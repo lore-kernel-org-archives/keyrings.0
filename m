@@ -1,181 +1,88 @@
-From: Tudor Ambarus <tudor.ambarus@microchip.com>
-Date: Tue, 23 May 2017 13:18:57 +0000
-Subject: [PATCH v3 03/11] crypto: ecc - remove unnecessary casts
-Message-Id: <1495545545-16872-4-git-send-email-tudor.ambarus@microchip.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Tue, 16 May 2017 21:49:57 +0000
+Subject: Re: [PATCH] KEYS: make keyctl_invalidate() also require Setattr permission
+Message-Id: <20170516214957.GA113464@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
-In-Reply-To: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
-To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com
-Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Nicolas.Ferre@microchip.com, Tudor Ambarus <tudor.ambarus@microchip.com>
+References: <20170329220101.26067-1-ebiggers@google.com>
+ <10049.1491207629@warthog.procyon.org.uk>
+ <20170404184433.GA46469@gmail.com>
+In-Reply-To: <20170404184433.GA46469-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Cc: Eric Biggers <ebiggers-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-api-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-cifs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fscrypt-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-nfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Gwendal Grignou <gwendal-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Richard Weinberger <richard-/L3Ra7n9ekc@public.gmane.org>, Theodore Ts'o <tytso-3s7WtUTddSA@public.gmane.org>, stable-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-ecc software implementation works with chunks of u64 data. There were some
-unnecessary casts to u8 and then back to u64 for the ecc keys. This patch
-removes the unnecessary casts.
+Hi David,
 
-Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
----
- crypto/ecc.c  | 28 +++++++++++++---------------
- crypto/ecc.h  |  8 ++++----
- crypto/ecdh.c | 11 +++++------
- 3 files changed, 22 insertions(+), 25 deletions(-)
+On Tue, Apr 04, 2017 at 11:44:33AM -0700, Eric Biggers wrote:
+> On Mon, Apr 03, 2017 at 09:20:29AM +0100, David Howells wrote:
+> > Eric Biggers <ebiggers@google.com> wrote:
+> > 
+> > > Currently, a process only needs Search permission on a key to invalidate
+> > > it with keyctl_invalidate(), which has an effect similar to unlinking it
+> > > from all keyrings.  Unfortunately, this significantly compromises the
+> > > keys permission system because as a result, there is no way to grant
+> > > read-only access to keys without also granting de-facto "delete" access.
+> > > Even worse, processes may invalidate entire _keyrings_, given only
+> > > permission to "search" them.
+> > > 
+> > > Key invalidation seems to have intended for cases where keyrings are
+> > > used as caches, and keys can be re-requested at any time by an upcall to
+> > > /sbin/request-key.  However, keyrings are not always used in this way.
+> > > For example, users of ext4, f2fs, and ubifs encryption may wish to grant
+> > > many differently-privileged processes access to the same keys, set up in
+> > > a shared keyring ahead of time.  Permitting everyone to invalidate keys
+> > > in this scenario enables a trivial denial-of-service.  And even users of
+> > > keyrings as "just caches" may wish to restrict invalidation because it
+> > > may require significant work or user interaction to regenerate keys.
+> > > 
+> > > This patch fixes the flaw by requiring both Search and Setattr
+> > > permission to invalidate a key rather than just Search permission.
+> > > Requiring Setattr permission is appropriate because Setattr permission
+> > > also allows revoking (via keyctl_revoke()) or expiring (via
+> > > keyctl_set_timeout()) the key, which also make the key inaccessible
+> > > regardless of how many keyrings it is in.  Continuing to require Search
+> > > permission ensures we do not decrease the level of permissions required.
+> > 
+> > I'm not sure this is the right method either.  It might be better to allocate
+> > one of the remaining two permissions bits for this and/or mark keys that are
+> > invalidateable.
+> > 
+> 
+> What do you think is the right solution?  We really need to do _something_.  Can
+> you elaborate on what the use case(s) for "invalidate" were intended to be, and
+> what users of it are known?
+> 
+> As I noted in the commit message I was hesistant to create a new Invalidate
+> permission because that would require that users of keyctl_setperm +
+> keyctl_invalidate to start including a new permission which never existed
+> before.  Note that the new permission would be rejected with EINVAL by old
+> kernels, so applications might even need to try it both ways.
+> 
+> However perhaps no one cares and doing that would be a non-issue.
+> 
+> If furthermore the only users of "invalidate" are nfsidmap and the in-kernel
+> dns_resolver, then it may be fine to rename the KEY_FLAG_ROOT_CAN_INVAL flag to
+> something like "KEY_FLAG_INVALIDATABLE" and making it so only those keys can be
+> invalidated.  That would be much better, but I don't know for sure that there
+> aren't other users of keyctl_invalidate() (you may know more).
+> 
 
-diff --git a/crypto/ecc.c b/crypto/ecc.c
-index 69b4cc4..e3a2b8f 100644
---- a/crypto/ecc.c
-+++ b/crypto/ecc.c
-@@ -904,7 +904,7 @@ static inline void ecc_swap_digits(const u64 *in, u64 *out,
- }
- 
- int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
--		     const u8 *private_key, unsigned int private_key_len)
-+		     const u64 *private_key, unsigned int private_key_len)
- {
- 	int nbytes;
- 	const struct ecc_curve *curve = ecc_get_curve(curve_id);
-@@ -917,23 +917,22 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
- 	if (private_key_len != nbytes)
- 		return -EINVAL;
- 
--	if (vli_is_zero((const u64 *)&private_key[0], ndigits))
-+	if (vli_is_zero(private_key, ndigits))
- 		return -EINVAL;
- 
- 	/* Make sure the private key is in the range [1, n-1]. */
--	if (vli_cmp(curve->n, (const u64 *)&private_key[0], ndigits) != 1)
-+	if (vli_cmp(curve->n, private_key, ndigits) != 1)
- 		return -EINVAL;
- 
- 	return 0;
- }
- 
- int ecdh_make_pub_key(unsigned int curve_id, unsigned int ndigits,
--		      const u8 *private_key, u8 *public_key)
-+		      const u64 *private_key, u64 *public_key)
- {
- 	int ret = 0;
- 	struct ecc_point *pk;
- 	u64 priv[ndigits];
--	unsigned int nbytes;
- 	const struct ecc_curve *curve = ecc_get_curve(curve_id);
- 
- 	if (!private_key || !curve) {
-@@ -941,7 +940,7 @@ int ecdh_make_pub_key(unsigned int curve_id, unsigned int ndigits,
- 		goto out;
- 	}
- 
--	ecc_swap_digits((const u64 *)private_key, priv, ndigits);
-+	ecc_swap_digits(private_key, priv, ndigits);
- 
- 	pk = ecc_alloc_point(ndigits);
- 	if (!pk) {
-@@ -955,9 +954,8 @@ int ecdh_make_pub_key(unsigned int curve_id, unsigned int ndigits,
- 		goto err_free_point;
- 	}
- 
--	nbytes = ndigits << ECC_DIGITS_TO_BYTES_SHIFT;
--	ecc_swap_digits(pk->x, (u64 *)public_key, ndigits);
--	ecc_swap_digits(pk->y, (u64 *)&public_key[nbytes], ndigits);
-+	ecc_swap_digits(pk->x, public_key, ndigits);
-+	ecc_swap_digits(pk->y, &public_key[ndigits], ndigits);
- 
- err_free_point:
- 	ecc_free_point(pk);
-@@ -966,8 +964,8 @@ int ecdh_make_pub_key(unsigned int curve_id, unsigned int ndigits,
- }
- 
- int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
--			      const u8 *private_key, const u8 *public_key,
--			      u8 *secret)
-+			      const u64 *private_key, const u64 *public_key,
-+			      u64 *secret)
- {
- 	int ret = 0;
- 	struct ecc_point *product, *pk;
-@@ -997,13 +995,13 @@ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
- 		goto err_alloc_product;
- 	}
- 
--	ecc_swap_digits((const u64 *)public_key, pk->x, ndigits);
--	ecc_swap_digits((const u64 *)&public_key[nbytes], pk->y, ndigits);
--	ecc_swap_digits((const u64 *)private_key, priv, ndigits);
-+	ecc_swap_digits(public_key, pk->x, ndigits);
-+	ecc_swap_digits(&public_key[ndigits], pk->y, ndigits);
-+	ecc_swap_digits(private_key, priv, ndigits);
- 
- 	ecc_point_mult(product, pk, priv, rand_z, curve->p, ndigits);
- 
--	ecc_swap_digits(product->x, (u64 *)secret, ndigits);
-+	ecc_swap_digits(product->x, secret, ndigits);
- 
- 	if (ecc_point_is_zero(product))
- 		ret = -EFAULT;
-diff --git a/crypto/ecc.h b/crypto/ecc.h
-index 1ca9bf7..af2ffdb 100644
---- a/crypto/ecc.h
-+++ b/crypto/ecc.h
-@@ -41,7 +41,7 @@
-  * Returns 0 if the key is acceptable, a negative value otherwise
-  */
- int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
--		     const u8 *private_key, unsigned int private_key_len);
-+		     const u64 *private_key, unsigned int private_key_len);
- 
- /**
-  * ecdh_make_pub_key() - Compute an ECC public key
-@@ -55,7 +55,7 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
-  * if an error occurred.
-  */
- int ecdh_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
--		      const u8 *private_key, u8 *public_key);
-+		      const u64 *private_key, u64 *public_key);
- 
- /**
-  * crypto_ecdh_shared_secret() - Compute a shared secret
-@@ -73,6 +73,6 @@ int ecdh_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
-  * if an error occurred.
-  */
- int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
--			      const u8 *private_key, const u8 *public_key,
--			      u8 *secret);
-+			      const u64 *private_key, const u64 *public_key,
-+			      u64 *secret);
- #endif
-diff --git a/crypto/ecdh.c b/crypto/ecdh.c
-index 69c3951..c1f0163 100644
---- a/crypto/ecdh.c
-+++ b/crypto/ecdh.c
-@@ -56,7 +56,7 @@ static int ecdh_set_secret(struct crypto_kpp *tfm, const void *buf,
- 	ctx->ndigits = ndigits;
- 
- 	if (ecc_is_key_valid(ctx->curve_id, ctx->ndigits,
--			     (const u8 *)params.key, params.key_size) < 0)
-+			     (const u64 *)params.key, params.key_size) < 0)
- 		return -EINVAL;
- 
- 	memcpy(ctx->private_key, params.key, params.key_size);
-@@ -81,15 +81,14 @@ static int ecdh_compute_value(struct kpp_request *req)
- 			return -EINVAL;
- 
- 		ret = crypto_ecdh_shared_secret(ctx->curve_id, ctx->ndigits,
--						(const u8 *)ctx->private_key,
--						(const u8 *)ctx->public_key,
--						(u8 *)ctx->shared_secret);
-+						ctx->private_key,
-+						ctx->public_key,
-+						ctx->shared_secret);
- 
- 		buf = ctx->shared_secret;
- 	} else {
- 		ret = ecdh_make_pub_key(ctx->curve_id, ctx->ndigits,
--					(const u8 *)ctx->private_key,
--					(u8 *)ctx->public_key);
-+					ctx->private_key, ctx->public_key);
- 		buf = ctx->public_key;
- 		/* Public part is a point thus it has both coordinates */
- 		nbytes *= 2;
--- 
-2.7.4
+I'm still thinking my proposed fix to require Setattr permission is the best
+solution.  Allocating a new permission bit breaks everyone calling
+keyctl_setperm() along with keyctl_invalidate(), while marking only certain keys
+as invalidatable breaks everyone using keyctl_invalidate() for some "unintended"
+key.
 
+Personally, I've now seen keyctl_invalidate() used in two different places for
+removing ext4 encryption keys: in Chrome OS userspace, and in a test script.
+The fact is that almost everyone using the keyrings API gets confused about the
+difference between revocation, invalidation, expiration, and unlinking, so they
+may end up doing "invalidate" when maybe they were "supposed" to do something
+else.  And it may not be a good idea to break the people who happened to choose
+"invalidate", beyond what we have to do to close the security hole.
+
+What do you say?
+
+- Eric
