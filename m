@@ -1,48 +1,119 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 16 May 2017 22:41:07 +0000
-Subject: Re: [PATCH 4/4] crypto: Documentation: fix none signal safe sample
-Message-Id: <20170516224107.GD113464@gmail.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Wed, 17 May 2017 15:00:29 +0000
+Subject: [PATCH v2 02/11] crypto: ecc - remove unused function arguments
+Message-Id: <1495033238-26016-3-git-send-email-tudor.ambarus@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1494503626-15877-1-git-send-email-gilad@benyossef.com>
- <1494503626-15877-5-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1494503626-15877-5-git-send-email-gilad@benyossef.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Ofir Drang <ofir.drang@arm.com>, Gilad Ben-Yossef <gilad.benyossef@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <1495033238-26016-1-git-send-email-tudor.ambarus@microchip.com>
+In-Reply-To: <1495033238-26016-1-git-send-email-tudor.ambarus@microchip.com>
+To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com
+Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Nicolas.Ferre@microchip.com, Tudor Ambarus <tudor.ambarus@microchip.com>
 
-On Thu, May 11, 2017 at 02:53:45PM +0300, Gilad Ben-Yossef wrote:
-> The sample code was showing use of wait_for_completion_interruptible()
-> for waiting for an async. crypto op to finish. However, if a signal
-> arrived it would free the buffers used even while crypto HW might
-> still DMA from/into the buffers.
-> 
-> Resolve this by using wait_for_completion() instead.
-> 
-> Reported-by: Eric Biggers <ebiggers3@gmail.com>
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> ---
->  Documentation/crypto/api-samples.rst | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/crypto/api-samples.rst b/Documentation/crypto/api-samples.rst
-> index d021fd9..944f08b 100644
-> --- a/Documentation/crypto/api-samples.rst
-> +++ b/Documentation/crypto/api-samples.rst
-> @@ -48,7 +48,7 @@ Code Example For Symmetric Key Cipher Operation
->              break;
->          case -EINPROGRESS:
->          case -EBUSY:
-> -            rc = wait_for_completion_interruptible(
-> +            rc = wait_for_completion(
->                  &sk->result.completion);
->              if (!rc && !sk->result.err) {
->                  reinit_completion(&sk->result.completion);
-> -- 
-> 2.1.4
-> 
+Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
+---
+ crypto/ecc.c  |  8 +++-----
+ crypto/ecc.h  | 13 +++----------
+ crypto/ecdh.c | 11 +++++------
+ 3 files changed, 11 insertions(+), 21 deletions(-)
 
-Same issue here: wait_for_completion() doesn't return a value.
+diff --git a/crypto/ecc.c b/crypto/ecc.c
+index 414c78a..69b4cc4 100644
+--- a/crypto/ecc.c
++++ b/crypto/ecc.c
+@@ -928,8 +928,7 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
+ }
+ 
+ int ecdh_make_pub_key(unsigned int curve_id, unsigned int ndigits,
+-		      const u8 *private_key, unsigned int private_key_len,
+-		      u8 *public_key, unsigned int public_key_len)
++		      const u8 *private_key, u8 *public_key)
+ {
+ 	int ret = 0;
+ 	struct ecc_point *pk;
+@@ -967,9 +966,8 @@ int ecdh_make_pub_key(unsigned int curve_id, unsigned int ndigits,
+ }
+ 
+ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
+-		       const u8 *private_key, unsigned int private_key_len,
+-		       const u8 *public_key, unsigned int public_key_len,
+-		       u8 *secret, unsigned int secret_len)
++			      const u8 *private_key, const u8 *public_key,
++			      u8 *secret)
+ {
+ 	int ret = 0;
+ 	struct ecc_point *product, *pk;
+diff --git a/crypto/ecc.h b/crypto/ecc.h
+index 37f4385..1ca9bf7 100644
+--- a/crypto/ecc.h
++++ b/crypto/ecc.h
+@@ -49,16 +49,13 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
+  * @curve_id:		id representing the curve to use
+  * @ndigits:		curve's number of digits
+  * @private_key:	pregenerated private key for the given curve
+- * @private_key_len:	length of private_key
+  * @public_key:		buffer for storing the generated public key
+- * @public_key_len:	length of the public_key buffer
+  *
+  * Returns 0 if the public key was generated successfully, a negative value
+  * if an error occurred.
+  */
+ int ecdh_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
+-		      const u8 *private_key, unsigned int private_key_len,
+-		      u8 *public_key, unsigned int public_key_len);
++		      const u8 *private_key, u8 *public_key);
+ 
+ /**
+  * crypto_ecdh_shared_secret() - Compute a shared secret
+@@ -66,11 +63,8 @@ int ecdh_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
+  * @curve_id:		id representing the curve to use
+  * @ndigits:		curve's number of digits
+  * @private_key:	private key of part A
+- * @private_key_len:	length of private_key
+  * @public_key:		public key of counterpart B
+- * @public_key_len:	length of public_key
+  * @secret:		buffer for storing the calculated shared secret
+- * @secret_len:		length of the secret buffer
+  *
+  * Note: It is recommended that you hash the result of crypto_ecdh_shared_secret
+  * before using it for symmetric encryption or HMAC.
+@@ -79,7 +73,6 @@ int ecdh_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
+  * if an error occurred.
+  */
+ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
+-		       const u8 *private_key, unsigned int private_key_len,
+-		       const u8 *public_key, unsigned int public_key_len,
+-		       u8 *secret, unsigned int secret_len);
++			      const u8 *private_key, const u8 *public_key,
++			      u8 *secret);
+ #endif
+diff --git a/crypto/ecdh.c b/crypto/ecdh.c
+index 3623307..69c3951 100644
+--- a/crypto/ecdh.c
++++ b/crypto/ecdh.c
+@@ -81,16 +81,15 @@ static int ecdh_compute_value(struct kpp_request *req)
+ 			return -EINVAL;
+ 
+ 		ret = crypto_ecdh_shared_secret(ctx->curve_id, ctx->ndigits,
+-					 (const u8 *)ctx->private_key, nbytes,
+-					 (const u8 *)ctx->public_key, 2 * nbytes,
+-					 (u8 *)ctx->shared_secret, nbytes);
++						(const u8 *)ctx->private_key,
++						(const u8 *)ctx->public_key,
++						(u8 *)ctx->shared_secret);
+ 
+ 		buf = ctx->shared_secret;
+ 	} else {
+ 		ret = ecdh_make_pub_key(ctx->curve_id, ctx->ndigits,
+-					(const u8 *)ctx->private_key, nbytes,
+-					(u8 *)ctx->public_key,
+-					sizeof(ctx->public_key));
++					(const u8 *)ctx->private_key,
++					(u8 *)ctx->public_key);
+ 		buf = ctx->public_key;
+ 		/* Public part is a point thus it has both coordinates */
+ 		nbytes *= 2;
+-- 
+2.7.4
 
-Eric
