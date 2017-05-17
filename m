@@ -1,84 +1,184 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 29 May 2017 08:22:56 +0000
-Subject: [PATCH v2 09/11] cifs: move to generic async completion
-Message-Id: <1496046180-21962-10-git-send-email-gilad@benyossef.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Wed, 17 May 2017 15:00:28 +0000
+Subject: [PATCH v2 01/11] crypto: kpp, (ec)dh - fix typos
+Message-Id: <1495033238-26016-2-git-send-email-tudor.ambarus@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1496046180-21962-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1496046180-21962-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Eric Biggers <ebiggers3@gmail.com>, Ofir Drang <ofir.drang@arm.com>, Pavel Shilovsky <pshilov@microsoft.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-raid@vger.kernel.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <1495033238-26016-1-git-send-email-tudor.ambarus@microchip.com>
+In-Reply-To: <1495033238-26016-1-git-send-email-tudor.ambarus@microchip.com>
+To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com
+Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Nicolas.Ferre@microchip.com, Tudor Ambarus <tudor.ambarus@microchip.com>
 
-cifs starts an async. crypto op and waits for their completion.
-Move it over to generic code doing the same.
+While here, add missing argument description (ndigits).
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Pavel Shilovsky <pshilov@microsoft.com>
+Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
 ---
- fs/cifs/smb2ops.c | 30 ++++--------------------------
- 1 file changed, 4 insertions(+), 26 deletions(-)
+ crypto/dh.c           | 4 ++--
+ crypto/dh_helper.c    | 4 ++--
+ crypto/ecc.h          | 8 +++++---
+ crypto/ecdh.c         | 4 ++--
+ crypto/ecdh_helper.c  | 4 ++--
+ include/crypto/dh.h   | 4 ++--
+ include/crypto/ecdh.h | 4 ++--
+ include/crypto/kpp.h  | 4 ++--
+ 8 files changed, 19 insertions(+), 17 deletions(-)
 
-diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
-index c586918..c0e1882 100644
---- a/fs/cifs/smb2ops.c
-+++ b/fs/cifs/smb2ops.c
-@@ -1707,22 +1707,6 @@ init_sg(struct smb_rqst *rqst, u8 *sign)
- 	return sg;
- }
+diff --git a/crypto/dh.c b/crypto/dh.c
+index 87e3542..7cec0498 100644
+--- a/crypto/dh.c
++++ b/crypto/dh.c
+@@ -4,9 +4,9 @@
+  * Authors: Salvatore Benedetto <salvatore.benedetto@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
+  */
  
--struct cifs_crypt_result {
--	int err;
--	struct completion completion;
--};
--
--static void cifs_crypt_complete(struct crypto_async_request *req, int err)
--{
--	struct cifs_crypt_result *res = req->data;
--
--	if (err = -EINPROGRESS)
--		return;
--
--	res->err = err;
--	complete(&res->completion);
--}
--
- static int
- smb2_get_enc_key(struct TCP_Server_Info *server, __u64 ses_id, int enc, u8 *key)
- {
-@@ -1763,12 +1747,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
- 	struct aead_request *req;
- 	char *iv;
- 	unsigned int iv_len;
--	struct cifs_crypt_result result = {0, };
-+	DECLARE_CRYPTO_WAIT(wait);
- 	struct crypto_aead *tfm;
- 	unsigned int crypt_len = le32_to_cpu(tr_hdr->OriginalMessageSize);
+ #include <linux/module.h>
+diff --git a/crypto/dh_helper.c b/crypto/dh_helper.c
+index 02db76b..8ba8a3f 100644
+--- a/crypto/dh_helper.c
++++ b/crypto/dh_helper.c
+@@ -3,9 +3,9 @@
+  * Authors: Salvatore Benedetto <salvatore.benedetto@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
+  */
+ #include <linux/kernel.h>
+ #include <linux/export.h>
+diff --git a/crypto/ecc.h b/crypto/ecc.h
+index 663d598..37f4385 100644
+--- a/crypto/ecc.h
++++ b/crypto/ecc.h
+@@ -34,9 +34,9 @@
+  * ecc_is_key_valid() - Validate a given ECDH private key
+  *
+  * @curve_id:		id representing the curve to use
+- * @ndigits:		curve number of digits
++ * @ndigits:		curve's number of digits
+  * @private_key:	private key to be used for the given curve
+- * @private_key_len:	private key len
++ * @private_key_len:	private key length
+  *
+  * Returns 0 if the key is acceptable, a negative value otherwise
+  */
+@@ -47,9 +47,10 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
+  * ecdh_make_pub_key() - Compute an ECC public key
+  *
+  * @curve_id:		id representing the curve to use
++ * @ndigits:		curve's number of digits
+  * @private_key:	pregenerated private key for the given curve
+  * @private_key_len:	length of private_key
+- * @public_key:		buffer for storing the public key generated
++ * @public_key:		buffer for storing the generated public key
+  * @public_key_len:	length of the public_key buffer
+  *
+  * Returns 0 if the public key was generated successfully, a negative value
+@@ -63,6 +64,7 @@ int ecdh_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
+  * crypto_ecdh_shared_secret() - Compute a shared secret
+  *
+  * @curve_id:		id representing the curve to use
++ * @ndigits:		curve's number of digits
+  * @private_key:	private key of part A
+  * @private_key_len:	length of private_key
+  * @public_key:		public key of counterpart B
+diff --git a/crypto/ecdh.c b/crypto/ecdh.c
+index 63ca337..3623307 100644
+--- a/crypto/ecdh.c
++++ b/crypto/ecdh.c
+@@ -4,9 +4,9 @@
+  * Authors: Salvator Benedetto <salvatore.benedetto@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
+  */
  
--	init_completion(&result.completion);
--
- 	rc = smb2_get_enc_key(server, tr_hdr->SessionId, enc, key);
- 	if (rc) {
- 		cifs_dbg(VFS, "%s: Could not get %scryption key\n", __func__,
-@@ -1826,14 +1808,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
- 	aead_request_set_ad(req, assoc_data_len);
- 
- 	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				  cifs_crypt_complete, &result);
-+				  crypto_req_done, &wait);
- 
--	rc = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
--
--	if (rc = -EINPROGRESS || rc = -EBUSY) {
--		wait_for_completion(&result.completion);
--		rc = result.err;
--	}
-+	rc = crypto_wait_req(enc ? crypto_aead_encrypt(req)
-+				: crypto_aead_decrypt(req), &wait);
- 
- 	if (!rc && enc)
- 		memcpy(&tr_hdr->Signature, sign, SMB2_SIGNATURE_SIZE);
+ #include <linux/module.h>
+diff --git a/crypto/ecdh_helper.c b/crypto/ecdh_helper.c
+index 3cd8a24..f05bea5 100644
+--- a/crypto/ecdh_helper.c
++++ b/crypto/ecdh_helper.c
+@@ -3,9 +3,9 @@
+  * Authors: Salvatore Benedetto <salvatore.benedetto@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
+  */
+ #include <linux/kernel.h>
+ #include <linux/export.h>
+diff --git a/include/crypto/dh.h b/include/crypto/dh.h
+index 6b424ad..f638998 100644
+--- a/include/crypto/dh.h
++++ b/include/crypto/dh.h
+@@ -73,9 +73,9 @@ int crypto_dh_encode_key(char *buf, unsigned int len, const struct dh *params);
+ /**
+  * crypto_dh_decode_key() - decode a private key
+  * @buf:	Buffer holding a packet key that should be decoded
+- * @len:	Lenth of the packet private key buffer
++ * @len:	Length of the packet private key buffer
+  * @params:	Buffer allocated by the caller that is filled with the
+- *		unpacket DH private key.
++ *		unpacked DH private key.
+  *
+  * The unpacking obtains the private key by pointing @p to the correct location
+  * in @buf. Thus, both pointers refer to the same memory.
+diff --git a/include/crypto/ecdh.h b/include/crypto/ecdh.h
+index 03a64f6..1aff2a8 100644
+--- a/include/crypto/ecdh.h
++++ b/include/crypto/ecdh.h
+@@ -74,9 +74,9 @@ int crypto_ecdh_encode_key(char *buf, unsigned int len, const struct ecdh *p);
+ /**
+  * crypto_ecdh_decode_key() - decode a private key
+  * @buf:	Buffer holding a packet key that should be decoded
+- * @len:	Lenth of the packet private key buffer
++ * @len:	Length of the packet private key buffer
+  * @p:		Buffer allocated by the caller that is filled with the
+- *		unpacket ECDH private key.
++ *		unpacked ECDH private key.
+  *
+  * The unpacking obtains the private key by pointing @p to the correct location
+  * in @buf. Thus, both pointers refer to the same memory.
+diff --git a/include/crypto/kpp.h b/include/crypto/kpp.h
+index ce8e1f7..c190825 100644
+--- a/include/crypto/kpp.h
++++ b/include/crypto/kpp.h
+@@ -53,7 +53,7 @@ struct crypto_kpp {
+  *
+  * @set_secret:		Function invokes the protocol specific function to
+  *			store the secret private key along with parameters.
+- *			The implementation knows how to decode thie buffer
++ *			The implementation knows how to decode the buffer
+  * @generate_public_key: Function generate the public key to be sent to the
+  *			counterpart. In case of error, where output is not big
+  *			enough req->dst_len will be updated to the size
+@@ -102,7 +102,7 @@ struct kpp_alg {
+  * @mask: specifies the mask for the algorithm
+  *
+  * Allocate a handle for kpp algorithm. The returned struct crypto_kpp
+- * is requeried for any following API invocation
++ * is required for any following API invocation
+  *
+  * Return: allocated handle in case of success; IS_ERR() is true in case of
+  *	   an error, PTR_ERR() returns the error code.
 -- 
-2.1.4
+2.7.4
 
