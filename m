@@ -1,35 +1,42 @@
-From: Dan Carpenter <dan.carpenter@oracle.com>
-Date: Mon, 29 May 2017 13:26:22 +0000
-Subject: [PATCH v2] X.509: Fix error code in x509_cert_parse()
-Message-Id: <20170529132622.6tapug7i7aqmvnqz@mwanda>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Thu, 18 May 2017 11:26:42 +0000
+Subject: [PATCH v2 0/4] crypto: async crypto op fixes
+Message-Id: <1495106806-2292-1-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <4045.1495558143@warthog.procyon.org.uk>
-In-Reply-To: <4045.1495558143@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, kernel-janitors@vger.kernel.org
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>
+Cc: Ofir Drang <ofir.drang@arm.com>, stable@vger.kernel.org, Eric Biggers <ebiggers3@gmail.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-We forgot to set the error code on this path so it could result in
-returning NULL which leads to a NULL dereference.
+This patch set fixes various usage and documentation errors
+in waiting for async crypto op to complete which can result
+in data corruption.
 
-Fixes: db6c43bd2132 ("crypto: KEYS: convert public key and digsig asym to the akcipher api")
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-v2:  Style change
+Note: these were discovered in the process of working on a
+patch set that replaces these call sites and more with a
+generic implementation that will prevent these problems
+going forward. These are just the fix ups for current code.
 
-Sorry for the delay, I'm been out of office.
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: stable@vger.kernel.org
+CC: Eric Biggers <ebiggers3@gmail.com>
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index c80765b211cf..dd03fead1ca3 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -102,6 +102,7 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
- 		}
- 	}
- 
-+	ret = -ENOMEM;
- 	cert->pub->key = kmemdup(ctx->key, ctx->key_size, GFP_KERNEL);
- 	if (!cert->pub->key)
- 		goto error_decode;
+Gilad Ben-Yossef (4):
+  crypto: handle EBUSY due to backlog correctly
+  crypto: drbg wait for crypto op not signal safe
+  crypto: gcm wait for crypto op not signal safe
+  crypto: Documentation: fix none signal safe sample
+
+Changes from v1:
+- Fix a brown paper bug compile error due to bad git rebase squashing
+
+ Documentation/crypto/api-samples.rst | 2 +-
+ crypto/asymmetric_keys/public_key.c  | 2 +-
+ crypto/drbg.c                        | 5 ++---
+ crypto/gcm.c                         | 6 ++----
+ 4 files changed, 6 insertions(+), 9 deletions(-)
+
+-- 
+2.1.4
+
