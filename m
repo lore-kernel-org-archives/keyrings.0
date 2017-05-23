@@ -1,40 +1,64 @@
 From: Tudor Ambarus <tudor.ambarus@microchip.com>
-Date: Tue, 23 May 2017 13:19:05 +0000
-Subject: [PATCH v3 11/11] crypto: dh - fix memleak in setkey
-Message-Id: <1495545545-16872-12-git-send-email-tudor.ambarus@microchip.com>
+Date: Tue, 23 May 2017 13:18:54 +0000
+Subject: [PATCH v3 00/11] fixes for ecc, ec(dh), rsa & testmgr
+Message-Id: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
-In-Reply-To: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
 To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com
 Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Nicolas.Ferre@microchip.com, Tudor Ambarus <tudor.ambarus@microchip.com>
 
-setkey can be called multiple times during the existence
-of the transformation object. In case of multiple setkey calls,
-the old key was not freed and we leaked memory.
-Free the old MPI key if any.
+Hi,
 
-Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
----
- crypto/dh.c | 3 +++
- 1 file changed, 3 insertions(+)
+These are various fixes that I made while reading kpp and akcipher
+implementations.
 
-diff --git a/crypto/dh.c b/crypto/dh.c
-index 3d35ba9..8eb433d 100644
---- a/crypto/dh.c
-+++ b/crypto/dh.c
-@@ -85,6 +85,9 @@ static int dh_set_secret(struct crypto_kpp *tfm, const void *buf,
- 	struct dh_ctx *ctx = dh_get_ctx(tfm);
- 	struct dh params;
- 
-+	/* Free the old MPI key if any */
-+	dh_free_ctx(ctx);
-+
- 	if (crypto_dh_decode_key(buf, len, &params) < 0)
- 		return -EINVAL;
- 
+For KEYS there is only one patch. It checks the return value of
+crypto_akcipher_maxsize().
+
+Changes in v3:
+ - change error code to ENOKEY instead of EINVAL in
+   dh/ecdh/rsa_max_size()
+ - reorder commits
+ - update some commit messages
+ - drop "crypto: rsa - do checks before allocating data",
+   it didn't consider leading zeros.
+
+Changes in v2:
+ - squash the patches that removed the unnecessary casts
+ - add the last five patches
+
+v1 can be found at:
+http://www.mail-archive.com/linux-crypto@vger.kernel.org/msg25139.html
+
+Tudor Ambarus (11):
+  crypto: kpp, (ec)dh - fix typos
+  crypto: ecc - remove unused function arguments
+  crypto: ecc - remove unnecessary casts
+  crypto: dh - fix dh_max_size
+  crypto: ecdh - fix ecdh_max_size
+  crypto: rsa - change err code in rsa_max_size
+  crypto: testmgr - check err on kpp maxsize
+  crypto: testmgr - check err on akcipher maxsize
+  crypto: KEYS: check err on akcipher maxsize
+  crypto: ecc - don't be selfish on pubkeys
+  crypto: dh - fix memleak in setkey
+
+ crypto/asymmetric_keys/public_key.c |  5 +++++
+ crypto/dh.c                         |  9 ++++++---
+ crypto/dh_helper.c                  |  4 ++--
+ crypto/ecc.c                        | 32 ++++++++++++++------------------
+ crypto/ecc.h                        | 25 ++++++++++---------------
+ crypto/ecdh.c                       | 24 +++++++++++-------------
+ crypto/ecdh_helper.c                |  4 ++--
+ crypto/rsa.c                        |  2 +-
+ crypto/testmgr.c                    | 10 ++++++++++
+ include/crypto/dh.h                 |  4 ++--
+ include/crypto/ecdh.h               |  4 ++--
+ include/crypto/kpp.h                |  4 ++--
+ 12 files changed, 67 insertions(+), 60 deletions(-)
+
 -- 
 2.7.4
 
