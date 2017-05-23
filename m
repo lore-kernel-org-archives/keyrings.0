@@ -1,84 +1,33 @@
-From: Colin Walters <walters@verbum.org>
-Date: Wed, 31 May 2017 15:36:19 +0000
-Subject: Re: [RFC PATCH] KEYS: Allow a live daemon in a namespace to service request_key upcalls
-Message-Id: <1496244979.313075.994296480.7C5735E8@webmail.messagingengine.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
+Date: Tue, 23 May 2017 14:27:17 +0000
+Subject: [PATCH] X.509: Fix error code in x509_cert_parse()
+Message-Id: <20170523142717.GA28346@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1496239145.289295.994170312.57409998@webmail.messagingengine.com>
- <149616052408.10194.7774163568767478808.stgit@warthog.procyon.org.uk>
- <3412.1496242065@warthog.procyon.org.uk>
-In-Reply-To: <3412.1496242065@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: James.Bottomley@HansenPartnership.com, ebiederm@xmission.com, linux-nfs@vger.kernel.org, containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
+To: David Howells <dhowells@redhat.com>, Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, kernel-janitors@vger.kernel.org
 
-On Wed, May 31, 2017, at 10:47 AM, David Howells wrote:
+We forgot to set the error code on this path so it could result in
+returning NULL which leads to a NULL dereference.
 
+Fixes: db6c43bd2132 ("crypto: KEYS: convert public key and digsig asym to the akcipher api")
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-> > So if the mount-in-container is mostly init containers, and for init
-> > containers you have *all* namespaces usually, does it make
-> > sense to have the capability to match namespaces for key services?
-> 
-> Yes.
-> 
-> If I don't provide it, someone will complain that I haven't provided it.
-
-I don't think it's as clear cut as that.  I'd agree that where possible, it makes
-sense to be general since it's hard to envision every use case, but in this particualr
-case there are risks around security and clear maintenance issues.  Providing
-a feature without *known* users in a security-sensitive context seems to
-me to be something to think twice about.
-
-> > Something that worries me a lot here is for e.g. Docker today, the default
-> > is uid 0 but not CAP_SYS_ADMIN.  We don't want a container that I run
-> > with --host=net to be able to read the "host" keyrings, even if it shares
-> > the host network namespace.
-> 
-> This is a separate issue.
-
-Kind of - what I'm getting at is that today, changing any of the kernel
-upcalls is a fully privileged operation.  Most container userspace tools
-mount /proc read-only to ensure that even uid 0 containers can't change it
-by default.
-
-(Wait, is /sbin/request-key really hardcoded in the kernel?  I guess that's
- good from the perspective of not having containers be able to change it 
- like they could /proc/sys/kernel/core_pattern if it was writable, but
- it seems surprising)
-
-Anyways, if we now expose a method to configure this, we have to look
-at the increase in attack surface.
-
-In practice again, most container implementations I'm aware of use
-seccomp today to simply block off access to the keyring.   As I mentioned
-Docker does it, so does flatpak:
-https://github.com/flatpak/flatpak/blob/ea7077fcd431fb98fe85cd815cbd2ec13df58d09/common/flatpak-run.c#L4007
-and Chrome:
-https://cs.chromium.org/chromium/src/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc?q=keyctl&dr=C&ly1
-
-But I'm a bit uncertain about *relying* on the seccomp filtering.  Particularly
-because we do want the "init container" approach to work and be able
-to use the kernel keyring, but also not be able to affect other containers
-or the host.
-
-> Keys may be relevant in different namespaces, which makes namespacing them
-> hard to achieve.  For instance, dns-, idmapper- and rxrpc-type keys should
-> probably be differentiated by network namespace.
-> 
-> However, it might be worth creating a keyrings namespace.
-
-Hm, yes - I think I was conflating CLONE_NEWUSER with uid 0's keyring
-but that's a distinct thing from the kernel keyrings.
-
-> > Basically my instinct here is to be conservative and have KEYCTL_SERVICE_ADD
-> > require CAP_SYS_ADMIN and only affect the userns keyring.
-> 
-> "Affect" in what sense?
-
-Operate on at all - view/read/write/search etc.
-
-At a high level I'm glad you're looking at the "service fd" model instead of
-upcalls - I do think it'll get us to a better place.  The main thing I'm getting
-at first though is making sure we're not introducing new security issues, and that the
-new proposed API makes sense for some of the important userspace use cases.
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index c80765b211cf..1f69e948fb34 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -103,8 +103,10 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
+ 	}
+ 
+ 	cert->pub->key = kmemdup(ctx->key, ctx->key_size, GFP_KERNEL);
+-	if (!cert->pub->key)
++	if (!cert->pub->key) {
++		ret = -ENOMEM;
+ 		goto error_decode;
++	}
+ 
+ 	cert->pub->keylen = ctx->key_size;
+ 
