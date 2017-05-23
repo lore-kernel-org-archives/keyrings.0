@@ -1,248 +1,184 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 29 May 2017 08:22:55 +0000
-Subject: [PATCH v2 08/11] fscrypt: move to generic async completion
-Message-Id: <1496046180-21962-9-git-send-email-gilad@benyossef.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Tue, 23 May 2017 13:18:55 +0000
+Subject: [PATCH v3 01/11] crypto: kpp, (ec)dh - fix typos
+Message-Id: <1495545545-16872-2-git-send-email-tudor.ambarus@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1496046180-21962-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1496046180-21962-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-cifs@vger.kernel.org, linux-doc@vger.kernel.org, linux-ima-user@lists.sourceforge.net, Eric Biggers <ebiggers3@gmail.com>, samba-technical@lists.samba.org, linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, Pavel Shilovsky <pshilov@microsoft.com>, Ofir Drang <ofir.drang@arm.com>
+References: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
+In-Reply-To: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
+To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com
+Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Nicolas.Ferre@microchip.com, Tudor Ambarus <tudor.ambarus@microchip.com>
 
-fscrypt starts several async. crypto ops and waiting for them to
-complete. Move it over to generic code doing the same.
+While here, add missing argument description (ndigits).
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
 ---
- fs/crypto/crypto.c          | 28 ++++------------------------
- fs/crypto/fname.c           | 36 ++++++------------------------------
- fs/crypto/fscrypt_private.h | 10 ----------
- fs/crypto/keyinfo.c         | 21 +++------------------
- 4 files changed, 13 insertions(+), 82 deletions(-)
+ crypto/dh.c           | 4 ++--
+ crypto/dh_helper.c    | 4 ++--
+ crypto/ecc.h          | 8 +++++---
+ crypto/ecdh.c         | 4 ++--
+ crypto/ecdh_helper.c  | 4 ++--
+ include/crypto/dh.h   | 4 ++--
+ include/crypto/ecdh.h | 4 ++--
+ include/crypto/kpp.h  | 4 ++--
+ 8 files changed, 19 insertions(+), 17 deletions(-)
 
-diff --git a/fs/crypto/crypto.c b/fs/crypto/crypto.c
-index 6d6eca3..227db85 100644
---- a/fs/crypto/crypto.c
-+++ b/fs/crypto/crypto.c
-@@ -125,21 +125,6 @@ struct fscrypt_ctx *fscrypt_get_ctx(const struct inode *inode, gfp_t gfp_flags)
- }
- EXPORT_SYMBOL(fscrypt_get_ctx);
- 
--/**
-- * page_crypt_complete() - completion callback for page crypto
-- * @req: The asynchronous cipher request context
-- * @res: The result of the cipher operation
-- */
--static void page_crypt_complete(struct crypto_async_request *req, int res)
--{
--	struct fscrypt_completion_result *ecr = req->data;
--
--	if (res = -EINPROGRESS)
--		return;
--	ecr->res = res;
--	complete(&ecr->completion);
--}
--
- int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
- 			   u64 lblk_num, struct page *src_page,
- 			   struct page *dest_page, unsigned int len,
-@@ -150,7 +135,7 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
- 		u8 padding[FS_XTS_TWEAK_SIZE - sizeof(__le64)];
- 	} xts_tweak;
- 	struct skcipher_request *req = NULL;
--	DECLARE_FS_COMPLETION_RESULT(ecr);
-+	DECLARE_CRYPTO_WAIT(wait);
- 	struct scatterlist dst, src;
- 	struct fscrypt_info *ci = inode->i_crypt_info;
- 	struct crypto_skcipher *tfm = ci->ci_ctfm;
-@@ -168,7 +153,7 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
- 
- 	skcipher_request_set_callback(
- 		req, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
--		page_crypt_complete, &ecr);
-+		crypto_req_done, &wait);
- 
- 	BUILD_BUG_ON(sizeof(xts_tweak) != FS_XTS_TWEAK_SIZE);
- 	xts_tweak.index = cpu_to_le64(lblk_num);
-@@ -180,14 +165,9 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
- 	sg_set_page(&src, src_page, len, offs);
- 	skcipher_request_set_crypt(req, &src, &dst, len, &xts_tweak);
- 	if (rw = FS_DECRYPT)
--		res = crypto_skcipher_decrypt(req);
-+		res = crypto_wait_req(crypto_skcipher_decrypt(req), &wait);
- 	else
--		res = crypto_skcipher_encrypt(req);
--	if (res = -EINPROGRESS || res = -EBUSY) {
--		BUG_ON(req->base.data != &ecr);
--		wait_for_completion(&ecr.completion);
--		res = ecr.res;
--	}
-+		res = crypto_wait_req(crypto_skcipher_encrypt(req), &wait);
- 	skcipher_request_free(req);
- 	if (res) {
- 		printk_ratelimited(KERN_ERR
-diff --git a/fs/crypto/fname.c b/fs/crypto/fname.c
-index d1bb02b..d5732c9 100644
---- a/fs/crypto/fname.c
-+++ b/fs/crypto/fname.c
-@@ -15,21 +15,6 @@
- #include "fscrypt_private.h"
- 
- /**
-- * fname_crypt_complete() - completion callback for filename crypto
-- * @req: The asynchronous cipher request context
-- * @res: The result of the cipher operation
-- */
--static void fname_crypt_complete(struct crypto_async_request *req, int res)
--{
--	struct fscrypt_completion_result *ecr = req->data;
--
--	if (res = -EINPROGRESS)
--		return;
--	ecr->res = res;
--	complete(&ecr->completion);
--}
--
--/**
-  * fname_encrypt() - encrypt a filename
+diff --git a/crypto/dh.c b/crypto/dh.c
+index 87e3542..7cec0498 100644
+--- a/crypto/dh.c
++++ b/crypto/dh.c
+@@ -4,9 +4,9 @@
+  * Authors: Salvatore Benedetto <salvatore.benedetto@intel.com>
   *
-  * The caller must have allocated sufficient memory for the @oname string.
-@@ -40,7 +25,7 @@ static int fname_encrypt(struct inode *inode,
- 			const struct qstr *iname, struct fscrypt_str *oname)
- {
- 	struct skcipher_request *req = NULL;
--	DECLARE_FS_COMPLETION_RESULT(ecr);
-+	DECLARE_CRYPTO_WAIT(ecr);
- 	struct fscrypt_info *ci = inode->i_crypt_info;
- 	struct crypto_skcipher *tfm = ci->ci_ctfm;
- 	int res = 0;
-@@ -76,17 +61,12 @@ static int fname_encrypt(struct inode *inode,
- 	}
- 	skcipher_request_set_callback(req,
- 			CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
--			fname_crypt_complete, &ecr);
-+			crypto_req_done, &ecr);
- 	sg_init_one(&sg, oname->name, cryptlen);
- 	skcipher_request_set_crypt(req, &sg, &sg, cryptlen, iv);
+  * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
+  */
  
- 	/* Do the encryption */
--	res = crypto_skcipher_encrypt(req);
--	if (res = -EINPROGRESS || res = -EBUSY) {
--		/* Request is being completed asynchronously; wait for it */
--		wait_for_completion(&ecr.completion);
--		res = ecr.res;
--	}
-+	res = crypto_wait_req(crypto_skcipher_encrypt(req), &ecr);
- 	skcipher_request_free(req);
- 	if (res < 0) {
- 		printk_ratelimited(KERN_ERR
-@@ -110,7 +90,7 @@ static int fname_decrypt(struct inode *inode,
- 				struct fscrypt_str *oname)
- {
- 	struct skcipher_request *req = NULL;
--	DECLARE_FS_COMPLETION_RESULT(ecr);
-+	DECLARE_CRYPTO_WAIT(ecr);
- 	struct scatterlist src_sg, dst_sg;
- 	struct fscrypt_info *ci = inode->i_crypt_info;
- 	struct crypto_skcipher *tfm = ci->ci_ctfm;
-@@ -131,7 +111,7 @@ static int fname_decrypt(struct inode *inode,
- 	}
- 	skcipher_request_set_callback(req,
- 		CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
--		fname_crypt_complete, &ecr);
-+		crypto_req_done, &ecr);
+ #include <linux/module.h>
+diff --git a/crypto/dh_helper.c b/crypto/dh_helper.c
+index 02db76b..8ba8a3f 100644
+--- a/crypto/dh_helper.c
++++ b/crypto/dh_helper.c
+@@ -3,9 +3,9 @@
+  * Authors: Salvatore Benedetto <salvatore.benedetto@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
+  */
+ #include <linux/kernel.h>
+ #include <linux/export.h>
+diff --git a/crypto/ecc.h b/crypto/ecc.h
+index 663d598..37f4385 100644
+--- a/crypto/ecc.h
++++ b/crypto/ecc.h
+@@ -34,9 +34,9 @@
+  * ecc_is_key_valid() - Validate a given ECDH private key
+  *
+  * @curve_id:		id representing the curve to use
+- * @ndigits:		curve number of digits
++ * @ndigits:		curve's number of digits
+  * @private_key:	private key to be used for the given curve
+- * @private_key_len:	private key len
++ * @private_key_len:	private key length
+  *
+  * Returns 0 if the key is acceptable, a negative value otherwise
+  */
+@@ -47,9 +47,10 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
+  * ecdh_make_pub_key() - Compute an ECC public key
+  *
+  * @curve_id:		id representing the curve to use
++ * @ndigits:		curve's number of digits
+  * @private_key:	pregenerated private key for the given curve
+  * @private_key_len:	length of private_key
+- * @public_key:		buffer for storing the public key generated
++ * @public_key:		buffer for storing the generated public key
+  * @public_key_len:	length of the public_key buffer
+  *
+  * Returns 0 if the public key was generated successfully, a negative value
+@@ -63,6 +64,7 @@ int ecdh_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
+  * crypto_ecdh_shared_secret() - Compute a shared secret
+  *
+  * @curve_id:		id representing the curve to use
++ * @ndigits:		curve's number of digits
+  * @private_key:	private key of part A
+  * @private_key_len:	length of private_key
+  * @public_key:		public key of counterpart B
+diff --git a/crypto/ecdh.c b/crypto/ecdh.c
+index 63ca337..3623307 100644
+--- a/crypto/ecdh.c
++++ b/crypto/ecdh.c
+@@ -4,9 +4,9 @@
+  * Authors: Salvator Benedetto <salvatore.benedetto@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
+  */
  
- 	/* Initialize IV */
- 	memset(iv, 0, FS_CRYPTO_BLOCK_SIZE);
-@@ -140,11 +120,7 @@ static int fname_decrypt(struct inode *inode,
- 	sg_init_one(&src_sg, iname->name, iname->len);
- 	sg_init_one(&dst_sg, oname->name, oname->len);
- 	skcipher_request_set_crypt(req, &src_sg, &dst_sg, iname->len, iv);
--	res = crypto_skcipher_decrypt(req);
--	if (res = -EINPROGRESS || res = -EBUSY) {
--		wait_for_completion(&ecr.completion);
--		res = ecr.res;
--	}
-+	res = crypto_wait_req(crypto_skcipher_decrypt(req), &ecr);
- 	skcipher_request_free(req);
- 	if (res < 0) {
- 		printk_ratelimited(KERN_ERR
-diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
-index 1e1f8a3..b2d130e 100644
---- a/fs/crypto/fscrypt_private.h
-+++ b/fs/crypto/fscrypt_private.h
-@@ -65,16 +65,6 @@ typedef enum {
- #define FS_CTX_REQUIRES_FREE_ENCRYPT_FL		0x00000001
- #define FS_CTX_HAS_BOUNCE_BUFFER_FL		0x00000002
- 
--struct fscrypt_completion_result {
--	struct completion completion;
--	int res;
--};
--
--#define DECLARE_FS_COMPLETION_RESULT(ecr) \
--	struct fscrypt_completion_result ecr = { \
--		COMPLETION_INITIALIZER_ONSTACK((ecr).completion), 0 }
--
--
- /* crypto.c */
- extern int fscrypt_initialize(unsigned int cop_flags);
- extern struct workqueue_struct *fscrypt_read_workqueue;
-diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
-index 179e578..5661020 100644
---- a/fs/crypto/keyinfo.c
-+++ b/fs/crypto/keyinfo.c
-@@ -12,17 +12,6 @@
- #include <linux/scatterlist.h>
- #include "fscrypt_private.h"
- 
--static void derive_crypt_complete(struct crypto_async_request *req, int rc)
--{
--	struct fscrypt_completion_result *ecr = req->data;
--
--	if (rc = -EINPROGRESS)
--		return;
--
--	ecr->res = rc;
--	complete(&ecr->completion);
--}
--
+ #include <linux/module.h>
+diff --git a/crypto/ecdh_helper.c b/crypto/ecdh_helper.c
+index 3cd8a24..f05bea5 100644
+--- a/crypto/ecdh_helper.c
++++ b/crypto/ecdh_helper.c
+@@ -3,9 +3,9 @@
+  * Authors: Salvatore Benedetto <salvatore.benedetto@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
+  */
+ #include <linux/kernel.h>
+ #include <linux/export.h>
+diff --git a/include/crypto/dh.h b/include/crypto/dh.h
+index 6b424ad..f638998 100644
+--- a/include/crypto/dh.h
++++ b/include/crypto/dh.h
+@@ -73,9 +73,9 @@ int crypto_dh_encode_key(char *buf, unsigned int len, const struct dh *params);
  /**
-  * derive_key_aes() - Derive a key using AES-128-ECB
-  * @deriving_key: Encryption key used for derivation.
-@@ -37,7 +26,7 @@ static int derive_key_aes(u8 deriving_key[FS_AES_128_ECB_KEY_SIZE],
- {
- 	int res = 0;
- 	struct skcipher_request *req = NULL;
--	DECLARE_FS_COMPLETION_RESULT(ecr);
-+	DECLARE_CRYPTO_WAIT(wait);
- 	struct scatterlist src_sg, dst_sg;
- 	struct crypto_skcipher *tfm = crypto_alloc_skcipher("ecb(aes)", 0, 0);
- 
-@@ -54,7 +43,7 @@ static int derive_key_aes(u8 deriving_key[FS_AES_128_ECB_KEY_SIZE],
- 	}
- 	skcipher_request_set_callback(req,
- 			CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
--			derive_crypt_complete, &ecr);
-+			crypto_req_done, &wait);
- 	res = crypto_skcipher_setkey(tfm, deriving_key,
- 					FS_AES_128_ECB_KEY_SIZE);
- 	if (res < 0)
-@@ -64,11 +53,7 @@ static int derive_key_aes(u8 deriving_key[FS_AES_128_ECB_KEY_SIZE],
- 	sg_init_one(&dst_sg, derived_key, FS_AES_256_XTS_KEY_SIZE);
- 	skcipher_request_set_crypt(req, &src_sg, &dst_sg,
- 					FS_AES_256_XTS_KEY_SIZE, NULL);
--	res = crypto_skcipher_encrypt(req);
--	if (res = -EINPROGRESS || res = -EBUSY) {
--		wait_for_completion(&ecr.completion);
--		res = ecr.res;
--	}
-+	res = crypto_wait_req(crypto_skcipher_encrypt(req), &wait);
- out:
- 	skcipher_request_free(req);
- 	crypto_free_skcipher(tfm);
+  * crypto_dh_decode_key() - decode a private key
+  * @buf:	Buffer holding a packet key that should be decoded
+- * @len:	Lenth of the packet private key buffer
++ * @len:	Length of the packet private key buffer
+  * @params:	Buffer allocated by the caller that is filled with the
+- *		unpacket DH private key.
++ *		unpacked DH private key.
+  *
+  * The unpacking obtains the private key by pointing @p to the correct location
+  * in @buf. Thus, both pointers refer to the same memory.
+diff --git a/include/crypto/ecdh.h b/include/crypto/ecdh.h
+index 03a64f6..1aff2a8 100644
+--- a/include/crypto/ecdh.h
++++ b/include/crypto/ecdh.h
+@@ -74,9 +74,9 @@ int crypto_ecdh_encode_key(char *buf, unsigned int len, const struct ecdh *p);
+ /**
+  * crypto_ecdh_decode_key() - decode a private key
+  * @buf:	Buffer holding a packet key that should be decoded
+- * @len:	Lenth of the packet private key buffer
++ * @len:	Length of the packet private key buffer
+  * @p:		Buffer allocated by the caller that is filled with the
+- *		unpacket ECDH private key.
++ *		unpacked ECDH private key.
+  *
+  * The unpacking obtains the private key by pointing @p to the correct location
+  * in @buf. Thus, both pointers refer to the same memory.
+diff --git a/include/crypto/kpp.h b/include/crypto/kpp.h
+index ce8e1f7..c190825 100644
+--- a/include/crypto/kpp.h
++++ b/include/crypto/kpp.h
+@@ -53,7 +53,7 @@ struct crypto_kpp {
+  *
+  * @set_secret:		Function invokes the protocol specific function to
+  *			store the secret private key along with parameters.
+- *			The implementation knows how to decode thie buffer
++ *			The implementation knows how to decode the buffer
+  * @generate_public_key: Function generate the public key to be sent to the
+  *			counterpart. In case of error, where output is not big
+  *			enough req->dst_len will be updated to the size
+@@ -102,7 +102,7 @@ struct kpp_alg {
+  * @mask: specifies the mask for the algorithm
+  *
+  * Allocate a handle for kpp algorithm. The returned struct crypto_kpp
+- * is requeried for any following API invocation
++ * is required for any following API invocation
+  *
+  * Return: allocated handle in case of success; IS_ERR() is true in case of
+  *	   an error, PTR_ERR() returns the error code.
 -- 
-2.1.4
+2.7.4
 
