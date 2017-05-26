@@ -1,31 +1,75 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Wed, 24 May 2017 03:51:32 +0000
-Subject: Re: [PATCH v2 08/11] crypto: testmgr - check err on akcipher maxsize
-Message-Id: <20170524035132.GB21629@gondor.apana.org.au>
+From: Mark Rutland <mark.rutland@arm.com>
+Date: Fri, 26 May 2017 17:37:34 +0000
+Subject: [PATCH] KEYS: fix refcount_inc() on zero
+Message-Id: <1495820254-6651-1-git-send-email-mark.rutland@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1495033238-26016-1-git-send-email-tudor.ambarus@microchip.com>
- <1495033238-26016-9-git-send-email-tudor.ambarus@microchip.com>
- <20170523040836.GD12788@gondor.apana.org.au>
- <dcec37d7-888f-4903-2aeb-b287b5d1042c@microchip.com>
-In-Reply-To: <dcec37d7-888f-4903-2aeb-b287b5d1042c@microchip.com>
-To: Tudor Ambarus <tudor.ambarus@microchip.com>
-Cc: davem@davemloft.net, dhowells@redhat.com, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Nicolas.Ferre@microchip.com
+To: linux-security-module@vger.kernel.org
 
-On Tue, May 23, 2017 at 12:18:23PM +0300, Tudor Ambarus wrote:
-> 
-> As of now, this call is reached only after a successful setkey.
-> If some user call it before setkey we will end up in a NULL dereference.
-> I tend to keep the error checking.
+If a key's refcount is dropped to zero between key_lookup() peeking at
+the refcount and subsequently attempting to increment it, refcount_inc()
+will see a zero refcount. Here, refcount_inc() will WARN_ONCE(), and
+will *not* increment the refcount, which will remain zero.
 
-I fail to see how this could be an issue in testmgr.
+Once key_lookup() drops key_serial_lock, it is possible for the key to
+be freed behind our back.
 
-Please just kill these unnecessary checks.
+This patch uses refcount_inc_not_zero() to perform the peek and
+increment atomically. A helper with lockdep annotation is added to
+document why this is safe.
 
-Thanks,
+Fixes: fff292914d3a2f1e ("security, keys: convert key.usage from atomic_t to refcount_t")
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: David Windsor <dwindsor@gmail.com>
+Cc: Elena Reshetova <elena.reshetova@intel.com>
+Cc: Hans Liljestrand <ishkamiel@gmail.com>
+Cc: James Morris <james.l.morris@oracle.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ security/keys/key.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 455c04d..150f51d 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -632,6 +632,12 @@ void key_put(struct key *key)
+ }
+ EXPORT_SYMBOL(key_put);
+ 
++static bool key_get_not_free(struct key *key)
++{
++	lockdep_assert_held(&key_serial_lock);
++	return refcount_inc_not_zero(&key->usage);
++}
++
+ /*
+  * Find a key by its serial number.
+  */
+@@ -660,14 +666,12 @@ struct key *key_lookup(key_serial_t id)
+ 	goto error;
+ 
+ found:
+-	/* pretend it doesn't exist if it is awaiting deletion */
+-	if (refcount_read(&key->usage) = 0)
+-		goto not_found;
+-
+-	/* this races with key_put(), but that doesn't matter since key_put()
+-	 * doesn't actually change the key
++	/*
++	 * Pretend it doesn't exist if it is awaiting deletion. This races with
++	 * key_put(), but we can peek at the key until we drop key_serial_lock.
+ 	 */
+-	__key_get(key);
++	if (!key_get_not_free(key))
++		goto not_found;
+ 
+ error:
+ 	spin_unlock(&key_serial_lock);
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.9.1
+
