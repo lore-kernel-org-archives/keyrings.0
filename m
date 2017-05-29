@@ -1,25 +1,127 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 23 May 2017 16:49:03 +0000
-Subject: Re: [PATCH] X.509: Fix error code in x509_cert_parse()
-Message-Id: <4045.1495558143@warthog.procyon.org.uk>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Mon, 29 May 2017 08:22:48 +0000
+Subject: [PATCH v2 01/11] crypto: introduce crypto wait for async op
+Message-Id: <1496046180-21962-2-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170523142717.GA28346@elgon.mountain>
-In-Reply-To: <20170523142717.GA28346@elgon.mountain>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: dhowells@redhat.com, Tadeusz Struk <tadeusz.struk@intel.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <1496046180-21962-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1496046180-21962-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Eric Biggers <ebiggers3@gmail.com>, Ofir Drang <ofir.drang@arm.com>, Pavel Shilovsky <pshilov@microsoft.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-raid@vger.kernel.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-Dan Carpenter <dan.carpenter@oracle.com> wrote:
+Invoking a possibly async. crypto op and waiting for completion
+while correctly handling backlog processing is a common task
+in the crypto API implementation and outside users of it.
 
->  	cert->pub->key = kmemdup(ctx->key, ctx->key_size, GFP_KERNEL);
-> -	if (!cert->pub->key)
-> +	if (!cert->pub->key) {
-> +		ret = -ENOMEM;
->  		goto error_decode;
-> +	}
+This patch adds a generic implementation for doing so in
+preparation for using it across the board instead of hand
+rolled versions.
 
-Put the "ret = -ENOMEM" line before the kmemdup line maybe?
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: Eric Biggers <ebiggers3@gmail.com>
+CC: Ofir Drang <ofir.drang@arm.com>
+---
+ crypto/api.c           | 13 +++++++++++++
+ include/linux/crypto.h | 41 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+)
 
-David
+diff --git a/crypto/api.c b/crypto/api.c
+index 941cd4c..2a2479d 100644
+--- a/crypto/api.c
++++ b/crypto/api.c
+@@ -24,6 +24,7 @@
+ #include <linux/sched/signal.h>
+ #include <linux/slab.h>
+ #include <linux/string.h>
++#include <linux/completion.h>
+ #include "internal.h"
+ 
+ LIST_HEAD(crypto_alg_list);
+@@ -595,5 +596,17 @@ int crypto_has_alg(const char *name, u32 type, u32 mask)
+ }
+ EXPORT_SYMBOL_GPL(crypto_has_alg);
+ 
++void crypto_req_done(struct crypto_async_request *req, int err)
++{
++	struct crypto_wait *wait = req->data;
++
++	if (err = -EINPROGRESS)
++		return;
++
++	wait->err = err;
++	complete(&wait->completion);
++}
++EXPORT_SYMBOL_GPL(crypto_req_done);
++
+ MODULE_DESCRIPTION("Cryptographic core API");
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/crypto.h b/include/linux/crypto.h
+index 84da997..bb00186 100644
+--- a/include/linux/crypto.h
++++ b/include/linux/crypto.h
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/uaccess.h>
++#include <linux/completion.h>
+ 
+ /*
+  * Autoloaded crypto modules should only use a prefixed name to avoid allowing
+@@ -468,6 +469,45 @@ struct crypto_alg {
+ } CRYPTO_MINALIGN_ATTR;
+ 
+ /*
++ * A helper struct for waiting for completion of async crypto ops
++ */
++struct crypto_wait {
++	struct completion completion;
++	int err;
++};
++
++/*
++ * Macro for declaring a crypto op async wait object on stack
++ */
++#define DECLARE_CRYPTO_WAIT(_wait) \
++	struct crypto_wait _wait = { \
++		COMPLETION_INITIALIZER_ONSTACK((_wait).completion), 0 }
++
++/*
++ * Async ops completion helper functioons
++ */
++void crypto_req_done(struct crypto_async_request *req, int err);
++
++static inline int crypto_wait_req(int err, struct crypto_wait *wait)
++{
++	switch (err) {
++	case -EINPROGRESS:
++	case -EBUSY:
++		wait_for_completion(&wait->completion);
++		reinit_completion(&wait->completion);
++		err = wait->err;
++		break;
++	};
++
++	return err;
++}
++
++static inline void crypto_init_wait(struct crypto_wait *wait)
++{
++	init_completion(&wait->completion);
++}
++
++/*
+  * Algorithm registration interface.
+  */
+ int crypto_register_alg(struct crypto_alg *alg);
+@@ -1604,5 +1644,6 @@ static inline int crypto_comp_decompress(struct crypto_comp *tfm,
+ 						    src, slen, dst, dlen);
+ }
+ 
++
+ #endif	/* _LINUX_CRYPTO_H */
+ 
+-- 
+2.1.4
+
