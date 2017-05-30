@@ -1,45 +1,92 @@
-From: Tudor Ambarus <tudor.ambarus@microchip.com>
-Date: Tue, 23 May 2017 13:18:59 +0000
-Subject: [PATCH v3 05/11] crypto: ecdh - fix ecdh_max_size
-Message-Id: <1495545545-16872-6-git-send-email-tudor.ambarus@microchip.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 30 May 2017 16:13:10 +0000
+Subject: Example daemon program
+Message-Id: <10295.1496160790@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
-In-Reply-To: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
-To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com
-Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Nicolas.Ferre@microchip.com, Tudor Ambarus <tudor.ambarus@microchip.com>
+References: <149616052408.10194.7774163568767478808.stgit@warthog.procyon.org.uk>
+In-Reply-To: <149616052408.10194.7774163568767478808.stgit-S6HVgzuS8uM4Awkfq6JHfwNdhmdF6hFW@public.gmane.org>
+To: James.Bottomley-d9PhHud1JfjCXq6kfMZ53/egYHeGw8Jk@public.gmane.org, ebiederm-aS9lmoZGLiVWk0Htik3J/w@public.gmane.org
+Cc: linux-nfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, containers-cunTk1MwBs9QetFLy7KEm3xJsTq8ys+cHZ5vskTnxNA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, cgroups-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-If someone called this function before a successful setkey,
-we would end up in a NULL dereference.
+Here's a one-shot example daemon that services user-type keys.
 
-The function should return minimum size for output buffer
-or error code if key hasn't been set.
-
-Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
+David
 ---
- crypto/ecdh.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+/* request_key() service daemon
+ *
+ * Copyright (C) 2017 Red Hat, Inc. All Rights Reserved.
+ * Written by David Howells (dhowells@redhat.com)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public Licence
+ * as published by the Free Software Foundation; either version
+ * 2 of the Licence, or (at your option) any later version.
+ */
 
-diff --git a/crypto/ecdh.c b/crypto/ecdh.c
-index c1f0163..b2b12cd 100644
---- a/crypto/ecdh.c
-+++ b/crypto/ecdh.c
-@@ -107,10 +107,10 @@ static int ecdh_compute_value(struct kpp_request *req)
- static int ecdh_max_size(struct crypto_kpp *tfm)
- {
- 	struct ecdh_ctx *ctx = ecdh_get_ctx(tfm);
--	int nbytes = ctx->ndigits << ECC_DIGITS_TO_BYTES_SHIFT;
- 
--	/* Public key is made of two coordinates */
--	return 2 * nbytes;
-+	/* Public key is made of two coordinates, add one to the left shift  */
-+	return ctx->ndigits ? ctx->ndigits << (ECC_DIGITS_TO_BYTES_SHIFT + 1) :
-+			      -ENOKEY;
- }
- 
- static void no_exit_tfm(struct crypto_kpp *tfm)
--- 
-2.7.4
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <keyutils.h>
 
+#define KEY_SERVICE_NS_UTS		0x0001
+#define KEY_SERVICE_NS_IPC		0x0002
+#define KEY_SERVICE_NS_MNT		0x0004
+#define KEY_SERVICE_NS_PID		0x0008
+#define KEY_SERVICE_NS_NET		0x0010
+#define KEY_SERVICE_NS_CGROUP		0x0020
+#define KEY_SERVICE___ALL_NS		0x003f
+
+#define KEY_SERVICE_FD_CLOEXEC		0x0001
+#define KEY_SERVICE_FD_NONBLOCK		0x0002
+
+#define KEYCTL_SERVICE_CREATE		30	/* Create a request_key() service channel */
+#define KEYCTL_SERVICE_ADD		31	/* Specify the a request pattern we can service */
+
+int main()
+{
+	key_serial_t key, tring, pring, sring;
+	char buf[128], op[12];
+	uid_t uid;
+	gid_t gid;
+	int kfd, len;
+
+	kfd = keyctl(KEYCTL_SERVICE_CREATE, KEY_SERVICE_FD_CLOEXEC);
+	if (kfd = -1) {
+		perror("service-create");
+		exit(1);
+	}
+
+	if (keyctl(KEYCTL_SERVICE_ADD, kfd, "user", 0) = -1) {
+		perror("service-add");
+		exit(1);
+	}
+
+	len = read(kfd, buf, sizeof(buf) - 1);
+	if (len = -1) {
+		perror("read");
+		exit(1);
+	}
+	buf[len] = 0;
+
+	printf("received %d [%s]\n", len, buf);
+	if (sscanf(buf, "%12s %x %x %x %x %x %x",
+		   op, &key, &uid, &gid, &tring, &pring, &sring) != 7) {
+		fprintf(stderr, "sscanf: Insufficient args decoded\n");
+		exit(1);
+	}
+
+	if (keyctl_assume_authority(key) = -1) {
+		perror("assume");
+		exit(1);
+	}
+
+	if (keyctl_instantiate(key, "foo_bar", 7, 0) = -1) {
+		perror("instantiate");
+		exit(1);
+	}
+	
+	exit(0);
+}
