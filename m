@@ -1,32 +1,51 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Tue, 23 May 2017 05:03:05 +0000
-Subject: Re: [PATCH v2 0/4] crypto: async crypto op fixes
-Message-Id: <20170523050305.GE17569@gondor.apana.org.au>
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Date: Tue, 30 May 2017 07:10:23 +0000
+Subject: verify_pefile_signature() and a message field of MZ header in pe.h
+Message-Id: <20170530071022.GB26483@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1495114167-3073-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1495114167-3073-1-git-send-email-gilad@benyossef.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Ofir Drang <ofir.drang@arm.com>, stable@vger.kernel.org, Eric Biggers <ebiggers3@gmail.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+To: dhowells@redhat.com
+Cc: ard.biesheuvel@linaro.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Thu, May 18, 2017 at 04:29:22PM +0300, Gilad Ben-Yossef wrote:
-> This patch set fixes various usage and documentation errors
-> in waiting for async crypto op to complete which can result
-> in data corruption.
-> 
-> Note: these were discovered in the process of working on a
-> patch set that replaces these call sites and more with a
-> generic implementation that will prevent these problems
-> going forward. These are just the fix ups for current code.
-> 
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> CC: stable@vger.kernel.org
-> CC: Eric Biggers <ebiggers3@gmail.com>
+Hi David,
 
-Patches 1-3 applied.  Please fix patch 4 and resubmit.  Thanks.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Struct mz_hdr in include/linux/pe.h contains a message[] field.
+Should it be part of this structure?
+(I googled "MZ format," but didn't find out the exact definition.)
+
+I'm now working on kexec_file_load support on arm64. As arm64's
+Image binary can be seen as in PE format, verify_pefile_signature()
+is used to assure integrity as on x86.
+But this attempt fails (ELIBBAD) at pefile_parse_binary():
+
+        ---8<---
+#define chkaddr(base, x, s)                                             \
+        do {                                                            \
+                if ((x) < base || (s) >= datalen || (x) > datalen - (s)) \
+                        return -ELIBBAD;                                \
+        } while (0)
+
+        ...
+
+        cursor = sizeof(*mz);
+
+        chkaddr(cursor, mz->peaddr, sizeof(*pe)); <-- Here
+        pe = pebuf + mz->peaddr;
+        if (pe->magic != PE_MAGIC)
+                return -ELIBBAD;
+        --->8---
+
+because our Image doesn't have message[] in a pseudo header and so
+mz->peaddr is not beyond sizeof(*mz).
+
+I think we can fix this issue, either
+(a) remove message[] from struct mz_hdr
+(b) modify a check by chkaddr() macro
+(c) add a dummy pad into arm64's binary
+
+Which one should we follow here?
+
+Thanks,
+-Takahiro AKASHI
