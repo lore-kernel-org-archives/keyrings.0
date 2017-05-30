@@ -1,62 +1,87 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Tue, 30 May 2017 11:25:47 +0000
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Tue, 30 May 2017 13:25:20 +0000
 Subject: Re: [Linux-ima-devel] [PATCH v2 3/5] tpm: pass multiple digests to tpm_pcr_extend()
-Message-Id: <1496143547.3841.517.camel@linux.vnet.ibm.com>
+Message-Id: <5e62a3ba-8d0d-d531-152b-73ce94955124@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20170505142152.29795-1-roberto.sassu@huawei.com>
 	<20170505142152.29795-4-roberto.sassu@huawei.com>
 	<1496114943.3841.480.camel@linux.vnet.ibm.com>
 	<97c6930e-8b4d-9578-e210-68987e4d7503@huawei.com>
-In-Reply-To: <97c6930e-8b4d-9578-e210-68987e4d7503@huawei.com>
+	<1496143547.3841.517.camel@linux.vnet.ibm.com>
+In-Reply-To: <1496143547.3841.517.camel@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 
-T24gVHVlLCAyMDE3LTA1LTMwIGF0IDA5OjI4ICswMjAwLCBSb2JlcnRvIFNhc3N1IHdyb3RlOgo+
-IE9uIDUvMzAvMjAxNyA1OjI5IEFNLCBNaW1pIFpvaGFyIHdyb3RlOgo+ID4gT24gRnJpLCAyMDE3
-LTA1LTA1IGF0IDE2OjIxICswMjAwLCBSb2JlcnRvIFNhc3N1IHdyb3RlOgoKCj4gPj4gQEAgLTg3
-NiwyOSArOTI1LDQ2IEBAIHN0YXRpYyBpbnQgdHBtMV9wY3JfZXh0ZW5kKHN0cnVjdCB0cG1fY2hp
-cCAqY2hpcCwgaW50IHBjcl9pZHgsIGNvbnN0IHU4ICpoYXNoLAo+ID4+ICAgKiBpc24ndCwgcHJv
-dGVjdCBhZ2FpbnN0IHRoZSBjaGlwIGRpc2FwcGVhcmluZywgYnkgaW5jcmVtZW50aW5nCj4gPj4g
-ICAqIHRoZSBtb2R1bGUgdXNhZ2UgY291bnQuCj4gPj4gICAqLwo+ID4+IC1pbnQgdHBtX3Bjcl9l
-eHRlbmQodTMyIGNoaXBfbnVtLCBpbnQgcGNyX2lkeCwgY29uc3QgdTggKmhhc2gpCj4gPj4gK2lu
-dCB0cG1fcGNyX2V4dGVuZCh1MzIgY2hpcF9udW0sIGludCBwY3JfaWR4LCBpbnQgY291bnQsCj4g
-Pj4gKwkJICAgc3RydWN0IHRwbTJfZGlnZXN0ICpkaWdlc3RzKQo+ID4+ICB7Cj4gPj4gIAlpbnQg
-cmM7Cj4gPj4gIAlzdHJ1Y3QgdHBtX2NoaXAgKmNoaXA7Cj4gPj4gIAlzdHJ1Y3QgdHBtMl9kaWdl
-c3QgZGlnZXN0X2xpc3RbQVJSQVlfU0laRShjaGlwLT5hY3RpdmVfYmFua3MpXTsKPiA+PiAtCXUz
-MiBjb3VudCA9IDA7Cj4gPj4gKwlzdHJ1Y3QgdHBtMl9kaWdlc3QgKmRpZ2VzdHNfcHRyID0gZGln
-ZXN0czsKPiA+PiArCXUzMiBmaWxsZWRfY291bnQgPSAwOwo+ID4+ICsJdTggKmhhc2g7Cj4gPj4g
-IAlpbnQgaTsKPiA+Pgo+ID4+ICAJY2hpcCA9IHRwbV9jaGlwX2ZpbmRfZ2V0KGNoaXBfbnVtKTsK
-PiA+PiAgCWlmIChjaGlwID0gTlVMTCkKPiA+PiAgCQlyZXR1cm4gLUVOT0RFVjsKPiA+Pgo+ID4+
-IC0JaWYgKGNoaXAtPmZsYWdzICYgVFBNX0NISVBfRkxBR19UUE0yKSB7Cj4gPj4gKwlyYyA9IHRw
-bV9wY3JfY2hlY2tfaW5wdXQoY2hpcCwgY291bnQsIGRpZ2VzdHMpOwo+ID4+ICsJaWYgKHJjIDwg
-MCkgewo+ID4+ICsJCWRldl9kYmcoJmNoaXAtPmRldiwgIiVzOiBpbnZhbGlkIGFyZ3VtZW50c1xu
-IiwgX19mdW5jX18pOwo+ID4+ICsJCXRwbV9wdXRfb3BzKGNoaXApOwo+ID4KPiA+IFRoaXMgcmVq
-ZWN0cyB0aGUgVFBNIGV4dGVuZCwgaWYgQU5ZIG9mIHRoZSBhbGdvcml0aG1zIGFyZSB1bmtub3du
-Lgo+ID4gU3VwcG9zZSB0aGF0IHRoZSBzdGFuZGFyZHMgd2VyZSB1cGRhdGVkLCBUUE0gdmVuZG9y
-cyBhZGQgc3VwcG9ydCBmb3IKPiA+IHRoZSBuZXcgYWxnb3JpdGhtLCBidXQgdGhlIGtlcm5lbCBo
-YXMgbm90IGJlZW4gdXBkYXRlZCB0byByZWZsZWN0IHRoZQo+ID4gbmV3IGFsZ29yaXRobXMgc3Vw
-cG9ydGVkLiAgQXMgdGhlIG1lYXN1cmVtZW50IGhhc2ggYWxyZWFkeSBiZWVuIGFkZGVkCj4gPiB0
-byB0aGUgSU1BIG1lYXN1cmVtZW50IGxpc3QsIHZlcmlmeWluZyB0aGUgbWVhc3VyZW1lbnQgbGlz
-dCBhZ2FpbnN0IGEKPiA+IFRQTSBxdW90ZSB3aWxsIGZhaWwsIG5vdCBqdXN0IGZvciB0aGUgdW5r
-bm93biBhbGdvcml0aG0sIGJ1dCBmb3IgYWxsCj4gPiBhbGdvcml0aG1zLiAgU29tZXRoaW5nIGlz
-IHZlcnkgYnJva2VuIHdpdGggdGhpcyBhcHByb2FjaC4KPiAKPiBUaGUgYWx0ZXJuYXRpdmUgaXMg
-dG8gZXh0ZW5kIHJlbWFpbmluZyBiYW5rcyB3aXRoIGEgZGlnZXN0LAo+IGZvciBleGFtcGxlIHRo
-ZSBmaXJzdCBwYXNzZWQgYnkgdGhlIGNhbGxlci4gSSB3aWxsIG1vZGlmeQo+IHRoZSBwYXRjaCwg
-aWYgZXZlcnlvbmUgYWdyZWVzIG9uIHRoYXQuCgpUaGUgc29sdXRpb24geW91J3JlIHByb3Bvc2lu
-ZyBpcyBzaW1pbGFyIHRvIHRoZSBvcmlnaW5hbCBzb2x1dGlvbiBvZgpleHRlbmRpbmcgdGhlIFRQ
-TSB3aXRoIGEgcGFkZGVkL3RydW5jYXRlZCBTSEExIGhhc2gsIGJ1dCB0aGlzIHRpbWUgaXQKbWln
-aHQgbm90IGJlIGEgcGFkZGVkL3RydW5jYXRlZCBTSEExIGhhc2gsIGJ1dCBhIGRpZmZlcmVudCBh
-bGdvcml0aG0uClNvIHRoZSBhdHRlc3RhdGlvbiBzZXJ2ZXIgd2lsbCB0aGVuIG5lZWQgdG8ga25v
-dyB3aGljaCBoYXNoIGFsZ29yaXRobQp3YXMgdXNlZCB0byBleHRlbmQgZWFjaCBvZiB0aGUgVFBN
-IGJhbmtzIC0gYSBwYWRkZWQvdHJ1bmNhdGVkIGRpZ2VzdAp2YWx1ZSBvciB0aGUgcmVhbCBkaWdl
-c3QgdmFsdWUuCgpUaGUgb25seSBpc3N1ZSwgZnJvbSB0aGUga2VybmVsJ3MgcGVyc3BlY3RpdmUs
-IHdpbGwgYmUgZGV0ZXJtaW5pbmcgdGhlCmFsZ29yaXRobSdzIGRpZ2VzdCBzaXplIGFzIHRoZSBr
-ZXJuZWwgaGFzIG5vIGtub3dsZWRnZSBvZiBpdC4gwqBPbiBUUE0KcmVnaXN0cmF0aW9uL2luaXRp
-YWxpemF0aW9uLCBpZiB5b3UncmUgbm90IGFscmVhZHkgcXVlcnlpbmcgdGhlIFRQTQpmb3IgdGhl
-IGFsZ29yaXRobSBkaWdlc3Qgc2l6ZXMsIHlvdSB3aWxsIG5lZWQgdG8gZG8gc28uCgpNaW1pCgot
-LQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3Jp
-YmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5r
-ZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcv
-bWFqb3Jkb21vLWluZm8uaHRtbA==
+On 5/30/2017 1:25 PM, Mimi Zohar wrote:
+> On Tue, 2017-05-30 at 09:28 +0200, Roberto Sassu wrote:
+>> On 5/30/2017 5:29 AM, Mimi Zohar wrote:
+>>> On Fri, 2017-05-05 at 16:21 +0200, Roberto Sassu wrote:
+>
+>
+>>>> @@ -876,29 +925,46 @@ static int tpm1_pcr_extend(struct tpm_chip *chip, int pcr_idx, const u8 *hash,
+>>>>   * isn't, protect against the chip disappearing, by incrementing
+>>>>   * the module usage count.
+>>>>   */
+>>>> -int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
+>>>> +int tpm_pcr_extend(u32 chip_num, int pcr_idx, int count,
+>>>> +		   struct tpm2_digest *digests)
+>>>>  {
+>>>>  	int rc;
+>>>>  	struct tpm_chip *chip;
+>>>>  	struct tpm2_digest digest_list[ARRAY_SIZE(chip->active_banks)];
+>>>> -	u32 count = 0;
+>>>> +	struct tpm2_digest *digests_ptr = digests;
+>>>> +	u32 filled_count = 0;
+>>>> +	u8 *hash;
+>>>>  	int i;
+>>>>
+>>>>  	chip = tpm_chip_find_get(chip_num);
+>>>>  	if (chip = NULL)
+>>>>  		return -ENODEV;
+>>>>
+>>>> -	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
+>>>> +	rc = tpm_pcr_check_input(chip, count, digests);
+>>>> +	if (rc < 0) {
+>>>> +		dev_dbg(&chip->dev, "%s: invalid arguments\n", __func__);
+>>>> +		tpm_put_ops(chip);
+>>>
+>>> This rejects the TPM extend, if ANY of the algorithms are unknown.
+>>> Suppose that the standards were updated, TPM vendors add support for
+>>> the new algorithm, but the kernel has not been updated to reflect the
+>>> new algorithms supported.  As the measurement hash already been added
+>>> to the IMA measurement list, verifying the measurement list against a
+>>> TPM quote will fail, not just for the unknown algorithm, but for all
+>>> algorithms.  Something is very broken with this approach.
+>>
+>> The alternative is to extend remaining banks with a digest,
+>> for example the first passed by the caller. I will modify
+>> the patch, if everyone agrees on that.
+>
+> The solution you're proposing is similar to the original solution of
+> extending the TPM with a padded/truncated SHA1 hash, but this time it
+> might not be a padded/truncated SHA1 hash, but a different algorithm.
+> So the attestation server will then need to know which hash algorithm
+> was used to extend each of the TPM banks - a padded/truncated digest
+> value or the real digest value.
+
+The convention would be that the first digest in the event log
+is truncated/padded, to extend banks for which no digest is
+provided. This convention would apply to all callers of
+tpm_pcr_extend().
+
+Roberto
+
+
+> The only issue, from the kernel's perspective, will be determining the
+> algorithm's digest size as the kernel has no knowledge of it.  On TPM
+> registration/initialization, if you're not already querying the TPM
+> for the algorithm digest sizes, you will need to do so.
+>
+> Mimi
+>
+
+-- 
+HUAWEI TECHNOLOGIES Duesseldorf GmbH, HRB 56063
+Managing Director: Bo PENG, Qiuen PENG, Shengli WANG
