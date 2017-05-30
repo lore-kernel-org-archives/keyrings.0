@@ -1,236 +1,62 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Tue, 30 May 2017 07:28:58 +0000
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date: Tue, 30 May 2017 11:25:47 +0000
 Subject: Re: [Linux-ima-devel] [PATCH v2 3/5] tpm: pass multiple digests to tpm_pcr_extend()
-Message-Id: <97c6930e-8b4d-9578-e210-68987e4d7503@huawei.com>
+Message-Id: <1496143547.3841.517.camel@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20170505142152.29795-1-roberto.sassu@huawei.com>
 	<20170505142152.29795-4-roberto.sassu@huawei.com>
 	<1496114943.3841.480.camel@linux.vnet.ibm.com>
-In-Reply-To: <1496114943.3841.480.camel@linux.vnet.ibm.com>
+	<97c6930e-8b4d-9578-e210-68987e4d7503@huawei.com>
+In-Reply-To: <97c6930e-8b4d-9578-e210-68987e4d7503@huawei.com>
 To: linux-security-module@vger.kernel.org
 
-On 5/30/2017 5:29 AM, Mimi Zohar wrote:
-> On Fri, 2017-05-05 at 16:21 +0200, Roberto Sassu wrote:
->> The tpm_pcr_extend() definition has been modified to take an array of
->> tpm2_digest structures, and the size of the array as arguments.
->>
->> The function now checks if callers provided a digests for each active
->> PCR bank (or a SHA1 digest for TPM 1.2), to follow the recomendation from
->> the TCG specifications. See commit c1f92b4b04ad ("tpm: enhance TPM 2.0
->> PCR extend to support multiple banks"). All banks should be extended
->> because unused banks could be used by an attacker to hide the true
->> integrity status of the platform.
->>
->> The only allowed exception to the rule above is to pass a SHA1 digest.
->> It has been introduced to maintain compatibility with applications that
->> expect to interact with a TPM 1.2, and provide only a SHA1 digest.
->> In this case, the behavior of tpm_pcr_extend() is unchanged and
->> remaining PCR banks are extended with that digest, padded with zeros.
->>
->> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
->> ---
->> v2
->>
->> - tpm_pcr_extend() arguments checked by tpm_pcr_check_input()
->> - modified parameters of tpm_pcr_extend()
->>
->>  drivers/char/tpm/tpm-interface.c | 76 +++++++++++++++++++++++++++++++++++++---
->>  drivers/char/tpm/tpm.h           |  6 ----
->>  include/linux/tpm.h              | 11 ++++--
->>  3 files changed, 80 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
->> index aac703e..4b08b02 100644
->> --- a/drivers/char/tpm/tpm-interface.c
->> +++ b/drivers/char/tpm/tpm-interface.c
->> @@ -867,6 +867,55 @@ static int tpm1_pcr_extend(struct tpm_chip *chip, int pcr_idx, const u8 *hash,
->>  }
->>
->>  /**
->> + * tpm_pcr_check_input - check digests argument
->> + *
->> + * Return values:
->> + *       1: input correct
->> + *       0: fill digests with SHA1 digest padded with zeros
->> + * -EINVAL: input incorrect
->> + */
->> +static int tpm_pcr_check_input(struct tpm_chip *chip, int count,
->> +			       struct tpm2_digest *digests)
->> +{
->> +	bool sha1_only;
->> +	int found = 0, not_found = 0;
->> +	int i, j;
->> +
->> +	if (count <= 0 || digests = NULL)
->> +		return -EINVAL;
->> +
->> +	sha1_only = (count = 1 && digests[0].alg_id = TPM2_ALG_SHA1);
->> +
->> +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2))
->> +		return sha1_only ? 1 : -EINVAL;
->> +
->> +	if (sha1_only)
->> +		return 0;
->> +
->> +	for (i = 0; i < ARRAY_SIZE(chip->active_banks) &&
->> +	     chip->active_banks[i] != TPM2_ALG_ERROR; i++) {
->> +		for (j = 0; j < count; j++) {
->> +			if (digests[j].alg_id = chip->active_banks[i]) {
->> +				found++;
->> +				break;
->> +			}
->> +		}
->> +
->> +		if (j = count) {
->> +			dev_dbg(&chip->dev, "%s: missing algorithm 0x%X\n",
->> +				__func__, chip->active_banks[i]);
->> +			not_found++;
->> +		}
->> +	}
->> +
->> +	if (not_found = 0 && found != count)
->> +		dev_dbg(&chip->dev,
->> +			"%s: duplicate or unsupported algorithm\n", __func__);
->> +
->> +	return (not_found = 0 && found = count) ? 1 : -EINVAL;
->> +}
->> +
->> +/**
->>   * tpm_pcr_extend - extend pcr value with hash
->>   * @chip_num:	tpm idx # or AN&
->>   * @pcr_idx:	pcr idx to extend
->> @@ -876,29 +925,46 @@ static int tpm1_pcr_extend(struct tpm_chip *chip, int pcr_idx, const u8 *hash,
->>   * isn't, protect against the chip disappearing, by incrementing
->>   * the module usage count.
->>   */
->> -int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
->> +int tpm_pcr_extend(u32 chip_num, int pcr_idx, int count,
->> +		   struct tpm2_digest *digests)
->>  {
->>  	int rc;
->>  	struct tpm_chip *chip;
->>  	struct tpm2_digest digest_list[ARRAY_SIZE(chip->active_banks)];
->> -	u32 count = 0;
->> +	struct tpm2_digest *digests_ptr = digests;
->> +	u32 filled_count = 0;
->> +	u8 *hash;
->>  	int i;
->>
->>  	chip = tpm_chip_find_get(chip_num);
->>  	if (chip = NULL)
->>  		return -ENODEV;
->>
->> -	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
->> +	rc = tpm_pcr_check_input(chip, count, digests);
->> +	if (rc < 0) {
->> +		dev_dbg(&chip->dev, "%s: invalid arguments\n", __func__);
->> +		tpm_put_ops(chip);
->
-> This rejects the TPM extend, if ANY of the algorithms are unknown.
-> Suppose that the standards were updated, TPM vendors add support for
-> the new algorithm, but the kernel has not been updated to reflect the
-> new algorithms supported.  As the measurement hash already been added
-> to the IMA measurement list, verifying the measurement list against a
-> TPM quote will fail, not just for the unknown algorithm, but for all
-> algorithms.  Something is very broken with this approach.
-
-The alternative is to extend remaining banks with a digest,
-for example the first passed by the caller. I will modify
-the patch, if everyone agrees on that.
-
-Roberto
-
-
->
-> Mimi
->
->> +		return rc;
->> +	}
->> +
->> +	hash = digests[0].digest;
->> +
->> +	if (!rc) {
->>  		memset(digest_list, 0, sizeof(digest_list));
->>
->>  		for (i = 0; i < ARRAY_SIZE(chip->active_banks) &&
->>  			    chip->active_banks[i] != TPM2_ALG_ERROR; i++) {
->>  			digest_list[i].alg_id = chip->active_banks[i];
->>  			memcpy(digest_list[i].digest, hash, TPM_DIGEST_SIZE);
->> -			count++;
->> +			filled_count++;
->>  		}
->>
->> -		rc = tpm2_pcr_extend(chip, pcr_idx, count, digest_list);
->> +		digests_ptr = digest_list;
->> +		count = filled_count;
->> +	}
->> +
->> +	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
->> +		rc = tpm2_pcr_extend(chip, pcr_idx, count, digests_ptr);
->>  		tpm_put_ops(chip);
->>  		return rc;
->>  	}
->> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
->> index b22bc25..6d775c4 100644
->> --- a/drivers/char/tpm/tpm.h
->> +++ b/drivers/char/tpm/tpm.h
->> @@ -34,7 +34,6 @@
->>  #include <linux/acpi.h>
->>  #include <linux/cdev.h>
->>  #include <linux/highmem.h>
->> -#include <crypto/hash_info.h>
->>
->>  enum tpm_const {
->>  	TPM_MINOR = 224,	/* officially assigned */
->> @@ -405,11 +404,6 @@ struct tpm_cmd_t {
->>  	tpm_cmd_params	params;
->>  } __packed;
->>
->> -struct tpm2_digest {
->> -	u16 alg_id;
->> -	u8 digest[SHA512_DIGEST_SIZE];
->> -} __packed;
->> -
->>  /* A string buffer type for constructing TPM commands. This is based on the
->>   * ideas of string buffer code in security/keys/trusted.h but is heap based
->>   * in order to keep the stack usage minimal.
->> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
->> index 9ecd12c..5c5a600 100644
->> --- a/include/linux/tpm.h
->> +++ b/include/linux/tpm.h
->> @@ -36,6 +36,11 @@ struct tpm_chip;
->>  struct trusted_key_payload;
->>  struct trusted_key_options;
->>
->> +struct tpm2_digest {
->> +	u16 alg_id;
->> +	u8 digest[SHA512_DIGEST_SIZE];
->> +} __packed;
->> +
->>  enum TPM_OPS_FLAGS {
->>  	TPM_OPS_AUTO_STARTUP = BIT(0),
->>  };
->> @@ -70,7 +75,8 @@ struct tpm_class_ops {
->>
->>  extern int tpm_is_tpm2(u32 chip_num);
->>  extern int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf);
->> -extern int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash);
->> +extern int tpm_pcr_extend(u32 chip_num, int pcr_idx, int count,
->> +			  struct tpm2_digest *digests);
->>  extern int tpm_pcr_algorithms(u32 chip_num, int count,
->>  			      enum tpm2_algorithms *algorithms);
->>  extern enum hash_algo tpm_pcr_algo_to_crypto(enum tpm2_algorithms tpm_id);
->> @@ -91,7 +97,8 @@ static inline int tpm_is_tpm2(u32 chip_num)
->>  static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
->>  	return -ENODEV;
->>  }
->> -static inline int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash) {
->> +static inline int tpm_pcr_extend(u32 chip_num, int pcr_idx, int count,
->> +				 struct tpm2_digest *digests) {
->>  	return -ENODEV;
->>  }
->>  static inline int tpm_pcr_algorithms(u32 chip_num, int count,
->
+T24gVHVlLCAyMDE3LTA1LTMwIGF0IDA5OjI4ICswMjAwLCBSb2JlcnRvIFNhc3N1IHdyb3RlOgo+
+IE9uIDUvMzAvMjAxNyA1OjI5IEFNLCBNaW1pIFpvaGFyIHdyb3RlOgo+ID4gT24gRnJpLCAyMDE3
+LTA1LTA1IGF0IDE2OjIxICswMjAwLCBSb2JlcnRvIFNhc3N1IHdyb3RlOgoKCj4gPj4gQEAgLTg3
+NiwyOSArOTI1LDQ2IEBAIHN0YXRpYyBpbnQgdHBtMV9wY3JfZXh0ZW5kKHN0cnVjdCB0cG1fY2hp
+cCAqY2hpcCwgaW50IHBjcl9pZHgsIGNvbnN0IHU4ICpoYXNoLAo+ID4+ICAgKiBpc24ndCwgcHJv
+dGVjdCBhZ2FpbnN0IHRoZSBjaGlwIGRpc2FwcGVhcmluZywgYnkgaW5jcmVtZW50aW5nCj4gPj4g
+ICAqIHRoZSBtb2R1bGUgdXNhZ2UgY291bnQuCj4gPj4gICAqLwo+ID4+IC1pbnQgdHBtX3Bjcl9l
+eHRlbmQodTMyIGNoaXBfbnVtLCBpbnQgcGNyX2lkeCwgY29uc3QgdTggKmhhc2gpCj4gPj4gK2lu
+dCB0cG1fcGNyX2V4dGVuZCh1MzIgY2hpcF9udW0sIGludCBwY3JfaWR4LCBpbnQgY291bnQsCj4g
+Pj4gKwkJICAgc3RydWN0IHRwbTJfZGlnZXN0ICpkaWdlc3RzKQo+ID4+ICB7Cj4gPj4gIAlpbnQg
+cmM7Cj4gPj4gIAlzdHJ1Y3QgdHBtX2NoaXAgKmNoaXA7Cj4gPj4gIAlzdHJ1Y3QgdHBtMl9kaWdl
+c3QgZGlnZXN0X2xpc3RbQVJSQVlfU0laRShjaGlwLT5hY3RpdmVfYmFua3MpXTsKPiA+PiAtCXUz
+MiBjb3VudCA9IDA7Cj4gPj4gKwlzdHJ1Y3QgdHBtMl9kaWdlc3QgKmRpZ2VzdHNfcHRyID0gZGln
+ZXN0czsKPiA+PiArCXUzMiBmaWxsZWRfY291bnQgPSAwOwo+ID4+ICsJdTggKmhhc2g7Cj4gPj4g
+IAlpbnQgaTsKPiA+Pgo+ID4+ICAJY2hpcCA9IHRwbV9jaGlwX2ZpbmRfZ2V0KGNoaXBfbnVtKTsK
+PiA+PiAgCWlmIChjaGlwID0gTlVMTCkKPiA+PiAgCQlyZXR1cm4gLUVOT0RFVjsKPiA+Pgo+ID4+
+IC0JaWYgKGNoaXAtPmZsYWdzICYgVFBNX0NISVBfRkxBR19UUE0yKSB7Cj4gPj4gKwlyYyA9IHRw
+bV9wY3JfY2hlY2tfaW5wdXQoY2hpcCwgY291bnQsIGRpZ2VzdHMpOwo+ID4+ICsJaWYgKHJjIDwg
+MCkgewo+ID4+ICsJCWRldl9kYmcoJmNoaXAtPmRldiwgIiVzOiBpbnZhbGlkIGFyZ3VtZW50c1xu
+IiwgX19mdW5jX18pOwo+ID4+ICsJCXRwbV9wdXRfb3BzKGNoaXApOwo+ID4KPiA+IFRoaXMgcmVq
+ZWN0cyB0aGUgVFBNIGV4dGVuZCwgaWYgQU5ZIG9mIHRoZSBhbGdvcml0aG1zIGFyZSB1bmtub3du
+Lgo+ID4gU3VwcG9zZSB0aGF0IHRoZSBzdGFuZGFyZHMgd2VyZSB1cGRhdGVkLCBUUE0gdmVuZG9y
+cyBhZGQgc3VwcG9ydCBmb3IKPiA+IHRoZSBuZXcgYWxnb3JpdGhtLCBidXQgdGhlIGtlcm5lbCBo
+YXMgbm90IGJlZW4gdXBkYXRlZCB0byByZWZsZWN0IHRoZQo+ID4gbmV3IGFsZ29yaXRobXMgc3Vw
+cG9ydGVkLiAgQXMgdGhlIG1lYXN1cmVtZW50IGhhc2ggYWxyZWFkeSBiZWVuIGFkZGVkCj4gPiB0
+byB0aGUgSU1BIG1lYXN1cmVtZW50IGxpc3QsIHZlcmlmeWluZyB0aGUgbWVhc3VyZW1lbnQgbGlz
+dCBhZ2FpbnN0IGEKPiA+IFRQTSBxdW90ZSB3aWxsIGZhaWwsIG5vdCBqdXN0IGZvciB0aGUgdW5r
+bm93biBhbGdvcml0aG0sIGJ1dCBmb3IgYWxsCj4gPiBhbGdvcml0aG1zLiAgU29tZXRoaW5nIGlz
+IHZlcnkgYnJva2VuIHdpdGggdGhpcyBhcHByb2FjaC4KPiAKPiBUaGUgYWx0ZXJuYXRpdmUgaXMg
+dG8gZXh0ZW5kIHJlbWFpbmluZyBiYW5rcyB3aXRoIGEgZGlnZXN0LAo+IGZvciBleGFtcGxlIHRo
+ZSBmaXJzdCBwYXNzZWQgYnkgdGhlIGNhbGxlci4gSSB3aWxsIG1vZGlmeQo+IHRoZSBwYXRjaCwg
+aWYgZXZlcnlvbmUgYWdyZWVzIG9uIHRoYXQuCgpUaGUgc29sdXRpb24geW91J3JlIHByb3Bvc2lu
+ZyBpcyBzaW1pbGFyIHRvIHRoZSBvcmlnaW5hbCBzb2x1dGlvbiBvZgpleHRlbmRpbmcgdGhlIFRQ
+TSB3aXRoIGEgcGFkZGVkL3RydW5jYXRlZCBTSEExIGhhc2gsIGJ1dCB0aGlzIHRpbWUgaXQKbWln
+aHQgbm90IGJlIGEgcGFkZGVkL3RydW5jYXRlZCBTSEExIGhhc2gsIGJ1dCBhIGRpZmZlcmVudCBh
+bGdvcml0aG0uClNvIHRoZSBhdHRlc3RhdGlvbiBzZXJ2ZXIgd2lsbCB0aGVuIG5lZWQgdG8ga25v
+dyB3aGljaCBoYXNoIGFsZ29yaXRobQp3YXMgdXNlZCB0byBleHRlbmQgZWFjaCBvZiB0aGUgVFBN
+IGJhbmtzIC0gYSBwYWRkZWQvdHJ1bmNhdGVkIGRpZ2VzdAp2YWx1ZSBvciB0aGUgcmVhbCBkaWdl
+c3QgdmFsdWUuCgpUaGUgb25seSBpc3N1ZSwgZnJvbSB0aGUga2VybmVsJ3MgcGVyc3BlY3RpdmUs
+IHdpbGwgYmUgZGV0ZXJtaW5pbmcgdGhlCmFsZ29yaXRobSdzIGRpZ2VzdCBzaXplIGFzIHRoZSBr
+ZXJuZWwgaGFzIG5vIGtub3dsZWRnZSBvZiBpdC4gwqBPbiBUUE0KcmVnaXN0cmF0aW9uL2luaXRp
+YWxpemF0aW9uLCBpZiB5b3UncmUgbm90IGFscmVhZHkgcXVlcnlpbmcgdGhlIFRQTQpmb3IgdGhl
+IGFsZ29yaXRobSBkaWdlc3Qgc2l6ZXMsIHlvdSB3aWxsIG5lZWQgdG8gZG8gc28uCgpNaW1pCgot
+LQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3Jp
+YmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5r
+ZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcv
+bWFqb3Jkb21vLWluZm8uaHRtbA==
