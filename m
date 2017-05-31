@@ -1,64 +1,53 @@
-From: Tudor Ambarus <tudor.ambarus@microchip.com>
-Date: Tue, 23 May 2017 13:18:54 +0000
-Subject: [PATCH v3 00/11] fixes for ecc, ec(dh), rsa & testmgr
-Message-Id: <1495545545-16872-1-git-send-email-tudor.ambarus@microchip.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 31 May 2017 19:11:07 +0000
+Subject: Re: [PATCH] KEYS: fix dereferencing NULL payload with nonzero length
+Message-Id: <20170531191107.GB72735@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com
-Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Nicolas.Ferre@microchip.com, Tudor Ambarus <tudor.ambarus@microchip.com>
+References: <20170403175929.GB72831@gmail.com>
+	<20170401213428.17097-1-ebiggers3@gmail.com>
+	<3451.1491234402@warthog.procyon.org.uk>
+	<6884.1491247244@warthog.procyon.org.uk>
+	<20170403213041.GA140817@gmail.com>
+In-Reply-To: <20170403213041.GA140817@gmail.com>
+To: linux-security-module@vger.kernel.org
 
-Hi,
+On Mon, Apr 03, 2017 at 02:30:41PM -0700, Eric Biggers wrote:
+> On Mon, Apr 03, 2017 at 08:20:44PM +0100, David Howells wrote:
+> > Eric Biggers <ebiggers3@gmail.com> wrote:
+> > 
+> > > > > -	if (_payload) {
+> > > > > +	if (plen) {
+> > > > 
+> > > > "if (_payload && plen)" would be better.
+> > > > 
+> > > > David
+> > > 
+> > > No, that doesn't solve the problem.  The problem is that userspace can pass
+> > > in a NULL payload with nonzero length, causing the kernel to dereference a
+> > > NULL pointer for some key types.  For example:
+> > 
+> > Okay, in that case, I think there should be an else-statement that clears plen
+> > if !_payload.
+> > 
+> > David
+> 
+> I think it's preferable to return EFAULT in the case in question.  Most syscalls
+> work like that, i.e. if you say you have 100 bytes (or any number > 0) at
+> address NULL you'll get EFAULT.
+> 
+> Also note that anyone doing this before would have been either crashing the
+> kernel or getting EINVAL.  So starting to return EFAULT would be very unlikely
+> to break anything.
+> 
+> - Eric
 
-These are various fixes that I made while reading kpp and akcipher
-implementations.
+David, can you please apply this?  Or if you haven't applied it because you
+prefer the other solution then please explain your reasoning.
 
-For KEYS there is only one patch. It checks the return value of
-crypto_akcipher_maxsize().
+It's really not acceptable for unprivileged users to be able to trivially oops
+the kernel.
 
-Changes in v3:
- - change error code to ENOKEY instead of EINVAL in
-   dh/ecdh/rsa_max_size()
- - reorder commits
- - update some commit messages
- - drop "crypto: rsa - do checks before allocating data",
-   it didn't consider leading zeros.
-
-Changes in v2:
- - squash the patches that removed the unnecessary casts
- - add the last five patches
-
-v1 can be found at:
-http://www.mail-archive.com/linux-crypto@vger.kernel.org/msg25139.html
-
-Tudor Ambarus (11):
-  crypto: kpp, (ec)dh - fix typos
-  crypto: ecc - remove unused function arguments
-  crypto: ecc - remove unnecessary casts
-  crypto: dh - fix dh_max_size
-  crypto: ecdh - fix ecdh_max_size
-  crypto: rsa - change err code in rsa_max_size
-  crypto: testmgr - check err on kpp maxsize
-  crypto: testmgr - check err on akcipher maxsize
-  crypto: KEYS: check err on akcipher maxsize
-  crypto: ecc - don't be selfish on pubkeys
-  crypto: dh - fix memleak in setkey
-
- crypto/asymmetric_keys/public_key.c |  5 +++++
- crypto/dh.c                         |  9 ++++++---
- crypto/dh_helper.c                  |  4 ++--
- crypto/ecc.c                        | 32 ++++++++++++++------------------
- crypto/ecc.h                        | 25 ++++++++++---------------
- crypto/ecdh.c                       | 24 +++++++++++-------------
- crypto/ecdh_helper.c                |  4 ++--
- crypto/rsa.c                        |  2 +-
- crypto/testmgr.c                    | 10 ++++++++++
- include/crypto/dh.h                 |  4 ++--
- include/crypto/ecdh.h               |  4 ++--
- include/crypto/kpp.h                |  4 ++--
- 12 files changed, 67 insertions(+), 60 deletions(-)
-
--- 
-2.7.4
-
+Eric
