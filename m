@@ -1,31 +1,23 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Fri, 02 Jun 2017 17:24:17 +0000
-Subject: Re: [PATCH 1/5] KEYS: sanitize add_key() and keyctl() key payloads
-Message-Id: <20170602172417.GA2938@zzz>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 02 Jun 2017 13:43:52 +0000
+Subject: Re: [LTP] [lkp-robot] [KEYS] bdf7c0f8bf: ltp.add_key02.fail
+Message-Id: <7358.1496411032@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170421083037.12746-2-ebiggers3@gmail.com>
-	<20170421083037.12746-1-ebiggers3@gmail.com>
-	<5744.1496417684@warthog.procyon.org.uk>
-In-Reply-To: <5744.1496417684@warthog.procyon.org.uk>
+References: <20170421044304.GB626@zzz>
+	<20170401213428.17097-1-ebiggers3@gmail.com>
+	<20170417062641.GN31394@yexl-desktop>
+	<20170417172955.GA31469@gmail.com> <20170420125750.GD10246@rei.lan>
+In-Reply-To: <20170421044304.GB626@zzz>
 To: linux-security-module@vger.kernel.org
 
-On Fri, Jun 02, 2017 at 04:34:44PM +0100, David Howells wrote:
-> Eric Biggers <ebiggers3@gmail.com> wrote:
-> 
-> >  error2:
-> > +	memzero_explicit(payload, plen);
-> 
-> Isn't that wrong?  payload can be NULL.
-> 
-> David
+Eric Biggers <ebiggers3@gmail.com> wrote:
 
-If you're talking about memset(NULL, ..., 0) being undefined behavior, it's
-completely insane but sure, I guess we should add the NULL check to be safe.  It
-would also mean there would be no requirement that "KEYS: fix dereferencing NULL
-payload with nonzero length" be applied first so the second paragraph of the
-commit message would be removed.  I'll send a v2 of just this patch.
+> I'll plan to send a patch.  Also, it looks like the testing that LTP does of
+> add_key() is very sparse, so I'll try to extend it a bit.
 
-Eric
+There's more testing in the testsuite that's with the keyutils package.
+
+David
