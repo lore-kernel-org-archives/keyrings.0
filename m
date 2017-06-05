@@ -1,33 +1,30 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 05 Jun 2017 03:41:32 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 05 Jun 2017 10:03:32 +0000
 Subject: Re: [PATCH v2] KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP API
-Message-Id: <20170605034132.GB6277@zzz>
+Message-Id: <30301.1496657012@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <1638.1496419102@warthog.procyon.org.uk>
-In-Reply-To: <1638.1496419102@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
+References: <2210575.YAdSgJatlP@tauon.chronox.de>
+	<20170511003557.3467-1-mathew.j.martineau@linux.intel.com>
+	<1638.1496419102@warthog.procyon.org.uk>
+In-Reply-To: <2210575.YAdSgJatlP@tauon.chronox.de>
+To: linux-security-module@vger.kernel.org
 
-Hi Mat,
+Stephan M=C3=BCller <smueller@chronox.de> wrote:
 
-On Wed, May 10, 2017 at 05:35:57PM -0700, Mat Martineau wrote:
-> The initial Diffie-Hellman computation made direct use of the MPI
-> library because the crypto module did not support DH at the time. Now
-> that KPP is implemented, KEYCTL_DH_COMPUTE should use it to get rid of
-> duplicate code and leverage possible hardware acceleration.
-> 
-> Signed-off-by: Mat Martineau <mathew.j.martineau@linux.intel.com>
+> > Note that I haven't included Eric's DH patch that was obsoleted by Step=
+han's
+> > patch that was obsoleted by this one.
+>=20
+> Eric's patches 1, 2, 4, and 5 should be pulled as they are unrelated to a=
+ny=20
+> other patch. Eric's patch 3 should be disregarded, my patch in response t=
+o=20
+> Eric's patch 3 should be disregarded, and this patch from Mat should be u=
+sed.
 
-Have you verified that this doesn't change the API at all --- order of bytes
-within the numbers, whether they are padded with zeroes, any other corner cases
-etc.?  There can't be breaking changes to the API after this is released in
-mainline, and this is already in v4.12-rc4.
+Indeed.  But Mat's patch doesn't apply.
 
-Also, Stephan, what is the purpose of the "__spare" field in keyctl_kdf_params?
-How is it ever supposed to be used for anything if the kernel doesn't even
-validate that it contains 0's?  Some flag hacked into the 'otherinfolen'
-field...?
-
-Eric
+David
