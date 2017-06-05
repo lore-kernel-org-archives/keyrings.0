@@ -1,30 +1,36 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 05 Jun 2017 10:03:32 +0000
+From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
+Date: Mon, 05 Jun 2017 21:51:32 +0000
 Subject: Re: [PATCH v2] KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP API
-Message-Id: <30301.1496657012@warthog.procyon.org.uk>
+Message-Id: <26272836.b4vH9V8tES@positron.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <2210575.YAdSgJatlP@tauon.chronox.de>
-	<20170511003557.3467-1-mathew.j.martineau@linux.intel.com>
-	<1638.1496419102@warthog.procyon.org.uk>
-In-Reply-To: <2210575.YAdSgJatlP@tauon.chronox.de>
-To: linux-security-module@vger.kernel.org
+References: <1638.1496419102@warthog.procyon.org.uk>
+In-Reply-To: <1638.1496419102@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
 
-Stephan M=C3=BCller <smueller@chronox.de> wrote:
+Am Montag, 5. Juni 2017, 05:41:32 CEST schrieb Eric Biggers:
 
-> > Note that I haven't included Eric's DH patch that was obsoleted by Step=
-han's
-> > patch that was obsoleted by this one.
->=20
-> Eric's patches 1, 2, 4, and 5 should be pulled as they are unrelated to a=
-ny=20
-> other patch. Eric's patch 3 should be disregarded, my patch in response t=
-o=20
-> Eric's patch 3 should be disregarded, and this patch from Mat should be u=
-sed.
+Hi Eric,
+> 
+> Also, Stephan, what is the purpose of the "__spare" field in
+> keyctl_kdf_params? How is it ever supposed to be used for anything if the
+> kernel doesn't even validate that it contains 0's?  Some flag hacked into
+> the 'otherinfolen' field...?
 
-Indeed.  But Mat's patch doesn't apply.
+The idea in the very first patch set was the presence of a "flags" field. We 
+have a proliferation of system calls in the last few years which just add a 
+"flags" parameter compared to an identical older system call.
 
-David
+To prevent falling into this trap, I wanted to have a flags field. The core 
+reason is that there are multiple options allowed and possible how to derive a 
+key. The current approach is the easiest and smallest one, i.e. using the 
+SP800-108 counter KDF. Other KDFs are possible too. To allow such openness, we 
+decided to leave some room.
+
+See https://patchwork.kernel.org/patch/9224837/ and search for __spare[8] in 
+the answer from Mat.
+
+Ciao
+Stephan
