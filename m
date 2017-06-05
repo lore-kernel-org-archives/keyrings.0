@@ -1,62 +1,77 @@
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Date: Wed, 21 Jun 2017 13:07:31 +0000
-Subject: Re: Problem with new X.509 is_hash_blacklisted() interface
-Message-Id: <CAKv+Gu9KuogQkfgqKYJt40oW2tvuuVi+w29tp_2KLUqcWvM83A@mail.gmail.com>
+From: Cyril Hrubis <chrubis@suse.cz>
+Date: Mon, 05 Jun 2017 13:48:23 +0000
+Subject: Re: kernel of next-20170602 call trace when run add_key02 in LTP
+Message-Id: <20170605134823.GA24454@rei.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1495897525.3458.7.camel@HansenPartnership.com>
- <26151.1497974983@warthog.procyon.org.uk> <CAKv+Gu-Lwrd_=g6QNFxk5nKeh=wovstbEoc86M+0QUnwvU6ukA@mail.gmail.com>
- <8099.1498049349@warthog.procyon.org.uk>
-In-Reply-To: <8099.1498049349-S6HVgzuS8uM4Awkfq6JHfwNdhmdF6hFW@public.gmane.org>
-To: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Cc: James Bottomley <James.Bottomley-JuX6DAaQMKPCXq6kfMZ53/egYHeGw8Jk@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-security-module <linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-efi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-efi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, linux-kernel <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+References: <CACsHhCKXwfo3hn3uNwQUWTg-MS9Ja5_5USO--Df3kRi2Z0b-hg@mail.gmail.com>
+In-Reply-To: <CACsHhCKXwfo3hn3uNwQUWTg-MS9Ja5_5USO--Df3kRi2Z0b-hg@mail.gmail.com>
+To: Bixuan Cui <cuibixuan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, ltp@lists.linux.it
 
-On 21 June 2017 at 14:49, David Howells <dhowells@redhat.com> wrote:
-> Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
->
->> >      This can be told to skip a particular algorithm for when the caller
->> >      has one precalculated.  The precalculated hash can be passed to
->> >      is_hash_blacklisted().  This would typically be the case for a signed
->> >      X.509 message.
->>
->> This last part seems a premature optimization to me. Is there a
->> performance concern preventing us from using (4) only?
->
-> Crypto stuff is relatively slow - and in the case of X.509 and PKCS#7 the
-> caller will already have calculated a hash.  The most likely situation
-> currently, I think, is that we will only have sha256 hashes in the blacklist,
-> and whatever we're checking will have a sha256 hash also.
->
-> Possibly, I could just pass the precalculated hash into is_data_blacklisted()
-> and so avoid having to call is_hash_blacklisted() from outside.
->
+Hi,
+> Compile kernel (next-20170602) and run ltp, find:
+> 
+> / # ./add_key02
+> tst_test.c:878: INFO: Timeout per run is 0h 05m 00s
+> [  341.183219] BUG: unable to handle kernel NULL pointer dereference at   (null)
+> [  341.183850] IP: memset+0x10/0x20
+> [  341.184550] *pdpt = 0000000035441001 *pde = 0000000000000000
+> [  341.184550]
+> [  341.184550] Oops: 0002 [#2] SMP
+> [  341.184550] Modules linked in:
+> [  341.184550] CPU: 0 PID: 124 Comm: add_key02 Tainted: G S    D W
+>   4.12.0-rc3-next-20170602 #3
+> [  341.184550] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996),
+> BIOS Bochs 01/01/2011
+> [  341.184550] task: f5b9ca00 task.stack: f6514000
+> [  341.184550] EIP: memset+0x10/0x20
+> [  341.184550] EFLAGS: 00000246 CPU: 0
+> [  341.184550] EAX: 00000000 EBX: 00000000 ECX: 00000001 EDX: 00000000
+> [  341.184550] ESI: 00000000 EDI: 00000000 EBP: f6515f24 ESP: f6515f1c
+> [  341.184550]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> [  341.184550] CR0: 80050033 CR2: 00000000 CR3: 36404920 CR4: 000006f0
+> [  341.184550] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> [  341.184550] DR6: 00000000 DR7: 00000000
+> [  341.184550] Call Trace:
+> [  341.184550]  memzero_explicit+0xf/0x20
+> [  341.184550]  SyS_add_key+0x11f/0x1c0
+> [  341.184550]  ? change_pid+0x13/0x50
+> [  341.184550]  do_fast_syscall_32+0x8b/0x130
+> [  341.184550]  entry_SYSENTER_32+0x4e/0x7c
+> [  341.184550] EIP: 0xb772ddc1
+> [  341.184550] EFLAGS: 00000246 CPU: 0
+> [  341.184550] EAX: ffffffda EBX: 080de341 ECX: 080de346 EDX: 00000000
+> [  341.184550] ESI: 00000001 EDI: fffffffc EBP: 0808aa97 ESP: bfe3636c
+> [  341.184550]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 007b
+> [  341.184550] Code: 8a 0e 88 0f 8d b4 26 00 00 00 00 8b 45 f0 83 c4
+> 04 5b 5e 5f 5d c3 90 8d 74 26 00 3e 8d 74 26 00 55 89 e5 57 89 c7 53
+> 89 c3 89 d0 <f3> aa 89 d8 5b 5f 5d c3 90 90 90 90 90 90 90 90 3e 8d 74
+> 26 00
+> [  341.184550] EIP: memset+0x10/0x20 SS:ESP: 0068:f6515f1c
+> [  341.184550] CR2: 0000000000000000
+> [  341.219144] ---[ end trace e3963c970d107f91 ]---
+> tst_test.c:928: INFO: If you are running on slow machine, try
+> exporting LTP_TIMEOUT_MUL > 1
+> tst_test.c:929: BROK: Test killed! (timeout?)
+> 
+> I try to use other tags and kernel on next-20170427 is ok, but
+> next-20170502 fail.
+> Is it bug?
 
-That would be cleaner, yes. As I said, it looks correct to me, but I
-would simply prefer to keep the code as simple as possible. If there
-is a good reason for the additional fast path, then I have no
-objections at all.
+Looks like a kernel bug to me.
 
->> In any case, the approach and the code look sound to me, although I
->> think adding a hash of a type that we don't know how to calculate
->> deserves a warning at least.
->
-> There are two issues with that:
->
->  (1) We don't know what hashes are available without checking to see what
->      modules are available.  However, to do this would involve loading the
->      hash algorithm module - but we might not be in a position to do this yet
->      (the blacklist is loaded before we start userspace).
->
+The test is a very simple one that just does:
 
-Ah ok. That does complicate matters, indeed.
+add_key("keyring", "wjkey", NULL, 0, KEY_SPEC_THREAD_KEYRING));
 
->  (2) A module implementing a hash algorithm might be blacklisted by the hash
->      that we've been given to add to the blacklist.  I think this is a more
->      general problem - and might require us to restrict blacklisting to hash
->      algorithms that are built in.
->
+And expects success.
 
-That makes sense, but deserves another big fat warning when it turns
-out that the blacklist contains an entry we cannot verify against.
+
+Also CCing LTP ML and relevant maintainers.
+
+-- 
+Cyril Hrubis
+chrubis@suse.cz
