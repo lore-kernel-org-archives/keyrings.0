@@ -1,90 +1,161 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 08 Jun 2017 13:47:34 +0000
-Subject: [PATCH 02/23] security: use READ_ONCE instead of deprecated ACCESS_ONCE
-Message-Id: <149692965438.11452.17954613433247309012.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 05 Jun 2017 17:48:11 +0000
+Subject: [PATCH 2/2] syscalls/add_key03: add test for NULL payload with nonzero length
+Message-Id: <20170605174811.95267-3-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Davidlohr Bueso <dave@stgolabs.net>
+From: Eric Biggers <ebiggers@google.com>
 
-With the new standardized functions, we can replace all ACCESS_ONCE()
-calls across relevant security/keyrings/.
+Add a new test program to test that the add_key() syscall correctly
+handles a NULL payload with nonzero length.  Note that may cause a NULL
+pointer dereference in unpatched kernels.
 
-ACCESS_ONCE() does not work reliably on non-scalar types. For example
-gcc 4.6 and 4.7 might remove the volatile tag for such accesses during
-the SRA (scalar replacement of aggregates) step:
-
-https://gcc.gnu.org/bugzilla/show_bug.cgi?idX145
-
-Update the new calls regardless of if it is a scalar type, this is
-cleaner than having three alternatives.
-
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ runtest/syscalls                              |   1 +
+ testcases/kernel/syscalls/.gitignore          |   1 +
+ testcases/kernel/syscalls/add_key/add_key03.c | 104 ++++++++++++++++++++++++++
+ 3 files changed, 106 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/add_key/add_key03.c
 
- security/keys/keyring.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 4d1678e4586f..de81793f9920 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -706,7 +706,7 @@ static bool search_nested_keyrings(struct key *keyring,
- 	 * Non-keyrings avoid the leftmost branch of the root entirely (root
- 	 * slots 1-15).
- 	 */
--	ptr = ACCESS_ONCE(keyring->keys.root);
-+	ptr = READ_ONCE(keyring->keys.root);
- 	if (!ptr)
- 		goto not_this_keyring;
+diff --git a/runtest/syscalls b/runtest/syscalls
+index 0c3c46e57..618089801 100644
+--- a/runtest/syscalls
++++ b/runtest/syscalls
+@@ -12,6 +12,7 @@ access04 access04
+ acct01 acct01
  
-@@ -720,7 +720,7 @@ static bool search_nested_keyrings(struct key *keyring,
- 		if ((shortcut->index_key[0] & ASSOC_ARRAY_FAN_MASK) != 0)
- 			goto not_this_keyring;
+ add_key01 add_key01
++add_key03 add_key03
  
--		ptr = ACCESS_ONCE(shortcut->next_node);
-+		ptr = READ_ONCE(shortcut->next_node);
- 		node = assoc_array_ptr_to_node(ptr);
- 		goto begin_node;
- 	}
-@@ -740,7 +740,7 @@ static bool search_nested_keyrings(struct key *keyring,
- 	if (assoc_array_ptr_is_shortcut(ptr)) {
- 		shortcut = assoc_array_ptr_to_shortcut(ptr);
- 		smp_read_barrier_depends();
--		ptr = ACCESS_ONCE(shortcut->next_node);
-+		ptr = READ_ONCE(shortcut->next_node);
- 		BUG_ON(!assoc_array_ptr_is_node(ptr));
- 	}
- 	node = assoc_array_ptr_to_node(ptr);
-@@ -752,7 +752,7 @@ static bool search_nested_keyrings(struct key *keyring,
- ascend_to_node:
- 	/* Go through the slots in a node */
- 	for (; slot < ASSOC_ARRAY_FAN_OUT; slot++) {
--		ptr = ACCESS_ONCE(node->slots[slot]);
-+		ptr = READ_ONCE(node->slots[slot]);
- 
- 		if (assoc_array_ptr_is_meta(ptr) && node->back_pointer)
- 			goto descend_to_node;
-@@ -790,13 +790,13 @@ static bool search_nested_keyrings(struct key *keyring,
- 	/* We've dealt with all the slots in the current node, so now we need
- 	 * to ascend to the parent and continue processing there.
- 	 */
--	ptr = ACCESS_ONCE(node->back_pointer);
-+	ptr = READ_ONCE(node->back_pointer);
- 	slot = node->parent_slot;
- 
- 	if (ptr && assoc_array_ptr_is_shortcut(ptr)) {
- 		shortcut = assoc_array_ptr_to_shortcut(ptr);
- 		smp_read_barrier_depends();
--		ptr = ACCESS_ONCE(shortcut->back_pointer);
-+		ptr = READ_ONCE(shortcut->back_pointer);
- 		slot = shortcut->parent_slot;
- 	}
- 	if (!ptr)
+ adjtimex01 adjtimex01
+ adjtimex02 adjtimex02
+diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
+index 5b8df06f5..b5b428df5 100644
+--- a/testcases/kernel/syscalls/.gitignore
++++ b/testcases/kernel/syscalls/.gitignore
+@@ -7,6 +7,7 @@
+ /access/access04
+ /acct/acct01
+ /add_key/add_key01
++/add_key/add_key03
+ /adjtimex/adjtimex01
+ /adjtimex/adjtimex02
+ /alarm/alarm01
+diff --git a/testcases/kernel/syscalls/add_key/add_key03.c b/testcases/kernel/syscalls/add_key/add_key03.c
+new file mode 100644
+index 000000000..21812710f
+--- /dev/null
++++ b/testcases/kernel/syscalls/add_key/add_key03.c
+@@ -0,0 +1,104 @@
++/*
++ * Copyright (c) 2017 Google, Inc.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include "config.h"
++#ifdef HAVE_LINUX_KEYCTL_H
++# include <linux/keyctl.h>
++#endif
++#include "tst_test.h"
++#include "linux_syscall_numbers.h"
++
++/*
++ * Test that the add_key() syscall correctly handles a NULL payload with nonzero
++ * length.  Specifically, it should fail with EFAULT rather than oopsing the
++ * kernel with a NULL pointer dereference or failing with EINVAL, as it did
++ * before (depending on the key type).  This is a regression test for "KEYS: fix
++ * dereferencing NULL payload with nonzero length".
++ *
++ * Note that none of the key types that exhibited the NULL pointer dereference
++ * are guaranteed to be built into the kernel, so we just test as many as we
++ * can, in the hope of catching one.  We also test with the "user" key type for
++ * good measure, although it was one of the types that failed with EINVAL rather
++ * than dereferencing NULL.
++ */
++
++#ifdef HAVE_LINUX_KEYCTL_H
++struct tcase {
++	const char *type;
++	size_t plen;
++} tcases[] = {
++	/*
++	 * The payload length we test for each key type needs to pass initial
++	 * validation but is otherwise arbitrary.  Note: the "rxrpc_s" key type
++	 * requires a payload of exactly 8 bytes.
++	 */
++	{ "asymmetric",		64 },
++	{ "cifs.idmap",		64 },
++	{ "cifs.spnego",	64 },
++	{ "pkcs7_test",		64 },
++	{ "rxrpc",		64 },
++	{ "rxrpc_s",		 8 },
++	{ "user",		64 },
++};
++#endif /* HAVE_LINUX_KEYCTL_H */
++
++static void verify_add_key(unsigned int i)
++{
++#ifdef HAVE_LINUX_KEYCTL_H
++	TEST(tst_syscall(__NR_add_key, tcases[i].type, "abc:def",
++			 NULL, tcases[i].plen, KEY_SPEC_PROCESS_KEYRING));
++
++	if (TEST_RETURN != -1) {
++		tst_res(TFAIL,
++			"add_key() with key type \"%s\" unexpectedly succeeded",
++			tcases[i].type);
++		return;
++	}
++
++	if (TEST_ERRNO = EFAULT) {
++		tst_res(TPASS, "received expected EFAULT with key type \"%s\"",
++			tcases[i].type);
++		return;
++	}
++
++	if (TEST_ERRNO = ENODEV) {
++		tst_res(TCONF, "kernel doesn't support key type \"%s\"",
++			tcases[i].type);
++		return;
++	}
++
++	/*
++	 * It's possible for the "asymmetric" key type to be supported, but with
++	 * no asymmetric key parsers registered.  In that case, attempting to
++	 * add a key of type asymmetric will fail with EBADMSG.
++	 */
++	if (TEST_ERRNO = EBADMSG && !strcmp(tcases[i].type, "asymmetric")) {
++		tst_res(TCONF, "no asymmetric key parsers are registered");
++		return;
++	}
++
++	tst_res(TFAIL | TTERRNO, "unexpected error with key type \"%s\"",
++		tcases[i].type);
++#else
++	tst_brk(TCONF, "linux/keyctl.h was missing upon compilation.");
++#endif /* HAVE_LINUX_KEYCTL_H */
++}
++
++static struct tst_test test = {
++	.tcnt = ARRAY_SIZE(tcases),
++	.test = verify_add_key,
++};
+-- 
+2.13.0.506.g27d5fe0cd-goog
 
