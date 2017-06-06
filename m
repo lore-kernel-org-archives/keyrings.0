@@ -1,22 +1,38 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 06 Jun 2017 18:45:56 +0000
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Date: Tue, 06 Jun 2017 19:18:15 +0000
 Subject: Re: [PATCH] security/keys: rewrite all of big_key crypto
-Message-Id: <15666.1496774756@warthog.procyon.org.uk>
+Message-Id: <CAHmME9odRhCDMp7BYrhBwY+yc5av3WBb+EzTfVQtBGg5eWSoDg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAHmME9q35r302wJm_Y+UD1nT-fXcs9VGaDrZ5xWOm4jzDgyFwQ@mail.gmail.com> <20170606173900.29279-1-Jason@zx2c4.com> <14825.1496771896@warthog.procyon.org.uk>
-In-Reply-To: <CAHmME9q35r302wJm_Y+UD1nT-fXcs9VGaDrZ5xWOm4jzDgyFwQ@mail.gmail.com>
-To: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, Eric Biggers <ebiggers3@gmail.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org, stable@vger.kernel.org
+References: <20170606173900.29279-1-Jason@zx2c4.com> <14825.1496771896@warthog.procyon.org.uk>
+ <CAHmME9q35r302wJm_Y+UD1nT-fXcs9VGaDrZ5xWOm4jzDgyFwQ@mail.gmail.com> <15666.1496774756@warthog.procyon.org.uk>
+In-Reply-To: <15666.1496774756@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, Eric Biggers <ebiggers3@gmail.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org, stable@vger.kernel.org, Theodore Ts'o <tytso@mit.edu>, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>
 
-Jason A. Donenfeld <Jason@zx2c4.com> wrote:
+On Tue, Jun 6, 2017 at 8:45 PM, David Howells <dhowells@redhat.com> wrote:
+> Jason A. Donenfeld <Jason@zx2c4.com> wrote:
+>
+>> Thank you! Perfect instructions, I'll play around with this and make
+>> sure it works.
+>
+> Don't forget that it's bimodal.  You need to give it sufficient data to
+> trigger storage in swappable space.
 
-> Thank you! Perfect instructions, I'll play around with this and make
-> sure it works.
+Somewhat incredibly, it works perfectly.
 
-Don't forget that it's bimodal.  You need to give it sufficient data to
-trigger storage in swappable space.
+First I tried the instructions you noted, and things worked, both for
+big files and small ones.
 
-David
+Then I modified the source to print to dmesg the data buffer and the
+key before and after the encryption/decryption function. I verified
+with a small python script that indeed standard aes-gcm is being used
+successfully.
+
+Thus, pending Ted's approval of the new random API, this patch should
+be ready for merging.
+
+Regards,
+Jason
