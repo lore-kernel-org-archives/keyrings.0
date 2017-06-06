@@ -1,106 +1,443 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 15 Jun 2017 16:00:45 +0000
-Subject: Re: [PATCH v2 1/6] integrity: Small code improvements
-Message-Id: <1497542445.4287.55.camel@linux.vnet.ibm.com>
+From: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Date: Tue, 06 Jun 2017 00:37:47 +0000
+Subject: [PATCH v3] KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP API
+Message-Id: <20170606003747.5942-1-mathew.j.martineau@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
-         <1496886555-10082-2-git-send-email-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <1496886555-10082-2-git-send-email-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+To: keyrings@vger.kernel.org
 
-T24gV2VkLCAyMDE3LTA2LTA3IGF0IDIyOjQ5IC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
-d3JvdGU6Cj4gVGhlc2UgY2hhbmdlcyBhcmUgdG9vIHNtYWxsIHRvIHdhcnJhbnQgdGhlaXIgb3du
-IHBhdGNoZXM6Cj4gCj4gVGhlIGtleWlkIGFuZCBzaWdfc2l6ZSBtZW1iZXJzIG9mIHN0cnVjdCBz
-aWduYXR1cmVfdjJfaGRyIGFyZSBpbiBCRSBmb3JtYXQsCj4gc28gdXNlIGEgdHlwZSB0aGF0IG1h
-a2VzIHRoaXMgYXNzdW1wdGlvbiBleHBsaWNpdC4gQWxzbywgdXNlIGJlWFhfdG9fY3B1Cj4gaW5z
-dGVhZCBvZiBfX2JlWFhfdG9fY3B1IHRvIHJlYWQgdGhlbS4KPiAKPiBDaGFuZ2UgaW50ZWdyaXR5
-X2tlcm5lbF9yZWFkIHRvIHRha2UgYSB2b2lkICogYnVmZmVyIGluc3RlYWQgb2YgY2hhciAqCj4g
-YnVmZmVyLCBzbyB0aGF0IGNhbGxlcnMgZG9uJ3QgaGF2ZSB0byB1c2UgYSBjYXN0IGlmIHRoZXkg
-cHJvdmlkZSBhIGJ1ZmZlcgo+IHRoYXQgaXNuJ3QgYSBjaGFyICouCj4gCj4gQWRkIG1pc3Npbmcg
-I2VuZGlmIGNvbW1lbnQgaW4gaW1hLmggcG9pbnRpbmcgb3V0IHdoaWNoIG1hY3JvIGl0IHJlZmVy
-cyB0by4KPiAKPiBBZGQgbWlzc2luZyBmYWxsIHRocm91Z2ggY29tbWVudCBpbiBpbWFfYXBwcmFp
-c2UuYy4KPiAKPiBDb25zdGlmeSBtYXNrX3Rva2VucyBhbmQgZnVuY190b2tlbnMgYXJyYXlzLgo+
-IAo+IFNpZ25lZC1vZmYtYnk6IFRoaWFnbyBKdW5nIEJhdWVybWFubiA8YmF1ZXJtYW5AbGludXgu
-dm5ldC5pYm0uY29tPgoKVGhhbmsgeW91LiDCoFF1ZXVlZCB0byBiZSB1cHN0cmVhbWVkLgoKTWlt
-aQoKCj4gLS0tCj4gIHNlY3VyaXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1ldHJpYy5jIHwgNCAr
-Ky0tCj4gIHNlY3VyaXR5L2ludGVncml0eS9paW50LmMgICAgICAgICAgICAgIHwgMiArLQo+ICBz
-ZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYS5oICAgICAgICAgICB8IDIgKy0KPiAgc2VjdXJpdHkv
-aW50ZWdyaXR5L2ltYS9pbWFfYXBwcmFpc2UuYyAgfCAxICsKPiAgc2VjdXJpdHkvaW50ZWdyaXR5
-L2ltYS9pbWFfcG9saWN5LmMgICAgfCA0ICsrLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2ludGVn
-cml0eS5oICAgICAgICAgfCA3ICsrKystLS0KPiAgNiBmaWxlcyBjaGFuZ2VkLCAxMSBpbnNlcnRp
-b25zKCspLCA5IGRlbGV0aW9ucygtKQo+IAo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3Jp
-dHkvZGlnc2lnX2FzeW1tZXRyaWMuYyBiL3NlY3VyaXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1l
-dHJpYy5jCj4gaW5kZXggODAwNTJlZDhkNDY3Li5hYjZhMDI5MDYyYTEgMTAwNjQ0Cj4gLS0tIGEv
-c2VjdXJpdHkvaW50ZWdyaXR5L2RpZ3NpZ19hc3ltbWV0cmljLmMKPiArKysgYi9zZWN1cml0eS9p
-bnRlZ3JpdHkvZGlnc2lnX2FzeW1tZXRyaWMuYwo+IEBAIC05MiwxMyArOTIsMTMgQEAgaW50IGFz
-eW1tZXRyaWNfdmVyaWZ5KHN0cnVjdCBrZXkgKmtleXJpbmcsIGNvbnN0IGNoYXIgKnNpZywKPiAK
-PiAgCXNpZ2xlbiAtPSBzaXplb2YoKmhkcik7Cj4gCj4gLQlpZiAoc2lnbGVuICE9IF9fYmUxNl90
-b19jcHUoaGRyLT5zaWdfc2l6ZSkpCj4gKwlpZiAoc2lnbGVuICE9IGJlMTZfdG9fY3B1KGhkci0+
-c2lnX3NpemUpKQo+ICAJCXJldHVybiAtRUJBRE1TRzsKPiAKPiAgCWlmIChoZHItPmhhc2hfYWxn
-byA+PSBIQVNIX0FMR09fX0xBU1QpCj4gIAkJcmV0dXJuIC1FTk9QS0c7Cj4gCj4gLQlrZXkgPSBy
-ZXF1ZXN0X2FzeW1tZXRyaWNfa2V5KGtleXJpbmcsIF9fYmUzMl90b19jcHUoaGRyLT5rZXlpZCkp
-Owo+ICsJa2V5ID0gcmVxdWVzdF9hc3ltbWV0cmljX2tleShrZXlyaW5nLCBiZTMyX3RvX2NwdSho
-ZHItPmtleWlkKSk7Cj4gIAlpZiAoSVNfRVJSKGtleSkpCj4gIAkJcmV0dXJuIFBUUl9FUlIoa2V5
-KTsKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2lpbnQuYyBiL3NlY3VyaXR5
-L2ludGVncml0eS9paW50LmMKPiBpbmRleCBjNzEwZDIyMDQyZjkuLjZmYzg4OGNhNDY4ZSAxMDA2
-NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaWludC5jCj4gKysrIGIvc2VjdXJpdHkvaW50
-ZWdyaXR5L2lpbnQuYwo+IEBAIC0xODIsNyArMTgyLDcgQEAgc2VjdXJpdHlfaW5pdGNhbGwoaW50
-ZWdyaXR5X2lpbnRjYWNoZV9pbml0KTsKPiAgICoKPiAgICovCj4gIGludCBpbnRlZ3JpdHlfa2Vy
-bmVsX3JlYWQoc3RydWN0IGZpbGUgKmZpbGUsIGxvZmZfdCBvZmZzZXQsCj4gLQkJCSAgY2hhciAq
-YWRkciwgdW5zaWduZWQgbG9uZyBjb3VudCkKPiArCQkJICB2b2lkICphZGRyLCB1bnNpZ25lZCBs
-b25nIGNvdW50KQo+ICB7Cj4gIAltbV9zZWdtZW50X3Qgb2xkX2ZzOwo+ICAJY2hhciBfX3VzZXIg
-KmJ1ZiA9IChjaGFyIF9fdXNlciAqKWFkZHI7Cj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVn
-cml0eS9pbWEvaW1hLmggYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYS5oCj4gaW5kZXggZDI2
-YTMwZTM3ZDEzLi4yMTVhOTNjNDFiNTEgMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5
-L2ltYS9pbWEuaAo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmgKPiBAQCAtMjg0
-LDcgKzI4NCw3IEBAIHN0YXRpYyBpbmxpbmUgaW50IGltYV9yZWFkX3hhdHRyKHN0cnVjdCBkZW50
-cnkgKmRlbnRyeSwKPiAgCXJldHVybiAwOwo+ICB9Cj4gCj4gLSNlbmRpZgo+ICsjZW5kaWYgLyog
-Q09ORklHX0lNQV9BUFBSQUlTRSAqLwo+IAo+ICAvKiBMU00gYmFzZWQgcG9saWN5IHJ1bGVzIHJl
-cXVpcmUgYXVkaXQgKi8KPiAgI2lmZGVmIENPTkZJR19JTUFfTFNNX1JVTEVTCj4gZGlmZiAtLWdp
-dCBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMgYi9zZWN1cml0eS9pbnRl
-Z3JpdHkvaW1hL2ltYV9hcHByYWlzZS5jCj4gaW5kZXggN2ZlMDU2NjE0MmQ4Li5lYTM2YTRmMTM0
-ZjQgMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXBwcmFpc2UuYwo+
-ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMKPiBAQCAtMjQwLDYg
-KzI0MCw3IEBAIGludCBpbWFfYXBwcmFpc2VfbWVhc3VyZW1lbnQoZW51bSBpbWFfaG9va3MgZnVu
-YywKPiAgCWNhc2UgSU1BX1hBVFRSX0RJR0VTVF9ORzoKPiAgCQkvKiBmaXJzdCBieXRlIGNvbnRh
-aW5zIGFsZ29yaXRobSBpZCAqLwo+ICAJCWhhc2hfc3RhcnQgPSAxOwo+ICsJCS8qIGZhbGwgdGhy
-b3VnaCAqLwo+ICAJY2FzZSBJTUFfWEFUVFJfRElHRVNUOgo+ICAJCWlmIChpaW50LT5mbGFncyAm
-IElNQV9ESUdTSUdfUkVRVUlSRUQpIHsKPiAgCQkJY2F1c2UgPSAiSU1BLXNpZ25hdHVyZS1yZXF1
-aXJlZCI7Cj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX3BvbGljeS5j
-IGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfcG9saWN5LmMKPiBpbmRleCAwYWNkNjhkZWNi
-MTcuLjk0OWFkMzg1ODMyNyAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2lt
-YV9wb2xpY3kuYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX3BvbGljeS5jCj4g
-QEAgLTk2NSw3ICs5NjUsNyBAQCBlbnVtIHsKPiAgCW1hc2tfZXhlYyA9IDAsIG1hc2tfd3JpdGUs
-IG1hc2tfcmVhZCwgbWFza19hcHBlbmQKPiAgfTsKPiAKPiAtc3RhdGljIGNoYXIgKm1hc2tfdG9r
-ZW5zW10gPSB7Cj4gK3N0YXRpYyBjb25zdCBjaGFyICpjb25zdCBtYXNrX3Rva2Vuc1tdID0gewo+
-ICAJIk1BWV9FWEVDIiwKPiAgCSJNQVlfV1JJVEUiLAo+ICAJIk1BWV9SRUFEIiwKPiBAQCAtOTc5
-LDcgKzk3OSw3IEBAIGVudW0gewo+ICAJZnVuY19wb2xpY3kKPiAgfTsKPiAKPiAtc3RhdGljIGNo
-YXIgKmZ1bmNfdG9rZW5zW10gPSB7Cj4gK3N0YXRpYyBjb25zdCBjaGFyICpjb25zdCBmdW5jX3Rv
-a2Vuc1tdID0gewo+ICAJIkZJTEVfQ0hFQ0siLAo+ICAJIk1NQVBfQ0hFQ0siLAo+ICAJIkJQUk1f
-Q0hFQ0siLAo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW50ZWdyaXR5LmggYi9z
-ZWN1cml0eS9pbnRlZ3JpdHkvaW50ZWdyaXR5LmgKPiBpbmRleCAyNDUyMGI0ZWYzYjAuLmE1M2U3
-ZTRhYjA2YyAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW50ZWdyaXR5LmgKPiAr
-KysgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW50ZWdyaXR5LmgKPiBAQCAtOTIsOCArOTIsOCBAQCBz
-dHJ1Y3Qgc2lnbmF0dXJlX3YyX2hkciB7Cj4gIAl1aW50OF90IHR5cGU7CQkvKiB4YXR0ciB0eXBl
-ICovCj4gIAl1aW50OF90IHZlcnNpb247CS8qIHNpZ25hdHVyZSBmb3JtYXQgdmVyc2lvbiAqLwo+
-ICAJdWludDhfdAloYXNoX2FsZ287CS8qIERpZ2VzdCBhbGdvcml0aG0gW2VudW0gaGFzaF9hbGdv
-XSAqLwo+IC0JdWludDMyX3Qga2V5aWQ7CQkvKiBJTUEga2V5IGlkZW50aWZpZXIgLSBub3QgWDUw
-OS9QR1Agc3BlY2lmaWMgKi8KPiAtCXVpbnQxNl90IHNpZ19zaXplOwkvKiBzaWduYXR1cmUgc2l6
-ZSAqLwo+ICsJX19iZTMyIGtleWlkOwkJLyogSU1BIGtleSBpZGVudGlmaWVyIC0gbm90IFg1MDkv
-UEdQIHNwZWNpZmljICovCj4gKwlfX2JlMTYgc2lnX3NpemU7CS8qIHNpZ25hdHVyZSBzaXplICov
-Cj4gIAl1aW50OF90IHNpZ1swXTsJCS8qIHNpZ25hdHVyZSBwYXlsb2FkICovCj4gIH0gX19wYWNr
-ZWQ7Cj4gCj4gQEAgLTExOCw3ICsxMTgsOCBAQCBzdHJ1Y3QgaW50ZWdyaXR5X2lpbnRfY2FjaGUg
-ewo+ICBzdHJ1Y3QgaW50ZWdyaXR5X2lpbnRfY2FjaGUgKmludGVncml0eV9paW50X2ZpbmQoc3Ry
-dWN0IGlub2RlICppbm9kZSk7Cj4gCj4gIGludCBpbnRlZ3JpdHlfa2VybmVsX3JlYWQoc3RydWN0
-IGZpbGUgKmZpbGUsIGxvZmZfdCBvZmZzZXQsCj4gLQkJCSAgY2hhciAqYWRkciwgdW5zaWduZWQg
-bG9uZyBjb3VudCk7Cj4gKwkJCSAgdm9pZCAqYWRkciwgdW5zaWduZWQgbG9uZyBjb3VudCk7Cj4g
-Kwo+ICBpbnQgX19pbml0IGludGVncml0eV9yZWFkX2ZpbGUoY29uc3QgY2hhciAqcGF0aCwgY2hh
-ciAqKmRhdGEpOwo+IAo+ICAjZGVmaW5lIElOVEVHUklUWV9LRVlSSU5HX0VWTQkJMAoKLS0KVG8g
-dW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNlbmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGtl
-eXJpbmdzIiBpbgp0aGUgYm9keSBvZiBhIG1lc3NhZ2UgdG8gbWFqb3Jkb21vQHZnZXIua2VybmVs
-Lm9yZwpNb3JlIG1ham9yZG9tbyBpbmZvIGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9y
-ZG9tby1pbmZvLmh0bWw=
+The initial Diffie-Hellman computation made direct use of the MPI
+library because the crypto module did not support DH at the time. Now
+that KPP is implemented, KEYCTL_DH_COMPUTE should use it to get rid of
+duplicate code and leverage possible hardware acceleration.
+
+Signed-off-by: Mat Martineau <mathew.j.martineau@linux.intel.com>
+---
+
+v2: Fix issue when DH computation results with leading zeros are used with
+    a KDF.
+
+v3: Rebase on keys-fixes (v2 was on keys-next)
+
+git tree at
+https://git.kernel.org/pub/scm/linux/kernel/git/martineau/linux.git
+(dh-refactor branch)
+
+ security/keys/Kconfig |   2 +-
+ security/keys/dh.c    | 272 +++++++++++++++++++++++++++++++-------------------
+ 2 files changed, 171 insertions(+), 103 deletions(-)
+
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index 00b7431a8aeb..a7a23b5541f8 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -93,9 +93,9 @@ config ENCRYPTED_KEYS
+ config KEY_DH_OPERATIONS
+        bool "Diffie-Hellman operations on retained keys"
+        depends on KEYS
+-       select MPILIB
+        select CRYPTO
+        select CRYPTO_HASH
++       select CRYPTO_DH
+        help
+ 	 This option provides support for calculating Diffie-Hellman
+ 	 public keys and shared secrets using values stored as keys
+diff --git a/security/keys/dh.c b/security/keys/dh.c
+index 63ac87d430db..4755d4b4f945 100644
+--- a/security/keys/dh.c
++++ b/security/keys/dh.c
+@@ -8,34 +8,17 @@
+  * 2 of the License, or (at your option) any later version.
+  */
+ 
+-#include <linux/mpi.h>
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
++#include <linux/scatterlist.h>
+ #include <linux/crypto.h>
+ #include <crypto/hash.h>
++#include <crypto/kpp.h>
++#include <crypto/dh.h>
+ #include <keys/user-type.h>
+ #include "internal.h"
+ 
+-/*
+- * Public key or shared secret generation function [RFC2631 sec 2.1.1]
+- *
+- * ya = g^xa mod p;
+- * or
+- * ZZ = yb^xa mod p;
+- *
+- * where xa is the local private key, ya is the local public key, g is
+- * the generator, p is the prime, yb is the remote public key, and ZZ
+- * is the shared secret.
+- *
+- * Both are the same calculation, so g or yb are the "base" and ya or
+- * ZZ are the "result".
+- */
+-static int do_dh(MPI result, MPI base, MPI xa, MPI p)
+-{
+-	return mpi_powm(result, base, xa, p);
+-}
+-
+-static ssize_t mpi_from_key(key_serial_t keyid, size_t maxlen, MPI *mpi)
++static ssize_t dh_data_from_key(key_serial_t keyid, void **data)
+ {
+ 	struct key *key;
+ 	key_ref_t key_ref;
+@@ -56,19 +39,17 @@ static ssize_t mpi_from_key(key_serial_t keyid, size_t maxlen, MPI *mpi)
+ 		status = key_validate(key);
+ 		if (status = 0) {
+ 			const struct user_key_payload *payload;
++			uint8_t *duplicate;
+ 
+ 			payload = user_key_payload_locked(key);
+ 
+-			if (maxlen = 0) {
+-				*mpi = NULL;
++			duplicate = kmemdup(payload->data, payload->datalen,
++					    GFP_KERNEL);
++			if (duplicate) {
++				*data = duplicate;
+ 				ret = payload->datalen;
+-			} else if (payload->datalen <= maxlen) {
+-				*mpi = mpi_read_raw_data(payload->data,
+-							 payload->datalen);
+-				if (*mpi)
+-					ret = payload->datalen;
+ 			} else {
+-				ret = -EINVAL;
++				ret = -ENOMEM;
+ 			}
+ 		}
+ 		up_read(&key->sem);
+@@ -79,6 +60,29 @@ static ssize_t mpi_from_key(key_serial_t keyid, size_t maxlen, MPI *mpi)
+ 	return ret;
+ }
+ 
++static void dh_free_data(struct dh *dh)
++{
++	kzfree(dh->key);
++	kzfree(dh->p);
++	kzfree(dh->g);
++}
++
++struct dh_completion {
++	struct completion completion;
++	int err;
++};
++
++static void dh_crypto_done(struct crypto_async_request *req, int err)
++{
++	struct dh_completion *compl = req->data;
++
++	if (err = -EINPROGRESS)
++		return;
++
++	compl->err = err;
++	complete(&compl->completion);
++}
++
+ struct kdf_sdesc {
+ 	struct shash_desc shash;
+ 	char ctx[];
+@@ -140,7 +144,7 @@ static void kdf_dealloc(struct kdf_sdesc *sdesc)
+  * 5.8.1.2).
+  */
+ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+-		   u8 *dst, unsigned int dlen)
++		   u8 *dst, unsigned int dlen, unsigned int zlen)
+ {
+ 	struct shash_desc *desc = &sdesc->shash;
+ 	unsigned int h = crypto_shash_digestsize(desc->tfm);
+@@ -157,6 +161,22 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+ 		if (err)
+ 			goto err;
+ 
++		if (zlen && h) {
++			u8 tmpbuffer[h];
++			size_t chunk = min_t(size_t, zlen, h);
++			memset(tmpbuffer, 0, chunk);
++
++			do {
++				err = crypto_shash_update(desc, tmpbuffer,
++							  chunk);
++				if (err)
++					goto err;
++
++				zlen -= chunk;
++				chunk = min_t(size_t, zlen, h);
++			} while (zlen);
++		}
++
+ 		if (src && slen) {
+ 			err = crypto_shash_update(desc, src, slen);
+ 			if (err)
+@@ -192,7 +212,7 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+ 
+ static int keyctl_dh_compute_kdf(struct kdf_sdesc *sdesc,
+ 				 char __user *buffer, size_t buflen,
+-				 uint8_t *kbuf, size_t kbuflen)
++				 uint8_t *kbuf, size_t kbuflen, size_t lzero)
+ {
+ 	uint8_t *outbuf = NULL;
+ 	int ret;
+@@ -203,7 +223,7 @@ static int keyctl_dh_compute_kdf(struct kdf_sdesc *sdesc,
+ 		goto err;
+ 	}
+ 
+-	ret = kdf_ctr(sdesc, kbuf, kbuflen, outbuf, buflen);
++	ret = kdf_ctr(sdesc, kbuf, kbuflen, outbuf, buflen, lzero);
+ 	if (ret)
+ 		goto err;
+ 
+@@ -221,21 +241,26 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 			 struct keyctl_kdf_params *kdfcopy)
+ {
+ 	long ret;
+-	MPI base, private, prime, result;
+-	unsigned nbytes;
++	ssize_t dlen;
++	int secretlen;
++	int outlen;
+ 	struct keyctl_dh_params pcopy;
+-	uint8_t *kbuf;
+-	ssize_t keylen;
+-	size_t resultlen;
++	struct dh dh_inputs;
++	struct scatterlist outsg;
++	struct dh_completion compl;
++	struct crypto_kpp *tfm;
++	struct kpp_request *req;
++	uint8_t *secret;
++	uint8_t *outbuf;
+ 	struct kdf_sdesc *sdesc = NULL;
+ 
+ 	if (!params || (!buffer && buflen)) {
+ 		ret = -EINVAL;
+-		goto out;
++		goto out1;
+ 	}
+ 	if (copy_from_user(&pcopy, params, sizeof(pcopy)) != 0) {
+ 		ret = -EFAULT;
+-		goto out;
++		goto out1;
+ 	}
+ 
+ 	if (kdfcopy) {
+@@ -244,104 +269,147 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 		if (buflen > KEYCTL_KDF_MAX_OUTPUT_LEN ||
+ 		    kdfcopy->otherinfolen > KEYCTL_KDF_MAX_OI_LEN) {
+ 			ret = -EMSGSIZE;
+-			goto out;
++			goto out1;
+ 		}
+ 
+ 		/* get KDF name string */
+ 		hashname = strndup_user(kdfcopy->hashname, CRYPTO_MAX_ALG_NAME);
+ 		if (IS_ERR(hashname)) {
+ 			ret = PTR_ERR(hashname);
+-			goto out;
++			goto out1;
+ 		}
+ 
+ 		/* allocate KDF from the kernel crypto API */
+ 		ret = kdf_alloc(&sdesc, hashname);
+ 		kfree(hashname);
+ 		if (ret)
+-			goto out;
++			goto out1;
+ 	}
+ 
+-	/*
+-	 * If the caller requests postprocessing with a KDF, allow an
+-	 * arbitrary output buffer size since the KDF ensures proper truncation.
+-	 */
+-	keylen = mpi_from_key(pcopy.prime, kdfcopy ? SIZE_MAX : buflen, &prime);
+-	if (keylen < 0 || !prime) {
+-		/* buflen = 0 may be used to query the required buffer size,
+-		 * which is the prime key length.
+-		 */
+-		ret = keylen;
+-		goto out;
++	memset(&dh_inputs, 0, sizeof(dh_inputs));
++
++	dlen = dh_data_from_key(pcopy.prime, &dh_inputs.p);
++	if (dlen < 0) {
++		ret = dlen;
++		goto out1;
+ 	}
++	dh_inputs.p_size = dlen;
+ 
+-	/* The result is never longer than the prime */
+-	resultlen = keylen;
++	dlen = dh_data_from_key(pcopy.base, &dh_inputs.g);
++	if (dlen < 0) {
++		ret = dlen;
++		goto out2;
++	}
++	dh_inputs.g_size = dlen;
+ 
+-	keylen = mpi_from_key(pcopy.base, SIZE_MAX, &base);
+-	if (keylen < 0 || !base) {
+-		ret = keylen;
+-		goto error1;
++	dlen = dh_data_from_key(pcopy.private, &dh_inputs.key);
++	if (dlen < 0) {
++		ret = dlen;
++		goto out2;
+ 	}
++	dh_inputs.key_size = dlen;
+ 
+-	keylen = mpi_from_key(pcopy.private, SIZE_MAX, &private);
+-	if (keylen < 0 || !private) {
+-		ret = keylen;
+-		goto error2;
++	secretlen = crypto_dh_key_len(&dh_inputs);
++	secret = kmalloc(secretlen, GFP_KERNEL);
++	if (!secret) {
++		ret = -ENOMEM;
++		goto out2;
++	}
++	ret = crypto_dh_encode_key(secret, secretlen, &dh_inputs);
++	if (ret)
++		goto out3;
++
++	tfm = crypto_alloc_kpp("dh", CRYPTO_ALG_TYPE_KPP, 0);
++	if (IS_ERR(tfm)) {
++		ret = PTR_ERR(tfm);
++		goto out3;
++	}
++
++	ret = crypto_kpp_set_secret(tfm, secret, secretlen);
++	if (ret)
++		goto out4;
++
++	outlen = crypto_kpp_maxsize(tfm);
++
++	if (!kdfcopy) {
++		/*
++		 * When not using a KDF, buflen 0 is used to read the
++		 * required buffer length
++		 */
++		if (buflen = 0) {
++			ret = outlen;
++			goto out4;
++		} else if (outlen > buflen) {
++			ret = -EOVERFLOW;
++			goto out4;
++		}
+ 	}
+ 
+-	result = mpi_alloc(0);
+-	if (!result) {
++	outbuf = kzalloc(kdfcopy ? (outlen + kdfcopy->otherinfolen) : outlen,
++			 GFP_KERNEL);
++	if (!outbuf) {
+ 		ret = -ENOMEM;
+-		goto error3;
++		goto out4;
+ 	}
+ 
+-	/* allocate space for DH shared secret and SP800-56A otherinfo */
+-	kbuf = kmalloc(kdfcopy ? (resultlen + kdfcopy->otherinfolen) : resultlen,
+-		       GFP_KERNEL);
+-	if (!kbuf) {
++	sg_init_one(&outsg, outbuf, outlen);
++
++	req = kpp_request_alloc(tfm, GFP_KERNEL);
++	if (!req) {
+ 		ret = -ENOMEM;
+-		goto error4;
++		goto out5;
+ 	}
+ 
++	kpp_request_set_input(req, NULL, 0);
++	kpp_request_set_output(req, &outsg, outlen);
++	init_completion(&compl.completion);
++	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				 CRYPTO_TFM_REQ_MAY_SLEEP,
++				 dh_crypto_done, &compl);
++
+ 	/*
+-	 * Concatenate SP800-56A otherinfo past DH shared secret -- the
+-	 * input to the KDF is (DH shared secret || otherinfo)
++	 * For DH, generate_public_key and generate_shared_secret are
++	 * the same calculation
+ 	 */
+-	if (kdfcopy &&
+-	    copy_from_user(kbuf + resultlen, kdfcopy->otherinfo,
+-			   kdfcopy->otherinfolen) != 0) {
+-		ret = -EFAULT;
+-		goto error5;
++	ret = crypto_kpp_generate_public_key(req);
++	if (ret = -EINPROGRESS) {
++		wait_for_completion(&compl.completion);
++		ret = compl.err;
++		if (ret)
++			goto out6;
+ 	}
+ 
+-	ret = do_dh(result, base, private, prime);
+-	if (ret)
+-		goto error5;
+-
+-	ret = mpi_read_buffer(result, kbuf, resultlen, &nbytes, NULL);
+-	if (ret != 0)
+-		goto error5;
+-
+ 	if (kdfcopy) {
+-		ret = keyctl_dh_compute_kdf(sdesc, buffer, buflen, kbuf,
+-					    resultlen + kdfcopy->otherinfolen);
+-	} else {
+-		ret = nbytes;
+-		if (copy_to_user(buffer, kbuf, nbytes) != 0)
++		/*
++		 * Concatenate SP800-56A otherinfo past DH shared secret -- the
++		 * input to the KDF is (DH shared secret || otherinfo)
++		 */
++		if (copy_from_user(outbuf + req->dst_len, kdfcopy->otherinfo,
++				   kdfcopy->otherinfolen) != 0) {
+ 			ret = -EFAULT;
++			goto out6;
++		}
++
++		ret = keyctl_dh_compute_kdf(sdesc, buffer, buflen, outbuf,
++					    req->dst_len + kdfcopy->otherinfolen,
++					    outlen - req->dst_len);
++	} else if (copy_to_user(buffer, outbuf, req->dst_len) = 0) {
++		ret = req->dst_len;
++	} else {
++		ret = -EFAULT;
+ 	}
+ 
+-error5:
+-	kzfree(kbuf);
+-error4:
+-	mpi_free(result);
+-error3:
+-	mpi_free(private);
+-error2:
+-	mpi_free(base);
+-error1:
+-	mpi_free(prime);
+-out:
++out6:
++	kpp_request_free(req);
++out5:
++	kzfree(outbuf);
++out4:
++	crypto_free_kpp(tfm);
++out3:
++	kzfree(secret);
++out2:
++	dh_free_data(&dh_inputs);
++out1:
+ 	kdf_dealloc(sdesc);
+ 	return ret;
+ }
+-- 
+2.13.1
+
