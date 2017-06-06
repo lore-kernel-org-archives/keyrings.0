@@ -1,43 +1,63 @@
 From: Mat Martineau <mathew.j.martineau@linux.intel.com>
-Date: Tue, 06 Jun 2017 00:16:13 +0000
+Date: Tue, 06 Jun 2017 00:33:04 +0000
 Subject: Re: [PATCH v2] KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP API
-Message-Id: <alpine.OSX.2.21.1706051707010.7532@mjmartin-mac01.sea.intel.com>
+Message-Id: <alpine.OSX.2.21.1706051725150.7532@mjmartin-mac01.sea.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1638.1496419102@warthog.procyon.org.uk>
+References: <20170511003557.3467-1-mathew.j.martineau@linux.intel.com>
+	<1638.1496419102@warthog.procyon.org.uk>
 In-Reply-To: <1638.1496419102@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
 
-Hi Eric -
+Hi David -
 
-On Sun, 4 Jun 2017, Eric Biggers wrote:
+On Fri, 2 Jun 2017, David Howells wrote:
 
-> Hi Mat,
+> Mat Martineau <mathew.j.martineau@linux.intel.com> wrote:
 >
-> On Wed, May 10, 2017 at 05:35:57PM -0700, Mat Martineau wrote:
 >> The initial Diffie-Hellman computation made direct use of the MPI
 >> library because the crypto module did not support DH at the time. Now
 >> that KPP is implemented, KEYCTL_DH_COMPUTE should use it to get rid of
 >> duplicate code and leverage possible hardware acceleration.
->>
->> Signed-off-by: Mat Martineau <mathew.j.martineau@linux.intel.com>
 >
-> Have you verified that this doesn't change the API at all --- order of bytes
-> within the numbers, whether they are padded with zeroes, any other corner cases
-> etc.?  There can't be breaking changes to the API after this is released in
-> mainline, and this is already in v4.12-rc4.
+> This doesn't apply to linus/master.
 
-The available unit tests in keyutils (next branch) and ELL still pass.
+It was on top of keys-next, for what it's worth.
 
-Stephan pointed out a difference regarding handling of leading zeros in 
-KDF, which is what I addressed in v2 of the patch. There's a gap in the 
-unit tests where results with leading zeros are not covered well, and I'm 
-working on that. DH results are definitely handled the same with this 
-patch, but I have yet to confirm KDF output - I don't have a known-good 
-test vector for KDF when the shared secret has leading zeros.
+> I've pushed the keyrings fix patches I
+> have, including a bunch from Eric Biggers that fix DH stuff, to:
+>
+> 	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git
+>
+> branch:
+>
+> 	keys-fixes
+
+I'll post a v3 that applies to keys-fixes right after I send this email.
+
+>
+> though I think there may be a couple of bugs in on of Eric's patches where
+> he's assumed that he can do:
+>
+> 	memzero_explicit(NULL, 0);
+>
+> I'm not sure whether it's permissible to assume that memset(NULL, 0, 0) is
+> guaranteed to work correctly.
+
+I'm still working on unit test coverage to confirm correct behavior of KDF 
+when the DH shared secret has leading zeros. Stephan, have you found any 
+such tests (last time I asked you were still looking)? If I see 
+inconsistent results when I make up a vector (choosing inputs that result 
+in a 0x01 shared secret), I'm not sure if the old or new answer is 
+correct.
+
+> Note that I haven't included Eric's DH patch that was obsoleted by Stephan's
+> patch that was obsoleted by this one.
+
+Thanks,
 
 --
 Mat Martineau
