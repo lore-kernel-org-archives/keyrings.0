@@ -1,332 +1,320 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 22 Jun 2017 01:33:57 +0000
-Subject: Re: [PATCH v2 6/6] ima: Support module-style appended signatures for appraisal
-Message-Id: <1498095237.5328.44.camel@linux.vnet.ibm.com>
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Date: Tue, 06 Jun 2017 21:51:29 +0000
+Subject: [PATCH v2] security/keys: rewrite all of big_key crypto
+Message-Id: <20170606215129.26388-1-Jason@zx2c4.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
-         <1496886555-10082-7-git-send-email-bauerman@linux.vnet.ibm.com>
-         <1497443972.4287.38.camel@linux.vnet.ibm.com>
-         <8760fpck0x.fsf@linux.vnet.ibm.com>
-In-Reply-To: <8760fpck0x.fsf@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+To: keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, Theodore Ts'o <tytso@mit.edu>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers3@gmail.com>
+Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org
 
-On Wed, 2017-06-21 at 14:45 -0300, Thiago Jung Bauermann wrote:
-> Hello Mimi,
-> 
-> Thanks for your review, and for queuing the other patches in this series.
-> 
-> Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
-> > On Wed, 2017-06-07 at 22:49 -0300, Thiago Jung Bauermann wrote:
-> >> This patch introduces the modsig keyword to the IMA policy syntax to
-> >> specify that a given hook should expect the file to have the IMA signature
-> >> appended to it.
-> >
-> > Thank you, Thiago. Appended signatures seem to be working proper now
-> > with multiple keys on the IMA keyring.
-> 
-> Great news!
-> 
-> > The length of this patch description is a good indication that this
-> > patch needs to be broken up for easier review. A few
-> > comments/suggestions inline below.
-> 
-> Ok, I will try to break it up, and also patch 5 as you suggested.
-> 
-> >> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-> >> index 06554c448dce..9190c9058f4f 100644
-> >> --- a/security/integrity/digsig.c
-> >> +++ b/security/integrity/digsig.c
-> >> @@ -48,11 +48,10 @@ static bool init_keyring __initdata;
-> >>  #define restrict_link_to_ima restrict_link_by_builtin_trusted
-> >>  #endif
-> >> 
-> >> -int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-> >> -			    const char *digest, int digestlen)
-> >> +struct key *integrity_keyring_from_id(const unsigned int id)
-> >>  {
-> >> -	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
-> >> -		return -EINVAL;
-> >> +	if (id >= INTEGRITY_KEYRING_MAX)
-> >> +		return ERR_PTR(-EINVAL);
-> >> 
-> >
-> > When splitting up this patch, the addition of this new function could
-> > be a separate patch. The patch description would explain the need for
-> > a new function.
-> 
-> Ok, will do for v3.
-> 
-> >> @@ -229,10 +234,14 @@ int ima_appraise_measurement(enum ima_hooks func,
-> >>  		goto out;
-> >>  	}
-> >> 
-> >> -	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
-> >> -	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
-> >> -		if ((status = INTEGRITY_NOLABEL)
-> >> -		    || (status = INTEGRITY_NOXATTRS))
-> >> +	/* Appended signatures aren't protected by EVM. */
-> >> +	status = evm_verifyxattr(dentry, XATTR_NAME_IMA,
-> >> +				 xattr_value->type = IMA_MODSIG ?
-> >> +				 NULL : xattr_value, rc, iint);
-> >> +	if (status != INTEGRITY_PASS && status != INTEGRITY_UNKNOWN &&
-> >> +	    !(xattr_value->type = IMA_MODSIG &&
-> >> +	      (status = INTEGRITY_NOLABEL || status = INTEGRITY_NOXATTRS))) {
-> >
-> > This was messy to begin with, and now it is even more messy. For
-> > appended signatures, we're only interested in INTEGRITY_FAIL. Maybe
-> > leave the existing "if" clause alone and define a new "if" clause.
-> 
-> Ok, is this what you had in mind?
-> 
-> @@ -229,8 +237,14 @@ int ima_appraise_measurement(enum ima_hooks func,
->  		goto out;
->  	}
-> 
-> -	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
-> -	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
-> +	/* Appended signatures aren't protected by EVM. */
-> +	status = evm_verifyxattr(dentry, XATTR_NAME_IMA,
-> +				 xattr_value->type = IMA_MODSIG ?
-> +				 NULL : xattr_value, rc, iint);
+This started out as just replacing the use of crypto/rng with
+get_random_bytes, so that we wouldn't use bad randomness at boot time.
+But, upon looking further, it appears that there were even deeper
+underlying cryptographic problems, and that this seems to have been
+committed with very little crypto review. So, I rewrote the whole thing,
+trying to keep to the conventions introduced by the previous author, to
+fix these cryptographic flaws.
 
-Yes, maybe add a comment here indicating only verifying other security
-xattrs, if they exist.
+Since this sensitive material is being stored untrusted, using
+ECB and no authentication is simply not okay at all. I find it surprising
+that this code even made it past basic crypto review, though perhaps
+there's something I'm missing. This patch moves from using AES-ECB to
+using AES-GCM. Since keys are uniquely generated each time, we can set
+the nonce to zero. There was also a race condition in which the same key
+would be reused at the same time in different threads. A mutex fixes this
+issue now. And, some error paths forgot to zero out sensitive material, so
+this patch changes a kfree into a kzfree.
 
-> +	if (xattr_value->type = IMA_MODSIG && status = INTEGRITY_FAIL) {
-> +		cause = "invalid-HMAC";
-> +		goto out;
-> +	} else if (status != INTEGRITY_PASS && status != INTEGRITY_UNKNOWN) {
->  		if ((status = INTEGRITY_NOLABEL)
->  		    || (status = INTEGRITY_NOXATTRS))
->  			cause = "missing-HMAC";
+So, to summarize, this commit fixes the following vulnerabilities:
 
-> 
-> >> @@ -267,11 +276,18 @@ int ima_appraise_measurement(enum ima_hooks func,
-> >>  		status = INTEGRITY_PASS;
-> >>  		break;
-> >>  	case EVM_IMA_XATTR_DIGSIG:
-> >> +	case IMA_MODSIG:
-> >>  		iint->flags |= IMA_DIGSIG;
-> >> -		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-> >> -					     (const char *)xattr_value, rc,
-> >> -					     iint->ima_hash->digest,
-> >> -					     iint->ima_hash->length);
-> >> +
-> >> +		if (xattr_value->type = EVM_IMA_XATTR_DIGSIG)
-> >> +			rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-> >> +						     (const char *)xattr_value,
-> >> +						     rc, iint->ima_hash->digest,
-> >> +						     iint->ima_hash->length);
-> >> +		else
-> >> +			rc = ima_modsig_verify(INTEGRITY_KEYRING_IMA,
-> >> +					       xattr_value);
-> >> +
-> >
-> > Perhaps allowing IMA_MODSIG to flow into EVM_IMA_XATTR_DIGSIG on
-> > failure, would help restore process_measurements() to the way it was.
-> > Further explanation below.
-> 
-> It's not possible to simply flow into EVM_IMA_XATTR_DIGSIG on failure
-> because after calling ima_read_xattr we need to run again all the logic
-> before the switch statement. Instead, I'm currently testing the
-> following change for v3, what do you think?
+  * Unauthenticated encryption, allowing an attacker to modify the
+    cipher text in particular ways in order to manipulate the plaintext,
+    which is is even more frightening considering the next point.
+  * Use of ECB mode, allowing an attacker to trivially swap blocks or
+    compare identical plaintext blocks.
+  * Key re-use.
+  * Faulty memory zeroing.
 
-I don't think we can assume that the same algorithm will be used for
-signing the kernel image. Different entities would be signing the
-kernel image with different requirements.
+Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Eric Biggers <ebiggers3@gmail.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Kirill Marinushkin <k.marinushkin@gmail.com>
+Cc: security@kernel.org
+---
+Changes v1->v2:
+  - The code has now been tested, and it works.
+  - Style fixups.
+  - Memory zeroring.
+  - Use mutex to prevent key reuse race condition.
+  - Useful comments.
+  - Kconfig simplification.
+  - We no longer rely on get_random_bytes_wait, even though we really should,
+    because that hasn't yet been merged. When it is merged, I'll submit a
+    follow-up patch.
 
-Suppose for example a stock distro image comes signed using one
-algorithm (appended signature), but the same kernel image is locally
-signed using a different algorithm (xattr).  Signature verification is
-dependent on either the distro or local public key being loaded onto
-the IMA keyring.
+ security/keys/Kconfig   |   4 +-
+ security/keys/big_key.c | 129 ++++++++++++++++++++++--------------------------
+ 2 files changed, 61 insertions(+), 72 deletions(-)
 
-> More about this code further below.
-> 
-> @@ -266,6 +280,44 @@ int ima_appraise_measurement(enum ima_hooks func,
->  		}
->  		status = INTEGRITY_PASS;
->  		break;
-> +	case IMA_MODSIG:
-> +		rc = ima_modsig_verify(INTEGRITY_KEYRING_IMA, xattr_value);
-> +		if (!rc) {
-> +			iint->flags |= IMA_DIGSIG;
-> +			status = INTEGRITY_PASS;
-> +			break;
-> +		}
-> +
-> +		/*
-> +		 * The appended signature failed verification. Let's try
-> +		 * reading a signature from the extended attribute instead.
-> +		 */
-> +
-> +		ima_free_xattr_data(xattr_value);
-> +		xattr_value = NULL;
-> +
-> +		/* read 'security.ima' */
-> +		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
-> +		algo = iint->ima_hash->algo;
-> +
-> +		if (!xattr_value || xattr_value->type = IMA_MODSIG ||
-> +		    ima_get_hash_algo(xattr_value, xattr_len) != algo) {
-> +			iint->flags |= IMA_DIGSIG;
-> +
-> +			if (rc = -EOPNOTSUPP)
-> +				status = INTEGRITY_UNKNOWN;
-> +			else {
-> +				cause = "invalid-signature";
-> +				status = INTEGRITY_FAIL;
-> +			}
-> +
-> +			break;
-> +		}
-> +
-> +		pr_debug("Trying the xattr signature\n");
-> +
-> +		return ima_appraise_measurement(func, iint, file, filename,
-> +						xattr_value, xattr_len, opened);
->  	case EVM_IMA_XATTR_DIGSIG:
->  		iint->flags |= IMA_DIGSIG;
->  		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-> 
-> >> @@ -406,7 +424,8 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-> >>  		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
-> >>  			return -EINVAL;
-> >>  		ima_reset_appraise_flags(d_backing_inode(dentry),
-> >> -			 (xvalue->type = EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
-> >> +					 xvalue->type = EVM_IMA_XATTR_DIGSIG ||
-> >> +					 xvalue->type = IMA_MODSIG);
-> >
-> > Probably easier to read if we set a variable, before calling
-> > ima_reset_appraise_flags.
-> 
-> Ok, will do in v3.
-> 
-> >> @@ -226,30 +282,23 @@ static int process_measurement(struct file *file, char *buf, loff_t size,
-> >>  		goto out_digsig;
-> >>  	}
-> >> 
-> >> -	template_desc = ima_template_desc_current();
-> >> -	if ((action & IMA_APPRAISE_SUBMASK) ||
-> >> -		    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0)
-> >> -		/* read 'security.ima' */
-> >> -		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
-> >> -
-> >> -	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
-> >> -
-> >> -	rc = ima_collect_measurement(iint, file, buf, size, hash_algo);
-> >> -	if (rc != 0) {
-> >> -		if (file->f_flags & O_DIRECT)
-> >> -			rc = (iint->flags & IMA_PERMIT_DIRECTIO) ? 0 : -EACCES;
-> >> -		goto out_digsig;
-> >> -	}
-> >> -
-> >
-> > There are four stages: collect measurement, store measurement,
-> > appraise measurement and audit measurement. "Collect" needs to be
-> > done if any one of the other stages is needed.
-> >
-> >>  	if (!pathbuf)	/* ima_rdwr_violation possibly pre-fetched */
-> >>  		pathname = ima_d_path(&file->f_path, &pathbuf, filename);
-> >> 
-> >> +	if (iint->flags & IMA_MODSIG_ALLOWED)
-> >> +		rc = measure_and_appraise(file, buf, size, func, opened, action,
-> >> +					  iint, &xattr_value, &xattr_len,
-> >> +					  pathname, true);
-> >> +	if (!xattr_len)
-> >> +		rc = measure_and_appraise(file, buf, size, func, opened, action,
-> >> +					  iint, &xattr_value, &xattr_len,
-> >> +					  pathname, false);
-> >
-> > I would rather see "collect" extended to support an appended signature
-> > rather than trying to combine "collect" and "appraise" together.
-> 
-> I'm not sure I understand what you mean by "extend collect to support an
-> appended signature", but the fundamental problem is that we don't know
-> whether we need to fallback to the xattr sig until the appraise step
-> because that's when we verify the signature, and by then the collect and
-> store steps were already completed and would need to be done again if
-> the hash algorithm in the xattr sig is different.
-
-The "appraise" stage could be moved before the "store" stage, like you
-have.  (This should be a separate patch explaining the need for moving
-it.)  Based on an argument to ima_collect_measurement() have it
-"collect" either the appended signature or the xattr.  Maybe something
-like this:
-
-loop [ appended signature, xattr ] {  <= list based on policy flags
-     collect_measurement()
-     if failure
-        continue
-     appraise_measurement()
-     if success
-        break
-}
-
-store_measurement()
-
-Mimi
-
-
-> If we don't want to change the order of these steps what I suggest (and
-> what the code I pasted above for ima_appraise_measurement does) is to
-> only allow falling back to the xattr sig if the appended sig and the
-> xattr sig use the same hash algorithm.
-> 
-> In that case, collect and store don't need to be redone nor the store
-> step need to be moved after appraise. This is the only change that would
-> be needed in process_measurement:
-
-> @@ -227,10 +230,16 @@ static int process_measurement(struct file *file, char *buf, loff_t size,
->  	}
-> 
->  	template_desc = ima_template_desc_current();
-> -	if ((action & IMA_APPRAISE_SUBMASK) ||
-> -		    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0)
-> -		/* read 'security.ima' */
-> -		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
-> +	if (action & IMA_APPRAISE_SUBMASK ||
-> +	    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0) {
-> +		if (iint->flags & IMA_MODSIG_ALLOWED)
-> +			ima_read_modsig(buf, &size, &xattr_value, &xattr_len);
-> +
-> +		if (!xattr_len)
-> +			/* read 'security.ima' */
-> +			xattr_len = ima_read_xattr(file_dentry(file),
-> +						   &xattr_value);
-> +	}
-> 
->  	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
-> 
-> @@ -257,7 +266,7 @@ static int process_measurement(struct file *file, char *buf, loff_t size,
->  	if ((mask & MAY_WRITE) && (iint->flags & IMA_DIGSIG) &&
->  	     !(iint->flags & IMA_NEW_FILE))
->  		rc = -EACCES;
-> -	kfree(xattr_value);
-> +	ima_free_xattr_data(xattr_value);
->  out_free:
->  	if (pathbuf)
->  		__putname(pathbuf);
-> 
-> >
-> >> +	if (rc)
-> >> +		goto out_digsig;
-> >> +
-> >>  	if (action & IMA_MEASURE)
-> >>  		ima_store_measurement(iint, file, pathname,
-> >>  				      xattr_value, xattr_len, pcr);
-> >> -	if (action & IMA_APPRAISE_SUBMASK)
-> >> -		rc = ima_appraise_measurement(func, iint, file, pathname,
-> >> -					      xattr_value, xattr_len, opened);
-> >
-> > Moving appraisal before storing the measurement, should be a separate
-> > patch with a clear explanation as to why it is needed.
-> 
-> Ok, will do in v3 if you don't like the restriction of both the modsig
-> and xattr sig having to use the same hash algorithm.
-> 
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index 6fd95f76bfae..3906e1cc78ef 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -41,10 +41,8 @@ config BIG_KEYS
+ 	bool "Large payload keys"
+ 	depends on KEYS
+ 	depends on TMPFS
+-	depends on (CRYPTO_ANSI_CPRNG = y || CRYPTO_DRBG = y)
+ 	select CRYPTO_AES
+-	select CRYPTO_ECB
+-	select CRYPTO_RNG
++	select CRYPTO_GCM
+ 	help
+ 	  This option provides support for holding large keys within the kernel
+ 	  (for example Kerberos ticket caches).  The data may be stored out to
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 835c1ab30d01..dd12e8592e40 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -1,5 +1,6 @@
+ /* Large capacity key type
+  *
++ * Copyright (C) 2017 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
+  * Copyright (C) 2013 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+  *
+@@ -16,10 +17,10 @@
+ #include <linux/shmem_fs.h>
+ #include <linux/err.h>
+ #include <linux/scatterlist.h>
++#include <linux/random.h>
+ #include <keys/user-type.h>
+ #include <keys/big_key-type.h>
+-#include <crypto/rng.h>
+-#include <crypto/skcipher.h>
++#include <crypto/aead.h>
+ 
+ /*
+  * Layout of key payload words.
+@@ -49,7 +50,12 @@ enum big_key_op {
+ /*
+  * Key size for big_key data encryption
+  */
+-#define ENC_KEY_SIZE	16
++#define ENC_KEY_SIZE 32
++
++/*
++ * Authentication tag length
++ */
++#define ENC_AUTHTAG_SIZE 16
+ 
+ /*
+  * big_key defined keys take an arbitrary string as the description and an
+@@ -64,27 +70,23 @@ struct key_type key_type_big_key = {
+ 	.destroy		= big_key_destroy,
+ 	.describe		= big_key_describe,
+ 	.read			= big_key_read,
++	/* no ->update(); don't add it without changing big_key_crypt() nonce */
+ };
+ 
+ /*
+- * Crypto names for big_key data encryption
++ * Crypto names for big_key data authenticated encryption
+  */
+-static const char big_key_rng_name[] = "stdrng";
+-static const char big_key_alg_name[] = "ecb(aes)";
++static const char big_key_alg_name[] = "gcm(aes)";
+ 
+ /*
+- * Crypto algorithms for big_key data encryption
++ * Crypto algorithms for big_key data authenticated encryption
+  */
+-static struct crypto_rng *big_key_rng;
+-static struct crypto_skcipher *big_key_skcipher;
++static struct crypto_aead *big_key_aead;
+ 
+ /*
+- * Generate random key to encrypt big_key data
++ * Since changing the key affects the entire object, we need a mutex.
+  */
+-static inline int big_key_gen_enckey(u8 *key)
+-{
+-	return crypto_rng_get_bytes(big_key_rng, key, ENC_KEY_SIZE);
+-}
++static DEFINE_MUTEX(big_key_aead_lock);
+ 
+ /*
+  * Encrypt/decrypt big_key data
+@@ -93,28 +95,37 @@ static int big_key_crypt(enum big_key_op op, u8 *data, size_t datalen, u8 *key)
+ {
+ 	int ret = -EINVAL;
+ 	struct scatterlist sgio;
+-	SKCIPHER_REQUEST_ON_STACK(req, big_key_skcipher);
+-
+-	if (crypto_skcipher_setkey(big_key_skcipher, key, ENC_KEY_SIZE)) {
++	u8 req_on_stack[sizeof(struct aead_request) +
++			crypto_aead_reqsize(big_key_aead)];
++	struct aead_request *aead_req = (struct aead_request *)req_on_stack;
++
++	/* We always use a zero nonce. The reason we can get away with this is
++	 * because we're using a different randomly generated key for every
++	 * different encryption. Notably, too, key_type_big_key doesn't define
++	 * an .update function, so there's no chance we'll wind up reusing the
++	 * key to encrypt updated data. Simply put: one key, one encryption.
++	 */
++	u8 zero_nonce[crypto_aead_ivsize(big_key_aead)];
++
++	memset(req_on_stack, 0, sizeof(req_on_stack));
++	memset(zero_nonce, 0, sizeof(zero_nonce));
++	sg_init_one(&sgio, data, datalen + (op = BIG_KEY_ENC ? ENC_AUTHTAG_SIZE : 0));
++	aead_request_set_tfm(aead_req, big_key_aead);
++	aead_request_set_crypt(aead_req, &sgio, &sgio, datalen, zero_nonce);
++	aead_request_set_callback(aead_req, CRYPTO_TFM_REQ_MAY_SLEEP, NULL, NULL);
++
++	mutex_lock(&big_key_aead_lock);
++	if (crypto_aead_setkey(big_key_aead, key, ENC_KEY_SIZE)) {
+ 		ret = -EAGAIN;
+ 		goto error;
+ 	}
+-
+-	skcipher_request_set_tfm(req, big_key_skcipher);
+-	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP,
+-				      NULL, NULL);
+-
+-	sg_init_one(&sgio, data, datalen);
+-	skcipher_request_set_crypt(req, &sgio, &sgio, datalen, NULL);
+-
+ 	if (op = BIG_KEY_ENC)
+-		ret = crypto_skcipher_encrypt(req);
++		ret = crypto_aead_encrypt(aead_req);
+ 	else
+-		ret = crypto_skcipher_decrypt(req);
+-
+-	skcipher_request_zero(req);
+-
++		ret = crypto_aead_decrypt(aead_req);
+ error:
++	mutex_unlock(&big_key_aead_lock);
++	memzero_explicit(req_on_stack, sizeof(req_on_stack));
+ 	return ret;
+ }
+ 
+@@ -146,15 +157,12 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 		 *
+ 		 * File content is stored encrypted with randomly generated key.
+ 		 */
+-		size_t enclen = ALIGN(datalen, crypto_skcipher_blocksize(big_key_skcipher));
++		size_t enclen = datalen + ENC_AUTHTAG_SIZE;
+ 
+-		/* prepare aligned data to encrypt */
+ 		data = kmalloc(enclen, GFP_KERNEL);
+ 		if (!data)
+ 			return -ENOMEM;
+-
+ 		memcpy(data, prep->data, datalen);
+-		memset(data + datalen, 0x00, enclen - datalen);
+ 
+ 		/* generate random key */
+ 		enckey = kmalloc(ENC_KEY_SIZE, GFP_KERNEL);
+@@ -162,13 +170,10 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 			ret = -ENOMEM;
+ 			goto error;
+ 		}
+-
+-		ret = big_key_gen_enckey(enckey);
+-		if (ret)
+-			goto err_enckey;
++		get_random_bytes(enckey, ENC_KEY_SIZE);
+ 
+ 		/* encrypt aligned data */
+-		ret = big_key_crypt(BIG_KEY_ENC, data, enclen, enckey);
++		ret = big_key_crypt(BIG_KEY_ENC, data, datalen, enckey);
+ 		if (ret)
+ 			goto err_enckey;
+ 
+@@ -212,7 +217,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ err_enckey:
+ 	kfree(enckey);
+ error:
+-	kfree(data);
++	kzfree(data);
+ 	return ret;
+ }
+ 
+@@ -294,7 +299,7 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+ 		struct file *file;
+ 		u8 *data;
+ 		u8 *enckey = (u8 *)key->payload.data[big_key_data];
+-		size_t enclen = ALIGN(datalen, crypto_skcipher_blocksize(big_key_skcipher));
++		size_t enclen = datalen + ENC_AUTHTAG_SIZE;
+ 
+ 		data = kmalloc(enclen, GFP_KERNEL);
+ 		if (!data)
+@@ -342,47 +347,33 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+  */
+ static int __init big_key_init(void)
+ {
+-	struct crypto_skcipher *cipher;
+-	struct crypto_rng *rng;
++	struct crypto_aead *tfm;
+ 	int ret;
+ 
+-	rng = crypto_alloc_rng(big_key_rng_name, 0, 0);
+-	if (IS_ERR(rng)) {
+-		pr_err("Can't alloc rng: %ld\n", PTR_ERR(rng));
+-		return PTR_ERR(rng);
+-	}
+-
+-	big_key_rng = rng;
+-
+-	/* seed RNG */
+-	ret = crypto_rng_reset(rng, NULL, crypto_rng_seedsize(rng));
+-	if (ret) {
+-		pr_err("Can't reset rng: %d\n", ret);
+-		goto error_rng;
+-	}
+-
+ 	/* init block cipher */
+-	cipher = crypto_alloc_skcipher(big_key_alg_name, 0, CRYPTO_ALG_ASYNC);
+-	if (IS_ERR(cipher)) {
+-		ret = PTR_ERR(cipher);
++	tfm = crypto_alloc_aead(big_key_alg_name, 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(tfm)) {
++		ret = PTR_ERR(tfm);
+ 		pr_err("Can't alloc crypto: %d\n", ret);
+-		goto error_rng;
++		return ret;
++	}
++	ret = crypto_aead_setauthsize(tfm, ENC_AUTHTAG_SIZE);
++	if (ret < 0) {
++		pr_err("Can't set crypto auth tag len: %d\n", ret);
++		goto free_aead;
+ 	}
+-
+-	big_key_skcipher = cipher;
+ 
+ 	ret = register_key_type(&key_type_big_key);
+ 	if (ret < 0) {
+ 		pr_err("Can't register type: %d\n", ret);
+-		goto error_cipher;
++		goto free_aead;
+ 	}
+ 
++	big_key_aead = tfm;
+ 	return 0;
+ 
+-error_cipher:
+-	crypto_free_skcipher(big_key_skcipher);
+-error_rng:
+-	crypto_free_rng(big_key_rng);
++free_aead:
++	crypto_free_aead(tfm);
+ 	return ret;
+ }
+ 
+-- 
+2.13.0
 
