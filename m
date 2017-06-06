@@ -1,67 +1,44 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 05 Jun 2017 22:03:10 +0000
+From: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Date: Tue, 06 Jun 2017 00:16:13 +0000
 Subject: Re: [PATCH v2] KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP API
-Message-Id: <20170605220310.GC87699@gmail.com>
+Message-Id: <alpine.OSX.2.21.1706051707010.7532@mjmartin-mac01.sea.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-3"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1638.1496419102@warthog.procyon.org.uk>
 In-Reply-To: <1638.1496419102@warthog.procyon.org.uk>
 To: keyrings@vger.kernel.org
 
-Hi Stephan,
 
-On Mon, Jun 05, 2017 at 11:51:32PM +0200, Stephan M=FCller wrote:
-> Am Montag, 5. Juni 2017, 05:41:32 CEST schrieb Eric Biggers:
->=20
-> Hi Eric,
-> >=20
-> > Also, Stephan, what is the purpose of the "__spare" field in
-> > keyctl_kdf_params? How is it ever supposed to be used for anything if t=
-he
-> > kernel doesn't even validate that it contains 0's?  Some flag hacked in=
-to
-> > the 'otherinfolen' field...?
->=20
-> The idea in the very first patch set was the presence of a "flags" field.=
- We=20
-> have a proliferation of system calls in the last few years which just add=
- a=20
-> "flags" parameter compared to an identical older system call.
->=20
-> To prevent falling into this trap, I wanted to have a flags field. The co=
-re=20
-> reason is that there are multiple options allowed and possible how to der=
-ive a=20
-> key. The current approach is the easiest and smallest one, i.e. using the=
-=20
-> SP800-108 counter KDF. Other KDFs are possible too. To allow such opennes=
-s, we=20
-> decided to leave some room.
->=20
-> See https://patchwork.kernel.org/patch/9224837/ and search for __spare[8]=
- in=20
-> the answer from Mat.
->=20
+Hi Eric -
 
-Well, regardless of what it's reserved *for* (if anything), this is *not* t=
-he
-correct way to do a reserved field.  The API needs to verify that it has va=
-lue 0
-and return -EINVAL otherwise, i.e.
+On Sun, 4 Jun 2017, Eric Biggers wrote:
 
-	if (memchr_inv(kdfcopy->__spare, 0, sizeof(kdfcopy->__spare)))
-		return -EINVAL;
+> Hi Mat,
+>
+> On Wed, May 10, 2017 at 05:35:57PM -0700, Mat Martineau wrote:
+>> The initial Diffie-Hellman computation made direct use of the MPI
+>> library because the crypto module did not support DH at the time. Now
+>> that KPP is implemented, KEYCTL_DH_COMPUTE should use it to get rid of
+>> duplicate code and leverage possible hardware acceleration.
+>>
+>> Signed-off-by: Mat Martineau <mathew.j.martineau@linux.intel.com>
+>
+> Have you verified that this doesn't change the API at all --- order of bytes
+> within the numbers, whether they are padded with zeroes, any other corner cases
+> etc.?  There can't be breaking changes to the API after this is released in
+> mainline, and this is already in v4.12-rc4.
 
-It can't simply be ignored, otherwise users will have no way to know whethe=
-r any
-new fields are recognized or not.  Also if there is no validation, users wi=
-ll
-screw up and pass in a nonzero value (perhaps through leaving it uninitiali=
-zed)
-before it's un-reserved, which will then break as soon as the space is actu=
-ally
-used for something.
+The available unit tests in keyutils (next branch) and ELL still pass.
 
-Eric
+Stephan pointed out a difference regarding handling of leading zeros in 
+KDF, which is what I addressed in v2 of the patch. There's a gap in the 
+unit tests where results with leading zeros are not covered well, and I'm 
+working on that. DH results are definitely handled the same with this 
+patch, but I have yet to confirm KDF output - I don't have a known-good 
+test vector for KDF when the shared secret has leading zeros.
+
+--
+Mat Martineau
+Intel OTC
