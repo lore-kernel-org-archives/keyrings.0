@@ -1,21 +1,99 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 06 Jun 2017 09:40:12 +0000
-Subject: Re: kernel of next-20170602 call trace when run add_key02 in LTP
-Message-Id: <25659.1496742012@warthog.procyon.org.uk>
+From: Cyril Hrubis <chrubis@suse.cz>
+Date: Tue, 06 Jun 2017 12:06:56 +0000
+Subject: Re: [LTP] [PATCH 2/2] syscalls/add_key03: add test for NULL payload with nonzero length
+Message-Id: <20170606120656.GB5208@rei>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170605172855.GA87699@gmail.com> <CACsHhCKXwfo3hn3uNwQUWTg-MS9Ja5_5USO--Df3kRi2Z0b-hg@mail.gmail.com> <20170605134823.GA24454@rei.lan>
-In-Reply-To: <20170605172855.GA87699@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: dhowells@redhat.com, Cyril Hrubis <chrubis@suse.cz>, Bixuan Cui <cuibixuan@gmail.com>, linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, ltp@lists.linux.it
+To: keyrings@vger.kernel.org
 
-Eric Biggers <ebiggers3@gmail.com> wrote:
+Hi!
+> diff --git a/testcases/kernel/syscalls/add_key/add_key03.c b/testcases/kernel/syscalls/add_key/add_key03.c
+> new file mode 100644
+> index 000000000..21812710f
+> --- /dev/null
+> +++ b/testcases/kernel/syscalls/add_key/add_key03.c
+> @@ -0,0 +1,104 @@
+> +/*
+> + * Copyright (c) 2017 Google, Inc.
+> + *
+> + * This program is free software: you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation, either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include "config.h"
+> +#ifdef HAVE_LINUX_KEYCTL_H
+> +# include <linux/keyctl.h>
+> +#endif
+> +#include "tst_test.h"
+> +#include "linux_syscall_numbers.h"
+> +
+> +/*
+> + * Test that the add_key() syscall correctly handles a NULL payload with nonzero
+> + * length.  Specifically, it should fail with EFAULT rather than oopsing the
+> + * kernel with a NULL pointer dereference or failing with EINVAL, as it did
+> + * before (depending on the key type).  This is a regression test for "KEYS: fix
+> + * dereferencing NULL payload with nonzero length".
 
-> David, can you get keys-next up to date with keys-fixes so that people
-> don't run into this bug?  Note that it was also hit with the Trinity fuzzer.
+Can you pretty please add the kernel commit hash here as well?
 
-Done.
+> + * Note that none of the key types that exhibited the NULL pointer dereference
+> + * are guaranteed to be built into the kernel, so we just test as many as we
+> + * can, in the hope of catching one.  We also test with the "user" key type for
+> + * good measure, although it was one of the types that failed with EINVAL rather
+> + * than dereferencing NULL.
+> + */
+> +
+> +#ifdef HAVE_LINUX_KEYCTL_H
+> +struct tcase {
+> +	const char *type;
+> +	size_t plen;
+> +} tcases[] = {
+> +	/*
+> +	 * The payload length we test for each key type needs to pass initial
+> +	 * validation but is otherwise arbitrary.  Note: the "rxrpc_s" key type
+> +	 * requires a payload of exactly 8 bytes.
+> +	 */
+> +	{ "asymmetric",		64 },
+> +	{ "cifs.idmap",		64 },
+> +	{ "cifs.spnego",	64 },
+> +	{ "pkcs7_test",		64 },
+> +	{ "rxrpc",		64 },
+> +	{ "rxrpc_s",		 8 },
+> +	{ "user",		64 },
+> +};
+> +#endif /* HAVE_LINUX_KEYCTL_H */
+> +
+> +static void verify_add_key(unsigned int i)
+> +{
+> +#ifdef HAVE_LINUX_KEYCTL_H
+> +	TEST(tst_syscall(__NR_add_key, tcases[i].type, "abc:def",
+> +			 NULL, tcases[i].plen, KEY_SPEC_PROCESS_KEYRING));
+> +
+> +	if (TEST_RETURN != -1) {
+> +		tst_res(TFAIL,
+> +			"add_key() with key type \"%s\" unexpectedly succeeded",
+                                                  ^
+						  And we tend to use
+						  single quotes that
+						  does not have to be
+						  escaped. But that is
+						  very minor.
 
-David
+Otherwise the test looks good to me.
+
+
+-- 
+Cyril Hrubis
+chrubis@suse.cz
