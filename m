@@ -1,22 +1,23 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 07 Jun 2017 07:31:09 +0000
-Subject: Re: [PATCH v2] security/keys: rewrite all of big_key crypto
-Message-Id: <29551.1496820669@warthog.procyon.org.uk>
+From: Cyril Hrubis <chrubis@suse.cz>
+Date: Tue, 06 Jun 2017 11:55:52 +0000
+Subject: Re: [LTP] [PATCH 0/2] ltp: update add_key tests for nonempty NULL payload fix
+Message-Id: <20170606114416.GA5208@rei>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170607042219.GC594@zzz> <20170606215129.26388-1-Jason@zx2c4.com>
-In-Reply-To: <20170607042219.GC594@zzz>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: dhowells@redhat.com, "Jason A. Donenfeld" <Jason@zx2c4.com>, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, Theodore Ts'o <tytso@mit.edu>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org
+To: keyrings@vger.kernel.org
 
-Eric Biggers <ebiggers3@gmail.com> wrote:
+Hi!
+> (The reason I'm not simply changing the add_key02 test is that I don't want it
+> to appear as a regression on old kernels.  I'm not sure exactly how this kind of
+> thing is typically handled in LTP, though.)
 
-> but I skipped the big_key type because it was one of the more obscure key
-> types (and frankly I have no idea what, if anything, actually uses it)
+What exactly do you mean by a regression here? The fact that it may
+crash older kernels? That is pretty much fine, when test fails/kernel
+crashes manual intervention is required and one of the first things you
+do is git log for the test.
 
-Kerberos can use it.
-
-David
-
+-- 
+Cyril Hrubis
+chrubis@suse.cz
