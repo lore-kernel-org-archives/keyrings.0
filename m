@@ -1,320 +1,77 @@
-From: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Date: Tue, 06 Jun 2017 21:51:29 +0000
-Subject: [PATCH v2] security/keys: rewrite all of big_key crypto
-Message-Id: <20170606215129.26388-1-Jason@zx2c4.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 07 Jun 2017 04:22:19 +0000
+Subject: Re: [PATCH v2] security/keys: rewrite all of big_key crypto
+Message-Id: <20170607042219.GC594@zzz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, Theodore Ts'o <tytso@mit.edu>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers3@gmail.com>
-Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org
+References: <20170606215129.26388-1-Jason@zx2c4.com>
+In-Reply-To: <20170606215129.26388-1-Jason@zx2c4.com>
+To: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Cc: keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, Theodore Ts'o <tytso@mit.edu>, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org
 
-This started out as just replacing the use of crypto/rng with
-get_random_bytes, so that we wouldn't use bad randomness at boot time.
-But, upon looking further, it appears that there were even deeper
-underlying cryptographic problems, and that this seems to have been
-committed with very little crypto review. So, I rewrote the whole thing,
-trying to keep to the conventions introduced by the previous author, to
-fix these cryptographic flaws.
+Hi Jason,
 
-Since this sensitive material is being stored untrusted, using
-ECB and no authentication is simply not okay at all. I find it surprising
-that this code even made it past basic crypto review, though perhaps
-there's something I'm missing. This patch moves from using AES-ECB to
-using AES-GCM. Since keys are uniquely generated each time, we can set
-the nonce to zero. There was also a race condition in which the same key
-would be reused at the same time in different threads. A mutex fixes this
-issue now. And, some error paths forgot to zero out sensitive material, so
-this patch changes a kfree into a kzfree.
+On Tue, Jun 06, 2017 at 11:51:29PM +0200, Jason A. Donenfeld wrote:
+> issue now. And, some error paths forgot to zero out sensitive material, so
+> this patch changes a kfree into a kzfree.
 
-So, to summarize, this commit fixes the following vulnerabilities:
+There are other places in big_key.c that should be doing kzfree() instead of
+kfree().  Sorry, I actually recently did a patchset that fixed this for major
+parts of the keyrings API, but I skipped the big_key type because it was one of
+the more obscure key types (and frankly I have no idea what, if anything,
+actually uses it).  Probably the switch to kzfree() should be its own patch
+since it's a separate logical change.
 
-  * Unauthenticated encryption, allowing an attacker to modify the
-    cipher text in particular ways in order to manipulate the plaintext,
-    which is is even more frightening considering the next point.
-  * Use of ECB mode, allowing an attacker to trivially swap blocks or
-    compare identical plaintext blocks.
-  * Key re-use.
-  * Faulty memory zeroing.
+>  {
+>  	int ret = -EINVAL;
+>  	struct scatterlist sgio;
+> -	SKCIPHER_REQUEST_ON_STACK(req, big_key_skcipher);
+> -
+> -	if (crypto_skcipher_setkey(big_key_skcipher, key, ENC_KEY_SIZE)) {
+> +	u8 req_on_stack[sizeof(struct aead_request) +
+> +			crypto_aead_reqsize(big_key_aead)];
+> +	struct aead_request *aead_req = (struct aead_request *)req_on_stack;
+> +
 
-Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Eric Biggers <ebiggers3@gmail.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Kirill Marinushkin <k.marinushkin@gmail.com>
-Cc: security@kernel.org
----
-Changes v1->v2:
-  - The code has now been tested, and it works.
-  - Style fixups.
-  - Memory zeroring.
-  - Use mutex to prevent key reuse race condition.
-  - Useful comments.
-  - Kconfig simplification.
-  - We no longer rely on get_random_bytes_wait, even though we really should,
-    because that hasn't yet been merged. When it is merged, I'll submit a
-    follow-up patch.
+The crypto API with CONFIG_VMAP_STACK=y and CONFIG_DEBUG_SG=y is unhappy with
+using an aead_request on the stack, because it can't create a scatterlist from
+it.  It will need to be on the heap instead.  (Or else the crypto API fixed.)
 
- security/keys/Kconfig   |   4 +-
- security/keys/big_key.c | 129 ++++++++++++++++++++++--------------------------
- 2 files changed, 61 insertions(+), 72 deletions(-)
-
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 6fd95f76bfae..3906e1cc78ef 100644
---- a/security/keys/Kconfig
-+++ b/security/keys/Kconfig
-@@ -41,10 +41,8 @@ config BIG_KEYS
- 	bool "Large payload keys"
- 	depends on KEYS
- 	depends on TMPFS
--	depends on (CRYPTO_ANSI_CPRNG = y || CRYPTO_DRBG = y)
- 	select CRYPTO_AES
--	select CRYPTO_ECB
--	select CRYPTO_RNG
-+	select CRYPTO_GCM
- 	help
- 	  This option provides support for holding large keys within the kernel
- 	  (for example Kerberos ticket caches).  The data may be stored out to
-diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-index 835c1ab30d01..dd12e8592e40 100644
---- a/security/keys/big_key.c
-+++ b/security/keys/big_key.c
-@@ -1,5 +1,6 @@
- /* Large capacity key type
-  *
-+ * Copyright (C) 2017 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
-  * Copyright (C) 2013 Red Hat, Inc. All Rights Reserved.
-  * Written by David Howells (dhowells@redhat.com)
-  *
-@@ -16,10 +17,10 @@
- #include <linux/shmem_fs.h>
- #include <linux/err.h>
- #include <linux/scatterlist.h>
-+#include <linux/random.h>
- #include <keys/user-type.h>
- #include <keys/big_key-type.h>
--#include <crypto/rng.h>
--#include <crypto/skcipher.h>
-+#include <crypto/aead.h>
- 
- /*
-  * Layout of key payload words.
-@@ -49,7 +50,12 @@ enum big_key_op {
- /*
-  * Key size for big_key data encryption
-  */
--#define ENC_KEY_SIZE	16
-+#define ENC_KEY_SIZE 32
-+
-+/*
-+ * Authentication tag length
-+ */
-+#define ENC_AUTHTAG_SIZE 16
- 
- /*
-  * big_key defined keys take an arbitrary string as the description and an
-@@ -64,27 +70,23 @@ struct key_type key_type_big_key = {
- 	.destroy		= big_key_destroy,
- 	.describe		= big_key_describe,
- 	.read			= big_key_read,
-+	/* no ->update(); don't add it without changing big_key_crypt() nonce */
- };
- 
- /*
-- * Crypto names for big_key data encryption
-+ * Crypto names for big_key data authenticated encryption
-  */
--static const char big_key_rng_name[] = "stdrng";
--static const char big_key_alg_name[] = "ecb(aes)";
-+static const char big_key_alg_name[] = "gcm(aes)";
- 
- /*
-- * Crypto algorithms for big_key data encryption
-+ * Crypto algorithms for big_key data authenticated encryption
-  */
--static struct crypto_rng *big_key_rng;
--static struct crypto_skcipher *big_key_skcipher;
-+static struct crypto_aead *big_key_aead;
- 
- /*
-- * Generate random key to encrypt big_key data
-+ * Since changing the key affects the entire object, we need a mutex.
-  */
--static inline int big_key_gen_enckey(u8 *key)
--{
--	return crypto_rng_get_bytes(big_key_rng, key, ENC_KEY_SIZE);
--}
-+static DEFINE_MUTEX(big_key_aead_lock);
- 
- /*
-  * Encrypt/decrypt big_key data
-@@ -93,28 +95,37 @@ static int big_key_crypt(enum big_key_op op, u8 *data, size_t datalen, u8 *key)
- {
- 	int ret = -EINVAL;
- 	struct scatterlist sgio;
--	SKCIPHER_REQUEST_ON_STACK(req, big_key_skcipher);
--
--	if (crypto_skcipher_setkey(big_key_skcipher, key, ENC_KEY_SIZE)) {
-+	u8 req_on_stack[sizeof(struct aead_request) +
-+			crypto_aead_reqsize(big_key_aead)];
-+	struct aead_request *aead_req = (struct aead_request *)req_on_stack;
-+
-+	/* We always use a zero nonce. The reason we can get away with this is
-+	 * because we're using a different randomly generated key for every
-+	 * different encryption. Notably, too, key_type_big_key doesn't define
-+	 * an .update function, so there's no chance we'll wind up reusing the
-+	 * key to encrypt updated data. Simply put: one key, one encryption.
-+	 */
-+	u8 zero_nonce[crypto_aead_ivsize(big_key_aead)];
-+
-+	memset(req_on_stack, 0, sizeof(req_on_stack));
-+	memset(zero_nonce, 0, sizeof(zero_nonce));
-+	sg_init_one(&sgio, data, datalen + (op = BIG_KEY_ENC ? ENC_AUTHTAG_SIZE : 0));
-+	aead_request_set_tfm(aead_req, big_key_aead);
-+	aead_request_set_crypt(aead_req, &sgio, &sgio, datalen, zero_nonce);
-+	aead_request_set_callback(aead_req, CRYPTO_TFM_REQ_MAY_SLEEP, NULL, NULL);
-+
-+	mutex_lock(&big_key_aead_lock);
-+	if (crypto_aead_setkey(big_key_aead, key, ENC_KEY_SIZE)) {
- 		ret = -EAGAIN;
- 		goto error;
- 	}
--
--	skcipher_request_set_tfm(req, big_key_skcipher);
--	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP,
--				      NULL, NULL);
--
--	sg_init_one(&sgio, data, datalen);
--	skcipher_request_set_crypt(req, &sgio, &sgio, datalen, NULL);
--
- 	if (op = BIG_KEY_ENC)
--		ret = crypto_skcipher_encrypt(req);
-+		ret = crypto_aead_encrypt(aead_req);
- 	else
--		ret = crypto_skcipher_decrypt(req);
--
--	skcipher_request_zero(req);
--
-+		ret = crypto_aead_decrypt(aead_req);
- error:
-+	mutex_unlock(&big_key_aead_lock);
-+	memzero_explicit(req_on_stack, sizeof(req_on_stack));
- 	return ret;
- }
- 
-@@ -146,15 +157,12 @@ int big_key_preparse(struct key_preparsed_payload *prep)
- 		 *
- 		 * File content is stored encrypted with randomly generated key.
- 		 */
--		size_t enclen = ALIGN(datalen, crypto_skcipher_blocksize(big_key_skcipher));
-+		size_t enclen = datalen + ENC_AUTHTAG_SIZE;
- 
--		/* prepare aligned data to encrypt */
- 		data = kmalloc(enclen, GFP_KERNEL);
- 		if (!data)
- 			return -ENOMEM;
--
- 		memcpy(data, prep->data, datalen);
--		memset(data + datalen, 0x00, enclen - datalen);
- 
- 		/* generate random key */
- 		enckey = kmalloc(ENC_KEY_SIZE, GFP_KERNEL);
-@@ -162,13 +170,10 @@ int big_key_preparse(struct key_preparsed_payload *prep)
- 			ret = -ENOMEM;
- 			goto error;
- 		}
--
--		ret = big_key_gen_enckey(enckey);
--		if (ret)
--			goto err_enckey;
-+		get_random_bytes(enckey, ENC_KEY_SIZE);
- 
- 		/* encrypt aligned data */
--		ret = big_key_crypt(BIG_KEY_ENC, data, enclen, enckey);
-+		ret = big_key_crypt(BIG_KEY_ENC, data, datalen, enckey);
- 		if (ret)
- 			goto err_enckey;
- 
-@@ -212,7 +217,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
- err_enckey:
- 	kfree(enckey);
- error:
--	kfree(data);
-+	kzfree(data);
- 	return ret;
- }
- 
-@@ -294,7 +299,7 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
- 		struct file *file;
- 		u8 *data;
- 		u8 *enckey = (u8 *)key->payload.data[big_key_data];
--		size_t enclen = ALIGN(datalen, crypto_skcipher_blocksize(big_key_skcipher));
-+		size_t enclen = datalen + ENC_AUTHTAG_SIZE;
- 
- 		data = kmalloc(enclen, GFP_KERNEL);
- 		if (!data)
-@@ -342,47 +347,33 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
-  */
- static int __init big_key_init(void)
- {
--	struct crypto_skcipher *cipher;
--	struct crypto_rng *rng;
-+	struct crypto_aead *tfm;
- 	int ret;
- 
--	rng = crypto_alloc_rng(big_key_rng_name, 0, 0);
--	if (IS_ERR(rng)) {
--		pr_err("Can't alloc rng: %ld\n", PTR_ERR(rng));
--		return PTR_ERR(rng);
--	}
--
--	big_key_rng = rng;
--
--	/* seed RNG */
--	ret = crypto_rng_reset(rng, NULL, crypto_rng_seedsize(rng));
--	if (ret) {
--		pr_err("Can't reset rng: %d\n", ret);
--		goto error_rng;
--	}
--
- 	/* init block cipher */
--	cipher = crypto_alloc_skcipher(big_key_alg_name, 0, CRYPTO_ALG_ASYNC);
--	if (IS_ERR(cipher)) {
--		ret = PTR_ERR(cipher);
-+	tfm = crypto_alloc_aead(big_key_alg_name, 0, CRYPTO_ALG_ASYNC);
-+	if (IS_ERR(tfm)) {
-+		ret = PTR_ERR(tfm);
- 		pr_err("Can't alloc crypto: %d\n", ret);
--		goto error_rng;
-+		return ret;
-+	}
-+	ret = crypto_aead_setauthsize(tfm, ENC_AUTHTAG_SIZE);
-+	if (ret < 0) {
-+		pr_err("Can't set crypto auth tag len: %d\n", ret);
-+		goto free_aead;
- 	}
--
--	big_key_skcipher = cipher;
- 
- 	ret = register_key_type(&key_type_big_key);
- 	if (ret < 0) {
- 		pr_err("Can't register type: %d\n", ret);
--		goto error_cipher;
-+		goto free_aead;
- 	}
- 
-+	big_key_aead = tfm;
- 	return 0;
- 
--error_cipher:
--	crypto_free_skcipher(big_key_skcipher);
--error_rng:
--	crypto_free_rng(big_key_rng);
-+free_aead:
-+	crypto_free_aead(tfm);
- 	return ret;
- }
- 
--- 
-2.13.0
-
+# cat .vimrc | keyctl padd big_key fred @s
+[   43.687347] ------------[ cut here ]------------
+[   43.692592] kernel BUG at ./include/linux/scatterlist.h:140!
+[   43.697527] invalid opcode: 0000 [#1] SMP
+[   43.700843] CPU: 0 PID: 219 Comm: keyctl Not tainted 4.12.0-rc4-next-20170606-xfstests-00003-gc6e36366c198 #120
+[   43.707361] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.10.2-20170228_101828-anatol 04/01/2014
+[   43.712167] task: ffff9ff6f97d8340 task.stack: ffffbd460049c000
+[   43.714259] RIP: 0010:crypto_gcm_init_common+0x234/0x260
+[   43.715786] RSP: 0018:ffffbd460049fac8 EFLAGS: 00010246
+[   43.717031] RAX: 0000000000000000 RBX: ffffbd460049fba8 RCX: 0000000000000028
+[   43.718688] RDX: 00001d4f4049fbb8 RSI: 000000000000001d RDI: ffffbd468049fbb8
+[   43.720245] RBP: ffffbd460049fb00 R08: ffffbd460049fbd8 R09: ffffbd460049fbd8
+[   43.721473] R10: 0000000000000000 R11: 0000000000000000 R12: ffffbd460049fbb8
+[   43.722704] R13: 000000000000092f R14: ffffbd460049fb58 R15: ffffbd460049fba8
+[   43.723927] FS:  00007f04df2f8700(0000) GS:ffff9ff6fe200000(0000) knlGS:0000000000000000
+[   43.725262] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   43.726065] CR2: 00007f04dec1a4c0 CR3: 000000003957e000 CR4: 00000000003406f0
+[   43.727059] Call Trace:
+[   43.727414]  crypto_gcm_encrypt+0x37/0xe0
+[   43.727896]  big_key_crypt+0x106/0x160
+[   43.728324]  big_key_preparse+0xc0/0x1d0
+[   43.728784]  ? down_read+0x68/0xa0
+[   43.729183]  key_create_or_update+0x13f/0x440
+[   43.729688]  SyS_add_key+0xa1/0x1d0
+[   43.730260]  entry_SYSCALL_64_fastpath+0x1f/0xbe
+[   43.730851] RIP: 0033:0x7f04dec22f19
+[   43.731253] RSP: 002b:00007ffd622a0c88 EFLAGS: 00000206 ORIG_RAX: 00000000000000f8
+[   43.732321] RAX: ffffffffffffffda RBX: 0000000000000000 RCX: 00007f04dec22f19
+[   43.733274] RDX: 0000000000606260 RSI: 00007ffd622a2866 RDI: 00007ffd622a285e
+[   43.734192] RBP: 0000000000000000 R08: 00000000fffffffd R09: 000000000000001e
+[   43.735026] R10: 000000000000092f R11: 0000000000000206 R12: 0000000000100000
+[   43.735855] R13: 00007ffd622a0ca8 R14: 00007ffd622a0df8 R15: 0000000000404606
+[   43.736690] Code: c8 01 48 89 83 d8 00 00 00 48 83 c4 10 5b 41 5c 41 5d 41 5e 41 5f 5d c3 48 c7 c0 00 00 00 80 48 2b 05 69 36 74 00 e9 43 ff ff ff <0f> 0b 0f 0b 0f 0b 0f 0b 0f 0b 0f 0b 0f 0b 0f 0b 48 c7 45 c8 01 
+[   43.738740] RIP: crypto_gcm_init_common+0x234/0x260 RSP: ffffbd460049fac8
+[   43.739402] ---[ end trace 6df3f493a6e39d76 ]---
+Segmentation fault
