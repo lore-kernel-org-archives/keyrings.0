@@ -1,142 +1,353 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 05 Jun 2017 17:48:10 +0000
-Subject: [PATCH 1/2] syscalls/add_key02: remove test
-Message-Id: <20170605174811.95267-2-ebiggers3@gmail.com>
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Date: Wed, 07 Jun 2017 10:12:09 +0000
+Subject: [PATCH v3] security/keys: rewrite all of big_key crypto
+Message-Id: <20170607101209.7603-1-Jason@zx2c4.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+To: keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, Theodore Ts'o <tytso@mit.edu>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers3@gmail.com>
+Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org, stable@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+This started out as just replacing the use of crypto/rng with
+get_random_bytes, so that we wouldn't use bad randomness at boot time.
+But, upon looking further, it appears that there were even deeper
+underlying cryptographic problems, and that this seems to have been
+committed with very little crypto review. So, I rewrote the whole thing,
+trying to keep to the conventions introduced by the previous author, to
+fix these cryptographic flaws.
 
-add_key02 was supposed to be a "Basic test for the add_key() syscall",
-but it actually happened to test the obscure case of passing a NULL
-payload with nonzero length.  This case was mishandled by the kernel,
-which either returned EINVAL or crashed with a NULL pointer dereference,
-depending on the key type.  (The former applied to the test, as it used
-the "user" key type.)  The expected behavior is that the syscall fail
-with EFAULT.
+Since this sensitive material is being stored untrusted, using
+ECB and no authentication is simply not okay at all. I find it surprising
+that this code even made it past basic crypto review, though perhaps
+there's something I'm missing. This patch moves from using AES-ECB to
+using AES-GCM. Since keys are uniquely generated each time, we can set
+the nonce to zero. There was also a race condition in which the same key
+would be reused at the same time in different threads. A mutex fixes this
+issue now. And, some error paths forgot to zero out sensitive material, so
+this patch changes a kfree into a kzfree.
 
-As this is being fixed by the kernel patch "KEYS: fix dereferencing NULL
-payload with nonzero length", the test needed to be updated.  To avoid
-making it appear as a regression, just remove the test; the next patch
-will add a replacement test as add_key03.  The new test will also be
-more thorough as it will test other key types besides "user", including
-ones that cause a NULL pointer dereference in unfixed kernels.
+So, to summarize, this commit fixes the following vulnerabilities:
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+  * Unauthenticated encryption, allowing an attacker to modify the
+    cipher text in particular ways in order to manipulate the plaintext,
+    which is is even more frightening considering the next point.
+  * Use of ECB mode, allowing an attacker to trivially swap blocks or
+    compare identical plaintext blocks.
+  * Key re-use.
+  * Faulty memory zeroing.
+
+Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Eric Biggers <ebiggers3@gmail.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Kirill Marinushkin <k.marinushkin@gmail.com>
+Cc: security@kernel.org
+Cc: stable@vger.kernel.org
 ---
- runtest/syscalls                              |  1 -
- testcases/kernel/syscalls/.gitignore          |  1 -
- testcases/kernel/syscalls/add_key/add_key02.c | 74 ---------------------------
- 3 files changed, 76 deletions(-)
- delete mode 100644 testcases/kernel/syscalls/add_key/add_key02.c
+Changes v2->v3:
+  - Do AEAD operations on heap rather than stack.
+  - Various cleanups.
 
-diff --git a/runtest/syscalls b/runtest/syscalls
-index fe5227290..0c3c46e57 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -12,7 +12,6 @@ access04 access04
- acct01 acct01
+ security/keys/Kconfig   |   4 +-
+ security/keys/big_key.c | 139 ++++++++++++++++++++++--------------------------
+ 2 files changed, 65 insertions(+), 78 deletions(-)
+
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index 6fd95f76bfae..3906e1cc78ef 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -41,10 +41,8 @@ config BIG_KEYS
+ 	bool "Large payload keys"
+ 	depends on KEYS
+ 	depends on TMPFS
+-	depends on (CRYPTO_ANSI_CPRNG = y || CRYPTO_DRBG = y)
+ 	select CRYPTO_AES
+-	select CRYPTO_ECB
+-	select CRYPTO_RNG
++	select CRYPTO_GCM
+ 	help
+ 	  This option provides support for holding large keys within the kernel
+ 	  (for example Kerberos ticket caches).  The data may be stored out to
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 835c1ab30d01..735dd609b96f 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -1,5 +1,6 @@
+ /* Large capacity key type
+  *
++ * Copyright (C) 2017 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
+  * Copyright (C) 2013 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+  *
+@@ -16,10 +17,10 @@
+ #include <linux/shmem_fs.h>
+ #include <linux/err.h>
+ #include <linux/scatterlist.h>
++#include <linux/random.h>
+ #include <keys/user-type.h>
+ #include <keys/big_key-type.h>
+-#include <crypto/rng.h>
+-#include <crypto/skcipher.h>
++#include <crypto/aead.h>
  
- add_key01 add_key01
--add_key02 add_key02
+ /*
+  * Layout of key payload words.
+@@ -49,7 +50,12 @@ enum big_key_op {
+ /*
+  * Key size for big_key data encryption
+  */
+-#define ENC_KEY_SIZE	16
++#define ENC_KEY_SIZE 32
++
++/*
++ * Authentication tag length
++ */
++#define ENC_AUTHTAG_SIZE 16
  
- adjtimex01 adjtimex01
- adjtimex02 adjtimex02
-diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
-index c14c4e66b..5b8df06f5 100644
---- a/testcases/kernel/syscalls/.gitignore
-+++ b/testcases/kernel/syscalls/.gitignore
-@@ -7,7 +7,6 @@
- /access/access04
- /acct/acct01
- /add_key/add_key01
--/add_key/add_key02
- /adjtimex/adjtimex01
- /adjtimex/adjtimex02
- /alarm/alarm01
-diff --git a/testcases/kernel/syscalls/add_key/add_key02.c b/testcases/kernel/syscalls/add_key/add_key02.c
-deleted file mode 100644
-index 866800d6f..000000000
---- a/testcases/kernel/syscalls/add_key/add_key02.c
-+++ /dev/null
-@@ -1,74 +0,0 @@
--/******************************************************************************
-- * Copyright (c) Crackerjack Project., 2007				      *
-- *									      *
-- * This program is free software;  you can redistribute it and/or modify      *
-- * it under the terms of the GNU General Public License as published by       *
-- * the Free Software Foundation; either version 2 of the License, or	      *
-- * (at your option) any later version.					      *
-- *									      *
-- * This program is distributed in the hope that it will be useful,	      *
-- * but WITHOUT ANY WARRANTY;  without even the implied warranty of	      *
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See		      *
-- * the GNU General Public License for more details.			      *
-- *									      *
-- * You should have received a copy of the GNU General Public License	      *
-- * along with this program;  if not, write to the Free Software	Foundation,   *
-- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA           *
-- *									      *
-- ******************************************************************************/
--
--/*
-- * Basic test for the add_key() syscall.
-- *
-- * History:   Porting from Crackerjack to LTP is done by
-- *	      Manas Kumar Nayak maknayak@in.ibm.com>
-- */
--
--#include "config.h"
--#ifdef HAVE_LINUX_KEYCTL_H
--# include <linux/keyctl.h>
--#endif
--#include "tst_test.h"
--#include "linux_syscall_numbers.h"
--
--#ifdef HAVE_LINUX_KEYCTL_H
--struct tcase {
--	char *type;
--	char *desc;
--	void *payload;
--	int plen;
--	int exp_errno;
--} tcases[] = {
--	{"user", "firstkey", NULL, 1, EINVAL}
--};
--#endif /* HAVE_LINUX_KEYCTL_H */
--
--static void verify_add_key(unsigned int i)
+ /*
+  * big_key defined keys take an arbitrary string as the description and an
+@@ -64,57 +70,62 @@ struct key_type key_type_big_key = {
+ 	.destroy		= big_key_destroy,
+ 	.describe		= big_key_describe,
+ 	.read			= big_key_read,
++	/* no ->update(); don't add it without changing big_key_crypt() nonce */
+ };
+ 
+ /*
+- * Crypto names for big_key data encryption
++ * Crypto names for big_key data authenticated encryption
+  */
+-static const char big_key_rng_name[] = "stdrng";
+-static const char big_key_alg_name[] = "ecb(aes)";
++static const char big_key_alg_name[] = "gcm(aes)";
+ 
+ /*
+- * Crypto algorithms for big_key data encryption
++ * Crypto algorithms for big_key data authenticated encryption
+  */
+-static struct crypto_rng *big_key_rng;
+-static struct crypto_skcipher *big_key_skcipher;
++static struct crypto_aead *big_key_aead;
+ 
+ /*
+- * Generate random key to encrypt big_key data
++ * Since changing the key affects the entire object, we need a mutex.
+  */
+-static inline int big_key_gen_enckey(u8 *key)
 -{
--#ifdef HAVE_LINUX_KEYCTL_H
--	TEST(tst_syscall(__NR_add_key, tcases[i].type, tcases[i].desc,
--	                 tcases[i].payload, tcases[i].plen,
--	                 KEY_SPEC_USER_KEYRING));
--
--	if (TEST_RETURN != -1) {
--		tst_res(TFAIL, "add_key() passed unexpectedly");
--		return;
--	}
--
--	if (TEST_ERRNO = tcases[i].exp_errno) {
--		tst_res(TPASS | TTERRNO, "add_key() failed expectedly");
--		return;
--	}
--
--	tst_res(TFAIL | TTERRNO,
--	        "add_key() failed unexpectedly, expected %s",
--	        tst_strerrno(tcases[i].exp_errno));
--#else
--	tst_brk(TCONF, "linux/keyctl.h was missing upon compilation.");
--#endif /* HAVE_LINUX_KEYCTL_H */
+-	return crypto_rng_get_bytes(big_key_rng, key, ENC_KEY_SIZE);
 -}
++static DEFINE_MUTEX(big_key_aead_lock);
+ 
+ /*
+  * Encrypt/decrypt big_key data
+  */
+ static int big_key_crypt(enum big_key_op op, u8 *data, size_t datalen, u8 *key)
+ {
+-	int ret = -EINVAL;
++	int ret;
+ 	struct scatterlist sgio;
+-	SKCIPHER_REQUEST_ON_STACK(req, big_key_skcipher);
 -
--static struct tst_test test = {
--	.tcnt = ARRAY_SIZE(tcases),
--	.test = verify_add_key,
--};
+-	if (crypto_skcipher_setkey(big_key_skcipher, key, ENC_KEY_SIZE)) {
++	struct aead_request *aead_req;
++	/* We always use a zero nonce. The reason we can get away with this is
++	 * because we're using a different randomly generated key for every
++	 * different encryption. Notably, too, key_type_big_key doesn't define
++	 * an .update function, so there's no chance we'll wind up reusing the
++	 * key to encrypt updated data. Simply put: one key, one encryption.
++	 */
++	u8 zero_nonce[crypto_aead_ivsize(big_key_aead)];
++
++	aead_req = aead_request_alloc(big_key_aead, GFP_KERNEL);
++	if (!aead_req)
++		return -ENOMEM;
++
++	memset(zero_nonce, 0, sizeof(zero_nonce));
++	sg_init_one(&sgio, data, datalen + (op = BIG_KEY_ENC ? ENC_AUTHTAG_SIZE : 0));
++	aead_request_set_crypt(aead_req, &sgio, &sgio, datalen, zero_nonce);
++	aead_request_set_callback(aead_req, CRYPTO_TFM_REQ_MAY_SLEEP, NULL, NULL);
++	aead_request_set_ad(aead_req, 0);
++
++	mutex_lock(&big_key_aead_lock);
++	if (crypto_aead_setkey(big_key_aead, key, ENC_KEY_SIZE)) {
+ 		ret = -EAGAIN;
+ 		goto error;
+ 	}
+-
+-	skcipher_request_set_tfm(req, big_key_skcipher);
+-	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP,
+-				      NULL, NULL);
+-
+-	sg_init_one(&sgio, data, datalen);
+-	skcipher_request_set_crypt(req, &sgio, &sgio, datalen, NULL);
+-
+ 	if (op = BIG_KEY_ENC)
+-		ret = crypto_skcipher_encrypt(req);
++		ret = crypto_aead_encrypt(aead_req);
+ 	else
+-		ret = crypto_skcipher_decrypt(req);
+-
+-	skcipher_request_zero(req);
+-
++		ret = crypto_aead_decrypt(aead_req);
+ error:
++	mutex_unlock(&big_key_aead_lock);
++	aead_request_free(aead_req);
+ 	return ret;
+ }
+ 
+@@ -146,15 +157,12 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 		 *
+ 		 * File content is stored encrypted with randomly generated key.
+ 		 */
+-		size_t enclen = ALIGN(datalen, crypto_skcipher_blocksize(big_key_skcipher));
++		size_t enclen = datalen + ENC_AUTHTAG_SIZE;
+ 
+-		/* prepare aligned data to encrypt */
+ 		data = kmalloc(enclen, GFP_KERNEL);
+ 		if (!data)
+ 			return -ENOMEM;
+-
+ 		memcpy(data, prep->data, datalen);
+-		memset(data + datalen, 0x00, enclen - datalen);
+ 
+ 		/* generate random key */
+ 		enckey = kmalloc(ENC_KEY_SIZE, GFP_KERNEL);
+@@ -162,13 +170,10 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 			ret = -ENOMEM;
+ 			goto error;
+ 		}
+-
+-		ret = big_key_gen_enckey(enckey);
+-		if (ret)
+-			goto err_enckey;
++		get_random_bytes(enckey, ENC_KEY_SIZE);
+ 
+ 		/* encrypt aligned data */
+-		ret = big_key_crypt(BIG_KEY_ENC, data, enclen, enckey);
++		ret = big_key_crypt(BIG_KEY_ENC, data, datalen, enckey);
+ 		if (ret)
+ 			goto err_enckey;
+ 
+@@ -194,7 +199,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 		*path = file->f_path;
+ 		path_get(path);
+ 		fput(file);
+-		kfree(data);
++		kzfree(data);
+ 	} else {
+ 		/* Just store the data in a buffer */
+ 		void *data = kmalloc(datalen, GFP_KERNEL);
+@@ -210,9 +215,9 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ err_fput:
+ 	fput(file);
+ err_enckey:
+-	kfree(enckey);
++	kzfree(enckey);
+ error:
+-	kfree(data);
++	kzfree(data);
+ 	return ret;
+ }
+ 
+@@ -226,7 +231,7 @@ void big_key_free_preparse(struct key_preparsed_payload *prep)
+ 
+ 		path_put(path);
+ 	}
+-	kfree(prep->payload.data[big_key_data]);
++	kzfree(prep->payload.data[big_key_data]);
+ }
+ 
+ /*
+@@ -258,7 +263,7 @@ void big_key_destroy(struct key *key)
+ 		path->mnt = NULL;
+ 		path->dentry = NULL;
+ 	}
+-	kfree(key->payload.data[big_key_data]);
++	kzfree(key->payload.data[big_key_data]);
+ 	key->payload.data[big_key_data] = NULL;
+ }
+ 
+@@ -294,7 +299,7 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+ 		struct file *file;
+ 		u8 *data;
+ 		u8 *enckey = (u8 *)key->payload.data[big_key_data];
+-		size_t enclen = ALIGN(datalen, crypto_skcipher_blocksize(big_key_skcipher));
++		size_t enclen = datalen + ENC_AUTHTAG_SIZE;
+ 
+ 		data = kmalloc(enclen, GFP_KERNEL);
+ 		if (!data)
+@@ -326,7 +331,7 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+ err_fput:
+ 		fput(file);
+ error:
+-		kfree(data);
++		kzfree(data);
+ 	} else {
+ 		ret = datalen;
+ 		if (copy_to_user(buffer, key->payload.data[big_key_data],
+@@ -342,47 +347,31 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+  */
+ static int __init big_key_init(void)
+ {
+-	struct crypto_skcipher *cipher;
+-	struct crypto_rng *rng;
+ 	int ret;
+ 
+-	rng = crypto_alloc_rng(big_key_rng_name, 0, 0);
+-	if (IS_ERR(rng)) {
+-		pr_err("Can't alloc rng: %ld\n", PTR_ERR(rng));
+-		return PTR_ERR(rng);
+-	}
+-
+-	big_key_rng = rng;
+-
+-	/* seed RNG */
+-	ret = crypto_rng_reset(rng, NULL, crypto_rng_seedsize(rng));
+-	if (ret) {
+-		pr_err("Can't reset rng: %d\n", ret);
+-		goto error_rng;
+-	}
+-
+ 	/* init block cipher */
+-	cipher = crypto_alloc_skcipher(big_key_alg_name, 0, CRYPTO_ALG_ASYNC);
+-	if (IS_ERR(cipher)) {
+-		ret = PTR_ERR(cipher);
++	big_key_aead = crypto_alloc_aead(big_key_alg_name, 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(big_key_aead)) {
++		ret = PTR_ERR(big_key_aead);
+ 		pr_err("Can't alloc crypto: %d\n", ret);
+-		goto error_rng;
++		return ret;
++	}
++	ret = crypto_aead_setauthsize(big_key_aead, ENC_AUTHTAG_SIZE);
++	if (ret < 0) {
++		pr_err("Can't set crypto auth tag len: %d\n", ret);
++		goto free_aead;
+ 	}
+-
+-	big_key_skcipher = cipher;
+ 
+ 	ret = register_key_type(&key_type_big_key);
+ 	if (ret < 0) {
+ 		pr_err("Can't register type: %d\n", ret);
+-		goto error_cipher;
++		goto free_aead;
+ 	}
+ 
+ 	return 0;
+ 
+-error_cipher:
+-	crypto_free_skcipher(big_key_skcipher);
+-error_rng:
+-	crypto_free_rng(big_key_rng);
++free_aead:
++	crypto_free_aead(big_key_aead);
+ 	return ret;
+ }
+ 
 -- 
-2.13.0.506.g27d5fe0cd-goog
+2.13.0
 
