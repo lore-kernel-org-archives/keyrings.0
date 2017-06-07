@@ -1,51 +1,48 @@
 From: Mat Martineau <mathew.j.martineau@linux.intel.com>
-Date: Wed, 07 Jun 2017 16:58:29 +0000
-Subject: Re: [PATCH v2] KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP API
-Message-Id: <alpine.OSX.2.21.1706070951400.19308@wchen26-mobl1.amr.corp.intel.com>
+Date: Wed, 07 Jun 2017 17:31:35 +0000
+Subject: [PATCH keyutils] TEST: Add KDF leading zero test
+Message-Id: <20170607173135.19912-1-mathew.j.martineau@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1638.1496419102@warthog.procyon.org.uk>
-In-Reply-To: <1638.1496419102@warthog.procyon.org.uk>
 To: keyrings@vger.kernel.org
 
+Diffie-Hellman results used as input to a KDF algorithm can have leading
+zero bytes, and the current kernel DH implementation truncates leading
+zero bytes. This test confirms that the KDF code correctly handles DH
+results with leading zeros.
 
-On Mon, 5 Jun 2017, Mat Martineau wrote:
+Signed-off-by: Mat Martineau <mathew.j.martineau@linux.intel.com>
+---
 
->
-> Hi Eric -
->
-> On Sun, 4 Jun 2017, Eric Biggers wrote:
->
->> Hi Mat,
->> 
->> On Wed, May 10, 2017 at 05:35:57PM -0700, Mat Martineau wrote:
->>> The initial Diffie-Hellman computation made direct use of the MPI
->>> library because the crypto module did not support DH at the time. Now
->>> that KPP is implemented, KEYCTL_DH_COMPUTE should use it to get rid of
->>> duplicate code and leverage possible hardware acceleration.
->>> 
->>> Signed-off-by: Mat Martineau <mathew.j.martineau@linux.intel.com>
->> 
->> Have you verified that this doesn't change the API at all --- order of 
->> bytes within the numbers, whether they are padded with zeroes, any 
->> other corner cases etc.?  There can't be breaking changes to the API 
->> after this is released in mainline, and this is already in v4.12-rc4.
->
-> The available unit tests in keyutils (next branch) and ELL still pass.
->
-> Stephan pointed out a difference regarding handling of leading zeros in 
-> KDF, which is what I addressed in v2 of the patch. There's a gap in the 
-> unit tests where results with leading zeros are not covered well, and 
-> I'm working on that. DH results are definitely handled the same with 
-> this patch, but I have yet to confirm KDF output - I don't have a 
-> known-good test vector for KDF when the shared secret has leading zeros.
+This applies to the 'next' branch, commit
+6eca7565871694091d6cda21fd23e19ad2c77b7a
 
-To close this out, I have confirmed that the leading zeros are handled 
-correctly by the "KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP 
-API" patch v2 and later. I'm sending the keyutils unit test to this list.
+ tests/keyctl/dh_compute/valid/runtest.sh | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---
-Mat Martineau
-Intel OTC
+diff --git a/tests/keyctl/dh_compute/valid/runtest.sh b/tests/keyctl/dh_compute/valid/runtest.sh
+index 6498eef..5ad1d14 100644
+--- a/tests/keyctl/dh_compute/valid/runtest.sh
++++ b/tests/keyctl/dh_compute/valid/runtest.sh
+@@ -171,6 +171,16 @@ marker "COMPUTE DERIVED KEY FROM DH SHARED SECRET (SHA-256)"
+ echo -e -n $otherinfo | dh_compute_kdf_oi $privateid $primeid $xaid 16 "sha256"
+ expect_multiline payload "$derived"
+ 
++pcreate_key "-e \x01" user dh:leadingzero @s
++expect_keyid lzid
++
++read -d '' derived2 <<"EOF"
++0066207b cdab1d64 bbf489b3 d6a0dadc
++EOF
++
++marker "COMPUTE DERIVED KEY WITH LEADING ZEROS"
++echo -e -n $otherinfo | dh_compute_kdf_oi $privateid $primeid $lzid 16 "sha256"
++expect_multiline payload "$derived2"
+ 
+ # SHA-224
+ 
+-- 
+2.13.1
+
