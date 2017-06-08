@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 08 Jun 2017 13:49:49 +0000
-Subject: [PATCH 20/23] KEYS: DH: ensure the KDF counter is properly aligned
-Message-Id: <149692978940.11452.2775787299367252465.stgit@warthog.procyon.org.uk>
+Date: Thu, 08 Jun 2017 13:49:04 +0000
+Subject: [PATCH 14/23] KEYS: user_defined: sanitize key payloads
+Message-Id: <149692974429.11452.9095858900312530276.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -12,62 +12,66 @@ To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-Accessing a 'u8[4]' through a '__be32 *' violates alignment rules.  Just
-make the counter a __be32 instead.
+Zero the payloads of user and logon keys before freeing them.  This
+prevents sensitive key material from being kept around in the slab
+caches after a key is released.
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Stephan Mueller <smueller@chronox.de>
 ---
 
- security/keys/dh.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
+ security/keys/user_defined.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/security/keys/dh.c b/security/keys/dh.c
-index 1c1cac677041..63ac87d430db 100644
---- a/security/keys/dh.c
-+++ b/security/keys/dh.c
-@@ -130,14 +130,6 @@ static void kdf_dealloc(struct kdf_sdesc *sdesc)
- 	kzfree(sdesc);
+diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+index 26605134f17a..3d8c68eba516 100644
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -86,10 +86,18 @@ EXPORT_SYMBOL_GPL(user_preparse);
+  */
+ void user_free_preparse(struct key_preparsed_payload *prep)
+ {
+-	kfree(prep->payload.data[0]);
++	kzfree(prep->payload.data[0]);
+ }
+ EXPORT_SYMBOL_GPL(user_free_preparse);
+ 
++static void user_free_payload_rcu(struct rcu_head *head)
++{
++	struct user_key_payload *payload;
++
++	payload = container_of(head, struct user_key_payload, rcu);
++	kzfree(payload);
++}
++
+ /*
+  * update a user defined key
+  * - the key's semaphore is write-locked
+@@ -112,7 +120,7 @@ int user_update(struct key *key, struct key_preparsed_payload *prep)
+ 	prep->payload.data[0] = NULL;
+ 
+ 	if (zap)
+-		kfree_rcu(zap, rcu);
++		call_rcu(&zap->rcu, user_free_payload_rcu);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(user_update);
+@@ -130,7 +138,7 @@ void user_revoke(struct key *key)
+ 
+ 	if (upayload) {
+ 		rcu_assign_keypointer(key, NULL);
+-		kfree_rcu(upayload, rcu);
++		call_rcu(&upayload->rcu, user_free_payload_rcu);
+ 	}
  }
  
--/* convert 32 bit integer into its string representation */
--static inline void crypto_kw_cpu_to_be32(u32 val, u8 *buf)
--{
--	__be32 *a = (__be32 *)buf;
--
--	*a = cpu_to_be32(val);
--}
--
- /*
-  * Implementation of the KDF in counter mode according to SP800-108 section 5.1
-  * as well as SP800-56A section 5.8.1 (Single-step KDF).
-@@ -154,16 +146,14 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
- 	unsigned int h = crypto_shash_digestsize(desc->tfm);
- 	int err = 0;
- 	u8 *dst_orig = dst;
--	u32 i = 1;
--	u8 iteration[sizeof(u32)];
-+	__be32 counter = cpu_to_be32(1);
+@@ -143,7 +151,7 @@ void user_destroy(struct key *key)
+ {
+ 	struct user_key_payload *upayload = key->payload.data[0];
  
- 	while (dlen) {
- 		err = crypto_shash_init(desc);
- 		if (err)
- 			goto err;
+-	kfree(upayload);
++	kzfree(upayload);
+ }
  
--		crypto_kw_cpu_to_be32(i, iteration);
--		err = crypto_shash_update(desc, iteration, sizeof(u32));
-+		err = crypto_shash_update(desc, (u8 *)&counter, sizeof(__be32));
- 		if (err)
- 			goto err;
- 
-@@ -189,7 +179,7 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
- 
- 			dlen -= h;
- 			dst += h;
--			i++;
-+			counter = cpu_to_be32(be32_to_cpu(counter) + 1);
- 		}
- 	}
- 
+ EXPORT_SYMBOL_GPL(user_destroy);
 
