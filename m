@@ -1,55 +1,55 @@
-From: Artem Savkov <asavkov@redhat.com>
-Date: Tue, 27 Jun 2017 09:54:19 +0000
-Subject: [PATCH keyutils v2] tests/bz1031154: skip if selinux is disabled
-Message-Id: <1498557259-23801-1-git-send-email-asavkov@redhat.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 08 Jun 2017 13:48:40 +0000
+Subject: [PATCH 11/23] KEYS: fix dereferencing NULL payload with nonzero length
+Message-Id: <149692972058.11452.16006332360734138615.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
+In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-With selinux disabled the test currently fails trying to setenforce, it
-should be skipped instead. Found while trying to run in a container
-where selinux always appears disabled.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Artem Savkov <asavkov@redhat.com>
+sys_add_key() and the KEYCTL_UPDATE operation of sys_keyctl() allowed a
+NULL payload with nonzero length to be passed to the key type's
+->preparse(), ->instantiate(), and/or ->update() methods.  Various key
+types including asymmetric, cifs.idmap, cifs.spnego, and pkcs7_test did
+not handle this case, allowing an unprivileged user to trivially cause a
+NULL pointer dereference (kernel oops) if one of these key types was
+present.  Fix it by doing the copy_from_user() when 'plen' is nonzero
+rather than when '_payload' is non-NULL, causing the syscall to fail
+with EFAULT as expected when an invalid buffer is specified.
+
+Cc: stable@vger.kernel.org # 2.6.10+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- tests/bugzillas/bz1031154/runtest.sh | 1 +
- tests/toolbox.inc.sh                 | 9 +++++++++
- 2 files changed, 10 insertions(+)
 
-diff --git a/tests/bugzillas/bz1031154/runtest.sh b/tests/bugzillas/bz1031154/runtest.sh
-index aee8a28..d90afb4 100644
---- a/tests/bugzillas/bz1031154/runtest.sh
-+++ b/tests/bugzillas/bz1031154/runtest.sh
-@@ -20,6 +20,7 @@ then
-     exit 0
- fi
+ security/keys/keyctl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 447a7d5cee0f..94c2790f8283 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -99,7 +99,7 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
+ 	/* pull the payload in if one was supplied */
+ 	payload = NULL;
  
-+require_selinux
- require_command getenforce
- require_command setenforce
- require_command runcon
-diff --git a/tests/toolbox.inc.sh b/tests/toolbox.inc.sh
-index 7f19a02..8e4e91d 100644
---- a/tests/toolbox.inc.sh
-+++ b/tests/toolbox.inc.sh
-@@ -115,6 +115,15 @@ function require_command ()
-     fi
- }
+-	if (_payload) {
++	if (plen) {
+ 		ret = -ENOMEM;
+ 		payload = kvmalloc(plen, GFP_KERNEL);
+ 		if (!payload)
+@@ -324,7 +324,7 @@ long keyctl_update_key(key_serial_t id,
  
-+function require_selinux ()
-+{
-+    if ! grep -q selinuxfs /proc/mounts;
-+    then
-+	toolbox_skip_test $TEST "SKIP DUE TO DISABLED SELINUX"
-+	exit 0
-+    fi
-+}
-+
- ###############################################################################
- #
- # extract an error message from the log file and check it
--- 
-2.7.5
+ 	/* pull the payload in if one was supplied */
+ 	payload = NULL;
+-	if (_payload) {
++	if (plen) {
+ 		ret = -ENOMEM;
+ 		payload = kmalloc(plen, GFP_KERNEL);
+ 		if (!payload)
 
