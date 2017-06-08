@@ -1,98 +1,386 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 08 Jun 2017 13:48:47 +0000
-Subject: [PATCH 12/23] KEYS: fix freeing uninitialized memory in key_update()
-Message-Id: <149692972770.11452.13033016119636168290.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Thu, 08 Jun 2017 01:49:14 +0000
+Subject: [PATCH v2 5/6] MODSIGN: Export module signature definitions.
+Message-Id: <1496886555-10082-6-git-send-email-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
+References: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
+Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+IMA will use the module_signature format for append signatures, so export
+the relevant definitions and factor out the code which verifies that the
+appended signature trailer is valid.
 
-key_update() freed the key_preparsed_payload even if it was not
-initialized first.  This would cause a crash if userspace called
-keyctl_update() on a key with type like "asymmetric" that has a
-->preparse() method but not an ->update() method.  Possibly it could
-even be triggered for other key types by racing with keyctl_setperm() to
-make the KEY_NEED_WRITE check fail (the permission was already checked,
-so normally it wouldn't fail there).
+Also, add function verify_pkcs7_message_signature which takes a struct
+pkcs7_message for verification isntead of the raw bytes that
+verify_pkcs7_signature takes.
 
-Reproducer with key type "asymmetric", given a valid cert.der:
+Finally, create a CONFIG_MODULE_SIG_FORMAT option so that IMA can select it
+and be able to use validate_module_signature without having to depend on
+CONFIG_MODULE_SIG.
 
-keyctl new_session
-keyid=$(keyctl padd asymmetric desc @s < cert.der)
-keyctl setperm $keyid 0x3f000000
-keyctl update $keyid data
-
-[  150.686666] BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
-[  150.687601] IP: asymmetric_key_free_kids+0x12/0x30
-[  150.688139] PGD 38a3d067
-[  150.688141] PUD 3b3de067
-[  150.688447] PMD 0
-[  150.688745]
-[  150.689160] Oops: 0000 [#1] SMP
-[  150.689455] Modules linked in:
-[  150.689769] CPU: 1 PID: 2478 Comm: keyctl Not tainted 4.11.0-rc4-xfstests-00187-ga9f6b6b8cd2f #742
-[  150.690916] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.10.2-20170228_101828-anatol 04/01/2014
-[  150.692199] task: ffff88003b30c480 task.stack: ffffc90000350000
-[  150.692952] RIP: 0010:asymmetric_key_free_kids+0x12/0x30
-[  150.693556] RSP: 0018:ffffc90000353e58 EFLAGS: 00010202
-[  150.694142] RAX: 0000000000000000 RBX: 0000000000000001 RCX: 0000000000000004
-[  150.694845] RDX: ffffffff81ee3920 RSI: ffff88003d4b0700 RDI: 0000000000000001
-[  150.697569] RBP: ffffc90000353e60 R08: ffff88003d5d2140 R09: 0000000000000000
-[  150.702483] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000001
-[  150.707393] R13: 0000000000000004 R14: ffff880038a4d2d8 R15: 000000000040411f
-[  150.709720] FS:  00007fcbcee35700(0000) GS:ffff88003fd00000(0000) knlGS:0000000000000000
-[  150.711504] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  150.712733] CR2: 0000000000000001 CR3: 0000000039eab000 CR4: 00000000003406e0
-[  150.714487] Call Trace:
-[  150.714975]  asymmetric_key_free_preparse+0x2f/0x40
-[  150.715907]  key_update+0xf7/0x140
-[  150.716560]  ? key_default_cmp+0x20/0x20
-[  150.717319]  keyctl_update_key+0xb0/0xe0
-[  150.718066]  SyS_keyctl+0x109/0x130
-[  150.718663]  entry_SYSCALL_64_fastpath+0x1f/0xc2
-[  150.719440] RIP: 0033:0x7fcbce75ff19
-[  150.719926] RSP: 002b:00007ffd5d167088 EFLAGS: 00000206 ORIG_RAX: 00000000000000fa
-[  150.720918] RAX: ffffffffffffffda RBX: 0000000000404d80 RCX: 00007fcbce75ff19
-[  150.721874] RDX: 00007ffd5d16785e RSI: 000000002866cd36 RDI: 0000000000000002
-[  150.722827] RBP: 0000000000000006 R08: 000000002866cd36 R09: 00007ffd5d16785e
-[  150.723781] R10: 0000000000000004 R11: 0000000000000206 R12: 0000000000404d80
-[  150.724650] R13: 00007ffd5d16784d R14: 00007ffd5d167238 R15: 000000000040411f
-[  150.725447] Code: 83 c4 08 31 c0 5b 41 5c 41 5d 41 5e 41 5f 5d c3 66 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 48 85 ff 74 23 55 48 89 e5 53 48 89 fb <48> 8b 3f e8 06 21 c5 ff 48 8b 7b 08 e8 fd 20 c5 ff 48 89 df e8
-[  150.727489] RIP: asymmetric_key_free_kids+0x12/0x30 RSP: ffffc90000353e58
-[  150.728117] CR2: 0000000000000001
-[  150.728430] ---[ end trace f7f8fe1da2d5ae8d ]---
-
-Fixes: 4d8c0250b841 ("KEYS: Call ->free_preparse() even after ->preparse() returns an error")
-Cc: stable@vger.kernel.org # 3.17+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
+ certs/system_keyring.c           | 62 ++++++++++++++++++++++++---------
+ include/linux/module.h           |  3 --
+ include/linux/module_signature.h | 48 ++++++++++++++++++++++++++
+ include/linux/verification.h     | 10 ++++++
+ init/Kconfig                     |  6 +++-
+ kernel/Makefile                  |  2 +-
+ kernel/module.c                  |  1 +
+ kernel/module_signing.c          | 74 +++++++++++++++++-----------------------
+ 8 files changed, 142 insertions(+), 64 deletions(-)
 
- security/keys/key.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/security/keys/key.c b/security/keys/key.c
-index d84ee2a87da6..83da68d98b40 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -963,12 +963,11 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
- 	/* the key must be writable */
- 	ret = key_permission(key_ref, KEY_NEED_WRITE);
- 	if (ret < 0)
--		goto error;
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 6251d1b27f0c..0597f87a2375 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -190,33 +190,28 @@ late_initcall(load_system_certificate_list);
+ #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+ 
+ /**
+- * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
++ * verify_pkcs7_message_signature - Verify PKCS#7-based signature on system data
+  * @data: The data to be verified (NULL if expecting internal data).
+  * @len: Size of @data.
+- * @raw_pkcs7: The PKCS#7 message that is the signature.
+- * @pkcs7_len: The size of @raw_pkcs7.
++ * @pkcs7: The PKCS#7 message that is the signature.
+  * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
+  *					(void *)1UL for all trusted keys).
+  * @usage: The use to which the key is being put.
+  * @view_content: Callback to gain access to content.
+  * @ctx: Context for callback.
+  */
+-int verify_pkcs7_signature(const void *data, size_t len,
+-			   const void *raw_pkcs7, size_t pkcs7_len,
+-			   struct key *trusted_keys,
+-			   enum key_being_used_for usage,
+-			   int (*view_content)(void *ctx,
+-					       const void *data, size_t len,
+-					       size_t asn1hdrlen),
+-			   void *ctx)
++int verify_pkcs7_message_signature(const void *data, size_t len,
++				   struct pkcs7_message *pkcs7,
++				   struct key *trusted_keys,
++				   enum key_being_used_for usage,
++				   int (*view_content)(void *ctx,
++						       const void *data,
++						       size_t len,
++						       size_t asn1hdrlen),
++				   void *ctx)
+ {
+-	struct pkcs7_message *pkcs7;
+ 	int ret;
+ 
+-	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
+-	if (IS_ERR(pkcs7))
+-		return PTR_ERR(pkcs7);
+-
+ 	/* The data should be detached - so we need to supply it. */
+ 	if (data && pkcs7_supply_detached_data(pkcs7, data, len) < 0) {
+ 		pr_err("PKCS#7 signature with non-detached data\n");
+@@ -258,6 +253,41 @@ int verify_pkcs7_signature(const void *data, size_t len,
+ 	}
+ 
+ error:
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
++}
++
++/**
++ * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
++ * @data: The data to be verified (NULL if expecting internal data).
++ * @len: Size of @data.
++ * @raw_pkcs7: The PKCS#7 message that is the signature.
++ * @pkcs7_len: The size of @raw_pkcs7.
++ * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
++ *					(void *)1UL for all trusted keys).
++ * @usage: The use to which the key is being put.
++ * @view_content: Callback to gain access to content.
++ * @ctx: Context for callback.
++ */
++int verify_pkcs7_signature(const void *data, size_t len,
++			   const void *raw_pkcs7, size_t pkcs7_len,
++			   struct key *trusted_keys,
++			   enum key_being_used_for usage,
++			   int (*view_content)(void *ctx,
++					       const void *data, size_t len,
++					       size_t asn1hdrlen),
++			   void *ctx)
++{
++	struct pkcs7_message *pkcs7;
++	int ret;
++
++	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
++	if (IS_ERR(pkcs7))
++		return PTR_ERR(pkcs7);
++
++	ret = verify_pkcs7_message_signature(data, len, pkcs7, trusted_keys,
++					     usage, view_content, ctx);
++
+ 	pkcs7_free_message(pkcs7);
+ 	pr_devel("<=%s() = %d\n", __func__, ret);
+ 	return ret;
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 21f56393602f..76a233f120ba 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -23,9 +23,6 @@
+ #include <linux/percpu.h>
+ #include <asm/module.h>
+ 
+-/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
+-#define MODULE_SIG_STRING "~Module signature appended~\n"
+-
+ /* Not Yet Implemented */
+ #define MODULE_SUPPORTED_DEVICE(name)
+ 
+diff --git a/include/linux/module_signature.h b/include/linux/module_signature.h
+new file mode 100644
+index 000000000000..4e49fa059931
+--- /dev/null
++++ b/include/linux/module_signature.h
+@@ -0,0 +1,48 @@
++/* Module signature handling.
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#ifndef _LINUX_MODULE_SIGNATURE_H
++#define _LINUX_MODULE_SIGNATURE_H
++
++/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
++#define MODULE_SIG_STRING "~Module signature appended~\n"
++
++enum pkey_id_type {
++	PKEY_ID_PGP,		/* OpenPGP generated key ID */
++	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
++	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
++};
++
++/*
++ * Module signature information block.
++ *
++ * The constituents of the signature section are, in order:
++ *
++ *	- Signer's name
++ *	- Key identifier
++ *	- Signature data
++ *	- Information block
++ */
++struct module_signature {
++	u8	algo;		/* Public-key crypto algorithm [0] */
++	u8	hash;		/* Digest algorithm [0] */
++	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
++	u8	signer_len;	/* Length of signer's name [0] */
++	u8	key_id_len;	/* Length of key identifier [0] */
++	u8	__pad[3];
++	__be32	sig_len;	/* Length of signature data */
++};
++
++int validate_module_signature(const struct module_signature *ms,
++			      size_t file_len);
++int mod_verify_sig(const void *mod, unsigned long *_modlen);
++
++#endif /* _LINUX_MODULE_SIGNATURE_H */
+diff --git a/include/linux/verification.h b/include/linux/verification.h
+index a10549a6c7cd..c7cb8db06ced 100644
+--- a/include/linux/verification.h
++++ b/include/linux/verification.h
+@@ -29,6 +29,7 @@ extern const char *const key_being_used_for[NR__KEY_BEING_USED_FOR];
+ #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+ 
+ struct key;
++struct pkcs7_message;
+ 
+ extern int verify_pkcs7_signature(const void *data, size_t len,
+ 				  const void *raw_pkcs7, size_t pkcs7_len,
+@@ -38,6 +39,15 @@ extern int verify_pkcs7_signature(const void *data, size_t len,
+ 						      const void *data, size_t len,
+ 						      size_t asn1hdrlen),
+ 				  void *ctx);
++extern int verify_pkcs7_message_signature(const void *data, size_t len,
++					  struct pkcs7_message *pkcs7,
++					  struct key *trusted_keys,
++					  enum key_being_used_for usage,
++					  int (*view_content)(void *ctx,
++							      const void *data,
++							      size_t len,
++							      size_t asn1hdrlen),
++					  void *ctx);
+ 
+ #ifdef CONFIG_SIGNED_PE_FILE_VERIFICATION
+ extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
+diff --git a/init/Kconfig b/init/Kconfig
+index 1d3475fc9496..5f20513098ff 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -2063,7 +2063,7 @@ config MODULE_SRCVERSION_ALL
+ config MODULE_SIG
+ 	bool "Module signature verification"
+ 	depends on MODULES
+-	select SYSTEM_DATA_VERIFICATION
++	select MODULE_SIG_FORMAT
+ 	help
+ 	  Check modules for valid signatures upon load: the signature
+ 	  is simply appended to the module. For more information see
+@@ -2078,6 +2078,10 @@ config MODULE_SIG
+ 	  debuginfo strip done by some packagers (such as rpmbuild) and
+ 	  inclusion into an initramfs that wants the module size reduced.
+ 
++config MODULE_SIG_FORMAT
++	def_bool n
++	select SYSTEM_DATA_VERIFICATION
++
+ config MODULE_SIG_FORCE
+ 	bool "Require modules to be validly signed"
+ 	depends on MODULE_SIG
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 72aa080f91f0..dcb548b68084 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -56,7 +56,7 @@ obj-y += up.o
+ endif
+ obj-$(CONFIG_UID16) += uid16.o
+ obj-$(CONFIG_MODULES) += module.o
+-obj-$(CONFIG_MODULE_SIG) += module_signing.o
++obj-$(CONFIG_MODULE_SIG_FORMAT) += module_signing.o
+ obj-$(CONFIG_KALLSYMS) += kallsyms.o
+ obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
+ obj-$(CONFIG_CRASH_CORE) += crash_core.o
+diff --git a/kernel/module.c b/kernel/module.c
+index 4a3665f8f837..0f973856d6d2 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -19,6 +19,7 @@
+ #include <linux/export.h>
+ #include <linux/extable.h>
+ #include <linux/moduleloader.h>
++#include <linux/module_signature.h>
+ #include <linux/trace_events.h>
+ #include <linux/init.h>
+ #include <linux/kallsyms.h>
+diff --git a/kernel/module_signing.c b/kernel/module_signing.c
+index 937c844bee4a..421e3e668714 100644
+--- a/kernel/module_signing.c
++++ b/kernel/module_signing.c
+@@ -11,36 +11,38 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
++#include <linux/module_signature.h>
+ #include <linux/string.h>
+ #include <linux/verification.h>
+ #include <crypto/public_key.h>
+ #include "module-internal.h"
+ 
+-enum pkey_id_type {
+-	PKEY_ID_PGP,		/* OpenPGP generated key ID */
+-	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
+-	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
+-};
+-
+-/*
+- * Module signature information block.
+- *
+- * The constituents of the signature section are, in order:
++/**
++ * validate_module_signature - validate that the given signature is sane
+  *
+- *	- Signer's name
+- *	- Key identifier
+- *	- Signature data
+- *	- Information block
++ * @ms:		Signature to validate.
++ * @file_len:	Size of the file to which @ms is appended.
+  */
+-struct module_signature {
+-	u8	algo;		/* Public-key crypto algorithm [0] */
+-	u8	hash;		/* Digest algorithm [0] */
+-	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
+-	u8	signer_len;	/* Length of signer's name [0] */
+-	u8	key_id_len;	/* Length of key identifier [0] */
+-	u8	__pad[3];
+-	__be32	sig_len;	/* Length of signature data */
+-};
++int validate_module_signature(const struct module_signature *ms, size_t file_len)
++{
++	if (be32_to_cpu(ms->sig_len) >= file_len - sizeof(*ms))
++		return -EBADMSG;
++	else if (ms->id_type != PKEY_ID_PKCS7) {
++		pr_err("Module is not signed with expected PKCS#7 message\n");
++		return -ENOPKG;
++	} else if (ms->algo != 0 ||
++		   ms->hash != 0 ||
++		   ms->signer_len != 0 ||
++		   ms->key_id_len != 0 ||
++		   ms->__pad[0] != 0 ||
++		   ms->__pad[1] != 0 ||
++		   ms->__pad[2] != 0) {
++		pr_err("PKCS#7 signature info has unexpected non-zero params\n");
++		return -EBADMSG;
++	}
++
++	return 0;
++}
+ 
+ /*
+  * Verify the signature on a module.
+@@ -49,6 +51,7 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
+ {
+ 	struct module_signature ms;
+ 	size_t modlen = *_modlen, sig_len;
++	int ret;
+ 
+ 	pr_devel("=>%s(,%zu)\n", __func__, modlen);
+ 
+@@ -56,30 +59,15 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
+ 		return -EBADMSG;
+ 
+ 	memcpy(&ms, mod + (modlen - sizeof(ms)), sizeof(ms));
+-	modlen -= sizeof(ms);
++
++	ret = validate_module_signature(&ms, modlen);
++	if (ret)
 +		return ret;
  
- 	/* attempt to update it if supported */
--	ret = -EOPNOTSUPP;
- 	if (!key->type->update)
--		goto error;
-+		return -EOPNOTSUPP;
+ 	sig_len = be32_to_cpu(ms.sig_len);
+-	if (sig_len >= modlen)
+-		return -EBADMSG;
+-	modlen -= sig_len;
++	modlen -= sig_len + sizeof(ms);
+ 	*_modlen = modlen;
  
- 	memset(&prep, 0, sizeof(prep));
- 	prep.data = payload;
+-	if (ms.id_type != PKEY_ID_PKCS7) {
+-		pr_err("Module is not signed with expected PKCS#7 message\n");
+-		return -ENOPKG;
+-	}
+-
+-	if (ms.algo != 0 ||
+-	    ms.hash != 0 ||
+-	    ms.signer_len != 0 ||
+-	    ms.key_id_len != 0 ||
+-	    ms.__pad[0] != 0 ||
+-	    ms.__pad[1] != 0 ||
+-	    ms.__pad[2] != 0) {
+-		pr_err("PKCS#7 signature info has unexpected non-zero params\n");
+-		return -EBADMSG;
+-	}
+-
+ 	return verify_pkcs7_signature(mod, modlen, mod + modlen, sig_len,
+ 				      NULL, VERIFYING_MODULE_SIGNATURE,
+ 				      NULL, NULL);
+-- 
+2.7.4
 
