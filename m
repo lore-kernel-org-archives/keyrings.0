@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 08 Jun 2017 13:48:57 +0000
-Subject: [PATCH 13/23] KEYS: sanitize add_key() and keyctl() key payloads
-Message-Id: <149692973725.11452.14760840345072862642.stgit@warthog.procyon.org.uk>
+Date: Thu, 08 Jun 2017 13:47:56 +0000
+Subject: [PATCH 05/23] KEYS: Delete an error message for a failed memory allocation in get_derived_key()
+Message-Id: <149692967632.11452.8051625673207615804.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,55 +10,35 @@ References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk
 In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+From: Markus Elfring <elfring@users.sourceforge.net>
 
-Before returning from add_key() or one of the keyctl() commands that
-takes in a key payload, zero the temporary buffer that was allocated to
-hold the key payload copied from userspace.  This may contain sensitive
-key material that should not be kept around in the slab caches.
+Omit an extra message for a memory allocation failure in this function.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+This issue was detected by using the Coccinelle software.
+
+Link: http://events.linuxfoundation.org/sites/events/files/slides/LCJ16-Refactor_Strings-WSang_0.pdf
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- security/keys/keyctl.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ security/keys/encrypted-keys/encrypted.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 94c2790f8283..ab0b337c84b4 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -132,7 +132,10 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index 0010955d7876..2ab48eab29a1 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -385,10 +385,9 @@ static int get_derived_key(u8 *derived_key, enum derived_key_type key_type,
+ 		derived_buf_len = HASH_SIZE;
  
- 	key_ref_put(keyring_ref);
-  error3:
--	kvfree(payload);
-+	if (payload) {
-+		memzero_explicit(payload, plen);
-+		kvfree(payload);
-+	}
-  error2:
- 	kfree(description);
-  error:
-@@ -347,7 +350,7 @@ long keyctl_update_key(key_serial_t id,
- 
- 	key_ref_put(key_ref);
- error2:
--	kfree(payload);
-+	kzfree(payload);
- error:
- 	return ret;
- }
-@@ -1093,7 +1096,10 @@ long keyctl_instantiate_key_common(key_serial_t id,
- 		keyctl_change_reqkey_auth(NULL);
- 
- error2:
--	kvfree(payload);
-+	if (payload) {
-+		memzero_explicit(payload, plen);
-+		kvfree(payload);
-+	}
- error:
- 	return ret;
- }
+ 	derived_buf = kzalloc(derived_buf_len, GFP_KERNEL);
+-	if (!derived_buf) {
+-		pr_err("encrypted_key: out of memory\n");
++	if (!derived_buf)
+ 		return -ENOMEM;
+-	}
++
+ 	if (key_type)
+ 		strcpy(derived_buf, "AUTH_KEY");
+ 	else
 
