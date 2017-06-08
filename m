@@ -1,36 +1,90 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 05 Jun 2017 17:48:09 +0000
-Subject: [PATCH 0/2] ltp: update add_key tests for nonempty NULL payload fix
-Message-Id: <20170605174811.95267-1-ebiggers3@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 08 Jun 2017 13:47:34 +0000
+Subject: [PATCH 02/23] security: use READ_ONCE instead of deprecated ACCESS_ONCE
+Message-Id: <149692965438.11452.17954613433247309012.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
+In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+From: Davidlohr Bueso <dave@stgolabs.net>
 
-These two patches remove the existing add_key02 test, which is having its
-behavior changed, and replaces it with the more thorough add_key03 test which
-specifically tests the "NULL payload with nonzero length" case, which was
-subject to a kernel bug causing a NULL dereference with some key types.
+With the new standardized functions, we can replace all ACCESS_ONCE()
+calls across relevant security/keyrings/.
 
-(The reason I'm not simply changing the add_key02 test is that I don't want it
-to appear as a regression on old kernels.  I'm not sure exactly how this kind of
-thing is typically handled in LTP, though.)
+ACCESS_ONCE() does not work reliably on non-scalar types. For example
+gcc 4.6 and 4.7 might remove the volatile tag for such accesses during
+the SRA (scalar replacement of aggregates) step:
 
-Eric Biggers (2):
-  syscalls/add_key02: remove test
-  syscalls/add_key03: add test for NULL payload with nonzero length
+https://gcc.gnu.org/bugzilla/show_bug.cgi?idX145
 
- runtest/syscalls                              |   2 +-
- testcases/kernel/syscalls/.gitignore          |   2 +-
- testcases/kernel/syscalls/add_key/add_key02.c |  74 ------------------
- testcases/kernel/syscalls/add_key/add_key03.c | 104 ++++++++++++++++++++++++++
- 4 files changed, 106 insertions(+), 76 deletions(-)
- delete mode 100644 testcases/kernel/syscalls/add_key/add_key02.c
- create mode 100644 testcases/kernel/syscalls/add_key/add_key03.c
+Update the new calls regardless of if it is a scalar type, this is
+cleaner than having three alternatives.
 
--- 
-2.13.0.506.g27d5fe0cd-goog
+Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ security/keys/keyring.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 4d1678e4586f..de81793f9920 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -706,7 +706,7 @@ static bool search_nested_keyrings(struct key *keyring,
+ 	 * Non-keyrings avoid the leftmost branch of the root entirely (root
+ 	 * slots 1-15).
+ 	 */
+-	ptr = ACCESS_ONCE(keyring->keys.root);
++	ptr = READ_ONCE(keyring->keys.root);
+ 	if (!ptr)
+ 		goto not_this_keyring;
+ 
+@@ -720,7 +720,7 @@ static bool search_nested_keyrings(struct key *keyring,
+ 		if ((shortcut->index_key[0] & ASSOC_ARRAY_FAN_MASK) != 0)
+ 			goto not_this_keyring;
+ 
+-		ptr = ACCESS_ONCE(shortcut->next_node);
++		ptr = READ_ONCE(shortcut->next_node);
+ 		node = assoc_array_ptr_to_node(ptr);
+ 		goto begin_node;
+ 	}
+@@ -740,7 +740,7 @@ static bool search_nested_keyrings(struct key *keyring,
+ 	if (assoc_array_ptr_is_shortcut(ptr)) {
+ 		shortcut = assoc_array_ptr_to_shortcut(ptr);
+ 		smp_read_barrier_depends();
+-		ptr = ACCESS_ONCE(shortcut->next_node);
++		ptr = READ_ONCE(shortcut->next_node);
+ 		BUG_ON(!assoc_array_ptr_is_node(ptr));
+ 	}
+ 	node = assoc_array_ptr_to_node(ptr);
+@@ -752,7 +752,7 @@ static bool search_nested_keyrings(struct key *keyring,
+ ascend_to_node:
+ 	/* Go through the slots in a node */
+ 	for (; slot < ASSOC_ARRAY_FAN_OUT; slot++) {
+-		ptr = ACCESS_ONCE(node->slots[slot]);
++		ptr = READ_ONCE(node->slots[slot]);
+ 
+ 		if (assoc_array_ptr_is_meta(ptr) && node->back_pointer)
+ 			goto descend_to_node;
+@@ -790,13 +790,13 @@ static bool search_nested_keyrings(struct key *keyring,
+ 	/* We've dealt with all the slots in the current node, so now we need
+ 	 * to ascend to the parent and continue processing there.
+ 	 */
+-	ptr = ACCESS_ONCE(node->back_pointer);
++	ptr = READ_ONCE(node->back_pointer);
+ 	slot = node->parent_slot;
+ 
+ 	if (ptr && assoc_array_ptr_is_shortcut(ptr)) {
+ 		shortcut = assoc_array_ptr_to_shortcut(ptr);
+ 		smp_read_barrier_depends();
+-		ptr = ACCESS_ONCE(shortcut->back_pointer);
++		ptr = READ_ONCE(shortcut->back_pointer);
+ 		slot = shortcut->parent_slot;
+ 	}
+ 	if (!ptr)
 
