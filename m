@@ -1,23 +1,50 @@
 From: David Howells <dhowells@redhat.com>
-Date: Fri, 02 Jun 2017 13:43:52 +0000
-Subject: Re: [LTP] [lkp-robot] [KEYS] bdf7c0f8bf: ltp.add_key02.fail
-Message-Id: <7358.1496411032@warthog.procyon.org.uk>
+Date: Thu, 08 Jun 2017 13:48:32 +0000
+Subject: [PATCH 10/23] KEYS: encrypted: use constant-time HMAC comparison
+Message-Id: <149692971287.11452.3700184292634708953.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170421044304.GB626@zzz>
-	<20170401213428.17097-1-ebiggers3@gmail.com>
-	<20170417062641.GN31394@yexl-desktop>
-	<20170417172955.GA31469@gmail.com> <20170420125750.GD10246@rei.lan>
-In-Reply-To: <20170421044304.GB626@zzz>
+References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
+In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-Eric Biggers <ebiggers3@gmail.com> wrote:
+From: Eric Biggers <ebiggers@google.com>
 
-> I'll plan to send a patch.  Also, it looks like the testing that LTP does of
-> add_key() is very sparse, so I'll try to extend it a bit.
+MACs should, in general, be compared using crypto_memneq() to prevent
+timing attacks.
 
-There's more testing in the testsuite that's with the keyutils package.
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-David
+ security/keys/encrypted-keys/encrypted.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index 702c80662069..5c98c2fe03f0 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -30,6 +30,7 @@
+ #include <linux/scatterlist.h>
+ #include <linux/ctype.h>
+ #include <crypto/aes.h>
++#include <crypto/algapi.h>
+ #include <crypto/hash.h>
+ #include <crypto/sha.h>
+ #include <crypto/skcipher.h>
+@@ -534,8 +535,8 @@ static int datablob_hmac_verify(struct encrypted_key_payload *epayload,
+ 	ret = calc_hmac(digest, derived_key, sizeof derived_key, p, len);
+ 	if (ret < 0)
+ 		goto out;
+-	ret = memcmp(digest, epayload->format + epayload->datablob_len,
+-		     sizeof digest);
++	ret = crypto_memneq(digest, epayload->format + epayload->datablob_len,
++			    sizeof(digest));
+ 	if (ret) {
+ 		ret = -EINVAL;
+ 		dump_hmac("datablob",
+
