@@ -1,38 +1,67 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 15 Jun 2017 16:00:56 +0000
-Subject: Re: [PATCH v2 3/6] ima: Log the same audit cause whenever a file has no signature
-Message-Id: <1497542456.4287.57.camel@linux.vnet.ibm.com>
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Date: Sat, 10 Jun 2017 02:59:10 +0000
+Subject: [PATCH 4/6] security/keys: use constant time memory comparison for macs
+Message-Id: <20170610025912.6499-5-Jason@zx2c4.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
-         <1496886555-10082-4-git-send-email-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <1496886555-10082-4-git-send-email-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <20170610025912.6499-1-Jason@zx2c4.com>
+In-Reply-To: <20170610025912.6499-1-Jason@zx2c4.com>
+To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>, David Safford <safford@us.ibm.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, stable@vger.kernel.org
 
-T24gV2VkLCAyMDE3LTA2LTA3IGF0IDIyOjQ5IC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
-d3JvdGU6Cj4gSWYgdGhlIGZpbGUgZG9lc24ndCBoYXZlIGFuIHhhdHRyLCBpbWFfYXBwcmFpc2Vf
-bWVhc3VyZW1lbnQgc2V0cyBjYXVzZSB0bwo+ICJtaXNzaW5nLWhhc2giIHdoaWxlIGlmIHRoZXJl
-J3MgYW4geGF0dHIgYnV0IGl0J3MgYSBkaWdlc3QgaW5zdGVhZCBvZiBhCj4gc2lnbmF0dXJlIGl0
-IHNldHMgY2F1c2UgdG8gIklNQS1zaWduYXR1cmUtcmVxdWlyZWQiLgo+IAo+IEZpeCBpdCBieSBz
-ZXR0aW5nIGNhdXNlIHRvICJJTUEtc2lnbmF0dXJlLXJlcXVpcmVkIiBpbiBib3RoIGNhc2VzLgo+
-IAo+IFNpZ25lZC1vZmYtYnk6IFRoaWFnbyBKdW5nIEJhdWVybWFubiA8YmF1ZXJtYW5AbGludXgu
-dm5ldC5pYm0uY29tPgoKVGhhbmsgeW91LsKgwqBRdWV1ZWQgdG8gYmUgdXBzdHJlYW1lZC4KCk1p
-bWkKPiAtLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXBwcmFpc2UuYyB8IDMgKyst
-Cj4gIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKyksIDEgZGVsZXRpb24oLSkKPiAKPiBk
-aWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXBwcmFpc2UuYyBiL3NlY3Vy
-aXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMKPiBpbmRleCBlYTM2YTRmMTM0ZjQuLjgw
-OWJhNzBmYmJiZiAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcHBy
-YWlzZS5jCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXBwcmFpc2UuYwo+IEBA
-IC0yMTcsNyArMjE3LDggQEAgaW50IGltYV9hcHByYWlzZV9tZWFzdXJlbWVudChlbnVtIGltYV9o
-b29rcyBmdW5jLAo+ICAJCWlmIChyYyAmJiByYyAhPSAtRU5PREFUQSkKPiAgCQkJZ290byBvdXQ7
-Cj4gCj4gLQkJY2F1c2UgPSAibWlzc2luZy1oYXNoIjsKPiArCQljYXVzZSA9IGlpbnQtPmZsYWdz
-ICYgSU1BX0RJR1NJR19SRVFVSVJFRCA/Cj4gKwkJCQkiSU1BLXNpZ25hdHVyZS1yZXF1aXJlZCIg
-OiAibWlzc2luZy1oYXNoIjsKPiAgCQlzdGF0dXMgPSBJTlRFR1JJVFlfTk9MQUJFTDsKPiAgCQlp
-ZiAob3BlbmVkICYgRklMRV9DUkVBVEVEKQo+ICAJCQlpaW50LT5mbGFncyB8PSBJTUFfTkVXX0ZJ
-TEU7CgotLQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5z
-dWJzY3JpYmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9A
-dmdlci5rZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5l
-bC5vcmcvbWFqb3Jkb21vLWluZm8uaHRtbA==
+Otherwise, we enable a MAC forgery via timing attack.
+
+Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+Cc: David Safford <safford@us.ibm.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org
+Cc: stable@vger.kernel.org
+---
+ security/keys/trusted.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 2ae31c5a87de..df7d30b0a6f7 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -11,6 +11,7 @@
+  * See Documentation/security/keys-trusted-encrypted.txt
+  */
+ 
++#include <crypto/algapi.h>
+ #include <crypto/hash_info.h>
+ #include <linux/uaccess.h>
+ #include <linux/module.h>
+@@ -243,7 +244,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	if (memcmp(testhmac, authdata, SHA1_DIGEST_SIZE))
++	if (crypto_memneq(testhmac, authdata, SHA1_DIGEST_SIZE))
+ 		ret = -EINVAL;
+ out:
+ 	kfree(sdesc);
+@@ -335,7 +336,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
+ 			  TPM_NONCE_SIZE, ononce, 1, continueflag1, 0, 0);
+ 	if (ret < 0)
+ 		goto out;
+-	if (memcmp(testhmac1, authdata1, SHA1_DIGEST_SIZE)) {
++	if (crypto_memneq(testhmac1, authdata1, SHA1_DIGEST_SIZE)) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+@@ -344,7 +345,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
+ 			  TPM_NONCE_SIZE, ononce, 1, continueflag2, 0, 0);
+ 	if (ret < 0)
+ 		goto out;
+-	if (memcmp(testhmac2, authdata2, SHA1_DIGEST_SIZE))
++	if (crypto_memneq(testhmac2, authdata2, SHA1_DIGEST_SIZE))
+ 		ret = -EINVAL;
+ out:
+ 	kfree(sdesc);
+-- 
+2.13.1
+
