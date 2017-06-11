@@ -1,33 +1,36 @@
-From: Emmanuel Grumbach <egrumbach@gmail.com>
-Date: Sun, 11 Jun 2017 20:48:36 +0000
+From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
+Date: Sun, 11 Jun 2017 21:06:14 +0000
 Subject: Re: [PATCH 0/6] Constant Time Memory Comparisons Are Important
-Message-Id: <CANUX_P2b0Bx+-E_OBQ0reGW0=d6819qc=r83K0kTv0xMo8mtLQ@mail.gmail.com>
+Message-Id: <20235732.W6WmnKk6cl@tauon.chronox.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170610025912.6499-1-Jason@zx2c4.com> <878tkzq6wi.fsf@purkki.adurom.net>
- <CAGXu5jKp=X7-eKo+HgzS3uqncx5yy-u=tJNqV9K8GOgJ=-C7iA@mail.gmail.com>
-In-Reply-To: <CAGXu5jKp=X7-eKo+HgzS3uqncx5yy-u=tJNqV9K8GOgJ=-C7iA@mail.gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Kalle Valo <kvalo@codeaurora.org>, "Jason A. Donenfeld" <Jason@zx2c4.com>, LKML <linux-kernel@vger.kernel.org>, "kernel-hardening@lists.openwall.com" <kernel-hardening@lists.openwall.com>, Anna Schumaker <anna.schumaker@netapp.com>, David Howells <dhowells@redhat.com>, David Safford <safford@us.ibm.com>, "David S. Miller" <davem@davemloft.net>, Gilad Ben-Yossef <gilad@benyossef.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Gustavo Padovan <gustavo@padovan.org>, "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@poochiereds.net>, Johan Hedberg <johan.hedberg@gmail.com>, Johannes Berg <johannes@sipsolutions.net>, Marcel Holtmann <marcel@holtmann.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Trond Myklebust <trond.myklebust@primarydata.com>, keyrings@vger.kernel.org, linux-bluetooth@vger.kernel.org, "open list:NFS, SUNRPC, AND..." <linux-nfs@vger.kernel.org>, linux-wireless <linux-wireless@vger.kernel.org>, Network Development <netdev@vger.kernel.org>
+References: <20170610025912.6499-1-Jason@zx2c4.com>
+In-Reply-To: <20170610025912.6499-1-Jason@zx2c4.com>
+To: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, Anna Schumaker <anna.schumaker@netapp.com>, David Howells <dhowells@redhat.com>, David Safford <safford@us.ibm.com>, "David S. Miller" <davem@davemloft.net>, Gilad Ben-Yossef <gilad@benyossef.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Gustavo Padovan <gustavo@padovan.org>, "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@poochiereds.net>, Johan Hedberg <johan.hedberg@gmail.com>, Johannes Berg <johannes@sipsolutions.net>, Marcel Holtmann <marcel@holtmann.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Trond Myklebust <trond.myklebust@primarydata.com>, keyrings@vger.kernel.org, linux-bluetooth@vger.kernel.org, linux-nfs@vger.kernel.org, linux-wireless@vger.kernel.org, netdev@vger.kernel.org
 
-On Sun, Jun 11, 2017 at 4:36 PM, Kees Cook <keescook@chromium.org> wrote:
->
-> On Sun, Jun 11, 2017 at 1:13 AM, Kalle Valo <kvalo@codeaurora.org> wrote:
-> > "Jason A. Donenfeld" <Jason@zx2c4.com> writes:
-> >
-> >> Whenever you're comparing two MACs, it's important to do this using
-> >> crypto_memneq instead of memcmp. With memcmp, you leak timing information,
-> >> which could then be used to iteratively forge a MAC.
-> >
-> > Do you have any pointers where I could learn more about this?
->
-> While not using C specifically, this talks about the problem generally:
-> https://www.chosenplaintext.ca/articles/beginners-guide-constant-time-cryptography.html
->
+Am Samstag, 10. Juni 2017, 04:59:06 CEST schrieb Jason A. Donenfeld:
 
-Sorry for the stupid question, but the MAC address is in plaintext in
-the air anyway or easily accessible via user space tools. I fail to
-see what it is so secret about a MAC address in that code where that
-same MAC address is accessible via myriads of ways.
+Hi Jason,
+
+> Whenever you're comparing two MACs, it's important to do this using
+> crypto_memneq instead of memcmp. With memcmp, you leak timing information,
+> which could then be used to iteratively forge a MAC. This is far too basic
+> of a mistake for us to have so pervasively in the year 2017, so let's begin
+> cleaning this stuff up. The following 6 locations were found with some
+> simple regex greps, but I'm sure more lurk below the surface. If you
+> maintain some code or know somebody who maintains some code that deals
+> with MACs, tell them to double check which comparison function they're
+> using.
+
+Are you planning to send an update to your patch set? If yes, there is another 
+one which should be converted too: crypto/rsa-pkcs1pad.c.
+
+Otherwise, I will send a patch converting this one.
+
+Thanks.
+
+Ciao
+Stephan
