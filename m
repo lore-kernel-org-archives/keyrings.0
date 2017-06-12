@@ -1,131 +1,141 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 08 Jun 2017 13:47:26 +0000
-Subject: [PATCH 01/23] security/keys: add CONFIG_KEYS_COMPAT to Kconfig
-Message-Id: <149692964657.11452.547823032024351272.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 12 Jun 2017 18:55:21 +0000
+Subject: [PATCH] syscalls/add_key02: update to test fix for nonempty NULL payload
+Message-Id: <20170612185521.90355-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Bilal Amarni <bilal.amarni@gmail.com>
+From: Eric Biggers <ebiggers@google.com>
 
-CONFIG_KEYS_COMPAT is defined in arch-specific Kconfigs and is missing for
-several 64-bit architectures : mips, parisc, tile.
+add_key02 was supposed to be a "Basic test for the add_key() syscall",
+but it actually happened to test the obscure case of passing a NULL
+payload with nonzero length.  This case was mishandled by the kernel,
+which either returned EINVAL or crashed with a NULL pointer dereference,
+depending on the key type.  (The former applied to the test, as it used
+the "user" key type.)  The expected behavior in this case is that the
+syscall fail with EFAULT.
 
-At the moment and for those architectures, calling in 32-bit userspace the
-keyctl syscall would return an ENOSYS error.
+Update the test to expect the fixed behavior from v4.12-rc5, and make
+the test more thorough by testing additional key types, including ones
+that caused a NULL pointer dereference in unfixed kernels.
 
-This patch moves the CONFIG_KEYS_COMPAT option to security/keys/Kconfig, to
-make sure the compatibility wrapper is registered by default for any 64-bit
-architecture as long as it is configured with CONFIG_COMPAT.
-
-[DH: Modified to remove arm64 compat enablement also as requested by Eric
- Biggers]
-
-Signed-off-by: Bilal Amarni <bilal.amarni@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-cc: Eric Biggers <ebiggers3@gmail.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ testcases/kernel/syscalls/add_key/add_key02.c | 69 ++++++++++++++++++++-------
+ 1 file changed, 51 insertions(+), 18 deletions(-)
 
- arch/arm64/Kconfig    |    4 ----
- arch/powerpc/Kconfig  |    5 -----
- arch/s390/Kconfig     |    3 ---
- arch/sparc/Kconfig    |    3 ---
- arch/x86/Kconfig      |    4 ----
- security/keys/Kconfig |    4 ++++
- 6 files changed, 4 insertions(+), 19 deletions(-)
-
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 3dcd7ec69bca..b2024db225a9 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -1084,10 +1084,6 @@ config SYSVIPC_COMPAT
- 	def_bool y
- 	depends on COMPAT && SYSVIPC
+diff --git a/testcases/kernel/syscalls/add_key/add_key02.c b/testcases/kernel/syscalls/add_key/add_key02.c
+index 866800d6f..a0ccbdeb1 100644
+--- a/testcases/kernel/syscalls/add_key/add_key02.c
++++ b/testcases/kernel/syscalls/add_key/add_key02.c
+@@ -1,5 +1,6 @@
+ /******************************************************************************
+  * Copyright (c) Crackerjack Project., 2007				      *
++ * Copyright (c) 2017 Google, Inc.
+  *									      *
+  * This program is free software;  you can redistribute it and/or modify      *
+  * it under the terms of the GNU General Public License as published by       *
+@@ -18,10 +19,17 @@
+  ******************************************************************************/
  
--config KEYS_COMPAT
--	def_bool y
--	depends on COMPAT && KEYS
--
- endmenu
+ /*
+- * Basic test for the add_key() syscall.
++ * Test that the add_key() syscall correctly handles a NULL payload with nonzero
++ * length.  Specifically, it should fail with EFAULT rather than oopsing the
++ * kernel with a NULL pointer dereference or failing with EINVAL, as it did
++ * before (depending on the key type).  This is a regression test for commit
++ * 5649645d725c ("KEYS: fix dereferencing NULL payload with nonzero length").
+  *
+- * History:   Porting from Crackerjack to LTP is done by
+- *	      Manas Kumar Nayak maknayak@in.ibm.com>
++ * Note that none of the key types that exhibited the NULL pointer dereference
++ * are guaranteed to be built into the kernel, so we just test as many as we
++ * can, in the hope of catching one.  We also test with the "user" key type for
++ * good measure, although it was one of the types that failed with EINVAL rather
++ * than dereferencing NULL.
+  */
  
- menu "Power management options"
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index f7c8f9972f61..83d2e0f43c26 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -1215,11 +1215,6 @@ source "arch/powerpc/Kconfig.debug"
+ #include "config.h"
+@@ -33,36 +41,61 @@
  
- source "security/Kconfig"
+ #ifdef HAVE_LINUX_KEYCTL_H
+ struct tcase {
+-	char *type;
+-	char *desc;
+-	void *payload;
+-	int plen;
+-	int exp_errno;
++	const char *type;
++	size_t plen;
+ } tcases[] = {
+-	{"user", "firstkey", NULL, 1, EINVAL}
++	/*
++	 * The payload length we test for each key type needs to pass initial
++	 * validation but is otherwise arbitrary.  Note: the "rxrpc_s" key type
++	 * requires a payload of exactly 8 bytes.
++	 */
++	{ "asymmetric",		64 },
++	{ "cifs.idmap",		64 },
++	{ "cifs.spnego",	64 },
++	{ "pkcs7_test",		64 },
++	{ "rxrpc",		64 },
++	{ "rxrpc_s",		 8 },
++	{ "user",		64 },
+ };
+ #endif /* HAVE_LINUX_KEYCTL_H */
  
--config KEYS_COMPAT
--	bool
--	depends on COMPAT && KEYS
--	default y
--
- source "crypto/Kconfig"
+ static void verify_add_key(unsigned int i)
+ {
+ #ifdef HAVE_LINUX_KEYCTL_H
+-	TEST(tst_syscall(__NR_add_key, tcases[i].type, tcases[i].desc,
+-	                 tcases[i].payload, tcases[i].plen,
+-	                 KEY_SPEC_USER_KEYRING));
++	TEST(tst_syscall(__NR_add_key, tcases[i].type, "abc:def",
++			 NULL, tcases[i].plen, KEY_SPEC_PROCESS_KEYRING));
  
- config PPC_LIB_RHEAP
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index e161fafb495b..6967addc6a89 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -363,9 +363,6 @@ config COMPAT
- config SYSVIPC_COMPAT
- 	def_bool y if COMPAT && SYSVIPC
+ 	if (TEST_RETURN != -1) {
+-		tst_res(TFAIL, "add_key() passed unexpectedly");
++		tst_res(TFAIL,
++			"add_key() with key type '%s' unexpectedly succeeded",
++			tcases[i].type);
+ 		return;
+ 	}
  
--config KEYS_COMPAT
--	def_bool y if COMPAT && KEYS
--
- config SMP
- 	def_bool y
- 	prompt "Symmetric multi-processing support"
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index b558c9e29de3..5639c9fe5b55 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -577,9 +577,6 @@ config SYSVIPC_COMPAT
- 	depends on COMPAT && SYSVIPC
- 	default y
+-	if (TEST_ERRNO = tcases[i].exp_errno) {
+-		tst_res(TPASS | TTERRNO, "add_key() failed expectedly");
++	if (TEST_ERRNO = EFAULT) {
++		tst_res(TPASS, "received expected EFAULT with key type '%s'",
++			tcases[i].type);
+ 		return;
+ 	}
  
--config KEYS_COMPAT
--	def_bool y if COMPAT && KEYS
--
- endmenu
- 
- source "net/Kconfig"
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 4ccfacc7232a..0efb4c9497bc 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2776,10 +2776,6 @@ config COMPAT_FOR_U64_ALIGNMENT
- config SYSVIPC_COMPAT
- 	def_bool y
- 	depends on SYSVIPC
--
--config KEYS_COMPAT
--	def_bool y
--	depends on KEYS
- endif
- 
- endmenu
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 6fd95f76bfae..00b7431a8aeb 100644
---- a/security/keys/Kconfig
-+++ b/security/keys/Kconfig
-@@ -20,6 +20,10 @@ config KEYS
- 
- 	  If you are unsure as to whether this is required, answer N.
- 
-+config KEYS_COMPAT
-+	def_bool y
-+	depends on COMPAT && KEYS
+-	tst_res(TFAIL | TTERRNO,
+-	        "add_key() failed unexpectedly, expected %s",
+-	        tst_strerrno(tcases[i].exp_errno));
++	if (TEST_ERRNO = ENODEV) {
++		tst_res(TCONF, "kernel doesn't support key type '%s'",
++			tcases[i].type);
++		return;
++	}
 +
- config PERSISTENT_KEYRINGS
- 	bool "Enable register of persistent per-UID keyrings"
- 	depends on KEYS
++	/*
++	 * It's possible for the "asymmetric" key type to be supported, but with
++	 * no asymmetric key parsers registered.  In that case, attempting to
++	 * add a key of type asymmetric will fail with EBADMSG.
++	 */
++	if (TEST_ERRNO = EBADMSG && !strcmp(tcases[i].type, "asymmetric")) {
++		tst_res(TCONF, "no asymmetric key parsers are registered");
++		return;
++	}
++
++	tst_res(TFAIL | TTERRNO, "unexpected error with key type '%s'",
++		tcases[i].type);
+ #else
+ 	tst_brk(TCONF, "linux/keyctl.h was missing upon compilation.");
+ #endif /* HAVE_LINUX_KEYCTL_H */
+-- 
+2.13.1.508.gb3defc5cc-goog
 
