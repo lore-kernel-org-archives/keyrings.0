@@ -1,42 +1,34 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 08 Jun 2017 13:49:42 +0000
-Subject: [PATCH 19/23] KEYS: DH: don't feed uninitialized "otherinfo" into KDF
-Message-Id: <149692978205.11452.9161641214967386572.stgit@warthog.procyon.org.uk>
+From: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Date: Tue, 13 Jun 2017 21:50:08 +0000
+Subject: [PATCH keyutils v2 4/6] TEST: Add KDF leading zero test
+Message-Id: <20170613215010.14390-5-mathew.j.martineau@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
-
-If userspace called KEYCTL_DH_COMPUTE with kdf_params containing NULL
-otherinfo but nonzero otherinfolen, the kernel would allocate a buffer
-for the otherinfo, then feed it into the KDF without initializing it.
-Fix this by always doing the copy from userspace (which will fail with
-EFAULT in this scenario).
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Stephan Mueller <smueller@chronox.de>
 ---
+ tests/keyctl/dh_compute/valid/runtest.sh | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
- security/keys/dh.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/security/keys/dh.c b/security/keys/dh.c
-index 8abc70ebe22d..1c1cac677041 100644
---- a/security/keys/dh.c
-+++ b/security/keys/dh.c
-@@ -317,7 +317,7 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
- 	 * Concatenate SP800-56A otherinfo past DH shared secret -- the
- 	 * input to the KDF is (DH shared secret || otherinfo)
- 	 */
--	if (kdfcopy && kdfcopy->otherinfo &&
-+	if (kdfcopy &&
- 	    copy_from_user(kbuf + resultlen, kdfcopy->otherinfo,
- 			   kdfcopy->otherinfolen) != 0) {
- 		ret = -EFAULT;
+diff --git a/tests/keyctl/dh_compute/valid/runtest.sh b/tests/keyctl/dh_compute/valid/runtest.sh
+index 6498eef..e0daba9 100644
+--- a/tests/keyctl/dh_compute/valid/runtest.sh
++++ b/tests/keyctl/dh_compute/valid/runtest.sh
+@@ -171,6 +171,12 @@ marker "COMPUTE DERIVED KEY FROM DH SHARED SECRET (SHA-256)"
+ echo -e -n $otherinfo | dh_compute_kdf_oi $privateid $primeid $xaid 16 "sha256"
+ expect_multiline payload "$derived"
+ 
++xpcreate_key 01 user dh:leadingzero @s
++expect_keyid lzid
++
++marker "COMPUTE DERIVED KEY WITH LEADING ZEROS"
++echo -e -n $otherinfo | dh_compute_kdf_oi $privateid $primeid $lzid 16 "sha256"
++expect_payload payload "0066207b cdab1d64 bbf489b3 d6a0dadc"
+ 
+ # SHA-224
+ 
+-- 
+2.13.1
 
