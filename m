@@ -1,204 +1,66 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 08 Jun 2017 13:49:18 +0000
-Subject: [PATCH 16/23] KEYS: trusted: sanitize all key material
-Message-Id: <149692975873.11452.4299102306056105423.stgit@warthog.procyon.org.uk>
+From: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Date: Tue, 13 Jun 2017 21:50:07 +0000
+Subject: [PATCH keyutils v2 3/6] Doc: Add 'keyctl xpadd' information
+Message-Id: <20170613215010.14390-4-mathew.j.martineau@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
-
-As the previous patch did for encrypted-keys, zero sensitive any
-potentially sensitive data related to the "trusted" key type before it
-is freed.  Notably, we were not zeroing the tpm_buf structures in which
-the actual key is stored for TPM seal and unseal, nor were we zeroing
-the trusted_key_payload in certain error paths.
-
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: David Safford <safford@us.ibm.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Mat Martineau <mathew.j.martineau@linux.intel.com>
 ---
+ man/keyctl.1 | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
- security/keys/trusted.c |   50 +++++++++++++++++++++--------------------------
- 1 file changed, 22 insertions(+), 28 deletions(-)
-
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 2ae31c5a87de..435e86e13879 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -70,7 +70,7 @@ static int TSS_sha1(const unsigned char *data, unsigned int datalen,
- 	}
+diff --git a/man/keyctl.1 b/man/keyctl.1
+index 0360bf0..6ee8776 100644
+--- a/man/keyctl.1
++++ b/man/keyctl.1
+@@ -19,6 +19,8 @@ keyctl \- key management facility control
+ .br
+ \fBkeyctl\fR padd <type> <desc> <keyring>
+ .br
++\fBkeyctl\fR xpadd <type> <desc> <keyring>
++.br
+ \fBkeyctl\fR request <type> <desc> [<dest_keyring>]
+ .br
+ \fBkeyctl\fR request2 <type> <desc> <info> [<dest_keyring>]
+@@ -176,6 +178,8 @@ IDs will be dumped in hex instead of decimal.
+ \fBkeyctl add\fR <type> <desc> <data> <keyring>
+ .br
+ \fBkeyctl padd\fR <type> <desc> <keyring>
++.br
++\fBkeyctl xpadd\fR <type> <desc> <keyring>
  
- 	ret = crypto_shash_digest(&sdesc->shash, data, datalen, digest);
--	kfree(sdesc);
-+	kzfree(sdesc);
- 	return ret;
- }
+ This command creates a key of the specified type and description; instantiates
+ it with the given data and attaches it to the specified keyring. It then prints
+@@ -192,11 +196,24 @@ The \fBpadd\fR variant of the command reads the data from stdin rather than
+ taking it from the command line:
  
-@@ -114,7 +114,7 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
- 	if (!ret)
- 		ret = crypto_shash_final(&sdesc->shash, digest);
- out:
--	kfree(sdesc);
-+	kzfree(sdesc);
- 	return ret;
- }
- 
-@@ -165,7 +165,7 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 				  paramdigest, TPM_NONCE_SIZE, h1,
- 				  TPM_NONCE_SIZE, h2, 1, &c, 0, 0);
- out:
--	kfree(sdesc);
-+	kzfree(sdesc);
- 	return ret;
- }
- 
-@@ -246,7 +246,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	if (memcmp(testhmac, authdata, SHA1_DIGEST_SIZE))
- 		ret = -EINVAL;
- out:
--	kfree(sdesc);
-+	kzfree(sdesc);
- 	return ret;
- }
- 
-@@ -347,7 +347,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
- 	if (memcmp(testhmac2, authdata2, SHA1_DIGEST_SIZE))
- 		ret = -EINVAL;
- out:
--	kfree(sdesc);
-+	kzfree(sdesc);
- 	return ret;
- }
- 
-@@ -564,7 +564,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
- 		*bloblen = storedsize;
- 	}
- out:
--	kfree(td);
-+	kzfree(td);
- 	return ret;
- }
- 
-@@ -678,7 +678,7 @@ static int key_seal(struct trusted_key_payload *p,
- 	if (ret < 0)
- 		pr_info("trusted_key: srkseal failed (%d)\n", ret);
- 
--	kfree(tb);
-+	kzfree(tb);
- 	return ret;
- }
- 
-@@ -703,7 +703,7 @@ static int key_unseal(struct trusted_key_payload *p,
- 		/* pull migratable flag out of sealed key */
- 		p->migratable = p->key[--p->key_len];
- 
--	kfree(tb);
-+	kzfree(tb);
- 	return ret;
- }
- 
-@@ -1037,12 +1037,12 @@ static int trusted_instantiate(struct key *key,
- 	if (!ret && options->pcrlock)
- 		ret = pcrlock(options->pcrlock);
- out:
--	kfree(datablob);
--	kfree(options);
-+	kzfree(datablob);
-+	kzfree(options);
- 	if (!ret)
- 		rcu_assign_keypointer(key, payload);
- 	else
--		kfree(payload);
-+		kzfree(payload);
- 	return ret;
- }
- 
-@@ -1051,8 +1051,7 @@ static void trusted_rcu_free(struct rcu_head *rcu)
- 	struct trusted_key_payload *p;
- 
- 	p = container_of(rcu, struct trusted_key_payload, rcu);
--	memset(p->key, 0, p->key_len);
--	kfree(p);
-+	kzfree(p);
- }
- 
- /*
-@@ -1094,13 +1093,13 @@ static int trusted_update(struct key *key, struct key_preparsed_payload *prep)
- 	ret = datablob_parse(datablob, new_p, new_o);
- 	if (ret != Opt_update) {
- 		ret = -EINVAL;
--		kfree(new_p);
-+		kzfree(new_p);
- 		goto out;
- 	}
- 
- 	if (!new_o->keyhandle) {
- 		ret = -EINVAL;
--		kfree(new_p);
-+		kzfree(new_p);
- 		goto out;
- 	}
- 
-@@ -1114,22 +1113,22 @@ static int trusted_update(struct key *key, struct key_preparsed_payload *prep)
- 	ret = key_seal(new_p, new_o);
- 	if (ret < 0) {
- 		pr_info("trusted_key: key_seal failed (%d)\n", ret);
--		kfree(new_p);
-+		kzfree(new_p);
- 		goto out;
- 	}
- 	if (new_o->pcrlock) {
- 		ret = pcrlock(new_o->pcrlock);
- 		if (ret < 0) {
- 			pr_info("trusted_key: pcrlock failed (%d)\n", ret);
--			kfree(new_p);
-+			kzfree(new_p);
- 			goto out;
- 		}
- 	}
- 	rcu_assign_keypointer(key, new_p);
- 	call_rcu(&p->rcu, trusted_rcu_free);
- out:
--	kfree(datablob);
--	kfree(new_o);
-+	kzfree(datablob);
-+	kzfree(new_o);
- 	return ret;
- }
- 
-@@ -1158,24 +1157,19 @@ static long trusted_read(const struct key *key, char __user *buffer,
- 	for (i = 0; i < p->blob_len; i++)
- 		bufp = hex_byte_pack(bufp, p->blob[i]);
- 	if ((copy_to_user(buffer, ascii_buf, 2 * p->blob_len)) != 0) {
--		kfree(ascii_buf);
-+		kzfree(ascii_buf);
- 		return -EFAULT;
- 	}
--	kfree(ascii_buf);
-+	kzfree(ascii_buf);
- 	return 2 * p->blob_len;
- }
- 
- /*
-- * trusted_destroy - before freeing the key, clear the decrypted data
-+ * trusted_destroy - clear and free the key's payload
-  */
- static void trusted_destroy(struct key *key)
- {
--	struct trusted_key_payload *p = key->payload.data[0];
--
--	if (!p)
--		return;
--	memset(p->key, 0, p->key_len);
--	kfree(key->payload.data[0]);
-+	kzfree(key->payload.data[0]);
- }
- 
- struct key_type key_type_trusted = {
+ .RS
+-.fi
++.nf
+ $ echo \-n stuff | keyctl padd user mykey @u
+ 26
+ .fi
+ .RE
++
++The \fBxpadd\fR variant of the command reads hexadecimal text from stdin and
++converts it to binary data before instantiating the key:
++
++.RS
++.nf
++$ echo \-n "11223344 ccddeeff" | keyctl xpadd user mykey @u
++26
++.fi
++.RE
++
++Each hexadecimal data byte must be represented by two adjacent hexadecimal
++digits. Whitespace is ignored before and after each hexadecimal data byte.
+ .SS Request a key
+ \fBkeyctl request\fR <type> <desc> [<dest_keyring>]
+ .br
+-- 
+2.13.1
 
