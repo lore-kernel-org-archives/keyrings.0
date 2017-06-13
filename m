@@ -1,149 +1,116 @@
 From: Mat Martineau <mathew.j.martineau@linux.intel.com>
-Date: Tue, 27 Jun 2017 16:28:37 +0000
-Subject: [PATCH v2] KEYS: Add documentation for asymmetric keyring restrictions
-Message-Id: <20170627162837.12182-1-mathew.j.martineau@linux.intel.com>
+Date: Tue, 13 Jun 2017 21:50:05 +0000
+Subject: [PATCH keyutils v2 1/6] keyctl: Add xpadd command for hexadecimal data
+Message-Id: <20170613215010.14390-2-mathew.j.martineau@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-Provide more specific examples of keyring restrictions as applied to
-X.509 signature chain verification.
+The unit tests for 'keyctl dh_compute' and KDF variants involve binary
+user key payloads hundreds of bytes in length, which are cumbersome to
+represent on the command line and in scripts. The 'keyctl xpadd' command
+provides a way to populate keys with binary values without relying on
+backslash escapes.
 
 Signed-off-by: Mat Martineau <mathew.j.martineau@linux.intel.com>
 ---
+ keyctl.c | 67 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
 
-v2: David's suggested edits, and use "X.509" instead of "x509". 
-
- Documentation/crypto/asymmetric-keys.txt | 65 ++++++++++++++++++++++++++++----
- Documentation/security/keys.txt          |  5 +++
- 2 files changed, 62 insertions(+), 8 deletions(-)
-
-diff --git a/Documentation/crypto/asymmetric-keys.txt b/Documentation/crypto/asymmetric-keys.txt
-index 5ad6480e3fb9..cba2affc8f77 100644
---- a/Documentation/crypto/asymmetric-keys.txt
-+++ b/Documentation/crypto/asymmetric-keys.txt
-@@ -10,6 +10,7 @@ Contents:
-     - Signature verification.
-   - Asymmetric key subtypes.
-   - Instantiation data parsers.
-+  - Keyring link restrictions.
+diff --git a/keyctl.c b/keyctl.c
+index 61990b4..b8bec93 100644
+--- a/keyctl.c
++++ b/keyctl.c
+@@ -34,6 +34,7 @@ static nr void act_keyctl___version(int argc, char *argv[]);
+ static nr void act_keyctl_show(int argc, char *argv[]);
+ static nr void act_keyctl_add(int argc, char *argv[]);
+ static nr void act_keyctl_padd(int argc, char *argv[]);
++static nr void act_keyctl_xpadd(int argc, char *argv[]);
+ static nr void act_keyctl_request(int argc, char *argv[]);
+ static nr void act_keyctl_request2(int argc, char *argv[]);
+ static nr void act_keyctl_prequest2(int argc, char *argv[]);
+@@ -118,6 +119,7 @@ const struct command commands[] = {
+ 	{ act_keyctl_timeout,	"timeout",	"<key> <timeout>" },
+ 	{ act_keyctl_unlink,	"unlink",	"<key> [<keyring>]" },
+ 	{ act_keyctl_update,	"update",	"<key> <data>" },
++	{ act_keyctl_xpadd,	"xpadd",	"<type> <desc> <keyring>" },
+ 	{ NULL,			NULL,		NULL }
+ };
  
+@@ -426,6 +428,71 @@ static void act_keyctl_padd(int argc, char *argv[])
  
- ====
-@@ -318,7 +319,8 @@ KEYRING LINK RESTRICTIONS
- ============ 
- Keyrings created from userspace using add_key can be configured to check the
--signature of the key being linked.
-+signature of the key being linked.  Keys without a valid signature are not
-+allowed to link.
- 
- Several restriction methods are available:
- 
-@@ -327,9 +329,10 @@ Several restriction methods are available:
-      - Option string used with KEYCTL_RESTRICT_KEYRING:
-        - "builtin_trusted"
- 
--     The kernel builtin trusted keyring will be searched for the signing
--     key. The ca_keys kernel parameter also affects which keys are used for
--     signature verification.
-+     The kernel builtin trusted keyring will be searched for the signing key.
-+     If the builtin trusted keyring is not configured, all links will be
-+     rejected.  The ca_keys kernel parameter also affects which keys are used
-+     for signature verification.
- 
-  (2) Restrict using the kernel builtin and secondary trusted keyrings
- 
-@@ -337,8 +340,10 @@ Several restriction methods are available:
-        - "builtin_and_secondary_trusted"
- 
-      The kernel builtin and secondary trusted keyrings will be searched for the
--     signing key. The ca_keys kernel parameter also affects which keys are used
--     for signature verification.
-+     signing key.  If the secondary trusted keyring is not configured, this
-+     restriction will behave like the "builtin_trusted" option.  The ca_keys
-+     kernel parameter also affects which keys are used for signature
-+     verification.
- 
-  (3) Restrict using a separate key or keyring
- 
-@@ -346,7 +351,7 @@ Several restriction methods are available:
-        - "key_or_keyring:<key or keyring serial number>[:chain]"
- 
-      Whenever a key link is requested, the link will only succeed if the key
--     being linked is signed by one of the designated keys. This key may be
-+     being linked is signed by one of the designated keys.  This key may be
-      specified directly by providing a serial number for one asymmetric key, or
-      a group of keys may be searched for the signing key by providing the
-      serial number for a keyring.
-@@ -354,7 +359,51 @@ Several restriction methods are available:
-      When the "chain" option is provided at the end of the string, the keys
-      within the destination keyring will also be searched for signing keys.
-      This allows for verification of certificate chains by adding each
--     cert in order (starting closest to the root) to one keyring.
-+     certificate in order (starting closest to the root) to a keyring.  For
-+     instance, one keyring can be populated with links to a set of root
-+     certificates, with a separate, restricted keyring set up for each
-+     certificate chain to be validated:
+ /*****************************************************************************/
+ /*
++ * add a key, reading ASCII hexadecimal from a pipe and converting to binary
++ */
++static void act_keyctl_xpadd(int argc, char *argv[])
++{
++	key_serial_t dest;
++	size_t hexdatalen;
++	char *hexdata;
++	size_t datalen = 0;
++	char *data;
++	int ret;
 +
-+	# Create and populate a keyring for root certificates
-+	root-id=`keyctl add keyring root-certs "" @s`
-+	keyctl padd asymmetric "" $root-id < root1.cert
-+	keyctl padd asymmetric "" $root-id < root2.cert
++	if (argc != 4)
++		format();
 +
-+	# Create and restrict a keyring for the certificate chain
-+	chain-id=`keyctl add keyring chain "" @s`
-+	keyctl restrict_keyring $chain-id asymmetric key_or_keyring:$root-id:chain
++	dest = get_key_id(argv[3]);
 +
-+	# Attempt to add each certificate in the chain, starting with the
-+	# certificate closest to the root.
-+	keyctl padd asymmetric "" $chain-id < intermediateA.cert
-+	keyctl padd asymmetric "" $chain-id < intermediateB.cert
-+	keyctl padd asymmetric "" $chain-id < end-entity.cert
++	hexdata = grab_stdin(&hexdatalen);
 +
-+     If the final end-entity certificate is successfully added to the "chain"
-+     keyring, we can be certain that it has a valid signing chain going back to
-+     one of the root certificates.
++	data = malloc(hexdatalen/2);
++	if (!data)
++		error("xpadd: cannot allocate memory");
 +
-+     A single keyring can be used to verify a chain of signatures by
-+     restricting the keyring after linking the root certificate:
++	while (hexdatalen > 1) {
++		if (isspace(hexdata[0])) {
++			hexdatalen--;
++			hexdata++;
++			continue;
++		}
 +
-+	# Create a keyring for the certificate chain and add the root
-+	chain2-id=`keyctl add keyring chain2 "" @s`
-+	keyctl padd asymmetric "" $chain2-id < root1.cert
++		if (!isxdigit(hexdata[1]) && isxdigit(hexdata[0])) {
++			fprintf(stderr, "xpadd: odd number of contiguous "
++					"hexadecimal digits\n");
++			exit(2);
++		}
 +
-+	# Restrict the keyring that already has root1.cert linked.  The cert
-+	# will remain linked by the keyring.
-+	keyctl restrict_keyring $chain2-id asymmetric key_or_keyring:0:chain
++		ret = sscanf(hexdata, "%02hhx", &data[datalen]);
++		if (ret != 1) {
++			fprintf(stderr, "xpadd: non-hexadecimal input data\n");
++			exit(2);
++		}
 +
-+	# Attempt to add each certificate in the chain, starting with the
-+	# certificate closest to the root.
-+	keyctl padd asymmetric "" $chain2-id < intermediateA.cert
-+	keyctl padd asymmetric "" $chain2-id < intermediateB.cert
-+	keyctl padd asymmetric "" $chain2-id < end-entity.cert
++		hexdatalen -= 2;
++		hexdata += 2;
++		datalen++;
++	}
 +
-+     If the final end-entity certificate is successfully added to the "chain2"
-+     keyring, we can be certain that there is a valid signing chain going back
-+     to the root certificate that was added before the keyring was restricted.
++	if (hexdatalen = 1 && !isspace(hexdata[0])) {
++		fprintf(stderr,	"xpadd: invalid trailing byte\n");
++		exit(2);
++	}
 +
- 
- In all of these cases, if the signing key is found the signature of the key to
- be linked will be verified using the signing key.  The requested key is added
-diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
-index cd5019934d7f..5a8dd723b60a 100644
---- a/Documentation/security/keys.txt
-+++ b/Documentation/security/keys.txt
-@@ -900,6 +900,11 @@ The keyctl syscall functions are:
-      To apply a keyring restriction the process must have Set Attribute
-      permission and the keyring must not be previously restricted.
- 
-+     One application of restricted keyrings is to verify X.509 certificate
-+     chains or individual certificate signatures using the asymmetric key type.
-+     See Documentation/crypto/asymmetric-keys.txt for specific restrictions
-+     applicable to the asymmetric key type.
++	ret = add_key(argv[1], argv[2], data, datalen, dest);
++	free(data);
 +
- ======= KERNEL SERVICES
- =======-- 
-2.13.2
++	if (ret < 0)
++		error("add_key");
++
++	/* print the resulting key ID */
++	printf("%d\n", ret);
++	exit(0);
++
++} /* end act_keyctl_xpadd() */
++
++/*****************************************************************************/
++/*
+  * request a key
+  */
+ static void act_keyctl_request(int argc, char *argv[])
+-- 
+2.13.1
 
