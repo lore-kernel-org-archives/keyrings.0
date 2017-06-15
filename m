@@ -1,147 +1,106 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Thu, 08 Jun 2017 01:49:10 +0000
-Subject: [PATCH v2 1/6] integrity: Small code improvements
-Message-Id: <1496886555-10082-2-git-send-email-bauerman@linux.vnet.ibm.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date: Thu, 15 Jun 2017 16:00:45 +0000
+Subject: Re: [PATCH v2 1/6] integrity: Small code improvements
+Message-Id: <1497542445.4287.55.camel@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+         <1496886555-10082-2-git-send-email-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <1496886555-10082-2-git-send-email-bauerman@linux.vnet.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-security-module@vger.kernel.org
+Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-These changes are too small to warrant their own patches:
-
-The keyid and sig_size members of struct signature_v2_hdr are in BE format,
-so use a type that makes this assumption explicit. Also, use beXX_to_cpu
-instead of __beXX_to_cpu to read them.
-
-Change integrity_kernel_read to take a void * buffer instead of char *
-buffer, so that callers don't have to use a cast if they provide a buffer
-that isn't a char *.
-
-Add missing #endif comment in ima.h pointing out which macro it refers to.
-
-Add missing fall through comment in ima_appraise.c.
-
-Constify mask_tokens and func_tokens arrays.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
----
- security/integrity/digsig_asymmetric.c | 4 ++--
- security/integrity/iint.c              | 2 +-
- security/integrity/ima/ima.h           | 2 +-
- security/integrity/ima/ima_appraise.c  | 1 +
- security/integrity/ima/ima_policy.c    | 4 ++--
- security/integrity/integrity.h         | 7 ++++---
- 6 files changed, 11 insertions(+), 9 deletions(-)
-
-diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-index 80052ed8d467..ab6a029062a1 100644
---- a/security/integrity/digsig_asymmetric.c
-+++ b/security/integrity/digsig_asymmetric.c
-@@ -92,13 +92,13 @@ int asymmetric_verify(struct key *keyring, const char *sig,
- 
- 	siglen -= sizeof(*hdr);
- 
--	if (siglen != __be16_to_cpu(hdr->sig_size))
-+	if (siglen != be16_to_cpu(hdr->sig_size))
- 		return -EBADMSG;
- 
- 	if (hdr->hash_algo >= HASH_ALGO__LAST)
- 		return -ENOPKG;
- 
--	key = request_asymmetric_key(keyring, __be32_to_cpu(hdr->keyid));
-+	key = request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
- 	if (IS_ERR(key))
- 		return PTR_ERR(key);
- 
-diff --git a/security/integrity/iint.c b/security/integrity/iint.c
-index c710d22042f9..6fc888ca468e 100644
---- a/security/integrity/iint.c
-+++ b/security/integrity/iint.c
-@@ -182,7 +182,7 @@ security_initcall(integrity_iintcache_init);
-  *
-  */
- int integrity_kernel_read(struct file *file, loff_t offset,
--			  char *addr, unsigned long count)
-+			  void *addr, unsigned long count)
- {
- 	mm_segment_t old_fs;
- 	char __user *buf = (char __user *)addr;
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index d26a30e37d13..215a93c41b51 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -284,7 +284,7 @@ static inline int ima_read_xattr(struct dentry *dentry,
- 	return 0;
- }
- 
--#endif
-+#endif /* CONFIG_IMA_APPRAISE */
- 
- /* LSM based policy rules require audit */
- #ifdef CONFIG_IMA_LSM_RULES
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 7fe0566142d8..ea36a4f134f4 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -240,6 +240,7 @@ int ima_appraise_measurement(enum ima_hooks func,
- 	case IMA_XATTR_DIGEST_NG:
- 		/* first byte contains algorithm id */
- 		hash_start = 1;
-+		/* fall through */
- 	case IMA_XATTR_DIGEST:
- 		if (iint->flags & IMA_DIGSIG_REQUIRED) {
- 			cause = "IMA-signature-required";
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 0acd68decb17..949ad3858327 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -965,7 +965,7 @@ enum {
- 	mask_exec = 0, mask_write, mask_read, mask_append
- };
- 
--static char *mask_tokens[] = {
-+static const char *const mask_tokens[] = {
- 	"MAY_EXEC",
- 	"MAY_WRITE",
- 	"MAY_READ",
-@@ -979,7 +979,7 @@ enum {
- 	func_policy
- };
- 
--static char *func_tokens[] = {
-+static const char *const func_tokens[] = {
- 	"FILE_CHECK",
- 	"MMAP_CHECK",
- 	"BPRM_CHECK",
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 24520b4ef3b0..a53e7e4ab06c 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -92,8 +92,8 @@ struct signature_v2_hdr {
- 	uint8_t type;		/* xattr type */
- 	uint8_t version;	/* signature format version */
- 	uint8_t	hash_algo;	/* Digest algorithm [enum hash_algo] */
--	uint32_t keyid;		/* IMA key identifier - not X509/PGP specific */
--	uint16_t sig_size;	/* signature size */
-+	__be32 keyid;		/* IMA key identifier - not X509/PGP specific */
-+	__be16 sig_size;	/* signature size */
- 	uint8_t sig[0];		/* signature payload */
- } __packed;
- 
-@@ -118,7 +118,8 @@ struct integrity_iint_cache {
- struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
- 
- int integrity_kernel_read(struct file *file, loff_t offset,
--			  char *addr, unsigned long count);
-+			  void *addr, unsigned long count);
-+
- int __init integrity_read_file(const char *path, char **data);
- 
- #define INTEGRITY_KEYRING_EVM		0
--- 
-2.7.4
-
+T24gV2VkLCAyMDE3LTA2LTA3IGF0IDIyOjQ5IC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
+d3JvdGU6Cj4gVGhlc2UgY2hhbmdlcyBhcmUgdG9vIHNtYWxsIHRvIHdhcnJhbnQgdGhlaXIgb3du
+IHBhdGNoZXM6Cj4gCj4gVGhlIGtleWlkIGFuZCBzaWdfc2l6ZSBtZW1iZXJzIG9mIHN0cnVjdCBz
+aWduYXR1cmVfdjJfaGRyIGFyZSBpbiBCRSBmb3JtYXQsCj4gc28gdXNlIGEgdHlwZSB0aGF0IG1h
+a2VzIHRoaXMgYXNzdW1wdGlvbiBleHBsaWNpdC4gQWxzbywgdXNlIGJlWFhfdG9fY3B1Cj4gaW5z
+dGVhZCBvZiBfX2JlWFhfdG9fY3B1IHRvIHJlYWQgdGhlbS4KPiAKPiBDaGFuZ2UgaW50ZWdyaXR5
+X2tlcm5lbF9yZWFkIHRvIHRha2UgYSB2b2lkICogYnVmZmVyIGluc3RlYWQgb2YgY2hhciAqCj4g
+YnVmZmVyLCBzbyB0aGF0IGNhbGxlcnMgZG9uJ3QgaGF2ZSB0byB1c2UgYSBjYXN0IGlmIHRoZXkg
+cHJvdmlkZSBhIGJ1ZmZlcgo+IHRoYXQgaXNuJ3QgYSBjaGFyICouCj4gCj4gQWRkIG1pc3Npbmcg
+I2VuZGlmIGNvbW1lbnQgaW4gaW1hLmggcG9pbnRpbmcgb3V0IHdoaWNoIG1hY3JvIGl0IHJlZmVy
+cyB0by4KPiAKPiBBZGQgbWlzc2luZyBmYWxsIHRocm91Z2ggY29tbWVudCBpbiBpbWFfYXBwcmFp
+c2UuYy4KPiAKPiBDb25zdGlmeSBtYXNrX3Rva2VucyBhbmQgZnVuY190b2tlbnMgYXJyYXlzLgo+
+IAo+IFNpZ25lZC1vZmYtYnk6IFRoaWFnbyBKdW5nIEJhdWVybWFubiA8YmF1ZXJtYW5AbGludXgu
+dm5ldC5pYm0uY29tPgoKVGhhbmsgeW91LiDCoFF1ZXVlZCB0byBiZSB1cHN0cmVhbWVkLgoKTWlt
+aQoKCj4gLS0tCj4gIHNlY3VyaXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1ldHJpYy5jIHwgNCAr
+Ky0tCj4gIHNlY3VyaXR5L2ludGVncml0eS9paW50LmMgICAgICAgICAgICAgIHwgMiArLQo+ICBz
+ZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYS5oICAgICAgICAgICB8IDIgKy0KPiAgc2VjdXJpdHkv
+aW50ZWdyaXR5L2ltYS9pbWFfYXBwcmFpc2UuYyAgfCAxICsKPiAgc2VjdXJpdHkvaW50ZWdyaXR5
+L2ltYS9pbWFfcG9saWN5LmMgICAgfCA0ICsrLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2ludGVn
+cml0eS5oICAgICAgICAgfCA3ICsrKystLS0KPiAgNiBmaWxlcyBjaGFuZ2VkLCAxMSBpbnNlcnRp
+b25zKCspLCA5IGRlbGV0aW9ucygtKQo+IAo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3Jp
+dHkvZGlnc2lnX2FzeW1tZXRyaWMuYyBiL3NlY3VyaXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1l
+dHJpYy5jCj4gaW5kZXggODAwNTJlZDhkNDY3Li5hYjZhMDI5MDYyYTEgMTAwNjQ0Cj4gLS0tIGEv
+c2VjdXJpdHkvaW50ZWdyaXR5L2RpZ3NpZ19hc3ltbWV0cmljLmMKPiArKysgYi9zZWN1cml0eS9p
+bnRlZ3JpdHkvZGlnc2lnX2FzeW1tZXRyaWMuYwo+IEBAIC05MiwxMyArOTIsMTMgQEAgaW50IGFz
+eW1tZXRyaWNfdmVyaWZ5KHN0cnVjdCBrZXkgKmtleXJpbmcsIGNvbnN0IGNoYXIgKnNpZywKPiAK
+PiAgCXNpZ2xlbiAtPSBzaXplb2YoKmhkcik7Cj4gCj4gLQlpZiAoc2lnbGVuICE9IF9fYmUxNl90
+b19jcHUoaGRyLT5zaWdfc2l6ZSkpCj4gKwlpZiAoc2lnbGVuICE9IGJlMTZfdG9fY3B1KGhkci0+
+c2lnX3NpemUpKQo+ICAJCXJldHVybiAtRUJBRE1TRzsKPiAKPiAgCWlmIChoZHItPmhhc2hfYWxn
+byA+PSBIQVNIX0FMR09fX0xBU1QpCj4gIAkJcmV0dXJuIC1FTk9QS0c7Cj4gCj4gLQlrZXkgPSBy
+ZXF1ZXN0X2FzeW1tZXRyaWNfa2V5KGtleXJpbmcsIF9fYmUzMl90b19jcHUoaGRyLT5rZXlpZCkp
+Owo+ICsJa2V5ID0gcmVxdWVzdF9hc3ltbWV0cmljX2tleShrZXlyaW5nLCBiZTMyX3RvX2NwdSho
+ZHItPmtleWlkKSk7Cj4gIAlpZiAoSVNfRVJSKGtleSkpCj4gIAkJcmV0dXJuIFBUUl9FUlIoa2V5
+KTsKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2lpbnQuYyBiL3NlY3VyaXR5
+L2ludGVncml0eS9paW50LmMKPiBpbmRleCBjNzEwZDIyMDQyZjkuLjZmYzg4OGNhNDY4ZSAxMDA2
+NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaWludC5jCj4gKysrIGIvc2VjdXJpdHkvaW50
+ZWdyaXR5L2lpbnQuYwo+IEBAIC0xODIsNyArMTgyLDcgQEAgc2VjdXJpdHlfaW5pdGNhbGwoaW50
+ZWdyaXR5X2lpbnRjYWNoZV9pbml0KTsKPiAgICoKPiAgICovCj4gIGludCBpbnRlZ3JpdHlfa2Vy
+bmVsX3JlYWQoc3RydWN0IGZpbGUgKmZpbGUsIGxvZmZfdCBvZmZzZXQsCj4gLQkJCSAgY2hhciAq
+YWRkciwgdW5zaWduZWQgbG9uZyBjb3VudCkKPiArCQkJICB2b2lkICphZGRyLCB1bnNpZ25lZCBs
+b25nIGNvdW50KQo+ICB7Cj4gIAltbV9zZWdtZW50X3Qgb2xkX2ZzOwo+ICAJY2hhciBfX3VzZXIg
+KmJ1ZiA9IChjaGFyIF9fdXNlciAqKWFkZHI7Cj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVn
+cml0eS9pbWEvaW1hLmggYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYS5oCj4gaW5kZXggZDI2
+YTMwZTM3ZDEzLi4yMTVhOTNjNDFiNTEgMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5
+L2ltYS9pbWEuaAo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmgKPiBAQCAtMjg0
+LDcgKzI4NCw3IEBAIHN0YXRpYyBpbmxpbmUgaW50IGltYV9yZWFkX3hhdHRyKHN0cnVjdCBkZW50
+cnkgKmRlbnRyeSwKPiAgCXJldHVybiAwOwo+ICB9Cj4gCj4gLSNlbmRpZgo+ICsjZW5kaWYgLyog
+Q09ORklHX0lNQV9BUFBSQUlTRSAqLwo+IAo+ICAvKiBMU00gYmFzZWQgcG9saWN5IHJ1bGVzIHJl
+cXVpcmUgYXVkaXQgKi8KPiAgI2lmZGVmIENPTkZJR19JTUFfTFNNX1JVTEVTCj4gZGlmZiAtLWdp
+dCBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMgYi9zZWN1cml0eS9pbnRl
+Z3JpdHkvaW1hL2ltYV9hcHByYWlzZS5jCj4gaW5kZXggN2ZlMDU2NjE0MmQ4Li5lYTM2YTRmMTM0
+ZjQgMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXBwcmFpc2UuYwo+
+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMKPiBAQCAtMjQwLDYg
+KzI0MCw3IEBAIGludCBpbWFfYXBwcmFpc2VfbWVhc3VyZW1lbnQoZW51bSBpbWFfaG9va3MgZnVu
+YywKPiAgCWNhc2UgSU1BX1hBVFRSX0RJR0VTVF9ORzoKPiAgCQkvKiBmaXJzdCBieXRlIGNvbnRh
+aW5zIGFsZ29yaXRobSBpZCAqLwo+ICAJCWhhc2hfc3RhcnQgPSAxOwo+ICsJCS8qIGZhbGwgdGhy
+b3VnaCAqLwo+ICAJY2FzZSBJTUFfWEFUVFJfRElHRVNUOgo+ICAJCWlmIChpaW50LT5mbGFncyAm
+IElNQV9ESUdTSUdfUkVRVUlSRUQpIHsKPiAgCQkJY2F1c2UgPSAiSU1BLXNpZ25hdHVyZS1yZXF1
+aXJlZCI7Cj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX3BvbGljeS5j
+IGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfcG9saWN5LmMKPiBpbmRleCAwYWNkNjhkZWNi
+MTcuLjk0OWFkMzg1ODMyNyAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2lt
+YV9wb2xpY3kuYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX3BvbGljeS5jCj4g
+QEAgLTk2NSw3ICs5NjUsNyBAQCBlbnVtIHsKPiAgCW1hc2tfZXhlYyA9IDAsIG1hc2tfd3JpdGUs
+IG1hc2tfcmVhZCwgbWFza19hcHBlbmQKPiAgfTsKPiAKPiAtc3RhdGljIGNoYXIgKm1hc2tfdG9r
+ZW5zW10gPSB7Cj4gK3N0YXRpYyBjb25zdCBjaGFyICpjb25zdCBtYXNrX3Rva2Vuc1tdID0gewo+
+ICAJIk1BWV9FWEVDIiwKPiAgCSJNQVlfV1JJVEUiLAo+ICAJIk1BWV9SRUFEIiwKPiBAQCAtOTc5
+LDcgKzk3OSw3IEBAIGVudW0gewo+ICAJZnVuY19wb2xpY3kKPiAgfTsKPiAKPiAtc3RhdGljIGNo
+YXIgKmZ1bmNfdG9rZW5zW10gPSB7Cj4gK3N0YXRpYyBjb25zdCBjaGFyICpjb25zdCBmdW5jX3Rv
+a2Vuc1tdID0gewo+ICAJIkZJTEVfQ0hFQ0siLAo+ICAJIk1NQVBfQ0hFQ0siLAo+ICAJIkJQUk1f
+Q0hFQ0siLAo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW50ZWdyaXR5LmggYi9z
+ZWN1cml0eS9pbnRlZ3JpdHkvaW50ZWdyaXR5LmgKPiBpbmRleCAyNDUyMGI0ZWYzYjAuLmE1M2U3
+ZTRhYjA2YyAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW50ZWdyaXR5LmgKPiAr
+KysgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW50ZWdyaXR5LmgKPiBAQCAtOTIsOCArOTIsOCBAQCBz
+dHJ1Y3Qgc2lnbmF0dXJlX3YyX2hkciB7Cj4gIAl1aW50OF90IHR5cGU7CQkvKiB4YXR0ciB0eXBl
+ICovCj4gIAl1aW50OF90IHZlcnNpb247CS8qIHNpZ25hdHVyZSBmb3JtYXQgdmVyc2lvbiAqLwo+
+ICAJdWludDhfdAloYXNoX2FsZ287CS8qIERpZ2VzdCBhbGdvcml0aG0gW2VudW0gaGFzaF9hbGdv
+XSAqLwo+IC0JdWludDMyX3Qga2V5aWQ7CQkvKiBJTUEga2V5IGlkZW50aWZpZXIgLSBub3QgWDUw
+OS9QR1Agc3BlY2lmaWMgKi8KPiAtCXVpbnQxNl90IHNpZ19zaXplOwkvKiBzaWduYXR1cmUgc2l6
+ZSAqLwo+ICsJX19iZTMyIGtleWlkOwkJLyogSU1BIGtleSBpZGVudGlmaWVyIC0gbm90IFg1MDkv
+UEdQIHNwZWNpZmljICovCj4gKwlfX2JlMTYgc2lnX3NpemU7CS8qIHNpZ25hdHVyZSBzaXplICov
+Cj4gIAl1aW50OF90IHNpZ1swXTsJCS8qIHNpZ25hdHVyZSBwYXlsb2FkICovCj4gIH0gX19wYWNr
+ZWQ7Cj4gCj4gQEAgLTExOCw3ICsxMTgsOCBAQCBzdHJ1Y3QgaW50ZWdyaXR5X2lpbnRfY2FjaGUg
+ewo+ICBzdHJ1Y3QgaW50ZWdyaXR5X2lpbnRfY2FjaGUgKmludGVncml0eV9paW50X2ZpbmQoc3Ry
+dWN0IGlub2RlICppbm9kZSk7Cj4gCj4gIGludCBpbnRlZ3JpdHlfa2VybmVsX3JlYWQoc3RydWN0
+IGZpbGUgKmZpbGUsIGxvZmZfdCBvZmZzZXQsCj4gLQkJCSAgY2hhciAqYWRkciwgdW5zaWduZWQg
+bG9uZyBjb3VudCk7Cj4gKwkJCSAgdm9pZCAqYWRkciwgdW5zaWduZWQgbG9uZyBjb3VudCk7Cj4g
+Kwo+ICBpbnQgX19pbml0IGludGVncml0eV9yZWFkX2ZpbGUoY29uc3QgY2hhciAqcGF0aCwgY2hh
+ciAqKmRhdGEpOwo+IAo+ICAjZGVmaW5lIElOVEVHUklUWV9LRVlSSU5HX0VWTQkJMAoKLS0KVG8g
+dW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNlbmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGtl
+eXJpbmdzIiBpbgp0aGUgYm9keSBvZiBhIG1lc3NhZ2UgdG8gbWFqb3Jkb21vQHZnZXIua2VybmVs
+Lm9yZwpNb3JlIG1ham9yZG9tbyBpbmZvIGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9y
+ZG9tby1pbmZvLmh0bWw=
