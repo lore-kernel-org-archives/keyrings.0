@@ -1,155 +1,94 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Thu, 08 Jun 2017 01:49:11 +0000
-Subject: [PATCH v2 2/6] ima: Simplify policy_func_show.
-Message-Id: <1496886555-10082-3-git-send-email-bauerman@linux.vnet.ibm.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date: Thu, 15 Jun 2017 16:00:50 +0000
+Subject: Re: [PATCH v2 2/6] ima: Simplify policy_func_show.
+Message-Id: <1497542450.4287.56.camel@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+         <1496886555-10082-3-git-send-email-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <1496886555-10082-3-git-send-email-bauerman@linux.vnet.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-security-module@vger.kernel.org
+Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-If the func_tokens array uses the same indices as enum ima_hooks,
-policy_func_show can be a lot simpler, and the func_* enum becomes
-unnecessary.
-
-Also, if we use the same macro trick used by kernel_read_file_id_str we can
-use one hooks list for both the enum and the string array, making sure they
-are always in sync (suggested by Mimi Zohar).
-
-Finally, by using the printf pattern for the function token directly
-instead of using the pt macro we can simplify policy_func_show even further
-and avoid needing a temporary buffer.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
----
- security/integrity/ima/ima.h        | 25 +++++++++-------
- security/integrity/ima/ima_policy.c | 58 ++++---------------------------------
- 2 files changed, 21 insertions(+), 62 deletions(-)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 215a93c41b51..d52b487ad259 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -172,17 +172,22 @@ static inline unsigned long ima_hash_key(u8 *digest)
- 	return hash_long(*digest, IMA_HASH_BITS);
- }
- 
-+#define __ima_hooks(hook)		\
-+	hook(NONE)			\
-+	hook(FILE_CHECK)		\
-+	hook(MMAP_CHECK)		\
-+	hook(BPRM_CHECK)		\
-+	hook(POST_SETATTR)		\
-+	hook(MODULE_CHECK)		\
-+	hook(FIRMWARE_CHECK)		\
-+	hook(KEXEC_KERNEL_CHECK)	\
-+	hook(KEXEC_INITRAMFS_CHECK)	\
-+	hook(POLICY_CHECK)		\
-+	hook(MAX_CHECK)
-+#define __ima_hook_enumify(ENUM)	ENUM,
-+
- enum ima_hooks {
--	FILE_CHECK = 1,
--	MMAP_CHECK,
--	BPRM_CHECK,
--	POST_SETATTR,
--	MODULE_CHECK,
--	FIRMWARE_CHECK,
--	KEXEC_KERNEL_CHECK,
--	KEXEC_INITRAMFS_CHECK,
--	POLICY_CHECK,
--	MAX_CHECK
-+	__ima_hooks(__ima_hook_enumify)
- };
- 
- /* LIM API function definitions */
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 949ad3858327..f4436626ccb7 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -972,23 +972,10 @@ static const char *const mask_tokens[] = {
- 	"MAY_APPEND"
- };
- 
--enum {
--	func_file = 0, func_mmap, func_bprm,
--	func_module, func_firmware, func_post,
--	func_kexec_kernel, func_kexec_initramfs,
--	func_policy
--};
-+#define __ima_hook_stringify(str)	(#str),
- 
- static const char *const func_tokens[] = {
--	"FILE_CHECK",
--	"MMAP_CHECK",
--	"BPRM_CHECK",
--	"MODULE_CHECK",
--	"FIRMWARE_CHECK",
--	"POST_SETATTR",
--	"KEXEC_KERNEL_CHECK",
--	"KEXEC_INITRAMFS_CHECK",
--	"POLICY_CHECK"
-+	__ima_hooks(__ima_hook_stringify)
- };
- 
- void *ima_policy_start(struct seq_file *m, loff_t *pos)
-@@ -1025,49 +1012,16 @@ void ima_policy_stop(struct seq_file *m, void *v)
- 
- #define pt(token)	policy_tokens[token + Opt_err].pattern
- #define mt(token)	mask_tokens[token]
--#define ft(token)	func_tokens[token]
- 
- /*
-  * policy_func_show - display the ima_hooks policy rule
-  */
- static void policy_func_show(struct seq_file *m, enum ima_hooks func)
- {
--	char tbuf[64] = {0,};
--
--	switch (func) {
--	case FILE_CHECK:
--		seq_printf(m, pt(Opt_func), ft(func_file));
--		break;
--	case MMAP_CHECK:
--		seq_printf(m, pt(Opt_func), ft(func_mmap));
--		break;
--	case BPRM_CHECK:
--		seq_printf(m, pt(Opt_func), ft(func_bprm));
--		break;
--	case MODULE_CHECK:
--		seq_printf(m, pt(Opt_func), ft(func_module));
--		break;
--	case FIRMWARE_CHECK:
--		seq_printf(m, pt(Opt_func), ft(func_firmware));
--		break;
--	case POST_SETATTR:
--		seq_printf(m, pt(Opt_func), ft(func_post));
--		break;
--	case KEXEC_KERNEL_CHECK:
--		seq_printf(m, pt(Opt_func), ft(func_kexec_kernel));
--		break;
--	case KEXEC_INITRAMFS_CHECK:
--		seq_printf(m, pt(Opt_func), ft(func_kexec_initramfs));
--		break;
--	case POLICY_CHECK:
--		seq_printf(m, pt(Opt_func), ft(func_policy));
--		break;
--	default:
--		snprintf(tbuf, sizeof(tbuf), "%d", func);
--		seq_printf(m, pt(Opt_func), tbuf);
--		break;
--	}
--	seq_puts(m, " ");
-+	if (func > 0 && func < MAX_CHECK)
-+		seq_printf(m, "func=%s ", func_tokens[func]);
-+	else
-+		seq_printf(m, "func=%d ", func);
- }
- 
- int ima_policy_show(struct seq_file *m, void *v)
--- 
-2.7.4
-
+T24gV2VkLCAyMDE3LTA2LTA3IGF0IDIyOjQ5IC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
+d3JvdGU6Cj4gSWYgdGhlIGZ1bmNfdG9rZW5zIGFycmF5IHVzZXMgdGhlIHNhbWUgaW5kaWNlcyBh
+cyBlbnVtIGltYV9ob29rcywKPiBwb2xpY3lfZnVuY19zaG93IGNhbiBiZSBhIGxvdCBzaW1wbGVy
+LCBhbmQgdGhlIGZ1bmNfKiBlbnVtIGJlY29tZXMKPiB1bm5lY2Vzc2FyeS4KPiAKPiBBbHNvLCBp
+ZiB3ZSB1c2UgdGhlIHNhbWUgbWFjcm8gdHJpY2sgdXNlZCBieSBrZXJuZWxfcmVhZF9maWxlX2lk
+X3N0ciB3ZSBjYW4KPiB1c2Ugb25lIGhvb2tzIGxpc3QgZm9yIGJvdGggdGhlIGVudW0gYW5kIHRo
+ZSBzdHJpbmcgYXJyYXksIG1ha2luZyBzdXJlIHRoZXkKPiBhcmUgYWx3YXlzIGluIHN5bmMgKHN1
+Z2dlc3RlZCBieSBNaW1pIFpvaGFyKS4KPiAKPiBGaW5hbGx5LCBieSB1c2luZyB0aGUgcHJpbnRm
+IHBhdHRlcm4gZm9yIHRoZSBmdW5jdGlvbiB0b2tlbiBkaXJlY3RseQo+IGluc3RlYWQgb2YgdXNp
+bmcgdGhlIHB0IG1hY3JvIHdlIGNhbiBzaW1wbGlmeSBwb2xpY3lfZnVuY19zaG93IGV2ZW4gZnVy
+dGhlcgo+IGFuZCBhdm9pZCBuZWVkaW5nIGEgdGVtcG9yYXJ5IGJ1ZmZlci4KPiAKPiBTaWduZWQt
+b2ZmLWJ5OiBUaGlhZ28gSnVuZyBCYXVlcm1hbm4gPGJhdWVybWFuQGxpbnV4LnZuZXQuaWJtLmNv
+bT4KClRoYW5rIHlvdS7CoMKgUXVldWVkIHRvIGJlIHVwc3RyZWFtZWQuCgpNaW1pCj4gLS0tCj4g
+IHNlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmggICAgICAgIHwgMjUgKysrKysrKysrLS0tLS0t
+LQo+ICBzZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYyB8IDU4ICsrKystLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KPiAgMiBmaWxlcyBjaGFuZ2VkLCAyMSBpbnNlcnRp
+b25zKCspLCA2MiBkZWxldGlvbnMoLSkKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdy
+aXR5L2ltYS9pbWEuaCBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmgKPiBpbmRleCAyMTVh
+OTNjNDFiNTEuLmQ1MmI0ODdhZDI1OSAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkv
+aW1hL2ltYS5oCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaAo+IEBAIC0xNzIs
+MTcgKzE3MiwyMiBAQCBzdGF0aWMgaW5saW5lIHVuc2lnbmVkIGxvbmcgaW1hX2hhc2hfa2V5KHU4
+ICpkaWdlc3QpCj4gIAlyZXR1cm4gaGFzaF9sb25nKCpkaWdlc3QsIElNQV9IQVNIX0JJVFMpOwo+
+ICB9Cj4gCj4gKyNkZWZpbmUgX19pbWFfaG9va3MoaG9vaykJCVwKPiArCWhvb2soTk9ORSkJCQlc
+Cj4gKwlob29rKEZJTEVfQ0hFQ0spCQlcCj4gKwlob29rKE1NQVBfQ0hFQ0spCQlcCj4gKwlob29r
+KEJQUk1fQ0hFQ0spCQlcCj4gKwlob29rKFBPU1RfU0VUQVRUUikJCVwKPiArCWhvb2soTU9EVUxF
+X0NIRUNLKQkJXAo+ICsJaG9vayhGSVJNV0FSRV9DSEVDSykJCVwKPiArCWhvb2soS0VYRUNfS0VS
+TkVMX0NIRUNLKQlcCj4gKwlob29rKEtFWEVDX0lOSVRSQU1GU19DSEVDSykJXAo+ICsJaG9vayhQ
+T0xJQ1lfQ0hFQ0spCQlcCj4gKwlob29rKE1BWF9DSEVDSykKPiArI2RlZmluZSBfX2ltYV9ob29r
+X2VudW1pZnkoRU5VTSkJRU5VTSwKPiArCj4gIGVudW0gaW1hX2hvb2tzIHsKPiAtCUZJTEVfQ0hF
+Q0sgPSAxLAo+IC0JTU1BUF9DSEVDSywKPiAtCUJQUk1fQ0hFQ0ssCj4gLQlQT1NUX1NFVEFUVFIs
+Cj4gLQlNT0RVTEVfQ0hFQ0ssCj4gLQlGSVJNV0FSRV9DSEVDSywKPiAtCUtFWEVDX0tFUk5FTF9D
+SEVDSywKPiAtCUtFWEVDX0lOSVRSQU1GU19DSEVDSywKPiAtCVBPTElDWV9DSEVDSywKPiAtCU1B
+WF9DSEVDSwo+ICsJX19pbWFfaG9va3MoX19pbWFfaG9va19lbnVtaWZ5KQo+ICB9Owo+IAo+ICAv
+KiBMSU0gQVBJIGZ1bmN0aW9uIGRlZmluaXRpb25zICovCj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5
+L2ludGVncml0eS9pbWEvaW1hX3BvbGljeS5jIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFf
+cG9saWN5LmMKPiBpbmRleCA5NDlhZDM4NTgzMjcuLmY0NDM2NjI2Y2NiNyAxMDA2NDQKPiAtLS0g
+YS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYwo+ICsrKyBiL3NlY3VyaXR5L2lu
+dGVncml0eS9pbWEvaW1hX3BvbGljeS5jCj4gQEAgLTk3MiwyMyArOTcyLDEwIEBAIHN0YXRpYyBj
+b25zdCBjaGFyICpjb25zdCBtYXNrX3Rva2Vuc1tdID0gewo+ICAJIk1BWV9BUFBFTkQiCj4gIH07
+Cj4gCj4gLWVudW0gewo+IC0JZnVuY19maWxlID0gMCwgZnVuY19tbWFwLCBmdW5jX2Jwcm0sCj4g
+LQlmdW5jX21vZHVsZSwgZnVuY19maXJtd2FyZSwgZnVuY19wb3N0LAo+IC0JZnVuY19rZXhlY19r
+ZXJuZWwsIGZ1bmNfa2V4ZWNfaW5pdHJhbWZzLAo+IC0JZnVuY19wb2xpY3kKPiAtfTsKPiArI2Rl
+ZmluZSBfX2ltYV9ob29rX3N0cmluZ2lmeShzdHIpCSgjc3RyKSwKPiAKPiAgc3RhdGljIGNvbnN0
+IGNoYXIgKmNvbnN0IGZ1bmNfdG9rZW5zW10gPSB7Cj4gLQkiRklMRV9DSEVDSyIsCj4gLQkiTU1B
+UF9DSEVDSyIsCj4gLQkiQlBSTV9DSEVDSyIsCj4gLQkiTU9EVUxFX0NIRUNLIiwKPiAtCSJGSVJN
+V0FSRV9DSEVDSyIsCj4gLQkiUE9TVF9TRVRBVFRSIiwKPiAtCSJLRVhFQ19LRVJORUxfQ0hFQ0si
+LAo+IC0JIktFWEVDX0lOSVRSQU1GU19DSEVDSyIsCj4gLQkiUE9MSUNZX0NIRUNLIgo+ICsJX19p
+bWFfaG9va3MoX19pbWFfaG9va19zdHJpbmdpZnkpCj4gIH07Cj4gCj4gIHZvaWQgKmltYV9wb2xp
+Y3lfc3RhcnQoc3RydWN0IHNlcV9maWxlICptLCBsb2ZmX3QgKnBvcykKPiBAQCAtMTAyNSw0OSAr
+MTAxMiwxNiBAQCB2b2lkIGltYV9wb2xpY3lfc3RvcChzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIHZvaWQg
+KnYpCj4gCj4gICNkZWZpbmUgcHQodG9rZW4pCXBvbGljeV90b2tlbnNbdG9rZW4gKyBPcHRfZXJy
+XS5wYXR0ZXJuCj4gICNkZWZpbmUgbXQodG9rZW4pCW1hc2tfdG9rZW5zW3Rva2VuXQo+IC0jZGVm
+aW5lIGZ0KHRva2VuKQlmdW5jX3Rva2Vuc1t0b2tlbl0KPiAKPiAgLyoKPiAgICogcG9saWN5X2Z1
+bmNfc2hvdyAtIGRpc3BsYXkgdGhlIGltYV9ob29rcyBwb2xpY3kgcnVsZQo+ICAgKi8KPiAgc3Rh
+dGljIHZvaWQgcG9saWN5X2Z1bmNfc2hvdyhzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIGVudW0gaW1hX2hv
+b2tzIGZ1bmMpCj4gIHsKPiAtCWNoYXIgdGJ1Zls2NF0gPSB7MCx9Owo+IC0KPiAtCXN3aXRjaCAo
+ZnVuYykgewo+IC0JY2FzZSBGSUxFX0NIRUNLOgo+IC0JCXNlcV9wcmludGYobSwgcHQoT3B0X2Z1
+bmMpLCBmdChmdW5jX2ZpbGUpKTsKPiAtCQlicmVhazsKPiAtCWNhc2UgTU1BUF9DSEVDSzoKPiAt
+CQlzZXFfcHJpbnRmKG0sIHB0KE9wdF9mdW5jKSwgZnQoZnVuY19tbWFwKSk7Cj4gLQkJYnJlYWs7
+Cj4gLQljYXNlIEJQUk1fQ0hFQ0s6Cj4gLQkJc2VxX3ByaW50ZihtLCBwdChPcHRfZnVuYyksIGZ0
+KGZ1bmNfYnBybSkpOwo+IC0JCWJyZWFrOwo+IC0JY2FzZSBNT0RVTEVfQ0hFQ0s6Cj4gLQkJc2Vx
+X3ByaW50ZihtLCBwdChPcHRfZnVuYyksIGZ0KGZ1bmNfbW9kdWxlKSk7Cj4gLQkJYnJlYWs7Cj4g
+LQljYXNlIEZJUk1XQVJFX0NIRUNLOgo+IC0JCXNlcV9wcmludGYobSwgcHQoT3B0X2Z1bmMpLCBm
+dChmdW5jX2Zpcm13YXJlKSk7Cj4gLQkJYnJlYWs7Cj4gLQljYXNlIFBPU1RfU0VUQVRUUjoKPiAt
+CQlzZXFfcHJpbnRmKG0sIHB0KE9wdF9mdW5jKSwgZnQoZnVuY19wb3N0KSk7Cj4gLQkJYnJlYWs7
+Cj4gLQljYXNlIEtFWEVDX0tFUk5FTF9DSEVDSzoKPiAtCQlzZXFfcHJpbnRmKG0sIHB0KE9wdF9m
+dW5jKSwgZnQoZnVuY19rZXhlY19rZXJuZWwpKTsKPiAtCQlicmVhazsKPiAtCWNhc2UgS0VYRUNf
+SU5JVFJBTUZTX0NIRUNLOgo+IC0JCXNlcV9wcmludGYobSwgcHQoT3B0X2Z1bmMpLCBmdChmdW5j
+X2tleGVjX2luaXRyYW1mcykpOwo+IC0JCWJyZWFrOwo+IC0JY2FzZSBQT0xJQ1lfQ0hFQ0s6Cj4g
+LQkJc2VxX3ByaW50ZihtLCBwdChPcHRfZnVuYyksIGZ0KGZ1bmNfcG9saWN5KSk7Cj4gLQkJYnJl
+YWs7Cj4gLQlkZWZhdWx0Ogo+IC0JCXNucHJpbnRmKHRidWYsIHNpemVvZih0YnVmKSwgIiVkIiwg
+ZnVuYyk7Cj4gLQkJc2VxX3ByaW50ZihtLCBwdChPcHRfZnVuYyksIHRidWYpOwo+IC0JCWJyZWFr
+Owo+IC0JfQo+IC0Jc2VxX3B1dHMobSwgIiAiKTsKPiArCWlmIChmdW5jID4gMCAmJiBmdW5jIDwg
+TUFYX0NIRUNLKQo+ICsJCXNlcV9wcmludGYobSwgImZ1bmM9JXMgIiwgZnVuY190b2tlbnNbZnVu
+Y10pOwo+ICsJZWxzZQo+ICsJCXNlcV9wcmludGYobSwgImZ1bmM9JWQgIiwgZnVuYyk7Cj4gIH0K
+PiAKPiAgaW50IGltYV9wb2xpY3lfc2hvdyhzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIHZvaWQgKnYpCgot
+LQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3Jp
+YmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5r
+ZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcv
+bWFqb3Jkb21vLWluZm8uaHRtbA==
