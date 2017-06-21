@@ -1,120 +1,170 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 29 May 2017 08:22:58 +0000
-Subject: [PATCH v2 11/11] crypto: adapt api sample to use async. op wait
-Message-Id: <1496046180-21962-12-git-send-email-gilad@benyossef.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Wed, 21 Jun 2017 14:29:35 +0000
+Subject: [PATCH v3 0/6] Updated API for TPM 2.0 PCR extend
+Message-Id: <20170621142941.32674-1-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1496046180-21962-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1496046180-21962-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Eric Biggers <ebiggers3@gmail.com>, Ofir Drang <ofir.drang@arm.com>, Pavel Shilovsky <pshilov@microsoft.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-raid@vger.kernel.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-The code sample is waiting for an async. crypto op completion.
-Adapt sample to use the new generic infrastructure to do the same.
+The first version of the patch set can be retrieved at the URL:
 
-This also fixes a possible data coruption bug created by the
-use of wait_for_completion_interruptible() without dealing
-correctly with an interrupt aborting the wait prior to the
-async op finishing.
+https://sourceforge.net/p/tpmdd/mailman/message/35756302/
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
----
- Documentation/crypto/api-samples.rst | 52 +++++++-----------------------------
- 1 file changed, 10 insertions(+), 42 deletions(-)
+The patches should be applied on top of the next branch of
+linux-security.git (commit cdac74d).
 
-diff --git a/Documentation/crypto/api-samples.rst b/Documentation/crypto/api-samples.rst
-index d021fd9..73b466b 100644
---- a/Documentation/crypto/api-samples.rst
-+++ b/Documentation/crypto/api-samples.rst
-@@ -7,59 +7,27 @@ Code Example For Symmetric Key Cipher Operation
- ::
- 
- 
--    struct tcrypt_result {
--        struct completion completion;
--        int err;
--    };
--
-     /* tie all data structures together */
-     struct skcipher_def {
-         struct scatterlist sg;
-         struct crypto_skcipher *tfm;
-         struct skcipher_request *req;
--        struct tcrypt_result result;
-+        struct crypto_wait wait;
-     };
- 
--    /* Callback function */
--    static void test_skcipher_cb(struct crypto_async_request *req, int error)
--    {
--        struct tcrypt_result *result = req->data;
--
--        if (error = -EINPROGRESS)
--            return;
--        result->err = error;
--        complete(&result->completion);
--        pr_info("Encryption finished successfully\n");
--    }
--
-     /* Perform cipher operation */
-     static unsigned int test_skcipher_encdec(struct skcipher_def *sk,
-                          int enc)
-     {
--        int rc = 0;
-+        int rc;
- 
-         if (enc)
--            rc = crypto_skcipher_encrypt(sk->req);
-+            rc = crypto_wait_req(crypto_skcipher_encrypt(sk->req), &sk->wait);
-         else
--            rc = crypto_skcipher_decrypt(sk->req);
--
--        switch (rc) {
--        case 0:
--            break;
--        case -EINPROGRESS:
--        case -EBUSY:
--            rc = wait_for_completion_interruptible(
--                &sk->result.completion);
--            if (!rc && !sk->result.err) {
--                reinit_completion(&sk->result.completion);
--                break;
--            }
--        default:
--            pr_info("skcipher encrypt returned with %d result %d\n",
--                rc, sk->result.err);
--            break;
--        }
--        init_completion(&sk->result.completion);
-+            rc = crypto_wait_req(crypto_skcipher_decrypt(sk->req), &sk->wait);
-+
-+	if (rc)
-+		pr_info("skcipher encrypt returned with result %d\n", rc);
- 
-         return rc;
-     }
-@@ -89,8 +57,8 @@ Code Example For Symmetric Key Cipher Operation
-         }
- 
-         skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--                          test_skcipher_cb,
--                          &sk.result);
-+                          crypto_req_done,
-+                          &sk.wait);
- 
-         /* AES 256 with random key */
-         get_random_bytes(&key, 32);
-@@ -122,7 +90,7 @@ Code Example For Symmetric Key Cipher Operation
-         /* We encrypt one block */
-         sg_init_one(&sk.sg, scratchpad, 16);
-         skcipher_request_set_crypt(req, &sk.sg, &sk.sg, 16, ivdata);
--        init_completion(&sk.result.completion);
-+        crypto_init_wait(&sk.wait);
- 
-         /* encrypt data */
-         ret = test_skcipher_encdec(&sk, 1);
+This patch set updates the TPM driver API for extending Platform
+Configuration Registers (PCRs). These are special TPM registers which
+cannot be written directly, but can only be updated through the extend
+operation, by passing a digest as input:
+
+PCR_value_new = hash_func(PCR_value_old | digest)
+
+While TPM 1.2 can only use SHA1 as hash function, TPM 2.0 can support
+multiple algorithms. On a TPM 2.0, PCR values extended with the same
+algorithm are stored in a location called bank.
+
+Currently, PCRs can only be extended from the kernel with a SHA1 digest,
+through tpm_pcr_extend(). Remaining banks of a TPM 2.0 are extended with
+the SHA1 digest padded with zeros. In order to take advantage of stronger
+algorithms, the TPM driver should allow TPM users to extend a PCR with
+digests calculated with the same algorithm of the PCR bank.
+
+This patch set first introduces a new structure, called tpm_pcr_bank_info,
+for storing detailed information about each PCR bank:
+
+- TPM algorithm ID: algorithm identifier, defined by TCG; will be included
+  by TPM users (e.g. IMA) in a measurement event log
+- digest size: digest size for a TPM algorithm; since this is retrieved
+  from the TPM, PCR banks can be extended even if an algorithm is unknown
+  for the crypto subsystem (which currently the TPM driver relies on)
+- crypto ID: will be used by TPM users to calculate a digest, to extend
+  a PCR
+
+Then, the patch set introduces the new function tpm_get_pcr_banks_info(),
+to pass the information about PCR banks to TPM users, and finally, modifies
+the parameters of tpm_pcr_extend(), so that TPM users can pass multiple
+digests.
+
+Given this definition of the tpm2_digest structure:
+
+struct tpm2_digest {
+    u16 alg_id;
+    u8 digest[SHA512_DIGEST_SIZE];
+} __packed;
+
+there will be two methods to extend PCRs:
+
+1) by passing only one tpm2_digest structure containing a SHA1 digest
+   (as it is done in the patch 6/6); in this case, the SHA1 digest
+   is padded with zeros
+
+2) by calling tpm_get_pcr_banks_info() to obtain PCR banks information,
+   and by calling tpm_pcr_extend() with as many tpm2_digest structures as
+   the number of tpm_pcr_bank_info structures retrieved in the first step
+   (if a digest for a TPM algorithm is missing, the TPM driver
+   pads/truncates the first digest provided by the TPM user)
+
+
+API Usage Examples
+
+In the following examples, an application extends PCR 16 with the digest
+of an event (e.g. record of a software measurement), with the methods
+described above.
+
+
+void app_calc_event_digest(struct crypto_shash *tfm, char *event,
+                           u8 *digest)
+{
+    SHASH_DESC_ON_STACK(shash, tfm);
+
+    shash->tfm = tfm;
+    shash->flags = 0;
+
+    crypto_shash_init(shash);
+    crypto_shash_update(shash, event, strlen(event));
+    crypto_shash_final(shash, digest);
+}
+
+void app_pcr_extend_method_1(void)
+{
+    char *event = "application event";
+    struct tpm2_digest digestarg = {.alg_id = TPM2_ALG_SHA1};
+
+    /* calculate event digest with current hash algorithm */
+    struct crypto_shash *tfm = crypto_alloc_shash("sha1", 0, 0);
+
+    app_calc_event_digest(tfm, event, digestarg.digest);
+
+    /* extend all PCR banks with SHA1 digest*/
+    tpm_pcr_extend(TPM_ANY_NUM, 16, 1, &digestarg);
+}
+
+void app_pcr_extend_method_2(void)
+{
+    /* declare static arrays, limit is known */
+    struct tpm_pcr_bank_info active_banks[TPM_ACTIVE_BANKS_MAX];
+    struct tpm2_digest digest_array[TPM_ACTIVE_BANKS_MAX];
+    int i, num_algo;
+
+    /* obtain algorithms supported by the TPM */
+    num_algo = tpm_get_pcr_banks_info(TPM_ANY_NUM, active_banks);
+
+    for (i = 0; i < num_algo; i++) {
+        char *event = "application event";
+
+        /* calculate event digest with current hash algorithm */
+        const char *algo_name = hash_algo_name[active_banks[i].crypto_id];
+        struct crypto_shash *tfm = crypto_alloc_shash(algo_name, 0, 0);
+
+        app_calc_event_digest(tfm, event, digest_array[i].digest);
+        digest_array[i].alg_id = active_banks[i].alg_id;
+    }
+
+    /* extend all PCR banks with calculated digests */
+    tpm_pcr_extend(TPM_ANY_NUM, 16, num_algo, digest_array);
+}
+
+
+Changelog
+
+v3
+
+- introduced new structure tpm_pcr_bank_info
+- read a PCR to obtain the digest size for each TPM algorithm
+- tpm_pcr_algorithms() replaced by tpm_get_pcr_banks_info()
+- removed tpm_pcr_algo_to_crypto() and tpm_pcr_algo_from_crypto()
+- modification of tpm_pcr_extend() parameters and of callers of the
+  function done in the same patch
+- removed tpm_pcr_check_input()
+
+v2
+
+- tpm_pcr_algorithms() returns supported algorithms also for TPM 1.2
+- fixed return values of tpm2_pcr_algo_to_crypto() and
+  tpm2_pcr_algo_from_crypto() if TPM support is disabled in the kernel
+- tpm_pcr_extend() arguments checked by tpm_pcr_check_input()
+- modified parameters of tpm_pcr_extend()
+
+Roberto Sassu (6):
+  tpm: use tpm_buf functions to perform a PCR read
+  tpm: use tpm2_pcr_read_tpm_buf() in tpm2_do_selftest()
+  tpm: introduce tpm_pcr_bank_info structure with digest_size from TPM
+  tpm: replace TPM algorithms IDs with tpm_pcr_bank_info structs in
+    tpm_chip
+  tpm: introduce tpm_get_pcr_banks_info()
+  tpm: pass multiple digests to tpm_pcr_extend()
+
+ drivers/char/tpm/tpm-interface.c   |  88 ++++++++++++++++++++++---
+ drivers/char/tpm/tpm.h             |  19 +-----
+ drivers/char/tpm/tpm2-cmd.c        | 132 ++++++++++++++++++++++---------------
+ include/linux/tpm.h                |  39 ++++++++++-
+ security/integrity/ima/ima_queue.c |   4 +-
+ security/keys/trusted.c            |   6 +-
+ 6 files changed, 202 insertions(+), 86 deletions(-)
+
 -- 
-2.1.4
+2.9.3
 
