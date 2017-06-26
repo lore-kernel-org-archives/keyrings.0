@@ -1,25 +1,38 @@
-From: Cyril Hrubis <chrubis@suse.cz>
-Date: Wed, 07 Jun 2017 13:51:06 +0000
-Subject: Re: [LTP] [PATCH 0/2] ltp: update add_key tests for nonempty NULL payload fix
-Message-Id: <20170607135106.GC26322@rei.lan>
+From: Artem Savkov <asavkov@redhat.com>
+Date: Mon, 26 Jun 2017 12:35:21 +0000
+Subject: [PATCH keyutils] tests/bz1031154: skip if selinux is disabled
+Message-Id: <1498480521-16489-1-git-send-email-asavkov@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170606114416.GA5208@rei>
-In-Reply-To: <20170606114416.GA5208@rei>
 To: keyrings@vger.kernel.org
 
-Hi!
-> Personally, I don't align quite as strongly with that viewpoint (and maybe you
-> and the other LTP developers don't either) because this can, after all, only be
-> a problem in cases where the test suite is upgraded, and furthermore if a test
-> fails it's helpful to 'git log' the test anyway.
-> 
-> Would you suggest I simply update add_key02 instead?
+With selinux disabled the test currently fails trying to setenforce, it
+should be skipped instead. Found while trying to run in a container
+where selinux always appears disabled.
 
-Yes, I would have done that as well.
+Signed-off-by: Artem Savkov <asavkov@redhat.com>
+---
+ tests/bugzillas/bz1031154/runtest.sh | 5 +++++
+ 1 file changed, 5 insertions(+)
 
+diff --git a/tests/bugzillas/bz1031154/runtest.sh b/tests/bugzillas/bz1031154/runtest.sh
+index aee8a28..e1721c0 100644
+--- a/tests/bugzillas/bz1031154/runtest.sh
++++ b/tests/bugzillas/bz1031154/runtest.sh
+@@ -20,6 +20,11 @@ then
+     exit 0
+ fi
+ 
++if ! grep -q selinuxfs /proc/mounts; then
++    toolbox_skip_test $TEST "SKIPPING TEST DUE TO DISABLED SELINUX"
++    exit 0
++fi
++
+ require_command getenforce
+ require_command setenforce
+ require_command runcon
 -- 
-Cyril Hrubis
-chrubis@suse.cz
+2.7.5
+
