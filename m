@@ -1,7 +1,7 @@
 From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Mon, 26 Jun 2017 06:58:16 +0000
+Date: Mon, 26 Jun 2017 07:21:46 +0000
 Subject: Re: [PATCH v3 0/6] Updated API for TPM 2.0 PCR extend
-Message-Id: <b38be3c3-09ad-5b2a-c007-9b054f622542@huawei.com>
+Message-Id: <989430a6-973f-6610-fb0a-f9e4b01b0d8e@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -186,21 +186,26 @@ On 6/24/2017 11:03 AM, Jarkko Sakkinen wrote:
 > 		   const u8 *hash);
 >
 > The paramater 'alg' is crypto ID as specified by crypto subsystem.
->
+
+You cannot pass one digest at time. Suppose that you want to extend
+the SHA1 and SHA256 banks, each with a digest calculated with the
+same algorithm. If you pass a SHA1 digest first, also the SHA256 bank
+will be extended with the padded SHA1 digest.
+
+Regarding crypto IDs, it has been decided that IMA will include
+TPM algorithm IDs in the event log. So both IDs should be passed
+to IMA somehow.
+
+Roberto
+
+
 > TPM driver must have a precompiled table of mappings for crypto IDs
 > and TPM algorithm IDs.
 >
 > In addition it must have dynamically acquired list of TPM alg IDs.
 > For those algs that static mapping does not exist it must extend
 > them like we do now everything else except SHA-1 (Naynas changes).
-
-Algorithms for which there is no mapping are skipped.
-
-How you can build the command buffer if you don't know the digest size?
-
-Roberto
-
-
+>
 > There's absolutely no need to pass digest size like you do BTW as it is
 > defined by the standard.
 >
