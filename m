@@ -1,94 +1,60 @@
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 15 Jun 2017 16:00:50 +0000
-Subject: Re: [PATCH v2 2/6] ima: Simplify policy_func_show.
-Message-Id: <1497542450.4287.56.camel@linux.vnet.ibm.com>
+Date: Mon, 26 Jun 2017 12:33:59 +0000
+Subject: Re: [Linux-ima-devel] [PATCH v3 0/6] Updated API for TPM 2.0 PCR extend
+Message-Id: <1498480439.3387.45.camel@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1496886555-10082-1-git-send-email-bauerman@linux.vnet.ibm.com>
-         <1496886555-10082-3-git-send-email-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <1496886555-10082-3-git-send-email-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <20170621142941.32674-1-roberto.sassu@huawei.com>
+	<20170624090325.kbqhwkrx5qvtxveg@linux.intel.com>
+In-Reply-To: <20170624090325.kbqhwkrx5qvtxveg@linux.intel.com>
+To: linux-security-module@vger.kernel.org
 
-T24gV2VkLCAyMDE3LTA2LTA3IGF0IDIyOjQ5IC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
-d3JvdGU6Cj4gSWYgdGhlIGZ1bmNfdG9rZW5zIGFycmF5IHVzZXMgdGhlIHNhbWUgaW5kaWNlcyBh
-cyBlbnVtIGltYV9ob29rcywKPiBwb2xpY3lfZnVuY19zaG93IGNhbiBiZSBhIGxvdCBzaW1wbGVy
-LCBhbmQgdGhlIGZ1bmNfKiBlbnVtIGJlY29tZXMKPiB1bm5lY2Vzc2FyeS4KPiAKPiBBbHNvLCBp
-ZiB3ZSB1c2UgdGhlIHNhbWUgbWFjcm8gdHJpY2sgdXNlZCBieSBrZXJuZWxfcmVhZF9maWxlX2lk
-X3N0ciB3ZSBjYW4KPiB1c2Ugb25lIGhvb2tzIGxpc3QgZm9yIGJvdGggdGhlIGVudW0gYW5kIHRo
-ZSBzdHJpbmcgYXJyYXksIG1ha2luZyBzdXJlIHRoZXkKPiBhcmUgYWx3YXlzIGluIHN5bmMgKHN1
-Z2dlc3RlZCBieSBNaW1pIFpvaGFyKS4KPiAKPiBGaW5hbGx5LCBieSB1c2luZyB0aGUgcHJpbnRm
-IHBhdHRlcm4gZm9yIHRoZSBmdW5jdGlvbiB0b2tlbiBkaXJlY3RseQo+IGluc3RlYWQgb2YgdXNp
-bmcgdGhlIHB0IG1hY3JvIHdlIGNhbiBzaW1wbGlmeSBwb2xpY3lfZnVuY19zaG93IGV2ZW4gZnVy
-dGhlcgo+IGFuZCBhdm9pZCBuZWVkaW5nIGEgdGVtcG9yYXJ5IGJ1ZmZlci4KPiAKPiBTaWduZWQt
-b2ZmLWJ5OiBUaGlhZ28gSnVuZyBCYXVlcm1hbm4gPGJhdWVybWFuQGxpbnV4LnZuZXQuaWJtLmNv
-bT4KClRoYW5rIHlvdS7CoMKgUXVldWVkIHRvIGJlIHVwc3RyZWFtZWQuCgpNaW1pCj4gLS0tCj4g
-IHNlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmggICAgICAgIHwgMjUgKysrKysrKysrLS0tLS0t
-LQo+ICBzZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYyB8IDU4ICsrKystLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KPiAgMiBmaWxlcyBjaGFuZ2VkLCAyMSBpbnNlcnRp
-b25zKCspLCA2MiBkZWxldGlvbnMoLSkKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdy
-aXR5L2ltYS9pbWEuaCBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmgKPiBpbmRleCAyMTVh
-OTNjNDFiNTEuLmQ1MmI0ODdhZDI1OSAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkv
-aW1hL2ltYS5oCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaAo+IEBAIC0xNzIs
-MTcgKzE3MiwyMiBAQCBzdGF0aWMgaW5saW5lIHVuc2lnbmVkIGxvbmcgaW1hX2hhc2hfa2V5KHU4
-ICpkaWdlc3QpCj4gIAlyZXR1cm4gaGFzaF9sb25nKCpkaWdlc3QsIElNQV9IQVNIX0JJVFMpOwo+
-ICB9Cj4gCj4gKyNkZWZpbmUgX19pbWFfaG9va3MoaG9vaykJCVwKPiArCWhvb2soTk9ORSkJCQlc
-Cj4gKwlob29rKEZJTEVfQ0hFQ0spCQlcCj4gKwlob29rKE1NQVBfQ0hFQ0spCQlcCj4gKwlob29r
-KEJQUk1fQ0hFQ0spCQlcCj4gKwlob29rKFBPU1RfU0VUQVRUUikJCVwKPiArCWhvb2soTU9EVUxF
-X0NIRUNLKQkJXAo+ICsJaG9vayhGSVJNV0FSRV9DSEVDSykJCVwKPiArCWhvb2soS0VYRUNfS0VS
-TkVMX0NIRUNLKQlcCj4gKwlob29rKEtFWEVDX0lOSVRSQU1GU19DSEVDSykJXAo+ICsJaG9vayhQ
-T0xJQ1lfQ0hFQ0spCQlcCj4gKwlob29rKE1BWF9DSEVDSykKPiArI2RlZmluZSBfX2ltYV9ob29r
-X2VudW1pZnkoRU5VTSkJRU5VTSwKPiArCj4gIGVudW0gaW1hX2hvb2tzIHsKPiAtCUZJTEVfQ0hF
-Q0sgPSAxLAo+IC0JTU1BUF9DSEVDSywKPiAtCUJQUk1fQ0hFQ0ssCj4gLQlQT1NUX1NFVEFUVFIs
-Cj4gLQlNT0RVTEVfQ0hFQ0ssCj4gLQlGSVJNV0FSRV9DSEVDSywKPiAtCUtFWEVDX0tFUk5FTF9D
-SEVDSywKPiAtCUtFWEVDX0lOSVRSQU1GU19DSEVDSywKPiAtCVBPTElDWV9DSEVDSywKPiAtCU1B
-WF9DSEVDSwo+ICsJX19pbWFfaG9va3MoX19pbWFfaG9va19lbnVtaWZ5KQo+ICB9Owo+IAo+ICAv
-KiBMSU0gQVBJIGZ1bmN0aW9uIGRlZmluaXRpb25zICovCj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5
-L2ludGVncml0eS9pbWEvaW1hX3BvbGljeS5jIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFf
-cG9saWN5LmMKPiBpbmRleCA5NDlhZDM4NTgzMjcuLmY0NDM2NjI2Y2NiNyAxMDA2NDQKPiAtLS0g
-YS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYwo+ICsrKyBiL3NlY3VyaXR5L2lu
-dGVncml0eS9pbWEvaW1hX3BvbGljeS5jCj4gQEAgLTk3MiwyMyArOTcyLDEwIEBAIHN0YXRpYyBj
-b25zdCBjaGFyICpjb25zdCBtYXNrX3Rva2Vuc1tdID0gewo+ICAJIk1BWV9BUFBFTkQiCj4gIH07
-Cj4gCj4gLWVudW0gewo+IC0JZnVuY19maWxlID0gMCwgZnVuY19tbWFwLCBmdW5jX2Jwcm0sCj4g
-LQlmdW5jX21vZHVsZSwgZnVuY19maXJtd2FyZSwgZnVuY19wb3N0LAo+IC0JZnVuY19rZXhlY19r
-ZXJuZWwsIGZ1bmNfa2V4ZWNfaW5pdHJhbWZzLAo+IC0JZnVuY19wb2xpY3kKPiAtfTsKPiArI2Rl
-ZmluZSBfX2ltYV9ob29rX3N0cmluZ2lmeShzdHIpCSgjc3RyKSwKPiAKPiAgc3RhdGljIGNvbnN0
-IGNoYXIgKmNvbnN0IGZ1bmNfdG9rZW5zW10gPSB7Cj4gLQkiRklMRV9DSEVDSyIsCj4gLQkiTU1B
-UF9DSEVDSyIsCj4gLQkiQlBSTV9DSEVDSyIsCj4gLQkiTU9EVUxFX0NIRUNLIiwKPiAtCSJGSVJN
-V0FSRV9DSEVDSyIsCj4gLQkiUE9TVF9TRVRBVFRSIiwKPiAtCSJLRVhFQ19LRVJORUxfQ0hFQ0si
-LAo+IC0JIktFWEVDX0lOSVRSQU1GU19DSEVDSyIsCj4gLQkiUE9MSUNZX0NIRUNLIgo+ICsJX19p
-bWFfaG9va3MoX19pbWFfaG9va19zdHJpbmdpZnkpCj4gIH07Cj4gCj4gIHZvaWQgKmltYV9wb2xp
-Y3lfc3RhcnQoc3RydWN0IHNlcV9maWxlICptLCBsb2ZmX3QgKnBvcykKPiBAQCAtMTAyNSw0OSAr
-MTAxMiwxNiBAQCB2b2lkIGltYV9wb2xpY3lfc3RvcChzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIHZvaWQg
-KnYpCj4gCj4gICNkZWZpbmUgcHQodG9rZW4pCXBvbGljeV90b2tlbnNbdG9rZW4gKyBPcHRfZXJy
-XS5wYXR0ZXJuCj4gICNkZWZpbmUgbXQodG9rZW4pCW1hc2tfdG9rZW5zW3Rva2VuXQo+IC0jZGVm
-aW5lIGZ0KHRva2VuKQlmdW5jX3Rva2Vuc1t0b2tlbl0KPiAKPiAgLyoKPiAgICogcG9saWN5X2Z1
-bmNfc2hvdyAtIGRpc3BsYXkgdGhlIGltYV9ob29rcyBwb2xpY3kgcnVsZQo+ICAgKi8KPiAgc3Rh
-dGljIHZvaWQgcG9saWN5X2Z1bmNfc2hvdyhzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIGVudW0gaW1hX2hv
-b2tzIGZ1bmMpCj4gIHsKPiAtCWNoYXIgdGJ1Zls2NF0gPSB7MCx9Owo+IC0KPiAtCXN3aXRjaCAo
-ZnVuYykgewo+IC0JY2FzZSBGSUxFX0NIRUNLOgo+IC0JCXNlcV9wcmludGYobSwgcHQoT3B0X2Z1
-bmMpLCBmdChmdW5jX2ZpbGUpKTsKPiAtCQlicmVhazsKPiAtCWNhc2UgTU1BUF9DSEVDSzoKPiAt
-CQlzZXFfcHJpbnRmKG0sIHB0KE9wdF9mdW5jKSwgZnQoZnVuY19tbWFwKSk7Cj4gLQkJYnJlYWs7
-Cj4gLQljYXNlIEJQUk1fQ0hFQ0s6Cj4gLQkJc2VxX3ByaW50ZihtLCBwdChPcHRfZnVuYyksIGZ0
-KGZ1bmNfYnBybSkpOwo+IC0JCWJyZWFrOwo+IC0JY2FzZSBNT0RVTEVfQ0hFQ0s6Cj4gLQkJc2Vx
-X3ByaW50ZihtLCBwdChPcHRfZnVuYyksIGZ0KGZ1bmNfbW9kdWxlKSk7Cj4gLQkJYnJlYWs7Cj4g
-LQljYXNlIEZJUk1XQVJFX0NIRUNLOgo+IC0JCXNlcV9wcmludGYobSwgcHQoT3B0X2Z1bmMpLCBm
-dChmdW5jX2Zpcm13YXJlKSk7Cj4gLQkJYnJlYWs7Cj4gLQljYXNlIFBPU1RfU0VUQVRUUjoKPiAt
-CQlzZXFfcHJpbnRmKG0sIHB0KE9wdF9mdW5jKSwgZnQoZnVuY19wb3N0KSk7Cj4gLQkJYnJlYWs7
-Cj4gLQljYXNlIEtFWEVDX0tFUk5FTF9DSEVDSzoKPiAtCQlzZXFfcHJpbnRmKG0sIHB0KE9wdF9m
-dW5jKSwgZnQoZnVuY19rZXhlY19rZXJuZWwpKTsKPiAtCQlicmVhazsKPiAtCWNhc2UgS0VYRUNf
-SU5JVFJBTUZTX0NIRUNLOgo+IC0JCXNlcV9wcmludGYobSwgcHQoT3B0X2Z1bmMpLCBmdChmdW5j
-X2tleGVjX2luaXRyYW1mcykpOwo+IC0JCWJyZWFrOwo+IC0JY2FzZSBQT0xJQ1lfQ0hFQ0s6Cj4g
-LQkJc2VxX3ByaW50ZihtLCBwdChPcHRfZnVuYyksIGZ0KGZ1bmNfcG9saWN5KSk7Cj4gLQkJYnJl
-YWs7Cj4gLQlkZWZhdWx0Ogo+IC0JCXNucHJpbnRmKHRidWYsIHNpemVvZih0YnVmKSwgIiVkIiwg
-ZnVuYyk7Cj4gLQkJc2VxX3ByaW50ZihtLCBwdChPcHRfZnVuYyksIHRidWYpOwo+IC0JCWJyZWFr
-Owo+IC0JfQo+IC0Jc2VxX3B1dHMobSwgIiAiKTsKPiArCWlmIChmdW5jID4gMCAmJiBmdW5jIDwg
-TUFYX0NIRUNLKQo+ICsJCXNlcV9wcmludGYobSwgImZ1bmM9JXMgIiwgZnVuY190b2tlbnNbZnVu
-Y10pOwo+ICsJZWxzZQo+ICsJCXNlcV9wcmludGYobSwgImZ1bmM9JWQgIiwgZnVuYyk7Cj4gIH0K
-PiAKPiAgaW50IGltYV9wb2xpY3lfc2hvdyhzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIHZvaWQgKnYpCgot
-LQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3Jp
-YmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5r
-ZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcv
-bWFqb3Jkb21vLWluZm8uaHRtbA==
+On Sat, 2017-06-24 at 11:03 +0200, Jarkko Sakkinen wrote:
+> On Wed, Jun 21, 2017 at 04:29:35PM +0200, Roberto Sassu wrote:
+
+
+> To move this forward and be more constructive here's how I see it
+> should be done (along the lines, draft):
+> 
+> int tpm_pcr_extend(u32 chip_num, int pcr_idx, unsigned int alg,
+> 		   const u8 *hash);
+> 
+> The paramater 'alg' is crypto ID as specified by crypto subsystem.
+
+Based on Kenneth Goldman's input, the new IMA TPM-2.0 crypto hash
+agile measurement list will contain the TPM crypto hash algorithm ids
+(TPM crypto-ID). 
+
+> TPM driver must have a precompiled table of mappings for crypto IDs
+> and TPM algorithm IDs.
+
+We could map the TPM crypto-IDs to the crypto subsystem IDs and then
+map them back, but is that necessary?
+
+> 
+> In addition it must have dynamically acquired list of TPM alg IDs.
+> For those algs that static mapping does not exist it must extend
+> them like we do now everything else except SHA-1 (Naynas changes).
+
+Padding/truncating an unknown bank using SHA1 is fine, but at some
+point, as Roberto pointed out to me, TPM 2.0's might not support SHA-
+1.  So for the record, we're hard coding the use of SHA1 for the
+unknown algorithms whether or not the TPM supports SHA1.
+
+> There's absolutely no need to pass digest size like you do BTW as it is
+> defined by the standard.
+
+For algorithms known to the crypto subsystem, that is fine, but for
+the unknown TPM crypto algorithms, we would need to somehow query the
+TPM for the digest sizes to create the mapping.
+
+Mimi
+
+> I also except that where ever this interleaves with trusted keys there
+> won't be duplicate structures and code.
+> 
+> /Jarkko
+> 
+
