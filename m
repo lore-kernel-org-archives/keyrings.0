@@ -1,73 +1,55 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 08 Jun 2017 13:48:18 +0000
-Subject: [PATCH 08/23] KEYS: encrypted: fix buffer overread in valid_master_desc()
-Message-Id: <149692969796.11452.2915277493345705577.stgit@warthog.procyon.org.uk>
+From: Artem Savkov <asavkov@redhat.com>
+Date: Tue, 27 Jun 2017 09:54:19 +0000
+Subject: [PATCH keyutils v2] tests/bz1031154: skip if selinux is disabled
+Message-Id: <1498557259-23801-1-git-send-email-asavkov@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-In-Reply-To: <149692963884.11452.7673998701432248814.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+With selinux disabled the test currently fails trying to setenforce, it
+should be skipped instead. Found while trying to run in a container
+where selinux always appears disabled.
 
-With the 'encrypted' key type it was possible for userspace to provide a
-data blob ending with a master key description shorter than expected,
-e.g. 'keyctl add encrypted desc "new x" @s'.  When validating such a
-master key description, validate_master_desc() could read beyond the end
-of the buffer.  Fix this by using strncmp() instead of memcmp().  [Also
-clean up the code to deduplicate some logic.]
-
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Artem Savkov <asavkov@redhat.com>
 ---
+ tests/bugzillas/bz1031154/runtest.sh | 1 +
+ tests/toolbox.inc.sh                 | 9 +++++++++
+ 2 files changed, 10 insertions(+)
 
- security/keys/encrypted-keys/encrypted.c |   31 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
-
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index d14f1a47a130..0f7b95de3b5f 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -141,23 +141,22 @@ static int valid_ecryptfs_desc(const char *ecryptfs_desc)
-  */
- static int valid_master_desc(const char *new_desc, const char *orig_desc)
- {
--	if (!memcmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN)) {
--		if (strlen(new_desc) = KEY_TRUSTED_PREFIX_LEN)
--			goto out;
--		if (orig_desc)
--			if (memcmp(new_desc, orig_desc, KEY_TRUSTED_PREFIX_LEN))
--				goto out;
--	} else if (!memcmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN)) {
--		if (strlen(new_desc) = KEY_USER_PREFIX_LEN)
--			goto out;
--		if (orig_desc)
--			if (memcmp(new_desc, orig_desc, KEY_USER_PREFIX_LEN))
--				goto out;
--	} else
--		goto out;
-+	int prefix_len;
-+
-+	if (!strncmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN))
-+		prefix_len = KEY_TRUSTED_PREFIX_LEN;
-+	else if (!strncmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN))
-+		prefix_len = KEY_USER_PREFIX_LEN;
-+	else
-+		return -EINVAL;
-+
-+	if (!new_desc[prefix_len])
-+		return -EINVAL;
-+
-+	if (orig_desc && strncmp(new_desc, orig_desc, prefix_len))
-+		return -EINVAL;
-+
- 	return 0;
--out:
--	return -EINVAL;
+diff --git a/tests/bugzillas/bz1031154/runtest.sh b/tests/bugzillas/bz1031154/runtest.sh
+index aee8a28..d90afb4 100644
+--- a/tests/bugzillas/bz1031154/runtest.sh
++++ b/tests/bugzillas/bz1031154/runtest.sh
+@@ -20,6 +20,7 @@ then
+     exit 0
+ fi
+ 
++require_selinux
+ require_command getenforce
+ require_command setenforce
+ require_command runcon
+diff --git a/tests/toolbox.inc.sh b/tests/toolbox.inc.sh
+index 7f19a02..8e4e91d 100644
+--- a/tests/toolbox.inc.sh
++++ b/tests/toolbox.inc.sh
+@@ -115,6 +115,15 @@ function require_command ()
+     fi
  }
  
- /*
++function require_selinux ()
++{
++    if ! grep -q selinuxfs /proc/mounts;
++    then
++	toolbox_skip_test $TEST "SKIP DUE TO DISABLED SELINUX"
++	exit 0
++    fi
++}
++
+ ###############################################################################
+ #
+ # extract an error message from the log file and check it
+-- 
+2.7.5
 
