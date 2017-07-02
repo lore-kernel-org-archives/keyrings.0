@@ -1,186 +1,300 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Thu, 06 Jul 2017 22:17:46 +0000
-Subject: [PATCH v3 0/7] Appended signatures support for IMA appraisal
-Message-Id: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Sun, 02 Jul 2017 14:41:57 +0000
+Subject: [PATCH v3 15/28] crypto: move algif to generic async completion
+Message-Id: <1499006535-19760-16-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+References: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-Hello,
+algif starts several async crypto ops and waits for their completion.
+Move it over to generic code doing the same.
 
-The main change in this version is that the process of first trying to
-verify a modsig and then trying an xattr sig if the former fails is now done
-in ima_appraise_measurement instead of process_measurement. As a result, the
-changes needed in the latter are small.
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+---
+ crypto/af_alg.c         | 27 ---------------------------
+ crypto/algif_aead.c     | 14 +++++++-------
+ crypto/algif_hash.c     | 29 +++++++++++++----------------
+ crypto/algif_skcipher.c | 15 +++++++--------
+ include/crypto/if_alg.h | 14 --------------
+ 5 files changed, 27 insertions(+), 72 deletions(-)
 
-This is possible because the file hash used to verify the modsig isn't used
-by IMA's collect step at all anymore. It's not suitable because the hash
-doesn't cover the appended signature at the end of the file.
-
-The hash algorithm used by ima_collect_measurement in the case of a file
-with a modsig will be the same one used before these patches: if there is an
-xattr signature its hash algorithm will be used, otherwise the IMA default
-hash algorithm will be used.
-
-Another noteworthy change is in ima_template_lib.c's ima_eventsig_init, to
-allow storing the modsig if the template requires storing the signature
-contents.
-
-There's a detailed changelog after the original cover letter describing the
-feature below:
-
-On the OpenPOWER platform, secure boot and trusted boot are being
-implemented using IMA for taking measurements and verifying signatures.
-Since the kernel image on Power servers is an ELF binary, kernels are
-signed using the scripts/sign-file tool and thus use the same signature
-format as signed kernel modules.
-
-This patch series adds support in IMA for verifying those signatures.
-It adds flexibility to OpenPOWER secure boot, because it allows it to boot
-kernels with the signature appended to them as well as kernels where the
-signature is stored in the IMA extended attribute.
-
-Since modsig is only supported on some specific hooks which don't get
-called often (cf. ima_hook_supports_modsig), it's possible to always check
-for the presence of an appended modsig before looking for the xattr sig. In
-that case, the policy doesn't need to be changed to support the modsig
-keyword. Is that preferable than requiring the policy to explicitly allow a
-modsig like this code does?
-
-I tested these patches with EVM and I believe they don't break it and
-things work as expected, but I'm not really familiar with EVM and its use
-cases so this should be taken with a grain of salt.
-
-I also verified that the code correctly recalculates the file hash if the
-modsig verification fails and the file also has an xattr signature which
-uses a different hash algorithm.
-
-These patches apply on top of today's linux-integrity/next.
-
-Changes since v2:
-- Patch "MODSIGN: Export module signature definitions."
-  - Put change introducing function verify_pkcs7_message_signature into
-    its own patch (suggested by Mimi Zohar).
-  - Shortened validate_module_signature to validate_module_sig.
-
-- Patch "PKCS#7: Introduce verify_pkcs7_message_sig"
-  - New patch in this series.
-  - Shortened verify_pkcs7_message_signature to verify_pkcs7_message_sig.
-
-- Patch "integrity: Introduce integrity_keyring_from_id"
-  - New patch in this series.
-
-- Patch "integrity: Select CONFIG_KEYS instead of depending on it"
-  - New patch in this series.
-
-- Patch "ima: Store measurement after appraisal"
-  - New patch in this series.
-  - Instead of creating function measure_and_appraise, simply call
-    ima_appraise_measurement before ima_store_measurement in
-    process_measurement (suggested by Mimi Zohar).
-
-- Patch "ima: Support appended signatures for appraisal"
-  - Put change introducing function integrity_keyring_from_id into
-    its own patch (suggested by Mimi Zohar).
-  - Put change to select CONFIG_KEYS in its own patch.
-  - Put change in the order of measure and appraise steps into
-    its own patch (suggested by Mimi Zohar).
-  - Add buf and size arguments to ima_appraise_measurement. Also,
-    pass xattr_value and xattr_len by reference so that the function can
-    change them to point to the modsig.
-  - Don't pass buf_len by reference in ima_read_modsig. It doesn't need
-    to be changed anymore now that the hash calculated by the collect step
-    covers the whole file instead of skipping the modsig at the end.
-  - Don't add pkcs7_get_message_sig. It's not necessary anymore. Ditto for
-    ima_get_modsig_hash_algo.
-  - Don't change ima_collect_measurement anymore to recalculate the file
-    hash if the algorithm is different, since now it doesn't have anything
-    to do with the hash used by the modsig.
-  - Don't change ima_get_hash_alog anymore to obtain the hash algo used by
-    the modsig, since it isn't used in the collect step.
-  - Change ima_appraise_measurement to check whether there is a modsig
-    before verifying the xattr if the policy rule allows a modsig.
-  - Use separate if clause to check result of evm_verifyxattr when
-    appraising modsig (suggested by Mimi Zohar).
-  - Use bool variable in ima_inode_setxattr to make code clearer (suggested
-    by Mimi Zohar).
-  - Don't define pr_fmt in ima_main.c.
-  - Renamed struct signature_modsig_hdr to modsig_hdr.
-
-Changes since v1:
-- Patch "integrity: Small code improvements"
-  - Add missing #endif comment in ima.h.
-
-- Patch "ima: Tidy up constant strings"
-  - Squashed into previous patch.
-
-- Patch "ima: Simplify policy_func_show."
-  - Generate ima_hooks enum and func_tokens array from a single macro.
-    (suggested by Mimi)
-  - Further simplify policy_func_show by not using the printf format string
-    from the policy_tokens table.
-
-- Patch "integrity: Introduce struct evm_hmac_xattr"
-  - New patch.
-
-- Patch "MODSIGN: Export module signature definitions."
-  - Add function verify_pkcs7_message_signature which takes a
-    struct pkcs7_message.
-  - Move MODULE_SIG_STRING definition from <linux/module.h> to
-    <linux/module_signature.h>.
-
-- Patch "ima: Support appended signatures for appraisal"
-  - Changed name from appended_sig to modsig. (suggested by Mehmet Kayaalp)
-  - Don't add key_being_used_for value VERIFYING_KEXEC_CMS_SIGNATURE. Use
-    existing VERIFYING_MODULE_SIGNATURE. (suggested by Mimi)
-  - Moved modsig code to its own file. (suggested by Mimi)
-  - Added new xattr "subtype" IMA_MODSIG. (suggested by Mimi)
-  - Check whether a hook supports modsig when the policy is being parsed.
-    (suggested by Mimi)
-  - If the modsig verification fails, look for an xattr signature.
-    (suggested by Mimi)
-  - Add integrity_keyring_from_id function.
-  - Put modsig to measurement list if the template requires the signature
-    contents. (suggested by Mimi).
-
-Thiago Jung Bauermann (7):
-  integrity: Introduce struct evm_hmac_xattr
-  MODSIGN: Export module signature definitions.
-  PKCS#7: Introduce verify_pkcs7_message_sig
-  integrity: Introduce integrity_keyring_from_id
-  integrity: Select CONFIG_KEYS instead of depending on it
-  ima: Store measurement after appraisal
-  ima: Support module-style appended signatures for appraisal
-
- certs/system_keyring.c                    |  60 ++++++++----
- include/linux/module.h                    |   3 -
- include/linux/module_signature.h          |  47 ++++++++++
- include/linux/verification.h              |  10 ++
- init/Kconfig                              |   6 +-
- kernel/Makefile                           |   2 +-
- kernel/module.c                           |   1 +
- kernel/module_signing.c                   |  74 +++++++--------
- security/integrity/Kconfig                |   2 +-
- security/integrity/digsig.c               |  28 ++++--
- security/integrity/evm/evm.h              |   5 +
- security/integrity/evm/evm_crypto.c       |   2 +-
- security/integrity/evm/evm_main.c         |   8 +-
- security/integrity/ima/Kconfig            |  13 +++
- security/integrity/ima/Makefile           |   1 +
- security/integrity/ima/ima.h              |  60 ++++++++++--
- security/integrity/ima/ima_appraise.c     | 109 +++++++++++++++++++---
- security/integrity/ima/ima_main.c         |   9 +-
- security/integrity/ima/ima_modsig.c       | 147 ++++++++++++++++++++++++++++++
- security/integrity/ima/ima_policy.c       |  26 ++++--
- security/integrity/ima/ima_template_lib.c |  14 ++-
- security/integrity/integrity.h            |   7 +-
- 22 files changed, 519 insertions(+), 115 deletions(-)
- create mode 100644 include/linux/module_signature.h
- create mode 100644 security/integrity/ima/ima_modsig.c
-
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index c67daba..bf4acaf 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -480,33 +480,6 @@ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con)
+ }
+ EXPORT_SYMBOL_GPL(af_alg_cmsg_send);
+ 
+-int af_alg_wait_for_completion(int err, struct af_alg_completion *completion)
+-{
+-	switch (err) {
+-	case -EINPROGRESS:
+-	case -EIOCBQUEUED:
+-		wait_for_completion(&completion->completion);
+-		reinit_completion(&completion->completion);
+-		err = completion->err;
+-		break;
+-	};
+-
+-	return err;
+-}
+-EXPORT_SYMBOL_GPL(af_alg_wait_for_completion);
+-
+-void af_alg_complete(struct crypto_async_request *req, int err)
+-{
+-	struct af_alg_completion *completion = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	completion->err = err;
+-	complete(&completion->completion);
+-}
+-EXPORT_SYMBOL_GPL(af_alg_complete);
+-
+ static int __init af_alg_init(void)
+ {
+ 	int err = proto_register(&alg_proto, 0);
+diff --git a/crypto/algif_aead.c b/crypto/algif_aead.c
+index 8af664f..4881cb1 100644
+--- a/crypto/algif_aead.c
++++ b/crypto/algif_aead.c
+@@ -57,7 +57,7 @@ struct aead_ctx {
+ 
+ 	void *iv;
+ 
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	unsigned long used;
+ 
+@@ -648,10 +648,10 @@ static int aead_recvmsg_sync(struct socket *sock, struct msghdr *msg, int flags)
+ 			       used, ctx->iv);
+ 	aead_request_set_ad(&ctx->aead_req, ctx->aead_assoclen);
+ 
+-	err = af_alg_wait_for_completion(ctx->enc ?
+-					 crypto_aead_encrypt(&ctx->aead_req) :
+-					 crypto_aead_decrypt(&ctx->aead_req),
+-					 &ctx->completion);
++	err = crypto_wait_req(ctx->enc ?
++			      crypto_aead_encrypt(&ctx->aead_req) :
++			      crypto_aead_decrypt(&ctx->aead_req),
++			      &ctx->wait);
+ 
+ 	if (err) {
+ 		/* EBADMSG implies a valid cipher operation took place */
+@@ -912,7 +912,7 @@ static int aead_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->enc = 0;
+ 	ctx->tsgl.cur = 0;
+ 	ctx->aead_assoclen = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 	sg_init_table(ctx->tsgl.sg, ALG_MAX_PAGES);
+ 	INIT_LIST_HEAD(&ctx->list);
+ 
+@@ -920,7 +920,7 @@ static int aead_accept_parent_nokey(void *private, struct sock *sk)
+ 
+ 	aead_request_set_tfm(&ctx->aead_req, aead);
+ 	aead_request_set_callback(&ctx->aead_req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				  af_alg_complete, &ctx->completion);
++				  crypto_req_done, &ctx->wait);
+ 
+ 	sk->sk_destruct = aead_sock_destruct;
+ 
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index 5e92bd2..6a6739a 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -26,7 +26,7 @@ struct hash_ctx {
+ 
+ 	u8 *result;
+ 
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	unsigned int len;
+ 	bool more;
+@@ -88,8 +88,7 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 		if ((msg->msg_flags & MSG_MORE))
+ 			hash_free_result(sk, ctx);
+ 
+-		err = af_alg_wait_for_completion(crypto_ahash_init(&ctx->req),
+-						&ctx->completion);
++		err = crypto_wait_req(crypto_ahash_init(&ctx->req), &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+@@ -110,8 +109,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 
+ 		ahash_request_set_crypt(&ctx->req, ctx->sgl.sg, NULL, len);
+ 
+-		err = af_alg_wait_for_completion(crypto_ahash_update(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_update(&ctx->req),
++				      &ctx->wait);
+ 		af_alg_free_sg(&ctx->sgl);
+ 		if (err)
+ 			goto unlock;
+@@ -129,8 +128,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 			goto unlock;
+ 
+ 		ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
+-		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
++				      &ctx->wait);
+ 	}
+ 
+ unlock:
+@@ -171,7 +170,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 	} else {
+ 		if (!ctx->more) {
+ 			err = crypto_ahash_init(&ctx->req);
+-			err = af_alg_wait_for_completion(err, &ctx->completion);
++			err = crypto_wait_req(err, &ctx->wait);
+ 			if (err)
+ 				goto unlock;
+ 		}
+@@ -179,7 +178,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 		err = crypto_ahash_update(&ctx->req);
+ 	}
+ 
+-	err = af_alg_wait_for_completion(err, &ctx->completion);
++	err = crypto_wait_req(err, &ctx->wait);
+ 	if (err)
+ 		goto unlock;
+ 
+@@ -215,17 +214,15 @@ static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
+ 	ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
+ 
+ 	if (!result && !ctx->more) {
+-		err = af_alg_wait_for_completion(
+-				crypto_ahash_init(&ctx->req),
+-				&ctx->completion);
++		err = crypto_wait_req(crypto_ahash_init(&ctx->req), &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+ 
+ 	if (!result || ctx->more) {
+ 		ctx->more = 0;
+-		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
++				      &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+@@ -476,13 +473,13 @@ static int hash_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->result = NULL;
+ 	ctx->len = len;
+ 	ctx->more = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+ 	ahash_request_set_tfm(&ctx->req, hash);
+ 	ahash_request_set_callback(&ctx->req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				   af_alg_complete, &ctx->completion);
++				   crypto_req_done, &ctx->wait);
+ 
+ 	sk->sk_destruct = hash_sock_destruct;
+ 
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 43839b0..75fa9a5 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -43,7 +43,7 @@ struct skcipher_ctx {
+ 
+ 	void *iv;
+ 
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	atomic_t inflight;
+ 	size_t used;
+@@ -684,11 +684,10 @@ static int skcipher_recvmsg_sync(struct socket *sock, struct msghdr *msg,
+ 		skcipher_request_set_crypt(&ctx->req, sg, ctx->rsgl.sg, used,
+ 					   ctx->iv);
+ 
+-		err = af_alg_wait_for_completion(
+-				ctx->enc ?
+-					crypto_skcipher_encrypt(&ctx->req) :
+-					crypto_skcipher_decrypt(&ctx->req),
+-				&ctx->completion);
++		err = crypto_wait_req(ctx->enc ?
++				      crypto_skcipher_encrypt(&ctx->req) :
++				      crypto_skcipher_decrypt(&ctx->req),
++				      &ctx->wait);
+ 
+ free:
+ 		af_alg_free_sg(&ctx->rsgl);
+@@ -948,14 +947,14 @@ static int skcipher_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->merge = 0;
+ 	ctx->enc = 0;
+ 	atomic_set(&ctx->inflight, 0);
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+ 	skcipher_request_set_tfm(&ctx->req, skcipher);
+ 	skcipher_request_set_callback(&ctx->req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 						 CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				      af_alg_complete, &ctx->completion);
++				      crypto_req_done, &ctx->wait);
+ 
+ 	sk->sk_destruct = skcipher_sock_destruct;
+ 
+diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
+index e2b9c6f..86764fb 100644
+--- a/include/crypto/if_alg.h
++++ b/include/crypto/if_alg.h
+@@ -14,7 +14,6 @@
+ #define _CRYPTO_IF_ALG_H
+ 
+ #include <linux/compiler.h>
+-#include <linux/completion.h>
+ #include <linux/if_alg.h>
+ #include <linux/scatterlist.h>
+ #include <linux/types.h>
+@@ -37,11 +36,6 @@ struct alg_sock {
+ 	void *private;
+ };
+ 
+-struct af_alg_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+ struct af_alg_control {
+ 	struct af_alg_iv *iv;
+ 	int op;
+@@ -81,17 +75,9 @@ void af_alg_link_sg(struct af_alg_sgl *sgl_prev, struct af_alg_sgl *sgl_new);
+ 
+ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con);
+ 
+-int af_alg_wait_for_completion(int err, struct af_alg_completion *completion);
+-void af_alg_complete(struct crypto_async_request *req, int err);
+-
+ static inline struct alg_sock *alg_sk(struct sock *sk)
+ {
+ 	return (struct alg_sock *)sk;
+ }
+ 
+-static inline void af_alg_init_completion(struct af_alg_completion *completion)
+-{
+-	init_completion(&completion->completion);
+-}
+-
+ #endif	/* _CRYPTO_IF_ALG_H */
 -- 
-2.13.0
+2.1.4
 
