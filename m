@@ -1,90 +1,114 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Thu, 06 Jul 2017 22:17:50 +0000
-Subject: [PATCH v3 4/7] integrity: Introduce integrity_keyring_from_id
-Message-Id: <20170706221753.17380-5-bauerman@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Sun, 02 Jul 2017 14:41:59 +0000
+Subject: [PATCH v3 17/28] crypto: move drbg to generic async completion
+Message-Id: <1499006535-19760-18-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+References: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-IMA will need to obtain the keyring used to verify file signatures so that
-it can verify the module-style signature appended to files.
+DRBG is starting an async. crypto op and waiting for it complete.
+Move it over to generic code doing the same.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+The code now also passes CRYPTO_TFM_REQ_MAY_SLEEP flag indicating
+crypto request memory allocation may use GFP_KERNEL which should
+be perfectly fine as the code is obviously sleeping for the
+completion of the request any way.
+
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Stephan Muller <smueller@chronox.de>
 ---
- security/integrity/digsig.c    | 28 +++++++++++++++++++---------
- security/integrity/integrity.h |  1 +
- 2 files changed, 20 insertions(+), 9 deletions(-)
+ crypto/drbg.c         | 36 +++++++++---------------------------
+ include/crypto/drbg.h |  3 +--
+ 2 files changed, 10 insertions(+), 29 deletions(-)
 
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 06554c448dce..bb5328ba2848 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -48,11 +48,10 @@ static bool init_keyring __initdata;
- #define restrict_link_to_ima restrict_link_by_builtin_trusted
- #endif
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index 850b451..c522251 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -1651,16 +1651,6 @@ static int drbg_fini_sym_kernel(struct drbg_state *drbg)
+ 	return 0;
+ }
  
--int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
--			    const char *digest, int digestlen)
-+struct key *integrity_keyring_from_id(const unsigned int id)
+-static void drbg_skcipher_cb(struct crypto_async_request *req, int error)
+-{
+-	struct drbg_state *drbg = req->data;
+-
+-	if (error = -EINPROGRESS)
+-		return;
+-	drbg->ctr_async_err = error;
+-	complete(&drbg->ctr_completion);
+-}
+-
+ static int drbg_init_sym_kernel(struct drbg_state *drbg)
  {
--	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
--		return -EINVAL;
-+	if (id >= INTEGRITY_KEYRING_MAX)
-+		return ERR_PTR(-EINVAL);
- 
- 	if (!keyring[id]) {
- 		keyring[id] @@ -61,18 +60,29 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			int err = PTR_ERR(keyring[id]);
- 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
- 			keyring[id] = NULL;
--			return err;
-+			return ERR_PTR(err);
- 		}
+ 	struct crypto_cipher *tfm;
+@@ -1691,7 +1681,7 @@ static int drbg_init_sym_kernel(struct drbg_state *drbg)
+ 		return PTR_ERR(sk_tfm);
  	}
+ 	drbg->ctr_handle = sk_tfm;
+-	init_completion(&drbg->ctr_completion);
++	crypto_init_wait(&drbg->ctr_wait);
  
-+	return keyring[id];
-+}
-+
-+int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-+			    const char *digest, int digestlen)
-+{
-+	struct key *keyring = integrity_keyring_from_id(id);
-+
-+	if (IS_ERR(keyring) || siglen < 2)
-+		return PTR_ERR(keyring);
-+
- 	switch (sig[1]) {
- 	case 1:
- 		/* v1 API expect signature without xattr type */
--		return digsig_verify(keyring[id], sig + 1, siglen - 1,
--				     digest, digestlen);
-+		return digsig_verify(keyring, sig + 1, siglen - 1, digest,
-+				     digestlen);
- 	case 2:
--		return asymmetric_verify(keyring[id], sig, siglen,
--					 digest, digestlen);
-+		return asymmetric_verify(keyring, sig, siglen, digest,
-+					 digestlen);
+ 	req = skcipher_request_alloc(sk_tfm, GFP_KERNEL);
+ 	if (!req) {
+@@ -1700,8 +1690,9 @@ static int drbg_init_sym_kernel(struct drbg_state *drbg)
+ 		return -ENOMEM;
  	}
+ 	drbg->ctr_req = req;
+-	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					drbg_skcipher_cb, drbg);
++	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++						CRYPTO_TFM_REQ_MAY_SLEEP,
++					crypto_req_done, &drbg->ctr_wait);
  
- 	return -EOPNOTSUPP;
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 874211aba6e9..ba5f13f94ed3 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -129,6 +129,7 @@ int __init integrity_read_file(const char *path, char **data);
+ 	alignmask = crypto_skcipher_alignmask(sk_tfm);
+ 	drbg->ctr_null_value_buf = kzalloc(DRBG_CTR_NULL_LEN + alignmask,
+@@ -1762,21 +1753,12 @@ static int drbg_kcapi_sym_ctr(struct drbg_state *drbg,
+ 		/* Output buffer may not be valid for SGL, use scratchpad */
+ 		skcipher_request_set_crypt(drbg->ctr_req, &sg_in, &sg_out,
+ 					   cryptlen, drbg->V);
+-		ret = crypto_skcipher_encrypt(drbg->ctr_req);
+-		switch (ret) {
+-		case 0:
+-			break;
+-		case -EINPROGRESS:
+-		case -EIOCBQUEUED:
+-			wait_for_completion(&drbg->ctr_completion);
+-			if (!drbg->ctr_async_err) {
+-				reinit_completion(&drbg->ctr_completion);
+-				break;
+-			}
+-		default:
++		ret = crypto_wait_req(crypto_skcipher_encrypt(drbg->ctr_req),
++					&drbg->ctr_wait);
++		if (ret)
+ 			goto out;
+-		}
+-		init_completion(&drbg->ctr_completion);
++
++		crypto_init_wait(&drbg->ctr_wait);
  
- #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 		memcpy(outbuf, drbg->outscratchpad, cryptlen);
  
-+struct key *integrity_keyring_from_id(const unsigned int id);
- int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			    const char *digest, int digestlen);
+diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
+index 22f884c..8f94110 100644
+--- a/include/crypto/drbg.h
++++ b/include/crypto/drbg.h
+@@ -126,8 +126,7 @@ struct drbg_state {
+ 	__u8 *ctr_null_value;			/* CTR mode aligned zero buf */
+ 	__u8 *outscratchpadbuf;			/* CTR mode output scratchpad */
+         __u8 *outscratchpad;			/* CTR mode aligned outbuf */
+-	struct completion ctr_completion;	/* CTR mode async handler */
+-	int ctr_async_err;			/* CTR mode async error */
++	struct crypto_wait ctr_wait;		/* CTR mode async wait obj */
  
+ 	bool seeded;		/* DRBG fully seeded? */
+ 	bool pr;		/* Prediction resistance enabled? */
 -- 
-2.13.0
+2.1.4
 
