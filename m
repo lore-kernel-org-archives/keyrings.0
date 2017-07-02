@@ -1,70 +1,41 @@
-From: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Date: Sun, 16 Jul 2017 17:21:13 +0000
-Subject: [PATCH] security/keys: ensure RNG is seeded before use
-Message-Id: <20170716172113.6223-1-Jason@zx2c4.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Sun, 02 Jul 2017 14:41:54 +0000
+Subject: [PATCH v3 12/28] ima: use -EIOCBQUEUED for backlog indication
+Message-Id: <1499006535-19760-13-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-security-module@vger.kernel.org
+References: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-Otherwise, we might use bad random numbers which, particularly in the
-case of IV generation, could be quite bad. It makes sense to use the
-synchronous API here, because we're always in process context (as the
-code is littered with GFP_KERNEL and the like). However, we can't change
-to using a blocking function in key serial allocation, because this will
-block booting in some configurations, so here we use the more
-appropriate get_random_u32, which will use RDRAND if available.
+Replace -EBUSY with -EIOCBQUEUED for backlog queueing indication
+as part of new API.
 
-Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: David Safford <safford@us.ibm.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- security/keys/encrypted-keys/encrypted.c | 8 +++++---
- security/keys/key.c                      | 8 +++-----
- 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index 69855ba0d3b3..7640fa46b3e5 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -759,10 +759,12 @@ static int encrypted_init(struct encrypted_key_payload *epayload,
- 
- 	__ekey_init(epayload, format, master_desc, datalen);
- 	if (!hex_encoded_iv) {
--		get_random_bytes(epayload->iv, ivsize);
-+		ret = get_random_bytes_wait(epayload->iv, ivsize);
-+		if (unlikely(ret))
-+			return ret;
- 
--		get_random_bytes(epayload->decrypted_data,
--				 epayload->decrypted_datalen);
-+		ret = get_random_bytes_wait(epayload->decrypted_data,
-+					    epayload->decrypted_datalen);
- 	} else
- 		ret = encrypted_key_decrypt(epayload, format, hex_encoded_iv);
- 	return ret;
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 83da68d98b40..ee443d2a4f7e 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -139,12 +139,10 @@ static inline void key_alloc_serial(struct key *key)
- 	struct rb_node *parent, **p;
- 	struct key *xkey;
- 
--	/* propose a random serial number and look for a hole for it in the
--	 * serial number tree */
-+	/* propose a non-negative random serial number and look for a hole for
-+	 * it in the serial number tree */
- 	do {
--		get_random_bytes(&key->serial, sizeof(key->serial));
--
--		key->serial >>= 1; /* negative numbers are not permitted */
-+		key->serial = get_random_u32() >> 1;
- 	} while (key->serial < 3);
- 
- 	spin_lock(&key_serial_lock);
+This patch should be squashed with the first patch in the series
+when applied.
+
+ security/integrity/ima/ima_crypto.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+index 802d5d2..226dd88 100644
+--- a/security/integrity/ima/ima_crypto.c
++++ b/security/integrity/ima/ima_crypto.c
+@@ -212,7 +212,7 @@ static int ahash_wait(int err, struct ahash_completion *res)
+ 	case 0:
+ 		break;
+ 	case -EINPROGRESS:
+-	case -EBUSY:
++	case -EIOCBQUEUED:
+ 		wait_for_completion(&res->completion);
+ 		reinit_completion(&res->completion);
+ 		err = res->err;
 -- 
-2.13.3
+2.1.4
 
