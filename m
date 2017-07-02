@@ -1,7 +1,7 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 02 Jul 2017 14:41:58 +0000
-Subject: [PATCH v3 16/28] crypto: move pub key to generic async completion
-Message-Id: <1499006535-19760-17-git-send-email-gilad@benyossef.com>
+Date: Sun, 02 Jul 2017 14:42:00 +0000
+Subject: [PATCH v3 18/28] crypto: move gcm to generic async completion
+Message-Id: <1499006535-19760-19-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,74 +11,92 @@ In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
 Cc: Ofir Drang <ofir.drang@arm.com>
 
-public_key_verify_signature() is starting an async crypto op and
-waiting for it to complete. Move it over to generic code doing
-the same.
+gcm is starting an async. crypto op and waiting for it complete.
+Move it over to generic code doing the same.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- crypto/asymmetric_keys/public_key.c | 28 ++++------------------------
- 1 file changed, 4 insertions(+), 24 deletions(-)
+ crypto/gcm.c | 32 ++++++--------------------------
+ 1 file changed, 6 insertions(+), 26 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index 3fad1fd..d916235 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -57,29 +57,13 @@ static void public_key_destroy(void *payload0, void *payload3)
- 	public_key_signature_free(payload3);
- }
+diff --git a/crypto/gcm.c b/crypto/gcm.c
+index ffac821..fb923a5 100644
+--- a/crypto/gcm.c
++++ b/crypto/gcm.c
+@@ -16,7 +16,6 @@
+ #include <crypto/scatterwalk.h>
+ #include <crypto/hash.h>
+ #include "internal.h"
+-#include <linux/completion.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+@@ -78,11 +77,6 @@ struct crypto_gcm_req_priv_ctx {
+ 	} u;
+ };
  
--struct public_key_completion {
--	struct completion completion;
+-struct crypto_gcm_setkey_result {
 -	int err;
+-	struct completion completion;
 -};
 -
--static void public_key_verify_done(struct crypto_async_request *req, int err)
+ static struct {
+ 	u8 buf[16];
+ 	struct scatterlist sg;
+@@ -98,17 +92,6 @@ static inline struct crypto_gcm_req_priv_ctx *crypto_gcm_reqctx(
+ 	return (void *)PTR_ALIGN((u8 *)aead_request_ctx(req), align + 1);
+ }
+ 
+-static void crypto_gcm_setkey_done(struct crypto_async_request *req, int err)
 -{
--	struct public_key_completion *compl = req->data;
+-	struct crypto_gcm_setkey_result *result = req->data;
 -
 -	if (err = -EINPROGRESS)
 -		return;
 -
--	compl->err = err;
--	complete(&compl->completion);
+-	result->err = err;
+-	complete(&result->completion);
 -}
 -
- /*
-  * Verify a signature using a public key.
-  */
- int public_key_verify_signature(const struct public_key *pkey,
- 				const struct public_key_signature *sig)
+ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 			     unsigned int keylen)
  {
--	struct public_key_completion compl;
-+	struct crypto_wait cwait;
- 	struct crypto_akcipher *tfm;
- 	struct akcipher_request *req;
- 	struct scatterlist sig_sg, digest_sg;
-@@ -131,20 +115,16 @@ int public_key_verify_signature(const struct public_key *pkey,
- 	sg_init_one(&digest_sg, output, outlen);
- 	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
- 				   outlen);
--	init_completion(&compl.completion);
-+	crypto_init_wait(&cwait);
- 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				      CRYPTO_TFM_REQ_MAY_SLEEP,
--				      public_key_verify_done, &compl);
-+				      crypto_req_done, &cwait);
+@@ -119,7 +102,7 @@ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 		be128 hash;
+ 		u8 iv[16];
  
- 	/* Perform the verification calculation.  This doesn't actually do the
- 	 * verification, but rather calculates the hash expected by the
- 	 * signature and returns that to us.
- 	 */
--	ret = crypto_akcipher_verify(req);
--	if ((ret = -EINPROGRESS) || (ret = -EIOCBQUEUED)) {
--		wait_for_completion(&compl.completion);
--		ret = compl.err;
+-		struct crypto_gcm_setkey_result result;
++		struct crypto_wait wait;
+ 
+ 		struct scatterlist sg[1];
+ 		struct skcipher_request req;
+@@ -140,21 +123,18 @@ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 	if (!data)
+ 		return -ENOMEM;
+ 
+-	init_completion(&data->result.completion);
++	crypto_init_wait(&data->wait);
+ 	sg_init_one(data->sg, &data->hash, sizeof(data->hash));
+ 	skcipher_request_set_tfm(&data->req, ctr);
+ 	skcipher_request_set_callback(&data->req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 						  CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				      crypto_gcm_setkey_done,
+-				      &data->result);
++				      crypto_req_done,
++				      &data->wait);
+ 	skcipher_request_set_crypt(&data->req, data->sg, data->sg,
+ 				   sizeof(data->hash), data->iv);
+ 
+-	err = crypto_skcipher_encrypt(&data->req);
+-	if (err = -EINPROGRESS || err = -EIOCBQUEUED) {
+-		wait_for_completion(&data->result.completion);
+-		err = data->result.err;
 -	}
-+	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
- 	if (ret < 0)
- 		goto out_free_output;
++	err = crypto_wait_req(crypto_skcipher_encrypt(&data->req),
++							&data->wait);
  
+ 	if (err)
+ 		goto out;
 -- 
 2.1.4
 
