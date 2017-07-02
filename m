@@ -1,41 +1,120 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 02 Jul 2017 14:41:53 +0000
-Subject: [PATCH v3 11/28] cifs: use -EIOCBQUEUED for backlog indication
-Message-Id: <1499006535-19760-12-git-send-email-gilad@benyossef.com>
+Date: Sun, 02 Jul 2017 14:42:10 +0000
+Subject: [PATCH v3 28/28] crypto: adapt api sample to use async. op wait
+Message-Id: <1499006535-19760-29-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
-Cc: Ofir Drang <ofir.drang@arm.com>
+In-Reply-To: <1499006535-19760-1-git-send-email-gilad-6S/DczAoZh3WXxRugSxzZg@public.gmane.org>
+To: Herbert Xu <herbert-lOAM2aK0SrRLBo1qDEOMRrpzq4S04n8Q@public.gmane.org>, "David S. Miller" <davem-fT/PcQaiUtIeIZ0/mPfg9Q@public.gmane.org>, Jonathan Corbet <corbet-T1hC0tSOHrs@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Tom Lendacky <thomas.lendacky-5C7GfCeVMHo@public.gmane.org>, Gary Hook <gary.hook-5C7GfCeVMHo@public.gmane.org>, Boris Brezillon <boris.brezillon-wi1+55ScJUtKEb57/3fJTNBPR1lH4CV8@public.gmane.org>, Arnaud Ebalard <arno-LkuqDEemtHBg9hUCZPvPmw@public.gmane.org>, Matthias Brugger <matthias.bgg-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Shaohua Li <shli-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Steve French <sfrench-eUNUBHrolfbYtjvyW6yDsg@public.gmane.org>, "Theodore Y. Ts'o" <tytso-3s7WtUTddSA@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Mimi Zohar <zohar-23VcF4HTsmIX0ybBhKVfKdBPR1lH4CV8@public.gmane.org>, Dmitry Kasatkin <dmitry.kasatkin-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, "Serge E. Hallyn" <serge-A9i7LUbDfNHQT0dZR+AlfA@public.gmane.org>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang-5wv7dgnIgG8@public.gmane.org>
 
-Replace -EBUSY with -EIOCBQUEUED for backlog queueing indication
-as part of new API.
+The code sample is waiting for an async. crypto op completion.
+Adapt sample to use the new generic infrastructure to do the same.
+
+This also fixes a possible data coruption bug created by the
+use of wait_for_completion_interruptible() without dealing
+correctly with an interrupt aborting the wait prior to the
+async op finishing.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
+ Documentation/crypto/api-samples.rst | 52 +++++++-----------------------------
+ 1 file changed, 10 insertions(+), 42 deletions(-)
 
-This patch should be squashed with the first patch in the series
-when applied.
-
- fs/cifs/smb2ops.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
-index 941c40b..00b1143 100644
---- a/fs/cifs/smb2ops.c
-+++ b/fs/cifs/smb2ops.c
-@@ -1934,7 +1934,7 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+diff --git a/Documentation/crypto/api-samples.rst b/Documentation/crypto/api-samples.rst
+index c6aa4ba..006827e 100644
+--- a/Documentation/crypto/api-samples.rst
++++ b/Documentation/crypto/api-samples.rst
+@@ -7,59 +7,27 @@ Code Example For Symmetric Key Cipher Operation
+ ::
  
- 	rc = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
  
--	if (rc = -EINPROGRESS || rc = -EBUSY) {
-+	if (rc = -EINPROGRESS || rc = -EIOCBQUEUED) {
- 		wait_for_completion(&result.completion);
- 		rc = result.err;
- 	}
+-    struct tcrypt_result {
+-        struct completion completion;
+-        int err;
+-    };
+-
+     /* tie all data structures together */
+     struct skcipher_def {
+         struct scatterlist sg;
+         struct crypto_skcipher *tfm;
+         struct skcipher_request *req;
+-        struct tcrypt_result result;
++        struct crypto_wait wait;
+     };
+ 
+-    /* Callback function */
+-    static void test_skcipher_cb(struct crypto_async_request *req, int error)
+-    {
+-        struct tcrypt_result *result = req->data;
+-
+-        if (error = -EINPROGRESS)
+-            return;
+-        result->err = error;
+-        complete(&result->completion);
+-        pr_info("Encryption finished successfully\n");
+-    }
+-
+     /* Perform cipher operation */
+     static unsigned int test_skcipher_encdec(struct skcipher_def *sk,
+                          int enc)
+     {
+-        int rc = 0;
++        int rc;
+ 
+         if (enc)
+-            rc = crypto_skcipher_encrypt(sk->req);
++            rc = crypto_wait_req(crypto_skcipher_encrypt(sk->req), &sk->wait);
+         else
+-            rc = crypto_skcipher_decrypt(sk->req);
+-
+-        switch (rc) {
+-        case 0:
+-            break;
+-        case -EINPROGRESS:
+-        case -EIOCBQUEUED:
+-            rc = wait_for_completion_interruptible(
+-                &sk->result.completion);
+-            if (!rc && !sk->result.err) {
+-                reinit_completion(&sk->result.completion);
+-                break;
+-            }
+-        default:
+-            pr_info("skcipher encrypt returned with %d result %d\n",
+-                rc, sk->result.err);
+-            break;
+-        }
+-        init_completion(&sk->result.completion);
++            rc = crypto_wait_req(crypto_skcipher_decrypt(sk->req), &sk->wait);
++
++	if (rc)
++		pr_info("skcipher encrypt returned with result %d\n", rc);
+ 
+         return rc;
+     }
+@@ -89,8 +57,8 @@ Code Example For Symmetric Key Cipher Operation
+         }
+ 
+         skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-                          test_skcipher_cb,
+-                          &sk.result);
++                          crypto_req_done,
++                          &sk.wait);
+ 
+         /* AES 256 with random key */
+         get_random_bytes(&key, 32);
+@@ -122,7 +90,7 @@ Code Example For Symmetric Key Cipher Operation
+         /* We encrypt one block */
+         sg_init_one(&sk.sg, scratchpad, 16);
+         skcipher_request_set_crypt(req, &sk.sg, &sk.sg, 16, ivdata);
+-        init_completion(&sk.result.completion);
++        crypto_init_wait(&sk.wait);
+ 
+         /* encrypt data */
+         ret = test_skcipher_encdec(&sk, 1);
 -- 
 2.1.4
 
