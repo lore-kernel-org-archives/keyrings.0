@@ -1,14 +1,14 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 02 Jul 2017 14:41:49 +0000
-Subject: [PATCH v3 07/28] crypto: qce: use -EIOCBQUEUED for backlog indication
-Message-Id: <1499006535-19760-8-git-send-email-gilad@benyossef.com>
+Date: Sun, 02 Jul 2017 14:41:51 +0000
+Subject: [PATCH v3 09/28] dm: verity: use -EIOCBQUEUED for backlog indication
+Message-Id: <1499006535-19760-10-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
 In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
 Cc: Ofir Drang <ofir.drang@arm.com>
 
 Replace -EBUSY with -EIOCBQUEUED for backlog queueing indication
@@ -20,22 +20,22 @@ Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 This patch should be squashed with the first patch in the series
 when applied.
 
- drivers/crypto/qce/sha.c | 2 +-
+ drivers/md/dm-verity-target.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/crypto/qce/sha.c b/drivers/crypto/qce/sha.c
-index 47e114a..a21d2a1c 100644
---- a/drivers/crypto/qce/sha.c
-+++ b/drivers/crypto/qce/sha.c
-@@ -421,7 +421,7 @@ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
- 	ahash_request_set_crypt(req, &sg, ctx->authkey, keylen);
+diff --git a/drivers/md/dm-verity-target.c b/drivers/md/dm-verity-target.c
+index b46705e..4fe7d18 100644
+--- a/drivers/md/dm-verity-target.c
++++ b/drivers/md/dm-verity-target.c
+@@ -116,7 +116,7 @@ static inline int verity_complete_op(struct verity_result *res, int ret)
+ 		break;
  
- 	ret = crypto_ahash_digest(req);
--	if (ret = -EINPROGRESS || ret = -EBUSY) {
-+	if (ret = -EINPROGRESS || ret = -EIOCBQUEUED) {
- 		ret = wait_for_completion_interruptible(&result.completion);
+ 	case -EINPROGRESS:
+-	case -EBUSY:
++	case -EIOCBQUEUED:
+ 		ret = wait_for_completion_interruptible(&res->completion);
  		if (!ret)
- 			ret = result.error;
+ 			ret = res->err;
 -- 
 2.1.4
 
