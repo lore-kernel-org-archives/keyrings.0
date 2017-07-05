@@ -1,99 +1,49 @@
-From: Ken Goldman <kgold@linux.vnet.ibm.com>
-Date: Wed, 05 Jul 2017 15:18:54 +0000
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date: Wed, 05 Jul 2017 16:06:42 +0000
 Subject: Re: [tpmdd-devel] [Linux-ima-devel] [PATCH v3 0/6] Updated API for TPM 2.0 PCR extend
-Message-Id: <55cf0a07-bee8-a034-4d40-6232bc0eefb8@linux.vnet.ibm.com>
+Message-Id: <1499270802.3059.101.camel@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20170621142941.32674-1-roberto.sassu@huawei.com>
 	<20170624090325.kbqhwkrx5qvtxveg@linux.intel.com>
 	<1498480439.3387.45.camel@linux.vnet.ibm.com>
 	<20170628172851.fuap4ennmdj473yu@linux.intel.com>
-In-Reply-To: <20170628172851.fuap4ennmdj473yu@linux.intel.com>
+	<55cf0a07-bee8-a034-4d40-6232bc0eefb8@linux.vnet.ibm.com>
+In-Reply-To: <55cf0a07-bee8-a034-4d40-6232bc0eefb8@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 
-On 6/28/2017 1:28 PM, Jarkko Sakkinen wrote:
- > On Mon, Jun 26, 2017 at 08:33:59AM -0400, Mimi Zohar wrote:
- >> On Sat, 2017-06-24 at 11:03 +0200, Jarkko Sakkinen wrote:
- >>> On Wed, Jun 21, 2017 at 04:29:35PM +0200, Roberto Sassu wrote:
- >>
- >>
- >>> To move this forward and be more constructive here's how I see it
- >>> should be done (along the lines, draft):
- >>>
- >>> int tpm_pcr_extend(u32 chip_num, int pcr_idx, unsigned int alg,
- >>> 		   const u8 *hash);
-
-This appears to be a single algorithm extend.
-
-TPM 2.0 permits all algorithms to be extended in one operation. 
-Splitting it is likely to nearly double the extend time.
-
-Would performance be better using the TPM pattern, a count plus 
-algorithm / digest pairs?  It's TPML_DIGEST_VALUES, the input to 
-TPM2_PCR_Extend.
-
- >>>
- >>> The paramater 'alg' is crypto ID as specified by crypto subsystem.
- >>
- >> Based on Kenneth Goldman's input, the new IMA TPM-2.0 crypto hash
- >> agile measurement list will contain the TPM crypto hash algorithm ids
- >> (TPM crypto-ID).
- >
- > Doesn't this lock you to TPM?
- >
-> If you seriously want to do this, I guess it is fine by me but I'm
-> just wondering why the measurement list couldn't use something with
-> more loose binding to TPM.
-Are you asking, "Why use the TPM algorithm ID?"  If so:
-
-1 - The IMA measurement log is already closely linked to a TPM.
-
-2 - Why not use the TPM algorithm IDs?  They are standardized (ISO) and 
-maintained.  It's unlikely that a TPM will ever be manufactured that 
-uses a digest algorithm that is not in the TCG registry.
-
-3 - The device driver needs the TPM algorithm ID already to do the 
-extend, so it seems natural to use that value everywhere.
-
- >>> TPM driver must have a precompiled table of mappings for crypto IDs
- >>> and TPM algorithm IDs.
- >>
- >> We could map the TPM crypto-IDs to the crypto subsystem IDs and then
- >> map them back, but is that necessary?
-
-That's the question.  Why have two values and add the mapping?
-
- >>> There's absolutely no need to pass digest size like you do BTW as 
-it >>> is defined by the standard.
- >>
- >> For algorithms known to the crypto subsystem, that is fine, but for
- >> the unknown TPM crypto algorithms, we would need to somehow query the
- >> TPM for the digest sizes to create the mapping.
- >>
- >> Mimi
- >
- > There's a TPM command to query TPM algorithms.
-
-This is true - one getcap to determine the number of algorithms, then a 
-pcr read, then parse the response structures and match the algorithms to 
-sizes.
-
-Alternatively, could you create a table mapping the algorithm to the 
-size?  There are currently 8 approved algorithms, meaning the table is 
-32 bytes, probably less code than the queries.
-
-As for an algorithm appearing in the TPM that's not in the table, it 
-takes a year or more for a new algorithm to appear.  Is that enough time 
-to patch the device driver?
-
-FYI, the 8 algorithms are:
-
-sha1, sha256, sha384, sha512, sm3-256, sha3-256, sha3-384, sha3-512.
-
-I am only aware of sha1, sha256, and sm3-256 being used in production 
-hardware TPMs.
-
-
-
+T24gV2VkLCAyMDE3LTA3LTA1IGF0IDExOjE4IC0wNDAwLCBLZW4gR29sZG1hbiB3cm90ZToKPiBP
+biA2LzI4LzIwMTcgMToyOCBQTSwgSmFya2tvIFNha2tpbmVuIHdyb3RlOgo+ICA+IE9uIE1vbiwg
+SnVuIDI2LCAyMDE3IGF0IDA4OjMzOjU5QU0gLTA0MDAsIE1pbWkgWm9oYXIgd3JvdGU6Cj4gID4+
+IE9uIFNhdCwgMjAxNy0wNi0yNCBhdCAxMTowMyArMDIwMCwgSmFya2tvIFNha2tpbmVuIHdyb3Rl
+Ogo+ICA+Pj4gT24gV2VkLCBKdW4gMjEsIDIwMTcgYXQgMDQ6Mjk6MzVQTSArMDIwMCwgUm9iZXJ0
+byBTYXNzdSB3cm90ZToKCj4gID4+PiBUaGVyZSdzIGFic29sdXRlbHkgbm8gbmVlZCB0byBwYXNz
+IGRpZ2VzdCBzaXplIGxpa2UgeW91IGRvIEJUVyBhcyAKPiBpdCA+Pj4gaXMgZGVmaW5lZCBieSB0
+aGUgc3RhbmRhcmQuCj4gID4+Cj4gID4+IEZvciBhbGdvcml0aG1zIGtub3duIHRvIHRoZSBjcnlw
+dG8gc3Vic3lzdGVtLCB0aGF0IGlzIGZpbmUsIGJ1dCBmb3IKPiAgPj4gdGhlIHVua25vd24gVFBN
+IGNyeXB0byBhbGdvcml0aG1zLCB3ZSB3b3VsZCBuZWVkIHRvIHNvbWVob3cgcXVlcnkgdGhlCj4g
+ID4+IFRQTSBmb3IgdGhlIGRpZ2VzdCBzaXplcyB0byBjcmVhdGUgdGhlIG1hcHBpbmcuCj4gID4+
+Cj4gID4+IE1pbWkKPiAgPgo+ICA+IFRoZXJlJ3MgYSBUUE0gY29tbWFuZCB0byBxdWVyeSBUUE0g
+YWxnb3JpdGhtcy4KPiAKPiBUaGlzIGlzIHRydWUgLSBvbmUgZ2V0Y2FwIHRvIGRldGVybWluZSB0
+aGUgbnVtYmVyIG9mIGFsZ29yaXRobXMsIHRoZW4gYSAKPiBwY3IgcmVhZCwgdGhlbiBwYXJzZSB0
+aGUgcmVzcG9uc2Ugc3RydWN0dXJlcyBhbmQgbWF0Y2ggdGhlIGFsZ29yaXRobXMgdG8gCj4gc2l6
+ZXMuCj4gCj4gQWx0ZXJuYXRpdmVseSwgY291bGQgeW91IGNyZWF0ZSBhIHRhYmxlIG1hcHBpbmcg
+dGhlIGFsZ29yaXRobSB0byB0aGUgCj4gc2l6ZT8gIFRoZXJlIGFyZSBjdXJyZW50bHkgOCBhcHBy
+b3ZlZCBhbGdvcml0aG1zLCBtZWFuaW5nIHRoZSB0YWJsZSBpcyAKPiAzMiBieXRlcywgcHJvYmFi
+bHkgbGVzcyBjb2RlIHRoYW4gdGhlIHF1ZXJpZXMuCj4gCj4gQXMgZm9yIGFuIGFsZ29yaXRobSBh
+cHBlYXJpbmcgaW4gdGhlIFRQTSB0aGF0J3Mgbm90IGluIHRoZSB0YWJsZSwgaXQgCj4gdGFrZXMg
+YSB5ZWFyIG9yIG1vcmUgZm9yIGEgbmV3IGFsZ29yaXRobSB0byBhcHBlYXIuICBJcyB0aGF0IGVu
+b3VnaCB0aW1lIAo+IHRvIHBhdGNoIHRoZSBkZXZpY2UgZHJpdmVyPwo+IAo+IEZZSSwgdGhlIDgg
+YWxnb3JpdGhtcyBhcmU6Cj4gCj4gc2hhMSwgc2hhMjU2LCBzaGEzODQsIHNoYTUxMiwgc20zLTI1
+Niwgc2hhMy0yNTYsIHNoYTMtMzg0LCBzaGEzLTUxMi4KPiAKPiBJIGFtIG9ubHkgYXdhcmUgb2Yg
+c2hhMSwgc2hhMjU2LCBhbmQgc20zLTI1NiBiZWluZyB1c2VkIGluIHByb2R1Y3Rpb24gCj4gaGFy
+ZHdhcmUgVFBNcy4KCk5ldyBkZXZpY2VzIGFyZW4ndCBiZWluZyBzaGlwcGVkIHdpdGggdGhlIG1v
+c3QgcmVjZW50IGtlcm5lbHMuIMKgU28KZXZlbiBpZiB0aGUgdXBzdHJlYW0ga2VybmVsIHN1cHBv
+cnRzIHRoZSBuZXdlciBjcnlwdG8gYWxnb3JpdGhtcywgdGhhdApkb2Vzbid0IGltcGx5IHRoYXQg
+aXQgaXMgYXZhaWxhYmxlLgoKQSBzYWZlciBtZXRob2Qgd291bGQgYmUgdG8gcXVlcnkgdGhlIFRQ
+TSBmb3IgdGhlIGRpZ2VzdCBzaXplcy4KCk1pbWkKCi0tClRvIHVuc3Vic2NyaWJlIGZyb20gdGhp
+cyBsaXN0OiBzZW5kIHRoZSBsaW5lICJ1bnN1YnNjcmliZSBrZXlyaW5ncyIgaW4KdGhlIGJvZHkg
+b2YgYSBtZXNzYWdlIHRvIG1ham9yZG9tb0B2Z2VyLmtlcm5lbC5vcmcKTW9yZSBtYWpvcmRvbW8g
+aW5mbyBhdCAgaHR0cDovL3ZnZXIua2VybmVsLm9yZy9tYWpvcmRvbW8taW5mby5odG1s
