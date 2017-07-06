@@ -1,94 +1,90 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 02 Jul 2017 14:42:09 +0000
-Subject: [PATCH v3 27/28] crypto: mediatek: move to generic async completion
-Message-Id: <1499006535-19760-28-git-send-email-gilad@benyossef.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Thu, 06 Jul 2017 22:17:50 +0000
+Subject: [PATCH v3 4/7] integrity: Introduce integrity_keyring_from_id
+Message-Id: <20170706221753.17380-5-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
-Cc: Ofir Drang <ofir.drang@arm.com>
+References: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-The mediatek driver starts several async crypto ops and waits for their
-completions. Move it over to generic code doing the same.
+IMA will need to obtain the keyring used to verify file signatures so that
+it can verify the module-style signature appended to files.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
- drivers/crypto/mediatek/mtk-aes.c | 31 +++++--------------------------
- 1 file changed, 5 insertions(+), 26 deletions(-)
+ security/integrity/digsig.c    | 28 +++++++++++++++++++---------
+ security/integrity/integrity.h |  1 +
+ 2 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/crypto/mediatek/mtk-aes.c b/drivers/crypto/mediatek/mtk-aes.c
-index 5254e13..e2c7c95 100644
---- a/drivers/crypto/mediatek/mtk-aes.c
-+++ b/drivers/crypto/mediatek/mtk-aes.c
-@@ -137,11 +137,6 @@ struct mtk_aes_gcm_ctx {
- 	struct crypto_skcipher *ctr;
- };
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 06554c448dce..bb5328ba2848 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -48,11 +48,10 @@ static bool init_keyring __initdata;
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
+ #endif
  
--struct mtk_aes_gcm_setkey_result {
--	int err;
--	struct completion completion;
--};
--
- struct mtk_aes_drv {
- 	struct list_head dev_list;
- 	/* Device list lock */
-@@ -936,17 +931,6 @@ static int mtk_aes_gcm_crypt(struct aead_request *req, u64 mode)
- 				    &req->base);
- }
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+-			    const char *digest, int digestlen)
++struct key *integrity_keyring_from_id(const unsigned int id)
+ {
+-	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
+-		return -EINVAL;
++	if (id >= INTEGRITY_KEYRING_MAX)
++		return ERR_PTR(-EINVAL);
  
--static void mtk_gcm_setkey_done(struct crypto_async_request *req, int err)
--{
--	struct mtk_aes_gcm_setkey_result *result = req->data;
--
--	if (err = -EINPROGRESS)
--		return;
--
--	result->err = err;
--	complete(&result->completion);
--}
--
- /*
-  * Because of the hardware limitation, we need to pre-calculate key(H)
-  * for the GHASH operation. The result of the encryption operation
-@@ -962,7 +946,7 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
- 		u32 hash[4];
- 		u8 iv[8];
+ 	if (!keyring[id]) {
+ 		keyring[id] @@ -61,18 +60,29 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			int err = PTR_ERR(keyring[id]);
+ 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
+ 			keyring[id] = NULL;
+-			return err;
++			return ERR_PTR(err);
+ 		}
+ 	}
  
--		struct mtk_aes_gcm_setkey_result result;
-+		struct crypto_wait wait;
++	return keyring[id];
++}
++
++int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
++			    const char *digest, int digestlen)
++{
++	struct key *keyring = integrity_keyring_from_id(id);
++
++	if (IS_ERR(keyring) || siglen < 2)
++		return PTR_ERR(keyring);
++
+ 	switch (sig[1]) {
+ 	case 1:
+ 		/* v1 API expect signature without xattr type */
+-		return digsig_verify(keyring[id], sig + 1, siglen - 1,
+-				     digest, digestlen);
++		return digsig_verify(keyring, sig + 1, siglen - 1, digest,
++				     digestlen);
+ 	case 2:
+-		return asymmetric_verify(keyring[id], sig, siglen,
+-					 digest, digestlen);
++		return asymmetric_verify(keyring, sig, siglen, digest,
++					 digestlen);
+ 	}
  
- 		struct scatterlist sg[1];
- 		struct skcipher_request req;
-@@ -1002,22 +986,17 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
- 	if (!data)
- 		return -ENOMEM;
+ 	return -EOPNOTSUPP;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 874211aba6e9..ba5f13f94ed3 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -129,6 +129,7 @@ int __init integrity_read_file(const char *path, char **data);
  
--	init_completion(&data->result.completion);
-+	crypto_init_wait(&data->wait);
- 	sg_init_one(data->sg, &data->hash, AES_BLOCK_SIZE);
- 	skcipher_request_set_tfm(&data->req, ctr);
- 	skcipher_request_set_callback(&data->req, CRYPTO_TFM_REQ_MAY_SLEEP |
- 				      CRYPTO_TFM_REQ_MAY_BACKLOG,
--				      mtk_gcm_setkey_done, &data->result);
-+				      crypto_req_done, &data->wait);
- 	skcipher_request_set_crypt(&data->req, data->sg, data->sg,
- 				   AES_BLOCK_SIZE, data->iv);
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
  
--	err = crypto_skcipher_encrypt(&data->req);
--	if (err = -EINPROGRESS || err = -EIOCBQUEUED) {
--		err = wait_for_completion_interruptible(
--			&data->result.completion);
--		if (!err)
--			err = data->result.err;
--	}
-+	err = crypto_wait_req(crypto_skcipher_encrypt(&data->req),
-+			      &data->wait);
- 	if (err)
- 		goto out;
++struct key *integrity_keyring_from_id(const unsigned int id);
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
  
 -- 
-2.1.4
+2.13.0
 
