@@ -1,55 +1,53 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 02 Jul 2017 14:41:47 +0000
-Subject: [PATCH v3 05/28] crypto: mediatek: use -EIOCBQUEUED for backlog indication
-Message-Id: <1499006535-19760-6-git-send-email-gilad@benyossef.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Thu, 06 Jul 2017 22:17:52 +0000
+Subject: [PATCH v3 6/7] ima: Store measurement after appraisal
+Message-Id: <20170706221753.17380-7-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
-Cc: Ofir Drang <ofir.drang@arm.com>
+References: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-Replace -EBUSY with -EIOCBQUEUED for backlog queueing indication
-as part of new API.
+When module-style signatures appended at the end of files are supported for
+IMA appraisal, the code will fallback to the xattr signature if the
+appended one fails to verify.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+The problem is that we don't know whether we need to fallback to the xattr
+signature until the appraise step, and by then the measure step was already
+completed and would need to be done again in case the template includes the
+signature.
+
+To avoid this problem, do the appraisal first so that the correct signature
+is stored by the template in the measure step.
+
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
+ security/integrity/ima/ima_main.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-This patch should be squashed with the first patch in the series
-when applied.
-
- drivers/crypto/mediatek/mtk-aes.c | 2 +-
- drivers/crypto/mediatek/mtk-sha.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/crypto/mediatek/mtk-aes.c b/drivers/crypto/mediatek/mtk-aes.c
-index 9e845e8..5254e13 100644
---- a/drivers/crypto/mediatek/mtk-aes.c
-+++ b/drivers/crypto/mediatek/mtk-aes.c
-@@ -1012,7 +1012,7 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
- 				   AES_BLOCK_SIZE, data->iv);
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 2aebb7984437..0b4845e7248d 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -244,12 +244,12 @@ static int process_measurement(struct file *file, char *buf, loff_t size,
+ 	if (!pathbuf)	/* ima_rdwr_violation possibly pre-fetched */
+ 		pathname = ima_d_path(&file->f_path, &pathbuf, filename);
  
- 	err = crypto_skcipher_encrypt(&data->req);
--	if (err = -EINPROGRESS || err = -EBUSY) {
-+	if (err = -EINPROGRESS || err = -EIOCBQUEUED) {
- 		err = wait_for_completion_interruptible(
- 			&data->result.completion);
- 		if (!err)
-diff --git a/drivers/crypto/mediatek/mtk-sha.c b/drivers/crypto/mediatek/mtk-sha.c
-index 5f4f845..5c75b50 100644
---- a/drivers/crypto/mediatek/mtk-sha.c
-+++ b/drivers/crypto/mediatek/mtk-sha.c
-@@ -782,7 +782,7 @@ static int mtk_sha_finup(struct ahash_request *req)
- 	ctx->flags |= SHA_FLAGS_FINUP;
+-	if (action & IMA_MEASURE)
+-		ima_store_measurement(iint, file, pathname,
+-				      xattr_value, xattr_len, pcr);
+ 	if (action & IMA_APPRAISE_SUBMASK)
+ 		rc = ima_appraise_measurement(func, iint, file, pathname,
+ 					      xattr_value, xattr_len, opened);
++	if (action & IMA_MEASURE)
++		ima_store_measurement(iint, file, pathname,
++				      xattr_value, xattr_len, pcr);
+ 	if (action & IMA_AUDIT)
+ 		ima_audit_measurement(iint, pathname);
  
- 	err1 = mtk_sha_update(req);
--	if (err1 = -EINPROGRESS || err1 = -EBUSY)
-+	if (err1 = -EINPROGRESS || err1 = -EIOCBQUEUED)
- 		return err1;
- 	/*
- 	 * final() has to be always called to cleanup resources
 -- 
-2.1.4
+2.13.0
 
