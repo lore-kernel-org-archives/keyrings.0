@@ -1,7 +1,7 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Jul 2017 12:09:55 +0000
+From: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Date: Thu, 13 Jul 2017 15:28:58 +0000
 Subject: Re: [PATCH v3] KEYS: Add documentation for asymmetric keyring restrictions
-Message-Id: <14820.1499947795@warthog.procyon.org.uk>
+Message-Id: <alpine.OSX.2.21.1707130827080.35864@tmusah-mobl.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,10 +10,19 @@ References: <20170705205329.13543-1-mathew.j.martineau@linux.intel.com>
 In-Reply-To: <20170705205329.13543-1-mathew.j.martineau@linux.intel.com>
 To: keyrings@vger.kernel.org
 
-Mat Martineau <mathew.j.martineau@linux.intel.com> wrote:
 
-> diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+On Thu, 13 Jul 2017, David Howells wrote:
 
-This got rusted, so I've changed it over.
+> Mat Martineau <mathew.j.martineau@linux.intel.com> wrote:
+>
+>> diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+>
+> This got rusted, so I've changed it over.
 
-David
+Thanks for adjusting the patch.
+
+Regards,
+
+--
+Mat Martineau
+Intel OTC
