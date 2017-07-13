@@ -1,40 +1,58 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Thu, 06 Jul 2017 22:17:51 +0000
-Subject: [PATCH v3 5/7] integrity: Select CONFIG_KEYS instead of depending on it
-Message-Id: <20170706221753.17380-6-bauerman@linux.vnet.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 13 Jul 2017 12:16:56 +0000
+Subject: [PATCH 2/3] KEYS: DH: validate __spare field
+Message-Id: <149994821634.15267.4855955837816300806.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com>
+References: <149994820255.15267.8445091158769841444.stgit@warthog.procyon.org.uk>
+In-Reply-To: <149994820255.15267.8445091158769841444.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-This avoids a dependency cycle in CONFIG_IMA_APPRAISE_MODSIG (introduced by
-a later patch in this series): it will select CONFIG_MODULE_SIG_FORMAT
-which in turn selects CONFIG_KEYS. Kconfig then complains that
-CONFIG_INTEGRITY_SIGNATURE depends on CONFIG_KEYS.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Syscalls must validate that their reserved arguments are zero and return
+EINVAL otherwise.  Otherwise, it will be impossible to actually use them
+for anything in the future because existing programs may be passing
+garbage in.  This is standard practice when adding new APIs.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- security/integrity/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-index da9565891738..0d642e0317c7 100644
---- a/security/integrity/Kconfig
-+++ b/security/integrity/Kconfig
-@@ -17,8 +17,8 @@ if INTEGRITY
+ security/keys/compat_dh.c |    2 ++
+ security/keys/dh.c        |    5 +++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/security/keys/compat_dh.c b/security/keys/compat_dh.c
+index a6a659b6bcb6..aa6b34cafe5f 100644
+--- a/security/keys/compat_dh.c
++++ b/security/keys/compat_dh.c
+@@ -33,6 +33,8 @@ long compat_keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 	kdfcopy.hashname = compat_ptr(compat_kdfcopy.hashname);
+ 	kdfcopy.otherinfo = compat_ptr(compat_kdfcopy.otherinfo);
+ 	kdfcopy.otherinfolen = compat_kdfcopy.otherinfolen;
++	memcpy(kdfcopy.__spare, compat_kdfcopy.__spare,
++	       sizeof(kdfcopy.__spare));
  
- config INTEGRITY_SIGNATURE
- 	bool "Digital signature verification using multiple keyrings"
--	depends on KEYS
- 	default n
-+	select KEYS
- 	select SIGNATURE
- 	help
- 	  This option enables digital signature verification support
--- 
-2.13.0
+ 	return __keyctl_dh_compute(params, buffer, buflen, &kdfcopy);
+ }
+diff --git a/security/keys/dh.c b/security/keys/dh.c
+index 4755d4b4f945..d1ea9f325f94 100644
+--- a/security/keys/dh.c
++++ b/security/keys/dh.c
+@@ -266,6 +266,11 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 	if (kdfcopy) {
+ 		char *hashname;
+ 
++		if (memchr_inv(kdfcopy->__spare, 0, sizeof(kdfcopy->__spare))) {
++			ret = -EINVAL;
++			goto out1;
++		}
++
+ 		if (buflen > KEYCTL_KDF_MAX_OUTPUT_LEN ||
+ 		    kdfcopy->otherinfolen > KEYCTL_KDF_MAX_OI_LEN) {
+ 			ret = -EMSGSIZE;
 
