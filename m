@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Jul 2017 12:15:25 +0000
+Date: Thu, 13 Jul 2017 12:16:49 +0000
 Subject: [PATCH 1/3] modsign: add markers to endif-statements in certs/Makefile
-Message-Id: <149994812542.15121.14734117464094953900.stgit@warthog.procyon.org.uk>
+Message-Id: <149994820943.15267.5536873590902306268.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <149994811849.15121.8667303093371871645.stgit@warthog.procyon.org.uk>
-In-Reply-To: <149994811849.15121.8667303093371871645.stgit@warthog.procyon.org.uk>
+References: <149994820255.15267.8445091158769841444.stgit@warthog.procyon.org.uk>
+In-Reply-To: <149994820255.15267.8445091158769841444.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
