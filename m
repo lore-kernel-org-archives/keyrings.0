@@ -1,11 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Jul 2017 12:15:18 +0000
+Date: Thu, 13 Jul 2017 12:16:42 +0000
 Subject: [PATCH 0/3] KEYS: Miscellany
-Message-Id: <149994811849.15121.8667303093371871645.stgit@warthog.procyon.org.uk>
+Message-Id: <149994820255.15267.8445091158769841444.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <149994811849.15121.8667303093371871645.stgit@warthog.procyon.org.uk>
+In-Reply-To: <149994811849.15121.8667303093371871645.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
 
