@@ -1,49 +1,52 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Wed, 05 Jul 2017 16:06:42 +0000
-Subject: Re: [tpmdd-devel] [Linux-ima-devel] [PATCH v3 0/6] Updated API for TPM 2.0 PCR extend
-Message-Id: <1499270802.3059.101.camel@linux.vnet.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 13 Jul 2017 12:14:59 +0000
+Subject: [PATCH 1/3] modsign: add markers to endif-statements in certs/Makefile
+Message-Id: <149994809940.15079.2922232291613184365.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170621142941.32674-1-roberto.sassu@huawei.com>
-	<20170624090325.kbqhwkrx5qvtxveg@linux.intel.com>
-	<1498480439.3387.45.camel@linux.vnet.ibm.com>
-	<20170628172851.fuap4ennmdj473yu@linux.intel.com>
-	<55cf0a07-bee8-a034-4d40-6232bc0eefb8@linux.vnet.ibm.com>
-In-Reply-To: <55cf0a07-bee8-a034-4d40-6232bc0eefb8@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 
-T24gV2VkLCAyMDE3LTA3LTA1IGF0IDExOjE4IC0wNDAwLCBLZW4gR29sZG1hbiB3cm90ZToKPiBP
-biA2LzI4LzIwMTcgMToyOCBQTSwgSmFya2tvIFNha2tpbmVuIHdyb3RlOgo+ICA+IE9uIE1vbiwg
-SnVuIDI2LCAyMDE3IGF0IDA4OjMzOjU5QU0gLTA0MDAsIE1pbWkgWm9oYXIgd3JvdGU6Cj4gID4+
-IE9uIFNhdCwgMjAxNy0wNi0yNCBhdCAxMTowMyArMDIwMCwgSmFya2tvIFNha2tpbmVuIHdyb3Rl
-Ogo+ICA+Pj4gT24gV2VkLCBKdW4gMjEsIDIwMTcgYXQgMDQ6Mjk6MzVQTSArMDIwMCwgUm9iZXJ0
-byBTYXNzdSB3cm90ZToKCj4gID4+PiBUaGVyZSdzIGFic29sdXRlbHkgbm8gbmVlZCB0byBwYXNz
-IGRpZ2VzdCBzaXplIGxpa2UgeW91IGRvIEJUVyBhcyAKPiBpdCA+Pj4gaXMgZGVmaW5lZCBieSB0
-aGUgc3RhbmRhcmQuCj4gID4+Cj4gID4+IEZvciBhbGdvcml0aG1zIGtub3duIHRvIHRoZSBjcnlw
-dG8gc3Vic3lzdGVtLCB0aGF0IGlzIGZpbmUsIGJ1dCBmb3IKPiAgPj4gdGhlIHVua25vd24gVFBN
-IGNyeXB0byBhbGdvcml0aG1zLCB3ZSB3b3VsZCBuZWVkIHRvIHNvbWVob3cgcXVlcnkgdGhlCj4g
-ID4+IFRQTSBmb3IgdGhlIGRpZ2VzdCBzaXplcyB0byBjcmVhdGUgdGhlIG1hcHBpbmcuCj4gID4+
-Cj4gID4+IE1pbWkKPiAgPgo+ICA+IFRoZXJlJ3MgYSBUUE0gY29tbWFuZCB0byBxdWVyeSBUUE0g
-YWxnb3JpdGhtcy4KPiAKPiBUaGlzIGlzIHRydWUgLSBvbmUgZ2V0Y2FwIHRvIGRldGVybWluZSB0
-aGUgbnVtYmVyIG9mIGFsZ29yaXRobXMsIHRoZW4gYSAKPiBwY3IgcmVhZCwgdGhlbiBwYXJzZSB0
-aGUgcmVzcG9uc2Ugc3RydWN0dXJlcyBhbmQgbWF0Y2ggdGhlIGFsZ29yaXRobXMgdG8gCj4gc2l6
-ZXMuCj4gCj4gQWx0ZXJuYXRpdmVseSwgY291bGQgeW91IGNyZWF0ZSBhIHRhYmxlIG1hcHBpbmcg
-dGhlIGFsZ29yaXRobSB0byB0aGUgCj4gc2l6ZT8gIFRoZXJlIGFyZSBjdXJyZW50bHkgOCBhcHBy
-b3ZlZCBhbGdvcml0aG1zLCBtZWFuaW5nIHRoZSB0YWJsZSBpcyAKPiAzMiBieXRlcywgcHJvYmFi
-bHkgbGVzcyBjb2RlIHRoYW4gdGhlIHF1ZXJpZXMuCj4gCj4gQXMgZm9yIGFuIGFsZ29yaXRobSBh
-cHBlYXJpbmcgaW4gdGhlIFRQTSB0aGF0J3Mgbm90IGluIHRoZSB0YWJsZSwgaXQgCj4gdGFrZXMg
-YSB5ZWFyIG9yIG1vcmUgZm9yIGEgbmV3IGFsZ29yaXRobSB0byBhcHBlYXIuICBJcyB0aGF0IGVu
-b3VnaCB0aW1lIAo+IHRvIHBhdGNoIHRoZSBkZXZpY2UgZHJpdmVyPwo+IAo+IEZZSSwgdGhlIDgg
-YWxnb3JpdGhtcyBhcmU6Cj4gCj4gc2hhMSwgc2hhMjU2LCBzaGEzODQsIHNoYTUxMiwgc20zLTI1
-Niwgc2hhMy0yNTYsIHNoYTMtMzg0LCBzaGEzLTUxMi4KPiAKPiBJIGFtIG9ubHkgYXdhcmUgb2Yg
-c2hhMSwgc2hhMjU2LCBhbmQgc20zLTI1NiBiZWluZyB1c2VkIGluIHByb2R1Y3Rpb24gCj4gaGFy
-ZHdhcmUgVFBNcy4KCk5ldyBkZXZpY2VzIGFyZW4ndCBiZWluZyBzaGlwcGVkIHdpdGggdGhlIG1v
-c3QgcmVjZW50IGtlcm5lbHMuIMKgU28KZXZlbiBpZiB0aGUgdXBzdHJlYW0ga2VybmVsIHN1cHBv
-cnRzIHRoZSBuZXdlciBjcnlwdG8gYWxnb3JpdGhtcywgdGhhdApkb2Vzbid0IGltcGx5IHRoYXQg
-aXQgaXMgYXZhaWxhYmxlLgoKQSBzYWZlciBtZXRob2Qgd291bGQgYmUgdG8gcXVlcnkgdGhlIFRQ
-TSBmb3IgdGhlIGRpZ2VzdCBzaXplcy4KCk1pbWkKCi0tClRvIHVuc3Vic2NyaWJlIGZyb20gdGhp
-cyBsaXN0OiBzZW5kIHRoZSBsaW5lICJ1bnN1YnNjcmliZSBrZXlyaW5ncyIgaW4KdGhlIGJvZHkg
-b2YgYSBtZXNzYWdlIHRvIG1ham9yZG9tb0B2Z2VyLmtlcm5lbC5vcmcKTW9yZSBtYWpvcmRvbW8g
-aW5mbyBhdCAgaHR0cDovL3ZnZXIua2VybmVsLm9yZy9tYWpvcmRvbW8taW5mby5odG1s
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+
+It's a bit hard for eye to track certs/Makefile if you are not
+accustomed to it. This commit adds comments to key endif statements in
+order to help to keep the context while reading this file.
+
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ certs/Makefile |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/certs/Makefile b/certs/Makefile
+index 4119bb376ea1..847361ce14d1 100644
+--- a/certs/Makefile
++++ b/certs/Makefile
+@@ -26,7 +26,7 @@ quiet_cmd_extract_certs  = EXTRACT_CERTS   $(patsubst "%",%,$(2))
+ targets += x509_certificate_list
+ $(obj)/x509_certificate_list: scripts/extract-cert $(SYSTEM_TRUSTED_KEYS_SRCPREFIX)$(SYSTEM_TRUSTED_KEYS_FILENAME) FORCE
+ 	$(call if_changed,extract_certs,$(SYSTEM_TRUSTED_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_TRUSTED_KEYS))
+-endif
++endif # CONFIG_SYSTEM_TRUSTED_KEYRING
+ 
+ clean-files := x509_certificate_list .x509.list
+ 
+@@ -87,7 +87,7 @@ $(obj)/x509.genkey:
+ 	@echo >>$@ "keyUsage=digitalSignature"
+ 	@echo >>$@ "subjectKeyIdentifier=hash"
+ 	@echo >>$@ "authorityKeyIdentifier=keyid"
+-endif
++endif # CONFIG_MODULE_SIG_KEY
+ 
+ $(eval $(call config_filename,MODULE_SIG_KEY))
+ 
+@@ -102,4 +102,4 @@ $(obj)/system_certificates.o: $(obj)/signing_key.x509
+ targets += signing_key.x509
+ $(obj)/signing_key.x509: scripts/extract-cert $(X509_DEP) FORCE
+ 	$(call if_changed,extract_certs,$(MODULE_SIG_KEY_SRCPREFIX)$(CONFIG_MODULE_SIG_KEY))
+-endif
++endif # CONFIG_MODULE_SIG
+
