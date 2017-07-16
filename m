@@ -1,85 +1,70 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 02 Jul 2017 14:42:08 +0000
-Subject: [PATCH v3 26/28] crypto: qce: move to generic async completion
-Message-Id: <1499006535-19760-27-git-send-email-gilad@benyossef.com>
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Date: Sun, 16 Jul 2017 17:21:13 +0000
+Subject: [PATCH] security/keys: ensure RNG is seeded before use
+Message-Id: <20170716172113.6223-1-Jason@zx2c4.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1499006535-19760-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
-Cc: Ofir Drang <ofir.drang@arm.com>
+To: linux-security-module@vger.kernel.org
 
-The qce driver starts several async crypto ops and  waits for their
-completions. Move it over to generic code doing the same.
+Otherwise, we might use bad random numbers which, particularly in the
+case of IV generation, could be quite bad. It makes sense to use the
+synchronous API here, because we're always in process context (as the
+code is littered with GFP_KERNEL and the like). However, we can't change
+to using a blocking function in key serial allocation, because this will
+block booting in some configurations, so here we use the more
+appropriate get_random_u32, which will use RDRAND if available.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: David Safford <safford@us.ibm.com>
 ---
- drivers/crypto/qce/sha.c | 30 ++++--------------------------
- 1 file changed, 4 insertions(+), 26 deletions(-)
+ security/keys/encrypted-keys/encrypted.c | 8 +++++---
+ security/keys/key.c                      | 8 +++-----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/crypto/qce/sha.c b/drivers/crypto/qce/sha.c
-index a21d2a1c..53227d7 100644
---- a/drivers/crypto/qce/sha.c
-+++ b/drivers/crypto/qce/sha.c
-@@ -349,28 +349,12 @@ static int qce_ahash_digest(struct ahash_request *req)
- 	return qce->async_req_enqueue(tmpl->qce, &req->base);
- }
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index 69855ba0d3b3..7640fa46b3e5 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -759,10 +759,12 @@ static int encrypted_init(struct encrypted_key_payload *epayload,
  
--struct qce_ahash_result {
--	struct completion completion;
--	int error;
--};
--
--static void qce_digest_complete(struct crypto_async_request *req, int error)
--{
--	struct qce_ahash_result *result = req->data;
--
--	if (error = -EINPROGRESS)
--		return;
--
--	result->error = error;
--	complete(&result->completion);
--}
--
- static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
- 				 unsigned int keylen)
- {
- 	unsigned int digestsize = crypto_ahash_digestsize(tfm);
- 	struct qce_sha_ctx *ctx = crypto_tfm_ctx(&tfm->base);
--	struct qce_ahash_result result;
-+	struct crypto_wait wait;
- 	struct ahash_request *req;
- 	struct scatterlist sg;
- 	unsigned int blocksize;
-@@ -405,9 +389,9 @@ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
- 		goto err_free_ahash;
- 	}
+ 	__ekey_init(epayload, format, master_desc, datalen);
+ 	if (!hex_encoded_iv) {
+-		get_random_bytes(epayload->iv, ivsize);
++		ret = get_random_bytes_wait(epayload->iv, ivsize);
++		if (unlikely(ret))
++			return ret;
  
--	init_completion(&result.completion);
-+	crypto_init_wait(&wait);
- 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				   qce_digest_complete, &result);
-+				   crypto_req_done, &wait);
- 	crypto_ahash_clear_flags(ahash_tfm, ~0);
+-		get_random_bytes(epayload->decrypted_data,
+-				 epayload->decrypted_datalen);
++		ret = get_random_bytes_wait(epayload->decrypted_data,
++					    epayload->decrypted_datalen);
+ 	} else
+ 		ret = encrypted_key_decrypt(epayload, format, hex_encoded_iv);
+ 	return ret;
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 83da68d98b40..ee443d2a4f7e 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -139,12 +139,10 @@ static inline void key_alloc_serial(struct key *key)
+ 	struct rb_node *parent, **p;
+ 	struct key *xkey;
  
- 	buf = kzalloc(keylen + QCE_MAX_ALIGN_SIZE, GFP_KERNEL);
-@@ -420,13 +404,7 @@ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
- 	sg_init_one(&sg, buf, keylen);
- 	ahash_request_set_crypt(req, &sg, ctx->authkey, keylen);
- 
--	ret = crypto_ahash_digest(req);
--	if (ret = -EINPROGRESS || ret = -EIOCBQUEUED) {
--		ret = wait_for_completion_interruptible(&result.completion);
--		if (!ret)
--			ret = result.error;
--	}
+-	/* propose a random serial number and look for a hole for it in the
+-	 * serial number tree */
++	/* propose a non-negative random serial number and look for a hole for
++	 * it in the serial number tree */
+ 	do {
+-		get_random_bytes(&key->serial, sizeof(key->serial));
 -
-+	ret = crypto_wait_req(crypto_ahash_digest(req), &wait);
- 	if (ret)
- 		crypto_ahash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+-		key->serial >>= 1; /* negative numbers are not permitted */
++		key->serial = get_random_u32() >> 1;
+ 	} while (key->serial < 3);
  
+ 	spin_lock(&key_serial_lock);
 -- 
-2.1.4
+2.13.3
 
