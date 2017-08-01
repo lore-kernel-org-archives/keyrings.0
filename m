@@ -1,76 +1,54 @@
-From: Eugene Syromyatnikov <evgsyr@gmail.com>
-Date: Thu, 31 Aug 2017 15:58:22 +0000
-Subject: [RFC PATCH 1/5] keyctl.2: change "is" to "was" in error descriptions
-Message-Id: <20170831155822.GA4825@asgard.redhat.com>
+From: Carlo Caione <carlo@caione.org>
+Date: Tue, 01 Aug 2017 12:28:59 +0000
+Subject: [PATCH] X.509: Recognize the legacy OID 1.3.14.3.2.29 (sha1WithRSASignature)
+Message-Id: <20170801122859.24806-1-carlo@caione.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
-Cc: linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, linux@endlessm.com
+Cc: Carlo Caione <carlo@endlessm.com>
 
-Since half of items used "was" and another half used "is".
+From: Carlo Caione <carlo@endlessm.com>
+
+sha1WithRSASignature is a deprecated equivalent of
+sha1WithRSAEncryption. It originates from the NIST Open Systems
+Environment (OSE) Implementor's Workshop (OIW).
+
+It is supported for compatibility with Microsoft's certificate APIs
+and tools, particularly makecert.exe, which default(ed/s) to this
+OID for SHA-1.
+
+Signed-off-by: Carlo Caione <carlo@endlessm.com>
 ---
- man2/keyctl.2 | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ crypto/asymmetric_keys/x509_cert_parser.c | 1 +
+ include/linux/oid_registry.h              | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/man2/keyctl.2 b/man2/keyctl.2
-index 63109f9..3469947 100644
---- a/man2/keyctl.2
-+++ b/man2/keyctl.2
-@@ -1537,7 +1537,7 @@ The requested operation wasn't permitted.
- .TP
- .B EDEADLK
- .I operation
--is
-+was
- .BR KEYCTL_LINK
- and the requested link would result in a cycle.
- .TP
-@@ -1585,14 +1585,14 @@ A revoked key was found or specified.
- .TP
- .B ELOOP
- .I operation
--is
-+was
- .BR KEYCTL_LINK
- and the requested link would cause the maximum nesting depth
- for keyrings to be exceeded.
- .TP
- .BR ENFILE " (Linux kernels before 3.13)"
- .IR operation
--is
-+was
- .BR KEYCTL_LINK
- and the keyring is full.
- (Before Linux 3.13,
-@@ -1602,7 +1602,7 @@ a single page of memory; since Linux 3.13, there is no fixed limit.)
- .TP
- .B ENOENT
- .I operation
--is
-+was
- .B KEYCTL_UNLINK
- and the key to be unlinked isn't linked to the keyring.
- .TP
-@@ -1626,7 +1626,7 @@ a different type was provided.
- .TP
- .B EOPNOTSUPP
- .I operation
--is
-+was
- .B KEYCTL_READ
- and the key type does not support reading
- (e.g., the type is
-@@ -1634,7 +1634,7 @@ and the key type does not support reading
- .TP
- .B EOPNOTSUPP
- .I operation
--is
-+was
- .B KEYCTL_UPDATE
- and the key type does not support updating.
- .TP
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index dd03fead1ca3..cdbc8c2def79 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -203,6 +203,7 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
+ 		break;
+ 
+ 	case OID_sha1WithRSAEncryption:
++	case OID_sha1WithRSASignature:
+ 		ctx->cert->sig->hash_algo = "sha1";
+ 		ctx->cert->sig->pkey_algo = "rsa";
+ 		break;
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index d2fa9ca42e9a..26faee80357f 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -62,6 +62,7 @@ enum OID {
+ 
+ 	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
+ 	OID_sha1,			/* 1.3.14.3.2.26 */
++	OID_sha1WithRSASignature,	/* 1.3.14.3.2.29 */
+ 	OID_sha256,			/* 2.16.840.1.101.3.4.2.1 */
+ 	OID_sha384,			/* 2.16.840.1.101.3.4.2.2 */
+ 	OID_sha512,			/* 2.16.840.1.101.3.4.2.3 */
 -- 
-2.1.4
+2.13.3
 
