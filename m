@@ -1,53 +1,65 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 08 Aug 2017 12:03:35 +0000
-Subject: [PATCH v4 04/19] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
-Message-Id: <1502193834-11289-5-git-send-email-gilad@benyossef.com>
+From: Artem Savkov <asavkov@redhat.com>
+Date: Tue, 01 Aug 2017 13:04:31 +0000
+Subject: Re: [PATCH keyutils v2] tests/bz1031154: skip if selinux is disabled
+Message-Id: <20170801130431.dyxn6ebcs3fg3ucs@shodan.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
-Cc: Ofir Drang <ofir.drang@arm.com>
+To: keyrings@vger.kernel.org
 
-Now that -EBUSY return code only indicates backlog queueing
-we can safely remove the now redundant check for the
-CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
+Hi David,
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
----
- drivers/crypto/marvell/cesa.c | 3 +--
- drivers/crypto/marvell/cesa.h | 2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+On Tue, Jun 27, 2017 at 11:54:19AM +0200, Artem Savkov wrote:
+> With selinux disabled the test currently fails trying to setenforce, it
+> should be skipped instead. Found while trying to run in a container
+> where selinux always appears disabled.
+> 
+> Signed-off-by: Artem Savkov <asavkov@redhat.com>
 
-diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
-index 6e7a5c7..269737f 100644
---- a/drivers/crypto/marvell/cesa.c
-+++ b/drivers/crypto/marvell/cesa.c
-@@ -183,8 +183,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
- 	spin_lock_bh(&engine->lock);
- 	ret = crypto_enqueue_request(&engine->queue, req);
- 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
--	    (ret = -EINPROGRESS ||
--	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	    (ret = -EINPROGRESS || ret = -EBUSY)
- 		mv_cesa_tdma_chain(engine, creq);
- 	spin_unlock_bh(&engine->lock);
- 
-diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
-index b7872f6..63c8457 100644
---- a/drivers/crypto/marvell/cesa.h
-+++ b/drivers/crypto/marvell/cesa.h
-@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
- 	 * the backlog and will be processed later. There's no need to
- 	 * clean it up.
- 	 */
--	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
-+	if (ret = -EBUSY)
- 		return false;
- 
- 	/* Request wasn't queued, we need to clean it up */
+Is there any feedback on v2 of this patch?
+
+> ---
+>  tests/bugzillas/bz1031154/runtest.sh | 1 +
+>  tests/toolbox.inc.sh                 | 9 +++++++++
+>  2 files changed, 10 insertions(+)
+> 
+> diff --git a/tests/bugzillas/bz1031154/runtest.sh b/tests/bugzillas/bz1031154/runtest.sh
+> index aee8a28..d90afb4 100644
+> --- a/tests/bugzillas/bz1031154/runtest.sh
+> +++ b/tests/bugzillas/bz1031154/runtest.sh
+> @@ -20,6 +20,7 @@ then
+>      exit 0
+>  fi
+>  
+> +require_selinux
+>  require_command getenforce
+>  require_command setenforce
+>  require_command runcon
+> diff --git a/tests/toolbox.inc.sh b/tests/toolbox.inc.sh
+> index 7f19a02..8e4e91d 100644
+> --- a/tests/toolbox.inc.sh
+> +++ b/tests/toolbox.inc.sh
+> @@ -115,6 +115,15 @@ function require_command ()
+>      fi
+>  }
+>  
+> +function require_selinux ()
+> +{
+> +    if ! grep -q selinuxfs /proc/mounts;
+> +    then
+> +	toolbox_skip_test $TEST "SKIP DUE TO DISABLED SELINUX"
+> +	exit 0
+> +    fi
+> +}
+> +
+>  ###############################################################################
+>  #
+>  # extract an error message from the log file and check it
+> -- 
+> 2.7.5
+> 
+
 -- 
-2.1.4
-
+Regards,
+  Artem
