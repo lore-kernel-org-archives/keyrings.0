@@ -1,46 +1,68 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 21 Aug 2017 12:49:41 +0000
-Subject: Re: [PATCH v5 05/19] crypto: introduce crypto wait for async op
-Message-Id: <CAOtvUMfJaG-Uomc1EnD1+HySz+X8SUaRUm1SEx4DusquWfOF0w@mail.gmail.com>
+From: Richard Palethorpe <rpalethorpe@suse.de>
+Date: Tue, 01 Aug 2017 07:42:55 +0000
+Subject: Re: [LTP] [PATCH] syscalls/keyctl04: new test for thread keyring memory leak
+Message-Id: <87fudbhgxs.fsf@our.domain.is.not.set>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
- <1502724094-23305-6-git-send-email-gilad@benyossef.com> <20170815032303.000042b2@huawei.com>
-In-Reply-To: <20170815032303.000042b2@huawei.com>
-To: Jonathan Cameron <Jonathan.Cameron@huawei.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, device-mapper development <dm-devel@redhat.com>, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, Serge
+References: <87mv7lghr8.fsf@our.domain.is.not.set>
+In-Reply-To: <87mv7lghr8.fsf@our.domain.is.not.set>
+To: keyrings@vger.kernel.org
 
-On Tue, Aug 15, 2017 at 5:23 AM, Jonathan Cameron
-<Jonathan.Cameron@huawei.com> wrote:
-> On Mon, 14 Aug 2017 18:21:15 +0300
-> Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+
+Eric Biggers writes:
+
+> Hi Richard, thanks for reviewing!
 >
->> Invoking a possibly async. crypto op and waiting for completion
->> while correctly handling backlog processing is a common task
->> in the crypto API implementation and outside users of it.
+> On Mon, Jul 31, 2017 at 09:58:19AM +0200, Richard Palethorpe wrote:
 >>
->> This patch adds a generic implementation for doing so in
->> preparation for using it across the board instead of hand
->> rolled versions.
-
->
-> Trivial observation.  Shouldn't have this bonus blank line inserted here.
->
->>  #endif       /* _LINUX_CRYPTO_H */
+>> Thanks for contributing this test! We now have a directory
+>> (testcases/cve) and runtest file dedicated to CVE regression tests. So
+>> please atleast add it to the CVE runtest file.
 >>
 >
+> I'll add it to 'runtest/cve' but will leave it in the syscalls/keyctl directory.
+> I don't like the idea of putting "CVE regression tests" in a separate directory
+> because then it will be harder to find all the tests for a given syscall or
+> feature.
 
-Indeed. Will be fixed.
+OK, this is fine. There is no particular filing structure which fits
+every test and usage case. I was never particularly sure if having all
+the tests with a CVE number in the same place would be a good idea,
+although it makes filing some of them a lot easier.
 
-Thanks,
-Gilad
+>
+>> > +#include "config.h"
+>> > +#ifdef HAVE_LINUX_KEYCTL_H
+>> > +# include <linux/keyctl.h>
+>> > +#endif
+>>
+>> Please just include the definitions for keyctl in the test like:
+>> https://github.com/richiejp/ltp/blob/cve/testcases/cve/cve-2016-7042.c
+>> The vulnerability is still exploitable on systems without this header.
+>>
+>> On a related note; we should create a fallback header in include/lapi
+>> for keyutils as there are a few tests which use it.
+>>
+>
+> It's including the Linux UAPI header (from include/uapi/linux/keyctl.h), not
+> even the libkeyutils header.  Is using UAPI headers really not allowed in LTP?
+> I see tons of other tests that include <linux/${foo}.h>.
+>
+> Eric
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
+The sys headers are preferred (or whatever user land library is most
+commonly used) if there is one available because they are deemed to be
+more stable and commonly available. Failing that the linux UAPI headers
+can be used, but usually we will try to ensure the test will still run
+even if the headers are missing or incomplete. Which, unfortunately, is
+not that uncommon amongst LTP users even with the glibc headers.
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+There are a few tests using either keyutils or keyctl.h, so maybe we can
+abstract them both away behind headers in the LTP lib, but that is not
+necessarily your concern, I'm just writing it for the record.
+
+--
+Thank you,
+Richard.
