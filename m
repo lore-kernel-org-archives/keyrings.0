@@ -1,269 +1,286 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 14 Aug 2017 15:21:16 +0000
-Subject: [PATCH v5 06/19] crypto: move algif to generic async completion
-Message-Id: <1502724094-23305-7-git-send-email-gilad@benyossef.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Tue, 01 Aug 2017 00:47:17 +0000
+Subject: [PATCH v2] syscalls/keyctl05: new test for key_update() crash
+Message-Id: <20170801004717.108963-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
-Cc: Ofir Drang <ofir.drang@arm.com>
+To: keyrings@vger.kernel.org
 
-algif starts several async crypto ops and waits for their completion.
-Move it over to generic code doing the same.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Add a test for a kernel bug that caused a key type's ->free_preparse()
+method to be called on an uninitialized key_preparsed_payload,
+potentially causing a NULL pointer dereference or other kernel crash.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- crypto/af_alg.c         | 27 ---------------------------
- crypto/algif_aead.c     |  8 ++++----
- crypto/algif_hash.c     | 30 ++++++++++++++----------------
- crypto/algif_skcipher.c |  9 ++++-----
- include/crypto/if_alg.h | 15 +--------------
- 5 files changed, 23 insertions(+), 66 deletions(-)
+ runtest/syscalls                            |   1 +
+ testcases/kernel/syscalls/.gitignore        |   1 +
+ testcases/kernel/syscalls/keyctl/keyctl05.c | 230 ++++++++++++++++++++++++++++
+ 3 files changed, 232 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/keyctl/keyctl05.c
 
-diff --git a/crypto/af_alg.c b/crypto/af_alg.c
-index d6936c0..f8917e7 100644
---- a/crypto/af_alg.c
-+++ b/crypto/af_alg.c
-@@ -481,33 +481,6 @@ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con)
- }
- EXPORT_SYMBOL_GPL(af_alg_cmsg_send);
+diff --git a/runtest/syscalls b/runtest/syscalls
+index 5c7fd8e94..cfc1cbfa1 100644
+--- a/runtest/syscalls
++++ b/runtest/syscalls
+@@ -495,6 +495,7 @@ keyctl01 keyctl01
+ keyctl02 keyctl02
+ keyctl03 keyctl03
+ keyctl04 keyctl04
++keyctl05 keyctl05
  
--int af_alg_wait_for_completion(int err, struct af_alg_completion *completion)
--{
--	switch (err) {
--	case -EINPROGRESS:
--	case -EBUSY:
--		wait_for_completion(&completion->completion);
--		reinit_completion(&completion->completion);
--		err = completion->err;
--		break;
--	};
--
--	return err;
--}
--EXPORT_SYMBOL_GPL(af_alg_wait_for_completion);
--
--void af_alg_complete(struct crypto_async_request *req, int err)
--{
--	struct af_alg_completion *completion = req->data;
--
--	if (err = -EINPROGRESS)
--		return;
--
--	completion->err = err;
--	complete(&completion->completion);
--}
--EXPORT_SYMBOL_GPL(af_alg_complete);
--
- /**
-  * af_alg_alloc_tsgl - allocate the TX SGL
-  *
-diff --git a/crypto/algif_aead.c b/crypto/algif_aead.c
-index 48d46e7..abbac8a 100644
---- a/crypto/algif_aead.c
-+++ b/crypto/algif_aead.c
-@@ -278,11 +278,11 @@ static int _aead_recvmsg(struct socket *sock, struct msghdr *msg,
- 		/* Synchronous operation */
- 		aead_request_set_callback(&areq->cra_u.aead_req,
- 					  CRYPTO_TFM_REQ_MAY_BACKLOG,
--					  af_alg_complete, &ctx->completion);
--		err = af_alg_wait_for_completion(ctx->enc ?
-+					  crypto_req_done, &ctx->wait);
-+		err = crypto_wait_req(ctx->enc ?
- 				crypto_aead_encrypt(&areq->cra_u.aead_req) :
- 				crypto_aead_decrypt(&areq->cra_u.aead_req),
--						 &ctx->completion);
-+				&ctx->wait);
- 	}
- 
- 	/* AIO operation in progress */
-@@ -554,7 +554,7 @@ static int aead_accept_parent_nokey(void *private, struct sock *sk)
- 	ctx->merge = 0;
- 	ctx->enc = 0;
- 	ctx->aead_assoclen = 0;
--	af_alg_init_completion(&ctx->completion);
-+	crypto_init_wait(&ctx->wait);
- 
- 	ask->private = ctx;
- 
-diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
-index 3b3c154..d2ab8de 100644
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -26,7 +26,7 @@ struct hash_ctx {
- 
- 	u8 *result;
- 
--	struct af_alg_completion completion;
-+	struct crypto_wait wait;
- 
- 	unsigned int len;
- 	bool more;
-@@ -102,8 +102,7 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
- 		if ((msg->msg_flags & MSG_MORE))
- 			hash_free_result(sk, ctx);
- 
--		err = af_alg_wait_for_completion(crypto_ahash_init(&ctx->req),
--						&ctx->completion);
-+		err = crypto_wait_req(crypto_ahash_init(&ctx->req), &ctx->wait);
- 		if (err)
- 			goto unlock;
- 	}
-@@ -124,8 +123,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
- 
- 		ahash_request_set_crypt(&ctx->req, ctx->sgl.sg, NULL, len);
- 
--		err = af_alg_wait_for_completion(crypto_ahash_update(&ctx->req),
--						 &ctx->completion);
-+		err = crypto_wait_req(crypto_ahash_update(&ctx->req),
-+				      &ctx->wait);
- 		af_alg_free_sg(&ctx->sgl);
- 		if (err)
- 			goto unlock;
-@@ -143,8 +142,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
- 			goto unlock;
- 
- 		ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
--		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
--						 &ctx->completion);
-+		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
-+				      &ctx->wait);
- 	}
- 
- unlock:
-@@ -185,7 +184,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
- 	} else {
- 		if (!ctx->more) {
- 			err = crypto_ahash_init(&ctx->req);
--			err = af_alg_wait_for_completion(err, &ctx->completion);
-+			err = crypto_wait_req(err, &ctx->wait);
- 			if (err)
- 				goto unlock;
- 		}
-@@ -193,7 +192,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
- 		err = crypto_ahash_update(&ctx->req);
- 	}
- 
--	err = af_alg_wait_for_completion(err, &ctx->completion);
-+	err = crypto_wait_req(err, &ctx->wait);
- 	if (err)
- 		goto unlock;
- 
-@@ -229,17 +228,16 @@ static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
- 	ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
- 
- 	if (!result && !ctx->more) {
--		err = af_alg_wait_for_completion(
--				crypto_ahash_init(&ctx->req),
--				&ctx->completion);
-+		err = crypto_wait_req(crypto_ahash_init(&ctx->req),
-+				      &ctx->wait);
- 		if (err)
- 			goto unlock;
- 	}
- 
- 	if (!result || ctx->more) {
- 		ctx->more = 0;
--		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
--						 &ctx->completion);
-+		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
-+				      &ctx->wait);
- 		if (err)
- 			goto unlock;
- 	}
-@@ -490,13 +488,13 @@ static int hash_accept_parent_nokey(void *private, struct sock *sk)
- 	ctx->result = NULL;
- 	ctx->len = len;
- 	ctx->more = 0;
--	af_alg_init_completion(&ctx->completion);
-+	crypto_init_wait(&ctx->wait);
- 
- 	ask->private = ctx;
- 
- 	ahash_request_set_tfm(&ctx->req, hash);
- 	ahash_request_set_callback(&ctx->req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				   af_alg_complete, &ctx->completion);
-+				   crypto_req_done, &ctx->wait);
- 
- 	sk->sk_destruct = hash_sock_destruct;
- 
-diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
-index 8ae4170..9954b07 100644
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -129,12 +129,11 @@ static int _skcipher_recvmsg(struct socket *sock, struct msghdr *msg,
- 		skcipher_request_set_callback(&areq->cra_u.skcipher_req,
- 					      CRYPTO_TFM_REQ_MAY_SLEEP |
- 					      CRYPTO_TFM_REQ_MAY_BACKLOG,
--					      af_alg_complete,
--					      &ctx->completion);
--		err = af_alg_wait_for_completion(ctx->enc ?
-+					      crypto_req_done, &ctx->wait);
-+		err = crypto_wait_req(ctx->enc ?
- 			crypto_skcipher_encrypt(&areq->cra_u.skcipher_req) :
- 			crypto_skcipher_decrypt(&areq->cra_u.skcipher_req),
--						 &ctx->completion);
-+						 &ctx->wait);
- 	}
- 
- 	/* AIO operation in progress */
-@@ -388,7 +387,7 @@ static int skcipher_accept_parent_nokey(void *private, struct sock *sk)
- 	ctx->more = 0;
- 	ctx->merge = 0;
- 	ctx->enc = 0;
--	af_alg_init_completion(&ctx->completion);
-+	crypto_init_wait(&ctx->wait);
- 
- 	ask->private = ctx;
- 
-diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
-index 75ec9c6..6abf0a3 100644
---- a/include/crypto/if_alg.h
-+++ b/include/crypto/if_alg.h
-@@ -40,11 +40,6 @@ struct alg_sock {
- 	void *private;
- };
- 
--struct af_alg_completion {
--	struct completion completion;
--	int err;
--};
--
- struct af_alg_control {
- 	struct af_alg_iv *iv;
- 	int op;
-@@ -152,7 +147,7 @@ struct af_alg_ctx {
- 	void *iv;
- 	size_t aead_assoclen;
- 
--	struct af_alg_completion completion;
-+	struct crypto_wait wait;
- 
- 	size_t used;
- 	size_t rcvused;
-@@ -177,19 +172,11 @@ void af_alg_link_sg(struct af_alg_sgl *sgl_prev, struct af_alg_sgl *sgl_new);
- 
- int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con);
- 
--int af_alg_wait_for_completion(int err, struct af_alg_completion *completion);
--void af_alg_complete(struct crypto_async_request *req, int err);
--
- static inline struct alg_sock *alg_sk(struct sock *sk)
- {
- 	return (struct alg_sock *)sk;
- }
- 
--static inline void af_alg_init_completion(struct af_alg_completion *completion)
--{
--	init_completion(&completion->completion);
--}
--
- /**
-  * Size of available buffer for sending data from user space to kernel.
-  *
+ kcmp01 kcmp01
+ kcmp02 kcmp02
+diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
+index e311ba3f8..82dfb8293 100644
+--- a/testcases/kernel/syscalls/.gitignore
++++ b/testcases/kernel/syscalls/.gitignore
+@@ -458,6 +458,7 @@
+ /keyctl/keyctl02
+ /keyctl/keyctl03
+ /keyctl/keyctl04
++/keyctl/keyctl05
+ /kcmp/kcmp01
+ /kcmp/kcmp02
+ /kcmp/kcmp03
+diff --git a/testcases/kernel/syscalls/keyctl/keyctl05.c b/testcases/kernel/syscalls/keyctl/keyctl05.c
+new file mode 100644
+index 000000000..a11b788c6
+--- /dev/null
++++ b/testcases/kernel/syscalls/keyctl/keyctl05.c
+@@ -0,0 +1,230 @@
++/*
++ * Copyright (c) 2017 Google, Inc.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program, if not, see <http://www.gnu.org/licenses/>.
++ */
++
++/*
++ * Regression test for commit 63a0b0509e70 ("KEYS: fix freeing uninitialized
++ * memory in key_update()").  Try to reproduce the crash in two different ways:
++ *
++ * 1. Try to update a key of a type that has a ->preparse() method but not an
++ *    ->update() method.  Examples are the "asymmetric" and "dns_resolver" key
++ *    types.  It crashes reliably for the "asymmetric" key type, since the
++ *    "asymmetric" key type's ->free_preparse() method will dereference a
++ *    pointer in the uninitialized memory, whereas other key types often just
++ *    free a pointer which tends be NULL in practice, depending on how the stack
++ *    is laid out.  However, to actually be able to add an "asymmetric" key, we
++ *    need a specially-formatted payload and several kernel config options.  We
++ *    do try it, but for completeness we also try the "dns_resolver" key type
++ *    (though that's not guaranteed to be available either).
++ *
++ * 2. Race keyctl_update() with another task removing write permission from the
++ *    key using keyctl_setperm().  This can cause a crash with almost any key
++ *    type.  "user" is a good one to try, since it's always available if
++ *    keyrings are supported at all.  However, depending on how the stack is
++ *    laid out the crash may not actually occur.
++ */
++
++#include <stdlib.h>
++#include "tst_test.h"
++#include "lapi/syscalls.h"
++
++typedef int32_t key_serial_t;
++
++#define KEYCTL_JOIN_SESSION_KEYRING	1
++#define KEYCTL_UPDATE			2
++#define KEYCTL_SETPERM			5
++
++#define KEY_SPEC_SESSION_KEYRING	-3
++
++#define KEY_POS_WRITE	0x04000000
++#define KEY_POS_ALL	0x3f000000
++
++/*
++ * A valid payload for the "asymmetric" key type.  This is an x509 certificate
++ * in DER format, generated using:
++ *
++ *	openssl req -x509 -newkey rsa:512 -batch -nodes -outform der \
++ *		| ~/linux/scripts/bin2c
++ */
++static const char x509_cert[] +	"\x30\x82\x01\xd3\x30\x82\x01\x7d\xa0\x03\x02\x01\x02\x02\x09\x00"
++	"\x92\x2a\x76\xff\x0c\x00\xfb\x9a\x30\x0d\x06\x09\x2a\x86\x48\x86"
++	"\xf7\x0d\x01\x01\x0b\x05\x00\x30\x45\x31\x0b\x30\x09\x06\x03\x55"
++	"\x04\x06\x13\x02\x41\x55\x31\x13\x30\x11\x06\x03\x55\x04\x08\x0c"
++	"\x0a\x53\x6f\x6d\x65\x2d\x53\x74\x61\x74\x65\x31\x21\x30\x1f\x06"
++	"\x03\x55\x04\x0a\x0c\x18\x49\x6e\x74\x65\x72\x6e\x65\x74\x20\x57"
++	"\x69\x64\x67\x69\x74\x73\x20\x50\x74\x79\x20\x4c\x74\x64\x30\x1e"
++	"\x17\x0d\x31\x37\x30\x37\x32\x38\x32\x31\x34\x31\x33\x34\x5a\x17"
++	"\x0d\x31\x37\x30\x38\x32\x37\x32\x31\x34\x31\x33\x34\x5a\x30\x45"
++	"\x31\x0b\x30\x09\x06\x03\x55\x04\x06\x13\x02\x41\x55\x31\x13\x30"
++	"\x11\x06\x03\x55\x04\x08\x0c\x0a\x53\x6f\x6d\x65\x2d\x53\x74\x61"
++	"\x74\x65\x31\x21\x30\x1f\x06\x03\x55\x04\x0a\x0c\x18\x49\x6e\x74"
++	"\x65\x72\x6e\x65\x74\x20\x57\x69\x64\x67\x69\x74\x73\x20\x50\x74"
++	"\x79\x20\x4c\x74\x64\x30\x5c\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7"
++	"\x0d\x01\x01\x01\x05\x00\x03\x4b\x00\x30\x48\x02\x41\x00\xde\x0b"
++	"\x1c\x24\xe2\x0d\xf8\x17\xf2\xc3\x6f\xc9\x72\x3e\x9d\xb0\x2d\x47"
++	"\xe4\xc4\x85\x87\xed\xde\x06\xe3\xf3\xe9\x4c\x35\x6c\xe4\xcb\x0e"
++	"\x44\x28\x23\x66\x76\xec\x4e\xdf\x10\x93\x92\x1e\x52\xfb\xdf\x5c"
++	"\x08\xe7\x24\x04\x66\xe3\x06\x05\x27\x56\xfb\x3e\x91\x31\x02\x03"
++	"\x01\x00\x01\xa3\x50\x30\x4e\x30\x1d\x06\x03\x55\x1d\x0e\x04\x16"
++	"\x04\x14\x6f\x39\x3a\x46\xdf\x29\x63\xde\x54\x7b\x6c\x31\x06\xd0"
++	"\x9f\x36\x16\xfb\x9c\xbf\x30\x1f\x06\x03\x55\x1d\x23\x04\x18\x30"
++	"\x16\x80\x14\x6f\x39\x3a\x46\xdf\x29\x63\xde\x54\x7b\x6c\x31\x06"
++	"\xd0\x9f\x36\x16\xfb\x9c\xbf\x30\x0c\x06\x03\x55\x1d\x13\x04\x05"
++	"\x30\x03\x01\x01\xff\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01"
++	"\x01\x0b\x05\x00\x03\x41\x00\x73\xf0\x4b\x62\x56\xed\xf0\x8b\x7e"
++	"\xc4\x75\x78\x98\xa2\x7a\x6e\x75\x1f\xde\x9b\xa0\xbe\x1a\x1f\x86"
++	"\x44\x13\xcd\x45\x06\x7f\x86\xde\xf6\x36\x4e\xb6\x15\xfa\xf5\xb0"
++	"\x34\xd2\x5e\x0b\xb3\x2c\x03\x5a\x5a\x28\x97\x5e\x7b\xdf\x63\x75"
++	"\x83\x8d\x69\xda\xd6\x59\xbd"
++	;
++
++static void new_session_keyring(void)
++{
++	TEST(tst_syscall(__NR_keyctl, KEYCTL_JOIN_SESSION_KEYRING, NULL));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "failed to join new session keyring");
++}
++
++static void test_update_nonupdatable(const char *type,
++				     const void *payload, size_t plen)
++{
++	key_serial_t keyid;
++
++	new_session_keyring();
++
++	TEST(tst_syscall(__NR_add_key, type, "desc", payload, plen,
++			 KEY_SPEC_SESSION_KEYRING));
++	if (TEST_RETURN < 0) {
++		if (TEST_ERRNO = ENODEV) {
++			tst_res(TCONF, "kernel doesn't support key type '%s'",
++				type);
++			return;
++		}
++		if (TEST_ERRNO = EBADMSG && !strcmp(type, "asymmetric")) {
++			tst_res(TCONF, "kernel is missing x509 cert parser "
++				"(CONFIG_X509_CERTIFICATE_PARSER)");
++			return;
++		}
++		if (TEST_ERRNO = ENOENT && !strcmp(type, "asymmetric")) {
++			tst_res(TCONF, "kernel is missing crypto algorithms "
++				"needed to parse x509 cert (CONFIG_CRYPTO_RSA "
++				"and/or CONFIG_CRYPTO_SHA256)");
++			return;
++		}
++		tst_res(TBROK | TTERRNO, "unexpected error adding '%s' key",
++			type);
++		return;
++	}
++	keyid = TEST_RETURN;
++
++	/*
++	 * Non-updatable keys don't start with write permission, so we must
++	 * explicitly grant it.
++	 */
++	TEST(tst_syscall(__NR_keyctl, KEYCTL_SETPERM, keyid, KEY_POS_ALL));
++	if (TEST_RETURN != 0) {
++		tst_res(TBROK | TTERRNO,
++			"failed to grant write permission to '%s' key", type);
++		return;
++	}
++
++	tst_res(TINFO, "Try to update the '%s' key...", type);
++	TEST(tst_syscall(__NR_keyctl, KEYCTL_UPDATE, keyid, payload, plen));
++	if (TEST_RETURN = 0) {
++		tst_res(TBROK,
++			"updating '%s' key unexpectedly succeeded", type);
++		return;
++	}
++	if (TEST_ERRNO != EOPNOTSUPP) {
++		tst_res(TBROK | TTERRNO,
++			"updating '%s' key unexpectedly failed", type);
++		return;
++	}
++	tst_res(TPASS, "updating '%s' key expectedly failed with EOPNOTSUPP",
++		type);
++}
++
++/*
++ * Try to update a key, racing with removing write permission.
++ * This may crash buggy kernels.
++ */
++static void test_update_setperm_race(void)
++{
++	static const char payload[] = "payload";
++	key_serial_t keyid;
++	int i;
++
++	new_session_keyring();
++
++	TEST(tst_syscall(__NR_add_key, "user", "desc", payload, sizeof(payload),
++			 KEY_SPEC_SESSION_KEYRING));
++	if (TEST_RETURN < 0) {
++		tst_res(TBROK | TTERRNO, "failed to add 'user' key");
++		return;
++	}
++	keyid = TEST_RETURN;
++
++	if (SAFE_FORK() = 0) {
++		uint32_t perm = KEY_POS_ALL;
++
++		for (i = 0; i < 10000; i++) {
++			perm ^= KEY_POS_WRITE;
++			TEST(syscall(__NR_keyctl, KEYCTL_SETPERM, keyid, perm));
++			if (TEST_RETURN != 0)
++				tst_brk(TBROK | TTERRNO, "setperm failed");
++		}
++		exit(0);
++	}
++
++	tst_res(TINFO, "Try to update the 'user' key...");
++	for (i = 0; i < 10000; i++) {
++		TEST(tst_syscall(__NR_keyctl, KEYCTL_UPDATE, keyid,
++				 payload, sizeof(payload)));
++		if (TEST_RETURN != 0 && TEST_ERRNO != EACCES) {
++			tst_res(TBROK | TTERRNO, "failed to update 'user' key");
++			return;
++		}
++	}
++	tst_reap_children();
++	tst_res(TPASS, "didn't crash while racing to update 'user' key");
++}
++
++static void do_test(unsigned int i)
++{
++	/* two 0 bytes is accepted as a dns_resolver key payload */
++	static char zeroes[2];
++
++	switch (i) {
++	case 0:
++		test_update_nonupdatable("asymmetric",
++					 x509_cert, sizeof(x509_cert));
++		break;
++	case 1:
++		test_update_nonupdatable("dns_resolver",
++					 zeroes, sizeof(zeroes));
++		break;
++	case 2:
++		test_update_setperm_race();
++		break;
++	}
++}
++
++static struct tst_test test = {
++	.tcnt = 3,
++	.test = do_test,
++	.forks_child = 1,
++};
 -- 
-2.1.4
+2.14.0.rc0.400.g1c36432dff-goog
 
