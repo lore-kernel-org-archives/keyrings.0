@@ -1,98 +1,214 @@
-From: Ryder Lee <ryder.lee@mediatek.com>
-Date: Tue, 15 Aug 2017 05:13:58 +0000
-Subject: Re: [PATCH v5 18/19] crypto: mediatek: move to generic async completion
-Message-Id: <1502774038.962.2.camel@mtkswgap22>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Wed, 02 Aug 2017 17:17:05 +0000
+Subject: Re: [PATCH v3 1/7] integrity: Introduce struct evm_hmac_xattr
+Message-Id: <87h8xpyjn2.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
-         <1502724094-23305-19-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1502724094-23305-19-git-send-email-gilad-6S/DczAoZh3WXxRugSxzZg@public.gmane.org>
-To: Gilad Ben-Yossef <gilad-6S/DczAoZh3WXxRugSxzZg@public.gmane.org>
-Cc: Herbert Xu <herbert-lOAM2aK0SrRLBo1qDEOMRrpzq4S04n8Q@public.gmane.org>, "David S. Miller" <davem-fT/PcQaiUtIeIZ0/mPfg9Q@public.gmane.org>, Jonathan Corbet <corbet-T1hC0tSOHrs@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Tom Lendacky <thomas.lendacky-5C7GfCeVMHo@public.gmane.org>, Gary Hook <gary.hook-5C7GfCeVMHo@public.gmane.org>, Boris Brezillon <boris.brezillon-wi1+55ScJUtKEb57/3fJTNBPR1lH4CV8@public.gmane.org>, Arnaud Ebalard <arno-LkuqDEemtHBg9hUCZPvPmw@public.gmane.org>, Matthias Brugger <matthias.bgg-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Shaohua Li <shli-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Steve French <sfrench-eUNUBHrolfbYtjvyW6yDsg@public.gmane.org>, "Theodore Y. Ts'o" <tytso-3s7WtUTddSA@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Mimi Zohar <zohar-23VcF4HTsmIX0ybBhKVfKdBPR1lH4CV8@public.gmane.org>, Dmitry Kasatkin <dmitry.kasatkin-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, "Serge E. Hallyn" <serge-A9i7LUbDfNHQT0dZR+AlfA@public.gmane.org>
+References: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com> <20170706221753.17380-2-bauerman@linux.vnet.ibm.com> <1501245566.10288.35.camel@linux.vnet.ibm.com>
+In-Reply-To: <1501245566.10288.35.camel@linux.vnet.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-On Mon, 2017-08-14 at 18:21 +0300, Gilad Ben-Yossef wrote:
-> The mediatek driver starts several async crypto ops and waits for their
-> completions. Move it over to generic code doing the same.
-> 
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> ---
 
-Acked-by: Ryder Lee <ryder.lee@mediatek.com>
+Hello Mimi,
 
->  drivers/crypto/mediatek/mtk-aes.c | 31 +++++--------------------------
->  1 file changed, 5 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/crypto/mediatek/mtk-aes.c b/drivers/crypto/mediatek/mtk-aes.c
-> index 9e845e8..e2c7c95 100644
-> --- a/drivers/crypto/mediatek/mtk-aes.c
-> +++ b/drivers/crypto/mediatek/mtk-aes.c
-> @@ -137,11 +137,6 @@ struct mtk_aes_gcm_ctx {
->  	struct crypto_skcipher *ctr;
->  };
->  
-> -struct mtk_aes_gcm_setkey_result {
-> -	int err;
-> -	struct completion completion;
-> -};
-> -
->  struct mtk_aes_drv {
->  	struct list_head dev_list;
->  	/* Device list lock */
-> @@ -936,17 +931,6 @@ static int mtk_aes_gcm_crypt(struct aead_request *req, u64 mode)
->  				    &req->base);
->  }
->  
-> -static void mtk_gcm_setkey_done(struct crypto_async_request *req, int err)
-> -{
-> -	struct mtk_aes_gcm_setkey_result *result = req->data;
-> -
-> -	if (err = -EINPROGRESS)
-> -		return;
-> -
-> -	result->err = err;
-> -	complete(&result->completion);
-> -}
-> -
->  /*
->   * Because of the hardware limitation, we need to pre-calculate key(H)
->   * for the GHASH operation. The result of the encryption operation
-> @@ -962,7 +946,7 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
->  		u32 hash[4];
->  		u8 iv[8];
->  
-> -		struct mtk_aes_gcm_setkey_result result;
-> +		struct crypto_wait wait;
->  
->  		struct scatterlist sg[1];
->  		struct skcipher_request req;
-> @@ -1002,22 +986,17 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
->  	if (!data)
->  		return -ENOMEM;
->  
-> -	init_completion(&data->result.completion);
-> +	crypto_init_wait(&data->wait);
->  	sg_init_one(data->sg, &data->hash, AES_BLOCK_SIZE);
->  	skcipher_request_set_tfm(&data->req, ctr);
->  	skcipher_request_set_callback(&data->req, CRYPTO_TFM_REQ_MAY_SLEEP |
->  				      CRYPTO_TFM_REQ_MAY_BACKLOG,
-> -				      mtk_gcm_setkey_done, &data->result);
-> +				      crypto_req_done, &data->wait);
->  	skcipher_request_set_crypt(&data->req, data->sg, data->sg,
->  				   AES_BLOCK_SIZE, data->iv);
->  
-> -	err = crypto_skcipher_encrypt(&data->req);
-> -	if (err = -EINPROGRESS || err = -EBUSY) {
-> -		err = wait_for_completion_interruptible(
-> -			&data->result.completion);
-> -		if (!err)
-> -			err = data->result.err;
-> -	}
-> +	err = crypto_wait_req(crypto_skcipher_encrypt(&data->req),
-> +			      &data->wait);
->  	if (err)
->  		goto out;
->  
+Thanks for your review!
 
+The patch at the end of the email implements your suggestions, what do
+you think?
+
+Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
+> On Thu, 2017-07-06 at 19:17 -0300, Thiago Jung Bauermann wrote:
+>> A separate struct evm_hmac_xattr is introduced, with the original
+>> definition of evm_ima_xattr_data to be used in the places that actually
+>> expect that definition.
+>
+> The new structure name implies that the xattr can only be an HMAC. By
+> moving the new structure to evm.h we also loose the connection that it
+> has to theevm_ima_xattr_type enumeration.
+
+Ok, I renamed it to struct evm_xattr.
+
+> Instead, how about defining the new struct in terms of the modified
+> evm_ima_xattr_data struct?
+
+IMHO IMA and EVM's practice of mixing and matching structs to compose
+its data structures makes the code somewhat confusing and harder to see
+where the actual storage used by a given field is actually allocated.
+
+But I don't feel strongly about it, so the patch at the end of this
+emails defines it as:
+
+struct evm_xattr {
+	struct evm_ima_xattr_data data;
+	u8 digest[SHA1_DIGEST_SIZE];
+} __packed;
+
+Another disadvantage of the above is that you have two fields pointing
+to the same place: evm_xattr.data.data and evm_xattr.digest.
+
+> Please leave the new structure in integrity.h.
+
+I think that moving the structure in evm.h is helpful. It immediately
+conveys that nothing outside of security/integrity/evm/ interprets the
+xattr data in the way defined by struct evm_xattr.
+
+But I also don't feel strongly about it, so I moved it to integrity.h.
+
+-- 
+Thiago Jung Bauermann
+IBM Linux Technology Center
+
+
+From df2e29f29c99f5c986d8005d8af8409b3c4d115c Mon Sep 17 00:00:00 2001
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Tue, 16 May 2017 17:14:49 -0300
+Subject: [PATCH v4 1/7] integrity: Introduce struct evm_xattr
+
+Even though struct evm_ima_xattr_data includes a fixed-size array to hold a
+SHA1 digest, most of the code ignores the array and uses the struct to mean
+"type indicator followed by data of unspecified size" and tracks the real
+size of what the struct represents in a separate length variable.
+
+The only exception to that is the EVM code, which correctly uses the
+definition of struct evm_ima_xattr_data.
+
+This patch makes this explicit in the code by removing the length
+specification from the array in struct evm_ima_xattr_data. It also changes
+the name of the element from digest to data, since in most places the array
+doesn't hold a digest.
+
+A separate struct evm_xattr is introduced, with the original definition of
+evm_ima_xattr_data to be used in the places that actually expect that
+definition.
+
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+---
+ security/integrity/evm/evm_crypto.c   |  4 ++--
+ security/integrity/evm/evm_main.c     | 10 +++++-----
+ security/integrity/ima/ima_appraise.c |  7 ++++---
+ security/integrity/integrity.h        |  5 +++++
+ 4 files changed, 16 insertions(+), 10 deletions(-)
+
+diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+index d7f282d75cc1..d902a18ef66f 100644
+--- a/security/integrity/evm/evm_crypto.c
++++ b/security/integrity/evm/evm_crypto.c
+@@ -252,13 +252,13 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
+ 			const char *xattr_value, size_t xattr_value_len)
+ {
+ 	struct inode *inode = d_backing_inode(dentry);
+-	struct evm_ima_xattr_data xattr_data;
++	struct evm_xattr xattr_data;
+ 	int rc = 0;
+ 
+ 	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+ 			   xattr_value_len, xattr_data.digest);
+ 	if (rc = 0) {
+-		xattr_data.type = EVM_XATTR_HMAC;
++		xattr_data.data.type = EVM_XATTR_HMAC;
+ 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
+ 					   &xattr_data,
+ 					   sizeof(xattr_data), 0);
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index 063d38aef64e..536694499515 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -116,7 +116,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 					     struct integrity_iint_cache *iint)
+ {
+ 	struct evm_ima_xattr_data *xattr_data = NULL;
+-	struct evm_ima_xattr_data calc;
++	struct evm_xattr calc;
+ 	enum integrity_status evm_status = INTEGRITY_PASS;
+ 	int rc, xattr_len;
+ 
+@@ -147,7 +147,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 	/* check value type */
+ 	switch (xattr_data->type) {
+ 	case EVM_XATTR_HMAC:
+-		if (xattr_len != sizeof(struct evm_ima_xattr_data)) {
++		if (xattr_len != sizeof(struct evm_xattr)) {
+ 			evm_status = INTEGRITY_FAIL;
+ 			goto out;
+ 		}
+@@ -155,7 +155,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 				   xattr_value_len, calc.digest);
+ 		if (rc)
+ 			break;
+-		rc = crypto_memneq(xattr_data->digest, calc.digest,
++		rc = crypto_memneq(xattr_data->data, calc.digest,
+ 			    sizeof(calc.digest));
+ 		if (rc)
+ 			rc = -EINVAL;
+@@ -467,7 +467,7 @@ int evm_inode_init_security(struct inode *inode,
+ 				 const struct xattr *lsm_xattr,
+ 				 struct xattr *evm_xattr)
+ {
+-	struct evm_ima_xattr_data *xattr_data;
++	struct evm_xattr *xattr_data;
+ 	int rc;
+ 
+ 	if (!evm_initialized || !evm_protected_xattr(lsm_xattr->name))
+@@ -477,7 +477,7 @@ int evm_inode_init_security(struct inode *inode,
+ 	if (!xattr_data)
+ 		return -ENOMEM;
+ 
+-	xattr_data->type = EVM_XATTR_HMAC;
++	xattr_data->data.type = EVM_XATTR_HMAC;
+ 	rc = evm_init_hmac(inode, lsm_xattr, xattr_data->digest);
+ 	if (rc < 0)
+ 		goto out;
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 809ba70fbbbf..87d2b601cf8e 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -156,7 +156,8 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
+ 		return sig->hash_algo;
+ 		break;
+ 	case IMA_XATTR_DIGEST_NG:
+-		ret = xattr_value->digest[0];
++		/* first byte contains algorithm id */
++		ret = xattr_value->data[0];
+ 		if (ret < HASH_ALGO__LAST)
+ 			return ret;
+ 		break;
+@@ -164,7 +165,7 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
+ 		/* this is for backward compatibility */
+ 		if (xattr_len = 21) {
+ 			unsigned int zero = 0;
+-			if (!memcmp(&xattr_value->digest[16], &zero, 4))
++			if (!memcmp(&xattr_value->data[16], &zero, 4))
+ 				return HASH_ALGO_MD5;
+ 			else
+ 				return HASH_ALGO_SHA1;
+@@ -253,7 +254,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 			/* xattr length may be longer. md5 hash in previous
+ 			   version occupied 20 bytes in xattr, instead of 16
+ 			 */
+-			rc = memcmp(&xattr_value->digest[hash_start],
++			rc = memcmp(&xattr_value->data[hash_start],
+ 				    iint->ima_hash->digest,
+ 				    iint->ima_hash->length);
+ 		else
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index a53e7e4ab06c..9b1762076f38 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -63,6 +63,11 @@ enum evm_ima_xattr_type {
+ 
+ struct evm_ima_xattr_data {
+ 	u8 type;
++	u8 data[];
++} __packed;
++
++struct evm_xattr {
++	struct evm_ima_xattr_data data;
+ 	u8 digest[SHA1_DIGEST_SIZE];
+ } __packed;
+ 
+-- 
+2.13.0
 
