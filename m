@@ -1,68 +1,52 @@
-From: Richard Palethorpe <rpalethorpe@suse.de>
-Date: Tue, 01 Aug 2017 07:42:55 +0000
-Subject: Re: [LTP] [PATCH] syscalls/keyctl04: new test for thread keyring memory leak
-Message-Id: <87fudbhgxs.fsf@our.domain.is.not.set>
+From: James Morris <jmorris@namei.org>
+Date: Wed, 02 Aug 2017 07:22:30 +0000
+Subject: Re: [Linux-ima-devel] [PATCH, RESEND 08/12] ima: added parser for RPM data type
+Message-Id: <alpine.LRH.2.20.1708021716440.1117@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <87mv7lghr8.fsf@our.domain.is.not.set>
-In-Reply-To: <87mv7lghr8.fsf@our.domain.is.not.set>
-To: keyrings@vger.kernel.org
+References: <20170725154423.24845-9-roberto.sassu@huawei.com> <20170801102036.15371-1-roberto.sassu@huawei.com> <20170801102709.GA24285@infradead.org> <11206fd8-d189-deb0-ab67-aec373f8d979@huawei.com>
+In-Reply-To: <11206fd8-d189-deb0-ab67-aec373f8d979@huawei.com>
+To: Roberto Sassu <roberto.sassu@huawei.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-ima-devel@lists.sourceforge.net
 
+On Tue, 1 Aug 2017, Roberto Sassu wrote:
 
-Eric Biggers writes:
+> On 8/1/2017 12:27 PM, Christoph Hellwig wrote:
+> > On Tue, Aug 01, 2017 at 12:20:36PM +0200, Roberto Sassu wrote:
+> > > This patch introduces a parser for RPM packages. It extracts the digests
+> > > from the RPMTAG_FILEDIGESTS header section and converts them to binary
+> > > data
+> > > before adding them to the hash table.
+> > >
+> > > The advantage of this data type is that verifiers can determine who
+> > > produced that data, as headers are signed by Linux distributions vendors.
+> > > RPM headers signatures can be provided as digest list metadata.
+> >
+> > Err, parsing arbitrary file formats has no business in the kernel.
+> 
+> The benefit of this choice is that no actions are required for
+> Linux distribution vendors to support the solution I'm proposing,
+> because they already provide signed digest lists (RPM headers).
+> 
+> Since the proof of loading a digest list is the digest of the
+> digest list (included in the list metadata), if RPM headers are
+> converted to a different format, remote attestation verifiers
+> cannot check the signature.
+> 
+> If the concern is security, it would be possible to prevent unsigned
+> RPM headers from being parsed, if the PGP key type is upstreamed
+> (adding in CC keyrings@vger.kernel.org).
 
-> Hi Richard, thanks for reviewing!
->
-> On Mon, Jul 31, 2017 at 09:58:19AM +0200, Richard Palethorpe wrote:
->>
->> Thanks for contributing this test! We now have a directory
->> (testcases/cve) and runtest file dedicated to CVE regression tests. So
->> please atleast add it to the CVE runtest file.
->>
->
-> I'll add it to 'runtest/cve' but will leave it in the syscalls/keyctl directory.
-> I don't like the idea of putting "CVE regression tests" in a separate directory
-> because then it will be harder to find all the tests for a given syscall or
-> feature.
+It's a security concern and also a layering violation, there should be no 
+need to parse package file formats in the kernel.
 
-OK, this is fine. There is no particular filing structure which fits
-every test and usage case. I was never particularly sure if having all
-the tests with a CVE number in the same place would be a good idea,
-although it makes filing some of them a lot easier.
+I'm not really clear on exactly how this patch series works.  Can you 
+provide a more concrete explanation of what steps would occur during boot 
+and attestation? 
 
->
->> > +#include "config.h"
->> > +#ifdef HAVE_LINUX_KEYCTL_H
->> > +# include <linux/keyctl.h>
->> > +#endif
->>
->> Please just include the definitions for keyctl in the test like:
->> https://github.com/richiejp/ltp/blob/cve/testcases/cve/cve-2016-7042.c
->> The vulnerability is still exploitable on systems without this header.
->>
->> On a related note; we should create a fallback header in include/lapi
->> for keyutils as there are a few tests which use it.
->>
->
-> It's including the Linux UAPI header (from include/uapi/linux/keyctl.h), not
-> even the libkeyutils header.  Is using UAPI headers really not allowed in LTP?
-> I see tons of other tests that include <linux/${foo}.h>.
->
-> Eric
+-- 
+James Morris
+<jmorris@namei.org>
 
-The sys headers are preferred (or whatever user land library is most
-commonly used) if there is one available because they are deemed to be
-more stable and commonly available. Failing that the linux UAPI headers
-can be used, but usually we will try to ensure the test will still run
-even if the headers are missing or incomplete. Which, unfortunately, is
-not that uncommon amongst LTP users even with the glibc headers.
-
-There are a few tests using either keyutils or keyctl.h, so maybe we can
-abstract them both away behind headers in the LTP lib, but that is not
-necessarily your concern, I'm just writing it for the record.
-
---
-Thank you,
-Richard.
