@@ -1,135 +1,90 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 01 Aug 2017 00:46:26 +0000
-Subject: [PATCH v2] syscalls/keyctl04: new test for thread keyring memory leak
-Message-Id: <20170801004626.108851-1-ebiggers3@gmail.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Fri, 04 Aug 2017 22:03:27 +0000
+Subject: [PATCH v4 4/7] integrity: Introduce integrity_keyring_from_id
+Message-Id: <20170804220330.30026-5-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+IMA will need to obtain the keyring used to verify file signatures so that
+it can verify the module-style signature appended to files.
 
-Add a test for a kernel bug that allowed unprivileged programs to
-exhaust kernel memory by leaking thread keyrings (CVE-2017-7472).
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
- runtest/cve                                 |  1 +
- runtest/syscalls                            |  1 +
- testcases/kernel/syscalls/.gitignore        |  1 +
- testcases/kernel/syscalls/keyctl/keyctl04.c | 68 +++++++++++++++++++++++++++++
- 4 files changed, 71 insertions(+)
- create mode 100644 testcases/kernel/syscalls/keyctl/keyctl04.c
+ security/integrity/digsig.c    | 28 +++++++++++++++++++---------
+ security/integrity/integrity.h |  1 +
+ 2 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/runtest/cve b/runtest/cve
-index 6e3e52d3a..e97f823c8 100644
---- a/runtest/cve
-+++ b/runtest/cve
-@@ -7,4 +7,5 @@ cve-2016-7117 cve-2016-7117
- cve-2017-2671 cve-2017-2671
- cve-2017-5669 cve-2017-5669
- cve-2017-6951 cve-2017-6951
-+cve-2017-7472 keyctl04
- cve-2017-1000364 stack_clash
-diff --git a/runtest/syscalls b/runtest/syscalls
-index 8e1f58731..5c7fd8e94 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -494,6 +494,7 @@ io_submit01 io_submit01
- keyctl01 keyctl01
- keyctl02 keyctl02
- keyctl03 keyctl03
-+keyctl04 keyctl04
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 06554c448dce..bb5328ba2848 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -48,11 +48,10 @@ static bool init_keyring __initdata;
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
+ #endif
  
- kcmp01 kcmp01
- kcmp02 kcmp02
-diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
-index 6e0af314c..e311ba3f8 100644
---- a/testcases/kernel/syscalls/.gitignore
-+++ b/testcases/kernel/syscalls/.gitignore
-@@ -457,6 +457,7 @@
- /keyctl/keyctl01
- /keyctl/keyctl02
- /keyctl/keyctl03
-+/keyctl/keyctl04
- /kcmp/kcmp01
- /kcmp/kcmp02
- /kcmp/kcmp03
-diff --git a/testcases/kernel/syscalls/keyctl/keyctl04.c b/testcases/kernel/syscalls/keyctl/keyctl04.c
-new file mode 100644
-index 000000000..942cf2d5b
---- /dev/null
-+++ b/testcases/kernel/syscalls/keyctl/keyctl04.c
-@@ -0,0 +1,68 @@
-+/*
-+ * Copyright (c) 2017 Google, Inc.
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program, if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+/*
-+ * Regression test for commit c9f838d104fe ("KEYS: fix
-+ * keyctl_set_reqkey_keyring() to not leak thread keyrings"), a.k.a.
-+ * CVE-2017-7472.  This bug could be used to exhaust kernel memory, though it
-+ * would take a while to do that and it would grind the test suite to a halt.
-+ * Instead we do a quick check for whether the existing thread keyring is
-+ * replaced when the default request-key destination is set to the thread
-+ * keyring.  It shouldn't be, but before the fix it was (and the old thread
-+ * keyring was leaked).
-+ */
-+
-+#include "tst_test.h"
-+#include "lapi/syscalls.h"
-+
-+typedef int32_t key_serial_t;
-+
-+#define KEYCTL_GET_KEYRING_ID		0
-+#define KEYCTL_SET_REQKEY_KEYRING	14
-+
-+#define KEY_SPEC_THREAD_KEYRING		-1
-+
-+#define KEY_REQKEY_DEFL_THREAD_KEYRING	1
-+
-+static void do_test(void)
-+{
-+	key_serial_t tid_keyring;
-+
-+	TEST(tst_syscall(__NR_keyctl, KEYCTL_GET_KEYRING_ID,
-+			 KEY_SPEC_THREAD_KEYRING, 1));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "failed to create thread keyring");
-+	tid_keyring = TEST_RETURN;
-+
-+	TEST(tst_syscall(__NR_keyctl, KEYCTL_SET_REQKEY_KEYRING,
-+			 KEY_REQKEY_DEFL_THREAD_KEYRING));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "failed to set reqkey keyring");
-+
-+	TEST(tst_syscall(__NR_keyctl, KEYCTL_GET_KEYRING_ID,
-+			 KEY_SPEC_THREAD_KEYRING, 0));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "failed to get thread keyring ID");
-+	if (TEST_RETURN = tid_keyring)
-+		tst_res(TPASS, "thread keyring was not leaked");
-+	else
-+		tst_res(TFAIL, "thread keyring was leaked!");
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+-			    const char *digest, int digestlen)
++struct key *integrity_keyring_from_id(const unsigned int id)
+ {
+-	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
+-		return -EINVAL;
++	if (id >= INTEGRITY_KEYRING_MAX)
++		return ERR_PTR(-EINVAL);
+ 
+ 	if (!keyring[id]) {
+ 		keyring[id] @@ -61,18 +60,29 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			int err = PTR_ERR(keyring[id]);
+ 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
+ 			keyring[id] = NULL;
+-			return err;
++			return ERR_PTR(err);
+ 		}
+ 	}
+ 
++	return keyring[id];
 +}
 +
-+static struct tst_test test = {
-+	.test_all = do_test,
-+};
++int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
++			    const char *digest, int digestlen)
++{
++	struct key *keyring = integrity_keyring_from_id(id);
++
++	if (IS_ERR(keyring) || siglen < 2)
++		return PTR_ERR(keyring);
++
+ 	switch (sig[1]) {
+ 	case 1:
+ 		/* v1 API expect signature without xattr type */
+-		return digsig_verify(keyring[id], sig + 1, siglen - 1,
+-				     digest, digestlen);
++		return digsig_verify(keyring, sig + 1, siglen - 1, digest,
++				     digestlen);
+ 	case 2:
+-		return asymmetric_verify(keyring[id], sig, siglen,
+-					 digest, digestlen);
++		return asymmetric_verify(keyring, sig, siglen, digest,
++					 digestlen);
+ 	}
+ 
+ 	return -EOPNOTSUPP;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 9b1762076f38..1f8f1a31d487 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -134,6 +134,7 @@ int __init integrity_read_file(const char *path, char **data);
+ 
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 
++struct key *integrity_keyring_from_id(const unsigned int id);
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
+ 
 -- 
-2.14.0.rc0.400.g1c36432dff-goog
+2.13.0
 
