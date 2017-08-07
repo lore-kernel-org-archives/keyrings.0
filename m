@@ -1,40 +1,69 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 16 Aug 2017 02:52:44 +0000
-Subject: Re: [PATCH] KEYS: remove CONFIG_KEYS_COMPAT
-Message-Id: <20170816025244.GA1417@zzz.localdomain>
+From: Carlo Caione <carlo@caione.org>
+Date: Mon, 07 Aug 2017 08:01:51 +0000
+Subject: [PATCH RESEND] X.509: Recognize the legacy OID 1.3.14.3.2.29 (sha1WithRSASignature)
+Message-Id: <20170807080151.5313-1-carlo@caione.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170613060925.17121-1-ebiggers3@gmail.com>
-	<7704.1498555674@warthog.procyon.org.uk>
-In-Reply-To: <7704.1498555674@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, linux@endlessm.com
+Cc: Carlo Caione <carlo@endlessm.com>
 
-On Tue, Jun 27, 2017 at 10:27:54AM +0100, David Howells wrote:
-> Eric Biggers <ebiggers3@gmail.com> wrote:
-> 
-> > diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-> > index a7a23b5541f8..f5d96996baa6 100644
-> > --- a/security/keys/Kconfig
-> > +++ b/security/keys/Kconfig
-> > @@ -20,10 +20,6 @@ config KEYS
-> >  
-> >  	  If you are unsure as to whether this is required, answer N.
-> >  
-> > -config KEYS_COMPAT
-> > -	def_bool y
-> > -	depends on COMPAT && KEYS
-> > -
-> >  config PERSISTENT_KEYRINGS
-> >  	bool "Enable register of persistent per-UID keyrings"
-> >  	depends on KEYS
-> 
-> Hmmm...  This is in linus/master, but not in security/next.  I'll hold your
-> patch till later in the merge window or just after -rc1.
-> 
-> David
+From: Carlo Caione <carlo@endlessm.com>
 
-Hi David, are you still planning to apply this patch?
+We have found some ACER laptops shipping with certificates signed using
+the 1.3.14.3.2.29 OID. This is causing the message
 
-Eric
+   EFI: Problem loading in-kernel X.509 certificate (-65)
+
+to be printed at boot.
+
+This OID is Rivest, Shamir and Adleman (RSA) algorithm that uses the
+Secure Hash Algorithm 1 (SHA1) (obsolete), usually referred to as
+sha1WithRSASignature.
+
+sha1WithRSASignature is a deprecated equivalent of
+sha1WithRSAEncryption. It originates from the NIST Open Systems
+Environment (OSE) Implementor's Workshop (OIW).
+
+It is supported for compatibility with Microsoft's certificate APIs
+and tools, particularly makecert.exe, which default(ed/s) to this
+OID for SHA-1.
+
+We introduce sha1WithRSASignature as new supported OID making it
+equivalent to sha1WithRSAEncryption. This is solving the issue when
+loading the in-kernel X.509 certificates that can now be correctly read.
+
+Signed-off-by: Carlo Caione <carlo@endlessm.com>
+---
+ crypto/asymmetric_keys/x509_cert_parser.c | 1 +
+ include/linux/oid_registry.h              | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index dd03fead1ca3..cdbc8c2def79 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -203,6 +203,7 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
+ 		break;
+ 
+ 	case OID_sha1WithRSAEncryption:
++	case OID_sha1WithRSASignature:
+ 		ctx->cert->sig->hash_algo = "sha1";
+ 		ctx->cert->sig->pkey_algo = "rsa";
+ 		break;
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index d2fa9ca42e9a..26faee80357f 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -62,6 +62,7 @@ enum OID {
+ 
+ 	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
+ 	OID_sha1,			/* 1.3.14.3.2.26 */
++	OID_sha1WithRSASignature,	/* 1.3.14.3.2.29 */
+ 	OID_sha256,			/* 2.16.840.1.101.3.4.2.1 */
+ 	OID_sha384,			/* 2.16.840.1.101.3.4.2.2 */
+ 	OID_sha512,			/* 2.16.840.1.101.3.4.2.3 */
+-- 
+2.13.3
+
