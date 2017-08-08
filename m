@@ -1,53 +1,232 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Fri, 04 Aug 2017 22:03:29 +0000
-Subject: [PATCH v4 6/7] ima: Store measurement after appraisal
-Message-Id: <20170804220330.30026-7-bauerman@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 08 Aug 2017 12:03:43 +0000
+Subject: [PATCH v4 12/19] dm: move dm-verity to generic async completion
+Message-Id: <1502193834-11289-13-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-When module-style signatures appended at the end of files are supported for
-IMA appraisal, the code will fallback to the xattr signature if the
-appended one fails to verify.
+dm-verity is starting async. crypto ops and waiting for them to complete.
+Move it over to generic code doing the same.
 
-The problem is that we don't know whether we need to fallback to the xattr
-signature until the appraise step, and by then the measure step was already
-completed and would need to be done again in case the template includes the
-signature.
+This also fixes a possible data coruption bug created by the
+use of wait_for_completion_interruptible() without dealing
+correctly with an interrupt aborting the wait prior to the
+async op finishing.
 
-To avoid this problem, do the appraisal first so that the correct signature
-is stored by the template in the measure step.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- security/integrity/ima/ima_main.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/md/dm-verity-target.c | 81 +++++++++++--------------------------------
+ drivers/md/dm-verity.h        |  5 ---
+ 2 files changed, 20 insertions(+), 66 deletions(-)
 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 2aebb7984437..0b4845e7248d 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -244,12 +244,12 @@ static int process_measurement(struct file *file, char *buf, loff_t size,
- 	if (!pathbuf)	/* ima_rdwr_violation possibly pre-fetched */
- 		pathname = ima_d_path(&file->f_path, &pathbuf, filename);
+diff --git a/drivers/md/dm-verity-target.c b/drivers/md/dm-verity-target.c
+index 79f18d4..8df08a8 100644
+--- a/drivers/md/dm-verity-target.c
++++ b/drivers/md/dm-verity-target.c
+@@ -92,74 +92,33 @@ static sector_t verity_position_at_level(struct dm_verity *v, sector_t block,
+ 	return block >> (level * v->hash_per_block_bits);
+ }
  
--	if (action & IMA_MEASURE)
--		ima_store_measurement(iint, file, pathname,
--				      xattr_value, xattr_len, pcr);
- 	if (action & IMA_APPRAISE_SUBMASK)
- 		rc = ima_appraise_measurement(func, iint, file, pathname,
- 					      xattr_value, xattr_len, opened);
-+	if (action & IMA_MEASURE)
-+		ima_store_measurement(iint, file, pathname,
-+				      xattr_value, xattr_len, pcr);
- 	if (action & IMA_AUDIT)
- 		ima_audit_measurement(iint, pathname);
+-/*
+- * Callback function for asynchrnous crypto API completion notification
+- */
+-static void verity_op_done(struct crypto_async_request *base, int err)
+-{
+-	struct verity_result *res = (struct verity_result *)base->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	res->err = err;
+-	complete(&res->completion);
+-}
+-
+-/*
+- * Wait for async crypto API callback
+- */
+-static inline int verity_complete_op(struct verity_result *res, int ret)
+-{
+-	switch (ret) {
+-	case 0:
+-		break;
+-
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		ret = wait_for_completion_interruptible(&res->completion);
+-		if (!ret)
+-			ret = res->err;
+-		reinit_completion(&res->completion);
+-		break;
+-
+-	default:
+-		DMERR("verity_wait_hash: crypto op submission failed: %d", ret);
+-	}
+-
+-	if (unlikely(ret < 0))
+-		DMERR("verity_wait_hash: crypto op failed: %d", ret);
+-
+-	return ret;
+-}
+-
+ static int verity_hash_update(struct dm_verity *v, struct ahash_request *req,
+ 				const u8 *data, size_t len,
+-				struct verity_result *res)
++				struct crypto_wait *wait)
+ {
+ 	struct scatterlist sg;
  
+ 	sg_init_one(&sg, data, len);
+ 	ahash_request_set_crypt(req, &sg, NULL, len);
+ 
+-	return verity_complete_op(res, crypto_ahash_update(req));
++	return crypto_wait_req(crypto_ahash_update(req), wait);
+ }
+ 
+ /*
+  * Wrapper for crypto_ahash_init, which handles verity salting.
+  */
+ static int verity_hash_init(struct dm_verity *v, struct ahash_request *req,
+-				struct verity_result *res)
++				struct crypto_wait *wait)
+ {
+ 	int r;
+ 
+ 	ahash_request_set_tfm(req, v->tfm);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 					CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					verity_op_done, (void *)res);
+-	init_completion(&res->completion);
++					crypto_req_done, (void *)wait);
++	crypto_init_wait(wait);
+ 
+-	r = verity_complete_op(res, crypto_ahash_init(req));
++	r = crypto_wait_req(crypto_ahash_init(req), wait);
+ 
+ 	if (unlikely(r < 0)) {
+ 		DMERR("crypto_ahash_init failed: %d", r);
+@@ -167,18 +126,18 @@ static int verity_hash_init(struct dm_verity *v, struct ahash_request *req,
+ 	}
+ 
+ 	if (likely(v->salt_size && (v->version >= 1)))
+-		r = verity_hash_update(v, req, v->salt, v->salt_size, res);
++		r = verity_hash_update(v, req, v->salt, v->salt_size, wait);
+ 
+ 	return r;
+ }
+ 
+ static int verity_hash_final(struct dm_verity *v, struct ahash_request *req,
+-			     u8 *digest, struct verity_result *res)
++			     u8 *digest, struct crypto_wait *wait)
+ {
+ 	int r;
+ 
+ 	if (unlikely(v->salt_size && (!v->version))) {
+-		r = verity_hash_update(v, req, v->salt, v->salt_size, res);
++		r = verity_hash_update(v, req, v->salt, v->salt_size, wait);
+ 
+ 		if (r < 0) {
+ 			DMERR("verity_hash_final failed updating salt: %d", r);
+@@ -187,7 +146,7 @@ static int verity_hash_final(struct dm_verity *v, struct ahash_request *req,
+ 	}
+ 
+ 	ahash_request_set_crypt(req, NULL, digest, 0);
+-	r = verity_complete_op(res, crypto_ahash_final(req));
++	r = crypto_wait_req(crypto_ahash_final(req), wait);
+ out:
+ 	return r;
+ }
+@@ -196,17 +155,17 @@ int verity_hash(struct dm_verity *v, struct ahash_request *req,
+ 		const u8 *data, size_t len, u8 *digest)
+ {
+ 	int r;
+-	struct verity_result res;
++	struct crypto_wait wait;
+ 
+-	r = verity_hash_init(v, req, &res);
++	r = verity_hash_init(v, req, &wait);
+ 	if (unlikely(r < 0))
+ 		goto out;
+ 
+-	r = verity_hash_update(v, req, data, len, &res);
++	r = verity_hash_update(v, req, data, len, &wait);
+ 	if (unlikely(r < 0))
+ 		goto out;
+ 
+-	r = verity_hash_final(v, req, digest, &res);
++	r = verity_hash_final(v, req, digest, &wait);
+ 
+ out:
+ 	return r;
+@@ -389,7 +348,7 @@ int verity_hash_for_block(struct dm_verity *v, struct dm_verity_io *io,
+  * Calculates the digest for the given bio
+  */
+ int verity_for_io_block(struct dm_verity *v, struct dm_verity_io *io,
+-			struct bvec_iter *iter, struct verity_result *res)
++			struct bvec_iter *iter, struct crypto_wait *wait)
+ {
+ 	unsigned int todo = 1 << v->data_dev_block_bits;
+ 	struct bio *bio = dm_bio_from_per_bio_data(io, v->ti->per_io_data_size);
+@@ -414,7 +373,7 @@ int verity_for_io_block(struct dm_verity *v, struct dm_verity_io *io,
+ 		 */
+ 		sg_set_page(&sg, bv.bv_page, len, bv.bv_offset);
+ 		ahash_request_set_crypt(req, &sg, NULL, len);
+-		r = verity_complete_op(res, crypto_ahash_update(req));
++		r = crypto_wait_req(crypto_ahash_update(req), wait);
+ 
+ 		if (unlikely(r < 0)) {
+ 			DMERR("verity_for_io_block crypto op failed: %d", r);
+@@ -482,7 +441,7 @@ static int verity_verify_io(struct dm_verity_io *io)
+ 	struct dm_verity *v = io->v;
+ 	struct bvec_iter start;
+ 	unsigned b;
+-	struct verity_result res;
++	struct crypto_wait wait;
+ 
+ 	for (b = 0; b < io->n_blocks; b++) {
+ 		int r;
+@@ -507,17 +466,17 @@ static int verity_verify_io(struct dm_verity_io *io)
+ 			continue;
+ 		}
+ 
+-		r = verity_hash_init(v, req, &res);
++		r = verity_hash_init(v, req, &wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+ 		start = io->iter;
+-		r = verity_for_io_block(v, io, &io->iter, &res);
++		r = verity_for_io_block(v, io, &io->iter, &wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+ 		r = verity_hash_final(v, req, verity_io_real_digest(v, io),
+-					&res);
++					&wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+diff --git a/drivers/md/dm-verity.h b/drivers/md/dm-verity.h
+index a59e0ad..b675bc0 100644
+--- a/drivers/md/dm-verity.h
++++ b/drivers/md/dm-verity.h
+@@ -90,11 +90,6 @@ struct dm_verity_io {
+ 	 */
+ };
+ 
+-struct verity_result {
+-	struct completion completion;
+-	int err;
+-};
+-
+ static inline struct ahash_request *verity_io_hash_req(struct dm_verity *v,
+ 						     struct dm_verity_io *io)
+ {
 -- 
-2.13.0
+2.1.4
 
