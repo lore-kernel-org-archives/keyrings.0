@@ -1,215 +1,280 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Thu, 17 Aug 2017 09:15:52 +0000
-Subject: Re: [Linux-ima-devel] [PATCH, RESEND 08/12] ima: added parser for RPM data type
-Message-Id: <edf5405d-ffc0-cd59-d590-e0a42741b633@huawei.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 08 Aug 2017 12:03:37 +0000
+Subject: [PATCH v4 06/19] crypto: move algif to generic async completion
+Message-Id: <1502193834-11289-7-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170725154423.24845-9-roberto.sassu@huawei.com>
- <20170801102036.15371-1-roberto.sassu@huawei.com>
- <20170801102709.GA24285@infradead.org>
- <11206fd8-d189-deb0-ab67-aec373f8d979@huawei.com>
- <alpine.LRH.2.20.1708021716440.1117@namei.org>
- <0506050f-c4f1-1b36-a25b-c5418607906d@huawei.com>
- <1502289048.19092.62.camel@linux.vnet.ibm.com>
- <fffaf219-a633-478a-ec0e-2869419fe3b0@huawei.com>
- <1502370765.3367.69.camel@linux.vnet.ibm.com>
-In-Reply-To: <1502370765.3367.69.camel@linux.vnet.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-On 8/10/2017 3:12 PM, Mimi Zohar wrote:
-> On Wed, 2017-08-09 at 19:18 +0200, Roberto Sassu wrote:
->> On 8/9/2017 4:30 PM, Mimi Zohar wrote:
->>> On Wed, 2017-08-09 at 11:15 +0200, Roberto Sassu wrote:
->>>> On 8/2/2017 9:22 AM, James Morris wrote:
->>>>> On Tue, 1 Aug 2017, Roberto Sassu wrote:
->>>>>
->>>>>> On 8/1/2017 12:27 PM, Christoph Hellwig wrote:
->>>>>>> On Tue, Aug 01, 2017 at 12:20:36PM +0200, Roberto Sassu wrote:
->>>>>>>> This patch introduces a parser for RPM packages. It extracts the digests
->>>>>>>> from the RPMTAG_FILEDIGESTS header section and converts them to binary
->>>>>>>> data
->>>>>>>> before adding them to the hash table.
->>>>>>>>
->>>>>>>> The advantage of this data type is that verifiers can determine who
->>>>>>>> produced that data, as headers are signed by Linux distributions vendors.
->>>>>>>> RPM headers signatures can be provided as digest list metadata.
->>>>>>>
->>>>>>> Err, parsing arbitrary file formats has no business in the kernel.
->>>>>>
->>>>>> The benefit of this choice is that no actions are required for
->>>>>> Linux distribution vendors to support the solution I'm proposing,
->>>>>> because they already provide signed digest lists (RPM headers).
->>>>>>
->>>>>> Since the proof of loading a digest list is the digest of the
->>>>>> digest list (included in the list metadata), if RPM headers are
->>>>>> converted to a different format, remote attestation verifiers
->>>>>> cannot check the signature.
->>>>>>
->>>>>> If the concern is security, it would be possible to prevent unsigned
->>>>>> RPM headers from being parsed, if the PGP key type is upstreamed
->>>>>> (adding in CC keyrings@vger.kernel.org).
->>>>>
->>>>> It's a security concern and also a layering violation, there should be no
->>>>> need to parse package file formats in the kernel.
->>>>
->>>> Parsing RPMs is not strictly necessary. Digests from the headers
->>>> can be extracted and written to a new file using the compact data
->>>> format (introduced with patch 7/12).
->>>>
->>>> At boot time, IMA measures this file before digests are uploaded to the
->>>> kernel. At this point, only files with unknown digest will be added
->>>> to the measurement list. At verification time, verifiers recreate the
->>>> measurement list by merging together the digests uploaded to the
->>>> kernel with the unknown digests. Then, they verify the obtained list.
->>>>
->>>> There are two ways to verify the digests: searching them in a reference
->>>> database, or checking a signature. With the 'ima-sig' measurement list
->>>> template, it is possible to verify signatures for each accessed file.
->>>> With this patch set, it is possible to verify the signature of
->>>> the file containing the digests uploaded to the kernel. If the data
->>>> format changes, the signature cannot be verified.
->>>>
->>>> To avoid this limitation, the parsers could be moved to a userspace
->>>> tool which then uploads the parsed digests to the kernel. IMA would
->>>> measure the original files. But, if the tool is compromised, it could
->>>> load digests not included in the parsed files. With the current solution
->>>> this problem does not arise because no changes can be done by userspace
->>>> applications to the uploaded data while digests are parsed by IMA.
->>>>
->>>> I could remove the RPM parser from the patch set for now.
->>>>
->>>> Is the remaining part of the patch set ok, and is the explanation of
->>>> what it does clear?
->>>
->>> From a trusted boot perspective, file measurements are added to the
->>> measurement list, before access to the file is given.  The measurement
->>> list contains ALL measurements, as defined by policy.  This patch set
->>> changes that meaning to be all measurements, as defined by policy,
->>> with the exception of those in a white list.
->>
->> The digest list is also measured, so the measurement list is complete.
->> Verifiers have to check the digest of digest lists. Otherwise, they
->> would get an unknown digest and conclude that the system being verified
->> has been compromised.
->
-> Your proposal is basically a pre-approved "batched" measurement, of a
-> set of known good measurements, without the corresponding list of
-> measurements that this "batched" measurement represents.  Right?
+algif starts several async crypto ops and waits for their completion.
+Move it over to generic code doing the same.
 
-Yes, correct.
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+---
+ crypto/af_alg.c         | 27 ---------------------------
+ crypto/algif_aead.c     | 14 +++++++-------
+ crypto/algif_hash.c     | 30 ++++++++++++++----------------
+ crypto/algif_skcipher.c | 15 +++++++--------
+ include/crypto/if_alg.h | 13 -------------
+ 5 files changed, 28 insertions(+), 71 deletions(-)
 
-
-> This pre-approved "batched" measurement represents not what has been
-> accessed/executed on the system, but what potentially could be
-> accessed/executed.  That's a major difference.
->
->> If you prefer, I could add a new policy rule option to avoid file
->> measurements if the digest is in the digest list.
->
-> Huh?  Patch "ima: don't report measurements if digests are included in
-> the loaded lists" is already doing this.
-
-Since the content of the measurement list depends on the policy,
-adding a new option would give a better understanding of what the
-measurement list represents. But, I agree that this is redundant.
-
-
->>> Changing the fundamental meaning of the measurement list is not
->>> acceptable.  You could define a new securityfs file to differentiate
->>> between the full measurement list and this abbreviated one.  But
->>
->> There cannot be two measurement lists at the same time. Providing the
->> full measurement list (containing the digest of files being accessed)
->> implies that its integrity must be protected with PCR extends, making
->> the optimization done by this patch set useless.
->
-> True, so you would be able to configure the system with one or the
-> other type of list, not both.  At least there would be a clear
-> understanding of what that list represents.
->
->>
->>> before making this sort of change, I would prefer to address the
->>> underlying problem - TPM peformance.
->>
->> Even if the TPM driver performance improves significantly (17 seconds
->> for 1000 extends), the boot time delay would be still noticeable
->> (8.5 seconds for normal boot + 24 seconds for 1400 PCR extends).
->
-> Agreed, there is still room for more TPM improvements.  Just Nayna's
-> one patch, without any other changes, brought the timing down from 53s
-> for a 1000 extends to just 11s.  (The initial patch was Nack'ed, but
-> we're working with the tpmdd and the TCG's device driver work group
-> (DDWG).)
->
->> In my opinion, this patch set is useful without considering the
->> performance improvement: reduced size of measurement lists and
->> verification of digest list signatures, instead of file signatures,
->> where signatures are already provided by Linux distributions.
->
-> Right, there's always a trade off.  My suggestion, assuming we go with
-> this approach, would be to make that trade off clear by using
-> different lists.
-
-You mean to add a new kernel command line option to create new
-securityfs files instead of the existing ones
-(ascii_runtime_measurements, binary_runtime_measurements)? I would
-prefer a solution that does not change the interfaces, otherwise
-remote attestation agents have to be modified. They can handle
-the new list type, as the data format didn't change.
-
-Thanks
-
-Roberto
-
-
->>> There are a couple of things that could be done to improve the TPM
->>> driver performance, itself.  Once all of these options have been
->>> pursued, we could then consider batching the measurements to the TPM,
->>> meaning that the measurement list would still contain all the file
->>> measurements, but instead of extending the TPM for each measurement, a
->>> batched hash - a hash of a group of file measurements - would be
->>> extended into the TPM.
->>
->> Probably, I didn't explain clearly that this patch set does not decrease
->> the security of IMA.
->>
->> Extending the PCR for a group of file measurements means that the system
->> can be compromised between two PCR extends without detection because
->> a malicious binary could alter IMA before the next extend.
->
-> Currently, a measurement is added to the measurement list and then is
-> used to extend the TPM, before returning to the caller.
->
-> A performance improvement would still first add the measurement to the
-> measurement list, but would then queue and wait for the measurement to
-> extend the TPM, before returning to the caller.  In a multi threaded
-> environment, the queued measurements could be "batched" - a hash of a
-> set of hashes - to extend the TPM.
->
-> The delay would be at most two times it takes to extend the TPM - one
-> to complete an existing current "batched" extend and another new
-> "batched" extend.
->
-> The difficulty with this approach is identifying which measurements
-> are included in which "batched" measurement.  This approach provides
-> the same guarantees as previously.
->
-> Before making the TPM performance problem an IMA issue and "fixing" it
-> in IMA, I would prefer that the TPM performance be addressed directly.
->
-> Mimi
->
->>
->> This patch set extends the PCR with the digest of digest lists, before
->> files are accessed. No actions happen before either the digest lists
->> have been measured or the file measurement is added to the measurement
->> list, if the file digest is not included in the digest list.
->
->
-
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index 92a3d54..887f75c 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -480,33 +480,6 @@ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con)
+ }
+ EXPORT_SYMBOL_GPL(af_alg_cmsg_send);
+ 
+-int af_alg_wait_for_completion(int err, struct af_alg_completion *completion)
+-{
+-	switch (err) {
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		wait_for_completion(&completion->completion);
+-		reinit_completion(&completion->completion);
+-		err = completion->err;
+-		break;
+-	};
+-
+-	return err;
+-}
+-EXPORT_SYMBOL_GPL(af_alg_wait_for_completion);
+-
+-void af_alg_complete(struct crypto_async_request *req, int err)
+-{
+-	struct af_alg_completion *completion = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	completion->err = err;
+-	complete(&completion->completion);
+-}
+-EXPORT_SYMBOL_GPL(af_alg_complete);
+-
+ static int __init af_alg_init(void)
+ {
+ 	int err = proto_register(&alg_proto, 0);
+diff --git a/crypto/algif_aead.c b/crypto/algif_aead.c
+index 9755aac..36be369 100644
+--- a/crypto/algif_aead.c
++++ b/crypto/algif_aead.c
+@@ -78,7 +78,7 @@ struct aead_ctx {
+ 	void *iv;
+ 	size_t aead_assoclen;
+ 
+-	struct af_alg_completion completion;	/* sync work queue */
++	struct crypto_wait wait;
+ 
+ 	size_t used;		/* TX bytes sent to kernel */
+ 	size_t rcvused;		/* total RX bytes to be processed by kernel */
+@@ -751,11 +751,11 @@ static int _aead_recvmsg(struct socket *sock, struct msghdr *msg,
+ 		/* Synchronous operation */
+ 		aead_request_set_callback(&areq->aead_req,
+ 					  CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					  af_alg_complete, &ctx->completion);
+-		err = af_alg_wait_for_completion(ctx->enc ?
+-					 crypto_aead_encrypt(&areq->aead_req) :
+-					 crypto_aead_decrypt(&areq->aead_req),
+-					 &ctx->completion);
++					  crypto_req_done, &ctx->wait);
++		err = crypto_wait_req(ctx->enc ?
++				      crypto_aead_encrypt(&areq->aead_req) :
++				      crypto_aead_decrypt(&areq->aead_req),
++				      &ctx->wait);
+ 	}
+ 
+ 	/* AIO operation in progress */
+@@ -1036,7 +1036,7 @@ static int aead_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->merge = 0;
+ 	ctx->enc = 0;
+ 	ctx->aead_assoclen = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index 3b3c154..d2ab8de 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -26,7 +26,7 @@ struct hash_ctx {
+ 
+ 	u8 *result;
+ 
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	unsigned int len;
+ 	bool more;
+@@ -102,8 +102,7 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 		if ((msg->msg_flags & MSG_MORE))
+ 			hash_free_result(sk, ctx);
+ 
+-		err = af_alg_wait_for_completion(crypto_ahash_init(&ctx->req),
+-						&ctx->completion);
++		err = crypto_wait_req(crypto_ahash_init(&ctx->req), &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+@@ -124,8 +123,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 
+ 		ahash_request_set_crypt(&ctx->req, ctx->sgl.sg, NULL, len);
+ 
+-		err = af_alg_wait_for_completion(crypto_ahash_update(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_update(&ctx->req),
++				      &ctx->wait);
+ 		af_alg_free_sg(&ctx->sgl);
+ 		if (err)
+ 			goto unlock;
+@@ -143,8 +142,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 			goto unlock;
+ 
+ 		ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
+-		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
++				      &ctx->wait);
+ 	}
+ 
+ unlock:
+@@ -185,7 +184,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 	} else {
+ 		if (!ctx->more) {
+ 			err = crypto_ahash_init(&ctx->req);
+-			err = af_alg_wait_for_completion(err, &ctx->completion);
++			err = crypto_wait_req(err, &ctx->wait);
+ 			if (err)
+ 				goto unlock;
+ 		}
+@@ -193,7 +192,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 		err = crypto_ahash_update(&ctx->req);
+ 	}
+ 
+-	err = af_alg_wait_for_completion(err, &ctx->completion);
++	err = crypto_wait_req(err, &ctx->wait);
+ 	if (err)
+ 		goto unlock;
+ 
+@@ -229,17 +228,16 @@ static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
+ 	ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
+ 
+ 	if (!result && !ctx->more) {
+-		err = af_alg_wait_for_completion(
+-				crypto_ahash_init(&ctx->req),
+-				&ctx->completion);
++		err = crypto_wait_req(crypto_ahash_init(&ctx->req),
++				      &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+ 
+ 	if (!result || ctx->more) {
+ 		ctx->more = 0;
+-		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
++				      &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+@@ -490,13 +488,13 @@ static int hash_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->result = NULL;
+ 	ctx->len = len;
+ 	ctx->more = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+ 	ahash_request_set_tfm(&ctx->req, hash);
+ 	ahash_request_set_callback(&ctx->req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				   af_alg_complete, &ctx->completion);
++				   crypto_req_done, &ctx->wait);
+ 
+ 	sk->sk_destruct = hash_sock_destruct;
+ 
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 968d094..ebbd433 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -75,7 +75,7 @@ struct skcipher_ctx {
+ 
+ 	void *iv;
+ 
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	size_t used;
+ 	size_t rcvused;
+@@ -677,12 +677,11 @@ static int _skcipher_recvmsg(struct socket *sock, struct msghdr *msg,
+ 		skcipher_request_set_callback(&areq->req,
+ 					      CRYPTO_TFM_REQ_MAY_SLEEP |
+ 					      CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					      af_alg_complete,
+-					      &ctx->completion);
+-		err = af_alg_wait_for_completion(ctx->enc ?
+-					crypto_skcipher_encrypt(&areq->req) :
+-					crypto_skcipher_decrypt(&areq->req),
+-						 &ctx->completion);
++					      crypto_req_done, &ctx->wait);
++		err = crypto_wait_req(ctx->enc ?
++				      crypto_skcipher_encrypt(&areq->req) :
++				      crypto_skcipher_decrypt(&areq->req),
++				      &ctx->wait);
+ 	}
+ 
+ 	/* AIO operation in progress */
+@@ -950,7 +949,7 @@ static int skcipher_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->more = 0;
+ 	ctx->merge = 0;
+ 	ctx->enc = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
+index e2b9c6f..14b79e5 100644
+--- a/include/crypto/if_alg.h
++++ b/include/crypto/if_alg.h
+@@ -37,11 +37,6 @@ struct alg_sock {
+ 	void *private;
+ };
+ 
+-struct af_alg_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+ struct af_alg_control {
+ 	struct af_alg_iv *iv;
+ 	int op;
+@@ -81,17 +76,9 @@ void af_alg_link_sg(struct af_alg_sgl *sgl_prev, struct af_alg_sgl *sgl_new);
+ 
+ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con);
+ 
+-int af_alg_wait_for_completion(int err, struct af_alg_completion *completion);
+-void af_alg_complete(struct crypto_async_request *req, int err);
+-
+ static inline struct alg_sock *alg_sk(struct sock *sk)
+ {
+ 	return (struct alg_sock *)sk;
+ }
+ 
+-static inline void af_alg_init_completion(struct af_alg_completion *completion)
+-{
+-	init_completion(&completion->completion);
+-}
+-
+ #endif	/* _CRYPTO_IF_ALG_H */
 -- 
-HUAWEI TECHNOLOGIES Duesseldorf GmbH, HRB 56063
-Managing Director: Bo PENG, Qiuen PENG, Shengli WANG
+2.1.4
+
