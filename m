@@ -1,83 +1,113 @@
-From: Baolin Wang <baolin.wang@linaro.org>
-Date: Wed, 09 Aug 2017 02:51:31 +0000
-Subject: [PATCH 2/3] security: keys: Replace time_t with time64_t for struct key_preparsed_payload
-Message-Id: <edd8fbb1ecfa2f5e45b5c09efbf67a59014d3cd9.1502246502.git.baolin.wang@linaro.org>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 08 Aug 2017 12:03:39 +0000
+Subject: [PATCH v4 08/19] crypto: move drbg to generic async completion
+Message-Id: <1502193834-11289-9-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1502246501.git.baolin.wang@linaro.org>
-In-Reply-To: <cover.1502246501.git.baolin.wang@linaro.org>
-To: linux-security-module@vger.kernel.org
+References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-The 'struct key_preparsed_payload' will use 'time_t' which we will
-try to remove in the kernel, since 'time_t' is not year 2038 safe on
-32bits systems.
+DRBG is starting an async. crypto op and waiting for it complete.
+Move it over to generic code doing the same.
 
-Thus this patch replaces 'time_t' with 'time64_t' which is year 2038
-safe on 32 bits system for 'struct key_preparsed_payload', moreover
-we should use the 'TIME64_MAX' macro to initialize the 'time64_t'
-type variable.
+The code now also passes CRYPTO_TFM_REQ_MAY_SLEEP flag indicating
+crypto request memory allocation may use GFP_KERNEL which should
+be perfectly fine as the code is obviously sleeping for the
+completion of the request any way.
 
-Signed-off-by: Baolin Wang <baolin.wang@linaro.org>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- include/linux/key-type.h |    2 +-
- security/keys/key.c      |    8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ crypto/drbg.c         | 36 +++++++++---------------------------
+ include/crypto/drbg.h |  3 +--
+ 2 files changed, 10 insertions(+), 29 deletions(-)
 
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index 8496cf6..4beb006 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -44,7 +44,7 @@ struct key_preparsed_payload {
- 	const void	*data;		/* Raw data */
- 	size_t		datalen;	/* Raw datalen */
- 	size_t		quotalen;	/* Quota length for proposed payload */
--	time_t		expiry;		/* Expiry time of key */
-+	time64_t	expiry;		/* Expiry time of key */
- };
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index 633a88e..c522251 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -1651,16 +1651,6 @@ static int drbg_fini_sym_kernel(struct drbg_state *drbg)
+ 	return 0;
+ }
  
- typedef int (*request_key_actor_t)(struct key_construction *key,
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 291a67c..d5c8941 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -446,7 +446,7 @@ static int __key_instantiate_and_link(struct key *key,
- 			if (authkey)
- 				key_revoke(authkey);
+-static void drbg_skcipher_cb(struct crypto_async_request *req, int error)
+-{
+-	struct drbg_state *drbg = req->data;
+-
+-	if (error = -EINPROGRESS)
+-		return;
+-	drbg->ctr_async_err = error;
+-	complete(&drbg->ctr_completion);
+-}
+-
+ static int drbg_init_sym_kernel(struct drbg_state *drbg)
+ {
+ 	struct crypto_cipher *tfm;
+@@ -1691,7 +1681,7 @@ static int drbg_init_sym_kernel(struct drbg_state *drbg)
+ 		return PTR_ERR(sk_tfm);
+ 	}
+ 	drbg->ctr_handle = sk_tfm;
+-	init_completion(&drbg->ctr_completion);
++	crypto_init_wait(&drbg->ctr_wait);
  
--			if (prep->expiry != TIME_T_MAX) {
-+			if (prep->expiry != TIME64_MAX) {
- 				key->expiry = prep->expiry;
- 				key_schedule_gc(prep->expiry + key_gc_delay);
- 			}
-@@ -492,7 +492,7 @@ int key_instantiate_and_link(struct key *key,
- 	prep.data = data;
- 	prep.datalen = datalen;
- 	prep.quotalen = key->type->def_datalen;
--	prep.expiry = TIME_T_MAX;
-+	prep.expiry = TIME64_MAX;
- 	if (key->type->preparse) {
- 		ret = key->type->preparse(&prep);
- 		if (ret < 0)
-@@ -834,7 +834,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 	prep.data = payload;
- 	prep.datalen = plen;
- 	prep.quotalen = index_key.type->def_datalen;
--	prep.expiry = TIME_T_MAX;
-+	prep.expiry = TIME64_MAX;
- 	if (index_key.type->preparse) {
- 		ret = index_key.type->preparse(&prep);
- 		if (ret < 0) {
-@@ -968,7 +968,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
- 	prep.data = payload;
- 	prep.datalen = plen;
- 	prep.quotalen = key->type->def_datalen;
--	prep.expiry = TIME_T_MAX;
-+	prep.expiry = TIME64_MAX;
- 	if (key->type->preparse) {
- 		ret = key->type->preparse(&prep);
- 		if (ret < 0)
+ 	req = skcipher_request_alloc(sk_tfm, GFP_KERNEL);
+ 	if (!req) {
+@@ -1700,8 +1690,9 @@ static int drbg_init_sym_kernel(struct drbg_state *drbg)
+ 		return -ENOMEM;
+ 	}
+ 	drbg->ctr_req = req;
+-	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					drbg_skcipher_cb, drbg);
++	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++						CRYPTO_TFM_REQ_MAY_SLEEP,
++					crypto_req_done, &drbg->ctr_wait);
+ 
+ 	alignmask = crypto_skcipher_alignmask(sk_tfm);
+ 	drbg->ctr_null_value_buf = kzalloc(DRBG_CTR_NULL_LEN + alignmask,
+@@ -1762,21 +1753,12 @@ static int drbg_kcapi_sym_ctr(struct drbg_state *drbg,
+ 		/* Output buffer may not be valid for SGL, use scratchpad */
+ 		skcipher_request_set_crypt(drbg->ctr_req, &sg_in, &sg_out,
+ 					   cryptlen, drbg->V);
+-		ret = crypto_skcipher_encrypt(drbg->ctr_req);
+-		switch (ret) {
+-		case 0:
+-			break;
+-		case -EINPROGRESS:
+-		case -EBUSY:
+-			wait_for_completion(&drbg->ctr_completion);
+-			if (!drbg->ctr_async_err) {
+-				reinit_completion(&drbg->ctr_completion);
+-				break;
+-			}
+-		default:
++		ret = crypto_wait_req(crypto_skcipher_encrypt(drbg->ctr_req),
++					&drbg->ctr_wait);
++		if (ret)
+ 			goto out;
+-		}
+-		init_completion(&drbg->ctr_completion);
++
++		crypto_init_wait(&drbg->ctr_wait);
+ 
+ 		memcpy(outbuf, drbg->outscratchpad, cryptlen);
+ 
+diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
+index 22f884c..8f94110 100644
+--- a/include/crypto/drbg.h
++++ b/include/crypto/drbg.h
+@@ -126,8 +126,7 @@ struct drbg_state {
+ 	__u8 *ctr_null_value;			/* CTR mode aligned zero buf */
+ 	__u8 *outscratchpadbuf;			/* CTR mode output scratchpad */
+         __u8 *outscratchpad;			/* CTR mode aligned outbuf */
+-	struct completion ctr_completion;	/* CTR mode async handler */
+-	int ctr_async_err;			/* CTR mode async error */
++	struct crypto_wait ctr_wait;		/* CTR mode async wait obj */
+ 
+ 	bool seeded;		/* DRBG fully seeded? */
+ 	bool pr;		/* Prediction resistance enabled? */
 -- 
-1.7.9.5
+2.1.4
 
