@@ -1,7 +1,7 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 08 Aug 2017 12:03:45 +0000
-Subject: [PATCH v4 14/19] ima: move to generic async completion
-Message-Id: <1502193834-11289-15-git-send-email-gilad@benyossef.com>
+Date: Tue, 08 Aug 2017 12:03:35 +0000
+Subject: [PATCH v4 04/19] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
+Message-Id: <1502193834-11289-5-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,164 +11,43 @@ In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
 Cc: Ofir Drang <ofir.drang@arm.com>
 
-ima starts several async crypto ops and  waits for their completions.
-Move it over to generic code doing the same.
+Now that -EBUSY return code only indicates backlog queueing
+we can safely remove the now redundant check for the
+CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- security/integrity/ima/ima_crypto.c | 56 +++++++++++--------------------------
- 1 file changed, 17 insertions(+), 39 deletions(-)
+ drivers/crypto/marvell/cesa.c | 3 +--
+ drivers/crypto/marvell/cesa.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index 802d5d2..0e4db1fe 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -27,11 +27,6 @@
+diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
+index 6e7a5c7..269737f 100644
+--- a/drivers/crypto/marvell/cesa.c
++++ b/drivers/crypto/marvell/cesa.c
+@@ -183,8 +183,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
+ 	spin_lock_bh(&engine->lock);
+ 	ret = crypto_enqueue_request(&engine->queue, req);
+ 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
+-	    (ret = -EINPROGRESS ||
+-	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	    (ret = -EINPROGRESS || ret = -EBUSY)
+ 		mv_cesa_tdma_chain(engine, creq);
+ 	spin_unlock_bh(&engine->lock);
  
- #include "ima.h"
+diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
+index b7872f6..63c8457 100644
+--- a/drivers/crypto/marvell/cesa.h
++++ b/drivers/crypto/marvell/cesa.h
+@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
+ 	 * the backlog and will be processed later. There's no need to
+ 	 * clean it up.
+ 	 */
+-	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
++	if (ret = -EBUSY)
+ 		return false;
  
--struct ahash_completion {
--	struct completion completion;
--	int err;
--};
--
- /* minimum file size for ahash use */
- static unsigned long ima_ahash_minsize;
- module_param_named(ahash_minsize, ima_ahash_minsize, ulong, 0644);
-@@ -196,30 +191,13 @@ static void ima_free_atfm(struct crypto_ahash *tfm)
- 		crypto_free_ahash(tfm);
- }
- 
--static void ahash_complete(struct crypto_async_request *req, int err)
-+static inline int ahash_wait(int err, struct crypto_wait *wait)
- {
--	struct ahash_completion *res = req->data;
- 
--	if (err = -EINPROGRESS)
--		return;
--	res->err = err;
--	complete(&res->completion);
--}
-+	err = crypto_wait_req(err, wait);
- 
--static int ahash_wait(int err, struct ahash_completion *res)
--{
--	switch (err) {
--	case 0:
--		break;
--	case -EINPROGRESS:
--	case -EBUSY:
--		wait_for_completion(&res->completion);
--		reinit_completion(&res->completion);
--		err = res->err;
--		/* fall through */
--	default:
-+	if (err)
- 		pr_crit_ratelimited("ahash calculation failed: err: %d\n", err);
--	}
- 
- 	return err;
- }
-@@ -233,7 +211,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 	int rc, read = 0, rbuf_len, active = 0, ahash_rc = 0;
- 	struct ahash_request *req;
- 	struct scatterlist sg[1];
--	struct ahash_completion res;
-+	struct crypto_wait wait;
- 	size_t rbuf_size[2];
- 
- 	hash->length = crypto_ahash_digestsize(tfm);
-@@ -242,12 +220,12 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 	if (!req)
- 		return -ENOMEM;
- 
--	init_completion(&res.completion);
-+	crypto_init_wait(&wait);
- 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				   CRYPTO_TFM_REQ_MAY_SLEEP,
--				   ahash_complete, &res);
-+				   crypto_req_done, &wait);
- 
--	rc = ahash_wait(crypto_ahash_init(req), &res);
-+	rc = ahash_wait(crypto_ahash_init(req), &wait);
- 	if (rc)
- 		goto out1;
- 
-@@ -288,7 +266,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 			 * read/request, wait for the completion of the
- 			 * previous ahash_update() request.
- 			 */
--			rc = ahash_wait(ahash_rc, &res);
-+			rc = ahash_wait(ahash_rc, &wait);
- 			if (rc)
- 				goto out3;
- 		}
-@@ -304,7 +282,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 			 * read/request, wait for the completion of the
- 			 * previous ahash_update() request.
- 			 */
--			rc = ahash_wait(ahash_rc, &res);
-+			rc = ahash_wait(ahash_rc, &wait);
- 			if (rc)
- 				goto out3;
- 		}
-@@ -318,7 +296,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 			active = !active; /* swap buffers, if we use two */
- 	}
- 	/* wait for the last update request to complete */
--	rc = ahash_wait(ahash_rc, &res);
-+	rc = ahash_wait(ahash_rc, &wait);
- out3:
- 	if (read)
- 		file->f_mode &= ~FMODE_READ;
-@@ -327,7 +305,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- out2:
- 	if (!rc) {
- 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
--		rc = ahash_wait(crypto_ahash_final(req), &res);
-+		rc = ahash_wait(crypto_ahash_final(req), &wait);
- 	}
- out1:
- 	ahash_request_free(req);
-@@ -527,7 +505,7 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
- {
- 	struct ahash_request *req;
- 	struct scatterlist sg;
--	struct ahash_completion res;
-+	struct crypto_wait wait;
- 	int rc, ahash_rc = 0;
- 
- 	hash->length = crypto_ahash_digestsize(tfm);
-@@ -536,12 +514,12 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
- 	if (!req)
- 		return -ENOMEM;
- 
--	init_completion(&res.completion);
-+	crypto_init_wait(&wait);
- 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				   CRYPTO_TFM_REQ_MAY_SLEEP,
--				   ahash_complete, &res);
-+				   crypto_req_done, &wait);
- 
--	rc = ahash_wait(crypto_ahash_init(req), &res);
-+	rc = ahash_wait(crypto_ahash_init(req), &wait);
- 	if (rc)
- 		goto out;
- 
-@@ -551,10 +529,10 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
- 	ahash_rc = crypto_ahash_update(req);
- 
- 	/* wait for the update request to complete */
--	rc = ahash_wait(ahash_rc, &res);
-+	rc = ahash_wait(ahash_rc, &wait);
- 	if (!rc) {
- 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
--		rc = ahash_wait(crypto_ahash_final(req), &res);
-+		rc = ahash_wait(crypto_ahash_final(req), &wait);
- 	}
- out:
- 	ahash_request_free(req);
+ 	/* Request wasn't queued, we need to clean it up */
 -- 
 2.1.4
 
