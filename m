@@ -1,90 +1,84 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Fri, 04 Aug 2017 22:03:27 +0000
-Subject: [PATCH v4 4/7] integrity: Introduce integrity_keyring_from_id
-Message-Id: <20170804220330.30026-5-bauerman@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 08 Aug 2017 12:03:38 +0000
+Subject: [PATCH v4 07/19] crypto: move pub key to generic async completion
+Message-Id: <1502193834-11289-8-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-IMA will need to obtain the keyring used to verify file signatures so that
-it can verify the module-style signature appended to files.
+public_key_verify_signature() is starting an async crypto op and
+waiting for it to complete. Move it over to generic code doing
+the same.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- security/integrity/digsig.c    | 28 +++++++++++++++++++---------
- security/integrity/integrity.h |  1 +
- 2 files changed, 20 insertions(+), 9 deletions(-)
+ crypto/asymmetric_keys/public_key.c | 28 ++++------------------------
+ 1 file changed, 4 insertions(+), 24 deletions(-)
 
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 06554c448dce..bb5328ba2848 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -48,11 +48,10 @@ static bool init_keyring __initdata;
- #define restrict_link_to_ima restrict_link_by_builtin_trusted
- #endif
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index 3cd6e12..d916235 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -57,29 +57,13 @@ static void public_key_destroy(void *payload0, void *payload3)
+ 	public_key_signature_free(payload3);
+ }
  
--int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
--			    const char *digest, int digestlen)
-+struct key *integrity_keyring_from_id(const unsigned int id)
+-struct public_key_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+-static void public_key_verify_done(struct crypto_async_request *req, int err)
+-{
+-	struct public_key_completion *compl = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	compl->err = err;
+-	complete(&compl->completion);
+-}
+-
+ /*
+  * Verify a signature using a public key.
+  */
+ int public_key_verify_signature(const struct public_key *pkey,
+ 				const struct public_key_signature *sig)
  {
--	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
--		return -EINVAL;
-+	if (id >= INTEGRITY_KEYRING_MAX)
-+		return ERR_PTR(-EINVAL);
+-	struct public_key_completion compl;
++	struct crypto_wait cwait;
+ 	struct crypto_akcipher *tfm;
+ 	struct akcipher_request *req;
+ 	struct scatterlist sig_sg, digest_sg;
+@@ -131,20 +115,16 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	sg_init_one(&digest_sg, output, outlen);
+ 	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
+ 				   outlen);
+-	init_completion(&compl.completion);
++	crypto_init_wait(&cwait);
+ 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				      CRYPTO_TFM_REQ_MAY_SLEEP,
+-				      public_key_verify_done, &compl);
++				      crypto_req_done, &cwait);
  
- 	if (!keyring[id]) {
- 		keyring[id] @@ -61,18 +60,29 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			int err = PTR_ERR(keyring[id]);
- 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
- 			keyring[id] = NULL;
--			return err;
-+			return ERR_PTR(err);
- 		}
- 	}
- 
-+	return keyring[id];
-+}
-+
-+int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-+			    const char *digest, int digestlen)
-+{
-+	struct key *keyring = integrity_keyring_from_id(id);
-+
-+	if (IS_ERR(keyring) || siglen < 2)
-+		return PTR_ERR(keyring);
-+
- 	switch (sig[1]) {
- 	case 1:
- 		/* v1 API expect signature without xattr type */
--		return digsig_verify(keyring[id], sig + 1, siglen - 1,
--				     digest, digestlen);
-+		return digsig_verify(keyring, sig + 1, siglen - 1, digest,
-+				     digestlen);
- 	case 2:
--		return asymmetric_verify(keyring[id], sig, siglen,
--					 digest, digestlen);
-+		return asymmetric_verify(keyring, sig, siglen, digest,
-+					 digestlen);
- 	}
- 
- 	return -EOPNOTSUPP;
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 9b1762076f38..1f8f1a31d487 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -134,6 +134,7 @@ int __init integrity_read_file(const char *path, char **data);
- 
- #ifdef CONFIG_INTEGRITY_SIGNATURE
- 
-+struct key *integrity_keyring_from_id(const unsigned int id);
- int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			    const char *digest, int digestlen);
+ 	/* Perform the verification calculation.  This doesn't actually do the
+ 	 * verification, but rather calculates the hash expected by the
+ 	 * signature and returns that to us.
+ 	 */
+-	ret = crypto_akcipher_verify(req);
+-	if ((ret = -EINPROGRESS) || (ret = -EBUSY)) {
+-		wait_for_completion(&compl.completion);
+-		ret = compl.err;
+-	}
++	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+ 	if (ret < 0)
+ 		goto out_free_output;
  
 -- 
-2.13.0
+2.1.4
 
