@@ -1,134 +1,84 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 21 Aug 2017 14:04:47 +0000
-Subject: [PATCH v6 01/19] crypto: change transient busy return code to -EAGAIN
-Message-Id: <1503324309-13673-2-git-send-email-gilad@benyossef.com>
+Date: Tue, 08 Aug 2017 12:03:44 +0000
+Subject: [PATCH v4 13/19] cifs: move to generic async completion
+Message-Id: <1502193834-11289-14-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1503324309-13673-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1503324309-13673-1-git-send-email-gilad@benyossef.com>
+References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
 Cc: Ofir Drang <ofir.drang@arm.com>
 
-The crypto API was using the -EBUSY return value to indicate
-both a hard failure to submit a crypto operation into a
-transformation provider when the latter was busy and the backlog
-mechanism was not enabled as well as a notification that the
-operation was queued into the backlog when the backlog mechanism
-was enabled.
-
-Having the same return code indicate two very different conditions
-depending on a flag is both error prone and requires extra runtime
-check like the following to discern between the cases:
-
-	if (err = -EINPROGRESS ||
-	    (err = -EBUSY && (ahash_request_flags(req) &
-			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
-
-This patch changes the return code used to indicate a crypto op
-failed due to the transformation provider being transiently busy
-to -EAGAIN.
+cifs starts an async. crypto op and waits for their completion.
+Move it over to generic code doing the same.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Pavel Shilovsky <pshilov@microsoft.com>
 ---
- crypto/algapi.c     |  6 ++++--
- crypto/algif_hash.c | 20 +++++++++++++++++---
- crypto/cryptd.c     |  4 +---
- 3 files changed, 22 insertions(+), 8 deletions(-)
+ fs/cifs/smb2ops.c | 30 ++++--------------------------
+ 1 file changed, 4 insertions(+), 26 deletions(-)
 
-diff --git a/crypto/algapi.c b/crypto/algapi.c
-index aa699ff..916bee3 100644
---- a/crypto/algapi.c
-+++ b/crypto/algapi.c
-@@ -897,9 +897,11 @@ int crypto_enqueue_request(struct crypto_queue *queue,
- 	int err = -EINPROGRESS;
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index cfacf2c..16fb041 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -1878,22 +1878,6 @@ init_sg(struct smb_rqst *rqst, u8 *sign)
+ 	return sg;
+ }
  
- 	if (unlikely(queue->qlen >= queue->max_qlen)) {
--		err = -EBUSY;
--		if (!(request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (!(request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)) {
-+			err = -EAGAIN;
- 			goto out;
-+		}
-+		err = -EBUSY;
- 		if (queue->backlog = &queue->list)
- 			queue->backlog = &request->list;
- 	}
-diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
-index 5e92bd2..3b3c154 100644
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -39,6 +39,20 @@ struct algif_hash_tfm {
- 	bool has_key;
- };
- 
-+/* Previous versions of crypto_* ops used to return -EBUSY
-+ * rather than -EAGAIN to indicate being tied up. The in
-+ * kernel API changed but we don't want to break the user
-+ * space API. As only the hash user interface exposed this
-+ * error ever to the user, do the translation here.
-+ */
-+static inline int crypto_user_err(int err)
-+{
-+	if (err = -EAGAIN)
-+		return -EBUSY;
-+
-+	return err;
-+}
-+
- static int hash_alloc_result(struct sock *sk, struct hash_ctx *ctx)
+-struct cifs_crypt_result {
+-	int err;
+-	struct completion completion;
+-};
+-
+-static void cifs_crypt_complete(struct crypto_async_request *req, int err)
+-{
+-	struct cifs_crypt_result *res = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	res->err = err;
+-	complete(&res->completion);
+-}
+-
+ static int
+ smb2_get_enc_key(struct TCP_Server_Info *server, __u64 ses_id, int enc, u8 *key)
  {
- 	unsigned ds;
-@@ -136,7 +150,7 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
- unlock:
- 	release_sock(sk);
+@@ -1934,12 +1918,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	struct aead_request *req;
+ 	char *iv;
+ 	unsigned int iv_len;
+-	struct cifs_crypt_result result = {0, };
++	DECLARE_CRYPTO_WAIT(wait);
+ 	struct crypto_aead *tfm;
+ 	unsigned int crypt_len = le32_to_cpu(tr_hdr->OriginalMessageSize);
  
--	return err ?: copied;
-+	return err ? crypto_user_err(err) : copied;
- }
+-	init_completion(&result.completion);
+-
+ 	rc = smb2_get_enc_key(server, tr_hdr->SessionId, enc, key);
+ 	if (rc) {
+ 		cifs_dbg(VFS, "%s: Could not get %scryption key\n", __func__,
+@@ -1999,14 +1981,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	aead_request_set_ad(req, assoc_data_len);
  
- static ssize_t hash_sendpage(struct socket *sock, struct page *page,
-@@ -188,7 +202,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
- unlock:
- 	release_sock(sk);
+ 	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				  cifs_crypt_complete, &result);
++				  crypto_req_done, &wait);
  
--	return err ?: size;
-+	return err ? crypto_user_err(err) : size;
- }
+-	rc = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
+-
+-	if (rc = -EINPROGRESS || rc = -EBUSY) {
+-		wait_for_completion(&result.completion);
+-		rc = result.err;
+-	}
++	rc = crypto_wait_req(enc ? crypto_aead_encrypt(req)
++				: crypto_aead_decrypt(req), &wait);
  
- static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
-@@ -236,7 +250,7 @@ static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
- 	hash_free_result(sk, ctx);
- 	release_sock(sk);
- 
--	return err ?: len;
-+	return err ? crypto_user_err(err) : len;
- }
- 
- static int hash_accept(struct socket *sock, struct socket *newsock, int flags,
-diff --git a/crypto/cryptd.c b/crypto/cryptd.c
-index 0508c48..d1dbdce 100644
---- a/crypto/cryptd.c
-+++ b/crypto/cryptd.c
-@@ -137,16 +137,14 @@ static int cryptd_enqueue_request(struct cryptd_queue *queue,
- 	int cpu, err;
- 	struct cryptd_cpu_queue *cpu_queue;
- 	atomic_t *refcnt;
--	bool may_backlog;
- 
- 	cpu = get_cpu();
- 	cpu_queue = this_cpu_ptr(queue->cpu_queue);
- 	err = crypto_enqueue_request(&cpu_queue->queue, request);
- 
- 	refcnt = crypto_tfm_ctx(request->tfm);
--	may_backlog = request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG;
- 
--	if (err = -EBUSY && !may_backlog)
-+	if (err = -EAGAIN)
- 		goto out_put_cpu;
- 
- 	queue_work_on(cpu, kcrypto_wq, &cpu_queue->work);
+ 	if (!rc && enc)
+ 		memcpy(&tr_hdr->Signature, sign, SMB2_SIGNATURE_SIZE);
 -- 
 2.1.4
 
