@@ -1,74 +1,71 @@
-From: Gary R Hook <gary.hook@amd.com>
-Date: Mon, 14 Aug 2017 16:55:44 +0000
-Subject: Re: [PATCH v5 02/19] crypto: ccp: use -EAGAIN for transient busy indication
-Message-Id: <28b9a7d4-d329-bb1e-d4eb-6530795eaa0b@amd.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 08 Aug 2017 12:03:33 +0000
+Subject: [PATCH v4 02/19] crypto: ccm: use -EAGAIN for transient busy indication
+Message-Id: <1502193834-11289-3-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
- <1502724094-23305-3-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1502724094-23305-3-git-send-email-gilad-6S/DczAoZh3WXxRugSxzZg@public.gmane.org>
-To: Gilad Ben-Yossef <gilad-6S/DczAoZh3WXxRugSxzZg@public.gmane.org>, Herbert Xu <herbert-lOAM2aK0SrRLBo1qDEOMRrpzq4S04n8Q@public.gmane.org>, "David S. Miller" <davem-fT/PcQaiUtIeIZ0/mPfg9Q@public.gmane.org>, Jonathan Corbet <corbet-T1hC0tSOHrs@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "Lendacky, Thomas" <Thomas.Lendacky-5C7GfCeVMHo@public.gmane.org>, Boris Brezillon <boris.brezillon-wi1+55ScJUtKEb57/3fJTNBPR1lH4CV8@public.gmane.org>, Arnaud Ebalard <arno-LkuqDEemtHBg9hUCZPvPmw@public.gmane.org>, Matthias Brugger <matthias.bgg-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Shaohua Li <shli-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Steve French <sfrench-eUNUBHrolfbYtjvyW6yDsg@public.gmane.org>, "Theodore Y. Ts'o" <tytso-3s7WtUTddSA@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Mimi Zohar <zohar-23VcF4HTsmIX0ybBhKVfKdBPR1lH4CV8@public.gmane.org>, Dmitry Kasatkin <dmitry.kasatkin-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, Serg
-Cc: Ofir Drang <ofir.drang-5wv7dgnIgG8@public.gmane.org>
+References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-On 08/14/2017 10:21 AM, Gilad Ben-Yossef wrote:
-> Replace -EBUSY with -EAGAIN when reporting transient busy
-> indication in the absence of backlog.
->
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Replace -EBUSY with -EAGAIN when reporting transient busy
+indication in the absence of backlog.
 
-Reviewed-by: Gary R Hook <gary.hook@amd.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+---
+ drivers/crypto/ccp/ccp-crypto-main.c | 8 +++-----
+ drivers/crypto/ccp/ccp-dev.c         | 7 +++++--
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-> ---
->  drivers/crypto/ccp/ccp-crypto-main.c | 8 +++-----
->  drivers/crypto/ccp/ccp-dev.c         | 7 +++++--
->  2 files changed, 8 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/crypto/ccp/ccp-crypto-main.c b/drivers/crypto/ccp/ccp-crypto-main.c
-> index 35a9de7..403ff0a 100644
-> --- a/drivers/crypto/ccp/ccp-crypto-main.c
-> +++ b/drivers/crypto/ccp/ccp-crypto-main.c
-> @@ -222,9 +222,10 @@ static int ccp_crypto_enqueue_cmd(struct ccp_crypto_cmd *crypto_cmd)
->
->  	/* Check if the cmd can/should be queued */
->  	if (req_queue.cmd_count >= CCP_CRYPTO_MAX_QLEN) {
-> -		ret = -EBUSY;
-> -		if (!(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG))
-> +		if (!(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG)) {
-> +			ret = -EAGAIN;
->  			goto e_lock;
-> +		}
->  	}
->
->  	/* Look for an entry with the same tfm.  If there is a cmd
-> @@ -243,9 +244,6 @@ static int ccp_crypto_enqueue_cmd(struct ccp_crypto_cmd *crypto_cmd)
->  		ret = ccp_enqueue_cmd(crypto_cmd->cmd);
->  		if (!ccp_crypto_success(ret))
->  			goto e_lock;	/* Error, don't queue it */
-> -		if ((ret = -EBUSY) &&
-> -		    !(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG))
-> -			goto e_lock;	/* Not backlogging, don't queue it */
->  	}
->
->  	if (req_queue.cmd_count >= CCP_CRYPTO_MAX_QLEN) {
-> diff --git a/drivers/crypto/ccp/ccp-dev.c b/drivers/crypto/ccp/ccp-dev.c
-> index 4e029b1..3d637e3 100644
-> --- a/drivers/crypto/ccp/ccp-dev.c
-> +++ b/drivers/crypto/ccp/ccp-dev.c
-> @@ -292,9 +292,12 @@ int ccp_enqueue_cmd(struct ccp_cmd *cmd)
->  	i = ccp->cmd_q_count;
->
->  	if (ccp->cmd_count >= MAX_CMD_QLEN) {
-> -		ret = -EBUSY;
-> -		if (cmd->flags & CCP_CMD_MAY_BACKLOG)
-> +		if (cmd->flags & CCP_CMD_MAY_BACKLOG) {
-> +			ret = -EBUSY;
->  			list_add_tail(&cmd->entry, &ccp->backlog);
-> +		} else {
-> +			ret = -EAGAIN;
-> +		}
->  	} else {
->  		ret = -EINPROGRESS;
->  		ccp->cmd_count++;
->
+diff --git a/drivers/crypto/ccp/ccp-crypto-main.c b/drivers/crypto/ccp/ccp-crypto-main.c
+index 35a9de7..403ff0a 100644
+--- a/drivers/crypto/ccp/ccp-crypto-main.c
++++ b/drivers/crypto/ccp/ccp-crypto-main.c
+@@ -222,9 +222,10 @@ static int ccp_crypto_enqueue_cmd(struct ccp_crypto_cmd *crypto_cmd)
+ 
+ 	/* Check if the cmd can/should be queued */
+ 	if (req_queue.cmd_count >= CCP_CRYPTO_MAX_QLEN) {
+-		ret = -EBUSY;
+-		if (!(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG))
++		if (!(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG)) {
++			ret = -EAGAIN;
+ 			goto e_lock;
++		}
+ 	}
+ 
+ 	/* Look for an entry with the same tfm.  If there is a cmd
+@@ -243,9 +244,6 @@ static int ccp_crypto_enqueue_cmd(struct ccp_crypto_cmd *crypto_cmd)
+ 		ret = ccp_enqueue_cmd(crypto_cmd->cmd);
+ 		if (!ccp_crypto_success(ret))
+ 			goto e_lock;	/* Error, don't queue it */
+-		if ((ret = -EBUSY) &&
+-		    !(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG))
+-			goto e_lock;	/* Not backlogging, don't queue it */
+ 	}
+ 
+ 	if (req_queue.cmd_count >= CCP_CRYPTO_MAX_QLEN) {
+diff --git a/drivers/crypto/ccp/ccp-dev.c b/drivers/crypto/ccp/ccp-dev.c
+index 4e029b1..3d637e3 100644
+--- a/drivers/crypto/ccp/ccp-dev.c
++++ b/drivers/crypto/ccp/ccp-dev.c
+@@ -292,9 +292,12 @@ int ccp_enqueue_cmd(struct ccp_cmd *cmd)
+ 	i = ccp->cmd_q_count;
+ 
+ 	if (ccp->cmd_count >= MAX_CMD_QLEN) {
+-		ret = -EBUSY;
+-		if (cmd->flags & CCP_CMD_MAY_BACKLOG)
++		if (cmd->flags & CCP_CMD_MAY_BACKLOG) {
++			ret = -EBUSY;
+ 			list_add_tail(&cmd->entry, &ccp->backlog);
++		} else {
++			ret = -EAGAIN;
++		}
+ 	} else {
+ 		ret = -EINPROGRESS;
+ 		ccp->cmd_count++;
+-- 
+2.1.4
+
