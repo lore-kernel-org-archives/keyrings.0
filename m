@@ -1,174 +1,83 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Thu, 24 Aug 2017 14:19:01 +0000
-Subject: [PATCH v7 14/19] ima: move to generic async completion
-Message-Id: <1503584350-7831-15-git-send-email-gilad@benyossef.com>
+From: Baolin Wang <baolin.wang@linaro.org>
+Date: Wed, 09 Aug 2017 02:51:31 +0000
+Subject: [PATCH 2/3] security: keys: Replace time_t with time64_t for struct key_preparsed_payload
+Message-Id: <edd8fbb1ecfa2f5e45b5c09efbf67a59014d3cd9.1502246502.git.baolin.wang@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
-Cc: Ofir Drang <ofir.drang@arm.com>
+References: <cover.1502246501.git.baolin.wang@linaro.org>
+In-Reply-To: <cover.1502246501.git.baolin.wang@linaro.org>
+To: linux-security-module@vger.kernel.org
 
-ima starts several async crypto ops and  waits for their completions.
-Move it over to generic code doing the same.
+The 'struct key_preparsed_payload' will use 'time_t' which we will
+try to remove in the kernel, since 'time_t' is not year 2038 safe on
+32bits systems.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Thus this patch replaces 'time_t' with 'time64_t' which is year 2038
+safe on 32 bits system for 'struct key_preparsed_payload', moreover
+we should use the 'TIME64_MAX' macro to initialize the 'time64_t'
+type variable.
+
+Signed-off-by: Baolin Wang <baolin.wang@linaro.org>
 ---
- security/integrity/ima/ima_crypto.c | 56 +++++++++++--------------------------
- 1 file changed, 17 insertions(+), 39 deletions(-)
+ include/linux/key-type.h |    2 +-
+ security/keys/key.c      |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index a856d8c..9057b16 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -27,11 +27,6 @@
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index 8496cf6..4beb006 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -44,7 +44,7 @@ struct key_preparsed_payload {
+ 	const void	*data;		/* Raw data */
+ 	size_t		datalen;	/* Raw datalen */
+ 	size_t		quotalen;	/* Quota length for proposed payload */
+-	time_t		expiry;		/* Expiry time of key */
++	time64_t	expiry;		/* Expiry time of key */
+ };
  
- #include "ima.h"
+ typedef int (*request_key_actor_t)(struct key_construction *key,
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 291a67c..d5c8941 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -446,7 +446,7 @@ static int __key_instantiate_and_link(struct key *key,
+ 			if (authkey)
+ 				key_revoke(authkey);
  
--struct ahash_completion {
--	struct completion completion;
--	int err;
--};
--
- /* minimum file size for ahash use */
- static unsigned long ima_ahash_minsize;
- module_param_named(ahash_minsize, ima_ahash_minsize, ulong, 0644);
-@@ -196,30 +191,13 @@ static void ima_free_atfm(struct crypto_ahash *tfm)
- 		crypto_free_ahash(tfm);
- }
- 
--static void ahash_complete(struct crypto_async_request *req, int err)
-+static inline int ahash_wait(int err, struct crypto_wait *wait)
- {
--	struct ahash_completion *res = req->data;
- 
--	if (err = -EINPROGRESS)
--		return;
--	res->err = err;
--	complete(&res->completion);
--}
-+	err = crypto_wait_req(err, wait);
- 
--static int ahash_wait(int err, struct ahash_completion *res)
--{
--	switch (err) {
--	case 0:
--		break;
--	case -EINPROGRESS:
--	case -EBUSY:
--		wait_for_completion(&res->completion);
--		reinit_completion(&res->completion);
--		err = res->err;
--		/* fall through */
--	default:
-+	if (err)
- 		pr_crit_ratelimited("ahash calculation failed: err: %d\n", err);
--	}
- 
- 	return err;
- }
-@@ -233,7 +211,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 	int rc, read = 0, rbuf_len, active = 0, ahash_rc = 0;
- 	struct ahash_request *req;
- 	struct scatterlist sg[1];
--	struct ahash_completion res;
-+	struct crypto_wait wait;
- 	size_t rbuf_size[2];
- 
- 	hash->length = crypto_ahash_digestsize(tfm);
-@@ -242,12 +220,12 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 	if (!req)
- 		return -ENOMEM;
- 
--	init_completion(&res.completion);
-+	crypto_init_wait(&wait);
- 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				   CRYPTO_TFM_REQ_MAY_SLEEP,
--				   ahash_complete, &res);
-+				   crypto_req_done, &wait);
- 
--	rc = ahash_wait(crypto_ahash_init(req), &res);
-+	rc = ahash_wait(crypto_ahash_init(req), &wait);
- 	if (rc)
- 		goto out1;
- 
-@@ -288,7 +266,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 			 * read/request, wait for the completion of the
- 			 * previous ahash_update() request.
- 			 */
--			rc = ahash_wait(ahash_rc, &res);
-+			rc = ahash_wait(ahash_rc, &wait);
- 			if (rc)
- 				goto out3;
- 		}
-@@ -304,7 +282,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 			 * read/request, wait for the completion of the
- 			 * previous ahash_update() request.
- 			 */
--			rc = ahash_wait(ahash_rc, &res);
-+			rc = ahash_wait(ahash_rc, &wait);
- 			if (rc)
- 				goto out3;
- 		}
-@@ -318,7 +296,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 			active = !active; /* swap buffers, if we use two */
- 	}
- 	/* wait for the last update request to complete */
--	rc = ahash_wait(ahash_rc, &res);
-+	rc = ahash_wait(ahash_rc, &wait);
- out3:
- 	if (read)
- 		file->f_mode &= ~FMODE_READ;
-@@ -327,7 +305,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- out2:
- 	if (!rc) {
- 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
--		rc = ahash_wait(crypto_ahash_final(req), &res);
-+		rc = ahash_wait(crypto_ahash_final(req), &wait);
- 	}
- out1:
- 	ahash_request_free(req);
-@@ -537,7 +515,7 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
- {
- 	struct ahash_request *req;
- 	struct scatterlist sg;
--	struct ahash_completion res;
-+	struct crypto_wait wait;
- 	int rc, ahash_rc = 0;
- 
- 	hash->length = crypto_ahash_digestsize(tfm);
-@@ -546,12 +524,12 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
- 	if (!req)
- 		return -ENOMEM;
- 
--	init_completion(&res.completion);
-+	crypto_init_wait(&wait);
- 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				   CRYPTO_TFM_REQ_MAY_SLEEP,
--				   ahash_complete, &res);
-+				   crypto_req_done, &wait);
- 
--	rc = ahash_wait(crypto_ahash_init(req), &res);
-+	rc = ahash_wait(crypto_ahash_init(req), &wait);
- 	if (rc)
- 		goto out;
- 
-@@ -561,10 +539,10 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
- 	ahash_rc = crypto_ahash_update(req);
- 
- 	/* wait for the update request to complete */
--	rc = ahash_wait(ahash_rc, &res);
-+	rc = ahash_wait(ahash_rc, &wait);
- 	if (!rc) {
- 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
--		rc = ahash_wait(crypto_ahash_final(req), &res);
-+		rc = ahash_wait(crypto_ahash_final(req), &wait);
- 	}
- out:
- 	ahash_request_free(req);
+-			if (prep->expiry != TIME_T_MAX) {
++			if (prep->expiry != TIME64_MAX) {
+ 				key->expiry = prep->expiry;
+ 				key_schedule_gc(prep->expiry + key_gc_delay);
+ 			}
+@@ -492,7 +492,7 @@ int key_instantiate_and_link(struct key *key,
+ 	prep.data = data;
+ 	prep.datalen = datalen;
+ 	prep.quotalen = key->type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (key->type->preparse) {
+ 		ret = key->type->preparse(&prep);
+ 		if (ret < 0)
+@@ -834,7 +834,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	prep.data = payload;
+ 	prep.datalen = plen;
+ 	prep.quotalen = index_key.type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (index_key.type->preparse) {
+ 		ret = index_key.type->preparse(&prep);
+ 		if (ret < 0) {
+@@ -968,7 +968,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
+ 	prep.data = payload;
+ 	prep.datalen = plen;
+ 	prep.quotalen = key->type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (key->type->preparse) {
+ 		ret = key->type->preparse(&prep);
+ 		if (ret < 0)
 -- 
-2.1.4
+1.7.9.5
 
