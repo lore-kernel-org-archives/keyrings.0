@@ -1,39 +1,39 @@
-From: Josh Holland <anowlcalledjosh@gmail.com>
-Date: Wed, 23 Aug 2017 20:34:52 +0000
-Subject: Re: [PATCH 1/2] docs: Standardise capitalisation of section headers in core.rst
-Message-Id: <20170823203452.fibxglkpfuu3uevm@yes>
+From: Baolin Wang <baolin.wang@linaro.org>
+Date: Wed, 09 Aug 2017 02:51:29 +0000
+Subject: [PATCH 0/3] Fix y2038 issues for security/keys subsystem
+Message-Id: <cover.1502246501.git.baolin.wang@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170819152106.20432-2-anowlcalledjosh@gmail.com>
-In-Reply-To: <20170819152106.20432-2-anowlcalledjosh@gmail.com>
-To: keyrings@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-On 2017-08-21, Jonathan Corbet wrote:
-> On Mon, 21 Aug 2017 12:15:26 +0300
-> Jani Nikula <jani.nikula@linux.intel.com> wrote:
-> 
-> > However, if you want to sphinxify things a little, you could make the
-> > resulting html a little bit nicer with automatic links, and document
-> > maintenance a little bit easier, by replacing the hand written contents
-> > with:
-> > 
-> > .. contents::
-> >    :local:
-> 
-> I think this is what we should do.  I don't think that manually listing
-> the section heads buys a whole lot for readers of the docs, and
-> experience says they won't be kept in sync with the rest of the
-> document.  I'd much rather see a patch taking them out and letting Sphinx
-> do the work.
+Since 'time_t', 'timeval' and 'timespec' types are not year 2038 safe on
+32 bits system, this patchset tries to fix this issues for security/keys
+subsystem and net/rxrpc subsystem which is connected with security/keys
+subsystem.
 
-Ok, I'll send a patch in.
+Baolin Wang (3):
+  security: keys: Replace time_t/timespec with time64_t
+  security: keys: Replace time_t with time64_t for struct
+    key_preparsed_payload
+  net: rxrpc: Replace time_t type with time64_t type
 
-> Part 2 looks fine, though, I'll apply that shortly.
+ include/keys/rxrpc-type.h    |   21 +++++++++++++++++++++
+ include/linux/key-type.h     |    2 +-
+ include/linux/key.h          |    7 ++++---
+ net/rxrpc/ar-internal.h      |    2 +-
+ net/rxrpc/key.c              |   22 ++++++++++++++--------
+ net/rxrpc/rxkad.c            |   14 +++++++-------
+ security/keys/gc.c           |   20 ++++++++++----------
+ security/keys/internal.h     |    8 ++++----
+ security/keys/key.c          |   27 ++++++++++-----------------
+ security/keys/keyring.c      |   18 +++++++++---------
+ security/keys/permission.c   |    3 +--
+ security/keys/proc.c         |   20 ++++++++++----------
+ security/keys/process_keys.c |    2 +-
+ 13 files changed, 93 insertions(+), 73 deletions(-)
 
-Great!
+-- 
+1.7.9.5
 
-Thanks,
-
-Josh
