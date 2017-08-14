@@ -1,286 +1,102 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 01 Aug 2017 00:47:17 +0000
-Subject: [PATCH v2] syscalls/keyctl05: new test for key_update() crash
-Message-Id: <20170801004717.108963-1-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Mon, 14 Aug 2017 15:21:19 +0000
+Subject: [PATCH v5 09/19] crypto: move gcm to generic async completion
+Message-Id: <1502724094-23305-10-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+gcm is starting an async. crypto op and waiting for it complete.
+Move it over to generic code doing the same.
 
-Add a test for a kernel bug that caused a key type's ->free_preparse()
-method to be called on an uninitialized key_preparsed_payload,
-potentially causing a NULL pointer dereference or other kernel crash.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- runtest/syscalls                            |   1 +
- testcases/kernel/syscalls/.gitignore        |   1 +
- testcases/kernel/syscalls/keyctl/keyctl05.c | 230 ++++++++++++++++++++++++++++
- 3 files changed, 232 insertions(+)
- create mode 100644 testcases/kernel/syscalls/keyctl/keyctl05.c
+ crypto/gcm.c | 32 ++++++--------------------------
+ 1 file changed, 6 insertions(+), 26 deletions(-)
 
-diff --git a/runtest/syscalls b/runtest/syscalls
-index 5c7fd8e94..cfc1cbfa1 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -495,6 +495,7 @@ keyctl01 keyctl01
- keyctl02 keyctl02
- keyctl03 keyctl03
- keyctl04 keyctl04
-+keyctl05 keyctl05
+diff --git a/crypto/gcm.c b/crypto/gcm.c
+index 3841b5e..fb923a5 100644
+--- a/crypto/gcm.c
++++ b/crypto/gcm.c
+@@ -16,7 +16,6 @@
+ #include <crypto/scatterwalk.h>
+ #include <crypto/hash.h>
+ #include "internal.h"
+-#include <linux/completion.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+@@ -78,11 +77,6 @@ struct crypto_gcm_req_priv_ctx {
+ 	} u;
+ };
  
- kcmp01 kcmp01
- kcmp02 kcmp02
-diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
-index e311ba3f8..82dfb8293 100644
---- a/testcases/kernel/syscalls/.gitignore
-+++ b/testcases/kernel/syscalls/.gitignore
-@@ -458,6 +458,7 @@
- /keyctl/keyctl02
- /keyctl/keyctl03
- /keyctl/keyctl04
-+/keyctl/keyctl05
- /kcmp/kcmp01
- /kcmp/kcmp02
- /kcmp/kcmp03
-diff --git a/testcases/kernel/syscalls/keyctl/keyctl05.c b/testcases/kernel/syscalls/keyctl/keyctl05.c
-new file mode 100644
-index 000000000..a11b788c6
---- /dev/null
-+++ b/testcases/kernel/syscalls/keyctl/keyctl05.c
-@@ -0,0 +1,230 @@
-+/*
-+ * Copyright (c) 2017 Google, Inc.
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program, if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+/*
-+ * Regression test for commit 63a0b0509e70 ("KEYS: fix freeing uninitialized
-+ * memory in key_update()").  Try to reproduce the crash in two different ways:
-+ *
-+ * 1. Try to update a key of a type that has a ->preparse() method but not an
-+ *    ->update() method.  Examples are the "asymmetric" and "dns_resolver" key
-+ *    types.  It crashes reliably for the "asymmetric" key type, since the
-+ *    "asymmetric" key type's ->free_preparse() method will dereference a
-+ *    pointer in the uninitialized memory, whereas other key types often just
-+ *    free a pointer which tends be NULL in practice, depending on how the stack
-+ *    is laid out.  However, to actually be able to add an "asymmetric" key, we
-+ *    need a specially-formatted payload and several kernel config options.  We
-+ *    do try it, but for completeness we also try the "dns_resolver" key type
-+ *    (though that's not guaranteed to be available either).
-+ *
-+ * 2. Race keyctl_update() with another task removing write permission from the
-+ *    key using keyctl_setperm().  This can cause a crash with almost any key
-+ *    type.  "user" is a good one to try, since it's always available if
-+ *    keyrings are supported at all.  However, depending on how the stack is
-+ *    laid out the crash may not actually occur.
-+ */
-+
-+#include <stdlib.h>
-+#include "tst_test.h"
-+#include "lapi/syscalls.h"
-+
-+typedef int32_t key_serial_t;
-+
-+#define KEYCTL_JOIN_SESSION_KEYRING	1
-+#define KEYCTL_UPDATE			2
-+#define KEYCTL_SETPERM			5
-+
-+#define KEY_SPEC_SESSION_KEYRING	-3
-+
-+#define KEY_POS_WRITE	0x04000000
-+#define KEY_POS_ALL	0x3f000000
-+
-+/*
-+ * A valid payload for the "asymmetric" key type.  This is an x509 certificate
-+ * in DER format, generated using:
-+ *
-+ *	openssl req -x509 -newkey rsa:512 -batch -nodes -outform der \
-+ *		| ~/linux/scripts/bin2c
-+ */
-+static const char x509_cert[] +	"\x30\x82\x01\xd3\x30\x82\x01\x7d\xa0\x03\x02\x01\x02\x02\x09\x00"
-+	"\x92\x2a\x76\xff\x0c\x00\xfb\x9a\x30\x0d\x06\x09\x2a\x86\x48\x86"
-+	"\xf7\x0d\x01\x01\x0b\x05\x00\x30\x45\x31\x0b\x30\x09\x06\x03\x55"
-+	"\x04\x06\x13\x02\x41\x55\x31\x13\x30\x11\x06\x03\x55\x04\x08\x0c"
-+	"\x0a\x53\x6f\x6d\x65\x2d\x53\x74\x61\x74\x65\x31\x21\x30\x1f\x06"
-+	"\x03\x55\x04\x0a\x0c\x18\x49\x6e\x74\x65\x72\x6e\x65\x74\x20\x57"
-+	"\x69\x64\x67\x69\x74\x73\x20\x50\x74\x79\x20\x4c\x74\x64\x30\x1e"
-+	"\x17\x0d\x31\x37\x30\x37\x32\x38\x32\x31\x34\x31\x33\x34\x5a\x17"
-+	"\x0d\x31\x37\x30\x38\x32\x37\x32\x31\x34\x31\x33\x34\x5a\x30\x45"
-+	"\x31\x0b\x30\x09\x06\x03\x55\x04\x06\x13\x02\x41\x55\x31\x13\x30"
-+	"\x11\x06\x03\x55\x04\x08\x0c\x0a\x53\x6f\x6d\x65\x2d\x53\x74\x61"
-+	"\x74\x65\x31\x21\x30\x1f\x06\x03\x55\x04\x0a\x0c\x18\x49\x6e\x74"
-+	"\x65\x72\x6e\x65\x74\x20\x57\x69\x64\x67\x69\x74\x73\x20\x50\x74"
-+	"\x79\x20\x4c\x74\x64\x30\x5c\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7"
-+	"\x0d\x01\x01\x01\x05\x00\x03\x4b\x00\x30\x48\x02\x41\x00\xde\x0b"
-+	"\x1c\x24\xe2\x0d\xf8\x17\xf2\xc3\x6f\xc9\x72\x3e\x9d\xb0\x2d\x47"
-+	"\xe4\xc4\x85\x87\xed\xde\x06\xe3\xf3\xe9\x4c\x35\x6c\xe4\xcb\x0e"
-+	"\x44\x28\x23\x66\x76\xec\x4e\xdf\x10\x93\x92\x1e\x52\xfb\xdf\x5c"
-+	"\x08\xe7\x24\x04\x66\xe3\x06\x05\x27\x56\xfb\x3e\x91\x31\x02\x03"
-+	"\x01\x00\x01\xa3\x50\x30\x4e\x30\x1d\x06\x03\x55\x1d\x0e\x04\x16"
-+	"\x04\x14\x6f\x39\x3a\x46\xdf\x29\x63\xde\x54\x7b\x6c\x31\x06\xd0"
-+	"\x9f\x36\x16\xfb\x9c\xbf\x30\x1f\x06\x03\x55\x1d\x23\x04\x18\x30"
-+	"\x16\x80\x14\x6f\x39\x3a\x46\xdf\x29\x63\xde\x54\x7b\x6c\x31\x06"
-+	"\xd0\x9f\x36\x16\xfb\x9c\xbf\x30\x0c\x06\x03\x55\x1d\x13\x04\x05"
-+	"\x30\x03\x01\x01\xff\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01"
-+	"\x01\x0b\x05\x00\x03\x41\x00\x73\xf0\x4b\x62\x56\xed\xf0\x8b\x7e"
-+	"\xc4\x75\x78\x98\xa2\x7a\x6e\x75\x1f\xde\x9b\xa0\xbe\x1a\x1f\x86"
-+	"\x44\x13\xcd\x45\x06\x7f\x86\xde\xf6\x36\x4e\xb6\x15\xfa\xf5\xb0"
-+	"\x34\xd2\x5e\x0b\xb3\x2c\x03\x5a\x5a\x28\x97\x5e\x7b\xdf\x63\x75"
-+	"\x83\x8d\x69\xda\xd6\x59\xbd"
-+	;
-+
-+static void new_session_keyring(void)
-+{
-+	TEST(tst_syscall(__NR_keyctl, KEYCTL_JOIN_SESSION_KEYRING, NULL));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "failed to join new session keyring");
-+}
-+
-+static void test_update_nonupdatable(const char *type,
-+				     const void *payload, size_t plen)
-+{
-+	key_serial_t keyid;
-+
-+	new_session_keyring();
-+
-+	TEST(tst_syscall(__NR_add_key, type, "desc", payload, plen,
-+			 KEY_SPEC_SESSION_KEYRING));
-+	if (TEST_RETURN < 0) {
-+		if (TEST_ERRNO = ENODEV) {
-+			tst_res(TCONF, "kernel doesn't support key type '%s'",
-+				type);
-+			return;
-+		}
-+		if (TEST_ERRNO = EBADMSG && !strcmp(type, "asymmetric")) {
-+			tst_res(TCONF, "kernel is missing x509 cert parser "
-+				"(CONFIG_X509_CERTIFICATE_PARSER)");
-+			return;
-+		}
-+		if (TEST_ERRNO = ENOENT && !strcmp(type, "asymmetric")) {
-+			tst_res(TCONF, "kernel is missing crypto algorithms "
-+				"needed to parse x509 cert (CONFIG_CRYPTO_RSA "
-+				"and/or CONFIG_CRYPTO_SHA256)");
-+			return;
-+		}
-+		tst_res(TBROK | TTERRNO, "unexpected error adding '%s' key",
-+			type);
-+		return;
-+	}
-+	keyid = TEST_RETURN;
-+
-+	/*
-+	 * Non-updatable keys don't start with write permission, so we must
-+	 * explicitly grant it.
-+	 */
-+	TEST(tst_syscall(__NR_keyctl, KEYCTL_SETPERM, keyid, KEY_POS_ALL));
-+	if (TEST_RETURN != 0) {
-+		tst_res(TBROK | TTERRNO,
-+			"failed to grant write permission to '%s' key", type);
-+		return;
-+	}
-+
-+	tst_res(TINFO, "Try to update the '%s' key...", type);
-+	TEST(tst_syscall(__NR_keyctl, KEYCTL_UPDATE, keyid, payload, plen));
-+	if (TEST_RETURN = 0) {
-+		tst_res(TBROK,
-+			"updating '%s' key unexpectedly succeeded", type);
-+		return;
-+	}
-+	if (TEST_ERRNO != EOPNOTSUPP) {
-+		tst_res(TBROK | TTERRNO,
-+			"updating '%s' key unexpectedly failed", type);
-+		return;
-+	}
-+	tst_res(TPASS, "updating '%s' key expectedly failed with EOPNOTSUPP",
-+		type);
-+}
-+
-+/*
-+ * Try to update a key, racing with removing write permission.
-+ * This may crash buggy kernels.
-+ */
-+static void test_update_setperm_race(void)
-+{
-+	static const char payload[] = "payload";
-+	key_serial_t keyid;
-+	int i;
-+
-+	new_session_keyring();
-+
-+	TEST(tst_syscall(__NR_add_key, "user", "desc", payload, sizeof(payload),
-+			 KEY_SPEC_SESSION_KEYRING));
-+	if (TEST_RETURN < 0) {
-+		tst_res(TBROK | TTERRNO, "failed to add 'user' key");
-+		return;
-+	}
-+	keyid = TEST_RETURN;
-+
-+	if (SAFE_FORK() = 0) {
-+		uint32_t perm = KEY_POS_ALL;
-+
-+		for (i = 0; i < 10000; i++) {
-+			perm ^= KEY_POS_WRITE;
-+			TEST(syscall(__NR_keyctl, KEYCTL_SETPERM, keyid, perm));
-+			if (TEST_RETURN != 0)
-+				tst_brk(TBROK | TTERRNO, "setperm failed");
-+		}
-+		exit(0);
-+	}
-+
-+	tst_res(TINFO, "Try to update the 'user' key...");
-+	for (i = 0; i < 10000; i++) {
-+		TEST(tst_syscall(__NR_keyctl, KEYCTL_UPDATE, keyid,
-+				 payload, sizeof(payload)));
-+		if (TEST_RETURN != 0 && TEST_ERRNO != EACCES) {
-+			tst_res(TBROK | TTERRNO, "failed to update 'user' key");
-+			return;
-+		}
-+	}
-+	tst_reap_children();
-+	tst_res(TPASS, "didn't crash while racing to update 'user' key");
-+}
-+
-+static void do_test(unsigned int i)
-+{
-+	/* two 0 bytes is accepted as a dns_resolver key payload */
-+	static char zeroes[2];
-+
-+	switch (i) {
-+	case 0:
-+		test_update_nonupdatable("asymmetric",
-+					 x509_cert, sizeof(x509_cert));
-+		break;
-+	case 1:
-+		test_update_nonupdatable("dns_resolver",
-+					 zeroes, sizeof(zeroes));
-+		break;
-+	case 2:
-+		test_update_setperm_race();
-+		break;
-+	}
-+}
-+
-+static struct tst_test test = {
-+	.tcnt = 3,
-+	.test = do_test,
-+	.forks_child = 1,
-+};
+-struct crypto_gcm_setkey_result {
+-	int err;
+-	struct completion completion;
+-};
+-
+ static struct {
+ 	u8 buf[16];
+ 	struct scatterlist sg;
+@@ -98,17 +92,6 @@ static inline struct crypto_gcm_req_priv_ctx *crypto_gcm_reqctx(
+ 	return (void *)PTR_ALIGN((u8 *)aead_request_ctx(req), align + 1);
+ }
+ 
+-static void crypto_gcm_setkey_done(struct crypto_async_request *req, int err)
+-{
+-	struct crypto_gcm_setkey_result *result = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	result->err = err;
+-	complete(&result->completion);
+-}
+-
+ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 			     unsigned int keylen)
+ {
+@@ -119,7 +102,7 @@ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 		be128 hash;
+ 		u8 iv[16];
+ 
+-		struct crypto_gcm_setkey_result result;
++		struct crypto_wait wait;
+ 
+ 		struct scatterlist sg[1];
+ 		struct skcipher_request req;
+@@ -140,21 +123,18 @@ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 	if (!data)
+ 		return -ENOMEM;
+ 
+-	init_completion(&data->result.completion);
++	crypto_init_wait(&data->wait);
+ 	sg_init_one(data->sg, &data->hash, sizeof(data->hash));
+ 	skcipher_request_set_tfm(&data->req, ctr);
+ 	skcipher_request_set_callback(&data->req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 						  CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				      crypto_gcm_setkey_done,
+-				      &data->result);
++				      crypto_req_done,
++				      &data->wait);
+ 	skcipher_request_set_crypt(&data->req, data->sg, data->sg,
+ 				   sizeof(data->hash), data->iv);
+ 
+-	err = crypto_skcipher_encrypt(&data->req);
+-	if (err = -EINPROGRESS || err = -EBUSY) {
+-		wait_for_completion(&data->result.completion);
+-		err = data->result.err;
+-	}
++	err = crypto_wait_req(crypto_skcipher_encrypt(&data->req),
++							&data->wait);
+ 
+ 	if (err)
+ 		goto out;
 -- 
-2.14.0.rc0.400.g1c36432dff-goog
+2.1.4
 
