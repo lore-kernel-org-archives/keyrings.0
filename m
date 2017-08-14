@@ -1,260 +1,269 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Fri, 04 Aug 2017 22:03:25 +0000
-Subject: [PATCH v4 2/7] MODSIGN: Export module signature definitions
-Message-Id: <20170804220330.30026-3-bauerman@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Mon, 14 Aug 2017 15:21:16 +0000
+Subject: [PATCH v5 06/19] crypto: move algif to generic async completion
+Message-Id: <1502724094-23305-7-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-IMA will use the module_signature format for append signatures, so export
-the relevant definitions and factor out the code which verifies that the
-appended signature trailer is valid.
+algif starts several async crypto ops and waits for their completion.
+Move it over to generic code doing the same.
 
-Also, create a CONFIG_MODULE_SIG_FORMAT option so that IMA can select it
-and be able to use validate_module_signature without having to depend on
-CONFIG_MODULE_SIG.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- include/linux/module.h           |  3 --
- include/linux/module_signature.h | 47 +++++++++++++++++++++++++
- init/Kconfig                     |  6 +++-
- kernel/Makefile                  |  2 +-
- kernel/module.c                  |  1 +
- kernel/module_signing.c          | 74 +++++++++++++++++-----------------------
- 6 files changed, 85 insertions(+), 48 deletions(-)
+ crypto/af_alg.c         | 27 ---------------------------
+ crypto/algif_aead.c     |  8 ++++----
+ crypto/algif_hash.c     | 30 ++++++++++++++----------------
+ crypto/algif_skcipher.c |  9 ++++-----
+ include/crypto/if_alg.h | 15 +--------------
+ 5 files changed, 23 insertions(+), 66 deletions(-)
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index e7bdd549e527..672ad2016262 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -23,9 +23,6 @@
- #include <linux/percpu.h>
- #include <asm/module.h>
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index d6936c0..f8917e7 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -481,33 +481,6 @@ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con)
+ }
+ EXPORT_SYMBOL_GPL(af_alg_cmsg_send);
  
--/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
--#define MODULE_SIG_STRING "~Module signature appended~\n"
+-int af_alg_wait_for_completion(int err, struct af_alg_completion *completion)
+-{
+-	switch (err) {
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		wait_for_completion(&completion->completion);
+-		reinit_completion(&completion->completion);
+-		err = completion->err;
+-		break;
+-	};
 -
- /* Not Yet Implemented */
- #define MODULE_SUPPORTED_DEVICE(name)
- 
-diff --git a/include/linux/module_signature.h b/include/linux/module_signature.h
-new file mode 100644
-index 000000000000..e80728e5b86c
---- /dev/null
-+++ b/include/linux/module_signature.h
-@@ -0,0 +1,47 @@
-+/* Module signature handling.
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#ifndef _LINUX_MODULE_SIGNATURE_H
-+#define _LINUX_MODULE_SIGNATURE_H
-+
-+/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
-+#define MODULE_SIG_STRING "~Module signature appended~\n"
-+
-+enum pkey_id_type {
-+	PKEY_ID_PGP,		/* OpenPGP generated key ID */
-+	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
-+	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
-+};
-+
-+/*
-+ * Module signature information block.
-+ *
-+ * The constituents of the signature section are, in order:
-+ *
-+ *	- Signer's name
-+ *	- Key identifier
-+ *	- Signature data
-+ *	- Information block
-+ */
-+struct module_signature {
-+	u8	algo;		/* Public-key crypto algorithm [0] */
-+	u8	hash;		/* Digest algorithm [0] */
-+	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
-+	u8	signer_len;	/* Length of signer's name [0] */
-+	u8	key_id_len;	/* Length of key identifier [0] */
-+	u8	__pad[3];
-+	__be32	sig_len;	/* Length of signature data */
-+};
-+
-+int validate_module_sig(const struct module_signature *ms, size_t file_len);
-+int mod_verify_sig(const void *mod, unsigned long *_modlen);
-+
-+#endif /* _LINUX_MODULE_SIGNATURE_H */
-diff --git a/init/Kconfig b/init/Kconfig
-index 8514b25db21c..c3ac1170b93a 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1734,7 +1734,7 @@ config MODULE_SRCVERSION_ALL
- config MODULE_SIG
- 	bool "Module signature verification"
- 	depends on MODULES
--	select SYSTEM_DATA_VERIFICATION
-+	select MODULE_SIG_FORMAT
- 	help
- 	  Check modules for valid signatures upon load: the signature
- 	  is simply appended to the module. For more information see
-@@ -1749,6 +1749,10 @@ config MODULE_SIG
- 	  debuginfo strip done by some packagers (such as rpmbuild) and
- 	  inclusion into an initramfs that wants the module size reduced.
- 
-+config MODULE_SIG_FORMAT
-+	def_bool n
-+	select SYSTEM_DATA_VERIFICATION
-+
- config MODULE_SIG_FORCE
- 	bool "Require modules to be validly signed"
- 	depends on MODULE_SIG
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 4cb8e8b23c6e..d5f9748ab19f 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -56,7 +56,7 @@ obj-y += up.o
- endif
- obj-$(CONFIG_UID16) += uid16.o
- obj-$(CONFIG_MODULES) += module.o
--obj-$(CONFIG_MODULE_SIG) += module_signing.o
-+obj-$(CONFIG_MODULE_SIG_FORMAT) += module_signing.o
- obj-$(CONFIG_KALLSYMS) += kallsyms.o
- obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
- obj-$(CONFIG_CRASH_CORE) += crash_core.o
-diff --git a/kernel/module.c b/kernel/module.c
-index 40f983cbea81..52921fccb51a 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -19,6 +19,7 @@
- #include <linux/export.h>
- #include <linux/extable.h>
- #include <linux/moduleloader.h>
-+#include <linux/module_signature.h>
- #include <linux/trace_events.h>
- #include <linux/init.h>
- #include <linux/kallsyms.h>
-diff --git a/kernel/module_signing.c b/kernel/module_signing.c
-index 937c844bee4a..204c60d4cc9f 100644
---- a/kernel/module_signing.c
-+++ b/kernel/module_signing.c
-@@ -11,36 +11,38 @@
- 
- #include <linux/kernel.h>
- #include <linux/errno.h>
-+#include <linux/module_signature.h>
- #include <linux/string.h>
- #include <linux/verification.h>
- #include <crypto/public_key.h>
- #include "module-internal.h"
- 
--enum pkey_id_type {
--	PKEY_ID_PGP,		/* OpenPGP generated key ID */
--	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
--	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
--};
+-	return err;
+-}
+-EXPORT_SYMBOL_GPL(af_alg_wait_for_completion);
 -
--/*
-- * Module signature information block.
-- *
-- * The constituents of the signature section are, in order:
-+/**
-+ * validate_module_sig - validate that the given signature is sane
+-void af_alg_complete(struct crypto_async_request *req, int err)
+-{
+-	struct af_alg_completion *completion = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	completion->err = err;
+-	complete(&completion->completion);
+-}
+-EXPORT_SYMBOL_GPL(af_alg_complete);
+-
+ /**
+  * af_alg_alloc_tsgl - allocate the TX SGL
   *
-- *	- Signer's name
-- *	- Key identifier
-- *	- Signature data
-- *	- Information block
-+ * @ms:		Signature to validate.
-+ * @file_len:	Size of the file to which @ms is appended.
-  */
--struct module_signature {
--	u8	algo;		/* Public-key crypto algorithm [0] */
--	u8	hash;		/* Digest algorithm [0] */
--	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
--	u8	signer_len;	/* Length of signer's name [0] */
--	u8	key_id_len;	/* Length of key identifier [0] */
--	u8	__pad[3];
--	__be32	sig_len;	/* Length of signature data */
+diff --git a/crypto/algif_aead.c b/crypto/algif_aead.c
+index 48d46e7..abbac8a 100644
+--- a/crypto/algif_aead.c
++++ b/crypto/algif_aead.c
+@@ -278,11 +278,11 @@ static int _aead_recvmsg(struct socket *sock, struct msghdr *msg,
+ 		/* Synchronous operation */
+ 		aead_request_set_callback(&areq->cra_u.aead_req,
+ 					  CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					  af_alg_complete, &ctx->completion);
+-		err = af_alg_wait_for_completion(ctx->enc ?
++					  crypto_req_done, &ctx->wait);
++		err = crypto_wait_req(ctx->enc ?
+ 				crypto_aead_encrypt(&areq->cra_u.aead_req) :
+ 				crypto_aead_decrypt(&areq->cra_u.aead_req),
+-						 &ctx->completion);
++				&ctx->wait);
+ 	}
+ 
+ 	/* AIO operation in progress */
+@@ -554,7 +554,7 @@ static int aead_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->merge = 0;
+ 	ctx->enc = 0;
+ 	ctx->aead_assoclen = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index 3b3c154..d2ab8de 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -26,7 +26,7 @@ struct hash_ctx {
+ 
+ 	u8 *result;
+ 
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	unsigned int len;
+ 	bool more;
+@@ -102,8 +102,7 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 		if ((msg->msg_flags & MSG_MORE))
+ 			hash_free_result(sk, ctx);
+ 
+-		err = af_alg_wait_for_completion(crypto_ahash_init(&ctx->req),
+-						&ctx->completion);
++		err = crypto_wait_req(crypto_ahash_init(&ctx->req), &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+@@ -124,8 +123,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 
+ 		ahash_request_set_crypt(&ctx->req, ctx->sgl.sg, NULL, len);
+ 
+-		err = af_alg_wait_for_completion(crypto_ahash_update(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_update(&ctx->req),
++				      &ctx->wait);
+ 		af_alg_free_sg(&ctx->sgl);
+ 		if (err)
+ 			goto unlock;
+@@ -143,8 +142,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 			goto unlock;
+ 
+ 		ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
+-		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
++				      &ctx->wait);
+ 	}
+ 
+ unlock:
+@@ -185,7 +184,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 	} else {
+ 		if (!ctx->more) {
+ 			err = crypto_ahash_init(&ctx->req);
+-			err = af_alg_wait_for_completion(err, &ctx->completion);
++			err = crypto_wait_req(err, &ctx->wait);
+ 			if (err)
+ 				goto unlock;
+ 		}
+@@ -193,7 +192,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 		err = crypto_ahash_update(&ctx->req);
+ 	}
+ 
+-	err = af_alg_wait_for_completion(err, &ctx->completion);
++	err = crypto_wait_req(err, &ctx->wait);
+ 	if (err)
+ 		goto unlock;
+ 
+@@ -229,17 +228,16 @@ static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
+ 	ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
+ 
+ 	if (!result && !ctx->more) {
+-		err = af_alg_wait_for_completion(
+-				crypto_ahash_init(&ctx->req),
+-				&ctx->completion);
++		err = crypto_wait_req(crypto_ahash_init(&ctx->req),
++				      &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+ 
+ 	if (!result || ctx->more) {
+ 		ctx->more = 0;
+-		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
++				      &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+@@ -490,13 +488,13 @@ static int hash_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->result = NULL;
+ 	ctx->len = len;
+ 	ctx->more = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+ 	ahash_request_set_tfm(&ctx->req, hash);
+ 	ahash_request_set_callback(&ctx->req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				   af_alg_complete, &ctx->completion);
++				   crypto_req_done, &ctx->wait);
+ 
+ 	sk->sk_destruct = hash_sock_destruct;
+ 
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 8ae4170..9954b07 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -129,12 +129,11 @@ static int _skcipher_recvmsg(struct socket *sock, struct msghdr *msg,
+ 		skcipher_request_set_callback(&areq->cra_u.skcipher_req,
+ 					      CRYPTO_TFM_REQ_MAY_SLEEP |
+ 					      CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					      af_alg_complete,
+-					      &ctx->completion);
+-		err = af_alg_wait_for_completion(ctx->enc ?
++					      crypto_req_done, &ctx->wait);
++		err = crypto_wait_req(ctx->enc ?
+ 			crypto_skcipher_encrypt(&areq->cra_u.skcipher_req) :
+ 			crypto_skcipher_decrypt(&areq->cra_u.skcipher_req),
+-						 &ctx->completion);
++						 &ctx->wait);
+ 	}
+ 
+ 	/* AIO operation in progress */
+@@ -388,7 +387,7 @@ static int skcipher_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->more = 0;
+ 	ctx->merge = 0;
+ 	ctx->enc = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
+index 75ec9c6..6abf0a3 100644
+--- a/include/crypto/if_alg.h
++++ b/include/crypto/if_alg.h
+@@ -40,11 +40,6 @@ struct alg_sock {
+ 	void *private;
+ };
+ 
+-struct af_alg_completion {
+-	struct completion completion;
+-	int err;
 -};
-+int validate_module_sig(const struct module_signature *ms, size_t file_len)
-+{
-+	if (be32_to_cpu(ms->sig_len) >= file_len - sizeof(*ms))
-+		return -EBADMSG;
-+	else if (ms->id_type != PKEY_ID_PKCS7) {
-+		pr_err("Module is not signed with expected PKCS#7 message\n");
-+		return -ENOPKG;
-+	} else if (ms->algo != 0 ||
-+		   ms->hash != 0 ||
-+		   ms->signer_len != 0 ||
-+		   ms->key_id_len != 0 ||
-+		   ms->__pad[0] != 0 ||
-+		   ms->__pad[1] != 0 ||
-+		   ms->__pad[2] != 0) {
-+		pr_err("PKCS#7 signature info has unexpected non-zero params\n");
-+		return -EBADMSG;
-+	}
-+
-+	return 0;
-+}
+-
+ struct af_alg_control {
+ 	struct af_alg_iv *iv;
+ 	int op;
+@@ -152,7 +147,7 @@ struct af_alg_ctx {
+ 	void *iv;
+ 	size_t aead_assoclen;
  
- /*
-  * Verify the signature on a module.
-@@ -49,6 +51,7 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	size_t used;
+ 	size_t rcvused;
+@@ -177,19 +172,11 @@ void af_alg_link_sg(struct af_alg_sgl *sgl_prev, struct af_alg_sgl *sgl_new);
+ 
+ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con);
+ 
+-int af_alg_wait_for_completion(int err, struct af_alg_completion *completion);
+-void af_alg_complete(struct crypto_async_request *req, int err);
+-
+ static inline struct alg_sock *alg_sk(struct sock *sk)
  {
- 	struct module_signature ms;
- 	size_t modlen = *_modlen, sig_len;
-+	int ret;
+ 	return (struct alg_sock *)sk;
+ }
  
- 	pr_devel("=>%s(,%zu)\n", __func__, modlen);
- 
-@@ -56,30 +59,15 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
- 		return -EBADMSG;
- 
- 	memcpy(&ms, mod + (modlen - sizeof(ms)), sizeof(ms));
--	modlen -= sizeof(ms);
-+
-+	ret = validate_module_sig(&ms, modlen);
-+	if (ret)
-+		return ret;
- 
- 	sig_len = be32_to_cpu(ms.sig_len);
--	if (sig_len >= modlen)
--		return -EBADMSG;
--	modlen -= sig_len;
-+	modlen -= sig_len + sizeof(ms);
- 	*_modlen = modlen;
- 
--	if (ms.id_type != PKEY_ID_PKCS7) {
--		pr_err("Module is not signed with expected PKCS#7 message\n");
--		return -ENOPKG;
--	}
+-static inline void af_alg_init_completion(struct af_alg_completion *completion)
+-{
+-	init_completion(&completion->completion);
+-}
 -
--	if (ms.algo != 0 ||
--	    ms.hash != 0 ||
--	    ms.signer_len != 0 ||
--	    ms.key_id_len != 0 ||
--	    ms.__pad[0] != 0 ||
--	    ms.__pad[1] != 0 ||
--	    ms.__pad[2] != 0) {
--		pr_err("PKCS#7 signature info has unexpected non-zero params\n");
--		return -EBADMSG;
--	}
--
- 	return verify_pkcs7_signature(mod, modlen, mod + modlen, sig_len,
- 				      NULL, VERIFYING_MODULE_SIGNATURE,
- 				      NULL, NULL);
+ /**
+  * Size of available buffer for sending data from user space to kernel.
+  *
 -- 
-2.13.0
+2.1.4
 
