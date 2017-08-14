@@ -1,113 +1,84 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 08 Aug 2017 12:03:39 +0000
-Subject: [PATCH v4 08/19] crypto: move drbg to generic async completion
-Message-Id: <1502193834-11289-9-git-send-email-gilad@benyossef.com>
+Date: Mon, 14 Aug 2017 15:21:23 +0000
+Subject: [PATCH v5 13/19] cifs: move to generic async completion
+Message-Id: <1502724094-23305-14-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
+References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
 Cc: Ofir Drang <ofir.drang@arm.com>
 
-DRBG is starting an async. crypto op and waiting for it complete.
+cifs starts an async. crypto op and waits for their completion.
 Move it over to generic code doing the same.
 
-The code now also passes CRYPTO_TFM_REQ_MAY_SLEEP flag indicating
-crypto request memory allocation may use GFP_KERNEL which should
-be perfectly fine as the code is obviously sleeping for the
-completion of the request any way.
-
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Pavel Shilovsky <pshilov@microsoft.com>
 ---
- crypto/drbg.c         | 36 +++++++++---------------------------
- include/crypto/drbg.h |  3 +--
- 2 files changed, 10 insertions(+), 29 deletions(-)
+ fs/cifs/smb2ops.c | 30 ++++--------------------------
+ 1 file changed, 4 insertions(+), 26 deletions(-)
 
-diff --git a/crypto/drbg.c b/crypto/drbg.c
-index 633a88e..c522251 100644
---- a/crypto/drbg.c
-+++ b/crypto/drbg.c
-@@ -1651,16 +1651,6 @@ static int drbg_fini_sym_kernel(struct drbg_state *drbg)
- 	return 0;
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index cfacf2c..16fb041 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -1878,22 +1878,6 @@ init_sg(struct smb_rqst *rqst, u8 *sign)
+ 	return sg;
  }
  
--static void drbg_skcipher_cb(struct crypto_async_request *req, int error)
--{
--	struct drbg_state *drbg = req->data;
+-struct cifs_crypt_result {
+-	int err;
+-	struct completion completion;
+-};
 -
--	if (error = -EINPROGRESS)
+-static void cifs_crypt_complete(struct crypto_async_request *req, int err)
+-{
+-	struct cifs_crypt_result *res = req->data;
+-
+-	if (err = -EINPROGRESS)
 -		return;
--	drbg->ctr_async_err = error;
--	complete(&drbg->ctr_completion);
+-
+-	res->err = err;
+-	complete(&res->completion);
 -}
 -
- static int drbg_init_sym_kernel(struct drbg_state *drbg)
+ static int
+ smb2_get_enc_key(struct TCP_Server_Info *server, __u64 ses_id, int enc, u8 *key)
  {
- 	struct crypto_cipher *tfm;
-@@ -1691,7 +1681,7 @@ static int drbg_init_sym_kernel(struct drbg_state *drbg)
- 		return PTR_ERR(sk_tfm);
- 	}
- 	drbg->ctr_handle = sk_tfm;
--	init_completion(&drbg->ctr_completion);
-+	crypto_init_wait(&drbg->ctr_wait);
+@@ -1934,12 +1918,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	struct aead_request *req;
+ 	char *iv;
+ 	unsigned int iv_len;
+-	struct cifs_crypt_result result = {0, };
++	DECLARE_CRYPTO_WAIT(wait);
+ 	struct crypto_aead *tfm;
+ 	unsigned int crypt_len = le32_to_cpu(tr_hdr->OriginalMessageSize);
  
- 	req = skcipher_request_alloc(sk_tfm, GFP_KERNEL);
- 	if (!req) {
-@@ -1700,8 +1690,9 @@ static int drbg_init_sym_kernel(struct drbg_state *drbg)
- 		return -ENOMEM;
- 	}
- 	drbg->ctr_req = req;
--	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--					drbg_skcipher_cb, drbg);
-+	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
-+						CRYPTO_TFM_REQ_MAY_SLEEP,
-+					crypto_req_done, &drbg->ctr_wait);
+-	init_completion(&result.completion);
+-
+ 	rc = smb2_get_enc_key(server, tr_hdr->SessionId, enc, key);
+ 	if (rc) {
+ 		cifs_dbg(VFS, "%s: Could not get %scryption key\n", __func__,
+@@ -1999,14 +1981,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	aead_request_set_ad(req, assoc_data_len);
  
- 	alignmask = crypto_skcipher_alignmask(sk_tfm);
- 	drbg->ctr_null_value_buf = kzalloc(DRBG_CTR_NULL_LEN + alignmask,
-@@ -1762,21 +1753,12 @@ static int drbg_kcapi_sym_ctr(struct drbg_state *drbg,
- 		/* Output buffer may not be valid for SGL, use scratchpad */
- 		skcipher_request_set_crypt(drbg->ctr_req, &sg_in, &sg_out,
- 					   cryptlen, drbg->V);
--		ret = crypto_skcipher_encrypt(drbg->ctr_req);
--		switch (ret) {
--		case 0:
--			break;
--		case -EINPROGRESS:
--		case -EBUSY:
--			wait_for_completion(&drbg->ctr_completion);
--			if (!drbg->ctr_async_err) {
--				reinit_completion(&drbg->ctr_completion);
--				break;
--			}
--		default:
-+		ret = crypto_wait_req(crypto_skcipher_encrypt(drbg->ctr_req),
-+					&drbg->ctr_wait);
-+		if (ret)
- 			goto out;
--		}
--		init_completion(&drbg->ctr_completion);
-+
-+		crypto_init_wait(&drbg->ctr_wait);
+ 	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				  cifs_crypt_complete, &result);
++				  crypto_req_done, &wait);
  
- 		memcpy(outbuf, drbg->outscratchpad, cryptlen);
+-	rc = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
+-
+-	if (rc = -EINPROGRESS || rc = -EBUSY) {
+-		wait_for_completion(&result.completion);
+-		rc = result.err;
+-	}
++	rc = crypto_wait_req(enc ? crypto_aead_encrypt(req)
++				: crypto_aead_decrypt(req), &wait);
  
-diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
-index 22f884c..8f94110 100644
---- a/include/crypto/drbg.h
-+++ b/include/crypto/drbg.h
-@@ -126,8 +126,7 @@ struct drbg_state {
- 	__u8 *ctr_null_value;			/* CTR mode aligned zero buf */
- 	__u8 *outscratchpadbuf;			/* CTR mode output scratchpad */
-         __u8 *outscratchpad;			/* CTR mode aligned outbuf */
--	struct completion ctr_completion;	/* CTR mode async handler */
--	int ctr_async_err;			/* CTR mode async error */
-+	struct crypto_wait ctr_wait;		/* CTR mode async wait obj */
- 
- 	bool seeded;		/* DRBG fully seeded? */
- 	bool pr;		/* Prediction resistance enabled? */
+ 	if (!rc && enc)
+ 		memcpy(&tr_hdr->Signature, sign, SMB2_SIGNATURE_SIZE);
 -- 
 2.1.4
 
