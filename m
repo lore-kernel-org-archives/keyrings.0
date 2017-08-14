@@ -1,214 +1,53 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Wed, 02 Aug 2017 17:17:05 +0000
-Subject: Re: [PATCH v3 1/7] integrity: Introduce struct evm_hmac_xattr
-Message-Id: <87h8xpyjn2.fsf@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Mon, 14 Aug 2017 15:21:14 +0000
+Subject: [PATCH v5 04/19] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
+Message-Id: <1502724094-23305-5-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com> <20170706221753.17380-2-bauerman@linux.vnet.ibm.com> <1501245566.10288.35.camel@linux.vnet.ibm.com>
-In-Reply-To: <1501245566.10288.35.camel@linux.vnet.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
+Now that -EBUSY return code only indicates backlog queueing
+we can safely remove the now redundant check for the
+CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
 
-Hello Mimi,
-
-Thanks for your review!
-
-The patch at the end of the email implements your suggestions, what do
-you think?
-
-Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
-> On Thu, 2017-07-06 at 19:17 -0300, Thiago Jung Bauermann wrote:
->> A separate struct evm_hmac_xattr is introduced, with the original
->> definition of evm_ima_xattr_data to be used in the places that actually
->> expect that definition.
->
-> The new structure name implies that the xattr can only be an HMAC. By
-> moving the new structure to evm.h we also loose the connection that it
-> has to theevm_ima_xattr_type enumeration.
-
-Ok, I renamed it to struct evm_xattr.
-
-> Instead, how about defining the new struct in terms of the modified
-> evm_ima_xattr_data struct?
-
-IMHO IMA and EVM's practice of mixing and matching structs to compose
-its data structures makes the code somewhat confusing and harder to see
-where the actual storage used by a given field is actually allocated.
-
-But I don't feel strongly about it, so the patch at the end of this
-emails defines it as:
-
-struct evm_xattr {
-	struct evm_ima_xattr_data data;
-	u8 digest[SHA1_DIGEST_SIZE];
-} __packed;
-
-Another disadvantage of the above is that you have two fields pointing
-to the same place: evm_xattr.data.data and evm_xattr.digest.
-
-> Please leave the new structure in integrity.h.
-
-I think that moving the structure in evm.h is helpful. It immediately
-conveys that nothing outside of security/integrity/evm/ interprets the
-xattr data in the way defined by struct evm_xattr.
-
-But I also don't feel strongly about it, so I moved it to integrity.h.
-
--- 
-Thiago Jung Bauermann
-IBM Linux Technology Center
-
-
-From df2e29f29c99f5c986d8005d8af8409b3c4d115c Mon Sep 17 00:00:00 2001
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Tue, 16 May 2017 17:14:49 -0300
-Subject: [PATCH v4 1/7] integrity: Introduce struct evm_xattr
-
-Even though struct evm_ima_xattr_data includes a fixed-size array to hold a
-SHA1 digest, most of the code ignores the array and uses the struct to mean
-"type indicator followed by data of unspecified size" and tracks the real
-size of what the struct represents in a separate length variable.
-
-The only exception to that is the EVM code, which correctly uses the
-definition of struct evm_ima_xattr_data.
-
-This patch makes this explicit in the code by removing the length
-specification from the array in struct evm_ima_xattr_data. It also changes
-the name of the element from digest to data, since in most places the array
-doesn't hold a digest.
-
-A separate struct evm_xattr is introduced, with the original definition of
-evm_ima_xattr_data to be used in the places that actually expect that
-definition.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- security/integrity/evm/evm_crypto.c   |  4 ++--
- security/integrity/evm/evm_main.c     | 10 +++++-----
- security/integrity/ima/ima_appraise.c |  7 ++++---
- security/integrity/integrity.h        |  5 +++++
- 4 files changed, 16 insertions(+), 10 deletions(-)
+ drivers/crypto/marvell/cesa.c | 3 +--
+ drivers/crypto/marvell/cesa.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
-index d7f282d75cc1..d902a18ef66f 100644
---- a/security/integrity/evm/evm_crypto.c
-+++ b/security/integrity/evm/evm_crypto.c
-@@ -252,13 +252,13 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
- 			const char *xattr_value, size_t xattr_value_len)
- {
- 	struct inode *inode = d_backing_inode(dentry);
--	struct evm_ima_xattr_data xattr_data;
-+	struct evm_xattr xattr_data;
- 	int rc = 0;
+diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
+index 6e7a5c7..269737f 100644
+--- a/drivers/crypto/marvell/cesa.c
++++ b/drivers/crypto/marvell/cesa.c
+@@ -183,8 +183,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
+ 	spin_lock_bh(&engine->lock);
+ 	ret = crypto_enqueue_request(&engine->queue, req);
+ 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
+-	    (ret = -EINPROGRESS ||
+-	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	    (ret = -EINPROGRESS || ret = -EBUSY)
+ 		mv_cesa_tdma_chain(engine, creq);
+ 	spin_unlock_bh(&engine->lock);
  
- 	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
- 			   xattr_value_len, xattr_data.digest);
- 	if (rc = 0) {
--		xattr_data.type = EVM_XATTR_HMAC;
-+		xattr_data.data.type = EVM_XATTR_HMAC;
- 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
- 					   &xattr_data,
- 					   sizeof(xattr_data), 0);
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 063d38aef64e..536694499515 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -116,7 +116,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 					     struct integrity_iint_cache *iint)
- {
- 	struct evm_ima_xattr_data *xattr_data = NULL;
--	struct evm_ima_xattr_data calc;
-+	struct evm_xattr calc;
- 	enum integrity_status evm_status = INTEGRITY_PASS;
- 	int rc, xattr_len;
+diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
+index b7872f6..63c8457 100644
+--- a/drivers/crypto/marvell/cesa.h
++++ b/drivers/crypto/marvell/cesa.h
+@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
+ 	 * the backlog and will be processed later. There's no need to
+ 	 * clean it up.
+ 	 */
+-	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
++	if (ret = -EBUSY)
+ 		return false;
  
-@@ -147,7 +147,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 	/* check value type */
- 	switch (xattr_data->type) {
- 	case EVM_XATTR_HMAC:
--		if (xattr_len != sizeof(struct evm_ima_xattr_data)) {
-+		if (xattr_len != sizeof(struct evm_xattr)) {
- 			evm_status = INTEGRITY_FAIL;
- 			goto out;
- 		}
-@@ -155,7 +155,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 				   xattr_value_len, calc.digest);
- 		if (rc)
- 			break;
--		rc = crypto_memneq(xattr_data->digest, calc.digest,
-+		rc = crypto_memneq(xattr_data->data, calc.digest,
- 			    sizeof(calc.digest));
- 		if (rc)
- 			rc = -EINVAL;
-@@ -467,7 +467,7 @@ int evm_inode_init_security(struct inode *inode,
- 				 const struct xattr *lsm_xattr,
- 				 struct xattr *evm_xattr)
- {
--	struct evm_ima_xattr_data *xattr_data;
-+	struct evm_xattr *xattr_data;
- 	int rc;
- 
- 	if (!evm_initialized || !evm_protected_xattr(lsm_xattr->name))
-@@ -477,7 +477,7 @@ int evm_inode_init_security(struct inode *inode,
- 	if (!xattr_data)
- 		return -ENOMEM;
- 
--	xattr_data->type = EVM_XATTR_HMAC;
-+	xattr_data->data.type = EVM_XATTR_HMAC;
- 	rc = evm_init_hmac(inode, lsm_xattr, xattr_data->digest);
- 	if (rc < 0)
- 		goto out;
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 809ba70fbbbf..87d2b601cf8e 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -156,7 +156,8 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 		return sig->hash_algo;
- 		break;
- 	case IMA_XATTR_DIGEST_NG:
--		ret = xattr_value->digest[0];
-+		/* first byte contains algorithm id */
-+		ret = xattr_value->data[0];
- 		if (ret < HASH_ALGO__LAST)
- 			return ret;
- 		break;
-@@ -164,7 +165,7 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 		/* this is for backward compatibility */
- 		if (xattr_len = 21) {
- 			unsigned int zero = 0;
--			if (!memcmp(&xattr_value->digest[16], &zero, 4))
-+			if (!memcmp(&xattr_value->data[16], &zero, 4))
- 				return HASH_ALGO_MD5;
- 			else
- 				return HASH_ALGO_SHA1;
-@@ -253,7 +254,7 @@ int ima_appraise_measurement(enum ima_hooks func,
- 			/* xattr length may be longer. md5 hash in previous
- 			   version occupied 20 bytes in xattr, instead of 16
- 			 */
--			rc = memcmp(&xattr_value->digest[hash_start],
-+			rc = memcmp(&xattr_value->data[hash_start],
- 				    iint->ima_hash->digest,
- 				    iint->ima_hash->length);
- 		else
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index a53e7e4ab06c..9b1762076f38 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -63,6 +63,11 @@ enum evm_ima_xattr_type {
- 
- struct evm_ima_xattr_data {
- 	u8 type;
-+	u8 data[];
-+} __packed;
-+
-+struct evm_xattr {
-+	struct evm_ima_xattr_data data;
- 	u8 digest[SHA1_DIGEST_SIZE];
- } __packed;
- 
+ 	/* Request wasn't queued, we need to clean it up */
 -- 
-2.13.0
+2.1.4
 
