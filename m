@@ -1,48 +1,71 @@
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-Date: Tue, 15 Aug 2017 08:16:29 +0000
-Subject: Re: [PATCH v5 04/19] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
-Message-Id: <20170815101629.7d323845@bbrezillon>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Mon, 14 Aug 2017 15:21:12 +0000
+Subject: [PATCH v5 02/19] crypto: ccp: use -EAGAIN for transient busy indication
+Message-Id: <1502724094-23305-3-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
-        <1502724094-23305-5-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1502724094-23305-5-git-send-email-gilad@benyossef.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kerne
+In-Reply-To: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-TGUgTW9uLCAxNCBBdWcgMjAxNyAxODoyMToxNCArMDMwMCwKR2lsYWQgQmVuLVlvc3NlZiA8Z2ls
-YWRAYmVueW9zc2VmLmNvbT4gYSDDqWNyaXQgOgoKPiBOb3cgdGhhdCAtRUJVU1kgcmV0dXJuIGNv
-ZGUgb25seSBpbmRpY2F0ZXMgYmFja2xvZyBxdWV1ZWluZwo+IHdlIGNhbiBzYWZlbHkgcmVtb3Zl
-IHRoZSBub3cgcmVkdW5kYW50IGNoZWNrIGZvciB0aGUKPiBDUllQVE9fVEZNX1JFUV9NQVlfQkFD
-S0xPRyBmbGFnIHdoZW4gLUVCVVNZIGlzIHJldHVybmVkLgo+IAo+IFNpZ25lZC1vZmYtYnk6IEdp
-bGFkIEJlbi1Zb3NzZWYgPGdpbGFkQGJlbnlvc3NlZi5jb20+CgpBY2tlZC1ieTogQm9yaXMgQnJl
-emlsbG9uIDxib3Jpcy5icmV6aWxsb25AZnJlZS1lbGVjdHJvbnMuY29tPgoKPiAtLS0KPiAgZHJp
-dmVycy9jcnlwdG8vbWFydmVsbC9jZXNhLmMgfCAzICstLQo+ICBkcml2ZXJzL2NyeXB0by9tYXJ2
-ZWxsL2Nlc2EuaCB8IDIgKy0KPiAgMiBmaWxlcyBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKyksIDMg
-ZGVsZXRpb25zKC0pCj4gCj4gZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3J5cHRvL21hcnZlbGwvY2Vz
-YS5jIGIvZHJpdmVycy9jcnlwdG8vbWFydmVsbC9jZXNhLmMKPiBpbmRleCA2ZTdhNWM3Li4yNjk3
-MzdmIDEwMDY0NAo+IC0tLSBhL2RyaXZlcnMvY3J5cHRvL21hcnZlbGwvY2VzYS5jCj4gKysrIGIv
-ZHJpdmVycy9jcnlwdG8vbWFydmVsbC9jZXNhLmMKPiBAQCAtMTgzLDggKzE4Myw3IEBAIGludCBt
-dl9jZXNhX3F1ZXVlX3JlcShzdHJ1Y3QgY3J5cHRvX2FzeW5jX3JlcXVlc3QgKnJlcSwKPiAgCXNw
-aW5fbG9ja19iaCgmZW5naW5lLT5sb2NrKTsKPiAgCXJldCA9IGNyeXB0b19lbnF1ZXVlX3JlcXVl
-c3QoJmVuZ2luZS0+cXVldWUsIHJlcSk7Cj4gIAlpZiAoKG12X2Nlc2FfcmVxX2dldF90eXBlKGNy
-ZXEpID0gQ0VTQV9ETUFfUkVRKSAmJgo+IC0JICAgIChyZXQgPSAtRUlOUFJPR1JFU1MgfHwKPiAt
-CSAgICAocmV0ID0gLUVCVVNZICYmIHJlcS0+ZmxhZ3MgJiBDUllQVE9fVEZNX1JFUV9NQVlfQkFD
-S0xPRykpKQo+ICsJICAgIChyZXQgPSAtRUlOUFJPR1JFU1MgfHwgcmV0ID0gLUVCVVNZKQo+ICAJ
-CW12X2Nlc2FfdGRtYV9jaGFpbihlbmdpbmUsIGNyZXEpOwo+ICAJc3Bpbl91bmxvY2tfYmgoJmVu
-Z2luZS0+bG9jayk7Cj4gIAo+IGRpZmYgLS1naXQgYS9kcml2ZXJzL2NyeXB0by9tYXJ2ZWxsL2Nl
-c2EuaCBiL2RyaXZlcnMvY3J5cHRvL21hcnZlbGwvY2VzYS5oCj4gaW5kZXggYjc4NzJmNi4uNjNj
-ODQ1NyAxMDA2NDQKPiAtLS0gYS9kcml2ZXJzL2NyeXB0by9tYXJ2ZWxsL2Nlc2EuaAo+ICsrKyBi
-L2RyaXZlcnMvY3J5cHRvL21hcnZlbGwvY2VzYS5oCj4gQEAgLTc2Myw3ICs3NjMsNyBAQCBzdGF0
-aWMgaW5saW5lIGludCBtdl9jZXNhX3JlcV9uZWVkc19jbGVhbnVwKHN0cnVjdCBjcnlwdG9fYXN5
-bmNfcmVxdWVzdCAqcmVxLAo+ICAJICogdGhlIGJhY2tsb2cgYW5kIHdpbGwgYmUgcHJvY2Vzc2Vk
-IGxhdGVyLiBUaGVyZSdzIG5vIG5lZWQgdG8KPiAgCSAqIGNsZWFuIGl0IHVwLgo+ICAJICovCj4g
-LQlpZiAocmV0ID0gLUVCVVNZICYmIHJlcS0+ZmxhZ3MgJiBDUllQVE9fVEZNX1JFUV9NQVlfQkFD
-S0xPRykKPiArCWlmIChyZXQgPSAtRUJVU1kpCj4gIAkJcmV0dXJuIGZhbHNlOwo+ICAKPiAgCS8q
-IFJlcXVlc3Qgd2Fzbid0IHF1ZXVlZCwgd2UgbmVlZCB0byBjbGVhbiBpdCB1cCAqLwoKLS0KVG8g
-dW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNlbmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGtl
-eXJpbmdzIiBpbgp0aGUgYm9keSBvZiBhIG1lc3NhZ2UgdG8gbWFqb3Jkb21vQHZnZXIua2VybmVs
-Lm9yZwpNb3JlIG1ham9yZG9tbyBpbmZvIGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9y
-ZG9tby1pbmZvLmh0bWw=
+Replace -EBUSY with -EAGAIN when reporting transient busy
+indication in the absence of backlog.
+
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+---
+ drivers/crypto/ccp/ccp-crypto-main.c | 8 +++-----
+ drivers/crypto/ccp/ccp-dev.c         | 7 +++++--
+ 2 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/crypto/ccp/ccp-crypto-main.c b/drivers/crypto/ccp/ccp-crypto-main.c
+index 35a9de7..403ff0a 100644
+--- a/drivers/crypto/ccp/ccp-crypto-main.c
++++ b/drivers/crypto/ccp/ccp-crypto-main.c
+@@ -222,9 +222,10 @@ static int ccp_crypto_enqueue_cmd(struct ccp_crypto_cmd *crypto_cmd)
+ 
+ 	/* Check if the cmd can/should be queued */
+ 	if (req_queue.cmd_count >= CCP_CRYPTO_MAX_QLEN) {
+-		ret = -EBUSY;
+-		if (!(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG))
++		if (!(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG)) {
++			ret = -EAGAIN;
+ 			goto e_lock;
++		}
+ 	}
+ 
+ 	/* Look for an entry with the same tfm.  If there is a cmd
+@@ -243,9 +244,6 @@ static int ccp_crypto_enqueue_cmd(struct ccp_crypto_cmd *crypto_cmd)
+ 		ret = ccp_enqueue_cmd(crypto_cmd->cmd);
+ 		if (!ccp_crypto_success(ret))
+ 			goto e_lock;	/* Error, don't queue it */
+-		if ((ret = -EBUSY) &&
+-		    !(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG))
+-			goto e_lock;	/* Not backlogging, don't queue it */
+ 	}
+ 
+ 	if (req_queue.cmd_count >= CCP_CRYPTO_MAX_QLEN) {
+diff --git a/drivers/crypto/ccp/ccp-dev.c b/drivers/crypto/ccp/ccp-dev.c
+index 4e029b1..3d637e3 100644
+--- a/drivers/crypto/ccp/ccp-dev.c
++++ b/drivers/crypto/ccp/ccp-dev.c
+@@ -292,9 +292,12 @@ int ccp_enqueue_cmd(struct ccp_cmd *cmd)
+ 	i = ccp->cmd_q_count;
+ 
+ 	if (ccp->cmd_count >= MAX_CMD_QLEN) {
+-		ret = -EBUSY;
+-		if (cmd->flags & CCP_CMD_MAY_BACKLOG)
++		if (cmd->flags & CCP_CMD_MAY_BACKLOG) {
++			ret = -EBUSY;
+ 			list_add_tail(&cmd->entry, &ccp->backlog);
++		} else {
++			ret = -EAGAIN;
++		}
+ 	} else {
+ 		ret = -EINPROGRESS;
+ 		ccp->cmd_count++;
+-- 
+2.1.4
+
