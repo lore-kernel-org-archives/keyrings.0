@@ -1,66 +1,94 @@
-From: Eugene Syromyatnikov <evgsyr@gmail.com>
-Date: Thu, 31 Aug 2017 16:32:49 +0000
-Subject: Re: [RFC PATCH 4/5] keyctl.2: document the ability to provide KDF parameters in KEYCTL_DH_COMPUTE
-Message-Id: <CACGkJduHdKeJApsmCP-GC0BhvyqHn49EztZZxGY5LOdTwRMYtg@mail.gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Mon, 14 Aug 2017 15:21:28 +0000
+Subject: [PATCH v5 18/19] crypto: mediatek: move to generic async completion
+Message-Id: <1502724094-23305-19-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170831155836.GA5257@asgard.redhat.com> <1638688.g8nhH00jlV@tauon.chronox.de>
- <CACGkJdveSTUSYXEWzRCAXPF1nwhbtUeH2LsaoYpDGJ_FfyesTQ@mail.gmail.com> <3012446.sSctSvPOAs@tauon.chronox.de>
-In-Reply-To: <3012446.sSctSvPOAs-b2PLbiJbNv8ftSvlWXw0+g@public.gmane.org>
-To: Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>
-Cc: Michael Kerrisk-manpages <mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, linux-man <linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-On Thu, Aug 31, 2017 at 4:21 PM, Stephan Mueller <smueller@chronox.de> wrot=
-e:
-> Am Donnerstag, 31. August 2017, 18:17:09 CEST schrieb Eugene Syromyatniko=
-v:
->
-> Hi Eugene,
->
->> On Thu, Aug 31, 2017 at 6:07 PM, Stephan Mueller <smueller@chronox.de>
-> wrote:
->> > Am Donnerstag, 31. August 2017, 17:58:36 CEST schrieb Eugene
->> > Syromyatnikov:
->> >
->> > Hi Eugene,
->> >
->> >> +field is a null-terminated string no longer than
->> >> +.B CRYPTO_MAX_ALG_NAME
->> >> +(128 bytes as of this writing) which specifies hash name
->> >
->> > Is it necessary to specify that size? Note, up to 4.11 it was 64 bytes.
->> > Also, it must be a valid cipher name as mentioned. Thus, I do not think
->> > the size is relevant here considering the requirement to use a proper
->> > name.
->>
->> Right, it's probably more important for syscall decoding, but not for
->> the documentation. However, my understanding is that cipher template
->> can be specified (like "rfc4106(gcm(aes))"), and I'm not sure how deep
->> this nesting can be and whether it is possible to reach algorithm name
->> limit this way (by employing the usage of driver name instead of
->> common name, for example=E2=80=94as I understood, it is also possible). =
-It
->> probably makes more sense to just mention this limit in the ERRORS
->> section instead.
->
-> CRYPTO_MAX_ALG_NAME is given a size that all allowed cipher names can be
-> represented.
->
-> Somehow in the 4.12 release cycle, somebody found a very obscure yet valid
-> name for a symmetric cipher that exceeded the 64 byte limit causing the b=
-ump
-> to 128 bytes.
->
-> Though, that obscure name is no SHASH. All SHASH keyed digest cipher name=
-s are
-> below 64 bytes.
+The mediatek driver starts several async crypto ops and waits for their
+completions. Move it over to generic code doing the same.
 
-I see. Thanks for the clarification!
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+---
+ drivers/crypto/mediatek/mtk-aes.c | 31 +++++--------------------------
+ 1 file changed, 5 insertions(+), 26 deletions(-)
 
+diff --git a/drivers/crypto/mediatek/mtk-aes.c b/drivers/crypto/mediatek/mtk-aes.c
+index 9e845e8..e2c7c95 100644
+--- a/drivers/crypto/mediatek/mtk-aes.c
++++ b/drivers/crypto/mediatek/mtk-aes.c
+@@ -137,11 +137,6 @@ struct mtk_aes_gcm_ctx {
+ 	struct crypto_skcipher *ctr;
+ };
+ 
+-struct mtk_aes_gcm_setkey_result {
+-	int err;
+-	struct completion completion;
+-};
+-
+ struct mtk_aes_drv {
+ 	struct list_head dev_list;
+ 	/* Device list lock */
+@@ -936,17 +931,6 @@ static int mtk_aes_gcm_crypt(struct aead_request *req, u64 mode)
+ 				    &req->base);
+ }
+ 
+-static void mtk_gcm_setkey_done(struct crypto_async_request *req, int err)
+-{
+-	struct mtk_aes_gcm_setkey_result *result = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	result->err = err;
+-	complete(&result->completion);
+-}
+-
+ /*
+  * Because of the hardware limitation, we need to pre-calculate key(H)
+  * for the GHASH operation. The result of the encryption operation
+@@ -962,7 +946,7 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 		u32 hash[4];
+ 		u8 iv[8];
+ 
+-		struct mtk_aes_gcm_setkey_result result;
++		struct crypto_wait wait;
+ 
+ 		struct scatterlist sg[1];
+ 		struct skcipher_request req;
+@@ -1002,22 +986,17 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 	if (!data)
+ 		return -ENOMEM;
+ 
+-	init_completion(&data->result.completion);
++	crypto_init_wait(&data->wait);
+ 	sg_init_one(data->sg, &data->hash, AES_BLOCK_SIZE);
+ 	skcipher_request_set_tfm(&data->req, ctr);
+ 	skcipher_request_set_callback(&data->req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 				      CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				      mtk_gcm_setkey_done, &data->result);
++				      crypto_req_done, &data->wait);
+ 	skcipher_request_set_crypt(&data->req, data->sg, data->sg,
+ 				   AES_BLOCK_SIZE, data->iv);
+ 
+-	err = crypto_skcipher_encrypt(&data->req);
+-	if (err = -EINPROGRESS || err = -EBUSY) {
+-		err = wait_for_completion_interruptible(
+-			&data->result.completion);
+-		if (!err)
+-			err = data->result.err;
+-	}
++	err = crypto_wait_req(crypto_skcipher_encrypt(&data->req),
++			      &data->wait);
+ 	if (err)
+ 		goto out;
+ 
+-- 
+2.1.4
 
---=20
-Eugene Syromyatnikov
-mailto:evgsyr@gmail.com
-xmpp:esyr@jabber.{ru|org}
