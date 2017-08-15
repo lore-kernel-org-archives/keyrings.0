@@ -1,53 +1,48 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 14 Aug 2017 15:21:14 +0000
-Subject: [PATCH v5 04/19] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
-Message-Id: <1502724094-23305-5-git-send-email-gilad@benyossef.com>
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+Date: Tue, 15 Aug 2017 08:16:29 +0000
+Subject: Re: [PATCH v5 04/19] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
+Message-Id: <20170815101629.7d323845@bbrezillon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
-Cc: Ofir Drang <ofir.drang@arm.com>
+        <1502724094-23305-5-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1502724094-23305-5-git-send-email-gilad@benyossef.com>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kerne
 
-Now that -EBUSY return code only indicates backlog queueing
-we can safely remove the now redundant check for the
-CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
-
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
----
- drivers/crypto/marvell/cesa.c | 3 +--
- drivers/crypto/marvell/cesa.h | 2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
-index 6e7a5c7..269737f 100644
---- a/drivers/crypto/marvell/cesa.c
-+++ b/drivers/crypto/marvell/cesa.c
-@@ -183,8 +183,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
- 	spin_lock_bh(&engine->lock);
- 	ret = crypto_enqueue_request(&engine->queue, req);
- 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
--	    (ret = -EINPROGRESS ||
--	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	    (ret = -EINPROGRESS || ret = -EBUSY)
- 		mv_cesa_tdma_chain(engine, creq);
- 	spin_unlock_bh(&engine->lock);
- 
-diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
-index b7872f6..63c8457 100644
---- a/drivers/crypto/marvell/cesa.h
-+++ b/drivers/crypto/marvell/cesa.h
-@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
- 	 * the backlog and will be processed later. There's no need to
- 	 * clean it up.
- 	 */
--	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
-+	if (ret = -EBUSY)
- 		return false;
- 
- 	/* Request wasn't queued, we need to clean it up */
--- 
-2.1.4
-
+TGUgTW9uLCAxNCBBdWcgMjAxNyAxODoyMToxNCArMDMwMCwKR2lsYWQgQmVuLVlvc3NlZiA8Z2ls
+YWRAYmVueW9zc2VmLmNvbT4gYSDDqWNyaXQgOgoKPiBOb3cgdGhhdCAtRUJVU1kgcmV0dXJuIGNv
+ZGUgb25seSBpbmRpY2F0ZXMgYmFja2xvZyBxdWV1ZWluZwo+IHdlIGNhbiBzYWZlbHkgcmVtb3Zl
+IHRoZSBub3cgcmVkdW5kYW50IGNoZWNrIGZvciB0aGUKPiBDUllQVE9fVEZNX1JFUV9NQVlfQkFD
+S0xPRyBmbGFnIHdoZW4gLUVCVVNZIGlzIHJldHVybmVkLgo+IAo+IFNpZ25lZC1vZmYtYnk6IEdp
+bGFkIEJlbi1Zb3NzZWYgPGdpbGFkQGJlbnlvc3NlZi5jb20+CgpBY2tlZC1ieTogQm9yaXMgQnJl
+emlsbG9uIDxib3Jpcy5icmV6aWxsb25AZnJlZS1lbGVjdHJvbnMuY29tPgoKPiAtLS0KPiAgZHJp
+dmVycy9jcnlwdG8vbWFydmVsbC9jZXNhLmMgfCAzICstLQo+ICBkcml2ZXJzL2NyeXB0by9tYXJ2
+ZWxsL2Nlc2EuaCB8IDIgKy0KPiAgMiBmaWxlcyBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKyksIDMg
+ZGVsZXRpb25zKC0pCj4gCj4gZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3J5cHRvL21hcnZlbGwvY2Vz
+YS5jIGIvZHJpdmVycy9jcnlwdG8vbWFydmVsbC9jZXNhLmMKPiBpbmRleCA2ZTdhNWM3Li4yNjk3
+MzdmIDEwMDY0NAo+IC0tLSBhL2RyaXZlcnMvY3J5cHRvL21hcnZlbGwvY2VzYS5jCj4gKysrIGIv
+ZHJpdmVycy9jcnlwdG8vbWFydmVsbC9jZXNhLmMKPiBAQCAtMTgzLDggKzE4Myw3IEBAIGludCBt
+dl9jZXNhX3F1ZXVlX3JlcShzdHJ1Y3QgY3J5cHRvX2FzeW5jX3JlcXVlc3QgKnJlcSwKPiAgCXNw
+aW5fbG9ja19iaCgmZW5naW5lLT5sb2NrKTsKPiAgCXJldCA9IGNyeXB0b19lbnF1ZXVlX3JlcXVl
+c3QoJmVuZ2luZS0+cXVldWUsIHJlcSk7Cj4gIAlpZiAoKG12X2Nlc2FfcmVxX2dldF90eXBlKGNy
+ZXEpID0gQ0VTQV9ETUFfUkVRKSAmJgo+IC0JICAgIChyZXQgPSAtRUlOUFJPR1JFU1MgfHwKPiAt
+CSAgICAocmV0ID0gLUVCVVNZICYmIHJlcS0+ZmxhZ3MgJiBDUllQVE9fVEZNX1JFUV9NQVlfQkFD
+S0xPRykpKQo+ICsJICAgIChyZXQgPSAtRUlOUFJPR1JFU1MgfHwgcmV0ID0gLUVCVVNZKQo+ICAJ
+CW12X2Nlc2FfdGRtYV9jaGFpbihlbmdpbmUsIGNyZXEpOwo+ICAJc3Bpbl91bmxvY2tfYmgoJmVu
+Z2luZS0+bG9jayk7Cj4gIAo+IGRpZmYgLS1naXQgYS9kcml2ZXJzL2NyeXB0by9tYXJ2ZWxsL2Nl
+c2EuaCBiL2RyaXZlcnMvY3J5cHRvL21hcnZlbGwvY2VzYS5oCj4gaW5kZXggYjc4NzJmNi4uNjNj
+ODQ1NyAxMDA2NDQKPiAtLS0gYS9kcml2ZXJzL2NyeXB0by9tYXJ2ZWxsL2Nlc2EuaAo+ICsrKyBi
+L2RyaXZlcnMvY3J5cHRvL21hcnZlbGwvY2VzYS5oCj4gQEAgLTc2Myw3ICs3NjMsNyBAQCBzdGF0
+aWMgaW5saW5lIGludCBtdl9jZXNhX3JlcV9uZWVkc19jbGVhbnVwKHN0cnVjdCBjcnlwdG9fYXN5
+bmNfcmVxdWVzdCAqcmVxLAo+ICAJICogdGhlIGJhY2tsb2cgYW5kIHdpbGwgYmUgcHJvY2Vzc2Vk
+IGxhdGVyLiBUaGVyZSdzIG5vIG5lZWQgdG8KPiAgCSAqIGNsZWFuIGl0IHVwLgo+ICAJICovCj4g
+LQlpZiAocmV0ID0gLUVCVVNZICYmIHJlcS0+ZmxhZ3MgJiBDUllQVE9fVEZNX1JFUV9NQVlfQkFD
+S0xPRykKPiArCWlmIChyZXQgPSAtRUJVU1kpCj4gIAkJcmV0dXJuIGZhbHNlOwo+ICAKPiAgCS8q
+IFJlcXVlc3Qgd2Fzbid0IHF1ZXVlZCwgd2UgbmVlZCB0byBjbGVhbiBpdCB1cCAqLwoKLS0KVG8g
+dW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNlbmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGtl
+eXJpbmdzIiBpbgp0aGUgYm9keSBvZiBhIG1lc3NhZ2UgdG8gbWFqb3Jkb21vQHZnZXIua2VybmVs
+Lm9yZwpNb3JlIG1ham9yZG9tbyBpbmZvIGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9y
+ZG9tby1pbmZvLmh0bWw=
