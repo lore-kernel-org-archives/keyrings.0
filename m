@@ -1,56 +1,54 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 17 Aug 2017 15:43:30 +0000
-Subject: Re: [PATCH v4 7/7] ima: Support module-style appended signatures for appraisal
-Message-Id: <1502984610.3172.41.camel@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Mon, 21 Aug 2017 14:04:50 +0000
+Subject: [PATCH v6 04/19] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
+Message-Id: <1503324309-13673-5-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170804220330.30026-1-bauerman@linux.vnet.ibm.com>
-         <20170804220330.30026-8-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20170804220330.30026-8-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-security-module@vger.kernel.org
-Cc: linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <1503324309-13673-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1503324309-13673-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-Cj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMgYi9z
-ZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcHByYWlzZS5jCj4gaW5kZXggODdkMmI2MDFjZjhl
-Li41YTI0NGViYzYxZDkgMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFf
-YXBwcmFpc2UuYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMK
-PiBAQCAtMTkwLDYgKzE5MCw2NCBAQCBpbnQgaW1hX3JlYWRfeGF0dHIoc3RydWN0IGRlbnRyeSAq
-ZGVudHJ5LAo+ICAJcmV0dXJuIHJldDsKPiAgfQo+IAo+ICtzdGF0aWMgdm9pZCBwcm9jZXNzX3hh
-dHRyX2Vycm9yKGludCByYywgc3RydWN0IGludGVncml0eV9paW50X2NhY2hlICppaW50LAo+ICsJ
-CQkJaW50IG9wZW5lZCwgY2hhciBjb25zdCAqKmNhdXNlLAo+ICsJCQkJZW51bSBpbnRlZ3JpdHlf
-c3RhdHVzICpzdGF0dXMpCj4gK3sKPiArCWlmIChyYyAmJiByYyAhPSAtRU5PREFUQSkKPiArCQly
-ZXR1cm47Cj4gKwo+ICsJKmNhdXNlID0gaWludC0+ZmxhZ3MgJiBJTUFfRElHU0lHX1JFUVVJUkVE
-ID8KPiArCQkiSU1BLXNpZ25hdHVyZS1yZXF1aXJlZCIgOiAibWlzc2luZy1oYXNoIjsKPiArCSpz
-dGF0dXMgPSBJTlRFR1JJVFlfTk9MQUJFTDsKPiArCj4gKwlpZiAob3BlbmVkICYgRklMRV9DUkVB
-VEVEKQo+ICsJCWlpbnQtPmZsYWdzIHw9IElNQV9ORVdfRklMRTsKPiArCj4gKwlpZiAoKGlpbnQt
-PmZsYWdzICYgSU1BX05FV19GSUxFKSAmJgo+ICsJICAgICEoaWludC0+ZmxhZ3MgJiBJTUFfRElH
-U0lHX1JFUVVJUkVEKSkKPiArCQkqc3RhdHVzID0gSU5URUdSSVRZX1BBU1M7Cj4gK30KPiArCj4g
-K3N0YXRpYyBpbnQgYXBwcmFpc2VfbW9kc2lnKHN0cnVjdCBpbnRlZ3JpdHlfaWludF9jYWNoZSAq
-aWludCwKPiArCQkJICAgc3RydWN0IGV2bV9pbWFfeGF0dHJfZGF0YSAqeGF0dHJfdmFsdWUsCj4g
-KwkJCSAgIGludCB4YXR0cl9sZW4pCj4gK3sKPiArCWVudW0gaGFzaF9hbGdvIGFsZ287Cj4gKwlj
-b25zdCB2b2lkICpkaWdlc3Q7Cj4gKwl2b2lkICpidWY7Cj4gKwlpbnQgcmMsIGxlbjsKPiArCXU4
-IGRpZ19sZW47Cj4gKwo+ICsJcmMgPSBpbWFfbW9kc2lnX3ZlcmlmeShJTlRFR1JJVFlfS0VZUklO
-R19JTUEsIHhhdHRyX3ZhbHVlKTsKPiArCWlmIChyYykKPiArCQlyZXR1cm4gcmM7Cj4gKwo+ICsJ
-LyoKPiArCSAqIFRoZSBzaWduYXR1cmUgaXMgZ29vZC4gTm93IGxldCdzIHB1dCB0aGUgc2lnIGhh
-c2gKPiArCSAqIGludG8gdGhlIGlpbnQgY2FjaGUgc28gdGhhdCBpdCBnZXRzIHN0b3JlZCBpbiB0
-aGUKPiArCSAqIG1lYXN1cmVtZW50IGxpc3QuCj4gKwkgKi8KPiArCj4gKwlyYyA9IGltYV9nZXRf
-bW9kc2lnX2hhc2goeGF0dHJfdmFsdWUsICZhbGdvLCAmZGlnZXN0LCAmZGlnX2xlbik7Cj4gKwlp
-ZiAocmMpCj4gKwkJcmV0dXJuIHJjOwo+ICsKPiArCWxlbiA9IHNpemVvZihpaW50LT5pbWFfaGFz
-aCkgKyBkaWdfbGVuOwo+ICsJYnVmID0ga3JlYWxsb2MoaWludC0+aW1hX2hhc2gsIGxlbiwgR0ZQ
-X05PRlMpOwo+ICsJaWYgKCFidWYpCj4gKwkJcmV0dXJuIC1FTk9NRU07Cj4gKwo+ICsJaWludC0+
-aW1hX2hhc2ggPSBidWY7Cj4gKwlpaW50LT5mbGFncyB8PSBJTUFfRElHU0lHOwo+ICsJaWludC0+
-aW1hX2hhc2gtPmFsZ28gPSBhbGdvOwo+ICsJaWludC0+aW1hX2hhc2gtPmxlbmd0aCA9IGRpZ19s
-ZW47Cj4gKwo+ICsJbWVtY3B5KGlpbnQtPmltYV9oYXNoLT5kaWdlc3QsIGRpZ2VzdCwgZGlnX2xl
-bik7Cj4gKwo+ICsJcmV0dXJuIDA7Cj4gK30KCkRlcGVuZGluZyBvbiB0aGUgSU1BIHBvbGljeSwg
-dGhlIGZpbGUgY291bGQgYWxyZWFkeSBoYXZlIGJlZW4KbWVhc3VyZWQuIMKgVGhhdCBtZWFzdXJl
-bWVudCBsaXN0IGVudHJ5IG1pZ2h0IGluY2x1ZGUgdGhlIGZpbGUKc2lnbmF0dXJlLCBhcyBzdG9y
-ZWQgaW4gdGhlIHhhdHRyLCBpbiB0aGUgaW1hLXNpZyB0ZW1wbGF0ZSBkYXRhLgoKSSB0aGluayBl
-dmVuIGlmIGEgbWVhc3VyZW1lbnQgbGlzdCBlbnRyeSBleGlzdHMsIHdlIHdvdWxkIHdhbnQgYW4K
-YWRkaXRpb25hbCBtZWFzdXJlbWVudCBsaXN0IGVudHJ5LCB3aGljaCBpbmNsdWRlcyB0aGUgYXBw
-ZW5kZWQKc2lnbmF0dXJlIGluIHRoZSBpbWEtc2lnIHRlbXBsYXRlIGRhdGEuCgpNaW1pCgotLQpU
-byB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3JpYmUg
-a2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5rZXJu
-ZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcvbWFq
-b3Jkb21vLWluZm8uaHRtbA==
+Now that -EBUSY return code only indicates backlog queueing
+we can safely remove the now redundant check for the
+CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
+
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ drivers/crypto/marvell/cesa.c | 3 +--
+ drivers/crypto/marvell/cesa.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
+index 6e7a5c7..269737f 100644
+--- a/drivers/crypto/marvell/cesa.c
++++ b/drivers/crypto/marvell/cesa.c
+@@ -183,8 +183,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
+ 	spin_lock_bh(&engine->lock);
+ 	ret = crypto_enqueue_request(&engine->queue, req);
+ 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
+-	    (ret = -EINPROGRESS ||
+-	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	    (ret = -EINPROGRESS || ret = -EBUSY)
+ 		mv_cesa_tdma_chain(engine, creq);
+ 	spin_unlock_bh(&engine->lock);
+ 
+diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
+index b7872f6..63c8457 100644
+--- a/drivers/crypto/marvell/cesa.h
++++ b/drivers/crypto/marvell/cesa.h
+@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
+ 	 * the backlog and will be processed later. There's no need to
+ 	 * clean it up.
+ 	 */
+-	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
++	if (ret = -EBUSY)
+ 		return false;
+ 
+ 	/* Request wasn't queued, we need to clean it up */
+-- 
+2.1.4
+
