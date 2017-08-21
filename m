@@ -1,13 +1,13 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Thu, 24 Aug 2017 14:18:55 +0000
-Subject: [PATCH v7 08/19] crypto: move drbg to generic async completion
-Message-Id: <1503584350-7831-9-git-send-email-gilad@benyossef.com>
+Date: Mon, 21 Aug 2017 14:04:54 +0000
+Subject: [PATCH v6 08/19] crypto: move drbg to generic async completion
+Message-Id: <1503324309-13673-9-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
+References: <1503324309-13673-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1503324309-13673-1-git-send-email-gilad@benyossef.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
 Cc: Ofir Drang <ofir.drang@arm.com>
 
