@@ -1,94 +1,44 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Thu, 03 Aug 2017 21:01:06 +0000
-Subject: Re: [PATCH v3 7/7] ima: Support module-style appended signatures for appraisal
-Message-Id: <87y3r0xt65.fsf@linux.vnet.ibm.com>
+From: Josh Holland <anowlcalledjosh@gmail.com>
+Date: Wed, 23 Aug 2017 20:42:32 +0000
+Subject: [PATCH v2] docs: ReSTify table of contents in core.rst
+Message-Id: <20170823204232.1879-1-anowlcalledjosh@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170706221753.17380-1-bauerman@linux.vnet.ibm.com> <20170706221753.17380-8-bauerman@linux.vnet.ibm.com> <1501424988.9230.67.camel@linux.vnet.ibm.com> <87fud9yig8.fsf@linux.vnet.ibm.com> <1501714334.27872.38.camel@linux.vnet.ibm.com> <1501771065.27872.63.camel@linux.vnet.ibm.com>
-In-Reply-To: <1501771065.27872.63.camel@linux.vnet.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+To: keyrings@vger.kernel.org
 
+Sphinx will now generate the table of contents automatically, which
+avoids having the ToC getting out of sync with the rest of the document.
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
+Signed-off-by: Josh Holland <anowlcalledjosh@gmail.com>
+---
+ Documentation/security/keys/core.rst | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-> On Wed, 2017-08-02 at 18:52 -0400, Mimi Zohar wrote:
->> On Wed, 2017-08-02 at 14:42 -0300, Thiago Jung Bauermann wrote:
->> > Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
->
->> > >> @@ -229,8 +251,24 @@ int ima_appraise_measurement(enum ima_hooks func,
->> > >>  		goto out;
->> > >>  	}
->> > >> 
->> > >> -	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
->> > >> -	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
->> > >> +	/*
->> > >> +	 * Appended signatures aren't protected by EVM but we still call
->> > >> +	 * evm_verifyxattr to check other security xattrs, if they exist.
->> > >> +	 */
->> > >> +	if (appraising_modsig) {
->> > >> +		xattr_value_evm = NULL;
->> > >> +		xattr_len_evm = 0;
->> > >> +	} else {
->> > >> +		xattr_value_evm = xattr_value;
->> > >> +		xattr_len_evm = xattr_len;
->> > >> +	}
->> > >> +
->> > >> +	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value_evm,
->> > >> +				 xattr_len_evm, iint);
->> > >> +	if (appraising_modsig && status = INTEGRITY_FAIL) {
->> > >> +		cause = "invalid-HMAC";
->> > >> +		goto out;
->> > >
->> > > "modsig" is special, because having any security xattrs is not
->> > > required. This test doesn't prevent status from being set to
->> > > "missing-HMAC". This test is redundant with the original tests below.
->> > 
->> > Indeed, that is wrong. I'm still a bit fuzzy about how EVM works and how
->> > it interacts with IMA. The only way I can think of singling out modsig
->> > without reintroduced the complex expression you didn't like in v2 is as
->> > below. What do you think?
->> 
->> The original code, without any extra tests, should be fine.
->
-> There is one major difference.
->
-> EVM verifies a file's metadata has not been modified based on either
-> an HMAC or signature stored as security.evm. Prior to the appended
-> signatures patch set, all files in policy required a security.evm
-> xattr. With IMA enabled we could guarantee that at least one security
-> xattr existed. The only exception were new files, which hadn't yet
-> been labeled.
->
-> With appended signatures, there is now no guarantee that at least one
-> security xattr exists.
->
-> Perhaps the code snippet below will help clarify the meaning of the
-> integrity_status results.
->
->     switch (status) {
-> case INTEGRITY_PASS:
-> case INTEGRITY_UNKNOWN:   
->        break;		
->     case INTEGRITY_NOXATTRS:/* no EVM protected xattrs */
-> if (appraising_modsig)
-> break;
-> case INTEGRITY_NOLABEL:/* no security.evm xattr */
-> cause = "missing-HMAC";
-> fail = 1;
-> break;
-> case INTEGRITY_FAIL:/* invalid HMAC/signature */
-> default:
-> cause = "invalid-HMAC";
-> fail = 1;
-> break;
-> }
-
-Thanks! I'll use the switch above in the next version of the patch.
-
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 312f981fa..1266eeae4 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -16,17 +16,7 @@ The key service can be configured on by enabling:
+ 
+ This document has the following sections:
+ 
+-	- Key overview
+-	- Key service overview
+-	- Key access permissions
+-	- SELinux support
+-	- New procfs files
+-	- Userspace system call interface
+-	- Kernel services
+-	- Notes on accessing payload contents
+-	- Defining a key type
+-	- Request-key callback service
+-	- Garbage collection
++.. contents:: :local:
+ 
+ 
+ Key Overview
 -- 
-Thiago Jung Bauermann
-IBM Linux Technology Center
+2.14.1
 
