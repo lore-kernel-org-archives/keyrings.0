@@ -1,134 +1,234 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 14 Aug 2017 15:21:11 +0000
-Subject: [PATCH v5 01/19] crypto: change transient busy return code to -EAGAIN
-Message-Id: <1502724094-23305-2-git-send-email-gilad@benyossef.com>
+Date: Thu, 24 Aug 2017 14:18:59 +0000
+Subject: [PATCH v7 12/19] dm: move dm-verity to generic async completion
+Message-Id: <1503584350-7831-13-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1502724094-23305-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1502724094-23305-1-git-send-email-gilad-6S/DczAoZh3WXxRugSxzZg@public.gmane.org>
+References: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1503584350-7831-1-git-send-email-gilad-6S/DczAoZh3WXxRugSxzZg@public.gmane.org>
 To: Herbert Xu <herbert-lOAM2aK0SrRLBo1qDEOMRrpzq4S04n8Q@public.gmane.org>, "David S. Miller" <davem-fT/PcQaiUtIeIZ0/mPfg9Q@public.gmane.org>, Jonathan Corbet <corbet-T1hC0tSOHrs@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Tom Lendacky <thomas.lendacky-5C7GfCeVMHo@public.gmane.org>, Gary Hook <gary.hook-5C7GfCeVMHo@public.gmane.org>, Boris Brezillon <boris.brezillon-wi1+55ScJUtKEb57/3fJTNBPR1lH4CV8@public.gmane.org>, Arnaud Ebalard <arno-LkuqDEemtHBg9hUCZPvPmw@public.gmane.org>, Matthias Brugger <matthias.bgg-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Shaohua Li <shli-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Steve French <sfrench-eUNUBHrolfbYtjvyW6yDsg@public.gmane.org>, "Theodore Y. Ts'o" <tytso-3s7WtUTddSA@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Mimi Zohar <zohar-23VcF4HTsmIX0ybBhKVfKdBPR1lH4CV8@public.gmane.org>, Dmitry Kasatkin <dmitry.kasatkin-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, "Serge E. Hallyn" <serge-A9i7LUbDfNHQT0dZR+AlfA@public.gmane.org>, linux-crypto@v
-Cc: Ofir Drang <ofir.drang-5wv7dgnIgG8@public.gmane.org>
+Cc: Ofir Drang <ofir.drang-5wv7dgnIgG8@public.gmane.org>, Mikulas Patocka <mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
 
-The crypto API was using the -EBUSY return value to indicate
-both a hard failure to submit a crypto operation into a
-transformation provider when the latter was busy and the backlog
-mechanism was not enabled as well as a notification that the
-operation was queued into the backlog when the backlog mechanism
-was enabled.
+dm-verity is starting async. crypto ops and waiting for them to complete.
+Move it over to generic code doing the same.
 
-Having the same return code indicate two very different conditions
-depending on a flag is both error prone and requires extra runtime
-check like the following to discern between the cases:
-
-	if (err = -EINPROGRESS ||
-	    (err = -EBUSY && (ahash_request_flags(req) &
-			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
-
-This patch changes the return code used to indicate a crypto op
-failed due to the transformation provider being transiently busy
-to -EAGAIN.
+This also avoids a future potential data coruption bug created
+by the use of wait_for_completion_interruptible() without dealing
+correctly with an interrupt aborting the wait prior to the
+async op finishing, should this code ever move to a context
+where signals are not masked.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>
 ---
- crypto/algapi.c     |  6 ++++--
- crypto/algif_hash.c | 20 +++++++++++++++++---
- crypto/cryptd.c     |  4 +---
- 3 files changed, 22 insertions(+), 8 deletions(-)
+ drivers/md/dm-verity-target.c | 81 +++++++++++--------------------------------
+ drivers/md/dm-verity.h        |  5 ---
+ 2 files changed, 20 insertions(+), 66 deletions(-)
 
-diff --git a/crypto/algapi.c b/crypto/algapi.c
-index aa699ff..916bee3 100644
---- a/crypto/algapi.c
-+++ b/crypto/algapi.c
-@@ -897,9 +897,11 @@ int crypto_enqueue_request(struct crypto_queue *queue,
- 	int err = -EINPROGRESS;
+diff --git a/drivers/md/dm-verity-target.c b/drivers/md/dm-verity-target.c
+index 79f18d4..8df08a8 100644
+--- a/drivers/md/dm-verity-target.c
++++ b/drivers/md/dm-verity-target.c
+@@ -92,74 +92,33 @@ static sector_t verity_position_at_level(struct dm_verity *v, sector_t block,
+ 	return block >> (level * v->hash_per_block_bits);
+ }
  
- 	if (unlikely(queue->qlen >= queue->max_qlen)) {
--		err = -EBUSY;
--		if (!(request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (!(request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)) {
-+			err = -EAGAIN;
- 			goto out;
-+		}
-+		err = -EBUSY;
- 		if (queue->backlog = &queue->list)
- 			queue->backlog = &request->list;
+-/*
+- * Callback function for asynchrnous crypto API completion notification
+- */
+-static void verity_op_done(struct crypto_async_request *base, int err)
+-{
+-	struct verity_result *res = (struct verity_result *)base->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	res->err = err;
+-	complete(&res->completion);
+-}
+-
+-/*
+- * Wait for async crypto API callback
+- */
+-static inline int verity_complete_op(struct verity_result *res, int ret)
+-{
+-	switch (ret) {
+-	case 0:
+-		break;
+-
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		ret = wait_for_completion_interruptible(&res->completion);
+-		if (!ret)
+-			ret = res->err;
+-		reinit_completion(&res->completion);
+-		break;
+-
+-	default:
+-		DMERR("verity_wait_hash: crypto op submission failed: %d", ret);
+-	}
+-
+-	if (unlikely(ret < 0))
+-		DMERR("verity_wait_hash: crypto op failed: %d", ret);
+-
+-	return ret;
+-}
+-
+ static int verity_hash_update(struct dm_verity *v, struct ahash_request *req,
+ 				const u8 *data, size_t len,
+-				struct verity_result *res)
++				struct crypto_wait *wait)
+ {
+ 	struct scatterlist sg;
+ 
+ 	sg_init_one(&sg, data, len);
+ 	ahash_request_set_crypt(req, &sg, NULL, len);
+ 
+-	return verity_complete_op(res, crypto_ahash_update(req));
++	return crypto_wait_req(crypto_ahash_update(req), wait);
+ }
+ 
+ /*
+  * Wrapper for crypto_ahash_init, which handles verity salting.
+  */
+ static int verity_hash_init(struct dm_verity *v, struct ahash_request *req,
+-				struct verity_result *res)
++				struct crypto_wait *wait)
+ {
+ 	int r;
+ 
+ 	ahash_request_set_tfm(req, v->tfm);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 					CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					verity_op_done, (void *)res);
+-	init_completion(&res->completion);
++					crypto_req_done, (void *)wait);
++	crypto_init_wait(wait);
+ 
+-	r = verity_complete_op(res, crypto_ahash_init(req));
++	r = crypto_wait_req(crypto_ahash_init(req), wait);
+ 
+ 	if (unlikely(r < 0)) {
+ 		DMERR("crypto_ahash_init failed: %d", r);
+@@ -167,18 +126,18 @@ static int verity_hash_init(struct dm_verity *v, struct ahash_request *req,
  	}
-diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
-index 5e92bd2..3b3c154 100644
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -39,6 +39,20 @@ struct algif_hash_tfm {
- 	bool has_key;
+ 
+ 	if (likely(v->salt_size && (v->version >= 1)))
+-		r = verity_hash_update(v, req, v->salt, v->salt_size, res);
++		r = verity_hash_update(v, req, v->salt, v->salt_size, wait);
+ 
+ 	return r;
+ }
+ 
+ static int verity_hash_final(struct dm_verity *v, struct ahash_request *req,
+-			     u8 *digest, struct verity_result *res)
++			     u8 *digest, struct crypto_wait *wait)
+ {
+ 	int r;
+ 
+ 	if (unlikely(v->salt_size && (!v->version))) {
+-		r = verity_hash_update(v, req, v->salt, v->salt_size, res);
++		r = verity_hash_update(v, req, v->salt, v->salt_size, wait);
+ 
+ 		if (r < 0) {
+ 			DMERR("verity_hash_final failed updating salt: %d", r);
+@@ -187,7 +146,7 @@ static int verity_hash_final(struct dm_verity *v, struct ahash_request *req,
+ 	}
+ 
+ 	ahash_request_set_crypt(req, NULL, digest, 0);
+-	r = verity_complete_op(res, crypto_ahash_final(req));
++	r = crypto_wait_req(crypto_ahash_final(req), wait);
+ out:
+ 	return r;
+ }
+@@ -196,17 +155,17 @@ int verity_hash(struct dm_verity *v, struct ahash_request *req,
+ 		const u8 *data, size_t len, u8 *digest)
+ {
+ 	int r;
+-	struct verity_result res;
++	struct crypto_wait wait;
+ 
+-	r = verity_hash_init(v, req, &res);
++	r = verity_hash_init(v, req, &wait);
+ 	if (unlikely(r < 0))
+ 		goto out;
+ 
+-	r = verity_hash_update(v, req, data, len, &res);
++	r = verity_hash_update(v, req, data, len, &wait);
+ 	if (unlikely(r < 0))
+ 		goto out;
+ 
+-	r = verity_hash_final(v, req, digest, &res);
++	r = verity_hash_final(v, req, digest, &wait);
+ 
+ out:
+ 	return r;
+@@ -389,7 +348,7 @@ int verity_hash_for_block(struct dm_verity *v, struct dm_verity_io *io,
+  * Calculates the digest for the given bio
+  */
+ int verity_for_io_block(struct dm_verity *v, struct dm_verity_io *io,
+-			struct bvec_iter *iter, struct verity_result *res)
++			struct bvec_iter *iter, struct crypto_wait *wait)
+ {
+ 	unsigned int todo = 1 << v->data_dev_block_bits;
+ 	struct bio *bio = dm_bio_from_per_bio_data(io, v->ti->per_io_data_size);
+@@ -414,7 +373,7 @@ int verity_for_io_block(struct dm_verity *v, struct dm_verity_io *io,
+ 		 */
+ 		sg_set_page(&sg, bv.bv_page, len, bv.bv_offset);
+ 		ahash_request_set_crypt(req, &sg, NULL, len);
+-		r = verity_complete_op(res, crypto_ahash_update(req));
++		r = crypto_wait_req(crypto_ahash_update(req), wait);
+ 
+ 		if (unlikely(r < 0)) {
+ 			DMERR("verity_for_io_block crypto op failed: %d", r);
+@@ -482,7 +441,7 @@ static int verity_verify_io(struct dm_verity_io *io)
+ 	struct dm_verity *v = io->v;
+ 	struct bvec_iter start;
+ 	unsigned b;
+-	struct verity_result res;
++	struct crypto_wait wait;
+ 
+ 	for (b = 0; b < io->n_blocks; b++) {
+ 		int r;
+@@ -507,17 +466,17 @@ static int verity_verify_io(struct dm_verity_io *io)
+ 			continue;
+ 		}
+ 
+-		r = verity_hash_init(v, req, &res);
++		r = verity_hash_init(v, req, &wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+ 		start = io->iter;
+-		r = verity_for_io_block(v, io, &io->iter, &res);
++		r = verity_for_io_block(v, io, &io->iter, &wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+ 		r = verity_hash_final(v, req, verity_io_real_digest(v, io),
+-					&res);
++					&wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+diff --git a/drivers/md/dm-verity.h b/drivers/md/dm-verity.h
+index a59e0ad..b675bc0 100644
+--- a/drivers/md/dm-verity.h
++++ b/drivers/md/dm-verity.h
+@@ -90,11 +90,6 @@ struct dm_verity_io {
+ 	 */
  };
  
-+/* Previous versions of crypto_* ops used to return -EBUSY
-+ * rather than -EAGAIN to indicate being tied up. The in
-+ * kernel API changed but we don't want to break the user
-+ * space API. As only the hash user interface exposed this
-+ * error ever to the user, do the translation here.
-+ */
-+static inline int crypto_user_err(int err)
-+{
-+	if (err = -EAGAIN)
-+		return -EBUSY;
-+
-+	return err;
-+}
-+
- static int hash_alloc_result(struct sock *sk, struct hash_ctx *ctx)
+-struct verity_result {
+-	struct completion completion;
+-	int err;
+-};
+-
+ static inline struct ahash_request *verity_io_hash_req(struct dm_verity *v,
+ 						     struct dm_verity_io *io)
  {
- 	unsigned ds;
-@@ -136,7 +150,7 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
- unlock:
- 	release_sock(sk);
- 
--	return err ?: copied;
-+	return err ? crypto_user_err(err) : copied;
- }
- 
- static ssize_t hash_sendpage(struct socket *sock, struct page *page,
-@@ -188,7 +202,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
- unlock:
- 	release_sock(sk);
- 
--	return err ?: size;
-+	return err ? crypto_user_err(err) : size;
- }
- 
- static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
-@@ -236,7 +250,7 @@ static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
- 	hash_free_result(sk, ctx);
- 	release_sock(sk);
- 
--	return err ?: len;
-+	return err ? crypto_user_err(err) : len;
- }
- 
- static int hash_accept(struct socket *sock, struct socket *newsock, int flags,
-diff --git a/crypto/cryptd.c b/crypto/cryptd.c
-index 0508c48..d1dbdce 100644
---- a/crypto/cryptd.c
-+++ b/crypto/cryptd.c
-@@ -137,16 +137,14 @@ static int cryptd_enqueue_request(struct cryptd_queue *queue,
- 	int cpu, err;
- 	struct cryptd_cpu_queue *cpu_queue;
- 	atomic_t *refcnt;
--	bool may_backlog;
- 
- 	cpu = get_cpu();
- 	cpu_queue = this_cpu_ptr(queue->cpu_queue);
- 	err = crypto_enqueue_request(&cpu_queue->queue, request);
- 
- 	refcnt = crypto_tfm_ctx(request->tfm);
--	may_backlog = request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG;
- 
--	if (err = -EBUSY && !may_backlog)
-+	if (err = -EAGAIN)
- 		goto out_put_cpu;
- 
- 	queue_work_on(cpu, kcrypto_wq, &cpu_queue->work);
 -- 
 2.1.4
 
