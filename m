@@ -1,65 +1,84 @@
-From: Artem Savkov <asavkov@redhat.com>
-Date: Tue, 01 Aug 2017 13:04:31 +0000
-Subject: Re: [PATCH keyutils v2] tests/bz1031154: skip if selinux is disabled
-Message-Id: <20170801130431.dyxn6ebcs3fg3ucs@shodan.usersys.redhat.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Thu, 24 Aug 2017 14:19:00 +0000
+Subject: [PATCH v7 13/19] cifs: move to generic async completion
+Message-Id: <1503584350-7831-14-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-Hi David,
+cifs starts an async. crypto op and waits for their completion.
+Move it over to generic code doing the same.
 
-On Tue, Jun 27, 2017 at 11:54:19AM +0200, Artem Savkov wrote:
-> With selinux disabled the test currently fails trying to setenforce, it
-> should be skipped instead. Found while trying to run in a container
-> where selinux always appears disabled.
-> 
-> Signed-off-by: Artem Savkov <asavkov@redhat.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Pavel Shilovsky <pshilov@microsoft.com>
+---
+ fs/cifs/smb2ops.c | 30 ++++--------------------------
+ 1 file changed, 4 insertions(+), 26 deletions(-)
 
-Is there any feedback on v2 of this patch?
-
-> ---
->  tests/bugzillas/bz1031154/runtest.sh | 1 +
->  tests/toolbox.inc.sh                 | 9 +++++++++
->  2 files changed, 10 insertions(+)
-> 
-> diff --git a/tests/bugzillas/bz1031154/runtest.sh b/tests/bugzillas/bz1031154/runtest.sh
-> index aee8a28..d90afb4 100644
-> --- a/tests/bugzillas/bz1031154/runtest.sh
-> +++ b/tests/bugzillas/bz1031154/runtest.sh
-> @@ -20,6 +20,7 @@ then
->      exit 0
->  fi
->  
-> +require_selinux
->  require_command getenforce
->  require_command setenforce
->  require_command runcon
-> diff --git a/tests/toolbox.inc.sh b/tests/toolbox.inc.sh
-> index 7f19a02..8e4e91d 100644
-> --- a/tests/toolbox.inc.sh
-> +++ b/tests/toolbox.inc.sh
-> @@ -115,6 +115,15 @@ function require_command ()
->      fi
->  }
->  
-> +function require_selinux ()
-> +{
-> +    if ! grep -q selinuxfs /proc/mounts;
-> +    then
-> +	toolbox_skip_test $TEST "SKIP DUE TO DISABLED SELINUX"
-> +	exit 0
-> +    fi
-> +}
-> +
->  ###############################################################################
->  #
->  # extract an error message from the log file and check it
-> -- 
-> 2.7.5
-> 
-
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index cfacf2c..16fb041 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -1878,22 +1878,6 @@ init_sg(struct smb_rqst *rqst, u8 *sign)
+ 	return sg;
+ }
+ 
+-struct cifs_crypt_result {
+-	int err;
+-	struct completion completion;
+-};
+-
+-static void cifs_crypt_complete(struct crypto_async_request *req, int err)
+-{
+-	struct cifs_crypt_result *res = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	res->err = err;
+-	complete(&res->completion);
+-}
+-
+ static int
+ smb2_get_enc_key(struct TCP_Server_Info *server, __u64 ses_id, int enc, u8 *key)
+ {
+@@ -1934,12 +1918,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	struct aead_request *req;
+ 	char *iv;
+ 	unsigned int iv_len;
+-	struct cifs_crypt_result result = {0, };
++	DECLARE_CRYPTO_WAIT(wait);
+ 	struct crypto_aead *tfm;
+ 	unsigned int crypt_len = le32_to_cpu(tr_hdr->OriginalMessageSize);
+ 
+-	init_completion(&result.completion);
+-
+ 	rc = smb2_get_enc_key(server, tr_hdr->SessionId, enc, key);
+ 	if (rc) {
+ 		cifs_dbg(VFS, "%s: Could not get %scryption key\n", __func__,
+@@ -1999,14 +1981,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	aead_request_set_ad(req, assoc_data_len);
+ 
+ 	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				  cifs_crypt_complete, &result);
++				  crypto_req_done, &wait);
+ 
+-	rc = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
+-
+-	if (rc = -EINPROGRESS || rc = -EBUSY) {
+-		wait_for_completion(&result.completion);
+-		rc = result.err;
+-	}
++	rc = crypto_wait_req(enc ? crypto_aead_encrypt(req)
++				: crypto_aead_decrypt(req), &wait);
+ 
+ 	if (!rc && enc)
+ 		memcpy(&tr_hdr->Signature, sign, SMB2_SIGNATURE_SIZE);
 -- 
-Regards,
-  Artem
+2.1.4
+
