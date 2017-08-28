@@ -1,93 +1,41 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Mon, 21 Aug 2017 14:05:02 +0000
-Subject: [PATCH v6 16/19] crypto: talitos: move to generic async completion
-Message-Id: <1503324309-13673-17-git-send-email-gilad@benyossef.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Mon, 28 Aug 2017 10:34:01 +0000
+Subject: Re: [PATCH 7/8] crypto: ecdh - constify key
+Message-Id: <cdf29df5-ff6f-3330-0ecb-1d854217c7bd@microchip.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <1503324309-13673-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1503324309-13673-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@v
-Cc: Ofir Drang <ofir.drang@arm.com>
+References: <2715753.J0rCo2lbig@positron.chronox.de>
+ <1694255.qHQGcMPfKl@positron.chronox.de>
+In-Reply-To: <1694255.qHQGcMPfKl@positron.chronox.de>
+To: =?UTF-8?Q?Stephan_M=c3=bcller?= <smueller@chronox.de>, "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
+Cc: "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>
 
-The talitos driver starts several async crypto ops and  waits for their
-completions. Move it over to generic code doing the same.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
----
- drivers/crypto/talitos.c | 38 +++++---------------------------------
- 1 file changed, 5 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/crypto/talitos.c b/drivers/crypto/talitos.c
-index 79791c6..194a307 100644
---- a/drivers/crypto/talitos.c
-+++ b/drivers/crypto/talitos.c
-@@ -2037,22 +2037,6 @@ static int ahash_import(struct ahash_request *areq, const void *in)
- 	return 0;
- }
- 
--struct keyhash_result {
--	struct completion completion;
--	int err;
--};
--
--static void keyhash_complete(struct crypto_async_request *req, int err)
--{
--	struct keyhash_result *res = req->data;
--
--	if (err = -EINPROGRESS)
--		return;
--
--	res->err = err;
--	complete(&res->completion);
--}
--
- static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
- 		   u8 *hash)
- {
-@@ -2060,10 +2044,10 @@ static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
- 
- 	struct scatterlist sg[1];
- 	struct ahash_request *req;
--	struct keyhash_result hresult;
-+	struct crypto_wait wait;
- 	int ret;
- 
--	init_completion(&hresult.completion);
-+	crypto_init_wait(&wait);
- 
- 	req = ahash_request_alloc(tfm, GFP_KERNEL);
- 	if (!req)
-@@ -2072,25 +2056,13 @@ static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
- 	/* Keep tfm keylen = 0 during hash of the long key */
- 	ctx->keylen = 0;
- 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				   keyhash_complete, &hresult);
-+				   crypto_req_done, &wait);
- 
- 	sg_init_one(&sg[0], key, keylen);
- 
- 	ahash_request_set_crypt(req, sg, hash, keylen);
--	ret = crypto_ahash_digest(req);
--	switch (ret) {
--	case 0:
--		break;
--	case -EINPROGRESS:
--	case -EBUSY:
--		ret = wait_for_completion_interruptible(
--			&hresult.completion);
--		if (!ret)
--			ret = hresult.err;
--		break;
--	default:
--		break;
--	}
-+	ret = crypto_wait_req(crypto_ahash_digest(req), &wait);
-+
- 	ahash_request_free(req);
- 
- 	return ret;
--- 
-2.1.4
+On 04/19/2017 02:07 AM, Stephan M=C3=BCller wrote:
+> Signed-off-by: Stephan Mueller <smueller@chronox.de>
+> ---
+>   include/crypto/ecdh.h | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/include/crypto/ecdh.h b/include/crypto/ecdh.h
+> index 03a64f6..b5bb149 100644
+> --- a/include/crypto/ecdh.h
+> +++ b/include/crypto/ecdh.h
+> @@ -40,7 +40,7 @@
+>    */
+>   struct ecdh {
+>   	unsigned short curve_id;
+> -	char *key;
+> +	const char *key;
+>   	unsigned short key_size;
+>   };
+>  =20
+>=20
 
+I just came across this and remembered that Stephan already
+made a patch, so:
+
+Acked-by: Tudor Ambarus <tudor.ambarus@microchip.com>
