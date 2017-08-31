@@ -1,93 +1,38 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Thu, 24 Aug 2017 14:19:03 +0000
-Subject: [PATCH v7 16/19] crypto: talitos: move to generic async completion
-Message-Id: <1503584350-7831-17-git-send-email-gilad@benyossef.com>
+From: Eugene Syromyatnikov <evgsyr@gmail.com>
+Date: Thu, 31 Aug 2017 15:58:16 +0000
+Subject: [RFC PATCH 0/5] keyctl.2 updates
+Message-Id: <20170831155816.GA606@asgard.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lis
-Cc: Ofir Drang <ofir.drang@arm.com>
+To: mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
+Cc: linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-The talitos driver starts several async crypto ops and  waits for their
-completions. Move it over to generic code doing the same.
+Hello.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
----
- drivers/crypto/talitos.c | 38 +++++---------------------------------
- 1 file changed, 5 insertions(+), 33 deletions(-)
+While trying to add support for the new keyctl features (ability to
+provide KDF and ability to restrict addition to the keyring) decoding
+to strace, I've noticed that these are not documented, so here is
+my initial attempt to document these things. Unfortunately, keys/crypto
+infrastructure is quite foreign to me, so these patches definitely need
+some improvement.
 
-diff --git a/drivers/crypto/talitos.c b/drivers/crypto/talitos.c
-index 79791c6..194a307 100644
---- a/drivers/crypto/talitos.c
-+++ b/drivers/crypto/talitos.c
-@@ -2037,22 +2037,6 @@ static int ahash_import(struct ahash_request *areq, const void *in)
- 	return 0;
- }
- 
--struct keyhash_result {
--	struct completion completion;
--	int err;
--};
--
--static void keyhash_complete(struct crypto_async_request *req, int err)
--{
--	struct keyhash_result *res = req->data;
--
--	if (err = -EINPROGRESS)
--		return;
--
--	res->err = err;
--	complete(&res->completion);
--}
--
- static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
- 		   u8 *hash)
- {
-@@ -2060,10 +2044,10 @@ static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
- 
- 	struct scatterlist sg[1];
- 	struct ahash_request *req;
--	struct keyhash_result hresult;
-+	struct crypto_wait wait;
- 	int ret;
- 
--	init_completion(&hresult.completion);
-+	crypto_init_wait(&wait);
- 
- 	req = ahash_request_alloc(tfm, GFP_KERNEL);
- 	if (!req)
-@@ -2072,25 +2056,13 @@ static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
- 	/* Keep tfm keylen = 0 during hash of the long key */
- 	ctx->keylen = 0;
- 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				   keyhash_complete, &hresult);
-+				   crypto_req_done, &wait);
- 
- 	sg_init_one(&sg[0], key, keylen);
- 
- 	ahash_request_set_crypt(req, sg, hash, keylen);
--	ret = crypto_ahash_digest(req);
--	switch (ret) {
--	case 0:
--		break;
--	case -EINPROGRESS:
--	case -EBUSY:
--		ret = wait_for_completion_interruptible(
--			&hresult.completion);
--		if (!ret)
--			ret = hresult.err;
--		break;
--	default:
--		break;
--	}
-+	ret = crypto_wait_req(crypto_ahash_digest(req), &wait);
-+
- 	ahash_request_free(req);
- 
- 	return ret;
+For the one part is definitely omitted yet is the documentation for the
+"asymmetric" key type, which should be a part of keyrings.7, I think.
+
+Eugene Syromyatnikov (5):
+  keyctl.2: change "is" to "was" in error descriptions
+  keyctl.2: update kernel documentation path reference
+  keyrings.7: add pointers to kernel's documentation
+  keyctl.2: document the ability to provide KDF parameters in
+    KEYCTL_DH_COMPUTE
+  keyctl.2: document KEYCTL_RESTRICT_KEYRING operation
+
+ man2/keyctl.2   | 216 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ man7/keyrings.7 |   5 ++
+ 2 files changed, 209 insertions(+), 12 deletions(-)
+
 -- 
 2.1.4
 
