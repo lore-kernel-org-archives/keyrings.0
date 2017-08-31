@@ -1,141 +1,217 @@
-From: Joe Richey <joerichey94@gmail.com>
-Date: Wed, 16 Aug 2017 22:08:05 +0000
-Subject: Re: [PATCH v2] KEYS: make keyctl_invalidate() also require Setattr permission
-Message-Id: <CAKpBdu2r0UZQ7AVngRNYaasG4zznOqFdjgbriK+bqguoEKXF1A@mail.gmail.com>
+From: Eugene Syromyatnikov <evgsyr@gmail.com>
+Date: Thu, 31 Aug 2017 15:58:36 +0000
+Subject: [RFC PATCH 4/5] keyctl.2: document the ability to provide KDF parameters in KEYCTL_DH_COMPUTE
+Message-Id: <20170831155836.GA5257@asgard.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170816211403.121920-1-ebiggers3@gmail.com>
-In-Reply-To: <20170816211403.121920-1-ebiggers3-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-To: Eric Biggers <ebiggers3-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, linux-api-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-cifs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fscrypt-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-nfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Gwendal Grignou <gwendal-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Paul Crowley <paulcrowley-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, Richard Weinberger <richard-/L3Ra7n9ekc@public.gmane.org>, Ryo Hashimoto <hashimoto-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, Tyler Hicks <tyhicks-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org>, stable-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
+Cc: linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-On Wed, Aug 16, 2017 at 2:14 PM, Eric Biggers <ebiggers3@gmail.com> wrote:
-> From: Eric Biggers <ebiggers@google.com>
->
-> Currently, a process only needs Search permission on a key to invalidate
-> it with keyctl_invalidate(), which has an effect similar to unlinking it
-> from all keyrings.  Unfortunately, this significantly compromises the
-> keys permission system because as a result, there is no way to grant
-> read-only access to keys without also granting de-facto "delete" access.
-> Even worse, processes may invalidate entire _keyrings_, given only
-> permission to "search" them.  It is not even possible to block this
-> using SELinux, because SELinux is likewise only asked for Search
-> permission, which needs to be allowed for read-only access.
->
-> Key invalidation seems to have intended for cases where keyrings are
-> used as caches, and keys can be re-requested at any time by an upcall to
-> /sbin/request-key.  However, keyrings are not always used in this way.
-> For example, users of filesystem-level encryption (EXT4, F2FS, and/or
-> UBIFS encryption) usually wish to grant many differently-privileged
-> processes access to the same keys, set up in a shared keyring ahead of
-> time.  Permitting everyone to invalidate keys in this scenario enables a
-> trivial denial-of-service.  And even users of keyrings as "just caches"
-> may wish to restrict invalidation because it may require significant
-> work or user interaction to regenerate keys.
+---
+ man2/keyctl.2 | 147 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 144 insertions(+), 3 deletions(-)
 
-This patch is great for our work on EXT4 encryption. Currently, if User
-A wishes to decrypt a file and have it shared with User B, the
-encryption keys must be in a keyring searchable by both users. However,
-this also means that User B can just invalidate this shared keyring,
-causing User A to lose access to their files.
+diff --git a/man2/keyctl.2 b/man2/keyctl.2
+index e4b4bc9..570edf5 100644
+--- a/man2/keyctl.2
++++ b/man2/keyctl.2
+@@ -25,6 +25,7 @@
+ .\" the source, must acknowledge the copyright and authors of this work.
+ .\" %%%LICENSE_END
+ .\"
++.mso www.tmac
+ .TH KEYCTL 2 2017-03-13 Linux "Linux Key Management Calls"
+ .SH NAME
+ keyctl \- manipulate the kernel's key management facility
+@@ -1413,7 +1414,8 @@ via the function
+ .TP
+ .BR KEYCTL_DH_COMPUTE " (since Linux 4.7)"
+ .\" commit ddbb41148724367394d0880c516bfaeed127b52e
+-Compute a Diffie-Hellman shared secret or public key.
++Compute a Diffie-Hellman shared secret or public key,
++optionally applying key derivation function (KDF) to the result.
+ .IP
+ The
+ .I arg2
+@@ -1476,10 +1478,67 @@ system call was considered a good fit due to the DH algorithm's use
+ for deriving shared keys;
+ it also allows the type of the key to determine
+ which DH implementation (software or hardware) is appropriate.
++.\" commit f1c316a3ab9d24df6022682422fe897492f2c0c8
+ .IP
+-The
++If the
+ .I arg5
+-argument is reserved and must be 0.
++argument is
++.BR NULL ,
++then the DH result itself is returned.
++Otherwise (since Linux 4.12), it is a pointer to a structure which specifies
++parameters of the KDF operation to be applied:
++.IP
++.in +4n
++.EX
+++struct keyctl_kdf_params {
++    char *hashname;
++    char *otherinfo;
++    __u32 otherinfolen;
++    __u32 __spare[8];
++};
++.EE
++.in
++.IP
++The
++.B hashname
++field is a null-terminated string no longer than
++.B CRYPTO_MAX_ALG_NAME
++(128 bytes as of this writing) which specifies hash name
++(available into the kernel's crypto API; the list of the hashes available
++is rather tricky to observe; please refer to the
++.URL https://www.kernel.org/doc/html/latest/crypto/architecture.html "Kernel Crypto API Architecture"
++for the information regarding how hash names are constructed and
++to your kernel's source and configuration regarding what ciphers
++and templates with
++.B CRYPTO_ALG_TYPE_SHASH
++are available)
++to be applied to DH result in KDF operation.
++.IP
++The
++.B otherinfo
++field is an
++.I OtherInfo
++data as described in SP800-56A section 5.8.1.2 and is algorithm-specific.
++This data is concatenated with the result of DH operation and is provided as
++an input to the KDF operation.
++Its size is provided in the
++.B otherinfolen
++field and is limited by
++.B KEYCTL_KDF_MAX_OI_LEN
++constant that defined in
++.B security/keys/internal.h
++to a value of 64.
++.IP
++The
++.B __spare
++field is currently unused.
++.\" commit 4f9dabfaf8df971f8a3b6aa324f8f817be38d538
++It was ignored until Linux 4.13 (but still should be
++user-addressable since it is copied to the kernel),
++and should contain zeroes since Linux 4.13.
++.IP
++The KDF implementation complies with SP800-56A as well
++as with SP800-108 (the counter KDF).
+ .SH RETURN VALUE
+ For a successful call, the return value depends on the operation:
+ .TP
+@@ -1545,6 +1604,43 @@ and the requested link would result in a cycle.
+ The key quota for the caller's user would be exceeded by creating a key or
+ linking it to the keyring.
+ .TP
++.B EFAULT
++.I operation
++was
++.B KEYCTL_DH_COMPUTE
++and one of the following has failed:
++.RS
++.IP \(bu 3
++copying of
++.BR "struct keyctl_dh_params" ,
++pointed by
++.IR arg2 ,
++from the user space;
++.IP \(bu
++copying of
++.BR "struct keyctl_kdf_params" ,
++pointed by non-NULL
++.IR arg5 ,
++from the user space
++(in case kernel supports performing KDF operation on DH operation result);
++.IP \(bu
++copying of data pointed by
++.B hashname
++field of
++.B "struct keyctl_kdf_params"
++from the user space;
++.IP \(bu
++copying of data pointed by
++.B otherinfo
++field of
++.B struct keyctl_kdf_params
++from the user space if
++.B otherinfolen
++field was non-zero;
++.IP \(bu
++copying of the result to the user space.
++.RE
++.TP
+ .B EINVAL
+ .I operation
+ was
+@@ -1570,10 +1666,38 @@ exceeded the limit (32 bytes and 4096 bytes respectively).
+ .B EINVAL
+ .I operation
+ was
++.BR KEYCTL_DH_COMPUTE ,
++.I arg5
++was non-NULL and kernel does not support applying KDF operation to the DH
++operation result.
++.TP
++.B EINVAL
++.I operation
++was
++.B KEYCTL_DH_COMPUTE
++And the digest size of the hashing algorithm supplied is zero.
++.TP
++.B EINVAL
++.I operation
++was
+ .B KEYCTL_DH_COMPUTE
+ and the buffer size provided is not enough to hold the result.
+ Provide 0 as a buffer size in order to obtain the minimum buffer size.
+ .TP
++.B EINVAL
++.\" commit 4f9dabfaf8df971f8a3b6aa324f8f817be38d538
++.I operation
++was
++.B KEYCTL_DH_COMPUTE
++and the
++.B __spare
++field of the
++.B struct keyctl_kdf_params
++provided in
++.I arg5
++field
++contains non-zero values.
++.TP
+ .B EKEYEXPIRED
+ An expired key was found or specified.
+ .TP
+@@ -1590,6 +1714,23 @@ was
+ and the requested link would cause the maximum nesting depth
+ for keyrings to be exceeded.
+ .TP
++.B EMSGSIZE
++.I operation
++was
++.B KEYCTL_DH_COMPUTE
++and the buffer length exceeds
++.B KEYCTL_KDF_MAX_OUTPUT_LEN
++(which is 1024 currently)
++or the
++.B otherinfolen
++field of
++.B struct keyctl_kdf_parms
++passed in
++.I arg5
++exceeds
++.B KEYCTL_KDF_MAX_OI_LEN
++(which is 64 currently).
++.TP
+ .BR ENFILE " (Linux kernels before 3.13)"
+ .IR operation
+ was
+-- 
+2.1.4
 
-Fixing this security issue will let us have a global keyring containing
-all the EXT4 encryption keys (with type logon).
-
--- Joe Richey <joerichey@google.com>
-
->
-> This patch fixes the flaw by requiring both Search and Setattr
-> permission to invalidate a key rather than just Search permission.
-> Requiring Setattr permission is appropriate because Setattr permission
-> also allows revoking (via keyctl_revoke()) or expiring (via
-> keyctl_set_timeout()) the key, which also make the key inaccessible
-> regardless of how many keyrings it is in.  Continuing to require Search
-> permission ensures we do not decrease the level of permissions required.
->
-> Alternatively, the problem could be solved by requiring Write
-> permission.  However, that would be less appropriate because Write
-> permission is ostensibly meant to deal with the key payload, not the key
-> itself.  A new "Invalidate" permission would also work, but that would
-> require keyctl_setperm() users to start including a new permission which
-> never existed before, which would be much more likely to break users of
-> keyctl_invalidate().  Finally, we could only allow invalidating keys
-> which the kernel has explicitly marked as invalidatible, e.g. the
-> "id_resolver" keys created for NFSv4 ID mapping.  However, that likewise
-> would be much more likely to break users.
->
-> This is a user-visible API change.  But we don't seem to have much
-> choice, and any breakage will be limited to users who override the
-> default key permissions using keyctl_setperm() to remove Setattr
-> permission, then later call keyctl_invalidate().  There are probably not
-> many such users, possibly even none at all.  In fact, the only users of
-> keyctl_invalidate() I could find are nfsidmap and the Chromium OS
-> cryptohome daemon.  nfsidmap will be unaffected because it runs as root
-> and actually relies on the "root is permitted to invalidate certain
-> special keys" exception (KEY_FLAG_ROOT_CAN_INVAL) rather than the actual
-> key permissions.  cryptohomed will be unaffected because it already owns
-> the keys and sets KEY_USR_SETATTR permission on them.
->
-> Cc: linux-api@vger.kernel.org
-> Cc: linux-cifs@vger.kernel.org
-> Cc: linux-fscrypt@vger.kernel.org
-> Cc: linux-nfs@vger.kernel.org
-> Cc: Gwendal Grignou <gwendal@chromium.org>
-> Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-> Cc: Paul Crowley <paulcrowley@google.com>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: Ryo Hashimoto <hashimoto@google.com>
-> Cc: Tyler Hicks <tyhicks@canonical.com>
-> Cc: stable@vger.kernel.org # v3.5+
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
-> ---
->  Documentation/security/keys/core.rst | 4 ++--
->  security/keys/keyctl.c               | 4 ++--
->  2 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-> index 1648fa80b3bf..c8030f628810 100644
-> --- a/Documentation/security/keys/core.rst
-> +++ b/Documentation/security/keys/core.rst
-> @@ -815,8 +815,8 @@ The keyctl syscall functions are:
->       immediately, though they are still visible in /proc/keys until deleted
->       (they're marked with an 'i' flag).
->
-> -     A process must have search permission on the key for this function to be
-> -     successful.
-> +     A process must have Search and Setattr permission on the key for this
-> +     function to be successful.
->
->    *  Compute a Diffie-Hellman shared secret or public key::
->
-> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> index ab0b337c84b4..0739e7934e74 100644
-> --- a/security/keys/keyctl.c
-> +++ b/security/keys/keyctl.c
-> @@ -400,7 +400,7 @@ long keyctl_revoke_key(key_serial_t id)
->  /*
->   * Invalidate a key.
->   *
-> - * The key must be grant the caller Invalidate permission for this to work.
-> + * The key must grant the caller Search and Setattr permission for this to work.
->   * The key and any links to the key will be automatically garbage collected
->   * immediately.
->   *
-> @@ -416,7 +416,7 @@ long keyctl_invalidate_key(key_serial_t id)
->
->         kenter("%d", id);
->
-> -       key_ref = lookup_user_key(id, 0, KEY_NEED_SEARCH);
-> +       key_ref = lookup_user_key(id, 0, KEY_NEED_SEARCH | KEY_NEED_SETATTR);
->         if (IS_ERR(key_ref)) {
->                 ret = PTR_ERR(key_ref);
->
-> --
-> 2.14.1.480.gb18f417b89-goog
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fscrypt" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
