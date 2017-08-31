@@ -1,21 +1,33 @@
-From: Cyril Hrubis <chrubis@suse.cz>
-Date: Fri, 18 Aug 2017 13:38:03 +0000
-Subject: Re: [LTP] [PATCH v2] syscalls/keyctl04: new test for thread keyring memory leak
-Message-Id: <20170818133802.GE22319@rei.lan>
+From: Eugene Syromyatnikov <evgsyr@gmail.com>
+Date: Thu, 31 Aug 2017 15:58:32 +0000
+Subject: [RFC PATCH 3/5] keyrings.7: add pointers to kernel's documentation
+Message-Id: <20170831155832.GA5165@asgard.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+To: mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
+Cc: linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-Hi!
-I've added a lapi/keyctl.h header to LTP with a fallback definitions,
-which is more or less standard way how we deal with possibly missing
-headers since that way we get to use the one available on system if
-present and changed the tests to make use of it.
+Mostly because of assymmetric-keys.txt, which is outside security/keys
+for some reason.
+---
+ man7/keyrings.7 | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-And pushed both patches, thanks.
-
+diff --git a/man7/keyrings.7 b/man7/keyrings.7
+index ba980da..0cb1190 100644
+--- a/man7/keyrings.7
++++ b/man7/keyrings.7
+@@ -866,3 +866,8 @@ scripts can use them.
+ .BR user\-session\-keyring (7),
+ .BR pam_keyinit (8),
+ .BR request-key (8)
++.PP
++The kernel source files
++.IR Documentation/crypto/asymmetric-keys.txt
++and under
++.IR Documentation/security/keys .
 -- 
-Cyril Hrubis
-chrubis@suse.cz
+2.1.4
+
