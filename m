@@ -1,42 +1,93 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 08 Aug 2017 13:45:36 +0000
-Subject: Re: [PATCH v4 06/19] crypto: move algif to generic async completion
-Message-Id: <CAOtvUMfp7Hie_RA8XNmWS084PvyO_xB0VAf2Vt9nR68cQhz3=g@mail.gmail.com>
+From: Eugene Syromyatnikov <evgsyr@gmail.com>
+Date: Thu, 31 Aug 2017 15:58:41 +0000
+Subject: [RFC PATCH 5/5] keyctl.2: document KEYCTL_RESTRICT_KEYRING operation
+Message-Id: <20170831155841.GA5456@asgard.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1502193834-11289-1-git-send-email-gilad@benyossef.com>
- <1502193834-11289-7-git-send-email-gilad@benyossef.com> <8585274.Umn6qnzcUd@tauon.chronox.de>
-In-Reply-To: <8585274.Umn6qnzcUd-b2PLbiJbNv8ftSvlWXw0+g@public.gmane.org>
-To: Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>
-Cc: Herbert Xu <herbert-lOAM2aK0SrRLBo1qDEOMRrpzq4S04n8Q@public.gmane.org>, "David S. Miller" <davem-fT/PcQaiUtIeIZ0/mPfg9Q@public.gmane.org>, Jonathan Corbet <corbet-T1hC0tSOHrs@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Tom Lendacky <thomas.lendacky-5C7GfCeVMHo@public.gmane.org>, Gary Hook <gary.hook-5C7GfCeVMHo@public.gmane.org>, Boris Brezillon <boris.brezillon-wi1+55ScJUtKEb57/3fJTNBPR1lH4CV8@public.gmane.org>, Arnaud Ebalard <arno-LkuqDEemtHBg9hUCZPvPmw@public.gmane.org>, Matthias Brugger <matthias.bgg-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, device-mapper development <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Shaohua Li <shli-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Steve French <sfrench-eUNUBHrolfbYtjvyW6yDsg@public.gmane.org>, "Theodore Y. Ts'o" <tytso-3s7WtUTddSA@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Mimi Zohar <zohar-23VcF4HTsmIX0ybBhKVfKdBPR1lH4CV8@public.gmane.org>, Dmitry Kasatkin <dmitry.kasatkin-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, Serge
+To: mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
+Cc: linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-On Tue, Aug 8, 2017 at 4:10 PM, Stephan Mueller <smueller@chronox.de> wrote:
-> Am Dienstag, 8. August 2017, 14:03:37 CEST schrieb Gilad Ben-Yossef:
->
-> Hi Gilad,
->
->> algif starts several async crypto ops and waits for their completion.
->> Move it over to generic code doing the same.
->
-> Just FYI: your patch set and my patch [1] will clash.
->
-> [1] https://patchwork.kernel.org/patch/9875959/
+---
+ man2/keyctl.2 | 53 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
-I'll try to rebase on linux-next + your patch than.
-
-Thanks for letting me know.
-
-Gilad
-
-
-
-
+diff --git a/man2/keyctl.2 b/man2/keyctl.2
+index 570edf5..8e2ed12 100644
+--- a/man2/keyctl.2
++++ b/man2/keyctl.2
+@@ -1539,6 +1539,45 @@ and should contain zeroes since Linux 4.13.
+ .IP
+ The KDF implementation complies with SP800-56A as well
+ as with SP800-108 (the counter KDF).
++.TP
++.BR KEYCTL_RESTRICT_KEYRING " (since Linux 4.12)"
++.\" commit 6563c91fd645556c7801748f15bc727c77fcd311
++.\" commit 7228b66aaf723a623e578aa4db7d083bb39546c9
++Apply a restriction to a keyring with the ID provided in
++.IR arg2 .
++(cast to
++.IR key_serial_t ).
++The caller must have
++.IR setattr
++permission on the key.
++If
++.I arg3
++is NULL, any attempt to add a key to the keyring is blocked;
++otherwise it contains a pointer to a string with a key type name and
++.I arg4
++contains a pointer to string that describes the type-specific restriction.
++As of Linux 4.12, only type "asymmetric" has the restrictions defined:
++.RS
++.TP
++.B builtin_trusted
++Allows only keys that are signed by builtin keyring (".builtin_trusted_keys").
++.TP
++.B builtin_and_secondary_trusted
++Allows only keys that are signed by secondary keyring
++(".secondary_trusted_keys").
++.TP
++.BI key_or_keyring:chain: key
++Allows only keys that are signed by keyring with
++.I key
++ID.
++.RE
++.IP
++Note that a restriction can be configured only once for the specific keyring;
++once it is set, it can't be overridden.
++.IP
++The argument
++.I arg5
++is ignored.
+ .SH RETURN VALUE
+ For a successful call, the return value depends on the operation:
+ .TP
+@@ -1600,10 +1639,24 @@ was
+ .BR KEYCTL_LINK
+ and the requested link would result in a cycle.
+ .TP
++.B EDEADLK
++.I operation
++was
++.BR KEYCTL_RESTRICT_KEYRING
++and the requested keyring restriction would result in a cycle.
++.TP
+ .B EDQUOT
+ The key quota for the caller's user would be exceeded by creating a key or
+ linking it to the keyring.
+ .TP
++.B EEXIST
++.I operation
++was
++.BR KEYCTL_RESTRICT_KEYRING
++and keyring provided in
++.I arg2
++already has a restriction set.
++.TP
+ .B EFAULT
+ .I operation
+ was
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
+2.1.4
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
