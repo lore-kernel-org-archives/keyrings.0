@@ -1,138 +1,35 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 27 Sep 2017 19:50:41 +0000
-Subject: [PATCH v3 1/7] KEYS: don't let add_key() update an uninstantiated key
-Message-Id: <20170927195047.122358-2-ebiggers3@gmail.com>
+From: Eugene Syromyatnikov <evgsyr@gmail.com>
+Date: Sat, 02 Sep 2017 04:40:32 +0000
+Subject: [PATCH v2 6/6] keyctl.2: mention ENOMEM in ERRORS
+Message-Id: <20170902044032.GA7817@asgard.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170927195047.122358-1-ebiggers3@gmail.com>
-In-Reply-To: <20170927195047.122358-1-ebiggers3@gmail.com>
-To: linux-security-module@vger.kernel.org
+To: mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
+Cc: linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-From: Eric Biggers <ebiggers@google.com>
-
-Currently, add_key() will, when passed a key that already exists, call
-the key's ->update() method.  But this is heavily broken in the case
-where the key is uninstantiated because it doesn't call
-__key_instantiate_and_link().  Consequently, it doesn't do most of the
-things that are supposed to happen when the key is instantiated, such as
-setting KEY_FLAG_INSTANTIATED, clearing KEY_FLAG_USER_CONSTRUCT and
-awakening tasks waiting on it, and incrementing key->user->nikeys.
-
-It also never takes key_construction_mutex, which means that
-->instantiate() can run concurrently with ->update() on the same key.
-In the case of the "user" and "logon" key types this causes a memory
-leak, at best.  Maybe even worse, the ->update() methods of the
-"encrypted" and "trusted" key types actually just dereference a NULL
-pointer when passed an uninstantiated key.
-
-Therefore, change find_key_to_update() to return NULL if the found key
-is uninstantiated, so that add_key() replaces the key rather than
-instantiating it.  This seems to be better than fixing __key_update() to
-call __key_instantiate_and_link(), since given all the bugs noted above
-as well as that the existing behavior was undocumented and
-keyctl_instantiate() is supposed to be used instead, I doubt anyone was
-relying on the existing behavior.
-
-This patch only affects *uninstantiated* keys.  For now we still allow a
-negatively instantiated key to be updated (thereby positively
-instantiating it), although that's broken too (the next patch fixes it)
-and I'm not sure that anyone actually uses that functionality either.
-
-Here is a simple reproducer for the bug using the "encrypted" key type
-(requires CONFIG_ENCRYPTED_KEYS=y), though as noted above the bug
-pertained to more than just the "encrypted" key type:
-
-    #include <stdlib.h>
-    #include <unistd.h>
-    #include <keyutils.h>
-
-    int main(void)
-    {
-        int ringid = keyctl_join_session_keyring(NULL);
-
-        if (fork()) {
-            for (;;) {
-                const char payload[] = "update user:foo 32";
-
-                usleep(rand() % 10000);
-                add_key("encrypted", "desc", payload, sizeof(payload), ringid);
-                keyctl_clear(ringid);
-            }
-        } else {
-            for (;;)
-                request_key("encrypted", "desc", "callout_info", ringid);
-        }
-    }
-
-It causes:
-
-    BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-    IP: encrypted_update+0xb0/0x170
-    PGD 7a178067 P4D 7a178067 PUD 77269067 PMD 0
-    PREEMPT SMP
-    CPU: 0 PID: 340 Comm: reproduce Tainted: G      D         4.14.0-rc1-00025-g428490e38b2e #796
-    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-    task: ffff8a467a39a340 task.stack: ffffb15c40770000
-    RIP: 0010:encrypted_update+0xb0/0x170
-    RSP: 0018:ffffb15c40773de8 EFLAGS: 00010246
-    RAX: 0000000000000000 RBX: ffff8a467a275b00 RCX: 0000000000000000
-    RDX: 0000000000000005 RSI: ffff8a467a275b14 RDI: ffffffffb742f303
-    RBP: ffffb15c40773e20 R08: 0000000000000000 R09: ffff8a467a275b17
-    R10: 0000000000000020 R11: 0000000000000000 R12: 0000000000000000
-    R13: 0000000000000000 R14: ffff8a4677057180 R15: ffff8a467a275b0f
-    FS:  00007f5d7fb08700(0000) GS:ffff8a467f200000(0000) knlGS:0000000000000000
-    CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-    CR2: 0000000000000018 CR3: 0000000077262005 CR4: 00000000001606f0
-    Call Trace:
-     key_create_or_update+0x2bc/0x460
-     SyS_add_key+0x10c/0x1d0
-     entry_SYSCALL_64_fastpath+0x1f/0xbe
-    RIP: 0033:0x7f5d7f211259
-    RSP: 002b:00007ffed03904c8 EFLAGS: 00000246 ORIG_RAX: 00000000000000f8
-    RAX: ffffffffffffffda RBX: 000000003b2a7955 RCX: 00007f5d7f211259
-    RDX: 00000000004009e4 RSI: 00000000004009ff RDI: 0000000000400a04
-    RBP: 0000000068db8bad R08: 000000003b2a7955 R09: 0000000000000004
-    R10: 000000000000001a R11: 0000000000000246 R12: 0000000000400868
-    R13: 00007ffed03905d0 R14: 0000000000000000 R15: 0000000000000000
-    Code: 77 28 e8 64 34 1f 00 45 31 c0 31 c9 48 8d 55 c8 48 89 df 48 8d 75 d0 e8 ff f9 ff ff 85 c0 41 89 c4 0f 88 84 00 00 00 4c 8b 7d c8 <49> 8b 75 18 4c 89 ff e8 24 f8 ff ff 85 c0 41 89 c4 78 6d 49 8b
-    RIP: encrypted_update+0xb0/0x170 RSP: ffffb15c40773de8
-    CR2: 0000000000000018
-
-Cc: <stable@vger.kernel.org>    [v2.6.12+]
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+This one is not very specific, as memory allocations are scattered across
+the code, so let's put some generic description here.
 ---
- security/keys/keyring.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ man2/keyctl.2 | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 4fa82a8a9c0e..129a4175760b 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -1056,8 +1056,8 @@ EXPORT_SYMBOL(keyring_restrict);
-  * caller must also hold a lock on the keyring semaphore.
-  *
-  * Returns a pointer to the found key with usage count incremented if
-- * successful and returns NULL if not found.  Revoked and invalidated keys are
-- * skipped over.
-+ * successful and returns NULL if not found.  Revoked, invalidated, and
-+ * uninstantiated keys are skipped over.  (But negative keys are not!)
-  *
-  * If successful, the possession indicator is propagated from the keyring ref
-  * to the returned key reference.
-@@ -1084,8 +1084,10 @@ key_ref_t find_key_to_update(key_ref_t keyring_ref,
- 
- found:
- 	key = keyring_ptr_to_key(object);
--	if (key->flags & ((1 << KEY_FLAG_INVALIDATED) |
--			  (1 << KEY_FLAG_REVOKED))) {
-+	if ((key->flags & ((1 << KEY_FLAG_INVALIDATED) |
-+			   (1 << KEY_FLAG_REVOKED) |
-+			   (1 << KEY_FLAG_INSTANTIATED))) !+	    (1 << KEY_FLAG_INSTANTIATED)) {
- 		kleave(" = NULL [x]");
- 		return NULL;
- 	}
+diff --git a/man2/keyctl.2 b/man2/keyctl.2
+index bbd85ce..fe17b1e 100644
+--- a/man2/keyctl.2
++++ b/man2/keyctl.2
+@@ -1866,6 +1866,10 @@ did not exist, and
+ .I arg3
+ was zero (meaning don't create the key if it didn't exist).
+ .TP
++.B ENOMEM
++One of kernel memory allocation routines failed during the execution of the
++syscall.
++.TP
+ .B ENOTDIR
+ A key of keyring type was expected but the ID of a key with
+ a different type was provided.
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.1.4
 
