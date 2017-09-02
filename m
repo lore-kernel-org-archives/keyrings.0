@@ -1,27 +1,53 @@
-From: Joe Perches <joe@perches.com>
-Date: Thu, 07 Sep 2017 05:54:57 +0000
-Subject: Re: [PATCH] security/keys: Adding newline after declaration
-Message-Id: <1504763697.7546.9.camel@perches.com>
+From: Eugene Syromyatnikov <evgsyr@gmail.com>
+Date: Sat, 02 Sep 2017 04:39:58 +0000
+Subject: [PATCH v2 0/6] keyctl.2 updates
+Message-Id: <20170902043958.GA27412@asgard.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1504762905-2424-1-git-send-email-pushkar.iit@gmail.com>
-In-Reply-To: <1504762905-2424-1-git-send-email-pushkar.iit@gmail.com>
-To: linux-security-module@vger.kernel.org
+To: mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
+Cc: linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-On Thu, 2017-09-07 at 11:11 +0530, Pushkar Jambhlekar wrote:
-> Fixing checkpatch warning to add newline after declaration
-[]
-> diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-[]
-> @@ -93,6 +93,7 @@ static int big_key_crypt(enum big_key_op op, u8 *data, size_t datalen, u8 *key)
->  {
->  	int ret = -EINVAL;
->  	struct scatterlist sgio;
-> +
->  	SKCIPHER_REQUEST_ON_STACK(req, big_key_skcipher);
+Hello.
 
-checkpatch doesn't know that SKCIPHER_REQUEST_ON_STACK
-is actually 2 declarations.
+While trying to add support for the new keyctl features (ability to
+provide KDF and ability to restrict addition to the keyring) decoding
+to strace, I've noticed that these are not documented, so here is
+my initial attempt to document these things. Unfortunately, keys/crypto
+infrastructure is quite foreign to me, so these patches definitely need
+some improvement.
+
+For the one part is definitely omitted yet is the documentation for the
+"asymmetric" key type, which should be a part of keyrings.7, I think.
+
+Thanks for all the feedback regarding the original version, I've tried to
+incorporate it in this version of the patchset.
+
+Changes since v1:
+ * Added additional information about causes of EAGAIN, ENOENT, and
+   ETIMEDOUT for the KEYCTL_DH_COMPUTE operation.
+ * Information about internal limit on hashname moved to the description
+   of yet another cause of EINVAL for the KEYCTL_DH_COMPUTE.
+ * The description of possible restriction specification for asymmetric
+   key type has been corrected.
+ * Added information about causes of ENOENT and EOPNOTSUPP for the
+   KEYCTL_RESTRICT_KEYRING operation.
+ * Added wildcard mention of the ENOMEM error code.
+
+Eugene Syromyatnikov (6):
+  keyctl.2: change "is" to "was" in error descriptions
+  keyctl.2: update kernel documentation path reference
+  keyrings.7: add pointers to kernel's documentation
+  keyctl.2: document the ability to provide KDF parameters in
+    KEYCTL_DH_COMPUTE
+  keyctl.2: document KEYCTL_RESTRICT_KEYRING operation
+  keyctl.2: mention ENOMEM in ERRORS
+
+ man2/keyctl.2   | 289 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ man7/keyrings.7 |   5 +
+ 2 files changed, 282 insertions(+), 12 deletions(-)
+
+-- 
+2.1.4
 
