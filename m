@@ -1,59 +1,53 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Thu, 28 Sep 2017 10:34:51 +0000
-Subject: Re: [GIT PULL] KEYS: Fixes and crypto fixes
-Message-Id: <20170928103451.GC8118@gondor.apana.org.au>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 05 Sep 2017 09:54:55 +0000
+Subject: Re: [PATCH v2] KEYS: make keyctl_invalidate() also require Setattr permission
+Message-Id: <13221.1504605295@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <28036.1506547164@warthog.procyon.org.uk>
- <alpine.LRH.2.21.1709280912400.12069@namei.org>
- <20170928001529.GA120911@gmail.com>
- <alpine.LRH.2.21.1709281208010.24604@namei.org>
-In-Reply-To: <alpine.LRH.2.21.1709281208010.24604@namei.org>
-To: James Morris <jmorris@namei.org>
-Cc: Eric Biggers <ebiggers3@gmail.com>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers@google.com>, "Jason A. Donenfeld" <Jason@zx2c4.com>, Michael Halcrow <mhalcrow@google.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20170816211403.121920-1-ebiggers3@gmail.com>
+In-Reply-To: <20170816211403.121920-1-ebiggers3-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Eric Biggers <ebiggers3-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-api-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-cifs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fscrypt-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-nfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Gwendal Grignou <gwendal-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Paul Crowley <paulcrowley-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, Richard Weinberger <richard-/L3Ra7n9ekc@public.gmane.org>, Ryo Hashimoto <hashimoto-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, Tyler Hicks <tyhicks-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org>, stable-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-On Thu, Sep 28, 2017 at 12:08:36PM +1000, James Morris wrote:
-> On Wed, 27 Sep 2017, Eric Biggers wrote:
-> 
-> > On Thu, Sep 28, 2017 at 09:14:58AM +1000, James Morris wrote:
-> > > On Wed, 27 Sep 2017, David Howells wrote:
-> > > 
-> > > >  (2) Fixing big_key to use safe crypto from Jason A. Donenfeld.
-> > > > 
-> > > 
-> > > I'm concerned about the lack of crypto review mentioned by Jason -- I 
-> > > wonder if we can get this rewrite any more review from crypto folk.
-> > > 
-> > > Also, are there any tests for this code?  If not, it would be good to make 
-> > > some.
-> > > 
-> > 
-> > There is a test for the big_key key type in the keyutils test suite.  I also
-> > manually tested Jason's change.  And as far as I can tell there isn't actually a
-> > whole lot to test besides adding a big_key larger than BIG_KEY_FILE_THRESHOLD
-> > bytes, reading it back, and verifying that the data is unchanged --- since that
-> > covers the code that was changed.  An earlier version of the patch produced a
-> > warning with CONFIG_DEBUG_SG=y since it put the aead_request on the stack, but
-> > that's been fixed.
-> > 
-> 
-> Ok, thanks a lot.
-> 
-> > It would be great if someone else would comment on the crypto too, but for what
-> > it's worth I'm satisfied with the crypto changes.  GCM is a much better choice
-> > than ECB as long as we don't repeat (key, IV) pairs --- which we don't.  And in
-> > any case ECB mode makes no sense in this context; you'd need a *very* good
-> > reason to actually choose to encrypt something with ECB mode.  Unfortunately it
-> > tends to be a favorite of people who don't understand encryption modes...
-> 
-> Adding Herbert.
+Eric Biggers <ebiggers3@gmail.com> wrote:
 
-I think Jason's patch is definitely an improvement over the status quo.
+> This patch fixes the flaw by requiring both Search and Setattr permission to
+> invalidate a key rather than just Search permission.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+I'm not sure I agree.  The problem is that you then have to grant someone
+Setattr permission for them to be able to do this, which then opens up a whole
+host of other things they can also do.
+
+> Requiring Setattr permission is appropriate because Setattr permission also
+> allows revoking (via keyctl_revoke()) or expiring (via keyctl_set_timeout())
+> the key, which also make the key inaccessible regardless of how many
+> keyrings it is in.
+
+Note that setting the expiry time is not really equivalent to revokation in
+this regard as setting the expiry time is something you do when setting up a
+key, whereas revokation is something you do later to kill a key off.
+
+> Alternatively, the problem could be solved by requiring Write permission.
+
+That's not really a viable solution as things stand.  You can't turn Write
+permission on on a key whose type doesn't have an ->update() method (though
+this could be changed) and it also opens up a key to being modified.
+
+How about another solution:
+
+ (1) I add a flag to a key to say that it can be invalidated and a keyctl to
+     change that flag.
+
+ (2) I add a new key type op called ->allow_invalidation() that allows key
+     types to govern separately who is allowed to invalidate keys of that
+     type.
+
+     So, for instance, DNS record invalidation would require CAP_NET_ADMIN.
+
+ (3) Allow keyrings to be cleared by users who don't have Write permission but
+     do have other permission, such as CAP_NET_ADMIN.  This would need to be
+     granted on a per-keyring basis.
+
+David
