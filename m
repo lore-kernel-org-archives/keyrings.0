@@ -1,55 +1,102 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 27 Sep 2017 19:50:44 +0000
-Subject: [PATCH v3 4/7] KEYS: load key flags and expiry time atomically in key_validate()
-Message-Id: <20170927195047.122358-5-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 05 Sep 2017 12:38:49 +0000
+Subject: [PATCH v8 10/20] crypto: move gcm to generic async completion
+Message-Id: <1504615144-29770-11-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170927195047.122358-1-ebiggers3@gmail.com>
-In-Reply-To: <20170927195047.122358-1-ebiggers3@gmail.com>
-To: linux-security-module@vger.kernel.org
+References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+gcm is starting an async. crypto op and waiting for it complete.
+Move it over to generic code doing the same.
 
-In key_validate(), load the flags and expiry time once atomically, since
-these can change concurrently if key_validate() is called without the
-key semaphore held.  And we don't want to get inconsistent results if a
-variable is referenced multiple times.  For example, key->expiry was
-referenced in both 'if (key->expiry)' and in 'if (now.tv_sec >key->expiry)', making it theoretically possible to see a spurious
-EKEYEXPIRED while the expiration time was being removed, i.e. set to 0.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- security/keys/permission.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ crypto/gcm.c | 32 ++++++--------------------------
+ 1 file changed, 6 insertions(+), 26 deletions(-)
 
-diff --git a/security/keys/permission.c b/security/keys/permission.c
-index 732cc0beffdf..a72b4dd70c8a 100644
---- a/security/keys/permission.c
-+++ b/security/keys/permission.c
-@@ -88,7 +88,8 @@ EXPORT_SYMBOL(key_task_permission);
-  */
- int key_validate(const struct key *key)
+diff --git a/crypto/gcm.c b/crypto/gcm.c
+index 3841b5e..fb923a5 100644
+--- a/crypto/gcm.c
++++ b/crypto/gcm.c
+@@ -16,7 +16,6 @@
+ #include <crypto/scatterwalk.h>
+ #include <crypto/hash.h>
+ #include "internal.h"
+-#include <linux/completion.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+@@ -78,11 +77,6 @@ struct crypto_gcm_req_priv_ctx {
+ 	} u;
+ };
+ 
+-struct crypto_gcm_setkey_result {
+-	int err;
+-	struct completion completion;
+-};
+-
+ static struct {
+ 	u8 buf[16];
+ 	struct scatterlist sg;
+@@ -98,17 +92,6 @@ static inline struct crypto_gcm_req_priv_ctx *crypto_gcm_reqctx(
+ 	return (void *)PTR_ALIGN((u8 *)aead_request_ctx(req), align + 1);
+ }
+ 
+-static void crypto_gcm_setkey_done(struct crypto_async_request *req, int err)
+-{
+-	struct crypto_gcm_setkey_result *result = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	result->err = err;
+-	complete(&result->completion);
+-}
+-
+ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 			     unsigned int keylen)
  {
--	unsigned long flags = key->flags;
-+	unsigned long flags = READ_ONCE(key->flags);
-+	time_t expiry = READ_ONCE(key->expiry);
+@@ -119,7 +102,7 @@ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 		be128 hash;
+ 		u8 iv[16];
  
- 	if (flags & (1 << KEY_FLAG_INVALIDATED))
- 		return -ENOKEY;
-@@ -99,9 +100,9 @@ int key_validate(const struct key *key)
- 		return -EKEYREVOKED;
+-		struct crypto_gcm_setkey_result result;
++		struct crypto_wait wait;
  
- 	/* check it hasn't expired */
--	if (key->expiry) {
-+	if (expiry) {
- 		struct timespec now = current_kernel_time();
--		if (now.tv_sec >= key->expiry)
-+		if (now.tv_sec >= expiry)
- 			return -EKEYEXPIRED;
- 	}
+ 		struct scatterlist sg[1];
+ 		struct skcipher_request req;
+@@ -140,21 +123,18 @@ static int crypto_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 	if (!data)
+ 		return -ENOMEM;
  
+-	init_completion(&data->result.completion);
++	crypto_init_wait(&data->wait);
+ 	sg_init_one(data->sg, &data->hash, sizeof(data->hash));
+ 	skcipher_request_set_tfm(&data->req, ctr);
+ 	skcipher_request_set_callback(&data->req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 						  CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				      crypto_gcm_setkey_done,
+-				      &data->result);
++				      crypto_req_done,
++				      &data->wait);
+ 	skcipher_request_set_crypt(&data->req, data->sg, data->sg,
+ 				   sizeof(data->hash), data->iv);
+ 
+-	err = crypto_skcipher_encrypt(&data->req);
+-	if (err = -EINPROGRESS || err = -EBUSY) {
+-		wait_for_completion(&data->result.completion);
+-		err = data->result.err;
+-	}
++	err = crypto_wait_req(crypto_skcipher_encrypt(&data->req),
++							&data->wait);
+ 
+ 	if (err)
+ 		goto out;
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.1.4
 
