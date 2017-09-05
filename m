@@ -1,114 +1,84 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 28 Sep 2017 21:26:00 +0000
-Subject: [PATCH 5/7] ecryptfs: fix dereference of NULL user_key_payload
-Message-Id: <20170928212602.41744-6-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 05 Sep 2017 12:38:47 +0000
+Subject: [PATCH v8 08/20] crypto: move pub key to generic async completion
+Message-Id: <1504615144-29770-9-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170928212602.41744-1-ebiggers3@gmail.com>
-In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1504615144-29770-1-git-send-email-gilad-6S/DczAoZh3WXxRugSxzZg@public.gmane.org>
+To: Herbert Xu <herbert-lOAM2aK0SrRLBo1qDEOMRrpzq4S04n8Q@public.gmane.org>, "David S. Miller" <davem-fT/PcQaiUtIeIZ0/mPfg9Q@public.gmane.org>, Jonathan Corbet <corbet-T1hC0tSOHrs@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Tom Lendacky <thomas.lendacky-5C7GfCeVMHo@public.gmane.org>, Gary Hook <gary.hook-5C7GfCeVMHo@public.gmane.org>, Boris Brezillon <boris.brezillon-wi1+55ScJUtKEb57/3fJTNBPR1lH4CV8@public.gmane.org>, Arnaud Ebalard <arno-LkuqDEemtHBg9hUCZPvPmw@public.gmane.org>, Matthias Brugger <matthias.bgg-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Shaohua Li <shli-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Steve French <sfrench-eUNUBHrolfbYtjvyW6yDsg@public.gmane.org>, "Theodore Y. Ts'o" <tytso-3s7WtUTddSA@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Steffen Klassert <steffen.klassert-opNxpl+3fjRBDgjK7y7TUQ@public.gmane.org>, Alexey Kuznetsov <kuznet-v/Mj1YrvjDBInbfyfbPRSQ@public.gmane.org>, Hideaki YOSHIFUJI <yoshfuji-VfPWfsRibaP+Ru+s062T9g@public.gmane.org>, Mimi Zohar <zohar-23VcF4HTsmIX0ybBhKVfKdBPR1lH4CV8@public.gmane.org>
+Cc: Ofir Drang <ofir.drang-5wv7dgnIgG8@public.gmane.org>
 
-From: Eric Biggers <ebiggers@google.com>
+public_key_verify_signature() is starting an async crypto op and
+waiting for it to complete. Move it over to generic code doing
+the same.
 
-In eCryptfs, we failed to verify that the authentication token keys are
-not revoked before dereferencing their payloads, which is problematic
-because the payload of a revoked key is NULL.  request_key() *does* skip
-revoked keys, but there is still a window where the key can be revoked
-before we acquire the key semaphore.
-
-Fix it by updating ecryptfs_get_key_payload_data() to return
--EKEYREVOKED if the key payload is NULL.  For completeness we check this
-for "encrypted" keys as well as "user" keys, although encrypted keys
-cannot be revoked currently.
-
-Alternatively we could use key_validate(), but since we'll also need to
-fix ecryptfs_get_key_payload_data() to validate the payload length, it
-seems appropriate to just check the payload pointer.
-
-Fixes: 237fead61998 ("[PATCH] ecryptfs: fs/Makefile and fs/Kconfig")
-Cc: <stable@vger.kernel.org>    [v2.6.19+]
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- fs/ecryptfs/ecryptfs_kernel.h | 24 +++++++++++++++++-------
- fs/ecryptfs/keystore.c        |  9 ++++++++-
- 2 files changed, 25 insertions(+), 8 deletions(-)
+ crypto/asymmetric_keys/public_key.c | 28 ++++------------------------
+ 1 file changed, 4 insertions(+), 24 deletions(-)
 
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index 9c351bf757b2..3fbc0ff79699 100644
---- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -84,11 +84,16 @@ struct ecryptfs_page_crypt_context {
- static inline struct ecryptfs_auth_tok *
- ecryptfs_get_encrypted_key_payload_data(struct key *key)
- {
--	if (key->type = &key_type_encrypted)
--		return (struct ecryptfs_auth_tok *)
--			(&((struct encrypted_key_payload *)key->payload.data[0])->payload_data);
--	else
-+	struct encrypted_key_payload *payload;
-+
-+	if (key->type != &key_type_encrypted)
- 		return NULL;
-+
-+	payload = key->payload.data[0];
-+	if (!payload)
-+		return ERR_PTR(-EKEYREVOKED);
-+
-+	return (struct ecryptfs_auth_tok *)payload->payload_data;
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index 3cd6e12..d916235 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -57,29 +57,13 @@ static void public_key_destroy(void *payload0, void *payload3)
+ 	public_key_signature_free(payload3);
  }
  
- static inline struct key *ecryptfs_get_encrypted_key(char *sig)
-@@ -114,12 +119,17 @@ static inline struct ecryptfs_auth_tok *
- ecryptfs_get_key_payload_data(struct key *key)
- {
- 	struct ecryptfs_auth_tok *auth_tok;
-+	struct user_key_payload *ukp;
- 
- 	auth_tok = ecryptfs_get_encrypted_key_payload_data(key);
--	if (!auth_tok)
--		return (struct ecryptfs_auth_tok *)user_key_payload_locked(key)->data;
--	else
-+	if (auth_tok)
- 		return auth_tok;
-+
-+	ukp = user_key_payload_locked(key);
-+	if (!ukp)
-+		return ERR_PTR(-EKEYREVOKED);
-+
-+	return (struct ecryptfs_auth_tok *)ukp->data;
- }
- 
- #define ECRYPTFS_MAX_KEYSET_SIZE 1024
-diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index 3cf1546dca82..fa218cd64f74 100644
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -459,7 +459,8 @@ static int ecryptfs_verify_version(u16 version)
-  * @auth_tok_key: key containing the authentication token
-  * @auth_tok: authentication token
-  *
-- * Returns zero on valid auth tok; -EINVAL otherwise
-+ * Returns zero on valid auth tok; -EINVAL if the payload is invalid; or
-+ * -EKEYREVOKED if the key was revoked before we acquired its semaphore.
+-struct public_key_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+-static void public_key_verify_done(struct crypto_async_request *req, int err)
+-{
+-	struct public_key_completion *compl = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	compl->err = err;
+-	complete(&compl->completion);
+-}
+-
+ /*
+  * Verify a signature using a public key.
   */
- static int
- ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
-@@ -468,6 +469,12 @@ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
- 	int rc = 0;
+ int public_key_verify_signature(const struct public_key *pkey,
+ 				const struct public_key_signature *sig)
+ {
+-	struct public_key_completion compl;
++	struct crypto_wait cwait;
+ 	struct crypto_akcipher *tfm;
+ 	struct akcipher_request *req;
+ 	struct scatterlist sig_sg, digest_sg;
+@@ -131,20 +115,16 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	sg_init_one(&digest_sg, output, outlen);
+ 	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
+ 				   outlen);
+-	init_completion(&compl.completion);
++	crypto_init_wait(&cwait);
+ 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				      CRYPTO_TFM_REQ_MAY_SLEEP,
+-				      public_key_verify_done, &compl);
++				      crypto_req_done, &cwait);
  
- 	(*auth_tok) = ecryptfs_get_key_payload_data(auth_tok_key);
-+	if (IS_ERR(*auth_tok)) {
-+		rc = PTR_ERR(*auth_tok);
-+		*auth_tok = NULL;
-+		goto out;
-+	}
-+
- 	if (ecryptfs_verify_version((*auth_tok)->version)) {
- 		printk(KERN_ERR "Data structure version mismatch. Userspace "
- 		       "tools must match eCryptfs kernel module with major "
+ 	/* Perform the verification calculation.  This doesn't actually do the
+ 	 * verification, but rather calculates the hash expected by the
+ 	 * signature and returns that to us.
+ 	 */
+-	ret = crypto_akcipher_verify(req);
+-	if ((ret = -EINPROGRESS) || (ret = -EBUSY)) {
+-		wait_for_completion(&compl.completion);
+-		ret = compl.err;
+-	}
++	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+ 	if (ret < 0)
+ 		goto out_free_output;
+ 
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.1.4
 
