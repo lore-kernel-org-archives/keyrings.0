@@ -1,87 +1,54 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 26 Sep 2017 20:11:04 +0000
-Subject: [PATCH v2 5/6] KEYS: load key flags and expiry time atomically in proc_keys_show()
-Message-Id: <20170926201105.126166-6-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 05 Sep 2017 12:38:44 +0000
+Subject: [PATCH v8 05/20] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
+Message-Id: <1504615144-29770-6-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170926201105.126166-1-ebiggers3@gmail.com>
-In-Reply-To: <20170926201105.126166-1-ebiggers3@gmail.com>
-To: linux-security-module@vger.kernel.org
+References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+Now that -EBUSY return code only indicates backlog queueing
+we can safely remove the now redundant check for the
+CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
 
-In proc_keys_show(), the key semaphore is not held, so the key ->flags
-and ->expiry can be changed concurrently.  We therefore should read them
-atomically just once.  Otherwise /proc/keys may show an inconsistent
-state, such a key that is negative ('N') but not instantiated ('I').
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- security/keys/proc.c | 28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+ drivers/crypto/marvell/cesa.c | 3 +--
+ drivers/crypto/marvell/cesa.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index de834309d100..a038069ac46a 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -179,7 +179,9 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 	struct rb_node *_p = v;
- 	struct key *key = rb_entry(_p, struct key, serial_node);
- 	struct timespec now;
-+	time_t expiry;
- 	unsigned long timo;
-+	unsigned long flags;
- 	key_ref_t key_ref, skey_ref;
- 	char xbuf[16];
- 	int rc;
-@@ -217,12 +219,13 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 	rcu_read_lock();
+diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
+index 6e7a5c7..0c3909d 100644
+--- a/drivers/crypto/marvell/cesa.c
++++ b/drivers/crypto/marvell/cesa.c
+@@ -183,8 +183,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
+ 	spin_lock_bh(&engine->lock);
+ 	ret = crypto_enqueue_request(&engine->queue, req);
+ 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
+-	    (ret = -EINPROGRESS ||
+-	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	    (ret = -EINPROGRESS || ret = -EBUSY))
+ 		mv_cesa_tdma_chain(engine, creq);
+ 	spin_unlock_bh(&engine->lock);
  
- 	/* come up with a suitable timeout value */
--	if (key->expiry = 0) {
-+	expiry = READ_ONCE(key->expiry);
-+	if (expiry = 0) {
- 		memcpy(xbuf, "perm", 5);
--	} else if (now.tv_sec >= key->expiry) {
-+	} else if (now.tv_sec >= expiry) {
- 		memcpy(xbuf, "expd", 5);
- 	} else {
--		timo = key->expiry - now.tv_sec;
-+		timo = expiry - now.tv_sec;
+diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
+index b7872f6..63c8457 100644
+--- a/drivers/crypto/marvell/cesa.h
++++ b/drivers/crypto/marvell/cesa.h
+@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
+ 	 * the backlog and will be processed later. There's no need to
+ 	 * clean it up.
+ 	 */
+-	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
++	if (ret = -EBUSY)
+ 		return false;
  
- 		if (timo < 60)
- 			sprintf(xbuf, "%lus", timo);
-@@ -236,18 +239,19 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 			sprintf(xbuf, "%luw", timo / (60*60*24*7));
- 	}
- 
--#define showflag(KEY, LETTER, FLAG) \
--	(test_bit(FLAG,	&(KEY)->flags) ? LETTER : '-')
-+#define showflag(FLAGS, LETTER, FLAG) \
-+	((FLAGS & (1 << FLAG)) ? LETTER : '-')
- 
-+	flags = READ_ONCE(key->flags);
- 	seq_printf(m, "%08x %c%c%c%c%c%c%c %5d %4s %08x %5d %5d %-9.9s ",
- 		   key->serial,
--		   showflag(key, 'I', KEY_FLAG_INSTANTIATED),
--		   showflag(key, 'R', KEY_FLAG_REVOKED),
--		   showflag(key, 'D', KEY_FLAG_DEAD),
--		   showflag(key, 'Q', KEY_FLAG_IN_QUOTA),
--		   showflag(key, 'U', KEY_FLAG_USER_CONSTRUCT),
--		   showflag(key, 'N', KEY_FLAG_NEGATIVE),
--		   showflag(key, 'i', KEY_FLAG_INVALIDATED),
-+		   showflag(flags, 'I', KEY_FLAG_INSTANTIATED),
-+		   showflag(flags, 'R', KEY_FLAG_REVOKED),
-+		   showflag(flags, 'D', KEY_FLAG_DEAD),
-+		   showflag(flags, 'Q', KEY_FLAG_IN_QUOTA),
-+		   showflag(flags, 'U', KEY_FLAG_USER_CONSTRUCT),
-+		   showflag(flags, 'N', KEY_FLAG_NEGATIVE),
-+		   showflag(flags, 'i', KEY_FLAG_INVALIDATED),
- 		   refcount_read(&key->usage),
- 		   xbuf,
- 		   key->perm,
+ 	/* Request wasn't queued, we need to clean it up */
 -- 
-2.14.1.992.g2c7b836f3a-goog
+2.1.4
 
