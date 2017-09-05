@@ -1,267 +1,85 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 27 Sep 2017 19:50:42 +0000
-Subject: [PATCH v3 2/7] KEYS: fix race between updating and finding negative key
-Message-Id: <20170927195047.122358-3-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 05 Sep 2017 12:38:57 +0000
+Subject: [PATCH v8 18/20] crypto: qce: move to generic async completion
+Message-Id: <1504615144-29770-19-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170927195047.122358-1-ebiggers3@gmail.com>
-In-Reply-To: <20170927195047.122358-1-ebiggers3@gmail.com>
-To: linux-security-module@vger.kernel.org
+References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+The qce driver starts several async crypto ops and  waits for their
+completions. Move it over to generic code doing the same.
 
-In keyring_search_iterator() and in wait_for_key_construction(), we
-check whether the key has been negatively instantiated, and if so return
-the key's ->reject_error.
-
-However, no lock is held during this, and ->reject_error is in union
-with ->payload.  And it's impossible for KEY_FLAG_NEGATIVE to be updated
-atomically with respect to ->reject_error and ->payload.
-
-Most problematically, when a negative key is positively instantiated via
-__key_update() (via sys_add_key()), ->payload is initialized first, then
-KEY_FLAG_NEGATIVE is cleared.  But that means that ->reject_error can be
-observed to have a bogus value, having been overwritten with ->payload,
-while the key still appears to be "negative".  Clearing
-KEY_FLAG_NEGATIVE first wouldn't work either, since then anyone who
-accesses the payload under rcu_read_lock() rather than the key semaphore
-might observe an uninitialized ->payload.  Nor can we just always take
-the key's semaphore when checking whether the key is negative, since
-keyring searches happen under rcu_read_lock().
-
-Therefore, fix the bug by moving ->reject_error into the high bits of
-->flags so that we can read and write it atomically with respect to
-KEY_FLAG_NEGATIVE and KEY_FLAG_INSTANTIATED.
-
-This will also allow KEY_FLAG_NEGATIVE to be removed, since tests for
-KEY_FLAG_NEGATIVE can be replaced with tests for nonzero reject_error.
-But for ease of backporting this fix, that is left for a later patch.
-
-This fixes a kernel crash caused by the following program:
-
-    #include <stdlib.h>
-    #include <unistd.h>
-    #include <keyutils.h>
-
-    int main(void)
-    {
-        int ringid = keyctl_join_session_keyring(NULL);
-
-        if (fork()) {
-            for (;;) {
-                usleep(rand() % 4096);
-                add_key("user", "desc", "x", 1, ringid);
-                keyctl_clear(ringid);
-            }
-        } else {
-            for (;;)
-                request_key("user", "desc", "", ringid);
-        }
-    }
-
-Here is the crash:
-
-    BUG: unable to handle kernel paging request at fffffffffd39a6b0
-    IP: __key_link_begin+0x0/0x100
-    PGD 7a0a067 P4D 7a0a067 PUD 7a0c067 PMD 0
-    Oops: 0000 [#1] SMP
-    CPU: 1 PID: 165 Comm: keyctl_negate_r Not tainted 4.14.0-rc1 #377
-    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.10.2-20170228_101828-anatol 04/01/2014
-    task: ffff9791fd809140 task.stack: ffffacba402bc000
-    RIP: 0010:__key_link_begin+0x0/0x100
-    RSP: 0018:ffffacba402bfdc8 EFLAGS: 00010282
-    RAX: ffff9791fd809140 RBX: fffffffffd39a620 RCX: 0000000000000008
-    RDX: ffffacba402bfdd0 RSI: fffffffffd39a6a0 RDI: ffff9791fd810600
-    RBP: ffffacba402bfdf8 R08: 0000000000000063 R09: ffffffff94845620
-    R10: 8080808080808080 R11: 0000000000000004 R12: ffff9791fd810600
-    R13: ffff9791fd39a940 R14: fffffffffd39a6a0 R15: 0000000000000000
-    FS:  00007fbf14a90740(0000) GS:ffff9791ffd00000(0000) knlGS:0000000000000000
-    CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-    CR2: fffffffffd39a6b0 CR3: 000000003b910003 CR4: 00000000003606e0
-    Call Trace:
-     ? key_link+0x28/0xb0
-     ? search_process_keyrings+0x13/0x100
-     request_key_and_link+0xcb/0x550
-     ? keyring_instantiate+0x110/0x110
-     ? key_default_cmp+0x20/0x20
-     SyS_request_key+0xc0/0x160
-     ? exit_to_usermode_loop+0x5e/0x80
-     entry_SYSCALL_64_fastpath+0x1a/0xa5
-    RIP: 0033:0x7fbf14190bb9
-    RSP: 002b:00007ffd8e4fe6c8 EFLAGS: 00000246 ORIG_RAX: 00000000000000f9
-    RAX: ffffffffffffffda RBX: 0000000036cc28fb RCX: 00007fbf14190bb9
-    RDX: 000055748b56ca4a RSI: 000055748b56ca46 RDI: 000055748b56ca4b
-    RBP: 000055748b56ca4a R08: 0000000000000001 R09: 0000000000000001
-    R10: 0000000036cc28fb R11: 0000000000000246 R12: 000055748b56c8b0
-    R13: 00007ffd8e4fe7d0 R14: 0000000000000000 R15: 0000000000000000
-    Code: c5 0f 85 69 ff ff ff 48 c7 c3 82 ff ff ff eb ab 45 31 ed e9 18 ff ff ff 85 c0 75 8d eb d2 0f 1f 00 66 2e 0f 1f 84 00 00 00 00 00 <48> 83 7e 10 00 0f 84 c5 00 00 00 55 48 89 e5 41 57 41 56 41 55
-    RIP: __key_link_begin+0x0/0x100 RSP: ffffacba402bfdc8
-    CR2: fffffffffd39a6b0
-
-Fixes: 146aa8b1453b ("KEYS: Merge the type-specific data with the payload data")
-Cc: <stable@vger.kernel.org>	[v4.4+]
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- include/linux/key.h         | 12 +++++++++++-
- security/keys/key.c         | 26 +++++++++++++++++++-------
- security/keys/keyctl.c      |  3 +++
- security/keys/keyring.c     |  4 ++--
- security/keys/request_key.c | 11 +++++++----
- 5 files changed, 42 insertions(+), 14 deletions(-)
+ drivers/crypto/qce/sha.c | 30 ++++--------------------------
+ 1 file changed, 4 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index e315e16b6ff8..b7b590d7c480 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -189,6 +189,17 @@ struct key {
- #define KEY_FLAG_KEEP		10	/* set if key should not be removed */
- #define KEY_FLAG_UID_KEYRING	11	/* set if key is a user or user session keyring */
- 
-+	/*
-+	 * If the key is negatively instantiated, then bits 20-31 hold the error
-+	 * code which should be returned when someone tries to use the key
-+	 * (unless they allow negative keys).  The error code is stored as a
-+	 * positive number, so it must be negated before being returned.
-+	 *
-+	 * Note that a key can go from negative to positive but not vice versa.
-+	 */
-+#define KEY_FLAGS_REJECT_ERROR_SHIFT	20
-+#define KEY_FLAGS_REJECT_ERROR_MASK	0xFFF00000
-+
- 	/* the key type and key description string
- 	 * - the desc is used to match a key against search criteria
- 	 * - it should be a printable string
-@@ -213,7 +224,6 @@ struct key {
- 			struct list_head name_link;
- 			struct assoc_array keys;
- 		};
--		int reject_error;
- 	};
- 
- 	/* This is set on a keyring to restrict the addition of a link to a key
-diff --git a/security/keys/key.c b/security/keys/key.c
-index eb914a838840..786158d3442e 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -401,6 +401,20 @@ int key_payload_reserve(struct key *key, size_t datalen)
+diff --git a/drivers/crypto/qce/sha.c b/drivers/crypto/qce/sha.c
+index 47e114a..53227d7 100644
+--- a/drivers/crypto/qce/sha.c
++++ b/drivers/crypto/qce/sha.c
+@@ -349,28 +349,12 @@ static int qce_ahash_digest(struct ahash_request *req)
+ 	return qce->async_req_enqueue(tmpl->qce, &req->base);
  }
- EXPORT_SYMBOL(key_payload_reserve);
  
-+static void mark_key_instantiated(struct key *key, unsigned int reject_error)
-+{
-+	unsigned long old, new;
-+
-+	do {
-+		old = READ_ONCE(key->flags);
-+		new = (old & ~((1 << KEY_FLAG_NEGATIVE) |
-+			       KEY_FLAGS_REJECT_ERROR_MASK)) |
-+		      (1 << KEY_FLAG_INSTANTIATED) |
-+		      (reject_error ? (1 << KEY_FLAG_NEGATIVE) : 0) |
-+		      (reject_error << KEY_FLAGS_REJECT_ERROR_SHIFT);
-+	} while (cmpxchg_release(&key->flags, old, new) != old);
-+}
-+
- /*
-  * Instantiate a key and link it into the target keyring atomically.  Must be
-  * called with the target keyring's semaphore writelocked.  The target key's
-@@ -431,7 +445,7 @@ static int __key_instantiate_and_link(struct key *key,
- 		if (ret = 0) {
- 			/* mark the key as being instantiated */
- 			atomic_inc(&key->user->nikeys);
--			set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
-+			mark_key_instantiated(key, 0);
- 
- 			if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
- 				awaken = 1;
-@@ -580,10 +594,8 @@ int key_reject_and_link(struct key *key,
- 	if (!test_bit(KEY_FLAG_INSTANTIATED, &key->flags)) {
- 		/* mark the key as being negatively instantiated */
- 		atomic_inc(&key->user->nikeys);
--		key->reject_error = -error;
--		smp_wmb();
--		set_bit(KEY_FLAG_NEGATIVE, &key->flags);
--		set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
-+		mark_key_instantiated(key, error);
-+
- 		now = current_kernel_time();
- 		key->expiry = now.tv_sec + timeout;
- 		key_schedule_gc(key->expiry + key_gc_delay);
-@@ -753,7 +765,7 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
- 	ret = key->type->update(key, prep);
- 	if (ret = 0)
- 		/* updating a negative key instantiates it */
--		clear_bit(KEY_FLAG_NEGATIVE, &key->flags);
-+		mark_key_instantiated(key, 0);
- 
- 	up_write(&key->sem);
- 
-@@ -987,7 +999,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
- 	ret = key->type->update(key, &prep);
- 	if (ret = 0)
- 		/* updating a negative key instantiates it */
--		clear_bit(KEY_FLAG_NEGATIVE, &key->flags);
-+		mark_key_instantiated(key, 0);
- 
- 	up_write(&key->sem);
- 
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 365ff85d7e27..19a09e121089 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1223,6 +1223,9 @@ long keyctl_reject_key(key_serial_t id, unsigned timeout, unsigned error,
- 	    error = ERESTART_RESTARTBLOCK)
- 		return -EINVAL;
- 
-+	BUILD_BUG_ON(MAX_ERRNO > (KEY_FLAGS_REJECT_ERROR_MASK >>
-+				  KEY_FLAGS_REJECT_ERROR_SHIFT));
-+
- 	/* the appropriate instantiation authorisation key must have been
- 	 * assumed before calling this */
- 	ret = -EPERM;
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 129a4175760b..e54ad0ed7aa4 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -598,8 +598,8 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
- 	if (ctx->flags & KEYRING_SEARCH_DO_STATE_CHECK) {
- 		/* we set a different error code if we pass a negative key */
- 		if (kflags & (1 << KEY_FLAG_NEGATIVE)) {
--			smp_rmb();
--			ctx->result = ERR_PTR(key->reject_error);
-+			ctx->result = ERR_PTR(-(int)(kflags >>
-+						KEY_FLAGS_REJECT_ERROR_SHIFT));
- 			kleave(" = %d [neg]", ctx->skipped_ret);
- 			goto skipped;
- 		}
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 63e63a42db3c..0aab68344837 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -590,15 +590,18 @@ struct key *request_key_and_link(struct key_type *type,
- int wait_for_key_construction(struct key *key, bool intr)
+-struct qce_ahash_result {
+-	struct completion completion;
+-	int error;
+-};
+-
+-static void qce_digest_complete(struct crypto_async_request *req, int error)
+-{
+-	struct qce_ahash_result *result = req->data;
+-
+-	if (error = -EINPROGRESS)
+-		return;
+-
+-	result->error = error;
+-	complete(&result->completion);
+-}
+-
+ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 				 unsigned int keylen)
  {
- 	int ret;
-+	unsigned long flags;
+ 	unsigned int digestsize = crypto_ahash_digestsize(tfm);
+ 	struct qce_sha_ctx *ctx = crypto_tfm_ctx(&tfm->base);
+-	struct qce_ahash_result result;
++	struct crypto_wait wait;
+ 	struct ahash_request *req;
+ 	struct scatterlist sg;
+ 	unsigned int blocksize;
+@@ -405,9 +389,9 @@ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 		goto err_free_ahash;
+ 	}
  
- 	ret = wait_on_bit(&key->flags, KEY_FLAG_USER_CONSTRUCT,
- 			  intr ? TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE);
- 	if (ret)
- 		return -ERESTARTSYS;
--	if (test_bit(KEY_FLAG_NEGATIVE, &key->flags)) {
--		smp_rmb();
--		return key->reject_error;
+-	init_completion(&result.completion);
++	crypto_init_wait(&wait);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				   qce_digest_complete, &result);
++				   crypto_req_done, &wait);
+ 	crypto_ahash_clear_flags(ahash_tfm, ~0);
+ 
+ 	buf = kzalloc(keylen + QCE_MAX_ALIGN_SIZE, GFP_KERNEL);
+@@ -420,13 +404,7 @@ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 	sg_init_one(&sg, buf, keylen);
+ 	ahash_request_set_crypt(req, &sg, ctx->authkey, keylen);
+ 
+-	ret = crypto_ahash_digest(req);
+-	if (ret = -EINPROGRESS || ret = -EBUSY) {
+-		ret = wait_for_completion_interruptible(&result.completion);
+-		if (!ret)
+-			ret = result.error;
 -	}
-+
-+	/* Pairs with RELEASE in mark_key_instantiated() */
-+	flags = smp_load_acquire(&key->flags);
-+	if (flags & (1 << KEY_FLAG_NEGATIVE))
-+		return -(int)(flags >> KEY_FLAGS_REJECT_ERROR_SHIFT);
-+
- 	return key_validate(key);
- }
- EXPORT_SYMBOL(wait_for_key_construction);
+-
++	ret = crypto_wait_req(crypto_ahash_digest(req), &wait);
+ 	if (ret)
+ 		crypto_ahash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+ 
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.1.4
 
