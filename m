@@ -1,50 +1,120 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 28 Sep 2017 21:25:59 +0000
-Subject: [PATCH 4/7] fscrypt: fix dereference of NULL user_key_payload
-Message-Id: <20170928212602.41744-5-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 05 Sep 2017 12:38:45 +0000
+Subject: [PATCH v8 06/20] crypto: introduce crypto wait for async op
+Message-Id: <1504615144-29770-7-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170928212602.41744-1-ebiggers3@gmail.com>
-In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Ofir Drang <ofir.drang@arm.com>, Eric Biggers <ebiggers3@gmail.com>, Jonathan Cameron <Jonathan.Cameron@huawei.com>
 
-From: Eric Biggers <ebiggers@google.com>
+Invoking a possibly async. crypto op and waiting for completion
+while correctly handling backlog processing is a common task
+in the crypto API implementation and outside users of it.
 
-When an fscrypt-encrypted file is opened, we request the file's master
-key from the keyrings service as a logon key, then access its payload.
-However, a revoked key has a NULL payload, and we failed to check for
-this.  request_key() *does* skip revoked keys, but there is still a
-window where the key can be revoked before we acquire its semaphore.
+This patch adds a generic implementation for doing so in
+preparation for using it across the board instead of hand
+rolled versions.
 
-Fix it by checking for a NULL payload, treating it like a key which was
-already revoked at the time it was requested.
-
-Fixes: 88bd6ccdcdd6 ("ext4 crypto: add encryption key management facilities")
-Cc: <stable@vger.kernel.org>    [v4.1+]
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: Eric Biggers <ebiggers3@gmail.com>
+CC: Jonathan Cameron <Jonathan.Cameron@huawei.com>
 ---
- fs/crypto/keyinfo.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ crypto/api.c           | 13 +++++++++++++
+ include/linux/crypto.h | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
 
-diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
-index 018c588c7ac3..8e704d12a1cf 100644
---- a/fs/crypto/keyinfo.c
-+++ b/fs/crypto/keyinfo.c
-@@ -109,6 +109,11 @@ static int validate_user_key(struct fscrypt_info *crypt_info,
- 		goto out;
- 	}
- 	ukp = user_key_payload_locked(keyring_key);
-+	if (!ukp) {
-+		/* key was revoked before we acquired its semaphore */
-+		res = -EKEYREVOKED;
-+		goto out;
-+	}
- 	if (ukp->datalen != sizeof(struct fscrypt_key)) {
- 		res = -EINVAL;
- 		goto out;
+diff --git a/crypto/api.c b/crypto/api.c
+index 941cd4c..2a2479d 100644
+--- a/crypto/api.c
++++ b/crypto/api.c
+@@ -24,6 +24,7 @@
+ #include <linux/sched/signal.h>
+ #include <linux/slab.h>
+ #include <linux/string.h>
++#include <linux/completion.h>
+ #include "internal.h"
+ 
+ LIST_HEAD(crypto_alg_list);
+@@ -595,5 +596,17 @@ int crypto_has_alg(const char *name, u32 type, u32 mask)
+ }
+ EXPORT_SYMBOL_GPL(crypto_has_alg);
+ 
++void crypto_req_done(struct crypto_async_request *req, int err)
++{
++	struct crypto_wait *wait = req->data;
++
++	if (err = -EINPROGRESS)
++		return;
++
++	wait->err = err;
++	complete(&wait->completion);
++}
++EXPORT_SYMBOL_GPL(crypto_req_done);
++
+ MODULE_DESCRIPTION("Cryptographic core API");
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/crypto.h b/include/linux/crypto.h
+index 84da997..78508ca 100644
+--- a/include/linux/crypto.h
++++ b/include/linux/crypto.h
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/uaccess.h>
++#include <linux/completion.h>
+ 
+ /*
+  * Autoloaded crypto modules should only use a prefixed name to avoid allowing
+@@ -468,6 +469,45 @@ struct crypto_alg {
+ } CRYPTO_MINALIGN_ATTR;
+ 
+ /*
++ * A helper struct for waiting for completion of async crypto ops
++ */
++struct crypto_wait {
++	struct completion completion;
++	int err;
++};
++
++/*
++ * Macro for declaring a crypto op async wait object on stack
++ */
++#define DECLARE_CRYPTO_WAIT(_wait) \
++	struct crypto_wait _wait = { \
++		COMPLETION_INITIALIZER_ONSTACK((_wait).completion), 0 }
++
++/*
++ * Async ops completion helper functioons
++ */
++void crypto_req_done(struct crypto_async_request *req, int err);
++
++static inline int crypto_wait_req(int err, struct crypto_wait *wait)
++{
++	switch (err) {
++	case -EINPROGRESS:
++	case -EBUSY:
++		wait_for_completion(&wait->completion);
++		reinit_completion(&wait->completion);
++		err = wait->err;
++		break;
++	};
++
++	return err;
++}
++
++static inline void crypto_init_wait(struct crypto_wait *wait)
++{
++	init_completion(&wait->completion);
++}
++
++/*
+  * Algorithm registration interface.
+  */
+ int crypto_register_alg(struct crypto_alg *alg);
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.1.4
 
