@@ -1,56 +1,84 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 18 Sep 2017 18:38:29 +0000
-Subject: [PATCH] KEYS: restrict /proc/keys by credentials at open time
-Message-Id: <20170918183829.114384-1-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 05 Sep 2017 12:38:53 +0000
+Subject: [PATCH v8 14/20] cifs: move to generic async completion
+Message-Id: <1504615144-29770-15-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>
+References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+cifs starts an async. crypto op and waits for their completion.
+Move it over to generic code doing the same.
 
-When checking for permission to view keys whilst reading from
-/proc/keys, we should use the credentials with which the /proc/keys file
-was opened.  This is because, in a classic type of exploit, it can be
-possible to bypass checks for the *current* credentials by passing the
-file descriptor to a suid program.
-
-Following commit 34dbbcdbf633 ("Make file credentials available to the
-seqfile interfaces") we can finally fix it.  So let's do it.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Pavel Shilovsky <pshilov@microsoft.com>
 ---
- security/keys/proc.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ fs/cifs/smb2ops.c | 30 ++++--------------------------
+ 1 file changed, 4 insertions(+), 26 deletions(-)
 
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index bf08d02b6646..de834309d100 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -187,7 +187,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 	struct keyring_search_context ctx = {
- 		.index_key.type		= key->type,
- 		.index_key.description	= key->description,
--		.cred			= current_cred(),
-+		.cred			= m->file->f_cred,
- 		.match_data.cmp		= lookup_user_key_possessed,
- 		.match_data.raw_data	= key,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
-@@ -207,11 +207,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 		}
- 	}
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index fb2934b..982b39d 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -2066,22 +2066,6 @@ init_sg(struct smb_rqst *rqst, u8 *sign)
+ 	return sg;
+ }
  
--	/* check whether the current task is allowed to view the key (assuming
--	 * non-possession)
--	 * - the caller holds a spinlock, and thus the RCU read lock, making our
--	 *   access to __current_cred() safe
--	 */
-+	/* check whether the current task is allowed to view the key */
- 	rc = key_task_permission(key_ref, ctx.cred, KEY_NEED_VIEW);
- 	if (rc < 0)
- 		return 0;
+-struct cifs_crypt_result {
+-	int err;
+-	struct completion completion;
+-};
+-
+-static void cifs_crypt_complete(struct crypto_async_request *req, int err)
+-{
+-	struct cifs_crypt_result *res = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	res->err = err;
+-	complete(&res->completion);
+-}
+-
+ static int
+ smb2_get_enc_key(struct TCP_Server_Info *server, __u64 ses_id, int enc, u8 *key)
+ {
+@@ -2122,12 +2106,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	struct aead_request *req;
+ 	char *iv;
+ 	unsigned int iv_len;
+-	struct cifs_crypt_result result = {0, };
++	DECLARE_CRYPTO_WAIT(wait);
+ 	struct crypto_aead *tfm;
+ 	unsigned int crypt_len = le32_to_cpu(tr_hdr->OriginalMessageSize);
+ 
+-	init_completion(&result.completion);
+-
+ 	rc = smb2_get_enc_key(server, tr_hdr->SessionId, enc, key);
+ 	if (rc) {
+ 		cifs_dbg(VFS, "%s: Could not get %scryption key\n", __func__,
+@@ -2187,14 +2169,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	aead_request_set_ad(req, assoc_data_len);
+ 
+ 	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				  cifs_crypt_complete, &result);
++				  crypto_req_done, &wait);
+ 
+-	rc = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
+-
+-	if (rc = -EINPROGRESS || rc = -EBUSY) {
+-		wait_for_completion(&result.completion);
+-		rc = result.err;
+-	}
++	rc = crypto_wait_req(enc ? crypto_aead_encrypt(req)
++				: crypto_aead_decrypt(req), &wait);
+ 
+ 	if (!rc && enc)
+ 		memcpy(&tr_hdr->Signature, sign, SMB2_SIGNATURE_SIZE);
 -- 
-2.14.1.690.gbb1197296e-goog
+2.1.4
 
