@@ -1,45 +1,190 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 26 Sep 2017 20:10:59 +0000
-Subject: [PATCH v2 0/6] KEYS: fix atomicity issues with key flags
-Message-Id: <20170926201105.126166-1-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Tue, 05 Sep 2017 12:38:43 +0000
+Subject: [PATCH v8 04/20] crypto: remove redundant backlog checks on EBUSY
+Message-Id: <1504615144-29770-5-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-security-module@vger.kernel.org
+References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Ofir Drang <ofir.drang@arm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+Now that -EBUSY return code only indicates backlog queueing
+we can safely remove the now redundant check for the
+CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
 
-The first patch in this series fixes the race between updating and
-finding a negative key, which could be used by an unprivileged user to
-cause a kernel oops.  That patch is Cc'ed to stable.
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+---
+ crypto/ahash.c        | 12 +++---------
+ crypto/cts.c          |  6 ++----
+ crypto/lrw.c          |  8 ++------
+ crypto/rsa-pkcs1pad.c | 16 ++++------------
+ crypto/xts.c          |  8 ++------
+ 5 files changed, 13 insertions(+), 37 deletions(-)
 
-The remaining patches fix some other, more theoretical atomicity issues
-with accessing key->flags and key->expiry, then eliminate
-KEY_FLAG_NEGATIVE, which becomes unnecessary after the first patch.
-
-Eric Biggers (6):
-  KEYS: fix race between updating and finding negative key
-  KEYS: load key flags atomically in key_is_instantiated()
-  KEYS: load key flags and expiry time atomically in key_validate()
-  KEYS: load key flags and expiry time atomically in
-    keyring_search_iterator()
-  KEYS: load key flags and expiry time atomically in proc_keys_show()
-  KEYS: remove KEY_FLAG_NEGATIVE
-
- include/linux/key.h                      | 37 +++++++++++++++++++++++---------
- security/keys/encrypted-keys/encrypted.c |  2 +-
- security/keys/gc.c                       |  4 +---
- security/keys/key.c                      | 24 +++++++++++++++------
- security/keys/keyctl.c                   |  5 ++++-
- security/keys/keyring.c                  | 12 ++++++-----
- security/keys/permission.c               |  7 +++---
- security/keys/proc.c                     | 28 +++++++++++++-----------
- security/keys/request_key.c              | 11 ++++++----
- security/keys/trusted.c                  |  2 +-
- security/keys/user_defined.c             |  2 +-
- 11 files changed, 86 insertions(+), 48 deletions(-)
-
+diff --git a/crypto/ahash.c b/crypto/ahash.c
+index 5e8666e..3a35d67 100644
+--- a/crypto/ahash.c
++++ b/crypto/ahash.c
+@@ -334,9 +334,7 @@ static int ahash_op_unaligned(struct ahash_request *req,
+ 		return err;
+ 
+ 	err = op(req);
+-	if (err = -EINPROGRESS ||
+-	    (err = -EBUSY && (ahash_request_flags(req) &
+-			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	if (err = -EINPROGRESS || err = -EBUSY)
+ 		return err;
+ 
+ 	ahash_restore_req(req, err);
+@@ -394,9 +392,7 @@ static int ahash_def_finup_finish1(struct ahash_request *req, int err)
+ 	req->base.complete = ahash_def_finup_done2;
+ 
+ 	err = crypto_ahash_reqtfm(req)->final(req);
+-	if (err = -EINPROGRESS ||
+-	    (err = -EBUSY && (ahash_request_flags(req) &
+-			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	if (err = -EINPROGRESS || err = -EBUSY)
+ 		return err;
+ 
+ out:
+@@ -432,9 +428,7 @@ static int ahash_def_finup(struct ahash_request *req)
+ 		return err;
+ 
+ 	err = tfm->update(req);
+-	if (err = -EINPROGRESS ||
+-	    (err = -EBUSY && (ahash_request_flags(req) &
+-			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	if (err = -EINPROGRESS || err = -EBUSY)
+ 		return err;
+ 
+ 	return ahash_def_finup_finish1(req, err);
+diff --git a/crypto/cts.c b/crypto/cts.c
+index 243f591..4773c18 100644
+--- a/crypto/cts.c
++++ b/crypto/cts.c
+@@ -136,8 +136,7 @@ static void crypto_cts_encrypt_done(struct crypto_async_request *areq, int err)
+ 		goto out;
+ 
+ 	err = cts_cbc_encrypt(req);
+-	if (err = -EINPROGRESS ||
+-	    (err = -EBUSY && req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
++	if (err = -EINPROGRESS || err = -EBUSY)
+ 		return;
+ 
+ out:
+@@ -229,8 +228,7 @@ static void crypto_cts_decrypt_done(struct crypto_async_request *areq, int err)
+ 		goto out;
+ 
+ 	err = cts_cbc_decrypt(req);
+-	if (err = -EINPROGRESS ||
+-	    (err = -EBUSY && req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
++	if (err = -EINPROGRESS || err = -EBUSY)
+ 		return;
+ 
+ out:
+diff --git a/crypto/lrw.c b/crypto/lrw.c
+index a8bfae4..695cea9 100644
+--- a/crypto/lrw.c
++++ b/crypto/lrw.c
+@@ -328,9 +328,7 @@ static int do_encrypt(struct skcipher_request *req, int err)
+ 		      crypto_skcipher_encrypt(subreq) ?:
+ 		      post_crypt(req);
+ 
+-		if (err = -EINPROGRESS ||
+-		    (err = -EBUSY &&
+-		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
++		if (err = -EINPROGRESS || err = -EBUSY)
+ 			return err;
+ 	}
+ 
+@@ -380,9 +378,7 @@ static int do_decrypt(struct skcipher_request *req, int err)
+ 		      crypto_skcipher_decrypt(subreq) ?:
+ 		      post_crypt(req);
+ 
+-		if (err = -EINPROGRESS ||
+-		    (err = -EBUSY &&
+-		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
++		if (err = -EINPROGRESS || err = -EBUSY)
+ 			return err;
+ 	}
+ 
+diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
+index 407c64b..2908f93 100644
+--- a/crypto/rsa-pkcs1pad.c
++++ b/crypto/rsa-pkcs1pad.c
+@@ -279,9 +279,7 @@ static int pkcs1pad_encrypt(struct akcipher_request *req)
+ 				   req->dst, ctx->key_size - 1, req->dst_len);
+ 
+ 	err = crypto_akcipher_encrypt(&req_ctx->child_req);
+-	if (err != -EINPROGRESS &&
+-			(err != -EBUSY ||
+-			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	if (err != -EINPROGRESS && err != -EBUSY)
+ 		return pkcs1pad_encrypt_sign_complete(req, err);
+ 
+ 	return err;
+@@ -383,9 +381,7 @@ static int pkcs1pad_decrypt(struct akcipher_request *req)
+ 				   ctx->key_size);
+ 
+ 	err = crypto_akcipher_decrypt(&req_ctx->child_req);
+-	if (err != -EINPROGRESS &&
+-			(err != -EBUSY ||
+-			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	if (err != -EINPROGRESS && err != -EBUSY)
+ 		return pkcs1pad_decrypt_complete(req, err);
+ 
+ 	return err;
+@@ -440,9 +436,7 @@ static int pkcs1pad_sign(struct akcipher_request *req)
+ 				   req->dst, ctx->key_size - 1, req->dst_len);
+ 
+ 	err = crypto_akcipher_sign(&req_ctx->child_req);
+-	if (err != -EINPROGRESS &&
+-			(err != -EBUSY ||
+-			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	if (err != -EINPROGRESS && err != -EBUSY)
+ 		return pkcs1pad_encrypt_sign_complete(req, err);
+ 
+ 	return err;
+@@ -561,9 +555,7 @@ static int pkcs1pad_verify(struct akcipher_request *req)
+ 				   ctx->key_size);
+ 
+ 	err = crypto_akcipher_verify(&req_ctx->child_req);
+-	if (err != -EINPROGRESS &&
+-			(err != -EBUSY ||
+-			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	if (err != -EINPROGRESS && err != -EBUSY)
+ 		return pkcs1pad_verify_complete(req, err);
+ 
+ 	return err;
+diff --git a/crypto/xts.c b/crypto/xts.c
+index d86c11a..af68012 100644
+--- a/crypto/xts.c
++++ b/crypto/xts.c
+@@ -269,9 +269,7 @@ static int do_encrypt(struct skcipher_request *req, int err)
+ 		      crypto_skcipher_encrypt(subreq) ?:
+ 		      post_crypt(req);
+ 
+-		if (err = -EINPROGRESS ||
+-		    (err = -EBUSY &&
+-		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
++		if (err = -EINPROGRESS || err = -EBUSY)
+ 			return err;
+ 	}
+ 
+@@ -321,9 +319,7 @@ static int do_decrypt(struct skcipher_request *req, int err)
+ 		      crypto_skcipher_decrypt(subreq) ?:
+ 		      post_crypt(req);
+ 
+-		if (err = -EINPROGRESS ||
+-		    (err = -EBUSY &&
+-		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
++		if (err = -EINPROGRESS || err = -EBUSY)
+ 			return err;
+ 	}
+ 
 -- 
-2.14.1.992.g2c7b836f3a-goog
+2.1.4
 
