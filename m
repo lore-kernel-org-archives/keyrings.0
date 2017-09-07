@@ -1,50 +1,32 @@
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Sun, 03 Sep 2017 00:20:27 +0000
-Subject: Re: [PATCH v2 3/6] keyrings.7: add pointers to kernel's documentation
-Message-Id: <593cf678-99f4-c7c6-2032-24e34b29d29a@gmail.com>
+From: Pushkar Jambhlekar <pushkar.iit@gmail.com>
+Date: Thu, 07 Sep 2017 05:53:45 +0000
+Subject: [PATCH] security/keys: Adding newline after declaration
+Message-Id: <1504762905-2424-1-git-send-email-pushkar.iit@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170902044014.GA7493@asgard.redhat.com>
-In-Reply-To: <20170902044014.GA7493-ZbobWygYI+YXGNroddHbYwC/G2K4zDHf@public.gmane.org>
-To: Eugene Syromyatnikov <evgsyr-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org, linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, Stephan Mueller <smueller-T9tCv8IpfcWELgA04lAiVw@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-security-module@vger.kernel.org
 
-Hi Eugene,
+Fixing checkpatch warning to add newline after declaration
 
-On 09/02/2017 06:40 AM, Eugene Syromyatnikov wrote:
-> Mostly because of assymmetric-keys.txt, which is outside security/keys
-> for some reason.
+Signed-off-by: Pushkar Jambhlekar <pushkar.iit@gmail.com>
+---
+ security/keys/big_key.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Applied.
-
-Thanks,
-
-Michael
-
-
-> ---
->  man7/keyrings.7 | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/man7/keyrings.7 b/man7/keyrings.7
-> index ba980da..0cb1190 100644
-> --- a/man7/keyrings.7
-> +++ b/man7/keyrings.7
-> @@ -866,3 +866,8 @@ scripts can use them.
->  .BR user\-session\-keyring (7),
->  .BR pam_keyinit (8),
->  .BR request-key (8)
-> +.PP
-> +The kernel source files
-> +.IR Documentation/crypto/asymmetric-keys.txt
-> +and under
-> +.IR Documentation/security/keys .
-> 
-
-
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 835c1ab..bc4c6eb 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -93,6 +93,7 @@ static int big_key_crypt(enum big_key_op op, u8 *data, size_t datalen, u8 *key)
+ {
+ 	int ret = -EINVAL;
+ 	struct scatterlist sgio;
++
+ 	SKCIPHER_REQUEST_ON_STACK(req, big_key_skcipher);
+ 
+ 	if (crypto_skcipher_setkey(big_key_skcipher, key, ENC_KEY_SIZE)) {
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+2.7.4
+
