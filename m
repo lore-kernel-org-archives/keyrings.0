@@ -1,33 +1,31 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 26 Sep 2017 20:39:09 +0000
-Subject: Re: [PATCH v2 1/6] KEYS: fix race between updating and finding negative key
-Message-Id: <20170926203909.GA126069@gmail.com>
+From: Baolin Wang <baolin.wang@linaro.org>
+Date: Fri, 15 Sep 2017 08:38:35 +0000
+Subject: Re: [PATCH 0/3] Fix y2038 issues for security/keys subsystem
+Message-Id: <CAMz4kuLKrwR3M=RX+SOX0k=MxxD9YMJF9YpGDpwZuC=M4zR_kw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170926201105.126166-1-ebiggers3@gmail.com>
-	<20170926201105.126166-2-ebiggers3@gmail.com>
-In-Reply-To: <20170926201105.126166-2-ebiggers3@gmail.com>
+References: <cover.1502246501.git.baolin.wang@linaro.org>
+	<4455.1502267323@warthog.procyon.org.uk>
+	<CAMz4kuL-mriUk3YV6Mz9xgC7geNe5a05vhjfXaxt58x=7BUo0w@mail.gmail.com>
+In-Reply-To: <CAMz4kuL-mriUk3YV6Mz9xgC7geNe5a05vhjfXaxt58x=7BUo0w@mail.gmail.com>
 To: linux-security-module@vger.kernel.org
 
-On Tue, Sep 26, 2017 at 01:11:00PM -0700, Eric Biggers wrote:
-> +static void mark_key_instantiated(struct key *key, unsigned int reject_error)
-> +{
-> +	unsigned long old, new;
-> +
-> +	do {
-> +		old = READ_ONCE(key->flags);
-> +		new = (old & ~(KEY_FLAG_NEGATIVE |
-> +			       KEY_FLAGS_REJECT_ERROR_MASK)) |
-> +		      KEY_FLAG_INSTANTIATED |
-> +		      (reject_error ? KEY_FLAG_NEGATIVE : 0) |
-> +		      (reject_error << KEY_FLAGS_REJECT_ERROR_SHIFT);
-> +	} while (cmpxchg_release(&key->flags, old, new) != old);
-> +}
+Hi James,
 
-Sorry, I realized I screwed this up --- the flags like KEY_FLAG_NEGATIVE need to
-be (1 << KEY_FLAG_NEGATIVE).  I'll send another version which will be better
-tested...
+On 21 August 2017 at 20:12, Baolin Wang <baolin.wang@linaro.org> wrote:
+> Hi David and James,
+>
+> On 9 August 2017 at 16:28, David Howells <dhowells@redhat.com> wrote:
+>> The rxrpc patch isn't part of the security/keys subsystem.  I'll push it
+>> to the network tree.  The other two I'll push to James.
+>
+> Could you apply this patch serials if there are no other comments? Thanks.
 
-Eric
+Could you apply patch1 and patch2? I have seen patch3 was merged into
+4.14 by David. Thanks.
+
+-- 
+Baolin.wang
+Best Regards
