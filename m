@@ -1,126 +1,365 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Sun, 17 Sep 2017 07:25:47 +0000
-Subject: Re: [PATCH v2] KEYS: make keyctl_invalidate() also require Setattr permission
-Message-Id: <20170917072547.GC10599@zzz.localdomain>
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Date: Sat, 16 Sep 2017 13:00:34 +0000
+Subject: [PATCH v4] security/keys: rewrite all of big_key crypto
+Message-Id: <20170916130034.17706-1-Jason@zx2c4.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170905183250.GA92687@gmail.com>
- <20170816211403.121920-1-ebiggers3@gmail.com>
- <13221.1504605295@warthog.procyon.org.uk>
- <610.1504885300@warthog.procyon.org.uk>
-In-Reply-To: <610.1504885300@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-nfs@vger.kernel.org, Gwendal Grignou <gwendal@chromium.org>, Jaegeuk Kim <jaegeuk@kernel.org>, Paul Crowley <paulcrowley@google.com>, Richard Weinberger <richard@nod.at>, Ryo Hashimoto <hashimoto@google.com>, Tyler Hicks <tyhicks@canonical.com>, stable@vger.kernel.org
+To: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org, dhowells@redhat.com, ebiggers3@gmail.com
+Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Ilhan Gurel <ilhan.gurel@gmail.com>, security@kernel.org, stable@vger.kernel.org
 
-Hi David,
+This started out as just replacing the use of crypto/rng with
+get_random_bytes_wait, so that we wouldn't use bad randomness at boot time.
+But, upon looking further, it appears that there were even deeper
+underlying cryptographic problems, and that this seems to have been
+committed with very little crypto review. So, I rewrote the whole thing,
+trying to keep to the conventions introduced by the previous author, to
+fix these cryptographic flaws.
 
-On Fri, Sep 08, 2017 at 04:41:40PM +0100, David Howells wrote:
-> Eric Biggers <ebiggers3@gmail.com> wrote:
-> 
-> > True, but Setattr permission has already been overloaded to allow several
-> > different types of modifications,
-> 
-> Perhaps therein lies the problem.  Setattr is too overloaded and really needs
-> splitting along the following lines:
-> 
->  (1) Security: ownership, access, security label, restrictions.
-> 
->  (2) Content: alter/update, timeout.
-> 
->  (3) Revocation and invalidation.
-> 
-> Maybe I should create some sort of ACL for keys and map setperm onto that.
-> 
-> I wonder if this could also intersect with user namespaces in some way so that
-> you can make an ACL that has users from multiple namespaces - might be tricky,
-> though.
+It makes no sense to seed crypto/rng at boot time and then keep
+using it like this, when in fact there's already get_random_bytes_wait,
+which can ensure there's enough entropy and be a much more standard way
+of generating keys. Since this sensitive material is being stored untrusted,
+using ECB and no authentication is simply not okay at all. I find it
+surprising and a bit horrifying that this code even made it past basic
+crypto review, which perhaps points to some larger issues. This patch
+moves from using AES-ECB to using AES-GCM. Since keys are uniquely generated
+each time, we can set the nonce to zero. There was also a race condition in
+which the same key would be reused at the same time in different threads. A
+mutex fixes this issue now. And, some error paths forgot to zero out sensitive
+material, so this patch changes a kfree into a kzfree.
 
-There would be a *lot* of changes needed to implement ACLs for keys.  Setting
-them, getting them, evaluating them, updating all the LSMs to understand any new
-permissions, deciding how the existing keyctl operations affect the ACL,
-deciding what ACL to use by default, etc...  And it would make the keyrings
-permissions system even more complicated, when people already have trouble
-understanding it.  Complicated permissions systems are difficult to use
-correctly.
+So, to summarize, this commit fixes the following vulnerabilities:
 
-Also I suppose that Invalidate would be implied by the old "Search" permission,
-so users would need to use a new keyctl to remove Invalidate permission from the
-ACL to get sane behavior?  That would be a pain, in comparison to having the bug
-fixed by default.
+  * Low entropy key generation, allowing an attacker to potentially
+    guess or predict keys.
+  * Unauthenticated encryption, allowing an attacker to modify the
+    cipher text in particular ways in order to manipulate the plaintext,
+    which is is even more frightening considering the next point.
+  * Use of ECB mode, allowing an attacker to trivially swap blocks or
+    compare identical plaintext blocks.
+  * Key re-use.
+  * Faulty memory zeroing.
 
-> 
-> > and it makes *much* more sense than Search permission which should not allow
-> > any modifications.  And in practice I expect people care more about whether
-> > modifications are permitted or not, than the details of the finer-grained
-> > permissions.
-> 
-> I disagree still.  To allow users to invalidate a key you would *also* have to
-> give them the ability to muck around with the permissions.
-> 
+Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Eric Biggers <ebiggers3@gmail.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Kirill Marinushkin <k.marinushkin@gmail.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Ilhan Gurel <ilhan.gurel@gmail.com>
+Cc: security@kernel.org
+Cc: stable@vger.kernel.org
+---
+ security/keys/Kconfig   |   4 +-
+ security/keys/big_key.c | 139 ++++++++++++++++++++++--------------------------
+ 2 files changed, 65 insertions(+), 78 deletions(-)
 
-True, though actually keyctl_setperm() also requires that the user own the key
-or be root.
+Changes v3->v4:
+  - Patchset resurrected from the dead. Just like the original use of ECB,
+    which this patch fixes, crypto-related things are sometimes neglected,
+    unfortunately.
+  - Rebased on top of 4.13+ changes.
+  - Now that get_random_bytes_wait has been merged, we can actually use
+    it, just like in v1 of this patch.
 
-And while finer-grained permissions are preferable in theory, out of curiosity
-do you have an example of an actual user who needs to be able to invalidate, or
-perhaps in plainer language, "delete" keys without otherwise being able to
-modify the keys or their containing keyring(s)?
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index a7a23b5541f8..91eafada3164 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -45,10 +45,8 @@ config BIG_KEYS
+ 	bool "Large payload keys"
+ 	depends on KEYS
+ 	depends on TMPFS
+-	depends on (CRYPTO_ANSI_CPRNG = y || CRYPTO_DRBG = y)
+ 	select CRYPTO_AES
+-	select CRYPTO_ECB
+-	select CRYPTO_RNG
++	select CRYPTO_GCM
+ 	help
+ 	  This option provides support for holding large keys within the kernel
+ 	  (for example Kerberos ticket caches).  The data may be stored out to
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 6acb00f6f22c..36682686f8c2 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -1,5 +1,6 @@
+ /* Large capacity key type
+  *
++ * Copyright (C) 2017 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
+  * Copyright (C) 2013 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+  *
+@@ -16,10 +17,10 @@
+ #include <linux/shmem_fs.h>
+ #include <linux/err.h>
+ #include <linux/scatterlist.h>
++#include <linux/random.h>
+ #include <keys/user-type.h>
+ #include <keys/big_key-type.h>
+-#include <crypto/rng.h>
+-#include <crypto/skcipher.h>
++#include <crypto/aead.h>
+ 
+ /*
+  * Layout of key payload words.
+@@ -49,7 +50,12 @@ enum big_key_op {
+ /*
+  * Key size for big_key data encryption
+  */
+-#define ENC_KEY_SIZE	16
++#define ENC_KEY_SIZE 32
++
++/*
++ * Authentication tag length
++ */
++#define ENC_AUTHTAG_SIZE 16
+ 
+ /*
+  * big_key defined keys take an arbitrary string as the description and an
+@@ -64,57 +70,62 @@ struct key_type key_type_big_key = {
+ 	.destroy		= big_key_destroy,
+ 	.describe		= big_key_describe,
+ 	.read			= big_key_read,
++	/* no ->update(); don't add it without changing big_key_crypt() nonce */
+ };
+ 
+ /*
+- * Crypto names for big_key data encryption
++ * Crypto names for big_key data authenticated encryption
+  */
+-static const char big_key_rng_name[] = "stdrng";
+-static const char big_key_alg_name[] = "ecb(aes)";
++static const char big_key_alg_name[] = "gcm(aes)";
+ 
+ /*
+- * Crypto algorithms for big_key data encryption
++ * Crypto algorithms for big_key data authenticated encryption
+  */
+-static struct crypto_rng *big_key_rng;
+-static struct crypto_skcipher *big_key_skcipher;
++static struct crypto_aead *big_key_aead;
+ 
+ /*
+- * Generate random key to encrypt big_key data
++ * Since changing the key affects the entire object, we need a mutex.
+  */
+-static inline int big_key_gen_enckey(u8 *key)
+-{
+-	return crypto_rng_get_bytes(big_key_rng, key, ENC_KEY_SIZE);
+-}
++static DEFINE_MUTEX(big_key_aead_lock);
+ 
+ /*
+  * Encrypt/decrypt big_key data
+  */
+ static int big_key_crypt(enum big_key_op op, u8 *data, size_t datalen, u8 *key)
+ {
+-	int ret = -EINVAL;
++	int ret;
+ 	struct scatterlist sgio;
+-	SKCIPHER_REQUEST_ON_STACK(req, big_key_skcipher);
+-
+-	if (crypto_skcipher_setkey(big_key_skcipher, key, ENC_KEY_SIZE)) {
++	struct aead_request *aead_req;
++	/* We always use a zero nonce. The reason we can get away with this is
++	 * because we're using a different randomly generated key for every
++	 * different encryption. Notably, too, key_type_big_key doesn't define
++	 * an .update function, so there's no chance we'll wind up reusing the
++	 * key to encrypt updated data. Simply put: one key, one encryption.
++	 */
++	u8 zero_nonce[crypto_aead_ivsize(big_key_aead)];
++
++	aead_req = aead_request_alloc(big_key_aead, GFP_KERNEL);
++	if (!aead_req)
++		return -ENOMEM;
++
++	memset(zero_nonce, 0, sizeof(zero_nonce));
++	sg_init_one(&sgio, data, datalen + (op = BIG_KEY_ENC ? ENC_AUTHTAG_SIZE : 0));
++	aead_request_set_crypt(aead_req, &sgio, &sgio, datalen, zero_nonce);
++	aead_request_set_callback(aead_req, CRYPTO_TFM_REQ_MAY_SLEEP, NULL, NULL);
++	aead_request_set_ad(aead_req, 0);
++
++	mutex_lock(&big_key_aead_lock);
++	if (crypto_aead_setkey(big_key_aead, key, ENC_KEY_SIZE)) {
+ 		ret = -EAGAIN;
+ 		goto error;
+ 	}
+-
+-	skcipher_request_set_tfm(req, big_key_skcipher);
+-	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP,
+-				      NULL, NULL);
+-
+-	sg_init_one(&sgio, data, datalen);
+-	skcipher_request_set_crypt(req, &sgio, &sgio, datalen, NULL);
+-
+ 	if (op = BIG_KEY_ENC)
+-		ret = crypto_skcipher_encrypt(req);
++		ret = crypto_aead_encrypt(aead_req);
+ 	else
+-		ret = crypto_skcipher_decrypt(req);
+-
+-	skcipher_request_zero(req);
+-
++		ret = crypto_aead_decrypt(aead_req);
+ error:
++	mutex_unlock(&big_key_aead_lock);
++	aead_request_free(aead_req);
+ 	return ret;
+ }
+ 
+@@ -146,16 +157,13 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 		 *
+ 		 * File content is stored encrypted with randomly generated key.
+ 		 */
+-		size_t enclen = ALIGN(datalen, crypto_skcipher_blocksize(big_key_skcipher));
++		size_t enclen = datalen + ENC_AUTHTAG_SIZE;
+ 		loff_t pos = 0;
+ 
+-		/* prepare aligned data to encrypt */
+ 		data = kmalloc(enclen, GFP_KERNEL);
+ 		if (!data)
+ 			return -ENOMEM;
+-
+ 		memcpy(data, prep->data, datalen);
+-		memset(data + datalen, 0x00, enclen - datalen);
+ 
+ 		/* generate random key */
+ 		enckey = kmalloc(ENC_KEY_SIZE, GFP_KERNEL);
+@@ -163,13 +171,10 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 			ret = -ENOMEM;
+ 			goto error;
+ 		}
+-
+-		ret = big_key_gen_enckey(enckey);
+-		if (ret)
+-			goto err_enckey;
++		get_random_bytes_wait(enckey, ENC_KEY_SIZE);
+ 
+ 		/* encrypt aligned data */
+-		ret = big_key_crypt(BIG_KEY_ENC, data, enclen, enckey);
++		ret = big_key_crypt(BIG_KEY_ENC, data, datalen, enckey);
+ 		if (ret)
+ 			goto err_enckey;
+ 
+@@ -195,7 +200,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 		*path = file->f_path;
+ 		path_get(path);
+ 		fput(file);
+-		kfree(data);
++		kzfree(data);
+ 	} else {
+ 		/* Just store the data in a buffer */
+ 		void *data = kmalloc(datalen, GFP_KERNEL);
+@@ -211,9 +216,9 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ err_fput:
+ 	fput(file);
+ err_enckey:
+-	kfree(enckey);
++	kzfree(enckey);
+ error:
+-	kfree(data);
++	kzfree(data);
+ 	return ret;
+ }
+ 
+@@ -227,7 +232,7 @@ void big_key_free_preparse(struct key_preparsed_payload *prep)
+ 
+ 		path_put(path);
+ 	}
+-	kfree(prep->payload.data[big_key_data]);
++	kzfree(prep->payload.data[big_key_data]);
+ }
+ 
+ /*
+@@ -259,7 +264,7 @@ void big_key_destroy(struct key *key)
+ 		path->mnt = NULL;
+ 		path->dentry = NULL;
+ 	}
+-	kfree(key->payload.data[big_key_data]);
++	kzfree(key->payload.data[big_key_data]);
+ 	key->payload.data[big_key_data] = NULL;
+ }
+ 
+@@ -295,7 +300,7 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+ 		struct file *file;
+ 		u8 *data;
+ 		u8 *enckey = (u8 *)key->payload.data[big_key_data];
+-		size_t enclen = ALIGN(datalen, crypto_skcipher_blocksize(big_key_skcipher));
++		size_t enclen = datalen + ENC_AUTHTAG_SIZE;
+ 		loff_t pos = 0;
+ 
+ 		data = kmalloc(enclen, GFP_KERNEL);
+@@ -328,7 +333,7 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+ err_fput:
+ 		fput(file);
+ error:
+-		kfree(data);
++		kzfree(data);
+ 	} else {
+ 		ret = datalen;
+ 		if (copy_to_user(buffer, key->payload.data[big_key_data],
+@@ -344,47 +349,31 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+  */
+ static int __init big_key_init(void)
+ {
+-	struct crypto_skcipher *cipher;
+-	struct crypto_rng *rng;
+ 	int ret;
+ 
+-	rng = crypto_alloc_rng(big_key_rng_name, 0, 0);
+-	if (IS_ERR(rng)) {
+-		pr_err("Can't alloc rng: %ld\n", PTR_ERR(rng));
+-		return PTR_ERR(rng);
+-	}
+-
+-	big_key_rng = rng;
+-
+-	/* seed RNG */
+-	ret = crypto_rng_reset(rng, NULL, crypto_rng_seedsize(rng));
+-	if (ret) {
+-		pr_err("Can't reset rng: %d\n", ret);
+-		goto error_rng;
+-	}
+-
+ 	/* init block cipher */
+-	cipher = crypto_alloc_skcipher(big_key_alg_name, 0, CRYPTO_ALG_ASYNC);
+-	if (IS_ERR(cipher)) {
+-		ret = PTR_ERR(cipher);
++	big_key_aead = crypto_alloc_aead(big_key_alg_name, 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(big_key_aead)) {
++		ret = PTR_ERR(big_key_aead);
+ 		pr_err("Can't alloc crypto: %d\n", ret);
+-		goto error_rng;
++		return ret;
++	}
++	ret = crypto_aead_setauthsize(big_key_aead, ENC_AUTHTAG_SIZE);
++	if (ret < 0) {
++		pr_err("Can't set crypto auth tag len: %d\n", ret);
++		goto free_aead;
+ 	}
+-
+-	big_key_skcipher = cipher;
+ 
+ 	ret = register_key_type(&key_type_big_key);
+ 	if (ret < 0) {
+ 		pr_err("Can't register type: %d\n", ret);
+-		goto error_cipher;
++		goto free_aead;
+ 	}
+ 
+ 	return 0;
+ 
+-error_cipher:
+-	crypto_free_skcipher(big_key_skcipher);
+-error_rng:
+-	crypto_free_rng(big_key_rng);
++free_aead:
++	crypto_free_aead(big_key_aead);
+ 	return ret;
+ }
+ 
+-- 
+2.14.1
 
-Meanwhile, users of filesystem-level encryption need to set up keys that can be
-searched by non-root users but not deleted.  This *should* be a normal, very
-boring use case, since being able to grant read-only access should be a
-fundamental part of any access control system.  But not with the keyrings
-permission system, apparently :-)
-
-> > Sort of, but actually keyctl_set_timeout() can be called at any time, and
-> > the timeout can be set to as little as 1 second.  So I don't see how
-> > keyctl_revoke() is that much different, fundamentally.
-> 
-> The timeout is a property of the key content and revoked is one of the states
-> the key can be in.
-> 
-> > >  (1) I add a flag to a key to say that it can be invalidated and a keyctl to
-> > >      change that flag.
-> > 
-> > And who would have permission to change that flag?  It seems to be the same
-> > problem again.
-> 
-> No.  Setperm would be required to change the flag, but not to apply the
-> invalidate operation if the flag is set.  Think of Invalidate as being a
-> mass-unlink operation effected by the garbage collector.
-> 
-> Kernel-created DNS keys, for example, don't grant Setperm to anyone.
-> 
-
-Perhaps keyctl_invalidate() should by default require Setattr permission, or
-perhaps owning the key --- but after a call to a new keyctl_set_invalidatable()
-which would require Setattr permission, just Search permission would be
-required?  It seems that would address your concern about needing to grant
-Setattr permission to invalidate keys.
-
-> 
-> > What would the behavior be if ->allow_invalidation() was not supplied?
-> 
-> The obvious would be to check that you're the owner of the key.
-> 
-> > In other words, would the purpose of this be to lock down invalidation of
-> > dns_resolver keys, or to restrict invalidation to *only* dns_resolver keys?
-> 
-> To restrict who could invalidate keys of a particular type.  Actually, it
-> wants to be per-key not per-key-type.  Hmmm...
-> 
-> > Granted by who, and how?  And do you mean keyctl_clear(), or
-> > keyctl_invalidate()?
-> 
-> keyctl_clear().  Empty the keyring, not render it unusable.
-> 
-> 
-> David
-
-If there is a "keyctl_set_invalidatable()" being added too, I don't really see
-the point of adding an ->allow_invalidation() method and mucking around with
-keyctl_clear() permissions as well.
-
-Eric
