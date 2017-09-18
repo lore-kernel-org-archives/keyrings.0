@@ -1,49 +1,38 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 05 Sep 2017 12:16:57 +0000
-Subject: Re: [PATCH v7 00/19] simplify crypto wait for async op
-Message-Id: <CAOtvUMdrMEPjXqVk66EOM+2NYoU-Hze2+5Vx6HGuR4FDNxYzDQ@mail.gmail.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 18 Sep 2017 18:33:31 +0000
+Subject: [PATCH] KEYS: fix cred refcount leak in request_key_auth_new()
+Message-Id: <20170918183331.113261-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1503584350-7831-1-git-send-email-gilad@benyossef.com>
- <CAFXBA=n6W_n1P=NKHEUAgpaDDrdmh4QwB4aYma9xyio7UFP3Vw@mail.gmail.com>
- <CAOtvUMcjtEMj4eoCG_Rpp-8CmJP+Yu0dPDN3PyOTWjHapf_y1g@mail.gmail.com> <CAFXBA=mqYxD3H_e38hEd2hVL4yvPXb_4DnfgGO5bf6YboTQVSg@mail.gmail.com>
-In-Reply-To: <CAFXBA=mqYxD3H_e38hEd2hVL4yvPXb_4DnfgGO5bf6YboTQVSg@mail.gmail.com>
-To: Harsh Jain <harshjain.prof@gmail.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, device-mapper development <dm-devel@redhat.com>, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, Serge
+To: linux-security-module@vger.kernel.org
 
-On Tue, Sep 5, 2017 at 2:23 PM, Harsh Jain <harshjain.prof@gmail.com> wrote:
-> On Sun, Sep 3, 2017 at 11:47 AM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
->> On Thu, Aug 31, 2017 at 3:31 PM, Harsh Jain <harshjain.prof@gmail.com> wrote:
->>> HI Gilad,
->>>
->>> I think we need an update in ESP also. Now EBUSY return means driver
->>> has accepted, Packet should not be dropped in
->>>
->>> esp_output_tail() function.
->>
->> Good catch. You are right and the same holds true for ah_output() in ah4.c.
->>
->> But I do wonder, the code there now treats -EBUSY as a special case
->> and returns NET_XMIT_DROP
->> but if an AEAD or AHASH transformation return some other error, like
->> -ENOMEM or -EINVAL shouldn't
->> we return NET_XMIT_DROP in that case too?
-> I think we should not,  XMIT_DROP implies drop current packet only,
-> later on when device is recovered from busy state, Upper layer
-> protocol(TCP) will re-transmit the packet. It helps in flow control.
->>
+From: Eric Biggers <ebiggers@google.com>
 
-I see. Makes sense.
+In request_key_auth_new(), if alloc_key() or key_instantiate_and_link()
+were to fail, we would leak a reference to the 'struct cred'.  Currently
+this can only happen if alloc_key() fails to to allocate memory.  But it
+still should be fixed, as it is a more severe bug waiting to happen.
 
-Thanks,
-Gilad
+Fixes: d84f4f992cbd ("CRED: Inaugurate COW credentials")
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ security/keys/request_key_auth.c | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index afe9d22ab361..f2f29f13ecff 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -227,6 +227,7 @@ struct key *request_key_auth_new(struct key *target, const void *callout_info,
+ 	key_revoke(authkey);
+ 	key_put(authkey);
+ error_alloc:
++	put_cred(rka->cred);
+ 	key_put(rka->target_key);
+ 	key_put(rka->dest_keyring);
+ 	kfree(rka->callout_info);
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
+2.14.1.690.gbb1197296e-goog
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
