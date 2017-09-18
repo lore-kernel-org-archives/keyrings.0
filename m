@@ -1,50 +1,47 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 28 Sep 2017 21:25:58 +0000
-Subject: [PATCH 3/7] lib/digsig: fix dereference of NULL user_key_payload
-Message-Id: <20170928212602.41744-4-ebiggers3@gmail.com>
+Date: Mon, 18 Sep 2017 18:37:39 +0000
+Subject: [PATCH] KEYS: reset parent each time before searching key_user_tree
+Message-Id: <20170918183739.114308-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170928212602.41744-1-ebiggers3@gmail.com>
-In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-digsig_verify() requests a user key, then accesses its payload.
-However, a revoked key has a NULL payload, and we failed to check for
-this.  request_key() *does* skip revoked keys, but there is still a
-window where the key can be revoked before we acquire its semaphore.
+In key_user_lookup(), if there is no key_user for the given uid, we drop
+key_user_lock, allocate a new key_user, and search the tree again.  But
+we failed to set 'parent' to NULL at the beginning of the second search.
+If the tree were to be empty for the second search, the insertion would
+be done with an invalid 'parent', scribbling over freed memory.
 
-Fix it by checking for a NULL payload, treating it like a key which was
-already revoked at the time it was requested.
+Fortunately this can't actually happen currently because the tree always
+contains at least the root_key_user.  But it still should be fixed to
+make the code more robust.
 
-Fixes: 051dbb918c7f ("crypto: digital signature verification support")
-Cc: <stable@vger.kernel.org>    [v3.3+]
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- lib/digsig.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ security/keys/key.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/lib/digsig.c b/lib/digsig.c
-index 03d7c63837ae..6ba6fcd92dd1 100644
---- a/lib/digsig.c
-+++ b/lib/digsig.c
-@@ -87,6 +87,12 @@ static int digsig_verify_rsa(struct key *key,
- 	down_read(&key->sem);
- 	ukp = user_key_payload_locked(key);
+diff --git a/security/keys/key.c b/security/keys/key.c
+index e5c0896c3a8f..eb914a838840 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -54,10 +54,10 @@ void __key_check(const struct key *key)
+ struct key_user *key_user_lookup(kuid_t uid)
+ {
+ 	struct key_user *candidate = NULL, *user;
+-	struct rb_node *parent = NULL;
+-	struct rb_node **p;
++	struct rb_node *parent, **p;
  
-+	if (!ukp) {
-+		/* key was revoked before we acquired its semaphore */
-+		err = -EKEYREVOKED;
-+		goto err1;
-+	}
-+
- 	if (ukp->datalen < sizeof(*pkh))
- 		goto err1;
+ try_again:
++	parent = NULL;
+ 	p = &key_user_tree.rb_node;
+ 	spin_lock(&key_user_lock);
  
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.14.1.690.gbb1197296e-goog
 
