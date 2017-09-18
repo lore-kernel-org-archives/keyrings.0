@@ -1,38 +1,50 @@
-From: Baolin Wang <baolin.wang@linaro.org>
-Date: Thu, 28 Sep 2017 22:05:01 +0000
-Subject: Re: [PATCH v2 0/2] Fix y2038 issues for security/keys subsystem
-Message-Id: <CAMz4kuKsh9hQVgGQEuwErRhX=j+Dan3ewTsM9g9QSCt+5AKK8w@mail.gmail.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 18 Sep 2017 18:36:12 +0000
+Subject: [PATCH] KEYS: fix key refcount leak in keyctl_assume_authority()
+Message-Id: <20170918183612.113941-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <alpine.LRH.2.21.1709281910430.6300@namei.org>
-	<cover.1505960744.git.baolin.wang@linaro.org>
-	<5855.1506590782@warthog.procyon.org.uk>
-	<alpine.LRH.2.21.1709281946500.1903@namei.org>
-In-Reply-To: <alpine.LRH.2.21.1709281946500.1903@namei.org>
 To: linux-security-module@vger.kernel.org
 
-On 28 September 2017 at 17:48, James Morris <jmorris@namei.org> wrote:
-> On Thu, 28 Sep 2017, David Howells wrote:
->
->> James Morris <jmorris@namei.org> wrote:
->>
->> > David, have you taken these into your tree?  I can apply them to mine if
->> > needed.
->>
->> I was intending to add them to my next tree for security/next.
->
-> Ok, please add
-> Reviewed-by: James Morris <james.l.morris@oracle.com>
->
-> to these.
->
-> Also, please use the new next-general branch for tracking & pull requests
-> for the next kernel.
+From: Eric Biggers <ebiggers@google.com>
 
-Thanks James and David.
+In keyctl_assume_authority(), if keyctl_change_reqkey_auth() were to
+fail, we would leak the reference to the 'authkey'.  Currently this can
+only happen if prepare_creds() fails to allocate memory.  But it still
+should be fixed, as it is a more severe bug waiting to happen.
 
+This patch also moves the read of 'authkey->serial' to before the
+reference to the authkey is dropped.  Doing the read after dropping the
+reference is very fragile because it assumes we still hold another
+reference to the key.  (Which we do, in current->cred->request_key_auth,
+but there's no reason not to write it in the "obviously correct" way.)
+
+Fixes: d84f4f992cbd ("CRED: Inaugurate COW credentials")
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ security/keys/keyctl.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 6a82090c7fc1..552e4460683b 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1411,11 +1411,9 @@ long keyctl_assume_authority(key_serial_t id)
+ 	}
+ 
+ 	ret = keyctl_change_reqkey_auth(authkey);
+-	if (ret < 0)
+-		goto error;
++	if (ret = 0)
++		ret = authkey->serial;
+ 	key_put(authkey);
+-
+-	ret = authkey->serial;
+ error:
+ 	return ret;
+ }
 -- 
-Baolin.wang
-Best Regards
+2.14.1.690.gbb1197296e-goog
+
