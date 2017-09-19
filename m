@@ -1,50 +1,54 @@
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Tue, 19 Sep 2017 13:39:59 +0000
-Subject: Re: [PATCH v4] security/keys: rewrite all of big_key crypto
-Message-Id: <20170919133959.5fgtioyonlsdyjf5@thunk.org>
+From: Sandy Harris <sandyinchina@gmail.com>
+Date: Tue, 19 Sep 2017 19:04:29 +0000
+Subject: Re: [kernel-hardening] Re: [PATCH v4] security/keys: rewrite all of big_key crypto
+Message-Id: <CACXcFmmBzHu-9sCs+gJDbjeR4MTdOfMtUaBr+YjkwyfFquQMBA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170916130034.17706-1-Jason@zx2c4.com>
- <2681038.03lnYPhpsa@tauon.chronox.de>
- <CAHmME9p6uq0ELtgxB94bc4bUppa7UogWSEgj_9o8p2xXQfrz5A@mail.gmail.com>
-In-Reply-To: <CAHmME9p6uq0ELtgxB94bc4bUppa7UogWSEgj_9o8p2xXQfrz5A@mail.gmail.com>
-To: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Cc: Stephan Mueller <smueller@chronox.de>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers3@gmail.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Ilhan Gurel <ilhan.gurel@gmail.com>, security@kernel.org, stable@vger.kernel.org
+References: <20170916130034.17706-1-Jason@zx2c4.com> <2681038.03lnYPhpsa@tauon.chronox.de>
+ <CAHmME9p6uq0ELtgxB94bc4bUppa7UogWSEgj_9o8p2xXQfrz5A@mail.gmail.com> <20170919133959.5fgtioyonlsdyjf5@thunk.org>
+In-Reply-To: <20170919133959.5fgtioyonlsdyjf5@thunk.org>
+To: Theodore Ts'o <tytso@mit.edu>, "Jason A. Donenfeld" <Jason@zx2c4.com>, Stephan Mueller <smueller@chronox.de>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers3@gmail.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Ilhan Gurel <ilhan.gurel@gmail.com>, security@kernel.org, stable@vger.kernel.org
 
-On Mon, Sep 18, 2017 at 01:24:18PM +0200, Jason A. Donenfeld wrote:
-> Good luck with getting approval... While Ted and I have our
-> differences like any two kernel developers, I really tend agree with
-> him in his attitude about this FIPS silliness. It's unlikely you're
-> going to be able to shovel this stuff into random.c, and I think doing
-> so will undermine your entire LRNG effort.
+On Tue, Sep 19, 2017 at 9:39 AM, Theodore Ts'o <tytso@mit.edu> wrote:
 
-Let me add one more reason why FIPS compliance for the kernel is just
-***stupid***.  The way FIPS compliance works, you have to pay hundreds
-of thousands of dollars to a FIPS certification lab to certify a
-specific binary, complete with the exact build environment (compiler,
-binutils, etc.) used to build that kernel binary.
+> On Mon, Sep 18, 2017 at 01:24:18PM +0200, Jason A. Donenfeld wrote:
+>> Good luck with getting approval... While Ted and I have our
+>> differences like any two kernel developers, I really tend agree with
+>> him in his attitude about this FIPS silliness. ...
+>
+> Let me add one more reason why FIPS compliance for the kernel is just
+> ***stupid***.  The way FIPS compliance works, you have to pay hundreds
+> of thousands of dollars to a FIPS certification lab to certify a
+> specific binary, complete with the exact build environment (compiler,
+> binutils, etc.) used to build that kernel binary.
+>
+> The moment you need to make a change --- say, to fix a critical
+> zero-day security bug --- this breaks the FIPS certification, ...
+>
+> You might say that FIPS certification != FIPS compliance.  Sure, but
+> the only silly people who care about FIPS compliance also need FIPS
+> certification, for the US Goverment signoff.
 
-The moment you need to make a change --- say, to fix a critical
-zero-day security bug --- this breaks the FIPS certification, and you
-then have to go back to the FIPS certification lab, and pay another
-hundreds of thousands of dollars for another certification.  This will
-take weeks/months, and while you are waiting for the results to come
-back from the FIPS certification lab, the hackers will be busy
-extracting another 143 million credit histories, or another 4.1
-million SF-86 Security Clearance Forms from the systems involved.  :-)
+I do not think it is just the US that matters here. If I understand
+Stefan correctly, one of his concerns is German (or EU?) gov't
+standards that are somehow related. I'm very hazy on details.
 
-You might say that FIPS certification != FIPS compliance.  Sure, but
-the only silly people who care about FIPS compliance also need FIPS
-certification, for the US Goverment signoff.
+I emphatically agree with Ted on some points here. Making
+FIPS certification a goal for kernel development would be
+really dumb. Having multiple RNGs available & compile-time
+options to select among them also looks silly to me; we just
+need one good one.
 
-Realistically, people who need FIPS certification will need to use
-FIPS certified crypto in hardware.  In which case the FIPS certified
-RNG, as well as the FIPS certified crypto, will all be in a single
-certified lump of hardware, which doesn't have to change when we need
-to fix various kernel bugs.
+On the other hand, I do not see why the driver should not
+use a FIPS-compliant PRNG where it can. This would make
+things easier for anyone who does seek certification. One
+of the big distro vendors? A gov't department or contractor
+that wants to use Linux? A corporation's sys admin or
+security reviewer? Stefan?
 
-Cheers,
-
-						- Ted
+I cannot see much downside to this. Is the current PRNG
+more efficient? More easily maintained? Is it still the case
+that random(4) must use only hashes, not ciphers, to
+avoid restrictions under export laws?
