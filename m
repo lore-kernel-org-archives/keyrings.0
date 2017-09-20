@@ -1,23 +1,27 @@
 From: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Date: Wed, 20 Sep 2017 14:09:46 +0000
+Date: Wed, 20 Sep 2017 14:56:06 +0000
 Subject: Re: [PATCH v6] security/keys: rewrite all of big_key crypto
-Message-Id: <CAHmME9qUPR0KTyr0TgiCA38-trMu1s_0C2uYq8u-S=kAWByZqQ@mail.gmail.com>
+Message-Id: <CAHmME9pSfXZC6QGsGs6Qax9q8QeKxGJSJonA8gXyYDqjvTRY=A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <CAHmME9rjrz2Pn39ay3myApBeBtQAPNt0C+NvmFoV28NeT4_zLg@mail.gmail.com>
- <2545404.XUVGGHhd0i@tauon.chronox.de> <CAHmME9pLF7cdm3RuOa-k8knsikNwU-5BVsnoHNEYw-xpuhW0tg@mail.gmail.com>
- <1882458.VgLOd8kIdz@tauon.chronox.de>
-In-Reply-To: <1882458.VgLOd8kIdz@tauon.chronox.de>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers3@gmail.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org, stable@vger.kernel.org
+ <20170917115217.15805-1-Jason@zx2c4.com> <27444.1505835505@warthog.procyon.org.uk>
+In-Reply-To: <27444.1505835505@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, Eric Biggers <ebiggers3@gmail.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org, stable@vger.kernel.org
 
-On Wed, Sep 20, 2017 at 4:06 PM, Stephan Mueller <smueller@chronox.de> wrote:
->> Section 3 shows an attack with repeated nonces, which we don't do here.
+On Tue, Sep 19, 2017 at 5:38 PM, David Howells <dhowells@redhat.com> wrote:
+> Jason A. Donenfeld <Jason@zx2c4.com> wrote:
 >
-> Maybe I miss a point here, but zero IVs is no repetition of nonces?
+>> And, some error paths forgot to zero out sensitive
+>> material, so this patch changes a kfree into a kzfree.
+>
+> Can you split that out into a separate preparatory patch?
+>
+> Also, I recommend limiting the lines in your patch description to 75 chars
+> lest you get people who run checkpatch on everything pestering you ;-)
 
-If there's a fresh key each time, then no, it's not a repetition.
-
-This patch uses a fresh random key for every encryption.
+No problem. Will split that out, then fix the description, and
+resubmit as v7. Coming your way shortly.
