@@ -1,45 +1,44 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 25 Sep 2017 11:54:20 +0000
-Subject: Re: [PATCH] KEYS: prevent creating a different user's keyrings
-Message-Id: <26475.1506340460@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 21 Sep 2017 20:57:41 +0000
+Subject: [PATCH v2 2/3] KEYS: don't revoke uninstantiated key in request_key_auth_new()
+Message-Id: <20170921205742.144596-3-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170921220029.GB89627@gmail.com>
-	<20170918183703.114134-1-ebiggers3@gmail.com>
-	<29684.1505837120@warthog.procyon.org.uk>
-In-Reply-To: <20170921220029.GB89627@gmail.com>
+References: <20170921205742.144596-1-ebiggers3@gmail.com>
+In-Reply-To: <20170921205742.144596-1-ebiggers3@gmail.com>
 To: linux-security-module@vger.kernel.org
 
-Eric Biggers <ebiggers3@gmail.com> wrote:
+From: Eric Biggers <ebiggers@google.com>
 
-> Well, maybe.  Whitelists are hard to get right, and it would be a bit ugly
-> having to check the name in both add_key() and join_session_keyring().  And
-> hopefully that would be everything?
+If key_instantiate_and_link() were to fail (which fortunately isn't
+possible currently), the call to key_revoke(authkey) would crash with a
+NULL pointer dereference in request_key_auth_revoke() because the key
+has not yet been instantiated.
 
-Actually, having thought about it some more, I think your way is better.
+Fix this by removing the call to key_revoke().  key_put() is sufficient,
+as it's not possible for an uninstantiated authkey to have been used for
+anything yet.
 
-> I think there's also a more fundamental problem with how keyring names work.
-> If you try to join a keyring with a certain name, how are you supposed to
-> know which one you're joining?  There can be many keyrings that have the
-> same name; and any unprivileged user can create a keyring with the name, and
-> they can grant everyone SEARCH permission so that their keyring can be
-> joined.  So it can be the case that a user is wanting to join a particular
-> keyring, but they actually get a keyring that a malicious user has crafted
-> for them...
+Fixes: b5f545c880a2 ("[PATCH] keys: Permit running process to instantiate keys")
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ security/keys/request_key_auth.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Yeah.  With hindsight, I think that firstly, joinable keyrings really need
-enablement and, secondly, thread, process, session, user and user-session need
-to have to be non-manually-creatable.
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index 8f12645945ca..2df92b619a38 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -220,7 +220,6 @@ struct key *request_key_auth_new(struct key *target, const void *callout_info,
+ 	return authkey;
+ 
+ error_put_authkey:
+-	key_revoke(authkey);
+ 	key_put(authkey);
+ error_free_rka:
+ 	free_request_key_auth(rka);
+-- 
+2.14.1.821.g8fa685d3b7-goog
 
-However, I'm not sure they can be renamed, since they're searchable and
-joinable by name and fixing this might break something in userspace (though I
-should hope that this is unlikely).
-
-> Also, if period ('.') is meant to be the reserved character in keyring names,
-> why do most of the special names actually start with underscore ('_')?
-
-'.' wasn't a reserved char originally.
-
-David
