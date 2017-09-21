@@ -1,69 +1,84 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 28 Sep 2017 21:26:01 +0000
-Subject: [PATCH 6/7] ecryptfs: fix out-of-bounds read of key payload
-Message-Id: <20170928212602.41744-7-ebiggers3@gmail.com>
+From: Baolin Wang <baolin.wang@linaro.org>
+Date: Thu, 21 Sep 2017 02:32:03 +0000
+Subject: [PATCH v2 2/2] security: keys: Replace time_t with time64_t for struct key_preparsed_payload
+Message-Id: <0f08ea5fb66780d40f104244d5fcaa8c610ffe30.1505960744.git.baolin.wang@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170928212602.41744-1-ebiggers3@gmail.com>
-In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <cover.1505960744.git.baolin.wang@linaro.org>
+In-Reply-To: <cover.1505960744.git.baolin.wang@linaro.org>
+To: linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+The 'struct key_preparsed_payload' will use 'time_t' which we will
+try to remove in the kernel, since 'time_t' is not year 2038 safe on
+32bits systems.
 
-eCryptfs blindly casts the user-supplied key payload to a
-'struct ecryptfs_auth_tok' without validating that the payload does, in
-fact, have the size of a 'struct ecryptfs_auth_tok'.  Fix it.
+Thus this patch replaces 'time_t' with 'time64_t' which is year 2038
+safe on 32 bits system for 'struct key_preparsed_payload', moreover
+we should use the 'TIME64_MAX' macro to initialize the 'time64_t'
+type variable.
 
-Fixes: 237fead61998 ("[PATCH] ecryptfs: fs/Makefile and fs/Kconfig")
-Cc: <stable@vger.kernel.org>    [v2.6.19+]
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Baolin Wang <baolin.wang@linaro.org>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- fs/ecryptfs/ecryptfs_kernel.h | 6 ++++++
- fs/ecryptfs/keystore.c        | 4 ++++
- 2 files changed, 10 insertions(+)
+ include/linux/key-type.h |    2 +-
+ security/keys/key.c      |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index 3fbc0ff79699..945844d5f0ef 100644
---- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -93,6 +93,9 @@ ecryptfs_get_encrypted_key_payload_data(struct key *key)
- 	if (!payload)
- 		return ERR_PTR(-EKEYREVOKED);
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index 9520fc3..05d8fb5 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -44,7 +44,7 @@ struct key_preparsed_payload {
+ 	const void	*data;		/* Raw data */
+ 	size_t		datalen;	/* Raw datalen */
+ 	size_t		quotalen;	/* Quota length for proposed payload */
+-	time_t		expiry;		/* Expiry time of key */
++	time64_t	expiry;		/* Expiry time of key */
+ } __randomize_layout;
  
-+	if (payload->payload_datalen != sizeof(struct ecryptfs_auth_tok))
-+		return ERR_PTR(-EINVAL);
-+
- 	return (struct ecryptfs_auth_tok *)payload->payload_data;
- }
+ typedef int (*request_key_actor_t)(struct key_construction *key,
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 291a67c..d5c8941 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -446,7 +446,7 @@ static int __key_instantiate_and_link(struct key *key,
+ 			if (authkey)
+ 				key_revoke(authkey);
  
-@@ -129,6 +132,9 @@ ecryptfs_get_key_payload_data(struct key *key)
- 	if (!ukp)
- 		return ERR_PTR(-EKEYREVOKED);
- 
-+	if (ukp->datalen != sizeof(struct ecryptfs_auth_tok))
-+		return ERR_PTR(-EINVAL);
-+
- 	return (struct ecryptfs_auth_tok *)ukp->data;
- }
- 
-diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index fa218cd64f74..95e20ab67df3 100644
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -471,6 +471,10 @@ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
- 	(*auth_tok) = ecryptfs_get_key_payload_data(auth_tok_key);
- 	if (IS_ERR(*auth_tok)) {
- 		rc = PTR_ERR(*auth_tok);
-+		if (rc = -EINVAL) {
-+			ecryptfs_printk(KERN_ERR,
-+					"Authentication token payload has wrong length\n");
-+		}
- 		*auth_tok = NULL;
- 		goto out;
- 	}
+-			if (prep->expiry != TIME_T_MAX) {
++			if (prep->expiry != TIME64_MAX) {
+ 				key->expiry = prep->expiry;
+ 				key_schedule_gc(prep->expiry + key_gc_delay);
+ 			}
+@@ -492,7 +492,7 @@ int key_instantiate_and_link(struct key *key,
+ 	prep.data = data;
+ 	prep.datalen = datalen;
+ 	prep.quotalen = key->type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (key->type->preparse) {
+ 		ret = key->type->preparse(&prep);
+ 		if (ret < 0)
+@@ -834,7 +834,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	prep.data = payload;
+ 	prep.datalen = plen;
+ 	prep.quotalen = index_key.type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (index_key.type->preparse) {
+ 		ret = index_key.type->preparse(&prep);
+ 		if (ret < 0) {
+@@ -968,7 +968,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
+ 	prep.data = payload;
+ 	prep.datalen = plen;
+ 	prep.quotalen = key->type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (key->type->preparse) {
+ 		ret = key->type->preparse(&prep);
+ 		if (ret < 0)
 -- 
-2.14.2.822.g60be5d43e6-goog
+1.7.9.5
 
