@@ -1,549 +1,400 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 05 Sep 2017 12:38:50 +0000
-Subject: [PATCH v8 11/20] crypto: move testmgr to generic async completion
-Message-Id: <1504615144-29770-12-git-send-email-gilad@benyossef.com>
+From: Baolin Wang <baolin.wang@linaro.org>
+Date: Thu, 21 Sep 2017 02:32:02 +0000
+Subject: [PATCH v2 1/2] security: keys: Replace time_t/timespec with time64_t
+Message-Id: <455c26d7bbbeeee26cba2e0338f6fd927b0bd448.1505960744.git.baolin.wang@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Ofir Drang <ofir.drang@arm.com>
+References: <cover.1505960744.git.baolin.wang@linaro.org>
+In-Reply-To: <cover.1505960744.git.baolin.wang@linaro.org>
+To: linux-security-module@vger.kernel.org
 
-testmgr is starting async. crypto ops and waiting for them to complete.
-Move it over to generic code doing the same.
+The 'struct key' will use 'time_t' which we try to remove in the
+kernel, since 'time_t' is not year 2038 safe on 32bit systems.
+Also the 'struct keyring_search_context' will use 'timespec' type
+to record current time, which is also not year 2038 safe on 32bit
+systems.
 
-This also provides a test of the generic crypto async. wait code.
+Thus this patch replaces 'time_t' with 'time64_t' which is year 2038
+safe for 'struct key', and replace 'timespec' with 'time64_t' for the
+'struct keyring_search_context', since we only look at the the seconds
+part of 'timespec' variable. Moreover we also change the codes where
+using the 'time_t' and 'timespec', and we can get current time by
+ktime_get_real_seconds() instead of current_kernel_time(), and use
+'TIME64_MAX' macro to initialize the 'time64_t' type variable.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Especially in proc.c file, we have replaced 'unsigned long' and 'timespec'
+type with 'u64' and 'time64_t' type to save the timeout value, which means
+user will get one 'u64' type timeout value by issuing proc_keys_show()
+function.
+
+Signed-off-by: Baolin Wang <baolin.wang@linaro.org>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- crypto/testmgr.c | 204 ++++++++++++++++++-------------------------------------
- 1 file changed, 66 insertions(+), 138 deletions(-)
+ include/linux/key.h          |    7 ++++---
+ security/keys/gc.c           |   20 ++++++++++----------
+ security/keys/internal.h     |    8 ++++----
+ security/keys/key.c          |   19 ++++++-------------
+ security/keys/keyring.c      |   18 +++++++++---------
+ security/keys/permission.c   |    3 +--
+ security/keys/proc.c         |   20 ++++++++++----------
+ security/keys/process_keys.c |    2 +-
+ 8 files changed, 45 insertions(+), 52 deletions(-)
 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 8a124d3..af968f4 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -76,11 +76,6 @@ int alg_test(const char *driver, const char *alg, u32 type, u32 mask)
- #define ENCRYPT 1
- #define DECRYPT 0
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 0441141..6d10f84 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -24,6 +24,7 @@
+ #include <linux/atomic.h>
+ #include <linux/assoc_array.h>
+ #include <linux/refcount.h>
++#include <linux/time64.h>
  
--struct tcrypt_result {
--	struct completion completion;
--	int err;
--};
--
- struct aead_test_suite {
- 	struct {
- 		const struct aead_testvec *vecs;
-@@ -155,17 +150,6 @@ static void hexdump(unsigned char *buf, unsigned int len)
- 			buf, len, false);
- }
+ #ifdef __KERNEL__
+ #include <linux/uidgid.h>
+@@ -157,10 +158,10 @@ struct key {
+ 	struct key_user		*user;		/* owner of this key */
+ 	void			*security;	/* security data for this key */
+ 	union {
+-		time_t		expiry;		/* time at which key expires (or 0) */
+-		time_t		revoked_at;	/* time at which key was revoked */
++		time64_t	expiry;		/* time at which key expires (or 0) */
++		time64_t	revoked_at;	/* time at which key was revoked */
+ 	};
+-	time_t			last_used_at;	/* last time used for LRU keyring discard */
++	time64_t		last_used_at;	/* last time used for LRU keyring discard */
+ 	kuid_t			uid;
+ 	kgid_t			gid;
+ 	key_perm_t		perm;		/* access permissions */
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index 87cb260..c99700e 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -32,7 +32,7 @@
+ static void key_gc_timer_func(unsigned long);
+ static DEFINE_TIMER(key_gc_timer, key_gc_timer_func, 0, 0);
  
--static void tcrypt_complete(struct crypto_async_request *req, int err)
--{
--	struct tcrypt_result *res = req->data;
--
--	if (err = -EINPROGRESS)
--		return;
--
--	res->err = err;
--	complete(&res->completion);
--}
--
- static int testmgr_alloc_buf(char *buf[XBUFSIZE])
+-static time_t key_gc_next_run = LONG_MAX;
++static time64_t key_gc_next_run = TIME64_MAX;
+ static struct key_type *key_gc_dead_keytype;
+ 
+ static unsigned long key_gc_flags;
+@@ -53,12 +53,12 @@ struct key_type key_type_dead = {
+  * Schedule a garbage collection run.
+  * - time precision isn't particularly important
+  */
+-void key_schedule_gc(time_t gc_at)
++void key_schedule_gc(time64_t gc_at)
  {
- 	int i;
-@@ -193,20 +177,10 @@ static void testmgr_free_buf(char *buf[XBUFSIZE])
- 		free_page((unsigned long)buf[i]);
+ 	unsigned long expires;
+-	time_t now = current_kernel_time().tv_sec;
++	time64_t now = ktime_get_real_seconds();
+ 
+-	kenter("%ld", gc_at - now);
++	kenter("%lld", gc_at - now);
+ 
+ 	if (gc_at <= now || test_bit(KEY_GC_REAP_KEYTYPE, &key_gc_flags)) {
+ 		kdebug("IMMEDIATE");
+@@ -87,7 +87,7 @@ void key_schedule_gc_links(void)
+ static void key_gc_timer_func(unsigned long data)
+ {
+ 	kenter("");
+-	key_gc_next_run = LONG_MAX;
++	key_gc_next_run = TIME64_MAX;
+ 	key_schedule_gc_links();
  }
  
--static int wait_async_op(struct tcrypt_result *tr, int ret)
--{
--	if (ret = -EINPROGRESS || ret = -EBUSY) {
--		wait_for_completion(&tr->completion);
--		reinit_completion(&tr->completion);
--		ret = tr->err;
+@@ -184,11 +184,11 @@ static void key_garbage_collector(struct work_struct *work)
+ 
+ 	struct rb_node *cursor;
+ 	struct key *key;
+-	time_t new_timer, limit;
++	time64_t new_timer, limit;
+ 
+ 	kenter("[%lx,%x]", key_gc_flags, gc_state);
+ 
+-	limit = current_kernel_time().tv_sec;
++	limit = ktime_get_real_seconds();
+ 	if (limit > key_gc_delay)
+ 		limit -= key_gc_delay;
+ 	else
+@@ -204,7 +204,7 @@ static void key_garbage_collector(struct work_struct *work)
+ 		gc_state |= KEY_GC_REAPING_DEAD_1;
+ 	kdebug("new pass %x", gc_state);
+ 
+-	new_timer = LONG_MAX;
++	new_timer = TIME64_MAX;
+ 
+ 	/* As only this function is permitted to remove things from the key
+ 	 * serial tree, if cursor is non-NULL then it will always point to a
+@@ -235,7 +235,7 @@ static void key_garbage_collector(struct work_struct *work)
+ 
+ 		if (gc_state & KEY_GC_SET_TIMER) {
+ 			if (key->expiry > limit && key->expiry < new_timer) {
+-				kdebug("will expire %x in %ld",
++				kdebug("will expire %x in %lld",
+ 				       key_serial(key), key->expiry - limit);
+ 				new_timer = key->expiry;
+ 			}
+@@ -276,7 +276,7 @@ static void key_garbage_collector(struct work_struct *work)
+ 	 */
+ 	kdebug("pass complete");
+ 
+-	if (gc_state & KEY_GC_SET_TIMER && new_timer != (time_t)LONG_MAX) {
++	if (gc_state & KEY_GC_SET_TIMER && new_timer != (time64_t)TIME64_MAX) {
+ 		new_timer += key_gc_delay;
+ 		key_schedule_gc(new_timer);
+ 	}
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 1c02c65..a32dc69 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -130,7 +130,7 @@ struct keyring_search_context {
+ 	int			skipped_ret;
+ 	bool			possessed;
+ 	key_ref_t		result;
+-	struct timespec		now;
++	time64_t		now;
+ };
+ 
+ extern bool key_default_cmp(const struct key *key,
+@@ -169,10 +169,10 @@ extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
+ 
+ extern struct work_struct key_gc_work;
+ extern unsigned key_gc_delay;
+-extern void keyring_gc(struct key *keyring, time_t limit);
++extern void keyring_gc(struct key *keyring, time64_t limit);
+ extern void keyring_restriction_gc(struct key *keyring,
+ 				   struct key_type *dead_type);
+-extern void key_schedule_gc(time_t gc_at);
++extern void key_schedule_gc(time64_t gc_at);
+ extern void key_schedule_gc_links(void);
+ extern void key_gc_keytype(struct key_type *ktype);
+ 
+@@ -211,7 +211,7 @@ extern struct key *request_key_auth_new(struct key *target,
+ /*
+  * Determine whether a key is dead.
+  */
+-static inline bool key_is_dead(const struct key *key, time_t limit)
++static inline bool key_is_dead(const struct key *key, time64_t limit)
+ {
+ 	return
+ 		key->flags & ((1 << KEY_FLAG_DEAD) |
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 83da68d..291a67c 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -556,7 +556,6 @@ int key_reject_and_link(struct key *key,
+ 			struct key *authkey)
+ {
+ 	struct assoc_array_edit *edit;
+-	struct timespec now;
+ 	int ret, awaken, link_ret = 0;
+ 
+ 	key_check(key);
+@@ -582,8 +581,7 @@ int key_reject_and_link(struct key *key,
+ 		smp_wmb();
+ 		set_bit(KEY_FLAG_NEGATIVE, &key->flags);
+ 		set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
+-		now = current_kernel_time();
+-		key->expiry = now.tv_sec + timeout;
++		key->expiry = ktime_get_real_seconds() + timeout;
+ 		key_schedule_gc(key->expiry + key_gc_delay);
+ 
+ 		if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
+@@ -699,16 +697,13 @@ struct key_type *key_type_lookup(const char *type)
+ 
+ void key_set_timeout(struct key *key, unsigned timeout)
+ {
+-	struct timespec now;
+-	time_t expiry = 0;
++	time64_t expiry = 0;
+ 
+ 	/* make the changes with the locks held to prevent races */
+ 	down_write(&key->sem);
+ 
+-	if (timeout > 0) {
+-		now = current_kernel_time();
+-		expiry = now.tv_sec + timeout;
 -	}
--	return ret;
--}
--
- static int ahash_partial_update(struct ahash_request **preq,
- 	struct crypto_ahash *tfm, const struct hash_testvec *template,
- 	void *hash_buff, int k, int temp, struct scatterlist *sg,
--	const char *algo, char *result, struct tcrypt_result *tresult)
-+	const char *algo, char *result, struct crypto_wait *wait)
++	if (timeout > 0)
++		expiry = ktime_get_real_seconds() + timeout;
+ 
+ 	key->expiry = expiry;
+ 	key_schedule_gc(key->expiry + key_gc_delay);
+@@ -1007,8 +1002,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
+  */
+ void key_revoke(struct key *key)
  {
- 	char *state;
- 	struct ahash_request *req;
-@@ -236,7 +210,7 @@ static int ahash_partial_update(struct ahash_request **preq,
- 	}
- 	ahash_request_set_callback(req,
- 		CRYPTO_TFM_REQ_MAY_BACKLOG,
--		tcrypt_complete, tresult);
-+		crypto_req_done, wait);
+-	struct timespec now;
+-	time_t time;
++	time64_t time;
  
- 	memcpy(hash_buff, template->plaintext + temp,
- 		template->tap[k]);
-@@ -247,7 +221,7 @@ static int ahash_partial_update(struct ahash_request **preq,
- 		pr_err("alg: hash: Failed to import() for %s\n", algo);
- 		goto out;
- 	}
--	ret = wait_async_op(tresult, crypto_ahash_update(req));
-+	ret = crypto_wait_req(crypto_ahash_update(req), wait);
- 	if (ret)
- 		goto out;
- 	*preq = req;
-@@ -272,7 +246,7 @@ static int __test_hash(struct crypto_ahash *tfm,
- 	char *result;
- 	char *key;
- 	struct ahash_request *req;
--	struct tcrypt_result tresult;
-+	struct crypto_wait wait;
- 	void *hash_buff;
- 	char *xbuf[XBUFSIZE];
- 	int ret = -ENOMEM;
-@@ -286,7 +260,7 @@ static int __test_hash(struct crypto_ahash *tfm,
- 	if (testmgr_alloc_buf(xbuf))
- 		goto out_nobuf;
+ 	key_check(key);
  
--	init_completion(&tresult.completion);
-+	crypto_init_wait(&wait);
+@@ -1023,8 +1017,7 @@ void key_revoke(struct key *key)
+ 		key->type->revoke(key);
  
- 	req = ahash_request_alloc(tfm, GFP_KERNEL);
- 	if (!req) {
-@@ -295,7 +269,7 @@ static int __test_hash(struct crypto_ahash *tfm,
- 		goto out_noreq;
- 	}
- 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				   tcrypt_complete, &tresult);
-+				   crypto_req_done, &wait);
- 
- 	j = 0;
- 	for (i = 0; i < tcount; i++) {
-@@ -335,26 +309,26 @@ static int __test_hash(struct crypto_ahash *tfm,
- 
- 		ahash_request_set_crypt(req, sg, result, template[i].psize);
- 		if (use_digest) {
--			ret = wait_async_op(&tresult, crypto_ahash_digest(req));
-+			ret = crypto_wait_req(crypto_ahash_digest(req), &wait);
- 			if (ret) {
- 				pr_err("alg: hash: digest failed on test %d "
- 				       "for %s: ret=%d\n", j, algo, -ret);
- 				goto out;
- 			}
- 		} else {
--			ret = wait_async_op(&tresult, crypto_ahash_init(req));
-+			ret = crypto_wait_req(crypto_ahash_init(req), &wait);
- 			if (ret) {
- 				pr_err("alg: hash: init failed on test %d "
- 				       "for %s: ret=%d\n", j, algo, -ret);
- 				goto out;
- 			}
--			ret = wait_async_op(&tresult, crypto_ahash_update(req));
-+			ret = crypto_wait_req(crypto_ahash_update(req), &wait);
- 			if (ret) {
- 				pr_err("alg: hash: update failed on test %d "
- 				       "for %s: ret=%d\n", j, algo, -ret);
- 				goto out;
- 			}
--			ret = wait_async_op(&tresult, crypto_ahash_final(req));
-+			ret = crypto_wait_req(crypto_ahash_final(req), &wait);
- 			if (ret) {
- 				pr_err("alg: hash: final failed on test %d "
- 				       "for %s: ret=%d\n", j, algo, -ret);
-@@ -420,22 +394,10 @@ static int __test_hash(struct crypto_ahash *tfm,
+ 	/* set the death time to no more than the expiry time */
+-	now = current_kernel_time();
+-	time = now.tv_sec;
++	time = ktime_get_real_seconds();
+ 	if (key->revoked_at = 0 || key->revoked_at > time) {
+ 		key->revoked_at = time;
+ 		key_schedule_gc(key->revoked_at + key_gc_delay);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index de81793..2d82088 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -576,7 +576,7 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
+ 			goto skipped;
  		}
  
- 		ahash_request_set_crypt(req, sg, result, template[i].psize);
--		ret = crypto_ahash_digest(req);
--		switch (ret) {
--		case 0:
--			break;
--		case -EINPROGRESS:
--		case -EBUSY:
--			wait_for_completion(&tresult.completion);
--			reinit_completion(&tresult.completion);
--			ret = tresult.err;
--			if (!ret)
--				break;
--			/* fall through */
--		default:
--			printk(KERN_ERR "alg: hash: digest failed "
--			       "on chunking test %d for %s: "
--			       "ret=%d\n", j, algo, -ret);
-+		ret = crypto_wait_req(crypto_ahash_digest(req), &wait);
-+		if (ret) {
-+			pr_err("alg: hash: digest failed on chunking test %d for %s: ret=%d\n",
-+			       j, algo, -ret);
+-		if (key->expiry && ctx->now.tv_sec >= key->expiry) {
++		if (key->expiry && ctx->now >= key->expiry) {
+ 			if (!(ctx->flags & KEYRING_SEARCH_SKIP_EXPIRED))
+ 				ctx->result = ERR_PTR(-EKEYEXPIRED);
+ 			kleave(" = %d [expire]", ctx->skipped_ret);
+@@ -837,10 +837,10 @@ static bool search_nested_keyrings(struct key *keyring,
+ 	key = key_ref_to_ptr(ctx->result);
+ 	key_check(key);
+ 	if (!(ctx->flags & KEYRING_SEARCH_NO_UPDATE_TIME)) {
+-		key->last_used_at = ctx->now.tv_sec;
+-		keyring->last_used_at = ctx->now.tv_sec;
++		key->last_used_at = ctx->now;
++		keyring->last_used_at = ctx->now;
+ 		while (sp > 0)
+-			stack[--sp].keyring->last_used_at = ctx->now.tv_sec;
++			stack[--sp].keyring->last_used_at = ctx->now;
+ 	}
+ 	kleave(" = true");
+ 	return true;
+@@ -901,7 +901,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+ 	}
+ 
+ 	rcu_read_lock();
+-	ctx->now = current_kernel_time();
++	ctx->now = ktime_get_real_seconds();
+ 	if (search_nested_keyrings(keyring, ctx))
+ 		__key_get(key_ref_to_ptr(ctx->result));
+ 	rcu_read_unlock();
+@@ -1147,7 +1147,7 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
+ 			 * (ie. it has a zero usage count) */
+ 			if (!refcount_inc_not_zero(&keyring->usage))
+ 				continue;
+-			keyring->last_used_at = current_kernel_time().tv_sec;
++			keyring->last_used_at = ktime_get_real_seconds();
  			goto out;
  		}
+ 	}
+@@ -1487,7 +1487,7 @@ static void keyring_revoke(struct key *keyring)
+ static bool keyring_gc_select_iterator(void *object, void *iterator_data)
+ {
+ 	struct key *key = keyring_ptr_to_key(object);
+-	time_t *limit = iterator_data;
++	time64_t *limit = iterator_data;
  
-@@ -486,13 +448,13 @@ static int __test_hash(struct crypto_ahash *tfm,
- 		}
+ 	if (key_is_dead(key, *limit))
+ 		return false;
+@@ -1498,7 +1498,7 @@ static bool keyring_gc_select_iterator(void *object, void *iterator_data)
+ static int keyring_gc_check_iterator(const void *object, void *iterator_data)
+ {
+ 	const struct key *key = keyring_ptr_to_key(object);
+-	time_t *limit = iterator_data;
++	time64_t *limit = iterator_data;
  
- 		ahash_request_set_crypt(req, sg, result, template[i].tap[0]);
--		ret = wait_async_op(&tresult, crypto_ahash_init(req));
-+		ret = crypto_wait_req(crypto_ahash_init(req), &wait);
- 		if (ret) {
- 			pr_err("alg: hash: init failed on test %d for %s: ret=%d\n",
- 				j, algo, -ret);
- 			goto out;
- 		}
--		ret = wait_async_op(&tresult, crypto_ahash_update(req));
-+		ret = crypto_wait_req(crypto_ahash_update(req), &wait);
- 		if (ret) {
- 			pr_err("alg: hash: update failed on test %d for %s: ret=%d\n",
- 				j, algo, -ret);
-@@ -503,7 +465,7 @@ static int __test_hash(struct crypto_ahash *tfm,
- 		for (k = 1; k < template[i].np; k++) {
- 			ret = ahash_partial_update(&req, tfm, &template[i],
- 				hash_buff, k, temp, &sg[0], algo, result,
--				&tresult);
-+				&wait);
- 			if (ret) {
- 				pr_err("alg: hash: partial update failed on test %d for %s: ret=%d\n",
- 					j, algo, -ret);
-@@ -511,7 +473,7 @@ static int __test_hash(struct crypto_ahash *tfm,
- 			}
- 			temp += template[i].tap[k];
- 		}
--		ret = wait_async_op(&tresult, crypto_ahash_final(req));
-+		ret = crypto_wait_req(crypto_ahash_final(req), &wait);
- 		if (ret) {
- 			pr_err("alg: hash: final failed on test %d for %s: ret=%d\n",
- 				j, algo, -ret);
-@@ -580,7 +542,7 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
- 	struct scatterlist *sg;
- 	struct scatterlist *sgout;
- 	const char *e, *d;
--	struct tcrypt_result result;
-+	struct crypto_wait wait;
- 	unsigned int authsize, iv_len;
- 	void *input;
- 	void *output;
-@@ -619,7 +581,7 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
- 	else
- 		e = "decryption";
+ 	key_check(key);
+ 	return key_is_dead(key, *limit);
+@@ -1510,7 +1510,7 @@ static int keyring_gc_check_iterator(const void *object, void *iterator_data)
+  * Not called with any locks held.  The keyring's key struct will not be
+  * deallocated under us as only our caller may deallocate it.
+  */
+-void keyring_gc(struct key *keyring, time_t limit)
++void keyring_gc(struct key *keyring, time64_t limit)
+ {
+ 	int result;
  
--	init_completion(&result.completion);
-+	crypto_init_wait(&wait);
+diff --git a/security/keys/permission.c b/security/keys/permission.c
+index 732cc0b..507b1d41 100644
+--- a/security/keys/permission.c
++++ b/security/keys/permission.c
+@@ -100,8 +100,7 @@ int key_validate(const struct key *key)
  
- 	req = aead_request_alloc(tfm, GFP_KERNEL);
- 	if (!req) {
-@@ -629,7 +591,7 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
+ 	/* check it hasn't expired */
+ 	if (key->expiry) {
+-		struct timespec now = current_kernel_time();
+-		if (now.tv_sec >= key->expiry)
++		if (ktime_get_real_seconds() >= key->expiry)
+ 			return -EKEYEXPIRED;
  	}
  
- 	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				  tcrypt_complete, &result);
-+				  crypto_req_done, &wait);
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index bf08d02..95c8720 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -178,8 +178,8 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ {
+ 	struct rb_node *_p = v;
+ 	struct key *key = rb_entry(_p, struct key, serial_node);
+-	struct timespec now;
+-	unsigned long timo;
++	time64_t now;
++	u64 timo;
+ 	key_ref_t key_ref, skey_ref;
+ 	char xbuf[16];
+ 	int rc;
+@@ -216,28 +216,28 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	if (rc < 0)
+ 		return 0;
  
- 	iv_len = crypto_aead_ivsize(tfm);
+-	now = current_kernel_time();
++	now = ktime_get_real_seconds();
  
-@@ -709,7 +671,8 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
+ 	rcu_read_lock();
  
- 		aead_request_set_ad(req, template[i].alen);
+ 	/* come up with a suitable timeout value */
+ 	if (key->expiry = 0) {
+ 		memcpy(xbuf, "perm", 5);
+-	} else if (now.tv_sec >= key->expiry) {
++	} else if (now >= key->expiry) {
+ 		memcpy(xbuf, "expd", 5);
+ 	} else {
+-		timo = key->expiry - now.tv_sec;
++		timo = key->expiry - now;
  
--		ret = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
-+		ret = crypto_wait_req(enc ? crypto_aead_encrypt(req)
-+				      : crypto_aead_decrypt(req), &wait);
- 
- 		switch (ret) {
- 		case 0:
-@@ -722,13 +685,6 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
- 				goto out;
- 			}
- 			break;
--		case -EINPROGRESS:
--		case -EBUSY:
--			wait_for_completion(&result.completion);
--			reinit_completion(&result.completion);
--			ret = result.err;
--			if (!ret)
--				break;
- 		case -EBADMSG:
- 			if (template[i].novrfy)
- 				/* verification failure was expected */
-@@ -866,7 +822,8 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
- 
- 		aead_request_set_ad(req, template[i].alen);
- 
--		ret = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
-+		ret = crypto_wait_req(enc ? crypto_aead_encrypt(req)
-+				      : crypto_aead_decrypt(req), &wait);
- 
- 		switch (ret) {
- 		case 0:
-@@ -879,13 +836,6 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
- 				goto out;
- 			}
- 			break;
--		case -EINPROGRESS:
--		case -EBUSY:
--			wait_for_completion(&result.completion);
--			reinit_completion(&result.completion);
--			ret = result.err;
--			if (!ret)
--				break;
- 		case -EBADMSG:
- 			if (template[i].novrfy)
- 				/* verification failure was expected */
-@@ -1083,7 +1033,7 @@ static int __test_skcipher(struct crypto_skcipher *tfm, int enc,
- 	struct scatterlist sg[8];
- 	struct scatterlist sgout[8];
- 	const char *e, *d;
--	struct tcrypt_result result;
-+	struct crypto_wait wait;
- 	void *data;
- 	char iv[MAX_IVLEN];
- 	char *xbuf[XBUFSIZE];
-@@ -1107,7 +1057,7 @@ static int __test_skcipher(struct crypto_skcipher *tfm, int enc,
- 	else
- 		e = "decryption";
- 
--	init_completion(&result.completion);
-+	crypto_init_wait(&wait);
- 
- 	req = skcipher_request_alloc(tfm, GFP_KERNEL);
- 	if (!req) {
-@@ -1117,7 +1067,7 @@ static int __test_skcipher(struct crypto_skcipher *tfm, int enc,
+ 		if (timo < 60)
+-			sprintf(xbuf, "%lus", timo);
++			sprintf(xbuf, "%llus", timo);
+ 		else if (timo < 60*60)
+-			sprintf(xbuf, "%lum", timo / 60);
++			sprintf(xbuf, "%llum", div_u64(timo, 60));
+ 		else if (timo < 60*60*24)
+-			sprintf(xbuf, "%luh", timo / (60*60));
++			sprintf(xbuf, "%lluh", div_u64(timo, 60 * 60));
+ 		else if (timo < 60*60*24*7)
+-			sprintf(xbuf, "%lud", timo / (60*60*24));
++			sprintf(xbuf, "%llud", div_u64(timo, 60 * 60 * 24));
+ 		else
+-			sprintf(xbuf, "%luw", timo / (60*60*24*7));
++			sprintf(xbuf, "%lluw", div_u64(timo, 60 * 60 * 24 * 7));
  	}
  
- 	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				      tcrypt_complete, &result);
-+				      crypto_req_done, &wait);
+ #define showflag(KEY, LETTER, FLAG) \
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 86bced9..c691e09 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -736,7 +736,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+ 	if (ret < 0)
+ 		goto invalid_key;
  
- 	j = 0;
- 	for (i = 0; i < tcount; i++) {
-@@ -1164,21 +1114,10 @@ static int __test_skcipher(struct crypto_skcipher *tfm, int enc,
+-	key->last_used_at = current_kernel_time().tv_sec;
++	key->last_used_at = ktime_get_real_seconds();
  
- 		skcipher_request_set_crypt(req, sg, (diff_dst) ? sgout : sg,
- 					   template[i].ilen, iv);
--		ret = enc ? crypto_skcipher_encrypt(req) :
--			    crypto_skcipher_decrypt(req);
-+		ret = crypto_wait_req(enc ? crypto_skcipher_encrypt(req) :
-+				      crypto_skcipher_decrypt(req), &wait);
- 
--		switch (ret) {
--		case 0:
--			break;
--		case -EINPROGRESS:
--		case -EBUSY:
--			wait_for_completion(&result.completion);
--			reinit_completion(&result.completion);
--			ret = result.err;
--			if (!ret)
--				break;
--			/* fall through */
--		default:
-+		if (ret) {
- 			pr_err("alg: skcipher%s: %s failed on test %d for %s: ret=%d\n",
- 			       d, e, j, algo, -ret);
- 			goto out;
-@@ -1272,21 +1211,10 @@ static int __test_skcipher(struct crypto_skcipher *tfm, int enc,
- 		skcipher_request_set_crypt(req, sg, (diff_dst) ? sgout : sg,
- 					   template[i].ilen, iv);
- 
--		ret = enc ? crypto_skcipher_encrypt(req) :
--			    crypto_skcipher_decrypt(req);
-+		ret = crypto_wait_req(enc ? crypto_skcipher_encrypt(req) :
-+				      crypto_skcipher_decrypt(req), &wait);
- 
--		switch (ret) {
--		case 0:
--			break;
--		case -EINPROGRESS:
--		case -EBUSY:
--			wait_for_completion(&result.completion);
--			reinit_completion(&result.completion);
--			ret = result.err;
--			if (!ret)
--				break;
--			/* fall through */
--		default:
-+		if (ret) {
- 			pr_err("alg: skcipher%s: %s failed on chunk test %d for %s: ret=%d\n",
- 			       d, e, j, algo, -ret);
- 			goto out;
-@@ -1462,7 +1390,7 @@ static int test_acomp(struct crypto_acomp *tfm,
- 	int ret;
- 	struct scatterlist src, dst;
- 	struct acomp_req *req;
--	struct tcrypt_result result;
-+	struct crypto_wait wait;
- 
- 	output = kmalloc(COMP_BUF_SIZE, GFP_KERNEL);
- 	if (!output)
-@@ -1486,7 +1414,7 @@ static int test_acomp(struct crypto_acomp *tfm,
- 		}
- 
- 		memset(output, 0, dlen);
--		init_completion(&result.completion);
-+		crypto_init_wait(&wait);
- 		sg_init_one(&src, input_vec, ilen);
- 		sg_init_one(&dst, output, dlen);
- 
-@@ -1501,9 +1429,9 @@ static int test_acomp(struct crypto_acomp *tfm,
- 
- 		acomp_request_set_params(req, &src, &dst, ilen, dlen);
- 		acomp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--					   tcrypt_complete, &result);
-+					   crypto_req_done, &wait);
- 
--		ret = wait_async_op(&result, crypto_acomp_compress(req));
-+		ret = crypto_wait_req(crypto_acomp_compress(req), &wait);
- 		if (ret) {
- 			pr_err("alg: acomp: compression failed on test %d for %s: ret=%d\n",
- 			       i + 1, algo, -ret);
-@@ -1516,10 +1444,10 @@ static int test_acomp(struct crypto_acomp *tfm,
- 		dlen = COMP_BUF_SIZE;
- 		sg_init_one(&src, output, ilen);
- 		sg_init_one(&dst, decomp_out, dlen);
--		init_completion(&result.completion);
-+		crypto_init_wait(&wait);
- 		acomp_request_set_params(req, &src, &dst, ilen, dlen);
- 
--		ret = wait_async_op(&result, crypto_acomp_decompress(req));
-+		ret = crypto_wait_req(crypto_acomp_decompress(req), &wait);
- 		if (ret) {
- 			pr_err("alg: acomp: compression failed on test %d for %s: ret=%d\n",
- 			       i + 1, algo, -ret);
-@@ -1563,7 +1491,7 @@ static int test_acomp(struct crypto_acomp *tfm,
- 		}
- 
- 		memset(output, 0, dlen);
--		init_completion(&result.completion);
-+		crypto_init_wait(&wait);
- 		sg_init_one(&src, input_vec, ilen);
- 		sg_init_one(&dst, output, dlen);
- 
-@@ -1578,9 +1506,9 @@ static int test_acomp(struct crypto_acomp *tfm,
- 
- 		acomp_request_set_params(req, &src, &dst, ilen, dlen);
- 		acomp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--					   tcrypt_complete, &result);
-+					   crypto_req_done, &wait);
- 
--		ret = wait_async_op(&result, crypto_acomp_decompress(req));
-+		ret = crypto_wait_req(crypto_acomp_decompress(req), &wait);
- 		if (ret) {
- 			pr_err("alg: acomp: decompression failed on test %d for %s: ret=%d\n",
- 			       i + 1, algo, -ret);
-@@ -2000,7 +1928,7 @@ static int do_test_kpp(struct crypto_kpp *tfm, const struct kpp_testvec *vec,
- 	void *a_public = NULL;
- 	void *a_ss = NULL;
- 	void *shared_secret = NULL;
--	struct tcrypt_result result;
-+	struct crypto_wait wait;
- 	unsigned int out_len_max;
- 	int err = -ENOMEM;
- 	struct scatterlist src, dst;
-@@ -2009,7 +1937,7 @@ static int do_test_kpp(struct crypto_kpp *tfm, const struct kpp_testvec *vec,
- 	if (!req)
- 		return err;
- 
--	init_completion(&result.completion);
-+	crypto_init_wait(&wait);
- 
- 	err = crypto_kpp_set_secret(tfm, vec->secret, vec->secret_size);
- 	if (err < 0)
-@@ -2027,10 +1955,10 @@ static int do_test_kpp(struct crypto_kpp *tfm, const struct kpp_testvec *vec,
- 	sg_init_one(&dst, output_buf, out_len_max);
- 	kpp_request_set_output(req, &dst, out_len_max);
- 	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				 tcrypt_complete, &result);
-+				 crypto_req_done, &wait);
- 
- 	/* Compute party A's public key */
--	err = wait_async_op(&result, crypto_kpp_generate_public_key(req));
-+	err = crypto_wait_req(crypto_kpp_generate_public_key(req), &wait);
- 	if (err) {
- 		pr_err("alg: %s: Party A: generate public key test failed. err %d\n",
- 		       alg, err);
-@@ -2069,8 +1997,8 @@ static int do_test_kpp(struct crypto_kpp *tfm, const struct kpp_testvec *vec,
- 	kpp_request_set_input(req, &src, vec->b_public_size);
- 	kpp_request_set_output(req, &dst, out_len_max);
- 	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				 tcrypt_complete, &result);
--	err = wait_async_op(&result, crypto_kpp_compute_shared_secret(req));
-+				 crypto_req_done, &wait);
-+	err = crypto_wait_req(crypto_kpp_compute_shared_secret(req), &wait);
- 	if (err) {
- 		pr_err("alg: %s: Party A: compute shared secret test failed. err %d\n",
- 		       alg, err);
-@@ -2100,9 +2028,9 @@ static int do_test_kpp(struct crypto_kpp *tfm, const struct kpp_testvec *vec,
- 		kpp_request_set_input(req, &src, vec->expected_a_public_size);
- 		kpp_request_set_output(req, &dst, out_len_max);
- 		kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--					 tcrypt_complete, &result);
--		err = wait_async_op(&result,
--				    crypto_kpp_compute_shared_secret(req));
-+					 crypto_req_done, &wait);
-+		err = crypto_wait_req(crypto_kpp_compute_shared_secret(req),
-+				      &wait);
- 		if (err) {
- 			pr_err("alg: %s: Party B: compute shared secret failed. err %d\n",
- 			       alg, err);
-@@ -2179,7 +2107,7 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 	struct akcipher_request *req;
- 	void *outbuf_enc = NULL;
- 	void *outbuf_dec = NULL;
--	struct tcrypt_result result;
-+	struct crypto_wait wait;
- 	unsigned int out_len_max, out_len = 0;
- 	int err = -ENOMEM;
- 	struct scatterlist src, dst, src_tab[2];
-@@ -2191,7 +2119,7 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 	if (!req)
- 		goto free_xbuf;
- 
--	init_completion(&result.completion);
-+	crypto_init_wait(&wait);
- 
- 	if (vecs->public_key_vec)
- 		err = crypto_akcipher_set_pub_key(tfm, vecs->key,
-@@ -2220,13 +2148,13 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 	akcipher_request_set_crypt(req, src_tab, &dst, vecs->m_size,
- 				   out_len_max);
- 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
--				      tcrypt_complete, &result);
-+				      crypto_req_done, &wait);
- 
--	err = wait_async_op(&result, vecs->siggen_sigver_test ?
--				     /* Run asymmetric signature generation */
--				     crypto_akcipher_sign(req) :
--				     /* Run asymmetric encrypt */
--				     crypto_akcipher_encrypt(req));
-+	err = crypto_wait_req(vecs->siggen_sigver_test ?
-+			      /* Run asymmetric signature generation */
-+			      crypto_akcipher_sign(req) :
-+			      /* Run asymmetric encrypt */
-+			      crypto_akcipher_encrypt(req), &wait);
- 	if (err) {
- 		pr_err("alg: akcipher: encrypt test failed. err %d\n", err);
- 		goto free_all;
-@@ -2261,14 +2189,14 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 
- 	sg_init_one(&src, xbuf[0], vecs->c_size);
- 	sg_init_one(&dst, outbuf_dec, out_len_max);
--	init_completion(&result.completion);
-+	crypto_init_wait(&wait);
- 	akcipher_request_set_crypt(req, &src, &dst, vecs->c_size, out_len_max);
- 
--	err = wait_async_op(&result, vecs->siggen_sigver_test ?
--				     /* Run asymmetric signature verification */
--				     crypto_akcipher_verify(req) :
--				     /* Run asymmetric decrypt */
--				     crypto_akcipher_decrypt(req));
-+	err = crypto_wait_req(vecs->siggen_sigver_test ?
-+			      /* Run asymmetric signature verification */
-+			      crypto_akcipher_verify(req) :
-+			      /* Run asymmetric decrypt */
-+			      crypto_akcipher_decrypt(req), &wait);
- 	if (err) {
- 		pr_err("alg: akcipher: decrypt test failed. err %d\n", err);
- 		goto free_all;
+ error:
+ 	put_cred(ctx.cred);
 -- 
-2.1.4
+1.7.9.5
 
