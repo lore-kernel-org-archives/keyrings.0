@@ -1,87 +1,61 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 27 Sep 2017 19:50:46 +0000
-Subject: [PATCH v3 6/7] KEYS: load key flags and expiry time atomically in proc_keys_show()
-Message-Id: <20170927195047.122358-7-ebiggers3@gmail.com>
+From: Mike Rapoport <rppt@linux.vnet.ibm.com>
+Date: Mon, 25 Sep 2017 06:12:01 +0000
+Subject: Re: [PATCH v5 0/4] Certificate insertion support for x86 bzImages
+Message-Id: <20170925061159.GA6934@rapoport-lnx>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170927195047.122358-1-ebiggers3@gmail.com>
-In-Reply-To: <20170927195047.122358-1-ebiggers3@gmail.com>
+In-Reply-To: <1494440456-28671-1-git-send-email-mkayaalp@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Hi,
 
-In proc_keys_show(), the key semaphore is not held, so the key ->flags
-and ->expiry can be changed concurrently.  We therefore should read them
-atomically just once.  Otherwise /proc/keys may show an inconsistent
-state, such a key that is negative ('N') but not instantiated ('I').
+> These patches add support for modifying the reserved space for extra
+> certificates in a compressed bzImage in x86. This allows separating the
+> system keyring certificate from the kernel build process. After the kernel
+> image is distributed, the insert-sys-cert script can be used to insert the
+> certificate for x86.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- security/keys/proc.c | 28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+I know it's been a while since these patches were posted and they seem to
+fail between the cracks ...
+Is there anything that prevents merging them?
+ 
+> Changes:
+> 
+> v5:
+> * Added CRC fixing (3/4)
+> 
+> v4:
+> * Applied checkpatch.pl suggestions (2/4, 3/4)
+> * Cleaned up the commit messages (1/4, 2/4)
+> * Added the build file to .gitignore (1/4)
+> 
+> v3:
+> * Rewrote 1/4 to insert incompressible bytes are at build time. Previous
+> solution required changes to <arch>/boot/Makefile's for modifying the
+> vmlinux file after linking, and did not work well with cross compilation.
+> * Added 2/4 for ELF class-independent processing of vmlinux file, in case
+> the script was compiled for 64-bit and the kernel was compiled for 32-bit.
+> * Reordered 3/4, added x86 bzImage boot version (>=2.08) verification.
+> 
+> v2:
+> * Rebased arch/boot/x86/Makefile patch (removed in v3)
+> 
+> Mehmet Kayaalp (4):
+>   KEYS: Insert incompressible bytes to reserve space in bzImage
+>   KEYS: Add ELF class-independent certificate insertion support
+>   KEYS: Support for inserting a certificate into x86 bzImage
+>   KEYS: Print insert-sys-cert information to stdout instead of stderr
+> 
+>  certs/.gitignore            |   1 +
+>  certs/Makefile              |  21 +-
+>  certs/system_certificates.S |   2 +-
+>  scripts/Makefile            |   1 +
+>  scripts/insert-sys-cert.c   | 473 +++++++++++++++++++++++++++++++++-----------
+>  5 files changed, 381 insertions(+), 117 deletions(-)
 
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index de834309d100..a038069ac46a 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -179,7 +179,9 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 	struct rb_node *_p = v;
- 	struct key *key = rb_entry(_p, struct key, serial_node);
- 	struct timespec now;
-+	time_t expiry;
- 	unsigned long timo;
-+	unsigned long flags;
- 	key_ref_t key_ref, skey_ref;
- 	char xbuf[16];
- 	int rc;
-@@ -217,12 +219,13 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 	rcu_read_lock();
- 
- 	/* come up with a suitable timeout value */
--	if (key->expiry = 0) {
-+	expiry = READ_ONCE(key->expiry);
-+	if (expiry = 0) {
- 		memcpy(xbuf, "perm", 5);
--	} else if (now.tv_sec >= key->expiry) {
-+	} else if (now.tv_sec >= expiry) {
- 		memcpy(xbuf, "expd", 5);
- 	} else {
--		timo = key->expiry - now.tv_sec;
-+		timo = expiry - now.tv_sec;
- 
- 		if (timo < 60)
- 			sprintf(xbuf, "%lus", timo);
-@@ -236,18 +239,19 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 			sprintf(xbuf, "%luw", timo / (60*60*24*7));
- 	}
- 
--#define showflag(KEY, LETTER, FLAG) \
--	(test_bit(FLAG,	&(KEY)->flags) ? LETTER : '-')
-+#define showflag(FLAGS, LETTER, FLAG) \
-+	((FLAGS & (1 << FLAG)) ? LETTER : '-')
- 
-+	flags = READ_ONCE(key->flags);
- 	seq_printf(m, "%08x %c%c%c%c%c%c%c %5d %4s %08x %5d %5d %-9.9s ",
- 		   key->serial,
--		   showflag(key, 'I', KEY_FLAG_INSTANTIATED),
--		   showflag(key, 'R', KEY_FLAG_REVOKED),
--		   showflag(key, 'D', KEY_FLAG_DEAD),
--		   showflag(key, 'Q', KEY_FLAG_IN_QUOTA),
--		   showflag(key, 'U', KEY_FLAG_USER_CONSTRUCT),
--		   showflag(key, 'N', KEY_FLAG_NEGATIVE),
--		   showflag(key, 'i', KEY_FLAG_INVALIDATED),
-+		   showflag(flags, 'I', KEY_FLAG_INSTANTIATED),
-+		   showflag(flags, 'R', KEY_FLAG_REVOKED),
-+		   showflag(flags, 'D', KEY_FLAG_DEAD),
-+		   showflag(flags, 'Q', KEY_FLAG_IN_QUOTA),
-+		   showflag(flags, 'U', KEY_FLAG_USER_CONSTRUCT),
-+		   showflag(flags, 'N', KEY_FLAG_NEGATIVE),
-+		   showflag(flags, 'i', KEY_FLAG_INVALIDATED),
- 		   refcount_read(&key->usage),
- 		   xbuf,
- 		   key->perm,
 -- 
-2.14.2.822.g60be5d43e6-goog
+Sincerely yours,
+Mike.
 
