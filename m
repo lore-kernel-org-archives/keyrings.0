@@ -1,53 +1,57 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 27 Sep 2017 19:50:43 +0000
-Subject: [PATCH v3 3/7] KEYS: load key flags atomically in key_is_instantiated()
-Message-Id: <20170927195047.122358-4-ebiggers3@gmail.com>
+Date: Tue, 26 Sep 2017 20:11:03 +0000
+Subject: [PATCH v2 4/6] KEYS: load key flags and expiry time atomically in keyring_search_iterator()
+Message-Id: <20170926201105.126166-5-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170927195047.122358-1-ebiggers3@gmail.com>
-In-Reply-To: <20170927195047.122358-1-ebiggers3@gmail.com>
+References: <20170926201105.126166-1-ebiggers3@gmail.com>
+In-Reply-To: <20170926201105.126166-1-ebiggers3@gmail.com>
 To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-In key_is_instantiated(), we check for KEY_FLAG_INSTANTIATED set and
-KEY_FLAG_NEGATIVE unset.  But this was done as two separate bit tests
-which were not atomic with respect to each other, and had no memory
-barrier providing ordering.  Therefore, it was theoretically possible
-for the function to incorrectly return true if called while the key was
-being negatively instantiated.
-
-There also needs to be a memory barrier before anything which is only
-meaningful for positively instantiated keys, e.g. ->payload and
-->datalen, can be read --- which some of the ->describe() methods do.
-
-Fix both these problems by loading the flags using smp_load_acquire().
+Similar to the case for key_validate(), we should load the key ->flags
+and ->expiry once atomically in keyring_search_iterator(), since they
+can be changed concurrently whenever the key semaphore isn't held.
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- include/linux/key.h | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ security/keys/keyring.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index b7b590d7c480..551f099f2f6a 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -372,8 +372,11 @@ extern void key_set_timeout(struct key *, unsigned);
-  */
- static inline bool key_is_instantiated(const struct key *key)
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 7fc661f492d3..1dfff0eac474 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -553,7 +553,7 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
  {
--	return test_bit(KEY_FLAG_INSTANTIATED, &key->flags) &&
--		!test_bit(KEY_FLAG_NEGATIVE, &key->flags);
-+	/* Pairs with RELEASE in mark_key_instantiated() */
-+	unsigned long flags = smp_load_acquire(&key->flags);
-+
-+	return (flags & (1 << KEY_FLAG_INSTANTIATED)) &&
-+		!(flags & (1 << KEY_FLAG_NEGATIVE));
- }
+ 	struct keyring_search_context *ctx = iterator_data;
+ 	const struct key *key = keyring_ptr_to_key(object);
+-	unsigned long kflags = key->flags;
++	unsigned long kflags = READ_ONCE(key->flags);
  
- #define dereference_key_rcu(KEY)					\
+ 	kenter("{%d}", key->serial);
+ 
+@@ -565,6 +565,8 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
+ 
+ 	/* skip invalidated, revoked and expired keys */
+ 	if (ctx->flags & KEYRING_SEARCH_DO_STATE_CHECK) {
++		time_t expiry = READ_ONCE(key->expiry);
++
+ 		if (kflags & ((1 << KEY_FLAG_INVALIDATED) |
+ 			      (1 << KEY_FLAG_REVOKED))) {
+ 			ctx->result = ERR_PTR(-EKEYREVOKED);
+@@ -572,7 +574,7 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
+ 			goto skipped;
+ 		}
+ 
+-		if (key->expiry && ctx->now.tv_sec >= key->expiry) {
++		if (expiry && ctx->now.tv_sec >= expiry) {
+ 			if (!(ctx->flags & KEYRING_SEARCH_SKIP_EXPIRED))
+ 				ctx->result = ERR_PTR(-EKEYEXPIRED);
+ 			kleave(" = %d [expire]", ctx->skipped_ret);
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.14.1.992.g2c7b836f3a-goog
 
