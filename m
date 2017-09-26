@@ -1,56 +1,55 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 28 Sep 2017 21:25:56 +0000
-Subject: [PATCH 1/7] KEYS: encrypted: fix dereference of NULL user_key_payload
-Message-Id: <20170928212602.41744-2-ebiggers3@gmail.com>
+Date: Tue, 26 Sep 2017 20:11:02 +0000
+Subject: [PATCH v2 3/6] KEYS: load key flags and expiry time atomically in key_validate()
+Message-Id: <20170926201105.126166-4-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170928212602.41744-1-ebiggers3@gmail.com>
-In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <20170926201105.126166-1-ebiggers3@gmail.com>
+In-Reply-To: <20170926201105.126166-1-ebiggers3@gmail.com>
+To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-A key of type "encrypted" references a "master key" which is used to
-encrypt and decrypt the encrypted key's payload.  However, when we
-accessed the master key's payload, we failed to handle the case where
-the master key has been revoked, which sets the payload pointer to NULL.
-Note that request_key() *does* skip revoked keys, but there is still a
-window where the key can be revoked before we acquire its semaphore.
+In key_validate(), load the flags and expiry time once atomically, since
+these can change concurrently if key_validate() is called without the
+key semaphore held.  And we don't want to get inconsistent results if a
+variable is referenced multiple times.  For example, key->expiry was
+referenced in both 'if (key->expiry)' and in 'if (now.tv_sec >key->expiry)', making it theoretically possible to see a spurious
+EKEYEXPIRED while the expiration time was being removed, i.e. set to 0.
 
-Fix it by checking for a NULL payload, treating it like a key which was
-already revoked at the time it was requested.
-
-This was an issue for master keys of type "user" only.  Master keys can
-also be of type "trusted", but those cannot be revoked.
-
-Fixes: 7e70cb497850 ("keys: add new key-type encrypted")
-Cc: <stable@vger.kernel.org>    [v2.6.38+]
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/keys/encrypted-keys/encrypted.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ security/keys/permission.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index f54b92868bc3..d92cbf9687c3 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -309,6 +309,13 @@ static struct key *request_user_key(const char *master_desc, const u8 **master_k
+diff --git a/security/keys/permission.c b/security/keys/permission.c
+index 732cc0beffdf..a72b4dd70c8a 100644
+--- a/security/keys/permission.c
++++ b/security/keys/permission.c
+@@ -88,7 +88,8 @@ EXPORT_SYMBOL(key_task_permission);
+  */
+ int key_validate(const struct key *key)
+ {
+-	unsigned long flags = key->flags;
++	unsigned long flags = READ_ONCE(key->flags);
++	time_t expiry = READ_ONCE(key->expiry);
  
- 	down_read(&ukey->sem);
- 	upayload = user_key_payload_locked(ukey);
-+	if (!upayload) {
-+		/* key was revoked before we acquired its semaphore */
-+		up_read(&ukey->sem);
-+		key_put(ukey);
-+		ukey = ERR_PTR(-EKEYREVOKED);
-+		goto error;
-+	}
- 	*master_key = upayload->data;
- 	*master_keylen = upayload->datalen;
- error:
+ 	if (flags & (1 << KEY_FLAG_INVALIDATED))
+ 		return -ENOKEY;
+@@ -99,9 +100,9 @@ int key_validate(const struct key *key)
+ 		return -EKEYREVOKED;
+ 
+ 	/* check it hasn't expired */
+-	if (key->expiry) {
++	if (expiry) {
+ 		struct timespec now = current_kernel_time();
+-		if (now.tv_sec >= key->expiry)
++		if (now.tv_sec >= expiry)
+ 			return -EKEYEXPIRED;
+ 	}
+ 
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.14.1.992.g2c7b836f3a-goog
 
