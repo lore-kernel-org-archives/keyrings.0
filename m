@@ -1,57 +1,87 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 27 Sep 2017 19:50:45 +0000
-Subject: [PATCH v3 5/7] KEYS: load key flags and expiry time atomically in keyring_search_iterator()
-Message-Id: <20170927195047.122358-6-ebiggers3@gmail.com>
+Date: Tue, 26 Sep 2017 20:11:04 +0000
+Subject: [PATCH v2 5/6] KEYS: load key flags and expiry time atomically in proc_keys_show()
+Message-Id: <20170926201105.126166-6-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170927195047.122358-1-ebiggers3@gmail.com>
-In-Reply-To: <20170927195047.122358-1-ebiggers3@gmail.com>
+References: <20170926201105.126166-1-ebiggers3@gmail.com>
+In-Reply-To: <20170926201105.126166-1-ebiggers3@gmail.com>
 To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-Similar to the case for key_validate(), we should load the key ->flags
-and ->expiry once atomically in keyring_search_iterator(), since they
-can be changed concurrently whenever the key semaphore isn't held.
+In proc_keys_show(), the key semaphore is not held, so the key ->flags
+and ->expiry can be changed concurrently.  We therefore should read them
+atomically just once.  Otherwise /proc/keys may show an inconsistent
+state, such a key that is negative ('N') but not instantiated ('I').
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/keys/keyring.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ security/keys/proc.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index e54ad0ed7aa4..cb39b517f69c 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -553,7 +553,7 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
- {
- 	struct keyring_search_context *ctx = iterator_data;
- 	const struct key *key = keyring_ptr_to_key(object);
--	unsigned long kflags = key->flags;
-+	unsigned long kflags = READ_ONCE(key->flags);
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index de834309d100..a038069ac46a 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -179,7 +179,9 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	struct rb_node *_p = v;
+ 	struct key *key = rb_entry(_p, struct key, serial_node);
+ 	struct timespec now;
++	time_t expiry;
+ 	unsigned long timo;
++	unsigned long flags;
+ 	key_ref_t key_ref, skey_ref;
+ 	char xbuf[16];
+ 	int rc;
+@@ -217,12 +219,13 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	rcu_read_lock();
  
- 	kenter("{%d}", key->serial);
+ 	/* come up with a suitable timeout value */
+-	if (key->expiry = 0) {
++	expiry = READ_ONCE(key->expiry);
++	if (expiry = 0) {
+ 		memcpy(xbuf, "perm", 5);
+-	} else if (now.tv_sec >= key->expiry) {
++	} else if (now.tv_sec >= expiry) {
+ 		memcpy(xbuf, "expd", 5);
+ 	} else {
+-		timo = key->expiry - now.tv_sec;
++		timo = expiry - now.tv_sec;
  
-@@ -565,6 +565,8 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
+ 		if (timo < 60)
+ 			sprintf(xbuf, "%lus", timo);
+@@ -236,18 +239,19 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 			sprintf(xbuf, "%luw", timo / (60*60*24*7));
+ 	}
  
- 	/* skip invalidated, revoked and expired keys */
- 	if (ctx->flags & KEYRING_SEARCH_DO_STATE_CHECK) {
-+		time_t expiry = READ_ONCE(key->expiry);
-+
- 		if (kflags & ((1 << KEY_FLAG_INVALIDATED) |
- 			      (1 << KEY_FLAG_REVOKED))) {
- 			ctx->result = ERR_PTR(-EKEYREVOKED);
-@@ -572,7 +574,7 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
- 			goto skipped;
- 		}
+-#define showflag(KEY, LETTER, FLAG) \
+-	(test_bit(FLAG,	&(KEY)->flags) ? LETTER : '-')
++#define showflag(FLAGS, LETTER, FLAG) \
++	((FLAGS & (1 << FLAG)) ? LETTER : '-')
  
--		if (key->expiry && ctx->now.tv_sec >= key->expiry) {
-+		if (expiry && ctx->now.tv_sec >= expiry) {
- 			if (!(ctx->flags & KEYRING_SEARCH_SKIP_EXPIRED))
- 				ctx->result = ERR_PTR(-EKEYEXPIRED);
- 			kleave(" = %d [expire]", ctx->skipped_ret);
++	flags = READ_ONCE(key->flags);
+ 	seq_printf(m, "%08x %c%c%c%c%c%c%c %5d %4s %08x %5d %5d %-9.9s ",
+ 		   key->serial,
+-		   showflag(key, 'I', KEY_FLAG_INSTANTIATED),
+-		   showflag(key, 'R', KEY_FLAG_REVOKED),
+-		   showflag(key, 'D', KEY_FLAG_DEAD),
+-		   showflag(key, 'Q', KEY_FLAG_IN_QUOTA),
+-		   showflag(key, 'U', KEY_FLAG_USER_CONSTRUCT),
+-		   showflag(key, 'N', KEY_FLAG_NEGATIVE),
+-		   showflag(key, 'i', KEY_FLAG_INVALIDATED),
++		   showflag(flags, 'I', KEY_FLAG_INSTANTIATED),
++		   showflag(flags, 'R', KEY_FLAG_REVOKED),
++		   showflag(flags, 'D', KEY_FLAG_DEAD),
++		   showflag(flags, 'Q', KEY_FLAG_IN_QUOTA),
++		   showflag(flags, 'U', KEY_FLAG_USER_CONSTRUCT),
++		   showflag(flags, 'N', KEY_FLAG_NEGATIVE),
++		   showflag(flags, 'i', KEY_FLAG_INVALIDATED),
+ 		   refcount_read(&key->usage),
+ 		   xbuf,
+ 		   key->perm,
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.14.1.992.g2c7b836f3a-goog
 
