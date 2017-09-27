@@ -1,120 +1,49 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 05 Sep 2017 12:38:45 +0000
-Subject: [PATCH v8 06/20] crypto: introduce crypto wait for async op
-Message-Id: <1504615144-29770-7-git-send-email-gilad@benyossef.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 27 Sep 2017 19:50:40 +0000
+Subject: [PATCH v3 0/7] KEYS: instantiation and atomicity fixes
+Message-Id: <20170927195047.122358-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Ofir Drang <ofir.drang@arm.com>, Eric Biggers <ebiggers3@gmail.com>, Jonathan Cameron <Jonathan.Cameron@huawei.com>
+To: linux-security-module@vger.kernel.org
 
-Invoking a possibly async. crypto op and waiting for completion
-while correctly handling backlog processing is a common task
-in the crypto API implementation and outside users of it.
+From: Eric Biggers <ebiggers@google.com>
 
-This patch adds a generic implementation for doing so in
-preparation for using it across the board instead of hand
-rolled versions.
+The first two patches in this series fix bugs related to instantiating
+keys which allowed unprivileged users to cause a kernel oops.
+Specifically, the first patch removes the ability for add_key() to
+update an uninstantiated key, as this was heavily broken; and the second
+patch fixes a race condition related to add_key() updating a negative
+key into a positive one.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Eric Biggers <ebiggers3@gmail.com>
-CC: Jonathan Cameron <Jonathan.Cameron@huawei.com>
----
- crypto/api.c           | 13 +++++++++++++
- include/linux/crypto.h | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+)
+The remaining patches fix some other, more theoretical atomicity issues
+with accessing key->flags and key->expiry, then eliminate
+KEY_FLAG_NEGATIVE, which becomes unnecessary after the second patch.
 
-diff --git a/crypto/api.c b/crypto/api.c
-index 941cd4c..2a2479d 100644
---- a/crypto/api.c
-+++ b/crypto/api.c
-@@ -24,6 +24,7 @@
- #include <linux/sched/signal.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-+#include <linux/completion.h>
- #include "internal.h"
- 
- LIST_HEAD(crypto_alg_list);
-@@ -595,5 +596,17 @@ int crypto_has_alg(const char *name, u32 type, u32 mask)
- }
- EXPORT_SYMBOL_GPL(crypto_has_alg);
- 
-+void crypto_req_done(struct crypto_async_request *req, int err)
-+{
-+	struct crypto_wait *wait = req->data;
-+
-+	if (err = -EINPROGRESS)
-+		return;
-+
-+	wait->err = err;
-+	complete(&wait->completion);
-+}
-+EXPORT_SYMBOL_GPL(crypto_req_done);
-+
- MODULE_DESCRIPTION("Cryptographic core API");
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/crypto.h b/include/linux/crypto.h
-index 84da997..78508ca 100644
---- a/include/linux/crypto.h
-+++ b/include/linux/crypto.h
-@@ -24,6 +24,7 @@
- #include <linux/slab.h>
- #include <linux/string.h>
- #include <linux/uaccess.h>
-+#include <linux/completion.h>
- 
- /*
-  * Autoloaded crypto modules should only use a prefixed name to avoid allowing
-@@ -468,6 +469,45 @@ struct crypto_alg {
- } CRYPTO_MINALIGN_ATTR;
- 
- /*
-+ * A helper struct for waiting for completion of async crypto ops
-+ */
-+struct crypto_wait {
-+	struct completion completion;
-+	int err;
-+};
-+
-+/*
-+ * Macro for declaring a crypto op async wait object on stack
-+ */
-+#define DECLARE_CRYPTO_WAIT(_wait) \
-+	struct crypto_wait _wait = { \
-+		COMPLETION_INITIALIZER_ONSTACK((_wait).completion), 0 }
-+
-+/*
-+ * Async ops completion helper functioons
-+ */
-+void crypto_req_done(struct crypto_async_request *req, int err);
-+
-+static inline int crypto_wait_req(int err, struct crypto_wait *wait)
-+{
-+	switch (err) {
-+	case -EINPROGRESS:
-+	case -EBUSY:
-+		wait_for_completion(&wait->completion);
-+		reinit_completion(&wait->completion);
-+		err = wait->err;
-+		break;
-+	};
-+
-+	return err;
-+}
-+
-+static inline void crypto_init_wait(struct crypto_wait *wait)
-+{
-+	init_completion(&wait->completion);
-+}
-+
-+/*
-  * Algorithm registration interface.
-  */
- int crypto_register_alg(struct crypto_alg *alg);
+Eric Biggers (7):
+  KEYS: don't let add_key() update an uninstantiated key
+  KEYS: fix race between updating and finding negative key
+  KEYS: load key flags atomically in key_is_instantiated()
+  KEYS: load key flags and expiry time atomically in key_validate()
+  KEYS: load key flags and expiry time atomically in
+    keyring_search_iterator()
+  KEYS: load key flags and expiry time atomically in proc_keys_show()
+  KEYS: remove KEY_FLAG_NEGATIVE
+
+ include/linux/key.h                      | 25 +++++++++++++++++++++----
+ security/keys/encrypted-keys/encrypted.c |  2 +-
+ security/keys/gc.c                       |  4 +---
+ security/keys/key.c                      | 24 +++++++++++++++++-------
+ security/keys/keyctl.c                   |  5 ++++-
+ security/keys/keyring.c                  | 22 +++++++++++++---------
+ security/keys/permission.c               |  7 ++++---
+ security/keys/proc.c                     | 28 ++++++++++++++++------------
+ security/keys/request_key.c              | 11 +++++++----
+ security/keys/trusted.c                  |  2 +-
+ security/keys/user_defined.c             |  2 +-
+ 11 files changed, 86 insertions(+), 46 deletions(-)
+
 -- 
-2.1.4
+2.14.2.822.g60be5d43e6-goog
 
