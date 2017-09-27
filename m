@@ -1,53 +1,267 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 28 Sep 2017 21:25:57 +0000
-Subject: [PATCH 2/7] FS-Cache: fix dereference of NULL user_key_payload
-Message-Id: <20170928212602.41744-3-ebiggers3@gmail.com>
+Date: Wed, 27 Sep 2017 19:50:42 +0000
+Subject: [PATCH v3 2/7] KEYS: fix race between updating and finding negative key
+Message-Id: <20170927195047.122358-3-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170928212602.41744-1-ebiggers3@gmail.com>
-In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <20170927195047.122358-1-ebiggers3@gmail.com>
+In-Reply-To: <20170927195047.122358-1-ebiggers3@gmail.com>
+To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-When the file /proc/fs/fscache/objects (available with
-CONFIG_FSCACHE_OBJECT_LIST=y) is opened, we request a user key with
-description "fscache:objlist", then access its payload.  However, a
-revoked key has a NULL payload, and we failed to check for this.
-request_key() *does* skip revoked keys, but there is still a window
-where the key can be revoked before we access its payload.
+In keyring_search_iterator() and in wait_for_key_construction(), we
+check whether the key has been negatively instantiated, and if so return
+the key's ->reject_error.
 
-Fix it by checking for a NULL payload, treating it like a key which was
-already revoked at the time it was requested.
+However, no lock is held during this, and ->reject_error is in union
+with ->payload.  And it's impossible for KEY_FLAG_NEGATIVE to be updated
+atomically with respect to ->reject_error and ->payload.
 
-Fixes: 4fbf4291aa15 ("FS-Cache: Allow the current state of all objects to be dumped")
-Cc: <stable@vger.kernel.org>    [v2.6.32+]
+Most problematically, when a negative key is positively instantiated via
+__key_update() (via sys_add_key()), ->payload is initialized first, then
+KEY_FLAG_NEGATIVE is cleared.  But that means that ->reject_error can be
+observed to have a bogus value, having been overwritten with ->payload,
+while the key still appears to be "negative".  Clearing
+KEY_FLAG_NEGATIVE first wouldn't work either, since then anyone who
+accesses the payload under rcu_read_lock() rather than the key semaphore
+might observe an uninitialized ->payload.  Nor can we just always take
+the key's semaphore when checking whether the key is negative, since
+keyring searches happen under rcu_read_lock().
+
+Therefore, fix the bug by moving ->reject_error into the high bits of
+->flags so that we can read and write it atomically with respect to
+KEY_FLAG_NEGATIVE and KEY_FLAG_INSTANTIATED.
+
+This will also allow KEY_FLAG_NEGATIVE to be removed, since tests for
+KEY_FLAG_NEGATIVE can be replaced with tests for nonzero reject_error.
+But for ease of backporting this fix, that is left for a later patch.
+
+This fixes a kernel crash caused by the following program:
+
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <keyutils.h>
+
+    int main(void)
+    {
+        int ringid = keyctl_join_session_keyring(NULL);
+
+        if (fork()) {
+            for (;;) {
+                usleep(rand() % 4096);
+                add_key("user", "desc", "x", 1, ringid);
+                keyctl_clear(ringid);
+            }
+        } else {
+            for (;;)
+                request_key("user", "desc", "", ringid);
+        }
+    }
+
+Here is the crash:
+
+    BUG: unable to handle kernel paging request at fffffffffd39a6b0
+    IP: __key_link_begin+0x0/0x100
+    PGD 7a0a067 P4D 7a0a067 PUD 7a0c067 PMD 0
+    Oops: 0000 [#1] SMP
+    CPU: 1 PID: 165 Comm: keyctl_negate_r Not tainted 4.14.0-rc1 #377
+    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.10.2-20170228_101828-anatol 04/01/2014
+    task: ffff9791fd809140 task.stack: ffffacba402bc000
+    RIP: 0010:__key_link_begin+0x0/0x100
+    RSP: 0018:ffffacba402bfdc8 EFLAGS: 00010282
+    RAX: ffff9791fd809140 RBX: fffffffffd39a620 RCX: 0000000000000008
+    RDX: ffffacba402bfdd0 RSI: fffffffffd39a6a0 RDI: ffff9791fd810600
+    RBP: ffffacba402bfdf8 R08: 0000000000000063 R09: ffffffff94845620
+    R10: 8080808080808080 R11: 0000000000000004 R12: ffff9791fd810600
+    R13: ffff9791fd39a940 R14: fffffffffd39a6a0 R15: 0000000000000000
+    FS:  00007fbf14a90740(0000) GS:ffff9791ffd00000(0000) knlGS:0000000000000000
+    CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+    CR2: fffffffffd39a6b0 CR3: 000000003b910003 CR4: 00000000003606e0
+    Call Trace:
+     ? key_link+0x28/0xb0
+     ? search_process_keyrings+0x13/0x100
+     request_key_and_link+0xcb/0x550
+     ? keyring_instantiate+0x110/0x110
+     ? key_default_cmp+0x20/0x20
+     SyS_request_key+0xc0/0x160
+     ? exit_to_usermode_loop+0x5e/0x80
+     entry_SYSCALL_64_fastpath+0x1a/0xa5
+    RIP: 0033:0x7fbf14190bb9
+    RSP: 002b:00007ffd8e4fe6c8 EFLAGS: 00000246 ORIG_RAX: 00000000000000f9
+    RAX: ffffffffffffffda RBX: 0000000036cc28fb RCX: 00007fbf14190bb9
+    RDX: 000055748b56ca4a RSI: 000055748b56ca46 RDI: 000055748b56ca4b
+    RBP: 000055748b56ca4a R08: 0000000000000001 R09: 0000000000000001
+    R10: 0000000036cc28fb R11: 0000000000000246 R12: 000055748b56c8b0
+    R13: 00007ffd8e4fe7d0 R14: 0000000000000000 R15: 0000000000000000
+    Code: c5 0f 85 69 ff ff ff 48 c7 c3 82 ff ff ff eb ab 45 31 ed e9 18 ff ff ff 85 c0 75 8d eb d2 0f 1f 00 66 2e 0f 1f 84 00 00 00 00 00 <48> 83 7e 10 00 0f 84 c5 00 00 00 55 48 89 e5 41 57 41 56 41 55
+    RIP: __key_link_begin+0x0/0x100 RSP: ffffacba402bfdc8
+    CR2: fffffffffd39a6b0
+
+Fixes: 146aa8b1453b ("KEYS: Merge the type-specific data with the payload data")
+Cc: <stable@vger.kernel.org>	[v4.4+]
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- fs/fscache/object-list.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ include/linux/key.h         | 12 +++++++++++-
+ security/keys/key.c         | 26 +++++++++++++++++++-------
+ security/keys/keyctl.c      |  3 +++
+ security/keys/keyring.c     |  4 ++--
+ security/keys/request_key.c | 11 +++++++----
+ 5 files changed, 42 insertions(+), 14 deletions(-)
 
-diff --git a/fs/fscache/object-list.c b/fs/fscache/object-list.c
-index b5ab06fabc60..0438d4cd91ef 100644
---- a/fs/fscache/object-list.c
-+++ b/fs/fscache/object-list.c
-@@ -331,6 +331,13 @@ static void fscache_objlist_config(struct fscache_objlist_data *data)
- 	rcu_read_lock();
+diff --git a/include/linux/key.h b/include/linux/key.h
+index e315e16b6ff8..b7b590d7c480 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -189,6 +189,17 @@ struct key {
+ #define KEY_FLAG_KEEP		10	/* set if key should not be removed */
+ #define KEY_FLAG_UID_KEYRING	11	/* set if key is a user or user session keyring */
  
- 	confkey = user_key_payload_rcu(key);
-+	if (!confkey) {
-+		/* key was revoked */
-+		rcu_read_unlock();
-+		key_put(key);
-+		goto no_config;
-+	}
++	/*
++	 * If the key is negatively instantiated, then bits 20-31 hold the error
++	 * code which should be returned when someone tries to use the key
++	 * (unless they allow negative keys).  The error code is stored as a
++	 * positive number, so it must be negated before being returned.
++	 *
++	 * Note that a key can go from negative to positive but not vice versa.
++	 */
++#define KEY_FLAGS_REJECT_ERROR_SHIFT	20
++#define KEY_FLAGS_REJECT_ERROR_MASK	0xFFF00000
 +
- 	buf = confkey->data;
+ 	/* the key type and key description string
+ 	 * - the desc is used to match a key against search criteria
+ 	 * - it should be a printable string
+@@ -213,7 +224,6 @@ struct key {
+ 			struct list_head name_link;
+ 			struct assoc_array keys;
+ 		};
+-		int reject_error;
+ 	};
  
- 	for (len = confkey->datalen - 1; len >= 0; len--) {
+ 	/* This is set on a keyring to restrict the addition of a link to a key
+diff --git a/security/keys/key.c b/security/keys/key.c
+index eb914a838840..786158d3442e 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -401,6 +401,20 @@ int key_payload_reserve(struct key *key, size_t datalen)
+ }
+ EXPORT_SYMBOL(key_payload_reserve);
+ 
++static void mark_key_instantiated(struct key *key, unsigned int reject_error)
++{
++	unsigned long old, new;
++
++	do {
++		old = READ_ONCE(key->flags);
++		new = (old & ~((1 << KEY_FLAG_NEGATIVE) |
++			       KEY_FLAGS_REJECT_ERROR_MASK)) |
++		      (1 << KEY_FLAG_INSTANTIATED) |
++		      (reject_error ? (1 << KEY_FLAG_NEGATIVE) : 0) |
++		      (reject_error << KEY_FLAGS_REJECT_ERROR_SHIFT);
++	} while (cmpxchg_release(&key->flags, old, new) != old);
++}
++
+ /*
+  * Instantiate a key and link it into the target keyring atomically.  Must be
+  * called with the target keyring's semaphore writelocked.  The target key's
+@@ -431,7 +445,7 @@ static int __key_instantiate_and_link(struct key *key,
+ 		if (ret = 0) {
+ 			/* mark the key as being instantiated */
+ 			atomic_inc(&key->user->nikeys);
+-			set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
++			mark_key_instantiated(key, 0);
+ 
+ 			if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
+ 				awaken = 1;
+@@ -580,10 +594,8 @@ int key_reject_and_link(struct key *key,
+ 	if (!test_bit(KEY_FLAG_INSTANTIATED, &key->flags)) {
+ 		/* mark the key as being negatively instantiated */
+ 		atomic_inc(&key->user->nikeys);
+-		key->reject_error = -error;
+-		smp_wmb();
+-		set_bit(KEY_FLAG_NEGATIVE, &key->flags);
+-		set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
++		mark_key_instantiated(key, error);
++
+ 		now = current_kernel_time();
+ 		key->expiry = now.tv_sec + timeout;
+ 		key_schedule_gc(key->expiry + key_gc_delay);
+@@ -753,7 +765,7 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+ 	ret = key->type->update(key, prep);
+ 	if (ret = 0)
+ 		/* updating a negative key instantiates it */
+-		clear_bit(KEY_FLAG_NEGATIVE, &key->flags);
++		mark_key_instantiated(key, 0);
+ 
+ 	up_write(&key->sem);
+ 
+@@ -987,7 +999,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
+ 	ret = key->type->update(key, &prep);
+ 	if (ret = 0)
+ 		/* updating a negative key instantiates it */
+-		clear_bit(KEY_FLAG_NEGATIVE, &key->flags);
++		mark_key_instantiated(key, 0);
+ 
+ 	up_write(&key->sem);
+ 
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 365ff85d7e27..19a09e121089 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1223,6 +1223,9 @@ long keyctl_reject_key(key_serial_t id, unsigned timeout, unsigned error,
+ 	    error = ERESTART_RESTARTBLOCK)
+ 		return -EINVAL;
+ 
++	BUILD_BUG_ON(MAX_ERRNO > (KEY_FLAGS_REJECT_ERROR_MASK >>
++				  KEY_FLAGS_REJECT_ERROR_SHIFT));
++
+ 	/* the appropriate instantiation authorisation key must have been
+ 	 * assumed before calling this */
+ 	ret = -EPERM;
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 129a4175760b..e54ad0ed7aa4 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -598,8 +598,8 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
+ 	if (ctx->flags & KEYRING_SEARCH_DO_STATE_CHECK) {
+ 		/* we set a different error code if we pass a negative key */
+ 		if (kflags & (1 << KEY_FLAG_NEGATIVE)) {
+-			smp_rmb();
+-			ctx->result = ERR_PTR(key->reject_error);
++			ctx->result = ERR_PTR(-(int)(kflags >>
++						KEY_FLAGS_REJECT_ERROR_SHIFT));
+ 			kleave(" = %d [neg]", ctx->skipped_ret);
+ 			goto skipped;
+ 		}
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 63e63a42db3c..0aab68344837 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -590,15 +590,18 @@ struct key *request_key_and_link(struct key_type *type,
+ int wait_for_key_construction(struct key *key, bool intr)
+ {
+ 	int ret;
++	unsigned long flags;
+ 
+ 	ret = wait_on_bit(&key->flags, KEY_FLAG_USER_CONSTRUCT,
+ 			  intr ? TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE);
+ 	if (ret)
+ 		return -ERESTARTSYS;
+-	if (test_bit(KEY_FLAG_NEGATIVE, &key->flags)) {
+-		smp_rmb();
+-		return key->reject_error;
+-	}
++
++	/* Pairs with RELEASE in mark_key_instantiated() */
++	flags = smp_load_acquire(&key->flags);
++	if (flags & (1 << KEY_FLAG_NEGATIVE))
++		return -(int)(flags >> KEY_FLAGS_REJECT_ERROR_SHIFT);
++
+ 	return key_validate(key);
+ }
+ EXPORT_SYMBOL(wait_for_key_construction);
 -- 
 2.14.2.822.g60be5d43e6-goog
 
