@@ -1,71 +1,53 @@
-From: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Date: Sun, 17 Sep 2017 11:50:40 +0000
-Subject: Re: [PATCH v5] security/keys: rewrite all of big_key crypto
-Message-Id: <CAHmME9rjrz2Pn39ay3myApBeBtQAPNt0C+NvmFoV28NeT4_zLg@mail.gmail.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 27 Sep 2017 19:50:43 +0000
+Subject: [PATCH v3 3/7] KEYS: load key flags atomically in key_is_instantiated()
+Message-Id: <20170927195047.122358-4-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170916130034.17706-1-Jason@zx2c4.com> <20170916130533.23036-1-Jason@zx2c4.com>
- <20170917060457.GB10599@zzz.localdomain>
-In-Reply-To: <20170917060457.GB10599@zzz.localdomain>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, LKML <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org, stable@vger.kernel.org
+References: <20170927195047.122358-1-ebiggers3@gmail.com>
+In-Reply-To: <20170927195047.122358-1-ebiggers3@gmail.com>
+To: linux-security-module@vger.kernel.org
 
-On Sun, Sep 17, 2017 at 8:04 AM, Eric Biggers <ebiggers3@gmail.com> wrote:
-> This should jump to 'err_enckey', otherwise it will leak 'enckey'.
+From: Eric Biggers <ebiggers@google.com>
 
-Yikes, good catch, thanks!
+In key_is_instantiated(), we check for KEY_FLAG_INSTANTIATED set and
+KEY_FLAG_NEGATIVE unset.  But this was done as two separate bit tests
+which were not atomic with respect to each other, and had no memory
+barrier providing ordering.  Therefore, it was theoretically possible
+for the function to incorrectly return true if called while the key was
+being negatively instantiated.
 
->
-> Otherwise the changes all look good; after fixing the above, feel free to add my
-> Reviewed-by.
+There also needs to be a memory barrier before anything which is only
+meaningful for positively instantiated keys, e.g. ->payload and
+->datalen, can be read --- which some of the ->describe() methods do.
 
-Ack.
+Fix both these problems by loading the flags using smp_load_acquire().
 
-> Yes, AES-GCM is the right choice here.  It is, however, almost
-> certainly the case that if someone can modify your swap partition, they can
-> already own your system in many other ways, so the "authenticated" portion of
-> "authenticated encryption" may not actually buy much in this situation :-)
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ include/linux/key.h | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-True, though this is slightly different from people putting their
-big_keys on NFS, I guess (but who would do such a thing anyway?).
+diff --git a/include/linux/key.h b/include/linux/key.h
+index b7b590d7c480..551f099f2f6a 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -372,8 +372,11 @@ extern void key_set_timeout(struct key *, unsigned);
+  */
+ static inline bool key_is_instantiated(const struct key *key)
+ {
+-	return test_bit(KEY_FLAG_INSTANTIATED, &key->flags) &&
+-		!test_bit(KEY_FLAG_NEGATIVE, &key->flags);
++	/* Pairs with RELEASE in mark_key_instantiated() */
++	unsigned long flags = smp_load_acquire(&key->flags);
++
++	return (flags & (1 << KEY_FLAG_INSTANTIATED)) &&
++		!(flags & (1 << KEY_FLAG_NEGATIVE));
+ }
+ 
+ #define dereference_key_rcu(KEY)					\
+-- 
+2.14.2.822.g60be5d43e6-goog
 
-> The patch is a little long and perhaps should be split into several patches,
-> each of which fixes one bug; but see what David thinks.
-
-Meh, it's a rewrite, so sure, it's long. I saw a bunch of bugs and
-rewrote the whole thing rather than going one-by-one with the bugs,
-which would have produced a series. Personally I'd prefer to keep it
-like this than spending the time needling away with git and extra
-commit messages and struggling to make them each build separately.
-Seems like very very little gain for the time required to do that
-right. *shrug* Will wait to hear from David.
-
-> I should also note, that while there definitely were some inadmissible bugs
-> here, the support for encrypting big_key's was only added recently, in the v4.7
-> kernel.  And obviously not encrypting at all is at least as much as a
-> "vulnerability" as using weak encryption.
-
-Yea that's fair. I'm mostly just running around like a headless
-chicken after seeing ECB and wondering how this got committed in the
-first place, but nobody really takes chickens seriously. But yes, I
-suppose one way of considering this is just to say, "big_keys did not
-use encryption before 4.14, even though the code was really
-complicated."
-
-> I'm also a little skeptical that
-> people actually care enough about big_key's for it to be worthwhile to mark a
-> rewrite like this for stable, though I suppose it wouldn't be *too* hard to at
-> least cherry-pick this to 4.9 if you wanted.  (There is a small conflict so
-> you'd have to send the backport yourself after this goes into mainline.)
-
-I imagine the conflicts will be moving back from get_random_bytes_wait
-to get_random_bytes and maybe the loff_t/kernel_{read,write} thing. Is
-this what you had in mind too? I should be able to handle those fairly
-easily and send it to Greg manually after this lands.
-
-Thanks again for the review, very appreciated.
-
-Regards,
-Jason
