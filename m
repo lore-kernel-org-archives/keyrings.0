@@ -1,141 +1,154 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 26 Sep 2017 23:05:35 +0000
-Subject: [RFC][PATCH] KEYS: Replace uid/gid/perm permissions checking with ACL
-Message-Id: <10635.1506467135@warthog.procyon.org.uk>
+Date: Wed, 27 Sep 2017 11:41:41 +0000
+Subject: Re: [RFC][PATCH] KEYS: Replace uid/gid/perm permissions checking with ACL
+Message-Id: <23861.1506512501@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <10635.1506467135@warthog.procyon.org.uk>
+In-Reply-To: <10635.1506467135@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-Hi Eric,
+David Howells <dhowells@redhat.com> wrote:
 
-Here's a patch that partially implements ACLs on keys.  I haven't yet done
-KEYCTL_[GS]ET_ACL, but KEYCTL_SETATTR, KEYCTL_DESCRIBE and /proc/keys have
-been modified to deal with it.
+> Here's a patch that partially implements ACLs on keys.  I haven't yet done
+> KEYCTL_[GS]ET_ACL, but KEYCTL_SETATTR, KEYCTL_DESCRIBE and /proc/keys have
+> been modified to deal with it.
+> 
+> Most of the keyutils testsuite passes, just the permissions tests that don't
+> because there isn't a fully compatible mapping from SETATTR -> ACL ->
+> DESCRIBE.
 
-Most of the keyutils testsuite passes, just the permissions tests that don't
-because there isn't a fully compatible mapping from SETATTR -> ACL ->
-DESCRIBE.
+Here's an updated patch.  It still doesn't implement GET/SET_ACL, but it
+passes almost all the tests in the keyutils testsuite, barring:
 
-David
+ (1) tests/keyctl/dh_compute/badargs: The first wrong-key-type test now
+     returns EOPNOTSUPP rather than ENOKEY as READ permission isn't removed
+     if the type doesn't have ->read().  You still can't actually read the
+     key.
+
+ (2) tests/keyctl/permitting/valid: The view-other-permissions test doesn't
+     work as Other has been replaced with Everyone in the ACL.
+
+All other tests still work.
 ---
-KEYS: Replace uid/gid/perm permissions checking with ACL
+commit 2b5fa6ac075006f129b376886a5e8b41d47efad1
+Author: David Howells <dhowells@redhat.com>
+Date:   Tue Sep 26 09:45:26 2017 +0100
 
-Replace the uid/gid/perm permissions checking on a key with an ACL to allow
-the SETATTR permission to be split.  The problem is that SETATTR covers a
-slew of things, not all of which should be grouped together.  This
-includes:
+    KEYS: Replace uid/gid/perm permissions checking with ACL
+    
+    Replace the uid/gid/perm permissions checking on a key with an ACL to allow
+    the SETATTR permission to be split.  The problem is that SETATTR covers a
+    slew of things, not all of which should be grouped together.  This
+    includes:
+    
+     (1) Changing the key ownership.
+    
+     (2) Changing the security information.
+    
+     (3) Keyring restriction.
+    
+     (4) Expiry time.
+    
+     (5) Revocation.
+    
+    and it has also been proposed to add:
+    
+     (6) Invalidation.
+    
+    The above can be divided into three groups: Controlling access (1), (2) and
+    (3), managing the content at construction time (4) and managing the key (5)
+    and (6).
+    
+    
+    Add an ACL set & get functions that use a list of elements of the following
+    form:
+    
+            struct key_ace {
+                    union {
+                            uid_t           uid;
+                            gid_t           gid;
+                            unsigned int    special_id;
+                    };
+                    unsigned int mask;
+            };
+    
+    where the top four bits of mask indicate the subject being checked:
+    
+            KEY_ACE_SPECIAL         A specific value
+            KEY_ACE_UID             A nominated UID
+            KEY_ACE_GID             A nominated GID
+    
+    and if SPECIAL is specified, special_id is one of the following:
+    
+            KEY_ACE_POSSESSOR       The possessor of the key
+            KEY_ACE_OWNER           The owner of the key
+            KEY_ACE_GROUP           The key's group
+            KEY_ACE_OTHER           Everyone else
+    
+    Each special ID may only occur once in an ACL.
+    
+    The bottom 28 bits of mask indicate the permissions being granted:
+    
+            KEY_ACE_VIEW            Can view the key metadata
+            KEY_ACE_READ            Can read the key content
+            KEY_ACE_WRITE           Can update/modify the key content
+            KEY_ACE_SEARCH          Can find the key by searching/requesting
+            KEY_ACE_LINK            Can make a link to the key
+            KEY_ACE_INVAL           Can invalidate
+            KEY_ACE_REVOKE          Can revoke
+            KEY_ACE_SET_SECURITY    Can set security
+            KEY_ACE_JOIN            Can join this keyring
+            KEY_ACE_CLEAR           Can clear this keyring
+    
+    The ACEs are purely additive; all ACEs that apply are considered.  I figure
+    that it's unlikely that you'll give the key's Group permissions that you
+    wouldn't give the Owner and Other permissions that you wouldn't give to both
+    Group and Owner.  Possessor permissions are already additive.
+    
+    The functions are:
+    
+            keyctl(KEYCTL_GET_ACL, key_serial_t key,
+                   struct key_ace *acl_buffer, unsigned int buflen);
+    
+            keyctl(KEYCTL_SET_ACL, key_serial_t key,
+                   const struct key_ace *acl, unsigned int len);
+    
+    The KEYCTL_SETATTR function is then deprecated.  If called, it will
+    construct an ACL to reflect the mask it is given, using possessor, owner,
+    group and other ACE's as appropriate if any of those elements are granted
+    any permissions.  SETATTR permission turns on all of INVAL, REVOKE and
+    SET_SECURITY.  WRITE permission turns on WRITE, REVOKE and, if a keyring,
+    CLEAR.  JOIN is turned on if a keyring is being altered.  KEYCTL_SETATTR
+    will return an error if SETACL has been called on a key.
+    
+    The KEYCTL_DESCRIBE function then creates a permissions mask to return
+    depending on possessor, owner, group and other ACEs, indicating SETATTR if
+    any of INVAL, REVOKE and SET_SECURITY are set and indicating WRITE if any
+    of WRITE, REVOKE or CLEAR are set.
+    
+    Note that the value subsequently returned by KEYCTL_DESCRIBE may not match
+    the value set with KEYCTL_SETATTR - but this is already true because keys
+    that lack ->read() can't have READ set and keys that lack ->write() can't
+    have WRITE set.
+    
+    The KEYCTL_SET_TIMEOUT function then is permitted if WRITE or SETSEC is
+    set, or if the caller has a valid instantiation auth token.
+    
+    The KEYCTL_INVALIDATE function then requires INVAL.
+    
+    The KEYCTL_REVOKE function then requires REVOKE.
+    
+    The KEYCTL_JOIN_SESSION_KEYRING function then requires JOIN to join an
+    existing keyring.
+    
+    The JOIN permission is enabled by default for session keyrings and manually
+    created keyrings only.
+    
+    Signed-off-by: David Howells <dhowells@redhat.com>
 
- (1) Changing the key ownership.
-
- (2) Changing the security information.
-
- (3) Keyring restriction.
-
- (4) Expiry time.
-
- (5) Revocation.
-
-and it has also been proposed to add:
-
- (6) Invalidation.
-
-The above can be divided into three groups: Controlling access (1), (2) and
-(3), managing the content at construction time (4) and managing the key (5)
-and (6).
-
-
-Add an ACL set & get functions that use a list of elements of the following
-form:
-
-        struct key_ace {
-                union {
-                        uid_t           uid;
-                        gid_t           gid;
-                        unsigned int    special_id;
-                };
-                unsigned int mask;
-        };
-
-where the top four bits of mask indicate the subject being checked:
-
-	KEY_ACE_SPECIAL		A specific value
-	KEY_ACE_UID		A nominated UID
-	KEY_ACE_GID		A nominated GID
-
-and if SPECIAL is specified, special_id is one of the following:
-
-	KEY_ACE_EVERYONE	Everyone, including owner and group
-	KEY_ACE_GROUP		The key's group
-	KEY_ACE_OWNER		The owner of the key
-	KEY_ACE_POSSESSOR	Any process that possesses the key
-	KEY_ACE_ROOT		The user namespace root user
-	KEY_ACE_SYS_ADMIN	Anyone with CAP_SYS_ADMIN
-	KEY_ACE_NET_ADMIN	Anyone with CAP_NET_ADMIN
-
-Each special ID may only occur once in an ACL.
-
-
-The bottom 28 bits of mask indicate the permissions being granted:
-
-	KEY_ACE_VIEW		Can view the key metadata
-	KEY_ACE_READ		Can read the key content
-	KEY_ACE_WRITE		Can update/modify the key content
-	KEY_ACE_SEARCH		Can find the key by searching/requesting
-	KEY_ACE_LINK		Can make a link to the key
-	KEY_ACE_INVAL		Can invalidate
-	KEY_ACE_REVOKE		Can revoke
-	KEY_ACE_SET_SECURITY	Can set security
-	KEY_ACE_JOIN		Can join this keyring
-	KEY_ACE_CLEAR		Can clear this keyring
-
-The ACEs are purely additive; all ACEs that apply are considered.  I figure
-that it's unlikely that you'll give the key's Group permissions that you
-wouldn't give the Owner and Other permissions that you wouldn't give to both
-Group and Owner.  Possessor permissions are already additive.
-
-The functions are:
-
-        keyctl(KEYCTL_GET_ACL, key_serial_t key,
-               struct key_ace *acl_buffer, unsigned int buflen);
-
-        keyctl(KEYCTL_SET_ACL, key_serial_t key,
-               const struct key_ace *acl, unsigned int len);
-
-The KEYCTL_SETATTR function is then deprecated.  If called, it will
-construct an ACL to reflect the mask it is given, using possessor, owner,
-group and other ACE's as appropriate if any of those elements are granted
-any permissions.  SETATTR permission turns on all of INVAL, REVOKE and
-SET_SECURITY.  WRITE permission turns on WRITE, REVOKE and, if a keyring,
-CLEAR.  JOIN is turned on if a keyring is being altered.  KEYCTL_SETATTR
-will return an error if SETACL has been called on a key.
-
-The KEYCTL_DESCRIBE function then creates a permissions mask to return
-depending on possessor, owner, group and other ACEs, indicating SETATTR if
-any of INVAL, REVOKE and SET_SECURITY are set and indicating WRITE if any
-of WRITE, REVOKE or CLEAR are set.
-
-Note that the value subsequently returned by KEYCTL_DESCRIBE may not match
-the value set with KEYCTL_SETATTR - but this is already true because keys
-that lack ->read() can't have READ set and keys that lack ->write() can't
-have WRITE set.
-
-The KEYCTL_SET_TIMEOUT function then is permitted if WRITE or SETSEC is
-set, or if the caller has a valid instantiation auth token.
-
-The KEYCTL_INVALIDATE function then requires INVAL.
-
-The KEYCTL_REVOKE function then requires REVOKE.
-
-The KEYCTL_JOIN_SESSION_KEYRING function then requires JOIN to join an
-existing keyring.
-
-The JOIN permission is enabled by default for session keyrings and manually
-created keyrings only.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
----
 diff --git a/certs/blacklist.c b/certs/blacklist.c
 index 3a507b9e2568..5f03a60ebb7f 100644
 --- a/certs/blacklist.c
@@ -734,7 +747,7 @@ index 000000000000..7a738569a673
 +#include <uapi/linux/keyctl.h>
 +#undef key_ace
 diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index ef16df06642a..0be132e3fb72 100644
+index ef16df06642a..8a9e829ef499 100644
 --- a/include/uapi/linux/keyctl.h
 +++ b/include/uapi/linux/keyctl.h
 @@ -14,6 +14,40 @@
@@ -769,7 +782,7 @@ index ef16df06642a..0be132e3fb72 100644
 +#define KEY_ACE_GROUP		2	/* The key's group */
 +#define KEY_ACE_OWNER		3	/* The owner of the key */
 +#define KEY_ACE_POSSESSOR	4	/* Any process that possesses of the key */
-+#define KEY_ACE_ROOT		5	/* Anyone with user namespace root */
++#define KEY_ACE_ROOT		5	/* The user namespace root user */
 +#define KEY_ACE_SYS_ADMIN	6	/* Anyone with CAP_SYS_ADMIN */
 +#define KEY_ACE_NET_ADMIN	7	/* Anyone with CAP_NET_ADMIN */
 +	};
@@ -1024,9 +1037,18 @@ index 503adbae7b0d..a699c5937cbe 100644
  				   size_t, key_serial_t);
  extern long keyctl_negate_key(key_serial_t, unsigned, key_serial_t);
 diff --git a/security/keys/key.c b/security/keys/key.c
-index eb914a838840..eb7ed724f2db 100644
+index eb914a838840..f342bf586006 100644
 --- a/security/keys/key.c
 +++ b/security/keys/key.c
+@@ -199,7 +199,7 @@ static inline void key_alloc_serial(struct key *key)
+  * @uid: The owner of the new key.
+  * @gid: The group ID for the new key's group permissions.
+  * @cred: The credentials specifying UID namespace.
+- * @perm: The permissions mask of the new key.
++ * @acl: The ACL to attach to the new key.
+  * @flags: Flags specifying quota properties.
+  * @restrict_link: Optional link restriction for new keyrings.
+  *
 @@ -227,7 +227,7 @@ static inline void key_alloc_serial(struct key *key)
   */
  struct key *key_alloc(struct key_type *type, const char *desc,
@@ -1036,7 +1058,17 @@ index eb914a838840..eb7ed724f2db 100644
  		      struct key_restriction *restrict_link)
  {
  	struct key_user *user = NULL;
-@@ -295,7 +295,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+@@ -250,6 +250,9 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	desclen = strlen(desc);
+ 	quotalen = desclen + 1 + type->def_datalen;
+ 
++	if (!acl)
++		acl = &default_key_acl;
++
+ 	/* get hold of the key tracking for this user */
+ 	user = key_user_lookup(uid);
+ 	if (!user)
+@@ -295,7 +298,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
  	key->datalen = type->def_datalen;
  	key->uid = uid;
  	key->gid = gid;
@@ -1046,7 +1078,16 @@ index eb914a838840..eb7ed724f2db 100644
  	key->restrict_link = restrict_link;
  
  	if (!(flags & KEY_ALLOC_NOT_IN_QUOTA))
-@@ -798,7 +799,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+@@ -775,7 +779,7 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+  * @description: The searchable description for the key.
+  * @payload: The data to use to instantiate or update the key.
+  * @plen: The length of @payload.
+- * @perm: The permissions mask for a new key.
++ * @acl: The ACL to attach if a key is created.
+  * @flags: The quota flags for a new key.
+  *
+  * Search the destination keyring for a key of the same description and if one
+@@ -798,7 +802,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
  			       const char *description,
  			       const void *payload,
  			       size_t plen,
@@ -1055,7 +1096,7 @@ index eb914a838840..eb7ed724f2db 100644
  			       unsigned long flags)
  {
  	struct keyring_index_key index_key = {
-@@ -889,22 +890,13 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+@@ -889,22 +893,9 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
  			goto found_matching_key;
  	}
  
@@ -1071,10 +1112,7 @@ index eb914a838840..eb7ed724f2db 100644
 -		    index_key.type->update)
 -			perm |= KEY_POS_WRITE;
 -	}
-+	/* If the caller doesn't provide, provide default permissions. */
-+	if (!acl)
-+		acl = &default_key_acl;
- 
+-
  	/* allocate a new key */
  	key = key_alloc(index_key.type, index_key.description,
 -			cred->fsuid, cred->fsgid, cred, perm, flags, NULL);
@@ -1344,11 +1382,25 @@ index 365ff85d7e27..51fefec80cce 100644
  	case KEYCTL_INSTANTIATE:
  		return keyctl_instantiate_key((key_serial_t) arg2,
 diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 4fa82a8a9c0e..70b91b052041 100644
+index 4fa82a8a9c0e..ea7e2620ca03 100644
 --- a/security/keys/keyring.c
 +++ b/security/keys/keyring.c
-@@ -493,7 +493,7 @@ static long keyring_read(const struct key *keyring,
-  * Allocate a keyring and link into the destination keyring.
+@@ -489,11 +489,19 @@ static long keyring_read(const struct key *keyring,
+ 	return ctx.count;
+ }
+ 
+-/*
+- * Allocate a keyring and link into the destination keyring.
++/**
++ * keyring_alloc - Allocate a keyring and link into the destination
++ * @description: The key description to allow the key to be searched out.
++ * @uid: The owner of the new key.
++ * @gid: The group ID for the new key's group permissions.
++ * @cred: The credentials specifying UID namespace.
++ * @acl: The ACL to attach to the new key.
++ * @flags: Flags specifying quota properties.
++ * @restrict_link: Optional link restriction for new keyrings.
++ * @dest: Destination keyring.
   */
  struct key *keyring_alloc(const char *description, kuid_t uid, kgid_t gid,
 -			  const struct cred *cred, key_perm_t perm,
@@ -1356,7 +1408,7 @@ index 4fa82a8a9c0e..70b91b052041 100644
  			  unsigned long flags,
  			  struct key_restriction *restrict_link,
  			  struct key *dest)
-@@ -502,7 +502,7 @@ struct key *keyring_alloc(const char *description, kuid_t uid, kgid_t gid,
+@@ -502,7 +510,7 @@ struct key *keyring_alloc(const char *description, kuid_t uid, kgid_t gid,
  	int ret;
  
  	keyring = key_alloc(&key_type_keyring, description,
@@ -1366,7 +1418,7 @@ index 4fa82a8a9c0e..70b91b052041 100644
  		ret = key_instantiate_and_link(keyring, NULL, 0, dest, NULL);
  		if (ret < 0) {
 diff --git a/security/keys/permission.c b/security/keys/permission.c
-index 732cc0beffdf..89259f8f6298 100644
+index 732cc0beffdf..5e186b0f802d 100644
 --- a/security/keys/permission.c
 +++ b/security/keys/permission.c
 @@ -11,13 +11,41 @@
@@ -1533,7 +1585,7 @@ index 732cc0beffdf..89259f8f6298 100644
  }
  EXPORT_SYMBOL(key_task_permission);
  
-@@ -108,3 +166,70 @@ int key_validate(const struct key *key)
+@@ -108,3 +166,80 @@ int key_validate(const struct key *key)
  	return 0;
  }
  EXPORT_SYMBOL(key_validate);
@@ -1558,34 +1610,44 @@ index 732cc0beffdf..89259f8f6298 100644
 +			switch (ace->special_id) {
 +			case KEY_ACE_POSSESSOR:
 +				perm |= (mask & 0x1f) << 24;
-+				if (mask & 0xe0)
++				if (mask & (KEY_ACE_INVAL | KEY_ACE_SET_SECURITY))
 +					perm |= KEY_POS_SETATTR;
-+				if (mask & (KEY_ACE_REVOKE | KEY_ACE_CLEAR))
++				if (mask & KEY_ACE_CLEAR)
++					perm |= KEY_POS_WRITE;
++				if ((mask & KEY_ACE_REVOKE) && !(perm & KEY_POS_SETATTR))
 +					perm |= KEY_POS_WRITE;
 +				break;
 +			case KEY_ACE_OWNER:
 +				perm |= (mask & 0x1f) << 16;
-+				if (mask & 0xe0)
++				if (mask & (KEY_ACE_INVAL | KEY_ACE_SET_SECURITY))
 +					perm |= KEY_USR_SETATTR;
-+				if (mask & (KEY_ACE_REVOKE | KEY_ACE_CLEAR))
++				if (mask & KEY_ACE_CLEAR)
++					perm |= KEY_USR_WRITE;
++				if ((mask & KEY_ACE_REVOKE) && !(perm & KEY_USR_SETATTR))
 +					perm |= KEY_USR_WRITE;
 +				break;
 +			case KEY_ACE_GROUP:
 +				perm |= (mask & 0x1f) << 8;
-+				if (mask & 0xe0)
++				if (mask & (KEY_ACE_INVAL | KEY_ACE_SET_SECURITY))
 +					perm |= KEY_GRP_SETATTR;
-+				if (mask & (KEY_ACE_REVOKE | KEY_ACE_CLEAR))
++				if (mask & KEY_ACE_CLEAR)
++					perm |= KEY_GRP_WRITE;
++				if ((mask & KEY_ACE_REVOKE) && !(perm & KEY_GRP_SETATTR))
 +					perm |= KEY_GRP_WRITE;
 +				break;
 +			case KEY_ACE_EVERYONE:
 +				perm |= (mask & 0x1f);
-+				if (mask & 0xe0)
++				if (mask & (KEY_ACE_INVAL | KEY_ACE_SET_SECURITY))
 +					perm |= KEY_OTH_SETATTR;
-+				if (mask & (KEY_ACE_REVOKE | KEY_ACE_CLEAR))
++				if (mask & KEY_ACE_CLEAR)
++					perm |= KEY_OTH_WRITE;
++				if ((mask & KEY_ACE_REVOKE) && !(perm & KEY_OTH_SETATTR))
 +					perm |= KEY_OTH_WRITE;
 +				break;
 +			}
 +		}
++
++		//printk("[%d] %08x %08x %08x\n", i, ace->special_id, ace->mask, perm);
 +	}
 +
 +	return perm;
@@ -1604,6 +1666,64 @@ index 732cc0beffdf..89259f8f6298 100644
 +	if (refcount_dec_and_test(&acl->usage))
 +		call_rcu(&acl->rcu, key_acl_rcu);
 +}
+diff --git a/security/keys/persistent.c b/security/keys/persistent.c
+index d0cb5b32eff7..0410a196a8f7 100644
+--- a/security/keys/persistent.c
++++ b/security/keys/persistent.c
+@@ -16,6 +16,33 @@
+ 
+ unsigned persistent_keyring_expiry = 3 * 24 * 3600; /* Expire after 3 days of non-use */
+ 
++static struct key_acl persistent_register_keyring_acl = {
++	.usage	= REFCOUNT_INIT(1),
++	.nr_ace	= 2,
++	.aces[0] = {
++		.mask = KEY_ACE_SPECIAL | KEY_ACE_SEARCH | KEY_ACE_WRITE,
++		.special_id = KEY_ACE_POSSESSOR,
++	},
++	.aces[1] = {
++		.mask = KEY_ACE_SPECIAL | KEY_ACE_VIEW | KEY_ACE_READ,
++		.special_id = KEY_ACE_OWNER,
++	},
++};
++
++static struct key_acl persistent_keyring_acl = {
++	.usage	= REFCOUNT_INIT(1),
++	.nr_ace	= 2,
++	.aces[0] = {
++		.mask = KEY_ACE_SPECIAL | (KEY_ACE__ORDINARY | KEY_ACE_CLEAR |
++					   KEY_ACE_INVAL),
++		.special_id = KEY_ACE_POSSESSOR,
++	},
++	.aces[1] = {
++		.mask = KEY_ACE_SPECIAL | KEY_ACE_VIEW | KEY_ACE_READ,
++		.special_id = KEY_ACE_OWNER,
++	},
++};
++
+ /*
+  * Create the persistent keyring register for the current user namespace.
+  *
+@@ -26,8 +53,7 @@ static int key_create_persistent_register(struct user_namespace *ns)
+ 	struct key *reg = keyring_alloc(".persistent_register",
+ 					KUIDT_INIT(0), KGIDT_INIT(0),
+ 					current_cred(),
+-					((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+-					 KEY_USR_VIEW | KEY_USR_READ),
++					&persistent_register_keyring_acl,
+ 					KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
+ 	if (IS_ERR(reg))
+ 		return PTR_ERR(reg);
+@@ -60,8 +86,7 @@ static key_ref_t key_create_persistent(struct user_namespace *ns, kuid_t uid,
+ 
+ 	persistent = keyring_alloc(index_key->description,
+ 				   uid, INVALID_GID, current_cred(),
+-				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+-				    KEY_USR_VIEW | KEY_USR_READ),
++				   &persistent_keyring_acl,
+ 				   KEY_ALLOC_NOT_IN_QUOTA, NULL,
+ 				   ns->persistent_keyring_register);
+ 	if (IS_ERR(persistent))
 diff --git a/security/keys/proc.c b/security/keys/proc.c
 index de834309d100..4361455abe78 100644
 --- a/security/keys/proc.c
@@ -2032,6 +2152,41 @@ index 63e63a42db3c..2f7906c231a6 100644
 +				    NULL, KEY_ALLOC_IN_QUOTA);
  }
  EXPORT_SYMBOL(request_key_async_with_auxdata);
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index 6ebf1af8fce9..d810a54070f7 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -29,6 +29,19 @@ static void request_key_auth_revoke(struct key *);
+ static void request_key_auth_destroy(struct key *);
+ static long request_key_auth_read(const struct key *, char __user *, size_t);
+ 
++static struct key_acl request_key_auth_acl = {
++	.usage	= REFCOUNT_INIT(1),
++	.nr_ace	= 2,
++	.aces[0] = {
++		.mask = KEY_ACE_SPECIAL | KEY_ACE_VIEW | KEY_ACE_READ | KEY_ACE_SEARCH,
++		.special_id = KEY_ACE_POSSESSOR,
++	},
++	.aces[1] = {
++		.mask = KEY_ACE_SPECIAL | KEY_ACE_VIEW,
++		.special_id = KEY_ACE_OWNER,
++	},
++};
++
+ /*
+  * The request-key authorisation key type definition.
+  */
+@@ -203,8 +216,8 @@ struct key *request_key_auth_new(struct key *target, const void *callout_info,
+ 
+ 	authkey = key_alloc(&key_type_request_key_auth, desc,
+ 			    cred->fsuid, cred->fsgid, cred,
+-			    KEY_POS_VIEW | KEY_POS_READ | KEY_POS_SEARCH |
+-			    KEY_USR_VIEW, KEY_ALLOC_NOT_IN_QUOTA, NULL);
++			    &request_key_auth_acl,
++			    KEY_ALLOC_NOT_IN_QUOTA, NULL);
+ 	if (IS_ERR(authkey)) {
+ 		ret = PTR_ERR(authkey);
+ 		goto error_free_rka;
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
 index f5d304736852..7c06837802be 100644
 --- a/security/selinux/hooks.c
