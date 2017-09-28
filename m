@@ -1,49 +1,50 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 21 Sep 2017 20:57:42 +0000
-Subject: [PATCH v2 3/3] KEYS: use kmemdup() in request_key_auth_new()
-Message-Id: <20170921205742.144596-4-ebiggers3@gmail.com>
+Date: Thu, 28 Sep 2017 21:25:58 +0000
+Subject: [PATCH 3/7] lib/digsig: fix dereference of NULL user_key_payload
+Message-Id: <20170928212602.41744-4-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170921205742.144596-1-ebiggers3@gmail.com>
-In-Reply-To: <20170921205742.144596-1-ebiggers3@gmail.com>
-To: linux-security-module@vger.kernel.org
+References: <20170928212602.41744-1-ebiggers3@gmail.com>
+In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
+To: keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-kmemdup() is preferred to kmalloc() followed by memcpy().
+digsig_verify() requests a user key, then accesses its payload.
+However, a revoked key has a NULL payload, and we failed to check for
+this.  request_key() *does* skip revoked keys, but there is still a
+window where the key can be revoked before we acquire its semaphore.
 
+Fix it by checking for a NULL payload, treating it like a key which was
+already revoked at the time it was requested.
+
+Fixes: 051dbb918c7f ("crypto: digital signature verification support")
+Cc: <stable@vger.kernel.org>    [v3.3+]
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/keys/request_key_auth.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ lib/digsig.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index 2df92b619a38..9d536f9e5222 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -163,9 +163,10 @@ struct key *request_key_auth_new(struct key *target, const void *callout_info,
- 	rka = kzalloc(sizeof(*rka), GFP_KERNEL);
- 	if (!rka)
- 		goto error_free_rka;
--	rka->callout_info = kmalloc(callout_len, GFP_KERNEL);
-+	rka->callout_info = kmemdup(callout_info, callout_len, GFP_KERNEL);
- 	if (!rka->callout_info)
- 		goto error_free_rka;
-+	rka->callout_len = callout_len;
+diff --git a/lib/digsig.c b/lib/digsig.c
+index 03d7c63837ae..6ba6fcd92dd1 100644
+--- a/lib/digsig.c
++++ b/lib/digsig.c
+@@ -87,6 +87,12 @@ static int digsig_verify_rsa(struct key *key,
+ 	down_read(&key->sem);
+ 	ukp = user_key_payload_locked(key);
  
- 	/* see if the calling process is already servicing the key request of
- 	 * another process */
-@@ -196,8 +197,6 @@ struct key *request_key_auth_new(struct key *target, const void *callout_info,
++	if (!ukp) {
++		/* key was revoked before we acquired its semaphore */
++		err = -EKEYREVOKED;
++		goto err1;
++	}
++
+ 	if (ukp->datalen < sizeof(*pkh))
+ 		goto err1;
  
- 	rka->target_key = key_get(target);
- 	rka->dest_keyring = key_get(dest_keyring);
--	memcpy(rka->callout_info, callout_info, callout_len);
--	rka->callout_len = callout_len;
- 
- 	/* allocate the auth key */
- 	sprintf(desc, "%x", target->serial);
 -- 
-2.14.1.821.g8fa685d3b7-goog
+2.14.2.822.g60be5d43e6-goog
 
