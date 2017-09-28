@@ -1,83 +1,114 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 05 Sep 2017 12:38:42 +0000
-Subject: [PATCH v8 03/20] net: use -EAGAIN for transient busy indication
-Message-Id: <1504615144-29770-4-git-send-email-gilad@benyossef.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 28 Sep 2017 21:26:00 +0000
+Subject: [PATCH 5/7] ecryptfs: fix dereference of NULL user_key_payload
+Message-Id: <20170928212602.41744-6-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Ofir Drang <ofir.drang@arm.com>
+References: <20170928212602.41744-1-ebiggers3@gmail.com>
+In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
+To: keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-Replace -EBUSY with -EAGAIN when handling transient busy
-indication in the absence of backlog.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+In eCryptfs, we failed to verify that the authentication token keys are
+not revoked before dereferencing their payloads, which is problematic
+because the payload of a revoked key is NULL.  request_key() *does* skip
+revoked keys, but there is still a window where the key can be revoked
+before we acquire the key semaphore.
 
+Fix it by updating ecryptfs_get_key_payload_data() to return
+-EKEYREVOKED if the key payload is NULL.  For completeness we check this
+for "encrypted" keys as well as "user" keys, although encrypted keys
+cannot be revoked currently.
+
+Alternatively we could use key_validate(), but since we'll also need to
+fix ecryptfs_get_key_payload_data() to validate the payload length, it
+seems appropriate to just check the payload pointer.
+
+Fixes: 237fead61998 ("[PATCH] ecryptfs: fs/Makefile and fs/Kconfig")
+Cc: <stable@vger.kernel.org>    [v2.6.19+]
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/ecryptfs/ecryptfs_kernel.h | 24 +++++++++++++++++-------
+ fs/ecryptfs/keystore.c        |  9 ++++++++-
+ 2 files changed, 25 insertions(+), 8 deletions(-)
 
-Please squash this patch with the previous one when merging upstream.
----
- net/ipv4/ah4.c  | 2 +-
- net/ipv4/esp4.c | 2 +-
- net/ipv6/ah6.c  | 2 +-
- net/ipv6/esp6.c | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/net/ipv4/ah4.c b/net/ipv4/ah4.c
-index 37db44f..049cb0a 100644
---- a/net/ipv4/ah4.c
-+++ b/net/ipv4/ah4.c
-@@ -240,7 +240,7 @@ static int ah_output(struct xfrm_state *x, struct sk_buff *skb)
- 		if (err = -EINPROGRESS)
- 			goto out;
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index 9c351bf757b2..3fbc0ff79699 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -84,11 +84,16 @@ struct ecryptfs_page_crypt_context {
+ static inline struct ecryptfs_auth_tok *
+ ecryptfs_get_encrypted_key_payload_data(struct key *key)
+ {
+-	if (key->type = &key_type_encrypted)
+-		return (struct ecryptfs_auth_tok *)
+-			(&((struct encrypted_key_payload *)key->payload.data[0])->payload_data);
+-	else
++	struct encrypted_key_payload *payload;
++
++	if (key->type != &key_type_encrypted)
+ 		return NULL;
++
++	payload = key->payload.data[0];
++	if (!payload)
++		return ERR_PTR(-EKEYREVOKED);
++
++	return (struct ecryptfs_auth_tok *)payload->payload_data;
+ }
  
--		if (err = -EBUSY)
-+		if (err = -EAGAIN)
- 			err = NET_XMIT_DROP;
- 		goto out_free;
- 	}
-diff --git a/net/ipv4/esp4.c b/net/ipv4/esp4.c
-index b00e4a4..ff8e088 100644
---- a/net/ipv4/esp4.c
-+++ b/net/ipv4/esp4.c
-@@ -432,7 +432,7 @@ int esp_output_tail(struct xfrm_state *x, struct sk_buff *skb, struct esp_info *
- 	case -EINPROGRESS:
- 		goto error;
+ static inline struct key *ecryptfs_get_encrypted_key(char *sig)
+@@ -114,12 +119,17 @@ static inline struct ecryptfs_auth_tok *
+ ecryptfs_get_key_payload_data(struct key *key)
+ {
+ 	struct ecryptfs_auth_tok *auth_tok;
++	struct user_key_payload *ukp;
  
--	case -EBUSY:
-+	case -EAGAIN:
- 		err = NET_XMIT_DROP;
- 		break;
+ 	auth_tok = ecryptfs_get_encrypted_key_payload_data(key);
+-	if (!auth_tok)
+-		return (struct ecryptfs_auth_tok *)user_key_payload_locked(key)->data;
+-	else
++	if (auth_tok)
+ 		return auth_tok;
++
++	ukp = user_key_payload_locked(key);
++	if (!ukp)
++		return ERR_PTR(-EKEYREVOKED);
++
++	return (struct ecryptfs_auth_tok *)ukp->data;
+ }
  
-diff --git a/net/ipv6/ah6.c b/net/ipv6/ah6.c
-index 7802b72..ba0c145 100644
---- a/net/ipv6/ah6.c
-+++ b/net/ipv6/ah6.c
-@@ -443,7 +443,7 @@ static int ah6_output(struct xfrm_state *x, struct sk_buff *skb)
- 		if (err = -EINPROGRESS)
- 			goto out;
+ #define ECRYPTFS_MAX_KEYSET_SIZE 1024
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 3cf1546dca82..fa218cd64f74 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -459,7 +459,8 @@ static int ecryptfs_verify_version(u16 version)
+  * @auth_tok_key: key containing the authentication token
+  * @auth_tok: authentication token
+  *
+- * Returns zero on valid auth tok; -EINVAL otherwise
++ * Returns zero on valid auth tok; -EINVAL if the payload is invalid; or
++ * -EKEYREVOKED if the key was revoked before we acquired its semaphore.
+  */
+ static int
+ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
+@@ -468,6 +469,12 @@ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
+ 	int rc = 0;
  
--		if (err = -EBUSY)
-+		if (err = -EAGAIN)
- 			err = NET_XMIT_DROP;
- 		goto out_free;
- 	}
-diff --git a/net/ipv6/esp6.c b/net/ipv6/esp6.c
-index 89910e2..1a71ee5 100644
---- a/net/ipv6/esp6.c
-+++ b/net/ipv6/esp6.c
-@@ -396,7 +396,7 @@ int esp6_output_tail(struct xfrm_state *x, struct sk_buff *skb, struct esp_info
- 	case -EINPROGRESS:
- 		goto error;
- 
--	case -EBUSY:
-+	case -EAGAIN:
- 		err = NET_XMIT_DROP;
- 		break;
- 
+ 	(*auth_tok) = ecryptfs_get_key_payload_data(auth_tok_key);
++	if (IS_ERR(*auth_tok)) {
++		rc = PTR_ERR(*auth_tok);
++		*auth_tok = NULL;
++		goto out;
++	}
++
+ 	if (ecryptfs_verify_version((*auth_tok)->version)) {
+ 		printk(KERN_ERR "Data structure version mismatch. Userspace "
+ 		       "tools must match eCryptfs kernel module with major "
 -- 
-2.1.4
+2.14.2.822.g60be5d43e6-goog
 
