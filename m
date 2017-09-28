@@ -1,61 +1,56 @@
-From: Mike Rapoport <rppt@linux.vnet.ibm.com>
-Date: Mon, 25 Sep 2017 06:12:01 +0000
-Subject: Re: [PATCH v5 0/4] Certificate insertion support for x86 bzImages
-Message-Id: <20170925061159.GA6934@rapoport-lnx>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 28 Sep 2017 21:25:56 +0000
+Subject: [PATCH 1/7] KEYS: encrypted: fix dereference of NULL user_key_payload
+Message-Id: <20170928212602.41744-2-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-In-Reply-To: <1494440456-28671-1-git-send-email-mkayaalp@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
+References: <20170928212602.41744-1-ebiggers3@gmail.com>
+In-Reply-To: <20170928212602.41744-1-ebiggers3@gmail.com>
+To: keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-Hi,
+From: Eric Biggers <ebiggers@google.com>
 
-> These patches add support for modifying the reserved space for extra
-> certificates in a compressed bzImage in x86. This allows separating the
-> system keyring certificate from the kernel build process. After the kernel
-> image is distributed, the insert-sys-cert script can be used to insert the
-> certificate for x86.
+A key of type "encrypted" references a "master key" which is used to
+encrypt and decrypt the encrypted key's payload.  However, when we
+accessed the master key's payload, we failed to handle the case where
+the master key has been revoked, which sets the payload pointer to NULL.
+Note that request_key() *does* skip revoked keys, but there is still a
+window where the key can be revoked before we acquire its semaphore.
 
-I know it's been a while since these patches were posted and they seem to
-fail between the cracks ...
-Is there anything that prevents merging them?
+Fix it by checking for a NULL payload, treating it like a key which was
+already revoked at the time it was requested.
+
+This was an issue for master keys of type "user" only.  Master keys can
+also be of type "trusted", but those cannot be revoked.
+
+Fixes: 7e70cb497850 ("keys: add new key-type encrypted")
+Cc: <stable@vger.kernel.org>    [v2.6.38+]
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ security/keys/encrypted-keys/encrypted.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index f54b92868bc3..d92cbf9687c3 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -309,6 +309,13 @@ static struct key *request_user_key(const char *master_desc, const u8 **master_k
  
-> Changes:
-> 
-> v5:
-> * Added CRC fixing (3/4)
-> 
-> v4:
-> * Applied checkpatch.pl suggestions (2/4, 3/4)
-> * Cleaned up the commit messages (1/4, 2/4)
-> * Added the build file to .gitignore (1/4)
-> 
-> v3:
-> * Rewrote 1/4 to insert incompressible bytes are at build time. Previous
-> solution required changes to <arch>/boot/Makefile's for modifying the
-> vmlinux file after linking, and did not work well with cross compilation.
-> * Added 2/4 for ELF class-independent processing of vmlinux file, in case
-> the script was compiled for 64-bit and the kernel was compiled for 32-bit.
-> * Reordered 3/4, added x86 bzImage boot version (>=2.08) verification.
-> 
-> v2:
-> * Rebased arch/boot/x86/Makefile patch (removed in v3)
-> 
-> Mehmet Kayaalp (4):
->   KEYS: Insert incompressible bytes to reserve space in bzImage
->   KEYS: Add ELF class-independent certificate insertion support
->   KEYS: Support for inserting a certificate into x86 bzImage
->   KEYS: Print insert-sys-cert information to stdout instead of stderr
-> 
->  certs/.gitignore            |   1 +
->  certs/Makefile              |  21 +-
->  certs/system_certificates.S |   2 +-
->  scripts/Makefile            |   1 +
->  scripts/insert-sys-cert.c   | 473 +++++++++++++++++++++++++++++++++-----------
->  5 files changed, 381 insertions(+), 117 deletions(-)
-
+ 	down_read(&ukey->sem);
+ 	upayload = user_key_payload_locked(ukey);
++	if (!upayload) {
++		/* key was revoked before we acquired its semaphore */
++		up_read(&ukey->sem);
++		key_put(ukey);
++		ukey = ERR_PTR(-EKEYREVOKED);
++		goto error;
++	}
+ 	*master_key = upayload->data;
+ 	*master_keylen = upayload->datalen;
+ error:
 -- 
-Sincerely yours,
-Mike.
+2.14.2.822.g60be5d43e6-goog
 
