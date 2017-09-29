@@ -1,47 +1,39 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 28 Sep 2017 21:25:55 +0000
-Subject: [PATCH 0/7] Fix dereferencing payload of revoked keys
-Message-Id: <20170928212602.41744-1-ebiggers3@gmail.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Fri, 29 Sep 2017 09:21:06 +0000
+Subject: [PATCH 3/3] KEYS: dh - make some length variables unsigned
+Message-Id: <20170929092106.24276-3-tudor.ambarus@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>
+References: <20170929092106.24276-1-tudor.ambarus@microchip.com>
+In-Reply-To: <20170929092106.24276-1-tudor.ambarus@microchip.com>
+To: herbert@gondor.apana.org.au, dhowells@redhat.com
+Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Tudor Ambarus <tudor.ambarus@microchip.com>
 
-From: Eric Biggers <ebiggers@google.com>
+Both crypto_kpp_maxsize() and crypto_dh_key_len() are returning
+unsigned integers.
 
-This series fixes the various users of the keyrings service that access
-a "user" or "logon" key's payload without first checking whether the
-payload pointer is NULL, or calling key_validate() while holding the key
-semaphore.  Without one of these two checks, a NULL pointer dereference
-will occur if the key has been revoked concurrently.  Usually this is
-pretty easy to reproduce (in most of the cases even as an unprivileged
-user), although it may be unlikely to happen by accident.
+Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
+---
+ security/keys/dh.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Patch 6 also fixes the lack of key length validation in ecryptfs.
-
-These fixes probably will need to be split up between a few different
-maintainers, but initially I'm sending the full series so that people
-can see the full context of the fixes.
-
-Eric Biggers (7):
-  KEYS: encrypted: fix dereference of NULL user_key_payload
-  FS-Cache: fix dereference of NULL user_key_payload
-  lib/digsig: fix dereference of NULL user_key_payload
-  fscrypt: fix dereference of NULL user_key_payload
-  ecryptfs: fix dereference of NULL user_key_payload
-  ecryptfs: fix out-of-bounds read of key payload
-  ecryptfs: move key payload accessor functions into keystore.c
-
- fs/crypto/keyinfo.c                      |  5 +++
- fs/ecryptfs/ecryptfs_kernel.h            | 44 -------------------
- fs/ecryptfs/keystore.c                   | 73 +++++++++++++++++++++++++++++++-
- fs/fscache/object-list.c                 |  7 +++
- lib/digsig.c                             |  6 +++
- security/keys/encrypted-keys/encrypted.c |  7 +++
- 6 files changed, 97 insertions(+), 45 deletions(-)
-
+diff --git a/security/keys/dh.c b/security/keys/dh.c
+index d1ea9f3..89e9255 100644
+--- a/security/keys/dh.c
++++ b/security/keys/dh.c
+@@ -242,8 +242,8 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ {
+ 	long ret;
+ 	ssize_t dlen;
+-	int secretlen;
+-	int outlen;
++	unsigned int secretlen;
++	unsigned int outlen;
+ 	struct keyctl_dh_params pcopy;
+ 	struct dh dh_inputs;
+ 	struct scatterlist outsg;
 -- 
-2.14.2.822.g60be5d43e6-goog
+2.9.4
 
