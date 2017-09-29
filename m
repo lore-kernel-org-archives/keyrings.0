@@ -1,54 +1,51 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Tue, 05 Sep 2017 12:38:44 +0000
-Subject: [PATCH v8 05/20] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
-Message-Id: <1504615144-29770-6-git-send-email-gilad@benyossef.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Fri, 29 Sep 2017 09:21:05 +0000
+Subject: [PATCH 2/3] crypto: dh_helper - return unsigned value for crypto_dh_key_len()
+Message-Id: <20170929092106.24276-2-tudor.ambarus@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1504615144-29770-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Ofir Drang <ofir.drang@arm.com>
+References: <20170929092106.24276-1-tudor.ambarus@microchip.com>
+In-Reply-To: <20170929092106.24276-1-tudor.ambarus@microchip.com>
+To: herbert@gondor.apana.org.au, dhowells@redhat.com
+Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Tudor Ambarus <tudor.ambarus@microchip.com>
 
-Now that -EBUSY return code only indicates backlog queueing
-we can safely remove the now redundant check for the
-CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
+DH_KPP_SECRET_MIN_SIZE and dh_data_size() are both returning
+unsigned values.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
 ---
- drivers/crypto/marvell/cesa.c | 3 +--
- drivers/crypto/marvell/cesa.h | 2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ crypto/dh_helper.c  | 2 +-
+ include/crypto/dh.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
-index 6e7a5c7..0c3909d 100644
---- a/drivers/crypto/marvell/cesa.c
-+++ b/drivers/crypto/marvell/cesa.c
-@@ -183,8 +183,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
- 	spin_lock_bh(&engine->lock);
- 	ret = crypto_enqueue_request(&engine->queue, req);
- 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
--	    (ret = -EINPROGRESS ||
--	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	    (ret = -EINPROGRESS || ret = -EBUSY))
- 		mv_cesa_tdma_chain(engine, creq);
- 	spin_unlock_bh(&engine->lock);
+diff --git a/crypto/dh_helper.c b/crypto/dh_helper.c
+index 69869da..a413b31 100644
+--- a/crypto/dh_helper.c
++++ b/crypto/dh_helper.c
+@@ -33,7 +33,7 @@ static inline unsigned int dh_data_size(const struct dh *p)
+ 	return p->key_size + p->p_size + p->g_size;
+ }
  
-diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
-index b7872f6..63c8457 100644
---- a/drivers/crypto/marvell/cesa.h
-+++ b/drivers/crypto/marvell/cesa.h
-@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
- 	 * the backlog and will be processed later. There's no need to
- 	 * clean it up.
- 	 */
--	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
-+	if (ret = -EBUSY)
- 		return false;
+-int crypto_dh_key_len(const struct dh *p)
++unsigned int crypto_dh_key_len(const struct dh *p)
+ {
+ 	return DH_KPP_SECRET_MIN_SIZE + dh_data_size(p);
+ }
+diff --git a/include/crypto/dh.h b/include/crypto/dh.h
+index f638998..71e1bb2 100644
+--- a/include/crypto/dh.h
++++ b/include/crypto/dh.h
+@@ -53,7 +53,7 @@ struct dh {
+  *
+  * Return: size of the key in bytes
+  */
+-int crypto_dh_key_len(const struct dh *params);
++unsigned int crypto_dh_key_len(const struct dh *params);
  
- 	/* Request wasn't queued, we need to clean it up */
+ /**
+  * crypto_dh_encode_key() - encode the private key
 -- 
-2.1.4
+2.9.4
 
