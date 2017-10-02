@@ -1,35 +1,28 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 10 Oct 2017 17:51:16 +0000
-Subject: [PATCH 0/4] ltp: add tests for some recently-fixed keyrings bugs
-Message-Id: <20171010175120.90586-1-ebiggers3@gmail.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Mon, 02 Oct 2017 14:15:35 +0000
+Subject: Re: [PATCH v8 0/4] crypto: add algif_akcipher user space API
+Message-Id: <43d74317-5c5c-d1da-d4a1-185416053e8a@microchip.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <26359147.tCiuJ5s8mz@positron.chronox.de>
+In-Reply-To: <26359147.tCiuJ5s8mz@positron.chronox.de>
+To: =?UTF-8?Q?Stephan_M=c3=bcller?= <smueller@chronox.de>, "herbert@gondor.apana.org.au" <herbert@gondor.apana.org.au>, Marcel Holtmann <marcel@holtmann.org>, Mat Martineau <mathew.j.martineau@linux.intel.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, "David S . Miller" <davem@davemloft.net>, balrogg@googlemail.com
+Cc: "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, gilad@benyossef.com
 
-From: Eric Biggers <ebiggers@google.com>
+Hi, all,
 
-Add tests to LTP for a few more longstanding bugs which were recently
-fixed in the kernel keyrings API.
+On 08/10/2017 09:39 AM, Stephan M=C3=BCller wrote:
+> Hi,
+>=20
+> This patch set adds the AF_ALG user space API to externalize the
+> asymmetric cipher API recently added to the kernel crypto API.
 
-Eric Biggers (4):
-  lapi/keyctl.h: add a few missing definitions
-  syscalls/keyctl06: new test for keyring_read() buffer overrun
-  syscalls/keyctl07: new test for oops when reading negative key
-  syscalls/add_key03: new test for forging user keyrings
+Do we have enough pros and cons so we can decide which interface to use
+for exporting akcipher/kpp to user-space?
 
- include/lapi/keyctl.h                         |  20 +++++
- runtest/syscalls                              |   3 +
- testcases/kernel/syscalls/.gitignore          |   3 +
- testcases/kernel/syscalls/add_key/add_key03.c | 122 ++++++++++++++++++++++++++
- testcases/kernel/syscalls/keyctl/keyctl06.c   |  68 ++++++++++++++
- testcases/kernel/syscalls/keyctl/keyctl07.c   |  89 +++++++++++++++++++
- 6 files changed, 305 insertions(+)
- create mode 100644 testcases/kernel/syscalls/add_key/add_key03.c
- create mode 100644 testcases/kernel/syscalls/keyctl/keyctl06.c
- create mode 100644 testcases/kernel/syscalls/keyctl/keyctl07.c
+I'm willing to invest some time to make this happen.
 
--- 
-2.14.2.920.gcf0c67979c-goog
-
+Cheers,
+ta
