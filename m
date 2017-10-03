@@ -1,41 +1,24 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 26 Oct 2017 16:16:47 +0000
-Subject: Re: TPM trusted keys code
-Message-Id: <20171026161647.k4klsehsb7i6cqu4@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 03 Oct 2017 09:06:02 +0000
+Subject: Re: [PATCH 1/3] crypto: dh_helper - return unsigned int for dh_data_size()
+Message-Id: <22466.1507021562@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171024160603.or2yflspzfrf3bfo@linux.intel.com>
-In-Reply-To: <20171024160603.or2yflspzfrf3bfo@linux.intel.com>
-To: keyrings@vger.kernel.org
+References: <20170929092106.24276-1-tudor.ambarus@microchip.com>
+In-Reply-To: <20170929092106.24276-1-tudor.ambarus@microchip.com>
+To: Tudor Ambarus <tudor.ambarus@microchip.com>
+Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
 
-On Thu, Oct 26, 2017 at 04:13:35PM +0100, David Howells wrote:
-> Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
-> 
-> > My rationale here is that it is domain specific code used by only one
-> > subsystem. For overall kernel arch it probably makes sense to have that
-> > code located in that subsystems and have TPM driver only provide great
-> > tools to implement that, right?
-> > 
-> > Just wanted to ask you before I start this effort. Thank you.
-> 
-> I have a partial asymmetric key subtype implementation that uses the TPM code
-> also - but that broken thoroughly when the tpm-2 stuff was added.  I'll have
-> to have another look at that (unless you want to), but it won't be till after
-> the next merge window.
-> 
-> My approach was to make a common library of routines that both the asymmetric
-> subtype and the trusted/encrypted types could use.
-> 
-> David
+Tudor Ambarus <tudor.ambarus@microchip.com> wrote:
 
-That sounds like a awesome idea to me!
+> -static inline int dh_data_size(const struct dh *p)
+> +static inline unsigned int dh_data_size(const struct dh *p)
+>  {
+>  	return p->key_size + p->p_size + p->g_size;
+>  }
 
-I'll continue to rework the TPM driver to the direction where you pass
-struct tpm_buf to tpm_send() function instead of plain buffer.
+If this is a problem, do you need to do range checking?
 
-After all the ad hoc code that trusted keys has to build TPM command
-buffers can be taken away and replaced with tpm_buf helpers.
-
-/Jarkko
+David
