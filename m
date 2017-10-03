@@ -1,88 +1,40 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Wed, 18 Oct 2017 00:53:27 +0000
-Subject: [PATCH v5 14/18] integrity: Introduce integrity_keyring_from_id
-Message-Id: <20171018005331.2688-15-bauerman@linux.vnet.ibm.com>
+From: James Morris <jmorris@namei.org>
+Date: Tue, 03 Oct 2017 11:05:05 +0000
+Subject: Re: [PATCH 7/7] ecryptfs: move key payload accessor functions into keystore.c
+Message-Id: <alpine.LRH.2.21.1710032204010.25033@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+References: <20170928212602.41744-1-ebiggers3@gmail.com> <20170928212602.41744-8-ebiggers3@gmail.com>
+In-Reply-To: <20170928212602.41744-8-ebiggers3@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>
 
-IMA will need to obtain the keyring used to verify file signatures so that
-it can verify the module-style signature appended to files.
+On Thu, 28 Sep 2017, Eric Biggers wrote:
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
----
- security/integrity/digsig.c    | 28 +++++++++++++++++++---------
- security/integrity/integrity.h |  1 +
- 2 files changed, 20 insertions(+), 9 deletions(-)
+> From: Eric Biggers <ebiggers@google.com>
+> 
+> As experience has shown, accessing the 'struct key' payload is very
+> error-prone, since we need to hold the key semaphore and properly
+> validate everything.  Fortunately eCryptfs only does it from one place,
+> in ecryptfs_verify_auth_tok_from_key() in keystore.c.  Therefore, move
+> the payload accessor functions like ecryptfs_get_key_payload_data() out
+> of ecryptfs_kernel.h and into keystore.c so that people might be less
+> tempted to use them directly.
+> 
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
+> ---
+>  fs/ecryptfs/ecryptfs_kernel.h | 60 -------------------------------------------
+>  fs/ecryptfs/keystore.c        | 60 +++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 60 insertions(+), 60 deletions(-)
 
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 6f9e4ce568cd..935f1b3258e7 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -48,11 +48,10 @@ static bool init_keyring __initdata;
- #define restrict_link_to_ima restrict_link_by_builtin_trusted
- #endif
- 
--int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
--			    const char *digest, int digestlen)
-+struct key *integrity_keyring_from_id(const unsigned int id)
- {
--	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
--		return -EINVAL;
-+	if (id >= INTEGRITY_KEYRING_MAX)
-+		return ERR_PTR(-EINVAL);
- 
- 	if (!keyring[id]) {
- 		keyring[id] @@ -61,18 +60,29 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			int err = PTR_ERR(keyring[id]);
- 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
- 			keyring[id] = NULL;
--			return err;
-+			return ERR_PTR(err);
- 		}
- 	}
- 
-+	return keyring[id];
-+}
-+
-+int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-+			    const char *digest, int digestlen)
-+{
-+	struct key *keyring = integrity_keyring_from_id(id);
-+
-+	if (IS_ERR(keyring) || siglen < 2)
-+		return PTR_ERR(keyring);
-+
- 	switch (sig[1]) {
- 	case 1:
- 		/* v1 API expect signature without xattr type */
--		return digsig_verify(keyring[id], sig + 1, siglen - 1,
--				     digest, digestlen);
-+		return digsig_verify(keyring, sig + 1, siglen - 1, digest,
-+				     digestlen);
- 	case 2:
--		return asymmetric_verify(keyring[id], sig, siglen,
--					 digest, digestlen);
-+		return asymmetric_verify(keyring, sig, siglen, digest,
-+					 digestlen);
- 	}
- 
- 	return -EOPNOTSUPP;
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index dd7ac4bfc89a..657ce4558984 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -132,6 +132,7 @@ int integrity_kernel_read(struct file *file, loff_t offset,
- 
- #ifdef CONFIG_INTEGRITY_SIGNATURE
- 
-+struct key *integrity_keyring_from_id(const unsigned int id);
- int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			    const char *digest, int digestlen);
- 
+Ok, I should have started at this patch :)
+
+Reviewed-by: James Morris <james.l.morris@oracle.com>
+
+
+-- 
+James Morris
+<jmorris@namei.org>
 
