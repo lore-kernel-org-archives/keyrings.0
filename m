@@ -1,58 +1,45 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 12 Oct 2017 20:16:03 +0000
-Subject: [PATCH 01/15] KEYS: encrypted: fix dereference of NULL user_key_payload
-Message-Id: <150783936328.10956.1529578849513896883.stgit@warthog.procyon.org.uk>
+From: James Morris <jmorris@namei.org>
+Date: Tue, 03 Oct 2017 11:01:21 +0000
+Subject: Re: [PATCH 5/7] ecryptfs: fix dereference of NULL user_key_payload
+Message-Id: <alpine.LRH.2.21.1710032158230.25033@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <20170928212602.41744-1-ebiggers3@gmail.com> <20170928212602.41744-6-ebiggers3@gmail.com>
+In-Reply-To: <20170928212602.41744-6-ebiggers3@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+On Thu, 28 Sep 2017, Eric Biggers wrote:
 
-A key of type "encrypted" references a "master key" which is used to
-encrypt and decrypt the encrypted key's payload.  However, when we
-accessed the master key's payload, we failed to handle the case where
-the master key has been revoked, which sets the payload pointer to NULL.
-Note that request_key() *does* skip revoked keys, but there is still a
-window where the key can be revoked before we acquire its semaphore.
+> From: Eric Biggers <ebiggers@google.com>
+> 
+> In eCryptfs, we failed to verify that the authentication token keys are
+> not revoked before dereferencing their payloads, which is problematic
+> because the payload of a revoked key is NULL.  request_key() *does* skip
+> revoked keys, but there is still a window where the key can be revoked
+> before we acquire the key semaphore.
+> 
+> Fix it by updating ecryptfs_get_key_payload_data() to return
+> -EKEYREVOKED if the key payload is NULL.  For completeness we check this
+> for "encrypted" keys as well as "user" keys, although encrypted keys
+> cannot be revoked currently.
+> 
+> Alternatively we could use key_validate(), but since we'll also need to
+> fix ecryptfs_get_key_payload_data() to validate the payload length, it
+> seems appropriate to just check the payload pointer.
+> 
+> Fixes: 237fead61998 ("[PATCH] ecryptfs: fs/Makefile and fs/Kconfig")
+> Cc: <stable@vger.kernel.org>    [v2.6.19+]
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
 
-Fix it by checking for a NULL payload, treating it like a key which was
-already revoked at the time it was requested.
+(A further cleanup might add some inline accessor functions for key data, 
+but it's not necessary now).
 
-This was an issue for master keys of type "user" only.  Master keys can
-also be of type "trusted", but those cannot be revoked.
-
-Fixes: 7e70cb497850 ("keys: add new key-type encrypted")
 Reviewed-by: James Morris <james.l.morris@oracle.com>
-Cc: <stable@vger.kernel.org>    [v2.6.38+]
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: David Safford <safford@us.ibm.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
 
- security/keys/encrypted-keys/encrypted.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index 69855ba0d3b3..535db141f4da 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -309,6 +309,13 @@ static struct key *request_user_key(const char *master_desc, const u8 **master_k
- 
- 	down_read(&ukey->sem);
- 	upayload = user_key_payload_locked(ukey);
-+	if (!upayload) {
-+		/* key was revoked before we acquired its semaphore */
-+		up_read(&ukey->sem);
-+		key_put(ukey);
-+		ukey = ERR_PTR(-EKEYREVOKED);
-+		goto error;
-+	}
- 	*master_key = upayload->data;
- 	*master_keylen = upayload->datalen;
- error:
+-- 
+James Morris
+<jmorris@namei.org>
 
