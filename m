@@ -1,38 +1,42 @@
 From: David Howells <dhowells@redhat.com>
-Date: Mon, 02 Oct 2017 21:12:04 +0000
+Date: Tue, 03 Oct 2017 09:04:30 +0000
 Subject: Re: Modular BIG_KEYS (was: Re: [PATCH v4] security/keys: rewrite all of big_key crypto)
-Message-Id: <7444.1506978724@warthog.procyon.org.uk>
+Message-Id: <22433.1507021470@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAMuHMdWd3ttH7Zdpo=bodkOBw2xiyeX_R9MhPf=Bcf0-QLhOiQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdWd3ttH7Zdpo=bodkOBw2xiyeX_R9MhPf=Bcf0-QLhOiQ@mail.gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: dhowells@redhat.com, "Jason A. Donenfeld" <Jason@zx2c4.com>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, ebiggers3@gmail.com, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Ilhan Gurel <ilhan.gurel@gmail.com>, security@kernel.org, stable <stable@vger.kernel.org>
+References: <20171002170111.GA6713@gmail.com> <CAMuHMdWd3ttH7Zdpo=bodkOBw2xiyeX_R9MhPf=Bcf0-QLhOiQ@mail.gmail.com>
+In-Reply-To: <20171002170111.GA6713@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: dhowells@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>, "Jason A. Donenfeld" <Jason@zx2c4.com>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Ilhan Gurel <ilhan.gurel@gmail.com>, security@kernel.org, stable <stable@vger.kernel.org>
 
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+Eric Biggers <ebiggers3@gmail.com> wrote:
 
-> Now this has hit mainline, the "BIG_KEYS" Kconfig symbol appeared on my
-> radar. Is there any reason this cannot be tristate?
+> (I also still need to convince myself that there aren't any race conditions
+> in key type unregistering.  It's a little weird how it changes the key type
+> to the ".dead" key type, rather than pinning the key type in memory while
+> it's still used.)
 
-It was tristate, but it got converted to bool:
+Keys are converted to the dead type and their destructors called by the gc
+whilst it holds a write lock on the key's semaphore, so keyctl() calls
+shouldn't be a problem as they all hold a read-lock or a write-lock on the
+content.
 
-	commit 2eaf6b5dcafda2b8c22930eff7f48a364fce1741
-	KEYS: Make BIG_KEYS boolean
+/proc/keys does things under the key_serial_lock and RCU, so if a key type's
+->describe() function looks at the payload, then it should use RCU conditions.
+Note that this doesn't affect the keyring_describe() as that only looks at a
+value that is stored in the key struct - and the same for user_describe() and
+big_key_describe().  asymmetric_key_describe(), OTOH...  Maybe the simplest
+thing to do is to take key_serial_lock in key_garbage_collector() around the
+code that changes the key type.
 
-and then:
+Inside the kernel, things are murkier as the kernel can reach inside a key
+without taking the semaphore.  If it does so, it must use RCU or some other
+mechanism to prevent the key payload from being destroyed under it.
 
-	commit a1f2bdf338f15dbad10ee6362891ebf79244858b
-	security/keys: make big_key.c explicitly non-modular
-
-> So to save kernel size, I wan't to save N, but for a distro kernel that might
-> have Kerberos users, you currently need to say Y, while M would be nicer.
-
-If you want to do that, you'll need to implement demand-loading of key type
-modules.
-
-Note that you'd end up using a minimum of a whole page as a module rather than
-~2K if built in (I know, that's a compromise you have to decide on).
+With AF_RXRPC, I think I'm doing this wrong.  I think I need to move the
+destruction of the key type to after I've unregistered the network namespace
+handling as the latter destroys connections which might be using the key.
 
 David
