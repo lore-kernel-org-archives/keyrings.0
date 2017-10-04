@@ -1,90 +1,48 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Thu, 26 Oct 2017 22:02:23 +0000
-Subject: Re: [PATCH v5 18/18] ima: Write modsig to the measurement list
-Message-Id: <87r2tpwosw.fsf@linux.vnet.ibm.com>
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Wed, 04 Oct 2017 10:27:00 +0000
+Subject: [PATCH] security/keys: BIG_KEY requires CONFIG_CRYPTO
+Message-Id: <20171004102722.1834761-1-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com> <20171018005331.2688-19-bauerman@linux.vnet.ibm.com> <1509048454.5886.108.camel@linux.vnet.ibm.com>
-In-Reply-To: <1509048454.5886.108.camel@linux.vnet.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+To: linux-security-module@vger.kernel.org
 
+The recent rework introduced a possible randconfig build failure
+when CONFIG_CRYPTO configured to only allow modules:
 
-Hello Mimi,
+security/keys/big_key.o: In function `big_key_crypt':
+big_key.c:(.text+0x29f): undefined reference to `crypto_aead_setkey'
+security/keys/big_key.o: In function `big_key_init':
+big_key.c:(.init.text+0x1a): undefined reference to `crypto_alloc_aead'
+big_key.c:(.init.text+0x45): undefined reference to `crypto_aead_setauthsize'
+big_key.c:(.init.text+0x77): undefined reference to `crypto_destroy_tfm'
+crypto/gcm.o: In function `gcm_hash_crypt_remain_continue':
+gcm.c:(.text+0x167): undefined reference to `crypto_ahash_finup'
+crypto/gcm.o: In function `crypto_gcm_exit_tfm':
+gcm.c:(.text+0x847): undefined reference to `crypto_destroy_tfm'
 
-Thanks for your review.
+When we 'select CRYPTO' like the other users, we always get a
+configuration that builds.
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
+Fixes: 428490e38b2e ("security/keys: rewrite all of big_key crypto")
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ security/keys/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-> On Tue, 2017-10-17 at 22:53 -0200, Thiago Jung Bauermann wrote:
->
->> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
->> index 6a2d960fbd92..0d3390de7432 100644
->> --- a/security/integrity/ima/ima_main.c
->> +++ b/security/integrity/ima/ima_main.c
->> @@ -246,7 +246,35 @@ static int process_measurement(struct file *file, char *buf, loff_t size,
->>  		rc = ima_appraise_measurement(func, iint, file, buf, size,
->>  					      pathname, &xattr_value,
->>  					      &xattr_len, opened);
->> -	if (action & IMA_MEASURE)
->> +
->> +	/*
->> +	 * MODSIG has one corner case we need to deal with here:
->> +	 *
->> +	 * Suppose the policy has one measure rule for one hook and an appraise
->> +	 * rule for a different hook. Suppose also that the template requires
->> +	 * the signature to be stored in the measurement list.
->> +	 *
->> +	 * If a file containing a MODSIG is measured by the first hook before
->> +	 * being appraised by the second one, the corresponding entry in the
->> +	 * measurement list will not contain the MODSIG because we only fetch it
->> +	 * for IMA_APPRAISAL. We don't fetch it earlier because if the file has
->> +	 * both a DIGSIG and a MODSIG it's not possible to know which one will
->> +	 * be valid without actually doing the appraisal.
->> +	 *
->> +	 * Therefore, after appraisal of a MODSIG signature we need to store the
->> +	 * measurement again if the current template requires storing the
->> +	 * signature.
->
-> Yes, all true, but this long comment doesn't belong here in the middle
-> of process_measurement().
->
->> +	 * With the opposite ordering (the appraise rule triggering before the
->> +	 * measurement rule) there is the same problem but it's not possible to
->> +	 * do anything about it because at the time we are appraising the
->> +	 * signature it's impossible to know whether a measurement will ever
->> +	 * need to be stored for this file.
->> +	 */
->
-> With the template format "ima-sig", the verified file signature needs
-> to be included in the measurement list. Based on this file signature,
-> the attestation server can validate the signature.
->
-> In this case, where the appraisal comes first followed by the
-> measurement, the appraised file signature is included in the
-> measurement list. I don't see the problem here.
-
-I think I forgot that during appraisal the modsig is copied into the
-iint cache and that it will be used when the measure rule is trigerred.
-I'll drop that last paragraph.
-
->
->> +	if ((action & IMA_MEASURE) || ((iint->flags & IMA_MEASURE) &&
->> +				       xattr_value &&
->> +				       xattr_value->type = IMA_MODSIG &&
->> +				       ima_current_template_has_sig()))
->
-> Like the clean up you did elsewhere, this new set of tests should be
-> made into a function. The comment could placed along with the new
-> function.
-
-Ok. I didn't create a function because these tests are only done here,
-but I agree that it will make the code clearer, and be a better place
-for the big comment as well. Will do in the next version.
-
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index 91eafada3164..6462e6654ccf 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -45,6 +45,7 @@ config BIG_KEYS
+ 	bool "Large payload keys"
+ 	depends on KEYS
+ 	depends on TMPFS
++	select CRYPTO
+ 	select CRYPTO_AES
+ 	select CRYPTO_GCM
+ 	help
 -- 
-Thiago Jung Bauermann
-IBM Linux Technology Center
+2.9.0
 
