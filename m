@@ -1,56 +1,129 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 26 Oct 2017 20:53:04 +0000
-Subject: Re: [PATCH v5 00/18] Appended signatures support for IMA appraisal
-Message-Id: <1509051184.5886.139.camel@linux.vnet.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 05 Oct 2017 11:00:24 +0000
+Subject: Draft manpage explaining kernel lockdown
+Message-Id: <7969.1507201224@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>, mtk.manpages@gmail.com
+Cc: dhowells@redhat.com, mcgrof@kernel.org, johannes@sipsolutions.net, linux-man@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Tue, 2017-10-17 at 22:53 -0200, Thiago Jung Bauermann wrote:
-> Hello,
-> 
-> The main highlight in this version is that it fixes a bug where the modsig
-> wasn't being included in the measurement list if the appraised file was
-> already measured by another rule. The fix is in the last patch.
-> 
-> Another change is that the last patch in the v4 series ("ima: Support
-> module-style appended signatures for appraisal") has been broken up into
-> smaller patches. I may have overdone it...
-> 
-> Finally, I have added some patches removing superfluous parentheses from
-> expressions. IMO these patches make it easier (and more pleasant) to read
-> the code, and thus easier to understand it. Since I'm not sure how welcome
-> the changes are, I split them in 3 "levels" in increasing potential for
-> conflict with patches from other people (they can be squashed together when
-> applied):
-> 
-> 1. patch 2 contains the bare minimum, changing only lines that are also
->    touched by other patches in the series;
-> 
-> 2. patch 3 cleans up all the files that are touched by this patch series;
-> 
-> 3. patch 4 cleans up all other EVM and IMA files that weren't already fixed
->    by the previous patches.
-> 
-> If unwanted, patches 3 and 4 can be simply skipped without affecting the
-> rest of the patches. I have already rebased them from v4.13-rc2 to
-> v4.14-rc3 and now to linux-integrity/next with very few easy to resolve
-> conflicts, so I think they are worth keeping.
-> 
-> These patches apply on top of today's linux-integrity/next.
+Hi Ard, Michael,
 
-This cover letter and the patch descriptions are well written,
-explaining what and why you're making this change.  The problem is
-that I don't agree that fewer parentheses makes the code more
-readable.  When you repost the patches (for other reasons), please
-don't include these changes.
+Attached is a draft for a manual page (kernel_lockdown.7) that I intend to
+point at from messages emitted when the kernel prohibits something because the
+kernel is in 'lockdown' mode, typically triggered by EFI secure boot.
 
-thanks,
+Let me know what you think.
 
-Mimi
+David
+---
+.\"
+.\" Copyright (C) 2017 Red Hat, Inc. All Rights Reserved.
+.\" Written by David Howells (dhowells@redhat.com)
+.\"
+.\" %%%LICENSE_START(GPLv2+_SW_ONEPARA)
+.\" This program is free software; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License
+.\" as published by the Free Software Foundation; either version
+.\" 2 of the License, or (at your option) any later version.
+.\" %%%LICENSE_END
+.\"
+.TH "KERNEL LOCKDOWN" 7 2017-10-05 Linux "Linux Programmer's Manual"
+.SH NAME
+Kernel Lockdown \- Kernel image access prevention feature
+.SH DESCRIPTION
+The Kernel Lockdown feature is designed to prevent both direct and indirect
+access to a running kernel image, attempting to protect against unauthorised
+modification of the kernel image and to prevent access to security and
+cryptographic data located in kernel memory, whilst still permitting driver
+modules to be loaded.
+.P
+Lockdown is typically enabled during boot and may be terminated, if configured,
+by typing a special key combination on a directly attached physical keyboard.
+.P
+If a prohibited or restricted feature is accessed or used, the kernel will emit
+a message that looks like:
+.P
+.RS
+	Lockdown: X is restricted, see man kernel_lockdown(7)
+.RE
+.P
+where X indicates what is restricted.
+.P
+On an EFI-enabled x86 or arm64 machine, lockdown will be automatically enabled
+if the system boots in EFI Secure Boot mode.
+.P
+If the kernel is appropriately configured, lockdown may be lifted by typing the
+appropriate sequence on a directly attached physical keyboard.  For x86
+machines, this is
+.IR SysRq+x .
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH COVERAGE
+When lockdown is in effect, a number of things are disabled or restricted in
+use.  This includes special device files and kernel services that allow direct
+access of the kernel image:
+.P
+.RS
+/dev/mem
+.br
+/dev/kmem
+.br
+/dev/kcore
+.br
+/dev/ioports
+.br
+BPF memory access functions
+.RE
+.P
+and the ability to directly configure and control devices, so as to prevent the
+use of a device to access or modify a kernel image:
+.P
+.RS
+The use of module parameters that directly specify hardware parameters to
+drivers through the kernel command line or when loading a module.
+.P
+The use of direct PCI BAR access.
+.P
+The use of the ioperm and iopl instructions on x86.
+.P
+The use of the KD*IO console ioctls.
+.P
+The use of the TIOCSSERIAL serial ioctl.
+.P
+The alteration of MSR registers on x86.
+.P
+The replacement of the PCMCIA CIS.
+.P
+The overriding of ACPI tables.
+.P
+The use of ACPI error injection.
+.P
+The specification of the ACPI RDSP address.
+.P
+The use of ACPI custom methods.
+.RE
+.P
+The following facilities are restricted:
+.P
+.RS
+Only validly signed modules may be loaded.
+.P
+Only validly signed binaries may be kexec'd.
+.P
+Only validly signed device firmware may be loaded.
+.P
+Only validly signed wifi databases may be use.
+.P
+Unencrypted hibernation/suspend to swap are disallowed as the kernel image is
+saved to a medium that can then be accessed.
+.P
+Use of debugfs is not permitted as this allows a whole range of actions
+including direct configuration of, access to and driving of hardware.
+.RE
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH SEE ALSO
+.ad l
+.nh
 
