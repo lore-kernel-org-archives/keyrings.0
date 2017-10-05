@@ -1,51 +1,105 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 12 Oct 2017 20:16:18 +0000
-Subject: [PATCH 03/15] lib/digsig: fix dereference of NULL user_key_payload
-Message-Id: <150783937851.10956.16601369966019710171.stgit@warthog.procyon.org.uk>
+From: George Wilson <ltcgcw@us.ibm.com>
+Date: Thu, 05 Oct 2017 22:59:57 +0000
+Subject: Re: [PATCH 0/8] KEYS: keyctl operations for asymmetric keys [ver #2]
+Message-Id: <20171005225957.GA13267@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <146668965425.2977.13357101274301968911.stgit@warthog.procyon.org.uk>
+In-Reply-To: <146668965425.2977.13357101274301968911.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: mathew.j.martineau@linux.intel.com, dwmw2@infradead.org, tadeusz.struk@intel.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org, subras@us.ibm.com
 
-From: Eric Biggers <ebiggers@google.com>
+On Thu, Jun 23, 2016 at 02:47:34PM +0100, David Howells wrote:
+> 
+> Here's a set of patches that provides keyctl access for asymmetric keys,
+> including a query function, and functions to do encryption, decryption,
+> signature creation and signature verification.
+> 
+> I've added a PKCS#8 asymmetric key parser so that you can load an RSA private
+> key into the kernel.  Currently only DER-encoded and unencrypted PKCS#8 is
+> supported.  Encryption and verification can use a public key from an X.509
+> cert, but signing and decryption require a private key, though encryption and
+> verification can use that too.
+> 
+> Example usage:
+> 
+> 	j=`openssl pkcs8 -in private_key.pem -topk8 -nocrypt -outform DER | \
+> 	    keyctl padd asymmetric foo @s`
+> 	echo -n abcdefghijklmnopqrst >/tmp/data
+> 	keyctl pkey_encrypt $j /tmp/data enc=pkcs1 >/tmp/enc
+> 	keyctl pkey_decrypt $j /tmp/enc enc=pkcs1 >/tmp/dec
+> 	cmp /tmp/data /tmp/dec
+> 	keyctl pkey_sign $j /tmp/data enc=pkcs1 hash=sha1 >/tmp/sig
+> 	keyctl pkey_verify $j /tmp/data /tmp/sig enc=pkcs1 hash=sha1
+> 
+> Changes:
+> 
+>  (*) I've taken out the password parameters for the moment as there isn't
+>      yet a subtype that uses them.  I have, however, left space in the
+>      keyctl UAPI to add them back later.
+> 
+> The kernel patches can be found here also:
+> 
+> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-asym-keyctl
+> 
+> The keyutils changes needed can be found here:
+> 
+> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/log/?h=pkey
+> 
+> David
+> ---
+> David Howells (8):
+>       KEYS: Provide key type operations for asymmetric key ops
+>       KEYS: Provide keyctls to drive the new key type ops for asymmetric keys
+>       KEYS: Provide missing asymmetric key subops for new key type ops
+>       KEYS: Make the X.509 and PKCS7 parsers supply the sig encoding type
+>       KEYS: Provide software public key query function
+>       KEYS: Allow the public_key struct to hold a private key
+>       KEYS: Implement encrypt, decrypt and sign for software asymmetric key
+>       KEYS: Implement PKCS#8 RSA Private Key parser
+> 
+> 
+>  Documentation/crypto/asymmetric-keys.txt  |   26 ++
+>  Documentation/security/keys.txt           |  217 +++++++++++++++++++
+>  crypto/asymmetric_keys/Kconfig            |   10 +
+>  crypto/asymmetric_keys/Makefile           |   13 +
+>  crypto/asymmetric_keys/asymmetric_keys.h  |    3 
+>  crypto/asymmetric_keys/asymmetric_type.c  |   59 +++++
+>  crypto/asymmetric_keys/pkcs7_parser.c     |    1 
+>  crypto/asymmetric_keys/pkcs8.asn1         |   24 ++
+>  crypto/asymmetric_keys/pkcs8_parser.c     |  184 +++++++++++++++++
+>  crypto/asymmetric_keys/public_key.c       |  195 ++++++++++++++++--
+>  crypto/asymmetric_keys/signature.c        |   95 +++++++++
+>  crypto/asymmetric_keys/x509_cert_parser.c |   21 +-
+>  include/crypto/public_key.h               |   14 +
+>  include/keys/asymmetric-subtype.h         |    9 +
+>  include/linux/key-type.h                  |   11 +
+>  include/linux/keyctl.h                    |   46 ++++
+>  include/uapi/linux/keyctl.h               |   30 +++
+>  security/keys/Makefile                    |    1 
+>  security/keys/compat.c                    |   18 ++
+>  security/keys/internal.h                  |   39 ++++
+>  security/keys/keyctl.c                    |   24 ++
+>  security/keys/keyctl_pkey.c               |  323 +++++++++++++++++++++++++++++
+>  22 files changed, 1319 insertions(+), 44 deletions(-)
+>  create mode 100644 crypto/asymmetric_keys/pkcs8.asn1
+>  create mode 100644 crypto/asymmetric_keys/pkcs8_parser.c
+>  create mode 100644 include/linux/keyctl.h
+>  create mode 100644 security/keys/keyctl_pkey.c
+> 
 
-digsig_verify() requests a user key, then accesses its payload.
-However, a revoked key has a NULL payload, and we failed to check for
-this.  request_key() *does* skip revoked keys, but there is still a
-window where the key can be revoked before we acquire its semaphore.
+Hi David,
 
-Fix it by checking for a NULL payload, treating it like a key which was
-already revoked at the time it was requested.
+To lend support for this patch series, we have a compelling use case in OpenPOWER
+firmware.  We need to verify that our key management command queue elements are
+properly signed.  However, we have limited flash storage space and want to avoid
+dragging in a userspace library.  Sub Swaminathan (on copy) has prototyped a
+solution using these patches.  We'd very much like to see them applied.
 
-Fixes: 051dbb918c7f ("crypto: digital signature verification support")
-Reviewed-by: James Morris <james.l.morris@oracle.com>
-Cc: <stable@vger.kernel.org>    [v3.3+]
-Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- lib/digsig.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/lib/digsig.c b/lib/digsig.c
-index 03d7c63837ae..6ba6fcd92dd1 100644
---- a/lib/digsig.c
-+++ b/lib/digsig.c
-@@ -87,6 +87,12 @@ static int digsig_verify_rsa(struct key *key,
- 	down_read(&key->sem);
- 	ukp = user_key_payload_locked(key);
- 
-+	if (!ukp) {
-+		/* key was revoked before we acquired its semaphore */
-+		err = -EKEYREVOKED;
-+		goto err1;
-+	}
-+
- 	if (ukp->datalen < sizeof(*pkh))
- 		goto err1;
- 
+-- 
+George Wilson
+IBM Linux Technology Center
+Security Development
 
