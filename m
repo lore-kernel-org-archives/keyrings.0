@@ -1,42 +1,55 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 12 Oct 2017 20:17:10 +0000
-Subject: [PATCH 10/15] KEYS: checking the input id parameters before finding asymmetric key
-Message-Id: <150783943076.10956.7407914508155575420.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 09 Oct 2017 19:40:00 +0000
+Subject: [PATCH v2] FS-Cache: fix dereference of NULL user_key_payload
+Message-Id: <20171009194000.66958-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-From: Lee, Chun-Yi <joeyli.kernel@gmail.com>
+From: Eric Biggers <ebiggers@google.com>
 
-For finding asymmetric key, the input id_0 and id_1 parameters can
-not be NULL at the same time. This patch adds the BUG_ON checking
-for id_0 and id_1.
+When the file /proc/fs/fscache/objects (available with
+CONFIG_FSCACHE_OBJECT_LIST=y) is opened, we request a user key with
+description "fscache:objlist", then access its payload.  However, a
+revoked key has a NULL payload, and we failed to check for this.
+request_key() *does* skip revoked keys, but there is still a window
+where the key can be revoked before we access its payload.
 
-Cc: David Howells <dhowells@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Fix it by checking for a NULL payload, treating it like a key which was
+already revoked at the time it was requested.
+
+Fixes: 4fbf4291aa15 ("FS-Cache: Allow the current state of all objects to be dumped")
+Reviewed-by: James Morris <james.l.morris@oracle.com>
+Cc: <stable@vger.kernel.org>    [v2.6.32+]
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
 
- crypto/asymmetric_keys/asymmetric_type.c |    2 ++
- 1 file changed, 2 insertions(+)
+Changed since v1: added Reviewed-by and resent as standalone patch.
+Can this please be taken through the keyrings tree?
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index a597f5c5a222..39aecad286fe 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -57,6 +57,8 @@ struct key *find_asymmetric_key(struct key *keyring,
- 	char *req, *p;
- 	int len;
+ fs/fscache/object-list.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/fs/fscache/object-list.c b/fs/fscache/object-list.c
+index b5ab06fabc60..0438d4cd91ef 100644
+--- a/fs/fscache/object-list.c
++++ b/fs/fscache/object-list.c
+@@ -331,6 +331,13 @@ static void fscache_objlist_config(struct fscache_objlist_data *data)
+ 	rcu_read_lock();
  
-+	BUG_ON(!id_0 && !id_1);
+ 	confkey = user_key_payload_rcu(key);
++	if (!confkey) {
++		/* key was revoked */
++		rcu_read_unlock();
++		key_put(key);
++		goto no_config;
++	}
 +
- 	if (id_0) {
- 		lookup = id_0->data;
- 		len = id_0->len;
+ 	buf = confkey->data;
+ 
+ 	for (len = confkey->datalen - 1; len >= 0; len--) {
+-- 
+2.14.2.920.gcf0c67979c-goog
 
