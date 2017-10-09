@@ -1,82 +1,74 @@
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 10 Oct 2017 00:22:49 +0000
-Subject: [PATCH RFC tip/core/rcu 15/15] keyring: Remove now-redundant smp_read_barrier_depends()
-Message-Id: <1507594969-8347-15-git-send-email-paulmck@linux.vnet.ibm.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 09 Oct 2017 19:51:28 +0000
+Subject: [PATCH v2 2/3] ecryptfs: fix out-of-bounds read of key payload
+Message-Id: <20171009195129.68610-2-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171010001951.GA6476@linux.vnet.ibm.com>
-In-Reply-To: <20171010001951.GA6476@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, mark.rutland@arm.com, dhowells@redhat.com, linux-arch@vger.kernel.org, peterz@infradead.org, will.deacon@arm.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+References: <20171009195129.68610-1-ebiggers3@gmail.com>
+In-Reply-To: <20171009195129.68610-1-ebiggers3@gmail.com>
+To: linux-security-module@vger.kernel.org
 
-Now that the associative-array library properly heads dependency chains,
-the various smp_read_barrier_depends() calls in security/keys/keyring.c
-are no longer needed.  This commit therefore removes them.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: James Morris <james.l.morris@oracle.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: <keyrings@vger.kernel.org>
-Cc: <linux-security-module@vger.kernel.org>
+eCryptfs blindly casts the user-supplied key payload to a
+'struct ecryptfs_auth_tok' without validating that the payload does, in
+fact, have the size of a 'struct ecryptfs_auth_tok'.  Fix it.
+
+Fixes: 237fead61998 ("[PATCH] ecryptfs: fs/Makefile and fs/Kconfig")
+Reviewed-by: James Morris <james.l.morris@oracle.com>
+Cc: <stable@vger.kernel.org>    [v2.6.19+]
+Cc: Michael Halcrow <mhalcrow@google.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/keys/keyring.c | 7 -------
- 1 file changed, 7 deletions(-)
 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 4fa82a8a9c0e..fb44c9169125 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -712,7 +712,6 @@ static bool search_nested_keyrings(struct key *keyring,
- 		 * doesn't contain any keyring pointers.
- 		 */
- 		shortcut = assoc_array_ptr_to_shortcut(ptr);
--		smp_read_barrier_depends();
- 		if ((shortcut->index_key[0] & ASSOC_ARRAY_FAN_MASK) != 0)
- 			goto not_this_keyring;
+Changed since v1: added Reviewed-by and resent in series with just the
+ecryptfs patches.  Can this please be taken through the ecryptfs tree?
+
+ fs/ecryptfs/ecryptfs_kernel.h | 6 ++++++
+ fs/ecryptfs/keystore.c        | 4 ++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index 3fbc0ff79699..945844d5f0ef 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -93,6 +93,9 @@ ecryptfs_get_encrypted_key_payload_data(struct key *key)
+ 	if (!payload)
+ 		return ERR_PTR(-EKEYREVOKED);
  
-@@ -722,8 +721,6 @@ static bool search_nested_keyrings(struct key *keyring,
++	if (payload->payload_datalen != sizeof(struct ecryptfs_auth_tok))
++		return ERR_PTR(-EINVAL);
++
+ 	return (struct ecryptfs_auth_tok *)payload->payload_data;
+ }
+ 
+@@ -129,6 +132,9 @@ ecryptfs_get_key_payload_data(struct key *key)
+ 	if (!ukp)
+ 		return ERR_PTR(-EKEYREVOKED);
+ 
++	if (ukp->datalen != sizeof(struct ecryptfs_auth_tok))
++		return ERR_PTR(-EINVAL);
++
+ 	return (struct ecryptfs_auth_tok *)ukp->data;
+ }
+ 
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index fa218cd64f74..95e20ab67df3 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -471,6 +471,10 @@ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
+ 	(*auth_tok) = ecryptfs_get_key_payload_data(auth_tok_key);
+ 	if (IS_ERR(*auth_tok)) {
+ 		rc = PTR_ERR(*auth_tok);
++		if (rc = -EINVAL) {
++			ecryptfs_printk(KERN_ERR,
++					"Authentication token payload has wrong length\n");
++		}
+ 		*auth_tok = NULL;
+ 		goto out;
  	}
- 
- 	node = assoc_array_ptr_to_node(ptr);
--	smp_read_barrier_depends();
--
- 	ptr = node->slots[0];
- 	if (!assoc_array_ptr_is_meta(ptr))
- 		goto begin_node;
-@@ -735,7 +732,6 @@ static bool search_nested_keyrings(struct key *keyring,
- 	kdebug("descend");
- 	if (assoc_array_ptr_is_shortcut(ptr)) {
- 		shortcut = assoc_array_ptr_to_shortcut(ptr);
--		smp_read_barrier_depends();
- 		ptr = READ_ONCE(shortcut->next_node);
- 		BUG_ON(!assoc_array_ptr_is_node(ptr));
- 	}
-@@ -743,7 +739,6 @@ static bool search_nested_keyrings(struct key *keyring,
- 
- begin_node:
- 	kdebug("begin_node");
--	smp_read_barrier_depends();
- 	slot = 0;
- ascend_to_node:
- 	/* Go through the slots in a node */
-@@ -791,14 +786,12 @@ static bool search_nested_keyrings(struct key *keyring,
- 
- 	if (ptr && assoc_array_ptr_is_shortcut(ptr)) {
- 		shortcut = assoc_array_ptr_to_shortcut(ptr);
--		smp_read_barrier_depends();
- 		ptr = READ_ONCE(shortcut->back_pointer);
- 		slot = shortcut->parent_slot;
- 	}
- 	if (!ptr)
- 		goto not_this_keyring;
- 	node = assoc_array_ptr_to_node(ptr);
--	smp_read_barrier_depends();
- 	slot++;
- 
- 	/* If we've ascended to the root (zero backpointer), we must have just
 -- 
-2.5.2
+2.14.2.920.gcf0c67979c-goog
 
