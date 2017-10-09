@@ -1,69 +1,53 @@
-From: Michael Halcrow <mhalcrow@google.com>
-Date: Fri, 27 Oct 2017 20:28:28 +0000
-Subject: Re: [RFC PATCH 07/25] fs/inode.c: export inode_lru_list_del()
-Message-Id: <20171027202828.GA10022@google.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 09 Oct 2017 19:46:18 +0000
+Subject: [PATCH v2] fscrypt: fix dereference of NULL user_key_payload
+Message-Id: <20171009194618.67494-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
- <20171023214058.128121-8-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-8-ebiggers3-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-To: Eric Biggers <ebiggers3-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-fscrypt-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-ext4-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-f2fs-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org, linux-mtd-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@public.gmane.org, linux-api-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, "Theodore Y . Ts'o" <tytso-3s7WtUTddSA@public.gmane.org>, Jaegeuk Kim <jaegeuk-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Gwendal Grignou <gwendal-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>, Ryo Hashimoto <hashimoto-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>, Sarthak Kukreti <sarthakkukreti-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>, Nick Desaulniers <ndesaulniers-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, Eric Biggers <ebiggers-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+To: linux-fscrypt@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>
+Cc: keyrings@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-On Mon, Oct 23, 2017 at 02:40:40PM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> When a filesystem encryption key is removed, we need all files which had
-> been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
-> again.  This is most easily done by evicting the inodes.  This can
-> currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
-> that is overkill and not usable by non-root users.  In preparation for
-> allowing fs/crypto/ to evict just the needed inodes, export
-> inode_lru_list_del() to modules.
-> 
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+From: Eric Biggers <ebiggers@google.com>
 
-Reviewed-by: Michael Halcrow <mhalcrow@google.com>
+When an fscrypt-encrypted file is opened, we request the file's master
+key from the keyrings service as a logon key, then access its payload.
+However, a revoked key has a NULL payload, and we failed to check for
+this.  request_key() *does* skip revoked keys, but there is still a
+window where the key can be revoked before we acquire its semaphore.
 
-> ---
->  fs/inode.c         | 5 ++---
->  include/linux/fs.h | 1 +
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index d1e35b53bb23..30ce98956801 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -420,13 +420,12 @@ void inode_add_lru(struct inode *inode)
->  		inode_lru_list_add(inode);
->  }
->  
-> -
-> -static void inode_lru_list_del(struct inode *inode)
-> +void inode_lru_list_del(struct inode *inode)
->  {
-> -
->  	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
->  		this_cpu_dec(nr_unused);
->  }
-> +EXPORT_SYMBOL_GPL(inode_lru_list_del);
->  
->  /**
->   * inode_sb_list_add - add inode to the superblock list of inodes
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 8cfb0877d32c..2833ace2f01d 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2879,6 +2879,7 @@ static inline void lockdep_annotate_inode_mutex_key(struct inode *inode) { };
->  extern void unlock_new_inode(struct inode *);
->  extern unsigned int get_next_ino(void);
->  extern void evict_inodes(struct super_block *sb);
-> +extern void inode_lru_list_del(struct inode *inode);
->  
->  extern void __iget(struct inode * inode);
->  extern void iget_failed(struct inode *);
-> -- 
-> 2.15.0.rc0.271.g36b669edcc-goog
-> 
+Fix it by checking for a NULL payload, treating it like a key which was
+already revoked at the time it was requested.
+
+Fixes: 88bd6ccdcdd6 ("ext4 crypto: add encryption key management facilities")
+Reviewed-by: James Morris <james.l.morris@oracle.com>
+Cc: <stable@vger.kernel.org>    [v4.1+]
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+
+Changed since v1: added Reviewed-by and resent as standalone patch.
+Can this please be taken through the fscrypt tree?
+
+ fs/crypto/keyinfo.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
+index 018c588c7ac3..8e704d12a1cf 100644
+--- a/fs/crypto/keyinfo.c
++++ b/fs/crypto/keyinfo.c
+@@ -109,6 +109,11 @@ static int validate_user_key(struct fscrypt_info *crypt_info,
+ 		goto out;
+ 	}
+ 	ukp = user_key_payload_locked(keyring_key);
++	if (!ukp) {
++		/* key was revoked before we acquired its semaphore */
++		res = -EKEYREVOKED;
++		goto out;
++	}
+ 	if (ukp->datalen != sizeof(struct fscrypt_key)) {
+ 		res = -EINVAL;
+ 		goto out;
+-- 
+2.14.2.920.gcf0c67979c-goog
+
