@@ -1,128 +1,178 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 23 Oct 2017 21:40:54 +0000
-Subject: [RFC PATCH 21/25] fscrypt: require that key be added when setting a v2 encryption policy
-Message-Id: <20171023214058.128121-22-ebiggers3@gmail.com>
+Date: Tue, 10 Oct 2017 17:51:20 +0000
+Subject: [PATCH 4/4] syscalls/add_key03: new test for forging user keyrings
+Message-Id: <20171010175120.90586-5-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
-To: linux-fscrypt@vger.kernel.org
-Cc: Ryo Hashimoto <hashimoto@chromium.org>, Gwendal Grignou <gwendal@chromium.org>, "Theodore Y . Ts'o" <tytso@mit.edu>, Eric Biggers <ebiggers@google.com>, linux-api@vger.kernel.org, Nick Desaulniers <ndesaulniers@google.com>, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, Michael Halcrow <mhalcrow@google.com>, Sarthak Kukreti <sarthakkukreti@chromium.org>, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
+To: keyrings@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-By looking up the master keys in a filesystem-level keyring rather than
-in the calling processes' key hierarchy, it becomes possible for a user
-to set an encryption policy which refers to some key they don't actually
-know, then encrypt their files using that key.  Cryptographically this
-shouldn't actually be a major problem; for one, every file will still be
-encrypted with a unique derived key, rather than with the master key
-directly.  But to be on the safe side, enforce that a v2 encryption
-policy can only be set if the user has previously added the key, or has
-capable(CAP_FOWNER).
-
-We tolerate that this problem will continue to exist for v1 encryption
-policies, however; there is no way around that.
+Add a test for a bug which allowed a user to create the user and user
+session keyrings for another user.
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- fs/crypto/fscrypt_private.h |  2 ++
- fs/crypto/keyinfo.c         | 42 ++++++++++++++++++++++++++++++++++++++++++
- fs/crypto/policy.c          |  6 ++++++
- 3 files changed, 50 insertions(+)
+ runtest/syscalls                              |   1 +
+ testcases/kernel/syscalls/.gitignore          |   1 +
+ testcases/kernel/syscalls/add_key/add_key03.c | 122 ++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/add_key/add_key03.c
 
-diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
-index d0a63086fa95..7a0d5b6c2504 100644
---- a/fs/crypto/fscrypt_private.h
-+++ b/fs/crypto/fscrypt_private.h
-@@ -234,6 +234,8 @@ extern struct page *fscrypt_alloc_bounce_page(struct fscrypt_ctx *ctx,
- 					      gfp_t gfp_flags);
+diff --git a/runtest/syscalls b/runtest/syscalls
+index 649dbfa6c..0d2254393 100644
+--- a/runtest/syscalls
++++ b/runtest/syscalls
+@@ -13,6 +13,7 @@ acct01 acct01
  
- /* keyinfo.c */
-+extern int fscrypt_verify_key_added(struct super_block *sb,
-+				    const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE]);
- extern struct key_type key_type_fscrypt_mk;
- extern struct key_type key_type_fscrypt_mk_user;
- extern void __exit fscrypt_essiv_cleanup(void);
-diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
-index 1fe44983239a..fd59f37dad10 100644
---- a/fs/crypto/keyinfo.c
-+++ b/fs/crypto/keyinfo.c
-@@ -851,6 +851,48 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
- }
- EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
+ add_key01 add_key01
+ add_key02 add_key02
++add_key03 add_key03
  
+ adjtimex01 adjtimex01
+ adjtimex02 adjtimex02
+diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
+index 53ad7ca2b..7dea3b2c7 100644
+--- a/testcases/kernel/syscalls/.gitignore
++++ b/testcases/kernel/syscalls/.gitignore
+@@ -8,6 +8,7 @@
+ /acct/acct01
+ /add_key/add_key01
+ /add_key/add_key02
++/add_key/add_key03
+ /adjtimex/adjtimex01
+ /adjtimex/adjtimex02
+ /alarm/alarm01
+diff --git a/testcases/kernel/syscalls/add_key/add_key03.c b/testcases/kernel/syscalls/add_key/add_key03.c
+new file mode 100644
+index 000000000..8c68f8635
+--- /dev/null
++++ b/testcases/kernel/syscalls/add_key/add_key03.c
+@@ -0,0 +1,122 @@
 +/*
-+ * Verify that the current user has added a master key that has the given
-+ * identifier (returns -ENOKEY if not).  This is needed to prevent a user from
-+ * encrypting their files using some other user's key which they don't actually
-+ * know.  Cryptographically speaking, it's debatable how much of a problem this
-+ * actually would be, but it's best to just forbid it.
++ * Copyright (c) 2017 Google, Inc.
 + *
-+ * The system administrator (CAP_FOWNER) can override this, which should be
-+ * enough for any use cases where encryption policies are being set using keys
-+ * that were chosen ahead of time but aren't available at the moment.
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program, if not, see <http://www.gnu.org/licenses/>.
 + */
-+int fscrypt_verify_key_added(struct super_block *sb,
-+			     const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE])
++
++/*
++ * Regression test for commit 237bbd29f7a0 ("KEYS: prevent creating a different
++ * user's keyrings").  The bug allowed any random user to create a keyring named
++ * "_uid.$UID" (or "_uid_ses.$UID"), and it would become the user keyring (or
++ * user session keyring) for user $UID, provided that it hadn't already been
++ * created.
++ *
++ * This test must be run as root so that it has permission to switch to another
++ * user ID and check whether the keyrings are wrong.  However, the underlying
++ * bug is actually reachable/exploitable by a non-root user.
++ */
++
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++#include "tst_test.h"
++#include "lapi/keyctl.h"
++
++static key_serial_t create_keyring(const char *description)
 +{
-+	struct fscrypt_key_specifier mk_spec;
-+	struct key *key, *mk_user;
-+	struct fscrypt_master_key *mk;
-+	int err;
-+
-+	mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER;
-+	memcpy(mk_spec.identifier, identifier, FSCRYPT_KEY_IDENTIFIER_SIZE);
-+
-+	key = find_master_key(sb, &mk_spec);
-+	if (IS_ERR(key)) {
-+		err = PTR_ERR(key);
-+		goto out;
++	TEST(add_key("keyring", description, NULL, 0,
++		     KEY_SPEC_PROCESS_KEYRING));
++	if (TEST_RETURN < 0) {
++		tst_brk(TBROK | TTERRNO,
++			"unable to create keyring '%s'", description);
 +	}
-+	mk = key->payload.data[0];
-+	mk_user = find_master_key_user(mk);
-+	if (IS_ERR(mk_user)) {
-+		err = PTR_ERR(mk_user);
-+	} else {
-+		key_put(mk_user);
-+		err = 0;
-+	}
-+	key_put(key);
-+out:
-+	if (err = -ENOKEY && capable(CAP_FOWNER))
-+		err = 0;
-+	return err;
++	return TEST_RETURN;
 +}
 +
- static void evict_dentries_for_decrypted_inodes(struct fscrypt_master_key *mk)
- {
- 	struct fscrypt_info *ci;
-diff --git a/fs/crypto/policy.c b/fs/crypto/policy.c
-index 27a391038f73..cfb404def9ed 100644
---- a/fs/crypto/policy.c
-+++ b/fs/crypto/policy.c
-@@ -170,6 +170,7 @@ static int set_encryption_policy(struct inode *inode,
- 				 const union fscrypt_policy *policy)
- {
- 	union fscrypt_context ctx;
-+	int err;
- 
- 	if (!fscrypt_supported_policy(policy))
- 		return -EINVAL;
-@@ -190,6 +191,11 @@ static int set_encryption_policy(struct inode *inode,
- 		 */
- 		pr_warn_once("%s (pid %d) is setting less secure v1 encryption policy; recommend upgrading to v2.\n",
- 			     current->comm, current->pid);
-+	} else {
-+		err = fscrypt_verify_key_added(inode->i_sb,
-+					       policy->v2.master_key_identifier);
-+		if (err)
-+			return err;
- 	}
- 
- 	return inode->i_sb->s_cop->set_context(inode, &ctx,
++static key_serial_t get_keyring_id(key_serial_t special_id)
++{
++	TEST(keyctl(KEYCTL_GET_KEYRING_ID, special_id, 1));
++	if (TEST_RETURN < 0) {
++		tst_brk(TBROK | TTERRNO,
++			"unable to get ID of keyring %d", special_id);
++	}
++	return TEST_RETURN;
++}
++
++static void unlink_keyring(key_serial_t id)
++{
++	TEST(keyctl(KEYCTL_UNLINK, id, KEY_SPEC_PROCESS_KEYRING));
++	if (TEST_RETURN < 0) {
++		tst_brk(TBROK | TTERRNO,
++			"unable to unlink the keyring we created");
++	}
++}
++
++static void do_test(void)
++{
++	int i;
++
++	/*
++	 * Try with multiple user IDs before reporting success.  By chance, some
++	 * users may already have an existing user keyring; the bug will not be
++	 * reproducible for them.
++	 */
++	for (i = 0; i < 10; i++) {
++		char description[32];
++		uid_t uid;
++		key_serial_t fake_user_keyring;
++		key_serial_t fake_user_session_keyring;
++
++		uid = rand();
++		if (uid = 0)
++			continue;
++
++		sprintf(description, "_uid.%u", uid);
++		fake_user_keyring = create_keyring(description);
++		sprintf(description, "_uid_ses.%u", uid);
++		fake_user_session_keyring = create_keyring(description);
++
++		TEST(setreuid(uid, 0));
++		if (TEST_RETURN < 0) {
++			tst_brk(TBROK | TTERRNO,
++				"unable to set real uid to %u", uid);
++		}
++
++		if (fake_user_keyring = get_keyring_id(KEY_SPEC_USER_KEYRING)) {
++			tst_brk(TFAIL,
++				"created user keyring for another user");
++		}
++
++		if (fake_user_session_keyring =
++		    get_keyring_id(KEY_SPEC_USER_SESSION_KEYRING)) {
++			tst_brk(TFAIL,
++				"created user session keyring for another user");
++		}
++
++		TEST(setreuid(0, 0));
++		if (TEST_RETURN < 0)
++			tst_brk(TBROK | TTERRNO, "unable to reset real uid");
++		uid++;
++
++		unlink_keyring(fake_user_keyring);
++		unlink_keyring(fake_user_session_keyring);
++	}
++	tst_res(TPASS, "expectedly could not create another user's keyrings");
++}
++
++static struct tst_test test = {
++	.test_all = do_test,
++	.needs_root = 1,
++};
 -- 
-2.15.0.rc0.271.g36b669edcc-goog
+2.14.2.920.gcf0c67979c-goog
 
