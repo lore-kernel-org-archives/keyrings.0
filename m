@@ -1,156 +1,145 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Wed, 18 Oct 2017 00:53:20 +0000
-Subject: [PATCH v5 07/18] integrity: Introduce struct evm_xattr
-Message-Id: <20171018005331.2688-8-bauerman@linux.vnet.ibm.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Tue, 10 Oct 2017 17:51:19 +0000
+Subject: [PATCH 3/4] syscalls/keyctl07: new test for oops when reading negative key
+Message-Id: <20171010175120.90586-4-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+To: keyrings@vger.kernel.org
 
-Even though struct evm_ima_xattr_data includes a fixed-size array to hold a
-SHA1 digest, most of the code ignores the array and uses the struct to mean
-"type indicator followed by data of unspecified size" and tracks the real
-size of what the struct represents in a separate length variable.
+From: Eric Biggers <ebiggers@google.com>
 
-The only exception to that is the EVM code, which correctly uses the
-definition of struct evm_ima_xattr_data.
+Add a test for a bug which caused the kernel to dereference a bogus
+pointer when using KEYCTL_READ to read from a negative key.
 
-This patch makes this explicit in the code by removing the length
-specification from the array in struct evm_ima_xattr_data. It also changes
-the name of the element from digest to data, since in most places the array
-doesn't hold a digest.
-
-A separate struct evm_xattr is introduced, with the original definition of
-evm_ima_xattr_data to be used in the places that actually expect that
-definition.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/integrity/evm/evm_crypto.c   |  4 ++--
- security/integrity/evm/evm_main.c     | 10 +++++-----
- security/integrity/ima/ima_appraise.c |  7 ++++---
- security/integrity/integrity.h        |  5 +++++
- 4 files changed, 16 insertions(+), 10 deletions(-)
+ runtest/syscalls                            |  1 +
+ testcases/kernel/syscalls/.gitignore        |  1 +
+ testcases/kernel/syscalls/keyctl/keyctl07.c | 89 +++++++++++++++++++++++++++++
+ 3 files changed, 91 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/keyctl/keyctl07.c
 
-diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
-index 9c2d88c80b9d..5fddc28e8a0e 100644
---- a/security/integrity/evm/evm_crypto.c
-+++ b/security/integrity/evm/evm_crypto.c
-@@ -252,13 +252,13 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
- 			const char *xattr_value, size_t xattr_value_len)
- {
- 	struct inode *inode = d_backing_inode(dentry);
--	struct evm_ima_xattr_data xattr_data;
-+	struct evm_xattr xattr_data;
- 	int rc = 0;
+diff --git a/runtest/syscalls b/runtest/syscalls
+index 67a7362ee..649dbfa6c 100644
+--- a/runtest/syscalls
++++ b/runtest/syscalls
+@@ -501,6 +501,7 @@ keyctl03 keyctl03
+ keyctl04 keyctl04
+ keyctl05 keyctl05
+ keyctl06 keyctl06
++keyctl07 keyctl07
  
- 	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
- 			   xattr_value_len, xattr_data.digest);
- 	if (rc = 0) {
--		xattr_data.type = EVM_XATTR_HMAC;
-+		xattr_data.data.type = EVM_XATTR_HMAC;
- 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
- 					   &xattr_data,
- 					   sizeof(xattr_data), 0);
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 37f062d38d5f..7f31f65b8492 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -119,7 +119,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 					     struct integrity_iint_cache *iint)
- {
- 	struct evm_ima_xattr_data *xattr_data = NULL;
--	struct evm_ima_xattr_data calc;
-+	struct evm_xattr calc;
- 	enum integrity_status evm_status = INTEGRITY_PASS;
- 	int rc, xattr_len;
- 
-@@ -150,7 +150,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 	/* check value type */
- 	switch (xattr_data->type) {
- 	case EVM_XATTR_HMAC:
--		if (xattr_len != sizeof(struct evm_ima_xattr_data)) {
-+		if (xattr_len != sizeof(struct evm_xattr)) {
- 			evm_status = INTEGRITY_FAIL;
- 			goto out;
- 		}
-@@ -158,7 +158,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 				   xattr_value_len, calc.digest);
- 		if (rc)
- 			break;
--		rc = crypto_memneq(xattr_data->digest, calc.digest,
-+		rc = crypto_memneq(xattr_data->data, calc.digest,
- 			    sizeof(calc.digest));
- 		if (rc)
- 			rc = -EINVAL;
-@@ -469,7 +469,7 @@ int evm_inode_init_security(struct inode *inode,
- 				 const struct xattr *lsm_xattr,
- 				 struct xattr *evm_xattr)
- {
--	struct evm_ima_xattr_data *xattr_data;
-+	struct evm_xattr *xattr_data;
- 	int rc;
- 
- 	if (!evm_initialized || !evm_protected_xattr(lsm_xattr->name))
-@@ -479,7 +479,7 @@ int evm_inode_init_security(struct inode *inode,
- 	if (!xattr_data)
- 		return -ENOMEM;
- 
--	xattr_data->type = EVM_XATTR_HMAC;
-+	xattr_data->data.type = EVM_XATTR_HMAC;
- 	rc = evm_init_hmac(inode, lsm_xattr, xattr_data->digest);
- 	if (rc < 0)
- 		goto out;
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 2c069f47eeec..091977c8ec40 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -156,7 +156,8 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 		return sig->hash_algo;
- 		break;
- 	case IMA_XATTR_DIGEST_NG:
--		ret = xattr_value->digest[0];
-+		/* first byte contains algorithm id */
-+		ret = xattr_value->data[0];
- 		if (ret < HASH_ALGO__LAST)
- 			return ret;
- 		break;
-@@ -164,7 +165,7 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 		/* this is for backward compatibility */
- 		if (xattr_len = 21) {
- 			unsigned int zero = 0;
--			if (!memcmp(&xattr_value->digest[16], &zero, 4))
-+			if (!memcmp(&xattr_value->data[16], &zero, 4))
- 				return HASH_ALGO_MD5;
- 			else
- 				return HASH_ALGO_SHA1;
-@@ -257,7 +258,7 @@ int ima_appraise_measurement(enum ima_hooks func,
- 			/* xattr length may be longer. md5 hash in previous
- 			   version occupied 20 bytes in xattr, instead of 16
- 			 */
--			rc = memcmp(&xattr_value->digest[hash_start],
-+			rc = memcmp(&xattr_value->data[hash_start],
- 				    iint->ima_hash->digest,
- 				    iint->ima_hash->length);
- 		else
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index e1bf040fb110..dd7ac4bfc89a 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -63,6 +63,11 @@ enum evm_ima_xattr_type {
- 
- struct evm_ima_xattr_data {
- 	u8 type;
-+	u8 data[];
-+} __packed;
+ kcmp01 kcmp01
+ kcmp02 kcmp02
+diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
+index 1e573d9a4..53ad7ca2b 100644
+--- a/testcases/kernel/syscalls/.gitignore
++++ b/testcases/kernel/syscalls/.gitignore
+@@ -463,6 +463,7 @@
+ /keyctl/keyctl04
+ /keyctl/keyctl05
+ /keyctl/keyctl06
++/keyctl/keyctl07
+ /kcmp/kcmp01
+ /kcmp/kcmp02
+ /kcmp/kcmp03
+diff --git a/testcases/kernel/syscalls/keyctl/keyctl07.c b/testcases/kernel/syscalls/keyctl/keyctl07.c
+new file mode 100644
+index 000000000..c41d7040f
+--- /dev/null
++++ b/testcases/kernel/syscalls/keyctl/keyctl07.c
+@@ -0,0 +1,89 @@
++/*
++ * Copyright (c) 2017 Google, Inc.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program, if not, see <http://www.gnu.org/licenses/>.
++ */
 +
-+struct evm_xattr {
-+	struct evm_ima_xattr_data data;
- 	u8 digest[SHA1_DIGEST_SIZE];
- } __packed;
- 
++/*
++ * Regression test for commit 37863c43b2c6 ("KEYS: prevent KEYCTL_READ on
++ * negative key").
++ */
++
++#include <errno.h>
++
++#include "tst_test.h"
++#include "lapi/keyctl.h"
++
++static void do_test(void)
++{
++	key_serial_t key_id;
++	char buffer[128];
++
++	/*
++	 * Create a negatively instantiated key of the "user" key type.  This
++	 * key type is chosen because it has a ->read() method (which makes the
++	 * bug reachable) and is available whenever CONFIG_KEYS is enabled.
++	 *
++	 * request_key() will result in the creation of a negative key provided
++	 * that /sbin/request-key isn't configured to positively instantiate the
++	 * key, based on the provided type, description, and callout_info.  If
++	 * /sbin/request-key doesn't exist, errno will be ENOENT; while if it
++	 * does exist and we specify some random unprefixed description, errno
++	 * should be ENOKEY (since /sbin/request-key should not be configured to
++	 * instantiate random user keys).  In either case a negative key should
++	 * be created and we can continue on with the test.  Negative keys last
++	 * for 60 seconds so there should be plenty of time for the test.
++	 */
++	TEST(request_key("user", "description", "callout_info",
++			 KEY_SPEC_PROCESS_KEYRING));
++	if (TEST_RETURN != -1)
++		tst_brk(TBROK, "request_key() unexpectedly succeeded");
++
++	if (TEST_ERRNO != ENOKEY && TEST_ERRNO != ENOENT) {
++		tst_brk(TBROK | TTERRNO,
++			"request_key() failed with unexpected error");
++	}
++
++	/* Get the ID of the negative key by reading the keyring */
++	TEST(keyctl(KEYCTL_READ, KEY_SPEC_PROCESS_KEYRING,
++		    &key_id, sizeof(key_id)));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "KEYCTL_READ unexpectedly failed");
++	if (TEST_RETURN != sizeof(key_id)) {
++		tst_brk(TBROK, "KEYCTL_READ returned %ld but expected %zu",
++			TEST_RETURN, sizeof(key_id));
++	}
++
++	/*
++	 * Now try to read the negative key.  Unpatched kernels will oops trying
++	 * to read from memory address 0x00000000ffffff92.
++	 */
++	tst_res(TINFO, "trying to read from the negative key...");
++	TEST(keyctl(KEYCTL_READ, key_id, buffer, sizeof(buffer)));
++	if (TEST_RETURN != -1) {
++		tst_res(TFAIL,
++			"KEYCTL_READ on negative key unexpectedly succeeded");
++		return;
++	}
++	if (TEST_ERRNO != ENOKEY) {
++		tst_res(TFAIL | TTERRNO,
++			"KEYCTL_READ on negative key failed with unexpected error");
++		return;
++	}
++	tst_res(TPASS, "KEYCTL_READ on negative key expectedly failed with ENOKEY");
++}
++
++static struct tst_test test = {
++	.test_all = do_test,
++};
+-- 
+2.14.2.920.gcf0c67979c-goog
 
