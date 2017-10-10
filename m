@@ -1,182 +1,124 @@
-From: Michael Halcrow <mhalcrow@google.com>
-Date: Fri, 27 Oct 2017 18:01:41 +0000
-Subject: Re: [RFC PATCH 01/25] fs, fscrypt: move uapi definitions to new header <linux/fscrypt.h>
-Message-Id: <20171027180141.GA10611@google.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Tue, 10 Oct 2017 17:51:18 +0000
+Subject: [PATCH 2/4] syscalls/keyctl06: new test for keyring_read() buffer overrun
+Message-Id: <20171010175120.90586-3-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
- <20171023214058.128121-2-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-2-ebiggers3@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: linux-fscrypt@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, keyrings@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Gwendal Grignou <gwendal@chromium.org>, Ryo Hashimoto <hashimoto@chromium.org>, Sarthak Kukreti <sarthakkukreti@chromium.org>, Nick Desaulniers <ndesaulniers@google.com>, Eric Biggers <ebiggers@google.com>
+To: keyrings@vger.kernel.org
 
-On Mon, Oct 23, 2017 at 02:40:34PM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> There are going to be more filesystem encryption definitions added, and
-> we don't want to use a disproportionate amount of space in <linux/fs.h>
-> for filesystem encryption stuff.  So move the fscrypt definitions to a
-> new header <linux/fscrypt.h>.
-> 
-> For compatibility with existing userspace programs which may be
-> including <linux/fs.h>, <linux/fs.h> still includes the new header.
-> (It's debatable whether we really need this, though; the filesystem
-> encryption API is new enough that most if not all programs that are
-> using it have to declare it themselves anyway.)
-> 
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+From: Eric Biggers <ebiggers@google.com>
 
-Reviewed-by: Michael Halcrow <mhalcrow@google.com>
+Add a test for a bug which caused the kernel to write past the end of
+the provided buffer when using KEYCTL_READ to read from a keyring.
 
-> ---
->  include/linux/fscrypt.h      |  2 +-
->  include/uapi/linux/fs.h      | 50 +++--------------------------------------
->  include/uapi/linux/fscrypt.h | 53 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 57 insertions(+), 48 deletions(-)
->  create mode 100644 include/uapi/linux/fscrypt.h
-> 
-> diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
-> index 53437bfdfcbc..f7aa7d62e235 100644
-> --- a/include/linux/fscrypt.h
-> +++ b/include/linux/fscrypt.h
-> @@ -19,7 +19,7 @@
->  #include <linux/bio.h>
->  #include <linux/dcache.h>
->  #include <crypto/skcipher.h>
-> -#include <uapi/linux/fs.h>
-> +#include <uapi/linux/fscrypt.h>
->  
->  #define FS_CRYPTO_BLOCK_SIZE		16
->  
-> diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-> index 56235dddea7d..6ecd3ee9960c 100644
-> --- a/include/uapi/linux/fs.h
-> +++ b/include/uapi/linux/fs.h
-> @@ -12,6 +12,9 @@
->  #include <linux/limits.h>
->  #include <linux/ioctl.h>
->  #include <linux/types.h>
-> +#ifndef __KERNEL__
-> +#include <linux/fscrypt.h>
-> +#endif
->  
->  /*
->   * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
-> @@ -253,53 +256,6 @@ struct fsxattr {
->  #define FS_IOC_FSGETXATTR		_IOR ('X', 31, struct fsxattr)
->  #define FS_IOC_FSSETXATTR		_IOW ('X', 32, struct fsxattr)
->  
-> -/*
-> - * File system encryption support
-> - */
-> -/* Policy provided via an ioctl on the topmost directory */
-> -#define FS_KEY_DESCRIPTOR_SIZE	8
-> -
-> -#define FS_POLICY_FLAGS_PAD_4		0x00
-> -#define FS_POLICY_FLAGS_PAD_8		0x01
-> -#define FS_POLICY_FLAGS_PAD_16		0x02
-> -#define FS_POLICY_FLAGS_PAD_32		0x03
-> -#define FS_POLICY_FLAGS_PAD_MASK	0x03
-> -#define FS_POLICY_FLAGS_VALID		0x03
-> -
-> -/* Encryption algorithms */
-> -#define FS_ENCRYPTION_MODE_INVALID		0
-> -#define FS_ENCRYPTION_MODE_AES_256_XTS		1
-> -#define FS_ENCRYPTION_MODE_AES_256_GCM		2
-> -#define FS_ENCRYPTION_MODE_AES_256_CBC		3
-> -#define FS_ENCRYPTION_MODE_AES_256_CTS		4
-> -#define FS_ENCRYPTION_MODE_AES_128_CBC		5
-> -#define FS_ENCRYPTION_MODE_AES_128_CTS		6
-> -
-> -struct fscrypt_policy {
-> -	__u8 version;
-> -	__u8 contents_encryption_mode;
-> -	__u8 filenames_encryption_mode;
-> -	__u8 flags;
-> -	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-> -};
-> -
-> -#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
-> -#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
-> -#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
-> -
-> -/* Parameters for passing an encryption key into the kernel keyring */
-> -#define FS_KEY_DESC_PREFIX		"fscrypt:"
-> -#define FS_KEY_DESC_PREFIX_SIZE		8
-> -
-> -/* Structure that userspace passes to the kernel keyring */
-> -#define FS_MAX_KEY_SIZE			64
-> -
-> -struct fscrypt_key {
-> -	__u32 mode;
-> -	__u8 raw[FS_MAX_KEY_SIZE];
-> -	__u32 size;
-> -};
-> -
->  /*
->   * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
->   *
-> diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-> new file mode 100644
-> index 000000000000..c09209fc42ea
-> --- /dev/null
-> +++ b/include/uapi/linux/fscrypt.h
-> @@ -0,0 +1,53 @@
-> +#ifndef _UAPI_LINUX_FSCRYPT_H
-> +#define _UAPI_LINUX_FSCRYPT_H
-> +
-> +#include <linux/types.h>
-> +
-> +/*
-> + * File system encryption support
-> + */
-> +/* Policy provided via an ioctl on the topmost directory */
-> +#define FS_KEY_DESCRIPTOR_SIZE	8
-> +
-> +#define FS_POLICY_FLAGS_PAD_4		0x00
-> +#define FS_POLICY_FLAGS_PAD_8		0x01
-> +#define FS_POLICY_FLAGS_PAD_16		0x02
-> +#define FS_POLICY_FLAGS_PAD_32		0x03
-> +#define FS_POLICY_FLAGS_PAD_MASK	0x03
-> +#define FS_POLICY_FLAGS_VALID		0x03
-> +
-> +/* Encryption algorithms */
-> +#define FS_ENCRYPTION_MODE_INVALID		0
-> +#define FS_ENCRYPTION_MODE_AES_256_XTS		1
-> +#define FS_ENCRYPTION_MODE_AES_256_GCM		2
-> +#define FS_ENCRYPTION_MODE_AES_256_CBC		3
-> +#define FS_ENCRYPTION_MODE_AES_256_CTS		4
-> +#define FS_ENCRYPTION_MODE_AES_128_CBC		5
-> +#define FS_ENCRYPTION_MODE_AES_128_CTS		6
-> +
-> +struct fscrypt_policy {
-> +	__u8 version;
-> +	__u8 contents_encryption_mode;
-> +	__u8 filenames_encryption_mode;
-> +	__u8 flags;
-> +	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-> +};
-> +
-> +#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
-> +#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
-> +#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
-> +
-> +/* Parameters for passing an encryption key into the kernel keyring */
-> +#define FS_KEY_DESC_PREFIX		"fscrypt:"
-> +#define FS_KEY_DESC_PREFIX_SIZE		8
-> +
-> +/* Structure that userspace passes to the kernel keyring */
-> +#define FS_MAX_KEY_SIZE			64
-> +
-> +struct fscrypt_key {
-> +	__u32 mode;
-> +	__u8 raw[FS_MAX_KEY_SIZE];
-> +	__u32 size;
-> +};
-> +
-> +#endif /* _UAPI_LINUX_FSCRYPT_H */
-> -- 
-> 2.15.0.rc0.271.g36b669edcc-goog
-> 
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ runtest/syscalls                            |  1 +
+ testcases/kernel/syscalls/.gitignore        |  1 +
+ testcases/kernel/syscalls/keyctl/keyctl06.c | 68 +++++++++++++++++++++++++++++
+ 3 files changed, 70 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/keyctl/keyctl06.c
+
+diff --git a/runtest/syscalls b/runtest/syscalls
+index 2362a231d..67a7362ee 100644
+--- a/runtest/syscalls
++++ b/runtest/syscalls
+@@ -500,6 +500,7 @@ keyctl02 keyctl02
+ keyctl03 keyctl03
+ keyctl04 keyctl04
+ keyctl05 keyctl05
++keyctl06 keyctl06
+ 
+ kcmp01 kcmp01
+ kcmp02 kcmp02
+diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
+index 930f3f999..1e573d9a4 100644
+--- a/testcases/kernel/syscalls/.gitignore
++++ b/testcases/kernel/syscalls/.gitignore
+@@ -462,6 +462,7 @@
+ /keyctl/keyctl03
+ /keyctl/keyctl04
+ /keyctl/keyctl05
++/keyctl/keyctl06
+ /kcmp/kcmp01
+ /kcmp/kcmp02
+ /kcmp/kcmp03
+diff --git a/testcases/kernel/syscalls/keyctl/keyctl06.c b/testcases/kernel/syscalls/keyctl/keyctl06.c
+new file mode 100644
+index 000000000..88734313d
+--- /dev/null
++++ b/testcases/kernel/syscalls/keyctl/keyctl06.c
+@@ -0,0 +1,68 @@
++/*
++ * Copyright (c) 2017 Google, Inc.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program, if not, see <http://www.gnu.org/licenses/>.
++ */
++
++/*
++ * Regression test for commit e645016abc80 ("KEYS: fix writing past end of
++ * user-supplied buffer in keyring_read()").
++ */
++
++#include <errno.h>
++
++#include "tst_test.h"
++#include "lapi/keyctl.h"
++
++static key_serial_t add_test_key(const char *description)
++{
++	TEST(add_key("user", description, "payload", 7,
++		     KEY_SPEC_PROCESS_KEYRING));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "Failed to add test key");
++	return TEST_RETURN;
++}
++
++static void do_test(void)
++{
++	key_serial_t key_ids[2];
++	key_serial_t key_id_1 = add_test_key("key1");
++	key_serial_t key_id_2 = add_test_key("key2");
++
++	memset(key_ids, 0, sizeof(key_ids));
++	TEST(keyctl(KEYCTL_READ, KEY_SPEC_PROCESS_KEYRING,
++		    (char *)key_ids, sizeof(key_serial_t)));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "KEYCTL_READ failed");
++
++	if (key_ids[1] != 0)
++		tst_brk(TFAIL, "KEYCTL_READ overran the buffer");
++
++	if (key_ids[0] = 0)
++		tst_brk(TBROK, "KEYCTL_READ didn't read anything");
++
++	if (key_ids[0] != key_id_1 && key_ids[0] != key_id_2)
++		tst_brk(TBROK, "KEYCTL_READ didn't return correct key ID");
++
++	if (TEST_RETURN != sizeof(key_serial_t)) {
++		tst_brk(TBROK, "KEYCTL_READ returned %ld but expected %zu",
++			TEST_RETURN, sizeof(key_serial_t));
++	}
++
++	tst_res(TPASS, "KEYCTL_READ didn't overrun the buffer");
++}
++
++static struct tst_test test = {
++	.test_all = do_test,
++};
+-- 
+2.14.2.920.gcf0c67979c-goog
+
