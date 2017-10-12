@@ -1,81 +1,43 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Wed, 18 Oct 2017 07:00:33 +0000
-Subject: [PATCH v10 01/20] crypto: change transient busy return code to -ENOSPC
-Message-Id: <1508310057-25369-2-git-send-email-gilad@benyossef.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 12 Oct 2017 20:42:23 +0000
+Subject: [PATCH v2 0/4] ltp: add tests for some recently-fixed keyrings bugs
+Message-Id: <20171012204227.116510-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
-Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-The crypto API was using the -EBUSY return value to indicate
-both a hard failure to submit a crypto operation into a
-transformation provider when the latter was busy and the backlog
-mechanism was not enabled as well as a notification that the
-operation was queued into the backlog when the backlog mechanism
-was enabled.
+From: Eric Biggers <ebiggers@google.com>
 
-Having the same return code indicate two very different conditions
-depending on a flag is both error prone and requires extra runtime
-check like the following to discern between the cases:
+Add tests to LTP for a few more longstanding bugs which were recently
+fixed in the kernel keyrings API.
 
-	if (err = -EINPROGRESS ||
-	    (err = -EBUSY && (ahash_request_flags(req) &
-			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
+Changed since v1:
 
-This patch changes the return code used to indicate a crypto op
-failed due to the transformation provider being transiently busy
-to -ENOSPC.
+    - Updated add_key03 to find an unused user by searching the passwd
+      database, which allowed simplifying the test.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
----
- crypto/algapi.c | 6 ++++--
- crypto/cryptd.c | 4 +---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+    - Added CVE number for keyctl07.
 
-diff --git a/crypto/algapi.c b/crypto/algapi.c
-index aa699ff..60d7366 100644
---- a/crypto/algapi.c
-+++ b/crypto/algapi.c
-@@ -897,9 +897,11 @@ int crypto_enqueue_request(struct crypto_queue *queue,
- 	int err = -EINPROGRESS;
- 
- 	if (unlikely(queue->qlen >= queue->max_qlen)) {
--		err = -EBUSY;
--		if (!(request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (!(request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)) {
-+			err = -ENOSPC;
- 			goto out;
-+		}
-+		err = -EBUSY;
- 		if (queue->backlog = &queue->list)
- 			queue->backlog = &request->list;
- 	}
-diff --git a/crypto/cryptd.c b/crypto/cryptd.c
-index 0508c48..bd43cf5 100644
---- a/crypto/cryptd.c
-+++ b/crypto/cryptd.c
-@@ -137,16 +137,14 @@ static int cryptd_enqueue_request(struct cryptd_queue *queue,
- 	int cpu, err;
- 	struct cryptd_cpu_queue *cpu_queue;
- 	atomic_t *refcnt;
--	bool may_backlog;
- 
- 	cpu = get_cpu();
- 	cpu_queue = this_cpu_ptr(queue->cpu_queue);
- 	err = crypto_enqueue_request(&cpu_queue->queue, request);
- 
- 	refcnt = crypto_tfm_ctx(request->tfm);
--	may_backlog = request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG;
- 
--	if (err = -EBUSY && !may_backlog)
-+	if (err = -ENOSPC)
- 		goto out_put_cpu;
- 
- 	queue_work_on(cpu, kcrypto_wq, &cpu_queue->work);
+Eric Biggers (4):
+  lapi/keyctl.h: add a few missing definitions
+  syscalls/keyctl06: new test for keyring_read() buffer overrun
+  syscalls/keyctl07: new test for oops when reading negative key
+  syscalls/add_key03: new test for forging user keyrings
+
+ include/lapi/keyctl.h                         | 20 ++++++
+ runtest/cve                                   |  1 +
+ runtest/syscalls                              |  3 +
+ testcases/kernel/syscalls/.gitignore          |  3 +
+ testcases/kernel/syscalls/add_key/add_key03.c | 98 +++++++++++++++++++++++++++
+ testcases/kernel/syscalls/keyctl/keyctl06.c   | 68 +++++++++++++++++++
+ testcases/kernel/syscalls/keyctl/keyctl07.c   | 89 ++++++++++++++++++++++++
+ 7 files changed, 282 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/add_key/add_key03.c
+ create mode 100644 testcases/kernel/syscalls/keyctl/keyctl06.c
+ create mode 100644 testcases/kernel/syscalls/keyctl/keyctl07.c
+
 -- 
-2.7.4
+2.15.0.rc0.271.g36b669edcc-goog
 
