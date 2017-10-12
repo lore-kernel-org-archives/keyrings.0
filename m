@@ -1,70 +1,189 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 12 Oct 2017 20:42:24 +0000
-Subject: [PATCH v2 1/4] lapi/keyctl.h: add a few missing definitions
-Message-Id: <20171012204227.116510-2-ebiggers3@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 12 Oct 2017 20:16:48 +0000
+Subject: [PATCH 07/15] ecryptfs: move key payload accessor functions into keystore.c
+Message-Id: <150783940815.10956.5196007076247615090.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-KEYCTL_REVOKE, KEYCTL_READ, KEY_SPEC_PROCESS_KEYRING, and
-KEY_SPEC_USER_SESSION_KEYRING are used by existing tests.
-KEY_SPEC_USER_KEYRING will be used by an upcoming test.
+As experience has shown, accessing the 'struct key' payload is very
+error-prone, since we need to hold the key semaphore and properly
+validate everything.  Fortunately eCryptfs only does it from one place,
+in ecryptfs_verify_auth_tok_from_key() in keystore.c.  Therefore, move
+the payload accessor functions like ecryptfs_get_key_payload_data() out
+of ecryptfs_kernel.h and into keystore.c so that people might be less
+tempted to use them directly.
 
+Reviewed-by: James Morris <james.l.morris@oracle.com>
+Cc: Michael Halcrow <mhalcrow@google.com>
 Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- include/lapi/keyctl.h | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
 
-diff --git a/include/lapi/keyctl.h b/include/lapi/keyctl.h
-index 3e7ce4708..73f4fdc90 100644
---- a/include/lapi/keyctl.h
-+++ b/include/lapi/keyctl.h
-@@ -81,6 +81,10 @@ static inline long keyctl(int cmd, ...)
- # define KEYCTL_UPDATE 2
- #endif
+ fs/ecryptfs/ecryptfs_kernel.h |   60 -----------------------------------------
+ fs/ecryptfs/keystore.c        |   60 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 60 insertions(+), 60 deletions(-)
+
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index 945844d5f0ef..f2e339a6f9e9 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -29,8 +29,6 @@
+ #define ECRYPTFS_KERNEL_H
  
-+#ifndef KEYCTL_REVOKE
-+# define KEYCTL_REVOKE 3
-+#endif
-+
- #ifndef KEYCTL_SETPERM
- # define KEYCTL_SETPERM 5
- #endif
-@@ -89,14 +93,30 @@ static inline long keyctl(int cmd, ...)
- # define KEYCTL_UNLINK 9
- #endif
+ #include <crypto/skcipher.h>
+-#include <keys/user-type.h>
+-#include <keys/encrypted-type.h>
+ #include <linux/fs.h>
+ #include <linux/fs_stack.h>
+ #include <linux/namei.h>
+@@ -80,64 +78,6 @@ struct ecryptfs_page_crypt_context {
+ 	} param;
+ };
  
-+#ifndef KEYCTL_READ
-+# define KEYCTL_READ 11
-+#endif
-+
- #ifndef KEY_SPEC_THREAD_KEYRING
- # define KEY_SPEC_THREAD_KEYRING -1
- #endif
+-#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
+-static inline struct ecryptfs_auth_tok *
+-ecryptfs_get_encrypted_key_payload_data(struct key *key)
+-{
+-	struct encrypted_key_payload *payload;
+-
+-	if (key->type != &key_type_encrypted)
+-		return NULL;
+-
+-	payload = key->payload.data[0];
+-	if (!payload)
+-		return ERR_PTR(-EKEYREVOKED);
+-
+-	if (payload->payload_datalen != sizeof(struct ecryptfs_auth_tok))
+-		return ERR_PTR(-EINVAL);
+-
+-	return (struct ecryptfs_auth_tok *)payload->payload_data;
+-}
+-
+-static inline struct key *ecryptfs_get_encrypted_key(char *sig)
+-{
+-	return request_key(&key_type_encrypted, sig, NULL);
+-}
+-
+-#else
+-static inline struct ecryptfs_auth_tok *
+-ecryptfs_get_encrypted_key_payload_data(struct key *key)
+-{
+-	return NULL;
+-}
+-
+-static inline struct key *ecryptfs_get_encrypted_key(char *sig)
+-{
+-	return ERR_PTR(-ENOKEY);
+-}
+-
+-#endif /* CONFIG_ENCRYPTED_KEYS */
+-
+-static inline struct ecryptfs_auth_tok *
+-ecryptfs_get_key_payload_data(struct key *key)
+-{
+-	struct ecryptfs_auth_tok *auth_tok;
+-	struct user_key_payload *ukp;
+-
+-	auth_tok = ecryptfs_get_encrypted_key_payload_data(key);
+-	if (auth_tok)
+-		return auth_tok;
+-
+-	ukp = user_key_payload_locked(key);
+-	if (!ukp)
+-		return ERR_PTR(-EKEYREVOKED);
+-
+-	if (ukp->datalen != sizeof(struct ecryptfs_auth_tok))
+-		return ERR_PTR(-EINVAL);
+-
+-	return (struct ecryptfs_auth_tok *)ukp->data;
+-}
+-
+ #define ECRYPTFS_MAX_KEYSET_SIZE 1024
+ #define ECRYPTFS_MAX_CIPHER_NAME_SIZE 31
+ #define ECRYPTFS_MAX_NUM_ENC_KEYS 64
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 95e20ab67df3..cb801bdcbae2 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -27,6 +27,8 @@
  
-+#ifndef KEY_SPEC_PROCESS_KEYRING
-+# define KEY_SPEC_PROCESS_KEYRING -2
-+#endif
-+
- #ifndef KEY_SPEC_SESSION_KEYRING
- # define KEY_SPEC_SESSION_KEYRING -3
- #endif
+ #include <crypto/hash.h>
+ #include <crypto/skcipher.h>
++#include <keys/user-type.h>
++#include <keys/encrypted-type.h>
+ #include <linux/string.h>
+ #include <linux/pagemap.h>
+ #include <linux/key.h>
+@@ -454,6 +456,64 @@ static int ecryptfs_verify_version(u16 version)
+ 	return rc;
+ }
  
-+#ifndef KEY_SPEC_USER_KEYRING
-+# define KEY_SPEC_USER_KEYRING -4
-+#endif
++#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
++static inline struct ecryptfs_auth_tok *
++ecryptfs_get_encrypted_key_payload_data(struct key *key)
++{
++	struct encrypted_key_payload *payload;
 +
-+#ifndef KEY_SPEC_USER_SESSION_KEYRING
-+# define KEY_SPEC_USER_SESSION_KEYRING -5
-+#endif
++	if (key->type != &key_type_encrypted)
++		return NULL;
 +
- #ifndef KEY_REQKEY_DEFL_THREAD_KEYRING
- # define KEY_REQKEY_DEFL_THREAD_KEYRING 1
- #endif
--- 
-2.15.0.rc0.271.g36b669edcc-goog
++	payload = key->payload.data[0];
++	if (!payload)
++		return ERR_PTR(-EKEYREVOKED);
++
++	if (payload->payload_datalen != sizeof(struct ecryptfs_auth_tok))
++		return ERR_PTR(-EINVAL);
++
++	return (struct ecryptfs_auth_tok *)payload->payload_data;
++}
++
++static inline struct key *ecryptfs_get_encrypted_key(char *sig)
++{
++	return request_key(&key_type_encrypted, sig, NULL);
++}
++
++#else
++static inline struct ecryptfs_auth_tok *
++ecryptfs_get_encrypted_key_payload_data(struct key *key)
++{
++	return NULL;
++}
++
++static inline struct key *ecryptfs_get_encrypted_key(char *sig)
++{
++	return ERR_PTR(-ENOKEY);
++}
++
++#endif /* CONFIG_ENCRYPTED_KEYS */
++
++static struct ecryptfs_auth_tok *
++ecryptfs_get_key_payload_data(struct key *key)
++{
++	struct ecryptfs_auth_tok *auth_tok;
++	struct user_key_payload *ukp;
++
++	auth_tok = ecryptfs_get_encrypted_key_payload_data(key);
++	if (auth_tok)
++		return auth_tok;
++
++	ukp = user_key_payload_locked(key);
++	if (!ukp)
++		return ERR_PTR(-EKEYREVOKED);
++
++	if (ukp->datalen != sizeof(struct ecryptfs_auth_tok))
++		return ERR_PTR(-EINVAL);
++
++	return (struct ecryptfs_auth_tok *)ukp->data;
++}
++
+ /**
+  * ecryptfs_verify_auth_tok_from_key
+  * @auth_tok_key: key containing the authentication token
 
