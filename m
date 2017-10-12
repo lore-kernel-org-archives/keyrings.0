@@ -1,59 +1,48 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 23 Oct 2017 21:40:45 +0000
-Subject: [RFC PATCH 12/25] ext4 crypto: wire up new ioctls for managing encryption keys
-Message-Id: <20171023214058.128121-13-ebiggers3@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 12 Oct 2017 20:17:41 +0000
+Subject: [PATCH 14/15] KEYS: load key flags and expiry time atomically in keyring_search_iterator()
+Message-Id: <150783946092.10956.10684012274871383502.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, keyrings@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Gwendal Grignou <gwendal@chromium.org>, Ryo Hashimoto <hashimoto@chromium.org>, Sarthak Kukreti <sarthakkukreti@chromium.org>, Nick Desaulniers <ndesaulniers@google.com>, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
+References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- fs/ext4/ioctl.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+Similar to the case for key_validate(), we should load the key ->flags
+and ->expiry once atomically in keyring_search_iterator(), since they
+can be changed concurrently whenever the key semaphore isn't held.
 
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index afb66d4ab5cf..b8a6765a556f 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -978,6 +978,21 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
- 		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ security/keys/keyring.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 816948abff89..1ef5c7caf15c 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -566,6 +566,8 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
  
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
+ 	/* skip invalidated, revoked and expired keys */
+ 	if (ctx->flags & KEYRING_SEARCH_DO_STATE_CHECK) {
++		time_t expiry = READ_ONCE(key->expiry);
 +
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
-+
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
-+
- 	case EXT4_IOC_FSGETXATTR:
- 	{
- 		struct fsxattr fa;
-@@ -1102,6 +1117,9 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
- 	case EXT4_IOC_GET_ENCRYPTION_PWSALT:
- 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 	case EXT4_IOC_SHUTDOWN:
- 	case FS_IOC_GETFSMAP:
- 		break;
--- 
-2.15.0.rc0.271.g36b669edcc-goog
+ 		if (kflags & ((1 << KEY_FLAG_INVALIDATED) |
+ 			      (1 << KEY_FLAG_REVOKED))) {
+ 			ctx->result = ERR_PTR(-EKEYREVOKED);
+@@ -573,7 +575,7 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
+ 			goto skipped;
+ 		}
+ 
+-		if (key->expiry && ctx->now.tv_sec >= key->expiry) {
++		if (expiry && ctx->now.tv_sec >= expiry) {
+ 			if (!(ctx->flags & KEYRING_SEARCH_SKIP_EXPIRED))
+ 				ctx->result = ERR_PTR(-EKEYEXPIRED);
+ 			kleave(" = %d [expire]", ctx->skipped_ret);
 
