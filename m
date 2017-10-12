@@ -1,38 +1,52 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Wed, 18 Oct 2017 00:53:21 +0000
-Subject: [PATCH v5 08/18] integrity: Select CONFIG_KEYS instead of depending on it
-Message-Id: <20171018005331.2688-9-bauerman@linux.vnet.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 12 Oct 2017 20:16:55 +0000
+Subject: [PATCH 08/15] security/keys: BIG_KEY requires CONFIG_CRYPTO
+Message-Id: <150783941546.10956.15884531475572047421.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-This avoids a dependency cycle in CONFIG_IMA_APPRAISE_MODSIG (introduced by
-a later patch in this series): it will select CONFIG_MODULE_SIG_FORMAT
-which in turn selects CONFIG_KEYS. Kconfig then complains that
-CONFIG_INTEGRITY_SIGNATURE depends on CONFIG_KEYS.
+From: Arnd Bergmann <arnd@arndb.de>
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+The recent rework introduced a possible randconfig build failure
+when CONFIG_CRYPTO configured to only allow modules:
+
+security/keys/big_key.o: In function `big_key_crypt':
+big_key.c:(.text+0x29f): undefined reference to `crypto_aead_setkey'
+security/keys/big_key.o: In function `big_key_init':
+big_key.c:(.init.text+0x1a): undefined reference to `crypto_alloc_aead'
+big_key.c:(.init.text+0x45): undefined reference to `crypto_aead_setauthsize'
+big_key.c:(.init.text+0x77): undefined reference to `crypto_destroy_tfm'
+crypto/gcm.o: In function `gcm_hash_crypt_remain_continue':
+gcm.c:(.text+0x167): undefined reference to `crypto_ahash_finup'
+crypto/gcm.o: In function `crypto_gcm_exit_tfm':
+gcm.c:(.text+0x847): undefined reference to `crypto_destroy_tfm'
+
+When we 'select CRYPTO' like the other users, we always get a
+configuration that builds.
+
+Fixes: 428490e38b2e ("security/keys: rewrite all of big_key crypto")
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- security/integrity/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-index da9565891738..0d642e0317c7 100644
---- a/security/integrity/Kconfig
-+++ b/security/integrity/Kconfig
-@@ -17,8 +17,8 @@ if INTEGRITY
- 
- config INTEGRITY_SIGNATURE
- 	bool "Digital signature verification using multiple keyrings"
--	depends on KEYS
- 	default n
-+	select KEYS
- 	select SIGNATURE
+ security/keys/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index 91eafada3164..6462e6654ccf 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -45,6 +45,7 @@ config BIG_KEYS
+ 	bool "Large payload keys"
+ 	depends on KEYS
+ 	depends on TMPFS
++	select CRYPTO
+ 	select CRYPTO_AES
+ 	select CRYPTO_GCM
  	help
- 	  This option enables digital signature verification support
 
