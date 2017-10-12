@@ -1,74 +1,157 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 09 Oct 2017 19:51:28 +0000
-Subject: [PATCH v2 2/3] ecryptfs: fix out-of-bounds read of key payload
-Message-Id: <20171009195129.68610-2-ebiggers3@gmail.com>
+Date: Thu, 12 Oct 2017 20:42:26 +0000
+Subject: [PATCH v2 3/4] syscalls/keyctl07: new test for oops when reading negative key
+Message-Id: <20171012204227.116510-4-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171009195129.68610-1-ebiggers3@gmail.com>
-In-Reply-To: <20171009195129.68610-1-ebiggers3@gmail.com>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-eCryptfs blindly casts the user-supplied key payload to a
-'struct ecryptfs_auth_tok' without validating that the payload does, in
-fact, have the size of a 'struct ecryptfs_auth_tok'.  Fix it.
+Add a test for a bug which caused the kernel to dereference a bogus
+pointer when using KEYCTL_READ to read from a negative key.
 
-Fixes: 237fead61998 ("[PATCH] ecryptfs: fs/Makefile and fs/Kconfig")
-Reviewed-by: James Morris <james.l.morris@oracle.com>
-Cc: <stable@vger.kernel.org>    [v2.6.19+]
-Cc: Michael Halcrow <mhalcrow@google.com>
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ runtest/cve                                 |  1 +
+ runtest/syscalls                            |  1 +
+ testcases/kernel/syscalls/.gitignore        |  1 +
+ testcases/kernel/syscalls/keyctl/keyctl07.c | 89 +++++++++++++++++++++++++++++
+ 4 files changed, 92 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/keyctl/keyctl07.c
 
-Changed since v1: added Reviewed-by and resent in series with just the
-ecryptfs patches.  Can this please be taken through the ecryptfs tree?
-
- fs/ecryptfs/ecryptfs_kernel.h | 6 ++++++
- fs/ecryptfs/keystore.c        | 4 ++++
- 2 files changed, 10 insertions(+)
-
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index 3fbc0ff79699..945844d5f0ef 100644
---- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -93,6 +93,9 @@ ecryptfs_get_encrypted_key_payload_data(struct key *key)
- 	if (!payload)
- 		return ERR_PTR(-EKEYREVOKED);
+diff --git a/runtest/cve b/runtest/cve
+index d182e592a..b8e038112 100644
+--- a/runtest/cve
++++ b/runtest/cve
+@@ -17,5 +17,6 @@ cve-2017-2671 cve-2017-2671
+ cve-2017-5669 cve-2017-5669
+ cve-2017-6951 cve-2017-6951
+ cve-2017-7472 keyctl04
++cve-2017-12192 keyctl07
+ cve-2017-15274 add_key02
+ cve-2017-1000364 stack_clash
+diff --git a/runtest/syscalls b/runtest/syscalls
+index fc6800abf..822608613 100644
+--- a/runtest/syscalls
++++ b/runtest/syscalls
+@@ -503,6 +503,7 @@ keyctl03 keyctl03
+ keyctl04 keyctl04
+ keyctl05 keyctl05
+ keyctl06 keyctl06
++keyctl07 keyctl07
  
-+	if (payload->payload_datalen != sizeof(struct ecryptfs_auth_tok))
-+		return ERR_PTR(-EINVAL);
+ kcmp01 kcmp01
+ kcmp02 kcmp02
+diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
+index a803986ef..8a2a8d21e 100644
+--- a/testcases/kernel/syscalls/.gitignore
++++ b/testcases/kernel/syscalls/.gitignore
+@@ -464,6 +464,7 @@
+ /keyctl/keyctl04
+ /keyctl/keyctl05
+ /keyctl/keyctl06
++/keyctl/keyctl07
+ /kcmp/kcmp01
+ /kcmp/kcmp02
+ /kcmp/kcmp03
+diff --git a/testcases/kernel/syscalls/keyctl/keyctl07.c b/testcases/kernel/syscalls/keyctl/keyctl07.c
+new file mode 100644
+index 000000000..404e7a92f
+--- /dev/null
++++ b/testcases/kernel/syscalls/keyctl/keyctl07.c
+@@ -0,0 +1,89 @@
++/*
++ * Copyright (c) 2017 Google, Inc.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program, if not, see <http://www.gnu.org/licenses/>.
++ */
 +
- 	return (struct ecryptfs_auth_tok *)payload->payload_data;
- }
- 
-@@ -129,6 +132,9 @@ ecryptfs_get_key_payload_data(struct key *key)
- 	if (!ukp)
- 		return ERR_PTR(-EKEYREVOKED);
- 
-+	if (ukp->datalen != sizeof(struct ecryptfs_auth_tok))
-+		return ERR_PTR(-EINVAL);
++/*
++ * Regression test for commit 37863c43b2c6 ("KEYS: prevent KEYCTL_READ on
++ * negative key").  This is CVE-2017-12192.
++ */
 +
- 	return (struct ecryptfs_auth_tok *)ukp->data;
- }
- 
-diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index fa218cd64f74..95e20ab67df3 100644
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -471,6 +471,10 @@ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
- 	(*auth_tok) = ecryptfs_get_key_payload_data(auth_tok_key);
- 	if (IS_ERR(*auth_tok)) {
- 		rc = PTR_ERR(*auth_tok);
-+		if (rc = -EINVAL) {
-+			ecryptfs_printk(KERN_ERR,
-+					"Authentication token payload has wrong length\n");
-+		}
- 		*auth_tok = NULL;
- 		goto out;
- 	}
++#include <errno.h>
++
++#include "tst_test.h"
++#include "lapi/keyctl.h"
++
++static void do_test(void)
++{
++	key_serial_t key_id;
++	char buffer[128];
++
++	/*
++	 * Create a negatively instantiated key of the "user" key type.  This
++	 * key type is chosen because it has a ->read() method (which makes the
++	 * bug reachable) and is available whenever CONFIG_KEYS is enabled.
++	 *
++	 * request_key() will result in the creation of a negative key provided
++	 * that /sbin/request-key isn't configured to positively instantiate the
++	 * key, based on the provided type, description, and callout_info.  If
++	 * /sbin/request-key doesn't exist, errno will be ENOENT; while if it
++	 * does exist and we specify some random unprefixed description, errno
++	 * should be ENOKEY (since /sbin/request-key should not be configured to
++	 * instantiate random user keys).  In either case a negative key should
++	 * be created and we can continue on with the test.  Negative keys last
++	 * for 60 seconds so there should be plenty of time for the test.
++	 */
++	TEST(request_key("user", "description", "callout_info",
++			 KEY_SPEC_PROCESS_KEYRING));
++	if (TEST_RETURN != -1)
++		tst_brk(TBROK, "request_key() unexpectedly succeeded");
++
++	if (TEST_ERRNO != ENOKEY && TEST_ERRNO != ENOENT) {
++		tst_brk(TBROK | TTERRNO,
++			"request_key() failed with unexpected error");
++	}
++
++	/* Get the ID of the negative key by reading the keyring */
++	TEST(keyctl(KEYCTL_READ, KEY_SPEC_PROCESS_KEYRING,
++		    &key_id, sizeof(key_id)));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "KEYCTL_READ unexpectedly failed");
++	if (TEST_RETURN != sizeof(key_id)) {
++		tst_brk(TBROK, "KEYCTL_READ returned %ld but expected %zu",
++			TEST_RETURN, sizeof(key_id));
++	}
++
++	/*
++	 * Now try to read the negative key.  Unpatched kernels will oops trying
++	 * to read from memory address 0x00000000ffffff92.
++	 */
++	tst_res(TINFO, "trying to read from the negative key...");
++	TEST(keyctl(KEYCTL_READ, key_id, buffer, sizeof(buffer)));
++	if (TEST_RETURN != -1) {
++		tst_res(TFAIL,
++			"KEYCTL_READ on negative key unexpectedly succeeded");
++		return;
++	}
++	if (TEST_ERRNO != ENOKEY) {
++		tst_res(TFAIL | TTERRNO,
++			"KEYCTL_READ on negative key failed with unexpected error");
++		return;
++	}
++	tst_res(TPASS, "KEYCTL_READ on negative key expectedly failed with ENOKEY");
++}
++
++static struct tst_test test = {
++	.test_all = do_test,
++};
 -- 
-2.14.2.920.gcf0c67979c-goog
+2.15.0.rc0.271.g36b669edcc-goog
 
