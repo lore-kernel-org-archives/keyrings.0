@@ -1,19 +1,70 @@
-From: Cyril Hrubis <chrubis@suse.cz>
-Date: Wed, 25 Oct 2017 09:23:44 +0000
-Subject: Re: [LTP] [PATCH v4] syscalls/keyctl07: new test for oops when reading negative key
-Message-Id: <20171025092344.GE4244@rei>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 12 Oct 2017 20:42:24 +0000
+Subject: [PATCH v2 1/4] lapi/keyctl.h: add a few missing definitions
+Message-Id: <20171012204227.116510-2-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-Hi!
-> Add a test for a bug which caused the kernel to dereference a bogus
-> pointer when using KEYCTL_READ to read from a negative key.
+From: Eric Biggers <ebiggers@google.com>
 
-Thanks a lot for the updated version, pushed.
+KEYCTL_REVOKE, KEYCTL_READ, KEY_SPEC_PROCESS_KEYRING, and
+KEY_SPEC_USER_SESSION_KEYRING are used by existing tests.
+KEY_SPEC_USER_KEYRING will be used by an upcoming test.
 
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ include/lapi/keyctl.h | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/include/lapi/keyctl.h b/include/lapi/keyctl.h
+index 3e7ce4708..73f4fdc90 100644
+--- a/include/lapi/keyctl.h
++++ b/include/lapi/keyctl.h
+@@ -81,6 +81,10 @@ static inline long keyctl(int cmd, ...)
+ # define KEYCTL_UPDATE 2
+ #endif
+ 
++#ifndef KEYCTL_REVOKE
++# define KEYCTL_REVOKE 3
++#endif
++
+ #ifndef KEYCTL_SETPERM
+ # define KEYCTL_SETPERM 5
+ #endif
+@@ -89,14 +93,30 @@ static inline long keyctl(int cmd, ...)
+ # define KEYCTL_UNLINK 9
+ #endif
+ 
++#ifndef KEYCTL_READ
++# define KEYCTL_READ 11
++#endif
++
+ #ifndef KEY_SPEC_THREAD_KEYRING
+ # define KEY_SPEC_THREAD_KEYRING -1
+ #endif
+ 
++#ifndef KEY_SPEC_PROCESS_KEYRING
++# define KEY_SPEC_PROCESS_KEYRING -2
++#endif
++
+ #ifndef KEY_SPEC_SESSION_KEYRING
+ # define KEY_SPEC_SESSION_KEYRING -3
+ #endif
+ 
++#ifndef KEY_SPEC_USER_KEYRING
++# define KEY_SPEC_USER_KEYRING -4
++#endif
++
++#ifndef KEY_SPEC_USER_SESSION_KEYRING
++# define KEY_SPEC_USER_SESSION_KEYRING -5
++#endif
++
+ #ifndef KEY_REQKEY_DEFL_THREAD_KEYRING
+ # define KEY_REQKEY_DEFL_THREAD_KEYRING 1
+ #endif
 -- 
-Cyril Hrubis
-chrubis@suse.cz
+2.15.0.rc0.271.g36b669edcc-goog
+
