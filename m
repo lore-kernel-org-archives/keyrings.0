@@ -1,190 +1,85 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Wed, 18 Oct 2017 07:00:36 +0000
-Subject: [PATCH v10 04/20] crypto: remove redundant backlog checks on EBUSY
-Message-Id: <1508310057-25369-5-git-send-email-gilad@benyossef.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 12 Oct 2017 20:17:48 +0000
+Subject: [PATCH 15/15] KEYS: load key flags and expiry time atomically in proc_keys_show()
+Message-Id: <150783946795.10956.9874718534834195991.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-cifs@vger.kernel.org, linux-doc@vger.kernel.org, linux-ima-user@lists.sourceforge.net, netdev@vger.kernel.org, samba-technical@lists.samba.org, linux-kernel@vger.kernel.org, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-arm-kernel@lists.infradead.org, Ofir Drang <ofir.drang@arm.com>
+References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-Now that -EBUSY return code only indicates backlog queueing
-we can safely remove the now redundant check for the
-CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+In proc_keys_show(), the key semaphore is not held, so the key ->flags
+and ->expiry can be changed concurrently.  We therefore should read them
+atomically just once.  Otherwise /proc/keys may show an inconsistent
+state, such a key that is negative ('N') but not instantiated ('I').
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- crypto/ahash.c        | 12 +++---------
- crypto/cts.c          |  6 ++----
- crypto/lrw.c          |  8 ++------
- crypto/rsa-pkcs1pad.c | 16 ++++------------
- crypto/xts.c          |  8 ++------
- 5 files changed, 13 insertions(+), 37 deletions(-)
 
-diff --git a/crypto/ahash.c b/crypto/ahash.c
-index 5e8666e..3a35d67 100644
---- a/crypto/ahash.c
-+++ b/crypto/ahash.c
-@@ -334,9 +334,7 @@ static int ahash_op_unaligned(struct ahash_request *req,
- 		return err;
+ security/keys/proc.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index 46fa0f1bfcc3..589328ed736f 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -179,7 +179,9 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	struct rb_node *_p = v;
+ 	struct key *key = rb_entry(_p, struct key, serial_node);
+ 	struct timespec now;
++	time_t expiry;
+ 	unsigned long timo;
++	unsigned long flags;
+ 	key_ref_t key_ref, skey_ref;
+ 	char xbuf[16];
+ 	short state;
+@@ -218,12 +220,13 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	rcu_read_lock();
  
- 	err = op(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && (ahash_request_flags(req) &
--			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return err;
+ 	/* come up with a suitable timeout value */
+-	if (key->expiry = 0) {
++	expiry = READ_ONCE(key->expiry);
++	if (expiry = 0) {
+ 		memcpy(xbuf, "perm", 5);
+-	} else if (now.tv_sec >= key->expiry) {
++	} else if (now.tv_sec >= expiry) {
+ 		memcpy(xbuf, "expd", 5);
+ 	} else {
+-		timo = key->expiry - now.tv_sec;
++		timo = expiry - now.tv_sec;
  
- 	ahash_restore_req(req, err);
-@@ -394,9 +392,7 @@ static int ahash_def_finup_finish1(struct ahash_request *req, int err)
- 	req->base.complete = ahash_def_finup_done2;
+ 		if (timo < 60)
+ 			sprintf(xbuf, "%lus", timo);
+@@ -239,18 +242,19 @@ static int proc_keys_show(struct seq_file *m, void *v)
  
- 	err = crypto_ahash_reqtfm(req)->final(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && (ahash_request_flags(req) &
--			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return err;
+ 	state = READ_ONCE(key->state);
  
- out:
-@@ -432,9 +428,7 @@ static int ahash_def_finup(struct ahash_request *req)
- 		return err;
+-#define showflag(KEY, LETTER, FLAG) \
+-	(test_bit(FLAG,	&(KEY)->flags) ? LETTER : '-')
++#define showflag(FLAGS, LETTER, FLAG) \
++	((FLAGS & (1 << FLAG)) ? LETTER : '-')
  
- 	err = tfm->update(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && (ahash_request_flags(req) &
--			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return err;
- 
- 	return ahash_def_finup_finish1(req, err);
-diff --git a/crypto/cts.c b/crypto/cts.c
-index 243f591..4773c18 100644
---- a/crypto/cts.c
-+++ b/crypto/cts.c
-@@ -136,8 +136,7 @@ static void crypto_cts_encrypt_done(struct crypto_async_request *areq, int err)
- 		goto out;
- 
- 	err = cts_cbc_encrypt(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return;
- 
- out:
-@@ -229,8 +228,7 @@ static void crypto_cts_decrypt_done(struct crypto_async_request *areq, int err)
- 		goto out;
- 
- 	err = cts_cbc_decrypt(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return;
- 
- out:
-diff --git a/crypto/lrw.c b/crypto/lrw.c
-index 92df312..cbbd7c5 100644
---- a/crypto/lrw.c
-+++ b/crypto/lrw.c
-@@ -328,9 +328,7 @@ static int do_encrypt(struct skcipher_request *req, int err)
- 		      crypto_skcipher_encrypt(subreq) ?:
- 		      post_crypt(req);
- 
--		if (err = -EINPROGRESS ||
--		    (err = -EBUSY &&
--		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (err = -EINPROGRESS || err = -EBUSY)
- 			return err;
- 	}
- 
-@@ -380,9 +378,7 @@ static int do_decrypt(struct skcipher_request *req, int err)
- 		      crypto_skcipher_decrypt(subreq) ?:
- 		      post_crypt(req);
- 
--		if (err = -EINPROGRESS ||
--		    (err = -EBUSY &&
--		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (err = -EINPROGRESS || err = -EBUSY)
- 			return err;
- 	}
- 
-diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
-index 407c64b..2908f93 100644
---- a/crypto/rsa-pkcs1pad.c
-+++ b/crypto/rsa-pkcs1pad.c
-@@ -279,9 +279,7 @@ static int pkcs1pad_encrypt(struct akcipher_request *req)
- 				   req->dst, ctx->key_size - 1, req->dst_len);
- 
- 	err = crypto_akcipher_encrypt(&req_ctx->child_req);
--	if (err != -EINPROGRESS &&
--			(err != -EBUSY ||
--			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_encrypt_sign_complete(req, err);
- 
- 	return err;
-@@ -383,9 +381,7 @@ static int pkcs1pad_decrypt(struct akcipher_request *req)
- 				   ctx->key_size);
- 
- 	err = crypto_akcipher_decrypt(&req_ctx->child_req);
--	if (err != -EINPROGRESS &&
--			(err != -EBUSY ||
--			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_decrypt_complete(req, err);
- 
- 	return err;
-@@ -440,9 +436,7 @@ static int pkcs1pad_sign(struct akcipher_request *req)
- 				   req->dst, ctx->key_size - 1, req->dst_len);
- 
- 	err = crypto_akcipher_sign(&req_ctx->child_req);
--	if (err != -EINPROGRESS &&
--			(err != -EBUSY ||
--			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_encrypt_sign_complete(req, err);
- 
- 	return err;
-@@ -561,9 +555,7 @@ static int pkcs1pad_verify(struct akcipher_request *req)
- 				   ctx->key_size);
- 
- 	err = crypto_akcipher_verify(&req_ctx->child_req);
--	if (err != -EINPROGRESS &&
--			(err != -EBUSY ||
--			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_verify_complete(req, err);
- 
- 	return err;
-diff --git a/crypto/xts.c b/crypto/xts.c
-index e31828e..f317c48 100644
---- a/crypto/xts.c
-+++ b/crypto/xts.c
-@@ -269,9 +269,7 @@ static int do_encrypt(struct skcipher_request *req, int err)
- 		      crypto_skcipher_encrypt(subreq) ?:
- 		      post_crypt(req);
- 
--		if (err = -EINPROGRESS ||
--		    (err = -EBUSY &&
--		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (err = -EINPROGRESS || err = -EBUSY)
- 			return err;
- 	}
- 
-@@ -321,9 +319,7 @@ static int do_decrypt(struct skcipher_request *req, int err)
- 		      crypto_skcipher_decrypt(subreq) ?:
- 		      post_crypt(req);
- 
--		if (err = -EINPROGRESS ||
--		    (err = -EBUSY &&
--		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (err = -EINPROGRESS || err = -EBUSY)
- 			return err;
- 	}
- 
--- 
-2.7.4
++	flags = READ_ONCE(key->flags);
+ 	seq_printf(m, "%08x %c%c%c%c%c%c%c %5d %4s %08x %5d %5d %-9.9s ",
+ 		   key->serial,
+ 		   state = KEY_IS_INSTANTIATED ? 'I' : '-',
+-		   showflag(key, 'R', KEY_FLAG_REVOKED),
+-		   showflag(key, 'D', KEY_FLAG_DEAD),
+-		   showflag(key, 'Q', KEY_FLAG_IN_QUOTA),
+-		   showflag(key, 'U', KEY_FLAG_USER_CONSTRUCT),
++		   showflag(flags, 'R', KEY_FLAG_REVOKED),
++		   showflag(flags, 'D', KEY_FLAG_DEAD),
++		   showflag(flags, 'Q', KEY_FLAG_IN_QUOTA),
++		   showflag(flags, 'U', KEY_FLAG_USER_CONSTRUCT),
+ 		   state < 0 ? 'N' : '-',
+-		   showflag(key, 'i', KEY_FLAG_INVALIDATED),
++		   showflag(flags, 'i', KEY_FLAG_INVALIDATED),
+ 		   refcount_read(&key->usage),
+ 		   xbuf,
+ 		   key->perm,
 
