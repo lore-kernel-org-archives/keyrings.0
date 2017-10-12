@@ -1,25 +1,87 @@
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Date: Wed, 25 Oct 2017 20:04:42 +0000
-Subject: Re: [PATCH] tpm: Move Linux RNG connection to hwrng
-Message-Id: <20171025200442.GA2815@obsidianresearch.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 12 Oct 2017 16:17:27 +0000
+Subject: [RFC][PATCH 00/15] KEYS: Fixes
+Message-Id: <150782504738.1655.12882942775980793687.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171024184235.GC1806@obsidianresearch.com>
- <CANc+2y5q78g1Ow1JQ7kO0SkPrgNtbRV=COkB4YLHbSraTQH7aQ@mail.gmail.com>
- <20171025185817.hoalqzud3646yuy7@linux.intel.com>
- <20171025193707.GA998@obsidianresearch.com>
- <20171025200030.ikygzc3lxnwex7sg@linux.intel.com>
-In-Reply-To: <20171025200030.ikygzc3lxnwex7sg@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>, Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, open list <linux-kernel@vger.kernel.org>, linux-security-module@vger.kernel.org, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, James Morris <james.l.morris@oracle.com>, Matt Mackall <mpm@selenic.com>, David Safford <safford@us.ibm.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, "Serge E. Hallyn" <serge@hallyn.com>
+To: linux-security-module@vger.kernel.org
 
-On Wed, Oct 25, 2017 at 10:00:30PM +0200, Jarkko Sakkinen wrote:
-> A minor tidbit: could the tpm_ prefix removed from those fields?
 
-Yes, in v2
+Hi Eric,
 
-I will send v2 when you land your rework patch as this will depend on it.
+Are you okay with my changes/substitution of your key instantiation-state
+patches?
 
-Jason
+David
+---
+Here's a collection of fixes for Linux keyrings, mostly thanks to Eric
+Biggers, including:
+
+ (1) Fix a bunch of places where kernel drivers may access revoked user-type
+     keys and don't do it correctly.
+
+ (2) Fix some ecryptfs bits.
+
+ (3) Fix big_key to require CONFIG_CRYPTO.
+
+ (4) Fix a couple of bugs in the asymmetric key type.
+
+ (5) Fix a race between updating and finding negative keys.
+
+ (6) Prevent add_key() from updating uninstantiated keys.
+
+ (7) Make loading of key flags and expiry time atomic when not holding locks.
+
+The patches can be found here also:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-fixes
+
+David
+---
+Arnd Bergmann (1):
+      security/keys: BIG_KEY requires CONFIG_CRYPTO
+
+David Howells (2):
+      KEYS: Fix race between updating and finding a negative key
+      KEYS: don't let add_key() update an uninstantiated key
+
+Eric Biggers (10):
+      KEYS: encrypted: fix dereference of NULL user_key_payload
+      FS-Cache: fix dereference of NULL user_key_payload
+      lib/digsig: fix dereference of NULL user_key_payload
+      fscrypt: fix dereference of NULL user_key_payload
+      ecryptfs: fix dereference of NULL user_key_payload
+      ecryptfs: fix out-of-bounds read of key payload
+      ecryptfs: move key payload accessor functions into keystore.c
+      KEYS: load key flags and expiry time atomically in key_validate()
+      KEYS: load key flags and expiry time atomically in keyring_search_iterator()
+      KEYS: load key flags and expiry time atomically in proc_keys_show()
+
+Lee, Chun-Yi (2):
+      KEYS: Fix the wrong index when checking the existence of second id
+      KEYS: checking the input id parameters before finding asymmetric key
+
+
+ crypto/asymmetric_keys/asymmetric_type.c |    4 +-
+ fs/crypto/keyinfo.c                      |    5 ++
+ fs/ecryptfs/ecryptfs_kernel.h            |   44 ------------------
+ fs/ecryptfs/keystore.c                   |   73 ++++++++++++++++++++++++++++++
+ fs/fscache/object-list.c                 |    7 +++
+ include/linux/key.h                      |   37 +++++++++------
+ lib/digsig.c                             |    6 ++
+ security/keys/Kconfig                    |    1 
+ security/keys/encrypted-keys/encrypted.c |    9 +++-
+ security/keys/gc.c                       |    7 ++-
+ security/keys/key.c                      |   37 +++++++++++----
+ security/keys/keyctl.c                   |    9 ++--
+ security/keys/keyring.c                  |   12 +++--
+ security/keys/permission.c               |    7 ++-
+ security/keys/proc.c                     |   35 +++++++++-----
+ security/keys/process_keys.c             |    8 ++-
+ security/keys/request_key.c              |    7 +--
+ security/keys/trusted.c                  |    2 -
+ security/keys/user_defined.c             |    2 -
+ 19 files changed, 201 insertions(+), 111 deletions(-)
+
