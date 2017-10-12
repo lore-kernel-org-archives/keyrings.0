@@ -1,54 +1,115 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 15 Oct 2017 09:19:50 +0000
-Subject: [PATCH v9 05/20] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
-Message-Id: <1508059209-25529-6-git-send-email-gilad@benyossef.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 12 Oct 2017 20:16:33 +0000
+Subject: [PATCH 05/15] ecryptfs: fix dereference of NULL user_key_payload
+Message-Id: <150783939339.10956.4554947273195730727.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
-Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-Now that -EBUSY return code only indicates backlog queueing
-we can safely remove the now redundant check for the
-CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+In eCryptfs, we failed to verify that the authentication token keys are
+not revoked before dereferencing their payloads, which is problematic
+because the payload of a revoked key is NULL.  request_key() *does* skip
+revoked keys, but there is still a window where the key can be revoked
+before we acquire the key semaphore.
+
+Fix it by updating ecryptfs_get_key_payload_data() to return
+-EKEYREVOKED if the key payload is NULL.  For completeness we check this
+for "encrypted" keys as well as "user" keys, although encrypted keys
+cannot be revoked currently.
+
+Alternatively we could use key_validate(), but since we'll also need to
+fix ecryptfs_get_key_payload_data() to validate the payload length, it
+seems appropriate to just check the payload pointer.
+
+Fixes: 237fead61998 ("[PATCH] ecryptfs: fs/Makefile and fs/Kconfig")
+Reviewed-by: James Morris <james.l.morris@oracle.com>
+Cc: <stable@vger.kernel.org>    [v2.6.19+]
+Cc: Michael Halcrow <mhalcrow@google.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- drivers/crypto/marvell/cesa.c | 3 +--
- drivers/crypto/marvell/cesa.h | 2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
-index b657e7c..ff73aa5 100644
---- a/drivers/crypto/marvell/cesa.c
-+++ b/drivers/crypto/marvell/cesa.c
-@@ -181,8 +181,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
- 	spin_lock_bh(&engine->lock);
- 	ret = crypto_enqueue_request(&engine->queue, req);
- 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
--	    (ret = -EINPROGRESS ||
--	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	    (ret = -EINPROGRESS || ret = -EBUSY))
- 		mv_cesa_tdma_chain(engine, creq);
- 	spin_unlock_bh(&engine->lock);
+ fs/ecryptfs/ecryptfs_kernel.h |   24 +++++++++++++++++-------
+ fs/ecryptfs/keystore.c        |    9 ++++++++-
+ 2 files changed, 25 insertions(+), 8 deletions(-)
+
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index 9c351bf757b2..3fbc0ff79699 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -84,11 +84,16 @@ struct ecryptfs_page_crypt_context {
+ static inline struct ecryptfs_auth_tok *
+ ecryptfs_get_encrypted_key_payload_data(struct key *key)
+ {
+-	if (key->type = &key_type_encrypted)
+-		return (struct ecryptfs_auth_tok *)
+-			(&((struct encrypted_key_payload *)key->payload.data[0])->payload_data);
+-	else
++	struct encrypted_key_payload *payload;
++
++	if (key->type != &key_type_encrypted)
+ 		return NULL;
++
++	payload = key->payload.data[0];
++	if (!payload)
++		return ERR_PTR(-EKEYREVOKED);
++
++	return (struct ecryptfs_auth_tok *)payload->payload_data;
+ }
  
-diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
-index b7872f6..63c8457 100644
---- a/drivers/crypto/marvell/cesa.h
-+++ b/drivers/crypto/marvell/cesa.h
-@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
- 	 * the backlog and will be processed later. There's no need to
- 	 * clean it up.
- 	 */
--	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
-+	if (ret = -EBUSY)
- 		return false;
+ static inline struct key *ecryptfs_get_encrypted_key(char *sig)
+@@ -114,12 +119,17 @@ static inline struct ecryptfs_auth_tok *
+ ecryptfs_get_key_payload_data(struct key *key)
+ {
+ 	struct ecryptfs_auth_tok *auth_tok;
++	struct user_key_payload *ukp;
  
- 	/* Request wasn't queued, we need to clean it up */
--- 
-2.7.4
+ 	auth_tok = ecryptfs_get_encrypted_key_payload_data(key);
+-	if (!auth_tok)
+-		return (struct ecryptfs_auth_tok *)user_key_payload_locked(key)->data;
+-	else
++	if (auth_tok)
+ 		return auth_tok;
++
++	ukp = user_key_payload_locked(key);
++	if (!ukp)
++		return ERR_PTR(-EKEYREVOKED);
++
++	return (struct ecryptfs_auth_tok *)ukp->data;
+ }
+ 
+ #define ECRYPTFS_MAX_KEYSET_SIZE 1024
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 3cf1546dca82..fa218cd64f74 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -459,7 +459,8 @@ static int ecryptfs_verify_version(u16 version)
+  * @auth_tok_key: key containing the authentication token
+  * @auth_tok: authentication token
+  *
+- * Returns zero on valid auth tok; -EINVAL otherwise
++ * Returns zero on valid auth tok; -EINVAL if the payload is invalid; or
++ * -EKEYREVOKED if the key was revoked before we acquired its semaphore.
+  */
+ static int
+ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
+@@ -468,6 +469,12 @@ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
+ 	int rc = 0;
+ 
+ 	(*auth_tok) = ecryptfs_get_key_payload_data(auth_tok_key);
++	if (IS_ERR(*auth_tok)) {
++		rc = PTR_ERR(*auth_tok);
++		*auth_tok = NULL;
++		goto out;
++	}
++
+ 	if (ecryptfs_verify_version((*auth_tok)->version)) {
+ 		printk(KERN_ERR "Data structure version mismatch. Userspace "
+ 		       "tools must match eCryptfs kernel module with major "
 
