@@ -1,177 +1,234 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 16 Oct 2017 19:47:57 +0000
-Subject: [PATCH v3] syscalls/keyctl07: new test for oops when reading negative key
-Message-Id: <20171016194757.47486-1-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Sun, 15 Oct 2017 09:19:58 +0000
+Subject: [PATCH v9 13/20] dm: move dm-verity to generic async completion
+Message-Id: <1508059209-25529-14-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, Mikulas Patocka <mpatocka@redhat.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+dm-verity is starting async. crypto ops and waiting for them to complete.
+Move it over to generic code doing the same.
 
-Add a test for a bug which caused the kernel to dereference a bogus
-pointer when using KEYCTL_READ to read from a negative key.
+This also avoids a future potential data coruption bug created
+by the use of wait_for_completion_interruptible() without dealing
+correctly with an interrupt aborting the wait prior to the
+async op finishing, should this code ever move to a context
+where signals are not masked.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>
 ---
- runtest/cve                                 |   1 +
- runtest/syscalls                            |   1 +
- testcases/kernel/syscalls/.gitignore        |   1 +
- testcases/kernel/syscalls/keyctl/keyctl07.c | 109 ++++++++++++++++++++++++++++
- 4 files changed, 112 insertions(+)
- create mode 100644 testcases/kernel/syscalls/keyctl/keyctl07.c
+ drivers/md/dm-verity-target.c | 81 +++++++++++--------------------------------
+ drivers/md/dm-verity.h        |  5 ---
+ 2 files changed, 20 insertions(+), 66 deletions(-)
 
-diff --git a/runtest/cve b/runtest/cve
-index d182e592a..b8e038112 100644
---- a/runtest/cve
-+++ b/runtest/cve
-@@ -17,5 +17,6 @@ cve-2017-2671 cve-2017-2671
- cve-2017-5669 cve-2017-5669
- cve-2017-6951 cve-2017-6951
- cve-2017-7472 keyctl04
-+cve-2017-12192 keyctl07
- cve-2017-15274 add_key02
- cve-2017-1000364 stack_clash
-diff --git a/runtest/syscalls b/runtest/syscalls
-index 49ae48621..e345325a2 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -504,6 +504,7 @@ keyctl03 keyctl03
- keyctl04 keyctl04
- keyctl05 keyctl05
- keyctl06 keyctl06
-+keyctl07 keyctl07
+diff --git a/drivers/md/dm-verity-target.c b/drivers/md/dm-verity-target.c
+index bda3cac..811ad28 100644
+--- a/drivers/md/dm-verity-target.c
++++ b/drivers/md/dm-verity-target.c
+@@ -92,74 +92,33 @@ static sector_t verity_position_at_level(struct dm_verity *v, sector_t block,
+ 	return block >> (level * v->hash_per_block_bits);
+ }
  
- kcmp01 kcmp01
- kcmp02 kcmp02
-diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
-index 76bae9e4a..2a770a998 100644
---- a/testcases/kernel/syscalls/.gitignore
-+++ b/testcases/kernel/syscalls/.gitignore
-@@ -465,6 +465,7 @@
- /keyctl/keyctl04
- /keyctl/keyctl05
- /keyctl/keyctl06
-+/keyctl/keyctl07
- /kcmp/kcmp01
- /kcmp/kcmp02
- /kcmp/kcmp03
-diff --git a/testcases/kernel/syscalls/keyctl/keyctl07.c b/testcases/kernel/syscalls/keyctl/keyctl07.c
-new file mode 100644
-index 000000000..eb8a72dbe
---- /dev/null
-+++ b/testcases/kernel/syscalls/keyctl/keyctl07.c
-@@ -0,0 +1,109 @@
-+/*
-+ * Copyright (c) 2017 Google, Inc.
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program, if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+/*
-+ * Regression test for commit 37863c43b2c6 ("KEYS: prevent KEYCTL_READ on
-+ * negative key").  This is CVE-2017-12192.
-+ */
-+
-+#include <errno.h>
-+#include <stdlib.h>
-+#include <sys/wait.h>
-+
-+#include "tst_test.h"
-+#include "lapi/keyctl.h"
-+
-+static void try_to_read_negative_key(void)
-+{
-+	key_serial_t key_id;
-+	char buffer[128];
-+
-+	/*
-+	 * Create a negatively instantiated key of the "user" key type.  This
-+	 * key type is chosen because it has a ->read() method (which makes the
-+	 * bug reachable) and is available whenever CONFIG_KEYS is enabled.
-+	 *
-+	 * request_key() will result in the creation of a negative key provided
-+	 * that /sbin/request-key isn't configured to positively instantiate the
-+	 * key, based on the provided type, description, and callout_info.  If
-+	 * /sbin/request-key doesn't exist, errno will be ENOENT; while if it
-+	 * does exist and we specify some random unprefixed description, errno
-+	 * should be ENOKEY (since /sbin/request-key should not be configured to
-+	 * instantiate random user keys).  In either case a negative key should
-+	 * be created and we can continue on with the test.  Negative keys last
-+	 * for 60 seconds so there should be plenty of time for the test.
-+	 */
-+	TEST(request_key("user", "description", "callout_info",
-+			 KEY_SPEC_PROCESS_KEYRING));
-+	if (TEST_RETURN != -1)
-+		tst_brk(TBROK, "request_key() unexpectedly succeeded");
-+
-+	if (TEST_ERRNO != ENOKEY && TEST_ERRNO != ENOENT) {
-+		tst_brk(TBROK | TTERRNO,
-+			"request_key() failed with unexpected error");
-+	}
-+
-+	/* Get the ID of the negative key by reading the keyring */
-+	TEST(keyctl(KEYCTL_READ, KEY_SPEC_PROCESS_KEYRING,
-+		    &key_id, sizeof(key_id)));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "KEYCTL_READ unexpectedly failed");
-+	if (TEST_RETURN != sizeof(key_id)) {
-+		tst_brk(TBROK, "KEYCTL_READ returned %ld but expected %zu",
-+			TEST_RETURN, sizeof(key_id));
-+	}
-+
-+	/*
-+	 * Now try to read the negative key.  Unpatched kernels will oops trying
-+	 * to read from memory address 0x00000000ffffff92.
-+	 */
-+	tst_res(TINFO, "trying to read from the negative key...");
-+	TEST(keyctl(KEYCTL_READ, key_id, buffer, sizeof(buffer)));
-+	if (TEST_RETURN != -1) {
-+		tst_brk(TFAIL,
-+			"KEYCTL_READ on negative key unexpectedly succeeded");
-+	}
-+	if (TEST_ERRNO != ENOKEY) {
-+		tst_brk(TFAIL | TTERRNO,
-+			"KEYCTL_READ on negative key failed with unexpected error");
-+	}
-+	tst_res(TPASS,
-+		"KEYCTL_READ on negative key expectedly failed with ENOKEY");
-+}
-+
-+static void do_test(void)
-+{
-+	int status;
-+
-+	if (SAFE_FORK() = 0) {
-+		try_to_read_negative_key();
-+		return;
-+	}
-+	SAFE_WAIT(&status);
-+	if (WIFSIGNALED(status) && WTERMSIG(status) = SIGKILL) {
-+		tst_brk(TFAIL,
-+			"KEYCTL_READ on negative key caused kernel oops");
-+	}
-+	if (!WIFEXITED(status))
-+		tst_brk(TBROK, "child exited abnormally");
-+	exit(WEXITSTATUS(status));
-+}
-+
-+static struct tst_test test = {
-+	.test_all = do_test,
-+	.forks_child = 1,
-+};
+-/*
+- * Callback function for asynchrnous crypto API completion notification
+- */
+-static void verity_op_done(struct crypto_async_request *base, int err)
+-{
+-	struct verity_result *res = (struct verity_result *)base->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	res->err = err;
+-	complete(&res->completion);
+-}
+-
+-/*
+- * Wait for async crypto API callback
+- */
+-static inline int verity_complete_op(struct verity_result *res, int ret)
+-{
+-	switch (ret) {
+-	case 0:
+-		break;
+-
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		ret = wait_for_completion_interruptible(&res->completion);
+-		if (!ret)
+-			ret = res->err;
+-		reinit_completion(&res->completion);
+-		break;
+-
+-	default:
+-		DMERR("verity_wait_hash: crypto op submission failed: %d", ret);
+-	}
+-
+-	if (unlikely(ret < 0))
+-		DMERR("verity_wait_hash: crypto op failed: %d", ret);
+-
+-	return ret;
+-}
+-
+ static int verity_hash_update(struct dm_verity *v, struct ahash_request *req,
+ 				const u8 *data, size_t len,
+-				struct verity_result *res)
++				struct crypto_wait *wait)
+ {
+ 	struct scatterlist sg;
+ 
+ 	sg_init_one(&sg, data, len);
+ 	ahash_request_set_crypt(req, &sg, NULL, len);
+ 
+-	return verity_complete_op(res, crypto_ahash_update(req));
++	return crypto_wait_req(crypto_ahash_update(req), wait);
+ }
+ 
+ /*
+  * Wrapper for crypto_ahash_init, which handles verity salting.
+  */
+ static int verity_hash_init(struct dm_verity *v, struct ahash_request *req,
+-				struct verity_result *res)
++				struct crypto_wait *wait)
+ {
+ 	int r;
+ 
+ 	ahash_request_set_tfm(req, v->tfm);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 					CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					verity_op_done, (void *)res);
+-	init_completion(&res->completion);
++					crypto_req_done, (void *)wait);
++	crypto_init_wait(wait);
+ 
+-	r = verity_complete_op(res, crypto_ahash_init(req));
++	r = crypto_wait_req(crypto_ahash_init(req), wait);
+ 
+ 	if (unlikely(r < 0)) {
+ 		DMERR("crypto_ahash_init failed: %d", r);
+@@ -167,18 +126,18 @@ static int verity_hash_init(struct dm_verity *v, struct ahash_request *req,
+ 	}
+ 
+ 	if (likely(v->salt_size && (v->version >= 1)))
+-		r = verity_hash_update(v, req, v->salt, v->salt_size, res);
++		r = verity_hash_update(v, req, v->salt, v->salt_size, wait);
+ 
+ 	return r;
+ }
+ 
+ static int verity_hash_final(struct dm_verity *v, struct ahash_request *req,
+-			     u8 *digest, struct verity_result *res)
++			     u8 *digest, struct crypto_wait *wait)
+ {
+ 	int r;
+ 
+ 	if (unlikely(v->salt_size && (!v->version))) {
+-		r = verity_hash_update(v, req, v->salt, v->salt_size, res);
++		r = verity_hash_update(v, req, v->salt, v->salt_size, wait);
+ 
+ 		if (r < 0) {
+ 			DMERR("verity_hash_final failed updating salt: %d", r);
+@@ -187,7 +146,7 @@ static int verity_hash_final(struct dm_verity *v, struct ahash_request *req,
+ 	}
+ 
+ 	ahash_request_set_crypt(req, NULL, digest, 0);
+-	r = verity_complete_op(res, crypto_ahash_final(req));
++	r = crypto_wait_req(crypto_ahash_final(req), wait);
+ out:
+ 	return r;
+ }
+@@ -196,17 +155,17 @@ int verity_hash(struct dm_verity *v, struct ahash_request *req,
+ 		const u8 *data, size_t len, u8 *digest)
+ {
+ 	int r;
+-	struct verity_result res;
++	struct crypto_wait wait;
+ 
+-	r = verity_hash_init(v, req, &res);
++	r = verity_hash_init(v, req, &wait);
+ 	if (unlikely(r < 0))
+ 		goto out;
+ 
+-	r = verity_hash_update(v, req, data, len, &res);
++	r = verity_hash_update(v, req, data, len, &wait);
+ 	if (unlikely(r < 0))
+ 		goto out;
+ 
+-	r = verity_hash_final(v, req, digest, &res);
++	r = verity_hash_final(v, req, digest, &wait);
+ 
+ out:
+ 	return r;
+@@ -389,7 +348,7 @@ int verity_hash_for_block(struct dm_verity *v, struct dm_verity_io *io,
+  * Calculates the digest for the given bio
+  */
+ int verity_for_io_block(struct dm_verity *v, struct dm_verity_io *io,
+-			struct bvec_iter *iter, struct verity_result *res)
++			struct bvec_iter *iter, struct crypto_wait *wait)
+ {
+ 	unsigned int todo = 1 << v->data_dev_block_bits;
+ 	struct bio *bio = dm_bio_from_per_bio_data(io, v->ti->per_io_data_size);
+@@ -414,7 +373,7 @@ int verity_for_io_block(struct dm_verity *v, struct dm_verity_io *io,
+ 		 */
+ 		sg_set_page(&sg, bv.bv_page, len, bv.bv_offset);
+ 		ahash_request_set_crypt(req, &sg, NULL, len);
+-		r = verity_complete_op(res, crypto_ahash_update(req));
++		r = crypto_wait_req(crypto_ahash_update(req), wait);
+ 
+ 		if (unlikely(r < 0)) {
+ 			DMERR("verity_for_io_block crypto op failed: %d", r);
+@@ -482,7 +441,7 @@ static int verity_verify_io(struct dm_verity_io *io)
+ 	struct dm_verity *v = io->v;
+ 	struct bvec_iter start;
+ 	unsigned b;
+-	struct verity_result res;
++	struct crypto_wait wait;
+ 
+ 	for (b = 0; b < io->n_blocks; b++) {
+ 		int r;
+@@ -507,17 +466,17 @@ static int verity_verify_io(struct dm_verity_io *io)
+ 			continue;
+ 		}
+ 
+-		r = verity_hash_init(v, req, &res);
++		r = verity_hash_init(v, req, &wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+ 		start = io->iter;
+-		r = verity_for_io_block(v, io, &io->iter, &res);
++		r = verity_for_io_block(v, io, &io->iter, &wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+ 		r = verity_hash_final(v, req, verity_io_real_digest(v, io),
+-					&res);
++					&wait);
+ 		if (unlikely(r < 0))
+ 			return r;
+ 
+diff --git a/drivers/md/dm-verity.h b/drivers/md/dm-verity.h
+index a59e0ad..b675bc0 100644
+--- a/drivers/md/dm-verity.h
++++ b/drivers/md/dm-verity.h
+@@ -90,11 +90,6 @@ struct dm_verity_io {
+ 	 */
+ };
+ 
+-struct verity_result {
+-	struct completion completion;
+-	int err;
+-};
+-
+ static inline struct ahash_request *verity_io_hash_req(struct dm_verity *v,
+ 						     struct dm_verity_io *io)
+ {
 -- 
-2.15.0.rc0.271.g36b669edcc-goog
+2.7.4
 
