@@ -1,112 +1,95 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Wed, 18 Oct 2017 00:53:19 +0000
-Subject: [PATCH v5 06/18] ima: Improvements in ima_appraise_measurement
-Message-Id: <20171018005331.2688-7-bauerman@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Sun, 15 Oct 2017 09:20:04 +0000
+Subject: [PATCH v9 19/20] crypto: mediatek: move to generic async completion
+Message-Id: <1508059209-25529-20-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+References: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-cifs@vger.kernel.org, linux-doc@vger.kernel.org, linux-ima-user@lists.sourceforge.net, netdev@vger.kernel.org, samba-technical@lists.samba.org, linux-kernel@vger.kernel.org, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-arm-kernel@lists.infradead.org, Ofir Drang <ofir.drang@arm.com>
 
-Replace nested ifs in the EVM xattr verification logic with a switch
-statement, making the code easier to understand.
+The mediatek driver starts several async crypto ops and waits for their
+completions. Move it over to generic code doing the same.
 
-Also, add comments to the if statements in the out section.
-
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Ryder Lee <ryder.lee@mediatek.com>
 ---
- security/integrity/ima/ima.h          |  5 +++++
- security/integrity/ima/ima_appraise.c | 33 ++++++++++++++++++++-------------
- 2 files changed, 25 insertions(+), 13 deletions(-)
+ drivers/crypto/mediatek/mtk-aes.c | 31 +++++--------------------------
+ 1 file changed, 5 insertions(+), 26 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index d52b487ad259..4e61d3189b72 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -155,6 +155,11 @@ unsigned long ima_get_binary_runtime_size(void);
- int ima_init_template(void);
- void ima_init_template_list(void);
+diff --git a/drivers/crypto/mediatek/mtk-aes.c b/drivers/crypto/mediatek/mtk-aes.c
+index 32aa587..c2058cf 100644
+--- a/drivers/crypto/mediatek/mtk-aes.c
++++ b/drivers/crypto/mediatek/mtk-aes.c
+@@ -138,11 +138,6 @@ struct mtk_aes_gcm_ctx {
+ 	struct crypto_skcipher *ctr;
+ };
  
-+static inline bool is_ima_sig(const struct evm_ima_xattr_data *xattr_value)
-+{
-+	return xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG;
-+}
-+
+-struct mtk_aes_gcm_setkey_result {
+-	int err;
+-	struct completion completion;
+-};
+-
+ struct mtk_aes_drv {
+ 	struct list_head dev_list;
+ 	/* Device list lock */
+@@ -942,17 +937,6 @@ static int mtk_aes_gcm_crypt(struct aead_request *req, u64 mode)
+ 				    &req->base);
+ }
+ 
+-static void mtk_gcm_setkey_done(struct crypto_async_request *req, int err)
+-{
+-	struct mtk_aes_gcm_setkey_result *result = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	result->err = err;
+-	complete(&result->completion);
+-}
+-
  /*
-  * used to protect h_table and sha_table
-  */
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 58c6a60c7e83..2c069f47eeec 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -204,7 +204,7 @@ int ima_appraise_measurement(enum ima_hooks func,
- 			     int xattr_len, int opened)
- {
- 	static const char op[] = "appraise_data";
--	char *cause = "unknown";
-+	const char *cause = "unknown";
- 	struct dentry *dentry = file_dentry(file);
- 	struct inode *inode = d_backing_inode(dentry);
- 	enum integrity_status status = INTEGRITY_UNKNOWN;
-@@ -229,11 +229,16 @@ int ima_appraise_measurement(enum ima_hooks func,
- 	}
+  * Because of the hardware limitation, we need to pre-calculate key(H)
+  * for the GHASH operation. The result of the encryption operation
+@@ -968,7 +952,7 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 		u32 hash[4];
+ 		u8 iv[8];
  
- 	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
--	if (status != INTEGRITY_PASS && status != INTEGRITY_UNKNOWN) {
--		if (status = INTEGRITY_NOLABEL || status = INTEGRITY_NOXATTRS)
--			cause = "missing-HMAC";
--		else if (status = INTEGRITY_FAIL)
--			cause = "invalid-HMAC";
-+	switch (status) {
-+	case INTEGRITY_PASS:
-+	case INTEGRITY_UNKNOWN:
-+		break;
-+	case INTEGRITY_NOXATTRS:	/* No EVM protected xattrs. */
-+	case INTEGRITY_NOLABEL:		/* No security.evm xattr. */
-+		cause = "missing-HMAC";
-+		goto out;
-+	case INTEGRITY_FAIL:		/* Invalid HMAC/signature. */
-+		cause = "invalid-HMAC";
+-		struct mtk_aes_gcm_setkey_result result;
++		struct crypto_wait wait;
+ 
+ 		struct scatterlist sg[1];
+ 		struct skcipher_request req;
+@@ -1008,22 +992,17 @@ static int mtk_aes_gcm_setkey(struct crypto_aead *aead, const u8 *key,
+ 	if (!data)
+ 		return -ENOMEM;
+ 
+-	init_completion(&data->result.completion);
++	crypto_init_wait(&data->wait);
+ 	sg_init_one(data->sg, &data->hash, AES_BLOCK_SIZE);
+ 	skcipher_request_set_tfm(&data->req, ctr);
+ 	skcipher_request_set_callback(&data->req, CRYPTO_TFM_REQ_MAY_SLEEP |
+ 				      CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				      mtk_gcm_setkey_done, &data->result);
++				      crypto_req_done, &data->wait);
+ 	skcipher_request_set_crypt(&data->req, data->sg, data->sg,
+ 				   AES_BLOCK_SIZE, data->iv);
+ 
+-	err = crypto_skcipher_encrypt(&data->req);
+-	if (err = -EINPROGRESS || err = -EBUSY) {
+-		err = wait_for_completion_interruptible(
+-			&data->result.completion);
+-		if (!err)
+-			err = data->result.err;
+-	}
++	err = crypto_wait_req(crypto_skcipher_encrypt(&data->req),
++			      &data->wait);
+ 	if (err)
  		goto out;
- 	}
- 	switch (xattr_value->type) {
-@@ -287,17 +292,19 @@ int ima_appraise_measurement(enum ima_hooks func,
  
- out:
- 	if (status != INTEGRITY_PASS) {
-+		/* Fix mode, but don't replace file signatures. */
- 		if ((ima_appraise & IMA_APPRAISE_FIX) &&
--		    (!xattr_value ||
--		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
-+		    !is_ima_sig(xattr_value)) {
- 			if (!ima_fix_xattr(dentry, iint))
- 				status = INTEGRITY_PASS;
--		} else if (inode->i_size = 0 &&
--			   (iint->flags & IMA_NEW_FILE) &&
--			   xattr_value &&
--			   xattr_value->type = EVM_IMA_XATTR_DIGSIG) {
-+		}
-+
-+		/* Permit new files with file signatures, but without data. */
-+		if (inode->i_size = 0 && (iint->flags & IMA_NEW_FILE) &&
-+		    is_ima_sig(xattr_value)) {
- 			status = INTEGRITY_PASS;
- 		}
-+
- 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
- 				    op, cause, rc, 0);
- 	} else {
-@@ -404,7 +411,7 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 		if (!xattr_value_len || xvalue->type >= IMA_XATTR_LAST)
- 			return -EINVAL;
- 		ima_reset_appraise_flags(d_backing_inode(dentry),
--			xvalue->type = EVM_IMA_XATTR_DIGSIG);
-+					 is_ima_sig(xvalue));
- 		result = 0;
- 	}
- 	return result;
+-- 
+2.7.4
 
