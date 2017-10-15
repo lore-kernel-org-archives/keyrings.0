@@ -1,158 +1,93 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Tue, 31 Oct 2017 13:31:35 +0000
-Subject: Re: [PATCH v5 17/18] ima: Implement support for module-style appended signatures
-Message-Id: <1509456695.3583.226.camel@linux.vnet.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Sun, 15 Oct 2017 09:20:02 +0000
+Subject: [PATCH v9 17/20] crypto: talitos: move to generic async completion
+Message-Id: <1508059209-25529-18-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-         <20171018005331.2688-18-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-18-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-On Tue, 2017-10-17 at 22:53 -0200, Thiago Jung Bauermann wrote:
+The talitos driver starts several async crypto ops and  waits for their
+completions. Move it over to generic code doing the same.
 
-Below are a few additional comments.
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+---
+ drivers/crypto/talitos.c | 38 +++++---------------------------------
+ 1 file changed, 5 insertions(+), 33 deletions(-)
 
-> @@ -200,18 +239,28 @@ int ima_read_xattr(struct dentry *dentry,
->   */
->  int ima_appraise_measurement(enum ima_hooks func,
->  			     struct integrity_iint_cache *iint,
-> -			     struct file *file, const unsigned char *filename,
-> -			     struct evm_ima_xattr_data *xattr_value,
-> -			     int xattr_len, int opened)
-> +			     struct file *file, const void *buf, loff_t size,
-> +			     const unsigned char *filename,
-> +			     struct evm_ima_xattr_data **xattr_value_,
-> +			     int *xattr_len_, int opened)
->  {
->  	static const char op[] = "appraise_data";
->  	const char *cause = "unknown";
->  	struct dentry *dentry = file_dentry(file);
->  	struct inode *inode = d_backing_inode(dentry);
->  	enum integrity_status status = INTEGRITY_UNKNOWN;
-> -	int rc = xattr_len, hash_start = 0;
-> +	struct evm_ima_xattr_data *xattr_value = *xattr_value_;
-> +	int xattr_len = *xattr_len_, rc = xattr_len, hash_start = 0;
-> +	bool appraising_modsig = false;
-> +
-> +	if (iint->flags & IMA_MODSIG_ALLOWED &&
-> +	    !ima_read_modsig(func, buf, size, &xattr_value, &xattr_len)) {
-> +		appraising_modsig = true;
-> +		rc = xattr_len;
-> +	}
-> 
-> -	if (!(inode->i_opflags & IOP_XATTR))
-> +	/* If not appraising a modsig, we need an xattr. */
-> +	if (!appraising_modsig && !(inode->i_opflags & IOP_XATTR))
->  		return INTEGRITY_UNKNOWN;
-> 
->  	if (rc <= 0) {
-> @@ -235,6 +284,9 @@ int ima_appraise_measurement(enum ima_hooks func,
->  	case INTEGRITY_UNKNOWN:
->  		break;
->  	case INTEGRITY_NOXATTRS:	/* No EVM protected xattrs. */
-> +		/* It's fine not to have xattrs when using a modsig. */
-> +		if (appraising_modsig)
-> +			break;
->  	case INTEGRITY_NOLABEL:		/* No security.evm xattr. */
->  		cause = "missing-HMAC";
->  		goto out;
-> @@ -242,6 +294,8 @@ int ima_appraise_measurement(enum ima_hooks func,
->  		cause = "invalid-HMAC";
->  		goto out;
->  	}
-> +
-> + retry:
->  	switch (xattr_value->type) {
->  	case IMA_XATTR_DIGEST_NG:
->  		/* first byte contains algorithm id */
-> @@ -285,6 +339,61 @@ int ima_appraise_measurement(enum ima_hooks func,
->  			status = INTEGRITY_PASS;
->  		}
->  		break;
-> +	case IMA_MODSIG:
-> +		/*
-> +		 * To avoid being tricked into an infinite loop, we don't allow
-> +		 * a modsig stored in the xattr.
-> +		 */
-> +		if (!appraising_modsig) {
-> +			status = INTEGRITY_UNKNOWN;
-> +			cause = "unknown-ima-data";
-> +			break;
-> +		}
-> +		rc = appraise_modsig(iint, xattr_value, xattr_len);
-> +		if (!rc) {
-> +			kfree(*xattr_value_);
-> +			*xattr_value_ = xattr_value;
-> +			*xattr_len_ = xattr_len;
-> +
-> +			status = INTEGRITY_PASS;
-> +			break;
-> +		}
-> +
-> +		ima_free_xattr_data(xattr_value);
-> +
-> +		/*
-> +		 * The appended signature failed verification. If there's a
-> +		 * signature in the extended attribute, let's fall back to it.
-> +		 */
-> +		if (inode->i_opflags & IOP_XATTR && *xattr_len_ != 0 &&
-> +		    *xattr_len_ != -ENODATA) {
-
-At this point, there was an appended signature verification failure.
- If there isn't an xattr, for whatever reason, shouldn't we be
-returning "invalid_signature" and "INTEGRITY_FAIL".  If so, then the
-above test could be simplified to check whether there is any data,
-like this:
-
-	if ((inode->i_opflags & IOP_XATTR) && (*xattr_len_ > 0)) {
-
-> +			const char *modsig_cause = rc = -EOPNOTSUPP ?
-> +				"unknown" : "invalid-signature";
-
-This can then be cleaned up as well.
-
-> +
-> +			/* First, log that the modsig verification failed. */
-> +			integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode,
-> +					    filename, op, modsig_cause, rc, 0);
-
-I'm not sure that we want to audit intermediary signature verification
-failures.  Perhaps this audit message should be considered
-"additional", meaning it is only emitted if the "integrity_audit" boot
-command line option is enabled.  Change the last field to 1 to
-indicate it is an "additional" audit message.
-
-> +
-> +			xattr_len = rc = *xattr_len_;
-> +			xattr_value = *xattr_value_;
-> +			appraising_modsig = false;
-> +
-> +			if (rc > 0)
-
-This test becomes redundant.
-
-> +				/* Process xattr contents. */
-> +				goto retry;
-> +
-> +			/* Unexpected error reading xattr. */
-> +			status = INTEGRITY_UNKNOWN;
-> +		} else {
-> +			if (rc = -EOPNOTSUPP)
-> +				status = INTEGRITY_UNKNOWN;
-> +			else {
-> +				cause = "invalid-signature";
-> +				status = INTEGRITY_FAIL;
-> +			}
-> +		}
-> +		break;
-
-I think the rest can be simplified to:
-	cause = "invalid-signature";
-	status = INTEGRITY_FAIL;
-
-Mimi
+diff --git a/drivers/crypto/talitos.c b/drivers/crypto/talitos.c
+index 5bd8191..9c80e0c 100644
+--- a/drivers/crypto/talitos.c
++++ b/drivers/crypto/talitos.c
+@@ -2160,22 +2160,6 @@ static int ahash_import(struct ahash_request *areq, const void *in)
+ 	return 0;
+ }
+ 
+-struct keyhash_result {
+-	struct completion completion;
+-	int err;
+-};
+-
+-static void keyhash_complete(struct crypto_async_request *req, int err)
+-{
+-	struct keyhash_result *res = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	res->err = err;
+-	complete(&res->completion);
+-}
+-
+ static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
+ 		   u8 *hash)
+ {
+@@ -2183,10 +2167,10 @@ static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
+ 
+ 	struct scatterlist sg[1];
+ 	struct ahash_request *req;
+-	struct keyhash_result hresult;
++	struct crypto_wait wait;
+ 	int ret;
+ 
+-	init_completion(&hresult.completion);
++	crypto_init_wait(&wait);
+ 
+ 	req = ahash_request_alloc(tfm, GFP_KERNEL);
+ 	if (!req)
+@@ -2195,25 +2179,13 @@ static int keyhash(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen,
+ 	/* Keep tfm keylen = 0 during hash of the long key */
+ 	ctx->keylen = 0;
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				   keyhash_complete, &hresult);
++				   crypto_req_done, &wait);
+ 
+ 	sg_init_one(&sg[0], key, keylen);
+ 
+ 	ahash_request_set_crypt(req, sg, hash, keylen);
+-	ret = crypto_ahash_digest(req);
+-	switch (ret) {
+-	case 0:
+-		break;
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		ret = wait_for_completion_interruptible(
+-			&hresult.completion);
+-		if (!ret)
+-			ret = hresult.err;
+-		break;
+-	default:
+-		break;
+-	}
++	ret = crypto_wait_req(crypto_ahash_digest(req), &wait);
++
+ 	ahash_request_free(req);
+ 
+ 	return ret;
+-- 
+2.7.4
 
