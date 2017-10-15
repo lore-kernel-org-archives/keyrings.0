@@ -1,260 +1,174 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 30 Oct 2017 18:50:36 +0000
-Subject: [PATCH] syscalls/request_key03: new test for key instantiation races
-Message-Id: <20171030185036.126451-1-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Sun, 15 Oct 2017 09:20:00 +0000
+Subject: [PATCH v9 15/20] ima: move to generic async completion
+Message-Id: <1508059209-25529-16-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+ima starts several async crypto ops and  waits for their completions.
+Move it over to generic code doing the same.
 
-Add a test for two related bugs in the keyrings subsystem which each
-allowed unprivileged local users to cause a kernel oops (at best) by
-attempting to "add" a key concurrently with "requesting" it.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- include/lapi/keyctl.h                              |   4 +
- runtest/cve                                        |   2 +
- runtest/syscalls                                   |   1 +
- testcases/kernel/syscalls/.gitignore               |   1 +
- .../kernel/syscalls/request_key/request_key03.c    | 174 +++++++++++++++++++++
- 5 files changed, 182 insertions(+)
- create mode 100644 testcases/kernel/syscalls/request_key/request_key03.c
+ security/integrity/ima/ima_crypto.c | 56 +++++++++++--------------------------
+ 1 file changed, 17 insertions(+), 39 deletions(-)
 
-diff --git a/include/lapi/keyctl.h b/include/lapi/keyctl.h
-index 8e6beac0e..dddd4a0ca 100644
---- a/include/lapi/keyctl.h
-+++ b/include/lapi/keyctl.h
-@@ -119,6 +119,10 @@ static inline long keyctl(int cmd, ...)
- # define KEYCTL_SETPERM 5
- #endif
+diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+index a856d8c..9057b16 100644
+--- a/security/integrity/ima/ima_crypto.c
++++ b/security/integrity/ima/ima_crypto.c
+@@ -27,11 +27,6 @@
  
-+#ifndef KEYCTL_CLEAR
-+# define KEYCTL_CLEAR 7
-+#endif
-+
- #ifndef KEYCTL_UNLINK
- # define KEYCTL_UNLINK 9
- #endif
-diff --git a/runtest/cve b/runtest/cve
-index 1719997cc..41a84a5d1 100644
---- a/runtest/cve
-+++ b/runtest/cve
-@@ -19,5 +19,7 @@ cve-2017-6951 cve-2017-6951
- cve-2017-7472 keyctl04
- cve-2017-12192 keyctl07
- cve-2017-15274 add_key02
-+cve-2017-15299 request_key03
- cve-2017-15537 ptrace07
-+cve-2017-15951 request_key03
- cve-2017-1000364 stack_clash
-diff --git a/runtest/syscalls b/runtest/syscalls
-index 323947556..f94b9c0a2 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -930,6 +930,7 @@ renameat202 renameat202 -i 10
+ #include "ima.h"
  
- request_key01 request_key01
- request_key02 request_key02
-+request_key03 request_key03
- cve-2017-6951 cve-2017-6951
+-struct ahash_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+ /* minimum file size for ahash use */
+ static unsigned long ima_ahash_minsize;
+ module_param_named(ahash_minsize, ima_ahash_minsize, ulong, 0644);
+@@ -196,30 +191,13 @@ static void ima_free_atfm(struct crypto_ahash *tfm)
+ 		crypto_free_ahash(tfm);
+ }
  
- rmdir01 rmdir01
-diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
-index a988e6b6e..cfde1cca5 100644
---- a/testcases/kernel/syscalls/.gitignore
-+++ b/testcases/kernel/syscalls/.gitignore
-@@ -771,6 +771,7 @@
- /renameat2/renameat202
- /request_key/request_key01
- /request_key/request_key02
-+/request_key/request_key03
- /rmdir/rmdir01
- /rmdir/rmdir02
- /rmdir/rmdir03
-diff --git a/testcases/kernel/syscalls/request_key/request_key03.c b/testcases/kernel/syscalls/request_key/request_key03.c
-new file mode 100644
-index 000000000..6ea763a3d
---- /dev/null
-+++ b/testcases/kernel/syscalls/request_key/request_key03.c
-@@ -0,0 +1,174 @@
-+/*
-+ * Copyright (c) 2017 Google, Inc.
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program, if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+/*
-+ * Regression test for two related bugs:
-+ *
-+ * (1) CVE-2017-15299, fixed by commit 60ff5b2f547a ("KEYS: don't let add_key()
-+ *     update an uninstantiated key")
-+ * (2) CVE-2017-15951, fixed by commit 363b02dab09b ("KEYS: Fix race between
-+ *     updating and finding a negative key")
-+ *
-+ * We test for the bugs together because the reproduction steps are essentially
-+ * the same: repeatedly try to add/update a key with add_key() while requesting
-+ * it with request_key() in another task.  This reproduces both bugs:
-+ *
-+ * For CVE-2017-15299, add_key() has to run while the key being created by
-+ * request_key() is still in the "uninstantiated" state.  For the "encrypted" or
-+ * "trusted" key types (not guaranteed to be available) this caused a NULL
-+ * pointer dereference in encrypted_update() or in trusted_update(),
-+ * respectively.  For the "user" key type, this caused the WARN_ON() in
-+ * construct_key() to be hit.
-+ *
-+ * For CVE-2017-15951, request_key() has to run while the key is "negatively
-+ * instantiated" (from a prior request_key()) and is being concurrently changed
-+ * to "positively instantiated" via add_key() updating it.  This race, which is
-+ * a bit more difficult to reproduce, caused the task executing request_key() to
-+ * dereference an invalid pointer in __key_link_begin().
-+ */
-+
-+#include <errno.h>
-+#include <stdlib.h>
-+#include <sys/wait.h>
-+
-+#include "tst_test.h"
-+#include "lapi/keyctl.h"
-+
-+static void test_with_key_type(const char *type, const char *payload,
-+			       int effort)
-+{
-+	int i;
-+	int status;
-+	pid_t add_key_pid;
-+	pid_t request_key_pid;
-+
-+	TEST(keyctl(KEYCTL_JOIN_SESSION_KEYRING, NULL));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "failed to join new session keyring");
-+
-+	TEST(add_key(type, "desc", payload, strlen(payload),
-+		     KEY_SPEC_SESSION_KEYRING));
-+	if (TEST_RETURN < 0 && TEST_ERRNO != EINVAL) {
-+		if (TEST_ERRNO = ENODEV) {
-+			tst_res(TCONF, "kernel doesn't support key type '%s'",
-+				type);
-+			return;
-+		}
-+		tst_brk(TBROK | TTERRNO,
-+			"unexpected error checking whether key type '%s' is supported",
-+			type);
-+	}
-+
-+	/*
-+	 * Fork a subprocess which repeatedly tries to "add" a key of the given
-+	 * type.  This actually will try to update the key if it already exists.
-+	 * Depending on the state of the key, add_key() should either succeed or
-+	 * fail with one of several errors:
-+	 *
-+	 * (1) key didn't exist at all: either add_key() should succeed (if the
-+	 *     payload is valid), or it should fail with EINVAL (if the payload
-+	 *     is invalid; this is needed for the "encrypted" and "trusted" key
-+	 *     types because they have a quirk where the payload syntax differs
-+	 *     for creating new keys vs. updating existing keys)
-+	 *
-+	 * (2) key was negative: add_key() should succeed
-+	 *
-+	 * (3) key was uninstantiated: add_key() should wait for the key to be
-+	 *     negated, then fail with ENOKEY
-+	 */
-+	add_key_pid = SAFE_FORK();
-+	if (add_key_pid = 0) {
-+		for (i = 0; i < 100 * effort; i++) {
-+			usleep(rand() % 1024);
-+			TEST(add_key(type, "desc", payload, strlen(payload),
-+				     KEY_SPEC_SESSION_KEYRING));
-+			if (TEST_RETURN < 0 &&
-+			    TEST_ERRNO != EINVAL && TEST_ERRNO != ENOKEY) {
-+				tst_brk(TBROK | TTERRNO,
-+					"unexpected error adding key of type '%s'",
-+					type);
-+			}
-+			TEST(keyctl(KEYCTL_CLEAR, KEY_SPEC_SESSION_KEYRING));
-+			if (TEST_RETURN < 0) {
-+				tst_brk(TBROK | TTERRNO,
-+					"unable to clear keyring");
-+			}
-+		}
-+		exit(0);
-+	}
-+
-+	request_key_pid = SAFE_FORK();
-+	if (request_key_pid = 0) {
-+		for (i = 0; i < 5000 * effort; i++) {
-+			TEST(request_key(type, "desc", "callout_info",
-+					 KEY_SPEC_SESSION_KEYRING));
-+			if (TEST_RETURN < 0 &&
-+			    TEST_ERRNO != ENOKEY && TEST_ERRNO != ENOENT) {
-+				tst_brk(TBROK | TTERRNO,
-+					"unexpected error requesting key of type '%s'",
-+					type);
-+			}
-+		}
-+		exit(0);
-+	}
-+
-+	SAFE_WAITPID(add_key_pid, &status, 0);
-+	if (WIFEXITED(status) && WEXITSTATUS(status) = 0) {
-+		tst_res(TPASS, "didn't crash while updating key of type '%s'",
-+			type);
-+	} else if (WIFSIGNALED(status) && WTERMSIG(status) = SIGKILL) {
-+		/* Probably CVE-2017-15299 */
-+		tst_res(TFAIL, "kernel oops while updating key of type '%s'",
-+			type);
-+	} else {
-+		tst_brk(TBROK, "add_key child %s", tst_strstatus(status));
-+	}
-+
-+	SAFE_WAITPID(request_key_pid, &status, 0);
-+	if (WIFEXITED(status) && WEXITSTATUS(status) = 0) {
-+		tst_res(TPASS, "didn't crash while requesting key of type '%s'",
-+			type);
-+	} else if (WIFSIGNALED(status) && WTERMSIG(status) = SIGKILL) {
-+		/* Probably CVE-2017-15951 */
-+		tst_res(TFAIL, "kernel oops while requesting key of type '%s'",
-+			type);
-+	} else {
-+		tst_brk(TBROK, "request_key child %s", tst_strstatus(status));
-+	}
-+}
-+
-+static void do_test(void)
-+{
-+	/*
-+	 * Briefly test the "encrypted" and/or "trusted" key types when
-+	 * availaible, mainly to reproduce CVE-2017-15299.
-+	 */
-+	test_with_key_type("encrypted", "update user:foo 32", 2);
-+	test_with_key_type("trusted", "update", 2);
-+
-+	/*
-+	 * Test the "user" key type for longer, mainly in order to reproduce
-+	 * CVE-2017-15951.  However, without the fix for CVE-2017-15299 as well,
-+	 * WARNs may show up in the kernel log.
-+	 */
-+	test_with_key_type("user", "payload", 15);
-+}
-+
-+static struct tst_test test = {
-+	.test_all = do_test,
-+	.forks_child = 1,
-+};
+-static void ahash_complete(struct crypto_async_request *req, int err)
++static inline int ahash_wait(int err, struct crypto_wait *wait)
+ {
+-	struct ahash_completion *res = req->data;
+ 
+-	if (err = -EINPROGRESS)
+-		return;
+-	res->err = err;
+-	complete(&res->completion);
+-}
++	err = crypto_wait_req(err, wait);
+ 
+-static int ahash_wait(int err, struct ahash_completion *res)
+-{
+-	switch (err) {
+-	case 0:
+-		break;
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		wait_for_completion(&res->completion);
+-		reinit_completion(&res->completion);
+-		err = res->err;
+-		/* fall through */
+-	default:
++	if (err)
+ 		pr_crit_ratelimited("ahash calculation failed: err: %d\n", err);
+-	}
+ 
+ 	return err;
+ }
+@@ -233,7 +211,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 	int rc, read = 0, rbuf_len, active = 0, ahash_rc = 0;
+ 	struct ahash_request *req;
+ 	struct scatterlist sg[1];
+-	struct ahash_completion res;
++	struct crypto_wait wait;
+ 	size_t rbuf_size[2];
+ 
+ 	hash->length = crypto_ahash_digestsize(tfm);
+@@ -242,12 +220,12 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 	if (!req)
+ 		return -ENOMEM;
+ 
+-	init_completion(&res.completion);
++	crypto_init_wait(&wait);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				   CRYPTO_TFM_REQ_MAY_SLEEP,
+-				   ahash_complete, &res);
++				   crypto_req_done, &wait);
+ 
+-	rc = ahash_wait(crypto_ahash_init(req), &res);
++	rc = ahash_wait(crypto_ahash_init(req), &wait);
+ 	if (rc)
+ 		goto out1;
+ 
+@@ -288,7 +266,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 			 * read/request, wait for the completion of the
+ 			 * previous ahash_update() request.
+ 			 */
+-			rc = ahash_wait(ahash_rc, &res);
++			rc = ahash_wait(ahash_rc, &wait);
+ 			if (rc)
+ 				goto out3;
+ 		}
+@@ -304,7 +282,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 			 * read/request, wait for the completion of the
+ 			 * previous ahash_update() request.
+ 			 */
+-			rc = ahash_wait(ahash_rc, &res);
++			rc = ahash_wait(ahash_rc, &wait);
+ 			if (rc)
+ 				goto out3;
+ 		}
+@@ -318,7 +296,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 			active = !active; /* swap buffers, if we use two */
+ 	}
+ 	/* wait for the last update request to complete */
+-	rc = ahash_wait(ahash_rc, &res);
++	rc = ahash_wait(ahash_rc, &wait);
+ out3:
+ 	if (read)
+ 		file->f_mode &= ~FMODE_READ;
+@@ -327,7 +305,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ out2:
+ 	if (!rc) {
+ 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
+-		rc = ahash_wait(crypto_ahash_final(req), &res);
++		rc = ahash_wait(crypto_ahash_final(req), &wait);
+ 	}
+ out1:
+ 	ahash_request_free(req);
+@@ -537,7 +515,7 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
+ {
+ 	struct ahash_request *req;
+ 	struct scatterlist sg;
+-	struct ahash_completion res;
++	struct crypto_wait wait;
+ 	int rc, ahash_rc = 0;
+ 
+ 	hash->length = crypto_ahash_digestsize(tfm);
+@@ -546,12 +524,12 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
+ 	if (!req)
+ 		return -ENOMEM;
+ 
+-	init_completion(&res.completion);
++	crypto_init_wait(&wait);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				   CRYPTO_TFM_REQ_MAY_SLEEP,
+-				   ahash_complete, &res);
++				   crypto_req_done, &wait);
+ 
+-	rc = ahash_wait(crypto_ahash_init(req), &res);
++	rc = ahash_wait(crypto_ahash_init(req), &wait);
+ 	if (rc)
+ 		goto out;
+ 
+@@ -561,10 +539,10 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
+ 	ahash_rc = crypto_ahash_update(req);
+ 
+ 	/* wait for the update request to complete */
+-	rc = ahash_wait(ahash_rc, &res);
++	rc = ahash_wait(ahash_rc, &wait);
+ 	if (!rc) {
+ 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
+-		rc = ahash_wait(crypto_ahash_final(req), &res);
++		rc = ahash_wait(crypto_ahash_final(req), &wait);
+ 	}
+ out:
+ 	ahash_request_free(req);
 -- 
-2.15.0.rc2.357.g7e34df9404-goog
+2.7.4
 
