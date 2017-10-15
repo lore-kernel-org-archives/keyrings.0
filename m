@@ -1,97 +1,54 @@
-From: James Morris <james.l.morris@oracle.com>
-Date: Thu, 19 Oct 2017 02:24:16 +0000
-Subject: [GIT PULL] Security subystem fixes for v4.14-rc5
-Message-Id: <alpine.LFD.2.20.1710191320380.1601@t440.gateway.2wire.net>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Sun, 15 Oct 2017 09:19:50 +0000
+Subject: [PATCH v9 05/20] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
+Message-Id: <1508059209-25529-6-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-security-module@vger.kernel.org
+References: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-This includes a fix for the capabilities code from Colin King, and a set 
-of further fixes for the Keys subsystem.  From David:
+Now that -EBUSY return code only indicates backlog queueing
+we can safely remove the now redundant check for the
+CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
 
-"(1) Fix a bunch of places where kernel drivers may access revoked user-type
-     keys and don't do it correctly.
-
- (2) Fix some ecryptfs bits.
-
- (3) Fix big_key to require CONFIG_CRYPTO.
-
- (4) Fix a couple of bugs in the asymmetric key type.
-
- (5) Fix a race between updating and finding negative keys.
-
- (6) Prevent add_key() from updating uninstantiated keys.
-
- (7) Make loading of key flags and expiry time atomic when not holding 
-     locks."
-
-Please pull!
-
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
+ drivers/crypto/marvell/cesa.c | 3 +--
+ drivers/crypto/marvell/cesa.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
+index b657e7c..ff73aa5 100644
+--- a/drivers/crypto/marvell/cesa.c
++++ b/drivers/crypto/marvell/cesa.c
+@@ -181,8 +181,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
+ 	spin_lock_bh(&engine->lock);
+ 	ret = crypto_enqueue_request(&engine->queue, req);
+ 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
+-	    (ret = -EINPROGRESS ||
+-	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	    (ret = -EINPROGRESS || ret = -EBUSY))
+ 		mv_cesa_tdma_chain(engine, creq);
+ 	spin_unlock_bh(&engine->lock);
+ 
+diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
+index b7872f6..63c8457 100644
+--- a/drivers/crypto/marvell/cesa.h
++++ b/drivers/crypto/marvell/cesa.h
+@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
+ 	 * the backlog and will be processed later. There's no need to
+ 	 * clean it up.
+ 	 */
+-	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
++	if (ret = -EBUSY)
+ 		return false;
+ 
+ 	/* Request wasn't queued, we need to clean it up */
+-- 
+2.7.4
 
-The following changes since commit 73d3393ada4f70fa3df5639c8d438f2f034c0ecb:
-
-  Merge tag 'xfs-4.14-fixes-6' of git://git.kernel.org/pub/scm/fs/xfs/xfs-linux (2017-10-18 14:51:50 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git fixes-v4.14-rc5
-
-Arnd Bergmann (1):
-      security/keys: BIG_KEY requires CONFIG_CRYPTO
-
-Chun-Yi Lee (2):
-      KEYS: Fix the wrong index when checking the existence of second id
-      KEYS: checking the input id parameters before finding asymmetric key
-
-Colin Ian King (1):
-      commoncap: move assignment of fs_ns to avoid null pointer dereference
-
-David Howells (2):
-      KEYS: Fix race between updating and finding a negative key
-      KEYS: don't let add_key() update an uninstantiated key
-
-Eric Biggers (8):
-      KEYS: encrypted: fix dereference of NULL user_key_payload
-      FS-Cache: fix dereference of NULL user_key_payload
-      lib/digsig: fix dereference of NULL user_key_payload
-      fscrypt: fix dereference of NULL user_key_payload
-      ecryptfs: fix dereference of NULL user_key_payload
-      KEYS: load key flags and expiry time atomically in key_validate()
-      KEYS: Load key expiry time atomically in keyring_search_iterator()
-      KEYS: load key flags and expiry time atomically in proc_keys_show()
-
-Eric Sesterhenn (1):
-      pkcs7: Prevent NULL pointer dereference, since sinfo is not always set.
-
-James Morris (1):
-      Merge commit 'tags/keys-fixes-20171018' into fixes-v4.14-rc5
-
- crypto/asymmetric_keys/asymmetric_type.c |    4 ++-
- crypto/asymmetric_keys/pkcs7_parser.c    |    3 ++
- fs/crypto/keyinfo.c                      |    5 +++
- fs/ecryptfs/ecryptfs_kernel.h            |   24 +++++++++++----
- fs/ecryptfs/keystore.c                   |    9 +++++-
- fs/fscache/object-list.c                 |    7 ++++
- include/linux/key.h                      |   47 +++++++++++++++++++-----------
- lib/digsig.c                             |    6 ++++
- net/dns_resolver/dns_key.c               |    2 +-
- security/commoncap.c                     |    3 +-
- security/keys/Kconfig                    |    1 +
- security/keys/big_key.c                  |    4 +-
- security/keys/encrypted-keys/encrypted.c |    9 +++++-
- security/keys/gc.c                       |    8 ++--
- security/keys/key.c                      |   41 +++++++++++++++++++-------
- security/keys/keyctl.c                   |    9 ++---
- security/keys/keyring.c                  |   14 +++++----
- security/keys/permission.c               |    7 ++--
- security/keys/proc.c                     |   31 ++++++++++++-------
- security/keys/process_keys.c             |    2 +-
- security/keys/request_key.c              |    7 ++--
- security/keys/request_key_auth.c         |    2 +-
- security/keys/trusted.c                  |    2 +-
- security/keys/user_defined.c             |    4 +-
- 24 files changed, 170 insertions(+), 81 deletions(-)
