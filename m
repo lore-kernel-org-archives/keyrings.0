@@ -1,154 +1,65 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 12 Oct 2017 20:42:27 +0000
-Subject: [PATCH v2 4/4] syscalls/add_key03: new test for forging user keyrings
-Message-Id: <20171012204227.116510-5-ebiggers3@gmail.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Wed, 18 Oct 2017 00:53:24 +0000
+Subject: [PATCH v5 11/18] ima: Export func_tokens
+Message-Id: <20171018005331.2688-12-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+ima_read_modsig will need it so that it can show an error message.
 
-Add a test for a bug which allowed a user to create the user and user
-session keyrings for another user.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
- runtest/syscalls                              |  1 +
- testcases/kernel/syscalls/.gitignore          |  1 +
- testcases/kernel/syscalls/add_key/add_key03.c | 98 +++++++++++++++++++++++++++
- 3 files changed, 100 insertions(+)
- create mode 100644 testcases/kernel/syscalls/add_key/add_key03.c
+ security/integrity/ima/ima.h        |  2 ++
+ security/integrity/ima/ima_policy.c | 12 ++++++------
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/runtest/syscalls b/runtest/syscalls
-index 822608613..e345325a2 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -13,6 +13,7 @@ acct01 acct01
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 4e61d3189b72..c9ba4362760b 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -195,6 +195,8 @@ enum ima_hooks {
+ 	__ima_hooks(__ima_hook_enumify)
+ };
  
- add_key01 add_key01
- add_key02 add_key02
-+add_key03 add_key03
++extern const char *const func_tokens[];
++
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, int mask,
+ 		   enum ima_hooks func, int *pcr);
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index efd8e1c60c10..7355d4ab7bf4 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -959,6 +959,12 @@ void ima_delete_rules(void)
+ 	}
+ }
  
- adjtimex01 adjtimex01
- adjtimex02 adjtimex02
-diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
-index 8a2a8d21e..2a770a998 100644
---- a/testcases/kernel/syscalls/.gitignore
-+++ b/testcases/kernel/syscalls/.gitignore
-@@ -8,6 +8,7 @@
- /acct/acct01
- /add_key/add_key01
- /add_key/add_key02
-+/add_key/add_key03
- /adjtimex/adjtimex01
- /adjtimex/adjtimex02
- /alarm/alarm01
-diff --git a/testcases/kernel/syscalls/add_key/add_key03.c b/testcases/kernel/syscalls/add_key/add_key03.c
-new file mode 100644
-index 000000000..27edcb27f
---- /dev/null
-+++ b/testcases/kernel/syscalls/add_key/add_key03.c
-@@ -0,0 +1,98 @@
-+/*
-+ * Copyright (c) 2017 Google, Inc.
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program, if not, see <http://www.gnu.org/licenses/>.
-+ */
++#define __ima_hook_stringify(str)	(#str),
 +
-+/*
-+ * Regression test for commit 237bbd29f7a0 ("KEYS: prevent creating a different
-+ * user's keyrings").  The bug allowed any random user to create a keyring named
-+ * "_uid.$UID" (or "_uid_ses.$UID"), and it would become the user keyring (or
-+ * user session keyring) for user $UID, provided that it hadn't already been
-+ * created.
-+ *
-+ * This test must be run as root so that it has permission to switch to another
-+ * user ID and check whether the keyrings are wrong.  However, the underlying
-+ * bug is actually reachable/exploitable by a non-root user.
-+ */
-+
-+#include <errno.h>
-+#include <pwd.h>
-+#include <stdio.h>
-+
-+#include "tst_test.h"
-+#include "lapi/keyctl.h"
-+
-+static key_serial_t create_keyring(const char *description)
-+{
-+	TEST(add_key("keyring", description, NULL, 0,
-+		     KEY_SPEC_PROCESS_KEYRING));
-+	if (TEST_RETURN < 0) {
-+		tst_brk(TBROK | TTERRNO,
-+			"unable to create keyring '%s'", description);
-+	}
-+	return TEST_RETURN;
-+}
-+
-+static key_serial_t get_keyring_id(key_serial_t special_id)
-+{
-+	TEST(keyctl(KEYCTL_GET_KEYRING_ID, special_id, 1));
-+	if (TEST_RETURN < 0) {
-+		tst_brk(TBROK | TTERRNO,
-+			"unable to get ID of keyring %d", special_id);
-+	}
-+	return TEST_RETURN;
-+}
-+
-+static void do_test(void)
-+{
-+	uid_t uid = 1;
-+	char description[32];
-+	key_serial_t fake_user_keyring;
-+	key_serial_t fake_user_session_keyring;
-+
-+	/*
-+	 * We need a user to forge the keyrings for.  But the bug is not
-+	 * reproducible for a UID which already has its keyrings, so find an
-+	 * unused UID.  Note that it would be better to directly check for the
-+	 * presence of the UID's keyrings than to search the passwd file.
-+	 * However, that's not easy to do given that even if we assumed the UID
-+	 * temporarily to check, KEYCTL_GET_KEYRING_ID for the user and user
-+	 * session keyrings will create them rather than failing (even if the
-+	 * 'create' argument is 0).
-+	 */
-+	while (getpwuid(uid))
-+		uid++;
-+
-+	sprintf(description, "_uid.%u", uid);
-+	fake_user_keyring = create_keyring(description);
-+	sprintf(description, "_uid_ses.%u", uid);
-+	fake_user_session_keyring = create_keyring(description);
-+
-+	SAFE_SETUID(uid);
-+
-+	if (fake_user_keyring = get_keyring_id(KEY_SPEC_USER_KEYRING))
-+		tst_brk(TFAIL, "created user keyring for another user");
-+
-+	if (fake_user_session_keyring =
-+	    get_keyring_id(KEY_SPEC_USER_SESSION_KEYRING))
-+		tst_brk(TFAIL, "created user session keyring for another user");
-+
-+	tst_res(TPASS, "expectedly could not create another user's keyrings");
-+}
-+
-+static struct tst_test test = {
-+	.test_all = do_test,
-+	.needs_root = 1,
++const char *const func_tokens[] = {
++	__ima_hooks(__ima_hook_stringify)
 +};
--- 
-2.15.0.rc0.271.g36b669edcc-goog
++
+ #ifdef	CONFIG_IMA_READ_POLICY
+ enum {
+ 	mask_exec = 0, mask_write, mask_read, mask_append
+@@ -971,12 +977,6 @@ static const char *const mask_tokens[] = {
+ 	"MAY_APPEND"
+ };
+ 
+-#define __ima_hook_stringify(str)	(#str),
+-
+-static const char *const func_tokens[] = {
+-	__ima_hooks(__ima_hook_stringify)
+-};
+-
+ void *ima_policy_start(struct seq_file *m, loff_t *pos)
+ {
+ 	loff_t l = *pos;
 
