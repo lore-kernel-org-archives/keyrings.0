@@ -1,124 +1,269 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 12 Oct 2017 20:42:25 +0000
-Subject: [PATCH v2 2/4] syscalls/keyctl06: new test for keyring_read() buffer overrun
-Message-Id: <20171012204227.116510-3-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Wed, 18 Oct 2017 07:00:39 +0000
+Subject: [PATCH v10 07/20] crypto: move algif to generic async completion
+Message-Id: <1508310057-25369-8-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+algif starts several async crypto ops and waits for their completion.
+Move it over to generic code doing the same.
 
-Add a test for a bug which caused the kernel to write past the end of
-the provided buffer when using KEYCTL_READ to read from a keyring.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- runtest/syscalls                            |  1 +
- testcases/kernel/syscalls/.gitignore        |  1 +
- testcases/kernel/syscalls/keyctl/keyctl06.c | 68 +++++++++++++++++++++++++++++
- 3 files changed, 70 insertions(+)
- create mode 100644 testcases/kernel/syscalls/keyctl/keyctl06.c
+ crypto/af_alg.c         | 27 ---------------------------
+ crypto/algif_aead.c     |  8 ++++----
+ crypto/algif_hash.c     | 30 ++++++++++++++----------------
+ crypto/algif_skcipher.c |  9 ++++-----
+ include/crypto/if_alg.h | 15 +--------------
+ 5 files changed, 23 insertions(+), 66 deletions(-)
 
-diff --git a/runtest/syscalls b/runtest/syscalls
-index b1e988dce..fc6800abf 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -502,6 +502,7 @@ keyctl02 keyctl02
- keyctl03 keyctl03
- keyctl04 keyctl04
- keyctl05 keyctl05
-+keyctl06 keyctl06
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index 337cf38..85cea9d 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -481,33 +481,6 @@ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con)
+ }
+ EXPORT_SYMBOL_GPL(af_alg_cmsg_send);
  
- kcmp01 kcmp01
- kcmp02 kcmp02
-diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
-index 4dc2f8bfa..a803986ef 100644
---- a/testcases/kernel/syscalls/.gitignore
-+++ b/testcases/kernel/syscalls/.gitignore
-@@ -463,6 +463,7 @@
- /keyctl/keyctl03
- /keyctl/keyctl04
- /keyctl/keyctl05
-+/keyctl/keyctl06
- /kcmp/kcmp01
- /kcmp/kcmp02
- /kcmp/kcmp03
-diff --git a/testcases/kernel/syscalls/keyctl/keyctl06.c b/testcases/kernel/syscalls/keyctl/keyctl06.c
-new file mode 100644
-index 000000000..88734313d
---- /dev/null
-+++ b/testcases/kernel/syscalls/keyctl/keyctl06.c
-@@ -0,0 +1,68 @@
-+/*
-+ * Copyright (c) 2017 Google, Inc.
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program, if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+/*
-+ * Regression test for commit e645016abc80 ("KEYS: fix writing past end of
-+ * user-supplied buffer in keyring_read()").
-+ */
-+
-+#include <errno.h>
-+
-+#include "tst_test.h"
-+#include "lapi/keyctl.h"
-+
-+static key_serial_t add_test_key(const char *description)
-+{
-+	TEST(add_key("user", description, "payload", 7,
-+		     KEY_SPEC_PROCESS_KEYRING));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "Failed to add test key");
-+	return TEST_RETURN;
-+}
-+
-+static void do_test(void)
-+{
-+	key_serial_t key_ids[2];
-+	key_serial_t key_id_1 = add_test_key("key1");
-+	key_serial_t key_id_2 = add_test_key("key2");
-+
-+	memset(key_ids, 0, sizeof(key_ids));
-+	TEST(keyctl(KEYCTL_READ, KEY_SPEC_PROCESS_KEYRING,
-+		    (char *)key_ids, sizeof(key_serial_t)));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "KEYCTL_READ failed");
-+
-+	if (key_ids[1] != 0)
-+		tst_brk(TFAIL, "KEYCTL_READ overran the buffer");
-+
-+	if (key_ids[0] = 0)
-+		tst_brk(TBROK, "KEYCTL_READ didn't read anything");
-+
-+	if (key_ids[0] != key_id_1 && key_ids[0] != key_id_2)
-+		tst_brk(TBROK, "KEYCTL_READ didn't return correct key ID");
-+
-+	if (TEST_RETURN != sizeof(key_serial_t)) {
-+		tst_brk(TBROK, "KEYCTL_READ returned %ld but expected %zu",
-+			TEST_RETURN, sizeof(key_serial_t));
-+	}
-+
-+	tst_res(TPASS, "KEYCTL_READ didn't overrun the buffer");
-+}
-+
-+static struct tst_test test = {
-+	.test_all = do_test,
-+};
+-int af_alg_wait_for_completion(int err, struct af_alg_completion *completion)
+-{
+-	switch (err) {
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		wait_for_completion(&completion->completion);
+-		reinit_completion(&completion->completion);
+-		err = completion->err;
+-		break;
+-	};
+-
+-	return err;
+-}
+-EXPORT_SYMBOL_GPL(af_alg_wait_for_completion);
+-
+-void af_alg_complete(struct crypto_async_request *req, int err)
+-{
+-	struct af_alg_completion *completion = req->data;
+-
+-	if (err = -EINPROGRESS)
+-		return;
+-
+-	completion->err = err;
+-	complete(&completion->completion);
+-}
+-EXPORT_SYMBOL_GPL(af_alg_complete);
+-
+ /**
+  * af_alg_alloc_tsgl - allocate the TX SGL
+  *
+diff --git a/crypto/algif_aead.c b/crypto/algif_aead.c
+index 516b38c..aacae08 100644
+--- a/crypto/algif_aead.c
++++ b/crypto/algif_aead.c
+@@ -278,11 +278,11 @@ static int _aead_recvmsg(struct socket *sock, struct msghdr *msg,
+ 		/* Synchronous operation */
+ 		aead_request_set_callback(&areq->cra_u.aead_req,
+ 					  CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					  af_alg_complete, &ctx->completion);
+-		err = af_alg_wait_for_completion(ctx->enc ?
++					  crypto_req_done, &ctx->wait);
++		err = crypto_wait_req(ctx->enc ?
+ 				crypto_aead_encrypt(&areq->cra_u.aead_req) :
+ 				crypto_aead_decrypt(&areq->cra_u.aead_req),
+-						 &ctx->completion);
++				&ctx->wait);
+ 	}
+ 
+ 	/* AIO operation in progress */
+@@ -554,7 +554,7 @@ static int aead_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->merge = 0;
+ 	ctx->enc = 0;
+ 	ctx->aead_assoclen = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index 5e92bd2..76d2e71 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -26,7 +26,7 @@ struct hash_ctx {
+ 
+ 	u8 *result;
+ 
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	unsigned int len;
+ 	bool more;
+@@ -88,8 +88,7 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 		if ((msg->msg_flags & MSG_MORE))
+ 			hash_free_result(sk, ctx);
+ 
+-		err = af_alg_wait_for_completion(crypto_ahash_init(&ctx->req),
+-						&ctx->completion);
++		err = crypto_wait_req(crypto_ahash_init(&ctx->req), &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+@@ -110,8 +109,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 
+ 		ahash_request_set_crypt(&ctx->req, ctx->sgl.sg, NULL, len);
+ 
+-		err = af_alg_wait_for_completion(crypto_ahash_update(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_update(&ctx->req),
++				      &ctx->wait);
+ 		af_alg_free_sg(&ctx->sgl);
+ 		if (err)
+ 			goto unlock;
+@@ -129,8 +128,8 @@ static int hash_sendmsg(struct socket *sock, struct msghdr *msg,
+ 			goto unlock;
+ 
+ 		ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
+-		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
++				      &ctx->wait);
+ 	}
+ 
+ unlock:
+@@ -171,7 +170,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 	} else {
+ 		if (!ctx->more) {
+ 			err = crypto_ahash_init(&ctx->req);
+-			err = af_alg_wait_for_completion(err, &ctx->completion);
++			err = crypto_wait_req(err, &ctx->wait);
+ 			if (err)
+ 				goto unlock;
+ 		}
+@@ -179,7 +178,7 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 		err = crypto_ahash_update(&ctx->req);
+ 	}
+ 
+-	err = af_alg_wait_for_completion(err, &ctx->completion);
++	err = crypto_wait_req(err, &ctx->wait);
+ 	if (err)
+ 		goto unlock;
+ 
+@@ -215,17 +214,16 @@ static int hash_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
+ 	ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
+ 
+ 	if (!result && !ctx->more) {
+-		err = af_alg_wait_for_completion(
+-				crypto_ahash_init(&ctx->req),
+-				&ctx->completion);
++		err = crypto_wait_req(crypto_ahash_init(&ctx->req),
++				      &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+ 
+ 	if (!result || ctx->more) {
+ 		ctx->more = 0;
+-		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
+-						 &ctx->completion);
++		err = crypto_wait_req(crypto_ahash_final(&ctx->req),
++				      &ctx->wait);
+ 		if (err)
+ 			goto unlock;
+ 	}
+@@ -476,13 +474,13 @@ static int hash_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->result = NULL;
+ 	ctx->len = len;
+ 	ctx->more = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+ 	ahash_request_set_tfm(&ctx->req, hash);
+ 	ahash_request_set_callback(&ctx->req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				   af_alg_complete, &ctx->completion);
++				   crypto_req_done, &ctx->wait);
+ 
+ 	sk->sk_destruct = hash_sock_destruct;
+ 
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 8ae4170..9954b07 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -129,12 +129,11 @@ static int _skcipher_recvmsg(struct socket *sock, struct msghdr *msg,
+ 		skcipher_request_set_callback(&areq->cra_u.skcipher_req,
+ 					      CRYPTO_TFM_REQ_MAY_SLEEP |
+ 					      CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					      af_alg_complete,
+-					      &ctx->completion);
+-		err = af_alg_wait_for_completion(ctx->enc ?
++					      crypto_req_done, &ctx->wait);
++		err = crypto_wait_req(ctx->enc ?
+ 			crypto_skcipher_encrypt(&areq->cra_u.skcipher_req) :
+ 			crypto_skcipher_decrypt(&areq->cra_u.skcipher_req),
+-						 &ctx->completion);
++						 &ctx->wait);
+ 	}
+ 
+ 	/* AIO operation in progress */
+@@ -388,7 +387,7 @@ static int skcipher_accept_parent_nokey(void *private, struct sock *sk)
+ 	ctx->more = 0;
+ 	ctx->merge = 0;
+ 	ctx->enc = 0;
+-	af_alg_init_completion(&ctx->completion);
++	crypto_init_wait(&ctx->wait);
+ 
+ 	ask->private = ctx;
+ 
+diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
+index 75ec9c6..6abf0a3 100644
+--- a/include/crypto/if_alg.h
++++ b/include/crypto/if_alg.h
+@@ -40,11 +40,6 @@ struct alg_sock {
+ 	void *private;
+ };
+ 
+-struct af_alg_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+ struct af_alg_control {
+ 	struct af_alg_iv *iv;
+ 	int op;
+@@ -152,7 +147,7 @@ struct af_alg_ctx {
+ 	void *iv;
+ 	size_t aead_assoclen;
+ 
+-	struct af_alg_completion completion;
++	struct crypto_wait wait;
+ 
+ 	size_t used;
+ 	size_t rcvused;
+@@ -177,19 +172,11 @@ void af_alg_link_sg(struct af_alg_sgl *sgl_prev, struct af_alg_sgl *sgl_new);
+ 
+ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con);
+ 
+-int af_alg_wait_for_completion(int err, struct af_alg_completion *completion);
+-void af_alg_complete(struct crypto_async_request *req, int err);
+-
+ static inline struct alg_sock *alg_sk(struct sock *sk)
+ {
+ 	return (struct alg_sock *)sk;
+ }
+ 
+-static inline void af_alg_init_completion(struct af_alg_completion *completion)
+-{
+-	init_completion(&completion->completion);
+-}
+-
+ /**
+  * Size of available buffer for sending data from user space to kernel.
+  *
 -- 
-2.15.0.rc0.271.g36b669edcc-goog
+2.7.4
 
