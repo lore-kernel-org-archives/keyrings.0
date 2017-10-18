@@ -1,36 +1,52 @@
-From: James Morris <jmorris@namei.org>
-Date: Tue, 03 Oct 2017 10:52:54 +0000
-Subject: Re: [PATCH 3/7] lib/digsig: fix dereference of NULL user_key_payload
-Message-Id: <alpine.LRH.2.21.1710032152430.25033@namei.org>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Wed, 18 Oct 2017 00:53:23 +0000
+Subject: [PATCH v5 10/18] ima: Store measurement after appraisal
+Message-Id: <20171018005331.2688-11-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170928212602.41744-1-ebiggers3@gmail.com> <20170928212602.41744-4-ebiggers3@gmail.com>
-In-Reply-To: <20170928212602.41744-4-ebiggers3@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-On Thu, 28 Sep 2017, Eric Biggers wrote:
+When module-style signatures appended at the end of files are supported for
+IMA appraisal, the code will fallback to the xattr signature if the
+appended one fails to verify.
 
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> digsig_verify() requests a user key, then accesses its payload.
-> However, a revoked key has a NULL payload, and we failed to check for
-> this.  request_key() *does* skip revoked keys, but there is still a
-> window where the key can be revoked before we acquire its semaphore.
-> 
-> Fix it by checking for a NULL payload, treating it like a key which was
-> already revoked at the time it was requested.
-> 
-> Fixes: 051dbb918c7f ("crypto: digital signature verification support")
-> Cc: <stable@vger.kernel.org>    [v3.3+]
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+The problem is that we don't know whether we need to fallback to the xattr
+signature until the appraise step, and by then the measure step was already
+completed and would need to be done again in case the template includes the
+signature.
 
+To avoid this problem, do the appraisal first so that the correct signature
+is stored by the template in the measure step.
 
-Reviewed-by: James Morris <james.l.morris@oracle.com>
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+---
+ security/integrity/ima/ima_main.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
--- 
-James Morris
-<jmorris@namei.org>
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 747a4fd9e2de..8e96450e27f5 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -242,12 +242,12 @@ static int process_measurement(struct file *file, char *buf, loff_t size,
+ 	if (!pathbuf)	/* ima_rdwr_violation possibly pre-fetched */
+ 		pathname = ima_d_path(&file->f_path, &pathbuf, filename);
+ 
+-	if (action & IMA_MEASURE)
+-		ima_store_measurement(iint, file, pathname,
+-				      xattr_value, xattr_len, pcr);
+ 	if (rc = 0 && (action & IMA_APPRAISE_SUBMASK))
+ 		rc = ima_appraise_measurement(func, iint, file, pathname,
+ 					      xattr_value, xattr_len, opened);
++	if (action & IMA_MEASURE)
++		ima_store_measurement(iint, file, pathname,
++				      xattr_value, xattr_len, pcr);
+ 	if (action & IMA_AUDIT)
+ 		ima_audit_measurement(iint, pathname);
+ 
 
