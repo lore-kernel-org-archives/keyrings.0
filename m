@@ -1,105 +1,174 @@
-From: George Wilson <ltcgcw@us.ibm.com>
-Date: Thu, 05 Oct 2017 22:59:57 +0000
-Subject: Re: [PATCH 0/8] KEYS: keyctl operations for asymmetric keys [ver #2]
-Message-Id: <20171005225957.GA13267@us.ibm.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Wed, 18 Oct 2017 07:00:47 +0000
+Subject: [PATCH v10 15/20] ima: move to generic async completion
+Message-Id: <1508310057-25369-16-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <146668965425.2977.13357101274301968911.stgit@warthog.procyon.org.uk>
-In-Reply-To: <146668965425.2977.13357101274301968911.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: mathew.j.martineau@linux.intel.com, dwmw2@infradead.org, tadeusz.struk@intel.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org, subras@us.ibm.com
+References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-On Thu, Jun 23, 2016 at 02:47:34PM +0100, David Howells wrote:
-> 
-> Here's a set of patches that provides keyctl access for asymmetric keys,
-> including a query function, and functions to do encryption, decryption,
-> signature creation and signature verification.
-> 
-> I've added a PKCS#8 asymmetric key parser so that you can load an RSA private
-> key into the kernel.  Currently only DER-encoded and unencrypted PKCS#8 is
-> supported.  Encryption and verification can use a public key from an X.509
-> cert, but signing and decryption require a private key, though encryption and
-> verification can use that too.
-> 
-> Example usage:
-> 
-> 	j=`openssl pkcs8 -in private_key.pem -topk8 -nocrypt -outform DER | \
-> 	    keyctl padd asymmetric foo @s`
-> 	echo -n abcdefghijklmnopqrst >/tmp/data
-> 	keyctl pkey_encrypt $j /tmp/data enc=pkcs1 >/tmp/enc
-> 	keyctl pkey_decrypt $j /tmp/enc enc=pkcs1 >/tmp/dec
-> 	cmp /tmp/data /tmp/dec
-> 	keyctl pkey_sign $j /tmp/data enc=pkcs1 hash=sha1 >/tmp/sig
-> 	keyctl pkey_verify $j /tmp/data /tmp/sig enc=pkcs1 hash=sha1
-> 
-> Changes:
-> 
->  (*) I've taken out the password parameters for the moment as there isn't
->      yet a subtype that uses them.  I have, however, left space in the
->      keyctl UAPI to add them back later.
-> 
-> The kernel patches can be found here also:
-> 
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-asym-keyctl
-> 
-> The keyutils changes needed can be found here:
-> 
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/log/?h=pkey
-> 
-> David
-> ---
-> David Howells (8):
->       KEYS: Provide key type operations for asymmetric key ops
->       KEYS: Provide keyctls to drive the new key type ops for asymmetric keys
->       KEYS: Provide missing asymmetric key subops for new key type ops
->       KEYS: Make the X.509 and PKCS7 parsers supply the sig encoding type
->       KEYS: Provide software public key query function
->       KEYS: Allow the public_key struct to hold a private key
->       KEYS: Implement encrypt, decrypt and sign for software asymmetric key
->       KEYS: Implement PKCS#8 RSA Private Key parser
-> 
-> 
->  Documentation/crypto/asymmetric-keys.txt  |   26 ++
->  Documentation/security/keys.txt           |  217 +++++++++++++++++++
->  crypto/asymmetric_keys/Kconfig            |   10 +
->  crypto/asymmetric_keys/Makefile           |   13 +
->  crypto/asymmetric_keys/asymmetric_keys.h  |    3 
->  crypto/asymmetric_keys/asymmetric_type.c  |   59 +++++
->  crypto/asymmetric_keys/pkcs7_parser.c     |    1 
->  crypto/asymmetric_keys/pkcs8.asn1         |   24 ++
->  crypto/asymmetric_keys/pkcs8_parser.c     |  184 +++++++++++++++++
->  crypto/asymmetric_keys/public_key.c       |  195 ++++++++++++++++--
->  crypto/asymmetric_keys/signature.c        |   95 +++++++++
->  crypto/asymmetric_keys/x509_cert_parser.c |   21 +-
->  include/crypto/public_key.h               |   14 +
->  include/keys/asymmetric-subtype.h         |    9 +
->  include/linux/key-type.h                  |   11 +
->  include/linux/keyctl.h                    |   46 ++++
->  include/uapi/linux/keyctl.h               |   30 +++
->  security/keys/Makefile                    |    1 
->  security/keys/compat.c                    |   18 ++
->  security/keys/internal.h                  |   39 ++++
->  security/keys/keyctl.c                    |   24 ++
->  security/keys/keyctl_pkey.c               |  323 +++++++++++++++++++++++++++++
->  22 files changed, 1319 insertions(+), 44 deletions(-)
->  create mode 100644 crypto/asymmetric_keys/pkcs8.asn1
->  create mode 100644 crypto/asymmetric_keys/pkcs8_parser.c
->  create mode 100644 include/linux/keyctl.h
->  create mode 100644 security/keys/keyctl_pkey.c
-> 
+ima starts several async crypto ops and  waits for their completions.
+Move it over to generic code doing the same.
 
-Hi David,
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
+ security/integrity/ima/ima_crypto.c | 56 +++++++++++--------------------------
+ 1 file changed, 17 insertions(+), 39 deletions(-)
 
-To lend support for this patch series, we have a compelling use case in OpenPOWER
-firmware.  We need to verify that our key management command queue elements are
-properly signed.  However, we have limited flash storage space and want to avoid
-dragging in a userspace library.  Sub Swaminathan (on copy) has prototyped a
-solution using these patches.  We'd very much like to see them applied.
-
+diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+index a856d8c..9057b16 100644
+--- a/security/integrity/ima/ima_crypto.c
++++ b/security/integrity/ima/ima_crypto.c
+@@ -27,11 +27,6 @@
+ 
+ #include "ima.h"
+ 
+-struct ahash_completion {
+-	struct completion completion;
+-	int err;
+-};
+-
+ /* minimum file size for ahash use */
+ static unsigned long ima_ahash_minsize;
+ module_param_named(ahash_minsize, ima_ahash_minsize, ulong, 0644);
+@@ -196,30 +191,13 @@ static void ima_free_atfm(struct crypto_ahash *tfm)
+ 		crypto_free_ahash(tfm);
+ }
+ 
+-static void ahash_complete(struct crypto_async_request *req, int err)
++static inline int ahash_wait(int err, struct crypto_wait *wait)
+ {
+-	struct ahash_completion *res = req->data;
+ 
+-	if (err = -EINPROGRESS)
+-		return;
+-	res->err = err;
+-	complete(&res->completion);
+-}
++	err = crypto_wait_req(err, wait);
+ 
+-static int ahash_wait(int err, struct ahash_completion *res)
+-{
+-	switch (err) {
+-	case 0:
+-		break;
+-	case -EINPROGRESS:
+-	case -EBUSY:
+-		wait_for_completion(&res->completion);
+-		reinit_completion(&res->completion);
+-		err = res->err;
+-		/* fall through */
+-	default:
++	if (err)
+ 		pr_crit_ratelimited("ahash calculation failed: err: %d\n", err);
+-	}
+ 
+ 	return err;
+ }
+@@ -233,7 +211,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 	int rc, read = 0, rbuf_len, active = 0, ahash_rc = 0;
+ 	struct ahash_request *req;
+ 	struct scatterlist sg[1];
+-	struct ahash_completion res;
++	struct crypto_wait wait;
+ 	size_t rbuf_size[2];
+ 
+ 	hash->length = crypto_ahash_digestsize(tfm);
+@@ -242,12 +220,12 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 	if (!req)
+ 		return -ENOMEM;
+ 
+-	init_completion(&res.completion);
++	crypto_init_wait(&wait);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				   CRYPTO_TFM_REQ_MAY_SLEEP,
+-				   ahash_complete, &res);
++				   crypto_req_done, &wait);
+ 
+-	rc = ahash_wait(crypto_ahash_init(req), &res);
++	rc = ahash_wait(crypto_ahash_init(req), &wait);
+ 	if (rc)
+ 		goto out1;
+ 
+@@ -288,7 +266,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 			 * read/request, wait for the completion of the
+ 			 * previous ahash_update() request.
+ 			 */
+-			rc = ahash_wait(ahash_rc, &res);
++			rc = ahash_wait(ahash_rc, &wait);
+ 			if (rc)
+ 				goto out3;
+ 		}
+@@ -304,7 +282,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 			 * read/request, wait for the completion of the
+ 			 * previous ahash_update() request.
+ 			 */
+-			rc = ahash_wait(ahash_rc, &res);
++			rc = ahash_wait(ahash_rc, &wait);
+ 			if (rc)
+ 				goto out3;
+ 		}
+@@ -318,7 +296,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 			active = !active; /* swap buffers, if we use two */
+ 	}
+ 	/* wait for the last update request to complete */
+-	rc = ahash_wait(ahash_rc, &res);
++	rc = ahash_wait(ahash_rc, &wait);
+ out3:
+ 	if (read)
+ 		file->f_mode &= ~FMODE_READ;
+@@ -327,7 +305,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ out2:
+ 	if (!rc) {
+ 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
+-		rc = ahash_wait(crypto_ahash_final(req), &res);
++		rc = ahash_wait(crypto_ahash_final(req), &wait);
+ 	}
+ out1:
+ 	ahash_request_free(req);
+@@ -537,7 +515,7 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
+ {
+ 	struct ahash_request *req;
+ 	struct scatterlist sg;
+-	struct ahash_completion res;
++	struct crypto_wait wait;
+ 	int rc, ahash_rc = 0;
+ 
+ 	hash->length = crypto_ahash_digestsize(tfm);
+@@ -546,12 +524,12 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
+ 	if (!req)
+ 		return -ENOMEM;
+ 
+-	init_completion(&res.completion);
++	crypto_init_wait(&wait);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				   CRYPTO_TFM_REQ_MAY_SLEEP,
+-				   ahash_complete, &res);
++				   crypto_req_done, &wait);
+ 
+-	rc = ahash_wait(crypto_ahash_init(req), &res);
++	rc = ahash_wait(crypto_ahash_init(req), &wait);
+ 	if (rc)
+ 		goto out;
+ 
+@@ -561,10 +539,10 @@ static int calc_buffer_ahash_atfm(const void *buf, loff_t len,
+ 	ahash_rc = crypto_ahash_update(req);
+ 
+ 	/* wait for the update request to complete */
+-	rc = ahash_wait(ahash_rc, &res);
++	rc = ahash_wait(ahash_rc, &wait);
+ 	if (!rc) {
+ 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
+-		rc = ahash_wait(crypto_ahash_final(req), &res);
++		rc = ahash_wait(crypto_ahash_final(req), &wait);
+ 	}
+ out:
+ 	ahash_request_free(req);
 -- 
-George Wilson
-IBM Linux Technology Center
-Security Development
+2.7.4
 
