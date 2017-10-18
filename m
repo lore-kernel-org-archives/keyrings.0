@@ -1,190 +1,216 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 15 Oct 2017 09:19:49 +0000
-Subject: [PATCH v9 04/20] crypto: remove redundant backlog checks on EBUSY
-Message-Id: <1508059209-25529-5-git-send-email-gilad@benyossef.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Wed, 18 Oct 2017 00:53:28 +0000
+Subject: [PATCH v5 15/18] ima: Add modsig appraise_type option for module-style appended signatures
+Message-Id: <20171018005331.2688-16-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
-Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-Now that -EBUSY return code only indicates backlog queueing
-we can safely remove the now redundant check for the
-CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
+This patch introduces the modsig keyword to the IMA policy syntax to
+specify that a given hook should expect the file to have the IMA signature
+appended to it. Here is how it can be used in a rule:
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+appraise func=KEXEC_KERNEL_CHECK appraise_type=modsig|imasig
+
+With this rule, IMA will accept either an appended signature or a signature
+stored in the extended attribute. In that case, it will first check whether
+there is an appended signature, and if not it will read it from the
+extended attribute.
+
+For now, the rule above will behave exactly the same as if
+appraise_type=imasig was specified because the actual modsig implementation
+will be introduced in a separate patch.
+
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
- crypto/ahash.c        | 12 +++---------
- crypto/cts.c          |  6 ++----
- crypto/lrw.c          |  8 ++------
- crypto/rsa-pkcs1pad.c | 16 ++++------------
- crypto/xts.c          |  8 ++------
- 5 files changed, 13 insertions(+), 37 deletions(-)
+ Documentation/ABI/testing/ima_policy |  6 +++++-
+ security/integrity/ima/Kconfig       | 10 +++++++++
+ security/integrity/ima/Makefile      |  1 +
+ security/integrity/ima/ima.h         | 11 ++++++++++
+ security/integrity/ima/ima_modsig.c  | 39 ++++++++++++++++++++++++++++++++++++
+ security/integrity/ima/ima_policy.c  | 12 +++++++++--
+ security/integrity/integrity.h       |  3 ++-
+ 7 files changed, 78 insertions(+), 4 deletions(-)
 
-diff --git a/crypto/ahash.c b/crypto/ahash.c
-index 5e8666e..3a35d67 100644
---- a/crypto/ahash.c
-+++ b/crypto/ahash.c
-@@ -334,9 +334,7 @@ static int ahash_op_unaligned(struct ahash_request *req,
- 		return err;
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index e76432b9954d..ced1e1835a30 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -36,7 +36,7 @@ Description:
+ 			euid:= decimal value
+ 			fowner:= decimal value
+ 		lsm:  	are LSM specific
+-		option:	appraise_type:= [imasig]
++		option:	appraise_type:= [imasig] [modsig|imasig]
+ 			pcr:= decimal value
  
- 	err = op(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && (ahash_request_flags(req) &
--			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return err;
+ 		default policy:
+@@ -102,3 +102,7 @@ Description:
  
- 	ahash_restore_req(req, err);
-@@ -394,9 +392,7 @@ static int ahash_def_finup_finish1(struct ahash_request *req, int err)
- 	req->base.complete = ahash_def_finup_done2;
+ 			measure func=KEXEC_KERNEL_CHECK pcr=4
+ 			measure func=KEXEC_INITRAMFS_CHECK pcr=5
++
++		Example of appraise rule allowing modsig appended signatures:
++
++			appraise func=KEXEC_KERNEL_CHECK appraise_type=modsig|imasig
+diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+index 35ef69312811..40c6618d00e6 100644
+--- a/security/integrity/ima/Kconfig
++++ b/security/integrity/ima/Kconfig
+@@ -163,6 +163,16 @@ config IMA_APPRAISE_BOOTPARAM
+ 	  This option enables the different "ima_appraise=" modes
+ 	  (eg. fix, log) from the boot command line.
  
- 	err = crypto_ahash_reqtfm(req)->final(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && (ahash_request_flags(req) &
--			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return err;
++config IMA_APPRAISE_MODSIG
++	bool "Support module-style signatures for appraisal"
++	depends on IMA_APPRAISE
++	default n
++	help
++	   Adds support for signatures appended to files. The format of the
++	   appended signature is the same used for signed kernel modules.
++	   The modsig keyword can be used in the IMA policy to allow a hook
++	   to accept such signatures.
++
+ config IMA_TRUSTED_KEYRING
+ 	bool "Require all keys on the .ima keyring be signed (deprecated)"
+ 	depends on IMA_APPRAISE && SYSTEM_TRUSTED_KEYRING
+diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
+index 29f198bde02b..c72026acecc3 100644
+--- a/security/integrity/ima/Makefile
++++ b/security/integrity/ima/Makefile
+@@ -8,5 +8,6 @@ obj-$(CONFIG_IMA) += ima.o
+ ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
+ 	 ima_policy.o ima_template.o ima_template_lib.o
+ ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
++ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
+ ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
+ obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index c9ba4362760b..156ba218e0b6 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -255,6 +255,10 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
+ int ima_read_xattr(struct dentry *dentry,
+ 		   struct evm_ima_xattr_data **xattr_value);
  
- out:
-@@ -432,9 +428,7 @@ static int ahash_def_finup(struct ahash_request *req)
- 		return err;
++#ifdef CONFIG_IMA_APPRAISE_MODSIG
++bool ima_hook_supports_modsig(enum ima_hooks func);
++#endif
++
+ #else
+ static inline int ima_appraise_measurement(enum ima_hooks func,
+ 					   struct integrity_iint_cache *iint,
+@@ -298,6 +302,13 @@ static inline int ima_read_xattr(struct dentry *dentry,
  
- 	err = tfm->update(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && (ahash_request_flags(req) &
--			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return err;
+ #endif /* CONFIG_IMA_APPRAISE */
  
- 	return ahash_def_finup_finish1(req, err);
-diff --git a/crypto/cts.c b/crypto/cts.c
-index 243f591..4773c18 100644
---- a/crypto/cts.c
-+++ b/crypto/cts.c
-@@ -136,8 +136,7 @@ static void crypto_cts_encrypt_done(struct crypto_async_request *areq, int err)
- 		goto out;
++#ifndef CONFIG_IMA_APPRAISE_MODSIG
++static inline bool ima_hook_supports_modsig(enum ima_hooks func)
++{
++	return false;
++}
++#endif
++
+ /* LSM based policy rules require audit */
+ #ifdef CONFIG_IMA_LSM_RULES
  
- 	err = cts_cbc_encrypt(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return;
- 
- out:
-@@ -229,8 +228,7 @@ static void crypto_cts_decrypt_done(struct crypto_async_request *areq, int err)
- 		goto out;
- 
- 	err = cts_cbc_decrypt(req);
--	if (err = -EINPROGRESS ||
--	    (err = -EBUSY && req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+	if (err = -EINPROGRESS || err = -EBUSY)
- 		return;
- 
- out:
-diff --git a/crypto/lrw.c b/crypto/lrw.c
-index 92df312..cbbd7c5 100644
---- a/crypto/lrw.c
-+++ b/crypto/lrw.c
-@@ -328,9 +328,7 @@ static int do_encrypt(struct skcipher_request *req, int err)
- 		      crypto_skcipher_encrypt(subreq) ?:
- 		      post_crypt(req);
- 
--		if (err = -EINPROGRESS ||
--		    (err = -EBUSY &&
--		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (err = -EINPROGRESS || err = -EBUSY)
- 			return err;
+diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
+new file mode 100644
+index 000000000000..452ce6048a7e
+--- /dev/null
++++ b/security/integrity/ima/ima_modsig.c
+@@ -0,0 +1,39 @@
++/*
++ * IMA support for appraising module-style appended signatures.
++ *
++ * Copyright (C) 2017  IBM Corporation
++ *
++ * Author:
++ * Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation (version 2 of the License).
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include "ima.h"
++
++/**
++ * ima_hook_supports_modsig - can the policy allow modsig for this hook?
++ *
++ * modsig is only supported by hooks using ima_post_read_file, because only they
++ * preload the contents of the file in a buffer. FILE_CHECK does that in some
++ * cases, but not when reached from vfs_open. POLICY_CHECK can support it, but
++ * it's not useful in practice because it's a text file so deny.
++ */
++bool ima_hook_supports_modsig(enum ima_hooks func)
++{
++	switch (func) {
++	case FIRMWARE_CHECK:
++	case KEXEC_KERNEL_CHECK:
++	case KEXEC_INITRAMFS_CHECK:
++		return true;
++	default:
++		return false;
++	}
++}
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 7355d4ab7bf4..c5f98c54e59d 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -854,6 +854,10 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 			ima_log_string(ab, "appraise_type", args[0].from);
+ 			if (strcmp(args[0].from, "imasig") = 0)
+ 				entry->flags |= IMA_DIGSIG_REQUIRED;
++			else if (ima_hook_supports_modsig(entry->func) &&
++				 strcmp(args[0].from, "modsig|imasig") = 0)
++				entry->flags |= IMA_DIGSIG_REQUIRED
++						| IMA_MODSIG_ALLOWED;
+ 			else
+ 				result = -EINVAL;
+ 			break;
+@@ -1139,8 +1143,12 @@ int ima_policy_show(struct seq_file *m, void *v)
+ 			}
+ 		}
  	}
+-	if (entry->flags & IMA_DIGSIG_REQUIRED)
+-		seq_puts(m, "appraise_type=imasig ");
++	if (entry->flags & IMA_DIGSIG_REQUIRED) {
++		if (entry->flags & IMA_MODSIG_ALLOWED)
++			seq_puts(m, "appraise_type=modsig|imasig ");
++		else
++			seq_puts(m, "appraise_type=imasig ");
++	}
+ 	if (entry->flags & IMA_PERMIT_DIRECTIO)
+ 		seq_puts(m, "permit_directio ");
+ 	rcu_read_unlock();
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 657ce4558984..da709558ec8b 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -28,11 +28,12 @@
  
-@@ -380,9 +378,7 @@ static int do_decrypt(struct skcipher_request *req, int err)
- 		      crypto_skcipher_decrypt(subreq) ?:
- 		      post_crypt(req);
+ /* iint cache flags */
+ #define IMA_ACTION_FLAGS	0xff000000
+-#define IMA_ACTION_RULE_FLAGS	0x06000000
++#define IMA_ACTION_RULE_FLAGS	0x16000000
+ #define IMA_DIGSIG		0x01000000
+ #define IMA_DIGSIG_REQUIRED	0x02000000
+ #define IMA_PERMIT_DIRECTIO	0x04000000
+ #define IMA_NEW_FILE		0x08000000
++#define IMA_MODSIG_ALLOWED	0x10000000
  
--		if (err = -EINPROGRESS ||
--		    (err = -EBUSY &&
--		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (err = -EINPROGRESS || err = -EBUSY)
- 			return err;
- 	}
- 
-diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
-index 407c64b..2908f93 100644
---- a/crypto/rsa-pkcs1pad.c
-+++ b/crypto/rsa-pkcs1pad.c
-@@ -279,9 +279,7 @@ static int pkcs1pad_encrypt(struct akcipher_request *req)
- 				   req->dst, ctx->key_size - 1, req->dst_len);
- 
- 	err = crypto_akcipher_encrypt(&req_ctx->child_req);
--	if (err != -EINPROGRESS &&
--			(err != -EBUSY ||
--			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_encrypt_sign_complete(req, err);
- 
- 	return err;
-@@ -383,9 +381,7 @@ static int pkcs1pad_decrypt(struct akcipher_request *req)
- 				   ctx->key_size);
- 
- 	err = crypto_akcipher_decrypt(&req_ctx->child_req);
--	if (err != -EINPROGRESS &&
--			(err != -EBUSY ||
--			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_decrypt_complete(req, err);
- 
- 	return err;
-@@ -440,9 +436,7 @@ static int pkcs1pad_sign(struct akcipher_request *req)
- 				   req->dst, ctx->key_size - 1, req->dst_len);
- 
- 	err = crypto_akcipher_sign(&req_ctx->child_req);
--	if (err != -EINPROGRESS &&
--			(err != -EBUSY ||
--			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_encrypt_sign_complete(req, err);
- 
- 	return err;
-@@ -561,9 +555,7 @@ static int pkcs1pad_verify(struct akcipher_request *req)
- 				   ctx->key_size);
- 
- 	err = crypto_akcipher_verify(&req_ctx->child_req);
--	if (err != -EINPROGRESS &&
--			(err != -EBUSY ||
--			 !(req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
-+	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_verify_complete(req, err);
- 
- 	return err;
-diff --git a/crypto/xts.c b/crypto/xts.c
-index e31828e..f317c48 100644
---- a/crypto/xts.c
-+++ b/crypto/xts.c
-@@ -269,9 +269,7 @@ static int do_encrypt(struct skcipher_request *req, int err)
- 		      crypto_skcipher_encrypt(subreq) ?:
- 		      post_crypt(req);
- 
--		if (err = -EINPROGRESS ||
--		    (err = -EBUSY &&
--		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (err = -EINPROGRESS || err = -EBUSY)
- 			return err;
- 	}
- 
-@@ -321,9 +319,7 @@ static int do_decrypt(struct skcipher_request *req, int err)
- 		      crypto_skcipher_decrypt(subreq) ?:
- 		      post_crypt(req);
- 
--		if (err = -EINPROGRESS ||
--		    (err = -EBUSY &&
--		     req->base.flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
-+		if (err = -EINPROGRESS || err = -EBUSY)
- 			return err;
- 	}
- 
--- 
-2.7.4
+ #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+ 				 IMA_APPRAISE_SUBMASK)
 
