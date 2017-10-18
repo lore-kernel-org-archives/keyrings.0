@@ -1,19 +1,19 @@
-From: joeyli <jlee@suse.com>
-Date: Fri, 06 Oct 2017 07:46:49 +0000
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Wed, 18 Oct 2017 08:21:35 +0000
 Subject: Re: Draft manpage explaining kernel lockdown
-Message-Id: <20171006074649.GB3789@linux-l9pv.suse>
+Message-Id: <95c53500-eae9-6c03-8bc5-f1ba62475711@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <7969.1507201224@warthog.procyon.org.uk>
-In-Reply-To: <7969.1507201224-S6HVgzuS8uM4Awkfq6JHfwNdhmdF6hFW@public.gmane.org>
-To: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Cc: Ard Biesheuvel <ard.biesheuvel-QSEj5FYQhm4dnm+yROfE0A@public.gmane.org>, mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org, mcgrof-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, johannes-cdvu00un1VgdHxzADdlk8Q@public.gmane.org, linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-efi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Gary Lin <GLin-IBi9RG/b67k@public.gmane.org>, Jann Horn <jann-XZ1E9jl8jIdeoWH0uzbU5w@public.gmane.org>
+In-Reply-To: <7969.1507201224@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: mtk.manpages@gmail.com, mcgrof@kernel.org, johannes@sipsolutions.net, linux-man@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
 
 Hi David,
 
-On Thu, Oct 05, 2017 at 12:00:24PM +0100, David Howells wrote:
+On 10/05/2017 01:00 PM, David Howells wrote:
 > Hi Ard, Michael,
 > 
 > Attached is a draft for a manual page (kernel_lockdown.7) that I intend to
@@ -21,10 +21,59 @@ On Thu, Oct 05, 2017 at 12:00:24PM +0100, David Howells wrote:
 > kernel is in 'lockdown' mode, typically triggered by EFI secure boot.
 > 
 > Let me know what you think.
-> 
+
+Thanks for the page proposal. Several people sent feedback. Will you
+revise the draft?
+
+Thanks,
+
+Michael
+
+
 > David
 > ---
-[...snip]
+> .\"
+> .\" Copyright (C) 2017 Red Hat, Inc. All Rights Reserved.
+> .\" Written by David Howells (dhowells@redhat.com)
+> .\"
+> .\" %%%LICENSE_START(GPLv2+_SW_ONEPARA)
+> .\" This program is free software; you can redistribute it and/or
+> .\" modify it under the terms of the GNU General Public License
+> .\" as published by the Free Software Foundation; either version
+> .\" 2 of the License, or (at your option) any later version.
+> .\" %%%LICENSE_END
+> .\"
+> .TH "KERNEL LOCKDOWN" 7 2017-10-05 Linux "Linux Programmer's Manual"
+> .SH NAME
+> Kernel Lockdown \- Kernel image access prevention feature
+> .SH DESCRIPTION
+> The Kernel Lockdown feature is designed to prevent both direct and indirect
+> access to a running kernel image, attempting to protect against unauthorised
+> modification of the kernel image and to prevent access to security and
+> cryptographic data located in kernel memory, whilst still permitting driver
+> modules to be loaded.
+> .P
+> Lockdown is typically enabled during boot and may be terminated, if configured,
+> by typing a special key combination on a directly attached physical keyboard.
+> .P
+> If a prohibited or restricted feature is accessed or used, the kernel will emit
+> a message that looks like:
+> .P
+> .RS
+> 	Lockdown: X is restricted, see man kernel_lockdown(7)
+> .RE
+> .P
+> where X indicates what is restricted.
+> .P
+> On an EFI-enabled x86 or arm64 machine, lockdown will be automatically enabled
+> if the system boots in EFI Secure Boot mode.
+> .P
+> If the kernel is appropriately configured, lockdown may be lifted by typing the
+> appropriate sequence on a directly attached physical keyboard.  For x86
+> machines, this is
+> .IR SysRq+x .
+> .\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+> .SH COVERAGE
 > When lockdown is in effect, a number of things are disabled or restricted in
 > use.  This includes special device files and kernel services that allow direct
 > access of the kernel image:
@@ -39,35 +88,62 @@ On Thu, Oct 05, 2017 at 12:00:24PM +0100, David Howells wrote:
 > /dev/ioports
 > .br
 > BPF memory access functions
-
-Some information for note...
-
-The BPF functions bpf_probe_read(), bpf_trace_printk() and
-bpf_probe_write_user() need to be lockdown to avoid accessing
-arbitrary addess.
-
-Our original idea is trying to filter out senstivie data address
-at runtime by eBPF verifier. But it can not be success. Gary Lin has
-investigated and comment:
-
-  Although eBPF verifier can stop the reading from the hard-coded address, 
-  it's not able to stop reading arguments in the probed functions. So if 
-  the malicious user attaches a eBPF program to a function that is used to 
-  process the sensitive data, the eBPF program can print those arguments 
-  easily and this might leak the passwords or private keys.
-
-If we readlly want to allow eBPF code to access memory, then I think that the
-bpf bytecode should be signed by trused key in system keyring.
-
 > .RE
 > .P
+> and the ability to directly configure and control devices, so as to prevent the
+> use of a device to access or modify a kernel image:
+> .P
+> .RS
+> The use of module parameters that directly specify hardware parameters to
+> drivers through the kernel command line or when loading a module.
+> .P
+> The use of direct PCI BAR access.
+> .P
+> The use of the ioperm and iopl instructions on x86.
+> .P
+> The use of the KD*IO console ioctls.
+> .P
+> The use of the TIOCSSERIAL serial ioctl.
+> .P
+> The alteration of MSR registers on x86.
+> .P
+> The replacement of the PCMCIA CIS.
+> .P
+> The overriding of ACPI tables.
+> .P
+> The use of ACPI error injection.
+> .P
+> The specification of the ACPI RDSP address.
+> .P
+> The use of ACPI custom methods.
+> .RE
+> .P
+> The following facilities are restricted:
+> .P
+> .RS
+> Only validly signed modules may be loaded.
+> .P
+> Only validly signed binaries may be kexec'd.
+> .P
+> Only validly signed device firmware may be loaded.
+> .P
+> Only validly signed wifi databases may be use.
+> .P
+> Unencrypted hibernation/suspend to swap are disallowed as the kernel image is
+> saved to a medium that can then be accessed.
+> .P
+> Use of debugfs is not permitted as this allows a whole range of actions
+> including direct configuration of, access to and driving of hardware.
+> .RE
+> .\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+> .SH SEE ALSO
+> .ad l
+> .nh
+> 
+> 
 
-Another function may needs to be restrictred:
 
-- The perf_event_open() with PERF_SAMPLE_REGS_INTR
-
-  Jann Horn raised this concern. The tool can be used to grab register
-  to peep sensitive data. We may need to block this tracing function.
-
-Regards
-Joey Lee
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
