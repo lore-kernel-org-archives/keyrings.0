@@ -1,115 +1,113 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 12 Oct 2017 20:16:33 +0000
-Subject: [PATCH 05/15] ecryptfs: fix dereference of NULL user_key_payload
-Message-Id: <150783939339.10956.4554947273195730727.stgit@warthog.procyon.org.uk>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Wed, 18 Oct 2017 07:00:41 +0000
+Subject: [PATCH v10 09/20] crypto: move drbg to generic async completion
+Message-Id: <1508310057-25369-10-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+DRBG is starting an async. crypto op and waiting for it complete.
+Move it over to generic code doing the same.
 
-In eCryptfs, we failed to verify that the authentication token keys are
-not revoked before dereferencing their payloads, which is problematic
-because the payload of a revoked key is NULL.  request_key() *does* skip
-revoked keys, but there is still a window where the key can be revoked
-before we acquire the key semaphore.
+The code now also passes CRYPTO_TFM_REQ_MAY_SLEEP flag indicating
+crypto request memory allocation may use GFP_KERNEL which should
+be perfectly fine as the code is obviously sleeping for the
+completion of the request any way.
 
-Fix it by updating ecryptfs_get_key_payload_data() to return
--EKEYREVOKED if the key payload is NULL.  For completeness we check this
-for "encrypted" keys as well as "user" keys, although encrypted keys
-cannot be revoked currently.
-
-Alternatively we could use key_validate(), but since we'll also need to
-fix ecryptfs_get_key_payload_data() to validate the payload length, it
-seems appropriate to just check the payload pointer.
-
-Fixes: 237fead61998 ("[PATCH] ecryptfs: fs/Makefile and fs/Kconfig")
-Reviewed-by: James Morris <james.l.morris@oracle.com>
-Cc: <stable@vger.kernel.org>    [v2.6.19+]
-Cc: Michael Halcrow <mhalcrow@google.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
+ crypto/drbg.c         | 36 +++++++++---------------------------
+ include/crypto/drbg.h |  3 +--
+ 2 files changed, 10 insertions(+), 29 deletions(-)
 
- fs/ecryptfs/ecryptfs_kernel.h |   24 +++++++++++++++++-------
- fs/ecryptfs/keystore.c        |    9 ++++++++-
- 2 files changed, 25 insertions(+), 8 deletions(-)
-
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index 9c351bf757b2..3fbc0ff79699 100644
---- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -84,11 +84,16 @@ struct ecryptfs_page_crypt_context {
- static inline struct ecryptfs_auth_tok *
- ecryptfs_get_encrypted_key_payload_data(struct key *key)
- {
--	if (key->type = &key_type_encrypted)
--		return (struct ecryptfs_auth_tok *)
--			(&((struct encrypted_key_payload *)key->payload.data[0])->payload_data);
--	else
-+	struct encrypted_key_payload *payload;
-+
-+	if (key->type != &key_type_encrypted)
- 		return NULL;
-+
-+	payload = key->payload.data[0];
-+	if (!payload)
-+		return ERR_PTR(-EKEYREVOKED);
-+
-+	return (struct ecryptfs_auth_tok *)payload->payload_data;
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index 7001839..4faa278 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -1651,16 +1651,6 @@ static int drbg_fini_sym_kernel(struct drbg_state *drbg)
+ 	return 0;
  }
  
- static inline struct key *ecryptfs_get_encrypted_key(char *sig)
-@@ -114,12 +119,17 @@ static inline struct ecryptfs_auth_tok *
- ecryptfs_get_key_payload_data(struct key *key)
+-static void drbg_skcipher_cb(struct crypto_async_request *req, int error)
+-{
+-	struct drbg_state *drbg = req->data;
+-
+-	if (error = -EINPROGRESS)
+-		return;
+-	drbg->ctr_async_err = error;
+-	complete(&drbg->ctr_completion);
+-}
+-
+ static int drbg_init_sym_kernel(struct drbg_state *drbg)
  {
- 	struct ecryptfs_auth_tok *auth_tok;
-+	struct user_key_payload *ukp;
+ 	struct crypto_cipher *tfm;
+@@ -1691,7 +1681,7 @@ static int drbg_init_sym_kernel(struct drbg_state *drbg)
+ 		return PTR_ERR(sk_tfm);
+ 	}
+ 	drbg->ctr_handle = sk_tfm;
+-	init_completion(&drbg->ctr_completion);
++	crypto_init_wait(&drbg->ctr_wait);
  
- 	auth_tok = ecryptfs_get_encrypted_key_payload_data(key);
--	if (!auth_tok)
--		return (struct ecryptfs_auth_tok *)user_key_payload_locked(key)->data;
--	else
-+	if (auth_tok)
- 		return auth_tok;
-+
-+	ukp = user_key_payload_locked(key);
-+	if (!ukp)
-+		return ERR_PTR(-EKEYREVOKED);
-+
-+	return (struct ecryptfs_auth_tok *)ukp->data;
- }
+ 	req = skcipher_request_alloc(sk_tfm, GFP_KERNEL);
+ 	if (!req) {
+@@ -1700,8 +1690,9 @@ static int drbg_init_sym_kernel(struct drbg_state *drbg)
+ 		return -ENOMEM;
+ 	}
+ 	drbg->ctr_req = req;
+-	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-					drbg_skcipher_cb, drbg);
++	skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++						CRYPTO_TFM_REQ_MAY_SLEEP,
++					crypto_req_done, &drbg->ctr_wait);
  
- #define ECRYPTFS_MAX_KEYSET_SIZE 1024
-diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index 3cf1546dca82..fa218cd64f74 100644
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -459,7 +459,8 @@ static int ecryptfs_verify_version(u16 version)
-  * @auth_tok_key: key containing the authentication token
-  * @auth_tok: authentication token
-  *
-- * Returns zero on valid auth tok; -EINVAL otherwise
-+ * Returns zero on valid auth tok; -EINVAL if the payload is invalid; or
-+ * -EKEYREVOKED if the key was revoked before we acquired its semaphore.
-  */
- static int
- ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
-@@ -468,6 +469,12 @@ ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
- 	int rc = 0;
- 
- 	(*auth_tok) = ecryptfs_get_key_payload_data(auth_tok_key);
-+	if (IS_ERR(*auth_tok)) {
-+		rc = PTR_ERR(*auth_tok);
-+		*auth_tok = NULL;
-+		goto out;
-+	}
+ 	alignmask = crypto_skcipher_alignmask(sk_tfm);
+ 	drbg->ctr_null_value_buf = kzalloc(DRBG_CTR_NULL_LEN + alignmask,
+@@ -1762,21 +1753,12 @@ static int drbg_kcapi_sym_ctr(struct drbg_state *drbg,
+ 		/* Output buffer may not be valid for SGL, use scratchpad */
+ 		skcipher_request_set_crypt(drbg->ctr_req, &sg_in, &sg_out,
+ 					   cryptlen, drbg->V);
+-		ret = crypto_skcipher_encrypt(drbg->ctr_req);
+-		switch (ret) {
+-		case 0:
+-			break;
+-		case -EINPROGRESS:
+-		case -EBUSY:
+-			wait_for_completion(&drbg->ctr_completion);
+-			if (!drbg->ctr_async_err) {
+-				reinit_completion(&drbg->ctr_completion);
+-				break;
+-			}
+-		default:
++		ret = crypto_wait_req(crypto_skcipher_encrypt(drbg->ctr_req),
++					&drbg->ctr_wait);
++		if (ret)
+ 			goto out;
+-		}
+-		init_completion(&drbg->ctr_completion);
 +
- 	if (ecryptfs_verify_version((*auth_tok)->version)) {
- 		printk(KERN_ERR "Data structure version mismatch. Userspace "
- 		       "tools must match eCryptfs kernel module with major "
++		crypto_init_wait(&drbg->ctr_wait);
+ 
+ 		memcpy(outbuf, drbg->outscratchpad, cryptlen);
+ 
+diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
+index 22f884c..8f94110 100644
+--- a/include/crypto/drbg.h
++++ b/include/crypto/drbg.h
+@@ -126,8 +126,7 @@ struct drbg_state {
+ 	__u8 *ctr_null_value;			/* CTR mode aligned zero buf */
+ 	__u8 *outscratchpadbuf;			/* CTR mode output scratchpad */
+         __u8 *outscratchpad;			/* CTR mode aligned outbuf */
+-	struct completion ctr_completion;	/* CTR mode async handler */
+-	int ctr_async_err;			/* CTR mode async error */
++	struct crypto_wait ctr_wait;		/* CTR mode async wait obj */
+ 
+ 	bool seeded;		/* DRBG fully seeded? */
+ 	bool pr;		/* Prediction resistance enabled? */
+-- 
+2.7.4
 
