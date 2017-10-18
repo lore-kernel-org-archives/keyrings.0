@@ -1,120 +1,88 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Sun, 15 Oct 2017 09:19:51 +0000
-Subject: [PATCH v9 06/20] crypto: introduce crypto wait for async op
-Message-Id: <1508059209-25529-7-git-send-email-gilad@benyossef.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Wed, 18 Oct 2017 00:53:27 +0000
+Subject: [PATCH v5 14/18] integrity: Introduce integrity_keyring_from_id
+Message-Id: <20171018005331.2688-15-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1508059209-25529-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
-Cc: Ofir Drang <ofir.drang@arm.com>, Eric Biggers <ebiggers3@gmail.com>, Jonathan Cameron <Jonathan.Cameron@huawei.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-Invoking a possibly async. crypto op and waiting for completion
-while correctly handling backlog processing is a common task
-in the crypto API implementation and outside users of it.
+IMA will need to obtain the keyring used to verify file signatures so that
+it can verify the module-style signature appended to files.
 
-This patch adds a generic implementation for doing so in
-preparation for using it across the board instead of hand
-rolled versions.
-
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Eric Biggers <ebiggers3@gmail.com>
-CC: Jonathan Cameron <Jonathan.Cameron@huawei.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
- crypto/api.c           | 13 +++++++++++++
- include/linux/crypto.h | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+)
+ security/integrity/digsig.c    | 28 +++++++++++++++++++---------
+ security/integrity/integrity.h |  1 +
+ 2 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/crypto/api.c b/crypto/api.c
-index 941cd4c..2a2479d 100644
---- a/crypto/api.c
-+++ b/crypto/api.c
-@@ -24,6 +24,7 @@
- #include <linux/sched/signal.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-+#include <linux/completion.h>
- #include "internal.h"
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 6f9e4ce568cd..935f1b3258e7 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -48,11 +48,10 @@ static bool init_keyring __initdata;
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
+ #endif
  
- LIST_HEAD(crypto_alg_list);
-@@ -595,5 +596,17 @@ int crypto_has_alg(const char *name, u32 type, u32 mask)
- }
- EXPORT_SYMBOL_GPL(crypto_has_alg);
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+-			    const char *digest, int digestlen)
++struct key *integrity_keyring_from_id(const unsigned int id)
+ {
+-	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
+-		return -EINVAL;
++	if (id >= INTEGRITY_KEYRING_MAX)
++		return ERR_PTR(-EINVAL);
  
-+void crypto_req_done(struct crypto_async_request *req, int err)
-+{
-+	struct crypto_wait *wait = req->data;
-+
-+	if (err = -EINPROGRESS)
-+		return;
-+
-+	wait->err = err;
-+	complete(&wait->completion);
-+}
-+EXPORT_SYMBOL_GPL(crypto_req_done);
-+
- MODULE_DESCRIPTION("Cryptographic core API");
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/crypto.h b/include/linux/crypto.h
-index 84da997..78508ca 100644
---- a/include/linux/crypto.h
-+++ b/include/linux/crypto.h
-@@ -24,6 +24,7 @@
- #include <linux/slab.h>
- #include <linux/string.h>
- #include <linux/uaccess.h>
-+#include <linux/completion.h>
+ 	if (!keyring[id]) {
+ 		keyring[id] @@ -61,18 +60,29 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			int err = PTR_ERR(keyring[id]);
+ 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
+ 			keyring[id] = NULL;
+-			return err;
++			return ERR_PTR(err);
+ 		}
+ 	}
  
- /*
-  * Autoloaded crypto modules should only use a prefixed name to avoid allowing
-@@ -468,6 +469,45 @@ struct crypto_alg {
- } CRYPTO_MINALIGN_ATTR;
- 
- /*
-+ * A helper struct for waiting for completion of async crypto ops
-+ */
-+struct crypto_wait {
-+	struct completion completion;
-+	int err;
-+};
-+
-+/*
-+ * Macro for declaring a crypto op async wait object on stack
-+ */
-+#define DECLARE_CRYPTO_WAIT(_wait) \
-+	struct crypto_wait _wait = { \
-+		COMPLETION_INITIALIZER_ONSTACK((_wait).completion), 0 }
-+
-+/*
-+ * Async ops completion helper functioons
-+ */
-+void crypto_req_done(struct crypto_async_request *req, int err);
-+
-+static inline int crypto_wait_req(int err, struct crypto_wait *wait)
-+{
-+	switch (err) {
-+	case -EINPROGRESS:
-+	case -EBUSY:
-+		wait_for_completion(&wait->completion);
-+		reinit_completion(&wait->completion);
-+		err = wait->err;
-+		break;
-+	};
-+
-+	return err;
++	return keyring[id];
 +}
 +
-+static inline void crypto_init_wait(struct crypto_wait *wait)
++int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
++			    const char *digest, int digestlen)
 +{
-+	init_completion(&wait->completion);
-+}
++	struct key *keyring = integrity_keyring_from_id(id);
 +
-+/*
-  * Algorithm registration interface.
-  */
- int crypto_register_alg(struct crypto_alg *alg);
--- 
-2.7.4
++	if (IS_ERR(keyring) || siglen < 2)
++		return PTR_ERR(keyring);
++
+ 	switch (sig[1]) {
+ 	case 1:
+ 		/* v1 API expect signature without xattr type */
+-		return digsig_verify(keyring[id], sig + 1, siglen - 1,
+-				     digest, digestlen);
++		return digsig_verify(keyring, sig + 1, siglen - 1, digest,
++				     digestlen);
+ 	case 2:
+-		return asymmetric_verify(keyring[id], sig, siglen,
+-					 digest, digestlen);
++		return asymmetric_verify(keyring, sig, siglen, digest,
++					 digestlen);
+ 	}
+ 
+ 	return -EOPNOTSUPP;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index dd7ac4bfc89a..657ce4558984 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -132,6 +132,7 @@ int integrity_kernel_read(struct file *file, loff_t offset,
+ 
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 
++struct key *integrity_keyring_from_id(const unsigned int id);
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
+ 
 
