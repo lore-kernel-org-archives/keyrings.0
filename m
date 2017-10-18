@@ -1,51 +1,38 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 23 Oct 2017 21:40:55 +0000
-Subject: [RFC PATCH 22/25] ext4 crypto: wire up FS_IOC_GET_ENCRYPTION_POLICY_EX
-Message-Id: <20171023214058.128121-23-ebiggers3@gmail.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Wed, 18 Oct 2017 00:53:21 +0000
+Subject: [PATCH v5 08/18] integrity: Select CONFIG_KEYS instead of depending on it
+Message-Id: <20171018005331.2688-9-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
-To: linux-fscrypt@vger.kernel.org
-Cc: Ryo Hashimoto <hashimoto@chromium.org>, Gwendal Grignou <gwendal@chromium.org>, "Theodore Y . Ts'o" <tytso@mit.edu>, Eric Biggers <ebiggers@google.com>, linux-api@vger.kernel.org, Nick Desaulniers <ndesaulniers@google.com>, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, Michael Halcrow <mhalcrow@google.com>, Sarthak Kukreti <sarthakkukreti@chromium.org>, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
+References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+This avoids a dependency cycle in CONFIG_IMA_APPRAISE_MODSIG (introduced by
+a later patch in this series): it will select CONFIG_MODULE_SIG_FORMAT
+which in turn selects CONFIG_KEYS. Kconfig then complains that
+CONFIG_INTEGRITY_SIGNATURE depends on CONFIG_KEYS.
 
-FS_IOC_GET_ENCRYPTION_POLICY_EX allows filesystem encryption users to
-retrieve the encryption policy for files and directories that use a v2
-encryption policy.  Unlike the original FS_IOC_GET_ENCRYPTION_POLICY,
-FS_IOC_GET_ENCRYPTION_POLICY_EX is also extensible to new versions of
-the policy struct that may be added in the future.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
- fs/ext4/ioctl.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ security/integrity/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index b8a6765a556f..954042f311dc 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -978,6 +978,9 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
- 		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
+diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+index da9565891738..0d642e0317c7 100644
+--- a/security/integrity/Kconfig
++++ b/security/integrity/Kconfig
+@@ -17,8 +17,8 @@ if INTEGRITY
  
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
-+
- 	case FS_IOC_ADD_ENCRYPTION_KEY:
- 		if (!ext4_has_feature_encrypt(sb))
- 			return -EOPNOTSUPP;
-@@ -1117,6 +1120,7 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
- 	case EXT4_IOC_GET_ENCRYPTION_PWSALT:
- 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
- 	case FS_IOC_ADD_ENCRYPTION_KEY:
- 	case FS_IOC_REMOVE_ENCRYPTION_KEY:
- 	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
--- 
-2.15.0.rc0.271.g36b669edcc-goog
+ config INTEGRITY_SIGNATURE
+ 	bool "Digital signature verification using multiple keyrings"
+-	depends on KEYS
+ 	default n
++	select KEYS
+ 	select SIGNATURE
+ 	help
+ 	  This option enables digital signature verification support
 
