@@ -1,68 +1,85 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 23 Oct 2017 21:40:56 +0000
-Subject: [RFC PATCH 23/25] f2fs crypto: wire up FS_IOC_GET_ENCRYPTION_POLICY_EX
-Message-Id: <20171023214058.128121-24-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Wed, 18 Oct 2017 07:00:50 +0000
+Subject: [PATCH v10 18/20] crypto: qce: move to generic async completion
+Message-Id: <1508310057-25369-19-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, keyrings@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Gwendal Grignou <gwendal@chromium.org>, Ryo Hashimoto <hashimoto@chromium.org>, Sarthak Kukreti <sarthakkukreti@chromium.org>, Nick Desaulniers <ndesaulniers@google.com>, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
+References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+The qce driver starts several async crypto ops and  waits for their
+completions. Move it over to generic code doing the same.
 
-FS_IOC_GET_ENCRYPTION_POLICY_EX allows filesystem encryption users to
-retrieve the encryption policy for files and directories that use a v2
-encryption policy.  Unlike the original FS_IOC_GET_ENCRYPTION_POLICY,
-FS_IOC_GET_ENCRYPTION_POLICY_EX is also extensible to new versions of
-the policy struct that may be added in the future.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
- fs/f2fs/file.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/crypto/qce/sha.c | 30 ++++--------------------------
+ 1 file changed, 4 insertions(+), 26 deletions(-)
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 0296a9594fe7..68b6ba732f25 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -1887,11 +1887,6 @@ static int f2fs_ioc_set_encryption_policy(struct file *filp, unsigned long arg)
- 	return fscrypt_ioctl_set_policy(filp, (const void __user *)arg);
+diff --git a/drivers/crypto/qce/sha.c b/drivers/crypto/qce/sha.c
+index 47e114a..53227d7 100644
+--- a/drivers/crypto/qce/sha.c
++++ b/drivers/crypto/qce/sha.c
+@@ -349,28 +349,12 @@ static int qce_ahash_digest(struct ahash_request *req)
+ 	return qce->async_req_enqueue(tmpl->qce, &req->base);
  }
  
--static int f2fs_ioc_get_encryption_policy(struct file *filp, unsigned long arg)
+-struct qce_ahash_result {
+-	struct completion completion;
+-	int error;
+-};
+-
+-static void qce_digest_complete(struct crypto_async_request *req, int error)
 -{
--	return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
+-	struct qce_ahash_result *result = req->data;
+-
+-	if (error = -EINPROGRESS)
+-		return;
+-
+-	result->error = error;
+-	complete(&result->completion);
 -}
 -
- static int f2fs_ioc_get_encryption_pwsalt(struct file *filp, unsigned long arg)
+ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 				 unsigned int keylen)
  {
- 	struct inode *inode = file_inode(filp);
-@@ -2647,10 +2642,12 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return f2fs_ioc_fitrim(filp, arg);
- 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
- 		return f2fs_ioc_set_encryption_policy(filp, arg);
--	case F2FS_IOC_GET_ENCRYPTION_POLICY:
--		return f2fs_ioc_get_encryption_policy(filp, arg);
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 		return f2fs_ioc_get_encryption_pwsalt(filp, arg);
-+	case F2FS_IOC_GET_ENCRYPTION_POLICY:
-+		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
- 	case FS_IOC_ADD_ENCRYPTION_KEY:
- 		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
- 	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-@@ -2737,6 +2734,7 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 	case F2FS_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
- 	case FS_IOC_ADD_ENCRYPTION_KEY:
- 	case FS_IOC_REMOVE_ENCRYPTION_KEY:
- 	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 	unsigned int digestsize = crypto_ahash_digestsize(tfm);
+ 	struct qce_sha_ctx *ctx = crypto_tfm_ctx(&tfm->base);
+-	struct qce_ahash_result result;
++	struct crypto_wait wait;
+ 	struct ahash_request *req;
+ 	struct scatterlist sg;
+ 	unsigned int blocksize;
+@@ -405,9 +389,9 @@ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 		goto err_free_ahash;
+ 	}
+ 
+-	init_completion(&result.completion);
++	crypto_init_wait(&wait);
+ 	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				   qce_digest_complete, &result);
++				   crypto_req_done, &wait);
+ 	crypto_ahash_clear_flags(ahash_tfm, ~0);
+ 
+ 	buf = kzalloc(keylen + QCE_MAX_ALIGN_SIZE, GFP_KERNEL);
+@@ -420,13 +404,7 @@ static int qce_ahash_hmac_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 	sg_init_one(&sg, buf, keylen);
+ 	ahash_request_set_crypt(req, &sg, ctx->authkey, keylen);
+ 
+-	ret = crypto_ahash_digest(req);
+-	if (ret = -EINPROGRESS || ret = -EBUSY) {
+-		ret = wait_for_completion_interruptible(&result.completion);
+-		if (!ret)
+-			ret = result.error;
+-	}
+-
++	ret = crypto_wait_req(crypto_ahash_digest(req), &wait);
+ 	if (ret)
+ 		crypto_ahash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+ 
 -- 
-2.15.0.rc0.271.g36b669edcc-goog
+2.7.4
 
