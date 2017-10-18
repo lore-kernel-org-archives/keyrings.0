@@ -1,53 +1,76 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 23 Oct 2017 21:40:47 +0000
-Subject: [RFC PATCH 14/25] ubifs crypto: wire up new ioctls for managing encryption keys
-Message-Id: <20171023214058.128121-15-ebiggers3@gmail.com>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Wed, 18 Oct 2017 07:00:34 +0000
+Subject: [PATCH v10 02/20] crypto: ccp: use -ENOSPC for transient busy indication
+Message-Id: <1508310057-25369-3-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
-To: linux-fscrypt@vger.kernel.org
-Cc: Ryo Hashimoto <hashimoto@chromium.org>, Gwendal Grignou <gwendal@chromium.org>, "Theodore Y . Ts'o" <tytso@mit.edu>, Eric Biggers <ebiggers@google.com>, linux-api@vger.kernel.org, Nick Desaulniers <ndesaulniers@google.com>, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, Michael Halcrow <mhalcrow@google.com>, Sarthak Kukreti <sarthakkukreti@chromium.org>, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
+References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Replace -EBUSY with -ENOSPC when reporting transient busy
+indication in the absence of backlog.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Reviewed-by: Gary R Hook <gary.hook@amd.com>
+
 ---
- fs/ubifs/ioctl.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
 
-diff --git a/fs/ubifs/ioctl.c b/fs/ubifs/ioctl.c
-index 0164bcc827f8..09ede2d1898f 100644
---- a/fs/ubifs/ioctl.c
-+++ b/fs/ubifs/ioctl.c
-@@ -205,6 +205,15 @@ long ubifs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- #endif
+Please squash this patch with the previous one when merging upstream.
+
+ drivers/crypto/ccp/ccp-crypto-main.c | 8 +++-----
+ drivers/crypto/ccp/ccp-dev.c         | 7 +++++--
+ 2 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/crypto/ccp/ccp-crypto-main.c b/drivers/crypto/ccp/ccp-crypto-main.c
+index 35a9de7..b95d199 100644
+--- a/drivers/crypto/ccp/ccp-crypto-main.c
++++ b/drivers/crypto/ccp/ccp-crypto-main.c
+@@ -222,9 +222,10 @@ static int ccp_crypto_enqueue_cmd(struct ccp_crypto_cmd *crypto_cmd)
+ 
+ 	/* Check if the cmd can/should be queued */
+ 	if (req_queue.cmd_count >= CCP_CRYPTO_MAX_QLEN) {
+-		ret = -EBUSY;
+-		if (!(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG))
++		if (!(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG)) {
++			ret = -ENOSPC;
+ 			goto e_lock;
++		}
  	}
  
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		return fscrypt_ioctl_add_key(file, (void __user *)arg);
-+
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		return fscrypt_ioctl_remove_key(file, (const void __user *)arg);
-+
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		return fscrypt_ioctl_get_key_status(file, (void __user *)arg);
-+
- 	default:
- 		return -ENOTTY;
+ 	/* Look for an entry with the same tfm.  If there is a cmd
+@@ -243,9 +244,6 @@ static int ccp_crypto_enqueue_cmd(struct ccp_crypto_cmd *crypto_cmd)
+ 		ret = ccp_enqueue_cmd(crypto_cmd->cmd);
+ 		if (!ccp_crypto_success(ret))
+ 			goto e_lock;	/* Error, don't queue it */
+-		if ((ret = -EBUSY) &&
+-		    !(crypto_cmd->cmd->flags & CCP_CMD_MAY_BACKLOG))
+-			goto e_lock;	/* Not backlogging, don't queue it */
  	}
-@@ -222,6 +231,9 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		break;
- 	case FS_IOC_SET_ENCRYPTION_POLICY:
- 	case FS_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 		break;
- 	default:
- 		return -ENOIOCTLCMD;
+ 
+ 	if (req_queue.cmd_count >= CCP_CRYPTO_MAX_QLEN) {
+diff --git a/drivers/crypto/ccp/ccp-dev.c b/drivers/crypto/ccp/ccp-dev.c
+index 4e029b1..1b5035d 100644
+--- a/drivers/crypto/ccp/ccp-dev.c
++++ b/drivers/crypto/ccp/ccp-dev.c
+@@ -292,9 +292,12 @@ int ccp_enqueue_cmd(struct ccp_cmd *cmd)
+ 	i = ccp->cmd_q_count;
+ 
+ 	if (ccp->cmd_count >= MAX_CMD_QLEN) {
+-		ret = -EBUSY;
+-		if (cmd->flags & CCP_CMD_MAY_BACKLOG)
++		if (cmd->flags & CCP_CMD_MAY_BACKLOG) {
++			ret = -EBUSY;
+ 			list_add_tail(&cmd->entry, &ccp->backlog);
++		} else {
++			ret = -ENOSPC;
++		}
+ 	} else {
+ 		ret = -EINPROGRESS;
+ 		ccp->cmd_count++;
 -- 
-2.15.0.rc0.271.g36b669edcc-goog
+2.7.4
 
