@@ -1,404 +1,81 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 30 Oct 2017 15:38:02 +0000
-Subject: [PATCH 2/4] security: keys: Replace time_t/timespec with time64_t
-Message-Id: <150937788287.31781.12168363430263217958.stgit@warthog.procyon.org.uk>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Wed, 18 Oct 2017 07:00:33 +0000
+Subject: [PATCH v10 01/20] crypto: change transient busy return code to -ENOSPC
+Message-Id: <1508310057-25369-2-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
-In-Reply-To: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
-To: tglx@linutronix.de
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org
+References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-From: Baolin Wang <baolin.wang@linaro.org>
+The crypto API was using the -EBUSY return value to indicate
+both a hard failure to submit a crypto operation into a
+transformation provider when the latter was busy and the backlog
+mechanism was not enabled as well as a notification that the
+operation was queued into the backlog when the backlog mechanism
+was enabled.
 
-The 'struct key' will use 'time_t' which we try to remove in the
-kernel, since 'time_t' is not year 2038 safe on 32bit systems.
-Also the 'struct keyring_search_context' will use 'timespec' type
-to record current time, which is also not year 2038 safe on 32bit
-systems.
+Having the same return code indicate two very different conditions
+depending on a flag is both error prone and requires extra runtime
+check like the following to discern between the cases:
 
-Thus this patch replaces 'time_t' with 'time64_t' which is year 2038
-safe for 'struct key', and replace 'timespec' with 'time64_t' for the
-'struct keyring_search_context', since we only look at the the seconds
-part of 'timespec' variable. Moreover we also change the codes where
-using the 'time_t' and 'timespec', and we can get current time by
-ktime_get_real_seconds() instead of current_kernel_time(), and use
-'TIME64_MAX' macro to initialize the 'time64_t' type variable.
+	if (err = -EINPROGRESS ||
+	    (err = -EBUSY && (ahash_request_flags(req) &
+			       CRYPTO_TFM_REQ_MAY_BACKLOG)))
 
-Especially in proc.c file, we have replaced 'unsigned long' and 'timespec'
-type with 'u64' and 'time64_t' type to save the timeout value, which means
-user will get one 'u64' type timeout value by issuing proc_keys_show()
-function.
+This patch changes the return code used to indicate a crypto op
+failed due to the transformation provider being transiently busy
+to -ENOSPC.
 
-Signed-off-by: Baolin Wang <baolin.wang@linaro.org>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 ---
+ crypto/algapi.c | 6 ++++--
+ crypto/cryptd.c | 4 +---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
- include/linux/key.h          |    7 ++++---
- security/keys/gc.c           |   20 ++++++++++----------
- security/keys/internal.h     |    8 ++++----
- security/keys/key.c          |   19 ++++++-------------
- security/keys/keyring.c      |   18 +++++++++---------
- security/keys/permission.c   |    3 +--
- security/keys/proc.c         |   20 ++++++++++----------
- security/keys/process_keys.c |    2 +-
- 8 files changed, 45 insertions(+), 52 deletions(-)
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 044114185120..6d10f843a904 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -24,6 +24,7 @@
- #include <linux/atomic.h>
- #include <linux/assoc_array.h>
- #include <linux/refcount.h>
-+#include <linux/time64.h>
+diff --git a/crypto/algapi.c b/crypto/algapi.c
+index aa699ff..60d7366 100644
+--- a/crypto/algapi.c
++++ b/crypto/algapi.c
+@@ -897,9 +897,11 @@ int crypto_enqueue_request(struct crypto_queue *queue,
+ 	int err = -EINPROGRESS;
  
- #ifdef __KERNEL__
- #include <linux/uidgid.h>
-@@ -157,10 +158,10 @@ struct key {
- 	struct key_user		*user;		/* owner of this key */
- 	void			*security;	/* security data for this key */
- 	union {
--		time_t		expiry;		/* time at which key expires (or 0) */
--		time_t		revoked_at;	/* time at which key was revoked */
-+		time64_t	expiry;		/* time at which key expires (or 0) */
-+		time64_t	revoked_at;	/* time at which key was revoked */
- 	};
--	time_t			last_used_at;	/* last time used for LRU keyring discard */
-+	time64_t		last_used_at;	/* last time used for LRU keyring discard */
- 	kuid_t			uid;
- 	kgid_t			gid;
- 	key_perm_t		perm;		/* access permissions */
-diff --git a/security/keys/gc.c b/security/keys/gc.c
-index 87cb260e4890..c99700e82ad6 100644
---- a/security/keys/gc.c
-+++ b/security/keys/gc.c
-@@ -32,7 +32,7 @@ DECLARE_WORK(key_gc_work, key_garbage_collector);
- static void key_gc_timer_func(unsigned long);
- static DEFINE_TIMER(key_gc_timer, key_gc_timer_func, 0, 0);
- 
--static time_t key_gc_next_run = LONG_MAX;
-+static time64_t key_gc_next_run = TIME64_MAX;
- static struct key_type *key_gc_dead_keytype;
- 
- static unsigned long key_gc_flags;
-@@ -53,12 +53,12 @@ struct key_type key_type_dead = {
-  * Schedule a garbage collection run.
-  * - time precision isn't particularly important
-  */
--void key_schedule_gc(time_t gc_at)
-+void key_schedule_gc(time64_t gc_at)
- {
- 	unsigned long expires;
--	time_t now = current_kernel_time().tv_sec;
-+	time64_t now = ktime_get_real_seconds();
- 
--	kenter("%ld", gc_at - now);
-+	kenter("%lld", gc_at - now);
- 
- 	if (gc_at <= now || test_bit(KEY_GC_REAP_KEYTYPE, &key_gc_flags)) {
- 		kdebug("IMMEDIATE");
-@@ -87,7 +87,7 @@ void key_schedule_gc_links(void)
- static void key_gc_timer_func(unsigned long data)
- {
- 	kenter("");
--	key_gc_next_run = LONG_MAX;
-+	key_gc_next_run = TIME64_MAX;
- 	key_schedule_gc_links();
- }
- 
-@@ -184,11 +184,11 @@ static void key_garbage_collector(struct work_struct *work)
- 
- 	struct rb_node *cursor;
- 	struct key *key;
--	time_t new_timer, limit;
-+	time64_t new_timer, limit;
- 
- 	kenter("[%lx,%x]", key_gc_flags, gc_state);
- 
--	limit = current_kernel_time().tv_sec;
-+	limit = ktime_get_real_seconds();
- 	if (limit > key_gc_delay)
- 		limit -= key_gc_delay;
- 	else
-@@ -204,7 +204,7 @@ static void key_garbage_collector(struct work_struct *work)
- 		gc_state |= KEY_GC_REAPING_DEAD_1;
- 	kdebug("new pass %x", gc_state);
- 
--	new_timer = LONG_MAX;
-+	new_timer = TIME64_MAX;
- 
- 	/* As only this function is permitted to remove things from the key
- 	 * serial tree, if cursor is non-NULL then it will always point to a
-@@ -235,7 +235,7 @@ static void key_garbage_collector(struct work_struct *work)
- 
- 		if (gc_state & KEY_GC_SET_TIMER) {
- 			if (key->expiry > limit && key->expiry < new_timer) {
--				kdebug("will expire %x in %ld",
-+				kdebug("will expire %x in %lld",
- 				       key_serial(key), key->expiry - limit);
- 				new_timer = key->expiry;
- 			}
-@@ -276,7 +276,7 @@ static void key_garbage_collector(struct work_struct *work)
- 	 */
- 	kdebug("pass complete");
- 
--	if (gc_state & KEY_GC_SET_TIMER && new_timer != (time_t)LONG_MAX) {
-+	if (gc_state & KEY_GC_SET_TIMER && new_timer != (time64_t)TIME64_MAX) {
- 		new_timer += key_gc_delay;
- 		key_schedule_gc(new_timer);
- 	}
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 1c02c6547038..a32dc692f997 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -130,7 +130,7 @@ struct keyring_search_context {
- 	int			skipped_ret;
- 	bool			possessed;
- 	key_ref_t		result;
--	struct timespec		now;
-+	time64_t		now;
- };
- 
- extern bool key_default_cmp(const struct key *key,
-@@ -169,10 +169,10 @@ extern void key_change_session_keyring(struct callback_head *twork);
- 
- extern struct work_struct key_gc_work;
- extern unsigned key_gc_delay;
--extern void keyring_gc(struct key *keyring, time_t limit);
-+extern void keyring_gc(struct key *keyring, time64_t limit);
- extern void keyring_restriction_gc(struct key *keyring,
- 				   struct key_type *dead_type);
--extern void key_schedule_gc(time_t gc_at);
-+extern void key_schedule_gc(time64_t gc_at);
- extern void key_schedule_gc_links(void);
- extern void key_gc_keytype(struct key_type *ktype);
- 
-@@ -211,7 +211,7 @@ extern struct key *key_get_instantiation_authkey(key_serial_t target_id);
- /*
-  * Determine whether a key is dead.
-  */
--static inline bool key_is_dead(const struct key *key, time_t limit)
-+static inline bool key_is_dead(const struct key *key, time64_t limit)
- {
- 	return
- 		key->flags & ((1 << KEY_FLAG_DEAD) |
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 83da68d98b40..291a67c45b65 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -556,7 +556,6 @@ int key_reject_and_link(struct key *key,
- 			struct key *authkey)
- {
- 	struct assoc_array_edit *edit;
--	struct timespec now;
- 	int ret, awaken, link_ret = 0;
- 
- 	key_check(key);
-@@ -582,8 +581,7 @@ int key_reject_and_link(struct key *key,
- 		smp_wmb();
- 		set_bit(KEY_FLAG_NEGATIVE, &key->flags);
- 		set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
--		now = current_kernel_time();
--		key->expiry = now.tv_sec + timeout;
-+		key->expiry = ktime_get_real_seconds() + timeout;
- 		key_schedule_gc(key->expiry + key_gc_delay);
- 
- 		if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
-@@ -699,16 +697,13 @@ struct key_type *key_type_lookup(const char *type)
- 
- void key_set_timeout(struct key *key, unsigned timeout)
- {
--	struct timespec now;
--	time_t expiry = 0;
-+	time64_t expiry = 0;
- 
- 	/* make the changes with the locks held to prevent races */
- 	down_write(&key->sem);
- 
--	if (timeout > 0) {
--		now = current_kernel_time();
--		expiry = now.tv_sec + timeout;
--	}
-+	if (timeout > 0)
-+		expiry = ktime_get_real_seconds() + timeout;
- 
- 	key->expiry = expiry;
- 	key_schedule_gc(key->expiry + key_gc_delay);
-@@ -1007,8 +1002,7 @@ EXPORT_SYMBOL(key_update);
-  */
- void key_revoke(struct key *key)
- {
--	struct timespec now;
--	time_t time;
-+	time64_t time;
- 
- 	key_check(key);
- 
-@@ -1023,8 +1017,7 @@ void key_revoke(struct key *key)
- 		key->type->revoke(key);
- 
- 	/* set the death time to no more than the expiry time */
--	now = current_kernel_time();
--	time = now.tv_sec;
-+	time = ktime_get_real_seconds();
- 	if (key->revoked_at = 0 || key->revoked_at > time) {
- 		key->revoked_at = time;
- 		key_schedule_gc(key->revoked_at + key_gc_delay);
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index de81793f9920..2d820884f8c7 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -576,7 +576,7 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
- 			goto skipped;
- 		}
- 
--		if (key->expiry && ctx->now.tv_sec >= key->expiry) {
-+		if (key->expiry && ctx->now >= key->expiry) {
- 			if (!(ctx->flags & KEYRING_SEARCH_SKIP_EXPIRED))
- 				ctx->result = ERR_PTR(-EKEYEXPIRED);
- 			kleave(" = %d [expire]", ctx->skipped_ret);
-@@ -837,10 +837,10 @@ static bool search_nested_keyrings(struct key *keyring,
- 	key = key_ref_to_ptr(ctx->result);
- 	key_check(key);
- 	if (!(ctx->flags & KEYRING_SEARCH_NO_UPDATE_TIME)) {
--		key->last_used_at = ctx->now.tv_sec;
--		keyring->last_used_at = ctx->now.tv_sec;
-+		key->last_used_at = ctx->now;
-+		keyring->last_used_at = ctx->now;
- 		while (sp > 0)
--			stack[--sp].keyring->last_used_at = ctx->now.tv_sec;
-+			stack[--sp].keyring->last_used_at = ctx->now;
- 	}
- 	kleave(" = true");
- 	return true;
-@@ -901,7 +901,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
- 	}
- 
- 	rcu_read_lock();
--	ctx->now = current_kernel_time();
-+	ctx->now = ktime_get_real_seconds();
- 	if (search_nested_keyrings(keyring, ctx))
- 		__key_get(key_ref_to_ptr(ctx->result));
- 	rcu_read_unlock();
-@@ -1147,7 +1147,7 @@ struct key *find_keyring_by_name(const char *name, bool skip_perm_check)
- 			 * (ie. it has a zero usage count) */
- 			if (!refcount_inc_not_zero(&keyring->usage))
- 				continue;
--			keyring->last_used_at = current_kernel_time().tv_sec;
-+			keyring->last_used_at = ktime_get_real_seconds();
+ 	if (unlikely(queue->qlen >= queue->max_qlen)) {
+-		err = -EBUSY;
+-		if (!(request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG))
++		if (!(request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)) {
++			err = -ENOSPC;
  			goto out;
- 		}
++		}
++		err = -EBUSY;
+ 		if (queue->backlog = &queue->list)
+ 			queue->backlog = &request->list;
  	}
-@@ -1487,7 +1487,7 @@ static void keyring_revoke(struct key *keyring)
- static bool keyring_gc_select_iterator(void *object, void *iterator_data)
- {
- 	struct key *key = keyring_ptr_to_key(object);
--	time_t *limit = iterator_data;
-+	time64_t *limit = iterator_data;
+diff --git a/crypto/cryptd.c b/crypto/cryptd.c
+index 0508c48..bd43cf5 100644
+--- a/crypto/cryptd.c
++++ b/crypto/cryptd.c
+@@ -137,16 +137,14 @@ static int cryptd_enqueue_request(struct cryptd_queue *queue,
+ 	int cpu, err;
+ 	struct cryptd_cpu_queue *cpu_queue;
+ 	atomic_t *refcnt;
+-	bool may_backlog;
  
- 	if (key_is_dead(key, *limit))
- 		return false;
-@@ -1498,7 +1498,7 @@ static bool keyring_gc_select_iterator(void *object, void *iterator_data)
- static int keyring_gc_check_iterator(const void *object, void *iterator_data)
- {
- 	const struct key *key = keyring_ptr_to_key(object);
--	time_t *limit = iterator_data;
-+	time64_t *limit = iterator_data;
+ 	cpu = get_cpu();
+ 	cpu_queue = this_cpu_ptr(queue->cpu_queue);
+ 	err = crypto_enqueue_request(&cpu_queue->queue, request);
  
- 	key_check(key);
- 	return key_is_dead(key, *limit);
-@@ -1510,7 +1510,7 @@ static int keyring_gc_check_iterator(const void *object, void *iterator_data)
-  * Not called with any locks held.  The keyring's key struct will not be
-  * deallocated under us as only our caller may deallocate it.
-  */
--void keyring_gc(struct key *keyring, time_t limit)
-+void keyring_gc(struct key *keyring, time64_t limit)
- {
- 	int result;
+ 	refcnt = crypto_tfm_ctx(request->tfm);
+-	may_backlog = request->flags & CRYPTO_TFM_REQ_MAY_BACKLOG;
  
-diff --git a/security/keys/permission.c b/security/keys/permission.c
-index 732cc0beffdf..507b1d41df25 100644
---- a/security/keys/permission.c
-+++ b/security/keys/permission.c
-@@ -100,8 +100,7 @@ int key_validate(const struct key *key)
+-	if (err = -EBUSY && !may_backlog)
++	if (err = -ENOSPC)
+ 		goto out_put_cpu;
  
- 	/* check it hasn't expired */
- 	if (key->expiry) {
--		struct timespec now = current_kernel_time();
--		if (now.tv_sec >= key->expiry)
-+		if (ktime_get_real_seconds() >= key->expiry)
- 			return -EKEYEXPIRED;
- 	}
- 
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index bf08d02b6646..95c8720717fa 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -178,8 +178,8 @@ static int proc_keys_show(struct seq_file *m, void *v)
- {
- 	struct rb_node *_p = v;
- 	struct key *key = rb_entry(_p, struct key, serial_node);
--	struct timespec now;
--	unsigned long timo;
-+	time64_t now;
-+	u64 timo;
- 	key_ref_t key_ref, skey_ref;
- 	char xbuf[16];
- 	int rc;
-@@ -216,28 +216,28 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 	if (rc < 0)
- 		return 0;
- 
--	now = current_kernel_time();
-+	now = ktime_get_real_seconds();
- 
- 	rcu_read_lock();
- 
- 	/* come up with a suitable timeout value */
- 	if (key->expiry = 0) {
- 		memcpy(xbuf, "perm", 5);
--	} else if (now.tv_sec >= key->expiry) {
-+	} else if (now >= key->expiry) {
- 		memcpy(xbuf, "expd", 5);
- 	} else {
--		timo = key->expiry - now.tv_sec;
-+		timo = key->expiry - now;
- 
- 		if (timo < 60)
--			sprintf(xbuf, "%lus", timo);
-+			sprintf(xbuf, "%llus", timo);
- 		else if (timo < 60*60)
--			sprintf(xbuf, "%lum", timo / 60);
-+			sprintf(xbuf, "%llum", div_u64(timo, 60));
- 		else if (timo < 60*60*24)
--			sprintf(xbuf, "%luh", timo / (60*60));
-+			sprintf(xbuf, "%lluh", div_u64(timo, 60 * 60));
- 		else if (timo < 60*60*24*7)
--			sprintf(xbuf, "%lud", timo / (60*60*24));
-+			sprintf(xbuf, "%llud", div_u64(timo, 60 * 60 * 24));
- 		else
--			sprintf(xbuf, "%luw", timo / (60*60*24*7));
-+			sprintf(xbuf, "%lluw", div_u64(timo, 60 * 60 * 24 * 7));
- 	}
- 
- #define showflag(KEY, LETTER, FLAG) \
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 86bced9fdbdf..c691e09adfef 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -736,7 +736,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 	if (ret < 0)
- 		goto invalid_key;
- 
--	key->last_used_at = current_kernel_time().tv_sec;
-+	key->last_used_at = ktime_get_real_seconds();
- 
- error:
- 	put_cred(ctx.cred);
+ 	queue_work_on(cpu, kcrypto_wq, &cpu_queue->work);
+-- 
+2.7.4
 
