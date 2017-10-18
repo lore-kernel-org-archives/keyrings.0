@@ -1,71 +1,54 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 30 Oct 2017 15:37:45 +0000
-Subject: [PATCH 0/4] Timer reduction function
-Message-Id: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+Date: Wed, 18 Oct 2017 07:00:37 +0000
+Subject: [PATCH v10 05/20] crypto: marvell/cesa: remove redundant backlog checks on EBUSY
+Message-Id: <1508310057-25369-6-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: tglx@linutronix.de
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org
+References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
+Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
+Now that -EBUSY return code only indicates backlog queueing
+we can safely remove the now redundant check for the
+CRYPTO_TFM_REQ_MAY_BACKLOG flag when -EBUSY is returned.
 
-Hi Thomas,
-
-Here's a set of patches, the first of which introduces a function,
-reduce_timer(), that starts an inactive timer or reduces the expiry time on it
-if the desired timeout is less than the current expiry time.
-
-This is of immediate use in keyrings, where the gc timer currently sampled and
-set if reduced without using a lock.  The other three patches upgrade
-keyring's times to time64_t and then use reduce_timer() to manage the gc
-timeout.
-
-It is also of use in upcoming afs patches, where a collective timer is used to
-manage a set of cell records, each of which has a timeout that is dependent on
-DNS record lifetimes, and another collective timer is used to manage a set of
-servers.
-
-The advantage of reduce_timer() over mod_timer() is that the former won't
-increase the timeout if the timer is already running.  Now, granted, this can
-be done by wrapping the check of the timer and the call of mod_timer() in a
-lock, but this requires an extra lock when the timer system has its own locks
-that could be used - and will be taken unconditionally if mod_timer() is used
-in this way.
-
-I suspect this is of use in other places too - AF_RXRPC possibly, though there
-since we usually want an exact timeout and usually further in the future, I'm
-not sure whether it's faster to always modify the timer or whether it's faster
-to take the expiration of the earlier timer that we no longer need and then
-set the timer going again to the right time[*].
-
-[*] In AF_RXRPC, timer expiration involves scheduling a work function to
-    handle the timeout - which could then restart the timer if needed.  I need
-    to overhaul this code to improve the timeout handling, and if
-    reduce_timer() is available, I can separate out the setting of each
-    timeout value.
-
-David
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
-Baolin Wang (2):
-      security: keys: Replace time_t/timespec with time64_t
-      security: keys: Replace time_t with time64_t for struct key_preparsed_payload
+ drivers/crypto/marvell/cesa.c | 3 +--
+ drivers/crypto/marvell/cesa.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-David Howells (2):
-      Add a function to start/reduce a timer
-      KEYS: Use reduce_timer() to shorten gc timeout
-
-
- include/linux/key-type.h     |    2 +-
- include/linux/key.h          |    7 +++---
- include/linux/timer.h        |    1 +
- kernel/time/timer.c          |   49 +++++++++++++++++++++++++++++++++++-------
- security/keys/gc.c           |   23 +++++++++-----------
- security/keys/internal.h     |    8 +++----
- security/keys/key.c          |   27 +++++++++--------------
- security/keys/keyring.c      |   18 ++++++++-------
- security/keys/permission.c   |    3 +--
- security/keys/proc.c         |   20 +++++++++--------
- security/keys/process_keys.c |    2 +-
- 11 files changed, 92 insertions(+), 68 deletions(-)
+diff --git a/drivers/crypto/marvell/cesa.c b/drivers/crypto/marvell/cesa.c
+index b657e7c..ff73aa5 100644
+--- a/drivers/crypto/marvell/cesa.c
++++ b/drivers/crypto/marvell/cesa.c
+@@ -181,8 +181,7 @@ int mv_cesa_queue_req(struct crypto_async_request *req,
+ 	spin_lock_bh(&engine->lock);
+ 	ret = crypto_enqueue_request(&engine->queue, req);
+ 	if ((mv_cesa_req_get_type(creq) = CESA_DMA_REQ) &&
+-	    (ret = -EINPROGRESS ||
+-	    (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)))
++	    (ret = -EINPROGRESS || ret = -EBUSY))
+ 		mv_cesa_tdma_chain(engine, creq);
+ 	spin_unlock_bh(&engine->lock);
+ 
+diff --git a/drivers/crypto/marvell/cesa.h b/drivers/crypto/marvell/cesa.h
+index b7872f6..63c8457 100644
+--- a/drivers/crypto/marvell/cesa.h
++++ b/drivers/crypto/marvell/cesa.h
+@@ -763,7 +763,7 @@ static inline int mv_cesa_req_needs_cleanup(struct crypto_async_request *req,
+ 	 * the backlog and will be processed later. There's no need to
+ 	 * clean it up.
+ 	 */
+-	if (ret = -EBUSY && req->flags & CRYPTO_TFM_REQ_MAY_BACKLOG)
++	if (ret = -EBUSY)
+ 		return false;
+ 
+ 	/* Request wasn't queued, we need to clean it up */
+-- 
+2.7.4
 
