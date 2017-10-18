@@ -1,7 +1,7 @@
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Wed, 18 Oct 2017 07:00:40 +0000
-Subject: [PATCH v10 08/20] crypto: move pub key to generic async completion
-Message-Id: <1508310057-25369-9-git-send-email-gilad@benyossef.com>
+Date: Wed, 18 Oct 2017 07:00:46 +0000
+Subject: [PATCH v10 14/20] cifs: move to generic async completion
+Message-Id: <1508310057-25369-15-git-send-email-gilad@benyossef.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,74 +11,74 @@ In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
 Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-public_key_verify_signature() is starting an async crypto op and
-waiting for it to complete. Move it over to generic code doing
-the same.
+cifs starts an async. crypto op and waits for their completion.
+Move it over to generic code doing the same.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Pavel Shilovsky <pshilov@microsoft.com>
 ---
- crypto/asymmetric_keys/public_key.c | 28 ++++------------------------
- 1 file changed, 4 insertions(+), 24 deletions(-)
+ fs/cifs/smb2ops.c | 30 ++++--------------------------
+ 1 file changed, 4 insertions(+), 26 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index 3cd6e12..d916235 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -57,29 +57,13 @@ static void public_key_destroy(void *payload0, void *payload3)
- 	public_key_signature_free(payload3);
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index bdb963d..e067404 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -2087,22 +2087,6 @@ init_sg(struct smb_rqst *rqst, u8 *sign)
+ 	return sg;
  }
  
--struct public_key_completion {
--	struct completion completion;
+-struct cifs_crypt_result {
 -	int err;
+-	struct completion completion;
 -};
 -
--static void public_key_verify_done(struct crypto_async_request *req, int err)
+-static void cifs_crypt_complete(struct crypto_async_request *req, int err)
 -{
--	struct public_key_completion *compl = req->data;
+-	struct cifs_crypt_result *res = req->data;
 -
 -	if (err = -EINPROGRESS)
 -		return;
 -
--	compl->err = err;
--	complete(&compl->completion);
+-	res->err = err;
+-	complete(&res->completion);
 -}
 -
- /*
-  * Verify a signature using a public key.
-  */
- int public_key_verify_signature(const struct public_key *pkey,
- 				const struct public_key_signature *sig)
+ static int
+ smb2_get_enc_key(struct TCP_Server_Info *server, __u64 ses_id, int enc, u8 *key)
  {
--	struct public_key_completion compl;
-+	struct crypto_wait cwait;
- 	struct crypto_akcipher *tfm;
- 	struct akcipher_request *req;
- 	struct scatterlist sig_sg, digest_sg;
-@@ -131,20 +115,16 @@ int public_key_verify_signature(const struct public_key *pkey,
- 	sg_init_one(&digest_sg, output, outlen);
- 	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
- 				   outlen);
--	init_completion(&compl.completion);
-+	crypto_init_wait(&cwait);
- 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				      CRYPTO_TFM_REQ_MAY_SLEEP,
--				      public_key_verify_done, &compl);
-+				      crypto_req_done, &cwait);
+@@ -2143,12 +2127,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	struct aead_request *req;
+ 	char *iv;
+ 	unsigned int iv_len;
+-	struct cifs_crypt_result result = {0, };
++	DECLARE_CRYPTO_WAIT(wait);
+ 	struct crypto_aead *tfm;
+ 	unsigned int crypt_len = le32_to_cpu(tr_hdr->OriginalMessageSize);
  
- 	/* Perform the verification calculation.  This doesn't actually do the
- 	 * verification, but rather calculates the hash expected by the
- 	 * signature and returns that to us.
- 	 */
--	ret = crypto_akcipher_verify(req);
--	if ((ret = -EINPROGRESS) || (ret = -EBUSY)) {
--		wait_for_completion(&compl.completion);
--		ret = compl.err;
+-	init_completion(&result.completion);
+-
+ 	rc = smb2_get_enc_key(server, tr_hdr->SessionId, enc, key);
+ 	if (rc) {
+ 		cifs_dbg(VFS, "%s: Could not get %scryption key\n", __func__,
+@@ -2208,14 +2190,10 @@ crypt_message(struct TCP_Server_Info *server, struct smb_rqst *rqst, int enc)
+ 	aead_request_set_ad(req, assoc_data_len);
+ 
+ 	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+-				  cifs_crypt_complete, &result);
++				  crypto_req_done, &wait);
+ 
+-	rc = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
+-
+-	if (rc = -EINPROGRESS || rc = -EBUSY) {
+-		wait_for_completion(&result.completion);
+-		rc = result.err;
 -	}
-+	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
- 	if (ret < 0)
- 		goto out_free_output;
++	rc = crypto_wait_req(enc ? crypto_aead_encrypt(req)
++				: crypto_aead_decrypt(req), &wait);
  
+ 	if (!rc && enc)
+ 		memcpy(&tr_hdr->Signature, sign, SMB2_SIGNATURE_SIZE);
 -- 
 2.7.4
 
