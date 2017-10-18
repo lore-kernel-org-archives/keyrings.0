@@ -1,83 +1,112 @@
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-Date: Wed, 18 Oct 2017 07:00:35 +0000
-Subject: [PATCH v10 03/20] net: use -ENOSPC for transient busy indication
-Message-Id: <1508310057-25369-4-git-send-email-gilad@benyossef.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Wed, 18 Oct 2017 00:53:19 +0000
+Subject: [PATCH v5 06/18] ima: Improvements in ima_appraise_measurement
+Message-Id: <20171018005331.2688-7-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Arnaud Ebalard <arno@natisbad.org>, Matthias Brugger <matthias.bgg@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Steve French <sfrench@samba.org>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Steffen Klassert <steffen.klassert@secunet.com>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.ka>
-Cc: Ofir Drang <ofir.drang@arm.com>, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-mediatek@lists.infradead.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-fscrypt@vger.kernel.org, netdev@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, linux-ima-user@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-Replace -EBUSY with -ENOSPC when handling transient busy
-indication in the absence of backlog.
+Replace nested ifs in the EVM xattr verification logic with a switch
+statement, making the code easier to understand.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Also, add comments to the if statements in the out section.
 
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
+ security/integrity/ima/ima.h          |  5 +++++
+ security/integrity/ima/ima_appraise.c | 33 ++++++++++++++++++++-------------
+ 2 files changed, 25 insertions(+), 13 deletions(-)
 
-Please squash this patch with the previous one when merging upstream.
-
- net/ipv4/ah4.c  | 2 +-
- net/ipv4/esp4.c | 2 +-
- net/ipv6/ah6.c  | 2 +-
- net/ipv6/esp6.c | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/net/ipv4/ah4.c b/net/ipv4/ah4.c
-index 37db44f..4dd95cd 100644
---- a/net/ipv4/ah4.c
-+++ b/net/ipv4/ah4.c
-@@ -240,7 +240,7 @@ static int ah_output(struct xfrm_state *x, struct sk_buff *skb)
- 		if (err = -EINPROGRESS)
- 			goto out;
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index d52b487ad259..4e61d3189b72 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -155,6 +155,11 @@ unsigned long ima_get_binary_runtime_size(void);
+ int ima_init_template(void);
+ void ima_init_template_list(void);
  
--		if (err = -EBUSY)
-+		if (err = -ENOSPC)
- 			err = NET_XMIT_DROP;
- 		goto out_free;
++static inline bool is_ima_sig(const struct evm_ima_xattr_data *xattr_value)
++{
++	return xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG;
++}
++
+ /*
+  * used to protect h_table and sha_table
+  */
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 58c6a60c7e83..2c069f47eeec 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -204,7 +204,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 			     int xattr_len, int opened)
+ {
+ 	static const char op[] = "appraise_data";
+-	char *cause = "unknown";
++	const char *cause = "unknown";
+ 	struct dentry *dentry = file_dentry(file);
+ 	struct inode *inode = d_backing_inode(dentry);
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+@@ -229,11 +229,16 @@ int ima_appraise_measurement(enum ima_hooks func,
  	}
-diff --git a/net/ipv4/esp4.c b/net/ipv4/esp4.c
-index b00e4a4..d57aa64 100644
---- a/net/ipv4/esp4.c
-+++ b/net/ipv4/esp4.c
-@@ -432,7 +432,7 @@ int esp_output_tail(struct xfrm_state *x, struct sk_buff *skb, struct esp_info *
- 	case -EINPROGRESS:
- 		goto error;
  
--	case -EBUSY:
-+	case -ENOSPC:
- 		err = NET_XMIT_DROP;
- 		break;
- 
-diff --git a/net/ipv6/ah6.c b/net/ipv6/ah6.c
-index 7802b72..3bd9d80 100644
---- a/net/ipv6/ah6.c
-+++ b/net/ipv6/ah6.c
-@@ -443,7 +443,7 @@ static int ah6_output(struct xfrm_state *x, struct sk_buff *skb)
- 		if (err = -EINPROGRESS)
- 			goto out;
- 
--		if (err = -EBUSY)
-+		if (err = -ENOSPC)
- 			err = NET_XMIT_DROP;
- 		goto out_free;
+ 	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
+-	if (status != INTEGRITY_PASS && status != INTEGRITY_UNKNOWN) {
+-		if (status = INTEGRITY_NOLABEL || status = INTEGRITY_NOXATTRS)
+-			cause = "missing-HMAC";
+-		else if (status = INTEGRITY_FAIL)
+-			cause = "invalid-HMAC";
++	switch (status) {
++	case INTEGRITY_PASS:
++	case INTEGRITY_UNKNOWN:
++		break;
++	case INTEGRITY_NOXATTRS:	/* No EVM protected xattrs. */
++	case INTEGRITY_NOLABEL:		/* No security.evm xattr. */
++		cause = "missing-HMAC";
++		goto out;
++	case INTEGRITY_FAIL:		/* Invalid HMAC/signature. */
++		cause = "invalid-HMAC";
+ 		goto out;
  	}
-diff --git a/net/ipv6/esp6.c b/net/ipv6/esp6.c
-index 89910e2..c04d995 100644
---- a/net/ipv6/esp6.c
-+++ b/net/ipv6/esp6.c
-@@ -396,7 +396,7 @@ int esp6_output_tail(struct xfrm_state *x, struct sk_buff *skb, struct esp_info
- 	case -EINPROGRESS:
- 		goto error;
+ 	switch (xattr_value->type) {
+@@ -287,17 +292,19 @@ int ima_appraise_measurement(enum ima_hooks func,
  
--	case -EBUSY:
-+	case -ENOSPC:
- 		err = NET_XMIT_DROP;
- 		break;
- 
--- 
-2.7.4
+ out:
+ 	if (status != INTEGRITY_PASS) {
++		/* Fix mode, but don't replace file signatures. */
+ 		if ((ima_appraise & IMA_APPRAISE_FIX) &&
+-		    (!xattr_value ||
+-		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
++		    !is_ima_sig(xattr_value)) {
+ 			if (!ima_fix_xattr(dentry, iint))
+ 				status = INTEGRITY_PASS;
+-		} else if (inode->i_size = 0 &&
+-			   (iint->flags & IMA_NEW_FILE) &&
+-			   xattr_value &&
+-			   xattr_value->type = EVM_IMA_XATTR_DIGSIG) {
++		}
++
++		/* Permit new files with file signatures, but without data. */
++		if (inode->i_size = 0 && (iint->flags & IMA_NEW_FILE) &&
++		    is_ima_sig(xattr_value)) {
+ 			status = INTEGRITY_PASS;
+ 		}
++
+ 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
+ 				    op, cause, rc, 0);
+ 	} else {
+@@ -404,7 +411,7 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		if (!xattr_value_len || xvalue->type >= IMA_XATTR_LAST)
+ 			return -EINVAL;
+ 		ima_reset_appraise_flags(d_backing_inode(dentry),
+-			xvalue->type = EVM_IMA_XATTR_DIGSIG);
++					 is_ima_sig(xvalue));
+ 		result = 0;
+ 	}
+ 	return result;
 
