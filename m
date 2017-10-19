@@ -1,239 +1,97 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Wed, 18 Oct 2017 00:53:29 +0000
-Subject: [PATCH v5 16/18] ima: Add functions to read and verify a modsig signature
-Message-Id: <20171018005331.2688-17-bauerman@linux.vnet.ibm.com>
+From: James Morris <james.l.morris@oracle.com>
+Date: Thu, 19 Oct 2017 02:24:16 +0000
+Subject: [GIT PULL] Security subystem fixes for v4.14-rc5
+Message-Id: <alpine.LFD.2.20.1710191320380.1601@t440.gateway.2wire.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
 
-This is the code needed by IMA-appraise to work with modsig signatures.
-It will be used by the next patch.
+This includes a fix for the capabilities code from Colin King, and a set 
+of further fixes for the Keys subsystem.  From David:
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+"(1) Fix a bunch of places where kernel drivers may access revoked user-type
+     keys and don't do it correctly.
+
+ (2) Fix some ecryptfs bits.
+
+ (3) Fix big_key to require CONFIG_CRYPTO.
+
+ (4) Fix a couple of bugs in the asymmetric key type.
+
+ (5) Fix a race between updating and finding negative keys.
+
+ (6) Prevent add_key() from updating uninstantiated keys.
+
+ (7) Make loading of key flags and expiry time atomic when not holding 
+     locks."
+
+Please pull!
+
 ---
- security/integrity/ima/Kconfig      |   3 +
- security/integrity/ima/ima.h        |  34 +++++++++++
- security/integrity/ima/ima_modsig.c | 119 ++++++++++++++++++++++++++++++++++++
- security/integrity/integrity.h      |   1 +
- 4 files changed, 157 insertions(+)
 
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index 40c6618d00e6..55f734a6124b 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -166,6 +166,9 @@ config IMA_APPRAISE_BOOTPARAM
- config IMA_APPRAISE_MODSIG
- 	bool "Support module-style signatures for appraisal"
- 	depends on IMA_APPRAISE
-+	depends on INTEGRITY_ASYMMETRIC_KEYS
-+	select PKCS7_MESSAGE_PARSER
-+	select MODULE_SIG_FORMAT
- 	default n
- 	help
- 	   Adds support for signatures appended to files. The format of the
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 156ba218e0b6..eb58af06566f 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -257,6 +257,14 @@ int ima_read_xattr(struct dentry *dentry,
- 
- #ifdef CONFIG_IMA_APPRAISE_MODSIG
- bool ima_hook_supports_modsig(enum ima_hooks func);
-+int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
-+		    struct evm_ima_xattr_data **xattr_value,
-+		    int *xattr_len);
-+int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr, enum hash_algo *algo,
-+			void const **hash, u8 *len);
-+int ima_modsig_verify(const unsigned int keyring_id,
-+		      struct evm_ima_xattr_data *hdr);
-+void ima_free_xattr_data(struct evm_ima_xattr_data *hdr);
- #endif
- 
- #else
-@@ -307,6 +315,32 @@ static inline bool ima_hook_supports_modsig(enum ima_hooks func)
- {
- 	return false;
- }
-+
-+static inline int ima_read_modsig(enum ima_hooks func, const void *buf,
-+				  loff_t buf_len,
-+				  struct evm_ima_xattr_data **xattr_value,
-+				  int *xattr_len)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+static inline int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr,
-+				      enum hash_algo *algo, void const **hash,
-+				      u8 *len)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+static inline int ima_modsig_verify(const unsigned int keyring_id,
-+				    struct evm_ima_xattr_data *hdr)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+static inline void ima_free_xattr_data(struct evm_ima_xattr_data *hdr)
-+{
-+	kfree(hdr);
-+}
- #endif
- 
- /* LSM based policy rules require audit */
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-index 452ce6048a7e..2786aa97060e 100644
---- a/security/integrity/ima/ima_modsig.c
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -16,8 +16,19 @@
-  * GNU General Public License for more details.
-  */
- 
-+#include <linux/types.h>
-+#include <linux/module_signature.h>
-+#include <crypto/pkcs7.h>
-+
- #include "ima.h"
- 
-+struct modsig_hdr {
-+	uint8_t type;		/* Should be IMA_MODSIG. */
-+	const void *data;	/* Pointer to data covered by pkcs7_msg. */
-+	size_t data_len;
-+	struct pkcs7_message *pkcs7_msg;
-+};
-+
- /**
-  * ima_hook_supports_modsig - can the policy allow modsig for this hook?
-  *
-@@ -37,3 +48,111 @@ bool ima_hook_supports_modsig(enum ima_hooks func)
- 		return false;
- 	}
- }
-+
-+int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
-+		    struct evm_ima_xattr_data **xattr_value,
-+		    int *xattr_len)
-+{
-+	const size_t marker_len = sizeof(MODULE_SIG_STRING) - 1;
-+	const struct module_signature *sig;
-+	struct modsig_hdr *hdr;
-+	size_t sig_len;
-+	const void *p;
-+	int rc;
-+
-+	/*
-+	 * Not supposed to happen. Hooks that support modsig are
-+	 * whitelisted when parsing the policy using
-+	 * ima_hooks_supports_modsig.
-+	 */
-+	if (!buf || !buf_len) {
-+		WARN_ONCE(true, "%s doesn't support modsig\n",
-+			  func_tokens[func]);
-+		return -ENOENT;
-+	} else if (buf_len <= marker_len + sizeof(*sig))
-+		return -ENOENT;
-+
-+	p = buf + buf_len - marker_len;
-+	if (memcmp(p, MODULE_SIG_STRING, marker_len))
-+		return -ENOENT;
-+
-+	buf_len -= marker_len;
-+	sig = (const struct module_signature *) (p - sizeof(*sig));
-+
-+	rc = validate_module_sig(sig, buf_len);
-+	if (rc)
-+		return rc;
-+
-+	sig_len = be32_to_cpu(sig->sig_len);
-+	buf_len -= sig_len + sizeof(*sig);
-+
-+	hdr = kmalloc(sizeof(*hdr), GFP_KERNEL);
-+	if (!hdr)
-+		return -ENOMEM;
-+
-+	hdr->pkcs7_msg = pkcs7_parse_message(buf + buf_len, sig_len);
-+	if (IS_ERR(hdr->pkcs7_msg)) {
-+		rc = PTR_ERR(hdr->pkcs7_msg);
-+		kfree(hdr);
-+		return rc;
-+	}
-+
-+	hdr->type = IMA_MODSIG;
-+	hdr->data = buf;
-+	hdr->data_len = buf_len;
-+
-+	*xattr_value = (typeof(*xattr_value)) hdr;
-+	*xattr_len = sizeof(*hdr);
-+
-+	return 0;
-+}
-+
-+int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr, enum hash_algo *algo,
-+			void const **hash, u8 *len)
-+{
-+	const struct public_key_signature *pks;
-+	struct modsig_hdr *modsig = (typeof(modsig)) hdr;
-+	int i;
-+
-+	pks = pkcs7_get_message_sig(modsig->pkcs7_msg);
-+	if (!pks)
-+		return -EBADMSG;
-+
-+	for (i = 0; i < HASH_ALGO__LAST; i++)
-+		if (!strcmp(hash_algo_name[i], pks->hash_algo))
-+			break;
-+
-+	*algo = i;
-+	*hash = pks->digest;
-+	*len = pks->digest_size;
-+
-+	return 0;
-+}
-+
-+int ima_modsig_verify(const unsigned int keyring_id,
-+		      struct evm_ima_xattr_data *hdr)
-+{
-+	struct modsig_hdr *modsig = (struct modsig_hdr *) hdr;
-+	struct key *trusted_keys = integrity_keyring_from_id(keyring_id);
-+
-+	if (IS_ERR(trusted_keys))
-+		return -EINVAL;
-+
-+	return verify_pkcs7_message_sig(modsig->data, modsig->data_len,
-+					modsig->pkcs7_msg, trusted_keys,
-+					VERIFYING_MODULE_SIGNATURE, NULL, NULL);
-+}
-+
-+void ima_free_xattr_data(struct evm_ima_xattr_data *hdr)
-+{
-+	if (!hdr)
-+		return;
-+
-+	if (hdr->type = IMA_MODSIG) {
-+		struct modsig_hdr *modsig = (struct modsig_hdr *) hdr;
-+
-+		pkcs7_free_message(modsig->pkcs7_msg);
-+	}
-+
-+	kfree(hdr);
-+}
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index da709558ec8b..ce2bd9d5afa5 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -59,6 +59,7 @@ enum evm_ima_xattr_type {
- 	EVM_XATTR_HMAC,
- 	EVM_IMA_XATTR_DIGSIG,
- 	IMA_XATTR_DIGEST_NG,
-+	IMA_MODSIG,
- 	IMA_XATTR_LAST
- };
- 
 
+The following changes since commit 73d3393ada4f70fa3df5639c8d438f2f034c0ecb:
+
+  Merge tag 'xfs-4.14-fixes-6' of git://git.kernel.org/pub/scm/fs/xfs/xfs-linux (2017-10-18 14:51:50 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git fixes-v4.14-rc5
+
+Arnd Bergmann (1):
+      security/keys: BIG_KEY requires CONFIG_CRYPTO
+
+Chun-Yi Lee (2):
+      KEYS: Fix the wrong index when checking the existence of second id
+      KEYS: checking the input id parameters before finding asymmetric key
+
+Colin Ian King (1):
+      commoncap: move assignment of fs_ns to avoid null pointer dereference
+
+David Howells (2):
+      KEYS: Fix race between updating and finding a negative key
+      KEYS: don't let add_key() update an uninstantiated key
+
+Eric Biggers (8):
+      KEYS: encrypted: fix dereference of NULL user_key_payload
+      FS-Cache: fix dereference of NULL user_key_payload
+      lib/digsig: fix dereference of NULL user_key_payload
+      fscrypt: fix dereference of NULL user_key_payload
+      ecryptfs: fix dereference of NULL user_key_payload
+      KEYS: load key flags and expiry time atomically in key_validate()
+      KEYS: Load key expiry time atomically in keyring_search_iterator()
+      KEYS: load key flags and expiry time atomically in proc_keys_show()
+
+Eric Sesterhenn (1):
+      pkcs7: Prevent NULL pointer dereference, since sinfo is not always set.
+
+James Morris (1):
+      Merge commit 'tags/keys-fixes-20171018' into fixes-v4.14-rc5
+
+ crypto/asymmetric_keys/asymmetric_type.c |    4 ++-
+ crypto/asymmetric_keys/pkcs7_parser.c    |    3 ++
+ fs/crypto/keyinfo.c                      |    5 +++
+ fs/ecryptfs/ecryptfs_kernel.h            |   24 +++++++++++----
+ fs/ecryptfs/keystore.c                   |    9 +++++-
+ fs/fscache/object-list.c                 |    7 ++++
+ include/linux/key.h                      |   47 +++++++++++++++++++-----------
+ lib/digsig.c                             |    6 ++++
+ net/dns_resolver/dns_key.c               |    2 +-
+ security/commoncap.c                     |    3 +-
+ security/keys/Kconfig                    |    1 +
+ security/keys/big_key.c                  |    4 +-
+ security/keys/encrypted-keys/encrypted.c |    9 +++++-
+ security/keys/gc.c                       |    8 ++--
+ security/keys/key.c                      |   41 +++++++++++++++++++-------
+ security/keys/keyctl.c                   |    9 ++---
+ security/keys/keyring.c                  |   14 +++++----
+ security/keys/permission.c               |    7 ++--
+ security/keys/proc.c                     |   31 ++++++++++++-------
+ security/keys/process_keys.c             |    2 +-
+ security/keys/request_key.c              |    7 ++--
+ security/keys/request_key_auth.c         |    2 +-
+ security/keys/trusted.c                  |    2 +-
+ security/keys/user_defined.c             |    4 +-
+ 24 files changed, 170 insertions(+), 81 deletions(-)
