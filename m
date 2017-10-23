@@ -1,187 +1,80 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 26 Oct 2017 20:12:57 +0000
-Subject: Re: [PATCH v5 13/18] PKCS#7: Introduce pkcs7_get_message_sig and verify_pkcs7_message_sig
-Message-Id: <1509048777.5886.113.camel@linux.vnet.ibm.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 23 Oct 2017 21:40:38 +0000
+Subject: [RFC PATCH 05/25] fs: add ->s_master_keys to struct super_block
+Message-Id: <20171023214058.128121-6-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-         <20171018005331.2688-14-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-14-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <20171023214058.128121-1-ebiggers3@gmail.com>
+In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
+To: linux-fscrypt@vger.kernel.org
+Cc: Ryo Hashimoto <hashimoto@chromium.org>, Gwendal Grignou <gwendal@chromium.org>, "Theodore Y . Ts'o" <tytso@mit.edu>, Eric Biggers <ebiggers@google.com>, linux-api@vger.kernel.org, Nick Desaulniers <ndesaulniers@google.com>, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, Michael Halcrow <mhalcrow@google.com>, Sarthak Kukreti <sarthakkukreti@chromium.org>, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
 
-On Tue, 2017-10-17 at 22:53 -0200, Thiago Jung Bauermann wrote:
-> IMA will need to access the digest used in the signature so that it can
-> verify files containing module-style appended signatures. For this purpose,
-> add function pkcs7_get_message_sig.
-> 
-> It will also need to verify an already parsed PKCS#7 message. For this
-> purpose, add function verify_pkcs7_message_signature which takes a struct
-> pkcs7_message for verification instead of the raw bytes that
-> verify_pkcs7_signature takes.
-> 
-> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+From: Eric Biggers <ebiggers@google.com>
 
-Reviewed-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Add an ->s_master_keys keyring to 'struct super_block' for holding
+encryption keys which have been added to the filesystem.  This keyring
+will be populated using a new fscrypt ioctl.
 
-> ---
->  certs/system_keyring.c                | 60 +++++++++++++++++++++++++----------
->  crypto/asymmetric_keys/pkcs7_parser.c | 12 +++++++
->  include/crypto/pkcs7.h                |  2 ++
->  include/linux/verification.h          | 10 ++++++
->  4 files changed, 68 insertions(+), 16 deletions(-)
-> 
-> diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-> index 6251d1b27f0c..6a8684959780 100644
-> --- a/certs/system_keyring.c
-> +++ b/certs/system_keyring.c
-> @@ -190,33 +190,26 @@ late_initcall(load_system_certificate_list);
->  #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
-> 
->  /**
-> - * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-> + * verify_pkcs7_message_sig - Verify a PKCS#7-based signature on system data.
->   * @data: The data to be verified (NULL if expecting internal data).
->   * @len: Size of @data.
-> - * @raw_pkcs7: The PKCS#7 message that is the signature.
-> - * @pkcs7_len: The size of @raw_pkcs7.
-> + * @pkcs7: The PKCS#7 message that is the signature.
->   * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
->   *					(void *)1UL for all trusted keys).
->   * @usage: The use to which the key is being put.
->   * @view_content: Callback to gain access to content.
->   * @ctx: Context for callback.
->   */
-> -int verify_pkcs7_signature(const void *data, size_t len,
-> -			   const void *raw_pkcs7, size_t pkcs7_len,
-> -			   struct key *trusted_keys,
-> -			   enum key_being_used_for usage,
-> -			   int (*view_content)(void *ctx,
-> -					       const void *data, size_t len,
-> -					       size_t asn1hdrlen),
-> -			   void *ctx)
-> +int verify_pkcs7_message_sig(const void *data, size_t len,
-> +			     struct pkcs7_message *pkcs7,
-> +			     struct key *trusted_keys,
-> +			     enum key_being_used_for usage,
-> +			     int (*view_content)(void *ctx, const void *data,
-> +						 size_t len, size_t asn1hdrlen),
-> +			     void *ctx)
->  {
-> -	struct pkcs7_message *pkcs7;
->  	int ret;
-> 
-> -	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-> -	if (IS_ERR(pkcs7))
-> -		return PTR_ERR(pkcs7);
-> -
->  	/* The data should be detached - so we need to supply it. */
->  	if (data && pkcs7_supply_detached_data(pkcs7, data, len) < 0) {
->  		pr_err("PKCS#7 signature with non-detached data\n");
-> @@ -258,6 +251,41 @@ int verify_pkcs7_signature(const void *data, size_t len,
->  	}
-> 
->  error:
-> +	pr_devel("<=%s() = %d\n", __func__, ret);
-> +	return ret;
-> +}
-> +
-> +/**
-> + * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-> + * @data: The data to be verified (NULL if expecting internal data).
-> + * @len: Size of @data.
-> + * @raw_pkcs7: The PKCS#7 message that is the signature.
-> + * @pkcs7_len: The size of @raw_pkcs7.
-> + * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
-> + *					(void *)1UL for all trusted keys).
-> + * @usage: The use to which the key is being put.
-> + * @view_content: Callback to gain access to content.
-> + * @ctx: Context for callback.
-> + */
-> +int verify_pkcs7_signature(const void *data, size_t len,
-> +			   const void *raw_pkcs7, size_t pkcs7_len,
-> +			   struct key *trusted_keys,
-> +			   enum key_being_used_for usage,
-> +			   int (*view_content)(void *ctx,
-> +					       const void *data, size_t len,
-> +					       size_t asn1hdrlen),
-> +			   void *ctx)
-> +{
-> +	struct pkcs7_message *pkcs7;
-> +	int ret;
-> +
-> +	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-> +	if (IS_ERR(pkcs7))
-> +		return PTR_ERR(pkcs7);
-> +
-> +	ret = verify_pkcs7_message_sig(data, len, pkcs7, trusted_keys, usage,
-> +				       view_content, ctx);
-> +
->  	pkcs7_free_message(pkcs7);
->  	pr_devel("<=%s() = %d\n", __func__, ret);
->  	return ret;
-> diff --git a/crypto/asymmetric_keys/pkcs7_parser.c b/crypto/asymmetric_keys/pkcs7_parser.c
-> index af4cd8649117..e41beda297a8 100644
-> --- a/crypto/asymmetric_keys/pkcs7_parser.c
-> +++ b/crypto/asymmetric_keys/pkcs7_parser.c
-> @@ -673,3 +673,15 @@ int pkcs7_note_signed_info(void *context, size_t hdrlen,
->  		return -ENOMEM;
->  	return 0;
->  }
-> +
-> +/**
-> + * pkcs7_get_message_sig - get signature in @pkcs7
-> + *
-> + * This function doesn't meaningfully support messages with more than one
-> + * signature. It will always return the first signature.
-> + */
-> +const struct public_key_signature *pkcs7_get_message_sig(
-> +					const struct pkcs7_message *pkcs7)
-> +{
-> +	return pkcs7->signed_infos ? pkcs7->signed_infos->sig : NULL;
-> +}
-> diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
-> index 583f199400a3..6f51d0cb6d12 100644
-> --- a/include/crypto/pkcs7.h
-> +++ b/include/crypto/pkcs7.h
-> @@ -28,6 +28,8 @@ extern void pkcs7_free_message(struct pkcs7_message *pkcs7);
->  extern int pkcs7_get_content_data(const struct pkcs7_message *pkcs7,
->  				  const void **_data, size_t *_datalen,
->  				  size_t *_headerlen);
-> +extern const struct public_key_signature *pkcs7_get_message_sig(
-> +					const struct pkcs7_message *pkcs7);
-> 
->  /*
->   * pkcs7_trust.c
-> diff --git a/include/linux/verification.h b/include/linux/verification.h
-> index a10549a6c7cd..f04dac2728ec 100644
-> --- a/include/linux/verification.h
-> +++ b/include/linux/verification.h
-> @@ -29,6 +29,7 @@ extern const char *const key_being_used_for[NR__KEY_BEING_USED_FOR];
->  #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
-> 
->  struct key;
-> +struct pkcs7_message;
-> 
->  extern int verify_pkcs7_signature(const void *data, size_t len,
->  				  const void *raw_pkcs7, size_t pkcs7_len,
-> @@ -38,6 +39,15 @@ extern int verify_pkcs7_signature(const void *data, size_t len,
->  						      const void *data, size_t len,
->  						      size_t asn1hdrlen),
->  				  void *ctx);
-> +extern int verify_pkcs7_message_sig(const void *data, size_t len,
-> +				    struct pkcs7_message *pkcs7,
-> +				    struct key *trusted_keys,
-> +				    enum key_being_used_for usage,
-> +				    int (*view_content)(void *ctx,
-> +							const void *data,
-> +							size_t len,
-> +							size_t asn1hdrlen),
-> +				    void *ctx);
-> 
->  #ifdef CONFIG_SIGNED_PE_FILE_VERIFICATION
->  extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
-> 
+This is needed for several reasons, including:
+
+- To solve the visibility problems of having filesystem encryption keys
+  stored in process-subscribed keyrings, while the VFS state of the
+  filesystem is actually global.
+
+- To implement a proper API for removing keys, which among other things
+  will require maintaining the list of inodes that are using each master
+  key so that we can evict the inodes when the key is removed.
+
+- To allow caching a crypto transform for each master key so that we
+  don't have to repeatedly allocate one over and over.
+
+See later patches for full details, including why it wouldn't be enough
+to add the concept of a "global keyring" to the keyrings API instead.
+
+->s_master_keys will only be allocated when someone tries to add a key
+for the first time.  Otherwise it will stay NULL.
+
+Note that this could go in the filesystem-specific superblocks instead.
+However, we already have three filesystems using fs/crypto/, so it's
+useful to have it in the VFS.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ fs/super.c         | 3 +++
+ include/linux/fs.h | 4 ++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/fs/super.c b/fs/super.c
+index 166c4ee0d0ed..161a9d05aa9f 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -168,6 +168,9 @@ static void destroy_super(struct super_block *s)
+ 	WARN_ON(!list_empty(&s->s_mounts));
+ 	put_user_ns(s->s_user_ns);
+ 	kfree(s->s_subtype);
++#if IS_ENABLED(CONFIG_FS_ENCRYPTION)
++	key_put(s->s_master_keys);
++#endif
+ 	call_rcu(&s->rcu, destroy_super_rcu);
+ }
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 3efd5ded21c9..8cfb0877d32c 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1440,6 +1440,10 @@ struct super_block {
+ 
+ 	spinlock_t		s_inode_wblist_lock;
+ 	struct list_head	s_inodes_wb;	/* writeback inodes */
++
++#if IS_ENABLED(CONFIG_FS_ENCRYPTION)
++	struct key		*s_master_keys; /* master crypto keys in use */
++#endif
+ } __randomize_layout;
+ 
+ /* Helper functions so that in most cases filesystems will
+-- 
+2.15.0.rc0.271.g36b669edcc-goog
 
