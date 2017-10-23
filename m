@@ -1,157 +1,128 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 12 Oct 2017 20:42:26 +0000
-Subject: [PATCH v2 3/4] syscalls/keyctl07: new test for oops when reading negative key
-Message-Id: <20171012204227.116510-4-ebiggers3@gmail.com>
+Date: Mon, 23 Oct 2017 21:40:54 +0000
+Subject: [RFC PATCH 21/25] fscrypt: require that key be added when setting a v2 encryption policy
+Message-Id: <20171023214058.128121-22-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20171023214058.128121-1-ebiggers3@gmail.com>
+In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
+To: linux-fscrypt@vger.kernel.org
+Cc: Ryo Hashimoto <hashimoto@chromium.org>, Gwendal Grignou <gwendal@chromium.org>, "Theodore Y . Ts'o" <tytso@mit.edu>, Eric Biggers <ebiggers@google.com>, linux-api@vger.kernel.org, Nick Desaulniers <ndesaulniers@google.com>, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, Michael Halcrow <mhalcrow@google.com>, Sarthak Kukreti <sarthakkukreti@chromium.org>, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-Add a test for a bug which caused the kernel to dereference a bogus
-pointer when using KEYCTL_READ to read from a negative key.
+By looking up the master keys in a filesystem-level keyring rather than
+in the calling processes' key hierarchy, it becomes possible for a user
+to set an encryption policy which refers to some key they don't actually
+know, then encrypt their files using that key.  Cryptographically this
+shouldn't actually be a major problem; for one, every file will still be
+encrypted with a unique derived key, rather than with the master key
+directly.  But to be on the safe side, enforce that a v2 encryption
+policy can only be set if the user has previously added the key, or has
+capable(CAP_FOWNER).
+
+We tolerate that this problem will continue to exist for v1 encryption
+policies, however; there is no way around that.
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- runtest/cve                                 |  1 +
- runtest/syscalls                            |  1 +
- testcases/kernel/syscalls/.gitignore        |  1 +
- testcases/kernel/syscalls/keyctl/keyctl07.c | 89 +++++++++++++++++++++++++++++
- 4 files changed, 92 insertions(+)
- create mode 100644 testcases/kernel/syscalls/keyctl/keyctl07.c
+ fs/crypto/fscrypt_private.h |  2 ++
+ fs/crypto/keyinfo.c         | 42 ++++++++++++++++++++++++++++++++++++++++++
+ fs/crypto/policy.c          |  6 ++++++
+ 3 files changed, 50 insertions(+)
 
-diff --git a/runtest/cve b/runtest/cve
-index d182e592a..b8e038112 100644
---- a/runtest/cve
-+++ b/runtest/cve
-@@ -17,5 +17,6 @@ cve-2017-2671 cve-2017-2671
- cve-2017-5669 cve-2017-5669
- cve-2017-6951 cve-2017-6951
- cve-2017-7472 keyctl04
-+cve-2017-12192 keyctl07
- cve-2017-15274 add_key02
- cve-2017-1000364 stack_clash
-diff --git a/runtest/syscalls b/runtest/syscalls
-index fc6800abf..822608613 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -503,6 +503,7 @@ keyctl03 keyctl03
- keyctl04 keyctl04
- keyctl05 keyctl05
- keyctl06 keyctl06
-+keyctl07 keyctl07
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index d0a63086fa95..7a0d5b6c2504 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -234,6 +234,8 @@ extern struct page *fscrypt_alloc_bounce_page(struct fscrypt_ctx *ctx,
+ 					      gfp_t gfp_flags);
  
- kcmp01 kcmp01
- kcmp02 kcmp02
-diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
-index a803986ef..8a2a8d21e 100644
---- a/testcases/kernel/syscalls/.gitignore
-+++ b/testcases/kernel/syscalls/.gitignore
-@@ -464,6 +464,7 @@
- /keyctl/keyctl04
- /keyctl/keyctl05
- /keyctl/keyctl06
-+/keyctl/keyctl07
- /kcmp/kcmp01
- /kcmp/kcmp02
- /kcmp/kcmp03
-diff --git a/testcases/kernel/syscalls/keyctl/keyctl07.c b/testcases/kernel/syscalls/keyctl/keyctl07.c
-new file mode 100644
-index 000000000..404e7a92f
---- /dev/null
-+++ b/testcases/kernel/syscalls/keyctl/keyctl07.c
-@@ -0,0 +1,89 @@
+ /* keyinfo.c */
++extern int fscrypt_verify_key_added(struct super_block *sb,
++				    const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE]);
+ extern struct key_type key_type_fscrypt_mk;
+ extern struct key_type key_type_fscrypt_mk_user;
+ extern void __exit fscrypt_essiv_cleanup(void);
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
+index 1fe44983239a..fd59f37dad10 100644
+--- a/fs/crypto/keyinfo.c
++++ b/fs/crypto/keyinfo.c
+@@ -851,6 +851,48 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
+ }
+ EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
+ 
 +/*
-+ * Copyright (c) 2017 Google, Inc.
++ * Verify that the current user has added a master key that has the given
++ * identifier (returns -ENOKEY if not).  This is needed to prevent a user from
++ * encrypting their files using some other user's key which they don't actually
++ * know.  Cryptographically speaking, it's debatable how much of a problem this
++ * actually would be, but it's best to just forbid it.
 + *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program, if not, see <http://www.gnu.org/licenses/>.
++ * The system administrator (CAP_FOWNER) can override this, which should be
++ * enough for any use cases where encryption policies are being set using keys
++ * that were chosen ahead of time but aren't available at the moment.
 + */
-+
-+/*
-+ * Regression test for commit 37863c43b2c6 ("KEYS: prevent KEYCTL_READ on
-+ * negative key").  This is CVE-2017-12192.
-+ */
-+
-+#include <errno.h>
-+
-+#include "tst_test.h"
-+#include "lapi/keyctl.h"
-+
-+static void do_test(void)
++int fscrypt_verify_key_added(struct super_block *sb,
++			     const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE])
 +{
-+	key_serial_t key_id;
-+	char buffer[128];
++	struct fscrypt_key_specifier mk_spec;
++	struct key *key, *mk_user;
++	struct fscrypt_master_key *mk;
++	int err;
 +
-+	/*
-+	 * Create a negatively instantiated key of the "user" key type.  This
-+	 * key type is chosen because it has a ->read() method (which makes the
-+	 * bug reachable) and is available whenever CONFIG_KEYS is enabled.
-+	 *
-+	 * request_key() will result in the creation of a negative key provided
-+	 * that /sbin/request-key isn't configured to positively instantiate the
-+	 * key, based on the provided type, description, and callout_info.  If
-+	 * /sbin/request-key doesn't exist, errno will be ENOENT; while if it
-+	 * does exist and we specify some random unprefixed description, errno
-+	 * should be ENOKEY (since /sbin/request-key should not be configured to
-+	 * instantiate random user keys).  In either case a negative key should
-+	 * be created and we can continue on with the test.  Negative keys last
-+	 * for 60 seconds so there should be plenty of time for the test.
-+	 */
-+	TEST(request_key("user", "description", "callout_info",
-+			 KEY_SPEC_PROCESS_KEYRING));
-+	if (TEST_RETURN != -1)
-+		tst_brk(TBROK, "request_key() unexpectedly succeeded");
++	mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER;
++	memcpy(mk_spec.identifier, identifier, FSCRYPT_KEY_IDENTIFIER_SIZE);
 +
-+	if (TEST_ERRNO != ENOKEY && TEST_ERRNO != ENOENT) {
-+		tst_brk(TBROK | TTERRNO,
-+			"request_key() failed with unexpected error");
++	key = find_master_key(sb, &mk_spec);
++	if (IS_ERR(key)) {
++		err = PTR_ERR(key);
++		goto out;
 +	}
-+
-+	/* Get the ID of the negative key by reading the keyring */
-+	TEST(keyctl(KEYCTL_READ, KEY_SPEC_PROCESS_KEYRING,
-+		    &key_id, sizeof(key_id)));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "KEYCTL_READ unexpectedly failed");
-+	if (TEST_RETURN != sizeof(key_id)) {
-+		tst_brk(TBROK, "KEYCTL_READ returned %ld but expected %zu",
-+			TEST_RETURN, sizeof(key_id));
++	mk = key->payload.data[0];
++	mk_user = find_master_key_user(mk);
++	if (IS_ERR(mk_user)) {
++		err = PTR_ERR(mk_user);
++	} else {
++		key_put(mk_user);
++		err = 0;
 +	}
-+
-+	/*
-+	 * Now try to read the negative key.  Unpatched kernels will oops trying
-+	 * to read from memory address 0x00000000ffffff92.
-+	 */
-+	tst_res(TINFO, "trying to read from the negative key...");
-+	TEST(keyctl(KEYCTL_READ, key_id, buffer, sizeof(buffer)));
-+	if (TEST_RETURN != -1) {
-+		tst_res(TFAIL,
-+			"KEYCTL_READ on negative key unexpectedly succeeded");
-+		return;
-+	}
-+	if (TEST_ERRNO != ENOKEY) {
-+		tst_res(TFAIL | TTERRNO,
-+			"KEYCTL_READ on negative key failed with unexpected error");
-+		return;
-+	}
-+	tst_res(TPASS, "KEYCTL_READ on negative key expectedly failed with ENOKEY");
++	key_put(key);
++out:
++	if (err = -ENOKEY && capable(CAP_FOWNER))
++		err = 0;
++	return err;
 +}
 +
-+static struct tst_test test = {
-+	.test_all = do_test,
-+};
+ static void evict_dentries_for_decrypted_inodes(struct fscrypt_master_key *mk)
+ {
+ 	struct fscrypt_info *ci;
+diff --git a/fs/crypto/policy.c b/fs/crypto/policy.c
+index 27a391038f73..cfb404def9ed 100644
+--- a/fs/crypto/policy.c
++++ b/fs/crypto/policy.c
+@@ -170,6 +170,7 @@ static int set_encryption_policy(struct inode *inode,
+ 				 const union fscrypt_policy *policy)
+ {
+ 	union fscrypt_context ctx;
++	int err;
+ 
+ 	if (!fscrypt_supported_policy(policy))
+ 		return -EINVAL;
+@@ -190,6 +191,11 @@ static int set_encryption_policy(struct inode *inode,
+ 		 */
+ 		pr_warn_once("%s (pid %d) is setting less secure v1 encryption policy; recommend upgrading to v2.\n",
+ 			     current->comm, current->pid);
++	} else {
++		err = fscrypt_verify_key_added(inode->i_sb,
++					       policy->v2.master_key_identifier);
++		if (err)
++			return err;
+ 	}
+ 
+ 	return inode->i_sb->s_cop->set_context(inode, &ctx,
 -- 
 2.15.0.rc0.271.g36b669edcc-goog
 
