@@ -1,38 +1,60 @@
-From: James Morris <jmorris@namei.org>
-Date: Tue, 03 Oct 2017 10:56:19 +0000
-Subject: Re: [PATCH 4/7] fscrypt: fix dereference of NULL user_key_payload
-Message-Id: <alpine.LRH.2.21.1710032156090.25033@namei.org>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 23 Oct 2017 21:40:57 +0000
+Subject: [RFC PATCH 24/25] ubifs crypto: wire up FS_IOC_GET_ENCRYPTION_POLICY_EX
+Message-Id: <20171023214058.128121-25-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170928212602.41744-1-ebiggers3@gmail.com> <20170928212602.41744-5-ebiggers3@gmail.com>
-In-Reply-To: <20170928212602.41744-5-ebiggers3@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Michael Halcrow <mhalcrow@google.com>, linux-cachefs@redhat.com, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <20171023214058.128121-1-ebiggers3@gmail.com>
+In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, keyrings@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Gwendal Grignou <gwendal@chromium.org>, Ryo Hashimoto <hashimoto@chromium.org>, Sarthak Kukreti <sarthakkukreti@chromium.org>, Nick Desaulniers <ndesaulniers@google.com>, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
 
-On Thu, 28 Sep 2017, Eric Biggers wrote:
+From: Eric Biggers <ebiggers@google.com>
 
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> When an fscrypt-encrypted file is opened, we request the file's master
-> key from the keyrings service as a logon key, then access its payload.
-> However, a revoked key has a NULL payload, and we failed to check for
-> this.  request_key() *does* skip revoked keys, but there is still a
-> window where the key can be revoked before we acquire its semaphore.
-> 
-> Fix it by checking for a NULL payload, treating it like a key which was
-> already revoked at the time it was requested.
-> 
-> Fixes: 88bd6ccdcdd6 ("ext4 crypto: add encryption key management facilities")
-> Cc: <stable@vger.kernel.org>    [v4.1+]
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+FS_IOC_GET_ENCRYPTION_POLICY_EX allows filesystem encryption users to
+retrieve the encryption policy for files and directories that use a v2
+encryption policy.  Unlike the original FS_IOC_GET_ENCRYPTION_POLICY,
+FS_IOC_GET_ENCRYPTION_POLICY_EX is also extensible to new versions of
+the policy struct that may be added in the future.
 
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ fs/ubifs/ioctl.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Reviewed-by: James Morris <james.l.morris@oracle.com>
-
-
+diff --git a/fs/ubifs/ioctl.c b/fs/ubifs/ioctl.c
+index 09ede2d1898f..2064c01ac864 100644
+--- a/fs/ubifs/ioctl.c
++++ b/fs/ubifs/ioctl.c
+@@ -197,13 +197,12 @@ long ubifs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		return -EOPNOTSUPP;
+ #endif
+ 	}
+-	case FS_IOC_GET_ENCRYPTION_POLICY: {
+-#ifdef CONFIG_UBIFS_FS_ENCRYPTION
++
++	case FS_IOC_GET_ENCRYPTION_POLICY:
+ 		return fscrypt_ioctl_get_policy(file, (void __user *)arg);
+-#else
+-		return -EOPNOTSUPP;
+-#endif
+-	}
++
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		return fscrypt_ioctl_get_policy_ex(file, (void __user *)arg);
+ 
+ 	case FS_IOC_ADD_ENCRYPTION_KEY:
+ 		return fscrypt_ioctl_add_key(file, (void __user *)arg);
+@@ -231,6 +230,7 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		break;
+ 	case FS_IOC_SET_ENCRYPTION_POLICY:
+ 	case FS_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
+ 	case FS_IOC_ADD_ENCRYPTION_KEY:
+ 	case FS_IOC_REMOVE_ENCRYPTION_KEY:
+ 	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
 -- 
-James Morris
-<jmorris@namei.org>
+2.15.0.rc0.271.g36b669edcc-goog
 
