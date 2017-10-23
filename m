@@ -1,30 +1,64 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 12 Oct 2017 15:27:07 +0000
-Subject: Re: [PATCH v3 1/7] KEYS: don't let add_key() update an uninstantiated key
-Message-Id: <22673.1507822027@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 23 Oct 2017 21:40:40 +0000
+Subject: [RFC PATCH 07/25] fs/inode.c: export inode_lru_list_del()
+Message-Id: <20171023214058.128121-8-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20170927195047.122358-2-ebiggers3@gmail.com>
-	<20170927195047.122358-1-ebiggers3@gmail.com>
-In-Reply-To: <20170927195047.122358-2-ebiggers3@gmail.com>
-To: linux-security-module@vger.kernel.org
+References: <20171023214058.128121-1-ebiggers3@gmail.com>
+In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
+To: linux-fscrypt@vger.kernel.org
+Cc: Ryo Hashimoto <hashimoto@chromium.org>, Gwendal Grignou <gwendal@chromium.org>, "Theodore Y . Ts'o" <tytso@mit.edu>, Eric Biggers <ebiggers@google.com>, linux-api@vger.kernel.org, Nick Desaulniers <ndesaulniers@google.com>, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, Michael Halcrow <mhalcrow@google.com>, Sarthak Kukreti <sarthakkukreti@chromium.org>, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
 
-Eric Biggers <ebiggers3@gmail.com> wrote:
+From: Eric Biggers <ebiggers@google.com>
 
-> Therefore, change find_key_to_update() to return NULL if the found key
-> is uninstantiated, so that add_key() replaces the key rather than
-> instantiating it.  This seems to be better than fixing __key_update() to
-> call __key_instantiate_and_link(), since given all the bugs noted above
-> as well as that the existing behavior was undocumented and
-> keyctl_instantiate() is supposed to be used instead, I doubt anyone was
-> relying on the existing behavior.
+When a filesystem encryption key is removed, we need all files which had
+been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
+again.  This is most easily done by evicting the inodes.  This can
+currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
+that is overkill and not usable by non-root users.  In preparation for
+allowing fs/crypto/ to evict just the needed inodes, export
+inode_lru_list_del() to modules.
 
-keyctl_instantiate() can only be called from an upcall.  It can't be called in
-the same context as keyctl_update().
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ fs/inode.c         | 5 ++---
+ include/linux/fs.h | 1 +
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-I would be okay with making key_update() wait for completion of construction
-in this case.
+diff --git a/fs/inode.c b/fs/inode.c
+index d1e35b53bb23..30ce98956801 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -420,13 +420,12 @@ void inode_add_lru(struct inode *inode)
+ 		inode_lru_list_add(inode);
+ }
+ 
+-
+-static void inode_lru_list_del(struct inode *inode)
++void inode_lru_list_del(struct inode *inode)
+ {
+-
+ 	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
+ 		this_cpu_dec(nr_unused);
+ }
++EXPORT_SYMBOL_GPL(inode_lru_list_del);
+ 
+ /**
+  * inode_sb_list_add - add inode to the superblock list of inodes
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8cfb0877d32c..2833ace2f01d 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2879,6 +2879,7 @@ static inline void lockdep_annotate_inode_mutex_key(struct inode *inode) { };
+ extern void unlock_new_inode(struct inode *);
+ extern unsigned int get_next_ino(void);
+ extern void evict_inodes(struct super_block *sb);
++extern void inode_lru_list_del(struct inode *inode);
+ 
+ extern void __iget(struct inode * inode);
+ extern void iget_failed(struct inode *);
+-- 
+2.15.0.rc0.271.g36b669edcc-goog
 
-David
