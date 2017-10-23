@@ -1,52 +1,59 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 12 Oct 2017 20:16:55 +0000
-Subject: [PATCH 08/15] security/keys: BIG_KEY requires CONFIG_CRYPTO
-Message-Id: <150783941546.10956.15884531475572047421.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 23 Oct 2017 21:40:45 +0000
+Subject: [RFC PATCH 12/25] ext4 crypto: wire up new ioctls for managing encryption keys
+Message-Id: <20171023214058.128121-13-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-In-Reply-To: <150783935268.10956.14343227057986655899.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <20171023214058.128121-1-ebiggers3@gmail.com>
+In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, keyrings@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Gwendal Grignou <gwendal@chromium.org>, Ryo Hashimoto <hashimoto@chromium.org>, Sarthak Kukreti <sarthakkukreti@chromium.org>, Nick Desaulniers <ndesaulniers@google.com>, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Eric Biggers <ebiggers@google.com>
 
-The recent rework introduced a possible randconfig build failure
-when CONFIG_CRYPTO configured to only allow modules:
-
-security/keys/big_key.o: In function `big_key_crypt':
-big_key.c:(.text+0x29f): undefined reference to `crypto_aead_setkey'
-security/keys/big_key.o: In function `big_key_init':
-big_key.c:(.init.text+0x1a): undefined reference to `crypto_alloc_aead'
-big_key.c:(.init.text+0x45): undefined reference to `crypto_aead_setauthsize'
-big_key.c:(.init.text+0x77): undefined reference to `crypto_destroy_tfm'
-crypto/gcm.o: In function `gcm_hash_crypt_remain_continue':
-gcm.c:(.text+0x167): undefined reference to `crypto_ahash_finup'
-crypto/gcm.o: In function `crypto_gcm_exit_tfm':
-gcm.c:(.text+0x847): undefined reference to `crypto_destroy_tfm'
-
-When we 'select CRYPTO' like the other users, we always get a
-configuration that builds.
-
-Fixes: 428490e38b2e ("security/keys: rewrite all of big_key crypto")
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/ext4/ioctl.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
- security/keys/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 91eafada3164..6462e6654ccf 100644
---- a/security/keys/Kconfig
-+++ b/security/keys/Kconfig
-@@ -45,6 +45,7 @@ config BIG_KEYS
- 	bool "Large payload keys"
- 	depends on KEYS
- 	depends on TMPFS
-+	select CRYPTO
- 	select CRYPTO_AES
- 	select CRYPTO_GCM
- 	help
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index afb66d4ab5cf..b8a6765a556f 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -978,6 +978,21 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
+ 		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
+ 
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
++
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
++
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
++
+ 	case EXT4_IOC_FSGETXATTR:
+ 	{
+ 		struct fsxattr fa;
+@@ -1102,6 +1117,9 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
+ 	case EXT4_IOC_GET_ENCRYPTION_PWSALT:
+ 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 	case EXT4_IOC_SHUTDOWN:
+ 	case FS_IOC_GETFSMAP:
+ 		break;
+-- 
+2.15.0.rc0.271.g36b669edcc-goog
 
