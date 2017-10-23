@@ -1,88 +1,92 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 30 Oct 2017 15:38:09 +0000
-Subject: [PATCH 3/4] security: keys: Replace time_t with time64_t for struct key_preparsed_payload
-Message-Id: <150937788989.31781.5673897968859253387.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 23 Oct 2017 21:40:42 +0000
+Subject: [RFC PATCH 09/25] fs/dcache.c: add shrink_dcache_inode()
+Message-Id: <20171023214058.128121-10-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
-In-Reply-To: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
-To: tglx@linutronix.de
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org
+References: <20171023214058.128121-1-ebiggers3@gmail.com>
+In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
+To: linux-fscrypt@vger.kernel.org
+Cc: Ryo Hashimoto <hashimoto@chromium.org>, Gwendal Grignou <gwendal@chromium.org>, "Theodore Y . Ts'o" <tytso@mit.edu>, Eric Biggers <ebiggers@google.com>, linux-api@vger.kernel.org, Nick Desaulniers <ndesaulniers@google.com>, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, Michael Halcrow <mhalcrow@google.com>, Sarthak Kukreti <sarthakkukreti@chromium.org>, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
 
-From: Baolin Wang <baolin.wang@linaro.org>
+From: Eric Biggers <ebiggers@google.com>
 
-The 'struct key_preparsed_payload' will use 'time_t' which we will
-try to remove in the kernel, since 'time_t' is not year 2038 safe on
-32bits systems.
+When a filesystem encryption key is removed, we need all files which had
+been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
+again.  This is most easily done by evicting the inodes.  This can
+currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
+that is overkill and not usable by non-root users.
 
-Thus this patch replaces 'time_t' with 'time64_t' which is year 2038
-safe on 32 bits system for 'struct key_preparsed_payload', moreover
-we should use the 'TIME64_MAX' macro to initialize the 'time64_t'
-type variable.
+To evict just the needed inodes we also need the ability to evict those
+inodes' dentries, since an inode is pinned by its dentries.  Therefore,
+add a function shrink_dcache_inode() which iterates through an inode's
+dentries and evicts any unused ones as well as any unused descendants
+(since there may be negative dentries pinning the inode's dentries).
 
-Signed-off-by: Baolin Wang <baolin.wang@linaro.org>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/dcache.c            | 33 +++++++++++++++++++++++++++++++++
+ include/linux/dcache.h |  1 +
+ 2 files changed, 34 insertions(+)
 
- include/linux/key-type.h |    2 +-
- security/keys/key.c      |    8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index 9520fc3c3b9a..05d8fb5a06c4 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -44,7 +44,7 @@ struct key_preparsed_payload {
- 	const void	*data;		/* Raw data */
- 	size_t		datalen;	/* Raw datalen */
- 	size_t		quotalen;	/* Quota length for proposed payload */
--	time_t		expiry;		/* Expiry time of key */
-+	time64_t	expiry;		/* Expiry time of key */
- } __randomize_layout;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index f90141387f01..455540e889f8 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1456,6 +1456,39 @@ void shrink_dcache_parent(struct dentry *parent)
+ }
+ EXPORT_SYMBOL(shrink_dcache_parent);
  
- typedef int (*request_key_actor_t)(struct key_construction *key,
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 291a67c45b65..d5c8941ae3fd 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -446,7 +446,7 @@ static int __key_instantiate_and_link(struct key *key,
- 			if (authkey)
- 				key_revoke(authkey);
++/**
++ * shrink_dcache_inode - prune dcache for inode
++ * @inode: inode to prune
++ *
++ * Evict all unused aliases of the specified inode from the dcache.  This is
++ * intended to be used when trying to evict a specific inode, since inodes are
++ * pinned by their dentries.  We also have to descend to ->d_subdirs for each
++ * alias, since aliases may be pinned by negative child dentries.
++ */
++void shrink_dcache_inode(struct inode *inode)
++{
++	for (;;) {
++		struct select_data data;
++		struct dentry *dentry;
++
++		INIT_LIST_HEAD(&data.dispose);
++		data.start = NULL;
++		data.found = 0;
++
++		spin_lock(&inode->i_lock);
++		hlist_for_each_entry(dentry, &inode->i_dentry, d_u.d_alias)
++			d_walk(dentry, &data, select_collect, NULL);
++		spin_unlock(&inode->i_lock);
++
++		if (!data.found)
++			break;
++
++		shrink_dentry_list(&data.dispose);
++		cond_resched();
++	}
++}
++EXPORT_SYMBOL(shrink_dcache_inode);
++
+ static enum d_walk_ret umount_check(void *_data, struct dentry *dentry)
+ {
+ 	/* it has busy descendents; complain about those instead */
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index ed1a7cf6923a..fb08199d67d5 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -245,6 +245,7 @@ extern struct dentry * d_obtain_alias(struct inode *);
+ extern struct dentry * d_obtain_root(struct inode *);
+ extern void shrink_dcache_sb(struct super_block *);
+ extern void shrink_dcache_parent(struct dentry *);
++extern void shrink_dcache_inode(struct inode *);
+ extern void shrink_dcache_for_umount(struct super_block *);
+ extern void d_invalidate(struct dentry *);
  
--			if (prep->expiry != TIME_T_MAX) {
-+			if (prep->expiry != TIME64_MAX) {
- 				key->expiry = prep->expiry;
- 				key_schedule_gc(prep->expiry + key_gc_delay);
- 			}
-@@ -492,7 +492,7 @@ int key_instantiate_and_link(struct key *key,
- 	prep.data = data;
- 	prep.datalen = datalen;
- 	prep.quotalen = key->type->def_datalen;
--	prep.expiry = TIME_T_MAX;
-+	prep.expiry = TIME64_MAX;
- 	if (key->type->preparse) {
- 		ret = key->type->preparse(&prep);
- 		if (ret < 0)
-@@ -834,7 +834,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 	prep.data = payload;
- 	prep.datalen = plen;
- 	prep.quotalen = index_key.type->def_datalen;
--	prep.expiry = TIME_T_MAX;
-+	prep.expiry = TIME64_MAX;
- 	if (index_key.type->preparse) {
- 		ret = index_key.type->preparse(&prep);
- 		if (ret < 0) {
-@@ -968,7 +968,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
- 	prep.data = payload;
- 	prep.datalen = plen;
- 	prep.quotalen = key->type->def_datalen;
--	prep.expiry = TIME_T_MAX;
-+	prep.expiry = TIME64_MAX;
- 	if (key->type->preparse) {
- 		ret = key->type->preparse(&prep);
- 		if (ret < 0)
+-- 
+2.15.0.rc0.271.g36b669edcc-goog
 
