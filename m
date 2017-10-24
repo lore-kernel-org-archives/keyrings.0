@@ -1,34 +1,41 @@
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Date: Tue, 24 Oct 2017 18:52:08 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Tue, 24 Oct 2017 22:27:41 +0000
 Subject: Re: [PATCH] tpm: remove chip_num parameter from in-kernel API
-Message-Id: <20171024185208.GD1806@obsidianresearch.com>
+Message-Id: <20171024222741.lqvgpdaosjazpvfd@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20171023123817.18559-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20171023123817.18559-1-jarkko.sakkinen@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+ <20171024185208.GD1806@obsidianresearch.com>
+In-Reply-To: <20171024185208.GD1806@obsidianresearch.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>, Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, Jerry Snitselaar <jsnitsel@redhat.com>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>
 
-On Mon, Oct 23, 2017 at 02:38:14PM +0200, Jarkko Sakkinen wrote:
-> The reasoning is simple and obvious. Since every call site passes the
-> value TPM_ANY_NUM (0xFFFF) the parameter does not have right to exist.
-> Refined the documentation of the corresponding functions.
+On Tue, Oct 24, 2017 at 12:52:08PM -0600, Jason Gunthorpe wrote:
+> On Mon, Oct 23, 2017 at 02:38:14PM +0200, Jarkko Sakkinen wrote:
+> > The reasoning is simple and obvious. Since every call site passes the
+> > value TPM_ANY_NUM (0xFFFF) the parameter does not have right to exist.
+> > Refined the documentation of the corresponding functions.
+> 
+> I like this patch, but how about a slightly different take, make this
+> change instead:
+> 
+> -struct tpm_chip *tpm_chip_find_get(int chip_num)
+> +struct tpm_chip *tpm_chip_find_get(struct tpm_chip *chip);
+> 
+> Where chip = NULL means the default TPM.
+> 
+> And then at all call sites swap TPM_ANY_NUM to NULL and instead of
+> flowing an 'int chip_num' to tpm_chip_find_get, flow the 'struct
+> tpm_chip *' directly.
+> 
+> This gets us much closer to the desired API with about the same amount
+> of churn as this patch has.
+> 
+> Jason
 
-I like this patch, but how about a slightly different take, make this
-change instead:
+I can do that. I will rework this as a patch set that includes this
+proposal. Gives us more clean position to continue. Thank you.
 
--struct tpm_chip *tpm_chip_find_get(int chip_num)
-+struct tpm_chip *tpm_chip_find_get(struct tpm_chip *chip);
-
-Where chip = NULL means the default TPM.
-
-And then at all call sites swap TPM_ANY_NUM to NULL and instead of
-flowing an 'int chip_num' to tpm_chip_find_get, flow the 'struct
-tpm_chip *' directly.
-
-This gets us much closer to the desired API with about the same amount
-of churn as this patch has.
-
-Jason
+/Jarkko
