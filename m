@@ -1,41 +1,94 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 24 Oct 2017 22:27:41 +0000
-Subject: Re: [PATCH] tpm: remove chip_num parameter from in-kernel API
-Message-Id: <20171024222741.lqvgpdaosjazpvfd@linux.intel.com>
+From: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
+Date: Wed, 25 Oct 2017 14:51:33 +0000
+Subject: Re: [tpmdd-devel] [PATCH] tpm: remove chip_num parameter from in-kernel API
+Message-Id: <CANc+2y4BtQGqtC8RJL1Srrz_kWwhyveV3HBpfO1kikFj+0mHaA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20171023123817.18559-1-jarkko.sakkinen@linux.intel.com>
- <20171024185208.GD1806@obsidianresearch.com>
-In-Reply-To: <20171024185208.GD1806@obsidianresearch.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>, Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, Jerry Snitselaar <jsnitsel@redhat.com>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>
+ <cbcb78c6-fa36-32d3-891e-96544875d97c@linux.vnet.ibm.com>
+ <20171023163139.GA17394@obsidianresearch.com>
+ <20171024154440.3jeupmus43jcgbbz@linux.intel.com>
+ <CANc+2y4TbkfPT3d_sBd0MbE7ZJ4F7Sfsfvdv9V6=63=tRpWn4A@mail.gmail.com>
+ <20171024162359.tf5xulhlhokmuxh5@linux.intel.com>
+ <CANc+2y4vtr+kbhC_7Rv=rHA2LgEVBHLFEu+DYYK1UmpU63PCgQ@mail.gmail.com>
+ <20171024182235.d7b3oajc5zcjs57v@linux.intel.com>
+In-Reply-To: <20171024182235.d7b3oajc5zcjs57v-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>
+To: Jarkko Sakkinen <jarkko.sakkinen-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>
+Cc: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Herbert Xu <herbert-lOAM2aK0SrRLBo1qDEOMRrpzq4S04n8Q@public.gmane.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE IMA" <linux-ima-user-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>, Dmitry Kasatkin <dmitry.kasatkin-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, David Safford <safford-r/Jw6+rmf7HQT0dZR+AlfA@public.gmane.org>, open list <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Jason Gunthorpe <jgunthorpe-ePGOBjL8dl3ta4EC/59zMFaTQe2KTcn/@public.gmane.org>, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, "moderated list:TPM DEVICE DRIVER" <tpmdd-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>, "open list:KEYS-TRUSTED" <keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, Matt Mackall <mpm-VDJrAJ4Gl5ZBDgjK7y7TUQ@public.gmane.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE IMA" <linux-ima-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>, linux-integrity-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Mimi Zohar <zohar-23VcF4HTsmIX0ybBhKVfKdBPR1lH4CV8@public.gmane.org>, "Serge E. Hallyn" <serge-A9i7LUbDfNHQT0dZR+AlfA@public.gmane.org>
 
-On Tue, Oct 24, 2017 at 12:52:08PM -0600, Jason Gunthorpe wrote:
-> On Mon, Oct 23, 2017 at 02:38:14PM +0200, Jarkko Sakkinen wrote:
-> > The reasoning is simple and obvious. Since every call site passes the
-> > value TPM_ANY_NUM (0xFFFF) the parameter does not have right to exist.
-> > Refined the documentation of the corresponding functions.
-> 
-> I like this patch, but how about a slightly different take, make this
-> change instead:
-> 
-> -struct tpm_chip *tpm_chip_find_get(int chip_num)
-> +struct tpm_chip *tpm_chip_find_get(struct tpm_chip *chip);
-> 
-> Where chip = NULL means the default TPM.
-> 
-> And then at all call sites swap TPM_ANY_NUM to NULL and instead of
-> flowing an 'int chip_num' to tpm_chip_find_get, flow the 'struct
-> tpm_chip *' directly.
-> 
-> This gets us much closer to the desired API with about the same amount
-> of churn as this patch has.
-> 
-> Jason
+Hi Jarkko,
 
-I can do that. I will rework this as a patch set that includes this
-proposal. Gives us more clean position to continue. Thank you.
+On 24 October 2017 at 23:52, Jarkko Sakkinen
+<jarkko.sakkinen@linux.intel.com> wrote:
+> On Tue, Oct 24, 2017 at 10:05:20PM +0530, PrasannaKumar Muralidharan wrote:
+>> > 1. Every user in the kernel is using TPM_ANY_NUM, which means there are
+>> >    no other users.
+>>
+>> Completely agree that there is no in kernel users yet.
+>
+> And should never be. It's a bogus parameter that makes no sense.
 
-/Jarkko
+I understood that after seeing latest patch that uses struct tpm_chip.
+Sorry for the noise.
+
+>> > 2. Moving struct tpm_rng to the TPM client is architecturally
+>> >    uacceptable.
+>>
+>> As there was no response to the patch there is no way to know whether
+>> it is acceptable or not.
+>
+> I like the idea of removing the tpm rng driver as discussed in other
+> emails in this thread.
+
+Thank you.
+
+>> > 3. Using zero deos not give you any better guarantees on anything than
+>> >    just using TPM_ANY_NUM.
+>>
+>> Chip id is used, not zero.
+>
+> Sorry I misread the patch first time. Anyway it's not any kind of ID to
+> be trusted.
+
+Okay.
+
+>> > Why this patch is not CC'd to linux-integrity? It modifies the TPM
+>> > driver. And in the worst way.
+>>
+>> TPM list is moderated and the moderator has not approved it yet.
+>> get_maintainer script did not say about linux-integrity mailing list.
+>>
+>> It could be doing things in worst way but it is not known until some
+>> one says. If no one tells it is the case I don't think it is possible
+>> to fix. Which is what happened.
+>
+> Understood. We've moved to linux-integrity@vger.kernel.org. MAINTAINERS
+> update is in the queue for the next kernel release.
+
+Sorry I never knew this.
+
+>> > Implementing the ideas that Jason explained is the senseful way to
+>> > get stable access. modules.dep makes sure that the modules are loaded
+>> > in the correct order.
+>>
+>> If that is sensible then it is the way to go.
+>>
+>> There must be a reason to believe what is sensible and what is not.
+>> Looks like this RFC has helped in judging that.
+>>
+>> Regards,
+>> PrasannaKumar
+>
+> Would you be interested to work on patch set that would remove the
+> existing tpm rng driver and make the TPM driver the customer? It's not
+> that far away from the work you've been doing already.
+>
+> /Jarkko
+
+I am late to the party. Jason has sent a patch doing that by the time
+I read this email.
+
+Thanks and regards,
+PrasannaKumar
