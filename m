@@ -1,101 +1,79 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 18 Oct 2017 08:23:12 +0000
-Subject: [GIT PULL] KEYS: Fixes
-Message-Id: <7111.1508314992@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 26 Oct 2017 21:00:08 +0000
+Subject: [PATCH] keyctl: use keyctl_read_alloc() in dump_key_tree_aux()
+Message-Id: <20171026210008.106248-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <866.1508281053@warthog.procyon.org.uk>
-In-Reply-To: <866.1508281053@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Hi James,
+From: Eric Biggers <ebiggers@google.com>
 
-Can you pull this collection of fixes for Linux keyrings and pass them along
-to Linus.  They include:
+dump_key_tree_aux() (part of 'keyctl show') was racy: it allocated a
+buffer for the keyring contents, then read the keyring.  But it's
+possible that keys are added to the keyring concurrently.  This is
+problematic for two reasons.  First, when keyctl_read() is passed a
+buffer that is too small, it is unspecified whether it is filled or not.
+Second, even if the buffer is filled, some keys (not necessarily even
+the newest ones) would be omitted from the listing.
 
- (1) Fix a bunch of places where kernel drivers may access revoked user-type
-     keys and don't do it correctly.
+Switch to keyctl_read_alloc() which handles the "buffer too small" case
+correctly by retrying the read.
 
- (2) Fix some ecryptfs bits.
-
- (3) Fix big_key to require CONFIG_CRYPTO.
-
- (4) Fix a couple of bugs in the asymmetric key type.
-
- (5) Fix a race between updating and finding negative keys.
-
- (6) Prevent add_key() from updating uninstantiated keys.
-
- (7) Make loading of key flags and expiry time atomic when not holding locks.
-
-Note that I've removed the two patches that Eric asked me to.
-
-Thanks,
-David
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
-The following changes since commit 9e66317d3c92ddaab330c125dfe9d06eee268aff:
+ keyctl.c | 22 ++++++----------------
+ 1 file changed, 6 insertions(+), 16 deletions(-)
 
-  Linux 4.14-rc3 (2017-10-01 14:54:54 -0700)
+diff --git a/keyctl.c b/keyctl.c
+index 801a864..65a7397 100644
+--- a/keyctl.c
++++ b/keyctl.c
+@@ -1808,29 +1808,18 @@ static int dump_key_tree_aux(key_serial_t key, int depth, int more, int hex_key_
+ 	/* if it's a keyring then we're going to want to recursively
+ 	 * display it if we can */
+ 	if (strcmp(type, "keyring") = 0) {
+-		/* find out how big the keyring is */
+-		ret = keyctl_read(key, NULL, 0);
+-		if (ret < 0)
+-			error("keyctl_read");
+-		if (ret = 0)
+-			return 0;
+-		ringlen = ret;
+ 
+ 		/* read its contents */
+-		payload = malloc(ringlen);
+-		if (!payload)
+-			error("malloc");
+-
+-		ret = keyctl_read(key, payload, ringlen);
++		ret = keyctl_read_alloc(key, &payload);
+ 		if (ret < 0)
+-			error("keyctl_read");
++			error("keyctl_read_alloc");
+ 
+-		ringlen = ret < ringlen ? ret : ringlen;
++		ringlen = ret;
+ 		kcount = ringlen / sizeof(key_serial_t);
+ 
+ 		/* walk the keyring */
+ 		pk = payload;
+-		do {
++		while (ringlen >= sizeof(key_serial_t)) {
+ 			key = *pk++;
+ 
+ 			/* recurse into nexted keyrings */
+@@ -1858,7 +1847,8 @@ static int dump_key_tree_aux(key_serial_t key, int depth, int more, int hex_key_
+ 							    hex_key_IDs);
+ 			}
+ 
+-		} while (ringlen -= 4, ringlen >= sizeof(key_serial_t));
++			ringlen -= sizeof(key_serial_t);
++		}
+ 
+ 		free(payload);
+ 	}
+-- 
+2.15.0.rc2.357.g7e34df9404-goog
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-fixes-20171018
-
-for you to fetch changes up to 68a1fdbbf8bd3378325e45c19e167a165f9ffc3a:
-
-  pkcs7: Prevent NULL pointer dereference, since sinfo is not always set. (2017-10-18 09:12:41 +0100)
-
-----------------------------------------------------------------
-Keyrings fixes
-
-----------------------------------------------------------------
-Arnd Bergmann (1):
-      security/keys: BIG_KEY requires CONFIG_CRYPTO
-
-Chun-Yi Lee (2):
-      KEYS: Fix the wrong index when checking the existence of second id
-      KEYS: checking the input id parameters before finding asymmetric key
-
-David Howells (2):
-      KEYS: Fix race between updating and finding a negative key
-      KEYS: don't let add_key() update an uninstantiated key
-
-Eric Biggers (8):
-      KEYS: encrypted: fix dereference of NULL user_key_payload
-      FS-Cache: fix dereference of NULL user_key_payload
-      lib/digsig: fix dereference of NULL user_key_payload
-      fscrypt: fix dereference of NULL user_key_payload
-      ecryptfs: fix dereference of NULL user_key_payload
-      KEYS: load key flags and expiry time atomically in key_validate()
-      KEYS: Load key expiry time atomically in keyring_search_iterator()
-      KEYS: load key flags and expiry time atomically in proc_keys_show()
-
-Eric Sesterhenn (1):
-      pkcs7: Prevent NULL pointer dereference, since sinfo is not always set.
-
- crypto/asymmetric_keys/asymmetric_type.c |  4 ++-
- crypto/asymmetric_keys/pkcs7_parser.c    |  3 ++
- fs/crypto/keyinfo.c                      |  5 ++++
- fs/ecryptfs/ecryptfs_kernel.h            | 24 +++++++++++-----
- fs/ecryptfs/keystore.c                   |  9 +++++-
- fs/fscache/object-list.c                 |  7 +++++
- include/linux/key.h                      | 47 ++++++++++++++++++++------------
- lib/digsig.c                             |  6 ++++
- net/dns_resolver/dns_key.c               |  2 +-
- security/keys/Kconfig                    |  1 +
- security/keys/big_key.c                  |  4 +--
- security/keys/encrypted-keys/encrypted.c |  9 +++++-
- security/keys/gc.c                       |  8 +++---
- security/keys/key.c                      | 41 ++++++++++++++++++++--------
- security/keys/keyctl.c                   |  9 +++---
- security/keys/keyring.c                  | 14 ++++++----
- security/keys/permission.c               |  7 +++--
- security/keys/proc.c                     | 31 +++++++++++++--------
- security/keys/process_keys.c             |  2 +-
- security/keys/request_key.c              |  7 ++---
- security/keys/request_key_auth.c         |  2 +-
- security/keys/trusted.c                  |  2 +-
- security/keys/user_defined.c             |  4 +--
- 23 files changed, 168 insertions(+), 80 deletions(-)
