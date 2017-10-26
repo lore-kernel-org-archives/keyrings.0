@@ -1,73 +1,53 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Wed, 18 Oct 2017 00:53:15 +0000
-Subject: [PATCH v5 02/18] ima: Remove some superfluous parentheses
-Message-Id: <20171018005331.2688-3-bauerman@linux.vnet.ibm.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 26 Oct 2017 20:59:03 +0000
+Subject: [PATCH] man: keyctl_read(3): fix documentation for short buffer case
+Message-Id: <20171026205903.105766-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20171018005331.2688-1-bauerman@linux.vnet.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: Jessica Yu <jeyu@redhat.com>, linuxppc-dev@lists.ozlabs.org, Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>, David Howells <dhowells@redhat.com>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, James Morris <james.l.morris@oracle.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, Herbert Xu <herbert@gondor.apana.org.au>, Mimi Zohar <zohar@linux.vnet.ibm.com>, David Woodhouse <dwmw2@infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
+To: keyrings@vger.kernel.org
 
-Superfluous parentheses just add clutter to the code, making it harder to
-read and to understand.
+From: Eric Biggers <ebiggers@google.com>
 
-In order to avoid churn and minimize conflicts with other patches from the
-community, this patch only removes superfluous parentheses from lines that
-are modified by other patches in this series.
+When keyctl_read() is passed a buffer that is too small, the behavior is
+inconsistent.  Some key types will fill as much of the buffer as
+possible, while others won't copy anything.  Moreover, the in-kernel
+documentation contradicted the man page on this point.
 
-Confirmed that the patch is correct by comparing the object files from
-before and after the patch. They are identical.
+Update the man page to say that this point is unspecified.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/integrity/ima/ima_appraise.c     | 11 +++++------
- security/integrity/ima/ima_template_lib.c |  2 +-
- 2 files changed, 6 insertions(+), 7 deletions(-)
+ man/keyctl_read.3 | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index ec7dfa02c051..bce0b36778bd 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -229,9 +229,8 @@ int ima_appraise_measurement(enum ima_hooks func,
- 	}
- 
- 	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
--	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
--		if ((status = INTEGRITY_NOLABEL)
--		    || (status = INTEGRITY_NOXATTRS))
-+	if (status != INTEGRITY_PASS && status != INTEGRITY_UNKNOWN) {
-+		if (status = INTEGRITY_NOLABEL || status = INTEGRITY_NOXATTRS)
- 			cause = "missing-HMAC";
- 		else if (status = INTEGRITY_FAIL)
- 			cause = "invalid-HMAC";
-@@ -293,10 +292,10 @@ int ima_appraise_measurement(enum ima_hooks func,
- 		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
- 			if (!ima_fix_xattr(dentry, iint))
- 				status = INTEGRITY_PASS;
--		} else if ((inode->i_size = 0) &&
-+		} else if (inode->i_size = 0 &&
- 			   (iint->flags & IMA_NEW_FILE) &&
--			   (xattr_value &&
--			    xattr_value->type = EVM_IMA_XATTR_DIGSIG)) {
-+			   xattr_value &&
-+			   xattr_value->type = EVM_IMA_XATTR_DIGSIG) {
- 			status = INTEGRITY_PASS;
- 		}
- 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
-diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
-index 28af43f63572..8bebcbb61162 100644
---- a/security/integrity/ima/ima_template_lib.c
-+++ b/security/integrity/ima/ima_template_lib.c
-@@ -383,7 +383,7 @@ int ima_eventsig_init(struct ima_event_data *event_data,
- 	int xattr_len = event_data->xattr_len;
- 	int rc = 0;
- 
--	if ((!xattr_value) || (xattr_value->type != EVM_IMA_XATTR_DIGSIG))
-+	if (!xattr_value || xattr_value->type != EVM_IMA_XATTR_DIGSIG)
- 		goto out;
- 
- 	rc = ima_write_template_field_data(xattr_value, xattr_len, fmt,
+diff --git a/man/keyctl_read.3 b/man/keyctl_read.3
+index 25821ad..6cfac13 100644
+--- a/man/keyctl_read.3
++++ b/man/keyctl_read.3
+@@ -33,8 +33,8 @@ permission on a key to be able to read it.
+ and
+ .I buflen
+ specify the buffer into which the payload data will be placed.  If the buffer
+-is too small, the full size of the payload will be returned and no copy will
+-take place.
++is too small, then the full size of the payload will be returned, and it is
++unspecified whether any data will be copied into the buffer.
+ .P
+ .BR keyctl_read_alloc ()
+ is similar to
+@@ -62,8 +62,8 @@ though the byte-ordering is as appropriate for the kernel.
+ On success
+ .BR keyctl_read ()
+ returns the amount of data placed into the buffer.  If the buffer was too
+-small, then the size of buffer required will be returned, but no data will be
+-transferred.
++small, then the size of buffer required will be returned, and it is
++unspecified whether any data will have been copied into the buffer.
+ .P
+ On success
+ .BR keyctl_read_alloc ()
+-- 
+2.15.0.rc2.357.g7e34df9404-goog
 
