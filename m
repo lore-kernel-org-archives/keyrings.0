@@ -1,7 +1,7 @@
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Date: Wed, 25 Oct 2017 20:17:44 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Thu, 26 Oct 2017 10:54:30 +0000
 Subject: Re: [PATCH v2] tpm: use struct tpm_chip for tpm_chip_find_get()
-Message-Id: <20171025201744.GB2815@obsidianresearch.com>
+Message-Id: <20171026105430.t6khk6cekk3cyfrs@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,22 +11,28 @@ References: <20171025115508.5682-1-jarkko.sakkinen@linux.intel.com>
  <20171025193452.d4qa4dhacfgqejk7@linux.intel.com>
  <20171025194633.GB998@obsidianresearch.com>
  <20171025200746.svsraubdotjyzt2i@linux.intel.com>
-In-Reply-To: <20171025200746.svsraubdotjyzt2i-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>
-To: Jarkko Sakkinen <jarkko.sakkinen-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>
-Cc: Herbert Xu <herbert-lOAM2aK0SrRLBo1qDEOMRrpzq4S04n8Q@public.gmane.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE (IMA)" <linux-ima-user-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>, PrasannaKumar Muralidharan <prasannatsmkumar-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, open list <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, "moderated list:TPM DEVICE DRIVER" <tpmdd-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>, Dmitry Kasatkin <dmitry.kasatkin-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, Matt Mackall <mpm-VDJrAJ4Gl5ZBDgjK7y7TUQ@public.gmane.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE (IMA)" <linux-ima-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>, David Safford <safford-r/Jw6+rmf7HQT0dZR+AlfA@public.gmane.org>, linux-integrity-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Mimi Zohar <zohar-23VcF4HTsmIX0ybBhKVfKdBPR1lH4CV8@public.gmane.org>, "open list:KEYS-TRUSTED" <keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "Serge E. Hallyn" <serge-A9i7LUbDfNHQT0dZR+AlfA@public.gmane.org>
+ <20171025201744.GB2815@obsidianresearch.com>
+In-Reply-To: <20171025201744.GB2815@obsidianresearch.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>, Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@us.ibm.com>, David Howells <dhowells@redhat.com>, Jerry Snitselaar <jsnitsel@redhat.com>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, "moderated list:TPM DEVICE DRIVER" <tpmdd-devel@lists.sourceforge.net>
 
-On Wed, Oct 25, 2017 at 10:07:46PM +0200, Jarkko Sakkinen wrote:
+On Wed, Oct 25, 2017 at 02:17:44PM -0600, Jason Gunthorpe wrote:
+> On Wed, Oct 25, 2017 at 10:07:46PM +0200, Jarkko Sakkinen wrote:
+> 
+> > The id has a nice feature that it is unique for one boot cycle you can
+> > even try to get a chip that has been deleted. It has the most stable
+> > properties in the long run.
+> 
+> It isn't unique, we can re-use ids them via idr_alloc(). We should
+> never use index inside the kernel.
+> 
+> > Address is a reusable identifier in one boot cycle.
+> 
+> It is invalid to pass in a chip for which the caller does not hold a
+> kref, so address is the safest argument.
+> 
+> Jason
 
-> The id has a nice feature that it is unique for one boot cycle you can
-> even try to get a chip that has been deleted. It has the most stable
-> properties in the long run.
+I'll buy this too (sending update today).
 
-It isn't unique, we can re-use ids them via idr_alloc(). We should
-never use index inside the kernel.
-
-> Address is a reusable identifier in one boot cycle.
-
-It is invalid to pass in a chip for which the caller does not hold a
-kref, so address is the safest argument.
-
-Jason
+/Jarkko
