@@ -1,7 +1,7 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 26 Oct 2017 23:57:36 +0000
+From: James Morris <james.l.morris@oracle.com>
+Date: Fri, 27 Oct 2017 07:55:39 +0000
 Subject: Re: [PATCH] KEYS: trusted: fix writing past end of buffer in trusted_read()
-Message-Id: <1509062256.5886.147.camel@linux.vnet.ibm.com>
+Message-Id: <alpine.LFD.2.20.1710270954210.2635@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,7 +10,8 @@ References: <20171026205744.105566-1-ebiggers3@gmail.com>
 In-Reply-To: <20171026205744.105566-1-ebiggers3@gmail.com>
 To: linux-security-module@vger.kernel.org
 
-On Thu, 2017-10-26 at 13:57 -0700, Eric Biggers wrote:
+On Thu, 26 Oct 2017, Eric Biggers wrote:
+
 > From: Eric Biggers <ebiggers@google.com>
 > 
 > When calling keyctl_read() on a key of type "trusted", if the
@@ -29,49 +30,12 @@ On Thu, 2017-10-26 at 13:57 -0700, Eric Biggers wrote:
 > Cc: <stable@vger.kernel.org> # v2.6.38+
 > Signed-off-by: Eric Biggers <ebiggers@google.com>
 
-Thanks!
 
-Reviewed-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Reviewed-by: James Morris <james.l.morris@oracle.com>
 
-> ---
->  security/keys/trusted.c | 23 ++++++++++++-----------
->  1 file changed, 12 insertions(+), 11 deletions(-)
-> 
-> diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-> index bd85315cbfeb..98aa89ff7bfd 100644
-> --- a/security/keys/trusted.c
-> +++ b/security/keys/trusted.c
-> @@ -1147,20 +1147,21 @@ static long trusted_read(const struct key *key, char __user *buffer,
->  	p = dereference_key_locked(key);
->  	if (!p)
->  		return -EINVAL;
-> -	if (!buffer || buflen <= 0)
-> -		return 2 * p->blob_len;
-> -	ascii_buf = kmalloc(2 * p->blob_len, GFP_KERNEL);
-> -	if (!ascii_buf)
-> -		return -ENOMEM;
-> 
-> -	bufp = ascii_buf;
-> -	for (i = 0; i < p->blob_len; i++)
-> -		bufp = hex_byte_pack(bufp, p->blob[i]);
-> -	if ((copy_to_user(buffer, ascii_buf, 2 * p->blob_len)) != 0) {
-> +	if (buffer && buflen >= 2 * p->blob_len) {
-> +		ascii_buf = kmalloc(2 * p->blob_len, GFP_KERNEL);
-> +		if (!ascii_buf)
-> +			return -ENOMEM;
-> +
-> +		bufp = ascii_buf;
-> +		for (i = 0; i < p->blob_len; i++)
-> +			bufp = hex_byte_pack(bufp, p->blob[i]);
-> +		if (copy_to_user(buffer, ascii_buf, 2 * p->blob_len) != 0) {
-> +			kzfree(ascii_buf);
-> +			return -EFAULT;
-> +		}
->  		kzfree(ascii_buf);
-> -		return -EFAULT;
->  	}
-> -	kzfree(ascii_buf);
->  	return 2 * p->blob_len;
->  }
-> 
+
+
+-- 
+James Morris
+<james.l.morris@oracle.com>
 
