@@ -1,42 +1,45 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 03 Oct 2017 09:04:30 +0000
-Subject: Re: Modular BIG_KEYS (was: Re: [PATCH v4] security/keys: rewrite all of big_key crypto)
-Message-Id: <22433.1507021470@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Fri, 27 Oct 2017 03:12:07 +0000
+Subject: [PATCH] MAINTAINERS: remove David Safford as maintainer for encrypted+trusted keys
+Message-Id: <20171027031207.6193-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171002170111.GA6713@gmail.com> <CAMuHMdWd3ttH7Zdpo=bodkOBw2xiyeX_R9MhPf=Bcf0-QLhOiQ@mail.gmail.com>
-In-Reply-To: <20171002170111.GA6713@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: dhowells@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>, "Jason A. Donenfeld" <Jason@zx2c4.com>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Ilhan Gurel <ilhan.gurel@gmail.com>, security@kernel.org, stable <stable@vger.kernel.org>
+To: linux-security-module@vger.kernel.org
 
-Eric Biggers <ebiggers3@gmail.com> wrote:
+From: Eric Biggers <ebiggers@google.com>
 
-> (I also still need to convince myself that there aren't any race conditions
-> in key type unregistering.  It's a little weird how it changes the key type
-> to the ".dead" key type, rather than pinning the key type in memory while
-> it's still used.)
+Emails to David's listed email address bounce, and in the commit log
+there's no activity from him within the last 5 years.
 
-Keys are converted to the dead type and their destructors called by the gc
-whilst it holds a write lock on the key's semaphore, so keyctl() calls
-shouldn't be a problem as they all hold a read-lock or a write-lock on the
-content.
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: David Safford <safford@us.ibm.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ MAINTAINERS | 2 --
+ 1 file changed, 2 deletions(-)
 
-/proc/keys does things under the key_serial_lock and RCU, so if a key type's
-->describe() function looks at the payload, then it should use RCU conditions.
-Note that this doesn't affect the keyring_describe() as that only looks at a
-value that is stored in the key struct - and the same for user_describe() and
-big_key_describe().  asymmetric_key_describe(), OTOH...  Maybe the simplest
-thing to do is to take key_serial_lock in key_garbage_collector() around the
-code that changes the key type.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d85c08956875..f0b69d1c2041 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7626,7 +7626,6 @@ F:	kernel/kexec*
+ 
+ KEYS-ENCRYPTED
+ M:	Mimi Zohar <zohar@linux.vnet.ibm.com>
+-M:	David Safford <safford@us.ibm.com>
+ L:	linux-security-module@vger.kernel.org
+ L:	keyrings@vger.kernel.org
+ S:	Supported
+@@ -7635,7 +7634,6 @@ F:	include/keys/encrypted-type.h
+ F:	security/keys/encrypted-keys/
+ 
+ KEYS-TRUSTED
+-M:	David Safford <safford@us.ibm.com>
+ M:	Mimi Zohar <zohar@linux.vnet.ibm.com>
+ L:	linux-security-module@vger.kernel.org
+ L:	keyrings@vger.kernel.org
+-- 
+2.14.3
 
-Inside the kernel, things are murkier as the kernel can reach inside a key
-without taking the semaphore.  If it does so, it must use RCU or some other
-mechanism to prevent the key payload from being destroyed under it.
-
-With AF_RXRPC, I think I'm doing this wrong.  I think I need to move the
-destruction of the key type to after I've unregistered the network namespace
-handling as the latter destroys connections which might be using the key.
-
-David
