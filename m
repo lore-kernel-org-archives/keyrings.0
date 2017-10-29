@@ -1,53 +1,33 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 09 Oct 2017 19:46:18 +0000
-Subject: [PATCH v2] fscrypt: fix dereference of NULL user_key_payload
-Message-Id: <20171009194618.67494-1-ebiggers3@gmail.com>
+From: Theodore Ts'o <tytso@mit.edu>
+Date: Sun, 29 Oct 2017 10:23:05 +0000
+Subject: Re: [PATCH v2] fscrypt: fix dereference of NULL user_key_payload
+Message-Id: <20171029102305.4ifapjehlrgwsqmu@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-fscrypt@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>
-Cc: keyrings@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <20171009194618.67494-1-ebiggers3@gmail.com>
+In-Reply-To: <20171009194618.67494-1-ebiggers3@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-security-module@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+On Mon, Oct 09, 2017 at 12:46:18PM -0700, Eric Biggers wrote:
+> From: Eric Biggers <ebiggers@google.com>
+> 
+> When an fscrypt-encrypted file is opened, we request the file's master
+> key from the keyrings service as a logon key, then access its payload.
+> However, a revoked key has a NULL payload, and we failed to check for
+> this.  request_key() *does* skip revoked keys, but there is still a
+> window where the key can be revoked before we acquire its semaphore.
+> 
+> Fix it by checking for a NULL payload, treating it like a key which was
+> already revoked at the time it was requested.
+> 
+> Fixes: 88bd6ccdcdd6 ("ext4 crypto: add encryption key management facilities")
+> Reviewed-by: James Morris <james.l.morris@oracle.com>
+> Cc: <stable@vger.kernel.org>    [v4.1+]
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
 
-When an fscrypt-encrypted file is opened, we request the file's master
-key from the keyrings service as a logon key, then access its payload.
-However, a revoked key has a NULL payload, and we failed to check for
-this.  request_key() *does* skip revoked keys, but there is still a
-window where the key can be revoked before we acquire its semaphore.
+Applied, thanks.
 
-Fix it by checking for a NULL payload, treating it like a key which was
-already revoked at the time it was requested.
-
-Fixes: 88bd6ccdcdd6 ("ext4 crypto: add encryption key management facilities")
-Reviewed-by: James Morris <james.l.morris@oracle.com>
-Cc: <stable@vger.kernel.org>    [v4.1+]
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
-
-Changed since v1: added Reviewed-by and resent as standalone patch.
-Can this please be taken through the fscrypt tree?
-
- fs/crypto/keyinfo.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
-index 018c588c7ac3..8e704d12a1cf 100644
---- a/fs/crypto/keyinfo.c
-+++ b/fs/crypto/keyinfo.c
-@@ -109,6 +109,11 @@ static int validate_user_key(struct fscrypt_info *crypt_info,
- 		goto out;
- 	}
- 	ukp = user_key_payload_locked(keyring_key);
-+	if (!ukp) {
-+		/* key was revoked before we acquired its semaphore */
-+		res = -EKEYREVOKED;
-+		goto out;
-+	}
- 	if (ukp->datalen != sizeof(struct fscrypt_key)) {
- 		res = -EINVAL;
- 		goto out;
--- 
-2.14.2.920.gcf0c67979c-goog
-
+					- Ted
