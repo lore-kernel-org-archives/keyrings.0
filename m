@@ -1,201 +1,88 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 23 Oct 2017 21:40:51 +0000
-Subject: [RFC PATCH 18/25] fscrypt: allow adding and removing keys for v2 encryption policies
-Message-Id: <20171023214058.128121-19-ebiggers3@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 30 Oct 2017 15:38:09 +0000
+Subject: [PATCH 3/4] security: keys: Replace time_t with time64_t for struct key_preparsed_payload
+Message-Id: <150937788989.31781.5673897968859253387.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
-To: linux-fscrypt@vger.kernel.org
-Cc: Ryo Hashimoto <hashimoto@chromium.org>, Gwendal Grignou <gwendal@chromium.org>, "Theodore Y . Ts'o" <tytso@mit.edu>, Eric Biggers <ebiggers@google.com>, linux-api@vger.kernel.org, Nick Desaulniers <ndesaulniers@google.com>, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, Michael Halcrow <mhalcrow@google.com>, Sarthak Kukreti <sarthakkukreti@chromium.org>, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
+References: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
+To: tglx@linutronix.de
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org
 
-From: Eric Biggers <ebiggers@google.com>
+From: Baolin Wang <baolin.wang@linaro.org>
 
-Extend the FS_IOC_ADD_ENCRYPTION_KEY and FS_IOC_REMOVE_ENCRYPTION_KEY
-ioctls to support adding and removing keys for use by v2 encryption
-policies.
+The 'struct key_preparsed_payload' will use 'time_t' which we will
+try to remove in the kernel, since 'time_t' is not year 2038 safe on
+32bits systems.
 
-Keys for v2 encryption policies are identified by a 16-byte
-"identifier", which is a cryptographic hash of the key, instead of by an
-8-byte "descriptor".  For FS_IOC_ADD_ENCRYPTION_KEY, the kernel
-calculates the key identifier and copies it to userspace.  Userspace is
-not allowed to choose the key identifier, since the kernel would have to
-recalculate it anyway to verify that it is correct.
+Thus this patch replaces 'time_t' with 'time64_t' which is year 2038
+safe on 32 bits system for 'struct key_preparsed_payload', moreover
+we should use the 'TIME64_MAX' macro to initialize the 'time64_t'
+type variable.
 
-For FS_IOC_REMOVE_ENCRYPTION_KEY, userspace provides the key identifier
-rather than the key descriptor to identify the key to be removed.  For
-both ioctls, a type field indicates whether the old or new way of
-specifying keys is being used.  A common structure is used, 'struct
-fscrypt_key_specifier', and it has some extra space just in case we have
-to introduce a new way to identify keys in the future.
-
-Note that keys for v1 and v2 encryption policies are both stored in
-->s_master_keys, but their descriptions will be of different lengths.
-Therefore, they cannot be mixed up when we search for a key.
-
-For now the ioctls still always require capable(CAP_SYS_ADMIN).  We'll
-be able to relax that soon, but only for v2 policies.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Baolin Wang <baolin.wang@linaro.org>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: James Morris <james.l.morris@oracle.com>
 ---
- fs/crypto/keyinfo.c          | 75 ++++++++++++++++++++++++++++++++++++++++----
- include/uapi/linux/fscrypt.h |  2 ++
- 2 files changed, 71 insertions(+), 6 deletions(-)
 
-diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
-index e9de625ddfe4..c9e7b2b262d2 100644
---- a/fs/crypto/keyinfo.c
-+++ b/fs/crypto/keyinfo.c
-@@ -32,6 +32,19 @@
- #define HKDF_HMAC_ALG		"hmac(sha512)"
- #define HKDF_HASHLEN		SHA512_DIGEST_SIZE
+ include/linux/key-type.h |    2 +-
+ security/keys/key.c      |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index 9520fc3c3b9a..05d8fb5a06c4 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -44,7 +44,7 @@ struct key_preparsed_payload {
+ 	const void	*data;		/* Raw data */
+ 	size_t		datalen;	/* Raw datalen */
+ 	size_t		quotalen;	/* Quota length for proposed payload */
+-	time_t		expiry;		/* Expiry time of key */
++	time64_t	expiry;		/* Expiry time of key */
+ } __randomize_layout;
  
-+/*
-+ * The list of contexts in which we use HKDF to derive additional keys from a
-+ * master key.  The values in this list are used as the first byte of the
-+ * application-specific info string to guarantee that info strings are never
-+ * repeated between contexts.
-+ *
-+ * Keys derived with different info strings are cryptographically isolated from
-+ * each other --- knowledge of one derived key doesn't reveal any others.
-+ * (This property is particularly important for the derived key used as the
-+ * "key identifier", as that is stored in the clear.)
-+ */
-+#define HKDF_CONTEXT_KEY_IDENTIFIER	1
-+
- /*
-  * HKDF consists of two steps:
-  *
-@@ -228,7 +241,12 @@ struct fscrypt_master_key {
- 	 */
- 	struct fscrypt_master_key_secret	mk_secret;
+ typedef int (*request_key_actor_t)(struct key_construction *key,
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 291a67c45b65..d5c8941ae3fd 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -446,7 +446,7 @@ static int __key_instantiate_and_link(struct key *key,
+ 			if (authkey)
+ 				key_revoke(authkey);
  
--	/* Arbitrary key descriptor which was assigned by userspace */
-+	/*
-+	 * For v1 policy keys: an arbitrary key descriptor which was assigned by
-+	 * userspace (->descriptor).
-+	 *
-+	 * For v2 policy keys: a cryptographic hash of this key (->identifier).
-+	 */
- 	struct fscrypt_key_specifier		mk_spec;
- 
- 	/*
-@@ -252,6 +270,8 @@ static inline int master_key_spec_len(const struct fscrypt_key_specifier *spec)
- 	switch (spec->type) {
- 	case FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR:
- 		return FSCRYPT_KEY_DESCRIPTOR_SIZE;
-+	case FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER:
-+		return FSCRYPT_KEY_IDENTIFIER_SIZE;
- 	}
- 	return 0;
- }
-@@ -346,7 +366,7 @@ static struct key *search_fscrypt_keyring(struct key *keyring,
- #define FSCRYPT_FS_KEYRING_DESCRIPTION_SIZE	\
- 	(sizeof("fscrypt-") - 1 + sizeof(((struct super_block *)0)->s_id) + 1)
- 
--#define FSCRYPT_MK_DESCRIPTION_SIZE	(2 * FSCRYPT_KEY_DESCRIPTOR_SIZE + 1)
-+#define FSCRYPT_MK_DESCRIPTION_SIZE	(2 * FSCRYPT_KEY_IDENTIFIER_SIZE + 1)
- 
- static void format_fs_keyring_description(
- 			char description[FSCRYPT_FS_KEYRING_DESCRIPTION_SIZE],
-@@ -550,6 +570,39 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
- 	if (copy_from_user(secret.raw, uarg->raw, secret.size))
- 		goto out_wipe_secret;
- 
-+	if (arg.key_spec.type = FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER) {
-+		struct crypto_shash *hmac_tfm;
-+
-+		hmac_tfm = allocate_hmac_tfm(secret.raw, secret.size);
-+		if (IS_ERR(hmac_tfm)) {
-+			err = PTR_ERR(hmac_tfm);
-+			goto out_wipe_secret;
-+		}
-+
-+		/*
-+		 * Hash the master key to get the key identifier, then return it
-+		 * to userspace.  Specifically, we derive the key identifier
-+		 * from the master key with HKDF-SHA512, using a unique
-+		 * application-specific info string.  This is preferable to a
-+		 * simple truncated SHA512 because it means we only ever use the
-+		 * master key for a single cryptographic primitive (HKDF-SHA512)
-+		 * rather than two (HKDF-SHA512 and SHA512).  It *maybe* would
-+		 * be okay, but cryptographically it would be bad practice.
-+		 */
-+		err = hkdf_expand(hmac_tfm, HKDF_CONTEXT_KEY_IDENTIFIER,
-+				  NULL, 0, arg.key_spec.identifier,
-+				  FSCRYPT_KEY_IDENTIFIER_SIZE);
-+		crypto_free_shash(hmac_tfm);
-+		if (err)
-+			goto out_wipe_secret;
-+
-+		err = -EFAULT;
-+		if (copy_to_user(uarg->key_spec.identifier,
-+				 arg.key_spec.identifier,
-+				 FSCRYPT_KEY_IDENTIFIER_SIZE))
-+			goto out_wipe_secret;
-+	}
-+
- 	err = add_master_key(sb, &secret, &arg.key_spec);
- out_wipe_secret:
- 	wipe_master_key_secret(&secret);
-@@ -872,6 +925,10 @@ static int derive_key_aes(const u8 *master_key,
-  * Search the current task's subscribed keyrings for a "logon" key with
-  * description prefix:descriptor, and if found acquire a read lock on it and
-  * return a pointer to its validated payload in *payload_ret.
-+ *
-+ * This is only used for v1 encryption policies, where keys are identified by
-+ * master_key_descriptor.  With newer policy versions, only the filesystem-level
-+ * keyring (->s_master_keys) is supported.
-  */
- static struct key *
- find_and_lock_process_key(const char *prefix,
-@@ -977,17 +1034,23 @@ static int find_and_derive_key(const struct inode *inode,
- 		memcpy(mk_spec.descriptor, ctx->v1.master_key_descriptor,
- 		       FSCRYPT_KEY_DESCRIPTOR_SIZE);
- 		break;
-+	case FSCRYPT_CONTEXT_V2:
-+		mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER;
-+		memcpy(mk_spec.identifier, ctx->v2.master_key_identifier,
-+		       FSCRYPT_KEY_IDENTIFIER_SIZE);
-+		break;
- 	default:
--		return -EOPNOTSUPP;
-+		return -EOPNOTSUPP; /* should have been checked earlier too */
- 	}
- 
- 	key = find_master_key(inode->i_sb, &mk_spec);
- 	if (IS_ERR(key)) {
--		if (key != ERR_PTR(-ENOKEY))
-+		if (key != ERR_PTR(-ENOKEY) ||
-+		    ctx->v1.version != FSCRYPT_CONTEXT_V1)
- 			return PTR_ERR(key);
- 		/*
--		 * As a legacy fallback, we search the current task's subscribed
--		 * keyrings in addition to ->s_master_keys.
-+		 * As a legacy fallback for v1 policies, we search the current
-+		 * task's subscribed keyrings in addition to ->s_master_keys.
- 		 */
- 		return find_and_derive_key_legacy(inode, &ctx->v1, derived_key,
- 						  derived_keysize);
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-index 065060b20a34..1918bdc0c6d7 100644
---- a/include/uapi/linux/fscrypt.h
-+++ b/include/uapi/linux/fscrypt.h
-@@ -82,10 +82,12 @@ struct fscrypt_get_policy_ex_args {
- struct fscrypt_key_specifier {
- 	__u32 type;
- #define FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR	1
-+#define FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER	2
- 	__u32 reserved;
- 	union {
- 		__u8 max_specifier[32];
- 		__u8 descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
-+		__u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE];
- 	};
- };
- 
--- 
-2.15.0.rc0.271.g36b669edcc-goog
+-			if (prep->expiry != TIME_T_MAX) {
++			if (prep->expiry != TIME64_MAX) {
+ 				key->expiry = prep->expiry;
+ 				key_schedule_gc(prep->expiry + key_gc_delay);
+ 			}
+@@ -492,7 +492,7 @@ int key_instantiate_and_link(struct key *key,
+ 	prep.data = data;
+ 	prep.datalen = datalen;
+ 	prep.quotalen = key->type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (key->type->preparse) {
+ 		ret = key->type->preparse(&prep);
+ 		if (ret < 0)
+@@ -834,7 +834,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	prep.data = payload;
+ 	prep.datalen = plen;
+ 	prep.quotalen = index_key.type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (index_key.type->preparse) {
+ 		ret = index_key.type->preparse(&prep);
+ 		if (ret < 0) {
+@@ -968,7 +968,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
+ 	prep.data = payload;
+ 	prep.datalen = plen;
+ 	prep.quotalen = key->type->def_datalen;
+-	prep.expiry = TIME_T_MAX;
++	prep.expiry = TIME64_MAX;
+ 	if (key->type->preparse) {
+ 		ret = key->type->preparse(&prep);
+ 		if (ret < 0)
 
