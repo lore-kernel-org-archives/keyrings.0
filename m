@@ -1,50 +1,157 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 23 Oct 2017 21:40:46 +0000
-Subject: [RFC PATCH 13/25] f2fs crypto: wire up new ioctls for managing encryption keys
-Message-Id: <20171023214058.128121-14-ebiggers3@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 30 Oct 2017 15:37:52 +0000
+Subject: [PATCH 1/4] Add a function to start/reduce a timer
+Message-Id: <150937787256.31781.8531811303029438707.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171023214058.128121-1-ebiggers3@gmail.com>
-In-Reply-To: <20171023214058.128121-1-ebiggers3@gmail.com>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, keyrings@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Gwendal Grignou <gwendal@chromium.org>, Ryo Hashimoto <hashimoto@chromium.org>, Sarthak Kukreti <sarthakkukreti@chromium.org>, Nick Desaulniers <ndesaulniers@google.com>, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
+References: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150937786557.31781.15521097996984061107.stgit@warthog.procyon.org.uk>
+To: tglx@linutronix.de
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org
 
-From: Eric Biggers <ebiggers@google.com>
+Add a function, similar to mod_timer(), that will start a timer it isn't
+running and will modify it if it is running and has an expiry time longer
+than the new time.  If the timer is running with an expiry time that's the
+same or sooner, no change is made.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+The function looks like:
+
+	int reduce_timer(struct timer_list *timer, unsigned long expires);
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- fs/f2fs/file.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 517e112c8a9a..0296a9594fe7 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -2651,6 +2651,12 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return f2fs_ioc_get_encryption_policy(filp, arg);
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 		return f2fs_ioc_get_encryption_pwsalt(filp, arg);
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
- 	case F2FS_IOC_GARBAGE_COLLECT:
- 		return f2fs_ioc_gc(filp, arg);
- 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
-@@ -2731,6 +2737,9 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 	case F2FS_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 	case F2FS_IOC_GARBAGE_COLLECT:
- 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
- 	case F2FS_IOC_WRITE_CHECKPOINT:
--- 
-2.15.0.rc0.271.g36b669edcc-goog
+ include/linux/timer.h |    1 +
+ kernel/time/timer.c   |   49 +++++++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 42 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/timer.h b/include/linux/timer.h
+index e6789b8757d5..6ec5d897606d 100644
+--- a/include/linux/timer.h
++++ b/include/linux/timer.h
+@@ -187,6 +187,7 @@ extern void add_timer_on(struct timer_list *timer, int cpu);
+ extern int del_timer(struct timer_list * timer);
+ extern int mod_timer(struct timer_list *timer, unsigned long expires);
+ extern int mod_timer_pending(struct timer_list *timer, unsigned long expires);
++extern int reduce_timer(struct timer_list *timer, unsigned long expires);
+ 
+ /*
+  * The jiffies value which is added to now, when there is no timer
+diff --git a/kernel/time/timer.c b/kernel/time/timer.c
+index f2674a056c26..bd9369d7225e 100644
+--- a/kernel/time/timer.c
++++ b/kernel/time/timer.c
+@@ -929,8 +929,11 @@ static struct timer_base *lock_timer_base(struct timer_list *timer,
+ 	}
+ }
+ 
++#define MOD_TIMER_PENDING_ONLY	0x01
++#define MOD_TIMER_REDUCE	0x02
++
+ static inline int
+-__mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
++__mod_timer(struct timer_list *timer, unsigned long expires, unsigned int options)
+ {
+ 	struct timer_base *base, *new_base;
+ 	unsigned int idx = UINT_MAX;
+@@ -950,8 +953,13 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
+ 		 * larger granularity than you would get from adding a new
+ 		 * timer with this expiry.
+ 		 */
+-		if (timer->expires = expires)
+-			return 1;
++		if (options & MOD_TIMER_REDUCE) {
++			if (time_before_eq(timer->expires, expires))
++				return 1;
++		} else {
++			if (timer->expires = expires)
++				return 1;
++		}
+ 
+ 		/*
+ 		 * We lock timer base and calculate the bucket index right
+@@ -962,6 +970,13 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
+ 		base = lock_timer_base(timer, &flags);
+ 		forward_timer_base(base);
+ 
++		if (timer_pending(timer) &&
++		    options & MOD_TIMER_REDUCE &&
++		    time_before_eq(timer->expires, expires)) {
++			ret = 1;
++			goto out_unlock;
++		}
++
+ 		clk = base->clk;
+ 		idx = calc_wheel_index(expires, clk);
+ 
+@@ -971,7 +986,10 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
+ 		 * subsequent call will exit in the expires check above.
+ 		 */
+ 		if (idx = timer_get_idx(timer)) {
+-			timer->expires = expires;
++			if (!(options & MOD_TIMER_REDUCE))
++				timer->expires = expires;
++			else if (time_after(timer->expires, expires))
++				timer->expires = expires;
+ 			ret = 1;
+ 			goto out_unlock;
+ 		}
+@@ -981,7 +999,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
+ 	}
+ 
+ 	ret = detach_if_pending(timer, base, false);
+-	if (!ret && pending_only)
++	if (!ret && options & MOD_TIMER_PENDING_ONLY)
+ 		goto out_unlock;
+ 
+ 	debug_activate(timer, expires);
+@@ -1042,7 +1060,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
+  */
+ int mod_timer_pending(struct timer_list *timer, unsigned long expires)
+ {
+-	return __mod_timer(timer, expires, true);
++	return __mod_timer(timer, expires, MOD_TIMER_PENDING_ONLY);
+ }
+ EXPORT_SYMBOL(mod_timer_pending);
+ 
+@@ -1068,11 +1086,26 @@ EXPORT_SYMBOL(mod_timer_pending);
+  */
+ int mod_timer(struct timer_list *timer, unsigned long expires)
+ {
+-	return __mod_timer(timer, expires, false);
++	return __mod_timer(timer, expires, 0);
+ }
+ EXPORT_SYMBOL(mod_timer);
+ 
+ /**
++ * reduce_timer - modify a timer's timeout if it would reduce the timeout
++ * @timer: the timer to be modified
++ * @expires: new timeout in jiffies
++ *
++ * reduce_timer() is very similar to mod_timer(), except that it will only
++ * modify a running timer if that would reduce the expiration time (it will
++ * start a timer that isn't running).
++ */
++int reduce_timer(struct timer_list *timer, unsigned long expires)
++{
++	return __mod_timer(timer, expires, MOD_TIMER_REDUCE);
++}
++EXPORT_SYMBOL(reduce_timer);
++
++/**
+  * add_timer - start a timer
+  * @timer: the timer to be added
+  *
+@@ -1739,7 +1772,7 @@ signed long __sched schedule_timeout(signed long timeout)
+ 	expire = timeout + jiffies;
+ 
+ 	setup_timer_on_stack(&timer, process_timeout, (unsigned long)current);
+-	__mod_timer(&timer, expire, false);
++	__mod_timer(&timer, expire, 0);
+ 	schedule();
+ 	del_singleshot_timer_sync(&timer);
+ 
 
