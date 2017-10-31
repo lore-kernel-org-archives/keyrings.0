@@ -1,80 +1,77 @@
-From: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Date: Wed, 20 Sep 2017 14:58:38 +0000
-Subject: [PATCH v7 1/2] security/keys: properly zero out sensitive key material in big_key
-Message-Id: <20170920145839.27511-1-Jason@zx2c4.com>
+From: Petr Vorel <pvorel@suse.cz>
+Date: Tue, 31 Oct 2017 08:25:43 +0000
+Subject: Re: [LTP] [PATCH] syscalls/request_key03: new test for key instantiation races
+Message-Id: <20171031082543.udhds5dvuj42kcqr@dell5510>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org, dhowells@redhat.com, ebiggers3@gmail.com
-Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>, Herbert Xu <herbert@gondor.apana.org.au>, Kirill Marinushkin <k.marinushkin@gmail.com>, security@kernel.org, stable@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Error paths forgot to zero out sensitive material, so this patch changes
-some kfrees into a kzfrees.
+> From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
-Reviewed-by: Eric Biggers <ebiggers3@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Kirill Marinushkin <k.marinushkin@gmail.com>
-Cc: security@kernel.org
-Cc: stable@vger.kernel.org
----
- security/keys/big_key.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+> Add a test for two related bugs in the keyrings subsystem which each
+> allowed unprivileged local users to cause a kernel oops (at best) by
+> attempting to "add" a key concurrently with "requesting" it.
 
-diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-index 6acb00f6f22c..507d6fb86a4f 100644
---- a/security/keys/big_key.c
-+++ b/security/keys/big_key.c
-@@ -195,7 +195,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
- 		*path = file->f_path;
- 		path_get(path);
- 		fput(file);
--		kfree(data);
-+		kzfree(data);
- 	} else {
- 		/* Just store the data in a buffer */
- 		void *data = kmalloc(datalen, GFP_KERNEL);
-@@ -211,9 +211,9 @@ int big_key_preparse(struct key_preparsed_payload *prep)
- err_fput:
- 	fput(file);
- err_enckey:
--	kfree(enckey);
-+	kzfree(enckey);
- error:
--	kfree(data);
-+	kzfree(data);
- 	return ret;
- }
- 
-@@ -227,7 +227,7 @@ void big_key_free_preparse(struct key_preparsed_payload *prep)
- 
- 		path_put(path);
- 	}
--	kfree(prep->payload.data[big_key_data]);
-+	kzfree(prep->payload.data[big_key_data]);
- }
- 
- /*
-@@ -259,7 +259,7 @@ void big_key_destroy(struct key *key)
- 		path->mnt = NULL;
- 		path->dentry = NULL;
- 	}
--	kfree(key->payload.data[big_key_data]);
-+	kzfree(key->payload.data[big_key_data]);
- 	key->payload.data[big_key_data] = NULL;
- }
- 
-@@ -328,7 +328,7 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
- err_fput:
- 		fput(file);
- error:
--		kfree(data);
-+		kzfree(data);
- 	} else {
- 		ret = datalen;
- 		if (copy_to_user(buffer, key->payload.data[big_key_data],
--- 
-2.14.1
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
 
+Looks very nice to me. Just two notes below.
+
+<snip>
+
+> +
+> +	SAFE_WAITPID(add_key_pid, &status, 0);
+> +	if (WIFEXITED(status) && WEXITSTATUS(status) = 0) {
+> +		tst_res(TPASS, "didn't crash while updating key of type '%s'",
+> +			type);
+> +	} else if (WIFSIGNALED(status) && WTERMSIG(status) = SIGKILL) {
+> +		/* Probably CVE-2017-15299 */
+> +		tst_res(TFAIL, "kernel oops while updating key of type '%s'",
+> +			type);
+> +	} else {
+> +		tst_brk(TBROK, "add_key child %s", tst_strstatus(status));
+> +	}
+> +
+> +	SAFE_WAITPID(request_key_pid, &status, 0);
+> +	if (WIFEXITED(status) && WEXITSTATUS(status) = 0) {
+> +		tst_res(TPASS, "didn't crash while requesting key of type '%s'",
+> +			type);
+> +	} else if (WIFSIGNALED(status) && WTERMSIG(status) = SIGKILL) {
+> +		/* Probably CVE-2017-15951 */
+> +		tst_res(TFAIL, "kernel oops while requesting key of type '%s'",
+> +			type);
+> +	} else {
+> +		tst_brk(TBROK, "request_key child %s", tst_strstatus(status));
+> +	}
+
+You evaluate test twice: for add_key_pid and then for request_key_pid.
+This can lead to FAIL and PASS together. It's probably ok, it's just unusual for me.
+./request_key03 
+tst_test.c:958: INFO: Timeout per run is 0h 05m 00s
+request_key03.c:136: FAIL: kernel oops while updating key of type 'encrypted'
+request_key03.c:144: PASS: didn't crash while requesting key of type 'encrypted'
+...
+
+
+> +static void do_test(void)
+> +{
+> +	/*
+> +	 * Briefly test the "encrypted" and/or "trusted" key types when
+> +	 * availaible, mainly to reproduce CVE-2017-15299.
+> +	 */
+> +	test_with_key_type("encrypted", "update user:foo 32", 2);
+> +	test_with_key_type("trusted", "update", 2);
+> +
+> +	/*
+> +	 * Test the "user" key type for longer, mainly in order to reproduce
+> +	 * CVE-2017-15951.  However, without the fix for CVE-2017-15299 as well,
+> +	 * WARNs may show up in the kernel log.
+> +	 */
+> +	test_with_key_type("user", "payload", 15);
+I wonder (out of curiosity how did you get values for effort (2 and 15).
+
+<snip>
+
+Kind regards,
+Petr
