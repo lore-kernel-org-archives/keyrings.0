@@ -1,136 +1,76 @@
-From: James Morris <james.l.morris@oracle.com>
-Date: Wed, 08 Nov 2017 13:54:53 +0000
-Subject: [GIT PULL] keys: fix NULL pointer dereference during ASN.1 parsing
-Message-Id: <alpine.LFD.2.20.1711090053260.13057@localhost>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 01 Nov 2017 19:10:22 +0000
+Subject: [PATCH] KEYS: fix out-of-bounds read during ASN.1 parsing
+Message-Id: <20171101191022.108942-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-Hi Linus,
+From: Eric Biggers <ebiggers@google.com>
 
-Please pull this fix by Eric Biggers for the keys subsystem.
+syzkaller with KASAN reported an out-of-bounds read in
+asn1_ber_decoder().  It can be reproduced by the following command,
+assuming CONFIG_X509_CERTIFICATE_PARSER=y and CONFIG_KASAN=y:
 
+    keyctl add asymmetric desc $'\x30\x30' @s
+
+The bug is that the length of an ASN.1 data value isn't validated in the
+case where it is encoded using the short form, causing the decoder to
+read past the end of the input buffer.  Fix it by validating the length.
+
+The bug report was:
+
+    BUG: KASAN: slab-out-of-bounds in asn1_ber_decoder+0x10cb/0x1730 lib/asn1_decoder.c:233
+    Read of size 1 at addr ffff88003cccfa02 by task syz-executor0/6818
+
+    CPU: 1 PID: 6818 Comm: syz-executor0 Not tainted 4.14.0-rc7-00008-g5f479447d983 #2
+    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+    Call Trace:
+     __dump_stack lib/dump_stack.c:16 [inline]
+     dump_stack+0xb3/0x10b lib/dump_stack.c:52
+     print_address_description+0x79/0x2a0 mm/kasan/report.c:252
+     kasan_report_error mm/kasan/report.c:351 [inline]
+     kasan_report+0x236/0x340 mm/kasan/report.c:409
+     __asan_report_load1_noabort+0x14/0x20 mm/kasan/report.c:427
+     asn1_ber_decoder+0x10cb/0x1730 lib/asn1_decoder.c:233
+     x509_cert_parse+0x1db/0x650 crypto/asymmetric_keys/x509_cert_parser.c:89
+     x509_key_preparse+0x64/0x7a0 crypto/asymmetric_keys/x509_public_key.c:174
+     asymmetric_key_preparse+0xcb/0x1a0 crypto/asymmetric_keys/asymmetric_type.c:388
+     key_create_or_update+0x347/0xb20 security/keys/key.c:855
+     SYSC_add_key security/keys/keyctl.c:122 [inline]
+     SyS_add_key+0x1cd/0x340 security/keys/keyctl.c:62
+     entry_SYSCALL_64_fastpath+0x1f/0xbe
+    RIP: 0033:0x447c89
+    RSP: 002b:00007fca7a5d3bd8 EFLAGS: 00000246 ORIG_RAX: 00000000000000f8
+    RAX: ffffffffffffffda RBX: 00007fca7a5d46cc RCX: 0000000000447c89
+    RDX: 0000000020006f4a RSI: 0000000020006000 RDI: 0000000020001ff5
+    RBP: 0000000000000046 R08: fffffffffffffffd R09: 0000000000000000
+    R10: 0000000000000002 R11: 0000000000000246 R12: 0000000000000000
+    R13: 0000000000000000 R14: 00007fca7a5d49c0 R15: 00007fca7a5d4700
+
+Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
+Cc: <stable@vger.kernel.org> # v3.7+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
-
-The following changes since commit fbc3edf7d7731d7a22c483c679700589bab936a3:
-
-  drivers/ide-cd: Handle missing driver data during status check gracefully (2017-11-07 09:12:04 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git fixes-v4.14-rc8
-
-for you to fetch changes up to 624f5ab8720b3371367327a822c267699c1823b8:
-
-  KEYS: fix NULL pointer dereference during ASN.1 parsing [ver #2] (2017-11-09 00:38:21 +1100)
-
-----------------------------------------------------------------
-Eric Biggers (1):
-      KEYS: fix NULL pointer dereference during ASN.1 parsing [ver #2]
-
- lib/asn1_decoder.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
----
-
-commit 624f5ab8720b3371367327a822c267699c1823b8
-Author: Eric Biggers <ebiggers@google.com>
-Date:   Tue Nov 7 22:29:02 2017 +0000
-
-    KEYS: fix NULL pointer dereference during ASN.1 parsing [ver #2]
-    
-    syzkaller reported a NULL pointer dereference in asn1_ber_decoder().  It
-    can be reproduced by the following command, assuming
-    CONFIG_PKCS7_TEST_KEY=y:
-    
-            keyctl add pkcs7_test desc '' @s
-    
-    The bug is that if the data buffer is empty, an integer underflow occurs
-    in the following check:
-    
-            if (unlikely(dp >= datalen - 1))
-                    goto data_overrun_error;
-    
-    This results in the NULL data pointer being dereferenced.
-    
-    Fix it by checking for 'datalen - dp < 2' instead.
-    
-    Also fix the similar check for 'dp >= datalen - n' later in the same
-    function.  That one possibly could result in a buffer overread.
-    
-    The NULL pointer dereference was reproducible using the "pkcs7_test" key
-    type but not the "asymmetric" key type because the "asymmetric" key type
-    checks for a 0-length payload before calling into the ASN.1 decoder but
-    the "pkcs7_test" key type does not.
-    
-    The bug report was:
-    
-        BUG: unable to handle kernel NULL pointer dereference at           (null)
-        IP: asn1_ber_decoder+0x17f/0xe60 lib/asn1_decoder.c:233
-        PGD 7b708067 P4D 7b708067 PUD 7b6ee067 PMD 0
-        Oops: 0000 [#1] SMP
-        Modules linked in:
-        CPU: 0 PID: 522 Comm: syz-executor1 Not tainted 4.14.0-rc8 #7
-        Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.10.3-20171021_125229-anatol 04/01/2014
-        task: ffff9b6b3798c040 task.stack: ffff9b6b37970000
-        RIP: 0010:asn1_ber_decoder+0x17f/0xe60 lib/asn1_decoder.c:233
-        RSP: 0018:ffff9b6b37973c78 EFLAGS: 00010216
-        RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000000000021c
-        RDX: ffffffff814a04ed RSI: ffffb1524066e000 RDI: ffffffff910759e0
-        RBP: ffff9b6b37973d60 R08: 0000000000000001 R09: ffff9b6b3caa4180
-        R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000002
-        R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-        FS:  00007f10ed1f2700(0000) GS:ffff9b6b3ea00000(0000) knlGS:0000000000000000
-        CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-        CR2: 0000000000000000 CR3: 000000007b6f3000 CR4: 00000000000006f0
-        Call Trace:
-         pkcs7_parse_message+0xee/0x240 crypto/asymmetric_keys/pkcs7_parser.c:139
-         verify_pkcs7_signature+0x33/0x180 certs/system_keyring.c:216
-         pkcs7_preparse+0x41/0x70 crypto/asymmetric_keys/pkcs7_key_type.c:63
-         key_create_or_update+0x180/0x530 security/keys/key.c:855
-         SYSC_add_key security/keys/keyctl.c:122 [inline]
-         SyS_add_key+0xbf/0x250 security/keys/keyctl.c:62
-         entry_SYSCALL_64_fastpath+0x1f/0xbe
-        RIP: 0033:0x4585c9
-        RSP: 002b:00007f10ed1f1bd8 EFLAGS: 00000216 ORIG_RAX: 00000000000000f8
-        RAX: ffffffffffffffda RBX: 00007f10ed1f2700 RCX: 00000000004585c9
-        RDX: 0000000020000000 RSI: 0000000020008ffb RDI: 0000000020008000
-        RBP: 0000000000000000 R08: ffffffffffffffff R09: 0000000000000000
-        R10: 0000000000000000 R11: 0000000000000216 R12: 00007fff1b2260ae
-        R13: 00007fff1b2260af R14: 00007f10ed1f2700 R15: 0000000000000000
-        Code: dd ca ff 48 8b 45 88 48 83 e8 01 4c 39 f0 0f 86 a8 07 00 00 e8 53 dd ca ff 49 8d 46 01 48 89 85 58 ff ff ff 48 8b 85 60 ff ff ff <42> 0f b6 0c 30 89 c8 88 8d 75 ff ff ff 83 e0 1f 89 8d 28 ff ff
-        RIP: asn1_ber_decoder+0x17f/0xe60 lib/asn1_decoder.c:233 RSP: ffff9b6b37973c78
-        CR2: 0000000000000000
-    
-    Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
-    Reported-by: syzbot <syzkaller@googlegroups.com>
-    Cc: <stable@vger.kernel.org> # v3.7+
-    Signed-off-by: Eric Biggers <ebiggers@google.com>
-    Signed-off-by: David Howells <dhowells@redhat.com>
-    Signed-off-by: James Morris <james.l.morris@oracle.com>
+ lib/asn1_decoder.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/lib/asn1_decoder.c b/lib/asn1_decoder.c
-index fef5d2e..1ef0cec 100644
+index 0bd8a611eb83..fef5d2e114be 100644
 --- a/lib/asn1_decoder.c
 +++ b/lib/asn1_decoder.c
-@@ -228,7 +228,7 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
- 		hdr = 2;
- 
- 		/* Extract a tag from the data */
--		if (unlikely(dp >= datalen - 1))
-+		if (unlikely(datalen - dp < 2))
- 			goto data_overrun_error;
- 		tag = data[dp++];
- 		if (unlikely((tag & 0x1f) = ASN1_LONG_TAG))
-@@ -274,7 +274,7 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
- 				int n = len - 0x80;
- 				if (unlikely(n > 2))
- 					goto length_too_long;
--				if (unlikely(dp >= datalen - n))
-+				if (unlikely(n > datalen - dp))
+@@ -284,6 +284,9 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
+ 				if (unlikely(len > datalen - dp))
  					goto data_overrun_error;
- 				hdr += n;
- 				for (len = 0; n > 0; n--) {
+ 			}
++		} else {
++			if (unlikely(len > datalen - dp))
++				goto data_overrun_error;
+ 		}
+ 
+ 		if (flags & FLAG_CONS) {
+-- 
+2.15.0.403.gc27cc4dac6-goog
+
