@@ -1,70 +1,52 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 06 Nov 2017 02:30:47 +0000
-Subject: [PATCH v2 4/5] crypto: qat - Clean up error handling in qat_dh_set_secret()
-Message-Id: <20171106023048.8067-5-ebiggers3@gmail.com>
+Date: Wed, 01 Nov 2017 22:25:17 +0000
+Subject: [PATCH 4/4] crypto: dh - don't permit 'key' or 'g' size longer than 'p'
+Message-Id: <20171101222517.41602-5-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171106023048.8067-1-ebiggers3@gmail.com>
-In-Reply-To: <20171106023048.8067-1-ebiggers3@gmail.com>
+References: <20171101222517.41602-1-ebiggers3@gmail.com>
+In-Reply-To: <20171101222517.41602-1-ebiggers3@gmail.com>
 To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Giovanni Cabiddu <giovanni.cabiddu@intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Stephan Mueller <smueller@chronox.de>, qat-linux@intel.com, keyrings@vger.kernel.org, Eric Biggers <ebiggers@google.com>
+Cc: keyrings@vger.kernel.org, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-Update the error handling in qat_dh_set_secret() to mirror
-dh_set_secret().  The new version is less error-prone because freeing
-memory and setting the pointers to NULL is now only done in one place.
+The "qat-dh" DH implementation assumes that 'key' and 'g' can be copied
+into a buffer with size 'p_size'.  However it was never checked that
+that was actually the case, which allowed users to cause a buffer
+underflow via KEYCTL_DH_COMPUTE.
 
+Fix this by updating crypto_dh_decode_key() to verify this precondition
+for all DH implementations.
+
+Fixes: c9839143ebbf ("crypto: qat - Add DH support")
+Cc: <stable@vger.kernel.org> # v4.8+
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- drivers/crypto/qat/qat_common/qat_asym_algs.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ crypto/dh_helper.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/crypto/qat/qat_common/qat_asym_algs.c b/drivers/crypto/qat/qat_common/qat_asym_algs.c
-index 6f5dd68449c6..7655fdb499de 100644
---- a/drivers/crypto/qat/qat_common/qat_asym_algs.c
-+++ b/drivers/crypto/qat/qat_common/qat_asym_algs.c
-@@ -462,11 +462,8 @@ static int qat_dh_set_params(struct qat_dh_ctx *ctx, struct dh *params)
- 	}
+diff --git a/crypto/dh_helper.c b/crypto/dh_helper.c
+index 708ae20d2d3c..7f00c771fe8d 100644
+--- a/crypto/dh_helper.c
++++ b/crypto/dh_helper.c
+@@ -83,6 +83,14 @@ int crypto_dh_decode_key(const char *buf, unsigned int len, struct dh *params)
+ 	if (secret.len != crypto_dh_key_len(params))
+ 		return -EINVAL;
  
- 	ctx->g = dma_zalloc_coherent(dev, ctx->p_size, &ctx->dma_g, GFP_KERNEL);
--	if (!ctx->g) {
--		dma_free_coherent(dev, ctx->p_size, ctx->p, ctx->dma_p);
--		ctx->p = NULL;
-+	if (!ctx->g)
- 		return -ENOMEM;
--	}
- 	memcpy(ctx->g + (ctx->p_size - params->g_size), params->g,
- 	       params->g_size);
- 
-@@ -507,18 +504,22 @@ static int qat_dh_set_secret(struct crypto_kpp *tfm, const void *buf,
- 
- 	ret = qat_dh_set_params(ctx, &params);
- 	if (ret < 0)
--		return ret;
-+		goto err_clear_ctx;
- 
- 	ctx->xa = dma_zalloc_coherent(dev, ctx->p_size, &ctx->dma_xa,
- 				      GFP_KERNEL);
- 	if (!ctx->xa) {
--		qat_dh_clear_ctx(dev, ctx);
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto err_clear_ctx;
- 	}
- 	memcpy(ctx->xa + (ctx->p_size - params.key_size), params.key,
- 	       params.key_size);
- 
- 	return 0;
++	/*
++	 * Don't permit the buffer for 'key' or 'g' to be larger than 'p', since
++	 * some drivers assume otherwise.
++	 */
++	if (params->key_size > params->p_size ||
++	    params->g_size > params->p_size)
++		return -EINVAL;
 +
-+err_clear_ctx:
-+	qat_dh_clear_ctx(dev, ctx);
-+	return ret;
- }
- 
- static unsigned int qat_dh_max_size(struct crypto_kpp *tfm)
+ 	/* Don't allocate memory. Set pointers to data within
+ 	 * the given buffer
+ 	 */
 -- 
-2.15.0
+2.15.0.403.gc27cc4dac6-goog
 
