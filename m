@@ -1,42 +1,40 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 27 Nov 2017 07:20:05 +0000
-Subject: [PATCH] pkcs7: use crypto_shash_digest()
-Message-Id: <20171127072005.26333-1-ebiggers3@gmail.com>
+Date: Wed, 01 Nov 2017 22:25:13 +0000
+Subject: [PATCH 0/4] crypto: dh - input validation fixes
+Message-Id: <20171101222517.41602-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-crypto@vger.kernel.org, Eric Biggers <ebiggers@google.com>
+To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: keyrings@vger.kernel.org, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
 
 From: Eric Biggers <ebiggers@google.com>
 
-Use crypto_shash_digest() instead of crypto_shash_init() followed by
-crypto_shash_finup().  (For simplicity only; they are equivalent.)
+This series fixes several corner cases in the Diffie-Hellman key
+exchange implementations:
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- crypto/asymmetric_keys/pkcs7_verify.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+- With CONFIG_DEBUG_SG=y and the software DH implementation, setting 'p'
+  to 0 caused a BUG_ON().
+- Both the software and QAT DH implementations had a double-free bug in
+  the case where 'g' could not be allocated.
+- With the QAT DH implementation, setting 'g' or 'key' larger than 'p'
+  caused a buffer underflow.
 
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 063d6745c741..1647313872aa 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -59,11 +59,8 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
- 	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
- 
- 	/* Digest the message [RFC2315 9.3] */
--	ret = crypto_shash_init(desc);
--	if (ret < 0)
--		goto error;
--	ret = crypto_shash_finup(desc, pkcs7->data, pkcs7->data_len,
--				 sig->digest);
-+	ret = crypto_shash_digest(desc, pkcs7->data, pkcs7->data_len,
-+				  sig->digest);
- 	if (ret < 0)
- 		goto error;
- 	pr_devel("MsgDigest = [%*ph]\n", 8, sig->digest);
+Note that in kernels configured with CONFIG_KEY_DH_OPERATIONS=y, these
+bugs are reachable by unprivileged users via KEYCTL_DH_COMPUTE.
+
+Eric Biggers (4):
+  crypto: dh - fix double free of ctx->p
+  crypto: dh - don't permit 'p' to be 0
+  crypto: qat - fix double free of ctx->p
+  crypto: dh - don't permit 'key' or 'g' size longer than 'p'
+
+ crypto/dh.c                                   | 18 +++++++++---------
+ crypto/dh_helper.c                            | 16 ++++++++++++++++
+ drivers/crypto/qat/qat_common/qat_asym_algs.c | 15 ++++++++-------
+ 3 files changed, 33 insertions(+), 16 deletions(-)
+
 -- 
-2.15.0
+2.15.0.403.gc27cc4dac6-goog
 
