@@ -1,78 +1,31 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 02 Nov 2017 00:47:19 +0000
-Subject: [PATCH 3/3] KEYS: fix out-of-bounds read during ASN.1 parsing
-Message-Id: <150958363973.7093.17020904832437759281.stgit@warthog.procyon.org.uk>
+From: James Morris <james.l.morris@oracle.com>
+Date: Thu, 02 Nov 2017 10:21:00 +0000
+Subject: [GIT PULL] Keys fixes for v4.15
+Message-Id: <alpine.LFD.2.20.1711022118180.24938@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
-In-Reply-To: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Hi Linus,
 
-syzkaller with KASAN reported an out-of-bounds read in
-asn1_ber_decoder().  It can be reproduced by the following command,
-assuming CONFIG_X509_CERTIFICATE_PARSER=y and CONFIG_KASAN=y:
+Please pull these fixes for the Keys subsystem by Eric Biggers.
 
-    keyctl add asymmetric desc $'\x30\x30' @s
+The following changes since commit 3a99df9a3d14cd866b5516f8cba515a3bfd554ab:
 
-The bug is that the length of an ASN.1 data value isn't validated in the
-case where it is encoded using the short form, causing the decoder to
-read past the end of the input buffer.  Fix it by validating the length.
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace (2017-11-01 16:04:27 -0700)
 
-The bug report was:
+are available in the git repository at:
 
-    BUG: KASAN: slab-out-of-bounds in asn1_ber_decoder+0x10cb/0x1730 lib/asn1_decoder.c:233
-    Read of size 1 at addr ffff88003cccfa02 by task syz-executor0/6818
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git fixes-v4.14-rc7
 
-    CPU: 1 PID: 6818 Comm: syz-executor0 Not tainted 4.14.0-rc7-00008-g5f479447d983 #2
-    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-    Call Trace:
-     __dump_stack lib/dump_stack.c:16 [inline]
-     dump_stack+0xb3/0x10b lib/dump_stack.c:52
-     print_address_description+0x79/0x2a0 mm/kasan/report.c:252
-     kasan_report_error mm/kasan/report.c:351 [inline]
-     kasan_report+0x236/0x340 mm/kasan/report.c:409
-     __asan_report_load1_noabort+0x14/0x20 mm/kasan/report.c:427
-     asn1_ber_decoder+0x10cb/0x1730 lib/asn1_decoder.c:233
-     x509_cert_parse+0x1db/0x650 crypto/asymmetric_keys/x509_cert_parser.c:89
-     x509_key_preparse+0x64/0x7a0 crypto/asymmetric_keys/x509_public_key.c:174
-     asymmetric_key_preparse+0xcb/0x1a0 crypto/asymmetric_keys/asymmetric_type.c:388
-     key_create_or_update+0x347/0xb20 security/keys/key.c:855
-     SYSC_add_key security/keys/keyctl.c:122 [inline]
-     SyS_add_key+0x1cd/0x340 security/keys/keyctl.c:62
-     entry_SYSCALL_64_fastpath+0x1f/0xbe
-    RIP: 0033:0x447c89
-    RSP: 002b:00007fca7a5d3bd8 EFLAGS: 00000246 ORIG_RAX: 00000000000000f8
-    RAX: ffffffffffffffda RBX: 00007fca7a5d46cc RCX: 0000000000447c89
-    RDX: 0000000020006f4a RSI: 0000000020006000 RDI: 0000000020001ff5
-    RBP: 0000000000000046 R08: fffffffffffffffd R09: 0000000000000000
-    R10: 0000000000000002 R11: 0000000000000246 R12: 0000000000000000
-    R13: 0000000000000000 R14: 00007fca7a5d49c0 R15: 00007fca7a5d4700
+Eric Biggers (3):
+      KEYS: return full count in keyring_read() if buffer is too small
+      KEYS: trusted: fix writing past end of buffer in trusted_read()
+      KEYS: fix out-of-bounds read during ASN.1 parsing
 
-Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
-Cc: <stable@vger.kernel.org> # v3.7+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- lib/asn1_decoder.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/lib/asn1_decoder.c b/lib/asn1_decoder.c
-index 0bd8a611eb83..fef5d2e114be 100644
---- a/lib/asn1_decoder.c
-+++ b/lib/asn1_decoder.c
-@@ -284,6 +284,9 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
- 				if (unlikely(len > datalen - dp))
- 					goto data_overrun_error;
- 			}
-+		} else {
-+			if (unlikely(len > datalen - dp))
-+				goto data_overrun_error;
- 		}
- 
- 		if (flags & FLAG_CONS) {
-
+ lib/asn1_decoder.c      |    3 +++
+ security/keys/keyring.c |   39 +++++++++++++++++++--------------------
+ security/keys/trusted.c |   23 ++++++++++++-----------
+ 3 files changed, 34 insertions(+), 31 deletions(-)
