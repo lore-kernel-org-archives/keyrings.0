@@ -1,45 +1,28 @@
-From: Marcho <marcho.markov@gmail.com>
-Date: Thu, 02 Nov 2017 22:05:07 +0000
-Subject: [PATCH] KEYS: allow searching of user-session keyring if session keyring exists
-Message-Id: <001f3865-e1ee-410f-07f2-e655c7f59ec9@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 02 Nov 2017 22:29:50 +0000
+Subject: Re: [PATCH] KEYS: allow searching of user-session keyring if session keyring exists
+Message-Id: <19252.1509661790@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <001f3865-e1ee-410f-07f2-e655c7f59ec9@gmail.com>
+In-Reply-To: <001f3865-e1ee-410f-07f2-e655c7f59ec9@gmail.com>
 To: keyrings@vger.kernel.org
 
-In search_my_process_keyrings(), if a session keyring exists, we will skip the search of a potential user-session keyring.
-This is exhibited when using ecryptfs:
+Marcho <marcho.markov@gmail.com> wrote:
 
-kernel: [   27.441621] Could not find key with description: [3bea61015ca4c0e2]
-kernel: [   27.441653] process_request_key_err: No key
-kernel: [   27.441653] Could not find valid key in user session keyring for sig specified in mount option: [3bea61015ca4c0e2]
+> In search_my_process_keyrings(), if a session keyring exists, we will skip
+> the search of a potential user-session keyring.
 
-$ keyctl show # session keyring exists
-Session Keyring
-   67329122 --alswrv   1000  1000  keyring: _ses
-   83033473 ----s-rv      0     0   \_ user: invocation_id
+That is the correct behaviour.
 
-$ keyctl show @us #requested user-session key exists even though it is reported missing
-Keyring
-  765040937 --alswrv   1000 65534  keyring: _uid_ses.1000
-  546860119 --alswrv   1000 65534   \_ keyring: _uid.1000
-  213500744 --alswrv   1000  1000       \_ user: 3bea61015ca4c0e2
+You can fix this in userspace by adding a link into the session keyring that
+points to the user-session keyring if you must.  You may have noted that the
+search algorithm also does not directly search the user keyring - pam_keyinit
+adds the link, thereby explicitly adding the user keyring to the search tree.
 
-This allows ecryptfs to see the key it needs.
+You should not be using the user-session keyring like this.  I would recommend
+either using the user keyring or the newer persistent keyring.
 
---- a/security/keys/process_keys.c	2017-11-02 22:28:29.247550207 +0100
-+++ b/security/keys/process_keys.c	2017-11-02 22:29:58.707095600 +0100
-@@ -412,8 +412,9 @@ key_ref_t search_my_process_keyrings(str
-  			break;
-  		}
-  	}
--	/* or search the user-session keyring */
--	else if (ctx->cred->user->session_keyring) {
-+
-+	/* search the user-session keyring */
-+	if (ctx->cred->user->session_keyring) {
-  		key_ref = keyring_search_aux(
-  			make_key_ref(ctx->cred->user->session_keyring, 1),
-  			ctx);
-
+David
