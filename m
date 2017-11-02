@@ -1,167 +1,53 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 28 Nov 2017 19:10:37 +0000
-Subject: [PATCH v2] KEYS: add missing permission check for request_key() destination
-Message-Id: <20171128191037.86213-1-ebiggers3@gmail.com>
+Date: Thu, 02 Nov 2017 18:06:05 +0000
+Subject: [keyutils PATCH v2] man: keyctl_read(3): fix documentation for short buffer case
+Message-Id: <20171102180605.110627-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-When the request_key() syscall is not passed a destination keyring, it
-links the requested key (if constructed) into the "default" request-key
-keyring.  This should require Write permission to the keyring.  However,
-there is actually no permission check.
+When keyctl_read() is passed a buffer that is too small, the behavior is
+inconsistent.  Some key types will fill as much of the buffer as
+possible, while others won't copy anything.  Moreover, the in-kernel
+documentation contradicted the man page on this point.
 
-This can be abused to add keys to any keyring to which only Search
-permission is granted.  This is because Search permission allows joining
-the keyring.  keyctl_set_reqkey_keyring(KEY_REQKEY_DEFL_SESSION_KEYRING)
-then will set the default request-key keyring to the session keyring.
-Then, request_key() can be used to add keys to the keyring.
+Update the man page to say that this point is unspecified.
 
-Both negatively and positively instantiated keys can be added using this
-method.  Adding negative keys is trivial.  Adding a positive key is a
-bit trickier.  It requires that either /sbin/request-key positively
-instantiates the key, or that another thread adds the key to the process
-keyring at just the right time, such that request_key() misses it
-initially but then finds it in construct_alloc_key().
-
-Fix this bug by checking for Write permission to the keyring in
-construct_get_dest_keyring() when the default keyring is being used.
-
-We don't do the permission check for non-default keyrings because that
-was already done by the earlier call to lookup_user_key().  Also,
-request_key_and_link() is currently passed a 'struct key *' rather than
-a key_ref_t, so the "possessed" bit is unavailable.
-
-We also don't do the permission check for the "requestor keyring", to
-continue to support the use case described by commit 8bbf4976b59f
-("KEYS: Alter use of key instantiation link-to-keyring argument") where
-/sbin/request-key recursively calls request_key() to add keys to the
-original requestor's destination keyring.  (I don't know of any users
-who actually do that, though...)
-
-Fixes: 3e30148c3d52 ("[PATCH] Keys: Make request-key create an authorisation key")
-Cc: <stable@vger.kernel.org>	# v2.6.13+
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ man/keyctl_read.3 | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-v2: also skip permission check if default dest_keyring is NULL
-
- security/keys/request_key.c | 46 ++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 37 insertions(+), 9 deletions(-)
-
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index e8036cd0ad54..7dc741382154 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -251,11 +251,12 @@ static int construct_key(struct key *key, const void *callout_info,
-  * The keyring selected is returned with an extra reference upon it which the
-  * caller must release.
-  */
--static void construct_get_dest_keyring(struct key **_dest_keyring)
-+static int construct_get_dest_keyring(struct key **_dest_keyring)
- {
- 	struct request_key_auth *rka;
- 	const struct cred *cred = current_cred();
- 	struct key *dest_keyring = *_dest_keyring, *authkey;
-+	int ret;
- 
- 	kenter("%p", dest_keyring);
- 
-@@ -264,6 +265,8 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
- 		/* the caller supplied one */
- 		key_get(dest_keyring);
- 	} else {
-+		bool do_perm_check = true;
-+
- 		/* use a default keyring; falling through the cases until we
- 		 * find one that we actually have */
- 		switch (cred->jit_keyring) {
-@@ -278,8 +281,10 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
- 					dest_keyring  						key_get(rka->dest_keyring);
- 				up_read(&authkey->sem);
--				if (dest_keyring)
-+				if (dest_keyring) {
-+					do_perm_check = false;
- 					break;
-+				}
- 			}
- 
- 		case KEY_REQKEY_DEFL_THREAD_KEYRING:
-@@ -314,11 +319,29 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
- 		default:
- 			BUG();
- 		}
-+
-+		/*
-+		 * Require Write permission on the keyring.  This is essential
-+		 * because the default keyring may be the session keyring, and
-+		 * joining a keyring only requires Search permission.
-+		 *
-+		 * However, this check is skipped for the "requestor keyring" so
-+		 * that /sbin/request-key can itself use request_key() to add
-+		 * keys to the original requestor's destination keyring.
-+		 */
-+		if (dest_keyring && do_perm_check) {
-+			ret = key_permission(make_key_ref(dest_keyring, 1),
-+					     KEY_NEED_WRITE);
-+			if (ret) {
-+				key_put(dest_keyring);
-+				return ret;
-+			}
-+		}
- 	}
- 
- 	*_dest_keyring = dest_keyring;
- 	kleave(" [dk %d]", key_serial(dest_keyring));
--	return;
-+	return 0;
- }
- 
- /*
-@@ -444,11 +467,15 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
- 	if (ctx->index_key.type = &key_type_keyring)
- 		return ERR_PTR(-EPERM);
- 
--	user = key_user_lookup(current_fsuid());
--	if (!user)
--		return ERR_PTR(-ENOMEM);
-+	ret = construct_get_dest_keyring(&dest_keyring);
-+	if (ret)
-+		goto error;
- 
--	construct_get_dest_keyring(&dest_keyring);
-+	user = key_user_lookup(current_fsuid());
-+	if (!user) {
-+		ret = -ENOMEM;
-+		goto error_put_dest_keyring;
-+	}
- 
- 	ret = construct_alloc_key(ctx, dest_keyring, flags, user, &key);
- 	key_user_put(user);
-@@ -463,7 +490,7 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
- 	} else if (ret = -EINPROGRESS) {
- 		ret = 0;
- 	} else {
--		goto couldnt_alloc_key;
-+		goto error_put_dest_keyring;
- 	}
- 
- 	key_put(dest_keyring);
-@@ -473,8 +500,9 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
- construction_failed:
- 	key_negate_and_link(key, key_negative_timeout, NULL, NULL);
- 	key_put(key);
--couldnt_alloc_key:
-+error_put_dest_keyring:
- 	key_put(dest_keyring);
-+error:
- 	kleave(" = %d", ret);
- 	return ERR_PTR(ret);
- }
+diff --git a/man/keyctl_read.3 b/man/keyctl_read.3
+index 25821ad..852bc05 100644
+--- a/man/keyctl_read.3
++++ b/man/keyctl_read.3
+@@ -33,8 +33,8 @@ permission on a key to be able to read it.
+ and
+ .I buflen
+ specify the buffer into which the payload data will be placed.  If the buffer
+-is too small, the full size of the payload will be returned and no copy will
+-take place.
++is too small, then the full size of the payload will be returned, and the
++contents of the buffer may be overwritten in some undefined way.
+ .P
+ .BR keyctl_read_alloc ()
+ is similar to
+@@ -62,8 +62,8 @@ though the byte-ordering is as appropriate for the kernel.
+ On success
+ .BR keyctl_read ()
+ returns the amount of data placed into the buffer.  If the buffer was too
+-small, then the size of buffer required will be returned, but no data will be
+-transferred.
++small, then the size of buffer required will be returned, and the contents of
++the buffer may have been overwritten in some undefined way.
+ .P
+ On success
+ .BR keyctl_read_alloc ()
 -- 
-2.15.0.417.g466bffb3ac-goog
+2.15.0.403.gc27cc4dac6-goog
 
