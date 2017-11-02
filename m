@@ -1,142 +1,35 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 01 Nov 2017 22:25:14 +0000
-Subject: [PATCH 1/4] crypto: dh - fix double free of ctx->p
-Message-Id: <20171101222517.41602-2-ebiggers3@gmail.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Thu, 02 Nov 2017 10:55:56 +0000
+Subject: Re: [PATCH 1/4] crypto: dh - fix double free of ctx->p
+Message-Id: <93501fc6-94df-bf27-cdd8-7a44b04effc1@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20171101222517.41602-1-ebiggers3@gmail.com>
-In-Reply-To: <20171101222517.41602-1-ebiggers3@gmail.com>
-To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
-Cc: keyrings@vger.kernel.org, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+ <20171101222517.41602-2-ebiggers3@gmail.com>
+In-Reply-To: <20171101222517.41602-2-ebiggers3@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>, linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: keyrings@vger.kernel.org, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Hi, Eric,
 
-When setting the secret with the software Diffie-Hellman implementation,
-if allocating 'g' failed (e.g. if it was longer than
-MAX_EXTERN_MPI_BITS), then 'p' was freed twice: once immediately, and
-once later when the crypto_kpp tfm was destroyed.  Fix it by using
-dh_free_ctx() in the error paths, as that sets the pointers to NULL.
+On 11/02/2017 12:25 AM, Eric Biggers wrote:
+> When setting the secret with the software Diffie-Hellman implementation,
+> if allocating 'g' failed (e.g. if it was longer than
+> MAX_EXTERN_MPI_BITS), then 'p' was freed twice: once immediately, and
+> once later when the crypto_kpp tfm was destroyed.  Fix it by using
+> dh_free_ctx() in the error paths, as that sets the pointers to NULL.
 
-KASAN report:
+Other solution would be to have just an one-line patch that sets p to
+NULL after freeing it. The benefit of just setting p to NULL and not
+using dh_free_ctx() is that you'll spare some cpu cycles. If g fails,
+g and a will already be NULL, so freeing them and set them to NULL is
+redundant.
 
-    MPI: mpi too large (32760 bits)
-    =================================
-    BUG: KASAN: use-after-free in mpi_free+0x131/0x170
-    Read of size 4 at addr ffff88006c7cdf90 by task reproduce_doubl/367
+However, if you decide to always use dh_free_ctx(), you'll have to get
+rid of dh_clear_params(), because it will be used just in dh_free_ctx().
+You can copy dh_clear_params() body to dh_free_ctx().
 
-    CPU: 1 PID: 367 Comm: reproduce_doubl Not tainted 4.14.0-rc7-00040-g05298abde6fe #7
-    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-    Call Trace:
-     dump_stack+0xb3/0x10b
-     ? mpi_free+0x131/0x170
-     print_address_description+0x79/0x2a0
-     ? mpi_free+0x131/0x170
-     kasan_report+0x236/0x340
-     ? akcipher_register_instance+0x90/0x90
-     __asan_report_load4_noabort+0x14/0x20
-     mpi_free+0x131/0x170
-     ? akcipher_register_instance+0x90/0x90
-     dh_exit_tfm+0x3d/0x140
-     crypto_kpp_exit_tfm+0x52/0x70
-     crypto_destroy_tfm+0xb3/0x250
-     __keyctl_dh_compute+0x640/0xe90
-     ? kasan_slab_free+0x12f/0x180
-     ? dh_data_from_key+0x240/0x240
-     ? key_create_or_update+0x1ee/0xb20
-     ? key_instantiate_and_link+0x440/0x440
-     ? lock_contended+0xee0/0xee0
-     ? kfree+0xcf/0x210
-     ? SyS_add_key+0x268/0x340
-     keyctl_dh_compute+0xb3/0xf1
-     ? __keyctl_dh_compute+0xe90/0xe90
-     ? SyS_add_key+0x26d/0x340
-     ? entry_SYSCALL_64_fastpath+0x5/0xbe
-     ? trace_hardirqs_on_caller+0x3f4/0x560
-     SyS_keyctl+0x72/0x2c0
-     entry_SYSCALL_64_fastpath+0x1f/0xbe
-    RIP: 0033:0x43ccf9
-    RSP: 002b:00007ffeeec96158 EFLAGS: 00000246 ORIG_RAX: 00000000000000fa
-    RAX: ffffffffffffffda RBX: 000000000248b9b9 RCX: 000000000043ccf9
-    RDX: 00007ffeeec96170 RSI: 00007ffeeec96160 RDI: 0000000000000017
-    RBP: 0000000000000046 R08: 0000000000000000 R09: 0248b9b9143dc936
-    R10: 0000000000001000 R11: 0000000000000246 R12: 0000000000000000
-    R13: 0000000000409670 R14: 0000000000409700 R15: 0000000000000000
-
-    Allocated by task 367:
-     save_stack_trace+0x16/0x20
-     kasan_kmalloc+0xeb/0x180
-     kmem_cache_alloc_trace+0x114/0x300
-     mpi_alloc+0x4b/0x230
-     mpi_read_raw_data+0xbe/0x360
-     dh_set_secret+0x1dc/0x460
-     __keyctl_dh_compute+0x623/0xe90
-     keyctl_dh_compute+0xb3/0xf1
-     SyS_keyctl+0x72/0x2c0
-     entry_SYSCALL_64_fastpath+0x1f/0xbe
-
-    Freed by task 367:
-     save_stack_trace+0x16/0x20
-     kasan_slab_free+0xab/0x180
-     kfree+0xb5/0x210
-     mpi_free+0xcb/0x170
-     dh_set_secret+0x2d7/0x460
-     __keyctl_dh_compute+0x623/0xe90
-     keyctl_dh_compute+0xb3/0xf1
-     SyS_keyctl+0x72/0x2c0
-     entry_SYSCALL_64_fastpath+0x1f/0xbe
-
-Fixes: 802c7f1c84e4 ("crypto: dh - Add DH software implementation")
-Cc: <stable@vger.kernel.org> # v4.8+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- crypto/dh.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/crypto/dh.c b/crypto/dh.c
-index b1032a5c1bfa..b488f1782ced 100644
---- a/crypto/dh.c
-+++ b/crypto/dh.c
-@@ -71,10 +71,8 @@ static int dh_set_params(struct dh_ctx *ctx, struct dh *params)
- 		return -EINVAL;
- 
- 	ctx->g = mpi_read_raw_data(params->g, params->g_size);
--	if (!ctx->g) {
--		mpi_free(ctx->p);
-+	if (!ctx->g)
- 		return -EINVAL;
--	}
- 
- 	return 0;
- }
-@@ -89,18 +87,20 @@ static int dh_set_secret(struct crypto_kpp *tfm, const void *buf,
- 	dh_free_ctx(ctx);
- 
- 	if (crypto_dh_decode_key(buf, len, &params) < 0)
--		return -EINVAL;
-+		goto err_free_ctx;
- 
- 	if (dh_set_params(ctx, &params) < 0)
--		return -EINVAL;
-+		goto err_free_ctx;
- 
- 	ctx->xa = mpi_read_raw_data(params.key, params.key_size);
--	if (!ctx->xa) {
--		dh_clear_params(ctx);
--		return -EINVAL;
--	}
-+	if (!ctx->xa)
-+		goto err_free_ctx;
- 
- 	return 0;
-+
-+err_free_ctx:
-+	dh_free_ctx(ctx);
-+	return -EINVAL;
- }
- 
- static int dh_compute_value(struct kpp_request *req)
--- 
-2.15.0.403.gc27cc4dac6-goog
-
+Cheers,
+ta
