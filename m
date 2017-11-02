@@ -1,93 +1,21 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 02 Nov 2017 00:47:03 +0000
-Subject: [PATCH 1/3] KEYS: return full count in keyring_read() if buffer is too small
-Message-Id: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
+Date: Thu, 02 Nov 2017 00:50:14 +0000
+Subject: Re: [PATCH 1/3] KEYS: return full count in keyring_read() if buffer is too small
+Message-Id: <7366.1509583814@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Hi James,
 
-Commit e645016abc80 ("KEYS: fix writing past end of user-supplied buffer
-in keyring_read()") made keyring_read() stop corrupting userspace memory
-when the user-supplied buffer is too small.  However it also made the
-return value in that case be the short buffer size rather than the size
-required, yet keyctl_read() is actually documented to return the size
-required.  Therefore, switch it over to the documented behavior.
+Can you pass these fix patches onto Linus?
 
-Note that for now we continue to have it fill the short buffer, since it
-did that before (pre-v3.13) and dump_key_tree_aux() in keyutils arguably
-relies on it.
+I'm holding onto Eric's doc update patch for a little longer as I suggested
+some changes to it, but it's only documentation, no code changes.
 
-Fixes: e645016abc80 ("KEYS: fix writing past end of user-supplied buffer in keyring_read()")
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: <stable@vger.kernel.org> # v3.13+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <james.l.morris@oracle.com>
----
-
- security/keys/keyring.c |   39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index a7e51f793867..36f842ec87f0 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -459,34 +459,33 @@ static long keyring_read(const struct key *keyring,
- 			 char __user *buffer, size_t buflen)
- {
- 	struct keyring_read_iterator_context ctx;
--	unsigned long nr_keys;
--	int ret;
-+	long ret;
- 
- 	kenter("{%d},,%zu", key_serial(keyring), buflen);
- 
- 	if (buflen & (sizeof(key_serial_t) - 1))
- 		return -EINVAL;
- 
--	nr_keys = keyring->keys.nr_leaves_on_tree;
--	if (nr_keys = 0)
--		return 0;
--
--	/* Calculate how much data we could return */
--	if (!buffer || !buflen)
--		return nr_keys * sizeof(key_serial_t);
--
--	/* Copy the IDs of the subscribed keys into the buffer */
--	ctx.buffer = (key_serial_t __user *)buffer;
--	ctx.buflen = buflen;
--	ctx.count = 0;
--	ret = assoc_array_iterate(&keyring->keys, keyring_read_iterator, &ctx);
--	if (ret < 0) {
--		kleave(" = %d [iterate]", ret);
--		return ret;
-+	/* Copy as many key IDs as fit into the buffer */
-+	if (buffer && buflen) {
-+		ctx.buffer = (key_serial_t __user *)buffer;
-+		ctx.buflen = buflen;
-+		ctx.count = 0;
-+		ret = assoc_array_iterate(&keyring->keys,
-+					  keyring_read_iterator, &ctx);
-+		if (ret < 0) {
-+			kleave(" = %ld [iterate]", ret);
-+			return ret;
-+		}
- 	}
- 
--	kleave(" = %zu [ok]", ctx.count);
--	return ctx.count;
-+	/* Return the size of the buffer needed */
-+	ret = keyring->keys.nr_leaves_on_tree * sizeof(key_serial_t);
-+	if (ret <= buflen)
-+		kleave("= %ld [ok]", ret);
-+	else
-+		kleave("= %ld [buffer too small]", ret);
-+	return ret;
- }
- 
- /*
-
+Thanks,
+David
