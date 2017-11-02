@@ -1,67 +1,78 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 23 Nov 2017 22:04:53 +0000
-Subject: [GIT PULL] Keyrings bits
-Message-Id: <6839.1511474693@warthog.procyon.org.uk>
+Date: Thu, 02 Nov 2017 00:47:19 +0000
+Subject: [PATCH 3/3] KEYS: fix out-of-bounds read during ASN.1 parsing
+Message-Id: <150958363973.7093.17020904832437759281.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-Hi James,
+From: Eric Biggers <ebiggers@google.com>
 
-Can you pull this and pass it along to Linus?  There's nothing too
-controversial here:
+syzkaller with KASAN reported an out-of-bounds read in
+asn1_ber_decoder().  It can be reproduced by the following command,
+assuming CONFIG_X509_CERTIFICATE_PARSER=y and CONFIG_KASAN=y:
 
- (1) Doc fix for keyctl_read().
+    keyctl add asymmetric desc $'\x30\x30' @s
 
- (2) time_t -> time64_t replacement.
+The bug is that the length of an ASN.1 data value isn't validated in the
+case where it is encoded using the short form, causing the decoder to
+read past the end of the input buffer.  Fix it by validating the length.
 
- (3) Set the module licence on things to prevent tainting.
+The bug report was:
 
-It's all been in linux-next for a week or so.
+    BUG: KASAN: slab-out-of-bounds in asn1_ber_decoder+0x10cb/0x1730 lib/asn1_decoder.c:233
+    Read of size 1 at addr ffff88003cccfa02 by task syz-executor0/6818
 
-Thanks,
-David
+    CPU: 1 PID: 6818 Comm: syz-executor0 Not tainted 4.14.0-rc7-00008-g5f479447d983 #2
+    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+    Call Trace:
+     __dump_stack lib/dump_stack.c:16 [inline]
+     dump_stack+0xb3/0x10b lib/dump_stack.c:52
+     print_address_description+0x79/0x2a0 mm/kasan/report.c:252
+     kasan_report_error mm/kasan/report.c:351 [inline]
+     kasan_report+0x236/0x340 mm/kasan/report.c:409
+     __asan_report_load1_noabort+0x14/0x20 mm/kasan/report.c:427
+     asn1_ber_decoder+0x10cb/0x1730 lib/asn1_decoder.c:233
+     x509_cert_parse+0x1db/0x650 crypto/asymmetric_keys/x509_cert_parser.c:89
+     x509_key_preparse+0x64/0x7a0 crypto/asymmetric_keys/x509_public_key.c:174
+     asymmetric_key_preparse+0xcb/0x1a0 crypto/asymmetric_keys/asymmetric_type.c:388
+     key_create_or_update+0x347/0xb20 security/keys/key.c:855
+     SYSC_add_key security/keys/keyctl.c:122 [inline]
+     SyS_add_key+0x1cd/0x340 security/keys/keyctl.c:62
+     entry_SYSCALL_64_fastpath+0x1f/0xbe
+    RIP: 0033:0x447c89
+    RSP: 002b:00007fca7a5d3bd8 EFLAGS: 00000246 ORIG_RAX: 00000000000000f8
+    RAX: ffffffffffffffda RBX: 00007fca7a5d46cc RCX: 0000000000447c89
+    RDX: 0000000020006f4a RSI: 0000000020006000 RDI: 0000000020001ff5
+    RBP: 0000000000000046 R08: fffffffffffffffd R09: 0000000000000000
+    R10: 0000000000000002 R11: 0000000000000246 R12: 0000000000000000
+    R13: 0000000000000000 R14: 00007fca7a5d49c0 R15: 00007fca7a5d4700
+
+Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
+Cc: <stable@vger.kernel.org> # v3.7+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-The following changes since commit 37cb8e1f8e10c6e9bd2a1b95cdda0620a21b0551:
 
-  Merge tag 'devicetree-for-4.15' of git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux (2017-11-14 18:25:40 -0800)
+ lib/asn1_decoder.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-are available in the git repository at:
+diff --git a/lib/asn1_decoder.c b/lib/asn1_decoder.c
+index 0bd8a611eb83..fef5d2e114be 100644
+--- a/lib/asn1_decoder.c
++++ b/lib/asn1_decoder.c
+@@ -284,6 +284,9 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
+ 				if (unlikely(len > datalen - dp))
+ 					goto data_overrun_error;
+ 			}
++		} else {
++			if (unlikely(len > datalen - dp))
++				goto data_overrun_error;
+ 		}
+ 
+ 		if (flags & FLAG_CONS) {
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-20171123
-
-for you to fetch changes up to 1e684d3820d8f72d877c0adb521ae17c6fc9bc88:
-
-  pkcs7: Set the module licence to prevent tainting (2017-11-15 16:38:45 +0000)
-
-----------------------------------------------------------------
-Keys devel
-
-----------------------------------------------------------------
-Baolin Wang (2):
-      security: keys: Replace time_t/timespec with time64_t
-      security: keys: Replace time_t with time64_t for struct key_preparsed_payload
-
-David Howells (1):
-      pkcs7: Set the module licence to prevent tainting
-
-Eric Biggers (1):
-      KEYS: fix in-kernel documentation for keyctl_read()
-
- Documentation/security/keys/core.rst     | 10 +++++-----
- crypto/asymmetric_keys/pkcs7_key_type.c  |  1 +
- crypto/asymmetric_keys/pkcs7_parser.c    |  5 +++++
- crypto/asymmetric_keys/public_key.c      |  2 ++
- crypto/asymmetric_keys/x509_public_key.c |  1 +
- include/linux/key-type.h                 |  2 +-
- include/linux/key.h                      |  7 ++++---
- security/keys/gc.c                       | 20 ++++++++++----------
- security/keys/internal.h                 |  8 ++++----
- security/keys/key.c                      | 27 ++++++++++-----------------
- security/keys/keyring.c                  | 20 ++++++++++----------
- security/keys/permission.c               |  5 ++---
- security/keys/proc.c                     | 21 ++++++++++-----------
- security/keys/process_keys.c             |  2 +-
- 14 files changed, 66 insertions(+), 65 deletions(-)
