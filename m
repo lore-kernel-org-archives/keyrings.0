@@ -1,76 +1,292 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 01 Nov 2017 19:10:22 +0000
-Subject: [PATCH] KEYS: fix out-of-bounds read during ASN.1 parsing
-Message-Id: <20171101191022.108942-1-ebiggers3@gmail.com>
+Date: Thu, 02 Nov 2017 19:13:54 +0000
+Subject: [PATCH v2] syscalls/request_key03: new test for key instantiation races
+Message-Id: <20171102191354.24733-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-syzkaller with KASAN reported an out-of-bounds read in
-asn1_ber_decoder().  It can be reproduced by the following command,
-assuming CONFIG_X509_CERTIFICATE_PARSER=y and CONFIG_KASAN=y:
+Add a test for two related bugs in the keyrings subsystem which each
+allowed unprivileged local users to cause a kernel oops (at best) by
+attempting to "add" a key concurrently with "requesting" it.
 
-    keyctl add asymmetric desc $'\x30\x30' @s
-
-The bug is that the length of an ASN.1 data value isn't validated in the
-case where it is encoded using the short form, causing the decoder to
-read past the end of the input buffer.  Fix it by validating the length.
-
-The bug report was:
-
-    BUG: KASAN: slab-out-of-bounds in asn1_ber_decoder+0x10cb/0x1730 lib/asn1_decoder.c:233
-    Read of size 1 at addr ffff88003cccfa02 by task syz-executor0/6818
-
-    CPU: 1 PID: 6818 Comm: syz-executor0 Not tainted 4.14.0-rc7-00008-g5f479447d983 #2
-    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-    Call Trace:
-     __dump_stack lib/dump_stack.c:16 [inline]
-     dump_stack+0xb3/0x10b lib/dump_stack.c:52
-     print_address_description+0x79/0x2a0 mm/kasan/report.c:252
-     kasan_report_error mm/kasan/report.c:351 [inline]
-     kasan_report+0x236/0x340 mm/kasan/report.c:409
-     __asan_report_load1_noabort+0x14/0x20 mm/kasan/report.c:427
-     asn1_ber_decoder+0x10cb/0x1730 lib/asn1_decoder.c:233
-     x509_cert_parse+0x1db/0x650 crypto/asymmetric_keys/x509_cert_parser.c:89
-     x509_key_preparse+0x64/0x7a0 crypto/asymmetric_keys/x509_public_key.c:174
-     asymmetric_key_preparse+0xcb/0x1a0 crypto/asymmetric_keys/asymmetric_type.c:388
-     key_create_or_update+0x347/0xb20 security/keys/key.c:855
-     SYSC_add_key security/keys/keyctl.c:122 [inline]
-     SyS_add_key+0x1cd/0x340 security/keys/keyctl.c:62
-     entry_SYSCALL_64_fastpath+0x1f/0xbe
-    RIP: 0033:0x447c89
-    RSP: 002b:00007fca7a5d3bd8 EFLAGS: 00000246 ORIG_RAX: 00000000000000f8
-    RAX: ffffffffffffffda RBX: 00007fca7a5d46cc RCX: 0000000000447c89
-    RDX: 0000000020006f4a RSI: 0000000020006000 RDI: 0000000020001ff5
-    RBP: 0000000000000046 R08: fffffffffffffffd R09: 0000000000000000
-    R10: 0000000000000002 R11: 0000000000000246 R12: 0000000000000000
-    R13: 0000000000000000 R14: 00007fca7a5d49c0 R15: 00007fca7a5d4700
-
-Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
-Cc: <stable@vger.kernel.org> # v3.7+
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- lib/asn1_decoder.c | 3 +++
- 1 file changed, 3 insertions(+)
 
-diff --git a/lib/asn1_decoder.c b/lib/asn1_decoder.c
-index 0bd8a611eb83..fef5d2e114be 100644
---- a/lib/asn1_decoder.c
-+++ b/lib/asn1_decoder.c
-@@ -284,6 +284,9 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
- 				if (unlikely(len > datalen - dp))
- 					goto data_overrun_error;
- 			}
-+		} else {
-+			if (unlikely(len > datalen - dp))
-+				goto data_overrun_error;
- 		}
+Changed since v1:
+    - Use an optional argument to indicate which crash to pay attention
+      to, used by the "cve" runtests file.
+    - Slightly increase the iteration count for the "user" key type.
+
+ include/lapi/keyctl.h                              |   4 +
+ runtest/cve                                        |   2 +
+ runtest/syscalls                                   |   1 +
+ testcases/kernel/syscalls/.gitignore               |   1 +
+ .../kernel/syscalls/request_key/request_key03.c    | 200 +++++++++++++++++++++
+ 5 files changed, 208 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/request_key/request_key03.c
+
+diff --git a/include/lapi/keyctl.h b/include/lapi/keyctl.h
+index 328e55763..4b8098a59 100644
+--- a/include/lapi/keyctl.h
++++ b/include/lapi/keyctl.h
+@@ -124,6 +124,10 @@ static inline key_serial_t keyctl_join_session_keyring(const char *name) {
+ # define KEYCTL_SETPERM 5
+ #endif
  
- 		if (flags & FLAG_CONS) {
++#ifndef KEYCTL_CLEAR
++# define KEYCTL_CLEAR 7
++#endif
++
+ #ifndef KEYCTL_UNLINK
+ # define KEYCTL_UNLINK 9
+ #endif
+diff --git a/runtest/cve b/runtest/cve
+index f137fb3db..1b0d13374 100644
+--- a/runtest/cve
++++ b/runtest/cve
+@@ -21,5 +21,7 @@ cve-2017-7308 setsockopt02
+ cve-2017-7472 keyctl04
+ cve-2017-12192 keyctl07
+ cve-2017-15274 add_key02
++cve-2017-15299 request_key03 -b cve-2017-15299
+ cve-2017-15537 ptrace07
++cve-2017-15951 request_key03 -b cve-2017-15951
+ cve-2017-1000364 stack_clash
+diff --git a/runtest/syscalls b/runtest/syscalls
+index 626853669..fc381eb16 100644
+--- a/runtest/syscalls
++++ b/runtest/syscalls
+@@ -932,6 +932,7 @@ renameat202 renameat202 -i 10
+ 
+ request_key01 request_key01
+ request_key02 request_key02
++request_key03 request_key03
+ cve-2017-6951 cve-2017-6951
+ 
+ rmdir01 rmdir01
+diff --git a/testcases/kernel/syscalls/.gitignore b/testcases/kernel/syscalls/.gitignore
+index 0ba38465f..0b3935880 100644
+--- a/testcases/kernel/syscalls/.gitignore
++++ b/testcases/kernel/syscalls/.gitignore
+@@ -773,6 +773,7 @@
+ /renameat2/renameat202
+ /request_key/request_key01
+ /request_key/request_key02
++/request_key/request_key03
+ /rmdir/rmdir01
+ /rmdir/rmdir02
+ /rmdir/rmdir03
+diff --git a/testcases/kernel/syscalls/request_key/request_key03.c b/testcases/kernel/syscalls/request_key/request_key03.c
+new file mode 100644
+index 000000000..9b00a1e0f
+--- /dev/null
++++ b/testcases/kernel/syscalls/request_key/request_key03.c
+@@ -0,0 +1,200 @@
++/*
++ * Copyright (c) 2017 Google, Inc.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program, if not, see <http://www.gnu.org/licenses/>.
++ */
++
++/*
++ * Regression test for two related bugs:
++ *
++ * (1) CVE-2017-15299, fixed by commit 60ff5b2f547a ("KEYS: don't let add_key()
++ *     update an uninstantiated key")
++ * (2) CVE-2017-15951, fixed by commit 363b02dab09b ("KEYS: Fix race between
++ *     updating and finding a negative key")
++ *
++ * We test for the bugs together because the reproduction steps are essentially
++ * the same: repeatedly try to add/update a key with add_key() while requesting
++ * it with request_key() in another task.  This reproduces both bugs:
++ *
++ * For CVE-2017-15299, add_key() has to run while the key being created by
++ * request_key() is still in the "uninstantiated" state.  For the "encrypted" or
++ * "trusted" key types (not guaranteed to be available) this caused a NULL
++ * pointer dereference in encrypted_update() or in trusted_update(),
++ * respectively.  For the "user" key type, this caused the WARN_ON() in
++ * construct_key() to be hit.
++ *
++ * For CVE-2017-15951, request_key() has to run while the key is "negatively
++ * instantiated" (from a prior request_key()) and is being concurrently changed
++ * to "positively instantiated" via add_key() updating it.  This race, which is
++ * a bit more difficult to reproduce, caused the task executing request_key() to
++ * dereference an invalid pointer in __key_link_begin().
++ */
++
++#include <errno.h>
++#include <stdbool.h>
++#include <stdlib.h>
++#include <sys/wait.h>
++
++#include "tst_test.h"
++#include "lapi/keyctl.h"
++
++static char *opt_bug;
++
++static struct tst_option options[] = {
++	{"b:", &opt_bug,  "-b       Bug to test for (cve-2017-15299 or cve-2017-15951; default is both)"},
++	{NULL, NULL, NULL}
++};
++
++static void test_with_key_type(const char *type, const char *payload,
++			       int effort)
++{
++	int i;
++	int status;
++	pid_t add_key_pid;
++	pid_t request_key_pid;
++	bool info_only;
++
++	TEST(keyctl(KEYCTL_JOIN_SESSION_KEYRING, NULL));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "failed to join new session keyring");
++
++	TEST(add_key(type, "desc", payload, strlen(payload),
++		     KEY_SPEC_SESSION_KEYRING));
++	if (TEST_RETURN < 0 && TEST_ERRNO != EINVAL) {
++		if (TEST_ERRNO = ENODEV) {
++			tst_res(TCONF, "kernel doesn't support key type '%s'",
++				type);
++			return;
++		}
++		tst_brk(TBROK | TTERRNO,
++			"unexpected error checking whether key type '%s' is supported",
++			type);
++	}
++
++	/*
++	 * Fork a subprocess which repeatedly tries to "add" a key of the given
++	 * type.  This actually will try to update the key if it already exists.
++	 * Depending on the state of the key, add_key() should either succeed or
++	 * fail with one of several errors:
++	 *
++	 * (1) key didn't exist at all: either add_key() should succeed (if the
++	 *     payload is valid), or it should fail with EINVAL (if the payload
++	 *     is invalid; this is needed for the "encrypted" and "trusted" key
++	 *     types because they have a quirk where the payload syntax differs
++	 *     for creating new keys vs. updating existing keys)
++	 *
++	 * (2) key was negative: add_key() should succeed
++	 *
++	 * (3) key was uninstantiated: add_key() should wait for the key to be
++	 *     negated, then fail with ENOKEY
++	 */
++	add_key_pid = SAFE_FORK();
++	if (add_key_pid = 0) {
++		for (i = 0; i < 100 * effort; i++) {
++			usleep(rand() % 1024);
++			TEST(add_key(type, "desc", payload, strlen(payload),
++				     KEY_SPEC_SESSION_KEYRING));
++			if (TEST_RETURN < 0 &&
++			    TEST_ERRNO != EINVAL && TEST_ERRNO != ENOKEY) {
++				tst_brk(TBROK | TTERRNO,
++					"unexpected error adding key of type '%s'",
++					type);
++			}
++			TEST(keyctl(KEYCTL_CLEAR, KEY_SPEC_SESSION_KEYRING));
++			if (TEST_RETURN < 0) {
++				tst_brk(TBROK | TTERRNO,
++					"unable to clear keyring");
++			}
++		}
++		exit(0);
++	}
++
++	request_key_pid = SAFE_FORK();
++	if (request_key_pid = 0) {
++		for (i = 0; i < 5000 * effort; i++) {
++			TEST(request_key(type, "desc", "callout_info",
++					 KEY_SPEC_SESSION_KEYRING));
++			if (TEST_RETURN < 0 &&
++			    TEST_ERRNO != ENOKEY && TEST_ERRNO != ENOENT) {
++				tst_brk(TBROK | TTERRNO,
++					"unexpected error requesting key of type '%s'",
++					type);
++			}
++		}
++		exit(0);
++	}
++
++	/*
++	 * Verify that neither the add_key() nor the request_key() process
++	 * crashed.  If the add_key() process crashed it is likely due to
++	 * CVE-2017-15299, while if the request_key() process crashed it is
++	 * likely due to CVE-2017-15951.  If testing for one of the bugs
++	 * specifically, only pay attention to the corresponding process.
++	 */
++
++	SAFE_WAITPID(add_key_pid, &status, 0);
++	info_only = (opt_bug && strcmp(opt_bug, "cve-2017-15299") != 0);
++	if (WIFEXITED(status) && WEXITSTATUS(status) = 0) {
++		tst_res(info_only ? TINFO : TPASS,
++			"didn't crash while updating key of type '%s'",
++			type);
++	} else if (WIFSIGNALED(status) && WTERMSIG(status) = SIGKILL) {
++		tst_res(info_only ? TINFO : TFAIL,
++			"kernel oops while updating key of type '%s'",
++			type);
++	} else {
++		tst_brk(TBROK, "add_key child %s", tst_strstatus(status));
++	}
++
++	SAFE_WAITPID(request_key_pid, &status, 0);
++	info_only = (opt_bug && strcmp(opt_bug, "cve-2017-15951") != 0);
++	if (WIFEXITED(status) && WEXITSTATUS(status) = 0) {
++		tst_res(info_only ? TINFO : TPASS,
++			"didn't crash while requesting key of type '%s'",
++			type);
++	} else if (WIFSIGNALED(status) && WTERMSIG(status) = SIGKILL) {
++		tst_res(info_only ? TINFO : TFAIL,
++			"kernel oops while requesting key of type '%s'",
++			type);
++	} else {
++		tst_brk(TBROK, "request_key child %s", tst_strstatus(status));
++	}
++}
++
++static void do_test(void)
++{
++	/*
++	 * Briefly test the "encrypted" and/or "trusted" key types when
++	 * availaible, mainly to reproduce CVE-2017-15299.
++	 */
++	test_with_key_type("encrypted", "update user:foo 32", 2);
++	test_with_key_type("trusted", "update", 2);
++
++	/*
++	 * Test the "user" key type for longer, mainly in order to reproduce
++	 * CVE-2017-15951.  However, without the fix for CVE-2017-15299 as well,
++	 * WARNs may show up in the kernel log.
++	 *
++	 * Note: the precise iteration count is arbitrary; it's just intended to
++	 * be enough to give a decent chance of reproducing the bug, without
++	 * wasting too much time.
++	 */
++	test_with_key_type("user", "payload", 20);
++}
++
++static struct tst_test test = {
++	.test_all = do_test,
++	.forks_child = 1,
++	.options = options,
++};
 -- 
 2.15.0.403.gc27cc4dac6-goog
 
