@@ -1,41 +1,75 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 27 Nov 2017 07:19:54 +0000
-Subject: [PATCH] X.509: use crypto_shash_digest()
-Message-Id: <20171127071954.26273-1-ebiggers3@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 02 Nov 2017 00:47:12 +0000
+Subject: [PATCH 2/3] KEYS: trusted: fix writing past end of buffer in trusted_read()
+Message-Id: <150958363228.7093.5144341440148561040.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-crypto@vger.kernel.org, Eric Biggers <ebiggers@google.com>
+References: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
+In-Reply-To: <150958362347.7093.12077889134222746769.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-Use crypto_shash_digest() instead of crypto_shash_init() followed by
-crypto_shash_finup().  (For simplicity only; they are equivalent.)
+When calling keyctl_read() on a key of type "trusted", if the
+user-supplied buffer was too small, the kernel ignored the buffer length
+and just wrote past the end of the buffer, potentially corrupting
+userspace memory.  Fix it by instead returning the size required, as per
+the documentation for keyctl_read().
 
+We also don't even fill the buffer at all in this case, as this is
+slightly easier to implement than doing a short read, and either
+behavior appears to be permitted.  It also makes it match the behavior
+of the "encrypted" key type.
+
+Fixes: d00a1c72f7f4 ("keys: add new trusted key-type")
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: <stable@vger.kernel.org> # v2.6.38+
 Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Reviewed-by: James Morris <james.l.morris@oracle.com>
 ---
- crypto/asymmetric_keys/x509_public_key.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index 9db20abe78a0..3b39c0659155 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -79,11 +79,7 @@ int x509_get_sig_params(struct x509_certificate *cert)
- 	desc->tfm = tfm;
- 	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+ security/keys/trusted.c |   23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index bd85315cbfeb..98aa89ff7bfd 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -1147,20 +1147,21 @@ static long trusted_read(const struct key *key, char __user *buffer,
+ 	p = dereference_key_locked(key);
+ 	if (!p)
+ 		return -EINVAL;
+-	if (!buffer || buflen <= 0)
+-		return 2 * p->blob_len;
+-	ascii_buf = kmalloc(2 * p->blob_len, GFP_KERNEL);
+-	if (!ascii_buf)
+-		return -ENOMEM;
  
--	ret = crypto_shash_init(desc);
--	if (ret < 0)
--		goto error_2;
--	might_sleep();
--	ret = crypto_shash_finup(desc, cert->tbs, cert->tbs_size, sig->digest);
-+	ret = crypto_shash_digest(desc, cert->tbs, cert->tbs_size, sig->digest);
- 	if (ret < 0)
- 		goto error_2;
+-	bufp = ascii_buf;
+-	for (i = 0; i < p->blob_len; i++)
+-		bufp = hex_byte_pack(bufp, p->blob[i]);
+-	if ((copy_to_user(buffer, ascii_buf, 2 * p->blob_len)) != 0) {
++	if (buffer && buflen >= 2 * p->blob_len) {
++		ascii_buf = kmalloc(2 * p->blob_len, GFP_KERNEL);
++		if (!ascii_buf)
++			return -ENOMEM;
++
++		bufp = ascii_buf;
++		for (i = 0; i < p->blob_len; i++)
++			bufp = hex_byte_pack(bufp, p->blob[i]);
++		if (copy_to_user(buffer, ascii_buf, 2 * p->blob_len) != 0) {
++			kzfree(ascii_buf);
++			return -EFAULT;
++		}
+ 		kzfree(ascii_buf);
+-		return -EFAULT;
+ 	}
+-	kzfree(ascii_buf);
+ 	return 2 * p->blob_len;
+ }
  
--- 
-2.15.0
 
