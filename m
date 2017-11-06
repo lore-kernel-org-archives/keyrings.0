@@ -1,50 +1,56 @@
-From: Greg KH <gregkh@linuxfoundation.org>
-Date: Thu, 16 Nov 2017 16:33:37 +0000
-Subject: Re: Apply "security/keys: add CONFIG_KEYS_COMPAT to Kconfig" to stable trees
-Message-Id: <20171116163337.GB24442@kroah.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 06 Nov 2017 02:30:48 +0000
+Subject: [PATCH v2 5/5] crypto: dh - Remove pointless checks for NULL 'p' and 'g'
+Message-Id: <20171106023048.8067-6-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <26f91532-a424-5449-bf5f-5682e47fb1c4@mips.com>
- <20171116131205.GA6447@kroah.com>
- <a1170aa3-91c3-e09c-19ed-36425e15d874@mips.com>
-In-Reply-To: <a1170aa3-91c3-e09c-19ed-36425e15d874@mips.com>
-To: James Cowgill <james.cowgill@mips.com>
-Cc: stable@vger.kernel.org, keyrings@vger.kernel.org
+References: <20171106023048.8067-1-ebiggers3@gmail.com>
+In-Reply-To: <20171106023048.8067-1-ebiggers3@gmail.com>
+To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Giovanni Cabiddu <giovanni.cabiddu@intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Stephan Mueller <smueller@chronox.de>, qat-linux@intel.com, keyrings@vger.kernel.org, Eric Biggers <ebiggers@google.com>
 
-On Thu, Nov 16, 2017 at 02:10:15PM +0000, James Cowgill wrote:
-> Hi,
-> 
-> On 16/11/17 13:12, Greg KH wrote:
-> > On Thu, Nov 16, 2017 at 11:57:27AM +0000, James Cowgill wrote:
-> >> Hi,
-> >>
-> >> Is it possible to apply this commit to the stable trees before 4.12?
-> >>
-> >> commit 47b2c3fff4932e6fc17ce13d51a43c6969714e20
-> >> Author: Bilal Amarni <bilal.amarni@gmail.com>
-> >> Date:   Thu Jun 8 14:47:26 2017 +0100
-> >>
-> >>     security/keys: add CONFIG_KEYS_COMPAT to Kconfig
-> >>
-> >> In commit 20f06ed9f61a ("KEYS: 64-bit MIPS needs to use
-> >> compat_sys_keyctl for 32-bit userspace"), the keyctl syscall for 32-bit
-> >> MIPS was "fixed" to point at compat_sys_keyctl instead of sys_keyctl.
-> >> Unfortunately this caused the syscall to always return ENOSYS because
-> >> CONFIG_KEYS_COMPAT was not enabled on MIPS. Instead of fixing this by
-> >> manually by enabling KEYS_COMPAT in the MIPS Kconfig, I think applying
-> >> the above commit is a better.
-> > 
-> > Sounds resonable, but how far back should it go?  4.9 makes sense, but
-> > stuff older than that?  4.4?  4.1?  3.16?
-> 
-> I'm most interested in 4.9, but I think it should go in all versions
-> which have 20f06ed9f61a applied, which includes all the current longterm
-> kernels as far as I can see.
+From: Eric Biggers <ebiggers@google.com>
 
-Ok, now applied, but there was some arm64 stuff that didn't match up...
+Neither 'p' nor 'g' can be NULL, as they were unpacked using
+crypto_dh_decode_key().  And it makes no sense for them to be optional.
+So remove the NULL checks that were copy-and-pasted into both modules.
 
-thanks,
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ crypto/dh.c                                   | 3 ---
+ drivers/crypto/qat/qat_common/qat_asym_algs.c | 3 ---
+ 2 files changed, 6 deletions(-)
 
-greg k-h
+diff --git a/crypto/dh.c b/crypto/dh.c
+index aadaf36fb56f..5659fe7f446d 100644
+--- a/crypto/dh.c
++++ b/crypto/dh.c
+@@ -53,9 +53,6 @@ static int dh_check_params_length(unsigned int p_len)
+ 
+ static int dh_set_params(struct dh_ctx *ctx, struct dh *params)
+ {
+-	if (unlikely(!params->p || !params->g))
+-		return -EINVAL;
+-
+ 	if (dh_check_params_length(params->p_size << 3))
+ 		return -EINVAL;
+ 
+diff --git a/drivers/crypto/qat/qat_common/qat_asym_algs.c b/drivers/crypto/qat/qat_common/qat_asym_algs.c
+index 7655fdb499de..13c52d6bf630 100644
+--- a/drivers/crypto/qat/qat_common/qat_asym_algs.c
++++ b/drivers/crypto/qat/qat_common/qat_asym_algs.c
+@@ -443,9 +443,6 @@ static int qat_dh_set_params(struct qat_dh_ctx *ctx, struct dh *params)
+ 	struct qat_crypto_instance *inst = ctx->inst;
+ 	struct device *dev = &GET_DEV(inst->accel_dev);
+ 
+-	if (unlikely(!params->p || !params->g))
+-		return -EINVAL;
+-
+ 	if (qat_dh_check_params_length(params->p_size << 3))
+ 		return -EINVAL;
+ 
+-- 
+2.15.0
+
