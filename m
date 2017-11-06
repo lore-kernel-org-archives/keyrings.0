@@ -1,7 +1,7 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 06 Nov 2017 18:43:59 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 06 Nov 2017 22:05:45 +0000
 Subject: Re: general protection fault in asn1_ber_decoder
-Message-Id: <20171106184359.GC50562@gmail.com>
+Message-Id: <15884.1510005945@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,54 +9,93 @@ List-Id: <keyrings.vger.kernel.org>
 References: <94eb2c1886e4e1e95e055d54b9ab@google.com>
 In-Reply-To: <94eb2c1886e4e1e95e055d54b9ab@google.com>
 To: syzbot <bot+04b92812698232d15d78c1e4d3bbf6fcc21eeeb1@syzkaller.appspotmail.com>
-Cc: davem@davemloft.net, dhowells@redhat.com, herbert@gondor.apana.org.au, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
+Cc: dhowells@redhat.com, ebiggers3@gmail.com, davem@davemloft.net, herbert@gondor.apana.org.au, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
 
-On Mon, Nov 06, 2017 at 10:36:00AM -0800, syzbot wrote:
-> kasan: GPF could be caused by NULL-ptr deref or user memory access
-> general protection fault: 0000 [#1] SMP KASAN
-> Dumping ftrace buffer:
->    (ftrace buffer empty)
-> Modules linked in:
-> CPU: 3 PID: 2984 Comm: syzkaller229187 Not tainted
-> 4.14.0-rc7-next-20171103+ #10
-> Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-> task: ffff88003ab66000 task.stack: ffff880039d58000
-> RIP: 0010:asn1_ber_decoder+0x41e/0x1af0 lib/asn1_decoder.c:233
-> RSP: 0018:ffff880039d5f8d0 EFLAGS: 00010246
-> RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
-> RDX: 0000000000000000 RSI: ffff88006981bf00 RDI: ffffffff853f1920
-> RBP: ffff880039d5fb88 R08: 0000000000000060 R09: 0000000000000000
-> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-> R13: 0000000000000000 R14: ffff880039d5fb60 R15: dffffc0000000000
-> FS:  00000000010ac880(0000) GS:ffff88006df00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 0000000020f49ffb CR3: 000000006aeb8000 CR4: 00000000000006e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-> Call Trace:
->  pkcs7_parse_message+0x2b3/0x730 crypto/asymmetric_keys/pkcs7_parser.c:139
->  verify_pkcs7_signature+0x8d/0x290 certs/system_keyring.c:216
->  pkcs7_preparse+0x7b/0xc0 crypto/asymmetric_keys/pkcs7_key_type.c:63
->  key_create_or_update+0x533/0x1040 security/keys/key.c:855
->  SYSC_add_key security/keys/keyctl.c:122 [inline]
->  SyS_add_key+0x18a/0x340 security/keys/keyctl.c:62
->  entry_SYSCALL_64_fastpath+0x1f/0xbe
-> RIP: 0033:0x434f39
-> RSP: 002b:00007fff51fda138 EFLAGS: 00000286 ORIG_RAX: 00000000000000f8
-> RAX: ffffffffffffffda RBX: 00000000004002b0 RCX: 0000000000434f39
-> RDX: 0000000020000000 RSI: 0000000020f49ffb RDI: 0000000020f4a000
-> RBP: 0000000000000086 R08: ffffffffffffffff R09: 0000000000000000
-> R10: 0000000000000000 R11: 0000000000000286 R12: 0000000000000000
-> R13: 00000000004018b0 R14: 0000000000401940 R15: 0000000000000000
-> Code: 19 ff 48 8d 43 01 49 89 86 80 fe ff ff 48 89 85 a8 fd ff ff 48
-> 8b 85 c0 fd ff ff 48 01 d8 48 89 c2 48 89 c1 48 c1 ea 03 83 e1 07
-> <42> 0f b6 14 3a 38 ca 7f 08 84 d2 0f 85 cd 0f 00 00 0f b6 00 88
-> RIP: asn1_ber_decoder+0x41e/0x1af0 lib/asn1_decoder.c:233 RSP:
-> ffff880039d5f8d0
+syzbot <bot+04b92812698232d15d78c1e4d3bbf6fcc21eeeb1@syzkaller.appspotmail.com> wrote:
 
-I'll be sending a fix for this.  The bug is an integer underflow in the
-expression 'if (unlikely(dp >= datalen - 1))', which causes a NULL pointer
-dereference if you try to add a "pkcs7_test" key with an empty payload (requires
-CONFIG_PKCS7_TEST_KEY=y).
+> syzkaller hit the following crash on 5a3517e009e979f21977d362212b7729c5165d92
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git/master
+> compiler: gcc (GCC) 7.1.1 20170620
+> .config is attached
+> Raw console output is attached.
+> C reproducer is attached
+> syzkaller reproducer is attached. See https://goo.gl/kgGztJ
+> for information about syzkaller reproducers
 
-Eric
+Does the attached patch fix it for you?
+
+David
+---
+commit 41f31a32d918a97dba2ec589d24b52527c8f35b6
+Author: David Howells <dhowells@redhat.com>
+Date:   Mon Nov 6 21:44:00 2017 +0000
+
+    asn1: Fix handling of zero-length ASN.1 messages
+    
+    The ASN.1 parser doesn't correctly handle zero-length ASN.1 data.  There
+    are at least a couple of ways this can be handled.  The simplest is just to
+    reject zero-length messages upfront on the basis that we don't currently
+    have a grammar that permits such; a more complex way is to expand all the
+    state variables to 32-bit signed so that the:
+    
+                    if (unlikely(dp >= datalen - 1))
+    
+    check on line 231 correctly detects underflow when datalen is 0.
+    
+    For the moment, just choose the simplest option and indicate EBADMSG for a
+    zero-length message, with a comment indicating what needs to be done if the
+    check is removed
+    
+    The bug can be reproduced by:
+    
+            echo -n | keyctl padd pkcs7_test "" @t
+    
+    The oops resulting from the bug looks like:
+    
+            BUG: unable to handle kernel NULL pointer dereference at (null)
+            IP: asn1_ber_decoder+0xe7/0x5fa
+            ...
+            RIP: 0010:asn1_ber_decoder+0xe7/0x5fa
+            ...
+            Call Trace:
+             ? pkcs7_parse_message+0x11/0x181
+             ? rcu_read_lock_sched_held+0x5f/0x67
+             ? kmem_cache_alloc_trace+0x275/0x2b1
+             ? pkcs7_parse_message+0x9a/0x181
+             pkcs7_parse_message+0xd9/0x181
+             ? pkcs7_preparse+0x48/0x48
+             verify_pkcs7_signature+0x2c/0x107
+             pkcs7_preparse+0x44/0x48
+             ? pkcs7_preparse+0x48/0x48
+             key_create_or_update+0x160/0x3d5
+             SyS_add_key+0x123/0x186
+             do_syscall_64+0x8a/0x190
+             entry_SYSCALL64_slow_path+0x25/0x25
+            ...
+    
+    with the bug falling on line 233 of asn1_decoder.c:
+    
+            tag = data[dp++];
+    
+    Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
+    Reported-by: syzkaller@googlegroups.com
+    Signed-off-by: David Howells <dhowells@redhat.com>
+
+diff --git a/lib/asn1_decoder.c b/lib/asn1_decoder.c
+index fef5d2e114be..048de2c20ae9 100644
+--- a/lib/asn1_decoder.c
++++ b/lib/asn1_decoder.c
+@@ -201,6 +201,13 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
+ 	if (datalen > 65535)
+ 		return -EMSGSIZE;
+ 
++	/* We don't currently support 0-length messages - the underrun checks
++	 * will fail if datalen is 0 because we check against datalen - 1 with
++	 * unsigned arithmetic.
++	 */
++	if (datalen = 0)
++		return -EBADMSG;
++
+ next_op:
+ 	pr_debug("next_op: pc=\e[32m%zu\e[m/%zu dp=\e[33m%zu\e[m/%zu C=%d J=%d\n",
+ 		 pc, machlen, dp, datalen, csp, jsp);
