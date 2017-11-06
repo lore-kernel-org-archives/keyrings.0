@@ -1,143 +1,70 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 27 Nov 2017 07:12:12 +0000
-Subject: [PATCH] ASN.1: fix out-of-bounds read when parsing indefinite length item
-Message-Id: <20171127071212.25243-1-ebiggers3@gmail.com>
+Date: Mon, 06 Nov 2017 02:30:47 +0000
+Subject: [PATCH v2 4/5] crypto: qat - Clean up error handling in qat_dh_set_secret()
+Message-Id: <20171106023048.8067-5-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-crypto@vger.kernel.org, Alexander Potapenko <glider@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <20171106023048.8067-1-ebiggers3@gmail.com>
+In-Reply-To: <20171106023048.8067-1-ebiggers3@gmail.com>
+To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Giovanni Cabiddu <giovanni.cabiddu@intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Stephan Mueller <smueller@chronox.de>, qat-linux@intel.com, keyrings@vger.kernel.org, Eric Biggers <ebiggers@google.com>
 
 From: Eric Biggers <ebiggers@google.com>
 
-In asn1_ber_decoder(), indefinitely-sized ASN.1 items were being passed
-to the action functions before their lengths had been computed, using
-the bogus length of 0x80 (ASN1_INDEFINITE_LENGTH).  This resulted in
-reading data past the end of the input buffer, when given a specially
-crafted message.
+Update the error handling in qat_dh_set_secret() to mirror
+dh_set_secret().  The new version is less error-prone because freeing
+memory and setting the pointers to NULL is now only done in one place.
 
-Fix it by rearranging the code so that the indefinite length is resolved
-before the action is called.
-
-This bug was originally found by fuzzing the X.509 parser in userspace
-using libFuzzer from the LLVM project.
-
-KASAN report (cleaned up slightly):
-
-    BUG: KASAN: slab-out-of-bounds in memcpy ./include/linux/string.h:341 [inline]
-    BUG: KASAN: slab-out-of-bounds in x509_fabricate_name.constprop.1+0x1a4/0x940 crypto/asymmetric_keys/x509_cert_parser.c:366
-    Read of size 128 at addr ffff880035dd9eaf by task keyctl/195
-
-    CPU: 1 PID: 195 Comm: keyctl Not tainted 4.14.0-09238-g1d3b78bbc6e9 #26
-    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.11.0-20171110_100015-anatol 04/01/2014
-    Call Trace:
-     __dump_stack lib/dump_stack.c:17 [inline]
-     dump_stack+0xd1/0x175 lib/dump_stack.c:53
-     print_address_description+0x78/0x260 mm/kasan/report.c:252
-     kasan_report_error mm/kasan/report.c:351 [inline]
-     kasan_report+0x23f/0x350 mm/kasan/report.c:409
-     memcpy+0x1f/0x50 mm/kasan/kasan.c:302
-     memcpy ./include/linux/string.h:341 [inline]
-     x509_fabricate_name.constprop.1+0x1a4/0x940 crypto/asymmetric_keys/x509_cert_parser.c:366
-     asn1_ber_decoder+0xb4a/0x1fd0 lib/asn1_decoder.c:447
-     x509_cert_parse+0x1c7/0x620 crypto/asymmetric_keys/x509_cert_parser.c:89
-     x509_key_preparse+0x61/0x750 crypto/asymmetric_keys/x509_public_key.c:174
-     asymmetric_key_preparse+0xa4/0x150 crypto/asymmetric_keys/asymmetric_type.c:388
-     key_create_or_update+0x4d4/0x10a0 security/keys/key.c:850
-     SYSC_add_key security/keys/keyctl.c:122 [inline]
-     SyS_add_key+0xe8/0x290 security/keys/keyctl.c:62
-     entry_SYSCALL_64_fastpath+0x1f/0x96
-
-    Allocated by task 195:
-     __do_kmalloc_node mm/slab.c:3675 [inline]
-     __kmalloc_node+0x47/0x60 mm/slab.c:3682
-     kvmalloc ./include/linux/mm.h:540 [inline]
-     SYSC_add_key security/keys/keyctl.c:104 [inline]
-     SyS_add_key+0x19e/0x290 security/keys/keyctl.c:62
-     entry_SYSCALL_64_fastpath+0x1f/0x96
-
-Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
-Reported-by: Alexander Potapenko <glider@google.com>
-Cc: <stable@vger.kernel.org> # v3.7+
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- lib/asn1_decoder.c | 47 ++++++++++++++++++++++++++---------------------
- 1 file changed, 26 insertions(+), 21 deletions(-)
+ drivers/crypto/qat/qat_common/qat_asym_algs.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/lib/asn1_decoder.c b/lib/asn1_decoder.c
-index 1ef0cec38d78..d77cdfc4b554 100644
---- a/lib/asn1_decoder.c
-+++ b/lib/asn1_decoder.c
-@@ -313,42 +313,47 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
+diff --git a/drivers/crypto/qat/qat_common/qat_asym_algs.c b/drivers/crypto/qat/qat_common/qat_asym_algs.c
+index 6f5dd68449c6..7655fdb499de 100644
+--- a/drivers/crypto/qat/qat_common/qat_asym_algs.c
++++ b/drivers/crypto/qat/qat_common/qat_asym_algs.c
+@@ -462,11 +462,8 @@ static int qat_dh_set_params(struct qat_dh_ctx *ctx, struct dh *params)
+ 	}
  
- 	/* Decide how to handle the operation */
- 	switch (op) {
--	case ASN1_OP_MATCH_ANY_ACT:
--	case ASN1_OP_MATCH_ANY_ACT_OR_SKIP:
--	case ASN1_OP_COND_MATCH_ANY_ACT:
--	case ASN1_OP_COND_MATCH_ANY_ACT_OR_SKIP:
--		ret = actions[machine[pc + 1]](context, hdr, tag, data + dp, len);
--		if (ret < 0)
--			return ret;
--		goto skip_data;
--
--	case ASN1_OP_MATCH_ACT:
--	case ASN1_OP_MATCH_ACT_OR_SKIP:
--	case ASN1_OP_COND_MATCH_ACT_OR_SKIP:
--		ret = actions[machine[pc + 2]](context, hdr, tag, data + dp, len);
--		if (ret < 0)
--			return ret;
--		goto skip_data;
--
- 	case ASN1_OP_MATCH:
- 	case ASN1_OP_MATCH_OR_SKIP:
-+	case ASN1_OP_MATCH_ACT:
-+	case ASN1_OP_MATCH_ACT_OR_SKIP:
- 	case ASN1_OP_MATCH_ANY:
- 	case ASN1_OP_MATCH_ANY_OR_SKIP:
-+	case ASN1_OP_MATCH_ANY_ACT:
-+	case ASN1_OP_MATCH_ANY_ACT_OR_SKIP:
- 	case ASN1_OP_COND_MATCH_OR_SKIP:
-+	case ASN1_OP_COND_MATCH_ACT_OR_SKIP:
- 	case ASN1_OP_COND_MATCH_ANY:
- 	case ASN1_OP_COND_MATCH_ANY_OR_SKIP:
--	skip_data:
-+	case ASN1_OP_COND_MATCH_ANY_ACT:
-+	case ASN1_OP_COND_MATCH_ANY_ACT_OR_SKIP:
-+
- 		if (!(flags & FLAG_CONS)) {
- 			if (flags & FLAG_INDEFINITE_LENGTH) {
-+				size_t tmp = dp;
-+
- 				ret = asn1_find_indefinite_length(
--					data, datalen, &dp, &len, &errmsg);
-+					data, datalen, &tmp, &len, &errmsg);
- 				if (ret < 0)
- 					goto error;
--			} else {
--				dp += len;
- 			}
- 			pr_debug("- LEAF: %zu\n", len);
- 		}
-+
-+		if (op & ASN1_OP_MATCH__ACT) {
-+			unsigned char act;
-+
-+			if (op & ASN1_OP_MATCH__ANY)
-+				act = machine[pc + 1];
-+			else
-+				act = machine[pc + 2];
-+			ret = actions[act](context, hdr, tag, data + dp, len);
-+			if (ret < 0)
-+				return ret;
-+		}
-+
-+		if (!(flags & FLAG_CONS))
-+			dp += len;
- 		pc += asn1_op_lengths[op];
- 		goto next_op;
+ 	ctx->g = dma_zalloc_coherent(dev, ctx->p_size, &ctx->dma_g, GFP_KERNEL);
+-	if (!ctx->g) {
+-		dma_free_coherent(dev, ctx->p_size, ctx->p, ctx->dma_p);
+-		ctx->p = NULL;
++	if (!ctx->g)
+ 		return -ENOMEM;
+-	}
+ 	memcpy(ctx->g + (ctx->p_size - params->g_size), params->g,
+ 	       params->g_size);
  
+@@ -507,18 +504,22 @@ static int qat_dh_set_secret(struct crypto_kpp *tfm, const void *buf,
+ 
+ 	ret = qat_dh_set_params(ctx, &params);
+ 	if (ret < 0)
+-		return ret;
++		goto err_clear_ctx;
+ 
+ 	ctx->xa = dma_zalloc_coherent(dev, ctx->p_size, &ctx->dma_xa,
+ 				      GFP_KERNEL);
+ 	if (!ctx->xa) {
+-		qat_dh_clear_ctx(dev, ctx);
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_clear_ctx;
+ 	}
+ 	memcpy(ctx->xa + (ctx->p_size - params.key_size), params.key,
+ 	       params.key_size);
+ 
+ 	return 0;
++
++err_clear_ctx:
++	qat_dh_clear_ctx(dev, ctx);
++	return ret;
+ }
+ 
+ static unsigned int qat_dh_max_size(struct crypto_kpp *tfm)
 -- 
 2.15.0
 
