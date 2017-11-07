@@ -1,7 +1,7 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 02 Nov 2017 19:13:54 +0000
-Subject: [PATCH v2] syscalls/request_key03: new test for key instantiation races
-Message-Id: <20171102191354.24733-1-ebiggers3@gmail.com>
+Date: Tue, 07 Nov 2017 05:26:29 +0000
+Subject: [PATCH v3] syscalls/request_key03: new test for key instantiation races
+Message-Id: <20171107052629.8518-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -17,6 +17,9 @@ attempting to "add" a key concurrently with "requesting" it.
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
 
+Changed since v2:
+    - Ignore EDQUOT from add_key() and request_key().
+
 Changed since v1:
     - Use an optional argument to indicate which crash to pay attention
       to, used by the "cve" runtests file.
@@ -26,8 +29,8 @@ Changed since v1:
  runtest/cve                                        |   2 +
  runtest/syscalls                                   |   1 +
  testcases/kernel/syscalls/.gitignore               |   1 +
- .../kernel/syscalls/request_key/request_key03.c    | 200 +++++++++++++++++++++
- 5 files changed, 208 insertions(+)
+ .../kernel/syscalls/request_key/request_key03.c    | 203 +++++++++++++++++++++
+ 5 files changed, 211 insertions(+)
  create mode 100644 testcases/kernel/syscalls/request_key/request_key03.c
 
 diff --git a/include/lapi/keyctl.h b/include/lapi/keyctl.h
@@ -83,10 +86,10 @@ index 0ba38465f..0b3935880 100644
  /rmdir/rmdir03
 diff --git a/testcases/kernel/syscalls/request_key/request_key03.c b/testcases/kernel/syscalls/request_key/request_key03.c
 new file mode 100644
-index 000000000..9b00a1e0f
+index 000000000..8711b1250
 --- /dev/null
 +++ b/testcases/kernel/syscalls/request_key/request_key03.c
-@@ -0,0 +1,200 @@
+@@ -0,0 +1,203 @@
 +/*
 + * Copyright (c) 2017 Google, Inc.
 + *
@@ -187,6 +190,9 @@ index 000000000..9b00a1e0f
 +	 *
 +	 * (3) key was uninstantiated: add_key() should wait for the key to be
 +	 *     negated, then fail with ENOKEY
++	 *
++	 * For now we also accept EDQUOT because the kernel frees up the keys
++	 * quota asynchronously after keys are unlinked.  So it may be hit.
 +	 */
 +	add_key_pid = SAFE_FORK();
 +	if (add_key_pid = 0) {
@@ -194,8 +200,8 @@ index 000000000..9b00a1e0f
 +			usleep(rand() % 1024);
 +			TEST(add_key(type, "desc", payload, strlen(payload),
 +				     KEY_SPEC_SESSION_KEYRING));
-+			if (TEST_RETURN < 0 &&
-+			    TEST_ERRNO != EINVAL && TEST_ERRNO != ENOKEY) {
++			if (TEST_RETURN < 0 && TEST_ERRNO != EINVAL &&
++			    TEST_ERRNO != ENOKEY && TEST_ERRNO != EDQUOT) {
 +				tst_brk(TBROK | TTERRNO,
 +					"unexpected error adding key of type '%s'",
 +					type);
@@ -214,8 +220,8 @@ index 000000000..9b00a1e0f
 +		for (i = 0; i < 5000 * effort; i++) {
 +			TEST(request_key(type, "desc", "callout_info",
 +					 KEY_SPEC_SESSION_KEYRING));
-+			if (TEST_RETURN < 0 &&
-+			    TEST_ERRNO != ENOKEY && TEST_ERRNO != ENOENT) {
++			if (TEST_RETURN < 0 && TEST_ERRNO != ENOKEY &&
++			    TEST_ERRNO != ENOENT && TEST_ERRNO != EDQUOT) {
 +				tst_brk(TBROK | TTERRNO,
 +					"unexpected error requesting key of type '%s'",
 +					type);
@@ -288,5 +294,5 @@ index 000000000..9b00a1e0f
 +	.options = options,
 +};
 -- 
-2.15.0.403.gc27cc4dac6-goog
+2.15.0
 
