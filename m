@@ -1,23 +1,56 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 02 Nov 2017 00:06:02 +0000
-Subject: Re: [PATCH] KEYS: fix in-kernel documentation for keyctl_read()
-Message-Id: <17684.1509581162@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Tue, 07 Nov 2017 22:15:27 +0000
+Subject: [PATCH v2] lib/mpi: call cond_resched() from mpi_powm() loop
+Message-Id: <20171107221527.98433-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171026205458.105299-1-ebiggers3@gmail.com>
-In-Reply-To: <20171026205458.105299-1-ebiggers3@gmail.com>
-To: keyrings@vger.kernel.org
+To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-Eric Biggers <ebiggers3@gmail.com> wrote:
+From: Eric Biggers <ebiggers@google.com>
 
-> I guess that's fine --- either way users can't rely on the contents of the
-> buffer.  The man page should use the same wording, though.  Should I send a v2
-> of both patches?
+On a non-preemptible kernel, if KEYCTL_DH_COMPUTE is called with the
+largest permitted inputs (16384 bits), the kernel spends 10+ seconds
+doing modular exponentiation in mpi_powm() without rescheduling.  If all
+threads do it, it locks up the system.  Moreover, it can cause
+rcu_sched-stall warnings.
 
-Please.  I just think it's better to put the 'semi-successful' case before the
-'really successful' case.
+Notwithstanding the insanity of doing this calculation in kernel mode
+rather than in userspace, fix it by calling cond_resched() as each bit
+from the exponent is processed.  It's still noninterruptible, but at
+least it's preemptible now.
 
-Thanks.
-David
+Do the cond_resched() once per bit rather than once per MPI limb because
+each limb might still easily take 100+ milliseconds on slow CPUs.
+
+Cc: <stable@vger.kernel.org> # v4.12+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ lib/mpi/mpi-pow.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/lib/mpi/mpi-pow.c b/lib/mpi/mpi-pow.c
+index e24388a863a7..468fb7cd1221 100644
+--- a/lib/mpi/mpi-pow.c
++++ b/lib/mpi/mpi-pow.c
+@@ -26,6 +26,7 @@
+  *	 however I decided to publish this code under the plain GPL.
+  */
+ 
++#include <linux/sched.h>
+ #include <linux/string.h>
+ #include "mpi-internal.h"
+ #include "longlong.h"
+@@ -256,6 +257,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
+ 				}
+ 				e <<= 1;
+ 				c--;
++				cond_resched();
+ 			}
+ 
+ 			i--;
+-- 
+2.15.0.403.gc27cc4dac6-goog
+
