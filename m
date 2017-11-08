@@ -1,25 +1,45 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 08 Nov 2017 12:50:17 +0000
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 08 Nov 2017 19:18:04 +0000
 Subject: Re: [PATCH v2] lib/mpi: call cond_resched() from mpi_powm() loop
-Message-Id: <25888.1510145417@warthog.procyon.org.uk>
+Message-Id: <20171108191804.GA74965@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20171107221527.98433-1-ebiggers3@gmail.com>
-In-Reply-To: <20171107221527.98433-1-ebiggers3@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: dhowells@redhat.com, linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+ <25888.1510145417@warthog.procyon.org.uk>
+In-Reply-To: <25888.1510145417@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-Eric Biggers <ebiggers3@gmail.com> wrote:
+Hi David,
 
-> On a non-preemptible kernel, if KEYCTL_DH_COMPUTE is called with the
-> largest permitted inputs (16384 bits), the kernel spends 10+ seconds
-> doing modular exponentiation in mpi_powm() without rescheduling.  If all
-> threads do it, it locks up the system.  Moreover, it can cause
-> rcu_sched-stall warnings.
+On Wed, Nov 08, 2017 at 12:50:17PM +0000, David Howells wrote:
+> Eric Biggers <ebiggers3@gmail.com> wrote:
+> 
+> > On a non-preemptible kernel, if KEYCTL_DH_COMPUTE is called with the
+> > largest permitted inputs (16384 bits), the kernel spends 10+ seconds
+> > doing modular exponentiation in mpi_powm() without rescheduling.  If all
+> > threads do it, it locks up the system.  Moreover, it can cause
+> > rcu_sched-stall warnings.
+> 
+> Do you want this to go in immediately, or I should I push it to James for the
+> next merge window?
+> 
+> David
 
-Do you want this to go in immediately, or I should I push it to James for the
-next merge window?
+This probably should be grouped with my series "crypto: dh - input validation
+fixes", as this is also a fix for Diffie-Hellman.  I was actually expecting
+Herbert Xu to take these patches, as Diffie-Hellman is now part of the crypto
+API (crypto/dh.c); none of the patches actually touch security/keys/.  If you'd
+like to maintain the Diffie-Hellman implementation(s) you should get yourself
+added to MAINTAINERS for the relevant files.
 
-David
+As for the criticality of the fixes, the code is new in v4.12, so I doubt many
+people have CONFIG_KEY_DH_OPERATIONS=y enabled yet.  syzbot doesn't actually
+have it enabled either (we should turn it on); I just happened to find these
+bugs by running syzkaller myself.  So it may not be particularly critical to
+take these fixes immediately.  However, at least the fix for the double free bug
+("crypto: dh - Fix double free of ctx->p") shouldn't wait for too long...
+
+Eric
