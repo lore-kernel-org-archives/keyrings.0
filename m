@@ -1,18 +1,27 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 08 Nov 2017 13:30:50 +0000
-Subject: Re: [PATCH v5 2/4] KEYS: Add ELF class-independent certificate insertion support
-Message-Id: <18400.1510147850@warthog.procyon.org.uk>
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 10 Nov 2017 20:28:16 +0000
+Subject: [PATCH 0/2] security/keys/trusted: Fine-tuning for two function implementations
+Message-Id: <479805df-edaf-1e9a-57be-d7c4f38e9d31@users.sourceforge.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1494440456-28671-3-git-send-email-mkayaalp@linux.vnet.ibm.com>
-	<1494440456-28671-1-git-send-email-mkayaalp@linux.vnet.ibm.com>
-In-Reply-To: <1494440456-28671-3-git-send-email-mkayaalp@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
 
-This patch may need to add elfutils to the list of minimal requirements in:
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 10 Nov 2017 21:21:12 +0100
 
-	Documentation/process/changes.rst
+Two update suggestions were taken into account
+from static source code analysis.
 
-David
+Markus Elfring (2):
+  Use common error handling code in trusted_update()
+  Use common error handling code in tpm_unseal()
+
+ security/keys/trusted.c | 61 +++++++++++++++++++++++--------------------------
+ 1 file changed, 29 insertions(+), 32 deletions(-)
+
+-- 
+2.15.0
+
