@@ -1,43 +1,108 @@
-From: Mat Martineau <mathew.j.martineau@linux.intel.com>
-Date: Wed, 08 Nov 2017 20:49:02 +0000
-Subject: Re: [PATCH v2] lib/mpi: call cond_resched() from mpi_powm() loop
-Message-Id: <alpine.OSX.2.21.1711081239190.27414@mjmartin-nuc02.sea.intel.com>
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 10 Nov 2017 20:29:16 +0000
+Subject: [PATCH 1/2] KEYS: trusted: Use common error handling code in trusted_update()
+Message-Id: <658d88c1-b29b-cf8c-2ce0-8a2755ec9f33@users.sourceforge.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171108191804.GA74965@gmail.com> <20171107221527.98433-1-ebiggers3@gmail.com> <25888.1510145417@warthog.procyon.org.uk> <17716.1510172232@warthog.procyon.org.uk> <20171108202803.GA14292@gmail.com>
-In-Reply-To: <20171108202803.GA14292@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <479805df-edaf-1e9a-57be-d7c4f38e9d31@users.sourceforge.net>
+In-Reply-To: <479805df-edaf-1e9a-57be-d7c4f38e9d31@users.sourceforge.net>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
 
-On Wed, 8 Nov 2017, Eric Biggers wrote:
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 10 Nov 2017 20:50:15 +0100
 
-> On Wed, Nov 08, 2017 at 08:17:12PM +0000, David Howells wrote:
->> Eric Biggers <ebiggers3@gmail.com> wrote:
->>
->>> This probably should be grouped with my series "crypto: dh - input validation
->>> fixes", as this is also a fix for Diffie-Hellman.  I was actually expecting
->>> Herbert Xu to take these patches, as Diffie-Hellman is now part of the crypto
->>> API (crypto/dh.c); none of the patches actually touch security/keys/.
->>
->> Fine by me.
->>
->>> If you'd like to maintain the Diffie-Hellman implementation(s) you should
->>> get yourself added to MAINTAINERS for the relevant files.
->>
->> It touches the MPI lib, though, so it also potentially affects RSA and stuff,
->> which is why I introduced it to the kernel originally.
->>
->
-> True, mpi_powm() might also be reachable by adding a key of type "asymmetric",
-> in which case this fix would need to go to older kernels than v4.12.  If I have
-> a chance I'll see if I can find a reproducer.
+Adjust jump targets so that a bit of exception handling can be better
+reused at the end of this function.
 
-CONFIG_KEY_DH_OPERATIONS and use of mpi_powm() by KEYCTL_DH_COMPUTE goes 
-back to v4.7, when the MPI library was called directly. KPP was not 
-implemented yet.
+This issue was detected by using the Coccinelle software.
 
---
-Mat Martineau
-Intel OTC
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ security/keys/trusted.c | 44 ++++++++++++++++++++------------------------
+ 1 file changed, 20 insertions(+), 24 deletions(-)
+
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index bd85315cbfeb..fd06d0c5323b 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -1078,30 +1078,18 @@ static int trusted_update(struct key *key, struct key_preparsed_payload *prep)
+ 	if (!datablob)
+ 		return -ENOMEM;
+ 	new_o = trusted_options_alloc();
+-	if (!new_o) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
++	if (!new_o)
++		goto e_nomem;
++
+ 	new_p = trusted_payload_alloc(key);
+-	if (!new_p) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
++	if (!new_p)
++		goto e_nomem;
+ 
+ 	memcpy(datablob, prep->data, datalen);
+ 	datablob[datalen] = '\0';
+ 	ret = datablob_parse(datablob, new_p, new_o);
+-	if (ret != Opt_update) {
+-		ret = -EINVAL;
+-		kzfree(new_p);
+-		goto out;
+-	}
+-
+-	if (!new_o->keyhandle) {
+-		ret = -EINVAL;
+-		kzfree(new_p);
+-		goto out;
+-	}
++	if (ret != Opt_update || !new_o->keyhandle)
++		goto e_inval;
+ 
+ 	/* copy old key values, and reseal with new pcrs */
+ 	new_p->migratable = p->migratable;
+@@ -1113,23 +1101,31 @@ static int trusted_update(struct key *key, struct key_preparsed_payload *prep)
+ 	ret = key_seal(new_p, new_o);
+ 	if (ret < 0) {
+ 		pr_info("trusted_key: key_seal failed (%d)\n", ret);
+-		kzfree(new_p);
+-		goto out;
++		goto free_payload;
+ 	}
+ 	if (new_o->pcrlock) {
+ 		ret = pcrlock(new_o->pcrlock);
+ 		if (ret < 0) {
+ 			pr_info("trusted_key: pcrlock failed (%d)\n", ret);
+-			kzfree(new_p);
+-			goto out;
++			goto free_payload;
+ 		}
+ 	}
+ 	rcu_assign_keypointer(key, new_p);
+ 	call_rcu(&p->rcu, trusted_rcu_free);
+-out:
++free_data:
+ 	kzfree(datablob);
+ 	kzfree(new_o);
+ 	return ret;
++
++e_nomem:
++	ret = -ENOMEM;
++	goto free_data;
++
++e_inval:
++	ret = -EINVAL;
++free_payload:
++	kzfree(new_p);
++	goto free_data;
+ }
+ 
+ /*
+-- 
+2.15.0
+
