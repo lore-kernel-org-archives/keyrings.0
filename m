@@ -1,41 +1,20 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Fri, 10 Nov 2017 11:36:59 +0000
-Subject: Re: [PATCH v2 0/5] crypto: dh - input validation fixes
-Message-Id: <20171110113659.GB26163@gondor.apana.org.au>
+From: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
+Date: Sun, 12 Nov 2017 05:35:35 +0000
+Subject: Re: [PATCH v3] tpm: use struct tpm_chip for tpm_chip_find_get()
+Message-Id: <CANc+2y4si3YW5FXWEdKz0UM5c76MBmHWu4RBF7d2dew9i-Ut+Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171106023048.8067-1-ebiggers3@gmail.com>
-In-Reply-To: <20171106023048.8067-1-ebiggers3@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: linux-crypto@vger.kernel.org, Giovanni Cabiddu <giovanni.cabiddu@intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Stephan Mueller <smueller@chronox.de>, qat-linux@intel.com, keyrings@vger.kernel.org
+References: <20171026135453.24672-1-jarkko.sakkinen@linux.intel.com> <20171031200303.GB18578@ziepe.ca>
+In-Reply-To: <20171031200303.GB18578@ziepe.ca>
+To: Jason Gunthorpe <jgg@ziepe.ca>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, open list <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>, Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@us.ibm.com>, David Howells <dhowells@redhat.com>, Jerry Snitselaar <jsnitsel@redhat.com>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE (IMA)" <linux-security-module@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>
 
-On Sun, Nov 05, 2017 at 06:30:43PM -0800, Eric Biggers wrote:
-> This series fixes several corner cases in the Diffie-Hellman key
-> exchange implementations:
-> 
-> 1. With the software DH implementation, using a large buffer for 'g'
->    caused a double free.
-> 2. With CONFIG_DEBUG_SG=y and the software DH implementation, setting 'p'
->    to 0 caused a BUG_ON().
-> 3. With the QAT DH implementation, setting 'key' or 'g' larger than 'p'
->    caused a buffer underflow.
-> 
-> Note that in kernels configured with CONFIG_KEY_DH_OPERATIONS=y, these
-> bugs are reachable by unprivileged users via KEYCTL_DH_COMPUTE.
-> 
-> Patches 4 and 5 are cleanup only.
-> 
-> Eric Biggers (5):
->   crypto: dh - Fix double free of ctx->p
->   crypto: dh - Don't permit 'p' to be 0
->   crypto: dh - Don't permit 'key' or 'g' size longer than 'p'
->   crypto: qat - Clean up error handling in qat_dh_set_secret()
->   crypto: dh - Remove pointless checks for NULL 'p' and 'g'
+Did basic check on tpm rng patch, it works fine. As it depends on this
+patch this should be working fine too.
 
-All applied.  Thanks.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Tested-by: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
+
+Regards,
+PrasannaKumar
