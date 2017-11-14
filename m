@@ -1,20 +1,27 @@
-From: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
-Date: Sun, 12 Nov 2017 05:35:35 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Tue, 14 Nov 2017 14:32:38 +0000
 Subject: Re: [PATCH v3] tpm: use struct tpm_chip for tpm_chip_find_get()
-Message-Id: <CANc+2y4si3YW5FXWEdKz0UM5c76MBmHWu4RBF7d2dew9i-Ut+Q@mail.gmail.com>
+Message-Id: <20171114143238.looouhjk4bp5ko4g@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171026135453.24672-1-jarkko.sakkinen@linux.intel.com> <20171031200303.GB18578@ziepe.ca>
-In-Reply-To: <20171031200303.GB18578@ziepe.ca>
-To: Jason Gunthorpe <jgg@ziepe.ca>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, open list <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>, Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@us.ibm.com>, David Howells <dhowells@redhat.com>, Jerry Snitselaar <jsnitsel@redhat.com>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE (IMA)" <linux-security-module@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>
+References: <20171026135453.24672-1-jarkko.sakkinen@linux.intel.com>
+ <20171031200303.GB18578@ziepe.ca>
+ <CANc+2y4si3YW5FXWEdKz0UM5c76MBmHWu4RBF7d2dew9i-Ut+Q@mail.gmail.com>
+In-Reply-To: <CANc+2y4si3YW5FXWEdKz0UM5c76MBmHWu4RBF7d2dew9i-Ut+Q@mail.gmail.com>
+To: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
+Cc: Jason Gunthorpe <jgg@ziepe.ca>, open list <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>, Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@us.ibm.com>, David Howells <dhowells@redhat.com>, Jerry Snitselaar <jsnitsel@redhat.com>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE (IMA)" <linux-security-module@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>
 
-Did basic check on tpm rng patch, it works fine. As it depends on this
-patch this should be working fine too.
+On Sun, Nov 12, 2017 at 10:53:35AM +0530, PrasannaKumar Muralidharan wrote:
+> Did basic check on tpm rng patch, it works fine. As it depends on this
+> patch this should be working fine too.
+> 
+> Tested-by: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
+> 
+> Regards,
+> PrasannaKumar
 
-Tested-by: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
+Thank you.
 
-Regards,
-PrasannaKumar
+/Jarkko
