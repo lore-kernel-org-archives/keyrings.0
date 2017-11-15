@@ -1,48 +1,49 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 13 Nov 2017 22:56:09 +0000
-Subject: Re: [PATCH] KEYS: remove CONFIG_KEYS_COMPAT
-Message-Id: <20171113225609.GA138082@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+From: Pavel Machek <pavel@ucw.cz>
+Date: Wed, 15 Nov 2017 21:12:46 +0000
+Subject: Re: Draft manpage explaining kernel lockdown
+Message-Id: <20171115211246.GF6183@amd>
+MIME-Version: 1
+Content-Type: multipart/mixed; boundary="BzCohdixPhurzSK4"
 List-Id: <keyrings.vger.kernel.org>
-References: <20170613060925.17121-1-ebiggers3@gmail.com>
-	<7704.1498555674@warthog.procyon.org.uk>
-	<20170816025244.GA1417@zzz.localdomain>
-	<20171009202534.GA67463@gmail.com>
-In-Reply-To: <20171009202534.GA67463@gmail.com>
-To: linux-security-module@vger.kernel.org
+References: <7969.1507201224@warthog.procyon.org.uk>
+In-Reply-To: <7969.1507201224-S6HVgzuS8uM4Awkfq6JHfwNdhmdF6hFW@public.gmane.org>
+To: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Cc: Ard Biesheuvel <ard.biesheuvel-QSEj5FYQhm4dnm+yROfE0A@public.gmane.org>, mtk.manpages-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org, mcgrof-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, johannes-cdvu00un1VgdHxzADdlk8Q@public.gmane.org, linux-man-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-efi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-On Mon, Oct 09, 2017 at 01:25:34PM -0700, Eric Biggers wrote:
-> On Tue, Aug 15, 2017 at 07:52:44PM -0700, Eric Biggers wrote:
-> > On Tue, Jun 27, 2017 at 10:27:54AM +0100, David Howells wrote:
-> > > Eric Biggers <ebiggers3@gmail.com> wrote:
-> > > 
-> > > > diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-> > > > index a7a23b5541f8..f5d96996baa6 100644
-> > > > --- a/security/keys/Kconfig
-> > > > +++ b/security/keys/Kconfig
-> > > > @@ -20,10 +20,6 @@ config KEYS
-> > > >  
-> > > >  	  If you are unsure as to whether this is required, answer N.
-> > > >  
-> > > > -config KEYS_COMPAT
-> > > > -	def_bool y
-> > > > -	depends on COMPAT && KEYS
-> > > > -
-> > > >  config PERSISTENT_KEYRINGS
-> > > >  	bool "Enable register of persistent per-UID keyrings"
-> > > >  	depends on KEYS
-> > > 
-> > > Hmmm...  This is in linus/master, but not in security/next.  I'll hold your
-> > > patch till later in the merge window or just after -rc1.
-> > > 
-> > > David
-> > 
-> > Hi David, are you still planning to apply this patch?
-> > 
-> > Eric
-> 
-> Ping.
 
-Ping.
+--BzCohdixPhurzSK4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi!
+
+> Attached is a draft for a manual page (kernel_lockdown.7) that I intend to
+> point at from messages emitted when the kernel prohibits something becaus=
+e the
+> kernel is in 'lockdown' mode, typically triggered by EFI secure
+> boot.
+
+What about livepatching? It allows kernel modifications.. and it has
+some interestlingly insecure /sys controls being merged just now...
+
+								Pavel
+							=09
+--=20
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blo=
+g.html
+
+--BzCohdixPhurzSK4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iEYEARECAAYFAloMrc4ACgkQMOfwapXb+vKKUwCdEPbzuQ1Vu/ZnRIJJ/5GYsCxR
+71oAn1YjfT8qBEhk2vvdlalbdg40uxkc
+=mAAp
+-----END PGP SIGNATURE-----
+
+--BzCohdixPhurzSK4--
