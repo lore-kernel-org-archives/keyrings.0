@@ -1,54 +1,31 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 17 Nov 2017 13:57:58 +0000
-Subject: Re: [PATCH v2] tpm: Move Linux RNG connection to hwrng
-Message-Id: <20171117135758.wvx3w5phndvfmfsh@linux.intel.com>
+From: James Cowgill <james.cowgill@mips.com>
+Date: Thu, 16 Nov 2017 11:57:27 +0000
+Subject: Apply "security/keys: add CONFIG_KEYS_COMPAT to Kconfig" to stable trees
+Message-Id: <26f91532-a424-5449-bf5f-5682e47fb1c4@mips.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171031200503.GC18578@ziepe.ca>
- <20171105110506.usxmuzrvcjvxahr6@linux.intel.com>
- <20171106022704.GD26011@ziepe.ca>
- <CANc+2y6dx_2zOzFA5aFs7RpEV8aNqxpDghmx+q_+XyendYJoew@mail.gmail.com>
- <20171107160404.GG21466@ziepe.ca>
- <20171114143421.3jxn6fzvgp2xmyk6@linux.intel.com>
- <20171117132853.cmr3wmsc3biedv7p@linux.intel.com>
-In-Reply-To: <20171117132853.cmr3wmsc3biedv7p@linux.intel.com>
-To: Jason Gunthorpe <jgg@ziepe.ca>
-Cc: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>, Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, open list <linux-kernel@vger.kernel.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE (IMA)" <linux-security-module@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, James Morris <james.l.morris@oracle.com>, Matt Mackall <mpm@selenic.com>, David Safford <safford@us.ibm.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, "Serge E. Hallyn" <serge@hallyn.com>
+To: stable@vger.kernel.org
+Cc: keyrings@vger.kernel.org
 
-On Fri, Nov 17, 2017 at 03:28:53PM +0200, Jarkko Sakkinen wrote:
-> On Tue, Nov 14, 2017 at 04:34:21PM +0200, Jarkko Sakkinen wrote:
-> > On Tue, Nov 07, 2017 at 09:04:04AM -0700, Jason Gunthorpe wrote:
-> > > On Tue, Nov 07, 2017 at 08:50:44AM +0530, PrasannaKumar Muralidharan wrote:
-> > > 
-> > > > I am assuming you are talking about the following patches - using
-> > > > struct tpm_chip instead of chip number and this patch.
-> > > 
-> > > yes
-> > > 
-> > > > I won't be able to test if struct tpm_chip usage as I don't have
-> > > > multiple tpm hw in one machine. In case of tpm rng changes I can test
-> > > > only the lifecycle of tpm rng device. Is that enough? I feel my test
-> > > > will be limited. Please provide your thoughts on this.
-> > > 
-> > > That is certainly better than no testing.
-> > > 
-> > > Jason
-> > 
-> > WFM too.
-> > 
-> > Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > 
-> > /Jarkko
-> 
-> I applied these commits. Please check that everything is correct as
-> I had to do manual work with the 2nd commit.
-> 
-> /Jarkko
+Hi,
 
-At least signed-off-by from PrassanaKumar is missing from the 2nd
-commit. I'll add it.
+Is it possible to apply this commit to the stable trees before 4.12?
 
-/Jarkko
+commit 47b2c3fff4932e6fc17ce13d51a43c6969714e20
+Author: Bilal Amarni <bilal.amarni@gmail.com>
+Date:   Thu Jun 8 14:47:26 2017 +0100
+
+    security/keys: add CONFIG_KEYS_COMPAT to Kconfig
+
+In commit 20f06ed9f61a ("KEYS: 64-bit MIPS needs to use
+compat_sys_keyctl for 32-bit userspace"), the keyctl syscall for 32-bit
+MIPS was "fixed" to point at compat_sys_keyctl instead of sys_keyctl.
+Unfortunately this caused the syscall to always return ENOSYS because
+CONFIG_KEYS_COMPAT was not enabled on MIPS. Instead of fixing this by
+manually by enabling KEYS_COMPAT in the MIPS Kconfig, I think applying
+the above commit is a better.
+
+Thanks,
+James
