@@ -1,44 +1,164 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 02 Nov 2017 17:30:01 +0000
-Subject: Re: [PATCH 1/4] crypto: dh - fix double free of ctx->p
-Message-Id: <20171102173001.GA23035@gmail.com>
+Date: Mon, 20 Nov 2017 22:58:30 +0000
+Subject: [PATCH] KEYS: add missing permission check for request_key() destination
+Message-Id: <20171120225830.96642-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171101222517.41602-1-ebiggers3@gmail.com>
- <20171101222517.41602-2-ebiggers3@gmail.com>
- <93501fc6-94df-bf27-cdd8-7a44b04effc1@microchip.com>
-In-Reply-To: <93501fc6-94df-bf27-cdd8-7a44b04effc1@microchip.com>
-To: Tudor Ambarus <tudor.ambarus@microchip.com>
-Cc: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>, keyrings@vger.kernel.org, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-Hi Tudor,
+From: Eric Biggers <ebiggers@google.com>
 
-On Thu, Nov 02, 2017 at 12:55:56PM +0200, Tudor Ambarus wrote:
-> Hi, Eric,
-> 
-> On 11/02/2017 12:25 AM, Eric Biggers wrote:
-> >When setting the secret with the software Diffie-Hellman implementation,
-> >if allocating 'g' failed (e.g. if it was longer than
-> >MAX_EXTERN_MPI_BITS), then 'p' was freed twice: once immediately, and
-> >once later when the crypto_kpp tfm was destroyed.  Fix it by using
-> >dh_free_ctx() in the error paths, as that sets the pointers to NULL.
-> 
-> Other solution would be to have just an one-line patch that sets p to
-> NULL after freeing it. The benefit of just setting p to NULL and not
-> using dh_free_ctx() is that you'll spare some cpu cycles. If g fails,
-> g and a will already be NULL, so freeing them and set them to NULL is
-> redundant.
-> 
-> However, if you decide to always use dh_free_ctx(), you'll have to get
-> rid of dh_clear_params(), because it will be used just in dh_free_ctx().
-> You can copy dh_clear_params() body to dh_free_ctx().
-> 
+When the request_key() syscall is not passed a destination keyring, it
+links the requested key (if constructed) into the "default" request-key
+keyring.  This should require Write permission to the keyring.  However,
+there is actually no permission check.
 
-This is on an error path, so a few cycles don't matter.  I would much rather
-have the simpler code, with less chance to introduce exploitable bugs.
+This can be abused to add keys to any keyring to which only Search
+permission is granted.  This is because Search permission allows joining
+the keyring.  keyctl_set_reqkey_keyring(KEY_REQKEY_DEFL_SESSION_KEYRING)
+then will set the default request-key keyring to the session keyring.
+Then, request_key() can be used to add keys to the keyring.
 
-Yes, I should inline dh_clear_params() into dh_free_ctx().
+Both negatively and positively instantiated keys can be added using this
+method.  Adding negative keys is trivial.  Adding a positive key is a
+bit trickier.  It requires that either /sbin/request-key positively
+instantiates the key, or that another thread adds the key to the process
+keyring at just the right time, such that request_key() misses it
+initially but then finds it in construct_alloc_key().
 
-Eric
+Fix this bug by checking for Write permission to the keyring in
+construct_get_dest_keyring() when the default keyring is being used.
+
+We don't do the permission check for non-default keyrings because that
+was already done by the earlier call to lookup_user_key().  Also,
+request_key_and_link() is currently passed a 'struct key *' rather than
+a key_ref_t, so the "possessed" bit is unavailable.
+
+We also don't do the permission check for the "requestor keyring", to
+continue to support the use case described by commit 8bbf4976b59f
+("KEYS: Alter use of key instantiation link-to-keyring argument") where
+/sbin/request-key recursively calls request_key() to add keys to the
+original requestor's destination keyring.  (I don't know of any users
+who actually do that, though...)
+
+Fixes: 3e30148c3d52 ("[PATCH] Keys: Make request-key create an authorisation key")
+Cc: <stable@vger.kernel.org>	# v2.6.13+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ security/keys/request_key.c | 46 ++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 37 insertions(+), 9 deletions(-)
+
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index c6880af8b411..4557c1c368aa 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -251,11 +251,12 @@ static int construct_key(struct key *key, const void *callout_info,
+  * The keyring selected is returned with an extra reference upon it which the
+  * caller must release.
+  */
+-static void construct_get_dest_keyring(struct key **_dest_keyring)
++static int construct_get_dest_keyring(struct key **_dest_keyring)
+ {
+ 	struct request_key_auth *rka;
+ 	const struct cred *cred = current_cred();
+ 	struct key *dest_keyring = *_dest_keyring, *authkey;
++	int ret;
+ 
+ 	kenter("%p", dest_keyring);
+ 
+@@ -264,6 +265,8 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
+ 		/* the caller supplied one */
+ 		key_get(dest_keyring);
+ 	} else {
++		bool do_perm_check = true;
++
+ 		/* use a default keyring; falling through the cases until we
+ 		 * find one that we actually have */
+ 		switch (cred->jit_keyring) {
+@@ -278,8 +281,10 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
+ 					dest_keyring  						key_get(rka->dest_keyring);
+ 				up_read(&authkey->sem);
+-				if (dest_keyring)
++				if (dest_keyring) {
++					do_perm_check = false;
+ 					break;
++				}
+ 			}
+ 
+ 		case KEY_REQKEY_DEFL_THREAD_KEYRING:
+@@ -314,11 +319,29 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
+ 		default:
+ 			BUG();
+ 		}
++
++		/*
++		 * Require Write permission on the keyring.  This is essential
++		 * because the default keyring may be the session keyring, and
++		 * joining a keyring only requires Search permission.
++		 *
++		 * However, this check is skipped for the "requestor keyring" so
++		 * that /sbin/request-key can itself use request_key() to add
++		 * keys to the original requestor's destination keyring.
++		 */
++		if (do_perm_check) {
++			ret = key_permission(make_key_ref(dest_keyring, 1),
++					     KEY_NEED_WRITE);
++			if (ret) {
++				key_put(dest_keyring);
++				return ret;
++			}
++		}
+ 	}
+ 
+ 	*_dest_keyring = dest_keyring;
+ 	kleave(" [dk %d]", key_serial(dest_keyring));
+-	return;
++	return 0;
+ }
+ 
+ /*
+@@ -444,11 +467,15 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
+ 	if (ctx->index_key.type = &key_type_keyring)
+ 		return ERR_PTR(-EPERM);
+ 
+-	user = key_user_lookup(current_fsuid());
+-	if (!user)
+-		return ERR_PTR(-ENOMEM);
++	ret = construct_get_dest_keyring(&dest_keyring);
++	if (ret)
++		goto error;
+ 
+-	construct_get_dest_keyring(&dest_keyring);
++	user = key_user_lookup(current_fsuid());
++	if (!user) {
++		ret = -ENOMEM;
++		goto error_put_dest_keyring;
++	}
+ 
+ 	ret = construct_alloc_key(ctx, dest_keyring, flags, user, &key);
+ 	key_user_put(user);
+@@ -463,7 +490,7 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
+ 	} else if (ret = -EINPROGRESS) {
+ 		ret = 0;
+ 	} else {
+-		goto couldnt_alloc_key;
++		goto error_put_dest_keyring;
+ 	}
+ 
+ 	key_put(dest_keyring);
+@@ -473,8 +500,9 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
+ construction_failed:
+ 	key_negate_and_link(key, key_negative_timeout, NULL, NULL);
+ 	key_put(key);
+-couldnt_alloc_key:
++error_put_dest_keyring:
+ 	key_put(dest_keyring);
++error:
+ 	kleave(" = %d", ret);
+ 	return ERR_PTR(ret);
+ }
+-- 
+2.15.0.448.gf294e3d99a-goog
+
