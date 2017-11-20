@@ -1,45 +1,90 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Fri, 10 Nov 2017 18:41:05 +0000
-Subject: Re: [PATCH] lib/mpi: call cond_resched() from mpi_powm() loop
-Message-Id: <20171110184105.GA99710@gmail.com>
+From: Eric Biggers <ebiggers@google.com>
+Date: Mon, 20 Nov 2017 21:42:57 +0000
+Subject: Re: x509 parsing bug + fuzzing crypto in the userspace
+Message-Id: <20171120214257.GB61394@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171107061951.861-1-ebiggers3@gmail.com>
- <20171110113729.GD26163@gondor.apana.org.au>
-In-Reply-To: <20171110113729.GD26163@gondor.apana.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-crypto@vger.kernel.org, Tudor-Dan Ambarus <tudor.ambarus@microchip.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <CAG_fn=XJZG_MJXXgos5jZmOThKho=uSvwgfhkMSYONZ04PKKaw@mail.gmail.com>
+In-Reply-To: <CAG_fn=XJZG_MJXXgos5jZmOThKho=uSvwgfhkMSYONZ04PKKaw@mail.gmail.com>
+To: Alexander Potapenko <glider@google.com>
+Cc: linux-crypto@vger.kernel.org, Kostya Serebryany <kcc@google.com>, keyrings@vger.kernel.org, Dmitriy Vyukov <dvyukov@google.com>, Andrey Konovalov <andreyknvl@google.com>
 
-On Fri, Nov 10, 2017 at 10:37:30PM +1100, Herbert Xu wrote:
-> On Mon, Nov 06, 2017 at 10:19:51PM -0800, Eric Biggers wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> > 
-> > On a non-preemptible kernel, if KEYCTL_DH_COMPUTE is called with the
-> > largest permitted inputs (16384 bits), the kernel spends 10+ seconds
-> > doing modular exponentiation in mpi_powm() without rescheduling.  If all
-> > threads do it, it locks up the system.  Moreover, it can cause
-> > rcu_sched-stall warnings.
-> > 
-> > Notwithstanding the insanity of doing this calculation in kernel mode
-> > rather than in userspace, fix it by calling cond_resched() as each bit
-> > from the exponent is processed.  It's still noninterruptible, but at
-> > least it's preemptible now.
-> > 
-> > Cc: stable@vger.kernel.org # v4.12+
-> > Signed-off-by: Eric Biggers <ebiggers@google.com>
++Cc keyrings@vger.kernel.org (for asymmetric_keys)
+
+First of all, thanks for working on this!  A lot of this code really needs to be
+better tested.
+
+On Mon, Nov 20, 2017 at 03:10:55PM +0100, Alexander Potapenko wrote:
+> Hi all,
 > 
-> Patch applied.  Thanks.
-> -- 
+> TL;DR userspace fuzzing may be very effective for finding bugs in
+> crypto code, but might require some kernel-side changes.
+> 
+> When the attached binary file,
+> crash-bbeda07d4ce60cf3b7fc20c3af92297e19f6dbae, is passed as payload
+> to add_key("asymmetric", "desc", payload, len), it triggers a
+> slab-out-of-bounds KASAN report (see below). This can be reproduced
+> with the attached program, add_key.c.
 
-If it's not too late can you fix the stable line to be just
+The bug is in asn1_ber_decoder(): the special length value of 0x80, which
+indicates an "indefinite length", is being passed to one of the "action"
+functions as the real length, causing the input buffer to be overread.  Off-hand
+I don't know the best fix, but probably it would involve calling
+asn1_find_indefinite_length() before the "action" rather than after...
 
-	Cc: stable@vger.kernel.org
+> 
+> We found this bug by fuzzing asn1_ber_decoder() in the userspace using
+> libFuzzer (http://llvm.org/docs/LibFuzzer.html).
+> The trick is to compile and link together several translation units
+> that provide a transitive closure of asn1_ber_decoder() (some of the
+> kernel functions need to be re-implemented to run in the userspace).
+> I've attached the resulting fuzzer as well (asn1_fuzzer.tar.gz). It
+> can operate on its own, although better results are achieved when
+> using the fuzzing corpus from
+> https://github.com/google/boringssl/tree/master/fuzz and
+> https://github.com/openssl/openssl/tree/master/fuzz.
 
-As Mat pointed out KEYCTL_DH_COMPUTE was actually introduced in v4.7.  Also I
-think the code is also reachable through RSA by adding an x509 certificate using
-the "asymmetric" key type, although that appears to be limited to 4096-bit
-inputs rather than 16384 bits.
+I had actually tried almost the same thing recently, but with afl-fuzz instead
+of libFuzzer.  But I don't think it was any better than what you did, and I
+didn't find the above bug, perhaps because the AFL_HARDEN compiler options don't
+include AddressSanitizer.
+
+I did use the original unpreprocessed .c files instead of preprocessed ones, but
+it required stubbing out quite a few headers.  Probably using preprocessed files
+is a bit easier.
+
+For the fuzzing function I had it call x509_cert_parse() rather than
+asn1_ber_decode() directly, but with x509_get_sig_params() and
+x509_check_for_self_signed() stubbed out.  It would be nice to get coverage of
+x509_check_for_self_signed() because it will call into crypto/rsa.c and, among
+other things, run yet another ASN.1 decoder...  But that would have required
+porting a lot of the crypto API to userspace.
+
+> 
+> Could it be possible to decouple the parsing algorithms from the rest
+> of kernel-specific crypto code? Maybe someone has other ideas about
+> how this code can be ran in the userspace?
+> 
+
+One idea is that the ASN.1 parsers could be run with no "actions", which would
+minimize dependencies on other kernel code.  But unfortunately that would omit a
+lot of the interesting code.  Many (or most?) bugs will be in how the parsed
+data is used, rather than in the parsing itself.  I don't think there is an easy
+solution.
+
+Note that separate from asymmetric_keys (which you can think of as being
+in-between the keyrings subsystem and the crypto subsystem) there is also the
+userspace interface to cryptographic algorithms, AF_ALG.  It might be possible
+to port a lot of the crypto API to userspace, but it would require a lot of work
+to stub things out.  Maybe a simpler improvement would be to teach syzkaller to
+more thoroughly test AF_ALG.  For example it could be made aware of algorithm
+templates so that it could try combining them in unusual ways.  (Example:
+https://marc.info/?l=linux-crypto-vger&m8063683310477&w=2 was a NULL pointer
+dereference bug that occurred if you asked to use the algorithm "mcryptd(md5)",
+i.e. the mcryptd template wrapping md5.)  Also,
+CONFIG_CRYPTO_MANAGER_DISABLE_TESTS should be unset, so that the crypto
+self-tests are enabled.
 
 Eric
