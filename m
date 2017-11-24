@@ -1,46 +1,68 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Fri, 03 Nov 2017 14:25:29 +0000
-Subject: Re: [PATCH v10 00/20] simplify crypto wait for async op
-Message-Id: <20171103142528.GL9011@gondor.apana.org.au>
+From: James Morris <james.l.morris@oracle.com>
+Date: Fri, 24 Nov 2017 01:39:44 +0000
+Subject: [GIT PULL] security subsystem: keys update for 4.15
+Message-Id: <alpine.LFD.2.20.1711241237430.4505@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1508310057-25369-1-git-send-email-gilad@benyossef.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, linux-doc@vger.kernel.org, Gary Hook <gary.hook@amd.com>, David Howells <dhowells@redhat.com>, dm-devel@redhat.com, keyrings@vger.kernel.org, linux-ima-devel@lists.sourceforge.net, Alasdair Kergon <agk@redhat.com>, Steffen Klassert <steffen.klassert@secunet.com>, Boris Brezillon <boris.brezillon@free-electrons.com>, Jonathan Corbet <corbet@lwn.net>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, Mimi Zohar <zohar@linux.vnet.ibm.com>, "Serge E. Hallyn" <serge@hallyn.com>, Tom Lendacky <thomas.lendacky@amd.com>, linux-cifs@vger.kernel.org, linux-ima-user@lists.sourceforge.net, Arnaud Ebalard <arno@natisbad.org>, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, James Morris <james.l.morris@oracle.com>, Matthias Brugger <matthias.bgg@gmail.com>, Jaegeuk Kim <jaegeuk@kernel.org>, linux-arm-kernel@lists.infradead.org, Ofir
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
 
-On Wed, Oct 18, 2017 at 08:00:32AM +0100, Gilad Ben-Yossef wrote:
-> Many users of kernel async. crypto services have a pattern of
-> starting an async. crypto op and than using a completion
-> to wait for it to end.
-> 
-> This patch set simplifies this common use case in two ways:
-> 
-> First, by separating the return codes of the case where a
-> request is queued to a backlog due to the provider being
-> busy (-EBUSY) from the case the request has failed due
-> to the provider being busy and backlogging is not enabled
-> (-ENOSPC).
-> 
-> Next, this change is than built on to create a generic API
-> to wait for a async. crypto operation to complete.
-> 
-> The end result is a smaller code base and an API that is
-> easier to use and more difficult to get wrong.
-> 
-> The patch set was boot tested on x86_64 and arm64 which
-> at the very least tests the crypto users via testmgr and
-> tcrypt but I do note that I do not have access to some
-> of the HW whose drivers are modified nor do I claim I was
-> able to test all of the corner cases.
-> 
-> The patch set is based upon linux-next release tagged
-> next-20171017.
+Please pull these updates or the keys subsystem.  From David:
 
-All applied.  Thanks.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+" There's nothing too controversial here:
+
+ (1) Doc fix for keyctl_read().
+
+ (2) time_t -> time64_t replacement.
+
+ (3) Set the module licence on things to prevent tainting.
+
+  It's all been in linux-next for a week or so. "
+
+---
+
+The following changes since commit 5a787756b809888e8925d722862167f1229b58f7:
+
+  Merge tag 'pwm/for-4.15-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/thierry.reding/linux-pwm (2017-11-22 21:09:18 -1000)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next-keys
+
+for you to fetch changes up to ce44cd8dfc55110fa7423ceb47a8a70dac65fe89:
+
+  Merge tag 'keys-next-20171123' of git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs into next-keys (2017-11-24 11:54:11 +1100)
+
+----------------------------------------------------------------
+
+Baolin Wang (2):
+      security: keys: Replace time_t/timespec with time64_t
+      security: keys: Replace time_t with time64_t for struct key_preparsed_payload
+
+David Howells (1):
+      pkcs7: Set the module licence to prevent tainting
+
+Eric Biggers (1):
+      KEYS: fix in-kernel documentation for keyctl_read()
+
+James Morris (1):
+      Merge tag 'keys-next-20171123' of git://git.kernel.org/.../dhowells/linux-fs into next-keys
+
+ Documentation/security/keys/core.rst     | 10 +++++-----
+ crypto/asymmetric_keys/pkcs7_key_type.c  |  1 +
+ crypto/asymmetric_keys/pkcs7_parser.c    |  5 +++++
+ crypto/asymmetric_keys/public_key.c      |  2 ++
+ crypto/asymmetric_keys/x509_public_key.c |  1 +
+ include/linux/key-type.h                 |  2 +-
+ include/linux/key.h                      |  7 ++++---
+ security/keys/gc.c                       | 20 ++++++++++----------
+ security/keys/internal.h                 |  8 ++++----
+ security/keys/key.c                      | 27 ++++++++++-----------------
+ security/keys/keyring.c                  | 20 ++++++++++----------
+ security/keys/permission.c               |  5 ++---
+ security/keys/proc.c                     | 21 ++++++++++-----------
+ security/keys/process_keys.c             |  2 +-
+ 14 files changed, 66 insertions(+), 65 deletions(-)
