@@ -1,53 +1,42 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 02 Nov 2017 18:06:05 +0000
-Subject: [keyutils PATCH v2] man: keyctl_read(3): fix documentation for short buffer case
-Message-Id: <20171102180605.110627-1-ebiggers3@gmail.com>
+Date: Mon, 27 Nov 2017 07:20:05 +0000
+Subject: [PATCH] pkcs7: use crypto_shash_digest()
+Message-Id: <20171127072005.26333-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-crypto@vger.kernel.org, Eric Biggers <ebiggers@google.com>
 
 From: Eric Biggers <ebiggers@google.com>
 
-When keyctl_read() is passed a buffer that is too small, the behavior is
-inconsistent.  Some key types will fill as much of the buffer as
-possible, while others won't copy anything.  Moreover, the in-kernel
-documentation contradicted the man page on this point.
-
-Update the man page to say that this point is unspecified.
+Use crypto_shash_digest() instead of crypto_shash_init() followed by
+crypto_shash_finup().  (For simplicity only; they are equivalent.)
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- man/keyctl_read.3 | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ crypto/asymmetric_keys/pkcs7_verify.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/man/keyctl_read.3 b/man/keyctl_read.3
-index 25821ad..852bc05 100644
---- a/man/keyctl_read.3
-+++ b/man/keyctl_read.3
-@@ -33,8 +33,8 @@ permission on a key to be able to read it.
- and
- .I buflen
- specify the buffer into which the payload data will be placed.  If the buffer
--is too small, the full size of the payload will be returned and no copy will
--take place.
-+is too small, then the full size of the payload will be returned, and the
-+contents of the buffer may be overwritten in some undefined way.
- .P
- .BR keyctl_read_alloc ()
- is similar to
-@@ -62,8 +62,8 @@ though the byte-ordering is as appropriate for the kernel.
- On success
- .BR keyctl_read ()
- returns the amount of data placed into the buffer.  If the buffer was too
--small, then the size of buffer required will be returned, but no data will be
--transferred.
-+small, then the size of buffer required will be returned, and the contents of
-+the buffer may have been overwritten in some undefined way.
- .P
- On success
- .BR keyctl_read_alloc ()
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 063d6745c741..1647313872aa 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -59,11 +59,8 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
+ 	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+ 	/* Digest the message [RFC2315 9.3] */
+-	ret = crypto_shash_init(desc);
+-	if (ret < 0)
+-		goto error;
+-	ret = crypto_shash_finup(desc, pkcs7->data, pkcs7->data_len,
+-				 sig->digest);
++	ret = crypto_shash_digest(desc, pkcs7->data, pkcs7->data_len,
++				  sig->digest);
+ 	if (ret < 0)
+ 		goto error;
+ 	pr_devel("MsgDigest = [%*ph]\n", 8, sig->digest);
 -- 
-2.15.0.403.gc27cc4dac6-goog
+2.15.0
 
