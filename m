@@ -1,36 +1,45 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 20 Nov 2017 22:00:41 +0000
-Subject: Re: TPM trusted keys code
-Message-Id: <20171120220041.vh3vrmy7nztqpvqn@linux.intel.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 27 Nov 2017 07:18:17 +0000
+Subject: [PATCH] X.509: fix printing uninitialized stack memory when OID is empty
+Message-Id: <20171127071817.25999-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171024160603.or2yflspzfrf3bfo@linux.intel.com>
-In-Reply-To: <20171024160603.or2yflspzfrf3bfo@linux.intel.com>
-To: keyrings@vger.kernel.org
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-crypto@vger.kernel.org, Alexander Potapenko <glider@google.com>, Eric Biggers <ebiggers@google.com>, Takashi Iwai <tiwai@suse.de>
 
-On Thu, Nov 16, 2017 at 05:33:16PM +0200, Tudor Ambarus wrote:
-> Hi, David,
-> 
-> On 10/26/2017 06:13 PM, David Howells wrote:
-> > I have a partial asymmetric key subtype implementation that uses the TPM code
-> > also - but that broken thoroughly when the tpm-2 stuff was added.
-> 
-> I would like to take a look at your implementation, if you don't mind.
-> Have you made it public somewhere?
-> 
-> Thanks,
-> ta
+From: Eric Biggers <ebiggers@google.com>
 
-I'll start rework on TPM in-kernel API as soon as the SGX driver has
-been upstreamed. Instead of a raw buffer you pass a struct tpm_buf
-instance to tpm_send() and get also the response to that buffer.
+Callers of sprint_oid() do not check its return value before printing
+the result.  In the case where the OID is zero-length, -EBADMSG was
+being returned without anything being written to the buffer, resulting
+in uninitialized stack memory being printed.  Fix this by writing
+"(empty)" to the buffer in that case.
 
-There is a set of helpers to construct command buffers already widely
-used inside the TPM driver.
+Fixes: 4f73175d0375 ("X.509: Add utility functions to render OIDs as strings")
+Cc: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ lib/oid_registry.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-I'll also move all the protocol specific constants to
-include/linux/tpm.h.
+diff --git a/lib/oid_registry.c b/lib/oid_registry.c
+index 5a75d127995d..3640170f0d65 100644
+--- a/lib/oid_registry.c
++++ b/lib/oid_registry.c
+@@ -115,8 +115,10 @@ int sprint_oid(const void *data, size_t datasize, char *buffer, size_t bufsize)
+ 	size_t ret;
+ 	int count;
+ 
+-	if (v >= end)
++	if (v >= end) {
++		snprintf(buffer, bufsize, "(empty)");
+ 		return -EBADMSG;
++	}
+ 
+ 	n = *v++;
+ 	ret = count = snprintf(buffer, bufsize, "%u.%u", n / 40, n % 40);
+-- 
+2.15.0
 
-/Jarkko
