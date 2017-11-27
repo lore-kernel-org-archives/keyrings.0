@@ -1,69 +1,74 @@
-From: Tudor Ambarus <tudor.ambarus@microchip.com>
-Date: Fri, 03 Nov 2017 06:23:54 +0000
-Subject: Re: [PATCH 2/4] crypto: dh - don't permit 'p' to be 0
-Message-Id: <266fef32-b622-7bca-038e-4e0f2ed04951@microchip.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 27 Nov 2017 07:16:20 +0000
+Subject: [PATCH] X.509: reject invalid BIT STRING for subjectPublicKey
+Message-Id: <20171127071620.25724-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171101222517.41602-1-ebiggers3@gmail.com>
- <20171101222517.41602-3-ebiggers3@gmail.com>
-In-Reply-To: <20171101222517.41602-3-ebiggers3@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>, linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
-Cc: keyrings@vger.kernel.org, Mat Martineau <mathew.j.martineau@linux.intel.com>, Salvatore Benedetto <salvatore.benedetto@intel.com>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-crypto@vger.kernel.org, Alexander Potapenko <glider@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
+From: Eric Biggers <ebiggers@google.com>
 
+Adding a specially crafted X.509 certificate whose subjectPublicKey
+ASN.1 value is zero-length caused x509_extract_key_data() to set the
+public key size to SIZE_MAX, as it subtracted the nonexistent BIT STRING
+metadata byte.  Then, x509_cert_parse() called kmemdup() with that bogus
+size, triggering the WARN_ON_ONCE() in kmalloc_slab().
 
-On 11/02/2017 12:25 AM, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> If 'p' is 0 for the software Diffie-Hellman implementation, then
-> dh_max_size() returns 0.  In the case of KEYCTL_DH_COMPUTE, this causes
-> ZERO_SIZE_POINTER to be passed to sg_init_one(), which with
-> CONFIG_DEBUG_SG=y triggers the 'BUG_ON(!virt_addr_valid(buf));' in
-> sg_set_buf().
-> 
-> Fix this by making crypto_dh_decode_key() reject 0 for 'p'.  p=0 makes
-> no sense for any DH implementation because 'p' is supposed to be a prime
-> number.  Moreover, 'mod 0' is not mathematically defined.
-> 
-> Bug report:
-> 
->      kernel BUG at ./include/linux/scatterlist.h:140!
->      invalid opcode: 0000 [#1] SMP KASAN
->      CPU: 0 PID: 27112 Comm: syz-executor2 Not tainted 4.14.0-rc7-00010-gf5dbb5d0ce32-dirty #7
->      Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.10.3-20171021_125229-anatol 04/01/2014
->      task: ffff88006caac0c0 task.stack: ffff88006c7c8000
->      RIP: 0010:sg_set_buf include/linux/scatterlist.h:140 [inline]
->      RIP: 0010:sg_init_one+0x1b3/0x240 lib/scatterlist.c:156
->      RSP: 0018:ffff88006c7cfb08 EFLAGS: 00010216
->      RAX: 0000000000010000 RBX: ffff88006c7cfe30 RCX: 00000000000064ee
->      RDX: ffffffff81cf64c3 RSI: ffffc90000d72000 RDI: ffffffff92e937e0
->      RBP: ffff88006c7cfb30 R08: ffffed000d8f9fab R09: ffff88006c7cfd30
->      R10: 0000000000000005 R11: ffffed000d8f9faa R12: ffff88006c7cfd30
->      R13: 0000000000000000 R14: 0000000000000010 R15: ffff88006c7cfc50
->      FS:  00007fce190fa700(0000) GS:ffff88003ea00000(0000) knlGS:0000000000000000
->      CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->      CR2: 00007fffc6b33db8 CR3: 000000003cf64000 CR4: 00000000000006f0
->      Call Trace:
->       __keyctl_dh_compute+0xa95/0x19b0 security/keys/dh.c:360
->       keyctl_dh_compute+0xac/0x100 security/keys/dh.c:434
->       SYSC_keyctl security/keys/keyctl.c:1745 [inline]
->       SyS_keyctl+0x72/0x2c0 security/keys/keyctl.c:1641
->       entry_SYSCALL_64_fastpath+0x1f/0xbe
->      RIP: 0033:0x4585c9
->      RSP: 002b:00007fce190f9bd8 EFLAGS: 00000216 ORIG_RAX: 00000000000000fa
->      RAX: ffffffffffffffda RBX: 0000000000738020 RCX: 00000000004585c9
->      RDX: 000000002000d000 RSI: 0000000020000ff4 RDI: 0000000000000017
->      RBP: 0000000000000046 R08: 0000000020008000 R09: 0000000000000000
->      R10: 0000000000000000 R11: 0000000000000216 R12: 00007fff6e610cde
->      R13: 00007fff6e610cdf R14: 00007fce190fa700 R15: 0000000000000000
->      Code: 03 0f b6 14 02 48 89 f8 83 e0 07 83 c0 03 38 d0 7c 04 84 d2 75 33 5b 45 89 6c 24 14 41 5c 41 5d 41 5e 41 5f 5d c3 e8 fd 8f 68 ff <0f> 0b e8 f6 8f 68 ff 0f 0b e8 ef 8f 68 ff 0f 0b e8 e8 8f 68 ff 20
->      RIP: sg_set_buf include/linux/scatterlist.h:140 [inline] RSP: ffff88006c7cfb08
->      RIP: sg_init_one+0x1b3/0x240 lib/scatterlist.c:156 RSP: ffff88006c7cfb08
-> 
-> Fixes: 802c7f1c84e4 ("crypto: dh - Add DH software implementation")
-> Cc: <stable@vger.kernel.org> # v4.8+
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+This appears to be harmless, but it still must be fixed since WARNs are
+never supposed to be user-triggerable.
 
-Reviewed-by: Tudor Ambarus <tudor.ambarus@microchip.com>
+Fix it by updating x509_cert_parse() to validate that the value has a
+BIT STRING metadata byte, and that the byte is 0 which indicates that
+the number of bits in the bitstring is a multiple of 8.
+
+It would be nice to handle the metadata byte in asn1_ber_decoder()
+instead.  But that would be tricky because in the general case a BIT
+STRING could be implicitly tagged, and/or could legitimately have a
+length that is not a whole number of bytes.
+
+Here was the WARN (cleaned up slightly):
+
+    WARNING: CPU: 1 PID: 202 at mm/slab_common.c:971 kmalloc_slab+0x5d/0x70 mm/slab_common.c:971
+    Modules linked in:
+    CPU: 1 PID: 202 Comm: keyctl Tainted: G    B            4.14.0-09238-g1d3b78bbc6e9 #26
+    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.11.0-20171110_100015-anatol 04/01/2014
+    task: ffff880033014180 task.stack: ffff8800305c8000
+    Call Trace:
+     __do_kmalloc mm/slab.c:3706 [inline]
+     __kmalloc_track_caller+0x22/0x2e0 mm/slab.c:3726
+     kmemdup+0x17/0x40 mm/util.c:118
+     kmemdup include/linux/string.h:414 [inline]
+     x509_cert_parse+0x2cb/0x620 crypto/asymmetric_keys/x509_cert_parser.c:106
+     x509_key_preparse+0x61/0x750 crypto/asymmetric_keys/x509_public_key.c:174
+     asymmetric_key_preparse+0xa4/0x150 crypto/asymmetric_keys/asymmetric_type.c:388
+     key_create_or_update+0x4d4/0x10a0 security/keys/key.c:850
+     SYSC_add_key security/keys/keyctl.c:122 [inline]
+     SyS_add_key+0xe8/0x290 security/keys/keyctl.c:62
+     entry_SYSCALL_64_fastpath+0x1f/0x96
+
+Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
+Cc: <stable@vger.kernel.org> # v3.7+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ crypto/asymmetric_keys/x509_cert_parser.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index dd03fead1ca3..ce2df8c9c583 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -409,6 +409,8 @@ int x509_extract_key_data(void *context, size_t hdrlen,
+ 	ctx->cert->pub->pkey_algo = "rsa";
+ 
+ 	/* Discard the BIT STRING metadata */
++	if (vlen < 1 || *(const u8 *)value != 0)
++		return -EBADMSG;
+ 	ctx->key = value + 1;
+ 	ctx->key_size = vlen - 1;
+ 	return 0;
+-- 
+2.15.0
+
