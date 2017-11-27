@@ -1,200 +1,143 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 09 Nov 2017 12:35:07 +0000
-Subject: [PATCH] Add a function to start/reduce a timer
-Message-Id: <151023090769.23050.1801643667223880753.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 27 Nov 2017 07:12:12 +0000
+Subject: [PATCH] ASN.1: fix out-of-bounds read when parsing indefinite length item
+Message-Id: <20171127071212.25243-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: tglx@linutronix.de
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-crypto@vger.kernel.org, Alexander Potapenko <glider@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-Add a function, similar to mod_timer(), that will start a timer it isn't
-running and will modify it if it is running and has an expiry time longer
-than the new time.  If the timer is running with an expiry time that's the
-same or sooner, no change is made.
+From: Eric Biggers <ebiggers@google.com>
 
-The function looks like:
+In asn1_ber_decoder(), indefinitely-sized ASN.1 items were being passed
+to the action functions before their lengths had been computed, using
+the bogus length of 0x80 (ASN1_INDEFINITE_LENGTH).  This resulted in
+reading data past the end of the input buffer, when given a specially
+crafted message.
 
-	int timer_reduce(struct timer_list *timer, unsigned long expires);
+Fix it by rearranging the code so that the indefinite length is resolved
+before the action is called.
 
-This can be used by code such as networking code to make it easier to share
-a timer for multiple timeouts.  For instance, in upcoming AF_RXRPC code,
-the rxrpc_call struct will maintain a number of timeouts:
+This bug was originally found by fuzzing the X.509 parser in userspace
+using libFuzzer from the LLVM project.
 
-	unsigned long	ack_at;
-	unsigned long	resend_at;
-	unsigned long	ping_at;
-	unsigned long	expect_rx_by;
-	unsigned long	expect_req_by;
-	unsigned long	expect_term_by;
+KASAN report (cleaned up slightly):
 
-each of which is set independently of the others.  With timer reduction
-available, when the code needs to set one of the timeouts, it only needs to
-look at that timeout and then call timer_reduce() to modify the timer,
-starting it or bringing it forward if necessary.  There is no need to refer
-to the other timeouts to see which is earliest and no need to take any lock
-other than, potentially, the timer lock inside timer_reduce().
+    BUG: KASAN: slab-out-of-bounds in memcpy ./include/linux/string.h:341 [inline]
+    BUG: KASAN: slab-out-of-bounds in x509_fabricate_name.constprop.1+0x1a4/0x940 crypto/asymmetric_keys/x509_cert_parser.c:366
+    Read of size 128 at addr ffff880035dd9eaf by task keyctl/195
 
-As an example, the expect_rx_by timeout above, which terminates a call if
-we don't get a packet from the server within a certain time window, would
-be set something like this:
+    CPU: 1 PID: 195 Comm: keyctl Not tainted 4.14.0-09238-g1d3b78bbc6e9 #26
+    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.11.0-20171110_100015-anatol 04/01/2014
+    Call Trace:
+     __dump_stack lib/dump_stack.c:17 [inline]
+     dump_stack+0xd1/0x175 lib/dump_stack.c:53
+     print_address_description+0x78/0x260 mm/kasan/report.c:252
+     kasan_report_error mm/kasan/report.c:351 [inline]
+     kasan_report+0x23f/0x350 mm/kasan/report.c:409
+     memcpy+0x1f/0x50 mm/kasan/kasan.c:302
+     memcpy ./include/linux/string.h:341 [inline]
+     x509_fabricate_name.constprop.1+0x1a4/0x940 crypto/asymmetric_keys/x509_cert_parser.c:366
+     asn1_ber_decoder+0xb4a/0x1fd0 lib/asn1_decoder.c:447
+     x509_cert_parse+0x1c7/0x620 crypto/asymmetric_keys/x509_cert_parser.c:89
+     x509_key_preparse+0x61/0x750 crypto/asymmetric_keys/x509_public_key.c:174
+     asymmetric_key_preparse+0xa4/0x150 crypto/asymmetric_keys/asymmetric_type.c:388
+     key_create_or_update+0x4d4/0x10a0 security/keys/key.c:850
+     SYSC_add_key security/keys/keyctl.c:122 [inline]
+     SyS_add_key+0xe8/0x290 security/keys/keyctl.c:62
+     entry_SYSCALL_64_fastpath+0x1f/0x96
 
-	unsigned long now = jiffies;
-	unsigned long expect_rx_by = now + packet_receive_timeout;
-	WRITE_ONCE(call->expect_rx_by, expect_rx_by);
-	timer_reduce(&call->timer, expect_rx_by);
+    Allocated by task 195:
+     __do_kmalloc_node mm/slab.c:3675 [inline]
+     __kmalloc_node+0x47/0x60 mm/slab.c:3682
+     kvmalloc ./include/linux/mm.h:540 [inline]
+     SYSC_add_key security/keys/keyctl.c:104 [inline]
+     SyS_add_key+0x19e/0x290 security/keys/keyctl.c:62
+     entry_SYSCALL_64_fastpath+0x1f/0x96
 
-The timer service code (which might, say, be in a work function) would then
-check all the timeouts to see which, if any, had triggered, deal with
-those:
-
-	t = READ_ONCE(call->ack_at);
-	if (time_after_eq(now, t)) {
-		cmpxchg(&call->ack_at, t, now + MAX_JIFFY_OFFSET);
-		set_bit(RXRPC_CALL_EV_ACK, &call->events);
-	}
-
-and then restart the timer if necessary by finding the soonest timeout that
-hasn't yet passed and then calling timer_reduce().
-
-The disadvantage of doing things this way rather than comparing the timers
-each time and calling mod_timer() is that you *will* take timer events
-unless you can finish what you're doing and delete the timer in time.
-
-The advantage of doing things this way is that you don't need to use a lock
-to work out when the next timer should be set, other than the timer's own
-lock - which you might not have to take.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Thomas Gleixner <tglx@linutronix.de>
+Fixes: 42d5ec27f873 ("X.509: Add an ASN.1 decoder")
+Reported-by: Alexander Potapenko <glider@google.com>
+Cc: <stable@vger.kernel.org> # v3.7+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ lib/asn1_decoder.c | 47 ++++++++++++++++++++++++++---------------------
+ 1 file changed, 26 insertions(+), 21 deletions(-)
 
- include/linux/timer.h |    1 +
- kernel/time/timer.c   |   46 +++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 40 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/timer.h b/include/linux/timer.h
-index 31ae9a88b9e4..0584a84109ba 100644
---- a/include/linux/timer.h
-+++ b/include/linux/timer.h
-@@ -215,6 +215,7 @@ extern void add_timer_on(struct timer_list *timer, int cpu);
- extern int del_timer(struct timer_list * timer);
- extern int mod_timer(struct timer_list *timer, unsigned long expires);
- extern int mod_timer_pending(struct timer_list *timer, unsigned long expires);
-+extern int timer_reduce(struct timer_list *timer, unsigned long expires);
+diff --git a/lib/asn1_decoder.c b/lib/asn1_decoder.c
+index 1ef0cec38d78..d77cdfc4b554 100644
+--- a/lib/asn1_decoder.c
++++ b/lib/asn1_decoder.c
+@@ -313,42 +313,47 @@ int asn1_ber_decoder(const struct asn1_decoder *decoder,
  
- /*
-  * The jiffies value which is added to now, when there is no timer
-diff --git a/kernel/time/timer.c b/kernel/time/timer.c
-index f2674a056c26..48a28a0578d0 100644
---- a/kernel/time/timer.c
-+++ b/kernel/time/timer.c
-@@ -929,8 +929,11 @@ static struct timer_base *lock_timer_base(struct timer_list *timer,
- 	}
- }
- 
-+#define MOD_TIMER_PENDING_ONLY	0x01
-+#define MOD_TIMER_REDUCE	0x02
+ 	/* Decide how to handle the operation */
+ 	switch (op) {
+-	case ASN1_OP_MATCH_ANY_ACT:
+-	case ASN1_OP_MATCH_ANY_ACT_OR_SKIP:
+-	case ASN1_OP_COND_MATCH_ANY_ACT:
+-	case ASN1_OP_COND_MATCH_ANY_ACT_OR_SKIP:
+-		ret = actions[machine[pc + 1]](context, hdr, tag, data + dp, len);
+-		if (ret < 0)
+-			return ret;
+-		goto skip_data;
+-
+-	case ASN1_OP_MATCH_ACT:
+-	case ASN1_OP_MATCH_ACT_OR_SKIP:
+-	case ASN1_OP_COND_MATCH_ACT_OR_SKIP:
+-		ret = actions[machine[pc + 2]](context, hdr, tag, data + dp, len);
+-		if (ret < 0)
+-			return ret;
+-		goto skip_data;
+-
+ 	case ASN1_OP_MATCH:
+ 	case ASN1_OP_MATCH_OR_SKIP:
++	case ASN1_OP_MATCH_ACT:
++	case ASN1_OP_MATCH_ACT_OR_SKIP:
+ 	case ASN1_OP_MATCH_ANY:
+ 	case ASN1_OP_MATCH_ANY_OR_SKIP:
++	case ASN1_OP_MATCH_ANY_ACT:
++	case ASN1_OP_MATCH_ANY_ACT_OR_SKIP:
+ 	case ASN1_OP_COND_MATCH_OR_SKIP:
++	case ASN1_OP_COND_MATCH_ACT_OR_SKIP:
+ 	case ASN1_OP_COND_MATCH_ANY:
+ 	case ASN1_OP_COND_MATCH_ANY_OR_SKIP:
+-	skip_data:
++	case ASN1_OP_COND_MATCH_ANY_ACT:
++	case ASN1_OP_COND_MATCH_ANY_ACT_OR_SKIP:
 +
- static inline int
--__mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
-+__mod_timer(struct timer_list *timer, unsigned long expires, unsigned int options)
- {
- 	struct timer_base *base, *new_base;
- 	unsigned int idx = UINT_MAX;
-@@ -950,7 +953,11 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
- 		 * larger granularity than you would get from adding a new
- 		 * timer with this expiry.
- 		 */
--		if (timer->expires = expires)
-+		long diff = timer->expires - expires;
-+		if (diff = 0)
-+			return 1;
-+		if (options & MOD_TIMER_REDUCE &&
-+		    diff <= 0)
- 			return 1;
- 
- 		/*
-@@ -962,6 +969,13 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
- 		base = lock_timer_base(timer, &flags);
- 		forward_timer_base(base);
- 
-+		if (timer_pending(timer) &&
-+		    options & MOD_TIMER_REDUCE &&
-+		    time_before_eq(timer->expires, expires)) {
-+			ret = 1;
-+			goto out_unlock;
+ 		if (!(flags & FLAG_CONS)) {
+ 			if (flags & FLAG_INDEFINITE_LENGTH) {
++				size_t tmp = dp;
++
+ 				ret = asn1_find_indefinite_length(
+-					data, datalen, &dp, &len, &errmsg);
++					data, datalen, &tmp, &len, &errmsg);
+ 				if (ret < 0)
+ 					goto error;
+-			} else {
+-				dp += len;
+ 			}
+ 			pr_debug("- LEAF: %zu\n", len);
+ 		}
++
++		if (op & ASN1_OP_MATCH__ACT) {
++			unsigned char act;
++
++			if (op & ASN1_OP_MATCH__ANY)
++				act = machine[pc + 1];
++			else
++				act = machine[pc + 2];
++			ret = actions[act](context, hdr, tag, data + dp, len);
++			if (ret < 0)
++				return ret;
 +		}
 +
- 		clk = base->clk;
- 		idx = calc_wheel_index(expires, clk);
++		if (!(flags & FLAG_CONS))
++			dp += len;
+ 		pc += asn1_op_lengths[op];
+ 		goto next_op;
  
-@@ -971,7 +985,10 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
- 		 * subsequent call will exit in the expires check above.
- 		 */
- 		if (idx = timer_get_idx(timer)) {
--			timer->expires = expires;
-+			if (!(options & MOD_TIMER_REDUCE))
-+				timer->expires = expires;
-+			else if (time_after(timer->expires, expires))
-+				timer->expires = expires;
- 			ret = 1;
- 			goto out_unlock;
- 		}
-@@ -981,7 +998,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
- 	}
- 
- 	ret = detach_if_pending(timer, base, false);
--	if (!ret && pending_only)
-+	if (!ret && options & MOD_TIMER_PENDING_ONLY)
- 		goto out_unlock;
- 
- 	debug_activate(timer, expires);
-@@ -1042,7 +1059,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires, bool pending_only)
-  */
- int mod_timer_pending(struct timer_list *timer, unsigned long expires)
- {
--	return __mod_timer(timer, expires, true);
-+	return __mod_timer(timer, expires, MOD_TIMER_PENDING_ONLY);
- }
- EXPORT_SYMBOL(mod_timer_pending);
- 
-@@ -1068,11 +1085,26 @@ EXPORT_SYMBOL(mod_timer_pending);
-  */
- int mod_timer(struct timer_list *timer, unsigned long expires)
- {
--	return __mod_timer(timer, expires, false);
-+	return __mod_timer(timer, expires, 0);
- }
- EXPORT_SYMBOL(mod_timer);
- 
- /**
-+ * timer_reduce - modify a timer's timeout if it would reduce the timeout
-+ * @timer: the timer to be modified
-+ * @expires: new timeout in jiffies
-+ *
-+ * timer_reduce() is very similar to mod_timer(), except that it will only
-+ * modify a running timer if that would reduce the expiration time (it will
-+ * start a timer that isn't running).
-+ */
-+int timer_reduce(struct timer_list *timer, unsigned long expires)
-+{
-+	return __mod_timer(timer, expires, MOD_TIMER_REDUCE);
-+}
-+EXPORT_SYMBOL(timer_reduce);
-+
-+/**
-  * add_timer - start a timer
-  * @timer: the timer to be added
-  *
-@@ -1739,7 +1771,7 @@ signed long __sched schedule_timeout(signed long timeout)
- 	expire = timeout + jiffies;
- 
- 	setup_timer_on_stack(&timer, process_timeout, (unsigned long)current);
--	__mod_timer(&timer, expire, false);
-+	__mod_timer(&timer, expire, 0);
- 	schedule();
- 	del_singleshot_timer_sync(&timer);
- 
+-- 
+2.15.0
 
