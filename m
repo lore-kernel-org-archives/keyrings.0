@@ -1,60 +1,74 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 28 Nov 2017 18:59:38 +0000
-Subject: [PATCH v2] X.509: fix comparisons of ->pkey_algo
-Message-Id: <20171128185938.57246-1-ebiggers3@gmail.com>
+Date: Mon, 27 Nov 2017 07:20:22 +0000
+Subject: [PATCH] KEYS: be careful with error codes in public_key_verify_signature()
+Message-Id: <20171127072022.26398-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-crypto@vger.kernel.org, Alexander Potapenko <glider@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, Eric Biggers <ebiggers@google.com>
 
 From: Eric Biggers <ebiggers@google.com>
 
-->pkey_algo used to be an enum, but was changed to a string by commit
-4e8ae72a75aa ("X.509: Make algo identifiers text instead of enum").  But
-two comparisons were not updated.  Fix them to use strcmp().
+In public_key_verify_signature(), if akcipher_request_alloc() fails, we
+return -ENOMEM.  But that error code was set 25 lines above, and by
+accident someone could easily insert new code in between that assigns to
+'ret', which would introduce a signature verification bypass.  Make the
+code clearer by moving the -ENOMEM down to where it is used.
 
-This bug broke signature verification in certain configurations,
-depending on whether the string constants were deduplicated or not.
+Additionally, the callers of public_key_verify_signature() only consider
+a negative return value to be an error.  This means that if any positive
+return value is accidentally introduced deeper in the call stack (e.g.
+'return EBADMSG' instead of 'return -EBADMSG' somewhere in RSA),
+signature verification will be bypassed.  Make things more robust by
+having public_key_verify_signature() warn about positive errors and
+translate them into -EINVAL.
 
-Fixes: 4e8ae72a75aa ("X.509: Make algo identifiers text instead of enum")
-Cc: <stable@vger.kernel.org> # v4.6+
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ crypto/asymmetric_keys/public_key.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-v2: use != 0 in comparisons
-
- crypto/asymmetric_keys/pkcs7_verify.c    | 2 +-
- crypto/asymmetric_keys/x509_public_key.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 2d93d9eccb4d..986033e64a83 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -150,7 +150,7 @@ static int pkcs7_find_key(struct pkcs7_message *pkcs7,
- 		pr_devel("Sig %u: Found cert serial match X.509[%u]\n",
- 			 sinfo->index, certix);
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index bc3035ef27a2..de996586762a 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -73,7 +73,7 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	char alg_name_buf[CRYPTO_MAX_ALG_NAME];
+ 	void *output;
+ 	unsigned int outlen;
+-	int ret = -ENOMEM;
++	int ret;
  
--		if (x509->pub->pkey_algo != sinfo->sig->pkey_algo) {
-+		if (strcmp(x509->pub->pkey_algo, sinfo->sig->pkey_algo) != 0) {
- 			pr_warn("Sig %u: X.509 algo and PKCS#7 sig algo don't match\n",
- 				sinfo->index);
- 			continue;
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index c9013582c026..3d6f124a8b34 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -135,7 +135,7 @@ int x509_check_for_self_signed(struct x509_certificate *cert)
- 	}
+ 	pr_devel("=>%s()\n", __func__);
  
- 	ret = -EKEYREJECTED;
--	if (cert->pub->pkey_algo != cert->sig->pkey_algo)
-+	if (strcmp(cert->pub->pkey_algo, cert->sig->pkey_algo) != 0)
- 		goto out;
+@@ -99,6 +99,7 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	if (IS_ERR(tfm))
+ 		return PTR_ERR(tfm);
  
- 	ret = public_key_verify_signature(cert->pub, cert->sig);
++	ret = -ENOMEM;
+ 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
+ 	if (!req)
+ 		goto error_free_tfm;
+@@ -127,7 +128,7 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	 * signature and returns that to us.
+ 	 */
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+-	if (ret < 0)
++	if (ret)
+ 		goto out_free_output;
+ 
+ 	/* Do the actual verification step. */
+@@ -142,6 +143,8 @@ int public_key_verify_signature(const struct public_key *pkey,
+ error_free_tfm:
+ 	crypto_free_akcipher(tfm);
+ 	pr_devel("<=%s() = %d\n", __func__, ret);
++	if (WARN_ON_ONCE(ret > 0))
++		ret = -EINVAL;
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(public_key_verify_signature);
 -- 
-2.15.0.417.g466bffb3ac-goog
+2.15.0
 
