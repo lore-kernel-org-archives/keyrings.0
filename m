@@ -1,61 +1,60 @@
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 11 Nov 2017 09:37:36 +0000
-Subject: Re: KEYS: trusted: Use common error handling code in trusted_update()
-Message-Id: <a4ee27ee-a893-70c6-d40b-b1831ce62634@users.sourceforge.net>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Tue, 28 Nov 2017 18:59:38 +0000
+Subject: [PATCH v2] X.509: fix comparisons of ->pkey_algo
+Message-Id: <20171128185938.57246-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <479805df-edaf-1e9a-57be-d7c4f38e9d31@users.sourceforge.net>
- <658d88c1-b29b-cf8c-2ce0-8a2755ec9f33@users.sourceforge.net>
- <alpine.DEB.2.20.1711102142220.2708@hadrien>
-In-Reply-To: <alpine.DEB.2.20.1711102142220.2708@hadrien>
-To: Julia Lawall <julia.lawall@lip6.fr>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, "Serge E. Hallyn" <serge@hallyn.com>, LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-crypto@vger.kernel.org, Alexander Potapenko <glider@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-> Safe means that cleanup code should appear once in a cascade at the end
-> of the function, to minimize the chance that anything will be overlooked.
+From: Eric Biggers <ebiggers@google.com>
 
-I find that the control flow of this function implementation does not fit
-to the mentioned ideal so far.
+->pkey_algo used to be an enum, but was changed to a string by commit
+4e8ae72a75aa ("X.509: Make algo identifiers text instead of enum").  But
+two comparisons were not updated.  Fix them to use strcmp().
 
+This bug broke signature verification in certain configurations,
+depending on whether the string constants were deduplicated or not.
 
-> Moving the ret assignments to the end of the function and adding the
-> backward jumps doesn't make the code more understandable.
+Fixes: 4e8ae72a75aa ("X.509: Make algo identifiers text instead of enum")
+Cc: <stable@vger.kernel.org> # v4.6+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
 
-Is this structure required if you would like to achieve something
-in the shown software design direction?
+v2: use != 0 in comparisons
 
+ crypto/asymmetric_keys/pkcs7_verify.c    | 2 +-
+ crypto/asymmetric_keys/x509_public_key.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> On the other hand, moving the kzalloc of new_p to the end of the function
-> could be helpful,
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 2d93d9eccb4d..986033e64a83 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -150,7 +150,7 @@ static int pkcs7_find_key(struct pkcs7_message *pkcs7,
+ 		pr_devel("Sig %u: Found cert serial match X.509[%u]\n",
+ 			 sinfo->index, certix);
+ 
+-		if (x509->pub->pkey_algo != sinfo->sig->pkey_algo) {
++		if (strcmp(x509->pub->pkey_algo, sinfo->sig->pkey_algo) != 0) {
+ 			pr_warn("Sig %u: X.509 algo and PKCS#7 sig algo don't match\n",
+ 				sinfo->index);
+ 			continue;
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index c9013582c026..3d6f124a8b34 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -135,7 +135,7 @@ int x509_check_for_self_signed(struct x509_certificate *cert)
+ 	}
+ 
+ 	ret = -EKEYREJECTED;
+-	if (cert->pub->pkey_algo != cert->sig->pkey_algo)
++	if (strcmp(cert->pub->pkey_algo, cert->sig->pkey_algo) != 0)
+ 		goto out;
+ 
+ 	ret = public_key_verify_signature(cert->pub, cert->sig);
+-- 
+2.15.0.417.g466bffb3ac-goog
 
-Why do you think that the movement of this function call can finally work
-in the concrete software situation?
-
-
-> because it reduces the chance that new error handling code,
-> if any turns out to be needed, will forget this operation.
-
-Your expectation can be nice.
-
-
-> By why not just follow standard practice and free the structures in a
-> cascade in the inverse of the order in which they are allocated at the end
-> of the function?
-
-This is still happening here partly, isn't it?
-
-
-> There can be a descriptive label for each thing that needs to be freed.
-
-Which identifiers would you find more appropriate in comparison to
-my suggestion?
-
-* e_inval
-* e_nomem
-* free_data
-* free_payload
-
-Regards,
-Markus
