@@ -1,7 +1,7 @@
-From: James Morris <james.l.morris@oracle.com>
-Date: Mon, 27 Nov 2017 08:22:59 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 28 Nov 2017 10:57:54 +0000
 Subject: Re: [PATCH] X.509: fix comparisons of ->pkey_algo
-Message-Id: <alpine.LFD.2.20.1711271922480.2808@localhost>
+Message-Id: <10025.1511866674@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,31 +9,14 @@ List-Id: <keyrings.vger.kernel.org>
 References: <20171127071724.25874-1-ebiggers3@gmail.com>
 In-Reply-To: <20171127071724.25874-1-ebiggers3@gmail.com>
 To: Eric Biggers <ebiggers3@gmail.com>
-Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, linux-crypto@vger.kernel.org, Alexander Potapenko <glider@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, Alexander Potapenko <glider@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-On Sun, 26 Nov 2017, Eric Biggers wrote:
+Eric Biggers <ebiggers3@gmail.com> wrote:
 
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> ->pkey_algo used to be an enum, but was changed to a string by commit
-> 4e8ae72a75aa ("X.509: Make algo identifiers text instead of enum").  But
-> two comparisons were not updated.  Fix them to use strcmp().
-> 
-> This bug broke signature verification in certain configurations,
-> depending on whether the string constants were deduplicated or not.
-> 
-> Fixes: 4e8ae72a75aa ("X.509: Make algo identifiers text instead of enum")
-> Cc: <stable@vger.kernel.org> # v4.6+
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
-> ---
->  crypto/asymmetric_keys/pkcs7_verify.c    | 2 +-
->  crypto/asymmetric_keys/x509_public_key.c | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+> if (strcmp(x509->pub->pkey_algo, sinfo->sig->pkey_algo))
 
+Can you make this strcmp(...) != 0?  I know it may seem picky, but checking
+strcmp() in this way kind of inverts the true/false thing.
 
-Reviewed-by: James Morris <james.l.morris@oracle.com>
-
--- 
-James Morris
-<james.l.morris@oracle.com>
-
+Thanks,
+David
