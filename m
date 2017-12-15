@@ -1,29 +1,20 @@
-From: Mat Martineau <mathew.j.martineau@linux.intel.com>
-Date: Fri, 08 Dec 2017 17:52:24 +0000
-Subject: Re: [PATCH] KEYS: reject NULL restriction string when type is specified
-Message-Id: <alpine.OSX.2.21.1712080859500.14297@mjmartin-mac01.sea.intel.com>
+From: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
+Date: Fri, 15 Dec 2017 02:47:06 +0000
+Subject: [question] should 363b02dab09b3 be backported to stable 4.1+?
+Message-Id: <20171215024706.GB11199@jagdpanzerIV>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <alpine.OSX.2.21.1711301533110.40510@jsswain-mobl.amr.corp.intel.com> <089e082676ecdedb0b055f394f11@google.com> <20171130205159.97771-1-ebiggers3@gmail.com> <31869.1512744350@warthog.procyon.org.uk>
-In-Reply-To: <31869.1512744350@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Biggers <ebiggers3@gmail.com>, keyrings@vger.kernel.org, syzbot <bot+25a1a3685abe943a89512250aece10bdd9aa4827@syzkaller.appspotmail.com>, davem@davemloft.net, herbert@gondor.apana.org.au, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-On Fri, 8 Dec 2017, David Howells wrote:
+Hello David, Eric,
 
-> Mat Martineau <mathew.j.martineau@linux.intel.com> wrote:
->
->> Since this fixes the bug for the asymmetric key type and ensures that other
->> key types won't make the same mistake, I agree this is the way to fix it. I
->> did not find any issues in the patch.
->
-> Can I put that down as a Reviewed-by?
+please help me out.
 
-Yes. Looks like I missed the window for your pull request, though - I'll 
-be sure to add Reviewed-by in future reviews.
+I'm looking at 363b02dab09b ("KEYS: Fix race between updating and finding
+a negative key") right now. So, I see that it has been backported to stable
+4.4+. My question is -- do we have those test_bit(KEY_FLAG_INSTANTIATED)
+and test_bit(KEY_FLAG_NEGATIVE) races in stable 4.1?
 
---
-Mat Martineau
-Intel OTC
+	-ss
