@@ -1,27 +1,34 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 11 Dec 2017 18:55:02 +0000
-Subject: Re: general protection fault in strcmp
-Message-Id: <20171211185502.GA62691@gmail.com>
+From: Andi Kleen <andi@firstfloor.org>
+Date: Fri, 22 Dec 2017 00:13:35 +0000
+Subject: [PATCH] Fix const confusion in certs blacklist
+Message-Id: <20171222001335.1987-1-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <089e082676ecdedb0b055f394f11@google.com>
-In-Reply-To: <089e082676ecdedb0b055f394f11@google.com>
-To: syzbot <bot+25a1a3685abe943a89512250aece10bdd9aa4827@syzkaller.appspotmail.com>
-Cc: davem@davemloft.net, dhowells@redhat.com, herbert@gondor.apana.org.au, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
+To: keyrings@vger.kernel.org
 
-On Thu, Nov 30, 2017 at 12:44:01PM -0800, syzbot wrote:
-> syzbot will keep track of this bug report.
-> Once a fix for this bug is committed, please reply to this email with:
-> #syz fix: exact-commit-title
-> To mark this as a duplicate of another syzbot report, please reply with:
-> #syz dup: exact-subject-of-another-report
-> If it's a one-off invalid bug report, please reply with:
-> #syz invalid
-> Note: if the crash happens again, it will cause creation of a new
-> bug report.
-> Note: all commands must start from beginning of the line in the email body.
-> 
+From: Andi Kleen <ak@linux.intel.com>
 
-#syz fix: KEYS: reject NULL restriction string when type is specified
+const must be marked __initconst, not __initdata.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ certs/blacklist_nohashes.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/certs/blacklist_nohashes.c b/certs/blacklist_nohashes.c
+index 73fd99098ad7..753b703ef0ef 100644
+--- a/certs/blacklist_nohashes.c
++++ b/certs/blacklist_nohashes.c
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0
+ #include "blacklist.h"
+ 
+-const char __initdata *const blacklist_hashes[] = {
++const char __initconst *const blacklist_hashes[] = {
+ 	NULL
+ };
+-- 
+2.15.0
+
