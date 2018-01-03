@@ -1,158 +1,85 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Fri, 05 Jan 2018 23:19:02 +0000
-Subject: [PATCH] syscalls/request_key04: new test for request_key() permission check bug
-Message-Id: <20180105231902.2063-1-ebiggers3@gmail.com>
+From: "tip-bot for Paul E. McKenney" <tipbot@zytor.com>
+Date: Wed, 03 Jan 2018 16:05:45 +0000
+Subject: [tip:core/rcu] keyring: Remove now-redundant smp_read_barrier_depends()
+Message-Id: <tip-d963007c7210deebef48c5e57aa4ca4cf9c059cd@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Commit-ID:  d963007c7210deebef48c5e57aa4ca4cf9c059cd
+Gitweb:     https://git.kernel.org/tip/d963007c7210deebef48c5e57aa4ca4cf9c059cd
+Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+AuthorDate: Mon, 9 Oct 2017 12:19:27 -0700
+Committer:  Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+CommitDate: Mon, 4 Dec 2017 10:53:14 -0800
 
-Add a test for a bug that allowed the request_key() system call to be
-used to add a key to a keyring using only Search permission.  This bug
-was assigned CVE-2017-17807.
+keyring: Remove now-redundant smp_read_barrier_depends()
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Now that the associative-array library properly heads dependency chains,
+the various smp_read_barrier_depends() calls in security/keys/keyring.c
+are no longer needed.  This commit therefore removes them.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: <keyrings@vger.kernel.org>
+Cc: <linux-security-module@vger.kernel.org>
+Reviewed-by: James Morris <james.l.morris@oracle.com>
 ---
- include/lapi/keyctl.h                              |  4 +
- runtest/cve                                        |  1 +
- runtest/syscalls                                   |  1 +
- .../kernel/syscalls/request_key/request_key04.c    | 87 ++++++++++++++++++++++
- 4 files changed, 93 insertions(+)
- create mode 100644 testcases/kernel/syscalls/request_key/request_key04.c
+ security/keys/keyring.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/include/lapi/keyctl.h b/include/lapi/keyctl.h
-index 4b8098a59..440f9c7c6 100644
---- a/include/lapi/keyctl.h
-+++ b/include/lapi/keyctl.h
-@@ -99,6 +99,10 @@ static inline key_serial_t keyctl_join_session_keyring(const char *name) {
- # define KEY_REQKEY_DEFL_THREAD_KEYRING 1
- #endif
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index d0bcceb..41bcf57 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -713,7 +713,6 @@ descend_to_keyring:
+ 		 * doesn't contain any keyring pointers.
+ 		 */
+ 		shortcut = assoc_array_ptr_to_shortcut(ptr);
+-		smp_read_barrier_depends();
+ 		if ((shortcut->index_key[0] & ASSOC_ARRAY_FAN_MASK) != 0)
+ 			goto not_this_keyring;
  
-+#ifndef KEY_REQKEY_DEFL_SESSION_KEYRING
-+# define KEY_REQKEY_DEFL_SESSION_KEYRING 3
-+#endif
-+
- #ifndef KEY_REQKEY_DEFL_DEFAULT
- # define KEY_REQKEY_DEFL_DEFAULT	0
- #endif
-diff --git a/runtest/cve b/runtest/cve
-index 2873df906..dce8c4af4 100644
---- a/runtest/cve
-+++ b/runtest/cve
-@@ -25,4 +25,5 @@ cve-2017-15274 add_key02
- cve-2017-15299 request_key03 -b cve-2017-15299
- cve-2017-15537 ptrace07
- cve-2017-15951 request_key03 -b cve-2017-15951
-+cve-2017-17807 request_key04
- cve-2017-1000364 stack_clash
-diff --git a/runtest/syscalls b/runtest/syscalls
-index 97fc64300..94efd2305 100644
---- a/runtest/syscalls
-+++ b/runtest/syscalls
-@@ -935,6 +935,7 @@ request_key01 request_key01
- request_key02 request_key02
- request_key03 request_key03
- cve-2017-6951 cve-2017-6951
-+request_key04 request_key04
+@@ -723,8 +722,6 @@ descend_to_keyring:
+ 	}
  
- rmdir01 rmdir01
- rmdir02 rmdir02
-diff --git a/testcases/kernel/syscalls/request_key/request_key04.c b/testcases/kernel/syscalls/request_key/request_key04.c
-new file mode 100644
-index 000000000..878b0de00
---- /dev/null
-+++ b/testcases/kernel/syscalls/request_key/request_key04.c
-@@ -0,0 +1,87 @@
-+/*
-+ * Copyright (c) 2018 Google, Inc.
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program, if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+/*
-+ * Regression test for commit 4dca6ea1d943 ("KEYS: add missing permission check
-+ * for request_key() destination"), or CVE-2017-17807.  This bug allowed adding
-+ * a key to a keyring given only Search permission to that keyring, rather than
-+ * the expected Write permission.
-+ *
-+ * We test for the bug by trying to add a negatively instantiated key, since
-+ * adding a negatively instantiated key using the bug was easy whereas adding a
-+ * positively instantiated key required exploiting a race condition.
-+ */
-+
-+#include <errno.h>
-+
-+#include "tst_test.h"
-+#include "lapi/keyctl.h"
-+
-+static void do_test(void)
-+{
-+	key_serial_t keyid;
-+	int saved_errno;
-+
-+	TEST(keyctl(KEYCTL_JOIN_SESSION_KEYRING, NULL));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "failed to join new session keyring");
-+
-+	TEST(keyctl(KEYCTL_SETPERM, KEY_SPEC_SESSION_KEYRING,
-+		    KEY_POS_SEARCH|KEY_POS_READ|KEY_POS_VIEW));
-+	if (TEST_RETURN < 0) {
-+		tst_brk(TBROK | TTERRNO,
-+			"failed to set permissions on session keyring");
-+	}
-+
-+	TEST(keyctl(KEYCTL_SET_REQKEY_KEYRING,
-+		    KEY_REQKEY_DEFL_SESSION_KEYRING));
-+	if (TEST_RETURN < 0) {
-+		tst_brk(TBROK | TTERRNO,
-+			"failed to set request-key default keyring");
-+	}
-+
-+	TEST(keyctl(KEYCTL_READ, KEY_SPEC_SESSION_KEYRING,
-+		    &keyid, sizeof(keyid)));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "failed to read from session keyring");
-+	if (TEST_RETURN != 0)
-+		tst_brk(TBROK, "session keyring is not empty");
-+
-+	TEST(request_key("user", "desc", "callout_info", 0));
-+	if (TEST_RETURN != -1)
-+		tst_brk(TBROK, "request_key() unexpectedly succeeded");
-+	saved_errno = TEST_ERRNO;
-+
-+	TEST(keyctl(KEYCTL_READ, KEY_SPEC_SESSION_KEYRING,
-+		    &keyid, sizeof(keyid)));
-+	if (TEST_RETURN < 0)
-+		tst_brk(TBROK | TTERRNO, "failed to read from session keyring");
-+	if (TEST_RETURN != 0)
-+		tst_brk(TFAIL, "added key to keyring without permission");
-+
-+	TEST_ERRNO = saved_errno;
-+	if (TEST_ERRNO = EACCES) {
-+		tst_res(TPASS, "request_key() failed with EACCES as expected");
-+	} else {
-+		tst_res(TBROK | TTERRNO,
-+			"request_key() failed with unexpected error code");
-+	}
-+}
-+
-+static struct tst_test test = {
-+	.test_all = do_test,
-+};
--- 
-2.16.0.rc0.223.g4a4ac83678-goog
-
+ 	node = assoc_array_ptr_to_node(ptr);
+-	smp_read_barrier_depends();
+-
+ 	ptr = node->slots[0];
+ 	if (!assoc_array_ptr_is_meta(ptr))
+ 		goto begin_node;
+@@ -736,7 +733,6 @@ descend_to_node:
+ 	kdebug("descend");
+ 	if (assoc_array_ptr_is_shortcut(ptr)) {
+ 		shortcut = assoc_array_ptr_to_shortcut(ptr);
+-		smp_read_barrier_depends();
+ 		ptr = READ_ONCE(shortcut->next_node);
+ 		BUG_ON(!assoc_array_ptr_is_node(ptr));
+ 	}
+@@ -744,7 +740,6 @@ descend_to_node:
+ 
+ begin_node:
+ 	kdebug("begin_node");
+-	smp_read_barrier_depends();
+ 	slot = 0;
+ ascend_to_node:
+ 	/* Go through the slots in a node */
+@@ -792,14 +787,12 @@ ascend_to_node:
+ 
+ 	if (ptr && assoc_array_ptr_is_shortcut(ptr)) {
+ 		shortcut = assoc_array_ptr_to_shortcut(ptr);
+-		smp_read_barrier_depends();
+ 		ptr = READ_ONCE(shortcut->back_pointer);
+ 		slot = shortcut->parent_slot;
+ 	}
+ 	if (!ptr)
+ 		goto not_this_keyring;
+ 	node = assoc_array_ptr_to_node(ptr);
+-	smp_read_barrier_depends();
+ 	slot++;
+ 
+ 	/* If we've ascended to the root (zero backpointer), we must have just
