@@ -1,85 +1,97 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 18 Jan 2018 00:18:41 +0000
-Subject: Re: [PATCH 1/3] encrypted-keys: add fscrypt format support
-Message-Id: <20180118001841.ntui5j2nsszgy3aj@gmail.com>
+Date: Fri, 05 Jan 2018 19:19:47 +0000
+Subject: [PATCH RESEND] KEYS: remove CONFIG_KEYS_COMPAT
+Message-Id: <20180105191947.91775-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180110124418.24385-1-git@andred.net>
- <20180111040022.GA943@zzz.localdomain>
- <1516199369.28972.93.camel@andred.net>
-In-Reply-To: <1516199369.28972.93.camel@andred.net>
-To: =?iso-8859-1?Q?Andr=E9?= Draszik <git@andred.net>
-Cc: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Kees Cook <keescook@chromium.org>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fscrypt@vger.kernel.org
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>
 
-SGkgQW5kcuksCgpPbiBXZWQsIEphbiAxNywgMjAxOCBhdCAwMjoyOToyOVBNICswMDAwLCBBbmRy
-6SBEcmFzemlrIHdyb3RlOgo+IFRoYW5rcyBFcmljIGZvciB0aGUgcmV2aWV3IQo+IAo+IE9uIFdl
-ZCwgMjAxOC0wMS0xMCBhdCAyMDowMCAtMDgwMCwgRXJpYyBCaWdnZXJzIHdyb3RlOgo+ID4gSGkg
-QW5kcuksCj4gPiAKPiA+IE9uIFdlZCwgSmFuIDEwLCAyMDE4IGF0IDEyOjQ0OjE2UE0gKzAwMDAs
-IEFuZHLpIERyYXN6aWsgd3JvdGU6Cj4gPiA+IFRoaXMgaXMgaGVhdmlseSBiYXNlZCBvbiBjb21t
-aXQgNzlhNzNkMTg4NzI2Cj4gPiA+ICgiZW5jcnlwdGVkLWtleXM6IGFkZCBlY3J5cHRmcyBmb3Jt
-YXQgc3VwcG9ydCIpLgo+ID4gPiAKPiA+ID4gVGhlICdlbmNyeXB0ZWQnIGtleSB0eXBlIGRlZmlu
-ZXMgaXRzIG93biBwYXlsb2FkIGZvcm1hdCB3aGljaCBjb250YWlucyBhCj4gPiA+IHN5bW1ldHJp
-YyBrZXkgcmFuZG9tbHkgZ2VuZXJhdGVkIHRoYXQgY2Fubm90IGJlIHVzZWQgZGlyZWN0bHkgYnkg
-dGhlCj4gPiA+IGZzY3J5cHQgc3Vic3lzdGVtLCBiZWNhdXNlIGl0IGluc3RlYWQgZXhwZWN0cyBh
-biBmc2NyeXB0X2tleSBzdHJ1Y3R1cmUuCj4gPiA+IAo+ID4gPiBUaGlzIHBhdGNoIGludHJvZHVj
-ZXMgdGhlIG5ldyBmb3JtYXQgJ2ZzY3J5cHQnIHRoYXQgYWxsb3dzIHRvIHN0b3JlIGFuCj4gPiA+
-IGZzY3J5cHRfa2V5IHN0cnVjdHVyZSBpbnNpZGUgdGhlIGVuY3J5cHRlZCBrZXkgcGF5bG9hZCBj
-b250YWluaW5nCj4gPiA+IGEgcmFuZG9tbHkgZ2VuZXJhdGVkIHN5bW1ldHJpYyBrZXksIGFzIHRo
-ZSBzYW1lIGZvciB0aGUgZm9ybWF0ICdkZWZhdWx0Jwo+ID4gPiBhbmQgJ2VjcnlwdGZzJy4KPiA+
-ID4gCj4gPiA+IE1vcmUgZGV0YWlscyBhYm91dCB0aGUgdXNhZ2Ugb2YgZW5jcnlwdGVkIGtleXMg
-d2l0aCB0aGUgZnNjcnlwdAo+ID4gPiBzdWJzeXN0ZW0gY2FuIGJlIGZvdW5kIGluIHRoZSBmaWxl
-Cj4gPiA+ICdEb2N1bWVudGF0aW9uL3NlY3VyaXR5L2tleXMvZnNjcnlwdC5yc3QnLgo+ID4gPiAK
-PiA+IAo+ID4gSSBkb24ndCB0aGluayBhIG5ldyBlbmNyeXB0ZWQta2V5IGZvcm1hdCBpcyBuZWVk
-ZWQuICBmc2NyeXB0IHJlYWxseSBvbmx5Cj4gPiBuZWVkcwo+ID4gdGhlIHJhdyBrZXkuCj4gCj4g
-VGhpcyB3YXMgYWN0dWFsbHkgbXkgb3JpZ2luYWwgYXBwcm9hY2gsIGJ1dCBJIHRob3VnaHQgaXQg
-bWlnaHQgcG90ZW50aWFsbHkKPiBiZSB1c2VmdWwgdG8gaGF2ZSBhIG5ldyBlbmNyeXB0ZWQta2V5
-IHR5cGUgdG8gYmUgYWJsZSB0byBkbyB2ZXJpZmljYXRpb24gb2YKPiBwYXJhbWV0ZXJzIChlLmcu
-IGtleSBzaXplKSBlYXJseS4KPiBBZGRpdGlvbmFsbHksIGJlY2F1c2UgdGhlIHR5cGUgaXMgdGhl
-biBlbmNvZGVkIGluIHRoZSBibG9iIHN0b3JlZCBpbiB0aGUKPiBmaWxlIHN5c3RlbSAoa2V5Y3Rs
-IHBpcGUpLCBpdCdkIGJlIGVhc3kgdG8gc3BvdCBpbmNvbXBhdGliaWxpdGllcyBpbiBjYXNlCj4g
-ZnNjcnlwdCBpbnRlcm5hbCBkYXRhIHN0cnVjdHVyZXMgY2hhbmdlLCB3aGVyZWFzIHdpdGhvdXQg
-b25lIGNhbiBvbmx5IHJlbHkKPiBvbiB0aGUgbmFtZSBvZiB0aGUga2V5IChrZXkgZGVzY3JpcHRp
-b24pLCBzaG91bGQgc3VjaCBhIGNoYW5nZSBldmVyIGhhcHBlbi4KCidzdHJ1Y3QgZnNjcnlwdF9r
-ZXknIGlzbid0IHJlYWxseSB1c2VmdWwgYmVjYXVzZSBpdCBkb2Vzbid0IGhhdmUgYW55IHJlc2Vy
-dmVkCmZpZWxkcy4gIFNvIGlmIHdlIHdhbnRlZCB0byBjaGFuZ2UgdGhlIGZvcm1hdCB3ZSdkIGhh
-dmUgdG8gY2hhbmdlIHRoZSBrZXkKZGVzY3JpcHRpb24gYW55d2F5LCBieSBzZXR0aW5nIHNvbWUg
-ZmxhZyBpbiB0aGUgZnNjcnlwdF9wb2xpY3kgYW5kIHRoZQpmc2NyeXB0X2NvbnRleHQgdGhhdCBp
-bmRpY2F0ZXMgYSBkaWZmZXJlbnQga2V5IGRlc2NyaXB0aW9uIHNob3VsZCBiZSB1c2VkLgoKQW5k
-IGZzY3J5cHQgZG9lcyB2ZXJpZnkgdGhlIGtleSdzIHNpemUgYmVmb3JlIGl0IHVzZXMgaXQgYWxy
-ZWFkeS4gIFN1cmUsIGl0Cm1pZ2h0IHRvIG5pY2UgdG8gdmVyaWZ5IGl0IGF0IGFkZF9rZXkoKSB0
-aW1lLCBidXQgSSBkb24ndCB0aGluayBpdCdzIG5lY2Vzc2FyeS4KCj4gCj4gPiBBbHNvIEkgaGF2
-ZSBwcm9wb3NlZCBhbiBmc2NyeXB0IGlvY3RsIHRvIGFkZCBrZXlzIHRvIGEgZmlsZXN5c3RlbS1s
-ZXZlbAo+ID4ga2V5cmluZywKPiA+IGFuZCBpdCBkb2Vzbid0IHVzZSAnc3RydWN0IGZzY3J5cHRf
-a2V5JyBhdCBhbGw6Cj4gPiBodHRwczovL21hcmMuaW5mby8/bD1saW51eC1mc2RldmVsJm0VMDg3
-OTUwNTIwNjM5Mwo+ID4gCj4gPiBTbyBJIHRoaW5rIHlvdSBzaG91bGQganVzdCB1c2UgdGhlICJk
-ZWZhdWx0IiBlbmNyeXB0ZWQta2V5IGZvcm1hdCwgd2hlcmUKPiA+IHRoZQo+ID4gcGF5bG9hZCBp
-cyBqdXN0IHRoZSByYXcga2V5LiAgZnNjcnlwdCBjYW4gdmVyeSBlYXNpbHkgYmUgdXBkYXRlZCB0
-byB3b3JrCj4gPiB3aXRoCj4gPiBzdWNoIGtleXMuCj4gCj4gSSd2ZSBkb25lIHRoYXQgaW4gdjIg
-LSBJIGFtIGdlbmVyYXRpbmcgdGhlIGZzY3J5cHRfa2V5IHRlbXBvcmFyaWx5IG9uIHRoZQo+IGZs
-eSBidXQgaGF2ZW4ndCBnb3R0ZW4gcmlkIG9mIGZzY3J5cHRfa2V5IGFsdG9nZXRoZXIuLi4gSXMg
-dGhhdCB3aGF0IHlvdSBoYWQKPiBpbiBtaW5kPwoKVGhhdCB3b3VsZCB3b3JrLCBidXQgd2UgZG9u
-J3QgYWN0dWFsbHkgbmVlZCB0aGUgZnNjcnlwdF9rZXkgc3RydWN0dXJlIGF0IGFsbC4KSnVzdCBk
-ZWNsYXJlICdjb25zdCB1OCAqcmF3JyBhbmQgJ3UzMiBzaXplJyBsb2NhbCB2YXJpYWJsZXMgYW5k
-IHNldCB0aGVtCmFwcHJvcHJpYXRlbHksIHRoZW4gcGFzcyB0aG9zZSBpbnRvIGRlcml2ZV9rZXlf
-YWVzKCkgKGNoYW5naW5nIGl0cyBwcm90b3R5cGUpCnJhdGhlciB0aGFuIHRoZSBmc2NyeXB0X2tl
-eS4KCj4gCj4gSSBhbHNvIGhhdmVuJ3QgYmFzZWQgaXQgb24geW91ciB3b3JrIG1lbnRpb25lZCBh
-Ym92ZSwgd291bGQgdGhhdCBiZQo+IHByZWZlcnJlZD8KCk5vdCByZWFsbHksIHRoYXQgcGF0Y2gg
-c2VyaWVzICgiZnNjcnlwdDogZmlsZXN5c3RlbS1sZXZlbCBrZXlyaW5nIGFuZCB2MiBwb2xpY3kK
-c3VwcG9ydCIpIGlzIHN0aWxsIGluIFJGQyBzdGF0dXMsIHNvIHdlIGRvbid0IGtub3cgd2hpY2gg
-d291bGQgYmUgbWVyZ2VkIGZpcnN0LgpJJ20gc3RpbGwgbG9va2luZyBmb3IgcGVvcGxlIHdpdGgg
-dGhlIGludGVyZXN0IGFuZCBleHBlcnRpc2UgdG8gcmV2aWV3IGl0IDotKQoKVGhhdCBiZWluZyBz
-YWlkLCB3ZSBjb3VsZCBjaG9vc2UgdG8gc3VwcG9ydCB0aGUgImVuY3J5cHRlZCIga2V5IHR5cGUg
-dXNpbmcgb25seQpGU19JT0NfQUREX0VOQ1JZUFRJT05fS0VZLCByYXRoZXIgdGhhbiB0aGUgY3Vy
-cmVudCBtZWNoYW5pc20gb2YKcHJvY2Vzcy1zdWJzY3JpYmVkIGtleXJpbmdzLiAgKFdpdGggRlNf
-SU9DX0FERF9FTkNSWVBUSU9OX0tFWSwgd2UnZCBuZWVkIHRvIHVzZQphIGZsYWcgaW4gJ3N0cnVj
-dCBmc2NyeXB0X2FkZF9rZXlfYXJncycgdG8gaW5kaWNhdGUgdGhhdCB0aGUga2V5IHNob3VsZCBi
-ZSBmb3VuZApieSBzZWFyY2hpbmcgdGhlIGN1cnJlbnQgcHJvY2VzcydzIGtleXJpbmdzIGZvciBh
-biAiZW5jcnlwdGVkIiBrZXkgd2l0aCB0aGUKZ2l2ZW4gZGVzY3JpcHRpb24sIHJhdGhlciB0aGFu
-IHRha2luZyB0aGUga2V5IGRpcmVjdGx5IGZyb20gdGhlIGlvY3RsIGFyZ3VtZW50LikKQnV0IGl0
-IHdvdWxkbid0IGJlIGEgaHVnZSBkZWFsIHRvIHN1cHBvcnQgaXQgYm90aCB3YXlzLgoKRXJpYwot
-LQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3Jp
-YmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5r
-ZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcv
-bWFqb3Jkb21vLWluZm8uaHRtbA==
+From: Eric Biggers <ebiggers@google.com>
+
+KEYS_COMPAT now always takes the value of COMPAT && KEYS.  But the
+security/keys/ directory is only compiled if KEYS is enabled, so in
+practice KEYS_COMPAT is the same as COMPAT.  Therefore, remove the
+unnecessary KEYS_COMPAT and just use COMPAT directly.
+
+(Also remove an outdated comment from compat.c.)
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ security/keys/Kconfig    | 4 ----
+ security/keys/Makefile   | 2 +-
+ security/keys/compat.c   | 5 -----
+ security/keys/internal.h | 4 ++--
+ 4 files changed, 3 insertions(+), 12 deletions(-)
+
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index 6462e6654ccf..e115d691d977 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -20,10 +20,6 @@ config KEYS
+ 
+ 	  If you are unsure as to whether this is required, answer N.
+ 
+-config KEYS_COMPAT
+-	def_bool y
+-	depends on COMPAT && KEYS
+-
+ config PERSISTENT_KEYRINGS
+ 	bool "Enable register of persistent per-UID keyrings"
+ 	depends on KEYS
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index ef1581b337a3..b92ef62b99a1 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -17,7 +17,7 @@ obj-y := \
+ 	request_key_auth.o \
+ 	user_defined.o
+ compat-obj-$(CONFIG_KEY_DH_OPERATIONS) += compat_dh.o
+-obj-$(CONFIG_KEYS_COMPAT) += compat.o $(compat-obj-y)
++obj-$(CONFIG_COMPAT) += compat.o $(compat-obj-y)
+ obj-$(CONFIG_PROC_FS) += proc.o
+ obj-$(CONFIG_SYSCTL) += sysctl.o
+ obj-$(CONFIG_PERSISTENT_KEYRINGS) += persistent.o
+diff --git a/security/keys/compat.c b/security/keys/compat.c
+index e87c89c0177c..d7445946b701 100644
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -50,11 +50,6 @@ static long compat_keyctl_instantiate_key_iov(
+ 
+ /*
+  * The key control system call, 32-bit compatibility version for 64-bit archs
+- *
+- * This should only be called if the 64-bit arch uses weird pointers in 32-bit
+- * mode or doesn't guarantee that the top 32-bits of the argument registers on
+- * taking a 32-bit syscall are zero.  If you can, you should call sys_keyctl()
+- * directly.
+  */
+ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
+ 		       u32, arg2, u32, arg3, u32, arg4, u32, arg5)
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 9f8208dc0e55..6d54fa8baa64 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -272,7 +272,7 @@ extern long keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
+ 			      size_t, struct keyctl_kdf_params __user *);
+ extern long __keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
+ 				size_t, struct keyctl_kdf_params *);
+-#ifdef CONFIG_KEYS_COMPAT
++#ifdef CONFIG_COMPAT
+ extern long compat_keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 				char __user *buffer, size_t buflen,
+ 				struct compat_keyctl_kdf_params __user *kdf);
+@@ -287,7 +287,7 @@ static inline long keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 	return -EOPNOTSUPP;
+ }
+ 
+-#ifdef CONFIG_KEYS_COMPAT
++#ifdef CONFIG_COMPAT
+ static inline long compat_keyctl_dh_compute(
+ 				struct keyctl_dh_params __user *params,
+ 				char __user *buffer, size_t buflen,
+-- 
+2.16.0.rc0.223.g4a4ac83678-goog
+
