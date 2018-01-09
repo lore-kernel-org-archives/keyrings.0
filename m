@@ -1,65 +1,162 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 08 Dec 2017 15:41:11 +0000
-Subject: [GIT PULL] KEYS, ASN.1, X.509, PKCS#7: Fixes
-Message-Id: <9594.1512747671@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Tue, 09 Jan 2018 22:08:46 +0000
+Subject: [PATCH v2 2/2] syscalls/request_key04: new test for request_key() permission check bug
+Message-Id: <20180109220846.211823-2-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Hi James,
+From: Eric Biggers <ebiggers@google.com>
 
-Can you pull these assorted fixes for keyrings, ASN.1, X.509 and PKCS#7 and
-pass them onto Linus please?
+Add a test for a bug that allowed the request_key() system call to be
+used to add a key to a keyring using only Search permission.  This bug
+was assigned CVE-2017-17807.
 
-Thanks,
-David
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
-The following changes since commit fd6d2e506ce6f850d45342a15c896591291b77b5:
 
-  Merge tag 'docs-4.15-fixes' of git://git.lwn.net/linux (2017-12-04 13:55:28 -0800)
+No changes since v1, just added a patch preceding this one.
 
-are available in the git repository at:
+ include/lapi/keyctl.h                              |  4 +
+ runtest/cve                                        |  1 +
+ runtest/syscalls                                   |  1 +
+ .../kernel/syscalls/request_key/request_key04.c    | 87 ++++++++++++++++++++++
+ 4 files changed, 93 insertions(+)
+ create mode 100644 testcases/kernel/syscalls/request_key/request_key04.c
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-fixes-20171208
+diff --git a/include/lapi/keyctl.h b/include/lapi/keyctl.h
+index 5f6ddaae3..8ad8db64f 100644
+--- a/include/lapi/keyctl.h
++++ b/include/lapi/keyctl.h
+@@ -99,6 +99,10 @@ static inline key_serial_t keyctl_join_session_keyring(const char *name) {
+ # define KEY_REQKEY_DEFL_THREAD_KEYRING 1
+ #endif
+ 
++#ifndef KEY_REQKEY_DEFL_SESSION_KEYRING
++# define KEY_REQKEY_DEFL_SESSION_KEYRING 3
++#endif
++
+ #ifndef KEY_REQKEY_DEFL_DEFAULT
+ # define KEY_REQKEY_DEFL_DEFAULT	0
+ #endif
+diff --git a/runtest/cve b/runtest/cve
+index 5d124083e..b69f40c65 100644
+--- a/runtest/cve
++++ b/runtest/cve
+@@ -25,5 +25,6 @@ cve-2017-15274 add_key02
+ cve-2017-15299 request_key03 -b cve-2017-15299
+ cve-2017-15537 ptrace07
+ cve-2017-15951 request_key03 -b cve-2017-15951
++cve-2017-17807 request_key04
+ cve-2017-1000364 stack_clash
+ cve-2017-5754 meltdown
+diff --git a/runtest/syscalls b/runtest/syscalls
+index 97fc64300..94efd2305 100644
+--- a/runtest/syscalls
++++ b/runtest/syscalls
+@@ -935,6 +935,7 @@ request_key01 request_key01
+ request_key02 request_key02
+ request_key03 request_key03
+ cve-2017-6951 cve-2017-6951
++request_key04 request_key04
+ 
+ rmdir01 rmdir01
+ rmdir02 rmdir02
+diff --git a/testcases/kernel/syscalls/request_key/request_key04.c b/testcases/kernel/syscalls/request_key/request_key04.c
+new file mode 100644
+index 000000000..878b0de00
+--- /dev/null
++++ b/testcases/kernel/syscalls/request_key/request_key04.c
+@@ -0,0 +1,87 @@
++/*
++ * Copyright (c) 2018 Google, Inc.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program, if not, see <http://www.gnu.org/licenses/>.
++ */
++
++/*
++ * Regression test for commit 4dca6ea1d943 ("KEYS: add missing permission check
++ * for request_key() destination"), or CVE-2017-17807.  This bug allowed adding
++ * a key to a keyring given only Search permission to that keyring, rather than
++ * the expected Write permission.
++ *
++ * We test for the bug by trying to add a negatively instantiated key, since
++ * adding a negatively instantiated key using the bug was easy whereas adding a
++ * positively instantiated key required exploiting a race condition.
++ */
++
++#include <errno.h>
++
++#include "tst_test.h"
++#include "lapi/keyctl.h"
++
++static void do_test(void)
++{
++	key_serial_t keyid;
++	int saved_errno;
++
++	TEST(keyctl(KEYCTL_JOIN_SESSION_KEYRING, NULL));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "failed to join new session keyring");
++
++	TEST(keyctl(KEYCTL_SETPERM, KEY_SPEC_SESSION_KEYRING,
++		    KEY_POS_SEARCH|KEY_POS_READ|KEY_POS_VIEW));
++	if (TEST_RETURN < 0) {
++		tst_brk(TBROK | TTERRNO,
++			"failed to set permissions on session keyring");
++	}
++
++	TEST(keyctl(KEYCTL_SET_REQKEY_KEYRING,
++		    KEY_REQKEY_DEFL_SESSION_KEYRING));
++	if (TEST_RETURN < 0) {
++		tst_brk(TBROK | TTERRNO,
++			"failed to set request-key default keyring");
++	}
++
++	TEST(keyctl(KEYCTL_READ, KEY_SPEC_SESSION_KEYRING,
++		    &keyid, sizeof(keyid)));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "failed to read from session keyring");
++	if (TEST_RETURN != 0)
++		tst_brk(TBROK, "session keyring is not empty");
++
++	TEST(request_key("user", "desc", "callout_info", 0));
++	if (TEST_RETURN != -1)
++		tst_brk(TBROK, "request_key() unexpectedly succeeded");
++	saved_errno = TEST_ERRNO;
++
++	TEST(keyctl(KEYCTL_READ, KEY_SPEC_SESSION_KEYRING,
++		    &keyid, sizeof(keyid)));
++	if (TEST_RETURN < 0)
++		tst_brk(TBROK | TTERRNO, "failed to read from session keyring");
++	if (TEST_RETURN != 0)
++		tst_brk(TFAIL, "added key to keyring without permission");
++
++	TEST_ERRNO = saved_errno;
++	if (TEST_ERRNO = EACCES) {
++		tst_res(TPASS, "request_key() failed with EACCES as expected");
++	} else {
++		tst_res(TBROK | TTERRNO,
++			"request_key() failed with unexpected error code");
++	}
++}
++
++static struct tst_test test = {
++	.test_all = do_test,
++};
+-- 
+2.16.0.rc1.238.g530d649a79-goog
 
-for you to fetch changes up to 54c1fb39fe0495f846539ab765925b008f86801c:
-
-  X.509: fix comparisons of ->pkey_algo (2017-12-08 15:13:29 +0000)
-
-----------------------------------------------------------------
-Keyrings fixes
-
-----------------------------------------------------------------
-Colin Ian King (1):
-      security: keys: remove redundant assignment to key_ref
-
-Eric Biggers (14):
-      KEYS: remove unnecessary get/put of explicit dest_keyring
-      KEYS: add missing permission check for request_key() destination
-      ASN.1: fix out-of-bounds read when parsing indefinite length item
-      ASN.1: check for error from ASN1_OP_END__ACT actions
-      X.509: reject invalid BIT STRING for subjectPublicKey
-      X.509: fix buffer overflow detection in sprint_oid()
-      509: fix printing uninitialized stack memory when OID is empty
-      pkcs7: return correct error code if pkcs7_check_authattrs() fails
-      pkcs7: fix check for self-signed certificate
-      pkcs7: use crypto_shash_digest()
-      KEYS: be careful with error codes in public_key_verify_signature()
-      X.509: use crypto_shash_digest()
-      KEYS: reject NULL restriction string when type is specified
-      X.509: fix comparisons of ->pkey_algo
-
- crypto/asymmetric_keys/pkcs7_parser.c     |  4 ++-
- crypto/asymmetric_keys/pkcs7_trust.c      |  2 +-
- crypto/asymmetric_keys/pkcs7_verify.c     |  9 ++----
- crypto/asymmetric_keys/public_key.c       |  7 +++--
- crypto/asymmetric_keys/x509_cert_parser.c |  2 ++
- crypto/asymmetric_keys/x509_public_key.c  |  8 ++---
- lib/asn1_decoder.c                        | 49 ++++++++++++++++++-------------
- lib/oid_registry.c                        | 16 ++++++----
- security/keys/key.c                       |  1 -
- security/keys/keyctl.c                    | 24 +++++++--------
- security/keys/request_key.c               | 48 +++++++++++++++++++++++-------
- 11 files changed, 101 insertions(+), 69 deletions(-)
