@@ -1,96 +1,82 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Mon, 29 Jan 2018 18:19:35 +0000
-Subject: Re: [PATCH v3] fscrypt: add support for the encrypted key type
-Message-Id: <20180129181935.qaec5n7w6jsk6gso@gmail.com>
+Date: Tue, 09 Jan 2018 22:08:45 +0000
+Subject: [PATCH v2 1/2] lapi/keyctl.h: add key permission constants
+Message-Id: <20180109220846.211823-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180118131359.8365-1-git@andred.net>
- <20180126003748.f2uhgwhulcltyok6@gmail.com>
-In-Reply-To: <20180126003748.f2uhgwhulcltyok6@gmail.com>
-To: =?iso-8859-1?Q?Andr=E9?= Draszik <git@andred.net>
-Cc: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Kees Cook <keescook@chromium.org>, Eric Biggers <ebiggers@google.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fscrypt@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-T24gVGh1LCBKYW4gMjUsIDIwMTggYXQgMDQ6Mzc6NDhQTSAtMDgwMCwgRXJpYyBCaWdnZXJzIHdy
-b3RlOgo+IE9uIFRodSwgSmFuIDE4LCAyMDE4IGF0IDAxOjEzOjU5UE0gKzAwMDAsIEFuZHLpIERy
-YXN6aWsgd3JvdGU6Cj4gPiAtc3RhdGljIGludCB2YWxpZGF0ZV91c2VyX2tleShzdHJ1Y3QgZnNj
-cnlwdF9pbmZvICpjcnlwdF9pbmZvLAo+ID4gK3N0YXRpYyBpbmxpbmUgc3RydWN0IGtleSAqZnNj
-cnlwdF9nZXRfZW5jcnlwdGVkX2tleShjb25zdCBjaGFyICpkZXNjcmlwdGlvbikKPiA+ICt7Cj4g
-PiArCWlmIChJU19FTkFCTEVEKENPTkZJR19FTkNSWVBURURfS0VZUykpCj4gPiArCQlyZXR1cm4g
-cmVxdWVzdF9rZXkoJmtleV90eXBlX2VuY3J5cHRlZCwgZGVzY3JpcHRpb24sIE5VTEwpOwo+ID4g
-KwlyZXR1cm4gRVJSX1BUUigtRU5PS0VZKTsKPiA+ICt9Cj4gPiArCj4gPiArc3RhdGljIGludCB2
-YWxpZGF0ZV9rZXlyaW5nX2tleShzdHJ1Y3QgZnNjcnlwdF9pbmZvICpjcnlwdF9pbmZvLAo+ID4g
-IAkJCXN0cnVjdCBmc2NyeXB0X2NvbnRleHQgKmN0eCwgdTggKnJhd19rZXksCj4gPiAgCQkJY29u
-c3QgY2hhciAqcHJlZml4LCBpbnQgbWluX2tleXNpemUpCj4gPiAgewo+ID4gIAljaGFyICpkZXNj
-cmlwdGlvbjsKPiA+ICAJc3RydWN0IGtleSAqa2V5cmluZ19rZXk7Cj4gPiAtCXN0cnVjdCBmc2Ny
-eXB0X2tleSAqbWFzdGVyX2tleTsKPiA+IC0JY29uc3Qgc3RydWN0IHVzZXJfa2V5X3BheWxvYWQg
-KnVrcDsKPiA+ICsJY29uc3QgdTggKm1hc3Rlcl9rZXk7Cj4gPiArCXUzMiBtYXN0ZXJfa2V5X2xl
-bjsKPiA+ICAJaW50IHJlczsKPiA+ICAKPiA+ICAJZGVzY3JpcHRpb24gPSBrYXNwcmludGYoR0ZQ
-X05PRlMsICIlcyUqcGhOIiwgcHJlZml4LAo+ID4gQEAgLTgzLDM5ICs5Myw1NSBAQCBzdGF0aWMg
-aW50IHZhbGlkYXRlX3VzZXJfa2V5KHN0cnVjdCBmc2NyeXB0X2luZm8gKmNyeXB0X2luZm8sCj4g
-PiAgCQlyZXR1cm4gLUVOT01FTTsKPiA+ICAKPiA+ICAJa2V5cmluZ19rZXkgPSByZXF1ZXN0X2tl
-eSgma2V5X3R5cGVfbG9nb24sIGRlc2NyaXB0aW9uLCBOVUxMKTsKPiA+ICsJaWYgKGtleXJpbmdf
-a2V5ID0gRVJSX1BUUigtRU5PS0VZKSkKPiA+ICsJCWtleXJpbmdfa2V5ID0gZnNjcnlwdF9nZXRf
-ZW5jcnlwdGVkX2tleShkZXNjcmlwdGlvbik7Cj4gPiAgCWtmcmVlKGRlc2NyaXB0aW9uKTsKPiA+
-ICAJaWYgKElTX0VSUihrZXlyaW5nX2tleSkpCj4gPiAgCQlyZXR1cm4gUFRSX0VSUihrZXlyaW5n
-X2tleSk7Cj4gPiAgCWRvd25fcmVhZCgma2V5cmluZ19rZXktPnNlbSk7Cj4gPiAgCj4gPiAtCWlm
-IChrZXlyaW5nX2tleS0+dHlwZSAhPSAma2V5X3R5cGVfbG9nb24pIHsKPiA+ICsJaWYgKGtleXJp
-bmdfa2V5LT50eXBlID0gJmtleV90eXBlX2xvZ29uKSB7Cj4gPiArCQljb25zdCBzdHJ1Y3QgdXNl
-cl9rZXlfcGF5bG9hZCAqdWtwOwo+ID4gKwkJY29uc3Qgc3RydWN0IGZzY3J5cHRfa2V5ICpmazsK
-PiA+ICsKPiA+ICsJCXVrcCA9IHVzZXJfa2V5X3BheWxvYWRfbG9ja2VkKGtleXJpbmdfa2V5KTsK
-PiA+ICsJCWlmICghdWtwKSB7Cj4gPiArCQkJLyoga2V5IHdhcyByZXZva2VkIGJlZm9yZSB3ZSBh
-Y3F1aXJlZCBpdHMgc2VtYXBob3JlICovCj4gPiArCQkJcmVzID0gLUVLRVlSRVZPS0VEOwo+ID4g
-KwkJCWdvdG8gb3V0Owo+ID4gKwkJfQo+ID4gKwkJaWYgKHVrcC0+ZGF0YWxlbiAhPSBzaXplb2Yo
-c3RydWN0IGZzY3J5cHRfa2V5KSkgewo+ID4gKwkJCXJlcyA9IC1FSU5WQUw7Cj4gPiArCQkJZ290
-byBvdXQ7Cj4gPiArCQl9Cj4gPiArCQlmayA9IChzdHJ1Y3QgZnNjcnlwdF9rZXkgKil1a3AtPmRh
-dGE7Cj4gPiArCQltYXN0ZXJfa2V5ID0gZmstPnJhdzsKPiA+ICsJCW1hc3Rlcl9rZXlfbGVuID0g
-ZmstPnNpemU7Cj4gPiArCX0gZWxzZSBpZiAoa2V5cmluZ19rZXktPnR5cGUgPSAma2V5X3R5cGVf
-ZW5jcnlwdGVkKSB7Cj4gPiArCQljb25zdCBzdHJ1Y3QgZW5jcnlwdGVkX2tleV9wYXlsb2FkICpl
-a3A7Cj4gPiArCj4gPiArCQlla3AgPSBrZXlyaW5nX2tleS0+cGF5bG9hZC5kYXRhWzBdOwo+ID4g
-KwkJbWFzdGVyX2tleSA9IGVrcC0+ZGVjcnlwdGVkX2RhdGE7Cj4gPiArCQltYXN0ZXJfa2V5X2xl
-biA9IGVrcC0+ZGVjcnlwdGVkX2RhdGFsZW47Cj4gPiArCX0gZWxzZSB7Cj4gPiAgCQlwcmludGtf
-b25jZShLRVJOX1dBUk5JTkcKPiA+IC0JCQkJIiVzOiBrZXkgdHlwZSBtdXN0IGJlIGxvZ29uXG4i
-LCBfX2Z1bmNfXyk7Cj4gPiArCQkJCSIlczoga2V5IHR5cGUgbXVzdCBiZSBsb2dvbiBvciBlbmNy
-eXB0ZWRcbiIsCj4gPiArCQkJCV9fZnVuY19fKTsKPiA+ICAJCXJlcyA9IC1FTk9LRVk7Cj4gPiAg
-CQlnb3RvIG91dDsKPiA+ICAJfQo+ID4gLQl1a3AgPSB1c2VyX2tleV9wYXlsb2FkX2xvY2tlZChr
-ZXlyaW5nX2tleSk7Cj4gPiAtCWlmICghdWtwKSB7Cj4gPiAtCQkvKiBrZXkgd2FzIHJldm9rZWQg
-YmVmb3JlIHdlIGFjcXVpcmVkIGl0cyBzZW1hcGhvcmUgKi8KPiA+IC0JCXJlcyA9IC1FS0VZUkVW
-T0tFRDsKPiA+IC0JCWdvdG8gb3V0Owo+ID4gLQl9Cj4gPiAtCWlmICh1a3AtPmRhdGFsZW4gIT0g
-c2l6ZW9mKHN0cnVjdCBmc2NyeXB0X2tleSkpIHsKPiA+IC0JCXJlcyA9IC1FSU5WQUw7Cj4gPiAt
-CQlnb3RvIG91dDsKPiA+IC0JfQo+ID4gLQltYXN0ZXJfa2V5ID0gKHN0cnVjdCBmc2NyeXB0X2tl
-eSAqKXVrcC0+ZGF0YTsKPiA+ICAJQlVJTERfQlVHX09OKEZTX0FFU18xMjhfRUNCX0tFWV9TSVpF
-ICE9IEZTX0tFWV9ERVJJVkFUSU9OX05PTkNFX1NJWkUpOwo+ID4gIAo+ID4gLQlpZiAobWFzdGVy
-X2tleS0+c2l6ZSA8IG1pbl9rZXlzaXplIHx8IG1hc3Rlcl9rZXktPnNpemUgPiBGU19NQVhfS0VZ
-X1NJWkUKPiA+IC0JICAgIHx8IG1hc3Rlcl9rZXktPnNpemUgJSBBRVNfQkxPQ0tfU0laRSAhPSAw
-KSB7Cj4gPiArCWlmIChtYXN0ZXJfa2V5X2xlbiA8IG1pbl9rZXlzaXplIHx8IG1hc3Rlcl9rZXlf
-bGVuID4gRlNfTUFYX0tFWV9TSVpFCj4gPiArCSAgICB8fCBtYXN0ZXJfa2V5X2xlbiAlIEFFU19C
-TE9DS19TSVpFICE9IDApIHsKPiA+ICAJCXByaW50a19vbmNlKEtFUk5fV0FSTklORwo+ID4gLQkJ
-CQkiJXM6IGtleSBzaXplIGluY29ycmVjdDogJWRcbiIsCj4gPiAtCQkJCV9fZnVuY19fLCBtYXN0
-ZXJfa2V5LT5zaXplKTsKPiA+ICsJCQkJIiVzOiBrZXkgc2l6ZSBpbmNvcnJlY3Q6ICV1XG4iLAo+
-ID4gKwkJCQlfX2Z1bmNfXywgbWFzdGVyX2tleV9sZW4pOwo+ID4gIAkJcmVzID0gLUVOT0tFWTsK
-PiA+ICAJCWdvdG8gb3V0Owo+ID4gIAl9Cj4gCj4gVGhlIGNvZGUgY2hhbmdlcyBoZXJlIGxvb2sg
-ZmluZSwgYnV0IHVuZm9ydHVuYXRlbHkgdGhlcmUgaXMgYSBsb2NrIG9yZGVyaW5nCj4gcHJvYmxl
-bSBleHBvc2VkIGJ5IHVzaW5nIGEga2V5IHR5cGUgdGhhdCBpbXBsZW1lbnRzIHRoZSBrZXlfdHlw
-ZSAtPnJlYWQoKQo+IG1ldGhvZC4gIFRoZSBwcm9ibGVtIGlzIHRoYXQgZW5jcnlwdGVkX3JlYWQo
-KSBjYW4gdGFrZSBhIHBhZ2UgZmF1bHQgZHVyaW5nCj4gY29weV90b191c2VyKCkgd2hpbGUgaG9s
-ZGluZyB0aGUga2V5IHNlbWFwaG9yZSwgd2hpY2ggdGhlbiAod2l0aCBleHQ0KSBjYW4KPiB0cmln
-Z2VyIHRoZSBzdGFydCBvZiBhIGpiZDIgdHJhbnNhY3Rpb24uICBNZWFud2hpbGUKPiBmc2NyeXB0
-X2dldF9lbmNyeXB0aW9uX2luZm8oKSBjYW4gYmUgY2FsbGVkIGZyb20gd2l0aGluIGEgamJkMiB0
-cmFuc2FjdGlvbiB2aWEKPiBmc2NyeXB0X2luaGVyaXRfY29udGV4dCgpLCB3aGljaCByZXN1bHRz
-IGluIGEgZGlmZmVyZW50IGxvY2tpbmcgb3JkZXIuICBXZQo+IHByb2JhYmx5IHdpbGwgbmVlZCB0
-byBmaXggdGhpcyBieSByZW1vdmluZyB0aGUgY2FsbCB0bwo+IGZzY3J5cHRfZ2V0X2VuY3J5cHRp
-b25faW5mbygpIGZyb20gZnNjcnlwdF9pbmhlcml0X2NvbnRleHQoKS4KPiAKCkFjdHVhbGx5LCBh
-IGJldHRlciBpZGVhIG1pZ2h0IGJlIHRvIGFjY2VzcyB0aGUga2V5IHBheWxvYWQgdW5kZXIgcmN1
-X3JlYWRfbG9jaygpCnJhdGhlciB0aGFuIHRoZSBrZXkgc2VtYXBob3JlLiAgSXQgbG9va3MgbGlr
-ZSB0aGF0J3MgcG9zc2libGUgd2l0aCBib3RoIHRoZQoibG9nb24iIGFuZCAiZW5jcnlwdGVkIiBr
-ZXkgdHlwZXMuCgpOb3RlIHRoYXQgZGVyaXZlX2tleV9hZXMoKSBjYW4gc2xlZXAsIHNvIHRoZSBw
-YXJ0IHVuZGVyIHRoZSByY3VfcmVhZF9sb2NrKCkKd291bGQgaGF2ZSB0byBqdXN0IGNvcHkgdGhl
-IHBheWxvYWQgdG8gYSB0ZW1wb3JhcnkgYnVmZmVyLCBhbmQgZGVyaXZlX2tleV9hZXMoKQp3b3Vs
-ZCBiZSBkb25lIGFmdGVyIHJjdV9yZWFkX3VubG9jaygpLCB1c2luZyB0aGUgdGVtcG9yYXJ5IGJ1
-ZmZlci4gIEJ1dCBJIHRoaW5rCnlvdSBjYW4ganVzdCByZXVzZSB0aGUgJ3Jhd19rZXknIGJ1ZmZl
-ciwgc28gdGhhdCB0aGUgZW5jcnlwdGlvbiBvcGVyYXRpb24gaW4KZGVyaXZlX2tleV9hZXMoKSBp
-cyBkb25lIGluLXBsYWNlLgoKRXJpYwotLQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDog
-c2VuZCB0aGUgbGluZSAidW5zdWJzY3JpYmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVz
-c2FnZSB0byBtYWpvcmRvbW9Admdlci5rZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQg
-IGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcvbWFqb3Jkb21vLWluZm8uaHRtbA==
+From: Eric Biggers <ebiggers@google.com>
+
+Add the key permission constants to keyctl.h so that they don't have to
+be defined in each test that uses them.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ include/lapi/keyctl.h                       | 35 +++++++++++++++++++++++++++++
+ testcases/kernel/syscalls/keyctl/keyctl05.c |  3 ---
+ 2 files changed, 35 insertions(+), 3 deletions(-)
+
+diff --git a/include/lapi/keyctl.h b/include/lapi/keyctl.h
+index 4b8098a59..5f6ddaae3 100644
+--- a/include/lapi/keyctl.h
++++ b/include/lapi/keyctl.h
+@@ -144,4 +144,39 @@ static inline key_serial_t keyctl_join_session_keyring(const char *name) {
+ # define KEYCTL_SET_TIMEOUT 15
+ #endif
+ 
++/* key permissions */
++#ifndef KEY_POS_VIEW
++# define KEY_POS_VIEW    0x01000000
++# define KEY_POS_READ    0x02000000
++# define KEY_POS_WRITE   0x04000000
++# define KEY_POS_SEARCH  0x08000000
++# define KEY_POS_LINK    0x10000000
++# define KEY_POS_SETATTR 0x20000000
++# define KEY_POS_ALL     0x3f000000
++
++# define KEY_USR_VIEW    0x00010000
++# define KEY_USR_READ    0x00020000
++# define KEY_USR_WRITE   0x00040000
++# define KEY_USR_SEARCH  0x00080000
++# define KEY_USR_LINK    0x00100000
++# define KEY_USR_SETATTR 0x00200000
++# define KEY_USR_ALL     0x003f0000
++
++# define KEY_GRP_VIEW    0x00000100
++# define KEY_GRP_READ    0x00000200
++# define KEY_GRP_WRITE   0x00000400
++# define KEY_GRP_SEARCH  0x00000800
++# define KEY_GRP_LINK    0x00001000
++# define KEY_GRP_SETATTR 0x00002000
++# define KEY_GRP_ALL     0x00003f00
++
++# define KEY_OTH_VIEW    0x00000001
++# define KEY_OTH_READ    0x00000002
++# define KEY_OTH_WRITE   0x00000004
++# define KEY_OTH_SEARCH  0x00000008
++# define KEY_OTH_LINK    0x00000010
++# define KEY_OTH_SETATTR 0x00000020
++# define KEY_OTH_ALL     0x0000003f
++#endif /* !KEY_POS_VIEW */
++
+ #endif	/* KEYCTL_H__ */
+diff --git a/testcases/kernel/syscalls/keyctl/keyctl05.c b/testcases/kernel/syscalls/keyctl/keyctl05.c
+index 9ba61200c..c04d1f5b0 100644
+--- a/testcases/kernel/syscalls/keyctl/keyctl05.c
++++ b/testcases/kernel/syscalls/keyctl/keyctl05.c
+@@ -43,9 +43,6 @@
+ #include "tst_test.h"
+ #include "lapi/keyctl.h"
+ 
+-#define KEY_POS_WRITE	0x04000000
+-#define KEY_POS_ALL	0x3f000000
+-
+ /*
+  * A valid payload for the "asymmetric" key type.  This is an x509 certificate
+  * in DER format, generated using:
+-- 
+2.16.0.rc1.238.g530d649a79-goog
+
