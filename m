@@ -1,62 +1,88 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Fri, 19 Jan 2018 23:15:34 +0000
-Subject: [PATCH] NFS: reject request for id_legacy key without auxdata
-Message-Id: <20180119231534.77293-1-ebiggers3@gmail.com>
+From: =?UTF-8?q?Andr=C3=A9=20Draszik?= <git@andred.net>
+Date: Wed, 10 Jan 2018 12:44:17 +0000
+Subject: [PATCH 2/3] fscrypt: add support for the encrypted key type
+Message-Id: <20180110124418.24385-2-git@andred.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1258"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <001a113f932c93a1400563282ce8@google.com>
-In-Reply-To: <001a113f932c93a1400563282ce8@google.com>
-To: linux-nfs@vger.kernel.org, Trond Myklebust <trond.myklebust@primarydata.com>, Anna Schumaker <anna.schumaker@netapp.com>
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+References: <20180110124418.24385-1-git@andred.net>
+In-Reply-To: <20180110124418.24385-1-git@andred.net>
+To: linux-kernel@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Kees Cook <keescook@chromium.org>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fscrypt@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
-
-nfs_idmap_legacy_upcall() is supposed to be called with 'aux' pointing
-to a 'struct idmap', via the call to request_key_with_auxdata() in
-nfs_idmap_request_key().
-
-However it can also be reached via the request_key() system call in
-which case 'aux' will be NULL, causing a NULL pointer dereference in
-nfs_idmap_prepare_pipe_upcall(), assuming that the key description is
-valid enough to get that far.
-
-Fix this by making nfs_idmap_legacy_upcall() negate the key if no
-auxdata is provided.
-
-As usual, this bug was found by syzkaller.  A simple reproducer using
-the command-line keyctl program is:
-
-    keyctl request2 id_legacy uid:0 '' @s
-
-Fixes: 57e62324e469 ("NFS: Store the legacy idmapper result in the keyring")
-Reported-by: syzbot+5dfdbcf7b3eb5912abbb@syzkaller.appspotmail.com
-Cc: <stable@vger.kernel.org> # v3.4+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- fs/nfs/nfs4idmap.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/fs/nfs/nfs4idmap.c b/fs/nfs/nfs4idmap.c
-index 30426c1a1bbd..22dc30a679a0 100644
---- a/fs/nfs/nfs4idmap.c
-+++ b/fs/nfs/nfs4idmap.c
-@@ -568,9 +568,13 @@ static int nfs_idmap_legacy_upcall(struct key_construction *cons,
- 	struct idmap_msg *im;
- 	struct idmap *idmap = (struct idmap *)aux;
- 	struct key *key = cons->key;
--	int ret = -ENOMEM;
-+	int ret = -ENOKEY;
-+
-+	if (!aux)
-+		goto out1;
- 
- 	/* msg and im are freed in idmap_pipe_destroy_msg */
-+	ret = -ENOMEM;
- 	data = kzalloc(sizeof(*data), GFP_KERNEL);
- 	if (!data)
- 		goto out1;
--- 
-2.16.0.rc1.238.g530d649a79-goog
-
+V2Ugbm93IHRyeSB0byBhY3F1aXJlIHRoZSBrZXkgYWNjb3JkaW5nIHRvIHRoZQplbmNyeXB0aW9u
+IHBvbGljeSBmcm9tIGJvdGgga2V5IHR5cGVzLCAnbG9nb24nCmFzIHdlbGwgYXMgJ2VuY3J5cHRl
+ZCcuCgpTaWduZWQtb2ZmLWJ5OiBBbmRyw6kgRHJhc3ppayA8Z2l0QGFuZHJlZC5uZXQ+CkNjOiBN
+aW1pIFpvaGFyIDx6b2hhckBsaW51eC52bmV0LmlibS5jb20+CkNjOiBEYXZpZCBIb3dlbGxzIDxk
+aG93ZWxsc0ByZWRoYXQuY29tPgpDYzogSmFtZXMgTW9ycmlzIDxqYW1lcy5sLm1vcnJpc0BvcmFj
+bGUuY29tPgpDYzogIlNlcmdlIEUuIEhhbGx5biIgPHNlcmdlQGhhbGx5bi5jb20+CkNjOiAiVGhl
+b2RvcmUgWS4gVHMnbyIgPHR5dHNvQG1pdC5lZHU+CkNjOiBKYWVnZXVrIEtpbSA8amFlZ2V1a0Br
+ZXJuZWwub3JnPgpDYzogS2VlcyBDb29rIDxrZWVzY29va0BjaHJvbWl1bS5vcmc+CkNjOiBsaW51
+eC1pbnRlZ3JpdHlAdmdlci5rZXJuZWwub3JnCkNjOiBrZXlyaW5nc0B2Z2VyLmtlcm5lbC5vcmcK
+Q2M6IGxpbnV4LXNlY3VyaXR5LW1vZHVsZUB2Z2VyLmtlcm5lbC5vcmcKQ2M6IGxpbnV4LWZzY3J5
+cHRAdmdlci5rZXJuZWwub3JnCi0tLQogZnMvY3J5cHRvL2tleWluZm8uYyB8IDU4ICsrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hh
+bmdlZCwgMzggaW5zZXJ0aW9ucygrKSwgMjAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMv
+Y3J5cHRvL2tleWluZm8uYyBiL2ZzL2NyeXB0by9rZXlpbmZvLmMKaW5kZXggNWU2ZTg0NmY1YTI0
+Li4wMjNmYTE5ZmVjNDggMTAwNjQ0Ci0tLSBhL2ZzL2NyeXB0by9rZXlpbmZvLmMKKysrIGIvZnMv
+Y3J5cHRvL2tleWluZm8uYwpAQCAtMTAsNiArMTAsNyBAQAogICovCiAKICNpbmNsdWRlIDxrZXlz
+L3VzZXItdHlwZS5oPgorI2luY2x1ZGUgPGtleXMvZW5jcnlwdGVkLXR5cGUuaD4KICNpbmNsdWRl
+IDxsaW51eC9zY2F0dGVybGlzdC5oPgogI2luY2x1ZGUgPGxpbnV4L3JhdGVsaW1pdC5oPgogI2lu
+Y2x1ZGUgPGNyeXB0by9hZXMuaD4KQEAgLTY2LDE0ICs2NywyMCBAQCBzdGF0aWMgaW50IGRlcml2
+ZV9rZXlfYWVzKHU4IGRlcml2aW5nX2tleVtGU19BRVNfMTI4X0VDQl9LRVlfU0laRV0sCiAJcmV0
+dXJuIHJlczsKIH0KIAotc3RhdGljIGludCB2YWxpZGF0ZV91c2VyX2tleShzdHJ1Y3QgZnNjcnlw
+dF9pbmZvICpjcnlwdF9pbmZvLAorc3RhdGljIGlubGluZSBzdHJ1Y3Qga2V5ICpmc2NyeXB0X2dl
+dF9lbmNyeXB0ZWRfa2V5KGNvbnN0IGNoYXIgKnNpZykKK3sKKwlpZiAoSVNfRU5BQkxFRChDT05G
+SUdfRU5DUllQVEVEX0tFWVMpKQorCQlyZXR1cm4gcmVxdWVzdF9rZXkoJmtleV90eXBlX2VuY3J5
+cHRlZCwgc2lnLCBOVUxMKTsKKwlyZXR1cm4gRVJSX1BUUigtRU5PS0VZKTsKK30KKworc3RhdGlj
+IGludCB2YWxpZGF0ZV9rZXlyaW5nX2tleShzdHJ1Y3QgZnNjcnlwdF9pbmZvICpjcnlwdF9pbmZv
+LAogCQkJc3RydWN0IGZzY3J5cHRfY29udGV4dCAqY3R4LCB1OCAqcmF3X2tleSwKIAkJCWNvbnN0
+IGNoYXIgKnByZWZpeCwgaW50IG1pbl9rZXlzaXplKQogewogCWNoYXIgKmRlc2NyaXB0aW9uOwog
+CXN0cnVjdCBrZXkgKmtleXJpbmdfa2V5OwogCXN0cnVjdCBmc2NyeXB0X2tleSAqbWFzdGVyX2tl
+eTsKLQljb25zdCBzdHJ1Y3QgdXNlcl9rZXlfcGF5bG9hZCAqdWtwOwogCWludCByZXM7CiAKIAlk
+ZXNjcmlwdGlvbiA9IGthc3ByaW50ZihHRlBfTk9GUywgIiVzJSpwaE4iLCBwcmVmaXgsCkBAIC04
+MywyOCArOTAsMzkgQEAgc3RhdGljIGludCB2YWxpZGF0ZV91c2VyX2tleShzdHJ1Y3QgZnNjcnlw
+dF9pbmZvICpjcnlwdF9pbmZvLAogCQlyZXR1cm4gLUVOT01FTTsKIAogCWtleXJpbmdfa2V5ID0g
+cmVxdWVzdF9rZXkoJmtleV90eXBlX2xvZ29uLCBkZXNjcmlwdGlvbiwgTlVMTCk7CisJaWYgKElT
+X0VSUihrZXlyaW5nX2tleSkpCisJCWtleXJpbmdfa2V5ID0gZnNjcnlwdF9nZXRfZW5jcnlwdGVk
+X2tleShkZXNjcmlwdGlvbik7CiAJa2ZyZWUoZGVzY3JpcHRpb24pOwogCWlmIChJU19FUlIoa2V5
+cmluZ19rZXkpKQogCQlyZXR1cm4gUFRSX0VSUihrZXlyaW5nX2tleSk7CiAJZG93bl9yZWFkKCZr
+ZXlyaW5nX2tleS0+c2VtKTsKIAotCWlmIChrZXlyaW5nX2tleS0+dHlwZSAhPSAma2V5X3R5cGVf
+bG9nb24pIHsKKwlpZiAoa2V5cmluZ19rZXktPnR5cGUgPSAma2V5X3R5cGVfbG9nb24pIHsKKwkJ
+Y29uc3Qgc3RydWN0IHVzZXJfa2V5X3BheWxvYWQgKnVrcDsKKworCQl1a3AgPSB1c2VyX2tleV9w
+YXlsb2FkX2xvY2tlZChrZXlyaW5nX2tleSk7CisJCWlmICghdWtwKSB7CisJCQkvKiBrZXkgd2Fz
+IHJldm9rZWQgYmVmb3JlIHdlIGFjcXVpcmVkIGl0cyBzZW1hcGhvcmUgKi8KKwkJCXJlcyA9IC1F
+S0VZUkVWT0tFRDsKKwkJCWdvdG8gb3V0OworCQl9CisJCWlmICh1a3AtPmRhdGFsZW4gIT0gc2l6
+ZW9mKHN0cnVjdCBmc2NyeXB0X2tleSkpIHsKKwkJCXJlcyA9IC1FSU5WQUw7CisJCQlnb3RvIG91
+dDsKKwkJfQorCQltYXN0ZXJfa2V5ID0gKHN0cnVjdCBmc2NyeXB0X2tleSAqKXVrcC0+ZGF0YTsK
+Kwl9IGVsc2UgaWYgKGtleXJpbmdfa2V5LT50eXBlID0gJmtleV90eXBlX2VuY3J5cHRlZCkgewor
+CQljb25zdCBzdHJ1Y3QgZW5jcnlwdGVkX2tleV9wYXlsb2FkICpla3A7CisKKwkJZWtwID0ga2V5
+cmluZ19rZXktPnBheWxvYWQuZGF0YVswXTsKKwkJbWFzdGVyX2tleSA9IChzdHJ1Y3QgZnNjcnlw
+dF9rZXkgKilla3AtPnBheWxvYWRfZGF0YTsKKwl9IGVsc2UgewogCQlwcmludGtfb25jZShLRVJO
+X1dBUk5JTkcKLQkJCQkiJXM6IGtleSB0eXBlIG11c3QgYmUgbG9nb25cbiIsIF9fZnVuY19fKTsK
+KwkJCQkiJXM6IGtleSB0eXBlIG11c3QgYmUgbG9nb24gb3IgZW5jcnlwdGVkXG4iLAorCQkJCV9f
+ZnVuY19fKTsKIAkJcmVzID0gLUVOT0tFWTsKIAkJZ290byBvdXQ7CiAJfQotCXVrcCA9IHVzZXJf
+a2V5X3BheWxvYWRfbG9ja2VkKGtleXJpbmdfa2V5KTsKLQlpZiAoIXVrcCkgewotCQkvKiBrZXkg
+d2FzIHJldm9rZWQgYmVmb3JlIHdlIGFjcXVpcmVkIGl0cyBzZW1hcGhvcmUgKi8KLQkJcmVzID0g
+LUVLRVlSRVZPS0VEOwotCQlnb3RvIG91dDsKLQl9Ci0JaWYgKHVrcC0+ZGF0YWxlbiAhPSBzaXpl
+b2Yoc3RydWN0IGZzY3J5cHRfa2V5KSkgewotCQlyZXMgPSAtRUlOVkFMOwotCQlnb3RvIG91dDsK
+LQl9Ci0JbWFzdGVyX2tleSA9IChzdHJ1Y3QgZnNjcnlwdF9rZXkgKil1a3AtPmRhdGE7CiAJQlVJ
+TERfQlVHX09OKEZTX0FFU18xMjhfRUNCX0tFWV9TSVpFICE9IEZTX0tFWV9ERVJJVkFUSU9OX05P
+TkNFX1NJWkUpOwogCiAJaWYgKG1hc3Rlcl9rZXktPnNpemUgPCBtaW5fa2V5c2l6ZSB8fCBtYXN0
+ZXJfa2V5LT5zaXplID4gRlNfTUFYX0tFWV9TSVpFCkBAIC0zMDIsMTIgKzMyMCwxMiBAQCBpbnQg
+ZnNjcnlwdF9nZXRfZW5jcnlwdGlvbl9pbmZvKHN0cnVjdCBpbm9kZSAqaW5vZGUpCiAJaWYgKCFy
+YXdfa2V5KQogCQlnb3RvIG91dDsKIAotCXJlcyA9IHZhbGlkYXRlX3VzZXJfa2V5KGNyeXB0X2lu
+Zm8sICZjdHgsIHJhd19rZXksIEZTX0tFWV9ERVNDX1BSRUZJWCwKLQkJCQlrZXlzaXplKTsKKwly
+ZXMgPSB2YWxpZGF0ZV9rZXlyaW5nX2tleShjcnlwdF9pbmZvLCAmY3R4LCByYXdfa2V5LAorCQkJ
+CSAgIEZTX0tFWV9ERVNDX1BSRUZJWCwga2V5c2l6ZSk7CiAJaWYgKHJlcyAmJiBpbm9kZS0+aV9z
+Yi0+c19jb3AtPmtleV9wcmVmaXgpIHsKLQkJaW50IHJlczIgPSB2YWxpZGF0ZV91c2VyX2tleShj
+cnlwdF9pbmZvLCAmY3R4LCByYXdfa2V5LAotCQkJCQkgICAgIGlub2RlLT5pX3NiLT5zX2NvcC0+
+a2V5X3ByZWZpeCwKLQkJCQkJICAgICBrZXlzaXplKTsKKwkJaW50IHJlczIgPSB2YWxpZGF0ZV9r
+ZXlyaW5nX2tleShjcnlwdF9pbmZvLCAmY3R4LCByYXdfa2V5LAorCQkJCQkJaW5vZGUtPmlfc2It
+PnNfY29wLT5rZXlfcHJlZml4LAorCQkJCQkJa2V5c2l6ZSk7CiAJCWlmIChyZXMyKSB7CiAJCQlp
+ZiAocmVzMiA9IC1FTk9LRVkpCiAJCQkJcmVzID0gLUVOT0tFWTsKLS0gCjIuMTUuMQoKLS0KVG8g
+dW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNlbmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGtl
+eXJpbmdzIiBpbgp0aGUgYm9keSBvZiBhIG1lc3NhZ2UgdG8gbWFqb3Jkb21vQHZnZXIua2VybmVs
+Lm9yZwpNb3JlIG1ham9yZG9tbyBpbmZvIGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9y
+ZG9tby1pbmZvLmh0bWw=
