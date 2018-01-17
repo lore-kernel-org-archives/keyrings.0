@@ -1,94 +1,111 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 11 Jan 2018 04:48:01 +0000
+From: =?ISO-8859-1?Q?Andr=E9?= Draszik <git@andred.net>
+Date: Wed, 17 Jan 2018 14:38:59 +0000
 Subject: Re: [PATCH 3/3] encrypted-keys: document new fscrypt key format
-Message-Id: <20180111044801.GB943@zzz.localdomain>
+Message-Id: <1516199939.28972.101.camel@andred.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20180110124418.24385-1-git@andred.net>
- <20180110124418.24385-3-git@andred.net>
-In-Reply-To: <20180110124418.24385-3-git@andred.net>
-To: =?iso-8859-1?Q?Andr=E9?= Draszik <git@andred.net>
+	 <20180110124418.24385-3-git@andred.net>
+	 <20180111044801.GB943@zzz.localdomain>
+In-Reply-To: <20180111044801.GB943@zzz.localdomain>
+To: Eric Biggers <ebiggers3@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Jonathan Corbet <corbet@lwn.net>, Kees Cook <keescook@chromium.org>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-doc@vger.kernel.org
 
-SGkgQW5kcuksCgpPbiBXZWQsIEphbiAxMCwgMjAxOCBhdCAxMjo0NDoxOFBNICswMDAwLCBBbmRy
-6SBEcmFzemlrIHdyb3RlOgo+IGRpZmYgLS1naXQgYS9Eb2N1bWVudGF0aW9uL3NlY3VyaXR5L2tl
-eXMvZnNjcnlwdC5yc3QgYi9Eb2N1bWVudGF0aW9uL3NlY3VyaXR5L2tleXMvZnNjcnlwdC5yc3QK
-PiBuZXcgZmlsZSBtb2RlIDEwMDY0NAo+IGluZGV4IDAwMDAwMDAwMDAwMC4uZTRhMjk1OTI1MTNl
-Cj4gLS0tIC9kZXYvbnVsbAo+ICsrKyBiL0RvY3VtZW50YXRpb24vc2VjdXJpdHkva2V5cy9mc2Ny
-eXB0LnJzdAo+IEBAIC0wLDAgKzEsNjcgQEAKPiArPT09PT09PT09PT09PT09PT09PT0KPiArRW5j
-cnlwdGVkIGtleXMgZm9yIHRoZSBmc2NyeXB0IHN1YnN5c3RlbQo+ICs9PT09PT09PT09PT09PT09
-PT09PQoKVGhlcmUgaXMgbm93IGRvY3VtZW50YXRpb24gZm9yIGZzY3J5cHQgaW4gRG9jdW1lbnRh
-dGlvbi9maWxlc3lzdGVtcy9mc2NyeXB0LnJzdDsKc2VlIGluIHBhcnRpY3VsYXIgdGhlICJBZGRp
-bmcga2V5cyIgc2VjdGlvbi4gIFRoZSBkb2N1bWVudGF0aW9uIGZvciBhbnkgbmV3IHdheXMKdG8g
-YWRkIGtleXMgc2hvdWxkIGdvIGluIHRoZXJlLgoKPiArCj4gK2ZzY3J5cHQgYWxsb3dzIGZpbGUg
-c3lzdGVtcyB0byBpbXBsZW1lbnQgdHJhbnNwYXJlbnQgZW5jcnlwdGlvbiBhbmQgZGVjcnlwdGlv
-bgo+ICtvZiBmaWxlcywgc2ltaWxhciB0byBlQ3J5cHRmcywgdXNpbmcga2V5cyBkZXJpdmVkIGZy
-b20gYSBtYXN0ZXIga2V5IGRlc2NyaXB0b3IuCgpOb3RlIHRoYXQgdGhlIG1hc3RlciBrZXkgKmRl
-c2NyaXB0b3IqIHJlZmVycyB0byB0aGUgaGV4IHN0cmluZyB1c2VkIGluIHRoZQprZXlyaW5nIGtl
-eSBkZXNjcmlwdGlvbi4gIEl0IGlzIG5vdCB0aGUgc2FtZSBhcyB0aGUgbWFzdGVyIGtleSBpdHNl
-bGYsIHdoaWNoIGlzCnN0b3JlZCBpbiB0aGUgcGF5bG9hZC4gIFRoZSBjcnlwdG9ncmFwaHkgaXMg
-ZG9uZSB3aXRoIHRoZSBtYXN0ZXIga2V5LCBub3Qgd2l0aAp0aGUgbWFzdGVyIGtleSAqZGVzY3Jp
-cHRvciouCgo+ICtJbiBvcmRlciB0byBhdm9pZCBrbm93bi1wbGFpbnRleHQgYXR0YWNrcywgdGhl
-IGRhdGFibG9iIG9idGFpbmVkIHRocm91Z2gKPiArY29tbWFuZHMgJ2tleWN0bCBwcmludCcgb3Ig
-J2tleWN0bCBwaXBlJyBkb2VzIG5vdCBjb250YWluIHRoZSBvdmVyYWxsCj4gK2ZzY3J5cHRfa2V5
-LCB0aGUgY29udGVudHMgb2Ygd2hpY2ggaXMgd2VsbCBrbm93biwgYnV0IG9ubHkgdGhlIG1hc3Rl
-ciBrZXkKPiArZGVzY3JpcHRvciBpdHNlbGYgaW4gZW5jcnlwdGVkIGZvcm0uCj4gKwo+ICtUaGUg
-ZnNjcnlwdCBzdWJzeXN0ZW0gbWF5IHJlYWxseSBiZW5lZml0IGZyb20gdXNpbmcgZW5jcnlwdGVk
-IGtleXMgaW4gdGhhdCB0aGUKPiArcmVxdWlyZWQga2V5IGNhbiBiZSBzZWN1cmVseSBnZW5lcmF0
-ZWQgYnkgYW4gQWRtaW5pc3RyYXRvciBhbmQgcHJvdmlkZWQgYXQgYm9vdAo+ICt0aW1lIGFmdGVy
-IHRoZSB1bnNlYWxpbmcgb2YgYSAndHJ1c3RlZCcga2V5IGluIG9yZGVyIHRvIHBlcmZvcm0gdGhl
-IG1vdW50IGluIGEKPiArY29udHJvbGxlZCBlbnZpcm9ubWVudC4gIEFub3RoZXIgYWR2YW50YWdl
-IGlzIHRoYXQgdGhlIGtleSBpcyBub3QgZXhwb3NlZCB0bwo+ICt0aHJlYXRzIG9mIG1hbGljaW91
-cyBzb2Z0d2FyZSwgYmVjYXVzZSBpdCBpcyBhdmFpbGFibGUgaW4gY2xlYXIgZm9ybSBvbmx5IGF0
-Cj4gK2tlcm5lbCBsZXZlbC4KClBsZWFzZSBiZSB2ZXJ5IGNsZWFyIGFib3V0IGV4YWN0bHkgd2hh
-dCBzZWN1cml0eSBwcm9wZXJ0aWVzIGFyZSBhY2hpZXZlZCBieQp1c2luZyBlbmNyeXB0ZWQta2V5
-cy4gIE5vdGUgdGhhdCBzdWNoIGtleXMgYXJlIHByZXNlbnQgaW4gdGhlIGNsZWFyIGluIGtlcm5l
-bAptZW1vcnksIHNvIHRoZXkgd2lsbCBiZSBleHBvc2VkIGJ5IGFueSBleHBsb2l0IHRoYXQgY29t
-cHJvbWlzZXMgdGhlIGtlcm5lbCwgb3IKZXZlbiBqdXN0IGZpbmRzIGEgd2F5IHRvIHJlYWQgaXRz
-IG1lbW9yeS4gIChBbmQgaWYgeW91J3ZlIGJlZW4gcGF5aW5nIGF0dGVudGlvbgppbiB0aGUgbGFz
-dCB3ZWVrLCB5b3UgbWF5IGJlIGF3YXJlIHRoYXQgY2VydGFpbiBDUFUgdmVuZG9ycyBoYXZlICJo
-ZWxwZnVsbHkiCm1hZGUgcmVhZGluZyBrZXJuZWwgbWVtb3J5IHF1aXRlIGVhc3kuKSAgU28sIGl0
-J3MgZGVmaW5pdGVseSAqbm90KiBjYXRlZ29yaWNhbGx5CnRydWUgdGhhdCAidGhlIGtleSBpcyBu
-b3QgZXhwb3NlZCB0byB0aHJlYXRzIG9mIG1hbGljaW91cyBzb2Z0d2FyZSIuCgpBbHNvIG5vdGUg
-dGhhdCBmc2NyeXB0IGlzIGFscmVhZHkgdXNpbmcgdGhlICJsb2dvbiIga2V5IHR5cGUgd2hpY2gg
-Y2Fubm90IGJlCnJlYWQgYnkgdXNlcnNwYWNlICh3aXRob3V0IGV4cGxvaXRzKS4gIFRoaXMgaXMg
-ZGlmZmVyZW50IGZyb20gZUNyeXB0ZnMgd2hpY2gKdXNlcyB0aGUgInVzZXIiIGtleSB0eXBlLgoK
-PiArVXNhZ2U6Ogo+ICsKPiArICAga2V5Y3RsIGFkZCBlbmNyeXB0ZWQgZnNjcnlwdDpwb2xpY3kg
-Im5ldyBmc2NyeXB0IGtleS10eXBlOm1hc3Rlci1rZXktbmFtZSBrZXlsZW4iIHJpbmcKPiArICAg
-a2V5Y3RsIGFkZCBlbmNyeXB0ZWQgZnNjcnlwdDpwb2xpY3kgImxvYWQgaGV4X2Jsb2IiIHJpbmcK
-PiArICAga2V5Y3RsIHVwZGF0ZSBrZXlpZCAidXBkYXRlIGtleS10eXBlOm1hc3Rlci1rZXktbmFt
-ZSIKPiArCj4gK1doZXJlOjoKPiArCj4gKwlwb2xpY3k6PSAnPDE2IGhleGFkZWNpbWFsIGNoYXJh
-Y3RlcnM+Jwo+ICsJa2V5LXR5cGU6PSAndHJ1c3RlZCcgfCAndXNlcicKPiArCWtleWxlbjo9IDE2
-IHwgMzIgfCA2NAo+ICsKPiArCj4gK0V4YW1wbGUgb2YgZW5jcnlwdGVkIGtleSB1c2FnZSB3aXRo
-IHRoZSBmc2NyeXB0IHN1YnN5c3RlbToKPiArCj4gK0NyZWF0ZSBhbiBlbmNyeXB0ZWQga2V5ICIx
-MjM0NTY3ODkwMTIzNDU2IiBvZiBsZW5ndGggNjQgYnl0ZXMgd2l0aCBmb3JtYXQKPiArJ2ZzY3J5
-cHQnIGFuZCBzYXZlIGl0IHVzaW5nIGEgcHJldmlvdXNseSBsb2FkZWQgdXNlciBrZXkgInRlc3Qi
-OjoKPiArCj4gKyAgICAkIGtleWN0bCBhZGQgZW5jcnlwdGVkIGZzY3J5cHQ6MTIzNDU2Nzg5MDEy
-MzQ1NiAibmV3IGZzY3J5cHQgdXNlcjp0ZXN0IDY0IiBAdQo+ICsgICAgMTAyMzkzNTE5OQo+ICsK
-PiArICAgICQga2V5Y3RsIHByaW50IDEwMjM5MzUxOTkKPiArICAgIGZzY3J5cHQgdXNlcjp0ZXN0
-IDY0IGU1NjA2Njg5ZmRjMjVkNzhhNzg3MjQ5ZjQwNjlmYjNiMDA3ZTk5MmY0YjIxZDBlZGE2MAo+
-ICsgICAgYzk3OTg2ZmMyZTMzMjZiNTU0MmUyYjMyMjE2ZmM1MDA3ZDlmZDE5Y2QzY2I2NjY4ZmE5
-ODUwZTk1NGQyYmEyNWUxYjhhMzMxCj4gKyAgICAxYjBjMWYyMDY2NmMKPiArCj4gKyAgICAkIGtl
-eWN0bCBwaXBlIDEwMjM5MzUxOTkgPiBmc2NyeXB0LmJsb2IKCldoYXQgaXMgdGhlIHBvaW50IG9m
-IGhhdmluZyB0aGUga2VybmVsIHdyYXAgYSBrZXkgd2l0aCB0aGUgInVzZXIiIGtleSB0eXBlPyAg
-SXQKc2VlbXMgcG9pbnRsZXNzOyB1c2Vyc3BhY2UgY291bGQganVzdCBkbyBpdCBpbnN0ZWFkLgoK
-Tm90ZSB0aGF0IGlmIHlvdSB1c2Uga2V5Y3RsX3JlYWQoKSB0byByZWFkIGZyb20gYW4gZW5jcnlw
-dGVkLWtleSwgeW91IGNhbgphY3R1YWxseSByZXF1ZXN0IHRoYXQgdGhlIGtleSBiZSBlbmNyeXB0
-ZWQgdXNpbmcgYW4gYXJiaXRyYXJ5IGtleSBvZiB0aGUgdHlwZQp3aXRoIHdoaWNoIHRoZSBrZXkg
-aXMgc3VwcG9zZWQgdG8gYmUgd3JhcHBlZC4gIFRoaXMgY2FuIGJlIGRvbmUgYnkgYWRkaW5nIGEg
-a2V5CnRvIHlvdXIgdGhyZWFkL3Byb2Nlc3Mvc2Vzc2lvbiBrZXlyaW5nIHdob3NlIHR5cGUgYW5k
-IGRlc2NyaXB0aW9uIG1hdGNoZXMgdGhlCmludGVuZGVkIHdyYXBwaW5nIGtleS4gIFRodXMsIGFu
-eSAiZW5jcnlwdGVkIiBrZXkgd3JhcHBlZCB3aXRoIGEgInVzZXIiIGtleSBjYW4KZWZmZWN0aXZl
-bHkgYmUgcmV0cmlldmVkIGluIHRoZSBjbGVhciBieSBjYWxsaW5nIGtleWN0bF9yZWFkKCksIHRo
-ZW4gZGVjcnlwdGluZwp0aGUgY2lwaGVydGV4dCBpbiB1c2Vyc3BhY2UuCgpQZXJoYXBzIHRoYXQn
-cyBhY3R1YWxseSBhIGJ1ZzsgSSBkb24ndCBrbm93LiAgQnV0IHVzaW5nICJ1c2VyIiB3cmFwcGlu
-ZyBrZXlzCnNlZW1zIHByZXR0eSBwb2ludGxlc3MgYW55d2F5LgoKSSB0aGluayBpdCdzIHJlYWxs
-eSBvbmx5ICJ0cnVzdGVkIiB3cmFwcGluZyBrZXlzIHdoZXJlIHRoaXMgbmV3IGZlYXR1cmUgd291
-bGQKaGF2ZSBhbnkgdXNlZnVsIHNlY3VyaXR5IHByb3BlcnRpZXMuICBTbyB0aGUgZG9jdW1lbnRh
-dGlvbiBuZWVkcyB0byBleHBsYWluCnRoYXQsIGFuZCB1c2UgdGhhdCBpbiB0aGUgZXhhbXBsZXMu
-CgpFcmljCi0tClRvIHVuc3Vic2NyaWJlIGZyb20gdGhpcyBsaXN0OiBzZW5kIHRoZSBsaW5lICJ1
-bnN1YnNjcmliZSBrZXlyaW5ncyIgaW4KdGhlIGJvZHkgb2YgYSBtZXNzYWdlIHRvIG1ham9yZG9t
-b0B2Z2VyLmtlcm5lbC5vcmcKTW9yZSBtYWpvcmRvbW8gaW5mbyBhdCAgaHR0cDovL3ZnZXIua2Vy
-bmVsLm9yZy9tYWpvcmRvbW8taW5mby5odG1s
+Hi Eric,
+
+On Wed, 2018-01-10 at 20:48 -0800, Eric Biggers wrote:
+> Hi André,
+> 
+> On Wed, Jan 10, 2018 at 12:44:18PM +0000, André Draszik wrote:
+> > diff --git a/Documentation/security/keys/fscrypt.rst
+> > b/Documentation/security/keys/fscrypt.rst
+> > new file mode 100644
+> > index 000000000000..e4a29592513e
+> > --- /dev/null
+> > +++ b/Documentation/security/keys/fscrypt.rst
+> > @@ -0,0 +1,67 @@
+> > +====================
+> > +Encrypted keys for the fscrypt subsystem
+> > +====================
+> 
+> There is now documentation for fscrypt in
+> Documentation/filesystems/fscrypt.rst;
+> see in particular the "Adding keys" section.  The documentation for any
+> new ways
+> to add keys should go in there.
+
+Done.
+
+> 
+> > +
+> > +fscrypt allows file systems to implement transparent encryption and
+> > decryption
+> > +of files, similar to eCryptfs, using keys derived from a master key
+> > descriptor.
+> 
+> Note that the master key *descriptor* refers to the hex string used in the
+> keyring key description.  It is not the same as the master key itself,
+> which is
+> stored in the payload.  The cryptography is done with the master key, not
+> with
+> the master key *descriptor*.
+
+Ups, thanks.
+
+> > [...]
+> 
+> Please be very clear about exactly what security properties are achieved
+> by
+> using encrypted-keys.
+
+I've left out all of this in the updated documentation, as any such
+information should probably be in Documentation/security/keys/trusted-
+encrypted.rst in the first place.
+
+> 
+[...]
+> > +
+> > +Example of encrypted key usage with the fscrypt subsystem:
+> > +
+> > +Create an encrypted key "1234567890123456" of length 64 bytes with
+> > format
+> > +'fscrypt' and save it using a previously loaded user key "test"::
+> > +
+> > +    $ keyctl add encrypted fscrypt:1234567890123456 "new fscrypt
+> > user:test 64" @u
+> > +    1023935199
+> > +
+> > +    $ keyctl print 1023935199
+> > +    fscrypt user:test 64
+> > e5606689fdc25d78a787249f4069fb3b007e992f4b21d0eda60
+> > +    c97986fc2e3326b5542e2b32216fc5007d9fd19cd3cb6668fa9850e954d2ba25e1b
+> > 8a331
+> > +    1b0c1f20666c
+> > +
+> > +    $ keyctl pipe 1023935199 > fscrypt.blob
+> 
+> What is the point of having the kernel wrap a key with the "user" key
+> type?  It
+> seems pointless; userspace could just do it instead.
+
+Yes... My real reasoning is being able to use an encrypted key, backed by a
+trusted TPM key.
+
+I've updated the examples.
+
+> 
+[...]
+> I think it's really only "trusted" wrapping keys where this new feature
+> would
+> have any useful security properties.  So the documentation needs to
+> explain
+> that, and use that in the examples.
+
+You're right. Done.
+
+
+Cheers,
+André
+
