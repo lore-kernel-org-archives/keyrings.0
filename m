@@ -1,52 +1,37 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 30 Jan 2018 15:28:08 +0000
-Subject: Re: [PATCH v2] tpm: Move Linux RNG connection to hwrng
-Message-Id: <20180130152808.2egxs2ki657eyxe3@linux.intel.com>
+From: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
+Date: Wed, 17 Jan 2018 14:25:51 +0000
+Subject: Re: [PATCH v3] tpm: use struct tpm_chip for tpm_chip_find_get()
+Message-Id: <CANc+2y4eGcqTpUPwCuYv1RdLXGhHdb3YAOjL-dnsnvQ-O7FVRQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171105110506.usxmuzrvcjvxahr6@linux.intel.com>
- <20171106022704.GD26011@ziepe.ca>
- <CANc+2y6dx_2zOzFA5aFs7RpEV8aNqxpDghmx+q_+XyendYJoew@mail.gmail.com>
- <20171107160404.GG21466@ziepe.ca>
- <20171114143421.3jxn6fzvgp2xmyk6@linux.intel.com>
- <20171117132853.cmr3wmsc3biedv7p@linux.intel.com>
- <20171117135758.wvx3w5phndvfmfsh@linux.intel.com>
- <CANc+2y4nALRpw9dY8PK8A56St4NONQoTLc8aHqxuV1RWg_PiCw@mail.gmail.com>
- <20180129220612.ifk7r4md5tynlvz4@linux.intel.com>
- <alpine.LRH.2.21.1801302252020.20741@namei.org>
-In-Reply-To: <alpine.LRH.2.21.1801302252020.20741@namei.org>
-To: James Morris <jmorris@namei.org>
-Cc: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>, Jason Gunthorpe <jgg@ziepe.ca>, Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, open list <linux-kernel@vger.kernel.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE (IMA)" <linux-security-module@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, James Morris <james.l.morris@oracle.com>, Matt Mackall <mpm@selenic.com>, David Safford <safford@us.ibm.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, "Serge E. Hallyn" <serge@hallyn.com>
+References: <20171026135453.24672-1-jarkko.sakkinen@linux.intel.com>
+ <20171031200303.GB18578@ziepe.ca> <CANc+2y4si3YW5FXWEdKz0UM5c76MBmHWu4RBF7d2dew9i-Ut+Q@mail.gmail.com>
+ <20171114143238.looouhjk4bp5ko4g@linux.intel.com>
+In-Reply-To: <20171114143238.looouhjk4bp5ko4g@linux.intel.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: Jason Gunthorpe <jgg@ziepe.ca>, open list <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>, Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@us.ibm.com>, David Howells <dhowells@redhat.com>, Jerry Snitselaar <jsnitsel@redhat.com>, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, "open list:INTEGRITY MEASUREMENT ARCHITECTURE (IMA)" <linux-security-module@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>
 
-On Tue, Jan 30, 2018 at 10:52:13PM +1100, James Morris wrote:
-> On Tue, 30 Jan 2018, Jarkko Sakkinen wrote:
-> 
-> > On Sat, Jan 27, 2018 at 12:20:18PM +0530, PrasannaKumar Muralidharan wrote:
-> > > Hi Jarkko,
-> > > 
-> > > On 17 November 2017 at 19:27, Jarkko Sakkinen
-> > > <jarkko.sakkinen@linux.intel.com> wrote:
-> > > > On Fri, Nov 17, 2017 at 03:28:53PM +0200, Jarkko Sakkinen wrote:
-> > > >
-> > > > At least signed-off-by from PrassanaKumar is missing from the 2nd
-> > > > commit. I'll add it.
-> > > 
-> > > I had the impression that my signed-off-by will be present in this
-> > > change. But it is missing in [1]. Is it supposed to be that way?
-> > > 
-> > > 1. https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git/commit/?idn592a065d51d26f9d62b8b7501a5114076af8b4
-> > > 
-> > > Thanks,
-> > > PrasannaKumar
-> > 
-> > Yes, it would be senseful.
-> > 
-> > James, would it still be possible to amend this tag to security tree?
-> 
-> Nope, it's been pushed to Linus.
+Hi Jarkko,
 
-Damn. Well, good that Tested-by is there. I'm sorry about this.
+On 14 November 2017 at 20:02, Jarkko Sakkinen
+<jarkko.sakkinen@linux.intel.com> wrote:
+> On Sun, Nov 12, 2017 at 10:53:35AM +0530, PrasannaKumar Muralidharan wrote:
+>> Did basic check on tpm rng patch, it works fine. As it depends on this
+>> patch this should be working fine too.
+>>
+>> Tested-by: PrasannaKumar Muralidharan <prasannatsmkumar@gmail.com>
+>>
+>> Regards,
+>> PrasannaKumar
+>
+> Thank you.
+>
+> /Jarkko
 
-/Jarkko
+Wondering what happened to this and tpm rng patch. Is there something
+more to do for this to get merged?
+
+Thanks,
+PrasannaKumar
