@@ -1,60 +1,77 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 28 Feb 2018 19:58:16 +0000
-Subject: [PATCH 3/5] tpm: migrate tpm2_probe() to use struct tpm_buf
-Message-Id: <20180228195819.22231-4-jarkko.sakkinen@linux.intel.com>
+From: Jin Qian <jinqian@android.com>
+Date: Mon, 05 Feb 2018 20:02:46 +0000
+Subject: [PATCH 1/1] KEYS: encrypted: fix buffer overread in valid_master_desc()
+Message-Id: <20180205200246.12253-1-jinqian@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180228195819.22231-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20180228195819.22231-1-jarkko.sakkinen@linux.intel.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
+To: linux-security-module@vger.kernel.org
 
-In order to make struct tpm_buf the first class object for constructing TPM
-commands, migrate tpm2_probe() to use it.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+commit 794b4bc292f5d31739d89c0202c54e7dc9bc3add upstream
+
+With the 'encrypted' key type it was possible for userspace to provide a
+data blob ending with a master key description shorter than expected,
+e.g. 'keyctl add encrypted desc "new x" @s'.  When validating such a
+master key description, validate_master_desc() could read beyond the end
+of the buffer.  Fix this by using strncmp() instead of memcmp().  [Also
+clean up the code to deduplicate some logic.]
+
+Cc: stable@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Jin Qian <jinqian@android.com>
 ---
- drivers/char/tpm/tpm2-cmd.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ security/keys/encrypted-keys/encrypted.c | 31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index 5f92141b1e16..36f6b0ac412b 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -856,19 +856,22 @@ static int tpm2_do_selftest(struct tpm_chip *chip)
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index a871159bf03c..ead2fd60244d 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -141,23 +141,22 @@ static int valid_ecryptfs_desc(const char *ecryptfs_desc)
   */
- int tpm2_probe(struct tpm_chip *chip)
+ static int valid_master_desc(const char *new_desc, const char *orig_desc)
  {
--	struct tpm2_cmd cmd;
-+	struct tpm_output_header *out;
-+	struct tpm_buf buf;
- 	int rc;
- 
--	cmd.header.in = tpm2_get_tpm_pt_header;
--	cmd.params.get_tpm_pt_in.cap_id = cpu_to_be32(TPM2_CAP_TPM_PROPERTIES);
--	cmd.params.get_tpm_pt_in.property_id = cpu_to_be32(0x100);
--	cmd.params.get_tpm_pt_in.property_cnt = cpu_to_be32(1);
--
--	rc = tpm_transmit_cmd(chip, NULL, &cmd, sizeof(cmd), 0, 0, NULL);
-+	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
-+	if (rc)
-+		return rc;
-+	tpm_buf_append_u32(&buf, TPM2_CAP_TPM_PROPERTIES);
-+	tpm_buf_append_u32(&buf, TPM_PT_TOTAL_COMMANDS);
-+	tpm_buf_append_u32(&buf, 1);
-+	rc = tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE, 0, 0, NULL);
-+	tpm_buf_destroy(&buf);
- 	if (rc <  0)
- 		return rc;
--
--	if (be16_to_cpu(cmd.header.out.tag) = TPM2_ST_NO_SESSIONS)
-+	out = (struct tpm_output_header *)buf.data;
-+	if (be16_to_cpu(out->tag) = TPM2_ST_NO_SESSIONS)
- 		chip->flags |= TPM_CHIP_FLAG_TPM2;
- 
+-	if (!memcmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN)) {
+-		if (strlen(new_desc) = KEY_TRUSTED_PREFIX_LEN)
+-			goto out;
+-		if (orig_desc)
+-			if (memcmp(new_desc, orig_desc, KEY_TRUSTED_PREFIX_LEN))
+-				goto out;
+-	} else if (!memcmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN)) {
+-		if (strlen(new_desc) = KEY_USER_PREFIX_LEN)
+-			goto out;
+-		if (orig_desc)
+-			if (memcmp(new_desc, orig_desc, KEY_USER_PREFIX_LEN))
+-				goto out;
+-	} else
+-		goto out;
++	int prefix_len;
++
++	if (!strncmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN))
++		prefix_len = KEY_TRUSTED_PREFIX_LEN;
++	else if (!strncmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN))
++		prefix_len = KEY_USER_PREFIX_LEN;
++	else
++		return -EINVAL;
++
++	if (!new_desc[prefix_len])
++		return -EINVAL;
++
++	if (orig_desc && strncmp(new_desc, orig_desc, prefix_len))
++		return -EINVAL;
++
  	return 0;
+-out:
+-	return -EINVAL;
+ }
+ 
+ /*
 -- 
-2.15.1
+2.16.0.rc1.238.g530d649a79-goog
 
