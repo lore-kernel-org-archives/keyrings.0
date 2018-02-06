@@ -1,101 +1,78 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 22 Feb 2018 16:21:02 +0000
-Subject: [PATCH 5/6] X.509: fix NULL dereference when restricting key with unsupported_sig
-Message-Id: <151931646253.27713.5857757999911191687.stgit@warthog.procyon.org.uk>
+From: Jin Qian <jinqian@android.com>
+Date: Tue, 06 Feb 2018 21:24:08 +0000
+Subject: [PATCHv2 1/1] KEYS: encrypted: fix buffer overread in valid_master_desc()
+Message-Id: <20180206212408.5455-1-jinqian@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
-In-Reply-To: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-The asymmetric key type allows an X.509 certificate to be added even if
-its signature's hash algorithm is not available in the crypto API.  In
-that case 'payload.data[asym_auth]' will be NULL.  But the key
-restriction code failed to check for this case before trying to use the
-signature, resulting in a NULL pointer dereference in
-key_or_keyring_common() or in restrict_link_by_signature().
+commit 794b4bc292f5d31739d89c0202c54e7dc9bc3add upstream
 
-Fix this by returning -ENOPKG when the signature is unsupported.
+With the 'encrypted' key type it was possible for userspace to provide a
+data blob ending with a master key description shorter than expected,
+e.g. 'keyctl add encrypted desc "new x" @s'.  When validating such a
+master key description, validate_master_desc() could read beyond the end
+of the buffer.  Fix this by using strncmp() instead of memcmp().  [Also
+clean up the code to deduplicate some logic.]
 
-Reproducer when all the CONFIG_CRYPTO_SHA512* options are disabled and
-keyctl has support for the 'restrict_keyring' command:
-
-    keyctl new_session
-    keyctl restrict_keyring @s asymmetric builtin_trusted
-    openssl req -new -sha512 -x509 -batch -nodes -outform der \
-        | keyctl padd asymmetric desc @s
-
-Fixes: a511e1af8b12 ("KEYS: Move the point of trust determination to __key_link()")
-Cc: <stable@vger.kernel.org> # v4.7+
+Cc: linux-stable <stable@vger.kernel.org> # 4.9.y
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Jin Qian <jinqian@google.com>
+Signed-off-by: Jin Qian <jinqian@android.com>
 ---
+ security/keys/encrypted-keys/encrypted.c | 31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
- crypto/asymmetric_keys/restrict.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
-
-diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
-index 86fb68508952..7c93c7728454 100644
---- a/crypto/asymmetric_keys/restrict.c
-+++ b/crypto/asymmetric_keys/restrict.c
-@@ -67,8 +67,9 @@ __setup("ca_keys=", ca_keys_setup);
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we couldn't find a
-  * matching parent certificate in the trusted list, -EKEYREJECTED if the
-- * signature check fails or the key is blacklisted and some other error if
-- * there is a matching certificate but the signature check cannot be performed.
-+ * signature check fails or the key is blacklisted, -ENOPKG if the signature
-+ * uses unsupported crypto, or some other error if there is a matching
-+ * certificate but the signature check cannot be performed.
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index a871159bf03c..ead2fd60244d 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -141,23 +141,22 @@ static int valid_ecryptfs_desc(const char *ecryptfs_desc)
   */
- int restrict_link_by_signature(struct key *dest_keyring,
- 			       const struct key_type *type,
-@@ -88,6 +89,8 @@ int restrict_link_by_signature(struct key *dest_keyring,
- 		return -EOPNOTSUPP;
+ static int valid_master_desc(const char *new_desc, const char *orig_desc)
+ {
+-	if (!memcmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN)) {
+-		if (strlen(new_desc) = KEY_TRUSTED_PREFIX_LEN)
+-			goto out;
+-		if (orig_desc)
+-			if (memcmp(new_desc, orig_desc, KEY_TRUSTED_PREFIX_LEN))
+-				goto out;
+-	} else if (!memcmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN)) {
+-		if (strlen(new_desc) = KEY_USER_PREFIX_LEN)
+-			goto out;
+-		if (orig_desc)
+-			if (memcmp(new_desc, orig_desc, KEY_USER_PREFIX_LEN))
+-				goto out;
+-	} else
+-		goto out;
++	int prefix_len;
++
++	if (!strncmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN))
++		prefix_len = KEY_TRUSTED_PREFIX_LEN;
++	else if (!strncmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN))
++		prefix_len = KEY_USER_PREFIX_LEN;
++	else
++		return -EINVAL;
++
++	if (!new_desc[prefix_len])
++		return -EINVAL;
++
++	if (orig_desc && strncmp(new_desc, orig_desc, prefix_len))
++		return -EINVAL;
++
+ 	return 0;
+-out:
+-	return -EINVAL;
+ }
  
- 	sig = payload->data[asym_auth];
-+	if (!sig)
-+		return -ENOPKG;
- 	if (!sig->auth_ids[0] && !sig->auth_ids[1])
- 		return -ENOKEY;
- 
-@@ -139,6 +142,8 @@ static int key_or_keyring_common(struct key *dest_keyring,
- 		return -EOPNOTSUPP;
- 
- 	sig = payload->data[asym_auth];
-+	if (!sig)
-+		return -ENOPKG;
- 	if (!sig->auth_ids[0] && !sig->auth_ids[1])
- 		return -ENOKEY;
- 
-@@ -222,9 +227,9 @@ static int key_or_keyring_common(struct key *dest_keyring,
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we
-  * couldn't find a matching parent certificate in the trusted list,
-- * -EKEYREJECTED if the signature check fails, and some other error if
-- * there is a matching certificate but the signature check cannot be
-- * performed.
-+ * -EKEYREJECTED if the signature check fails, -ENOPKG if the signature uses
-+ * unsupported crypto, or some other error if there is a matching certificate
-+ * but the signature check cannot be performed.
-  */
- int restrict_link_by_key_or_keyring(struct key *dest_keyring,
- 				    const struct key_type *type,
-@@ -249,9 +254,9 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we
-  * couldn't find a matching parent certificate in the trusted list,
-- * -EKEYREJECTED if the signature check fails, and some other error if
-- * there is a matching certificate but the signature check cannot be
-- * performed.
-+ * -EKEYREJECTED if the signature check fails, -ENOPKG if the signature uses
-+ * unsupported crypto, or some other error if there is a matching certificate
-+ * but the signature check cannot be performed.
-  */
- int restrict_link_by_key_or_keyring_chain(struct key *dest_keyring,
- 					  const struct key_type *type,
+ /*
+-- 
+2.16.0.rc1.238.g530d649a79-goog
 
