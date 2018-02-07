@@ -1,128 +1,87 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 28 Feb 2018 19:58:17 +0000
-Subject: [PATCH 4/5] tpm: migrate tpm2_get_tpm_pt() to use struct tpm_buf
-Message-Id: <20180228195819.22231-5-jarkko.sakkinen@linux.intel.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 07 Feb 2018 01:10:10 +0000
+Subject: [PATCH 7/9] X.509: remove never-set ->unsupported_key flag
+Message-Id: <20180207011012.5928-8-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180228195819.22231-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20180228195819.22231-1-jarkko.sakkinen@linux.intel.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
+References: <20180207011012.5928-1-ebiggers3@gmail.com>
+In-Reply-To: <20180207011012.5928-1-ebiggers3@gmail.com>
+To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
 
-In order to make struct tpm_buf the first class object for constructing TPM
-commands, migrate tpm2_get_tpm_pt() to use it.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+The X.509 parser is guaranteed to set cert->pub->pkey_algo, since
+x509_extract_key_data() is a mandatory action in the X.509 ASN.1
+grammar, and it returns an error code if an unrecognized
+AlgorithmIdentifier is given rather than leaving the algorithm as NULL.
+
+Therefore, remove the dead code which handled this algorithm being NULL.
+This results in the ->unsupported_key flag never being set at all, so
+remove that too.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- drivers/char/tpm/tpm2-cmd.c | 63 +++++++++++++++++----------------------------
- 1 file changed, 23 insertions(+), 40 deletions(-)
+ crypto/asymmetric_keys/pkcs7_verify.c    | 3 ---
+ crypto/asymmetric_keys/x509_parser.h     | 1 -
+ crypto/asymmetric_keys/x509_public_key.c | 9 ---------
+ 3 files changed, 13 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index 36f6b0ac412b..43791947b8e1 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -27,20 +27,6 @@ enum tpm2_session_attributes {
- 	TPM2_SA_CONTINUE_SESSION	= BIT(0),
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index a9e03f5c52e7..beb47fd2fca5 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -196,9 +196,6 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
+ 			return 0;
+ 		}
+ 
+-		if (x509->unsupported_key)
+-			goto unsupported_crypto_in_x509;
+-
+ 		pr_debug("- issuer %s\n", x509->issuer);
+ 		sig = x509->sig;
+ 		if (sig->auth_ids[0])
+diff --git a/crypto/asymmetric_keys/x509_parser.h b/crypto/asymmetric_keys/x509_parser.h
+index e373e7483812..217341276ae0 100644
+--- a/crypto/asymmetric_keys/x509_parser.h
++++ b/crypto/asymmetric_keys/x509_parser.h
+@@ -40,7 +40,6 @@ struct x509_certificate {
+ 	bool		seen;			/* Infinite recursion prevention */
+ 	bool		verified;
+ 	bool		self_signed;		/* T if self-signed (check unsupported_sig too) */
+-	bool		unsupported_key;	/* T if key uses unsupported crypto */
+ 	bool		unsupported_sig;	/* T if signature uses unsupported crypto */
+ 	bool		blacklisted;
  };
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index 9338b4558cdc..514007932ec9 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -34,9 +34,6 @@ int x509_get_sig_params(struct x509_certificate *cert)
  
--struct tpm2_get_tpm_pt_in {
--	__be32	cap_id;
--	__be32	property_id;
--	__be32	property_cnt;
--} __packed;
--
--struct tpm2_get_tpm_pt_out {
--	u8	more_data;
--	__be32	subcap_id;
--	__be32	property_cnt;
--	__be32	property_id;
--	__be32	value;
--} __packed;
--
- struct tpm2_get_random_in {
- 	__be16	size;
- } __packed;
-@@ -51,8 +37,6 @@ struct tpm2_get_random_out {
- } __packed;
+ 	pr_devel("=>%s()\n", __func__);
  
- union tpm2_cmd_params {
--	struct	tpm2_get_tpm_pt_in	get_tpm_pt_in;
--	struct	tpm2_get_tpm_pt_out	get_tpm_pt_out;
- 	struct	tpm2_get_random_in	getrandom_in;
- 	struct	tpm2_get_random_out	getrandom_out;
- };
-@@ -377,19 +361,6 @@ int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max)
- 	return total ? total : -EIO;
- }
+-	if (!cert->pub->pkey_algo)
+-		cert->unsupported_key = true;
+-
+ 	if (!sig->pkey_algo)
+ 		cert->unsupported_sig = true;
  
--#define TPM2_GET_TPM_PT_IN_SIZE \
--	(sizeof(struct tpm_input_header) + \
--	 sizeof(struct tpm2_get_tpm_pt_in))
--
--#define TPM2_GET_TPM_PT_OUT_BODY_SIZE \
--	 sizeof(struct tpm2_get_tpm_pt_out)
--
--static const struct tpm_input_header tpm2_get_tpm_pt_header = {
--	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
--	.length = cpu_to_be32(TPM2_GET_TPM_PT_IN_SIZE),
--	.ordinal = cpu_to_be32(TPM2_CC_GET_CAPABILITY)
--};
--
- /**
-  * tpm2_flush_context_cmd() - execute a TPM2_FlushContext command
-  * @chip: TPM chip to use
-@@ -726,6 +697,14 @@ int tpm2_unseal_trusted(struct tpm_chip *chip,
- 	return rc;
- }
+@@ -173,12 +170,6 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
  
-+struct tpm2_get_cap_out {
-+	u8 more_data;
-+	__be32 subcap_id;
-+	__be32 property_cnt;
-+	__be32 property_id;
-+	__be32 value;
-+} __packed;
-+
- /**
-  * tpm2_get_tpm_pt() - get value of a TPM_CAP_TPM_PROPERTIES type property
-  * @chip:		TPM chip to use.
-@@ -738,19 +717,23 @@ int tpm2_unseal_trusted(struct tpm_chip *chip,
- ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,  u32 *value,
- 			const char *desc)
- {
--	struct tpm2_cmd cmd;
-+	struct tpm2_get_cap_out *out;
-+	struct tpm_buf buf;
- 	int rc;
+ 	pr_devel("Cert Issuer: %s\n", cert->issuer);
+ 	pr_devel("Cert Subject: %s\n", cert->subject);
+-
+-	if (cert->unsupported_key) {
+-		ret = -ENOPKG;
+-		goto error_free_cert;
+-	}
+-
+ 	pr_devel("Cert Key Algo: %s\n", cert->pub->pkey_algo);
+ 	pr_devel("Cert Valid period: %lld-%lld\n", cert->valid_from, cert->valid_to);
  
--	cmd.header.in = tpm2_get_tpm_pt_header;
--	cmd.params.get_tpm_pt_in.cap_id = cpu_to_be32(TPM2_CAP_TPM_PROPERTIES);
--	cmd.params.get_tpm_pt_in.property_id = cpu_to_be32(property_id);
--	cmd.params.get_tpm_pt_in.property_cnt = cpu_to_be32(1);
--
--	rc = tpm_transmit_cmd(chip, NULL, &cmd, sizeof(cmd),
--			      TPM2_GET_TPM_PT_OUT_BODY_SIZE, 0, desc);
--	if (!rc)
--		*value = be32_to_cpu(cmd.params.get_tpm_pt_out.value);
--
-+	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
-+	if (rc)
-+		return rc;
-+	tpm_buf_append_u32(&buf, TPM2_CAP_TPM_PROPERTIES);
-+	tpm_buf_append_u32(&buf, property_id);
-+	tpm_buf_append_u32(&buf, 1);
-+	rc = tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE, 0, 0, NULL);
-+	if (!rc) {
-+		out = (struct tpm2_get_cap_out *)
-+			&buf.data[TPM_HEADER_SIZE];
-+		*value = be32_to_cpu(out->value);
-+	}
-+	tpm_buf_destroy(&buf);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(tpm2_get_tpm_pt);
 -- 
-2.15.1
+2.16.0.rc1.238.g530d649a79-goog
 
