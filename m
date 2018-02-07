@@ -1,67 +1,66 @@
-From: "Maciej S. Szmigiero" <mail@maciej.szmigiero.name>
-Date: Sat, 24 Feb 2018 16:03:31 +0000
-Subject: [PATCH 3/3] crypto: ccp - protect RSA implementation from too large input data
-Message-Id: <4af6c02f-db3f-3d82-9685-367913c684ff@maciej.szmigiero.name>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 07 Feb 2018 01:10:04 +0000
+Subject: [PATCH 1/9] PKCS#7: fix certificate chain verification
+Message-Id: <20180207011012.5928-2-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>
-Cc: David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20180207011012.5928-1-ebiggers3@gmail.com>
+In-Reply-To: <20180207011012.5928-1-ebiggers3@gmail.com>
+To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
 
-CCP RSA implementation uses a hardware input buffer which size depends only
-on the current RSA key length. Key modulus and a message to be processed
-is then copied to this buffer based on their own lengths.
+From: Eric Biggers <ebiggers@google.com>
 
-Since the price for providing too long input data is a buffer overflow and
-there already has been a case when this has happened let's better reject
-such oversized input data and log an error message in this case so we know
-what is going on.
+When pkcs7_verify_sig_chain() is building the certificate chain for a
+SignerInfo using the certificates in the PKCS#7 message, it is passing
+the wrong arguments to public_key_verify_signature().  Consequently,
+when the next certificate is supposed to be used to verify the previous
+certificate, the next certificate is actually used to verify itself.
 
-Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
+An attacker can use this bug to create a bogus certificate chain that
+has no cryptographic relationship between the beginning and end.
+
+Fortunately I couldn't quite find a way to use this to bypass the
+overall signature verification, though it comes very close.  Here's the
+reasoning: due to the bug, every certificate in the chain beyond the
+first actually has to be self-signed (where "self-signed" here refers to
+the actual key and signature; an attacker might still manipulate the
+certificate fields such that the self_signed flag doesn't actually get
+set, and thus the chain doesn't end immediately).  But to pass trust
+validation (pkcs7_validate_trust()), either the SignerInfo or one of the
+certificates has to actually be signed by a trusted key.  Since only
+self-signed certificates can be added to the chain, the only way for an
+attacker to introduce a trusted signature is to include a self-signed
+trusted certificate.
+
+But, when pkcs7_validate_trust_one() reaches that certificate, instead
+of trying to verify the signature on that certificate, it will actually
+look up the corresponding trusted key, which will succeed, and then try
+to verify the *previous* certificate, which will fail.  Thus, disaster
+is narrowly averted (as far as I could tell).
+
+Fixes: 6c2dc5ae4ab7 ("X.509: Extract signature digest and make self-signed cert checks earlier")
+Cc: <stable@vger.kernel.org> # v4.7+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- drivers/crypto/ccp/ccp-ops.c | 24 ++++++++++++++++++++----
- 1 file changed, 20 insertions(+), 4 deletions(-)
+ crypto/asymmetric_keys/pkcs7_verify.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/crypto/ccp/ccp-ops.c b/drivers/crypto/ccp/ccp-ops.c
-index 406b95329b3d..517aeee30abf 100644
---- a/drivers/crypto/ccp/ccp-ops.c
-+++ b/drivers/crypto/ccp/ccp-ops.c
-@@ -1770,10 +1770,6 @@ static int ccp_run_rsa_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
- 	if (!rsa->exp || !rsa->mod || !rsa->src || !rsa->dst)
- 		return -EINVAL;
- 
--	memset(&op, 0, sizeof(op));
--	op.cmd_q = cmd_q;
--	op.jobid = CCP_NEW_JOBID(cmd_q->ccp);
--
- 	/* The RSA modulus must precede the message being acted upon, so
- 	 * it must be copied to a DMA area where the message and the
- 	 * modulus can be concatenated.  Therefore the input buffer
-@@ -1785,6 +1781,26 @@ static int ccp_run_rsa_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
- 	o_len = 32 * ((rsa->key_size + 255) / 256);
- 	i_len = o_len * 2;
- 
-+	if (rsa->mod_len > o_len) {
-+		dev_err(cmd_q->ccp->dev,
-+			"RSA modulus of %u bytes too large for key size of %u bits\n",
-+			(unsigned int)rsa->mod_len,
-+			(unsigned int)rsa->key_size);
-+		return -EINVAL;
-+	}
-+
-+	if (rsa->src_len > o_len) {
-+		dev_err(cmd_q->ccp->dev,
-+			"RSA data of %u bytes too large for key size of %u bits\n",
-+			(unsigned int)rsa->src_len,
-+			(unsigned int)rsa->key_size);
-+		return -EINVAL;
-+	}
-+
-+	memset(&op, 0, sizeof(op));
-+	op.cmd_q = cmd_q;
-+	op.jobid = CCP_NEW_JOBID(cmd_q->ccp);
-+
- 	sb_count = 0;
- 	if (cmd_q->ccp->vdata->version < CCP_VERSION(5, 0)) {
- 		/* sb_count is the number of storage block slots required
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 39e6de0c2761..2f6a768b91d7 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -270,7 +270,7 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
+ 				sinfo->index);
+ 			return 0;
+ 		}
+-		ret = public_key_verify_signature(p->pub, p->sig);
++		ret = public_key_verify_signature(p->pub, x509->sig);
+ 		if (ret < 0)
+ 			return ret;
+ 		x509->signer = p;
+-- 
+2.16.0.rc1.238.g530d649a79-goog
+
