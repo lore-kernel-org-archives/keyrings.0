@@ -1,98 +1,79 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Mon, 12 Feb 2018 16:29:23 +0000
-Subject: [PATCH] sign-file: add generic engine key support
-Message-Id: <1518452963.3114.6.camel@HansenPartnership.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 07 Feb 2018 01:10:12 +0000
+Subject: [PATCH 9/9] X.509: self_signed implies !unsupported_sig
+Message-Id: <20180207011012.5928-10-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20180207011012.5928-1-ebiggers3@gmail.com>
+In-Reply-To: <20180207011012.5928-1-ebiggers3@gmail.com>
+To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
 
-The current engine code only supports a non-standard pkcs11 engine
-module.  Add code to support any standard engine key module, but leave
-the non-standard code alone because it would likely fail to function
-with the correct UI_method of collecting the password.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+The self_signed flag on a certificate implies we verified its signature.
+Hence, the signature cannot have been unsupported.
+
+Remove the dead code that resulted from this oversight.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- scripts/sign-file.c | 39 +++++++++++++++++++++++++++++++++++++--
- 1 file changed, 37 insertions(+), 2 deletions(-)
+ crypto/asymmetric_keys/pkcs7_verify.c | 18 +++---------------
+ crypto/asymmetric_keys/x509_parser.h  |  2 +-
+ 2 files changed, 4 insertions(+), 16 deletions(-)
 
-diff --git a/scripts/sign-file.c b/scripts/sign-file.c
-index 49f1cf456254..de8d9bb5e657 100644
---- a/scripts/sign-file.c
-+++ b/scripts/sign-file.c
-@@ -28,6 +28,7 @@
- #include <openssl/pem.h>
- #include <openssl/err.h>
- #include <openssl/engine.h>
-+#include <openssl/conf.h>
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index beb47fd2fca5..c23255240b93 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -206,13 +206,10 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
+ 				 sig->auth_ids[1]->len, sig->auth_ids[1]->data);
  
- /*
-  * Use CMS if we have openssl-1.0.0 or newer available - otherwise we have to
-@@ -122,15 +123,29 @@ static int pem_pw_cb(char *buf, int len, int w, void *v)
- 	return pwlen;
+ 		if (x509->self_signed) {
+-			/* If there's no authority certificate specified, then
+-			 * the certificate must be self-signed and is the root
+-			 * of the chain.  Likewise if the cert is its own
+-			 * authority.
++			/*
++			 * If the certificate is self-signed, then it is the
++			 * root of the chain.
+ 			 */
+-			if (x509->unsupported_sig)
+-				goto unsupported_crypto_in_x509;
+ 			x509->signer = x509;
+ 			pr_debug("- self-signed\n");
+ 			return 0;
+@@ -275,15 +272,6 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
+ 		x509 = p;
+ 		might_sleep();
+ 	}
+-
+-unsupported_crypto_in_x509:
+-	/* Just prune the certificate chain at this point if we lack some
+-	 * crypto module to go further.  Note, however, we don't want to set
+-	 * sinfo->unsupported_crypto as the signed info block may still be
+-	 * validatable against an X.509 cert lower in the chain that we have a
+-	 * trusted copy of.
+-	 */
+-	return 0;
  }
  
-+static int ui_read(UI *ui, UI_STRING *uis)
-+{
-+    if (UI_get_string_type(uis) = UIT_PROMPT) {
-+        char password[64];
-+
-+        pem_pw_cb(password, sizeof(password), 0, NULL);
-+        UI_set_result(ui, uis, password);
-+
-+        return 1;
-+    }
-+    return 0;
-+}
-+
- static EVP_PKEY *read_private_key(const char *private_key_name)
- {
- 	EVP_PKEY *private_key;
- 
-+	ENGINE_load_builtin_engines();
-+	OPENSSL_config(NULL);
-+	ERR_clear_error();
- 	if (!strncmp(private_key_name, "pkcs11:", 7)) {
- 		ENGINE *e;
- 
--		ENGINE_load_builtin_engines();
--		ERR_clear_error();
- 		e = ENGINE_by_id("pkcs11");
- 		ERR(!e, "Load PKCS#11 ENGINE");
- 		if (ENGINE_init(e))
-@@ -145,11 +160,31 @@ static EVP_PKEY *read_private_key(const char *private_key_name)
- 		ERR(!private_key, "%s", private_key_name);
- 	} else {
- 		BIO *b;
-+		ENGINE *e;
- 
- 		b = BIO_new_file(private_key_name, "rb");
- 		ERR(!b, "%s", private_key_name);
- 		private_key = PEM_read_bio_PrivateKey(b, NULL, pem_pw_cb,
- 						      NULL);
-+		for (e = ENGINE_get_first(); !private_key && e != NULL;
-+		     e = ENGINE_get_next(e)) {
-+			UI_METHOD *ui;
-+
-+			if (!ENGINE_get_load_privkey_function(e))
-+				continue;
-+
-+			ui = UI_create_method("sign-file");
-+			if (!ui)
-+				continue;
-+
-+			UI_method_set_reader(ui, ui_read);
-+			private_key = ENGINE_load_private_key(e, private_key_name,
-+							      ui, NULL);
-+			UI_destroy_method(ui);
-+			if (private_key)
-+				ERR_clear_error(); /* initial key read failed */
-+		}
-+
- 		ERR(!private_key, "%s", private_key_name);
- 		BIO_free(b);
- 	}
+ /*
+diff --git a/crypto/asymmetric_keys/x509_parser.h b/crypto/asymmetric_keys/x509_parser.h
+index 217341276ae0..1294cc2c855d 100644
+--- a/crypto/asymmetric_keys/x509_parser.h
++++ b/crypto/asymmetric_keys/x509_parser.h
+@@ -39,7 +39,7 @@ struct x509_certificate {
+ 	unsigned	index;
+ 	bool		seen;			/* Infinite recursion prevention */
+ 	bool		verified;
+-	bool		self_signed;		/* T if self-signed (check unsupported_sig too) */
++	bool		self_signed;		/* T if self-signed */
+ 	bool		unsupported_sig;	/* T if signature uses unsupported crypto */
+ 	bool		blacklisted;
+ };
 -- 
-2.12.3
+2.16.0.rc1.238.g530d649a79-goog
+
