@@ -1,52 +1,16 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 07 Feb 2018 01:10:03 +0000
-Subject: [PATCH 0/9] PKCS#7 / X.509 fixes and cleanups
-Message-Id: <20180207011012.5928-1-ebiggers3@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 08 Feb 2018 14:28:51 +0000
+Subject: Re: [PATCH 0/9] PKCS#7 / X.509 fixes and cleanups
+Message-Id: <14548.1518100131@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
+References: <20180207011012.5928-1-ebiggers3@gmail.com>
+In-Reply-To: <20180207011012.5928-1-ebiggers3@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
 
-From: Eric Biggers <ebiggers@google.com>
+I presume you don't have this in a git tree somewhere that I can pull?
 
-Hi David, here is another set of fixes and cleanups for the PKCS#7 and
-X.509 code:
-
-Patches 1-5 fix the BUG_ON() in public_key_verify_signature() reported
-by Paolo Valente as well as several other bugs I found.  Notably both
-the PKCS#7 certificate chain verification and certificate blacklisting
-were broken.  With the certificate chaining bug (introduced in v4.7) it
-is almost possible to bypass PKCS#7 signature verification completely,
-though I couldn't quite make it work.
-
-Patches 6-9 remove dead code related to the unsupported_key and
-unsupported_sig flags on struct x509_certificate's.  It's possible these
-flags should be fixed instead, so that we handle unrecognized or
-unsupported algorithms more gracefully.  But evidently no one is
-complaining about the current behavior, and removing the dead code is
-strictly an improvement as it doesn't actually change the behavior...
-
-Eric Biggers (9):
-  PKCS#7: fix certificate chain verification
-  PKCS#7: fix certificate blacklisting
-  PKCS#7: fix direct verification of SignerInfo signature
-  X.509: fix BUG_ON() when hash algorithm is unsupported
-  X.509: fix NULL dereference when restricting key with unsupported_sig
-  PKCS#7: remove unnecessary check for NULL sinfo->sig->hash_algo
-  X.509: remove never-set ->unsupported_key flag
-  X.509: remove dead code that set ->unsupported_sig
-  X.509: self_signed implies !unsupported_sig
-
- crypto/asymmetric_keys/pkcs7_trust.c     |  1 +
- crypto/asymmetric_keys/pkcs7_verify.c    | 36 +++++++++-----------------------
- crypto/asymmetric_keys/public_key.c      |  4 +++-
- crypto/asymmetric_keys/restrict.c        | 21 ++++++++++++-------
- crypto/asymmetric_keys/x509_parser.h     |  3 +--
- crypto/asymmetric_keys/x509_public_key.c | 18 ----------------
- 6 files changed, 28 insertions(+), 55 deletions(-)
-
--- 
-2.16.0.rc1.238.g530d649a79-goog
-
+David
