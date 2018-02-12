@@ -1,50 +1,98 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 22 Feb 2018 16:20:47 +0000
-Subject: [PATCH 3/6] PKCS#7: fix direct verification of SignerInfo signature
-Message-Id: <151931644754.27713.14995018428445770576.stgit@warthog.procyon.org.uk>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Mon, 12 Feb 2018 16:29:23 +0000
+Subject: [PATCH] sign-file: add generic engine key support
+Message-Id: <1518452963.3114.6.camel@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
-In-Reply-To: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+The current engine code only supports a non-standard pkcs11 engine
+module.  Add code to support any standard engine key module, but leave
+the non-standard code alone because it would likely fail to function
+with the correct UI_method of collecting the password.
 
-If none of the certificates in a SignerInfo's certificate chain match a
-trusted key, nor is the last certificate signed by a trusted key, then
-pkcs7_validate_trust_one() tries to check whether the SignerInfo's
-signature was made directly by a trusted key.  But, it actually fails to
-set the 'sig' variable correctly, so it actually verifies the last
-signature seen.  That will only be the SignerInfo's signature if the
-certificate chain is empty; otherwise it will actually be the last
-certificate's signature.
-
-This is not by itself a security problem, since verifying any of the
-certificates in the chain should be sufficient to verify the SignerInfo.
-Still, it's not working as intended so it should be fixed.
-
-Fix it by setting 'sig' correctly for the direct verification case.
-
-Fixes: 757932e6da6d ("PKCS#7: Handle PKCS#7 messages that contain no X.509 certs")
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 ---
+ scripts/sign-file.c | 39 +++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 37 insertions(+), 2 deletions(-)
 
- crypto/asymmetric_keys/pkcs7_trust.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
-index 1f4e25f10049..598906b1e28d 100644
---- a/crypto/asymmetric_keys/pkcs7_trust.c
-+++ b/crypto/asymmetric_keys/pkcs7_trust.c
-@@ -106,6 +106,7 @@ static int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
- 		pr_devel("sinfo %u: Direct signer is key %x\n",
- 			 sinfo->index, key_serial(key));
- 		x509 = NULL;
-+		sig = sinfo->sig;
- 		goto matched;
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index 49f1cf456254..de8d9bb5e657 100644
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -28,6 +28,7 @@
+ #include <openssl/pem.h>
+ #include <openssl/err.h>
+ #include <openssl/engine.h>
++#include <openssl/conf.h>
+ 
+ /*
+  * Use CMS if we have openssl-1.0.0 or newer available - otherwise we have to
+@@ -122,15 +123,29 @@ static int pem_pw_cb(char *buf, int len, int w, void *v)
+ 	return pwlen;
+ }
+ 
++static int ui_read(UI *ui, UI_STRING *uis)
++{
++    if (UI_get_string_type(uis) = UIT_PROMPT) {
++        char password[64];
++
++        pem_pw_cb(password, sizeof(password), 0, NULL);
++        UI_set_result(ui, uis, password);
++
++        return 1;
++    }
++    return 0;
++}
++
+ static EVP_PKEY *read_private_key(const char *private_key_name)
+ {
+ 	EVP_PKEY *private_key;
+ 
++	ENGINE_load_builtin_engines();
++	OPENSSL_config(NULL);
++	ERR_clear_error();
+ 	if (!strncmp(private_key_name, "pkcs11:", 7)) {
+ 		ENGINE *e;
+ 
+-		ENGINE_load_builtin_engines();
+-		ERR_clear_error();
+ 		e = ENGINE_by_id("pkcs11");
+ 		ERR(!e, "Load PKCS#11 ENGINE");
+ 		if (ENGINE_init(e))
+@@ -145,11 +160,31 @@ static EVP_PKEY *read_private_key(const char *private_key_name)
+ 		ERR(!private_key, "%s", private_key_name);
+ 	} else {
+ 		BIO *b;
++		ENGINE *e;
+ 
+ 		b = BIO_new_file(private_key_name, "rb");
+ 		ERR(!b, "%s", private_key_name);
+ 		private_key = PEM_read_bio_PrivateKey(b, NULL, pem_pw_cb,
+ 						      NULL);
++		for (e = ENGINE_get_first(); !private_key && e != NULL;
++		     e = ENGINE_get_next(e)) {
++			UI_METHOD *ui;
++
++			if (!ENGINE_get_load_privkey_function(e))
++				continue;
++
++			ui = UI_create_method("sign-file");
++			if (!ui)
++				continue;
++
++			UI_method_set_reader(ui, ui_read);
++			private_key = ENGINE_load_private_key(e, private_key_name,
++							      ui, NULL);
++			UI_destroy_method(ui);
++			if (private_key)
++				ERR_clear_error(); /* initial key read failed */
++		}
++
+ 		ERR(!private_key, "%s", private_key_name);
+ 		BIO_free(b);
  	}
- 	if (PTR_ERR(key) != -ENOKEY)
-
+-- 
+2.12.3
