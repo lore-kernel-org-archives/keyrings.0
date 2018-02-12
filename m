@@ -1,102 +1,55 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 07 Feb 2018 01:10:08 +0000
-Subject: [PATCH 5/9] X.509: fix NULL dereference when restricting key with unsupported_sig
-Message-Id: <20180207011012.5928-6-ebiggers3@gmail.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Mon, 12 Feb 2018 16:27:58 +0000
+Subject: [PATCH] sign-file: remove open coding of ERR_clear_error()
+Message-Id: <1518452878.3114.3.camel@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180207011012.5928-1-ebiggers3@gmail.com>
-In-Reply-To: <20180207011012.5928-1-ebiggers3@gmail.com>
-To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+drain_openssl_errors() is nothing more than an open coding of
+ERR_clear_error().  Use the correct API everywhere.
 
-The asymmetric key type allows an X.509 certificate to be added even if
-its signature's hash algorithm is not available in the crypto API.  In
-that case 'payload.data[asym_auth]' will be NULL.  But the key
-restriction code failed to check for this case before trying to use the
-signature, resulting in a NULL pointer dereference in
-key_or_keyring_common() or in restrict_link_by_signature().
-
-Fix this by returning -ENOPKG when the signature is unsupported.
-
-Reproducer when all the CONFIG_CRYPTO_SHA512* options are disabled and
-keyctl has support for the 'restrict_keyring' command:
-
-    keyctl new_session
-    keyctl restrict_keyring @s asymmetric builtin_trusted
-    openssl req -new -sha512 -x509 -batch -nodes -outform der \
-        | keyctl padd asymmetric desc @s
-
-Fixes: a511e1af8b12 ("KEYS: Move the point of trust determination to __key_link()")
-Cc: <stable@vger.kernel.org> # v4.7+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 ---
- crypto/asymmetric_keys/restrict.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ scripts/sign-file.c | 14 ++------------
+ 1 file changed, 2 insertions(+), 12 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
-index 86fb68508952..7c93c7728454 100644
---- a/crypto/asymmetric_keys/restrict.c
-+++ b/crypto/asymmetric_keys/restrict.c
-@@ -67,8 +67,9 @@ __setup("ca_keys=", ca_keys_setup);
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we couldn't find a
-  * matching parent certificate in the trusted list, -EKEYREJECTED if the
-- * signature check fails or the key is blacklisted and some other error if
-- * there is a matching certificate but the signature check cannot be performed.
-+ * signature check fails or the key is blacklisted, -ENOPKG if the signature
-+ * uses unsupported crypto, or some other error if there is a matching
-+ * certificate but the signature check cannot be performed.
-  */
- int restrict_link_by_signature(struct key *dest_keyring,
- 			       const struct key_type *type,
-@@ -88,6 +89,8 @@ int restrict_link_by_signature(struct key *dest_keyring,
- 		return -EOPNOTSUPP;
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index 563419bc2837..49f1cf456254 100644
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -92,16 +92,6 @@ static void display_openssl_errors(const char *f, int l)
+ 	}
+ }
  
- 	sig = payload->data[asym_auth];
-+	if (!sig)
-+		return -ENOPKG;
- 	if (!sig->auth_ids[0] && !sig->auth_ids[1])
- 		return -ENOKEY;
+-static void drain_openssl_errors(void)
+-{
+-	const char *file;
+-	int line;
+-
+-	if (ERR_peek_error() = 0)
+-		return;
+-	while (ERR_get_error_line(&file, &line)) {}
+-}
+-
+ #define ERR(cond, fmt, ...)				\
+ 	do {						\
+ 		bool __cond = (cond);			\
+@@ -140,11 +130,11 @@ static EVP_PKEY *read_private_key(const char *private_key_name)
+ 		ENGINE *e;
  
-@@ -139,6 +142,8 @@ static int key_or_keyring_common(struct key *dest_keyring,
- 		return -EOPNOTSUPP;
- 
- 	sig = payload->data[asym_auth];
-+	if (!sig)
-+		return -ENOPKG;
- 	if (!sig->auth_ids[0] && !sig->auth_ids[1])
- 		return -ENOKEY;
- 
-@@ -222,9 +227,9 @@ static int key_or_keyring_common(struct key *dest_keyring,
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we
-  * couldn't find a matching parent certificate in the trusted list,
-- * -EKEYREJECTED if the signature check fails, and some other error if
-- * there is a matching certificate but the signature check cannot be
-- * performed.
-+ * -EKEYREJECTED if the signature check fails, -ENOPKG if the signature uses
-+ * unsupported crypto, or some other error if there is a matching certificate
-+ * but the signature check cannot be performed.
-  */
- int restrict_link_by_key_or_keyring(struct key *dest_keyring,
- 				    const struct key_type *type,
-@@ -249,9 +254,9 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we
-  * couldn't find a matching parent certificate in the trusted list,
-- * -EKEYREJECTED if the signature check fails, and some other error if
-- * there is a matching certificate but the signature check cannot be
-- * performed.
-+ * -EKEYREJECTED if the signature check fails, -ENOPKG if the signature uses
-+ * unsupported crypto, or some other error if there is a matching certificate
-+ * but the signature check cannot be performed.
-  */
- int restrict_link_by_key_or_keyring_chain(struct key *dest_keyring,
- 					  const struct key_type *type,
+ 		ENGINE_load_builtin_engines();
+-		drain_openssl_errors();
++		ERR_clear_error();
+ 		e = ENGINE_by_id("pkcs11");
+ 		ERR(!e, "Load PKCS#11 ENGINE");
+ 		if (ENGINE_init(e))
+-			drain_openssl_errors();
++			ERR_clear_error();
+ 		else
+ 			ERR(1, "ENGINE_init");
+ 		if (key_pass)
 -- 
-2.16.0.rc1.238.g530d649a79-goog
-
+2.12.3
