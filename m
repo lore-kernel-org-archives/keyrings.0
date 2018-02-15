@@ -1,67 +1,23 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 15 Feb 2018 20:45:28 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 15 Feb 2018 21:36:01 +0000
 Subject: Re: [RFC PATCH] KEYS: Use individual pages in big_key for crypto buffers
-Message-Id: <20180215204528.GA49445@gmail.com>
+Message-Id: <13335.1518730561@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <151871006638.2759.15708879200455370908.stgit@warthog.procyon.org.uk>
-In-Reply-To: <151871006638.2759.15708879200455370908.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, Jason@zx2c4.com, herbert@gondor.apana.org.au, k.marinushkin@gmail.com, linux-crypto@vger.kernel.org
+References: <20180215204528.GA49445@gmail.com> <151871006638.2759.15708879200455370908.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20180215204528.GA49445@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, Jason@zx2c4.com, herbert@gondor.apana.org.au, k.marinushkin@gmail.com, linux-crypto@vger.kernel.org
 
-Hi David,
+Eric Biggers <ebiggers3@gmail.com> wrote:
 
-On Thu, Feb 15, 2018 at 03:54:26PM +0000, David Howells wrote:
-> kmalloc() can't always allocate large enough buffers for big_key to use for
-> crypto (1MB + some metadata) so we cannot use that to allocate the buffer.
-> Further, vmalloc'd pages can't be passed to sg_init_one() and the aead
-> crypto accessors cannot be called progressively and must be passed all the
-> data in one go (which means we can't pass the data in one block at a time).
-> 
-> Fix this by allocating the buffer pages individually and passing them
-> through a multientry scatterlist to the crypto layer.  This has the bonus
-> advantage that we don't have to allocate a contiguous series of pages.
+> If big_key_alloc_buffer() fails to allocate one of the pages then some of
+> the pages may still be NULL here, causing __free_page() to crash.  You need
+> to check for NULL first.
 
-Thanks for fixing this.  The proposed solution is ugly but I don't have a better
-one in mind.  Someday the crypto API might support virtual addresses itself, in
-which case vmalloc (or kvmalloc()) could just be used.  But it's tough since
-some crypto drivers really do need pages, so there would still have to be a
-translation from virtual addresses to pages somewhere.
+Ah, yes.  I incorrectly used free_page() first - and that does check for a
+NULL pointer.  Applied your other changes also.
 
-> +struct big_key_buf {
-> +	int			nr_pages;
-> +	void			*virt;
-> +	struct scatterlist	*sg;
-> +	struct page		*pages[];
-> +};
-
-nr_pages should be an 'unsigned int' to be consistent with the rest of the code.
-
-> + * Free up the buffer.
-> + */
-> +static void big_key_free_buffer(struct big_key_buf *buf)
-> +{
-> +	unsigned int i;
-> +
-> +	vunmap(buf->virt);
-> +	for (i = 0; i < buf->nr_pages; i++)
-> +		__free_page(buf->pages[i]);
-> +
-> +	kfree(buf);
-> +}
-
-If big_key_alloc_buffer() fails to allocate one of the pages then some of the
-pages may still be NULL here, causing __free_page() to crash.  You need to check
-for NULL first.
-
-Also how about doing the memset to 0 in here so that the callers don't thave to
-remember it:
-
-	if (buf->virt) {
-		memset(buf->virt, 0, buf->nr_pages * PAGE_SIZE);
-		vunmap(buf->virt);
-	}
-
-- Eric
+David
