@@ -1,88 +1,69 @@
-From: =?UTF-8?q?Andr=C3=A9=20Draszik?= <git@andred.net>
-Date: Wed, 10 Jan 2018 12:44:17 +0000
-Subject: [PATCH 2/3] fscrypt: add support for the encrypted key type
-Message-Id: <20180110124418.24385-2-git@andred.net>
+From: Philipp Hahn <hahn@univention.de>
+Date: Thu, 15 Feb 2018 11:51:50 +0000
+Subject: [linux] .system_keyring ?
+Message-Id: <49ef1eb6-802b-ae86-a5e4-eb29a8ef4c4c@univention.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1258"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180110124418.24385-1-git@andred.net>
-In-Reply-To: <20180110124418.24385-1-git@andred.net>
-To: linux-kernel@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <james.l.morris@oracle.com>, "Serge E. Hallyn" <serge@hallyn.com>, "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Kees Cook <keescook@chromium.org>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fscrypt@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-V2Ugbm93IHRyeSB0byBhY3F1aXJlIHRoZSBrZXkgYWNjb3JkaW5nIHRvIHRoZQplbmNyeXB0aW9u
-IHBvbGljeSBmcm9tIGJvdGgga2V5IHR5cGVzLCAnbG9nb24nCmFzIHdlbGwgYXMgJ2VuY3J5cHRl
-ZCcuCgpTaWduZWQtb2ZmLWJ5OiBBbmRyw6kgRHJhc3ppayA8Z2l0QGFuZHJlZC5uZXQ+CkNjOiBN
-aW1pIFpvaGFyIDx6b2hhckBsaW51eC52bmV0LmlibS5jb20+CkNjOiBEYXZpZCBIb3dlbGxzIDxk
-aG93ZWxsc0ByZWRoYXQuY29tPgpDYzogSmFtZXMgTW9ycmlzIDxqYW1lcy5sLm1vcnJpc0BvcmFj
-bGUuY29tPgpDYzogIlNlcmdlIEUuIEhhbGx5biIgPHNlcmdlQGhhbGx5bi5jb20+CkNjOiAiVGhl
-b2RvcmUgWS4gVHMnbyIgPHR5dHNvQG1pdC5lZHU+CkNjOiBKYWVnZXVrIEtpbSA8amFlZ2V1a0Br
-ZXJuZWwub3JnPgpDYzogS2VlcyBDb29rIDxrZWVzY29va0BjaHJvbWl1bS5vcmc+CkNjOiBsaW51
-eC1pbnRlZ3JpdHlAdmdlci5rZXJuZWwub3JnCkNjOiBrZXlyaW5nc0B2Z2VyLmtlcm5lbC5vcmcK
-Q2M6IGxpbnV4LXNlY3VyaXR5LW1vZHVsZUB2Z2VyLmtlcm5lbC5vcmcKQ2M6IGxpbnV4LWZzY3J5
-cHRAdmdlci5rZXJuZWwub3JnCi0tLQogZnMvY3J5cHRvL2tleWluZm8uYyB8IDU4ICsrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hh
-bmdlZCwgMzggaW5zZXJ0aW9ucygrKSwgMjAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMv
-Y3J5cHRvL2tleWluZm8uYyBiL2ZzL2NyeXB0by9rZXlpbmZvLmMKaW5kZXggNWU2ZTg0NmY1YTI0
-Li4wMjNmYTE5ZmVjNDggMTAwNjQ0Ci0tLSBhL2ZzL2NyeXB0by9rZXlpbmZvLmMKKysrIGIvZnMv
-Y3J5cHRvL2tleWluZm8uYwpAQCAtMTAsNiArMTAsNyBAQAogICovCiAKICNpbmNsdWRlIDxrZXlz
-L3VzZXItdHlwZS5oPgorI2luY2x1ZGUgPGtleXMvZW5jcnlwdGVkLXR5cGUuaD4KICNpbmNsdWRl
-IDxsaW51eC9zY2F0dGVybGlzdC5oPgogI2luY2x1ZGUgPGxpbnV4L3JhdGVsaW1pdC5oPgogI2lu
-Y2x1ZGUgPGNyeXB0by9hZXMuaD4KQEAgLTY2LDE0ICs2NywyMCBAQCBzdGF0aWMgaW50IGRlcml2
-ZV9rZXlfYWVzKHU4IGRlcml2aW5nX2tleVtGU19BRVNfMTI4X0VDQl9LRVlfU0laRV0sCiAJcmV0
-dXJuIHJlczsKIH0KIAotc3RhdGljIGludCB2YWxpZGF0ZV91c2VyX2tleShzdHJ1Y3QgZnNjcnlw
-dF9pbmZvICpjcnlwdF9pbmZvLAorc3RhdGljIGlubGluZSBzdHJ1Y3Qga2V5ICpmc2NyeXB0X2dl
-dF9lbmNyeXB0ZWRfa2V5KGNvbnN0IGNoYXIgKnNpZykKK3sKKwlpZiAoSVNfRU5BQkxFRChDT05G
-SUdfRU5DUllQVEVEX0tFWVMpKQorCQlyZXR1cm4gcmVxdWVzdF9rZXkoJmtleV90eXBlX2VuY3J5
-cHRlZCwgc2lnLCBOVUxMKTsKKwlyZXR1cm4gRVJSX1BUUigtRU5PS0VZKTsKK30KKworc3RhdGlj
-IGludCB2YWxpZGF0ZV9rZXlyaW5nX2tleShzdHJ1Y3QgZnNjcnlwdF9pbmZvICpjcnlwdF9pbmZv
-LAogCQkJc3RydWN0IGZzY3J5cHRfY29udGV4dCAqY3R4LCB1OCAqcmF3X2tleSwKIAkJCWNvbnN0
-IGNoYXIgKnByZWZpeCwgaW50IG1pbl9rZXlzaXplKQogewogCWNoYXIgKmRlc2NyaXB0aW9uOwog
-CXN0cnVjdCBrZXkgKmtleXJpbmdfa2V5OwogCXN0cnVjdCBmc2NyeXB0X2tleSAqbWFzdGVyX2tl
-eTsKLQljb25zdCBzdHJ1Y3QgdXNlcl9rZXlfcGF5bG9hZCAqdWtwOwogCWludCByZXM7CiAKIAlk
-ZXNjcmlwdGlvbiA9IGthc3ByaW50ZihHRlBfTk9GUywgIiVzJSpwaE4iLCBwcmVmaXgsCkBAIC04
-MywyOCArOTAsMzkgQEAgc3RhdGljIGludCB2YWxpZGF0ZV91c2VyX2tleShzdHJ1Y3QgZnNjcnlw
-dF9pbmZvICpjcnlwdF9pbmZvLAogCQlyZXR1cm4gLUVOT01FTTsKIAogCWtleXJpbmdfa2V5ID0g
-cmVxdWVzdF9rZXkoJmtleV90eXBlX2xvZ29uLCBkZXNjcmlwdGlvbiwgTlVMTCk7CisJaWYgKElT
-X0VSUihrZXlyaW5nX2tleSkpCisJCWtleXJpbmdfa2V5ID0gZnNjcnlwdF9nZXRfZW5jcnlwdGVk
-X2tleShkZXNjcmlwdGlvbik7CiAJa2ZyZWUoZGVzY3JpcHRpb24pOwogCWlmIChJU19FUlIoa2V5
-cmluZ19rZXkpKQogCQlyZXR1cm4gUFRSX0VSUihrZXlyaW5nX2tleSk7CiAJZG93bl9yZWFkKCZr
-ZXlyaW5nX2tleS0+c2VtKTsKIAotCWlmIChrZXlyaW5nX2tleS0+dHlwZSAhPSAma2V5X3R5cGVf
-bG9nb24pIHsKKwlpZiAoa2V5cmluZ19rZXktPnR5cGUgPSAma2V5X3R5cGVfbG9nb24pIHsKKwkJ
-Y29uc3Qgc3RydWN0IHVzZXJfa2V5X3BheWxvYWQgKnVrcDsKKworCQl1a3AgPSB1c2VyX2tleV9w
-YXlsb2FkX2xvY2tlZChrZXlyaW5nX2tleSk7CisJCWlmICghdWtwKSB7CisJCQkvKiBrZXkgd2Fz
-IHJldm9rZWQgYmVmb3JlIHdlIGFjcXVpcmVkIGl0cyBzZW1hcGhvcmUgKi8KKwkJCXJlcyA9IC1F
-S0VZUkVWT0tFRDsKKwkJCWdvdG8gb3V0OworCQl9CisJCWlmICh1a3AtPmRhdGFsZW4gIT0gc2l6
-ZW9mKHN0cnVjdCBmc2NyeXB0X2tleSkpIHsKKwkJCXJlcyA9IC1FSU5WQUw7CisJCQlnb3RvIG91
-dDsKKwkJfQorCQltYXN0ZXJfa2V5ID0gKHN0cnVjdCBmc2NyeXB0X2tleSAqKXVrcC0+ZGF0YTsK
-Kwl9IGVsc2UgaWYgKGtleXJpbmdfa2V5LT50eXBlID0gJmtleV90eXBlX2VuY3J5cHRlZCkgewor
-CQljb25zdCBzdHJ1Y3QgZW5jcnlwdGVkX2tleV9wYXlsb2FkICpla3A7CisKKwkJZWtwID0ga2V5
-cmluZ19rZXktPnBheWxvYWQuZGF0YVswXTsKKwkJbWFzdGVyX2tleSA9IChzdHJ1Y3QgZnNjcnlw
-dF9rZXkgKilla3AtPnBheWxvYWRfZGF0YTsKKwl9IGVsc2UgewogCQlwcmludGtfb25jZShLRVJO
-X1dBUk5JTkcKLQkJCQkiJXM6IGtleSB0eXBlIG11c3QgYmUgbG9nb25cbiIsIF9fZnVuY19fKTsK
-KwkJCQkiJXM6IGtleSB0eXBlIG11c3QgYmUgbG9nb24gb3IgZW5jcnlwdGVkXG4iLAorCQkJCV9f
-ZnVuY19fKTsKIAkJcmVzID0gLUVOT0tFWTsKIAkJZ290byBvdXQ7CiAJfQotCXVrcCA9IHVzZXJf
-a2V5X3BheWxvYWRfbG9ja2VkKGtleXJpbmdfa2V5KTsKLQlpZiAoIXVrcCkgewotCQkvKiBrZXkg
-d2FzIHJldm9rZWQgYmVmb3JlIHdlIGFjcXVpcmVkIGl0cyBzZW1hcGhvcmUgKi8KLQkJcmVzID0g
-LUVLRVlSRVZPS0VEOwotCQlnb3RvIG91dDsKLQl9Ci0JaWYgKHVrcC0+ZGF0YWxlbiAhPSBzaXpl
-b2Yoc3RydWN0IGZzY3J5cHRfa2V5KSkgewotCQlyZXMgPSAtRUlOVkFMOwotCQlnb3RvIG91dDsK
-LQl9Ci0JbWFzdGVyX2tleSA9IChzdHJ1Y3QgZnNjcnlwdF9rZXkgKil1a3AtPmRhdGE7CiAJQlVJ
-TERfQlVHX09OKEZTX0FFU18xMjhfRUNCX0tFWV9TSVpFICE9IEZTX0tFWV9ERVJJVkFUSU9OX05P
-TkNFX1NJWkUpOwogCiAJaWYgKG1hc3Rlcl9rZXktPnNpemUgPCBtaW5fa2V5c2l6ZSB8fCBtYXN0
-ZXJfa2V5LT5zaXplID4gRlNfTUFYX0tFWV9TSVpFCkBAIC0zMDIsMTIgKzMyMCwxMiBAQCBpbnQg
-ZnNjcnlwdF9nZXRfZW5jcnlwdGlvbl9pbmZvKHN0cnVjdCBpbm9kZSAqaW5vZGUpCiAJaWYgKCFy
-YXdfa2V5KQogCQlnb3RvIG91dDsKIAotCXJlcyA9IHZhbGlkYXRlX3VzZXJfa2V5KGNyeXB0X2lu
-Zm8sICZjdHgsIHJhd19rZXksIEZTX0tFWV9ERVNDX1BSRUZJWCwKLQkJCQlrZXlzaXplKTsKKwly
-ZXMgPSB2YWxpZGF0ZV9rZXlyaW5nX2tleShjcnlwdF9pbmZvLCAmY3R4LCByYXdfa2V5LAorCQkJ
-CSAgIEZTX0tFWV9ERVNDX1BSRUZJWCwga2V5c2l6ZSk7CiAJaWYgKHJlcyAmJiBpbm9kZS0+aV9z
-Yi0+c19jb3AtPmtleV9wcmVmaXgpIHsKLQkJaW50IHJlczIgPSB2YWxpZGF0ZV91c2VyX2tleShj
-cnlwdF9pbmZvLCAmY3R4LCByYXdfa2V5LAotCQkJCQkgICAgIGlub2RlLT5pX3NiLT5zX2NvcC0+
-a2V5X3ByZWZpeCwKLQkJCQkJICAgICBrZXlzaXplKTsKKwkJaW50IHJlczIgPSB2YWxpZGF0ZV9r
-ZXlyaW5nX2tleShjcnlwdF9pbmZvLCAmY3R4LCByYXdfa2V5LAorCQkJCQkJaW5vZGUtPmlfc2It
-PnNfY29wLT5rZXlfcHJlZml4LAorCQkJCQkJa2V5c2l6ZSk7CiAJCWlmIChyZXMyKSB7CiAJCQlp
-ZiAocmVzMiA9IC1FTk9LRVkpCiAJCQkJcmVzID0gLUVOT0tFWTsKLS0gCjIuMTUuMQoKLS0KVG8g
-dW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNlbmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGtl
-eXJpbmdzIiBpbgp0aGUgYm9keSBvZiBhIG1lc3NhZ2UgdG8gbWFqb3Jkb21vQHZnZXIua2VybmVs
-Lm9yZwpNb3JlIG1ham9yZG9tbyBpbmZvIGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9y
-ZG9tby1pbmZvLmh0bWw=
+Hello,
+
+reading "Documentation/admin-guide/module-signing.rst":
+> The kernel contains a ring of public keys that can be viewed by root.  They're
+> in a keyring called ".system_keyring" that can be seen by::
+> 
+>         [root@deneb ~]# cat /proc/keys
+>         ...
+>         223c7853 I------     1 perm 1f030000     0     0 keyring   .system_keyring: 1
+
+I don't have that ".system_keyring":
+> cat /proc/keys
+> 00a8459a I------     1 perm 1f0f0000     0     0 keyring   .secondary_trusted_keys: 1
+> 02b66804 I--Q---     8 perm 3f030000     0     0 keyring   _ses: 1
+> 0639503a I--Q---     3 perm 1f3f0000     0 65534 keyring   _uid.0: empty
+> 1afb3552 I------     2 perm 1f0b0000     0     0 keyring   .builtin_trusted_keys: 1
+> 3167cca3 I--Q---     1 perm 1f3f0000     0 65534 keyring   _uid_ses.0: 1
+> 37b744d9 I------     1 perm 1f030000     0     0 asymmetri Build time autogenerated kernel key: 8943e26cd249e2fcdafea805149fcf9ed5912e10: X509.rsa d5912e10 []
+
+Grepping the Linux kernel source tree git also find no '.system_keyring'
+in any source file - only the name of the header file and in Documentation/.
+Am I missing something? If that documentation out-dated?
+
+My .config is this:
+> $ sed -ne 's/^config /CONFIG_/p' certs/Kconfig | ssh uefi 'grep -F -f - /boot/config-`uname -r`'
+> CONFIG_MODULE_SIG_KEY="certs/signing_key.pem"
+> CONFIG_SYSTEM_TRUSTED_KEYRING=y
+> CONFIG_SYSTEM_TRUSTED_KEYS=""
+> # CONFIG_SYSTEM_EXTRA_CERTIFICATE is not set
+> CONFIG_SECONDARY_TRUSTED_KEYRING=y
+
+
+I was looking at
+<https://docs-old.fedoraproject.org/en-US/Fedora/23/html/System_Administrators_Guide/sect-kernel-module-authentication.html>
+and I'm trying to get my UEFI keys added to the Linux keyring. I want to
+sign my modules with that "external" key instead of embedding the key
+into the Linux kernel itself.
+
+Thanks in advance.
+
+Philipp
+
+PS: I'm not subscribed to 'keyring, but LKML.
+-- 
+Philipp Hahn
+Open Source Software Engineer
+
+Univention GmbH
+be open.
+Mary-Somerville-Str. 1
+D-28359 Bremen
+Tel.: +49 421 22232-0
+Fax : +49 421 22232-99
+hahn@univention.de
+
+http://www.univention.de/
+Geschäftsführer: Peter H. Ganten
+HRB 20755 Amtsgericht Bremen
+Steuer-Nr.: 71-597-02876
