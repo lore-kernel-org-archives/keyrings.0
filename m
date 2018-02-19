@@ -1,65 +1,58 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 07 Feb 2018 01:10:05 +0000
-Subject: [PATCH 2/9] PKCS#7: fix certificate blacklisting
-Message-Id: <20180207011012.5928-3-ebiggers3@gmail.com>
+From: Philipp Hahn <hahn@univention.de>
+Date: Mon, 19 Feb 2018 09:39:01 +0000
+Subject: [PATCH v2] doc: Rename .system_keyring to .builtin_trusted_keys
+Message-Id: <56bc730ca40df297dd2f5b9fc8e100b96a1121dc.1519033055.git.hahn@univention.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180207011012.5928-1-ebiggers3@gmail.com>
-In-Reply-To: <20180207011012.5928-1-ebiggers3@gmail.com>
-To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Commit d3bfe84129f65e0af2450743ebdab33d161d01c9 changed the name but did
+not update the documentation.
 
-If there is a blacklisted certificate in a SignerInfo's certificate
-chain, then pkcs7_verify_sig_chain() sets sinfo->blacklisted and returns
-0.  But, pkcs7_verify() fails to handle this case appropriately, as it
-actually continues on to the line 'actual_ret = 0;', indicating that the
-SignerInfo has passed verification.  Consequently, PKCS#7 signature
-verification ignores the certificate blacklist.
-
-Fix this by not considering blacklisted SignerInfos to have passed
-verification.
-
-Also fix the function comment with regards to when 0 is returned.
-
-Fixes: 03bb79315ddc ("PKCS#7: Handle blacklisted certificates")
-Cc: <stable@vger.kernel.org> # v4.12+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Fixes: d3bfe84129f65e0af2450743ebdab33d161d01c9
+Signed-off-by: Philipp Hahn <hahn@univention.de>
 ---
- crypto/asymmetric_keys/pkcs7_verify.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ Documentation/admin-guide/module-signing.rst | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 2f6a768b91d7..97c77f66b20d 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -366,8 +366,7 @@ static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
-  *
-  *  (*) -EBADMSG if some part of the message was invalid, or:
-  *
-- *  (*) 0 if no signature chains were found to be blacklisted or to contain
-- *	unsupported crypto, or:
-+ *  (*) 0 if a signature chain passed verification, or:
-  *
-  *  (*) -EKEYREJECTED if a blacklisted key was encountered, or:
-  *
-@@ -423,8 +422,11 @@ int pkcs7_verify(struct pkcs7_message *pkcs7,
+diff --git a/Documentation/admin-guide/module-signing.rst b/Documentation/admin-guide/module-signing.rst
+index 27e59498b487..62e389fdcb86 100644
+--- a/Documentation/admin-guide/module-signing.rst
++++ b/Documentation/admin-guide/module-signing.rst
+@@ -180,11 +180,11 @@ Public keys in the kernel
+ ============ 
+ The kernel contains a ring of public keys that can be viewed by root.  They're
+-in a keyring called ".system_keyring" that can be seen by::
++in a keyring called ".builtin_trusted_keys" that can be seen by::
  
- 	for (sinfo = pkcs7->signed_infos; sinfo; sinfo = sinfo->next) {
- 		ret = pkcs7_verify_one(pkcs7, sinfo);
--		if (sinfo->blacklisted && actual_ret = -ENOPKG)
--			actual_ret = -EKEYREJECTED;
-+		if (sinfo->blacklisted) {
-+			if (actual_ret = -ENOPKG)
-+				actual_ret = -EKEYREJECTED;
-+			continue;
-+		}
- 		if (ret < 0) {
- 			if (ret = -ENOPKG) {
- 				sinfo->unsupported_crypto = true;
+ 	[root@deneb ~]# cat /proc/keys
+ 	...
+-	223c7853 I------     1 perm 1f030000     0     0 keyring   .system_keyring: 1
++	223c7853 I------     1 perm 1f030000     0     0 keyring   .builtin_trusted_keys: 1
+ 	302d2d52 I------     1 perm 1f010000     0     0 asymmetri Fedora kernel signing key: d69a84e6bce3d216b979e9505b3e3ef9a7118079: X509.RSA a7118079 []
+ 	...
+ 
+@@ -197,15 +197,15 @@ add those in also (e.g. from the UEFI key database).
+ 
+ Finally, it is possible to add additional public keys by doing::
+ 
+-	keyctl padd asymmetric "" [.system_keyring-ID] <[key-file]
++	keyctl padd asymmetric "" [.builtin_trusted_keys-ID] <[key-file]
+ 
+ e.g.::
+ 
+ 	keyctl padd asymmetric "" 0x223c7853 <my_public_key.x509
+ 
+ Note, however, that the kernel will only permit keys to be added to
+-``.system_keyring _if_`` the new key's X.509 wrapper is validly signed by a key
+-that is already resident in the .system_keyring at the time the key was added.
++``.builtin_trusted_keys _if_`` the new key's X.509 wrapper is validly signed by a key
++that is already resident in the .builtin_trusted_keys at the time the key was added.
+ 
+ 
+ ============
 -- 
-2.16.0.rc1.238.g530d649a79-goog
+2.11.0
 
