@@ -1,7 +1,7 @@
 From: Philipp Hahn <hahn@univention.de>
-Date: Mon, 19 Feb 2018 09:39:01 +0000
-Subject: [PATCH v2] doc: Rename .system_keyring to .builtin_trusted_keys
-Message-Id: <56bc730ca40df297dd2f5b9fc8e100b96a1121dc.1519033055.git.hahn@univention.de>
+Date: Mon, 19 Feb 2018 09:31:57 +0000
+Subject: [PATCH] doc: Rename .system_keyring to .builtin_trusted_keys
+Message-Id: <56bc730ca40df297dd2f5b9fc8e100b96a1121dc.1519032581.git.hahn@univention.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -12,7 +12,6 @@ Commit d3bfe84129f65e0af2450743ebdab33d161d01c9 changed the name but did
 not update the documentation.
 
 Fixes: d3bfe84129f65e0af2450743ebdab33d161d01c9
-Signed-off-by: Philipp Hahn <hahn@univention.de>
 ---
  Documentation/admin-guide/module-signing.rst | 10 +++++-----
  1 file changed, 5 insertions(+), 5 deletions(-)
