@@ -1,28 +1,24 @@
-From: James Morris <jmorris@namei.org>
-Date: Fri, 23 Feb 2018 00:24:05 +0000
-Subject: Re: [RFC][PATCH 0/6] KEYS: Fixes
-Message-Id: <alpine.LRH.2.21.1802231123500.21075@namei.org>
+From: Philipp Hahn <hahn@univention.de>
+Date: Mon, 19 Feb 2018 09:39:00 +0000
+Subject: [PATCH v2] doc: admin-guide/module-signing.rst fixes
+Message-Id: <cover.1519033055.git.hahn@univention.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
-	<29946.1519343081@warthog.procyon.org.uk>
-In-Reply-To: <29946.1519343081@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-On Thu, 22 Feb 2018, David Howells wrote:
+Two trivial corrections for the module signing documentation.
 
-> I've posted an update that converts the min() to a min_t() and tagged it:
-> 
-> https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/tag/?h=keys-fixes-20180222-2
-> 
-> Do you want me to repost the patches?
+v2: Add missing Signed-off-by
 
-Nope, I'll grab them from there.
+Philipp Hahn (2):
+  doc: Rename .system_keyring to .builtin_trusted_keys
+  doc: module-signing.rst: Fix reST formatting
 
+ Documentation/admin-guide/module-signing.rst | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 -- 
-James Morris
-<jmorris@namei.org>
+2.11.0
 
