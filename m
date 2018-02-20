@@ -1,75 +1,102 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 28 Feb 2018 19:05:10 +0000
-Subject: [PATCH v2] KEYS: DNS: limit the length of option strings
-Message-Id: <20180228190510.215801-1-ebiggers3@gmail.com>
+Date: Tue, 20 Feb 2018 19:41:44 +0000
+Subject: Re: [PATCH RESEND] KEYS: remove CONFIG_KEYS_COMPAT
+Message-Id: <20180220194144.GB70958@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20180105191947.91775-1-ebiggers3@gmail.com>
+In-Reply-To: <20180105191947.91775-1-ebiggers3@gmail.com>
 To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: netdev@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>, Eric Biggers <ebiggers@google.com>
+Cc: linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>
 
-From: Eric Biggers <ebiggers@google.com>
+On Fri, Jan 05, 2018 at 11:19:47AM -0800, Eric Biggers wrote:
+> From: Eric Biggers <ebiggers@google.com>
+> 
+> KEYS_COMPAT now always takes the value of COMPAT && KEYS.  But the
+> security/keys/ directory is only compiled if KEYS is enabled, so in
+> practice KEYS_COMPAT is the same as COMPAT.  Therefore, remove the
+> unnecessary KEYS_COMPAT and just use COMPAT directly.
+> 
+> (Also remove an outdated comment from compat.c.)
+> 
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
+> ---
+>  security/keys/Kconfig    | 4 ----
+>  security/keys/Makefile   | 2 +-
+>  security/keys/compat.c   | 5 -----
+>  security/keys/internal.h | 4 ++--
+>  4 files changed, 3 insertions(+), 12 deletions(-)
+> 
+> diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+> index 6462e6654ccf..e115d691d977 100644
+> --- a/security/keys/Kconfig
+> +++ b/security/keys/Kconfig
+> @@ -20,10 +20,6 @@ config KEYS
+>  
+>  	  If you are unsure as to whether this is required, answer N.
+>  
+> -config KEYS_COMPAT
+> -	def_bool y
+> -	depends on COMPAT && KEYS
+> -
+>  config PERSISTENT_KEYRINGS
+>  	bool "Enable register of persistent per-UID keyrings"
+>  	depends on KEYS
+> diff --git a/security/keys/Makefile b/security/keys/Makefile
+> index ef1581b337a3..b92ef62b99a1 100644
+> --- a/security/keys/Makefile
+> +++ b/security/keys/Makefile
+> @@ -17,7 +17,7 @@ obj-y := \
+>  	request_key_auth.o \
+>  	user_defined.o
+>  compat-obj-$(CONFIG_KEY_DH_OPERATIONS) += compat_dh.o
+> -obj-$(CONFIG_KEYS_COMPAT) += compat.o $(compat-obj-y)
+> +obj-$(CONFIG_COMPAT) += compat.o $(compat-obj-y)
+>  obj-$(CONFIG_PROC_FS) += proc.o
+>  obj-$(CONFIG_SYSCTL) += sysctl.o
+>  obj-$(CONFIG_PERSISTENT_KEYRINGS) += persistent.o
+> diff --git a/security/keys/compat.c b/security/keys/compat.c
+> index e87c89c0177c..d7445946b701 100644
+> --- a/security/keys/compat.c
+> +++ b/security/keys/compat.c
+> @@ -50,11 +50,6 @@ static long compat_keyctl_instantiate_key_iov(
+>  
+>  /*
+>   * The key control system call, 32-bit compatibility version for 64-bit archs
+> - *
+> - * This should only be called if the 64-bit arch uses weird pointers in 32-bit
+> - * mode or doesn't guarantee that the top 32-bits of the argument registers on
+> - * taking a 32-bit syscall are zero.  If you can, you should call sys_keyctl()
+> - * directly.
+>   */
+>  COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
+>  		       u32, arg2, u32, arg3, u32, arg4, u32, arg5)
+> diff --git a/security/keys/internal.h b/security/keys/internal.h
+> index 9f8208dc0e55..6d54fa8baa64 100644
+> --- a/security/keys/internal.h
+> +++ b/security/keys/internal.h
+> @@ -272,7 +272,7 @@ extern long keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
+>  			      size_t, struct keyctl_kdf_params __user *);
+>  extern long __keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
+>  				size_t, struct keyctl_kdf_params *);
+> -#ifdef CONFIG_KEYS_COMPAT
+> +#ifdef CONFIG_COMPAT
+>  extern long compat_keyctl_dh_compute(struct keyctl_dh_params __user *params,
+>  				char __user *buffer, size_t buflen,
+>  				struct compat_keyctl_kdf_params __user *kdf);
+> @@ -287,7 +287,7 @@ static inline long keyctl_dh_compute(struct keyctl_dh_params __user *params,
+>  	return -EOPNOTSUPP;
+>  }
+>  
+> -#ifdef CONFIG_KEYS_COMPAT
+> +#ifdef CONFIG_COMPAT
+>  static inline long compat_keyctl_dh_compute(
+>  				struct keyctl_dh_params __user *params,
+>  				char __user *buffer, size_t buflen,
+> -- 
+> 2.16.0.rc0.223.g4a4ac83678-goog
+> 
 
-Adding a dns_resolver key whose payload contains a very long option name
-resulted in that string being printed in full.  This hit the WARN_ONCE()
-in set_precision() during the printk(), because printk() only supports a
-precision of up to 32767 bytes:
-
-    precision 1000000 too large
-    WARNING: CPU: 0 PID: 752 at lib/vsprintf.c:2189 vsnprintf+0x4bc/0x5b0
-
-Fix it by limiting option strings (combined name + value) to a much more
-reasonable 128 bytes.  The exact limit is arbitrary, but currently the
-only recognized option is formatted as "dnserror=%lu" which fits well
-within this limit.
-
-Also ratelimit the printks.
-
-Reproducer:
-
-    perl -e 'print "#", "A" x 1000000, "\x00"' | keyctl padd dns_resolver desc @s
-
-This bug was found using syzkaller.
-
-Reported-by: Mark Rutland <mark.rutland@arm.com>
-Fixes: 4a2d789267e0 ("DNS: If the DNS server returns an error, allow that to be cached [ver #2]")
-Cc: <stable@vger.kernel.org> # v2.6.36+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- net/dns_resolver/dns_key.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
-
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index e1d4d898a007..ed372d550137 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -91,9 +91,9 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
- 
- 			next_opt = memchr(opt, '#', end - opt) ?: end;
- 			opt_len = next_opt - opt;
--			if (!opt_len) {
--				printk(KERN_WARNING
--				       "Empty option to dns_resolver key\n");
-+			if (opt_len <= 0 || opt_len > 128) {
-+				pr_warn_ratelimited("Invalid option length (%d) for dns_resolver key\n",
-+						    opt_len);
- 				return -EINVAL;
- 			}
- 
-@@ -127,10 +127,8 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
- 			}
- 
- 		bad_option_value:
--			printk(KERN_WARNING
--			       "Option '%*.*s' to dns_resolver key:"
--			       " bad/missing value\n",
--			       opt_nlen, opt_nlen, opt);
-+			pr_warn_ratelimited("Option '%*.*s' to dns_resolver key: bad/missing value\n",
-+					    opt_nlen, opt_nlen, opt);
- 			return -EINVAL;
- 		} while (opt = next_opt + 1, opt < end);
- 	}
--- 
-2.16.2.395.g2e18187dfd-goog
-
+Ping.  
