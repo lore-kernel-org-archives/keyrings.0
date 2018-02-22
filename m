@@ -1,78 +1,65 @@
-From: Jin Qian <jinqian@android.com>
-Date: Tue, 06 Feb 2018 21:24:08 +0000
-Subject: [PATCHv2 1/1] KEYS: encrypted: fix buffer overread in valid_master_desc()
-Message-Id: <20180206212408.5455-1-jinqian@android.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 22 Feb 2018 16:20:34 +0000
+Subject: [PATCH 1/6] PKCS#7: fix certificate chain verification
+Message-Id: <151931643415.27713.4671836834877309737.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
+In-Reply-To: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
 From: Eric Biggers <ebiggers@google.com>
 
-commit 794b4bc292f5d31739d89c0202c54e7dc9bc3add upstream
+When pkcs7_verify_sig_chain() is building the certificate chain for a
+SignerInfo using the certificates in the PKCS#7 message, it is passing
+the wrong arguments to public_key_verify_signature().  Consequently,
+when the next certificate is supposed to be used to verify the previous
+certificate, the next certificate is actually used to verify itself.
 
-With the 'encrypted' key type it was possible for userspace to provide a
-data blob ending with a master key description shorter than expected,
-e.g. 'keyctl add encrypted desc "new x" @s'.  When validating such a
-master key description, validate_master_desc() could read beyond the end
-of the buffer.  Fix this by using strncmp() instead of memcmp().  [Also
-clean up the code to deduplicate some logic.]
+An attacker can use this bug to create a bogus certificate chain that
+has no cryptographic relationship between the beginning and end.
 
-Cc: linux-stable <stable@vger.kernel.org> # 4.9.y
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Fortunately I couldn't quite find a way to use this to bypass the
+overall signature verification, though it comes very close.  Here's the
+reasoning: due to the bug, every certificate in the chain beyond the
+first actually has to be self-signed (where "self-signed" here refers to
+the actual key and signature; an attacker might still manipulate the
+certificate fields such that the self_signed flag doesn't actually get
+set, and thus the chain doesn't end immediately).  But to pass trust
+validation (pkcs7_validate_trust()), either the SignerInfo or one of the
+certificates has to actually be signed by a trusted key.  Since only
+self-signed certificates can be added to the chain, the only way for an
+attacker to introduce a trusted signature is to include a self-signed
+trusted certificate.
+
+But, when pkcs7_validate_trust_one() reaches that certificate, instead
+of trying to verify the signature on that certificate, it will actually
+look up the corresponding trusted key, which will succeed, and then try
+to verify the *previous* certificate, which will fail.  Thus, disaster
+is narrowly averted (as far as I could tell).
+
+Fixes: 6c2dc5ae4ab7 ("X.509: Extract signature digest and make self-signed cert checks earlier")
+Cc: <stable@vger.kernel.org> # v4.7+
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
-Signed-off-by: Jin Qian <jinqian@google.com>
-Signed-off-by: Jin Qian <jinqian@android.com>
 ---
- security/keys/encrypted-keys/encrypted.c | 31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index a871159bf03c..ead2fd60244d 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -141,23 +141,22 @@ static int valid_ecryptfs_desc(const char *ecryptfs_desc)
-  */
- static int valid_master_desc(const char *new_desc, const char *orig_desc)
- {
--	if (!memcmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN)) {
--		if (strlen(new_desc) = KEY_TRUSTED_PREFIX_LEN)
--			goto out;
--		if (orig_desc)
--			if (memcmp(new_desc, orig_desc, KEY_TRUSTED_PREFIX_LEN))
--				goto out;
--	} else if (!memcmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN)) {
--		if (strlen(new_desc) = KEY_USER_PREFIX_LEN)
--			goto out;
--		if (orig_desc)
--			if (memcmp(new_desc, orig_desc, KEY_USER_PREFIX_LEN))
--				goto out;
--	} else
--		goto out;
-+	int prefix_len;
-+
-+	if (!strncmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN))
-+		prefix_len = KEY_TRUSTED_PREFIX_LEN;
-+	else if (!strncmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN))
-+		prefix_len = KEY_USER_PREFIX_LEN;
-+	else
-+		return -EINVAL;
-+
-+	if (!new_desc[prefix_len])
-+		return -EINVAL;
-+
-+	if (orig_desc && strncmp(new_desc, orig_desc, prefix_len))
-+		return -EINVAL;
-+
- 	return 0;
--out:
--	return -EINVAL;
- }
- 
- /*
--- 
-2.16.0.rc1.238.g530d649a79-goog
+ crypto/asymmetric_keys/pkcs7_verify.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 39e6de0c2761..2f6a768b91d7 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -270,7 +270,7 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
+ 				sinfo->index);
+ 			return 0;
+ 		}
+-		ret = public_key_verify_signature(p->pub, p->sig);
++		ret = public_key_verify_signature(p->pub, x509->sig);
+ 		if (ret < 0)
+ 			return ret;
+ 		x509->signer = p;
 
