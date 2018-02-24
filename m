@@ -1,37 +1,67 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 28 Feb 2018 19:58:13 +0000
-Subject: [PATCH 0/5] Migrate all TPM 2.0 commands to use struct tpm_buf
-Message-Id: <20180228195819.22231-1-jarkko.sakkinen@linux.intel.com>
+From: "Maciej S. Szmigiero" <mail@maciej.szmigiero.name>
+Date: Sat, 24 Feb 2018 16:03:31 +0000
+Subject: [PATCH 3/3] crypto: ccp - protect RSA implementation from too large input data
+Message-Id: <4af6c02f-db3f-3d82-9685-367913c684ff@maciej.szmigiero.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jason Gunthorpe <jgg@ziepe.ca>, open list <linux-kernel@vger.kernel.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>
+Cc: David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-In order to make struct tpm_buf the first class object for constructing TPM
-commands, this patch set migrates all TPM 2.0 commands to use it. The next
-step after this is to migrate TPM 1.2 commands in a subsequent patch set.
-Finally, tpm_transmit_cmd() can take simply struct tpm_buf as its argument
-and this interface can be exported to be used by the kernel keyring.
+CCP RSA implementation uses a hardware input buffer which size depends only
+on the current RSA key length. Key modulus and a message to be processed
+is then copied to this buffer based on their own lengths.
 
-The ultimate goal of this work is to make constructing TPM commands inside
-the kernel simple and robust.
+Since the price for providing too long input data is a buffer overflow and
+there already has been a case when this has happened let's better reject
+such oversized input data and log an error message in this case so we know
+what is going on.
 
-Alexander Steffen (1):
-  tpm: Trigger only missing TPM 2.0 self tests
+Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
+---
+ drivers/crypto/ccp/ccp-ops.c | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
 
-Jarkko Sakkinen (4):
-  tpm: migrate tpm2_shutdown() to use struct tpm_buf
-  tpm: migrate tpm2_probe() to use struct tpm_buf
-  tpm: migrate tpm2_get_tpm_pt() to use struct tpm_buf
-  tpm: migrate tpm2_get_random() to use struct tpm_buf
-
- drivers/char/tpm/tpm-interface.c |  20 ++-
- drivers/char/tpm/tpm.h           |   3 +-
- drivers/char/tpm/tpm2-cmd.c      | 266 ++++++++++++++-------------------------
- 3 files changed, 112 insertions(+), 177 deletions(-)
-
--- 
-2.15.1
-
+diff --git a/drivers/crypto/ccp/ccp-ops.c b/drivers/crypto/ccp/ccp-ops.c
+index 406b95329b3d..517aeee30abf 100644
+--- a/drivers/crypto/ccp/ccp-ops.c
++++ b/drivers/crypto/ccp/ccp-ops.c
+@@ -1770,10 +1770,6 @@ static int ccp_run_rsa_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
+ 	if (!rsa->exp || !rsa->mod || !rsa->src || !rsa->dst)
+ 		return -EINVAL;
+ 
+-	memset(&op, 0, sizeof(op));
+-	op.cmd_q = cmd_q;
+-	op.jobid = CCP_NEW_JOBID(cmd_q->ccp);
+-
+ 	/* The RSA modulus must precede the message being acted upon, so
+ 	 * it must be copied to a DMA area where the message and the
+ 	 * modulus can be concatenated.  Therefore the input buffer
+@@ -1785,6 +1781,26 @@ static int ccp_run_rsa_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
+ 	o_len = 32 * ((rsa->key_size + 255) / 256);
+ 	i_len = o_len * 2;
+ 
++	if (rsa->mod_len > o_len) {
++		dev_err(cmd_q->ccp->dev,
++			"RSA modulus of %u bytes too large for key size of %u bits\n",
++			(unsigned int)rsa->mod_len,
++			(unsigned int)rsa->key_size);
++		return -EINVAL;
++	}
++
++	if (rsa->src_len > o_len) {
++		dev_err(cmd_q->ccp->dev,
++			"RSA data of %u bytes too large for key size of %u bits\n",
++			(unsigned int)rsa->src_len,
++			(unsigned int)rsa->key_size);
++		return -EINVAL;
++	}
++
++	memset(&op, 0, sizeof(op));
++	op.cmd_q = cmd_q;
++	op.jobid = CCP_NEW_JOBID(cmd_q->ccp);
++
+ 	sb_count = 0;
+ 	if (cmd_q->ccp->vdata->version < CCP_VERSION(5, 0)) {
+ 		/* sb_count is the number of storage block slots required
