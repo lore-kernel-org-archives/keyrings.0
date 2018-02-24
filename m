@@ -1,29 +1,52 @@
-From: Jonathan Corbet <corbet@lwn.net>
-Date: Fri, 23 Feb 2018 15:04:47 +0000
-Subject: Re: [PATCH v2] doc: admin-guide/module-signing.rst fixes
-Message-Id: <20180223080447.2b192aaa@lwn.net>
+From: "Maciej S. Szmigiero" <mail@maciej.szmigiero.name>
+Date: Sat, 24 Feb 2018 16:03:21 +0000
+Subject: [PATCH 2/3] crypto: ccp - return an actual key size from RSA max_size callback
+Message-Id: <51c265e4-6153-3e5e-316a-ebef059ac36a@maciej.szmigiero.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1519033055.git.hahn@univention.de>
-In-Reply-To: <cover.1519033055.git.hahn@univention.de>
-To: keyrings@vger.kernel.org
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>
+Cc: David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Mon, 19 Feb 2018 10:39:00 +0100
-Philipp Hahn <hahn@univention.de> wrote:
+rsa-pkcs1pad uses a value returned from a RSA implementation max_size
+callback as a size of an input buffer passed to the RSA implementation for
+encrypt and sign operations.
 
-> Two trivial corrections for the module signing documentation.
-> 
-> v2: Add missing Signed-off-by
-> 
-> Philipp Hahn (2):
->   doc: Rename .system_keyring to .builtin_trusted_keys
->   doc: module-signing.rst: Fix reST formatting
-> 
->  Documentation/admin-guide/module-signing.rst | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+CCP RSA implementation uses a hardware input buffer which size depends only
+on the current RSA key length, so it should return this key length in
+the max_size callback, too.
+This also matches what the kernel software RSA implementation does.
 
-I've applied both to the docs tree, thanks.
+Previously, the value returned from this callback was always the maximum
+RSA key size the CCP hardware supports.
+This resulted in this huge buffer being passed by rsa-pkcs1pad to CCP even
+for smaller key sizes and then in a buffer overflow when ccp_run_rsa_cmd()
+tried to copy this large input buffer into a RSA key length-sized hardware
+input buffer.
 
-jon
+Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
+Fixes: ceeec0afd684 ("crypto: ccp - Add support for RSA on the CCP")
+Cc: stable@vger.kernel.org
+---
+ drivers/crypto/ccp/ccp-crypto-rsa.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/crypto/ccp/ccp-crypto-rsa.c b/drivers/crypto/ccp/ccp-crypto-rsa.c
+index e6db8672d89c..05850dfd7940 100644
+--- a/drivers/crypto/ccp/ccp-crypto-rsa.c
++++ b/drivers/crypto/ccp/ccp-crypto-rsa.c
+@@ -60,10 +60,9 @@ static int ccp_rsa_complete(struct crypto_async_request *async_req, int ret)
+ 
+ static unsigned int ccp_rsa_maxsize(struct crypto_akcipher *tfm)
+ {
+-	if (ccp_version() > CCP_VERSION(3, 0))
+-		return CCP5_RSA_MAXMOD;
+-	else
+-		return CCP_RSA_MAXMOD;
++	struct ccp_ctx *ctx = akcipher_tfm_ctx(tfm);
++
++	return ctx->u.rsa.n_len;
+ }
+ 
+ static int ccp_rsa_crypt(struct akcipher_request *req, bool encrypt)
