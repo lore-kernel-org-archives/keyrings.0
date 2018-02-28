@@ -1,80 +1,253 @@
-From: Jin Qian <jinqian@android.com>
-Date: Tue, 06 Feb 2018 21:22:15 +0000
-Subject: [PATCH 1/1] KEYS: encrypted: fix buffer overread in valid_master_desc()
-Message-Id: <20180206212216.4845-1-jinqian@android.com>
+From: Nayna Jain <nayna@linux.vnet.ibm.com>
+Date: Wed, 28 Feb 2018 17:58:01 +0000
+Subject: [PATCH 1/3] certs: define a trusted platform keyring
+Message-Id: <20180228175521.10287-1-nayna@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180205200246.12253-1-jinqian@android.com>
-In-Reply-To: <20180205200246.12253-1-jinqian@android.com>
-To: linux-security-module@vger.kernel.org
+To: dhowells@redhat.com
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, Nayna Jain <nayna@linux.vnet.ibm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+The kernel can be supplied in SEEPROM or lockable flash memory
+in embedded devices. Some devices may not support secure boot,
+but the kernel is trusted because the image is stored in protected
+memory. That kernel may need to kexec additional kernels, it may
+be used as a bootloader, for example, or it may need to kexec a
+crashdump kernel. In such cases, it may want to verify the
+signature of the next kernel.
 
-commit 794b4bc292f5d31739d89c0202c54e7dc9bc3add upstream
+The kernel, however, cannot directly verify platform keys,
+and an administrator may therefore not want to trust them for
+arbitrary usage. In order to differentiate platform keys from
+other keys and provide the necessary separation of trust, the
+kernel needs an additional keyring to store platform keys.
 
-With the 'encrypted' key type it was possible for userspace to provide a
-data blob ending with a master key description shorter than expected,
-e.g. 'keyctl add encrypted desc "new x" @s'.  When validating such a
-master key description, validate_master_desc() could read beyond the end
-of the buffer.  Fix this by using strncmp() instead of memcmp().  [Also
-clean up the code to deduplicate some logic.]
+This patch implements a built-in list of certificates that are
+loaded onto the trusted platform keyring named ".platform_keys"
+to facilitate signature verification during kexec. Because the
+platform keyring are builtin, it cannot be updated from userspace.
 
-Cc: linux-stable <stable@vger.kernel.org> # 4.4.y
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
-Signed-off-by: Jin Qian <jinqian@google.com>
-Signed-off-by: Jin Qian <jinqian@android.com>
+This keyring can be enabled by setting CONFIG_PLATFORM_KEYRING.
+The platform certificate can be provided using
+CONFIG_PLATFORM_TRUSTED_KEYS.
+
+Signed-off-by: Nayna Jain <nayna@linux.vnet.ibm.com>
 ---
- security/keys/encrypted-keys/encrypted.c | 31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ certs/Kconfig               | 17 +++++++++++
+ certs/Makefile              | 13 ++++++++
+ certs/system_certificates.S | 20 ++++++++++++
+ certs/system_keyring.c      | 74 ++++++++++++++++++++++++++++++++++-----------
+ 4 files changed, 107 insertions(+), 17 deletions(-)
 
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index ce295c0c1da0..e44e844c8ec4 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -141,23 +141,22 @@ static int valid_ecryptfs_desc(const char *ecryptfs_desc)
-  */
- static int valid_master_desc(const char *new_desc, const char *orig_desc)
- {
--	if (!memcmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN)) {
--		if (strlen(new_desc) = KEY_TRUSTED_PREFIX_LEN)
--			goto out;
--		if (orig_desc)
--			if (memcmp(new_desc, orig_desc, KEY_TRUSTED_PREFIX_LEN))
--				goto out;
--	} else if (!memcmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN)) {
--		if (strlen(new_desc) = KEY_USER_PREFIX_LEN)
--			goto out;
--		if (orig_desc)
--			if (memcmp(new_desc, orig_desc, KEY_USER_PREFIX_LEN))
--				goto out;
--	} else
--		goto out;
-+	int prefix_len;
+diff --git a/certs/Kconfig b/certs/Kconfig
+index 5f7663df6e8e..608a4358a25e 100644
+--- a/certs/Kconfig
++++ b/certs/Kconfig
+@@ -83,4 +83,21 @@ config SYSTEM_BLACKLIST_HASH_LIST
+ 	  wrapper to incorporate the list into the kernel.  Each <hash> should
+ 	  be a string of hex digits.
+ 
++config PLATFORM_KEYRING
++        bool "Provide keyring for platform trusted keys"
++        depends on KEYS
++        depends on ASYMMETRIC_KEY_TYPE
++        help
++	  Provide a separate, distinct keyring for platform trusted keys, which
++	  the kernel automatically populates during initialization from values
++	  embedded during build, used for verifying the kexec'ed kernel image
++	  and, possibly, the initramfs signature.
 +
-+	if (!strncmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN))
-+		prefix_len = KEY_TRUSTED_PREFIX_LEN;
-+	else if (!strncmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN))
-+		prefix_len = KEY_USER_PREFIX_LEN;
-+	else
-+		return -EINVAL;
++config PLATFORM_TRUSTED_KEYS
++	string "Platform/Firmware trusted X.509 certs."
++	depends on PLATFORM_KEYRING
++	help
++	  Provide the filename of a PEM-formatted file containing the platform
++	  trusted X.509 certificates to be loaded in the platform keyring.
 +
-+	if (!new_desc[prefix_len])
-+		return -EINVAL;
+ endmenu
+diff --git a/certs/Makefile b/certs/Makefile
+index 5d0999b9e21b..680903725031 100644
+--- a/certs/Makefile
++++ b/certs/Makefile
+@@ -104,3 +104,16 @@ targets += signing_key.x509
+ $(obj)/signing_key.x509: scripts/extract-cert $(X509_DEP) FORCE
+ 	$(call if_changed,extract_certs,$(MODULE_SIG_KEY_SRCPREFIX)$(CONFIG_MODULE_SIG_KEY))
+ endif # CONFIG_MODULE_SIG
 +
-+	if (orig_desc && strncmp(new_desc, orig_desc, prefix_len))
-+		return -EINVAL;
++
++ifeq ($(CONFIG_PLATFORM_KEYRING),y)
++
++$(eval $(call config_filename,PLATFORM_TRUSTED_KEYS))
++
++# GCC doesn't include .incbin files in -MD generated dependencies (PR#66871)
++$(obj)/system_certificates.o: $(obj)/platform_certificate_list
++
++targets += platform_certificate_list
++$(obj)/platform_certificate_list: scripts/extract-cert $(PLATFORM_TRUSTED_KEYS_FILENAME) FORCE
++	$(call if_changed,extract_certs,$(CONFIG_PLATFORM_TRUSTED_KEYS))
++endif # CONFIG_PLATFORM_KEYRING
+diff --git a/certs/system_certificates.S b/certs/system_certificates.S
+index 3918ff7235ed..b0eb448ee617 100644
+--- a/certs/system_certificates.S
++++ b/certs/system_certificates.S
+@@ -14,6 +14,15 @@ __cert_list_start:
+ 	.incbin "certs/x509_certificate_list"
+ __cert_list_end:
+ 
++#ifdef CONFIG_PLATFORM_KEYRING
++	.align 8
++	.globl VMLINUX_SYMBOL(platform_certificate_list)
++VMLINUX_SYMBOL(platform_certificate_list):
++__platform_cert_list_start:
++	.incbin "certs/platform_certificate_list"
++__platform_cert_list_end:
++#endif /* CONFIG_PLATFORM_KEYRING */
++
+ #ifdef CONFIG_SYSTEM_EXTRA_CERTIFICATE
+ 	.globl VMLINUX_SYMBOL(system_extra_cert)
+ 	.size system_extra_cert, CONFIG_SYSTEM_EXTRA_CERTIFICATE_SIZE
+@@ -35,3 +44,14 @@ VMLINUX_SYMBOL(system_certificate_list_size):
+ #else
+ 	.long __cert_list_end - __cert_list_start
+ #endif
++
++#ifdef CONFIG_PLATFORM_KEYRING
++	.align 8
++	.globl VMLINUX_SYMBOL(platform_certificate_list_size)
++VMLINUX_SYMBOL(platform_certificate_list_size):
++#ifdef CONFIG_64BIT
++	.quad __platform_cert_list_end - __platform_cert_list_start
++#else
++	.long __platform_cert_list_end - __platform_cert_list_start
++#endif
++#endif /* CONFIG_PLATFORM_KEYRING */
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 6251d1b27f0c..1900466ed46c 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -19,14 +19,22 @@
+ #include <keys/system_keyring.h>
+ #include <crypto/pkcs7.h>
+ 
++#define BUILTIN_TRUSTED_KEYRING	0
++#define PLATFORM_KEYRING	1
++
+ static struct key *builtin_trusted_keys;
+ #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
+ static struct key *secondary_trusted_keys;
+ #endif
++#ifdef CONFIG_PLATFORM_KEYRING
++static struct key *platform_keys __ro_after_init;
++#endif
+ 
+ extern __initconst const u8 system_certificate_list[];
+ extern __initconst const unsigned long system_certificate_list_size;
+ 
++extern __initconst const u8 platform_certificate_list[];
++extern __initconst const unsigned long platform_certificate_list_size;
+ /**
+  * restrict_link_to_builtin_trusted - Restrict keyring addition by built in CA
+  *
+@@ -123,6 +131,18 @@ static __init int system_trusted_keyring_init(void)
+ 		panic("Can't link trusted keyrings\n");
+ #endif
+ 
++#ifdef CONFIG_PLATFORM_KEYRING
++	platform_keys +		keyring_alloc(".platform_keys",
++			      KUIDT_INIT(0), KGIDT_INIT(0), current_cred(),
++			      ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
++			       KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH),
++			      KEY_ALLOC_NOT_IN_QUOTA,
++			      NULL, NULL);
++	if (IS_ERR(platform_keys))
++		panic("Can't allocate platform keyring\n");
++#endif
 +
  	return 0;
--out:
--	return -EINVAL;
  }
  
+@@ -132,18 +152,19 @@ static __init int system_trusted_keyring_init(void)
+ device_initcall(system_trusted_keyring_init);
+ 
  /*
+- * Load the compiled-in list of X.509 certificates.
++ * Load the certificates to the keyring.
+  */
+-static __init int load_system_certificate_list(void)
++static __init int load_certificate_list(const u8 *p, unsigned long size,
++		struct key *keyring)
+ {
+ 	key_ref_t key;
+-	const u8 *p, *end;
++	const u8 *end;
+ 	size_t plen;
+ 
+-	pr_notice("Loading compiled-in X.509 certificates\n");
++	pr_notice("Loading compiled-in X.509 certificates to %s\n",
++			keyring->description);
+ 
+-	p = system_certificate_list;
+-	end = p + system_certificate_list_size;
++	end = p + size;
+ 	while (p < end) {
+ 		/* Each cert begins with an ASN.1 SEQUENCE tag and must be more
+ 		 * than 256 bytes in size.
+@@ -158,16 +179,17 @@ static __init int load_system_certificate_list(void)
+ 		if (plen > end - p)
+ 			goto dodgy_cert;
+ 
+-		key = key_create_or_update(make_key_ref(builtin_trusted_keys, 1),
+-					   "asymmetric",
+-					   NULL,
+-					   p,
+-					   plen,
+-					   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+-					   KEY_USR_VIEW | KEY_USR_READ),
+-					   KEY_ALLOC_NOT_IN_QUOTA |
+-					   KEY_ALLOC_BUILT_IN |
+-					   KEY_ALLOC_BYPASS_RESTRICTION);
++		key = key_create_or_update(make_key_ref(keyring, 1),
++				"asymmetric",
++				NULL,
++				p,
++				plen,
++				((KEY_POS_ALL & ~KEY_POS_SETATTR) |
++				 KEY_USR_VIEW | KEY_USR_READ),
++				KEY_ALLOC_NOT_IN_QUOTA |
++				KEY_ALLOC_BUILT_IN |
++				KEY_ALLOC_BYPASS_RESTRICTION);
++
+ 		if (IS_ERR(key)) {
+ 			pr_err("Problem loading in-kernel X.509 certificate (%ld)\n",
+ 			       PTR_ERR(key));
+@@ -185,7 +207,25 @@ static __init int load_system_certificate_list(void)
+ 	pr_err("Problem parsing in-kernel X.509 certificate list\n");
+ 	return 0;
+ }
+-late_initcall(load_system_certificate_list);
++
++/*
++ * Load the compiled-in list of system and platform X.509 certificates.
++ */
++static __init int load_compiled_certificate_list(void)
++{
++	/* Loading certs in builtin keyring */
++	load_certificate_list(system_certificate_list,
++			system_certificate_list_size, builtin_trusted_keys);
++
++#ifdef CONFIG_PLATFORM_KEYRING
++	/* Loading certs in platform keyring */
++	load_certificate_list(platform_certificate_list,
++			platform_certificate_list_size, platform_keys);
++#endif
++
++	return 0;
++}
++late_initcall(load_compiled_certificate_list);
+ 
+ #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+ 
 -- 
-2.16.0.rc1.238.g530d649a79-goog
+2.13.6
 
