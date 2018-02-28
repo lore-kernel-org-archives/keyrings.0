@@ -1,54 +1,75 @@
 From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 20 Feb 2018 22:34:32 +0000
-Subject: Re: [PATCH 4/9] X.509: fix BUG_ON() when hash algorithm is unsupported
-Message-Id: <20180220223432.GE70958@gmail.com>
+Date: Wed, 28 Feb 2018 19:05:10 +0000
+Subject: [PATCH v2] KEYS: DNS: limit the length of option strings
+Message-Id: <20180228190510.215801-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180207011012.5928-5-ebiggers3@gmail.com>
- <20180207011012.5928-1-ebiggers3@gmail.com>
- <16536.1518102450@warthog.procyon.org.uk>
-In-Reply-To: <16536.1518102450@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>, Paolo Valente <paolo.valente@linaro.org>, stable@vger.kernel.org
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: netdev@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>, Eric Biggers <ebiggers@google.com>
 
-Hi David,
+From: Eric Biggers <ebiggers@google.com>
 
-On Thu, Feb 08, 2018 at 03:07:30PM +0000, David Howells wrote:
-> Eric Biggers <ebiggers3@gmail.com> wrote:
-> 
-> > The X.509 parser mishandles the case where the certificate's signature's
-> > hash algorithm is not available in the crypto API.  In this case,
-> > x509_get_sig_params() doesn't allocate the cert->sig->digest buffer; this
-> > part seems to be intentional.
-> 
-> Well, yes, that would be intentional: we can't digest the digestibles without
-> access to a hash algorithm to do so and we can't allocate a digest buffer
-> without knowing how big it should be.
-> 
-> > Fix this by making public_key_verify_signature() return -ENOPKG if the
-> > hash buffer has not been allocated.
-> 
-> Hmmm...  I'm not sure that this is the right place to do this, since it
-> obscures a potential invalid argument within the kernel.
-> 
-> I'm more inclined that the users of X.509 certs should check
-> x509->unsupported_sig (pkcs7_verify_sig_chain() does this already partially).
-> 
+Adding a dns_resolver key whose payload contains a very long option name
+resulted in that string being printed in full.  This hit the WARN_ONCE()
+in set_precision() during the printk(), because printk() only supports a
+precision of up to 32767 bytes:
 
-Well, either way using BUG_ON() is inappropriate for recoverable problems where
-an error code can be returned.  In this case we can simply indicate that the
-signature verification failed.  Note that unprivileged users can reach this
-BUG_ON(), and it also appears to be reachable in at least 3 different ways...
-So it really has to be fixed.
+    precision 1000000 too large
+    WARNING: CPU: 0 PID: 752 at lib/vsprintf.c:2189 vsnprintf+0x4bc/0x5b0
 
-And considering that the ->unsupported_sig and ->unsupported_key flags are
-almost completely broken anyway, it sounds like there would have to be a second
-patchset to actually fix them.  So I'd rather you just took the more important
-fixes in patches 1-5 now as-is, and then a patchset to make certificates with
-unsupported algorithms be accepted in more cases can be done separately.
+Fix it by limiting option strings (combined name + value) to a much more
+reasonable 128 bytes.  The exact limit is arbitrary, but currently the
+only recognized option is formatted as "dnserror=%lu" which fits well
+within this limit.
 
-Thanks,
+Also ratelimit the printks.
 
-Eric
+Reproducer:
+
+    perl -e 'print "#", "A" x 1000000, "\x00"' | keyctl padd dns_resolver desc @s
+
+This bug was found using syzkaller.
+
+Reported-by: Mark Rutland <mark.rutland@arm.com>
+Fixes: 4a2d789267e0 ("DNS: If the DNS server returns an error, allow that to be cached [ver #2]")
+Cc: <stable@vger.kernel.org> # v2.6.36+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ net/dns_resolver/dns_key.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index e1d4d898a007..ed372d550137 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -91,9 +91,9 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+ 
+ 			next_opt = memchr(opt, '#', end - opt) ?: end;
+ 			opt_len = next_opt - opt;
+-			if (!opt_len) {
+-				printk(KERN_WARNING
+-				       "Empty option to dns_resolver key\n");
++			if (opt_len <= 0 || opt_len > 128) {
++				pr_warn_ratelimited("Invalid option length (%d) for dns_resolver key\n",
++						    opt_len);
+ 				return -EINVAL;
+ 			}
+ 
+@@ -127,10 +127,8 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+ 			}
+ 
+ 		bad_option_value:
+-			printk(KERN_WARNING
+-			       "Option '%*.*s' to dns_resolver key:"
+-			       " bad/missing value\n",
+-			       opt_nlen, opt_nlen, opt);
++			pr_warn_ratelimited("Option '%*.*s' to dns_resolver key: bad/missing value\n",
++					    opt_nlen, opt_nlen, opt);
+ 			return -EINVAL;
+ 		} while (opt = next_opt + 1, opt < end);
+ 	}
+-- 
+2.16.2.395.g2e18187dfd-goog
+
