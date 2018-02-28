@@ -1,7 +1,7 @@
 From: Tudor Ambarus <tudor.ambarus@microchip.com>
-Date: Wed, 28 Feb 2018 16:52:26 +0000
-Subject: [RFC PATCH 1/5] KEYS: Provide key type operations for kpp ops
-Message-Id: <20180228165230.18729-2-tudor.ambarus@microchip.com>
+Date: Wed, 28 Feb 2018 16:52:29 +0000
+Subject: [RFC PATCH 4/5] KEYS: add asymmetric kpp subtype
+Message-Id: <20180228165230.18729-5-tudor.ambarus@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,148 +10,237 @@ References: <20180228165230.18729-1-tudor.ambarus@microchip.com>
 In-Reply-To: <20180228165230.18729-1-tudor.ambarus@microchip.com>
 To: dhowells@redhat.com, keyrings@vger.kernel.org
 
-Provide three new operations in the key_type struct that can be used to
-provide access to kpp operations. These will be implemented for the
-asymmetric key type in a later patch and may refer to a key retained in
-RAM by the kernel or a key retained in crypto hardware.
+Includes generation of public key and computation of shared secret.
+This mostly involves offloading the calls to the crypto layer.
 
-    int (*asym_kpp_query)(const struct kernel_kpp_params *params,
-                          struct kernel_kpp_query *res);
-    int (*asym_kpp_gen_pubkey)(struct kernel_kpp_params *params,
-			       void *out);
-    int (*asym_kpp_compute_ss)(struct kernel_kpp_params *params,
-                               const void *in, void *out);
+The crypto tfm was allocated and the private key was set when parsing
+the private key. This permits us to use a single tfm whatever the
+number of operation calls.
+
+The private key, the corresponding public key, the pair's public key
+and the shared secret are the same as those in crypto/testmgr.h:
+
+    # echo -n 020028000200200024d121ebe5cf2d83f6621b6e43843aa38be086c32019da92505303e1c0eab882 \
+        | xxd -r -p | keyctl padd asymmetric private @s
+    # keyctl kpp_query 266205365
+    max_sized
+    kpp_gen_pubkey=y
+    kpp_compute_ss=y
+    # keyctl kpp_gen_pubkey 266205365 | xxd -p
+    1a7feb5200bd3c317db670c186a6c7c43bc55f6c6f583cf5b66382773324
+    a15f6aca436ff77eff023708cc405e7afd6a6a026e4187683877faa94443
+    2def09df
+    # echo -n ccb4da74b1473fea6c709e382dc7aab729b2470319abdd34bda82c93e1a474d96463f770202fa4e69f4a38ccc02c492fb132bbaf2261dacb6fdba9aafc7781f3 | xxd -r -p > /tmp/bpub
+    # keyctl kpp_compute_ss 266205365 0 /tmp/bpub | xxd -p
+    ea176f7e6e5726388bfb41ebbac86da5a872d1ffc9473daa58439f340f8c
+    f3c9
 
 Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
 ---
- Documentation/security/keys/core.rst | 54 ++++++++++++++++++++++++++++++++++++
- include/linux/key-type.h             |  7 +++++
- include/linux/keyctl.h               | 11 ++++++++
- include/uapi/linux/keyctl.h          |  3 ++
- 4 files changed, 75 insertions(+)
+ crypto/asymmetric_keys/Kconfig    |   7 ++
+ crypto/asymmetric_keys/Makefile   |   1 +
+ crypto/asymmetric_keys/asym_kpp.c | 142 ++++++++++++++++++++++++++++++++++++++
+ include/crypto/asym_kpp_subtype.h |  12 ++++
+ 4 files changed, 162 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/asym_kpp.c
+ create mode 100644 include/crypto/asym_kpp_subtype.h
 
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index d224fd0..9b69a1f 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -1688,6 +1688,60 @@ The structure has a number of fields, some of which are mandatory:
-      If successful, 0 will be returned.  If the key doesn't support this,
-      EOPNOTSUPP will be returned.
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 66a7dad..1884570 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -21,6 +21,13 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ 	  appropriate hash algorithms (such as SHA-1) must be available.
+ 	  ENOPKG will be reported if the requisite algorithm is unavailable.
  
-+  *  ``int (*asym_kpp_gen_pubkey)(struct kernel_kpp_params *params, void *out);``
-+  *  ``int (*asym_kpp_compute_ss)(struct kernel_kpp_params *params, const void *in, void *out);``
++config ASYMMETRIC_KPP_SUBTYPE
++	tristate "Asymmetric Key Protocol Primitives (KPP) subtype"
++	select CRYPTO_ECDH
++	help
++	  This option provides support for KPP handling.
++	  ENOPKG will be reported if the requisite algorithm is unavailable.
 +
-+     These methods are optional. If provided the first allows to generate the
-+     public key pair corresponding to the private key. The second method allows
-+     to generate a shared secret by  combining the private key and the other
-+     party's public key.
-+
-+     In all cases, the following information is provided in the params block::
-+
-+       struct kernel_kpp_query {
-+               struct key      *key;
-+               __u32           in_len;         /* Input data size */
-+               __u32           out_len;        /* Output buffer size */
-+       }
-+
-+     This includes the key to be used and the sizes in bytes of the input and
-+     output buffers.
-+
-+     For a given operation, the in and out buffers are used as follows::
-+
-+       Operation ID            in,in_len            out,out_len
-+       ============ ==========  ============
-+       KEYCTL_KPP_GEN_PUBKEY   -                    Corresponding public key
-+       KEYCTL_KPP_COMPUTE_SS   Pair's public key    Shared Secret
-+
-+     If successful, the public key generation and the shared secret computation
-+     will return the amount of data written into the output buffer.
-+
-+  *  ``int (*asym_kpp_query)(const struct kernel_kpp_params *params, struct kernel_kpp_query *res);``
-+
-+     This method is optional. If provided it allows information about the
-+     asymmetric KPP (Key Protocol Primitives) key held in the key to be
-+     determined.
-+
-+     The ``params`` block will contain the key to be queried. ``in_len`` and
-+     ``out_len`` are unused.
-+
-+     If successful, the following information is filled in::
-+
-+       struct kernel_kpp_query {
-+               __u32           supported_ops;  /* Which ops are supported */
-+               __u32           max_size;       /* Maximum size of the output buffer */
-+       };
-+
-+     The supported_ops field will contain a bitmask indicating what operations
-+     are supported by the key, including public key generation and shared
-+     secret computation. The following constants are defined for this::
-+
-+       KEYCTL_SUPPORTS_{GEN_PUBKEY, COMPUTE_SS};
-+
-+     If successful, 0 is returned.  If the key is not an asymmetric kpp key,
-+     EOPNOTSUPP is returned.
-+
+ config X509_CERTIFICATE_PARSER
+ 	tristate "X.509 certificate parser"
+ 	depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index a67ad83..d884cf1 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -11,6 +11,7 @@ asymmetric_keys-y := \
+ 	signature.o
  
- Request-Key Callback Service
- ==============
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index bc9af55..d354b6b 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -19,6 +19,8 @@
+ obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
++obj-$(CONFIG_ASYMMETRIC_KPP_SUBTYPE) += asym_kpp.o
  
- struct kernel_pkey_query;
- struct kernel_pkey_params;
-+struct kernel_kpp_query;
-+struct kernel_kpp_params;
- 
- /*
-  * key under-construction record
-@@ -165,6 +167,11 @@ struct key_type {
- 			   const void *in, void *out);
- 	int (*asym_verify_signature)(struct kernel_pkey_params *params,
- 				     const void *in, const void *in2);
-+	int (*asym_kpp_query)(const struct kernel_kpp_params *params,
-+			      struct kernel_kpp_query *res);
-+	int (*asym_kpp_gen_pubkey)(struct kernel_kpp_params *params, void *out);
-+	int (*asym_kpp_compute_ss)(struct kernel_kpp_params *params,
-+				   const void *in, void *out);
- 
- 	/* internal fields */
- 	struct list_head	link;		/* link in types list */
-diff --git a/include/linux/keyctl.h b/include/linux/keyctl.h
-index e89b4a4..8f464ea 100644
---- a/include/linux/keyctl.h
-+++ b/include/linux/keyctl.h
-@@ -43,4 +43,15 @@ struct kernel_pkey_params {
- 	enum kernel_pkey_operation op : 8;
- };
- 
-+struct kernel_kpp_query {
-+	__u32		supported_ops;	/* Which ops are supported */
-+	__u32           max_size;	/* Maximum size of the output buffer */
+ #
+ # X.509 Certificate handling
+diff --git a/crypto/asymmetric_keys/asym_kpp.c b/crypto/asymmetric_keys/asym_kpp.c
+new file mode 100644
+index 0000000..77e085f
+--- /dev/null
++++ b/crypto/asymmetric_keys/asym_kpp.c
+@@ -0,0 +1,142 @@
++// SPDX-License-Identifier: GPL-2.0
++#define pr_fmt(fmt) "ASYM-KPP: "fmt
++#include <linux/module.h>
++#include <linux/export.h>
++#include <linux/kernel.h>
++#include <linux/seq_file.h>
++#include <linux/scatterlist.h>
++#include <keys/asymmetric-subtype.h>
++#include <crypto/asym_kpp_subtype.h>
++#include <crypto/kpp.h>
++
++/*
++ * Provide a part of a description of the key for /proc/keys.
++ */
++static void asym_kpp_describe(const struct key *asymmetric_key,
++			      struct seq_file *m)
++{
++	struct asym_kpp_ctx *ctx = asymmetric_key->payload.data[asym_crypto];
++
++	if (ctx)
++		seq_printf(m, "%s", ctx->alg_name);
++}
++
++static void free_kpp_ctx(struct asym_kpp_ctx *ctx)
++{
++	if (ctx) {
++		if (ctx->tfm)
++			crypto_free_kpp(ctx->tfm);
++		kfree(ctx);
++	}
++}
++
++static void asym_kpp_destroy(void *payload0, void *payload3)
++{
++	free_kpp_ctx(payload0);
++}
++
++/*
++ * Query information about a key.
++ */
++static int software_kpp_query(const struct kernel_kpp_params *params,
++			      struct kernel_kpp_query *res)
++{
++	struct asym_kpp_ctx *ctx = params->key->payload.data[asym_crypto];
++
++	res->max_size = crypto_kpp_maxsize(ctx->tfm);
++	res->supported_ops = KEYCTL_KPP_GEN_PUBKEY | KEYCTL_KPP_COMPUTE_SS;
++
++	pr_devel("<=%s() = %d\n", __func__, 0);
++	return 0;
++}
++
++/*
++ * Generate public key.
++ */
++static int software_kpp_gen_pubkey(struct kernel_kpp_params *params, void *out)
++{
++	struct crypto_wait cwait;
++	const struct asym_kpp_ctx *ctx = params->key->payload.data[asym_crypto];
++	struct kpp_request *req;
++	struct scatterlist out_sg;
++	int ret;
++
++	pr_devel("=>%s()\n", __func__);
++
++	req = kpp_request_alloc(ctx->tfm, GFP_KERNEL);
++	if (!req)
++		return -ENOMEM;
++
++	kpp_request_set_input(req, NULL, 0);
++	sg_init_one(&out_sg, out, params->out_len);
++	kpp_request_set_output(req, &out_sg, params->out_len);
++	crypto_init_wait(&cwait);
++	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				 CRYPTO_TFM_REQ_MAY_SLEEP,
++				 crypto_req_done, &cwait);
++
++	ret = crypto_wait_req(crypto_kpp_generate_public_key(req), &cwait);
++	if (ret = 0)
++		ret = req->dst_len;
++
++	kpp_request_free(req);
++
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
++}
++
++/*
++ * Compute shared secret.
++ */
++static int software_kpp_compute_ss(struct kernel_kpp_params *params,
++				   const void *in, void *out)
++{
++	struct crypto_wait cwait;
++	const struct asym_kpp_ctx *ctx = params->key->payload.data[asym_crypto];
++	struct kpp_request *req;
++	struct scatterlist in_sg, out_sg;
++	int ret;
++
++	pr_devel("=>%s()\n", __func__);
++
++	req = kpp_request_alloc(ctx->tfm, GFP_KERNEL);
++	if (!req)
++		return -ENOMEM;
++
++	sg_init_one(&in_sg, in, params->in_len);
++	kpp_request_set_input(req, &in_sg, params->in_len);
++	sg_init_one(&out_sg, out, params->out_len);
++	kpp_request_set_output(req, &out_sg, params->out_len);
++	crypto_init_wait(&cwait);
++	kpp_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				 CRYPTO_TFM_REQ_MAY_SLEEP,
++				 crypto_req_done, &cwait);
++
++	ret = crypto_wait_req(crypto_kpp_compute_shared_secret(req), &cwait);
++	if (ret = 0)
++		ret = req->dst_len;
++
++	kpp_request_free(req);
++
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
++}
++
++/*
++ * KPP algorithm asymmetric key subtype
++ */
++struct asymmetric_key_subtype asym_kpp_subtype = {
++	.owner			= THIS_MODULE,
++	.name			= "asym_kpp",
++	.name_len		= sizeof("asym_kpp") - 1,
++	.describe		= asym_kpp_describe,
++	.destroy		= asym_kpp_destroy,
++	.kpp_query		= software_kpp_query,
++	.kpp_gen_pubkey		= software_kpp_gen_pubkey,
++	.kpp_compute_ss		= software_kpp_compute_ss,
++};
++EXPORT_SYMBOL_GPL(asym_kpp_subtype);
++
++MODULE_DESCRIPTION("In-software asymmetric KPP subtype");
++MODULE_AUTHOR("Tudor Ambarus <tudor.ambarus@microchip.com>");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/crypto/asym_kpp_subtype.h b/include/crypto/asym_kpp_subtype.h
+new file mode 100644
+index 0000000..abb7569
+--- /dev/null
++++ b/include/crypto/asym_kpp_subtype.h
+@@ -0,0 +1,12 @@
++// SPDX-License-Identifier: GPL-2.0
++#ifndef _LINUX_ASYM_KPP_SUBTYPE_H
++#define _LINUX_ASYM_KPP_SUBTYPE_H
++
++#include <linux/keyctl.h>
++
++struct asym_kpp_ctx {
++	struct crypto_kpp *tfm;
++	const char *alg_name;
 +};
 +
-+struct kernel_kpp_params {
-+	struct key	*key;
-+	__u32		in_len;         /* Input data size */
-+	__u32		out_len;	/* Output buffer size */
-+};
-+
- #endif /* __LINUX_KEYCTL_H */
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index d75d208..98b79f8 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -107,4 +107,7 @@ struct keyctl_pkey_params {
- 	__u32		__spare[7];
- };
- 
-+#define KEYCTL_SUPPORTS_GEN_PUBKEY	0x0f
-+#define KEYCTL_SUPPORTS_COMPUTE_SS	0x10
-+
- #endif /*  _LINUX_KEYCTL_H */
++#endif /* _LINUX_ASYM_KPP_SUBTYPE_H */
 -- 
 2.9.4
 
