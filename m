@@ -1,58 +1,64 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 22 Feb 2018 16:20:55 +0000
-Subject: [PATCH 4/6] X.509: fix BUG_ON() when hash algorithm is unsupported
-Message-Id: <151931645546.27713.15009973131656269423.stgit@warthog.procyon.org.uk>
+From: Nayna Jain <nayna@linux.vnet.ibm.com>
+Date: Wed, 28 Feb 2018 17:57:44 +0000
+Subject: [PATCH 2/3] keys: export find_keyring_by_name()
+Message-Id: <20180228175521.10287-2-nayna@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
-In-Reply-To: <151931642737.27713.5082532296556836948.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <20180228175521.10287-1-nayna@linux.vnet.ibm.com>
+In-Reply-To: <20180228175521.10287-1-nayna@linux.vnet.ibm.com>
+To: dhowells@redhat.com
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, Nayna Jain <nayna@linux.vnet.ibm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+This patch exports the function find_keyring_by_name()
+to be used by other subsystems.
 
-The X.509 parser mishandles the case where the certificate's signature's
-hash algorithm is not available in the crypto API.  In this case,
-x509_get_sig_params() doesn't allocate the cert->sig->digest buffer;
-this part seems to be intentional.  However,
-public_key_verify_signature() is still called via
-x509_check_for_self_signed(), which triggers the 'BUG_ON(!sig->digest)'.
-
-Fix this by making public_key_verify_signature() return -ENOPKG if the
-hash buffer has not been allocated.
-
-Reproducer when all the CONFIG_CRYPTO_SHA512* options are disabled:
-
-    openssl req -new -sha512 -x509 -batch -nodes -outform der \
-        | keyctl padd asymmetric desc @s
-
-Fixes: 6c2dc5ae4ab7 ("X.509: Extract signature digest and make self-signed cert checks earlier")
-Reported-by: Paolo Valente <paolo.valente@linaro.org>
-Cc: Paolo Valente <paolo.valente@linaro.org>
-Cc: <stable@vger.kernel.org> # v4.7+
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Nayna Jain <nayna@linux.vnet.ibm.com>
 ---
+ include/linux/key.h      | 2 ++
+ security/keys/internal.h | 2 --
+ security/keys/keyring.c  | 1 +
+ 3 files changed, 3 insertions(+), 2 deletions(-)
 
- crypto/asymmetric_keys/public_key.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index de996586762a..e929fe1e4106 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -79,9 +79,11 @@ int public_key_verify_signature(const struct public_key *pkey,
+diff --git a/include/linux/key.h b/include/linux/key.h
+index e58ee10f6e58..c8d332d4103c 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -346,6 +346,8 @@ static inline key_serial_t key_serial(const struct key *key)
  
- 	BUG_ON(!pkey);
- 	BUG_ON(!sig);
--	BUG_ON(!sig->digest);
- 	BUG_ON(!sig->s);
+ extern void key_set_timeout(struct key *, unsigned);
  
-+	if (!sig->digest)
-+		return -ENOPKG;
++extern struct key *find_keyring_by_name(const char *name, bool uid_keyring);
 +
- 	alg_name = sig->pkey_algo;
- 	if (strcmp(sig->pkey_algo, "rsa") = 0) {
- 		/* The data wangled by the RSA algorithm is typically padded
+ /*
+  * The permissions required on a key that we're looking up.
+  */
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 9f8208dc0e55..8aa8d347a1ab 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -141,8 +141,6 @@ extern key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+ extern key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx);
+ extern key_ref_t search_process_keyrings(struct keyring_search_context *ctx);
+ 
+-extern struct key *find_keyring_by_name(const char *name, bool uid_keyring);
+-
+ extern int install_user_keyrings(void);
+ extern int install_thread_keyring_to_cred(struct cred *);
+ extern int install_process_keyring_to_cred(struct cred *);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index d0bccebbd3b5..0fd230534685 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -1159,6 +1159,7 @@ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
+ 	read_unlock(&keyring_name_lock);
+ 	return keyring;
+ }
++EXPORT_SYMBOL(find_keyring_by_name);
+ 
+ static int keyring_detect_cycle_iterator(const void *object,
+ 					 void *iterator_data)
+-- 
+2.13.6
 
