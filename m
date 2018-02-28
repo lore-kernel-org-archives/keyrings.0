@@ -1,35 +1,37 @@
-From: Philipp Hahn <hahn@univention.de>
-Date: Mon, 19 Feb 2018 09:31:58 +0000
-Subject: [PATCH] doc: module-signing.rst: Fix reST formatting
-Message-Id: <c72b57a4846da7c2c711970eb144e004adf49626.1519032581.git.hahn@univention.de>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Wed, 28 Feb 2018 19:58:13 +0000
+Subject: [PATCH 0/5] Migrate all TPM 2.0 commands to use struct tpm_buf
+Message-Id: <20180228195819.22231-1-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jason Gunthorpe <jgg@ziepe.ca>, open list <linux-kernel@vger.kernel.org>
 
-Move the _if_ outside the verbatim string.
+In order to make struct tpm_buf the first class object for constructing TPM
+commands, this patch set migrates all TPM 2.0 commands to use it. The next
+step after this is to migrate TPM 1.2 commands in a subsequent patch set.
+Finally, tpm_transmit_cmd() can take simply struct tpm_buf as its argument
+and this interface can be exported to be used by the kernel keyring.
 
-Make key ring name as a verbatim string.
----
- Documentation/admin-guide/module-signing.rst | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The ultimate goal of this work is to make constructing TPM commands inside
+the kernel simple and robust.
 
-diff --git a/Documentation/admin-guide/module-signing.rst b/Documentation/admin-guide/module-signing.rst
-index 62e389fdcb86..f8b584179cff 100644
---- a/Documentation/admin-guide/module-signing.rst
-+++ b/Documentation/admin-guide/module-signing.rst
-@@ -204,8 +204,8 @@ e.g.::
- 	keyctl padd asymmetric "" 0x223c7853 <my_public_key.x509
- 
- Note, however, that the kernel will only permit keys to be added to
--``.builtin_trusted_keys _if_`` the new key's X.509 wrapper is validly signed by a key
--that is already resident in the .builtin_trusted_keys at the time the key was added.
-+``.builtin_trusted_keys`` **if** the new key's X.509 wrapper is validly signed by a key
-+that is already resident in the ``.builtin_trusted_keys`` at the time the key was added.
- 
- 
- ============
+Alexander Steffen (1):
+  tpm: Trigger only missing TPM 2.0 self tests
+
+Jarkko Sakkinen (4):
+  tpm: migrate tpm2_shutdown() to use struct tpm_buf
+  tpm: migrate tpm2_probe() to use struct tpm_buf
+  tpm: migrate tpm2_get_tpm_pt() to use struct tpm_buf
+  tpm: migrate tpm2_get_random() to use struct tpm_buf
+
+ drivers/char/tpm/tpm-interface.c |  20 ++-
+ drivers/char/tpm/tpm.h           |   3 +-
+ drivers/char/tpm/tpm2-cmd.c      | 266 ++++++++++++++-------------------------
+ 3 files changed, 112 insertions(+), 177 deletions(-)
+
 -- 
-2.11.0
+2.15.1
 
