@@ -1,114 +1,77 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 05 Mar 2018 16:56:11 +0000
-Subject: [PATCH v3 2/5] tpm: migrate tpm2_shutdown() to use struct tpm_buf
-Message-Id: <20180305165614.5469-3-jarkko.sakkinen@linux.intel.com>
+From: Gary R Hook <gary.hook@amd.com>
+Date: Thu, 01 Mar 2018 00:35:07 +0000
+Subject: Re: [PATCH 3/3] crypto: ccp - protect RSA implementation from too large input data
+Message-Id: <49db7800-b052-79e8-8d8d-24ddc6382e48@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
+References: <4af6c02f-db3f-3d82-9685-367913c684ff@maciej.szmigiero.name>
+In-Reply-To: <4af6c02f-db3f-3d82-9685-367913c684ff@maciej.szmigiero.name>
+To: "Maciej S. Szmigiero" <mail@maciej.szmigiero.name>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>
+Cc: David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-In order to make struct tpm_buf the first class object for constructing TPM
-commands, migrate tpm2_shutdown() to use it. In addition, removed the klog
-entry when tpm_transmit_cmd() fails because tpm_tansmit_cmd() already
-prints an error message.
+On 02/24/2018 10:03 AM, Maciej S. Szmigiero wrote:
+> CCP RSA implementation uses a hardware input buffer which size depends only
+> on the current RSA key length. Key modulus and a message to be processed
+> is then copied to this buffer based on their own lengths.
+> 
+> Since the price for providing too long input data is a buffer overflow and
+> there already has been a case when this has happened let's better reject
+> such oversized input data and log an error message in this case so we know
+> what is going on.
+> 
+> Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
+> ---
+>   drivers/crypto/ccp/ccp-ops.c | 24 ++++++++++++++++++++----
+>   1 file changed, 20 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/crypto/ccp/ccp-ops.c b/drivers/crypto/ccp/ccp-ops.c
+> index 406b95329b3d..517aeee30abf 100644
+> --- a/drivers/crypto/ccp/ccp-ops.c
+> +++ b/drivers/crypto/ccp/ccp-ops.c
+> @@ -1770,10 +1770,6 @@ static int ccp_run_rsa_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
+>   	if (!rsa->exp || !rsa->mod || !rsa->src || !rsa->dst)
+>   		return -EINVAL;
+>   
+> -	memset(&op, 0, sizeof(op));
+> -	op.cmd_q = cmd_q;
+> -	op.jobid = CCP_NEW_JOBID(cmd_q->ccp);
+> -
+>   	/* The RSA modulus must precede the message being acted upon, so
+>   	 * it must be copied to a DMA area where the message and the
+>   	 * modulus can be concatenated.  Therefore the input buffer
+> @@ -1785,6 +1781,26 @@ static int ccp_run_rsa_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
+>   	o_len = 32 * ((rsa->key_size + 255) / 256);
+>   	i_len = o_len * 2;
+>   
+> +	if (rsa->mod_len > o_len) {
+> +		dev_err(cmd_q->ccp->dev,
+> +			"RSA modulus of %u bytes too large for key size of %u bits\n",
+> +			(unsigned int)rsa->mod_len,
+> +			(unsigned int)rsa->key_size);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (rsa->src_len > o_len) {
+> +		dev_err(cmd_q->ccp->dev,
+> +			"RSA data of %u bytes too large for key size of %u bits\n",
+> +			(unsigned int)rsa->src_len,
+> +			(unsigned int)rsa->key_size);
+> +		return -EINVAL;
+> +	}
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- drivers/char/tpm/tpm2-cmd.c | 44 ++++++++++++--------------------------------
- 1 file changed, 12 insertions(+), 32 deletions(-)
+We've talked about this, and we believe that a more central fix is 
+warranted. I intend to post another patch tomorrow that should address
+this problem.
 
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index 89a5397b18d2..abe6ef4a7a0b 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -27,10 +27,6 @@ enum tpm2_session_attributes {
- 	TPM2_SA_CONTINUE_SESSION	= BIT(0),
- };
- 
--struct tpm2_startup_in {
--	__be16	startup_type;
--} __packed;
--
- struct tpm2_get_tpm_pt_in {
- 	__be32	cap_id;
- 	__be32	property_id;
-@@ -55,7 +51,6 @@ struct tpm2_get_random_out {
- } __packed;
- 
- union tpm2_cmd_params {
--	struct	tpm2_startup_in		startup_in;
- 	struct	tpm2_get_tpm_pt_in	get_tpm_pt_in;
- 	struct	tpm2_get_tpm_pt_out	get_tpm_pt_out;
- 	struct	tpm2_get_random_in	getrandom_in;
-@@ -410,11 +405,8 @@ void tpm2_flush_context_cmd(struct tpm_chip *chip, u32 handle,
- 	int rc;
- 
- 	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_FLUSH_CONTEXT);
--	if (rc) {
--		dev_warn(&chip->dev, "0x%08x was not flushed, out of memory\n",
--			 handle);
-+	if (rc)
- 		return;
--	}
- 
- 	tpm_buf_append_u32(&buf, handle);
- 
-@@ -760,40 +752,28 @@ ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,  u32 *value,
- }
- EXPORT_SYMBOL_GPL(tpm2_get_tpm_pt);
- 
--#define TPM2_SHUTDOWN_IN_SIZE \
--	(sizeof(struct tpm_input_header) + \
--	 sizeof(struct tpm2_startup_in))
--
--static const struct tpm_input_header tpm2_shutdown_header = {
--	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
--	.length = cpu_to_be32(TPM2_SHUTDOWN_IN_SIZE),
--	.ordinal = cpu_to_be32(TPM2_CC_SHUTDOWN)
--};
--
- /**
-  * tpm2_shutdown() - send shutdown command to the TPM chip
-  *
-+ * In places where shutdown command is sent there's no much we can do except
-+ * print the error code on a system failure.
-+ *
-  * @chip:		TPM chip to use.
-  * @shutdown_type:	shutdown type. The value is either
-  *			TPM_SU_CLEAR or TPM_SU_STATE.
-  */
- void tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type)
- {
--	struct tpm2_cmd cmd;
-+	struct tpm_buf buf;
- 	int rc;
- 
--	cmd.header.in = tpm2_shutdown_header;
--	cmd.params.startup_in.startup_type = cpu_to_be16(shutdown_type);
--
--	rc = tpm_transmit_cmd(chip, NULL, &cmd, sizeof(cmd), 0, 0,
--			      "stopping the TPM");
--
--	/* In places where shutdown command is sent there's no much we can do
--	 * except print the error code on a system failure.
--	 */
--	if (rc < 0 && rc != -EPIPE)
--		dev_warn(&chip->dev, "transmit returned %d while stopping the TPM",
--			 rc);
-+	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_SHUTDOWN);
-+	if (rc)
-+		return;
-+	tpm_buf_append_u16(&buf, shutdown_type);
-+	tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE, 0, 0,
-+			 "stopping the TPM");
-+	tpm_buf_destroy(&buf);
- }
- 
- /*
--- 
-2.15.1
+> +
+> +	memset(&op, 0, sizeof(op));
+> +	op.cmd_q = cmd_q;
+> +	op.jobid = CCP_NEW_JOBID(cmd_q->ccp);
+> +
+>   	sb_count = 0;
+>   	if (cmd_q->ccp->vdata->version < CCP_VERSION(5, 0)) {
+>   		/* sb_count is the number of storage block slots required
+> 
 
