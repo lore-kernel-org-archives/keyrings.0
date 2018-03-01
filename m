@@ -1,130 +1,60 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Wed, 21 Mar 2018 23:17:45 +0000
-Subject: Re: [PATCH v6 06/12] integrity: Introduce asymmetric_sig_has_known_key()
-Message-Id: <1521674265.3848.220.camel@linux.vnet.ibm.com>
+From: Gary R Hook <gary.hook@amd.com>
+Date: Thu, 01 Mar 2018 00:34:09 +0000
+Subject: Re: [PATCH 2/3] crypto: ccp - return an actual key size from RSA max_size callback
+Message-Id: <510c8c85-8619-5fe6-9275-1549a73bd545@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
-         <20180316203837.10174-7-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20180316203837.10174-7-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <51c265e4-6153-3e5e-316a-ebef059ac36a@maciej.szmigiero.name>
+In-Reply-To: <51c265e4-6153-3e5e-316a-ebef059ac36a@maciej.szmigiero.name>
+To: "Maciej S. Szmigiero" <mail@maciej.szmigiero.name>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>
+Cc: David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, 2018-03-16 at 17:38 -0300, Thiago Jung Bauermann wrote:
-> IMA will only look for a modsig if the xattr sig references a key which is
-> not in the expected kernel keyring. To that end, introduce
-> asymmetric_sig_has_known_key().
+On 02/24/2018 10:03 AM, Maciej S. Szmigiero wrote:
+> rsa-pkcs1pad uses a value returned from a RSA implementation max_size
+> callback as a size of an input buffer passed to the RSA implementation for
+> encrypt and sign operations.
 > 
-> The logic of extracting the key used in the xattr sig is factored out from
-> asymmetric_verify() so that it can be used by the new function.
+> CCP RSA implementation uses a hardware input buffer which size depends only
+> on the current RSA key length, so it should return this key length in
+> the max_size callback, too.
+> This also matches what the kernel software RSA implementation does.
 > 
-> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+> Previously, the value returned from this callback was always the maximum
+> RSA key size the CCP hardware supports.
+> This resulted in this huge buffer being passed by rsa-pkcs1pad to CCP even
+> for smaller key sizes and then in a buffer overflow when ccp_run_rsa_cmd()
+> tried to copy this large input buffer into a RSA key length-sized hardware
+> input buffer.
+> 
+> Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Acked-by: Gary R Hook <gary.hook@amd.com>
 
+> Fixes: ceeec0afd684 ("crypto: ccp - Add support for RSA on the CCP")
+> Cc: stable@vger.kernel.org
 > ---
->  security/integrity/digsig_asymmetric.c | 44 +++++++++++++++++++++++++---------
->  security/integrity/integrity.h         |  8 +++++++
->  2 files changed, 41 insertions(+), 11 deletions(-)
+>   drivers/crypto/ccp/ccp-crypto-rsa.c | 7 +++----
+>   1 file changed, 3 insertions(+), 4 deletions(-)
 > 
-> diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-> index ab6a029062a1..241647970c19 100644
-> --- a/security/integrity/digsig_asymmetric.c
-> +++ b/security/integrity/digsig_asymmetric.c
-> @@ -79,26 +79,48 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
->  	return key;
->  }
-> 
-> -int asymmetric_verify(struct key *keyring, const char *sig,
-> -		      int siglen, const char *data, int datalen)
-> +static struct key *asymmetric_key_from_sig(struct key *keyring, const char *sig,
-> +					   int siglen)
->  {
-> -	struct public_key_signature pks;
-> -	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
-> -	struct key *key;
-> -	int ret = -ENOMEM;
-> +	const struct signature_v2_hdr *hdr = (struct signature_v2_hdr *) sig;
-> 
->  	if (siglen <= sizeof(*hdr))
-> -		return -EBADMSG;
-> +		return ERR_PTR(-EBADMSG);
-> 
->  	siglen -= sizeof(*hdr);
-> 
->  	if (siglen != be16_to_cpu(hdr->sig_size))
-> -		return -EBADMSG;
-> +		return ERR_PTR(-EBADMSG);
-> 
->  	if (hdr->hash_algo >= HASH_ALGO__LAST)
-> -		return -ENOPKG;
-> +		return ERR_PTR(-ENOPKG);
+> diff --git a/drivers/crypto/ccp/ccp-crypto-rsa.c b/drivers/crypto/ccp/ccp-crypto-rsa.c
+> index e6db8672d89c..05850dfd7940 100644
+> --- a/drivers/crypto/ccp/ccp-crypto-rsa.c
+> +++ b/drivers/crypto/ccp/ccp-crypto-rsa.c
+> @@ -60,10 +60,9 @@ static int ccp_rsa_complete(struct crypto_async_request *async_req, int ret)
+>   
+>   static unsigned int ccp_rsa_maxsize(struct crypto_akcipher *tfm)
+>   {
+> -	if (ccp_version() > CCP_VERSION(3, 0))
+> -		return CCP5_RSA_MAXMOD;
+> -	else
+> -		return CCP_RSA_MAXMOD;
+> +	struct ccp_ctx *ctx = akcipher_tfm_ctx(tfm);
 > +
-> +	return request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
-> +}
-> +
-> +bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
-> +				  int siglen)
-> +{
-> +	struct key *key;
-> +
-> +	key = asymmetric_key_from_sig(keyring, sig, siglen);
-> +	if (IS_ERR_OR_NULL(key))
-> +		return false;
-> +
-> +	key_put(key);
-> +
-> +	return true;
-> +}
-> +
-> +int asymmetric_verify(struct key *keyring, const char *sig,
-> +		      int siglen, const char *data, int datalen)
-> +{
-> +	struct public_key_signature pks;
-> +	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
-> +	struct key *key;
-> +	int ret = -ENOMEM;
-> 
-> -	key = request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
-> +	key = asymmetric_key_from_sig(keyring, sig, siglen);
->  	if (IS_ERR(key))
->  		return PTR_ERR(key);
-> 
-> @@ -109,7 +131,7 @@ int asymmetric_verify(struct key *keyring, const char *sig,
->  	pks.digest = (u8 *)data;
->  	pks.digest_size = datalen;
->  	pks.s = hdr->sig;
-> -	pks.s_size = siglen;
-> +	pks.s_size = siglen - sizeof(*hdr);
->  	ret = verify_signature(key, &pks);
->  	key_put(key);
->  	pr_debug("%s() = %d\n", __func__, ret);
-> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-> index 2d245f44ca26..4c381b992e11 100644
-> --- a/security/integrity/integrity.h
-> +++ b/security/integrity/integrity.h
-> @@ -179,12 +179,20 @@ static inline int integrity_init_keyring(const unsigned int id)
->  #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
->  int asymmetric_verify(struct key *keyring, const char *sig,
->  		      int siglen, const char *data, int datalen);
-> +bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
-> +				  int siglen);
->  #else
->  static inline int asymmetric_verify(struct key *keyring, const char *sig,
->  				    int siglen, const char *data, int datalen)
->  {
->  	return -EOPNOTSUPP;
->  }
-> +
-> +static inline bool asymmetric_sig_has_known_key(struct key *keyring,
-> +						const char *sig, int siglen)
-> +{
-> +	return false;
-> +}
->  #endif
-> 
->  #ifdef CONFIG_IMA_LOAD_X509
+> +	return ctx->u.rsa.n_len;
+>   }
+>   
+>   static int ccp_rsa_crypt(struct akcipher_request *req, bool encrypt)
 > 
 
