@@ -1,37 +1,38 @@
-From: Nick Desaulniers <nick.desaulniers@gmail.com>
-Date: Thu, 15 Mar 2018 04:16:44 +0000
-Subject: Re: [PATCH] certs/blacklist: fix const confusion
-Message-Id: <CAH7mPvjoaDiJmnj9CPNaKD8R=P3+0ESMetxMCWEq6=FgyHEfEg@mail.gmail.com>
+From: J Freyensee <why2jjj.linux@gmail.com>
+Date: Thu, 01 Mar 2018 22:10:17 +0000
+Subject: Re: [PATCH 3/5] tpm: migrate tpm2_probe() to use struct tpm_buf
+Message-Id: <5d8921fb-f7e0-5498-99e2-d4d84aa597f3@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180304065038.28373-1-nick.desaulniers@gmail.com>
-In-Reply-To: <20180304065038.28373-1-nick.desaulniers@gmail.com>
-To: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Nick Desaulniers <nick.desaulniers@gmail.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20180228195819.22231-1-jarkko.sakkinen@linux.intel.com>
+ <20180228195819.22231-4-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20180228195819.22231-4-jarkko.sakkinen@linux.intel.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
 
-bumping for review
+.
+.
+.
+I'm new to this area of the kernel, but I'm not getting these lines:
 
-On Sat, Mar 3, 2018 at 10:50 PM, Nick Desaulniers
-<nick.desaulniers@gmail.com> wrote:
-> Fixes commit 2be04df5668d ("certs/blacklist_nohashes.c: fix const confusion
-> in certs blacklist")
->
-> Signed-off-by: Nick Desaulniers <nick.desaulniers@gmail.com>
-> ---
->  certs/blacklist.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/certs/blacklist.h b/certs/blacklist.h
-> index 150d82da8e99..1efd6fa0dc60 100644
-> --- a/certs/blacklist.h
-> +++ b/certs/blacklist.h
-> @@ -1,3 +1,3 @@
->  #include <linux/kernel.h>
->
-> -extern const char __initdata *const blacklist_hashes[];
-> +extern const char __initconst *const blacklist_hashes[];
-> --
-> 2.14.1
->
+> +	rc = tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE, 0, 0, NULL);
+> +	tpm_buf_destroy(&buf);
+>   	if (rc <  0)
+Why is this if() check not directly after the tpm_transmit_cmd() call 
+that sets rc?  Is it correct you want to destroy buf regardless of the 
+tpm_transmit_cmd() outcome?
+>   		return rc;
+> -
+> -	if (be16_to_cpu(cmd.header.out.tag) = TPM2_ST_NO_SESSIONS)
+> +	out = (struct tpm_output_header *)buf.data;
+
+So buf has been destroyed, buf.data sill has something valid to assign 
+to out?
+> +	if (be16_to_cpu(out->tag) = TPM2_ST_NO_SESSIONS)
+>   		chip->flags |= TPM_CHIP_FLAG_TPM2;
+>   
+>   	return 0;
+Thanks,
+Jay
