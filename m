@@ -1,246 +1,210 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 05 Mar 2018 16:56:14 +0000
-Subject: [PATCH v3 5/5] tpm: migrate tpm2_get_random() to use struct tpm_buf
-Message-Id: <20180305165614.5469-6-jarkko.sakkinen@linux.intel.com>
+Date: Mon, 05 Mar 2018 14:38:59 +0000
+Subject: [PATCH v2 1/5] tpm: fix intermittent failure with self tests
+Message-Id: <20180305143904.7477-2-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
+References: <20180305143904.7477-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20180305143904.7477-1-jarkko.sakkinen@linux.intel.com>
 To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, James Bottomley <James.Bottomley@HansenPartnership.com>, stable@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkine@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
 
-In order to make struct tpm_buf the first class object for constructing
-TPM commands, migrate tpm2_get_random() to use it. In addition, removed
-remaining references to struct tpm2_cmd. All of them use it to acquire
-the length of the response, which can be achieved by using
-tpm_buf_length().
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+My Nuvoton 6xx in a Dell XPS-13 has been intermittently failing to work
+(necessitating a reboot). The problem seems to be that the TPM gets into a
+state where the partial self-test doesn't return TPM_RC_SUCCESS (meaning
+all tests have run to completion), but instead returns TPM_RC_TESTING
+(meaning some tests are still running in the background).  There are
+various theories that resending the self-test command actually causes the
+tests to restart and thus triggers more TPM_RC_TESTING returns until the
+timeout is exceeded.
+
+There are several issues here: firstly being we shouldn't slow down the
+boot sequence waiting for the self test to complete once the TPM
+backgrounds them.  It will actually make available all functions that have
+passed and if it gets a failure return TPM_RC_FAILURE to every subsequent
+command.  So the fix is to kick off self tests once and if they return
+TPM_RC_TESTING log that as a backgrounded self test and continue on.  In
+order to prevent other tpm users from seeing any TPM_RC_TESTING returns
+(which it might if they send a command that needs a TPM subsystem which is
+still under test), we loop in tpm_transmit_cmd until either a timeout or we
+don't get a TPM_RC_TESTING return.
+
+Finally, there have been observations of strange returns from a partial
+test. One Nuvoton is occasionally returning TPM_RC_COMMAND_CODE, so treat
+any unexpected return from a partial self test as an indication we need to
+run a full self test.
+
+[jarkko.sakkinen@linux.intel.com: cleaned up James' original commit and
+ added a proper Fixes line]
+
+Fixes: 2482b1bba5122 ("tpm: Trigger only missing TPM 2.0 self tests")
+Cc: stable@vger.kernel.org
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Tested-by: Jarkko Sakkinen <jarkko.sakkine@linux.intel.com>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkine@linux.intel.com>
 ---
- drivers/char/tpm/tpm.h      | 19 ++++-----
- drivers/char/tpm/tpm2-cmd.c | 98 ++++++++++++++++++---------------------------
- 2 files changed, 49 insertions(+), 68 deletions(-)
+ drivers/char/tpm/tpm-interface.c | 20 ++++++++++++---
+ drivers/char/tpm/tpm.h           |  1 +
+ drivers/char/tpm/tpm2-cmd.c      | 54 ++++++++++++----------------------------
+ 3 files changed, 33 insertions(+), 42 deletions(-)
 
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 9e80a953d693..1adb976a2e37 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -537,14 +537,26 @@ ssize_t tpm_transmit_cmd(struct tpm_chip *chip, struct tpm_space *space,
+ 			 const char *desc)
+ {
+ 	const struct tpm_output_header *header = buf;
++	unsigned int delay_msec = TPM2_DURATION_SHORT;
+ 	int err;
+ 	ssize_t len;
+ 
+-	len = tpm_transmit(chip, space, (u8 *)buf, bufsiz, flags);
+-	if (len <  0)
+-		return len;
++	for (;;) {
++		len = tpm_transmit(chip, space, (u8 *)buf, bufsiz, flags);
++		if (len <  0)
++			return len;
++		err = be32_to_cpu(header->return_code);
++		if (err != TPM2_RC_TESTING)
++			break;
++
++		delay_msec *= 2;
++		if (delay_msec > TPM2_DURATION_LONG) {
++			dev_err(&chip->dev, "the self test is still running\n");
++			break;
++		}
++		tpm_msleep(delay_msec);
++	}
+ 
+-	err = be32_to_cpu(header->return_code);
+ 	if (err != 0 && desc)
+ 		dev_err(&chip->dev, "A TPM error (%d) occurred %s\n", err,
+ 			desc);
 diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index cccd5994a0e1..29c0717437bc 100644
+index f895fba4e20d..cccd5994a0e1 100644
 --- a/drivers/char/tpm/tpm.h
 +++ b/drivers/char/tpm/tpm.h
-@@ -412,23 +412,24 @@ struct tpm_buf {
- 	u8 *data;
- };
- 
--static inline int tpm_buf_init(struct tpm_buf *buf, u16 tag, u32 ordinal)
-+static inline void tpm_buf_reset(struct tpm_buf *buf, u16 tag, u32 ordinal)
- {
- 	struct tpm_input_header *head;
-+	head = (struct tpm_input_header *)buf->data;
-+	head->tag = cpu_to_be16(tag);
-+	head->length = cpu_to_be32(sizeof(*head));
-+	head->ordinal = cpu_to_be32(ordinal);
-+}
- 
-+static inline int tpm_buf_init(struct tpm_buf *buf, u16 tag, u32 ordinal)
-+{
- 	buf->data_page = alloc_page(GFP_HIGHUSER);
- 	if (!buf->data_page)
- 		return -ENOMEM;
- 
- 	buf->flags = 0;
- 	buf->data = kmap(buf->data_page);
--
--	head = (struct tpm_input_header *) buf->data;
--
--	head->tag = cpu_to_be16(tag);
--	head->length = cpu_to_be32(sizeof(*head));
--	head->ordinal = cpu_to_be32(ordinal);
--
-+	tpm_buf_reset(buf, tag, ordinal);
- 	return 0;
- }
- 
-@@ -557,7 +558,7 @@ static inline u32 tpm2_rc_value(u32 rc)
- int tpm2_pcr_read(struct tpm_chip *chip, int pcr_idx, u8 *res_buf);
- int tpm2_pcr_extend(struct tpm_chip *chip, int pcr_idx, u32 count,
- 		    struct tpm2_digest *digests);
--int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max);
-+int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max);
- void tpm2_flush_context_cmd(struct tpm_chip *chip, u32 handle,
- 			    unsigned int flags);
- int tpm2_seal_trusted(struct tpm_chip *chip,
+@@ -104,6 +104,7 @@ enum tpm2_return_codes {
+ 	TPM2_RC_HASH		= 0x0083, /* RC_FMT1 */
+ 	TPM2_RC_HANDLE		= 0x008B,
+ 	TPM2_RC_INITIALIZE	= 0x0100, /* RC_VER1 */
++	TPM2_RC_FAILURE		= 0x0101,
+ 	TPM2_RC_DISABLED	= 0x0120,
+ 	TPM2_RC_COMMAND_CODE    = 0x0143,
+ 	TPM2_RC_TESTING		= 0x090A, /* RC_WARN */
 diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index e02f7d46e9ac..9e687b4a325a 100644
+index a700f8f9ead7..89a5397b18d2 100644
 --- a/drivers/char/tpm/tpm2-cmd.c
 +++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -27,25 +27,6 @@ enum tpm2_session_attributes {
- 	TPM2_SA_CONTINUE_SESSION	= BIT(0),
- };
+@@ -31,10 +31,6 @@ struct tpm2_startup_in {
+ 	__be16	startup_type;
+ } __packed;
  
--struct tpm2_get_random_in {
--	__be16	size;
+-struct tpm2_self_test_in {
+-	u8	full_test;
 -} __packed;
 -
--struct tpm2_get_random_out {
--	__be16	size;
--	u8	buffer[TPM_MAX_RNG_DATA];
--} __packed;
--
--union tpm2_cmd_params {
--	struct	tpm2_get_random_in	getrandom_in;
--	struct	tpm2_get_random_out	getrandom_out;
--};
--
--struct tpm2_cmd {
--	tpm_cmd_header		header;
--	union tpm2_cmd_params	params;
--} __packed;
--
- struct tpm2_hash {
- 	unsigned int crypto_id;
- 	unsigned int tpm_id;
-@@ -298,67 +279,70 @@ int tpm2_pcr_extend(struct tpm_chip *chip, int pcr_idx, u32 count,
+ struct tpm2_get_tpm_pt_in {
+ 	__be32	cap_id;
+ 	__be32	property_id;
+@@ -60,7 +56,6 @@ struct tpm2_get_random_out {
+ 
+ union tpm2_cmd_params {
+ 	struct	tpm2_startup_in		startup_in;
+-	struct	tpm2_self_test_in	selftest_in;
+ 	struct	tpm2_get_tpm_pt_in	get_tpm_pt_in;
+ 	struct	tpm2_get_tpm_pt_out	get_tpm_pt_out;
+ 	struct	tpm2_get_random_in	getrandom_in;
+@@ -827,16 +822,6 @@ unsigned long tpm2_calc_ordinal_duration(struct tpm_chip *chip, u32 ordinal)
  }
+ EXPORT_SYMBOL_GPL(tpm2_calc_ordinal_duration);
  
- 
--#define TPM2_GETRANDOM_IN_SIZE \
+-#define TPM2_SELF_TEST_IN_SIZE \
 -	(sizeof(struct tpm_input_header) + \
--	 sizeof(struct tpm2_get_random_in))
+-	 sizeof(struct tpm2_self_test_in))
 -
--static const struct tpm_input_header tpm2_getrandom_header = {
+-static const struct tpm_input_header tpm2_selftest_header = {
 -	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
--	.length = cpu_to_be32(TPM2_GETRANDOM_IN_SIZE),
--	.ordinal = cpu_to_be32(TPM2_CC_GET_RANDOM)
+-	.length = cpu_to_be32(TPM2_SELF_TEST_IN_SIZE),
+-	.ordinal = cpu_to_be32(TPM2_CC_SELF_TEST)
 -};
-+struct tpm2_get_random_out {
-+	__be16 size;
-+	u8 buffer[TPM_MAX_RNG_DATA];
-+} __packed;
- 
- /**
-  * tpm2_get_random() - get random bytes from the TPM RNG
-  *
-  * @chip: TPM chip to use
-- * @out: destination buffer for the random bytes
-+ * @dest: destination buffer for the random bytes
-  * @max: the max number of bytes to write to @out
-  *
-  * Return:
-- *    Size of the output buffer, or -EIO on error.
-+ * size of the output buffer when the operation is successful.
-+ * A negative number for system errors (errno).
-  */
--int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max)
-+int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
- {
--	struct tpm2_cmd cmd;
--	u32 recd, rlength;
--	u32 num_bytes;
-+	struct tpm2_get_random_out *out;
-+	struct tpm_buf buf;
-+	u32 recd;
-+	u32 num_bytes = max;
- 	int err;
- 	int total = 0;
- 	int retries = 5;
--	u8 *dest = out;
 -
--	num_bytes = min_t(u32, max, sizeof(cmd.params.getrandom_out.buffer));
-+	u8 *dest_ptr = dest;
- 
--	if (!out || !num_bytes ||
--	    max > sizeof(cmd.params.getrandom_out.buffer))
-+	if (!num_bytes || max > TPM_MAX_RNG_DATA)
- 		return -EINVAL;
- 
--	do {
--		cmd.header.in = tpm2_getrandom_header;
--		cmd.params.getrandom_in.size = cpu_to_be16(num_bytes);
-+	err = tpm_buf_init(&buf, 0, 0);
-+	if (err)
-+		return err;
- 
--		err = tpm_transmit_cmd(chip, NULL, &cmd, sizeof(cmd),
-+	do {
-+		tpm_buf_reset(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_RANDOM);
-+		tpm_buf_append_u16(&buf, num_bytes);
-+		err = tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE,
- 				       offsetof(struct tpm2_get_random_out,
- 						buffer),
- 				       0, "attempting get random");
- 		if (err)
--			break;
-+			goto out;
- 
--		recd = min_t(u32, be16_to_cpu(cmd.params.getrandom_out.size),
--			     num_bytes);
--		rlength = be32_to_cpu(cmd.header.out.length);
--		if (rlength < offsetof(struct tpm2_get_random_out, buffer) +
--			      recd)
--			return -EFAULT;
--		memcpy(dest, cmd.params.getrandom_out.buffer, recd);
-+		out = (struct tpm2_get_random_out *)
-+			&buf.data[TPM_HEADER_SIZE];
-+		recd = min_t(u32, be16_to_cpu(out->size), num_bytes);
-+		if (tpm_buf_length(&buf) <
-+		    offsetof(struct tpm2_get_random_out, buffer) + recd) {
-+			err = -EFAULT;
-+			goto out;
-+		}
-+		memcpy(dest_ptr, out->buffer, recd);
- 
--		dest += recd;
-+		dest_ptr += recd;
- 		total += recd;
- 		num_bytes -= recd;
- 	} while (retries-- && total < max);
- 
-+	tpm_buf_destroy(&buf);
- 	return total ? total : -EIO;
-+out:
-+	tpm_buf_destroy(&buf);
-+	return err;
- }
- 
  /**
-@@ -432,7 +416,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+  * tpm2_do_selftest() - ensure that all self tests have passed
+  *
+@@ -852,27 +837,24 @@ static const struct tpm_input_header tpm2_selftest_header = {
+  */
+ static int tpm2_do_selftest(struct tpm_chip *chip)
  {
- 	unsigned int blob_len;
- 	struct tpm_buf buf;
--	u32 hash, rlength;
-+	u32 hash;
- 	int i;
++	struct tpm_buf buf;
++	int full;
  	int rc;
+-	unsigned int delay_msec = 10;
+-	long duration;
+-	struct tpm2_cmd cmd;
  
-@@ -507,8 +491,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		rc = -E2BIG;
- 		goto out;
+-	duration = jiffies_to_msecs(
+-		tpm2_calc_ordinal_duration(chip, TPM2_CC_SELF_TEST));
+-
+-	while (1) {
+-		cmd.header.in = tpm2_selftest_header;
+-		cmd.params.selftest_in.full_test = 0;
+-
+-		rc = tpm_transmit_cmd(chip, NULL, &cmd, TPM2_SELF_TEST_IN_SIZE,
+-				      0, 0, "continue selftest");
++	for (full = 0; full < 2; full++) {
++		rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_SELF_TEST);
++		if (rc)
++			return rc;
+ 
+-		if (rc != TPM2_RC_TESTING || delay_msec >= duration)
+-			break;
++		tpm_buf_append_u8(&buf, full);
++		rc = tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE, 0, 0,
++				      "attempting the self test");
++		tpm_buf_destroy(&buf);
+ 
+-		/* wait longer than before */
+-		delay_msec *= 2;
+-		tpm_msleep(delay_msec);
++		if (rc = TPM2_RC_TESTING)
++			rc = TPM2_RC_SUCCESS;
++		if (rc = TPM2_RC_INITIALIZE || rc = TPM2_RC_SUCCESS)
++			return rc;
  	}
--	rlength = be32_to_cpu(((struct tpm2_cmd *)&buf)->header.out.length);
--	if (rlength < TPM_HEADER_SIZE + 4 + blob_len) {
-+	if (tpm_buf_length(&buf) < TPM_HEADER_SIZE + 4 + blob_len) {
- 		rc = -EFAULT;
+ 
+ 	return rc;
+@@ -1058,10 +1040,8 @@ int tpm2_auto_startup(struct tpm_chip *chip)
  		goto out;
+ 
+ 	rc = tpm2_do_selftest(chip);
+-	if (rc != 0 && rc != TPM2_RC_INITIALIZE) {
+-		dev_err(&chip->dev, "TPM self test failed\n");
++	if (rc && rc != TPM2_RC_INITIALIZE)
+ 		goto out;
+-	}
+ 
+ 	if (rc = TPM2_RC_INITIALIZE) {
+ 		rc = tpm_startup(chip);
+@@ -1069,10 +1049,8 @@ int tpm2_auto_startup(struct tpm_chip *chip)
+ 			goto out;
+ 
+ 		rc = tpm2_do_selftest(chip);
+-		if (rc) {
+-			dev_err(&chip->dev, "TPM self test failed\n");
++		if (rc)
+ 			goto out;
+-		}
  	}
-@@ -618,7 +601,6 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
- 	u16 data_len;
- 	u8 *data;
- 	int rc;
--	u32 rlength;
  
- 	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_UNSEAL);
- 	if (rc)
-@@ -646,9 +628,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
- 			goto out;
- 		}
- 
--		rlength = be32_to_cpu(((struct tpm2_cmd *)&buf)
--					->header.out.length);
--		if (rlength < TPM_HEADER_SIZE + 6 + data_len) {
-+		if (tpm_buf_length(&buf) < TPM_HEADER_SIZE + 6 + data_len) {
- 			rc = -EFAULT;
- 			goto out;
- 		}
+ 	rc = tpm2_get_pcr_allocation(chip);
 -- 
 2.15.1
 
