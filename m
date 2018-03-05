@@ -1,77 +1,246 @@
-From: Gary R Hook <gary.hook@amd.com>
-Date: Thu, 01 Mar 2018 00:35:07 +0000
-Subject: Re: [PATCH 3/3] crypto: ccp - protect RSA implementation from too large input data
-Message-Id: <49db7800-b052-79e8-8d8d-24ddc6382e48@amd.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Mon, 05 Mar 2018 16:56:14 +0000
+Subject: [PATCH v3 5/5] tpm: migrate tpm2_get_random() to use struct tpm_buf
+Message-Id: <20180305165614.5469-6-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <4af6c02f-db3f-3d82-9685-367913c684ff@maciej.szmigiero.name>
-In-Reply-To: <4af6c02f-db3f-3d82-9685-367913c684ff@maciej.szmigiero.name>
-To: "Maciej S. Szmigiero" <mail@maciej.szmigiero.name>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>
-Cc: David Howells <dhowells@redhat.com>, Tom Lendacky <thomas.lendacky@amd.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
 
-On 02/24/2018 10:03 AM, Maciej S. Szmigiero wrote:
-> CCP RSA implementation uses a hardware input buffer which size depends only
-> on the current RSA key length. Key modulus and a message to be processed
-> is then copied to this buffer based on their own lengths.
-> 
-> Since the price for providing too long input data is a buffer overflow and
-> there already has been a case when this has happened let's better reject
-> such oversized input data and log an error message in this case so we know
-> what is going on.
-> 
-> Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
-> ---
->   drivers/crypto/ccp/ccp-ops.c | 24 ++++++++++++++++++++----
->   1 file changed, 20 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/crypto/ccp/ccp-ops.c b/drivers/crypto/ccp/ccp-ops.c
-> index 406b95329b3d..517aeee30abf 100644
-> --- a/drivers/crypto/ccp/ccp-ops.c
-> +++ b/drivers/crypto/ccp/ccp-ops.c
-> @@ -1770,10 +1770,6 @@ static int ccp_run_rsa_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
->   	if (!rsa->exp || !rsa->mod || !rsa->src || !rsa->dst)
->   		return -EINVAL;
->   
-> -	memset(&op, 0, sizeof(op));
-> -	op.cmd_q = cmd_q;
-> -	op.jobid = CCP_NEW_JOBID(cmd_q->ccp);
-> -
->   	/* The RSA modulus must precede the message being acted upon, so
->   	 * it must be copied to a DMA area where the message and the
->   	 * modulus can be concatenated.  Therefore the input buffer
-> @@ -1785,6 +1781,26 @@ static int ccp_run_rsa_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
->   	o_len = 32 * ((rsa->key_size + 255) / 256);
->   	i_len = o_len * 2;
->   
-> +	if (rsa->mod_len > o_len) {
-> +		dev_err(cmd_q->ccp->dev,
-> +			"RSA modulus of %u bytes too large for key size of %u bits\n",
-> +			(unsigned int)rsa->mod_len,
-> +			(unsigned int)rsa->key_size);
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (rsa->src_len > o_len) {
-> +		dev_err(cmd_q->ccp->dev,
-> +			"RSA data of %u bytes too large for key size of %u bits\n",
-> +			(unsigned int)rsa->src_len,
-> +			(unsigned int)rsa->key_size);
-> +		return -EINVAL;
-> +	}
+In order to make struct tpm_buf the first class object for constructing
+TPM commands, migrate tpm2_get_random() to use it. In addition, removed
+remaining references to struct tpm2_cmd. All of them use it to acquire
+the length of the response, which can be achieved by using
+tpm_buf_length().
 
-We've talked about this, and we believe that a more central fix is 
-warranted. I intend to post another patch tomorrow that should address
-this problem.
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ drivers/char/tpm/tpm.h      | 19 ++++-----
+ drivers/char/tpm/tpm2-cmd.c | 98 ++++++++++++++++++---------------------------
+ 2 files changed, 49 insertions(+), 68 deletions(-)
 
-> +
-> +	memset(&op, 0, sizeof(op));
-> +	op.cmd_q = cmd_q;
-> +	op.jobid = CCP_NEW_JOBID(cmd_q->ccp);
-> +
->   	sb_count = 0;
->   	if (cmd_q->ccp->vdata->version < CCP_VERSION(5, 0)) {
->   		/* sb_count is the number of storage block slots required
-> 
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index cccd5994a0e1..29c0717437bc 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -412,23 +412,24 @@ struct tpm_buf {
+ 	u8 *data;
+ };
+ 
+-static inline int tpm_buf_init(struct tpm_buf *buf, u16 tag, u32 ordinal)
++static inline void tpm_buf_reset(struct tpm_buf *buf, u16 tag, u32 ordinal)
+ {
+ 	struct tpm_input_header *head;
++	head = (struct tpm_input_header *)buf->data;
++	head->tag = cpu_to_be16(tag);
++	head->length = cpu_to_be32(sizeof(*head));
++	head->ordinal = cpu_to_be32(ordinal);
++}
+ 
++static inline int tpm_buf_init(struct tpm_buf *buf, u16 tag, u32 ordinal)
++{
+ 	buf->data_page = alloc_page(GFP_HIGHUSER);
+ 	if (!buf->data_page)
+ 		return -ENOMEM;
+ 
+ 	buf->flags = 0;
+ 	buf->data = kmap(buf->data_page);
+-
+-	head = (struct tpm_input_header *) buf->data;
+-
+-	head->tag = cpu_to_be16(tag);
+-	head->length = cpu_to_be32(sizeof(*head));
+-	head->ordinal = cpu_to_be32(ordinal);
+-
++	tpm_buf_reset(buf, tag, ordinal);
+ 	return 0;
+ }
+ 
+@@ -557,7 +558,7 @@ static inline u32 tpm2_rc_value(u32 rc)
+ int tpm2_pcr_read(struct tpm_chip *chip, int pcr_idx, u8 *res_buf);
+ int tpm2_pcr_extend(struct tpm_chip *chip, int pcr_idx, u32 count,
+ 		    struct tpm2_digest *digests);
+-int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max);
++int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max);
+ void tpm2_flush_context_cmd(struct tpm_chip *chip, u32 handle,
+ 			    unsigned int flags);
+ int tpm2_seal_trusted(struct tpm_chip *chip,
+diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
+index e02f7d46e9ac..9e687b4a325a 100644
+--- a/drivers/char/tpm/tpm2-cmd.c
++++ b/drivers/char/tpm/tpm2-cmd.c
+@@ -27,25 +27,6 @@ enum tpm2_session_attributes {
+ 	TPM2_SA_CONTINUE_SESSION	= BIT(0),
+ };
+ 
+-struct tpm2_get_random_in {
+-	__be16	size;
+-} __packed;
+-
+-struct tpm2_get_random_out {
+-	__be16	size;
+-	u8	buffer[TPM_MAX_RNG_DATA];
+-} __packed;
+-
+-union tpm2_cmd_params {
+-	struct	tpm2_get_random_in	getrandom_in;
+-	struct	tpm2_get_random_out	getrandom_out;
+-};
+-
+-struct tpm2_cmd {
+-	tpm_cmd_header		header;
+-	union tpm2_cmd_params	params;
+-} __packed;
+-
+ struct tpm2_hash {
+ 	unsigned int crypto_id;
+ 	unsigned int tpm_id;
+@@ -298,67 +279,70 @@ int tpm2_pcr_extend(struct tpm_chip *chip, int pcr_idx, u32 count,
+ }
+ 
+ 
+-#define TPM2_GETRANDOM_IN_SIZE \
+-	(sizeof(struct tpm_input_header) + \
+-	 sizeof(struct tpm2_get_random_in))
+-
+-static const struct tpm_input_header tpm2_getrandom_header = {
+-	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
+-	.length = cpu_to_be32(TPM2_GETRANDOM_IN_SIZE),
+-	.ordinal = cpu_to_be32(TPM2_CC_GET_RANDOM)
+-};
++struct tpm2_get_random_out {
++	__be16 size;
++	u8 buffer[TPM_MAX_RNG_DATA];
++} __packed;
+ 
+ /**
+  * tpm2_get_random() - get random bytes from the TPM RNG
+  *
+  * @chip: TPM chip to use
+- * @out: destination buffer for the random bytes
++ * @dest: destination buffer for the random bytes
+  * @max: the max number of bytes to write to @out
+  *
+  * Return:
+- *    Size of the output buffer, or -EIO on error.
++ * size of the output buffer when the operation is successful.
++ * A negative number for system errors (errno).
+  */
+-int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max)
++int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max)
+ {
+-	struct tpm2_cmd cmd;
+-	u32 recd, rlength;
+-	u32 num_bytes;
++	struct tpm2_get_random_out *out;
++	struct tpm_buf buf;
++	u32 recd;
++	u32 num_bytes = max;
+ 	int err;
+ 	int total = 0;
+ 	int retries = 5;
+-	u8 *dest = out;
+-
+-	num_bytes = min_t(u32, max, sizeof(cmd.params.getrandom_out.buffer));
++	u8 *dest_ptr = dest;
+ 
+-	if (!out || !num_bytes ||
+-	    max > sizeof(cmd.params.getrandom_out.buffer))
++	if (!num_bytes || max > TPM_MAX_RNG_DATA)
+ 		return -EINVAL;
+ 
+-	do {
+-		cmd.header.in = tpm2_getrandom_header;
+-		cmd.params.getrandom_in.size = cpu_to_be16(num_bytes);
++	err = tpm_buf_init(&buf, 0, 0);
++	if (err)
++		return err;
+ 
+-		err = tpm_transmit_cmd(chip, NULL, &cmd, sizeof(cmd),
++	do {
++		tpm_buf_reset(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_RANDOM);
++		tpm_buf_append_u16(&buf, num_bytes);
++		err = tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE,
+ 				       offsetof(struct tpm2_get_random_out,
+ 						buffer),
+ 				       0, "attempting get random");
+ 		if (err)
+-			break;
++			goto out;
+ 
+-		recd = min_t(u32, be16_to_cpu(cmd.params.getrandom_out.size),
+-			     num_bytes);
+-		rlength = be32_to_cpu(cmd.header.out.length);
+-		if (rlength < offsetof(struct tpm2_get_random_out, buffer) +
+-			      recd)
+-			return -EFAULT;
+-		memcpy(dest, cmd.params.getrandom_out.buffer, recd);
++		out = (struct tpm2_get_random_out *)
++			&buf.data[TPM_HEADER_SIZE];
++		recd = min_t(u32, be16_to_cpu(out->size), num_bytes);
++		if (tpm_buf_length(&buf) <
++		    offsetof(struct tpm2_get_random_out, buffer) + recd) {
++			err = -EFAULT;
++			goto out;
++		}
++		memcpy(dest_ptr, out->buffer, recd);
+ 
+-		dest += recd;
++		dest_ptr += recd;
+ 		total += recd;
+ 		num_bytes -= recd;
+ 	} while (retries-- && total < max);
+ 
++	tpm_buf_destroy(&buf);
+ 	return total ? total : -EIO;
++out:
++	tpm_buf_destroy(&buf);
++	return err;
+ }
+ 
+ /**
+@@ -432,7 +416,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ {
+ 	unsigned int blob_len;
+ 	struct tpm_buf buf;
+-	u32 hash, rlength;
++	u32 hash;
+ 	int i;
+ 	int rc;
+ 
+@@ -507,8 +491,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 		rc = -E2BIG;
+ 		goto out;
+ 	}
+-	rlength = be32_to_cpu(((struct tpm2_cmd *)&buf)->header.out.length);
+-	if (rlength < TPM_HEADER_SIZE + 4 + blob_len) {
++	if (tpm_buf_length(&buf) < TPM_HEADER_SIZE + 4 + blob_len) {
+ 		rc = -EFAULT;
+ 		goto out;
+ 	}
+@@ -618,7 +601,6 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 	u16 data_len;
+ 	u8 *data;
+ 	int rc;
+-	u32 rlength;
+ 
+ 	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_UNSEAL);
+ 	if (rc)
+@@ -646,9 +628,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 			goto out;
+ 		}
+ 
+-		rlength = be32_to_cpu(((struct tpm2_cmd *)&buf)
+-					->header.out.length);
+-		if (rlength < TPM_HEADER_SIZE + 6 + data_len) {
++		if (tpm_buf_length(&buf) < TPM_HEADER_SIZE + 6 + data_len) {
+ 			rc = -EFAULT;
+ 			goto out;
+ 		}
+-- 
+2.15.1
 
