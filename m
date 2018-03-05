@@ -1,112 +1,66 @@
-From: joeyli <jlee@suse.com>
-Date: Tue, 27 Mar 2018 11:08:14 +0000
-Subject: Re: [PATCH 0/9] KEYS: Blacklisting & UEFI database load
-Message-Id: <20180327110814.GC5669@linux-l9pv.suse>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Mon, 05 Mar 2018 16:56:12 +0000
+Subject: [PATCH v3 3/5] tpm: migrate tpm2_probe() to use struct tpm_buf
+Message-Id: <20180305165614.5469-4-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <147931984418.16460.6639993676886095760.stgit@warthog.procyon.org.uk>
- <6eabbb43-295e-9ba0-c0d9-120f48aa0e1d@suse.cz>
- <1520428682.10396.445.camel@linux.vnet.ibm.com>
- <1520436517.5558.2.camel@HansenPartnership.com>
- <20180311032022.GA31059@linux-l9pv.suse>
- <1521468723.3503.171.camel@linux.vnet.ibm.com>
-In-Reply-To: <1521468723.3503.171.camel@linux.vnet.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>, Jiri Slaby <jslaby@suse.cz>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, matthew.garrett@nebula.com, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
 
-Hi Mimi,
+In order to make struct tpm_buf the first class object for constructing TPM
+commands, migrate tpm2_probe() to use it.
 
-On Mon, Mar 19, 2018 at 10:12:03AM -0400, Mimi Zohar wrote:
-> On Sun, 2018-03-11 at 11:20 +0800, joeyli wrote:
-> > On Wed, Mar 07, 2018 at 07:28:37AM -0800, James Bottomley wrote:
-> > > On Wed, 2018-03-07 at 08:18 -0500, Mimi Zohar wrote:
-> > > > On Tue, 2018-03-06 at 15:05 +0100, Jiri Slaby wrote:
-> > > > > what's the status of this please? Distributors (I checked SUSE,
-> > > > > RedHat and Ubuntu) have to carry these patches and every of them
-> > > > > have to forward-port the patches to new kernels. So are you going
-> > > > > to resend the PR to have this merged?
-> > > [...]
-> > > > Just because I trust the platform keys prior to booting the kernel,
-> > > > doesn't mean that I *want* to trust those keys once booted.  There
-> > > > are, however, places where we need access to those keys to verify a
-> > > > signature (eg. kexec kernel image).
-> > > 
-> > > Which is essentially the reason I always give when these patches come
-> > > back
-> > >
-> > 
-> > Josh Boyer's "MODSIGN: Allow the "db" UEFI variable to be suppressed"
-> > patch checks MokIgnoreDB variable to ignore db:
-> > 
-> > https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/commit/?h=keys-uefi&id|395b30a33a617c5cc2cdd419300af71277b79a
-> > 
-> > I think that we can consider to use MokAllowDB. Which means that kernel
-> > ignores DB by default.
-> 
-> Not all systems have a shim layer.  This design is really x86
-> specific.  Allowing shim keys, but ignoring DB, does not address those
-> systems.
->
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ drivers/char/tpm/tpm2-cmd.c | 27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
 
-Actually shim is EFI specific but not x86 specific. I agree with you that
-not all system has shim. But at least shim provides a way to interact with
-user to detect the physical accessing.
-
-For the system doesn't have shim, kernel can provide a boot option for user
-to trust the keys in DB. But it also means that the boot option can be
-enabled without physical accessing.
+diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
+index abe6ef4a7a0b..890d83c5c78b 100644
+--- a/drivers/char/tpm/tpm2-cmd.c
++++ b/drivers/char/tpm/tpm2-cmd.c
+@@ -851,22 +851,25 @@ static int tpm2_do_selftest(struct tpm_chip *chip)
+  */
+ int tpm2_probe(struct tpm_chip *chip)
+ {
+-	struct tpm2_cmd cmd;
++	struct tpm_output_header *out;
++	struct tpm_buf buf;
+ 	int rc;
  
-> > > > Nayna Jain's "certs: define a trusted platform keyring" patch set
-> > > > introduces a new, separate keyring for these platform keys.
-> > > 
-> > > Perhaps, to break the deadlock, we should ask Jiří what the reason is
-> > > the distros want these keys to be trusted.  Apart from the Microsoft
-> > > key, it will also give you an OEM key in your trusted keyring.  Is it
-> > > something to do with OEM supplied modules?
-> > >
-> > 
-> > As I remember that some manufacturers uses certificate in db to
-> > sign their kernel module. We need to discuss with them for switching
-> > to mok. Currently I do not know all use cases for using db.
-> > 
-> > There have some benefits for using db:
-> > 
-> >  - User does not need to deal with shim-mokmanager to enroll mok.
-> >    Target machine doesn't need to reboot and user doesn't need to
-> >    face to mokmanager UI.  
-> 
-> The reason for trusting enrolled shim keys is because it requires
-> physical presence.  (I kind of remember hearing that this changed.
->  There is some method of accepting enrolled keys that does not require
-> physical presence.)
->
-
-Could you please provide more detail for those methods? Thanks!
+-	cmd.header.in = tpm2_get_tpm_pt_header;
+-	cmd.params.get_tpm_pt_in.cap_id = cpu_to_be32(TPM2_CAP_TPM_PROPERTIES);
+-	cmd.params.get_tpm_pt_in.property_id = cpu_to_be32(0x100);
+-	cmd.params.get_tpm_pt_in.property_cnt = cpu_to_be32(1);
+-
+-	rc = tpm_transmit_cmd(chip, NULL, &cmd, sizeof(cmd), 0, 0, NULL);
+-	if (rc <  0)
++	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
++	if (rc)
+ 		return rc;
+-
+-	if (be16_to_cpu(cmd.header.out.tag) = TPM2_ST_NO_SESSIONS)
++	tpm_buf_append_u32(&buf, TPM2_CAP_TPM_PROPERTIES);
++	tpm_buf_append_u32(&buf, TPM_PT_TOTAL_COMMANDS);
++	tpm_buf_append_u32(&buf, 1);
++	rc = tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE, 0, 0, NULL);
++	if (rc <  0)
++		goto out;
++	out = (struct tpm_output_header *)buf.data;
++	if (be16_to_cpu(out->tag) = TPM2_ST_NO_SESSIONS)
+ 		chip->flags |= TPM_CHIP_FLAG_TPM2;
+-
+-	return 0;
++out:
++	tpm_buf_destroy(&buf);
++	return rc;
+ }
+ EXPORT_SYMBOL_GPL(tpm2_probe);
  
-> >  - The db is a authenticated variable, it's still secure when secure
-> >    boot is disabled.
-> >    The db is a authenticated variable that it can only be modified
-> >    by manufacturer's key. Kernel can trust it when secure boot
-> >    is disabled. It's useful for we do not need to taint kernel
-> >    for loading a manufacturer's kernel module even secure boot is
-> >    disabled.
-> > 
-> >  - Do not need to worry about the space of NVRAM and the EFI firmware
-> >    implementation for writing a boot time variable.
-> >   
-> > But I also agree that we should not trust all keys (like Microsoft key)
-> > in db by default.
-> 
-> Between requiring a shim layer and relying on physical presence, I'm
-> not convinced this is the best solution.  Do we really want to support
-> different methods for different architectures?
->
+-- 
+2.15.1
 
-It's not the best solution because it relies on other layers. But it's
-currently the only solution for general EFI firmware. Or you have other
-solution can be used for all architectures?
-
-Thanks a lot!
-Joey Lee 
