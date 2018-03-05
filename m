@@ -1,191 +1,114 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Fri, 16 Mar 2018 20:38:34 +0000
-Subject: [PATCH v6 09/12] ima: Add modsig appraise_type option for module-style appended signatures
-Message-Id: <20180316203837.10174-10-bauerman@linux.vnet.ibm.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Mon, 05 Mar 2018 16:56:11 +0000
+Subject: [PATCH v3 2/5] tpm: migrate tpm2_shutdown() to use struct tpm_buf
+Message-Id: <20180305165614.5469-3-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
+References: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
 To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
 
-This patch introduces the modsig keyword to the IMA policy syntax to
-specify that a given hook should expect the file to have the IMA signature
-appended to it. Here is how it can be used in a rule:
+In order to make struct tpm_buf the first class object for constructing TPM
+commands, migrate tpm2_shutdown() to use it. In addition, removed the klog
+entry when tpm_transmit_cmd() fails because tpm_tansmit_cmd() already
+prints an error message.
 
-appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
-
-With this rule, IMA will accept either a signature stored in the extended
-attribute or an appended signature.
-
-For now, the rule above will behave exactly the same as if
-appraise_type=imasig was specified because the actual modsig implementation
-will be introduced in a separate patch.
-
-Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
- Documentation/ABI/testing/ima_policy |  6 +++++-
- security/integrity/ima/Kconfig       | 10 ++++++++++
- security/integrity/ima/Makefile      |  1 +
- security/integrity/ima/ima.h         |  9 +++++++++
- security/integrity/ima/ima_modsig.c  | 31 +++++++++++++++++++++++++++++++
- security/integrity/ima/ima_policy.c  | 12 ++++++++++--
- security/integrity/integrity.h       |  1 +
- 7 files changed, 67 insertions(+), 3 deletions(-)
+ drivers/char/tpm/tpm2-cmd.c | 44 ++++++++++++--------------------------------
+ 1 file changed, 12 insertions(+), 32 deletions(-)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index b8465e00ba5f..835d9da9b26e 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -37,7 +37,7 @@ Description:
- 			euid:= decimal value
- 			fowner:= decimal value
- 		lsm:  	are LSM specific
--		option:	appraise_type:= [imasig]
-+		option:	appraise_type:= [imasig] [imasig|modsig]
- 			pcr:= decimal value
+diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
+index 89a5397b18d2..abe6ef4a7a0b 100644
+--- a/drivers/char/tpm/tpm2-cmd.c
++++ b/drivers/char/tpm/tpm2-cmd.c
+@@ -27,10 +27,6 @@ enum tpm2_session_attributes {
+ 	TPM2_SA_CONTINUE_SESSION	= BIT(0),
+ };
  
- 		default policy:
-@@ -103,3 +103,7 @@ Description:
+-struct tpm2_startup_in {
+-	__be16	startup_type;
+-} __packed;
+-
+ struct tpm2_get_tpm_pt_in {
+ 	__be32	cap_id;
+ 	__be32	property_id;
+@@ -55,7 +51,6 @@ struct tpm2_get_random_out {
+ } __packed;
  
- 			measure func=KEXEC_KERNEL_CHECK pcr=4
- 			measure func=KEXEC_INITRAMFS_CHECK pcr=5
-+
-+		Example of appraise rule allowing modsig appended signatures:
-+
-+			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index 6a8f67714c83..ee278189e0bb 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -164,6 +164,16 @@ config IMA_APPRAISE_BOOTPARAM
- 	  This option enables the different "ima_appraise=" modes
- 	  (eg. fix, log) from the boot command line.
+ union tpm2_cmd_params {
+-	struct	tpm2_startup_in		startup_in;
+ 	struct	tpm2_get_tpm_pt_in	get_tpm_pt_in;
+ 	struct	tpm2_get_tpm_pt_out	get_tpm_pt_out;
+ 	struct	tpm2_get_random_in	getrandom_in;
+@@ -410,11 +405,8 @@ void tpm2_flush_context_cmd(struct tpm_chip *chip, u32 handle,
+ 	int rc;
  
-+config IMA_APPRAISE_MODSIG
-+	bool "Support module-style signatures for appraisal"
-+	depends on IMA_APPRAISE
-+	default n
-+	help
-+	   Adds support for signatures appended to files. The format of the
-+	   appended signature is the same used for signed kernel modules.
-+	   The modsig keyword can be used in the IMA policy to allow a hook
-+	   to accept such signatures.
-+
- config IMA_TRUSTED_KEYRING
- 	bool "Require all keys on the .ima keyring be signed (deprecated)"
- 	depends on IMA_APPRAISE && SYSTEM_TRUSTED_KEYRING
-diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
-index d921dc4f9eb0..31d57cdf2421 100644
---- a/security/integrity/ima/Makefile
-+++ b/security/integrity/ima/Makefile
-@@ -9,5 +9,6 @@ obj-$(CONFIG_IMA) += ima.o
- ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
- 	 ima_policy.o ima_template.o ima_template_lib.o
- ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
-+ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
- ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
- obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 99f2bab15009..c61d8fc5190d 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -299,6 +299,15 @@ static inline int ima_read_xattr(struct dentry *dentry,
+ 	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_FLUSH_CONTEXT);
+-	if (rc) {
+-		dev_warn(&chip->dev, "0x%08x was not flushed, out of memory\n",
+-			 handle);
++	if (rc)
+ 		return;
+-	}
  
- #endif /* CONFIG_IMA_APPRAISE */
+ 	tpm_buf_append_u32(&buf, handle);
  
-+#ifdef CONFIG_IMA_APPRAISE_MODSIG
-+bool ima_hook_supports_modsig(enum ima_hooks func);
-+#else
-+static inline bool ima_hook_supports_modsig(enum ima_hooks func)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_IMA_APPRAISE_MODSIG */
-+
- /* LSM based policy rules require audit */
- #ifdef CONFIG_IMA_LSM_RULES
+@@ -760,40 +752,28 @@ ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,  u32 *value,
+ }
+ EXPORT_SYMBOL_GPL(tpm2_get_tpm_pt);
  
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-new file mode 100644
-index 000000000000..d8ea811b6f74
---- /dev/null
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -0,0 +1,31 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/*
-+ * IMA support for appraising module-style appended signatures.
+-#define TPM2_SHUTDOWN_IN_SIZE \
+-	(sizeof(struct tpm_input_header) + \
+-	 sizeof(struct tpm2_startup_in))
+-
+-static const struct tpm_input_header tpm2_shutdown_header = {
+-	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
+-	.length = cpu_to_be32(TPM2_SHUTDOWN_IN_SIZE),
+-	.ordinal = cpu_to_be32(TPM2_CC_SHUTDOWN)
+-};
+-
+ /**
+  * tpm2_shutdown() - send shutdown command to the TPM chip
+  *
++ * In places where shutdown command is sent there's no much we can do except
++ * print the error code on a system failure.
 + *
-+ * Copyright (C) 2018  IBM Corporation
-+ *
-+ * Author:
-+ * Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-+ */
-+
-+#include "ima.h"
-+
-+/**
-+ * ima_hook_supports_modsig - can the policy allow modsig for this hook?
-+ *
-+ * modsig is only supported by hooks using ima_post_read_file, because only they
-+ * preload the contents of the file in a buffer. FILE_CHECK does that in some
-+ * cases, but not when reached from vfs_open. POLICY_CHECK can support it, but
-+ * it's not useful in practice because it's a text file so deny.
-+ */
-+bool ima_hook_supports_modsig(enum ima_hooks func)
-+{
-+	switch (func) {
-+	case FIRMWARE_CHECK:
-+	case KEXEC_KERNEL_CHECK:
-+	case KEXEC_INITRAMFS_CHECK:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 833da24c7009..e7421fd94277 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -887,6 +887,10 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 			ima_log_string(ab, "appraise_type", args[0].from);
- 			if ((strcmp(args[0].from, "imasig")) = 0)
- 				entry->flags |= IMA_DIGSIG_REQUIRED;
-+			else if (ima_hook_supports_modsig(entry->func) &&
-+				 strcmp(args[0].from, "imasig|modsig") = 0)
-+				entry->flags |= IMA_DIGSIG_REQUIRED
-+						| IMA_MODSIG_ALLOWED;
- 			else
- 				result = -EINVAL;
- 			break;
-@@ -1176,8 +1180,12 @@ int ima_policy_show(struct seq_file *m, void *v)
- 			}
- 		}
- 	}
--	if (entry->flags & IMA_DIGSIG_REQUIRED)
--		seq_puts(m, "appraise_type=imasig ");
-+	if (entry->flags & IMA_DIGSIG_REQUIRED) {
-+		if (entry->flags & IMA_MODSIG_ALLOWED)
-+			seq_puts(m, "appraise_type=imasig|modsig ");
-+		else
-+			seq_puts(m, "appraise_type=imasig ");
-+	}
- 	if (entry->flags & IMA_PERMIT_DIRECTIO)
- 		seq_puts(m, "permit_directio ");
- 	rcu_read_unlock();
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 4c381b992e11..6643c6550787 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -35,6 +35,7 @@
- #define IMA_NEW_FILE		0x04000000
- #define EVM_IMMUTABLE_DIGSIG	0x08000000
- #define IMA_FAIL_UNVERIFIABLE_SIGS	0x10000000
-+#define IMA_MODSIG_ALLOWED	0x20000000
+  * @chip:		TPM chip to use.
+  * @shutdown_type:	shutdown type. The value is either
+  *			TPM_SU_CLEAR or TPM_SU_STATE.
+  */
+ void tpm2_shutdown(struct tpm_chip *chip, u16 shutdown_type)
+ {
+-	struct tpm2_cmd cmd;
++	struct tpm_buf buf;
+ 	int rc;
  
- #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
- 				 IMA_HASH | IMA_APPRAISE_SUBMASK)
+-	cmd.header.in = tpm2_shutdown_header;
+-	cmd.params.startup_in.startup_type = cpu_to_be16(shutdown_type);
+-
+-	rc = tpm_transmit_cmd(chip, NULL, &cmd, sizeof(cmd), 0, 0,
+-			      "stopping the TPM");
+-
+-	/* In places where shutdown command is sent there's no much we can do
+-	 * except print the error code on a system failure.
+-	 */
+-	if (rc < 0 && rc != -EPIPE)
+-		dev_warn(&chip->dev, "transmit returned %d while stopping the TPM",
+-			 rc);
++	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_SHUTDOWN);
++	if (rc)
++		return;
++	tpm_buf_append_u16(&buf, shutdown_type);
++	tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE, 0, 0,
++			 "stopping the TPM");
++	tpm_buf_destroy(&buf);
+ }
+ 
+ /*
+-- 
+2.15.1
 
