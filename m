@@ -1,65 +1,37 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Fri, 16 Mar 2018 20:38:33 +0000
-Subject: [PATCH v6 08/12] ima: Export func_tokens
-Message-Id: <20180316203837.10174-9-bauerman@linux.vnet.ibm.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Mon, 05 Mar 2018 14:38:58 +0000
+Subject: [PATCH v2 0/5] Migrate all TPM 2.0 commands to use struct tpm_buf
+Message-Id: <20180305143904.7477-1-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
 To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jason Gunthorpe <jgg@ziepe.ca>, open list <linux-kernel@vger.kernel.org>
 
-ima_read_modsig() will need it so that it can show an error message.
+v2:
+* Fixed author information in the commit that fixes the self-test issue,
+  removed '\n' from the log message and added the missing tested-by.
+  (James: sincere apologies about this)
+* Removed the redundant "out of memory" log message from tpm2_shutdown().
+* tpm_buf_destroy() was called before using the response data in
+  tpm2_probe().
+* Added missing tpm_buf_destroy() to tpm2_get_random().
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
----
- security/integrity/ima/ima.h        |  2 ++
- security/integrity/ima/ima_policy.c | 12 ++++++------
- 2 files changed, 8 insertions(+), 6 deletions(-)
+James Bottomley (1):
+  tpm: fix intermittent failure with self tests
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 4bafa6a97967..99f2bab15009 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -196,6 +196,8 @@ enum ima_hooks {
- 	__ima_hooks(__ima_hook_enumify)
- };
- 
-+extern const char *const func_tokens[];
-+
- /* LIM API function definitions */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr);
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 51a4cd999a49..833da24c7009 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -992,6 +992,12 @@ void ima_delete_rules(void)
- 	}
- }
- 
-+#define __ima_hook_stringify(str)	(#str),
-+
-+const char *const func_tokens[] = {
-+	__ima_hooks(__ima_hook_stringify)
-+};
-+
- #ifdef	CONFIG_IMA_READ_POLICY
- enum {
- 	mask_exec = 0, mask_write, mask_read, mask_append
-@@ -1004,12 +1010,6 @@ static const char *const mask_tokens[] = {
- 	"MAY_APPEND"
- };
- 
--#define __ima_hook_stringify(str)	(#str),
--
--static const char *const func_tokens[] = {
--	__ima_hooks(__ima_hook_stringify)
--};
--
- void *ima_policy_start(struct seq_file *m, loff_t *pos)
- {
- 	loff_t l = *pos;
+Jarkko Sakkinen (4):
+  tpm: migrate tpm2_shutdown() to use struct tpm_buf
+  tpm: migrate tpm2_probe() to use struct tpm_buf
+  tpm: migrate tpm2_get_tpm_pt() to use struct tpm_buf
+  tpm: migrate tpm2_get_random() to use struct tpm_buf
+
+ drivers/char/tpm/tpm-interface.c |  20 ++-
+ drivers/char/tpm/tpm.h           |  20 +--
+ drivers/char/tpm/tpm2-cmd.c      | 281 ++++++++++++++-------------------------
+ 3 files changed, 128 insertions(+), 193 deletions(-)
+
+-- 
+2.15.1
 
