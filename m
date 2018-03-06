@@ -1,31 +1,46 @@
-From: "Maciej S. Szmigiero" <mail@maciej.szmigiero.name>
-Date: Fri, 23 Mar 2018 15:25:27 +0000
-Subject: Re: [PATCH] X.509: unpack RSA signatureValue field from BIT STRING
-Message-Id: <9264ee5d-e793-22c3-6aad-6bd7b8737dbf@maciej.szmigiero.name>
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Tue, 06 Mar 2018 14:05:50 +0000
+Subject: Re: [PATCH 0/9] KEYS: Blacklisting & UEFI database load
+Message-Id: <6eabbb43-295e-9ba0-c0d9-120f48aa0e1d@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <88da0c24-385c-64a9-6d56-36696d433bc7@maciej.szmigiero.name>
- <30085.1520437454@warthog.procyon.org.uk>
- <593f6dbe-4ab4-0149-43d9-388cf0fee9f3@maciej.szmigiero.name>
-In-Reply-To: <593f6dbe-4ab4-0149-43d9-388cf0fee9f3@maciej.szmigiero.name>
-To: David Howells <dhowells@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <147931984418.16460.6639993676886095760.stgit@warthog.procyon.org.uk>
+In-Reply-To: <147931984418.16460.6639993676886095760.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
+Cc: matthew.garrett@nebula.com, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On 07.03.2018 18:56, Maciej S. Szmigiero wrote:
-> On 07.03.2018 16:44, David Howells wrote:
->> Maciej S. Szmigiero <mail@maciej.szmigiero.name> wrote:
->>
->>> +	if (!strcmp(ctx->cert->sig->pkey_algo, "rsa")) {
->>
->> I'm going to change this to '= 0' rather than '!'.
+On 11/16/2016, 07:10 PM, David Howells wrote:
+> Here are two sets of patches.  Firstly, the first three patches provide a
+> blacklist, making the following changes:
+...
+> Secondly, the remaining patches allow the UEFI database to be used to load
+> the system keyrings:
+...
+> Dave Howells (2):
+>       efi: Add EFI signature data types
+>       efi: Add an EFI signature blob parser
 > 
-> No problem. 
+> David Howells (5):
+>       KEYS: Add a system blacklist keyring
+>       X.509: Allow X.509 certs to be blacklisted
+>       PKCS#7: Handle blacklisted certificates
+>       KEYS: Allow unrestricted boot-time addition of keys to secondary keyring
+>       efi: Add SHIM and image security database GUID definitions
+> 
+> Josh Boyer (2):
+>       MODSIGN: Import certificates from UEFI Secure Boot
+>       MODSIGN: Allow the "db" UEFI variable to be suppressed
 
-I cannot find this patch in any tree that I have looked at.
-Are you going to pick it up later or am I not looking at the right
-place?
+Hi,
 
-Thanks,
-Maciej
+what's the status of this please? Distributors (I checked SUSE, RedHat
+and Ubuntu) have to carry these patches and every of them have to
+forward-port the patches to new kernels. So are you going to resend the
+PR to have this merged?
+
+thanks,
+-- 
+js
+suse labs
