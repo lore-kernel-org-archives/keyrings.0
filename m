@@ -1,49 +1,54 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 05 Mar 2018 16:56:09 +0000
-Subject: [PATCH v3 0/5] Migrate all TPM 2.0 commands to use struct tpm_buf
-Message-Id: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
+From: James Williams <johnsonmakuofficeuba@gmail.com>
+Date: Thu, 08 Mar 2018 06:52:07 +0000
+Subject: ,Your urgent confirmation
+Message-Id: <CAF94_XqrJKsF6-SLyhZSczdR9a9hY34zuhxd+uWcAUe-Tbj2eg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jason Gunthorpe <jgg@ziepe.ca>, open list <linux-kernel@vger.kernel.org>
+To: keyrings@vger.kernel.org
 
-In order to make struct tpm_buf the first class object for constructing TPM
-commands, this patch set migrates all TPM 2.0 commands to use it. The next
-step after this is to migrate TPM 1.2 commands in a subsequent patch set.
-Finally, tpm_transmit_cmd() can take simply struct tpm_buf as its argument
-and this interface can be exported to be used by the kernel keyring.
+Attn: Beneficiary,
 
-The ultimate goal of this work is to make constructing TPM commands inside
-the kernel simple and robust.
+We have contacted the Federal Ministry of Finance on your Behalf and
+they have brought a solution to your problem by coordinating your
+payment in total (10,000,000.00) Ten Million Dollars in an atm card
+which you can use to withdraw money from any ATM MACHINE CENTER
+anywhere in the world with a maximum of 10000 Dollars daily. You now
+have the lawful right to claim your fund in an atm card. Since the
+Federal Bureau of Investigation is involved in this transaction, you
+have to be rest assured for this is 100% risk free it is our duty to
+protect the American Citizens, European Citizens, Asian Citizen. All I
+want you to do is to contact the atm card CENTER Via email or call the
+office telephone number one of the Consultant will assist you for
+their requirements to proceed and procure your Approval Slip on your
+behalf.
 
-v3:
-* Fixed error handling in tpm2_get_random()
+CONTACT INFORMATION
+NAME: James  Williams
+EMAIL: paymasterofficedesk@gmail.com
 
-v2:
-* Fixed author information in the commit that fixes the self-test issue,
-  removed '\n' from the log message and added the missing tested-by.
-  (James: sincere apologies about this)
-* Removed the redundant "out of memory" log message from tpm2_shutdown().
-* tpm_buf_destroy() was called before using the response data in
-  tpm2_probe().
-* Added missing tpm_buf_destroy() to tpm2_get_random().
 
-James Bottomley (1):
-  tpm: fix intermittent failure with self tests
+Do contact us with your details:
 
-Jarkko Sakkinen (4):
-  tpm: migrate tpm2_shutdown() to use struct tpm_buf
-  tpm: migrate tpm2_probe() to use struct tpm_buf
-  tpm: migrate tpm2_get_tpm_pt() to use struct tpm_buf
-  tpm: migrate tpm2_get_random() to use struct tpm_buf
+Full name//
+Address// Age//
+ Telephone Numbers//
+Occupation//
+ Your Country//
+Bank Details//
 
- drivers/char/tpm/tpm-interface.c |  20 ++-
- drivers/char/tpm/tpm.h           |  20 +--
- drivers/char/tpm/tpm2-cmd.c      | 286 ++++++++++++++-------------------------
- 3 files changed, 132 insertions(+), 194 deletions(-)
+So your files would be updated after which the Delivery of your
+atm card will be affected to your designated home Address without any
+further delay and the bank will transfer your funds in total
+(10,000,000.00) Ten Million Dollars to your Bank account. We
+will reply you with the secret code (1600 atm card). We advice you get
+back to the payment office after you have contacted the ATM SWIFT CARD
+CENTER and we do await your response so we can move on with our
+Investigation and make sure your ATM SWIFT CARD gets to you.
 
--- 
-2.15.1
 
+Best Regards
+James Williams
+Paymaster General
+Federal Republic Of Nigeri
