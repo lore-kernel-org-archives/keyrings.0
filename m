@@ -1,240 +1,165 @@
-From: Nayna Jain <nayna@linux.vnet.ibm.com>
-Date: Fri, 09 Mar 2018 15:50:01 +0000
-Subject: [PATCH v2 1/3] certs: define a trusted platform keyring
-Message-Id: <20180309153803.25859-1-nayna@linux.vnet.ibm.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date: Fri, 09 Mar 2018 17:10:34 +0000
+Subject: Re: [PATCH v2 1/3] certs: define a trusted platform keyring
+Message-Id: <1520615434.3911.3.camel@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, Nayna Jain <nayna@linux.vnet.ibm.com>
+References: <20180309153803.25859-1-nayna@linux.vnet.ibm.com>
+In-Reply-To: <20180309153803.25859-1-nayna@linux.vnet.ibm.com>
+To: Nayna Jain <nayna@linux.vnet.ibm.com>, dhowells@redhat.com
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org
 
-The kernel can be supplied in SEEPROM or lockable flash memory in embedded
-devices. Some devices may not support secure boot, but the kernel is
-trusted because the image is stored in protected memory. That kernel may
-need to kexec additional kernels, it may be used as a bootloader, for
-example, or it may need to kexec a crashdump kernel. In such cases, it may
-want to verify the signature of the next kernel.
-
-The kernel, however, cannot directly verify platform keys, and an
-administrator may therefore not want to trust them for arbitrary usage.
-In order to differentiate platform keys from other keys and provide the
-necessary separation of trust, the kernel needs an additional keyring to
-store platform keys.
-
-This patch implements a built-in list of certificates that are loaded onto
-the trusted platform keyring named ".platform_keys" to facilitate signature
-verification during kexec. Because the platform keyring are builtin, it
-cannot be updated from userspace.
-
-This keyring can be enabled by setting CONFIG_PLATFORM_KEYRING. The
-platform certificate can be provided using CONFIG_PLATFORM_TRUSTED_KEYS.
-
-Signed-off-by: Nayna Jain <nayna@linux.vnet.ibm.com>
----
-Changelog:
-
-v2:
-
-* Include David Howell's feedback:
- * Fix the indentation
-* Fix the patch description per line length as suggested by Mimi
-
- certs/Kconfig               | 17 ++++++++++++++
- certs/Makefile              | 13 +++++++++++
- certs/system_certificates.S | 20 +++++++++++++++++
- certs/system_keyring.c      | 55 ++++++++++++++++++++++++++++++++++++++-------
- 4 files changed, 97 insertions(+), 8 deletions(-)
-
-diff --git a/certs/Kconfig b/certs/Kconfig
-index 5f7663df6e8e..608a4358a25e 100644
---- a/certs/Kconfig
-+++ b/certs/Kconfig
-@@ -83,4 +83,21 @@ config SYSTEM_BLACKLIST_HASH_LIST
- 	  wrapper to incorporate the list into the kernel.  Each <hash> should
- 	  be a string of hex digits.
- 
-+config PLATFORM_KEYRING
-+        bool "Provide keyring for platform trusted keys"
-+        depends on KEYS
-+        depends on ASYMMETRIC_KEY_TYPE
-+        help
-+	  Provide a separate, distinct keyring for platform trusted keys, which
-+	  the kernel automatically populates during initialization from values
-+	  embedded during build, used for verifying the kexec'ed kernel image
-+	  and, possibly, the initramfs signature.
-+
-+config PLATFORM_TRUSTED_KEYS
-+	string "Platform/Firmware trusted X.509 certs."
-+	depends on PLATFORM_KEYRING
-+	help
-+	  Provide the filename of a PEM-formatted file containing the platform
-+	  trusted X.509 certificates to be loaded in the platform keyring.
-+
- endmenu
-diff --git a/certs/Makefile b/certs/Makefile
-index 5d0999b9e21b..680903725031 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -104,3 +104,16 @@ targets += signing_key.x509
- $(obj)/signing_key.x509: scripts/extract-cert $(X509_DEP) FORCE
- 	$(call if_changed,extract_certs,$(MODULE_SIG_KEY_SRCPREFIX)$(CONFIG_MODULE_SIG_KEY))
- endif # CONFIG_MODULE_SIG
-+
-+
-+ifeq ($(CONFIG_PLATFORM_KEYRING),y)
-+
-+$(eval $(call config_filename,PLATFORM_TRUSTED_KEYS))
-+
-+# GCC doesn't include .incbin files in -MD generated dependencies (PR#66871)
-+$(obj)/system_certificates.o: $(obj)/platform_certificate_list
-+
-+targets += platform_certificate_list
-+$(obj)/platform_certificate_list: scripts/extract-cert $(PLATFORM_TRUSTED_KEYS_FILENAME) FORCE
-+	$(call if_changed,extract_certs,$(CONFIG_PLATFORM_TRUSTED_KEYS))
-+endif # CONFIG_PLATFORM_KEYRING
-diff --git a/certs/system_certificates.S b/certs/system_certificates.S
-index 3918ff7235ed..b0eb448ee617 100644
---- a/certs/system_certificates.S
-+++ b/certs/system_certificates.S
-@@ -14,6 +14,15 @@ __cert_list_start:
- 	.incbin "certs/x509_certificate_list"
- __cert_list_end:
- 
-+#ifdef CONFIG_PLATFORM_KEYRING
-+	.align 8
-+	.globl VMLINUX_SYMBOL(platform_certificate_list)
-+VMLINUX_SYMBOL(platform_certificate_list):
-+__platform_cert_list_start:
-+	.incbin "certs/platform_certificate_list"
-+__platform_cert_list_end:
-+#endif /* CONFIG_PLATFORM_KEYRING */
-+
- #ifdef CONFIG_SYSTEM_EXTRA_CERTIFICATE
- 	.globl VMLINUX_SYMBOL(system_extra_cert)
- 	.size system_extra_cert, CONFIG_SYSTEM_EXTRA_CERTIFICATE_SIZE
-@@ -35,3 +44,14 @@ VMLINUX_SYMBOL(system_certificate_list_size):
- #else
- 	.long __cert_list_end - __cert_list_start
- #endif
-+
-+#ifdef CONFIG_PLATFORM_KEYRING
-+	.align 8
-+	.globl VMLINUX_SYMBOL(platform_certificate_list_size)
-+VMLINUX_SYMBOL(platform_certificate_list_size):
-+#ifdef CONFIG_64BIT
-+	.quad __platform_cert_list_end - __platform_cert_list_start
-+#else
-+	.long __platform_cert_list_end - __platform_cert_list_start
-+#endif
-+#endif /* CONFIG_PLATFORM_KEYRING */
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index 6251d1b27f0c..594b4986a081 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -19,14 +19,22 @@
- #include <keys/system_keyring.h>
- #include <crypto/pkcs7.h>
- 
-+#define BUILTIN_TRUSTED_KEYRING	0
-+#define PLATFORM_KEYRING	1
-+
- static struct key *builtin_trusted_keys;
- #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
- static struct key *secondary_trusted_keys;
- #endif
-+#ifdef CONFIG_PLATFORM_KEYRING
-+static struct key *platform_keys __ro_after_init;
-+#endif
- 
- extern __initconst const u8 system_certificate_list[];
- extern __initconst const unsigned long system_certificate_list_size;
- 
-+extern __initconst const u8 platform_certificate_list[];
-+extern __initconst const unsigned long platform_certificate_list_size;
- /**
-  * restrict_link_to_builtin_trusted - Restrict keyring addition by built in CA
-  *
-@@ -123,6 +131,18 @@ static __init int system_trusted_keyring_init(void)
- 		panic("Can't link trusted keyrings\n");
- #endif
- 
-+#ifdef CONFIG_PLATFORM_KEYRING
-+	platform_keys +		keyring_alloc(".platform_keys",
-+			      KUIDT_INIT(0), KGIDT_INIT(0), current_cred(),
-+			      ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			      KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH),
-+			      KEY_ALLOC_NOT_IN_QUOTA,
-+			      NULL, NULL);
-+	if (IS_ERR(platform_keys))
-+		panic("Can't allocate platform keyring\n");
-+#endif
-+
- 	return 0;
- }
- 
-@@ -132,18 +152,19 @@ static __init int system_trusted_keyring_init(void)
- device_initcall(system_trusted_keyring_init);
- 
- /*
-- * Load the compiled-in list of X.509 certificates.
-+ * Load the certificates to the keyring.
-  */
--static __init int load_system_certificate_list(void)
-+static __init int load_certificate_list(const u8 *p, unsigned long size,
-+		struct key *keyring)
- {
- 	key_ref_t key;
--	const u8 *p, *end;
-+	const u8 *end;
- 	size_t plen;
- 
--	pr_notice("Loading compiled-in X.509 certificates\n");
-+	pr_notice("Loading compiled-in X.509 certificates to %s\n",
-+			keyring->description);
- 
--	p = system_certificate_list;
--	end = p + system_certificate_list_size;
-+	end = p + size;
- 	while (p < end) {
- 		/* Each cert begins with an ASN.1 SEQUENCE tag and must be more
- 		 * than 256 bytes in size.
-@@ -158,7 +179,7 @@ static __init int load_system_certificate_list(void)
- 		if (plen > end - p)
- 			goto dodgy_cert;
- 
--		key = key_create_or_update(make_key_ref(builtin_trusted_keys, 1),
-+		key = key_create_or_update(make_key_ref(keyring, 1),
- 					   "asymmetric",
- 					   NULL,
- 					   p,
-@@ -185,7 +206,25 @@ static __init int load_system_certificate_list(void)
- 	pr_err("Problem parsing in-kernel X.509 certificate list\n");
- 	return 0;
- }
--late_initcall(load_system_certificate_list);
-+
-+/*
-+ * Load the compiled-in list of system and platform X.509 certificates.
-+ */
-+static __init int load_compiled_certificate_list(void)
-+{
-+	/* Loading certs in builtin keyring */
-+	load_certificate_list(system_certificate_list,
-+			system_certificate_list_size, builtin_trusted_keys);
-+
-+#ifdef CONFIG_PLATFORM_KEYRING
-+	/* Loading certs in platform keyring */
-+	load_certificate_list(platform_certificate_list,
-+			platform_certificate_list_size, platform_keys);
-+#endif
-+
-+	return 0;
-+}
-+late_initcall(load_compiled_certificate_list);
- 
- #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
- 
--- 
-2.13.6
-
+T24gRnJpLCAyMDE4LTAzLTA5IGF0IDIxOjA4ICswNTMwLCBOYXluYSBKYWluIHdyb3RlOgo+IFRo
+ZSBrZXJuZWwgY2FuIGJlIHN1cHBsaWVkIGluIFNFRVBST00gb3IgbG9ja2FibGUgZmxhc2ggbWVt
+b3J5IGluIGVtYmVkZGVkCj4gZGV2aWNlcy4gU29tZSBkZXZpY2VzIG1heSBub3Qgc3VwcG9ydCBz
+ZWN1cmUgYm9vdCwgYnV0IHRoZSBrZXJuZWwgaXMKPiB0cnVzdGVkIGJlY2F1c2UgdGhlIGltYWdl
+IGlzIHN0b3JlZCBpbiBwcm90ZWN0ZWQgbWVtb3J5LiBUaGF0IGtlcm5lbCBtYXkKPiBuZWVkIHRv
+IGtleGVjIGFkZGl0aW9uYWwga2VybmVscywgaXQgbWF5IGJlIHVzZWQgYXMgYSBib290bG9hZGVy
+LCBmb3IKPiBleGFtcGxlLCBvciBpdCBtYXkgbmVlZCB0byBrZXhlYyBhIGNyYXNoZHVtcCBrZXJu
+ZWwuIEluIHN1Y2ggY2FzZXMsIGl0IG1heQo+IHdhbnQgdG8gdmVyaWZ5IHRoZSBzaWduYXR1cmUg
+b2YgdGhlIG5leHQga2VybmVsLgo+IAo+IFRoZSBrZXJuZWwsIGhvd2V2ZXIsIGNhbm5vdCBkaXJl
+Y3RseSB2ZXJpZnkgcGxhdGZvcm0ga2V5cywgYW5kIGFuCj4gYWRtaW5pc3RyYXRvciBtYXkgdGhl
+cmVmb3JlIG5vdCB3YW50IHRvIHRydXN0IHRoZW0gZm9yIGFyYml0cmFyeSB1c2FnZS4KPiBJbiBv
+cmRlciB0byBkaWZmZXJlbnRpYXRlIHBsYXRmb3JtIGtleXMgZnJvbSBvdGhlciBrZXlzIGFuZCBw
+cm92aWRlIHRoZQo+IG5lY2Vzc2FyeSBzZXBhcmF0aW9uIG9mIHRydXN0LCB0aGUga2VybmVsIG5l
+ZWRzIGFuIGFkZGl0aW9uYWwga2V5cmluZyB0bwo+IHN0b3JlIHBsYXRmb3JtIGtleXMuCj4gCj4g
+VGhpcyBwYXRjaCBpbXBsZW1lbnRzIGEgYnVpbHQtaW4gbGlzdCBvZiBjZXJ0aWZpY2F0ZXMgdGhh
+dCBhcmUgbG9hZGVkIG9udG8KPiB0aGUgdHJ1c3RlZCBwbGF0Zm9ybSBrZXlyaW5nIG5hbWVkICIu
+cGxhdGZvcm1fa2V5cyIgdG8gZmFjaWxpdGF0ZSBzaWduYXR1cmUKPiB2ZXJpZmljYXRpb24gZHVy
+aW5nIGtleGVjLiBCZWNhdXNlIHRoZSBwbGF0Zm9ybSBrZXlyaW5nIGFyZSBidWlsdGluLCBpdAo+
+IGNhbm5vdCBiZSB1cGRhdGVkIGZyb20gdXNlcnNwYWNlLgo+IAo+IFRoaXMga2V5cmluZyBjYW4g
+YmUgZW5hYmxlZCBieSBzZXR0aW5nIENPTkZJR19QTEFURk9STV9LRVlSSU5HLiBUaGUKPiBwbGF0
+Zm9ybSBjZXJ0aWZpY2F0ZSBjYW4gYmUgcHJvdmlkZWQgdXNpbmcgQ09ORklHX1BMQVRGT1JNX1RS
+VVNURURfS0VZUy4KPiAKPiBTaWduZWQtb2ZmLWJ5OiBOYXluYSBKYWluIDxuYXluYUBsaW51eC52
+bmV0LmlibS5jb20+CgpQbGVhc2UgYWRkIG15IFJldmlld2VkLWJ5OiBNaW1pIFpvaGFyIDx6b2hh
+ckBsaW51eC52bmV0LmlibS5jb20+wqBvbgp0aGlzIGFuZCAyLzMuCgpNaW1pCgo+IC0tLQo+IENo
+YW5nZWxvZzoKPiAKPiB2MjoKPiAKPiAqIEluY2x1ZGUgRGF2aWQgSG93ZWxsJ3MgZmVlZGJhY2s6
+Cj4gICogRml4IHRoZSBpbmRlbnRhdGlvbgo+ICogRml4IHRoZSBwYXRjaCBkZXNjcmlwdGlvbiBw
+ZXIgbGluZSBsZW5ndGggYXMgc3VnZ2VzdGVkIGJ5IE1pbWkKPiAKPiAgY2VydHMvS2NvbmZpZyAg
+ICAgICAgICAgICAgIHwgMTcgKysrKysrKysrKysrKysKPiAgY2VydHMvTWFrZWZpbGUgICAgICAg
+ICAgICAgIHwgMTMgKysrKysrKysrKysKPiAgY2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TIHwg
+MjAgKysrKysrKysrKysrKysrKysKPiAgY2VydHMvc3lzdGVtX2tleXJpbmcuYyAgICAgIHwgNTUg
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tCj4gIDQgZmlsZXMg
+Y2hhbmdlZCwgOTcgaW5zZXJ0aW9ucygrKSwgOCBkZWxldGlvbnMoLSkKPiAKPiBkaWZmIC0tZ2l0
+IGEvY2VydHMvS2NvbmZpZyBiL2NlcnRzL0tjb25maWcKPiBpbmRleCA1Zjc2NjNkZjZlOGUuLjYw
+OGE0MzU4YTI1ZSAxMDA2NDQKPiAtLS0gYS9jZXJ0cy9LY29uZmlnCj4gKysrIGIvY2VydHMvS2Nv
+bmZpZwo+IEBAIC04Myw0ICs4MywyMSBAQCBjb25maWcgU1lTVEVNX0JMQUNLTElTVF9IQVNIX0xJ
+U1QKPiAgCSAgd3JhcHBlciB0byBpbmNvcnBvcmF0ZSB0aGUgbGlzdCBpbnRvIHRoZSBrZXJuZWwu
+ICBFYWNoIDxoYXNoPiBzaG91bGQKPiAgCSAgYmUgYSBzdHJpbmcgb2YgaGV4IGRpZ2l0cy4KPiAK
+PiArY29uZmlnIFBMQVRGT1JNX0tFWVJJTkcKPiArICAgICAgICBib29sICJQcm92aWRlIGtleXJp
+bmcgZm9yIHBsYXRmb3JtIHRydXN0ZWQga2V5cyIKPiArICAgICAgICBkZXBlbmRzIG9uIEtFWVMK
+PiArICAgICAgICBkZXBlbmRzIG9uIEFTWU1NRVRSSUNfS0VZX1RZUEUKPiArICAgICAgICBoZWxw
+Cj4gKwkgIFByb3ZpZGUgYSBzZXBhcmF0ZSwgZGlzdGluY3Qga2V5cmluZyBmb3IgcGxhdGZvcm0g
+dHJ1c3RlZCBrZXlzLCB3aGljaAo+ICsJICB0aGUga2VybmVsIGF1dG9tYXRpY2FsbHkgcG9wdWxh
+dGVzIGR1cmluZyBpbml0aWFsaXphdGlvbiBmcm9tIHZhbHVlcwo+ICsJICBlbWJlZGRlZCBkdXJp
+bmcgYnVpbGQsIHVzZWQgZm9yIHZlcmlmeWluZyB0aGUga2V4ZWMnZWQga2VybmVsIGltYWdlCj4g
+KwkgIGFuZCwgcG9zc2libHksIHRoZSBpbml0cmFtZnMgc2lnbmF0dXJlLgo+ICsKPiArY29uZmln
+IFBMQVRGT1JNX1RSVVNURURfS0VZUwo+ICsJc3RyaW5nICJQbGF0Zm9ybS9GaXJtd2FyZSB0cnVz
+dGVkIFguNTA5IGNlcnRzLiIKPiArCWRlcGVuZHMgb24gUExBVEZPUk1fS0VZUklORwo+ICsJaGVs
+cAo+ICsJICBQcm92aWRlIHRoZSBmaWxlbmFtZSBvZiBhIFBFTS1mb3JtYXR0ZWQgZmlsZSBjb250
+YWluaW5nIHRoZSBwbGF0Zm9ybQo+ICsJICB0cnVzdGVkIFguNTA5IGNlcnRpZmljYXRlcyB0byBi
+ZSBsb2FkZWQgaW4gdGhlIHBsYXRmb3JtIGtleXJpbmcuCj4gKwo+ICBlbmRtZW51Cj4gZGlmZiAt
+LWdpdCBhL2NlcnRzL01ha2VmaWxlIGIvY2VydHMvTWFrZWZpbGUKPiBpbmRleCA1ZDA5OTliOWUy
+MWIuLjY4MDkwMzcyNTAzMSAxMDA2NDQKPiAtLS0gYS9jZXJ0cy9NYWtlZmlsZQo+ICsrKyBiL2Nl
+cnRzL01ha2VmaWxlCj4gQEAgLTEwNCwzICsxMDQsMTYgQEAgdGFyZ2V0cyArPSBzaWduaW5nX2tl
+eS54NTA5Cj4gICQob2JqKS9zaWduaW5nX2tleS54NTA5OiBzY3JpcHRzL2V4dHJhY3QtY2VydCAk
+KFg1MDlfREVQKSBGT1JDRQo+ICAJJChjYWxsIGlmX2NoYW5nZWQsZXh0cmFjdF9jZXJ0cywkKE1P
+RFVMRV9TSUdfS0VZX1NSQ1BSRUZJWCkkKENPTkZJR19NT0RVTEVfU0lHX0tFWSkpCj4gIGVuZGlm
+ICMgQ09ORklHX01PRFVMRV9TSUcKPiArCj4gKwo+ICtpZmVxICgkKENPTkZJR19QTEFURk9STV9L
+RVlSSU5HKSx5KQo+ICsKPiArJChldmFsICQoY2FsbCBjb25maWdfZmlsZW5hbWUsUExBVEZPUk1f
+VFJVU1RFRF9LRVlTKSkKPiArCj4gKyMgR0NDIGRvZXNuJ3QgaW5jbHVkZSAuaW5jYmluIGZpbGVz
+IGluIC1NRCBnZW5lcmF0ZWQgZGVwZW5kZW5jaWVzIChQUiM2Njg3MSkKPiArJChvYmopL3N5c3Rl
+bV9jZXJ0aWZpY2F0ZXMubzogJChvYmopL3BsYXRmb3JtX2NlcnRpZmljYXRlX2xpc3QKPiArCj4g
+K3RhcmdldHMgKz0gcGxhdGZvcm1fY2VydGlmaWNhdGVfbGlzdAo+ICskKG9iaikvcGxhdGZvcm1f
+Y2VydGlmaWNhdGVfbGlzdDogc2NyaXB0cy9leHRyYWN0LWNlcnQgJChQTEFURk9STV9UUlVTVEVE
+X0tFWVNfRklMRU5BTUUpIEZPUkNFCj4gKwkkKGNhbGwgaWZfY2hhbmdlZCxleHRyYWN0X2NlcnRz
+LCQoQ09ORklHX1BMQVRGT1JNX1RSVVNURURfS0VZUykpCj4gK2VuZGlmICMgQ09ORklHX1BMQVRG
+T1JNX0tFWVJJTkcKPiBkaWZmIC0tZ2l0IGEvY2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TIGIv
+Y2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TCj4gaW5kZXggMzkxOGZmNzIzNWVkLi5iMGViNDQ4
+ZWU2MTcgMTAwNjQ0Cj4gLS0tIGEvY2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TCj4gKysrIGIv
+Y2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TCj4gQEAgLTE0LDYgKzE0LDE1IEBAIF9fY2VydF9s
+aXN0X3N0YXJ0Ogo+ICAJLmluY2JpbiAiY2VydHMveDUwOV9jZXJ0aWZpY2F0ZV9saXN0Igo+ICBf
+X2NlcnRfbGlzdF9lbmQ6Cj4gCj4gKyNpZmRlZiBDT05GSUdfUExBVEZPUk1fS0VZUklORwo+ICsJ
+LmFsaWduIDgKPiArCS5nbG9ibCBWTUxJTlVYX1NZTUJPTChwbGF0Zm9ybV9jZXJ0aWZpY2F0ZV9s
+aXN0KQo+ICtWTUxJTlVYX1NZTUJPTChwbGF0Zm9ybV9jZXJ0aWZpY2F0ZV9saXN0KToKPiArX19w
+bGF0Zm9ybV9jZXJ0X2xpc3Rfc3RhcnQ6Cj4gKwkuaW5jYmluICJjZXJ0cy9wbGF0Zm9ybV9jZXJ0
+aWZpY2F0ZV9saXN0Igo+ICtfX3BsYXRmb3JtX2NlcnRfbGlzdF9lbmQ6Cj4gKyNlbmRpZiAvKiBD
+T05GSUdfUExBVEZPUk1fS0VZUklORyAqLwo+ICsKPiAgI2lmZGVmIENPTkZJR19TWVNURU1fRVhU
+UkFfQ0VSVElGSUNBVEUKPiAgCS5nbG9ibCBWTUxJTlVYX1NZTUJPTChzeXN0ZW1fZXh0cmFfY2Vy
+dCkKPiAgCS5zaXplIHN5c3RlbV9leHRyYV9jZXJ0LCBDT05GSUdfU1lTVEVNX0VYVFJBX0NFUlRJ
+RklDQVRFX1NJWkUKPiBAQCAtMzUsMyArNDQsMTQgQEAgVk1MSU5VWF9TWU1CT0woc3lzdGVtX2Nl
+cnRpZmljYXRlX2xpc3Rfc2l6ZSk6Cj4gICNlbHNlCj4gIAkubG9uZyBfX2NlcnRfbGlzdF9lbmQg
+LSBfX2NlcnRfbGlzdF9zdGFydAo+ICAjZW5kaWYKPiArCj4gKyNpZmRlZiBDT05GSUdfUExBVEZP
+Uk1fS0VZUklORwo+ICsJLmFsaWduIDgKPiArCS5nbG9ibCBWTUxJTlVYX1NZTUJPTChwbGF0Zm9y
+bV9jZXJ0aWZpY2F0ZV9saXN0X3NpemUpCj4gK1ZNTElOVVhfU1lNQk9MKHBsYXRmb3JtX2NlcnRp
+ZmljYXRlX2xpc3Rfc2l6ZSk6Cj4gKyNpZmRlZiBDT05GSUdfNjRCSVQKPiArCS5xdWFkIF9fcGxh
+dGZvcm1fY2VydF9saXN0X2VuZCAtIF9fcGxhdGZvcm1fY2VydF9saXN0X3N0YXJ0Cj4gKyNlbHNl
+Cj4gKwkubG9uZyBfX3BsYXRmb3JtX2NlcnRfbGlzdF9lbmQgLSBfX3BsYXRmb3JtX2NlcnRfbGlz
+dF9zdGFydAo+ICsjZW5kaWYKPiArI2VuZGlmIC8qIENPTkZJR19QTEFURk9STV9LRVlSSU5HICov
+Cj4gZGlmZiAtLWdpdCBhL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMgYi9jZXJ0cy9zeXN0ZW1fa2V5
+cmluZy5jCj4gaW5kZXggNjI1MWQxYjI3ZjBjLi41OTRiNDk4NmEwODEgMTAwNjQ0Cj4gLS0tIGEv
+Y2VydHMvc3lzdGVtX2tleXJpbmcuYwo+ICsrKyBiL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMKPiBA
+QCAtMTksMTQgKzE5LDIyIEBACj4gICNpbmNsdWRlIDxrZXlzL3N5c3RlbV9rZXlyaW5nLmg+Cj4g
+ICNpbmNsdWRlIDxjcnlwdG8vcGtjczcuaD4KPiAKPiArI2RlZmluZSBCVUlMVElOX1RSVVNURURf
+S0VZUklORwkwCj4gKyNkZWZpbmUgUExBVEZPUk1fS0VZUklORwkxCj4gKwo+ICBzdGF0aWMgc3Ry
+dWN0IGtleSAqYnVpbHRpbl90cnVzdGVkX2tleXM7Cj4gICNpZmRlZiBDT05GSUdfU0VDT05EQVJZ
+X1RSVVNURURfS0VZUklORwo+ICBzdGF0aWMgc3RydWN0IGtleSAqc2Vjb25kYXJ5X3RydXN0ZWRf
+a2V5czsKPiAgI2VuZGlmCj4gKyNpZmRlZiBDT05GSUdfUExBVEZPUk1fS0VZUklORwo+ICtzdGF0
+aWMgc3RydWN0IGtleSAqcGxhdGZvcm1fa2V5cyBfX3JvX2FmdGVyX2luaXQ7Cj4gKyNlbmRpZgo+
+IAo+ICBleHRlcm4gX19pbml0Y29uc3QgY29uc3QgdTggc3lzdGVtX2NlcnRpZmljYXRlX2xpc3Rb
+XTsKPiAgZXh0ZXJuIF9faW5pdGNvbnN0IGNvbnN0IHVuc2lnbmVkIGxvbmcgc3lzdGVtX2NlcnRp
+ZmljYXRlX2xpc3Rfc2l6ZTsKPiAKPiArZXh0ZXJuIF9faW5pdGNvbnN0IGNvbnN0IHU4IHBsYXRm
+b3JtX2NlcnRpZmljYXRlX2xpc3RbXTsKPiArZXh0ZXJuIF9faW5pdGNvbnN0IGNvbnN0IHVuc2ln
+bmVkIGxvbmcgcGxhdGZvcm1fY2VydGlmaWNhdGVfbGlzdF9zaXplOwo+ICAvKioKPiAgICogcmVz
+dHJpY3RfbGlua190b19idWlsdGluX3RydXN0ZWQgLSBSZXN0cmljdCBrZXlyaW5nIGFkZGl0aW9u
+IGJ5IGJ1aWx0IGluIENBCj4gICAqCj4gQEAgLTEyMyw2ICsxMzEsMTggQEAgc3RhdGljIF9faW5p
+dCBpbnQgc3lzdGVtX3RydXN0ZWRfa2V5cmluZ19pbml0KHZvaWQpCj4gIAkJcGFuaWMoIkNhbid0
+IGxpbmsgdHJ1c3RlZCBrZXlyaW5nc1xuIik7Cj4gICNlbmRpZgo+IAo+ICsjaWZkZWYgQ09ORklH
+X1BMQVRGT1JNX0tFWVJJTkcKPiArCXBsYXRmb3JtX2tleXMgPiArCQlrZXlyaW5nX2FsbG9jKCIu
+cGxhdGZvcm1fa2V5cyIsCj4gKwkJCSAgICAgIEtVSURUX0lOSVQoMCksIEtHSURUX0lOSVQoMCks
+IGN1cnJlbnRfY3JlZCgpLAo+ICsJCQkgICAgICAoKEtFWV9QT1NfQUxMICYgfktFWV9QT1NfU0VU
+QVRUUikgfAo+ICsJCQkgICAgICBLRVlfVVNSX1ZJRVcgfCBLRVlfVVNSX1JFQUQgfCBLRVlfVVNS
+X1NFQVJDSCksCj4gKwkJCSAgICAgIEtFWV9BTExPQ19OT1RfSU5fUVVPVEEsCj4gKwkJCSAgICAg
+IE5VTEwsIE5VTEwpOwo+ICsJaWYgKElTX0VSUihwbGF0Zm9ybV9rZXlzKSkKPiArCQlwYW5pYygi
+Q2FuJ3QgYWxsb2NhdGUgcGxhdGZvcm0ga2V5cmluZ1xuIik7Cj4gKyNlbmRpZgo+ICsKPiAgCXJl
+dHVybiAwOwo+ICB9Cj4gCj4gQEAgLTEzMiwxOCArMTUyLDE5IEBAIHN0YXRpYyBfX2luaXQgaW50
+IHN5c3RlbV90cnVzdGVkX2tleXJpbmdfaW5pdCh2b2lkKQo+ICBkZXZpY2VfaW5pdGNhbGwoc3lz
+dGVtX3RydXN0ZWRfa2V5cmluZ19pbml0KTsKPiAKPiAgLyoKPiAtICogTG9hZCB0aGUgY29tcGls
+ZWQtaW4gbGlzdCBvZiBYLjUwOSBjZXJ0aWZpY2F0ZXMuCj4gKyAqIExvYWQgdGhlIGNlcnRpZmlj
+YXRlcyB0byB0aGUga2V5cmluZy4KPiAgICovCj4gLXN0YXRpYyBfX2luaXQgaW50IGxvYWRfc3lz
+dGVtX2NlcnRpZmljYXRlX2xpc3Qodm9pZCkKPiArc3RhdGljIF9faW5pdCBpbnQgbG9hZF9jZXJ0
+aWZpY2F0ZV9saXN0KGNvbnN0IHU4ICpwLCB1bnNpZ25lZCBsb25nIHNpemUsCj4gKwkJc3RydWN0
+IGtleSAqa2V5cmluZykKPiAgewo+ICAJa2V5X3JlZl90IGtleTsKPiAtCWNvbnN0IHU4ICpwLCAq
+ZW5kOwo+ICsJY29uc3QgdTggKmVuZDsKPiAgCXNpemVfdCBwbGVuOwo+IAo+IC0JcHJfbm90aWNl
+KCJMb2FkaW5nIGNvbXBpbGVkLWluIFguNTA5IGNlcnRpZmljYXRlc1xuIik7Cj4gKwlwcl9ub3Rp
+Y2UoIkxvYWRpbmcgY29tcGlsZWQtaW4gWC41MDkgY2VydGlmaWNhdGVzIHRvICVzXG4iLAo+ICsJ
+CQlrZXlyaW5nLT5kZXNjcmlwdGlvbik7Cj4gCj4gLQlwID0gc3lzdGVtX2NlcnRpZmljYXRlX2xp
+c3Q7Cj4gLQllbmQgPSBwICsgc3lzdGVtX2NlcnRpZmljYXRlX2xpc3Rfc2l6ZTsKPiArCWVuZCA9
+IHAgKyBzaXplOwo+ICAJd2hpbGUgKHAgPCBlbmQpIHsKPiAgCQkvKiBFYWNoIGNlcnQgYmVnaW5z
+IHdpdGggYW4gQVNOLjEgU0VRVUVOQ0UgdGFnIGFuZCBtdXN0IGJlIG1vcmUKPiAgCQkgKiB0aGFu
+IDI1NiBieXRlcyBpbiBzaXplLgo+IEBAIC0xNTgsNyArMTc5LDcgQEAgc3RhdGljIF9faW5pdCBp
+bnQgbG9hZF9zeXN0ZW1fY2VydGlmaWNhdGVfbGlzdCh2b2lkKQo+ICAJCWlmIChwbGVuID4gZW5k
+IC0gcCkKPiAgCQkJZ290byBkb2RneV9jZXJ0Owo+IAo+IC0JCWtleSA9IGtleV9jcmVhdGVfb3Jf
+dXBkYXRlKG1ha2Vfa2V5X3JlZihidWlsdGluX3RydXN0ZWRfa2V5cywgMSksCj4gKwkJa2V5ID0g
+a2V5X2NyZWF0ZV9vcl91cGRhdGUobWFrZV9rZXlfcmVmKGtleXJpbmcsIDEpLAo+ICAJCQkJCSAg
+ICJhc3ltbWV0cmljIiwKPiAgCQkJCQkgICBOVUxMLAo+ICAJCQkJCSAgIHAsCj4gQEAgLTE4NSw3
+ICsyMDYsMjUgQEAgc3RhdGljIF9faW5pdCBpbnQgbG9hZF9zeXN0ZW1fY2VydGlmaWNhdGVfbGlz
+dCh2b2lkKQo+ICAJcHJfZXJyKCJQcm9ibGVtIHBhcnNpbmcgaW4ta2VybmVsIFguNTA5IGNlcnRp
+ZmljYXRlIGxpc3RcbiIpOwo+ICAJcmV0dXJuIDA7Cj4gIH0KPiAtbGF0ZV9pbml0Y2FsbChsb2Fk
+X3N5c3RlbV9jZXJ0aWZpY2F0ZV9saXN0KTsKPiArCj4gKy8qCj4gKyAqIExvYWQgdGhlIGNvbXBp
+bGVkLWluIGxpc3Qgb2Ygc3lzdGVtIGFuZCBwbGF0Zm9ybSBYLjUwOSBjZXJ0aWZpY2F0ZXMuCj4g
+KyAqLwo+ICtzdGF0aWMgX19pbml0IGludCBsb2FkX2NvbXBpbGVkX2NlcnRpZmljYXRlX2xpc3Qo
+dm9pZCkKPiArewo+ICsJLyogTG9hZGluZyBjZXJ0cyBpbiBidWlsdGluIGtleXJpbmcgKi8KPiAr
+CWxvYWRfY2VydGlmaWNhdGVfbGlzdChzeXN0ZW1fY2VydGlmaWNhdGVfbGlzdCwKPiArCQkJc3lz
+dGVtX2NlcnRpZmljYXRlX2xpc3Rfc2l6ZSwgYnVpbHRpbl90cnVzdGVkX2tleXMpOwo+ICsKPiAr
+I2lmZGVmIENPTkZJR19QTEFURk9STV9LRVlSSU5HCj4gKwkvKiBMb2FkaW5nIGNlcnRzIGluIHBs
+YXRmb3JtIGtleXJpbmcgKi8KPiArCWxvYWRfY2VydGlmaWNhdGVfbGlzdChwbGF0Zm9ybV9jZXJ0
+aWZpY2F0ZV9saXN0LAo+ICsJCQlwbGF0Zm9ybV9jZXJ0aWZpY2F0ZV9saXN0X3NpemUsIHBsYXRm
+b3JtX2tleXMpOwo+ICsjZW5kaWYKPiArCj4gKwlyZXR1cm4gMDsKPiArfQo+ICtsYXRlX2luaXRj
+YWxsKGxvYWRfY29tcGlsZWRfY2VydGlmaWNhdGVfbGlzdCk7Cj4gCj4gICNpZmRlZiBDT05GSUdf
+U1lTVEVNX0RBVEFfVkVSSUZJQ0FUSU9OCj4gCgotLQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMg
+bGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3JpYmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9m
+IGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5rZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGlu
+Zm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcvbWFqb3Jkb21vLWluZm8uaHRtbA==
