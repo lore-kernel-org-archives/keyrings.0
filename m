@@ -1,34 +1,180 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 19 Mar 2018 21:06:21 +0000
-Subject: Re: [PATCH v3 1/5] tpm: fix intermittent failure with self tests
-Message-Id: <20180319210620.GB14364@linux.intel.com>
+From: Nayna Jain <nayna@linux.vnet.ibm.com>
+Date: Fri, 09 Mar 2018 15:50:03 +0000
+Subject: [PATCH v2 3/3] ima: support platform keyring for kernel appraisal
+Message-Id: <20180309153803.25859-3-nayna@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
- <20180305165614.5469-2-jarkko.sakkinen@linux.intel.com>
- <1521249631.12827.5.camel@HansenPartnership.com>
-In-Reply-To: <1521249631.12827.5.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>, '@linux.intel.com
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, stable@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkine@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
+References: <20180309153803.25859-1-nayna@linux.vnet.ibm.com>
+In-Reply-To: <20180309153803.25859-1-nayna@linux.vnet.ibm.com>
+To: dhowells@redhat.com
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, Nayna Jain <nayna@linux.vnet.ibm.com>
 
-On Fri, Mar 16, 2018 at 06:20:31PM -0700, James Bottomley wrote:
-> It turns out this bit is wrong ... I just discovered it testing the
-> RC_RETRY code. =A0You can't feed the buf back to tpm_transmit because the
-> header has already been changed to give you back the return code. =A0To
-> make this work, you have to save the header and handle area and restore
-> it before the command is resent.
->=20
-> I think the best solution for this hunk of code is to merge it with the
-> retry code.
+Distros may sign the kernel images and, possibly, the initramfs with
+platform trusted keys. On secure boot enabled systems or embedded devices,
+these signatures are to be validated using keys on the platform keyring.
 
-Yeah, right, so it is embarrasingly so :-) I wonder how I missed ths
-during the review. Thanks for spotting this one out. Are you saying
-that I should merge the patches into a single one? Perhaps you could
-send me the merged patch if so?
+This patch enables IMA-appraisal to access the platform keyring, based on a
+new Kconfig option "IMA_USE_PLATFORM_KEYRING".
 
-If you agree, please send only that patch. I'll send v4 of my patch
-set after 4.17 pull request.
+Signed-off-by: Nayna Jain <nayna@linux.vnet.ibm.com>
+---
+Changelog:
 
-/Jarkko
+v2:
+* Rename integrity_load_keyring() to integrity_find_keyring()
+* Fix the patch description per line length as suggested by Mimi
+
+ security/integrity/digsig.c           | 15 +++++++++++++++
+ security/integrity/ima/Kconfig        | 10 ++++++++++
+ security/integrity/ima/ima_appraise.c | 22 +++++++++++++++++-----
+ security/integrity/ima/ima_init.c     |  4 ++++
+ security/integrity/integrity.h        | 17 ++++++++++++++++-
+ 5 files changed, 62 insertions(+), 6 deletions(-)
+
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 6f9e4ce568cd..cfeb977bced9 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -34,6 +34,8 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
+ 	".ima",
+ #endif
+ 	"_module",
++	".platform_keys",
++
+ };
+ 
+ #ifdef CONFIG_INTEGRITY_TRUSTED_KEYRING
+@@ -78,6 +80,19 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 	return -EOPNOTSUPP;
+ }
+ 
++#ifdef CONFIG_IMA_USE_PLATFORM_KEYRING
++int __init integrity_find_keyring(const unsigned int id)
++{
++
++	keyring[id] = find_keyring_by_name(keyring_name[id], 0);
++	if (IS_ERR(keyring[id]))
++		if (PTR_ERR(keyring[id]) != -ENOKEY)
++			return PTR_ERR(keyring[id]);
++	return 0;
++
++}
++#endif
++
+ int __init integrity_init_keyring(const unsigned int id)
+ {
+ 	const struct cred *cred = current_cred();
+diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+index 35ef69312811..2e89d4f8a364 100644
+--- a/security/integrity/ima/Kconfig
++++ b/security/integrity/ima/Kconfig
+@@ -227,3 +227,13 @@ config IMA_APPRAISE_SIGNED_INIT
+ 	default n
+ 	help
+ 	   This option requires user-space init to be signed.
++
++config IMA_USE_PLATFORM_KEYRING
++       bool "IMA uses keys from Platform Keyring for verification"
++       depends on PLATFORM_KEYRING
++       depends on IMA_APPRAISE
++       depends on INTEGRITY_ASYMMETRIC_KEYS
++       default n
++       help
++	  This option enables IMA appraisal to look for the platform
++	  trusted keys in .platform_keys keyring.
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index f2803a40ff82..5fec29f40595 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -276,13 +276,25 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 					     (const char *)xattr_value, rc,
+ 					     iint->ima_hash->digest,
+ 					     iint->ima_hash->length);
+-		if (rc = -EOPNOTSUPP) {
+-			status = INTEGRITY_UNKNOWN;
+-		} else if (rc) {
++		if (rc) {
++			if (rc = -EOPNOTSUPP) {
++				status = INTEGRITY_UNKNOWN;
++				break;
++			}
++			if (func = KEXEC_KERNEL_CHECK) {
++				rc = integrity_digsig_verify(
++						INTEGRITY_KEYRING_PLATFORM,
++						(const char *)xattr_value,
++						xattr_len,
++						iint->ima_hash->digest,
++						iint->ima_hash->length);
++				if (!rc) {
++					status = INTEGRITY_PASS;
++					break;
++				}
++			}
+ 			cause = "invalid-signature";
+ 			status = INTEGRITY_FAIL;
+-		} else {
+-			status = INTEGRITY_PASS;
+ 		}
+ 		break;
+ 	default:
+diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
+index 29b72cd2502e..5778647c6bc4 100644
+--- a/security/integrity/ima/ima_init.c
++++ b/security/integrity/ima/ima_init.c
+@@ -122,6 +122,10 @@ int __init ima_init(void)
+ 	if (rc)
+ 		return rc;
+ 
++	rc = integrity_find_keyring(INTEGRITY_KEYRING_PLATFORM);
++	if (rc)
++		pr_info("Platform keyring is not found. (rc=%d)\n", rc);
++
+ 	rc = ima_init_crypto();
+ 	if (rc)
+ 		return rc;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 50a8e3365df7..3d3b7171ead2 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -136,13 +136,23 @@ int integrity_kernel_read(struct file *file, loff_t offset,
+ #define INTEGRITY_KEYRING_EVM		0
+ #define INTEGRITY_KEYRING_IMA		1
+ #define INTEGRITY_KEYRING_MODULE	2
+-#define INTEGRITY_KEYRING_MAX		3
++#define INTEGRITY_KEYRING_PLATFORM	3
++#define INTEGRITY_KEYRING_MAX		4
+ 
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
+ 
++#ifdef CONFIG_IMA_USE_PLATFORM_KEYRING
++int __init integrity_find_keyring(const unsigned int id);
++#else
++static inline int __init integrity_find_keyring(const unsigned int id)
++{
++	return 0;
++}
++#endif
++
+ int __init integrity_init_keyring(const unsigned int id);
+ int __init integrity_load_x509(const unsigned int id, const char *path);
+ #else
+@@ -154,6 +164,11 @@ static inline int integrity_digsig_verify(const unsigned int id,
+ 	return -EOPNOTSUPP;
+ }
+ 
++static inline int __init integrity_find_keyring(const unsigned int id)
++{
++	return 0;
++}
++
+ static inline int integrity_init_keyring(const unsigned int id)
+ {
+ 	return 0;
+-- 
+2.13.6
+
