@@ -1,205 +1,60 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Thu, 22 Mar 2018 21:49:38 +0000
-Subject: Re: [PATCH v6 02/12] PKCS#7: Introduce pkcs7_get_message_sig() and verify_pkcs7_message_sig()
-Message-Id: <1521755378.3848.295.camel@linux.vnet.ibm.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Mon, 12 Mar 2018 17:07:53 +0000
+Subject: in-kernel user of ecdsa
+Message-Id: <0f698592-8ade-14d4-7891-1c35501c6285@microchip.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
-         <20180316203837.10174-3-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20180316203837.10174-3-bauerman@linux.vnet.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+To: David Howells <dhowells@redhat.com>, dwmw2@infradead.org, keyrings@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, Linux Crypto Mailing List <linux-crypto@vger.kernel.org>, "bluez mailin list (linux-bluetooth@vger.kernel.org)" <linux-bluetooth@vger.kernel.org>
 
-Hi Thiago,
+Hi,
 
-On Fri, 2018-03-16 at 17:38 -0300, Thiago Jung Bauermann wrote:
-> IMA will need to know the key that signed a given PKCS#7 message, so add
-> pkcs7_get_message_sig().
-> 
-> It will also need to verify an already parsed PKCS#7 message. For this
-> purpose, add verify_pkcs7_message_sig() which takes a struct pkcs7_message
-> for verification instead of the raw bytes that verify_pkcs7_signature()
-> takes.
+Would you consider using ECDSA in the kernel module signing facility?
+When compared with RSA, ECDSA has shorter keys, the key generation
+process is faster, the sign operation is faster, but the verify
+operation is slower than with RSA.
 
-The title "PKCS#7: refactor verify_pkcs7_signature()" might be more
-appropriate.  The patch description would then explain why it needs to
-be refactored.  In this case, verify_pkcs7_signature() verifies the
-signature using keys on the builtin and secondary keyrings.  IMA-
-appraisal needs to verify the signature using keys on its keyring.
-
-The patch itself looks good!
-
-Reviewed-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Smaller key sizes imply reduced memory footprint and bandwidth that are
+especially attractive for memory constrained devices. I'm working with
+such a device, capable of generating ecc keys, secure key storage and
+ecdsa/ecdh crypto acceleration. I'm trying to find an in-kernel user of
+ecdsa.
 
 
-> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> ---
->  certs/system_keyring.c                | 61 ++++++++++++++++++++++++++---------
->  crypto/asymmetric_keys/pkcs7_parser.c | 16 +++++++++
->  include/crypto/pkcs7.h                |  2 ++
->  include/linux/verification.h          | 10 ++++++
->  4 files changed, 73 insertions(+), 16 deletions(-)
-> 
-> diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-> index 6251d1b27f0c..7ddc8b7a3062 100644
-> --- a/certs/system_keyring.c
-> +++ b/certs/system_keyring.c
-> @@ -190,33 +190,27 @@ late_initcall(load_system_certificate_list);
->  #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
-> 
->  /**
-> - * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-> + * verify_pkcs7_message_sig - Verify a PKCS#7-based signature on system data.
->   * @data: The data to be verified (NULL if expecting internal data).
->   * @len: Size of @data.
-> - * @raw_pkcs7: The PKCS#7 message that is the signature.
-> - * @pkcs7_len: The size of @raw_pkcs7.
-> + * @pkcs7: The PKCS#7 message that is the signature.
->   * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
->   *					(void *)1UL for all trusted keys).
->   * @usage: The use to which the key is being put.
->   * @view_content: Callback to gain access to content.
->   * @ctx: Context for callback.
->   */
-> -int verify_pkcs7_signature(const void *data, size_t len,
-> -			   const void *raw_pkcs7, size_t pkcs7_len,
-> -			   struct key *trusted_keys,
-> -			   enum key_being_used_for usage,
-> -			   int (*view_content)(void *ctx,
-> -					       const void *data, size_t len,
-> -					       size_t asn1hdrlen),
-> -			   void *ctx)
-> +int verify_pkcs7_message_sig(const void *data, size_t len,
-> +			     struct pkcs7_message *pkcs7,
-> +			     struct key *trusted_keys,
-> +			     enum key_being_used_for usage,
-> +			     int (*view_content)(void *ctx,
-> +						 const void *data, size_t len,
-> +						 size_t asn1hdrlen),
-> +			     void *ctx)
->  {
-> -	struct pkcs7_message *pkcs7;
->  	int ret;
-> 
-> -	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-> -	if (IS_ERR(pkcs7))
-> -		return PTR_ERR(pkcs7);
-> -
->  	/* The data should be detached - so we need to supply it. */
->  	if (data && pkcs7_supply_detached_data(pkcs7, data, len) < 0) {
->  		pr_err("PKCS#7 signature with non-detached data\n");
-> @@ -258,6 +252,41 @@ int verify_pkcs7_signature(const void *data, size_t len,
->  	}
-> 
->  error:
-> +	pr_devel("<=%s() = %d\n", __func__, ret);
-> +	return ret;
-> +}
-> +
-> +/**
-> + * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-> + * @data: The data to be verified (NULL if expecting internal data).
-> + * @len: Size of @data.
-> + * @raw_pkcs7: The PKCS#7 message that is the signature.
-> + * @pkcs7_len: The size of @raw_pkcs7.
-> + * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
-> + *					(void *)1UL for all trusted keys).
-> + * @usage: The use to which the key is being put.
-> + * @view_content: Callback to gain access to content.
-> + * @ctx: Context for callback.
-> + */
-> +int verify_pkcs7_signature(const void *data, size_t len,
-> +			   const void *raw_pkcs7, size_t pkcs7_len,
-> +			   struct key *trusted_keys,
-> +			   enum key_being_used_for usage,
-> +			   int (*view_content)(void *ctx,
-> +					       const void *data, size_t len,
-> +					       size_t asn1hdrlen),
-> +			   void *ctx)
-> +{
-> +	struct pkcs7_message *pkcs7;
-> +	int ret;
-> +
-> +	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-> +	if (IS_ERR(pkcs7))
-> +		return PTR_ERR(pkcs7);
-> +
-> +	ret = verify_pkcs7_message_sig(data, len, pkcs7, trusted_keys, usage,
-> +				       view_content, ctx);
-> +
->  	pkcs7_free_message(pkcs7);
->  	pr_devel("<=%s() = %d\n", __func__, ret);
->  	return ret;
-> diff --git a/crypto/asymmetric_keys/pkcs7_parser.c b/crypto/asymmetric_keys/pkcs7_parser.c
-> index a6dcaa659aa8..456b803972b5 100644
-> --- a/crypto/asymmetric_keys/pkcs7_parser.c
-> +++ b/crypto/asymmetric_keys/pkcs7_parser.c
-> @@ -683,3 +683,19 @@ int pkcs7_note_signed_info(void *context, size_t hdrlen,
->  		return -ENOMEM;
->  	return 0;
->  }
-> +
-> +/**
-> + * pkcs7_get_message_sig - get signature in @pkcs7
-> + */
-> +const struct public_key_signature *pkcs7_get_message_sig(
-> +					const struct pkcs7_message *pkcs7)
-> +{
-> +	/*
-> +	 * This function doesn't support messages with more than one signature,
-> +	 * so don't return anything in that case.
-> +	 */
-> +	if (pkcs7->signed_infos = NULL || pkcs7->signed_infos->next != NULL)
-> +		return NULL;
-> +
-> +	return pkcs7->signed_infos->sig;
-> +}
-> diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
-> index 583f199400a3..6f51d0cb6d12 100644
-> --- a/include/crypto/pkcs7.h
-> +++ b/include/crypto/pkcs7.h
-> @@ -28,6 +28,8 @@ extern void pkcs7_free_message(struct pkcs7_message *pkcs7);
->  extern int pkcs7_get_content_data(const struct pkcs7_message *pkcs7,
->  				  const void **_data, size_t *_datalen,
->  				  size_t *_headerlen);
-> +extern const struct public_key_signature *pkcs7_get_message_sig(
-> +					const struct pkcs7_message *pkcs7);
-> 
->  /*
->   * pkcs7_trust.c
-> diff --git a/include/linux/verification.h b/include/linux/verification.h
-> index a10549a6c7cd..f04dac2728ec 100644
-> --- a/include/linux/verification.h
-> +++ b/include/linux/verification.h
-> @@ -29,6 +29,7 @@ extern const char *const key_being_used_for[NR__KEY_BEING_USED_FOR];
->  #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
-> 
->  struct key;
-> +struct pkcs7_message;
-> 
->  extern int verify_pkcs7_signature(const void *data, size_t len,
->  				  const void *raw_pkcs7, size_t pkcs7_len,
-> @@ -38,6 +39,15 @@ extern int verify_pkcs7_signature(const void *data, size_t len,
->  						      const void *data, size_t len,
->  						      size_t asn1hdrlen),
->  				  void *ctx);
-> +extern int verify_pkcs7_message_sig(const void *data, size_t len,
-> +				    struct pkcs7_message *pkcs7,
-> +				    struct key *trusted_keys,
-> +				    enum key_being_used_for usage,
-> +				    int (*view_content)(void *ctx,
-> +							const void *data,
-> +							size_t len,
-> +							size_t asn1hdrlen),
-> +				    void *ctx);
-> 
->  #ifdef CONFIG_SIGNED_PE_FILE_VERIFICATION
->  extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
-> 
+ECDSA and RSA comparison
+------------------------
+-> ECDSA requires a much smaller key length in order to provide the same
+security strength as RSA [1]:
 
+Security Strength    RSA (bits)        ECDSA (bits)
+112                   2048             224 - 255
+128                   3072             256 - 383
+192                   7680             384 - 511
+256                  15360             512+
+
+7680 and 15360  keys are not included in the NIST standards for
+interoperability and efficiency reasons, the keys are just too big.
+
+-> key generation: ECC key generation is faster than IFC (Integer -
+Factorization Cryptography). RSA private key is based on large prime
+numbers, while for ECDSA any positive integer less than n is a valid
+private key.
+
+-> ECDSA sign operations are faster than RSA, but verify operations are
+slower. Here's an openssl speed test that I've run on my computer:
+
+                   sign    verify    sign/s verify/s
+rsa 2048 bits 0.000604s 0.000018s   1656.3  56813.7
+rsa 4096 bits 0.004027s 0.000062s    248.3  16052.5
+
+                              sign    verify    sign/s verify/s
+256 bit ecdsa (nistp256)   0.0000s   0.0001s  28986.4  13516.3
+384 bit ecdsa (nistp384)   0.0002s   0.0008s   5541.0   1322.2
+521 bit ecdsa (nistp521)   0.0003s   0.0006s   3104.2   1756.2
+
+Best,
+ta
+
+[1] NIST SP 800-57 Pt. 1 Rev. 4, Recommendation for key management
