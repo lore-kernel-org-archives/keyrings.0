@@ -1,31 +1,47 @@
-From: James Bottomley <jejb@linux.vnet.ibm.com>
-Date: Mon, 12 Mar 2018 18:09:18 +0000
+From: Stephan Mueller <smueller@chronox.de>
+Date: Mon, 12 Mar 2018 19:56:56 +0000
 Subject: Re: [tpmdd-devel] in-kernel user of ecdsa
-Message-Id: <1520878158.4522.31.camel@linux.vnet.ibm.com>
+Message-Id: <31045526.HZb3ddfbbg@tauon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <0f698592-8ade-14d4-7891-1c35501c6285@microchip.com>
-In-Reply-To: <0f698592-8ade-14d4-7891-1c35501c6285@microchip.com>
-To: Tudor Ambarus <tudor.ambarus@microchip.com>, David Howells <dhowells@redhat.com>, dwmw2@infradead.org, keyrings@vger.kernel.org
-Cc: "bluez mailin list (linux-bluetooth@vger.kernel.org)" <linux-bluetooth@vger.kernel.org>, linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+References: <0f698592-8ade-14d4-7891-1c35501c6285@microchip.com> <1520878158.4522.31.camel@linux.vnet.ibm.com>
+In-Reply-To: <1520878158.4522.31.camel@linux.vnet.ibm.com>
+To: James Bottomley <jejb@linux.vnet.ibm.com>
+Cc: Tudor Ambarus <tudor.ambarus@microchip.com>, David Howells <dhowells@redhat.com>, dwmw2@infradead.org, keyrings@vger.kernel.org, "bluez mailin list (linux-bluetooth@vger.kernel.org)" <linux-bluetooth@vger.kernel.org>, linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
 
-T24gTW9uLCAyMDE4LTAzLTEyIGF0IDE5OjA3ICswMjAwLCBUdWRvciBBbWJhcnVzIHdyb3RlOgo+
-IEhpLAo+IAo+IFdvdWxkIHlvdSBjb25zaWRlciB1c2luZyBFQ0RTQSBpbiB0aGUga2VybmVsIG1v
-ZHVsZSBzaWduaW5nIGZhY2lsaXR5Pwo+IFdoZW4gY29tcGFyZWQgd2l0aCBSU0EsIEVDRFNBIGhh
-cyBzaG9ydGVyIGtleXMsIHRoZSBrZXkgZ2VuZXJhdGlvbgo+IHByb2Nlc3MgaXMgZmFzdGVyLCB0
-aGUgc2lnbiBvcGVyYXRpb24gaXMgZmFzdGVyLCBidXQgdGhlIHZlcmlmeQo+IG9wZXJhdGlvbiBp
-cyBzbG93ZXIgdGhhbiB3aXRoIFJTQS4KCllvdSBtaXNzZWQgdGhlIGtleXJpbmdzIGxpc3QsIHdo
-aWNoIGlzIHdoZXJlIHRoZSBtb2R1bGUgc2lnbmluZyB1dGlsaXR5CmlzIGRpc2N1c3NlZC4KCkZp
-cnN0IHF1ZXN0aW9uIGlzLCBoYXZlIHlvdSBhY3R1YWxseSB0cmllZD8gwqBJdCBsb29rcyBsaWtl
-IHNpZ24tZmlsZQpkb2Vzbid0IGRvIGFueXRoaW5nIFJTQSBzcGVjaWZpYyBzbyBpZiB5b3UgZ2l2
-ZSBpdCBhbiBFQyBYLjUwOQpjZXJ0aWZpY2F0ZSBpdCB3aWxsIHByb2R1Y2UgYW4gRUNEU0Egc2ln
-bmF0dXJlLgoKSSB0aGluayBvdXIga2VybmVsIGludGVybmFsIHg1MDkgcGFyc2VycyBkb24ndCBo
-YXZlIHRoZSBFQyBPSURzLCBzbwpzaWduYXR1cmUgdmVyaWZpY2F0aW9uIHdpbGwgZmFpbDsgYnV0
-LCBlc3BlY2lhbGx5IHNpbmNlIHdlIGhhdmUgdGhlCnJlc3Qgb2YgdGhlIEVDIG1hY2hpbmVyeSBp
-biB0aGUgY3J5cHRvIHN1YnN5c3RlbSwgdGhhdCBsb29rcyB0byBiZQpzaW1wbHkgZml4YWJsZS4K
-CkphbWVzCgotLQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAi
-dW5zdWJzY3JpYmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRv
-bW9Admdlci5rZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtl
-cm5lbC5vcmcvbWFqb3Jkb21vLWluZm8uaHRtbA==
+Am Montag, 12. M=E4rz 2018, 19:09:18 CET schrieb James Bottomley:
+
+Hi James,
+
+> On Mon, 2018-03-12 at 19:07 +0200, Tudor Ambarus wrote:
+> > Hi,
+> >=20
+> > Would you consider using ECDSA in the kernel module signing facility?
+> > When compared with RSA, ECDSA has shorter keys, the key generation
+> > process is faster, the sign operation is faster, but the verify
+> > operation is slower than with RSA.
+>=20
+> You missed the keyrings list, which is where the module signing utility
+> is discussed.
+>=20
+> First question is, have you actually tried?  It looks like sign-file
+> doesn't do anything RSA specific so if you give it an EC X.509
+> certificate it will produce an ECDSA signature.
+>=20
+> I think our kernel internal x509 parsers don't have the EC OIDs, so
+> signature verification will fail; but, especially since we have the
+> rest of the EC machinery in the crypto subsystem, that looks to be
+> simply fixable.
+
+ECDSA is not implemented currently in the kernel crypto API.
+>=20
+> James
+
+
+
+Ciao
+Stephan
+
+
