@@ -1,7 +1,7 @@
-From: "Serge E. Hallyn" <serge@hallyn.com>
-Date: Tue, 13 Mar 2018 17:39:03 +0000
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 15 Mar 2018 02:21:12 +0000
 Subject: Re: [PATCH 2/2] dh key: get rid of stack array allocation
-Message-Id: <20180313173903.GA19174@mail.hallyn.com>
+Message-Id: <20180315022112.GB641@zzz.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -12,7 +12,7 @@ In-Reply-To: <20180313042907.29598-2-tycho@tycho.ws>
 To: Tycho Andersen <tycho@tycho.ws>
 Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
 
-Quoting Tycho Andersen (tycho@tycho.ws):
+On Mon, Mar 12, 2018 at 10:29:07PM -0600, Tycho Andersen wrote:
 > Similarly to the previous patch, we would like to get rid of stack
 > allocated arrays: https://lkml.org/lkml/2018/3/7/621
 > 
@@ -25,11 +25,6 @@ Quoting Tycho Andersen (tycho@tycho.ws):
 > CC: David Howells <dhowells@redhat.com>
 > CC: James Morris <jmorris@namei.org>
 > CC: "Serge E. Hallyn" <serge@hallyn.com>
-
-Acked-by: Serge Hallyn <serge@hallyn.com>
-
-for both, thanks.
-
 > ---
 >  security/keys/dh.c | 27 +++++++++++++++++++++------
 >  1 file changed, 21 insertions(+), 6 deletions(-)
@@ -67,6 +62,12 @@ for both, thanks.
 > +
 > +			kzfree(tmpbuffer);
 >  		}
+
+This is just hashing zeroes.  Why not use the zeroes at the end of the 'src'
+buffer which was allocated as 'outbuf' in __keyctl_dh_compute()?  It's already
+the right size.  It might even simplify the code a bit since
+crypto_shash_update() would no longer need to be in a loop.
+
 >  
 >  		if (src && slen) {
 > @@ -184,13 +192,20 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
@@ -94,4 +95,13 @@ for both, thanks.
 >  		} else {
 >  			err = crypto_shash_final(desc, dst);
 > -- 
-> 2.15.1
+
+Why not instead round the allocated size of 'outbuf' in keyctl_dh_compute_kdf()
+up to the next 'crypto_shash_digestsize()'-boundary?  Then this temporary buffer
+wouldn't be needed at all.
+
+It would be nice if people thought about how to properly solve the problems when
+doing these VLA conversions, rather than mindlessly replacing them with
+kmalloc...
+
+Eric
