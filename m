@@ -1,119 +1,101 @@
-From: Tycho Andersen <tycho@tycho.ws>
-Date: Wed, 21 Mar 2018 04:05:11 +0000
-Subject: Re: [PATCH 2/2] dh key: get rid of stack array allocation
-Message-Id: <20180321040511.GB18067@cisco>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Fri, 16 Mar 2018 20:38:30 +0000
+Subject: [PATCH v6 05/12] integrity: Introduce integrity_keyring_from_id()
+Message-Id: <20180316203837.10174-6-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180313042907.29598-1-tycho@tycho.ws>
- <20180313042907.29598-2-tycho@tycho.ws>
- <20180315022112.GB641@zzz.localdomain>
-In-Reply-To: <20180315022112.GB641@zzz.localdomain>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
+References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-Hi Eric,
+IMA will need to obtain the keyring used to verify file signatures so that
+it can verify the module-style signature appended to files.
 
-On Wed, Mar 14, 2018 at 07:21:12PM -0700, Eric Biggers wrote:
-> On Mon, Mar 12, 2018 at 10:29:07PM -0600, Tycho Andersen wrote:
-> > Similarly to the previous patch, we would like to get rid of stack
-> > allocated arrays: https://lkml.org/lkml/2018/3/7/621
-> > 
-> > In this case, we can also use a malloc style approach to free the temporary
-> > buffer, being careful to also use kzfree to free them (indeed, at least one
-> > of these has a memzero_explicit, but it seems like maybe they both
-> > should?).
-> > 
-> > Signed-off-by: Tycho Andersen <tycho@tycho.ws>
-> > CC: David Howells <dhowells@redhat.com>
-> > CC: James Morris <jmorris@namei.org>
-> > CC: "Serge E. Hallyn" <serge@hallyn.com>
-> > ---
-> >  security/keys/dh.c | 27 +++++++++++++++++++++------
-> >  1 file changed, 21 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/security/keys/dh.c b/security/keys/dh.c
-> > index d1ea9f325f94..f02261b24759 100644
-> > --- a/security/keys/dh.c
-> > +++ b/security/keys/dh.c
-> > @@ -162,19 +162,27 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
-> >  			goto err;
-> >  
-> >  		if (zlen && h) {
-> > -			u8 tmpbuffer[h];
-> > +			u8 *tmpbuffer;
-> >  			size_t chunk = min_t(size_t, zlen, h);
-> > -			memset(tmpbuffer, 0, chunk);
-> > +
-> > +			err = -ENOMEM;
-> > +			tmpbuffer = kzalloc(chunk, GFP_KERNEL);
-> > +			if (!tmpbuffer)
-> > +				goto err;
-> >  
-> >  			do {
-> >  				err = crypto_shash_update(desc, tmpbuffer,
-> >  							  chunk);
-> > -				if (err)
-> > +				if (err) {
-> > +					kzfree(tmpbuffer);
-> >  					goto err;
-> > +				}
-> >  
-> >  				zlen -= chunk;
-> >  				chunk = min_t(size_t, zlen, h);
-> >  			} while (zlen);
-> > +
-> > +			kzfree(tmpbuffer);
-> >  		}
-> 
-> This is just hashing zeroes.  Why not use the zeroes at the end of the 'src'
-> buffer which was allocated as 'outbuf' in __keyctl_dh_compute()?  It's already
-> the right size.  It might even simplify the code a bit since
-> crypto_shash_update() would no longer need to be in a loop.
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+---
+ security/integrity/digsig.c    | 28 +++++++++++++++++++++-------
+ security/integrity/integrity.h |  6 ++++++
+ 2 files changed, 27 insertions(+), 7 deletions(-)
 
-Can you clarify what you mean by the "end" here? It looks like the end
-is copied over with the user string just before it's passed into
-keyctl_dh_compute_kdf().
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 6f9e4ce568cd..e641a67b9fc7 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -48,11 +48,10 @@ static bool init_keyring __initdata;
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
+ #endif
+ 
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+-			    const char *digest, int digestlen)
++struct key *integrity_keyring_from_id(const unsigned int id)
+ {
+-	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
+-		return -EINVAL;
++	if (id >= INTEGRITY_KEYRING_MAX)
++		return ERR_PTR(-EINVAL);
+ 
+ 	if (!keyring[id]) {
+ 		keyring[id] @@ -61,17 +60,32 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			int err = PTR_ERR(keyring[id]);
+ 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
+ 			keyring[id] = NULL;
+-			return err;
++			return ERR_PTR(err);
+ 		}
+ 	}
+ 
++	return keyring[id];
++}
++
++int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
++			    const char *digest, int digestlen)
++{
++	struct key *keyring;
++
++	if (siglen < 2)
++		return -EINVAL;
++
++	keyring = integrity_keyring_from_id(id);
++	if (IS_ERR(keyring))
++		return PTR_ERR(keyring);
++
+ 	switch (sig[1]) {
+ 	case 1:
+ 		/* v1 API expect signature without xattr type */
+-		return digsig_verify(keyring[id], sig + 1, siglen - 1,
++		return digsig_verify(keyring, sig + 1, siglen - 1,
+ 				     digest, digestlen);
+ 	case 2:
+-		return asymmetric_verify(keyring[id], sig, siglen,
++		return asymmetric_verify(keyring, sig, siglen,
+ 					 digest, digestlen);
+ 	}
+ 
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 79799a0d9195..2d245f44ca26 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -150,6 +150,7 @@ int integrity_kernel_read(struct file *file, loff_t offset,
+ 
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 
++struct key *integrity_keyring_from_id(const unsigned int id);
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
+ 
+@@ -157,6 +158,11 @@ int __init integrity_init_keyring(const unsigned int id);
+ int __init integrity_load_x509(const unsigned int id, const char *path);
+ #else
+ 
++static inline struct key *integrity_keyring_from_id(const unsigned int id)
++{
++	return ERR_PTR(-EINVAL);
++}
++
+ static inline int integrity_digsig_verify(const unsigned int id,
+ 					  const char *sig, int siglen,
+ 					  const char *digest, int digestlen)
 
-In any case, I agree that it's dumb to do this allocation in a loop
-now. What if instead we just do one big long allocation of zlen, hash
-it, and then free it? This has the advantage that it's not allocated
-two functions away from where it's used...
-
-> >  
-> >  		if (src && slen) {
-> > @@ -184,13 +192,20 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
-> >  		}
-> >  
-> >  		if (dlen < h) {
-> > -			u8 tmpbuffer[h];
-> > +			u8 *tmpbuffer;
-> > +
-> > +			err = -ENOMEM;
-> > +			tmpbuffer = kzalloc(h, GFP_KERNEL);
-> > +			if (!tmpbuffer)
-> > +				goto err;
-> >  
-> >  			err = crypto_shash_final(desc, tmpbuffer);
-> > -			if (err)
-> > +			if (err) {
-> > +				kzfree(tmpbuffer);
-> >  				goto err;
-> > +			}
-> >  			memcpy(dst, tmpbuffer, dlen);
-> > -			memzero_explicit(tmpbuffer, h);
-> > +			kzfree(tmpbuffer);
-> >  			return 0;
-> >  		} else {
-> >  			err = crypto_shash_final(desc, dst);
-> > -- 
-> 
-> Why not instead round the allocated size of 'outbuf' in keyctl_dh_compute_kdf()
-> up to the next 'crypto_shash_digestsize()'-boundary?  Then this temporary buffer
-> wouldn't be needed at all.
-
-Thanks, I've made this change (and split it out into a separate patch)
-for v2.
-
-Tycho
