@@ -1,128 +1,191 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 05 Mar 2018 14:39:02 +0000
-Subject: [PATCH v2 4/5] tpm: migrate tpm2_get_tpm_pt() to use struct tpm_buf
-Message-Id: <20180305143904.7477-5-jarkko.sakkinen@linux.intel.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Fri, 16 Mar 2018 20:38:34 +0000
+Subject: [PATCH v6 09/12] ima: Add modsig appraise_type option for module-style appended signatures
+Message-Id: <20180316203837.10174-10-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180305143904.7477-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20180305143904.7477-1-jarkko.sakkinen@linux.intel.com>
+References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
 To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-In order to make struct tpm_buf the first class object for constructing TPM
-commands, migrate tpm2_get_tpm_pt() to use it.
+This patch introduces the modsig keyword to the IMA policy syntax to
+specify that a given hook should expect the file to have the IMA signature
+appended to it. Here is how it can be used in a rule:
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
+
+With this rule, IMA will accept either a signature stored in the extended
+attribute or an appended signature.
+
+For now, the rule above will behave exactly the same as if
+appraise_type=imasig was specified because the actual modsig implementation
+will be introduced in a separate patch.
+
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
- drivers/char/tpm/tpm2-cmd.c | 63 +++++++++++++++++----------------------------
- 1 file changed, 23 insertions(+), 40 deletions(-)
+ Documentation/ABI/testing/ima_policy |  6 +++++-
+ security/integrity/ima/Kconfig       | 10 ++++++++++
+ security/integrity/ima/Makefile      |  1 +
+ security/integrity/ima/ima.h         |  9 +++++++++
+ security/integrity/ima/ima_modsig.c  | 31 +++++++++++++++++++++++++++++++
+ security/integrity/ima/ima_policy.c  | 12 ++++++++++--
+ security/integrity/integrity.h       |  1 +
+ 7 files changed, 67 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index 890d83c5c78b..e02f7d46e9ac 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -27,20 +27,6 @@ enum tpm2_session_attributes {
- 	TPM2_SA_CONTINUE_SESSION	= BIT(0),
- };
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index b8465e00ba5f..835d9da9b26e 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -37,7 +37,7 @@ Description:
+ 			euid:= decimal value
+ 			fowner:= decimal value
+ 		lsm:  	are LSM specific
+-		option:	appraise_type:= [imasig]
++		option:	appraise_type:= [imasig] [imasig|modsig]
+ 			pcr:= decimal value
  
--struct tpm2_get_tpm_pt_in {
--	__be32	cap_id;
--	__be32	property_id;
--	__be32	property_cnt;
--} __packed;
--
--struct tpm2_get_tpm_pt_out {
--	u8	more_data;
--	__be32	subcap_id;
--	__be32	property_cnt;
--	__be32	property_id;
--	__be32	value;
--} __packed;
--
- struct tpm2_get_random_in {
- 	__be16	size;
- } __packed;
-@@ -51,8 +37,6 @@ struct tpm2_get_random_out {
- } __packed;
+ 		default policy:
+@@ -103,3 +103,7 @@ Description:
  
- union tpm2_cmd_params {
--	struct	tpm2_get_tpm_pt_in	get_tpm_pt_in;
--	struct	tpm2_get_tpm_pt_out	get_tpm_pt_out;
- 	struct	tpm2_get_random_in	getrandom_in;
- 	struct	tpm2_get_random_out	getrandom_out;
- };
-@@ -377,19 +361,6 @@ int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max)
- 	return total ? total : -EIO;
- }
- 
--#define TPM2_GET_TPM_PT_IN_SIZE \
--	(sizeof(struct tpm_input_header) + \
--	 sizeof(struct tpm2_get_tpm_pt_in))
--
--#define TPM2_GET_TPM_PT_OUT_BODY_SIZE \
--	 sizeof(struct tpm2_get_tpm_pt_out)
--
--static const struct tpm_input_header tpm2_get_tpm_pt_header = {
--	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
--	.length = cpu_to_be32(TPM2_GET_TPM_PT_IN_SIZE),
--	.ordinal = cpu_to_be32(TPM2_CC_GET_CAPABILITY)
--};
--
- /**
-  * tpm2_flush_context_cmd() - execute a TPM2_FlushContext command
-  * @chip: TPM chip to use
-@@ -723,6 +694,14 @@ int tpm2_unseal_trusted(struct tpm_chip *chip,
- 	return rc;
- }
- 
-+struct tpm2_get_cap_out {
-+	u8 more_data;
-+	__be32 subcap_id;
-+	__be32 property_cnt;
-+	__be32 property_id;
-+	__be32 value;
-+} __packed;
+ 			measure func=KEXEC_KERNEL_CHECK pcr=4
+ 			measure func=KEXEC_INITRAMFS_CHECK pcr=5
 +
- /**
-  * tpm2_get_tpm_pt() - get value of a TPM_CAP_TPM_PROPERTIES type property
-  * @chip:		TPM chip to use.
-@@ -735,19 +714,23 @@ int tpm2_unseal_trusted(struct tpm_chip *chip,
- ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,  u32 *value,
- 			const char *desc)
- {
--	struct tpm2_cmd cmd;
-+	struct tpm2_get_cap_out *out;
-+	struct tpm_buf buf;
- 	int rc;
++		Example of appraise rule allowing modsig appended signatures:
++
++			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
+diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+index 6a8f67714c83..ee278189e0bb 100644
+--- a/security/integrity/ima/Kconfig
++++ b/security/integrity/ima/Kconfig
+@@ -164,6 +164,16 @@ config IMA_APPRAISE_BOOTPARAM
+ 	  This option enables the different "ima_appraise=" modes
+ 	  (eg. fix, log) from the boot command line.
  
--	cmd.header.in = tpm2_get_tpm_pt_header;
--	cmd.params.get_tpm_pt_in.cap_id = cpu_to_be32(TPM2_CAP_TPM_PROPERTIES);
--	cmd.params.get_tpm_pt_in.property_id = cpu_to_be32(property_id);
--	cmd.params.get_tpm_pt_in.property_cnt = cpu_to_be32(1);
--
--	rc = tpm_transmit_cmd(chip, NULL, &cmd, sizeof(cmd),
--			      TPM2_GET_TPM_PT_OUT_BODY_SIZE, 0, desc);
--	if (!rc)
--		*value = be32_to_cpu(cmd.params.get_tpm_pt_out.value);
--
-+	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_GET_CAPABILITY);
-+	if (rc)
-+		return rc;
-+	tpm_buf_append_u32(&buf, TPM2_CAP_TPM_PROPERTIES);
-+	tpm_buf_append_u32(&buf, property_id);
-+	tpm_buf_append_u32(&buf, 1);
-+	rc = tpm_transmit_cmd(chip, NULL, buf.data, PAGE_SIZE, 0, 0, NULL);
-+	if (!rc) {
-+		out = (struct tpm2_get_cap_out *)
-+			&buf.data[TPM_HEADER_SIZE];
-+		*value = be32_to_cpu(out->value);
++config IMA_APPRAISE_MODSIG
++	bool "Support module-style signatures for appraisal"
++	depends on IMA_APPRAISE
++	default n
++	help
++	   Adds support for signatures appended to files. The format of the
++	   appended signature is the same used for signed kernel modules.
++	   The modsig keyword can be used in the IMA policy to allow a hook
++	   to accept such signatures.
++
+ config IMA_TRUSTED_KEYRING
+ 	bool "Require all keys on the .ima keyring be signed (deprecated)"
+ 	depends on IMA_APPRAISE && SYSTEM_TRUSTED_KEYRING
+diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
+index d921dc4f9eb0..31d57cdf2421 100644
+--- a/security/integrity/ima/Makefile
++++ b/security/integrity/ima/Makefile
+@@ -9,5 +9,6 @@ obj-$(CONFIG_IMA) += ima.o
+ ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
+ 	 ima_policy.o ima_template.o ima_template_lib.o
+ ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
++ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
+ ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
+ obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 99f2bab15009..c61d8fc5190d 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -299,6 +299,15 @@ static inline int ima_read_xattr(struct dentry *dentry,
+ 
+ #endif /* CONFIG_IMA_APPRAISE */
+ 
++#ifdef CONFIG_IMA_APPRAISE_MODSIG
++bool ima_hook_supports_modsig(enum ima_hooks func);
++#else
++static inline bool ima_hook_supports_modsig(enum ima_hooks func)
++{
++	return false;
++}
++#endif /* CONFIG_IMA_APPRAISE_MODSIG */
++
+ /* LSM based policy rules require audit */
+ #ifdef CONFIG_IMA_LSM_RULES
+ 
+diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
+new file mode 100644
+index 000000000000..d8ea811b6f74
+--- /dev/null
++++ b/security/integrity/ima/ima_modsig.c
+@@ -0,0 +1,31 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * IMA support for appraising module-style appended signatures.
++ *
++ * Copyright (C) 2018  IBM Corporation
++ *
++ * Author:
++ * Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
++ */
++
++#include "ima.h"
++
++/**
++ * ima_hook_supports_modsig - can the policy allow modsig for this hook?
++ *
++ * modsig is only supported by hooks using ima_post_read_file, because only they
++ * preload the contents of the file in a buffer. FILE_CHECK does that in some
++ * cases, but not when reached from vfs_open. POLICY_CHECK can support it, but
++ * it's not useful in practice because it's a text file so deny.
++ */
++bool ima_hook_supports_modsig(enum ima_hooks func)
++{
++	switch (func) {
++	case FIRMWARE_CHECK:
++	case KEXEC_KERNEL_CHECK:
++	case KEXEC_INITRAMFS_CHECK:
++		return true;
++	default:
++		return false;
 +	}
-+	tpm_buf_destroy(&buf);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(tpm2_get_tpm_pt);
--- 
-2.15.1
++}
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 833da24c7009..e7421fd94277 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -887,6 +887,10 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 			ima_log_string(ab, "appraise_type", args[0].from);
+ 			if ((strcmp(args[0].from, "imasig")) = 0)
+ 				entry->flags |= IMA_DIGSIG_REQUIRED;
++			else if (ima_hook_supports_modsig(entry->func) &&
++				 strcmp(args[0].from, "imasig|modsig") = 0)
++				entry->flags |= IMA_DIGSIG_REQUIRED
++						| IMA_MODSIG_ALLOWED;
+ 			else
+ 				result = -EINVAL;
+ 			break;
+@@ -1176,8 +1180,12 @@ int ima_policy_show(struct seq_file *m, void *v)
+ 			}
+ 		}
+ 	}
+-	if (entry->flags & IMA_DIGSIG_REQUIRED)
+-		seq_puts(m, "appraise_type=imasig ");
++	if (entry->flags & IMA_DIGSIG_REQUIRED) {
++		if (entry->flags & IMA_MODSIG_ALLOWED)
++			seq_puts(m, "appraise_type=imasig|modsig ");
++		else
++			seq_puts(m, "appraise_type=imasig ");
++	}
+ 	if (entry->flags & IMA_PERMIT_DIRECTIO)
+ 		seq_puts(m, "permit_directio ");
+ 	rcu_read_unlock();
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 4c381b992e11..6643c6550787 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -35,6 +35,7 @@
+ #define IMA_NEW_FILE		0x04000000
+ #define EVM_IMMUTABLE_DIGSIG	0x08000000
+ #define IMA_FAIL_UNVERIFIABLE_SIGS	0x10000000
++#define IMA_MODSIG_ALLOWED	0x20000000
+ 
+ #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+ 				 IMA_HASH | IMA_APPRAISE_SUBMASK)
 
