@@ -1,24 +1,33 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Sat, 10 Mar 2018 13:11:35 +0000
+Date: Fri, 16 Mar 2018 12:21:29 +0000
 Subject: Re: [PATCH v3 3/5] tpm: migrate tpm2_probe() to use struct tpm_buf
-Message-Id: <1afb789425c50f06efbd80bc7377731fd1269d42.camel@linux.intel.com>
+Message-Id: <20180316122129.GA2458@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
 References: <20180305165614.5469-1-jarkko.sakkinen@linux.intel.com>
-         <20180305165614.5469-4-jarkko.sakkinen@linux.intel.com>
-         <3f3f9059-06ae-cb78-0d02-2658b2edc234@gmail.com>
-In-Reply-To: <3f3f9059-06ae-cb78-0d02-2658b2edc234@gmail.com>
-To: J Freyensee <why2jjj.linux@gmail.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
+ <20180305165614.5469-4-jarkko.sakkinen@linux.intel.com>
+ <1520290344.10396.357.camel@linux.vnet.ibm.com>
+In-Reply-To: <1520290344.10396.357.camel@linux.vnet.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>
 
-On Thu, 2018-03-08 at 13:47 -0800, J Freyensee wrote:
-> Looks better :-).
-> 
-> 
-> Acked-by: Jay Freyensee <why2jjj.linux@gmail.com>
+On Mon, Mar 05, 2018 at 05:52:24PM -0500, Mimi Zohar wrote:
+> Hi Jarrko,
+>=20
+> On Mon, 2018-03-05 at 18:56 +0200, Jarkko Sakkinen wrote:
+> > In order to make struct tpm_buf the first class object for constructing=
+ TPM
+> > commands, migrate tpm2_probe() to use it.
+> >=20
+> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+>=20
+> With this patch, the Pi doesn't find the TPM. =A0I'm seeing the
+> following line in dmesg.
+>=20
+> [=A0=A0=A0=A01.087414] tpm_tis_spi: probe of spi0.0 failed with error 256
 
-Thank you.
+Thank you for reporting this Mimi. Does it have TPM1/TPM2?
 
 /Jarkko
