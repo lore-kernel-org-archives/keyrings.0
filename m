@@ -1,165 +1,149 @@
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Date: Fri, 09 Mar 2018 17:10:34 +0000
-Subject: Re: [PATCH v2 1/3] certs: define a trusted platform keyring
-Message-Id: <1520615434.3911.3.camel@linux.vnet.ibm.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Fri, 16 Mar 2018 20:38:37 +0000
+Subject: [PATCH v6 12/12] ima: Write modsig to the measurement list
+Message-Id: <20180316203837.10174-13-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180309153803.25859-1-nayna@linux.vnet.ibm.com>
-In-Reply-To: <20180309153803.25859-1-nayna@linux.vnet.ibm.com>
-To: Nayna Jain <nayna@linux.vnet.ibm.com>, dhowells@redhat.com
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org
+References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-T24gRnJpLCAyMDE4LTAzLTA5IGF0IDIxOjA4ICswNTMwLCBOYXluYSBKYWluIHdyb3RlOgo+IFRo
-ZSBrZXJuZWwgY2FuIGJlIHN1cHBsaWVkIGluIFNFRVBST00gb3IgbG9ja2FibGUgZmxhc2ggbWVt
-b3J5IGluIGVtYmVkZGVkCj4gZGV2aWNlcy4gU29tZSBkZXZpY2VzIG1heSBub3Qgc3VwcG9ydCBz
-ZWN1cmUgYm9vdCwgYnV0IHRoZSBrZXJuZWwgaXMKPiB0cnVzdGVkIGJlY2F1c2UgdGhlIGltYWdl
-IGlzIHN0b3JlZCBpbiBwcm90ZWN0ZWQgbWVtb3J5LiBUaGF0IGtlcm5lbCBtYXkKPiBuZWVkIHRv
-IGtleGVjIGFkZGl0aW9uYWwga2VybmVscywgaXQgbWF5IGJlIHVzZWQgYXMgYSBib290bG9hZGVy
-LCBmb3IKPiBleGFtcGxlLCBvciBpdCBtYXkgbmVlZCB0byBrZXhlYyBhIGNyYXNoZHVtcCBrZXJu
-ZWwuIEluIHN1Y2ggY2FzZXMsIGl0IG1heQo+IHdhbnQgdG8gdmVyaWZ5IHRoZSBzaWduYXR1cmUg
-b2YgdGhlIG5leHQga2VybmVsLgo+IAo+IFRoZSBrZXJuZWwsIGhvd2V2ZXIsIGNhbm5vdCBkaXJl
-Y3RseSB2ZXJpZnkgcGxhdGZvcm0ga2V5cywgYW5kIGFuCj4gYWRtaW5pc3RyYXRvciBtYXkgdGhl
-cmVmb3JlIG5vdCB3YW50IHRvIHRydXN0IHRoZW0gZm9yIGFyYml0cmFyeSB1c2FnZS4KPiBJbiBv
-cmRlciB0byBkaWZmZXJlbnRpYXRlIHBsYXRmb3JtIGtleXMgZnJvbSBvdGhlciBrZXlzIGFuZCBw
-cm92aWRlIHRoZQo+IG5lY2Vzc2FyeSBzZXBhcmF0aW9uIG9mIHRydXN0LCB0aGUga2VybmVsIG5l
-ZWRzIGFuIGFkZGl0aW9uYWwga2V5cmluZyB0bwo+IHN0b3JlIHBsYXRmb3JtIGtleXMuCj4gCj4g
-VGhpcyBwYXRjaCBpbXBsZW1lbnRzIGEgYnVpbHQtaW4gbGlzdCBvZiBjZXJ0aWZpY2F0ZXMgdGhh
-dCBhcmUgbG9hZGVkIG9udG8KPiB0aGUgdHJ1c3RlZCBwbGF0Zm9ybSBrZXlyaW5nIG5hbWVkICIu
-cGxhdGZvcm1fa2V5cyIgdG8gZmFjaWxpdGF0ZSBzaWduYXR1cmUKPiB2ZXJpZmljYXRpb24gZHVy
-aW5nIGtleGVjLiBCZWNhdXNlIHRoZSBwbGF0Zm9ybSBrZXlyaW5nIGFyZSBidWlsdGluLCBpdAo+
-IGNhbm5vdCBiZSB1cGRhdGVkIGZyb20gdXNlcnNwYWNlLgo+IAo+IFRoaXMga2V5cmluZyBjYW4g
-YmUgZW5hYmxlZCBieSBzZXR0aW5nIENPTkZJR19QTEFURk9STV9LRVlSSU5HLiBUaGUKPiBwbGF0
-Zm9ybSBjZXJ0aWZpY2F0ZSBjYW4gYmUgcHJvdmlkZWQgdXNpbmcgQ09ORklHX1BMQVRGT1JNX1RS
-VVNURURfS0VZUy4KPiAKPiBTaWduZWQtb2ZmLWJ5OiBOYXluYSBKYWluIDxuYXluYUBsaW51eC52
-bmV0LmlibS5jb20+CgpQbGVhc2UgYWRkIG15IFJldmlld2VkLWJ5OiBNaW1pIFpvaGFyIDx6b2hh
-ckBsaW51eC52bmV0LmlibS5jb20+wqBvbgp0aGlzIGFuZCAyLzMuCgpNaW1pCgo+IC0tLQo+IENo
-YW5nZWxvZzoKPiAKPiB2MjoKPiAKPiAqIEluY2x1ZGUgRGF2aWQgSG93ZWxsJ3MgZmVlZGJhY2s6
-Cj4gICogRml4IHRoZSBpbmRlbnRhdGlvbgo+ICogRml4IHRoZSBwYXRjaCBkZXNjcmlwdGlvbiBw
-ZXIgbGluZSBsZW5ndGggYXMgc3VnZ2VzdGVkIGJ5IE1pbWkKPiAKPiAgY2VydHMvS2NvbmZpZyAg
-ICAgICAgICAgICAgIHwgMTcgKysrKysrKysrKysrKysKPiAgY2VydHMvTWFrZWZpbGUgICAgICAg
-ICAgICAgIHwgMTMgKysrKysrKysrKysKPiAgY2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TIHwg
-MjAgKysrKysrKysrKysrKysrKysKPiAgY2VydHMvc3lzdGVtX2tleXJpbmcuYyAgICAgIHwgNTUg
-KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tCj4gIDQgZmlsZXMg
-Y2hhbmdlZCwgOTcgaW5zZXJ0aW9ucygrKSwgOCBkZWxldGlvbnMoLSkKPiAKPiBkaWZmIC0tZ2l0
-IGEvY2VydHMvS2NvbmZpZyBiL2NlcnRzL0tjb25maWcKPiBpbmRleCA1Zjc2NjNkZjZlOGUuLjYw
-OGE0MzU4YTI1ZSAxMDA2NDQKPiAtLS0gYS9jZXJ0cy9LY29uZmlnCj4gKysrIGIvY2VydHMvS2Nv
-bmZpZwo+IEBAIC04Myw0ICs4MywyMSBAQCBjb25maWcgU1lTVEVNX0JMQUNLTElTVF9IQVNIX0xJ
-U1QKPiAgCSAgd3JhcHBlciB0byBpbmNvcnBvcmF0ZSB0aGUgbGlzdCBpbnRvIHRoZSBrZXJuZWwu
-ICBFYWNoIDxoYXNoPiBzaG91bGQKPiAgCSAgYmUgYSBzdHJpbmcgb2YgaGV4IGRpZ2l0cy4KPiAK
-PiArY29uZmlnIFBMQVRGT1JNX0tFWVJJTkcKPiArICAgICAgICBib29sICJQcm92aWRlIGtleXJp
-bmcgZm9yIHBsYXRmb3JtIHRydXN0ZWQga2V5cyIKPiArICAgICAgICBkZXBlbmRzIG9uIEtFWVMK
-PiArICAgICAgICBkZXBlbmRzIG9uIEFTWU1NRVRSSUNfS0VZX1RZUEUKPiArICAgICAgICBoZWxw
-Cj4gKwkgIFByb3ZpZGUgYSBzZXBhcmF0ZSwgZGlzdGluY3Qga2V5cmluZyBmb3IgcGxhdGZvcm0g
-dHJ1c3RlZCBrZXlzLCB3aGljaAo+ICsJICB0aGUga2VybmVsIGF1dG9tYXRpY2FsbHkgcG9wdWxh
-dGVzIGR1cmluZyBpbml0aWFsaXphdGlvbiBmcm9tIHZhbHVlcwo+ICsJICBlbWJlZGRlZCBkdXJp
-bmcgYnVpbGQsIHVzZWQgZm9yIHZlcmlmeWluZyB0aGUga2V4ZWMnZWQga2VybmVsIGltYWdlCj4g
-KwkgIGFuZCwgcG9zc2libHksIHRoZSBpbml0cmFtZnMgc2lnbmF0dXJlLgo+ICsKPiArY29uZmln
-IFBMQVRGT1JNX1RSVVNURURfS0VZUwo+ICsJc3RyaW5nICJQbGF0Zm9ybS9GaXJtd2FyZSB0cnVz
-dGVkIFguNTA5IGNlcnRzLiIKPiArCWRlcGVuZHMgb24gUExBVEZPUk1fS0VZUklORwo+ICsJaGVs
-cAo+ICsJICBQcm92aWRlIHRoZSBmaWxlbmFtZSBvZiBhIFBFTS1mb3JtYXR0ZWQgZmlsZSBjb250
-YWluaW5nIHRoZSBwbGF0Zm9ybQo+ICsJICB0cnVzdGVkIFguNTA5IGNlcnRpZmljYXRlcyB0byBi
-ZSBsb2FkZWQgaW4gdGhlIHBsYXRmb3JtIGtleXJpbmcuCj4gKwo+ICBlbmRtZW51Cj4gZGlmZiAt
-LWdpdCBhL2NlcnRzL01ha2VmaWxlIGIvY2VydHMvTWFrZWZpbGUKPiBpbmRleCA1ZDA5OTliOWUy
-MWIuLjY4MDkwMzcyNTAzMSAxMDA2NDQKPiAtLS0gYS9jZXJ0cy9NYWtlZmlsZQo+ICsrKyBiL2Nl
-cnRzL01ha2VmaWxlCj4gQEAgLTEwNCwzICsxMDQsMTYgQEAgdGFyZ2V0cyArPSBzaWduaW5nX2tl
-eS54NTA5Cj4gICQob2JqKS9zaWduaW5nX2tleS54NTA5OiBzY3JpcHRzL2V4dHJhY3QtY2VydCAk
-KFg1MDlfREVQKSBGT1JDRQo+ICAJJChjYWxsIGlmX2NoYW5nZWQsZXh0cmFjdF9jZXJ0cywkKE1P
-RFVMRV9TSUdfS0VZX1NSQ1BSRUZJWCkkKENPTkZJR19NT0RVTEVfU0lHX0tFWSkpCj4gIGVuZGlm
-ICMgQ09ORklHX01PRFVMRV9TSUcKPiArCj4gKwo+ICtpZmVxICgkKENPTkZJR19QTEFURk9STV9L
-RVlSSU5HKSx5KQo+ICsKPiArJChldmFsICQoY2FsbCBjb25maWdfZmlsZW5hbWUsUExBVEZPUk1f
-VFJVU1RFRF9LRVlTKSkKPiArCj4gKyMgR0NDIGRvZXNuJ3QgaW5jbHVkZSAuaW5jYmluIGZpbGVz
-IGluIC1NRCBnZW5lcmF0ZWQgZGVwZW5kZW5jaWVzIChQUiM2Njg3MSkKPiArJChvYmopL3N5c3Rl
-bV9jZXJ0aWZpY2F0ZXMubzogJChvYmopL3BsYXRmb3JtX2NlcnRpZmljYXRlX2xpc3QKPiArCj4g
-K3RhcmdldHMgKz0gcGxhdGZvcm1fY2VydGlmaWNhdGVfbGlzdAo+ICskKG9iaikvcGxhdGZvcm1f
-Y2VydGlmaWNhdGVfbGlzdDogc2NyaXB0cy9leHRyYWN0LWNlcnQgJChQTEFURk9STV9UUlVTVEVE
-X0tFWVNfRklMRU5BTUUpIEZPUkNFCj4gKwkkKGNhbGwgaWZfY2hhbmdlZCxleHRyYWN0X2NlcnRz
-LCQoQ09ORklHX1BMQVRGT1JNX1RSVVNURURfS0VZUykpCj4gK2VuZGlmICMgQ09ORklHX1BMQVRG
-T1JNX0tFWVJJTkcKPiBkaWZmIC0tZ2l0IGEvY2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TIGIv
-Y2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TCj4gaW5kZXggMzkxOGZmNzIzNWVkLi5iMGViNDQ4
-ZWU2MTcgMTAwNjQ0Cj4gLS0tIGEvY2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TCj4gKysrIGIv
-Y2VydHMvc3lzdGVtX2NlcnRpZmljYXRlcy5TCj4gQEAgLTE0LDYgKzE0LDE1IEBAIF9fY2VydF9s
-aXN0X3N0YXJ0Ogo+ICAJLmluY2JpbiAiY2VydHMveDUwOV9jZXJ0aWZpY2F0ZV9saXN0Igo+ICBf
-X2NlcnRfbGlzdF9lbmQ6Cj4gCj4gKyNpZmRlZiBDT05GSUdfUExBVEZPUk1fS0VZUklORwo+ICsJ
-LmFsaWduIDgKPiArCS5nbG9ibCBWTUxJTlVYX1NZTUJPTChwbGF0Zm9ybV9jZXJ0aWZpY2F0ZV9s
-aXN0KQo+ICtWTUxJTlVYX1NZTUJPTChwbGF0Zm9ybV9jZXJ0aWZpY2F0ZV9saXN0KToKPiArX19w
-bGF0Zm9ybV9jZXJ0X2xpc3Rfc3RhcnQ6Cj4gKwkuaW5jYmluICJjZXJ0cy9wbGF0Zm9ybV9jZXJ0
-aWZpY2F0ZV9saXN0Igo+ICtfX3BsYXRmb3JtX2NlcnRfbGlzdF9lbmQ6Cj4gKyNlbmRpZiAvKiBD
-T05GSUdfUExBVEZPUk1fS0VZUklORyAqLwo+ICsKPiAgI2lmZGVmIENPTkZJR19TWVNURU1fRVhU
-UkFfQ0VSVElGSUNBVEUKPiAgCS5nbG9ibCBWTUxJTlVYX1NZTUJPTChzeXN0ZW1fZXh0cmFfY2Vy
-dCkKPiAgCS5zaXplIHN5c3RlbV9leHRyYV9jZXJ0LCBDT05GSUdfU1lTVEVNX0VYVFJBX0NFUlRJ
-RklDQVRFX1NJWkUKPiBAQCAtMzUsMyArNDQsMTQgQEAgVk1MSU5VWF9TWU1CT0woc3lzdGVtX2Nl
-cnRpZmljYXRlX2xpc3Rfc2l6ZSk6Cj4gICNlbHNlCj4gIAkubG9uZyBfX2NlcnRfbGlzdF9lbmQg
-LSBfX2NlcnRfbGlzdF9zdGFydAo+ICAjZW5kaWYKPiArCj4gKyNpZmRlZiBDT05GSUdfUExBVEZP
-Uk1fS0VZUklORwo+ICsJLmFsaWduIDgKPiArCS5nbG9ibCBWTUxJTlVYX1NZTUJPTChwbGF0Zm9y
-bV9jZXJ0aWZpY2F0ZV9saXN0X3NpemUpCj4gK1ZNTElOVVhfU1lNQk9MKHBsYXRmb3JtX2NlcnRp
-ZmljYXRlX2xpc3Rfc2l6ZSk6Cj4gKyNpZmRlZiBDT05GSUdfNjRCSVQKPiArCS5xdWFkIF9fcGxh
-dGZvcm1fY2VydF9saXN0X2VuZCAtIF9fcGxhdGZvcm1fY2VydF9saXN0X3N0YXJ0Cj4gKyNlbHNl
-Cj4gKwkubG9uZyBfX3BsYXRmb3JtX2NlcnRfbGlzdF9lbmQgLSBfX3BsYXRmb3JtX2NlcnRfbGlz
-dF9zdGFydAo+ICsjZW5kaWYKPiArI2VuZGlmIC8qIENPTkZJR19QTEFURk9STV9LRVlSSU5HICov
-Cj4gZGlmZiAtLWdpdCBhL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMgYi9jZXJ0cy9zeXN0ZW1fa2V5
-cmluZy5jCj4gaW5kZXggNjI1MWQxYjI3ZjBjLi41OTRiNDk4NmEwODEgMTAwNjQ0Cj4gLS0tIGEv
-Y2VydHMvc3lzdGVtX2tleXJpbmcuYwo+ICsrKyBiL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMKPiBA
-QCAtMTksMTQgKzE5LDIyIEBACj4gICNpbmNsdWRlIDxrZXlzL3N5c3RlbV9rZXlyaW5nLmg+Cj4g
-ICNpbmNsdWRlIDxjcnlwdG8vcGtjczcuaD4KPiAKPiArI2RlZmluZSBCVUlMVElOX1RSVVNURURf
-S0VZUklORwkwCj4gKyNkZWZpbmUgUExBVEZPUk1fS0VZUklORwkxCj4gKwo+ICBzdGF0aWMgc3Ry
-dWN0IGtleSAqYnVpbHRpbl90cnVzdGVkX2tleXM7Cj4gICNpZmRlZiBDT05GSUdfU0VDT05EQVJZ
-X1RSVVNURURfS0VZUklORwo+ICBzdGF0aWMgc3RydWN0IGtleSAqc2Vjb25kYXJ5X3RydXN0ZWRf
-a2V5czsKPiAgI2VuZGlmCj4gKyNpZmRlZiBDT05GSUdfUExBVEZPUk1fS0VZUklORwo+ICtzdGF0
-aWMgc3RydWN0IGtleSAqcGxhdGZvcm1fa2V5cyBfX3JvX2FmdGVyX2luaXQ7Cj4gKyNlbmRpZgo+
-IAo+ICBleHRlcm4gX19pbml0Y29uc3QgY29uc3QgdTggc3lzdGVtX2NlcnRpZmljYXRlX2xpc3Rb
-XTsKPiAgZXh0ZXJuIF9faW5pdGNvbnN0IGNvbnN0IHVuc2lnbmVkIGxvbmcgc3lzdGVtX2NlcnRp
-ZmljYXRlX2xpc3Rfc2l6ZTsKPiAKPiArZXh0ZXJuIF9faW5pdGNvbnN0IGNvbnN0IHU4IHBsYXRm
-b3JtX2NlcnRpZmljYXRlX2xpc3RbXTsKPiArZXh0ZXJuIF9faW5pdGNvbnN0IGNvbnN0IHVuc2ln
-bmVkIGxvbmcgcGxhdGZvcm1fY2VydGlmaWNhdGVfbGlzdF9zaXplOwo+ICAvKioKPiAgICogcmVz
-dHJpY3RfbGlua190b19idWlsdGluX3RydXN0ZWQgLSBSZXN0cmljdCBrZXlyaW5nIGFkZGl0aW9u
-IGJ5IGJ1aWx0IGluIENBCj4gICAqCj4gQEAgLTEyMyw2ICsxMzEsMTggQEAgc3RhdGljIF9faW5p
-dCBpbnQgc3lzdGVtX3RydXN0ZWRfa2V5cmluZ19pbml0KHZvaWQpCj4gIAkJcGFuaWMoIkNhbid0
-IGxpbmsgdHJ1c3RlZCBrZXlyaW5nc1xuIik7Cj4gICNlbmRpZgo+IAo+ICsjaWZkZWYgQ09ORklH
-X1BMQVRGT1JNX0tFWVJJTkcKPiArCXBsYXRmb3JtX2tleXMgPiArCQlrZXlyaW5nX2FsbG9jKCIu
-cGxhdGZvcm1fa2V5cyIsCj4gKwkJCSAgICAgIEtVSURUX0lOSVQoMCksIEtHSURUX0lOSVQoMCks
-IGN1cnJlbnRfY3JlZCgpLAo+ICsJCQkgICAgICAoKEtFWV9QT1NfQUxMICYgfktFWV9QT1NfU0VU
-QVRUUikgfAo+ICsJCQkgICAgICBLRVlfVVNSX1ZJRVcgfCBLRVlfVVNSX1JFQUQgfCBLRVlfVVNS
-X1NFQVJDSCksCj4gKwkJCSAgICAgIEtFWV9BTExPQ19OT1RfSU5fUVVPVEEsCj4gKwkJCSAgICAg
-IE5VTEwsIE5VTEwpOwo+ICsJaWYgKElTX0VSUihwbGF0Zm9ybV9rZXlzKSkKPiArCQlwYW5pYygi
-Q2FuJ3QgYWxsb2NhdGUgcGxhdGZvcm0ga2V5cmluZ1xuIik7Cj4gKyNlbmRpZgo+ICsKPiAgCXJl
-dHVybiAwOwo+ICB9Cj4gCj4gQEAgLTEzMiwxOCArMTUyLDE5IEBAIHN0YXRpYyBfX2luaXQgaW50
-IHN5c3RlbV90cnVzdGVkX2tleXJpbmdfaW5pdCh2b2lkKQo+ICBkZXZpY2VfaW5pdGNhbGwoc3lz
-dGVtX3RydXN0ZWRfa2V5cmluZ19pbml0KTsKPiAKPiAgLyoKPiAtICogTG9hZCB0aGUgY29tcGls
-ZWQtaW4gbGlzdCBvZiBYLjUwOSBjZXJ0aWZpY2F0ZXMuCj4gKyAqIExvYWQgdGhlIGNlcnRpZmlj
-YXRlcyB0byB0aGUga2V5cmluZy4KPiAgICovCj4gLXN0YXRpYyBfX2luaXQgaW50IGxvYWRfc3lz
-dGVtX2NlcnRpZmljYXRlX2xpc3Qodm9pZCkKPiArc3RhdGljIF9faW5pdCBpbnQgbG9hZF9jZXJ0
-aWZpY2F0ZV9saXN0KGNvbnN0IHU4ICpwLCB1bnNpZ25lZCBsb25nIHNpemUsCj4gKwkJc3RydWN0
-IGtleSAqa2V5cmluZykKPiAgewo+ICAJa2V5X3JlZl90IGtleTsKPiAtCWNvbnN0IHU4ICpwLCAq
-ZW5kOwo+ICsJY29uc3QgdTggKmVuZDsKPiAgCXNpemVfdCBwbGVuOwo+IAo+IC0JcHJfbm90aWNl
-KCJMb2FkaW5nIGNvbXBpbGVkLWluIFguNTA5IGNlcnRpZmljYXRlc1xuIik7Cj4gKwlwcl9ub3Rp
-Y2UoIkxvYWRpbmcgY29tcGlsZWQtaW4gWC41MDkgY2VydGlmaWNhdGVzIHRvICVzXG4iLAo+ICsJ
-CQlrZXlyaW5nLT5kZXNjcmlwdGlvbik7Cj4gCj4gLQlwID0gc3lzdGVtX2NlcnRpZmljYXRlX2xp
-c3Q7Cj4gLQllbmQgPSBwICsgc3lzdGVtX2NlcnRpZmljYXRlX2xpc3Rfc2l6ZTsKPiArCWVuZCA9
-IHAgKyBzaXplOwo+ICAJd2hpbGUgKHAgPCBlbmQpIHsKPiAgCQkvKiBFYWNoIGNlcnQgYmVnaW5z
-IHdpdGggYW4gQVNOLjEgU0VRVUVOQ0UgdGFnIGFuZCBtdXN0IGJlIG1vcmUKPiAgCQkgKiB0aGFu
-IDI1NiBieXRlcyBpbiBzaXplLgo+IEBAIC0xNTgsNyArMTc5LDcgQEAgc3RhdGljIF9faW5pdCBp
-bnQgbG9hZF9zeXN0ZW1fY2VydGlmaWNhdGVfbGlzdCh2b2lkKQo+ICAJCWlmIChwbGVuID4gZW5k
-IC0gcCkKPiAgCQkJZ290byBkb2RneV9jZXJ0Owo+IAo+IC0JCWtleSA9IGtleV9jcmVhdGVfb3Jf
-dXBkYXRlKG1ha2Vfa2V5X3JlZihidWlsdGluX3RydXN0ZWRfa2V5cywgMSksCj4gKwkJa2V5ID0g
-a2V5X2NyZWF0ZV9vcl91cGRhdGUobWFrZV9rZXlfcmVmKGtleXJpbmcsIDEpLAo+ICAJCQkJCSAg
-ICJhc3ltbWV0cmljIiwKPiAgCQkJCQkgICBOVUxMLAo+ICAJCQkJCSAgIHAsCj4gQEAgLTE4NSw3
-ICsyMDYsMjUgQEAgc3RhdGljIF9faW5pdCBpbnQgbG9hZF9zeXN0ZW1fY2VydGlmaWNhdGVfbGlz
-dCh2b2lkKQo+ICAJcHJfZXJyKCJQcm9ibGVtIHBhcnNpbmcgaW4ta2VybmVsIFguNTA5IGNlcnRp
-ZmljYXRlIGxpc3RcbiIpOwo+ICAJcmV0dXJuIDA7Cj4gIH0KPiAtbGF0ZV9pbml0Y2FsbChsb2Fk
-X3N5c3RlbV9jZXJ0aWZpY2F0ZV9saXN0KTsKPiArCj4gKy8qCj4gKyAqIExvYWQgdGhlIGNvbXBp
-bGVkLWluIGxpc3Qgb2Ygc3lzdGVtIGFuZCBwbGF0Zm9ybSBYLjUwOSBjZXJ0aWZpY2F0ZXMuCj4g
-KyAqLwo+ICtzdGF0aWMgX19pbml0IGludCBsb2FkX2NvbXBpbGVkX2NlcnRpZmljYXRlX2xpc3Qo
-dm9pZCkKPiArewo+ICsJLyogTG9hZGluZyBjZXJ0cyBpbiBidWlsdGluIGtleXJpbmcgKi8KPiAr
-CWxvYWRfY2VydGlmaWNhdGVfbGlzdChzeXN0ZW1fY2VydGlmaWNhdGVfbGlzdCwKPiArCQkJc3lz
-dGVtX2NlcnRpZmljYXRlX2xpc3Rfc2l6ZSwgYnVpbHRpbl90cnVzdGVkX2tleXMpOwo+ICsKPiAr
-I2lmZGVmIENPTkZJR19QTEFURk9STV9LRVlSSU5HCj4gKwkvKiBMb2FkaW5nIGNlcnRzIGluIHBs
-YXRmb3JtIGtleXJpbmcgKi8KPiArCWxvYWRfY2VydGlmaWNhdGVfbGlzdChwbGF0Zm9ybV9jZXJ0
-aWZpY2F0ZV9saXN0LAo+ICsJCQlwbGF0Zm9ybV9jZXJ0aWZpY2F0ZV9saXN0X3NpemUsIHBsYXRm
-b3JtX2tleXMpOwo+ICsjZW5kaWYKPiArCj4gKwlyZXR1cm4gMDsKPiArfQo+ICtsYXRlX2luaXRj
-YWxsKGxvYWRfY29tcGlsZWRfY2VydGlmaWNhdGVfbGlzdCk7Cj4gCj4gICNpZmRlZiBDT05GSUdf
-U1lTVEVNX0RBVEFfVkVSSUZJQ0FUSU9OCj4gCgotLQpUbyB1bnN1YnNjcmliZSBmcm9tIHRoaXMg
-bGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3JpYmUga2V5cmluZ3MiIGluCnRoZSBib2R5IG9m
-IGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5rZXJuZWwub3JnCk1vcmUgbWFqb3Jkb21vIGlu
-Zm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcvbWFqb3Jkb21vLWluZm8uaHRtbA==
+Define new "d-sig" template field which holds the digest that is expected
+to match the one contained in the modsig.
+
+Also add modsig support to the "sig" template field, allowing the the
+contents of the modsig to be included in the measurement list.
+
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+---
+ Documentation/security/IMA-templates.rst  |  5 ++++
+ security/integrity/ima/ima_template.c     |  4 ++-
+ security/integrity/ima/ima_template_lib.c | 47 +++++++++++++++++++++++++++++--
+ security/integrity/ima/ima_template_lib.h |  2 ++
+ 4 files changed, 55 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/security/IMA-templates.rst b/Documentation/security/IMA-templates.rst
+index 2cd0e273cc9a..f2a0f4225857 100644
+--- a/Documentation/security/IMA-templates.rst
++++ b/Documentation/security/IMA-templates.rst
+@@ -68,6 +68,11 @@ descriptors by adding their identifier to the format string
+  - 'd-ng': the digest of the event, calculated with an arbitrary hash
+    algorithm (field format: [<hash algo>:]digest, where the digest
+    prefix is shown only if the hash algorithm is not SHA1 or MD5);
++ - 'd-sig': the digest of the event for files that have an appended modsig. This
++   field is calculated without including the modsig and thus will differ from
++   the total digest of the file, but it is what should match the digest
++   contained in the modsig (if it doesn't, the signature is invalid). It is
++   shown in the same format as 'd-ng';
+  - 'n-ng': the name of the event, without size limitations;
+  - 'sig': the file signature.
+ 
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index 30db39b23804..36fc32f538b5 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -43,8 +43,10 @@ static struct ima_template_field supported_fields[] = {
+ 	 .field_show = ima_show_template_string},
+ 	{.field_id = "sig", .field_init = ima_eventsig_init,
+ 	 .field_show = ima_show_template_sig},
++	{.field_id = "d-sig", .field_init = ima_eventdigest_sig_init,
++	 .field_show = ima_show_template_digest_ng},
+ };
+-#define MAX_TEMPLATE_NAME_LEN 15
++#define MAX_TEMPLATE_NAME_LEN 24
+ 
+ static struct ima_template_desc *ima_template;
+ static struct ima_template_desc *lookup_template_desc(const char *name);
+diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
+index afb52a90e532..1dca082cce43 100644
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -220,7 +220,8 @@ int ima_parse_buf(void *bufstartp, void *bufendp, void **bufcurp,
+ 	return 0;
+ }
+ 
+-static int ima_eventdigest_init_common(u8 *digest, u32 digestsize, u8 hash_algo,
++static int ima_eventdigest_init_common(const u8 *digest, u32 digestsize,
++				       u8 hash_algo,
+ 				       struct ima_field_data *field_data)
+ {
+ 	/*
+@@ -323,6 +324,35 @@ int ima_eventdigest_ng_init(struct ima_event_data *event_data,
+ 					   hash_algo, field_data);
+ }
+ 
++/*
++ * This function writes the digest of the file which is expected to match the
++ * digest contained in the file's embedded signature.
++ */
++int ima_eventdigest_sig_init(struct ima_event_data *event_data,
++			     struct ima_field_data *field_data)
++{
++	struct evm_ima_xattr_data *xattr_value = event_data->xattr_value;
++	enum hash_algo hash_algo = HASH_ALGO_SHA1;
++	const u8 *cur_digest = NULL;
++	u8 cur_digestsize = 0;
++	int ret;
++
++	if (!xattr_value || xattr_value->type != IMA_MODSIG)
++		return 0;
++
++	if (event_data->violation)	/* recording a violation. */
++		goto out;
++
++	ret = ima_get_modsig_hash(xattr_value, &hash_algo, &cur_digest,
++				  &cur_digestsize);
++	if (ret)
++		return ret;
++
++ out:
++	return ima_eventdigest_init_common(cur_digest, cur_digestsize,
++					   hash_algo, field_data);
++}
++
+ static int ima_eventname_init_common(struct ima_event_data *event_data,
+ 				     struct ima_field_data *field_data,
+ 				     bool size_limit)
+@@ -379,10 +409,23 @@ int ima_eventsig_init(struct ima_event_data *event_data,
+ 		      struct ima_field_data *field_data)
+ {
+ 	struct evm_ima_xattr_data *xattr_value = event_data->xattr_value;
++	int xattr_len = event_data->xattr_len;
+ 
+ 	if (!is_ima_sig(xattr_value))
+ 		return 0;
+ 
+-	return ima_write_template_field_data(xattr_value, event_data->xattr_len,
++	/*
++	 * The xattr_value for IMA_MODSIG is a runtime structure containing
++	 * pointers. Get its raw data instead.
++	 */
++	if (xattr_value->type = IMA_MODSIG) {
++		int rc;
++
++		rc = ima_modsig_serialize_data(&xattr_value, &xattr_len);
++		if (rc)
++			return rc;
++	}
++
++	return ima_write_template_field_data(xattr_value, xattr_len,
+ 					     DATA_FMT_HEX, field_data);
+ }
+diff --git a/security/integrity/ima/ima_template_lib.h b/security/integrity/ima/ima_template_lib.h
+index 6a3d8b831deb..3cd353e83f73 100644
+--- a/security/integrity/ima/ima_template_lib.h
++++ b/security/integrity/ima/ima_template_lib.h
+@@ -38,6 +38,8 @@ int ima_eventname_init(struct ima_event_data *event_data,
+ 		       struct ima_field_data *field_data);
+ int ima_eventdigest_ng_init(struct ima_event_data *event_data,
+ 			    struct ima_field_data *field_data);
++int ima_eventdigest_sig_init(struct ima_event_data *event_data,
++			     struct ima_field_data *field_data);
+ int ima_eventname_ng_init(struct ima_event_data *event_data,
+ 			  struct ima_field_data *field_data);
+ int ima_eventsig_init(struct ima_event_data *event_data,
+
