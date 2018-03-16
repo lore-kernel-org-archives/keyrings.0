@@ -1,87 +1,87 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Wed, 07 Feb 2018 01:10:10 +0000
-Subject: [PATCH 7/9] X.509: remove never-set ->unsupported_key flag
-Message-Id: <20180207011012.5928-8-ebiggers3@gmail.com>
+From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+Date: Fri, 16 Mar 2018 20:38:29 +0000
+Subject: [PATCH v6 04/12] ima: Introduce is_ima_sig()
+Message-Id: <20180316203837.10174-5-bauerman@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180207011012.5928-1-ebiggers3@gmail.com>
-In-Reply-To: <20180207011012.5928-1-ebiggers3@gmail.com>
-To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, Michael Halcrow <mhalcrow@google.com>, Eric Biggers <ebiggers@google.com>
+References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+With the introduction of another IMA signature type (modsig), some places
+will need to check for both of them. It is cleaner to do that if there's a
+helper function to tell whether an xattr_value represents an IMA
+signature.
 
-The X.509 parser is guaranteed to set cert->pub->pkey_algo, since
-x509_extract_key_data() is a mandatory action in the X.509 ASN.1
-grammar, and it returns an error code if an unrecognized
-AlgorithmIdentifier is given rather than leaving the algorithm as NULL.
-
-Therefore, remove the dead code which handled this algorithm being NULL.
-This results in the ->unsupported_key flag never being set at all, so
-remove that too.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
 ---
- crypto/asymmetric_keys/pkcs7_verify.c    | 3 ---
- crypto/asymmetric_keys/x509_parser.h     | 1 -
- crypto/asymmetric_keys/x509_public_key.c | 9 ---------
- 3 files changed, 13 deletions(-)
+ security/integrity/ima/ima.h              | 5 +++++
+ security/integrity/ima/ima_appraise.c     | 7 +++----
+ security/integrity/ima/ima_template_lib.c | 2 +-
+ 3 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index a9e03f5c52e7..beb47fd2fca5 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -196,9 +196,6 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
- 			return 0;
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 35fe91aa1fc9..4bafa6a97967 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -155,6 +155,11 @@ unsigned long ima_get_binary_runtime_size(void);
+ int ima_init_template(void);
+ void ima_init_template_list(void);
+ 
++static inline bool is_ima_sig(const struct evm_ima_xattr_data *xattr_value)
++{
++	return xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG;
++}
++
+ /*
+  * used to protect h_table and sha_table
+  */
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index a6b2995b7d0b..01172eab297b 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -325,15 +325,14 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	} else if (status != INTEGRITY_PASS) {
+ 		/* Fix mode, but don't replace file signatures. */
+ 		if ((ima_appraise & IMA_APPRAISE_FIX) &&
+-		    (!xattr_value ||
+-		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
++		    !is_ima_sig(xattr_value)) {
+ 			if (!ima_fix_xattr(dentry, iint))
+ 				status = INTEGRITY_PASS;
  		}
  
--		if (x509->unsupported_key)
--			goto unsupported_crypto_in_x509;
--
- 		pr_debug("- issuer %s\n", x509->issuer);
- 		sig = x509->sig;
- 		if (sig->auth_ids[0])
-diff --git a/crypto/asymmetric_keys/x509_parser.h b/crypto/asymmetric_keys/x509_parser.h
-index e373e7483812..217341276ae0 100644
---- a/crypto/asymmetric_keys/x509_parser.h
-+++ b/crypto/asymmetric_keys/x509_parser.h
-@@ -40,7 +40,6 @@ struct x509_certificate {
- 	bool		seen;			/* Infinite recursion prevention */
- 	bool		verified;
- 	bool		self_signed;		/* T if self-signed (check unsupported_sig too) */
--	bool		unsupported_key;	/* T if key uses unsupported crypto */
- 	bool		unsupported_sig;	/* T if signature uses unsupported crypto */
- 	bool		blacklisted;
- };
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index 9338b4558cdc..514007932ec9 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -34,9 +34,6 @@ int x509_get_sig_params(struct x509_certificate *cert)
+ 		/* Permit new files with file signatures, but without data. */
+ 		if (inode->i_size = 0 && iint->flags & IMA_NEW_FILE &&
+-		    xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG) {
++		    is_ima_sig(xattr_value)) {
+ 			status = INTEGRITY_PASS;
+ 		}
  
- 	pr_devel("=>%s()\n", __func__);
+@@ -448,7 +447,7 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
+ 			return -EINVAL;
+ 		ima_reset_appraise_flags(d_backing_inode(dentry),
+-			xvalue->type = EVM_IMA_XATTR_DIGSIG);
++					 is_ima_sig(xvalue));
+ 		result = 0;
+ 	}
+ 	return result;
+diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
+index 5afaa53decc5..afb52a90e532 100644
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -380,7 +380,7 @@ int ima_eventsig_init(struct ima_event_data *event_data,
+ {
+ 	struct evm_ima_xattr_data *xattr_value = event_data->xattr_value;
  
--	if (!cert->pub->pkey_algo)
--		cert->unsupported_key = true;
--
- 	if (!sig->pkey_algo)
- 		cert->unsupported_sig = true;
+-	if ((!xattr_value) || (xattr_value->type != EVM_IMA_XATTR_DIGSIG))
++	if (!is_ima_sig(xattr_value))
+ 		return 0;
  
-@@ -173,12 +170,6 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 
- 	pr_devel("Cert Issuer: %s\n", cert->issuer);
- 	pr_devel("Cert Subject: %s\n", cert->subject);
--
--	if (cert->unsupported_key) {
--		ret = -ENOPKG;
--		goto error_free_cert;
--	}
--
- 	pr_devel("Cert Key Algo: %s\n", cert->pub->pkey_algo);
- 	pr_devel("Cert Valid period: %lld-%lld\n", cert->valid_from, cert->valid_to);
- 
--- 
-2.16.0.rc1.238.g530d649a79-goog
+ 	return ima_write_template_field_data(xattr_value, event_data->xattr_len,
 
