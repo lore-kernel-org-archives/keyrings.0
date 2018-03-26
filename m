@@ -1,206 +1,152 @@
-From: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
-Date: Fri, 16 Mar 2018 20:38:36 +0000
-Subject: [PATCH v6 11/12] ima: Implement support for module-style appended signatures
-Message-Id: <20180316203837.10174-12-bauerman@linux.vnet.ibm.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date: Mon, 26 Mar 2018 12:56:43 +0000
+Subject: Re: [PATCH v6 11/12] ima: Implement support for module-style appended signatures
+Message-Id: <1522069003.3541.64.camel@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
-In-Reply-To: <20180316203837.10174-1-bauerman@linux.vnet.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
+         <20180316203837.10174-12-bauerman@linux.vnet.ibm.com>
+In-Reply-To: <20180316203837.10174-12-bauerman@linux.vnet.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-This patch actually implements the appraise_type=imasig|modsig option,
-allowing IMA to read and verify modsig signatures.
-
-In case both are present in the same file, IMA will first check whether the
-key used by the xattr signature is present in the kernel keyring. If not,
-it will try the appended signature.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.vnet.ibm.com>
----
- security/integrity/ima/ima.h          | 11 +++++++-
- security/integrity/ima/ima_appraise.c | 53 +++++++++++++++++++++++++++++++----
- security/integrity/ima/ima_main.c     | 21 +++++++++++---
- 3 files changed, 74 insertions(+), 11 deletions(-)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 49aef56dc96d..c11ccb7c5bfb 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -157,7 +157,8 @@ void ima_init_template_list(void);
- 
- static inline bool is_ima_sig(const struct evm_ima_xattr_data *xattr_value)
- {
--	return xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG;
-+	return xattr_value && (xattr_value->type = EVM_IMA_XATTR_DIGSIG ||
-+			       xattr_value->type = IMA_MODSIG);
- }
- 
- /*
-@@ -253,6 +254,8 @@ enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
- 					   enum ima_hooks func);
- enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 				 int xattr_len);
-+bool ima_xattr_sig_known_key(const struct evm_ima_xattr_data *xattr_value,
-+			     int xattr_len);
- int ima_read_xattr(struct dentry *dentry,
- 		   struct evm_ima_xattr_data **xattr_value);
- 
-@@ -291,6 +294,12 @@ ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value, int xattr_len)
- 	return ima_hash_algo;
- }
- 
-+static inline bool ima_xattr_sig_known_key(const struct evm_ima_xattr_data
-+					   *xattr_value, int xattr_len)
-+{
-+	return false;
-+}
-+
- static inline int ima_read_xattr(struct dentry *dentry,
- 				 struct evm_ima_xattr_data **xattr_value)
- {
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 01172eab297b..84e0fd5a19c8 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -189,6 +189,22 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 	return ima_hash_algo;
- }
- 
-+bool ima_xattr_sig_known_key(const struct evm_ima_xattr_data *xattr_value,
-+			     int xattr_len)
-+{
-+	struct key *keyring;
-+
-+	if (xattr_value->type != EVM_IMA_XATTR_DIGSIG)
-+		return false;
-+
-+	keyring = integrity_keyring_from_id(INTEGRITY_KEYRING_IMA);
-+	if (IS_ERR(keyring))
-+		return false;
-+
-+	return asymmetric_sig_has_known_key(keyring, (const char *) xattr_value,
-+					    xattr_len);
-+}
-+
- int ima_read_xattr(struct dentry *dentry,
- 		   struct evm_ima_xattr_data **xattr_value)
- {
-@@ -221,8 +237,12 @@ int ima_appraise_measurement(enum ima_hooks func,
- 	struct inode *inode = d_backing_inode(dentry);
- 	enum integrity_status status = INTEGRITY_UNKNOWN;
- 	int rc = xattr_len, hash_start = 0;
-+	size_t xattr_contents_len;
-+	void *xattr_contents;
- 
--	if (!(inode->i_opflags & IOP_XATTR))
-+	/* If not appraising a modsig, we need an xattr. */
-+	if ((xattr_value = NULL || xattr_value->type != IMA_MODSIG) &&
-+	    !(inode->i_opflags & IOP_XATTR))
- 		return INTEGRITY_UNKNOWN;
- 
- 	if (rc <= 0) {
-@@ -241,13 +261,29 @@ int ima_appraise_measurement(enum ima_hooks func,
- 		goto out;
- 	}
- 
--	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
-+	/*
-+	 * If it's a modsig, we don't have the xattr contents to pass to
-+	 * evm_verifyxattr().
-+	 */
-+	if (xattr_value->type = IMA_MODSIG) {
-+		xattr_contents = NULL;
-+		xattr_contents_len = 0;
-+	} else {
-+		xattr_contents = xattr_value;
-+		xattr_contents_len = xattr_len;
-+	}
-+
-+	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_contents,
-+				 xattr_contents_len, iint);
- 	switch (status) {
- 	case INTEGRITY_PASS:
- 	case INTEGRITY_PASS_IMMUTABLE:
- 	case INTEGRITY_UNKNOWN:
- 		break;
- 	case INTEGRITY_NOXATTRS:	/* No EVM protected xattrs. */
-+		/* It's fine not to have xattrs when using a modsig. */
-+		if (xattr_value->type = IMA_MODSIG)
-+			break;
- 	case INTEGRITY_NOLABEL:		/* No security.evm xattr. */
- 		cause = "missing-HMAC";
- 		goto out;
-@@ -288,11 +324,16 @@ int ima_appraise_measurement(enum ima_hooks func,
- 		status = INTEGRITY_PASS;
- 		break;
- 	case EVM_IMA_XATTR_DIGSIG:
-+	case IMA_MODSIG:
- 		set_bit(IMA_DIGSIG, &iint->atomic_flags);
--		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
--					     (const char *)xattr_value, rc,
--					     iint->ima_hash->digest,
--					     iint->ima_hash->length);
-+		if (xattr_value->type = EVM_IMA_XATTR_DIGSIG)
-+			rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-+						     (const char *)xattr_value,
-+						     rc, iint->ima_hash->digest,
-+						     iint->ima_hash->length);
-+		else
-+			rc = ima_modsig_verify(INTEGRITY_KEYRING_IMA,
-+					       xattr_value);
- 		if (rc = -EOPNOTSUPP) {
- 			status = INTEGRITY_UNKNOWN;
- 		} else if (rc) {
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 5d122daf5c8a..1b11c10f09df 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -183,7 +183,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	struct evm_ima_xattr_data *xattr_value = NULL;
- 	int xattr_len = 0;
- 	bool violation_check;
--	enum hash_algo hash_algo;
-+	enum hash_algo hash_algo = HASH_ALGO__LAST;
- 
- 	if (!ima_policy_flag || !S_ISREG(inode->i_mode))
- 		return 0;
-@@ -277,11 +277,24 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 
- 	template_desc = ima_template_desc_current();
- 	if ((action & IMA_APPRAISE_SUBMASK) ||
--		    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0)
-+	    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0) {
- 		/* read 'security.ima' */
- 		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
-+		if (iint->flags & IMA_MODSIG_ALLOWED &&
-+		    (xattr_len <= 0 || !ima_xattr_sig_known_key(xattr_value,
-+								xattr_len))) {
-+			/*
-+			 * Even if we end up using a modsig, hash_algo should
-+			 * come from the xattr (or even the default hash algo).
-+			 */
-+			hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
-+			ima_read_modsig(func, buf, size, &xattr_value,
-+					&xattr_len);
-+		}
-+	}
- 
--	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
-+	if (hash_algo = HASH_ALGO__LAST)
-+		hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
- 
- 	rc = ima_collect_measurement(iint, file, buf, size, hash_algo);
- 	if (rc != 0 && rc != -EBADF && rc != -EINVAL)
-@@ -309,7 +322,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	     !(iint->flags & IMA_NEW_FILE))
- 		rc = -EACCES;
- 	mutex_unlock(&iint->mutex);
--	kfree(xattr_value);
-+	ima_free_xattr_data(xattr_value);
- out:
- 	if (pathbuf)
- 		__putname(pathbuf);
-
+T24gRnJpLCAyMDE4LTAzLTE2IGF0IDE3OjM4IC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
+d3JvdGU6Cj4gVGhpcyBwYXRjaCBhY3R1YWxseSBpbXBsZW1lbnRzIHRoZSBhcHByYWlzZV90eXBl
+PWltYXNpZ3xtb2RzaWcgb3B0aW9uLAo+IGFsbG93aW5nIElNQSB0byByZWFkIGFuZCB2ZXJpZnkg
+bW9kc2lnIHNpZ25hdHVyZXMuCj4gCj4gSW4gY2FzZSBib3RoIGFyZSBwcmVzZW50IGluIHRoZSBz
+YW1lIGZpbGUsIElNQSB3aWxsIGZpcnN0IGNoZWNrIHdoZXRoZXIgdGhlCj4ga2V5IHVzZWQgYnkg
+dGhlIHhhdHRyIHNpZ25hdHVyZSBpcyBwcmVzZW50IGluIHRoZSBrZXJuZWwga2V5cmluZy4gSWYg
+bm90LAo+IGl0IHdpbGwgdHJ5IHRoZSBhcHBlbmRlZCBzaWduYXR1cmUuCgpZZXMsIHRoaXMgc291
+bmRzIHJpZ2h0LgoKPiAKPiBTaWduZWQtb2ZmLWJ5OiBUaGlhZ28gSnVuZyBCYXVlcm1hbm4gPGJh
+dWVybWFuQGxpbnV4LnZuZXQuaWJtLmNvbT4KPiAtLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2lt
+YS9pbWEuaCAgICAgICAgICB8IDExICsrKysrKystCj4gIHNlY3VyaXR5L2ludGVncml0eS9pbWEv
+aW1hX2FwcHJhaXNlLmMgfCA1MyArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLQo+
+ICBzZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9tYWluLmMgICAgIHwgMjEgKysrKysrKysrKyst
+LS0KPiAgMyBmaWxlcyBjaGFuZ2VkLCA3NCBpbnNlcnRpb25zKCspLCAxMSBkZWxldGlvbnMoLSkK
+PiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaCBiL3NlY3VyaXR5
+L2ludGVncml0eS9pbWEvaW1hLmgKPiBpbmRleCA0OWFlZjU2ZGM5NmQuLmMxMWNjYjdjNWJmYiAx
+MDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYS5oCj4gKysrIGIvc2VjdXJp
+dHkvaW50ZWdyaXR5L2ltYS9pbWEuaAo+IEBAIC0xNTcsNyArMTU3LDggQEAgdm9pZCBpbWFfaW5p
+dF90ZW1wbGF0ZV9saXN0KHZvaWQpOwo+IAo+ICBzdGF0aWMgaW5saW5lIGJvb2wgaXNfaW1hX3Np
+Zyhjb25zdCBzdHJ1Y3QgZXZtX2ltYV94YXR0cl9kYXRhICp4YXR0cl92YWx1ZSkKPiAgewo+IC0J
+cmV0dXJuIHhhdHRyX3ZhbHVlICYmIHhhdHRyX3ZhbHVlLT50eXBlID0gRVZNX0lNQV9YQVRUUl9E
+SUdTSUc7Cj4gKwlyZXR1cm4geGF0dHJfdmFsdWUgJiYgKHhhdHRyX3ZhbHVlLT50eXBlID0gRVZN
+X0lNQV9YQVRUUl9ESUdTSUcgfHwKPiArCQkJICAgICAgIHhhdHRyX3ZhbHVlLT50eXBlID0gSU1B
+X01PRFNJRyk7Cj4gIH0KPiAKPiAgLyoKPiBAQCAtMjUzLDYgKzI1NCw4IEBAIGVudW0gaW50ZWdy
+aXR5X3N0YXR1cyBpbWFfZ2V0X2NhY2hlX3N0YXR1cyhzdHJ1Y3QgaW50ZWdyaXR5X2lpbnRfY2Fj
+aGUgKmlpbnQsCj4gIAkJCQkJICAgZW51bSBpbWFfaG9va3MgZnVuYyk7Cj4gIGVudW0gaGFzaF9h
+bGdvIGltYV9nZXRfaGFzaF9hbGdvKHN0cnVjdCBldm1faW1hX3hhdHRyX2RhdGEgKnhhdHRyX3Zh
+bHVlLAo+ICAJCQkJIGludCB4YXR0cl9sZW4pOwo+ICtib29sIGltYV94YXR0cl9zaWdfa25vd25f
+a2V5KGNvbnN0IHN0cnVjdCBldm1faW1hX3hhdHRyX2RhdGEgKnhhdHRyX3ZhbHVlLAo+ICsJCQkg
+ICAgIGludCB4YXR0cl9sZW4pOwo+ICBpbnQgaW1hX3JlYWRfeGF0dHIoc3RydWN0IGRlbnRyeSAq
+ZGVudHJ5LAo+ICAJCSAgIHN0cnVjdCBldm1faW1hX3hhdHRyX2RhdGEgKip4YXR0cl92YWx1ZSk7
+Cj4gCj4gQEAgLTI5MSw2ICsyOTQsMTIgQEAgaW1hX2dldF9oYXNoX2FsZ28oc3RydWN0IGV2bV9p
+bWFfeGF0dHJfZGF0YSAqeGF0dHJfdmFsdWUsIGludCB4YXR0cl9sZW4pCj4gIAlyZXR1cm4gaW1h
+X2hhc2hfYWxnbzsKPiAgfQo+IAo+ICtzdGF0aWMgaW5saW5lIGJvb2wgaW1hX3hhdHRyX3NpZ19r
+bm93bl9rZXkoY29uc3Qgc3RydWN0IGV2bV9pbWFfeGF0dHJfZGF0YQo+ICsJCQkJCSAgICp4YXR0
+cl92YWx1ZSwgaW50IHhhdHRyX2xlbikKPiArewo+ICsJcmV0dXJuIGZhbHNlOwo+ICt9Cj4gKwo+
+ICBzdGF0aWMgaW5saW5lIGludCBpbWFfcmVhZF94YXR0cihzdHJ1Y3QgZGVudHJ5ICpkZW50cnks
+Cj4gIAkJCQkgc3RydWN0IGV2bV9pbWFfeGF0dHJfZGF0YSAqKnhhdHRyX3ZhbHVlKQo+ICB7Cj4g
+ZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMgYi9zZWN1
+cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcHByYWlzZS5jCj4gaW5kZXggMDExNzJlYWIyOTdiLi44
+NGUwZmQ1YTE5YzggMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXBw
+cmFpc2UuYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FwcHJhaXNlLmMKPiBA
+QCAtMTg5LDYgKzE4OSwyMiBAQCBlbnVtIGhhc2hfYWxnbyBpbWFfZ2V0X2hhc2hfYWxnbyhzdHJ1
+Y3QgZXZtX2ltYV94YXR0cl9kYXRhICp4YXR0cl92YWx1ZSwKPiAgCXJldHVybiBpbWFfaGFzaF9h
+bGdvOwo+ICB9Cj4gCj4gK2Jvb2wgaW1hX3hhdHRyX3NpZ19rbm93bl9rZXkoY29uc3Qgc3RydWN0
+IGV2bV9pbWFfeGF0dHJfZGF0YSAqeGF0dHJfdmFsdWUsCj4gKwkJCSAgICAgaW50IHhhdHRyX2xl
+bikKPiArewo+ICsJc3RydWN0IGtleSAqa2V5cmluZzsKPiArCj4gKwlpZiAoeGF0dHJfdmFsdWUt
+PnR5cGUgIT0gRVZNX0lNQV9YQVRUUl9ESUdTSUcpCj4gKwkJcmV0dXJuIGZhbHNlOwo+ICsKPiAr
+CWtleXJpbmcgPSBpbnRlZ3JpdHlfa2V5cmluZ19mcm9tX2lkKElOVEVHUklUWV9LRVlSSU5HX0lN
+QSk7Cj4gKwlpZiAoSVNfRVJSKGtleXJpbmcpKQo+ICsJCXJldHVybiBmYWxzZTsKPiArCj4gKwly
+ZXR1cm4gYXN5bW1ldHJpY19zaWdfaGFzX2tub3duX2tleShrZXlyaW5nLCAoY29uc3QgY2hhciAq
+KSB4YXR0cl92YWx1ZSwKPiArCQkJCQkgICAgeGF0dHJfbGVuKTsKPiArfQo+ICsKPiAgaW50IGlt
+YV9yZWFkX3hhdHRyKHN0cnVjdCBkZW50cnkgKmRlbnRyeSwKPiAgCQkgICBzdHJ1Y3QgZXZtX2lt
+YV94YXR0cl9kYXRhICoqeGF0dHJfdmFsdWUpCj4gIHsKPiBAQCAtMjIxLDggKzIzNywxMiBAQCBp
+bnQgaW1hX2FwcHJhaXNlX21lYXN1cmVtZW50KGVudW0gaW1hX2hvb2tzIGZ1bmMsCj4gIAlzdHJ1
+Y3QgaW5vZGUgKmlub2RlID0gZF9iYWNraW5nX2lub2RlKGRlbnRyeSk7Cj4gIAllbnVtIGludGVn
+cml0eV9zdGF0dXMgc3RhdHVzID0gSU5URUdSSVRZX1VOS05PV047Cj4gIAlpbnQgcmMgPSB4YXR0
+cl9sZW4sIGhhc2hfc3RhcnQgPSAwOwo+ICsJc2l6ZV90IHhhdHRyX2NvbnRlbnRzX2xlbjsKPiAr
+CXZvaWQgKnhhdHRyX2NvbnRlbnRzOwo+IAo+IC0JaWYgKCEoaW5vZGUtPmlfb3BmbGFncyAmIElP
+UF9YQVRUUikpCj4gKwkvKiBJZiBub3QgYXBwcmFpc2luZyBhIG1vZHNpZywgd2UgbmVlZCBhbiB4
+YXR0ci4gKi8KPiArCWlmICgoeGF0dHJfdmFsdWUgPSBOVUxMIHx8IHhhdHRyX3ZhbHVlLT50eXBl
+ICE9IElNQV9NT0RTSUcpICYmCj4gKwkgICAgIShpbm9kZS0+aV9vcGZsYWdzICYgSU9QX1hBVFRS
+KSkKPiAgCQlyZXR1cm4gSU5URUdSSVRZX1VOS05PV047Cj4gCj4gIAlpZiAocmMgPD0gMCkgewo+
+IEBAIC0yNDEsMTMgKzI2MSwyOSBAQCBpbnQgaW1hX2FwcHJhaXNlX21lYXN1cmVtZW50KGVudW0g
+aW1hX2hvb2tzIGZ1bmMsCj4gIAkJZ290byBvdXQ7Cj4gIAl9Cj4gCj4gLQlzdGF0dXMgPSBldm1f
+dmVyaWZ5eGF0dHIoZGVudHJ5LCBYQVRUUl9OQU1FX0lNQSwgeGF0dHJfdmFsdWUsIHJjLCBpaW50
+KTsKPiArCS8qCj4gKwkgKiBJZiBpdCdzIGEgbW9kc2lnLCB3ZSBkb24ndCBoYXZlIHRoZSB4YXR0
+ciBjb250ZW50cyB0byBwYXNzIHRvCj4gKwkgKiBldm1fdmVyaWZ5eGF0dHIoKS4KPiArCSAqLwo+
+ICsJaWYgKHhhdHRyX3ZhbHVlLT50eXBlID0gSU1BX01PRFNJRykgewo+ICsJCXhhdHRyX2NvbnRl
+bnRzID0gTlVMTDsKPiArCQl4YXR0cl9jb250ZW50c19sZW4gPSAwOwo+ICsJfSBlbHNlIHsKPiAr
+CQl4YXR0cl9jb250ZW50cyA9IHhhdHRyX3ZhbHVlOwo+ICsJCXhhdHRyX2NvbnRlbnRzX2xlbiA9
+IHhhdHRyX2xlbjsKPiArCX0KPiArCj4gKwlzdGF0dXMgPSBldm1fdmVyaWZ5eGF0dHIoZGVudHJ5
+LCBYQVRUUl9OQU1FX0lNQSwgeGF0dHJfY29udGVudHMsCj4gKwkJCQkgeGF0dHJfY29udGVudHNf
+bGVuLCBpaW50KTsKPiAgCXN3aXRjaCAoc3RhdHVzKSB7Cj4gIAljYXNlIElOVEVHUklUWV9QQVNT
+Ogo+ICAJY2FzZSBJTlRFR1JJVFlfUEFTU19JTU1VVEFCTEU6Cj4gIAljYXNlIElOVEVHUklUWV9V
+TktOT1dOOgo+ICAJCWJyZWFrOwo+ICAJY2FzZSBJTlRFR1JJVFlfTk9YQVRUUlM6CS8qIE5vIEVW
+TSBwcm90ZWN0ZWQgeGF0dHJzLiAqLwo+ICsJCS8qIEl0J3MgZmluZSBub3QgdG8gaGF2ZSB4YXR0
+cnMgd2hlbiB1c2luZyBhIG1vZHNpZy4gKi8KPiArCQlpZiAoeGF0dHJfdmFsdWUtPnR5cGUgPSBJ
+TUFfTU9EU0lHKQo+ICsJCQlicmVhazsKPiAgCWNhc2UgSU5URUdSSVRZX05PTEFCRUw6CQkvKiBO
+byBzZWN1cml0eS5ldm0geGF0dHIuICovCj4gIAkJY2F1c2UgPSAibWlzc2luZy1ITUFDIjsKPiAg
+CQlnb3RvIG91dDsKPiBAQCAtMjg4LDExICszMjQsMTYgQEAgaW50IGltYV9hcHByYWlzZV9tZWFz
+dXJlbWVudChlbnVtIGltYV9ob29rcyBmdW5jLAo+ICAJCXN0YXR1cyA9IElOVEVHUklUWV9QQVNT
+Owo+ICAJCWJyZWFrOwo+ICAJY2FzZSBFVk1fSU1BX1hBVFRSX0RJR1NJRzoKPiArCWNhc2UgSU1B
+X01PRFNJRzoKPiAgCQlzZXRfYml0KElNQV9ESUdTSUcsICZpaW50LT5hdG9taWNfZmxhZ3MpOwo+
+IC0JCXJjID0gaW50ZWdyaXR5X2RpZ3NpZ192ZXJpZnkoSU5URUdSSVRZX0tFWVJJTkdfSU1BLAo+
+IC0JCQkJCSAgICAgKGNvbnN0IGNoYXIgKil4YXR0cl92YWx1ZSwgcmMsCj4gLQkJCQkJICAgICBp
+aW50LT5pbWFfaGFzaC0+ZGlnZXN0LAo+IC0JCQkJCSAgICAgaWludC0+aW1hX2hhc2gtPmxlbmd0
+aCk7Cj4gKwkJaWYgKHhhdHRyX3ZhbHVlLT50eXBlID0gRVZNX0lNQV9YQVRUUl9ESUdTSUcpCj4g
+KwkJCXJjID0gaW50ZWdyaXR5X2RpZ3NpZ192ZXJpZnkoSU5URUdSSVRZX0tFWVJJTkdfSU1BLAo+
+ICsJCQkJCQkgICAgIChjb25zdCBjaGFyICopeGF0dHJfdmFsdWUsCj4gKwkJCQkJCSAgICAgcmMs
+IGlpbnQtPmltYV9oYXNoLT5kaWdlc3QsCj4gKwkJCQkJCSAgICAgaWludC0+aW1hX2hhc2gtPmxl
+bmd0aCk7Cj4gKwkJZWxzZQo+ICsJCQlyYyA9IGltYV9tb2RzaWdfdmVyaWZ5KElOVEVHUklUWV9L
+RVlSSU5HX0lNQSwKPiArCQkJCQkgICAgICAgeGF0dHJfdmFsdWUpOwo+ICAJCWlmIChyYyA9IC1F
+T1BOT1RTVVBQKSB7Cj4gIAkJCXN0YXR1cyA9IElOVEVHUklUWV9VTktOT1dOOwo+ICAJCX0gZWxz
+ZSBpZiAocmMpIHsKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfbWFp
+bi5jIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfbWFpbi5jCj4gaW5kZXggNWQxMjJkYWY1
+YzhhLi4xYjExYzEwZjA5ZGYgMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9p
+bWFfbWFpbi5jCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfbWFpbi5jCj4gQEAg
+LTE4Myw3ICsxODMsNyBAQCBzdGF0aWMgaW50IHByb2Nlc3NfbWVhc3VyZW1lbnQoc3RydWN0IGZp
+bGUgKmZpbGUsIGNvbnN0IHN0cnVjdCBjcmVkICpjcmVkLAo+ICAJc3RydWN0IGV2bV9pbWFfeGF0
+dHJfZGF0YSAqeGF0dHJfdmFsdWUgPSBOVUxMOwo+ICAJaW50IHhhdHRyX2xlbiA9IDA7Cj4gIAli
+b29sIHZpb2xhdGlvbl9jaGVjazsKPiAtCWVudW0gaGFzaF9hbGdvIGhhc2hfYWxnbzsKPiArCWVu
+dW0gaGFzaF9hbGdvIGhhc2hfYWxnbyA9IEhBU0hfQUxHT19fTEFTVDsKPiAKPiAgCWlmICghaW1h
+X3BvbGljeV9mbGFnIHx8ICFTX0lTUkVHKGlub2RlLT5pX21vZGUpKQo+ICAJCXJldHVybiAwOwo+
+IEBAIC0yNzcsMTEgKzI3NywyNCBAQCBzdGF0aWMgaW50IHByb2Nlc3NfbWVhc3VyZW1lbnQoc3Ry
+dWN0IGZpbGUgKmZpbGUsIGNvbnN0IHN0cnVjdCBjcmVkICpjcmVkLAo+IAo+ICAJdGVtcGxhdGVf
+ZGVzYyA9IGltYV90ZW1wbGF0ZV9kZXNjX2N1cnJlbnQoKTsKPiAgCWlmICgoYWN0aW9uICYgSU1B
+X0FQUFJBSVNFX1NVQk1BU0spIHx8Cj4gLQkJICAgIHN0cmNtcCh0ZW1wbGF0ZV9kZXNjLT5uYW1l
+LCBJTUFfVEVNUExBVEVfSU1BX05BTUUpICE9IDApCj4gKwkgICAgc3RyY21wKHRlbXBsYXRlX2Rl
+c2MtPm5hbWUsIElNQV9URU1QTEFURV9JTUFfTkFNRSkgIT0gMCkgewo+ICAJCS8qIHJlYWQgJ3Nl
+Y3VyaXR5LmltYScgKi8KPiAgCQl4YXR0cl9sZW4gPSBpbWFfcmVhZF94YXR0cihmaWxlX2RlbnRy
+eShmaWxlKSwgJnhhdHRyX3ZhbHVlKTsKPiArCQlpZiAoaWludC0+ZmxhZ3MgJiBJTUFfTU9EU0lH
+X0FMTE9XRUQgJiYKPiArCQkgICAgKHhhdHRyX2xlbiA8PSAwIHx8ICFpbWFfeGF0dHJfc2lnX2tu
+b3duX2tleSh4YXR0cl92YWx1ZSwKPiArCQkJCQkJCQl4YXR0cl9sZW4pKSkgewo+ICsJCQkvKgo+
+ICsJCQkgKiBFdmVuIGlmIHdlIGVuZCB1cCB1c2luZyBhIG1vZHNpZywgaGFzaF9hbGdvIHNob3Vs
+ZAo+ICsJCQkgKiBjb21lIGZyb20gdGhlIHhhdHRyIChvciBldmVuIHRoZSBkZWZhdWx0IGhhc2gg
+YWxnbykuCj4gKwkJCSAqLwo+ICsJCQloYXNoX2FsZ28gPSBpbWFfZ2V0X2hhc2hfYWxnbyh4YXR0
+cl92YWx1ZSwgeGF0dHJfbGVuKTsKPiArCQkJaW1hX3JlYWRfbW9kc2lnKGZ1bmMsIGJ1Ziwgc2l6
+ZSwgJnhhdHRyX3ZhbHVlLAo+ICsJCQkJCSZ4YXR0cl9sZW4pOwo+ICsJCX0KPiArCX0KPiAKPiAt
+CWhhc2hfYWxnbyA9IGltYV9nZXRfaGFzaF9hbGdvKHhhdHRyX3ZhbHVlLCB4YXR0cl9sZW4pOwo+
+ICsJaWYgKGhhc2hfYWxnbyA9IEhBU0hfQUxHT19fTEFTVCkKPiArCQloYXNoX2FsZ28gPSBpbWFf
+Z2V0X2hhc2hfYWxnbyh4YXR0cl92YWx1ZSwgeGF0dHJfbGVuKTsKClByZXZpb3VzIHZlcnNpb25z
+IG5lZWRlZCB0byBjYWxjdWxhdGUgdGhlIGZpbGUgaGFzaCBiYXNlZCBvbiB0aGUKbW9kc2lnIGhh
+c2ggYWxnb3JpdGhtLsKgwqBXaXRoIHRoZSBpbnRyb2R1Y3Rpb24gb2YgdGhlIGRpZ2VzdCBzaWdu
+YXR1cmUKdGVtcGxhdGUgZmllbGQgKCdkLXNpZycpLCB0aGUgZmlsZSBkaWdlc3QgZmllbGQgKCdk
+LW5nJykgaXMgYWx3YXlzCmNhbGN1bGF0ZWQgYmFzZWQgb24gZWl0aGVyIHRoZSB4YXR0ciBoYXNo
+IGFsZ29yaXRobSwgaWYgb25lIGV4aXN0cywgb3IKdGhlIElNQSBkZWZhdWx0IGhhc2ggYWxnb3Jp
+dGhtLgoKTWltaQoKPiAKPiAgCXJjID0gaW1hX2NvbGxlY3RfbWVhc3VyZW1lbnQoaWludCwgZmls
+ZSwgYnVmLCBzaXplLCBoYXNoX2FsZ28pOwo+ICAJaWYgKHJjICE9IDAgJiYgcmMgIT0gLUVCQURG
+ICYmIHJjICE9IC1FSU5WQUwpCj4gQEAgLTMwOSw3ICszMjIsNyBAQCBzdGF0aWMgaW50IHByb2Nl
+c3NfbWVhc3VyZW1lbnQoc3RydWN0IGZpbGUgKmZpbGUsIGNvbnN0IHN0cnVjdCBjcmVkICpjcmVk
+LAo+ICAJICAgICAhKGlpbnQtPmZsYWdzICYgSU1BX05FV19GSUxFKSkKPiAgCQlyYyA9IC1FQUND
+RVM7Cj4gIAltdXRleF91bmxvY2soJmlpbnQtPm11dGV4KTsKPiAtCWtmcmVlKHhhdHRyX3ZhbHVl
+KTsKPiArCWltYV9mcmVlX3hhdHRyX2RhdGEoeGF0dHJfdmFsdWUpOwo+ICBvdXQ6Cj4gIAlpZiAo
+cGF0aGJ1ZikKPiAgCQlfX3B1dG5hbWUocGF0aGJ1Zik7Cj4gCgotLQpUbyB1bnN1YnNjcmliZSBm
+cm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3JpYmUga2V5cmluZ3MiIGluCnRo
+ZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5rZXJuZWwub3JnCk1vcmUgbWFq
+b3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5vcmcvbWFqb3Jkb21vLWluZm8uaHRt
+bA==
