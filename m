@@ -1,79 +1,39 @@
-From: Tycho Andersen <tycho@tycho.ws>
-Date: Tue, 24 Apr 2018 20:26:37 +0000
-Subject: [PATCH v3 1/3] big key: get rid of stack array allocation
-Message-Id: <20180424202639.19830-1-tycho@tycho.ws>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Mon, 02 Apr 2018 19:20:35 +0000
+Subject: Re: [PATCH v2] KEYS: DNS: limit the length of option strings
+Message-Id: <20180402192035.GC59810@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20180228190510.215801-1-ebiggers3@gmail.com>
+ <31292.1520438077@warthog.procyon.org.uk>
+ <20180312175707.GA230165@gmail.com>
+ <20180323202122.GB16350@gmail.com>
+In-Reply-To: <20180323202122.GB16350@gmail.com>
 To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, Tycho Andersen <tycho@tycho.ws>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, "Jason A . Donenfeld" <Jason@zx2c4.com>, Eric Biggers <ebiggers3@gmail.com>
+Cc: keyrings@vger.kernel.org, netdev@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>, Eric Biggers <ebiggers@google.com>
 
-We're interested in getting rid of all of the stack allocated arrays in the
-kernel [1]. This patch simply hardcodes the iv length to match that of the
-hardcoded cipher.
+On Fri, Mar 23, 2018 at 01:21:22PM -0700, Eric Biggers wrote:
+> On Mon, Mar 12, 2018 at 10:57:07AM -0700, Eric Biggers wrote:
+> > On Wed, Mar 07, 2018 at 03:54:37PM +0000, David Howells wrote:
+> > > Eric Biggers <ebiggers3@gmail.com> wrote:
+> > > 
+> > > > Fix it by limiting option strings (combined name + value) to a much more
+> > > > reasonable 128 bytes.  The exact limit is arbitrary, but currently the
+> > > > only recognized option is formatted as "dnserror=%lu" which fits well
+> > > > within this limit.
+> > > 
+> > > There will be more options coming ("ipv4", "ipv6") but they shouldn't overrun
+> > > this limit and we can always extend the limit if need be.
+> > > 
+> > > David
+> > 
+> > David (Howells) do you want to take this patch through the keyrings tree or
+> > should I ask David Miller to take it through net-next?
+> > 
+> > Eric
+> 
+> Ping.
 
-[1]: https://lkml.org/lkml/2018/3/7/621
-
-v2: hardcode the length of the nonce to be the GCM AES IV length, and do a
-    sanity check in init(), Eric Biggers
-v3: * remember to free big_key_aead when sanity check fails
-    * define a constant for big key IV size so it can be changed along side
-      the algorithm in the code
-
-Signed-off-by: Tycho Andersen <tycho@tycho.ws>
-CC: David Howells <dhowells@redhat.com>
-CC: James Morris <jmorris@namei.org>
-CC: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Jason A. Donenfeld <Jason@zx2c4.com>
-CC: Eric Biggers <ebiggers3@gmail.com>
----
- security/keys/big_key.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-index 933623784ccd..2806e70d7f8f 100644
---- a/security/keys/big_key.c
-+++ b/security/keys/big_key.c
-@@ -22,6 +22,7 @@
- #include <keys/user-type.h>
- #include <keys/big_key-type.h>
- #include <crypto/aead.h>
-+#include <crypto/gcm.h>
- 
- struct big_key_buf {
- 	unsigned int		nr_pages;
-@@ -85,6 +86,7 @@ struct key_type key_type_big_key = {
-  * Crypto names for big_key data authenticated encryption
-  */
- static const char big_key_alg_name[] = "gcm(aes)";
-+#define BIG_KEY_IV_SIZE		GCM_AES_IV_SIZE
- 
- /*
-  * Crypto algorithms for big_key data authenticated encryption
-@@ -109,7 +111,7 @@ static int big_key_crypt(enum big_key_op op, struct big_key_buf *buf, size_t dat
- 	 * an .update function, so there's no chance we'll wind up reusing the
- 	 * key to encrypt updated data. Simply put: one key, one encryption.
- 	 */
--	u8 zero_nonce[crypto_aead_ivsize(big_key_aead)];
-+	u8 zero_nonce[BIG_KEY_IV_SIZE];
- 
- 	aead_req = aead_request_alloc(big_key_aead, GFP_KERNEL);
- 	if (!aead_req)
-@@ -425,6 +427,13 @@ static int __init big_key_init(void)
- 		pr_err("Can't alloc crypto: %d\n", ret);
- 		return ret;
- 	}
-+
-+	if (unlikely(crypto_aead_ivsize(big_key_aead) != BIG_KEY_IV_SIZE)) {
-+		WARN(1, "big key algorithm changed?");
-+		ret = -EINVAL;
-+		goto free_aead;
-+	}
-+
- 	ret = crypto_aead_setauthsize(big_key_aead, ENC_AUTHTAG_SIZE);
- 	if (ret < 0) {
- 		pr_err("Can't set crypto auth tag len: %d\n", ret);
--- 
-2.17.0
-
+Ping again.
