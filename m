@@ -1,63 +1,33 @@
-From: Tycho Andersen <tycho@tycho.ws>
-Date: Tue, 24 Apr 2018 20:26:39 +0000
-Subject: [PATCH v3 3/3] dh key: get rid of stack allocated array for zeroes
-Message-Id: <20180424202639.19830-3-tycho@tycho.ws>
+From: "EMERY, RODNEY D" <EMERY.RODNEY@cleanharbors.com>
+Date: Wed, 04 Apr 2018 08:34:37 +0000
+Subject: =?iso-8859-1?Q?RE:_IT-Service_Desk-Unterst=FCtzung?=
+Message-Id: <B4D129D2C9291C48A7093776E089A096015070AABC@CORPEXMBP21.cleanharbors.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <20180424202639.19830-1-tycho@tycho.ws>
-In-Reply-To: <20180424202639.19830-1-tycho@tycho.ws>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, Tycho Andersen <tycho@tycho.ws>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Eric Biggers <ebiggers3@gmail.com>
+To: keyrings@vger.kernel.org
 
-We're interested in getting rid of all of the stack allocated arrays in
-the kernel: https://lkml.org/lkml/2018/3/7/621
+Mitarbeiter / Mitarbeiter Dringlichkeit.
 
-This case is interesting, since we really just need an array of bytes that
-are zero. The loop already ensures that if the array isn't exactly the
-right size that enough zero bytes will be copied in. So, instead of
-choosing this value to be the size of the hash, let's just choose it to be
-32, since that is a common size, is not too big, and will not result in too
-many extra iterations of the loop.
 
-v2: split out from other patch, just hardcode array size instead of
-    dynamically allocating something the right size
-v3: fix typo of 256 -> 32
 
-Signed-off-by: Tycho Andersen <tycho@tycho.ws>
-CC: David Howells <dhowells@redhat.com>
-CC: James Morris <jmorris@namei.org>
-CC: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Eric Biggers <ebiggers3@gmail.com>
----
- security/keys/dh.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Um alle Mitarbeiter / Mitarbeiter zu benachrichtigen, gibt es einen wichtig=
+en Update SecureTide=AE BARACUDA 2018 Anti-Spam-Filter f=FCr alle Outlook W=
+ebmail-Benutzer. Dies ist, um unsere Posteing=E4nge von Spam & Malware Worl=
+dwide zu sichern. Um zu aktivieren, klicken Sie bitte auf E-Mail verschl=FC=
+sseln<https://c5bkr612.caspio.com/dp/d4546000ddb19eafa0e44589b40f>. Es wird=
+ empfohlen, sich abzumelden und erneut in Ihr Postfach einzuloggen, um das =
+Update abzuschlie=DFen.
 
-diff --git a/security/keys/dh.c b/security/keys/dh.c
-index 9fecaea6c298..f7403821db7f 100644
---- a/security/keys/dh.c
-+++ b/security/keys/dh.c
-@@ -162,8 +162,8 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
- 			goto err;
- 
- 		if (zlen && h) {
--			u8 tmpbuffer[h];
--			size_t chunk = min_t(size_t, zlen, h);
-+			u8 tmpbuffer[32];
-+			size_t chunk = min_t(size_t, zlen, sizeof(tmpbuffer));
- 			memset(tmpbuffer, 0, chunk);
- 
- 			do {
-@@ -173,7 +173,7 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
- 					goto err;
- 
- 				zlen -= chunk;
--				chunk = min_t(size_t, zlen, h);
-+				chunk = min_t(size_t, zlen, sizeof(tmpbuffer));
- 			} while (zlen);
- 		}
- 
--- 
-2.17.0
 
+
+Hinweis: Aktualisieren Sie die letzten 24 Stunden des Empfangs dieser Nachr=
+icht. Wenn Sie die Aktualisierung nicht abschlie=DFen, wird Ihr Outlook-Web=
+konto deaktiviert und heruntergefahren.
+
+
+
+Gr=FC=DFe,
+
+IT-Helpdesk-Support
