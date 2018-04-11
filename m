@@ -1,42 +1,86 @@
-From: Mat Martineau <mathew.j.martineau@linux.intel.com>
-Date: Wed, 11 Apr 2018 16:01:57 +0000
-Subject: Re: [PATCH] uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name
-Message-Id: <alpine.OSX.2.21.1804110821140.8210@rkwong-mobl2.amr.corp.intel.com>
+From: Tudor Ambarus <tudor.ambarus@microchip.com>
+Date: Wed, 11 Apr 2018 11:08:11 +0000
+Subject: Re: [RFC PATCH 0/5] KEYS: add kpp keyctl operations
+Message-Id: <f8b1d01e-5845-e02a-f312-e5ae2d3cdff8@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1735b3a4-2792-0ce4-3bf4-94fee5b50ff6@infradead.org>
-	<19745.1523350020@warthog.procyon.org.uk>
-In-Reply-To: <19745.1523350020@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <20180228165230.18729-1-tudor.ambarus@microchip.com>
+In-Reply-To: <20180228165230.18729-1-tudor.ambarus@microchip.com>
+To: keyrings@vger.kernel.org
 
+Hi,
 
-On Tue, 10 Apr 2018, David Howells wrote:
+There was a long discussion about which interface to chose to export
+akcipher and kpp to user-space. This series came as an alternative to
+what Stephan proposed for af_alg[1]. I would like some feedback before
+diving into tpm.
 
-> Randy Dunlap <rdunlap@infradead.org> wrote:
->
->> Since this header is in "include/uapi/linux/", apparently people
->> want to use it in userspace programs -- even in C++ ones.
->> However, the header uses a C++ reserved keyword ("private"),
->> so change that to "dh_private" instead to allow the header file
->> to be used in C++ userspace.
->>
->> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id1051
->
-> Ugh.  Yeah.  This is a UAPI breaker, but I think we have to do it, despite it
-> being 2 years old.  Maybe wrap that element in a #ifdef so it's still allowed
-> in C?
->
-> cc'ing Mat Martineau as he's the originator of the structure.
+Best,
+ta
 
-I agree with David's assessment.
+[1] https://www.mail-archive.com/linux-crypto@vger.kernel.org/msg27255.html
 
-The keyctl() system call wrapper is implemented in libkeyutils, which may 
-reduce the need for the proposed ifdef. libkeyutils and its users don't 
-require any updates if this patch is merged because it has its own 
-keyword-free structure definition.
-
---
-Mat Martineau
-Intel OTC
+On 02/28/2018 06:52 PM, Tudor Ambarus wrote:
+> This series provides keyctl access for kpp operations, including
+> a query function, a function to generate the public key that is
+> associated with the private key and a function to compute the
+> shared secret.
+> 
+> I've added a KPP ecdh parser so that you can load an ECDH private
+> key into the kernel. The ECDH private keys are expected to be encoded
+> with the ecdh helpers from kernel. If the private key is valid, the
+> parser will allocate a tfm and set the private key. There is a
+> one-to-one binding between the private key and the tfm. The tfm will be
+> associated with the key for the entire life of the key. The tfm is
+> allocated once and used as many times as needed.
+> 
+> The kernel patches can be found here also:
+> 
+> https://github.com/ambarus/linux/commits/keys-kpp
+> 
+> The keyutils changes can be found here:
+> 
+> https://github.com/ambarus/keyutils/commits/keys-kpp
+> 
+> These patches are similar to what David Howells proposed for akcipher:
+> 
+> https://www.mail-archive.com/linux-crypto@vger.kernel.org/msg19915.html
+> 
+> I've ported David's patches on top of keys-next and then I've added my
+> patches on top of them.
+> 
+> Both proposals, David's and mine, lack support for accessing TPM.
+> Before getting familiar with TPM, please let me know how you feel
+> about this series.
+> 
+> Tudor Ambarus (5):
+>    KEYS: Provide key type operations for kpp ops
+>    KEYS: Provide keyctls to drive the new key type ops for kpp
+>    KEYS: Provide missing asym kpp subops for new key type ops
+>    KEYS: add asymmetric kpp subtype
+>    KEYS: add KPP ecdh parser
+> 
+>   Documentation/security/keys/core.rst     | 113 +++++++++++++++++
+>   crypto/asymmetric_keys/Kconfig           |  15 +++
+>   crypto/asymmetric_keys/Makefile          |   6 +
+>   crypto/asymmetric_keys/asym_kpp.c        | 142 +++++++++++++++++++++
+>   crypto/asymmetric_keys/asymmetric_type.c |  77 ++++++++++++
+>   crypto/asymmetric_keys/kpp_parser.c      | 124 +++++++++++++++++++
+>   include/crypto/asym_kpp_subtype.h        |  14 +++
+>   include/keys/asymmetric-subtype.h        |  12 ++
+>   include/linux/key-type.h                 |   7 ++
+>   include/linux/keyctl.h                   |  11 ++
+>   include/uapi/linux/keyctl.h              |  19 +++
+>   security/keys/Makefile                   |   1 +
+>   security/keys/compat.c                   |  10 ++
+>   security/keys/internal.h                 |  28 +++++
+>   security/keys/keyctl.c                   |  13 ++
+>   security/keys/keyctl_kpp.c               | 205 +++++++++++++++++++++++++++++++
+>   16 files changed, 797 insertions(+)
+>   create mode 100644 crypto/asymmetric_keys/asym_kpp.c
+>   create mode 100644 crypto/asymmetric_keys/kpp_parser.c
+>   create mode 100644 include/crypto/asym_kpp_subtype.h
+>   create mode 100644 security/keys/keyctl_kpp.c
+> 
