@@ -1,37 +1,42 @@
-From: Sasha Levin <Alexander.Levin@microsoft.com>
-Date: Tue, 10 Apr 2018 13:50:49 +0000
+From: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Date: Wed, 11 Apr 2018 16:01:57 +0000
 Subject: Re: [PATCH] uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name
-Message-Id: <DM5PR2101MB1032FCB3C25A4F8B7F778073FBBE0@DM5PR2101MB1032.namprd21.prod.outlook.com>
+Message-Id: <alpine.OSX.2.21.1804110821140.8210@rkwong-mobl2.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1735b3a4-2792-0ce4-3bf4-94fee5b50ff6@infradead.org>
-In-Reply-To: <1735b3a4-2792-0ce4-3bf4-94fee5b50ff6@infradead.org>
+	<19745.1523350020@warthog.procyon.org.uk>
+In-Reply-To: <19745.1523350020@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-Hi,
 
-[This is an automated email]
+On Tue, 10 Apr 2018, David Howells wrote:
 
-This commit has been processed because it contains a "Fixes:" tag,
-fixing commit: .
+> Randy Dunlap <rdunlap@infradead.org> wrote:
+>
+>> Since this header is in "include/uapi/linux/", apparently people
+>> want to use it in userspace programs -- even in C++ ones.
+>> However, the header uses a C++ reserved keyword ("private"),
+>> so change that to "dh_private" instead to allow the header file
+>> to be used in C++ userspace.
+>>
+>> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id1051
+>
+> Ugh.  Yeah.  This is a UAPI breaker, but I think we have to do it, despite it
+> being 2 years old.  Maybe wrap that element in a #ifdef so it's still allowed
+> in C?
+>
+> cc'ing Mat Martineau as he's the originator of the structure.
 
-The bot has also determined it's probably a bug fixing patch. (score: 15.7018)
+I agree with David's assessment.
 
-The bot has tested the following trees: v4.16.1, v4.15.16, v4.14.33, v4.9.93, v4.4.127.
-
-v4.16.1: Build OK!
-v4.15.16: Build OK!
-v4.14.33: Build OK!
-v4.9.93: Failed to apply! Possible dependencies:
-    7cbe0932c2f2 ("KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP API")
-
-v4.4.127: Failed to apply! Possible dependencies:
-    7cbe0932c2f2 ("KEYS: Convert KEYCTL_DH_COMPUTE to use the crypto KPP API")
-    ddbb41148724 ("KEYS: Add KEYCTL_DH_COMPUTE command")
-
+The keyctl() system call wrapper is implemented in libkeyutils, which may 
+reduce the need for the proposed ifdef. libkeyutils and its users don't 
+require any updates if this patch is merged because it has its own 
+keyword-free structure definition.
 
 --
-Thanks,
-Sasha
+Mat Martineau
+Intel OTC
