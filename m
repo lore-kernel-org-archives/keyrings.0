@@ -1,33 +1,23 @@
-From: David Miller <davem@davemloft.net>
-Date: Tue, 17 Apr 2018 18:52:51 +0000
-Subject: Re: [PATCH RESEND net-next v2] KEYS: DNS: limit the length of option strings
-Message-Id: <20180417.145251.2147558317390246687.davem@davemloft.net>
+From: "Gustafson, William E" <gustafson.william@cleanharbors.com>
+Date: Fri, 13 Apr 2018 09:49:11 +0000
+Subject: RE: AUSBLICK ACCOUNT SICHERHEIT UPDATE
+Message-Id: <68330CF46261F44E96DE90B43867AADD01FB786415@CORPEXMBP21.cleanharbors.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <20180417182340.GB9237@gmail.com>
-        <20180417.142437.1105065334888296683.davem@davemloft.net>
-        <20180417183736.GC9237@gmail.com>
-In-Reply-To: <20180417183736.GC9237@gmail.com>
-To: ebiggers3@gmail.com
-Cc: netdev@vger.kernel.org, keyrings@vger.kernel.org, mark.rutland@arm.com, ebiggers@google.com
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 17 Apr 2018 11:37:36 -0700
+Sehr geehrter Outlook E-Mail-Benutzer,
 
-> On Tue, Apr 17, 2018 at 02:24:37PM -0400, David Miller wrote:
->> From: Eric Biggers <ebiggers3@gmail.com>
->> Date: Tue, 17 Apr 2018 11:23:40 -0700
->> 
->> > Can you queue this up for stable too?  syzbot has been hitting this on older
->> > kernel versions.
->> 
->> If you want a patch bound for stable, it must show up in Linus's tree
->> first which means you should target 'net' rather than 'net-next'.
-> 
-> Okay, can you move the patch there, or do I need to resend, or is it too late
-> already?  It's a clean cherry-pick.  Sorry, I'm not too familiar with the quirks
-> of net and netdev -- most other maintainers do things differently.
+Ihr Outlook-E-Mail-Konto wird in wenigen Minuten geschlossen, wenn Sie Ihre=
+ Speicherkapazit=E4t nicht erh=F6hen k=F6nnen. KLICKEN SIE HIER<https://c0a=
+cy475.caspio.com/dp/39a46000fa819249d7e94872a004>, um Ihre Speicherkapazit=
+=E4t auf 30,00 GB zu erh=F6hen.
 
-It's already in net-next, so submit another copy based on net.
+HINWEIS: Wenn innerhalb der n=E4chsten 24 Stunden keine Best=E4tigung von I=
+hnen erhalten wird, werden wir gezwungen sein, Ihr Outlook-E-Mail-Konto zu =
+schlie=DFen, bis eine ordnungsgem=E4=DFe =DCberpr=FCfung erfolgt, bevor Sie=
+ erneut auf Ihr E-Mail-Konto zugreifen k=F6nnen.
+
+Danke.
