@@ -1,33 +1,18 @@
-From: "EMERY, RODNEY D" <EMERY.RODNEY@cleanharbors.com>
-Date: Wed, 04 Apr 2018 08:34:37 +0000
-Subject: =?iso-8859-1?Q?RE:_IT-Service_Desk-Unterst=FCtzung?=
-Message-Id: <B4D129D2C9291C48A7093776E089A096015070AABC@CORPEXMBP21.cleanharbors.com>
+From: Sgt Clara Herbert <sgtclaraherbert@gmail.com>
+Date: Tue, 24 Apr 2018 19:36:35 +0000
+Subject: Greetings to you,
+Message-Id: <237875797.404650.1524598595131@mail.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
-
-Mitarbeiter / Mitarbeiter Dringlichkeit.
+References: <237875797.404650.1524598595131.ref@mail.yahoo.com>
 
 
 
-Um alle Mitarbeiter / Mitarbeiter zu benachrichtigen, gibt es einen wichtig=
-en Update SecureTide=AE BARACUDA 2018 Anti-Spam-Filter f=FCr alle Outlook W=
-ebmail-Benutzer. Dies ist, um unsere Posteing=E4nge von Spam & Malware Worl=
-dwide zu sichern. Um zu aktivieren, klicken Sie bitte auf E-Mail verschl=FC=
-sseln<https://c5bkr612.caspio.com/dp/d4546000ddb19eafa0e44589b40f>. Es wird=
- empfohlen, sich abzumelden und erneut in Ihr Postfach einzuloggen, um das =
-Update abzuschlie=DFen.
+Greetings to you,
 
+My name is Sgt Clara,from America i am here to search for a business partner or friend who will help me to invest my fund in his company/country Please reply me through my email.
 
-
-Hinweis: Aktualisieren Sie die letzten 24 Stunden des Empfangs dieser Nachr=
-icht. Wenn Sie die Aktualisierung nicht abschlie=DFen, wird Ihr Outlook-Web=
-konto deaktiviert und heruntergefahren.
-
-
-
-Gr=FC=DFe,
-
-IT-Helpdesk-Support
+thanks
+Sgt Clara
