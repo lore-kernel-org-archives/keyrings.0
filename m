@@ -1,23 +1,63 @@
-From: "Gustafson, William E" <gustafson.william@cleanharbors.com>
-Date: Fri, 13 Apr 2018 09:49:11 +0000
-Subject: RE: AUSBLICK ACCOUNT SICHERHEIT UPDATE
-Message-Id: <68330CF46261F44E96DE90B43867AADD01FB786415@CORPEXMBP21.cleanharbors.com>
+From: Tycho Andersen <tycho@tycho.ws>
+Date: Tue, 24 Apr 2018 20:26:39 +0000
+Subject: [PATCH v3 3/3] dh key: get rid of stack allocated array for zeroes
+Message-Id: <20180424202639.19830-3-tycho@tycho.ws>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20180424202639.19830-1-tycho@tycho.ws>
+In-Reply-To: <20180424202639.19830-1-tycho@tycho.ws>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, Tycho Andersen <tycho@tycho.ws>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Eric Biggers <ebiggers3@gmail.com>
 
-Sehr geehrter Outlook E-Mail-Benutzer,
+We're interested in getting rid of all of the stack allocated arrays in
+the kernel: https://lkml.org/lkml/2018/3/7/621
 
-Ihr Outlook-E-Mail-Konto wird in wenigen Minuten geschlossen, wenn Sie Ihre=
- Speicherkapazit=E4t nicht erh=F6hen k=F6nnen. KLICKEN SIE HIER<https://c0a=
-cy475.caspio.com/dp/39a46000fa819249d7e94872a004>, um Ihre Speicherkapazit=
-=E4t auf 30,00 GB zu erh=F6hen.
+This case is interesting, since we really just need an array of bytes that
+are zero. The loop already ensures that if the array isn't exactly the
+right size that enough zero bytes will be copied in. So, instead of
+choosing this value to be the size of the hash, let's just choose it to be
+32, since that is a common size, is not too big, and will not result in too
+many extra iterations of the loop.
 
-HINWEIS: Wenn innerhalb der n=E4chsten 24 Stunden keine Best=E4tigung von I=
-hnen erhalten wird, werden wir gezwungen sein, Ihr Outlook-E-Mail-Konto zu =
-schlie=DFen, bis eine ordnungsgem=E4=DFe =DCberpr=FCfung erfolgt, bevor Sie=
- erneut auf Ihr E-Mail-Konto zugreifen k=F6nnen.
+v2: split out from other patch, just hardcode array size instead of
+    dynamically allocating something the right size
+v3: fix typo of 256 -> 32
 
-Danke.
+Signed-off-by: Tycho Andersen <tycho@tycho.ws>
+CC: David Howells <dhowells@redhat.com>
+CC: James Morris <jmorris@namei.org>
+CC: "Serge E. Hallyn" <serge@hallyn.com>
+CC: Eric Biggers <ebiggers3@gmail.com>
+---
+ security/keys/dh.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/security/keys/dh.c b/security/keys/dh.c
+index 9fecaea6c298..f7403821db7f 100644
+--- a/security/keys/dh.c
++++ b/security/keys/dh.c
+@@ -162,8 +162,8 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+ 			goto err;
+ 
+ 		if (zlen && h) {
+-			u8 tmpbuffer[h];
+-			size_t chunk = min_t(size_t, zlen, h);
++			u8 tmpbuffer[32];
++			size_t chunk = min_t(size_t, zlen, sizeof(tmpbuffer));
+ 			memset(tmpbuffer, 0, chunk);
+ 
+ 			do {
+@@ -173,7 +173,7 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+ 					goto err;
+ 
+ 				zlen -= chunk;
+-				chunk = min_t(size_t, zlen, h);
++				chunk = min_t(size_t, zlen, sizeof(tmpbuffer));
+ 			} while (zlen);
+ 		}
+ 
+-- 
+2.17.0
+
