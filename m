@@ -1,13 +1,13 @@
 From: Tycho Andersen <tycho@tycho.ws>
-Date: Tue, 24 Apr 2018 20:26:38 +0000
-Subject: [PATCH v3 2/3] dh key: get rid of stack allocated array
-Message-Id: <20180424202639.19830-2-tycho@tycho.ws>
+Date: Tue, 24 Apr 2018 01:03:20 +0000
+Subject: [PATCH 2/3] dh key: get rid of stack allocated array
+Message-Id: <20180424010321.14739-2-tycho@tycho.ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180424202639.19830-1-tycho@tycho.ws>
-In-Reply-To: <20180424202639.19830-1-tycho@tycho.ws>
+References: <20180424010321.14739-1-tycho@tycho.ws>
+In-Reply-To: <20180424010321.14739-1-tycho@tycho.ws>
 To: David Howells <dhowells@redhat.com>
 Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, Tycho Andersen <tycho@tycho.ws>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Eric Biggers <ebiggers3@gmail.com>
 
