@@ -1,44 +1,62 @@
-From: David Miller <davem@davemloft.net>
-Date: Tue, 17 Apr 2018 19:18:45 +0000
-Subject: Re: [PATCH RESEND net v2] KEYS: DNS: limit the length of option strings
-Message-Id: <20180417.151845.1215574870086065510.davem@davemloft.net>
+From: Tycho Andersen <tycho@tycho.ws>
+Date: Tue, 24 Apr 2018 01:03:21 +0000
+Subject: [PATCH 3/3] dh key: get rid of stack allocated array for zeroes
+Message-Id: <20180424010321.14739-3-tycho@tycho.ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180417190706.217384-1-ebiggers3@gmail.com>
-In-Reply-To: <20180417190706.217384-1-ebiggers3@gmail.com>
-To: ebiggers3@gmail.com
-Cc: netdev@vger.kernel.org, keyrings@vger.kernel.org, mark.rutland@arm.com, ebiggers@google.com
+References: <20180424010321.14739-1-tycho@tycho.ws>
+In-Reply-To: <20180424010321.14739-1-tycho@tycho.ws>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, Tycho Andersen <tycho@tycho.ws>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Eric Biggers <ebiggers3@gmail.com>
 
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 17 Apr 2018 12:07:06 -0700
+We're interested in getting rid of all of the stack allocated arrays in
+the kernel: https://lkml.org/lkml/2018/3/7/621
 
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> Adding a dns_resolver key whose payload contains a very long option name
-> resulted in that string being printed in full.  This hit the WARN_ONCE()
-> in set_precision() during the printk(), because printk() only supports a
-> precision of up to 32767 bytes:
-> 
->     precision 1000000 too large
->     WARNING: CPU: 0 PID: 752 at lib/vsprintf.c:2189 vsnprintf+0x4bc/0x5b0
-> 
-> Fix it by limiting option strings (combined name + value) to a much more
-> reasonable 128 bytes.  The exact limit is arbitrary, but currently the
-> only recognized option is formatted as "dnserror=%lu" which fits well
-> within this limit.
-> 
-> Also ratelimit the printks.
-> 
-> Reproducer:
-> 
->     perl -e 'print "#", "A" x 1000000, "\x00"' | keyctl padd dns_resolver desc @s
-> 
-> This bug was found using syzkaller.
-> 
-> Reported-by: Mark Rutland <mark.rutland@arm.com>
-> Fixes: 4a2d789267e0 ("DNS: If the DNS server returns an error, allow that to be cached [ver #2]")
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+This case is interesting, since we really just need an array of bytes that
+are zero. The loop already ensures that if the array isn't exactly the
+right size that enough zero bytes will be copied in. So, instead of
+choosing this value to be the size of the hash, let's just choose it to be
+256, since that is a common size, is not to big, and will not result in too
+many extra iterations of the loop.
 
-Applied and qeueud up for -stable, thanks.
+v2: split out from other patch, just hardcode array size instead of
+    dynamically allocating something the right size
+
+Signed-off-by: Tycho Andersen <tycho@tycho.ws>
+CC: David Howells <dhowells@redhat.com>
+CC: James Morris <jmorris@namei.org>
+CC: "Serge E. Hallyn" <serge@hallyn.com>
+CC: Eric Biggers <ebiggers3@gmail.com>
+---
+ security/keys/dh.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/security/keys/dh.c b/security/keys/dh.c
+index 9fecaea6c298..74f8a853872e 100644
+--- a/security/keys/dh.c
++++ b/security/keys/dh.c
+@@ -162,8 +162,8 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+ 			goto err;
+ 
+ 		if (zlen && h) {
+-			u8 tmpbuffer[h];
+-			size_t chunk = min_t(size_t, zlen, h);
++			u8 tmpbuffer[256];
++			size_t chunk = min_t(size_t, zlen, sizeof(tmpbuffer));
+ 			memset(tmpbuffer, 0, chunk);
+ 
+ 			do {
+@@ -173,7 +173,7 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+ 					goto err;
+ 
+ 				zlen -= chunk;
+-				chunk = min_t(size_t, zlen, h);
++				chunk = min_t(size_t, zlen, sizeof(tmpbuffer));
+ 			} while (zlen);
+ 		}
+ 
+-- 
+2.17.0
+
