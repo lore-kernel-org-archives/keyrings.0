@@ -1,90 +1,62 @@
-From: Tycho Andersen <tycho@tycho.ws>
-Date: Tue, 24 Apr 2018 01:03:20 +0000
-Subject: [PATCH 2/3] dh key: get rid of stack allocated array
-Message-Id: <20180424010321.14739-2-tycho@tycho.ws>
+From: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Date: Sat, 05 May 2018 06:01:52 +0000
+Subject: [RESEND][PATCH] KEYS: Handle missing Authority Key Identifier x509 extension
+Message-Id: <20180505060152.21571-1-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180424010321.14739-1-tycho@tycho.ws>
-In-Reply-To: <20180424010321.14739-1-tycho@tycho.ws>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, Tycho Andersen <tycho@tycho.ws>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Eric Biggers <ebiggers3@gmail.com>
+To: keyrings@vger.kernel.org
 
-We're interested in getting rid of all of the stack allocated arrays in the
-kernel: https://lkml.org/lkml/2018/3/7/621
+If the certificate is self-signed and the Key Identifier is not present
+in the Authority Key Identifier extension (RFC5280 4.2.1.1), fill in the
+sig->auth_ids values with the certificate's own key IDs since they need
+to be the same anyway.  This is noted in 4.2.1.1 as an exception for
+self-signed certificates where the keyIdentifier field may be empty.
 
-This particular vla is used as a temporary output buffer in case there is
-too much hash output for the destination buffer. Instead, let's just
-allocate a buffer that's big enough initially, but only copy back to
-userspace the amount that was originally asked for.
+There are root certificates in use where this is the case.  This affects
+the checks in the restrict functions in
+crypto/asymmetric_keys/restrict.c but at the point the restrict functions
+run we have no access to the certificate struct to be able to do this
+substitution there.  A self-signed certificate with the auth_ids NULL
+will fail the restrict checks while other self-signed certificates will
+be verified against themselves and pass.
 
-v2: allocate enough in the original output buffer vs creating a temporary
-    output buffer
-
-Signed-off-by: Tycho Andersen <tycho@tycho.ws>
-CC: David Howells <dhowells@redhat.com>
-CC: James Morris <jmorris@namei.org>
-CC: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Eric Biggers <ebiggers3@gmail.com>
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
 ---
- security/keys/dh.c | 29 ++++++++++-------------------
- 1 file changed, 10 insertions(+), 19 deletions(-)
+ crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/security/keys/dh.c b/security/keys/dh.c
-index d1ea9f325f94..9fecaea6c298 100644
---- a/security/keys/dh.c
-+++ b/security/keys/dh.c
-@@ -183,24 +183,13 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
- 				goto err;
- 		}
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index ce2df8c9c5..b6d05f17f6 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -130,6 +130,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
+ 	if (ret < 0)
+ 		goto error_decode;
  
--		if (dlen < h) {
--			u8 tmpbuffer[h];
--
--			err = crypto_shash_final(desc, tmpbuffer);
--			if (err)
--				goto err;
--			memcpy(dst, tmpbuffer, dlen);
--			memzero_explicit(tmpbuffer, h);
--			return 0;
--		} else {
--			err = crypto_shash_final(desc, dst);
--			if (err)
--				goto err;
-+		err = crypto_shash_final(desc, dst);
-+		if (err)
-+			goto err;
- 
--			dlen -= h;
--			dst += h;
--			counter = cpu_to_be32(be32_to_cpu(counter) + 1);
--		}
-+		dlen -= h;
-+		dst += h;
-+		counter = cpu_to_be32(be32_to_cpu(counter) + 1);
- 	}
- 
- 	return 0;
-@@ -216,14 +205,16 @@ static int keyctl_dh_compute_kdf(struct kdf_sdesc *sdesc,
- {
- 	uint8_t *outbuf = NULL;
- 	int ret;
-+	size_t outbuf_len = round_up(buflen,
-+			             crypto_shash_digestsize(sdesc->shash.tfm));
- 
--	outbuf = kmalloc(buflen, GFP_KERNEL);
-+	outbuf = kmalloc(outbuf_len, GFP_KERNEL);
- 	if (!outbuf) {
- 		ret = -ENOMEM;
- 		goto err;
- 	}
- 
--	ret = kdf_ctr(sdesc, kbuf, kbuflen, outbuf, buflen, lzero);
-+	ret = kdf_ctr(sdesc, kbuf, kbuflen, outbuf, outbuf_len, lzero);
- 	if (ret)
- 		goto err;
++	if (cert->self_signed) {
++		if (!cert->sig->auth_ids[0]) {
++			/* Duplicate cert->id */
++			kid = asymmetric_key_generate_id(cert->raw_serial,
++							 cert->raw_serial_size,
++							 cert->raw_issuer,
++							 cert->raw_issuer_size);
++			cert->sig->auth_ids[0] = kid;
++		}
++
++		if (!cert->sig->auth_ids[1] && cert->skid) {
++			/* Duplicate cert->skid */
++			kid = asymmetric_key_generate_id(cert->raw_skid,
++							 cert->raw_skid_size,
++							 "", 0);
++			cert->sig->auth_ids[1] = kid;
++		}
++	}
++
+ 	kfree(ctx);
+ 	return cert;
  
 -- 
-2.17.0
+2.14.1
 
