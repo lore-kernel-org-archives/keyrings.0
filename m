@@ -1,103 +1,50 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Wed, 23 May 2018 00:12:52 +0000
-Subject: [PATCH v7 13/14] ima: Write modsig to the measurement list
-Message-Id: <20180523001253.15247-14-bauerman@linux.ibm.com>
+From: Andrea Parri <andrea.parri@amarulasolutions.com>
+Date: Mon, 07 May 2018 15:40:55 +0000
+Subject: [PATCH] certificate handling: Update references to the documentation
+Message-Id: <1525707655-3542-1-git-send-email-andrea.parri@amarulasolutions.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180523001253.15247-1-bauerman@linux.ibm.com>
-In-Reply-To: <20180523001253.15247-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+To: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>
+Cc: Jonathan Corbet <corbet@lwn.net>, Mauro Carvalho Chehab <mchehab@s-opensource.com>, keyrings@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Andrea Parri <andrea.parri@amarulasolutions.com>
 
-Add modsig support to the "sig" template field, allowing the the contents
-of the modsig to be included in the measurement list.
+Commit 94e980cc45f2b2 ("Documentation/module-signing.txt: convert to
+ReST markup") converted the .txt doc. to ReST markup, but it did not
+update the references to the doc. (including in MAINTAINERS).
 
-Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: Andrea Parri <andrea.parri@amarulasolutions.com>
 ---
- security/integrity/ima/ima.h              |  7 +++++++
- security/integrity/ima/ima_modsig.c       | 13 +++++++++++++
- security/integrity/ima/ima_template_lib.c | 15 ++++++++++++++-
- 3 files changed, 34 insertions(+), 1 deletion(-)
+ MAINTAINERS   | 2 +-
+ certs/Kconfig | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 4ed7b0610842..33120c10a173 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -314,6 +314,7 @@ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
- 		    int *xattr_len);
- int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr, enum hash_algo *algo,
- 			const u8 **hash, u8 *len);
-+int ima_modsig_serialize_data(struct evm_ima_xattr_data **data, int *data_len);
- int ima_modsig_verify(const unsigned int keyring_id,
- 		      struct evm_ima_xattr_data *hdr);
- void ima_free_xattr_data(struct evm_ima_xattr_data *hdr);
-@@ -338,6 +339,12 @@ static inline int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr,
- 	return -EOPNOTSUPP;
- }
+diff --git a/MAINTAINERS b/MAINTAINERS
+index df6e9bb2559af..803d4b4ff5f1d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3347,7 +3347,7 @@ M:	David Howells <dhowells@redhat.com>
+ M:	David Woodhouse <dwmw2@infradead.org>
+ L:	keyrings@vger.kernel.org
+ S:	Maintained
+-F:	Documentation/module-signing.txt
++F:	Documentation/admin-guide/module-signing.rst
+ F:	certs/
+ F:	scripts/sign-file.c
+ F:	scripts/extract-cert.c
+diff --git a/certs/Kconfig b/certs/Kconfig
+index 5f7663df6e8e3..c94e93d8bccf0 100644
+--- a/certs/Kconfig
++++ b/certs/Kconfig
+@@ -13,7 +13,7 @@ config MODULE_SIG_KEY
  
-+static inline int ima_modsig_serialize_data(struct evm_ima_xattr_data **data,
-+					    int *data_len)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- static inline int ima_modsig_verify(const unsigned int keyring_id,
- 				    struct evm_ima_xattr_data *hdr)
- {
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-index 0a8b9216cfa5..105fd04d585e 100644
---- a/security/integrity/ima/ima_modsig.c
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -167,6 +167,19 @@ int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr, enum hash_algo *algo,
- 	return pkcs7_get_digest(modsig->pkcs7_msg, hash, len);
- }
+          If this option is unchanged from its default "certs/signing_key.pem",
+          then the kernel will automatically generate the private key and
+-         certificate as described in Documentation/module-signing.txt
++         certificate as described in Documentation/admin-guide/module-signing.rst
  
-+int ima_modsig_serialize_data(struct evm_ima_xattr_data **data, int *data_len)
-+{
-+	struct modsig_hdr *modsig = (struct modsig_hdr *) *data;
-+
-+	if (!*data || (*data)->type != IMA_MODSIG)
-+		return -EINVAL;
-+
-+	*data = &modsig->raw_pkcs7;
-+	*data_len = modsig->raw_pkcs7_len;
-+
-+	return 0;
-+}
-+
- int ima_modsig_verify(const unsigned int keyring_id,
- 		      struct evm_ima_xattr_data *hdr)
- {
-diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
-index 36d175816894..417cd153ba60 100644
---- a/security/integrity/ima/ima_template_lib.c
-+++ b/security/integrity/ima/ima_template_lib.c
-@@ -411,10 +411,23 @@ int ima_eventsig_init(struct ima_event_data *event_data,
- 		      struct ima_field_data *field_data)
- {
- 	struct evm_ima_xattr_data *xattr_value = event_data->xattr_value;
-+	int xattr_len = event_data->xattr_len;
- 
- 	if (!is_signed(xattr_value))
- 		return 0;
- 
--	return ima_write_template_field_data(xattr_value, event_data->xattr_len,
-+	/*
-+	 * The xattr_value for IMA_MODSIG is a runtime structure containing
-+	 * pointers. Get its raw data instead.
-+	 */
-+	if (xattr_value->type = IMA_MODSIG) {
-+		int rc;
-+
-+		rc = ima_modsig_serialize_data(&xattr_value, &xattr_len);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	return ima_write_template_field_data(xattr_value, xattr_len,
- 					     DATA_FMT_HEX, field_data);
- }
+ config SYSTEM_TRUSTED_KEYRING
+ 	bool "Provide system-wide ring of trusted keys"
+-- 
+2.7.4
 
