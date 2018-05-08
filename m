@@ -1,100 +1,87 @@
-From: Mat Martineau <mathew.j.martineau@linux.intel.com>
-Date: Wed, 30 May 2018 00:00:35 +0000
-Subject: Re: [RFC 00/10] KEYS: TPM 1.2 asymmetric key type
-Message-Id: <alpine.OSX.2.21.1805291628390.21916@jrboyce-mobl1.amr.corp.intel.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Tue, 08 May 2018 18:09:27 +0000
+Subject: Re: [PATCH] keyctl: use keyctl_read_alloc() in dump_key_tree_aux()
+Message-Id: <20180508180927.GC135321@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180529032949.30526-1-denkenz@gmail.com>
-In-Reply-To: <20180529032949.30526-1-denkenz@gmail.com>
+References: <20171026210008.106248-1-ebiggers3@gmail.com>
+In-Reply-To: <20171026210008.106248-1-ebiggers3@gmail.com>
 To: keyrings@vger.kernel.org
 
+On Tue, Feb 20, 2018 at 11:43:49AM -0800, Eric Biggers wrote:
+> On Thu, Oct 26, 2017 at 02:00:08PM -0700, Eric Biggers wrote:
+> > From: Eric Biggers <ebiggers@google.com>
+> > 
+> > dump_key_tree_aux() (part of 'keyctl show') was racy: it allocated a
+> > buffer for the keyring contents, then read the keyring.  But it's
+> > possible that keys are added to the keyring concurrently.  This is
+> > problematic for two reasons.  First, when keyctl_read() is passed a
+> > buffer that is too small, it is unspecified whether it is filled or not.
+> > Second, even if the buffer is filled, some keys (not necessarily even
+> > the newest ones) would be omitted from the listing.
+> > 
+> > Switch to keyctl_read_alloc() which handles the "buffer too small" case
+> > correctly by retrying the read.
+> > 
+> > Signed-off-by: Eric Biggers <ebiggers@google.com>
+> > ---
+> >  keyctl.c | 22 ++++++----------------
+> >  1 file changed, 6 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/keyctl.c b/keyctl.c
+> > index 801a864..65a7397 100644
+> > --- a/keyctl.c
+> > +++ b/keyctl.c
+> > @@ -1808,29 +1808,18 @@ static int dump_key_tree_aux(key_serial_t key, int depth, int more, int hex_key_
+> >  	/* if it's a keyring then we're going to want to recursively
+> >  	 * display it if we can */
+> >  	if (strcmp(type, "keyring") = 0) {
+> > -		/* find out how big the keyring is */
+> > -		ret = keyctl_read(key, NULL, 0);
+> > -		if (ret < 0)
+> > -			error("keyctl_read");
+> > -		if (ret = 0)
+> > -			return 0;
+> > -		ringlen = ret;
+> >  
+> >  		/* read its contents */
+> > -		payload = malloc(ringlen);
+> > -		if (!payload)
+> > -			error("malloc");
+> > -
+> > -		ret = keyctl_read(key, payload, ringlen);
+> > +		ret = keyctl_read_alloc(key, &payload);
+> >  		if (ret < 0)
+> > -			error("keyctl_read");
+> > +			error("keyctl_read_alloc");
+> >  
+> > -		ringlen = ret < ringlen ? ret : ringlen;
+> > +		ringlen = ret;
+> >  		kcount = ringlen / sizeof(key_serial_t);
+> >  
+> >  		/* walk the keyring */
+> >  		pk = payload;
+> > -		do {
+> > +		while (ringlen >= sizeof(key_serial_t)) {
+> >  			key = *pk++;
+> >  
+> >  			/* recurse into nexted keyrings */
+> > @@ -1858,7 +1847,8 @@ static int dump_key_tree_aux(key_serial_t key, int depth, int more, int hex_key_
+> >  							    hex_key_IDs);
+> >  			}
+> >  
+> > -		} while (ringlen -= 4, ringlen >= sizeof(key_serial_t));
+> > +			ringlen -= sizeof(key_serial_t);
+> > +		}
+> >  
+> >  		free(payload);
+> >  	}
+> > -- 
+> > 2.15.0.rc2.357.g7e34df9404-goog
+> > 
+> 
+> Ping.
 
-David,
-
-On Mon, 28 May 2018, Denis Kenzior wrote:
-
-> Here's an RFC to provide access to the TPM-wrapped keys via keyctl
-> asymmetric key interface.  This RFC only provides pkey_query,
-> pkey_encrypt and pkey_decrypt operations.  sign and verify operations
-> should be simple, but I did not want to proceed with them until I sanity
-> checked that this is the right approach.
->
-> These patches depend on asymmetric key patches from David Howells, which
-> can be found here:
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-asym-keyctl
-
-I've posted a rebased keys-asym-keyctl branch for v4.16 here:
-
-https://git.kernel.org/pub/scm/linux/kernel/git/martineau/linux.git/tag/?h=ell-key-crypto-416
-
-
-Mat
-
->
-> And the needed keyutils patches:
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/log/?h=pkey
->
-> A simple parser for DER-encoded TPM keys is added so that userspace
-> applications can load the key directly into the kernel.  The outer PEM
-> formatting (if any) must be stripped out by userspace.  For more details
-> on the format, please see patch 3/10.
->
-> Since the loaded key blob contains both the public key portion and the
-> (encrypted) private key portion of the key, it is possible to perform
-> both encryption and decryption operations.
->
-> For operations where the public key is used, all operations are done in
-> software using the existing kernel crypto APIs.  For operations that
-> utilize the TPM protected private key, tpm_loadkey2 and tpm_unbind
-> operations are used.
->
-> Example usage:
-> 	# Generate Private Key
-> 	openssl genrsa -out /tmp/privkey.pem 2048
-> 	# Wrap the key with the TPM
-> 	create_tpm_key -s 2048 -w /tmp/privkey.pem /tmp/privkey.tpm
-> 	# Strip PEM
-> 	openssl asn1parse -inform pem -in /tmp/privkey.tpm -noout -out \
-> 	    /tmp/privkey.der
-> 	# Load the TPM key into the kernel
-> 	tpm_serial=`cat /tmp/privkey.der | keyctl padd asymmetric tpm @u`
-> 	echo -n abcdefghijklmnopqrst >/tmp/data
-> 	keyctl pkey_encrypt $tpm_serial 0 /tmp/data enc=pkcs1 > /tmp/enc
-> 	keyctl pkey_decrypt $tpm_serial 0 /tmp/enc enc=pkcs1 > /tmp/dec
-> 	cmp /tmp/data /tmp/dec
->
-> Denis Kenzior (10):
->  crypto: rsa-pkcs1pad: Allow hash to be optional
->  KEYS: asym_tpm: add skeleton for asym_tpm
->  KEYS: Add parser for TPM-based keys
->  KEYS: asym_tpm: extract key size & public key
->  KEYS: asym_tpm: Implement pkey_query
->  KEYS: asym_tpm: Implement encryption operation
->  KEYS: trusted: Expose common functionality
->  KEYS: asym_tpm: Add loadkey2 and flushspecific
->  KEYS: asym_tpm: Implement tpm_unbind
->  KEYS: asym_tpm: Implement the encrypt operation
->
-> crypto/asymmetric_keys/Kconfig      |  21 ++
-> crypto/asymmetric_keys/Makefile     |  13 +
-> crypto/asymmetric_keys/asym_tpm.c   | 666 ++++++++++++++++++++++++++++++++++++
-> crypto/asymmetric_keys/tpm.asn1     |   5 +
-> crypto/asymmetric_keys/tpm_parser.c | 104 ++++++
-> crypto/rsa-pkcs1pad.c               |  59 +++-
-> include/crypto/asym_tpm_subtype.h   |  19 +
-> security/keys/trusted.c             |  12 +-
-> security/keys/trusted.h             |  14 +-
-> 9 files changed, 890 insertions(+), 23 deletions(-)
-> create mode 100644 crypto/asymmetric_keys/asym_tpm.c
-> create mode 100644 crypto/asymmetric_keys/tpm.asn1
-> create mode 100644 crypto/asymmetric_keys/tpm_parser.c
-> create mode 100644 include/crypto/asym_tpm_subtype.h
->
-> -- 
-> 2.16.1
-
---
-Mat Martineau
-Intel OTC
+Ping.
