@@ -1,125 +1,149 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Wed, 23 May 2018 00:12:45 +0000
-Subject: [PATCH v7 06/14] integrity: Introduce asymmetric_sig_has_known_key()
-Message-Id: <20180523001253.15247-7-bauerman@linux.ibm.com>
+From: Joe Perches <joe@perches.com>
+Date: Thu, 10 May 2018 15:45:26 +0000
+Subject: [PATCH 00/18] Convert default pr_fmt from empty to KBUILD_MODNAME
+Message-Id: <cover.1525964381.git.joe@perches.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180523001253.15247-1-bauerman@linux.ibm.com>
-In-Reply-To: <20180523001253.15247-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Alexander Shishkin <alexander.shishkin@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>, Mathieu Desnoyers <mathieu.desnoyers@efficios.com>, Lai Jiangshan <jiangshanlai@gmail.com>, Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>, linux-block@vger.kernel.org, linux-crypto@vger.kernel.org, netdev@vger.kernel.org, linux-fbdev@vger.kernel.org, linux-audit@redhat.com, linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org, netfilter-devel@vger.kernel.org, coreteam@netfilter.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, selinux@tycho.nsa.gov
+Cc: dri-devel@lists.freedesktop.org, linux-security-module@vger.kernel.org
 
-IMA will only look for a modsig if the xattr sig references a key which is
-not in the expected kernel keyring. To that end, introduce
-asymmetric_sig_has_known_key().
+pr_<level> logging uses allow a prefix to be specified with a
+specific #define pr_fmt
 
-The logic of extracting the key used in the xattr sig is factored out from
-asymmetric_verify() so that it can be used by the new function.
+The default of pr_fmt in printk.h is #define pr_fmt(fmt) fmt
+so no prefixing of logging output is generically done.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- security/integrity/digsig_asymmetric.c | 44 +++++++++++++++++++++++++---------
- security/integrity/integrity.h         |  8 +++++++
- 2 files changed, 41 insertions(+), 11 deletions(-)
+There are several output logging uses like dump_stack() that are
+unprefixed and should remain unprefixed.
 
-diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-index ab6a029062a1..241647970c19 100644
---- a/security/integrity/digsig_asymmetric.c
-+++ b/security/integrity/digsig_asymmetric.c
-@@ -79,26 +79,48 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
- 	return key;
- }
- 
--int asymmetric_verify(struct key *keyring, const char *sig,
--		      int siglen, const char *data, int datalen)
-+static struct key *asymmetric_key_from_sig(struct key *keyring, const char *sig,
-+					   int siglen)
- {
--	struct public_key_signature pks;
--	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
--	struct key *key;
--	int ret = -ENOMEM;
-+	const struct signature_v2_hdr *hdr = (struct signature_v2_hdr *) sig;
- 
- 	if (siglen <= sizeof(*hdr))
--		return -EBADMSG;
-+		return ERR_PTR(-EBADMSG);
- 
- 	siglen -= sizeof(*hdr);
- 
- 	if (siglen != be16_to_cpu(hdr->sig_size))
--		return -EBADMSG;
-+		return ERR_PTR(-EBADMSG);
- 
- 	if (hdr->hash_algo >= HASH_ALGO__LAST)
--		return -ENOPKG;
-+		return ERR_PTR(-ENOPKG);
-+
-+	return request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
-+}
-+
-+bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
-+				  int siglen)
-+{
-+	struct key *key;
-+
-+	key = asymmetric_key_from_sig(keyring, sig, siglen);
-+	if (IS_ERR_OR_NULL(key))
-+		return false;
-+
-+	key_put(key);
-+
-+	return true;
-+}
-+
-+int asymmetric_verify(struct key *keyring, const char *sig,
-+		      int siglen, const char *data, int datalen)
-+{
-+	struct public_key_signature pks;
-+	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
-+	struct key *key;
-+	int ret = -ENOMEM;
- 
--	key = request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
-+	key = asymmetric_key_from_sig(keyring, sig, siglen);
- 	if (IS_ERR(key))
- 		return PTR_ERR(key);
- 
-@@ -109,7 +131,7 @@ int asymmetric_verify(struct key *keyring, const char *sig,
- 	pks.digest = (u8 *)data;
- 	pks.digest_size = datalen;
- 	pks.s = hdr->sig;
--	pks.s_size = siglen;
-+	pks.s_size = siglen - sizeof(*hdr);
- 	ret = verify_signature(key, &pks);
- 	key_put(key);
- 	pr_debug("%s() = %d\n", __func__, ret);
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index d4f676906442..7f80c3e44d51 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -181,12 +181,20 @@ static inline int integrity_init_keyring(const unsigned int id)
- #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
- int asymmetric_verify(struct key *keyring, const char *sig,
- 		      int siglen, const char *data, int datalen);
-+bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
-+				  int siglen);
- #else
- static inline int asymmetric_verify(struct key *keyring, const char *sig,
- 				    int siglen, const char *data, int datalen)
- {
- 	return -EOPNOTSUPP;
- }
-+
-+static inline bool asymmetric_sig_has_known_key(struct key *keyring,
-+						const char *sig, int siglen)
-+{
-+	return false;
-+}
- #endif
- 
- #ifdef CONFIG_IMA_LOAD_X509
+This patch series attempts to convert the default #define of pr_fmt to
+KBUILD_MODNAME ": " fmt and as well update the various bits of the kernel
+that should _not_ be prefixed by adding #define pr_fmt(fmt) fmt to those
+compilation units that do not want output message prefixing.
+
+There are about 1200 uses of #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+that could be removed if the default is changed.
+
+A script that does this removal (and removes any blank lines that follow)
+for the linux-kernel tree is included below:
+
+$ git grep -P --name-only "define\s+pr_fmt\b" | \
+  grep -v include/linux/printk.h | \
+  xargs perl -i -e 'local $/; while (<>) {s/(\n)*[ \t]*#[ \t]*define[ \t]+pr_fmt[ \t]*\([ \t]*(\w+)[ \t]*\)[ \t]*KBUILD_MODNAME[ \t]*\": \"[ \t]*\2[ \t]*\n\s*/\1\n/; s/^\n//; print;}'
+
+This script should be run after this patch series is applied.
+
+The above script output diff is currently:
+
+1198 files changed, 70 insertions(+), 2241 deletions(-)
+
+Joe Perches (18):
+  kernel: Use pr_fmt
+  lib: Use pr_fmt
+  printk: Convert pr_fmt from blank define to KBUILD_MODNAME
+  x86: Remove pr_fmt duplicate logging prefixes
+  x86/mtrr: Rename main.c to mtrr.c and remove duplicate prefixes
+  net: Remove pr_fmt duplicate logging prefixes
+  blk-mq: Remove pr_fmt duplicate logging prefixes
+  random: Remove pr_fmt duplicate logging prefixes
+  ptp: Remove pr_fmt duplicate logging prefixes
+  efifb: Remove pr_fmt duplicate logging prefixes
+  proc: Remove pr_fmt duplicate logging prefixes
+  uprobes: Remove pr_fmt duplicate logging prefixes
+  printk: Remove pr_fmt duplicate logging prefixes
+  lib/mpi: Remove pr_fmt duplicate logging prefixes
+  security: Remove pr_fmt duplicate logging prefixes
+  aoe: Remove pr_fmt duplicate logging prefixes
+  security: encrypted-keys: Remove pr_fmt duplicate logging prefixes
+  rcu: Use pr_fmt to prefix "rcu: " to logging output
+
+ arch/x86/events/amd/ibs.c                      |  2 +-
+ arch/x86/kernel/cpu/mtrr/Makefile              |  2 +-
+ arch/x86/kernel/cpu/mtrr/{main.c => mtrr.c}    | 33 ++++++-------
+ arch/x86/kernel/e820.c                         | 32 ++++++------
+ arch/x86/kernel/hpet.c                         |  5 +-
+ arch/x86/kernel/uprobes.c                      |  4 +-
+ arch/x86/mm/numa.c                             | 22 ++++-----
+ block/blk-mq.c                                 |  9 ++--
+ drivers/block/aoe/aoeblk.c                     | 29 ++++++-----
+ drivers/block/aoe/aoechr.c                     | 11 ++---
+ drivers/block/aoe/aoecmd.c                     | 34 ++++++-------
+ drivers/block/aoe/aoedev.c                     | 19 +++-----
+ drivers/block/aoe/aoemain.c                    |  6 +--
+ drivers/block/aoe/aoenet.c                     | 19 +++-----
+ drivers/char/hw_random/via-rng.c               | 10 ++--
+ drivers/char/random.c                          | 16 +++---
+ drivers/ptp/ptp_clock.c                        |  4 +-
+ drivers/video/fbdev/efifb.c                    | 48 +++++++++---------
+ fs/proc/root.c                                 |  6 +--
+ include/linux/printk.h                         |  2 +-
+ kernel/acct.c                                  |  2 +
+ kernel/async.c                                 | 14 +++---
+ kernel/audit_tree.c                            |  2 +-
+ kernel/backtracetest.c                         |  8 +--
+ kernel/crash_core.c                            | 29 ++++++-----
+ kernel/events/uprobes.c                        |  3 +-
+ kernel/exit.c                                  |  2 +
+ kernel/hung_task.c                             | 13 +++--
+ kernel/kprobes.c                               | 20 +++++---
+ kernel/module.c                                | 59 +++++++++++------------
+ kernel/panic.c                                 |  3 ++
+ kernel/params.c                                | 13 +++--
+ kernel/pid.c                                   |  2 +
+ kernel/printk/printk.c                         |  2 +-
+ kernel/profile.c                               |  2 +
+ kernel/range.c                                 |  2 +-
+ kernel/rcu/rcu_segcblist.c                     |  2 +
+ kernel/rcu/rcuperf.c                           | 10 ++--
+ kernel/rcu/rcutorture.c                        | 46 +++++++++---------
+ kernel/rcu/srcutiny.c                          |  2 +
+ kernel/rcu/srcutree.c                          |  5 +-
+ kernel/rcu/tiny.c                              |  3 ++
+ kernel/rcu/tree.c                              |  8 +--
+ kernel/rcu/tree_plugin.h                       | 67 +++++++++++++++-----------
+ kernel/rcu/update.c                            | 19 +++++---
+ kernel/relay.c                                 |  5 +-
+ kernel/seccomp.c                               |  4 +-
+ kernel/signal.c                                | 10 ++--
+ kernel/smpboot.c                               |  5 +-
+ kernel/taskstats.c                             |  4 +-
+ kernel/torture.c                               |  6 ++-
+ kernel/tracepoint.c                            |  3 ++
+ kernel/workqueue.c                             |  2 +
+ lib/cpu_rmap.c                                 | 15 +++---
+ lib/crc32test.c                                |  2 +
+ lib/earlycpio.c                                |  5 +-
+ lib/find_bit_benchmark.c                       |  2 +
+ lib/kobject.c                                  | 36 +++++++-------
+ lib/kobject_uevent.c                           | 27 +++++------
+ lib/mpi/mpicoder.c                             | 10 ++--
+ lib/nmi_backtrace.c                            |  3 ++
+ lib/percpu_ida.c                               |  4 +-
+ lib/percpu_test.c                              |  2 +
+ lib/random32.c                                 | 10 ++--
+ lib/stmp_device.c                              |  2 +
+ lib/string.c                                   |  2 +
+ lib/swiotlb.c                                  |  4 +-
+ lib/test_debug_virtual.c                       |  2 +
+ lib/test_rhashtable.c                          | 44 +++++++++--------
+ lib/test_sort.c                                |  2 +
+ lib/ubsan.c                                    | 61 ++++++++++++-----------
+ net/ipv4/ipconfig.c                            | 59 ++++++++++-------------
+ net/ipv4/ipmr.c                                |  2 +-
+ net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c |  9 ++--
+ net/ipv6/ip6mr.c                               |  2 +-
+ net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c |  6 +--
+ net/ipv6/netfilter/nf_defrag_ipv6_hooks.c      |  4 +-
+ net/netfilter/nf_conntrack_helper.c            | 11 ++---
+ net/netfilter/nf_conntrack_standalone.c        |  2 +-
+ net/socket.c                                   |  2 +-
+ security/keys/encrypted-keys/encrypted.c       | 63 +++++++++++-------------
+ security/selinux/selinuxfs.c                   | 29 ++++++-----
+ 82 files changed, 580 insertions(+), 532 deletions(-)
+ rename arch/x86/kernel/cpu/mtrr/{main.c => mtrr.c} (96%)
+
+-- 
+2.15.0
 
