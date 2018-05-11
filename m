@@ -1,37 +1,39 @@
-From: Kees Cook <keescook@chromium.org>
-Date: Wed, 09 May 2018 19:50:15 +0000
+From: James Morris <jmorris@namei.org>
+Date: Fri, 11 May 2018 20:09:49 +0000
 Subject: Re: [PATCH v3 1/3] big key: get rid of stack array allocation
-Message-Id: <CAGXu5jKr=E5bnJPX7nHov-UfWRr4EFd1Ni+WFgaikD0dyYiMZw@mail.gmail.com>
+Message-Id: <alpine.LRH.2.21.1805120609250.6601@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180424202639.19830-1-tycho@tycho.ws> <CAGXu5jLL7NeX+zUNqcYW_LDF87CPg-5Z4R5+FZ5uPDT-sTisng@mail.gmail.com>
- <alpine.LRH.2.21.1805100519200.12749@namei.org> <alpine.LRH.2.21.1805100520100.12749@namei.org>
-In-Reply-To: <alpine.LRH.2.21.1805100520100.12749@namei.org>
-To: James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>
-Cc: Tycho Andersen <tycho@tycho.ws>, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, Kernel Hardening <kernel-hardening@lists.openwall.com>, "Serge E. Hallyn" <serge@hallyn.com>, "Jason A . Donenfeld" <Jason@zx2c4.com>, Eric Biggers <ebiggers3@gmail.com>
+References: <20180424202639.19830-1-tycho@tycho.ws>
+In-Reply-To: <20180424202639.19830-1-tycho@tycho.ws>
+To: Tycho Andersen <tycho@tycho.ws>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com, "Serge E. Hallyn" <serge@hallyn.com>, "Jason A . Donenfeld" <Jason@zx2c4.com>, Eric Biggers <ebiggers3@gmail.com>
 
-On Wed, May 9, 2018 at 12:21 PM, James Morris <jmorris@namei.org> wrote:
-> On Thu, 10 May 2018, James Morris wrote:
->
->> >
->> > Reviewed-by: Kees Cook <keescook@chromium.org>
->> >
->> > James, are these something you can take into your tree?
->>
->> Sure!
->
-> Although, normally, these would likely come in to mine via David's tree.
->
-> Please do that unless there's a special case here.
+On Tue, 24 Apr 2018, Tycho Andersen wrote:
 
-David has not replied to any of the threads or versions since
-originally posted on March 12. David, can you take these or at least
-Ack them for James?
+> We're interested in getting rid of all of the stack allocated arrays in the
+> kernel [1]. This patch simply hardcodes the iv length to match that of the
+> hardcoded cipher.
+> 
+> [1]: https://lkml.org/lkml/2018/3/7/621
+> 
+> v2: hardcode the length of the nonce to be the GCM AES IV length, and do a
+>     sanity check in init(), Eric Biggers
+> v3: * remember to free big_key_aead when sanity check fails
+>     * define a constant for big key IV size so it can be changed along side
+>       the algorithm in the code
 
--Kees
+All applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next-general
+and next-testing
+
+
+Thanks!
+
 
 -- 
-Kees Cook
-Pixel Security
+James Morris
+<jmorris@namei.org>
+
