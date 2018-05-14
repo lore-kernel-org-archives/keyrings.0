@@ -1,108 +1,52 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Tue, 08 May 2018 18:06:37 +0000
-Subject: Re: [PATCH RESEND] KEYS: remove CONFIG_KEYS_COMPAT
-Message-Id: <20180508180637.GA135321@gmail.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Mon, 14 May 2018 19:54:45 +0000
+Subject: Re: [RFC PATCH 5/5] KEYS: add KPP ecdh parser
+Message-Id: <25b6fb69-22cd-7006-a71f-e2c5329a0259@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180105191947.91775-1-ebiggers3@gmail.com>
- <20180220194144.GB70958@gmail.com>
-In-Reply-To: <20180220194144.GB70958@gmail.com>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Eric Biggers <ebiggers@google.com>
+References: <20180228165230.18729-6-tudor.ambarus@microchip.com>
+In-Reply-To: <20180228165230.18729-6-tudor.ambarus@microchip.com>
+To: keyrings@vger.kernel.org
 
-On Tue, Feb 20, 2018 at 11:41:44AM -0800, Eric Biggers wrote:
-> On Fri, Jan 05, 2018 at 11:19:47AM -0800, Eric Biggers wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> > 
-> > KEYS_COMPAT now always takes the value of COMPAT && KEYS.  But the
-> > security/keys/ directory is only compiled if KEYS is enabled, so in
-> > practice KEYS_COMPAT is the same as COMPAT.  Therefore, remove the
-> > unnecessary KEYS_COMPAT and just use COMPAT directly.
-> > 
-> > (Also remove an outdated comment from compat.c.)
-> > 
-> > Signed-off-by: Eric Biggers <ebiggers@google.com>
-> > ---
-> >  security/keys/Kconfig    | 4 ----
-> >  security/keys/Makefile   | 2 +-
-> >  security/keys/compat.c   | 5 -----
-> >  security/keys/internal.h | 4 ++--
-> >  4 files changed, 3 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-> > index 6462e6654ccf..e115d691d977 100644
-> > --- a/security/keys/Kconfig
-> > +++ b/security/keys/Kconfig
-> > @@ -20,10 +20,6 @@ config KEYS
-> >  
-> >  	  If you are unsure as to whether this is required, answer N.
-> >  
-> > -config KEYS_COMPAT
-> > -	def_bool y
-> > -	depends on COMPAT && KEYS
-> > -
-> >  config PERSISTENT_KEYRINGS
-> >  	bool "Enable register of persistent per-UID keyrings"
-> >  	depends on KEYS
-> > diff --git a/security/keys/Makefile b/security/keys/Makefile
-> > index ef1581b337a3..b92ef62b99a1 100644
-> > --- a/security/keys/Makefile
-> > +++ b/security/keys/Makefile
-> > @@ -17,7 +17,7 @@ obj-y := \
-> >  	request_key_auth.o \
-> >  	user_defined.o
-> >  compat-obj-$(CONFIG_KEY_DH_OPERATIONS) += compat_dh.o
-> > -obj-$(CONFIG_KEYS_COMPAT) += compat.o $(compat-obj-y)
-> > +obj-$(CONFIG_COMPAT) += compat.o $(compat-obj-y)
-> >  obj-$(CONFIG_PROC_FS) += proc.o
-> >  obj-$(CONFIG_SYSCTL) += sysctl.o
-> >  obj-$(CONFIG_PERSISTENT_KEYRINGS) += persistent.o
-> > diff --git a/security/keys/compat.c b/security/keys/compat.c
-> > index e87c89c0177c..d7445946b701 100644
-> > --- a/security/keys/compat.c
-> > +++ b/security/keys/compat.c
-> > @@ -50,11 +50,6 @@ static long compat_keyctl_instantiate_key_iov(
-> >  
-> >  /*
-> >   * The key control system call, 32-bit compatibility version for 64-bit archs
-> > - *
-> > - * This should only be called if the 64-bit arch uses weird pointers in 32-bit
-> > - * mode or doesn't guarantee that the top 32-bits of the argument registers on
-> > - * taking a 32-bit syscall are zero.  If you can, you should call sys_keyctl()
-> > - * directly.
-> >   */
-> >  COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
-> >  		       u32, arg2, u32, arg3, u32, arg4, u32, arg5)
-> > diff --git a/security/keys/internal.h b/security/keys/internal.h
-> > index 9f8208dc0e55..6d54fa8baa64 100644
-> > --- a/security/keys/internal.h
-> > +++ b/security/keys/internal.h
-> > @@ -272,7 +272,7 @@ extern long keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
-> >  			      size_t, struct keyctl_kdf_params __user *);
-> >  extern long __keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
-> >  				size_t, struct keyctl_kdf_params *);
-> > -#ifdef CONFIG_KEYS_COMPAT
-> > +#ifdef CONFIG_COMPAT
-> >  extern long compat_keyctl_dh_compute(struct keyctl_dh_params __user *params,
-> >  				char __user *buffer, size_t buflen,
-> >  				struct compat_keyctl_kdf_params __user *kdf);
-> > @@ -287,7 +287,7 @@ static inline long keyctl_dh_compute(struct keyctl_dh_params __user *params,
-> >  	return -EOPNOTSUPP;
-> >  }
-> >  
-> > -#ifdef CONFIG_KEYS_COMPAT
-> > +#ifdef CONFIG_COMPAT
-> >  static inline long compat_keyctl_dh_compute(
-> >  				struct keyctl_dh_params __user *params,
-> >  				char __user *buffer, size_t buflen,
-> > -- 
-> > 2.16.0.rc0.223.g4a4ac83678-goog
-> > 
+Hi Tudor,
+
+On 02/28/2018 10:52 AM, Tudor Ambarus wrote:
+> The ECDH private keys are expected to be encoded with the ecdh
+> helpers from kernel.
 > 
-> Ping.  
+> Use the ecdh helpers to check if the key is valid. If valid,
+> allocate a tfm and set the private key. There is a one-to-one
+> binding between the private key and the tfm. The tfm is allocated
+> once and used as many times as needed.
+> 
+> ECDH keys can be loaded like this:
+>      # echo -n 020028000200200024d121ebe5cf2d83f6621b6e43843aa38be086c32019da92505303e1c0eab882 \
 
-Ping.  David, are you ever planning to apply this?
+This part looks a bit scary.  Isn't this translating directly to 
+kpp_secret data structure (in looks like little-endian order) followed 
+curve_id, etc.
 
-- Eric
+If the intent is to extend KPP with regular DH, DH + KDF, etc, then we 
+might want to invent a proper format here?  I don't think that a Diffie 
+Hellman or ECDH Private Key format was ever invented, similar to how 
+PKCS8 is used for RSA.
+
+Inventing an ASN.1 syntax would be logical but somewhat painful as D-H 
+is frequently used with plain old random numbers and certificates are 
+not stored on disk...
+
+>          | xxd -r -p | keyctl padd asymmetric private @s
+> 
+> Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
+> ---
+>   crypto/asymmetric_keys/Kconfig      |   8 +++
+>   crypto/asymmetric_keys/Makefile     |   5 ++
+>   crypto/asymmetric_keys/kpp_parser.c | 124 ++++++++++++++++++++++++++++++++++++
+>   include/crypto/asym_kpp_subtype.h   |   2 +
+>   4 files changed, 139 insertions(+)
+>   create mode 100644 crypto/asymmetric_keys/kpp_parser.c
+
+Regards,
+-Denis
