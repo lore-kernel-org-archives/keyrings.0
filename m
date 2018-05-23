@@ -1,205 +1,65 @@
-From: Tudor Ambarus <tudor.ambarus@microchip.com>
-Date: Fri, 18 May 2018 13:58:38 +0000
-Subject: Re: [RFC PATCH 1/5] KEYS: Provide key type operations for kpp ops
-Message-Id: <48282f3e-b89f-2e6e-09cc-73fb1ba59d64@microchip.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Wed, 23 May 2018 00:12:48 +0000
+Subject: [PATCH v7 09/14] ima: Export func_tokens
+Message-Id: <20180523001253.15247-10-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180228165230.18729-2-tudor.ambarus@microchip.com>
-In-Reply-To: <20180228165230.18729-2-tudor.ambarus@microchip.com>
-To: keyrings@vger.kernel.org
+References: <20180523001253.15247-1-bauerman@linux.ibm.com>
+In-Reply-To: <20180523001253.15247-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Hi, Denis,
+ima_read_modsig() will need it so that it can show an error message.
 
-Thanks for the review! Please see inline.
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+---
+ security/integrity/ima/ima.h        |  2 ++
+ security/integrity/ima/ima_policy.c | 12 ++++++------
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-On 05/14/2018 09:48 PM, Denis Kenzior wrote:
-> Hi Tudor,
-> 
-> On 02/28/2018 10:52 AM, Tudor Ambarus wrote:
->> Provide three new operations in the key_type struct that can be used to
->> provide access to kpp operations. These will be implemented for the
->> asymmetric key type in a later patch and may refer to a key retained in
->> RAM by the kernel or a key retained in crypto hardware.
->>
->>      int (*asym_kpp_query)(const struct kernel_kpp_params *params,
->>                            struct kernel_kpp_query *res);
->>      int (*asym_kpp_gen_pubkey)(struct kernel_kpp_params *params,
->>                    void *out);
->>      int (*asym_kpp_compute_ss)(struct kernel_kpp_params *params,
->>                                 const void *in, void *out);
->>
->> Signed-off-by: Tudor Ambarus <tudor.ambarus@microchip.com>
->> ---
->>   Documentation/security/keys/core.rst | 54 
->> ++++++++++++++++++++++++++++++++++++
->>   include/linux/key-type.h             |  7 +++++
->>   include/linux/keyctl.h               | 11 ++++++++
->>   include/uapi/linux/keyctl.h          |  3 ++
->>   4 files changed, 75 insertions(+)
->>
->> diff --git a/Documentation/security/keys/core.rst 
->> b/Documentation/security/keys/core.rst
->> index d224fd0..9b69a1f 100644
->> --- a/Documentation/security/keys/core.rst
->> +++ b/Documentation/security/keys/core.rst
->> @@ -1688,6 +1688,60 @@ The structure has a number of fields, some of 
->> which are mandatory:
->>        If successful, 0 will be returned.  If the key doesn't support 
->> this,
->>        EOPNOTSUPP will be returned.
->> +  *  ``int (*asym_kpp_gen_pubkey)(struct kernel_kpp_params *params, 
->> void *out);``
->> +  *  ``int (*asym_kpp_compute_ss)(struct kernel_kpp_params *params, 
->> const void *in, void *out);``
->> +
->> +     These methods are optional. If provided the first allows to 
->> generate the
->> +     public key pair corresponding to the private key. The second 
->> method allows
->> +     to generate a shared secret by  combining the private key and 
->> the other
->> +     party's public key.
->> +
->> +     In all cases, the following information is provided in the 
->> params block::
->> +
->> +       struct kernel_kpp_query {
->> +               struct key      *key;
->> +               __u32           in_len;         /* Input data size */
->> +               __u32           out_len;        /* Output buffer size */
->> +       }
->> +
-> 
-> Probably not a huge deal as most common key sizes are already supported, 
-> but... is there a way to query supported key sizes?  I think for 
-> DH_COMPUTE we didn't have this problem as everything was done in 
-> software.  However, if the intent is to use TPM / other hardware engines 
-> we might need a way to query supported key sizes.
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 43d4aaf31f7a..567be3c6568c 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -195,6 +195,8 @@ enum ima_hooks {
+ 	__ima_hooks(__ima_hook_enumify)
+ };
+ 
++extern const char *const func_tokens[];
++
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr);
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 8bbc18eb07eb..d454949493c6 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -1021,6 +1021,12 @@ void ima_delete_rules(void)
+ 	}
+ }
+ 
++#define __ima_hook_stringify(str)	(#str),
++
++const char *const func_tokens[] = {
++	__ima_hooks(__ima_hook_stringify)
++};
++
+ #ifdef	CONFIG_IMA_READ_POLICY
+ enum {
+ 	mask_exec = 0, mask_write, mask_read, mask_append
+@@ -1033,12 +1039,6 @@ static const char *const mask_tokens[] = {
+ 	"MAY_APPEND"
+ };
+ 
+-#define __ima_hook_stringify(str)	(#str),
+-
+-static const char *const func_tokens[] = {
+-	__ima_hooks(__ima_hook_stringify)
+-};
+-
+ void *ima_policy_start(struct seq_file *m, loff_t *pos)
+ {
+ 	loff_t l = *pos;
 
-Oh, there's a typo here, this structure should have been named
-'kernel_kpp_params' and not 'kernel_kpp_query'. 'kernel_kpp_query' is
-defined below, it provides a way for determining the maximum supported
-key size.
-
-> 
->> +     This includes the key to be used and the sizes in bytes of the 
->> input and
->> +     output buffers.
->> +
->> +     For a given operation, the in and out buffers are used as follows::
->> +
->> +       Operation ID            in,in_len            out,out_len
->> +       ============ ==========  
->> ============
->> +       KEYCTL_KPP_GEN_PUBKEY   -                    Corresponding 
->> public key
->> +       KEYCTL_KPP_COMPUTE_SS   Pair's public key    Shared Secret
->> +
->> +     If successful, the public key generation and the shared secret 
->> computation
->> +     will return the amount of data written into the output buffer.
->> +
->> +  *  ``int (*asym_kpp_query)(const struct kernel_kpp_params *params, 
->> struct kernel_kpp_query *res);``
->> +
->> +     This method is optional. If provided it allows information about 
->> the
->> +     asymmetric KPP (Key Protocol Primitives) key held in the key to be
->> +     determined.
->> +
->> +     The ``params`` block will contain the key to be queried. 
->> ``in_len`` and
->> +     ``out_len`` are unused.
->> +
->> +     If successful, the following information is filled in::
->> +
->> +       struct kernel_kpp_query {
->> +               __u32           supported_ops;  /* Which ops are 
->> supported */
->> +               __u32           max_size;       /* Maximum size of the 
->> output buffer */
->> +       };
->> +
->> +     The supported_ops field will contain a bitmask indicating what 
->> operations
->> +     are supported by the key, including public key generation and 
->> shared
->> +     secret computation. The following constants are defined for this::
->> +
->> +       KEYCTL_SUPPORTS_{GEN_PUBKEY, COMPUTE_SS};
->> +
->> +     If successful, 0 is returned.  If the key is not an asymmetric 
->> kpp key,
->> +     EOPNOTSUPP is returned.
->> +
->>   Request-Key Callback Service
->>   ==============
->> diff --git a/include/linux/key-type.h b/include/linux/key-type.h
->> index bc9af55..d354b6b 100644
->> --- a/include/linux/key-type.h
->> +++ b/include/linux/key-type.h
->> @@ -19,6 +19,8 @@
->>   struct kernel_pkey_query;
->>   struct kernel_pkey_params;
->> +struct kernel_kpp_query;
->> +struct kernel_kpp_params;
->>   /*
->>    * key under-construction record
->> @@ -165,6 +167,11 @@ struct key_type {
->>                  const void *in, void *out);
->>       int (*asym_verify_signature)(struct kernel_pkey_params *params,
->>                        const void *in, const void *in2);
->> +    int (*asym_kpp_query)(const struct kernel_kpp_params *params,
->> +                  struct kernel_kpp_query *res);
->> +    int (*asym_kpp_gen_pubkey)(struct kernel_kpp_params *params, void 
->> *out);
->> +    int (*asym_kpp_compute_ss)(struct kernel_kpp_params *params,
->> +                   const void *in, void *out);
->>       /* internal fields */
->>       struct list_head    link;        /* link in types list */
->> diff --git a/include/linux/keyctl.h b/include/linux/keyctl.h
->> index e89b4a4..8f464ea 100644
->> --- a/include/linux/keyctl.h
->> +++ b/include/linux/keyctl.h
->> @@ -43,4 +43,15 @@ struct kernel_pkey_params {
->>       enum kernel_pkey_operation op : 8;
->>   };
->> +struct kernel_kpp_query {
->> +    __u32        supported_ops;    /* Which ops are supported */
->> +    __u32           max_size;    /* Maximum size of the output buffer */
->> +};
->> +
->> +struct kernel_kpp_params {
->> +    struct key    *key;
->> +    __u32        in_len;         /* Input data size */
->> +    __u32        out_len;    /* Output buffer size */
->> +};
->> +
->>   #endif /* __LINUX_KEYCTL_H */
->> diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
->> index d75d208..98b79f8 100644
->> --- a/include/uapi/linux/keyctl.h
->> +++ b/include/uapi/linux/keyctl.h
->> @@ -107,4 +107,7 @@ struct keyctl_pkey_params {
->>       __u32        __spare[7];
->>   };
->> +#define KEYCTL_SUPPORTS_GEN_PUBKEY    0x0f
-> 
-> This looks fishy, the other KEYCTL_SUPPORTS_ block ends at 0x08.  This 
-> would imply that KPP supports encryption, decryption, sign, verify.  Do 
-> you mean 0x10 here?
-> 
-
-of course, thanks!
-
->> +#define KEYCTL_SUPPORTS_COMPUTE_SS    0x10
->> +
-> 
-> And 0x20 here?
-
-you're right, thanks!
-
-Best,
-ta
