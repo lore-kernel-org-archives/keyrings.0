@@ -1,139 +1,87 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Tue, 29 May 2018 03:29:45 +0000
-Subject: [RFC 07/10] KEYS: trusted: Expose common functionality
-Message-Id: <20180529032949.30526-8-denkenz@gmail.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Wed, 23 May 2018 00:12:47 +0000
+Subject: [PATCH v7 08/14] ima: Introduce is_signed()
+Message-Id: <20180523001253.15247-9-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20180523001253.15247-1-bauerman@linux.ibm.com>
+In-Reply-To: <20180523001253.15247-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-This patch exposes some common functionality needed to send TPM
-commands.  The current approach is a complete hack and needs to be
-addressed properly.  This commit just show-cases what functionality
-would need to be moved to a shared location or exposed in some other
-manner.
+With the introduction of another IMA signature type (modsig), some places
+will need to check for both of them. It is cleaner to do that if there's a
+helper function to tell whether an xattr_value represents an IMA
+signature.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 ---
- crypto/asymmetric_keys/Kconfig |  1 +
- security/keys/trusted.c        | 12 ++++++++----
- security/keys/trusted.h        | 14 +++++++++++++-
- 3 files changed, 22 insertions(+), 5 deletions(-)
+ security/integrity/ima/ima.h              | 5 +++++
+ security/integrity/ima/ima_appraise.c     | 7 +++----
+ security/integrity/ima/ima_template_lib.c | 2 +-
+ 3 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 88353a9ebc9b..be70ca6c85d3 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -24,6 +24,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- config ASYMMETRIC_TPM_KEY_SUBTYPE
- 	tristate "Asymmetric TPM backed private key subtype"
- 	depends on TCG_TPM
-+	depends on TRUSTED_KEYS
- 	select CRYPTO_HMAC
- 	select CRYPTO_SHA1
- 	select CRYPTO_HASH_INFO
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 423776682025..a93cfc1b083b 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -121,7 +121,7 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
- /*
-  * calculate authorization info fields to send to TPM
-  */
--static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
-+int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 			unsigned int keylen, unsigned char *h1,
- 			unsigned char *h2, unsigned char h3, ...)
- {
-@@ -168,11 +168,12 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 	kzfree(sdesc);
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(TSS_authhmac);
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 354bb5716ce3..43d4aaf31f7a 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -154,6 +154,11 @@ unsigned long ima_get_binary_runtime_size(void);
+ int ima_init_template(void);
+ void ima_init_template_list(void);
  
- /*
-  * verify the AUTH1_COMMAND (Seal) result from TPM
-  */
--static int TSS_checkhmac1(unsigned char *buffer,
-+int TSS_checkhmac1(unsigned char *buffer,
- 			  const uint32_t command,
- 			  const unsigned char *ononce,
- 			  const unsigned char *key,
-@@ -249,6 +250,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	kzfree(sdesc);
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(TSS_checkhmac1);
- 
- /*
-  * verify the AUTH2_COMMAND (unseal) result from TPM
-@@ -355,7 +357,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
-  * For key specific tpm requests, we will generate and send our
-  * own TPM command packets using the drivers send function.
-  */
--static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
-+int trusted_tpm_send(unsigned char *cmd, size_t buflen)
- {
- 	int rc;
- 
-@@ -367,6 +369,7 @@ static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
- 		rc = -EPERM;
- 	return rc;
- }
-+EXPORT_SYMBOL_GPL(trusted_tpm_send);
- 
- /*
-  * Lock a trusted key, by extending a selected PCR.
-@@ -425,7 +428,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
- /*
-  * Create an object independent authorisation protocol (oiap) session
-  */
--static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
-+int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
- {
- 	int ret;
- 
-@@ -442,6 +445,7 @@ static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
- 	       TPM_NONCE_SIZE);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(oiap);
- 
- struct tpm_digests {
- 	unsigned char encauth[SHA1_DIGEST_SIZE];
-diff --git a/security/keys/trusted.h b/security/keys/trusted.h
-index 8d5fe9eafb22..adbcb6817826 100644
---- a/security/keys/trusted.h
-+++ b/security/keys/trusted.h
-@@ -3,7 +3,7 @@
- #define __TRUSTED_KEY_H
- 
- /* implementation specific TPM constants */
--#define MAX_BUF_SIZE			512
-+#define MAX_BUF_SIZE			1024
- #define TPM_GETRANDOM_SIZE		14
- #define TPM_OSAP_SIZE			36
- #define TPM_OIAP_SIZE			10
-@@ -36,6 +36,18 @@ enum {
- 	SRK_keytype = 4
- };
- 
-+int TSS_authhmac(unsigned char *digest, const unsigned char *key,
-+			unsigned int keylen, unsigned char *h1,
-+			unsigned char *h2, unsigned char h3, ...);
-+int TSS_checkhmac1(unsigned char *buffer,
-+			  const uint32_t command,
-+			  const unsigned char *ononce,
-+			  const unsigned char *key,
-+			  unsigned int keylen, ...);
++static inline bool is_signed(const struct evm_ima_xattr_data *xattr_value)
++{
++	return xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG;
++}
 +
-+int trusted_tpm_send(unsigned char *cmd, size_t buflen);
-+int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
-+
- #define TPM_DEBUG 0
+ /*
+  * used to protect h_table and sha_table
+  */
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index a6b2995b7d0b..bcbbd8f86fe1 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -325,15 +325,14 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	} else if (status != INTEGRITY_PASS) {
+ 		/* Fix mode, but don't replace file signatures. */
+ 		if ((ima_appraise & IMA_APPRAISE_FIX) &&
+-		    (!xattr_value ||
+-		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
++		    !is_signed(xattr_value)) {
+ 			if (!ima_fix_xattr(dentry, iint))
+ 				status = INTEGRITY_PASS;
+ 		}
  
- #if TPM_DEBUG
--- 
-2.16.1
+ 		/* Permit new files with file signatures, but without data. */
+ 		if (inode->i_size = 0 && iint->flags & IMA_NEW_FILE &&
+-		    xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG) {
++		    is_signed(xattr_value)) {
+ 			status = INTEGRITY_PASS;
+ 		}
+ 
+@@ -448,7 +447,7 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
+ 			return -EINVAL;
+ 		ima_reset_appraise_flags(d_backing_inode(dentry),
+-			xvalue->type = EVM_IMA_XATTR_DIGSIG);
++					 is_signed(xvalue));
+ 		result = 0;
+ 	}
+ 	return result;
+diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
+index 43752002c222..300912914b17 100644
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -382,7 +382,7 @@ int ima_eventsig_init(struct ima_event_data *event_data,
+ {
+ 	struct evm_ima_xattr_data *xattr_value = event_data->xattr_value;
+ 
+-	if ((!xattr_value) || (xattr_value->type != EVM_IMA_XATTR_DIGSIG))
++	if (!is_signed(xattr_value))
+ 		return 0;
+ 
+ 	return ima_write_template_field_data(xattr_value, event_data->xattr_len,
 
