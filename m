@@ -1,7 +1,7 @@
 From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Wed, 23 May 2018 00:12:43 +0000
-Subject: [PATCH v7 04/14] integrity: Introduce struct evm_xattr
-Message-Id: <20180523001253.15247-5-bauerman@linux.ibm.com>
+Date: Wed, 23 May 2018 00:12:53 +0000
+Subject: [PATCH v7 14/14] ima: Store the measurement again when appraising a modsig
+Message-Id: <20180523001253.15247-15-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,148 +11,272 @@ In-Reply-To: <20180523001253.15247-1-bauerman@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Even though struct evm_ima_xattr_data includes a fixed-size array to hold a
-SHA1 digest, most of the code ignores the array and uses the struct to mean
-"type indicator followed by data of unspecified size" and tracks the real
-size of what the struct represents in a separate length variable.
+If the IMA template contains the 'sig' field, then the modsig should be
+added to the measurement list when the file is appraised, and that is what
+normally happens.
 
-The only exception to that is the EVM code, which correctly uses the
-definition of struct evm_ima_xattr_data.
+But If a measurement rule caused a file containing a modsig to be measured
+before a different rule causes it to be appraised, the resulting
+measurement entry will not contain the modsig because it is only fetched
+during appraisal. When the appraisal rule triggers, it won't store a new
+measurement containing the modsig because the file was already measured.
 
-So make this explicit in the code by removing the length specification from
-the array in struct evm_ima_xattr_data. Also, change the name of the
-element from digest to data since in most places the array doesn't hold a
-digest.
+We need to detect that situation and store an additional measurement with
+the modsig. This is done by defining the appraise subaction flag
+IMA_READ_MEASURE and testing for it in process_measurement().
 
-A separate struct evm_xattr is introduced, with the original definition of
-evm_ima_xattr_data to be used in the places that actually expect that
-definition.
-
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 ---
- security/integrity/evm/evm_crypto.c   |  4 ++--
- security/integrity/evm/evm_main.c     | 10 +++++-----
- security/integrity/ima/ima_appraise.c |  7 ++++---
- security/integrity/integrity.h        |  5 +++++
- 4 files changed, 16 insertions(+), 10 deletions(-)
+ security/integrity/ima/ima.h          |  1 +
+ security/integrity/ima/ima_api.c      |  8 ++++-
+ security/integrity/ima/ima_main.c     | 16 +++++++++-
+ security/integrity/ima/ima_policy.c   | 59 ++++++++++++++++++++++++++++++++---
+ security/integrity/ima/ima_template.c | 27 ++++++++++++++++
+ security/integrity/integrity.h        |  9 ++++--
+ 6 files changed, 110 insertions(+), 10 deletions(-)
 
-diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
-index 494da5fcc092..c03ebb0c20b4 100644
---- a/security/integrity/evm/evm_crypto.c
-+++ b/security/integrity/evm/evm_crypto.c
-@@ -302,7 +302,7 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
- 			const char *xattr_value, size_t xattr_value_len)
- {
- 	struct inode *inode = d_backing_inode(dentry);
--	struct evm_ima_xattr_data xattr_data;
-+	struct evm_xattr xattr_data;
- 	int rc = 0;
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 33120c10a173..081e2b87cf9d 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -147,6 +147,7 @@ int ima_init_crypto(void);
+ void ima_putc(struct seq_file *m, void *data, int datalen);
+ void ima_print_digest(struct seq_file *m, u8 *digest, u32 size);
+ struct ima_template_desc *ima_template_desc_current(void);
++bool ima_current_template_has_sig(void);
+ int ima_restore_measurement_entry(struct ima_template_entry *entry);
+ int ima_restore_measurement_list(loff_t bufsize, void *buf);
+ int ima_measurements_show(struct seq_file *m, void *v);
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index bf88236b7a0b..73f6d4df66a7 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -288,7 +288,13 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 					    xattr_len, NULL};
+ 	int violation = 0;
  
- 	/*
-@@ -318,7 +318,7 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
- 	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
- 			   xattr_value_len, xattr_data.digest);
- 	if (rc = 0) {
--		xattr_data.type = EVM_XATTR_HMAC;
-+		xattr_data.data.type = EVM_XATTR_HMAC;
- 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
- 					   &xattr_data,
- 					   sizeof(xattr_data), 0);
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index f9eff5041e4c..65f9578be058 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -134,7 +134,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 					     struct integrity_iint_cache *iint)
+-	if (iint->measured_pcrs & (0x1 << pcr))
++	/*
++	 * We still need to store the measurement in the case of MODSIG because
++	 * we only have its contents to put in the list at the time of
++	 * appraisal. See comment in store_measurement_again() for more details.
++	 */
++	if (iint->measured_pcrs & (0x1 << pcr) &&
++	    (!xattr_value || xattr_value->type != IMA_MODSIG))
+ 		return;
+ 
+ 	result = ima_alloc_init_template(&event_data, &entry);
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 9d32ce6c3df3..90e336a2b5c4 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -169,6 +169,20 @@ void ima_file_free(struct file *file)
+ 	ima_check_last_writer(iint, inode, file);
+ }
+ 
++/*
++ * A file measurement might already exist in the measurement list. Based on
++ * policy, include an additional file measurement containing the appended
++ * signature and file hash, without the appended signature (i.e., the 'd-sig'
++ * field).
++ */
++static bool store_measurement_again(struct integrity_iint_cache *iint,
++				    struct evm_ima_xattr_data *xattr_value)
++{
++	return iint->flags & IMA_READ_MEASURE && xattr_value &&
++		xattr_value->type = IMA_MODSIG &&
++		ima_current_template_has_sig();
++}
++
+ static int process_measurement(struct file *file, const struct cred *cred,
+ 			       u32 secid, char *buf, loff_t size, int mask,
+ 			       enum ima_hooks func, int opened)
+@@ -302,7 +316,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	if (!pathbuf)	/* ima_rdwr_violation possibly pre-fetched */
+ 		pathname = ima_d_path(&file->f_path, &pathbuf, filename);
+ 
+-	if (action & IMA_MEASURE)
++	if (action & IMA_MEASURE || store_measurement_again(iint, xattr_value))
+ 		ima_store_measurement(iint, file, pathname,
+ 				      xattr_value, xattr_len, pcr);
+ 	if (rc = 0 && (action & IMA_APPRAISE_SUBMASK)) {
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 66d0d3bcf1b2..5ad5ced3b352 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -10,6 +10,9 @@
+  *	- initialize default measure policy rules
+  *
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/list.h>
+ #include <linux/fs.h>
+@@ -341,7 +344,8 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
+  * In addition to knowing that we need to appraise the file in general,
+  * we need to differentiate between calling hooks, for hook specific rules.
+  */
+-static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
++static int get_appraise_subaction(struct ima_rule_entry *rule,
++				  enum ima_hooks func)
  {
- 	struct evm_ima_xattr_data *xattr_data = NULL;
--	struct evm_ima_xattr_data calc;
-+	struct evm_xattr calc;
- 	enum integrity_status evm_status = INTEGRITY_PASS;
- 	struct inode *inode;
- 	int rc, xattr_len;
-@@ -167,7 +167,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 	/* check value type */
- 	switch (xattr_data->type) {
- 	case EVM_XATTR_HMAC:
--		if (xattr_len != sizeof(struct evm_ima_xattr_data)) {
-+		if (xattr_len != sizeof(struct evm_xattr)) {
- 			evm_status = INTEGRITY_FAIL;
- 			goto out;
- 		}
-@@ -175,7 +175,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
- 				   xattr_value_len, calc.digest);
- 		if (rc)
+ 	if (!(rule->flags & IMA_FUNC))
+ 		return IMA_FILE_APPRAISE;
+@@ -362,6 +366,15 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
+ 	}
+ }
+ 
++static int get_measure_subaction(struct ima_rule_entry *rule,
++				 enum ima_hooks func)
++{
++	if (rule->flags & IMA_FUNC && ima_hook_supports_modsig(func))
++		return IMA_READ_MEASURE;
++	else
++		return 0;
++}
++
+ /**
+  * ima_match_policy - decision based on LSM and other conditions
+  * @inode: pointer to an inode for which the policy decision is being made
+@@ -398,11 +411,12 @@ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
+ 
+ 		action |= entry->action & IMA_DO_MASK;
+ 		if (entry->action & IMA_APPRAISE) {
+-			action |= get_subaction(entry, func);
++			action |= get_appraise_subaction(entry, func);
+ 			action &= ~IMA_HASH;
+ 			if (ima_fail_unverifiable_sigs)
+ 				action |= IMA_FAIL_UNVERIFIABLE_SIGS;
+-		}
++		} else if (entry->action & IMA_MEASURE)
++			action |= get_measure_subaction(entry, func);
+ 
+ 		if (entry->action & IMA_DO_MASK)
+ 			actmask &= ~(entry->action | entry->action << 1);
+@@ -642,6 +656,40 @@ static void ima_log_string(struct audit_buffer *ab, char *key, char *value)
+ 	ima_log_string_op(ab, key, value, NULL);
+ }
+ 
++/*
++ * To validate the appended signature included in the measurement list requires
++ * the file hash, without the appended signature (i.e., the 'd-sig' field).
++ * Therefore, notify the user if they have the 'sig' field but not the 'd-sig'
++ * field in the template.
++ */
++static void check_current_template_modsig(void)
++{
++#define MSG "template with 'sig' field also needs 'd-sig' field when modsig is allowed\n"
++	struct ima_template_desc *template;
++	bool has_sig, has_dsig;
++	static bool checked;
++	int i;
++
++	/* We only need to notify the user once. */
++	if (checked)
++		return;
++
++	has_sig = has_dsig = false;
++	template = ima_template_desc_current();
++	for (i = 0; i < template->num_fields; i++) {
++		if (!strcmp(template->fields[i]->field_id, "sig"))
++			has_sig = true;
++		else if (!strcmp(template->fields[i]->field_id, "d-sig"))
++			has_dsig = true;
++	}
++
++	if (has_sig && !has_dsig)
++		pr_notice(MSG);
++
++	checked = true;
++#undef MSG
++}
++
+ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ {
+ 	struct audit_buffer *ab;
+@@ -920,10 +968,11 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 			if ((strcmp(args[0].from, "imasig")) = 0)
+ 				entry->flags |= IMA_DIGSIG_REQUIRED;
+ 			else if (ima_hook_supports_modsig(entry->func) &&
+-				 strcmp(args[0].from, "imasig|modsig") = 0)
++				 strcmp(args[0].from, "imasig|modsig") = 0) {
+ 				entry->flags |= IMA_DIGSIG_REQUIRED
+ 						| IMA_MODSIG_ALLOWED;
+-			else
++				check_current_template_modsig();
++			} else
+ 				result = -EINVAL;
  			break;
--		rc = crypto_memneq(xattr_data->digest, calc.digest,
-+		rc = crypto_memneq(xattr_data->data, calc.digest,
- 			    sizeof(calc.digest));
- 		if (rc)
- 			rc = -EINVAL;
-@@ -518,7 +518,7 @@ int evm_inode_init_security(struct inode *inode,
- 				 const struct xattr *lsm_xattr,
- 				 struct xattr *evm_xattr)
+ 		case Opt_permit_directio:
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index 36fc32f538b5..967c287dcdfb 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -230,6 +230,33 @@ struct ima_template_desc *ima_template_desc_current(void)
+ 	return ima_template;
+ }
+ 
++/*
++ * Tells whether the current template has fields which reference a file's
++ * signature.
++ */
++bool ima_current_template_has_sig(void)
++{
++	static int ima_template_has_sig = -1;
++
++	if (ima_template_has_sig < 0) {
++		struct ima_template_desc *template;
++		int i;
++
++		template = ima_template_desc_current();
++		for (i = 0; i < template->num_fields; i++)
++			if (!strcmp(template->fields[i]->field_id, "sig") ||
++			    !strcmp(template->fields[i]->field_id, "d-sig")) {
++				ima_template_has_sig = 1;
++				break;
++			}
++
++		if (ima_template_has_sig < 0)
++			ima_template_has_sig = 0;
++	}
++
++	return ima_template_has_sig;
++}
++
+ int __init ima_init_template(void)
  {
--	struct evm_ima_xattr_data *xattr_data;
-+	struct evm_xattr *xattr_data;
- 	int rc;
- 
- 	if (!evm_key_loaded() || !evm_protected_xattr(lsm_xattr->name))
-@@ -528,7 +528,7 @@ int evm_inode_init_security(struct inode *inode,
- 	if (!xattr_data)
- 		return -ENOMEM;
- 
--	xattr_data->type = EVM_XATTR_HMAC;
-+	xattr_data->data.type = EVM_XATTR_HMAC;
- 	rc = evm_init_hmac(inode, lsm_xattr, xattr_data->digest);
- 	if (rc < 0)
- 		goto out;
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 8bd7a0733e51..a6b2995b7d0b 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -167,7 +167,8 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 		return sig->hash_algo;
- 		break;
- 	case IMA_XATTR_DIGEST_NG:
--		ret = xattr_value->digest[0];
-+		/* first byte contains algorithm id */
-+		ret = xattr_value->data[0];
- 		if (ret < HASH_ALGO__LAST)
- 			return ret;
- 		break;
-@@ -175,7 +176,7 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 		/* this is for backward compatibility */
- 		if (xattr_len = 21) {
- 			unsigned int zero = 0;
--			if (!memcmp(&xattr_value->digest[16], &zero, 4))
-+			if (!memcmp(&xattr_value->data[16], &zero, 4))
- 				return HASH_ALGO_MD5;
- 			else
- 				return HASH_ALGO_SHA1;
-@@ -274,7 +275,7 @@ int ima_appraise_measurement(enum ima_hooks func,
- 			/* xattr length may be longer. md5 hash in previous
- 			   version occupied 20 bytes in xattr, instead of 16
- 			 */
--			rc = memcmp(&xattr_value->digest[hash_start],
-+			rc = memcmp(&xattr_value->data[hash_start],
- 				    iint->ima_hash->digest,
- 				    iint->ima_hash->length);
- 		else
+ 	struct ima_template_desc *template = ima_template_desc_current();
 diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 0bb372eed62a..714fe2e135c7 100644
+index b38339c02541..a85b83519fc8 100644
 --- a/security/integrity/integrity.h
 +++ b/security/integrity/integrity.h
-@@ -78,6 +78,11 @@ enum evm_ima_xattr_type {
+@@ -38,12 +38,13 @@
+ #define IMA_MODSIG_ALLOWED	0x20000000
  
- struct evm_ima_xattr_data {
- 	u8 type;
-+	u8 data[];
-+} __packed;
-+
-+struct evm_xattr {
-+	struct evm_ima_xattr_data data;
- 	u8 digest[SHA1_DIGEST_SIZE];
- } __packed;
+ #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+-				 IMA_HASH | IMA_APPRAISE_SUBMASK)
++				 IMA_HASH | IMA_APPRAISE_SUBMASK | \
++				 IMA_READ_MEASURE)
+ #define IMA_DONE_MASK		(IMA_MEASURED | IMA_APPRAISED | IMA_AUDITED | \
+ 				 IMA_HASHED | IMA_COLLECTED | \
+-				 IMA_APPRAISED_SUBMASK)
++				 IMA_APPRAISED_SUBMASK | IMA_READ_MEASURED)
  
+-/* iint subaction appraise cache flags */
++/* iint subaction appraise and measure cache flags */
+ #define IMA_FILE_APPRAISE	0x00001000
+ #define IMA_FILE_APPRAISED	0x00002000
+ #define IMA_MMAP_APPRAISE	0x00004000
+@@ -54,6 +55,8 @@
+ #define IMA_READ_APPRAISED	0x00080000
+ #define IMA_CREDS_APPRAISE	0x00100000
+ #define IMA_CREDS_APPRAISED	0x00200000
++#define IMA_READ_MEASURE	0x00400000
++#define IMA_READ_MEASURED	0x00800000
+ #define IMA_APPRAISE_SUBMASK	(IMA_FILE_APPRAISE | IMA_MMAP_APPRAISE | \
+ 				 IMA_BPRM_APPRAISE | IMA_READ_APPRAISE | \
+ 				 IMA_CREDS_APPRAISE)
 
