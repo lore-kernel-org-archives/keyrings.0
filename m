@@ -1,131 +1,158 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Tue, 29 May 2018 03:29:44 +0000
-Subject: [RFC 06/10] KEYS: asym_tpm: Implement encryption operation
-Message-Id: <20180529032949.30526-7-denkenz@gmail.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Wed, 23 May 2018 00:12:43 +0000
+Subject: [PATCH v7 04/14] integrity: Introduce struct evm_xattr
+Message-Id: <20180523001253.15247-5-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20180523001253.15247-1-bauerman@linux.ibm.com>
+In-Reply-To: <20180523001253.15247-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-This patch impelements the pkey_encrypt operation.  The public key
-portion extracted from the TPM key blob is used.  The operation is
-performed entirely in software using the crypto API.
+Even though struct evm_ima_xattr_data includes a fixed-size array to hold a
+SHA1 digest, most of the code ignores the array and uses the struct to mean
+"type indicator followed by data of unspecified size" and tracks the real
+size of what the struct represents in a separate length variable.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+The only exception to that is the EVM code, which correctly uses the
+definition of struct evm_ima_xattr_data.
+
+So make this explicit in the code by removing the length specification from
+the array in struct evm_ima_xattr_data. Also, change the name of the
+element from digest to data since in most places the array doesn't hold a
+digest.
+
+A separate struct evm_xattr is introduced, with the original definition of
+evm_ima_xattr_data to be used in the places that actually expect that
+definition.
+
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 84 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 84 insertions(+)
+ security/integrity/evm/evm_crypto.c   |  4 ++--
+ security/integrity/evm/evm_main.c     | 10 +++++-----
+ security/integrity/ima/ima_appraise.c |  7 ++++---
+ security/integrity/integrity.h        |  5 +++++
+ 4 files changed, 16 insertions(+), 10 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index e530896353e0..0cce7614e5b4 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -172,6 +172,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	info->max_enc_size = len;
- 	info->max_dec_size = tk->key_len / 8;
+diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+index 494da5fcc092..c03ebb0c20b4 100644
+--- a/security/integrity/evm/evm_crypto.c
++++ b/security/integrity/evm/evm_crypto.c
+@@ -302,7 +302,7 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
+ 			const char *xattr_value, size_t xattr_value_len)
+ {
+ 	struct inode *inode = d_backing_inode(dentry);
+-	struct evm_ima_xattr_data xattr_data;
++	struct evm_xattr xattr_data;
+ 	int rc = 0;
  
-+	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
-+
- 	ret = 0;
- error_free_tfm:
- 	crypto_free_akcipher(tfm);
-@@ -179,6 +181,87 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	return ret;
- }
+ 	/*
+@@ -318,7 +318,7 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
+ 	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+ 			   xattr_value_len, xattr_data.digest);
+ 	if (rc = 0) {
+-		xattr_data.type = EVM_XATTR_HMAC;
++		xattr_data.data.type = EVM_XATTR_HMAC;
+ 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
+ 					   &xattr_data,
+ 					   sizeof(xattr_data), 0);
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index f9eff5041e4c..65f9578be058 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -134,7 +134,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 					     struct integrity_iint_cache *iint)
+ {
+ 	struct evm_ima_xattr_data *xattr_data = NULL;
+-	struct evm_ima_xattr_data calc;
++	struct evm_xattr calc;
+ 	enum integrity_status evm_status = INTEGRITY_PASS;
+ 	struct inode *inode;
+ 	int rc, xattr_len;
+@@ -167,7 +167,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 	/* check value type */
+ 	switch (xattr_data->type) {
+ 	case EVM_XATTR_HMAC:
+-		if (xattr_len != sizeof(struct evm_ima_xattr_data)) {
++		if (xattr_len != sizeof(struct evm_xattr)) {
+ 			evm_status = INTEGRITY_FAIL;
+ 			goto out;
+ 		}
+@@ -175,7 +175,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 				   xattr_value_len, calc.digest);
+ 		if (rc)
+ 			break;
+-		rc = crypto_memneq(xattr_data->digest, calc.digest,
++		rc = crypto_memneq(xattr_data->data, calc.digest,
+ 			    sizeof(calc.digest));
+ 		if (rc)
+ 			rc = -EINVAL;
+@@ -518,7 +518,7 @@ int evm_inode_init_security(struct inode *inode,
+ 				 const struct xattr *lsm_xattr,
+ 				 struct xattr *evm_xattr)
+ {
+-	struct evm_ima_xattr_data *xattr_data;
++	struct evm_xattr *xattr_data;
+ 	int rc;
  
-+/*
-+ * Encryption operation is performed with the public key.  Hence it is done
-+ * in software
-+ */
-+static int tpm_key_encrypt(struct tpm_key *tk,
-+			   struct kernel_pkey_params *params,
-+			   const void *in, void *out)
-+{
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	struct crypto_akcipher *tfm;
-+	struct akcipher_request *req;
-+	struct crypto_wait cwait;
-+	struct scatterlist in_sg, out_sg;
-+	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
-+	uint32_t der_pub_key_len;
-+	int ret;
-+
-+	pr_devel("=>%s()\n", __func__);
-+
-+	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
-+	if (ret < 0)
-+		return ret;
-+
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
-+					 der_pub_key);
-+
-+	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
-+	if (ret < 0)
-+		goto error_free_tfm;
-+
-+	req = akcipher_request_alloc(tfm, GFP_KERNEL);
-+	if (!req)
-+		goto error_free_tfm;
-+
-+	sg_init_one(&in_sg, in, params->in_len);
-+	sg_init_one(&out_sg, out, params->out_len);
-+	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
-+				   params->out_len);
-+	crypto_init_wait(&cwait);
-+	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
-+				      CRYPTO_TFM_REQ_MAY_SLEEP,
-+				      crypto_req_done, &cwait);
-+
-+	ret = crypto_akcipher_encrypt(req);
-+	ret = crypto_wait_req(ret, &cwait);
-+
-+	if (ret = 0)
-+		ret = req->dst_len;
-+
-+	akcipher_request_free(req);
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
-+/*
-+ * Do encryption, decryption and signing ops.
-+ */
-+static int tpm_key_eds_op(struct kernel_pkey_params *params,
-+			       const void *in, void *out)
-+{
-+	struct tpm_key *tk = params->key->payload.data[asym_crypto];
-+	int ret = -EOPNOTSUPP;
-+
-+	/* Perform the encryption calculation. */
-+	switch (params->op) {
-+	case kernel_pkey_encrypt:
-+		ret = tpm_key_encrypt(tk, params, in, out);
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	return ret;
-+}
-+
- /*
-  * Parse enough information out of TPM_KEY structure:
-  * TPM_STRUCT_VER -> 4 bytes
-@@ -338,6 +421,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
- 	.describe		= asym_tpm_describe,
- 	.destroy		= asym_tpm_destroy,
- 	.query			= tpm_key_query,
-+	.eds_op			= tpm_key_eds_op,
- };
- EXPORT_SYMBOL_GPL(asym_tpm_subtype);
+ 	if (!evm_key_loaded() || !evm_protected_xattr(lsm_xattr->name))
+@@ -528,7 +528,7 @@ int evm_inode_init_security(struct inode *inode,
+ 	if (!xattr_data)
+ 		return -ENOMEM;
  
--- 
-2.16.1
+-	xattr_data->type = EVM_XATTR_HMAC;
++	xattr_data->data.type = EVM_XATTR_HMAC;
+ 	rc = evm_init_hmac(inode, lsm_xattr, xattr_data->digest);
+ 	if (rc < 0)
+ 		goto out;
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 8bd7a0733e51..a6b2995b7d0b 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -167,7 +167,8 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
+ 		return sig->hash_algo;
+ 		break;
+ 	case IMA_XATTR_DIGEST_NG:
+-		ret = xattr_value->digest[0];
++		/* first byte contains algorithm id */
++		ret = xattr_value->data[0];
+ 		if (ret < HASH_ALGO__LAST)
+ 			return ret;
+ 		break;
+@@ -175,7 +176,7 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
+ 		/* this is for backward compatibility */
+ 		if (xattr_len = 21) {
+ 			unsigned int zero = 0;
+-			if (!memcmp(&xattr_value->digest[16], &zero, 4))
++			if (!memcmp(&xattr_value->data[16], &zero, 4))
+ 				return HASH_ALGO_MD5;
+ 			else
+ 				return HASH_ALGO_SHA1;
+@@ -274,7 +275,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 			/* xattr length may be longer. md5 hash in previous
+ 			   version occupied 20 bytes in xattr, instead of 16
+ 			 */
+-			rc = memcmp(&xattr_value->digest[hash_start],
++			rc = memcmp(&xattr_value->data[hash_start],
+ 				    iint->ima_hash->digest,
+ 				    iint->ima_hash->length);
+ 		else
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 0bb372eed62a..714fe2e135c7 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -78,6 +78,11 @@ enum evm_ima_xattr_type {
+ 
+ struct evm_ima_xattr_data {
+ 	u8 type;
++	u8 data[];
++} __packed;
++
++struct evm_xattr {
++	struct evm_ima_xattr_data data;
+ 	u8 digest[SHA1_DIGEST_SIZE];
+ } __packed;
+ 
 
