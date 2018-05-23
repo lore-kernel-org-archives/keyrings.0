@@ -1,7 +1,7 @@
 From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Wed, 23 May 2018 00:12:44 +0000
-Subject: [PATCH v7 05/14] integrity: Introduce integrity_keyring_from_id()
-Message-Id: <20180523001253.15247-6-bauerman@linux.ibm.com>
+Date: Wed, 23 May 2018 00:12:41 +0000
+Subject: [PATCH v7 02/14] PKCS#7: Refactor verify_pkcs7_signature() and add pkcs7_get_message_sig()
+Message-Id: <20180523001253.15247-3-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,92 +11,180 @@ In-Reply-To: <20180523001253.15247-1-bauerman@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-IMA will need to obtain the keyring used to verify file signatures so that
-it can verify the module-style signature appended to files.
+IMA will need to verify a PKCS#7 which has already been parsed. For this
+reason, factor out the code which does that from verify_pkcs7_signature()
+into a new function which takes a struct pkcs7_message instead of a data
+buffer.
+
+In addition, IMA will need to know the key that signed a given PKCS#7
+message, so add pkcs7_get_message_sig().
 
 Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- security/integrity/digsig.c    | 28 +++++++++++++++++++++-------
- security/integrity/integrity.h |  6 ++++++
- 2 files changed, 27 insertions(+), 7 deletions(-)
+ certs/system_keyring.c                | 61 ++++++++++++++++++++++++++---------
+ crypto/asymmetric_keys/pkcs7_parser.c | 16 +++++++++
+ include/crypto/pkcs7.h                |  2 ++
+ include/linux/verification.h          | 10 ++++++
+ 4 files changed, 73 insertions(+), 16 deletions(-)
 
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 9bb0a7f2863e..2a60151af0c5 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -49,11 +49,10 @@ static bool init_keyring __initdata;
- #define restrict_link_to_ima restrict_link_by_builtin_trusted
- #endif
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 6251d1b27f0c..7ddc8b7a3062 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -190,33 +190,27 @@ late_initcall(load_system_certificate_list);
+ #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
  
--int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
--			    const char *digest, int digestlen)
-+struct key *integrity_keyring_from_id(const unsigned int id)
+ /**
+- * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
++ * verify_pkcs7_message_sig - Verify a PKCS#7-based signature on system data.
+  * @data: The data to be verified (NULL if expecting internal data).
+  * @len: Size of @data.
+- * @raw_pkcs7: The PKCS#7 message that is the signature.
+- * @pkcs7_len: The size of @raw_pkcs7.
++ * @pkcs7: The PKCS#7 message that is the signature.
+  * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
+  *					(void *)1UL for all trusted keys).
+  * @usage: The use to which the key is being put.
+  * @view_content: Callback to gain access to content.
+  * @ctx: Context for callback.
+  */
+-int verify_pkcs7_signature(const void *data, size_t len,
+-			   const void *raw_pkcs7, size_t pkcs7_len,
+-			   struct key *trusted_keys,
+-			   enum key_being_used_for usage,
+-			   int (*view_content)(void *ctx,
+-					       const void *data, size_t len,
+-					       size_t asn1hdrlen),
+-			   void *ctx)
++int verify_pkcs7_message_sig(const void *data, size_t len,
++			     struct pkcs7_message *pkcs7,
++			     struct key *trusted_keys,
++			     enum key_being_used_for usage,
++			     int (*view_content)(void *ctx,
++						 const void *data, size_t len,
++						 size_t asn1hdrlen),
++			     void *ctx)
  {
--	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
--		return -EINVAL;
-+	if (id >= INTEGRITY_KEYRING_MAX)
-+		return ERR_PTR(-EINVAL);
+-	struct pkcs7_message *pkcs7;
+ 	int ret;
  
- 	if (!keyring[id]) {
- 		keyring[id] @@ -62,17 +61,32 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			int err = PTR_ERR(keyring[id]);
- 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
- 			keyring[id] = NULL;
--			return err;
-+			return ERR_PTR(err);
- 		}
+-	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
+-	if (IS_ERR(pkcs7))
+-		return PTR_ERR(pkcs7);
+-
+ 	/* The data should be detached - so we need to supply it. */
+ 	if (data && pkcs7_supply_detached_data(pkcs7, data, len) < 0) {
+ 		pr_err("PKCS#7 signature with non-detached data\n");
+@@ -258,6 +252,41 @@ int verify_pkcs7_signature(const void *data, size_t len,
  	}
  
-+	return keyring[id];
+ error:
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
 +}
 +
-+int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-+			    const char *digest, int digestlen)
++/**
++ * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
++ * @data: The data to be verified (NULL if expecting internal data).
++ * @len: Size of @data.
++ * @raw_pkcs7: The PKCS#7 message that is the signature.
++ * @pkcs7_len: The size of @raw_pkcs7.
++ * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
++ *					(void *)1UL for all trusted keys).
++ * @usage: The use to which the key is being put.
++ * @view_content: Callback to gain access to content.
++ * @ctx: Context for callback.
++ */
++int verify_pkcs7_signature(const void *data, size_t len,
++			   const void *raw_pkcs7, size_t pkcs7_len,
++			   struct key *trusted_keys,
++			   enum key_being_used_for usage,
++			   int (*view_content)(void *ctx,
++					       const void *data, size_t len,
++					       size_t asn1hdrlen),
++			   void *ctx)
 +{
-+	struct key *keyring;
++	struct pkcs7_message *pkcs7;
++	int ret;
 +
-+	if (siglen < 2)
-+		return -EINVAL;
++	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
++	if (IS_ERR(pkcs7))
++		return PTR_ERR(pkcs7);
 +
-+	keyring = integrity_keyring_from_id(id);
-+	if (IS_ERR(keyring))
-+		return PTR_ERR(keyring);
++	ret = verify_pkcs7_message_sig(data, len, pkcs7, trusted_keys, usage,
++				       view_content, ctx);
 +
- 	switch (sig[1]) {
- 	case 1:
- 		/* v1 API expect signature without xattr type */
--		return digsig_verify(keyring[id], sig + 1, siglen - 1,
-+		return digsig_verify(keyring, sig + 1, siglen - 1,
- 				     digest, digestlen);
- 	case 2:
--		return asymmetric_verify(keyring[id], sig, siglen,
-+		return asymmetric_verify(keyring, sig, siglen,
- 					 digest, digestlen);
- 	}
- 
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 714fe2e135c7..d4f676906442 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -152,6 +152,7 @@ extern struct dentry *integrity_dir;
- 
- #ifdef CONFIG_INTEGRITY_SIGNATURE
- 
-+struct key *integrity_keyring_from_id(const unsigned int id);
- int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			    const char *digest, int digestlen);
- 
-@@ -159,6 +160,11 @@ int __init integrity_init_keyring(const unsigned int id);
- int __init integrity_load_x509(const unsigned int id, const char *path);
- #else
- 
-+static inline struct key *integrity_keyring_from_id(const unsigned int id)
+ 	pkcs7_free_message(pkcs7);
+ 	pr_devel("<=%s() = %d\n", __func__, ret);
+ 	return ret;
+diff --git a/crypto/asymmetric_keys/pkcs7_parser.c b/crypto/asymmetric_keys/pkcs7_parser.c
+index 0f134162cef4..4c7a00734e03 100644
+--- a/crypto/asymmetric_keys/pkcs7_parser.c
++++ b/crypto/asymmetric_keys/pkcs7_parser.c
+@@ -683,3 +683,19 @@ int pkcs7_note_signed_info(void *context, size_t hdrlen,
+ 		return -ENOMEM;
+ 	return 0;
+ }
++
++/**
++ * pkcs7_get_message_sig - get signature in @pkcs7
++ */
++const struct public_key_signature *pkcs7_get_message_sig(
++					const struct pkcs7_message *pkcs7)
 +{
-+	return ERR_PTR(-EINVAL);
++	/*
++	 * This function doesn't support messages with more than one signature,
++	 * so don't return anything in that case.
++	 */
++	if (pkcs7->signed_infos = NULL || pkcs7->signed_infos->next != NULL)
++		return NULL;
++
++	return pkcs7->signed_infos->sig;
 +}
-+
- static inline int integrity_digsig_verify(const unsigned int id,
- 					  const char *sig, int siglen,
- 					  const char *digest, int digestlen)
+diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
+index 583f199400a3..6f51d0cb6d12 100644
+--- a/include/crypto/pkcs7.h
++++ b/include/crypto/pkcs7.h
+@@ -28,6 +28,8 @@ extern void pkcs7_free_message(struct pkcs7_message *pkcs7);
+ extern int pkcs7_get_content_data(const struct pkcs7_message *pkcs7,
+ 				  const void **_data, size_t *_datalen,
+ 				  size_t *_headerlen);
++extern const struct public_key_signature *pkcs7_get_message_sig(
++					const struct pkcs7_message *pkcs7);
+ 
+ /*
+  * pkcs7_trust.c
+diff --git a/include/linux/verification.h b/include/linux/verification.h
+index a10549a6c7cd..f04dac2728ec 100644
+--- a/include/linux/verification.h
++++ b/include/linux/verification.h
+@@ -29,6 +29,7 @@ extern const char *const key_being_used_for[NR__KEY_BEING_USED_FOR];
+ #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+ 
+ struct key;
++struct pkcs7_message;
+ 
+ extern int verify_pkcs7_signature(const void *data, size_t len,
+ 				  const void *raw_pkcs7, size_t pkcs7_len,
+@@ -38,6 +39,15 @@ extern int verify_pkcs7_signature(const void *data, size_t len,
+ 						      const void *data, size_t len,
+ 						      size_t asn1hdrlen),
+ 				  void *ctx);
++extern int verify_pkcs7_message_sig(const void *data, size_t len,
++				    struct pkcs7_message *pkcs7,
++				    struct key *trusted_keys,
++				    enum key_being_used_for usage,
++				    int (*view_content)(void *ctx,
++							const void *data,
++							size_t len,
++							size_t asn1hdrlen),
++				    void *ctx);
+ 
+ #ifdef CONFIG_SIGNED_PE_FILE_VERIFICATION
+ extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
 
