@@ -1,11 +1,13 @@
 From: Denis Kenzior <denkenz@gmail.com>
-Date: Tue, 29 May 2018 03:29:48 +0000
-Subject: [RFC 10/10] KEYS: asym_tpm: Implement the decrypt operation
-Message-Id: <20180529032949.30526-11-denkenz@gmail.com>
+Date: Tue, 29 May 2018 03:29:49 +0000
+Subject: [RFC 10/10] KEYS: asym_tpm: Implement the encrypt operation
+Message-Id: <20180529032949.30526-12-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20180529032949.30526-11-denkenz@gmail.com>
+In-Reply-To: <20180529032949.30526-11-denkenz@gmail.com>
 To: keyrings@vger.kernel.org
 
 This patch implements the pkey_decrypt operation using the private key
