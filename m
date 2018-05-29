@@ -1,120 +1,139 @@
 From: Denis Kenzior <denkenz@gmail.com>
-Date: Tue, 29 May 2018 03:29:47 +0000
-Subject: [RFC 09/10] KEYS: asym_tpm: Implement tpm_unbind
-Message-Id: <20180529032949.30526-10-denkenz@gmail.com>
+Date: Tue, 29 May 2018 03:29:45 +0000
+Subject: [RFC 07/10] KEYS: trusted: Expose common functionality
+Message-Id: <20180529032949.30526-8-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
+This patch exposes some common functionality needed to send TPM
+commands.  The current approach is a complete hack and needs to be
+addressed properly.  This commit just show-cases what functionality
+would need to be moved to a shared location or exposed in some other
+manner.
+
 Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 82 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 82 insertions(+)
+ crypto/asymmetric_keys/Kconfig |  1 +
+ security/keys/trusted.c        | 12 ++++++++----
+ security/keys/trusted.h        | 14 +++++++++++++-
+ 3 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index c2e2df4e1bd9..a06950ff0939 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -18,8 +18,10 @@
- 
- #define TPM_ORD_FLUSHSPECIFIC	186
- #define TPM_ORD_LOADKEY2	65
-+#define TPM_ORD_UNBIND		30
- #define TPM_LOADKEY2_SIZE		59
- #define TPM_FLUSHSPECIFIC_SIZE		18
-+#define TPM_UNBIND_SIZE			63
- 
- #define TPM_RT_KEY                      0x00000001
- 
-@@ -106,6 +108,86 @@ static uint32_t tpm_flushspecific(struct tpm_buf *tb, uint32_t handle)
- 	return trusted_tpm_send(tb->data, MAX_BUF_SIZE);
- }
- 
-+/*
-+ * Decrypt a blob provided by userspace using a specific key handle.
-+ * The handle is a well known handle or previously loaded by e.g. LoadKey2
-+ */
-+static int tpm_unbind(struct tpm_buf *tb,
-+			uint32_t keyhandle, unsigned char *keyauth,
-+			const unsigned char *blob, uint32_t bloblen,
-+			void *out, uint32_t outlen)
-+{
-+	unsigned char nonceodd[TPM_NONCE_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+	unsigned char authdata[SHA1_DIGEST_SIZE];
-+	uint32_t authhandle = 0;
-+	unsigned char cont = 0;
-+	uint32_t ordinal;
-+	uint32_t datalen;
-+	int ret;
-+
-+	ordinal = htonl(TPM_ORD_UNBIND);
-+	datalen = htonl(bloblen);
-+
-+	/* session for loading the key */
-+	ret = oiap(tb, &authhandle, enonce);
-+	if (ret < 0) {
-+		pr_info("oiap failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* generate odd nonce */
-+	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0) {
-+		pr_info("tpm_get_random failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* calculate authorization HMAC value */
-+	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-+			   nonceodd, cont, sizeof(uint32_t), &ordinal,
-+			   sizeof(uint32_t), &datalen,
-+			   bloblen, blob, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* build the request buffer */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
-+	store32(tb, TPM_UNBIND_SIZE + bloblen);
-+	store32(tb, TPM_ORD_UNBIND);
-+	store32(tb, keyhandle);
-+	store32(tb, bloblen);
-+	storebytes(tb, blob, bloblen);
-+	store32(tb, authhandle);
-+	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
-+	store8(tb, cont);
-+	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
-+
-+	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
-+	if (ret < 0) {
-+		pr_info("authhmac failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
-+	pr_info("datalen: %u, outlen: %u\n", datalen, outlen);
-+
-+	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd,
-+			     keyauth, SHA1_DIGEST_SIZE,
-+			     sizeof(uint32_t), TPM_DATA_OFFSET,
-+			     datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
-+			     0, 0);
-+	if (ret < 0) {
-+		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	memcpy(out, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t), datalen);
-+
-+	return datalen;
-+}
-+
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 88353a9ebc9b..be70ca6c85d3 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -24,6 +24,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ config ASYMMETRIC_TPM_KEY_SUBTYPE
+ 	tristate "Asymmetric TPM backed private key subtype"
+ 	depends on TCG_TPM
++	depends on TRUSTED_KEYS
+ 	select CRYPTO_HMAC
+ 	select CRYPTO_SHA1
+ 	select CRYPTO_HASH_INFO
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 423776682025..a93cfc1b083b 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -121,7 +121,7 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
  /*
-  * Maximum buffer size for the BER/DER encoded public key.  The public key
-  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
+  * calculate authorization info fields to send to TPM
+  */
+-static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 			unsigned int keylen, unsigned char *h1,
+ 			unsigned char *h2, unsigned char h3, ...)
+ {
+@@ -168,11 +168,12 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 	kzfree(sdesc);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(TSS_authhmac);
+ 
+ /*
+  * verify the AUTH1_COMMAND (Seal) result from TPM
+  */
+-static int TSS_checkhmac1(unsigned char *buffer,
++int TSS_checkhmac1(unsigned char *buffer,
+ 			  const uint32_t command,
+ 			  const unsigned char *ononce,
+ 			  const unsigned char *key,
+@@ -249,6 +250,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
+ 	kzfree(sdesc);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(TSS_checkhmac1);
+ 
+ /*
+  * verify the AUTH2_COMMAND (unseal) result from TPM
+@@ -355,7 +357,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
+  * For key specific tpm requests, we will generate and send our
+  * own TPM command packets using the drivers send function.
+  */
+-static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
++int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ {
+ 	int rc;
+ 
+@@ -367,6 +369,7 @@ static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ 		rc = -EPERM;
+ 	return rc;
+ }
++EXPORT_SYMBOL_GPL(trusted_tpm_send);
+ 
+ /*
+  * Lock a trusted key, by extending a selected PCR.
+@@ -425,7 +428,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ /*
+  * Create an object independent authorisation protocol (oiap) session
+  */
+-static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ {
+ 	int ret;
+ 
+@@ -442,6 +445,7 @@ static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ 	       TPM_NONCE_SIZE);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(oiap);
+ 
+ struct tpm_digests {
+ 	unsigned char encauth[SHA1_DIGEST_SIZE];
+diff --git a/security/keys/trusted.h b/security/keys/trusted.h
+index 8d5fe9eafb22..adbcb6817826 100644
+--- a/security/keys/trusted.h
++++ b/security/keys/trusted.h
+@@ -3,7 +3,7 @@
+ #define __TRUSTED_KEY_H
+ 
+ /* implementation specific TPM constants */
+-#define MAX_BUF_SIZE			512
++#define MAX_BUF_SIZE			1024
+ #define TPM_GETRANDOM_SIZE		14
+ #define TPM_OSAP_SIZE			36
+ #define TPM_OIAP_SIZE			10
+@@ -36,6 +36,18 @@ enum {
+ 	SRK_keytype = 4
+ };
+ 
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++			unsigned int keylen, unsigned char *h1,
++			unsigned char *h2, unsigned char h3, ...);
++int TSS_checkhmac1(unsigned char *buffer,
++			  const uint32_t command,
++			  const unsigned char *ononce,
++			  const unsigned char *key,
++			  unsigned int keylen, ...);
++
++int trusted_tpm_send(unsigned char *cmd, size_t buflen);
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
++
+ #define TPM_DEBUG 0
+ 
+ #if TPM_DEBUG
 -- 
 2.16.1
 
