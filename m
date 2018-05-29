@@ -1,190 +1,216 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Wed, 23 May 2018 00:12:41 +0000
-Subject: [PATCH v7 02/14] PKCS#7: Refactor verify_pkcs7_signature() and add pkcs7_get_message_sig()
-Message-Id: <20180523001253.15247-3-bauerman@linux.ibm.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Tue, 29 May 2018 03:29:43 +0000
+Subject: [RFC 05/10] KEYS: asym_tpm: Implement pkey_query
+Message-Id: <20180529032949.30526-6-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180523001253.15247-1-bauerman@linux.ibm.com>
-In-Reply-To: <20180523001253.15247-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+To: keyrings@vger.kernel.org
 
-IMA will need to verify a PKCS#7 which has already been parsed. For this
-reason, factor out the code which does that from verify_pkcs7_signature()
-into a new function which takes a struct pkcs7_message instead of a data
-buffer.
+This commit implements the pkey_query operation.  This is accomplished
+by utilizing the public key portion to obtain max encryption size
+information for the operations that utilize the public key (encrypt,
+verify).  The private key size extracted from the TPM_Key data structure
+is used to fill the information where the private key is used (decrypt,
+sign).
 
-In addition, IMA will need to know the key that signed a given PKCS#7
-message, so add pkcs7_get_message_sig().
+The kernel uses a DER/BER format for public keys and does not support
+setting the key via the raw binary form.  To get around this a simple
+DER/BER formatter is implemented which stores the DER/BER formatted key
+and exponent in a temporary buffer for use by the crypto API.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
+The only exponent supported currently is 65537.  This holds true for
+other Linux TPM tools such as 'create_tpm_key' and
+trousers-openssl_tpm_engine.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- certs/system_keyring.c                | 61 ++++++++++++++++++++++++++---------
- crypto/asymmetric_keys/pkcs7_parser.c | 16 +++++++++
- include/crypto/pkcs7.h                |  2 ++
- include/linux/verification.h          | 10 ++++++
- 4 files changed, 73 insertions(+), 16 deletions(-)
+ crypto/asymmetric_keys/asym_tpm.c | 138 ++++++++++++++++++++++++++++++++++++++
+ include/crypto/asym_tpm_subtype.h |   3 +
+ 2 files changed, 141 insertions(+)
 
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index 6251d1b27f0c..7ddc8b7a3062 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -190,33 +190,27 @@ late_initcall(load_system_certificate_list);
- #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 4f070706628c..e530896353e0 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -7,10 +7,24 @@
+ #include <linux/seq_file.h>
+ #include <linux/scatterlist.h>
+ #include <linux/tpm.h>
++#include <crypto/akcipher.h>
+ #include <asm/unaligned.h>
+ #include <keys/asymmetric-subtype.h>
+ #include <crypto/asym_tpm_subtype.h>
  
- /**
-- * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-+ * verify_pkcs7_message_sig - Verify a PKCS#7-based signature on system data.
-  * @data: The data to be verified (NULL if expecting internal data).
-  * @len: Size of @data.
-- * @raw_pkcs7: The PKCS#7 message that is the signature.
-- * @pkcs7_len: The size of @raw_pkcs7.
-+ * @pkcs7: The PKCS#7 message that is the signature.
-  * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
-  *					(void *)1UL for all trusted keys).
-  * @usage: The use to which the key is being put.
-  * @view_content: Callback to gain access to content.
-  * @ctx: Context for callback.
++/*
++ * Maximum buffer size for the BER/DER encoded public key.  The public key
++ * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
++ * bit key and e is usually 65537
++ * The encoding overhead is:
++ * - max 4 bytes for SEQUENCE
++ *   - max 4 bytes for INTEGER n type/length
++ *     - 257 bytes of n
++ *   - max 2 bytes for INTEGER e type/length
++ *     - 3 bytes of e
++ */
++#define PUB_KEY_BUF_SIZE (4 + 4 + 257 + 2 + 3)
++
+ /*
+  * Provide a part of a description of the key for /proc/keys.
   */
--int verify_pkcs7_signature(const void *data, size_t len,
--			   const void *raw_pkcs7, size_t pkcs7_len,
--			   struct key *trusted_keys,
--			   enum key_being_used_for usage,
--			   int (*view_content)(void *ctx,
--					       const void *data, size_t len,
--					       size_t asn1hdrlen),
--			   void *ctx)
-+int verify_pkcs7_message_sig(const void *data, size_t len,
-+			     struct pkcs7_message *pkcs7,
-+			     struct key *trusted_keys,
-+			     enum key_being_used_for usage,
-+			     int (*view_content)(void *ctx,
-+						 const void *data, size_t len,
-+						 size_t asn1hdrlen),
-+			     void *ctx)
- {
--	struct pkcs7_message *pkcs7;
- 	int ret;
+@@ -42,6 +56,129 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
+ 	kfree(tk);
+ }
  
--	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
--	if (IS_ERR(pkcs7))
--		return PTR_ERR(pkcs7);
--
- 	/* The data should be detached - so we need to supply it. */
- 	if (data && pkcs7_supply_detached_data(pkcs7, data, len) < 0) {
- 		pr_err("PKCS#7 signature with non-detached data\n");
-@@ -258,6 +252,41 @@ int verify_pkcs7_signature(const void *data, size_t len,
- 	}
- 
- error:
-+	pr_devel("<=%s() = %d\n", __func__, ret);
++/* How many bytes will it take to encode the length */
++static inline uint32_t definite_length(uint32_t len)
++{
++	if (len <= 127)
++		return 1;
++	if (len <= 255)
++		return 2;
++	return 3;
++}
++
++static inline uint8_t *encode_tag_length(uint8_t *buf, uint8_t tag,
++					 uint32_t len)
++{
++	*buf++ = tag;
++
++	if (len <= 127) {
++		buf[0] = len;
++		return buf + 1;
++	}
++
++	if (len <= 255) {
++		buf[0] = 0x81;
++		buf[1] = len;
++		return buf + 2;
++	}
++
++	buf[0] = 0x82;
++	put_unaligned_be16(len, buf + 1);
++	return buf + 3;
++}
++
++static uint32_t derive_pub_key(const void *pub_key, uint32_t len, uint8_t *buf)
++{
++	uint8_t *cur = buf;
++	uint32_t n_len = definite_length(len) + 1 + len + 1;
++	uint32_t e_len = definite_length(3) + 1 + 3;
++	uint8_t e[3] = { 0x01, 0x00, 0x01 };
++
++	/* SEQUENCE */
++	cur = encode_tag_length(cur, 0x30, n_len + e_len);
++	/* INTEGER n */
++	cur = encode_tag_length(cur, 0x02, len + 1);
++	cur[0] = 0x00;
++	memcpy(cur + 1, pub_key, len);
++	cur += len + 1;
++	cur = encode_tag_length(cur, 0x02, sizeof(e));
++	memcpy(cur, e, sizeof(e));
++	cur += sizeof(e);
++
++	return cur - buf;
++}
++
++/*
++ * Determine the crypto algorithm name.
++ */
++static int determine_akcipher(const char *encoding, const char *hash_algo,
++			      char alg_name[CRYPTO_MAX_ALG_NAME])
++{
++	pr_info("encoding: %s, hash_algo: %s\n",
++		encoding ? encoding : "", hash_algo ? hash_algo : hash_algo);
++
++	/* TODO: We don't support hashing yet */
++	if (hash_algo)
++		return -ENOPKG;
++
++	if (strcmp(encoding, "pkcs1") = 0) {
++		strcpy(alg_name, "pkcs1pad(rsa)");
++		return 0;
++	}
++
++	if (strcmp(encoding, "raw") = 0) {
++		strcpy(alg_name, "rsa");
++		return 0;
++	}
++
++	return -ENOPKG;
++}
++
++/*
++ * Query information about a key.
++ */
++static int tpm_key_query(const struct kernel_pkey_params *params,
++			      struct kernel_pkey_query *info)
++{
++	struct tpm_key *tk = params->key->payload.data[asym_crypto];
++	int ret;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	struct crypto_akcipher *tfm;
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
++	int len;
++
++	/* TPM only works on private keys, public keys still done in software */
++	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
++
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
++
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	len = crypto_akcipher_maxsize(tfm);
++
++	info->key_size = tk->key_len;
++	info->max_data_size = tk->key_len / 8;
++	info->max_sig_size = len;
++	info->max_enc_size = len;
++	info->max_dec_size = tk->key_len / 8;
++
++	ret = 0;
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_info("<=%s() = %d\n", __func__, ret);
 +	return ret;
 +}
 +
-+/**
-+ * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-+ * @data: The data to be verified (NULL if expecting internal data).
-+ * @len: Size of @data.
-+ * @raw_pkcs7: The PKCS#7 message that is the signature.
-+ * @pkcs7_len: The size of @raw_pkcs7.
-+ * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
-+ *					(void *)1UL for all trusted keys).
-+ * @usage: The use to which the key is being put.
-+ * @view_content: Callback to gain access to content.
-+ * @ctx: Context for callback.
-+ */
-+int verify_pkcs7_signature(const void *data, size_t len,
-+			   const void *raw_pkcs7, size_t pkcs7_len,
-+			   struct key *trusted_keys,
-+			   enum key_being_used_for usage,
-+			   int (*view_content)(void *ctx,
-+					       const void *data, size_t len,
-+					       size_t asn1hdrlen),
-+			   void *ctx)
-+{
-+	struct pkcs7_message *pkcs7;
-+	int ret;
-+
-+	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-+	if (IS_ERR(pkcs7))
-+		return PTR_ERR(pkcs7);
-+
-+	ret = verify_pkcs7_message_sig(data, len, pkcs7, trusted_keys, usage,
-+				       view_content, ctx);
-+
- 	pkcs7_free_message(pkcs7);
- 	pr_devel("<=%s() = %d\n", __func__, ret);
- 	return ret;
-diff --git a/crypto/asymmetric_keys/pkcs7_parser.c b/crypto/asymmetric_keys/pkcs7_parser.c
-index 0f134162cef4..4c7a00734e03 100644
---- a/crypto/asymmetric_keys/pkcs7_parser.c
-+++ b/crypto/asymmetric_keys/pkcs7_parser.c
-@@ -683,3 +683,19 @@ int pkcs7_note_signed_info(void *context, size_t hdrlen,
- 		return -ENOMEM;
- 	return 0;
- }
-+
-+/**
-+ * pkcs7_get_message_sig - get signature in @pkcs7
-+ */
-+const struct public_key_signature *pkcs7_get_message_sig(
-+					const struct pkcs7_message *pkcs7)
-+{
-+	/*
-+	 * This function doesn't support messages with more than one signature,
-+	 * so don't return anything in that case.
-+	 */
-+	if (pkcs7->signed_infos = NULL || pkcs7->signed_infos->next != NULL)
-+		return NULL;
-+
-+	return pkcs7->signed_infos->sig;
-+}
-diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
-index 583f199400a3..6f51d0cb6d12 100644
---- a/include/crypto/pkcs7.h
-+++ b/include/crypto/pkcs7.h
-@@ -28,6 +28,8 @@ extern void pkcs7_free_message(struct pkcs7_message *pkcs7);
- extern int pkcs7_get_content_data(const struct pkcs7_message *pkcs7,
- 				  const void **_data, size_t *_datalen,
- 				  size_t *_headerlen);
-+extern const struct public_key_signature *pkcs7_get_message_sig(
-+					const struct pkcs7_message *pkcs7);
- 
  /*
-  * pkcs7_trust.c
-diff --git a/include/linux/verification.h b/include/linux/verification.h
-index a10549a6c7cd..f04dac2728ec 100644
---- a/include/linux/verification.h
-+++ b/include/linux/verification.h
-@@ -29,6 +29,7 @@ extern const char *const key_being_used_for[NR__KEY_BEING_USED_FOR];
- #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -200,6 +337,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.name_len		= sizeof("asym_tpm") - 1,
+ 	.describe		= asym_tpm_describe,
+ 	.destroy		= asym_tpm_destroy,
++	.query			= tpm_key_query,
+ };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
  
- struct key;
-+struct pkcs7_message;
+diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
+index 03550b850998..48198c36d6b9 100644
+--- a/include/crypto/asym_tpm_subtype.h
++++ b/include/crypto/asym_tpm_subtype.h
+@@ -7,6 +7,9 @@
+ struct tpm_key {
+ 	void *blob;
+ 	u32 blob_len;
++	uint16_t key_len; /* Size in bits of the key */
++	const void *pub_key; /* pointer inside blob to the public key bytes */
++	uint16_t pub_key_len; /* length of the public key */
+ };
  
- extern int verify_pkcs7_signature(const void *data, size_t len,
- 				  const void *raw_pkcs7, size_t pkcs7_len,
-@@ -38,6 +39,15 @@ extern int verify_pkcs7_signature(const void *data, size_t len,
- 						      const void *data, size_t len,
- 						      size_t asn1hdrlen),
- 				  void *ctx);
-+extern int verify_pkcs7_message_sig(const void *data, size_t len,
-+				    struct pkcs7_message *pkcs7,
-+				    struct key *trusted_keys,
-+				    enum key_being_used_for usage,
-+				    int (*view_content)(void *ctx,
-+							const void *data,
-+							size_t len,
-+							size_t asn1hdrlen),
-+				    void *ctx);
- 
- #ifdef CONFIG_SIGNED_PE_FILE_VERIFICATION
- extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
+ struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
+-- 
+2.16.1
 
