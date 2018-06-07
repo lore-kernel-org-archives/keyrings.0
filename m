@@ -1,18 +1,19 @@
-From: James Morris <jmorris@namei.org>
-Date: Thu, 07 Jun 2018 19:28:01 +0000
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Thu, 07 Jun 2018 19:28:48 +0000
 Subject: Re: [PATCH] dh key: fix rounding up KDF output length
-Message-Id: <alpine.LRH.2.21.1806080527570.7465@namei.org>
+Message-Id: <20180607192848.GD29665@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <0000000000009c221d056e0cf53a@google.com> <20180607191201.97080-1-ebiggers3@gmail.com> <CAGXu5jJf-cW8WkwMoPZT8zM2aUoO6P-EQs7MK6_uUTneZr0ehA@mail.gmail.com>
+References: <0000000000009c221d056e0cf53a@google.com>
+ <20180607191201.97080-1-ebiggers3@gmail.com>
+ <CAGXu5jJf-cW8WkwMoPZT8zM2aUoO6P-EQs7MK6_uUTneZr0ehA@mail.gmail.com>
 In-Reply-To: <CAGXu5jJf-cW8WkwMoPZT8zM2aUoO6P-EQs7MK6_uUTneZr0ehA@mail.gmail.com>
 To: Kees Cook <keescook@chromium.org>
-Cc: Eric Biggers <ebiggers3@gmail.com>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, linux-crypto <linux-crypto@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, syzkaller-bugs@googlegroups.com, Tycho Andersen <tycho@tycho.ws>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
+Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, linux-crypto <linux-crypto@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, syzkaller-bugs@googlegroups.com, Tycho Andersen <tycho@tycho.ws>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
 
-On Thu, 7 Jun 2018, Kees Cook wrote:
-
+On Thu, Jun 07, 2018 at 12:16:16PM -0700, Kees Cook wrote:
 > On Thu, Jun 7, 2018 at 12:12 PM, Eric Biggers <ebiggers3@gmail.com> wrote:
 > > From: Eric Biggers <ebiggers@google.com>
 > >
@@ -29,9 +30,9 @@ On Thu, 7 Jun 2018, Kees Cook wrote:
 > round_up() vs roundup(). Wow, that's not confusing. :( I wonder if we
 > should rename the former to roundup_pow2() or something?
 
-Good idea, in a separate patch(set).
+Yes, it's very confusing, and I wish the names were clearer, or that there was
+one macro that just did the right thing (but then the power-of-2 optimization
+could only be done for constants, where it might not be necessary anyway).
+roundup_pow2() would still be confused with roundup_pow_of_two(), unfortunately.
 
--- 
-James Morris
-<jmorris@namei.org>
-
+Eric
