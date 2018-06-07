@@ -1,38 +1,37 @@
-From: Eric Biggers <ebiggers3@gmail.com>
-Date: Thu, 07 Jun 2018 19:28:48 +0000
+From: Tycho Andersen <tycho@tycho.ws>
+Date: Thu, 07 Jun 2018 20:28:31 +0000
 Subject: Re: [PATCH] dh key: fix rounding up KDF output length
-Message-Id: <20180607192848.GD29665@gmail.com>
+Message-Id: <20180607202831.GG9999@cisco>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <0000000000009c221d056e0cf53a@google.com>
  <20180607191201.97080-1-ebiggers3@gmail.com>
- <CAGXu5jJf-cW8WkwMoPZT8zM2aUoO6P-EQs7MK6_uUTneZr0ehA@mail.gmail.com>
-In-Reply-To: <CAGXu5jJf-cW8WkwMoPZT8zM2aUoO6P-EQs7MK6_uUTneZr0ehA@mail.gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, linux-crypto <linux-crypto@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, syzkaller-bugs@googlegroups.com, Tycho Andersen <tycho@tycho.ws>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
+In-Reply-To: <20180607191201.97080-1-ebiggers3@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com, Kees Cook <keescook@chromium.org>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
 
-On Thu, Jun 07, 2018 at 12:16:16PM -0700, Kees Cook wrote:
-> On Thu, Jun 7, 2018 at 12:12 PM, Eric Biggers <ebiggers3@gmail.com> wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> >
-> > Commit 383203eff718 ("dh key: get rid of stack allocated array") changed
-> > kdf_ctr() to assume that the length of key material to derive is a
-> > multiple of the digest size.  The length was supposed to be rounded up
-> > accordingly.  However, the round_up() macro was used which only gives
-> > the correct result on power-of-2 arguments, whereas not all hash
-> > algorithms have power-of-2 digest sizes.  In some cases this resulted in
-> > a write past the end of the 'outbuf' buffer.
-> >
-> > Fix it by switching to roundup(), which works for non-power-of-2 inputs.
+On Thu, Jun 07, 2018 at 12:12:01PM -0700, Eric Biggers wrote:
+> From: Eric Biggers <ebiggers@google.com>
 > 
-> round_up() vs roundup(). Wow, that's not confusing. :( I wonder if we
-> should rename the former to roundup_pow2() or something?
+> Commit 383203eff718 ("dh key: get rid of stack allocated array") changed
+> kdf_ctr() to assume that the length of key material to derive is a
+> multiple of the digest size.  The length was supposed to be rounded up
+> accordingly.  However, the round_up() macro was used which only gives
+> the correct result on power-of-2 arguments, whereas not all hash
+> algorithms have power-of-2 digest sizes.  In some cases this resulted in
+> a write past the end of the 'outbuf' buffer.
+> 
+> Fix it by switching to roundup(), which works for non-power-of-2 inputs.
+> 
+> Reported-by: syzbot+486f97f892efeb2075a3@syzkaller.appspotmail.com
+> Reported-by: syzbot+29d17b7898b41ee120a5@syzkaller.appspotmail.com
+> Reported-by: syzbot+8a608baf8751184ec727@syzkaller.appspotmail.com
+> Reported-by: syzbot+d04e58bd384f1fe0b112@syzkaller.appspotmail.com
+> Fixes: 383203eff718 ("dh key: get rid of stack allocated array")
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
 
-Yes, it's very confusing, and I wish the names were clearer, or that there was
-one macro that just did the right thing (but then the power-of-2 optimization
-could only be done for constants, where it might not be necessary anyway).
-roundup_pow2() would still be confused with roundup_pow_of_two(), unfortunately.
+Arg, thanks.
 
-Eric
+Acked-by: Tycho Andersen <tycho@tycho.ws>
