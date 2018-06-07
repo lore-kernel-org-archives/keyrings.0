@@ -1,79 +1,37 @@
-From: Kees Cook <keescook@chromium.org>
-Date: Thu, 07 Jun 2018 19:16:16 +0000
+From: James Morris <jmorris@namei.org>
+Date: Thu, 07 Jun 2018 19:28:01 +0000
 Subject: Re: [PATCH] dh key: fix rounding up KDF output length
-Message-Id: <CAGXu5jJf-cW8WkwMoPZT8zM2aUoO6P-EQs7MK6_uUTneZr0ehA@mail.gmail.com>
+Message-Id: <alpine.LRH.2.21.1806080527570.7465@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <0000000000009c221d056e0cf53a@google.com> <20180607191201.97080-1-ebiggers3@gmail.com>
-In-Reply-To: <20180607191201.97080-1-ebiggers3@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, linux-crypto <linux-crypto@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, syzkaller-bugs@googlegroups.com, Tycho Andersen <tycho@tycho.ws>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
+References: <0000000000009c221d056e0cf53a@google.com> <20180607191201.97080-1-ebiggers3@gmail.com> <CAGXu5jJf-cW8WkwMoPZT8zM2aUoO6P-EQs7MK6_uUTneZr0ehA@mail.gmail.com>
+In-Reply-To: <CAGXu5jJf-cW8WkwMoPZT8zM2aUoO6P-EQs7MK6_uUTneZr0ehA@mail.gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Eric Biggers <ebiggers3@gmail.com>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, linux-crypto <linux-crypto@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, syzkaller-bugs@googlegroups.com, Tycho Andersen <tycho@tycho.ws>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
 
-On Thu, Jun 7, 2018 at 12:12 PM, Eric Biggers <ebiggers3@gmail.com> wrote:
-> From: Eric Biggers <ebiggers@google.com>
->
-> Commit 383203eff718 ("dh key: get rid of stack allocated array") changed
-> kdf_ctr() to assume that the length of key material to derive is a
-> multiple of the digest size.  The length was supposed to be rounded up
-> accordingly.  However, the round_up() macro was used which only gives
-> the correct result on power-of-2 arguments, whereas not all hash
-> algorithms have power-of-2 digest sizes.  In some cases this resulted in
-> a write past the end of the 'outbuf' buffer.
->
-> Fix it by switching to roundup(), which works for non-power-of-2 inputs.
+On Thu, 7 Jun 2018, Kees Cook wrote:
 
-round_up() vs roundup(). Wow, that's not confusing. :( I wonder if we
-should rename the former to roundup_pow2() or something?
+> On Thu, Jun 7, 2018 at 12:12 PM, Eric Biggers <ebiggers3@gmail.com> wrote:
+> > From: Eric Biggers <ebiggers@google.com>
+> >
+> > Commit 383203eff718 ("dh key: get rid of stack allocated array") changed
+> > kdf_ctr() to assume that the length of key material to derive is a
+> > multiple of the digest size.  The length was supposed to be rounded up
+> > accordingly.  However, the round_up() macro was used which only gives
+> > the correct result on power-of-2 arguments, whereas not all hash
+> > algorithms have power-of-2 digest sizes.  In some cases this resulted in
+> > a write past the end of the 'outbuf' buffer.
+> >
+> > Fix it by switching to roundup(), which works for non-power-of-2 inputs.
+> 
+> round_up() vs roundup(). Wow, that's not confusing. :( I wonder if we
+> should rename the former to roundup_pow2() or something?
 
-> Reported-by: syzbot+486f97f892efeb2075a3@syzkaller.appspotmail.com
-> Reported-by: syzbot+29d17b7898b41ee120a5@syzkaller.appspotmail.com
-> Reported-by: syzbot+8a608baf8751184ec727@syzkaller.appspotmail.com
-> Reported-by: syzbot+d04e58bd384f1fe0b112@syzkaller.appspotmail.com
-> Fixes: 383203eff718 ("dh key: get rid of stack allocated array")
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
-
-Regardless:
-
-Acked-by: Kees Cook <keescook@chromium.org>
-
--Kees
-
-> ---
->  security/keys/dh.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/security/keys/dh.c b/security/keys/dh.c
-> index f7403821db7f0..b203f7758f976 100644
-> --- a/security/keys/dh.c
-> +++ b/security/keys/dh.c
-> @@ -142,6 +142,8 @@ static void kdf_dealloc(struct kdf_sdesc *sdesc)
->   * The src pointer is defined as Z || other info where Z is the shared secret
->   * from DH and other info is an arbitrary string (see SP800-56A section
->   * 5.8.1.2).
-> + *
-> + * 'dlen' must be a multiple of the digest size.
->   */
->  static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
->                    u8 *dst, unsigned int dlen, unsigned int zlen)
-> @@ -205,8 +207,8 @@ static int keyctl_dh_compute_kdf(struct kdf_sdesc *sdesc,
->  {
->         uint8_t *outbuf = NULL;
->         int ret;
-> -       size_t outbuf_len = round_up(buflen,
-> -                                    crypto_shash_digestsize(sdesc->shash.tfm));
-> +       size_t outbuf_len = roundup(buflen,
-> +                                   crypto_shash_digestsize(sdesc->shash.tfm));
->
->         outbuf = kmalloc(outbuf_len, GFP_KERNEL);
->         if (!outbuf) {
-> --
-> 2.17.1.1185.g55be947832-goog
->
-
-
+Good idea, in a separate patch(set).
 
 -- 
-Kees Cook
-Pixel Security
+James Morris
+<jmorris@namei.org>
+
