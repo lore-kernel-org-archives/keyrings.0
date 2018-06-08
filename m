@@ -1,20 +1,18 @@
-From: Tycho Andersen <tycho@tycho.ws>
-Date: Thu, 07 Jun 2018 20:28:31 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 08 Jun 2018 15:37:58 +0000
 Subject: Re: [PATCH] dh key: fix rounding up KDF output length
-Message-Id: <20180607202831.GG9999@cisco>
+Message-Id: <17595.1528472278@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <0000000000009c221d056e0cf53a@google.com>
- <20180607191201.97080-1-ebiggers3@gmail.com>
+References: <20180607191201.97080-1-ebiggers3@gmail.com> <0000000000009c221d056e0cf53a@google.com>
 In-Reply-To: <20180607191201.97080-1-ebiggers3@gmail.com>
 To: Eric Biggers <ebiggers3@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com, Kees Cook <keescook@chromium.org>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
+Cc: dhowells@redhat.com, James Morris <jmorris@namei.org>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com, Tycho Andersen <tycho@tycho.ws>, Kees Cook <keescook@chromium.org>, Stephan Mueller <smueller@chronox.de>, Eric Biggers <ebiggers@google.com>
 
-On Thu, Jun 07, 2018 at 12:12:01PM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
+Eric Biggers <ebiggers3@gmail.com> wrote:
+
 > Commit 383203eff718 ("dh key: get rid of stack allocated array") changed
 > kdf_ctr() to assume that the length of key material to derive is a
 > multiple of the digest size.  The length was supposed to be rounded up
@@ -24,14 +22,5 @@ On Thu, Jun 07, 2018 at 12:12:01PM -0700, Eric Biggers wrote:
 > a write past the end of the 'outbuf' buffer.
 > 
 > Fix it by switching to roundup(), which works for non-power-of-2 inputs.
-> 
-> Reported-by: syzbot+486f97f892efeb2075a3@syzkaller.appspotmail.com
-> Reported-by: syzbot+29d17b7898b41ee120a5@syzkaller.appspotmail.com
-> Reported-by: syzbot+8a608baf8751184ec727@syzkaller.appspotmail.com
-> Reported-by: syzbot+d04e58bd384f1fe0b112@syzkaller.appspotmail.com
-> Fixes: 383203eff718 ("dh key: get rid of stack allocated array")
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
 
-Arg, thanks.
-
-Acked-by: Tycho Andersen <tycho@tycho.ws>
+Applied.
