@@ -1,243 +1,237 @@
-From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
-Date: Wed, 27 Jun 2018 06:15:31 +0000
-Subject: [PATCH v2] crypto: DH - add public key verification test
-Message-Id: <2573864.V43BhLOfag@positron.chronox.de>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 08 Jun 2018 16:33:04 +0000
+Subject: Re: RESEND [RFC] KEYS: add a new type "mktme" to kernel key services
+Message-Id: <19964.1528475584@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <3594538.6iHA3aaNKK@positron.chronox.de>
-In-Reply-To: <3594538.6iHA3aaNKK@positron.chronox.de>
-To: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
-Cc: herbert@gondor.apana.org.au, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
+References: <20180525234328.GA2981@alison-desk.jf.intel.com>
+In-Reply-To: <20180525234328.GA2981@alison-desk.jf.intel.com>
+To: linux-security-module@vger.kernel.org
 
-Hi,
+Alison Schofield <alison.schofield@intel.com> wrote:
 
-Changes v2:
-* addition of a check that mpi_alloc succeeds.
+> +EXPORT_SYMBOL(key_lookup);
 
----8<---
+*Twitch*.
 
-According to SP800-56A section 5.6.2.1, the public key to be processed
-for the DH operation shall be checked for appropriateness. The check
-shall covers the full verification test in case the domain parameter Q
-is provided as defined in SP800-56A section 5.6.2.3.1. If Q is not
-provided, the partial check according to SP800-56A section 5.6.2.3.2 is
-performed.
+There's no protection on this whatsoever.
 
-The full verification test requires the presence of the domain parameter
-Q. Thus, the patch adds the support to handle Q. It is permissible to
-not provide the Q value as part of the domain parameters. This implies
-that the interface is still backwards-compatible where so far only P and
-G are to be provided. However, if Q is provided, it is imported.
+> +struct mktme_mapping {
+> +	struct mutex		lock;	/* protect mktme_map & hw state */
+> +	struct data {
+> +		key_serial_t	serial;
 
-Without the test, the NIST ACVP testing fails. After adding this check,
-the NIST ACVP testing passes. Testing without providing the Q domain
-parameter has been performed to verify the interface has not changed.
+Why key_serial_t rather than struct key *?
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/dh.c         | 66 ++++++++++++++++++++++++++++++++++++++++++---
- crypto/dh_helper.c  | 15 ++++++++---
- include/crypto/dh.h |  4 +++
- 3 files changed, 79 insertions(+), 6 deletions(-)
+Unless you pin it, there's no guarantee that serial will refer to the same
+key - or even the same type of key - next time you look for it.
 
-diff --git a/crypto/dh.c b/crypto/dh.c
-index 5659fe7f446d..8f79269db2b7 100644
---- a/crypto/dh.c
-+++ b/crypto/dh.c
-@@ -16,14 +16,16 @@
- #include <linux/mpi.h>
- 
- struct dh_ctx {
--	MPI p;
--	MPI g;
--	MPI xa;
-+	MPI p;	/* Value is guaranteed to be set. */
-+	MPI q;	/* Value is optional. */
-+	MPI g;	/* Value is guaranteed to be set. */
-+	MPI xa;	/* Value is guaranteed to be set. */
- };
- 
- static void dh_clear_ctx(struct dh_ctx *ctx)
- {
- 	mpi_free(ctx->p);
-+	mpi_free(ctx->q);
- 	mpi_free(ctx->g);
- 	mpi_free(ctx->xa);
- 	memset(ctx, 0, sizeof(*ctx));
-@@ -60,6 +62,12 @@ static int dh_set_params(struct dh_ctx *ctx, struct dh *params)
- 	if (!ctx->p)
- 		return -EINVAL;
- 
-+	if (params->q && params->q_size) {
-+		ctx->q = mpi_read_raw_data(params->q, params->q_size);
-+		if (!ctx->q)
-+			return -EINVAL;
-+	}
-+
- 	ctx->g = mpi_read_raw_data(params->g, params->g_size);
- 	if (!ctx->g)
- 		return -EINVAL;
-@@ -93,6 +101,55 @@ static int dh_set_secret(struct crypto_kpp *tfm, const void *buf,
- 	return -EINVAL;
- }
- 
-+/*
-+ * SP800-56A public key verification:
-+ *
-+ * * If Q is provided as part of the domain paramenters, a full validation
-+ *   according to SP800-56A section 5.6.2.3.1 is performed.
-+ *
-+ * * If Q is not provided, a partial validation according to SP800-56A section
-+ *   5.6.2.3.2 is performed.
-+ */
-+static int dh_is_pubkey_valid(struct dh_ctx *ctx, MPI y)
-+{
-+	if (unlikely(!ctx->p))
-+		return -EINVAL;
-+
-+	/*
-+	 * Step 1: Verify that 2 <= y <= p - 2.
-+	 *
-+	 * The upper limit check is actually y < p instead of y < p - 1
-+	 * as the mpi_sub_ui function is yet missing.
-+	 */
-+	if (mpi_cmp_ui(y, 1) < 1 || mpi_cmp(y, ctx->p) >= 0)
-+		return -EINVAL;
-+
-+	/* Step 2: Verify that 1 = y^q mod p */
-+	if (ctx->q) {
-+		MPI val = mpi_alloc(0);
-+		int ret;
-+
-+		if (!val)
-+			return -ENOMEM;
-+
-+		ret = mpi_powm(val, y, ctx->q, ctx->p);
-+
-+		if (ret) {
-+			mpi_free(val);
-+			return ret;
-+		}
-+
-+		ret = mpi_cmp_ui(val, 1);
-+
-+		mpi_free(val);
-+
-+		if (ret != 0)
-+			return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int dh_compute_value(struct kpp_request *req)
- {
- 	struct crypto_kpp *tfm = crypto_kpp_reqtfm(req);
-@@ -115,6 +172,9 @@ static int dh_compute_value(struct kpp_request *req)
- 			ret = -EINVAL;
- 			goto err_free_val;
- 		}
-+		ret = dh_is_pubkey_valid(ctx, base);
-+		if (ret)
-+			goto err_free_val;
- 	} else {
- 		base = ctx->g;
- 	}
-diff --git a/crypto/dh_helper.c b/crypto/dh_helper.c
-index 24fdb2ecaa85..a7de3d9ce5ac 100644
---- a/crypto/dh_helper.c
-+++ b/crypto/dh_helper.c
-@@ -30,7 +30,7 @@ static inline const u8 *dh_unpack_data(void *dst, const void *src, size_t size)
- 
- static inline unsigned int dh_data_size(const struct dh *p)
- {
--	return p->key_size + p->p_size + p->g_size;
-+	return p->key_size + p->p_size + p->q_size + p->g_size;
- }
- 
- unsigned int crypto_dh_key_len(const struct dh *p)
-@@ -56,9 +56,11 @@ int crypto_dh_encode_key(char *buf, unsigned int len, const struct dh *params)
- 	ptr = dh_pack_data(ptr, &secret, sizeof(secret));
- 	ptr = dh_pack_data(ptr, &params->key_size, sizeof(params->key_size));
- 	ptr = dh_pack_data(ptr, &params->p_size, sizeof(params->p_size));
-+	ptr = dh_pack_data(ptr, &params->q_size, sizeof(params->q_size));
- 	ptr = dh_pack_data(ptr, &params->g_size, sizeof(params->g_size));
- 	ptr = dh_pack_data(ptr, params->key, params->key_size);
- 	ptr = dh_pack_data(ptr, params->p, params->p_size);
-+	ptr = dh_pack_data(ptr, params->q, params->q_size);
- 	dh_pack_data(ptr, params->g, params->g_size);
- 
- 	return 0;
-@@ -79,6 +81,7 @@ int crypto_dh_decode_key(const char *buf, unsigned int len, struct dh *params)
- 
- 	ptr = dh_unpack_data(&params->key_size, ptr, sizeof(params->key_size));
- 	ptr = dh_unpack_data(&params->p_size, ptr, sizeof(params->p_size));
-+	ptr = dh_unpack_data(&params->q_size, ptr, sizeof(params->q_size));
- 	ptr = dh_unpack_data(&params->g_size, ptr, sizeof(params->g_size));
- 	if (secret.len != crypto_dh_key_len(params))
- 		return -EINVAL;
-@@ -88,7 +91,7 @@ int crypto_dh_decode_key(const char *buf, unsigned int len, struct dh *params)
- 	 * some drivers assume otherwise.
- 	 */
- 	if (params->key_size > params->p_size ||
--	    params->g_size > params->p_size)
-+	    params->g_size > params->p_size || params->q_size > params->p_size)
- 		return -EINVAL;
- 
- 	/* Don't allocate memory. Set pointers to data within
-@@ -96,7 +99,9 @@ int crypto_dh_decode_key(const char *buf, unsigned int len, struct dh *params)
- 	 */
- 	params->key = (void *)ptr;
- 	params->p = (void *)(ptr + params->key_size);
--	params->g = (void *)(ptr + params->key_size + params->p_size);
-+	params->q = (void *)(ptr + params->key_size + params->p_size);
-+	params->g = (void *)(ptr + params->key_size + params->p_size +
-+			     params->q_size);
- 
- 	/*
- 	 * Don't permit 'p' to be 0.  It's not a prime number, and it's subject
-@@ -106,6 +111,10 @@ int crypto_dh_decode_key(const char *buf, unsigned int len, struct dh *params)
- 	if (memchr_inv(params->p, 0, params->p_size) = NULL)
- 		return -EINVAL;
- 
-+	/* It is permissible to not provide Q. */
-+	if (params->q_size = 0)
-+		params->q = NULL;
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(crypto_dh_decode_key);
-diff --git a/include/crypto/dh.h b/include/crypto/dh.h
-index 71e1bb24d79f..7e0dad94cb2b 100644
---- a/include/crypto/dh.h
-+++ b/include/crypto/dh.h
-@@ -29,17 +29,21 @@
-  *
-  * @key:	Private DH key
-  * @p:		Diffie-Hellman parameter P
-+ * @q:		Diffie-Hellman parameter Q
-  * @g:		Diffie-Hellman generator G
-  * @key_size:	Size of the private DH key
-  * @p_size:	Size of DH parameter P
-+ * @q_size:	Size of DH parameter Q
-  * @g_size:	Size of DH generator G
-  */
- struct dh {
- 	void *key;
- 	void *p;
-+	void *q;
- 	void *g;
- 	unsigned int key_size;
- 	unsigned int p_size;
-+	unsigned int q_size;
- 	unsigned int g_size;
- };
- 
--- 
-2.17.1
+The kernel should not be using key IDs outside of code keyrings code, except
+for logging purposes.
 
+> +static int mktme_recover_key(void)
+> +{
+> +	int i = mktme_max_keyids;
+> +	struct key *key;
+> +
+> +	do {
+> +		if (!mktme_map->id[i].serial)
+> +			continue;
+> +
+> +		key = key_lookup(mktme_map->id[i].serial);
+> +		if (IS_ERR(key))
+> +			goto recover;
 
+This gets a ref on the key from key_lookup() and then simply drops it.  Did
+you also want to check the key type?
 
+> +
+> +		if (key_validate(key) < 0) {
+> +			/*
+> +			 * Here the key ptr is good, but the
+> +			 * key may * be marked for removal.
+> +			 * Leave this here to watch for.
+> +			 */
+> +			pr_info("%s key validate fails\n", __func__);
+> +			goto recover;
+> +		}
+> +	} while (i--);
+> +
+> +	return 0;
+> +recover:
+> +	mktme_unregister_key(i);
+> +	return i;
+> +}
 
+What do you name your keys?  Can they be named for the slot they're in?
+
+> +/* Parse the options from the datablob and fill in struct mktme_key_program.
+> + * After parsing, call mktme_check_options() for sanity checking.
+> + *
+> + * Success returns 0, otherwise -EINVAL.
+> + */
+> +static int mktme_get_options(char *datablob, struct mktme_key_program *kprog)
+> +{
+> +	enum mktme_alg alg = MKTME_ALG__LAST;
+> +	substring_t args[MAX_OPT_ARGS];
+> +	unsigned long token_mask = 0;
+> +	int len, ret, token;
+> +	char *p = datablob;
+> +
+> +	while ((p = strsep(&datablob, " \t"))) {
+> +		if (*p = '\0' || *p = ' ' || *p = '\t')
+> +			continue;
+> +		token = match_token(p, mktme_tokens, args);
+> +		if (test_and_set_bit(token, &token_mask))
+> +			return -EINVAL;
+> +
+> +		len = strlen(args[0].from) / 2;
+> +		if (len > MKTME_MAX_OPTION_SIZE)
+> +			return -EINVAL;
+> +
+> +		switch (token) {
+> +		case opt_userkey:
+> +			ret = hex2bin(kprog->key_field_1, args[0].from, len);
+> +			if (ret < 0)
+> +				return -EINVAL;
+> +			kprog->keyid_ctrl |= MKTME_KEYID_SET_KEY_DIRECT;
+> +			break;
+
+You should perhaps use request_key() or lookup_user_key() here maybe?
+
+> +
+> +		case opt_tweak:
+> +			ret = hex2bin(kprog->key_field_2, args[0].from, len);
+> +			if (ret < 0)
+> +				return -EINVAL;
+> +			break;
+> +
+> +		case opt_entropy:
+> +			ret = hex2bin(kprog->key_field_1, args[0].from, len);
+> +			if (ret < 0)
+> +				return -EINVAL;
+> +			break;
+> +
+> +		case opt_algorithm:
+> +			alg = match_string(mktme_alg_name, MKTME_ALG__LAST,
+> +					   args[0].from);
+> +			switch (alg) {
+> +			case MKTME_ALG_AES_XTS_128:
+> +				kprog->keyid_ctrl |= MKTME_AES_XTS_128;
+> +				break;
+> +
+> +			case MKTME_ALG_NO_ENCRYPT:
+> +				kprog->keyid_ctrl |= MKTME_KEYID_NO_ENCRYPT;
+> +				break;
+> +
+> +			default:
+> +				return -EINVAL;
+> +			}
+> +			break;
+> +
+> +		default:
+> +			return -EINVAL;
+> +		}
+> +	}
+> +	dump_kprog(kprog);
+> +	return mktme_check_options(kprog, token_mask);
+> +}
+> +
+> +/* Key Service Command: Creates a software key and programs hardware */
+> +
+> +int mktme_instantiate(struct key *key, struct key_preparsed_payload *prep)
+
+Please use preparsing if you can.  You shouldn't be returning ENOMEM from
+->instantiate() if at all possible.
+
+> +{
+> +	struct mktme_key_program *kprog = NULL;
+> +	size_t datalen = prep->datalen;
+> +	char *datablob;
+> +	int ret = 0;
+> +
+> +	if (datalen <= 0 || datalen > 1024 || !prep->data)
+> +		return -EINVAL;
+> +
+> +	datablob = kmemdup(prep->data, datalen + 1, GFP_KERNEL);
+> +	if (!datablob)
+> +		return -ENOMEM;
+> +
+> +	datablob[datalen] = '\0';
+> +	kprog = kzalloc(sizeof(*kprog), GFP_KERNEL);
+> +	if (!kprog) {
+> +		kzfree(datablob);
+> +		return -ENOMEM;
+> +	}
+> +	ret = mktme_get_options(datablob, kprog);
+> +	if (ret < 0)
+> +		goto out;
+> +
+> +	mutex_lock(&mktme_map->lock);
+> +	ret = mktme_register_key(key->serial, kprog);
+> +	mutex_unlock(&mktme_map->lock);
+> +out:
+> +	kzfree(datablob);
+> +	kzfree(kprog);
+> +	dump_keys();
+> +	return ret;
+> +}
+> +
+> +/* Key Service Command: Clears the keys software and hardware */
+> +
+> +void mktme_revoke(struct key *key)
+> +{
+> +	int keyid;
+> +
+> +	keyid = mktme_get_keyid(key->serial);
+> +	if (keyid < 0)
+> +		return;
+> +
+> +	mutex_lock(&mktme_map->lock);
+> +	mktme_unregister_key(keyid);
+> +	mutex_unlock(&mktme_map->lock);
+> +	dump_keys();
+> +}
+> +
+> +struct key_type key_type_mktme = {
+> +	.name = "mktme",
+> +	.instantiate = mktme_instantiate,
+> +	.revoke = mktme_revoke,
+> +	.describe = user_describe,
+> +};
+> +
+> +/*
+> + * Get the maximum keyids reported from BIOS.
+> + * Allocate the mktme_map structure and register mktme key type.
+> + */
+> +static int __init init_mktme(void)
+> +{
+> +	int ret;
+> +
+> +	/* TODO: get real max hardware keyids */
+> +	/* mktme_max_keyids = nr_keyids; */
+> +
+> +	mktme_max_keyids = 100;
+> +	mktme_mapped_keyids = 0;
+> +	mktme_map = kzalloc((sizeof(mktme_map->id[0]) * mktme_max_keyids)
+> +			    + (sizeof(mktme_map->lock)), GFP_KERNEL);
+> +	if (!mktme_map)
+> +		return -ENOMEM;
+> +
+> +	mutex_init(&mktme_map->lock);
+> +	ret = register_key_type(&key_type_mktme);
+> +	if (ret < 0)
+> +		kfree(mktme_map);
+> +
+> +	return ret;
+> +}
+> +
+> +static void __exit cleanup_mktme(void)
+> +{
+> +	unregister_key_type(&key_type_mktme);
+> +	kfree(mktme_map);
+> +}
+> +
+> +late_initcall(init_mktme);
