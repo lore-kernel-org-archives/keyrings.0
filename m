@@ -1,68 +1,139 @@
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Date: Tue, 26 Jun 2018 19:30:39 +0000
-Subject: [PATCH 1/2] tpm: Implement public tpm_put_chip() to release reference to chip
-Message-Id: <20180626193040.2509798-2-stefanb@linux.vnet.ibm.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Tue, 12 Jun 2018 15:55:28 +0000
+Subject: [RFCv2 07/13] KEYS: trusted: Expose common functionality
+Message-Id: <20180612155534.4873-8-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180626193040.2509798-1-stefanb@linux.vnet.ibm.com>
-In-Reply-To: <20180626193040.2509798-1-stefanb@linux.vnet.ibm.com>
-To: linux-integrity@vger.kernel.org, jarkko.sakkinen@linux.intel.com, zohar@linux.vnet.ibm.com, jejb@linux.vnet.ibm.com
-Cc: jgg@ziepe.ca, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, keyrings@vger.kernel.org, Stefan Berger <stefanb@linux.vnet.ibm.com>, Stefan Berger <stefanb@liux.vnet.ibm.com>
+To: keyrings@vger.kernel.org
 
-Some subsystems that got a hold of a TPM chip through tpm_default_chip()
-need a way to release the reference to the TPM chip when they shut down.
-The tpm_put_chip() function enables this.
+This patch exposes some common functionality needed to send TPM
+commands.  The current approach is a complete hack and needs to be
+addressed properly.  This commit just show-cases what functionality
+would need to be moved to a shared location or exposed in some other
+manner.
 
-Signed-off-by: Stefan Berger <stefanb@liux.vnet.ibm.com>
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/char/tpm/tpm-chip.c | 10 ++++++++++
- include/linux/tpm.h         |  4 ++++
- 2 files changed, 14 insertions(+)
+ crypto/asymmetric_keys/Kconfig |  1 +
+ security/keys/trusted.c        | 12 ++++++++----
+ security/keys/trusted.h        | 14 +++++++++++++-
+ 3 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
-index 46caadca916a..c744289d82e0 100644
---- a/drivers/char/tpm/tpm-chip.c
-+++ b/drivers/char/tpm/tpm-chip.c
-@@ -80,6 +80,16 @@ void tpm_put_ops(struct tpm_chip *chip)
- }
- EXPORT_SYMBOL_GPL(tpm_put_ops);
- 
-+/**
-+ * tpm_put_chip() - Releae a ref to the tpm_chip
-+ * @chip: Chip to put
-+ */
-+void tpm_put_chip(struct tpm_chip *chip)
-+{
-+	put_device(&chip->dev);
-+}
-+EXPORT_SYMBOL_GPL(tpm_put_chip);
-+
- /**
-  * tpm_default_chip() - find a TPM chip and get a reference to it
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 88353a9ebc9b..be70ca6c85d3 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -24,6 +24,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ config ASYMMETRIC_TPM_KEY_SUBTYPE
+ 	tristate "Asymmetric TPM backed private key subtype"
+ 	depends on TCG_TPM
++	depends on TRUSTED_KEYS
+ 	select CRYPTO_HMAC
+ 	select CRYPTO_SHA1
+ 	select CRYPTO_HASH_INFO
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 423776682025..a93cfc1b083b 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -121,7 +121,7 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
+ /*
+  * calculate authorization info fields to send to TPM
   */
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index e0e51c49a0e6..889dafe739e1 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -62,6 +62,7 @@ extern int tpm_unseal_trusted(struct tpm_chip *chip,
- 			      struct trusted_key_payload *payload,
- 			      struct trusted_key_options *options);
- extern struct tpm_chip *tpm_default_chip(void);
-+extern void tpm_put_chip(struct tpm_chip *chip);
- #else
- static inline int tpm_is_tpm2(struct tpm_chip *chip)
+-static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 			unsigned int keylen, unsigned char *h1,
+ 			unsigned char *h2, unsigned char h3, ...)
  {
-@@ -101,5 +102,8 @@ static inline struct tpm_chip *tpm_default_chip(void)
- {
- 	return NULL;
+@@ -168,11 +168,12 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 	kzfree(sdesc);
+ 	return ret;
  }
-+static inline void tpm_put_chip(struct tpm_chip *chip)
-+{
-+}
- #endif
- #endif
++EXPORT_SYMBOL_GPL(TSS_authhmac);
+ 
+ /*
+  * verify the AUTH1_COMMAND (Seal) result from TPM
+  */
+-static int TSS_checkhmac1(unsigned char *buffer,
++int TSS_checkhmac1(unsigned char *buffer,
+ 			  const uint32_t command,
+ 			  const unsigned char *ononce,
+ 			  const unsigned char *key,
+@@ -249,6 +250,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
+ 	kzfree(sdesc);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(TSS_checkhmac1);
+ 
+ /*
+  * verify the AUTH2_COMMAND (unseal) result from TPM
+@@ -355,7 +357,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
+  * For key specific tpm requests, we will generate and send our
+  * own TPM command packets using the drivers send function.
+  */
+-static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
++int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ {
+ 	int rc;
+ 
+@@ -367,6 +369,7 @@ static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ 		rc = -EPERM;
+ 	return rc;
+ }
++EXPORT_SYMBOL_GPL(trusted_tpm_send);
+ 
+ /*
+  * Lock a trusted key, by extending a selected PCR.
+@@ -425,7 +428,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ /*
+  * Create an object independent authorisation protocol (oiap) session
+  */
+-static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ {
+ 	int ret;
+ 
+@@ -442,6 +445,7 @@ static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ 	       TPM_NONCE_SIZE);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(oiap);
+ 
+ struct tpm_digests {
+ 	unsigned char encauth[SHA1_DIGEST_SIZE];
+diff --git a/security/keys/trusted.h b/security/keys/trusted.h
+index 8d5fe9eafb22..adbcb6817826 100644
+--- a/security/keys/trusted.h
++++ b/security/keys/trusted.h
+@@ -3,7 +3,7 @@
+ #define __TRUSTED_KEY_H
+ 
+ /* implementation specific TPM constants */
+-#define MAX_BUF_SIZE			512
++#define MAX_BUF_SIZE			1024
+ #define TPM_GETRANDOM_SIZE		14
+ #define TPM_OSAP_SIZE			36
+ #define TPM_OIAP_SIZE			10
+@@ -36,6 +36,18 @@ enum {
+ 	SRK_keytype = 4
+ };
+ 
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++			unsigned int keylen, unsigned char *h1,
++			unsigned char *h2, unsigned char h3, ...);
++int TSS_checkhmac1(unsigned char *buffer,
++			  const uint32_t command,
++			  const unsigned char *ononce,
++			  const unsigned char *key,
++			  unsigned int keylen, ...);
++
++int trusted_tpm_send(unsigned char *cmd, size_t buflen);
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
++
+ #define TPM_DEBUG 0
+ 
+ #if TPM_DEBUG
 -- 
-2.17.1
+2.16.1
 
