@@ -1,119 +1,109 @@
-From: Dave Young <dyoung@redhat.com>
-Date: Fri, 08 Jun 2018 08:53:05 +0000
-Subject: Re: [PATCH] certs: always use secondary keyring first if possible
-Message-Id: <20180608085305.GA8594@dhcp-128-65.nay.redhat.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Tue, 12 Jun 2018 15:55:21 +0000
+Subject: [RFCv2 00/13] KEYS: TPM 1.2 asymmetric key type
+Message-Id: <20180612155534.4873-1-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20171118044711.GA7352@dhcp-128-65.nay.redhat.com>
- <20171214102513.GA2371@dhcp-128-65.nay.redhat.com>
- <20180608072848.GA7773@dhcp-128-65.nay.redhat.com>
-In-Reply-To: <20180608072848.GA7773@dhcp-128-65.nay.redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, kexec@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>, mathew.j.martineau@linux.intel.com, Laura Abbott <labbott@redhat.com>, jwboyer@redhat.com
+To: keyrings@vger.kernel.org
 
-On 06/08/18 at 03:28pm, Dave Young wrote:
-> On 12/14/17 at 06:25pm, Dave Young wrote:
-> > On 11/18/17 at 12:47pm, Dave Young wrote:
-> > > Commit d3bfe84129f6 introduced secondary_trusted_keys keyring, current
-> > > users of verify_pkcs7_signature are below:
-> > > net/wireless/reg.c : uses its own trusted_keys
-> > > kernel/module_signing.c : pass NULL trusted_keys 
-> > > crypto/asymmetric_keys/verify_pefile.c : pass NULL trusted_keys
-> > > 
-> > > For both module and pefile verification, there is no reason to use builtin
-> > > keys only. Actually in Fedora kernel module signing code passes 1UL, but
-> > > kexec code does not pass 1UL for pefile verification thus we have below bug
-> > > https://bugzilla.redhat.com/show_bug.cgi?id70995
-> > > 
-> > > Drop the hard code 1UL checking so that pefile verification can use
-> > > secondary keyring as well.
-> > > 
-> > > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > > ---
-> > >  certs/system_keyring.c |    2 --
-> > >  1 file changed, 2 deletions(-)
-> > > 
-> > > --- linux-x86.orig/certs/system_keyring.c
-> > > +++ linux-x86/certs/system_keyring.c
-> > > @@ -229,8 +229,6 @@ int verify_pkcs7_signature(const void *d
-> > >  		goto error;
-> > >  
-> > >  	if (!trusted_keys) {
-> > > -		trusted_keys = builtin_trusted_keys;
-> > > -	} else if (trusted_keys = (void *)1UL) {
-> > >  #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
-> > >  		trusted_keys = secondary_trusted_keys;
-> > >  #else
-> > 
-> > Another ping.
-> > 
-> > If the (-1UL) is really needed, below file need update to use it
-> > But I think it is ugly..
-> > crypto/asymmetric_keys/verify_pefile.c
-> 
-> Ping again.  Can anyone response to this issue?
-> 
-> Let me describe more details about the problem:
-> 
-> In Fedora kernel there is a patch below which is not upstreamed:
-> https://src.fedoraproject.org/rpms/kernel/blob/master/f/Fix-for-module-sig-verification.patch
-> 
-> It has below changes:
-> 
-> ---
-> diff --git a/kernel/module_signing.c b/kernel/module_signing.c
-> index 937c844..d3d6f95 100644
-> --- a/kernel/module_signing.c
-> +++ b/kernel/module_signing.c
-> @@ -81,6 +81,6 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
->  	}
-> 
->  	return verify_pkcs7_signature(mod, modlen, mod + modlen, sig_len,
-> -				      NULL, VERIFYING_MODULE_SIGNATURE,
-> +				      (void *)1UL, VERIFYING_MODULE_SIGNATURE,
->  				      NULL, NULL);
->  }
-> ---
-> 
-> Above change is needed because the verify_pkcs7_signature is doing
-> below:
-> ---
->         if (!trusted_keys) {
->                 trusted_keys = builtin_trusted_keys;
->         } else if (trusted_keys = (void *)1UL) {
-> #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
->                 trusted_keys = secondary_trusted_keys;
-> #else
->                 trusted_keys = builtin_trusted_keys;
-> #endif
->         }
-> ---
-> 
-> The trusted_keys is an argument passed to verify_pkcs7_signature
-> function. We can see that users of this function must pass "-1UL"
-> as trusted_keys to use secondary keyring.  This "-1UL" is not
+Here's an RFC to provide access to the TPM-wrapped keys via keyctl
+asymmetric key interface.  This RFC is essentially feature complete,
+providing encrypt, decrypt, verify and sign operations.  The only
+missing bits are a way to provide SRK authorization data if it is not
+well known.  This requires changes to the underlying keyctl interface
+and is out of scope for this RFC.
 
-I meant to say "1UL" instead of "-1UL"..
+These patches depend on asymmetric key patches from David Howells, which
+can be found here:
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-asym-keyctl
 
-> documented and it looks a hardcode api.   Besides of the module
-> signing code, actually as I mentioned in the patch log kexec/kdump
-> also need passing "-1UL" to use the secondary keyring.
-> 
-> But why do we need that hack?  If I understand it correctly
-> if use secondary then builtin can still be used, see commit log
-> of d3bfe84129f65e0af2450743ebdab33d161d01c9:
->     If the secondary keyring is enabled, a link is created from that to
->     .builtin_trusted_keys so that the the latter will automatically be searched
->     too if the secondary keyring is searched.
-> 
-> So why not directly use secondary in case trusted_keys = NULL?
-> 
-> I'm not familar with the certs/keyring code, if I'm wrong please
-> correct me.
-> 
-> --
-> Thanks
-> Dave
-> 
+And the needed keyutils patches:
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/log/?h=pkey
+
+A simple parser for DER-encoded TPM keys is added so that userspace
+applications can load the key directly into the kernel.  The outer PEM
+formatting (if any) must be stripped out by userspace.  For more details
+on the format, please see patch 3/10.
+
+Since the loaded key blob contains both the public key portion and the
+(encrypted) private key portion of the key, it is possible to perform
+operations with both the private and public portion of the key.
+
+For operations where the public key is used, all operations are done in
+software using the existing kernel crypto APIs.  For operations that
+utilize the TPM protected private key, tpm_loadkey2, tpm_unbind and
+tpm_sign operations are used.
+
+Example usage:
+	# Generate Private Key
+	openssl genrsa -out /tmp/privkey.pem 2048
+	# Wrap the key with the TPM
+	create_tpm_key -s 2048 -w /tmp/privkey.pem /tmp/privkey.tpm
+	# Strip PEM
+	openssl asn1parse -inform pem -in /tmp/privkey.tpm -noout -out \
+	    /tmp/privkey.der
+	# Load the TPM key into the kernel
+	tpm_serial=`cat /tmp/privkey.der | keyctl padd asymmetric tpm @u`
+	echo -n abcdefghijklmnopqrst >/tmp/data
+	keyctl pkey_encrypt $tpm_serial 0 /tmp/data enc=pkcs1 > /tmp/enc
+	keyctl pkey_decrypt $tpm_serial 0 /tmp/enc enc=pkcs1 > /tmp/dec
+	cmp /tmp/data /tmp/dec
+
+	# Sign with the TPM key
+	keyctl pkey_sign $tpm_serial 0 /tmp/data enc=pkcs1 \
+		hash=sha1 > /tmp/sig
+	# Sign with OpenSSL
+	openssl dgst -sha1 -sign /tmp/privkey.pem -out /tmp/sig.ref /tmp/data
+	cmp /tmp/sig.ref /tmp/sig
+
+	# SHA1-hash the data
+	openssl dgst -sha1 -binary -out /tmp/data.sha1 /tmp/data
+	keyctl pkey_verify $tpm_serial 0 /tmp/data.sha1 /tmp/sig \
+		enc=pkcs1 hash=sha1
+
+ChangeLog
+
+v2
+
+- Cleanup some pr_infos
+- Cleanup some error paths to be more pedantic
+- Added verify operation
+- Added TPM_Sign operation
+- Added helpers to perform hashing of input
+- Added sign operation
+
+Denis Kenzior (13):
+  crypto: rsa-pkcs1pad: Allow hash to be optional
+  KEYS: asym_tpm: add skeleton for asym_tpm
+  KEYS: Add parser for TPM-based keys
+  KEYS: asym_tpm: extract key size & public key
+  KEYS: asym_tpm: Implement pkey_query
+  KEYS: asym_tpm: Implement encryption operation
+  KEYS: trusted: Expose common functionality
+  KEYS: asym_tpm: Add loadkey2 and flushspecific
+  KEYS: asym_tpm: Implement tpm_unbind
+  KEYS: asym_tpm: Implement the decrypt operation
+  KEYS: asym_tpm: Implement signature verification
+  KEYS: asym_tpm: Implement tpm_sign
+  KEYS: asym_tpm: Add support for the sign operation
+
+ crypto/asymmetric_keys/Kconfig      |   21 +
+ crypto/asymmetric_keys/Makefile     |   13 +
+ crypto/asymmetric_keys/asym_tpm.c   | 1019 +++++++++++++++++++++++++++++++++++
+ crypto/asymmetric_keys/tpm.asn1     |    5 +
+ crypto/asymmetric_keys/tpm_parser.c |  104 ++++
+ crypto/rsa-pkcs1pad.c               |   59 +-
+ include/crypto/asym_tpm_subtype.h   |   19 +
+ security/keys/trusted.c             |   12 +-
+ security/keys/trusted.h             |   14 +-
+ 9 files changed, 1243 insertions(+), 23 deletions(-)
+ create mode 100644 crypto/asymmetric_keys/asym_tpm.c
+ create mode 100644 crypto/asymmetric_keys/tpm.asn1
+ create mode 100644 crypto/asymmetric_keys/tpm_parser.c
+ create mode 100644 include/crypto/asym_tpm_subtype.h
+
+-- 
+2.16.1
+
