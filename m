@@ -1,58 +1,131 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 26 Jun 2018 15:59:33 +0000
-Subject: [PATCH 1/3] X.509: unpack RSA signatureValue field from BIT STRING
-Message-Id: <153002877383.31726.1992447630485011119.stgit@warthog.procyon.org.uk>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Tue, 12 Jun 2018 15:55:27 +0000
+Subject: [RFCv2 06/13] KEYS: asym_tpm: Implement encryption operation
+Message-Id: <20180612155534.4873-7-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153002876741.31726.8580751276453556884.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153002876741.31726.8580751276453556884.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
+This patch impelements the pkey_encrypt operation.  The public key
+portion extracted from the TPM key blob is used.  The operation is
+performed entirely in software using the crypto API.
 
-The signatureValue field of a X.509 certificate is encoded as a BIT STRING.
-For RSA signatures this BIT STRING is of so-called primitive subtype, which
-contains a u8 prefix indicating a count of unused bits in the encoding.
-
-We have to strip this prefix from signature data, just as we already do for
-key data in x509_extract_key_data() function.
-
-This wasn't noticed earlier because this prefix byte is zero for RSA key
-sizes divisible by 8. Since BIT STRING is a big-endian encoding adding zero
-prefixes has no bearing on its value.
-
-The signature length, however was incorrect, which is a problem for RSA
-implementations that need it to be exactly correct (like AMD CCP).
-
-Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
-Fixes: c26fd69fa009 ("X.509: Add a crypto key parser for binary (DER) X.509 certificates")
-Cc: stable@vger.kernel.org
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
+ crypto/asymmetric_keys/asym_tpm.c | 84 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 84 insertions(+)
 
- crypto/asymmetric_keys/x509_cert_parser.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 7d81e6bb461a..b6cabac4b62b 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -249,6 +249,15 @@ int x509_note_signature(void *context, size_t hdrlen,
- 		return -EINVAL;
- 	}
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 3eed931a6362..b41ff0a07bab 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -172,6 +172,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	info->max_enc_size = len;
+ 	info->max_dec_size = tk->key_len / 8;
  
-+	if (strcmp(ctx->cert->sig->pkey_algo, "rsa") = 0) {
-+		/* Discard the BIT STRING metadata */
-+		if (vlen < 1 || *(const u8 *)value != 0)
-+			return -EBADMSG;
++	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
 +
-+		value++;
-+		vlen--;
+ 	ret = 0;
+ error_free_tfm:
+ 	crypto_free_akcipher(tfm);
+@@ -179,6 +181,87 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	return ret;
+ }
+ 
++/*
++ * Encryption operation is performed with the public key.  Hence it is done
++ * in software
++ */
++static int tpm_key_encrypt(struct tpm_key *tk,
++			   struct kernel_pkey_params *params,
++			   const void *in, void *out)
++{
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	struct crypto_akcipher *tfm;
++	struct akcipher_request *req;
++	struct crypto_wait cwait;
++	struct scatterlist in_sg, out_sg;
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
++	int ret;
++
++	pr_devel("=>%s()\n", __func__);
++
++	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
++
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
++
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	req = akcipher_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
++
++	sg_init_one(&in_sg, in, params->in_len);
++	sg_init_one(&out_sg, out, params->out_len);
++	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
++				   params->out_len);
++	crypto_init_wait(&cwait);
++	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				      CRYPTO_TFM_REQ_MAY_SLEEP,
++				      crypto_req_done, &cwait);
++
++	ret = crypto_akcipher_encrypt(req);
++	ret = crypto_wait_req(ret, &cwait);
++
++	if (ret = 0)
++		ret = req->dst_len;
++
++	akcipher_request_free(req);
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
++}
++
++/*
++ * Do encryption, decryption and signing ops.
++ */
++static int tpm_key_eds_op(struct kernel_pkey_params *params,
++			  const void *in, void *out)
++{
++	struct tpm_key *tk = params->key->payload.data[asym_crypto];
++	int ret = -EOPNOTSUPP;
++
++	/* Perform the encryption calculation. */
++	switch (params->op) {
++	case kernel_pkey_encrypt:
++		ret = tpm_key_encrypt(tk, params, in, out);
++		break;
++	default:
++		BUG();
 +	}
 +
- 	ctx->cert->raw_sig = value;
- 	ctx->cert->raw_sig_size = vlen;
- 	return 0;
++	return ret;
++}
++
+ /*
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -338,6 +421,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.describe		= asym_tpm_describe,
+ 	.destroy		= asym_tpm_destroy,
+ 	.query			= tpm_key_query,
++	.eds_op			= tpm_key_eds_op,
+ };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
+ 
+-- 
+2.16.1
 
