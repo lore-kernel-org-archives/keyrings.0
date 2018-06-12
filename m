@@ -1,127 +1,165 @@
 From: Denis Kenzior <denkenz@gmail.com>
-Date: Tue, 12 Jun 2018 15:55:33 +0000
-Subject: [RFCv2 12/13] KEYS: asym_tpm: Implement tpm_sign
-Message-Id: <20180612155534.4873-13-denkenz@gmail.com>
+Date: Tue, 12 Jun 2018 15:55:25 +0000
+Subject: [RFCv2 04/13] KEYS: asym_tpm: extract key size & public key
+Message-Id: <20180612155534.4873-5-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
+The parsed BER/DER blob obtained from user space contains a TPM_Key
+structure.  This structure has some information about the key as well as
+the public key portion.
+
+This patch extracts this information for future use.
+
 Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 88 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 88 insertions(+)
+ crypto/asymmetric_keys/asym_tpm.c | 114 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
 
 diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 571fb98e1af9..8789df029313 100644
+index f98335068a3b..4f070706628c 100644
 --- a/crypto/asymmetric_keys/asym_tpm.c
 +++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -20,9 +20,11 @@
- #define TPM_ORD_FLUSHSPECIFIC	186
- #define TPM_ORD_LOADKEY2	65
- #define TPM_ORD_UNBIND		30
-+#define TPM_ORD_SIGN		60
- #define TPM_LOADKEY2_SIZE		59
- #define TPM_FLUSHSPECIFIC_SIZE		18
- #define TPM_UNBIND_SIZE			63
-+#define TPM_SIGN_SIZE			63
+@@ -7,6 +7,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/scatterlist.h>
+ #include <linux/tpm.h>
++#include <asm/unaligned.h>
+ #include <keys/asymmetric-subtype.h>
+ #include <crypto/asym_tpm_subtype.h>
  
- #define TPM_RT_KEY                      0x00000001
- 
-@@ -189,6 +191,92 @@ static int tpm_unbind(struct tpm_buf *tb,
- 	return datalen;
+@@ -41,6 +42,112 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
+ 	kfree(tk);
  }
  
 +/*
-+ * Sign a blob provided by userspace (that has had the hash function applied)
-+ * using a specific key handle.  The handle is assumed to have been previously
-+ * loaded by e.g. LoadKey2.
++ * Parse enough information out of TPM_KEY structure:
++ * TPM_STRUCT_VER -> 4 bytes
++ * TPM_KEY_USAGE -> 2 bytes
++ * TPM_KEY_FLAGS -> 4 bytes
++ * TPM_AUTH_DATA_USAGE -> 1 byte
++ * TPM_KEY_PARMS -> variable
++ * UINT32 PCRInfoSize -> 4 bytes
++ * BYTE* -> PCRInfoSize bytes
++ * TPM_STORE_PUBKEY
++ * UINT32 encDataSize;
++ * BYTE* -> encDataSize;
 + *
-+ * Note that the key signature scheme of the used key should be set to
-+ * TPM_SS_RSASSAPKCS1v15_DER.  This allows the hashed input to be of any size
-+ * up to key_length_in_bytes - 11 and not be limited to size 20 like the
-+ * TPM_SS_RSASSAPKCS1v15_SHA1 signature scheme.
++ * TPM_KEY_PARMS:
++ * TPM_ALGORITHM_ID -> 4 bytes
++ * TPM_ENC_SCHEME -> 2 bytes
++ * TPM_SIG_SCHEME -> 2 bytes
++ * UINT32 parmSize -> 4 bytes
++ * BYTE* -> variable
 + */
-+static int tpm_sign(struct tpm_buf *tb,
-+		    uint32_t keyhandle, unsigned char *keyauth,
-+		    const unsigned char *blob, uint32_t bloblen,
-+		    void *out, uint32_t outlen)
++static int extract_key_parameters(struct tpm_key *tk)
 +{
-+	unsigned char nonceodd[TPM_NONCE_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+	unsigned char authdata[SHA1_DIGEST_SIZE];
-+	uint32_t authhandle = 0;
-+	unsigned char cont = 0;
-+	uint32_t ordinal;
-+	uint32_t datalen;
-+	int ret;
++	const void *cur = tk->blob;
++	uint32_t len = tk->blob_len;
++	const void *pub_key;
++	uint32_t sz;
++	uint32_t key_len;
 +
-+	ordinal = htonl(TPM_ORD_SIGN);
-+	datalen = htonl(bloblen);
++	if (len < 11)
++		return -EBADMSG;
 +
-+	/* session for loading the key */
-+	ret = oiap(tb, &authhandle, enonce);
-+	if (ret < 0) {
-+		pr_info("oiap failed (%d)\n", ret);
-+		return ret;
++	/* Ensure this is a legacy key */
++	if (get_unaligned_be16(cur + 4) != 0x0015)
++		return -EBADMSG;
++
++	/* Skip to TPM_KEY_PARMS */
++	cur += 11;
++	len -= 11;
++
++	if (len < 12)
++		return -EBADMSG;
++
++	/* Make sure this is an RSA key */
++	if (get_unaligned_be32(cur) != 0x00000001)
++		return -EBADMSG;
++
++	/* Make sure this is TPM_ES_RSAESPKCSv15 encoding scheme */
++	if (get_unaligned_be16(cur + 4) != 0x0002)
++		return -EBADMSG;
++
++	/* Make sure this is TPM_SS_RSASSAPKCS1v15_DER signature scheme */
++	if (get_unaligned_be16(cur + 6) != 0x0003)
++		return -EBADMSG;
++
++	sz = get_unaligned_be32(cur + 8);
++	if (len < sz + 12)
++		return -EBADMSG;
++
++	/* Move to TPM_RSA_KEY_PARMS */
++	len -= 12;
++	cur += 12;
++
++	/* Grab the RSA key length */
++	key_len = get_unaligned_be32(cur);
++
++	switch (key_len) {
++	case 512:
++	case 1024:
++	case 1536:
++	case 2048:
++		break;
++	default:
++		return -EINVAL;
 +	}
 +
-+	/* generate odd nonce */
-+	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0) {
-+		pr_info("tpm_get_random failed (%d)\n", ret);
-+		return ret;
-+	}
++	/* Move just past TPM_KEY_PARMS */
++	cur += sz;
++	len -= sz;
 +
-+	/* calculate authorization HMAC value */
-+	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-+			   nonceodd, cont, sizeof(uint32_t), &ordinal,
-+			   sizeof(uint32_t), &datalen,
-+			   bloblen, blob, 0, 0);
-+	if (ret < 0)
-+		return ret;
++	if (len < 4)
++		return -EBADMSG;
 +
-+	/* build the request buffer */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
-+	store32(tb, TPM_SIGN_SIZE + bloblen);
-+	store32(tb, TPM_ORD_SIGN);
-+	store32(tb, keyhandle);
-+	store32(tb, bloblen);
-+	storebytes(tb, blob, bloblen);
-+	store32(tb, authhandle);
-+	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
-+	store8(tb, cont);
-+	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
++	sz = get_unaligned_be32(cur);
++	if (len < 4 + sz)
++		return -EBADMSG;
 +
-+	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
-+	if (ret < 0) {
-+		pr_info("authhmac failed (%d)\n", ret);
-+		return ret;
-+	}
++	/* Move to TPM_STORE_PUBKEY */
++	cur += 4 + sz;
++	len -= 4 + sz;
 +
-+	datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
-+	pr_info("datalen: %u, outlen: %u\n", datalen, outlen);
++	/* Grab the size of the public key, it should jive with the key size */
++	sz = get_unaligned_be32(cur);
++	if (sz > 256)
++		return -EINVAL;
 +
-+	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd,
-+			     keyauth, SHA1_DIGEST_SIZE,
-+			     sizeof(uint32_t), TPM_DATA_OFFSET,
-+			     datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
-+			     0, 0);
-+	if (ret < 0) {
-+		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
-+		return ret;
-+	}
++	pub_key = cur + 4;
 +
-+	memcpy(out, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t),
-+	       min(datalen, outlen));
++	pr_info("Key length: %d\n", key_len);
++	pr_info("Public Key Length: %d\n", sz);
++	tk->key_len = key_len;
++	tk->pub_key = pub_key;
++	tk->pub_key_len = sz;
 +
-+	return datalen;
++	return 0;
 +}
- /*
-  * Maximum buffer size for the BER/DER encoded public key.  The public key
-  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
++
+ /* Given the blob, parse it and load it into the TPM */
+ struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
+ {
+@@ -68,8 +175,15 @@ struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
+ 
+ 	tk->blob_len = blob_len;
+ 
++	r = extract_key_parameters(tk);
++	if (r < 0)
++		goto error_extract;
++
+ 	return tk;
+ 
++error_extract:
++	kfree(tk->blob);
++	tk->blob_len = 0;
+ error_memdup:
+ 	kfree(tk);
+ error:
 -- 
 2.16.1
 
