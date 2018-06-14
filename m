@@ -1,32 +1,41 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 14 Jun 2018 16:14:30 +0000
+Date: Thu, 14 Jun 2018 16:18:18 +0000
 Subject: Re: [PATCH net] KEYS: DNS: fix parsing multiple options
-Message-Id: <8195.1528992870@warthog.procyon.org.uk>
+Message-Id: <8385.1528993098@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180608162037.129802-1-ebiggers3@gmail.com>
-In-Reply-To: <20180608162037.129802-1-ebiggers3@gmail.com>
-To: Eric Biggers <ebiggers3@gmail.com>
-Cc: dhowells@redhat.com, netdev@vger.kernel.org, "David S . Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, Wang Lei <wang840925@gmail.com>, Eric Biggers <ebiggers@google.com>
+References: <20180611094022.gvrefejktxzw44i7@netronome.com> <20180608162037.129802-1-ebiggers3@gmail.com>
+In-Reply-To: <20180611094022.gvrefejktxzw44i7@netronome.com>
+To: Simon Horman <simon.horman@netronome.com>
+Cc: dhowells@redhat.com, Eric Biggers <ebiggers3@gmail.com>, netdev@vger.kernel.org, "David S . Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, Wang Lei <wang840925@gmail.com>, Eric Biggers <ebiggers@google.com>
 
-The fix seems to work, but the use of kstrtoul():
+Simon Horman <simon.horman@netronome.com> wrote:
 
-	ret = kstrtoul(eq, 10, &derrno);
+> > -			eq = memchr(opt, '=', opt_len) ?: end;
+> > +			eq = memchr(opt, '=', opt_len) ?: next_opt;
+> >  			opt_nlen = eq - opt;
+> >  			eq++;
+> 
+> It seems risky to advance eq++ in the case there the value is empty.
+> Its not not pointing to the value but it may be accessed twice further on
+> in this loop.
+> 
+> >  			opt_vlen = next_opt - eq; /* will be -1 if no value */
 
-is incorrect since the buffer can't been modified to block out the next
-argument if there is one, so the following fails:
+Yes, but note the next line ^^^ and the comment thereon.
 
-	perl -e 'print "#dnserror=1#", "\x00" x 1' |
-	keyctl padd dns_resolver desc @s
+This is followed later by a check:
 
-(Note this is preexisting and nothing to do with your patch).
+				if (opt_vlen <= 0)
+					goto bad_option_value;
 
-I'm not sure how best to handle this.
+in the dnserror option handler.
 
-Anyway, Dave, can you take Eric's patch into the net tree with:
+Note, also, there is guaranteed to be a NUL char included at the end of the
+payload data, and that this is checked:
 
-	Acked-by: David Howells <dhowells@redhat.com>
+	if (datalen <= 1 || !data || data[datalen - 1] != '\0') {
 
 David
