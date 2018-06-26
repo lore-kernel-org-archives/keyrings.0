@@ -1,120 +1,58 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Tue, 12 Jun 2018 15:55:30 +0000
-Subject: [RFCv2 09/13] KEYS: asym_tpm: Implement tpm_unbind
-Message-Id: <20180612155534.4873-10-denkenz@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 26 Jun 2018 15:59:33 +0000
+Subject: [PATCH 1/3] X.509: unpack RSA signatureValue field from BIT STRING
+Message-Id: <153002877383.31726.1992447630485011119.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153002876741.31726.8580751276453556884.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153002876741.31726.8580751276453556884.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+From: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
+
+The signatureValue field of a X.509 certificate is encoded as a BIT STRING.
+For RSA signatures this BIT STRING is of so-called primitive subtype, which
+contains a u8 prefix indicating a count of unused bits in the encoding.
+
+We have to strip this prefix from signature data, just as we already do for
+key data in x509_extract_key_data() function.
+
+This wasn't noticed earlier because this prefix byte is zero for RSA key
+sizes divisible by 8. Since BIT STRING is a big-endian encoding adding zero
+prefixes has no bearing on its value.
+
+The signature length, however was incorrect, which is a problem for RSA
+implementations that need it to be exactly correct (like AMD CCP).
+
+Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
+Fixes: c26fd69fa009 ("X.509: Add a crypto key parser for binary (DER) X.509 certificates")
+Cc: stable@vger.kernel.org
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 82 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 82 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 9aed598dd9b0..edcb81fe8937 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -18,8 +18,10 @@
+ crypto/asymmetric_keys/x509_cert_parser.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 7d81e6bb461a..b6cabac4b62b 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -249,6 +249,15 @@ int x509_note_signature(void *context, size_t hdrlen,
+ 		return -EINVAL;
+ 	}
  
- #define TPM_ORD_FLUSHSPECIFIC	186
- #define TPM_ORD_LOADKEY2	65
-+#define TPM_ORD_UNBIND		30
- #define TPM_LOADKEY2_SIZE		59
- #define TPM_FLUSHSPECIFIC_SIZE		18
-+#define TPM_UNBIND_SIZE			63
- 
- #define TPM_RT_KEY                      0x00000001
- 
-@@ -106,6 +108,86 @@ static uint32_t tpm_flushspecific(struct tpm_buf *tb, uint32_t handle)
- 	return trusted_tpm_send(tb->data, MAX_BUF_SIZE);
- }
- 
-+/*
-+ * Decrypt a blob provided by userspace using a specific key handle.
-+ * The handle is a well known handle or previously loaded by e.g. LoadKey2
-+ */
-+static int tpm_unbind(struct tpm_buf *tb,
-+			uint32_t keyhandle, unsigned char *keyauth,
-+			const unsigned char *blob, uint32_t bloblen,
-+			void *out, uint32_t outlen)
-+{
-+	unsigned char nonceodd[TPM_NONCE_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+	unsigned char authdata[SHA1_DIGEST_SIZE];
-+	uint32_t authhandle = 0;
-+	unsigned char cont = 0;
-+	uint32_t ordinal;
-+	uint32_t datalen;
-+	int ret;
++	if (strcmp(ctx->cert->sig->pkey_algo, "rsa") = 0) {
++		/* Discard the BIT STRING metadata */
++		if (vlen < 1 || *(const u8 *)value != 0)
++			return -EBADMSG;
 +
-+	ordinal = htonl(TPM_ORD_UNBIND);
-+	datalen = htonl(bloblen);
-+
-+	/* session for loading the key */
-+	ret = oiap(tb, &authhandle, enonce);
-+	if (ret < 0) {
-+		pr_info("oiap failed (%d)\n", ret);
-+		return ret;
++		value++;
++		vlen--;
 +	}
 +
-+	/* generate odd nonce */
-+	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0) {
-+		pr_info("tpm_get_random failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* calculate authorization HMAC value */
-+	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-+			   nonceodd, cont, sizeof(uint32_t), &ordinal,
-+			   sizeof(uint32_t), &datalen,
-+			   bloblen, blob, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* build the request buffer */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
-+	store32(tb, TPM_UNBIND_SIZE + bloblen);
-+	store32(tb, TPM_ORD_UNBIND);
-+	store32(tb, keyhandle);
-+	store32(tb, bloblen);
-+	storebytes(tb, blob, bloblen);
-+	store32(tb, authhandle);
-+	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
-+	store8(tb, cont);
-+	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
-+
-+	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
-+	if (ret < 0) {
-+		pr_info("authhmac failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
-+
-+	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd,
-+			     keyauth, SHA1_DIGEST_SIZE,
-+			     sizeof(uint32_t), TPM_DATA_OFFSET,
-+			     datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
-+			     0, 0);
-+	if (ret < 0) {
-+		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	memcpy(out, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t),
-+	       min(outlen, datalen));
-+
-+	return datalen;
-+}
-+
- /*
-  * Maximum buffer size for the BER/DER encoded public key.  The public key
-  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
--- 
-2.16.1
+ 	ctx->cert->raw_sig = value;
+ 	ctx->cert->raw_sig_size = vlen;
+ 	return 0;
 
