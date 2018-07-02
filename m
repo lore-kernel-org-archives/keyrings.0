@@ -1,139 +1,142 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 19 Jul 2018 18:30:05 +0000
-Subject: [RFCv2 RESEND 07/13] KEYS: trusted: Expose common functionality
-Message-Id: <20180719183011.8574-8-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Mon, 02 Jul 2018 23:39:46 +0000
+Subject: [PATCH 07/11] nfit/libnvdimm: add freeze security support to Intel nvdimm
+Message-Id: <153057478596.38125.16368895958393903118.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-This patch exposes some common functionality needed to send TPM
-commands.  The current approach is a complete hack and needs to be
-addressed properly.  This commit just show-cases what functionality
-would need to be moved to a shared location or exposed in some other
-manner.
+Adding support for freeze security on Intel nvdimm. This locks out any
+changes to security for the DIMM unless a reboot is done. This is triggered
+by writing "freeze" to the "security" sysfs attribute. libnvdimm will
+support the generic freeze_lock API call.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 ---
- crypto/asymmetric_keys/Kconfig |  1 +
- security/keys/trusted.c        | 12 ++++++++----
- security/keys/trusted.h        | 14 +++++++++++++-
- 3 files changed, 22 insertions(+), 5 deletions(-)
+ drivers/acpi/nfit/intel.c  |   47 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   22 +++++++++++++++++++++
+ include/linux/libnvdimm.h  |    2 ++
+ 3 files changed, 71 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 88353a9ebc9b..be70ca6c85d3 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -24,6 +24,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- config ASYMMETRIC_TPM_KEY_SUBTYPE
- 	tristate "Asymmetric TPM backed private key subtype"
- 	depends on TCG_TPM
-+	depends on TRUSTED_KEYS
- 	select CRYPTO_HMAC
- 	select CRYPTO_SHA1
- 	select CRYPTO_HASH_INFO
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 423776682025..a93cfc1b083b 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -121,7 +121,7 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
- /*
-  * calculate authorization info fields to send to TPM
-  */
--static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
-+int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 			unsigned int keylen, unsigned char *h1,
- 			unsigned char *h2, unsigned char h3, ...)
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 6d73493f02cc..41602be2a33b 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -16,6 +16,52 @@
+ #include <acpi/nfit.h>
+ #include "nfit.h"
+ 
++static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0, pkg_size;
++	struct nd_intel_freeze_lock *cmd;
++	struct nd_cmd_pkg *pkg;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++
++	if (!test_bit(NVDIMM_INTEL_FREEZE_LOCK, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	pkg_size = sizeof(*pkg) + sizeof(*cmd);
++	pkg = kzalloc(pkg_size, GFP_KERNEL);
++	if (!pkg)
++		return -ENOMEM;
++
++	pkg->nd_command = NVDIMM_INTEL_FREEZE_LOCK;
++	pkg->nd_family = NVDIMM_FAMILY_INTEL;
++	pkg->nd_size_in = 0;
++	pkg->nd_size_out = ND_INTEL_STATUS_SIZE;
++	pkg->nd_fw_size = pkg->nd_size_out;
++	cmd = (struct nd_intel_freeze_lock *)&pkg->nd_payload;
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, pkg,
++			sizeof(pkg_size), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (cmd->status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	kfree(pkg);
++	return rc;
++}
++
+ static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm, const char *pass)
  {
-@@ -168,11 +168,12 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 	kzfree(sdesc);
- 	return ret;
+@@ -244,4 +290,5 @@ struct nvdimm_security_ops intel_security_ops = {
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
+ 	.disable = intel_dimm_security_disable,
++	.freeze_lock = intel_dimm_security_freeze_lock,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 070811cb4cdc..cd0624663621 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -85,6 +85,26 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
  }
-+EXPORT_SYMBOL_GPL(TSS_authhmac);
  
- /*
-  * verify the AUTH1_COMMAND (Seal) result from TPM
-  */
--static int TSS_checkhmac1(unsigned char *buffer,
-+int TSS_checkhmac1(unsigned char *buffer,
- 			  const uint32_t command,
- 			  const unsigned char *ononce,
- 			  const unsigned char *key,
-@@ -249,6 +250,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	kzfree(sdesc);
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(TSS_checkhmac1);
- 
- /*
-  * verify the AUTH2_COMMAND (unseal) result from TPM
-@@ -355,7 +357,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
-  * For key specific tpm requests, we will generate and send our
-  * own TPM command packets using the drivers send function.
-  */
--static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
-+int trusted_tpm_send(unsigned char *cmd, size_t buflen)
++static int nvdimm_security_freeze_lock(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	int rc;
++
++	if (!nvdimm->security_ops)
++		return 0;
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		return 0;
++
++	rc = nvdimm->security_ops->freeze_lock(nvdimm_bus, nvdimm);
++	if (rc < 0)
++		return rc;
++
++	nvdimm_security_get_state(dev);
++	return 0;
++}
++
+ static int nvdimm_security_disable(struct device *dev)
  {
- 	int rc;
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -628,6 +648,8 @@ static ssize_t security_store(struct device *dev,
+ 		rc = nvdimm_security_change_key(dev);
+ 	else if (strcmp(buf, "disable") = 0 || strcmp(buf, "disable\n") = 0)
+ 		rc = nvdimm_security_disable(dev);
++	else if (strcmp(buf, "freeze") = 0 || strcmp(buf, "freeze\n") = 0)
++		rc = nvdimm_security_freeze_lock(dev);
+ 	else
+ 		return -EINVAL;
  
-@@ -367,6 +369,7 @@ static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
- 		rc = -EPERM;
- 	return rc;
- }
-+EXPORT_SYMBOL_GPL(trusted_tpm_send);
- 
- /*
-  * Lock a trusted key, by extending a selected PCR.
-@@ -425,7 +428,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
- /*
-  * Create an object independent authorisation protocol (oiap) session
-  */
--static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
-+int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
- {
- 	int ret;
- 
-@@ -442,6 +445,7 @@ static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
- 	       TPM_NONCE_SIZE);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(oiap);
- 
- struct tpm_digests {
- 	unsigned char encauth[SHA1_DIGEST_SIZE];
-diff --git a/security/keys/trusted.h b/security/keys/trusted.h
-index 8d5fe9eafb22..adbcb6817826 100644
---- a/security/keys/trusted.h
-+++ b/security/keys/trusted.h
-@@ -3,7 +3,7 @@
- #define __TRUSTED_KEY_H
- 
- /* implementation specific TPM constants */
--#define MAX_BUF_SIZE			512
-+#define MAX_BUF_SIZE			1024
- #define TPM_GETRANDOM_SIZE		14
- #define TPM_OSAP_SIZE			36
- #define TPM_OIAP_SIZE			10
-@@ -36,6 +36,18 @@ enum {
- 	SRK_keytype = 4
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 0990dfd5a0a3..683e4cadc7f6 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -179,6 +179,8 @@ struct nvdimm_security_ops {
+ 			const char *new_pass);
+ 	int (*disable)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm, const char *pass);
++	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm);
  };
  
-+int TSS_authhmac(unsigned char *digest, const unsigned char *key,
-+			unsigned int keylen, unsigned char *h1,
-+			unsigned char *h2, unsigned char h3, ...);
-+int TSS_checkhmac1(unsigned char *buffer,
-+			  const uint32_t command,
-+			  const unsigned char *ononce,
-+			  const unsigned char *key,
-+			  unsigned int keylen, ...);
-+
-+int trusted_tpm_send(unsigned char *cmd, size_t buflen);
-+int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
-+
- #define TPM_DEBUG 0
- 
- #if TPM_DEBUG
--- 
-2.16.1
+ void badrange_init(struct badrange *badrange);
 
