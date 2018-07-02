@@ -1,128 +1,57 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 02 Jul 2018 23:39:57 +0000
-Subject: [PATCH 09/11] nfit_test: adding context to dimm_dev for nfit_test
-Message-Id: <153057479705.38125.18423435681655620944.stgit@djiang5-desk3.ch.intel.com>
+Date: Mon, 02 Jul 2018 23:39:07 +0000
+Subject: [PATCH 00/11] Adding security support for nvdimm
+Message-Id: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
 To: dan.j.williams@intel.com
 Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-In order to access the nfit_test context via sideband sysfs knobs, the
-dimm_dev needs to be more than struct device in order to point back to
-struct nfit_test. Wrapping the original struct device with a struct
-nfit_dimm_dev and saving the nfit_test as private driver data. Also
-changing the nfit_mem to be a member of struct nfit_dimm_dev instead of
-saving as private driver data of that device. This is in preparation for
-adding security DSM support and allowing the locking of DIMMs for testing
-via sideband.
+The following series implements security support for nvdimm. Mostly adding
+new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
+adding generic support libnvdimm for other vendors. The most important
+security features are unlocking locked nvdimms, and updating/setting security
+passphrase to nvdimms.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Security folks, thanks in advance for taking a look at my key management
+implementation and making sure that I'm doing something sane. Mainly you'll
+want to review patches 2, 4, and 5 as most relevant ones that need scrutiny.
+
 ---
- tools/testing/nvdimm/test/nfit.c |   41 +++++++++++++++++++++++++-------------
- 1 file changed, 27 insertions(+), 14 deletions(-)
 
-diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
-index 18157b0c0d0d..7b3ce2194889 100644
---- a/tools/testing/nvdimm/test/nfit.c
-+++ b/tools/testing/nvdimm/test/nfit.c
-@@ -150,6 +150,11 @@ struct nfit_test_fw {
- 	u64 end_time;
- };
- 
-+struct nfit_dimm_dev {
-+	struct device dev;
-+	struct nfit_mem *nfit_mem;
-+};
-+
- struct nfit_test {
- 	struct acpi_nfit_desc acpi_desc;
- 	struct platform_device pdev;
-@@ -181,7 +186,7 @@ struct nfit_test {
- 		unsigned long deadline;
- 		spinlock_t lock;
- 	} ars_state;
--	struct device *dimm_dev[NUM_DCR];
-+	struct nfit_dimm_dev dimm_dev[NUM_DCR];
- 	struct nd_intel_smart *smart;
- 	struct nd_intel_smart_threshold *smart_threshold;
- 	struct badrange badrange;
-@@ -981,7 +986,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 						&t->smart_threshold[i -
- 							t->dcr_idx],
- 						&t->smart[i - t->dcr_idx],
--						&t->pdev.dev, t->dimm_dev[i]);
-+						&t->pdev.dev,
-+						&t->dimm_dev[i].dev);
- 				break;
- 			case ND_INTEL_SMART_INJECT:
- 				rc = nfit_test_cmd_smart_inject(buf,
-@@ -989,7 +995,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 						&t->smart_threshold[i -
- 							t->dcr_idx],
- 						&t->smart[i - t->dcr_idx],
--						&t->pdev.dev, t->dimm_dev[i]);
-+						&t->pdev.dev,
-+						&t->dimm_dev[i].dev);
- 				break;
- 			default:
- 				return -ENOTTY;
-@@ -1187,8 +1194,7 @@ static void put_dimms(void *data)
- 	int i;
- 
- 	for (i = 0; i < t->num_dcr; i++)
--		if (t->dimm_dev[i])
--			device_unregister(t->dimm_dev[i]);
-+		device_unregister(&t->dimm_dev[i].dev);
- }
- 
- static struct class *nfit_test_dimm;
-@@ -1290,19 +1296,27 @@ static const struct attribute_group *nfit_test_dimm_attribute_groups[] = {
- 	NULL,
- };
- 
-+static void dimm_dev_release(struct device *dev)
-+{
-+}
-+
- static int nfit_test_dimm_init(struct nfit_test *t)
- {
--	int i;
-+	int i, rc;
- 
- 	if (devm_add_action_or_reset(&t->pdev.dev, put_dimms, t))
- 		return -ENOMEM;
- 	for (i = 0; i < t->num_dcr; i++) {
--		t->dimm_dev[i] = device_create_with_groups(nfit_test_dimm,
--				&t->pdev.dev, 0, NULL,
--				nfit_test_dimm_attribute_groups,
--				"test_dimm%d", i + t->dcr_idx);
--		if (!t->dimm_dev[i])
--			return -ENOMEM;
-+		t->dimm_dev[i].dev.parent = &t->pdev.dev;
-+		dev_set_name(&t->dimm_dev[i].dev, "test_dimm%d",
-+				i + t->dcr_idx);
-+		t->dimm_dev[i].dev.class = nfit_test_dimm;
-+		t->dimm_dev[i].dev.groups = nfit_test_dimm_attribute_groups;
-+		t->dimm_dev[i].dev.release = dimm_dev_release;
-+		rc = device_register(&t->dimm_dev[i].dev);
-+		if (rc < 0)
-+			return rc;
-+		dev_set_drvdata(&t->dimm_dev[i].dev, t);
- 	}
- 	return 0;
- }
-@@ -2665,8 +2679,7 @@ static int nfit_test_probe(struct platform_device *pdev)
- 
- 		for (i = 0; i < NUM_DCR; i++)
- 			if (nfit_handle = handle[i])
--				dev_set_drvdata(nfit_test->dimm_dev[i],
--						nfit_mem);
-+				nfit_test->dimm_dev[i].nfit_mem = nfit_mem;
- 	}
- 	mutex_unlock(&acpi_desc->init_mutex);
- 
+Dave Jiang (11):
+      nfit: adding support for Intel DSM 1.7 commands
+      libnvdimm: create keyring to store security keys
+      nfit/libnvdimm: store dimm id as a member to struct nvdimm
+      nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
+      nfit/libnvdimm: add set passphrase support for Intel nvdimms
+      nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+      nfit/libnvdimm: add freeze security support to Intel nvdimm
+      nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+      nfit_test: adding context to dimm_dev for nfit_test
+      nfit_test: adding test support for Intel nvdimm security DSMs
+      libnvdimm: adding documentation for nvdimm security support
 
+
+ Documentation/nvdimm/security    |   70 ++++++++
+ drivers/acpi/nfit/Makefile       |    2 
+ drivers/acpi/nfit/core.c         |   61 +++++--
+ drivers/acpi/nfit/intel.c        |  348 ++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/nfit/intel.h        |  104 +++++++++++
+ drivers/acpi/nfit/nfit.h         |   24 ---
+ drivers/nvdimm/bus.c             |    2 
+ drivers/nvdimm/dimm.c            |   97 +++++++++++
+ drivers/nvdimm/dimm_devs.c       |  332 ++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/nd-core.h         |    4 
+ drivers/nvdimm/nd.h              |    2 
+ include/linux/libnvdimm.h        |   35 ++++
+ tools/testing/nvdimm/Kbuild      |    1 
+ tools/testing/nvdimm/test/nfit.c |  226 +++++++++++++++++++++++--
+ 14 files changed, 1254 insertions(+), 54 deletions(-)
+ create mode 100644 Documentation/nvdimm/security
+ create mode 100644 drivers/acpi/nfit/intel.c
+ create mode 100644 drivers/acpi/nfit/intel.h
+
+--
