@@ -1,105 +1,165 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 25 Jul 2018 20:58:30 +0000
-Subject: [PATCH v6 00/11] Adding security support for nvdimm
-Message-Id: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+Date: Mon, 02 Jul 2018 23:39:40 +0000
+Subject: [PATCH 06/11] nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+Message-Id: <153057478052.38125.4677218866266067369.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-The following series implements security support for nvdimm. Mostly adding
-new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
-adding generic support libnvdimm for other vendors. The most important
-security features are unlocking locked nvdimms, and updating/setting security
-passphrase to nvdimms.
+Adding support to disable passphrase (security) for the Intel nvdimm. The
+passphrase used for disabling is pulled from userspace via the kernel
+key management. The action is triggered by writing "disable" to the sysfs
+attribute "security". libnvdimm will support the generic disable API call.
 
-Security folks, thanks in advance for taking a look at my key management
-implementation and making sure that I'm doing something sane. Mainly you'll
-want to review patches 2, 4, and 5 as most relevant ones that need scrutiny.
-
-v6:
-- Fix intel DSM data structures to use defined size for passphrase (Robert)
-- Fix memcpy size to use sizeof data structure member (Robert)
-- Fix defined dimm id length (Robert)
-- Making intel_security_ops const (Eric)
-- Remove unused var in nvdimm_key_search() (Eric)
-- Added wbinvd before secure erase is issued (Robert)
-- Removed key_put_sync() usage (David)
-- Use init_cred instead of creating own cred (David)
-    - Exported init_cred symbol
-- Move keyring to dedicated (David)
-- Use logon_key_type and friends instead of creating custom (David)
-- Use key_lookup() with stored key serial (David)
-    - Exported key_lookup() symbol
-- Mark passed in key data as const (David)
-- Added comment for change_pass_phrase to explain how it works (David)
-- Unlink key when it's being removed from keyring. (David)
-- Removed request_key() from all security ops except update and unlock.
-- Update will now update the existing key's payload with the new key's
-  retrieved from userspace when the new payload is accepted by nvdimm.
-
-v5:
-- Moved dimm_id initialization (Dan)
-- Added a key_put_sync() in order to run key_gc_work and cleanup old key. (Dan)
-- Added check to block security state changes while DIMM is active. (Dan)
-
-v4:
-- flip payload layout for update passphrase to make it easier on userland.
-
-v3:
-- Set x86 wrappers for x86 only bits. (Dan)
-- Fixed up some verbiage in commit headers.
-- Put in usage of sysfs_streq() for sysfs inputs.
-- 0-day build fixes for non-x86 archs.
-
-v2:
-- Move inclusion of intel.h to relevant source files and not in nfit.h. (Dan)
-- Moved security ring relevant code to dimm_devs.c. (Dan)
-- Added dimm_id to nfit_mem to avoid recreate per sysfs show call. (Dan)
-- Added routine to return security_ops based on family supplied. (Dan)
-- Added nvdimm_key_data struct to wrap raw passphrase string. (Dan)
-- Allocate firmware package on stack. (Dan)
-- Added missing frozen state detection when retrieving security state.
-
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 ---
+ drivers/acpi/nfit/intel.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   41 +++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    2 ++
+ 3 files changed, 94 insertions(+)
 
-Dave Jiang (11):
-      nfit: add support for Intel DSM 1.7 commands
-      libnvdimm: create keyring to store security keys
-      nfit/libnvdimm: store dimm id as a member to struct nvdimm
-      nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
-      nfit/libnvdimm: add set passphrase support for Intel nvdimms
-      nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
-      nfit/libnvdimm: add freeze security support to Intel nvdimm
-      nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-      nfit_test: add context to dimm_dev for nfit_test
-      nfit_test: add test support for Intel nvdimm security DSMs
-      libnvdimm: add documentation for nvdimm security support
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 792a5c694a9e..6d73493f02cc 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -16,6 +16,56 @@
+ #include <acpi/nfit.h>
+ #include "nfit.h"
+ 
++static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, const char *pass)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0, pkg_size;
++	struct nd_intel_disable_passphrase *cmd;
++	struct nd_cmd_pkg *pkg;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++
++	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	pkg_size = sizeof(*pkg) + sizeof(*cmd);
++	pkg = kzalloc(pkg_size, GFP_KERNEL);
++	if (!pkg)
++		return -ENOMEM;
++
++	pkg->nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE;
++	pkg->nd_family = NVDIMM_FAMILY_INTEL;
++	pkg->nd_size_in = ND_INTEL_PASSPHRASE_SIZE;
++	pkg->nd_size_out = ND_INTEL_STATUS_SIZE;
++	pkg->nd_fw_size = pkg->nd_size_out;
++	cmd = (struct nd_intel_disable_passphrase *)&pkg->nd_payload;
++	memcpy(cmd->passphrase, pass, ND_INTEL_PASSPHRASE_SIZE);
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, pkg,
++			sizeof(pkg_size), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (cmd->status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	kfree(pkg);
++	return rc;
++}
++
+ static int intel_dimm_security_update_passphrase(
+ 		struct nvdimm_bus *nvdimm_bus, struct nvdimm *nvdimm,
+ 		const char *old_pass, const char *new_pass)
+@@ -193,4 +243,5 @@ struct nvdimm_security_ops intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
++	.disable = intel_dimm_security_disable,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index d3d738c77adb..070811cb4cdc 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -85,6 +85,45 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
+ 
++static int nvdimm_security_disable(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	int rc;
++	char *payload;
++	bool cached_key = false;
++
++	if (!nvdimm->security_ops)
++		return 0;
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		return 0;
++
++	key = nvdimm_search_key(dev);
++	if (!key)
++		key = nvdimm_request_key(dev);
++	else
++		cached_key = true;
++	if (!key)
++		return -ENXIO;
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm, payload);
++	up_read(&key->sem);
++	if (rc < 0)
++		goto out;
++
++	/* If we succeed then remove the key */
++	key_invalidate(key);
++
++ out:
++	key_put(key);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ int nvdimm_security_unlock_dimm(struct device *dev)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -587,6 +626,8 @@ static ssize_t security_store(struct device *dev,
+ 
+ 	if (strcmp(buf, "update") = 0 || strcmp(buf, "update\n") = 0)
+ 		rc = nvdimm_security_change_key(dev);
++	else if (strcmp(buf, "disable") = 0 || strcmp(buf, "disable\n") = 0)
++		rc = nvdimm_security_disable(dev);
+ 	else
+ 		return -EINVAL;
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 7b609409042c..0990dfd5a0a3 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -177,6 +177,8 @@ struct nvdimm_security_ops {
+ 	int (*change_key)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm, const char *old_pass,
+ 			const char *new_pass);
++	int (*disable)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm, const char *pass);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
 
-
- Documentation/nvdimm/security    |   70 +++++++
- drivers/acpi/nfit/Makefile       |    1 
- drivers/acpi/nfit/core.c         |   58 ++++--
- drivers/acpi/nfit/intel.c        |  382 +++++++++++++++++++++++++++++++++++++
- drivers/acpi/nfit/intel.h        |   82 ++++++++
- drivers/acpi/nfit/nfit.h         |   20 ++
- drivers/nvdimm/bus.c             |    2 
- drivers/nvdimm/core.c            |    7 +
- drivers/nvdimm/dimm.c            |    7 +
- drivers/nvdimm/dimm_devs.c       |  397 ++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/nd-core.h         |    6 +
- drivers/nvdimm/nd.h              |    2 
- include/linux/libnvdimm.h        |   42 ++++
- kernel/cred.c                    |    1 
- security/keys/key.c              |    1 
- tools/testing/nvdimm/Kbuild      |    1 
- tools/testing/nvdimm/test/nfit.c |  227 ++++++++++++++++++++--
- 17 files changed, 1272 insertions(+), 34 deletions(-)
- create mode 100644 Documentation/nvdimm/security
- create mode 100644 drivers/acpi/nfit/intel.c
- create mode 100644 drivers/acpi/nfit/intel.h
-
---
-Signature
