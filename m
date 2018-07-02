@@ -1,28 +1,158 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 18 Jul 2018 11:17:19 +0000
-Subject: Re: [PATCH v5 05/12] keys: add call key_put_sync() to flush key_gc_work when doing a key_put().
-Message-Id: <9635.1531912639@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Mon, 02 Jul 2018 23:39:18 +0000
+Subject: [PATCH 02/11] libnvdimm: create keyring to store security keys
+Message-Id: <153057475818.38125.11899134233158940470.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <5959.1531910449@warthog.procyon.org.uk>
- <153186087257.27463.13382652631526471099.stgit@djiang5-desk3.ch.intel.com>
- <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <5959.1531910449@warthog.procyon.org.uk>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-David Howells <dhowells@redhat.com> wrote:
+Prepping the libnvdimm to support security management by adding a keyring
+in order to provide passphrase management through the kernel key management
+APIs.
 
-> A better way might be to add a global waitqueue and then use that to watch for
-> an indication that a key is about to be finally destroyed.  A flag can be set
-> on the key to ask for the waitqueue to be poked
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
+ drivers/nvdimm/dimm.c     |   90 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h |    5 +++
+ 2 files changed, 95 insertions(+)
 
-Hmmm...  This wouldn't work unless you added yourself to the waitqueue before
-decrementing the key usage count:-/
+diff --git a/drivers/nvdimm/dimm.c b/drivers/nvdimm/dimm.c
+index 6c8fb7590838..ee0c68efa82a 100644
+--- a/drivers/nvdimm/dimm.c
++++ b/drivers/nvdimm/dimm.c
+@@ -18,9 +18,46 @@
+ #include <linux/slab.h>
+ #include <linux/mm.h>
+ #include <linux/nd.h>
++#include <linux/cred.h>
++#include <keys/user-type.h>
++#include <linux/key-type.h>
++#include <linux/keyctl.h>
+ #include "label.h"
+ #include "nd.h"
+ 
++const struct cred *nvdimm_cred;
++static int nvdimm_key_instantiate(struct key *key,
++		struct key_preparsed_payload *prep);
++static void nvdimm_key_destroy(struct key *key);
++
++struct key_type nvdimm_key_type = {
++	.name = "nvdimm",
++	.instantiate = nvdimm_key_instantiate,
++	.destroy = nvdimm_key_destroy,
++	.describe = user_describe,
++	.def_datalen = NVDIMM_DEFAULT_PASSPHRASE_LEN * 2,
++};
++
++static int nvdimm_key_instantiate(struct key *key,
++		struct key_preparsed_payload *prep)
++{
++	char *payload;
++
++	payload = kzalloc(nvdimm_key_type.def_datalen, GFP_KERNEL);
++	if (!payload)
++		return -ENOMEM;
++
++	key->datalen = min(nvdimm_key_type.def_datalen, prep->datalen);
++	memcpy(payload, prep->data, key->datalen);
++	key->payload.data[0] = payload;
++	return 0;
++}
++
++static void nvdimm_key_destroy(struct key *key)
++{
++	kfree(key->payload.data[0]);
++}
++
+ static int nvdimm_probe(struct device *dev)
+ {
+ 	struct nvdimm_drvdata *ndd;
+@@ -129,13 +166,66 @@ static struct nd_device_driver nvdimm_driver = {
+ 	.type = ND_DRIVER_DIMM,
+ };
+ 
++static int nvdimm_register_keyring(void)
++{
++	struct cred *cred;
++	struct key *keyring;
++	int rc;
++
++	rc = register_key_type(&nvdimm_key_type);
++	if (rc < 0)
++		return rc;
++
++	cred = prepare_kernel_cred(NULL);
++	if (!cred) {
++		rc = -ENOMEM;
++		goto failed_cred;
++	}
++
++	keyring = keyring_alloc(".nvdimm",
++			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, cred,
++			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
++			(KEY_USR_ALL & ~KEY_USR_SETATTR),
++			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
++	if (IS_ERR(keyring)) {
++		rc = PTR_ERR(keyring);
++		goto failed_keyring;
++	}
++
++	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
++	cred->thread_keyring = keyring;
++	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
++	nvdimm_cred = cred;
++	return 0;
++
++ failed_cred:
++	unregister_key_type(&nvdimm_key_type);
++ failed_keyring:
++	put_cred(cred);
++	return rc;
++}
++
++static void nvdimm_unregister_keyring(void)
++{
++	key_revoke(nvdimm_cred->thread_keyring);
++	unregister_key_type(&nvdimm_key_type);
++	put_cred(nvdimm_cred);
++}
++
+ int __init nvdimm_init(void)
+ {
++	int rc;
++
++	rc = nvdimm_register_keyring();
++	if (rc < 0)
++		return rc;
++
+ 	return nd_driver_register(&nvdimm_driver);
+ }
+ 
+ void nvdimm_exit(void)
+ {
++	nvdimm_unregister_keyring();
+ 	driver_unregister(&nvdimm_driver.drv);
+ }
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 472171af7f60..a250ff2a30df 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -155,6 +155,11 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
+ 
+ }
+ 
++extern struct key_type nvdimm_key_type;
++
++#define NVDIMM_DEFAULT_PASSPHRASE_LEN		32
++#define NVDIMM_DEFAULT_DESC_LEN			32
++
+ void badrange_init(struct badrange *badrange);
+ int badrange_add(struct badrange *badrange, u64 addr, u64 length);
+ void badrange_forget(struct badrange *badrange, phys_addr_t start,
 
-In fact, if someone creates a link to your key, sync'ing the gc isn't
-sufficient.
-
-David
