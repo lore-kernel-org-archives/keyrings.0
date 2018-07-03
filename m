@@ -1,7 +1,7 @@
-From: "Elliott, Robert (Persistent Memory)" <elliott@hpe.com>
-Date: Tue, 03 Jul 2018 04:58:45 +0000
-Subject: RE: [PATCH 04/11] nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
-Message-Id: <AT5PR8401MB11698726FDD969FF8D75B9EEAB420@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Tue, 03 Jul 2018 05:03:03 +0000
+Subject: Re: [PATCH 04/11] nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
+Message-Id: <CAPcyv4gaMBU=Rr_A-7VX7CE+oviQSExTpBgUyzMGTJ-k-Eg6tQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,31 +10,39 @@ References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.inte
  <153057476931.38125.15448927598576316449.stgit@djiang5-desk3.ch.intel.com>
  <AT5PR8401MB1169BD7B3DE8CDA8BA5AE658AB420@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
  <CAPcyv4ipAULUgtV6rvx7hQBLtjr7VSE25KvBiHxHRe7TT0HvKA@mail.gmail.com>
-In-Reply-To: <CAPcyv4ipAULUgtV6rvx7hQBLtjr7VSE25KvBiHxHRe7TT0HvKA@mail.gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
+ <AT5PR8401MB11698726FDD969FF8D75B9EEAB420@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
+In-Reply-To: <AT5PR8401MB11698726FDD969FF8D75B9EEAB420@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
+To: "Elliott, Robert (Persistent Memory)" <elliott@hpe.com>
 Cc: "Schofield, Alison" <alison.schofield@intel.com>, "keescook@chromium.org" <keescook@chromium.org>, "linux-nvdimm@lists.01.org" <linux-nvdimm@lists.01.org>, "dhowells@redhat.com" <dhowells@redhat.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>
 
-DQo+ID4gU2luY2UgaXQgY29udGFpbnMgYSBoaWdoLXZhbHVlIHBhc3N3b3JkLCBJIHJlY29tbWVu
-ZCB6ZXJvaW5nDQo+ID4gY21kLT5wYXNzcGhyYXNlIGJlZm9yZSBjYWxsaW5nIGtmcmVlKCkgc28g
-dGhhdCBkYXRhIGlzbid0IHNlZW4NCj4gPiBieSBhIHN1YnNlcXVlbnQga21hbGxvYygpIGNhbGxl
-ciAoYW5kIG1ha2Ugc3VyZSB0aGUgY29tcGlsZXINCj4gPiBjYW5ub3Qgb3B0aW1pemUgYXdheSB0
-aGUgY2xlYXJpbmcgY29kZSkuDQo+ID4NCj4gPiBBbHNvLCBjaGVjayBpZiB0aGUgbmRjdGwoKSBj
-YWxsIGNoYWluIG1ha2VzIGFueSBjb3BpZXMgb2YgY21kLQ0KPiA+IHBhc3NwaHJhc2UgYW5kIGVu
-c3VyZSB0aGV5IGFyZSBjbGVhcmVkLg0KPiANCj4gSWYgYW4gYXR0YWNrZXIgY2FuIHJ1biBhcmJp
-dHJhcnkgY29kZSBpbiB0aGUga2VybmVsIHRoZXkgY2FuIGdldCB0aGUNCj4ga2V5IGZyb20gdGhl
-IHJpbmcgZGlyZWN0bHksIG9yIHR1cm4gb24gQUNQSSBkZWJ1Zy4gQSBwbGF0Zm9ybSBjb3VsZA0K
-PiBhcnJhbmdlIGZvciB0aGUgRElNTXMgdG8gYmUgdW5sb2NrZWQgcHJlLU9TIHRvIG1pbmltaXpl
-IHBhc3NwaHJhc2UNCj4gZXhwb3N1cmUsIGJ1dCBvbmNlIHlvdSBuZWVkIHRvIHVubG9jayBmcm9t
-IHRoZSBPUyBhdCBydW50aW1lIHRoZXJlIGlzDQo+IHRoaXMgZXhwb3N1cmUuIE5vdywgdGhlcmUg
-bWF5IGJlIHdheXMgd2UgY291bGQgcHJvdGVjdCB0aGUga2V5IHRoZQ0KPiBUUE0NCj4gdG8gbWlu
-aW1pemUgZXhwb3N1cmUsIGJ1dCB0aGVyZSB3b3VsZCBhbHdheXMgYmUgdGhlIGluLWZsaWdodCBy
-aXNrLA0KPiBlc3BlY2lhbGx5IHdpdGggQUNQSSBkZWJ1Zy4NCg0KVENHIE9wYWwgcG9zZXMgdGhl
-IHNhbWUgcHJvYmxlbXMsIGRpc2N1c3NlZCBiZWZvcmUgaW4gdGhpcyB0aHJlYWQ6DQpodHRwOi8v
-bGlzdHMuaW5mcmFkZWFkLm9yZy9waXBlcm1haWwvbGludXgtbnZtZS8yMDE2LU1heS8wMDQ2NDYu
-aHRtbA0KDQpVbHRpbWF0ZWx5IHdlIG1pZ2h0IG5lZWQgdG8gcmVseSBvbiBjb2RlIHJ1bm5pbmcg
-aW4gZW5jcnlwdGVkIG1lbW9yeQ0KKGUuZy4sIFNHWCkgdG8gdW5wYWNrIHRoZSBwYXNzd29yZCBm
-cm9tIFRQTS1iYXNlZCBzdG9yYWdlLCB3cmFwIGl0IHdpdGgNCmEgdGVtcG9yYXJ5IHNlc3Npb24g
-a2V5IChlLmcuLCBiYXNlZCBvbiBUQ0cgUFNLIHNlY3VyZSBzZXNzaW9ucywgb3INCnB1YmxpYy9w
-cml2YXRlIGtleXMpLCBhbmQgb25seSBwYXNzIHRoYXQgbm9uLXJldXNhYmxlIGJ1bmRsZSB0aHJv
-dWdoDQp0aGUga2VybmVsLiBUaGF0J2xsIHJlcXVpcmUgbW9yZSBjb21wbGV4IGRldmljZXMsIHRo
-b3VnaC4NCg0KDQoNCg0KDQo
+On Mon, Jul 2, 2018 at 9:58 PM, Elliott, Robert (Persistent Memory)
+<elliott@hpe.com> wrote:
+>
+>> > Since it contains a high-value password, I recommend zeroing
+>> > cmd->passphrase before calling kfree() so that data isn't seen
+>> > by a subsequent kmalloc() caller (and make sure the compiler
+>> > cannot optimize away the clearing code).
+>> >
+>> > Also, check if the ndctl() call chain makes any copies of cmd-
+>> > passphrase and ensure they are cleared.
+>>
+>> If an attacker can run arbitrary code in the kernel they can get the
+>> key from the ring directly, or turn on ACPI debug. A platform could
+>> arrange for the DIMMs to be unlocked pre-OS to minimize passphrase
+>> exposure, but once you need to unlock from the OS at runtime there is
+>> this exposure. Now, there may be ways we could protect the key the
+>> TPM
+>> to minimize exposure, but there would always be the in-flight risk,
+>> especially with ACPI debug.
+>
+> TCG Opal poses the same problems, discussed before in this thread:
+> http://lists.infradead.org/pipermail/linux-nvme/2016-May/004646.html
+>
+> Ultimately we might need to rely on code running in encrypted memory
+> (e.g., SGX) to unpack the password from TPM-based storage, wrap it with
+> a temporary session key (e.g., based on TCG PSK secure sessions, or
+> public/private keys), and only pass that non-reusable bundle through
+> the kernel. That'll require more complex devices, though.
+
+Agreed. At least this implementation avoids sedutil and reuses the
+keyctl api directly.
