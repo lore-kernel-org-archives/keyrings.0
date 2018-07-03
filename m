@@ -1,183 +1,71 @@
-From: Udit Agarwal <udit.agarwal@nxp.com>
-Date: Fri, 20 Jul 2018 05:58:56 +0000
-Subject: [PATCH 2/2] encrypted_keys: Adds support for secure key-type as master key.
-Message-Id: <20180720054656.29143-2-udit.agarwal@nxp.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Tue, 03 Jul 2018 15:21:29 +0000
+Subject: Re: [PATCH 1/2] tpm: Implement public tpm_put_chip() to release reference to chip
+Message-Id: <4789ea0ee11f0a87afcd89ad2814ad0964dd4809.camel@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180720054656.29143-1-udit.agarwal@nxp.com>
-In-Reply-To: <20180720054656.29143-1-udit.agarwal@nxp.com>
-To: dhowells@redhat.com, zohar@linux.vnet.ibm.com, jmorris@namei.org, serge@hallyn.com, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: sahil.malhotra@nxp.com, Udit Agarwal <udit.agarwal@nxp.com>
+References: <20180626193040.2509798-1-stefanb@linux.vnet.ibm.com>
+         <20180626193040.2509798-2-stefanb@linux.vnet.ibm.com>
+In-Reply-To: <20180626193040.2509798-2-stefanb@linux.vnet.ibm.com>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org, zohar@linux.vnet.ibm.com, jejb@linux.vnet.ibm.com
+Cc: jgg@ziepe.ca, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, keyrings@vger.kernel.org, Stefan Berger <stefanb@liux.vnet.ibm.com>
 
-Encrypted keys can use secure key-type as master key along with
-trusted/user keys.
+On Tue, 2018-06-26 at 15:30 -0400, Stefan Berger wrote:
+> Some subsystems that got a hold of a TPM chip through tpm_default_chip()
+> need a way to release the reference to the TPM chip when they shut down.
+> The tpm_put_chip() function enables this.
+> 
+> Signed-off-by: Stefan Berger <stefanb@liux.vnet.ibm.com>
+> ---
+>  drivers/char/tpm/tpm-chip.c | 10 ++++++++++
+>  include/linux/tpm.h         |  4 ++++
+>  2 files changed, 14 insertions(+)
+> 
+> diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
+> index 46caadca916a..c744289d82e0 100644
+> --- a/drivers/char/tpm/tpm-chip.c
+> +++ b/drivers/char/tpm/tpm-chip.c
+> @@ -80,6 +80,16 @@ void tpm_put_ops(struct tpm_chip *chip)
+>  }
+>  EXPORT_SYMBOL_GPL(tpm_put_ops);
+>  
+> +/**
+> + * tpm_put_chip() - Releae a ref to the tpm_chip
+> + * @chip: Chip to put
+> + */
+> +void tpm_put_chip(struct tpm_chip *chip)
+> +{
+> +	put_device(&chip->dev);
+> +}
+> +EXPORT_SYMBOL_GPL(tpm_put_chip);
+> +
+>  /**
+>   * tpm_default_chip() - find a TPM chip and get a reference to it
+>   */
+> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+> index e0e51c49a0e6..889dafe739e1 100644
+> --- a/include/linux/tpm.h
+> +++ b/include/linux/tpm.h
+> @@ -62,6 +62,7 @@ extern int tpm_unseal_trusted(struct tpm_chip *chip,
+>  			      struct trusted_key_payload *payload,
+>  			      struct trusted_key_options *options);
+>  extern struct tpm_chip *tpm_default_chip(void);
+> +extern void tpm_put_chip(struct tpm_chip *chip);
+>  #else
+>  static inline int tpm_is_tpm2(struct tpm_chip *chip)
+>  {
+> @@ -101,5 +102,8 @@ static inline struct tpm_chip *tpm_default_chip(void)
+>  {
+>  	return NULL;
+>  }
+> +static inline void tpm_put_chip(struct tpm_chip *chip)
+> +{
+> +}
+>  #endif
+>  #endif
 
-Secure key as master key uses, secure key type payload derieved
-using CAAM hardware.
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-Signed-off-by: Udit Agarwal <udit.agarwal@nxp.com>
-Reviewed-by: Sahil Malhotra <sahil.malhotra@nxp.com>
----
- MAINTAINERS                                   |  1 +
- security/keys/encrypted-keys/Makefile         |  2 +
- security/keys/encrypted-keys/encrypted.c      | 13 ++++++-
- security/keys/encrypted-keys/encrypted.h      | 13 +++++++
- .../keys/encrypted-keys/masterkey_secure.c    | 37 +++++++++++++++++++
- 5 files changed, 64 insertions(+), 2 deletions(-)
- create mode 100644 security/keys/encrypted-keys/masterkey_secure.c
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 654be2ee4b0a..847254eec22a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7949,6 +7949,7 @@ F:	include/keys/secure-type.h
- F:	security/keys/secure_key.c
- F:	security/keys/securekey_desc.c
- F:	security/keys/securekey_desc.h
-+F:	security/keys/encrypted-keys/masterkey_secure.c
- 
- KEYS/KEYRINGS:
- M:	David Howells <dhowells@redhat.com>
-diff --git a/security/keys/encrypted-keys/Makefile b/security/keys/encrypted-keys/Makefile
-index 7a44dce6f69d..df2b906b7d24 100644
---- a/security/keys/encrypted-keys/Makefile
-+++ b/security/keys/encrypted-keys/Makefile
-@@ -7,5 +7,7 @@ obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys.o
- 
- encrypted-keys-y := encrypted.o ecryptfs_format.o
- masterkey-$(CONFIG_TRUSTED_KEYS) := masterkey_trusted.o
-+masterkey-$(CONFIG_SECURE_KEYS) := masterkey_secure.o
- masterkey-$(CONFIG_TRUSTED_KEYS)-$(CONFIG_ENCRYPTED_KEYS) := masterkey_trusted.o
-+masterkey-$(CONFIG_SECURE_KEYS)-$(CONFIG_ENCRYPTED_KEYS) := masterkey_secure.o
- encrypted-keys-y += $(masterkey-y) $(masterkey-m-m)
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index d92cbf9687c3..258b38094705 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -39,6 +39,7 @@
- #include "ecryptfs_format.h"
- 
- static const char KEY_TRUSTED_PREFIX[] = "trusted:";
-+static const char KEY_SECURE_PREFIX[] = "secure:";
- static const char KEY_USER_PREFIX[] = "user:";
- static const char hash_alg[] = "sha256";
- static const char hmac_alg[] = "hmac(sha256)";
-@@ -49,6 +50,7 @@ static unsigned int ivsize;
- static int blksize;
- 
- #define KEY_TRUSTED_PREFIX_LEN (sizeof (KEY_TRUSTED_PREFIX) - 1)
-+#define KEY_SECURE_PREFIX_LEN (sizeof(KEY_SECURE_PREFIX) - 1)
- #define KEY_USER_PREFIX_LEN (sizeof (KEY_USER_PREFIX) - 1)
- #define KEY_ECRYPTFS_DESC_LEN 16
- #define HASH_SIZE SHA256_DIGEST_SIZE
-@@ -125,7 +127,7 @@ static int valid_ecryptfs_desc(const char *ecryptfs_desc)
- /*
-  * valid_master_desc - verify the 'key-type:desc' of a new/updated master-key
-  *
-- * key-type:= "trusted:" | "user:"
-+ * key-type:= "trusted:" | "user:" | "secure:"
-  * desc:= master-key description
-  *
-  * Verify that 'key-type' is valid and that 'desc' exists. On key update,
-@@ -140,6 +142,8 @@ static int valid_master_desc(const char *new_desc, const char *orig_desc)
- 
- 	if (!strncmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN))
- 		prefix_len = KEY_TRUSTED_PREFIX_LEN;
-+	else if (!strncmp(new_desc, KEY_SECURE_PREFIX, KEY_SECURE_PREFIX_LEN))
-+		prefix_len = KEY_SECURE_PREFIX_LEN;
- 	else if (!strncmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN))
- 		prefix_len = KEY_USER_PREFIX_LEN;
- 	else
-@@ -358,7 +362,7 @@ static int calc_hmac(u8 *digest, const u8 *key, unsigned int keylen,
- 
- enum derived_key_type { ENC_KEY, AUTH_KEY };
- 
--/* Derive authentication/encryption key from trusted key */
-+/* Derive authentication/encryption key from trusted/secure key */
- static int get_derived_key(u8 *derived_key, enum derived_key_type key_type,
- 			   const u8 *master_key, size_t master_keylen)
- {
-@@ -429,6 +433,11 @@ static struct key *request_master_key(struct encrypted_key_payload *epayload,
- 		mkey = request_trusted_key(epayload->master_desc +
- 					   KEY_TRUSTED_PREFIX_LEN,
- 					   master_key, master_keylen);
-+	} else if (!strncmp(epayload->master_desc, KEY_SECURE_PREFIX,
-+			    KEY_SECURE_PREFIX_LEN)) {
-+		mkey = request_secure_key(epayload->master_desc +
-+					  KEY_SECURE_PREFIX_LEN,
-+					  master_key, master_keylen);
- 	} else if (!strncmp(epayload->master_desc, KEY_USER_PREFIX,
- 			    KEY_USER_PREFIX_LEN)) {
- 		mkey = request_user_key(epayload->master_desc +
-diff --git a/security/keys/encrypted-keys/encrypted.h b/security/keys/encrypted-keys/encrypted.h
-index 1809995db452..f1cb73611e77 100644
---- a/security/keys/encrypted-keys/encrypted.h
-+++ b/security/keys/encrypted-keys/encrypted.h
-@@ -16,6 +16,19 @@ static inline struct key *request_trusted_key(const char *trusted_desc,
- }
- #endif
- 
-+#if defined(CONFIG_SECURE_KEYS)
-+extern struct key *request_secure_key(const char *secure_desc,
-+				      const u8 **master_key,
-+				      size_t *master_keylen);
-+#else
-+static inline struct key *request_secure_key(const char *secure_desc,
-+					     const u8 **master_key,
-+					     size_t *master_keylen)
-+{
-+	return ERR_PTR(-EOPNOTSUPP);
-+}
-+#endif
-+
- #if ENCRYPTED_DEBUG
- static inline void dump_master_key(const u8 *master_key, size_t master_keylen)
- {
-diff --git a/security/keys/encrypted-keys/masterkey_secure.c b/security/keys/encrypted-keys/masterkey_secure.c
-new file mode 100644
-index 000000000000..87068c966111
---- /dev/null
-+++ b/security/keys/encrypted-keys/masterkey_secure.c
-@@ -0,0 +1,37 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/*
-+ * Copyright (C) 2018 NXP.
-+ *
-+ */
-+
-+#include <linux/uaccess.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <keys/secure-type.h>
-+#include <keys/encrypted-type.h>
-+#include "encrypted.h"
-+
-+/*
-+ * request_secure_key - request the secure key
-+ *
-+ * Secure keys and their blobs are derived from CAAM hardware.
-+ * Userspace manages secure  key-type data, but key data is not
-+ * visible in plain form. It is presented as blobs.
-+ */
-+struct key *request_secure_key(const char *secure_desc,
-+				const u8 **master_key, size_t *master_keylen)
-+{
-+	struct secure_key_payload *spayload;
-+	struct key *skey;
-+
-+	skey = request_key(&key_type_secure, secure_desc, NULL);
-+	if (IS_ERR(skey))
-+		goto error;
-+
-+	down_read(&skey->sem);
-+	spayload = skey->payload.data[0];
-+	*master_key = spayload->key;
-+	*master_keylen = spayload->key_len;
-+error:
-+	return skey;
-+}
--- 
-2.17.1
-
+/Jarkko
