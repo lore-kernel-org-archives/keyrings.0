@@ -1,98 +1,116 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 02 Jul 2018 23:40:08 +0000
-Subject: [PATCH 11/11] libnvdimm: adding documentation for nvdimm security support
-Message-Id: <153057480817.38125.1881495388634154140.stgit@djiang5-desk3.ch.intel.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 03 Jul 2018 16:14:44 +0000
+Subject: Re: [PATCH] sign-file: add generic engine key support
+Message-Id: <1530634484.3142.17.camel@HansenPartnership.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+To: keyrings@vger.kernel.org
 
-Adding theory of operation for the security support that's going into
-libnvdimm.
+On Mon, 2018-02-12 at 08:29 -0800, James Bottomley wrote:
+> The current engine code only supports a non-standard pkcs11 engine
+> module.  Add code to support any standard engine key module, but
+> leave the non-standard code alone because it would likely fail to
+> function with the correct UI_method of collecting the password.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
- Documentation/nvdimm/security |   70 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 70 insertions(+)
- create mode 100644 Documentation/nvdimm/security
+Ping on this one also.  I realise Red Hat uses the non standard token
+interface, but I don't think I broke it and the rest of us use tokens
+with standard engine interfaces, so we'd very much like this to be
+included.
 
-diff --git a/Documentation/nvdimm/security b/Documentation/nvdimm/security
-new file mode 100644
-index 000000000000..756205c9aa4c
---- /dev/null
-+++ b/Documentation/nvdimm/security
-@@ -0,0 +1,70 @@
-+NVDIMM SECURITY
-+=======+
-+1. Introduction
-+---------------
-+
-+With the introduction of Intel DSM v1.7 specification [1], security DSMs are
-+introduced. The spec added the following security DSMs: "get security state",
-+"set passphrase", "disable passphrase", "unlock unit", "freeze lock",
-+"secure erase", and "overwrite". A security_ops data structure has been
-+added to struct dimm in order to support the security operations and generic
-+APIs are exposed to allow vendor neutral operations.
-+
-+2. Sysfs Interface
-+------------------
-+The "security" sysfs attribute is provided in the nvdimm sysfs directory. For
-+example:
-+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/security
-+
-+The "show" function of that attribute will display the security state for
-+that DIMM. The following states are available: disabled, unlocked, locked,
-+frozen, and unsupported.
-+
-+The "store" function takes several commands when the attribute is written to
-+in order to support some of the security functionalities:
-+update - enable security. Add or update current key.
-+disable - disable enabled security and remove key.
-+freeze - freeze changing of security states.
-+erase - generate new ecryption key for DIMM and crypto-scrambles all existing
-+	user data.
-+
-+3. Key Management
-+-----------------
-+
-+The key is associted to the payload by the DIMM id. For example:
-+# cat /sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/nfit/id
-+8089-a2-1740-00000133
-+The DIMM id would be provided along with the key payload (passphrase) to
-+the kernel.
-+
-+The security keys are managed on the basis of a single key per DIMM. The
-+key "passphrase" is expected to be 32bytes long or padded to 32bytes. This is
-+similar to the ATA security specification [2]. A key is initially acquired
-+via the request_key() kernel API call and retrieved from userspace. It is up to
-+the user to provide an upcall application to retrieve the key in whatever
-+fashion meets their security requirements.
-+
-+The payload provided to the key can be a 32bytes payload or 64bytes payload
-+when doing an "update". The payload is viewed as 64 bytes in the following
-+format:
-+[32 bytes current key data zero padded][32 bytes new key data zero padded]
-+However, a 32bytes payload can be provided and will be assumed as the old
-+key to be 32 bytes of 0s and the provided 32bytes payload is the new key.
-+It is up to the user upcall function how that's presented as the key payload
-+to the kernel.
-+
-+All the other security functions that require a provided key can accept a
-+32bytes payload or 64bytes. If the payload is 64bytes, then second 32bytes
-+will be ignored and the first 32bytes contains the expected "passphrase".
-+
-+4. Unlocking
-+------------
-+When the DIMMs are being enumerated by the kernel, the kernel will attempt to
-+retrieve the key from its keyring. If that fails, it will attempt to
-+acquire the key from the userspace upcall function. This is the only time
-+a locked DIMM can be unlocked. Once unlocked, the DIMM will remain unlocked
-+until reboot.
-+
-+[1]: http://pmem.io/documents/NVDIMM_DSM_Interface-V1.7.pdf
-+[2]: http://www.t13.org/documents/UploadedDocuments/docs2006/e05179r4-ACS-SecurityClarifications.pdf
+Thanks,
+
+James
+
+
+> Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com
+> >
+> ---
+>  scripts/sign-file.c | 39 +++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 37 insertions(+), 2 deletions(-)
+> 
+> diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+> index 49f1cf456254..de8d9bb5e657 100644
+> --- a/scripts/sign-file.c
+> +++ b/scripts/sign-file.c
+> @@ -28,6 +28,7 @@
+>  #include <openssl/pem.h>
+>  #include <openssl/err.h>
+>  #include <openssl/engine.h>
+> +#include <openssl/conf.h>
+>  
+>  /*
+>   * Use CMS if we have openssl-1.0.0 or newer available - otherwise
+> we have to
+> @@ -122,15 +123,29 @@ static int pem_pw_cb(char *buf, int len, int w,
+> void *v)
+>  	return pwlen;
+>  }
+>  
+> +static int ui_read(UI *ui, UI_STRING *uis)
+> +{
+> +    if (UI_get_string_type(uis) = UIT_PROMPT) {
+> +        char password[64];
+> +
+> +        pem_pw_cb(password, sizeof(password), 0, NULL);
+> +        UI_set_result(ui, uis, password);
+> +
+> +        return 1;
+> +    }
+> +    return 0;
+> +}
+> +
+>  static EVP_PKEY *read_private_key(const char *private_key_name)
+>  {
+>  	EVP_PKEY *private_key;
+>  
+> +	ENGINE_load_builtin_engines();
+> +	OPENSSL_config(NULL);
+> +	ERR_clear_error();
+>  	if (!strncmp(private_key_name, "pkcs11:", 7)) {
+>  		ENGINE *e;
+>  
+> -		ENGINE_load_builtin_engines();
+> -		ERR_clear_error();
+>  		e = ENGINE_by_id("pkcs11");
+>  		ERR(!e, "Load PKCS#11 ENGINE");
+>  		if (ENGINE_init(e))
+> @@ -145,11 +160,31 @@ static EVP_PKEY *read_private_key(const char
+> *private_key_name)
+>  		ERR(!private_key, "%s", private_key_name);
+>  	} else {
+>  		BIO *b;
+> +		ENGINE *e;
+>  
+>  		b = BIO_new_file(private_key_name, "rb");
+>  		ERR(!b, "%s", private_key_name);
+>  		private_key = PEM_read_bio_PrivateKey(b, NULL,
+> pem_pw_cb,
+>  						      NULL);
+> +		for (e = ENGINE_get_first(); !private_key && e !> NULL;
+> +		     e = ENGINE_get_next(e)) {
+> +			UI_METHOD *ui;
+> +
+> +			if (!ENGINE_get_load_privkey_function(e))
+> +				continue;
+> +
+> +			ui = UI_create_method("sign-file");
+> +			if (!ui)
+> +				continue;
+> +
+> +			UI_method_set_reader(ui, ui_read);
+> +			private_key = ENGINE_load_private_key(e,
+> private_key_name,
+> +							      ui,
+> NULL);
+> +			UI_destroy_method(ui);
+> +			if (private_key)
+> +				ERR_clear_error(); /* initial key
+> read failed */
+> +		}
+> +
+>  		ERR(!private_key, "%s", private_key_name);
+>  		BIO_free(b);
+>  	}
 
