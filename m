@@ -1,58 +1,40 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Tue, 03 Jul 2018 03:48:26 +0000
-Subject: Re: [PATCH 04/11] nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
-Message-Id: <CAPcyv4gXt=K7yC3M8gsgK35T1zrWW9kCXjjiyOPBgH8ZDTQxnA@mail.gmail.com>
+From: "Elliott, Robert (Persistent Memory)" <elliott@hpe.com>
+Date: Tue, 03 Jul 2018 04:58:45 +0000
+Subject: RE: [PATCH 04/11] nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
+Message-Id: <AT5PR8401MB11698726FDD969FF8D75B9EEAB420@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
  <153057476931.38125.15448927598576316449.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153057476931.38125.15448927598576316449.stgit@djiang5-desk3.ch.intel.com>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: David Howells <dhowells@redhat.com>, "Schofield, Alison  <alison.schofield@intel.com>, keyrings@vger.kernel.org, Kees Cook" <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>
+ <AT5PR8401MB1169BD7B3DE8CDA8BA5AE658AB420@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
+ <CAPcyv4ipAULUgtV6rvx7hQBLtjr7VSE25KvBiHxHRe7TT0HvKA@mail.gmail.com>
+In-Reply-To: <CAPcyv4ipAULUgtV6rvx7hQBLtjr7VSE25KvBiHxHRe7TT0HvKA@mail.gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: "Schofield, Alison" <alison.schofield@intel.com>, "keescook@chromium.org" <keescook@chromium.org>, "linux-nvdimm@lists.01.org" <linux-nvdimm@lists.01.org>, "dhowells@redhat.com" <dhowells@redhat.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>
 
-On Mon, Jul 2, 2018 at 4:39 PM, Dave Jiang <dave.jiang@intel.com> wrote:
-> Adding support to allow query the security status of the Intel nvdimms and
-> also unlock the dimm via the kernel key management APIs. The passphrase is
-> expected to be pulled from userspace through keyutils. Moving the Intel
-> related bits to its own source file as well.
->
-> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-> ---
->  drivers/acpi/nfit/Makefile |    2 -
->  drivers/acpi/nfit/core.c   |    3 +
->  drivers/acpi/nfit/intel.c  |  142 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/nfit/intel.h  |    2 +
->  drivers/nvdimm/dimm.c      |    7 ++
->  drivers/nvdimm/dimm_devs.c |  110 ++++++++++++++++++++++++++++++++++
->  drivers/nvdimm/nd-core.h   |    3 +
->  drivers/nvdimm/nd.h        |    2 +
->  include/linux/libnvdimm.h  |   22 ++++++-
->  9 files changed, 287 insertions(+), 6 deletions(-)
->  create mode 100644 drivers/acpi/nfit/intel.c
->
-> diff --git a/drivers/acpi/nfit/Makefile b/drivers/acpi/nfit/Makefile
-> index a407e769f103..8287005f9226 100644
-> --- a/drivers/acpi/nfit/Makefile
-> +++ b/drivers/acpi/nfit/Makefile
-> @@ -1,3 +1,3 @@
->  obj-$(CONFIG_ACPI_NFIT) := nfit.o
-> -nfit-y := core.o
-> +nfit-y := core.o intel.o
->  nfit-$(CONFIG_X86_MCE) += mce.o
-> diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-> index a6fb336da79d..638bb7fbe565 100644
-> --- a/drivers/acpi/nfit/core.c
-> +++ b/drivers/acpi/nfit/core.c
-> @@ -1907,7 +1907,8 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
->                 nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
->                                 acpi_nfit_dimm_attribute_groups,
->                                 flags, cmd_mask, flush ? flush->hint_count : 0,
-> -                               nfit_mem->flush_wpq, dimm_id);
-> +                               nfit_mem->flush_wpq, dimm_id,
-> +                               &intel_security_ops);
-
-I would expect there to be a routine that returns the security ops
-based on the 'nvdimm family'. I.e. that this ops structure should be
-NULL for everything except NVDIMM_FAMILY_INTEL presently.
+DQo+ID4gU2luY2UgaXQgY29udGFpbnMgYSBoaWdoLXZhbHVlIHBhc3N3b3JkLCBJIHJlY29tbWVu
+ZCB6ZXJvaW5nDQo+ID4gY21kLT5wYXNzcGhyYXNlIGJlZm9yZSBjYWxsaW5nIGtmcmVlKCkgc28g
+dGhhdCBkYXRhIGlzbid0IHNlZW4NCj4gPiBieSBhIHN1YnNlcXVlbnQga21hbGxvYygpIGNhbGxl
+ciAoYW5kIG1ha2Ugc3VyZSB0aGUgY29tcGlsZXINCj4gPiBjYW5ub3Qgb3B0aW1pemUgYXdheSB0
+aGUgY2xlYXJpbmcgY29kZSkuDQo+ID4NCj4gPiBBbHNvLCBjaGVjayBpZiB0aGUgbmRjdGwoKSBj
+YWxsIGNoYWluIG1ha2VzIGFueSBjb3BpZXMgb2YgY21kLQ0KPiA+IHBhc3NwaHJhc2UgYW5kIGVu
+c3VyZSB0aGV5IGFyZSBjbGVhcmVkLg0KPiANCj4gSWYgYW4gYXR0YWNrZXIgY2FuIHJ1biBhcmJp
+dHJhcnkgY29kZSBpbiB0aGUga2VybmVsIHRoZXkgY2FuIGdldCB0aGUNCj4ga2V5IGZyb20gdGhl
+IHJpbmcgZGlyZWN0bHksIG9yIHR1cm4gb24gQUNQSSBkZWJ1Zy4gQSBwbGF0Zm9ybSBjb3VsZA0K
+PiBhcnJhbmdlIGZvciB0aGUgRElNTXMgdG8gYmUgdW5sb2NrZWQgcHJlLU9TIHRvIG1pbmltaXpl
+IHBhc3NwaHJhc2UNCj4gZXhwb3N1cmUsIGJ1dCBvbmNlIHlvdSBuZWVkIHRvIHVubG9jayBmcm9t
+IHRoZSBPUyBhdCBydW50aW1lIHRoZXJlIGlzDQo+IHRoaXMgZXhwb3N1cmUuIE5vdywgdGhlcmUg
+bWF5IGJlIHdheXMgd2UgY291bGQgcHJvdGVjdCB0aGUga2V5IHRoZQ0KPiBUUE0NCj4gdG8gbWlu
+aW1pemUgZXhwb3N1cmUsIGJ1dCB0aGVyZSB3b3VsZCBhbHdheXMgYmUgdGhlIGluLWZsaWdodCBy
+aXNrLA0KPiBlc3BlY2lhbGx5IHdpdGggQUNQSSBkZWJ1Zy4NCg0KVENHIE9wYWwgcG9zZXMgdGhl
+IHNhbWUgcHJvYmxlbXMsIGRpc2N1c3NlZCBiZWZvcmUgaW4gdGhpcyB0aHJlYWQ6DQpodHRwOi8v
+bGlzdHMuaW5mcmFkZWFkLm9yZy9waXBlcm1haWwvbGludXgtbnZtZS8yMDE2LU1heS8wMDQ2NDYu
+aHRtbA0KDQpVbHRpbWF0ZWx5IHdlIG1pZ2h0IG5lZWQgdG8gcmVseSBvbiBjb2RlIHJ1bm5pbmcg
+aW4gZW5jcnlwdGVkIG1lbW9yeQ0KKGUuZy4sIFNHWCkgdG8gdW5wYWNrIHRoZSBwYXNzd29yZCBm
+cm9tIFRQTS1iYXNlZCBzdG9yYWdlLCB3cmFwIGl0IHdpdGgNCmEgdGVtcG9yYXJ5IHNlc3Npb24g
+a2V5IChlLmcuLCBiYXNlZCBvbiBUQ0cgUFNLIHNlY3VyZSBzZXNzaW9ucywgb3INCnB1YmxpYy9w
+cml2YXRlIGtleXMpLCBhbmQgb25seSBwYXNzIHRoYXQgbm9uLXJldXNhYmxlIGJ1bmRsZSB0aHJv
+dWdoDQp0aGUga2VybmVsLiBUaGF0J2xsIHJlcXVpcmUgbW9yZSBjb21wbGV4IGRldmljZXMsIHRo
+b3VnaC4NCg0KDQoNCg0KDQo
