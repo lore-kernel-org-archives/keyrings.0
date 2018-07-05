@@ -1,57 +1,256 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 02 Jul 2018 23:39:07 +0000
-Subject: [PATCH 00/11] Adding security support for nvdimm
-Message-Id: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
+Date: Thu, 05 Jul 2018 20:22:38 +0000
+Subject: [PATCH v2 05/11] nfit/libnvdimm: adding set passphrase support for Intel nvdimms
+Message-Id: <153082215869.61422.9637712912457962319.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
 To: dan.j.williams@intel.com
 Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-The following series implements security support for nvdimm. Mostly adding
-new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
-adding generic support libnvdimm for other vendors. The most important
-security features are unlocking locked nvdimms, and updating/setting security
-passphrase to nvdimms.
+Adding support for setting and/or updating passphrase on the Intel nvdimms.
+The passphrase is pulled from userspace through the kernel key management.
+We trigger the update via writing "update" to the sysfs attribute
+"security". The state of the security can also be read via the "security"
+attribute. libnvdimm will generically support the key_change API call.
 
-Security folks, thanks in advance for taking a look at my key management
-implementation and making sure that I'm doing something sane. Mainly you'll
-want to review patches 2, 4, and 5 as most relevant ones that need scrutiny.
-
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 ---
+ drivers/acpi/nfit/intel.c  |   57 +++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |  110 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    5 ++
+ 3 files changed, 172 insertions(+)
 
-Dave Jiang (11):
-      nfit: adding support for Intel DSM 1.7 commands
-      libnvdimm: create keyring to store security keys
-      nfit/libnvdimm: store dimm id as a member to struct nvdimm
-      nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
-      nfit/libnvdimm: add set passphrase support for Intel nvdimms
-      nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
-      nfit/libnvdimm: add freeze security support to Intel nvdimm
-      nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-      nfit_test: adding context to dimm_dev for nfit_test
-      nfit_test: adding test support for Intel nvdimm security DSMs
-      libnvdimm: adding documentation for nvdimm security support
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index c1140f6901da..82514ff3e644 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -17,6 +17,62 @@
+ #include "intel.h"
+ #include "nfit.h"
+ 
++static int intel_dimm_security_update_passphrase(
++		struct nvdimm_bus *nvdimm_bus, struct nvdimm *nvdimm,
++		struct nvdimm_key_data *old_data,
++		struct nvdimm_key_data *new_data)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_set_passphrase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_SET_PASSPHRASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE * 2,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
++
++	if (!test_bit(NVDIMM_INTEL_SET_PASSPHRASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	if (old_data)
++		memcpy(nd_cmd.cmd.old_pass, old_data->data,
++				ND_INTEL_PASSPHRASE_SIZE);
++	memcpy(nd_cmd.cmd.new_pass, new_data->data, ND_INTEL_PASSPHRASE_SIZE);
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	return rc;
++}
++
+ static int intel_dimm_security_unlock(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm, struct nvdimm_key_data *nkey)
+ {
+@@ -143,4 +199,5 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
+ struct nvdimm_security_ops intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
++	.change_key = intel_dimm_security_update_passphrase,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 5e190120f4aa..645979665808 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -171,6 +171,75 @@ int nvdimm_security_unlock_dimm(struct device *dev)
+ 	return rc;
+ }
+ 
++static int nvdimm_security_change_key(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key = NULL, *old_key = NULL;
++	int rc;
++	void *old_data, *new_data;
++
++	if (!nvdimm->security_ops)
++		return 0;
++
++	if (nvdimm->state = NVDIMM_SECURITY_FROZEN)
++		return -EBUSY;
++
++	/* look for a key from keyring if exists and remove */
++	old_key = nvdimm_search_key(dev);
++	if (old_key) {
++		dev_dbg(dev, "%s: killing old key: %#x\n",
++				__func__, old_key->serial);
++		key_invalidate(old_key);
++		key_put(old_key);
++		/* need key garbage collection to take effect */
++		cond_resched();
++	}
++
++	/* request new key from userspace */
++	key = nvdimm_request_key(dev);
++	if (!key) {
++		dev_dbg(dev, "%s: failed to acquire new key\n", __func__);
++		return -ENXIO;
++	}
++
++	dev_dbg(dev, "%s: new key: %#x\n", __func__, key->serial);
++
++	if (key->datalen = NVDIMM_PASSPHRASE_LEN) {
++		old_data = NULL;
++		new_data = key->payload.data[0];
++	} else if (key->datalen = (NVDIMM_PASSPHRASE_LEN * 2)) {
++		old_data = key->payload.data[0];
++		new_data = old_data + NVDIMM_PASSPHRASE_LEN;
++	} else {
++		key_invalidate(key);
++		key_put(key);
++		dev_warn(dev, "Incorrect key payload size for update: %u\n",
++				key->datalen);
++		return -EINVAL;
++	}
++
++	down_read(&key->sem);
++	rc = nvdimm->security_ops->change_key(nvdimm_bus, nvdimm, old_data,
++			new_data);
++	if (rc = 0 && key->datalen = (NVDIMM_PASSPHRASE_LEN * 2))
++		memcpy(old_data, new_data, NVDIMM_PASSPHRASE_LEN);
++	up_read(&key->sem);
++
++	/*
++	 * If we successfully update, link the new key to our keyring,
++	 * otherwise, nuke the key.
++	 */
++	if (rc = 0)
++		key_link(nvdimm_cred->thread_keyring, key);
++	else
++		key_invalidate(key);
++
++	key_put(key);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ /*
+  * Retrieve bus and dimm handle and return if this bus supports
+  * get_config_data commands
+@@ -528,11 +597,52 @@ static ssize_t available_slots_show(struct device *dev,
+ }
+ static DEVICE_ATTR_RO(available_slots);
+ 
++static ssize_t security_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++
++	switch (nvdimm->state) {
++	case NVDIMM_SECURITY_DISABLED:
++		return sprintf(buf, "disabled\n");
++	case NVDIMM_SECURITY_UNLOCKED:
++		return sprintf(buf, "unlocked\n");
++	case NVDIMM_SECURITY_LOCKED:
++		return sprintf(buf, "locked\n");
++	case NVDIMM_SECURITY_FROZEN:
++		return sprintf(buf, "frozen\n");
++	case NVDIMM_SECURITY_UNSUPPORTED:
++	default:
++		return sprintf(buf, "unsupported\n");
++	}
++
++	return -ENOTTY;
++}
++
++static ssize_t security_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t len)
++
++{
++	ssize_t rc = -EINVAL;
++
++	if (strcmp(buf, "update") = 0 || strcmp(buf, "update\n") = 0)
++		rc = nvdimm_security_change_key(dev);
++	else
++		return -EINVAL;
++
++	if (rc = 0)
++		rc = len;
++
++	return rc;
++}
++static DEVICE_ATTR_RW(security);
++
+ static struct attribute *nvdimm_attributes[] = {
+ 	&dev_attr_state.attr,
+ 	&dev_attr_flags.attr,
+ 	&dev_attr_commands.attr,
+ 	&dev_attr_available_slots.attr,
++	&dev_attr_security.attr,
+ 	NULL,
+ };
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 692217f82c6e..7889fea75281 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -162,6 +162,7 @@ enum nvdimm_security_state {
+ 	NVDIMM_SECURITY_DISABLED,
+ 	NVDIMM_SECURITY_UNLOCKED,
+ 	NVDIMM_SECURITY_LOCKED,
++	NVDIMM_SECURITY_FROZEN,
+ 	NVDIMM_SECURITY_UNSUPPORTED,
+ };
+ 
+@@ -178,6 +179,10 @@ struct nvdimm_security_ops {
+ 			enum nvdimm_security_state *state);
+ 	int (*unlock)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm, struct nvdimm_key_data *nkey);
++	int (*change_key)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			struct nvdimm_key_data *old_data,
++			struct nvdimm_key_data *new_data);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
 
-
- Documentation/nvdimm/security    |   70 ++++++++
- drivers/acpi/nfit/Makefile       |    2 
- drivers/acpi/nfit/core.c         |   61 +++++--
- drivers/acpi/nfit/intel.c        |  348 ++++++++++++++++++++++++++++++++++++++
- drivers/acpi/nfit/intel.h        |  104 +++++++++++
- drivers/acpi/nfit/nfit.h         |   24 ---
- drivers/nvdimm/bus.c             |    2 
- drivers/nvdimm/dimm.c            |   97 +++++++++++
- drivers/nvdimm/dimm_devs.c       |  332 ++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/nd-core.h         |    4 
- drivers/nvdimm/nd.h              |    2 
- include/linux/libnvdimm.h        |   35 ++++
- tools/testing/nvdimm/Kbuild      |    1 
- tools/testing/nvdimm/test/nfit.c |  226 +++++++++++++++++++++++--
- 14 files changed, 1254 insertions(+), 54 deletions(-)
- create mode 100644 Documentation/nvdimm/security
- create mode 100644 drivers/acpi/nfit/intel.c
- create mode 100644 drivers/acpi/nfit/intel.h
-
---
