@@ -1,296 +1,166 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 25 Jul 2018 20:59:27 +0000
-Subject: [PATCH v6 10/11] nfit_test: add test support for Intel nvdimm security DSMs
-Message-Id: <153255236737.51274.11297989514122656698.stgit@djiang5-desk3.ch.intel.com>
+Date: Thu, 05 Jul 2018 20:22:44 +0000
+Subject: [PATCH v2 06/11] nfit/libnvdimm: adding disable passphrase support to Intel nvdimm.
+Message-Id: <153082216451.61422.2923876535893157241.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-Add nfit_test support for DSM functions "Get Security State",
-"Set Passphrase", "Disable Passphrase", "Unlock Unit", "Freeze Lock",
-and "Secure Erase" for the fake DIMMs.
-
-Also adding a sysfs knob in order to put the DIMMs in "locked" state. The
-order of testing DIMM unlocking would be.
-1a. Disable DIMM X.
-1b. Set Passphrase to DIMM X.
-2. Write to
-/sys/devices/platform/nfit_test.0/nfit_test_dimm/test_dimmX/lock_dimm
-3. Renable DIMM X
-4. Check DIMM X state via sysfs "security" attribute for nmemX.
+Adding support to disable passphrase (security) for the Intel nvdimm. The
+passphrase used for disabling is pulled from userspace via the kernel
+key management. The action is triggered by writing "disable" to the sysfs
+attribute "security". libnvdimm will support the generic disable API call.
 
 Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- tools/testing/nvdimm/Kbuild      |    1 
- tools/testing/nvdimm/test/nfit.c |  186 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 187 insertions(+)
+ drivers/acpi/nfit/intel.c  |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   41 +++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    2 ++
+ 3 files changed, 95 insertions(+)
 
-diff --git a/tools/testing/nvdimm/Kbuild b/tools/testing/nvdimm/Kbuild
-index 0392153a0009..a13670d3b389 100644
---- a/tools/testing/nvdimm/Kbuild
-+++ b/tools/testing/nvdimm/Kbuild
-@@ -36,6 +36,7 @@ obj-$(CONFIG_DEV_DAX) += device_dax.o
- obj-$(CONFIG_DEV_DAX_PMEM) += dax_pmem.o
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 82514ff3e644..e413e78c0cee 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -17,6 +17,57 @@
+ #include "intel.h"
+ #include "nfit.h"
  
- nfit-y := $(ACPI_SRC)/core.o
-+nfit-$(CONFIG_X86) += $(ACPI_SRC)/intel.o
- nfit-$(CONFIG_X86_MCE) += $(ACPI_SRC)/mce.o
- nfit-y += acpi_nfit_test.o
- nfit-y += config_check.o
-diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
-index 7b3ce2194889..e5b62396c41f 100644
---- a/tools/testing/nvdimm/test/nfit.c
-+++ b/tools/testing/nvdimm/test/nfit.c
-@@ -24,6 +24,7 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <nd-core.h>
-+#include <intel.h>
- #include <nfit.h>
- #include <nd.h>
- #include "nfit_test.h"
-@@ -155,6 +156,11 @@ struct nfit_dimm_dev {
- 	struct nfit_mem *nfit_mem;
- };
- 
-+struct nfit_test_sec {
-+	u8 state;
-+	u8 passphrase[32];
-+};
++static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, struct nvdimm_key_data *nkey)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_disable_passphrase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
 +
- struct nfit_test {
- 	struct acpi_nfit_desc acpi_desc;
- 	struct platform_device pdev;
-@@ -192,6 +198,7 @@ struct nfit_test {
- 	struct badrange badrange;
- 	struct work_struct work;
- 	struct nfit_test_fw *fw;
-+	struct nfit_test_sec *sec;
++	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	memcpy(nd_cmd.cmd.passphrase, nkey->data, ND_INTEL_PASSPHRASE_SIZE);
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	return rc;
++}
++
+ static int intel_dimm_security_update_passphrase(
+ 		struct nvdimm_bus *nvdimm_bus, struct nvdimm *nvdimm,
+ 		struct nvdimm_key_data *old_data,
+@@ -200,4 +251,5 @@ struct nvdimm_security_ops intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
++	.disable = intel_dimm_security_disable,
  };
- 
- static struct workqueue_struct *nfit_wq;
-@@ -899,6 +906,138 @@ static int override_return_code(int dimm, unsigned int func, int rc)
- 	return rc;
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 645979665808..9ee8f269b1ce 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -125,6 +125,45 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
  }
  
-+static int nd_intel_test_cmd_security_status(struct nfit_test *t,
-+		struct nd_intel_get_security_state *nd_cmd,
-+		unsigned int buf_len, int idx)
++static int nvdimm_security_disable(struct device *dev)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	int rc;
++	void *payload;
++	bool cached_key = false;
 +
-+	nd_cmd->status = 0;
-+	nd_cmd->state = sec->state;
-+	dev_dbg(dev, "security state (%#x) returned\n", nd_cmd->state);
++	if (!nvdimm->security_ops)
++		return 0;
 +
-+	return 0;
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		return 0;
++
++	key = nvdimm_search_key(dev);
++	if (!key)
++		key = nvdimm_request_key(dev);
++	else
++		cached_key = true;
++	if (!key)
++		return -ENXIO;
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm, payload);
++	up_read(&key->sem);
++	if (rc < 0)
++		goto out;
++
++	/* If we succeed then remove the key */
++	key_invalidate(key);
++
++ out:
++	key_put(key);
++	nvdimm_security_get_state(dev);
++	return rc;
 +}
 +
-+static int nd_intel_test_cmd_unlock_unit(struct nfit_test *t,
-+		struct nd_intel_unlock_unit *nd_cmd,
-+		unsigned int buf_len, int idx)
-+{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
-+
-+	if (!(sec->state & ND_INTEL_SEC_STATE_LOCKED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "unlock unit: invalid state: %#x\n",
-+				sec->state);
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "unlock unit: invalid passphrase\n");
-+	} else {
-+		nd_cmd->status = 0;
-+		sec->state = ND_INTEL_SEC_STATE_ENABLED;
-+		dev_dbg(dev, "Unit unlocked\n");
-+	}
-+
-+	dev_dbg(dev, "unlocking status returned: %#x\n", nd_cmd->status);
-+	return 0;
-+}
-+
-+static int nd_intel_test_cmd_set_pass(struct nfit_test *t,
-+		struct nd_intel_set_passphrase *nd_cmd,
-+		unsigned int buf_len, int idx)
-+{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
-+
-+	if (sec->state & ND_INTEL_SEC_STATE_FROZEN) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "set passphrase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->old_pass, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "set passphrase: wrong passphrase\n");
-+	} else {
-+		memcpy(sec->passphrase, nd_cmd->new_pass,
-+				ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state |= ND_INTEL_SEC_STATE_ENABLED;
-+		nd_cmd->status = 0;
-+		dev_dbg(dev, "passphrase updated\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int nd_intel_test_cmd_freeze_lock(struct nfit_test *t,
-+		struct nd_intel_freeze_lock *nd_cmd,
-+		unsigned int buf_len, int idx)
-+{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
-+
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "freeze lock: wrong security state\n");
-+	} else {
-+		sec->state |= ND_INTEL_SEC_STATE_FROZEN;
-+		nd_cmd->status = 0;
-+		dev_dbg(dev, "security frozen\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int nd_intel_test_cmd_disable_pass(struct nfit_test *t,
-+		struct nd_intel_disable_passphrase *nd_cmd,
-+		unsigned int buf_len, int idx)
-+{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
-+
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "disable passphrase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "disable passphrase: wrong passphrase\n");
-+	} else {
-+		memset(sec->passphrase, 0, ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state = 0;
-+		dev_dbg(dev, "disable passphrase: done\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int nd_intel_test_cmd_secure_erase(struct nfit_test *t,
-+		struct nd_intel_secure_erase *nd_cmd,
-+		unsigned int buf_len, int idx)
-+{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
-+
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "secure erase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "secure erase: wrong passphrase\n");
-+	} else {
-+		memset(sec->passphrase, 0, ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state = 0;
-+		dev_dbg(dev, "secure erase: done\n");
-+	}
-+
-+	return 0;
-+}
-+
- static int get_dimm(struct nfit_mem *nfit_mem, unsigned int func)
+ int nvdimm_security_unlock_dimm(struct device *dev)
  {
- 	int i;
-@@ -946,6 +1085,30 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 				return i;
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -627,6 +666,8 @@ static ssize_t security_store(struct device *dev,
  
- 			switch (func) {
-+			case NVDIMM_INTEL_GET_SECURITY_STATE:
-+				rc = nd_intel_test_cmd_security_status(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_UNLOCK_UNIT:
-+				rc = nd_intel_test_cmd_unlock_unit(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_SET_PASSPHRASE:
-+				rc = nd_intel_test_cmd_set_pass(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_DISABLE_PASSPHRASE:
-+				rc = nd_intel_test_cmd_disable_pass(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_FREEZE_LOCK:
-+				rc = nd_intel_test_cmd_freeze_lock(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_SECURE_ERASE:
-+				rc = nd_intel_test_cmd_secure_erase(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
- 			case ND_INTEL_ENABLE_LSS_STATUS:
- 				rc = nd_intel_test_cmd_set_lss_status(t,
- 						buf, buf_len);
-@@ -1280,10 +1443,23 @@ static ssize_t fail_cmd_code_store(struct device *dev, struct device_attribute *
- }
- static DEVICE_ATTR_RW(fail_cmd_code);
+ 	if (strcmp(buf, "update") = 0 || strcmp(buf, "update\n") = 0)
+ 		rc = nvdimm_security_change_key(dev);
++	else if (strcmp(buf, "disable") = 0 || strcmp(buf, "disable\n") = 0)
++		rc = nvdimm_security_disable(dev);
+ 	else
+ 		return -EINVAL;
  
-+static ssize_t lock_dimm_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	int dimm = dimm_name_to_id(dev);
-+	struct nfit_test *t = dev_get_drvdata(dev);
-+	struct nfit_test_sec *sec = &t->sec[dimm];
-+
-+	sec->state = ND_INTEL_SEC_STATE_ENABLED | ND_INTEL_SEC_STATE_LOCKED;
-+	return size;
-+}
-+static DEVICE_ATTR_WO(lock_dimm);
-+
- static struct attribute *nfit_test_dimm_attributes[] = {
- 	&dev_attr_fail_cmd.attr,
- 	&dev_attr_fail_cmd_code.attr,
- 	&dev_attr_handle.attr,
-+	&dev_attr_lock_dimm.attr,
- 	NULL,
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 7889fea75281..59ad04261f34 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -183,6 +183,8 @@ struct nvdimm_security_ops {
+ 			struct nvdimm *nvdimm,
+ 			struct nvdimm_key_data *old_data,
+ 			struct nvdimm_key_data *new_data);
++	int (*disable)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm, struct nvdimm_key_data *nkey);
  };
  
-@@ -2192,6 +2368,14 @@ static void nfit_test0_setup(struct nfit_test *t)
- 	set_bit(ND_INTEL_FW_FINISH_UPDATE, &acpi_desc->dimm_cmd_force_en);
- 	set_bit(ND_INTEL_FW_FINISH_QUERY, &acpi_desc->dimm_cmd_force_en);
- 	set_bit(ND_INTEL_ENABLE_LSS_STATUS, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_GET_SECURITY_STATE,
-+			&acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_SET_PASSPHRASE, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE,
-+			&acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_UNLOCK_UNIT, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_FREEZE_LOCK, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_SECURE_ERASE, &acpi_desc->dimm_cmd_force_en);
- }
- 
- static void nfit_test1_setup(struct nfit_test *t)
-@@ -2611,6 +2795,8 @@ static int nfit_test_probe(struct platform_device *pdev)
- 				GFP_KERNEL);
- 		nfit_test->fw = devm_kcalloc(dev, num,
- 				sizeof(struct nfit_test_fw), GFP_KERNEL);
-+		nfit_test->sec = devm_kcalloc(dev, num,
-+				sizeof(struct nfit_test_sec), GFP_KERNEL);
- 		if (nfit_test->dimm && nfit_test->dimm_dma && nfit_test->label
- 				&& nfit_test->label_dma && nfit_test->dcr
- 				&& nfit_test->dcr_dma && nfit_test->flush
+ void badrange_init(struct badrange *badrange);
 
