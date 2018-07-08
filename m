@@ -1,30 +1,49 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Fri, 13 Jul 2018 23:34:14 +0000
-Subject: Re: [PATCH v4 07/11] nfit/libnvdimm: add freeze security support to Intel nvdimm
-Message-Id: <CAPcyv4iw0mPVvX2ijMGqyfxOqyecpGx7wfzHdaOkG6w5sSvX-g@mail.gmail.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Sun, 08 Jul 2018 16:44:14 +0000
+Subject: Re: [PATCH v2] crypto: DH - add public key verification test
+Message-Id: <20180708164414.jrj3k7jvkq2jnrst@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-3"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <153142840572.27297.8070233763007198738.stgit@djiang5-desk3.ch.intel.com>
- <153142854714.27297.10145290341563367334.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153142854714.27297.10145290341563367334.stgit@djiang5-desk3.ch.intel.com>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: David Howells <dhowells@redhat.com>, "Schofield, Alison  <alison.schofield@intel.com>, keyrings@vger.kernel.org, Kees Cook" <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>
+References: <2573864.V43BhLOfag@positron.chronox.de>
+In-Reply-To: <2573864.V43BhLOfag@positron.chronox.de>
+To: keyrings@vger.kernel.org
 
-On Thu, Jul 12, 2018 at 1:49 PM, Dave Jiang <dave.jiang@intel.com> wrote:
-> Add support for freeze security on Intel nvdimm. This locks out any
-> changes to security for the DIMM unless a reboot is done. This is triggered
-> by writing "freeze" to the "security" sysfs attribute. libnvdimm will
-> support the generic freeze_lock API call.
->
-> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+On Wed, Jun 27, 2018 at 08:15:31AM +0200, Stephan M=FCller wrote:
+> Hi,
+>=20
+> Changes v2:
+> * addition of a check that mpi_alloc succeeds.
+>=20
+> ---8<---
+>=20
+> According to SP800-56A section 5.6.2.1, the public key to be processed
+> for the DH operation shall be checked for appropriateness. The check
+> shall covers the full verification test in case the domain parameter Q
+> is provided as defined in SP800-56A section 5.6.2.3.1. If Q is not
+> provided, the partial check according to SP800-56A section 5.6.2.3.2 is
+> performed.
+>=20
+> The full verification test requires the presence of the domain parameter
+> Q. Thus, the patch adds the support to handle Q. It is permissible to
+> not provide the Q value as part of the domain parameters. This implies
+> that the interface is still backwards-compatible where so far only P and
+> G are to be provided. However, if Q is provided, it is imported.
+>=20
+> Without the test, the NIST ACVP testing fails. After adding this check,
+> the NIST ACVP testing passes. Testing without providing the Q domain
+> parameter has been performed to verify the interface has not changed.
+>=20
+> Signed-off-by: Stephan Mueller <smueller@chronox.de>
 > ---
->  drivers/acpi/nfit/intel.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/nvdimm/dimm_devs.c |   22 +++++++++++++++++++
->  include/linux/libnvdimm.h  |    2 ++
->  3 files changed, 75 insertions(+)
+>  crypto/dh.c         | 66 ++++++++++++++++++++++++++++++++++++++++++---
+>  crypto/dh_helper.c  | 15 ++++++++---
+>  include/crypto/dh.h |  4 +++
+>  3 files changed, 79 insertions(+), 6 deletions(-)
 
-Looks good,
-
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Patch applied.  Thanks.
+--=20
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
