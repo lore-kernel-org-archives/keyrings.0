@@ -1,171 +1,49 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 25 Jul 2018 20:59:04 +0000
-Subject: [PATCH v6 06/11] nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
-Message-Id: <153255234480.51274.17829701006557876369.stgit@djiang5-desk3.ch.intel.com>
+From: "Mrs. Ursula Alice Walton" <cnegre@viquel.fr>
+Date: Mon, 09 Jul 2018 02:08:43 +0000
+Subject: =?utf-8?Q?J=C3=93_H=C3=8DREK?=
+Message-Id: <179150912.119135.1531102123521.JavaMail.root@SRV-ZIMBRA>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Add support to disable passphrase (security) for the Intel nvdimm. The
-passphrase used for disabling is pulled from userspace via the kernel
-key management. The action is triggered by writing "disable" to the sysfs
-attribute "security". libnvdimm will support the generic disable API call.
+Kedves Kedvezményezettem,
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
----
- drivers/acpi/nfit/intel.c  |   53 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   43 ++++++++++++++++++++++++++++++++++++
- include/linux/libnvdimm.h  |    3 ++
- 3 files changed, 99 insertions(+)
+Biztos vagyok benne, hogy ez a levél meglepetésként fog megjelenni, mivel még soha nem találkoztunk, és akkor is megkérdeznéd, hogy miért döntöttem úgy, hogy választottam Önt a világ számos internethasználója között. Pontosan, nem tudom megmondani, hogy miért választottam Önt, de ne aggódj, mert láttam a profilodat az interneten, ami megkönnyítette a kérésemet. A Mindenható Isten megáldjon és átnézzen titeket ezen a küldetésben, ha alaposan elolvashatja és megemésztheti az alábbi üzenetet.
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 314eae7e02d7..21d30222371f 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,58 @@
- #include "intel.h"
- #include "nfit.h"
- 
-+static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_disable_passphrase cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
-+	};
-+
-+	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
-+
-+	memcpy(nd_cmd.cmd.passphrase, nkey->data,
-+			sizeof(nd_cmd.cmd.passphrase));
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+ out:
-+	return rc;
-+}
-+
- /*
-  * The update passphrase takes the old passphrase and the new passphrase
-  * and send those to the nvdimm. The nvdimm will verify the old
-@@ -217,4 +269,5 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.state = intel_dimm_security_state,
- 	.unlock = intel_dimm_security_unlock,
- 	.change_key = intel_dimm_security_update_passphrase,
-+	.disable = intel_dimm_security_disable,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index c6029e3f329e..1d85a4cb9402 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -97,6 +97,47 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
- }
- 
-+static int nvdimm_security_disable(struct device *dev)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key;
-+	int rc;
-+	struct user_key_payload *payload;
-+
-+	if (!nvdimm->security_ops)
-+		return 0;
-+
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
-+		return 0;
-+
-+	key = nvdimm_search_key(dev);
-+	if (!key) {
-+		dev_warn(dev, "no key found\n");
-+		return -ENOKEY;
-+	}
-+
-+	down_read(&key->sem);
-+	payload = key->payload.data[0];
-+	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm,
-+			(void *)payload->data);
-+	up_read(&key->sem);
-+	if (rc < 0) {
-+		dev_warn(dev, "unlock failed\n");
-+		goto out;
-+	}
-+
-+	/* If we succeed then remove the key */
-+	key_unlink(nvdimm_keyring, key);
-+	key_invalidate(key);
-+	nvdimm->key_id = 0;
-+
-+ out:
-+	key_put(key);
-+	nvdimm_security_get_state(dev);
-+	return rc;
-+}
-+
- int nvdimm_security_unlock_dimm(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -622,6 +663,8 @@ static ssize_t security_store(struct device *dev,
- 
- 	if (sysfs_streq(buf, "update"))
- 		rc = nvdimm_security_change_key(dev);
-+	else if (sysfs_streq(buf, "disable"))
-+		rc = nvdimm_security_disable(dev);
- 	else
- 		return -EINVAL;
- 
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index bd6a413164ee..c60ab4b238f3 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -182,6 +182,9 @@ struct nvdimm_security_ops {
- 			struct nvdimm *nvdimm,
- 			const struct nvdimm_key_data *old_data,
- 			const struct nvdimm_key_data *new_data);
-+	int (*disable)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm,
-+			const struct nvdimm_key_data *nkey);
- };
- 
- void badrange_init(struct badrange *badrange);
+Mielőtt elmegyek tovább, engedje meg, hogy adjak egy kis életrajzomat, én Ursula Anya, Alice Walton vagyok, 72 éves nő és a késő Sir Danon Walton felesége, aki 1998. szeptember 7-én, hétfőn : 22 Egyesült Királyság, miközben New Yorkból Genfbe repültek.
 
+A férjem halála után a befektetés vezetője lettem, és most, hogy öregek és gyenge vagyok, úgy döntöttem, hogy az életem hátralevő részét családommal és szeretteikkel töltik, akinek életem során soha nem volt időm. de a férjem halála előtt terveztük, hogy életünk legutóbbi napjait használjuk fel arra, hogy felajánljuk a kevésbé kiváltságos és jótékonysági otthonok felét, a másik fele pedig magunknak, családtagjainknak és közeli barátainknak. annyira szerencsétlen, hogy a férjem nem él ma, hogy ezt tegye velem, és nagyon gyenge vagyok és idős voltam, ezért úgy döntöttem, hogy ezt a filantrópikus munkát végzem a késő férjem és én nevében.
+
+Jelenleg a vagyonunknak csaknem felét több jótékonysági otthonra és néhány kevésbé kiváltságos országra fordítottam. Annak ellenére, hogy a késő férjem és én segítséget nyújtottak a hátrányos helyzetűek számára, beleegyeztünk abba, hogy segítséget nyújtsunk egy olyan egyénnek, akivel még nem találkoztunk az életben, mivel életünkben még mindig fiatal volt, anonim segítséget kapunk egy az egyén, akiről nem tudtunk, és melyeket nem tudtunk megmondani a dátumig, az efféle gesztus hatása miatt ugyanezt tettük.
+
+Sajnálattal értesítem, hogy soha nem lesz alkalmam megismerni, mert éppen befejeztem azt a feladatot, amelyet a férjem és én a hirtelen halálát megelőzően megállapodtunk, és te voltál a legutóbbi gyilkosságunk kedvezményezettje, függetlenül attól, hogy korábbi pénzügyi státusza, ezért szükségem van arra, hogy tegyen nekem egy szívességet azáltal, hogy elfogadja ajánlatunkat, ami semmivel sem fog kerülni.
+
+Jelenleg letétbe helyezem a Zenith Bank (UK) Ltd 5,800,000.00 amerikai dollár összegének átutalását Önnek, amit most tenned kell, hogy a lehető leghamarabb lépjen kapcsolatba a Zenith Bank (UK) Ltd-vel, hogy megtudja, mikor fognak a lejárat dátuma miatt adja át a pénzt.
+
+Csak letétbe helyeztem az EMAIL ADDRESS és a DEPOSIT CODE (2017748032) számot, mert nem tudom a nevedet és a számlaszámot, amellyel szeretnéd megkapni a pénzt. Nem tudtam megtalálni őket neten a profilod böngészése közben, ha nem adtam volna át a BANK-nak az azonnali átadáshoz.
+
+Az Ön információiért fizettem az összes adót, biztosítási prémiumot és bankátutalást A készpénz díja, amely azt mutatja, hogy ez nem drogpénz, vagy az országában a terrorizmust támogatta.
+
+Engedjék meg, hogy ismét megismételjem, nem fizeti meg az adóterheket, a biztosítási díjat és a csekk átutalási díját, mert már kifizettem őket, az egyetlen pénzt, amelyre fizetni akarsz, 85 dollár amerikai dollár a számlára Az aktiválás lehetővé teszi, hogy a bank átutalja az összeget a helyi számlájára anélkül, hogy további átutalási díjakat fizetne. Én fizettem volna a díjat, de a bank ragaszkodott hozzá, hogy nem szabad, mert nem tudják, mikor fogsz velük kapcsolatba lépni, és elkerülni a kudarcot vagy a további költségeket. Kérlek kedvesem, ha tudod, hogy nem fogsz segíteni a 85 dolláros amerikai dollárral, kérlek, ne lépj kapcsolatba velem a bankkal, kérlek, szükségem van valakire, aki segít nekem.
+
+A csekk átutalásához az alábbiakban meg kell adnia a kapcsolatot a Bankkal;
+
+Zenith Bank (UK) Ltd.
+39 Corn Hill London
+EC3V 3ND Egyesült Királyság
+Tel: +447452059980
+E-mail: info@zenithbankltd.co.uk
+
+Újra meg kell erősítenie az alábbi információkat, hogy elkerülje az átadás hibáját.
+Postázási cím;
+Teljes nevek:
+Közvetlen telefonszám;
+
+Az alábbiakban a vázlat DEPOSIT CODE (2017748032) pontja látható, akkor az átadás előtt ellenőrizni kell.
+
+Megjegyzés: Kérem, nem akarom, hogy köszönetet mondjon nekem, vagy a férjemnek mindössze annyit kell tennie, hogy bölcsen bánjon vele, és ugyanazt a dolgot tegye egy nap valaki életébe, mivel ez az egyetlen módja annak, hogy ez a világ jobb közösség legyen, ha önzetlen szolgáltatásokat nyújtanak egymásnak.
+
+Tisztelettel,
+Mrs. Ursula Alice Walton
