@@ -1,109 +1,464 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 19 Jul 2018 18:29:58 +0000
-Subject: [RFCv2 RESEND 00/13] KEYS: TPM 1.2 asymmetric key type
-Message-Id: <20180719183011.8574-1-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Wed, 11 Jul 2018 22:34:10 +0000
+Subject: [PATCH v3 04/11] nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
+Message-Id: <153134845085.41955.524060987186059923.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153134823290.41955.817023337662647245.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153134823290.41955.817023337662647245.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-Here's an RFC to provide access to the TPM-wrapped keys via keyctl
-asymmetric key interface.  This RFC is essentially feature complete,
-providing encrypt, decrypt, verify and sign operations.  The only
-missing bits are a way to provide SRK authorization data if it is not
-well known.  This requires changes to the underlying keyctl interface
-and is out of scope for this RFC.
+Add support to allow query the security status of the Intel nvdimms and
+also unlock the dimm via the kernel key management APIs. The passphrase is
+expected to be pulled from userspace through keyutils. Moving the Intel
+related bits to its own source file as well.
 
-These patches depend on asymmetric key patches from David Howells, which
-can be found here:
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-asym-keyctl
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
+ drivers/acpi/nfit/Makefile |    1 
+ drivers/acpi/nfit/core.c   |    3 +
+ drivers/acpi/nfit/intel.c  |  151 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/nfit/intel.h  |   16 +++++
+ drivers/nvdimm/dimm.c      |    7 ++
+ drivers/nvdimm/dimm_devs.c |  108 +++++++++++++++++++++++++++++++
+ drivers/nvdimm/nd-core.h   |    2 +
+ drivers/nvdimm/nd.h        |    2 +
+ include/linux/libnvdimm.h  |   23 ++++++-
+ 9 files changed, 310 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/acpi/nfit/intel.c
 
-And the needed keyutils patches:
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/log/?h=pkey
-
-A simple parser for DER-encoded TPM keys is added so that userspace
-applications can load the key directly into the kernel.  The outer PEM
-formatting (if any) must be stripped out by userspace.  For more details
-on the format, please see patch 3/10.
-
-Since the loaded key blob contains both the public key portion and the
-(encrypted) private key portion of the key, it is possible to perform
-operations with both the private and public portion of the key.
-
-For operations where the public key is used, all operations are done in
-software using the existing kernel crypto APIs.  For operations that
-utilize the TPM protected private key, tpm_loadkey2, tpm_unbind and
-tpm_sign operations are used.
-
-Example usage:
-	# Generate Private Key
-	openssl genrsa -out /tmp/privkey.pem 2048
-	# Wrap the key with the TPM
-	create_tpm_key -s 2048 -w /tmp/privkey.pem /tmp/privkey.tpm
-	# Strip PEM
-	openssl asn1parse -inform pem -in /tmp/privkey.tpm -noout -out \
-	    /tmp/privkey.der
-	# Load the TPM key into the kernel
-	tpm_serial=`cat /tmp/privkey.der | keyctl padd asymmetric tpm @u`
-	echo -n abcdefghijklmnopqrst >/tmp/data
-	keyctl pkey_encrypt $tpm_serial 0 /tmp/data enc=pkcs1 > /tmp/enc
-	keyctl pkey_decrypt $tpm_serial 0 /tmp/enc enc=pkcs1 > /tmp/dec
-	cmp /tmp/data /tmp/dec
-
-	# Sign with the TPM key
-	keyctl pkey_sign $tpm_serial 0 /tmp/data enc=pkcs1 \
-		hash=sha1 > /tmp/sig
-	# Sign with OpenSSL
-	openssl dgst -sha1 -sign /tmp/privkey.pem -out /tmp/sig.ref /tmp/data
-	cmp /tmp/sig.ref /tmp/sig
-
-	# SHA1-hash the data
-	openssl dgst -sha1 -binary -out /tmp/data.sha1 /tmp/data
-	keyctl pkey_verify $tpm_serial 0 /tmp/data.sha1 /tmp/sig \
-		enc=pkcs1 hash=sha1
-
-ChangeLog
-
-v2
-
-- Cleanup some pr_infos
-- Cleanup some error paths to be more pedantic
-- Added verify operation
-- Added TPM_Sign operation
-- Added helpers to perform hashing of input
-- Added sign operation
-
-Denis Kenzior (13):
-  crypto: rsa-pkcs1pad: Allow hash to be optional
-  KEYS: asym_tpm: add skeleton for asym_tpm
-  KEYS: Add parser for TPM-based keys
-  KEYS: asym_tpm: extract key size & public key
-  KEYS: asym_tpm: Implement pkey_query
-  KEYS: asym_tpm: Implement encryption operation
-  KEYS: trusted: Expose common functionality
-  KEYS: asym_tpm: Add loadkey2 and flushspecific
-  KEYS: asym_tpm: Implement tpm_unbind
-  KEYS: asym_tpm: Implement the decrypt operation
-  KEYS: asym_tpm: Implement signature verification
-  KEYS: asym_tpm: Implement tpm_sign
-  KEYS: asym_tpm: Add support for the sign operation
-
- crypto/asymmetric_keys/Kconfig      |   21 +
- crypto/asymmetric_keys/Makefile     |   12 +
- crypto/asymmetric_keys/asym_tpm.c   | 1019 +++++++++++++++++++++++++++++++++++
- crypto/asymmetric_keys/tpm.asn1     |    5 +
- crypto/asymmetric_keys/tpm_parser.c |  104 ++++
- crypto/rsa-pkcs1pad.c               |   59 +-
- include/crypto/asym_tpm_subtype.h   |   19 +
- security/keys/trusted.c             |   12 +-
- security/keys/trusted.h             |   14 +-
- 9 files changed, 1242 insertions(+), 23 deletions(-)
- create mode 100644 crypto/asymmetric_keys/asym_tpm.c
- create mode 100644 crypto/asymmetric_keys/tpm.asn1
- create mode 100644 crypto/asymmetric_keys/tpm_parser.c
- create mode 100644 include/crypto/asym_tpm_subtype.h
-
--- 
-2.16.1
+diff --git a/drivers/acpi/nfit/Makefile b/drivers/acpi/nfit/Makefile
+index a407e769f103..443c7ef4e6a6 100644
+--- a/drivers/acpi/nfit/Makefile
++++ b/drivers/acpi/nfit/Makefile
+@@ -1,3 +1,4 @@
+ obj-$(CONFIG_ACPI_NFIT) := nfit.o
+ nfit-y := core.o
++nfit-$(CONFIG_X86) += intel.o
+ nfit-$(CONFIG_X86_MCE) += mce.o
+diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
+index dcb5f428bd9c..5790f5349bbe 100644
+--- a/drivers/acpi/nfit/core.c
++++ b/drivers/acpi/nfit/core.c
+@@ -1910,7 +1910,8 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
+ 		nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
+ 				acpi_nfit_dimm_attribute_groups,
+ 				flags, cmd_mask, flush ? flush->hint_count : 0,
+-				nfit_mem->flush_wpq, nfit_mem->id);
++				nfit_mem->flush_wpq, nfit_mem->id,
++				acpi_nfit_get_security_ops(nfit_mem->family));
+ 		if (!nvdimm)
+ 			return -ENOMEM;
+ 
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+new file mode 100644
+index 000000000000..9155b8e63f0e
+--- /dev/null
++++ b/drivers/acpi/nfit/intel.c
+@@ -0,0 +1,151 @@
++// SPDX-License-Identifier: GPL-2.0
++/* Copyright(c) 2018 Intel Corporation. All rights reserved. */
++/*
++ * Intel specific NFIT ops
++ */
++#include <linux/libnvdimm.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/ndctl.h>
++#include <linux/sysfs.h>
++#include <linux/delay.h>
++#include <linux/acpi.h>
++#include <linux/io.h>
++#include <linux/nd.h>
++#include <asm/cacheflush.h>
++#include <asm/smp.h>
++#include <acpi/nfit.h>
++#include "intel.h"
++#include "nfit.h"
++
++static int intel_dimm_security_unlock(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, struct nvdimm_key_data *nkey)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_unlock_unit cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_UNLOCK_UNIT,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
++
++	if (!test_bit(NVDIMM_INTEL_UNLOCK_UNIT, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	memcpy(nd_cmd.cmd.passphrase, nkey->data, ND_INTEL_PASSPHRASE_SIZE);
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++	/*
++	 * TODO: define a cross arch wbinvd when/if NVDIMM_FAMILY_INTEL
++	 * support arrives on another arch.
++	 */
++	/* DIMM unlocked, invalidate all CPU caches before we read it */
++	wbinvd_on_all_cpus();
++
++ out:
++	return rc;
++}
++
++static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, enum nvdimm_security_state *state)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_get_security_state cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_GET_SECURITY_STATE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = 0,
++			.nd_size_out +				sizeof(struct nd_intel_get_security_state),
++			.nd_fw_size +				sizeof(struct nd_intel_get_security_state),
++		},
++		.cmd = {
++			.status = 0,
++			.state = 0,
++		},
++	};
++
++	if (!test_bit(NVDIMM_INTEL_GET_SECURITY_STATE, &nfit_mem->dsm_mask)) {
++		*state = NVDIMM_SECURITY_UNSUPPORTED;
++		return 0;
++	}
++
++	*state = NVDIMM_SECURITY_DISABLED;
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_RETRY:
++		rc = -EAGAIN;
++		goto out;
++	case ND_INTEL_STATUS_NOT_READY:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++	/* check and see if security is enabled and locked */
++	if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_UNSUPPORTED)
++		*state = NVDIMM_SECURITY_UNSUPPORTED;
++	else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_ENABLED) {
++		if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_LOCKED)
++			*state = NVDIMM_SECURITY_LOCKED;
++		else
++			*state = NVDIMM_SECURITY_UNLOCKED;
++	} else
++		*state = NVDIMM_SECURITY_DISABLED;
++
++ out:
++	if (rc < 0)
++		*state = NVDIMM_SECURITY_INVALID;
++	return rc;
++}
++
++struct nvdimm_security_ops intel_security_ops = {
++	.state = intel_dimm_security_state,
++	.unlock = intel_dimm_security_unlock,
++};
+diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
+index f60dbcbc5f33..de722420e3b3 100644
+--- a/drivers/acpi/nfit/intel.h
++++ b/drivers/acpi/nfit/intel.h
+@@ -8,6 +8,8 @@
+ 
+ #ifdef CONFIG_X86
+ 
++extern struct nvdimm_security_ops intel_security_ops;
++
+ #define ND_INTEL_STATUS_SIZE		4
+ #define ND_INTEL_PASSPHRASE_SIZE	32
+ 
+@@ -62,6 +64,20 @@ struct nd_intel_overwrite {
+ struct nd_intel_query_overwrite {
+ 	u32 status;
+ } __packed;
++
+ #endif /* CONFIG_X86 */
+ 
++static inline struct nvdimm_security_ops *
++acpi_nfit_get_security_ops(int family)
++{
++	switch (family) {
++#ifdef CONFIG_X86
++	case NVDIMM_FAMILY_INTEL:
++		return &intel_security_ops;
++#endif
++	default:
++		return NULL;
++	}
++}
++
+ #endif
+diff --git a/drivers/nvdimm/dimm.c b/drivers/nvdimm/dimm.c
+index 6c8fb7590838..b6381ddbd6c1 100644
+--- a/drivers/nvdimm/dimm.c
++++ b/drivers/nvdimm/dimm.c
+@@ -51,6 +51,13 @@ static int nvdimm_probe(struct device *dev)
+ 	get_device(dev);
+ 	kref_init(&ndd->kref);
+ 
++	nvdimm_security_get_state(dev);
++
++	/* unlock DIMM here before touch label */
++	rc = nvdimm_security_unlock_dimm(dev);
++	if (rc < 0)
++		dev_warn(dev, "failed to unlock dimm %s\n", dev_name(dev));
++
+ 	/*
+ 	 * EACCES failures reading the namespace label-area-properties
+ 	 * are interpreted as the DIMM capacity being locked but the
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 1842c74413fa..5e190120f4aa 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -67,6 +67,110 @@ static void nvdimm_key_destroy(struct key *key)
+ 	kfree(key->payload.data[0]);
+ }
+ 
++/*
++ * Find key in kernel keyring
++ */
++static struct key *nvdimm_search_key(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	char *desc;
++	key_ref_t keyref;
++	struct key *key = NULL;
++
++	if (!nvdimm->security_ops)
++		return NULL;
++
++	desc = kzalloc(NVDIMM_KEY_DESC_LEN, GFP_KERNEL);
++	if (!desc)
++		return NULL;
++
++	keyref = keyring_search(make_key_ref(nvdimm_cred->thread_keyring, 1),
++			&nvdimm_key_type, nvdimm->dimm_id);
++	if (IS_ERR(keyref))
++		key = NULL;
++	else
++		key = key_ref_to_ptr(keyref);
++
++	kfree(desc);
++	return key;
++}
++
++/*
++ * Retrieve kernel key for DIMM and request from user space if necessary.
++ */
++static struct key *nvdimm_request_key(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct key *key = NULL;
++
++	if (!nvdimm->security_ops)
++		return NULL;
++
++	key = request_key(&nvdimm_key_type, nvdimm->dimm_id, nvdimm->dimm_id);
++	if (IS_ERR(key))
++		key = NULL;
++
++	return key;
++}
++
++int nvdimm_security_get_state(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++
++	if (!nvdimm->security_ops)
++		return 0;
++
++	return nvdimm->security_ops->state(nvdimm_bus, nvdimm,
++			&nvdimm->state);
++}
++
++int nvdimm_security_unlock_dimm(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	int rc;
++	void *payload;
++	bool cached_key = false;
++
++	if (!nvdimm->security_ops)
++		return 0;
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNLOCKED ||
++			nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED ||
++			nvdimm->state = NVDIMM_SECURITY_DISABLED)
++		return 0;
++
++	key = nvdimm_search_key(dev);
++	if (!key)
++		key = nvdimm_request_key(dev);
++	else
++		cached_key = true;
++	if (!key)
++		return -ENXIO;
++
++	dev_dbg(dev, "%s: key: %#x\n", __func__, key->serial);
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++	rc = nvdimm->security_ops->unlock(nvdimm_bus, nvdimm, payload);
++	up_read(&key->sem);
++
++	if (rc = 0) {
++		if (!cached_key)
++			key_link(nvdimm_cred->thread_keyring, key);
++		nvdimm->state = NVDIMM_SECURITY_UNLOCKED;
++		dev_info(dev, "DIMM %s unlocked\n", dev_name(dev));
++	} else {
++		key_invalidate(key);
++		dev_warn(dev, "Failed to unlock dimm: %s\n", dev_name(dev));
++	}
++
++	key_put(key);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ /*
+  * Retrieve bus and dimm handle and return if this bus supports
+  * get_config_data commands
+@@ -440,7 +544,8 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
+ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		const struct attribute_group **groups, unsigned long flags,
+ 		unsigned long cmd_mask, int num_flush,
+-		struct resource *flush_wpq, const char *id)
++		struct resource *flush_wpq, const char *id,
++		struct nvdimm_security_ops *sec_ops)
+ {
+ 	struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
+ 	struct device *dev;
+@@ -455,6 +560,7 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 	}
+ 
+ 	memcpy(nvdimm->dimm_id, id, NVDIMM_KEY_DESC_LEN);
++	nvdimm->security_ops = sec_ops;
+ 	nvdimm->provider_data = provider_data;
+ 	nvdimm->flags = flags;
+ 	nvdimm->cmd_mask = cmd_mask;
+diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
+index ea9227498dac..7f7515505d27 100644
+--- a/drivers/nvdimm/nd-core.h
++++ b/drivers/nvdimm/nd-core.h
+@@ -43,6 +43,8 @@ struct nvdimm {
+ 	int id, num_flush;
+ 	struct resource *flush_wpq;
+ 	char dimm_id[NVDIMM_KEY_DESC_LEN];
++	struct nvdimm_security_ops *security_ops;
++	enum nvdimm_security_state state;
+ };
+ 
+ /**
+diff --git a/drivers/nvdimm/nd.h b/drivers/nvdimm/nd.h
+index 9d17abd9f8d0..9c80e0f8c327 100644
+--- a/drivers/nvdimm/nd.h
++++ b/drivers/nvdimm/nd.h
+@@ -424,4 +424,6 @@ static inline bool is_bad_pmem(struct badblocks *bb, sector_t sector,
+ resource_size_t nd_namespace_blk_validate(struct nd_namespace_blk *nsblk);
+ const u8 *nd_dev_to_uuid(struct device *dev);
+ bool pmem_should_map_pages(struct device *dev);
++int nvdimm_security_unlock_dimm(struct device *dev);
++int nvdimm_security_get_state(struct device *dev);
+ #endif /* __ND_H__ */
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 6d0247b95e6f..692217f82c6e 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -157,9 +157,29 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
+ 
+ extern struct key_type nvdimm_key_type;
+ 
++enum nvdimm_security_state {
++	NVDIMM_SECURITY_INVALID = 0,
++	NVDIMM_SECURITY_DISABLED,
++	NVDIMM_SECURITY_UNLOCKED,
++	NVDIMM_SECURITY_LOCKED,
++	NVDIMM_SECURITY_UNSUPPORTED,
++};
++
+ #define NVDIMM_PASSPHRASE_LEN		32
+ #define NVDIMM_KEY_DESC_LEN		25
+ 
++struct nvdimm_key_data {
++	u8 data[NVDIMM_PASSPHRASE_LEN];
++};
++
++struct nvdimm_security_ops {
++	int (*state)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			enum nvdimm_security_state *state);
++	int (*unlock)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm, struct nvdimm_key_data *nkey);
++};
++
+ void badrange_init(struct badrange *badrange);
+ int badrange_add(struct badrange *badrange, u64 addr, u64 length);
+ void badrange_forget(struct badrange *badrange, phys_addr_t start,
+@@ -183,7 +203,8 @@ void *nvdimm_provider_data(struct nvdimm *nvdimm);
+ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		const struct attribute_group **groups, unsigned long flags,
+ 		unsigned long cmd_mask, int num_flush,
+-		struct resource *flush_wpq, const char *dimm_id);
++		struct resource *flush_wpq, const char *dimm_id,
++		struct nvdimm_security_ops *sec_ops);
+ const struct nd_cmd_desc *nd_cmd_dimm_desc(int cmd);
+ const struct nd_cmd_desc *nd_cmd_bus_desc(int cmd);
+ u32 nd_cmd_in_size(struct nvdimm *nvdimm, int cmd,
 
