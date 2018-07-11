@@ -1,49 +1,42 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 04 Jul 2018 13:52:35 +0000
-Subject: Re: [PATCH 2/2] KEYS: trusted: Find tpm_chip and use it until module shutdown
-Message-Id: <20180704135235.GA6724@linux.intel.com>
+From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
+Date: Wed, 11 Jul 2018 18:36:23 +0000
+Subject: [PATCH 2/2] crypto: ECDH - fix typo of P-192 b value
+Message-Id: <31905154.JqEMqoRUPu@positron.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180626193040.2509798-1-stefanb@linux.vnet.ibm.com>
- <20180626193040.2509798-3-stefanb@linux.vnet.ibm.com>
- <edf4aeaab76713579016cb009a0e632d7417c5f8.camel@linux.intel.com>
- <1530631615.3142.6.camel@linux.vnet.ibm.com>
- <20180703165102.GB19800@linux.intel.com>
- <alpine.LRH.2.21.1807040450340.32123@namei.org>
- <1530644783.3142.37.camel@linux.vnet.ibm.com>
-In-Reply-To: <1530644783.3142.37.camel@linux.vnet.ibm.com>
-To: James Bottomley <jejb@linux.vnet.ibm.com>
-Cc: James Morris <jmorris@namei.org>, Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org, zohar@linux.vnet.ibm.com, jgg@ziepe.ca, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <3594538.6iHA3aaNKK@positron.chronox.de>
+	<2573864.V43BhLOfag@positron.chronox.de>
+	<20180711041059.GA13331@sol.localdomain>
+In-Reply-To: <20180711041059.GA13331@sol.localdomain>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: herbert@gondor.apana.org.au, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
 
-On Tue, Jul 03, 2018 at 12:06:23PM -0700, James Bottomley wrote:
-> On Wed, 2018-07-04 at 04:51 +1000, James Morris wrote:
-> > On Tue, 3 Jul 2018, Jarkko Sakkinen wrote:
-> >=20
-> > > On Tue, Jul 03, 2018 at 08:26:55AM -0700, James Bottomley wrote:
-> > >=20
-> > > OK, I was not sure how that discussion went. I could add myself as
-> > > co-maintainer to MAINTAINERS because I anyway need to go through
-> > > all of these.
-> > >=20
-> > > If anyone does not vote against, I'll send a patch.
-> > >=20
-> >=20
-> > For Keys?=A0=A0That would would be useful to help reduce the workload o=
-n=A0
-> > David.
->=20
-> Well, no, this was for trusted keys, which is the part of the key
-> infrastructure that goes via the TPM: The KEYS-TRUSTED part in the
-> MAINTAINERs file.  There's still KEYS-ENCRYPTED, KEYS/KEYRING and
-> ASYMETRIC KEYS, which don't use the TPM.
->=20
-> However, I've no objection to consolidating the lot under a larger set
-> of maintainers ... I recently agreed to look at the asymmetric key TPM
-> patch because it's my area, but it also strays over into crypto,
-> keyring and asymmetric keys.
+Fix the b value to be compliant with FIPS 186-4 D.1.2.1. This fix is
+required to make sure the SP800-56A public key test passes for P-192.
 
-Should 2/2 be rolled through my tree? 1/2 is a tpm patch.
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/ecc_curve_defs.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-/Jarkko
+diff --git a/crypto/ecc_curve_defs.h b/crypto/ecc_curve_defs.h
+index 94e883a9403f..336ab1805639 100644
+--- a/crypto/ecc_curve_defs.h
++++ b/crypto/ecc_curve_defs.h
+@@ -27,7 +27,7 @@ static u64 nist_p192_p[] = { 0xFFFFFFFFFFFFFFFFull, 0xFFFFFFFFFFFFFFFEull,
+ static u64 nist_p192_n[] = { 0x146BC9B1B4D22831ull, 0xFFFFFFFF99DEF836ull,
+ 				0xFFFFFFFFFFFFFFFFull };
+ static u64 nist_p192_a[] = { 0xFFFFFFFFFFFFFFFCull, 0xFFFFFFFFFFFFFFFEull,
+-				0xFFFFFFFFFFFFFFFEull };
++				0xFFFFFFFFFFFFFFFFull };
+ static u64 nist_p192_b[] = { 0xFEB8DEECC146B9B1ull, 0x0FA7E9AB72243049ull,
+ 				0x64210519E59C80E7ull };
+ static struct ecc_curve nist_p192 = {
+-- 
+2.17.1
+
+
+
+
