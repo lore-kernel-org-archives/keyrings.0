@@ -1,104 +1,64 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Thu, 19 Jul 2018 20:06:39 +0000
-Subject: Re: [PATCH v5 09/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-Message-Id: <503e1027-eae3-d38e-20a1-fada97528687@intel.com>
+From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
+Date: Wed, 11 Jul 2018 18:35:49 +0000
+Subject: [PATCH 1/2] crypto: DH - update test for public key verification
+Message-Id: <3498555.DuuoTkek00@positron.chronox.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
- <153186089522.27463.4537738384176593789.stgit@djiang5-desk3.ch.intel.com>
- <AT5PR8401MB11692A3B06A2BDB669DBEA9BAB530@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
- <f9873585-2f9a-6f15-0783-7f784b777ce4@intel.com>
- <AT5PR8401MB1169AAD6B37FAA0004A2D334AB520@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
-In-Reply-To: <AT5PR8401MB1169AAD6B37FAA0004A2D334AB520@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
-To: "Elliott, Robert (Persistent Memory)" <elliott@hpe.com>, "Williams, Dan J" <dan.j.williams@intel.com>
-Cc: "dhowells@redhat.com" <dhowells@redhat.com>, "Schofield, Alison  <alison.schofield@intel.com>, keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "keescook@chromium.org" <keescook@chromium.org>, "linux-nvdimm@lists.01.org" <linux-nvdimm@lists.01.org>
+References: <3594538.6iHA3aaNKK@positron.chronox.de>
+	<2573864.V43BhLOfag@positron.chronox.de>
+	<20180711041059.GA13331@sol.localdomain>
+In-Reply-To: <20180711041059.GA13331@sol.localdomain>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: herbert@gondor.apana.org.au, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
+
+By adding a zero byte-length for the DH parameter Q value, the public
+key verification test is disabled for the given test.
+
+Reported-by: Eric Biggers <ebiggers3@gmail.com>
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/testmgr.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/crypto/testmgr.h b/crypto/testmgr.h
+index b6362169771a..759462d65f41 100644
+--- a/crypto/testmgr.h
++++ b/crypto/testmgr.h
+@@ -644,12 +644,14 @@ static const struct kpp_testvec dh_tv_template[] = {
+ 	"\x11\x02" /* len */
+ 	"\x00\x01\x00\x00" /* key_size */
+ 	"\x00\x01\x00\x00" /* p_size */
++	"\x00\x00\x00\x00" /* q_size */
+ 	"\x01\x00\x00\x00" /* g_size */
+ #else
+ 	"\x00\x01" /* type */
+ 	"\x02\x11" /* len */
+ 	"\x00\x00\x01\x00" /* key_size */
+ 	"\x00\x00\x01\x00" /* p_size */
++	"\x00\x00\x00\x00" /* q_size */
+ 	"\x00\x00\x00\x01" /* g_size */
+ #endif
+ 	/* xa */
+@@ -751,12 +753,14 @@ static const struct kpp_testvec dh_tv_template[] = {
+ 	"\x11\x02" /* len */
+ 	"\x00\x01\x00\x00" /* key_size */
+ 	"\x00\x01\x00\x00" /* p_size */
++	"\x00\x00\x00\x00" /* q_size */
+ 	"\x01\x00\x00\x00" /* g_size */
+ #else
+ 	"\x00\x01" /* type */
+ 	"\x02\x11" /* len */
+ 	"\x00\x00\x01\x00" /* key_size */
+ 	"\x00\x00\x01\x00" /* p_size */
++	"\x00\x00\x00\x00" /* q_size */
+ 	"\x00\x00\x00\x01" /* g_size */
+ #endif
+ 	/* xa */
+-- 
+2.17.1
 
 
 
-On 07/18/2018 06:43 PM, Elliott, Robert (Persistent Memory) wrote:
-> 
-> 
->> -----Original Message-----
->> From: Dave Jiang <dave.jiang@intel.com>
->> Sent: Wednesday, July 18, 2018 12:41 PM
->> To: Elliott, Robert (Persistent Memory) <elliott@hpe.com>; Williams,
->> Dan J <dan.j.williams@intel.com>
->> Cc: dhowells@redhat.com; Schofield, Alison
->> <alison.schofield@intel.com>; keyrings@vger.kernel.org;
->> keescook@chromium.org; linux-nvdimm@lists.01.org
->> Subject: Re: [PATCH v5 09/12] nfit/libnvdimm: add support for issue
->> secure erase DSM to Intel nvdimm
->>
->>
->>
->> On 07/18/2018 10:27 AM, Elliott, Robert (Persistent Memory) wrote:
->>>
->>>
->>>> -----Original Message-----
->>>> From: Linux-nvdimm [mailto:linux-nvdimm-bounces@lists.01.org] On
->> Behalf Of Dave Jiang
->>>> Sent: Tuesday, July 17, 2018 3:55 PM
->>>> Subject: [PATCH v5 09/12] nfit/libnvdimm: add support for issue
->> secure erase DSM to Intel nvdimm
->>> ...
->>>  +static int intel_dimm_security_erase(struct nvdimm_bus
->> *nvdimm_bus,
->>>> +struct nvdimm *nvdimm, struct nvdimm_key_data *nkey)
->>> ...
->>>> +/* DIMM unlocked, invalidate all CPU caches before we read it */
->>>> +wbinvd_on_all_cpus();
->>>
->>> For this function, that comment should use "erased" rather than
->>> "unlocked".
->>>
->>> For both this function and intel_dimm_security_unlock() in patch
->> 04/12,
->>> could the driver do a loop of clflushopts on one CPU via
->>> clflush_cache_range() rather than run wbinvd on all CPUs?
->>
->> The loop should work, but wbinvd is going to be less overall impact
->> to the performance for really huge ranges. Also, unlock should happen
->> only once and during NVDIMM initialization. So wbinvd should be ok.
-> 
-> Unlike unlock, secure erase could be requested at any time.
-> 
-> wbinvd must run on every physical core on every physical CPU, while
-> clflushopt flushes everything from just one CPU core.
-> 
-> wbinvd adds huge interrupt latencies, generating complaints like these:
-> https://patchwork.kernel.org/patch/37090/
-> https://lists.xenproject.org/archives/html/xen-devel/2011-09/msg00675.html
-> 
-> Also, there's no need to disrupt cache content for other addresses;
-> only the data at the addresses just erased or unlocked is a concern.
-> clflushopt avoids disrupting other threads.
 
-Yes secure erase could be requested at any time, but the likelihood of
-that happening frequently is unlikely. Also, in order to do secure
-erase, one must disable regions impacted by the dimm and also the dimm
-itself. More likely than not, the admin is doing maintenance and not
-expecting running workloads (at least not on the pmem). The concern is
-more that the admin wants to finish the task quickly rather than if
-there's performance impact while the maintenance task is going on.
-
-Also, looping over potentially TB-sized ranges with CLFLUSHOPT may take
-a while (many minutes?)? Yes it just flushes cache from one CPU, but
-also it causes cross-CPU traffic to maintain coherency, and KTI traffic
-and/or reads from the media to check directory bits. WBINVD is pretty
-heavy handed but it's the only option we have that doesn't have to plow
-through each cache line in the huge range.
-
-> 
-> Related topic: a flush is also necessary before sending the secure erase or
-> unlock command.  Otherwise, there could be dirty write data that gets
-> written by the concluding flush (overwriting the now-unlocked or just-erased
-> data).  For unlock during boot, you might assume that no writes having
-> occurred yet, but that isn't true for secure erase on demand.  Flushing
-> before both commands is safest.
-
-Yes I missed that. Thanks for catching. I'll add the flush before
-executing secure erase. It's probably not necessary for unlock since
-there's no data that would be in the CPU cache until the DIMMs are
-accessible.
