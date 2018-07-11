@@ -1,7 +1,7 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Thu, 12 Jul 2018 20:48:27 +0000
-Subject: [PATCH v4 00/11] Adding security support for nvdimm
-Message-Id: <153142840572.27297.8070233763007198738.stgit@djiang5-desk3.ch.intel.com>
+Date: Wed, 11 Jul 2018 22:33:48 +0000
+Subject: [PATCH v3 00/11] Adding security support for nvdimm
+Message-Id: <153134823290.41955.817023337662647245.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -18,9 +18,6 @@ passphrase to nvdimms.
 Security folks, thanks in advance for taking a look at my key management
 implementation and making sure that I'm doing something sane. Mainly you'll
 want to review patches 2, 4, and 5 as most relevant ones that need scrutiny.
-
-v4:
-- flip payload layout for update passphrase to make it easier on userland.
 
 v3:
 - Set x86 wrappers for x86 only bits. (Dan)
