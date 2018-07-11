@@ -1,33 +1,116 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Fri, 13 Jul 2018 23:05:49 +0000
-Subject: Re: [PATCH v4 02/11] libnvdimm: create keyring to store security keys
-Message-Id: <CAPcyv4i=N+4Rx3zKOYxrwjPXeKfp5NCT+E+sY8NxGoUVJ83Dgw@mail.gmail.com>
+From: Eric Biggers <ebiggers3@gmail.com>
+Date: Wed, 11 Jul 2018 17:46:29 +0000
+Subject: [PATCH net v2] KEYS: DNS: fix parsing multiple options
+Message-Id: <20180711174629.2700-1-ebiggers3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153142840572.27297.8070233763007198738.stgit@djiang5-desk3.ch.intel.com>
- <153142851854.27297.8356860633862959932.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153142851854.27297.8356860633862959932.stgit@djiang5-desk3.ch.intel.com>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: David Howells <dhowells@redhat.com>, "Schofield, Alison  <alison.schofield@intel.com>, keyrings@vger.kernel.org, Kees Cook" <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>
+To: netdev@vger.kernel.org, "David S . Miller" <davem@davemloft.net>
+Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Wang Lei <wang840925@gmail.com>, Eric Biggers <ebiggers@google.com>
 
-On Thu, Jul 12, 2018 at 1:48 PM, Dave Jiang <dave.jiang@intel.com> wrote:
-> Prepping the libnvdimm to support security management by adding a keyring
-> in order to provide passphrase management through the kernel key management
-> APIs.
->
-> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-> ---
->  drivers/nvdimm/core.c      |    7 +++
->  drivers/nvdimm/dimm_devs.c |   96 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/nvdimm/nd-core.h   |    1
->  include/linux/libnvdimm.h  |    5 ++
->  4 files changed, 107 insertions(+), 2 deletions(-)
->
+From: Eric Biggers <ebiggers@google.com>
 
-Looks good to me,
+My recent fix for dns_resolver_preparse() printing very long strings was
+incomplete, as shown by syzbot which still managed to hit the
+WARN_ONCE() in set_precision() by adding a crafted "dns_resolver" key:
 
-You can add:
+    precision 50001 too large
+    WARNING: CPU: 7 PID: 864 at lib/vsprintf.c:2164 vsnprintf+0x48a/0x5a0
 
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+The bug this time isn't just a printing bug, but also a logical error
+when multiple options ("#"-separated strings) are given in the key
+payload.  Specifically, when separating an option string into name and
+value, if there is no value then the name is incorrectly considered to
+end at the end of the key payload, rather than the end of the current
+option.  This bypasses validation of the option length, and also means
+that specifying multiple options is broken -- which presumably has gone
+unnoticed as there is currently only one valid option anyway.
+
+A similar problem also applied to option values, as the kstrtoul() when
+parsing the "dnserror" option will read past the end of the current
+option and into the next option.
+
+Fix these bugs by correctly computing the length of the option name and
+by copying the option value, null-terminated, into a temporary buffer.
+
+Reproducer for the WARN_ONCE() that syzbot hit:
+
+    perl -e 'print "#A#", "\0" x 50000' | keyctl padd dns_resolver desc @s
+
+Reproducer for "dnserror" option being parsed incorrectly (expected
+behavior is to fail when seeing the unknown option "foo", actual
+behavior was to read the dnserror value as "1#foo" and fail there):
+
+    perl -e 'print "#dnserror=1#foo\0"' | keyctl padd dns_resolver desc @s
+
+Reported-by: syzbot <syzkaller@googlegroups.com>
+Fixes: 4a2d789267e0 ("DNS: If the DNS server returns an error, allow that to be cached [ver #2]")
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+
+Changed since v1:
+    - Also fix parsing the option values, not just option names.
+
+ net/dns_resolver/dns_key.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index 40c851693f77..0c9478b91fa5 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -86,35 +86,39 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+ 		opt++;
+ 		kdebug("options: '%s'", opt);
+ 		do {
++			int opt_len, opt_nlen;
+ 			const char *eq;
+-			int opt_len, opt_nlen, opt_vlen, tmp;
++			char optval[128];
+ 
+ 			next_opt = memchr(opt, '#', end - opt) ?: end;
+ 			opt_len = next_opt - opt;
+-			if (opt_len <= 0 || opt_len > 128) {
++			if (opt_len <= 0 || opt_len > sizeof(optval)) {
+ 				pr_warn_ratelimited("Invalid option length (%d) for dns_resolver key\n",
+ 						    opt_len);
+ 				return -EINVAL;
+ 			}
+ 
+-			eq = memchr(opt, '=', opt_len) ?: end;
+-			opt_nlen = eq - opt;
+-			eq++;
+-			opt_vlen = next_opt - eq; /* will be -1 if no value */
++			eq = memchr(opt, '=', opt_len);
++			if (eq) {
++				opt_nlen = eq - opt;
++				eq++;
++				memcpy(optval, eq, next_opt - eq);
++				optval[next_opt - eq] = '\0';
++			} else {
++				opt_nlen = opt_len;
++				optval[0] = '\0';
++			}
+ 
+-			tmp = opt_vlen >= 0 ? opt_vlen : 0;
+-			kdebug("option '%*.*s' val '%*.*s'",
+-			       opt_nlen, opt_nlen, opt, tmp, tmp, eq);
++			kdebug("option '%*.*s' val '%s'",
++			       opt_nlen, opt_nlen, opt, optval);
+ 
+ 			/* see if it's an error number representing a DNS error
+ 			 * that's to be recorded as the result in this key */
+ 			if (opt_nlen = sizeof(DNS_ERRORNO_OPTION) - 1 &&
+ 			    memcmp(opt, DNS_ERRORNO_OPTION, opt_nlen) = 0) {
+ 				kdebug("dns error number option");
+-				if (opt_vlen <= 0)
+-					goto bad_option_value;
+ 
+-				ret = kstrtoul(eq, 10, &derrno);
++				ret = kstrtoul(optval, 10, &derrno);
+ 				if (ret < 0)
+ 					goto bad_option_value;
+ 
+-- 
+2.18.0.203.gfac676dfb9-goog
+
