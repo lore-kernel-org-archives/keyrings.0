@@ -1,182 +1,76 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 25 Jul 2018 20:59:16 +0000
-Subject: [PATCH v6 08/11] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-Message-Id: <153255235625.51274.15991694080684776540.stgit@djiang5-desk3.ch.intel.com>
+Date: Thu, 12 Jul 2018 20:48:27 +0000
+Subject: [PATCH v4 00/11] Adding security support for nvdimm
+Message-Id: <153142840572.27297.8070233763007198738.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-Add support to issue a secure erase DSM to the Intel nvdimm. The
-required passphrase is acquired from userspace through the kernel key
-management. To trigger the action, "erase" is written to the "security"
-sysfs attribute. libnvdimm will support the erase generic API call.
+The following series implements security support for nvdimm. Mostly adding
+new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
+adding generic support libnvdimm for other vendors. The most important
+security features are unlocking locked nvdimms, and updating/setting security
+passphrase to nvdimms.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Security folks, thanks in advance for taking a look at my key management
+implementation and making sure that I'm doing something sane. Mainly you'll
+want to review patches 2, 4, and 5 as most relevant ones that need scrutiny.
+
+v4:
+- flip payload layout for update passphrase to make it easier on userland.
+
+v3:
+- Set x86 wrappers for x86 only bits. (Dan)
+- Fixed up some verbiage in commit headers.
+- Put in usage of sysfs_streq() for sysfs inputs.
+- 0-day build fixes for non-x86 archs.
+
+v2:
+- Move inclusion of intel.h to relevant source files and not in nfit.h. (Dan)
+- Moved security ring relevant code to dimm_devs.c. (Dan)
+- Added dimm_id to nfit_mem to avoid recreate per sysfs show call. (Dan)
+- Added routine to return security_ops based on family supplied. (Dan)
+- Added nvdimm_key_data struct to wrap raw passphrase string. (Dan)
+- Allocate firmware package on stack. (Dan)
+- Added missing frozen state detection when retrieving security state.
+
 ---
- drivers/acpi/nfit/intel.c  |   58 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   49 +++++++++++++++++++++++++++++++++++++
- include/linux/libnvdimm.h  |    3 ++
- 3 files changed, 110 insertions(+)
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index ba886f1f5399..419a7d54d4e8 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,63 @@
- #include "intel.h"
- #include "nfit.h"
- 
-+static int intel_dimm_security_erase(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_secure_erase cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_SECURE_ERASE,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
-+	};
-+
-+	if (!test_bit(NVDIMM_INTEL_SECURE_ERASE, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
-+
-+	/* flush all cache before we erase DIMM */
-+	wbinvd_on_all_cpus();
-+	memcpy(nd_cmd.cmd.passphrase, nkey->data,
-+			sizeof(nd_cmd.cmd.passphrase));
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+	/* DIMM erased, invalidate all CPU caches before we read it */
-+	wbinvd_on_all_cpus();
-+
-+ out:
-+	return rc;
-+}
-+
- static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
- 		struct nvdimm *nvdimm)
- {
-@@ -321,4 +378,5 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.change_key = intel_dimm_security_update_passphrase,
- 	.disable = intel_dimm_security_disable,
- 	.freeze_lock = intel_dimm_security_freeze_lock,
-+	.erase = intel_dimm_security_erase,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 8f4ea4e2c2ab..e6d04ca44008 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -97,6 +97,53 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
- }
- 
-+static int nvdimm_security_erase(struct device *dev)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key;
-+	struct user_key_payload *payload;
-+	int rc = 0;
-+
-+	if (!nvdimm->security_ops)
-+		return 0;
-+
-+	/* lock the device and disallow driver bind */
-+	device_lock(dev);
-+	/* No driver data means dimm is disabled. Proceed if so. */
-+	if (dev_get_drvdata(dev)) {
-+		dev_warn(dev, "Unable to secure erase while DIMM active.\n");
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
-+		goto out;
-+
-+	key = nvdimm_search_key(dev);
-+	if (!key) {
-+		dev_warn(dev, "no key found\n");
-+		rc = -ENOKEY;
-+		goto out;
-+	}
-+
-+	down_read(&key->sem);
-+	payload = key->payload.data[0];
-+	rc = nvdimm->security_ops->erase(nvdimm_bus, nvdimm,
-+			(void *)payload->data);
-+	up_read(&key->sem);
-+	/* remove key since secure erase kills the passphrase */
-+	key_unlink(nvdimm_keyring, key);
-+	key_invalidate(key);
-+	nvdimm->key_id = 0;
-+	key_put(key);
-+
-+ out:
-+	device_unlock(dev);
-+	nvdimm_security_get_state(dev);
-+	return rc;
-+}
-+
- static int nvdimm_security_freeze_lock(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -687,6 +734,8 @@ static ssize_t security_store(struct device *dev,
- 		rc = nvdimm_security_disable(dev);
- 	else if (sysfs_streq(buf, "freeze"))
- 		rc = nvdimm_security_freeze_lock(dev);
-+	else if (sysfs_streq(buf, "erase"))
-+		rc = nvdimm_security_erase(dev);
- 	else
- 		return -EINVAL;
- 
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index bcab42caa948..0d85e092a6dd 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -187,6 +187,9 @@ struct nvdimm_security_ops {
- 			const struct nvdimm_key_data *nkey);
- 	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
- 			struct nvdimm *nvdimm);
-+	int (*erase)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm,
-+			const struct nvdimm_key_data *nkey);
- };
- 
- void badrange_init(struct badrange *badrange);
+Dave Jiang (11):
+      nfit: add support for Intel DSM 1.7 commands
+      libnvdimm: create keyring to store security keys
+      nfit/libnvdimm: store dimm id as a member to struct nvdimm
+      nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
+      nfit/libnvdimm: add set passphrase support for Intel nvdimms
+      nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+      nfit/libnvdimm: add freeze security support to Intel nvdimm
+      nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+      nfit_test: add context to dimm_dev for nfit_test
+      nfit_test: add test support for Intel nvdimm security DSMs
+      libnvdimm: add documentation for nvdimm security support
 
+
+ Documentation/nvdimm/security    |   70 ++++++
+ drivers/acpi/nfit/Makefile       |    1 
+ drivers/acpi/nfit/core.c         |   64 +++++-
+ drivers/acpi/nfit/intel.c        |  366 +++++++++++++++++++++++++++++++++
+ drivers/acpi/nfit/intel.h        |   83 +++++++
+ drivers/acpi/nfit/nfit.h         |   18 ++
+ drivers/nvdimm/bus.c             |    2 
+ drivers/nvdimm/core.c            |    7 +
+ drivers/nvdimm/dimm.c            |    7 +
+ drivers/nvdimm/dimm_devs.c       |  426 ++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/nd-core.h         |    4 
+ drivers/nvdimm/nd.h              |    2 
+ include/linux/libnvdimm.h        |   41 +++-
+ tools/testing/nvdimm/Kbuild      |    1 
+ tools/testing/nvdimm/test/nfit.c |  227 +++++++++++++++++++-
+ 15 files changed, 1285 insertions(+), 34 deletions(-)
+ create mode 100644 Documentation/nvdimm/security
+ create mode 100644 drivers/acpi/nfit/intel.c
+ create mode 100644 drivers/acpi/nfit/intel.h
+
+--
