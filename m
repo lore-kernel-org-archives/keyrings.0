@@ -1,128 +1,30 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Thu, 12 Jul 2018 20:49:18 +0000
-Subject: [PATCH v4 09/11] nfit_test: add context to dimm_dev for nfit_test
-Message-Id: <153142855815.27297.740336926832022321.stgit@djiang5-desk3.ch.intel.com>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Fri, 13 Jul 2018 23:54:54 +0000
+Subject: Re: [PATCH v4 09/11] nfit_test: add context to dimm_dev for nfit_test
+Message-Id: <CAPcyv4hFBir+xwj-2czQD0ZSbWcQEGVbg_AGaYt7-v8Q_aLP3w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <153142840572.27297.8070233763007198738.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153142840572.27297.8070233763007198738.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+ <153142855815.27297.740336926832022321.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153142855815.27297.740336926832022321.stgit@djiang5-desk3.ch.intel.com>
+To: Dave Jiang <dave.jiang@intel.com>
+Cc: David Howells <dhowells@redhat.com>, "Schofield, Alison  <alison.schofield@intel.com>, keyrings@vger.kernel.org, Kees Cook" <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>
 
-In order to access the nfit_test context via sideband sysfs knobs, the
-dimm_dev needs to be more than struct device in order to point back to
-struct nfit_test. Wrapping the original struct device with a struct
-nfit_dimm_dev and saving the nfit_test as private driver data. Also
-changing the nfit_mem to be a member of struct nfit_dimm_dev instead of
-saving as private driver data of that device. This is in preparation for
-adding security DSM support and allowing the locking of DIMMs for testing
-via sideband.
+On Thu, Jul 12, 2018 at 1:49 PM, Dave Jiang <dave.jiang@intel.com> wrote:
+> In order to access the nfit_test context via sideband sysfs knobs, the
+> dimm_dev needs to be more than struct device in order to point back to
+> struct nfit_test. Wrapping the original struct device with a struct
+> nfit_dimm_dev and saving the nfit_test as private driver data. Also
+> changing the nfit_mem to be a member of struct nfit_dimm_dev instead of
+> saving as private driver data of that device. This is in preparation for
+> adding security DSM support and allowing the locking of DIMMs for testing
+> via sideband.
+>
+> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+> ---
+>  tools/testing/nvdimm/test/nfit.c |   41 +++++++++++++++++++++++++-------------
+>  1 file changed, 27 insertions(+), 14 deletions(-)
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
- tools/testing/nvdimm/test/nfit.c |   41 +++++++++++++++++++++++++-------------
- 1 file changed, 27 insertions(+), 14 deletions(-)
-
-diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
-index 18157b0c0d0d..7b3ce2194889 100644
---- a/tools/testing/nvdimm/test/nfit.c
-+++ b/tools/testing/nvdimm/test/nfit.c
-@@ -150,6 +150,11 @@ struct nfit_test_fw {
- 	u64 end_time;
- };
- 
-+struct nfit_dimm_dev {
-+	struct device dev;
-+	struct nfit_mem *nfit_mem;
-+};
-+
- struct nfit_test {
- 	struct acpi_nfit_desc acpi_desc;
- 	struct platform_device pdev;
-@@ -181,7 +186,7 @@ struct nfit_test {
- 		unsigned long deadline;
- 		spinlock_t lock;
- 	} ars_state;
--	struct device *dimm_dev[NUM_DCR];
-+	struct nfit_dimm_dev dimm_dev[NUM_DCR];
- 	struct nd_intel_smart *smart;
- 	struct nd_intel_smart_threshold *smart_threshold;
- 	struct badrange badrange;
-@@ -981,7 +986,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 						&t->smart_threshold[i -
- 							t->dcr_idx],
- 						&t->smart[i - t->dcr_idx],
--						&t->pdev.dev, t->dimm_dev[i]);
-+						&t->pdev.dev,
-+						&t->dimm_dev[i].dev);
- 				break;
- 			case ND_INTEL_SMART_INJECT:
- 				rc = nfit_test_cmd_smart_inject(buf,
-@@ -989,7 +995,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 						&t->smart_threshold[i -
- 							t->dcr_idx],
- 						&t->smart[i - t->dcr_idx],
--						&t->pdev.dev, t->dimm_dev[i]);
-+						&t->pdev.dev,
-+						&t->dimm_dev[i].dev);
- 				break;
- 			default:
- 				return -ENOTTY;
-@@ -1187,8 +1194,7 @@ static void put_dimms(void *data)
- 	int i;
- 
- 	for (i = 0; i < t->num_dcr; i++)
--		if (t->dimm_dev[i])
--			device_unregister(t->dimm_dev[i]);
-+		device_unregister(&t->dimm_dev[i].dev);
- }
- 
- static struct class *nfit_test_dimm;
-@@ -1290,19 +1296,27 @@ static const struct attribute_group *nfit_test_dimm_attribute_groups[] = {
- 	NULL,
- };
- 
-+static void dimm_dev_release(struct device *dev)
-+{
-+}
-+
- static int nfit_test_dimm_init(struct nfit_test *t)
- {
--	int i;
-+	int i, rc;
- 
- 	if (devm_add_action_or_reset(&t->pdev.dev, put_dimms, t))
- 		return -ENOMEM;
- 	for (i = 0; i < t->num_dcr; i++) {
--		t->dimm_dev[i] = device_create_with_groups(nfit_test_dimm,
--				&t->pdev.dev, 0, NULL,
--				nfit_test_dimm_attribute_groups,
--				"test_dimm%d", i + t->dcr_idx);
--		if (!t->dimm_dev[i])
--			return -ENOMEM;
-+		t->dimm_dev[i].dev.parent = &t->pdev.dev;
-+		dev_set_name(&t->dimm_dev[i].dev, "test_dimm%d",
-+				i + t->dcr_idx);
-+		t->dimm_dev[i].dev.class = nfit_test_dimm;
-+		t->dimm_dev[i].dev.groups = nfit_test_dimm_attribute_groups;
-+		t->dimm_dev[i].dev.release = dimm_dev_release;
-+		rc = device_register(&t->dimm_dev[i].dev);
-+		if (rc < 0)
-+			return rc;
-+		dev_set_drvdata(&t->dimm_dev[i].dev, t);
- 	}
- 	return 0;
- }
-@@ -2665,8 +2679,7 @@ static int nfit_test_probe(struct platform_device *pdev)
- 
- 		for (i = 0; i < NUM_DCR; i++)
- 			if (nfit_handle = handle[i])
--				dev_set_drvdata(nfit_test->dimm_dev[i],
--						nfit_mem);
-+				nfit_test->dimm_dev[i].nfit_mem = nfit_mem;
- 	}
- 	mutex_unlock(&acpi_desc->init_mutex);
- 
-
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
