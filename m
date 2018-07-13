@@ -1,96 +1,91 @@
-From: "Elliott, Robert (Persistent Memory)" <elliott@hpe.com>
-Date: Wed, 18 Jul 2018 17:02:31 +0000
-Subject: RE: [PATCH v5 01/12] nfit: add support for Intel DSM 1.7 commands
-Message-Id: <AT5PR8401MB1169A89CE1A16C991D958720AB530@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Fri, 13 Jul 2018 20:12:40 +0000
+Subject: [PATCH] keyutils: Add pkg-config file for keyutils library
+Message-Id: <153151276086.61570.3244664656185894092.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
- <153186084980.27463.13636864614684009370.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153186084980.27463.13636864614684009370.stgit@djiang5-desk3.ch.intel.com>
-To: 'Dave Jiang' <dave.jiang@intel.com>, "dan.j.williams@intel.com" <dan.j.williams@intel.com>
-Cc: "dhowells@redhat.com" <dhowells@redhat.com>, "alison.schofield@intel.com" <alison.schofield@intel.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "keescook@chromium.org" <keescook@chromium.org>, "linux-nvdimm@lists.01.org" <linux-nvdimm@lists.01.org>
+To: keyrings@vger.kernel.org
 
-> -----Original Message-----
-> From: Linux-nvdimm [mailto:linux-nvdimm-bounces@lists.01.org] On Behalf Of Dave Jiang
-> Sent: Tuesday, July 17, 2018 3:54 PM
-> Subject: [PATCH v5 01/12] nfit: add support for Intel DSM 1.7 commands
-...
-> +#ifdef CONFIG_X86
-> +
-> +#define ND_INTEL_STATUS_SIZE		4
-> +#define ND_INTEL_PASSPHRASE_SIZE	32
-> +
-...
-> +
-> +struct nd_intel_get_security_state {
-> +	u32 status;
-> +	u32 reserved;
-> +	u8 state;
-> +	u8 reserved1[3];
-> +} __packed;
-> +
-> +struct nd_intel_set_passphrase {
-> +	u8 old_pass[32];
-> +	u8 new_pass[32];
-> +	u32 status;
-> +} __packed;
-> +
-> +struct nd_intel_unlock_unit {
-> +	u8 passphrase[32];
-> +	u32 status;
-> +} __packed;
-> +
-> +struct nd_intel_disable_passphrase {
-> +	u8 passphrase[32];
-> +	u32 status;
-> +} __packed;
-> +
-> +struct nd_intel_freeze_lock {
-> +	u32 status;
-> +} __packed;
-> +
-> +struct nd_intel_secure_erase {
-> +	u8 passphrase[32];
-> +	u32 status;
-> +} __packed;
-> +
-> +struct nd_intel_overwrite {
-> +	u8 passphrase[32];
-> +	u32 status;
-> +} __packed;
+This is needed so that other projects can add a dependency on libkeyutils via
+PKG_CHECK_MODULES([KEYUTILS], [keyutils]).  This enabling makes 'make install'
+do the right thing, and of course individual distros will need to add enabling
+to their associated packages (rpm, deb, etc.) so the package manager
+installs do the right thing.
 
-All those should use ND_INTEL_PASSPHRASE_SIZE rather than 32,
-or there should be a compile-time check that the macro is
-<= 32.
-
-In patch 06/12, there is a lot of code that uses
-ND_INTEL_PASSPHRASE_SIZE like this:
-
-> +	if (old_data)
-> +		memcpy(nd_cmd.cmd.old_pass, old_data->data,
-> +				ND_INTEL_PASSPHRASE_SIZE);
-> +	memcpy(nd_cmd.cmd.new_pass, new_data->data, ND_INTEL_PASSPHRASE_SIZE);
-
-I think it's safer to use sizeof the destination field:
-
-+	if (old_data)
-+		memcpy(nd_cmd.cmd.old_pass, old_data->data,
-+				sizeof(nd_cmd.cmd.old_pass));
-+	memcpy(nd_cmd.cmd.new_pass, new_data->data,
-	       sizeof(nd_cmd.cmd.new_pass));
-
-That helps if the macro gets out of sync with the real size of
-the structure.  If it larger, this change prevents an overrun.  If
-it is smaller, then memcpy copies some extra bytes, which is
-harmless.
-
-
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 ---
-Robert Elliott, HPE Persistent Memory
+ Makefile       |   13 +++++++++++++
+ keyutils.pc.in |   10 ++++++++++
+ keyutils.spec  |    1 +
+ 3 files changed, 24 insertions(+)
+ create mode 100644 keyutils.pc.in
 
-
-
-
+diff --git a/Makefile b/Makefile
+index 824bbbf..e2976ad 100644
+--- a/Makefile
++++ b/Makefile
+@@ -19,6 +19,7 @@ MAN8		:= $(MANDIR)/man8
+ INCLUDEDIR	:= /usr/include
+ LN		:= ln
+ LNS		:= $(LN) -sf
++PREFIX 		:= /usr
+ 
+ ###############################################################################
+ #
+@@ -78,6 +79,9 @@ endif
+ endif
+ endif
+ 
++PKGCONFIG 	:= keyutils.pc
++PKGCONFIG_DIR 	:= $(USRLIBDIR)/pkgconfig
++
+ ###############################################################################
+ #
+ # This is necessary if glibc doesn't know about the key management error codes
+@@ -168,6 +172,15 @@ ifeq ($(NO_SOLIB),0)
+ 	$(LNS) $(LIBNAME) $(DESTDIR)$(LIBDIR)/$(SONAME)
+ 	mkdir -p $(DESTDIR)$(USRLIBDIR)
+ 	$(LNS) $(LIBDIR)/$(SONAME) $(DESTDIR)$(USRLIBDIR)/$(DEVELLIB)
++	sed \
++	-e 's,@VERSION\@,$(VERSION),g' \
++	-e 's,@prefix\@,$(PREFIX),g' \
++	-e 's,@exec_prefix\@,$(PREFIX),g' \
++	-e 's,@libdir\@,$(USRLIBDIR),g' \
++	-e 's,@includedir\@,$(INCLUDEDIR),g' \
++	< $(PKGCONFIG).in > $(PKGCONFIG) || rm $(PKGCONFIG)
++	$(INSTALL) -D $(PKGCONFIG) $(PKGCONFIG_DIR)/$(PKGCONFIG)
++	rm $(PKGCONFIG)
+ endif
+ 	$(INSTALL) -D keyctl $(DESTDIR)$(BINDIR)/keyctl
+ 	$(INSTALL) -D request-key $(DESTDIR)$(SBINDIR)/request-key
+diff --git a/keyutils.pc.in b/keyutils.pc.in
+new file mode 100644
+index 0000000..44fd6e1
+--- /dev/null
++++ b/keyutils.pc.in
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: keyutils
++Description: keyutils library
++Version: @VERSION@
++Cflags: -I${includedir}
++Libs: -L${libdir} -lkeyutils
+diff --git a/keyutils.spec b/keyutils.spec
+index 1cbcf86..0e446ad 100644
+--- a/keyutils.spec
++++ b/keyutils.spec
+@@ -100,6 +100,7 @@ rm -rf $RPM_BUILD_ROOT
+ %{_mandir}/man7/*
+ %{_libdir}/libkeyutils.so.%{libapiversion}
+ %{_libdir}/libkeyutils.so.%{libapivermajor}
++%{_libdir}/pkgconfig/keyutils.pc
+ 
+ %files libs-devel
+ %defattr(-,root,root,-)
 
