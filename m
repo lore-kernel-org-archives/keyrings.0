@@ -1,33 +1,229 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Tue, 24 Jul 2018 13:34:50 +0000
-Subject: Re: [PATCH 1/2] security/keys/secure_key: Adds the secure key support based on CAAM.
-Message-Id: <1532439290.3277.52.camel@linux.ibm.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 17 Jul 2018 20:54:09 +0000
+Subject: [PATCH v5 01/12] nfit: add support for Intel DSM 1.7 commands
+Message-Id: <153186084980.27463.13636864614684009370.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180720054656.29143-1-udit.agarwal@nxp.com>
-         <1532302451.6206.22.camel@linux.ibm.com>
-         <AM5PR0401MB2660B8C1DD5ED9989239EF009E550@AM5PR0401MB2660.eurprd04.prod.outlook.com>
-In-Reply-To: <AM5PR0401MB2660B8C1DD5ED9989239EF009E550@AM5PR0401MB2660.eurprd04.prod.outlook.com>
-To: Udit Agarwal <udit.agarwal@nxp.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "zohar@linux.vnet.ibm.com" <zohar@linux.vnet.ibm.com>, "jmorris@namei.org" <jmorris@namei.org>, "serge@hallyn.com" <serge@hallyn.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Sahil Malhotra <sahil.malhotra@nxp.com>, Ruchika Gupta <ruchika.gupta@nxp.com>, Horia Geanta <horia.geanta@nxp.com>, Aymen Sghaier <aymen.sghaier@nxp.com>
+References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-On Tue, 2018-07-24 at 12:31 +0000, Udit Agarwal wrote:
-> Yes the secure keys and CAAM are correlated. Secure keys depends on
-> NXP CAAM crypto HW accelerator.  Secure key is a random data of
-> length X (passed using keyctl command) & derived using CAAM. Blob of
-> this data is also created using CAAM. Only blob is visible to user
-> space.
+Add command definition for security commands defined in Intel DSM
+specification v1.7. This includes "get security state", "set passphrase",
+"unlock unit", "freeze lock", "secure erase", "ovewrite", and
+"overwrite query". Since we are adding a lot of Intel definitions, moving
+the relevant bits to its own header. Also, we don't want those commands
+to be issued from user space through ioctls. Reason being some of the
+security commands require kernel involvement to flush all CPU caches that
+can't be done in userspace and the result can cause system crash. So
+blocking security commands in the ioctl path.
 
-The term "secure keys" is really generic.  What makes the "secure
-keys" secure?  We introduced "trusted keys", because TPM 1.2 didn't
-support symmetric keys.  We shouldn't just duplicate "trusted keys"
-for different HW, but improve upon it (eg. symmetric keys never leave
-the device).
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+---
+ drivers/acpi/nfit/core.c  |   28 ++++++++++++++++++-
+ drivers/acpi/nfit/intel.h |   67 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/nfit/nfit.h  |   17 +++++++++++
+ drivers/nvdimm/bus.c      |    2 +
+ include/linux/libnvdimm.h |    2 +
+ 5 files changed, 112 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/acpi/nfit/intel.h
 
-The new key type should define generic methods, which are implemented
-for NXP CAAM rypto HW accelerator as an example.
-
-Mimi
+diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
+index 0f47917b8ef1..a3a944751e6a 100644
+--- a/drivers/acpi/nfit/core.c
++++ b/drivers/acpi/nfit/core.c
+@@ -24,6 +24,7 @@
+ #include <linux/nd.h>
+ #include <asm/cacheflush.h>
+ #include <acpi/nfit.h>
++#include "intel.h"
+ #include "nfit.h"
+ 
+ /*
+@@ -377,6 +378,14 @@ static u8 nfit_dsm_revid(unsigned family, unsigned func)
+ 			[NVDIMM_INTEL_QUERY_FWUPDATE] = 2,
+ 			[NVDIMM_INTEL_SET_THRESHOLD] = 2,
+ 			[NVDIMM_INTEL_INJECT_ERROR] = 2,
++			[NVDIMM_INTEL_GET_SECURITY_STATE] = 2,
++			[NVDIMM_INTEL_SET_PASSPHRASE] = 2,
++			[NVDIMM_INTEL_DISABLE_PASSPHRASE] = 2,
++			[NVDIMM_INTEL_UNLOCK_UNIT] = 2,
++			[NVDIMM_INTEL_FREEZE_LOCK] = 2,
++			[NVDIMM_INTEL_SECURE_ERASE] = 2,
++			[NVDIMM_INTEL_OVERWRITE] = 2,
++			[NVDIMM_INTEL_QUERY_OVERWRITE] = 2,
+ 		},
+ 	};
+ 	u8 id;
+@@ -3202,7 +3211,7 @@ static int acpi_nfit_flush_probe(struct nvdimm_bus_descriptor *nd_desc)
+ 	return 0;
+ }
+ 
+-static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
++static int __acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
+ 		struct nvdimm *nvdimm, unsigned int cmd)
+ {
+ 	struct acpi_nfit_desc *acpi_desc = to_acpi_nfit_desc(nd_desc);
+@@ -3224,6 +3233,23 @@ static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
+ 	return 0;
+ }
+ 
++/* prevent security commands from being issued via ioctl */
++static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
++		struct nvdimm *nvdimm, unsigned int cmd, void *buf)
++{
++	struct nd_cmd_pkg *call_pkg = buf;
++	unsigned int func;
++
++	if (nvdimm && cmd = ND_CMD_CALL &&
++			call_pkg->nd_family = NVDIMM_FAMILY_INTEL) {
++		func = call_pkg->nd_command;
++		if ((1 << func) & NVDIMM_INTEL_SECURITY_CMDMASK)
++			return -EOPNOTSUPP;
++	}
++
++	return __acpi_nfit_clear_to_send(nd_desc, nvdimm, cmd);
++}
++
+ int acpi_nfit_ars_rescan(struct acpi_nfit_desc *acpi_desc, unsigned long flags)
+ {
+ 	struct device *dev = acpi_desc->dev;
+diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
+new file mode 100644
+index 000000000000..f60dbcbc5f33
+--- /dev/null
++++ b/drivers/acpi/nfit/intel.h
+@@ -0,0 +1,67 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/* Copyright(c) 2018 Intel Corporation. All rights reserved. */
++/*
++ * Intel specific definitions for NVDIMM Firmware Interface Table - NFIT
++ */
++#ifndef _NFIT_INTEL_H_
++#define _NFIT_INTEL_H_
++
++#ifdef CONFIG_X86
++
++#define ND_INTEL_STATUS_SIZE		4
++#define ND_INTEL_PASSPHRASE_SIZE	32
++
++#define ND_INTEL_STATUS_RETRY		5
++#define ND_INTEL_STATUS_NOT_READY	9
++#define ND_INTEL_STATUS_INVALID_STATE	10
++#define ND_INTEL_STATUS_INVALID_PASS	11
++
++#define ND_INTEL_SEC_STATE_ENABLED	0x02
++#define ND_INTEL_SEC_STATE_LOCKED	0x04
++#define ND_INTEL_SEC_STATE_FROZEN	0x08
++#define ND_INTEL_SEC_STATE_PLIMIT	0x10
++#define ND_INTEL_SEC_STATE_UNSUPPORTED	0x20
++
++struct nd_intel_get_security_state {
++	u32 status;
++	u32 reserved;
++	u8 state;
++	u8 reserved1[3];
++} __packed;
++
++struct nd_intel_set_passphrase {
++	u8 old_pass[32];
++	u8 new_pass[32];
++	u32 status;
++} __packed;
++
++struct nd_intel_unlock_unit {
++	u8 passphrase[32];
++	u32 status;
++} __packed;
++
++struct nd_intel_disable_passphrase {
++	u8 passphrase[32];
++	u32 status;
++} __packed;
++
++struct nd_intel_freeze_lock {
++	u32 status;
++} __packed;
++
++struct nd_intel_secure_erase {
++	u8 passphrase[32];
++	u32 status;
++} __packed;
++
++struct nd_intel_overwrite {
++	u8 passphrase[32];
++	u32 status;
++} __packed;
++
++struct nd_intel_query_overwrite {
++	u32 status;
++} __packed;
++#endif /* CONFIG_X86 */
++
++#endif
+diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
+index 7d15856a739f..40b0003b1805 100644
+--- a/drivers/acpi/nfit/nfit.h
++++ b/drivers/acpi/nfit/nfit.h
+@@ -60,14 +60,29 @@ enum nvdimm_family_cmds {
+ 	NVDIMM_INTEL_QUERY_FWUPDATE = 16,
+ 	NVDIMM_INTEL_SET_THRESHOLD = 17,
+ 	NVDIMM_INTEL_INJECT_ERROR = 18,
++	NVDIMM_INTEL_GET_SECURITY_STATE = 19,
++	NVDIMM_INTEL_SET_PASSPHRASE = 20,
++	NVDIMM_INTEL_DISABLE_PASSPHRASE = 21,
++	NVDIMM_INTEL_UNLOCK_UNIT = 22,
++	NVDIMM_INTEL_FREEZE_LOCK = 23,
++	NVDIMM_INTEL_SECURE_ERASE = 24,
++	NVDIMM_INTEL_OVERWRITE = 25,
++	NVDIMM_INTEL_QUERY_OVERWRITE = 26,
+ };
+ 
++#define NVDIMM_INTEL_SECURITY_CMDMASK \
++(1 << NVDIMM_INTEL_GET_SECURITY_STATE | 1 << NVDIMM_INTEL_SET_PASSPHRASE \
++| 1 << NVDIMM_INTEL_DISABLE_PASSPHRASE | 1 << NVDIMM_INTEL_UNLOCK_UNIT \
++| 1 << NVDIMM_INTEL_FREEZE_LOCK | 1 << NVDIMM_INTEL_SECURE_ERASE \
++| 1 << NVDIMM_INTEL_OVERWRITE | 1 << NVDIMM_INTEL_QUERY_OVERWRITE)
++
+ #define NVDIMM_INTEL_CMDMASK \
+ (NVDIMM_STANDARD_CMDMASK | 1 << NVDIMM_INTEL_GET_MODES \
+  | 1 << NVDIMM_INTEL_GET_FWINFO | 1 << NVDIMM_INTEL_START_FWUPDATE \
+  | 1 << NVDIMM_INTEL_SEND_FWUPDATE | 1 << NVDIMM_INTEL_FINISH_FWUPDATE \
+  | 1 << NVDIMM_INTEL_QUERY_FWUPDATE | 1 << NVDIMM_INTEL_SET_THRESHOLD \
+- | 1 << NVDIMM_INTEL_INJECT_ERROR | 1 << NVDIMM_INTEL_LATCH_SHUTDOWN)
++ | 1 << NVDIMM_INTEL_INJECT_ERROR | 1 << NVDIMM_INTEL_LATCH_SHUTDOWN \
++ | NVDIMM_INTEL_SECURITY_CMDMASK)
+ 
+ enum nfit_uuids {
+ 	/* for simplicity alias the uuid index with the family id */
+diff --git a/drivers/nvdimm/bus.c b/drivers/nvdimm/bus.c
+index 27902a8799b1..de2af49bbf08 100644
+--- a/drivers/nvdimm/bus.c
++++ b/drivers/nvdimm/bus.c
+@@ -894,7 +894,7 @@ static int nd_cmd_clear_to_send(struct nvdimm_bus *nvdimm_bus,
+ 
+ 	/* ask the bus provider if it would like to block this request */
+ 	if (nd_desc->clear_to_send) {
+-		int rc = nd_desc->clear_to_send(nd_desc, nvdimm, cmd);
++		int rc = nd_desc->clear_to_send(nd_desc, nvdimm, cmd, data);
+ 
+ 		if (rc)
+ 			return rc;
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 097072c5a852..472171af7f60 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -87,7 +87,7 @@ struct nvdimm_bus_descriptor {
+ 	ndctl_fn ndctl;
+ 	int (*flush_probe)(struct nvdimm_bus_descriptor *nd_desc);
+ 	int (*clear_to_send)(struct nvdimm_bus_descriptor *nd_desc,
+-			struct nvdimm *nvdimm, unsigned int cmd);
++			struct nvdimm *nvdimm, unsigned int cmd, void *data);
+ };
+ 
+ struct nd_cmd_desc {
 
