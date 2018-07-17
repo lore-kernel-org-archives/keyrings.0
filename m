@@ -1,162 +1,84 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Fri, 13 Jul 2018 23:17:37 +0000
-Subject: Re: [PATCH v4 03/11] nfit/libnvdimm: store dimm id as a member to struct nvdimm
-Message-Id: <CAPcyv4jq_8oJTAKxrxmwR36OzOiiiWrgxzMBvctCgDhmTJrqSA@mail.gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 17 Jul 2018 20:54:04 +0000
+Subject: [PATCH v5 00/12] Adding security support for nvdimm
+Message-Id: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153142840572.27297.8070233763007198738.stgit@djiang5-desk3.ch.intel.com>
- <153142852403.27297.4482491306340625013.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153142852403.27297.4482491306340625013.stgit@djiang5-desk3.ch.intel.com>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: David Howells <dhowells@redhat.com>, "Schofield, Alison  <alison.schofield@intel.com>, keyrings@vger.kernel.org, Kees Cook" <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-On Thu, Jul 12, 2018 at 1:48 PM, Dave Jiang <dave.jiang@intel.com> wrote:
-> The generated dimm id is needed for the sysfs attribute as well as being
-> used as the identifier/description for the security key. Since it's
-> constant and should never change, store it as a member of struct nvdimm.
->
-> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-> ---
->  drivers/acpi/nfit/core.c   |   35 +++++++++++++++++++++++------------
->  drivers/acpi/nfit/nfit.h   |    1 +
->  drivers/nvdimm/dimm_devs.c |    4 +++-
->  drivers/nvdimm/nd-core.h   |    1 +
->  include/linux/libnvdimm.h  |    2 +-
->  5 files changed, 29 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-> index a3a944751e6a..dcb5f428bd9c 100644
-> --- a/drivers/acpi/nfit/core.c
-> +++ b/drivers/acpi/nfit/core.c
-> @@ -71,6 +71,9 @@ struct nfit_table_prev {
->
->  static guid_t nfit_uuid[NFIT_UUID_MAX];
->
-> +static int acpi_nfit_get_dimm_id(struct acpi_nfit_control_region *dcr,
-> +               char *buf);
-> +
->  const guid_t *to_nfit_uuid(enum nfit_uuids id)
->  {
->         return &nfit_uuid[id];
-> @@ -1572,18 +1575,10 @@ static DEVICE_ATTR_RO(flags);
->  static ssize_t id_show(struct device *dev,
->                 struct device_attribute *attr, char *buf)
->  {
-> -       struct acpi_nfit_control_region *dcr = to_nfit_dcr(dev);
-> +       struct nvdimm *nvdimm = to_nvdimm(dev);
-> +       struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
->
-> -       if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
-> -               return sprintf(buf, "%04x-%02x-%04x-%08x\n",
-> -                               be16_to_cpu(dcr->vendor_id),
-> -                               dcr->manufacturing_location,
-> -                               be16_to_cpu(dcr->manufacturing_date),
-> -                               be32_to_cpu(dcr->serial_number));
-> -       else
-> -               return sprintf(buf, "%04x-%08x\n",
-> -                               be16_to_cpu(dcr->vendor_id),
-> -                               be32_to_cpu(dcr->serial_number));
-> +       return sprintf(buf, "%s\n", nfit_mem->id);
->  }
->  static DEVICE_ATTR_RO(id);
->
-> @@ -1830,6 +1825,21 @@ static void shutdown_dimm_notify(void *data)
->         mutex_unlock(&acpi_desc->init_mutex);
->  }
->
-> +static int acpi_nfit_get_dimm_id(struct acpi_nfit_control_region *dcr,
-> +               char *buf)
-> +{
-> +       if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
-> +               return sprintf(buf, "%04x-%02x-%04x-%08x",
-> +                               be16_to_cpu(dcr->vendor_id),
-> +                               dcr->manufacturing_location,
-> +                               be16_to_cpu(dcr->manufacturing_date),
-> +                               be32_to_cpu(dcr->serial_number));
-> +       else
-> +               return sprintf(buf, "%04x-%08x",
-> +                               be16_to_cpu(dcr->vendor_id),
-> +                               be32_to_cpu(dcr->serial_number));
-> +}
-> +
->  static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
->  {
->         struct nfit_mem *nfit_mem;
-> @@ -1896,10 +1906,11 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
->
->                 flush = nfit_mem->nfit_flush ? nfit_mem->nfit_flush->flush
->                         : NULL;
-> +               acpi_nfit_get_dimm_id(nfit_mem->dcr, nfit_mem->id);
+The following series implements security support for nvdimm. Mostly adding
+new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
+adding generic support libnvdimm for other vendors. The most important
+security features are unlocking locked nvdimms, and updating/setting security
+passphrase to nvdimms.
 
-It feels odd to initialize this late right before the dimm is
-registered with the bus when the rest of the nfit_mem initialization
-happens in acpi_nfit_add_dimm(). I think we can just open code
-acpi_nfit_get_dimm_id() inside acpi_nfit_add_dimm() and call it done.
+Security folks, thanks in advance for taking a look at my key management
+implementation and making sure that I'm doing something sane. Mainly you'll
+want to review patches 2, 4, 5, and 6 as most relevant ones that need scrutiny.
 
->                 nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
->                                 acpi_nfit_dimm_attribute_groups,
->                                 flags, cmd_mask, flush ? flush->hint_count : 0,
-> -                               nfit_mem->flush_wpq);
-> +                               nfit_mem->flush_wpq, nfit_mem->id);
->                 if (!nvdimm)
->                         return -ENOMEM;
->
-> diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
-> index 40b0003b1805..019549138133 100644
-> --- a/drivers/acpi/nfit/nfit.h
-> +++ b/drivers/acpi/nfit/nfit.h
-> @@ -195,6 +195,7 @@ struct nfit_mem {
->         int family;
->         bool has_lsr;
->         bool has_lsw;
-> +       char id[NVDIMM_KEY_DESC_LEN];
+v5:
+- Moved dimm_id initialization (Dan)
+- Added a key_put_sync() in order to run key_gc_work and cleanup old key. (Dan)
+- Added check to block security state changes while DIMM is active. (Dan)
 
-I think this length should be something like NFIT_DIMM_ID_LEN since it
-is independent of the key stuff, it's just the NFIT id that *happens*
-to also be used to generate the key id.
+v4:
+- flip payload layout for update passphrase to make it easier on userland.
 
->  };
->
->  struct acpi_nfit_desc {
-> diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-> index 1dcbb653455b..1842c74413fa 100644
-> --- a/drivers/nvdimm/dimm_devs.c
-> +++ b/drivers/nvdimm/dimm_devs.c
-> @@ -440,7 +440,7 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
->  struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
->                 const struct attribute_group **groups, unsigned long flags,
->                 unsigned long cmd_mask, int num_flush,
-> -               struct resource *flush_wpq)
-> +               struct resource *flush_wpq, const char *id)
->  {
->         struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
->         struct device *dev;
-> @@ -453,6 +453,8 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
->                 kfree(nvdimm);
->                 return NULL;
->         }
-> +
-> +       memcpy(nvdimm->dimm_id, id, NVDIMM_KEY_DESC_LEN);
->         nvdimm->provider_data = provider_data;
->         nvdimm->flags = flags;
->         nvdimm->cmd_mask = cmd_mask;
-> diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-> index 2af0f89c4010..ea9227498dac 100644
-> --- a/drivers/nvdimm/nd-core.h
-> +++ b/drivers/nvdimm/nd-core.h
-> @@ -42,6 +42,7 @@ struct nvdimm {
->         atomic_t busy;
->         int id, num_flush;
->         struct resource *flush_wpq;
-> +       char dimm_id[NVDIMM_KEY_DESC_LEN];
+v3:
+- Set x86 wrappers for x86 only bits. (Dan)
+- Fixed up some verbiage in commit headers.
+- Put in usage of sysfs_streq() for sysfs inputs.
+- 0-day build fixes for non-x86 archs.
 
-Hmm, I don't think struct nvdimm needs it's own storage for dimm_id.
-Just make this a pointer and assign it the passed in value. It's
-guaranteed that the nfit_mem object will stay around as long as the
-nvdimm is registered.
+v2:
+- Move inclusion of intel.h to relevant source files and not in nfit.h. (Dan)
+- Moved security ring relevant code to dimm_devs.c. (Dan)
+- Added dimm_id to nfit_mem to avoid recreate per sysfs show call. (Dan)
+- Added routine to return security_ops based on family supplied. (Dan)
+- Added nvdimm_key_data struct to wrap raw passphrase string. (Dan)
+- Allocate firmware package on stack. (Dan)
+- Added missing frozen state detection when retrieving security state.
 
-With those minor fixups you can add:
+---
 
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Dave Jiang (12):
+      nfit: add support for Intel DSM 1.7 commands
+      libnvdimm: create keyring to store security keys
+      nfit/libnvdimm: store dimm id as a member to struct nvdimm
+      nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
+      keys: add call key_put_sync() to flush key_gc_work when doing a key_put().
+      nfit/libnvdimm: add set passphrase support for Intel nvdimms
+      nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+      nfit/libnvdimm: add freeze security support to Intel nvdimm
+      nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+      nfit_test: add context to dimm_dev for nfit_test
+      nfit_test: add test support for Intel nvdimm security DSMs
+      libnvdimm: add documentation for nvdimm security support
+
+
+ Documentation/nvdimm/security    |   70 ++++++
+ drivers/acpi/nfit/Makefile       |    1 
+ drivers/acpi/nfit/core.c         |   58 ++++-
+ drivers/acpi/nfit/intel.c        |  366 ++++++++++++++++++++++++++++++++
+ drivers/acpi/nfit/intel.h        |   83 +++++++
+ drivers/acpi/nfit/nfit.h         |   20 ++
+ drivers/nvdimm/bus.c             |    2 
+ drivers/nvdimm/core.c            |    7 +
+ drivers/nvdimm/dimm.c            |    7 +
+ drivers/nvdimm/dimm_devs.c       |  430 ++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/nd-core.h         |    4 
+ drivers/nvdimm/nd.h              |    2 
+ include/linux/key.h              |    1 
+ include/linux/libnvdimm.h        |   41 +++-
+ security/keys/key.c              |   35 +++
+ tools/testing/nvdimm/Kbuild      |    1 
+ tools/testing/nvdimm/test/nfit.c |  227 +++++++++++++++++++-
+ 17 files changed, 1315 insertions(+), 40 deletions(-)
+ create mode 100644 Documentation/nvdimm/security
+ create mode 100644 drivers/acpi/nfit/intel.c
+ create mode 100644 drivers/acpi/nfit/intel.h
+
+--
