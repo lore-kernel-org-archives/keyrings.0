@@ -1,174 +1,129 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 02 Jul 2018 23:39:51 +0000
-Subject: [PATCH 08/11] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-Message-Id: <153057479159.38125.14622086729471334313.stgit@djiang5-desk3.ch.intel.com>
+Date: Tue, 17 Jul 2018 20:55:00 +0000
+Subject: [PATCH v5 10/12] nfit_test: add context to dimm_dev for nfit_test
+Message-Id: <153186090067.27463.11040989205930773501.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
+References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
 To: dan.j.williams@intel.com
 Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-Adding support to issue a secure erase DSM to the Intel nvdimm. The
-required passphrase is acquired from userspace through the kernel key
-management. To trigger the action, "erase" is written to the "security"
-sysfs attribute.  libnvdimm will support the erase generic API call.
+In order to access the nfit_test context via sideband sysfs knobs, the
+dimm_dev needs to be more than struct device in order to point back to
+struct nfit_test. Wrapping the original struct device with a struct
+nfit_dimm_dev and saving the nfit_test as private driver data. Also
+changing the nfit_mem to be a member of struct nfit_dimm_dev instead of
+saving as private driver data of that device. This is in preparation for
+adding security DSM support and allowing the locking of DIMMs for testing
+via sideband.
 
 Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/acpi/nfit/intel.c  |   54 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   47 ++++++++++++++++++++++++++++++++++++++
- include/linux/libnvdimm.h  |    2 ++
- 3 files changed, 103 insertions(+)
+ tools/testing/nvdimm/test/nfit.c |   41 +++++++++++++++++++++++++-------------
+ 1 file changed, 27 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 41602be2a33b..4000db2d5ed8 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -16,6 +16,59 @@
- #include <acpi/nfit.h>
- #include "nfit.h"
- 
-+static int intel_dimm_security_erase(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm, const char *passphrase)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0, pkg_size;
-+	struct nd_intel_secure_erase *cmd;
-+	struct nd_cmd_pkg *pkg;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+
-+	if (!test_bit(NVDIMM_INTEL_SECURE_ERASE, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
-+
-+	pkg_size = sizeof(*pkg) + sizeof(*cmd);
-+	pkg = kzalloc(pkg_size, GFP_KERNEL);
-+	if (!pkg)
-+		return -ENOMEM;
-+
-+	pkg->nd_command = NVDIMM_INTEL_SECURE_ERASE;
-+	pkg->nd_family = NVDIMM_FAMILY_INTEL;
-+	pkg->nd_size_in = ND_INTEL_PASSPHRASE_SIZE;
-+	pkg->nd_size_out = ND_INTEL_STATUS_SIZE;
-+	pkg->nd_fw_size = pkg->nd_size_out;
-+	cmd = (struct nd_intel_secure_erase *)&pkg->nd_payload;
-+	memcpy(cmd->passphrase, passphrase, ND_INTEL_PASSPHRASE_SIZE);
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, pkg,
-+			sizeof(pkg_size), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (cmd->status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+	/* DIMM unlocked, invalidate all CPU caches before we read it */
-+	wbinvd();
-+
-+ out:
-+	kfree(pkg);
-+	return rc;
-+}
-+
- static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
- 		struct nvdimm *nvdimm)
- {
-@@ -291,4 +344,5 @@ struct nvdimm_security_ops intel_security_ops = {
- 	.change_key = intel_dimm_security_update_passphrase,
- 	.disable = intel_dimm_security_disable,
- 	.freeze_lock = intel_dimm_security_freeze_lock,
-+	.erase = intel_dimm_security_erase,
+diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
+index 18157b0c0d0d..7b3ce2194889 100644
+--- a/tools/testing/nvdimm/test/nfit.c
++++ b/tools/testing/nvdimm/test/nfit.c
+@@ -150,6 +150,11 @@ struct nfit_test_fw {
+ 	u64 end_time;
  };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index cd0624663621..b66bde25bfe6 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -85,6 +85,51 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
+ 
++struct nfit_dimm_dev {
++	struct device dev;
++	struct nfit_mem *nfit_mem;
++};
++
+ struct nfit_test {
+ 	struct acpi_nfit_desc acpi_desc;
+ 	struct platform_device pdev;
+@@ -181,7 +186,7 @@ struct nfit_test {
+ 		unsigned long deadline;
+ 		spinlock_t lock;
+ 	} ars_state;
+-	struct device *dimm_dev[NUM_DCR];
++	struct nfit_dimm_dev dimm_dev[NUM_DCR];
+ 	struct nd_intel_smart *smart;
+ 	struct nd_intel_smart_threshold *smart_threshold;
+ 	struct badrange badrange;
+@@ -981,7 +986,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
+ 						&t->smart_threshold[i -
+ 							t->dcr_idx],
+ 						&t->smart[i - t->dcr_idx],
+-						&t->pdev.dev, t->dimm_dev[i]);
++						&t->pdev.dev,
++						&t->dimm_dev[i].dev);
+ 				break;
+ 			case ND_INTEL_SMART_INJECT:
+ 				rc = nfit_test_cmd_smart_inject(buf,
+@@ -989,7 +995,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
+ 						&t->smart_threshold[i -
+ 							t->dcr_idx],
+ 						&t->smart[i - t->dcr_idx],
+-						&t->pdev.dev, t->dimm_dev[i]);
++						&t->pdev.dev,
++						&t->dimm_dev[i].dev);
+ 				break;
+ 			default:
+ 				return -ENOTTY;
+@@ -1187,8 +1194,7 @@ static void put_dimms(void *data)
+ 	int i;
+ 
+ 	for (i = 0; i < t->num_dcr; i++)
+-		if (t->dimm_dev[i])
+-			device_unregister(t->dimm_dev[i]);
++		device_unregister(&t->dimm_dev[i].dev);
  }
  
-+static int nvdimm_security_erase(struct device *dev)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key;
-+	char *payload;
-+	int rc = 0;
-+
-+	if (!nvdimm->security_ops)
-+		return 0;
-+
-+	/* lock the device and disallow driver bind */
-+	device_lock(dev);
-+	/* No driver data means dimm is disabled. Proceed if so. */
-+	if (dev_get_drvdata(dev)) {
-+		dev_warn(dev, "Unable to secure erase while DIMM active.\n");
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
-+		goto out;
-+
-+	key = nvdimm_search_key(dev);
-+	if (!key)
-+		key = nvdimm_request_key(dev);
-+	if (!key) {
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+	down_read(&key->sem);
-+	payload = key->payload.data[0];
-+	rc = nvdimm->security_ops->erase(nvdimm_bus, nvdimm, payload);
-+	up_read(&key->sem);
-+	/* remove key since secure erase kills the passphrase */
-+	key_invalidate(key);
-+	key_put(key);
-+
-+ out:
-+	device_unlock(dev);
-+	nvdimm_security_get_state(dev);
-+	return rc;
-+}
-+
- static int nvdimm_security_freeze_lock(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -650,6 +695,8 @@ static ssize_t security_store(struct device *dev,
- 		rc = nvdimm_security_disable(dev);
- 	else if (strcmp(buf, "freeze") = 0 || strcmp(buf, "freeze\n") = 0)
- 		rc = nvdimm_security_freeze_lock(dev);
-+	else if (strcmp(buf, "erase") = 0 || strcmp(buf, "erase\n") = 0)
-+		rc = nvdimm_security_erase(dev);
- 	else
- 		return -EINVAL;
- 
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 683e4cadc7f6..e330a452238e 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -181,6 +181,8 @@ struct nvdimm_security_ops {
- 			struct nvdimm *nvdimm, const char *pass);
- 	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
- 			struct nvdimm *nvdimm);
-+	int (*erase)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm, const char *passphrase);
+ static struct class *nfit_test_dimm;
+@@ -1290,19 +1296,27 @@ static const struct attribute_group *nfit_test_dimm_attribute_groups[] = {
+ 	NULL,
  };
  
- void badrange_init(struct badrange *badrange);
++static void dimm_dev_release(struct device *dev)
++{
++}
++
+ static int nfit_test_dimm_init(struct nfit_test *t)
+ {
+-	int i;
++	int i, rc;
+ 
+ 	if (devm_add_action_or_reset(&t->pdev.dev, put_dimms, t))
+ 		return -ENOMEM;
+ 	for (i = 0; i < t->num_dcr; i++) {
+-		t->dimm_dev[i] = device_create_with_groups(nfit_test_dimm,
+-				&t->pdev.dev, 0, NULL,
+-				nfit_test_dimm_attribute_groups,
+-				"test_dimm%d", i + t->dcr_idx);
+-		if (!t->dimm_dev[i])
+-			return -ENOMEM;
++		t->dimm_dev[i].dev.parent = &t->pdev.dev;
++		dev_set_name(&t->dimm_dev[i].dev, "test_dimm%d",
++				i + t->dcr_idx);
++		t->dimm_dev[i].dev.class = nfit_test_dimm;
++		t->dimm_dev[i].dev.groups = nfit_test_dimm_attribute_groups;
++		t->dimm_dev[i].dev.release = dimm_dev_release;
++		rc = device_register(&t->dimm_dev[i].dev);
++		if (rc < 0)
++			return rc;
++		dev_set_drvdata(&t->dimm_dev[i].dev, t);
+ 	}
+ 	return 0;
+ }
+@@ -2665,8 +2679,7 @@ static int nfit_test_probe(struct platform_device *pdev)
+ 
+ 		for (i = 0; i < NUM_DCR; i++)
+ 			if (nfit_handle = handle[i])
+-				dev_set_drvdata(nfit_test->dimm_dev[i],
+-						nfit_mem);
++				nfit_test->dimm_dev[i].nfit_mem = nfit_mem;
+ 	}
+ 	mutex_unlock(&acpi_desc->init_mutex);
+ 
 
