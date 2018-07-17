@@ -1,62 +1,91 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 18 Jul 2018 15:49:43 +0000
-Subject: Re: [PATCH v5 03/12] nfit/libnvdimm: store dimm id as a member to struct nvdimm
-Message-Id: <e04f87e6-5266-a140-4595-dcf1abf20ea0@intel.com>
+Date: Tue, 17 Jul 2018 20:54:32 +0000
+Subject: [PATCH v5 05/12] keys: add call key_put_sync() to flush key_gc_work when doing a key_put().
+Message-Id: <153186087257.27463.13382652631526471099.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
- <153186086110.27463.9116313124772301223.stgit@djiang5-desk3.ch.intel.com>
- <AT5PR8401MB116910B46B865BCCBD587195AB530@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
-In-Reply-To: <AT5PR8401MB116910B46B865BCCBD587195AB530@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
-To: "Elliott, Robert (Persistent Memory)" <elliott@hpe.com>, "Williams, Dan J" <dan.j.williams@intel.com>
-Cc: "Schofield, Alison" <alison.schofield@intel.com>, "keescook@chromium.org" <keescook@chromium.org>, "linux-nvdimm@lists.01.org" <linux-nvdimm@lists.01.org>, 'Eric Biggers' <ebiggers3@gmail.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>
+In-Reply-To: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
+Adding key_put_sync() that calls flush_work on key_gc_work to ensure the
+key we want to remove is gone.
 
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
+ include/linux/key.h |    1 +
+ security/keys/key.c |   35 +++++++++++++++++++++++++++++------
+ 2 files changed, 30 insertions(+), 6 deletions(-)
 
-On 07/18/2018 08:40 AM, Elliott, Robert (Persistent Memory) wrote:
-> 
-> 
->> -----Original Message-----
->> From: Linux-nvdimm [mailto:linux-nvdimm-bounces@lists.01.org] On Behalf Of Dave Jiang
->> Sent: Tuesday, July 17, 2018 3:54 PM
->> Subject: [PATCH v5 03/12] nfit/libnvdimm: store dimm id as a member to struct nvdimm
-> ...
->> +if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
->> +sprintf(nfit_mem->id, "%04x-%02x-%04x-%08x",
->> +be16_to_cpu(dcr->vendor_id),
->> +dcr->manufacturing_location,
->> +be16_to_cpu(dcr->manufacturing_date),
->> +be32_to_cpu(dcr->serial_number));
->> +else
->> +sprintf(nfit_mem->id, "%04x-%08x",
->> +be16_to_cpu(dcr->vendor_id),
->> +be32_to_cpu(dcr->serial_number));
-> ...
->>
->> +#define NFIT_DIMM_ID_LEN25
->> +char id[NFIT_DIMM_ID_LEN];
-> 
-> Since the longest ID is:
->     4+2+4+8 hex characters = 18 bytes
->     +3 dashes = 21 bytes
->     +1 NULL = 22 bytes,
-> 
-> why is the define 25?
+diff --git a/include/linux/key.h b/include/linux/key.h
+index e58ee10f6e58..4dffbd23d4e4 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -253,6 +253,7 @@ extern struct key *key_alloc(struct key_type *type,
+ extern void key_revoke(struct key *key);
+ extern void key_invalidate(struct key *key);
+ extern void key_put(struct key *key);
++extern void key_put_sync(struct key *key);
+ 
+ static inline struct key *__key_get(struct key *key)
+ {
+diff --git a/security/keys/key.c b/security/keys/key.c
+index d97c9394b5dd..b6f3ec19ab0f 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -622,6 +622,19 @@ int key_reject_and_link(struct key *key,
+ }
+ EXPORT_SYMBOL(key_reject_and_link);
+ 
++static void __key_put(struct key *key, bool sync)
++{
++	if (key) {
++		key_check(key);
++
++		if (refcount_dec_and_test(&key->usage)) {
++			schedule_work(&key_gc_work);
++			if (sync)
++				flush_work(&key_gc_work);
++		}
++	}
++}
++
+ /**
+  * key_put - Discard a reference to a key.
+  * @key: The key to discard a reference from.
+@@ -632,15 +645,25 @@ EXPORT_SYMBOL(key_reject_and_link);
+  */
+ void key_put(struct key *key)
+ {
+-	if (key) {
+-		key_check(key);
+-
+-		if (refcount_dec_and_test(&key->usage))
+-			schedule_work(&key_gc_work);
+-	}
++	__key_put(key, false);
+ }
+ EXPORT_SYMBOL(key_put);
+ 
++/**
++ * key_put - Discard a reference to a key and flush the key gc work item.
++ * @key: The key to discard a reference from.
++ *
++ * Discard a reference to a key, and when all the references are gone, we
++ * schedule the cleanup task to come and pull it out of the tree in process
++ * context at some later time. This call flushes the clean up so we are sure
++ * that the key is gone.
++ */
++void key_put_sync(struct key *key)
++{
++	__key_put(key, true);
++}
++EXPORT_SYMBOL(key_put_sync);
++
+ /*
+  * Find a key by its serial number.
+  */
 
-It should be 22. I think I just arbitrarily gave it some more room. I'll
-fix it.
-
-> 
-> Same question for this define in patch 02/12 (although there's another comment
-> by Eric Biggers that this isn't really used, so this might be moot):
->> +#define NVDIMM_KEY_DESC_LEN25
-> 
-> 
-> ---
-> Robert Elliott, HPE Persistent Memory
-> 
-> 
-> 
-> 
