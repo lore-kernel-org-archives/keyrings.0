@@ -1,165 +1,202 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Tue, 12 Jun 2018 15:55:25 +0000
-Subject: [RFCv2 04/13] KEYS: asym_tpm: extract key size & public key
-Message-Id: <20180612155534.4873-5-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 17 Jul 2018 20:54:15 +0000
+Subject: [PATCH v5 02/12] libnvdimm: create keyring to store security keys
+Message-Id: <153186085546.27463.5501870662513432986.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
 
-The parsed BER/DER blob obtained from user space contains a TPM_Key
-structure.  This structure has some information about the key as well as
-the public key portion.
+Prepping the libnvdimm to support security management by adding a keyring
+in order to provide passphrase management through the kernel key management
+APIs.
 
-This patch extracts this information for future use.
-
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 114 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 114 insertions(+)
+ drivers/nvdimm/core.c      |    7 +++
+ drivers/nvdimm/dimm_devs.c |   96 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/nd-core.h   |    1 
+ include/linux/libnvdimm.h  |    5 ++
+ 4 files changed, 107 insertions(+), 2 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index f98335068a3b..4f070706628c 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -7,6 +7,7 @@
- #include <linux/seq_file.h>
- #include <linux/scatterlist.h>
- #include <linux/tpm.h>
-+#include <asm/unaligned.h>
- #include <keys/asymmetric-subtype.h>
- #include <crypto/asym_tpm_subtype.h>
+diff --git a/drivers/nvdimm/core.c b/drivers/nvdimm/core.c
+index acce050856a8..3cd33d5c7cf0 100644
+--- a/drivers/nvdimm/core.c
++++ b/drivers/nvdimm/core.c
+@@ -437,9 +437,12 @@ static __init int libnvdimm_init(void)
+ {
+ 	int rc;
  
-@@ -41,6 +42,112 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
- 	kfree(tk);
+-	rc = nvdimm_bus_init();
++	rc = nvdimm_devs_init();
+ 	if (rc)
+ 		return rc;
++	rc = nvdimm_bus_init();
++	if (rc)
++		goto err_bus;
+ 	rc = nvdimm_init();
+ 	if (rc)
+ 		goto err_dimm;
+@@ -454,6 +457,8 @@ static __init int libnvdimm_init(void)
+ 	nvdimm_exit();
+  err_dimm:
+ 	nvdimm_bus_exit();
++ err_bus:
++	nvdimm_devs_exit();
+ 	return rc;
  }
  
-+/*
-+ * Parse enough information out of TPM_KEY structure:
-+ * TPM_STRUCT_VER -> 4 bytes
-+ * TPM_KEY_USAGE -> 2 bytes
-+ * TPM_KEY_FLAGS -> 4 bytes
-+ * TPM_AUTH_DATA_USAGE -> 1 byte
-+ * TPM_KEY_PARMS -> variable
-+ * UINT32 PCRInfoSize -> 4 bytes
-+ * BYTE* -> PCRInfoSize bytes
-+ * TPM_STORE_PUBKEY
-+ * UINT32 encDataSize;
-+ * BYTE* -> encDataSize;
-+ *
-+ * TPM_KEY_PARMS:
-+ * TPM_ALGORITHM_ID -> 4 bytes
-+ * TPM_ENC_SCHEME -> 2 bytes
-+ * TPM_SIG_SCHEME -> 2 bytes
-+ * UINT32 parmSize -> 4 bytes
-+ * BYTE* -> variable
-+ */
-+static int extract_key_parameters(struct tpm_key *tk)
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 8d348b22ba45..1dcbb653455b 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -18,12 +18,54 @@
+ #include <linux/io.h>
+ #include <linux/fs.h>
+ #include <linux/mm.h>
++#include <linux/cred.h>
++#include <keys/user-type.h>
++#include <linux/key-type.h>
++#include <linux/keyctl.h>
+ #include "nd-core.h"
+ #include "label.h"
+ #include "pmem.h"
+ #include "nd.h"
+ 
+ static DEFINE_IDA(dimm_ida);
++static const struct cred *nvdimm_cred;
++
++static int nvdimm_key_instantiate(struct key *key,
++		struct key_preparsed_payload *prep);
++static void nvdimm_key_destroy(struct key *key);
++
++struct key_type nvdimm_key_type = {
++	.name = "nvdimm",
++	.instantiate = nvdimm_key_instantiate,
++	.destroy = nvdimm_key_destroy,
++	.describe = user_describe,
++	/*
++	 * The reason to have default data length to be len*2 is to
++	 * accomodate the payload when we are doing a key change where
++	 * the we stuff the old key and new key in the same payload.
++	 */
++	.def_datalen = NVDIMM_PASSPHRASE_LEN * 2,
++};
++
++static int nvdimm_key_instantiate(struct key *key,
++		struct key_preparsed_payload *prep)
 +{
-+	const void *cur = tk->blob;
-+	uint32_t len = tk->blob_len;
-+	const void *pub_key;
-+	uint32_t sz;
-+	uint32_t key_len;
++	char *payload;
 +
-+	if (len < 11)
-+		return -EBADMSG;
++	payload = kzalloc(nvdimm_key_type.def_datalen, GFP_KERNEL);
++	if (!payload)
++		return -ENOMEM;
 +
-+	/* Ensure this is a legacy key */
-+	if (get_unaligned_be16(cur + 4) != 0x0015)
-+		return -EBADMSG;
-+
-+	/* Skip to TPM_KEY_PARMS */
-+	cur += 11;
-+	len -= 11;
-+
-+	if (len < 12)
-+		return -EBADMSG;
-+
-+	/* Make sure this is an RSA key */
-+	if (get_unaligned_be32(cur) != 0x00000001)
-+		return -EBADMSG;
-+
-+	/* Make sure this is TPM_ES_RSAESPKCSv15 encoding scheme */
-+	if (get_unaligned_be16(cur + 4) != 0x0002)
-+		return -EBADMSG;
-+
-+	/* Make sure this is TPM_SS_RSASSAPKCS1v15_DER signature scheme */
-+	if (get_unaligned_be16(cur + 6) != 0x0003)
-+		return -EBADMSG;
-+
-+	sz = get_unaligned_be32(cur + 8);
-+	if (len < sz + 12)
-+		return -EBADMSG;
-+
-+	/* Move to TPM_RSA_KEY_PARMS */
-+	len -= 12;
-+	cur += 12;
-+
-+	/* Grab the RSA key length */
-+	key_len = get_unaligned_be32(cur);
-+
-+	switch (key_len) {
-+	case 512:
-+	case 1024:
-+	case 1536:
-+	case 2048:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* Move just past TPM_KEY_PARMS */
-+	cur += sz;
-+	len -= sz;
-+
-+	if (len < 4)
-+		return -EBADMSG;
-+
-+	sz = get_unaligned_be32(cur);
-+	if (len < 4 + sz)
-+		return -EBADMSG;
-+
-+	/* Move to TPM_STORE_PUBKEY */
-+	cur += 4 + sz;
-+	len -= 4 + sz;
-+
-+	/* Grab the size of the public key, it should jive with the key size */
-+	sz = get_unaligned_be32(cur);
-+	if (sz > 256)
-+		return -EINVAL;
-+
-+	pub_key = cur + 4;
-+
-+	pr_info("Key length: %d\n", key_len);
-+	pr_info("Public Key Length: %d\n", sz);
-+	tk->key_len = key_len;
-+	tk->pub_key = pub_key;
-+	tk->pub_key_len = sz;
-+
++	key->datalen = min(nvdimm_key_type.def_datalen, prep->datalen);
++	memcpy(payload, prep->data, key->datalen);
++	key->payload.data[0] = payload;
 +	return 0;
 +}
 +
- /* Given the blob, parse it and load it into the TPM */
- struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
- {
-@@ -68,8 +175,15 @@ struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
++static void nvdimm_key_destroy(struct key *key)
++{
++	kfree(key->payload.data[0]);
++}
  
- 	tk->blob_len = blob_len;
+ /*
+  * Retrieve bus and dimm handle and return if this bus supports
+@@ -668,7 +710,59 @@ int nvdimm_bus_check_dimm_count(struct nvdimm_bus *nvdimm_bus, int dimm_count)
+ }
+ EXPORT_SYMBOL_GPL(nvdimm_bus_check_dimm_count);
  
-+	r = extract_key_parameters(tk);
-+	if (r < 0)
-+		goto error_extract;
+-void __exit nvdimm_devs_exit(void)
++static int nvdimm_register_keyring(void)
++{
++	struct cred *cred;
++	struct key *keyring;
++	int rc;
 +
- 	return tk;
++	rc = register_key_type(&nvdimm_key_type);
++	if (rc < 0)
++		return rc;
++
++	cred = prepare_kernel_cred(NULL);
++	if (!cred) {
++		rc = -ENOMEM;
++		goto failed_cred;
++	}
++
++	keyring = keyring_alloc(".nvdimm",
++			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, cred,
++			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
++			(KEY_USR_ALL & ~KEY_USR_SETATTR),
++			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
++	if (IS_ERR(keyring)) {
++		rc = PTR_ERR(keyring);
++		goto failed_keyring;
++	}
++
++	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
++	cred->thread_keyring = keyring;
++	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
++	nvdimm_cred = cred;
++	return 0;
++
++ failed_cred:
++	unregister_key_type(&nvdimm_key_type);
++ failed_keyring:
++	put_cred(cred);
++	return rc;
++}
++
++static void nvdimm_unregister_keyring(void)
++{
++	key_revoke(nvdimm_cred->thread_keyring);
++	unregister_key_type(&nvdimm_key_type);
++	put_cred(nvdimm_cred);
++}
++
++int __init nvdimm_devs_init(void)
++{
++	return nvdimm_register_keyring();
++}
++
++void  nvdimm_devs_exit(void)
+ {
++	nvdimm_unregister_keyring();
+ 	ida_destroy(&dimm_ida);
+ }
+diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
+index 79274ead54fb..2af0f89c4010 100644
+--- a/drivers/nvdimm/nd-core.h
++++ b/drivers/nvdimm/nd-core.h
+@@ -76,6 +76,7 @@ static inline bool is_memory(struct device *dev)
+ struct nvdimm_bus *walk_to_nvdimm_bus(struct device *nd_dev);
+ int __init nvdimm_bus_init(void);
+ void nvdimm_bus_exit(void);
++int nvdimm_devs_init(void);
+ void nvdimm_devs_exit(void);
+ void nd_region_devs_exit(void);
+ void nd_region_probe_success(struct nvdimm_bus *nvdimm_bus, struct device *dev);
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 472171af7f60..09dd06f96f95 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -155,6 +155,11 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
  
-+error_extract:
-+	kfree(tk->blob);
-+	tk->blob_len = 0;
- error_memdup:
- 	kfree(tk);
- error:
--- 
-2.16.1
+ }
+ 
++extern struct key_type nvdimm_key_type;
++
++#define NVDIMM_PASSPHRASE_LEN		32
++#define NVDIMM_KEY_DESC_LEN		25
++
+ void badrange_init(struct badrange *badrange);
+ int badrange_add(struct badrange *badrange, u64 addr, u64 length);
+ void badrange_forget(struct badrange *badrange, phys_addr_t start,
 
