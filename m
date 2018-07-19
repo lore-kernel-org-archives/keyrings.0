@@ -1,262 +1,196 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Thu, 05 Jul 2018 20:22:16 +0000
-Subject: [PATCH v2 01/11] nfit: adding support for Intel DSM 1.7 commands
-Message-Id: <153082213626.61422.13092434265429052773.stgit@djiang5-desk3.ch.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:30:01 +0000
+Subject: [RFCv2 RESEND 03/13] KEYS: Add parser for TPM-based keys
+Message-Id: <20180719183011.8574-4-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+To: keyrings@vger.kernel.org
 
-Adding command definition for security commands defined in Intel DSM
-specification v1.7. This includes "get security state", "set passphrase",
-"unlock unit", "freeze lock", "secure erase", "ovewrite", and
-"overwrite query". Since we are adding a lot of Intel definitions, moving
-the relevant bits to its own header. Also, we don't want those commands
-to be issued from user space through ioctls. Reason being some of the
-security commands require kernel involvement to flush all CPU caches that
-can't be done in userspace and the result can cause system crash. So
-blocking security commands in the ioctl path.
+For TPM based keys, the only standard seems to be described here:
+http://david.woodhou.se/draft-woodhouse-cert-best-practice.html#rfc.section.4.4
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Quote from the relevant section:
+"Rather, a common form of storage for "wrapped" keys is to encode the
+binary TCPA_KEY structure in a single ASN.1 OCTET-STRING, and store the
+result in PEM format with the tag "-----BEGIN TSS KEY BLOB-----". "
+
+This patch implements the above behavior.  It is assumed that the PEM
+encoding is stripped out by userspace and only the raw DER/BER format is
+provided.  This is similar to how PKCS7, PKCS8 and X.509 keys are
+handled.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/acpi/nfit/core.c  |   28 ++++++++++++
- drivers/acpi/nfit/intel.h |  102 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/nfit/nfit.h  |   23 ----------
- drivers/nvdimm/bus.c      |    2 -
- include/linux/libnvdimm.h |    2 -
- 5 files changed, 131 insertions(+), 26 deletions(-)
- create mode 100644 drivers/acpi/nfit/intel.h
+ crypto/asymmetric_keys/Kconfig      |   9 ++++
+ crypto/asymmetric_keys/Makefile     |  11 ++++
+ crypto/asymmetric_keys/tpm.asn1     |   5 ++
+ crypto/asymmetric_keys/tpm_parser.c | 104 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 129 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/tpm.asn1
+ create mode 100644 crypto/asymmetric_keys/tpm_parser.c
 
-diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-index 2be8373153ed..195de2228088 100644
---- a/drivers/acpi/nfit/core.c
-+++ b/drivers/acpi/nfit/core.c
-@@ -24,6 +24,7 @@
- #include <linux/nd.h>
- #include <asm/cacheflush.h>
- #include <acpi/nfit.h>
-+#include "intel.h"
- #include "nfit.h"
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index b75555c7d8ae..88353a9ebc9b 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -52,6 +52,15 @@ config PKCS8_PRIVATE_KEY_PARSER
+ 	  private key data and provides the ability to instantiate a crypto key
+ 	  from that data.
  
- /*
-@@ -377,6 +378,14 @@ static u8 nfit_dsm_revid(unsigned family, unsigned func)
- 			[NVDIMM_INTEL_QUERY_FWUPDATE] = 2,
- 			[NVDIMM_INTEL_SET_THRESHOLD] = 2,
- 			[NVDIMM_INTEL_INJECT_ERROR] = 2,
-+			[NVDIMM_INTEL_GET_SECURITY_STATE] = 2,
-+			[NVDIMM_INTEL_SET_PASSPHRASE] = 2,
-+			[NVDIMM_INTEL_DISABLE_PASSPHRASE] = 2,
-+			[NVDIMM_INTEL_UNLOCK_UNIT] = 2,
-+			[NVDIMM_INTEL_FREEZE_LOCK] = 2,
-+			[NVDIMM_INTEL_SECURE_ERASE] = 2,
-+			[NVDIMM_INTEL_OVERWRITE] = 2,
-+			[NVDIMM_INTEL_QUERY_OVERWRITE] = 2,
- 		},
- 	};
- 	u8 id;
-@@ -3200,7 +3209,7 @@ static int acpi_nfit_flush_probe(struct nvdimm_bus_descriptor *nd_desc)
- 	return 0;
- }
++config TPM_KEY_PARSER
++	tristate "TPM private key parser"
++	depends on ASYMMETRIC_TPM_KEY_SUBTYPE
++	select ASN1
++	help
++	  This option provides support for parsing TPM format blobs for
++	  private key data and provides the ability to instantiate a crypto key
++	  from that data.
++
+ config PKCS7_MESSAGE_PARSER
+ 	tristate "PKCS#7 message parser"
+ 	depends on X509_CERTIFICATE_PARSER
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index 0476c44cdd55..ac2822c190ac 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -73,3 +73,14 @@ verify_signed_pefile-y := \
  
--static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
-+static int __acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
- 		struct nvdimm *nvdimm, unsigned int cmd)
- {
- 	struct acpi_nfit_desc *acpi_desc = to_acpi_nfit_desc(nd_desc);
-@@ -3222,6 +3231,23 @@ static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
- 	return 0;
- }
- 
-+/* prevent security commands from being issued via ioctl */
-+static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
-+		struct nvdimm *nvdimm, unsigned int cmd, void *buf)
-+{
-+	struct nd_cmd_pkg *call_pkg = buf;
-+	unsigned int func;
+ $(obj)/mscode_parser.o: $(obj)/mscode.asn1.h $(obj)/mscode.asn1.h
+ $(obj)/mscode.asn1.o: $(obj)/mscode.asn1.c $(obj)/mscode.asn1.h
 +
-+	if (nvdimm && cmd = ND_CMD_CALL &&
-+			call_pkg->nd_family = NVDIMM_FAMILY_INTEL) {
-+		func = call_pkg->nd_command;
-+		if ((1 << func) & NVDIMM_INTEL_SECURITY_CMDMASK)
-+			return -EOPNOTSUPP;
-+	}
++#
++# TPM private key parsing
++#
++obj-$(CONFIG_TPM_KEY_PARSER) += tpm_key_parser.o
++tpm_key_parser-y := \
++	tpm.asn1.o \
++	tpm_parser.o
 +
-+	return __acpi_nfit_clear_to_send(nd_desc, nvdimm, cmd);
-+}
-+
- int acpi_nfit_ars_rescan(struct acpi_nfit_desc *acpi_desc, unsigned long flags)
- {
- 	struct device *dev = acpi_desc->dev;
-diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
++$(obj)/tpm_parser.o: $(obj)/tpm.asn1.h
++$(obj)/tpm.asn1.o: $(obj)/tpm.asn1.c $(obj)/tpm.asn1.h
+diff --git a/crypto/asymmetric_keys/tpm.asn1 b/crypto/asymmetric_keys/tpm.asn1
 new file mode 100644
-index 000000000000..a351f451b42a
+index 000000000000..d7f194232f30
 --- /dev/null
-+++ b/drivers/acpi/nfit/intel.h
-@@ -0,0 +1,102 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+/* Copyright(c) 2018 Intel Corporation. All rights reserved. */
-+/*
-+ * Intel specific definitions for NVDIMM Firmware Interface Table - NFIT
-+ */
-+#ifndef _NFIT_INTEL_H_
-+#define _NFIT_INTEL_H_
++++ b/crypto/asymmetric_keys/tpm.asn1
+@@ -0,0 +1,5 @@
++--
++-- Unencryted TPM Blob.  For details of the format, see:
++-- http://david.woodhou.se/draft-woodhouse-cert-best-practice.html#I-D.mavrogiannopoulos-tpmuri
++--
++PrivateKeyInfo ::= OCTET STRING ({ tpm_note_key })
+diff --git a/crypto/asymmetric_keys/tpm_parser.c b/crypto/asymmetric_keys/tpm_parser.c
+new file mode 100644
+index 000000000000..113f67c74cbe
+--- /dev/null
++++ b/crypto/asymmetric_keys/tpm_parser.c
+@@ -0,0 +1,104 @@
++// SPDX-License-Identifier: GPL-2.0
++#define pr_fmt(fmt) "TPM-PARSER: "fmt
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/export.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <keys/asymmetric-subtype.h>
++#include <keys/asymmetric-parser.h>
++#include <crypto/asym_tpm_subtype.h>
++#include "tpm.asn1.h"
 +
-+/*
-+ * Command numbers that the kernel needs to know about to handle
-+ * non-default DSM revision ids
-+ */
-+enum nvdimm_family_cmds {
-+	NVDIMM_INTEL_LATCH_SHUTDOWN = 10,
-+	NVDIMM_INTEL_GET_MODES = 11,
-+	NVDIMM_INTEL_GET_FWINFO = 12,
-+	NVDIMM_INTEL_START_FWUPDATE = 13,
-+	NVDIMM_INTEL_SEND_FWUPDATE = 14,
-+	NVDIMM_INTEL_FINISH_FWUPDATE = 15,
-+	NVDIMM_INTEL_QUERY_FWUPDATE = 16,
-+	NVDIMM_INTEL_SET_THRESHOLD = 17,
-+	NVDIMM_INTEL_INJECT_ERROR = 18,
-+	NVDIMM_INTEL_GET_SECURITY_STATE = 19,
-+	NVDIMM_INTEL_SET_PASSPHRASE = 20,
-+	NVDIMM_INTEL_DISABLE_PASSPHRASE = 21,
-+	NVDIMM_INTEL_UNLOCK_UNIT = 22,
-+	NVDIMM_INTEL_FREEZE_LOCK = 23,
-+	NVDIMM_INTEL_SECURE_ERASE = 24,
-+	NVDIMM_INTEL_OVERWRITE = 25,
-+	NVDIMM_INTEL_QUERY_OVERWRITE = 26,
++struct tpm_parse_context {
++	const void	*blob;
++	u32		blob_len;
 +};
 +
-+#define NVDIMM_INTEL_SECURITY_CMDMASK \
-+(1 << NVDIMM_INTEL_GET_SECURITY_STATE | 1 << NVDIMM_INTEL_SET_PASSPHRASE \
-+| 1 << NVDIMM_INTEL_DISABLE_PASSPHRASE | 1 << NVDIMM_INTEL_UNLOCK_UNIT \
-+| 1 << NVDIMM_INTEL_FREEZE_LOCK | 1 << NVDIMM_INTEL_SECURE_ERASE \
-+| 1 << NVDIMM_INTEL_OVERWRITE | 1 << NVDIMM_INTEL_QUERY_OVERWRITE)
++/*
++ * Note the key data of the ASN.1 blob.
++ */
++int tpm_note_key(void *context, size_t hdrlen,
++		   unsigned char tag,
++		   const void *value, size_t vlen)
++{
++	struct tpm_parse_context *ctx = context;
 +
-+#define NVDIMM_INTEL_CMDMASK \
-+(NVDIMM_STANDARD_CMDMASK | 1 << NVDIMM_INTEL_GET_MODES \
-+| 1 << NVDIMM_INTEL_GET_FWINFO | 1 << NVDIMM_INTEL_START_FWUPDATE \
-+| 1 << NVDIMM_INTEL_SEND_FWUPDATE | 1 << NVDIMM_INTEL_FINISH_FWUPDATE \
-+| 1 << NVDIMM_INTEL_QUERY_FWUPDATE | 1 << NVDIMM_INTEL_SET_THRESHOLD \
-+| 1 << NVDIMM_INTEL_INJECT_ERROR | 1 << NVDIMM_INTEL_LATCH_SHUTDOWN \
-+| NVDIMM_INTEL_SECURITY_CMDMASK)
++	ctx->blob = value;
++	ctx->blob_len = vlen;
 +
-+#define ND_INTEL_STATUS_SIZE		4
-+#define ND_INTEL_PASSPHRASE_SIZE	32
++	return 0;
++}
 +
-+#define ND_INTEL_STATUS_RETRY		5
-+#define ND_INTEL_STATUS_NOT_READY	9
-+#define ND_INTEL_STATUS_INVALID_STATE	10
-+#define ND_INTEL_STATUS_INVALID_PASS	11
++/*
++ * Parse a TPM-encrypted private key blob.
++ */
++static struct tpm_key *tpm_parse(const void *data, size_t datalen)
++{
++	struct tpm_parse_context ctx;
++	long ret;
 +
-+#define ND_INTEL_SEC_STATE_ENABLED	0x02
-+#define ND_INTEL_SEC_STATE_LOCKED	0x04
-+#define ND_INTEL_SEC_STATE_FROZEN	0x08
-+#define ND_INTEL_SEC_STATE_PLIMIT	0x10
-+#define ND_INTEL_SEC_STATE_UNSUPPORTED	0x20
++	memset(&ctx, 0, sizeof(ctx));
 +
-+struct nd_intel_get_security_state {
-+	u32 status;
-+	u32 reserved;
-+	u8 state;
-+	u8 reserved1[3];
-+} __packed;
++	/* Attempt to decode the private key */
++	ret = asn1_ber_decoder(&tpm_decoder, &ctx, data, datalen);
++	if (ret < 0)
++		goto error;
 +
-+struct nd_intel_set_passphrase {
-+	u8 old_pass[32];
-+	u8 new_pass[32];
-+	u32 status;
-+} __packed;
++	return tpm_key_create(ctx.blob, ctx.blob_len);
 +
-+struct nd_intel_unlock_unit {
-+	u8 passphrase[32];
-+	u32 status;
-+} __packed;
++error:
++	return ERR_PTR(ret);
++}
++/*
++ * Attempt to parse a data blob for a key as a TPM private key blob.
++ */
++static int tpm_key_preparse(struct key_preparsed_payload *prep)
++{
++	struct tpm_key *tk;
 +
-+struct nd_intel_disable_passphrase {
-+	u8 passphrase[32];
-+	u32 status;
-+} __packed;
++	/*
++	 * TPM 1.2 keys are max 2048 bits long, so assume the blob is no
++	 * more than 4x that
++	 */
++	if (prep->datalen > 256 * 4)
++		return -EMSGSIZE;
 +
-+struct nd_intel_freeze_lock {
-+	u32 status;
-+} __packed;
++	tk = tpm_parse(prep->data, prep->datalen);
 +
-+struct nd_intel_secure_erase {
-+	u8 passphrase[32];
-+	u32 status;
-+} __packed;
++	if (IS_ERR(tk))
++		return PTR_ERR(tk);
 +
-+struct nd_intel_overwrite {
-+	u8 passphrase[32];
-+	u32 status;
-+} __packed;
++	pr_info("%s: TPM1.2 sealed blob parsing succeeded\n", __func__);
 +
-+struct nd_intel_query_overwrite {
-+	u32 status;
-+} __packed;
++	/* We're pinning the module by being linked against it */
++	__module_get(asym_tpm_subtype.owner);
++	prep->payload.data[asym_subtype] = &asym_tpm_subtype;
++	prep->payload.data[asym_key_ids] = NULL;
++	prep->payload.data[asym_crypto] = tk;
++	prep->payload.data[asym_auth] = NULL;
++	prep->quotalen = 100;
++	return 0;
++}
 +
-+#endif
-diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
-index 7d15856a739f..4c9ca3c7ba0f 100644
---- a/drivers/acpi/nfit/nfit.h
-+++ b/drivers/acpi/nfit/nfit.h
-@@ -46,29 +46,6 @@
-  | 1 << ND_CMD_SET_CONFIG_DATA | 1 << ND_CMD_VENDOR_EFFECT_LOG_SIZE \
-  | 1 << ND_CMD_VENDOR_EFFECT_LOG | 1 << ND_CMD_VENDOR)
- 
--/*
-- * Command numbers that the kernel needs to know about to handle
-- * non-default DSM revision ids
-- */
--enum nvdimm_family_cmds {
--	NVDIMM_INTEL_LATCH_SHUTDOWN = 10,
--	NVDIMM_INTEL_GET_MODES = 11,
--	NVDIMM_INTEL_GET_FWINFO = 12,
--	NVDIMM_INTEL_START_FWUPDATE = 13,
--	NVDIMM_INTEL_SEND_FWUPDATE = 14,
--	NVDIMM_INTEL_FINISH_FWUPDATE = 15,
--	NVDIMM_INTEL_QUERY_FWUPDATE = 16,
--	NVDIMM_INTEL_SET_THRESHOLD = 17,
--	NVDIMM_INTEL_INJECT_ERROR = 18,
--};
--
--#define NVDIMM_INTEL_CMDMASK \
--(NVDIMM_STANDARD_CMDMASK | 1 << NVDIMM_INTEL_GET_MODES \
-- | 1 << NVDIMM_INTEL_GET_FWINFO | 1 << NVDIMM_INTEL_START_FWUPDATE \
-- | 1 << NVDIMM_INTEL_SEND_FWUPDATE | 1 << NVDIMM_INTEL_FINISH_FWUPDATE \
-- | 1 << NVDIMM_INTEL_QUERY_FWUPDATE | 1 << NVDIMM_INTEL_SET_THRESHOLD \
-- | 1 << NVDIMM_INTEL_INJECT_ERROR | 1 << NVDIMM_INTEL_LATCH_SHUTDOWN)
--
- enum nfit_uuids {
- 	/* for simplicity alias the uuid index with the family id */
- 	NFIT_DEV_DIMM = NVDIMM_FAMILY_INTEL,
-diff --git a/drivers/nvdimm/bus.c b/drivers/nvdimm/bus.c
-index 27902a8799b1..de2af49bbf08 100644
---- a/drivers/nvdimm/bus.c
-+++ b/drivers/nvdimm/bus.c
-@@ -894,7 +894,7 @@ static int nd_cmd_clear_to_send(struct nvdimm_bus *nvdimm_bus,
- 
- 	/* ask the bus provider if it would like to block this request */
- 	if (nd_desc->clear_to_send) {
--		int rc = nd_desc->clear_to_send(nd_desc, nvdimm, cmd);
-+		int rc = nd_desc->clear_to_send(nd_desc, nvdimm, cmd, data);
- 
- 		if (rc)
- 			return rc;
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 097072c5a852..472171af7f60 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -87,7 +87,7 @@ struct nvdimm_bus_descriptor {
- 	ndctl_fn ndctl;
- 	int (*flush_probe)(struct nvdimm_bus_descriptor *nd_desc);
- 	int (*clear_to_send)(struct nvdimm_bus_descriptor *nd_desc,
--			struct nvdimm *nvdimm, unsigned int cmd);
-+			struct nvdimm *nvdimm, unsigned int cmd, void *data);
- };
- 
- struct nd_cmd_desc {
++static struct asymmetric_key_parser tpm_key_parser = {
++	.owner	= THIS_MODULE,
++	.name	= "tpm_parser",
++	.parse	= tpm_key_preparse,
++};
++
++static int __init tpm_key_init(void)
++{
++	return register_asymmetric_key_parser(&tpm_key_parser);
++}
++
++static void __exit tpm_key_exit(void)
++{
++	unregister_asymmetric_key_parser(&tpm_key_parser);
++}
++
++module_init(tpm_key_init);
++module_exit(tpm_key_exit);
++
++MODULE_DESCRIPTION("TPM private key-blob parser");
++MODULE_LICENSE("GPL v2");
+-- 
+2.16.1
 
