@@ -1,142 +1,109 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 02 Jul 2018 23:39:46 +0000
-Subject: [PATCH 07/11] nfit/libnvdimm: add freeze security support to Intel nvdimm
-Message-Id: <153057478596.38125.16368895958393903118.stgit@djiang5-desk3.ch.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:29:58 +0000
+Subject: [RFCv2 RESEND 00/13] KEYS: TPM 1.2 asymmetric key type
+Message-Id: <20180719183011.8574-1-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153057423804.38125.15912575101400055843.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+To: keyrings@vger.kernel.org
 
-Adding support for freeze security on Intel nvdimm. This locks out any
-changes to security for the DIMM unless a reboot is done. This is triggered
-by writing "freeze" to the "security" sysfs attribute. libnvdimm will
-support the generic freeze_lock API call.
+Here's an RFC to provide access to the TPM-wrapped keys via keyctl
+asymmetric key interface.  This RFC is essentially feature complete,
+providing encrypt, decrypt, verify and sign operations.  The only
+missing bits are a way to provide SRK authorization data if it is not
+well known.  This requires changes to the underlying keyctl interface
+and is out of scope for this RFC.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
- drivers/acpi/nfit/intel.c  |   47 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   22 +++++++++++++++++++++
- include/linux/libnvdimm.h  |    2 ++
- 3 files changed, 71 insertions(+)
+These patches depend on asymmetric key patches from David Howells, which
+can be found here:
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-asym-keyctl
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 6d73493f02cc..41602be2a33b 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -16,6 +16,52 @@
- #include <acpi/nfit.h>
- #include "nfit.h"
- 
-+static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0, pkg_size;
-+	struct nd_intel_freeze_lock *cmd;
-+	struct nd_cmd_pkg *pkg;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+
-+	if (!test_bit(NVDIMM_INTEL_FREEZE_LOCK, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
-+
-+	pkg_size = sizeof(*pkg) + sizeof(*cmd);
-+	pkg = kzalloc(pkg_size, GFP_KERNEL);
-+	if (!pkg)
-+		return -ENOMEM;
-+
-+	pkg->nd_command = NVDIMM_INTEL_FREEZE_LOCK;
-+	pkg->nd_family = NVDIMM_FAMILY_INTEL;
-+	pkg->nd_size_in = 0;
-+	pkg->nd_size_out = ND_INTEL_STATUS_SIZE;
-+	pkg->nd_fw_size = pkg->nd_size_out;
-+	cmd = (struct nd_intel_freeze_lock *)&pkg->nd_payload;
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, pkg,
-+			sizeof(pkg_size), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (cmd->status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+ out:
-+	kfree(pkg);
-+	return rc;
-+}
-+
- static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
- 		struct nvdimm *nvdimm, const char *pass)
- {
-@@ -244,4 +290,5 @@ struct nvdimm_security_ops intel_security_ops = {
- 	.unlock = intel_dimm_security_unlock,
- 	.change_key = intel_dimm_security_update_passphrase,
- 	.disable = intel_dimm_security_disable,
-+	.freeze_lock = intel_dimm_security_freeze_lock,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 070811cb4cdc..cd0624663621 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -85,6 +85,26 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
- }
- 
-+static int nvdimm_security_freeze_lock(struct device *dev)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	int rc;
-+
-+	if (!nvdimm->security_ops)
-+		return 0;
-+
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
-+		return 0;
-+
-+	rc = nvdimm->security_ops->freeze_lock(nvdimm_bus, nvdimm);
-+	if (rc < 0)
-+		return rc;
-+
-+	nvdimm_security_get_state(dev);
-+	return 0;
-+}
-+
- static int nvdimm_security_disable(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -628,6 +648,8 @@ static ssize_t security_store(struct device *dev,
- 		rc = nvdimm_security_change_key(dev);
- 	else if (strcmp(buf, "disable") = 0 || strcmp(buf, "disable\n") = 0)
- 		rc = nvdimm_security_disable(dev);
-+	else if (strcmp(buf, "freeze") = 0 || strcmp(buf, "freeze\n") = 0)
-+		rc = nvdimm_security_freeze_lock(dev);
- 	else
- 		return -EINVAL;
- 
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 0990dfd5a0a3..683e4cadc7f6 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -179,6 +179,8 @@ struct nvdimm_security_ops {
- 			const char *new_pass);
- 	int (*disable)(struct nvdimm_bus *nvdimm_bus,
- 			struct nvdimm *nvdimm, const char *pass);
-+	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm);
- };
- 
- void badrange_init(struct badrange *badrange);
+And the needed keyutils patches:
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/log/?h=pkey
+
+A simple parser for DER-encoded TPM keys is added so that userspace
+applications can load the key directly into the kernel.  The outer PEM
+formatting (if any) must be stripped out by userspace.  For more details
+on the format, please see patch 3/10.
+
+Since the loaded key blob contains both the public key portion and the
+(encrypted) private key portion of the key, it is possible to perform
+operations with both the private and public portion of the key.
+
+For operations where the public key is used, all operations are done in
+software using the existing kernel crypto APIs.  For operations that
+utilize the TPM protected private key, tpm_loadkey2, tpm_unbind and
+tpm_sign operations are used.
+
+Example usage:
+	# Generate Private Key
+	openssl genrsa -out /tmp/privkey.pem 2048
+	# Wrap the key with the TPM
+	create_tpm_key -s 2048 -w /tmp/privkey.pem /tmp/privkey.tpm
+	# Strip PEM
+	openssl asn1parse -inform pem -in /tmp/privkey.tpm -noout -out \
+	    /tmp/privkey.der
+	# Load the TPM key into the kernel
+	tpm_serial=`cat /tmp/privkey.der | keyctl padd asymmetric tpm @u`
+	echo -n abcdefghijklmnopqrst >/tmp/data
+	keyctl pkey_encrypt $tpm_serial 0 /tmp/data enc=pkcs1 > /tmp/enc
+	keyctl pkey_decrypt $tpm_serial 0 /tmp/enc enc=pkcs1 > /tmp/dec
+	cmp /tmp/data /tmp/dec
+
+	# Sign with the TPM key
+	keyctl pkey_sign $tpm_serial 0 /tmp/data enc=pkcs1 \
+		hash=sha1 > /tmp/sig
+	# Sign with OpenSSL
+	openssl dgst -sha1 -sign /tmp/privkey.pem -out /tmp/sig.ref /tmp/data
+	cmp /tmp/sig.ref /tmp/sig
+
+	# SHA1-hash the data
+	openssl dgst -sha1 -binary -out /tmp/data.sha1 /tmp/data
+	keyctl pkey_verify $tpm_serial 0 /tmp/data.sha1 /tmp/sig \
+		enc=pkcs1 hash=sha1
+
+ChangeLog
+
+v2
+
+- Cleanup some pr_infos
+- Cleanup some error paths to be more pedantic
+- Added verify operation
+- Added TPM_Sign operation
+- Added helpers to perform hashing of input
+- Added sign operation
+
+Denis Kenzior (13):
+  crypto: rsa-pkcs1pad: Allow hash to be optional
+  KEYS: asym_tpm: add skeleton for asym_tpm
+  KEYS: Add parser for TPM-based keys
+  KEYS: asym_tpm: extract key size & public key
+  KEYS: asym_tpm: Implement pkey_query
+  KEYS: asym_tpm: Implement encryption operation
+  KEYS: trusted: Expose common functionality
+  KEYS: asym_tpm: Add loadkey2 and flushspecific
+  KEYS: asym_tpm: Implement tpm_unbind
+  KEYS: asym_tpm: Implement the decrypt operation
+  KEYS: asym_tpm: Implement signature verification
+  KEYS: asym_tpm: Implement tpm_sign
+  KEYS: asym_tpm: Add support for the sign operation
+
+ crypto/asymmetric_keys/Kconfig      |   21 +
+ crypto/asymmetric_keys/Makefile     |   12 +
+ crypto/asymmetric_keys/asym_tpm.c   | 1019 +++++++++++++++++++++++++++++++++++
+ crypto/asymmetric_keys/tpm.asn1     |    5 +
+ crypto/asymmetric_keys/tpm_parser.c |  104 ++++
+ crypto/rsa-pkcs1pad.c               |   59 +-
+ include/crypto/asym_tpm_subtype.h   |   19 +
+ security/keys/trusted.c             |   12 +-
+ security/keys/trusted.h             |   14 +-
+ 9 files changed, 1242 insertions(+), 23 deletions(-)
+ create mode 100644 crypto/asymmetric_keys/asym_tpm.c
+ create mode 100644 crypto/asymmetric_keys/tpm.asn1
+ create mode 100644 crypto/asymmetric_keys/tpm_parser.c
+ create mode 100644 include/crypto/asym_tpm_subtype.h
+
+-- 
+2.16.1
 
