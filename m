@@ -1,201 +1,244 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 11 Jul 2018 22:33:59 +0000
-Subject: [PATCH v3 02/11] libnvdimm: create keyring to store security keys
-Message-Id: <153134843975.41955.12787061715880506684.stgit@djiang5-desk3.ch.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:30:11 +0000
+Subject: [RFCv2 RESEND 13/13] KEYS: asym_tpm: Add support for the sign operation
+Message-Id: <20180719183011.8574-14-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153134823290.41955.817023337662647245.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153134823290.41955.817023337662647245.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+To: keyrings@vger.kernel.org
 
-Prepping the libnvdimm to support security management by adding a keyring
-in order to provide passphrase management through the kernel key management
-APIs.
+The sign operation can operate in a non-hashed mode by running the RSA
+sign operation directly on the input.  This assumes that the input is
+less than key_size_in_bytes - 11.  Since the TPM performs its own PKCS1
+padding, it isn't possible to support 'raw' mode, only 'pkcs1'.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Alternatively, a hashed version is also possible.  In this variant the
+input is hashed via the selected hash function first, converted to ASN.1
+and then the sign operation is performed on the result.  This is similar
+to what crypto/rsa-pkcs1pad.c tries to do.  However, it seems that
+implementation is not actually computing a hash first!
+
+ASN1 templates were copied from crypto/rsa-pkcs1pad.c.  There seems to
+be no easy way to expose that functionality, but likely the templates
+should be shared somehow.  For now only SHA1 & SHA256 templates are
+supported to keep the code minimal for review purposes.
+
+The sign operation is implemented via TPM_Sign operation on the TPM.
+It is assumed that the TPM wrapped key provided uses
+TPM_SS_RSASSAPKCS1v15_DER signature scheme.  This allows the TPM_Sign
+operation to work on data up to key_len_in_bytes - 11 bytes long.
+
+In theory, we could also use TPM_Unbind instead of TPM_Sign, but we would
+have to manually pkcs1 pad the digest first.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/nvdimm/core.c      |    7 +++
- drivers/nvdimm/dimm_devs.c |   96 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/nd-core.h   |    1 
- include/linux/libnvdimm.h  |    5 ++
- 4 files changed, 107 insertions(+), 2 deletions(-)
+ crypto/asymmetric_keys/asym_tpm.c | 177 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 176 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/nvdimm/core.c b/drivers/nvdimm/core.c
-index acce050856a8..3cd33d5c7cf0 100644
---- a/drivers/nvdimm/core.c
-+++ b/drivers/nvdimm/core.c
-@@ -437,9 +437,12 @@ static __init int libnvdimm_init(void)
- {
- 	int rc;
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 8789df029313..a8cc8fc7e3fb 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -443,7 +443,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
  
--	rc = nvdimm_bus_init();
-+	rc = nvdimm_devs_init();
- 	if (rc)
- 		return rc;
-+	rc = nvdimm_bus_init();
-+	if (rc)
-+		goto err_bus;
- 	rc = nvdimm_init();
- 	if (rc)
- 		goto err_dimm;
-@@ -454,6 +457,8 @@ static __init int libnvdimm_init(void)
- 	nvdimm_exit();
-  err_dimm:
- 	nvdimm_bus_exit();
-+ err_bus:
-+	nvdimm_devs_exit();
- 	return rc;
+ 	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
+ 			      KEYCTL_SUPPORTS_DECRYPT |
+-			      KEYCTL_SUPPORTS_VERIFY;
++			      KEYCTL_SUPPORTS_VERIFY |
++			      KEYCTL_SUPPORTS_SIGN;
+ 
+ 	ret = 0;
+ error_free_tfm:
+@@ -564,6 +565,177 @@ static int tpm_key_decrypt(struct tpm_key *tk,
+ 	return r;
  }
  
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 8d348b22ba45..1dcbb653455b 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -18,12 +18,54 @@
- #include <linux/io.h>
- #include <linux/fs.h>
- #include <linux/mm.h>
-+#include <linux/cred.h>
-+#include <keys/user-type.h>
-+#include <linux/key-type.h>
-+#include <linux/keyctl.h>
- #include "nd-core.h"
- #include "label.h"
- #include "pmem.h"
- #include "nd.h"
- 
- static DEFINE_IDA(dimm_ida);
-+static const struct cred *nvdimm_cred;
-+
-+static int nvdimm_key_instantiate(struct key *key,
-+		struct key_preparsed_payload *prep);
-+static void nvdimm_key_destroy(struct key *key);
-+
-+struct key_type nvdimm_key_type = {
-+	.name = "nvdimm",
-+	.instantiate = nvdimm_key_instantiate,
-+	.destroy = nvdimm_key_destroy,
-+	.describe = user_describe,
-+	/*
-+	 * The reason to have default data length to be len*2 is to
-+	 * accomodate the payload when we are doing a key change where
-+	 * the we stuff the old key and new key in the same payload.
-+	 */
-+	.def_datalen = NVDIMM_PASSPHRASE_LEN * 2,
++/*
++ * Hash algorithm OIDs plus ASN.1 DER wrappings [RFC4880 sec 5.2.2].
++ */
++static const u8 digest_info_sha1[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2b, 0x0e, 0x03, 0x02, 0x1a,
++	0x05, 0x00, 0x04, 0x14
 +};
 +
-+static int nvdimm_key_instantiate(struct key *key,
-+		struct key_preparsed_payload *prep)
++static const u8 digest_info_sha256[] = {
++	0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x20
++};
++
++static const struct asn1_template {
++	const char	*name;
++	const u8	*data;
++	size_t		size;
++} asn1_templates[] = {
++#define _(X) { #X, digest_info_##X, sizeof(digest_info_##X) }
++	_(sha1),
++	_(sha256),
++	{ NULL }
++#undef _
++};
++
++static const struct asn1_template *lookup_asn1(const char *name)
 +{
-+	char *payload;
++	const struct asn1_template *p;
 +
-+	payload = kzalloc(nvdimm_key_type.def_datalen, GFP_KERNEL);
-+	if (!payload)
-+		return -ENOMEM;
-+
-+	key->datalen = min(nvdimm_key_type.def_datalen, prep->datalen);
-+	memcpy(payload, prep->data, key->datalen);
-+	key->payload.data[0] = payload;
-+	return 0;
++	for (p = asn1_templates; p->name; p++)
++		if (strcmp(name, p->name) = 0)
++			return p;
++	return NULL;
 +}
 +
-+static void nvdimm_key_destroy(struct key *key)
++static uint8_t *get_digest(const void *in, size_t in_len,
++			   const char *hash_algo, uint32_t *out_digest_len)
 +{
-+	kfree(key->payload.data[0]);
++	struct crypto_ahash *tfm;
++	struct ahash_request *req;
++	struct scatterlist in_sg;
++	struct crypto_wait cwait;
++	const struct asn1_template *asn1;
++	void *digest;
++	uint32_t digest_len;
++	int r;
++
++	pr_devel("=>%s()\n", __func__);
++
++	asn1 = lookup_asn1(hash_algo);
++	if (!asn1)
++		return ERR_PTR(-ENOPKG);
++
++	tfm = crypto_alloc_ahash(hash_algo, 0, 0);
++	if (IS_ERR(tfm))
++		return ERR_CAST(tfm);
++
++	digest_len = crypto_ahash_digestsize(tfm);
++	pr_info("digest_len: %u\n", digest_len);
++
++	r = -ENOMEM;
++	req = ahash_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
++
++	r = -ENOMEM;
++	/* Also request enough space for the ASN.1 template */
++	digest_len += asn1->size;
++	digest = kzalloc(digest_len, GFP_KERNEL);
++	if (!digest)
++		goto error_free_req;
++
++	sg_init_one(&in_sg, in, in_len);
++	ahash_request_set_crypt(req, &in_sg, digest + asn1->size, in_len);
++	crypto_init_wait(&cwait);
++	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				   CRYPTO_TFM_REQ_MAY_SLEEP,
++				   crypto_req_done, &cwait);
++
++	r = crypto_wait_req(crypto_ahash_digest(req), &cwait);
++
++	if (r)
++		kfree(digest);
++	else if (out_digest_len)
++		*out_digest_len = digest_len;
++
++	/* Copy the ASN.1 template before the digest */
++	memcpy(digest, asn1->data, asn1->size);
++
++error_free_req:
++	ahash_request_free(req);
++error_free_tfm:
++	crypto_free_ahash(tfm);
++
++	if (r)
++		return ERR_PTR(r);
++
++	return digest;
 +}
- 
++
++/*
++ * Sign operation is performed with the private key in the TPM.
++ */
++static int tpm_key_sign(struct tpm_key *tk,
++			struct kernel_pkey_params *params,
++			const void *in, void *out)
++{
++	struct tpm_buf *tb;
++	uint32_t keyhandle;
++	uint8_t srkauth[SHA1_DIGEST_SIZE];
++	uint8_t keyauth[SHA1_DIGEST_SIZE];
++	void *digest = NULL;
++	uint32_t digest_len;
++	uint32_t in_len = params->in_len;
++	int r;
++
++	pr_devel("=>%s()\n", __func__);
++
++	if (strcmp(params->encoding, "pkcs1"))
++		return -ENOPKG;
++
++	if (params->hash_algo) {
++		digest = get_digest(in, in_len, params->hash_algo, &digest_len);
++		if (IS_ERR(digest))
++			return PTR_ERR(digest);
++
++		pr_info("computing digest succeeded\n");
++		in = digest;
++		in_len = digest_len;
++	}
++
++	if (in_len > tk->key_len / 8 - 11) {
++		r = -EOVERFLOW;
++		goto error_free_digest;
++	}
++
++	r = -ENOMEM;
++	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
++	if (!tb)
++		goto error_free_digest;
++
++	/* TODO: Handle a non-all zero SRK authorization */
++	memset(srkauth, 0, sizeof(srkauth));
++
++	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
++			 tk->blob, tk->blob_len, &keyhandle);
++	if (r < 0) {
++		pr_devel("loadkey2 failed (%d)\n", r);
++		goto error_free_tb;
++	}
++
++	/* TODO: Handle a non-all zero key authorization */
++	memset(keyauth, 0, sizeof(keyauth));
++
++	r = tpm_sign(tb, keyhandle, keyauth, in, in_len, out, params->out_len);
++	if (r < 0)
++		pr_devel("tpm_sign failed (%d)\n", r);
++
++	if (tpm_flushspecific(tb, keyhandle) < 0)
++		pr_devel("flushspecific failed (%d)\n", r);
++
++error_free_tb:
++	kzfree(tb);
++error_free_digest:
++	kfree(digest);
++	pr_devel("<=%s() = %d\n", __func__, r);
++	return r;
++}
++
  /*
-  * Retrieve bus and dimm handle and return if this bus supports
-@@ -668,7 +710,59 @@ int nvdimm_bus_check_dimm_count(struct nvdimm_bus *nvdimm_bus, int dimm_count)
- }
- EXPORT_SYMBOL_GPL(nvdimm_bus_check_dimm_count);
- 
--void __exit nvdimm_devs_exit(void)
-+static int nvdimm_register_keyring(void)
-+{
-+	struct cred *cred;
-+	struct key *keyring;
-+	int rc;
-+
-+	rc = register_key_type(&nvdimm_key_type);
-+	if (rc < 0)
-+		return rc;
-+
-+	cred = prepare_kernel_cred(NULL);
-+	if (!cred) {
-+		rc = -ENOMEM;
-+		goto failed_cred;
-+	}
-+
-+	keyring = keyring_alloc(".nvdimm",
-+			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, cred,
-+			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			(KEY_USR_ALL & ~KEY_USR_SETATTR),
-+			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
-+	if (IS_ERR(keyring)) {
-+		rc = PTR_ERR(keyring);
-+		goto failed_keyring;
-+	}
-+
-+	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
-+	cred->thread_keyring = keyring;
-+	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
-+	nvdimm_cred = cred;
-+	return 0;
-+
-+ failed_cred:
-+	unregister_key_type(&nvdimm_key_type);
-+ failed_keyring:
-+	put_cred(cred);
-+	return rc;
-+}
-+
-+static void nvdimm_unregister_keyring(void)
-+{
-+	key_revoke(nvdimm_cred->thread_keyring);
-+	unregister_key_type(&nvdimm_key_type);
-+	put_cred(nvdimm_cred);
-+}
-+
-+int __init nvdimm_devs_init(void)
-+{
-+	return nvdimm_register_keyring();
-+}
-+
-+void  nvdimm_devs_exit(void)
- {
-+	nvdimm_unregister_keyring();
- 	ida_destroy(&dimm_ida);
- }
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 79274ead54fb..2af0f89c4010 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -76,6 +76,7 @@ static inline bool is_memory(struct device *dev)
- struct nvdimm_bus *walk_to_nvdimm_bus(struct device *nd_dev);
- int __init nvdimm_bus_init(void);
- void nvdimm_bus_exit(void);
-+int nvdimm_devs_init(void);
- void nvdimm_devs_exit(void);
- void nd_region_devs_exit(void);
- void nd_region_probe_success(struct nvdimm_bus *nvdimm_bus, struct device *dev);
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 472171af7f60..09dd06f96f95 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -155,6 +155,11 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
- 
- }
- 
-+extern struct key_type nvdimm_key_type;
-+
-+#define NVDIMM_PASSPHRASE_LEN		32
-+#define NVDIMM_KEY_DESC_LEN		25
-+
- void badrange_init(struct badrange *badrange);
- int badrange_add(struct badrange *badrange, u64 addr, u64 length);
- void badrange_forget(struct badrange *badrange, phys_addr_t start,
+  * Do encryption, decryption and signing ops.
+  */
+@@ -581,6 +753,9 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
+ 	case kernel_pkey_decrypt:
+ 		ret = tpm_key_decrypt(tk, params, in, out);
+ 		break;
++	case kernel_pkey_sign:
++		ret = tpm_key_sign(tk, params, in, out);
++		break;
+ 	default:
+ 		BUG();
+ 	}
+-- 
+2.16.1
 
