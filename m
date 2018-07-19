@@ -1,71 +1,120 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 03 Jul 2018 15:21:29 +0000
-Subject: Re: [PATCH 1/2] tpm: Implement public tpm_put_chip() to release reference to chip
-Message-Id: <4789ea0ee11f0a87afcd89ad2814ad0964dd4809.camel@linux.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:30:07 +0000
+Subject: [RFCv2 RESEND 09/13] KEYS: asym_tpm: Implement tpm_unbind
+Message-Id: <20180719183011.8574-10-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180626193040.2509798-1-stefanb@linux.vnet.ibm.com>
-         <20180626193040.2509798-2-stefanb@linux.vnet.ibm.com>
-In-Reply-To: <20180626193040.2509798-2-stefanb@linux.vnet.ibm.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-integrity@vger.kernel.org, zohar@linux.vnet.ibm.com, jejb@linux.vnet.ibm.com
-Cc: jgg@ziepe.ca, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, keyrings@vger.kernel.org, Stefan Berger <stefanb@liux.vnet.ibm.com>
+To: keyrings@vger.kernel.org
 
-On Tue, 2018-06-26 at 15:30 -0400, Stefan Berger wrote:
-> Some subsystems that got a hold of a TPM chip through tpm_default_chip()
-> need a way to release the reference to the TPM chip when they shut down.
-> The tpm_put_chip() function enables this.
-> 
-> Signed-off-by: Stefan Berger <stefanb@liux.vnet.ibm.com>
-> ---
->  drivers/char/tpm/tpm-chip.c | 10 ++++++++++
->  include/linux/tpm.h         |  4 ++++
->  2 files changed, 14 insertions(+)
-> 
-> diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
-> index 46caadca916a..c744289d82e0 100644
-> --- a/drivers/char/tpm/tpm-chip.c
-> +++ b/drivers/char/tpm/tpm-chip.c
-> @@ -80,6 +80,16 @@ void tpm_put_ops(struct tpm_chip *chip)
->  }
->  EXPORT_SYMBOL_GPL(tpm_put_ops);
->  
-> +/**
-> + * tpm_put_chip() - Releae a ref to the tpm_chip
-> + * @chip: Chip to put
-> + */
-> +void tpm_put_chip(struct tpm_chip *chip)
-> +{
-> +	put_device(&chip->dev);
-> +}
-> +EXPORT_SYMBOL_GPL(tpm_put_chip);
-> +
->  /**
->   * tpm_default_chip() - find a TPM chip and get a reference to it
->   */
-> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-> index e0e51c49a0e6..889dafe739e1 100644
-> --- a/include/linux/tpm.h
-> +++ b/include/linux/tpm.h
-> @@ -62,6 +62,7 @@ extern int tpm_unseal_trusted(struct tpm_chip *chip,
->  			      struct trusted_key_payload *payload,
->  			      struct trusted_key_options *options);
->  extern struct tpm_chip *tpm_default_chip(void);
-> +extern void tpm_put_chip(struct tpm_chip *chip);
->  #else
->  static inline int tpm_is_tpm2(struct tpm_chip *chip)
->  {
-> @@ -101,5 +102,8 @@ static inline struct tpm_chip *tpm_default_chip(void)
->  {
->  	return NULL;
->  }
-> +static inline void tpm_put_chip(struct tpm_chip *chip)
-> +{
-> +}
->  #endif
->  #endif
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+---
+ crypto/asymmetric_keys/asym_tpm.c | 82 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
 
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 9aed598dd9b0..edcb81fe8937 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -18,8 +18,10 @@
+ 
+ #define TPM_ORD_FLUSHSPECIFIC	186
+ #define TPM_ORD_LOADKEY2	65
++#define TPM_ORD_UNBIND		30
+ #define TPM_LOADKEY2_SIZE		59
+ #define TPM_FLUSHSPECIFIC_SIZE		18
++#define TPM_UNBIND_SIZE			63
+ 
+ #define TPM_RT_KEY                      0x00000001
+ 
+@@ -106,6 +108,86 @@ static uint32_t tpm_flushspecific(struct tpm_buf *tb, uint32_t handle)
+ 	return trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ }
+ 
++/*
++ * Decrypt a blob provided by userspace using a specific key handle.
++ * The handle is a well known handle or previously loaded by e.g. LoadKey2
++ */
++static int tpm_unbind(struct tpm_buf *tb,
++			uint32_t keyhandle, unsigned char *keyauth,
++			const unsigned char *blob, uint32_t bloblen,
++			void *out, uint32_t outlen)
++{
++	unsigned char nonceodd[TPM_NONCE_SIZE];
++	unsigned char enonce[TPM_NONCE_SIZE];
++	unsigned char authdata[SHA1_DIGEST_SIZE];
++	uint32_t authhandle = 0;
++	unsigned char cont = 0;
++	uint32_t ordinal;
++	uint32_t datalen;
++	int ret;
++
++	ordinal = htonl(TPM_ORD_UNBIND);
++	datalen = htonl(bloblen);
++
++	/* session for loading the key */
++	ret = oiap(tb, &authhandle, enonce);
++	if (ret < 0) {
++		pr_info("oiap failed (%d)\n", ret);
++		return ret;
++	}
++
++	/* generate odd nonce */
++	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
++	if (ret < 0) {
++		pr_info("tpm_get_random failed (%d)\n", ret);
++		return ret;
++	}
++
++	/* calculate authorization HMAC value */
++	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
++			   nonceodd, cont, sizeof(uint32_t), &ordinal,
++			   sizeof(uint32_t), &datalen,
++			   bloblen, blob, 0, 0);
++	if (ret < 0)
++		return ret;
++
++	/* build the request buffer */
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
++	store32(tb, TPM_UNBIND_SIZE + bloblen);
++	store32(tb, TPM_ORD_UNBIND);
++	store32(tb, keyhandle);
++	store32(tb, bloblen);
++	storebytes(tb, blob, bloblen);
++	store32(tb, authhandle);
++	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
++	store8(tb, cont);
++	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
++
++	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
++	if (ret < 0) {
++		pr_info("authhmac failed (%d)\n", ret);
++		return ret;
++	}
++
++	datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
++
++	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd,
++			     keyauth, SHA1_DIGEST_SIZE,
++			     sizeof(uint32_t), TPM_DATA_OFFSET,
++			     datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
++			     0, 0);
++	if (ret < 0) {
++		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
++		return ret;
++	}
++
++	memcpy(out, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t),
++	       min(outlen, datalen));
++
++	return datalen;
++}
++
+ /*
+  * Maximum buffer size for the BER/DER encoded public key.  The public key
+  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
+-- 
+2.16.1
 
-/Jarkko
