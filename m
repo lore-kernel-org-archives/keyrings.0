@@ -1,129 +1,122 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Tue, 17 Jul 2018 20:55:00 +0000
-Subject: [PATCH v5 10/12] nfit_test: add context to dimm_dev for nfit_test
-Message-Id: <153186090067.27463.11040989205930773501.stgit@djiang5-desk3.ch.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:29:59 +0000
+Subject: [RFCv2 RESEND 01/13] crypto: rsa-pkcs1pad: Allow hash to be optional
+Message-Id: <20180719183011.8574-2-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+To: keyrings@vger.kernel.org
 
-In order to access the nfit_test context via sideband sysfs knobs, the
-dimm_dev needs to be more than struct device in order to point back to
-struct nfit_test. Wrapping the original struct device with a struct
-nfit_dimm_dev and saving the nfit_test as private driver data. Also
-changing the nfit_mem to be a member of struct nfit_dimm_dev instead of
-saving as private driver data of that device. This is in preparation for
-adding security DSM support and allowing the locking of DIMMs for testing
-via sideband.
+The original pkcs1pad implementation allowed to pad/unpad raw RSA
+output.  However, this has been taken out in commit:
+commit c0d20d22e0ad ("crypto: rsa-pkcs1pad - Require hash to be present")
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+This patch restored this ability as it is needed by the asymmetric key
+implementation.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- tools/testing/nvdimm/test/nfit.c |   41 +++++++++++++++++++++++++-------------
- 1 file changed, 27 insertions(+), 14 deletions(-)
+ crypto/rsa-pkcs1pad.c | 59 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 41 insertions(+), 18 deletions(-)
 
-diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
-index 18157b0c0d0d..7b3ce2194889 100644
---- a/tools/testing/nvdimm/test/nfit.c
-+++ b/tools/testing/nvdimm/test/nfit.c
-@@ -150,6 +150,11 @@ struct nfit_test_fw {
- 	u64 end_time;
- };
+diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
+index 9893dbfc1af4..27b1e2bd4bfb 100644
+--- a/crypto/rsa-pkcs1pad.c
++++ b/crypto/rsa-pkcs1pad.c
+@@ -401,7 +401,8 @@ static int pkcs1pad_sign(struct akcipher_request *req)
+ 	if (!ctx->key_size)
+ 		return -EINVAL;
  
-+struct nfit_dimm_dev {
-+	struct device dev;
-+	struct nfit_mem *nfit_mem;
-+};
+-	digest_size = digest_info->size;
++	if (digest_info)
++		digest_size = digest_info->size;
+ 
+ 	if (req->src_len + digest_size > ctx->key_size - 11)
+ 		return -EOVERFLOW;
+@@ -421,8 +422,9 @@ static int pkcs1pad_sign(struct akcipher_request *req)
+ 	memset(req_ctx->in_buf + 1, 0xff, ps_end - 1);
+ 	req_ctx->in_buf[ps_end] = 0x00;
+ 
+-	memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
+-	       digest_info->size);
++	if (digest_info)
++		memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
++		       digest_info->size);
+ 
+ 	pkcs1pad_sg_set_buf(req_ctx->in_sg, req_ctx->in_buf,
+ 			ctx->key_size - 1 - req->src_len, req->src);
+@@ -484,10 +486,13 @@ static int pkcs1pad_verify_complete(struct akcipher_request *req, int err)
+ 		goto done;
+ 	pos++;
+ 
+-	if (crypto_memneq(out_buf + pos, digest_info->data, digest_info->size))
+-		goto done;
++	if (digest_info) {
++		if (crypto_memneq(out_buf + pos, digest_info->data,
++				  digest_info->size))
++			goto done;
+ 
+-	pos += digest_info->size;
++		pos += digest_info->size;
++	}
+ 
+ 	err = 0;
+ 
+@@ -617,11 +622,14 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
+ 
+ 	hash_name = crypto_attr_alg_name(tb[2]);
+ 	if (IS_ERR(hash_name))
+-		return PTR_ERR(hash_name);
++		hash_name = NULL;
+ 
+-	digest_info = rsa_lookup_asn1(hash_name);
+-	if (!digest_info)
+-		return -EINVAL;
++	if (hash_name) {
++		digest_info = rsa_lookup_asn1(hash_name);
++		if (!digest_info)
++			return -EINVAL;
++	} else
++		digest_info = NULL;
+ 
+ 	inst = kzalloc(sizeof(*inst) + sizeof(*ctx), GFP_KERNEL);
+ 	if (!inst)
+@@ -641,14 +649,29 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
+ 
+ 	err = -ENAMETOOLONG;
+ 
+-	if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
+-		     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME ||
+-	    snprintf(inst->alg.base.cra_driver_name, CRYPTO_MAX_ALG_NAME,
+-		     "pkcs1pad(%s,%s)",
+-		     rsa_alg->base.cra_driver_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME)
+-		goto out_drop_alg;
++	if (!hash_name) {
++		if (snprintf(inst->alg.base.cra_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
++			     rsa_alg->base.cra_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
 +
- struct nfit_test {
- 	struct acpi_nfit_desc acpi_desc;
- 	struct platform_device pdev;
-@@ -181,7 +186,7 @@ struct nfit_test {
- 		unsigned long deadline;
- 		spinlock_t lock;
- 	} ars_state;
--	struct device *dimm_dev[NUM_DCR];
-+	struct nfit_dimm_dev dimm_dev[NUM_DCR];
- 	struct nd_intel_smart *smart;
- 	struct nd_intel_smart_threshold *smart_threshold;
- 	struct badrange badrange;
-@@ -981,7 +986,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 						&t->smart_threshold[i -
- 							t->dcr_idx],
- 						&t->smart[i - t->dcr_idx],
--						&t->pdev.dev, t->dimm_dev[i]);
-+						&t->pdev.dev,
-+						&t->dimm_dev[i].dev);
- 				break;
- 			case ND_INTEL_SMART_INJECT:
- 				rc = nfit_test_cmd_smart_inject(buf,
-@@ -989,7 +995,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 						&t->smart_threshold[i -
- 							t->dcr_idx],
- 						&t->smart[i - t->dcr_idx],
--						&t->pdev.dev, t->dimm_dev[i]);
-+						&t->pdev.dev,
-+						&t->dimm_dev[i].dev);
- 				break;
- 			default:
- 				return -ENOTTY;
-@@ -1187,8 +1194,7 @@ static void put_dimms(void *data)
- 	int i;
- 
- 	for (i = 0; i < t->num_dcr; i++)
--		if (t->dimm_dev[i])
--			device_unregister(t->dimm_dev[i]);
-+		device_unregister(&t->dimm_dev[i].dev);
- }
- 
- static struct class *nfit_test_dimm;
-@@ -1290,19 +1296,27 @@ static const struct attribute_group *nfit_test_dimm_attribute_groups[] = {
- 	NULL,
- };
- 
-+static void dimm_dev_release(struct device *dev)
-+{
-+}
++		if (snprintf(inst->alg.base.cra_driver_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
++			     rsa_alg->base.cra_driver_name) >+			     CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
++	} else {
++		if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
++			     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name,
++			     hash_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
 +
- static int nfit_test_dimm_init(struct nfit_test *t)
- {
--	int i;
-+	int i, rc;
++		if (snprintf(inst->alg.base.cra_driver_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s,%s)",
++			     rsa_alg->base.cra_driver_name,
++			     hash_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
++	}
  
- 	if (devm_add_action_or_reset(&t->pdev.dev, put_dimms, t))
- 		return -ENOMEM;
- 	for (i = 0; i < t->num_dcr; i++) {
--		t->dimm_dev[i] = device_create_with_groups(nfit_test_dimm,
--				&t->pdev.dev, 0, NULL,
--				nfit_test_dimm_attribute_groups,
--				"test_dimm%d", i + t->dcr_idx);
--		if (!t->dimm_dev[i])
--			return -ENOMEM;
-+		t->dimm_dev[i].dev.parent = &t->pdev.dev;
-+		dev_set_name(&t->dimm_dev[i].dev, "test_dimm%d",
-+				i + t->dcr_idx);
-+		t->dimm_dev[i].dev.class = nfit_test_dimm;
-+		t->dimm_dev[i].dev.groups = nfit_test_dimm_attribute_groups;
-+		t->dimm_dev[i].dev.release = dimm_dev_release;
-+		rc = device_register(&t->dimm_dev[i].dev);
-+		if (rc < 0)
-+			return rc;
-+		dev_set_drvdata(&t->dimm_dev[i].dev, t);
- 	}
- 	return 0;
- }
-@@ -2665,8 +2679,7 @@ static int nfit_test_probe(struct platform_device *pdev)
- 
- 		for (i = 0; i < NUM_DCR; i++)
- 			if (nfit_handle = handle[i])
--				dev_set_drvdata(nfit_test->dimm_dev[i],
--						nfit_mem);
-+				nfit_test->dimm_dev[i].nfit_mem = nfit_mem;
- 	}
- 	mutex_unlock(&acpi_desc->init_mutex);
- 
+ 	inst->alg.base.cra_flags = rsa_alg->base.cra_flags & CRYPTO_ALG_ASYNC;
+ 	inst->alg.base.cra_priority = rsa_alg->base.cra_priority;
+-- 
+2.16.1
 
