@@ -1,201 +1,182 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Thu, 05 Jul 2018 20:22:21 +0000
-Subject: [PATCH v2 02/11] libnvdimm: create keyring to store security keys
-Message-Id: <153082214186.61422.6645568764470500390.stgit@djiang5-desk3.ch.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:30:00 +0000
+Subject: [RFCv2 RESEND 02/13] KEYS: asym_tpm: add skeleton for asym_tpm
+Message-Id: <20180719183011.8574-3-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+To: keyrings@vger.kernel.org
 
-Prepping the libnvdimm to support security management by adding a keyring
-in order to provide passphrase management through the kernel key management
-APIs.
+This patch adds the basic skeleton for the asym_tpm asymmetric key
+subtype.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/nvdimm/core.c      |    7 +++
- drivers/nvdimm/dimm_devs.c |   96 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/nd-core.h   |    1 
- include/linux/libnvdimm.h  |    5 ++
- 4 files changed, 107 insertions(+), 2 deletions(-)
+ crypto/asymmetric_keys/Kconfig    | 11 +++++
+ crypto/asymmetric_keys/Makefile   |  1 +
+ crypto/asymmetric_keys/asym_tpm.c | 94 +++++++++++++++++++++++++++++++++++++++
+ include/crypto/asym_tpm_subtype.h | 16 +++++++
+ 4 files changed, 122 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/asym_tpm.c
+ create mode 100644 include/crypto/asym_tpm_subtype.h
 
-diff --git a/drivers/nvdimm/core.c b/drivers/nvdimm/core.c
-index acce050856a8..3cd33d5c7cf0 100644
---- a/drivers/nvdimm/core.c
-+++ b/drivers/nvdimm/core.c
-@@ -437,9 +437,12 @@ static __init int libnvdimm_init(void)
- {
- 	int rc;
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 66a7dad7ed3d..b75555c7d8ae 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -21,6 +21,17 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ 	  appropriate hash algorithms (such as SHA-1) must be available.
+ 	  ENOPKG will be reported if the requisite algorithm is unavailable.
  
--	rc = nvdimm_bus_init();
-+	rc = nvdimm_devs_init();
- 	if (rc)
- 		return rc;
-+	rc = nvdimm_bus_init();
-+	if (rc)
-+		goto err_bus;
- 	rc = nvdimm_init();
- 	if (rc)
- 		goto err_dimm;
-@@ -454,6 +457,8 @@ static __init int libnvdimm_init(void)
- 	nvdimm_exit();
-  err_dimm:
- 	nvdimm_bus_exit();
-+ err_bus:
-+	nvdimm_devs_exit();
- 	return rc;
- }
++config ASYMMETRIC_TPM_KEY_SUBTYPE
++	tristate "Asymmetric TPM backed private key subtype"
++	depends on TCG_TPM
++	select CRYPTO_HMAC
++	select CRYPTO_SHA1
++	select CRYPTO_HASH_INFO
++	help
++	  This option provides support for TPM backed private key type handling.
++	  Operations such as sign, verify, encrypt, decrypt are performed by
++	  the TPM after the private key is loaded.
++
+ config X509_CERTIFICATE_PARSER
+ 	tristate "X.509 certificate parser"
+ 	depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index d25a8117b76d..0476c44cdd55 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -11,6 +11,7 @@ asymmetric_keys-y := \
+ 	signature.o
  
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 8d348b22ba45..1dcbb653455b 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -18,12 +18,54 @@
- #include <linux/io.h>
- #include <linux/fs.h>
- #include <linux/mm.h>
-+#include <linux/cred.h>
-+#include <keys/user-type.h>
-+#include <linux/key-type.h>
+ obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
++obj-$(CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE) += asym_tpm.o
+ 
+ #
+ # X.509 Certificate handling
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+new file mode 100644
+index 000000000000..f98335068a3b
+--- /dev/null
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -0,0 +1,94 @@
++// SPDX-License-Identifier: GPL-2.0
++#define pr_fmt(fmt) "ASYM-TPM: "fmt
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/export.h>
++#include <linux/kernel.h>
++#include <linux/seq_file.h>
++#include <linux/scatterlist.h>
++#include <linux/tpm.h>
++#include <keys/asymmetric-subtype.h>
++#include <crypto/asym_tpm_subtype.h>
++
++/*
++ * Provide a part of a description of the key for /proc/keys.
++ */
++static void asym_tpm_describe(const struct key *asymmetric_key,
++			      struct seq_file *m)
++{
++	struct tpm_key *tk = asymmetric_key->payload.data[asym_crypto];
++
++	pr_info("%s: tk: %p\n", __func__, tk);
++
++	if (!tk)
++		return;
++
++	seq_printf(m, "TPM1.2/Blob");
++}
++
++static void asym_tpm_destroy(void *payload0, void *payload3)
++{
++	struct tpm_key *tk = payload0;
++
++	pr_info("%s: %p\n", __func__, tk);
++
++	if (!tk)
++		return;
++
++	kfree(tk->blob);
++	tk->blob_len = 0;
++
++	kfree(tk);
++}
++
++/* Given the blob, parse it and load it into the TPM */
++struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
++{
++	int r;
++	struct tpm_key *tk;
++
++	r = tpm_is_tpm2(NULL);
++	if (r < 0)
++		goto error;
++
++	/* We don't support TPM2 yet */
++	if (r > 0) {
++		r = -ENODEV;
++		goto error;
++	}
++
++	r = -ENOMEM;
++	tk = kzalloc(sizeof(struct tpm_key), GFP_KERNEL);
++	if (!tk)
++		goto error;
++
++	tk->blob = kmemdup(blob, blob_len, GFP_KERNEL);
++	if (!tk->blob)
++		goto error_memdup;
++
++	tk->blob_len = blob_len;
++
++	return tk;
++
++error_memdup:
++	kfree(tk);
++error:
++	return ERR_PTR(r);
++}
++EXPORT_SYMBOL_GPL(tpm_key_create);
++
++/*
++ * TPM-based asymmetric key subtype
++ */
++struct asymmetric_key_subtype asym_tpm_subtype = {
++	.owner			= THIS_MODULE,
++	.name			= "asym_tpm",
++	.name_len		= sizeof("asym_tpm") - 1,
++	.describe		= asym_tpm_describe,
++	.destroy		= asym_tpm_destroy,
++};
++EXPORT_SYMBOL_GPL(asym_tpm_subtype);
++
++MODULE_DESCRIPTION("TPM based asymmetric key subtype");
++MODULE_AUTHOR("Intel Corporation");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
+new file mode 100644
+index 000000000000..03550b850998
+--- /dev/null
++++ b/include/crypto/asym_tpm_subtype.h
+@@ -0,0 +1,16 @@
++// SPDX-License-Identifier: GPL-2.0
++#ifndef _LINUX_ASYM_TPM_SUBTYPE_H
++#define _LINUX_ASYM_TPM_SUBTYPE_H
++
 +#include <linux/keyctl.h>
- #include "nd-core.h"
- #include "label.h"
- #include "pmem.h"
- #include "nd.h"
- 
- static DEFINE_IDA(dimm_ida);
-+static const struct cred *nvdimm_cred;
 +
-+static int nvdimm_key_instantiate(struct key *key,
-+		struct key_preparsed_payload *prep);
-+static void nvdimm_key_destroy(struct key *key);
-+
-+struct key_type nvdimm_key_type = {
-+	.name = "nvdimm",
-+	.instantiate = nvdimm_key_instantiate,
-+	.destroy = nvdimm_key_destroy,
-+	.describe = user_describe,
-+	/*
-+	 * The reason to have default data length to be len*2 is to
-+	 * accomodate the payload when we are doing a key change where
-+	 * the we stuff the old key and new key in the same payload.
-+	 */
-+	.def_datalen = NVDIMM_PASSPHRASE_LEN * 2,
++struct tpm_key {
++	void *blob;
++	u32 blob_len;
 +};
 +
-+static int nvdimm_key_instantiate(struct key *key,
-+		struct key_preparsed_payload *prep)
-+{
-+	char *payload;
++struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
 +
-+	payload = kzalloc(nvdimm_key_type.def_datalen, GFP_KERNEL);
-+	if (!payload)
-+		return -ENOMEM;
++extern struct asymmetric_key_subtype asym_tpm_subtype;
 +
-+	key->datalen = min(nvdimm_key_type.def_datalen, prep->datalen);
-+	memcpy(payload, prep->data, key->datalen);
-+	key->payload.data[0] = payload;
-+	return 0;
-+}
-+
-+static void nvdimm_key_destroy(struct key *key)
-+{
-+	kfree(key->payload.data[0]);
-+}
- 
- /*
-  * Retrieve bus and dimm handle and return if this bus supports
-@@ -668,7 +710,59 @@ int nvdimm_bus_check_dimm_count(struct nvdimm_bus *nvdimm_bus, int dimm_count)
- }
- EXPORT_SYMBOL_GPL(nvdimm_bus_check_dimm_count);
- 
--void __exit nvdimm_devs_exit(void)
-+static int nvdimm_register_keyring(void)
-+{
-+	struct cred *cred;
-+	struct key *keyring;
-+	int rc;
-+
-+	rc = register_key_type(&nvdimm_key_type);
-+	if (rc < 0)
-+		return rc;
-+
-+	cred = prepare_kernel_cred(NULL);
-+	if (!cred) {
-+		rc = -ENOMEM;
-+		goto failed_cred;
-+	}
-+
-+	keyring = keyring_alloc(".nvdimm",
-+			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, cred,
-+			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			(KEY_USR_ALL & ~KEY_USR_SETATTR),
-+			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
-+	if (IS_ERR(keyring)) {
-+		rc = PTR_ERR(keyring);
-+		goto failed_keyring;
-+	}
-+
-+	set_bit(KEY_FLAG_ROOT_CAN_CLEAR, &keyring->flags);
-+	cred->thread_keyring = keyring;
-+	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
-+	nvdimm_cred = cred;
-+	return 0;
-+
-+ failed_cred:
-+	unregister_key_type(&nvdimm_key_type);
-+ failed_keyring:
-+	put_cred(cred);
-+	return rc;
-+}
-+
-+static void nvdimm_unregister_keyring(void)
-+{
-+	key_revoke(nvdimm_cred->thread_keyring);
-+	unregister_key_type(&nvdimm_key_type);
-+	put_cred(nvdimm_cred);
-+}
-+
-+int __init nvdimm_devs_init(void)
-+{
-+	return nvdimm_register_keyring();
-+}
-+
-+void  nvdimm_devs_exit(void)
- {
-+	nvdimm_unregister_keyring();
- 	ida_destroy(&dimm_ida);
- }
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 79274ead54fb..2af0f89c4010 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -76,6 +76,7 @@ static inline bool is_memory(struct device *dev)
- struct nvdimm_bus *walk_to_nvdimm_bus(struct device *nd_dev);
- int __init nvdimm_bus_init(void);
- void nvdimm_bus_exit(void);
-+int nvdimm_devs_init(void);
- void nvdimm_devs_exit(void);
- void nd_region_devs_exit(void);
- void nd_region_probe_success(struct nvdimm_bus *nvdimm_bus, struct device *dev);
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 472171af7f60..09dd06f96f95 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -155,6 +155,11 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
- 
- }
- 
-+extern struct key_type nvdimm_key_type;
-+
-+#define NVDIMM_PASSPHRASE_LEN		32
-+#define NVDIMM_KEY_DESC_LEN		25
-+
- void badrange_init(struct badrange *badrange);
- int badrange_add(struct badrange *badrange, u64 addr, u64 length);
- void badrange_forget(struct badrange *badrange, phys_addr_t start,
++#endif /* _LINUX_ASYM_TPM_SUBTYPE_H */
+-- 
+2.16.1
 
