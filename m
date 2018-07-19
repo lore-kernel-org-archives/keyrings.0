@@ -1,216 +1,110 @@
 From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 19 Jul 2018 18:30:03 +0000
-Subject: [RFCv2 RESEND 05/13] KEYS: asym_tpm: Implement pkey_query
-Message-Id: <20180719183011.8574-6-denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:30:08 +0000
+Subject: [RFCv2 RESEND 10/13] KEYS: asym_tpm: Implement the decrypt operation
+Message-Id: <20180719183011.8574-11-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-This commit implements the pkey_query operation.  This is accomplished
-by utilizing the public key portion to obtain max encryption size
-information for the operations that utilize the public key (encrypt,
-verify).  The private key size extracted from the TPM_Key data structure
-is used to fill the information where the private key is used (decrypt,
-sign).
+This patch implements the pkey_decrypt operation using the private key
+blob.  The blob is first loaded into the TPM via tpm_loadkey2.  Once the
+handle is obtained, tpm_unbind operation is used to decrypt the data on
+the TPM and the result is returned.  The key loaded by tpm_loadkey2 is
+then evicted via tpm_flushspecific operation.
 
-The kernel uses a DER/BER format for public keys and does not support
-setting the key via the raw binary form.  To get around this a simple
-DER/BER formatter is implemented which stores the DER/BER formatted key
-and exponent in a temporary buffer for use by the crypto API.
-
-The only exponent supported currently is 65537.  This holds true for
-other Linux TPM tools such as 'create_tpm_key' and
-trousers-openssl_tpm_engine.
+This patch assumes that the SRK authorization is a well known 20-byte of
+zeros and the same holds for the key authorization of the provided key.
 
 Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 138 ++++++++++++++++++++++++++++++++++++++
- include/crypto/asym_tpm_subtype.h |   3 +
- 2 files changed, 141 insertions(+)
+ crypto/asymmetric_keys/asym_tpm.c | 58 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 57 insertions(+), 1 deletion(-)
 
 diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 4f070706628c..3eed931a6362 100644
+index edcb81fe8937..af661c9d55d7 100644
 --- a/crypto/asymmetric_keys/asym_tpm.c
 +++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -7,10 +7,24 @@
- #include <linux/seq_file.h>
- #include <linux/scatterlist.h>
- #include <linux/tpm.h>
-+#include <crypto/akcipher.h>
- #include <asm/unaligned.h>
- #include <keys/asymmetric-subtype.h>
- #include <crypto/asym_tpm_subtype.h>
+@@ -348,7 +348,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	info->max_enc_size = len;
+ 	info->max_dec_size = tk->key_len / 8;
  
-+/*
-+ * Maximum buffer size for the BER/DER encoded public key.  The public key
-+ * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
-+ * bit key and e is usually 65537
-+ * The encoding overhead is:
-+ * - max 4 bytes for SEQUENCE
-+ *   - max 4 bytes for INTEGER n type/length
-+ *     - 257 bytes of n
-+ *   - max 2 bytes for INTEGER e type/length
-+ *     - 3 bytes of e
-+ */
-+#define PUB_KEY_BUF_SIZE (4 + 4 + 257 + 2 + 3)
-+
- /*
-  * Provide a part of a description of the key for /proc/keys.
-  */
-@@ -42,6 +56,129 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
- 	kfree(tk);
+-	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
++	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
++			      KEYCTL_SUPPORTS_DECRYPT;
+ 
+ 	ret = 0;
+ error_free_tfm:
+@@ -417,6 +418,58 @@ static int tpm_key_encrypt(struct tpm_key *tk,
+ 	return ret;
  }
  
-+/* How many bytes will it take to encode the length */
-+static inline uint32_t definite_length(uint32_t len)
-+{
-+	if (len <= 127)
-+		return 1;
-+	if (len <= 255)
-+		return 2;
-+	return 3;
-+}
-+
-+static inline uint8_t *encode_tag_length(uint8_t *buf, uint8_t tag,
-+					 uint32_t len)
-+{
-+	*buf++ = tag;
-+
-+	if (len <= 127) {
-+		buf[0] = len;
-+		return buf + 1;
-+	}
-+
-+	if (len <= 255) {
-+		buf[0] = 0x81;
-+		buf[1] = len;
-+		return buf + 2;
-+	}
-+
-+	buf[0] = 0x82;
-+	put_unaligned_be16(len, buf + 1);
-+	return buf + 3;
-+}
-+
-+static uint32_t derive_pub_key(const void *pub_key, uint32_t len, uint8_t *buf)
-+{
-+	uint8_t *cur = buf;
-+	uint32_t n_len = definite_length(len) + 1 + len + 1;
-+	uint32_t e_len = definite_length(3) + 1 + 3;
-+	uint8_t e[3] = { 0x01, 0x00, 0x01 };
-+
-+	/* SEQUENCE */
-+	cur = encode_tag_length(cur, 0x30, n_len + e_len);
-+	/* INTEGER n */
-+	cur = encode_tag_length(cur, 0x02, len + 1);
-+	cur[0] = 0x00;
-+	memcpy(cur + 1, pub_key, len);
-+	cur += len + 1;
-+	cur = encode_tag_length(cur, 0x02, sizeof(e));
-+	memcpy(cur, e, sizeof(e));
-+	cur += sizeof(e);
-+
-+	return cur - buf;
-+}
-+
 +/*
-+ * Determine the crypto algorithm name.
++ * Decryption operation is performed with the private key in the TPM.
 + */
-+static int determine_akcipher(const char *encoding, const char *hash_algo,
-+			      char alg_name[CRYPTO_MAX_ALG_NAME])
++static int tpm_key_decrypt(struct tpm_key *tk,
++			   struct kernel_pkey_params *params,
++			   const void *in, void *out)
 +{
-+	pr_info("encoding: %s, hash_algo: %s\n",
-+		encoding ? encoding : "", hash_algo ? hash_algo : hash_algo);
++	struct tpm_buf *tb;
++	uint32_t keyhandle;
++	uint8_t srkauth[SHA1_DIGEST_SIZE];
++	uint8_t keyauth[SHA1_DIGEST_SIZE];
++	int r;
 +
-+	/* TODO: We don't support hashing yet */
-+	if (hash_algo)
++	pr_devel("=>%s()\n", __func__);
++
++	if (params->hash_algo)
 +		return -ENOPKG;
 +
-+	if (strcmp(encoding, "pkcs1") = 0) {
-+		strcpy(alg_name, "pkcs1pad(rsa)");
-+		return 0;
++	if (strcmp(params->encoding, "pkcs1"))
++		return -ENOPKG;
++
++	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
++	if (!tb)
++		return -ENOMEM;
++
++	/* TODO: Handle a non-all zero SRK authorization */
++	memset(srkauth, 0, sizeof(srkauth));
++
++	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
++				tk->blob, tk->blob_len, &keyhandle);
++	if (r < 0) {
++		pr_devel("loadkey2 failed (%d)\n", r);
++		goto error;
 +	}
 +
-+	if (strcmp(encoding, "raw") = 0) {
-+		strcpy(alg_name, "rsa");
-+		return 0;
-+	}
++	/* TODO: Handle a non-all zero key authorization */
++	memset(keyauth, 0, sizeof(keyauth));
 +
-+	return -ENOPKG;
-+}
++	r = tpm_unbind(tb, keyhandle, keyauth,
++		       in, params->in_len, out, params->out_len);
++	if (r < 0)
++		pr_devel("tpm_unbind failed (%d)\n", r);
 +
-+/*
-+ * Query information about a key.
-+ */
-+static int tpm_key_query(const struct kernel_pkey_params *params,
-+			 struct kernel_pkey_query *info)
-+{
-+	struct tpm_key *tk = params->key->payload.data[asym_crypto];
-+	int ret;
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	struct crypto_akcipher *tfm;
-+	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
-+	uint32_t der_pub_key_len;
-+	int len;
++	if (tpm_flushspecific(tb, keyhandle) < 0)
++		pr_devel("flushspecific failed (%d)\n", r);
 +
-+	/* TPM only works on private keys, public keys still done in software */
-+	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
-+	if (ret < 0)
-+		return ret;
-+
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
-+					 der_pub_key);
-+
-+	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
-+	if (ret < 0)
-+		goto error_free_tfm;
-+
-+	len = crypto_akcipher_maxsize(tfm);
-+
-+	info->key_size = tk->key_len;
-+	info->max_data_size = tk->key_len / 8;
-+	info->max_sig_size = len;
-+	info->max_enc_size = len;
-+	info->max_dec_size = tk->key_len / 8;
-+
-+	ret = 0;
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_info("<=%s() = %d\n", __func__, ret);
-+	return ret;
++error:
++	kzfree(tb);
++	pr_devel("<=%s() = %d\n", __func__, r);
++	return r;
 +}
 +
  /*
-  * Parse enough information out of TPM_KEY structure:
-  * TPM_STRUCT_VER -> 4 bytes
-@@ -200,6 +337,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
- 	.name_len		= sizeof("asym_tpm") - 1,
- 	.describe		= asym_tpm_describe,
- 	.destroy		= asym_tpm_destroy,
-+	.query			= tpm_key_query,
- };
- EXPORT_SYMBOL_GPL(asym_tpm_subtype);
- 
-diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
-index 03550b850998..48198c36d6b9 100644
---- a/include/crypto/asym_tpm_subtype.h
-+++ b/include/crypto/asym_tpm_subtype.h
-@@ -7,6 +7,9 @@
- struct tpm_key {
- 	void *blob;
- 	u32 blob_len;
-+	uint16_t key_len; /* Size in bits of the key */
-+	const void *pub_key; /* pointer inside blob to the public key bytes */
-+	uint16_t pub_key_len; /* length of the public key */
- };
- 
- struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
+  * Do encryption, decryption and signing ops.
+  */
+@@ -431,6 +484,9 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
+ 	case kernel_pkey_encrypt:
+ 		ret = tpm_key_encrypt(tk, params, in, out);
+ 		break;
++	case kernel_pkey_decrypt:
++		ret = tpm_key_decrypt(tk, params, in, out);
++		break;
+ 	default:
+ 		BUG();
+ 	}
 -- 
 2.16.1
 
