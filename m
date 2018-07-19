@@ -1,7 +1,7 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 18 Jul 2018 17:41:20 +0000
-Subject: Re: [PATCH v5 09/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-Message-Id: <f9873585-2f9a-6f15-0783-7f784b777ce4@intel.com>
+From: "Elliott, Robert (Persistent Memory)" <elliott@hpe.com>
+Date: Thu, 19 Jul 2018 01:43:17 +0000
+Subject: RE: [PATCH v5 09/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+Message-Id: <AT5PR8401MB1169AAD6B37FAA0004A2D334AB520@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,43 +9,55 @@ List-Id: <keyrings.vger.kernel.org>
 References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
  <153186089522.27463.4537738384176593789.stgit@djiang5-desk3.ch.intel.com>
  <AT5PR8401MB11692A3B06A2BDB669DBEA9BAB530@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
-In-Reply-To: <AT5PR8401MB11692A3B06A2BDB669DBEA9BAB530@AT5PR8401MB1169.NAMPRD84.PROD.OUTLOOK.COM>
-To: "Elliott, Robert (Persistent Memory)" <elliott@hpe.com>, "Williams, Dan J" <dan.j.williams@intel.com>
+ <f9873585-2f9a-6f15-0783-7f784b777ce4@intel.com>
+In-Reply-To: <f9873585-2f9a-6f15-0783-7f784b777ce4@intel.com>
+To: Dave Jiang <dave.jiang@intel.com>, "Williams, Dan J" <dan.j.williams@intel.com>
 Cc: "dhowells@redhat.com" <dhowells@redhat.com>, "Schofield, Alison  <alison.schofield@intel.com>, keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "keescook@chromium.org" <keescook@chromium.org>, "linux-nvdimm@lists.01.org" <linux-nvdimm@lists.01.org>
 
-
-
-On 07/18/2018 10:27 AM, Elliott, Robert (Persistent Memory) wrote:
-> 
-> 
->> -----Original Message-----
->> From: Linux-nvdimm [mailto:linux-nvdimm-bounces@lists.01.org] On Behalf Of Dave Jiang
->> Sent: Tuesday, July 17, 2018 3:55 PM
->> Subject: [PATCH v5 09/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-> ...
->  +static int intel_dimm_security_erase(struct nvdimm_bus *nvdimm_bus,
->> +struct nvdimm *nvdimm, struct nvdimm_key_data *nkey)
-> ...
->> +/* DIMM unlocked, invalidate all CPU caches before we read it */
->> +wbinvd_on_all_cpus();
-> 
-> For this function, that comment should use "erased" rather than
-> "unlocked".
-> 
-> For both this function and intel_dimm_security_unlock() in patch 04/12,
-> could the driver do a loop of clflushopts on one CPU via
-> clflush_cache_range() rather than run wbinvd on all CPUs?
-
-The loop should work, but wbinvd is going to be less overall impact to
-the performance for really huge ranges. Also, unlock should happen only
-once and during NVDIMM initialization. So wbinvd should be ok.
-
-BTW thanks for looking over the patches.
-
-> 
-> ---
-> Robert Elliott, HPE Persistent Memory
-> 
-> 
-> 
-> 
+DQoNCj4gLS0tLS1PcmlnaW5hbCBNZXNzYWdlLS0tLS0NCj4gRnJvbTogRGF2ZSBKaWFuZyA8ZGF2
+ZS5qaWFuZ0BpbnRlbC5jb20+DQo+IFNlbnQ6IFdlZG5lc2RheSwgSnVseSAxOCwgMjAxOCAxMjo0
+MSBQTQ0KPiBUbzogRWxsaW90dCwgUm9iZXJ0IChQZXJzaXN0ZW50IE1lbW9yeSkgPGVsbGlvdHRA
+aHBlLmNvbT47IFdpbGxpYW1zLA0KPiBEYW4gSiA8ZGFuLmoud2lsbGlhbXNAaW50ZWwuY29tPg0K
+PiBDYzogZGhvd2VsbHNAcmVkaGF0LmNvbTsgU2Nob2ZpZWxkLCBBbGlzb24NCj4gPGFsaXNvbi5z
+Y2hvZmllbGRAaW50ZWwuY29tPjsga2V5cmluZ3NAdmdlci5rZXJuZWwub3JnOw0KPiBrZWVzY29v
+a0BjaHJvbWl1bS5vcmc7IGxpbnV4LW52ZGltbUBsaXN0cy4wMS5vcmcNCj4gU3ViamVjdDogUmU6
+IFtQQVRDSCB2NSAwOS8xMl0gbmZpdC9saWJudmRpbW06IGFkZCBzdXBwb3J0IGZvciBpc3N1ZQ0K
+PiBzZWN1cmUgZXJhc2UgRFNNIHRvIEludGVsIG52ZGltbQ0KPiANCj4gDQo+IA0KPiBPbiAwNy8x
+OC8yMDE4IDEwOjI3IEFNLCBFbGxpb3R0LCBSb2JlcnQgKFBlcnNpc3RlbnQgTWVtb3J5KSB3cm90
+ZToNCj4gPg0KPiA+DQo+ID4+IC0tLS0tT3JpZ2luYWwgTWVzc2FnZS0tLS0tDQo+ID4+IEZyb206
+IExpbnV4LW52ZGltbSBbbWFpbHRvOmxpbnV4LW52ZGltbS1ib3VuY2VzQGxpc3RzLjAxLm9yZ10g
+T24NCj4gQmVoYWxmIE9mIERhdmUgSmlhbmcNCj4gPj4gU2VudDogVHVlc2RheSwgSnVseSAxNywg
+MjAxOCAzOjU1IFBNDQo+ID4+IFN1YmplY3Q6IFtQQVRDSCB2NSAwOS8xMl0gbmZpdC9saWJudmRp
+bW06IGFkZCBzdXBwb3J0IGZvciBpc3N1ZQ0KPiBzZWN1cmUgZXJhc2UgRFNNIHRvIEludGVsIG52
+ZGltbQ0KPiA+IC4uLg0KPiA+ICArc3RhdGljIGludCBpbnRlbF9kaW1tX3NlY3VyaXR5X2VyYXNl
+KHN0cnVjdCBudmRpbW1fYnVzDQo+ICpudmRpbW1fYnVzLA0KPiA+PiArc3RydWN0IG52ZGltbSAq
+bnZkaW1tLCBzdHJ1Y3QgbnZkaW1tX2tleV9kYXRhICpua2V5KQ0KPiA+IC4uLg0KPiA+PiArLyog
+RElNTSB1bmxvY2tlZCwgaW52YWxpZGF0ZSBhbGwgQ1BVIGNhY2hlcyBiZWZvcmUgd2UgcmVhZCBp
+dCAqLw0KPiA+PiArd2JpbnZkX29uX2FsbF9jcHVzKCk7DQo+ID4NCj4gPiBGb3IgdGhpcyBmdW5j
+dGlvbiwgdGhhdCBjb21tZW50IHNob3VsZCB1c2UgImVyYXNlZCIgcmF0aGVyIHRoYW4NCj4gPiAi
+dW5sb2NrZWQiLg0KPiA+DQo+ID4gRm9yIGJvdGggdGhpcyBmdW5jdGlvbiBhbmQgaW50ZWxfZGlt
+bV9zZWN1cml0eV91bmxvY2soKSBpbiBwYXRjaA0KPiAwNC8xMiwNCj4gPiBjb3VsZCB0aGUgZHJp
+dmVyIGRvIGEgbG9vcCBvZiBjbGZsdXNob3B0cyBvbiBvbmUgQ1BVIHZpYQ0KPiA+IGNsZmx1c2hf
+Y2FjaGVfcmFuZ2UoKSByYXRoZXIgdGhhbiBydW4gd2JpbnZkIG9uIGFsbCBDUFVzPw0KPiANCj4g
+VGhlIGxvb3Agc2hvdWxkIHdvcmssIGJ1dCB3YmludmQgaXMgZ29pbmcgdG8gYmUgbGVzcyBvdmVy
+YWxsIGltcGFjdA0KPiB0byB0aGUgcGVyZm9ybWFuY2UgZm9yIHJlYWxseSBodWdlIHJhbmdlcy4g
+QWxzbywgdW5sb2NrIHNob3VsZCBoYXBwZW4NCj4gb25seSBvbmNlIGFuZCBkdXJpbmcgTlZESU1N
+IGluaXRpYWxpemF0aW9uLiBTbyB3YmludmQgc2hvdWxkIGJlIG9rLg0KDQpVbmxpa2UgdW5sb2Nr
+LCBzZWN1cmUgZXJhc2UgY291bGQgYmUgcmVxdWVzdGVkIGF0IGFueSB0aW1lLg0KDQp3YmludmQg
+bXVzdCBydW4gb24gZXZlcnkgcGh5c2ljYWwgY29yZSBvbiBldmVyeSBwaHlzaWNhbCBDUFUsIHdo
+aWxlDQpjbGZsdXNob3B0IGZsdXNoZXMgZXZlcnl0aGluZyBmcm9tIGp1c3Qgb25lIENQVSBjb3Jl
+Lg0KDQp3YmludmQgYWRkcyBodWdlIGludGVycnVwdCBsYXRlbmNpZXMsIGdlbmVyYXRpbmcgY29t
+cGxhaW50cyBsaWtlIHRoZXNlOg0KCWh0dHBzOi8vcGF0Y2h3b3JrLmtlcm5lbC5vcmcvcGF0Y2gv
+MzcwOTAvDQoJaHR0cHM6Ly9saXN0cy54ZW5wcm9qZWN0Lm9yZy9hcmNoaXZlcy9odG1sL3hlbi1k
+ZXZlbC8yMDExLTA5L21zZzAwNjc1Lmh0bWwNCg0KQWxzbywgdGhlcmUncyBubyBuZWVkIHRvIGRp
+c3J1cHQgY2FjaGUgY29udGVudCBmb3Igb3RoZXIgYWRkcmVzc2VzOw0Kb25seSB0aGUgZGF0YSBh
+dCB0aGUgYWRkcmVzc2VzIGp1c3QgZXJhc2VkIG9yIHVubG9ja2VkIGlzIGEgY29uY2Vybi4NCmNs
+Zmx1c2hvcHQgYXZvaWRzIGRpc3J1cHRpbmcgb3RoZXIgdGhyZWFkcy4NCg0KUmVsYXRlZCB0b3Bp
+YzogYSBmbHVzaCBpcyBhbHNvIG5lY2Vzc2FyeSBiZWZvcmUgc2VuZGluZyB0aGUgc2VjdXJlIGVy
+YXNlIG9yDQp1bmxvY2sgY29tbWFuZC4gIE90aGVyd2lzZSwgdGhlcmUgY291bGQgYmUgZGlydHkg
+d3JpdGUgZGF0YSB0aGF0IGdldHMNCndyaXR0ZW4gYnkgdGhlIGNvbmNsdWRpbmcgZmx1c2ggKG92
+ZXJ3cml0aW5nIHRoZSBub3ctdW5sb2NrZWQgb3IganVzdC1lcmFzZWQNCmRhdGEpLiAgRm9yIHVu
+bG9jayBkdXJpbmcgYm9vdCwgeW91IG1pZ2h0IGFzc3VtZSB0aGF0IG5vIHdyaXRlcyBoYXZpbmcN
+Cm9jY3VycmVkIHlldCwgYnV0IHRoYXQgaXNuJ3QgdHJ1ZSBmb3Igc2VjdXJlIGVyYXNlIG9uIGRl
+bWFuZC4gIEZsdXNoaW5nDQpiZWZvcmUgYm90aCBjb21tYW5kcyBpcyBzYWZlc3QuDQoNCi0tLQ0K
+Um9iZXJ0IEVsbGlvdHQsIEhQRSBQZXJzaXN0ZW50IE1lbW9yeQ0KDQoNCg=
