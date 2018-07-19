@@ -1,49 +1,216 @@
-From: "Mrs. Ursula Alice Walton" <cnegre@viquel.fr>
-Date: Mon, 09 Jul 2018 02:08:43 +0000
-Subject: =?utf-8?Q?J=C3=93_H=C3=8DREK?=
-Message-Id: <179150912.119135.1531102123521.JavaMail.root@SRV-ZIMBRA>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:30:03 +0000
+Subject: [RFCv2 RESEND 05/13] KEYS: asym_tpm: Implement pkey_query
+Message-Id: <20180719183011.8574-6-denkenz@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-Kedves Kedvezményezettem,
+This commit implements the pkey_query operation.  This is accomplished
+by utilizing the public key portion to obtain max encryption size
+information for the operations that utilize the public key (encrypt,
+verify).  The private key size extracted from the TPM_Key data structure
+is used to fill the information where the private key is used (decrypt,
+sign).
 
-Biztos vagyok benne, hogy ez a levél meglepetésként fog megjelenni, mivel még soha nem találkoztunk, és akkor is megkérdeznéd, hogy miért döntöttem úgy, hogy választottam Önt a világ számos internethasználója között. Pontosan, nem tudom megmondani, hogy miért választottam Önt, de ne aggódj, mert láttam a profilodat az interneten, ami megkönnyítette a kérésemet. A Mindenható Isten megáldjon és átnézzen titeket ezen a küldetésben, ha alaposan elolvashatja és megemésztheti az alábbi üzenetet.
+The kernel uses a DER/BER format for public keys and does not support
+setting the key via the raw binary form.  To get around this a simple
+DER/BER formatter is implemented which stores the DER/BER formatted key
+and exponent in a temporary buffer for use by the crypto API.
 
-Mielőtt elmegyek tovább, engedje meg, hogy adjak egy kis életrajzomat, én Ursula Anya, Alice Walton vagyok, 72 éves nő és a késő Sir Danon Walton felesége, aki 1998. szeptember 7-én, hétfőn : 22 Egyesült Királyság, miközben New Yorkból Genfbe repültek.
+The only exponent supported currently is 65537.  This holds true for
+other Linux TPM tools such as 'create_tpm_key' and
+trousers-openssl_tpm_engine.
 
-A férjem halála után a befektetés vezetője lettem, és most, hogy öregek és gyenge vagyok, úgy döntöttem, hogy az életem hátralevő részét családommal és szeretteikkel töltik, akinek életem során soha nem volt időm. de a férjem halála előtt terveztük, hogy életünk legutóbbi napjait használjuk fel arra, hogy felajánljuk a kevésbé kiváltságos és jótékonysági otthonok felét, a másik fele pedig magunknak, családtagjainknak és közeli barátainknak. annyira szerencsétlen, hogy a férjem nem él ma, hogy ezt tegye velem, és nagyon gyenge vagyok és idős voltam, ezért úgy döntöttem, hogy ezt a filantrópikus munkát végzem a késő férjem és én nevében.
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+---
+ crypto/asymmetric_keys/asym_tpm.c | 138 ++++++++++++++++++++++++++++++++++++++
+ include/crypto/asym_tpm_subtype.h |   3 +
+ 2 files changed, 141 insertions(+)
 
-Jelenleg a vagyonunknak csaknem felét több jótékonysági otthonra és néhány kevésbé kiváltságos országra fordítottam. Annak ellenére, hogy a késő férjem és én segítséget nyújtottak a hátrányos helyzetűek számára, beleegyeztünk abba, hogy segítséget nyújtsunk egy olyan egyénnek, akivel még nem találkoztunk az életben, mivel életünkben még mindig fiatal volt, anonim segítséget kapunk egy az egyén, akiről nem tudtunk, és melyeket nem tudtunk megmondani a dátumig, az efféle gesztus hatása miatt ugyanezt tettük.
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 4f070706628c..3eed931a6362 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -7,10 +7,24 @@
+ #include <linux/seq_file.h>
+ #include <linux/scatterlist.h>
+ #include <linux/tpm.h>
++#include <crypto/akcipher.h>
+ #include <asm/unaligned.h>
+ #include <keys/asymmetric-subtype.h>
+ #include <crypto/asym_tpm_subtype.h>
+ 
++/*
++ * Maximum buffer size for the BER/DER encoded public key.  The public key
++ * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
++ * bit key and e is usually 65537
++ * The encoding overhead is:
++ * - max 4 bytes for SEQUENCE
++ *   - max 4 bytes for INTEGER n type/length
++ *     - 257 bytes of n
++ *   - max 2 bytes for INTEGER e type/length
++ *     - 3 bytes of e
++ */
++#define PUB_KEY_BUF_SIZE (4 + 4 + 257 + 2 + 3)
++
+ /*
+  * Provide a part of a description of the key for /proc/keys.
+  */
+@@ -42,6 +56,129 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
+ 	kfree(tk);
+ }
+ 
++/* How many bytes will it take to encode the length */
++static inline uint32_t definite_length(uint32_t len)
++{
++	if (len <= 127)
++		return 1;
++	if (len <= 255)
++		return 2;
++	return 3;
++}
++
++static inline uint8_t *encode_tag_length(uint8_t *buf, uint8_t tag,
++					 uint32_t len)
++{
++	*buf++ = tag;
++
++	if (len <= 127) {
++		buf[0] = len;
++		return buf + 1;
++	}
++
++	if (len <= 255) {
++		buf[0] = 0x81;
++		buf[1] = len;
++		return buf + 2;
++	}
++
++	buf[0] = 0x82;
++	put_unaligned_be16(len, buf + 1);
++	return buf + 3;
++}
++
++static uint32_t derive_pub_key(const void *pub_key, uint32_t len, uint8_t *buf)
++{
++	uint8_t *cur = buf;
++	uint32_t n_len = definite_length(len) + 1 + len + 1;
++	uint32_t e_len = definite_length(3) + 1 + 3;
++	uint8_t e[3] = { 0x01, 0x00, 0x01 };
++
++	/* SEQUENCE */
++	cur = encode_tag_length(cur, 0x30, n_len + e_len);
++	/* INTEGER n */
++	cur = encode_tag_length(cur, 0x02, len + 1);
++	cur[0] = 0x00;
++	memcpy(cur + 1, pub_key, len);
++	cur += len + 1;
++	cur = encode_tag_length(cur, 0x02, sizeof(e));
++	memcpy(cur, e, sizeof(e));
++	cur += sizeof(e);
++
++	return cur - buf;
++}
++
++/*
++ * Determine the crypto algorithm name.
++ */
++static int determine_akcipher(const char *encoding, const char *hash_algo,
++			      char alg_name[CRYPTO_MAX_ALG_NAME])
++{
++	pr_info("encoding: %s, hash_algo: %s\n",
++		encoding ? encoding : "", hash_algo ? hash_algo : hash_algo);
++
++	/* TODO: We don't support hashing yet */
++	if (hash_algo)
++		return -ENOPKG;
++
++	if (strcmp(encoding, "pkcs1") = 0) {
++		strcpy(alg_name, "pkcs1pad(rsa)");
++		return 0;
++	}
++
++	if (strcmp(encoding, "raw") = 0) {
++		strcpy(alg_name, "rsa");
++		return 0;
++	}
++
++	return -ENOPKG;
++}
++
++/*
++ * Query information about a key.
++ */
++static int tpm_key_query(const struct kernel_pkey_params *params,
++			 struct kernel_pkey_query *info)
++{
++	struct tpm_key *tk = params->key->payload.data[asym_crypto];
++	int ret;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	struct crypto_akcipher *tfm;
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
++	int len;
++
++	/* TPM only works on private keys, public keys still done in software */
++	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
++
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
++
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	len = crypto_akcipher_maxsize(tfm);
++
++	info->key_size = tk->key_len;
++	info->max_data_size = tk->key_len / 8;
++	info->max_sig_size = len;
++	info->max_enc_size = len;
++	info->max_dec_size = tk->key_len / 8;
++
++	ret = 0;
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_info("<=%s() = %d\n", __func__, ret);
++	return ret;
++}
++
+ /*
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -200,6 +337,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.name_len		= sizeof("asym_tpm") - 1,
+ 	.describe		= asym_tpm_describe,
+ 	.destroy		= asym_tpm_destroy,
++	.query			= tpm_key_query,
+ };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
+ 
+diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
+index 03550b850998..48198c36d6b9 100644
+--- a/include/crypto/asym_tpm_subtype.h
++++ b/include/crypto/asym_tpm_subtype.h
+@@ -7,6 +7,9 @@
+ struct tpm_key {
+ 	void *blob;
+ 	u32 blob_len;
++	uint16_t key_len; /* Size in bits of the key */
++	const void *pub_key; /* pointer inside blob to the public key bytes */
++	uint16_t pub_key_len; /* length of the public key */
+ };
+ 
+ struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
+-- 
+2.16.1
 
-Sajnálattal értesítem, hogy soha nem lesz alkalmam megismerni, mert éppen befejeztem azt a feladatot, amelyet a férjem és én a hirtelen halálát megelőzően megállapodtunk, és te voltál a legutóbbi gyilkosságunk kedvezményezettje, függetlenül attól, hogy korábbi pénzügyi státusza, ezért szükségem van arra, hogy tegyen nekem egy szívességet azáltal, hogy elfogadja ajánlatunkat, ami semmivel sem fog kerülni.
-
-Jelenleg letétbe helyezem a Zenith Bank (UK) Ltd 5,800,000.00 amerikai dollár összegének átutalását Önnek, amit most tenned kell, hogy a lehető leghamarabb lépjen kapcsolatba a Zenith Bank (UK) Ltd-vel, hogy megtudja, mikor fognak a lejárat dátuma miatt adja át a pénzt.
-
-Csak letétbe helyeztem az EMAIL ADDRESS és a DEPOSIT CODE (2017748032) számot, mert nem tudom a nevedet és a számlaszámot, amellyel szeretnéd megkapni a pénzt. Nem tudtam megtalálni őket neten a profilod böngészése közben, ha nem adtam volna át a BANK-nak az azonnali átadáshoz.
-
-Az Ön információiért fizettem az összes adót, biztosítási prémiumot és bankátutalást A készpénz díja, amely azt mutatja, hogy ez nem drogpénz, vagy az országában a terrorizmust támogatta.
-
-Engedjék meg, hogy ismét megismételjem, nem fizeti meg az adóterheket, a biztosítási díjat és a csekk átutalási díját, mert már kifizettem őket, az egyetlen pénzt, amelyre fizetni akarsz, 85 dollár amerikai dollár a számlára Az aktiválás lehetővé teszi, hogy a bank átutalja az összeget a helyi számlájára anélkül, hogy további átutalási díjakat fizetne. Én fizettem volna a díjat, de a bank ragaszkodott hozzá, hogy nem szabad, mert nem tudják, mikor fogsz velük kapcsolatba lépni, és elkerülni a kudarcot vagy a további költségeket. Kérlek kedvesem, ha tudod, hogy nem fogsz segíteni a 85 dolláros amerikai dollárral, kérlek, ne lépj kapcsolatba velem a bankkal, kérlek, szükségem van valakire, aki segít nekem.
-
-A csekk átutalásához az alábbiakban meg kell adnia a kapcsolatot a Bankkal;
-
-Zenith Bank (UK) Ltd.
-39 Corn Hill London
-EC3V 3ND Egyesült Királyság
-Tel: +447452059980
-E-mail: info@zenithbankltd.co.uk
-
-Újra meg kell erősítenie az alábbi információkat, hogy elkerülje az átadás hibáját.
-Postázási cím;
-Teljes nevek:
-Közvetlen telefonszám;
-
-Az alábbiakban a vázlat DEPOSIT CODE (2017748032) pontja látható, akkor az átadás előtt ellenőrizni kell.
-
-Megjegyzés: Kérem, nem akarom, hogy köszönetet mondjon nekem, vagy a férjemnek mindössze annyit kell tennie, hogy bölcsen bánjon vele, és ugyanazt a dolgot tegye egy nap valaki életébe, mivel ez az egyetlen módja annak, hogy ez a világ jobb közösség legyen, ha önzetlen szolgáltatásokat nyújtanak egymásnak.
-
-Tisztelettel,
-Mrs. Ursula Alice Walton
