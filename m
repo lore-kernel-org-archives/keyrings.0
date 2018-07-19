@@ -1,167 +1,168 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Tue, 17 Jul 2018 20:54:43 +0000
-Subject: [PATCH v5 07/12] nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
-Message-Id: <153186088383.27463.4501131093419423637.stgit@djiang5-desk3.ch.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 19 Jul 2018 18:30:09 +0000
+Subject: [RFCv2 RESEND 11/13] KEYS: asym_tpm: Implement signature verification
+Message-Id: <20180719183011.8574-12-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+To: keyrings@vger.kernel.org
 
-Add support to disable passphrase (security) for the Intel nvdimm. The
-passphrase used for disabling is pulled from userspace via the kernel
-key management. The action is triggered by writing "disable" to the sysfs
-attribute "security". libnvdimm will support the generic disable API call.
+This patch implements the verify_signature operation.  The public key
+portion extracted from the TPM key blob is used.  The operation is
+performed entirely in software using the crypto API.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/acpi/nfit/intel.c  |   52 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   41 +++++++++++++++++++++++++++++++++++
- include/linux/libnvdimm.h  |    2 ++
- 3 files changed, 95 insertions(+)
+ crypto/asymmetric_keys/asym_tpm.c | 106 +++++++++++++++++++++++++++++++++++---
+ 1 file changed, 100 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index b0a62248467d..2418f4b8c1fd 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,57 @@
- #include "intel.h"
- #include "nfit.h"
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index af661c9d55d7..571fb98e1af9 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -15,6 +15,7 @@
+ #include <keys/asymmetric-subtype.h>
+ #include "../../security/keys/trusted.h"
+ #include <crypto/asym_tpm_subtype.h>
++#include <crypto/public_key.h>
  
-+static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm, struct nvdimm_key_data *nkey)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_disable_passphrase cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
-+	};
+ #define TPM_ORD_FLUSHSPECIFIC	186
+ #define TPM_ORD_LOADKEY2	65
+@@ -293,12 +294,16 @@ static int determine_akcipher(const char *encoding, const char *hash_algo,
+ 	pr_info("encoding: %s, hash_algo: %s\n",
+ 		encoding ? encoding : "", hash_algo ? hash_algo : hash_algo);
+ 
+-	/* TODO: We don't support hashing yet */
+-	if (hash_algo)
+-		return -ENOPKG;
+-
+ 	if (strcmp(encoding, "pkcs1") = 0) {
+-		strcpy(alg_name, "pkcs1pad(rsa)");
++		if (!hash_algo) {
++			strcpy(alg_name, "pkcs1pad(rsa)");
++			return 0;
++		}
 +
-+	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
++		if (snprintf(alg_name, CRYPTO_MAX_ALG_NAME, "pkcs1pad(rsa,%s)",
++			     hash_algo) >= CRYPTO_MAX_ALG_NAME)
++			return -EINVAL;
 +
-+	memcpy(nd_cmd.cmd.passphrase, nkey->data, ND_INTEL_PASSPHRASE_SIZE);
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+ out:
-+	return rc;
-+}
-+
- static int intel_dimm_security_update_passphrase(
- 		struct nvdimm_bus *nvdimm_bus, struct nvdimm *nvdimm,
- 		struct nvdimm_key_data *old_data,
-@@ -205,4 +256,5 @@ struct nvdimm_security_ops intel_security_ops = {
- 	.state = intel_dimm_security_state,
- 	.unlock = intel_dimm_security_unlock,
- 	.change_key = intel_dimm_security_update_passphrase,
-+	.disable = intel_dimm_security_disable,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 432bdd8d19e3..def10000c230 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -125,6 +125,45 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
+ 		return 0;
+ 	}
+ 
+@@ -349,7 +354,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	info->max_dec_size = tk->key_len / 8;
+ 
+ 	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
+-			      KEYCTL_SUPPORTS_DECRYPT;
++			      KEYCTL_SUPPORTS_DECRYPT |
++			      KEYCTL_SUPPORTS_VERIFY;
+ 
+ 	ret = 0;
+ error_free_tfm:
+@@ -494,6 +500,93 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
+ 	return ret;
  }
  
-+static int nvdimm_security_disable(struct device *dev)
++/*
++ * Verify a signature using a public key.
++ */
++static int tpm_key_verify_signature(const struct key *key,
++				    const struct public_key_signature *sig)
 +{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key;
-+	int rc;
-+	void *payload;
-+	bool cached_key = false;
++	const struct tpm_key *tk = key->payload.data[asym_crypto];
++	struct crypto_wait cwait;
++	struct crypto_akcipher *tfm;
++	struct akcipher_request *req;
++	struct scatterlist sig_sg, digest_sg;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
++	void *output;
++	unsigned int outlen;
++	int ret;
 +
-+	if (!nvdimm->security_ops)
-+		return 0;
++	pr_devel("=>%s()\n", __func__);
 +
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
-+		return 0;
++	BUG_ON(!tk);
++	BUG_ON(!sig);
++	BUG_ON(!sig->s);
 +
-+	key = nvdimm_search_key(dev);
-+	if (!key)
-+		key = nvdimm_request_key(dev);
-+	else
-+		cached_key = true;
-+	if (!key)
-+		return -ENXIO;
++	if (!sig->digest)
++		return -ENOPKG;
 +
-+	down_read(&key->sem);
-+	payload = key->payload.data[0];
-+	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm, payload);
-+	up_read(&key->sem);
-+	if (rc < 0)
-+		goto out;
++	ret = determine_akcipher(sig->encoding, sig->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
 +
-+	/* If we succeed then remove the key */
-+	key_invalidate(key);
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
 +
-+ out:
-+	key_put(key);
-+	nvdimm_security_get_state(dev);
-+	return rc;
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
++
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	ret = -ENOMEM;
++	req = akcipher_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
++
++	ret = -ENOMEM;
++	outlen = crypto_akcipher_maxsize(tfm);
++	output = kmalloc(outlen, GFP_KERNEL);
++	if (!output)
++		goto error_free_req;
++
++	sg_init_one(&sig_sg, sig->s, sig->s_size);
++	sg_init_one(&digest_sg, output, outlen);
++	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
++				   outlen);
++	crypto_init_wait(&cwait);
++	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				      CRYPTO_TFM_REQ_MAY_SLEEP,
++				      crypto_req_done, &cwait);
++
++	/* Perform the verification calculation.  This doesn't actually do the
++	 * verification, but rather calculates the hash expected by the
++	 * signature and returns that to us.
++	 */
++	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
++	if (ret)
++		goto out_free_output;
++
++	/* Do the actual verification step. */
++	if (req->dst_len != sig->digest_size ||
++	    memcmp(sig->digest, output, sig->digest_size) != 0)
++		ret = -EKEYREJECTED;
++
++out_free_output:
++	kfree(output);
++error_free_req:
++	akcipher_request_free(req);
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	if (WARN_ON_ONCE(ret > 0))
++		ret = -EINVAL;
++	return ret;
 +}
 +
- int nvdimm_security_unlock_dimm(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -631,6 +670,8 @@ static ssize_t security_store(struct device *dev,
- 
- 	if (sysfs_streq(buf, "update"))
- 		rc = nvdimm_security_change_key(dev);
-+	else if (sysfs_streq(buf, "disable"))
-+		rc = nvdimm_security_disable(dev);
- 	else
- 		return -EINVAL;
- 
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 7889fea75281..59ad04261f34 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -183,6 +183,8 @@ struct nvdimm_security_ops {
- 			struct nvdimm *nvdimm,
- 			struct nvdimm_key_data *old_data,
- 			struct nvdimm_key_data *new_data);
-+	int (*disable)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm, struct nvdimm_key_data *nkey);
+ /*
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -654,6 +747,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.destroy		= asym_tpm_destroy,
+ 	.query			= tpm_key_query,
+ 	.eds_op			= tpm_key_eds_op,
++	.verify_signature	= tpm_key_verify_signature,
  };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
  
- void badrange_init(struct badrange *badrange);
+-- 
+2.16.1
 
