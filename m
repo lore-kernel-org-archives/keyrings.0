@@ -1,256 +1,502 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Thu, 05 Jul 2018 20:22:38 +0000
-Subject: [PATCH v2 05/11] nfit/libnvdimm: adding set passphrase support for Intel nvdimms
-Message-Id: <153082215869.61422.9637712912457962319.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 23 Jul 2018 15:26:05 +0000
+Subject: [PATCH 3/5] vfs: Add a mount-notification facility
+Message-Id: <153235956503.32640.8212120843796670089.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+References: <153235954191.32640.5792167066538704794.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153235954191.32640.5792167066538704794.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, dhowells@redhat.com, linux-kernel@vger.kernel.org, raven@themaw.net, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-Adding support for setting and/or updating passphrase on the Intel nvdimms.
-The passphrase is pulled from userspace through the kernel key management.
-We trigger the update via writing "update" to the sysfs attribute
-"security". The state of the security can also be read via the "security"
-attribute. libnvdimm will generically support the key_change API call.
+[*] Note that this needs some cleaning up and not all the events work yet.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Add a mount notification facility whereby notifications about changes in
+mount topology and configuration can be received.  Note that this only
+covers vfsmount topology changes and not superblock events.  A separate
+facility will be added for that.
+
+Firstly, an event queue needs to be created:
+
+	fd = open("/dev/event_queue", O_RDWR);
+
+then a notification can be set up to report notifications via that queue:
+
+	struct watch_notification_filter filter;
+	memset(&filter, 0, sizeof(filter));
+	filter.subtype_filter[0] = ~0ULL;
+	filter.info_id		 = 0x02000000;
+	mount_notify(AT_FDCWD, "/", 0, fd, &filter);
+
+Note that the queue can be shared between multiple notifications of various
+types.
+
+Mount notifications propagate up the tree towards the root, so a watch will
+catch all of the events happening in the subtree rooted at the watch.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- drivers/acpi/nfit/intel.c  |   57 +++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |  110 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/libnvdimm.h  |    5 ++
- 3 files changed, 172 insertions(+)
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index c1140f6901da..82514ff3e644 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -17,6 +17,62 @@
- #include "intel.h"
- #include "nfit.h"
+ arch/x86/entry/syscalls/syscall_32.tbl |    1 
+ arch/x86/entry/syscalls/syscall_64.tbl |    1 
+ fs/Kconfig                             |    9 ++
+ fs/Makefile                            |    1 
+ fs/fs_context.c                        |    1 
+ fs/mount.h                             |   26 +++++
+ fs/mount_notify.c                      |  178 ++++++++++++++++++++++++++++++++
+ fs/namespace.c                         |   18 +++
+ include/linux/dcache.h                 |    1 
+ include/linux/syscalls.h               |    2 
+ include/uapi/linux/watch_queue.h       |   24 ++++
+ kernel/sys_ni.c                        |    3 +
+ 12 files changed, 265 insertions(+)
+ create mode 100644 fs/mount_notify.c
+
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index 806760188a31..449bbcc19a6d 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -405,3 +405,4 @@
+ 391	i386	fsmount			sys_fsmount			__ia32_sys_fsmount
+ 392	i386	fspick			sys_fspick			__ia32_sys_fspick
+ 393	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
++394	i386	mount_notify		sys_mount_notify		__ia32_sys_mount_notify
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index 0823eed2b02e..f25fa7ff5fb9 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -350,6 +350,7 @@
+ 339	common	fsmount			__x64_sys_fsmount
+ 340	common	fspick			__x64_sys_fspick
+ 341	common	fsinfo			__x64_sys_fsinfo
++342	common	mount_notify		__x64_sys_mount_notify
  
-+static int intel_dimm_security_update_passphrase(
-+		struct nvdimm_bus *nvdimm_bus, struct nvdimm *nvdimm,
-+		struct nvdimm_key_data *old_data,
-+		struct nvdimm_key_data *new_data)
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/fs/Kconfig b/fs/Kconfig
+index ac474a61be37..cbcca62d32e9 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -107,6 +107,15 @@ source "fs/crypto/Kconfig"
+ 
+ source "fs/notify/Kconfig"
+ 
++config MOUNT_NOTIFICATIONS
++	bool "Mount topology change notifications"
++	select WATCH_QUEUE
++	help
++	  This option provides support for getting change notifications on the
++	  mount tree topology.  This makes use of the /dev/watch_queue misc
++	  device to handle the notification buffer and provides the
++	  mount_notify() system call to enable/disable watchpoints.
++
+ source "fs/quota/Kconfig"
+ 
+ source "fs/autofs/Kconfig"
+diff --git a/fs/Makefile b/fs/Makefile
+index d3b33798998e..49b60030d905 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -129,3 +129,4 @@ obj-y				+= exofs/ # Multiple modules
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
+ obj-$(CONFIG_EFIVAR_FS)		+= efivarfs/
++obj-$(CONFIG_MOUNT_NOTIFICATIONS) += mount_notify.o
+diff --git a/fs/fs_context.c b/fs/fs_context.c
+index 071723cf11c8..4fa99a438471 100644
+--- a/fs/fs_context.c
++++ b/fs/fs_context.c
+@@ -321,6 +321,7 @@ struct fs_context *vfs_new_fs_context(struct file_system_type *fs_type,
+ 	case FS_CONTEXT_FOR_SUBMOUNT:
+ 		fc->user_ns = get_user_ns(reference->d_sb->s_user_ns);
+ 		fc->net_ns = get_net(current->nsproxy->net_ns);
++		fc->sb_flags |= SB_SUBMOUNT;
+ 		break;
+ 	case FS_CONTEXT_FOR_RECONFIGURE:
+ 		/* We don't pin any namespaces as the superblock's
+diff --git a/fs/mount.h b/fs/mount.h
+index f39bc9da4d73..7f72f824b958 100644
+--- a/fs/mount.h
++++ b/fs/mount.h
+@@ -4,6 +4,7 @@
+ #include <linux/poll.h>
+ #include <linux/ns_common.h>
+ #include <linux/fs_pin.h>
++#include <linux/watch_queue.h>
+ 
+ struct mnt_namespace {
+ 	atomic_t		count;
+@@ -67,9 +68,13 @@ struct mount {
+ 	int mnt_id;			/* mount identifier */
+ 	int mnt_group_id;		/* peer group identifier */
+ 	int mnt_expiry_mark;		/* true if marked for expiry */
++	int mnt_nr_watchers;		/* The number of subtree watches tracking this */
+ 	struct hlist_head mnt_pins;
+ 	struct fs_pin mnt_umount;
+ 	struct dentry *mnt_ex_mountpoint;
++#ifdef CONFIG_MOUNT_NOTIFICATIONS
++	struct watch_list *mnt_watchers; /* Watches on dentries within this mount */
++#endif
+ } __randomize_layout;
+ 
+ #define MNT_NS_INTERNAL ERR_PTR(-EINVAL) /* distinct from any mnt_namespace */
+@@ -146,3 +151,24 @@ static inline bool is_local_mountpoint(struct dentry *dentry)
+ 
+ 	return __is_local_mountpoint(dentry);
+ }
++
++extern void post_mount_notification(struct mount *changed,
++				    struct mount_notification *notify);
++
++static inline void notify_mount(struct mount *changed,
++				struct mount *aux,
++				enum mount_notification_subtype subtype,
++				u32 info_flags)
 +{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_set_passphrase cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_SET_PASSPHRASE,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE * 2,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
++#ifdef CONFIG_MOUNT_NOTIFICATIONS
++	struct mount_notification n = {
++		.watch.type	= WATCH_TYPE_MOUNT_NOTIFY,
++		.watch.subtype	= subtype,
++		.watch.info	= info_flags | sizeof(n),
++		.triggered_on	= changed->mnt_id,
++		.changed_mount	= aux ? aux->mnt_id : 0,
 +	};
 +
-+	if (!test_bit(NVDIMM_INTEL_SET_PASSPHRASE, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
++	post_mount_notification(changed, &n);
++#endif
++}
+diff --git a/fs/mount_notify.c b/fs/mount_notify.c
+new file mode 100644
+index 000000000000..b4905c363136
+--- /dev/null
++++ b/fs/mount_notify.c
+@@ -0,0 +1,178 @@
++/* Provide mount topology/attribute change notifications.
++ *
++ * Copyright (C) 2018 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
 +
-+	if (old_data)
-+		memcpy(nd_cmd.cmd.old_pass, old_data->data,
-+				ND_INTEL_PASSPHRASE_SIZE);
-+	memcpy(nd_cmd.cmd.new_pass, new_data->data, ND_INTEL_PASSPHRASE_SIZE);
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
++#include <linux/fs.h>
++#include <linux/namei.h>
++#include <linux/syscalls.h>
++#include "mount.h"
++
++/*
++ * Post mount notifications to all watches going rootwards along the tree.
++ *
++ * Must be called with the mount_lock held.
++ */
++void post_mount_notification(struct mount *changed,
++			     struct mount_notification *notify)
++{
++	struct path cursor;
++	struct mount *mnt;
++	unsigned seq;
++
++	seq = 0;
++	rcu_read_lock();
++restart:
++	cursor.mnt = &changed->mnt;
++	cursor.dentry = changed->mnt.mnt_root;
++	mnt = real_mount(cursor.mnt);
++	notify->watch.info &= ~WATCH_INFO_IN_SUBTREE;
++
++	read_seqbegin_or_lock(&rename_lock, &seq);
++	for (;;) {
++		if (mnt->mnt_watchers &&
++		    !hlist_empty(&mnt->mnt_watchers->watchers)) {
++			if (cursor.dentry->d_flags & DCACHE_MOUNT_WATCH)
++				post_watch_notification(mnt->mnt_watchers,
++							&notify->watch,
++							(unsigned long)cursor.dentry);
++		} else {
++			cursor.dentry = mnt->mnt.mnt_root;
++		}
++		notify->watch.info |= WATCH_INFO_IN_SUBTREE;
++
++		if (cursor.dentry = cursor.mnt->mnt_root ||
++		    IS_ROOT(cursor.dentry)) {
++			struct mount *parent = READ_ONCE(mnt->mnt_parent);
++
++			/* Escaped? */
++			if (cursor.dentry != cursor.mnt->mnt_root)
++				break;
++
++			/* Global root? */
++			if (mnt != parent) {
++				cursor.dentry = READ_ONCE(mnt->mnt_mountpoint);
++				mnt = parent;
++				cursor.mnt = &mnt->mnt;
++				continue;
++			}
++			break;
++		}
++
++		cursor.dentry = cursor.dentry->d_parent;
 +	}
 +
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
++	if (need_seqretry(&rename_lock, seq)) {
++		seq = 1;
++		goto restart;
 +	}
 +
-+ out:
-+	return rc;
++	done_seqretry(&rename_lock, seq);
++	rcu_read_unlock();
 +}
 +
- static int intel_dimm_security_unlock(struct nvdimm_bus *nvdimm_bus,
- 		struct nvdimm *nvdimm, struct nvdimm_key_data *nkey)
- {
-@@ -143,4 +199,5 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
- struct nvdimm_security_ops intel_security_ops = {
- 	.state = intel_dimm_security_state,
- 	.unlock = intel_dimm_security_unlock,
-+	.change_key = intel_dimm_security_update_passphrase,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 5e190120f4aa..645979665808 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -171,6 +171,75 @@ int nvdimm_security_unlock_dimm(struct device *dev)
- 	return rc;
- }
- 
-+static int nvdimm_security_change_key(struct device *dev)
++static void release_mount_watch(struct watch_list *wlist, struct watch *watch)
 +{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key = NULL, *old_key = NULL;
-+	int rc;
-+	void *old_data, *new_data;
++	struct vfsmount *mnt = watch->private;
++	struct dentry *dentry = (struct dentry *)(unsigned long)watch->id;
 +
-+	if (!nvdimm->security_ops)
-+		return 0;
++	dput(dentry);
++	mntput(mnt);
++}
 +
-+	if (nvdimm->state = NVDIMM_SECURITY_FROZEN)
-+		return -EBUSY;
++/**
++ * sys_mount_notify - Watch for mount topology/attribute changes
++ * @dfd: Base directory to pathwalk from or fd referring to mount.
++ * @filename: Path to mount to place the watch upon
++ * @at_flags: Pathwalk control flags
++ * @watch_fd: The watch queue to send notifications to.
++ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
++ */
++SYSCALL_DEFINE5(mount_notify,
++		int, dfd,
++		const char __user *, filename,
++		unsigned int, at_flags,
++		int, watch_fd,
++		int, watch_id)
++{
++	struct watch_queue *wqueue;
++	struct watch_list *wlist = NULL;
++	struct watch *watch;
++	struct mount *m;
++	struct path path;
++	int ret;
 +
-+	/* look for a key from keyring if exists and remove */
-+	old_key = nvdimm_search_key(dev);
-+	if (old_key) {
-+		dev_dbg(dev, "%s: killing old key: %#x\n",
-+				__func__, old_key->serial);
-+		key_invalidate(old_key);
-+		key_put(old_key);
-+		/* need key garbage collection to take effect */
-+		cond_resched();
-+	}
++	if (watch_id < -1 || watch_id > 0xff)
++		return -EINVAL;
 +
-+	/* request new key from userspace */
-+	key = nvdimm_request_key(dev);
-+	if (!key) {
-+		dev_dbg(dev, "%s: failed to acquire new key\n", __func__);
-+		return -ENXIO;
-+	}
++	ret = user_path_at(dfd, filename, at_flags, &path);
++	if (ret)
++		return ret;
 +
-+	dev_dbg(dev, "%s: new key: %#x\n", __func__, key->serial);
++	wqueue = get_watch_queue(watch_fd);
++	if (IS_ERR(wqueue))
++		goto err_path;
 +
-+	if (key->datalen = NVDIMM_PASSPHRASE_LEN) {
-+		old_data = NULL;
-+		new_data = key->payload.data[0];
-+	} else if (key->datalen = (NVDIMM_PASSPHRASE_LEN * 2)) {
-+		old_data = key->payload.data[0];
-+		new_data = old_data + NVDIMM_PASSPHRASE_LEN;
++	m = real_mount(path.mnt);
++
++	if (watch_id >= 0) {
++		if (!m->mnt_watchers) {
++			wlist = kzalloc(sizeof(*wlist), GFP_KERNEL);
++			if (!wlist)
++				goto err_wqueue;
++			INIT_HLIST_HEAD(&wlist->watchers);
++			spin_lock_init(&wlist->lock);
++			wlist->release_watch = release_mount_watch;
++		}
++
++		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
++		if (!watch)
++			goto err_wlist;
++
++		init_watch(watch);
++		watch->id		= (unsigned long)path.dentry;
++		watch->queue		= wqueue;
++		watch->private		= path.mnt;
++		watch->info_id		= (u32)watch_id << 24;
++
++		down_write(&m->mnt.mnt_sb->s_umount);
++		if (!m->mnt_watchers) {
++			m->mnt_watchers = wlist;
++			wlist = NULL;
++		}
++
++		watch->watch_list = m->mnt_watchers;
++		ret = add_watch_to_object(watch);
++		if (ret = 0) {
++			spin_lock(&path.dentry->d_lock);
++			path.dentry->d_flags |= DCACHE_MOUNT_WATCH;
++			spin_unlock(&path.dentry->d_lock);
++			path_get(&path);
++		}
++		up_write(&m->mnt.mnt_sb->s_umount);
++		if (ret < 0)
++			kfree(watch);
++	} else if (m->mnt_watchers) {
++		down_write(&m->mnt.mnt_sb->s_umount);
++		ret = remove_watch_from_object(m->mnt_watchers, wqueue,
++					       (unsigned long)path.dentry,
++					       false);
++		up_write(&m->mnt.mnt_sb->s_umount);
 +	} else {
-+		key_invalidate(key);
-+		key_put(key);
-+		dev_warn(dev, "Incorrect key payload size for update: %u\n",
-+				key->datalen);
-+		return -EINVAL;
++		ret = -EBADSLT;
 +	}
 +
-+	down_read(&key->sem);
-+	rc = nvdimm->security_ops->change_key(nvdimm_bus, nvdimm, old_data,
-+			new_data);
-+	if (rc = 0 && key->datalen = (NVDIMM_PASSPHRASE_LEN * 2))
-+		memcpy(old_data, new_data, NVDIMM_PASSPHRASE_LEN);
-+	up_read(&key->sem);
-+
-+	/*
-+	 * If we successfully update, link the new key to our keyring,
-+	 * otherwise, nuke the key.
-+	 */
-+	if (rc = 0)
-+		key_link(nvdimm_cred->thread_keyring, key);
-+	else
-+		key_invalidate(key);
-+
-+	key_put(key);
-+	nvdimm_security_get_state(dev);
-+	return rc;
++err_wlist:
++	kfree(wlist);
++err_wqueue:
++	put_watch_queue(wqueue);
++err_path:
++	path_put(&path);
++	return ret;
 +}
-+
- /*
-  * Retrieve bus and dimm handle and return if this bus supports
-  * get_config_data commands
-@@ -528,11 +597,52 @@ static ssize_t available_slots_show(struct device *dev,
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 7e7b1145d15d..d4d16111659d 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -589,6 +589,9 @@ static int mnt_make_readonly(struct mount *mnt)
+ 	smp_wmb();
+ 	mnt->mnt.mnt_flags &= ~MNT_WRITE_HOLD;
+ 	unlock_mount_hash();
++	if (ret = 0)
++		notify_mount(mnt, NULL, notify_mount_readonly,
++			     WATCH_INFO_FLAG_0);
+ 	return ret;
  }
- static DEVICE_ATTR_RO(available_slots);
  
-+static ssize_t security_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -597,6 +600,7 @@ static int __mnt_unmake_readonly(struct mount *mnt)
+ 	lock_mount_hash();
+ 	mnt->mnt.mnt_flags &= ~MNT_READONLY;
+ 	unlock_mount_hash();
++	notify_mount(mnt, NULL, notify_mount_readonly, 0);
+ 	return 0;
+ }
+ 
+@@ -900,6 +904,7 @@ static void umount_mnt(struct mount *mnt)
+ {
+ 	/* old mountpoint will be dropped when we can do that */
+ 	mnt->mnt_ex_mountpoint = mnt->mnt_mountpoint;
++	notify_mount(mnt->mnt_parent, mnt, notify_mount_unmount, 0);
+ 	unhash_mnt(mnt);
+ }
+ 
+@@ -1451,6 +1456,11 @@ static void umount_tree(struct mount *mnt, enum umount_tree_flags how)
+ 		p = list_first_entry(&tmp_list, struct mount, mnt_list);
+ 		list_del_init(&p->mnt_expire);
+ 		list_del_init(&p->mnt_list);
 +
-+	switch (nvdimm->state) {
-+	case NVDIMM_SECURITY_DISABLED:
-+		return sprintf(buf, "disabled\n");
-+	case NVDIMM_SECURITY_UNLOCKED:
-+		return sprintf(buf, "unlocked\n");
-+	case NVDIMM_SECURITY_LOCKED:
-+		return sprintf(buf, "locked\n");
-+	case NVDIMM_SECURITY_FROZEN:
-+		return sprintf(buf, "frozen\n");
-+	case NVDIMM_SECURITY_UNSUPPORTED:
-+	default:
-+		return sprintf(buf, "unsupported\n");
-+	}
-+
-+	return -ENOTTY;
-+}
-+
-+static ssize_t security_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t len)
-+
-+{
-+	ssize_t rc = -EINVAL;
-+
-+	if (strcmp(buf, "update") = 0 || strcmp(buf, "update\n") = 0)
-+		rc = nvdimm_security_change_key(dev);
-+	else
-+		return -EINVAL;
-+
-+	if (rc = 0)
-+		rc = len;
-+
-+	return rc;
-+}
-+static DEVICE_ATTR_RW(security);
-+
- static struct attribute *nvdimm_attributes[] = {
- 	&dev_attr_state.attr,
- 	&dev_attr_flags.attr,
- 	&dev_attr_commands.attr,
- 	&dev_attr_available_slots.attr,
-+	&dev_attr_security.attr,
- 	NULL,
++#ifdef CONFIG_MOUNT_NOTIFICATIONS
++		if (p->mnt_watchers)
++			remove_watch_list(p->mnt_watchers);
++#endif
+ 		ns = p->mnt_ns;
+ 		if (ns) {
+ 			ns->mounts--;
+@@ -2004,11 +2014,17 @@ static int attach_recursive_mnt(struct mount *source_mnt,
+ 		lock_mount_hash();
+ 	}
+ 	if (parent_path) {
++		notify_mount(source_mnt->mnt_parent, source_mnt,
++			     notify_mount_move_from, 0);
+ 		detach_mnt(source_mnt, parent_path);
++		notify_mount(dest_mnt, source_mnt, notify_mount_move_to, 0);
+ 		attach_mnt(source_mnt, dest_mnt, dest_mp);
+ 		touch_mnt_namespace(source_mnt->mnt_ns);
+ 	} else {
+ 		mnt_set_mountpoint(dest_mnt, dest_mp, source_mnt);
++		notify_mount(dest_mnt, source_mnt, notify_mount_new_mount,
++			     source_mnt->mnt.mnt_sb->s_flags & SB_SUBMOUNT ?
++			     WATCH_INFO_FLAG_0 : 0);
+ 		commit_tree(source_mnt);
+ 	}
+ 
+@@ -2361,6 +2377,7 @@ static void set_mount_attributes(struct mount *mnt, unsigned int mnt_flags)
+ 	mnt->mnt.mnt_flags = mnt_flags;
+ 	touch_mnt_namespace(mnt->mnt_ns);
+ 	unlock_mount_hash();
++	notify_mount(mnt, NULL, notify_mount_setattr, 0);
+ }
+ 
+ /*
+@@ -2767,6 +2784,7 @@ void mark_mounts_for_expiry(struct list_head *mounts)
+ 		if (!xchg(&mnt->mnt_expiry_mark, 1) ||
+ 			propagate_mount_busy(mnt, 1))
+ 			continue;
++		notify_mount(mnt, NULL, notify_mount_expiry, 0);
+ 		list_move(&mnt->mnt_expire, &graveyard);
+ 	}
+ 	while (!list_empty(&graveyard)) {
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 66c6e17e61e5..b0eb68ed5b9b 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -217,6 +217,7 @@ struct dentry_operations {
+ 
+ #define DCACHE_PAR_LOOKUP		0x10000000 /* being looked up (with parent locked shared) */
+ #define DCACHE_DENTRY_CURSOR		0x20000000
++#define DCACHE_MOUNT_WATCH		0x40000000 /* There's a mount watch here */
+ 
+ extern seqlock_t rename_lock;
+ 
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 84b653874ab8..7db37c58289a 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -913,6 +913,8 @@ asmlinkage long sys_fspick(int dfd, const char __user *path, unsigned int flags)
+ asmlinkage long sys_fsinfo(int dfd, const char __user *path,
+ 			   struct fsinfo_params __user *params,
+ 			   void __user *buffer, size_t buf_size);
++asmlinkage long sys_mount_notify(int dfd, const char __user *path,
++				 unsigned int at_flags, int watch_fd, int watch_id);
+ 
+ /*
+  * Architecture-specific system calls
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index 3e0ab5fe388d..9d8e165e0065 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -103,4 +103,28 @@ struct key_notification {
+ 	__u32	aux;		/* Per-type auxiliary data */
  };
  
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 692217f82c6e..7889fea75281 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -162,6 +162,7 @@ enum nvdimm_security_state {
- 	NVDIMM_SECURITY_DISABLED,
- 	NVDIMM_SECURITY_UNLOCKED,
- 	NVDIMM_SECURITY_LOCKED,
-+	NVDIMM_SECURITY_FROZEN,
- 	NVDIMM_SECURITY_UNSUPPORTED,
- };
++/*
++ * Type of mount topology change notification.
++ */
++enum mount_notification_subtype {
++	notify_mount_new_mount	= 0, /* New mount added */
++	notify_mount_unmount	= 1, /* Mount removed manually */
++	notify_mount_expiry	= 2, /* Automount expired */
++	notify_mount_readonly	= 3, /* Mount R/O state changed */
++	notify_mount_setattr	= 4, /* Mount attributes changed */
++	notify_mount_move_from	= 5, /* Mount moved from here */
++	notify_mount_move_to	= 6, /* Mount moved to here (compare op_id) */
++};
++
++/*
++ * Mount topology/configuration change notification record.
++ * - watch.type = WATCH_TYPE_MOUNT_NOTIFY
++ * - watch.subtype = enum mount_notification_subtype
++ */
++struct mount_notification {
++	struct watch_notification watch; /* WATCH_TYPE_MOUNT_NOTIFY */
++	__u32	triggered_on;		/* The mount that the notify was on */
++	__u32	changed_mount;		/* The mount that got changed */
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index df556175be50..f608777be045 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -80,6 +80,9 @@ COND_SYSCALL(ioprio_get);
+ /* fs/locks.c */
+ COND_SYSCALL(flock);
  
-@@ -178,6 +179,10 @@ struct nvdimm_security_ops {
- 			enum nvdimm_security_state *state);
- 	int (*unlock)(struct nvdimm_bus *nvdimm_bus,
- 			struct nvdimm *nvdimm, struct nvdimm_key_data *nkey);
-+	int (*change_key)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm,
-+			struct nvdimm_key_data *old_data,
-+			struct nvdimm_key_data *new_data);
- };
++/* fs/mount_notify.c */
++COND_SYSCALL(mount_notify);
++
+ /* fs/namei.c */
  
- void badrange_init(struct badrange *badrange);
+ /* fs/namespace.c */
 
