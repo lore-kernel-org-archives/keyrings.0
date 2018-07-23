@@ -1,146 +1,415 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 25 Jul 2018 20:58:41 +0000
-Subject: [PATCH v6 02/11] libnvdimm: create keyring to store security keys
-Message-Id: <153255232187.51274.1933376251981949492.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 23 Jul 2018 15:26:11 +0000
+Subject: [PATCH 4/5] vfs: Add superblock notifications
+Message-Id: <153235957165.32640.10593983430211812657.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153235954191.32640.5792167066538704794.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153235954191.32640.5792167066538704794.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, dhowells@redhat.com, linux-kernel@vger.kernel.org, raven@themaw.net, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-Prepping the libnvdimm to support security management by adding a keyring
-in order to provide passphrase management through the kernel key management
-APIs.
+Add a superblock event notification facility whereby notifications about
+superblock events, such as I/O errors (EIO), quota limits being hit
+(EDQUOT) and running out of space (ENOSPC) can be reported to a monitoring
+process asynchronously.  Note that this does not cover vfsmount topology
+changes.  mount_notify() is used for that.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Firstly, an event queue needs to be created:
+
+	fd = open("/dev/event_queue", O_RDWR);
+
+then a notification can be set up to report notifications via that queue:
+
+	struct watch_notification_filter filter;
+	memset(&filter, 0, sizeof(filter));
+	filter.subtype_filter[0] = ~0ULL;
+	filter.info_id		 = 0x03000000;
+	sb_notify(AT_FDCWD, "/home/dhowells", 0, fd, &filter);
+
+In this case, it would let me monitor my own homedir for events.
+
+Note that the queue can be shared between multiple notifications of various
+types.
+
+[*] QUESTION: Does this want to be per-sb, per-mount_namespace,
+    per-some-new-notify-ns or per-system?  Or do multiple options make
+    sense?
+
+[*] QUESTION: I've done it this way so that anyone could theoretically
+    monitor the superblock of any filesystem they can pathwalk to, but do
+    we need other security controls?
+
+[*] QUESTION: Should the LSM be able to filter the events a queue can
+    receive?  For instance the opener of the queue would grant that queue
+    subject creds (by ->f_cred) that could be used to govern what events
+    could be seen, assuming the target superblock to have some object
+    creds, based on, say, the mounter.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- drivers/nvdimm/core.c      |    7 ++++++-
- drivers/nvdimm/dimm_devs.c |   29 ++++++++++++++++++++++++++++-
- drivers/nvdimm/nd-core.h   |    1 +
- include/linux/libnvdimm.h  |    3 +++
- kernel/cred.c              |    1 +
- 5 files changed, 39 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/nvdimm/core.c b/drivers/nvdimm/core.c
-index acce050856a8..3cd33d5c7cf0 100644
---- a/drivers/nvdimm/core.c
-+++ b/drivers/nvdimm/core.c
-@@ -437,9 +437,12 @@ static __init int libnvdimm_init(void)
+ arch/x86/entry/syscalls/syscall_32.tbl |    1 
+ arch/x86/entry/syscalls/syscall_64.tbl |    1 
+ fs/Kconfig                             |   12 +++
+ fs/super.c                             |  116 ++++++++++++++++++++++++++++++++
+ include/linux/fs.h                     |   77 +++++++++++++++++++++
+ include/linux/syscalls.h               |    2 +
+ include/uapi/linux/watch_queue.h       |   26 +++++++
+ kernel/sys_ni.c                        |    3 +
+ 8 files changed, 238 insertions(+)
+
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index 449bbcc19a6d..c9db9d51a7df 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -406,3 +406,4 @@
+ 392	i386	fspick			sys_fspick			__ia32_sys_fspick
+ 393	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
+ 394	i386	mount_notify		sys_mount_notify		__ia32_sys_mount_notify
++395	i386	sb_notify		sys_sb_notify			__ia32_sys_sb_notify
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index f25fa7ff5fb9..17869bf7788a 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -351,6 +351,7 @@
+ 340	common	fspick			__x64_sys_fspick
+ 341	common	fsinfo			__x64_sys_fsinfo
+ 342	common	mount_notify		__x64_sys_mount_notify
++343	common	sb_notify		__x64_sys_sb_notify
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/fs/Kconfig b/fs/Kconfig
+index cbcca62d32e9..0551abf08504 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -116,6 +116,18 @@ config MOUNT_NOTIFICATIONS
+ 	  device to handle the notification buffer and provides the
+ 	  mount_notify() system call to enable/disable watchpoints.
+ 
++config SB_NOTIFICATIONS
++	bool "Superblock event notifications"
++	select WATCH_QUEUE
++	help
++	  This option provides support for receiving superblock event
++	  notifications.  This makes use of the /dev/watch_queue misc device to
++	  handle the notification buffer and provides the sb_notify() system
++	  call to enable/disable watches.
++
++	  Events can include things like changing between R/W and R/O, EIO
++	  generation, ENOSPC generation and EDQUOT generation.
++
+ source "fs/quota/Kconfig"
+ 
+ source "fs/autofs/Kconfig"
+diff --git a/fs/super.c b/fs/super.c
+index 3fe5d12b7697..1a1cf517dbd8 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -37,6 +37,8 @@
+ #include <linux/user_namespace.h>
+ #include <uapi/linux/mount.h>
+ #include <linux/fs_context.h>
++#include <linux/syscalls.h>
++#include <linux/namei.h>
+ #include "internal.h"
+ 
+ static int thaw_super_locked(struct super_block *sb);
+@@ -320,6 +322,10 @@ void deactivate_locked_super(struct super_block *s)
  {
- 	int rc;
+ 	struct file_system_type *fs = s->s_type;
+ 	if (atomic_dec_and_test(&s->s_active)) {
++#ifdef CONFIG_SB_NOTIFICATIONS
++		if (s->s_watchers)
++			remove_watch_list(s->s_watchers);
++#endif
+ 		cleancache_invalidate_fs(s);
+ 		unregister_shrinker(&s->s_shrink);
+ 		fs->kill_sb(s);
+@@ -997,6 +1003,8 @@ int do_remount_sb(struct super_block *sb, int sb_flags, void *data,
+ 	/* Needs to be ordered wrt mnt_is_readonly() */
+ 	smp_wmb();
+ 	sb->s_readonly_remount = 0;
++	notify_sb(sb, notify_superblock_readonly,
++		  remount_ro ? WATCH_INFO_FLAG_0 : 0);
  
--	rc = nvdimm_bus_init();
-+	rc = nvdimm_devs_init();
- 	if (rc)
- 		return rc;
-+	rc = nvdimm_bus_init();
-+	if (rc)
-+		goto err_bus;
- 	rc = nvdimm_init();
- 	if (rc)
- 		goto err_dimm;
-@@ -454,6 +457,8 @@ static __init int libnvdimm_init(void)
- 	nvdimm_exit();
-  err_dimm:
- 	nvdimm_bus_exit();
-+ err_bus:
-+	nvdimm_devs_exit();
- 	return rc;
+ 	/*
+ 	 * Some filesystems modify their metadata via some other path than the
+@@ -1810,3 +1818,111 @@ int vfs_get_tree(struct fs_context *fc)
+ 	return ret;
  }
+ EXPORT_SYMBOL(vfs_get_tree);
++
++#ifdef CONFIG_SB_NOTIFICATIONS
++/*
++ * Post superblock notifications.
++ */
++void post_sb_notification(struct super_block *s, struct superblock_notification *n)
++{
++	post_watch_notification(s->s_watchers, &n->watch, s->s_watch_id);
++}
++
++static void release_sb_watch(struct watch_list *wlist, struct watch *watch)
++{
++	struct super_block *s = watch->private;
++
++	put_super(s);
++}
++
++/**
++ * sys_sb_notify - Watch for superblock events.
++ * @dfd: Base directory to pathwalk from or fd referring to superblock.
++ * @filename: Path to superblock to place the watch upon
++ * @at_flags: Pathwalk control flags
++ * @watch_fd: The watch queue to send notifications to.
++ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
++ */
++SYSCALL_DEFINE5(sb_notify,
++		int, dfd,
++		const char __user *, filename,
++		unsigned int, at_flags,
++		int, watch_fd,
++		int, watch_id)
++{
++	struct watch_queue *wqueue;
++	struct super_block *s;
++	struct watch_list *wlist = NULL;
++	struct watch *watch;
++	struct path path;
++	int ret;
++
++	if (watch_id < -1 || watch_id > 0xff)
++		return -EINVAL;
++
++	ret = user_path_at(dfd, filename, at_flags, &path);
++	if (ret)
++		return ret;
++
++	wqueue = get_watch_queue(watch_fd);
++	if (IS_ERR(wqueue))
++		goto err_path;
++
++	s = path.dentry->d_sb;
++	if (watch_id >= 0) {
++		if (!s->s_watchers) {
++			wlist = kzalloc(sizeof(*wlist), GFP_KERNEL);
++			if (!wlist)
++				goto err_wqueue;
++			INIT_HLIST_HEAD(&wlist->watchers);
++			spin_lock_init(&wlist->lock);
++			wlist->release_watch = release_sb_watch;
++		}
++
++		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
++		if (!watch)
++			goto err_wlist;
++
++		init_watch(watch);
++		watch->id		= s->s_watch_id;
++		watch->queue		= wqueue;
++		watch->private		= s;
++		watch->info_id		= (u32)watch_id << 24;
++
++		down_write(&s->s_umount);
++		ret = -EIO;
++		if (atomic_read(&s->s_active)) {
++			if (!s->s_watchers) {
++				s->s_watchers = wlist;
++				wlist = NULL;
++			}
++
++			watch->watch_list = s->s_watchers;
++			ret = add_watch_to_object(watch);
++			if (ret = 0) {
++				spin_lock(&sb_lock);
++				s->s_count++;
++				spin_unlock(&sb_lock);
++			}
++		}
++		up_write(&s->s_umount);
++		if (ret < 0)
++			kfree(watch);
++	} else if (s->s_watchers) {
++		down_write(&s->s_umount);
++		ret = remove_watch_from_object(s->s_watchers, wqueue,
++					       s->s_watch_id, false);
++		up_write(&s->s_umount);
++	} else {
++		ret = -EBADSLT;
++	}
++
++err_wlist:
++	kfree(wlist);
++err_wqueue:
++	put_watch_queue(wqueue);
++err_path:
++	path_put(&path);
++	return ret;
++}
++#endif
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index bcbe94c0dfe8..6dbc4f9aa6c3 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -37,6 +37,7 @@
+ #include <linux/uuid.h>
+ #include <linux/errseq.h>
+ #include <linux/ioprio.h>
++#include <linux/watch_queue.h>
  
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 8d348b22ba45..586432450c82 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -18,12 +18,15 @@
- #include <linux/io.h>
- #include <linux/fs.h>
- #include <linux/mm.h>
-+#include <linux/key.h>
-+#include <linux/init_task.h>
- #include "nd-core.h"
- #include "label.h"
- #include "pmem.h"
- #include "nd.h"
+ #include <asm/byteorder.h>
+ #include <uapi/linux/fs.h>
+@@ -1463,6 +1464,12 @@ struct super_block {
  
- static DEFINE_IDA(dimm_ida);
-+static struct key *nvdimm_keyring;
+ 	spinlock_t		s_inode_wblist_lock;
+ 	struct list_head	s_inodes_wb;	/* writeback inodes */
++
++	/* Superblock event notifications */
++#ifdef CONFIG_SB_NOTIFICATIONS
++	struct watch_list	*s_watchers;
++	u64			s_watch_id;
++#endif
+ } __randomize_layout;
+ 
+ /* Helper functions so that in most cases filesystems will
+@@ -3458,4 +3465,74 @@ static inline bool dir_relax_shared(struct inode *inode)
+ extern bool path_noexec(const struct path *path);
+ extern void inode_nohighmem(struct inode *inode);
+ 
++extern void post_sb_notification(struct super_block *, struct superblock_notification *);
++
++/**
++ * notify_sb: Post simple superblock notification.
++ * @s: The superblock the notification is about.
++ * @subtype: The type of notification.
++ */
++static inline void notify_sb(struct super_block *s,
++			     enum superblock_notification_type subtype,
++			     u32 info)
++{
++#ifdef CONFIG_SB_NOTIFICATIONS
++	if (unlikely(s->s_watchers)) {
++		struct superblock_notification n = {
++			.watch.type	= WATCH_TYPE_SB_NOTIFY,
++			.watch.subtype	= subtype,
++			.watch.info	= sizeof(n) | info,
++			.sb_id		= s->s_watch_id,
++		};
++
++		post_sb_notification(s, &n);
++	}
++			     
++#endif
++}
++
++/**
++ * sb_error: Post superblock error notification.
++ * @s: The superblock the notification is about.
++ */
++static inline int sb_error(struct super_block *s, int error)
++{
++#ifdef CONFIG_SB_NOTIFICATIONS
++	if (unlikely(s->s_watchers)) {
++		struct superblock_error_notification n = {
++			.s.watch.type	= WATCH_TYPE_SB_NOTIFY,
++			.s.watch.subtype = notify_superblock_error,
++			.s.watch.info	= sizeof(n),
++			.s.sb_id	= s->s_watch_id,
++			.error_number	= error,
++			.error_cookie	= 0,
++		};
++
++		post_sb_notification(s, &n.s);
++	}
++#endif
++	return error;
++}
++
++/**
++ * sb_EDQUOT: Post superblock quota overrun notification.
++ * @s: The superblock the notification is about.
++ */
++static inline int sb_EQDUOT(struct super_block *s)
++{
++#ifdef CONFIG_SB_NOTIFICATIONS
++	if (unlikely(s->s_watchers)) {
++		struct superblock_notification n = {
++			.watch.type	= WATCH_TYPE_SB_NOTIFY,
++			.watch.subtype	= notify_superblock_edquot,
++			.watch.info	= sizeof(n),
++			.sb_id		= s->s_watch_id,
++		};
++
++		post_sb_notification(s, &n);
++	}
++#endif
++	return -EDQUOT;
++}
++
+ #endif /* _LINUX_FS_H */
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 7db37c58289a..4d852f218949 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -915,6 +915,8 @@ asmlinkage long sys_fsinfo(int dfd, const char __user *path,
+ 			   void __user *buffer, size_t buf_size);
+ asmlinkage long sys_mount_notify(int dfd, const char __user *path,
+ 				 unsigned int at_flags, int watch_fd, int watch_id);
++asmlinkage long sys_sb_notify(int dfd, const char __user *path,
++			      unsigned int at_flags, int watch_fd, int watch_id);
  
  /*
-  * Retrieve bus and dimm handle and return if this bus supports
-@@ -668,7 +671,31 @@ int nvdimm_bus_check_dimm_count(struct nvdimm_bus *nvdimm_bus, int dimm_count)
- }
- EXPORT_SYMBOL_GPL(nvdimm_bus_check_dimm_count);
- 
--void __exit nvdimm_devs_exit(void)
-+static int nvdimm_register_keyring(void)
- {
-+	nvdimm_keyring = keyring_alloc(".nvdimm",
-+			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, &init_cred,
-+			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			(KEY_USR_ALL & ~KEY_USR_SETATTR),
-+			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
-+	if (IS_ERR(nvdimm_keyring))
-+		return PTR_ERR(nvdimm_keyring);
-+
-+	return 0;
-+}
-+
-+static void nvdimm_unregister_keyring(void)
-+{
-+	key_revoke(nvdimm_keyring);
-+}
-+
-+int __init nvdimm_devs_init(void)
-+{
-+	return nvdimm_register_keyring();
-+}
-+
-+void  nvdimm_devs_exit(void)
-+{
-+	nvdimm_unregister_keyring();
- 	ida_destroy(&dimm_ida);
- }
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 79274ead54fb..2af0f89c4010 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -76,6 +76,7 @@ static inline bool is_memory(struct device *dev)
- struct nvdimm_bus *walk_to_nvdimm_bus(struct device *nd_dev);
- int __init nvdimm_bus_init(void);
- void nvdimm_bus_exit(void);
-+int nvdimm_devs_init(void);
- void nvdimm_devs_exit(void);
- void nd_region_devs_exit(void);
- void nd_region_probe_success(struct nvdimm_bus *nvdimm_bus, struct device *dev);
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 472171af7f60..51084043915c 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -155,6 +155,9 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
- 
- }
- 
-+#define NVDIMM_PASSPHRASE_LEN		32
-+#define NVDIMM_KEY_DESC_LEN		22
-+
- void badrange_init(struct badrange *badrange);
- int badrange_add(struct badrange *badrange, u64 addr, u64 length);
- void badrange_forget(struct badrange *badrange, phys_addr_t start,
-diff --git a/kernel/cred.c b/kernel/cred.c
-index ecf03657e71c..3a161b78a0a4 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -64,6 +64,7 @@ struct cred init_cred = {
- 	.user_ns		= &init_user_ns,
- 	.group_info		= &init_groups,
+  * Architecture-specific system calls
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index 9d8e165e0065..40a3f809c73c 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -127,4 +127,30 @@ struct mount_notification {
+ 	__u32	changed_mount;		/* The mount that got changed */
  };
-+EXPORT_SYMBOL(init_cred);
  
- static inline void set_cred_subscribers(struct cred *cred, int n)
- {
++/*
++ * Type of superblock notification.
++ */
++enum superblock_notification_type {
++	notify_superblock_readonly	= 0, /* Filesystem toggled between R/O and R/W */
++	notify_superblock_error		= 1, /* Error in filesystem or blockdev */
++	notify_superblock_edquot	= 2, /* EDQUOT notification */
++	notify_superblock_network	= 3, /* Network status change */
++};
++
++/*
++ * Superblock notification record.
++ * - watch.type = WATCH_TYPE_MOUNT_NOTIFY
++ * - watch.subtype = enum superblock_notification_subtype
++ */
++struct superblock_notification {
++	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
++	__u64	sb_id;			/* 64-bit superblock ID [fsinfo_ids::f_sb_id] */
++};
++
++struct superblock_error_notification {
++	struct superblock_notification s; /* subtype = notify_superblock_error */
++	__u32	error_number;
++	__u32	error_cookie;
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index f608777be045..3b5aacb8a5a0 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -100,6 +100,9 @@ COND_SYSCALL(quotactl);
+ 
+ /* fs/read_write.c */
+ 
++/* fs/sb_notify.c */
++COND_SYSCALL(sb_notify);
++
+ /* fs/sendfile.c */
+ 
+ /* fs/select.c */
 
