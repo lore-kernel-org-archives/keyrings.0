@@ -1,154 +1,183 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 25 Jul 2018 20:59:10 +0000
-Subject: [PATCH v6 07/11] nfit/libnvdimm: add freeze security support to Intel nvdimm
-Message-Id: <153255235052.51274.12568778007618434485.stgit@djiang5-desk3.ch.intel.com>
+From: Udit Agarwal <udit.agarwal@nxp.com>
+Date: Mon, 23 Jul 2018 11:26:32 +0000
+Subject: [PATCH v2 2/2] encrypted_keys: Adds support for secure key-type as master key.
+Message-Id: <20180723111432.26830-2-udit.agarwal@nxp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <20180723111432.26830-1-udit.agarwal@nxp.com>
+In-Reply-To: <20180723111432.26830-1-udit.agarwal@nxp.com>
+To: dhowells@redhat.com, zohar@linux.vnet.ibm.com, jmorris@namei.org, serge@hallyn.com, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: sahil.malhotra@nxp.com, ruchika.gupta@nxp.com, horia.geanta@nxp.com, aymen.sghaier@nxp.com, Udit Agarwal <udit.agarwal@nxp.com>
 
-Add support for freeze security on Intel nvdimm. This locks out any
-changes to security for the DIMM unless a reboot is done. This is triggered
-by writing "freeze" to the "security" sysfs attribute. libnvdimm will
-support the generic freeze_lock API call.
+Encrypted keys can use secure key-type as master key along with
+trusted/user keys.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Secure key as master key uses, secure key type payload derieved
+using CAAM hardware.
+
+Signed-off-by: Udit Agarwal <udit.agarwal@nxp.com>
+Reviewed-by: Sahil Malhotra <sahil.malhotra@nxp.com>
 ---
- drivers/acpi/nfit/intel.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   22 +++++++++++++++++++
- include/linux/libnvdimm.h  |    2 ++
- 3 files changed, 75 insertions(+)
+ MAINTAINERS                                   |  1 +
+ security/keys/encrypted-keys/Makefile         |  2 +
+ security/keys/encrypted-keys/encrypted.c      | 13 ++++++-
+ security/keys/encrypted-keys/encrypted.h      | 13 +++++++
+ .../keys/encrypted-keys/masterkey_secure.c    | 37 +++++++++++++++++++
+ 5 files changed, 64 insertions(+), 2 deletions(-)
+ create mode 100644 security/keys/encrypted-keys/masterkey_secure.c
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 21d30222371f..ba886f1f5399 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,53 @@
- #include "intel.h"
- #include "nfit.h"
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 654be2ee4b0a..847254eec22a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7949,6 +7949,7 @@ F:	include/keys/secure-type.h
+ F:	security/keys/secure_key.c
+ F:	security/keys/securekey_desc.c
+ F:	security/keys/securekey_desc.h
++F:	security/keys/encrypted-keys/masterkey_secure.c
  
-+static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_freeze_lock cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_FREEZE_LOCK,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = 0,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
-+	};
-+
-+	if (!test_bit(NVDIMM_INTEL_FREEZE_LOCK, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
-+
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+ out:
-+	return rc;
-+}
-+
- static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
- 		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
- {
-@@ -254,6 +301,9 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
- 	else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_ENABLED) {
- 		if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_LOCKED)
- 			*state = NVDIMM_SECURITY_LOCKED;
-+		else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_FROZEN ||
-+				nd_cmd.cmd.state & ND_INTEL_SEC_STATE_PLIMIT)
-+			*state = NVDIMM_SECURITY_FROZEN;
- 		else
- 			*state = NVDIMM_SECURITY_UNLOCKED;
- 	} else
-@@ -270,4 +320,5 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.unlock = intel_dimm_security_unlock,
- 	.change_key = intel_dimm_security_update_passphrase,
- 	.disable = intel_dimm_security_disable,
-+	.freeze_lock = intel_dimm_security_freeze_lock,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 1d85a4cb9402..8f4ea4e2c2ab 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -97,6 +97,26 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
- }
+ KEYS/KEYRINGS:
+ M:	David Howells <dhowells@redhat.com>
+diff --git a/security/keys/encrypted-keys/Makefile b/security/keys/encrypted-keys/Makefile
+index 7a44dce6f69d..df2b906b7d24 100644
+--- a/security/keys/encrypted-keys/Makefile
++++ b/security/keys/encrypted-keys/Makefile
+@@ -7,5 +7,7 @@ obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys.o
  
-+static int nvdimm_security_freeze_lock(struct device *dev)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	int rc;
-+
-+	if (!nvdimm->security_ops)
-+		return 0;
-+
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
-+		return 0;
-+
-+	rc = nvdimm->security_ops->freeze_lock(nvdimm_bus, nvdimm);
-+	if (rc < 0)
-+		return rc;
-+
-+	nvdimm_security_get_state(dev);
-+	return 0;
-+}
-+
- static int nvdimm_security_disable(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -665,6 +685,8 @@ static ssize_t security_store(struct device *dev,
- 		rc = nvdimm_security_change_key(dev);
- 	else if (sysfs_streq(buf, "disable"))
- 		rc = nvdimm_security_disable(dev);
-+	else if (sysfs_streq(buf, "freeze"))
-+		rc = nvdimm_security_freeze_lock(dev);
+ encrypted-keys-y := encrypted.o ecryptfs_format.o
+ masterkey-$(CONFIG_TRUSTED_KEYS) := masterkey_trusted.o
++masterkey-$(CONFIG_SECURE_KEYS) := masterkey_secure.o
+ masterkey-$(CONFIG_TRUSTED_KEYS)-$(CONFIG_ENCRYPTED_KEYS) := masterkey_trusted.o
++masterkey-$(CONFIG_SECURE_KEYS)-$(CONFIG_ENCRYPTED_KEYS) := masterkey_secure.o
+ encrypted-keys-y += $(masterkey-y) $(masterkey-m-m)
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index d92cbf9687c3..258b38094705 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -39,6 +39,7 @@
+ #include "ecryptfs_format.h"
+ 
+ static const char KEY_TRUSTED_PREFIX[] = "trusted:";
++static const char KEY_SECURE_PREFIX[] = "secure:";
+ static const char KEY_USER_PREFIX[] = "user:";
+ static const char hash_alg[] = "sha256";
+ static const char hmac_alg[] = "hmac(sha256)";
+@@ -49,6 +50,7 @@ static unsigned int ivsize;
+ static int blksize;
+ 
+ #define KEY_TRUSTED_PREFIX_LEN (sizeof (KEY_TRUSTED_PREFIX) - 1)
++#define KEY_SECURE_PREFIX_LEN (sizeof(KEY_SECURE_PREFIX) - 1)
+ #define KEY_USER_PREFIX_LEN (sizeof (KEY_USER_PREFIX) - 1)
+ #define KEY_ECRYPTFS_DESC_LEN 16
+ #define HASH_SIZE SHA256_DIGEST_SIZE
+@@ -125,7 +127,7 @@ static int valid_ecryptfs_desc(const char *ecryptfs_desc)
+ /*
+  * valid_master_desc - verify the 'key-type:desc' of a new/updated master-key
+  *
+- * key-type:= "trusted:" | "user:"
++ * key-type:= "trusted:" | "user:" | "secure:"
+  * desc:= master-key description
+  *
+  * Verify that 'key-type' is valid and that 'desc' exists. On key update,
+@@ -140,6 +142,8 @@ static int valid_master_desc(const char *new_desc, const char *orig_desc)
+ 
+ 	if (!strncmp(new_desc, KEY_TRUSTED_PREFIX, KEY_TRUSTED_PREFIX_LEN))
+ 		prefix_len = KEY_TRUSTED_PREFIX_LEN;
++	else if (!strncmp(new_desc, KEY_SECURE_PREFIX, KEY_SECURE_PREFIX_LEN))
++		prefix_len = KEY_SECURE_PREFIX_LEN;
+ 	else if (!strncmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN))
+ 		prefix_len = KEY_USER_PREFIX_LEN;
  	else
- 		return -EINVAL;
+@@ -358,7 +362,7 @@ static int calc_hmac(u8 *digest, const u8 *key, unsigned int keylen,
  
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index c60ab4b238f3..bcab42caa948 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -185,6 +185,8 @@ struct nvdimm_security_ops {
- 	int (*disable)(struct nvdimm_bus *nvdimm_bus,
- 			struct nvdimm *nvdimm,
- 			const struct nvdimm_key_data *nkey);
-+	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm);
- };
+ enum derived_key_type { ENC_KEY, AUTH_KEY };
  
- void badrange_init(struct badrange *badrange);
+-/* Derive authentication/encryption key from trusted key */
++/* Derive authentication/encryption key from trusted/secure key */
+ static int get_derived_key(u8 *derived_key, enum derived_key_type key_type,
+ 			   const u8 *master_key, size_t master_keylen)
+ {
+@@ -429,6 +433,11 @@ static struct key *request_master_key(struct encrypted_key_payload *epayload,
+ 		mkey = request_trusted_key(epayload->master_desc +
+ 					   KEY_TRUSTED_PREFIX_LEN,
+ 					   master_key, master_keylen);
++	} else if (!strncmp(epayload->master_desc, KEY_SECURE_PREFIX,
++			    KEY_SECURE_PREFIX_LEN)) {
++		mkey = request_secure_key(epayload->master_desc +
++					  KEY_SECURE_PREFIX_LEN,
++					  master_key, master_keylen);
+ 	} else if (!strncmp(epayload->master_desc, KEY_USER_PREFIX,
+ 			    KEY_USER_PREFIX_LEN)) {
+ 		mkey = request_user_key(epayload->master_desc +
+diff --git a/security/keys/encrypted-keys/encrypted.h b/security/keys/encrypted-keys/encrypted.h
+index 1809995db452..f1cb73611e77 100644
+--- a/security/keys/encrypted-keys/encrypted.h
++++ b/security/keys/encrypted-keys/encrypted.h
+@@ -16,6 +16,19 @@ static inline struct key *request_trusted_key(const char *trusted_desc,
+ }
+ #endif
+ 
++#if defined(CONFIG_SECURE_KEYS)
++extern struct key *request_secure_key(const char *secure_desc,
++				      const u8 **master_key,
++				      size_t *master_keylen);
++#else
++static inline struct key *request_secure_key(const char *secure_desc,
++					     const u8 **master_key,
++					     size_t *master_keylen)
++{
++	return ERR_PTR(-EOPNOTSUPP);
++}
++#endif
++
+ #if ENCRYPTED_DEBUG
+ static inline void dump_master_key(const u8 *master_key, size_t master_keylen)
+ {
+diff --git a/security/keys/encrypted-keys/masterkey_secure.c b/security/keys/encrypted-keys/masterkey_secure.c
+new file mode 100644
+index 000000000000..87068c966111
+--- /dev/null
++++ b/security/keys/encrypted-keys/masterkey_secure.c
+@@ -0,0 +1,37 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2018 NXP.
++ *
++ */
++
++#include <linux/uaccess.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <keys/secure-type.h>
++#include <keys/encrypted-type.h>
++#include "encrypted.h"
++
++/*
++ * request_secure_key - request the secure key
++ *
++ * Secure keys and their blobs are derived from CAAM hardware.
++ * Userspace manages secure  key-type data, but key data is not
++ * visible in plain form. It is presented as blobs.
++ */
++struct key *request_secure_key(const char *secure_desc,
++				const u8 **master_key, size_t *master_keylen)
++{
++	struct secure_key_payload *spayload;
++	struct key *skey;
++
++	skey = request_key(&key_type_secure, secure_desc, NULL);
++	if (IS_ERR(skey))
++		goto error;
++
++	down_read(&skey->sem);
++	spayload = skey->payload.data[0];
++	*master_key = spayload->key;
++	*master_keylen = spayload->key_len;
++error:
++	return skey;
++}
+-- 
+2.17.1
 
