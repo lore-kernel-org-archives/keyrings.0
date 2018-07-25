@@ -1,67 +1,146 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Thu, 05 Jul 2018 20:22:10 +0000
-Subject: [PATCH v2 00/11] Adding security support for nvdimm
-Message-Id: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
+Date: Wed, 25 Jul 2018 20:58:41 +0000
+Subject: [PATCH v6 02/11] libnvdimm: create keyring to store security keys
+Message-Id: <153255232187.51274.1933376251981949492.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-The following series implements security support for nvdimm. Mostly adding
-new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
-adding generic support libnvdimm for other vendors. The most important
-security features are unlocking locked nvdimms, and updating/setting security
-passphrase to nvdimms.
+Prepping the libnvdimm to support security management by adding a keyring
+in order to provide passphrase management through the kernel key management
+APIs.
 
-Security folks, thanks in advance for taking a look at my key management
-implementation and making sure that I'm doing something sane. Mainly you'll
-want to review patches 2, 4, and 5 as most relevant ones that need scrutiny.
-
-v2:
-- Move inclusion of intel.h to relevant source files and not in nfit.h. (Dan)
-- Moved security ring relevant code to dimm_devs.c. (Dan)
-- Added dimm_id to nfit_mem to avoid recreate per sysfs show call. (Dan)
-- Added routine to return security_ops based on family supplied. (Dan)
-- Added nvdimm_key_data struct to wrap raw passphrase string. (Dan)
-- Allocate firmware package on stack. (Dan)
-- Added missing frozen state detection when retrieving security state.
-
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
+ drivers/nvdimm/core.c      |    7 ++++++-
+ drivers/nvdimm/dimm_devs.c |   29 ++++++++++++++++++++++++++++-
+ drivers/nvdimm/nd-core.h   |    1 +
+ include/linux/libnvdimm.h  |    3 +++
+ kernel/cred.c              |    1 +
+ 5 files changed, 39 insertions(+), 2 deletions(-)
 
-Dave Jiang (11):
-      nfit: adding support for Intel DSM 1.7 commands
-      libnvdimm: create keyring to store security keys
-      nfit/libnvdimm: store dimm id as a member to struct nvdimm
-      nfit/libnvdimm: adding unlock of nvdimm support for Intel DIMMs
-      nfit/libnvdimm: adding set passphrase support for Intel nvdimms
-      nfit/libnvdimm: adding disable passphrase support to Intel nvdimm.
-      nfit/libnvdimm: adding freeze security support to Intel nvdimm
-      nfit/libnvdimm: adding support for issue secure erase DSM to Intel nvdimm
-      nfit_test: adding context to dimm_dev for nfit_test
-      nfit_test: adding test support for Intel nvdimm security DSMs
-      libnvdimm: adding documentation for nvdimm security support
+diff --git a/drivers/nvdimm/core.c b/drivers/nvdimm/core.c
+index acce050856a8..3cd33d5c7cf0 100644
+--- a/drivers/nvdimm/core.c
++++ b/drivers/nvdimm/core.c
+@@ -437,9 +437,12 @@ static __init int libnvdimm_init(void)
+ {
+ 	int rc;
+ 
+-	rc = nvdimm_bus_init();
++	rc = nvdimm_devs_init();
+ 	if (rc)
+ 		return rc;
++	rc = nvdimm_bus_init();
++	if (rc)
++		goto err_bus;
+ 	rc = nvdimm_init();
+ 	if (rc)
+ 		goto err_dimm;
+@@ -454,6 +457,8 @@ static __init int libnvdimm_init(void)
+ 	nvdimm_exit();
+  err_dimm:
+ 	nvdimm_bus_exit();
++ err_bus:
++	nvdimm_devs_exit();
+ 	return rc;
+ }
+ 
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 8d348b22ba45..586432450c82 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -18,12 +18,15 @@
+ #include <linux/io.h>
+ #include <linux/fs.h>
+ #include <linux/mm.h>
++#include <linux/key.h>
++#include <linux/init_task.h>
+ #include "nd-core.h"
+ #include "label.h"
+ #include "pmem.h"
+ #include "nd.h"
+ 
+ static DEFINE_IDA(dimm_ida);
++static struct key *nvdimm_keyring;
+ 
+ /*
+  * Retrieve bus and dimm handle and return if this bus supports
+@@ -668,7 +671,31 @@ int nvdimm_bus_check_dimm_count(struct nvdimm_bus *nvdimm_bus, int dimm_count)
+ }
+ EXPORT_SYMBOL_GPL(nvdimm_bus_check_dimm_count);
+ 
+-void __exit nvdimm_devs_exit(void)
++static int nvdimm_register_keyring(void)
+ {
++	nvdimm_keyring = keyring_alloc(".nvdimm",
++			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, &init_cred,
++			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
++			(KEY_USR_ALL & ~KEY_USR_SETATTR),
++			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
++	if (IS_ERR(nvdimm_keyring))
++		return PTR_ERR(nvdimm_keyring);
++
++	return 0;
++}
++
++static void nvdimm_unregister_keyring(void)
++{
++	key_revoke(nvdimm_keyring);
++}
++
++int __init nvdimm_devs_init(void)
++{
++	return nvdimm_register_keyring();
++}
++
++void  nvdimm_devs_exit(void)
++{
++	nvdimm_unregister_keyring();
+ 	ida_destroy(&dimm_ida);
+ }
+diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
+index 79274ead54fb..2af0f89c4010 100644
+--- a/drivers/nvdimm/nd-core.h
++++ b/drivers/nvdimm/nd-core.h
+@@ -76,6 +76,7 @@ static inline bool is_memory(struct device *dev)
+ struct nvdimm_bus *walk_to_nvdimm_bus(struct device *nd_dev);
+ int __init nvdimm_bus_init(void);
+ void nvdimm_bus_exit(void);
++int nvdimm_devs_init(void);
+ void nvdimm_devs_exit(void);
+ void nd_region_devs_exit(void);
+ void nd_region_probe_success(struct nvdimm_bus *nvdimm_bus, struct device *dev);
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 472171af7f60..51084043915c 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -155,6 +155,9 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
+ 
+ }
+ 
++#define NVDIMM_PASSPHRASE_LEN		32
++#define NVDIMM_KEY_DESC_LEN		22
++
+ void badrange_init(struct badrange *badrange);
+ int badrange_add(struct badrange *badrange, u64 addr, u64 length);
+ void badrange_forget(struct badrange *badrange, phys_addr_t start,
+diff --git a/kernel/cred.c b/kernel/cred.c
+index ecf03657e71c..3a161b78a0a4 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -64,6 +64,7 @@ struct cred init_cred = {
+ 	.user_ns		= &init_user_ns,
+ 	.group_info		= &init_groups,
+ };
++EXPORT_SYMBOL(init_cred);
+ 
+ static inline void set_cred_subscribers(struct cred *cred, int n)
+ {
 
-
- Documentation/nvdimm/security    |   70 ++++++
- drivers/acpi/nfit/Makefile       |    2 
- drivers/acpi/nfit/core.c         |   72 +++++-
- drivers/acpi/nfit/intel.c        |  361 ++++++++++++++++++++++++++++++++
- drivers/acpi/nfit/intel.h        |  104 +++++++++
- drivers/acpi/nfit/nfit.h         |   24 --
- drivers/nvdimm/bus.c             |    2 
- drivers/nvdimm/core.c            |    7 +
- drivers/nvdimm/dimm.c            |    7 +
- drivers/nvdimm/dimm_devs.c       |  426 ++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/nd-core.h         |    4 
- drivers/nvdimm/nd.h              |    2 
- include/linux/libnvdimm.h        |   41 +++-
- tools/testing/nvdimm/Kbuild      |    1 
- tools/testing/nvdimm/test/nfit.c |  227 +++++++++++++++++++-
- 15 files changed, 1293 insertions(+), 57 deletions(-)
- create mode 100644 Documentation/nvdimm/security
- create mode 100644 drivers/acpi/nfit/intel.c
- create mode 100644 drivers/acpi/nfit/intel.h
-
---
