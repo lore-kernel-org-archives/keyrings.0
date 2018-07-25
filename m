@@ -1,131 +1,171 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 19 Jul 2018 18:30:04 +0000
-Subject: [RFCv2 RESEND 06/13] KEYS: asym_tpm: Implement encryption operation
-Message-Id: <20180719183011.8574-7-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Wed, 25 Jul 2018 20:59:04 +0000
+Subject: [PATCH v6 06/11] nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+Message-Id: <153255234480.51274.17829701006557876369.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-This patch impelements the pkey_encrypt operation.  The public key
-portion extracted from the TPM key blob is used.  The operation is
-performed entirely in software using the crypto API.
+Add support to disable passphrase (security) for the Intel nvdimm. The
+passphrase used for disabling is pulled from userspace via the kernel
+key management. The action is triggered by writing "disable" to the sysfs
+attribute "security". libnvdimm will support the generic disable API call.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 84 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 84 insertions(+)
+ drivers/acpi/nfit/intel.c  |   53 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   43 ++++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    3 ++
+ 3 files changed, 99 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 3eed931a6362..b41ff0a07bab 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -172,6 +172,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	info->max_enc_size = len;
- 	info->max_dec_size = tk->key_len / 8;
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 314eae7e02d7..21d30222371f 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,58 @@
+ #include "intel.h"
+ #include "nfit.h"
  
-+	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
-+
- 	ret = 0;
- error_free_tfm:
- 	crypto_free_akcipher(tfm);
-@@ -179,6 +181,87 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	return ret;
- }
- 
-+/*
-+ * Encryption operation is performed with the public key.  Hence it is done
-+ * in software
-+ */
-+static int tpm_key_encrypt(struct tpm_key *tk,
-+			   struct kernel_pkey_params *params,
-+			   const void *in, void *out)
++static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
 +{
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	struct crypto_akcipher *tfm;
-+	struct akcipher_request *req;
-+	struct crypto_wait cwait;
-+	struct scatterlist in_sg, out_sg;
-+	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
-+	uint32_t der_pub_key_len;
-+	int ret;
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_disable_passphrase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
 +
-+	pr_devel("=>%s()\n", __func__);
++	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
 +
-+	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
-+	if (ret < 0)
-+		return ret;
-+
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
-+					 der_pub_key);
-+
-+	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
-+	if (ret < 0)
-+		goto error_free_tfm;
-+
-+	req = akcipher_request_alloc(tfm, GFP_KERNEL);
-+	if (!req)
-+		goto error_free_tfm;
-+
-+	sg_init_one(&in_sg, in, params->in_len);
-+	sg_init_one(&out_sg, out, params->out_len);
-+	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
-+				   params->out_len);
-+	crypto_init_wait(&cwait);
-+	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
-+				      CRYPTO_TFM_REQ_MAY_SLEEP,
-+				      crypto_req_done, &cwait);
-+
-+	ret = crypto_akcipher_encrypt(req);
-+	ret = crypto_wait_req(ret, &cwait);
-+
-+	if (ret = 0)
-+		ret = req->dst_len;
-+
-+	akcipher_request_free(req);
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
-+/*
-+ * Do encryption, decryption and signing ops.
-+ */
-+static int tpm_key_eds_op(struct kernel_pkey_params *params,
-+			  const void *in, void *out)
-+{
-+	struct tpm_key *tk = params->key->payload.data[asym_crypto];
-+	int ret = -EOPNOTSUPP;
-+
-+	/* Perform the encryption calculation. */
-+	switch (params->op) {
-+	case kernel_pkey_encrypt:
-+		ret = tpm_key_encrypt(tk, params, in, out);
-+		break;
-+	default:
-+		BUG();
++	memcpy(nd_cmd.cmd.passphrase, nkey->data,
++			sizeof(nd_cmd.cmd.passphrase));
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
 +	}
 +
-+	return ret;
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	return rc;
 +}
 +
  /*
-  * Parse enough information out of TPM_KEY structure:
-  * TPM_STRUCT_VER -> 4 bytes
-@@ -338,6 +421,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
- 	.describe		= asym_tpm_describe,
- 	.destroy		= asym_tpm_destroy,
- 	.query			= tpm_key_query,
-+	.eds_op			= tpm_key_eds_op,
+  * The update passphrase takes the old passphrase and the new passphrase
+  * and send those to the nvdimm. The nvdimm will verify the old
+@@ -217,4 +269,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
++	.disable = intel_dimm_security_disable,
  };
- EXPORT_SYMBOL_GPL(asym_tpm_subtype);
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index c6029e3f329e..1d85a4cb9402 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -97,6 +97,47 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
  
--- 
-2.16.1
++static int nvdimm_security_disable(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	int rc;
++	struct user_key_payload *payload;
++
++	if (!nvdimm->security_ops)
++		return 0;
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		return 0;
++
++	key = nvdimm_search_key(dev);
++	if (!key) {
++		dev_warn(dev, "no key found\n");
++		return -ENOKEY;
++	}
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm,
++			(void *)payload->data);
++	up_read(&key->sem);
++	if (rc < 0) {
++		dev_warn(dev, "unlock failed\n");
++		goto out;
++	}
++
++	/* If we succeed then remove the key */
++	key_unlink(nvdimm_keyring, key);
++	key_invalidate(key);
++	nvdimm->key_id = 0;
++
++ out:
++	key_put(key);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ int nvdimm_security_unlock_dimm(struct device *dev)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -622,6 +663,8 @@ static ssize_t security_store(struct device *dev,
+ 
+ 	if (sysfs_streq(buf, "update"))
+ 		rc = nvdimm_security_change_key(dev);
++	else if (sysfs_streq(buf, "disable"))
++		rc = nvdimm_security_disable(dev);
+ 	else
+ 		return -EINVAL;
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index bd6a413164ee..c60ab4b238f3 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -182,6 +182,9 @@ struct nvdimm_security_ops {
+ 			struct nvdimm *nvdimm,
+ 			const struct nvdimm_key_data *old_data,
+ 			const struct nvdimm_key_data *new_data);
++	int (*disable)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			const struct nvdimm_key_data *nkey);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
 
