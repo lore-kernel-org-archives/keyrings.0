@@ -1,110 +1,182 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 19 Jul 2018 18:30:08 +0000
-Subject: [RFCv2 RESEND 10/13] KEYS: asym_tpm: Implement the decrypt operation
-Message-Id: <20180719183011.8574-11-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Wed, 25 Jul 2018 20:59:16 +0000
+Subject: [PATCH v6 08/11] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+Message-Id: <153255235625.51274.15991694080684776540.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-This patch implements the pkey_decrypt operation using the private key
-blob.  The blob is first loaded into the TPM via tpm_loadkey2.  Once the
-handle is obtained, tpm_unbind operation is used to decrypt the data on
-the TPM and the result is returned.  The key loaded by tpm_loadkey2 is
-then evicted via tpm_flushspecific operation.
+Add support to issue a secure erase DSM to the Intel nvdimm. The
+required passphrase is acquired from userspace through the kernel key
+management. To trigger the action, "erase" is written to the "security"
+sysfs attribute. libnvdimm will support the erase generic API call.
 
-This patch assumes that the SRK authorization is a well known 20-byte of
-zeros and the same holds for the key authorization of the provided key.
-
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 58 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 57 insertions(+), 1 deletion(-)
+ drivers/acpi/nfit/intel.c  |   58 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   49 +++++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    3 ++
+ 3 files changed, 110 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index edcb81fe8937..af661c9d55d7 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -348,7 +348,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	info->max_enc_size = len;
- 	info->max_dec_size = tk->key_len / 8;
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index ba886f1f5399..419a7d54d4e8 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,63 @@
+ #include "intel.h"
+ #include "nfit.h"
  
--	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
-+	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
-+			      KEYCTL_SUPPORTS_DECRYPT;
- 
- 	ret = 0;
- error_free_tfm:
-@@ -417,6 +418,58 @@ static int tpm_key_encrypt(struct tpm_key *tk,
- 	return ret;
- }
- 
-+/*
-+ * Decryption operation is performed with the private key in the TPM.
-+ */
-+static int tpm_key_decrypt(struct tpm_key *tk,
-+			   struct kernel_pkey_params *params,
-+			   const void *in, void *out)
++static int intel_dimm_security_erase(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
 +{
-+	struct tpm_buf *tb;
-+	uint32_t keyhandle;
-+	uint8_t srkauth[SHA1_DIGEST_SIZE];
-+	uint8_t keyauth[SHA1_DIGEST_SIZE];
-+	int r;
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_secure_erase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_SECURE_ERASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
 +
-+	pr_devel("=>%s()\n", __func__);
++	if (!test_bit(NVDIMM_INTEL_SECURE_ERASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
 +
-+	if (params->hash_algo)
-+		return -ENOPKG;
-+
-+	if (strcmp(params->encoding, "pkcs1"))
-+		return -ENOPKG;
-+
-+	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
-+	if (!tb)
-+		return -ENOMEM;
-+
-+	/* TODO: Handle a non-all zero SRK authorization */
-+	memset(srkauth, 0, sizeof(srkauth));
-+
-+	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
-+				tk->blob, tk->blob_len, &keyhandle);
-+	if (r < 0) {
-+		pr_devel("loadkey2 failed (%d)\n", r);
-+		goto error;
++	/* flush all cache before we erase DIMM */
++	wbinvd_on_all_cpus();
++	memcpy(nd_cmd.cmd.passphrase, nkey->data,
++			sizeof(nd_cmd.cmd.passphrase));
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
 +	}
 +
-+	/* TODO: Handle a non-all zero key authorization */
-+	memset(keyauth, 0, sizeof(keyauth));
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
 +
-+	r = tpm_unbind(tb, keyhandle, keyauth,
-+		       in, params->in_len, out, params->out_len);
-+	if (r < 0)
-+		pr_devel("tpm_unbind failed (%d)\n", r);
++	/* DIMM erased, invalidate all CPU caches before we read it */
++	wbinvd_on_all_cpus();
 +
-+	if (tpm_flushspecific(tb, keyhandle) < 0)
-+		pr_devel("flushspecific failed (%d)\n", r);
-+
-+error:
-+	kzfree(tb);
-+	pr_devel("<=%s() = %d\n", __func__, r);
-+	return r;
++ out:
++	return rc;
 +}
 +
- /*
-  * Do encryption, decryption and signing ops.
-  */
-@@ -431,6 +484,9 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
- 	case kernel_pkey_encrypt:
- 		ret = tpm_key_encrypt(tk, params, in, out);
- 		break;
-+	case kernel_pkey_decrypt:
-+		ret = tpm_key_decrypt(tk, params, in, out);
-+		break;
- 	default:
- 		BUG();
- 	}
--- 
-2.16.1
+ static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm)
+ {
+@@ -321,4 +378,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.change_key = intel_dimm_security_update_passphrase,
+ 	.disable = intel_dimm_security_disable,
+ 	.freeze_lock = intel_dimm_security_freeze_lock,
++	.erase = intel_dimm_security_erase,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 8f4ea4e2c2ab..e6d04ca44008 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -97,6 +97,53 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
+ 
++static int nvdimm_security_erase(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	struct user_key_payload *payload;
++	int rc = 0;
++
++	if (!nvdimm->security_ops)
++		return 0;
++
++	/* lock the device and disallow driver bind */
++	device_lock(dev);
++	/* No driver data means dimm is disabled. Proceed if so. */
++	if (dev_get_drvdata(dev)) {
++		dev_warn(dev, "Unable to secure erase while DIMM active.\n");
++		rc = -EINVAL;
++		goto out;
++	}
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		goto out;
++
++	key = nvdimm_search_key(dev);
++	if (!key) {
++		dev_warn(dev, "no key found\n");
++		rc = -ENOKEY;
++		goto out;
++	}
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++	rc = nvdimm->security_ops->erase(nvdimm_bus, nvdimm,
++			(void *)payload->data);
++	up_read(&key->sem);
++	/* remove key since secure erase kills the passphrase */
++	key_unlink(nvdimm_keyring, key);
++	key_invalidate(key);
++	nvdimm->key_id = 0;
++	key_put(key);
++
++ out:
++	device_unlock(dev);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ static int nvdimm_security_freeze_lock(struct device *dev)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -687,6 +734,8 @@ static ssize_t security_store(struct device *dev,
+ 		rc = nvdimm_security_disable(dev);
+ 	else if (sysfs_streq(buf, "freeze"))
+ 		rc = nvdimm_security_freeze_lock(dev);
++	else if (sysfs_streq(buf, "erase"))
++		rc = nvdimm_security_erase(dev);
+ 	else
+ 		return -EINVAL;
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index bcab42caa948..0d85e092a6dd 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -187,6 +187,9 @@ struct nvdimm_security_ops {
+ 			const struct nvdimm_key_data *nkey);
+ 	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm);
++	int (*erase)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			const struct nvdimm_key_data *nkey);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
 
