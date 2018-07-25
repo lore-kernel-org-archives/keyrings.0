@@ -1,98 +1,155 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Thu, 05 Jul 2018 20:23:12 +0000
-Subject: [PATCH v2 11/11] libnvdimm: adding documentation for nvdimm security support
-Message-Id: <153082219238.61422.8691902999718036928.stgit@djiang5-desk3.ch.intel.com>
+Date: Wed, 25 Jul 2018 20:58:47 +0000
+Subject: [PATCH v6 03/11] nfit/libnvdimm: store dimm id as a member to struct nvdimm
+Message-Id: <153255232776.51274.12416872628534532057.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153082172527.61422.13689320279597181069.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: dhowells@redhat.com, alison.schofield@intel.com, keyrings@vger.kernel.org, keescook@chromium.org, linux-nvdimm@lists.01.org
+References: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Adding theory of operation for the security support that's going into
-libnvdimm.
+The generated dimm id is needed for the sysfs attribute as well as being
+used as the identifier/description for the security key. Since it's
+constant and should never change, store it as a member of struct nvdimm.
 
 Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- Documentation/nvdimm/security |   70 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 70 insertions(+)
- create mode 100644 Documentation/nvdimm/security
+ drivers/acpi/nfit/core.c   |   29 +++++++++++++++++------------
+ drivers/acpi/nfit/nfit.h   |    3 +++
+ drivers/nvdimm/dimm_devs.c |    4 +++-
+ drivers/nvdimm/nd-core.h   |    1 +
+ include/linux/libnvdimm.h  |    2 +-
+ 5 files changed, 25 insertions(+), 14 deletions(-)
 
-diff --git a/Documentation/nvdimm/security b/Documentation/nvdimm/security
-new file mode 100644
-index 000000000000..756205c9aa4c
---- /dev/null
-+++ b/Documentation/nvdimm/security
-@@ -0,0 +1,70 @@
-+NVDIMM SECURITY
-+=======+
-+1. Introduction
-+---------------
+diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
+index a3a944751e6a..21235d555b5f 100644
+--- a/drivers/acpi/nfit/core.c
++++ b/drivers/acpi/nfit/core.c
+@@ -1572,18 +1572,10 @@ static DEVICE_ATTR_RO(flags);
+ static ssize_t id_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+-	struct acpi_nfit_control_region *dcr = to_nfit_dcr(dev);
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
+ 
+-	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
+-		return sprintf(buf, "%04x-%02x-%04x-%08x\n",
+-				be16_to_cpu(dcr->vendor_id),
+-				dcr->manufacturing_location,
+-				be16_to_cpu(dcr->manufacturing_date),
+-				be32_to_cpu(dcr->serial_number));
+-	else
+-		return sprintf(buf, "%04x-%08x\n",
+-				be16_to_cpu(dcr->vendor_id),
+-				be32_to_cpu(dcr->serial_number));
++	return sprintf(buf, "%s\n", nfit_mem->id);
+ }
+ static DEVICE_ATTR_RO(id);
+ 
+@@ -1712,10 +1704,23 @@ static int acpi_nfit_add_dimm(struct acpi_nfit_desc *acpi_desc,
+ 	const guid_t *guid;
+ 	int i;
+ 	int family = -1;
++	struct acpi_nfit_control_region *dcr = nfit_mem->dcr;
+ 
+ 	/* nfit test assumes 1:1 relationship between commands and dsms */
+ 	nfit_mem->dsm_mask = acpi_desc->dimm_cmd_force_en;
+ 	nfit_mem->family = NVDIMM_FAMILY_INTEL;
 +
-+With the introduction of Intel DSM v1.7 specification [1], security DSMs are
-+introduced. The spec added the following security DSMs: "get security state",
-+"set passphrase", "disable passphrase", "unlock unit", "freeze lock",
-+"secure erase", and "overwrite". A security_ops data structure has been
-+added to struct dimm in order to support the security operations and generic
-+APIs are exposed to allow vendor neutral operations.
++	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
++		sprintf(nfit_mem->id, "%04x-%02x-%04x-%08x",
++				be16_to_cpu(dcr->vendor_id),
++				dcr->manufacturing_location,
++				be16_to_cpu(dcr->manufacturing_date),
++				be32_to_cpu(dcr->serial_number));
++	else
++		sprintf(nfit_mem->id, "%04x-%08x",
++				be16_to_cpu(dcr->vendor_id),
++				be32_to_cpu(dcr->serial_number));
 +
-+2. Sysfs Interface
-+------------------
-+The "security" sysfs attribute is provided in the nvdimm sysfs directory. For
-+example:
-+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/security
+ 	adev = to_acpi_dev(acpi_desc);
+ 	if (!adev)
+ 		return 0;
+@@ -1899,7 +1904,7 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
+ 		nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
+ 				acpi_nfit_dimm_attribute_groups,
+ 				flags, cmd_mask, flush ? flush->hint_count : 0,
+-				nfit_mem->flush_wpq);
++				nfit_mem->flush_wpq, &nfit_mem->id[0]);
+ 		if (!nvdimm)
+ 			return -ENOMEM;
+ 
+diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
+index 40b0003b1805..4048036d6ec2 100644
+--- a/drivers/acpi/nfit/nfit.h
++++ b/drivers/acpi/nfit/nfit.h
+@@ -173,6 +173,8 @@ struct nfit_memdev {
+ 	struct acpi_nfit_memory_map memdev[0];
+ };
+ 
++#define NFIT_DIMM_ID_LEN	22
 +
-+The "show" function of that attribute will display the security state for
-+that DIMM. The following states are available: disabled, unlocked, locked,
-+frozen, and unsupported.
+ /* assembled tables for a given dimm/memory-device */
+ struct nfit_mem {
+ 	struct nvdimm *nvdimm;
+@@ -195,6 +197,7 @@ struct nfit_mem {
+ 	int family;
+ 	bool has_lsr;
+ 	bool has_lsw;
++	char id[NFIT_DIMM_ID_LEN+1];
+ };
+ 
+ struct acpi_nfit_desc {
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 586432450c82..e753b2095402 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -401,7 +401,7 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
+ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		const struct attribute_group **groups, unsigned long flags,
+ 		unsigned long cmd_mask, int num_flush,
+-		struct resource *flush_wpq)
++		struct resource *flush_wpq, const char *dimm_id)
+ {
+ 	struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
+ 	struct device *dev;
+@@ -414,6 +414,8 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		kfree(nvdimm);
+ 		return NULL;
+ 	}
 +
-+The "store" function takes several commands when the attribute is written to
-+in order to support some of the security functionalities:
-+update - enable security. Add or update current key.
-+disable - disable enabled security and remove key.
-+freeze - freeze changing of security states.
-+erase - generate new ecryption key for DIMM and crypto-scrambles all existing
-+	user data.
-+
-+3. Key Management
-+-----------------
-+
-+The key is associted to the payload by the DIMM id. For example:
-+# cat /sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/nfit/id
-+8089-a2-1740-00000133
-+The DIMM id would be provided along with the key payload (passphrase) to
-+the kernel.
-+
-+The security keys are managed on the basis of a single key per DIMM. The
-+key "passphrase" is expected to be 32bytes long or padded to 32bytes. This is
-+similar to the ATA security specification [2]. A key is initially acquired
-+via the request_key() kernel API call and retrieved from userspace. It is up to
-+the user to provide an upcall application to retrieve the key in whatever
-+fashion meets their security requirements.
-+
-+The payload provided to the key can be a 32bytes payload or 64bytes payload
-+when doing an "update". The payload is viewed as 64 bytes in the following
-+format:
-+[32 bytes current key data zero padded][32 bytes new key data zero padded]
-+However, a 32bytes payload can be provided and will be assumed as the old
-+key to be 32 bytes of 0s and the provided 32bytes payload is the new key.
-+It is up to the user upcall function how that's presented as the key payload
-+to the kernel.
-+
-+All the other security functions that require a provided key can accept a
-+32bytes payload or 64bytes. If the payload is 64bytes, then second 32bytes
-+will be ignored and the first 32bytes contains the expected "passphrase".
-+
-+4. Unlocking
-+------------
-+When the DIMMs are being enumerated by the kernel, the kernel will attempt to
-+retrieve the key from its keyring. If that fails, it will attempt to
-+acquire the key from the userspace upcall function. This is the only time
-+a locked DIMM can be unlocked. Once unlocked, the DIMM will remain unlocked
-+until reboot.
-+
-+[1]: http://pmem.io/documents/NVDIMM_DSM_Interface-V1.7.pdf
-+[2]: http://www.t13.org/documents/UploadedDocuments/docs2006/e05179r4-ACS-SecurityClarifications.pdf
++	nvdimm->dimm_id = dimm_id;
+ 	nvdimm->provider_data = provider_data;
+ 	nvdimm->flags = flags;
+ 	nvdimm->cmd_mask = cmd_mask;
+diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
+index 2af0f89c4010..ed650f1607d8 100644
+--- a/drivers/nvdimm/nd-core.h
++++ b/drivers/nvdimm/nd-core.h
+@@ -42,6 +42,7 @@ struct nvdimm {
+ 	atomic_t busy;
+ 	int id, num_flush;
+ 	struct resource *flush_wpq;
++	const char *dimm_id;
+ };
+ 
+ /**
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 51084043915c..3c1f18fdf76f 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -181,7 +181,7 @@ void *nvdimm_provider_data(struct nvdimm *nvdimm);
+ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		const struct attribute_group **groups, unsigned long flags,
+ 		unsigned long cmd_mask, int num_flush,
+-		struct resource *flush_wpq);
++		struct resource *flush_wpq, const char *dimm_id);
+ const struct nd_cmd_desc *nd_cmd_dimm_desc(int cmd);
+ const struct nd_cmd_desc *nd_cmd_bus_desc(int cmd);
+ u32 nd_cmd_in_size(struct nvdimm *nvdimm, int cmd,
 
