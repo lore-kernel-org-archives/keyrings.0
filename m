@@ -1,35 +1,291 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Fri, 24 Aug 2018 11:22:39 +0000
-Subject: Re: [PATCH 01/23] TPM: Add new TPMs to the tail of the list to prevent inadvertent change of dev
-Message-Id: <1535109759.19550.355.camel@linux.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 01 Aug 2018 21:04:04 +0000
+Subject: LSM hook for mount, superblock and keys watch notifications
+Message-Id: <7561.1533157444@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-         <153486701644.13066.13372706238885253812.stgit@warthog.procyon.org.uk>
-         <20180821183004.GB25543@ziepe.ca> <20180824062434.GB3584@linux.intel.com>
-         <20180824062557.GC3584@linux.intel.com>
-In-Reply-To: <20180824062557.GC3584@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jason Gunthorpe <jgg@ziepe.ca>
-Cc: David Howells <dhowells@redhat.com>, denkenz@gmail.com, jejb@linux.vnet.ibm.com, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <675e5c24-36ef-4cc5-846c-1414c1195d85@schaufler-ca.com> <153235954191.32640.5792167066538704794.stgit@warthog.procyon.org.uk>
+In-Reply-To: <675e5c24-36ef-4cc5-846c-1414c1195d85@schaufler-ca.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, raven@themaw.net, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-T24gRnJpLCAyMDE4LTA4LTI0IGF0IDA5OjI1ICswMzAwLCBKYXJra28gU2Fra2luZW4gd3JvdGU6
-Cj4gT24gRnJpLCBBdWcgMjQsIDIwMTggYXQgMDk6MjQ6MzRBTSArMDMwMCwgSmFya2tvIFNha2tp
-bmVuIHdyb3RlOgo+ID4gT24gVHVlLCBBdWcgMjEsIDIwMTggYXQgMTI6MzA6MDRQTSAtMDYwMCwg
-SmFzb24gR3VudGhvcnBlIHdyb3RlOgo+ID4gPiBPbiBUdWUsIEF1ZyAyMSwgMjAxOCBhdCAwNDo1
-Njo1NlBNICswMTAwLCBEYXZpZCBIb3dlbGxzIHdyb3RlOgo+ID4gPiA+IEFkZCBuZXdseSByZWdp
-c3RlcmVkIFRQTXMgdG8gdGhlIHRhaWwgb2YgdGhlIGxpc3QsIG5vdCB0aGUgYmVnaW5uaW5nLCBz
-byB0aGF0Cj4gPiA+ID4gdGhpbmdzIHRoYXQgYXJlIHNwZWNpZnlpbmcgVFBNX0FOWV9OVU0gZG9u
-J3QgZmluZCB0aGF0IHRoZSBkZXZpY2UgdGhleSdyZQo+ID4gPiA+IHVzaW5nIGhhcyBpbmFkdmVy
-dGVudGx5IGNoYW5nZWQuICBBZGRpbmcgYSBzZWNvbmQgZGV2aWNlIHdvdWxkIGJyZWFrIElNQSwg
-Zm9yCj4gPiA+ID4gaW5zdGFuY2UuCj4gPiA+ID4gCj4gPiA+ID4gU2lnbmVkLW9mZi1ieTogRGF2
-aWQgSG93ZWxscyA8ZGhvd2VsbHNAcmVkaGF0LmNvbT4KPiA+ID4gPiBSZXZpZXdlZC1ieTogSmFz
-b24gR3VudGhvcnBlIDxqZ3VudGhvcnBlQG9ic2lkaWFucmVzZWFyY2guY29tPgo+ID4gPiA+IFNp
-Z25lZC1vZmYtYnk6IFBldGVyIEh1ZXdlIDxwZXRlcmh1ZXdlQGdteC5kZT4KPiA+ID4gPiBjYzog
-c3RhYmxlQHZnZXIua2VybmVsLm9yZwo+ID4gPiA+IC0tLQo+ID4gPiAKPiA+ID4gV2UgcmVhbGx5
-IHNob3VsZCBhcHBseSB0aGlzIHBhdGNoLi4uCj4gPiA+IAo+ID4gPiBKYXNvbgo+ID4gCj4gPiBU
-aGlzIGlzIHRoZSBmaXJzdCB0aW1lIEkgcmVtZW1iZXIgc2VlaW5nIGl0Lgo+IAo+IEF0IGxlYXN0
-IGluIHRoZSBzZW5zZSB0aGF0IEkgc2hvdWxkIHJldmlldyBpdC4KCkkgcmVtZW1iZXIgdGhpcyBw
-YXRjaCwgYmVjYXVzZSBpdCBhZmZlY3RlZCBJTUEuIMKgSXQgaGFzIGFscmVhZHkgYmVlbgp1cHN0
-cmVhbWVkIGFzIDM5OGExZTcxZGM4Mi4KCk1pbWkK
+How about if I apply the attached patch?  It creates a new LSM hook that gets
+called each time a notification is about to be posted on a queue.  It is given
+the creds from the /dev/watch_queue opener, the creds of whoever triggered the
+watchpoint and a pointer to the notification message.
+
+The notification message includes metadata describing the source/type of the
+message and the subtype within that, plus subtype-specific flags.
+
+David
+---
+diff --git a/drivers/misc/watch_queue.c b/drivers/misc/watch_queue.c
+index 13c9f88e6953..3e7bb032ec17 100644
+--- a/drivers/misc/watch_queue.c
++++ b/drivers/misc/watch_queue.c
+@@ -23,6 +23,8 @@
+ #include <linux/uaccess.h>
+ #include <linux/vmalloc.h>
+ #include <linux/file.h>
++#include <linux/security.h>
++#include <linux/cred.h>
+ #include <linux/watch_queue.h>
+ 
+ #define DEBUG_WITH_WRITE /* Allow use of write() to record notifications */
+@@ -50,6 +52,7 @@ struct watch_filter {
+ struct watch_queue {
+ 	struct rcu_head		rcu;
+ 	struct address_space	mapping;
++	const struct cred	*cred;		/* Creds of the owner of the queue */
+ 	struct watch_filter	*filter;
+ 	wait_queue_head_t	waiters;
+ 	struct hlist_head	watches;	/* Contributory watches */
+@@ -82,7 +85,8 @@ struct watch_queue {
+  * should be in units of sizeof(*n).
+  */
+ static bool post_one_notification(struct watch_queue *wqueue,
+-				  struct watch_notification *n)
++				  struct watch_notification *n,
++				  const struct cred *cred)
+ {
+ 	struct watch_queue_buffer *buf = wqueue->buffer;
+ 	unsigned int metalen = sizeof(buf->meta) / sizeof(buf->slots[0]);
+@@ -99,7 +103,8 @@ static bool post_one_notification(struct watch_queue *wqueue,
+ 
+ 	spin_lock(&wqueue->lock); /* Protect head pointer */
+ 
+-	if (wqueue->defunct)
++	if (wqueue->defunct ||
++	    security_post_notification(wqueue->cred, cred, n) < 0)
+ 		goto out;
+ 
+ 	ring_tail = READ_ONCE(buf->meta.tail);
+@@ -205,6 +210,7 @@ static bool filter_watch_notification(const struct watch_filter *wf,
+  * __post_watch_notification - Post an event notification
+  * @wlist: The watch list to post the event to.
+  * @n: The notification record to post.
++ * @cred: The creds of the process that triggered the notification.
+  * @id: The ID to match on the watch.
+  *
+  * Post a notification of an event into a set of watch queues and let the users
+@@ -217,6 +223,7 @@ static bool filter_watch_notification(const struct watch_filter *wf,
+  */
+ void __post_watch_notification(struct watch_list *wlist,
+ 			       struct watch_notification *n,
++			       const struct cred *cred,
+ 			       u64 id)
+ {
+ 	const struct watch_filter *wf;
+@@ -236,7 +243,7 @@ void __post_watch_notification(struct watch_list *wlist,
+ 		if (wf && !filter_watch_notification(wf, n))
+ 			continue;
+ 
+-		post_one_notification(wqueue, n);
++		post_one_notification(wqueue, n, cred);
+ 	}
+ 
+ 	rcu_read_unlock();
+@@ -517,6 +524,7 @@ static int watch_queue_open(struct inode *inode, struct file *file)
+ 	refcount_set(&wqueue->usage, 1);
+ 	spin_lock_init(&wqueue->lock);
+ 	init_waitqueue_head(&wqueue->waiters);
++	wqueue->cred = get_cred(file->f_cred);
+ 
+ 	file->private_data = wqueue;
+ 	return 0;
+@@ -615,7 +623,7 @@ int remove_watch_from_object(struct watch_list *wlist, struct watch_queue *wq,
+ 	n.subtype = watch_meta_removal_notification;
+ 	n.info = watch->info_id | sizeof(n);
+ 
+-	post_one_notification(watch->queue, &n);
++	post_one_notification(watch->queue, &n, wq->cred);
+ 
+ 	/* We don't need the watch list lock for the next bit as RCU is
+ 	 * protecting everything from being deallocated.
+@@ -733,6 +741,7 @@ static int watch_queue_release(struct inode *inode, struct file *file)
+ 	if (wqueue->filter)
+ 		kfree_rcu(wqueue->filter, rcu);
+ 	kfree(wqueue->pages);
++	put_cred(wqueue->cred);
+ 	put_watch_queue(wqueue);
+ 	return 0;
+ }
+@@ -760,7 +769,7 @@ static ssize_t watch_queue_write(struct file *file,
+ 		goto error;
+ 	n->info &= (WATCH_INFO_LENGTH | WATCH_INFO_TYPE_FLAGS | WATCH_INFO_ID);
+ 
+-	if (post_one_notification(wqueue, n))
++	if (post_one_notification(wqueue, n, current_cred()))
+ 		wqueue->debug = 0;
+ 	else
+ 		wqueue->debug++;
+diff --git a/fs/mount_notify.c b/fs/mount_notify.c
+index b4905c363136..6de6e701bf20 100644
+--- a/fs/mount_notify.c
++++ b/fs/mount_notify.c
+@@ -22,6 +22,7 @@
+ void post_mount_notification(struct mount *changed,
+ 			     struct mount_notification *notify)
+ {
++	const struct cred *cred = current_cred();
+ 	struct path cursor;
+ 	struct mount *mnt;
+ 	unsigned seq;
+@@ -40,7 +41,7 @@ void post_mount_notification(struct mount *changed,
+ 		    !hlist_empty(&mnt->mnt_watchers->watchers)) {
+ 			if (cursor.dentry->d_flags & DCACHE_MOUNT_WATCH)
+ 				post_watch_notification(mnt->mnt_watchers,
+-							&notify->watch,
++							&notify->watch, cred,
+ 							(unsigned long)cursor.dentry);
+ 		} else {
+ 			cursor.dentry = mnt->mnt.mnt_root;
+diff --git a/fs/super.c b/fs/super.c
+index 1a1cf517dbd8..939ed08b87e9 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1825,7 +1825,8 @@ EXPORT_SYMBOL(vfs_get_tree);
+  */
+ void post_sb_notification(struct super_block *s, struct superblock_notification *n)
+ {
+-	post_watch_notification(s->s_watchers, &n->watch, s->s_watch_id);
++	post_watch_notification(s->s_watchers, &n->watch, current_cred(),
++				s->s_watch_id);
+ }
+ 
+ static void release_sb_watch(struct watch_list *wlist, struct watch *watch)
+diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
+index b1a62dc0b8d9..08a61a5fecd4 100644
+--- a/include/linux/lsm_hooks.h
++++ b/include/linux/lsm_hooks.h
+@@ -1439,6 +1439,13 @@
+  *	@ctx is a pointer in which to place the allocated security context.
+  *	@ctxlen points to the place to put the length of @ctx.
+  *
++ * @post_notification:
++ *	Check to see if a watch notification can be posted to a particular
++ *	queue.
++ *	@q_cred: The credentials of the target watch queue.
++ *	@cred: The event-triggerer's credentials
++ *	@n: The notification being posted
++ *
+  * Security hooks for using the eBPF maps and programs functionalities through
+  * eBPF syscalls.
+  *
+@@ -1713,6 +1720,11 @@ union security_list_options {
+ 	int (*inode_notifysecctx)(struct inode *inode, void *ctx, u32 ctxlen);
+ 	int (*inode_setsecctx)(struct dentry *dentry, void *ctx, u32 ctxlen);
+ 	int (*inode_getsecctx)(struct inode *inode, void **ctx, u32 *ctxlen);
++#ifdef CONFIG_WATCH_QUEUE
++	int (*post_notification)(const struct cred *q_cred,
++				 const struct cred *cred,
++				 struct watch_notification *n);
++#endif
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
+@@ -1992,6 +2004,9 @@ struct security_hook_heads {
+ 	struct hlist_head inode_notifysecctx;
+ 	struct hlist_head inode_setsecctx;
+ 	struct hlist_head inode_getsecctx;
++#ifdef CONFIG_WATCH_QUEUE
++	struct hlist_head post_notification;
++#endif
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	struct hlist_head unix_stream_connect;
+ 	struct hlist_head unix_may_send;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index c73d9ba863bc..946ab7455a3f 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -392,6 +392,11 @@ void security_inode_invalidate_secctx(struct inode *inode);
+ int security_inode_notifysecctx(struct inode *inode, void *ctx, u32 ctxlen);
+ int security_inode_setsecctx(struct dentry *dentry, void *ctx, u32 ctxlen);
+ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen);
++#ifdef CONFIG_WATCH_QUEUE
++int security_post_notification(const struct cred *q_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n);
++#endif
+ #else /* CONFIG_SECURITY */
+ struct security_mnt_opts {
+ };
+@@ -1216,6 +1221,14 @@ static inline int security_inode_getsecctx(struct inode *inode, void **ctx, u32
+ {
+ 	return -EOPNOTSUPP;
+ }
++#ifdef CONFIG_WATCH_QUEUE
++static inline int security_post_notification(const struct cred *q_cred,
++					     const struct cred *cred,
++					     struct watch_notification *n)
++{
++	return 0;
++}
++#endif
+ #endif	/* CONFIG_SECURITY */
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+diff --git a/include/linux/watch_queue.h b/include/linux/watch_queue.h
+index 465b14f3ad42..a1d20c917998 100644
+--- a/include/linux/watch_queue.h
++++ b/include/linux/watch_queue.h
+@@ -46,7 +46,9 @@ struct watch_list {
+ };
+ 
+ extern void __post_watch_notification(struct watch_list *,
+-				      struct watch_notification *, u64);
++				      struct watch_notification *,
++				      const struct cred *,
++				      u64);
+ extern struct watch_queue *get_watch_queue(int);
+ extern void put_watch_queue(struct watch_queue *);
+ extern void put_watch_list(struct watch_list *);
+@@ -68,10 +70,11 @@ static inline void init_watch(struct watch *watch)
+ 
+ static inline void post_watch_notification(struct watch_list *wlist,
+ 					   struct watch_notification *n,
++					   const struct cred *cred,
+ 					   u64 id)
+ {
+ 	if (unlikely(wlist))
+-		__post_watch_notification(wlist, n, id);
++		__post_watch_notification(wlist, n, cred, id);
+ }
+ 
+ static inline void remove_watch_list(struct watch_list *wlist)
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 66b424e8c104..8394e42fe5ae 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -194,7 +194,8 @@ static inline void notify_key(struct key *key,
+ 		.aux		= aux,
+ 	};
+ 
+-	post_watch_notification(key->watchers, &n.watch, n.key_id);
++	post_watch_notification(key->watchers, &n.watch, current_cred(),
++				n.key_id);
+ #endif
+ }
+ 
+diff --git a/security/security.c b/security/security.c
+index 2439a5613813..2e9c74ca3eac 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1375,6 +1375,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
+ }
+ EXPORT_SYMBOL(security_inode_getsecctx);
+ 
++#ifdef CONFIG_WATCH_QUEUE
++int security_post_notification(const struct cred *q_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n)
++{
++	return call_int_hook(post_notification, 0, q_cred, cred, n);
++}
++#endif
++
+ #ifdef CONFIG_SECURITY_NETWORK
+ 
+ int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk)
