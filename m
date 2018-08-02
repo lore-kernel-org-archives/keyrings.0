@@ -1,33 +1,130 @@
 From: Denis Kenzior <denkenz@gmail.com>
-Date: Fri, 03 Aug 2018 15:12:49 +0000
-Subject: Re: [RFCv3 00/13] KEYS: TPM 1.2 asymmetric key type
-Message-Id: <e8dbb009-8ff3-11ba-4ee2-f96d73ae0a73@gmail.com>
+Date: Thu, 02 Aug 2018 18:31:16 +0000
+Subject: [RFCv3 08/13] KEYS: asym_tpm: Add loadkey2 and flushspecific
+Message-Id: <20180802183121.22909-9-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180802183121.22909-1-denkenz@gmail.com>
-In-Reply-To: <20180802183121.22909-1-denkenz@gmail.com>
 To: keyrings@vger.kernel.org
 
-Hi David,
+This commit adds TPM_LoadKey2 and TPM_FlushSpecific operations.
 
-On 08/03/2018 10:07 AM, David Howells wrote:
-> Denis Kenzior <denkenz@gmail.com> wrote:
-> 
->> 	create_tpm_key -s 2048 -w /tmp/privkey.pem /tmp/privkey.tpm
-> 
-> Where do I find this command?
-> 
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+---
+ crypto/asymmetric_keys/asym_tpm.c | 94 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 94 insertions(+)
 
-It is part of the trousers openssl_tpm_engine.
-https://git.code.sf.net/p/trousers/openssl_tpm_engine
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index b41ff0a07bab..9aed598dd9b0 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -7,11 +7,105 @@
+ #include <linux/seq_file.h>
+ #include <linux/scatterlist.h>
+ #include <linux/tpm.h>
++#include <linux/tpm_command.h>
+ #include <crypto/akcipher.h>
++#include <crypto/hash.h>
++#include <crypto/sha.h>
+ #include <asm/unaligned.h>
+ #include <keys/asymmetric-subtype.h>
++#include "../../security/keys/trusted.h"
+ #include <crypto/asym_tpm_subtype.h>
+ 
++#define TPM_ORD_FLUSHSPECIFIC	186
++#define TPM_ORD_LOADKEY2	65
++#define TPM_LOADKEY2_SIZE		59
++#define TPM_FLUSHSPECIFIC_SIZE		18
++
++#define TPM_RT_KEY                      0x00000001
++
++/*
++ * Load a TPM key from the blob provided by userspace
++ */
++static int tpm_loadkey2(struct tpm_buf *tb,
++			uint32_t keyhandle, unsigned char *keyauth,
++			const unsigned char *keyblob, int keybloblen,
++			uint32_t *newhandle)
++{
++	unsigned char nonceodd[TPM_NONCE_SIZE];
++	unsigned char enonce[TPM_NONCE_SIZE];
++	unsigned char authdata[SHA1_DIGEST_SIZE];
++	uint32_t authhandle = 0;
++	unsigned char cont = 0;
++	uint32_t ordinal;
++	int ret;
++
++	ordinal = htonl(TPM_ORD_LOADKEY2);
++
++	/* session for loading the key */
++	ret = oiap(tb, &authhandle, enonce);
++	if (ret < 0) {
++		pr_info("oiap failed (%d)\n", ret);
++		return ret;
++	}
++
++	/* generate odd nonce */
++	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
++	if (ret < 0) {
++		pr_info("tpm_get_random failed (%d)\n", ret);
++		return ret;
++	}
++
++	/* calculate authorization HMAC value */
++	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
++			   nonceodd, cont, sizeof(uint32_t), &ordinal,
++			   keybloblen, keyblob, 0, 0);
++	if (ret < 0)
++		return ret;
++
++	/* build the request buffer */
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
++	store32(tb, TPM_LOADKEY2_SIZE + keybloblen);
++	store32(tb, TPM_ORD_LOADKEY2);
++	store32(tb, keyhandle);
++	storebytes(tb, keyblob, keybloblen);
++	store32(tb, authhandle);
++	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
++	store8(tb, cont);
++	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
++
++	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
++	if (ret < 0) {
++		pr_info("authhmac failed (%d)\n", ret);
++		return ret;
++	}
++
++	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd, keyauth,
++			     SHA1_DIGEST_SIZE, 0, 0);
++	if (ret < 0) {
++		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
++		return ret;
++	}
++
++	*newhandle = LOAD32(tb->data, TPM_DATA_OFFSET);
++	return 0;
++}
++
++/*
++ * Execute the FlushSpecific TPM command
++ */
++static uint32_t tpm_flushspecific(struct tpm_buf *tb, uint32_t handle)
++{
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_COMMAND);
++	store32(tb, TPM_FLUSHSPECIFIC_SIZE);
++	store32(tb, TPM_ORD_FLUSHSPECIFIC);
++	store32(tb, handle);
++	store32(tb, TPM_RT_KEY);
++
++	return trusted_tpm_send(tb->data, MAX_BUF_SIZE);
++}
++
+ /*
+  * Maximum buffer size for the BER/DER encoded public key.  The public key
+  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
+-- 
+2.16.1
 
-I do have a small patch on top of that tree (Actually it is originally 
-from James Bottomley) that sets the use of the default 20 '0' key by 
-default.  I can send this to you privately if you want.
-
-TPM is a bit of a mess in Linux :)
-
-Regards,
--Denis
