@@ -1,154 +1,110 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Sat, 04 Aug 2018 00:01:54 +0000
-Subject: [PATCH v7 08/12] nfit/libnvdimm: add freeze security support to Intel nvdimm
-Message-Id: <153334091448.60955.17393000104848914817.stgit@djiang5-desk3.ch.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 02 Aug 2018 18:31:18 +0000
+Subject: [RFCv3 10/13] KEYS: asym_tpm: Implement the decrypt operation
+Message-Id: <20180802183121.22909-11-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Add support for freeze security on Intel nvdimm. This locks out any
-changes to security for the DIMM unless a reboot is done. This is triggered
-by writing "freeze" to the "security" sysfs attribute. libnvdimm will
-support the generic freeze_lock API call.
+This patch implements the pkey_decrypt operation using the private key
+blob.  The blob is first loaded into the TPM via tpm_loadkey2.  Once the
+handle is obtained, tpm_unbind operation is used to decrypt the data on
+the TPM and the result is returned.  The key loaded by tpm_loadkey2 is
+then evicted via tpm_flushspecific operation.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+This patch assumes that the SRK authorization is a well known 20-byte of
+zeros and the same holds for the key authorization of the provided key.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/acpi/nfit/intel.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   22 +++++++++++++++++++
- include/linux/libnvdimm.h  |    2 ++
- 3 files changed, 75 insertions(+)
+ crypto/asymmetric_keys/asym_tpm.c | 58 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 57 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 21d30222371f..ba886f1f5399 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,53 @@
- #include "intel.h"
- #include "nfit.h"
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index edcb81fe8937..af661c9d55d7 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -348,7 +348,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	info->max_enc_size = len;
+ 	info->max_dec_size = tk->key_len / 8;
  
-+static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_freeze_lock cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_FREEZE_LOCK,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = 0,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
-+	};
-+
-+	if (!test_bit(NVDIMM_INTEL_FREEZE_LOCK, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
-+
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+ out:
-+	return rc;
-+}
-+
- static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
- 		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
- {
-@@ -254,6 +301,9 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
- 	else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_ENABLED) {
- 		if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_LOCKED)
- 			*state = NVDIMM_SECURITY_LOCKED;
-+		else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_FROZEN ||
-+				nd_cmd.cmd.state & ND_INTEL_SEC_STATE_PLIMIT)
-+			*state = NVDIMM_SECURITY_FROZEN;
- 		else
- 			*state = NVDIMM_SECURITY_UNLOCKED;
- 	} else
-@@ -270,4 +320,5 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.unlock = intel_dimm_security_unlock,
- 	.change_key = intel_dimm_security_update_passphrase,
- 	.disable = intel_dimm_security_disable,
-+	.freeze_lock = intel_dimm_security_freeze_lock,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 4169aabe814e..ccb5fd13cd57 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -143,6 +143,26 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
+-	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
++	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
++			      KEYCTL_SUPPORTS_DECRYPT;
+ 
+ 	ret = 0;
+ error_free_tfm:
+@@ -417,6 +418,58 @@ static int tpm_key_encrypt(struct tpm_key *tk,
+ 	return ret;
  }
  
-+static int nvdimm_security_freeze_lock(struct device *dev)
++/*
++ * Decryption operation is performed with the private key in the TPM.
++ */
++static int tpm_key_decrypt(struct tpm_key *tk,
++			   struct kernel_pkey_params *params,
++			   const void *in, void *out)
 +{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	int rc;
++	struct tpm_buf *tb;
++	uint32_t keyhandle;
++	uint8_t srkauth[SHA1_DIGEST_SIZE];
++	uint8_t keyauth[SHA1_DIGEST_SIZE];
++	int r;
 +
-+	if (!nvdimm->security_ops)
-+		return 0;
++	pr_devel("=>%s()\n", __func__);
 +
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
-+		return 0;
++	if (params->hash_algo)
++		return -ENOPKG;
 +
-+	rc = nvdimm->security_ops->freeze_lock(nvdimm_bus, nvdimm);
-+	if (rc < 0)
-+		return rc;
++	if (strcmp(params->encoding, "pkcs1"))
++		return -ENOPKG;
 +
-+	nvdimm_security_get_state(dev);
-+	return 0;
++	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
++	if (!tb)
++		return -ENOMEM;
++
++	/* TODO: Handle a non-all zero SRK authorization */
++	memset(srkauth, 0, sizeof(srkauth));
++
++	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
++				tk->blob, tk->blob_len, &keyhandle);
++	if (r < 0) {
++		pr_devel("loadkey2 failed (%d)\n", r);
++		goto error;
++	}
++
++	/* TODO: Handle a non-all zero key authorization */
++	memset(keyauth, 0, sizeof(keyauth));
++
++	r = tpm_unbind(tb, keyhandle, keyauth,
++		       in, params->in_len, out, params->out_len);
++	if (r < 0)
++		pr_devel("tpm_unbind failed (%d)\n", r);
++
++	if (tpm_flushspecific(tb, keyhandle) < 0)
++		pr_devel("flushspecific failed (%d)\n", r);
++
++error:
++	kzfree(tb);
++	pr_devel("<=%s() = %d\n", __func__, r);
++	return r;
 +}
 +
- static int nvdimm_security_disable(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -795,6 +815,8 @@ static ssize_t security_store(struct device *dev,
- 		rc = nvdimm_security_change_key(dev, old_id, new_id);
- 	} else if (sysfs_streq(buf, "disable"))
- 		rc = nvdimm_security_disable(dev);
-+	else if (sysfs_streq(buf, "freeze"))
-+		rc = nvdimm_security_freeze_lock(dev);
- 	else
- 		return -EINVAL;
- 
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index c60ab4b238f3..bcab42caa948 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -185,6 +185,8 @@ struct nvdimm_security_ops {
- 	int (*disable)(struct nvdimm_bus *nvdimm_bus,
- 			struct nvdimm *nvdimm,
- 			const struct nvdimm_key_data *nkey);
-+	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm);
- };
- 
- void badrange_init(struct badrange *badrange);
+ /*
+  * Do encryption, decryption and signing ops.
+  */
+@@ -431,6 +484,9 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
+ 	case kernel_pkey_encrypt:
+ 		ret = tpm_key_encrypt(tk, params, in, out);
+ 		break;
++	case kernel_pkey_decrypt:
++		ret = tpm_key_decrypt(tk, params, in, out);
++		break;
+ 	default:
+ 		BUG();
+ 	}
+-- 
+2.16.1
 
