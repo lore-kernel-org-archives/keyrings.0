@@ -1,108 +1,131 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2018 15:59:18 +0000
-Subject: [PATCH 22/23] TPMLIB: Provide call for TPM_FlushSpecific
-Message-Id: <153486715863.13066.9507446322086735862.stgit@warthog.procyon.org.uk>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 02 Aug 2018 18:31:14 +0000
+Subject: [RFCv3 06/13] KEYS: asym_tpm: Implement encryption operation
+Message-Id: <20180802183121.22909-7-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
+This patch impelements the pkey_encrypt operation.  The public key
+portion extracted from the TPM key blob is used.  The operation is
+performed entirely in software using the crypto API.
 
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
+ crypto/asymmetric_keys/asym_tpm.c | 84 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 84 insertions(+)
 
- drivers/char/tpm/tpm-library.c |   31 +++++++++++++++++++++++++++++++
- include/linux/tpm.h            |   17 +++++++++++++++++
- include/linux/tpm_command.h    |    1 +
- 3 files changed, 49 insertions(+)
-
-diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
-index d279243ccc00..27e993f0b0b7 100644
---- a/drivers/char/tpm/tpm-library.c
-+++ b/drivers/char/tpm/tpm-library.c
-@@ -1110,6 +1110,37 @@ out:
- }
- EXPORT_SYMBOL_GPL(tpm_load_key2);
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 3eed931a6362..b41ff0a07bab 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -172,6 +172,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	info->max_enc_size = len;
+ 	info->max_dec_size = tk->key_len / 8;
  
-+/**
-+ * tpm_flush_specific - Tell the TPM to discard a handle and associated resources
-+ * @chip: The chip to use
-+ * @handle: The handle to discard
-+ * @handle_type: The type of handle
++	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
++
+ 	ret = 0;
+ error_free_tfm:
+ 	crypto_free_akcipher(tfm);
+@@ -179,6 +181,87 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	return ret;
+ }
+ 
++/*
++ * Encryption operation is performed with the public key.  Hence it is done
++ * in software
 + */
-+int tpm_flush_specific(struct tpm_chip *chip,
-+		       uint32_t handle, enum tpm_resource_type handle_type)
++static int tpm_key_encrypt(struct tpm_key *tk,
++			   struct kernel_pkey_params *params,
++			   const void *in, void *out)
 +{
-+	struct tpm_buf *tb;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	struct crypto_akcipher *tfm;
++	struct akcipher_request *req;
++	struct crypto_wait cwait;
++	struct scatterlist in_sg, out_sg;
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
 +	int ret;
 +
-+	/* alloc some work space */
-+	tb = kmalloc(sizeof(*tb), GFP_KERNEL);
-+	if (!tb)
-+		return -ENOMEM;
++	pr_devel("=>%s()\n", __func__);
 +
-+	/* build and send the TPM request packet */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_COMMAND);
-+	store32(tb, TPM_DATA_OFFSET + 8);
-+	store32(tb, TPM_ORD_FLUSHSPECIFIC);
-+	store32(tb, handle);
-+	store32(tb, handle_type);
++	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
 +
-+	ret = tpm_send_dump(chip, tb, "flushing handle");
-+	kfree(tb);
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
++
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	req = akcipher_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
++
++	sg_init_one(&in_sg, in, params->in_len);
++	sg_init_one(&out_sg, out, params->out_len);
++	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
++				   params->out_len);
++	crypto_init_wait(&cwait);
++	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				      CRYPTO_TFM_REQ_MAY_SLEEP,
++				      crypto_req_done, &cwait);
++
++	ret = crypto_akcipher_encrypt(req);
++	ret = crypto_wait_req(ret, &cwait);
++
++	if (ret = 0)
++		ret = req->dst_len;
++
++	akcipher_request_free(req);
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(tpm_flush_specific);
 +
- /**
-  * tpm_library_use - Tell the TPM library we want to make use of it
-  *
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 2be0decff93b..753ffd3799a1 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -109,6 +109,19 @@ enum tpm_entity_type {
- 	TPM_ET_RESERVED_HANDLE		= 0x40,
++/*
++ * Do encryption, decryption and signing ops.
++ */
++static int tpm_key_eds_op(struct kernel_pkey_params *params,
++			  const void *in, void *out)
++{
++	struct tpm_key *tk = params->key->payload.data[asym_crypto];
++	int ret = -EOPNOTSUPP;
++
++	/* Perform the encryption calculation. */
++	switch (params->op) {
++	case kernel_pkey_encrypt:
++		ret = tpm_key_encrypt(tk, params, in, out);
++		break;
++	default:
++		BUG();
++	}
++
++	return ret;
++}
++
+ /*
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -338,6 +421,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.describe		= asym_tpm_describe,
+ 	.destroy		= asym_tpm_destroy,
+ 	.query			= tpm_key_query,
++	.eds_op			= tpm_key_eds_op,
  };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
  
-+enum tpm_resource_type {
-+	TPM_RT_KEY			= 0x00000001,
-+	TPM_RT_AUTH			= 0x00000002,
-+	TPM_RT_HASH			= 0x00000003,
-+	TPM_RT_TRANS			= 0x00000004,
-+	TPM_RT_CONTEXT			= 0x00000005,
-+	TPM_RT_COUNTER			= 0x00000006,
-+	TPM_RT_DELEGATE			= 0x00000007,
-+	TPM_RT_DAA_TPM			= 0x00000008,
-+	TPM_RT_DAA_V0			= 0x00000009,
-+	TPM_RT_DAA_V1			= 0x0000000a,
-+};
-+
- struct tpm_buf {
- 	unsigned short len;
- 	unsigned short offset;
-@@ -154,4 +167,8 @@ extern int tpm_load_key2(struct tpm_chip *chip,
- 			 const struct tpm_wrapped_key *wrapped_key,
- 			 uint32_t *_key_handle);
- 
-+extern int tpm_flush_specific(struct tpm_chip *chip,
-+			      uint32_t handle,
-+			      enum tpm_resource_type handle_type);
-+
- #endif
-diff --git a/include/linux/tpm_command.h b/include/linux/tpm_command.h
-index 211d4ce75f67..8b52447bbee3 100644
---- a/include/linux/tpm_command.h
-+++ b/include/linux/tpm_command.h
-@@ -30,6 +30,7 @@ enum tpm_ordinal {
- 	TPM_ORD_READPUBEK		= 124,
- 	TPM_ORD_SAVESTATE		= 152,
- 	TPM_ORD_STARTUP			= 153,
-+	TPM_ORD_FLUSHSPECIFIC		= 186,
- };
- 
- /* Other constants */
+-- 
+2.16.1
+
