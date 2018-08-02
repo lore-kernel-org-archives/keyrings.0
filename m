@@ -1,76 +1,78 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 01 Aug 2018 22:50:53 +0000
-Subject: Re: LSM hook for mount, superblock and keys watch notifications
-Message-Id: <19025.1533163853@warthog.procyon.org.uk>
+Date: Thu, 02 Aug 2018 11:07:00 +0000
+Subject: Re: [PATCH v5 06/12] nfit/libnvdimm: add set passphrase support for Intel nvdimms
+Message-Id: <13701.1533208020@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <83894922-c126-3648-d2f5-191256111718@schaufler-ca.com> <675e5c24-36ef-4cc5-846c-1414c1195d85@schaufler-ca.com> <153235954191.32640.5792167066538704794.stgit@warthog.procyon.org.uk> <7561.1533157444@warthog.procyon.org.uk>
-In-Reply-To: <83894922-c126-3648-d2f5-191256111718@schaufler-ca.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, raven@themaw.net, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+References: <7f826777-c9bd-d602-a8d5-613adc6b4a94@intel.com>
+ <4d79bd7b-c992-8259-2408-100756b9983e@intel.com>
+ <0a5ba1eb-01d2-b0f2-5e67-262fdb488bb7@intel.com>
+ <153186087803.27463.7423668214880824595.stgit@djiang5-desk3.ch.intel.com>
+ <153186061802.27463.14539931103401173743.stgit@djiang5-desk3.ch.intel.com>
+ <9360.1531912457@warthog.procyon.org.uk>
+ <19525.1531988520@warthog.procyon.org.uk>
+ <9090.1532101203@warthog.procyon.org.uk>
+In-Reply-To: <7f826777-c9bd-d602-a8d5-613adc6b4a94@intel.com>
+To: Dave Jiang <dave.jiang@intel.com>
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Casey Schaufler <casey@schaufler-ca.com> wrote:
+Dave Jiang <dave.jiang@intel.com> wrote:
 
-> This looks like it will solve the problem for security modules.
-> I still think there should be some sort of default controls.
+> New:
+> 1. userspace inject key into kernel keyring
 
-The control for keyrings is that you have to have View permission on the thing
-you want to set a watchpoint on.
+I presume this step is what you do to use the nvdimm?  If so, this can use
+request_key() and then splice the key across to the kernel keyring.
 
-For mount topology changes, everyone can see everything in their namespace
-anyway just by repeatedly parsing /proc/mounts or similar.  Whether or not
-this is a good idea...
+> 2. userspace triggers update with new key id and old key id
+> 3. kernel looks up keys with key-id in kernel
+> 4. kernel tries to update with hardware
+> 5. on success kernel accepts new key (or update old key payload)
 
-Superblocks - some of the things generated here *shouldn't* be hidden - EIO
-for example.
+     ... and splices the key into the kernel keyring.
 
-> The idea that the default is that anyone can listen for everyone's
-> events, and there's no way to control it does not sit well.
-> You could implement that as a security module with the one hook
-> that does UID based controls, but I don't see a lot of advantages
-> to doing it that way. At the least a process should be able to hide
-> the events it would generate from everyone.
+> Also, unlock right now basically is a request-key to userspace to retrieve
+> the key before we unlock. If we go the other way it sounds like we need to
+> inject all the keys from userspace first before unlock can happen?
 
-That's tricky.  Some of the events aren't actually generated directly by a
-process stepping on a trigger - EIO for example.  Further, none of the
-interfaces available have a "don't notify" button.  Now I can add one to
-move_mount() and fsmount(), but not write() (which might cause EDQUOT or
-ENOSPC errors that we might want to know about irrespective of what the user
-wants).
+No, you'd still use request_key() for that.
 
-> Better would be to have a specification (e.g. mod bits, an ACL) for who
-> should receive them.
+It's the change-password event that I'm suggesting you should use two
+explicitly nominated keys for.
 
-How does one attach this, and to where?  It doesn't belong to the watch queue,
-it belongs to the watched object.  It would also need attaching before the
-object gets published.
+> I do think associating with the current key id with the nvdimm object
+> can make things a lot easier and I can just do key_lookup() instead of
+> calling request_key().
 
-If you're using fsopen(), you could attach it before doing fsmount() to set an
-ACL on a superblock, I suppose:
+You shouldn't be using key_lookup().
 
-	fd = fsopen("ext4", 0);
-	fsconfig(fd, FSCONFIG_SET_NAMESPACE, "user", NULL, userns_fd);
-	fsconfig(fd, FSCONFIG_SET_SB_ACL, NULL, "0:pw,1000:w", 0);
-	fsconfig(fd, FSCONFIG_SET_PATH, "source", "/dev/sda1", AT_FDCWD);
-	fsconfig(fd, FSCONFIG_SET_FLAG, "acl", NULL, 0);
-	mfd = fsmount(0, 0);
+> What about:
+> 1. user triggers update through sysfs
+> 2. kernel fetches old key with key-id that's associated with the nvdimm
+> object from keyring
 
-where 0 and 1000 are uids and [pw] indicate pickability and watchability, with
-the former allowing the use of fspick() with it:
+You can do that.  You'd use key_search() for that.
 
-	fd = fspick(AT_FDCWD, "/mnt", 0);
+> 3. kernel request_key from userspace for new key
 
-or, even:
+This bit I quibble with.  I think you should specify it to make sure that you
+get the password you intended and don't pick something else up by accident.
 
-	fd = fspick(0, "6f9553ab-7329-4998-bd5b-a5b4add9ad79",
-		    FSPICK_OPEN_BY_UUID);
+> 4. kernel sends both payloads to hardware to attempt update
+> 5. on success kernel invalidates old key and updates key-id associated
+> with the nvdimm object
 
-I'm not sure how you'd attach an ACL to mount objects, though.  I guess
-move_mount() would have to take a 6th parameter that's the ACL.  You wouldn't
-necessarily be able to use the same ACL for both mount and superblock because
-of namespaces - it should be possible to have a superblock that's in multiple
-user namespace (though it currently isn't).
+I think you should just link the new key across.  It should have the same
+description as the old key to the kernel keyring.  This would displace the
+old key automatically.
+
+> ... lookup the key via key-id ...
+
+You shouldn't use key IDs within the kernel, except at the UAPI boundary.  You
+should be using the key description as the handle - and, in this case, it
+should be an identifier you can match uniquely within the system with the
+particular nvdimm.
 
 David
