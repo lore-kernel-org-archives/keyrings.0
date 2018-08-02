@@ -1,182 +1,196 @@
 From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 02 Aug 2018 18:31:10 +0000
-Subject: [RFCv3 02/13] KEYS: asym_tpm: add skeleton for asym_tpm
-Message-Id: <20180802183121.22909-3-denkenz@gmail.com>
+Date: Thu, 02 Aug 2018 18:31:11 +0000
+Subject: [RFCv3 03/13] KEYS: Add parser for TPM-based keys
+Message-Id: <20180802183121.22909-4-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-This patch adds the basic skeleton for the asym_tpm asymmetric key
-subtype.
+For TPM based keys, the only standard seems to be described here:
+http://david.woodhou.se/draft-woodhouse-cert-best-practice.html#rfc.section.4.4
+
+Quote from the relevant section:
+"Rather, a common form of storage for "wrapped" keys is to encode the
+binary TCPA_KEY structure in a single ASN.1 OCTET-STRING, and store the
+result in PEM format with the tag "-----BEGIN TSS KEY BLOB-----". "
+
+This patch implements the above behavior.  It is assumed that the PEM
+encoding is stripped out by userspace and only the raw DER/BER format is
+provided.  This is similar to how PKCS7, PKCS8 and X.509 keys are
+handled.
 
 Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- crypto/asymmetric_keys/Kconfig    | 11 +++++
- crypto/asymmetric_keys/Makefile   |  1 +
- crypto/asymmetric_keys/asym_tpm.c | 94 +++++++++++++++++++++++++++++++++++++++
- include/crypto/asym_tpm_subtype.h | 16 +++++++
- 4 files changed, 122 insertions(+)
- create mode 100644 crypto/asymmetric_keys/asym_tpm.c
- create mode 100644 include/crypto/asym_tpm_subtype.h
+ crypto/asymmetric_keys/Kconfig      |   9 ++++
+ crypto/asymmetric_keys/Makefile     |  11 ++++
+ crypto/asymmetric_keys/tpm.asn1     |   5 ++
+ crypto/asymmetric_keys/tpm_parser.c | 104 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 129 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/tpm.asn1
+ create mode 100644 crypto/asymmetric_keys/tpm_parser.c
 
 diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 66a7dad7ed3d..b75555c7d8ae 100644
+index b75555c7d8ae..88353a9ebc9b 100644
 --- a/crypto/asymmetric_keys/Kconfig
 +++ b/crypto/asymmetric_keys/Kconfig
-@@ -21,6 +21,17 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- 	  appropriate hash algorithms (such as SHA-1) must be available.
- 	  ENOPKG will be reported if the requisite algorithm is unavailable.
+@@ -52,6 +52,15 @@ config PKCS8_PRIVATE_KEY_PARSER
+ 	  private key data and provides the ability to instantiate a crypto key
+ 	  from that data.
  
-+config ASYMMETRIC_TPM_KEY_SUBTYPE
-+	tristate "Asymmetric TPM backed private key subtype"
-+	depends on TCG_TPM
-+	select CRYPTO_HMAC
-+	select CRYPTO_SHA1
-+	select CRYPTO_HASH_INFO
++config TPM_KEY_PARSER
++	tristate "TPM private key parser"
++	depends on ASYMMETRIC_TPM_KEY_SUBTYPE
++	select ASN1
 +	help
-+	  This option provides support for TPM backed private key type handling.
-+	  Operations such as sign, verify, encrypt, decrypt are performed by
-+	  the TPM after the private key is loaded.
++	  This option provides support for parsing TPM format blobs for
++	  private key data and provides the ability to instantiate a crypto key
++	  from that data.
 +
- config X509_CERTIFICATE_PARSER
- 	tristate "X.509 certificate parser"
- 	depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ config PKCS7_MESSAGE_PARSER
+ 	tristate "PKCS#7 message parser"
+ 	depends on X509_CERTIFICATE_PARSER
 diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index c38424f55b08..73fbe650ff1d 100644
+index 73fbe650ff1d..28b91adba2ae 100644
 --- a/crypto/asymmetric_keys/Makefile
 +++ b/crypto/asymmetric_keys/Makefile
-@@ -11,6 +11,7 @@ asymmetric_keys-y := \
- 	signature.o
+@@ -75,3 +75,14 @@ verify_signed_pefile-y := \
  
- obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
-+obj-$(CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE) += asym_tpm.o
- 
- #
- # X.509 Certificate handling
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+ $(obj)/mscode_parser.o: $(obj)/mscode.asn1.h $(obj)/mscode.asn1.h
+ $(obj)/mscode.asn1.o: $(obj)/mscode.asn1.c $(obj)/mscode.asn1.h
++
++#
++# TPM private key parsing
++#
++obj-$(CONFIG_TPM_KEY_PARSER) += tpm_key_parser.o
++tpm_key_parser-y := \
++	tpm.asn1.o \
++	tpm_parser.o
++
++$(obj)/tpm_parser.o: $(obj)/tpm.asn1.h
++$(obj)/tpm.asn1.o: $(obj)/tpm.asn1.c $(obj)/tpm.asn1.h
+diff --git a/crypto/asymmetric_keys/tpm.asn1 b/crypto/asymmetric_keys/tpm.asn1
 new file mode 100644
-index 000000000000..f98335068a3b
+index 000000000000..d7f194232f30
 --- /dev/null
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -0,0 +1,94 @@
++++ b/crypto/asymmetric_keys/tpm.asn1
+@@ -0,0 +1,5 @@
++--
++-- Unencryted TPM Blob.  For details of the format, see:
++-- http://david.woodhou.se/draft-woodhouse-cert-best-practice.html#I-D.mavrogiannopoulos-tpmuri
++--
++PrivateKeyInfo ::= OCTET STRING ({ tpm_note_key })
+diff --git a/crypto/asymmetric_keys/tpm_parser.c b/crypto/asymmetric_keys/tpm_parser.c
+new file mode 100644
+index 000000000000..113f67c74cbe
+--- /dev/null
++++ b/crypto/asymmetric_keys/tpm_parser.c
+@@ -0,0 +1,104 @@
 +// SPDX-License-Identifier: GPL-2.0
-+#define pr_fmt(fmt) "ASYM-TPM: "fmt
-+#include <linux/slab.h>
++#define pr_fmt(fmt) "TPM-PARSER: "fmt
 +#include <linux/module.h>
-+#include <linux/export.h>
 +#include <linux/kernel.h>
-+#include <linux/seq_file.h>
-+#include <linux/scatterlist.h>
-+#include <linux/tpm.h>
++#include <linux/export.h>
++#include <linux/slab.h>
++#include <linux/err.h>
 +#include <keys/asymmetric-subtype.h>
++#include <keys/asymmetric-parser.h>
 +#include <crypto/asym_tpm_subtype.h>
++#include "tpm.asn1.h"
++
++struct tpm_parse_context {
++	const void	*blob;
++	u32		blob_len;
++};
 +
 +/*
-+ * Provide a part of a description of the key for /proc/keys.
++ * Note the key data of the ASN.1 blob.
 + */
-+static void asym_tpm_describe(const struct key *asymmetric_key,
-+			      struct seq_file *m)
++int tpm_note_key(void *context, size_t hdrlen,
++		   unsigned char tag,
++		   const void *value, size_t vlen)
 +{
-+	struct tpm_key *tk = asymmetric_key->payload.data[asym_crypto];
++	struct tpm_parse_context *ctx = context;
 +
-+	pr_info("%s: tk: %p\n", __func__, tk);
++	ctx->blob = value;
++	ctx->blob_len = vlen;
 +
-+	if (!tk)
-+		return;
-+
-+	seq_printf(m, "TPM1.2/Blob");
++	return 0;
 +}
 +
-+static void asym_tpm_destroy(void *payload0, void *payload3)
++/*
++ * Parse a TPM-encrypted private key blob.
++ */
++static struct tpm_key *tpm_parse(const void *data, size_t datalen)
 +{
-+	struct tpm_key *tk = payload0;
++	struct tpm_parse_context ctx;
++	long ret;
 +
-+	pr_info("%s: %p\n", __func__, tk);
++	memset(&ctx, 0, sizeof(ctx));
 +
-+	if (!tk)
-+		return;
++	/* Attempt to decode the private key */
++	ret = asn1_ber_decoder(&tpm_decoder, &ctx, data, datalen);
++	if (ret < 0)
++		goto error;
 +
-+	kfree(tk->blob);
-+	tk->blob_len = 0;
++	return tpm_key_create(ctx.blob, ctx.blob_len);
 +
-+	kfree(tk);
++error:
++	return ERR_PTR(ret);
 +}
-+
-+/* Given the blob, parse it and load it into the TPM */
-+struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
++/*
++ * Attempt to parse a data blob for a key as a TPM private key blob.
++ */
++static int tpm_key_preparse(struct key_preparsed_payload *prep)
 +{
-+	int r;
 +	struct tpm_key *tk;
 +
-+	r = tpm_is_tpm2(NULL);
-+	if (r < 0)
-+		goto error;
++	/*
++	 * TPM 1.2 keys are max 2048 bits long, so assume the blob is no
++	 * more than 4x that
++	 */
++	if (prep->datalen > 256 * 4)
++		return -EMSGSIZE;
 +
-+	/* We don't support TPM2 yet */
-+	if (r > 0) {
-+		r = -ENODEV;
-+		goto error;
-+	}
++	tk = tpm_parse(prep->data, prep->datalen);
 +
-+	r = -ENOMEM;
-+	tk = kzalloc(sizeof(struct tpm_key), GFP_KERNEL);
-+	if (!tk)
-+		goto error;
++	if (IS_ERR(tk))
++		return PTR_ERR(tk);
 +
-+	tk->blob = kmemdup(blob, blob_len, GFP_KERNEL);
-+	if (!tk->blob)
-+		goto error_memdup;
++	pr_info("%s: TPM1.2 sealed blob parsing succeeded\n", __func__);
 +
-+	tk->blob_len = blob_len;
-+
-+	return tk;
-+
-+error_memdup:
-+	kfree(tk);
-+error:
-+	return ERR_PTR(r);
++	/* We're pinning the module by being linked against it */
++	__module_get(asym_tpm_subtype.owner);
++	prep->payload.data[asym_subtype] = &asym_tpm_subtype;
++	prep->payload.data[asym_key_ids] = NULL;
++	prep->payload.data[asym_crypto] = tk;
++	prep->payload.data[asym_auth] = NULL;
++	prep->quotalen = 100;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(tpm_key_create);
 +
-+/*
-+ * TPM-based asymmetric key subtype
-+ */
-+struct asymmetric_key_subtype asym_tpm_subtype = {
-+	.owner			= THIS_MODULE,
-+	.name			= "asym_tpm",
-+	.name_len		= sizeof("asym_tpm") - 1,
-+	.describe		= asym_tpm_describe,
-+	.destroy		= asym_tpm_destroy,
++static struct asymmetric_key_parser tpm_key_parser = {
++	.owner	= THIS_MODULE,
++	.name	= "tpm_parser",
++	.parse	= tpm_key_preparse,
 +};
-+EXPORT_SYMBOL_GPL(asym_tpm_subtype);
 +
-+MODULE_DESCRIPTION("TPM based asymmetric key subtype");
-+MODULE_AUTHOR("Intel Corporation");
++static int __init tpm_key_init(void)
++{
++	return register_asymmetric_key_parser(&tpm_key_parser);
++}
++
++static void __exit tpm_key_exit(void)
++{
++	unregister_asymmetric_key_parser(&tpm_key_parser);
++}
++
++module_init(tpm_key_init);
++module_exit(tpm_key_exit);
++
++MODULE_DESCRIPTION("TPM private key-blob parser");
 +MODULE_LICENSE("GPL v2");
-diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
-new file mode 100644
-index 000000000000..03550b850998
---- /dev/null
-+++ b/include/crypto/asym_tpm_subtype.h
-@@ -0,0 +1,16 @@
-+// SPDX-License-Identifier: GPL-2.0
-+#ifndef _LINUX_ASYM_TPM_SUBTYPE_H
-+#define _LINUX_ASYM_TPM_SUBTYPE_H
-+
-+#include <linux/keyctl.h>
-+
-+struct tpm_key {
-+	void *blob;
-+	u32 blob_len;
-+};
-+
-+struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
-+
-+extern struct asymmetric_key_subtype asym_tpm_subtype;
-+
-+#endif /* _LINUX_ASYM_TPM_SUBTYPE_H */
 -- 
 2.16.1
 
