@@ -1,145 +1,139 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Tue, 28 Aug 2018 22:47:29 +0000
-Subject: [PATCH v8 02/12] libnvdimm: create keyring to store security keys
-Message-Id: <153549644916.4089.12258485183075906901.stgit@djiang5-desk3.ch.intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 02 Aug 2018 18:31:15 +0000
+Subject: [RFCv3 07/13] KEYS: trusted: Expose common functionality
+Message-Id: <20180802183121.22909-8-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Prepping the libnvdimm to support security management by adding a keyring
-in order to provide passphrase management through the kernel key management
-APIs.
+This patch exposes some common functionality needed to send TPM
+commands.  The current approach is a complete hack and needs to be
+addressed properly.  This commit just show-cases what functionality
+would need to be moved to a shared location or exposed in some other
+manner.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/nvdimm/core.c      |    7 ++++++-
- drivers/nvdimm/dimm_devs.c |   29 ++++++++++++++++++++++++++++-
- drivers/nvdimm/nd-core.h   |    1 +
- include/linux/libnvdimm.h  |    3 +++
- kernel/cred.c              |    1 +
- 5 files changed, 39 insertions(+), 2 deletions(-)
+ crypto/asymmetric_keys/Kconfig |  1 +
+ security/keys/trusted.c        | 12 ++++++++----
+ security/keys/trusted.h        | 14 +++++++++++++-
+ 3 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/nvdimm/core.c b/drivers/nvdimm/core.c
-index acce050856a8..3cd33d5c7cf0 100644
---- a/drivers/nvdimm/core.c
-+++ b/drivers/nvdimm/core.c
-@@ -437,9 +437,12 @@ static __init int libnvdimm_init(void)
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 88353a9ebc9b..be70ca6c85d3 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -24,6 +24,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ config ASYMMETRIC_TPM_KEY_SUBTYPE
+ 	tristate "Asymmetric TPM backed private key subtype"
+ 	depends on TCG_TPM
++	depends on TRUSTED_KEYS
+ 	select CRYPTO_HMAC
+ 	select CRYPTO_SHA1
+ 	select CRYPTO_HASH_INFO
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index b69d3b1777c2..1c025fdfe0e0 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -121,7 +121,7 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
+ /*
+  * calculate authorization info fields to send to TPM
+  */
+-static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 			unsigned int keylen, unsigned char *h1,
+ 			unsigned char *h2, unsigned char h3, ...)
+ {
+@@ -168,11 +168,12 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 	kzfree(sdesc);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(TSS_authhmac);
+ 
+ /*
+  * verify the AUTH1_COMMAND (Seal) result from TPM
+  */
+-static int TSS_checkhmac1(unsigned char *buffer,
++int TSS_checkhmac1(unsigned char *buffer,
+ 			  const uint32_t command,
+ 			  const unsigned char *ononce,
+ 			  const unsigned char *key,
+@@ -249,6 +250,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
+ 	kzfree(sdesc);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(TSS_checkhmac1);
+ 
+ /*
+  * verify the AUTH2_COMMAND (unseal) result from TPM
+@@ -355,7 +357,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
+  * For key specific tpm requests, we will generate and send our
+  * own TPM command packets using the drivers send function.
+  */
+-static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
++int trusted_tpm_send(unsigned char *cmd, size_t buflen)
  {
  	int rc;
  
--	rc = nvdimm_bus_init();
-+	rc = nvdimm_devs_init();
- 	if (rc)
- 		return rc;
-+	rc = nvdimm_bus_init();
-+	if (rc)
-+		goto err_bus;
- 	rc = nvdimm_init();
- 	if (rc)
- 		goto err_dimm;
-@@ -454,6 +457,8 @@ static __init int libnvdimm_init(void)
- 	nvdimm_exit();
-  err_dimm:
- 	nvdimm_bus_exit();
-+ err_bus:
-+	nvdimm_devs_exit();
+@@ -367,6 +369,7 @@ static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ 		rc = -EPERM;
  	return rc;
  }
- 
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 8d348b22ba45..586432450c82 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -18,12 +18,15 @@
- #include <linux/io.h>
- #include <linux/fs.h>
- #include <linux/mm.h>
-+#include <linux/key.h>
-+#include <linux/init_task.h>
- #include "nd-core.h"
- #include "label.h"
- #include "pmem.h"
- #include "nd.h"
- 
- static DEFINE_IDA(dimm_ida);
-+static struct key *nvdimm_keyring;
++EXPORT_SYMBOL_GPL(trusted_tpm_send);
  
  /*
-  * Retrieve bus and dimm handle and return if this bus supports
-@@ -668,7 +671,31 @@ int nvdimm_bus_check_dimm_count(struct nvdimm_bus *nvdimm_bus, int dimm_count)
- }
- EXPORT_SYMBOL_GPL(nvdimm_bus_check_dimm_count);
- 
--void __exit nvdimm_devs_exit(void)
-+static int nvdimm_register_keyring(void)
+  * Lock a trusted key, by extending a selected PCR.
+@@ -425,7 +428,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ /*
+  * Create an object independent authorisation protocol (oiap) session
+  */
+-static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
  {
-+	nvdimm_keyring = keyring_alloc(".nvdimm",
-+			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, &init_cred,
-+			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			(KEY_USR_ALL & ~KEY_USR_SETATTR),
-+			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
-+	if (IS_ERR(nvdimm_keyring))
-+		return PTR_ERR(nvdimm_keyring);
-+
-+	return 0;
-+}
-+
-+static void nvdimm_unregister_keyring(void)
-+{
-+	key_revoke(nvdimm_keyring);
-+}
-+
-+int __init nvdimm_devs_init(void)
-+{
-+	return nvdimm_register_keyring();
-+}
-+
-+void  nvdimm_devs_exit(void)
-+{
-+	nvdimm_unregister_keyring();
- 	ida_destroy(&dimm_ida);
- }
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 79274ead54fb..2af0f89c4010 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -76,6 +76,7 @@ static inline bool is_memory(struct device *dev)
- struct nvdimm_bus *walk_to_nvdimm_bus(struct device *nd_dev);
- int __init nvdimm_bus_init(void);
- void nvdimm_bus_exit(void);
-+int nvdimm_devs_init(void);
- void nvdimm_devs_exit(void);
- void nd_region_devs_exit(void);
- void nd_region_probe_success(struct nvdimm_bus *nvdimm_bus, struct device *dev);
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 472171af7f60..51084043915c 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -155,6 +155,9 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
+ 	int ret;
  
+@@ -442,6 +445,7 @@ static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ 	       TPM_NONCE_SIZE);
+ 	return 0;
  }
++EXPORT_SYMBOL_GPL(oiap);
  
-+#define NVDIMM_PASSPHRASE_LEN		32
-+#define NVDIMM_KEY_DESC_LEN		22
-+
- void badrange_init(struct badrange *badrange);
- int badrange_add(struct badrange *badrange, u64 addr, u64 length);
- void badrange_forget(struct badrange *badrange, phys_addr_t start,
-diff --git a/kernel/cred.c b/kernel/cred.c
-index ecf03657e71c..3a161b78a0a4 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -64,6 +64,7 @@ struct cred init_cred = {
- 	.user_ns		= &init_user_ns,
- 	.group_info		= &init_groups,
+ struct tpm_digests {
+ 	unsigned char encauth[SHA1_DIGEST_SIZE];
+diff --git a/security/keys/trusted.h b/security/keys/trusted.h
+index 8d5fe9eafb22..adbcb6817826 100644
+--- a/security/keys/trusted.h
++++ b/security/keys/trusted.h
+@@ -3,7 +3,7 @@
+ #define __TRUSTED_KEY_H
+ 
+ /* implementation specific TPM constants */
+-#define MAX_BUF_SIZE			512
++#define MAX_BUF_SIZE			1024
+ #define TPM_GETRANDOM_SIZE		14
+ #define TPM_OSAP_SIZE			36
+ #define TPM_OIAP_SIZE			10
+@@ -36,6 +36,18 @@ enum {
+ 	SRK_keytype = 4
  };
-+EXPORT_SYMBOL(init_cred);
  
- static inline void set_cred_subscribers(struct cred *cred, int n)
- {
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++			unsigned int keylen, unsigned char *h1,
++			unsigned char *h2, unsigned char h3, ...);
++int TSS_checkhmac1(unsigned char *buffer,
++			  const uint32_t command,
++			  const unsigned char *ononce,
++			  const unsigned char *key,
++			  unsigned int keylen, ...);
++
++int trusted_tpm_send(unsigned char *cmd, size_t buflen);
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
++
+ #define TPM_DEBUG 0
+ 
+ #if TPM_DEBUG
+-- 
+2.16.1
+
