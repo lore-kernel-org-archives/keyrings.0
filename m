@@ -1,25 +1,28 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 23 Aug 2018 22:49:24 +0000
-Subject: Re: tpm: Provide a TPM access library
-Message-Id: <20180823224924.GA530@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 02 Aug 2018 12:00:53 +0000
+Subject: Re: [PATCH v6 05/11] nfit/libnvdimm: add set passphrase support for Intel nvdimms
+Message-Id: <20101.1533211253@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180822141956.GA28110@linux.intel.com>
- <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
- <13611.1534949106@warthog.procyon.org.uk>
-In-Reply-To: <13611.1534949106@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: denkenz@gmail.com, jejb@linux.vnet.ibm.com, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <153255233932.51274.17371670672074459834.stgit@djiang5-desk3.ch.intel.com>
+ <153255001863.51274.11308713958786222873.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153255233932.51274.17371670672074459834.stgit@djiang5-desk3.ch.intel.com>
+To: Dave Jiang <dave.jiang@intel.com>
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-On Wed, Aug 22, 2018 at 03:45:06PM +0100, David Howells wrote:
-> Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
-> 
-> > Just a minor overal complaint: lower case for tags
-> 
-> You mean like TPM_TAG_RQU_COMMAND?
+Dave Jiang <dave.jiang@intel.com> wrote:
 
-No, I meant just the the short summary...
+> +	/* request new key from userspace */
+> +	key = nvdimm_request_key(dev, update);
+> +	if (!key) {
+> +		dev_dbg(dev, "%s: failed to acquire new key\n", __func__);
+> +		rc = -ENXIO;
+> +		goto out;
+> +	}
 
-/Jarkko
+I still think you're better taking two explicit key IDs as part of the command
+rather than using request_key() to *hopefully* pick the right target.
+
+David
