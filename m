@@ -1,153 +1,168 @@
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Date: Sun, 05 Aug 2018 03:21:18 +0000
-Subject: [PATCH 5/6] key: add EFI secure key as a master key type
-Message-Id: <20180805032119.20485-6-jlee@suse.com>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 02 Aug 2018 18:31:19 +0000
+Subject: [RFCv3 11/13] KEYS: asym_tpm: Implement signature verification
+Message-Id: <20180802183121.22909-12-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180805032119.20485-1-jlee@suse.com>
-In-Reply-To: <20180805032119.20485-1-jlee@suse.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>, Kees Cook <keescook@chromium.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Pavel Machek <pavel@ucw.cz>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: keyrings@vger.kernel.org
 
-EFI secure key can be a new master key type that it's used for
-generate encrypted key.
+This patch implements the verify_signature operation.  The public key
+portion extracted from the TPM key blob is used.  The operation is
+performed entirely in software using the crypto API.
 
-Compared with trusted key or user key, the advantage of using
-EFI master key is that it doesn't need TPM or password from user
-space.
-
-As other master key types, keyctl can be used to create new encrypted
-key by EFI secure key. Using the "efi:" prefix string with master
-key name:
-
-e.g. keyctl add encrypted evm-key "new efi:kmk-efi 32" @u
-
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Chen Yu <yu.c.chen@intel.com>
-Cc: Oliver Neukum <oneukum@suse.com>
-Cc: Ryan Chen <yu.chen.surf@gmail.com>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/firmware/efi/efi-secure-key.c    | 21 +++++++++++++++++++++
- include/keys/efi-type.h                  |  7 +++++++
- security/keys/encrypted-keys/encrypted.c | 10 ++++++++++
- 3 files changed, 38 insertions(+)
+ crypto/asymmetric_keys/asym_tpm.c | 106 +++++++++++++++++++++++++++++++++++---
+ 1 file changed, 100 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/firmware/efi/efi-secure-key.c b/drivers/firmware/efi/efi-secure-key.c
-index 5e72a8c9e13e..aa422ee87f70 100644
---- a/drivers/firmware/efi/efi-secure-key.c
-+++ b/drivers/firmware/efi/efi-secure-key.c
-@@ -676,6 +676,27 @@ struct key_type key_type_efi = {
- };
- EXPORT_SYMBOL_GPL(key_type_efi);
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index af661c9d55d7..571fb98e1af9 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -15,6 +15,7 @@
+ #include <keys/asymmetric-subtype.h>
+ #include "../../security/keys/trusted.h"
+ #include <crypto/asym_tpm_subtype.h>
++#include <crypto/public_key.h>
+ 
+ #define TPM_ORD_FLUSHSPECIFIC	186
+ #define TPM_ORD_LOADKEY2	65
+@@ -293,12 +294,16 @@ static int determine_akcipher(const char *encoding, const char *hash_algo,
+ 	pr_info("encoding: %s, hash_algo: %s\n",
+ 		encoding ? encoding : "", hash_algo ? hash_algo : hash_algo);
+ 
+-	/* TODO: We don't support hashing yet */
+-	if (hash_algo)
+-		return -ENOPKG;
+-
+ 	if (strcmp(encoding, "pkcs1") = 0) {
+-		strcpy(alg_name, "pkcs1pad(rsa)");
++		if (!hash_algo) {
++			strcpy(alg_name, "pkcs1pad(rsa)");
++			return 0;
++		}
++
++		if (snprintf(alg_name, CRYPTO_MAX_ALG_NAME, "pkcs1pad(rsa,%s)",
++			     hash_algo) >= CRYPTO_MAX_ALG_NAME)
++			return -EINVAL;
++
+ 		return 0;
+ 	}
+ 
+@@ -349,7 +354,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	info->max_dec_size = tk->key_len / 8;
+ 
+ 	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
+-			      KEYCTL_SUPPORTS_DECRYPT;
++			      KEYCTL_SUPPORTS_DECRYPT |
++			      KEYCTL_SUPPORTS_VERIFY;
+ 
+ 	ret = 0;
+ error_free_tfm:
+@@ -494,6 +500,93 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
+ 	return ret;
+ }
  
 +/*
-+ * request_efi_key - request the efi key
++ * Verify a signature using a public key.
 + */
-+struct key *request_efi_key(const char *master_desc,
-+			    const u8 **master_key, size_t *master_keylen)
++static int tpm_key_verify_signature(const struct key *key,
++				    const struct public_key_signature *sig)
 +{
-+	struct efi_key_payload *epayload;
-+	struct key *ekey;
++	const struct tpm_key *tk = key->payload.data[asym_crypto];
++	struct crypto_wait cwait;
++	struct crypto_akcipher *tfm;
++	struct akcipher_request *req;
++	struct scatterlist sig_sg, digest_sg;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
++	void *output;
++	unsigned int outlen;
++	int ret;
 +
-+	ekey = request_key(&key_type_efi, master_desc, NULL);
-+	if (IS_ERR(ekey))
-+		goto error;
++	pr_devel("=>%s()\n", __func__);
 +
-+	down_read(&ekey->sem);
-+	epayload = ekey->payload.data[0];
-+	*master_key = epayload->key;
-+	*master_keylen = epayload->key_len;
-+error:
-+	return ekey;
++	BUG_ON(!tk);
++	BUG_ON(!sig);
++	BUG_ON(!sig->s);
++
++	if (!sig->digest)
++		return -ENOPKG;
++
++	ret = determine_akcipher(sig->encoding, sig->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
++
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
++
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	ret = -ENOMEM;
++	req = akcipher_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
++
++	ret = -ENOMEM;
++	outlen = crypto_akcipher_maxsize(tfm);
++	output = kmalloc(outlen, GFP_KERNEL);
++	if (!output)
++		goto error_free_req;
++
++	sg_init_one(&sig_sg, sig->s, sig->s_size);
++	sg_init_one(&digest_sg, output, outlen);
++	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
++				   outlen);
++	crypto_init_wait(&cwait);
++	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				      CRYPTO_TFM_REQ_MAY_SLEEP,
++				      crypto_req_done, &cwait);
++
++	/* Perform the verification calculation.  This doesn't actually do the
++	 * verification, but rather calculates the hash expected by the
++	 * signature and returns that to us.
++	 */
++	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
++	if (ret)
++		goto out_free_output;
++
++	/* Do the actual verification step. */
++	if (req->dst_len != sig->digest_size ||
++	    memcmp(sig->digest, output, sig->digest_size) != 0)
++		ret = -EKEYREJECTED;
++
++out_free_output:
++	kfree(output);
++error_free_req:
++	akcipher_request_free(req);
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	if (WARN_ON_ONCE(ret > 0))
++		ret = -EINVAL;
++	return ret;
 +}
 +
- static int __init init_efi_secure_key(void)
- {
- 	int ret;
-diff --git a/include/keys/efi-type.h b/include/keys/efi-type.h
-index 57524b22d42f..bbe649f3eec0 100644
---- a/include/keys/efi-type.h
-+++ b/include/keys/efi-type.h
-@@ -39,12 +39,19 @@ extern struct key_type key_type_efi;
- #if defined(CONFIG_EFI_SECURE_KEY)
- extern long efi_read_blob(const struct key *key, char __user *buffer,
- 			  char *kbuffer, size_t buflen);
-+extern struct key *request_efi_key(const char *master_desc,
-+			const u8 **master_key, size_t *master_keylen);
- #else
- inline long efi_read_blob(const struct key *key, char __user *buffer,
- 			  char *kbuffer, size_t buflen)
- {
- 	return 0;
- }
-+static inline struct key *request_efi_key(const char *master_desc,
-+			const u8 **master_key, size_t *master_keylen)
-+{
-+	return ERR_PTR(-EOPNOTSUPP);
-+}
- #endif
- 
- #endif /* _KEYS_EFI_TYPE_H */
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index d92cbf9687c3..b396506afdfc 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -24,6 +24,7 @@
- #include <keys/user-type.h>
- #include <keys/trusted-type.h>
- #include <keys/encrypted-type.h>
-+#include <keys/efi-type.h>
- #include <linux/key-type.h>
- #include <linux/random.h>
- #include <linux/rcupdate.h>
-@@ -40,6 +41,7 @@
- 
- static const char KEY_TRUSTED_PREFIX[] = "trusted:";
- static const char KEY_USER_PREFIX[] = "user:";
-+static const char KEY_EFI_PREFIX[] = "efi:";
- static const char hash_alg[] = "sha256";
- static const char hmac_alg[] = "hmac(sha256)";
- static const char blkcipher_alg[] = "cbc(aes)";
-@@ -50,6 +52,7 @@ static int blksize;
- 
- #define KEY_TRUSTED_PREFIX_LEN (sizeof (KEY_TRUSTED_PREFIX) - 1)
- #define KEY_USER_PREFIX_LEN (sizeof (KEY_USER_PREFIX) - 1)
-+#define KEY_EFI_PREFIX_LEN (sizeof (KEY_EFI_PREFIX) - 1)
- #define KEY_ECRYPTFS_DESC_LEN 16
- #define HASH_SIZE SHA256_DIGEST_SIZE
- #define MAX_DATA_SIZE 4096
-@@ -142,6 +145,8 @@ static int valid_master_desc(const char *new_desc, const char *orig_desc)
- 		prefix_len = KEY_TRUSTED_PREFIX_LEN;
- 	else if (!strncmp(new_desc, KEY_USER_PREFIX, KEY_USER_PREFIX_LEN))
- 		prefix_len = KEY_USER_PREFIX_LEN;
-+	else if (!strncmp(new_desc, KEY_EFI_PREFIX, KEY_EFI_PREFIX_LEN))
-+		prefix_len = KEY_EFI_PREFIX_LEN;
- 	else
- 		return -EINVAL;
- 
-@@ -434,6 +439,11 @@ static struct key *request_master_key(struct encrypted_key_payload *epayload,
- 		mkey = request_user_key(epayload->master_desc +
- 					KEY_USER_PREFIX_LEN,
- 					master_key, master_keylen);
-+	} else if (!strncmp(epayload->master_desc, KEY_EFI_PREFIX,
-+			    KEY_EFI_PREFIX_LEN)) {
-+		mkey = request_efi_key(epayload->master_desc +
-+					KEY_EFI_PREFIX_LEN,
-+					master_key, master_keylen);
- 	} else
- 		goto out;
+ /*
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -654,6 +747,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.destroy		= asym_tpm_destroy,
+ 	.query			= tpm_key_query,
+ 	.eds_op			= tpm_key_eds_op,
++	.verify_signature	= tpm_key_verify_signature,
+ };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
  
 -- 
-2.13.6
+2.16.1
 
