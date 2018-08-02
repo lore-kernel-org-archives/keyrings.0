@@ -1,247 +1,122 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2018 15:57:29 +0000
-Subject: [PATCH 06/23] TPM: Move ordinal values from interface file to header with other ordinals
-Message-Id: <153486704975.13066.1880897540173112691.stgit@warthog.procyon.org.uk>
+From: Denis Kenzior <denkenz@gmail.com>
+Date: Thu, 02 Aug 2018 18:31:09 +0000
+Subject: [RFCv3 01/13] crypto: rsa-pkcs1pad: Allow hash to be optional
+Message-Id: <20180802183121.22909-2-denkenz@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Move the ordinal values (command IDs) from the tpm-interface.c file to the
-tpm_command.h header where the other ordinal values are declared.  Use
-cpu_to_be32() when the ordinal values are used, and not in their declarations.
+The original pkcs1pad implementation allowed to pad/unpad raw RSA
+output.  However, this has been taken out in commit:
+commit c0d20d22e0ad ("crypto: rsa-pkcs1pad - Require hash to be present")
 
-The TPM_TAG_RQU_COMMAND definition in the internal tpm.h has to be removed
-because it is a differently-defined duplicate label to avoid a clash.
-cpu_to_be16() is then used in the places where it was used.
+This patch restored this ability as it is needed by the asymmetric key
+implementation.
 
-This allows the infineon TPM driver to use the constants directly in
-tpm_inf_pnp_suspend().  The savestate buffer there can also be made static and
-const.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 ---
+ crypto/rsa-pkcs1pad.c | 59 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 41 insertions(+), 18 deletions(-)
 
- drivers/char/tpm/tpm-interface.c |   48 +++++++++++++++++---------------------
- drivers/char/tpm/tpm-sysfs.c     |    8 +++---
- drivers/char/tpm/tpm.h           |    2 --
- drivers/char/tpm/tpm_infineon.c  |    6 ++---
- include/linux/tpm_command.h      |   19 +++++++++++----
- 5 files changed, 42 insertions(+), 41 deletions(-)
+diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
+index 9893dbfc1af4..27b1e2bd4bfb 100644
+--- a/crypto/rsa-pkcs1pad.c
++++ b/crypto/rsa-pkcs1pad.c
+@@ -401,7 +401,8 @@ static int pkcs1pad_sign(struct akcipher_request *req)
+ 	if (!ctx->key_size)
+ 		return -EINVAL;
+ 
+-	digest_size = digest_info->size;
++	if (digest_info)
++		digest_size = digest_info->size;
+ 
+ 	if (req->src_len + digest_size > ctx->key_size - 11)
+ 		return -EOVERFLOW;
+@@ -421,8 +422,9 @@ static int pkcs1pad_sign(struct akcipher_request *req)
+ 	memset(req_ctx->in_buf + 1, 0xff, ps_end - 1);
+ 	req_ctx->in_buf[ps_end] = 0x00;
+ 
+-	memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
+-	       digest_info->size);
++	if (digest_info)
++		memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
++		       digest_info->size);
+ 
+ 	pkcs1pad_sg_set_buf(req_ctx->in_sg, req_ctx->in_buf,
+ 			ctx->key_size - 1 - req->src_len, req->src);
+@@ -484,10 +486,13 @@ static int pkcs1pad_verify_complete(struct akcipher_request *req, int err)
+ 		goto done;
+ 	pos++;
+ 
+-	if (crypto_memneq(out_buf + pos, digest_info->data, digest_info->size))
+-		goto done;
++	if (digest_info) {
++		if (crypto_memneq(out_buf + pos, digest_info->data,
++				  digest_info->size))
++			goto done;
+ 
+-	pos += digest_info->size;
++		pos += digest_info->size;
++	}
+ 
+ 	err = 0;
+ 
+@@ -617,11 +622,14 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
+ 
+ 	hash_name = crypto_attr_alg_name(tb[2]);
+ 	if (IS_ERR(hash_name))
+-		return PTR_ERR(hash_name);
++		hash_name = NULL;
+ 
+-	digest_info = rsa_lookup_asn1(hash_name);
+-	if (!digest_info)
+-		return -EINVAL;
++	if (hash_name) {
++		digest_info = rsa_lookup_asn1(hash_name);
++		if (!digest_info)
++			return -EINVAL;
++	} else
++		digest_info = NULL;
+ 
+ 	inst = kzalloc(sizeof(*inst) + sizeof(*ctx), GFP_KERNEL);
+ 	if (!inst)
+@@ -641,14 +649,29 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
+ 
+ 	err = -ENAMETOOLONG;
+ 
+-	if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
+-		     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME ||
+-	    snprintf(inst->alg.base.cra_driver_name, CRYPTO_MAX_ALG_NAME,
+-		     "pkcs1pad(%s,%s)",
+-		     rsa_alg->base.cra_driver_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME)
+-		goto out_drop_alg;
++	if (!hash_name) {
++		if (snprintf(inst->alg.base.cra_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
++			     rsa_alg->base.cra_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
++
++		if (snprintf(inst->alg.base.cra_driver_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
++			     rsa_alg->base.cra_driver_name) >+			     CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
++	} else {
++		if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
++			     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name,
++			     hash_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
++
++		if (snprintf(inst->alg.base.cra_driver_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s,%s)",
++			     rsa_alg->base.cra_driver_name,
++			     hash_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
++	}
+ 
+ 	inst->alg.base.cra_flags = rsa_alg->base.cra_flags & CRYPTO_ALG_ASYNC;
+ 	inst->alg.base.cra_priority = rsa_alg->base.cra_priority;
+-- 
+2.16.1
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 29c2ce5cfc69..9add6034c252 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -28,6 +28,7 @@
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
- #include <linux/freezer.h>
-+#include <linux/tpm_command.h>
- 
- #include "tpm.h"
- #include "tpm_eventlog.h"
-@@ -417,13 +418,11 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
- }
- 
- #define TPM_INTERNAL_RESULT_SIZE 200
--#define TPM_ORD_GET_CAP cpu_to_be32(101)
--#define TPM_ORD_GET_RANDOM cpu_to_be32(70)
- 
- static const struct tpm_input_header tpm_getcap_header = {
--	.tag = TPM_TAG_RQU_COMMAND,
--	.length = cpu_to_be32(22),
--	.ordinal = TPM_ORD_GET_CAP
-+	.tag	 = cpu_to_be16(TPM_TAG_RQU_COMMAND),
-+	.length	 = cpu_to_be32(22),
-+	.ordinal = cpu_to_be32(TPM_ORD_GET_CAP),
- };
- 
- ssize_t tpm_getcap(struct device *dev, __be32 subcap_id, cap_t *cap,
-@@ -469,14 +468,13 @@ void tpm_gen_interrupt(struct tpm_chip *chip)
- }
- EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
- 
--#define TPM_ORD_STARTUP cpu_to_be32(153)
- #define TPM_ST_CLEAR cpu_to_be16(1)
- #define TPM_ST_STATE cpu_to_be16(2)
- #define TPM_ST_DEACTIVATED cpu_to_be16(3)
- static const struct tpm_input_header tpm_startup_header = {
--	.tag = TPM_TAG_RQU_COMMAND,
--	.length = cpu_to_be32(12),
--	.ordinal = TPM_ORD_STARTUP
-+	.tag	 = cpu_to_be16(TPM_TAG_RQU_COMMAND),
-+	.length	 = cpu_to_be32(12),
-+	.ordinal = cpu_to_be32(TPM_ORD_STARTUP),
- };
- 
- static int tpm_startup(struct tpm_chip *chip, __be16 startup_type)
-@@ -609,12 +607,11 @@ duration:
- }
- EXPORT_SYMBOL_GPL(tpm_get_timeouts);
- 
--#define TPM_ORD_CONTINUE_SELFTEST 83
- #define CONTINUE_SELFTEST_RESULT_SIZE 10
- 
- static struct tpm_input_header continue_selftest_header = {
--	.tag = TPM_TAG_RQU_COMMAND,
--	.length = cpu_to_be32(10),
-+	.tag	 = cpu_to_be16(TPM_TAG_RQU_COMMAND),
-+	.length	 = cpu_to_be32(10),
- 	.ordinal = cpu_to_be32(TPM_ORD_CONTINUE_SELFTEST),
- };
- 
-@@ -670,12 +667,11 @@ void tpm_chip_put(struct tpm_chip *chip)
- }
- EXPORT_SYMBOL_GPL(tpm_chip_put);
- 
--#define TPM_ORDINAL_PCRREAD cpu_to_be32(21)
- #define READ_PCR_RESULT_SIZE 30
- static struct tpm_input_header pcrread_header = {
--	.tag = TPM_TAG_RQU_COMMAND,
--	.length = cpu_to_be32(14),
--	.ordinal = TPM_ORDINAL_PCRREAD
-+	.tag	 = cpu_to_be16(TPM_TAG_RQU_COMMAND),
-+	.length	 = cpu_to_be32(14),
-+	.ordinal = cpu_to_be32(TPM_ORD_PCR_READ),
- };
- 
- /**
-@@ -716,12 +712,11 @@ EXPORT_SYMBOL_GPL(tpm_pcr_read);
-  * isn't, protect against the chip disappearing, by incrementing
-  * the module usage count.
-  */
--#define TPM_ORD_PCR_EXTEND cpu_to_be32(20)
- #define EXTEND_PCR_RESULT_SIZE 34
- static struct tpm_input_header pcrextend_header = {
--	.tag = TPM_TAG_RQU_COMMAND,
--	.length = cpu_to_be32(34),
--	.ordinal = TPM_ORD_PCR_EXTEND
-+	.tag	 = cpu_to_be16(TPM_TAG_RQU_COMMAND),
-+	.length	 = cpu_to_be32(34),
-+	.ordinal = cpu_to_be32(TPM_ORD_PCR_EXTEND)
- };
- 
- int tpm_pcr_extend(struct tpm_chip *chip, int pcr_idx, const u8 *hash)
-@@ -889,13 +884,12 @@ void tpm_remove_hardware(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(tpm_remove_hardware);
- 
--#define TPM_ORD_SAVESTATE cpu_to_be32(152)
- #define SAVESTATE_RESULT_SIZE 10
- 
- static struct tpm_input_header savestate_header = {
--	.tag = TPM_TAG_RQU_COMMAND,
--	.length = cpu_to_be32(10),
--	.ordinal = TPM_ORD_SAVESTATE
-+	.tag	 = cpu_to_be16(TPM_TAG_RQU_COMMAND),
-+	.length	 = cpu_to_be32(10),
-+	.ordinal = cpu_to_be32(TPM_ORD_SAVESTATE),
- };
- 
- /*
-@@ -971,9 +965,9 @@ EXPORT_SYMBOL_GPL(tpm_pm_resume);
- 
- #define TPM_GETRANDOM_RESULT_SIZE	18
- static struct tpm_input_header tpm_getrandom_header = {
--	.tag = TPM_TAG_RQU_COMMAND,
--	.length = cpu_to_be32(14),
--	.ordinal = TPM_ORD_GET_RANDOM
-+	.tag	 = cpu_to_be16(TPM_TAG_RQU_COMMAND),
-+	.length	 = cpu_to_be32(14),
-+	.ordinal = cpu_to_be32(TPM_ORD_GET_RANDOM),
- };
- 
- /**
-diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
-index 507d8ab37ef1..d8da83a1d11c 100644
---- a/drivers/char/tpm/tpm-sysfs.c
-+++ b/drivers/char/tpm/tpm-sysfs.c
-@@ -18,6 +18,7 @@
-  *
-  */
- #include <linux/device.h>
-+#include <linux/tpm_command.h>
- #include "tpm.h"
- 
- /* XXX for now this helper is duplicated in tpm-interface.c */
-@@ -40,11 +41,10 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
- }
- 
- #define READ_PUBEK_RESULT_SIZE 314
--#define TPM_ORD_READPUBEK cpu_to_be32(124)
- static struct tpm_input_header tpm_readpubek_header = {
--	.tag = TPM_TAG_RQU_COMMAND,
--	.length = cpu_to_be32(30),
--	.ordinal = TPM_ORD_READPUBEK
-+	.tag	 = cpu_to_be16(TPM_TAG_RQU_COMMAND),
-+	.length	 = cpu_to_be32(30),
-+	.ordinal = cpu_to_be32(TPM_ORD_READPUBEK),
- };
- static ssize_t pubek_show(struct device *dev, struct device_attribute *attr,
- 			  char *buf)
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index df6ffceb3429..2a1be0ec2fbd 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -138,8 +138,6 @@ struct tpm_output_header {
- 	__be32	return_code;
- } __packed;
- 
--#define TPM_TAG_RQU_COMMAND cpu_to_be16(193)
--
- struct	stclear_flags_t {
- 	__be16	tag;
- 	u8	deactivated;
-diff --git a/drivers/char/tpm/tpm_infineon.c b/drivers/char/tpm/tpm_infineon.c
-index dc0a2554034e..7daa3317e18d 100644
---- a/drivers/char/tpm/tpm_infineon.c
-+++ b/drivers/char/tpm/tpm_infineon.c
-@@ -591,10 +591,10 @@ static int tpm_inf_pnp_suspend(struct pnp_dev *dev, pm_message_t pm_state)
- 	struct tpm_chip *chip = pnp_get_drvdata(dev);
- 	int rc;
- 	if (chip) {
--		u8 savestate[] = {
--			0, 193,	/* TPM_TAG_RQU_COMMAND */
-+		static const u8 savestate[] = {
-+			0, TPM_TAG_RQU_COMMAND,
- 			0, 0, 0, 10,	/* blob length (in bytes) */
--			0, 0, 0, 152	/* TPM_ORD_SaveState */
-+			0, 0, 0, TPM_ORD_SAVESTATE,
- 		};
- 		dev_info(&dev->dev, "saving TPM state\n");
- 		rc = tpm_inf_send(chip, savestate, sizeof(savestate));
-diff --git a/include/linux/tpm_command.h b/include/linux/tpm_command.h
-index 727512e249b5..a3e0bb670e62 100644
---- a/include/linux/tpm_command.h
-+++ b/include/linux/tpm_command.h
-@@ -15,11 +15,20 @@
- #define TPM_TAG_RSP_AUTH2_COMMAND       198
- 
- /* Command Ordinals */
--#define TPM_ORD_GETRANDOM               70
--#define TPM_ORD_OSAP                    11
--#define TPM_ORD_OIAP                    10
--#define TPM_ORD_SEAL                    23
--#define TPM_ORD_UNSEAL                  24
-+enum tpm_ordinal {
-+	TPM_ORD_OSAP			= 11,
-+	TPM_ORD_OIAP			= 10,
-+	TPM_ORD_PCR_EXTEND		= 20,
-+	TPM_ORD_PCR_READ		= 21,
-+	TPM_ORD_SEAL			= 23,
-+	TPM_ORD_UNSEAL			= 24,
-+	TPM_ORD_GET_RANDOM		= 70,
-+	TPM_ORD_CONTINUE_SELFTEST	= 83,
-+	TPM_ORD_GET_CAP			= 101,
-+	TPM_ORD_READPUBEK		= 124,
-+	TPM_ORD_SAVESTATE		= 152,
-+	TPM_ORD_STARTUP			= 153,
-+};
- 
- /* Other constants */
- #define SRKHANDLE                       0x40000000
