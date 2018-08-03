@@ -1,10 +1,10 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Thu, 02 Aug 2018 18:57:41 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Fri, 03 Aug 2018 11:58:02 +0000
 Subject: Re: [PATCH v2 1/2] security/keys/secure_key: Adds the secure key support based on CAAM.
-Message-Id: <1533236261.12916.5.camel@HansenPartnership.com>
+Message-Id: <1533297482.4337.373.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20180723111432.26830-1-udit.agarwal@nxp.com>
          <8060.1533226481@warthog.procyon.org.uk>
@@ -27,24 +27,22 @@ On Thu, 2018-08-02 at 17:14 +0100, David Howells wrote:
 > > +or loaded in hex ascii.
 > 
 > To echo Mimi, this sounds suspiciously like it should have a generic
-> interface, not one that's specifically tied to one piece of hardware
-> -
+> interface, not one that's specifically tied to one piece of hardware -
 > particularly if it's named with generic "secure".
 > 
-> Can you convert this into a "symmetric" type and make the backend
-> pluggable?
+> Can you convert this into a "symmetric" type and make the backend pluggable?
 
-This is a symmetric key backed by a piece of hardware, which is exactly
-what trusted keys are, so if we're defining common infrastructure with
-callouts, trusted keys should be part of it.
+TPM 1.2 didn't support symmetric keys.  For this reason, the TPM
+"unseals" the random number, used as a symmetric key, and returns the
+"unsealed" data to the kernel.
 
-Additionally, when I look at the trusted key code, I have significant
-qualms about using the TPM RNG exclusively in the same way CAAM wants
-to use its own RNG.  What I think both should be doing is collecting
-data from their local RNGs, mixing it into the kernel entropy pool and
-using a kernel generated random number (just in case these RNGs
-suddenly turn out to be less random than they should be).
+Does anyone know if CAAM or TPM 2.0 have support for symmetric keys?
+ If they have symmetric key support, there would be no need for the
+symmetric key ever to leave the device in the clear.  The device would
+unseal/decrypt data, such as an encrypted key.
 
-James
+The "symmetric" key type would be a generic interface for different
+devices.
 
+Mimi
 
