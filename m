@@ -1,333 +1,146 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2018 15:59:05 +0000
-Subject: [PATCH 20/23] TPMLIB: Implement call to TPM_CreateWrapKey
-Message-Id: <153486714520.13066.16385120783665804621.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Sat, 04 Aug 2018 00:01:20 +0000
+Subject: [PATCH v7 02/12] libnvdimm: create keyring to store security keys
+Message-Id: <153334088037.60955.16564112888295280964.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Implement a function to invoke TPM_CreateWrapKey.
+Prepping the libnvdimm to support security management by adding a keyring
+in order to provide passphrase management through the kernel key management
+APIs.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
+ drivers/nvdimm/core.c      |    7 ++++++-
+ drivers/nvdimm/dimm_devs.c |   29 ++++++++++++++++++++++++++++-
+ drivers/nvdimm/nd-core.h   |    1 +
+ include/linux/libnvdimm.h  |    3 +++
+ kernel/cred.c              |    1 +
+ 5 files changed, 39 insertions(+), 2 deletions(-)
 
- drivers/char/tpm/tpm-library.c |  248 ++++++++++++++++++++++++++++++++++++++++
- include/linux/tpm.h            |   16 ++-
- include/linux/tpm_command.h    |    1 
- 3 files changed, 264 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
-index 0676165322a3..3413abeb3635 100644
---- a/drivers/char/tpm/tpm-library.c
-+++ b/drivers/char/tpm/tpm-library.c
-@@ -500,6 +500,7 @@ static int tpm_create_oiap(struct tpm_chip *chip, struct tpm_buf *tb,
+diff --git a/drivers/nvdimm/core.c b/drivers/nvdimm/core.c
+index acce050856a8..3cd33d5c7cf0 100644
+--- a/drivers/nvdimm/core.c
++++ b/drivers/nvdimm/core.c
+@@ -437,9 +437,12 @@ static __init int libnvdimm_init(void)
+ {
+ 	int rc;
  
- struct tpm_digests {
- 	unsigned char encauth[SHA1_DIGEST_SIZE];
-+	unsigned char encauth2[SHA1_DIGEST_SIZE];
- 	unsigned char pubauth[SHA1_DIGEST_SIZE];
- 	unsigned char xorwork[SHA1_DIGEST_SIZE * 2];
- 	unsigned char xorhash[SHA1_DIGEST_SIZE];
-@@ -769,6 +770,253 @@ out:
+-	rc = nvdimm_bus_init();
++	rc = nvdimm_devs_init();
+ 	if (rc)
+ 		return rc;
++	rc = nvdimm_bus_init();
++	if (rc)
++		goto err_bus;
+ 	rc = nvdimm_init();
+ 	if (rc)
+ 		goto err_dimm;
+@@ -454,6 +457,8 @@ static __init int libnvdimm_init(void)
+ 	nvdimm_exit();
+  err_dimm:
+ 	nvdimm_bus_exit();
++ err_bus:
++	nvdimm_devs_exit();
+ 	return rc;
  }
- EXPORT_SYMBOL_GPL(tpm_unseal);
  
-+enum tpm_key_usage {
-+	TPM_KEY_SIGNING			= 0x0010,
-+	TPM_KEY_STORAGE			= 0x0011,
-+	TPM_KEY_IDENTITY		= 0x0012,
-+	TPM_KEY_AUTHCHANGE		= 0x0013,
-+	TPM_KEY_BIND			= 0x0014,
-+	TPM_KEY_LEGACY			= 0x0015,
-+	TPM_KEY_MIGRATE			= 0x0016,
-+};
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 8d348b22ba45..586432450c82 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -18,12 +18,15 @@
+ #include <linux/io.h>
+ #include <linux/fs.h>
+ #include <linux/mm.h>
++#include <linux/key.h>
++#include <linux/init_task.h>
+ #include "nd-core.h"
+ #include "label.h"
+ #include "pmem.h"
+ #include "nd.h"
+ 
+ static DEFINE_IDA(dimm_ida);
++static struct key *nvdimm_keyring;
+ 
+ /*
+  * Retrieve bus and dimm handle and return if this bus supports
+@@ -668,7 +671,31 @@ int nvdimm_bus_check_dimm_count(struct nvdimm_bus *nvdimm_bus, int dimm_count)
+ }
+ EXPORT_SYMBOL_GPL(nvdimm_bus_check_dimm_count);
+ 
+-void __exit nvdimm_devs_exit(void)
++static int nvdimm_register_keyring(void)
+ {
++	nvdimm_keyring = keyring_alloc(".nvdimm",
++			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, &init_cred,
++			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
++			(KEY_USR_ALL & ~KEY_USR_SETATTR),
++			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
++	if (IS_ERR(nvdimm_keyring))
++		return PTR_ERR(nvdimm_keyring);
 +
-+enum tpm_algorithm_id {
-+	TPM_ALG_RSA			= 0x00000001,
-+	TPM_ALG_SHA			= 0x00000004,
-+	TPM_ALG_HMAC			= 0x00000005,
-+	TPM_ALG_AES128			= 0x00000006,
-+	TPM_ALG_MGF1			= 0x00000007,
-+	TPM_ALG_AES192			= 0x00000008,
-+	TPM_ALG_AES256			= 0x00000009,
-+	TPM_ALG_XOR			= 0x0000000a,
-+};
-+
-+enum tpm_enc_scheme {
-+	TPM_ES_NONE			= 0x0001,
-+	TPM_ES_RSAESPKCSv15		= 0x0002,
-+	TPM_ES_RSAESOAEP_SHA1_MGF1	= 0x0003,
-+	TPM_ES_SYM_CTR			= 0x0004,
-+	TPM_ES_SYM_OFB			= 0x0005,
-+};
-+
-+enum tpm_sig_scheme {
-+	TPM_SS_NONE			= 0x0001,
-+	TPM_SS_RSAESPKCSv15_SHA1	= 0x0002,
-+	TPM_SS_RSAESPKCSv15_DER		= 0x0003,
-+	TPM_SS_RSAESPKCSv15_INFO	= 0x0004,
-+};
-+
-+enum tpm_auth_data_usage {
-+	TPM_AUTH_NEVER			= 0x00,
-+	TPM_AUTH_ALWAYS			= 0x01,
-+	TPM_NO_READ_PUBKEY_AUTH		= 0x03,
-+};
-+
-+#define TPM_KEY_REDIRECTION		0x00000001
-+#define TPM_KEY_MIGRATABLE		0x00000002
-+#define TPM_KEY_ISVOLATILE		0x00000004
-+#define TPM_KEY_PCRIGNOREDONREAD	0x00000008
-+#define TPM_KEY_MIGRATEAUTHORITY	0x00000010
-+
-+struct tpm_key {
-+	struct tpm_struct_ver {
-+		u8	major, minor, rev_major, rev_minor;
-+	} ver;
-+	__be16		key_usage;		/* enum tpm_key_usage */
-+	__be32		key_flags;
-+	u8		auth_data_usage;	/* enum tpm_auth_data_usage */
-+	struct tpm_key_parms {
-+		__be32		algorithm_id;	/* enum tpm_algorithm_id */
-+		__be16		enc_scheme;	/* enum tpm_enc_scheme */
-+		__be16		sig_scheme;	/* enum tpm_sig_scheme */
-+		__be32		parm_size;
-+		struct tpm_rsa_key_parms {
-+			__be32		key_length;
-+			__be32		num_primes;
-+			__be32		exponent_size;
-+		} __packed rsa;
-+	} __packed parms;
-+	__be32		pcr_info_size;
-+	struct tpm_store_pubkey {
-+		__be32		key_length;
-+		u8		key_data[0];
-+	} __packed pub;
-+	__be32		enc_data_size;
-+	u8		enc_data[0];
-+} __packed;
-+
-+/**
-+ * tpm_create_wrap_key - Generate a new key and return it encrypted
-+ * @chip: The chip to use
-+ * @tb: Large scratch buffer for I/O
-+ * @parent_type: Type of entity attached to @parent_handle
-+ * @parent_handle: TPM-resident key used to encrypt
-+ * @parent_auth: Parent authorisation HMAC key
-+ * @usage_auth: Encrypted usage authdata for the key
-+ * @migration_auth: Encrypted migration authdata for the key (or NULL)
-+ * @_wrapped_key: Pointer to where to return the wrapped key (kmalloc'd)
-+ *
-+ * Have the TPM generate a new key and return it encrypted.  The encryption is
-+ * based on a key already resident in the TPM and may also include the state of
-+ * one or more Platform Configuration Registers (PCRs).
-+ *
-+ * AUTH1 is used for sealing key.
-+ */
-+int tpm_create_wrap_key(struct tpm_chip *chip,
-+			enum tpm_entity_type parent_type,
-+			uint32_t parent_handle,
-+			const unsigned char *parent_auth,
-+			const unsigned char *usage_auth,
-+			const unsigned char *migration_auth,
-+			struct tpm_wrapped_key **_wrapped_key)
-+{
-+	struct tpm_wrapped_key *wrapped_key;
-+	struct tpm_osapsess sess;
-+	struct tpm_digests *td;
-+	struct tpm_buf *tb;
-+	struct tpm_key *result;
-+	unsigned char cont;
-+	__be32 ordinal_be;
-+	int key_size;
-+	int ret;
-+
-+	struct tpm_key tpm_key = {
-+		.ver			= { 0x01, 0x01, 0x00, 0x00 },
-+		.key_usage		= cpu_to_be16(TPM_KEY_SIGNING),
-+		.key_flags		= cpu_to_be32(0),
-+		.auth_data_usage	= TPM_AUTH_ALWAYS,
-+		.parms.algorithm_id	= cpu_to_be32(TPM_ALG_RSA),
-+		.parms.enc_scheme	= cpu_to_be16(TPM_ES_RSAESPKCSv15),
-+		.parms.sig_scheme	= cpu_to_be16(TPM_SS_RSAESPKCSv15_SHA1),
-+		.parms.parm_size	= cpu_to_be32(sizeof(struct tpm_rsa_key_parms)),
-+		.parms.rsa.key_length	= cpu_to_be32(2048),
-+		.parms.rsa.num_primes	= cpu_to_be32(2),
-+		.parms.rsa.exponent_size = cpu_to_be32(0),
-+		.pcr_info_size		= cpu_to_be32(0),
-+		.pub.key_length		= cpu_to_be32(0),
-+		.enc_data_size		= cpu_to_be32(0),
-+	};
-+
-+	kenter("");
-+
-+	if (migration_auth)
-+		tpm_key.key_flags |= cpu_to_be32(TPM_KEY_MIGRATABLE);
-+
-+	/* alloc some work space */
-+	tb = kmalloc(sizeof(*tb) + sizeof(*td), GFP_KERNEL);
-+	if (!tb)
-+		return -ENOMEM;
-+	td = (void *)tb + sizeof(*tb);
-+
-+	/* Get the encryption session */
-+	ret = tpm_create_osap(chip, tb, &sess,
-+			      parent_auth, parent_type, parent_handle);
-+	if (ret < 0)
-+		goto out;
-+	dump_sess(&sess);
-+
-+	/* We need to pass 'passwords' to the TPM with which it will encrypt
-+	 * the key before returning it.  So that the passwords don't travel to
-+	 * the TPM in the clear, we generate a symmetric key from the
-+	 * negotiated and encrypted session data and encrypt the passwords with
-+	 * that.
-+	 */
-+	ret = tpm_calc_symmetric_authkey(td, sess.secret, &sess.enonce);
-+	if (ret < 0)
-+		goto out;
-+	tpm_crypt_with_authkey(td, usage_auth, td->encauth);
-+	if (migration_auth)
-+		tpm_crypt_with_authkey(td, migration_auth, td->encauth2);
-+	else
-+		tpm_crypt_with_authkey(td, sess.enonce.data, td->encauth2);
-+
-+	/* Set up the parameters we will be sending */
-+	ret = tpm_gen_odd_nonce(chip, &td->ononce);
-+	if (ret < 0)
-+		goto out;
-+
-+	/* calculate authorization HMAC value */
-+	ordinal_be = cpu_to_be32(TPM_ORD_CREATEWRAPKEY);
-+	cont = 0;
-+	ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
-+			   &sess.enonce, &td->ononce, cont,
-+			   /* 1S */ sizeof(__be32), &ordinal_be,
-+			   /* 2S */ SHA1_DIGEST_SIZE, td->encauth,
-+			   /* 3S */ SHA1_DIGEST_SIZE, td->encauth2,
-+			   /* 4S */ sizeof(tpm_key), &tpm_key,
-+			   0, NULL);
-+	if (ret < 0)
-+		goto out;
-+
-+	/* build and send the TPM request packet */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
-+	store32(tb, TPM_DATA_OFFSET + 44 + sizeof(tpm_key) + 45);
-+	store32(tb, TPM_ORD_CREATEWRAPKEY);
-+	store32(tb, parent_handle);
-+	store_s(tb, td->encauth, SHA1_DIGEST_SIZE);
-+	store_s(tb, td->encauth2, SHA1_DIGEST_SIZE);
-+	store_s(tb, &tpm_key, sizeof(tpm_key));
-+	store32(tb, sess.handle);
-+	store_s(tb, td->ononce.data, TPM_NONCE_SIZE);
-+	store_8(tb, cont);
-+	store_s(tb, td->pubauth, SHA1_DIGEST_SIZE);
-+
-+	ret = tpm_send_dump(chip, tb, "creating key");
-+	if (ret < 0)
-+		goto out;
-+
-+	/* We need to work out how big the TPM_KEY or TPM_KEY12 struct we got
-+	 * back is.  These structs have several variable-length fields inside
-+	 * to make parsing more difficult.  However, they are only followed by
-+	 * fixed-length structs...
-+	 */
-+	SET_BUF_OFFSET(tb, TPM_SIZE_OFFSET);
-+	key_size = LOAD32(tb);
-+	key_size -= TPM_DATA_OFFSET;
-+	key_size -= 2 * TPM_NONCE_SIZE + 1;
-+	if (key_size < sizeof(tpm_key)) {
-+		ret = -EBADMSG;
-+		goto out;
-+	}
-+
-+	/* Check the HMAC in the response */
-+	ret = TSS_checkhmac1(tb, ordinal_be, &td->ononce,
-+			     sess.secret, SHA1_DIGEST_SIZE,
-+			     /* 3S */ key_size, TPM_DATA_OFFSET,
-+			     0, NULL);
-+	if (ret < 0)
-+		goto out;
-+
-+	/* Parse the key */
-+	result = (void *)tb->data + TPM_DATA_OFFSET;
-+	ret = -EBADMSG;
-+	if (key_size < sizeof(tpm_key) + be32_to_cpu(tpm_key.parms.rsa.key_length) / 8)
-+		goto out;
-+	if (memcmp(result, &tpm_key, offsetof(struct tpm_key, pub.key_length)) != 0)
-+		goto out;
-+	if (be32_to_cpu(result->pub.key_length) >
-+	    be32_to_cpu(tpm_key.parms.rsa.key_length) / 8)
-+		goto out;
-+
-+	ret = -ENOMEM;
-+	wrapped_key = kmalloc(sizeof(struct tpm_wrapped_key) + key_size, GFP_KERNEL);
-+	if (!wrapped_key)
-+		goto out;
-+	wrapped_key->data_len = key_size;
-+	wrapped_key->pubkey_offset = offsetof(struct tpm_key, pub.key_data);
-+	wrapped_key->pubkey_len = be32_to_cpu(result->pub.key_length);
-+	memcpy(wrapped_key->data, result, key_size);
-+	*_wrapped_key = wrapped_key;
-+	ret = 0;
-+
-+out:
-+	kfree(tb);
-+	kleave(" = %d", ret);
-+	return ret;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(tpm_create_wrap_key);
 +
- /**
-  * tpm_library_use - Tell the TPM library we want to make use of it
-  *
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 398bfaef2325..0bc954ac8266 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -83,7 +83,7 @@ static inline int tpm_get_random(struct tpm_chip *chip, u8 *data, size_t max) {
-  */
- /* implementation specific TPM constants */
- #define MAX_PCRINFO_SIZE		64
--#define MAX_BUF_SIZE			512
-+#define MAX_BUF_SIZE			(2048 - 4)
- #define TPM_GETRANDOM_SIZE		14
- #define TPM_OSAP_SIZE			36
- #define TPM_OIAP_SIZE			10
-@@ -133,4 +133,18 @@ extern int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 		      const unsigned char *blobauth,
- 		      unsigned char *data, unsigned int *datalen);
++static void nvdimm_unregister_keyring(void)
++{
++	key_revoke(nvdimm_keyring);
++}
++
++int __init nvdimm_devs_init(void)
++{
++	return nvdimm_register_keyring();
++}
++
++void  nvdimm_devs_exit(void)
++{
++	nvdimm_unregister_keyring();
+ 	ida_destroy(&dimm_ida);
+ }
+diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
+index 79274ead54fb..2af0f89c4010 100644
+--- a/drivers/nvdimm/nd-core.h
++++ b/drivers/nvdimm/nd-core.h
+@@ -76,6 +76,7 @@ static inline bool is_memory(struct device *dev)
+ struct nvdimm_bus *walk_to_nvdimm_bus(struct device *nd_dev);
+ int __init nvdimm_bus_init(void);
+ void nvdimm_bus_exit(void);
++int nvdimm_devs_init(void);
+ void nvdimm_devs_exit(void);
+ void nd_region_devs_exit(void);
+ void nd_region_probe_success(struct nvdimm_bus *nvdimm_bus, struct device *dev);
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 472171af7f60..51084043915c 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -155,6 +155,9 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
  
-+struct tpm_wrapped_key {
-+	unsigned short data_len;
-+	unsigned short pubkey_offset;
-+	unsigned short pubkey_len;
-+	u8 data[];
-+};
+ }
+ 
++#define NVDIMM_PASSPHRASE_LEN		32
++#define NVDIMM_KEY_DESC_LEN		22
 +
-+extern int tpm_create_wrap_key(struct tpm_chip *chip,
-+			       enum tpm_entity_type parent_type,
-+			       uint32_t parent_handle,
-+			       const unsigned char *parent_auth,
-+			       const unsigned char *usage_auth,
-+			       const unsigned char *migration_auth,
-+			       struct tpm_wrapped_key **_wrapped_key);
- #endif
-diff --git a/include/linux/tpm_command.h b/include/linux/tpm_command.h
-index a3e0bb670e62..0417a3db7e8f 100644
---- a/include/linux/tpm_command.h
-+++ b/include/linux/tpm_command.h
-@@ -22,6 +22,7 @@ enum tpm_ordinal {
- 	TPM_ORD_PCR_READ		= 21,
- 	TPM_ORD_SEAL			= 23,
- 	TPM_ORD_UNSEAL			= 24,
-+	TPM_ORD_CREATEWRAPKEY		= 31,
- 	TPM_ORD_GET_RANDOM		= 70,
- 	TPM_ORD_CONTINUE_SELFTEST	= 83,
- 	TPM_ORD_GET_CAP			= 101,
+ void badrange_init(struct badrange *badrange);
+ int badrange_add(struct badrange *badrange, u64 addr, u64 length);
+ void badrange_forget(struct badrange *badrange, phys_addr_t start,
+diff --git a/kernel/cred.c b/kernel/cred.c
+index ecf03657e71c..3a161b78a0a4 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -64,6 +64,7 @@ struct cred init_cred = {
+ 	.user_ns		= &init_user_ns,
+ 	.group_info		= &init_groups,
+ };
++EXPORT_SYMBOL(init_cred);
+ 
+ static inline void set_cred_subscribers(struct cred *cred, int n)
+ {
+
