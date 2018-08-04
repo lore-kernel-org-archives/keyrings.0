@@ -1,325 +1,106 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2018 15:58:45 +0000
-Subject: [PATCH 17/23] TPMLIB: Provide a wrapper to load bytes out of the reply
-Message-Id: <153486712522.13066.16199758850117818658.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Sat, 04 Aug 2018 00:02:17 +0000
+Subject: [PATCH v7 12/12] libnvdimm: add documentation for nvdimm security support
+Message-Id: <153334093694.60955.18199474198600257580.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Provide a wrapper for memcpy to load bytes out of the reply, similar to
-LOAD32() and friends.
+Add theory of operation for the security support that's going into
+libnvdimm.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 ---
+ Documentation/nvdimm/security.txt |   78 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 78 insertions(+)
+ create mode 100644 Documentation/nvdimm/security.txt
 
- drivers/char/tpm/tpm-library.c |   87 ++++++++++++++++++++--------------------
- drivers/char/tpm/tpm-library.h |   43 +++++++++++++++++---
- include/linux/tpm.h            |    3 +
- 3 files changed, 82 insertions(+), 51 deletions(-)
+diff --git a/Documentation/nvdimm/security.txt b/Documentation/nvdimm/security.txt
+new file mode 100644
+index 000000000000..ede844ff6fd2
+--- /dev/null
++++ b/Documentation/nvdimm/security.txt
+@@ -0,0 +1,78 @@
++NVDIMM SECURITY
++=======+
++1. Introduction
++---------------
++
++With the introduction of Intel DSM v1.7 specification [1], security DSMs are
++introduced. The spec added the following security DSMs: "get security state",
++"set passphrase", "disable passphrase", "unlock unit", "freeze lock",
++"secure erase", and "overwrite". A security_ops data structure has been
++added to struct dimm in order to support the security operations and generic
++APIs are exposed to allow vendor neutral operations.
++
++2. Sysfs Interface
++------------------
++The "security" sysfs attribute is provided in the nvdimm sysfs directory. For
++example:
++/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/security
++
++The "show" function of that attribute will display the security state for
++that DIMM. The following states are available: disabled, unlocked, locked,
++frozen, and unsupported.
++
++The "store" function takes several commands when the attribute is written to
++in order to support some of the security functionalities:
++update - enable security. Add or update current key.
++disable - disable enabled security and remove key.
++freeze - freeze changing of security states.
++erase - generate new ecryption key for DIMM and crypto-scrambles all existing
++	user data.
++
++3. Key Management
++-----------------
++
++The key is associted to the payload by the DIMM id. For example:
++# cat /sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/nfit/id
++8089-a2-1740-00000133
++The DIMM id would be provided along with the key payload (passphrase) to
++the kernel.
++
++The security keys are managed on the basis of a single key per DIMM. The
++key "passphrase" is expected to be 32bytes long or padded to 32bytes. This is
++similar to the ATA security specification [2]. A key is initially acquired
++via the request_key() kernel API call and retrieved from userspace. It is up to
++the user to provide an upcall application to retrieve the key in whatever
++fashion meets their security requirements.
++
++The payload provided to the key can be a 32bytes payload or 64bytes payload
++when doing an "update". The payload is viewed as 64 bytes in the following
++format:
++[32 bytes new key data zero padded][32 bytes current key data zero padded]
++However, a 32bytes payload can be provided and will be assumed as the old
++key to be 32 bytes of 0s and the provided 32bytes payload is the new key.
++It is up to the user upcall function how that's presented as the key payload
++to the kernel.
++
++All the other security functions that require a provided key can accept a
++32bytes payload or 64bytes. If the payload is 64bytes, then second 32bytes
++will be ignored and the first 32bytes contains the expected "passphrase".
++
++4. Unlocking
++------------
++When the DIMMs are being enumerated by the kernel, the kernel will attempt to
++retrieve the key from its keyring. If that fails, it will attempt to
++acquire the key from the userspace upcall function. This is the only time
++a locked DIMM can be unlocked. Once unlocked, the DIMM will remain unlocked
++until reboot.
++
++5. Update
++---------
++When doing an update, it is expected that the new key with the 64bit payload of
++format described above is added via the keyutils API or utility. The update
++command written to the sysfs attribute will be with the format:
++update:<old id>:<new id>
++If there is no old ID due to a security enabling, then a 0 should be passed in.
++
++[1]: http://pmem.io/documents/NVDIMM_DSM_Interface-V1.7.pdf
++[2]: http://www.t13.org/documents/UploadedDocuments/docs2006/e05179r4-ACS-SecurityClarifications.pdf
 
-diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
-index 46cd12d30ec6..329b5c3f23a2 100644
---- a/drivers/char/tpm/tpm-library.c
-+++ b/drivers/char/tpm/tpm-library.c
-@@ -199,7 +199,7 @@ out:
-  * @...: Pairs of size and pointer of data elements to load into hash
-  * @0,NULL: Terminator
-  */
--static int TSS_checkhmac1(unsigned char *buffer,
-+static int TSS_checkhmac1(struct tpm_buf *tb,
- 			  __be32 ordinal,
- 			  const struct tpm_odd_nonce *ononce,
- 			  const unsigned char *key, unsigned keylen,
-@@ -219,14 +219,16 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	va_list argp;
- 	int ret;
- 
--	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
--	tag = LOAD16(buffer, 0);
--	result = LOAD32BE(buffer, TPM_RETURN_OFFSET);
-+	SET_BUF_OFFSET(tb, 0);
-+	tag = LOAD16(tb);
-+	bufsize = LOAD32(tb);
-+	result = LOAD32BE(tb);
- 	if (tag = TPM_TAG_RSP_COMMAND)
- 		return 0;
- 	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
- 		return -EINVAL;
--	authdata = buffer + bufsize - SHA1_DIGEST_SIZE;
-+
-+	authdata = tb->data + bufsize - SHA1_DIGEST_SIZE;
- 	continueflag = authdata - 1;
- 	enonce = (void *)continueflag - TPM_NONCE_SIZE;
- 
-@@ -255,7 +257,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 		dpos = va_arg(argp, unsigned int);
- 		if (!dlen && !dpos)
- 			break;
--		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
-+		ret = crypto_shash_update(&sdesc->shash, tb->data + dpos, dlen);
- 		if (ret < 0)
- 			break;
- 	}
-@@ -296,7 +298,7 @@ out:
-  *
-  * verify the AUTH2_COMMAND (unseal) result from TPM
-  */
--static int TSS_checkhmac2(const unsigned char *buffer,
-+static int TSS_checkhmac2(struct tpm_buf *tb,
- 			  __be32 ordinal,
- 			  const struct tpm_odd_nonce *ononce,
- 			  const unsigned char *key1, unsigned keylen1,
-@@ -321,17 +323,17 @@ static int TSS_checkhmac2(const unsigned char *buffer,
- 	va_list argp;
- 	int ret;
- 
--	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
--	tag = LOAD16(buffer, 0);
--	result = LOAD32BE(buffer, TPM_RETURN_OFFSET);
-+	bufsize = LOAD32(tb);
-+	tag = LOAD16(tb);
-+	result = LOAD32BE(tb);
- 
- 	if (tag = TPM_TAG_RSP_COMMAND)
- 		return 0;
- 	if (tag != TPM_TAG_RSP_AUTH2_COMMAND)
- 		return -EINVAL;
--	authdata1 = buffer + bufsize - (SHA1_DIGEST_SIZE + 1
-+	authdata1 = tb->data + bufsize - (SHA1_DIGEST_SIZE + 1
- 			+ SHA1_DIGEST_SIZE + SHA1_DIGEST_SIZE);
--	authdata2 = buffer + bufsize - (SHA1_DIGEST_SIZE);
-+	authdata2 = tb->data + bufsize - (SHA1_DIGEST_SIZE);
- 	continueflag1 = authdata1 - 1;
- 	continueflag2 = authdata2 - 1;
- 	enonce1 = (const void *)continueflag1 - TPM_NONCE_SIZE;
-@@ -363,7 +365,7 @@ static int TSS_checkhmac2(const unsigned char *buffer,
- 		dpos = va_arg(argp, unsigned int);
- 		if (!dlen && !dpos)
- 			break;
--		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
-+		ret = crypto_shash_update(&sdesc->shash, tb->data + dpos, dlen);
- 		if (ret < 0)
- 			break;
- 	}
-@@ -404,17 +406,19 @@ out:
-  * For key specific tpm requests, we will generate and send our
-  * own TPM command packets using the drivers send function.
-  */
--static int tpm_send_dump(struct tpm_chip *chip,
--			 unsigned char *cmd, size_t buflen, const char *desc)
-+static int tpm_send_dump(struct tpm_chip *chip, struct tpm_buf *cmd,
-+			 const char *desc)
- {
- 	int rc;
- 
- 	dump_tpm_buf(cmd);
--	rc = tpm_send_command(chip, cmd, buflen, desc);
-+	rc = tpm_send_command(chip, cmd->data, MAX_BUF_SIZE, desc);
- 	dump_tpm_buf(cmd);
- 	if (rc > 0)
- 		/* Can't return positive return codes values to keyctl */
- 		rc = -EPERM;
-+	else
-+		SET_BUF_OFFSET(cmd, TPM_DATA_OFFSET);
- 	return rc;
- }
- 
-@@ -442,16 +446,14 @@ static int tpm_create_osap(struct tpm_chip *chip,
- 	store32(tb, keyhandle);
- 	store_s(tb, ononce.data, TPM_NONCE_SIZE);
- 
--	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
--			    "creating OSAP session");
-+	ret = tpm_send_dump(chip, tb, "creating OSAP session");
- 	if (ret < 0)
- 		return ret;
- 
--	s->handle = LOAD32(tb->data, TPM_DATA_OFFSET);
--	memcpy(s->enonce.data, &(tb->data[TPM_DATA_OFFSET + sizeof(uint32_t)]),
--	       TPM_NONCE_SIZE);
--	memcpy(enonce.data, &(tb->data[TPM_DATA_OFFSET + sizeof(uint32_t) +
--				  TPM_NONCE_SIZE]), TPM_NONCE_SIZE);
-+	s->handle = LOAD32(tb);
-+	LOAD_S(tb, s->enonce.data, TPM_NONCE_SIZE);
-+	LOAD_S(tb, enonce.data, TPM_NONCE_SIZE);
-+
- 	return TSS_rawhmac(s->secret, keyauth, SHA1_DIGEST_SIZE,
- 			   TPM_NONCE_SIZE, enonce.data,
- 			   TPM_NONCE_SIZE, ononce.data,
-@@ -470,14 +472,12 @@ static int tpm_create_oiap(struct tpm_chip *chip, struct tpm_buf *tb,
- 	store16(tb, TPM_TAG_RQU_COMMAND);
- 	store32(tb, TPM_OIAP_SIZE);
- 	store32(tb, TPM_ORD_OIAP);
--	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
--			    "creating OIAP session");
-+	ret = tpm_send_dump(chip, tb, "creating OIAP session");
- 	if (ret < 0)
- 		return ret;
- 
--	*handle = LOAD32(tb->data, TPM_DATA_OFFSET);
--	memcpy(enonce->data, &tb->data[TPM_DATA_OFFSET + sizeof(uint32_t)],
--	       TPM_NONCE_SIZE);
-+	*handle = LOAD32(tb);
-+	LOAD_S(tb, enonce->data, TPM_NONCE_SIZE);
- 	return 0;
- }
- 
-@@ -590,27 +590,29 @@ int tpm_seal(struct tpm_chip *chip,
- 	store_8(tb, cont);
- 	store_s(tb, td->pubauth, SHA1_DIGEST_SIZE);
- 
--	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
--			    "sealing data");
-+	ret = tpm_send_dump(chip, tb, "sealing data");
- 	if (ret < 0)
- 		goto out;
- 
--	/* calculate the size of the returned encrypted data */
--	sealinfosize = LOAD32(tb->data, TPM_DATA_OFFSET + sizeof(uint32_t));
--	encdatasize = LOAD32(tb->data, TPM_DATA_OFFSET + sizeof(uint32_t) +
--			     sizeof(uint32_t) + sealinfosize);
--	storedsize = sizeof(uint32_t) + sizeof(uint32_t) + sealinfosize +
--	    sizeof(uint32_t) + encdatasize;
-+	/* Look inside the TPM_STORED_DATA object to calculate the size of the
-+	 * returned encrypted data.
-+	 */
-+	SET_BUF_OFFSET(tb, TPM_DATA_OFFSET + sizeof(uint32_t));
-+	sealinfosize = LOAD32(tb);
-+	SET_BUF_OFFSET(tb, TPM_DATA_OFFSET + sizeof(uint32_t) * 2 + sealinfosize);
-+	storedsize = sizeof(uint32_t) * 2 + sealinfosize +
-+		sizeof(uint32_t) + encdatasize;
- 
- 	/* check the HMAC in the response */
--	ret = TSS_checkhmac1(tb->data, ordinal_be, &td->ononce,
-+	ret = TSS_checkhmac1(tb, ordinal_be, &td->ononce,
- 			     sess.secret, SHA1_DIGEST_SIZE,
- 			     /* 3S */ storedsize, TPM_DATA_OFFSET,
- 			     0, NULL);
- 
- 	/* copy the encrypted data to caller's buffer */
- 	if (!ret) {
--		memcpy(encbuffer, tb->data + TPM_DATA_OFFSET, storedsize);
-+		SET_BUF_OFFSET(tb, TPM_DATA_OFFSET);
-+		LOAD_S(tb, encbuffer, storedsize);
- 		*_enclen = storedsize;
- 	}
- out:
-@@ -697,15 +699,14 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 	store_8(tb, cont);
- 	store_s(tb, authdata2, SHA1_DIGEST_SIZE);
- 
--	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
--			    "unsealing data");
-+	ret = tpm_send_dump(chip, tb, "unsealing data");
- 	if (ret < 0) {
- 		pr_info("authhmac failed (%d)\n", ret);
- 		return ret;
- 	}
- 
--	*_rawlen = LOAD32(tb->data, TPM_DATA_OFFSET);
--	ret = TSS_checkhmac2(tb->data, ordinal, &ononce,
-+	*_rawlen = LOAD32(tb);
-+	ret = TSS_checkhmac2(tb, ordinal, &ononce,
- 			     keyauth, SHA1_DIGEST_SIZE,
- 			     decauth, SHA1_DIGEST_SIZE,
- 			     /* 3S */ sizeof(uint32_t), TPM_DATA_OFFSET,
-@@ -715,7 +716,7 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 		pr_info("TSS_checkhmac2 failed (%d)\n", ret);
- 		return ret;
- 	}
--	memcpy(rawbuffer, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t), *_rawlen);
-+	LOAD_S(tb, rawbuffer, *_rawlen);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(tpm_unseal);
-diff --git a/drivers/char/tpm/tpm-library.h b/drivers/char/tpm/tpm-library.h
-index c12d451704a2..3e288624b8e8 100644
---- a/drivers/char/tpm/tpm-library.h
-+++ b/drivers/char/tpm/tpm-library.h
-@@ -11,10 +11,6 @@
-  */
- 
- 
--#define LOAD32BE(buffer, offset) (*(__be32 *)&buffer[(offset)])
--#define LOAD16(buffer, offset)	(be16_to_cpu(*(__be16 *)&buffer[(offset)]))
--#define LOAD32(buffer, offset)	(be32_to_cpu(LOAD32BE(buffer, (offset))))
--
- struct tpm_even_nonce {
- 	unsigned char data[TPM_NONCE_SIZE];
- };
-@@ -29,6 +25,38 @@ struct tpm_osapsess {
- 	struct tpm_even_nonce enonce;
- };
- 
-+static inline void SET_BUF_OFFSET(struct tpm_buf *buffer, unsigned offset)
-+{
-+	buffer->offset = offset;
-+}
-+
-+static inline uint16_t LOAD16(struct tpm_buf *buffer)
-+{
-+	__be16 *p = (__be16 *)(buffer->data + buffer->offset);
-+	buffer->offset += 2;
-+	return be16_to_cpup(p);
-+}
-+
-+static inline __be32 LOAD32BE(struct tpm_buf *buffer)
-+{
-+	__be32 val = *(__be32 *)(buffer->data + buffer->offset);
-+	buffer->offset += 4;
-+	return val;
-+}
-+
-+static inline uint32_t LOAD32(struct tpm_buf *buffer)
-+{
-+	__be32 *p = (__be32 *)(buffer->data + buffer->offset);
-+	buffer->offset += 4;
-+	return be32_to_cpup(p);
-+}
-+
-+static inline void LOAD_S(struct tpm_buf *buffer, void *data_buffer, size_t amount)
-+{
-+	memcpy(data_buffer, buffer->data + buffer->offset, amount);
-+	buffer->offset += amount;
-+}
-+
- static inline void store_8(struct tpm_buf *buf, unsigned char value)
- {
- 	buf->data[buf->len++] = value;
-@@ -70,13 +98,14 @@ static inline void dump_sess(struct tpm_osapsess *s)
- 		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
- }
- 
--static inline void dump_tpm_buf(unsigned char *buf)
-+static inline void dump_tpm_buf(struct tpm_buf *tb)
- {
- 	int len;
- 
- 	pr_info("\ntpm buffer\n");
--	len = LOAD32(buf, TPM_SIZE_OFFSET);
--	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
-+	SET_BUF_OFFSET(tb, TPM_SIZE_OFFSET);
-+	len = LOAD32(tb);
-+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, tb->data, len, 0);
- }
- 
- #else
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index cbd13e03a869..398bfaef2325 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -110,7 +110,8 @@ enum tpm_entity_type {
- };
- 
- struct tpm_buf {
--	int len;
-+	unsigned short len;
-+	unsigned short offset;
- 	unsigned char data[MAX_BUF_SIZE];
- };
- 
