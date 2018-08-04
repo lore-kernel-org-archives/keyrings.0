@@ -1,127 +1,155 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 02 Aug 2018 18:31:20 +0000
-Subject: [RFCv3 12/13] KEYS: asym_tpm: Implement tpm_sign
-Message-Id: <20180802183121.22909-13-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Sat, 04 Aug 2018 00:01:26 +0000
+Subject: [PATCH v7 03/12] nfit/libnvdimm: store dimm id as a member to struct nvdimm
+Message-Id: <153334088615.60955.5011589563958001975.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+The generated dimm id is needed for the sysfs attribute as well as being
+used as the identifier/description for the security key. Since it's
+constant and should never change, store it as a member of struct nvdimm.
+
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 88 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 88 insertions(+)
+ drivers/acpi/nfit/core.c   |   29 +++++++++++++++++------------
+ drivers/acpi/nfit/nfit.h   |    3 +++
+ drivers/nvdimm/dimm_devs.c |    4 +++-
+ drivers/nvdimm/nd-core.h   |    1 +
+ include/linux/libnvdimm.h  |    2 +-
+ 5 files changed, 25 insertions(+), 14 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 571fb98e1af9..8789df029313 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -20,9 +20,11 @@
- #define TPM_ORD_FLUSHSPECIFIC	186
- #define TPM_ORD_LOADKEY2	65
- #define TPM_ORD_UNBIND		30
-+#define TPM_ORD_SIGN		60
- #define TPM_LOADKEY2_SIZE		59
- #define TPM_FLUSHSPECIFIC_SIZE		18
- #define TPM_UNBIND_SIZE			63
-+#define TPM_SIGN_SIZE			63
+diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
+index a3a944751e6a..21235d555b5f 100644
+--- a/drivers/acpi/nfit/core.c
++++ b/drivers/acpi/nfit/core.c
+@@ -1572,18 +1572,10 @@ static DEVICE_ATTR_RO(flags);
+ static ssize_t id_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+-	struct acpi_nfit_control_region *dcr = to_nfit_dcr(dev);
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
  
- #define TPM_RT_KEY                      0x00000001
- 
-@@ -189,6 +191,92 @@ static int tpm_unbind(struct tpm_buf *tb,
- 	return datalen;
+-	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
+-		return sprintf(buf, "%04x-%02x-%04x-%08x\n",
+-				be16_to_cpu(dcr->vendor_id),
+-				dcr->manufacturing_location,
+-				be16_to_cpu(dcr->manufacturing_date),
+-				be32_to_cpu(dcr->serial_number));
+-	else
+-		return sprintf(buf, "%04x-%08x\n",
+-				be16_to_cpu(dcr->vendor_id),
+-				be32_to_cpu(dcr->serial_number));
++	return sprintf(buf, "%s\n", nfit_mem->id);
  }
+ static DEVICE_ATTR_RO(id);
  
-+/*
-+ * Sign a blob provided by userspace (that has had the hash function applied)
-+ * using a specific key handle.  The handle is assumed to have been previously
-+ * loaded by e.g. LoadKey2.
-+ *
-+ * Note that the key signature scheme of the used key should be set to
-+ * TPM_SS_RSASSAPKCS1v15_DER.  This allows the hashed input to be of any size
-+ * up to key_length_in_bytes - 11 and not be limited to size 20 like the
-+ * TPM_SS_RSASSAPKCS1v15_SHA1 signature scheme.
-+ */
-+static int tpm_sign(struct tpm_buf *tb,
-+		    uint32_t keyhandle, unsigned char *keyauth,
-+		    const unsigned char *blob, uint32_t bloblen,
-+		    void *out, uint32_t outlen)
-+{
-+	unsigned char nonceodd[TPM_NONCE_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+	unsigned char authdata[SHA1_DIGEST_SIZE];
-+	uint32_t authhandle = 0;
-+	unsigned char cont = 0;
-+	uint32_t ordinal;
-+	uint32_t datalen;
-+	int ret;
+@@ -1712,10 +1704,23 @@ static int acpi_nfit_add_dimm(struct acpi_nfit_desc *acpi_desc,
+ 	const guid_t *guid;
+ 	int i;
+ 	int family = -1;
++	struct acpi_nfit_control_region *dcr = nfit_mem->dcr;
+ 
+ 	/* nfit test assumes 1:1 relationship between commands and dsms */
+ 	nfit_mem->dsm_mask = acpi_desc->dimm_cmd_force_en;
+ 	nfit_mem->family = NVDIMM_FAMILY_INTEL;
 +
-+	ordinal = htonl(TPM_ORD_SIGN);
-+	datalen = htonl(bloblen);
++	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
++		sprintf(nfit_mem->id, "%04x-%02x-%04x-%08x",
++				be16_to_cpu(dcr->vendor_id),
++				dcr->manufacturing_location,
++				be16_to_cpu(dcr->manufacturing_date),
++				be32_to_cpu(dcr->serial_number));
++	else
++		sprintf(nfit_mem->id, "%04x-%08x",
++				be16_to_cpu(dcr->vendor_id),
++				be32_to_cpu(dcr->serial_number));
 +
-+	/* session for loading the key */
-+	ret = oiap(tb, &authhandle, enonce);
-+	if (ret < 0) {
-+		pr_info("oiap failed (%d)\n", ret);
-+		return ret;
-+	}
+ 	adev = to_acpi_dev(acpi_desc);
+ 	if (!adev)
+ 		return 0;
+@@ -1899,7 +1904,7 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
+ 		nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
+ 				acpi_nfit_dimm_attribute_groups,
+ 				flags, cmd_mask, flush ? flush->hint_count : 0,
+-				nfit_mem->flush_wpq);
++				nfit_mem->flush_wpq, &nfit_mem->id[0]);
+ 		if (!nvdimm)
+ 			return -ENOMEM;
+ 
+diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
+index 40b0003b1805..4048036d6ec2 100644
+--- a/drivers/acpi/nfit/nfit.h
++++ b/drivers/acpi/nfit/nfit.h
+@@ -173,6 +173,8 @@ struct nfit_memdev {
+ 	struct acpi_nfit_memory_map memdev[0];
+ };
+ 
++#define NFIT_DIMM_ID_LEN	22
 +
-+	/* generate odd nonce */
-+	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0) {
-+		pr_info("tpm_get_random failed (%d)\n", ret);
-+		return ret;
-+	}
+ /* assembled tables for a given dimm/memory-device */
+ struct nfit_mem {
+ 	struct nvdimm *nvdimm;
+@@ -195,6 +197,7 @@ struct nfit_mem {
+ 	int family;
+ 	bool has_lsr;
+ 	bool has_lsw;
++	char id[NFIT_DIMM_ID_LEN+1];
+ };
+ 
+ struct acpi_nfit_desc {
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 586432450c82..e753b2095402 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -401,7 +401,7 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
+ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		const struct attribute_group **groups, unsigned long flags,
+ 		unsigned long cmd_mask, int num_flush,
+-		struct resource *flush_wpq)
++		struct resource *flush_wpq, const char *dimm_id)
+ {
+ 	struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
+ 	struct device *dev;
+@@ -414,6 +414,8 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		kfree(nvdimm);
+ 		return NULL;
+ 	}
 +
-+	/* calculate authorization HMAC value */
-+	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-+			   nonceodd, cont, sizeof(uint32_t), &ordinal,
-+			   sizeof(uint32_t), &datalen,
-+			   bloblen, blob, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* build the request buffer */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
-+	store32(tb, TPM_SIGN_SIZE + bloblen);
-+	store32(tb, TPM_ORD_SIGN);
-+	store32(tb, keyhandle);
-+	store32(tb, bloblen);
-+	storebytes(tb, blob, bloblen);
-+	store32(tb, authhandle);
-+	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
-+	store8(tb, cont);
-+	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
-+
-+	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
-+	if (ret < 0) {
-+		pr_info("authhmac failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
-+	pr_info("datalen: %u, outlen: %u\n", datalen, outlen);
-+
-+	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd,
-+			     keyauth, SHA1_DIGEST_SIZE,
-+			     sizeof(uint32_t), TPM_DATA_OFFSET,
-+			     datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
-+			     0, 0);
-+	if (ret < 0) {
-+		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	memcpy(out, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t),
-+	       min(datalen, outlen));
-+
-+	return datalen;
-+}
- /*
-  * Maximum buffer size for the BER/DER encoded public key.  The public key
-  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
--- 
-2.16.1
++	nvdimm->dimm_id = dimm_id;
+ 	nvdimm->provider_data = provider_data;
+ 	nvdimm->flags = flags;
+ 	nvdimm->cmd_mask = cmd_mask;
+diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
+index 2af0f89c4010..ed650f1607d8 100644
+--- a/drivers/nvdimm/nd-core.h
++++ b/drivers/nvdimm/nd-core.h
+@@ -42,6 +42,7 @@ struct nvdimm {
+ 	atomic_t busy;
+ 	int id, num_flush;
+ 	struct resource *flush_wpq;
++	const char *dimm_id;
+ };
+ 
+ /**
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 51084043915c..3c1f18fdf76f 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -181,7 +181,7 @@ void *nvdimm_provider_data(struct nvdimm *nvdimm);
+ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		const struct attribute_group **groups, unsigned long flags,
+ 		unsigned long cmd_mask, int num_flush,
+-		struct resource *flush_wpq);
++		struct resource *flush_wpq, const char *dimm_id);
+ const struct nd_cmd_desc *nd_cmd_dimm_desc(int cmd);
+ const struct nd_cmd_desc *nd_cmd_bus_desc(int cmd);
+ u32 nd_cmd_in_size(struct nvdimm *nvdimm, int cmd,
 
