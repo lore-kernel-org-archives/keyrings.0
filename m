@@ -1,196 +1,129 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 02 Aug 2018 18:31:11 +0000
-Subject: [RFCv3 03/13] KEYS: Add parser for TPM-based keys
-Message-Id: <20180802183121.22909-4-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Sat, 04 Aug 2018 00:02:05 +0000
+Subject: [PATCH v7 10/12] nfit_test: add context to dimm_dev for nfit_test
+Message-Id: <153334092552.60955.15962378697541868001.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-For TPM based keys, the only standard seems to be described here:
-http://david.woodhou.se/draft-woodhouse-cert-best-practice.html#rfc.section.4.4
+In order to access the nfit_test context via sideband sysfs knobs, the
+dimm_dev needs to be more than struct device in order to point back to
+struct nfit_test. Wrapping the original struct device with a struct
+nfit_dimm_dev and saving the nfit_test as private driver data. Also
+changing the nfit_mem to be a member of struct nfit_dimm_dev instead of
+saving as private driver data of that device. This is in preparation for
+adding security DSM support and allowing the locking of DIMMs for testing
+via sideband.
 
-Quote from the relevant section:
-"Rather, a common form of storage for "wrapped" keys is to encode the
-binary TCPA_KEY structure in a single ASN.1 OCTET-STRING, and store the
-result in PEM format with the tag "-----BEGIN TSS KEY BLOB-----". "
-
-This patch implements the above behavior.  It is assumed that the PEM
-encoding is stripped out by userspace and only the raw DER/BER format is
-provided.  This is similar to how PKCS7, PKCS8 and X.509 keys are
-handled.
-
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- crypto/asymmetric_keys/Kconfig      |   9 ++++
- crypto/asymmetric_keys/Makefile     |  11 ++++
- crypto/asymmetric_keys/tpm.asn1     |   5 ++
- crypto/asymmetric_keys/tpm_parser.c | 104 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 129 insertions(+)
- create mode 100644 crypto/asymmetric_keys/tpm.asn1
- create mode 100644 crypto/asymmetric_keys/tpm_parser.c
+ tools/testing/nvdimm/test/nfit.c |   41 +++++++++++++++++++++++++-------------
+ 1 file changed, 27 insertions(+), 14 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index b75555c7d8ae..88353a9ebc9b 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -52,6 +52,15 @@ config PKCS8_PRIVATE_KEY_PARSER
- 	  private key data and provides the ability to instantiate a crypto key
- 	  from that data.
+diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
+index 18157b0c0d0d..7b3ce2194889 100644
+--- a/tools/testing/nvdimm/test/nfit.c
++++ b/tools/testing/nvdimm/test/nfit.c
+@@ -150,6 +150,11 @@ struct nfit_test_fw {
+ 	u64 end_time;
+ };
  
-+config TPM_KEY_PARSER
-+	tristate "TPM private key parser"
-+	depends on ASYMMETRIC_TPM_KEY_SUBTYPE
-+	select ASN1
-+	help
-+	  This option provides support for parsing TPM format blobs for
-+	  private key data and provides the ability to instantiate a crypto key
-+	  from that data.
-+
- config PKCS7_MESSAGE_PARSER
- 	tristate "PKCS#7 message parser"
- 	depends on X509_CERTIFICATE_PARSER
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index 73fbe650ff1d..28b91adba2ae 100644
---- a/crypto/asymmetric_keys/Makefile
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -75,3 +75,14 @@ verify_signed_pefile-y := \
- 
- $(obj)/mscode_parser.o: $(obj)/mscode.asn1.h $(obj)/mscode.asn1.h
- $(obj)/mscode.asn1.o: $(obj)/mscode.asn1.c $(obj)/mscode.asn1.h
-+
-+#
-+# TPM private key parsing
-+#
-+obj-$(CONFIG_TPM_KEY_PARSER) += tpm_key_parser.o
-+tpm_key_parser-y := \
-+	tpm.asn1.o \
-+	tpm_parser.o
-+
-+$(obj)/tpm_parser.o: $(obj)/tpm.asn1.h
-+$(obj)/tpm.asn1.o: $(obj)/tpm.asn1.c $(obj)/tpm.asn1.h
-diff --git a/crypto/asymmetric_keys/tpm.asn1 b/crypto/asymmetric_keys/tpm.asn1
-new file mode 100644
-index 000000000000..d7f194232f30
---- /dev/null
-+++ b/crypto/asymmetric_keys/tpm.asn1
-@@ -0,0 +1,5 @@
-+--
-+-- Unencryted TPM Blob.  For details of the format, see:
-+-- http://david.woodhou.se/draft-woodhouse-cert-best-practice.html#I-D.mavrogiannopoulos-tpmuri
-+--
-+PrivateKeyInfo ::= OCTET STRING ({ tpm_note_key })
-diff --git a/crypto/asymmetric_keys/tpm_parser.c b/crypto/asymmetric_keys/tpm_parser.c
-new file mode 100644
-index 000000000000..113f67c74cbe
---- /dev/null
-+++ b/crypto/asymmetric_keys/tpm_parser.c
-@@ -0,0 +1,104 @@
-+// SPDX-License-Identifier: GPL-2.0
-+#define pr_fmt(fmt) "TPM-PARSER: "fmt
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/export.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <keys/asymmetric-subtype.h>
-+#include <keys/asymmetric-parser.h>
-+#include <crypto/asym_tpm_subtype.h>
-+#include "tpm.asn1.h"
-+
-+struct tpm_parse_context {
-+	const void	*blob;
-+	u32		blob_len;
++struct nfit_dimm_dev {
++	struct device dev;
++	struct nfit_mem *nfit_mem;
 +};
 +
-+/*
-+ * Note the key data of the ASN.1 blob.
-+ */
-+int tpm_note_key(void *context, size_t hdrlen,
-+		   unsigned char tag,
-+		   const void *value, size_t vlen)
+ struct nfit_test {
+ 	struct acpi_nfit_desc acpi_desc;
+ 	struct platform_device pdev;
+@@ -181,7 +186,7 @@ struct nfit_test {
+ 		unsigned long deadline;
+ 		spinlock_t lock;
+ 	} ars_state;
+-	struct device *dimm_dev[NUM_DCR];
++	struct nfit_dimm_dev dimm_dev[NUM_DCR];
+ 	struct nd_intel_smart *smart;
+ 	struct nd_intel_smart_threshold *smart_threshold;
+ 	struct badrange badrange;
+@@ -981,7 +986,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
+ 						&t->smart_threshold[i -
+ 							t->dcr_idx],
+ 						&t->smart[i - t->dcr_idx],
+-						&t->pdev.dev, t->dimm_dev[i]);
++						&t->pdev.dev,
++						&t->dimm_dev[i].dev);
+ 				break;
+ 			case ND_INTEL_SMART_INJECT:
+ 				rc = nfit_test_cmd_smart_inject(buf,
+@@ -989,7 +995,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
+ 						&t->smart_threshold[i -
+ 							t->dcr_idx],
+ 						&t->smart[i - t->dcr_idx],
+-						&t->pdev.dev, t->dimm_dev[i]);
++						&t->pdev.dev,
++						&t->dimm_dev[i].dev);
+ 				break;
+ 			default:
+ 				return -ENOTTY;
+@@ -1187,8 +1194,7 @@ static void put_dimms(void *data)
+ 	int i;
+ 
+ 	for (i = 0; i < t->num_dcr; i++)
+-		if (t->dimm_dev[i])
+-			device_unregister(t->dimm_dev[i]);
++		device_unregister(&t->dimm_dev[i].dev);
+ }
+ 
+ static struct class *nfit_test_dimm;
+@@ -1290,19 +1296,27 @@ static const struct attribute_group *nfit_test_dimm_attribute_groups[] = {
+ 	NULL,
+ };
+ 
++static void dimm_dev_release(struct device *dev)
 +{
-+	struct tpm_parse_context *ctx = context;
-+
-+	ctx->blob = value;
-+	ctx->blob_len = vlen;
-+
-+	return 0;
 +}
 +
-+/*
-+ * Parse a TPM-encrypted private key blob.
-+ */
-+static struct tpm_key *tpm_parse(const void *data, size_t datalen)
-+{
-+	struct tpm_parse_context ctx;
-+	long ret;
-+
-+	memset(&ctx, 0, sizeof(ctx));
-+
-+	/* Attempt to decode the private key */
-+	ret = asn1_ber_decoder(&tpm_decoder, &ctx, data, datalen);
-+	if (ret < 0)
-+		goto error;
-+
-+	return tpm_key_create(ctx.blob, ctx.blob_len);
-+
-+error:
-+	return ERR_PTR(ret);
-+}
-+/*
-+ * Attempt to parse a data blob for a key as a TPM private key blob.
-+ */
-+static int tpm_key_preparse(struct key_preparsed_payload *prep)
-+{
-+	struct tpm_key *tk;
-+
-+	/*
-+	 * TPM 1.2 keys are max 2048 bits long, so assume the blob is no
-+	 * more than 4x that
-+	 */
-+	if (prep->datalen > 256 * 4)
-+		return -EMSGSIZE;
-+
-+	tk = tpm_parse(prep->data, prep->datalen);
-+
-+	if (IS_ERR(tk))
-+		return PTR_ERR(tk);
-+
-+	pr_info("%s: TPM1.2 sealed blob parsing succeeded\n", __func__);
-+
-+	/* We're pinning the module by being linked against it */
-+	__module_get(asym_tpm_subtype.owner);
-+	prep->payload.data[asym_subtype] = &asym_tpm_subtype;
-+	prep->payload.data[asym_key_ids] = NULL;
-+	prep->payload.data[asym_crypto] = tk;
-+	prep->payload.data[asym_auth] = NULL;
-+	prep->quotalen = 100;
-+	return 0;
-+}
-+
-+static struct asymmetric_key_parser tpm_key_parser = {
-+	.owner	= THIS_MODULE,
-+	.name	= "tpm_parser",
-+	.parse	= tpm_key_preparse,
-+};
-+
-+static int __init tpm_key_init(void)
-+{
-+	return register_asymmetric_key_parser(&tpm_key_parser);
-+}
-+
-+static void __exit tpm_key_exit(void)
-+{
-+	unregister_asymmetric_key_parser(&tpm_key_parser);
-+}
-+
-+module_init(tpm_key_init);
-+module_exit(tpm_key_exit);
-+
-+MODULE_DESCRIPTION("TPM private key-blob parser");
-+MODULE_LICENSE("GPL v2");
--- 
-2.16.1
+ static int nfit_test_dimm_init(struct nfit_test *t)
+ {
+-	int i;
++	int i, rc;
+ 
+ 	if (devm_add_action_or_reset(&t->pdev.dev, put_dimms, t))
+ 		return -ENOMEM;
+ 	for (i = 0; i < t->num_dcr; i++) {
+-		t->dimm_dev[i] = device_create_with_groups(nfit_test_dimm,
+-				&t->pdev.dev, 0, NULL,
+-				nfit_test_dimm_attribute_groups,
+-				"test_dimm%d", i + t->dcr_idx);
+-		if (!t->dimm_dev[i])
+-			return -ENOMEM;
++		t->dimm_dev[i].dev.parent = &t->pdev.dev;
++		dev_set_name(&t->dimm_dev[i].dev, "test_dimm%d",
++				i + t->dcr_idx);
++		t->dimm_dev[i].dev.class = nfit_test_dimm;
++		t->dimm_dev[i].dev.groups = nfit_test_dimm_attribute_groups;
++		t->dimm_dev[i].dev.release = dimm_dev_release;
++		rc = device_register(&t->dimm_dev[i].dev);
++		if (rc < 0)
++			return rc;
++		dev_set_drvdata(&t->dimm_dev[i].dev, t);
+ 	}
+ 	return 0;
+ }
+@@ -2665,8 +2679,7 @@ static int nfit_test_probe(struct platform_device *pdev)
+ 
+ 		for (i = 0; i < NUM_DCR; i++)
+ 			if (nfit_handle = handle[i])
+-				dev_set_drvdata(nfit_test->dimm_dev[i],
+-						nfit_mem);
++				nfit_test->dimm_dev[i].nfit_mem = nfit_mem;
+ 	}
+ 	mutex_unlock(&acpi_desc->init_mutex);
+ 
 
