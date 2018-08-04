@@ -1,390 +1,426 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2018 15:59:25 +0000
-Subject: [PATCH 23/23] TPM: Add an asymmetric key subtype for handling TPM-based keys
-Message-Id: <153486716525.13066.18042327896429419884.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Sat, 04 Aug 2018 00:01:43 +0000
+Subject: [PATCH v7 06/12] nfit/libnvdimm: add set passphrase support for Intel nvdimms
+Message-Id: <153334090312.60955.650899527822657616.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Add an asymmetric key subtype for handling keys that have to be loaded into
-the TPM to be used.
+Add support for setting and/or updating passphrase on the Intel nvdimms.
+The passphrase is pulled from userspace through the kernel key management.
+We trigger the update via writing "update" to the sysfs attribute
+"security". The state of the security can also be read via the "security"
+attribute. libnvdimm will generically support the key_change API call.
 
-A key can be created by something like:
-
-	keyctl add asymmetric "a" "tpm_create parent@000000,095c2a76085f6aa9327c62f72a3d1348f62b99db keyauth	5c2a76085f6aa9327c62f72a3d1348f62b99db" @s
-
-where "parent=<parent_key_handle>,<parent_key_secret>" and
-"keyauth=<new_key_secret>".
-
-The above will ask the TPM to create a key and return the TPM_KEY struct as a
-blob with the private key encrypted by the parent key (in the above case, the
-SRK).
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 ---
+ drivers/acpi/nfit/intel.c  |   68 ++++++++++++
+ drivers/nvdimm/dimm_devs.c |  255 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    5 +
+ 3 files changed, 328 insertions(+)
 
- crypto/asymmetric_keys/Kconfig          |    7 +
- crypto/asymmetric_keys/Makefile         |    1 
- crypto/asymmetric_keys/tpm_key.c        |   73 +++++++++++
- crypto/asymmetric_keys/tpm_key.h        |   19 +++
- crypto/asymmetric_keys/tpm_key_parser.c |  212 +++++++++++++++++++++++++++++++
- 5 files changed, 312 insertions(+)
- create mode 100644 crypto/asymmetric_keys/tpm_key.c
- create mode 100644 crypto/asymmetric_keys/tpm_key.h
- create mode 100644 crypto/asymmetric_keys/tpm_key_parser.c
-
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 4870f28403f5..97d1bb714617 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -67,4 +67,11 @@ config SIGNED_PE_FILE_VERIFICATION
- 	  This option provides support for verifying the signature(s) on a
- 	  signed PE binary.
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 4bfc1c1da339..314eae7e02d7 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,73 @@
+ #include "intel.h"
+ #include "nfit.h"
  
-+config ASYMMETRIC_TPM_KEY_SUBTYPE
-+	tristate "Asymmetric TPM-based public-key crypto algorithm subtype"
-+	depends on TCG_TPM
-+	help
-+	  This option provides support for TPM hardware-based asymmetric public
-+	  key type handling.
-+
- endif # ASYMMETRIC_KEY_TYPE
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index e47fcd9ac5e8..690c16a517a9 100644
---- a/crypto/asymmetric_keys/Makefile
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += asymmetric_keys.o
- asymmetric_keys-y := asymmetric_type.o signature.o
- 
- obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
-+obj-$(CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE) += tpm_key.o tpm_key_parser.o
- obj-$(CONFIG_PUBLIC_KEY_ALGO_RSA) += rsa.o
- 
- #
-diff --git a/crypto/asymmetric_keys/tpm_key.c b/crypto/asymmetric_keys/tpm_key.c
-new file mode 100644
-index 000000000000..bfddedc9db32
---- /dev/null
-+++ b/crypto/asymmetric_keys/tpm_key.c
-@@ -0,0 +1,73 @@
-+/* In-TPM asymmetric public-key crypto subtype
-+ *
-+ * Copyright (C) 2014 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#define pr_fmt(fmt) "TPK: "fmt
-+#include <linux/module.h>
-+#include <linux/export.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/seq_file.h>
-+#include <linux/tpm.h>
-+#include <keys/asymmetric-subtype.h>
-+#include "tpm_key.h"
-+
-+MODULE_LICENSE("GPL");
-+
 +/*
-+ * Provide a part of a description of the key for /proc/keys.
++ * The update passphrase takes the old passphrase and the new passphrase
++ * and send those to the nvdimm. The nvdimm will verify the old
++ * passphrase and then update it with the new passphrase if pending
++ * verification. The function will pass in a zeroed passphrase field
++ * if the old passphrase is NULL. This typically happens when we are
++ * enabling security from the disabled state.
 + */
-+static void tpm_key_describe(const struct key *asymmetric_key,
-+			     struct seq_file *m)
++static int intel_dimm_security_update_passphrase(
++		struct nvdimm_bus *nvdimm_bus, struct nvdimm *nvdimm,
++		const struct nvdimm_key_data *old_data,
++		const struct nvdimm_key_data *new_data)
 +{
-+	struct tpm_asymmetric_key *key = asymmetric_key->payload.data;
-+	struct tpm_wrapped_key *wrap;
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_set_passphrase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_SET_PASSPHRASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE * 2,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
 +
-+	if (key && key->wrapped_key) {
-+		wrap = key->wrapped_key;
-+		seq_printf(m, "TPM.RSA %*phN",
-+			   wrap->pubkey_len, wrap->data + wrap->pubkey_offset);
++	if (!test_bit(NVDIMM_INTEL_SET_PASSPHRASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	if (old_data)
++		memcpy(nd_cmd.cmd.old_pass, old_data->data,
++				sizeof(nd_cmd.cmd.old_pass));
++	else
++		memset(nd_cmd.cmd.old_pass, 0, sizeof(nd_cmd.cmd.old_pass));
++	memcpy(nd_cmd.cmd.new_pass, new_data->data,
++			sizeof(nd_cmd.cmd.new_pass));
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
 +	}
-+}
 +
-+/*
-+ * Destroy a TPM-based key.
-+ */
-+static void tpm_key_destroy(void *payload)
-+{
-+	struct tpm_asymmetric_key *key = payload;
-+
-+	if (key) {
-+		kfree(key->wrapped_key);
-+		kfree(key);
-+		tpm_library_unuse();
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
 +	}
++
++ out:
++	return rc;
++}
++
+ static int intel_dimm_security_unlock(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
+ {
+@@ -149,4 +216,5 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
+ const struct nvdimm_security_ops intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
++	.change_key = intel_dimm_security_update_passphrase,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 8204b2ac0457..af0f4ad9d513 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -20,6 +20,7 @@
+ #include <linux/mm.h>
+ #include <linux/key.h>
+ #include <linux/init_task.h>
++#include <linux/key-type.h>
+ #include <keys/user-type.h>
+ #include "nd-core.h"
+ #include "label.h"
+@@ -51,6 +52,57 @@ static struct key *nvdimm_get_key(struct device *dev)
+ 	return nvdimm->key;
+ }
+ 
++/*
++ * Replacing the user key with a kernel key
++ */
++static struct key *nvdimm_replace_key(struct key *key)
++{
++	struct key *new_key;
++	struct user_key_payload *payload;
++	int rc;
++
++	new_key = key_alloc(&key_type_logon, key->description,
++			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, &init_cred, 0,
++			KEY_ALLOC_NOT_IN_QUOTA, NULL);
++	if (IS_ERR(new_key))
++		return NULL;
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++	rc = key_instantiate_and_link(new_key, payload->data, key->datalen,
++			nvdimm_keyring, NULL);
++	up_read(&key->sem);
++	if (rc < 0) {
++		key_revoke(new_key);
++		key_put(new_key);
++		return NULL;
++	}
++
++	key_invalidate(key);
++	key_put(key);
++
++	return new_key;
 +}
 +
 +/*
-+ * Verify a signature using a TPM-based key.
++ * Retrieve user injected key
 + */
-+static int tpm_key_verify_signature(const struct key *key,
-+				    const struct public_key_signature *sig)
++static struct key *nvdimm_lookup_user_key(struct device *dev,
++		key_serial_t id)
 +{
-+	return -EOPNOTSUPP;
++	key_ref_t keyref;
++	struct key *key;
++
++	keyref = lookup_user_key(id, 0, 0);
++	if (IS_ERR(keyref))
++		return NULL;
++
++	key = key_ref_to_ptr(keyref);
++	dev_dbg(dev, "%s: key found: %d\n", __func__, key_serial(key));
++
++	return key;
 +}
 +
-+/*
-+ * Public key algorithm asymmetric key subtype
-+ */
-+struct asymmetric_key_subtype tpm_key_subtype = {
-+	.owner			= THIS_MODULE,
-+	.name			= "tpm_key",
-+	.describe		= tpm_key_describe,
-+	.destroy		= tpm_key_destroy,
-+	.verify_signature	= tpm_key_verify_signature,
-+};
-+EXPORT_SYMBOL_GPL(tpm_key_subtype);
-diff --git a/crypto/asymmetric_keys/tpm_key.h b/crypto/asymmetric_keys/tpm_key.h
-new file mode 100644
-index 000000000000..712221fee874
---- /dev/null
-+++ b/crypto/asymmetric_keys/tpm_key.h
-@@ -0,0 +1,19 @@
-+/* TPM-based public key algorithm internals
-+ *
-+ * Copyright (C) 2014 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+struct tpm_asymmetric_key {
-+	struct tpm_wrapped_key *wrapped_key;
-+	u32	parent_tpm_handle;
-+	u8	parent_authdata[TPM_DIGEST_SIZE];
-+	u8	key_authdata[TPM_DIGEST_SIZE];
-+};
-+
-+extern struct asymmetric_key_subtype tpm_key_subtype;
-diff --git a/crypto/asymmetric_keys/tpm_key_parser.c b/crypto/asymmetric_keys/tpm_key_parser.c
-new file mode 100644
-index 000000000000..efb53172b43d
---- /dev/null
-+++ b/crypto/asymmetric_keys/tpm_key_parser.c
-@@ -0,0 +1,212 @@
-+/* Instantiate a TPM key.
-+ *
-+ * Copyright (C) 2014 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+#define DEBUG
-+#define pr_fmt(fmt) "TPKP: "fmt
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/tpm.h>
-+#include <linux/parser.h>
-+#include <keys/asymmetric-subtype.h>
-+#include <keys/asymmetric-parser.h>
-+#include "asymmetric_keys.h"
-+#include "tpm_key.h"
-+
-+
-+enum tpm_key_create_token {
-+	opt_crt_err = -1,
-+	opt_crt_parent,
-+	opt_crt_keyauth,
-+};
-+
-+static const match_table_t tpm_key_create_tokens = {
-+	{ opt_crt_parent,	"parent=%x,%s"},
-+	{ opt_crt_keyauth,	"keyauth=%s"},
-+	{ opt_crt_err,		NULL}
-+};
-+
-+/*
-+ * Attempt to parse a key creation request.
-+ */
-+static int tpm_key_create(struct tpm_asymmetric_key *key, char *data)
+ /*
+  * Retrieve kernel key for DIMM and request from user space if necessary.
+  */
+@@ -151,6 +203,95 @@ int nvdimm_security_unlock_dimm(struct device *dev)
+ 	return rc;
+ }
+ 
++static int nvdimm_security_change_key(struct device *dev,
++		unsigned int old_keyid, unsigned int new_keyid)
 +{
-+	enum tpm_key_create_token token;
-+	struct tpm_chip *chip;
-+	unsigned long tmp, got = 0;
-+	substring_t args[MAX_OPT_ARGS];
-+	uint32_t key_handle;
-+	char *p;
-+	int ret;
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key = NULL, *old_key = NULL;
++	int rc;
++	void *old_data, *new_data;
++	bool update = false;
++	struct user_key_payload *payload;
 +
-+	pr_devel("=>%s(,%s)\n", __func__, data);
++	if (!nvdimm->security_ops)
++		return 0;
 +
-+	while ((p = strsep(&data, " \t"))) {
-+		if (*p = '\0' || *p = ' ' || *p = '\t')
-+			continue;
-+		token = match_token(p, tpm_key_create_tokens, args);
-+		switch (token) {
-+		case opt_crt_parent:
-+			pr_devel("parent %ld %ld\n",
-+				 args[0].to - args[0].from,
-+				 args[1].to - args[1].from);
-+			*args[0].to = 0;
-+			ret = kstrtoul(args[0].from, 16, &tmp);
-+			if (ret < 0) {
-+				pr_devel("bad parent handle\n");
++	if (nvdimm->state = NVDIMM_SECURITY_FROZEN)
++		return -EBUSY;
++
++	/* look for a key from keyring if exists and remove */
++	if (old_keyid != 0) {
++		old_key = nvdimm_get_key(dev);
++		if (old_key) {
++			if (key_serial(old_key) != old_keyid) {
++				dev_warn(dev, "incorrect key id: %u\n",
++						old_keyid);
 +				return -EINVAL;
 +			}
-+			key->parent_tpm_handle = tmp;
-+			if (args[1].to - args[1].from != TPM_DIGEST_SIZE * 2) {
-+				pr_devel("parent auth wrong size\n");
-+				return -EINVAL;
-+			}
-+			if (hex2bin(key->parent_authdata, args[1].from,
-+				    TPM_DIGEST_SIZE) < 0) {
-+				pr_devel("parent auth bad hex\n");
-+				return -EINVAL;
-+			}
-+			break;
-+
-+		case opt_crt_keyauth:
-+			pr_devel("keyauth\n");
-+			if (args[1].to - args[1].from != TPM_DIGEST_SIZE * 2)
-+				return -EINVAL;
-+			if (hex2bin(key->parent_authdata, args[1].from,
-+				    TPM_DIGEST_SIZE) < 0)
-+				return -EINVAL;
-+			break;
-+
-+		case opt_crt_err:
-+			pr_devel("Unknown token %s\n", p);
-+			return -EINVAL;
++			dev_dbg(dev, "%s: old key: %#x\n",
++					__func__, key_serial(old_key));
++			update = true;
 +		}
-+		got |= 1 << token;
 +	}
 +
-+	if ((got & 3) != 3) {
-+		pr_devel("Missing mandatory args\n");
-+		return -EINVAL;
-+	}
-+
-+	chip = tpm_chip_find_get(TPM_ANY_NUM);
-+	if (!chip)
-+		return -ENODEV;
-+
-+	/* Create a key and retrieve the partially encrypted blob. */
-+	ret = tpm_create_wrap_key(chip, TPM_ET_SRK, key->parent_tpm_handle,
-+				  key->parent_authdata,
-+				  key->key_authdata,
-+				  NULL,
-+				  &key->wrapped_key);
-+	if (ret = -EBADMSG)
-+		ret = -EIO;
-+
-+	/* Attempt to load the key back as a check */
-+	ret = tpm_load_key2(chip, TPM_ET_SRK, key->parent_tpm_handle,
-+			    key->parent_authdata, key->wrapped_key,
-+			    &key_handle);
-+	if (ret != 0) {
-+		pr_devel("Couldn't load key back\n");
++	/* request new key from userspace */
++	key = nvdimm_lookup_user_key(dev, new_keyid);
++	if (!key) {
++		dev_dbg(dev, "%s: failed to acquire new key\n", __func__);
++		rc = -ENXIO;
 +		goto out;
 +	}
 +
-+	ret = tpm_flush_specific(chip, key_handle, TPM_RT_KEY);
-+	if (ret != 0)
-+		pr_devel("Couldn't flush key handle\n");
++	dev_dbg(dev, "%s: new key: %#x\n", __func__, key_serial(key));
 +
-+out:
-+	tpm_chip_put(chip);
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
-+/*
-+ * Attempt to parse a data blob for a key as a TPM key specification.
-+ *
-+ * We expect one of the following in the prep data:
-+ *
-+ *	tpm_create parent=<key>,<auth> keyauth=<hex> [options...]
-+ *	tpm_load parent=<key>,<auth> data=<hex> [options...]
-+ */
-+static int tpm_key_preparse(struct key_preparsed_payload *prep)
-+{
-+	struct tpm_asymmetric_key *key;
-+	char *data;
-+	int ret;
-+
-+	pr_devel("=>%s()\n", __func__);
-+
-+	ret = tpm_library_use();
-+	if (ret < 0)
++	rc = nvdimm_check_key_len(key->datalen, update);
++	if (rc < 0)
 +		goto out;
 +
-+	ret = -ENOMEM;
-+	key = kzalloc(sizeof(*key), GFP_KERNEL);
++	if (!update)
++		key = nvdimm_replace_key(key);
++
 +	if (!key)
-+		goto out_free_tpmlib;
-+	data = kmalloc(prep->datalen + 1, GFP_KERNEL);
-+	if (!data)
-+		goto out_free_key;
++		goto out;
 +
-+	memcpy(data, prep->data, prep->datalen);
-+	data[prep->datalen] = 0;
-+	if (memcmp(data, "tpm_create ", 11) = 0) {
-+		ret = tpm_key_create(key, data + 11);
++	payload = key->payload.data[0];
++	if (!update) {
++		old_data = NULL;
++		new_data = payload->data;
 +	} else {
-+		ret = -EBADMSG;
-+		goto out_free_data;
++		new_data = payload->data;
++		old_data = new_data + NVDIMM_PASSPHRASE_LEN;
 +	}
 +
-+	/* We're pinning the module by being linked against it */
-+	__module_get(tpm_key_subtype.owner);
-+	prep->type_data[0] = &tpm_key_subtype;
-+	//prep->type_data[1] = kids;
-+	prep->payload[0] = key;
-+	//prep->description = desc;
-+	prep->quotalen = 100;
-+	key = NULL;
-+	tpm_library_use();
++	down_read(&key->sem);
++	rc = nvdimm->security_ops->change_key(nvdimm_bus, nvdimm, old_data,
++			new_data);
++	/* copy new payload to old payload */
++	if (rc = 0) {
++		if (update)
++			key_update(make_key_ref(old_key, 1), new_data,
++					old_key->datalen);
++	} else
++		dev_warn(dev, "key update failed\n");
++	up_read(&key->sem);
 +
-+out_free_data:
-+	kfree(data);
-+out_free_key:
-+	kfree(key);
-+out_free_tpmlib:
-+	tpm_library_unuse();
-+out:
-+	return ret;
++	if (update)
++		key_invalidate(key);
++	else {
++		key_link(nvdimm_keyring, key);
++		nvdimm->key = key;
++	}
++	nvdimm_security_get_state(dev);
++
++ out:
++	if (old_key)
++		key_put(old_key);
++	if (key)
++		key_put(key);
++	return rc;
 +}
 +
-+static struct asymmetric_key_parser tpm_key_parser = {
-+	.owner	= THIS_MODULE,
-+	.name	= "tpm",
-+	.parse	= tpm_key_preparse,
-+};
+ /*
+  * Retrieve bus and dimm handle and return if this bus supports
+  * get_config_data commands
+@@ -508,11 +649,125 @@ static ssize_t available_slots_show(struct device *dev,
+ }
+ static DEVICE_ATTR_RO(available_slots);
+ 
++static ssize_t security_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++
++	switch (nvdimm->state) {
++	case NVDIMM_SECURITY_DISABLED:
++		return sprintf(buf, "disabled\n");
++	case NVDIMM_SECURITY_UNLOCKED:
++		return sprintf(buf, "unlocked\n");
++	case NVDIMM_SECURITY_LOCKED:
++		return sprintf(buf, "locked\n");
++	case NVDIMM_SECURITY_FROZEN:
++		return sprintf(buf, "frozen\n");
++	case NVDIMM_SECURITY_UNSUPPORTED:
++	default:
++		return sprintf(buf, "unsupported\n");
++	}
++
++	return -ENOTTY;
++}
 +
 +/*
-+ * Module stuff
++ * The update command:
++ *	update:<old_id>:<new_id>
 + */
-+static int __init tpm_key_init(void)
++#define STR_UPDATE_LEN		6
++/* ":0:0" */
++#define NVDIMM_UPDATE_MIN_LEN	STR_UPDATE_LEN + 4
++
++static int __parse_update(const char *buf, size_t len, unsigned int *old_id,
++		unsigned int *new_id)
 +{
-+	return register_asymmetric_key_parser(&tpm_key_parser);
++	int i, rc = 0;
++	const char *tmp, *old_idstr;
++	char *desc;
++	size_t buf_len;
++
++	if (len < NVDIMM_UPDATE_MIN_LEN)
++		return -EINVAL;
++
++	desc = kmemdup_nul(buf, STR_UPDATE_LEN, GFP_KERNEL);
++	if (!desc)
++		return -EINVAL;
++
++	if (strcmp(desc, "update") != 0) {
++		rc = -ENOMEM;
++		goto free_desc;
++	}
++
++	tmp = &buf[STR_UPDATE_LEN];
++	if (*tmp != ':') {
++		rc = -EINVAL;
++		goto free_desc;
++	}
++
++	tmp++;
++
++	buf_len = len - STR_UPDATE_LEN - 1;
++	for (i = 0; i < buf_len; i++) {
++		if (tmp[i] = ':')
++			break;
++	}
++
++	old_idstr = kmemdup_nul(tmp, i, GFP_KERNEL);
++	if (!old_idstr) {
++		rc = -ENOMEM;
++		goto free_desc;
++	}
++
++	rc = kstrtouint(old_idstr, 0, old_id);
++	if (rc < 0)
++		goto free_old;
++
++	tmp += i + 1;
++
++	rc = kstrtouint(tmp, 0, new_id);
++	if (rc < 0)
++		goto free_old;
++
++free_old:
++	kfree(old_idstr);
++free_desc:
++	kfree(desc);
++	return rc;
 +}
 +
-+static void __exit tpm_key_exit(void)
++static ssize_t security_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t len)
++
 +{
-+	unregister_asymmetric_key_parser(&tpm_key_parser);
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	ssize_t rc = -EINVAL;
++	unsigned int new_id, old_id;
++
++        wait_nvdimm_bus_probe_idle(&nvdimm_bus->dev);
++        if (atomic_read(&nvdimm->busy))
++                return -EBUSY;
++
++	if (__parse_update(buf, len, &old_id, &new_id) = 0) {
++		dev_dbg(dev, "update: old: %u new: %u\n", old_id, new_id);
++		rc = nvdimm_security_change_key(dev, old_id, new_id);
++	} else
++		return -EINVAL;
++
++	if (rc = 0)
++		rc = len;
++
++	return rc;
 +}
++static DEVICE_ATTR_RW(security);
 +
-+module_init(tpm_key_init);
-+module_exit(tpm_key_exit);
-+
-+MODULE_DESCRIPTION("TPM key parser");
-+MODULE_LICENSE("GPL");
+ static struct attribute *nvdimm_attributes[] = {
+ 	&dev_attr_state.attr,
+ 	&dev_attr_flags.attr,
+ 	&dev_attr_commands.attr,
+ 	&dev_attr_available_slots.attr,
++	&dev_attr_security.attr,
+ 	NULL,
+ };
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 257ff2637ce1..bd6a413164ee 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -160,6 +160,7 @@ enum nvdimm_security_state {
+ 	NVDIMM_SECURITY_DISABLED,
+ 	NVDIMM_SECURITY_UNLOCKED,
+ 	NVDIMM_SECURITY_LOCKED,
++	NVDIMM_SECURITY_FROZEN,
+ 	NVDIMM_SECURITY_UNSUPPORTED,
+ };
+ 
+@@ -177,6 +178,10 @@ struct nvdimm_security_ops {
+ 	int (*unlock)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm,
+ 			const struct nvdimm_key_data *nkey);
++	int (*change_key)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			const struct nvdimm_key_data *old_data,
++			const struct nvdimm_key_data *new_data);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
+
