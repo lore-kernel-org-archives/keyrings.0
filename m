@@ -1,201 +1,154 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 02 Aug 2018 18:31:13 +0000
-Subject: [RFCv3 05/13] KEYS: asym_tpm: Implement pkey_query
-Message-Id: <20180802183121.22909-6-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Sat, 04 Aug 2018 00:01:54 +0000
+Subject: [PATCH v7 08/12] nfit/libnvdimm: add freeze security support to Intel nvdimm
+Message-Id: <153334091448.60955.17393000104848914817.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-This commit implements the pkey_query operation.  This is accomplished
-by utilizing the public key portion to obtain max encryption size
-information for the operations that utilize the public key (encrypt,
-verify).  The private key size extracted from the TPM_Key data structure
-is used to fill the information where the private key is used (decrypt,
-sign).
+Add support for freeze security on Intel nvdimm. This locks out any
+changes to security for the DIMM unless a reboot is done. This is triggered
+by writing "freeze" to the "security" sysfs attribute. libnvdimm will
+support the generic freeze_lock API call.
 
-The kernel uses a DER/BER format for public keys and does not support
-setting the key via the raw binary form.  To get around this a simple
-DER/BER formatter is implemented which stores the DER/BER formatted key
-and exponent in a temporary buffer for use by the crypto API.
-
-The only exponent supported currently is 65537.  This holds true for
-other Linux TPM tools such as 'create_tpm_key' and
-trousers-openssl_tpm_engine.
-
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c | 138 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 138 insertions(+)
+ drivers/acpi/nfit/intel.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   22 +++++++++++++++++++
+ include/linux/libnvdimm.h  |    2 ++
+ 3 files changed, 75 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 4f070706628c..3eed931a6362 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -7,10 +7,24 @@
- #include <linux/seq_file.h>
- #include <linux/scatterlist.h>
- #include <linux/tpm.h>
-+#include <crypto/akcipher.h>
- #include <asm/unaligned.h>
- #include <keys/asymmetric-subtype.h>
- #include <crypto/asym_tpm_subtype.h>
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 21d30222371f..ba886f1f5399 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,53 @@
+ #include "intel.h"
+ #include "nfit.h"
  
-+/*
-+ * Maximum buffer size for the BER/DER encoded public key.  The public key
-+ * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
-+ * bit key and e is usually 65537
-+ * The encoding overhead is:
-+ * - max 4 bytes for SEQUENCE
-+ *   - max 4 bytes for INTEGER n type/length
-+ *     - 257 bytes of n
-+ *   - max 2 bytes for INTEGER e type/length
-+ *     - 3 bytes of e
-+ */
-+#define PUB_KEY_BUF_SIZE (4 + 4 + 257 + 2 + 3)
++static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_freeze_lock cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_FREEZE_LOCK,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = 0,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
 +
- /*
-  * Provide a part of a description of the key for /proc/keys.
-  */
-@@ -42,6 +56,129 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
- 	kfree(tk);
++	if (!test_bit(NVDIMM_INTEL_FREEZE_LOCK, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	return rc;
++}
++
+ static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
+ {
+@@ -254,6 +301,9 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
+ 	else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_ENABLED) {
+ 		if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_LOCKED)
+ 			*state = NVDIMM_SECURITY_LOCKED;
++		else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_FROZEN ||
++				nd_cmd.cmd.state & ND_INTEL_SEC_STATE_PLIMIT)
++			*state = NVDIMM_SECURITY_FROZEN;
+ 		else
+ 			*state = NVDIMM_SECURITY_UNLOCKED;
+ 	} else
+@@ -270,4 +320,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
+ 	.disable = intel_dimm_security_disable,
++	.freeze_lock = intel_dimm_security_freeze_lock,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 4169aabe814e..ccb5fd13cd57 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -143,6 +143,26 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
  }
  
-+/* How many bytes will it take to encode the length */
-+static inline uint32_t definite_length(uint32_t len)
++static int nvdimm_security_freeze_lock(struct device *dev)
 +{
-+	if (len <= 127)
-+		return 1;
-+	if (len <= 255)
-+		return 2;
-+	return 3;
-+}
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	int rc;
 +
-+static inline uint8_t *encode_tag_length(uint8_t *buf, uint8_t tag,
-+					 uint32_t len)
-+{
-+	*buf++ = tag;
-+
-+	if (len <= 127) {
-+		buf[0] = len;
-+		return buf + 1;
-+	}
-+
-+	if (len <= 255) {
-+		buf[0] = 0x81;
-+		buf[1] = len;
-+		return buf + 2;
-+	}
-+
-+	buf[0] = 0x82;
-+	put_unaligned_be16(len, buf + 1);
-+	return buf + 3;
-+}
-+
-+static uint32_t derive_pub_key(const void *pub_key, uint32_t len, uint8_t *buf)
-+{
-+	uint8_t *cur = buf;
-+	uint32_t n_len = definite_length(len) + 1 + len + 1;
-+	uint32_t e_len = definite_length(3) + 1 + 3;
-+	uint8_t e[3] = { 0x01, 0x00, 0x01 };
-+
-+	/* SEQUENCE */
-+	cur = encode_tag_length(cur, 0x30, n_len + e_len);
-+	/* INTEGER n */
-+	cur = encode_tag_length(cur, 0x02, len + 1);
-+	cur[0] = 0x00;
-+	memcpy(cur + 1, pub_key, len);
-+	cur += len + 1;
-+	cur = encode_tag_length(cur, 0x02, sizeof(e));
-+	memcpy(cur, e, sizeof(e));
-+	cur += sizeof(e);
-+
-+	return cur - buf;
-+}
-+
-+/*
-+ * Determine the crypto algorithm name.
-+ */
-+static int determine_akcipher(const char *encoding, const char *hash_algo,
-+			      char alg_name[CRYPTO_MAX_ALG_NAME])
-+{
-+	pr_info("encoding: %s, hash_algo: %s\n",
-+		encoding ? encoding : "", hash_algo ? hash_algo : hash_algo);
-+
-+	/* TODO: We don't support hashing yet */
-+	if (hash_algo)
-+		return -ENOPKG;
-+
-+	if (strcmp(encoding, "pkcs1") = 0) {
-+		strcpy(alg_name, "pkcs1pad(rsa)");
++	if (!nvdimm->security_ops)
 +		return 0;
-+	}
 +
-+	if (strcmp(encoding, "raw") = 0) {
-+		strcpy(alg_name, "rsa");
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
 +		return 0;
-+	}
 +
-+	return -ENOPKG;
++	rc = nvdimm->security_ops->freeze_lock(nvdimm_bus, nvdimm);
++	if (rc < 0)
++		return rc;
++
++	nvdimm_security_get_state(dev);
++	return 0;
 +}
 +
-+/*
-+ * Query information about a key.
-+ */
-+static int tpm_key_query(const struct kernel_pkey_params *params,
-+			 struct kernel_pkey_query *info)
-+{
-+	struct tpm_key *tk = params->key->payload.data[asym_crypto];
-+	int ret;
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	struct crypto_akcipher *tfm;
-+	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
-+	uint32_t der_pub_key_len;
-+	int len;
-+
-+	/* TPM only works on private keys, public keys still done in software */
-+	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
-+	if (ret < 0)
-+		return ret;
-+
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
-+					 der_pub_key);
-+
-+	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
-+	if (ret < 0)
-+		goto error_free_tfm;
-+
-+	len = crypto_akcipher_maxsize(tfm);
-+
-+	info->key_size = tk->key_len;
-+	info->max_data_size = tk->key_len / 8;
-+	info->max_sig_size = len;
-+	info->max_enc_size = len;
-+	info->max_dec_size = tk->key_len / 8;
-+
-+	ret = 0;
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_info("<=%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
- /*
-  * Parse enough information out of TPM_KEY structure:
-  * TPM_STRUCT_VER -> 4 bytes
-@@ -200,6 +337,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
- 	.name_len		= sizeof("asym_tpm") - 1,
- 	.describe		= asym_tpm_describe,
- 	.destroy		= asym_tpm_destroy,
-+	.query			= tpm_key_query,
- };
- EXPORT_SYMBOL_GPL(asym_tpm_subtype);
+ static int nvdimm_security_disable(struct device *dev)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -795,6 +815,8 @@ static ssize_t security_store(struct device *dev,
+ 		rc = nvdimm_security_change_key(dev, old_id, new_id);
+ 	} else if (sysfs_streq(buf, "disable"))
+ 		rc = nvdimm_security_disable(dev);
++	else if (sysfs_streq(buf, "freeze"))
++		rc = nvdimm_security_freeze_lock(dev);
+ 	else
+ 		return -EINVAL;
  
--- 
-2.16.1
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index c60ab4b238f3..bcab42caa948 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -185,6 +185,8 @@ struct nvdimm_security_ops {
+ 	int (*disable)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm,
+ 			const struct nvdimm_key_data *nkey);
++	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
 
