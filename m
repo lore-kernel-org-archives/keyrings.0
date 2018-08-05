@@ -1,182 +1,188 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2018 15:57:56 +0000
-Subject: [PATCH 10/23] TPMLIB: Better format calls to TSS_*hmac*()
-Message-Id: <153486707690.13066.12378140282590781364.stgit@warthog.procyon.org.uk>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Date: Sun, 05 Aug 2018 03:21:19 +0000
+Subject: [PATCH 6/6] key: enforce the secure boot checking when loading efi root key
+Message-Id: <20180805032119.20485-7-jlee@suse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <20180805032119.20485-1-jlee@suse.com>
+In-Reply-To: <20180805032119.20485-1-jlee@suse.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>, Kees Cook <keescook@chromium.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Pavel Machek <pavel@ucw.cz>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-Better format calls to TSS_rawhmac(), TSS_authhmac() and TSS_checkhmac*().
-Each of these calls takes a varargs list of pairs of datasize and data values.
-Put each pair on its own line so that things are more obvious.
+The EFI root key is not completely secure insecure when the
+secure boot is disabled because it can be changed by unsigned EFI
+binary before system be handed over to kernel. But in some use
+case user does not want the EFI secure key functions be blocked
+when secure boot is disabled.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Like the kernel module verification, this patch adds a enforce
+kernel configuration option that it can be used to enforce kernel
+to checking the secure boot before loading efi root key. And user
+can also use kernel parameter to enable it. When this option be
+enabled, the EFI root key will not be loaded by kernel when secure
+boot is diabled.
+
+Without this option, kernel will be tainted but the EFI root key
+can still be loaded.
+
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Chen Yu <yu.c.chen@intel.com>
+Cc: Oliver Neukum <oneukum@suse.com>
+Cc: Ryan Chen <yu.chen.surf@gmail.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
 ---
+ Documentation/admin-guide/kernel-parameters.txt |  6 +++++
+ drivers/firmware/efi/Kconfig                    |  8 ++++++
+ drivers/firmware/efi/efi-secure-key.c           | 33 ++++++++++++++++++++++---
+ include/linux/kernel.h                          |  3 ++-
+ kernel/panic.c                                  |  1 +
+ 5 files changed, 46 insertions(+), 5 deletions(-)
 
- drivers/char/tpm/tpm-library.c |   86 ++++++++++++++++++++++++++--------------
- 1 file changed, 55 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
-index e4cfc1f090e1..41fe4247a4c8 100644
---- a/drivers/char/tpm/tpm-library.c
-+++ b/drivers/char/tpm/tpm-library.c
-@@ -153,9 +153,12 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 	if (!ret)
- 		ret = crypto_shash_final(&sdesc->shash, paramdigest);
- 	if (!ret)
--		ret = TSS_rawhmac(digest, key, keylen, SHA1_DIGEST_SIZE,
--				  paramdigest, TPM_NONCE_SIZE, h1,
--				  TPM_NONCE_SIZE, h2, 1, &c, 0, 0);
-+		ret = TSS_rawhmac(digest, key, keylen,
-+				  SHA1_DIGEST_SIZE, paramdigest,
-+				  TPM_NONCE_SIZE, h1,
-+				  TPM_NONCE_SIZE, h2,
-+				  1, &c,
-+				  0, 0);
- out:
- 	kfree(sdesc);
- 	return ret;
-@@ -229,9 +232,12 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	if (ret < 0)
- 		goto out;
+diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
+index 533ff5c68970..7a9ac358793f 100644
+--- a/Documentation/admin-guide/kernel-parameters.txt
++++ b/Documentation/admin-guide/kernel-parameters.txt
+@@ -1122,6 +1122,12 @@
+ 			vendor GUIDs, all of them will be loaded. See
+ 			Documentation/acpi/ssdt-overlays.txt for details.
  
--	ret = TSS_rawhmac(testhmac, key, keylen, SHA1_DIGEST_SIZE, paramdigest,
--			  TPM_NONCE_SIZE, enonce, TPM_NONCE_SIZE, ononce,
--			  1, continueflag, 0, 0);
-+	ret = TSS_rawhmac(testhmac, key, keylen,
-+			  SHA1_DIGEST_SIZE, paramdigest,
-+			  TPM_NONCE_SIZE, enonce,
-+			  TPM_NONCE_SIZE, ononce,
-+			  1, continueflag,
-+			  0, 0);
- 	if (ret < 0)
- 		goto out;
++	efi-secure-key.sb_enforce [EFI; X86]
++			When EFI_SECURE_KEY is set, this means that
++			EFI root key will not be loaded when secure boot is
++			not enabled. Note that if EFI_SECURE_KEY_SB_ENFORCE
++			is set, that is always true, so this option does
++			nothing.
  
-@@ -322,18 +328,24 @@ static int TSS_checkhmac2(unsigned char *buffer,
- 	if (ret < 0)
- 		goto out;
+ 	eisa_irq_edge=	[PARISC,HW]
+ 			See header of drivers/parisc/eisa.c.
+diff --git a/drivers/firmware/efi/Kconfig b/drivers/firmware/efi/Kconfig
+index 048cf91ae8e8..fba894a4e7b0 100644
+--- a/drivers/firmware/efi/Kconfig
++++ b/drivers/firmware/efi/Kconfig
+@@ -187,6 +187,14 @@ config EFI_SECURE_KEY
  
--	ret = TSS_rawhmac(testhmac1, key1, keylen1, SHA1_DIGEST_SIZE,
--			  paramdigest, TPM_NONCE_SIZE, enonce1,
--			  TPM_NONCE_SIZE, ononce, 1, continueflag1, 0, 0);
-+	ret = TSS_rawhmac(testhmac1, key1, keylen1,
-+			  SHA1_DIGEST_SIZE, paramdigest,
-+			  TPM_NONCE_SIZE, enonce1,
-+			  TPM_NONCE_SIZE, ononce,
-+			  1, continueflag1,
-+			  0, 0);
- 	if (ret < 0)
- 		goto out;
- 	if (memcmp(testhmac1, authdata1, SHA1_DIGEST_SIZE)) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
--	ret = TSS_rawhmac(testhmac2, key2, keylen2, SHA1_DIGEST_SIZE,
--			  paramdigest, TPM_NONCE_SIZE, enonce2,
--			  TPM_NONCE_SIZE, ononce, 1, continueflag2, 0, 0);
-+	ret = TSS_rawhmac(testhmac2, key2, keylen2,
-+			  SHA1_DIGEST_SIZE, paramdigest,
-+			  TPM_NONCE_SIZE, enonce2,
-+			  TPM_NONCE_SIZE, ononce,
-+			  1, continueflag2,
-+			  0, 0);
- 	if (ret < 0)
- 		goto out;
- 	if (memcmp(testhmac2, authdata2, SHA1_DIGEST_SIZE))
-@@ -395,8 +407,10 @@ static int tpm_create_osap(struct tpm_chip *chip,
- 	       TPM_NONCE_SIZE);
- 	memcpy(enonce, &(tb->data[TPM_DATA_OFFSET + sizeof(uint32_t) +
- 				  TPM_NONCE_SIZE]), TPM_NONCE_SIZE);
--	return TSS_rawhmac(s->secret, key, SHA1_DIGEST_SIZE, TPM_NONCE_SIZE,
--			   enonce, TPM_NONCE_SIZE, ononce, 0, 0);
-+	return TSS_rawhmac(s->secret, key, SHA1_DIGEST_SIZE,
-+			   TPM_NONCE_SIZE, enonce,
-+			   TPM_NONCE_SIZE, ononce,
-+			   0, 0);
+ 	  If unsure, say N.
+ 
++config EFI_SECURE_KEY_SB_ENFORCE
++	bool "Force checking secure boot when loading EFI root key"
++	default y
++	depends on EFI_SECURE_KEY
++	help
++	  Skip EFI root key when secure boot is not enabled. Without this,
++	  EFI root key will simply taint the kernel when no secure boot.
++
+ endmenu
+ 
+ config UEFI_CPER
+diff --git a/drivers/firmware/efi/efi-secure-key.c b/drivers/firmware/efi/efi-secure-key.c
+index aa422ee87f70..417d73768887 100644
+--- a/drivers/firmware/efi/efi-secure-key.c
++++ b/drivers/firmware/efi/efi-secure-key.c
+@@ -15,6 +15,7 @@
+ #include <linux/parser.h>
+ #include <linux/random.h>
+ #include <linux/scatterlist.h>
++#include <linux/moduleparam.h>
+ #include <keys/efi-type.h>
+ #include <keys/user-type.h>
+ #include <crypto/algapi.h>
+@@ -27,6 +28,9 @@ static unsigned long rkey_size;
+ static bool is_loaded;
+ static bool is_secure;
+ 
++static bool sb_enforce = IS_ENABLED(CONFIG_EFI_SECURE_KEY_SB_ENFORCE);
++module_param(sb_enforce, bool_enable_only, 0644);
++
+ static void __init
+ print_efi_rkey_setup_data(struct efi_rkey_setup_data *rkey_setup)
+ {
+@@ -59,11 +63,13 @@ void __init parse_efi_root_key_setup(u64 phys_addr, u32 data_len)
+ 
+ 	/* keep efi root key */
+ 	if (rkey_setup->final_status = EFI_SUCCESS) {
+-		memcpy(root_key, rkey_setup->root_key, rkey_setup->key_size);
+-		rkey_size = rkey_setup->key_size;
+-		is_loaded = true;
+ 		is_secure = rkey_setup->is_secure;
+-		pr_info("EFI root key is loaded.\n");
++		if (is_secure || !sb_enforce) {
++			memcpy(root_key, rkey_setup->root_key, rkey_setup->key_size);
++			rkey_size = rkey_setup->key_size;
++			is_loaded = true;
++			pr_info("EFI root key is loaded.\n");
++		}
+ 		if (!is_secure) {
+ 			pr_warn("EFI root key is insecure when no secure boot.\n");
+ 		}
+@@ -75,6 +81,14 @@ void __init parse_efi_root_key_setup(u64 phys_addr, u32 data_len)
+ 	early_iounmap(setup_data, data_len);
  }
  
- /*
-@@ -488,18 +502,23 @@ int tpm_seal(struct tpm_chip *chip, struct tpm_buf *tb, uint16_t keytype,
- 		/* no pcr info specified */
- 		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
- 				   sess.enonce, td->nonceodd, cont,
--				   sizeof(uint32_t), &ordinal, SHA1_DIGEST_SIZE,
--				   td->encauth, sizeof(uint32_t), &pcrsize,
--				   sizeof(uint32_t), &datsize, datalen, data, 0,
--				   0);
-+				   sizeof(uint32_t), &ordinal,
-+				   SHA1_DIGEST_SIZE, td->encauth,
-+				   sizeof(uint32_t), &pcrsize,
-+				   sizeof(uint32_t), &datsize,
-+				   datalen, data,
-+				   0, 0);
- 	} else {
- 		/* pcr info specified */
- 		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
- 				   sess.enonce, td->nonceodd, cont,
--				   sizeof(uint32_t), &ordinal, SHA1_DIGEST_SIZE,
--				   td->encauth, sizeof(uint32_t), &pcrsize,
--				   pcrinfosize, pcrinfo, sizeof(uint32_t),
--				   &datsize, datalen, data, 0, 0);
-+				   sizeof(uint32_t), &ordinal,
-+				   SHA1_DIGEST_SIZE, td->encauth,
-+				   sizeof(uint32_t), &pcrsize,
-+				   pcrinfosize, pcrinfo,
-+				   sizeof(uint32_t), &datsize,
-+				   datalen, data,
-+				   0, 0);
- 	}
- 	if (ret < 0)
- 		goto out;
-@@ -533,9 +552,10 @@ int tpm_seal(struct tpm_chip *chip, struct tpm_buf *tb, uint16_t keytype,
- 	    sizeof(uint32_t) + encdatasize;
++static void __init clean_efi_root_key(void)
++{
++	memzero_explicit(root_key, ROOT_KEY_SIZE);
++	rkey_size = 0;
++	is_loaded = false;
++	is_secure = false;
++}
++
+ #define ERK_HASH_SIZE SHA256_DIGEST_SIZE
+ #define HMAC_HASH_SIZE SHA256_DIGEST_SIZE
+ #define DKEY_SIZE SHA256_DIGEST_SIZE
+@@ -705,6 +719,17 @@ static int __init init_efi_secure_key(void)
+ 	if (!is_loaded)
+ 		return 0;
  
- 	/* check the HMAC in the response */
--	ret = TSS_checkhmac1(tb->data, ordinal, td->nonceodd, sess.secret,
--			     SHA1_DIGEST_SIZE, storedsize, TPM_DATA_OFFSET, 0,
--			     0);
-+	ret = TSS_checkhmac1(tb->data, ordinal, td->nonceodd,
-+			     sess.secret, SHA1_DIGEST_SIZE,
-+			     storedsize, TPM_DATA_OFFSET,
-+			     0, 0);
++	if (!is_secure) {
++		if (sb_enforce) {
++			clean_efi_root_key();
++			pr_info("EFI root key is unloaded because insecure.\n");
++			return 0;
++		} else {
++			add_taint(TAINT_INSECURE_KEY, LOCKDEP_STILL_OK);
++			pr_warn("Tainted kernel because EFI root key is insecure.\n");
++		}
++	}
++
+ 	hash_tfm = crypto_alloc_shash(hash_alg, 0, CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(hash_tfm)) {
+ 		pr_err("can't allocate %s transform: %ld\n",
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 941dc0a5a877..b45716e54a97 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -565,7 +565,8 @@ extern enum system_states {
+ #define TAINT_LIVEPATCH			15
+ #define TAINT_AUX			16
+ #define TAINT_RANDSTRUCT		17
+-#define TAINT_FLAGS_COUNT		18
++#define TAINT_INSECURE_KEY		18
++#define TAINT_FLAGS_COUNT		19
  
- 	/* copy the returned blob to caller */
- 	if (!ret) {
-@@ -589,13 +609,17 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 		return ret;
- 	}
- 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
--			   enonce1, nonceodd, cont, sizeof(uint32_t),
--			   &ordinal, bloblen, blob, 0, 0);
-+			   enonce1, nonceodd, cont,
-+			   sizeof(uint32_t), &ordinal,
-+			   bloblen, blob,
-+			   0, 0);
- 	if (ret < 0)
- 		return ret;
- 	ret = TSS_authhmac(authdata2, blobauth, TPM_NONCE_SIZE,
--			   enonce2, nonceodd, cont, sizeof(uint32_t),
--			   &ordinal, bloblen, blob, 0, 0);
-+			   enonce2, nonceodd, cont,
-+			   sizeof(uint32_t), &ordinal,
-+			   bloblen, blob,
-+			   0, 0);
- 	if (ret < 0)
- 		return ret;
+ struct taint_flag {
+ 	char c_true;	/* character printed when tainted */
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 8b2e002d52eb..d641098a814d 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -327,6 +327,7 @@ const struct taint_flag taint_flags[TAINT_FLAGS_COUNT] = {
+ 	[ TAINT_LIVEPATCH ]		= { 'K', ' ', true },
+ 	[ TAINT_AUX ]			= { 'X', ' ', true },
+ 	[ TAINT_RANDSTRUCT ]		= { 'T', ' ', true },
++	[TAINT_INSECURE_KEY]		= { 'Y', ' ', false },
+ };
  
-@@ -627,8 +651,8 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 			     keyauth, SHA1_DIGEST_SIZE,
- 			     blobauth, SHA1_DIGEST_SIZE,
- 			     sizeof(uint32_t), TPM_DATA_OFFSET,
--			     *datalen, TPM_DATA_OFFSET + sizeof(uint32_t), 0,
--			     0);
-+			     *datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
-+			     0, 0);
- 	if (ret < 0) {
- 		pr_info("TSS_checkhmac2 failed (%d)\n", ret);
- 		return ret;
+ /**
+-- 
+2.13.6
+
