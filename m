@@ -1,36 +1,71 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 27 Aug 2018 08:25:01 +0000
-Subject: Re: [PATCH 08/23] TPMLIB: Break TPM bits out of security/keys/trusted.c
-Message-Id: <298a03a72bdded62290ce2db3a7a5219ccc5d8d2.camel@linux.intel.com>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Date: Sun, 05 Aug 2018 03:21:15 +0000
+Subject: [PATCH 2/6] efi: the function transfers status to string
+Message-Id: <20180805032119.20485-3-jlee@suse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180824084930.GA10266@linux.intel.com>
-         <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-         <153486706322.13066.3105842100625841410.stgit@warthog.procyon.org.uk>
-         <20180824075227.GG3584@linux.intel.com>
-         <25340.1535103190@warthog.procyon.org.uk>
-In-Reply-To: <25340.1535103190@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: denkenz@gmail.com, jejb@linux.vnet.ibm.com, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <20180805032119.20485-1-jlee@suse.com>
+In-Reply-To: <20180805032119.20485-1-jlee@suse.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>, Kees Cook <keescook@chromium.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Pavel Machek <pavel@ucw.cz>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-On Fri, 2018-08-24 at 10:33 +0100, David Howells wrote:
-> Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
-> 
-> > I could rebase them and make a patch set out of them when I have time.
-> 
-> Thanks.  I'm not going to do anything further with this until after the merge
-> window anyway.
-> 
-> And thanks for taking the time to look through the patches.  I just dumped the
-> entire patchset on you rather than weeding out the duplicate/obsolete patches
-> as I don't have time just now to port them to linus/master.
+This function can be used to transfer EFI status code to string
+for printing out debug message.
 
-Are you coming to Edinburgh in late Oct? Could discuss there about TPM
-and keyring "intersections" (not only this patch set but also trusted
-keys etc.).
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Chen Yu <yu.c.chen@intel.com>
+Cc: Oliver Neukum <oneukum@suse.com>
+Cc: Ryan Chen <yu.chen.surf@gmail.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
+---
+ include/linux/efi.h | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-> David
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 56add823f190..744cf92fe18e 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -1651,4 +1651,30 @@ struct linux_efi_tpm_eventlog {
+ 
+ extern int efi_tpm_eventlog_init(void);
+ 
++#define EFI_STATUS_STR(_status) \
++case EFI_##_status: \
++	return "EFI_" __stringify(_status);
++
++static inline char *
++efi_status_to_str(efi_status_t status)
++{
++	switch (status) {
++	EFI_STATUS_STR(SUCCESS)
++	EFI_STATUS_STR(LOAD_ERROR)
++	EFI_STATUS_STR(INVALID_PARAMETER)
++	EFI_STATUS_STR(UNSUPPORTED)
++	EFI_STATUS_STR(BAD_BUFFER_SIZE)
++	EFI_STATUS_STR(BUFFER_TOO_SMALL)
++	EFI_STATUS_STR(NOT_READY)
++	EFI_STATUS_STR(DEVICE_ERROR)
++	EFI_STATUS_STR(WRITE_PROTECTED)
++	EFI_STATUS_STR(OUT_OF_RESOURCES)
++	EFI_STATUS_STR(NOT_FOUND)
++	EFI_STATUS_STR(ABORTED)
++	EFI_STATUS_STR(SECURITY_VIOLATION)
++	}
++
++	return "";
++}
++
+ #endif /* _LINUX_EFI_H */
+-- 
+2.13.6
 
-/Jarkko
