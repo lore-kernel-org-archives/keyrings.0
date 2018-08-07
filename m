@@ -1,139 +1,28 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 02 Aug 2018 18:31:15 +0000
-Subject: [RFCv3 07/13] KEYS: trusted: Expose common functionality
-Message-Id: <20180802183121.22909-8-denkenz@gmail.com>
+From: James Morris <jmorris@namei.org>
+Date: Tue, 07 Aug 2018 20:10:31 +0000
+Subject: Re: [RFCv3 07/13] KEYS: trusted: Expose common functionality
+Message-Id: <alpine.LRH.2.21.1808080609040.6328@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20180802183121.22909-8-denkenz@gmail.com>
+In-Reply-To: <20180802183121.22909-8-denkenz@gmail.com>
 To: keyrings@vger.kernel.org
 
-This patch exposes some common functionality needed to send TPM
-commands.  The current approach is a complete hack and needs to be
-addressed properly.  This commit just show-cases what functionality
-would need to be moved to a shared location or exposed in some other
-manner.
+On Thu, 2 Aug 2018, Denis Kenzior wrote:
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
----
- crypto/asymmetric_keys/Kconfig |  1 +
- security/keys/trusted.c        | 12 ++++++++----
- security/keys/trusted.h        | 14 +++++++++++++-
- 3 files changed, 22 insertions(+), 5 deletions(-)
+> This patch exposes some common functionality needed to send TPM
+> commands.  The current approach is a complete hack and needs to be
+> addressed properly.  This commit just show-cases what functionality
+> would need to be moved to a shared location or exposed in some other
+> manner.
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 88353a9ebc9b..be70ca6c85d3 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -24,6 +24,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- config ASYMMETRIC_TPM_KEY_SUBTYPE
- 	tristate "Asymmetric TPM backed private key subtype"
- 	depends on TCG_TPM
-+	depends on TRUSTED_KEYS
- 	select CRYPTO_HMAC
- 	select CRYPTO_SHA1
- 	select CRYPTO_HASH_INFO
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index b69d3b1777c2..1c025fdfe0e0 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -121,7 +121,7 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
- /*
-  * calculate authorization info fields to send to TPM
-  */
--static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
-+int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 			unsigned int keylen, unsigned char *h1,
- 			unsigned char *h2, unsigned char h3, ...)
- {
-@@ -168,11 +168,12 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 	kzfree(sdesc);
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(TSS_authhmac);
- 
- /*
-  * verify the AUTH1_COMMAND (Seal) result from TPM
-  */
--static int TSS_checkhmac1(unsigned char *buffer,
-+int TSS_checkhmac1(unsigned char *buffer,
- 			  const uint32_t command,
- 			  const unsigned char *ononce,
- 			  const unsigned char *key,
-@@ -249,6 +250,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	kzfree(sdesc);
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(TSS_checkhmac1);
- 
- /*
-  * verify the AUTH2_COMMAND (unseal) result from TPM
-@@ -355,7 +357,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
-  * For key specific tpm requests, we will generate and send our
-  * own TPM command packets using the drivers send function.
-  */
--static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
-+int trusted_tpm_send(unsigned char *cmd, size_t buflen)
- {
- 	int rc;
- 
-@@ -367,6 +369,7 @@ static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
- 		rc = -EPERM;
- 	return rc;
- }
-+EXPORT_SYMBOL_GPL(trusted_tpm_send);
- 
- /*
-  * Lock a trusted key, by extending a selected PCR.
-@@ -425,7 +428,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
- /*
-  * Create an object independent authorisation protocol (oiap) session
-  */
--static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
-+int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
- {
- 	int ret;
- 
-@@ -442,6 +445,7 @@ static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
- 	       TPM_NONCE_SIZE);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(oiap);
- 
- struct tpm_digests {
- 	unsigned char encauth[SHA1_DIGEST_SIZE];
-diff --git a/security/keys/trusted.h b/security/keys/trusted.h
-index 8d5fe9eafb22..adbcb6817826 100644
---- a/security/keys/trusted.h
-+++ b/security/keys/trusted.h
-@@ -3,7 +3,7 @@
- #define __TRUSTED_KEY_H
- 
- /* implementation specific TPM constants */
--#define MAX_BUF_SIZE			512
-+#define MAX_BUF_SIZE			1024
- #define TPM_GETRANDOM_SIZE		14
- #define TPM_OSAP_SIZE			36
- #define TPM_OIAP_SIZE			10
-@@ -36,6 +36,18 @@ enum {
- 	SRK_keytype = 4
- };
- 
-+int TSS_authhmac(unsigned char *digest, const unsigned char *key,
-+			unsigned int keylen, unsigned char *h1,
-+			unsigned char *h2, unsigned char h3, ...);
-+int TSS_checkhmac1(unsigned char *buffer,
-+			  const uint32_t command,
-+			  const unsigned char *ononce,
-+			  const unsigned char *key,
-+			  unsigned int keylen, ...);
-+
-+int trusted_tpm_send(unsigned char *cmd, size_t buflen);
-+int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
-+
- #define TPM_DEBUG 0
- 
- #if TPM_DEBUG
+Consider adding the linux-integrity list to the cc line for these patches.
+
+
+
 -- 
-2.16.1
+James Morris
+<jmorris@namei.org>
 
