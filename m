@@ -1,30 +1,143 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 24 Aug 2018 06:30:15 +0000
-Subject: Re: [PATCH 03/23] TPM: Provide a platform driver for the user emulator driver
-Message-Id: <20180824063015.GE3584@linux.intel.com>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Tue, 14 Aug 2018 02:05:38 +0000
+Subject: [RFC] KEYS: inject an MKTME specific safety check in the keyctl revoke path
+Message-Id: <20180814020538.GA18424@alison-desk.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
- <153486702979.13066.16900998092976336647.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153486702979.13066.16900998092976336647.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: denkenz@gmail.com, jejb@linux.vnet.ibm.com, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-On Tue, Aug 21, 2018 at 04:57:09PM +0100, David Howells wrote:
-> Provide a platform driver for the user emulator driver.  This seems to be
-> necessary to stop tpm_chip_find_get() from blowing up because it assumes
-> unconditionally that any device will have a driver attached:
-> 
-> 		if (try_module_get(pos->dev->driver->owner)) {
-> 
-> However, this doesn't then work right because if I remove the TPM device and
-> re-add it, the tpm ID isn't recycled (ie, /dev/tpm0 becomes unavailable and
-> the new TPM is /dev/tpm1).
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
+This RFC is asking for feedback on a problem I'm running into using
+the Kernel Key Service for MKTME (MultiKey Total Memory Encryption).
 
-Again, a duplicate.
+I previously posted an RFC with the proposal to create a new key type
+"mktme" to support MKTME (Multi-Key Total Memory Encryption).
+https://www.spinics.net/lists/keyrings/msg03702.html
 
-/Jarkko
+The MKTME key service maps userspace keys to hardware keyids. Those
+keys are used in a new system call that encrypts memory. The keys
+need to be tightly controlled. One example is that userspace keys
+should not be revoked while the hardware keyid slot is still in use.
+
+The KEY_FLAG_KEEP bit offers good control. The mktme service uses that
+bit to prevent userspace keys from disappearing without the service
+being notified.
+
+Problem is that we need a safe and synchronous way to revoke keys. The
+way .revoke methods function now, the key service type is called late
+in the revoke process. The mktme key service has no means to reject the
+request. So, even if the mktme service sanity checks the request in its
+.revoke method, it's too late to do anything about it.
+
+This proposal inserts an MKTME specific check earlier into the existing
+keyctl <revoke> path. If it is safe to revoke the key, mktme key service
+will turn off KEY_FLAG_KEEP and let the revoke continue (and succeed).
+Otherwise, not safe, KEY_FLAG_KEEP stays on, and the revoke continues
+(and fails).
+
+I considered proposing a new keyctl <option> just for this mktme 'safe
+revoke' request. I wonder if that might be the preferred method for
+inserting this type specific behavior?
+
+Hoping that from this description and the diff you can understand the
+issue and suggest alternative solutions if needed. Thanks for looking!
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+---
+ security/keys/internal.h   |  6 ++++++
+ security/keys/keyctl.c     | 14 ++++++++++++++
+ security/keys/mktme_keys.c | 34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 54 insertions(+)
+
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 9f8208dc0e55..1b6425d0d1ab 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -316,4 +316,10 @@ static inline void key_check(const struct key *key)
+ 
+ #endif
+ 
++#ifdef CONFIG_MKTME_KEYS
++extern int mktme_safe_revoke(struct key *key);
++#else
++static inline int mktme_safe_revoke(struct key *key) { return 0; }
++#endif /* CONFIG_MKTME_KEYS */
++
+ #endif /* _INTERNAL_H */
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 1ffe60bb2845..7b5f98af1d54 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -387,6 +387,20 @@ long keyctl_revoke_key(key_serial_t id)
+ 
+ 	key = key_ref_to_ptr(key_ref);
+ 	ret = 0;
++
++	/*
++	 * MKTME (Multi-Key Total Memory Encryption) Keys require a
++	 * sanity check before allowing a revoke. If the sanity check
++	 * passes, the mktme key service will clear KEY_FLAG_KEEP bit
++	 * and the revoke will proceed.
++	 */
++	if (strcmp(key->type->name, "mktme") = 0)  {
++		if (mktme_safe_revoke(key)) {
++			ret = -EINVAL;
++			goto error;
++		}
++	}
++
+ 	if (test_bit(KEY_FLAG_KEEP, &key->flags))
+ 		ret = -EPERM;
+ 	else
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index b937bbe6bcdb..887b483d7b38 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -67,6 +67,39 @@ static int mktme_clear_programmed_key(int keyid)
+ 	return ret;
+ }
+ 
++/*
++ * mktme_safe_revoke() is called during the revoke process to
++ * determine if it is safe to revoke a key. If this check passes,
++ * the revoke proceeds, otherwise an error is returned to userspace.
++ * The important error case here is outstanding memory mappings using
++ * the corresponding hardware keyid.
++ */
++int mktme_safe_revoke(struct key *key)
++{
++	int keyid, vma_count;
++	int ret = -1;
++
++	mktme_map_lock();
++	keyid = mktme_map_keyid_from_serial(key->serial);
++	if (keyid <= 0)
++		goto out;
++
++	vma_count = vma_read_encrypt_ref(keyid);
++	if (vma_count > 0) {
++		pr_debug("mktme not freeing keyid[%d] encrypt_count[%d]\n",
++			 keyid, vma_count);
++		goto out;
++	}
++	mktme_clear_programmed_key(keyid);
++	/* Clearing KEY_FLAG_KEEP flag allows the revoke to proceed */
++	clear_bit(KEY_FLAG_KEEP, &key->flags);
++	ret = 0;
++out:
++	mktme_map_unlock();
++	return ret;
++}
++
++
+@@ -315,6 +348,7 @@ int mktme_instantiate(struct key *key, struct key_preparsed_payload *prep)
+ 
+ 	mktme_map_lock();
+ 	ret = mktme_program_key(key->serial, kprog);
++	set_bit(KEY_FLAG_KEEP, &key->flags);
+ 	mktme_map_unlock();
+ out:
+ 	kzfree(datablob);
+-- 
+2.14.1
