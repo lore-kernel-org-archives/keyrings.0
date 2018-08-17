@@ -1,143 +1,103 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Tue, 14 Aug 2018 02:05:38 +0000
-Subject: [RFC] KEYS: inject an MKTME specific safety check in the keyctl revoke path
-Message-Id: <20180814020538.GA18424@alison-desk.jf.intel.com>
+From: "Huang, Kai" <kai.huang@intel.com>
+Date: Fri, 17 Aug 2018 02:49:11 +0000
+Subject: Re: [RFC] KEYS: inject an MKTME specific safety check in the keyctl revoke path
+Message-Id: <1534474145.2908.4.camel@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20180814020538.GA18424@alison-desk.jf.intel.com>
+In-Reply-To: <20180814020538.GA18424@alison-desk.jf.intel.com>
 To: linux-security-module@vger.kernel.org
 
-This RFC is asking for feedback on a problem I'm running into using
-the Kernel Key Service for MKTME (MultiKey Total Memory Encryption).
-
-I previously posted an RFC with the proposal to create a new key type
-"mktme" to support MKTME (Multi-Key Total Memory Encryption).
-https://www.spinics.net/lists/keyrings/msg03702.html
-
-The MKTME key service maps userspace keys to hardware keyids. Those
-keys are used in a new system call that encrypts memory. The keys
-need to be tightly controlled. One example is that userspace keys
-should not be revoked while the hardware keyid slot is still in use.
-
-The KEY_FLAG_KEEP bit offers good control. The mktme service uses that
-bit to prevent userspace keys from disappearing without the service
-being notified.
-
-Problem is that we need a safe and synchronous way to revoke keys. The
-way .revoke methods function now, the key service type is called late
-in the revoke process. The mktme key service has no means to reject the
-request. So, even if the mktme service sanity checks the request in its
-.revoke method, it's too late to do anything about it.
-
-This proposal inserts an MKTME specific check earlier into the existing
-keyctl <revoke> path. If it is safe to revoke the key, mktme key service
-will turn off KEY_FLAG_KEEP and let the revoke continue (and succeed).
-Otherwise, not safe, KEY_FLAG_KEEP stays on, and the revoke continues
-(and fails).
-
-I considered proposing a new keyctl <option> just for this mktme 'safe
-revoke' request. I wonder if that might be the preferred method for
-inserting this type specific behavior?
-
-Hoping that from this description and the diff you can understand the
-issue and suggest alternative solutions if needed. Thanks for looking!
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
----
- security/keys/internal.h   |  6 ++++++
- security/keys/keyctl.c     | 14 ++++++++++++++
- security/keys/mktme_keys.c | 34 ++++++++++++++++++++++++++++++++++
- 3 files changed, 54 insertions(+)
-
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 9f8208dc0e55..1b6425d0d1ab 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -316,4 +316,10 @@ static inline void key_check(const struct key *key)
- 
- #endif
- 
-+#ifdef CONFIG_MKTME_KEYS
-+extern int mktme_safe_revoke(struct key *key);
-+#else
-+static inline int mktme_safe_revoke(struct key *key) { return 0; }
-+#endif /* CONFIG_MKTME_KEYS */
-+
- #endif /* _INTERNAL_H */
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 1ffe60bb2845..7b5f98af1d54 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -387,6 +387,20 @@ long keyctl_revoke_key(key_serial_t id)
- 
- 	key = key_ref_to_ptr(key_ref);
- 	ret = 0;
-+
-+	/*
-+	 * MKTME (Multi-Key Total Memory Encryption) Keys require a
-+	 * sanity check before allowing a revoke. If the sanity check
-+	 * passes, the mktme key service will clear KEY_FLAG_KEEP bit
-+	 * and the revoke will proceed.
-+	 */
-+	if (strcmp(key->type->name, "mktme") = 0)  {
-+		if (mktme_safe_revoke(key)) {
-+			ret = -EINVAL;
-+			goto error;
-+		}
-+	}
-+
- 	if (test_bit(KEY_FLAG_KEEP, &key->flags))
- 		ret = -EPERM;
- 	else
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index b937bbe6bcdb..887b483d7b38 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -67,6 +67,39 @@ static int mktme_clear_programmed_key(int keyid)
- 	return ret;
- }
- 
-+/*
-+ * mktme_safe_revoke() is called during the revoke process to
-+ * determine if it is safe to revoke a key. If this check passes,
-+ * the revoke proceeds, otherwise an error is returned to userspace.
-+ * The important error case here is outstanding memory mappings using
-+ * the corresponding hardware keyid.
-+ */
-+int mktme_safe_revoke(struct key *key)
-+{
-+	int keyid, vma_count;
-+	int ret = -1;
-+
-+	mktme_map_lock();
-+	keyid = mktme_map_keyid_from_serial(key->serial);
-+	if (keyid <= 0)
-+		goto out;
-+
-+	vma_count = vma_read_encrypt_ref(keyid);
-+	if (vma_count > 0) {
-+		pr_debug("mktme not freeing keyid[%d] encrypt_count[%d]\n",
-+			 keyid, vma_count);
-+		goto out;
-+	}
-+	mktme_clear_programmed_key(keyid);
-+	/* Clearing KEY_FLAG_KEEP flag allows the revoke to proceed */
-+	clear_bit(KEY_FLAG_KEEP, &key->flags);
-+	ret = 0;
-+out:
-+	mktme_map_unlock();
-+	return ret;
-+}
-+
-+
-@@ -315,6 +348,7 @@ int mktme_instantiate(struct key *key, struct key_preparsed_payload *prep)
- 
- 	mktme_map_lock();
- 	ret = mktme_program_key(key->serial, kprog);
-+	set_bit(KEY_FLAG_KEEP, &key->flags);
- 	mktme_map_unlock();
- out:
- 	kzfree(datablob);
--- 
-2.14.1
+T24gTW9uLCAyMDE4LTA4LTEzIGF0IDE5OjA1IC0wNzAwLCBBbGlzb24gU2Nob2ZpZWxkIHdyb3Rl
+Og0KPiBUaGlzIFJGQyBpcyBhc2tpbmcgZm9yIGZlZWRiYWNrIG9uIGEgcHJvYmxlbSBJJ20gcnVu
+bmluZyBpbnRvIHVzaW5nDQo+IHRoZSBLZXJuZWwgS2V5IFNlcnZpY2UgZm9yIE1LVE1FIChNdWx0
+aUtleSBUb3RhbCBNZW1vcnkgRW5jcnlwdGlvbikuDQo+IA0KPiBJIHByZXZpb3VzbHkgcG9zdGVk
+IGFuIFJGQyB3aXRoIHRoZSBwcm9wb3NhbCB0byBjcmVhdGUgYSBuZXcga2V5IHR5cGUNCj4gIm1r
+dG1lIiB0byBzdXBwb3J0IE1LVE1FIChNdWx0aS1LZXkgVG90YWwgTWVtb3J5IEVuY3J5cHRpb24p
+Lg0KPiBodHRwczovL3d3dy5zcGluaWNzLm5ldC9saXN0cy9rZXlyaW5ncy9tc2cwMzcwMi5odG1s
+DQo+IA0KPiBUaGUgTUtUTUUga2V5IHNlcnZpY2UgbWFwcyB1c2Vyc3BhY2Uga2V5cyB0byBoYXJk
+d2FyZSBrZXlpZHMuIFRob3NlDQo+IGtleXMgYXJlIHVzZWQgaW4gYSBuZXcgc3lzdGVtIGNhbGwg
+dGhhdCBlbmNyeXB0cyBtZW1vcnkuIFRoZSBrZXlzDQo+IG5lZWQgdG8gYmUgdGlnaHRseSBjb250
+cm9sbGVkLiBPbmUgZXhhbXBsZSBpcyB0aGF0IHVzZXJzcGFjZSBrZXlzDQo+IHNob3VsZCBub3Qg
+YmUgcmV2b2tlZCB3aGlsZSB0aGUgaGFyZHdhcmUga2V5aWQgc2xvdCBpcyBzdGlsbCBpbiB1c2Uu
+DQo+IA0KPiBUaGUgS0VZX0ZMQUdfS0VFUCBiaXQgb2ZmZXJzIGdvb2QgY29udHJvbC4gVGhlIG1r
+dG1lIHNlcnZpY2UgdXNlcw0KPiB0aGF0DQo+IGJpdCB0byBwcmV2ZW50IHVzZXJzcGFjZSBrZXlz
+IGZyb20gZGlzYXBwZWFyaW5nIHdpdGhvdXQgdGhlIHNlcnZpY2UNCj4gYmVpbmcgbm90aWZpZWQu
+DQo+IA0KPiBQcm9ibGVtIGlzIHRoYXQgd2UgbmVlZCBhIHNhZmUgYW5kIHN5bmNocm9ub3VzIHdh
+eSB0byByZXZva2Uga2V5cy4NCj4gVGhlDQo+IHdheSAucmV2b2tlIG1ldGhvZHMgZnVuY3Rpb24g
+bm93LCB0aGUga2V5IHNlcnZpY2UgdHlwZSBpcyBjYWxsZWQgbGF0ZQ0KPiBpbiB0aGUgcmV2b2tl
+IHByb2Nlc3MuIFRoZSBta3RtZSBrZXkgc2VydmljZSBoYXMgbm8gbWVhbnMgdG8gcmVqZWN0DQo+
+IHRoZQ0KPiByZXF1ZXN0LiBTbywgZXZlbiBpZiB0aGUgbWt0bWUgc2VydmljZSBzYW5pdHkgY2hl
+Y2tzIHRoZSByZXF1ZXN0IGluDQo+IGl0cw0KPiAucmV2b2tlIG1ldGhvZCwgaXQncyB0b28gbGF0
+ZSB0byBkbyBhbnl0aGluZyBhYm91dCBpdC4NCj4gDQo+IFRoaXMgcHJvcG9zYWwgaW5zZXJ0cyBh
+biBNS1RNRSBzcGVjaWZpYyBjaGVjayBlYXJsaWVyIGludG8gdGhlDQo+IGV4aXN0aW5nDQo+IGtl
+eWN0bCA8cmV2b2tlPiBwYXRoLiBJZiBpdCBpcyBzYWZlIHRvIHJldm9rZSB0aGUga2V5LCBta3Rt
+ZSBrZXkNCj4gc2VydmljZQ0KPiB3aWxsIHR1cm4gb2ZmIEtFWV9GTEFHX0tFRVAgYW5kIGxldCB0
+aGUgcmV2b2tlIGNvbnRpbnVlIChhbmQNCj4gc3VjY2VlZCkuDQo+IE90aGVyd2lzZSwgbm90IHNh
+ZmUsIEtFWV9GTEFHX0tFRVAgc3RheXMgb24sIGFuZCB0aGUgcmV2b2tlIGNvbnRpbnVlcw0KPiAo
+YW5kIGZhaWxzKS4NCj4gDQo+IEkgY29uc2lkZXJlZCBwcm9wb3NpbmcgYSBuZXcga2V5Y3RsIDxv
+cHRpb24+IGp1c3QgZm9yIHRoaXMgbWt0bWUNCj4gJ3NhZmUNCj4gcmV2b2tlJyByZXF1ZXN0LiBJ
+IHdvbmRlciBpZiB0aGF0IG1pZ2h0IGJlIHRoZSBwcmVmZXJyZWQgbWV0aG9kIGZvcg0KPiBpbnNl
+cnRpbmcgdGhpcyB0eXBlIHNwZWNpZmljIGJlaGF2aW9yPw0KPiANCj4gSG9waW5nIHRoYXQgZnJv
+bSB0aGlzIGRlc2NyaXB0aW9uIGFuZCB0aGUgZGlmZiB5b3UgY2FuIHVuZGVyc3RhbmQgdGhlDQo+
+IGlzc3VlIGFuZCBzdWdnZXN0IGFsdGVybmF0aXZlIHNvbHV0aW9ucyBpZiBuZWVkZWQuIFRoYW5r
+cyBmb3INCj4gbG9va2luZyENCg0KSSBhbSBub3QgZXhwZXJ0LCBidXQgbWF5YmUgd2UgY2FuIGFs
+c28gY29uc2lkZXIgbWFraW5nIGtleV9yZXZva2UoKQ0KcmV0dXJuIGVycm9yIGNvZGUsIHJhdGhl
+ciB0aGFuIHZvaWQ/DQoNClRoYW5rcywNCi1LYWkNCg0KPiANCj4gU2lnbmVkLW9mZi1ieTogQWxp
+c29uIFNjaG9maWVsZCA8YWxpc29uLnNjaG9maWVsZEBpbnRlbC5jb20+DQo+IC0tLQ0KPiAgc2Vj
+dXJpdHkva2V5cy9pbnRlcm5hbC5oICAgfCAgNiArKysrKysNCj4gIHNlY3VyaXR5L2tleXMva2V5
+Y3RsLmMgICAgIHwgMTQgKysrKysrKysrKysrKysNCj4gIHNlY3VyaXR5L2tleXMvbWt0bWVfa2V5
+cy5jIHwgMzQgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKw0KPiAgMyBmaWxlcyBj
+aGFuZ2VkLCA1NCBpbnNlcnRpb25zKCspDQo+IA0KPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkva2V5
+cy9pbnRlcm5hbC5oIGIvc2VjdXJpdHkva2V5cy9pbnRlcm5hbC5oDQo+IGluZGV4IDlmODIwOGRj
+MGU1NS4uMWI2NDI1ZDBkMWFiIDEwMDY0NA0KPiAtLS0gYS9zZWN1cml0eS9rZXlzL2ludGVybmFs
+LmgNCj4gKysrIGIvc2VjdXJpdHkva2V5cy9pbnRlcm5hbC5oDQo+IEBAIC0zMTYsNCArMzE2LDEw
+IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCBrZXlfY2hlY2soY29uc3Qgc3RydWN0IGtleQ0KPiAqa2V5
+KQ0KPiAgDQo+ICAjZW5kaWYNCj4gIA0KPiArI2lmZGVmIENPTkZJR19NS1RNRV9LRVlTDQo+ICtl
+eHRlcm4gaW50IG1rdG1lX3NhZmVfcmV2b2tlKHN0cnVjdCBrZXkgKmtleSk7DQo+ICsjZWxzZQ0K
+PiArc3RhdGljIGlubGluZSBpbnQgbWt0bWVfc2FmZV9yZXZva2Uoc3RydWN0IGtleSAqa2V5KSB7
+IHJldHVybiAwOyB9DQo+ICsjZW5kaWYgLyogQ09ORklHX01LVE1FX0tFWVMgKi8NCj4gKw0KPiAg
+I2VuZGlmIC8qIF9JTlRFUk5BTF9IICovDQo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9rZXlzL2tl
+eWN0bC5jIGIvc2VjdXJpdHkva2V5cy9rZXljdGwuYw0KPiBpbmRleCAxZmZlNjBiYjI4NDUuLjdi
+NWY5OGFmMWQ1NCAxMDA2NDQNCj4gLS0tIGEvc2VjdXJpdHkva2V5cy9rZXljdGwuYw0KPiArKysg
+Yi9zZWN1cml0eS9rZXlzL2tleWN0bC5jDQo+IEBAIC0zODcsNiArMzg3LDIwIEBAIGxvbmcga2V5
+Y3RsX3Jldm9rZV9rZXkoa2V5X3NlcmlhbF90IGlkKQ0KPiAgDQo+ICAJa2V5ID0ga2V5X3JlZl90
+b19wdHIoa2V5X3JlZik7DQo+ICAJcmV0ID0gMDsNCj4gKw0KPiArCS8qDQo+ICsJICogTUtUTUUg
+KE11bHRpLUtleSBUb3RhbCBNZW1vcnkgRW5jcnlwdGlvbikgS2V5cyByZXF1aXJlIGENCj4gKwkg
+KiBzYW5pdHkgY2hlY2sgYmVmb3JlIGFsbG93aW5nIGEgcmV2b2tlLiBJZiB0aGUgc2FuaXR5DQo+
+IGNoZWNrDQo+ICsJICogcGFzc2VzLCB0aGUgbWt0bWUga2V5IHNlcnZpY2Ugd2lsbCBjbGVhciBL
+RVlfRkxBR19LRUVQDQo+IGJpdA0KPiArCSAqIGFuZCB0aGUgcmV2b2tlIHdpbGwgcHJvY2VlZC4N
+Cj4gKwkgKi8NCj4gKwlpZiAoc3RyY21wKGtleS0+dHlwZS0+bmFtZSwgIm1rdG1lIikgPT0gMCkg
+IHsNCj4gKwkJaWYgKG1rdG1lX3NhZmVfcmV2b2tlKGtleSkpIHsNCj4gKwkJCXJldCA9IC1FSU5W
+QUw7DQo+ICsJCQlnb3RvIGVycm9yOw0KPiArCQl9DQo+ICsJfQ0KPiArDQo+ICAJaWYgKHRlc3Rf
+Yml0KEtFWV9GTEFHX0tFRVAsICZrZXktPmZsYWdzKSkNCj4gIAkJcmV0ID0gLUVQRVJNOw0KPiAg
+CWVsc2UNCj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2tleXMvbWt0bWVfa2V5cy5jIGIvc2VjdXJp
+dHkva2V5cy9ta3RtZV9rZXlzLmMNCj4gaW5kZXggYjkzN2JiZTZiY2RiLi44ODdiNDgzZDdiMzgg
+MTAwNjQ0DQo+IC0tLSBhL3NlY3VyaXR5L2tleXMvbWt0bWVfa2V5cy5jDQo+ICsrKyBiL3NlY3Vy
+aXR5L2tleXMvbWt0bWVfa2V5cy5jDQo+IEBAIC02Nyw2ICs2NywzOSBAQCBzdGF0aWMgaW50IG1r
+dG1lX2NsZWFyX3Byb2dyYW1tZWRfa2V5KGludCBrZXlpZCkNCj4gIAlyZXR1cm4gcmV0Ow0KPiAg
+fQ0KPiAgDQo+ICsvKg0KPiArICogbWt0bWVfc2FmZV9yZXZva2UoKSBpcyBjYWxsZWQgZHVyaW5n
+IHRoZSByZXZva2UgcHJvY2VzcyB0bw0KPiArICogZGV0ZXJtaW5lIGlmIGl0IGlzIHNhZmUgdG8g
+cmV2b2tlIGEga2V5LiBJZiB0aGlzIGNoZWNrIHBhc3NlcywNCj4gKyAqIHRoZSByZXZva2UgcHJv
+Y2VlZHMsIG90aGVyd2lzZSBhbiBlcnJvciBpcyByZXR1cm5lZCB0byB1c2Vyc3BhY2UuDQo+ICsg
+KiBUaGUgaW1wb3J0YW50IGVycm9yIGNhc2UgaGVyZSBpcyBvdXRzdGFuZGluZyBtZW1vcnkgbWFw
+cGluZ3MNCj4gdXNpbmcNCj4gKyAqIHRoZSBjb3JyZXNwb25kaW5nIGhhcmR3YXJlIGtleWlkLg0K
+PiArICovDQo+ICtpbnQgbWt0bWVfc2FmZV9yZXZva2Uoc3RydWN0IGtleSAqa2V5KQ0KPiArew0K
+PiArCWludCBrZXlpZCwgdm1hX2NvdW50Ow0KPiArCWludCByZXQgPSAtMTsNCj4gKw0KPiArCW1r
+dG1lX21hcF9sb2NrKCk7DQo+ICsJa2V5aWQgPSBta3RtZV9tYXBfa2V5aWRfZnJvbV9zZXJpYWwo
+a2V5LT5zZXJpYWwpOw0KPiArCWlmIChrZXlpZCA8PSAwKQ0KPiArCQlnb3RvIG91dDsNCj4gKw0K
+PiArCXZtYV9jb3VudCA9IHZtYV9yZWFkX2VuY3J5cHRfcmVmKGtleWlkKTsNCj4gKwlpZiAodm1h
+X2NvdW50ID4gMCkgew0KPiArCQlwcl9kZWJ1ZygibWt0bWUgbm90IGZyZWVpbmcga2V5aWRbJWRd
+DQo+IGVuY3J5cHRfY291bnRbJWRdXG4iLA0KPiArCQkJIGtleWlkLCB2bWFfY291bnQpOw0KPiAr
+CQlnb3RvIG91dDsNCj4gKwl9DQo+ICsJbWt0bWVfY2xlYXJfcHJvZ3JhbW1lZF9rZXkoa2V5aWQp
+Ow0KPiArCS8qIENsZWFyaW5nIEtFWV9GTEFHX0tFRVAgZmxhZyBhbGxvd3MgdGhlIHJldm9rZSB0
+byBwcm9jZWVkDQo+ICovDQo+ICsJY2xlYXJfYml0KEtFWV9GTEFHX0tFRVAsICZrZXktPmZsYWdz
+KTsNCj4gKwlyZXQgPSAwOw0KPiArb3V0Og0KPiArCW1rdG1lX21hcF91bmxvY2soKTsNCj4gKwly
+ZXR1cm4gcmV0Ow0KPiArfQ0KPiArDQo+ICsNCj4gQEAgLTMxNSw2ICszNDgsNyBAQCBpbnQgbWt0
+bWVfaW5zdGFudGlhdGUoc3RydWN0IGtleSAqa2V5LCBzdHJ1Y3QNCj4ga2V5X3ByZXBhcnNlZF9w
+YXlsb2FkICpwcmVwKQ0KPiAgDQo+ICAJbWt0bWVfbWFwX2xvY2soKTsNCj4gIAlyZXQgPSBta3Rt
+ZV9wcm9ncmFtX2tleShrZXktPnNlcmlhbCwga3Byb2cpOw0KPiArCXNldF9iaXQoS0VZX0ZMQUdf
+S0VFUCwgJmtleS0+ZmxhZ3MpOw0KPiAgCW1rdG1lX21hcF91bmxvY2soKTsNCj4gIG91dDoNCj4g
+IAlremZyZWUoZGF0YWJsb2IpOw=
