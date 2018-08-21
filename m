@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2018 15:58:30 +0000
-Subject: [PATCH 15/23] TPMLIB: Use __be32 rather than int32_t and use cpu_to_beX() and co.
-Message-Id: <153486711068.13066.16019818060381526218.stgit@warthog.procyon.org.uk>
+Date: Tue, 21 Aug 2018 15:59:11 +0000
+Subject: [PATCH 21/23] TPMLIB: Implement call to TPM_LoadKey2
+Message-Id: <153486715192.13066.16960521772592007978.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,231 +11,145 @@ In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.
 To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
 Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-Use __be32 rather than int32_t and use cpu_to_beX() and co. rather than
-htonl() and co.
+Implement a function to invoke TPM_LoadKey2
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- drivers/char/tpm/tpm-library.c |   58 ++++++++++++++++++----------------------
- drivers/char/tpm/tpm-library.h |   14 +++++-----
- 2 files changed, 33 insertions(+), 39 deletions(-)
+ drivers/char/tpm/tpm-library.c |   93 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/tpm.h            |    7 +++
+ include/linux/tpm_command.h    |    1 
+ 3 files changed, 101 insertions(+)
 
 diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
-index 1eea483cf36b..f14980be5ebb 100644
+index 3413abeb3635..d279243ccc00 100644
 --- a/drivers/char/tpm/tpm-library.c
 +++ b/drivers/char/tpm/tpm-library.c
-@@ -201,15 +201,14 @@ out:
-  * verify the AUTH1_COMMAND (Seal) result from TPM
-  */
- static int TSS_checkhmac1(unsigned char *buffer,
--			  const uint32_t command,
-+			  __be32 ordinal,
- 			  const struct tpm_odd_nonce *ononce,
- 			  const unsigned char *key, unsigned keylen,
- 			  ...)
- {
- 	uint32_t bufsize;
- 	uint16_t tag;
--	uint32_t ordinal;
--	uint32_t result;
-+	__be32 result;
- 	struct tpm_even_nonce *enonce;
- 	unsigned char *continueflag;
- 	unsigned char *authdata;
-@@ -223,8 +222,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
+@@ -1017,6 +1017,99 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(tpm_create_wrap_key);
  
- 	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
- 	tag = LOAD16(buffer, 0);
--	ordinal = command;
--	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
-+	result = LOAD32BE(buffer, TPM_RETURN_OFFSET);
- 	if (tag = TPM_TAG_RSP_COMMAND)
- 		return 0;
- 	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
-@@ -246,7 +244,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	if (ret < 0)
- 		goto out;
- 	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&ordinal,
--				  sizeof ordinal);
-+				  sizeof(ordinal));
- 	if (ret < 0)
- 		goto out;
- 	va_start(argp, keylen);
-@@ -285,7 +283,7 @@ out:
-  * verify the AUTH2_COMMAND (unseal) result from TPM
-  */
- static int TSS_checkhmac2(const unsigned char *buffer,
--			  const uint32_t command,
-+			  __be32 ordinal,
- 			  const struct tpm_odd_nonce *ononce,
- 			  const unsigned char *key1, unsigned keylen1,
- 			  const unsigned char *key2, unsigned keylen2,
-@@ -293,8 +291,7 @@ static int TSS_checkhmac2(const unsigned char *buffer,
- {
- 	uint32_t bufsize;
- 	uint16_t tag;
--	uint32_t ordinal;
--	uint32_t result;
-+	__be32 result;
- 	const struct tpm_even_nonce *enonce1;
- 	const unsigned char *continueflag1;
- 	const unsigned char *authdata1;
-@@ -312,8 +309,7 @@ static int TSS_checkhmac2(const unsigned char *buffer,
- 
- 	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
- 	tag = LOAD16(buffer, 0);
--	ordinal = command;
--	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
-+	result = LOAD32BE(buffer, TPM_RETURN_OFFSET);
- 
- 	if (tag = TPM_TAG_RSP_COMMAND)
- 		return 0;
-@@ -336,11 +332,11 @@ static int TSS_checkhmac2(const unsigned char *buffer,
- 	if (ret < 0)
- 		goto out;
- 	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&result,
--				  sizeof result);
-+				  sizeof(result));
- 	if (ret < 0)
- 		goto out;
- 	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&ordinal,
--				  sizeof ordinal);
-+				  sizeof(ordinal));
- 	if (ret < 0)
- 		goto out;
- 
-@@ -508,9 +504,9 @@ int tpm_seal(struct tpm_chip *chip,
- 	struct tpm_osapsess sess;
- 	struct tpm_digests *td;
- 	unsigned char cont;
--	uint32_t ordinal;
--	uint32_t pcrsize;
--	uint32_t datsize;
++/**
++ * tpm_load_key2 - Load a key and decrypt it
++ * @chip: The chip to use
++ * @tb: Large scratch buffer for I/O
++ * @parent_type: Type of entity attached to @parent_handle
++ * @parent_handle: TPM-resident key used to encrypt
++ * @parent_auth: Parent authorisation HMAC key
++ * @wrapped_key: The wrapped key
++ * @_key_handle: The TPM's handle on the key
++ *
++ * Have the TPM decrypt a key and load it into its memory.  The TPM then
++ * returns a handle to the key that we can use in other operations.
++ *
++ * AUTH1 is used for sealing key.
++ */
++int tpm_load_key2(struct tpm_chip *chip,
++		  enum tpm_entity_type parent_type,
++		  uint32_t parent_handle,
++		  const unsigned char *parent_auth,
++		  const struct tpm_wrapped_key *wrapped_key,
++		  uint32_t *_key_handle)
++{
++	struct tpm_osapsess sess;
++	struct tpm_digests *td;
++	struct tpm_buf *tb;
++	unsigned char cont;
 +	__be32 ordinal_be;
-+	__be32 rawlen_be;
-+	__be32 pcrinfosize_be;
- 	int sealinfosize;
- 	int encdatasize;
- 	int storedsize;
-@@ -538,9 +534,9 @@ int tpm_seal(struct tpm_chip *chip,
- 	ret = tpm_gen_odd_nonce(chip, &td->ononce);
- 	if (ret < 0)
- 		goto out;
--	ordinal = htonl(TPM_ORD_SEAL);
--	datsize = htonl(rawlen);
--	pcrsize = htonl(pcrinfosize);
-+	ordinal_be	= cpu_to_be32(TPM_ORD_SEAL);
-+	rawlen_be	= cpu_to_be32(rawlen);
-+	pcrinfosize_be	= cpu_to_be32(pcrinfosize);
- 	cont = 0;
- 
- 	/* encrypt data authorization key */
-@@ -552,21 +548,21 @@ int tpm_seal(struct tpm_chip *chip,
- 		/* no pcr info specified */
- 		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
- 				   &sess.enonce, &td->ononce, cont,
--				   sizeof(uint32_t), &ordinal,
-+				   sizeof(__be32), &ordinal_be,
- 				   SHA1_DIGEST_SIZE, td->encauth,
--				   sizeof(uint32_t), &pcrsize,
--				   sizeof(uint32_t), &datsize,
-+				   sizeof(__be32), &pcrinfosize_be,
-+				   sizeof(__be32), &rawlen_be,
- 				   rawlen, rawdata,
- 				   0, 0);
- 	} else {
- 		/* pcr info specified */
- 		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
- 				   &sess.enonce, &td->ononce, cont,
--				   sizeof(uint32_t), &ordinal,
-+				   sizeof(__be32), &ordinal_be,
- 				   SHA1_DIGEST_SIZE, td->encauth,
--				   sizeof(uint32_t), &pcrsize,
-+				   sizeof(__be32), &pcrinfosize_be,
- 				   pcrinfosize, pcrinfo,
--				   sizeof(uint32_t), &datsize,
-+				   sizeof(__be32), &rawlen_be,
- 				   rawlen, rawdata,
- 				   0, 0);
- 	}
-@@ -602,7 +598,7 @@ int tpm_seal(struct tpm_chip *chip,
- 	    sizeof(uint32_t) + encdatasize;
- 
- 	/* check the HMAC in the response */
--	ret = TSS_checkhmac1(tb->data, ordinal, &td->ononce,
-+	ret = TSS_checkhmac1(tb->data, ordinal_be, &td->ononce,
- 			     sess.secret, SHA1_DIGEST_SIZE,
- 			     storedsize, TPM_DATA_OFFSET,
- 			     0, 0);
-@@ -646,8 +642,7 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 	uint32_t authhandle1 = 0;
- 	uint32_t authhandle2 = 0;
- 	unsigned char cont = 0;
--	uint32_t ordinal;
--	uint32_t keyhndl;
-+	__be32 ordinal;
- 	int ret;
- 
- 	/* sessions for unsealing key and data */
-@@ -662,21 +657,20 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 		return ret;
- 	}
- 
--	ordinal = htonl(TPM_ORD_UNSEAL);
--	keyhndl = htonl(SRKHANDLE);
-+	ordinal = cpu_to_be32(TPM_ORD_UNSEAL);
- 	ret = tpm_gen_odd_nonce(chip, &ononce);
- 	if (ret < 0)
- 		return ret;
- 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
- 			   &enonce1, &ononce, cont,
--			   sizeof(uint32_t), &ordinal,
-+			   sizeof(__be32), &ordinal,
- 			   enclen, encdata,
- 			   0, 0);
- 	if (ret < 0)
- 		return ret;
- 	ret = TSS_authhmac(authdata2, decauth, TPM_NONCE_SIZE,
- 			   &enonce2, &ononce, cont,
--			   sizeof(uint32_t), &ordinal,
-+			   sizeof(__be32), &ordinal,
- 			   enclen, encdata,
- 			   0, 0);
- 	if (ret < 0)
-diff --git a/drivers/char/tpm/tpm-library.h b/drivers/char/tpm/tpm-library.h
-index 861e67df27fc..c12d451704a2 100644
---- a/drivers/char/tpm/tpm-library.h
-+++ b/drivers/char/tpm/tpm-library.h
-@@ -11,9 +11,9 @@
-  */
- 
- 
--#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
--#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
--#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
-+#define LOAD32BE(buffer, offset) (*(__be32 *)&buffer[(offset)])
-+#define LOAD16(buffer, offset)	(be16_to_cpu(*(__be16 *)&buffer[(offset)]))
-+#define LOAD32(buffer, offset)	(be32_to_cpu(LOAD32BE(buffer, (offset))))
- 
- struct tpm_even_nonce {
- 	unsigned char data[TPM_NONCE_SIZE];
-@@ -36,14 +36,14 @@ static inline void store_8(struct tpm_buf *buf, unsigned char value)
- 
- static inline void store16(struct tpm_buf *buf, uint16_t value)
- {
--	*(uint16_t *)&buf->data[buf->len] = htons(value);
--	buf->len += sizeof value;
-+	*(__be16 *)&buf->data[buf->len] = cpu_to_be16(value);
-+	buf->len += sizeof(value);
- }
- 
- static inline void store32(struct tpm_buf *buf, uint32_t value)
- {
--	*(uint32_t *)&buf->data[buf->len] = htonl(value);
--	buf->len += sizeof value;
-+	*(__be32 *)&buf->data[buf->len] = cpu_to_be32(value);
-+	buf->len += sizeof(value);
- }
- 
- static inline void store_s(struct tpm_buf *buf, const void *in, int len)
++	int ret;
++
++	kenter("");
++
++	/* alloc some work space */
++	tb = kmalloc(sizeof(*tb) + sizeof(*td), GFP_KERNEL);
++	if (!tb)
++		return -ENOMEM;
++	td = (void *)tb + sizeof(*tb);
++
++	/* Get the encryption session */
++	ret = tpm_create_osap(chip, tb, &sess,
++			      parent_auth, parent_type, parent_handle);
++	if (ret < 0)
++		goto out;
++	dump_sess(&sess);
++
++	/* Set up the parameters we will be sending */
++	ret = tpm_gen_odd_nonce(chip, &td->ononce);
++	if (ret < 0)
++		goto out;
++
++	/* calculate authorization HMAC value */
++	ordinal_be = cpu_to_be32(TPM_ORD_LOADKEY2);
++	cont = 0;
++	ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
++			   &sess.enonce, &td->ononce, cont,
++			   /* 1S */ sizeof(__be32), &ordinal_be,
++			   /* 2S */ wrapped_key->data_len, wrapped_key->data,
++			   0, NULL);
++	if (ret < 0)
++		goto out;
++
++	/* build and send the TPM request packet */
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
++	store32(tb, TPM_DATA_OFFSET + 4 + wrapped_key->data_len + 45);
++	store32(tb, TPM_ORD_LOADKEY2);
++	store32(tb, parent_handle);
++	store_s(tb, wrapped_key->data, wrapped_key->data_len);
++	store32(tb, sess.handle);
++	store_s(tb, td->ononce.data, TPM_NONCE_SIZE);
++	store_8(tb, cont);
++	store_s(tb, td->pubauth, SHA1_DIGEST_SIZE);
++
++	ret = tpm_send_dump(chip, tb, "loading key");
++	if (ret < 0)
++		goto out;
++
++	/* Check the HMAC in the response */
++	ret = TSS_checkhmac1(tb, ordinal_be, &td->ononce,
++			     sess.secret, SHA1_DIGEST_SIZE,
++			     0, NULL);
++	if (ret < 0)
++		goto out;
++
++	*_key_handle = LOAD32(tb);
++	ret = 0;
++
++out:
++	kfree(tb);
++	kleave(" = %d [%08x]", ret, *_key_handle);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(tpm_load_key2);
++
+ /**
+  * tpm_library_use - Tell the TPM library we want to make use of it
+  *
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 0bc954ac8266..2be0decff93b 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -147,4 +147,11 @@ extern int tpm_create_wrap_key(struct tpm_chip *chip,
+ 			       const unsigned char *usage_auth,
+ 			       const unsigned char *migration_auth,
+ 			       struct tpm_wrapped_key **_wrapped_key);
++extern int tpm_load_key2(struct tpm_chip *chip,
++			 enum tpm_entity_type parent_type,
++			 uint32_t parent_handle,
++			 const unsigned char *parent_auth,
++			 const struct tpm_wrapped_key *wrapped_key,
++			 uint32_t *_key_handle);
++
+ #endif
+diff --git a/include/linux/tpm_command.h b/include/linux/tpm_command.h
+index 0417a3db7e8f..211d4ce75f67 100644
+--- a/include/linux/tpm_command.h
++++ b/include/linux/tpm_command.h
+@@ -23,6 +23,7 @@ enum tpm_ordinal {
+ 	TPM_ORD_SEAL			= 23,
+ 	TPM_ORD_UNSEAL			= 24,
+ 	TPM_ORD_CREATEWRAPKEY		= 31,
++	TPM_ORD_LOADKEY2		= 65,
+ 	TPM_ORD_GET_RANDOM		= 70,
+ 	TPM_ORD_CONTINUE_SELFTEST	= 83,
+ 	TPM_ORD_GET_CAP			= 101,
