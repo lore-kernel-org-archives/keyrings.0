@@ -1,63 +1,40 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Tue, 28 Aug 2018 22:47:40 +0000
-Subject: [PATCH v8 04/12] keys: export lookup_user_key to external users
-Message-Id: <153549646033.4089.17866270311512341456.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 21 Aug 2018 15:56:56 +0000
+Subject: [PATCH 01/23] TPM: Add new TPMs to the tail of the list to prevent inadvertent change of dev
+Message-Id: <153486701644.13066.13372706238885253812.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
+To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-Export lookup_user_key() symbol in order to allow nvdimm passphrase
-update to retrieve user injected keys.
+Add newly registered TPMs to the tail of the list, not the beginning, so that
+things that are specifying TPM_ANY_NUM don't find that the device they're
+using has inadvertently changed.  Adding a second device would break IMA, for
+instance.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+cc: stable@vger.kernel.org
 ---
- include/linux/key.h          |    3 +++
- security/keys/internal.h     |    2 --
- security/keys/process_keys.c |    1 +
- 3 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index e58ee10f6e58..7099985e35a9 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -346,6 +346,9 @@ static inline key_serial_t key_serial(const struct key *key)
+ drivers/char/tpm/tpm-interface.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 6af17002a115..cfb9089887bd 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -1122,7 +1122,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
  
- extern void key_set_timeout(struct key *, unsigned);
+ 	/* Make chip available */
+ 	spin_lock(&driver_lock);
+-	list_add_rcu(&chip->list, &tpm_chip_list);
++	list_add_tail_rcu(&chip->list, &tpm_chip_list);
+ 	spin_unlock(&driver_lock);
  
-+extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
-+				 key_perm_t perm);
-+
- /*
-  * The permissions required on a key that we're looking up.
-  */
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 9f8208dc0e55..9968b21a76dd 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -158,8 +158,6 @@ extern struct key *request_key_and_link(struct key_type *type,
- 
- extern bool lookup_user_key_possessed(const struct key *key,
- 				      const struct key_match_data *match_data);
--extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
--				 key_perm_t perm);
- #define KEY_LOOKUP_CREATE	0x01
- #define KEY_LOOKUP_PARTIAL	0x02
- #define KEY_LOOKUP_FOR_UNLINK	0x04
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index d5b25e535d3a..ec4fd4531224 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -755,6 +755,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 	put_cred(ctx.cred);
- 	goto try_again;
- }
-+EXPORT_SYMBOL(lookup_user_key);
- 
- /*
-  * Join the named keyring as the session keyring if possible else attempt to
+ 	return chip;
