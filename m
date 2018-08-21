@@ -1,146 +1,119 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Sat, 04 Aug 2018 00:01:20 +0000
-Subject: [PATCH v7 02/12] libnvdimm: create keyring to store security keys
-Message-Id: <153334088037.60955.16564112888295280964.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 21 Aug 2018 15:58:17 +0000
+Subject: [PATCH 13/23] TPMLIB: Rename store8() and storebytes()
+Message-Id: <153486709741.13066.7109350297231028843.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
+To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-Prepping the libnvdimm to support security management by adding a keyring
-in order to provide passphrase management through the kernel key management
-APIs.
+Rename store8() and storebytes() so that the names are the same length as for
+store16() and store32() and their parameters line up, making blocks of them
+easier to read.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- drivers/nvdimm/core.c      |    7 ++++++-
- drivers/nvdimm/dimm_devs.c |   29 ++++++++++++++++++++++++++++-
- drivers/nvdimm/nd-core.h   |    1 +
- include/linux/libnvdimm.h  |    3 +++
- kernel/cred.c              |    1 +
- 5 files changed, 39 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/nvdimm/core.c b/drivers/nvdimm/core.c
-index acce050856a8..3cd33d5c7cf0 100644
---- a/drivers/nvdimm/core.c
-+++ b/drivers/nvdimm/core.c
-@@ -437,9 +437,12 @@ static __init int libnvdimm_init(void)
- {
- 	int rc;
+ drivers/char/tpm/tpm-library.c |   28 ++++++++++++++--------------
+ drivers/char/tpm/tpm-library.h |   14 +++++++-------
+ 2 files changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
+index 1c64282d1d0d..1eea483cf36b 100644
+--- a/drivers/char/tpm/tpm-library.c
++++ b/drivers/char/tpm/tpm-library.c
+@@ -427,7 +427,7 @@ static int tpm_create_osap(struct tpm_chip *chip,
+ 	store32(tb, TPM_ORD_OSAP);
+ 	store16(tb, keytype);
+ 	store32(tb, keyhandle);
+-	storebytes(tb, ononce.data, TPM_NONCE_SIZE);
++	store_s(tb, ononce.data, TPM_NONCE_SIZE);
  
--	rc = nvdimm_bus_init();
-+	rc = nvdimm_devs_init();
- 	if (rc)
- 		return rc;
-+	rc = nvdimm_bus_init();
-+	if (rc)
-+		goto err_bus;
- 	rc = nvdimm_init();
- 	if (rc)
- 		goto err_dimm;
-@@ -454,6 +457,8 @@ static __init int libnvdimm_init(void)
- 	nvdimm_exit();
-  err_dimm:
- 	nvdimm_bus_exit();
-+ err_bus:
-+	nvdimm_devs_exit();
- 	return rc;
- }
+ 	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
+ 			    "creating OSAP session");
+@@ -579,15 +579,15 @@ int tpm_seal(struct tpm_chip *chip,
+ 	store32(tb, TPM_SEAL_SIZE + pcrinfosize + rawlen);
+ 	store32(tb, TPM_ORD_SEAL);
+ 	store32(tb, keyhandle);
+-	storebytes(tb, td->encauth, SHA1_DIGEST_SIZE);
++	store_s(tb, td->encauth, SHA1_DIGEST_SIZE);
+ 	store32(tb, pcrinfosize);
+-	storebytes(tb, pcrinfo, pcrinfosize);
++	store_s(tb, pcrinfo, pcrinfosize);
+ 	store32(tb, rawlen);
+-	storebytes(tb, rawdata, rawlen);
++	store_s(tb, rawdata, rawlen);
+ 	store32(tb, sess.handle);
+-	storebytes(tb, td->ononce.data, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, td->pubauth, SHA1_DIGEST_SIZE);
++	store_s(tb, td->ononce.data, TPM_NONCE_SIZE);
++	store_8(tb, cont);
++	store_s(tb, td->pubauth, SHA1_DIGEST_SIZE);
  
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 8d348b22ba45..586432450c82 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -18,12 +18,15 @@
- #include <linux/io.h>
- #include <linux/fs.h>
- #include <linux/mm.h>
-+#include <linux/key.h>
-+#include <linux/init_task.h>
- #include "nd-core.h"
- #include "label.h"
- #include "pmem.h"
- #include "nd.h"
+ 	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
+ 			    "sealing data");
+@@ -688,15 +688,15 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
+ 	store32(tb, TPM_UNSEAL_SIZE + enclen);
+ 	store32(tb, TPM_ORD_UNSEAL);
+ 	store32(tb, keyhandle);
+-	storebytes(tb, encdata, enclen);
++	store_s(tb, encdata, enclen);
+ 	store32(tb, authhandle1);
+-	storebytes(tb, ononce.data, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata1, SHA1_DIGEST_SIZE);
++	store_s(tb, ononce.data, TPM_NONCE_SIZE);
++	store_8(tb, cont);
++	store_s(tb, authdata1, SHA1_DIGEST_SIZE);
+ 	store32(tb, authhandle2);
+-	storebytes(tb, ononce.data, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata2, SHA1_DIGEST_SIZE);
++	store_s(tb, ononce.data, TPM_NONCE_SIZE);
++	store_8(tb, cont);
++	store_s(tb, authdata2, SHA1_DIGEST_SIZE);
  
- static DEFINE_IDA(dimm_ida);
-+static struct key *nvdimm_keyring;
- 
- /*
-  * Retrieve bus and dimm handle and return if this bus supports
-@@ -668,7 +671,31 @@ int nvdimm_bus_check_dimm_count(struct nvdimm_bus *nvdimm_bus, int dimm_count)
- }
- EXPORT_SYMBOL_GPL(nvdimm_bus_check_dimm_count);
- 
--void __exit nvdimm_devs_exit(void)
-+static int nvdimm_register_keyring(void)
- {
-+	nvdimm_keyring = keyring_alloc(".nvdimm",
-+			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, &init_cred,
-+			(KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			(KEY_USR_ALL & ~KEY_USR_SETATTR),
-+			KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
-+	if (IS_ERR(nvdimm_keyring))
-+		return PTR_ERR(nvdimm_keyring);
-+
-+	return 0;
-+}
-+
-+static void nvdimm_unregister_keyring(void)
-+{
-+	key_revoke(nvdimm_keyring);
-+}
-+
-+int __init nvdimm_devs_init(void)
-+{
-+	return nvdimm_register_keyring();
-+}
-+
-+void  nvdimm_devs_exit(void)
-+{
-+	nvdimm_unregister_keyring();
- 	ida_destroy(&dimm_ida);
- }
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 79274ead54fb..2af0f89c4010 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -76,6 +76,7 @@ static inline bool is_memory(struct device *dev)
- struct nvdimm_bus *walk_to_nvdimm_bus(struct device *nd_dev);
- int __init nvdimm_bus_init(void);
- void nvdimm_bus_exit(void);
-+int nvdimm_devs_init(void);
- void nvdimm_devs_exit(void);
- void nd_region_devs_exit(void);
- void nd_region_probe_success(struct nvdimm_bus *nvdimm_bus, struct device *dev);
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 472171af7f60..51084043915c 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -155,6 +155,9 @@ static inline struct nd_blk_region_desc *to_blk_region_desc(
- 
- }
- 
-+#define NVDIMM_PASSPHRASE_LEN		32
-+#define NVDIMM_KEY_DESC_LEN		22
-+
- void badrange_init(struct badrange *badrange);
- int badrange_add(struct badrange *badrange, u64 addr, u64 length);
- void badrange_forget(struct badrange *badrange, phys_addr_t start,
-diff --git a/kernel/cred.c b/kernel/cred.c
-index ecf03657e71c..3a161b78a0a4 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -64,6 +64,7 @@ struct cred init_cred = {
- 	.user_ns		= &init_user_ns,
- 	.group_info		= &init_groups,
+ 	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
+ 			    "unsealing data");
+diff --git a/drivers/char/tpm/tpm-library.h b/drivers/char/tpm/tpm-library.h
+index ceb0ea1cd2bb..c1af99dba08d 100644
+--- a/drivers/char/tpm/tpm-library.h
++++ b/drivers/char/tpm/tpm-library.h
+@@ -29,25 +29,25 @@ struct tpm_osapsess {
+ 	struct tpm_even_nonce enonce;
  };
-+EXPORT_SYMBOL(init_cred);
  
- static inline void set_cred_subscribers(struct cred *cred, int n)
+-static inline void store8(struct tpm_buf *buf, const unsigned char value)
++static inline void store_8(struct tpm_buf *buf, unsigned char value)
  {
-
+ 	buf->data[buf->len++] = value;
+ }
+ 
+-static inline void store16(struct tpm_buf *buf, const uint16_t value)
++static inline void store16(struct tpm_buf *buf, uint16_t value)
+ {
+-	*(uint16_t *) & buf->data[buf->len] = htons(value);
++	*(uint16_t *)&buf->data[buf->len] = htons(value);
+ 	buf->len += sizeof value;
+ }
+ 
+-static inline void store32(struct tpm_buf *buf, const uint32_t value)
++static inline void store32(struct tpm_buf *buf, uint32_t value)
+ {
+-	*(uint32_t *) & buf->data[buf->len] = htonl(value);
++	*(uint32_t *)&buf->data[buf->len] = htonl(value);
+ 	buf->len += sizeof value;
+ }
+ 
+-static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
+-			      const int len)
++static inline void store_s(struct tpm_buf *buf, const unsigned char *in,
++			   int len)
+ {
+ 	memcpy(buf->data + buf->len, in, len);
+ 	buf->len += len;
