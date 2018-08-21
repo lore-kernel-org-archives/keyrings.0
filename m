@@ -1,155 +1,241 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Sat, 04 Aug 2018 00:01:26 +0000
-Subject: [PATCH v7 03/12] nfit/libnvdimm: store dimm id as a member to struct nvdimm
-Message-Id: <153334088615.60955.5011589563958001975.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 21 Aug 2018 15:58:30 +0000
+Subject: [PATCH 15/23] TPMLIB: Use __be32 rather than int32_t and use cpu_to_beX() and co.
+Message-Id: <153486711068.13066.16019818060381526218.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
-To: linux-nvdimm@lists.01.org
-Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
+To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-The generated dimm id is needed for the sysfs attribute as well as being
-used as the identifier/description for the security key. Since it's
-constant and should never change, store it as a member of struct nvdimm.
+Use __be32 rather than int32_t and use cpu_to_beX() and co. rather than
+htonl() and co.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- drivers/acpi/nfit/core.c   |   29 +++++++++++++++++------------
- drivers/acpi/nfit/nfit.h   |    3 +++
- drivers/nvdimm/dimm_devs.c |    4 +++-
- drivers/nvdimm/nd-core.h   |    1 +
- include/linux/libnvdimm.h  |    2 +-
- 5 files changed, 25 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-index a3a944751e6a..21235d555b5f 100644
---- a/drivers/acpi/nfit/core.c
-+++ b/drivers/acpi/nfit/core.c
-@@ -1572,18 +1572,10 @@ static DEVICE_ATTR_RO(flags);
- static ssize_t id_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
+ drivers/char/tpm/tpm-library.c |   58 ++++++++++++++++++----------------------
+ drivers/char/tpm/tpm-library.h |   14 +++++-----
+ 2 files changed, 33 insertions(+), 39 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
+index 1eea483cf36b..f14980be5ebb 100644
+--- a/drivers/char/tpm/tpm-library.c
++++ b/drivers/char/tpm/tpm-library.c
+@@ -201,15 +201,14 @@ out:
+  * verify the AUTH1_COMMAND (Seal) result from TPM
+  */
+ static int TSS_checkhmac1(unsigned char *buffer,
+-			  const uint32_t command,
++			  __be32 ordinal,
+ 			  const struct tpm_odd_nonce *ononce,
+ 			  const unsigned char *key, unsigned keylen,
+ 			  ...)
  {
--	struct acpi_nfit_control_region *dcr = to_nfit_dcr(dev);
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
+ 	uint32_t bufsize;
+ 	uint16_t tag;
+-	uint32_t ordinal;
+-	uint32_t result;
++	__be32 result;
+ 	struct tpm_even_nonce *enonce;
+ 	unsigned char *continueflag;
+ 	unsigned char *authdata;
+@@ -223,8 +222,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
  
--	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
--		return sprintf(buf, "%04x-%02x-%04x-%08x\n",
--				be16_to_cpu(dcr->vendor_id),
--				dcr->manufacturing_location,
--				be16_to_cpu(dcr->manufacturing_date),
--				be32_to_cpu(dcr->serial_number));
--	else
--		return sprintf(buf, "%04x-%08x\n",
--				be16_to_cpu(dcr->vendor_id),
--				be32_to_cpu(dcr->serial_number));
-+	return sprintf(buf, "%s\n", nfit_mem->id);
- }
- static DEVICE_ATTR_RO(id);
- 
-@@ -1712,10 +1704,23 @@ static int acpi_nfit_add_dimm(struct acpi_nfit_desc *acpi_desc,
- 	const guid_t *guid;
- 	int i;
- 	int family = -1;
-+	struct acpi_nfit_control_region *dcr = nfit_mem->dcr;
- 
- 	/* nfit test assumes 1:1 relationship between commands and dsms */
- 	nfit_mem->dsm_mask = acpi_desc->dimm_cmd_force_en;
- 	nfit_mem->family = NVDIMM_FAMILY_INTEL;
-+
-+	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
-+		sprintf(nfit_mem->id, "%04x-%02x-%04x-%08x",
-+				be16_to_cpu(dcr->vendor_id),
-+				dcr->manufacturing_location,
-+				be16_to_cpu(dcr->manufacturing_date),
-+				be32_to_cpu(dcr->serial_number));
-+	else
-+		sprintf(nfit_mem->id, "%04x-%08x",
-+				be16_to_cpu(dcr->vendor_id),
-+				be32_to_cpu(dcr->serial_number));
-+
- 	adev = to_acpi_dev(acpi_desc);
- 	if (!adev)
+ 	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
+ 	tag = LOAD16(buffer, 0);
+-	ordinal = command;
+-	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
++	result = LOAD32BE(buffer, TPM_RETURN_OFFSET);
+ 	if (tag = TPM_TAG_RSP_COMMAND)
  		return 0;
-@@ -1899,7 +1904,7 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
- 		nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
- 				acpi_nfit_dimm_attribute_groups,
- 				flags, cmd_mask, flush ? flush->hint_count : 0,
--				nfit_mem->flush_wpq);
-+				nfit_mem->flush_wpq, &nfit_mem->id[0]);
- 		if (!nvdimm)
- 			return -ENOMEM;
- 
-diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
-index 40b0003b1805..4048036d6ec2 100644
---- a/drivers/acpi/nfit/nfit.h
-+++ b/drivers/acpi/nfit/nfit.h
-@@ -173,6 +173,8 @@ struct nfit_memdev {
- 	struct acpi_nfit_memory_map memdev[0];
- };
- 
-+#define NFIT_DIMM_ID_LEN	22
-+
- /* assembled tables for a given dimm/memory-device */
- struct nfit_mem {
- 	struct nvdimm *nvdimm;
-@@ -195,6 +197,7 @@ struct nfit_mem {
- 	int family;
- 	bool has_lsr;
- 	bool has_lsw;
-+	char id[NFIT_DIMM_ID_LEN+1];
- };
- 
- struct acpi_nfit_desc {
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 586432450c82..e753b2095402 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -401,7 +401,7 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
- struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		const struct attribute_group **groups, unsigned long flags,
- 		unsigned long cmd_mask, int num_flush,
--		struct resource *flush_wpq)
-+		struct resource *flush_wpq, const char *dimm_id)
+ 	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
+@@ -246,7 +244,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
+ 	if (ret < 0)
+ 		goto out;
+ 	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&ordinal,
+-				  sizeof ordinal);
++				  sizeof(ordinal));
+ 	if (ret < 0)
+ 		goto out;
+ 	va_start(argp, keylen);
+@@ -285,7 +283,7 @@ out:
+  * verify the AUTH2_COMMAND (unseal) result from TPM
+  */
+ static int TSS_checkhmac2(const unsigned char *buffer,
+-			  const uint32_t command,
++			  __be32 ordinal,
+ 			  const struct tpm_odd_nonce *ononce,
+ 			  const unsigned char *key1, unsigned keylen1,
+ 			  const unsigned char *key2, unsigned keylen2,
+@@ -293,8 +291,7 @@ static int TSS_checkhmac2(const unsigned char *buffer,
  {
- 	struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
- 	struct device *dev;
-@@ -414,6 +414,8 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		kfree(nvdimm);
- 		return NULL;
- 	}
-+
-+	nvdimm->dimm_id = dimm_id;
- 	nvdimm->provider_data = provider_data;
- 	nvdimm->flags = flags;
- 	nvdimm->cmd_mask = cmd_mask;
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 2af0f89c4010..ed650f1607d8 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -42,6 +42,7 @@ struct nvdimm {
- 	atomic_t busy;
- 	int id, num_flush;
- 	struct resource *flush_wpq;
-+	const char *dimm_id;
- };
+ 	uint32_t bufsize;
+ 	uint16_t tag;
+-	uint32_t ordinal;
+-	uint32_t result;
++	__be32 result;
+ 	const struct tpm_even_nonce *enonce1;
+ 	const unsigned char *continueflag1;
+ 	const unsigned char *authdata1;
+@@ -312,8 +309,7 @@ static int TSS_checkhmac2(const unsigned char *buffer,
  
- /**
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 51084043915c..3c1f18fdf76f 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -181,7 +181,7 @@ void *nvdimm_provider_data(struct nvdimm *nvdimm);
- struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		const struct attribute_group **groups, unsigned long flags,
- 		unsigned long cmd_mask, int num_flush,
--		struct resource *flush_wpq);
-+		struct resource *flush_wpq, const char *dimm_id);
- const struct nd_cmd_desc *nd_cmd_dimm_desc(int cmd);
- const struct nd_cmd_desc *nd_cmd_bus_desc(int cmd);
- u32 nd_cmd_in_size(struct nvdimm *nvdimm, int cmd,
-
+ 	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
+ 	tag = LOAD16(buffer, 0);
+-	ordinal = command;
+-	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
++	result = LOAD32BE(buffer, TPM_RETURN_OFFSET);
+ 
+ 	if (tag = TPM_TAG_RSP_COMMAND)
+ 		return 0;
+@@ -336,11 +332,11 @@ static int TSS_checkhmac2(const unsigned char *buffer,
+ 	if (ret < 0)
+ 		goto out;
+ 	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&result,
+-				  sizeof result);
++				  sizeof(result));
+ 	if (ret < 0)
+ 		goto out;
+ 	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&ordinal,
+-				  sizeof ordinal);
++				  sizeof(ordinal));
+ 	if (ret < 0)
+ 		goto out;
+ 
+@@ -508,9 +504,9 @@ int tpm_seal(struct tpm_chip *chip,
+ 	struct tpm_osapsess sess;
+ 	struct tpm_digests *td;
+ 	unsigned char cont;
+-	uint32_t ordinal;
+-	uint32_t pcrsize;
+-	uint32_t datsize;
++	__be32 ordinal_be;
++	__be32 rawlen_be;
++	__be32 pcrinfosize_be;
+ 	int sealinfosize;
+ 	int encdatasize;
+ 	int storedsize;
+@@ -538,9 +534,9 @@ int tpm_seal(struct tpm_chip *chip,
+ 	ret = tpm_gen_odd_nonce(chip, &td->ononce);
+ 	if (ret < 0)
+ 		goto out;
+-	ordinal = htonl(TPM_ORD_SEAL);
+-	datsize = htonl(rawlen);
+-	pcrsize = htonl(pcrinfosize);
++	ordinal_be	= cpu_to_be32(TPM_ORD_SEAL);
++	rawlen_be	= cpu_to_be32(rawlen);
++	pcrinfosize_be	= cpu_to_be32(pcrinfosize);
+ 	cont = 0;
+ 
+ 	/* encrypt data authorization key */
+@@ -552,21 +548,21 @@ int tpm_seal(struct tpm_chip *chip,
+ 		/* no pcr info specified */
+ 		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
+ 				   &sess.enonce, &td->ononce, cont,
+-				   sizeof(uint32_t), &ordinal,
++				   sizeof(__be32), &ordinal_be,
+ 				   SHA1_DIGEST_SIZE, td->encauth,
+-				   sizeof(uint32_t), &pcrsize,
+-				   sizeof(uint32_t), &datsize,
++				   sizeof(__be32), &pcrinfosize_be,
++				   sizeof(__be32), &rawlen_be,
+ 				   rawlen, rawdata,
+ 				   0, 0);
+ 	} else {
+ 		/* pcr info specified */
+ 		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
+ 				   &sess.enonce, &td->ononce, cont,
+-				   sizeof(uint32_t), &ordinal,
++				   sizeof(__be32), &ordinal_be,
+ 				   SHA1_DIGEST_SIZE, td->encauth,
+-				   sizeof(uint32_t), &pcrsize,
++				   sizeof(__be32), &pcrinfosize_be,
+ 				   pcrinfosize, pcrinfo,
+-				   sizeof(uint32_t), &datsize,
++				   sizeof(__be32), &rawlen_be,
+ 				   rawlen, rawdata,
+ 				   0, 0);
+ 	}
+@@ -602,7 +598,7 @@ int tpm_seal(struct tpm_chip *chip,
+ 	    sizeof(uint32_t) + encdatasize;
+ 
+ 	/* check the HMAC in the response */
+-	ret = TSS_checkhmac1(tb->data, ordinal, &td->ononce,
++	ret = TSS_checkhmac1(tb->data, ordinal_be, &td->ononce,
+ 			     sess.secret, SHA1_DIGEST_SIZE,
+ 			     storedsize, TPM_DATA_OFFSET,
+ 			     0, 0);
+@@ -646,8 +642,7 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
+ 	uint32_t authhandle1 = 0;
+ 	uint32_t authhandle2 = 0;
+ 	unsigned char cont = 0;
+-	uint32_t ordinal;
+-	uint32_t keyhndl;
++	__be32 ordinal;
+ 	int ret;
+ 
+ 	/* sessions for unsealing key and data */
+@@ -662,21 +657,20 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
+ 		return ret;
+ 	}
+ 
+-	ordinal = htonl(TPM_ORD_UNSEAL);
+-	keyhndl = htonl(SRKHANDLE);
++	ordinal = cpu_to_be32(TPM_ORD_UNSEAL);
+ 	ret = tpm_gen_odd_nonce(chip, &ononce);
+ 	if (ret < 0)
+ 		return ret;
+ 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
+ 			   &enonce1, &ononce, cont,
+-			   sizeof(uint32_t), &ordinal,
++			   sizeof(__be32), &ordinal,
+ 			   enclen, encdata,
+ 			   0, 0);
+ 	if (ret < 0)
+ 		return ret;
+ 	ret = TSS_authhmac(authdata2, decauth, TPM_NONCE_SIZE,
+ 			   &enonce2, &ononce, cont,
+-			   sizeof(uint32_t), &ordinal,
++			   sizeof(__be32), &ordinal,
+ 			   enclen, encdata,
+ 			   0, 0);
+ 	if (ret < 0)
+diff --git a/drivers/char/tpm/tpm-library.h b/drivers/char/tpm/tpm-library.h
+index 861e67df27fc..c12d451704a2 100644
+--- a/drivers/char/tpm/tpm-library.h
++++ b/drivers/char/tpm/tpm-library.h
+@@ -11,9 +11,9 @@
+  */
+ 
+ 
+-#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
+-#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
+-#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
++#define LOAD32BE(buffer, offset) (*(__be32 *)&buffer[(offset)])
++#define LOAD16(buffer, offset)	(be16_to_cpu(*(__be16 *)&buffer[(offset)]))
++#define LOAD32(buffer, offset)	(be32_to_cpu(LOAD32BE(buffer, (offset))))
+ 
+ struct tpm_even_nonce {
+ 	unsigned char data[TPM_NONCE_SIZE];
+@@ -36,14 +36,14 @@ static inline void store_8(struct tpm_buf *buf, unsigned char value)
+ 
+ static inline void store16(struct tpm_buf *buf, uint16_t value)
+ {
+-	*(uint16_t *)&buf->data[buf->len] = htons(value);
+-	buf->len += sizeof value;
++	*(__be16 *)&buf->data[buf->len] = cpu_to_be16(value);
++	buf->len += sizeof(value);
+ }
+ 
+ static inline void store32(struct tpm_buf *buf, uint32_t value)
+ {
+-	*(uint32_t *)&buf->data[buf->len] = htonl(value);
+-	buf->len += sizeof value;
++	*(__be32 *)&buf->data[buf->len] = cpu_to_be32(value);
++	buf->len += sizeof(value);
+ }
+ 
+ static inline void store_s(struct tpm_buf *buf, const void *in, int len)
