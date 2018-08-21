@@ -1,740 +1,1641 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 31 Aug 2018 08:53:03 +0000
-Subject: Re: [RFC] KEYS: add a new type "mktme" to kernel key services
-Message-Id: <20180831085303.GA12908@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 21 Aug 2018 15:57:43 +0000
+Subject: [PATCH 08/23] TPMLIB: Break TPM bits out of security/keys/trusted.c
+Message-Id: <153486706322.13066.3105842100625841410.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180525233135.GA2774@alison-desk.jf.intel.com>
-	<20180831084057.GA9346@linux.intel.com>
-In-Reply-To: <20180831084057.GA9346@linux.intel.com>
-To: linux-security-module@vger.kernel.org
+References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
+To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
 
-On Fri, Aug 31, 2018 at 11:40:57AM +0300, Jarkko Sakkinen wrote:
-> On Fri, May 25, 2018 at 04:31:35PM -0700, Alison Schofield wrote:
-> > Hi David & Key Community,
-> > 
-> > I'm requesting your comments on placing the MK-TME API in the Kernel
-> > Key Service API set. I'm hoping to get a thumbs-up on the general
-> > direction before going further down this path. Key Services seems to
-> > offer a tremendous amount of functionality. I'd like to hear if you
-> > think so too, address any concerns, or hear other suggestions for its
-> > placement. Here are the details...
-> > 
-> > MK-TME (Multi-Key Total Memory Encryption) is a technology that allows
-> > transparent memory encryption in upcoming Intel platforms. Whereas TME
-> > allows encryption of the entire system memory using a single key, MK-TME
-> > allows mulitple encryption domains, each having their own key. The main
-> > use case for the feature is virtual machine isolation. The API, however,
-> > needs the flexibility to work for a wide range of uses.
-> > 
-> > Kirill Shutemov has a patchset for the core kernel support that has
-> > been making its way upstream. Find that here:
-> > git://git.kernel.org/pub/scm/linux/kernel/git/kas/linux.git mktme/wip
-> > 
-> > After considering alternatives (new API, crypto API) this POC adds
-> > "mktme" as a new key service to the existing kernel key services.
-> > 
-> > The mktme key service will manage the adding and removing of software
-> > keys. It will map software keys to hardware keyid slots and program the
-> > hardware keyid slots with the user requested encryption options.
-> > 
-> > The mktme key service will not store any encryption keys in the kernel.
-> > We program the hardware and basically throw away the key. We only retain
-> > a mapping of which software key is assigned to which hardware keyid. It
-> > is not even possible to read back any of the programming info (encryption
-> > algorithm, key, tweak, entropy) once programmed.
-> > 
-> > The mktme key service is half of the API level solution. It will be paired
-> > with a new API that uses these keys to protect the memory. You will see
-> > reference to that mktme_mprotect() system call in the example documentation
-> > included in the patch. It doesn't exist yet.
-> > 
-> > The first file in the patch is Documentation with sample usages.
-> > 
-> > Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-> > Cc: Dave Hansen <dave.hansen@intel.com>
-> > Cc: Kirill Shutemov <kirill.shutemov@intel.com>
-> 
-> Please Cc me too.
-> 
-> > ---
-> >  Documentation/security/keys/mktme.rst |  69 ++++++
-> >  include/keys/mktme-type.h             |  32 +++
-> >  security/keys/Kconfig                 |  11 +
-> >  security/keys/Makefile                |   1 +
-> >  security/keys/key.c                   |   1 +
-> >  security/keys/mktme.c                 | 413 ++++++++++++++++++++++++++++++++++
-> 
-> Should it rather be intel_mktme.c? And intel_mktme-type.h.
-> 
-> >  6 files changed, 527 insertions(+)
-> >  create mode 100644 Documentation/security/keys/mktme.rst
-> >  create mode 100644 include/keys/mktme-type.h
-> >  create mode 100644 security/keys/mktme.c
-> > 
-> > diff --git a/Documentation/security/keys/mktme.rst b/Documentation/security/keys/mktme.rst
-> > new file mode 100644
-> > index 0000000..bb9557e
-> > --- /dev/null
-> > +++ b/Documentation/security/keys/mktme.rst
-> > @@ -0,0 +1,69 @@
-> > +=====================
-> > +Keys for Multi-Key Total Memory Encryption
-> > +=====================
-> > +
-> > +Keys for Multi-Key Total Memory Encryption (MKTME) are a new key type
-> > +added to the existing kernel key ring service.
-> > +
-> > +Allocating MKTME Keys via command line or system call::
-> > +
-> > +    keyctl add mktme name "[options]" ring
-> > +
-> > +    key_serial_t add_key(const char *type, const char *description,
-> > +                         const void *payload, size_t plen,
-> > +                         key_serial_t keyring);
-> > +
-> > +
-> > +Revoking MKTME Keys via command line or system call::
-> > +
-> > +   keyctl revoke <key>
-> > +
-> > +   long keyctl(KEYCTL_REVOKE, key_serial_t key);
-> > +
-> > +
-> > +Options Field Definition::
-> > +
-> > +    userkey=      user provided encryption key. This key defaults to
-> > +                  a CPU generated (ephemeral) key if a userkey is not
-> > +                  defined here.
-> > +
-> > +    algorithm=    encryption algorithm to be used. Defaults to system
-> > +                  default TME algorithm. Select 'no_encrypt' for no
-> > +                  encryption.
-> > +
-> > +    tweak=        user provided tweak. This tweak will be added to the
-> > +                  user provided key.
-> 
-> A tautology: tweak is a tweak. What is "a tweak"?
-> 
-> > +
-> > +    entropy=      user provided entropy. This entropy will be used to
-> > +                  generated the CPU generated key.
-> > +
-> > +Algorithm Dependencies::
-> > +
-> > +    There will be algorithm dependencies that dictate which 'options'
-> > +    actually make sense. For example, aes_xts_128 will require a
-> > +    tweak key when a userkey is specified. Here we will document
-> > +    these dependencies based on algorithms supported. At initial
-> > +    release of the feature we will only support 2 algorithm choices:
-> > +    aex_xts_128 and no_encrypt.
-> > +
-> > +
-> > +Sample usage MK-TME Key Service API with mktme_mprotect() API::
-> > +
-> > +  Add a key::
-> > +        key = add_key(mktme, name, "userkey" tweakD", strlen(argv[3]),
-> > +                      KEY_SPEC_USER_KEYRING);
-> > +  Map memory::
-> > +        ptr = mmap(NULL, size, prot, MAP_ANONYMOUS, -1, 0);
-> > +
-> > +  Protect memory::
-> > +        ret = syscall(sys_mktme_mprotect, ptr, size, prot, key);
-> > +
-> > +  Use protected memory::
-> > +        ................
-> > +
-> > +  Free memory::
-> > +        ret = munmap(ptr, size);
-> > +
-> > +  Revoke key::                 /* User may keep and resuse the key */
-> > +        ret = keyctl(KEYCTL_REVOKE, key);
-> > +
-> > diff --git a/include/keys/mktme-type.h b/include/keys/mktme-type.h
-> > new file mode 100644
-> > index 0000000..4542606
-> > --- /dev/null
-> > +++ b/include/keys/mktme-type.h
-> > @@ -0,0 +1,32 @@
-> > +/* SPDX-License-Identifier: GPL-2.0 */
-> > +
-> > +/*
-> > + * Key service for Multi-KEY Total Memory Encryption
-> > + */
-> > +
-> > +#ifndef _KEYS_MKTME_TYPE_H
-> > +#define _KEYS_MKTME_TYPE_H
-> > +
-> > +#include <linux/key.h>
-> > +
-> > +/*
-> > + * User can optionally provide encryption algorithm, encryption
-> > + * key, and tweak key.
-> > + */
-> > +
-> > +#define MKTME_MAX_OPTION_SIZE		64
-> > +
-> > +enum mktme_alg {
-> > +	MKTME_ALG_AES_XTS_128,
-> > +	MKTME_ALG_NO_ENCRYPT,		/* do not encrypt */
-> > +	MKTME_ALG__LAST,
-> > +};
-> > +
-> > +const char *const mktme_alg_name[MKTME_ALG__LAST] = {
-> > +	[MKTME_ALG_AES_XTS_128]	= "aes_xts_128",
-> > +	[MKTME_ALG_NO_ENCRYPT]	= "no_encrypt",
-> > +};
-> > +
-> > +extern struct key_type key_type_mktme;
-> > +
-> > +#endif /* _KEYS_MKTME_TYPE_H */
-> > diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-> > index 6462e66..3e5e619 100644
-> > --- a/security/keys/Kconfig
-> > +++ b/security/keys/Kconfig
-> > @@ -101,3 +101,14 @@ config KEY_DH_OPERATIONS
-> >  	 in the kernel.
-> >  
-> >  	 If you are unsure as to whether this is required, answer N.
-> > +
-> > +config MKTME_KEYS
-> > +	bool "MKTME KEYS"
-> > +	depends on KEYS
-> > +	help
-> > +	  This option provides support for Multi-Key Total Memory
-> > +	  Encryption (MKTME). MKTME allows userspace to manage the
-> > +	  use of hardware programmed memory encryption keys for
-> > +	  encrypting any page of memory.
-> > +
-> > +	  If you are unsure as to whether this is required, answer N.
-> > diff --git a/security/keys/Makefile b/security/keys/Makefile
-> > index ef1581b..fa74bfc 100644
-> > --- a/security/keys/Makefile
-> > +++ b/security/keys/Makefile
-> > @@ -29,3 +29,4 @@ obj-$(CONFIG_KEY_DH_OPERATIONS) += dh.o
-> >  obj-$(CONFIG_BIG_KEYS) += big_key.o
-> >  obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
-> >  obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
-> > +obj-$(CONFIG_MKTME_KEYS) += mktme.o
-> > diff --git a/security/keys/key.c b/security/keys/key.c
-> > index d97c939..5aa367b 100644
-> > --- a/security/keys/key.c
-> > +++ b/security/keys/key.c
-> > @@ -679,6 +679,7 @@ struct key *key_lookup(key_serial_t id)
-> >  	spin_unlock(&key_serial_lock);
-> >  	return key;
-> >  }
-> > +EXPORT_SYMBOL(key_lookup);
-> >  
-> >  /*
-> >   * Find and lock the specified key type against removal.
-> > diff --git a/security/keys/mktme.c b/security/keys/mktme.c
-> > new file mode 100644
-> > index 0000000..977a528
-> > --- /dev/null
-> > +++ b/security/keys/mktme.c
-> > @@ -0,0 +1,413 @@
-> > +// SPDX-License-Identifier: GPL-3.0
-> > +
-> > +/* See Documentation/security/keys/mktme.rst */
-> > +
-> > +#include <linux/err.h>
-> > +#include <linux/init.h>
-> > +#include <linux/key.h>
-> > +#include <linux/key-type.h>
-> > +#include <linux/init.h>
-> > +#include <linux/parser.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/string.h>
-> > +#include <asm/intel_pconfig.h>
-> > +#include <keys/mktme-type.h>
-> > +#include <keys/user-type.h>
-> > +
-> > +/**
-> > + * struct mktme_mapping - global mapping of MKTME software keys
-> > + *                        to hardware keyids.
-> > + *
-> > + * @lock:   One lock used while (un)registering to protect the software
-> > + *	    map structure and the hardware state.
-> 
-> What is "one lock"?
-> What is "the software map structure"?
-> What is "the hardware state"?
-> 
-> If the description didn't exist at all I would be gained as much
-> knowledge as I gained now.
-> 
-> > + *
-> > + * @serial: Serial number associated with the software key. Userspace
-> > + *	    will use the serial number when invoking mktme_mprotect().
-> 
-> So.. user space directly invokes mktme_mprotect, which would mean a
-> change to the VDSO to achieve that?
-> 
-> "@serial: a Linux keyring serial number associated with the key"
-> 
-> or along the lines... Now the description is just confusing.
-> 
-> > + *
-> > + * @count:  Count is managed by mktme_mprotect(). Count is the number
-> > + *          of mappings outstanding with this serial/keyid pair.
-> > + *
-> > + * The MKTME Key Service API manages the adding and removing of software
-> > + * keys. It maps software keys to hardware keyid slots and programs the
-> > + * hardware keyid slots with the user requested encryption options.
-> > + *
-> > + * API mktme_mprotect() references this structure when requests are
-> > + * made to protect memory with one of these mapped keys.
-> > + */
-> 
-> Almos follows kdoc except no newlines between variable descriptions.
-> 
-> > +
-> > +struct mktme_mapping {
-> > +	struct mutex		lock;	/* protect mktme_map & hw state */
-> > +	struct data {
-> > +		key_serial_t	serial;
-> > +		unsigned int	count;
-> > +	} id[];
-> > +};
-> 
-> I'm totally against aligning struct fields albeit I think it makes sense
-> for enums. Tends to be one big causer of merge conflicts when you
-> backport to stable kernels.
-> 
-> > +
-> > +struct mktme_mapping *mktme_map;
-> > +unsigned int mktme_max_keyids;		/* max hardware keyids   */
-> > +unsigned int mktme_mapped_keyids;	/* number of keys mapped */
-> 
-> Should be static.
-> 
-> Since there is a single global array of mappings it would be cleaner to
-> have a named struct to describe a mapping and then just array of thos
-> e.g.
-> 
-> struct mktme_mapping {
-> 	key_serial_t serial;
-> 	unsigned int count;
-> };
-> 
-> static LIST_HEAD(mktme_mapping_list);
-> static struct mutex mktme_mapping_lock;:
-> 
-> > +
-> > +#define MKTME_DEBUG 0
-> > +#if MKTME_DEBUG
-> 
-> Ugh, you should rather use pr_debug() rather than this ugly
-> construction.
-> 
-> > +static inline void dump_keys(void)
-> > +{
-> > +	int i = mktme_max_keyids + 1;
-> > +
-> > +	while (i--)
-> > +		pr_info(" [%d:%d:%d]\n", i, mktme_map->id[i].serial,
-> > +			mktme_map->id[i].count);
-> > +}
-> > +
-> > +static inline void dump_kprog(struct mktme_key_program *kprog)
-> > +{
-> > +	print_hex_dump(KERN_INFO, "key_field_1: ", DUMP_PREFIX_NONE, 8, 1,
-> > +		       kprog->key_field_1, MKTME_MAX_OPTION_SIZE / 2, 1);
-> > +	print_hex_dump(KERN_INFO, "key_field_2: ", DUMP_PREFIX_NONE, 8, 1,
-> > +		       kprog->key_field_2, MKTME_MAX_OPTION_SIZE / 2, 1);
-> > +	pr_info("key_ctl [%x]\n", kprog->keyid_ctrl);
-> > +}
-> > +#else
-> > +static inline void dump_keys(void)
-> > +{
-> > +}
-> > +
-> > +static inline void dump_kprog(struct mktme_key_program *kprog)
-> > +{
-> > +}
-> > +#endif
-> > +
-> > +/*
-> > + * If a valid serial# is passed in, return the assigned keyid
-> > + * or EINVAL for invalid serial.
-> > + * If 0 is passed in, return an available keyid, or EINVAL if
-> > + * no more keyids are available.
-> > + */
-> > +
-> > +int mktme_get_keyid(key_serial_t serial)
-> > +{
-> > +	int i = mktme_max_keyids;
-> > +
-> > +	for (i = mktme_max_keyids; i > 0; i--)
-> > +		if (mktme_map->id[i].serial = serial)
-> > +			return i;
-> > +	return -EINVAL;
-> > +}
-> > +
-> > +static int mktme_unregister_key(int keyid)
-> > +{
-> > +	struct mktme_key_program *kprog = NULL;
-> > +	int ret;
-> > +
-> > +	kprog = kzalloc(sizeof(*kprog), GFP_KERNEL);
-> > +	if (!kprog)
-> > +		return -ENOMEM;
-> > +
-> > +	kprog->keyid = keyid;
-> > +	kprog->keyid_ctrl = MKTME_KEYID_CLEAR_KEY;
-> > +
-> > +	/* TODO ret = mktme_key_program(kprog); */
-> > +	ret = MKTME_PROG_SUCCESS;
-> 
-> No TODO's allowed.
-> 
-> > +
-> > +	if (ret = MKTME_PROG_SUCCESS) {
-> > +		mktme_map->id[kprog->keyid].serial = 0;
-> > +		mktme_map->id[kprog->keyid].count = 0;
-> > +		mktme_mapped_keyids--;
-> > +	}
-> > +	/* TODO pr the descriptive HW errors before passing up */
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +/*
-> > + * Check that for each keyid that is currently programmed, there is a
-> > + * valid userspace key associated. If the userspace key no longer exists,
-> > + * unregister it (clear it from both software and hardware)
-> > + *
-> > + * So far - it seems we can get here if a 'keyctl invalidate' is done.
-> > + * If we can find a way to block unwanted key control options, this defense
-> > + * could be removed.
-> > + *
-> > + * Call with mktme_map->lock held.
-> > + *
-> > + * Returns the keyid recovered, or 0 if no key is recovered.
-> > + */
-> > +
-> 
-> This should be in kdoc format and no newline-character in-between.
-> 
-> > +static int mktme_recover_key(void)
-> > +{
-> > +	int i = mktme_max_keyids;
-> > +	struct key *key;
-> > +
-> > +	do {
-> > +		if (!mktme_map->id[i].serial)
-> > +			continue;
-> > +
-> > +		key = key_lookup(mktme_map->id[i].serial);
-> > +		if (IS_ERR(key))
-> > +			goto recover;
-> > +
-> > +		if (key_validate(key) < 0) {
-> > +			/*
-> > +			 * Here the key ptr is good, but the
-> > +			 * key may * be marked for removal.
-> > +			 * Leave this here to watch for.
-> > +			 */
-> > +			pr_info("%s key validate fails\n", __func__);
-> > +			goto recover;
-> > +		}
-> > +	} while (i--);
-> > +
-> > +	return 0;
-> > +recover:
-> > +	mktme_unregister_key(i);
-> > +	return i;
-> > +}
-> > +
-> > +/* Add the key to software map and progam key into the hardware. */
-> > +
-> > +static int mktme_register_key(key_serial_t serial,
-> > +			      struct mktme_key_program *kprog)
-> > +{
-> > +	int keyid, ret;
-> > +
-> > +	/*
-> > +	 * If it appears that we are out of keyid's, try to
-> > +	 * recover an abandoned keyid. Note that Keyid 0 is
-> > +	 * reserved for system level TME.
-> > +	 */
-> > +
-> > +	if (mktme_mapped_keyids < mktme_max_keyids)
-> > +		keyid = mktme_get_keyid(0);
-> > +	else
-> > +		keyid = mktme_recover_key();
-> > +
-> > +	if (keyid = 0)
-> > +		return -EDQUOT;
-> > +
-> > +	kprog->keyid = keyid;
-> > +	dump_kprog(kprog);
-> > +
-> > +	/* TODO ret = mktme_key_program(kprog); */
-> > +	ret = MKTME_PROG_SUCCESS;
-> > +	if (ret = MKTME_PROG_SUCCESS) {
-> > +		mktme_map->id[keyid].serial = serial;
-> > +		mktme_map->id[keyid].count = 0;
-> > +		mktme_mapped_keyids++;
-> > +	}
-> > +	/* TODO pr the descriptive HW errors before passing up */
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +enum {
-> > +	opt_err = -1,
-> > +	opt_userkey,
-> > +	opt_tweak,
-> > +	opt_entropy,
-> > +	opt_algorithm,
-> > +};
-> 
-> Enums should be named and should be in all capitals e.g.
-> 
-> enum mktme_opt_ids {
-> 	OPT_ERR = -1,
-> 	/* ... */
-> };
-> 
-> > +
-> > +static const match_table_t mktme_tokens = {
-> > +	{opt_userkey, "userkey=%s"},
-> > +	{opt_tweak, "tweak=%s"},
-> > +	{opt_entropy, "entropy=%s"},
-> > +	{opt_algorithm, "algorithm=%s"},
-> > +	{opt_err, NULL}
-> > +};
-> > +
-> > +/*
-> > + * Sanity check the user specified options against each algorithms
-> > + * requirements.
-> > + *
-> > + * Success returns 0, otherwise -EINVAL.
-> > + */
-> > +
-> > +static int mktme_check_options(struct mktme_key_program *kprog,
-> > +			       unsigned long token_mask)
-> > +{
-> > +	/* no userkey specified, use cpu generated key */
-> > +	if (!test_bit(opt_userkey, &token_mask))
-> > +		kprog->keyid_ctrl |= MKTME_KEYID_SET_KEY_RANDOM;
-> 
-> What is the *non-obvious* fact that the comment provides that is not
-> *obvious* from the code? Maybe you should consider removing the comment?
-> 
-> English sentences start with a capital letter and end with a period.
-> 
-> > +	/* no algorithm specified, use aes_xts_128 */
-> > +	if (!test_bit(opt_algorithm, &token_mask))
-> > +		kprog->keyid_ctrl |= MKTME_AES_XTS_128;
-> > +
-> > +	/* userkey specified, no entropy allowed */
-> > +	if ((test_bit(opt_userkey, &token_mask)) &&
-> > +	    (test_bit(opt_entropy, &token_mask))) {
-> > +		pr_err("mktme: entropy not an option with userkey\n");
-> > +		return -EINVAL;
-> > +	}
-> > +	/* userkey specified with aes_xts_128, requires tweak */
-> > +	if ((test_bit(opt_userkey, &token_mask)) &&
-> > +	    (kprog->keyid_ctrl & MKTME_AES_XTS_128)) {
-> > +		if (!(test_bit(opt_tweak, &token_mask))) {
-> > +			pr_err("mktme: algorithm requires a tweak key\n");
-> > +			return -EINVAL;
-> > +		}
-> > +	}
-> > +	dump_kprog(kprog);
-> > +	return 0;
-> > +}
-> 
-> Same for other comments except tweak is a completely non-obvious
-> concept.
-> 
-> > +
-> > +/* Parse the options from the datablob and fill in struct mktme_key_program.
-> > + * After parsing, call mktme_check_options() for sanity checking.
-> > + *
-> > + * Success returns 0, otherwise -EINVAL.
-> > + */
-> 
-> kdoc
-> 
-> https://www.kernel.org/doc/Documentation/kernel-doc-nano-HOWTO.txt
-> 
-> > +static int mktme_get_options(char *datablob, struct mktme_key_program *kprog)
-> > +{
-> > +	enum mktme_alg alg = MKTME_ALG__LAST;
-> > +	substring_t args[MAX_OPT_ARGS];
-> > +	unsigned long token_mask = 0;
-> > +	int len, ret, token;
-> > +	char *p = datablob;
-> > +
-> > +	while ((p = strsep(&datablob, " \t"))) {
-> > +		if (*p = '\0' || *p = ' ' || *p = '\t')
-> > +			continue;
-> > +		token = match_token(p, mktme_tokens, args);
-> > +		if (test_and_set_bit(token, &token_mask))
-> > +			return -EINVAL;
-> > +
-> > +		len = strlen(args[0].from) / 2;
-> > +		if (len > MKTME_MAX_OPTION_SIZE)
-> > +			return -EINVAL;
-> > +
-> > +		switch (token) {
-> > +		case opt_userkey:
-> > +			ret = hex2bin(kprog->key_field_1, args[0].from, len);
-> > +			if (ret < 0)
-> > +				return -EINVAL;
-> > +			kprog->keyid_ctrl |= MKTME_KEYID_SET_KEY_DIRECT;
-> > +			break;
-> > +
-> > +		case opt_tweak:
-> > +			ret = hex2bin(kprog->key_field_2, args[0].from, len);
-> > +			if (ret < 0)
-> > +				return -EINVAL;
-> > +			break;
-> > +
-> > +		case opt_entropy:
-> > +			ret = hex2bin(kprog->key_field_1, args[0].from, len);
-> > +			if (ret < 0)
-> > +				return -EINVAL;
-> > +			break;
-> > +
-> > +		case opt_algorithm:
-> > +			alg = match_string(mktme_alg_name, MKTME_ALG__LAST,
-> > +					   args[0].from);
-> > +			switch (alg) {
-> > +			case MKTME_ALG_AES_XTS_128:
-> > +				kprog->keyid_ctrl |= MKTME_AES_XTS_128;
-> > +				break;
-> > +
-> > +			case MKTME_ALG_NO_ENCRYPT:
-> > +				kprog->keyid_ctrl |= MKTME_KEYID_NO_ENCRYPT;
-> > +				break;
-> > +
-> > +			default:
-> > +				return -EINVAL;
-> > +			}
-> > +			break;
-> > +
-> > +		default:
-> > +			return -EINVAL;
-> > +		}
-> > +	}
-> > +	dump_kprog(kprog);
-> > +	return mktme_check_options(kprog, token_mask);
-> > +}
-> > +
-> > +/* Key Service Command: Creates a software key and programs hardware */
-> > +
-> > +int mktme_instantiate(struct key *key, struct key_preparsed_payload *prep)
-> > +{
-> > +	struct mktme_key_program *kprog = NULL;
-> > +	size_t datalen = prep->datalen;
-> > +	char *datablob;
-> > +	int ret = 0;
-> > +
-> > +	if (datalen <= 0 || datalen > 1024 || !prep->data)
-> > +		return -EINVAL;
-> > +
-> > +	datablob = kmemdup(prep->data, datalen + 1, GFP_KERNEL);
-> > +	if (!datablob)
-> > +		return -ENOMEM;
-> > +
-> > +	datablob[datalen] = '\0';
-> > +	kprog = kzalloc(sizeof(*kprog), GFP_KERNEL);
-> > +	if (!kprog) {
-> > +		kzfree(datablob);
-> > +		return -ENOMEM;
-> > +	}
-> > +	ret = mktme_get_options(datablob, kprog);
-> > +	if (ret < 0)
-> > +		goto out;
-> > +
-> > +	mutex_lock(&mktme_map->lock);
-> > +	ret = mktme_register_key(key->serial, kprog);
-> > +	mutex_unlock(&mktme_map->lock);
-> > +out:
-> > +	kzfree(datablob);
-> > +	kzfree(kprog);
-> > +	dump_keys();
-> > +	return ret;
-> > +}
-> > +
-> > +/* Key Service Command: Clears the keys software and hardware */
-> > +
-> > +void mktme_revoke(struct key *key)
-> > +{
-> > +	int keyid;
-> > +
-> > +	keyid = mktme_get_keyid(key->serial);
-> > +	if (keyid < 0)
-> > +		return;
-> > +
-> > +	mutex_lock(&mktme_map->lock);
-> > +	mktme_unregister_key(keyid);
-> > +	mutex_unlock(&mktme_map->lock);
-> > +	dump_keys();
-> > +}
-> > +
-> > +struct key_type key_type_mktme = {
-> > +	.name = "mktme",
-> > +	.instantiate = mktme_instantiate,
-> > +	.revoke = mktme_revoke,
-> > +	.describe = user_describe,
-> > +};
-> > +
-> > +/*
-> > + * Get the maximum keyids reported from BIOS.
-> > + * Allocate the mktme_map structure and register mktme key type.
-> > + */
-> > +static int __init init_mktme(void)
-> > +{
-> > +	int ret;
-> > +
-> > +	/* TODO: get real max hardware keyids */
-> > +	/* mktme_max_keyids = nr_keyids; */
-> > +
-> > +	mktme_max_keyids = 100;
-> > +	mktme_mapped_keyids = 0;
-> > +	mktme_map = kzalloc((sizeof(mktme_map->id[0]) * mktme_max_keyids)
-> > +			    + (sizeof(mktme_map->lock)), GFP_KERNEL);
-> > +	if (!mktme_map)
-> > +		return -ENOMEM;
-> > +
-> > +	mutex_init(&mktme_map->lock);
-> > +	ret = register_key_type(&key_type_mktme);
-> > +	if (ret < 0)
-> > +		kfree(mktme_map);
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static void __exit cleanup_mktme(void)
-> > +{
-> > +	unregister_key_type(&key_type_mktme);
-> > +	kfree(mktme_map);
-> > +}
-> > +
-> > +late_initcall(init_mktme);
-> > -- 
-> > 2.7.4
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe keyrings" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> Even for RFC you should aim something that could be wrong but you think
-> it is in the right direction. Get rid of all TODO's for the next
-> version.
+Break the TPM bits out of security/keys/trusted.c into their own call wrapper
+library.
 
-I would assume that the lack of reviews if much related to the patch
-being completely unfinished. Finish it with your best aim and with RFC
-you state that this is with my current best knowledge how it should be
-but there still might be some unknown unknowns that I'm not aware of.
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-/Jarkko
+ drivers/char/tpm/Makefile      |    2 
+ drivers/char/tpm/tpm-library.c |  682 ++++++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm-library.h |   83 +++++
+ include/linux/tpm.h            |   38 ++
+ security/keys/trusted.c        |  646 --------------------------------------
+ security/keys/trusted.h        |   80 -----
+ 6 files changed, 804 insertions(+), 727 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm-library.c
+ create mode 100644 drivers/char/tpm/tpm-library.h
+
+diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+index b179052cd81b..cea6a4d05920 100644
+--- a/drivers/char/tpm/Makefile
++++ b/drivers/char/tpm/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the kernel tpm device drivers.
+ #
+ obj-$(CONFIG_TCG_TPM) += tpm.o
+-tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o
++tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-library.o
+ tpm-$(CONFIG_ACPI) += tpm_ppi.o
+ 
+ ifdef CONFIG_ACPI
+diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
+new file mode 100644
+index 000000000000..1be4f71cabcb
+--- /dev/null
++++ b/drivers/char/tpm/tpm-library.c
+@@ -0,0 +1,682 @@
++/* TPM call wrapper library.
++ *
++ * Copyright (C) 2010 IBM Corporation
++ *
++ * Author:
++ * David Safford <safford@us.ibm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, version 2 of the License.
++ *
++ * See Documentation/security/keys-trusted-encrypted.txt
++ */
++
++#include <linux/uaccess.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/parser.h>
++#include <linux/string.h>
++#include <linux/err.h>
++#include <keys/user-type.h>
++#include <keys/trusted-type.h>
++#include <linux/key-type.h>
++#include <linux/rcupdate.h>
++#include <linux/crypto.h>
++#include <crypto/hash.h>
++#include <crypto/sha.h>
++#include <linux/capability.h>
++#include <linux/tpm.h>
++#include <linux/tpm_command.h>
++
++#include "tpm-library.h"
++
++static const char hmac_alg[] = "hmac(sha1)";
++static const char hash_alg[] = "sha1";
++
++struct sdesc {
++	struct shash_desc shash;
++	char ctx[];
++};
++
++static struct crypto_shash *hashalg;
++static struct crypto_shash *hmacalg;
++
++static struct sdesc *init_sdesc(struct crypto_shash *alg)
++{
++	struct sdesc *sdesc;
++	int size;
++
++	size = sizeof(struct shash_desc) + crypto_shash_descsize(alg);
++	sdesc = kmalloc(size, GFP_KERNEL);
++	if (!sdesc)
++		return ERR_PTR(-ENOMEM);
++	sdesc->shash.tfm = alg;
++	sdesc->shash.flags = 0x0;
++	return sdesc;
++}
++
++static int TSS_sha1(const unsigned char *data, unsigned int datalen,
++		    unsigned char *digest)
++{
++	struct sdesc *sdesc;
++	int ret;
++
++	sdesc = init_sdesc(hashalg);
++	if (IS_ERR(sdesc)) {
++		pr_info("trusted_key: can't alloc %s\n", hash_alg);
++		return PTR_ERR(sdesc);
++	}
++
++	ret = crypto_shash_digest(&sdesc->shash, data, datalen, digest);
++	kfree(sdesc);
++	return ret;
++}
++
++static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
++		       unsigned int keylen, ...)
++{
++	struct sdesc *sdesc;
++	va_list argp;
++	unsigned int dlen;
++	unsigned char *data;
++	int ret;
++
++	sdesc = init_sdesc(hmacalg);
++	if (IS_ERR(sdesc)) {
++		pr_info("trusted_key: can't alloc %s\n", hmac_alg);
++		return PTR_ERR(sdesc);
++	}
++
++	ret = crypto_shash_setkey(hmacalg, key, keylen);
++	if (ret < 0)
++		goto out;
++	ret = crypto_shash_init(&sdesc->shash);
++	if (ret < 0)
++		goto out;
++
++	va_start(argp, keylen);
++	for (;;) {
++		dlen = va_arg(argp, unsigned int);
++		if (dlen = 0)
++			break;
++		data = va_arg(argp, unsigned char *);
++		if (data = NULL) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = crypto_shash_update(&sdesc->shash, data, dlen);
++		if (ret < 0)
++			break;
++	}
++	va_end(argp);
++	if (!ret)
++		ret = crypto_shash_final(&sdesc->shash, digest);
++out:
++	kfree(sdesc);
++	return ret;
++}
++
++/*
++ * calculate authorization info fields to send to TPM
++ */
++static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++			unsigned int keylen, unsigned char *h1,
++			unsigned char *h2, unsigned char h3, ...)
++{
++	unsigned char paramdigest[SHA1_DIGEST_SIZE];
++	struct sdesc *sdesc;
++	unsigned int dlen;
++	unsigned char *data;
++	unsigned char c;
++	int ret;
++	va_list argp;
++
++	sdesc = init_sdesc(hashalg);
++	if (IS_ERR(sdesc)) {
++		pr_info("trusted_key: can't alloc %s\n", hash_alg);
++		return PTR_ERR(sdesc);
++	}
++
++	c = h3;
++	ret = crypto_shash_init(&sdesc->shash);
++	if (ret < 0)
++		goto out;
++	va_start(argp, h3);
++	for (;;) {
++		dlen = va_arg(argp, unsigned int);
++		if (dlen = 0)
++			break;
++		data = va_arg(argp, unsigned char *);
++		if (!data) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = crypto_shash_update(&sdesc->shash, data, dlen);
++		if (ret < 0)
++			break;
++	}
++	va_end(argp);
++	if (!ret)
++		ret = crypto_shash_final(&sdesc->shash, paramdigest);
++	if (!ret)
++		ret = TSS_rawhmac(digest, key, keylen, SHA1_DIGEST_SIZE,
++				  paramdigest, TPM_NONCE_SIZE, h1,
++				  TPM_NONCE_SIZE, h2, 1, &c, 0, 0);
++out:
++	kfree(sdesc);
++	return ret;
++}
++
++/*
++ * verify the AUTH1_COMMAND (Seal) result from TPM
++ */
++static int TSS_checkhmac1(unsigned char *buffer,
++			  const uint32_t command,
++			  const unsigned char *ononce,
++			  const unsigned char *key,
++			  unsigned int keylen, ...)
++{
++	uint32_t bufsize;
++	uint16_t tag;
++	uint32_t ordinal;
++	uint32_t result;
++	unsigned char *enonce;
++	unsigned char *continueflag;
++	unsigned char *authdata;
++	unsigned char testhmac[SHA1_DIGEST_SIZE];
++	unsigned char paramdigest[SHA1_DIGEST_SIZE];
++	struct sdesc *sdesc;
++	unsigned int dlen;
++	unsigned int dpos;
++	va_list argp;
++	int ret;
++
++	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
++	tag = LOAD16(buffer, 0);
++	ordinal = command;
++	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
++	if (tag = TPM_TAG_RSP_COMMAND)
++		return 0;
++	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
++		return -EINVAL;
++	authdata = buffer + bufsize - SHA1_DIGEST_SIZE;
++	continueflag = authdata - 1;
++	enonce = continueflag - TPM_NONCE_SIZE;
++
++	sdesc = init_sdesc(hashalg);
++	if (IS_ERR(sdesc)) {
++		pr_info("trusted_key: can't alloc %s\n", hash_alg);
++		return PTR_ERR(sdesc);
++	}
++	ret = crypto_shash_init(&sdesc->shash);
++	if (ret < 0)
++		goto out;
++	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&result,
++				  sizeof result);
++	if (ret < 0)
++		goto out;
++	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&ordinal,
++				  sizeof ordinal);
++	if (ret < 0)
++		goto out;
++	va_start(argp, keylen);
++	for (;;) {
++		dlen = va_arg(argp, unsigned int);
++		if (dlen = 0)
++			break;
++		dpos = va_arg(argp, unsigned int);
++		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
++		if (ret < 0)
++			break;
++	}
++	va_end(argp);
++	if (!ret)
++		ret = crypto_shash_final(&sdesc->shash, paramdigest);
++	if (ret < 0)
++		goto out;
++
++	ret = TSS_rawhmac(testhmac, key, keylen, SHA1_DIGEST_SIZE, paramdigest,
++			  TPM_NONCE_SIZE, enonce, TPM_NONCE_SIZE, ononce,
++			  1, continueflag, 0, 0);
++	if (ret < 0)
++		goto out;
++
++	if (memcmp(testhmac, authdata, SHA1_DIGEST_SIZE))
++		ret = -EINVAL;
++out:
++	kfree(sdesc);
++	return ret;
++}
++
++/*
++ * verify the AUTH2_COMMAND (unseal) result from TPM
++ */
++static int TSS_checkhmac2(unsigned char *buffer,
++			  const uint32_t command,
++			  const unsigned char *ononce,
++			  const unsigned char *key1,
++			  unsigned int keylen1,
++			  const unsigned char *key2,
++			  unsigned int keylen2, ...)
++{
++	uint32_t bufsize;
++	uint16_t tag;
++	uint32_t ordinal;
++	uint32_t result;
++	unsigned char *enonce1;
++	unsigned char *continueflag1;
++	unsigned char *authdata1;
++	unsigned char *enonce2;
++	unsigned char *continueflag2;
++	unsigned char *authdata2;
++	unsigned char testhmac1[SHA1_DIGEST_SIZE];
++	unsigned char testhmac2[SHA1_DIGEST_SIZE];
++	unsigned char paramdigest[SHA1_DIGEST_SIZE];
++	struct sdesc *sdesc;
++	unsigned int dlen;
++	unsigned int dpos;
++	va_list argp;
++	int ret;
++
++	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
++	tag = LOAD16(buffer, 0);
++	ordinal = command;
++	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
++
++	if (tag = TPM_TAG_RSP_COMMAND)
++		return 0;
++	if (tag != TPM_TAG_RSP_AUTH2_COMMAND)
++		return -EINVAL;
++	authdata1 = buffer + bufsize - (SHA1_DIGEST_SIZE + 1
++			+ SHA1_DIGEST_SIZE + SHA1_DIGEST_SIZE);
++	authdata2 = buffer + bufsize - (SHA1_DIGEST_SIZE);
++	continueflag1 = authdata1 - 1;
++	continueflag2 = authdata2 - 1;
++	enonce1 = continueflag1 - TPM_NONCE_SIZE;
++	enonce2 = continueflag2 - TPM_NONCE_SIZE;
++
++	sdesc = init_sdesc(hashalg);
++	if (IS_ERR(sdesc)) {
++		pr_info("trusted_key: can't alloc %s\n", hash_alg);
++		return PTR_ERR(sdesc);
++	}
++	ret = crypto_shash_init(&sdesc->shash);
++	if (ret < 0)
++		goto out;
++	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&result,
++				  sizeof result);
++	if (ret < 0)
++		goto out;
++	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&ordinal,
++				  sizeof ordinal);
++	if (ret < 0)
++		goto out;
++
++	va_start(argp, keylen2);
++	for (;;) {
++		dlen = va_arg(argp, unsigned int);
++		if (dlen = 0)
++			break;
++		dpos = va_arg(argp, unsigned int);
++		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
++		if (ret < 0)
++			break;
++	}
++	va_end(argp);
++	if (!ret)
++		ret = crypto_shash_final(&sdesc->shash, paramdigest);
++	if (ret < 0)
++		goto out;
++
++	ret = TSS_rawhmac(testhmac1, key1, keylen1, SHA1_DIGEST_SIZE,
++			  paramdigest, TPM_NONCE_SIZE, enonce1,
++			  TPM_NONCE_SIZE, ononce, 1, continueflag1, 0, 0);
++	if (ret < 0)
++		goto out;
++	if (memcmp(testhmac1, authdata1, SHA1_DIGEST_SIZE)) {
++		ret = -EINVAL;
++		goto out;
++	}
++	ret = TSS_rawhmac(testhmac2, key2, keylen2, SHA1_DIGEST_SIZE,
++			  paramdigest, TPM_NONCE_SIZE, enonce2,
++			  TPM_NONCE_SIZE, ononce, 1, continueflag2, 0, 0);
++	if (ret < 0)
++		goto out;
++	if (memcmp(testhmac2, authdata2, SHA1_DIGEST_SIZE))
++		ret = -EINVAL;
++out:
++	kfree(sdesc);
++	return ret;
++}
++
++/*
++ * For key specific tpm requests, we will generate and send our
++ * own TPM command packets using the drivers send function.
++ */
++static int trusted_tpm_send(struct tpm_chip *chip, unsigned char *cmd,
++			    size_t buflen, const char *desc)
++{
++	int rc;
++
++	dump_tpm_buf(cmd);
++	rc = tpm_send_command(chip, cmd, buflen, desc);
++	dump_tpm_buf(cmd);
++	if (rc > 0)
++		/* Can't return positive return codes values to keyctl */
++		rc = -EPERM;
++	return rc;
++}
++
++/*
++ * Create an object specific authorisation protocol (OSAP) session
++ */
++static int osap(struct tpm_chip *chip,
++		struct tpm_buf *tb, struct osapsess *s,
++		const unsigned char *key, uint16_t type, uint32_t handle)
++{
++	unsigned char enonce[TPM_NONCE_SIZE];
++	unsigned char ononce[TPM_NONCE_SIZE];
++	int ret;
++
++	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
++	if (ret != TPM_NONCE_SIZE)
++		return ret;
++
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_COMMAND);
++	store32(tb, TPM_OSAP_SIZE);
++	store32(tb, TPM_ORD_OSAP);
++	store16(tb, type);
++	store32(tb, handle);
++	storebytes(tb, ononce, TPM_NONCE_SIZE);
++
++	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
++			       "creating OSAP session");
++	if (ret < 0)
++		return ret;
++
++	s->handle = LOAD32(tb->data, TPM_DATA_OFFSET);
++	memcpy(s->enonce, &(tb->data[TPM_DATA_OFFSET + sizeof(uint32_t)]),
++	       TPM_NONCE_SIZE);
++	memcpy(enonce, &(tb->data[TPM_DATA_OFFSET + sizeof(uint32_t) +
++				  TPM_NONCE_SIZE]), TPM_NONCE_SIZE);
++	return TSS_rawhmac(s->secret, key, SHA1_DIGEST_SIZE, TPM_NONCE_SIZE,
++			   enonce, TPM_NONCE_SIZE, ononce, 0, 0);
++}
++
++/*
++ * Create an object independent authorisation protocol (oiap) session
++ */
++static int oiap(struct tpm_chip *chip, struct tpm_buf *tb, uint32_t *handle,
++		unsigned char *nonce)
++{
++	int ret;
++
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_COMMAND);
++	store32(tb, TPM_OIAP_SIZE);
++	store32(tb, TPM_ORD_OIAP);
++	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
++			       "creating OIAP session");
++	if (ret < 0)
++		return ret;
++
++	*handle = LOAD32(tb->data, TPM_DATA_OFFSET);
++	memcpy(nonce, &tb->data[TPM_DATA_OFFSET + sizeof(uint32_t)],
++	       TPM_NONCE_SIZE);
++	return 0;
++}
++
++struct tpm_digests {
++	unsigned char encauth[SHA1_DIGEST_SIZE];
++	unsigned char pubauth[SHA1_DIGEST_SIZE];
++	unsigned char xorwork[SHA1_DIGEST_SIZE * 2];
++	unsigned char xorhash[SHA1_DIGEST_SIZE];
++	unsigned char nonceodd[TPM_NONCE_SIZE];
++};
++
++/*
++ * Have the TPM seal(encrypt) the trusted key, possibly based on
++ * Platform Configuration Registers (PCRs). AUTH1 for sealing key.
++ */
++int tpm_seal(struct tpm_chip *chip, struct tpm_buf *tb, uint16_t keytype,
++	     uint32_t keyhandle, const unsigned char *keyauth,
++	     const unsigned char *data, uint32_t datalen,
++	     unsigned char *blob, uint32_t *bloblen,
++	     const unsigned char *blobauth,
++	     const unsigned char *pcrinfo, uint32_t pcrinfosize)
++{
++	struct osapsess sess;
++	struct tpm_digests *td;
++	unsigned char cont;
++	uint32_t ordinal;
++	uint32_t pcrsize;
++	uint32_t datsize;
++	int sealinfosize;
++	int encdatasize;
++	int storedsize;
++	int ret;
++	int i;
++
++	/* alloc some work space for all the hashes */
++	td = kmalloc(sizeof *td, GFP_KERNEL);
++	if (!td)
++		return -ENOMEM;
++
++	/* get session for sealing key */
++	ret = osap(chip, tb, &sess, keyauth, keytype, keyhandle);
++	if (ret < 0)
++		goto out;
++	dump_sess(&sess);
++
++	/* calculate encrypted authorization value */
++	memcpy(td->xorwork, sess.secret, SHA1_DIGEST_SIZE);
++	memcpy(td->xorwork + SHA1_DIGEST_SIZE, sess.enonce, SHA1_DIGEST_SIZE);
++	ret = TSS_sha1(td->xorwork, SHA1_DIGEST_SIZE * 2, td->xorhash);
++	if (ret < 0)
++		goto out;
++
++	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
++	if (ret != TPM_NONCE_SIZE)
++		goto out;
++	ordinal = htonl(TPM_ORD_SEAL);
++	datsize = htonl(datalen);
++	pcrsize = htonl(pcrinfosize);
++	cont = 0;
++
++	/* encrypt data authorization key */
++	for (i = 0; i < SHA1_DIGEST_SIZE; ++i)
++		td->encauth[i] = td->xorhash[i] ^ blobauth[i];
++
++	/* calculate authorization HMAC value */
++	if (pcrinfosize = 0) {
++		/* no pcr info specified */
++		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
++				   sess.enonce, td->nonceodd, cont,
++				   sizeof(uint32_t), &ordinal, SHA1_DIGEST_SIZE,
++				   td->encauth, sizeof(uint32_t), &pcrsize,
++				   sizeof(uint32_t), &datsize, datalen, data, 0,
++				   0);
++	} else {
++		/* pcr info specified */
++		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
++				   sess.enonce, td->nonceodd, cont,
++				   sizeof(uint32_t), &ordinal, SHA1_DIGEST_SIZE,
++				   td->encauth, sizeof(uint32_t), &pcrsize,
++				   pcrinfosize, pcrinfo, sizeof(uint32_t),
++				   &datsize, datalen, data, 0, 0);
++	}
++	if (ret < 0)
++		goto out;
++
++	/* build and send the TPM request packet */
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
++	store32(tb, TPM_SEAL_SIZE + pcrinfosize + datalen);
++	store32(tb, TPM_ORD_SEAL);
++	store32(tb, keyhandle);
++	storebytes(tb, td->encauth, SHA1_DIGEST_SIZE);
++	store32(tb, pcrinfosize);
++	storebytes(tb, pcrinfo, pcrinfosize);
++	store32(tb, datalen);
++	storebytes(tb, data, datalen);
++	store32(tb, sess.handle);
++	storebytes(tb, td->nonceodd, TPM_NONCE_SIZE);
++	store8(tb, cont);
++	storebytes(tb, td->pubauth, SHA1_DIGEST_SIZE);
++
++	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
++			       "sealing data");
++	if (ret < 0)
++		goto out;
++
++	/* calculate the size of the returned Blob */
++	sealinfosize = LOAD32(tb->data, TPM_DATA_OFFSET + sizeof(uint32_t));
++	encdatasize = LOAD32(tb->data, TPM_DATA_OFFSET + sizeof(uint32_t) +
++			     sizeof(uint32_t) + sealinfosize);
++	storedsize = sizeof(uint32_t) + sizeof(uint32_t) + sealinfosize +
++	    sizeof(uint32_t) + encdatasize;
++
++	/* check the HMAC in the response */
++	ret = TSS_checkhmac1(tb->data, ordinal, td->nonceodd, sess.secret,
++			     SHA1_DIGEST_SIZE, storedsize, TPM_DATA_OFFSET, 0,
++			     0);
++
++	/* copy the returned blob to caller */
++	if (!ret) {
++		memcpy(blob, tb->data + TPM_DATA_OFFSET, storedsize);
++		*bloblen = storedsize;
++	}
++out:
++	kfree(td);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(tpm_seal);
++
++/*
++ * use the AUTH2_COMMAND form of unseal, to authorize both key and blob
++ */
++int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
++	       uint32_t keyhandle, const unsigned char *keyauth,
++	       const unsigned char *blob, int bloblen,
++	       const unsigned char *blobauth,
++	       unsigned char *data, unsigned int *datalen)
++{
++	unsigned char nonceodd[TPM_NONCE_SIZE];
++	unsigned char enonce1[TPM_NONCE_SIZE];
++	unsigned char enonce2[TPM_NONCE_SIZE];
++	unsigned char authdata1[SHA1_DIGEST_SIZE];
++	unsigned char authdata2[SHA1_DIGEST_SIZE];
++	uint32_t authhandle1 = 0;
++	uint32_t authhandle2 = 0;
++	unsigned char cont = 0;
++	uint32_t ordinal;
++	uint32_t keyhndl;
++	int ret;
++
++	/* sessions for unsealing key and data */
++	ret = oiap(chip, tb, &authhandle1, enonce1);
++	if (ret < 0) {
++		pr_info("trusted_key: oiap failed (%d)\n", ret);
++		return ret;
++	}
++	ret = oiap(chip, tb, &authhandle2, enonce2);
++	if (ret < 0) {
++		pr_info("trusted_key: oiap failed (%d)\n", ret);
++		return ret;
++	}
++
++	ordinal = htonl(TPM_ORD_UNSEAL);
++	keyhndl = htonl(SRKHANDLE);
++	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
++	if (ret != TPM_NONCE_SIZE) {
++		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
++		return ret;
++	}
++	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
++			   enonce1, nonceodd, cont, sizeof(uint32_t),
++			   &ordinal, bloblen, blob, 0, 0);
++	if (ret < 0)
++		return ret;
++	ret = TSS_authhmac(authdata2, blobauth, TPM_NONCE_SIZE,
++			   enonce2, nonceodd, cont, sizeof(uint32_t),
++			   &ordinal, bloblen, blob, 0, 0);
++	if (ret < 0)
++		return ret;
++
++	/* build and send TPM request packet */
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_AUTH2_COMMAND);
++	store32(tb, TPM_UNSEAL_SIZE + bloblen);
++	store32(tb, TPM_ORD_UNSEAL);
++	store32(tb, keyhandle);
++	storebytes(tb, blob, bloblen);
++	store32(tb, authhandle1);
++	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
++	store8(tb, cont);
++	storebytes(tb, authdata1, SHA1_DIGEST_SIZE);
++	store32(tb, authhandle2);
++	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
++	store8(tb, cont);
++	storebytes(tb, authdata2, SHA1_DIGEST_SIZE);
++
++	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
++			       "unsealing data");
++	if (ret < 0) {
++		pr_info("trusted_key: authhmac failed (%d)\n", ret);
++		return ret;
++	}
++
++	*datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
++	ret = TSS_checkhmac2(tb->data, ordinal, nonceodd,
++			     keyauth, SHA1_DIGEST_SIZE,
++			     blobauth, SHA1_DIGEST_SIZE,
++			     sizeof(uint32_t), TPM_DATA_OFFSET,
++			     *datalen, TPM_DATA_OFFSET + sizeof(uint32_t), 0,
++			     0);
++	if (ret < 0) {
++		pr_info("trusted_key: TSS_checkhmac2 failed (%d)\n", ret);
++		return ret;
++	}
++	memcpy(data, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t), *datalen);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(tpm_unseal);
++
++void trusted_shash_release(void)
++{
++	if (hashalg)
++		crypto_free_shash(hashalg);
++	if (hmacalg)
++		crypto_free_shash(hmacalg);
++}
++EXPORT_SYMBOL_GPL(trusted_shash_release);
++
++int trusted_shash_alloc(void)
++{
++	int ret;
++
++	hmacalg = crypto_alloc_shash(hmac_alg, 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(hmacalg)) {
++		pr_info("trusted_key: could not allocate crypto %s\n",
++			hmac_alg);
++		return PTR_ERR(hmacalg);
++	}
++
++	hashalg = crypto_alloc_shash(hash_alg, 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(hashalg)) {
++		pr_info("trusted_key: could not allocate crypto %s\n",
++			hash_alg);
++		ret = PTR_ERR(hashalg);
++		goto hashalg_fail;
++	}
++
++	return 0;
++
++hashalg_fail:
++	crypto_free_shash(hmacalg);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(trusted_shash_alloc);
+diff --git a/drivers/char/tpm/tpm-library.h b/drivers/char/tpm/tpm-library.h
+new file mode 100644
+index 000000000000..eec1dfe26c2a
+--- /dev/null
++++ b/drivers/char/tpm/tpm-library.h
+@@ -0,0 +1,83 @@
++/* TPM call wrapper library internal definitions.
++ *
++ * Copyright (C) 2010 IBM Corporation
++ *
++ * Author:
++ * David Safford <safford@us.ibm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, version 2 of the License.
++ */
++
++
++#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
++#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
++#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
++
++struct osapsess {
++	uint32_t handle;
++	unsigned char secret[SHA1_DIGEST_SIZE];
++	unsigned char enonce[TPM_NONCE_SIZE];
++};
++
++static inline void store8(struct tpm_buf *buf, const unsigned char value)
++{
++	buf->data[buf->len++] = value;
++}
++
++static inline void store16(struct tpm_buf *buf, const uint16_t value)
++{
++	*(uint16_t *) & buf->data[buf->len] = htons(value);
++	buf->len += sizeof value;
++}
++
++static inline void store32(struct tpm_buf *buf, const uint32_t value)
++{
++	*(uint32_t *) & buf->data[buf->len] = htonl(value);
++	buf->len += sizeof value;
++}
++
++static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
++			      const int len)
++{
++	memcpy(buf->data + buf->len, in, len);
++	buf->len += len;
++}
++
++/*
++ * Debugging
++ */
++#define TPM_DEBUG 0
++
++#ifdef TPM_DEBUG
++static inline void dump_sess(struct osapsess *s)
++{
++	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
++		       16, 1, &s->handle, 4, 0);
++	pr_info("trusted-key: secret:\n");
++	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
++		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
++	pr_info("trusted-key: enonce:\n");
++	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
++		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
++}
++
++static inline void dump_tpm_buf(unsigned char *buf)
++{
++	int len;
++
++	pr_info("\ntrusted-key: tpm buffer\n");
++	len = LOAD32(buf, TPM_SIZE_OFFSET);
++	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
++}
++
++#else
++static inline void dump_sess(struct osapsess *s)
++{
++}
++
++static inline void dump_tpm_buf(unsigned char *buf)
++{
++}
++#endif
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index f4e14405f5cf..5d8caf56c272 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -77,4 +77,42 @@ static inline int tpm_get_random(struct tpm_chip *chip, u8 *data, size_t max) {
+ 	return -ENODEV;
+ }
+ #endif
++
++/*
++ * TPM call library.
++ */
++/* implementation specific TPM constants */
++#define MAX_PCRINFO_SIZE		64
++#define MAX_BUF_SIZE			512
++#define TPM_GETRANDOM_SIZE		14
++#define TPM_OSAP_SIZE			36
++#define TPM_OIAP_SIZE			10
++#define TPM_SEAL_SIZE			87
++#define TPM_UNSEAL_SIZE			104
++#define TPM_SIZE_OFFSET			2
++#define TPM_RETURN_OFFSET		6
++#define TPM_DATA_OFFSET			10
++
++struct tpm_buf {
++	int len;
++	unsigned char data[MAX_BUF_SIZE];
++};
++
++#define INIT_BUF(tb) (tb->len = 0)
++
++extern void trusted_shash_release(void);
++extern int trusted_shash_alloc(void);
++
++extern int tpm_seal(struct tpm_chip *chip, struct tpm_buf *tb, uint16_t keytype,
++		    uint32_t keyhandle, const unsigned char *keyauth,
++		    const unsigned char *data, uint32_t datalen,
++		    unsigned char *blob, uint32_t *bloblen,
++		    const unsigned char *blobauth,
++		    const unsigned char *pcrinfo, uint32_t pcrinfosize);
++extern int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
++		      uint32_t keyhandle, const unsigned char *keyauth,
++		      const unsigned char *blob, int bloblen,
++		      const unsigned char *blobauth,
++		      unsigned char *data, unsigned int *datalen);
++
+ #endif
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 943c65b53201..83c6a485e62a 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -31,343 +31,6 @@
+ 
+ #include "trusted.h"
+ 
+-static const char hmac_alg[] = "hmac(sha1)";
+-static const char hash_alg[] = "sha1";
+-
+-struct sdesc {
+-	struct shash_desc shash;
+-	char ctx[];
+-};
+-
+-static struct crypto_shash *hashalg;
+-static struct crypto_shash *hmacalg;
+-
+-static struct sdesc *init_sdesc(struct crypto_shash *alg)
+-{
+-	struct sdesc *sdesc;
+-	int size;
+-
+-	size = sizeof(struct shash_desc) + crypto_shash_descsize(alg);
+-	sdesc = kmalloc(size, GFP_KERNEL);
+-	if (!sdesc)
+-		return ERR_PTR(-ENOMEM);
+-	sdesc->shash.tfm = alg;
+-	sdesc->shash.flags = 0x0;
+-	return sdesc;
+-}
+-
+-static int TSS_sha1(const unsigned char *data, unsigned int datalen,
+-		    unsigned char *digest)
+-{
+-	struct sdesc *sdesc;
+-	int ret;
+-
+-	sdesc = init_sdesc(hashalg);
+-	if (IS_ERR(sdesc)) {
+-		pr_info("trusted_key: can't alloc %s\n", hash_alg);
+-		return PTR_ERR(sdesc);
+-	}
+-
+-	ret = crypto_shash_digest(&sdesc->shash, data, datalen, digest);
+-	kfree(sdesc);
+-	return ret;
+-}
+-
+-static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
+-		       unsigned int keylen, ...)
+-{
+-	struct sdesc *sdesc;
+-	va_list argp;
+-	unsigned int dlen;
+-	unsigned char *data;
+-	int ret;
+-
+-	sdesc = init_sdesc(hmacalg);
+-	if (IS_ERR(sdesc)) {
+-		pr_info("trusted_key: can't alloc %s\n", hmac_alg);
+-		return PTR_ERR(sdesc);
+-	}
+-
+-	ret = crypto_shash_setkey(hmacalg, key, keylen);
+-	if (ret < 0)
+-		goto out;
+-	ret = crypto_shash_init(&sdesc->shash);
+-	if (ret < 0)
+-		goto out;
+-
+-	va_start(argp, keylen);
+-	for (;;) {
+-		dlen = va_arg(argp, unsigned int);
+-		if (dlen = 0)
+-			break;
+-		data = va_arg(argp, unsigned char *);
+-		if (data = NULL) {
+-			ret = -EINVAL;
+-			break;
+-		}
+-		ret = crypto_shash_update(&sdesc->shash, data, dlen);
+-		if (ret < 0)
+-			break;
+-	}
+-	va_end(argp);
+-	if (!ret)
+-		ret = crypto_shash_final(&sdesc->shash, digest);
+-out:
+-	kfree(sdesc);
+-	return ret;
+-}
+-
+-/*
+- * calculate authorization info fields to send to TPM
+- */
+-static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+-			unsigned int keylen, unsigned char *h1,
+-			unsigned char *h2, unsigned char h3, ...)
+-{
+-	unsigned char paramdigest[SHA1_DIGEST_SIZE];
+-	struct sdesc *sdesc;
+-	unsigned int dlen;
+-	unsigned char *data;
+-	unsigned char c;
+-	int ret;
+-	va_list argp;
+-
+-	sdesc = init_sdesc(hashalg);
+-	if (IS_ERR(sdesc)) {
+-		pr_info("trusted_key: can't alloc %s\n", hash_alg);
+-		return PTR_ERR(sdesc);
+-	}
+-
+-	c = h3;
+-	ret = crypto_shash_init(&sdesc->shash);
+-	if (ret < 0)
+-		goto out;
+-	va_start(argp, h3);
+-	for (;;) {
+-		dlen = va_arg(argp, unsigned int);
+-		if (dlen = 0)
+-			break;
+-		data = va_arg(argp, unsigned char *);
+-		if (!data) {
+-			ret = -EINVAL;
+-			break;
+-		}
+-		ret = crypto_shash_update(&sdesc->shash, data, dlen);
+-		if (ret < 0)
+-			break;
+-	}
+-	va_end(argp);
+-	if (!ret)
+-		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+-	if (!ret)
+-		ret = TSS_rawhmac(digest, key, keylen, SHA1_DIGEST_SIZE,
+-				  paramdigest, TPM_NONCE_SIZE, h1,
+-				  TPM_NONCE_SIZE, h2, 1, &c, 0, 0);
+-out:
+-	kfree(sdesc);
+-	return ret;
+-}
+-
+-/*
+- * verify the AUTH1_COMMAND (Seal) result from TPM
+- */
+-static int TSS_checkhmac1(unsigned char *buffer,
+-			  const uint32_t command,
+-			  const unsigned char *ononce,
+-			  const unsigned char *key,
+-			  unsigned int keylen, ...)
+-{
+-	uint32_t bufsize;
+-	uint16_t tag;
+-	uint32_t ordinal;
+-	uint32_t result;
+-	unsigned char *enonce;
+-	unsigned char *continueflag;
+-	unsigned char *authdata;
+-	unsigned char testhmac[SHA1_DIGEST_SIZE];
+-	unsigned char paramdigest[SHA1_DIGEST_SIZE];
+-	struct sdesc *sdesc;
+-	unsigned int dlen;
+-	unsigned int dpos;
+-	va_list argp;
+-	int ret;
+-
+-	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
+-	tag = LOAD16(buffer, 0);
+-	ordinal = command;
+-	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
+-	if (tag = TPM_TAG_RSP_COMMAND)
+-		return 0;
+-	if (tag != TPM_TAG_RSP_AUTH1_COMMAND)
+-		return -EINVAL;
+-	authdata = buffer + bufsize - SHA1_DIGEST_SIZE;
+-	continueflag = authdata - 1;
+-	enonce = continueflag - TPM_NONCE_SIZE;
+-
+-	sdesc = init_sdesc(hashalg);
+-	if (IS_ERR(sdesc)) {
+-		pr_info("trusted_key: can't alloc %s\n", hash_alg);
+-		return PTR_ERR(sdesc);
+-	}
+-	ret = crypto_shash_init(&sdesc->shash);
+-	if (ret < 0)
+-		goto out;
+-	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&result,
+-				  sizeof result);
+-	if (ret < 0)
+-		goto out;
+-	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&ordinal,
+-				  sizeof ordinal);
+-	if (ret < 0)
+-		goto out;
+-	va_start(argp, keylen);
+-	for (;;) {
+-		dlen = va_arg(argp, unsigned int);
+-		if (dlen = 0)
+-			break;
+-		dpos = va_arg(argp, unsigned int);
+-		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
+-		if (ret < 0)
+-			break;
+-	}
+-	va_end(argp);
+-	if (!ret)
+-		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+-	if (ret < 0)
+-		goto out;
+-
+-	ret = TSS_rawhmac(testhmac, key, keylen, SHA1_DIGEST_SIZE, paramdigest,
+-			  TPM_NONCE_SIZE, enonce, TPM_NONCE_SIZE, ononce,
+-			  1, continueflag, 0, 0);
+-	if (ret < 0)
+-		goto out;
+-
+-	if (memcmp(testhmac, authdata, SHA1_DIGEST_SIZE))
+-		ret = -EINVAL;
+-out:
+-	kfree(sdesc);
+-	return ret;
+-}
+-
+-/*
+- * verify the AUTH2_COMMAND (unseal) result from TPM
+- */
+-static int TSS_checkhmac2(unsigned char *buffer,
+-			  const uint32_t command,
+-			  const unsigned char *ononce,
+-			  const unsigned char *key1,
+-			  unsigned int keylen1,
+-			  const unsigned char *key2,
+-			  unsigned int keylen2, ...)
+-{
+-	uint32_t bufsize;
+-	uint16_t tag;
+-	uint32_t ordinal;
+-	uint32_t result;
+-	unsigned char *enonce1;
+-	unsigned char *continueflag1;
+-	unsigned char *authdata1;
+-	unsigned char *enonce2;
+-	unsigned char *continueflag2;
+-	unsigned char *authdata2;
+-	unsigned char testhmac1[SHA1_DIGEST_SIZE];
+-	unsigned char testhmac2[SHA1_DIGEST_SIZE];
+-	unsigned char paramdigest[SHA1_DIGEST_SIZE];
+-	struct sdesc *sdesc;
+-	unsigned int dlen;
+-	unsigned int dpos;
+-	va_list argp;
+-	int ret;
+-
+-	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
+-	tag = LOAD16(buffer, 0);
+-	ordinal = command;
+-	result = LOAD32N(buffer, TPM_RETURN_OFFSET);
+-
+-	if (tag = TPM_TAG_RSP_COMMAND)
+-		return 0;
+-	if (tag != TPM_TAG_RSP_AUTH2_COMMAND)
+-		return -EINVAL;
+-	authdata1 = buffer + bufsize - (SHA1_DIGEST_SIZE + 1
+-			+ SHA1_DIGEST_SIZE + SHA1_DIGEST_SIZE);
+-	authdata2 = buffer + bufsize - (SHA1_DIGEST_SIZE);
+-	continueflag1 = authdata1 - 1;
+-	continueflag2 = authdata2 - 1;
+-	enonce1 = continueflag1 - TPM_NONCE_SIZE;
+-	enonce2 = continueflag2 - TPM_NONCE_SIZE;
+-
+-	sdesc = init_sdesc(hashalg);
+-	if (IS_ERR(sdesc)) {
+-		pr_info("trusted_key: can't alloc %s\n", hash_alg);
+-		return PTR_ERR(sdesc);
+-	}
+-	ret = crypto_shash_init(&sdesc->shash);
+-	if (ret < 0)
+-		goto out;
+-	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&result,
+-				  sizeof result);
+-	if (ret < 0)
+-		goto out;
+-	ret = crypto_shash_update(&sdesc->shash, (const u8 *)&ordinal,
+-				  sizeof ordinal);
+-	if (ret < 0)
+-		goto out;
+-
+-	va_start(argp, keylen2);
+-	for (;;) {
+-		dlen = va_arg(argp, unsigned int);
+-		if (dlen = 0)
+-			break;
+-		dpos = va_arg(argp, unsigned int);
+-		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
+-		if (ret < 0)
+-			break;
+-	}
+-	va_end(argp);
+-	if (!ret)
+-		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+-	if (ret < 0)
+-		goto out;
+-
+-	ret = TSS_rawhmac(testhmac1, key1, keylen1, SHA1_DIGEST_SIZE,
+-			  paramdigest, TPM_NONCE_SIZE, enonce1,
+-			  TPM_NONCE_SIZE, ononce, 1, continueflag1, 0, 0);
+-	if (ret < 0)
+-		goto out;
+-	if (memcmp(testhmac1, authdata1, SHA1_DIGEST_SIZE)) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-	ret = TSS_rawhmac(testhmac2, key2, keylen2, SHA1_DIGEST_SIZE,
+-			  paramdigest, TPM_NONCE_SIZE, enonce2,
+-			  TPM_NONCE_SIZE, ononce, 1, continueflag2, 0, 0);
+-	if (ret < 0)
+-		goto out;
+-	if (memcmp(testhmac2, authdata2, SHA1_DIGEST_SIZE))
+-		ret = -EINVAL;
+-out:
+-	kfree(sdesc);
+-	return ret;
+-}
+-
+-/*
+- * For key specific tpm requests, we will generate and send our
+- * own TPM command packets using the drivers send function.
+- */
+-static int trusted_tpm_send(struct tpm_chip *chip, unsigned char *cmd,
+-			    size_t buflen, const char *desc)
+-{
+-	int rc;
+-
+-	dump_tpm_buf(cmd);
+-	rc = tpm_send_command(chip, cmd, buflen, desc);
+-	dump_tpm_buf(cmd);
+-	if (rc > 0)
+-		/* Can't return positive return codes values to keyctl */
+-		rc = -EPERM;
+-	return rc;
+-}
+-
+ /*
+  * Lock a trusted key, by extending a selected PCR.
+  *
+@@ -387,281 +50,6 @@ static int pcrlock(struct tpm_chip *chip, const int pcrnum)
+ 	return tpm_pcr_extend(chip, pcrnum, hash) ? -EINVAL : 0;
+ }
+ 
+-/*
+- * Create an object specific authorisation protocol (OSAP) session
+- */
+-static int osap(struct tpm_chip *chip,
+-		struct tpm_buf *tb, struct osapsess *s,
+-		const unsigned char *key, uint16_t type, uint32_t handle)
+-{
+-	unsigned char enonce[TPM_NONCE_SIZE];
+-	unsigned char ononce[TPM_NONCE_SIZE];
+-	int ret;
+-
+-	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
+-	if (ret != TPM_NONCE_SIZE)
+-		return ret;
+-
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_COMMAND);
+-	store32(tb, TPM_OSAP_SIZE);
+-	store32(tb, TPM_ORD_OSAP);
+-	store16(tb, type);
+-	store32(tb, handle);
+-	storebytes(tb, ononce, TPM_NONCE_SIZE);
+-
+-	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
+-			       "creating OSAP session");
+-	if (ret < 0)
+-		return ret;
+-
+-	s->handle = LOAD32(tb->data, TPM_DATA_OFFSET);
+-	memcpy(s->enonce, &(tb->data[TPM_DATA_OFFSET + sizeof(uint32_t)]),
+-	       TPM_NONCE_SIZE);
+-	memcpy(enonce, &(tb->data[TPM_DATA_OFFSET + sizeof(uint32_t) +
+-				  TPM_NONCE_SIZE]), TPM_NONCE_SIZE);
+-	return TSS_rawhmac(s->secret, key, SHA1_DIGEST_SIZE, TPM_NONCE_SIZE,
+-			   enonce, TPM_NONCE_SIZE, ononce, 0, 0);
+-}
+-
+-/*
+- * Create an object independent authorisation protocol (oiap) session
+- */
+-static int oiap(struct tpm_chip *chip, struct tpm_buf *tb, uint32_t *handle,
+-		unsigned char *nonce)
+-{
+-	int ret;
+-
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_COMMAND);
+-	store32(tb, TPM_OIAP_SIZE);
+-	store32(tb, TPM_ORD_OIAP);
+-	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
+-			       "creating OIAP session");
+-	if (ret < 0)
+-		return ret;
+-
+-	*handle = LOAD32(tb->data, TPM_DATA_OFFSET);
+-	memcpy(nonce, &tb->data[TPM_DATA_OFFSET + sizeof(uint32_t)],
+-	       TPM_NONCE_SIZE);
+-	return 0;
+-}
+-
+-struct tpm_digests {
+-	unsigned char encauth[SHA1_DIGEST_SIZE];
+-	unsigned char pubauth[SHA1_DIGEST_SIZE];
+-	unsigned char xorwork[SHA1_DIGEST_SIZE * 2];
+-	unsigned char xorhash[SHA1_DIGEST_SIZE];
+-	unsigned char nonceodd[TPM_NONCE_SIZE];
+-};
+-
+-/*
+- * Have the TPM seal(encrypt) the trusted key, possibly based on
+- * Platform Configuration Registers (PCRs). AUTH1 for sealing key.
+- */
+-static int tpm_seal(struct tpm_chip *chip,
+-		    struct tpm_buf *tb, uint16_t keytype,
+-		    uint32_t keyhandle, const unsigned char *keyauth,
+-		    const unsigned char *data, uint32_t datalen,
+-		    unsigned char *blob, uint32_t *bloblen,
+-		    const unsigned char *blobauth,
+-		    const unsigned char *pcrinfo, uint32_t pcrinfosize)
+-{
+-	struct osapsess sess;
+-	struct tpm_digests *td;
+-	unsigned char cont;
+-	uint32_t ordinal;
+-	uint32_t pcrsize;
+-	uint32_t datsize;
+-	int sealinfosize;
+-	int encdatasize;
+-	int storedsize;
+-	int ret;
+-	int i;
+-
+-	/* alloc some work space for all the hashes */
+-	td = kmalloc(sizeof *td, GFP_KERNEL);
+-	if (!td)
+-		return -ENOMEM;
+-
+-	/* get session for sealing key */
+-	ret = osap(chip, tb, &sess, keyauth, keytype, keyhandle);
+-	if (ret < 0)
+-		goto out;
+-	dump_sess(&sess);
+-
+-	/* calculate encrypted authorization value */
+-	memcpy(td->xorwork, sess.secret, SHA1_DIGEST_SIZE);
+-	memcpy(td->xorwork + SHA1_DIGEST_SIZE, sess.enonce, SHA1_DIGEST_SIZE);
+-	ret = TSS_sha1(td->xorwork, SHA1_DIGEST_SIZE * 2, td->xorhash);
+-	if (ret < 0)
+-		goto out;
+-
+-	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
+-	if (ret != TPM_NONCE_SIZE)
+-		goto out;
+-	ordinal = htonl(TPM_ORD_SEAL);
+-	datsize = htonl(datalen);
+-	pcrsize = htonl(pcrinfosize);
+-	cont = 0;
+-
+-	/* encrypt data authorization key */
+-	for (i = 0; i < SHA1_DIGEST_SIZE; ++i)
+-		td->encauth[i] = td->xorhash[i] ^ blobauth[i];
+-
+-	/* calculate authorization HMAC value */
+-	if (pcrinfosize = 0) {
+-		/* no pcr info specified */
+-		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
+-				   sess.enonce, td->nonceodd, cont,
+-				   sizeof(uint32_t), &ordinal, SHA1_DIGEST_SIZE,
+-				   td->encauth, sizeof(uint32_t), &pcrsize,
+-				   sizeof(uint32_t), &datsize, datalen, data, 0,
+-				   0);
+-	} else {
+-		/* pcr info specified */
+-		ret = TSS_authhmac(td->pubauth, sess.secret, SHA1_DIGEST_SIZE,
+-				   sess.enonce, td->nonceodd, cont,
+-				   sizeof(uint32_t), &ordinal, SHA1_DIGEST_SIZE,
+-				   td->encauth, sizeof(uint32_t), &pcrsize,
+-				   pcrinfosize, pcrinfo, sizeof(uint32_t),
+-				   &datsize, datalen, data, 0, 0);
+-	}
+-	if (ret < 0)
+-		goto out;
+-
+-	/* build and send the TPM request packet */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
+-	store32(tb, TPM_SEAL_SIZE + pcrinfosize + datalen);
+-	store32(tb, TPM_ORD_SEAL);
+-	store32(tb, keyhandle);
+-	storebytes(tb, td->encauth, SHA1_DIGEST_SIZE);
+-	store32(tb, pcrinfosize);
+-	storebytes(tb, pcrinfo, pcrinfosize);
+-	store32(tb, datalen);
+-	storebytes(tb, data, datalen);
+-	store32(tb, sess.handle);
+-	storebytes(tb, td->nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, td->pubauth, SHA1_DIGEST_SIZE);
+-
+-	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
+-			       "sealing data");
+-	if (ret < 0)
+-		goto out;
+-
+-	/* calculate the size of the returned Blob */
+-	sealinfosize = LOAD32(tb->data, TPM_DATA_OFFSET + sizeof(uint32_t));
+-	encdatasize = LOAD32(tb->data, TPM_DATA_OFFSET + sizeof(uint32_t) +
+-			     sizeof(uint32_t) + sealinfosize);
+-	storedsize = sizeof(uint32_t) + sizeof(uint32_t) + sealinfosize +
+-	    sizeof(uint32_t) + encdatasize;
+-
+-	/* check the HMAC in the response */
+-	ret = TSS_checkhmac1(tb->data, ordinal, td->nonceodd, sess.secret,
+-			     SHA1_DIGEST_SIZE, storedsize, TPM_DATA_OFFSET, 0,
+-			     0);
+-
+-	/* copy the returned blob to caller */
+-	if (!ret) {
+-		memcpy(blob, tb->data + TPM_DATA_OFFSET, storedsize);
+-		*bloblen = storedsize;
+-	}
+-out:
+-	kfree(td);
+-	return ret;
+-}
+-
+-/*
+- * use the AUTH2_COMMAND form of unseal, to authorize both key and blob
+- */
+-static int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
+-		      uint32_t keyhandle, const unsigned char *keyauth,
+-		      const unsigned char *blob, int bloblen,
+-		      const unsigned char *blobauth,
+-		      unsigned char *data, unsigned int *datalen)
+-{
+-	unsigned char nonceodd[TPM_NONCE_SIZE];
+-	unsigned char enonce1[TPM_NONCE_SIZE];
+-	unsigned char enonce2[TPM_NONCE_SIZE];
+-	unsigned char authdata1[SHA1_DIGEST_SIZE];
+-	unsigned char authdata2[SHA1_DIGEST_SIZE];
+-	uint32_t authhandle1 = 0;
+-	uint32_t authhandle2 = 0;
+-	unsigned char cont = 0;
+-	uint32_t ordinal;
+-	uint32_t keyhndl;
+-	int ret;
+-
+-	/* sessions for unsealing key and data */
+-	ret = oiap(chip, tb, &authhandle1, enonce1);
+-	if (ret < 0) {
+-		pr_info("trusted_key: oiap failed (%d)\n", ret);
+-		return ret;
+-	}
+-	ret = oiap(chip, tb, &authhandle2, enonce2);
+-	if (ret < 0) {
+-		pr_info("trusted_key: oiap failed (%d)\n", ret);
+-		return ret;
+-	}
+-
+-	ordinal = htonl(TPM_ORD_UNSEAL);
+-	keyhndl = htonl(SRKHANDLE);
+-	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
+-	if (ret != TPM_NONCE_SIZE) {
+-		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
+-		return ret;
+-	}
+-	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
+-			   enonce1, nonceodd, cont, sizeof(uint32_t),
+-			   &ordinal, bloblen, blob, 0, 0);
+-	if (ret < 0)
+-		return ret;
+-	ret = TSS_authhmac(authdata2, blobauth, TPM_NONCE_SIZE,
+-			   enonce2, nonceodd, cont, sizeof(uint32_t),
+-			   &ordinal, bloblen, blob, 0, 0);
+-	if (ret < 0)
+-		return ret;
+-
+-	/* build and send TPM request packet */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH2_COMMAND);
+-	store32(tb, TPM_UNSEAL_SIZE + bloblen);
+-	store32(tb, TPM_ORD_UNSEAL);
+-	store32(tb, keyhandle);
+-	storebytes(tb, blob, bloblen);
+-	store32(tb, authhandle1);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata1, SHA1_DIGEST_SIZE);
+-	store32(tb, authhandle2);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata2, SHA1_DIGEST_SIZE);
+-
+-	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
+-			       "unsealing data");
+-	if (ret < 0) {
+-		pr_info("trusted_key: authhmac failed (%d)\n", ret);
+-		return ret;
+-	}
+-
+-	*datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
+-	ret = TSS_checkhmac2(tb->data, ordinal, nonceodd,
+-			     keyauth, SHA1_DIGEST_SIZE,
+-			     blobauth, SHA1_DIGEST_SIZE,
+-			     sizeof(uint32_t), TPM_DATA_OFFSET,
+-			     *datalen, TPM_DATA_OFFSET + sizeof(uint32_t), 0,
+-			     0);
+-	if (ret < 0) {
+-		pr_info("trusted_key: TSS_checkhmac2 failed (%d)\n", ret);
+-		return ret;
+-	}
+-	memcpy(data, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t), *datalen);
+-	return 0;
+-}
+-
+ /*
+  * Have the TPM seal(encrypt) the symmetric key
+  */
+@@ -1129,40 +517,6 @@ struct key_type key_type_trusted = {
+ 
+ EXPORT_SYMBOL_GPL(key_type_trusted);
+ 
+-static void trusted_shash_release(void)
+-{
+-	if (hashalg)
+-		crypto_free_shash(hashalg);
+-	if (hmacalg)
+-		crypto_free_shash(hmacalg);
+-}
+-
+-static int __init trusted_shash_alloc(void)
+-{
+-	int ret;
+-
+-	hmacalg = crypto_alloc_shash(hmac_alg, 0, CRYPTO_ALG_ASYNC);
+-	if (IS_ERR(hmacalg)) {
+-		pr_info("trusted_key: could not allocate crypto %s\n",
+-			hmac_alg);
+-		return PTR_ERR(hmacalg);
+-	}
+-
+-	hashalg = crypto_alloc_shash(hash_alg, 0, CRYPTO_ALG_ASYNC);
+-	if (IS_ERR(hashalg)) {
+-		pr_info("trusted_key: could not allocate crypto %s\n",
+-			hash_alg);
+-		ret = PTR_ERR(hashalg);
+-		goto hashalg_fail;
+-	}
+-
+-	return 0;
+-
+-hashalg_fail:
+-	crypto_free_shash(hmacalg);
+-	return ret;
+-}
+-
+ static int __init init_trusted(void)
+ {
+ 	int ret;
+diff --git a/security/keys/trusted.h b/security/keys/trusted.h
+index 3249fbd2b653..61fe24d5c6b3 100644
+--- a/security/keys/trusted.h
++++ b/security/keys/trusted.h
+@@ -1,35 +1,6 @@
+ #ifndef __TRUSTED_KEY_H
+ #define __TRUSTED_KEY_H
+ 
+-/* implementation specific TPM constants */
+-#define MAX_PCRINFO_SIZE		64
+-#define MAX_BUF_SIZE			512
+-#define TPM_GETRANDOM_SIZE		14
+-#define TPM_OSAP_SIZE			36
+-#define TPM_OIAP_SIZE			10
+-#define TPM_SEAL_SIZE			87
+-#define TPM_UNSEAL_SIZE			104
+-#define TPM_SIZE_OFFSET			2
+-#define TPM_RETURN_OFFSET		6
+-#define TPM_DATA_OFFSET			10
+-
+-#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
+-#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
+-#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
+-
+-struct tpm_buf {
+-	int len;
+-	unsigned char data[MAX_BUF_SIZE];
+-};
+-
+-#define INIT_BUF(tb) (tb->len = 0)
+-
+-struct osapsess {
+-	uint32_t handle;
+-	unsigned char secret[SHA1_DIGEST_SIZE];
+-	unsigned char enonce[TPM_NONCE_SIZE];
+-};
+-
+ /* discrete values, but have to store in uint16_t for TPM use */
+ enum {
+ 	SEAL_keytype = 1,
+@@ -70,26 +41,6 @@ static inline void dump_payload(struct trusted_key_payload *p)
+ 	pr_info("trusted_key: migratable %d\n", p->migratable);
+ }
+ 
+-static inline void dump_sess(struct osapsess *s)
+-{
+-	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
+-		       16, 1, &s->handle, 4, 0);
+-	pr_info("trusted-key: secret:\n");
+-	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
+-		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
+-	pr_info("trusted-key: enonce:\n");
+-	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
+-		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
+-}
+-
+-static inline void dump_tpm_buf(unsigned char *buf)
+-{
+-	int len;
+-
+-	pr_info("\ntrusted-key: tpm buffer\n");
+-	len = LOAD32(buf, TPM_SIZE_OFFSET);
+-	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
+-}
+ #else
+ static inline void dump_options(struct trusted_key_options *o)
+ {
+@@ -99,36 +50,5 @@ static inline void dump_payload(struct trusted_key_payload *p)
+ {
+ }
+ 
+-static inline void dump_sess(struct osapsess *s)
+-{
+-}
+-
+-static inline void dump_tpm_buf(unsigned char *buf)
+-{
+-}
+ #endif
+-
+-static inline void store8(struct tpm_buf *buf, const unsigned char value)
+-{
+-	buf->data[buf->len++] = value;
+-}
+-
+-static inline void store16(struct tpm_buf *buf, const uint16_t value)
+-{
+-	*(uint16_t *) & buf->data[buf->len] = htons(value);
+-	buf->len += sizeof value;
+-}
+-
+-static inline void store32(struct tpm_buf *buf, const uint32_t value)
+-{
+-	*(uint32_t *) & buf->data[buf->len] = htonl(value);
+-	buf->len += sizeof value;
+-}
+-
+-static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
+-			      const int len)
+-{
+-	memcpy(buf->data + buf->len, in, len);
+-	buf->len += len;
+-}
+ #endif
