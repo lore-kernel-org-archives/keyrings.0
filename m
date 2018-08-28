@@ -1,188 +1,181 @@
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Date: Sun, 05 Aug 2018 03:21:19 +0000
-Subject: [PATCH 6/6] key: enforce the secure boot checking when loading efi root key
-Message-Id: <20180805032119.20485-7-jlee@suse.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 28 Aug 2018 22:48:09 +0000
+Subject: [PATCH v8 09/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+Message-Id: <153549648902.4089.1261694784533535926.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180805032119.20485-1-jlee@suse.com>
-In-Reply-To: <20180805032119.20485-1-jlee@suse.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>, Kees Cook <keescook@chromium.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Pavel Machek <pavel@ucw.cz>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+References: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-The EFI root key is not completely secure insecure when the
-secure boot is disabled because it can be changed by unsigned EFI
-binary before system be handed over to kernel. But in some use
-case user does not want the EFI secure key functions be blocked
-when secure boot is disabled.
+Add support to issue a secure erase DSM to the Intel nvdimm. The
+required passphrase is acquired from userspace through the kernel key
+management. To trigger the action, "erase" is written to the "security"
+sysfs attribute. libnvdimm will support the erase generic API call.
 
-Like the kernel module verification, this patch adds a enforce
-kernel configuration option that it can be used to enforce kernel
-to checking the secure boot before loading efi root key. And user
-can also use kernel parameter to enable it. When this option be
-enabled, the EFI root key will not be loaded by kernel when secure
-boot is diabled.
-
-Without this option, kernel will be tainted but the EFI root key
-can still be loaded.
-
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Chen Yu <yu.c.chen@intel.com>
-Cc: Oliver Neukum <oneukum@suse.com>
-Cc: Ryan Chen <yu.chen.surf@gmail.com>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- Documentation/admin-guide/kernel-parameters.txt |  6 +++++
- drivers/firmware/efi/Kconfig                    |  8 ++++++
- drivers/firmware/efi/efi-secure-key.c           | 33 ++++++++++++++++++++++---
- include/linux/kernel.h                          |  3 ++-
- kernel/panic.c                                  |  1 +
- 5 files changed, 46 insertions(+), 5 deletions(-)
+ drivers/acpi/nfit/intel.c  |   58 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   49 +++++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    3 ++
+ 3 files changed, 110 insertions(+)
 
-diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
-index 533ff5c68970..7a9ac358793f 100644
---- a/Documentation/admin-guide/kernel-parameters.txt
-+++ b/Documentation/admin-guide/kernel-parameters.txt
-@@ -1122,6 +1122,12 @@
- 			vendor GUIDs, all of them will be loaded. See
- 			Documentation/acpi/ssdt-overlays.txt for details.
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index ba886f1f5399..419a7d54d4e8 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,63 @@
+ #include "intel.h"
+ #include "nfit.h"
  
-+	efi-secure-key.sb_enforce [EFI; X86]
-+			When EFI_SECURE_KEY is set, this means that
-+			EFI root key will not be loaded when secure boot is
-+			not enabled. Note that if EFI_SECURE_KEY_SB_ENFORCE
-+			is set, that is always true, so this option does
-+			nothing.
- 
- 	eisa_irq_edge=	[PARISC,HW]
- 			See header of drivers/parisc/eisa.c.
-diff --git a/drivers/firmware/efi/Kconfig b/drivers/firmware/efi/Kconfig
-index 048cf91ae8e8..fba894a4e7b0 100644
---- a/drivers/firmware/efi/Kconfig
-+++ b/drivers/firmware/efi/Kconfig
-@@ -187,6 +187,14 @@ config EFI_SECURE_KEY
- 
- 	  If unsure, say N.
- 
-+config EFI_SECURE_KEY_SB_ENFORCE
-+	bool "Force checking secure boot when loading EFI root key"
-+	default y
-+	depends on EFI_SECURE_KEY
-+	help
-+	  Skip EFI root key when secure boot is not enabled. Without this,
-+	  EFI root key will simply taint the kernel when no secure boot.
-+
- endmenu
- 
- config UEFI_CPER
-diff --git a/drivers/firmware/efi/efi-secure-key.c b/drivers/firmware/efi/efi-secure-key.c
-index aa422ee87f70..417d73768887 100644
---- a/drivers/firmware/efi/efi-secure-key.c
-+++ b/drivers/firmware/efi/efi-secure-key.c
-@@ -15,6 +15,7 @@
- #include <linux/parser.h>
- #include <linux/random.h>
- #include <linux/scatterlist.h>
-+#include <linux/moduleparam.h>
- #include <keys/efi-type.h>
- #include <keys/user-type.h>
- #include <crypto/algapi.h>
-@@ -27,6 +28,9 @@ static unsigned long rkey_size;
- static bool is_loaded;
- static bool is_secure;
- 
-+static bool sb_enforce = IS_ENABLED(CONFIG_EFI_SECURE_KEY_SB_ENFORCE);
-+module_param(sb_enforce, bool_enable_only, 0644);
-+
- static void __init
- print_efi_rkey_setup_data(struct efi_rkey_setup_data *rkey_setup)
- {
-@@ -59,11 +63,13 @@ void __init parse_efi_root_key_setup(u64 phys_addr, u32 data_len)
- 
- 	/* keep efi root key */
- 	if (rkey_setup->final_status = EFI_SUCCESS) {
--		memcpy(root_key, rkey_setup->root_key, rkey_setup->key_size);
--		rkey_size = rkey_setup->key_size;
--		is_loaded = true;
- 		is_secure = rkey_setup->is_secure;
--		pr_info("EFI root key is loaded.\n");
-+		if (is_secure || !sb_enforce) {
-+			memcpy(root_key, rkey_setup->root_key, rkey_setup->key_size);
-+			rkey_size = rkey_setup->key_size;
-+			is_loaded = true;
-+			pr_info("EFI root key is loaded.\n");
-+		}
- 		if (!is_secure) {
- 			pr_warn("EFI root key is insecure when no secure boot.\n");
- 		}
-@@ -75,6 +81,14 @@ void __init parse_efi_root_key_setup(u64 phys_addr, u32 data_len)
- 	early_iounmap(setup_data, data_len);
- }
- 
-+static void __init clean_efi_root_key(void)
++static int intel_dimm_security_erase(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
 +{
-+	memzero_explicit(root_key, ROOT_KEY_SIZE);
-+	rkey_size = 0;
-+	is_loaded = false;
-+	is_secure = false;
-+}
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_secure_erase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_SECURE_ERASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
 +
- #define ERK_HASH_SIZE SHA256_DIGEST_SIZE
- #define HMAC_HASH_SIZE SHA256_DIGEST_SIZE
- #define DKEY_SIZE SHA256_DIGEST_SIZE
-@@ -705,6 +719,17 @@ static int __init init_efi_secure_key(void)
- 	if (!is_loaded)
- 		return 0;
- 
-+	if (!is_secure) {
-+		if (sb_enforce) {
-+			clean_efi_root_key();
-+			pr_info("EFI root key is unloaded because insecure.\n");
-+			return 0;
-+		} else {
-+			add_taint(TAINT_INSECURE_KEY, LOCKDEP_STILL_OK);
-+			pr_warn("Tainted kernel because EFI root key is insecure.\n");
-+		}
++	if (!test_bit(NVDIMM_INTEL_SECURE_ERASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	/* flush all cache before we erase DIMM */
++	wbinvd_on_all_cpus();
++	memcpy(nd_cmd.cmd.passphrase, nkey->data,
++			sizeof(nd_cmd.cmd.passphrase));
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
 +	}
 +
- 	hash_tfm = crypto_alloc_shash(hash_alg, 0, CRYPTO_ALG_ASYNC);
- 	if (IS_ERR(hash_tfm)) {
- 		pr_err("can't allocate %s transform: %ld\n",
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 941dc0a5a877..b45716e54a97 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -565,7 +565,8 @@ extern enum system_states {
- #define TAINT_LIVEPATCH			15
- #define TAINT_AUX			16
- #define TAINT_RANDSTRUCT		17
--#define TAINT_FLAGS_COUNT		18
-+#define TAINT_INSECURE_KEY		18
-+#define TAINT_FLAGS_COUNT		19
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++	/* DIMM erased, invalidate all CPU caches before we read it */
++	wbinvd_on_all_cpus();
++
++ out:
++	return rc;
++}
++
+ static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm)
+ {
+@@ -321,4 +378,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.change_key = intel_dimm_security_update_passphrase,
+ 	.disable = intel_dimm_security_disable,
+ 	.freeze_lock = intel_dimm_security_freeze_lock,
++	.erase = intel_dimm_security_erase,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index 338c3fedfdf3..102accb68893 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -143,6 +143,53 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
  
- struct taint_flag {
- 	char c_true;	/* character printed when tainted */
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 8b2e002d52eb..d641098a814d 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -327,6 +327,7 @@ const struct taint_flag taint_flags[TAINT_FLAGS_COUNT] = {
- 	[ TAINT_LIVEPATCH ]		= { 'K', ' ', true },
- 	[ TAINT_AUX ]			= { 'X', ' ', true },
- 	[ TAINT_RANDSTRUCT ]		= { 'T', ' ', true },
-+	[TAINT_INSECURE_KEY]		= { 'Y', ' ', false },
++static int nvdimm_security_erase(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	struct user_key_payload *payload;
++	int rc = 0;
++
++	if (!nvdimm->security_ops)
++		return 0;
++
++	/* lock the device and disallow driver bind */
++	device_lock(dev);
++	/* No driver data means dimm is disabled. Proceed if so. */
++	if (dev_get_drvdata(dev)) {
++		dev_warn(dev, "Unable to secure erase while DIMM active.\n");
++		rc = -EINVAL;
++		goto out;
++	}
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		goto out;
++
++	key = nvdimm_get_key(dev);
++	if (!key) {
++		dev_warn(dev, "no key found\n");
++		rc = -ENOKEY;
++		goto out;
++	}
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++	rc = nvdimm->security_ops->erase(nvdimm_bus, nvdimm,
++			(void *)payload->data);
++	up_read(&key->sem);
++	/* remove key since secure erase kills the passphrase */
++	key_unlink(nvdimm_keyring, key);
++	key_invalidate(key);
++	nvdimm->key = NULL;
++	key_put(key);
++
++ out:
++	device_unlock(dev);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ static int nvdimm_security_freeze_lock(struct device *dev)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -819,6 +866,8 @@ static ssize_t security_store(struct device *dev,
+ 		rc = nvdimm_security_disable(dev);
+ 	else if (sysfs_streq(buf, "freeze"))
+ 		rc = nvdimm_security_freeze_lock(dev);
++	else if (sysfs_streq(buf, "erase"))
++		rc = nvdimm_security_erase(dev);
+ 	else
+ 		return -EINVAL;
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index bcab42caa948..0d85e092a6dd 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -187,6 +187,9 @@ struct nvdimm_security_ops {
+ 			const struct nvdimm_key_data *nkey);
+ 	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm);
++	int (*erase)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			const struct nvdimm_key_data *nkey);
  };
  
- /**
--- 
-2.13.6
-
+ void badrange_init(struct badrange *badrange);
