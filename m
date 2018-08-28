@@ -1,51 +1,51 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Sat, 04 Aug 2018 00:01:48 +0000
-Subject: [PATCH v7 07/12] nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
-Message-Id: <153334090870.60955.12048473116408849750.stgit@djiang5-desk3.ch.intel.com>
+Date: Tue, 28 Aug 2018 22:48:03 +0000
+Subject: [PATCH v8 08/12] nfit/libnvdimm: add freeze security support to Intel nvdimm
+Message-Id: <153549648323.4089.18290811995977808513.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+References: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
 To: linux-nvdimm@lists.01.org
 Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Add support to disable passphrase (security) for the Intel nvdimm. The
-passphrase used for disabling is pulled from userspace via the kernel
-key management. The action is triggered by writing "disable" to the sysfs
-attribute "security". libnvdimm will support the generic disable API call.
+Add support for freeze security on Intel nvdimm. This locks out any
+changes to security for the DIMM unless a reboot is done. This is triggered
+by writing "freeze" to the "security" sysfs attribute. libnvdimm will
+support the generic freeze_lock API call.
 
 Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/acpi/nfit/intel.c  |   53 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   45 +++++++++++++++++++++++++++++++++++++
- include/linux/libnvdimm.h  |    3 ++
- 3 files changed, 100 insertions(+), 1 deletion(-)
+ drivers/acpi/nfit/intel.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   22 +++++++++++++++++++
+ include/linux/libnvdimm.h  |    2 ++
+ 3 files changed, 75 insertions(+)
 
 diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 314eae7e02d7..21d30222371f 100644
+index 21d30222371f..ba886f1f5399 100644
 --- a/drivers/acpi/nfit/intel.c
 +++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,58 @@
+@@ -18,6 +18,53 @@
  #include "intel.h"
  #include "nfit.h"
  
-+static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
++static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm)
 +{
 +	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
 +	int cmd_rc, rc = 0;
 +	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
 +	struct {
 +		struct nd_cmd_pkg pkg;
-+		struct nd_intel_disable_passphrase cmd;
++		struct nd_intel_freeze_lock cmd;
 +	} nd_cmd = {
 +		.pkg = {
-+			.nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE,
++			.nd_command = NVDIMM_INTEL_FREEZE_LOCK,
 +			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_in = 0,
 +			.nd_size_out = ND_INTEL_STATUS_SIZE,
 +			.nd_fw_size = ND_INTEL_STATUS_SIZE,
 +		},
@@ -54,11 +54,9 @@ index 314eae7e02d7..21d30222371f 100644
 +		},
 +	};
 +
-+	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
++	if (!test_bit(NVDIMM_INTEL_FREEZE_LOCK, &nfit_mem->dsm_mask))
 +		return -ENOTTY;
 +
-+	memcpy(nd_cmd.cmd.passphrase, nkey->data,
-+			sizeof(nd_cmd.cmd.passphrase));
 +	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
 +			sizeof(nd_cmd), &cmd_rc);
 +	if (rc < 0)
@@ -71,9 +69,6 @@ index 314eae7e02d7..21d30222371f 100644
 +	switch (nd_cmd.cmd.status) {
 +	case 0:
 +		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
 +	case ND_INTEL_STATUS_INVALID_STATE:
 +	default:
 +		rc = -ENXIO;
@@ -84,30 +79,38 @@ index 314eae7e02d7..21d30222371f 100644
 +	return rc;
 +}
 +
- /*
-  * The update passphrase takes the old passphrase and the new passphrase
-  * and send those to the nvdimm. The nvdimm will verify the old
-@@ -217,4 +269,5 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.state = intel_dimm_security_state,
+ static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
+ {
+@@ -254,6 +301,9 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
+ 	else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_ENABLED) {
+ 		if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_LOCKED)
+ 			*state = NVDIMM_SECURITY_LOCKED;
++		else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_FROZEN ||
++				nd_cmd.cmd.state & ND_INTEL_SEC_STATE_PLIMIT)
++			*state = NVDIMM_SECURITY_FROZEN;
+ 		else
+ 			*state = NVDIMM_SECURITY_UNLOCKED;
+ 	} else
+@@ -270,4 +320,5 @@ const struct nvdimm_security_ops intel_security_ops = {
  	.unlock = intel_dimm_security_unlock,
  	.change_key = intel_dimm_security_update_passphrase,
-+	.disable = intel_dimm_security_disable,
+ 	.disable = intel_dimm_security_disable,
++	.freeze_lock = intel_dimm_security_freeze_lock,
  };
 diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index af0f4ad9d513..4169aabe814e 100644
+index 3bae8b4b613a..338c3fedfdf3 100644
 --- a/drivers/nvdimm/dimm_devs.c
 +++ b/drivers/nvdimm/dimm_devs.c
-@@ -143,6 +143,47 @@ int nvdimm_security_get_state(struct device *dev)
+@@ -143,6 +143,26 @@ int nvdimm_security_get_state(struct device *dev)
  			&nvdimm->state);
  }
  
-+static int nvdimm_security_disable(struct device *dev)
++static int nvdimm_security_freeze_lock(struct device *dev)
 +{
 +	struct nvdimm *nvdimm = to_nvdimm(dev);
 +	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key;
 +	int rc;
-+	struct user_key_payload *payload;
 +
 +	if (!nvdimm->security_ops)
 +		return 0;
@@ -115,59 +118,36 @@ index af0f4ad9d513..4169aabe814e 100644
 +	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
 +		return 0;
 +
-+	key = nvdimm_get_key(dev);
-+	if (!key) {
-+		dev_warn(dev, "no key found\n");
-+		return -ENOKEY;
-+	}
++	rc = nvdimm->security_ops->freeze_lock(nvdimm_bus, nvdimm);
++	if (rc < 0)
++		return rc;
 +
-+	down_read(&key->sem);
-+	payload = key->payload.data[0];
-+	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm,
-+			(void *)payload->data);
-+	up_read(&key->sem);
-+	if (rc < 0) {
-+		dev_warn(dev, "unlock failed\n");
-+		goto out;
-+	}
-+
-+	/* If we succeed then remove the key */
-+	key_unlink(nvdimm_keyring, key);
-+	key_invalidate(key);
-+	nvdimm->key = NULL;
-+
-+ out:
-+	key_put(key);
 +	nvdimm_security_get_state(dev);
-+	return rc;
++	return 0;
 +}
 +
- int nvdimm_security_unlock_dimm(struct device *dev)
+ static int nvdimm_security_disable(struct device *dev)
  {
  	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -752,7 +793,9 @@ static ssize_t security_store(struct device *dev,
- 	if (__parse_update(buf, len, &old_id, &new_id) = 0) {
- 		dev_dbg(dev, "update: old: %u new: %u\n", old_id, new_id);
+@@ -797,6 +817,8 @@ static ssize_t security_store(struct device *dev,
  		rc = nvdimm_security_change_key(dev, old_id, new_id);
--	} else
-+	} else if (sysfs_streq(buf, "disable"))
-+		rc = nvdimm_security_disable(dev);
-+	else
+ 	} else if (sysfs_streq(buf, "disable"))
+ 		rc = nvdimm_security_disable(dev);
++	else if (sysfs_streq(buf, "freeze"))
++		rc = nvdimm_security_freeze_lock(dev);
+ 	else
  		return -EINVAL;
  
- 	if (rc = 0)
 diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index bd6a413164ee..c60ab4b238f3 100644
+index c60ab4b238f3..bcab42caa948 100644
 --- a/include/linux/libnvdimm.h
 +++ b/include/linux/libnvdimm.h
-@@ -182,6 +182,9 @@ struct nvdimm_security_ops {
+@@ -185,6 +185,8 @@ struct nvdimm_security_ops {
+ 	int (*disable)(struct nvdimm_bus *nvdimm_bus,
  			struct nvdimm *nvdimm,
- 			const struct nvdimm_key_data *old_data,
- 			const struct nvdimm_key_data *new_data);
-+	int (*disable)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm,
-+			const struct nvdimm_key_data *nkey);
+ 			const struct nvdimm_key_data *nkey);
++	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm);
  };
  
  void badrange_init(struct badrange *badrange);
-
