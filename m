@@ -1,115 +1,109 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Sat, 04 Aug 2018 00:01:09 +0000
-Subject: [PATCH v7 00/12] Adding security support for nvdimm
-Message-Id: <153334018216.60955.13349338519981704524.stgit@djiang5-desk3.ch.intel.com>
+Date: Tue, 28 Aug 2018 22:48:25 +0000
+Subject: [PATCH v8 12/12] libnvdimm: add documentation for nvdimm security support
+Message-Id: <153549650543.4089.4276034419476883694.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
 To: linux-nvdimm@lists.01.org
 Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-The following series implements security support for nvdimm. Mostly adding
-new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
-adding generic support libnvdimm for other vendors. The most important
-security features are unlocking locked nvdimms, and updating/setting security
-passphrase to nvdimms.
+Add theory of operation for the security support that's going into
+libnvdimm.
 
-Security folks, thanks in advance for taking a look at my key management
-implementation and making sure that I'm doing something sane. Mainly you'll
-want to review patches 2, 4, and 5 as most relevant ones that need scrutiny.
-
-v7:
-- Add CONFIG_KEYS depenency for libnvdimm. (Alison)
-- Export lookup_user_key(). (David)
-- Modified "update" to take two key ids and and use lookup_user_key() in
-  order to improve security.  (David)
-- Use key ptrs and key_validate() for cached keys. (David)
-
-v6:
-- Fix intel DSM data structures to use defined size for passphrase (Robert)
-- Fix memcpy size to use sizeof data structure member (Robert)
-- Fix defined dimm id length (Robert)
-- Making intel_security_ops const (Eric)
-- Remove unused var in nvdimm_key_search() (Eric)
-- Added wbinvd before secure erase is issued (Robert)
-- Removed key_put_sync() usage (David)
-- Use init_cred instead of creating own cred (David)
-    - Exported init_cred symbol
-- Move keyring to dedicated (David)
-- Use logon_key_type and friends instead of creating custom (David)
-- Use key_lookup() with stored key serial (David)
-    - Exported key_lookup() symbol
-- Mark passed in key data as const (David)
-- Added comment for change_pass_phrase to explain how it works (David)
-- Unlink key when it's being removed from keyring. (David)
-- Removed request_key() from all security ops except update and unlock.
-- Update will now update the existing key's payload with the new key's
-  retrieved from userspace when the new payload is accepted by nvdimm.
-
-v5:
-- Moved dimm_id initialization (Dan)
-- Added a key_put_sync() in order to run key_gc_work and cleanup old key. (Dan)
-- Added check to block security state changes while DIMM is active. (Dan)
-
-v4:
-- flip payload layout for update passphrase to make it easier on userland.
-
-v3:
-- Set x86 wrappers for x86 only bits. (Dan)
-- Fixed up some verbiage in commit headers.
-- Put in usage of sysfs_streq() for sysfs inputs.
-- 0-day build fixes for non-x86 archs.
-
-v2:
-- Move inclusion of intel.h to relevant source files and not in nfit.h. (Dan)
-- Moved security ring relevant code to dimm_devs.c. (Dan)
-- Added dimm_id to nfit_mem to avoid recreate per sysfs show call. (Dan)
-- Added routine to return security_ops based on family supplied. (Dan)
-- Added nvdimm_key_data struct to wrap raw passphrase string. (Dan)
-- Allocate firmware package on stack. (Dan)
-- Added missing frozen state detection when retrieving security state.
-
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 ---
-
-Dave Jiang (12):
-      nfit: add support for Intel DSM 1.7 commands
-      libnvdimm: create keyring to store security keys
-      nfit/libnvdimm: store dimm id as a member to struct nvdimm
-      keys: export lookup_user_key to external users
-      nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
-      nfit/libnvdimm: add set passphrase support for Intel nvdimms
-      nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
-      nfit/libnvdimm: add freeze security support to Intel nvdimm
-      nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-      nfit_test: add context to dimm_dev for nfit_test
-      nfit_test: add test support for Intel nvdimm security DSMs
-      libnvdimm: add documentation for nvdimm security support
-
-
- Documentation/nvdimm/security.txt |   78 +++++
- drivers/acpi/nfit/Makefile        |    1 
- drivers/acpi/nfit/core.c          |   58 +++-
- drivers/acpi/nfit/intel.c         |  382 +++++++++++++++++++++++++++
- drivers/acpi/nfit/intel.h         |   82 ++++++
- drivers/acpi/nfit/nfit.h          |   20 +
- drivers/nvdimm/Kconfig            |    1 
- drivers/nvdimm/bus.c              |    2 
- drivers/nvdimm/core.c             |    7 
- drivers/nvdimm/dimm.c             |    7 
- drivers/nvdimm/dimm_devs.c        |  527 +++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/nd-core.h          |    6 
- drivers/nvdimm/nd.h               |    2 
- include/linux/key.h               |    3 
- include/linux/libnvdimm.h         |   42 +++
- kernel/cred.c                     |    1 
- security/keys/internal.h          |    2 
- security/keys/process_keys.c      |    1 
- tools/testing/nvdimm/Kbuild       |    1 
- tools/testing/nvdimm/test/nfit.c  |  227 +++++++++++++++-
- 20 files changed, 1414 insertions(+), 36 deletions(-)
+ Documentation/nvdimm/security.txt |   82 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
  create mode 100644 Documentation/nvdimm/security.txt
- create mode 100644 drivers/acpi/nfit/intel.c
- create mode 100644 drivers/acpi/nfit/intel.h
 
---
+diff --git a/Documentation/nvdimm/security.txt b/Documentation/nvdimm/security.txt
+new file mode 100644
+index 000000000000..b230447bf237
+--- /dev/null
++++ b/Documentation/nvdimm/security.txt
+@@ -0,0 +1,82 @@
++NVDIMM SECURITY
++=======+
++1. Introduction
++---------------
++
++With the introduction of Intel DSM v1.7 specification [1], security DSMs are
++introduced. The spec added the following security DSMs: "get security state",
++"set passphrase", "disable passphrase", "unlock unit", "freeze lock",
++"secure erase", and "overwrite". A security_ops data structure has been
++added to struct dimm in order to support the security operations and generic
++APIs are exposed to allow vendor neutral operations.
++
++2. Sysfs Interface
++------------------
++The "security" sysfs attribute is provided in the nvdimm sysfs directory. For
++example:
++/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/security
++
++The "show" function of that attribute will display the security state for
++that DIMM. The following states are available: disabled, unlocked, locked,
++frozen, and unsupported.
++
++The "store" function takes several commands when the attribute is written to
++in order to support some of the security functionalities:
++update - enable security. Add or update current key.
++disable - disable enabled security and remove key.
++freeze - freeze changing of security states.
++erase - generate new ecryption key for DIMM and crypto-scrambles all existing
++	user data.
++
++3. Key Management
++-----------------
++
++The key is associted to the payload by the DIMM id. For example:
++# cat /sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/nfit/id
++8089-a2-1740-00000133
++The DIMM id would be provided along with the key payload (passphrase) to
++the kernel.
++
++The security keys are managed on the basis of a single key per DIMM. The
++key "passphrase" is expected to be 32bytes long or padded to 32bytes. This is
++similar to the ATA security specification [2]. A key is initially acquired
++via the request_key() kernel API call and retrieved from userspace. It is up to
++the user to provide an upcall application to retrieve the key in whatever
++fashion meets their security requirements.
++
++The payload provided to the key can be a 32bytes payload or 64bytes payload
++when doing an "update". The payload is viewed as 64 bytes in the following
++format:
++[32 bytes new key data zero padded][32 bytes current key data zero padded]
++However, a 32bytes payload can be provided and will be assumed as the old
++key to be 32 bytes of 0s and the provided 32bytes payload is the new key.
++It is up to the user upcall function how that's presented as the key payload
++to the kernel.
++
++All the other security functions that require a provided key can accept a
++32bytes payload or 64bytes. If the payload is 64bytes, then second 32bytes
++will be ignored and the first 32bytes contains the expected "passphrase".
++
++4. Unlocking
++------------
++When the DIMMs are being enumerated by the kernel, the kernel will attempt to
++retrieve the key from its keyring. If that fails, it will attempt to
++acquire the key from the userspace upcall function. This is the only time
++a locked DIMM can be unlocked. Once unlocked, the DIMM will remain unlocked
++until reboot.
++
++5. Update
++---------
++When doing an update, it is expected that the new key with the 64bit payload of
++format described above is added via the keyutils API or utility. The update
++command written to the sysfs attribute will be with the format:
++update:<old id>:<new id>
++If there is no old ID due to a security enabling, then a 0 should be passed in.
++It is expected that a user logon key has been injected via keyutils to provide
++the payload for the update operation. The kernel will take the new user key,
++attempt the update operation with the nvdimm, and replace the existing key's
++payload with the new passphrase.
++
++[1]: http://pmem.io/documents/NVDIMM_DSM_Interface-V1.7.pdf
++[2]: http://www.t13.org/documents/UploadedDocuments/docs2006/e05179r4-ACS-SecurityClarifications.pdf
