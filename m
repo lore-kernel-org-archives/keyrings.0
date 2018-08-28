@@ -1,77 +1,56 @@
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Date: Sun, 05 Aug 2018 08:17:36 +0000
-Subject: Re: [PATCH 2/6] efi: the function transfers status to string
-Message-Id: <CAKv+Gu9tE2KZNXTqtOi9qg3a861NQc-rQYxUQbioj04DzAkXbQ@mail.gmail.com>
+From: Randy Dunlap <rdunlap@infradead.org>
+Date: Tue, 28 Aug 2018 23:34:04 +0000
+Subject: [PATCH resend] uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name
+Message-Id: <0db6c314-1ef4-9bfa-1baa-7214dd2ee061@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180805032119.20485-1-jlee@suse.com> <20180805032119.20485-3-jlee@suse.com>
-In-Reply-To: <20180805032119.20485-3-jlee@suse.com>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-efi <linux-efi@vger.kernel.org>, the arch/x86 maintainers <x86@kernel.org>, keyrings@vger.kernel.org, linux-integrity <linux-integrity@vger.kernel.org>, "Lee, Chun-Yi" <jlee@suse.com>, Kees Cook <keescook@chromium.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Pavel Machek <pavel@ucw.cz>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
 
-On 5 August 2018 at 05:21, Lee, Chun-Yi <joeyli.kernel@gmail.com> wrote:
-> This function can be used to transfer EFI status code to string
-> for printing out debug message.
->
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Chen Yu <yu.c.chen@intel.com>
-> Cc: Oliver Neukum <oneukum@suse.com>
-> Cc: Ryan Chen <yu.chen.surf@gmail.com>
-> Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
+From: Randy Dunlap <rdunlap@infradead.org>
 
-Very useful.
+Since this header is in "include/uapi/linux/", apparently people
+want to use it in userspace programs -- even in C++ ones.
+However, the header uses a C++ reserved keyword ("private"),
+so change that to "dh_private" instead to allow the header file
+to be used in C++ userspace.
 
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id1051
+Fixes: ddbb41148724 ("KEYS: Add KEYCTL_DH_COMPUTE command")
 
-> ---
->  include/linux/efi.h | 26 ++++++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
->
-> diff --git a/include/linux/efi.h b/include/linux/efi.h
-> index 56add823f190..744cf92fe18e 100644
-> --- a/include/linux/efi.h
-> +++ b/include/linux/efi.h
-> @@ -1651,4 +1651,30 @@ struct linux_efi_tpm_eventlog {
->
->  extern int efi_tpm_eventlog_init(void);
->
-> +#define EFI_STATUS_STR(_status) \
-> +case EFI_##_status: \
-> +       return "EFI_" __stringify(_status);
-> +
-> +static inline char *
-> +efi_status_to_str(efi_status_t status)
-> +{
-> +       switch (status) {
-> +       EFI_STATUS_STR(SUCCESS)
-> +       EFI_STATUS_STR(LOAD_ERROR)
-> +       EFI_STATUS_STR(INVALID_PARAMETER)
-> +       EFI_STATUS_STR(UNSUPPORTED)
-> +       EFI_STATUS_STR(BAD_BUFFER_SIZE)
-> +       EFI_STATUS_STR(BUFFER_TOO_SMALL)
-> +       EFI_STATUS_STR(NOT_READY)
-> +       EFI_STATUS_STR(DEVICE_ERROR)
-> +       EFI_STATUS_STR(WRITE_PROTECTED)
-> +       EFI_STATUS_STR(OUT_OF_RESOURCES)
-> +       EFI_STATUS_STR(NOT_FOUND)
-> +       EFI_STATUS_STR(ABORTED)
-> +       EFI_STATUS_STR(SECURITY_VIOLATION)
-> +       }
-> +
-> +       return "";
-> +}
-> +
->  #endif /* _LINUX_EFI_H */
-> --
-> 2.13.6
->
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: keyrings@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Cc: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Cc: stable@vger.kernel.org
+---
+ include/uapi/linux/keyctl.h |    2 +-
+ security/keys/dh.c          |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- lnx-416.orig/include/uapi/linux/keyctl.h
++++ lnx-416/include/uapi/linux/keyctl.h
+@@ -65,7 +65,7 @@
+ 
+ /* keyctl structures */
+ struct keyctl_dh_params {
+-	__s32 private;
++	__s32 dh_private;
+ 	__s32 prime;
+ 	__s32 base;
+ };
+--- lnx-416.orig/security/keys/dh.c
++++ lnx-416/security/keys/dh.c
+@@ -307,7 +307,7 @@ long __keyctl_dh_compute(struct keyctl_d
+ 	}
+ 	dh_inputs.g_size = dlen;
+ 
+-	dlen = dh_data_from_key(pcopy.private, &dh_inputs.key);
++	dlen = dh_data_from_key(pcopy.dh_private, &dh_inputs.key);
+ 	if (dlen < 0) {
+ 		ret = dlen;
+ 		goto out2;
