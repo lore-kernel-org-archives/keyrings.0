@@ -1,510 +1,228 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2018 15:57:50 +0000
-Subject: [PATCH 09/23] TPMLIB: Do some source cleanups
-Message-Id: <153486707011.13066.14435967283392358361.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 28 Aug 2018 22:47:23 +0000
+Subject: [PATCH v8 01/12] nfit: add support for Intel DSM 1.7 commands
+Message-Id: <153549644372.4089.9013821927164695875.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153486700916.13066.12870860668352070081.stgit@warthog.procyon.org.uk>
-To: denkenz@gmail.com, jarkko.sakkinen@linux.intel.com, jejb@linux.vnet.ibm.com
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, tpmdd-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org
+References: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Clean up the TPM library file that was split out of trusted keys.
+Add command definition for security commands defined in Intel DSM
+specification v1.7. This includes "get security state", "set passphrase",
+"unlock unit", "freeze lock", "secure erase", "ovewrite", and
+"overwrite query". Since we are adding a lot of Intel definitions, moving
+the relevant bits to its own header. Also, we don't want those commands
+to be issued from user space through ioctls. Reason being some of the
+security commands require kernel involvement to flush all CPU caches that
+can't be done in userspace and the result can cause system crash. So
+blocking security commands in the ioctl path.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
+ drivers/acpi/nfit/core.c  |   28 ++++++++++++++++++-
+ drivers/acpi/nfit/intel.h |   67 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/nfit/nfit.h  |   17 +++++++++++
+ drivers/nvdimm/bus.c      |    2 +
+ include/linux/libnvdimm.h |    2 +
+ 5 files changed, 112 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/acpi/nfit/intel.h
 
- drivers/char/tpm/tpm-library.c |  187 +++++++++++++++++++++++-----------------
- drivers/char/tpm/tpm-library.h |   14 +--
- include/linux/tpm.h            |    4 -
- security/keys/trusted.c        |    6 +
- 4 files changed, 121 insertions(+), 90 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm-library.c b/drivers/char/tpm/tpm-library.c
-index 1be4f71cabcb..e4cfc1f090e1 100644
---- a/drivers/char/tpm/tpm-library.c
-+++ b/drivers/char/tpm/tpm-library.c
-@@ -8,44 +8,36 @@
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-  * the Free Software Foundation, version 2 of the License.
-- *
-- * See Documentation/security/keys-trusted-encrypted.txt
-  */
+diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
+index 0f47917b8ef1..a3a944751e6a 100644
+--- a/drivers/acpi/nfit/core.c
++++ b/drivers/acpi/nfit/core.c
+@@ -24,6 +24,7 @@
+ #include <linux/nd.h>
+ #include <asm/cacheflush.h>
+ #include <acpi/nfit.h>
++#include "intel.h"
+ #include "nfit.h"
  
--#include <linux/uaccess.h>
--#include <linux/module.h>
--#include <linux/init.h>
-+#define pr_fmt(fmt) "TPMLIB: "fmt
- #include <linux/slab.h>
--#include <linux/parser.h>
--#include <linux/string.h>
- #include <linux/err.h>
--#include <keys/user-type.h>
--#include <keys/trusted-type.h>
--#include <linux/key-type.h>
--#include <linux/rcupdate.h>
-+#include <linux/mutex.h>
- #include <linux/crypto.h>
- #include <crypto/hash.h>
- #include <crypto/sha.h>
--#include <linux/capability.h>
- #include <linux/tpm.h>
- #include <linux/tpm_command.h>
+ /*
+@@ -377,6 +378,14 @@ static u8 nfit_dsm_revid(unsigned family, unsigned func)
+ 			[NVDIMM_INTEL_QUERY_FWUPDATE] = 2,
+ 			[NVDIMM_INTEL_SET_THRESHOLD] = 2,
+ 			[NVDIMM_INTEL_INJECT_ERROR] = 2,
++			[NVDIMM_INTEL_GET_SECURITY_STATE] = 2,
++			[NVDIMM_INTEL_SET_PASSPHRASE] = 2,
++			[NVDIMM_INTEL_DISABLE_PASSPHRASE] = 2,
++			[NVDIMM_INTEL_UNLOCK_UNIT] = 2,
++			[NVDIMM_INTEL_FREEZE_LOCK] = 2,
++			[NVDIMM_INTEL_SECURE_ERASE] = 2,
++			[NVDIMM_INTEL_OVERWRITE] = 2,
++			[NVDIMM_INTEL_QUERY_OVERWRITE] = 2,
+ 		},
+ 	};
+ 	u8 id;
+@@ -3202,7 +3211,7 @@ static int acpi_nfit_flush_probe(struct nvdimm_bus_descriptor *nd_desc)
+ 	return 0;
+ }
  
- #include "tpm-library.h"
+-static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
++static int __acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
+ 		struct nvdimm *nvdimm, unsigned int cmd)
+ {
+ 	struct acpi_nfit_desc *acpi_desc = to_acpi_nfit_desc(nd_desc);
+@@ -3224,6 +3233,23 @@ static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
+ 	return 0;
+ }
  
--static const char hmac_alg[] = "hmac(sha1)";
--static const char hash_alg[] = "sha1";
-+static const char tpm_hmac_alg[] = "hmac(sha1)";
-+static const char tpm_hash_alg[] = "sha1";
- 
--struct sdesc {
-+struct tpm_sdesc {
- 	struct shash_desc shash;
- 	char ctx[];
++/* prevent security commands from being issued via ioctl */
++static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
++		struct nvdimm *nvdimm, unsigned int cmd, void *buf)
++{
++	struct nd_cmd_pkg *call_pkg = buf;
++	unsigned int func;
++
++	if (nvdimm && cmd = ND_CMD_CALL &&
++			call_pkg->nd_family = NVDIMM_FAMILY_INTEL) {
++		func = call_pkg->nd_command;
++		if ((1 << func) & NVDIMM_INTEL_SECURITY_CMDMASK)
++			return -EOPNOTSUPP;
++	}
++
++	return __acpi_nfit_clear_to_send(nd_desc, nvdimm, cmd);
++}
++
+ int acpi_nfit_ars_rescan(struct acpi_nfit_desc *acpi_desc, unsigned long flags)
+ {
+ 	struct device *dev = acpi_desc->dev;
+diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
+new file mode 100644
+index 000000000000..a6f8f4bc8ebb
+--- /dev/null
++++ b/drivers/acpi/nfit/intel.h
+@@ -0,0 +1,67 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/* Copyright(c) 2018 Intel Corporation. All rights reserved. */
++/*
++ * Intel specific definitions for NVDIMM Firmware Interface Table - NFIT
++ */
++#ifndef _NFIT_INTEL_H_
++#define _NFIT_INTEL_H_
++
++#ifdef CONFIG_X86
++
++#define ND_INTEL_STATUS_SIZE		4
++#define ND_INTEL_PASSPHRASE_SIZE	32
++
++#define ND_INTEL_STATUS_RETRY		5
++#define ND_INTEL_STATUS_NOT_READY	9
++#define ND_INTEL_STATUS_INVALID_STATE	10
++#define ND_INTEL_STATUS_INVALID_PASS	11
++
++#define ND_INTEL_SEC_STATE_ENABLED	0x02
++#define ND_INTEL_SEC_STATE_LOCKED	0x04
++#define ND_INTEL_SEC_STATE_FROZEN	0x08
++#define ND_INTEL_SEC_STATE_PLIMIT	0x10
++#define ND_INTEL_SEC_STATE_UNSUPPORTED	0x20
++
++struct nd_intel_get_security_state {
++	u32 status;
++	u32 reserved;
++	u8 state;
++	u8 reserved1[3];
++} __packed;
++
++struct nd_intel_set_passphrase {
++	u8 old_pass[ND_INTEL_PASSPHRASE_SIZE];
++	u8 new_pass[ND_INTEL_PASSPHRASE_SIZE];
++	u32 status;
++} __packed;
++
++struct nd_intel_unlock_unit {
++	u8 passphrase[ND_INTEL_PASSPHRASE_SIZE];
++	u32 status;
++} __packed;
++
++struct nd_intel_disable_passphrase {
++	u8 passphrase[ND_INTEL_PASSPHRASE_SIZE];
++	u32 status;
++} __packed;
++
++struct nd_intel_freeze_lock {
++	u32 status;
++} __packed;
++
++struct nd_intel_secure_erase {
++	u8 passphrase[ND_INTEL_PASSPHRASE_SIZE];
++	u32 status;
++} __packed;
++
++struct nd_intel_overwrite {
++	u8 passphrase[ND_INTEL_PASSPHRASE_SIZE];
++	u32 status;
++} __packed;
++
++struct nd_intel_query_overwrite {
++	u32 status;
++} __packed;
++#endif /* CONFIG_X86 */
++
++#endif
+diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
+index 7d15856a739f..40b0003b1805 100644
+--- a/drivers/acpi/nfit/nfit.h
++++ b/drivers/acpi/nfit/nfit.h
+@@ -60,14 +60,29 @@ enum nvdimm_family_cmds {
+ 	NVDIMM_INTEL_QUERY_FWUPDATE = 16,
+ 	NVDIMM_INTEL_SET_THRESHOLD = 17,
+ 	NVDIMM_INTEL_INJECT_ERROR = 18,
++	NVDIMM_INTEL_GET_SECURITY_STATE = 19,
++	NVDIMM_INTEL_SET_PASSPHRASE = 20,
++	NVDIMM_INTEL_DISABLE_PASSPHRASE = 21,
++	NVDIMM_INTEL_UNLOCK_UNIT = 22,
++	NVDIMM_INTEL_FREEZE_LOCK = 23,
++	NVDIMM_INTEL_SECURE_ERASE = 24,
++	NVDIMM_INTEL_OVERWRITE = 25,
++	NVDIMM_INTEL_QUERY_OVERWRITE = 26,
  };
  
--static struct crypto_shash *hashalg;
--static struct crypto_shash *hmacalg;
-+static DEFINE_MUTEX(tpm_library_init_mutex);
-+static atomic_t tpm_library_usage;
-+static struct crypto_shash *tpm_hashalg;
-+static struct crypto_shash *tpm_hmacalg;
- 
--static struct sdesc *init_sdesc(struct crypto_shash *alg)
-+static struct tpm_sdesc *tpm_init_sdesc(struct crypto_shash *alg)
- {
--	struct sdesc *sdesc;
-+	struct tpm_sdesc *sdesc;
- 	int size;
- 
- 	size = sizeof(struct shash_desc) + crypto_shash_descsize(alg);
-@@ -60,12 +52,12 @@ static struct sdesc *init_sdesc(struct crypto_shash *alg)
- static int TSS_sha1(const unsigned char *data, unsigned int datalen,
- 		    unsigned char *digest)
- {
--	struct sdesc *sdesc;
-+	struct tpm_sdesc *sdesc;
- 	int ret;
- 
--	sdesc = init_sdesc(hashalg);
-+	sdesc = tpm_init_sdesc(tpm_hashalg);
- 	if (IS_ERR(sdesc)) {
--		pr_info("trusted_key: can't alloc %s\n", hash_alg);
-+		pr_info("Can't alloc %s\n", tpm_hash_alg);
- 		return PTR_ERR(sdesc);
- 	}
- 
-@@ -77,19 +69,19 @@ static int TSS_sha1(const unsigned char *data, unsigned int datalen,
- static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
- 		       unsigned int keylen, ...)
- {
--	struct sdesc *sdesc;
-+	struct tpm_sdesc *sdesc;
- 	va_list argp;
- 	unsigned int dlen;
- 	unsigned char *data;
- 	int ret;
- 
--	sdesc = init_sdesc(hmacalg);
-+	sdesc = tpm_init_sdesc(tpm_hmacalg);
- 	if (IS_ERR(sdesc)) {
--		pr_info("trusted_key: can't alloc %s\n", hmac_alg);
-+		pr_info("Can't alloc %s\n", tpm_hmac_alg);
- 		return PTR_ERR(sdesc);
- 	}
- 
--	ret = crypto_shash_setkey(hmacalg, key, keylen);
-+	ret = crypto_shash_setkey(tpm_hmacalg, key, keylen);
- 	if (ret < 0)
- 		goto out;
- 	ret = crypto_shash_init(&sdesc->shash);
-@@ -126,16 +118,16 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 			unsigned char *h2, unsigned char h3, ...)
- {
- 	unsigned char paramdigest[SHA1_DIGEST_SIZE];
--	struct sdesc *sdesc;
-+	struct tpm_sdesc *sdesc;
- 	unsigned int dlen;
- 	unsigned char *data;
- 	unsigned char c;
- 	int ret;
- 	va_list argp;
- 
--	sdesc = init_sdesc(hashalg);
-+	sdesc = tpm_init_sdesc(tpm_hashalg);
- 	if (IS_ERR(sdesc)) {
--		pr_info("trusted_key: can't alloc %s\n", hash_alg);
-+		pr_info("Can't alloc %s\n", tpm_hash_alg);
- 		return PTR_ERR(sdesc);
- 	}
- 
-@@ -187,7 +179,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	unsigned char *authdata;
- 	unsigned char testhmac[SHA1_DIGEST_SIZE];
- 	unsigned char paramdigest[SHA1_DIGEST_SIZE];
--	struct sdesc *sdesc;
-+	struct tpm_sdesc *sdesc;
- 	unsigned int dlen;
- 	unsigned int dpos;
- 	va_list argp;
-@@ -205,9 +197,9 @@ static int TSS_checkhmac1(unsigned char *buffer,
- 	continueflag = authdata - 1;
- 	enonce = continueflag - TPM_NONCE_SIZE;
- 
--	sdesc = init_sdesc(hashalg);
-+	sdesc = tpm_init_sdesc(tpm_hashalg);
- 	if (IS_ERR(sdesc)) {
--		pr_info("trusted_key: can't alloc %s\n", hash_alg);
-+		pr_info("Can't alloc %s\n", tpm_hash_alg);
- 		return PTR_ERR(sdesc);
- 	}
- 	ret = crypto_shash_init(&sdesc->shash);
-@@ -274,7 +266,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
- 	unsigned char testhmac1[SHA1_DIGEST_SIZE];
- 	unsigned char testhmac2[SHA1_DIGEST_SIZE];
- 	unsigned char paramdigest[SHA1_DIGEST_SIZE];
--	struct sdesc *sdesc;
-+	struct tpm_sdesc *sdesc;
- 	unsigned int dlen;
- 	unsigned int dpos;
- 	va_list argp;
-@@ -297,9 +289,9 @@ static int TSS_checkhmac2(unsigned char *buffer,
- 	enonce1 = continueflag1 - TPM_NONCE_SIZE;
- 	enonce2 = continueflag2 - TPM_NONCE_SIZE;
- 
--	sdesc = init_sdesc(hashalg);
-+	sdesc = tpm_init_sdesc(tpm_hashalg);
- 	if (IS_ERR(sdesc)) {
--		pr_info("trusted_key: can't alloc %s\n", hash_alg);
-+		pr_info("Can't alloc %s\n", tpm_hash_alg);
- 		return PTR_ERR(sdesc);
- 	}
- 	ret = crypto_shash_init(&sdesc->shash);
-@@ -355,8 +347,8 @@ out:
-  * For key specific tpm requests, we will generate and send our
-  * own TPM command packets using the drivers send function.
-  */
--static int trusted_tpm_send(struct tpm_chip *chip, unsigned char *cmd,
--			    size_t buflen, const char *desc)
-+static int tpm_send_dump(struct tpm_chip *chip,
-+			 unsigned char *cmd, size_t buflen, const char *desc)
- {
- 	int rc;
- 
-@@ -372,9 +364,10 @@ static int trusted_tpm_send(struct tpm_chip *chip, unsigned char *cmd,
- /*
-  * Create an object specific authorisation protocol (OSAP) session
-  */
--static int osap(struct tpm_chip *chip,
--		struct tpm_buf *tb, struct osapsess *s,
--		const unsigned char *key, uint16_t type, uint32_t handle)
-+static int tpm_create_osap(struct tpm_chip *chip,
-+			   struct tpm_buf *tb, struct tpm_osapsess *s,
-+			   const unsigned char *key, uint16_t type,
-+			   uint32_t handle)
- {
- 	unsigned char enonce[TPM_NONCE_SIZE];
- 	unsigned char ononce[TPM_NONCE_SIZE];
-@@ -392,8 +385,8 @@ static int osap(struct tpm_chip *chip,
- 	store32(tb, handle);
- 	storebytes(tb, ononce, TPM_NONCE_SIZE);
- 
--	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
--			       "creating OSAP session");
-+	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
-+			    "creating OSAP session");
- 	if (ret < 0)
- 		return ret;
- 
-@@ -409,8 +402,8 @@ static int osap(struct tpm_chip *chip,
- /*
-  * Create an object independent authorisation protocol (oiap) session
-  */
--static int oiap(struct tpm_chip *chip, struct tpm_buf *tb, uint32_t *handle,
--		unsigned char *nonce)
-+static int tpm_create_oiap(struct tpm_chip *chip, struct tpm_buf *tb,
-+			   uint32_t *handle, unsigned char *nonce)
- {
- 	int ret;
- 
-@@ -418,8 +411,8 @@ static int oiap(struct tpm_chip *chip, struct tpm_buf *tb, uint32_t *handle,
- 	store16(tb, TPM_TAG_RQU_COMMAND);
- 	store32(tb, TPM_OIAP_SIZE);
- 	store32(tb, TPM_ORD_OIAP);
--	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
--			       "creating OIAP session");
-+	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
-+			    "creating OIAP session");
- 	if (ret < 0)
- 		return ret;
- 
-@@ -448,7 +441,7 @@ int tpm_seal(struct tpm_chip *chip, struct tpm_buf *tb, uint16_t keytype,
- 	     const unsigned char *blobauth,
- 	     const unsigned char *pcrinfo, uint32_t pcrinfosize)
- {
--	struct osapsess sess;
-+	struct tpm_osapsess sess;
- 	struct tpm_digests *td;
- 	unsigned char cont;
- 	uint32_t ordinal;
-@@ -466,7 +459,7 @@ int tpm_seal(struct tpm_chip *chip, struct tpm_buf *tb, uint16_t keytype,
- 		return -ENOMEM;
- 
- 	/* get session for sealing key */
--	ret = osap(chip, tb, &sess, keyauth, keytype, keyhandle);
-+	ret = tpm_create_osap(chip, tb, &sess, keyauth, keytype, keyhandle);
- 	if (ret < 0)
- 		goto out;
- 	dump_sess(&sess);
-@@ -527,8 +520,8 @@ int tpm_seal(struct tpm_chip *chip, struct tpm_buf *tb, uint16_t keytype,
- 	store8(tb, cont);
- 	storebytes(tb, td->pubauth, SHA1_DIGEST_SIZE);
- 
--	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
--			       "sealing data");
-+	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
-+			    "sealing data");
- 	if (ret < 0)
- 		goto out;
- 
-@@ -577,14 +570,14 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 	int ret;
- 
- 	/* sessions for unsealing key and data */
--	ret = oiap(chip, tb, &authhandle1, enonce1);
-+	ret = tpm_create_oiap(chip, tb, &authhandle1, enonce1);
- 	if (ret < 0) {
--		pr_info("trusted_key: oiap failed (%d)\n", ret);
-+		pr_info("Failed to create OIAP 1 (%d)\n", ret);
- 		return ret;
- 	}
--	ret = oiap(chip, tb, &authhandle2, enonce2);
-+	ret = tpm_create_oiap(chip, tb, &authhandle2, enonce2);
- 	if (ret < 0) {
--		pr_info("trusted_key: oiap failed (%d)\n", ret);
-+		pr_info("Failed to create OIAP 2 (%d)\n", ret);
- 		return ret;
- 	}
- 
-@@ -592,7 +585,7 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 	keyhndl = htonl(SRKHANDLE);
- 	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
- 	if (ret != TPM_NONCE_SIZE) {
--		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
-+		pr_info("tpm_get_random failed (%d)\n", ret);
- 		return ret;
- 	}
- 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
-@@ -622,10 +615,10 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 	store8(tb, cont);
- 	storebytes(tb, authdata2, SHA1_DIGEST_SIZE);
- 
--	ret = trusted_tpm_send(chip, tb->data, MAX_BUF_SIZE,
--			       "unsealing data");
-+	ret = tpm_send_dump(chip, tb->data, MAX_BUF_SIZE,
-+			    "unsealing data");
- 	if (ret < 0) {
--		pr_info("trusted_key: authhmac failed (%d)\n", ret);
-+		pr_info("authhmac failed (%d)\n", ret);
- 		return ret;
- 	}
- 
-@@ -637,7 +630,7 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- 			     *datalen, TPM_DATA_OFFSET + sizeof(uint32_t), 0,
- 			     0);
- 	if (ret < 0) {
--		pr_info("trusted_key: TSS_checkhmac2 failed (%d)\n", ret);
-+		pr_info("TSS_checkhmac2 failed (%d)\n", ret);
- 		return ret;
- 	}
- 	memcpy(data, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t), *datalen);
-@@ -645,38 +638,76 @@ int tpm_unseal(struct tpm_chip *chip, struct tpm_buf *tb,
- }
- EXPORT_SYMBOL_GPL(tpm_unseal);
- 
--void trusted_shash_release(void)
--{
--	if (hashalg)
--		crypto_free_shash(hashalg);
--	if (hmacalg)
--		crypto_free_shash(hmacalg);
--}
--EXPORT_SYMBOL_GPL(trusted_shash_release);
--
--int trusted_shash_alloc(void)
-+/**
-+ * tpm_library_use - Tell the TPM library we want to make use of it
-+ *
-+ * Tell the TPM library that we want to make use of it, allowing it to
-+ * allocate the resources it needs.
-+ */
-+int tpm_library_use(void)
- {
-+	struct crypto_shash *hashalg = NULL;
-+	struct crypto_shash *hmacalg = NULL;
- 	int ret;
- 
--	hmacalg = crypto_alloc_shash(hmac_alg, 0, CRYPTO_ALG_ASYNC);
-+	if (atomic_inc_not_zero(&tpm_library_usage))
-+		return 0;
++#define NVDIMM_INTEL_SECURITY_CMDMASK \
++(1 << NVDIMM_INTEL_GET_SECURITY_STATE | 1 << NVDIMM_INTEL_SET_PASSPHRASE \
++| 1 << NVDIMM_INTEL_DISABLE_PASSPHRASE | 1 << NVDIMM_INTEL_UNLOCK_UNIT \
++| 1 << NVDIMM_INTEL_FREEZE_LOCK | 1 << NVDIMM_INTEL_SECURE_ERASE \
++| 1 << NVDIMM_INTEL_OVERWRITE | 1 << NVDIMM_INTEL_QUERY_OVERWRITE)
 +
-+	/* We don't want to hold a mutex whilst allocating a crypto
-+	 * object as it may have to call up to userspace.
-+	 */
-+	hmacalg = crypto_alloc_shash(tpm_hmac_alg, 0, CRYPTO_ALG_ASYNC);
- 	if (IS_ERR(hmacalg)) {
--		pr_info("trusted_key: could not allocate crypto %s\n",
--			hmac_alg);
--		return PTR_ERR(hmacalg);
-+		pr_info("Could not allocate crypto %s\n", tpm_hmac_alg);
-+		ret = PTR_ERR(hmacalg);
-+		goto hmacalg_fail;
- 	}
+ #define NVDIMM_INTEL_CMDMASK \
+ (NVDIMM_STANDARD_CMDMASK | 1 << NVDIMM_INTEL_GET_MODES \
+  | 1 << NVDIMM_INTEL_GET_FWINFO | 1 << NVDIMM_INTEL_START_FWUPDATE \
+  | 1 << NVDIMM_INTEL_SEND_FWUPDATE | 1 << NVDIMM_INTEL_FINISH_FWUPDATE \
+  | 1 << NVDIMM_INTEL_QUERY_FWUPDATE | 1 << NVDIMM_INTEL_SET_THRESHOLD \
+- | 1 << NVDIMM_INTEL_INJECT_ERROR | 1 << NVDIMM_INTEL_LATCH_SHUTDOWN)
++ | 1 << NVDIMM_INTEL_INJECT_ERROR | 1 << NVDIMM_INTEL_LATCH_SHUTDOWN \
++ | NVDIMM_INTEL_SECURITY_CMDMASK)
  
--	hashalg = crypto_alloc_shash(hash_alg, 0, CRYPTO_ALG_ASYNC);
-+	hashalg = crypto_alloc_shash(tpm_hash_alg, 0, CRYPTO_ALG_ASYNC);
- 	if (IS_ERR(hashalg)) {
--		pr_info("trusted_key: could not allocate crypto %s\n",
--			hash_alg);
-+		pr_info("Could not allocate crypto %s\n", tpm_hash_alg);
- 		ret = PTR_ERR(hashalg);
- 		goto hashalg_fail;
- 	}
+ enum nfit_uuids {
+ 	/* for simplicity alias the uuid index with the family id */
+diff --git a/drivers/nvdimm/bus.c b/drivers/nvdimm/bus.c
+index 27902a8799b1..de2af49bbf08 100644
+--- a/drivers/nvdimm/bus.c
++++ b/drivers/nvdimm/bus.c
+@@ -894,7 +894,7 @@ static int nd_cmd_clear_to_send(struct nvdimm_bus *nvdimm_bus,
  
-+	mutex_lock(&tpm_library_init_mutex);
-+
-+	if (atomic_inc_return(&tpm_library_usage) = 1) {
-+		tpm_hmacalg = hmacalg;
-+		tpm_hashalg = hashalg;
-+	} else {
-+		crypto_free_shash(hashalg);
-+		crypto_free_shash(hmacalg);
-+	}
-+
-+	mutex_unlock(&tpm_library_init_mutex);
- 	return 0;
+ 	/* ask the bus provider if it would like to block this request */
+ 	if (nd_desc->clear_to_send) {
+-		int rc = nd_desc->clear_to_send(nd_desc, nvdimm, cmd);
++		int rc = nd_desc->clear_to_send(nd_desc, nvdimm, cmd, data);
  
- hashalg_fail:
--	crypto_free_shash(hmacalg);
-+	crypto_free_shash(tpm_hmacalg);
-+hmacalg_fail:
- 	return ret;
- }
--EXPORT_SYMBOL_GPL(trusted_shash_alloc);
-+EXPORT_SYMBOL_GPL(tpm_library_use);
-+
-+/**
-+ * tpm_library_unuse - Tell the TPM library we've finished with it
-+ *
-+ * Tell the TPM library we've finished with it, allowing it to free the
-+ * resources it had allocated.
-+ */
-+void tpm_library_unuse(void)
-+{
-+	if (atomic_add_unless(&tpm_library_usage, -1, 1))
-+		return;
-+
-+	mutex_lock(&tpm_library_init_mutex);
-+
-+	if (atomic_dec_and_test(&tpm_library_usage)) {
-+		crypto_free_shash(tpm_hashalg);
-+		crypto_free_shash(tpm_hmacalg);
-+	}
-+
-+	mutex_unlock(&tpm_library_init_mutex);
-+}
-+EXPORT_SYMBOL_GPL(tpm_library_unuse);
-diff --git a/drivers/char/tpm/tpm-library.h b/drivers/char/tpm/tpm-library.h
-index eec1dfe26c2a..6f7571cc6d6c 100644
---- a/drivers/char/tpm/tpm-library.h
-+++ b/drivers/char/tpm/tpm-library.h
-@@ -15,7 +15,7 @@
- #define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
- #define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
+ 		if (rc)
+ 			return rc;
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 097072c5a852..472171af7f60 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -87,7 +87,7 @@ struct nvdimm_bus_descriptor {
+ 	ndctl_fn ndctl;
+ 	int (*flush_probe)(struct nvdimm_bus_descriptor *nd_desc);
+ 	int (*clear_to_send)(struct nvdimm_bus_descriptor *nd_desc,
+-			struct nvdimm *nvdimm, unsigned int cmd);
++			struct nvdimm *nvdimm, unsigned int cmd, void *data);
+ };
  
--struct osapsess {
-+struct tpm_osapsess {
- 	uint32_t handle;
- 	unsigned char secret[SHA1_DIGEST_SIZE];
- 	unsigned char enonce[TPM_NONCE_SIZE];
-@@ -51,14 +51,14 @@ static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
- #define TPM_DEBUG 0
- 
- #ifdef TPM_DEBUG
--static inline void dump_sess(struct osapsess *s)
-+static inline void dump_sess(struct tpm_osapsess *s)
- {
--	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
-+	print_hex_dump(KERN_INFO, "handle ", DUMP_PREFIX_NONE,
- 		       16, 1, &s->handle, 4, 0);
--	pr_info("trusted-key: secret:\n");
-+	pr_info("secret:\n");
- 	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
- 		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
--	pr_info("trusted-key: enonce:\n");
-+	pr_info("enonce:\n");
- 	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
- 		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
- }
-@@ -67,13 +67,13 @@ static inline void dump_tpm_buf(unsigned char *buf)
- {
- 	int len;
- 
--	pr_info("\ntrusted-key: tpm buffer\n");
-+	pr_info("\ntpm buffer\n");
- 	len = LOAD32(buf, TPM_SIZE_OFFSET);
- 	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
- }
- 
- #else
--static inline void dump_sess(struct osapsess *s)
-+static inline void dump_sess(struct tpm_osapsess *s)
- {
- }
- 
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 5d8caf56c272..b08539920f76 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -100,8 +100,8 @@ struct tpm_buf {
- 
- #define INIT_BUF(tb) (tb->len = 0)
- 
--extern void trusted_shash_release(void);
--extern int trusted_shash_alloc(void);
-+extern int tpm_library_use(void);
-+extern void tpm_library_unuse(void);
- 
- extern int tpm_seal(struct tpm_chip *chip, struct tpm_buf *tb, uint16_t keytype,
- 		    uint32_t keyhandle, const unsigned char *keyauth,
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 83c6a485e62a..3afb152a6ae2 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -521,19 +521,19 @@ static int __init init_trusted(void)
- {
- 	int ret;
- 
--	ret = trusted_shash_alloc();
-+	ret = tpm_library_use();
- 	if (ret < 0)
- 		return ret;
- 	ret = register_key_type(&key_type_trusted);
- 	if (ret < 0)
--		trusted_shash_release();
-+		tpm_library_unuse();
- 	return ret;
- }
- 
- static void __exit cleanup_trusted(void)
- {
--	trusted_shash_release();
- 	unregister_key_type(&key_type_trusted);
-+	tpm_library_unuse();
- }
- 
- late_initcall(init_trusted);
+ struct nd_cmd_desc {
