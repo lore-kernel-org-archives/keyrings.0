@@ -1,110 +1,119 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 02 Aug 2018 18:31:18 +0000
-Subject: [RFCv3 10/13] KEYS: asym_tpm: Implement the decrypt operation
-Message-Id: <20180802183121.22909-11-denkenz@gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 28 Aug 2018 22:47:18 +0000
+Subject: [PATCH v8 00/12] Adding security support for nvdimm
+Message-Id: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+To: linux-nvdimm@lists.01.org
+Cc: alison.schofield@intel.com, keescook@chromium.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-This patch implements the pkey_decrypt operation using the private key
-blob.  The blob is first loaded into the TPM via tpm_loadkey2.  Once the
-handle is obtained, tpm_unbind operation is used to decrypt the data on
-the TPM and the result is returned.  The key loaded by tpm_loadkey2 is
-then evicted via tpm_flushspecific operation.
+The following series implements security support for nvdimm. Mostly adding
+new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
+adding generic support libnvdimm for other vendors. The most important
+security features are unlocking locked nvdimms, and updating/setting security
+passphrase to nvdimms.
 
-This patch assumes that the SRK authorization is a well known 20-byte of
-zeros and the same holds for the key authorization of the provided key.
+Security folks, thanks in advance for taking a look at my key management
+implementation and making sure that I'm doing something sane. Mainly you'll
+want to review patches 2, 4, and 5 as most relevant ones that need scrutiny.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+v8:
+- Make the keys retained by the kernel user searchable in order to find the
+  key that needs to be updated for key update.
+
+v7:
+- Add CONFIG_KEYS depenency for libnvdimm. (Alison)
+- Export lookup_user_key(). (David)
+- Modified "update" to take two key ids and and use lookup_user_key() in
+  order to improve security.  (David)
+- Use key ptrs and key_validate() for cached keys. (David)
+
+v6:
+- Fix intel DSM data structures to use defined size for passphrase (Robert)
+- Fix memcpy size to use sizeof data structure member (Robert)
+- Fix defined dimm id length (Robert)
+- Making intel_security_ops const (Eric)
+- Remove unused var in nvdimm_key_search() (Eric)
+- Added wbinvd before secure erase is issued (Robert)
+- Removed key_put_sync() usage (David)
+- Use init_cred instead of creating own cred (David)
+    - Exported init_cred symbol
+- Move keyring to dedicated (David)
+- Use logon_key_type and friends instead of creating custom (David)
+- Use key_lookup() with stored key serial (David)
+    - Exported key_lookup() symbol
+- Mark passed in key data as const (David)
+- Added comment for change_pass_phrase to explain how it works (David)
+- Unlink key when it's being removed from keyring. (David)
+- Removed request_key() from all security ops except update and unlock.
+- Update will now update the existing key's payload with the new key's
+  retrieved from userspace when the new payload is accepted by nvdimm.
+
+v5:
+- Moved dimm_id initialization (Dan)
+- Added a key_put_sync() in order to run key_gc_work and cleanup old key. (Dan)
+- Added check to block security state changes while DIMM is active. (Dan)
+
+v4:
+- flip payload layout for update passphrase to make it easier on userland.
+
+v3:
+- Set x86 wrappers for x86 only bits. (Dan)
+- Fixed up some verbiage in commit headers.
+- Put in usage of sysfs_streq() for sysfs inputs.
+- 0-day build fixes for non-x86 archs.
+
+v2:
+- Move inclusion of intel.h to relevant source files and not in nfit.h. (Dan)
+- Moved security ring relevant code to dimm_devs.c. (Dan)
+- Added dimm_id to nfit_mem to avoid recreate per sysfs show call. (Dan)
+- Added routine to return security_ops based on family supplied. (Dan)
+- Added nvdimm_key_data struct to wrap raw passphrase string. (Dan)
+- Allocate firmware package on stack. (Dan)
+- Added missing frozen state detection when retrieving security state.
+
 ---
- crypto/asymmetric_keys/asym_tpm.c | 58 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 57 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index edcb81fe8937..af661c9d55d7 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -348,7 +348,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	info->max_enc_size = len;
- 	info->max_dec_size = tk->key_len / 8;
- 
--	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
-+	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
-+			      KEYCTL_SUPPORTS_DECRYPT;
- 
- 	ret = 0;
- error_free_tfm:
-@@ -417,6 +418,58 @@ static int tpm_key_encrypt(struct tpm_key *tk,
- 	return ret;
- }
- 
-+/*
-+ * Decryption operation is performed with the private key in the TPM.
-+ */
-+static int tpm_key_decrypt(struct tpm_key *tk,
-+			   struct kernel_pkey_params *params,
-+			   const void *in, void *out)
-+{
-+	struct tpm_buf *tb;
-+	uint32_t keyhandle;
-+	uint8_t srkauth[SHA1_DIGEST_SIZE];
-+	uint8_t keyauth[SHA1_DIGEST_SIZE];
-+	int r;
-+
-+	pr_devel("=>%s()\n", __func__);
-+
-+	if (params->hash_algo)
-+		return -ENOPKG;
-+
-+	if (strcmp(params->encoding, "pkcs1"))
-+		return -ENOPKG;
-+
-+	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
-+	if (!tb)
-+		return -ENOMEM;
-+
-+	/* TODO: Handle a non-all zero SRK authorization */
-+	memset(srkauth, 0, sizeof(srkauth));
-+
-+	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
-+				tk->blob, tk->blob_len, &keyhandle);
-+	if (r < 0) {
-+		pr_devel("loadkey2 failed (%d)\n", r);
-+		goto error;
-+	}
-+
-+	/* TODO: Handle a non-all zero key authorization */
-+	memset(keyauth, 0, sizeof(keyauth));
-+
-+	r = tpm_unbind(tb, keyhandle, keyauth,
-+		       in, params->in_len, out, params->out_len);
-+	if (r < 0)
-+		pr_devel("tpm_unbind failed (%d)\n", r);
-+
-+	if (tpm_flushspecific(tb, keyhandle) < 0)
-+		pr_devel("flushspecific failed (%d)\n", r);
-+
-+error:
-+	kzfree(tb);
-+	pr_devel("<=%s() = %d\n", __func__, r);
-+	return r;
-+}
-+
- /*
-  * Do encryption, decryption and signing ops.
-  */
-@@ -431,6 +484,9 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
- 	case kernel_pkey_encrypt:
- 		ret = tpm_key_encrypt(tk, params, in, out);
- 		break;
-+	case kernel_pkey_decrypt:
-+		ret = tpm_key_decrypt(tk, params, in, out);
-+		break;
- 	default:
- 		BUG();
- 	}
--- 
-2.16.1
+Dave Jiang (12):
+      nfit: add support for Intel DSM 1.7 commands
+      libnvdimm: create keyring to store security keys
+      nfit/libnvdimm: store dimm id as a member to struct nvdimm
+      keys: export lookup_user_key to external users
+      nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
+      nfit/libnvdimm: add set passphrase support for Intel nvdimms
+      nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+      nfit/libnvdimm: add freeze security support to Intel nvdimm
+      nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+      nfit_test: add context to dimm_dev for nfit_test
+      nfit_test: add test support for Intel nvdimm security DSMs
+      libnvdimm: add documentation for nvdimm security support
 
+
+ Documentation/nvdimm/security.txt |   82 ++++++
+ drivers/acpi/nfit/Makefile        |    1 
+ drivers/acpi/nfit/core.c          |   58 +++-
+ drivers/acpi/nfit/intel.c         |  382 +++++++++++++++++++++++++++
+ drivers/acpi/nfit/intel.h         |   82 ++++++
+ drivers/acpi/nfit/nfit.h          |   20 +
+ drivers/nvdimm/Kconfig            |    1 
+ drivers/nvdimm/bus.c              |    2 
+ drivers/nvdimm/core.c             |    7 
+ drivers/nvdimm/dimm.c             |    7 
+ drivers/nvdimm/dimm_devs.c        |  529 +++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/nd-core.h          |    6 
+ drivers/nvdimm/nd.h               |    2 
+ include/linux/key.h               |    3 
+ include/linux/libnvdimm.h         |   42 +++
+ kernel/cred.c                     |    1 
+ security/keys/internal.h          |    2 
+ security/keys/process_keys.c      |    1 
+ tools/testing/nvdimm/Kbuild       |    1 
+ tools/testing/nvdimm/test/nfit.c  |  227 +++++++++++++++-
+ 20 files changed, 1420 insertions(+), 36 deletions(-)
+ create mode 100644 Documentation/nvdimm/security.txt
+ create mode 100644 drivers/acpi/nfit/intel.c
+ create mode 100644 drivers/acpi/nfit/intel.h
+
+--
