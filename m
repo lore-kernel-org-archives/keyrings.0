@@ -1,7 +1,7 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Wed, 29 Aug 2018 00:36:59 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Fri, 31 Aug 2018 11:05:43 +0000
 Subject: Re: [RFC] KEYS: inject an MKTME specific safety check in the keyctl revoke path
-Message-Id: <20180829003659.GB18344@alison-desk.jf.intel.com>
+Message-Id: <20180831110543.GB9346@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -22,6 +22,9 @@ On Mon, Aug 13, 2018 at 07:05:38PM -0700, Alison Schofield wrote:
 > keys are used in a new system call that encrypts memory. The keys
 > need to be tightly controlled. One example is that userspace keys
 > should not be revoked while the hardware keyid slot is still in use.
+
+What is the new syscall? Can you point to a description?
+
 > 
 > The KEY_FLAG_KEEP bit offers good control. The mktme service uses that
 > bit to prevent userspace keys from disappearing without the service
@@ -32,6 +35,10 @@ On Mon, Aug 13, 2018 at 07:05:38PM -0700, Alison Schofield wrote:
 > in the revoke process. The mktme key service has no means to reject the
 > request. So, even if the mktme service sanity checks the request in its
 > .revoke method, it's too late to do anything about it.
+
+I have trouble understanding the problem. I'm just seeing what you need
+but I don't know why you need it...
+
 > 
 > This proposal inserts an MKTME specific check earlier into the existing
 > keyctl <revoke> path. If it is safe to revoke the key, mktme key service
@@ -45,26 +52,6 @@ On Mon, Aug 13, 2018 at 07:05:38PM -0700, Alison Schofield wrote:
 > 
 > Hoping that from this description and the diff you can understand the
 > issue and suggest alternative solutions if needed. Thanks for looking!
-
-David,
-
-I get that this mktme inject proposal is probably too type specific.
-Do either of these options make sense:
-
-Add a new keyctl command <revoke_mktme> where the special checks are
-done before doing actual revoke.
-- or -
-Add an optional call out to key_type ".revoke_ext" that would basically
-replace the 'if type = mktme" that I suggested in this patch.  If a
-.revoke_ext existed, execute that, before proceeding with revoke. It
-seems like this would add the least redundant code, but wonder how keen
-you are about adding new (optional) fields to key_type?
-
-Thoughts? 
-
-Thanks,
-Alison
-
 > 
 > Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 > ---
@@ -103,12 +90,28 @@ Alison
 > +	 * passes, the mktme key service will clear KEY_FLAG_KEEP bit
 > +	 * and the revoke will proceed.
 > +	 */
+
+I think this should be moved to the kdoc of the function.
+
 > +	if (strcmp(key->type->name, "mktme") = 0)  {
 > +		if (mktme_safe_revoke(key)) {
 > +			ret = -EINVAL;
 > +			goto error;
 > +		}
 > +	}
+
+What about -EBUSY instead? There is something wrong here because you
+ignore the return value of mktme_safe_revoke() and substitute your own
+return value. Should be:
+
+ret = mktme_safe_revoke(key);
+if (ret)
+	goto error;
+
+I think this should renamed simply as mktme_revoke_key() and document in
+the function long description what measures it need to take to revoke a
+key.
+
 > +
 >  	if (test_bit(KEY_FLAG_KEEP, &key->flags))
 >  		ret = -EPERM;
@@ -128,10 +131,17 @@ Alison
 > + * The important error case here is outstanding memory mappings using
 > + * the corresponding hardware keyid.
 > + */
+
+Please use kdoc.
+
 > +int mktme_safe_revoke(struct key *key)
 > +{
 > +	int keyid, vma_count;
 > +	int ret = -1;
+
+So you choose to use a magic number instead of relaying to the standard
+errnos?
+
 > +
 > +	mktme_map_lock();
 > +	keyid = mktme_map_keyid_from_serial(key->serial);
@@ -142,10 +152,16 @@ Alison
 > +	if (vma_count > 0) {
 > +		pr_debug("mktme not freeing keyid[%d] encrypt_count[%d]\n",
 > +			 keyid, vma_count);
+
+Wasn't it busy using it? Maybe the log message could be more exact.
+
 > +		goto out;
 > +	}
 > +	mktme_clear_programmed_key(keyid);
 > +	/* Clearing KEY_FLAG_KEEP flag allows the revoke to proceed */
+
+Is this comment necessary?
+
 > +	clear_bit(KEY_FLAG_KEEP, &key->flags);
 > +	ret = 0;
 > +out:
@@ -165,3 +181,8 @@ Alison
 > -- 
 > 2.14.1
 > 
+
+What about just waiting by adding callback to the MMU notifier when the
+count is zero and using a wait queue?
+
+/Jarkko
