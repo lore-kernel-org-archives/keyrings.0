@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:55:50 +0000
-Subject: [PATCH 14/22] KEYS: asym_tpm: Implement encryption operation
-Message-Id: <153618455041.7946.3760011164296173162.stgit@warthog.procyon.org.uk>
+Date: Wed, 05 Sep 2018 21:56:03 +0000
+Subject: [PATCH 16/22] KEYS: Move trusted.h to include/keys
+Message-Id: <153618456351.7946.16069792174440572937.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -12,123 +12,311 @@ To: linux-security-module@vger.kernel.org
 
 From: Denis Kenzior <denkenz@gmail.com>
 
-This patch impelements the pkey_encrypt operation.  The public key
-portion extracted from the TPM key blob is used.  The operation is
-performed entirely in software using the crypto API.
-
 Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/asym_tpm.c |   84 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 84 insertions(+)
+ include/keys/trusted.h  |  136 +++++++++++++++++++++++++++++++++++++++++++++++
+ security/keys/trusted.c |    2 -
+ security/keys/trusted.h |  136 -----------------------------------------------
+ 3 files changed, 137 insertions(+), 137 deletions(-)
+ create mode 100644 include/keys/trusted.h
+ delete mode 100644 security/keys/trusted.h
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 837472d107d5..8edca3c4c193 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -165,6 +165,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	info->max_enc_size = len;
- 	info->max_dec_size = tk->key_len / 8;
- 
-+	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
+diff --git a/include/keys/trusted.h b/include/keys/trusted.h
+new file mode 100644
+index 000000000000..adbcb6817826
+--- /dev/null
++++ b/include/keys/trusted.h
+@@ -0,0 +1,136 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef __TRUSTED_KEY_H
++#define __TRUSTED_KEY_H
 +
- 	ret = 0;
- error_free_tfm:
- 	crypto_free_akcipher(tfm);
-@@ -172,6 +174,87 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	return ret;
- }
- 
-+/*
-+ * Encryption operation is performed with the public key.  Hence it is done
-+ * in software
-+ */
-+static int tpm_key_encrypt(struct tpm_key *tk,
-+			   struct kernel_pkey_params *params,
-+			   const void *in, void *out)
++/* implementation specific TPM constants */
++#define MAX_BUF_SIZE			1024
++#define TPM_GETRANDOM_SIZE		14
++#define TPM_OSAP_SIZE			36
++#define TPM_OIAP_SIZE			10
++#define TPM_SEAL_SIZE			87
++#define TPM_UNSEAL_SIZE			104
++#define TPM_SIZE_OFFSET			2
++#define TPM_RETURN_OFFSET		6
++#define TPM_DATA_OFFSET			10
++
++#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
++#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
++#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
++
++struct tpm_buf {
++	int len;
++	unsigned char data[MAX_BUF_SIZE];
++};
++
++#define INIT_BUF(tb) (tb->len = 0)
++
++struct osapsess {
++	uint32_t handle;
++	unsigned char secret[SHA1_DIGEST_SIZE];
++	unsigned char enonce[TPM_NONCE_SIZE];
++};
++
++/* discrete values, but have to store in uint16_t for TPM use */
++enum {
++	SEAL_keytype = 1,
++	SRK_keytype = 4
++};
++
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++			unsigned int keylen, unsigned char *h1,
++			unsigned char *h2, unsigned char h3, ...);
++int TSS_checkhmac1(unsigned char *buffer,
++			  const uint32_t command,
++			  const unsigned char *ononce,
++			  const unsigned char *key,
++			  unsigned int keylen, ...);
++
++int trusted_tpm_send(unsigned char *cmd, size_t buflen);
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
++
++#define TPM_DEBUG 0
++
++#if TPM_DEBUG
++static inline void dump_options(struct trusted_key_options *o)
 +{
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	struct crypto_akcipher *tfm;
-+	struct akcipher_request *req;
-+	struct crypto_wait cwait;
-+	struct scatterlist in_sg, out_sg;
-+	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
-+	uint32_t der_pub_key_len;
-+	int ret;
-+
-+	pr_devel("=>%s()\n", __func__);
-+
-+	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
-+	if (ret < 0)
-+		return ret;
-+
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
-+					 der_pub_key);
-+
-+	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
-+	if (ret < 0)
-+		goto error_free_tfm;
-+
-+	req = akcipher_request_alloc(tfm, GFP_KERNEL);
-+	if (!req)
-+		goto error_free_tfm;
-+
-+	sg_init_one(&in_sg, in, params->in_len);
-+	sg_init_one(&out_sg, out, params->out_len);
-+	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
-+				   params->out_len);
-+	crypto_init_wait(&cwait);
-+	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
-+				      CRYPTO_TFM_REQ_MAY_SLEEP,
-+				      crypto_req_done, &cwait);
-+
-+	ret = crypto_akcipher_encrypt(req);
-+	ret = crypto_wait_req(ret, &cwait);
-+
-+	if (ret = 0)
-+		ret = req->dst_len;
-+
-+	akcipher_request_free(req);
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
++	pr_info("trusted_key: sealing key type %d\n", o->keytype);
++	pr_info("trusted_key: sealing key handle %0X\n", o->keyhandle);
++	pr_info("trusted_key: pcrlock %d\n", o->pcrlock);
++	pr_info("trusted_key: pcrinfo %d\n", o->pcrinfo_len);
++	print_hex_dump(KERN_INFO, "pcrinfo ", DUMP_PREFIX_NONE,
++		       16, 1, o->pcrinfo, o->pcrinfo_len, 0);
 +}
 +
-+/*
-+ * Do encryption, decryption and signing ops.
-+ */
-+static int tpm_key_eds_op(struct kernel_pkey_params *params,
-+			  const void *in, void *out)
++static inline void dump_payload(struct trusted_key_payload *p)
 +{
-+	struct tpm_key *tk = params->key->payload.data[asym_crypto];
-+	int ret = -EOPNOTSUPP;
-+
-+	/* Perform the encryption calculation. */
-+	switch (params->op) {
-+	case kernel_pkey_encrypt:
-+		ret = tpm_key_encrypt(tk, params, in, out);
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	return ret;
++	pr_info("trusted_key: key_len %d\n", p->key_len);
++	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
++		       16, 1, p->key, p->key_len, 0);
++	pr_info("trusted_key: bloblen %d\n", p->blob_len);
++	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
++		       16, 1, p->blob, p->blob_len, 0);
++	pr_info("trusted_key: migratable %d\n", p->migratable);
 +}
 +
- /*
-  * Parse enough information out of TPM_KEY structure:
-  * TPM_STRUCT_VER -> 4 bytes
-@@ -329,6 +412,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
- 	.describe		= asym_tpm_describe,
- 	.destroy		= asym_tpm_destroy,
- 	.query			= tpm_key_query,
-+	.eds_op			= tpm_key_eds_op,
- };
- EXPORT_SYMBOL_GPL(asym_tpm_subtype);
++static inline void dump_sess(struct osapsess *s)
++{
++	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
++		       16, 1, &s->handle, 4, 0);
++	pr_info("trusted-key: secret:\n");
++	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
++		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
++	pr_info("trusted-key: enonce:\n");
++	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
++		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
++}
++
++static inline void dump_tpm_buf(unsigned char *buf)
++{
++	int len;
++
++	pr_info("\ntrusted-key: tpm buffer\n");
++	len = LOAD32(buf, TPM_SIZE_OFFSET);
++	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
++}
++#else
++static inline void dump_options(struct trusted_key_options *o)
++{
++}
++
++static inline void dump_payload(struct trusted_key_payload *p)
++{
++}
++
++static inline void dump_sess(struct osapsess *s)
++{
++}
++
++static inline void dump_tpm_buf(unsigned char *buf)
++{
++}
++#endif
++
++static inline void store8(struct tpm_buf *buf, const unsigned char value)
++{
++	buf->data[buf->len++] = value;
++}
++
++static inline void store16(struct tpm_buf *buf, const uint16_t value)
++{
++	*(uint16_t *) & buf->data[buf->len] = htons(value);
++	buf->len += sizeof value;
++}
++
++static inline void store32(struct tpm_buf *buf, const uint32_t value)
++{
++	*(uint32_t *) & buf->data[buf->len] = htonl(value);
++	buf->len += sizeof value;
++}
++
++static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
++			      const int len)
++{
++	memcpy(buf->data + buf->len, in, len);
++	buf->len += len;
++}
++#endif
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 1c025fdfe0e0..ff6789365a12 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -30,7 +30,7 @@
+ #include <linux/tpm.h>
+ #include <linux/tpm_command.h>
  
+-#include "trusted.h"
++#include <keys/trusted.h>
+ 
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
+diff --git a/security/keys/trusted.h b/security/keys/trusted.h
+deleted file mode 100644
+index adbcb6817826..000000000000
+--- a/security/keys/trusted.h
++++ /dev/null
+@@ -1,136 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef __TRUSTED_KEY_H
+-#define __TRUSTED_KEY_H
+-
+-/* implementation specific TPM constants */
+-#define MAX_BUF_SIZE			1024
+-#define TPM_GETRANDOM_SIZE		14
+-#define TPM_OSAP_SIZE			36
+-#define TPM_OIAP_SIZE			10
+-#define TPM_SEAL_SIZE			87
+-#define TPM_UNSEAL_SIZE			104
+-#define TPM_SIZE_OFFSET			2
+-#define TPM_RETURN_OFFSET		6
+-#define TPM_DATA_OFFSET			10
+-
+-#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
+-#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
+-#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
+-
+-struct tpm_buf {
+-	int len;
+-	unsigned char data[MAX_BUF_SIZE];
+-};
+-
+-#define INIT_BUF(tb) (tb->len = 0)
+-
+-struct osapsess {
+-	uint32_t handle;
+-	unsigned char secret[SHA1_DIGEST_SIZE];
+-	unsigned char enonce[TPM_NONCE_SIZE];
+-};
+-
+-/* discrete values, but have to store in uint16_t for TPM use */
+-enum {
+-	SEAL_keytype = 1,
+-	SRK_keytype = 4
+-};
+-
+-int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+-			unsigned int keylen, unsigned char *h1,
+-			unsigned char *h2, unsigned char h3, ...);
+-int TSS_checkhmac1(unsigned char *buffer,
+-			  const uint32_t command,
+-			  const unsigned char *ononce,
+-			  const unsigned char *key,
+-			  unsigned int keylen, ...);
+-
+-int trusted_tpm_send(unsigned char *cmd, size_t buflen);
+-int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
+-
+-#define TPM_DEBUG 0
+-
+-#if TPM_DEBUG
+-static inline void dump_options(struct trusted_key_options *o)
+-{
+-	pr_info("trusted_key: sealing key type %d\n", o->keytype);
+-	pr_info("trusted_key: sealing key handle %0X\n", o->keyhandle);
+-	pr_info("trusted_key: pcrlock %d\n", o->pcrlock);
+-	pr_info("trusted_key: pcrinfo %d\n", o->pcrinfo_len);
+-	print_hex_dump(KERN_INFO, "pcrinfo ", DUMP_PREFIX_NONE,
+-		       16, 1, o->pcrinfo, o->pcrinfo_len, 0);
+-}
+-
+-static inline void dump_payload(struct trusted_key_payload *p)
+-{
+-	pr_info("trusted_key: key_len %d\n", p->key_len);
+-	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
+-		       16, 1, p->key, p->key_len, 0);
+-	pr_info("trusted_key: bloblen %d\n", p->blob_len);
+-	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
+-		       16, 1, p->blob, p->blob_len, 0);
+-	pr_info("trusted_key: migratable %d\n", p->migratable);
+-}
+-
+-static inline void dump_sess(struct osapsess *s)
+-{
+-	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
+-		       16, 1, &s->handle, 4, 0);
+-	pr_info("trusted-key: secret:\n");
+-	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
+-		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
+-	pr_info("trusted-key: enonce:\n");
+-	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
+-		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
+-}
+-
+-static inline void dump_tpm_buf(unsigned char *buf)
+-{
+-	int len;
+-
+-	pr_info("\ntrusted-key: tpm buffer\n");
+-	len = LOAD32(buf, TPM_SIZE_OFFSET);
+-	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
+-}
+-#else
+-static inline void dump_options(struct trusted_key_options *o)
+-{
+-}
+-
+-static inline void dump_payload(struct trusted_key_payload *p)
+-{
+-}
+-
+-static inline void dump_sess(struct osapsess *s)
+-{
+-}
+-
+-static inline void dump_tpm_buf(unsigned char *buf)
+-{
+-}
+-#endif
+-
+-static inline void store8(struct tpm_buf *buf, const unsigned char value)
+-{
+-	buf->data[buf->len++] = value;
+-}
+-
+-static inline void store16(struct tpm_buf *buf, const uint16_t value)
+-{
+-	*(uint16_t *) & buf->data[buf->len] = htons(value);
+-	buf->len += sizeof value;
+-}
+-
+-static inline void store32(struct tpm_buf *buf, const uint32_t value)
+-{
+-	*(uint32_t *) & buf->data[buf->len] = htonl(value);
+-	buf->len += sizeof value;
+-}
+-
+-static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
+-			      const int len)
+-{
+-	memcpy(buf->data + buf->len, in, len);
+-	buf->len += len;
+-}
+-#endif
