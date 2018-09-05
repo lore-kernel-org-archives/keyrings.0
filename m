@@ -1,229 +1,741 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Fri, 28 Sep 2018 21:53:31 +0000
-Subject: [PATCH v11 01/12] nfit: add support for Intel DSM 1.7 commands
-Message-Id: <153817161127.17152.2545243881402745636.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 05 Sep 2018 21:54:31 +0000
+Subject: [PATCH 02/22] KEYS: Provide keyctls to drive the new key type ops for asymmetric keys
+Message-Id: <153618447101.7946.4954006465235569857.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-Add command definition for security commands defined in Intel DSM
-specification v1.7. This includes "get security state", "set passphrase",
-"unlock unit", "freeze lock", "secure erase", "ovewrite", and
-"overwrite query". Since we are adding a lot of Intel definitions, moving
-the relevant bits to its own header. Also, we don't want those commands
-to be issued from user space through ioctls. Reason being some of the
-security commands require kernel involvement to flush all CPU caches that
-can't be done in userspace and the result can cause system crash. So
-blocking security commands in the ioctl path.
+Provide five keyctl functions that permit userspace to make use of the new
+key type ops for accessing and driving asymmetric keys.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+ (*) Query an asymmetric key.
+
+	long keyctl(KEYCTL_PKEY_QUERY,
+		    key_serial_t key, unsigned long reserved,
+		    struct keyctl_pkey_query *info);
+
+     Get information about an asymmetric key.  The information is returned
+     in the keyctl_pkey_query struct:
+
+	__u32	supported_ops;
+
+     A bit mask of flags indicating which ops are supported.  This is
+     constructed from a bitwise-OR of:
+
+	KEYCTL_SUPPORTS_{ENCRYPT,DECRYPT,SIGN,VERIFY}
+
+	__u32	key_size;
+
+     The size in bits of the key.
+
+	__u16	max_data_size;
+	__u16	max_sig_size;
+	__u16	max_enc_size;
+	__u16	max_dec_size;
+
+     The maximum sizes in bytes of a blob of data to be signed, a signature
+     blob, a blob to be encrypted and a blob to be decrypted.
+
+     reserved must be set to 0.  This is intended for future use to hand
+     over one or more passphrases needed unlock a key.
+
+     If successful, 0 is returned.  If the key is not an asymmetric key,
+     EOPNOTSUPP is returned.
+
+
+ (*) Encrypt, decrypt, sign or verify a blob using an asymmetric key.
+
+	long keyctl(KEYCTL_PKEY_ENCRYPT,
+		    const struct keyctl_pkey_params *params,
+		    const char *info,
+		    const void *in,
+		    void *out);
+
+	long keyctl(KEYCTL_PKEY_DECRYPT,
+		    const struct keyctl_pkey_params *params,
+		    const char *info,
+		    const void *in,
+		    void *out);
+
+	long keyctl(KEYCTL_PKEY_SIGN,
+		    const struct keyctl_pkey_params *params,
+		    const char *info,
+		    const void *in,
+		    void *out);
+
+	long keyctl(KEYCTL_PKEY_VERIFY,
+		    const struct keyctl_pkey_params *params,
+		    const char *info,
+		    const void *in,
+		    const void *in2);
+
+     Use an asymmetric key to perform a public-key cryptographic operation
+     a blob of data.
+
+     The parameter block pointed to by params contains a number of integer
+     values:
+
+	__s32		key_id;
+	__u32		in_len;
+	__u32		out_len;
+	__u32		in2_len;
+
+     For a given operation, the in and out buffers are used as follows:
+
+	Operation ID		in,in_len	out,out_len	in2,in2_len
+	============	========	========	=====	KEYCTL_PKEY_ENCRYPT	Raw data	Encrypted data	-
+	KEYCTL_PKEY_DECRYPT	Encrypted data	Raw data	-
+	KEYCTL_PKEY_SIGN	Raw data	Signature	-
+	KEYCTL_PKEY_VERIFY	Raw data	-		Signature
+
+     info is a string of key=value pairs that supply supplementary
+     information.
+
+     The __spare space in the parameter block must be set to 0.  This is
+     intended, amongst other things, to allow the passing of passphrases
+     required to unlock a key.
+
+     If successful, encrypt, decrypt and sign all return the amount of data
+     written into the output buffer.  Verification returns 0 on success.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- drivers/acpi/nfit/core.c  |   28 ++++++++++++++++++-
- drivers/acpi/nfit/intel.h |   67 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/nfit/nfit.h  |   17 +++++++++++
- drivers/nvdimm/bus.c      |    2 +
- include/linux/libnvdimm.h |    2 +
- 5 files changed, 112 insertions(+), 4 deletions(-)
- create mode 100644 drivers/acpi/nfit/intel.h
 
-diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-index b072cfc5f20e..4f3b89dc9238 100644
---- a/drivers/acpi/nfit/core.c
-+++ b/drivers/acpi/nfit/core.c
-@@ -24,6 +24,7 @@
- #include <linux/nd.h>
- #include <asm/cacheflush.h>
- #include <acpi/nfit.h>
-+#include "intel.h"
- #include "nfit.h"
+ Documentation/security/keys/core.rst |  111 ++++++++++++
+ include/uapi/linux/keyctl.h          |   25 +++
+ security/keys/Makefile               |    1 
+ security/keys/compat.c               |   18 ++
+ security/keys/internal.h             |   39 ++++
+ security/keys/keyctl.c               |   24 +++
+ security/keys/keyctl_pkey.c          |  323 ++++++++++++++++++++++++++++++++++
+ 7 files changed, 541 insertions(+)
+ create mode 100644 security/keys/keyctl_pkey.c
+
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 2cdccde6c585..3d36f42283e6 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -859,6 +859,7 @@ The keyctl syscall functions are:
+      and either the buffer length or the OtherInfo length exceeds the
+      allowed length.
  
- /*
-@@ -377,6 +378,14 @@ static u8 nfit_dsm_revid(unsigned family, unsigned func)
- 			[NVDIMM_INTEL_QUERY_FWUPDATE] = 2,
- 			[NVDIMM_INTEL_SET_THRESHOLD] = 2,
- 			[NVDIMM_INTEL_INJECT_ERROR] = 2,
-+			[NVDIMM_INTEL_GET_SECURITY_STATE] = 2,
-+			[NVDIMM_INTEL_SET_PASSPHRASE] = 2,
-+			[NVDIMM_INTEL_DISABLE_PASSPHRASE] = 2,
-+			[NVDIMM_INTEL_UNLOCK_UNIT] = 2,
-+			[NVDIMM_INTEL_FREEZE_LOCK] = 2,
-+			[NVDIMM_INTEL_SECURE_ERASE] = 2,
-+			[NVDIMM_INTEL_OVERWRITE] = 2,
-+			[NVDIMM_INTEL_QUERY_OVERWRITE] = 2,
- 		},
- 	};
- 	u8 id;
-@@ -3229,7 +3238,7 @@ static int acpi_nfit_flush_probe(struct nvdimm_bus_descriptor *nd_desc)
- 	return 0;
- }
++
+   *  Restrict keyring linkage::
  
--static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
-+static int __acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
- 		struct nvdimm *nvdimm, unsigned int cmd)
- {
- 	struct acpi_nfit_desc *acpi_desc = to_acpi_nfit_desc(nd_desc);
-@@ -3251,6 +3260,23 @@ static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
- 	return 0;
- }
+ 	long keyctl(KEYCTL_RESTRICT_KEYRING, key_serial_t keyring,
+@@ -890,6 +891,116 @@ The keyctl syscall functions are:
+      applicable to the asymmetric key type.
  
-+/* prevent security commands from being issued via ioctl */
-+static int acpi_nfit_clear_to_send(struct nvdimm_bus_descriptor *nd_desc,
-+		struct nvdimm *nvdimm, unsigned int cmd, void *buf)
+ 
++  *  Query an asymmetric key::
++
++	long keyctl(KEYCTL_PKEY_QUERY,
++		    key_serial_t key_id, unsigned long reserved,
++		    struct keyctl_pkey_query *info);
++
++     Get information about an asymmetric key.  The information is returned in
++     the keyctl_pkey_query struct::
++
++	__u32	supported_ops;
++	__u32	key_size;
++	__u16	max_data_size;
++	__u16	max_sig_size;
++	__u16	max_enc_size;
++	__u16	max_dec_size;
++	__u32	__spare[10];
++
++     ``supported_ops`` contains a bit mask of flags indicating which ops are
++     supported.  This is constructed from a bitwise-OR of::
++
++	KEYCTL_SUPPORTS_{ENCRYPT,DECRYPT,SIGN,VERIFY}
++
++     ``key_size`` indicated the size of the key in bits.
++
++     ``max_*_size`` indicate the maximum sizes in bytes of a blob of data to be
++     signed, a signature blob, a blob to be encrypted and a blob to be
++     decrypted.
++
++     ``__spare[]`` must be set to 0.  This is intended for future use to hand
++     over one or more passphrases needed unlock a key.
++
++     If successful, 0 is returned.  If the key is not an asymmetric key,
++     EOPNOTSUPP is returned.
++
++
++  *  Encrypt, decrypt, sign or verify a blob using an asymmetric key::
++
++	long keyctl(KEYCTL_PKEY_ENCRYPT,
++		    const struct keyctl_pkey_params *params,
++		    const char *info,
++		    const void *in,
++		    void *out);
++
++	long keyctl(KEYCTL_PKEY_DECRYPT,
++		    const struct keyctl_pkey_params *params,
++		    const char *info,
++		    const void *in,
++		    void *out);
++
++	long keyctl(KEYCTL_PKEY_SIGN,
++		    const struct keyctl_pkey_params *params,
++		    const char *info,
++		    const void *in,
++		    void *out);
++
++	long keyctl(KEYCTL_PKEY_VERIFY,
++		    const struct keyctl_pkey_params *params,
++		    const char *info,
++		    const void *in,
++		    const void *in2);
++
++     Use an asymmetric key to perform a public-key cryptographic operation a
++     blob of data.  For encryption and verification, the asymmetric key may
++     only need the public parts to be available, but for decryption and signing
++     the private parts are required also.
++
++     The parameter block pointed to by params contains a number of integer
++     values::
++
++	__s32		key_id;
++	__u32		in_len;
++	__u32		out_len;
++	__u32		in2_len;
++
++     ``key_id`` is the ID of the asymmetric key to be used.  ``in_len`` and
++     ``in2_len`` indicate the amount of data in the in and in2 buffers and
++     ``out_len`` indicates the size of the out buffer as appropriate for the
++     above operations.
++
++     For a given operation, the in and out buffers are used as follows::
++
++	Operation ID		in,in_len	out,out_len	in2,in2_len
++	============	========	========	=======+	KEYCTL_PKEY_ENCRYPT	Raw data	Encrypted data	-
++	KEYCTL_PKEY_DECRYPT	Encrypted data	Raw data	-
++	KEYCTL_PKEY_SIGN	Raw data	Signature	-
++	KEYCTL_PKEY_VERIFY	Raw data	-		Signature
++
++     ``info`` is a string of key=value pairs that supply supplementary
++     information.  These include:
++
++	``enc=<encoding>`` The encoding of the encrypted/signature blob.  This
++			can be "pkcs1" for RSASSA-PKCS1-v1.5 or
++			RSAES-PKCS1-v1.5; "pss" for "RSASSA-PSS"; "oaep" for
++			"RSAES-OAEP".  If omitted or is "raw", the raw output
++			of the encryption function is specified.
++
++	``hash=<algo>``	If the data buffer contains the output of a hash
++			function and the encoding includes some indication of
++			which hash function was used, the hash function can be
++			specified with this, eg. "hash=sha256".
++
++     The ``__spare[]`` space in the parameter block must be set to 0.  This is
++     intended, amongst other things, to allow the passing of passphrases
++     required to unlock a key.
++
++     If successful, encrypt, decrypt and sign all return the amount of data
++     written into the output buffer.  Verification returns 0 on success.
++
++
+ Kernel Services
+ ======= 
+diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+index d5eac15bc00c..1a5a7948606e 100644
+--- a/include/uapi/linux/keyctl.h
++++ b/include/uapi/linux/keyctl.h
+@@ -61,6 +61,11 @@
+ #define KEYCTL_INVALIDATE		21	/* invalidate a key */
+ #define KEYCTL_GET_PERSISTENT		22	/* get a user's persistent keyring */
+ #define KEYCTL_DH_COMPUTE		23	/* Compute Diffie-Hellman values */
++#define KEYCTL_PKEY_QUERY		24	/* Query public key parameters */
++#define KEYCTL_PKEY_ENCRYPT		25	/* Encrypt a blob using a public key */
++#define KEYCTL_PKEY_DECRYPT		26	/* Decrypt a blob using a public key */
++#define KEYCTL_PKEY_SIGN		27	/* Create a public key signature */
++#define KEYCTL_PKEY_VERIFY		28	/* Verify a public key signature */
+ #define KEYCTL_RESTRICT_KEYRING		29	/* Restrict keys allowed to link to a keyring */
+ 
+ /* keyctl structures */
+@@ -82,4 +87,24 @@ struct keyctl_kdf_params {
+ #define KEYCTL_SUPPORTS_SIGN		0x04
+ #define KEYCTL_SUPPORTS_VERIFY		0x08
+ 
++struct keyctl_pkey_query {
++	__u32		supported_ops;	/* Which ops are supported */
++	__u32		key_size;	/* Size of the key in bits */
++	__u16		max_data_size;	/* Maximum size of raw data to sign in bytes */
++	__u16		max_sig_size;	/* Maximum size of signature in bytes */
++	__u16		max_enc_size;	/* Maximum size of encrypted blob in bytes */
++	__u16		max_dec_size;	/* Maximum size of decrypted blob in bytes */
++	__u32		__spare[10];
++};
++
++struct keyctl_pkey_params {
++	__s32		key_id;		/* Serial no. of public key to use */
++	__u32		in_len;		/* Input data size */
++	union {
++		__u32		out_len;	/* Output buffer size (encrypt/decrypt/sign) */
++		__u32		in2_len;	/* 2nd input data size (verify) */
++	};
++	__u32		__spare[7];
++};
++
+ #endif /*  _LINUX_KEYCTL_H */
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index ef1581b337a3..9cef54064f60 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -22,6 +22,7 @@ obj-$(CONFIG_PROC_FS) += proc.o
+ obj-$(CONFIG_SYSCTL) += sysctl.o
+ obj-$(CONFIG_PERSISTENT_KEYRINGS) += persistent.o
+ obj-$(CONFIG_KEY_DH_OPERATIONS) += dh.o
++obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
+ 
+ #
+ # Key types
+diff --git a/security/keys/compat.c b/security/keys/compat.c
+index e87c89c0177c..9482df601dc3 100644
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -141,6 +141,24 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
+ 		return keyctl_restrict_keyring(arg2, compat_ptr(arg3),
+ 					       compat_ptr(arg4));
+ 
++	case KEYCTL_PKEY_QUERY:
++		if (arg3 != 0)
++			return -EINVAL;
++		return keyctl_pkey_query(arg2,
++					 compat_ptr(arg4),
++					 compat_ptr(arg5));
++
++	case KEYCTL_PKEY_ENCRYPT:
++	case KEYCTL_PKEY_DECRYPT:
++	case KEYCTL_PKEY_SIGN:
++		return keyctl_pkey_e_d_s(option,
++					 compat_ptr(arg2), compat_ptr(arg3),
++					 compat_ptr(arg4), compat_ptr(arg5));
++
++	case KEYCTL_PKEY_VERIFY:
++		return keyctl_pkey_verify(compat_ptr(arg2), compat_ptr(arg3),
++					  compat_ptr(arg4), compat_ptr(arg5));
++
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 9f8208dc0e55..74cb0ff42fed 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -298,6 +298,45 @@ static inline long compat_keyctl_dh_compute(
+ #endif
+ #endif
+ 
++#ifdef CONFIG_ASYMMETRIC_KEY_TYPE
++extern long keyctl_pkey_query(key_serial_t,
++			      const char __user *,
++			      struct keyctl_pkey_query __user *);
++
++extern long keyctl_pkey_verify(const struct keyctl_pkey_params __user *,
++			       const char __user *,
++			       const void __user *, const void __user *);
++
++extern long keyctl_pkey_e_d_s(int,
++			      const struct keyctl_pkey_params __user *,
++			      const char __user *,
++			      const void __user *, void __user *);
++#else
++static inline long keyctl_pkey_query(key_serial_t id,
++				     const char __user *_info,
++				     struct keyctl_pkey_query __user *_res)
 +{
-+	struct nd_cmd_pkg *call_pkg = buf;
-+	unsigned int func;
-+
-+	if (nvdimm && cmd = ND_CMD_CALL &&
-+			call_pkg->nd_family = NVDIMM_FAMILY_INTEL) {
-+		func = call_pkg->nd_command;
-+		if ((1 << func) & NVDIMM_INTEL_SECURITY_CMDMASK)
-+			return -EOPNOTSUPP;
-+	}
-+
-+	return __acpi_nfit_clear_to_send(nd_desc, nvdimm, cmd);
++	return -EOPNOTSUPP;
 +}
 +
- int acpi_nfit_ars_rescan(struct acpi_nfit_desc *acpi_desc, unsigned long flags)
- {
- 	struct device *dev = acpi_desc->dev;
-diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
-new file mode 100644
-index 000000000000..a6f8f4bc8ebb
---- /dev/null
-+++ b/drivers/acpi/nfit/intel.h
-@@ -0,0 +1,67 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+/* Copyright(c) 2018 Intel Corporation. All rights reserved. */
-+/*
-+ * Intel specific definitions for NVDIMM Firmware Interface Table - NFIT
-+ */
-+#ifndef _NFIT_INTEL_H_
-+#define _NFIT_INTEL_H_
++static inline long keyctl_pkey_verify(const struct keyctl_pkey_params __user *params,
++				      const char __user *_info,
++				      const void __user *_in,
++				      const void __user *_in2)
++{
++	return -EOPNOTSUPP;
++}
 +
-+#ifdef CONFIG_X86
-+
-+#define ND_INTEL_STATUS_SIZE		4
-+#define ND_INTEL_PASSPHRASE_SIZE	32
-+
-+#define ND_INTEL_STATUS_RETRY		5
-+#define ND_INTEL_STATUS_NOT_READY	9
-+#define ND_INTEL_STATUS_INVALID_STATE	10
-+#define ND_INTEL_STATUS_INVALID_PASS	11
-+
-+#define ND_INTEL_SEC_STATE_ENABLED	0x02
-+#define ND_INTEL_SEC_STATE_LOCKED	0x04
-+#define ND_INTEL_SEC_STATE_FROZEN	0x08
-+#define ND_INTEL_SEC_STATE_PLIMIT	0x10
-+#define ND_INTEL_SEC_STATE_UNSUPPORTED	0x20
-+
-+struct nd_intel_get_security_state {
-+	u32 status;
-+	u32 reserved;
-+	u8 state;
-+	u8 reserved1[3];
-+} __packed;
-+
-+struct nd_intel_set_passphrase {
-+	u8 old_pass[ND_INTEL_PASSPHRASE_SIZE];
-+	u8 new_pass[ND_INTEL_PASSPHRASE_SIZE];
-+	u32 status;
-+} __packed;
-+
-+struct nd_intel_unlock_unit {
-+	u8 passphrase[ND_INTEL_PASSPHRASE_SIZE];
-+	u32 status;
-+} __packed;
-+
-+struct nd_intel_disable_passphrase {
-+	u8 passphrase[ND_INTEL_PASSPHRASE_SIZE];
-+	u32 status;
-+} __packed;
-+
-+struct nd_intel_freeze_lock {
-+	u32 status;
-+} __packed;
-+
-+struct nd_intel_secure_erase {
-+	u8 passphrase[ND_INTEL_PASSPHRASE_SIZE];
-+	u32 status;
-+} __packed;
-+
-+struct nd_intel_overwrite {
-+	u8 passphrase[ND_INTEL_PASSPHRASE_SIZE];
-+	u32 status;
-+} __packed;
-+
-+struct nd_intel_query_overwrite {
-+	u32 status;
-+} __packed;
-+#endif /* CONFIG_X86 */
-+
++static inline long keyctl_pkey_e_d_s(int op,
++				     const struct keyctl_pkey_params __user *params,
++				     const char __user *_info,
++				     const void __user *_in,
++				     void __user *_out)
++{
++	return -EOPNOTSUPP;
++}
 +#endif
-diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
-index d1274ea2d251..1c4e26dd6425 100644
---- a/drivers/acpi/nfit/nfit.h
-+++ b/drivers/acpi/nfit/nfit.h
-@@ -60,14 +60,29 @@ enum nvdimm_family_cmds {
- 	NVDIMM_INTEL_QUERY_FWUPDATE = 16,
- 	NVDIMM_INTEL_SET_THRESHOLD = 17,
- 	NVDIMM_INTEL_INJECT_ERROR = 18,
-+	NVDIMM_INTEL_GET_SECURITY_STATE = 19,
-+	NVDIMM_INTEL_SET_PASSPHRASE = 20,
-+	NVDIMM_INTEL_DISABLE_PASSPHRASE = 21,
-+	NVDIMM_INTEL_UNLOCK_UNIT = 22,
-+	NVDIMM_INTEL_FREEZE_LOCK = 23,
-+	NVDIMM_INTEL_SECURE_ERASE = 24,
-+	NVDIMM_INTEL_OVERWRITE = 25,
-+	NVDIMM_INTEL_QUERY_OVERWRITE = 26,
- };
- 
-+#define NVDIMM_INTEL_SECURITY_CMDMASK \
-+(1 << NVDIMM_INTEL_GET_SECURITY_STATE | 1 << NVDIMM_INTEL_SET_PASSPHRASE \
-+| 1 << NVDIMM_INTEL_DISABLE_PASSPHRASE | 1 << NVDIMM_INTEL_UNLOCK_UNIT \
-+| 1 << NVDIMM_INTEL_FREEZE_LOCK | 1 << NVDIMM_INTEL_SECURE_ERASE \
-+| 1 << NVDIMM_INTEL_OVERWRITE | 1 << NVDIMM_INTEL_QUERY_OVERWRITE)
 +
- #define NVDIMM_INTEL_CMDMASK \
- (NVDIMM_STANDARD_CMDMASK | 1 << NVDIMM_INTEL_GET_MODES \
-  | 1 << NVDIMM_INTEL_GET_FWINFO | 1 << NVDIMM_INTEL_START_FWUPDATE \
-  | 1 << NVDIMM_INTEL_SEND_FWUPDATE | 1 << NVDIMM_INTEL_FINISH_FWUPDATE \
-  | 1 << NVDIMM_INTEL_QUERY_FWUPDATE | 1 << NVDIMM_INTEL_SET_THRESHOLD \
-- | 1 << NVDIMM_INTEL_INJECT_ERROR | 1 << NVDIMM_INTEL_LATCH_SHUTDOWN)
-+ | 1 << NVDIMM_INTEL_INJECT_ERROR | 1 << NVDIMM_INTEL_LATCH_SHUTDOWN \
-+ | NVDIMM_INTEL_SECURITY_CMDMASK)
+ /*
+  * Debugging key validation
+  */
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 1ffe60bb2845..18619690ce77 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1747,6 +1747,30 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 					       (const char __user *) arg3,
+ 					       (const char __user *) arg4);
  
- enum nfit_uuids {
- 	/* for simplicity alias the uuid index with the family id */
-diff --git a/drivers/nvdimm/bus.c b/drivers/nvdimm/bus.c
-index f1fb39921236..9743d8083538 100644
---- a/drivers/nvdimm/bus.c
-+++ b/drivers/nvdimm/bus.c
-@@ -902,7 +902,7 @@ static int nd_cmd_clear_to_send(struct nvdimm_bus *nvdimm_bus,
- 
- 	/* ask the bus provider if it would like to block this request */
- 	if (nd_desc->clear_to_send) {
--		int rc = nd_desc->clear_to_send(nd_desc, nvdimm, cmd);
-+		int rc = nd_desc->clear_to_send(nd_desc, nvdimm, cmd, data);
- 
- 		if (rc)
- 			return rc;
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 097072c5a852..472171af7f60 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -87,7 +87,7 @@ struct nvdimm_bus_descriptor {
- 	ndctl_fn ndctl;
- 	int (*flush_probe)(struct nvdimm_bus_descriptor *nd_desc);
- 	int (*clear_to_send)(struct nvdimm_bus_descriptor *nd_desc,
--			struct nvdimm *nvdimm, unsigned int cmd);
-+			struct nvdimm *nvdimm, unsigned int cmd, void *data);
- };
- 
- struct nd_cmd_desc {
++	case KEYCTL_PKEY_QUERY:
++		if (arg3 != 0)
++			return -EINVAL;
++		return keyctl_pkey_query((key_serial_t)arg2,
++					 (const char __user *)arg4,
++					 (struct keyctl_pkey_query *)arg5);
++
++	case KEYCTL_PKEY_ENCRYPT:
++	case KEYCTL_PKEY_DECRYPT:
++	case KEYCTL_PKEY_SIGN:
++		return keyctl_pkey_e_d_s(
++			option,
++			(const struct keyctl_pkey_params __user *)arg2,
++			(const char __user *)arg3,
++			(const void __user *)arg4,
++			(void __user *)arg5);
++
++	case KEYCTL_PKEY_VERIFY:
++		return keyctl_pkey_verify(
++			(const struct keyctl_pkey_params __user *)arg2,
++			(const char __user *)arg3,
++			(const void __user *)arg4,
++			(const void __user *)arg5);
++
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+new file mode 100644
+index 000000000000..783978842f13
+--- /dev/null
++++ b/security/keys/keyctl_pkey.c
+@@ -0,0 +1,323 @@
++/* Public-key operation keyctls
++ *
++ * Copyright (C) 2016 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/key.h>
++#include <linux/keyctl.h>
++#include <linux/parser.h>
++#include <linux/uaccess.h>
++#include <keys/user-type.h>
++#include "internal.h"
++
++static void keyctl_pkey_params_free(struct kernel_pkey_params *params)
++{
++	kfree(params->info);
++	key_put(params->key);
++}
++
++enum {
++	Opt_err = -1,
++	Opt_enc,		/* "enc=<encoding>" eg. "enc=oaep" */
++	Opt_hash,		/* "hash=<digest-name>" eg. "hash=sha1" */
++};
++
++static const match_table_t param_keys = {
++	{ Opt_enc,	"enc=%s" },
++	{ Opt_hash,	"hash=%s" },
++	{ Opt_err,	NULL }
++};
++
++/*
++ * Parse the information string which consists of key=val pairs.
++ */
++static int keyctl_pkey_params_parse(struct kernel_pkey_params *params)
++{
++	unsigned long token_mask = 0;
++	substring_t args[MAX_OPT_ARGS];
++	char *c = params->info, *p, *q;
++	int token;
++
++	while ((p = strsep(&c, " \t"))) {
++		if (*p = '\0' || *p = ' ' || *p = '\t')
++			continue;
++		token = match_token(p, param_keys, args);
++		if (__test_and_set_bit(token, &token_mask))
++			return -EINVAL;
++		q = args[0].from;
++		if (!q[0])
++			return -EINVAL;
++
++		switch (token) {
++		case Opt_enc:
++			params->encoding = q;
++			break;
++
++		case Opt_hash:
++			params->hash_algo = q;
++			break;
++
++		default:
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * Interpret parameters.  Callers must always call the free function
++ * on params, even if an error is returned.
++ */
++static int keyctl_pkey_params_get(key_serial_t id,
++				  const char __user *_info,
++				  struct kernel_pkey_params *params)
++{
++	key_ref_t key_ref;
++	void *p;
++	int ret;
++
++	memset(params, 0, sizeof(*params));
++	params->encoding = "raw";
++
++	p = strndup_user(_info, PAGE_SIZE);
++	if (IS_ERR(p))
++		return PTR_ERR(p);
++	params->info = p;
++
++	ret = keyctl_pkey_params_parse(params);
++	if (ret < 0)
++		return ret;
++
++	key_ref = lookup_user_key(id, 0, KEY_NEED_SEARCH);
++	if (IS_ERR(key_ref))
++		return PTR_ERR(key_ref);
++	params->key = key_ref_to_ptr(key_ref);
++
++	if (!params->key->type->asym_query)
++		return -EOPNOTSUPP;
++
++	return 0;
++}
++
++/*
++ * Get parameters from userspace.  Callers must always call the free function
++ * on params, even if an error is returned.
++ */
++static int keyctl_pkey_params_get_2(const struct keyctl_pkey_params __user *_params,
++				    const char __user *_info,
++				    int op,
++				    struct kernel_pkey_params *params)
++{
++	struct keyctl_pkey_params uparams;
++	struct kernel_pkey_query info;
++	int ret;
++
++	memset(params, 0, sizeof(*params));
++	params->encoding = "raw";
++
++	if (copy_from_user(&uparams, _params, sizeof(uparams)) != 0)
++		return -EFAULT;
++
++	ret = keyctl_pkey_params_get(uparams.key_id, _info, params);
++	if (ret < 0)
++		return ret;
++
++	ret = params->key->type->asym_query(params, &info);
++	if (ret < 0)
++		return ret;
++
++	switch (op) {
++	case KEYCTL_PKEY_ENCRYPT:
++	case KEYCTL_PKEY_DECRYPT:
++		if (uparams.in_len  > info.max_enc_size ||
++		    uparams.out_len > info.max_dec_size)
++			return -EINVAL;
++		break;
++	case KEYCTL_PKEY_SIGN:
++	case KEYCTL_PKEY_VERIFY:
++		if (uparams.in_len  > info.max_sig_size ||
++		    uparams.out_len > info.max_data_size)
++			return -EINVAL;
++		break;
++	default:
++		BUG();
++	}
++
++	params->in_len  = uparams.in_len;
++	params->out_len = uparams.out_len;
++	return 0;
++}
++
++/*
++ * Query information about an asymmetric key.
++ */
++long keyctl_pkey_query(key_serial_t id,
++		       const char __user *_info,
++		       struct keyctl_pkey_query __user *_res)
++{
++	struct kernel_pkey_params params;
++	struct kernel_pkey_query res;
++	long ret;
++
++	memset(&params, 0, sizeof(params));
++
++	ret = keyctl_pkey_params_get(id, _info, &params);
++	if (ret < 0)
++		goto error;
++
++	ret = params.key->type->asym_query(&params, &res);
++	if (ret < 0)
++		goto error;
++
++	ret = -EFAULT;
++	if (copy_to_user(_res, &res, sizeof(res)) = 0 &&
++	    clear_user(_res->__spare, sizeof(_res->__spare)) = 0)
++		ret = 0;
++
++error:
++	keyctl_pkey_params_free(&params);
++	return ret;
++}
++
++/*
++ * Encrypt/decrypt/sign
++ *
++ * Encrypt data, decrypt data or sign data using a public key.
++ *
++ * _info is a string of supplementary information in key=val format.  For
++ * instance, it might contain:
++ *
++ *	"enc=pkcs1 hash=sha256"
++ *
++ * where enc= specifies the encoding and hash= selects the OID to go in that
++ * particular encoding if required.  If enc= isn't supplied, it's assumed that
++ * the caller is supplying raw values.
++ *
++ * If successful, the amount of data written into the output buffer is
++ * returned.
++ */
++long keyctl_pkey_e_d_s(int op,
++		       const struct keyctl_pkey_params __user *_params,
++		       const char __user *_info,
++		       const void __user *_in,
++		       void __user *_out)
++{
++	struct kernel_pkey_params params;
++	void *in, *out;
++	long ret;
++
++	ret = keyctl_pkey_params_get_2(_params, _info, op, &params);
++	if (ret < 0)
++		goto error_params;
++
++	ret = -EOPNOTSUPP;
++	if (!params.key->type->asym_eds_op)
++		goto error_params;
++
++	switch (op) {
++	case KEYCTL_PKEY_ENCRYPT:
++		params.op = kernel_pkey_encrypt;
++		break;
++	case KEYCTL_PKEY_DECRYPT:
++		params.op = kernel_pkey_decrypt;
++		break;
++	case KEYCTL_PKEY_SIGN:
++		params.op = kernel_pkey_sign;
++		break;
++	default:
++		BUG();
++	}
++
++	in = memdup_user(_in, params.in_len);
++	if (IS_ERR(in)) {
++		ret = PTR_ERR(in);
++		goto error_params;
++	}
++
++	ret = -ENOMEM;
++	out = kmalloc(params.out_len, GFP_KERNEL);
++	if (!out)
++		goto error_in;
++
++	ret = params.key->type->asym_eds_op(&params, in, out);
++	if (ret < 0)
++		goto error_out;
++
++	if (copy_to_user(_out, out, ret) != 0)
++		ret = -EFAULT;
++
++error_out:
++	kfree(out);
++error_in:
++	kfree(in);
++error_params:
++	keyctl_pkey_params_free(&params);
++	return ret;
++}
++
++/*
++ * Verify a signature.
++ *
++ * Verify a public key signature using the given key, or if not given, search
++ * for a matching key.
++ *
++ * _info is a string of supplementary information in key=val format.  For
++ * instance, it might contain:
++ *
++ *	"enc=pkcs1 hash=sha256"
++ *
++ * where enc= specifies the signature blob encoding and hash= selects the OID
++ * to go in that particular encoding.  If enc= isn't supplied, it's assumed
++ * that the caller is supplying raw values.
++ *
++ * If successful, 0 is returned.
++ */
++long keyctl_pkey_verify(const struct keyctl_pkey_params __user *_params,
++			const char __user *_info,
++			const void __user *_in,
++			const void __user *_in2)
++{
++	struct kernel_pkey_params params;
++	void *in, *in2;
++	long ret;
++
++	ret = keyctl_pkey_params_get_2(_params, _info, KEYCTL_PKEY_VERIFY,
++				       &params);
++	if (ret < 0)
++		goto error_params;
++
++	ret = -EOPNOTSUPP;
++	if (!params.key->type->asym_verify_signature)
++		goto error_params;
++
++	in = memdup_user(_in, params.in_len);
++	if (IS_ERR(in)) {
++		ret = PTR_ERR(in);
++		goto error_params;
++	}
++
++	in2 = memdup_user(_in2, params.in2_len);
++	if (IS_ERR(in2)) {
++		ret = PTR_ERR(in2);
++		goto error_in;
++	}
++
++	params.op = kernel_pkey_verify;
++	ret = params.key->type->asym_verify_signature(&params, in, in2);
++
++	kfree(in2);
++error_in:
++	kfree(in);
++error_params:
++	keyctl_pkey_params_free(&params);
++	return ret;
++}
