@@ -1,180 +1,181 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Sep 2018 16:09:01 +0000
-Subject: [PATCH 1/6] dns: Allow the dns resolver to retrieve a server set
-Message-Id: <153685494161.16086.536892492442787707.stgit@warthog.procyon.org.uk>
+Date: Wed, 05 Sep 2018 21:55:24 +0000
+Subject: [PATCH 10/22] KEYS: asym_tpm: add skeleton for asym_tpm
+Message-Id: <153618452424.7946.15617756404492598517.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-10"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-Allow the DNS resolver to retrieve a set of servers and their associated
-addresses, ports, preference and weight ratings.
+From: Denis Kenzior <denkenz@gmail.com>
 
-In terms of communication with userspace, "srv=3D1" is added to the callout
-string (the '1' indicating the maximum data version supported by the
-kernel) to ask the userspace side for this.
+This patch adds the basic skeleton for the asym_tpm asymmetric key
+subtype.
 
-If the userspace side doesn't recognise it, it will ignore the option and
-return the usual text address list.
-
-If the userspace side does recognise it, it will return some binary data
-that begins with a zero byte that would cause the string parsers to give an
-error.  The second byte contains the version of the data in the blob (this
-may be between 1 and the version specified in the callout data).  The
-remainder of the payload is version-specific.
-
-In version 1, the payload looks like (note that this is packed):
-
-	u8	Non-string marker (ie. 0)
-	u8	Content (0 =3D> Server list)
-	u8	Version (ie. 1)
-	u8	Number of servers
-	foreach-server {
-		u16	Name length (LE)
-		u16	Priority (as per SRV record) (LE)
-		u16	Weight (as per SRV record) (LE)
-		u16	Port (LE)
-		u8	Protocol (IPPROTO_*)
-		u8	Number of addresses
-		char[]	Name (not NUL-terminated)
-		foreach-address {
-			u8		Family (AF_INET{,6})
-			union {
-				u8[4]	ipv4_addr
-				u8[16]	ipv6_addr
-			}
-		}
-	}
-
-This can then be used to fetch a whole cell's configuration for AFS, for
-example.
-
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- net/dns_resolver/dns_key.c   |   61 ++++++++++++++++++++++++++++++++++++++=
-++--
- net/dns_resolver/dns_query.c |    5 +--
- 2 files changed, 59 insertions(+), 7 deletions(-)
+ crypto/asymmetric_keys/Kconfig    |   11 +++++
+ crypto/asymmetric_keys/Makefile   |    1 
+ crypto/asymmetric_keys/asym_tpm.c |   90 +++++++++++++++++++++++++++++++++++++
+ include/crypto/asym_tpm_subtype.h |   16 +++++++
+ 4 files changed, 118 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/asym_tpm.c
+ create mode 100644 include/crypto/asym_tpm_subtype.h
 
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index 7f4534828f6c..ac3c9aa75727 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -48,14 +48,40 @@ const struct cred *dns_resolver_cache;
- /*
-  * Preparse instantiation data for a dns_resolver key.
-  *
-- * The data must be a NUL-terminated string, with the NUL char accounted in
-- * datalen.
-+ * For normal hostname lookups, the data must be a NUL-terminated string, =
-with
-+ * the NUL char accounted in datalen.
-  *
-  * If the data contains a '#' characters, then we take the clause after ea=
-ch
-  * one to be an option of the form 'key=3Dvalue'.  The actual data of inte=
-rest is
-  * the string leading up to the first '#'.  For instance:
-  *
-  *        "ip1,ip2,...#foo=BAr"
-+ *
-+ * For server list requests, the data must begin with a NUL char and be
-+ * followed by a byte indicating the version of the data format.  Version 1
-+ * looks something like (note this is packed):
-+ *
-+ *	u8      Non-string marker (ie. 0)
-+ *	u8	Content (0 is server list)
-+ *	u8	Version (ie. 1)
-+ *	u8	Number of servers
-+ *	foreach-server {
-+ *		u16	Name length (LE)
-+ *		u16	Priority (as per SRV record, low first) (LE)
-+ *		u16	Weight (as per SRV record, higher first) (LE)
-+ *		u16	Port (LE)
-+ *		u8	Protocol (IPPROTO_*)
-+ *		u8	Number of addresses
-+ *		char[]	Name (not NUL-terminated)
-+ *		foreach-address {
-+ *			u8		Family (AF_INET{,6})
-+ *			union {
-+ *				u8[4]	ipv4_addr
-+ *				u8[16]	ipv6_addr
-+ *			}
-+ *		}
-+ *	}
-+ *
-  */
- static int
- dns_resolver_preparse(struct key_preparsed_payload *prep)
-@@ -66,9 +92,37 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
- 	int datalen =3D prep->datalen, result_len =3D 0;
- 	const char *data =3D prep->data, *end, *opt;
-=20
-+	if (datalen <=3D 1 || !data)
-+		return -EINVAL;
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 66a7dad7ed3d..b75555c7d8ae 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -21,6 +21,17 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ 	  appropriate hash algorithms (such as SHA-1) must be available.
+ 	  ENOPKG will be reported if the requisite algorithm is unavailable.
+ 
++config ASYMMETRIC_TPM_KEY_SUBTYPE
++	tristate "Asymmetric TPM backed private key subtype"
++	depends on TCG_TPM
++	select CRYPTO_HMAC
++	select CRYPTO_SHA1
++	select CRYPTO_HASH_INFO
++	help
++	  This option provides support for TPM backed private key type handling.
++	  Operations such as sign, verify, encrypt, decrypt are performed by
++	  the TPM after the private key is loaded.
 +
-+	if (data[0] =3D 0) {
-+		/* It may be a server list. */
-+		if (datalen <=3D 3)
-+			return -EINVAL;
+ config X509_CERTIFICATE_PARSER
+ 	tristate "X.509 certificate parser"
+ 	depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index c38424f55b08..73fbe650ff1d 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -11,6 +11,7 @@ asymmetric_keys-y := \
+ 	signature.o
+ 
+ obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
++obj-$(CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE) += asym_tpm.o
+ 
+ #
+ # X.509 Certificate handling
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+new file mode 100644
+index 000000000000..d0b2b97e8e54
+--- /dev/null
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -0,0 +1,90 @@
++// SPDX-License-Identifier: GPL-2.0
++#define pr_fmt(fmt) "ASYM-TPM: "fmt
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/export.h>
++#include <linux/kernel.h>
++#include <linux/seq_file.h>
++#include <linux/scatterlist.h>
++#include <linux/tpm.h>
++#include <keys/asymmetric-subtype.h>
++#include <crypto/asym_tpm_subtype.h>
 +
-+		data++;
-+		kenter("[%u,%u],%u", data[0], data[1], datalen);
-+		if (data[0] !=3D 0) {
-+			pr_warn_ratelimited(
-+				"dns_resolver: Unsupported result type (%u)\n",
-+				(unsigned char)data[0]);
-+			return -EINVAL;
-+		}
++/*
++ * Provide a part of a description of the key for /proc/keys.
++ */
++static void asym_tpm_describe(const struct key *asymmetric_key,
++			      struct seq_file *m)
++{
++	struct tpm_key *tk = asymmetric_key->payload.data[asym_crypto];
 +
-+		if (data[1] !=3D 1) {
-+			pr_warn_ratelimited(
-+				"dns_resolver: Unsupported server list version (%u)\n",
-+				(unsigned char)data[1]);
-+			return -EINVAL;
-+		}
++	if (!tk)
++		return;
 +
-+		result_len =3D datalen - 1;
-+		goto store_result;
++	seq_printf(m, "TPM1.2/Blob");
++}
++
++static void asym_tpm_destroy(void *payload0, void *payload3)
++{
++	struct tpm_key *tk = payload0;
++
++	if (!tk)
++		return;
++
++	kfree(tk->blob);
++	tk->blob_len = 0;
++
++	kfree(tk);
++}
++
++/* Given the blob, parse it and load it into the TPM */
++struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
++{
++	int r;
++	struct tpm_key *tk;
++
++	r = tpm_is_tpm2(NULL);
++	if (r < 0)
++		goto error;
++
++	/* We don't support TPM2 yet */
++	if (r > 0) {
++		r = -ENODEV;
++		goto error;
 +	}
 +
- 	kenter("'%*.*s',%u", datalen, datalen, data, datalen);
-=20
--	if (datalen <=3D 1 || !data || data[datalen - 1] !=3D '\0')
-+	if (!data || data[datalen - 1] !=3D '\0')
- 		return -EINVAL;
- 	datalen--;
-=20
-@@ -144,6 +198,7 @@ dns_resolver_preparse(struct key_preparsed_payload *pre=
-p)
- 		return 0;
- 	}
-=20
-+store_result:
- 	kdebug("store result");
- 	prep->quotalen =3D result_len;
-=20
-diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
-index 49da67034f29..76338c38738a 100644
---- a/net/dns_resolver/dns_query.c
-+++ b/net/dns_resolver/dns_query.c
-@@ -148,12 +148,9 @@ int dns_query(const char *type, const char *name, size=
-_t namelen,
-=20
- 	if (_result) {
- 		ret =3D -ENOMEM;
--		*_result =3D kmalloc(len + 1, GFP_KERNEL);
-+		*_result =3D kmemdup_nul(upayload->data, len, GFP_KERNEL);
- 		if (!*_result)
- 			goto put;
--
--		memcpy(*_result, upayload->data, len);
--		(*_result)[len] =3D '\0';
- 	}
-=20
- 	if (_expiry)
++	r = -ENOMEM;
++	tk = kzalloc(sizeof(struct tpm_key), GFP_KERNEL);
++	if (!tk)
++		goto error;
++
++	tk->blob = kmemdup(blob, blob_len, GFP_KERNEL);
++	if (!tk->blob)
++		goto error_memdup;
++
++	tk->blob_len = blob_len;
++
++	return tk;
++
++error_memdup:
++	kfree(tk);
++error:
++	return ERR_PTR(r);
++}
++EXPORT_SYMBOL_GPL(tpm_key_create);
++
++/*
++ * TPM-based asymmetric key subtype
++ */
++struct asymmetric_key_subtype asym_tpm_subtype = {
++	.owner			= THIS_MODULE,
++	.name			= "asym_tpm",
++	.name_len		= sizeof("asym_tpm") - 1,
++	.describe		= asym_tpm_describe,
++	.destroy		= asym_tpm_destroy,
++};
++EXPORT_SYMBOL_GPL(asym_tpm_subtype);
++
++MODULE_DESCRIPTION("TPM based asymmetric key subtype");
++MODULE_AUTHOR("Intel Corporation");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
+new file mode 100644
+index 000000000000..03550b850998
+--- /dev/null
++++ b/include/crypto/asym_tpm_subtype.h
+@@ -0,0 +1,16 @@
++// SPDX-License-Identifier: GPL-2.0
++#ifndef _LINUX_ASYM_TPM_SUBTYPE_H
++#define _LINUX_ASYM_TPM_SUBTYPE_H
++
++#include <linux/keyctl.h>
++
++struct tpm_key {
++	void *blob;
++	u32 blob_len;
++};
++
++struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
++
++extern struct asymmetric_key_subtype asym_tpm_subtype;
++
++#endif /* _LINUX_ASYM_TPM_SUBTYPE_H */
