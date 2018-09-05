@@ -1,35 +1,134 @@
-From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 27 Sep 2018 13:14:31 +0000
-Subject: [PATCH v2 2/7] keyctl_dh_compute.3: mention /proc/crypto for hashnames
-Message-Id: <20180927131436.23328-3-mathstuf@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 05 Sep 2018 21:55:50 +0000
+Subject: [PATCH 14/22] KEYS: asym_tpm: Implement encryption operation
+Message-Id: <153618455041.7946.3760011164296173162.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-The kernel does not have a set of known hashnames available. Instead,
-/proc/crypto contains the information for the running system.
+From: Denis Kenzior <denkenz@gmail.com>
 
-Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+This patch impelements the pkey_encrypt operation.  The public key
+portion extracted from the TPM key blob is used.  The operation is
+performed entirely in software using the crypto API.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- man/keyctl_dh_compute.3 | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/man/keyctl_dh_compute.3 b/man/keyctl_dh_compute.3
-index 837c481..bb1274c 100644
---- a/man/keyctl_dh_compute.3
-+++ b/man/keyctl_dh_compute.3
-@@ -86,7 +86,9 @@ function.
- The
- .I hashname
- specifies the Linux kernel crypto API name for a hash that shall be used
--for the key derivation function, such as sha256.
-+for the key derivation function, such as sha256. See
-+.I /proc/crypto
-+for available hashes on the system.
- The
- .I hashname
- must be a NULL terminated string.
--- 
-2.19.0.221.g150f307afc
+ crypto/asymmetric_keys/asym_tpm.c |   84 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 84 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 837472d107d5..8edca3c4c193 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -165,6 +165,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	info->max_enc_size = len;
+ 	info->max_dec_size = tk->key_len / 8;
+ 
++	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
++
+ 	ret = 0;
+ error_free_tfm:
+ 	crypto_free_akcipher(tfm);
+@@ -172,6 +174,87 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	return ret;
+ }
+ 
++/*
++ * Encryption operation is performed with the public key.  Hence it is done
++ * in software
++ */
++static int tpm_key_encrypt(struct tpm_key *tk,
++			   struct kernel_pkey_params *params,
++			   const void *in, void *out)
++{
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	struct crypto_akcipher *tfm;
++	struct akcipher_request *req;
++	struct crypto_wait cwait;
++	struct scatterlist in_sg, out_sg;
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
++	int ret;
++
++	pr_devel("=>%s()\n", __func__);
++
++	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
++
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
++
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	req = akcipher_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
++
++	sg_init_one(&in_sg, in, params->in_len);
++	sg_init_one(&out_sg, out, params->out_len);
++	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
++				   params->out_len);
++	crypto_init_wait(&cwait);
++	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				      CRYPTO_TFM_REQ_MAY_SLEEP,
++				      crypto_req_done, &cwait);
++
++	ret = crypto_akcipher_encrypt(req);
++	ret = crypto_wait_req(ret, &cwait);
++
++	if (ret = 0)
++		ret = req->dst_len;
++
++	akcipher_request_free(req);
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
++}
++
++/*
++ * Do encryption, decryption and signing ops.
++ */
++static int tpm_key_eds_op(struct kernel_pkey_params *params,
++			  const void *in, void *out)
++{
++	struct tpm_key *tk = params->key->payload.data[asym_crypto];
++	int ret = -EOPNOTSUPP;
++
++	/* Perform the encryption calculation. */
++	switch (params->op) {
++	case kernel_pkey_encrypt:
++		ret = tpm_key_encrypt(tk, params, in, out);
++		break;
++	default:
++		BUG();
++	}
++
++	return ret;
++}
++
+ /*
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -329,6 +412,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.describe		= asym_tpm_describe,
+ 	.destroy		= asym_tpm_destroy,
+ 	.query			= tpm_key_query,
++	.eds_op			= tpm_key_eds_op,
+ };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
+ 
