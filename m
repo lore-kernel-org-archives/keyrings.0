@@ -1,36 +1,32 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 17:50:42 +0000
+From: Jan Engelhardt <jengelh@inai.de>
+Date: Wed, 05 Sep 2018 19:22:11 +0000
 Subject: Re: [RFC] UAPI: Check headers by compiling all together as C++
-Message-Id: <22225.1536169842@warthog.procyon.org.uk>
+Message-Id: <nycvar.YFH.7.76.1809052120510.24932@n3.vanv.qr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180905165552.GB25206@kroah.com> <153616286704.23468.584491117180383924.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20180905165552.GB25206@kroah.com>
-To: Greg KH <greg@kroah.com>
-Cc: dhowells@redhat.com, linux-api@vger.kernel.org, linux-kbuild@vger.kernel.org, dri-devel@lists.freedesktop.org, virtualization@lists.linux-foundation.org, keyrings@vger.kernel.org, netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org, alsa-devel@alsa-project.org, freedreno@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <153616286704.23468.584491117180383924.stgit@warthog.procyon.org.uk>
+ <20180905165552.GB25206@kroah.com>
+In-Reply-To: <20180905165552.GB25206-U8xfFu+wG4EAvxtiuMwx3w@public.gmane.org>
+To: Greg KH <greg-U8xfFu+wG4EAvxtiuMwx3w@public.gmane.org>
+Cc: moderated for non-subscribers <alsa-devel-K7yf7f+aM1XWsZ/bQMPhNw@public.gmane.org>, "Michael S. Tsirkin" <mst-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, David Airlie <airlied-cv59FeDIM0c@public.gmane.org>, Jason Wang <jasowang-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, dri-devel-PD4FTy7X32lNgt0PjOBp9y5qC8QIuHrW@public.gmane.org, virtualization-cunTk1MwBs9QetFLy7KEm3xJsTq8ys+cHZ5vskTnxNA@public.gmane.org, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Masahiro Yamada <yamada.masahiro-uWyLwvC0a2jby3iVrkZq2A@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Ryusuke Konishi <konishi.ryusuke-Zyj7fXuS5i5L9jVzuh4AOg@public.gmane.org>, linux-nilfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-nvdimm-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org, codalist-/uMB558Y47wP4a1z8dhFYw@public.gmane.org, coda-ETDLCGt7PQU3uPMLIKxrzw@public.gmane.org, coreteam-Cap9r6Oaw4JrovVCs/uTlw@public.gmane.org, Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, linux-kbuild-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-arm-msm-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Coly Li <colyli-l3A5Bk7waGM@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Jaroslav Kysela <perex-/Fr2/VpizcU@public.gmane.org>, Jan Harkes <jaharkes-ETDLCGt7PQU3uPMLIKxrzw@public.gmane.org>, Michal Marek <michal.lkml-yyZNWGI4GtDR7s880joybQ@public.gmane.org>, linux-api-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Takash
 
-Greg KH <greg@kroah.com> wrote:
+On Wednesday 2018-09-05 18:55, Greg KH wrote:
 
-> > Here's a set of patches that inserts a step into the build process to make
-> > sure that the UAPI headers can all be built together with C++ (if the
-> > compiler being used supports C++).  All but the final patch perform fixups,
-> > including:
-> 
-> Wait, why do we care?  What has recently changed to start to directly
-> import kernel uapi files into C++ code?
+>On Wed, Sep 05, 2018 at 04:54:27PM +0100, David Howells wrote:
+>> 
+>> Here's a set of patches that inserts a step into the build process to make
+>> sure that the UAPI headers can all be built together with C++ (if the
+>> compiler being used supports C++).  All but the final patch perform fixups,
+>> including:
+>
+>Wait, why do we care?  What has recently changed to start to directly
+>import kernel uapi files into C++ code?
 
-There's at least one outstanding bug due to a C++ identifier in the kernel
-UAPI headers.
+With C++11, C++ has become a much nicer language to use (for userspace, anyway).
 
-Are you saying you explicitly don't want people to be able to use the kernel
-UAPI headers in C++?
+>And if userspace wants to do this, can't they do the C namespace trick
+>themselves when they do the import?
 
-> And if userspace wants to do this, can't they do the C namespace trick
-> themselves when they do the import?  That must be how they are doing it
-> today, right?
-
-No, because there's no such trick (except with the preprocessor).
-
-David
+The only trick is to use an extra C source file and extensively wrap things.
