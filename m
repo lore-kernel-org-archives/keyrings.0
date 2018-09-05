@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:55:04 +0000
-Subject: [PATCH 07/22] KEYS: Implement encrypt, decrypt and sign for software asymmetric key
-Message-Id: <153618450412.7946.3727422000233525983.stgit@warthog.procyon.org.uk>
+Date: Wed, 05 Sep 2018 21:55:57 +0000
+Subject: [PATCH 15/22] KEYS: trusted: Expose common functionality
+Message-Id: <153618455698.7946.4164892881649814591.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,143 +10,133 @@ References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk
 In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-Implement the encrypt, decrypt and sign operations for the software
-asymmetric key subtype.  This mostly involves offloading the call to the
-crypto layer.
+From: Denis Kenzior <denkenz@gmail.com>
 
-Note that the decrypt and sign operations require a private key to be
-supplied.  Encrypt (and also verify) will work with either a public or a
-private key.  A public key can be supplied with an X.509 certificate and a
-private key can be supplied using a PKCS#8 blob:
+This patch exposes some common functionality needed to send TPM
+commands.  The current approach is a complete hack and needs to be
+addressed properly.  This commit just show-cases what functionality
+would need to be moved to a shared location or exposed in some other
+manner.
 
-	# j=`openssl pkcs8 -in ~/pkcs7/firmwarekey2.priv -topk8 -nocrypt -outform DER | keyctl padd asymmetric foo @s`
-	# keyctl pkey_query $j - enc=pkcs1
-	key_size@96
-	max_data_sizeQ2
-	max_sig_sizeQ2
-	max_enc_sizeQ2
-	max_dec_sizeQ2
-	encrypt=y
-	decrypt=y
-	sign=y
-	verify=y
-	# keyctl pkey_encrypt $j 0 data enc=pkcs1 >/tmp/enc
-	# keyctl pkey_decrypt $j 0 /tmp/enc enc=pkcs1 >/tmp/dec
-	# cmp data /tmp/dec
-	# keyctl pkey_sign $j 0 data enc=pkcs1 hash=sha1 >/tmp/sig
-	# keyctl pkey_verify $j 0 data /tmp/sig enc=pkcs1 hash=sha1
-	#
-
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/public_key.c |   82 +++++++++++++++++++++++++++++++++++
- 1 file changed, 81 insertions(+), 1 deletion(-)
+ crypto/asymmetric_keys/Kconfig |    1 +
+ security/keys/trusted.c        |   12 ++++++++----
+ security/keys/trusted.h        |   14 +++++++++++++-
+ 3 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index f2dc27897319..f5d85b47fcc6 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -130,7 +130,11 @@ static int software_key_query(const struct kernel_pkey_params *params,
- 	info->max_sig_size = len;
- 	info->max_enc_size = len;
- 	info->max_dec_size = len;
--	info->supported_ops = KEYCTL_SUPPORTS_VERIFY;
-+	info->supported_ops = (KEYCTL_SUPPORTS_ENCRYPT |
-+			       KEYCTL_SUPPORTS_VERIFY);
-+	if (pkey->key_is_private)
-+		info->supported_ops |= (KEYCTL_SUPPORTS_DECRYPT |
-+					KEYCTL_SUPPORTS_SIGN);
- 	ret = 0;
- 
- error_free_tfm:
-@@ -139,6 +143,81 @@ static int software_key_query(const struct kernel_pkey_params *params,
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 88353a9ebc9b..be70ca6c85d3 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -24,6 +24,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ config ASYMMETRIC_TPM_KEY_SUBTYPE
+ 	tristate "Asymmetric TPM backed private key subtype"
+ 	depends on TCG_TPM
++	depends on TRUSTED_KEYS
+ 	select CRYPTO_HMAC
+ 	select CRYPTO_SHA1
+ 	select CRYPTO_HASH_INFO
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index b69d3b1777c2..1c025fdfe0e0 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -121,7 +121,7 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
+ /*
+  * calculate authorization info fields to send to TPM
+  */
+-static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 			unsigned int keylen, unsigned char *h1,
+ 			unsigned char *h2, unsigned char h3, ...)
+ {
+@@ -168,11 +168,12 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 	kzfree(sdesc);
  	return ret;
  }
++EXPORT_SYMBOL_GPL(TSS_authhmac);
  
-+/*
-+ * Do encryption, decryption and signing ops.
-+ */
-+static int software_key_eds_op(struct kernel_pkey_params *params,
-+			       const void *in, void *out)
-+{
-+	const struct public_key *pkey = params->key->payload.data[asym_crypto];
-+	struct akcipher_request *req;
-+	struct crypto_akcipher *tfm;
-+	struct crypto_wait cwait;
-+	struct scatterlist in_sg, out_sg;
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	int ret;
-+
-+	pr_devel("=>%s()\n", __func__);
-+
-+	ret = software_key_determine_akcipher(params->encoding,
-+					      params->hash_algo,
-+					      pkey, alg_name);
-+	if (ret < 0)
-+		return ret;
-+
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	req = akcipher_request_alloc(tfm, GFP_KERNEL);
-+	if (!req)
-+		goto error_free_tfm;
-+
-+	if (pkey->key_is_private)
-+		ret = crypto_akcipher_set_priv_key(tfm,
-+						   pkey->key, pkey->keylen);
-+	else
-+		ret = crypto_akcipher_set_pub_key(tfm,
-+						  pkey->key, pkey->keylen);
-+	if (ret)
-+		goto error_free_req;
-+
-+	sg_init_one(&in_sg, in, params->in_len);
-+	sg_init_one(&out_sg, out, params->out_len);
-+	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
-+				   params->out_len);
-+	crypto_init_wait(&cwait);
-+	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
-+				      CRYPTO_TFM_REQ_MAY_SLEEP,
-+				      crypto_req_done, &cwait);
-+
-+	/* Perform the encryption calculation. */
-+	switch (params->op) {
-+	case kernel_pkey_encrypt:
-+		ret = crypto_akcipher_encrypt(req);
-+		break;
-+	case kernel_pkey_decrypt:
-+		ret = crypto_akcipher_decrypt(req);
-+		break;
-+	case kernel_pkey_sign:
-+		ret = crypto_akcipher_sign(req);
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	ret = crypto_wait_req(ret, &cwait);
-+	if (ret = 0)
-+		ret = req->dst_len;
-+
-+error_free_req:
-+	akcipher_request_free(req);
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
  /*
-  * Verify a signature using a public key.
+  * verify the AUTH1_COMMAND (Seal) result from TPM
   */
-@@ -242,6 +321,7 @@ struct asymmetric_key_subtype public_key_subtype = {
- 	.describe		= public_key_describe,
- 	.destroy		= public_key_destroy,
- 	.query			= software_key_query,
-+	.eds_op			= software_key_eds_op,
- 	.verify_signature	= public_key_verify_signature_2,
+-static int TSS_checkhmac1(unsigned char *buffer,
++int TSS_checkhmac1(unsigned char *buffer,
+ 			  const uint32_t command,
+ 			  const unsigned char *ononce,
+ 			  const unsigned char *key,
+@@ -249,6 +250,7 @@ static int TSS_checkhmac1(unsigned char *buffer,
+ 	kzfree(sdesc);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(TSS_checkhmac1);
+ 
+ /*
+  * verify the AUTH2_COMMAND (unseal) result from TPM
+@@ -355,7 +357,7 @@ static int TSS_checkhmac2(unsigned char *buffer,
+  * For key specific tpm requests, we will generate and send our
+  * own TPM command packets using the drivers send function.
+  */
+-static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
++int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ {
+ 	int rc;
+ 
+@@ -367,6 +369,7 @@ static int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ 		rc = -EPERM;
+ 	return rc;
+ }
++EXPORT_SYMBOL_GPL(trusted_tpm_send);
+ 
+ /*
+  * Lock a trusted key, by extending a selected PCR.
+@@ -425,7 +428,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ /*
+  * Create an object independent authorisation protocol (oiap) session
+  */
+-static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ {
+ 	int ret;
+ 
+@@ -442,6 +445,7 @@ static int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ 	       TPM_NONCE_SIZE);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(oiap);
+ 
+ struct tpm_digests {
+ 	unsigned char encauth[SHA1_DIGEST_SIZE];
+diff --git a/security/keys/trusted.h b/security/keys/trusted.h
+index 8d5fe9eafb22..adbcb6817826 100644
+--- a/security/keys/trusted.h
++++ b/security/keys/trusted.h
+@@ -3,7 +3,7 @@
+ #define __TRUSTED_KEY_H
+ 
+ /* implementation specific TPM constants */
+-#define MAX_BUF_SIZE			512
++#define MAX_BUF_SIZE			1024
+ #define TPM_GETRANDOM_SIZE		14
+ #define TPM_OSAP_SIZE			36
+ #define TPM_OIAP_SIZE			10
+@@ -36,6 +36,18 @@ enum {
+ 	SRK_keytype = 4
  };
- EXPORT_SYMBOL_GPL(public_key_subtype);
+ 
++int TSS_authhmac(unsigned char *digest, const unsigned char *key,
++			unsigned int keylen, unsigned char *h1,
++			unsigned char *h2, unsigned char h3, ...);
++int TSS_checkhmac1(unsigned char *buffer,
++			  const uint32_t command,
++			  const unsigned char *ononce,
++			  const unsigned char *key,
++			  unsigned int keylen, ...);
++
++int trusted_tpm_send(unsigned char *cmd, size_t buflen);
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
++
+ #define TPM_DEBUG 0
+ 
+ #if TPM_DEBUG
