@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:55:24 +0000
-Subject: [PATCH 10/22] KEYS: asym_tpm: add skeleton for asym_tpm
-Message-Id: <153618452424.7946.15617756404492598517.stgit@warthog.procyon.org.uk>
+Date: Wed, 05 Sep 2018 21:55:04 +0000
+Subject: [PATCH 07/22] KEYS: Implement encrypt, decrypt and sign for software asymmetric key
+Message-Id: <153618450412.7946.3727422000233525983.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,172 +10,143 @@ References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk
 In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+Implement the encrypt, decrypt and sign operations for the software
+asymmetric key subtype.  This mostly involves offloading the call to the
+crypto layer.
 
-This patch adds the basic skeleton for the asym_tpm asymmetric key
-subtype.
+Note that the decrypt and sign operations require a private key to be
+supplied.  Encrypt (and also verify) will work with either a public or a
+private key.  A public key can be supplied with an X.509 certificate and a
+private key can be supplied using a PKCS#8 blob:
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+	# j=`openssl pkcs8 -in ~/pkcs7/firmwarekey2.priv -topk8 -nocrypt -outform DER | keyctl padd asymmetric foo @s`
+	# keyctl pkey_query $j - enc=pkcs1
+	key_size@96
+	max_data_sizeQ2
+	max_sig_sizeQ2
+	max_enc_sizeQ2
+	max_dec_sizeQ2
+	encrypt=y
+	decrypt=y
+	sign=y
+	verify=y
+	# keyctl pkey_encrypt $j 0 data enc=pkcs1 >/tmp/enc
+	# keyctl pkey_decrypt $j 0 /tmp/enc enc=pkcs1 >/tmp/dec
+	# cmp data /tmp/dec
+	# keyctl pkey_sign $j 0 data enc=pkcs1 hash=sha1 >/tmp/sig
+	# keyctl pkey_verify $j 0 data /tmp/sig enc=pkcs1 hash=sha1
+	#
+
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/Kconfig    |   11 +++++
- crypto/asymmetric_keys/Makefile   |    1 
- crypto/asymmetric_keys/asym_tpm.c |   90 +++++++++++++++++++++++++++++++++++++
- include/crypto/asym_tpm_subtype.h |   16 +++++++
- 4 files changed, 118 insertions(+)
- create mode 100644 crypto/asymmetric_keys/asym_tpm.c
- create mode 100644 include/crypto/asym_tpm_subtype.h
+ crypto/asymmetric_keys/public_key.c |   82 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 81 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 66a7dad7ed3d..b75555c7d8ae 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -21,6 +21,17 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- 	  appropriate hash algorithms (such as SHA-1) must be available.
- 	  ENOPKG will be reported if the requisite algorithm is unavailable.
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index f2dc27897319..f5d85b47fcc6 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -130,7 +130,11 @@ static int software_key_query(const struct kernel_pkey_params *params,
+ 	info->max_sig_size = len;
+ 	info->max_enc_size = len;
+ 	info->max_dec_size = len;
+-	info->supported_ops = KEYCTL_SUPPORTS_VERIFY;
++	info->supported_ops = (KEYCTL_SUPPORTS_ENCRYPT |
++			       KEYCTL_SUPPORTS_VERIFY);
++	if (pkey->key_is_private)
++		info->supported_ops |= (KEYCTL_SUPPORTS_DECRYPT |
++					KEYCTL_SUPPORTS_SIGN);
+ 	ret = 0;
  
-+config ASYMMETRIC_TPM_KEY_SUBTYPE
-+	tristate "Asymmetric TPM backed private key subtype"
-+	depends on TCG_TPM
-+	select CRYPTO_HMAC
-+	select CRYPTO_SHA1
-+	select CRYPTO_HASH_INFO
-+	help
-+	  This option provides support for TPM backed private key type handling.
-+	  Operations such as sign, verify, encrypt, decrypt are performed by
-+	  the TPM after the private key is loaded.
-+
- config X509_CERTIFICATE_PARSER
- 	tristate "X.509 certificate parser"
- 	depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index c38424f55b08..73fbe650ff1d 100644
---- a/crypto/asymmetric_keys/Makefile
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -11,6 +11,7 @@ asymmetric_keys-y := \
- 	signature.o
+ error_free_tfm:
+@@ -139,6 +143,81 @@ static int software_key_query(const struct kernel_pkey_params *params,
+ 	return ret;
+ }
  
- obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
-+obj-$(CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE) += asym_tpm.o
- 
- #
- # X.509 Certificate handling
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-new file mode 100644
-index 000000000000..d0b2b97e8e54
---- /dev/null
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -0,0 +1,90 @@
-+// SPDX-License-Identifier: GPL-2.0
-+#define pr_fmt(fmt) "ASYM-TPM: "fmt
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/export.h>
-+#include <linux/kernel.h>
-+#include <linux/seq_file.h>
-+#include <linux/scatterlist.h>
-+#include <linux/tpm.h>
-+#include <keys/asymmetric-subtype.h>
-+#include <crypto/asym_tpm_subtype.h>
-+
 +/*
-+ * Provide a part of a description of the key for /proc/keys.
++ * Do encryption, decryption and signing ops.
 + */
-+static void asym_tpm_describe(const struct key *asymmetric_key,
-+			      struct seq_file *m)
++static int software_key_eds_op(struct kernel_pkey_params *params,
++			       const void *in, void *out)
 +{
-+	struct tpm_key *tk = asymmetric_key->payload.data[asym_crypto];
++	const struct public_key *pkey = params->key->payload.data[asym_crypto];
++	struct akcipher_request *req;
++	struct crypto_akcipher *tfm;
++	struct crypto_wait cwait;
++	struct scatterlist in_sg, out_sg;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	int ret;
 +
-+	if (!tk)
-+		return;
++	pr_devel("=>%s()\n", __func__);
 +
-+	seq_printf(m, "TPM1.2/Blob");
-+}
++	ret = software_key_determine_akcipher(params->encoding,
++					      params->hash_algo,
++					      pkey, alg_name);
++	if (ret < 0)
++		return ret;
 +
-+static void asym_tpm_destroy(void *payload0, void *payload3)
-+{
-+	struct tpm_key *tk = payload0;
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
 +
-+	if (!tk)
-+		return;
++	req = akcipher_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
 +
-+	kfree(tk->blob);
-+	tk->blob_len = 0;
++	if (pkey->key_is_private)
++		ret = crypto_akcipher_set_priv_key(tfm,
++						   pkey->key, pkey->keylen);
++	else
++		ret = crypto_akcipher_set_pub_key(tfm,
++						  pkey->key, pkey->keylen);
++	if (ret)
++		goto error_free_req;
 +
-+	kfree(tk);
-+}
++	sg_init_one(&in_sg, in, params->in_len);
++	sg_init_one(&out_sg, out, params->out_len);
++	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
++				   params->out_len);
++	crypto_init_wait(&cwait);
++	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				      CRYPTO_TFM_REQ_MAY_SLEEP,
++				      crypto_req_done, &cwait);
 +
-+/* Given the blob, parse it and load it into the TPM */
-+struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
-+{
-+	int r;
-+	struct tpm_key *tk;
-+
-+	r = tpm_is_tpm2(NULL);
-+	if (r < 0)
-+		goto error;
-+
-+	/* We don't support TPM2 yet */
-+	if (r > 0) {
-+		r = -ENODEV;
-+		goto error;
++	/* Perform the encryption calculation. */
++	switch (params->op) {
++	case kernel_pkey_encrypt:
++		ret = crypto_akcipher_encrypt(req);
++		break;
++	case kernel_pkey_decrypt:
++		ret = crypto_akcipher_decrypt(req);
++		break;
++	case kernel_pkey_sign:
++		ret = crypto_akcipher_sign(req);
++		break;
++	default:
++		BUG();
 +	}
 +
-+	r = -ENOMEM;
-+	tk = kzalloc(sizeof(struct tpm_key), GFP_KERNEL);
-+	if (!tk)
-+		goto error;
++	ret = crypto_wait_req(ret, &cwait);
++	if (ret = 0)
++		ret = req->dst_len;
 +
-+	tk->blob = kmemdup(blob, blob_len, GFP_KERNEL);
-+	if (!tk->blob)
-+		goto error_memdup;
-+
-+	tk->blob_len = blob_len;
-+
-+	return tk;
-+
-+error_memdup:
-+	kfree(tk);
-+error:
-+	return ERR_PTR(r);
++error_free_req:
++	akcipher_request_free(req);
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
 +}
-+EXPORT_SYMBOL_GPL(tpm_key_create);
 +
-+/*
-+ * TPM-based asymmetric key subtype
-+ */
-+struct asymmetric_key_subtype asym_tpm_subtype = {
-+	.owner			= THIS_MODULE,
-+	.name			= "asym_tpm",
-+	.name_len		= sizeof("asym_tpm") - 1,
-+	.describe		= asym_tpm_describe,
-+	.destroy		= asym_tpm_destroy,
-+};
-+EXPORT_SYMBOL_GPL(asym_tpm_subtype);
-+
-+MODULE_DESCRIPTION("TPM based asymmetric key subtype");
-+MODULE_AUTHOR("Intel Corporation");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
-new file mode 100644
-index 000000000000..03550b850998
---- /dev/null
-+++ b/include/crypto/asym_tpm_subtype.h
-@@ -0,0 +1,16 @@
-+// SPDX-License-Identifier: GPL-2.0
-+#ifndef _LINUX_ASYM_TPM_SUBTYPE_H
-+#define _LINUX_ASYM_TPM_SUBTYPE_H
-+
-+#include <linux/keyctl.h>
-+
-+struct tpm_key {
-+	void *blob;
-+	u32 blob_len;
-+};
-+
-+struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
-+
-+extern struct asymmetric_key_subtype asym_tpm_subtype;
-+
-+#endif /* _LINUX_ASYM_TPM_SUBTYPE_H */
+ /*
+  * Verify a signature using a public key.
+  */
+@@ -242,6 +321,7 @@ struct asymmetric_key_subtype public_key_subtype = {
+ 	.describe		= public_key_describe,
+ 	.destroy		= public_key_destroy,
+ 	.query			= software_key_query,
++	.eds_op			= software_key_eds_op,
+ 	.verify_signature	= public_key_verify_signature_2,
+ };
+ EXPORT_SYMBOL_GPL(public_key_subtype);
