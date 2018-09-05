@@ -1,128 +1,224 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 26 Sep 2018 20:47:40 +0000
-Subject: [PATCH v10 10/12] nfit_test: add context to dimm_dev for nfit_test
-Message-Id: <153799486070.71621.11412880339298606423.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 05 Sep 2018 21:56:42 +0000
+Subject: [PATCH 22/22] KEYS: asym_tpm: Add support for the sign operation
+Message-Id: <153618460258.7946.14928570863758355701.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-In order to access the nfit_test context via sideband sysfs knobs, the
-dimm_dev needs to be more than struct device in order to point back to
-struct nfit_test. Wrapping the original struct device with a struct
-nfit_dimm_dev and saving the nfit_test as private driver data. Also
-changing the nfit_mem to be a member of struct nfit_dimm_dev instead of
-saving as private driver data of that device. This is in preparation for
-adding security DSM support and allowing the locking of DIMMs for testing
-via sideband.
+From: Denis Kenzior <denkenz@gmail.com>
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+The sign operation can operate in a non-hashed mode by running the RSA
+sign operation directly on the input.  This assumes that the input is
+less than key_size_in_bytes - 11.  Since the TPM performs its own PKCS1
+padding, it isn't possible to support 'raw' mode, only 'pkcs1'.
+
+Alternatively, a hashed version is also possible.  In this variant the
+input is hashed (by userspace) via the selected hash function first.
+Then this implementation takes care of converting the hash to ASN.1
+format and the sign operation is performed on the result.  This is
+similar to the implementation inside crypto/rsa-pkcs1pad.c.
+
+ASN1 templates were copied from crypto/rsa-pkcs1pad.c.  There seems to
+be no easy way to expose that functionality, but likely the templates
+should be shared somehow.
+
+The sign operation is implemented via TPM_Sign operation on the TPM.
+It is assumed that the TPM wrapped key provided uses
+TPM_SS_RSASSAPKCS1v15_DER signature scheme.  This allows the TPM_Sign
+operation to work on data up to key_len_in_bytes - 11 bytes long.
+
+In theory, we could also use TPM_Unbind instead of TPM_Sign, but we would
+have to manually pkcs1 pad the digest first.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- tools/testing/nvdimm/test/nfit.c |   41 +++++++++++++++++++++++++-------------
- 1 file changed, 27 insertions(+), 14 deletions(-)
 
-diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
-index cffc2c5a778d..1d62222a10da 100644
---- a/tools/testing/nvdimm/test/nfit.c
-+++ b/tools/testing/nvdimm/test/nfit.c
-@@ -172,6 +172,11 @@ struct nfit_test_fw {
- 	u64 end_time;
- };
+ crypto/asymmetric_keys/asym_tpm.c |  156 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 155 insertions(+), 1 deletion(-)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index a5a5f913a74f..5d4c270463f6 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -435,7 +435,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
  
-+struct nfit_dimm_dev {
-+	struct device dev;
-+	struct nfit_mem *nfit_mem;
+ 	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
+ 			      KEYCTL_SUPPORTS_DECRYPT |
+-			      KEYCTL_SUPPORTS_VERIFY;
++			      KEYCTL_SUPPORTS_VERIFY |
++			      KEYCTL_SUPPORTS_SIGN;
+ 
+ 	ret = 0;
+ error_free_tfm:
+@@ -556,6 +557,156 @@ static int tpm_key_decrypt(struct tpm_key *tk,
+ 	return r;
+ }
+ 
++/*
++ * Hash algorithm OIDs plus ASN.1 DER wrappings [RFC4880 sec 5.2.2].
++ */
++static const u8 digest_info_md5[] = {
++	0x30, 0x20, 0x30, 0x0c, 0x06, 0x08,
++	0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x02, 0x05, /* OID */
++	0x05, 0x00, 0x04, 0x10
 +};
 +
- struct nfit_test {
- 	struct acpi_nfit_desc acpi_desc;
- 	struct platform_device pdev;
-@@ -203,7 +208,7 @@ struct nfit_test {
- 		unsigned long deadline;
- 		spinlock_t lock;
- 	} ars_state;
--	struct device *dimm_dev[NUM_DCR];
-+	struct nfit_dimm_dev dimm_dev[NUM_DCR];
- 	struct nd_intel_smart *smart;
- 	struct nd_intel_smart_threshold *smart_threshold;
- 	struct badrange badrange;
-@@ -1018,7 +1023,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 						&t->smart_threshold[i -
- 							t->dcr_idx],
- 						&t->smart[i - t->dcr_idx],
--						&t->pdev.dev, t->dimm_dev[i]);
-+						&t->pdev.dev,
-+						&t->dimm_dev[i].dev);
- 				break;
- 			case ND_INTEL_SMART_INJECT:
- 				rc = nfit_test_cmd_smart_inject(buf,
-@@ -1026,7 +1032,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 						&t->smart_threshold[i -
- 							t->dcr_idx],
- 						&t->smart[i - t->dcr_idx],
--						&t->pdev.dev, t->dimm_dev[i]);
-+						&t->pdev.dev,
-+						&t->dimm_dev[i].dev);
- 				break;
- 			default:
- 				return -ENOTTY;
-@@ -1224,8 +1231,7 @@ static void put_dimms(void *data)
- 	int i;
- 
- 	for (i = 0; i < t->num_dcr; i++)
--		if (t->dimm_dev[i])
--			device_unregister(t->dimm_dev[i]);
-+		device_unregister(&t->dimm_dev[i].dev);
- }
- 
- static struct class *nfit_test_dimm;
-@@ -1327,19 +1333,27 @@ static const struct attribute_group *nfit_test_dimm_attribute_groups[] = {
- 	NULL,
- };
- 
-+static void dimm_dev_release(struct device *dev)
++static const u8 digest_info_sha1[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2b, 0x0e, 0x03, 0x02, 0x1a,
++	0x05, 0x00, 0x04, 0x14
++};
++
++static const u8 digest_info_rmd160[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2b, 0x24, 0x03, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x14
++};
++
++static const u8 digest_info_sha224[] = {
++	0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04,
++	0x05, 0x00, 0x04, 0x1c
++};
++
++static const u8 digest_info_sha256[] = {
++	0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x20
++};
++
++static const u8 digest_info_sha384[] = {
++	0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
++	0x05, 0x00, 0x04, 0x30
++};
++
++static const u8 digest_info_sha512[] = {
++	0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
++	0x05, 0x00, 0x04, 0x40
++};
++
++static const struct asn1_template {
++	const char	*name;
++	const u8	*data;
++	size_t		size;
++} asn1_templates[] = {
++#define _(X) { #X, digest_info_##X, sizeof(digest_info_##X) }
++	_(md5),
++	_(sha1),
++	_(rmd160),
++	_(sha256),
++	_(sha384),
++	_(sha512),
++	_(sha224),
++	{ NULL }
++#undef _
++};
++
++static const struct asn1_template *lookup_asn1(const char *name)
 +{
++	const struct asn1_template *p;
++
++	for (p = asn1_templates; p->name; p++)
++		if (strcmp(name, p->name) = 0)
++			return p;
++	return NULL;
 +}
 +
- static int nfit_test_dimm_init(struct nfit_test *t)
- {
--	int i;
-+	int i, rc;
- 
- 	if (devm_add_action_or_reset(&t->pdev.dev, put_dimms, t))
- 		return -ENOMEM;
- 	for (i = 0; i < t->num_dcr; i++) {
--		t->dimm_dev[i] = device_create_with_groups(nfit_test_dimm,
--				&t->pdev.dev, 0, NULL,
--				nfit_test_dimm_attribute_groups,
--				"test_dimm%d", i + t->dcr_idx);
--		if (!t->dimm_dev[i])
--			return -ENOMEM;
-+		t->dimm_dev[i].dev.parent = &t->pdev.dev;
-+		dev_set_name(&t->dimm_dev[i].dev, "test_dimm%d",
-+				i + t->dcr_idx);
-+		t->dimm_dev[i].dev.class = nfit_test_dimm;
-+		t->dimm_dev[i].dev.groups = nfit_test_dimm_attribute_groups;
-+		t->dimm_dev[i].dev.release = dimm_dev_release;
-+		rc = device_register(&t->dimm_dev[i].dev);
-+		if (rc < 0)
-+			return rc;
-+		dev_set_drvdata(&t->dimm_dev[i].dev, t);
++/*
++ * Sign operation is performed with the private key in the TPM.
++ */
++static int tpm_key_sign(struct tpm_key *tk,
++			struct kernel_pkey_params *params,
++			const void *in, void *out)
++{
++	struct tpm_buf *tb;
++	uint32_t keyhandle;
++	uint8_t srkauth[SHA1_DIGEST_SIZE];
++	uint8_t keyauth[SHA1_DIGEST_SIZE];
++	void *asn1_wrapped = NULL;
++	uint32_t in_len = params->in_len;
++	int r;
++
++	pr_devel("=>%s()\n", __func__);
++
++	if (strcmp(params->encoding, "pkcs1"))
++		return -ENOPKG;
++
++	if (params->hash_algo) {
++		const struct asn1_template *asn1 +						lookup_asn1(params->hash_algo);
++
++		if (!asn1)
++			return -ENOPKG;
++
++		/* request enough space for the ASN.1 template + input hash */
++		asn1_wrapped = kzalloc(in_len + asn1->size, GFP_KERNEL);
++		if (!asn1_wrapped)
++			return -ENOMEM;
++
++		/* Copy ASN.1 template, then the input */
++		memcpy(asn1_wrapped, asn1->data, asn1->size);
++		memcpy(asn1_wrapped + asn1->size, in, in_len);
++
++		in = asn1_wrapped;
++		in_len += asn1->size;
++	}
++
++	if (in_len > tk->key_len / 8 - 11) {
++		r = -EOVERFLOW;
++		goto error_free_asn1_wrapped;
++	}
++
++	r = -ENOMEM;
++	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
++	if (!tb)
++		goto error_free_asn1_wrapped;
++
++	/* TODO: Handle a non-all zero SRK authorization */
++	memset(srkauth, 0, sizeof(srkauth));
++
++	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
++			 tk->blob, tk->blob_len, &keyhandle);
++	if (r < 0) {
++		pr_devel("loadkey2 failed (%d)\n", r);
++		goto error_free_tb;
++	}
++
++	/* TODO: Handle a non-all zero key authorization */
++	memset(keyauth, 0, sizeof(keyauth));
++
++	r = tpm_sign(tb, keyhandle, keyauth, in, in_len, out, params->out_len);
++	if (r < 0)
++		pr_devel("tpm_sign failed (%d)\n", r);
++
++	if (tpm_flushspecific(tb, keyhandle) < 0)
++		pr_devel("flushspecific failed (%d)\n", r);
++
++error_free_tb:
++	kzfree(tb);
++error_free_asn1_wrapped:
++	kfree(asn1_wrapped);
++	pr_devel("<=%s() = %d\n", __func__, r);
++	return r;
++}
++
+ /*
+  * Do encryption, decryption and signing ops.
+  */
+@@ -573,6 +724,9 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
+ 	case kernel_pkey_decrypt:
+ 		ret = tpm_key_decrypt(tk, params, in, out);
+ 		break;
++	case kernel_pkey_sign:
++		ret = tpm_key_sign(tk, params, in, out);
++		break;
+ 	default:
+ 		BUG();
  	}
- 	return 0;
- }
-@@ -2680,8 +2694,7 @@ static int nfit_test_probe(struct platform_device *pdev)
- 
- 		for (i = 0; i < NUM_DCR; i++)
- 			if (nfit_handle = handle[i])
--				dev_set_drvdata(nfit_test->dimm_dev[i],
--						nfit_mem);
-+				nfit_test->dimm_dev[i].nfit_mem = nfit_mem;
- 	}
- 	mutex_unlock(&acpi_desc->init_mutex);
- 
