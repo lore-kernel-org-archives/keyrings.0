@@ -1,127 +1,171 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Fri, 28 Sep 2018 21:54:23 +0000
-Subject: [PATCH v11 10/12] libnvdimm: add documentation for nvdimm security support
-Message-Id: <153817166322.17152.9001270695094344266.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 05 Sep 2018 21:56:29 +0000
+Subject: [PATCH 20/22] KEYS: asym_tpm: Implement signature verification
+Message-Id: <153618458953.7946.5116691522328819991.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-Add theory of operation for the security support that's going into
-libnvdimm.
+From: Denis Kenzior <denkenz@gmail.com>
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+This patch implements the verify_signature operation.  The public key
+portion extracted from the TPM key blob is used.  The operation is
+performed entirely in software using the crypto API.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- Documentation/nvdimm/security.txt |   99 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 99 insertions(+)
- create mode 100644 Documentation/nvdimm/security.txt
 
-diff --git a/Documentation/nvdimm/security.txt b/Documentation/nvdimm/security.txt
-new file mode 100644
-index 000000000000..50cbb6cb96a1
---- /dev/null
-+++ b/Documentation/nvdimm/security.txt
-@@ -0,0 +1,99 @@
-+NVDIMM SECURITY
-+=======+
-+1. Introduction
-+---------------
+ crypto/asymmetric_keys/asym_tpm.c |  106 +++++++++++++++++++++++++++++++++++--
+ 1 file changed, 100 insertions(+), 6 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 6f5d5cf98910..a38ba375675e 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -15,6 +15,7 @@
+ #include <keys/asymmetric-subtype.h>
+ #include <keys/trusted.h>
+ #include <crypto/asym_tpm_subtype.h>
++#include <crypto/public_key.h>
+ 
+ #define TPM_ORD_FLUSHSPECIFIC	186
+ #define TPM_ORD_LOADKEY2	65
+@@ -286,12 +287,16 @@ static uint32_t derive_pub_key(const void *pub_key, uint32_t len, uint8_t *buf)
+ static int determine_akcipher(const char *encoding, const char *hash_algo,
+ 			      char alg_name[CRYPTO_MAX_ALG_NAME])
+ {
+-	/* TODO: We don't support hashing yet */
+-	if (hash_algo)
+-		return -ENOPKG;
+-
+ 	if (strcmp(encoding, "pkcs1") = 0) {
+-		strcpy(alg_name, "pkcs1pad(rsa)");
++		if (!hash_algo) {
++			strcpy(alg_name, "pkcs1pad(rsa)");
++			return 0;
++		}
 +
-+With the introduction of Intel DSM v1.7 specification [1], security DSMs are
-+introduced. The spec added the following security DSMs: "get security state",
-+"set passphrase", "disable passphrase", "unlock unit", "freeze lock",
-+"secure erase", and "overwrite". A security_ops data structure has been
-+added to struct dimm in order to support the security operations and generic
-+APIs are exposed to allow vendor neutral operations.
++		if (snprintf(alg_name, CRYPTO_MAX_ALG_NAME, "pkcs1pad(rsa,%s)",
++			     hash_algo) >= CRYPTO_MAX_ALG_NAME)
++			return -EINVAL;
 +
-+2. Sysfs Interface
-+------------------
-+The "security" sysfs attribute is provided in the nvdimm sysfs directory. For
-+example:
-+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/security
+ 		return 0;
+ 	}
+ 
+@@ -342,7 +347,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	info->max_dec_size = tk->key_len / 8;
+ 
+ 	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
+-			      KEYCTL_SUPPORTS_DECRYPT;
++			      KEYCTL_SUPPORTS_DECRYPT |
++			      KEYCTL_SUPPORTS_VERIFY;
+ 
+ 	ret = 0;
+ error_free_tfm:
+@@ -487,6 +493,93 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
+ 	return ret;
+ }
+ 
++/*
++ * Verify a signature using a public key.
++ */
++static int tpm_key_verify_signature(const struct key *key,
++				    const struct public_key_signature *sig)
++{
++	const struct tpm_key *tk = key->payload.data[asym_crypto];
++	struct crypto_wait cwait;
++	struct crypto_akcipher *tfm;
++	struct akcipher_request *req;
++	struct scatterlist sig_sg, digest_sg;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
++	void *output;
++	unsigned int outlen;
++	int ret;
 +
-+The "show" function of that attribute will display the security state for
-+that DIMM. The following states are available: disabled, unlocked, locked,
-+frozen, and unsupported.
++	pr_devel("=>%s()\n", __func__);
 +
-+The "store" function takes several commands when the attribute is written to
-+in order to support some of the security functionalities:
-+update <old_keyid> <new_keyid> - enable security. Add or update current key.
-+disable <old_keyid> - disable enabled security and remove key.
-+freeze - freeze changing of security states.
-+erase <old_keyid> - generate new ecryption key for DIMM and crypto-scrambles
-+	all existing user data.
++	BUG_ON(!tk);
++	BUG_ON(!sig);
++	BUG_ON(!sig->s);
 +
-+3. Key Management
-+-----------------
++	if (!sig->digest)
++		return -ENOPKG;
 +
-+The key is associted to the payload by the DIMM id. For example:
-+# cat /sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/nfit/id
-+8089-a2-1740-00000133
-+The DIMM id would be provided along with the key payload (passphrase) to
-+the kernel.
++	ret = determine_akcipher(sig->encoding, sig->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
 +
-+The security keys are managed on the basis of a single key per DIMM. The
-+key "passphrase" is expected to be 32bytes long or padded to 32bytes. This is
-+similar to the ATA security specification [2]. A key is initially acquired
-+via the request_key() kernel API call and retrieved from userspace. It is up to
-+the user to provide an upcall application to retrieve the key in whatever
-+fashion meets their security requirements.
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
 +
-+A nvdimm user logon key has the description format of:
-+nvdimm:<bus-provider-specific-unique-id>
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
 +
-+4. Unlocking
-+------------
-+When the DIMMs are being enumerated by the kernel, the kernel will attempt to
-+retrieve the key from its keyring. If that fails, it will attempt to
-+acquire the key from the userspace upcall function. This is the only time
-+a locked DIMM can be unlocked. Once unlocked, the DIMM will remain unlocked
-+until reboot.
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
 +
-+5. Update
-+---------
-+When doing an update, it is expected that the new key with the 64bit payload of
-+format described above is added via the keyutils API or utility. The update
-+command written to the sysfs attribute will be with the format:
-+update <old keyid> <new keyid>
++	ret = -ENOMEM;
++	req = akcipher_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
 +
-+It is expected that a user logon key has been injected via keyutils to provide
-+the payload for the update operation. The kernel will take the new user key,
-+attempt the update operation with the nvdimm, and replace the existing key's
-+payload with the new passphrase.
++	ret = -ENOMEM;
++	outlen = crypto_akcipher_maxsize(tfm);
++	output = kmalloc(outlen, GFP_KERNEL);
++	if (!output)
++		goto error_free_req;
 +
-+If there is no old key id due to a security enabling, then a 0 should be
-+passed in.  If a nvdimm has an existing passphrase, then an "old" key should
-+be injected with a key description that does not have the "nvdimm:" prefix.
++	sg_init_one(&sig_sg, sig->s, sig->s_size);
++	sg_init_one(&digest_sg, output, outlen);
++	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
++				   outlen);
++	crypto_init_wait(&cwait);
++	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				      CRYPTO_TFM_REQ_MAY_SLEEP,
++				      crypto_req_done, &cwait);
 +
-+6. Freeze
-+---------
-+The freeze operation does not require any keys. The security config can be
-+frozen by a user with root privelege.
++	/* Perform the verification calculation.  This doesn't actually do the
++	 * verification, but rather calculates the hash expected by the
++	 * signature and returns that to us.
++	 */
++	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
++	if (ret)
++		goto out_free_output;
 +
-+7. Disable
-+----------
-+The security disable command format is:
-+disable <old keyid>
++	/* Do the actual verification step. */
++	if (req->dst_len != sig->digest_size ||
++	    memcmp(sig->digest, output, sig->digest_size) != 0)
++		ret = -EKEYREJECTED;
 +
-+An "old" key with the passphrase payload that is tied to the nvdimm should be
-+injected with a key description that does not have the "nvdimm:" prefix and
-+its keyid should be passed in via sysfs.
++out_free_output:
++	kfree(output);
++error_free_req:
++	akcipher_request_free(req);
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	if (WARN_ON_ONCE(ret > 0))
++		ret = -EINVAL;
++	return ret;
++}
 +
-+8. Secure Erase
-+---------------
-+The command format for doing a secure erase is:
-+erase <old keyid>
-+
-+An "old" key with the passphrase payload that is tied to the nvdimm should be
-+injected with a key description that does not have the "nvdimm:" prefix and
-+its keyid should be passed in via sysfs.
-+
-+[1]: http://pmem.io/documents/NVDIMM_DSM_Interface-V1.7.pdf
-+[2]: http://www.t13.org/documents/UploadedDocuments/docs2006/e05179r4-ACS-SecurityClarifications.pdf
+ /*
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -645,6 +738,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.destroy		= asym_tpm_destroy,
+ 	.query			= tpm_key_query,
+ 	.eds_op			= tpm_key_eds_op,
++	.verify_signature	= tpm_key_verify_signature,
+ };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
+ 
