@@ -1,295 +1,201 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Wed, 26 Sep 2018 20:47:46 +0000
-Subject: [PATCH v10 11/12] nfit_test: add test support for Intel nvdimm security DSMs
-Message-Id: <153799486626.71621.17207195693882049901.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 05 Sep 2018 21:55:43 +0000
+Subject: [PATCH 13/22] KEYS: asym_tpm: Implement pkey_query
+Message-Id: <153618454385.7946.4740845674431042688.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+To: linux-security-module@vger.kernel.org
 
-Add nfit_test support for DSM functions "Get Security State",
-"Set Passphrase", "Disable Passphrase", "Unlock Unit", "Freeze Lock",
-and "Secure Erase" for the fake DIMMs.
+From: Denis Kenzior <denkenz@gmail.com>
 
-Also adding a sysfs knob in order to put the DIMMs in "locked" state. The
-order of testing DIMM unlocking would be.
-1a. Disable DIMM X.
-1b. Set Passphrase to DIMM X.
-2. Write to
-/sys/devices/platform/nfit_test.0/nfit_test_dimm/test_dimmX/lock_dimm
-3. Renable DIMM X
-4. Check DIMM X state via sysfs "security" attribute for nmemX.
+This commit implements the pkey_query operation.  This is accomplished
+by utilizing the public key portion to obtain max encryption size
+information for the operations that utilize the public key (encrypt,
+verify).  The private key size extracted from the TPM_Key data structure
+is used to fill the information where the private key is used (decrypt,
+sign).
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+The kernel uses a DER/BER format for public keys and does not support
+setting the key via the raw binary form.  To get around this a simple
+DER/BER formatter is implemented which stores the DER/BER formatted key
+and exponent in a temporary buffer for use by the crypto API.
+
+The only exponent supported currently is 65537.  This holds true for
+other Linux TPM tools such as 'create_tpm_key' and
+trousers-openssl_tpm_engine.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- tools/testing/nvdimm/Kbuild      |    1 
- tools/testing/nvdimm/test/nfit.c |  186 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 187 insertions(+)
 
-diff --git a/tools/testing/nvdimm/Kbuild b/tools/testing/nvdimm/Kbuild
-index 0392153a0009..a13670d3b389 100644
---- a/tools/testing/nvdimm/Kbuild
-+++ b/tools/testing/nvdimm/Kbuild
-@@ -36,6 +36,7 @@ obj-$(CONFIG_DEV_DAX) += device_dax.o
- obj-$(CONFIG_DEV_DAX_PMEM) += dax_pmem.o
+ crypto/asymmetric_keys/asym_tpm.c |  135 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 135 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 308c51e055a4..837472d107d5 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -7,10 +7,24 @@
+ #include <linux/seq_file.h>
+ #include <linux/scatterlist.h>
+ #include <linux/tpm.h>
++#include <crypto/akcipher.h>
+ #include <asm/unaligned.h>
+ #include <keys/asymmetric-subtype.h>
+ #include <crypto/asym_tpm_subtype.h>
  
- nfit-y := $(ACPI_SRC)/core.o
-+nfit-$(CONFIG_X86) += $(ACPI_SRC)/intel.o
- nfit-$(CONFIG_X86_MCE) += $(ACPI_SRC)/mce.o
- nfit-y += acpi_nfit_test.o
- nfit-y += config_check.o
-diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
-index 1d62222a10da..61ad16beef6d 100644
---- a/tools/testing/nvdimm/test/nfit.c
-+++ b/tools/testing/nvdimm/test/nfit.c
-@@ -24,6 +24,7 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <nd-core.h>
-+#include <intel.h>
- #include <nfit.h>
- #include <nd.h>
- #include "nfit_test.h"
-@@ -177,6 +178,11 @@ struct nfit_dimm_dev {
- 	struct nfit_mem *nfit_mem;
- };
- 
-+struct nfit_test_sec {
-+	u8 state;
-+	u8 passphrase[32];
-+};
++/*
++ * Maximum buffer size for the BER/DER encoded public key.  The public key
++ * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
++ * bit key and e is usually 65537
++ * The encoding overhead is:
++ * - max 4 bytes for SEQUENCE
++ *   - max 4 bytes for INTEGER n type/length
++ *     - 257 bytes of n
++ *   - max 2 bytes for INTEGER e type/length
++ *     - 3 bytes of e
++ */
++#define PUB_KEY_BUF_SIZE (4 + 4 + 257 + 2 + 3)
 +
- struct nfit_test {
- 	struct acpi_nfit_desc acpi_desc;
- 	struct platform_device pdev;
-@@ -214,6 +220,7 @@ struct nfit_test {
- 	struct badrange badrange;
- 	struct work_struct work;
- 	struct nfit_test_fw *fw;
-+	struct nfit_test_sec *sec;
- };
- 
- static struct workqueue_struct *nfit_wq;
-@@ -936,6 +943,138 @@ static int override_return_code(int dimm, unsigned int func, int rc)
- 	return rc;
+ /*
+  * Provide a part of a description of the key for /proc/keys.
+  */
+@@ -38,6 +52,126 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
+ 	kfree(tk);
  }
  
-+static int nd_intel_test_cmd_security_status(struct nfit_test *t,
-+		struct nd_intel_get_security_state *nd_cmd,
-+		unsigned int buf_len, int idx)
++/* How many bytes will it take to encode the length */
++static inline uint32_t definite_length(uint32_t len)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
-+
-+	nd_cmd->status = 0;
-+	nd_cmd->state = sec->state;
-+	dev_dbg(dev, "security state (%#x) returned\n", nd_cmd->state);
-+
-+	return 0;
++	if (len <= 127)
++		return 1;
++	if (len <= 255)
++		return 2;
++	return 3;
 +}
 +
-+static int nd_intel_test_cmd_unlock_unit(struct nfit_test *t,
-+		struct nd_intel_unlock_unit *nd_cmd,
-+		unsigned int buf_len, int idx)
++static inline uint8_t *encode_tag_length(uint8_t *buf, uint8_t tag,
++					 uint32_t len)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
++	*buf++ = tag;
 +
-+	if (!(sec->state & ND_INTEL_SEC_STATE_LOCKED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "unlock unit: invalid state: %#x\n",
-+				sec->state);
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "unlock unit: invalid passphrase\n");
-+	} else {
-+		nd_cmd->status = 0;
-+		sec->state = ND_INTEL_SEC_STATE_ENABLED;
-+		dev_dbg(dev, "Unit unlocked\n");
++	if (len <= 127) {
++		buf[0] = len;
++		return buf + 1;
 +	}
 +
-+	dev_dbg(dev, "unlocking status returned: %#x\n", nd_cmd->status);
-+	return 0;
-+}
-+
-+static int nd_intel_test_cmd_set_pass(struct nfit_test *t,
-+		struct nd_intel_set_passphrase *nd_cmd,
-+		unsigned int buf_len, int idx)
-+{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
-+
-+	if (sec->state & ND_INTEL_SEC_STATE_FROZEN) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "set passphrase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->old_pass, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "set passphrase: wrong passphrase\n");
-+	} else {
-+		memcpy(sec->passphrase, nd_cmd->new_pass,
-+				ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state |= ND_INTEL_SEC_STATE_ENABLED;
-+		nd_cmd->status = 0;
-+		dev_dbg(dev, "passphrase updated\n");
++	if (len <= 255) {
++		buf[0] = 0x81;
++		buf[1] = len;
++		return buf + 2;
 +	}
 +
-+	return 0;
++	buf[0] = 0x82;
++	put_unaligned_be16(len, buf + 1);
++	return buf + 3;
 +}
 +
-+static int nd_intel_test_cmd_freeze_lock(struct nfit_test *t,
-+		struct nd_intel_freeze_lock *nd_cmd,
-+		unsigned int buf_len, int idx)
++static uint32_t derive_pub_key(const void *pub_key, uint32_t len, uint8_t *buf)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
++	uint8_t *cur = buf;
++	uint32_t n_len = definite_length(len) + 1 + len + 1;
++	uint32_t e_len = definite_length(3) + 1 + 3;
++	uint8_t e[3] = { 0x01, 0x00, 0x01 };
 +
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "freeze lock: wrong security state\n");
-+	} else {
-+		sec->state |= ND_INTEL_SEC_STATE_FROZEN;
-+		nd_cmd->status = 0;
-+		dev_dbg(dev, "security frozen\n");
++	/* SEQUENCE */
++	cur = encode_tag_length(cur, 0x30, n_len + e_len);
++	/* INTEGER n */
++	cur = encode_tag_length(cur, 0x02, len + 1);
++	cur[0] = 0x00;
++	memcpy(cur + 1, pub_key, len);
++	cur += len + 1;
++	cur = encode_tag_length(cur, 0x02, sizeof(e));
++	memcpy(cur, e, sizeof(e));
++	cur += sizeof(e);
++
++	return cur - buf;
++}
++
++/*
++ * Determine the crypto algorithm name.
++ */
++static int determine_akcipher(const char *encoding, const char *hash_algo,
++			      char alg_name[CRYPTO_MAX_ALG_NAME])
++{
++	/* TODO: We don't support hashing yet */
++	if (hash_algo)
++		return -ENOPKG;
++
++	if (strcmp(encoding, "pkcs1") = 0) {
++		strcpy(alg_name, "pkcs1pad(rsa)");
++		return 0;
 +	}
 +
-+	return 0;
-+}
-+
-+static int nd_intel_test_cmd_disable_pass(struct nfit_test *t,
-+		struct nd_intel_disable_passphrase *nd_cmd,
-+		unsigned int buf_len, int idx)
-+{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
-+
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "disable passphrase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "disable passphrase: wrong passphrase\n");
-+	} else {
-+		memset(sec->passphrase, 0, ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state = 0;
-+		dev_dbg(dev, "disable passphrase: done\n");
++	if (strcmp(encoding, "raw") = 0) {
++		strcpy(alg_name, "rsa");
++		return 0;
 +	}
 +
-+	return 0;
++	return -ENOPKG;
 +}
 +
-+static int nd_intel_test_cmd_secure_erase(struct nfit_test *t,
-+		struct nd_intel_secure_erase *nd_cmd,
-+		unsigned int buf_len, int idx)
++/*
++ * Query information about a key.
++ */
++static int tpm_key_query(const struct kernel_pkey_params *params,
++			 struct kernel_pkey_query *info)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &t->sec[idx];
++	struct tpm_key *tk = params->key->payload.data[asym_crypto];
++	int ret;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	struct crypto_akcipher *tfm;
++	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
++	uint32_t der_pub_key_len;
++	int len;
 +
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "secure erase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "secure erase: wrong passphrase\n");
-+	} else {
-+		memset(sec->passphrase, 0, ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state = 0;
-+		dev_dbg(dev, "secure erase: done\n");
-+	}
++	/* TPM only works on private keys, public keys still done in software */
++	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
++	if (ret < 0)
++		return ret;
 +
-+	return 0;
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
++					 der_pub_key);
++
++	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	len = crypto_akcipher_maxsize(tfm);
++
++	info->key_size = tk->key_len;
++	info->max_data_size = tk->key_len / 8;
++	info->max_sig_size = len;
++	info->max_enc_size = len;
++	info->max_dec_size = tk->key_len / 8;
++
++	ret = 0;
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
 +}
 +
- static int get_dimm(struct nfit_mem *nfit_mem, unsigned int func)
- {
- 	int i;
-@@ -983,6 +1122,30 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 				return i;
- 
- 			switch (func) {
-+			case NVDIMM_INTEL_GET_SECURITY_STATE:
-+				rc = nd_intel_test_cmd_security_status(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_UNLOCK_UNIT:
-+				rc = nd_intel_test_cmd_unlock_unit(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_SET_PASSPHRASE:
-+				rc = nd_intel_test_cmd_set_pass(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_DISABLE_PASSPHRASE:
-+				rc = nd_intel_test_cmd_disable_pass(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_FREEZE_LOCK:
-+				rc = nd_intel_test_cmd_freeze_lock(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
-+			case NVDIMM_INTEL_SECURE_ERASE:
-+				rc = nd_intel_test_cmd_secure_erase(t,
-+						buf, buf_len, i - t->dcr_idx);
-+				break;
- 			case ND_INTEL_ENABLE_LSS_STATUS:
- 				rc = nd_intel_test_cmd_set_lss_status(t,
- 						buf, buf_len);
-@@ -1317,10 +1480,23 @@ static ssize_t fail_cmd_code_store(struct device *dev, struct device_attribute *
- }
- static DEVICE_ATTR_RW(fail_cmd_code);
- 
-+static ssize_t lock_dimm_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	int dimm = dimm_name_to_id(dev);
-+	struct nfit_test *t = dev_get_drvdata(dev);
-+	struct nfit_test_sec *sec = &t->sec[dimm];
-+
-+	sec->state = ND_INTEL_SEC_STATE_ENABLED | ND_INTEL_SEC_STATE_LOCKED;
-+	return size;
-+}
-+static DEVICE_ATTR_WO(lock_dimm);
-+
- static struct attribute *nfit_test_dimm_attributes[] = {
- 	&dev_attr_fail_cmd.attr,
- 	&dev_attr_fail_cmd_code.attr,
- 	&dev_attr_handle.attr,
-+	&dev_attr_lock_dimm.attr,
- 	NULL,
+ /*
+  * Parse enough information out of TPM_KEY structure:
+  * TPM_STRUCT_VER -> 4 bytes
+@@ -194,6 +328,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
+ 	.name_len		= sizeof("asym_tpm") - 1,
+ 	.describe		= asym_tpm_describe,
+ 	.destroy		= asym_tpm_destroy,
++	.query			= tpm_key_query,
  };
+ EXPORT_SYMBOL_GPL(asym_tpm_subtype);
  
-@@ -2207,6 +2383,14 @@ static void nfit_test0_setup(struct nfit_test *t)
- 	set_bit(ND_INTEL_FW_FINISH_UPDATE, &acpi_desc->dimm_cmd_force_en);
- 	set_bit(ND_INTEL_FW_FINISH_QUERY, &acpi_desc->dimm_cmd_force_en);
- 	set_bit(ND_INTEL_ENABLE_LSS_STATUS, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_GET_SECURITY_STATE,
-+			&acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_SET_PASSPHRASE, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE,
-+			&acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_UNLOCK_UNIT, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_FREEZE_LOCK, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_SECURE_ERASE, &acpi_desc->dimm_cmd_force_en);
- }
- 
- static void nfit_test1_setup(struct nfit_test *t)
-@@ -2626,6 +2810,8 @@ static int nfit_test_probe(struct platform_device *pdev)
- 				GFP_KERNEL);
- 		nfit_test->fw = devm_kcalloc(dev, num,
- 				sizeof(struct nfit_test_fw), GFP_KERNEL);
-+		nfit_test->sec = devm_kcalloc(dev, num,
-+				sizeof(struct nfit_test_sec), GFP_KERNEL);
- 		if (nfit_test->dimm && nfit_test->dimm_dma && nfit_test->label
- 				&& nfit_test->label_dma && nfit_test->dcr
- 				&& nfit_test->dcr_dma && nfit_test->flush
