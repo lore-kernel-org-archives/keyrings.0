@@ -1,74 +1,71 @@
-From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 27 Sep 2018 13:14:33 +0000
-Subject: [PATCH v2 4/7] keyctl_dh_compute_kdf: const-ify input parameters
-Message-Id: <20180927131436.23328-5-mathstuf@gmail.com>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Fri, 07 Sep 2018 22:34:26 +0000
+Subject: [RFC 02/12] mm: Generalize the mprotect implementation to support extensions
+Message-Id: <2dcbb08ed8804e02538a73ee05a4283c54180e36.1536356108.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <cover.1536356108.git.alison.schofield@intel.com>
+In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
 
-Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+Today mprotect is implemented to support legacy mprotect behavior
+plus an extension for memory protection keys. Make it more generic
+so that it can support additional extensions in the future.
+
+This is done is preparation for adding a new system call for memory
+encyption keys. The intent is that the new encrypted mprotect will be
+another extension to legacy mprotect.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 ---
- keyutils.c              | 5 +++--
- keyutils.h              | 8 ++++----
- man/keyctl_dh_compute.3 | 2 +-
- 3 files changed, 8 insertions(+), 7 deletions(-)
+ mm/mprotect.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/keyutils.c b/keyutils.c
-index fc7dc4d..a087a33 100644
---- a/keyutils.c
-+++ b/keyutils.c
-@@ -245,8 +245,9 @@ long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 68dc476310c0..56e64ef7931e 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -35,6 +35,8 @@
+ 
+ #include "internal.h"
+ 
++#define NO_PKEY  -1
++
+ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+ 		int dirty_accountable, int prot_numa)
+@@ -402,9 +404,9 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
  }
  
- long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
--			   key_serial_t base, char *hashname, char *otherinfo,
--			   size_t otherinfolen, char *buffer, size_t buflen)
-+			   key_serial_t base, const char *hashname,
-+			   const char *otherinfo, size_t otherinfolen,
-+			   char *buffer, size_t buflen)
+ /*
+- * pkey=-1 when doing a legacy mprotect()
++ * When pkey=NO_PKEY we get legacy mprotect behavior here.
+  */
+-static int do_mprotect_pkey(unsigned long start, size_t len,
++static int do_mprotect_ext(unsigned long start, size_t len,
+ 		unsigned long prot, int pkey)
  {
- 	struct keyctl_dh_params params = { .priv = private,
- 					   .prime = prime,
-diff --git a/keyutils.h b/keyutils.h
-index 5f81c62..208c175 100644
---- a/keyutils.h
-+++ b/keyutils.h
-@@ -115,8 +115,8 @@ struct keyctl_dh_params {
- };
+ 	unsigned long nstart, end, tmp, reqprot;
+@@ -528,7 +530,7 @@ static int do_mprotect_pkey(unsigned long start, size_t len,
+ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
+ 		unsigned long, prot)
+ {
+-	return do_mprotect_pkey(start, len, prot, -1);
++	return do_mprotect_ext(start, len, prot, NO_PKEY);
+ }
  
- struct keyctl_kdf_params {
--	char *hashname;
--	char *otherinfo;
-+	const char *hashname;
-+	const char *otherinfo;
- 	uint32_t otherinfolen;
- 	uint32_t __spare[8];
- };
-@@ -203,8 +203,8 @@ extern long keyctl_get_persistent(uid_t uid, key_serial_t id);
- extern long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
- 			      key_serial_t base, char *buffer, size_t buflen);
- extern long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
--				  key_serial_t base, char *hashname,
--				  char *otherinfo, size_t otherinfolen,
-+				  key_serial_t base, const char *hashname,
-+				  const char *otherinfo, size_t otherinfolen,
- 				  char *buffer, size_t buflen);
- extern long keyctl_restrict_keyring(key_serial_t keyring, const char *type,
- 				    const char *restriction);
-diff --git a/man/keyctl_dh_compute.3 b/man/keyctl_dh_compute.3
-index 09c5d21..58ad5df 100644
---- a/man/keyctl_dh_compute.3
-+++ b/man/keyctl_dh_compute.3
-@@ -25,7 +25,7 @@ keyctl_dh_compute_kdf \- Derive key from a Diffie-Hellman shared secret
- .BI "key_serial_t " prime ", key_serial_t " base ", void **" _buffer ");"
- .sp
- .BI "long keyctl_dh_compute_kdf(key_serial_t " private ", key_serial_t " prime ,
--.BI "key_serial_t " base ", char *" hashname ", char *" otherinfo ",
-+.BI "key_serial_t " base ", const char *" hashname ", const char *" otherinfo ",
- .BI "size_t " otherinfolen ", char *" buffer ", size_t " buflen ");"
- .\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
- .SH DESCRIPTION
+ #ifdef CONFIG_ARCH_HAS_PKEYS
+@@ -536,7 +538,7 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
+ SYSCALL_DEFINE4(pkey_mprotect, unsigned long, start, size_t, len,
+ 		unsigned long, prot, int, pkey)
+ {
+-	return do_mprotect_pkey(start, len, prot, pkey);
++	return do_mprotect_ext(start, len, prot, pkey);
+ }
+ 
+ SYSCALL_DEFINE2(pkey_alloc, unsigned long, flags, unsigned long, init_val)
 -- 
-2.19.0.221.g150f307afc
+2.14.1
