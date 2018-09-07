@@ -1,37 +1,147 @@
-From: KELLY ALAN <kellyalan@servicescourrier.club>
-Date: Sat, 25 Aug 2018 09:39:42 +0000
-Subject: TRADING  ACCOUNT
-Message-Id: <f53187a2b30c154a28b44315f31c9ed4@servicescourrier.club>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Fri, 07 Sep 2018 22:36:12 +0000
+Subject: [RFC 04/12] x86/mm: Add helper functions to manage memory encryption keys
+Message-Id: <28a55df5da1ecfea28bac588d3ac429cf1419b42.1536356108.git.alison.schofield@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <cover.1536356108.git.alison.schofield@intel.com>
+In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
 
+Define a global mapping structure to track the mapping of userspace
+keys to hardware keyids in MKTME (Multi-Key Total Memory Encryption).
+This data will be used for the memory encryption system call and the
+kernel key service API.
 
-Dear sir ,
+Implement helper functions to access this mapping structure and make
+them visible to the MKTME Kernel Key Service: security/keys/mktme_keys
 
-I KELLY ALAN  purchasing and sales manager of CFM INTERNATIONAL .Our 
-Company specialised in Supplying computer hardware and Electronic .We 
-want to extend our supplier list because of concurrency in prices on the 
-international market. We are seeking a supplier with whom we can to have 
-  partnered long-term in order to have competitive prices . we are 
-interested to buy the products you sell and want to place an order with 
-you in big quantities.
-Can you give us payment facilities ( 14 , 30 or 60 days payment terms ) 
-?
-What is the procedure for our account opening  and credit line 
-application ?
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+---
+ arch/x86/include/asm/mktme.h | 11 ++++++
+ arch/x86/mm/mktme.c          | 85 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 96 insertions(+)
 
-Cordially
-
-  KELLY ALAN
-
-CFM INTERNATIONAL
-2 BOULEVARD DU GAL MARTIAL VALIN
-75015 PARIS
-REG N° 302 527 700
-VAT N° FR90 302527700
-TEL +33171025367
-FAX +33177759149
-https://www.cfmaeroengines.com
+diff --git a/arch/x86/include/asm/mktme.h b/arch/x86/include/asm/mktme.h
+index dbfbd955da98..f6acd551457f 100644
+--- a/arch/x86/include/asm/mktme.h
++++ b/arch/x86/include/asm/mktme.h
+@@ -13,6 +13,17 @@ extern phys_addr_t mktme_keyid_mask;
+ extern int mktme_nr_keyids;
+ extern int mktme_keyid_shift;
+ 
++/* Manage mappings between hardware keyids and userspace keys */
++extern int mktme_map_alloc(void);
++extern void mktme_map_free(void);
++extern void mktme_map_lock(void);
++extern void mktme_map_unlock(void);
++extern int mktme_map_get_free_keyid(void);
++extern void mktme_map_clear_keyid(int keyid);
++extern void mktme_map_set_keyid(int keyid, unsigned int serial);
++extern int mktme_map_keyid_from_serial(unsigned int serial);
++extern unsigned int mktme_map_serial_from_keyid(int keyid);
++
+ extern struct page_ext_operations page_mktme_ops;
+ 
+ #define page_keyid page_keyid
+diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
+index 660caf6a5ce1..5246d8323359 100644
+--- a/arch/x86/mm/mktme.c
++++ b/arch/x86/mm/mktme.c
+@@ -63,6 +63,91 @@ int vma_keyid(struct vm_area_struct *vma)
+ 	return (prot & mktme_keyid_mask) >> mktme_keyid_shift;
+ }
+ 
++/*
++ * struct mktme_mapping and the mktme_map_* functions manage the mapping
++ * of userspace keys to hardware keyids in MKTME. They are used by the
++ * the encrypt_mprotect system call and the MKTME Key Service API.
++ */
++struct mktme_mapping {
++	struct mutex	lock;		/* protect this map & HW state */
++	unsigned int	mapped_keyids;
++	unsigned int	serial[];
++};
++
++struct mktme_mapping *mktme_map;
++
++static inline long mktme_map_size(void)
++{
++	long size = 0;
++
++	size += sizeof(mktme_map);
++	size += sizeof(mktme_map->serial[0]) * mktme_nr_keyids;
++	return size;
++}
++
++int mktme_map_alloc(void)
++{
++	mktme_map = kzalloc(mktme_map_size(), GFP_KERNEL);
++	if (!mktme_map)
++		return 0;
++	mutex_init(&mktme_map->lock);
++	return 1;
++}
++
++void mktme_map_free(void)
++{
++	kfree(mktme_map);
++}
++
++void mktme_map_lock(void)
++{
++	mutex_lock(&mktme_map->lock);
++}
++
++void mktme_map_unlock(void)
++{
++	mutex_unlock(&mktme_map->lock);
++}
++
++void mktme_map_set_keyid(int keyid, unsigned int serial)
++{
++	mktme_map->serial[keyid] = serial;
++	mktme_map->mapped_keyids++;
++}
++
++void mktme_map_clear_keyid(int keyid)
++{
++	mktme_map->serial[keyid] = 0;
++	mktme_map->mapped_keyids--;
++}
++
++unsigned int mktme_map_serial_from_keyid(int keyid)
++{
++	return mktme_map->serial[keyid];
++}
++
++int mktme_map_keyid_from_serial(unsigned int serial)
++{
++	int i;
++
++	for (i = 1; i < mktme_nr_keyids; i++)
++		if (mktme_map->serial[i] = serial)
++			return i;
++	return 0;
++}
++
++int mktme_map_get_free_keyid(void)
++{
++	int i;
++
++	if (mktme_map->mapped_keyids < mktme_nr_keyids) {
++		for (i = 1; i < mktme_nr_keyids; i++)
++			if (mktme_map->serial[i] = 0)
++				return i;
++	}
++	return 0;
++}
++
+ void prep_encrypted_page(struct page *page, int order, int keyid, bool zero)
+ {
+ 	int i;
+-- 
+2.14.1
