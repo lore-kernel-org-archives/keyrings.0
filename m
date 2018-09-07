@@ -1,54 +1,79 @@
 From: Alison Schofield <alison.schofield@intel.com>
-Date: Tue, 11 Sep 2018 00:34:33 +0000
-Subject: Re: [RFC 02/12] mm: Generalize the mprotect implementation to support extensions
-Message-Id: <20180911003433.GA447@alison-desk.jf.intel.com>
+Date: Fri, 07 Sep 2018 22:36:27 +0000
+Subject: [RFC 05/12] x86/mm: Add a helper function to set keyid bits in encrypted VMA's
+Message-Id: <efec45aae8dab3f4db8a79d001ec65137748cdb1.1536356108.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1536356108.git.alison.schofield@intel.com>
- <2dcbb08ed8804e02538a73ee05a4283c54180e36.1536356108.git.alison.schofield@intel.com>
- <0663b867003511f1ca652cef6acce589a5184a4b.camel@linux.intel.com>
-In-Reply-To: <0663b867003511f1ca652cef6acce589a5184a4b.camel@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: dhowells@redhat.com, tglx@linutronix.de, Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
+In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
 
-On Mon, Sep 10, 2018 at 01:12:31PM +0300, Jarkko Sakkinen wrote:
-> On Fri, 2018-09-07 at 15:34 -0700, Alison Schofield wrote:
-> > Today mprotect is implemented to support legacy mprotect behavior
-> > plus an extension for memory protection keys. Make it more generic
-> > so that it can support additional extensions in the future.
-> > 
-> > This is done is preparation for adding a new system call for memory
-> > encyption keys. The intent is that the new encrypted mprotect will be
-> > another extension to legacy mprotect.
-> > 
-> > Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-> > ---
-> >  mm/mprotect.c | 10 ++++++----
-> >  1 file changed, 6 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/mm/mprotect.c b/mm/mprotect.c
-> > index 68dc476310c0..56e64ef7931e 100644
-> > --- a/mm/mprotect.c
-> > +++ b/mm/mprotect.c
-> > @@ -35,6 +35,8 @@
-> >  
-> >  #include "internal.h"
-> >  
-> > +#define NO_PKEY  -1
-> 
-> This commit does not make anything more generic but it does take
-> away a magic number. The code change is senseful. The commit
-> message is nonsense.
+Store the memory encryption keyid in the upper bits of vm_page_prot
+that match position of keyid, bits 51:46, in a PTE.
 
-do_mprotect_ext() is intended to be the generic replacement for
-do_mprotect_pkey() which was added for protection keys.
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+---
+ arch/x86/include/asm/mktme.h |  3 +++
+ arch/x86/mm/mktme.c          | 15 +++++++++++++++
+ include/linux/mm.h           |  4 ++++
+ 3 files changed, 22 insertions(+)
 
-> 
-> PS. Please use @linux.intel.com for LKML.
-Is this a request to use your @linux.intel.com email address when I'm
-posting to LKML's?
-
-> 
-> /Jarkko
+diff --git a/arch/x86/include/asm/mktme.h b/arch/x86/include/asm/mktme.h
+index f6acd551457f..b707f800b68f 100644
+--- a/arch/x86/include/asm/mktme.h
++++ b/arch/x86/include/asm/mktme.h
+@@ -13,6 +13,9 @@ extern phys_addr_t mktme_keyid_mask;
+ extern int mktme_nr_keyids;
+ extern int mktme_keyid_shift;
+ 
++/* Set the encryption keyid bits in a VMA */
++extern void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid);
++
+ /* Manage mappings between hardware keyids and userspace keys */
+ extern int mktme_map_alloc(void);
+ extern void mktme_map_free(void);
+diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
+index 5246d8323359..5ee7f37e9cd0 100644
+--- a/arch/x86/mm/mktme.c
++++ b/arch/x86/mm/mktme.c
+@@ -63,6 +63,21 @@ int vma_keyid(struct vm_area_struct *vma)
+ 	return (prot & mktme_keyid_mask) >> mktme_keyid_shift;
+ }
+ 
++/* Set the encryption keyid bits in a VMA */
++void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid)
++{
++	int oldkeyid = vma_keyid(vma);
++	pgprotval_t newprot;
++
++	if (newkeyid = oldkeyid)
++		return;
++
++	newprot = pgprot_val(vma->vm_page_prot);
++	newprot &= ~mktme_keyid_mask;
++	newprot |= (unsigned long)newkeyid << mktme_keyid_shift;
++	vma->vm_page_prot = __pgprot(newprot);
++}
++
+ /*
+  * struct mktme_mapping and the mktme_map_* functions manage the mapping
+  * of userspace keys to hardware keyids in MKTME. They are used by the
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index a4ce26aa0b65..ac85c0805761 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -2799,5 +2799,9 @@ void __init setup_nr_node_ids(void);
+ static inline void setup_nr_node_ids(void) {}
+ #endif
+ 
++#ifndef CONFIG_X86_INTEL_MKTME
++static inline void mprotect_set_encrypt(struct vm_area_struct *vma,
++					int newkeyid) {}
++#endif /* CONFIG_X86_INTEL_MKTME */
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_MM_H */
+-- 
+2.14.1
