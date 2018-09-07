@@ -1,48 +1,81 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Sep 2018 16:09:16 +0000
-Subject: [PATCH 3/6] afs: afs_end_vnode_operation() needs to translate abort codes to errors
-Message-Id: <153685495622.16086.10265386563835390377.stgit@warthog.procyon.org.uk>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Fri, 07 Sep 2018 21:09:10 +0000
+Subject: [PATCH 4.14 16/89] Replace magic for trusting the secondary keyring with #define
+Message-Id: <20180907210854.655102443@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20180907210852.341064285@linuxfoundation.org>
+In-Reply-To: <20180907210852.341064285@linuxfoundation.org>
+To: linux-security-module@vger.kernel.org
 
-afs_end_vnode_operation() calls the function to translate an abort code
-into an error return, but never actually assigns the error.
+4.14-stable review patch.  If anyone has any objections, please let me know.
 
-Fix this by storing the looked up error back into the cursor.
+------------------
 
+From: Yannik Sembritzki <yannik@sembritzki.me>
+
+commit 817aef260037f33ee0f44c17fe341323d3aebd6d upstream.
+
+Replace the use of a magic number that indicates that verify_*_signature()
+should use the secondary keyring with a symbol.
+
+Signed-off-by: Yannik Sembritzki <yannik@sembritzki.me>
 Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ certs/system_keyring.c                  |    3 ++-
+ crypto/asymmetric_keys/pkcs7_key_type.c |    2 +-
+ include/linux/verification.h            |    6 ++++++
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
- fs/afs/rotate.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/fs/afs/rotate.c b/fs/afs/rotate.c
-index 1faef56b12bd..add0dbb18763 100644
---- a/fs/afs/rotate.c
-+++ b/fs/afs/rotate.c
-@@ -512,7 +512,6 @@ bool afs_select_current_fileserver(struct afs_fs_cursor *fc)
- int afs_end_vnode_operation(struct afs_fs_cursor *fc)
- {
- 	struct afs_net *net = afs_v2net(fc->vnode);
--	int ret;
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -15,6 +15,7 @@
+ #include <linux/cred.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
++#include <linux/verification.h>
+ #include <keys/asymmetric-type.h>
+ #include <keys/system_keyring.h>
+ #include <crypto/pkcs7.h>
+@@ -230,7 +231,7 @@ int verify_pkcs7_signature(const void *d
  
- 	mutex_unlock(&fc->vnode->io_lock);
+ 	if (!trusted_keys) {
+ 		trusted_keys = builtin_trusted_keys;
+-	} else if (trusted_keys = (void *)1UL) {
++	} else if (trusted_keys = VERIFY_USE_SECONDARY_KEYRING) {
+ #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
+ 		trusted_keys = secondary_trusted_keys;
+ #else
+--- a/crypto/asymmetric_keys/pkcs7_key_type.c
++++ b/crypto/asymmetric_keys/pkcs7_key_type.c
+@@ -62,7 +62,7 @@ static int pkcs7_preparse(struct key_pre
  
-@@ -520,9 +519,8 @@ int afs_end_vnode_operation(struct afs_fs_cursor *fc)
- 	afs_put_cb_interest(net, fc->cbi);
- 	afs_put_serverlist(net, fc->server_list);
- 
--	ret = fc->ac.error;
--	if (ret = -ECONNABORTED)
--		afs_abort_to_error(fc->ac.abort_code);
-+	if (fc->ac.error = -ECONNABORTED)
-+		fc->ac.error = afs_abort_to_error(fc->ac.abort_code);
- 
- 	return fc->ac.error;
+ 	return verify_pkcs7_signature(NULL, 0,
+ 				      prep->data, prep->datalen,
+-				      (void *)1UL, usage,
++				      VERIFY_USE_SECONDARY_KEYRING, usage,
+ 				      pkcs7_view_content, prep);
  }
+ 
+--- a/include/linux/verification.h
++++ b/include/linux/verification.h
+@@ -13,6 +13,12 @@
+ #define _LINUX_VERIFICATION_H
+ 
+ /*
++ * Indicate that both builtin trusted keys and secondary trusted keys
++ * should be used.
++ */
++#define VERIFY_USE_SECONDARY_KEYRING ((struct key *)1UL)
++
++/*
+  * The use to which an asymmetric key is being put.
+  */
+ enum key_being_used_for {
