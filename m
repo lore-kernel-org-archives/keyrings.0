@@ -1,194 +1,93 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Fri, 28 Sep 2018 21:54:00 +0000
-Subject: [PATCH v11 06/12] nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
-Message-Id: <153817164043.17152.16903691816029013085.stgit@djiang5-desk3.ch.intel.com>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Fri, 07 Sep 2018 22:34:54 +0000
+Subject: [RFC 03/12] syscall/x86: Wire up a new system call for memory encryption keys
+Message-Id: <e6be7d9cf4aa0b166401cfdc514f94b5f44803bd.1536356108.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <cover.1536356108.git.alison.schofield@intel.com>
+In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
 
-Add support to disable passphrase (security) for the Intel nvdimm. The
-passphrase used for disabling is pulled from userspace via the kernel
-key management. The action is triggered by writing "disable <old_keyid>" to
-the sysfs attribute "security". libnvdimm will support the generic disable
-API call. The kernel will verify the passphrase of the user key against
-the cached kernel key. If no kernel key exists, then the user key will be
-tried for the op.
+encrypt_mprotect() is a new system call to support memory encryption.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+It takes the same parameters as legacy mprotect, plus an additional
+key serial number that is mapped to an encryption keyid.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 ---
- drivers/acpi/nfit/intel.c  |   53 ++++++++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   56 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/libnvdimm.h  |    3 ++
- 3 files changed, 112 insertions(+)
+ arch/x86/entry/syscalls/syscall_32.tbl | 1 +
+ arch/x86/entry/syscalls/syscall_64.tbl | 1 +
+ include/linux/syscalls.h               | 2 ++
+ include/uapi/asm-generic/unistd.h      | 4 +++-
+ kernel/sys_ni.c                        | 2 ++
+ 5 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 314eae7e02d7..21d30222371f 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,58 @@
- #include "intel.h"
- #include "nfit.h"
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index 3cf7b533b3d1..f41ad857d5c6 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -398,3 +398,4 @@
+ 384	i386	arch_prctl		sys_arch_prctl			__ia32_compat_sys_arch_prctl
+ 385	i386	io_pgetevents		sys_io_pgetevents		__ia32_compat_sys_io_pgetevents
+ 386	i386	rseq			sys_rseq			__ia32_sys_rseq
++387	i386	encrypt_mprotect	sys_encrypt_mprotect		__ia32_sys_encrypt_mprotect
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index f0b1709a5ffb..cf2decfa6119 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -343,6 +343,7 @@
+ 332	common	statx			__x64_sys_statx
+ 333	common	io_pgetevents		__x64_sys_io_pgetevents
+ 334	common	rseq			__x64_sys_rseq
++335	common	encrypt_mprotect	__x64_sys_encrypt_mprotect
  
-+static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_disable_passphrase cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
-+	};
-+
-+	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
-+
-+	memcpy(nd_cmd.cmd.passphrase, nkey->data,
-+			sizeof(nd_cmd.cmd.passphrase));
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+ out:
-+	return rc;
-+}
-+
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 3ed377d0c46c..7dc0ed3a182e 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -904,6 +904,8 @@ asmlinkage long sys_statx(int dfd, const char __user *path, unsigned flags,
+ 			  unsigned mask, struct statx __user *buffer);
+ asmlinkage long sys_rseq(struct rseq __user *rseq, uint32_t rseq_len,
+ 			 int flags, uint32_t sig);
++asmlinkage long sys_encrypt_mprotect(unsigned long start, size_t len,
++				     unsigned long prot, int serial);
+ 
  /*
-  * The update passphrase takes the old passphrase and the new passphrase
-  * and send those to the nvdimm. The nvdimm will verify the old
-@@ -217,4 +269,5 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.state = intel_dimm_security_state,
- 	.unlock = intel_dimm_security_unlock,
- 	.change_key = intel_dimm_security_update_passphrase,
-+	.disable = intel_dimm_security_disable,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index abfe719558de..85f1816a4f0c 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -160,6 +160,7 @@ struct key *nvdimm_get_and_verify_key(struct device *dev,
- 	if (rc < 0)
- 		key = ERR_PTR(rc);
- 	return key;
-+
- }
+  * Architecture-specific system calls
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index 42990676a55e..d2cb0af68160 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -734,9 +734,11 @@ __SYSCALL(__NR_pkey_free,     sys_pkey_free)
+ __SYSCALL(__NR_statx,     sys_statx)
+ #define __NR_io_pgetevents 292
+ __SC_COMP(__NR_io_pgetevents, sys_io_pgetevents, compat_sys_io_pgetevents)
++#define __NR_encrypt_mprotect 293
++__SYSCALL(__NR_encrypt_mprotect, sys_encrypt_mprotect)
  
- static int nvdimm_check_key_len(unsigned short len)
-@@ -182,6 +183,56 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
- }
+ #undef __NR_syscalls
+-#define __NR_syscalls 293
++#define __NR_syscalls 294
  
-+static int nvdimm_security_disable(struct device *dev, unsigned int keyid)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key;
-+	int rc;
-+	struct user_key_payload *payload;
-+	bool is_userkey = false;
-+
-+	if (!nvdimm->security_ops)
-+		return -EOPNOTSUPP;
-+
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
-+		return -EOPNOTSUPP;
-+
-+	/* look for a key from cached key */
-+	key = nvdimm_get_and_verify_key(dev, keyid);
-+	if (IS_ERR(key))
-+		return PTR_ERR(key);
-+	if (!key) {
-+		/* get old user key */
-+		key = nvdimm_lookup_user_key(dev, keyid);
-+		if (!key)
-+			return -ENOKEY;
-+		is_userkey = true;
-+	}
-+
-+	down_read(&key->sem);
-+	payload = key->payload.data[0];
-+
-+	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm,
-+			(void *)payload->data);
-+	up_read(&key->sem);
-+	if (rc < 0) {
-+		dev_warn(dev, "unlock failed\n");
-+		goto out;
-+	}
-+
-+	/* If we succeed then remove the key */
-+	if (!is_userkey) {
-+		key_invalidate(key);
-+		nvdimm->key = NULL;
-+	}
-+
-+ out:
-+	key_put(key);
-+	nvdimm_security_get_state(dev);
-+	return rc;
-+}
-+
- int nvdimm_security_unlock_dimm(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -747,6 +798,11 @@ static ssize_t security_store(struct device *dev,
- 			return -EINVAL;
- 		dev_dbg(dev, "update %#x %#x\n", old_key, new_key);
- 		rc = nvdimm_security_change_key(dev, old_key, new_key);
-+	} else if (sysfs_streq(cmd, "disable")) {
-+		if (rc != 2)
-+			return -EINVAL;
-+		dev_dbg(dev, "disable %#x\n", old_key);
-+		rc = nvdimm_security_disable(dev, old_key);
- 	} else
- 		return -EINVAL;
+ /*
+  * 32 bit systems traditionally used different
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index df556175be50..1b48f709c265 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -336,6 +336,8 @@ COND_SYSCALL(pkey_mprotect);
+ COND_SYSCALL(pkey_alloc);
+ COND_SYSCALL(pkey_free);
  
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index bd6a413164ee..c60ab4b238f3 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -182,6 +182,9 @@ struct nvdimm_security_ops {
- 			struct nvdimm *nvdimm,
- 			const struct nvdimm_key_data *old_data,
- 			const struct nvdimm_key_data *new_data);
-+	int (*disable)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm,
-+			const struct nvdimm_key_data *nkey);
- };
++/* multi-key total memory encryption keys */
++COND_SYSCALL(encrypt_mprotect);
  
- void badrange_init(struct badrange *badrange);
+ /*
+  * Architecture specific weak syscall entries.
+-- 
+2.14.1
