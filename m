@@ -1,276 +1,150 @@
 From: Alison Schofield <alison.schofield@intel.com>
-Date: Tue, 11 Sep 2018 02:15:29 +0000
-Subject: Re: [RFC 06/12] mm: Add the encrypt_mprotect() system call
-Message-Id: <20180911021529.GA1732@alison-desk.jf.intel.com>
+Date: Fri, 07 Sep 2018 22:39:04 +0000
+Subject: [RFC 12/12] keys/mktme: Do not revoke in use memory encryption keys
+Message-Id: <e8f43039bf904d0547a9fdc1f6da515747305a59.1536356108.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1536356108.git.alison.schofield@intel.com>
- <7d27511b07c8337e15096214622b66ef8f0fa345.1536356108.git.alison.schofield@intel.com>
- <c790ace81239db52f8e9c42b10a9039aafbfff38.camel@linux.intel.com>
-In-Reply-To: <c790ace81239db52f8e9c42b10a9039aafbfff38.camel@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: dhowells@redhat.com, tglx@linutronix.de, Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
+In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
 
-On Mon, Sep 10, 2018 at 09:02:43PM +0300, Jarkko Sakkinen wrote:
-> On Fri, 2018-09-07 at 15:36 -0700, Alison Schofield wrote:
-> > Implement memory encryption with a new system call that is an
-> > extension of the legacy mprotect() system call.
-> > 
-> > In encrypt_mprotect the caller must pass a handle to a previously
-> > allocated and programmed encryption key. Validate the key and store
-> > the keyid bits in the vm_page_prot for each VMA in the protection
-> > range.
-> > 
-> > Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-> > ---
-> >  fs/exec.c           |  4 ++--
-> >  include/linux/key.h |  2 ++
-> >  include/linux/mm.h  |  3 ++-
-> >  mm/mprotect.c       | 67 ++++++++++++++++++++++++++++++++++++++++++++++++--
-> > ---
-> >  4 files changed, 67 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/fs/exec.c b/fs/exec.c
-> > index a1a246062561..b681a413db9c 100644
-> > --- a/fs/exec.c
-> > +++ b/fs/exec.c
-> > @@ -754,8 +754,8 @@ int setup_arg_pages(struct linux_binprm *bprm,
-> >  	vm_flags |= mm->def_flags;
-> >  	vm_flags |= VM_STACK_INCOMPLETE_SETUP;
-> >  
-> > -	ret = mprotect_fixup(vma, &prev, vma->vm_start, vma->vm_end,
-> > -			vm_flags);
-> > +	ret = mprotect_fixup(vma, &prev, vma->vm_start, vma->vm_end,
-> > vm_flags,
-> > +			     -1);
-> 
-> Why you pass a magic number here when you went the trouble having
-> a named constant?
+The MKTME key service maps userspace keys to hardware keyids. Those
+keys are used in a new system call that encrypts memory. The keys
+need to be tightly controlled. One example is that userspace keys
+should not be revoked while the hardware keyid slot is still in use.
 
-The named constant isn't available over here in fs/exec.c.
-The special case is documented further down ... (scroll down)
-That caller has no knowledge of proctection or encryption keys.
+The KEY_FLAG_KEEP bit offers good control. The mktme service uses
+that flag to prevent userspace keys from going away without proper
+synchronization with the mktme service type.
 
-> 
-> >  	if (ret)
-> >  		goto out_unlock;
-> >  	BUG_ON(prev != vma);
-> > diff --git a/include/linux/key.h b/include/linux/key.h
-> > index e58ee10f6e58..fb8a7d5f6149 100644
-> > --- a/include/linux/key.h
-> > +++ b/include/linux/key.h
-> > @@ -346,6 +346,8 @@ static inline key_serial_t key_serial(const struct key
-> > *key)
-> >  
-> >  extern void key_set_timeout(struct key *, unsigned);
-> >  
-> > +extern key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
-> > +				 key_perm_t perm);
-> >  /*
-> >   * The permissions required on a key that we're looking up.
-> >   */
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > index ac85c0805761..0f9422c7841e 100644
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -1579,7 +1579,8 @@ extern unsigned long change_protection(struct
-> > vm_area_struct *vma, unsigned long
-> >  			      int dirty_accountable, int prot_numa);
-> >  extern int mprotect_fixup(struct vm_area_struct *vma,
-> >  			  struct vm_area_struct **pprev, unsigned long start,
-> > -			  unsigned long end, unsigned long newflags);
-> > +			  unsigned long end, unsigned long newflags,
-> > +			  int newkeyid);
-> >  
-> >  /*
-> >   * doesn't attempt to fault and will return short.
-> > diff --git a/mm/mprotect.c b/mm/mprotect.c
-> > index 56e64ef7931e..6c2e1106525c 100644
-> > --- a/mm/mprotect.c
-> > +++ b/mm/mprotect.c
-> > @@ -28,14 +28,17 @@
-> >  #include <linux/ksm.h>
-> >  #include <linux/uaccess.h>
-> >  #include <linux/mm_inline.h>
-> > +#include <linux/key.h>
-> >  #include <asm/pgtable.h>
-> >  #include <asm/cacheflush.h>
-> >  #include <asm/mmu_context.h>
-> >  #include <asm/tlbflush.h>
-> > +#include <asm/mktme.h>
-> >  
-> >  #include "internal.h"
-> >  
-> >  #define NO_PKEY  -1
-> > +#define NO_KEYID -1
-> 
-> Should have only single named constant IMHO. This ambiguity
-> is worse than some reasonable constant name for both cases.
-> Maybe NO_KEYID would be adequate?
+The problem is that we need a safe and synchronous way to revoke keys.
+The way .revoke methods function now, the key service type is called late
+in the revoke process for cleanup after the fact. The mktme key service
+has no means to consider and perhaps reject the revoke request.
 
-Yes, this could be NO_KEY for both. I was worried about readability,
-but most of the usages compare it to a well-named variable, as in 
-(pkey = NO_KEY) or (keyid = NO_KEY) so it seems to work. 
-Will do!
+This proposal inserts the MKTME revoke call earlier into the existing
+keyctl <revoke> path. If it is safe to revoke the key, MKTME key service
+will turn off KEY_FLAG_KEEP and let the revoke continue and succeed.
+Otherwise, not safe, KEY_FLAG_KEEP stays on, which causes the normal
+path of revoke to fail.
 
-> 
-> >  
-> >  static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
-> >  		unsigned long addr, unsigned long end, pgprot_t newprot,
-> > @@ -310,7 +313,8 @@ unsigned long change_protection(struct vm_area_struct
-> > *vma, unsigned long start,
-> >  
-> >  int
-> >  mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
-> > -	unsigned long start, unsigned long end, unsigned long newflags)
-> > +	       unsigned long start, unsigned long end, unsigned long
-> > newflags,
-> > +	       int newkeyid)
-> >  {
-> >  	struct mm_struct *mm = vma->vm_mm;
-> >  	unsigned long oldflags = vma->vm_flags;
-> > @@ -320,10 +324,24 @@ mprotect_fixup(struct vm_area_struct *vma, struct
-> > vm_area_struct **pprev,
-> >  	int error;
-> >  	int dirty_accountable = 0;
-> >  
-> > +	/*
-> > +	 * Flags match and Keyids match or we have NO_KEYID.
-> > +	 * This _fixup is usually called from do_mprotect_ext() except
-> > +	 * for one special case: caller fs/exec.c/setup_arg_pages()
-> > +	 * In that case, newkeyid is passed as -1 (NO_KEYID).
-> > +	 */
+For the MKTME Key Service, a revoke may be done safely when there are
+no outstanding memory mappings encrypted with the key being revoked.
 
-Above is that special case explanation.
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+---
+ security/keys/internal.h   |  6 ++++++
+ security/keys/keyctl.c     |  7 +++++++
+ security/keys/mktme_keys.c | 47 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 60 insertions(+)
 
-> > +	if (newflags = oldflags &&
-> > +	    (newkeyid = vma_keyid(vma) || newkeyid = NO_KEYID)) {
-> > +		*pprev = vma;
-> > +		return 0;
-> > +	}
-> > +	/* Flags match and Keyid changes */
-> >  	if (newflags = oldflags) {
-> > +		mprotect_set_encrypt(vma, newkeyid);
-> >  		*pprev = vma;
-> >  		return 0;
-> >  	}
-> > +	/* Flags and Keyids both change, continue. */
-> >  
-> >  	/*
-> >  	 * If we make a private mapping writable we increase our commit;
-> > @@ -373,6 +391,8 @@ mprotect_fixup(struct vm_area_struct *vma, struct
-> > vm_area_struct **pprev,
-> >  	}
-> >  
-> >  success:
-> > +	if (newkeyid != NO_KEYID)
-> > +		mprotect_set_encrypt(vma, newkeyid);
-> >  	/*
-> >  	 * vm_flags and vm_page_prot are protected by the mmap_sem
-> >  	 * held in write mode.
-> > @@ -404,10 +424,15 @@ mprotect_fixup(struct vm_area_struct *vma, struct
-> > vm_area_struct **pprev,
-> >  }
-> >  
-> >  /*
-> > - * When pkey=NO_PKEY we get legacy mprotect behavior here.
-> > + * do_mprotect_ext() supports the legacy mprotect behavior plus extensions
-> > + * for protection keys and memory encryption keys. These extensions are
-> > + * mutually exclusive and the behavior is:
-> > + *	(pkey=NO_PKEY && keyid=NO_KEYID) => legacy mprotect
-> > + *	(pkey is valid)  => legacy mprotect plus protection key extensions
-> > + *	(keyid is valid) => legacy mprotect plus encryption key extensions
-> >   */
-> 
-> The header does not follow
-> 
-> https://www.kernel.org/doc/Documentation/kernel-doc-nano-HOWTO.txt
-
-Jarkko,
-
-I see the "how to" on kernel doc formatting, but I'm not getting the
-when? When should it be done? I can imagine it for new code, like
-the mktme_keys.c where new code is being added and the kernel docs
-could give a complete narrative of the module.
-
-Here, in mprotect.c, there are no kernel doc comments. I realize
-sometime we just need to start somewhere ;), but I find it odd to
-pluck out one function header to be extracted for kernel docs.
-
-Alison
-
-> 
-> >  static int do_mprotect_ext(unsigned long start, size_t len,
-> > -		unsigned long prot, int pkey)
-> > +			   unsigned long prot, int pkey, int keyid)
-> >  {
-> >  	unsigned long nstart, end, tmp, reqprot;
-> >  	struct vm_area_struct *vma, *prev;
-> > @@ -505,7 +530,8 @@ static int do_mprotect_ext(unsigned long start, size_t
-> > len,
-> >  		tmp = vma->vm_end;
-> >  		if (tmp > end)
-> >  			tmp = end;
-> > -		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags);
-> > +		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags,
-> > +				       keyid);
-> >  		if (error)
-> >  			goto out;
-> >  		nstart = tmp;
-> > @@ -530,7 +556,7 @@ static int do_mprotect_ext(unsigned long start, size_t
-> > len,
-> >  SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
-> >  		unsigned long, prot)
-> >  {
-> > -	return do_mprotect_ext(start, len, prot, NO_PKEY);
-> > +	return do_mprotect_ext(start, len, prot, NO_PKEY, NO_KEYID);
-> >  }
-> >  
-> >  #ifdef CONFIG_ARCH_HAS_PKEYS
-> > @@ -538,7 +564,7 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t,
-> > len,
-> >  SYSCALL_DEFINE4(pkey_mprotect, unsigned long, start, size_t, len,
-> >  		unsigned long, prot, int, pkey)
-> >  {
-> > -	return do_mprotect_ext(start, len, prot, pkey);
-> > +	return do_mprotect_ext(start, len, prot, pkey, NO_KEYID);
-> >  }
-> >  
-> >  SYSCALL_DEFINE2(pkey_alloc, unsigned long, flags, unsigned long, init_val)
-> > @@ -587,3 +613,32 @@ SYSCALL_DEFINE1(pkey_free, int, pkey)
-> >  }
-> >  
-> >  #endif /* CONFIG_ARCH_HAS_PKEYS */
-> > +
-> > +#ifdef CONFIG_X86_INTEL_MKTME
-> > +
-> > +SYSCALL_DEFINE4(encrypt_mprotect, unsigned long, start, size_t, len,
-> > +		unsigned long, prot, key_serial_t, serial)
-> > +{
-> > +	key_ref_t key_ref;
-> > +	int ret, keyid;
-> > +
-> > +	/* TODO MKTME key service must be initialized */
-> > +
-> > +	key_ref = lookup_user_key(serial, 0, KEY_NEED_VIEW);
-> > +	if (IS_ERR(key_ref))
-> > +		return PTR_ERR(key_ref);
-> > +
-> > +	mktme_map_lock();
-> > +	keyid = mktme_map_keyid_from_serial(serial);
-> > +	if (!keyid) {
-> > +		mktme_map_unlock();
-> > +		key_ref_put(key_ref);
-> > +		return -EINVAL;
-> > +	}
-> > +	ret = do_mprotect_ext(start, len, prot, NO_PKEY, keyid);
-> > +	mktme_map_unlock();
-> > +	key_ref_put(key_ref);
-> > +	return ret;
-> > +}
-> > +
-> > +#endif /* CONFIG_X86_INTEL_MKTME */
-> 
-> /Jarkko
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 9f8208dc0e55..9fb871522efe 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -316,4 +316,10 @@ static inline void key_check(const struct key *key)
+ 
+ #endif
+ 
++#ifdef CONFIG_MKTME_KEYS
++extern void mktme_revoke_key(struct key *key);
++#else
++static inline void mktme_revoke_key(struct key *key) {}
++#endif /* CONFIG_MKTME_KEYS */
++
+ #endif /* _INTERNAL_H */
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 1ffe60bb2845..86d2596ff275 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -363,6 +363,9 @@ long keyctl_update_key(key_serial_t id,
+  * and any links to the key will be automatically garbage collected after a
+  * certain amount of time (/proc/sys/kernel/keys/gc_delay).
+  *
++ * The MKTME key service type checks if a memory encryption key is in use
++ * before allowing a revoke to proceed.
++ *
+  * Keys with KEY_FLAG_KEEP set should not be revoked.
+  *
+  * If successful, 0 is returned.
+@@ -387,6 +390,10 @@ long keyctl_revoke_key(key_serial_t id)
+ 
+ 	key = key_ref_to_ptr(key_ref);
+ 	ret = 0;
++
++	if (strcmp(key->type->name, "mktme") = 0)
++		mktme_revoke_key(key);
++
+ 	if (test_bit(KEY_FLAG_KEEP, &key->flags))
+ 		ret = -EPERM;
+ 	else
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index dcbce7194647..c665be860538 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -31,6 +31,52 @@ static const char * const mktme_program_err[] = {
+ 	"Failure to access key table",		/* 5 */
+ };
+ 
++static int mktme_clear_programmed_key(int keyid)
++{
++	struct mktme_key_program *kprog = NULL;
++	int ret;
++
++	kprog = kmem_cache_zalloc(mktme_prog_cache, GFP_KERNEL);
++	if (!kprog)
++		return -ENOMEM;
++
++	kprog->keyid = keyid;
++	kprog->keyid_ctrl = MKTME_KEYID_CLEAR_KEY;
++	ret = mktme_key_program(kprog, mktme_cpumask);
++	if (ret = MKTME_PROG_SUCCESS)
++		mktme_map_clear_keyid(keyid);
++	else
++		pr_debug("mktme: %s [%d]\n", mktme_program_err[ret], ret);
++
++	kmem_cache_free(mktme_prog_cache, kprog);
++	return ret;
++}
++
++/*
++ * If the key is not in use, clear the hardware programming and
++ * allow the revoke to continue by clearing KEY_FLAG_KEEP.
++ */
++void mktme_revoke_key(struct key *key)
++{
++	int keyid, vma_count;
++
++	mktme_map_lock();
++	keyid = mktme_map_keyid_from_serial(key->serial);
++	if (keyid <= 0)
++		goto out;
++
++	vma_count = vma_read_encrypt_ref(keyid);
++	if (vma_count > 0) {
++		pr_debug("mktme not freeing keyid[%d] encrypt_count[%d]\n",
++			 keyid, vma_count);
++		goto out;
++	}
++	if (!mktme_clear_programmed_key(keyid))
++		clear_bit(KEY_FLAG_KEEP, &key->flags);
++out:
++	mktme_map_unlock();
++}
++
+ /* If a key is available, program and add the key to the software map. */
+ static int mktme_program_key(key_serial_t serial,
+ 			     struct mktme_key_program *kprog)
+@@ -193,6 +239,7 @@ int mktme_instantiate(struct key *key, struct key_preparsed_payload *prep)
+ 
+ 	mktme_map_lock();
+ 	ret = mktme_program_key(key->serial, kprog);
++	set_bit(KEY_FLAG_KEEP, &key->flags);
+ 	mktme_map_unlock();
+ out:
+ 	kzfree(options);
+-- 
+2.14.1
