@@ -1,50 +1,76 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 12 Sep 2018 11:12:43 +0000
-Subject: Re: [RFC 12/12] keys/mktme: Do not revoke in use memory encryption keys
-Message-Id: <17536.1536750763@warthog.procyon.org.uk>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Fri, 07 Sep 2018 22:23:24 +0000
+Subject: [RFC 00/12] Multi-Key Total Memory Encryption API (MKTME)
+Message-Id: <cover.1536356108.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <e8f43039bf904d0547a9fdc1f6da515747305a59.1536356108.git.alison.schofield@intel.com> <cover.1536356108.git.alison.schofield@intel.com>
-In-Reply-To: <e8f43039bf904d0547a9fdc1f6da515747305a59.1536356108.git.alison.schofield@intel.com>
-To: Alison Schofield <alison.schofield@intel.com>
-Cc: dhowells@redhat.com, tglx@linutronix.de, Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
 
-Alison Schofield <alison.schofield@intel.com> wrote:
+Seeking comments on the APIs supporting MKTME on future Intel platforms.
 
-> +
-> +	if (strcmp(key->type->name, "mktme") = 0)
-> +		mktme_revoke_key(key);
-> +
+MKTME (Multi-Key Total Memory Encryption) is a technology supporting
+memory encryption on upcoming Intel platforms. Whereas TME allows
+encryption of the entire system memory using a single key, MKTME
+allows mulitple encryption domains, each having their own key. While 
+the main use case for the feature is virtual machine isolation, the
+API needs the flexibility to work for a wide range of use cases.
 
-*Please* don't do that.
+This RFC presents the 2 API additions that enable userspace to:
+ 1) Create Encryption Keys: Kernel Key Service type "mktme"
+ 2) Use the Encryption Keys: system call encrypt_mprotect()
 
-The core code shouldn't be making references to specific key types in this
-way.  The only reason this is necessary for encrypted and trusted keys is
-because they misused the ->update() hook and it took a while for this to be
-noticed.
+In order to share between: the Kernel Key Service, the new system call,
+and the existing mm code, helper functions were created in arch/x86/mktme
 
-> The KEY_FLAG_KEEP bit offers good control. The mktme service uses
-> that flag to prevent userspace keys from going away without proper
-> synchronization with the mktme service type.
+This patchset is built upon Kirill Shutemov's patchset for the core MKTME
+support. You can find that here:
+git://git.kernel.org/pub/scm/linux/kernel/git/kas/linux.git mktme/wip
 
-This is not the control you are looking for.  The point of KEY_FLAG_KEEP is to
-allow the system to pin a key.  It's not meant to be a flag for the key type
-to play with.
 
-You say this:
+Alison Schofield (12):
+  docs/x86: Document the Multi-Key Total Memory Encryption API
+  mm: Generalize the mprotect implementation to support extensions
+  syscall/x86: Wire up a new system call for memory encryption keys
+  x86/mm: Add helper functions to manage memory encryption keys
+  x86/mm: Add a helper function to set keyid bits in encrypted VMA's
+  mm: Add the encrypt_mprotect() system call
+  x86/mm: Add helper functions to track encrypted VMA's
+  mm: Track VMA's in use for each memory encryption keyid
+  mm: Restrict memory encryption to anonymous VMA's
+  x86/pconfig: Program memory encryption keys on a system-wide basis
+  keys/mktme: Add a new key service type for memory encryption keys
+  keys/mktme: Do not revoke in use memory encryption keys
 
-	One example is that userspace keys should not be revoked while the
-	hardware keyid slot is still in use.
+ Documentation/x86/mktme-keys.txt       | 153 ++++++++++++++++
+ arch/x86/Kconfig                       |   1 +
+ arch/x86/entry/syscalls/syscall_32.tbl |   1 +
+ arch/x86/entry/syscalls/syscall_64.tbl |   1 +
+ arch/x86/include/asm/intel_pconfig.h   |  42 ++++-
+ arch/x86/include/asm/mktme.h           |  21 +++
+ arch/x86/mm/mktme.c                    | 141 ++++++++++++++
+ fs/exec.c                              |   4 +-
+ include/keys/mktme-type.h              |  28 +++
+ include/linux/key.h                    |   2 +
+ include/linux/mm.h                     |   9 +-
+ include/linux/syscalls.h               |   2 +
+ include/uapi/asm-generic/unistd.h      |   4 +-
+ kernel/fork.c                          |   2 +
+ kernel/sys_ni.c                        |   2 +
+ mm/mmap.c                              |  12 ++
+ mm/mprotect.c                          |  93 +++++++++-
+ mm/nommu.c                             |   4 +
+ security/keys/Kconfig                  |  11 ++
+ security/keys/Makefile                 |   1 +
+ security/keys/internal.h               |   6 +
+ security/keys/keyctl.c                 |   7 +
+ security/keys/mktme_keys.c             | 325 +++++++++++++++++++++++++++++++++
+ 23 files changed, 855 insertions(+), 17 deletions(-)
+ create mode 100644 Documentation/x86/mktme-keys.txt
+ create mode 100644 include/keys/mktme-type.h
+ create mode 100644 security/keys/mktme_keys.c
 
-but why not?  Revoking it causes accesses to return -EKEYREVOKED; it doesn't
-stop the kernel from using the key.
-
-Also, note that you don't *have* to provide a ->revoke() operation
-
-If you really want to suppress revocation, then I would suggest adding another
-type operation, say ->may_revoke(), that says whether you're allowed to do
-that.
-
-David
+-- 
+2.14.1
