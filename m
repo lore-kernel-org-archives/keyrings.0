@@ -1,24 +1,27 @@
-From: James Morris <jmorris@namei.org>
-Date: Thu, 06 Sep 2018 00:07:49 +0000
+From: Marcel Holtmann <marcel@holtmann.org>
+Date: Fri, 07 Sep 2018 17:31:36 +0000
 Subject: Re: [PATCH 00/22] KEYS: Support TPM-wrapped key and crypto ops
-Message-Id: <alpine.LRH.2.21.1809061007140.23269@namei.org>
+Message-Id: <25C89575-D4E9-48FB-BEC9-383B09F32E44@holtmann.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+	<alpine.LRH.2.21.1809061007140.23269@namei.org>
+In-Reply-To: <alpine.LRH.2.21.1809061007140.23269@namei.org>
 To: linux-security-module@vger.kernel.org
 
-On Wed, 5 Sep 2018, David Howells wrote:
+Hi James,
 
+>> Here's a set of patches that does the following, if you could pull it please:
 > 
-> Hi James,
-> 
-> Here's a set of patches that does the following, if you could pull it please:
+> Thanks, it would be good to see more review / acks, though.
 
-Thanks, it would be good to see more review / acks, though.
+so I have reviewed and tested this code. In addition, we have test cases for it in ELL (embedded linux library).
 
--- 
-James Morris
-<jmorris@namei.org>
+Tested-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+
+Regards
+
+Marcel
