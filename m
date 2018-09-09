@@ -1,83 +1,66 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:54:44 +0000
-Subject: [PATCH 04/22] KEYS: Make the X.509 and PKCS7 parsers supply the sig encoding type
-Message-Id: <153618448451.7946.79126788153992612.stgit@warthog.procyon.org.uk>
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Sun, 09 Sep 2018 22:00:18 +0000
+Subject: Re: [PATCH resend] uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name
+Message-Id: <20180909220018.GH13219@asgard.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+References: <0db6c314-1ef4-9bfa-1baa-7214dd2ee061@infradead.org>
+In-Reply-To: <0db6c314-1ef4-9bfa-1baa-7214dd2ee061@infradead.org>
 To: linux-security-module@vger.kernel.org
 
-Make the X.509 and PKCS7 parsers fill in the signature encoding type field
-recently added to the public_key_signature struct.
+On Tue, Aug 28, 2018 at 04:34:04PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Since this header is in "include/uapi/linux/", apparently people
+> want to use it in userspace programs -- even in C++ ones.
+> However, the header uses a C++ reserved keyword ("private"),
+> so change that to "dh_private" instead to allow the header file
+> to be used in C++ userspace.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+This change breaks all existing C programs that rely on <linux/keyctl.h>
+uapi header in order to get struct keyctl_dh_params definition, however.
 
- crypto/asymmetric_keys/pkcs7_parser.c     |    1 +
- crypto/asymmetric_keys/x509_cert_parser.c |   21 +++++++++------------
- 2 files changed, 10 insertions(+), 12 deletions(-)
+> 
+> Fixes https://bugzilla.kernel.org/show_bug.cgi?id1051
+> Fixes: ddbb41148724 ("KEYS: Add KEYCTL_DH_COMPUTE command")
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: "Serge E. Hallyn" <serge@hallyn.com>
+> Cc: keyrings@vger.kernel.org
+> Cc: linux-security-module@vger.kernel.org
+> Cc: Mat Martineau <mathew.j.martineau@linux.intel.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  include/uapi/linux/keyctl.h |    2 +-
+>  security/keys/dh.c          |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- lnx-416.orig/include/uapi/linux/keyctl.h
+> +++ lnx-416/include/uapi/linux/keyctl.h
+> @@ -65,7 +65,7 @@
+>  
+>  /* keyctl structures */
+>  struct keyctl_dh_params {
+> -	__s32 private;
+> +	__s32 dh_private;
 
-diff --git a/crypto/asymmetric_keys/pkcs7_parser.c b/crypto/asymmetric_keys/pkcs7_parser.c
-index 0f134162cef4..f0d56e1a8b7e 100644
---- a/crypto/asymmetric_keys/pkcs7_parser.c
-+++ b/crypto/asymmetric_keys/pkcs7_parser.c
-@@ -271,6 +271,7 @@ int pkcs7_sig_note_pkey_algo(void *context, size_t hdrlen,
- 	switch (ctx->last_oid) {
- 	case OID_rsaEncryption:
- 		ctx->sinfo->sig->pkey_algo = "rsa";
-+		ctx->sinfo->sig->encoding = "pkcs1";
- 		break;
- 	default:
- 		printk("Unsupported pkey algo: %u\n", ctx->last_oid);
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index b6cabac4b62b..991f4d735a4e 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -199,35 +199,32 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
- 
- 	case OID_md4WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "md4";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
- 
- 	case OID_sha1WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha1";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
- 
- 	case OID_sha256WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha256";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
- 
- 	case OID_sha384WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha384";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
- 
- 	case OID_sha512WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha512";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
- 
- 	case OID_sha224WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha224";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
- 	}
- 
-+rsa_pkcs1:
-+	ctx->cert->sig->pkey_algo = "rsa";
-+	ctx->cert->sig->encoding = "pkcs1";
- 	ctx->algo_oid = ctx->last_oid;
- 	return 0;
- }
+>  	__s32 prime;
+>  	__s32 base;
+>  };
+> --- lnx-416.orig/security/keys/dh.c
+> +++ lnx-416/security/keys/dh.c
+> @@ -307,7 +307,7 @@ long __keyctl_dh_compute(struct keyctl_d
+>  	}
+>  	dh_inputs.g_size = dlen;
+>  
+> -	dlen = dh_data_from_key(pcopy.private, &dh_inputs.key);
+> +	dlen = dh_data_from_key(pcopy.dh_private, &dh_inputs.key);
+>  	if (dlen < 0) {
+>  		ret = dlen;
+>  		goto out2;
+> 
+> 
