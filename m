@@ -1,95 +1,124 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Fri, 07 Sep 2018 22:38:10 +0000
-Subject: [RFC 10/12] x86/pconfig: Program memory encryption keys on a system-wide basis
-Message-Id: <0947e4ad711e8b7c1f581a446e808f514620b49b.1536356108.git.alison.schofield@intel.com>
+From: "Huang, Kai" <kai.huang@intel.com>
+Date: Mon, 10 Sep 2018 01:46:20 +0000
+Subject: RE: [RFC 10/12] x86/pconfig: Program memory encryption keys on a system-wide basis
+Message-Id: <105F7BF4D0229846AF094488D65A0989354249D2@PGSMSX112.gar.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1536356108.git.alison.schofield@intel.com>
-In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
-To: dhowells@redhat.com, tglx@linutronix.de
-Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
+ <0947e4ad711e8b7c1f581a446e808f514620b49b.1536356108.git.alison.schofield@intel.com>
+In-Reply-To: <0947e4ad711e8b7c1f581a446e808f514620b49b.1536356108.git.alison.schofield@intel.com>
+To: "Schofield, Alison" <alison.schofield@intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "tglx@linutronix.de" <tglx@linutronix.de>
+Cc: "Nakajima, Jun" <jun.nakajima@intel.com>, "Shutemov, Kirill" <kirill.shutemov@intel.com>, "Hansen, Dave" <dave.hansen@intel.com>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>, "jmorris@namei.org" <jmorris@namei.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>
 
-The kernel manages the MKTME (Multi-Key Total Memory Encryption) Keys
-as a system wide single pool of keys. The hardware, however, manages
-the keys on a per physical package basis. Each physical package
-maintains a key table that all CPU's in that package share.
 
-In order to maintain the consistent, system wide view that the kernel
-requires, program all physical packages during a key program request.
+> -----Original Message-----
+> From: Schofield, Alison
+> Sent: Saturday, September 8, 2018 10:38 AM
+> To: dhowells@redhat.com; tglx@linutronix.de
+> Cc: Huang, Kai <kai.huang@intel.com>; Nakajima, Jun
+> <jun.nakajima@intel.com>; Shutemov, Kirill <kirill.shutemov@intel.com>;
+> Hansen, Dave <dave.hansen@intel.com>; Sakkinen, Jarkko
+> <jarkko.sakkinen@intel.com>; jmorris@namei.org; keyrings@vger.kernel.org;
+> linux-security-module@vger.kernel.org; mingo@redhat.com; hpa@zytor.com;
+> x86@kernel.org; linux-mm@kvack.org
+> Subject: [RFC 10/12] x86/pconfig: Program memory encryption keys on a
+> system-wide basis
+> 
+> The kernel manages the MKTME (Multi-Key Total Memory Encryption) Keys as a
+> system wide single pool of keys. The hardware, however, manages the keys on a
+> per physical package basis. Each physical package maintains a key table that all
+> CPU's in that package share.
+> 
+> In order to maintain the consistent, system wide view that the kernel requires,
+> program all physical packages during a key program request.
+> 
+> Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+> ---
+>  arch/x86/include/asm/intel_pconfig.h | 42
+> ++++++++++++++++++++++++++++++------
+>  1 file changed, 36 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/intel_pconfig.h
+> b/arch/x86/include/asm/intel_pconfig.h
+> index 3cb002b1d0f9..d3bf0a297e89 100644
+> --- a/arch/x86/include/asm/intel_pconfig.h
+> +++ b/arch/x86/include/asm/intel_pconfig.h
+> @@ -3,6 +3,7 @@
+> 
+>  #include <asm/asm.h>
+>  #include <asm/processor.h>
+> +#include <linux/cpu.h>
+> 
+>  enum pconfig_target {
+>  	INVALID_TARGET	= 0,
+> @@ -47,19 +48,48 @@ struct mktme_key_program {
+>  	u8 key_field_2[64];
+>  } __packed __aligned(256);
+> 
+> -static inline int mktme_key_program(struct mktme_key_program
+> *key_program)
+> +struct mktme_key_program_info {
+> +	struct mktme_key_program *key_program;
+> +	unsigned long status;
+> +};
+> +
+> +static void mktme_package_program(void *key_program_info)
+>  {
+> +	struct mktme_key_program_info *info = key_program_info;
+>  	unsigned long rax = MKTME_KEY_PROGRAM;
+> 
+> +	asm volatile(PCONFIG
+> +		: "=a" (rax), "=b" (info->key_program)
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
----
- arch/x86/include/asm/intel_pconfig.h | 42 ++++++++++++++++++++++++++++++------
- 1 file changed, 36 insertions(+), 6 deletions(-)
+Why do we need "=b" (info->key_program)? To me PCONFIG only reads from rbx, but won't write to it.
 
-diff --git a/arch/x86/include/asm/intel_pconfig.h b/arch/x86/include/asm/intel_pconfig.h
-index 3cb002b1d0f9..d3bf0a297e89 100644
---- a/arch/x86/include/asm/intel_pconfig.h
-+++ b/arch/x86/include/asm/intel_pconfig.h
-@@ -3,6 +3,7 @@
- 
- #include <asm/asm.h>
- #include <asm/processor.h>
-+#include <linux/cpu.h>
- 
- enum pconfig_target {
- 	INVALID_TARGET	= 0,
-@@ -47,19 +48,48 @@ struct mktme_key_program {
- 	u8 key_field_2[64];
- } __packed __aligned(256);
- 
--static inline int mktme_key_program(struct mktme_key_program *key_program)
-+struct mktme_key_program_info {
-+	struct mktme_key_program *key_program;
-+	unsigned long status;
-+};
-+
-+static void mktme_package_program(void *key_program_info)
- {
-+	struct mktme_key_program_info *info = key_program_info;
- 	unsigned long rax = MKTME_KEY_PROGRAM;
- 
-+	asm volatile(PCONFIG
-+		: "=a" (rax), "=b" (info->key_program)
-+		: "0" (rax), "1" (info->key_program)
-+		: "memory", "cc");
-+
-+	if (rax != MKTME_PROG_SUCCESS)
-+		WRITE_ONCE(info->status, rax);
-+}
-+
-+/*
-+ * MKTME keys are managed as a system-wide single pool of keys.
-+ * In the hardware, each physical package maintains a separate key
-+ * table. Program all physical packages with the same key info to
-+ * maintain that system-wide kernel view.
-+ */
-+static inline int mktme_key_program(struct mktme_key_program *key_program,
-+				    cpumask_var_t mktme_cpumask)
-+{
-+	struct mktme_key_program_info info = {
-+		.key_program = key_program,
-+		.status = MKTME_PROG_SUCCESS,
-+	};
-+
- 	if (!pconfig_target_supported(MKTME_TARGET))
- 		return -ENXIO;
- 
--	asm volatile(PCONFIG
--		: "=a" (rax), "=b" (key_program)
--		: "0" (rax), "1" (key_program)
--		: "memory", "cc");
-+	get_online_cpus();
-+	on_each_cpu_mask(mktme_cpumask, mktme_package_program,
-+			 &info, 1);
-+	put_online_cpus();
- 
--	return rax;
-+	return info.status;
- }
- 
- #endif	/* _ASM_X86_INTEL_PCONFIG_H */
--- 
-2.14.1
+> +		: "0" (rax), "1" (info->key_program)
+> +		: "memory", "cc");
+> +
+> +	if (rax != MKTME_PROG_SUCCESS)
+> +		WRITE_ONCE(info->status, rax);
+> +}
+> +
+> +/*
+> + * MKTME keys are managed as a system-wide single pool of keys.
+> + * In the hardware, each physical package maintains a separate key
+> + * table. Program all physical packages with the same key info to
+> + * maintain that system-wide kernel view.
+> + */
+> +static inline int mktme_key_program(struct mktme_key_program
+> *key_program,
+> +				    cpumask_var_t mktme_cpumask)
+> +{
+> +	struct mktme_key_program_info info = {
+> +		.key_program = key_program,
+> +		.status = MKTME_PROG_SUCCESS,
+> +	};
+> +
+>  	if (!pconfig_target_supported(MKTME_TARGET))
+>  		return -ENXIO;
+> 
+> -	asm volatile(PCONFIG
+> -		: "=a" (rax), "=b" (key_program)
+> -		: "0" (rax), "1" (key_program)
+> -		: "memory", "cc");
+> +	get_online_cpus();
+> +	on_each_cpu_mask(mktme_cpumask, mktme_package_program,
+> +			 &info, 1);
+> +	put_online_cpus();
+
+What is the value of 'mktme_cpumask'? Does it only contain one core for each package? 
+
+Since we are using 'on_each_cpu_mask', I think  we should make sure only one core is set for each node in 'mktme_cpumask'. Otherwise we have to deal with 'DEVICE_BUSY' case, since if one core is already in middle of PCONFIG, the other PCONFIGs on the same node would get 'DEVICE_BUSY' error, but this doesn't mean PCONFIG has failed on that node.
+
+Thanks,
+-Kai
+> 
+> -	return rax;
+> +	return info.status;
+>  }
+> 
+>  #endif	/* _ASM_X86_INTEL_PCONFIG_H */
+> --
+> 2.14.1
