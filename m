@@ -1,79 +1,21 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Fri, 07 Sep 2018 22:36:27 +0000
-Subject: [RFC 05/12] x86/mm: Add a helper function to set keyid bits in encrypted VMA's
-Message-Id: <efec45aae8dab3f4db8a79d001ec65137748cdb1.1536356108.git.alison.schofield@intel.com>
+From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
+Date: Mon, 10 Sep 2018 17:57:00 +0000
+Subject: Re: [RFC 05/12] x86/mm: Add a helper function to set keyid bits in encrypted VMA's
+Message-Id: <7d89c2ca26aee64d1e8d36332c770746a9462d13.camel@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1536356108.git.alison.schofield@intel.com>
-In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
-To: dhowells@redhat.com, tglx@linutronix.de
-Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
+	 <efec45aae8dab3f4db8a79d001ec65137748cdb1.1536356108.git.alison.schofield@intel.com>
+In-Reply-To: <efec45aae8dab3f4db8a79d001ec65137748cdb1.1536356108.git.alison.schofield@intel.com>
+To: "tglx@linutronix.de" <tglx@linutronix.de>, "Schofield, Alison" <alison.schofield@intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>
+Cc: "Shutemov, Kirill" <kirill.shutemov@intel.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "jmorris@namei.org" <jmorris@namei.org>, "Huang,
+ Kai" <kai.huang@intel.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "Hansen, Dave" <dave.hansen@intel.com>, "Nakajima, Jun" <jun.nakajima@intel.com>
 
-Store the memory encryption keyid in the upper bits of vm_page_prot
-that match position of keyid, bits 51:46, in a PTE.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
----
- arch/x86/include/asm/mktme.h |  3 +++
- arch/x86/mm/mktme.c          | 15 +++++++++++++++
- include/linux/mm.h           |  4 ++++
- 3 files changed, 22 insertions(+)
-
-diff --git a/arch/x86/include/asm/mktme.h b/arch/x86/include/asm/mktme.h
-index f6acd551457f..b707f800b68f 100644
---- a/arch/x86/include/asm/mktme.h
-+++ b/arch/x86/include/asm/mktme.h
-@@ -13,6 +13,9 @@ extern phys_addr_t mktme_keyid_mask;
- extern int mktme_nr_keyids;
- extern int mktme_keyid_shift;
- 
-+/* Set the encryption keyid bits in a VMA */
-+extern void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid);
-+
- /* Manage mappings between hardware keyids and userspace keys */
- extern int mktme_map_alloc(void);
- extern void mktme_map_free(void);
-diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
-index 5246d8323359..5ee7f37e9cd0 100644
---- a/arch/x86/mm/mktme.c
-+++ b/arch/x86/mm/mktme.c
-@@ -63,6 +63,21 @@ int vma_keyid(struct vm_area_struct *vma)
- 	return (prot & mktme_keyid_mask) >> mktme_keyid_shift;
- }
- 
-+/* Set the encryption keyid bits in a VMA */
-+void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid)
-+{
-+	int oldkeyid = vma_keyid(vma);
-+	pgprotval_t newprot;
-+
-+	if (newkeyid = oldkeyid)
-+		return;
-+
-+	newprot = pgprot_val(vma->vm_page_prot);
-+	newprot &= ~mktme_keyid_mask;
-+	newprot |= (unsigned long)newkeyid << mktme_keyid_shift;
-+	vma->vm_page_prot = __pgprot(newprot);
-+}
-+
- /*
-  * struct mktme_mapping and the mktme_map_* functions manage the mapping
-  * of userspace keys to hardware keyids in MKTME. They are used by the
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index a4ce26aa0b65..ac85c0805761 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -2799,5 +2799,9 @@ void __init setup_nr_node_ids(void);
- static inline void setup_nr_node_ids(void) {}
- #endif
- 
-+#ifndef CONFIG_X86_INTEL_MKTME
-+static inline void mprotect_set_encrypt(struct vm_area_struct *vma,
-+					int newkeyid) {}
-+#endif /* CONFIG_X86_INTEL_MKTME */
- #endif /* __KERNEL__ */
- #endif /* _LINUX_MM_H */
--- 
-2.14.1
+T24gRnJpLCAyMDE4LTA5LTA3IGF0IDE1OjM2IC0wNzAwLCBBbGlzb24gU2Nob2ZpZWxkIHdyb3Rl
+Og0KPiBTdG9yZSB0aGUgbWVtb3J5IGVuY3J5cHRpb24ga2V5aWQgaW4gdGhlIHVwcGVyIGJpdHMg
+b2Ygdm1fcGFnZV9wcm90DQo+IHRoYXQgbWF0Y2ggcG9zaXRpb24gb2Yga2V5aWQsIGJpdHMgNTE6
+NDYsIGluIGEgUFRFLg0KDQpXb3VsZCBub3QgZG8gYmFkIHRvIGV4cGxhaW4gdGhlIGNvbnRleHQg
+YSBiaXQgaGVyZS4gQXQgbGVhc3QgSSBkbyBub3QNCmtub3cgd2h5IHlvdSBlbmRlZCB1cCB0byB0
+aGlzIGJpdCByYW5nZS4NCg0KL0phcmtrbw0K
