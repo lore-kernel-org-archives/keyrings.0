@@ -1,67 +1,48 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Fri, 07 Sep 2018 22:37:51 +0000
-Subject: [RFC 09/12] mm: Restrict memory encryption to anonymous VMA's
-Message-Id: <f69e3d4f96504185054d951c7c85075ebf63e47a.1536356108.git.alison.schofield@intel.com>
+From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
+Date: Mon, 10 Sep 2018 18:21:58 +0000
+Subject: Re: [RFC 09/12] mm: Restrict memory encryption to anonymous VMA's
+Message-Id: <ae0288d5205a5c431e9a6bf0c9e68beded45e84b.camel@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1536356108.git.alison.schofield@intel.com>
-In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
-To: dhowells@redhat.com, tglx@linutronix.de
-Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
+	 <f69e3d4f96504185054d951c7c85075ebf63e47a.1536356108.git.alison.schofield@intel.com>
+In-Reply-To: <f69e3d4f96504185054d951c7c85075ebf63e47a.1536356108.git.alison.schofield@intel.com>
+To: "tglx@linutronix.de" <tglx@linutronix.de>, "Schofield, Alison" <alison.schofield@intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>
+Cc: "Shutemov, Kirill" <kirill.shutemov@intel.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "jmorris@namei.org" <jmorris@namei.org>, "Huang,
+ Kai" <kai.huang@intel.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "Hansen, Dave" <dave.hansen@intel.com>, "Nakajima, Jun" <jun.nakajima@intel.com>
 
-Memory encryption is only supported for mappings that are ANONYMOUS.
-Test the entire range of VMA's in an encrypt_mprotect() request to
-make sure they all meet that requirement before encrypting any.
-
-The encrypt_mprotect syscall will return -EINVAL and will not encrypt
-any VMA's if this check fails.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
----
- mm/mprotect.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
-
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 6c2e1106525c..3384b755aad1 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -311,6 +311,24 @@ unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
- 	return pages;
- }
- 
-+/*
-+ * Encrypted mprotect is only supported on anonymous mappings.
-+ * All VMA's in the requested range must be anonymous. If this
-+ * test fails on any single VMA, the entire mprotect request fails.
-+ */
-+bool mem_supports_encryption(struct vm_area_struct *vma, unsigned long end)
-+{
-+	struct vm_area_struct *test_vma = vma;
-+
-+	do {
-+		if (!vma_is_anonymous(test_vma))
-+			return false;
-+
-+		test_vma = test_vma->vm_next;
-+	} while (test_vma && test_vma->vm_start < end);
-+	return true;
-+}
-+
- int
- mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
- 	       unsigned long start, unsigned long end, unsigned long newflags,
-@@ -491,6 +509,10 @@ static int do_mprotect_ext(unsigned long start, size_t len,
- 				goto out;
- 		}
- 	}
-+	if (keyid > 0 && !mem_supports_encryption(vma, end)) {
-+		error = -EINVAL;
-+		goto out;
-+	}
- 	if (start > vma->vm_start)
- 		prev = vma;
- 
--- 
-2.14.1
+T24gRnJpLCAyMDE4LTA5LTA3IGF0IDE1OjM3IC0wNzAwLCBBbGlzb24gU2Nob2ZpZWxkIHdyb3Rl
+Og0KPiBNZW1vcnkgZW5jcnlwdGlvbiBpcyBvbmx5IHN1cHBvcnRlZCBmb3IgbWFwcGluZ3MgdGhh
+dCBhcmUgQU5PTllNT1VTLg0KPiBUZXN0IHRoZSBlbnRpcmUgcmFuZ2Ugb2YgVk1BJ3MgaW4gYW4g
+ZW5jcnlwdF9tcHJvdGVjdCgpIHJlcXVlc3QgdG8NCj4gbWFrZSBzdXJlIHRoZXkgYWxsIG1lZXQg
+dGhhdCByZXF1aXJlbWVudCBiZWZvcmUgZW5jcnlwdGluZyBhbnkuDQo+IA0KPiBUaGUgZW5jcnlw
+dF9tcHJvdGVjdCBzeXNjYWxsIHdpbGwgcmV0dXJuIC1FSU5WQUwgYW5kIHdpbGwgbm90IGVuY3J5
+cHQNCj4gYW55IFZNQSdzIGlmIHRoaXMgY2hlY2sgZmFpbHMuDQo+IA0KPiBTaWduZWQtb2ZmLWJ5
+OiBBbGlzb24gU2Nob2ZpZWxkIDxhbGlzb24uc2Nob2ZpZWxkQGludGVsLmNvbT4NCj4gLS0tDQo+
+ICBtbS9tcHJvdGVjdC5jIHwgMjIgKysrKysrKysrKysrKysrKysrKysrKw0KPiAgMSBmaWxlIGNo
+YW5nZWQsIDIyIGluc2VydGlvbnMoKykNCj4gDQo+IGRpZmYgLS1naXQgYS9tbS9tcHJvdGVjdC5j
+IGIvbW0vbXByb3RlY3QuYw0KPiBpbmRleCA2YzJlMTEwNjUyNWMuLjMzODRiNzU1YWFkMSAxMDA2
+NDQNCj4gLS0tIGEvbW0vbXByb3RlY3QuYw0KPiArKysgYi9tbS9tcHJvdGVjdC5jDQo+IEBAIC0z
+MTEsNiArMzExLDI0IEBAIHVuc2lnbmVkIGxvbmcgY2hhbmdlX3Byb3RlY3Rpb24oc3RydWN0IHZt
+X2FyZWFfc3RydWN0DQo+ICp2bWEsIHVuc2lnbmVkIGxvbmcgc3RhcnQsDQo+ICAJcmV0dXJuIHBh
+Z2VzOw0KPiAgfQ0KPiAgDQo+ICsvKg0KPiArICogRW5jcnlwdGVkIG1wcm90ZWN0IGlzIG9ubHkg
+c3VwcG9ydGVkIG9uIGFub255bW91cyBtYXBwaW5ncy4NCj4gKyAqIEFsbCBWTUEncyBpbiB0aGUg
+cmVxdWVzdGVkIHJhbmdlIG11c3QgYmUgYW5vbnltb3VzLiBJZiB0aGlzDQo+ICsgKiB0ZXN0IGZh
+aWxzIG9uIGFueSBzaW5nbGUgVk1BLCB0aGUgZW50aXJlIG1wcm90ZWN0IHJlcXVlc3QgZmFpbHMu
+DQo+ICsgKi8NCg0Ka2RvYw0KDQo+ICtib29sIG1lbV9zdXBwb3J0c19lbmNyeXB0aW9uKHN0cnVj
+dCB2bV9hcmVhX3N0cnVjdCAqdm1hLCB1bnNpZ25lZCBsb25nIGVuZCkNCj4gK3sNCj4gKwlzdHJ1
+Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnRlc3Rfdm1hID0gdm1hOw0KPiArDQo+ICsJZG8gew0KPiArCQlp
+ZiAoIXZtYV9pc19hbm9ueW1vdXModGVzdF92bWEpKQ0KPiArCQkJcmV0dXJuIGZhbHNlOw0KPiAr
+DQo+ICsJCXRlc3Rfdm1hID0gdGVzdF92bWEtPnZtX25leHQ7DQo+ICsJfSB3aGlsZSAodGVzdF92
+bWEgJiYgdGVzdF92bWEtPnZtX3N0YXJ0IDwgZW5kKTsNCj4gKwlyZXR1cm4gdHJ1ZTsNCj4gK30N
+Cj4gKw0KPiAgaW50DQo+ICBtcHJvdGVjdF9maXh1cChzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZt
+YSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICoqcHByZXYsDQo+ICAJICAgICAgIHVuc2lnbmVkIGxv
+bmcgc3RhcnQsIHVuc2lnbmVkIGxvbmcgZW5kLCB1bnNpZ25lZCBsb25nDQo+IG5ld2ZsYWdzLA0K
+PiBAQCAtNDkxLDYgKzUwOSwxMCBAQCBzdGF0aWMgaW50IGRvX21wcm90ZWN0X2V4dCh1bnNpZ25l
+ZCBsb25nIHN0YXJ0LCBzaXplX3QNCj4gbGVuLA0KPiAgCQkJCWdvdG8gb3V0Ow0KPiAgCQl9DQo+
+ICAJfQ0KPiArCWlmIChrZXlpZCA+IDAgJiYgIW1lbV9zdXBwb3J0c19lbmNyeXB0aW9uKHZtYSwg
+ZW5kKSkgew0KPiArCQllcnJvciA9IC1FSU5WQUw7DQo+ICsJCWdvdG8gb3V0Ow0KPiArCX0NCj4g
+IAlpZiAoc3RhcnQgPiB2bWEtPnZtX3N0YXJ0KQ0KPiAgCQlwcmV2ID0gdm1hOw0KPiAgDQoNCi9K
+YXJra28
