@@ -1,7 +1,7 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Tue, 11 Sep 2018 00:13:01 +0000
-Subject: Re: [RFC 01/12] docs/x86: Document the Multi-Key Total Memory Encryption API
-Message-Id: <20180911001301.GB31868@alison-desk.jf.intel.com>
+From: "Huang, Kai" <kai.huang@intel.com>
+Date: Tue, 11 Sep 2018 00:14:53 +0000
+Subject: RE: [RFC 01/12] docs/x86: Document the Multi-Key Total Memory Encryption API
+Message-Id: <105F7BF4D0229846AF094488D65A098935426D55@PGSMSX112.gar.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,10 +10,23 @@ References: <cover.1536356108.git.alison.schofield@intel.com>
  <b9c1e3805c700043d92117462bdb6018bb9f858a.1536356108.git.alison.schofield@intel.com>
  <105F7BF4D0229846AF094488D65A098935424996@PGSMSX112.gar.corp.intel.com>
 In-Reply-To: <105F7BF4D0229846AF094488D65A098935424996@PGSMSX112.gar.corp.intel.com>
-To: "Huang, Kai" <kai.huang@intel.com>
-Cc: "dhowells@redhat.com" <dhowells@redhat.com>, "tglx@linutronix.de" <tglx@linutronix.de>, "Nakajima, Jun" <jun.nakajima@intel.com>, "Shutemov, Kirill" <kirill.shutemov@intel.com>, "Hansen, Dave" <dave.hansen@intel.com>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>, "jmorris@namei.org" <jmorris@namei.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>
+To: "Huang, Kai" <kai.huang@intel.com>, "Schofield, Alison" <alison.schofield@intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "tglx@linutronix.de" <tglx@linutronix.de>
+Cc: "Nakajima, Jun" <jun.nakajima@intel.com>, "Shutemov, Kirill" <kirill.shutemov@intel.com>, "Hansen, Dave" <dave.hansen@intel.com>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>, "jmorris@namei.org" <jmorris@namei.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>
 
-On Sun, Sep 09, 2018 at 06:28:28PM -0700, Huang, Kai wrote:
+> -----Original Message-----
+> From: owner-linux-mm@kvack.org [mailto:owner-linux-mm@kvack.org] On
+> Behalf Of Huang, Kai
+> Sent: Monday, September 10, 2018 1:28 PM
+> To: Schofield, Alison <alison.schofield@intel.com>; dhowells@redhat.com;
+> tglx@linutronix.de
+> Cc: Nakajima, Jun <jun.nakajima@intel.com>; Shutemov, Kirill
+> <kirill.shutemov@intel.com>; Hansen, Dave <dave.hansen@intel.com>;
+> Sakkinen, Jarkko <jarkko.sakkinen@intel.com>; jmorris@namei.org;
+> keyrings@vger.kernel.org; linux-security-module@vger.kernel.org;
+> mingo@redhat.com; hpa@zytor.com; x86@kernel.org; linux-mm@kvack.org
+> Subject: RE: [RFC 01/12] docs/x86: Document the Multi-Key Total Memory
+> Encryption API
+> 
 > 
 > > -----Original Message-----
 > > From: owner-linux-mm@kvack.org [mailto:owner-linux-mm@kvack.org] On
@@ -21,41 +34,42 @@ On Sun, Sep 09, 2018 at 06:28:28PM -0700, Huang, Kai wrote:
 > > Sent: Saturday, September 8, 2018 10:34 AM
 > > To: dhowells@redhat.com; tglx@linutronix.de
 > > Cc: Huang, Kai <kai.huang@intel.com>; Nakajima, Jun
-> > <jun.nakajima@intel.com>; Shutemov, Kirill <kirill.shutemov@intel.com>;
-> > Hansen, Dave <dave.hansen@intel.com>; Sakkinen, Jarkko
-> > <jarkko.sakkinen@intel.com>; jmorris@namei.org; keyrings@vger.kernel.org;
-> > linux-security-module@vger.kernel.org; mingo@redhat.com; hpa@zytor.com;
-> > x86@kernel.org; linux-mm@kvack.org
+> > <jun.nakajima@intel.com>; Shutemov, Kirill
+> > <kirill.shutemov@intel.com>; Hansen, Dave <dave.hansen@intel.com>;
+> > Sakkinen, Jarkko <jarkko.sakkinen@intel.com>; jmorris@namei.org;
+> > keyrings@vger.kernel.org; linux-security-module@vger.kernel.org;
+> > mingo@redhat.com; hpa@zytor.com; x86@kernel.org; linux-mm@kvack.org
 > > Subject: [RFC 01/12] docs/x86: Document the Multi-Key Total Memory
 > > Encryption API
-> > 
+> >
 > > Document the API's used for MKTME on Intel platforms.
 > > MKTME: Multi-KEY Total Memory Encryption
-> > 
+> >
 > > Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 > > ---
 > >  Documentation/x86/mktme-keys.txt | 153
 > > +++++++++++++++++++++++++++++++++++++++
 > >  1 file changed, 153 insertions(+)
 > >  create mode 100644 Documentation/x86/mktme-keys.txt
-> > 
-> > diff --git a/Documentation/x86/mktme-keys.txt b/Documentation/x86/mktme-
-> > keys.txt
-> > new file mode 100644
-> > index 000000000000..2dea7acd2a17
+> >
+> > diff --git a/Documentation/x86/mktme-keys.txt
+> > b/Documentation/x86/mktme- keys.txt new file mode 100644 index
+> > 000000000000..2dea7acd2a17
 > > --- /dev/null
 > > +++ b/Documentation/x86/mktme-keys.txt
 > > @@ -0,0 +1,153 @@
 > > +MKTME (Multi-Key Total Memory Encryption) is a technology that allows
 > > +memory encryption on Intel platforms. Whereas TME (Total Memory
 > > +Encryption) allows encryption of the entire system memory using a
-> > +single key, MKTME allows multiple encryption domains, each having their
-> > +own key. The main use case for the feature is virtual machine
-> > +isolation. The API's introduced here are intended to offer flexibility to work in a
+> > +single key, MKTME allows multiple encryption domains, each having
+> > +their own key. The main use case for the feature is virtual machine
+> > +isolation. The API's introduced here are intended to offer
+> > +flexibility to work in a
 > > wide range of uses.
 > > +
 > > +The externally available Intel Architecture Spec:
-> > +https://software.intel.com/sites/default/files/managed/a5/16/Multi-Key-
+> > +https://software.intel.com/sites/default/files/managed/a5/16/Multi-Ke
+> > +y-
 > > +Total-Memory-Encryption-Spec.pdf
 > > +
 > > +==============  API Overview
@@ -78,13 +92,9 @@ On Sun, Sep 09, 2018 at 06:28:28PM -0700, Huang, Kai wrote:
 > > +   o MKTME keys are a limited resource. There is a single pool of
 > > +     MKTME keys for a system and that pool can be from 3 to 63 keys.
 > 
-> Why 3 to 63 keys? Architecturally we are able to support up to 15-bit keyID, although in the first generation server we only support 6-bit keyID, which is 63 key/keyIDs (excluding keyID 0, which is TME's keyID).
-
-My understanding is that low level SKU's could have as few as 3 bits 
-available to hold the keyid, and that the max is 6 bits, hence 64.
-I probably don't need to be stating that level of detail here, but
-rather just iterate the important point that the resource is limited!
-
+> Why 3 to 63 keys? Architecturally we are able to support up to 15-bit keyID,
+> although in the first generation server we only support 6-bit keyID, which is 63
+> key/keyIDs (excluding keyID 0, which is TME's keyID).
 > 
 > > +     With that in mind, userspace may take advantage of the kernel
 > > +     key services sharing and permissions model for userspace keys.
@@ -127,10 +137,8 @@ rather just iterate the important point that the resource is limited!
 > > +   o Additional mprotect() calls to memory already protected with
 > > +     MKTME will not alter the MKTME status.
 > 
-> I think it's better to separate encrypt_mprotect() into another doc so both parts can be reviewed easier.
-
-I can do that.
-Also, I do know I need man page for that too.
+> I think it's better to separate encrypt_mprotect() into another doc so both parts
+> can be reviewed easier.
 > 
 > > +
 > > +===========  Usage: MKTME Key Service
@@ -184,10 +192,9 @@ Also, I do know I need man page for that too.
 > > +	  entropy will be used by the CPU to generate both the
 > > +	  encryption key and the tweak key.
 > > +	- No entropy field is accepted.
-             ^^^^^^^ should be tweak
-
 > 
-> This is not true. The spec says in CPU generated random mode, both 'key' and 'tweak' part are used to generate the final key and tweak respectively.
+> This is not true. The spec says in CPU generated random mode, both 'key' and
+> 'tweak' part are used to generate the final key and tweak respectively.
 > 
 > Actually, simple 'XOR' is used to generate the final key:
 > 
@@ -199,42 +206,63 @@ Also, I do know I need man page for that too.
 > 	TMP_RND_TWEAK_KEY = TMP_RND_TWEAK_KEY XOR
 > 		TMP_KEY_PROGRAM_STRUCT.KEY_FIELD_2.BYTES[15:0];
 > 
-> So I think we can either just remove 'entropy' parameter, since we can use both 'userkey' and 'tweak' even for random key mode.
+> So I think we can either just remove 'entropy' parameter, since we can use both
+> 'userkey' and 'tweak' even for random key mode.
 > 
-> In fact, which might be better IMHO, we can simply disallow or ignore 'userkey' and 'tweak' part for random key mode, since if we allow user to specify both entropies, and if user passes value with all 1, we are effectively making the key and tweak to be all 1, which is not random anymore.
+> In fact, which might be better IMHO, we can simply disallow or ignore 'userkey'
+> and 'tweak' part for random key mode, since if we allow user to specify both
+> entropies, and if user passes value with all 1, we are effectively making the key
+> and tweak to be all 1, which is not random anymore.
 > 
-> Instead, kernel can generate random for both entropies, or we can simply uses 0, ignoring user input.
+> Instead, kernel can generate random for both entropies, or we can simply uses 0,
+> ignoring user input.
 
-Kai,
-I think my typo above, threw you off. We have the same understanding of
-the key fields.
+Hmm.. I just realized that I confused 'OR' and 'XOR', so the last two paragraphs doesn't make sense. :)
 
-Is this the structure you are suggesting?
+But still I think we can simply use "userkey" and "tweak". "entropy" is not needed IMO.
 
-	Options
-
-	key_type=	"user" or "CPU"
-
-	key=		If key_type = user
-				key= is the data key
-			If key_type = CPU
-				key= is not required
-				if key= is present
-					it is entropy to be mixed with
-					CPU generated data key
-
-	tweak=		If key_type = user
-				tweak= is the tweak key
-			If key_type = CPU
-				tweak= is not required
-				if tweak= is present
-					it is entropy to be mixed with
-					CPU generated tweak key
-
-
-Alison
+Thanks,
+-Kai
 > 
 > Thanks,
 > -Kai
-
-........snip...........
+> > +
+> > +===========  Usage: encrypt_mprotect()
+> > +===========
+> > +
+> > +System Call encrypt_mprotect()::
+> > +
+> > +    This system call is an extension of the existing mprotect() system
+> > +    call. It requires the same parameters as legary mprotect() plus
+> > +    one additional parameter, the keyid. Userspace must provide the
+> > +    key serial number assigned through the kernel key service.
+> > +
+> > +    int encrypt_mprotect(void *addr, size_t len, int prot, int
+> > + keyid);
+> > +
+> > +===========  Usage: Sample Roundtrip
+> > ===========
+> > +
+> > +Sample usage of MKTME Key Service API with encrypt_mprotect() API:
+> > +
+> > +  Add a key:
+> > +        key = add_key(mktme, name, options, strlen(option), keyring);
+> > +
+> > +  Map memory:
+> > +        ptr = mmap(NULL, size, prot, MAP_ANONYMOUS|MAP_PRIVATE, -1,
+> > + 0);
+> > +
+> > +  Protect memory:
+> > +        ret = syscall(sys_encrypt_mprotect, ptr, size, prot, keyid);
+> > +
+> > +  Use protected memory:
+> > +        ................
+> > +
+> > +  Free memory:
+> > +        ret = munmap(ptr, size);
+> > +
+> > +  Revoke key:
+> > +        ret = keyctl(KEYCTL_REVOKE, key);
+> > +
+> > --
+> > 2.14.1
