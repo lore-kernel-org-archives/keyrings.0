@@ -1,150 +1,50 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Fri, 07 Sep 2018 22:39:04 +0000
-Subject: [RFC 12/12] keys/mktme: Do not revoke in use memory encryption keys
-Message-Id: <e8f43039bf904d0547a9fdc1f6da515747305a59.1536356108.git.alison.schofield@intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 12 Sep 2018 11:12:43 +0000
+Subject: Re: [RFC 12/12] keys/mktme: Do not revoke in use memory encryption keys
+Message-Id: <17536.1536750763@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1536356108.git.alison.schofield@intel.com>
-In-Reply-To: <cover.1536356108.git.alison.schofield@intel.com>
-To: dhowells@redhat.com, tglx@linutronix.de
-Cc: Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
+References: <e8f43039bf904d0547a9fdc1f6da515747305a59.1536356108.git.alison.schofield@intel.com> <cover.1536356108.git.alison.schofield@intel.com>
+In-Reply-To: <e8f43039bf904d0547a9fdc1f6da515747305a59.1536356108.git.alison.schofield@intel.com>
+To: Alison Schofield <alison.schofield@intel.com>
+Cc: dhowells@redhat.com, tglx@linutronix.de, Kai Huang <kai.huang@intel.com>, Jun Nakajima <jun.nakajima@intel.com>, Kirill Shutemov <kirill.shutemov@intel.com>, Dave Hansen <dave.hansen@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org, linux-mm@kvack.org
 
-The MKTME key service maps userspace keys to hardware keyids. Those
-keys are used in a new system call that encrypts memory. The keys
-need to be tightly controlled. One example is that userspace keys
-should not be revoked while the hardware keyid slot is still in use.
+Alison Schofield <alison.schofield@intel.com> wrote:
 
-The KEY_FLAG_KEEP bit offers good control. The mktme service uses
-that flag to prevent userspace keys from going away without proper
-synchronization with the mktme service type.
+> +
+> +	if (strcmp(key->type->name, "mktme") = 0)
+> +		mktme_revoke_key(key);
+> +
 
-The problem is that we need a safe and synchronous way to revoke keys.
-The way .revoke methods function now, the key service type is called late
-in the revoke process for cleanup after the fact. The mktme key service
-has no means to consider and perhaps reject the revoke request.
+*Please* don't do that.
 
-This proposal inserts the MKTME revoke call earlier into the existing
-keyctl <revoke> path. If it is safe to revoke the key, MKTME key service
-will turn off KEY_FLAG_KEEP and let the revoke continue and succeed.
-Otherwise, not safe, KEY_FLAG_KEEP stays on, which causes the normal
-path of revoke to fail.
+The core code shouldn't be making references to specific key types in this
+way.  The only reason this is necessary for encrypted and trusted keys is
+because they misused the ->update() hook and it took a while for this to be
+noticed.
 
-For the MKTME Key Service, a revoke may be done safely when there are
-no outstanding memory mappings encrypted with the key being revoked.
+> The KEY_FLAG_KEEP bit offers good control. The mktme service uses
+> that flag to prevent userspace keys from going away without proper
+> synchronization with the mktme service type.
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
----
- security/keys/internal.h   |  6 ++++++
- security/keys/keyctl.c     |  7 +++++++
- security/keys/mktme_keys.c | 47 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 60 insertions(+)
+This is not the control you are looking for.  The point of KEY_FLAG_KEEP is to
+allow the system to pin a key.  It's not meant to be a flag for the key type
+to play with.
 
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 9f8208dc0e55..9fb871522efe 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -316,4 +316,10 @@ static inline void key_check(const struct key *key)
- 
- #endif
- 
-+#ifdef CONFIG_MKTME_KEYS
-+extern void mktme_revoke_key(struct key *key);
-+#else
-+static inline void mktme_revoke_key(struct key *key) {}
-+#endif /* CONFIG_MKTME_KEYS */
-+
- #endif /* _INTERNAL_H */
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 1ffe60bb2845..86d2596ff275 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -363,6 +363,9 @@ long keyctl_update_key(key_serial_t id,
-  * and any links to the key will be automatically garbage collected after a
-  * certain amount of time (/proc/sys/kernel/keys/gc_delay).
-  *
-+ * The MKTME key service type checks if a memory encryption key is in use
-+ * before allowing a revoke to proceed.
-+ *
-  * Keys with KEY_FLAG_KEEP set should not be revoked.
-  *
-  * If successful, 0 is returned.
-@@ -387,6 +390,10 @@ long keyctl_revoke_key(key_serial_t id)
- 
- 	key = key_ref_to_ptr(key_ref);
- 	ret = 0;
-+
-+	if (strcmp(key->type->name, "mktme") = 0)
-+		mktme_revoke_key(key);
-+
- 	if (test_bit(KEY_FLAG_KEEP, &key->flags))
- 		ret = -EPERM;
- 	else
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index dcbce7194647..c665be860538 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -31,6 +31,52 @@ static const char * const mktme_program_err[] = {
- 	"Failure to access key table",		/* 5 */
- };
- 
-+static int mktme_clear_programmed_key(int keyid)
-+{
-+	struct mktme_key_program *kprog = NULL;
-+	int ret;
-+
-+	kprog = kmem_cache_zalloc(mktme_prog_cache, GFP_KERNEL);
-+	if (!kprog)
-+		return -ENOMEM;
-+
-+	kprog->keyid = keyid;
-+	kprog->keyid_ctrl = MKTME_KEYID_CLEAR_KEY;
-+	ret = mktme_key_program(kprog, mktme_cpumask);
-+	if (ret = MKTME_PROG_SUCCESS)
-+		mktme_map_clear_keyid(keyid);
-+	else
-+		pr_debug("mktme: %s [%d]\n", mktme_program_err[ret], ret);
-+
-+	kmem_cache_free(mktme_prog_cache, kprog);
-+	return ret;
-+}
-+
-+/*
-+ * If the key is not in use, clear the hardware programming and
-+ * allow the revoke to continue by clearing KEY_FLAG_KEEP.
-+ */
-+void mktme_revoke_key(struct key *key)
-+{
-+	int keyid, vma_count;
-+
-+	mktme_map_lock();
-+	keyid = mktme_map_keyid_from_serial(key->serial);
-+	if (keyid <= 0)
-+		goto out;
-+
-+	vma_count = vma_read_encrypt_ref(keyid);
-+	if (vma_count > 0) {
-+		pr_debug("mktme not freeing keyid[%d] encrypt_count[%d]\n",
-+			 keyid, vma_count);
-+		goto out;
-+	}
-+	if (!mktme_clear_programmed_key(keyid))
-+		clear_bit(KEY_FLAG_KEEP, &key->flags);
-+out:
-+	mktme_map_unlock();
-+}
-+
- /* If a key is available, program and add the key to the software map. */
- static int mktme_program_key(key_serial_t serial,
- 			     struct mktme_key_program *kprog)
-@@ -193,6 +239,7 @@ int mktme_instantiate(struct key *key, struct key_preparsed_payload *prep)
- 
- 	mktme_map_lock();
- 	ret = mktme_program_key(key->serial, kprog);
-+	set_bit(KEY_FLAG_KEEP, &key->flags);
- 	mktme_map_unlock();
- out:
- 	kzfree(options);
--- 
-2.14.1
+You say this:
+
+	One example is that userspace keys should not be revoked while the
+	hardware keyid slot is still in use.
+
+but why not?  Revoking it causes accesses to return -EKEYREVOKED; it doesn't
+stop the kernel from using the key.
+
+Also, note that you don't *have* to provide a ->revoke() operation
+
+If you really want to suppress revocation, then I would suggest adding another
+type operation, say ->may_revoke(), that says whether you're allowed to do
+that.
+
+David
