@@ -1,154 +1,180 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Tue, 25 Sep 2018 23:38:01 +0000
-Subject: [PATCH v9 03/12] nfit/libnvdimm: store dimm id as a member to struct nvdimm
-Message-Id: <153791868172.70158.2917180693535649232.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 13 Sep 2018 16:09:01 +0000
+Subject: [PATCH 1/6] dns: Allow the dns resolver to retrieve a server set
+Message-Id: <153685494161.16086.536892492442787707.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-10"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-The generated dimm id is needed for the sysfs attribute as well as being
-used as the identifier/description for the security key. Since it's
-constant and should never change, store it as a member of struct nvdimm.
+Allow the DNS resolver to retrieve a set of servers and their associated
+addresses, ports, preference and weight ratings.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+In terms of communication with userspace, "srv=3D1" is added to the callout
+string (the '1' indicating the maximum data version supported by the
+kernel) to ask the userspace side for this.
+
+If the userspace side doesn't recognise it, it will ignore the option and
+return the usual text address list.
+
+If the userspace side does recognise it, it will return some binary data
+that begins with a zero byte that would cause the string parsers to give an
+error.  The second byte contains the version of the data in the blob (this
+may be between 1 and the version specified in the callout data).  The
+remainder of the payload is version-specific.
+
+In version 1, the payload looks like (note that this is packed):
+
+	u8	Non-string marker (ie. 0)
+	u8	Content (0 =3D> Server list)
+	u8	Version (ie. 1)
+	u8	Number of servers
+	foreach-server {
+		u16	Name length (LE)
+		u16	Priority (as per SRV record) (LE)
+		u16	Weight (as per SRV record) (LE)
+		u16	Port (LE)
+		u8	Protocol (IPPROTO_*)
+		u8	Number of addresses
+		char[]	Name (not NUL-terminated)
+		foreach-address {
+			u8		Family (AF_INET{,6})
+			union {
+				u8[4]	ipv4_addr
+				u8[16]	ipv6_addr
+			}
+		}
+	}
+
+This can then be used to fetch a whole cell's configuration for AFS, for
+example.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- drivers/acpi/nfit/core.c   |   29 +++++++++++++++++------------
- drivers/acpi/nfit/nfit.h   |    3 +++
- drivers/nvdimm/dimm_devs.c |    4 +++-
- drivers/nvdimm/nd-core.h   |    1 +
- include/linux/libnvdimm.h  |    2 +-
- 5 files changed, 25 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-index 4f3b89dc9238..94755a4b6327 100644
---- a/drivers/acpi/nfit/core.c
-+++ b/drivers/acpi/nfit/core.c
-@@ -1572,18 +1572,10 @@ static DEVICE_ATTR_RO(flags);
- static ssize_t id_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
--	struct acpi_nfit_control_region *dcr = to_nfit_dcr(dev);
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
- 
--	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
--		return sprintf(buf, "%04x-%02x-%04x-%08x\n",
--				be16_to_cpu(dcr->vendor_id),
--				dcr->manufacturing_location,
--				be16_to_cpu(dcr->manufacturing_date),
--				be32_to_cpu(dcr->serial_number));
--	else
--		return sprintf(buf, "%04x-%08x\n",
--				be16_to_cpu(dcr->vendor_id),
--				be32_to_cpu(dcr->serial_number));
-+	return sprintf(buf, "%s\n", nfit_mem->id);
- }
- static DEVICE_ATTR_RO(id);
- 
-@@ -1712,10 +1704,23 @@ static int acpi_nfit_add_dimm(struct acpi_nfit_desc *acpi_desc,
- 	const guid_t *guid;
- 	int i;
- 	int family = -1;
-+	struct acpi_nfit_control_region *dcr = nfit_mem->dcr;
- 
- 	/* nfit test assumes 1:1 relationship between commands and dsms */
- 	nfit_mem->dsm_mask = acpi_desc->dimm_cmd_force_en;
- 	nfit_mem->family = NVDIMM_FAMILY_INTEL;
+ net/dns_resolver/dns_key.c   |   61 ++++++++++++++++++++++++++++++++++++++=
+++--
+ net/dns_resolver/dns_query.c |    5 +--
+ 2 files changed, 59 insertions(+), 7 deletions(-)
+
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index 7f4534828f6c..ac3c9aa75727 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -48,14 +48,40 @@ const struct cred *dns_resolver_cache;
+ /*
+  * Preparse instantiation data for a dns_resolver key.
+  *
+- * The data must be a NUL-terminated string, with the NUL char accounted in
+- * datalen.
++ * For normal hostname lookups, the data must be a NUL-terminated string, =
+with
++ * the NUL char accounted in datalen.
+  *
+  * If the data contains a '#' characters, then we take the clause after ea=
+ch
+  * one to be an option of the form 'key=3Dvalue'.  The actual data of inte=
+rest is
+  * the string leading up to the first '#'.  For instance:
+  *
+  *        "ip1,ip2,...#foo=BAr"
++ *
++ * For server list requests, the data must begin with a NUL char and be
++ * followed by a byte indicating the version of the data format.  Version 1
++ * looks something like (note this is packed):
++ *
++ *	u8      Non-string marker (ie. 0)
++ *	u8	Content (0 is server list)
++ *	u8	Version (ie. 1)
++ *	u8	Number of servers
++ *	foreach-server {
++ *		u16	Name length (LE)
++ *		u16	Priority (as per SRV record, low first) (LE)
++ *		u16	Weight (as per SRV record, higher first) (LE)
++ *		u16	Port (LE)
++ *		u8	Protocol (IPPROTO_*)
++ *		u8	Number of addresses
++ *		char[]	Name (not NUL-terminated)
++ *		foreach-address {
++ *			u8		Family (AF_INET{,6})
++ *			union {
++ *				u8[4]	ipv4_addr
++ *				u8[16]	ipv6_addr
++ *			}
++ *		}
++ *	}
++ *
+  */
+ static int
+ dns_resolver_preparse(struct key_preparsed_payload *prep)
+@@ -66,9 +92,37 @@ dns_resolver_preparse(struct key_preparsed_payload *prep)
+ 	int datalen =3D prep->datalen, result_len =3D 0;
+ 	const char *data =3D prep->data, *end, *opt;
+=20
++	if (datalen <=3D 1 || !data)
++		return -EINVAL;
 +
-+	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
-+		sprintf(nfit_mem->id, "%04x-%02x-%04x-%08x",
-+				be16_to_cpu(dcr->vendor_id),
-+				dcr->manufacturing_location,
-+				be16_to_cpu(dcr->manufacturing_date),
-+				be32_to_cpu(dcr->serial_number));
-+	else
-+		sprintf(nfit_mem->id, "%04x-%08x",
-+				be16_to_cpu(dcr->vendor_id),
-+				be32_to_cpu(dcr->serial_number));
++	if (data[0] =3D 0) {
++		/* It may be a server list. */
++		if (datalen <=3D 3)
++			return -EINVAL;
 +
- 	adev = to_acpi_dev(acpi_desc);
- 	if (!adev)
++		data++;
++		kenter("[%u,%u],%u", data[0], data[1], datalen);
++		if (data[0] !=3D 0) {
++			pr_warn_ratelimited(
++				"dns_resolver: Unsupported result type (%u)\n",
++				(unsigned char)data[0]);
++			return -EINVAL;
++		}
++
++		if (data[1] !=3D 1) {
++			pr_warn_ratelimited(
++				"dns_resolver: Unsupported server list version (%u)\n",
++				(unsigned char)data[1]);
++			return -EINVAL;
++		}
++
++		result_len =3D datalen - 1;
++		goto store_result;
++	}
++
+ 	kenter("'%*.*s',%u", datalen, datalen, data, datalen);
+=20
+-	if (datalen <=3D 1 || !data || data[datalen - 1] !=3D '\0')
++	if (!data || data[datalen - 1] !=3D '\0')
+ 		return -EINVAL;
+ 	datalen--;
+=20
+@@ -144,6 +198,7 @@ dns_resolver_preparse(struct key_preparsed_payload *pre=
+p)
  		return 0;
-@@ -1899,7 +1904,7 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
- 		nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
- 				acpi_nfit_dimm_attribute_groups,
- 				flags, cmd_mask, flush ? flush->hint_count : 0,
--				nfit_mem->flush_wpq);
-+				nfit_mem->flush_wpq, &nfit_mem->id[0]);
- 		if (!nvdimm)
- 			return -ENOMEM;
- 
-diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
-index 1c4e26dd6425..36c8695a3d27 100644
---- a/drivers/acpi/nfit/nfit.h
-+++ b/drivers/acpi/nfit/nfit.h
-@@ -174,6 +174,8 @@ struct nfit_memdev {
- 	struct acpi_nfit_memory_map memdev[0];
- };
- 
-+#define NFIT_DIMM_ID_LEN	22
-+
- /* assembled tables for a given dimm/memory-device */
- struct nfit_mem {
- 	struct nvdimm *nvdimm;
-@@ -196,6 +198,7 @@ struct nfit_mem {
- 	int family;
- 	bool has_lsr;
- 	bool has_lsw;
-+	char id[NFIT_DIMM_ID_LEN+1];
- };
- 
- struct acpi_nfit_desc {
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index d058078a82aa..f414ed346215 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -401,7 +401,7 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
- struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		const struct attribute_group **groups, unsigned long flags,
- 		unsigned long cmd_mask, int num_flush,
--		struct resource *flush_wpq)
-+		struct resource *flush_wpq, const char *dimm_id)
- {
- 	struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
- 	struct device *dev;
-@@ -414,6 +414,8 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		kfree(nvdimm);
- 		return NULL;
  	}
-+
-+	nvdimm->dimm_id = dimm_id;
- 	nvdimm->provider_data = provider_data;
- 	nvdimm->flags = flags;
- 	nvdimm->cmd_mask = cmd_mask;
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 711eaf055455..8f377682a3ac 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -42,6 +42,7 @@ struct nvdimm {
- 	atomic_t busy;
- 	int id, num_flush;
- 	struct resource *flush_wpq;
-+	const char *dimm_id;
- };
- 
- /**
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 51084043915c..3c1f18fdf76f 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -181,7 +181,7 @@ void *nvdimm_provider_data(struct nvdimm *nvdimm);
- struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		const struct attribute_group **groups, unsigned long flags,
- 		unsigned long cmd_mask, int num_flush,
--		struct resource *flush_wpq);
-+		struct resource *flush_wpq, const char *dimm_id);
- const struct nd_cmd_desc *nd_cmd_dimm_desc(int cmd);
- const struct nd_cmd_desc *nd_cmd_bus_desc(int cmd);
- u32 nd_cmd_in_size(struct nvdimm *nvdimm, int cmd,
+=20
++store_result:
+ 	kdebug("store result");
+ 	prep->quotalen =3D result_len;
+=20
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index 49da67034f29..76338c38738a 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -148,12 +148,9 @@ int dns_query(const char *type, const char *name, size=
+_t namelen,
+=20
+ 	if (_result) {
+ 		ret =3D -ENOMEM;
+-		*_result =3D kmalloc(len + 1, GFP_KERNEL);
++		*_result =3D kmemdup_nul(upayload->data, len, GFP_KERNEL);
+ 		if (!*_result)
+ 			goto put;
+-
+-		memcpy(*_result, upayload->data, len);
+-		(*_result)[len] =3D '\0';
+ 	}
+=20
+ 	if (_expiry)
