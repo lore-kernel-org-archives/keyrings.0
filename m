@@ -1,118 +1,364 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Sep 2018 16:09:08 +0000
-Subject: [PATCH 2/6] afs: Do better max capacity handling on address lists
-Message-Id: <153685494877.16086.6419466153343099957.stgit@warthog.procyon.org.uk>
+Date: Thu, 13 Sep 2018 14:08:59 +0000
+Subject: [PATCH 3/3] Remove the dependency on MIT Kerberos
+Message-Id: <153684773962.10049.5588679375049584208.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <153684771698.10049.12488548190876920608.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153684771698.10049.12488548190876920608.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-security-module@vger.kernel.org
 
-Note the maximum allocated capacity in an afs_addr_list struct and discard
-addresses that would exceed it in afs_merge_fs_addr{4,6}().
+Remove the dependency on MIT Kerberos as not everyone has it available.
 
-Also, since the current maximum capacity is less than 255, reduce the
-relevant members to bytes.
+With the "use best match" change to /sbin/request-key, the kafs-client
+package can install a more specific handler for dns_resolver afsdb:*
+requests in front of the default one.
+
+This means that the dns resolver program only needs to look up DNS records
+and can ignore any static kafs configuration.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/afs/addr_list.c |   19 +++++++++++--------
- fs/afs/internal.h  |    8 +++++---
- 2 files changed, 16 insertions(+), 11 deletions(-)
+ Makefile      |    2 
+ dns.afsdb.c   |  268 ++++++++-------------------------------------------------
+ keyutils.spec |    2 
+ 3 files changed, 37 insertions(+), 235 deletions(-)
 
-diff --git a/fs/afs/addr_list.c b/fs/afs/addr_list.c
-index 025a9a5e1c32..4dbb8af54668 100644
---- a/fs/afs/addr_list.c
-+++ b/fs/afs/addr_list.c
-@@ -17,11 +17,6 @@
- #include "internal.h"
- #include "afs_fs.h"
+diff --git a/Makefile b/Makefile
+index 5ce6746..96b5df7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -153,7 +153,7 @@ request-key: request-key.o $(LIB_DEPENDENCY)
  
--//#define AFS_MAX_ADDRESSES
--//	((unsigned int)((PAGE_SIZE - sizeof(struct afs_addr_list)) /
--//			sizeof(struct sockaddr_rxrpc)))
--#define AFS_MAX_ADDRESSES ((unsigned int)(sizeof(unsigned long) * 8))
+ key.dns_resolver: key.dns_resolver.o dns.afsdb.o $(LIB_DEPENDENCY)
+ 	$(CC) -L. $(CFLAGS) $(LDFLAGS) $(RPATH) -o $@ \
+-		key.dns_resolver.o dns.afsdb.o -lkrb5 -lcom_err -lkeyutils -lresolv
++		key.dns_resolver.o dns.afsdb.o -lkeyutils -lresolv
+ 
+ key.dns_resolver.o: key.dns_resolver.c key.dns.h
+ dns.afsdb.o: dns.afsdb.c key.dns.h
+diff --git a/dns.afsdb.c b/dns.afsdb.c
+index 4e24815..064d9c8 100644
+--- a/dns.afsdb.c
++++ b/dns.afsdb.c
+@@ -36,179 +36,9 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+  */
+ #include "key.dns.h"
+-#include <profile.h>
+ 
+-static const char *afs_cellservdb[] = {
+-	"/etc/kafs/cellservdb.conf",
+-	"/usr/share/kafs/cellservdb.conf",
+-	NULL
+-};
+-
+-static profile_t afs_conf;
+-static bool afs_cell_in_conf;
+-static bool afs_prefer_dns;
+ static unsigned long afs_ttl = ULONG_MAX;
+ 
+-/*
+- * Check that a configured address is valid and add it to the list of addresses
+- * if okay.
+- */
+-static void afs_conf_add_address(char *addr)
+-{
+-	char *p, *q, *port = NULL;
+-	size_t plen = 0;
+-
+-	if (!addr[0])
+-		return;
+-
+-	if (addr[0] = '[') {
+-		/* IPv6 */
+-		struct in6_addr in6;
+-
+-		p = strchr(addr + 1, ']');
+-		if (!p)
+-			return;
+-		*p = 0;
+-		if (inet_pton(AF_INET6, addr + 1, &in6) = 0)
+-			return;
+-		*p++ = ']';
+-	} else {
+-		struct in_addr in;
+-
+-		p = strchr(addr, ':');
+-		if (p)
+-			*p = 0;
+-		if (inet_pton(AF_INET, addr, &in) = 0)
+-			return;
+-		if (p)
+-			*p = ':';
+-	}
+-
+-	/* See if there's a port specifier as well */
+-	if (p && *p) {
+-		if (*p != ':')
+-			return;
+-		p++;
+-		port = p;
+-		plen = strlen(port);
+-		if (plen > 5)
+-			return;
+-		strtoul(p, &q, 10);
+-		if (q != port + plen)
+-			return;
+-	}
+-
+-	append_address_to_payload(addr);
+-}
+-
+-/*
+- * Parse the cell database file
+- */
+-static void afs_conf_find_cell(const char *cell)
+-{
+-	const char *filter[6];
+-	char **list;
+-	long res;
+-	int tmp;
+-
+-	/* Parse the cell database file */
+-	res = profile_init(afs_cellservdb, &afs_conf);
+-	if (res != 0) {
+-		afs_prefer_dns = true;
+-		goto error;
+-	}
+-
+-	/* Check to see if the named cell is in the list */
+-	filter[0] = "cells";
+-	filter[1] = cell;
+-	filter[2] = NULL;
+-
+-	res = profile_get_subsection_names(afs_conf, filter, &list);
+-	if (res != 0) {
+-		afs_prefer_dns = true;
+-		goto error;
+-	}
+-
+-	if (!list[0]) {
+-		info("cell not configured\n");
+-		afs_cell_in_conf = false;
+-		afs_prefer_dns = true;
+-	} else {
+-		afs_cell_in_conf = true;
+-
+-		/* Retrieve the use_dns value for the cell */
+-		res = profile_get_boolean(afs_conf, "cells", cell, "use_dns", 1, &tmp);
+-		if (res != 0) {
+-			afs_prefer_dns = true;
+-			goto error;
+-		}
+-
+-		if (tmp)
+-			afs_prefer_dns = true;
+-		else
+-			info("cell sets use_dns=no");
+-	}
+-
+-	return;
+-
+-error:
+-	_error("cellservdb: %s", error_message(res));
+-}
+-
+-/*
+- * Get list of server names from the config file.
+- */
+-static char **afs_conf_list_servers(const char *cell)
+-{
+-	const char *filter[] = {
+-		"cells",
+-		cell,
+-		"servers",
+-		NULL
+-	};
+-	char **servers;
+-	long res;
+-
+-	res = profile_get_subsection_names(afs_conf, filter, &servers);
+-	if (res != 0)
+-		goto error;
+-
+-	return servers;
+-
+-error:
+-	_error("cellservdb: %s", error_message(res));
+-	return NULL;
+-}
+-
+-/*
+- * Get list of addresses for a server from the config file.
+- */
+-static int afs_conf_list_addresses(const char *cell, const char *server)
+-{
+-	const char *filter[] = {
+-		"cells",
+-		cell,
+-		"servers",
+-		server,
+-		"address",
+-		NULL
+-	};
+-	char **list, **p;
+-	long res;
+-
+-	res = profile_get_values(afs_conf, filter, &list);
+-	if (res != 0)
+-		goto error;
+-
+-	for (p = list; *p; p++)
+-		afs_conf_add_address(*p);
+-	return 0;
+-
+-error:
+-	_error("cellservdb: %s", error_message(res));
+-	return -1;
+-}
 -
  /*
-  * Release an address list.
+  *
   */
-@@ -43,11 +38,15 @@ struct afs_addr_list *afs_alloc_addrlist(unsigned int nr,
+@@ -377,40 +207,6 @@ static void srv_hosts_to_addrs(ns_msg handle, ns_sect section)
+ 	info("ttl: %u", ttl);
+ }
  
- 	_enter("%u,%u,%u", nr, service, port);
- 
-+	if (nr > AFS_MAX_ADDRESSES)
-+		nr = AFS_MAX_ADDRESSES;
-+
- 	alist = kzalloc(struct_size(alist, addrs, nr), GFP_KERNEL);
- 	if (!alist)
- 		return NULL;
- 
- 	refcount_set(&alist->usage, 1);
-+	alist->max_addrs = nr;
- 
- 	for (i = 0; i < nr; i++) {
- 		struct sockaddr_rxrpc *srx = &alist->addrs[i];
-@@ -109,8 +108,6 @@ struct afs_addr_list *afs_parse_text_addrs(const char *text, size_t len,
- 	} while (p < end);
- 
- 	_debug("%u/%u addresses", nr, AFS_MAX_ADDRESSES);
--	if (nr > AFS_MAX_ADDRESSES)
--		nr = AFS_MAX_ADDRESSES;
- 
- 	alist = afs_alloc_addrlist(nr, service, port);
- 	if (!alist)
-@@ -180,7 +177,7 @@ struct afs_addr_list *afs_parse_text_addrs(const char *text, size_t len,
- 		}
- 
- 		alist->nr_addrs++;
--	} while (p < end && alist->nr_addrs < AFS_MAX_ADDRESSES);
-+	} while (p < end && alist->nr_addrs < alist->max_addrs);
- 
- 	_leave(" = [nr %u]", alist->nr_addrs);
- 	return alist;
-@@ -241,6 +238,9 @@ void afs_merge_fs_addr4(struct afs_addr_list *alist, __be32 xdr, u16 port)
- 	__be16 xport = htons(port);
- 	int i;
- 
-+	if (alist->nr_addrs >= alist->max_addrs)
-+		return;
-+
- 	for (i = 0; i < alist->nr_ipv4; i++) {
- 		a = &alist->addrs[i].transport.sin6;
- 		if (xdr = a->sin6_addr.s6_addr32[3] &&
-@@ -277,6 +277,9 @@ void afs_merge_fs_addr6(struct afs_addr_list *alist, __be32 *xdr, u16 port)
- 	__be16 xport = htons(port);
- 	int i, diff;
- 
-+	if (alist->nr_addrs >= alist->max_addrs)
-+		return;
-+
- 	for (i = alist->nr_ipv4; i < alist->nr_addrs; i++) {
- 		a = &alist->addrs[i].transport.sin6;
- 		diff = memcmp(xdr, &a->sin6_addr, 16);
-diff --git a/fs/afs/internal.h b/fs/afs/internal.h
-index 871a228d7f37..8ae4e2ebb99a 100644
---- a/fs/afs/internal.h
-+++ b/fs/afs/internal.h
-@@ -73,12 +73,14 @@ struct afs_addr_list {
- 	struct rcu_head		rcu;		/* Must be first */
- 	refcount_t		usage;
- 	u32			version;	/* Version */
--	unsigned short		nr_addrs;
--	unsigned short		index;		/* Address currently in use */
--	unsigned short		nr_ipv4;	/* Number of IPv4 addresses */
-+	unsigned char		max_addrs;
-+	unsigned char		nr_addrs;
-+	unsigned char		index;		/* Address currently in use */
-+	unsigned char		nr_ipv4;	/* Number of IPv4 addresses */
- 	unsigned long		probed;		/* Mask of servers that have been probed */
- 	unsigned long		yfs;		/* Mask of servers that are YFS */
- 	struct sockaddr_rxrpc	addrs[];
-+#define AFS_MAX_ADDRESSES ((unsigned int)(sizeof(unsigned long) * 8))
- };
- 
+-/*
+- * Instantiate the key.
+- */
+-static __attribute__((noreturn))
+-void afs_instantiate(const char *cell)
+-{
+-	int ret;
+-
+-	/* set the key's expiry time from the minimum TTL encountered */
+-	if (!debug_mode) {
+-		ret = keyctl_set_timeout(key, afs_ttl);
+-		if (ret = -1)
+-			error("%s: keyctl_set_timeout: %m", __func__);
+-	}
+-
+-	/* handle a lack of results */
+-	if (payload_index = 0)
+-		nsError(NO_DATA, cell);
+-
+-	/* must include a NUL char at the end of the payload */
+-	payload[payload_index].iov_base = "";
+-	payload[payload_index++].iov_len = 1;
+-	dump_payload();
+-
+-	/* load the key with data key */
+-	if (!debug_mode) {
+-		ret = keyctl_instantiate_iov(key, payload, payload_index, 0);
+-		if (ret = -1)
+-			error("%s: keyctl_instantiate: %m", __func__);
+-	}
+-
+-	exit(0);
+-}
+-
  /*
+  * Look up an AFSDB record to get the VL server addresses.
+  */
+@@ -487,45 +283,53 @@ static int dns_query_VL_SRV(const char *cell)
+ 	return 0;
+ }
+ 
++/*
++ * Instantiate the key.
++ */
++static __attribute__((noreturn))
++void afs_instantiate(const char *cell)
++{
++	int ret;
++
++	/* set the key's expiry time from the minimum TTL encountered */
++	if (!debug_mode) {
++		ret = keyctl_set_timeout(key, afs_ttl);
++		if (ret = -1)
++			error("%s: keyctl_set_timeout: %m", __func__);
++	}
++
++	/* handle a lack of results */
++	if (payload_index = 0)
++		nsError(NO_DATA, cell);
++
++	/* must include a NUL char at the end of the payload */
++	payload[payload_index].iov_base = "";
++	payload[payload_index++].iov_len = 1;
++	dump_payload();
++
++	/* load the key with data key */
++	if (!debug_mode) {
++		ret = keyctl_instantiate_iov(key, payload, payload_index, 0);
++		if (ret = -1)
++			error("%s: keyctl_instantiate: %m", __func__);
++	}
++
++	exit(0);
++}
++
+ /*
+  * Look up VL servers for AFS.
+  */
+ void afs_look_up_VL_servers(const char *cell, char *options)
+ {
+-	char **servers;
+-
+ 	/* Is the IP address family limited? */
+ 	if (strcmp(options, "ipv4") = 0)
+ 		mask = INET_IP4_ONLY;
+ 	else if (strcmp(options, "ipv6") = 0)
+ 		mask = INET_IP6_ONLY;
+ 
+-	afs_conf_find_cell(cell);
+-
+-	if (afs_prefer_dns) {
+-		if (dns_query_VL_SRV(cell) = 0)
+-			goto instantiate;
+-		if (dns_query_AFSDB(cell) = 0)
+-			goto instantiate;
+-	}
+-
+-	if (!afs_cell_in_conf)
+-		goto instantiate; /* Record a negative result */
+-
+-	servers = afs_conf_list_servers(cell);
+-	if (!servers) {
+-		debug("conf: no servers");
+-		goto instantiate; /* Record a negative result */
+-	}
+-
+-	for (; *servers; servers++) {
+-		char *server = *servers;
+-
+-		debug("conf server %s", server);
+-		if (dns_resolver(server, NULL) < 0)
+-			afs_conf_list_addresses(cell, server);
+-	}
++	if (dns_query_VL_SRV(cell) != 0)
++		dns_query_AFSDB(cell);
+ 
+-instantiate:
+ 	afs_instantiate(cell);
+ }
+diff --git a/keyutils.spec b/keyutils.spec
+index 4303f94..544fe7c 100644
+--- a/keyutils.spec
++++ b/keyutils.spec
+@@ -17,9 +17,7 @@ Source0: http://people.redhat.com/~dhowells/keyutils/keyutils-%{version}.tar.bz2
+ 
+ BuildRequires: gcc
+ BuildRequires: glibc-kernheaders >= 2.4-9.1.92
+-BuildRequires: krb5-devel
+ Requires: %{name}-libs%{?_isa} = %{version}-%{release}
+-Requires: krb5-libs
+ 
+ %description
+ Utilities to control the kernel key management facility and to provide
