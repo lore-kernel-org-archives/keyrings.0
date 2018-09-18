@@ -1,52 +1,44 @@
 From: David Woodhouse <dwmw2@infradead.org>
-Date: Tue, 18 Sep 2018 06:59:53 +0000
+Date: Tue, 18 Sep 2018 07:00:55 +0000
 Subject: Re: [PATCH 00/22] KEYS: Support TPM-wrapped key and crypto ops
-Message-Id: <1537253993.20009.62.camel@infradead.org>
+Message-Id: <1537254055.20009.64.camel@infradead.org>
 MIME-Version: 1
-Content-Type: multipart/mixed; boundary="=-DMq9wQprAUhFg91Yckwf"
+Content-Type: multipart/mixed; boundary="=-s1pOoC2nTmfnL+pRtoQ2"
 List-Id: <keyrings.vger.kernel.org>
-References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, jmorris@namei.org
-Cc: denkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <25C89575-D4E9-48FB-BEC9-383B09F32E44@holtmann.org>
+         <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
+         <alpine.LRH.2.21.1809061007140.23269@namei.org>
+         <12101.1536420374@warthog.procyon.org.uk>
+In-Reply-To: <12101.1536420374@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>, Marcel Holtmann <marcel@holtmann.org>
+Cc: James Morris <jmorris@namei.org>, Denis Kenzior <denkenz@gmail.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
 
---=-DMq9wQprAUhFg91Yckwf
+--=-s1pOoC2nTmfnL+pRtoQ2
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2018-09-05 at 22:54 +0100, David Howells wrote:
->=20
-> Example usage for a PKCS#8 blob:
->=20
-> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0j=3D`openssl pkcs8 -in pr=
-ivate_key.pem -topk8 -nocrypt -outform DER | \
-> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 keyctl=
- padd asymmetric foo @s`
->=20
-> Example usage for a TPM wrapped blob:
->=20
-> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0openssl genrsa -out /tmp/=
-privkey.foo.pem 2048
-> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0create_tpm_key -s 2048 -w=
- /tmp/privkey.foo.pem /tmp/privkey.foo.tpm
-> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0j=3D`openssl asn1parse -i=
-nform pem -in /tmp/privkey.foo.tpm -noout |
-> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 keyctl=
- padd asymmetric foo @s`
 
-Those examples aren't equivalent. For the PKCS#8 blob you are first
-using openssl to convert from an encrypted PKCS#8 PEM to unencrypted
-DER, presumably because you haven't added decryption support (or base64
-decode) to keyctl yet.
 
-For the TPM example though, you are also showing the *generation* of
-the key, and importing it into the TPM. And then I'm confused by the
-'openssl asn1parse' line there... what is that actually doing? If I run
-it on a '-----BEGIN TSS KEY BLOB-----' file I have lying around, I get
-no output at all.
+On Sat, 2018-09-08 at 16:26 +0100, David Howells wrote:
+> Marcel Holtmann <marcel@holtmann.org> wrote:
+>=20
+> >=20
+> > so I have reviewed and tested this code. In addition, we have test case=
+s for
+> > it in ELL (embedded linux library).
+>
+> I wonder if there's any practical way to add a test for this to the keyut=
+ils
+> test suite.=C2=A0=C2=A0I'm guessing it's quite tricky, given the extra bi=
+ts you need to
+> emulate the TPM.
 
---=-DMq9wQprAUhFg91Yckwf
+Right, for a lot of userspace stuff we have the TPM emulator but for
+the kernel you might need to run in qemu, which I believe can emulate a
+TPM now (or at least, can talk to the TPM emulator, which has the same
+effect).
+--=-s1pOoC2nTmfnL+pRtoQ2
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -129,20 +121,20 @@ px9/s81rgzdEZOofSlZHynoSMYIDxzCCA8MCAQEwgawwgZcxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 ExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBD
 QSBMaW1pdGVkMT0wOwYDVQQDEzRDT01PRE8gUlNBIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQg
 U2VjdXJlIEVtYWlsIENBAhBNRhEyk/HZ7naOeTHWrzuAMA0GCWCGSAFlAwQCAQUAoIIB6zAYBgkq
-hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xODA5MTgwNjU5NTNaMC8GCSqG
-SIb3DQEJBDEiBCAOzVZlgHSF88thq0+EyY3PKB53KeGdDi/H3Q+y/VZJiTCBvQYJKwYBBAGCNxAE
+hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xODA5MTgwNzAwNTVaMC8GCSqG
+SIb3DQEJBDEiBCBjEGrH+bCrGU1g8/RVLo6ZylpKm2cUgNY2yMnqvdcvqzCBvQYJKwYBBAGCNxAE
 MYGvMIGsMIGXMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYD
 VQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE9MDsGA1UEAxM0Q09NT0RP
 IFJTQSBDbGllbnQgQXV0aGVudGljYXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQTUYRMpPx2e52
 jnkx1q87gDCBvwYLKoZIhvcNAQkQAgsxga+ggawwgZcxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJH
 cmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBM
 aW1pdGVkMT0wOwYDVQQDEzRDT01PRE8gUlNBIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2Vj
-dXJlIEVtYWlsIENBAhBNRhEyk/HZ7naOeTHWrzuAMA0GCSqGSIb3DQEBAQUABIIBAF/yxOzCrowG
-RGi04YJZf3LG6iWTuAZ9BMhlaY9UpBy25lMPaOYRU/58Kx/7AFakJJnZNKemCrsRolDj3X2Z4+vK
-dnKm08DJQYToaCQCdFBwI/P4Gp2xPsxnNQu+WYqdV5JryDoBFlxnswwv43GX1NcLh2XlqYoePb6H
-9hNoE3oZVjOnLMkqh3EFIX3KS8WGKe+g8eG0aBGvt+cjC5olZpmClTPtvpdoicwEcS5/Uv9AryNs
-VDROTHsGreHvZaXHRO/ZWF6BOhR8sT6F2zkzCsBeyeEPqllgzMJA6SbJQ5XX8Q6snOtHyJSfGgy8
-j+hSw7XCCSf8qL3DdDq5Z2jr1lEAAAAAAAA=
+dXJlIEVtYWlsIENBAhBNRhEyk/HZ7naOeTHWrzuAMA0GCSqGSIb3DQEBAQUABIIBADTiDaL8SpT2
+rNjbC/MrJjHmXufJGR/9iVUF+uU7P2moMFLWJudmMPWvS/rNdjMUJvRJYb9vlnwn3O1ZMc4W+8zf
+UnUsnGBEXRo6lgYpNUlmI714Tg4Cy991OrLFCmsUncAU9cFDUwbpcL+3XyannfKtZiN073Y+siyB
+ISBJTbzFu1bzfxCKI3j3qYiX1b53MK8NQHdiKujCJuM3G8Z2O/zIoKgdJ4VbeHSssNDp0WgFJc7i
+9N+CBe1+qaZDOv1JXIYVBhakoZGXlaAA+9RpKKphfYewvFtgVS4DjOjDacBgRF4rwqQmiMncFno2
+/vNUJ9NmqDIQveUSjYKT03Pr0nIAAAAAAAA=
 
 
---=-DMq9wQprAUhFg91Yckwf--
+--=-s1pOoC2nTmfnL+pRtoQ2--
