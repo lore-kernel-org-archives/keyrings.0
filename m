@@ -1,10 +1,10 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 18 Sep 2018 17:18:37 +0000
+From: Marcel Holtmann <marcel@holtmann.org>
+Date: Thu, 20 Sep 2018 07:26:18 +0000
 Subject: Re: [PATCH 00/22] KEYS: Support TPM-wrapped key and crypto ops
-Message-Id: <20622.1537291117@warthog.procyon.org.uk>
+Message-Id: <58F37819-78E2-45C8-8F04-4F21DDFB640E@holtmann.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <c33c759d-9243-8885-7c5f-667681b759c2@gmail.com>
 	<14f91823-474e-1b46-d305-12229dac8967@gmail.com>
@@ -16,25 +16,36 @@ References: <c33c759d-9243-8885-7c5f-667681b759c2@gmail.com>
 	<745318a0-51bd-be8f-2251-44701ad75830@gmail.com>
 	<19247.1537288419@warthog.procyon.org.uk>
 	<23698.1537289705@warthog.procyon.org.uk>
-In-Reply-To: <c33c759d-9243-8885-7c5f-667681b759c2@gmail.com>
+	<20622.1537291117@warthog.procyon.org.uk>
+In-Reply-To: <20622.1537291117@warthog.procyon.org.uk>
 To: linux-security-module@vger.kernel.org
 
-Denis Kenzior <denkenz@gmail.com> wrote:
-
-> > Yes.  It shouldn't be much code, either.  You still have to check for X.509
-> > DER since the kernel currently supports that.
-> 
-> For reasons of backward compatibility, correct?  The kernel also has
-> mscode.asn1 which we would need to support as well.  Since we can't break
-> compatibility then perhaps this doesn't buy us a whole lot in the end.
-
-Don't worry about mscode - that's not an asymmetric key parser.  That's only
-ever used directly from verify_pefile_signature().
-
-Currently, we have to retain support for DER-encoded X.509.
-
-But there's no reason we can't have a PEM parser that decodes the PEM and
-selects X.509, PKCS#8 or TPM based on the ascii header in that.  PKCS#8 and
-TPM don't need to take DER directly.
-
-David
+SGkgRGF2aWQsCgo+Pj4gWWVzLiAgSXQgc2hvdWxkbid0IGJlIG11Y2ggY29kZSwgZWl0aGVyLiAg
+WW91IHN0aWxsIGhhdmUgdG8gY2hlY2sgZm9yIFguNTA5Cj4+PiBERVIgc2luY2UgdGhlIGtlcm5l
+bCBjdXJyZW50bHkgc3VwcG9ydHMgdGhhdC4KPj4gCj4+IEZvciByZWFzb25zIG9mIGJhY2t3YXJk
+IGNvbXBhdGliaWxpdHksIGNvcnJlY3Q/ICBUaGUga2VybmVsIGFsc28gaGFzCj4+IG1zY29kZS5h
+c24xIHdoaWNoIHdlIHdvdWxkIG5lZWQgdG8gc3VwcG9ydCBhcyB3ZWxsLiAgU2luY2Ugd2UgY2Fu
+J3QgYnJlYWsKPj4gY29tcGF0aWJpbGl0eSB0aGVuIHBlcmhhcHMgdGhpcyBkb2Vzbid0IGJ1eSB1
+cyBhIHdob2xlIGxvdCBpbiB0aGUgZW5kLgo+IAo+IERvbid0IHdvcnJ5IGFib3V0IG1zY29kZSAt
+IHRoYXQncyBub3QgYW4gYXN5bW1ldHJpYyBrZXkgcGFyc2VyLiAgVGhhdCdzIG9ubHkKPiBldmVy
+IHVzZWQgZGlyZWN0bHkgZnJvbSB2ZXJpZnlfcGVmaWxlX3NpZ25hdHVyZSgpLgo+IAo+IEN1cnJl
+bnRseSwgd2UgaGF2ZSB0byByZXRhaW4gc3VwcG9ydCBmb3IgREVSLWVuY29kZWQgWC41MDkuCj4g
+Cj4gQnV0IHRoZXJlJ3Mgbm8gcmVhc29uIHdlIGNhbid0IGhhdmUgYSBQRU0gcGFyc2VyIHRoYXQg
+ZGVjb2RlcyB0aGUgUEVNIGFuZAo+IHNlbGVjdHMgWC41MDksIFBLQ1MjOCBvciBUUE0gYmFzZWQg
+b24gdGhlIGFzY2lpIGhlYWRlciBpbiB0aGF0LiAgUEtDUyM4IGFuZAo+IFRQTSBkb24ndCBuZWVk
+IHRvIHRha2UgREVSIGRpcmVjdGx5LgoKc2luY2Ugd2UgaGF2ZSB0byBzdXBwb3J0IERFUi1lbmNv
+ZGVkIGFueXdheSwgY2FuIHdlIGdldCB0aGUgY3VycmVudCBwYXRjaGVzIG1lcmdlZCAod2l0aCBm
+aXhlcyB0byB0aGUgY29tbWl0IG1lc3NhZ2VzIGZvciB0aGUgb3BlbnNzbCBleGFtcGxlcyBpZiBu
+ZWVkZWQpIGFuZCB0aGVuIHdvcmsgb24gUEVNIHN1cHBvcnQgaW5zaWRlIHRoZSBrZXJuZWwuIEZv
+ciBtZSB0aGVzZSBzZWVtcyB0byBiZSB0d28gaW5kZXBlbmRlbnQgZmVhdHVyZXMuIEFuZCBpbiB0
+aGUgY3VycmVudCBmb3JtIHRoZSBwYXRjaGVzIGhhdmUgYmVlbiB0ZXN0ZWQgYW5kIHVzZWQuCgpP
+ciBsZXQgbWUgYXNrIHRoaXMgZGlmZmVyZW50bHksIGFyZSB0aGVyZSBhbnkgb2JqZWN0aW9ucyB0
+byBtZXJnaW5nIHRoZXNlIHBhdGNoZXMgd2l0aCBqdXN0IERFUiBzdXBwb3J0PwoKRm9yIGV4YW1w
+bGUgaW4gRUxMIHdlIGhhdmUgaW1wbGVtZW50ZWQgdGhlIFBFTSB0byBERVIgY29udmVyc2lvbiBi
+ZWZvcmUgY2FsbGluZyBrZXljdGwuIFRoaXMgY2FuIGJlIHN1cmVseSBhZGRlZCB0byBrZXl1dGls
+cyAoaWYgY2FsbGluZyBvcGVuc3NsIGlzIHRvbyBtdWNoIHRvIGFzaykgb3IgZXZlbiB0aGUga2Vy
+bmVsIGl0c2VsZi4gSG93ZXZlciB0aGlzIGRvZXNu4oCZdCBjaGFuZ2UgdGhlIGFjdHVhbCBmdW5j
+dGlvbmFsaXR5IG9mIGhhbmRsaW5nIGFzeW1tZXRyaWMga2V5IG9wZXJhdGlvbnMuIEFuZCBJIHdv
+dWxkIHJhdGhlciBzZWUgdGhhdCBtZXJnZWQgYW5kIGVzdGFibGlzaGVkIGluc3RlYWQgb2Ygd29y
+cnlpbmcgdG8gbXVjaCBhYm91dCB0aGUgbXVsdGl0dWRlcyBvZiBwb3NzaWJsZSBlbmNvZGluZyBm
+b3JtcyBvZiBrZXlzLgoKUmVnYXJkcwoKTWFyY2VsCg==
