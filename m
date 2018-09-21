@@ -1,38 +1,68 @@
 From: Dan Williams <dan.j.williams@intel.com>
-Date: Sat, 22 Sep 2018 01:26:16 +0000
-Subject: Re: [PATCH v8 06/12] nfit/libnvdimm: add set passphrase support for Intel nvdimms
-Message-Id: <CAPcyv4gVoN2orHRFie-Q=hBRva1UCds-g=nHAT6zqEZ8YBh3uQ@mail.gmail.com>
+Date: Fri, 21 Sep 2018 21:59:34 +0000
+Subject: Re: [PATCH v8 04/12] keys: export lookup_user_key to external users
+Message-Id: <CAPcyv4jO9-OrBvDNxN6hB4X6bPKnerqkdh812_LjScwe44mX2A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153549647177.4089.18112512093259339717.stgit@djiang5-desk3.ch.intel.com>
- <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
- <19459.1537574236@warthog.procyon.org.uk>
- <c804ec81-68c5-3e11-c65f-1226e68a4b2b@intel.com>
-In-Reply-To: <c804ec81-68c5-3e11-c65f-1226e68a4b2b@intel.com>
+References: <153549632073.4089.3609134467249378610.stgit@djiang5-desk3.ch.intel.com>
+ <153549646033.4089.17866270311512341456.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153549646033.4089.17866270311512341456.stgit@djiang5-desk3.ch.intel.com>
 To: Dave Jiang <dave.jiang@intel.com>
-Cc: "Schofield, Alison" <alison.schofield@intel.com>, Kees Cook <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>, Eric Biggers <ebiggers3@gmail.com>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
+Cc: "Schofield, Alison" <alison.schofield@intel.com>, Kees Cook <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>, ebiggers3@gmail.com, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
 
-On Fri, Sep 21, 2018 at 5:29 PM Dave Jiang <dave.jiang@intel.com> wrote:
-[..]
-> > What I meant here was to use, say, nvdimm_lookup_user_key() to get a key from
-> > userspace that contains the old password.  You can use the description of the
-> > key to search nvdimm_keyring for the private key and then compare the
-> > passwords.
+On Tue, Aug 28, 2018 at 3:47 PM Dave Jiang <dave.jiang@intel.com> wrote:
 >
-> Ok I have a bit of confusion here. When the user injects a new key with
-> the same description and new passphrase, would that not replace the
-> existing user key with the old passphrase? Also, if I'm calling
-> lookup_user_key, where would the key_id come from for the old user key?
-> I suppose I can cache it.... Maybe I'm not quite understanding the exact
-> flow of how things you are suggesting.
+> Export lookup_user_key() symbol in order to allow nvdimm passphrase
+> update to retrieve user injected keys.
+>
+> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+> Cc: David Howells <dhowells@redhat.com>
+> ---
+>  include/linux/key.h          |    3 +++
+>  security/keys/internal.h     |    2 --
+>  security/keys/process_keys.c |    1 +
+>  3 files changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/key.h b/include/linux/key.h
+> index e58ee10f6e58..7099985e35a9 100644
+> --- a/include/linux/key.h
+> +++ b/include/linux/key.h
+> @@ -346,6 +346,9 @@ static inline key_serial_t key_serial(const struct key *key)
+>
+>  extern void key_set_timeout(struct key *, unsigned);
+>
+> +extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
+> +                                key_perm_t perm);
+> +
+>  /*
+>   * The permissions required on a key that we're looking up.
+>   */
+> diff --git a/security/keys/internal.h b/security/keys/internal.h
+> index 9f8208dc0e55..9968b21a76dd 100644
+> --- a/security/keys/internal.h
+> +++ b/security/keys/internal.h
+> @@ -158,8 +158,6 @@ extern struct key *request_key_and_link(struct key_type *type,
+>
+>  extern bool lookup_user_key_possessed(const struct key *key,
+>                                       const struct key_match_data *match_data);
+> -extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
+> -                                key_perm_t perm);
+>  #define KEY_LOOKUP_CREATE      0x01
+>  #define KEY_LOOKUP_PARTIAL     0x02
+>  #define KEY_LOOKUP_FOR_UNLINK  0x04
+> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+> index d5b25e535d3a..ec4fd4531224 100644
+> --- a/security/keys/process_keys.c
+> +++ b/security/keys/process_keys.c
+> @@ -755,6 +755,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+>         put_cred(ctx.cred);
+>         goto try_again;
+>  }
+> +EXPORT_SYMBOL(lookup_user_key);
 
-If the DIMM is in the in the unlocked state the kernel should already
-have the old passphrase cached, right? Could we just have the kernel
-fail ->change_key() requests if the kernel does not already have a
-valid old passphrase?
+This looks like a core api for affecting keyctl api internals, should
+it be EXPORT_SYMBOL_GPL?
 
-It does mean we can't support going from the locked state directly to
-changing the password, but I would expect requiring an initial unlock
-is fine.
+At a minimum this needs David's ack.
