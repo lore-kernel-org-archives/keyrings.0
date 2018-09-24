@@ -1,23 +1,63 @@
-From: David Howells <dhowells@redhat.com>
-Date: Sat, 22 Sep 2018 00:03:40 +0000
-Subject: Re: [PATCH resend] uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name
-Message-Id: <19867.1537574620@warthog.procyon.org.uk>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Mon, 24 Sep 2018 13:01:59 +0000
+Subject: [PATCH 4/4] keyctl_dh_compute_kdf: const-ify input parameters
+Message-Id: <20180924130159.5299-5-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180910150903.249031442dd7fe43e01812cf@linux-foundation.org>
-	<0db6c314-1ef4-9bfa-1baa-7214dd2ee061@infradead.org>
-	<20180909220018.GH13219@asgard.redhat.com>
-In-Reply-To: <20180910150903.249031442dd7fe43e01812cf@linux-foundation.org>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+---
+ keyutils.c              | 5 +++--
+ keyutils.h              | 4 ++--
+ man/keyctl_dh_compute.3 | 2 +-
+ 3 files changed, 6 insertions(+), 5 deletions(-)
 
-> Are there such programs?  Do they reference the `private' field?
-
-They would use the keyutils.h header from keyutils package probably.  There
-the field was named "priv" not "private".  The kernel's UAPI header should be
-amended again to match that.
-
-David
+diff --git a/keyutils.c b/keyutils.c
+index fc7dc4d..a087a33 100644
+--- a/keyutils.c
++++ b/keyutils.c
+@@ -245,8 +245,9 @@ long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
+ }
+ 
+ long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
+-			   key_serial_t base, char *hashname, char *otherinfo,
+-			   size_t otherinfolen, char *buffer, size_t buflen)
++			   key_serial_t base, const char *hashname,
++			   const char *otherinfo, size_t otherinfolen,
++			   char *buffer, size_t buflen)
+ {
+ 	struct keyctl_dh_params params = { .priv = private,
+ 					   .prime = prime,
+diff --git a/keyutils.h b/keyutils.h
+index 5f81c62..273f66f 100644
+--- a/keyutils.h
++++ b/keyutils.h
+@@ -115,8 +115,8 @@ struct keyctl_dh_params {
+ };
+ 
+ struct keyctl_kdf_params {
+-	char *hashname;
+-	char *otherinfo;
++	const char *hashname;
++	const char *otherinfo;
+ 	uint32_t otherinfolen;
+ 	uint32_t __spare[8];
+ };
+diff --git a/man/keyctl_dh_compute.3 b/man/keyctl_dh_compute.3
+index 09c5d21..58ad5df 100644
+--- a/man/keyctl_dh_compute.3
++++ b/man/keyctl_dh_compute.3
+@@ -25,7 +25,7 @@ keyctl_dh_compute_kdf \- Derive key from a Diffie-Hellman shared secret
+ .BI "key_serial_t " prime ", key_serial_t " base ", void **" _buffer ");"
+ .sp
+ .BI "long keyctl_dh_compute_kdf(key_serial_t " private ", key_serial_t " prime ,
+-.BI "key_serial_t " base ", char *" hashname ", char *" otherinfo ",
++.BI "key_serial_t " base ", const char *" hashname ", const char *" otherinfo ",
+ .BI "size_t " otherinfolen ", char *" buffer ", size_t " buflen ");"
+ .\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ .SH DESCRIPTION
+-- 
+2.17.1
