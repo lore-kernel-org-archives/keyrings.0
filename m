@@ -1,101 +1,38 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Fri, 28 Sep 2018 21:54:34 +0000
-Subject: [PATCH v11 12/12] acpi, nfit: Move acpi_nfit_get_security_ops() to generic location
-Message-Id: <153817167456.17152.874519072328282288.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 24 Sep 2018 12:18:26 +0000
+Subject: [PATCH 0/2] KEYS: Revert and replace incorrect UAPI fix
+Message-Id: <153779150602.28003.4692837431529288988.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-From: Dan Williams <dan.j.williams@intel.com>
 
-In anticipation of other DIMMs adding security operations support, don't
-require them to edit intel.h. Instead have intel.h optionally arrange
-for intel_security_ops to be NULL or not based on build parameters.
+Hi James,
 
-Reviewed-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Here's a pair of fixes that need to go upstream asap, please:
+
+ (1) Revert an incorrect fix to the keyrings UAPI for a C++ reserved word
+     used as a struct member name.  This change being reverted breaks
+     existing userspace code and is thus incorrect.
+
+     Further, *neither* name is consistent with the one in the keyutils
+     package public header.
+
+ (2) Fix the problem by using a union to make the name from keyutils
+     available in parallel and make the 'private' name unavailable in C++
+     with cpp-conditionals.
+
+David
 ---
- drivers/acpi/nfit/core.c  |   10 ++++++++++
- drivers/acpi/nfit/intel.c |    3 ++-
- drivers/acpi/nfit/intel.h |   18 +++---------------
- 3 files changed, 15 insertions(+), 16 deletions(-)
+David Howells (1):
+      keys: Fix the use of the C++ keyword "private" in uapi/linux/keyctl.h
 
-diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-index e5f7c664a7c8..b7773c70ee81 100644
---- a/drivers/acpi/nfit/core.c
-+++ b/drivers/acpi/nfit/core.c
-@@ -1835,6 +1835,16 @@ static void shutdown_dimm_notify(void *data)
- 	mutex_unlock(&acpi_desc->init_mutex);
- }
- 
-+static const struct nvdimm_security_ops *acpi_nfit_get_security_ops(int family)
-+{
-+        switch (family) {
-+        case NVDIMM_FAMILY_INTEL:
-+                return intel_security_ops;
-+        default:
-+                return NULL;
-+        }
-+}
-+
- static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
- {
- 	struct nfit_mem *nfit_mem;
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 70bccb0c57e2..8d2413810a5f 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -358,7 +358,7 @@ static int intel_dimm_security_state(struct nvdimm *nvdimm,
- 	return rc;
- }
- 
--const struct nvdimm_security_ops intel_security_ops = {
-+static const struct nvdimm_security_ops __intel_security_ops = {
- 	.state = intel_dimm_security_state,
- 	.unlock = intel_dimm_security_unlock,
- 	.change_key = intel_dimm_security_update_passphrase,
-@@ -366,3 +366,4 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.freeze_lock = intel_dimm_security_freeze_lock,
- 	.erase = intel_dimm_security_erase,
- };
-+const struct nvdimm_security_ops *intel_security_ops = &__intel_security_ops;
-diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
-index f9ac718776ca..f831084f95fa 100644
---- a/drivers/acpi/nfit/intel.h
-+++ b/drivers/acpi/nfit/intel.h
-@@ -8,7 +8,7 @@
- 
- #ifdef CONFIG_X86
- 
--extern const struct nvdimm_security_ops intel_security_ops;
-+extern const struct nvdimm_security_ops *intel_security_ops;
- 
- #define ND_INTEL_STATUS_SIZE		4
- #define ND_INTEL_PASSPHRASE_SIZE	32
-@@ -64,19 +64,7 @@ struct nd_intel_overwrite {
- struct nd_intel_query_overwrite {
- 	u32 status;
- } __packed;
-+#else /* CONFIG_X86 */
-+#define intel_security_ops (NULL)
- #endif /* CONFIG_X86 */
--
--static inline const struct nvdimm_security_ops *
--acpi_nfit_get_security_ops(int family)
--{
--	switch (family) {
--#ifdef CONFIG_X86
--	case NVDIMM_FAMILY_INTEL:
--		return &intel_security_ops;
--#endif
--	default:
--		return NULL;
--	}
--}
--
- #endif
+Lubomir Rintel (1):
+      Revert "uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name"
+
+
+ include/uapi/linux/keyctl.h |    7 ++++++-
+ security/keys/dh.c          |    2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
