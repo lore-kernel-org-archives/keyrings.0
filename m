@@ -1,52 +1,28 @@
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Fri, 07 Sep 2018 21:08:11 +0000
-Subject: [PATCH 4.18 025/145] Fix kexec forbidding kernels signed with keys in the secondary keyring to boot
-Message-Id: <20180907210905.703424333@linuxfoundation.org>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Mon, 24 Sep 2018 13:01:55 +0000
+Subject: [PATCH 0/4] keyctl_dh_compute_kdf touchups
+Message-Id: <20180924130159.5299-1-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180907210903.617721278@linuxfoundation.org>
-In-Reply-To: <20180907210903.617721278@linuxfoundation.org>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-4.18-stable review patch.  If anyone has any objections, please let me know.
+As requested. Feel free to squash if that is preferred.
 
-------------------
+--Ben
 
-From: Yannik Sembritzki <yannik@sembritzki.me>
+Ben Boeckel (4):
+  keyctl: fix error path message names
+  man/keyctl_dh_compute: mention /proc/crypto for hashnames
+  man/keyctl_dh_compute: clarify keyctl_dh_compute_kdf
+  keyctl_dh_compute_kdf: const-ify input parameters
 
-commit ea93102f32244e3f45c8b26260be77ed0cc1d16c upstream.
+ keyctl.c                |  4 ++--
+ keyutils.c              |  5 +++--
+ keyutils.h              |  4 ++--
+ man/keyctl_dh_compute.3 | 20 ++++++++++++++------
+ 4 files changed, 21 insertions(+), 12 deletions(-)
 
-The split of .system_keyring into .builtin_trusted_keys and
-.secondary_trusted_keys broke kexec, thereby preventing kernels signed by
-keys which are now in the secondary keyring from being kexec'd.
-
-Fix this by passing VERIFY_USE_SECONDARY_KEYRING to
-verify_pefile_signature().
-
-Fixes: d3bfe84129f6 ("certs: Add a secondary system keyring that can be added to dynamically")
-Signed-off-by: Yannik Sembritzki <yannik@sembritzki.me>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: kexec@lists.infradead.org
-Cc: keyrings@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
-Cc: stable@kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kernel/kexec-bzimage64.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/x86/kernel/kexec-bzimage64.c
-+++ b/arch/x86/kernel/kexec-bzimage64.c
-@@ -532,7 +532,7 @@ static int bzImage64_cleanup(void *loade
- static int bzImage64_verify_sig(const char *kernel, unsigned long kernel_len)
- {
- 	return verify_pefile_signature(kernel, kernel_len,
--				       NULL,
-+				       VERIFY_USE_SECONDARY_KEYRING,
- 				       VERIFYING_KEXEC_PE_SIGNATURE);
- }
- #endif
+-- 
+2.17.1
