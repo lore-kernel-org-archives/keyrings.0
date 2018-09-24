@@ -1,32 +1,67 @@
-From: Dave Hansen <dave.hansen@intel.com>
-Date: Mon, 10 Sep 2018 21:09:26 +0000
-Subject: Re: [RFC 09/12] mm: Restrict memory encryption to anonymous VMA's
-Message-Id: <21db220c-257b-f9b5-2b41-992267f0552b@intel.com>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Mon, 24 Sep 2018 17:55:06 +0000
+Subject: [PATCH] keyctl_dh_compute_kdf: use a void* for opaque data
+Message-Id: <20180924175506.21077-1-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1536356108.git.alison.schofield@intel.com>
- <f69e3d4f96504185054d951c7c85075ebf63e47a.1536356108.git.alison.schofield@intel.com>
- <ae0288d5205a5c431e9a6bf0c9e68beded45e84b.camel@intel.com>
- <84154fd2-7c27-0fd2-f339-15e144a5df49@intel.com>
- <20180910210716.GB26766@intel.com>
-In-Reply-To: <20180910210716.GB26766@intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>, "Schofield, Alison" <alison.schofield@intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "Shutemov, Kirill" <kirill.shutemov@intel.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "jmorris@namei.org" <jmorris@namei.org>, "Huang, Kai" <kai.huang@intel.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "Nakajima, Jun" <jun.nakajima@intel.com>
+To: keyrings@vger.kernel.org
 
-On 09/10/2018 02:07 PM, Jarkko Sakkinen wrote:
-> On Mon, Sep 10, 2018 at 11:57:49AM -0700, Dave Hansen wrote:
->> On 09/10/2018 11:21 AM, Sakkinen, Jarkko wrote:
->>>> +/*
->>>> + * Encrypted mprotect is only supported on anonymous mappings.
->>>> + * All VMA's in the requested range must be anonymous. If this
->>>> + * test fails on any single VMA, the entire mprotect request fails.
->>>> + */
->>> kdoc
->> kdoc what?  You want this comment in kdoc format?  Why?
-> If there is a header comment for a function anyway, why wouldn't you
-> put it to kdoc-format?
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+---
+ keyutils.c              | 2 +-
+ keyutils.h              | 4 ++--
+ man/keyctl_dh_compute.3 | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-Because this is a shorter and more concise way to document the function.
- kdoc isn't universally the best thing to do for function comments.
+diff --git a/keyutils.c b/keyutils.c
+index a087a33..5cc90cb 100644
+--- a/keyutils.c
++++ b/keyutils.c
+@@ -246,7 +246,7 @@ long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
+ 
+ long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
+ 			   key_serial_t base, const char *hashname,
+-			   const char *otherinfo, size_t otherinfolen,
++			   const void *otherinfo, size_t otherinfolen,
+ 			   char *buffer, size_t buflen)
+ {
+ 	struct keyctl_dh_params params = { .priv = private,
+diff --git a/keyutils.h b/keyutils.h
+index 273f66f..bd6137f 100644
+--- a/keyutils.h
++++ b/keyutils.h
+@@ -116,7 +116,7 @@ struct keyctl_dh_params {
+ 
+ struct keyctl_kdf_params {
+ 	const char *hashname;
+-	const char *otherinfo;
++	const void *otherinfo;
+ 	uint32_t otherinfolen;
+ 	uint32_t __spare[8];
+ };
+@@ -204,7 +204,7 @@ extern long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
+ 			      key_serial_t base, char *buffer, size_t buflen);
+ extern long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
+ 				  key_serial_t base, char *hashname,
+-				  char *otherinfo, size_t otherinfolen,
++				  void *otherinfo, size_t otherinfolen,
+ 				  char *buffer, size_t buflen);
+ extern long keyctl_restrict_keyring(key_serial_t keyring, const char *type,
+ 				    const char *restriction);
+diff --git a/man/keyctl_dh_compute.3 b/man/keyctl_dh_compute.3
+index 58ad5df..7aaf4a6 100644
+--- a/man/keyctl_dh_compute.3
++++ b/man/keyctl_dh_compute.3
+@@ -25,7 +25,7 @@ keyctl_dh_compute_kdf \- Derive key from a Diffie-Hellman shared secret
+ .BI "key_serial_t " prime ", key_serial_t " base ", void **" _buffer ");"
+ .sp
+ .BI "long keyctl_dh_compute_kdf(key_serial_t " private ", key_serial_t " prime ,
+-.BI "key_serial_t " base ", const char *" hashname ", const char *" otherinfo ",
++.BI "key_serial_t " base ", const char *" hashname ", const void *" otherinfo ",
+ .BI "size_t " otherinfolen ", char *" buffer ", size_t " buflen ");"
+ .\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ .SH DESCRIPTION
+-- 
+2.17.1
