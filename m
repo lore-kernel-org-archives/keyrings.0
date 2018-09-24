@@ -1,63 +1,30 @@
-From: Ben Boeckel <mathstuf@gmail.com>
-Date: Mon, 24 Sep 2018 13:01:59 +0000
-Subject: [PATCH 4/4] keyctl_dh_compute_kdf: const-ify input parameters
-Message-Id: <20180924130159.5299-5-mathstuf@gmail.com>
+From: Stephan Mueller <smueller@chronox.de>
+Date: Mon, 24 Sep 2018 14:02:47 +0000
+Subject: Re: [PATCH 4/4] keyctl_dh_compute_kdf: const-ify input parameters
+Message-Id: <2050015.ZLemLCf0Dp@tauon.chronox.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20180924130159.5299-5-mathstuf@gmail.com>
+In-Reply-To: <20180924130159.5299-5-mathstuf@gmail.com>
 To: keyrings@vger.kernel.org
 
-Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
----
- keyutils.c              | 5 +++--
- keyutils.h              | 4 ++--
- man/keyctl_dh_compute.3 | 2 +-
- 3 files changed, 6 insertions(+), 5 deletions(-)
+Am Montag, 24. September 2018, 15:01:59 CEST schrieb Ben Boeckel:
 
-diff --git a/keyutils.c b/keyutils.c
-index fc7dc4d..a087a33 100644
---- a/keyutils.c
-+++ b/keyutils.c
-@@ -245,8 +245,9 @@ long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
- }
- 
- long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
--			   key_serial_t base, char *hashname, char *otherinfo,
--			   size_t otherinfolen, char *buffer, size_t buflen)
-+			   key_serial_t base, const char *hashname,
-+			   const char *otherinfo, size_t otherinfolen,
-+			   char *buffer, size_t buflen)
- {
- 	struct keyctl_dh_params params = { .priv = private,
- 					   .prime = prime,
-diff --git a/keyutils.h b/keyutils.h
-index 5f81c62..273f66f 100644
---- a/keyutils.h
-+++ b/keyutils.h
-@@ -115,8 +115,8 @@ struct keyctl_dh_params {
- };
- 
- struct keyctl_kdf_params {
--	char *hashname;
--	char *otherinfo;
-+	const char *hashname;
-+	const char *otherinfo;
- 	uint32_t otherinfolen;
- 	uint32_t __spare[8];
- };
-diff --git a/man/keyctl_dh_compute.3 b/man/keyctl_dh_compute.3
-index 09c5d21..58ad5df 100644
---- a/man/keyctl_dh_compute.3
-+++ b/man/keyctl_dh_compute.3
-@@ -25,7 +25,7 @@ keyctl_dh_compute_kdf \- Derive key from a Diffie-Hellman shared secret
- .BI "key_serial_t " prime ", key_serial_t " base ", void **" _buffer ");"
- .sp
- .BI "long keyctl_dh_compute_kdf(key_serial_t " private ", key_serial_t " prime ,
--.BI "key_serial_t " base ", char *" hashname ", char *" otherinfo ",
-+.BI "key_serial_t " base ", const char *" hashname ", const char *" otherinfo ",
- .BI "size_t " otherinfolen ", char *" buffer ", size_t " buflen ");"
- .\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
- .SH DESCRIPTION
--- 
-2.17.1
+Hi Ben,
+
+> Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+
+David mentioned that he would like to see the switch to void. Could you please 
+roll that in?
+
+Thanks a lot.
+
+Otherwise, you can mark the whole series as:
+
+Reviewed-by: Stephan Mueller <smueller@chronox.de>
+
+
+Ciao
+Stephan
