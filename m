@@ -1,28 +1,51 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Sep 2018 21:50:56 +0000
-Subject: Re: [PATCH 4/6] afs: Differentiate VL servers
-Message-Id: <14307.1536875456@warthog.procyon.org.uk>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Mon, 24 Sep 2018 11:28:38 +0000
+Subject: Questions about keyctl_dh_compute_kdf
+Message-Id: <20180924112838.GB20321@rotor>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153685496637.16086.17825712088461188576.stgit@warthog.procyon.org.uk> <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153685496637.16086.17825712088461188576.stgit@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, linux-afs@lists.infradead.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+Hi,
 
-> +		ret = -EPROTONOSUPPORT;
-> +		if (protocol != IPPROTO_UDP)
-> +			goto error;
+I've been updating rust-keyutils[1] to have support for the KDF support (as
+a PR since it hasn't landed yet) and I've noticed a few things:
 
-This needs to be:
+    long keyctl_dh_compute_kdf(
+        key_serial_t private, key_serial_t prime, key_serial_t base,
+        char *hashname, char *otherinfo, size_t otherinfolen,
+        char *buffer, size_t buflen);
 
-		ret = -EPROTONOSUPPORT;
-		if (protocol != IPPROTO_UDP && protocol != 0)
-			goto error;
+  - Should `hashname` be a `const char*`? Does the kernel have any
+    reason to write here?
+  - Should `otherinfo` be a `const unsigned char*`? Maybe `const void*`?
+    If the caller specifies the format, why is it non-const?
 
-so that if the protocol is unspecified by the DNS upcall program, we choose
-UDP.
+The manpage mentions:
 
-David
+    The KDF returns the requested number of bytes specified with the
+    genlen or the buflen parameter depending on the invoked function.
+
+but `genlen` isn't mentioned anywhere else in the manpage. I assume the
+length is calculated by passing a `NULL` `buffer`, but that's just based
+on other APIs in keyutils.
+
+The `keyctl_dh_compute_kdf` function is also missing from the `RETURN
+VALUE` section of the manpage.
+
+In addition:
+
+    The hashname specifies the Linux kernel crypto API name for a hash
+    that shall be used for the key derivation function, such as sha256.
+    The hashname must be a NULL terminated string
+
+A reference to the manpage or header (hash_info.h?) listing these this
+would be great.
+
+Thanks!
+
+--Ben
+
+[1]https://github.com/mathstuf/rust-keyutils
