@@ -1,53 +1,60 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Wed, 26 Sep 2018 00:42:31 +0000
-Subject: Re: [PATCH v9 06/12] nfit/libnvdimm: add set passphrase support for Intel nvdimms
-Message-Id: <CAPcyv4gVAvM3CPd7Z=AzuFK79RLC139F9xAvZ4G-SKLL8uEmpA@mail.gmail.com>
+From: Lubomir Rintel <lkundrak@v3.sk>
+Date: Mon, 24 Sep 2018 09:47:23 +0000
+Subject: [PATCH] Revert "uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name"
+Message-Id: <20180924094723.487697-1-lkundrak@v3.sk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
- <153791869908.70158.3791301656095148670.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153791869908.70158.3791301656095148670.stgit@djiang5-desk3.ch.intel.com>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: "Schofield, Alison" <alison.schofield@intel.com>, Kees Cook <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>, Eric Biggers <ebiggers3@gmail.com>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
+To: linux-security-module@vger.kernel.org
 
-On Tue, Sep 25, 2018 at 4:39 PM Dave Jiang <dave.jiang@intel.com> wrote:
->
-> Add support for setting and/or updating passphrase on the Intel nvdimms.
-> The passphrase is pulled from userspace through the kernel key management.
-> We trigger the update via writing "update <old_keyid> <new_keyid>" to the
-> sysfs attribute "security". If no <old_keyid> exists (for enabling security)
-> then a 0 should be used. The state of the security can also be read via the
-> "security" attribute. libnvdimm will generically support the key_change
-> API call.
->
-> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-[..]
-> diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-> index b7e22e6b80db..e915e6de6c12 100644
-> --- a/drivers/nvdimm/dimm_devs.c
-> +++ b/drivers/nvdimm/dimm_devs.c
-[..]
-> +#define SEC_CMD_SIZE 128
-> +static ssize_t security_store(struct device *dev,
-> +               struct device_attribute *attr, const char *buf, size_t len)
-> +
-> +{
-> +       struct nvdimm *nvdimm = to_nvdimm(dev);
-> +       struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-> +       ssize_t rc = -EINVAL;
-> +       unsigned int new_key = 0, old_key = 0;
-> +       char cmd[SEC_CMD_SIZE];
-> +
-> +       if (len > SEC_CMD_SIZE)
-> +               return -EINVAL;
-> +
-> +        wait_nvdimm_bus_probe_idle(&nvdimm_bus->dev);
-> +        if (atomic_read(&nvdimm->busy))
-> +                return -EBUSY;
-> +
-> +       sscanf(buf, "%s %u %u", cmd, &old_key, &new_key);
-> +       if (strcmp(cmd, "update") = 0) {
+This changes UAPI, breaking iwd and libell:
 
-Please use sysfs_streq() here to catch garbage at the end of the string.
+  ell/key.c: In function 'kernel_dh_compute':
+  ell/key.c:205:38: error: 'struct keyctl_dh_params' has no member named 'private'; did you mean 'dh_private'?
+    struct keyctl_dh_params params = { .private = private,
+                                        ^~~~~~~
+                                        dh_private
+
+This reverts commit 8a2336e549d385bb0b46880435b411df8d8200e8.
+
+Cc: David Howells <dhowells@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <stable@vger.kernel.org>
+---
+ include/uapi/linux/keyctl.h | 2 +-
+ security/keys/dh.c          | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+index 910cc4334b21..7b8c9e19bad1 100644
+--- a/include/uapi/linux/keyctl.h
++++ b/include/uapi/linux/keyctl.h
+@@ -65,7 +65,7 @@
+ 
+ /* keyctl structures */
+ struct keyctl_dh_params {
+-	__s32 dh_private;
++	__s32 private;
+ 	__s32 prime;
+ 	__s32 base;
+ };
+diff --git a/security/keys/dh.c b/security/keys/dh.c
+index 3b602a1e27fa..711e89d8c415 100644
+--- a/security/keys/dh.c
++++ b/security/keys/dh.c
+@@ -300,7 +300,7 @@ long __keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 	}
+ 	dh_inputs.g_size = dlen;
+ 
+-	dlen = dh_data_from_key(pcopy.dh_private, &dh_inputs.key);
++	dlen = dh_data_from_key(pcopy.private, &dh_inputs.key);
+ 	if (dlen < 0) {
+ 		ret = dlen;
+ 		goto out2;
+-- 
+2.19.0
