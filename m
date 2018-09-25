@@ -1,322 +1,126 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:56:03 +0000
-Subject: [PATCH 16/22] KEYS: Move trusted.h to include/keys
-Message-Id: <153618456351.7946.16069792174440572937.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 25 Sep 2018 23:38:52 +0000
+Subject: [PATCH v9 12/12] libnvdimm: add documentation for nvdimm security support
+Message-Id: <153791873272.70158.7285850892671703250.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+Add theory of operation for the security support that's going into
+libnvdimm.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 ---
+ Documentation/nvdimm/security.txt |   99 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
+ create mode 100644 Documentation/nvdimm/security.txt
 
- include/keys/trusted.h  |  136 +++++++++++++++++++++++++++++++++++++++++++++++
- security/keys/trusted.c |    2 -
- security/keys/trusted.h |  136 -----------------------------------------------
- 3 files changed, 137 insertions(+), 137 deletions(-)
- create mode 100644 include/keys/trusted.h
- delete mode 100644 security/keys/trusted.h
-
-diff --git a/include/keys/trusted.h b/include/keys/trusted.h
+diff --git a/Documentation/nvdimm/security.txt b/Documentation/nvdimm/security.txt
 new file mode 100644
-index 000000000000..adbcb6817826
+index 000000000000..50cbb6cb96a1
 --- /dev/null
-+++ b/include/keys/trusted.h
-@@ -0,0 +1,136 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+#ifndef __TRUSTED_KEY_H
-+#define __TRUSTED_KEY_H
++++ b/Documentation/nvdimm/security.txt
+@@ -0,0 +1,99 @@
++NVDIMM SECURITY
++=======+
++1. Introduction
++---------------
 +
-+/* implementation specific TPM constants */
-+#define MAX_BUF_SIZE			1024
-+#define TPM_GETRANDOM_SIZE		14
-+#define TPM_OSAP_SIZE			36
-+#define TPM_OIAP_SIZE			10
-+#define TPM_SEAL_SIZE			87
-+#define TPM_UNSEAL_SIZE			104
-+#define TPM_SIZE_OFFSET			2
-+#define TPM_RETURN_OFFSET		6
-+#define TPM_DATA_OFFSET			10
++With the introduction of Intel DSM v1.7 specification [1], security DSMs are
++introduced. The spec added the following security DSMs: "get security state",
++"set passphrase", "disable passphrase", "unlock unit", "freeze lock",
++"secure erase", and "overwrite". A security_ops data structure has been
++added to struct dimm in order to support the security operations and generic
++APIs are exposed to allow vendor neutral operations.
 +
-+#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
-+#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
-+#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
++2. Sysfs Interface
++------------------
++The "security" sysfs attribute is provided in the nvdimm sysfs directory. For
++example:
++/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/security
 +
-+struct tpm_buf {
-+	int len;
-+	unsigned char data[MAX_BUF_SIZE];
-+};
++The "show" function of that attribute will display the security state for
++that DIMM. The following states are available: disabled, unlocked, locked,
++frozen, and unsupported.
 +
-+#define INIT_BUF(tb) (tb->len = 0)
++The "store" function takes several commands when the attribute is written to
++in order to support some of the security functionalities:
++update <old_keyid> <new_keyid> - enable security. Add or update current key.
++disable <old_keyid> - disable enabled security and remove key.
++freeze - freeze changing of security states.
++erase <old_keyid> - generate new ecryption key for DIMM and crypto-scrambles
++	all existing user data.
 +
-+struct osapsess {
-+	uint32_t handle;
-+	unsigned char secret[SHA1_DIGEST_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+};
++3. Key Management
++-----------------
 +
-+/* discrete values, but have to store in uint16_t for TPM use */
-+enum {
-+	SEAL_keytype = 1,
-+	SRK_keytype = 4
-+};
++The key is associted to the payload by the DIMM id. For example:
++# cat /sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/nfit/id
++8089-a2-1740-00000133
++The DIMM id would be provided along with the key payload (passphrase) to
++the kernel.
 +
-+int TSS_authhmac(unsigned char *digest, const unsigned char *key,
-+			unsigned int keylen, unsigned char *h1,
-+			unsigned char *h2, unsigned char h3, ...);
-+int TSS_checkhmac1(unsigned char *buffer,
-+			  const uint32_t command,
-+			  const unsigned char *ononce,
-+			  const unsigned char *key,
-+			  unsigned int keylen, ...);
++The security keys are managed on the basis of a single key per DIMM. The
++key "passphrase" is expected to be 32bytes long or padded to 32bytes. This is
++similar to the ATA security specification [2]. A key is initially acquired
++via the request_key() kernel API call and retrieved from userspace. It is up to
++the user to provide an upcall application to retrieve the key in whatever
++fashion meets their security requirements.
 +
-+int trusted_tpm_send(unsigned char *cmd, size_t buflen);
-+int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
++A nvdimm user logon key has the description format of:
++nvdimm:<bus-provider-specific-unique-id>
 +
-+#define TPM_DEBUG 0
++4. Unlocking
++------------
++When the DIMMs are being enumerated by the kernel, the kernel will attempt to
++retrieve the key from its keyring. If that fails, it will attempt to
++acquire the key from the userspace upcall function. This is the only time
++a locked DIMM can be unlocked. Once unlocked, the DIMM will remain unlocked
++until reboot.
 +
-+#if TPM_DEBUG
-+static inline void dump_options(struct trusted_key_options *o)
-+{
-+	pr_info("trusted_key: sealing key type %d\n", o->keytype);
-+	pr_info("trusted_key: sealing key handle %0X\n", o->keyhandle);
-+	pr_info("trusted_key: pcrlock %d\n", o->pcrlock);
-+	pr_info("trusted_key: pcrinfo %d\n", o->pcrinfo_len);
-+	print_hex_dump(KERN_INFO, "pcrinfo ", DUMP_PREFIX_NONE,
-+		       16, 1, o->pcrinfo, o->pcrinfo_len, 0);
-+}
++5. Update
++---------
++When doing an update, it is expected that the new key with the 64bit payload of
++format described above is added via the keyutils API or utility. The update
++command written to the sysfs attribute will be with the format:
++update <old keyid> <new keyid>
 +
-+static inline void dump_payload(struct trusted_key_payload *p)
-+{
-+	pr_info("trusted_key: key_len %d\n", p->key_len);
-+	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
-+		       16, 1, p->key, p->key_len, 0);
-+	pr_info("trusted_key: bloblen %d\n", p->blob_len);
-+	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
-+		       16, 1, p->blob, p->blob_len, 0);
-+	pr_info("trusted_key: migratable %d\n", p->migratable);
-+}
++It is expected that a user logon key has been injected via keyutils to provide
++the payload for the update operation. The kernel will take the new user key,
++attempt the update operation with the nvdimm, and replace the existing key's
++payload with the new passphrase.
 +
-+static inline void dump_sess(struct osapsess *s)
-+{
-+	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
-+		       16, 1, &s->handle, 4, 0);
-+	pr_info("trusted-key: secret:\n");
-+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
-+		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
-+	pr_info("trusted-key: enonce:\n");
-+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
-+		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
-+}
++If there is no old key id due to a security enabling, then a 0 should be
++passed in.  If a nvdimm has an existing passphrase, then an "old" key should
++be injected with a key description that does not have the "nvdimm:" prefix.
 +
-+static inline void dump_tpm_buf(unsigned char *buf)
-+{
-+	int len;
++6. Freeze
++---------
++The freeze operation does not require any keys. The security config can be
++frozen by a user with root privelege.
 +
-+	pr_info("\ntrusted-key: tpm buffer\n");
-+	len = LOAD32(buf, TPM_SIZE_OFFSET);
-+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
-+}
-+#else
-+static inline void dump_options(struct trusted_key_options *o)
-+{
-+}
++7. Disable
++----------
++The security disable command format is:
++disable <old keyid>
 +
-+static inline void dump_payload(struct trusted_key_payload *p)
-+{
-+}
++An "old" key with the passphrase payload that is tied to the nvdimm should be
++injected with a key description that does not have the "nvdimm:" prefix and
++its keyid should be passed in via sysfs.
 +
-+static inline void dump_sess(struct osapsess *s)
-+{
-+}
++8. Secure Erase
++---------------
++The command format for doing a secure erase is:
++erase <old keyid>
 +
-+static inline void dump_tpm_buf(unsigned char *buf)
-+{
-+}
-+#endif
++An "old" key with the passphrase payload that is tied to the nvdimm should be
++injected with a key description that does not have the "nvdimm:" prefix and
++its keyid should be passed in via sysfs.
 +
-+static inline void store8(struct tpm_buf *buf, const unsigned char value)
-+{
-+	buf->data[buf->len++] = value;
-+}
-+
-+static inline void store16(struct tpm_buf *buf, const uint16_t value)
-+{
-+	*(uint16_t *) & buf->data[buf->len] = htons(value);
-+	buf->len += sizeof value;
-+}
-+
-+static inline void store32(struct tpm_buf *buf, const uint32_t value)
-+{
-+	*(uint32_t *) & buf->data[buf->len] = htonl(value);
-+	buf->len += sizeof value;
-+}
-+
-+static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
-+			      const int len)
-+{
-+	memcpy(buf->data + buf->len, in, len);
-+	buf->len += len;
-+}
-+#endif
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 1c025fdfe0e0..ff6789365a12 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -30,7 +30,7 @@
- #include <linux/tpm.h>
- #include <linux/tpm_command.h>
- 
--#include "trusted.h"
-+#include <keys/trusted.h>
- 
- static const char hmac_alg[] = "hmac(sha1)";
- static const char hash_alg[] = "sha1";
-diff --git a/security/keys/trusted.h b/security/keys/trusted.h
-deleted file mode 100644
-index adbcb6817826..000000000000
---- a/security/keys/trusted.h
-+++ /dev/null
-@@ -1,136 +0,0 @@
--/* SPDX-License-Identifier: GPL-2.0 */
--#ifndef __TRUSTED_KEY_H
--#define __TRUSTED_KEY_H
--
--/* implementation specific TPM constants */
--#define MAX_BUF_SIZE			1024
--#define TPM_GETRANDOM_SIZE		14
--#define TPM_OSAP_SIZE			36
--#define TPM_OIAP_SIZE			10
--#define TPM_SEAL_SIZE			87
--#define TPM_UNSEAL_SIZE			104
--#define TPM_SIZE_OFFSET			2
--#define TPM_RETURN_OFFSET		6
--#define TPM_DATA_OFFSET			10
--
--#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
--#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
--#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
--
--struct tpm_buf {
--	int len;
--	unsigned char data[MAX_BUF_SIZE];
--};
--
--#define INIT_BUF(tb) (tb->len = 0)
--
--struct osapsess {
--	uint32_t handle;
--	unsigned char secret[SHA1_DIGEST_SIZE];
--	unsigned char enonce[TPM_NONCE_SIZE];
--};
--
--/* discrete values, but have to store in uint16_t for TPM use */
--enum {
--	SEAL_keytype = 1,
--	SRK_keytype = 4
--};
--
--int TSS_authhmac(unsigned char *digest, const unsigned char *key,
--			unsigned int keylen, unsigned char *h1,
--			unsigned char *h2, unsigned char h3, ...);
--int TSS_checkhmac1(unsigned char *buffer,
--			  const uint32_t command,
--			  const unsigned char *ononce,
--			  const unsigned char *key,
--			  unsigned int keylen, ...);
--
--int trusted_tpm_send(unsigned char *cmd, size_t buflen);
--int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
--
--#define TPM_DEBUG 0
--
--#if TPM_DEBUG
--static inline void dump_options(struct trusted_key_options *o)
--{
--	pr_info("trusted_key: sealing key type %d\n", o->keytype);
--	pr_info("trusted_key: sealing key handle %0X\n", o->keyhandle);
--	pr_info("trusted_key: pcrlock %d\n", o->pcrlock);
--	pr_info("trusted_key: pcrinfo %d\n", o->pcrinfo_len);
--	print_hex_dump(KERN_INFO, "pcrinfo ", DUMP_PREFIX_NONE,
--		       16, 1, o->pcrinfo, o->pcrinfo_len, 0);
--}
--
--static inline void dump_payload(struct trusted_key_payload *p)
--{
--	pr_info("trusted_key: key_len %d\n", p->key_len);
--	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
--		       16, 1, p->key, p->key_len, 0);
--	pr_info("trusted_key: bloblen %d\n", p->blob_len);
--	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
--		       16, 1, p->blob, p->blob_len, 0);
--	pr_info("trusted_key: migratable %d\n", p->migratable);
--}
--
--static inline void dump_sess(struct osapsess *s)
--{
--	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
--		       16, 1, &s->handle, 4, 0);
--	pr_info("trusted-key: secret:\n");
--	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
--		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
--	pr_info("trusted-key: enonce:\n");
--	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
--		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
--}
--
--static inline void dump_tpm_buf(unsigned char *buf)
--{
--	int len;
--
--	pr_info("\ntrusted-key: tpm buffer\n");
--	len = LOAD32(buf, TPM_SIZE_OFFSET);
--	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
--}
--#else
--static inline void dump_options(struct trusted_key_options *o)
--{
--}
--
--static inline void dump_payload(struct trusted_key_payload *p)
--{
--}
--
--static inline void dump_sess(struct osapsess *s)
--{
--}
--
--static inline void dump_tpm_buf(unsigned char *buf)
--{
--}
--#endif
--
--static inline void store8(struct tpm_buf *buf, const unsigned char value)
--{
--	buf->data[buf->len++] = value;
--}
--
--static inline void store16(struct tpm_buf *buf, const uint16_t value)
--{
--	*(uint16_t *) & buf->data[buf->len] = htons(value);
--	buf->len += sizeof value;
--}
--
--static inline void store32(struct tpm_buf *buf, const uint32_t value)
--{
--	*(uint32_t *) & buf->data[buf->len] = htonl(value);
--	buf->len += sizeof value;
--}
--
--static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
--			      const int len)
--{
--	memcpy(buf->data + buf->len, in, len);
--	buf->len += len;
--}
--#endif
++[1]: http://pmem.io/documents/NVDIMM_DSM_Interface-V1.7.pdf
++[2]: http://www.t13.org/documents/UploadedDocuments/docs2006/e05179r4-ACS-SecurityClarifications.pdf
