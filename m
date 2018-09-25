@@ -1,181 +1,167 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:55:30 +0000
-Subject: [PATCH 11/22] KEYS: asym_tpm: extract key size & public key
-Message-Id: <153618453075.7946.11830230385214262822.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 25 Sep 2018 23:38:30 +0000
+Subject: [PATCH v9 08/12] nfit/libnvdimm: add freeze security support to Intel nvdimm
+Message-Id: <153791871040.70158.15993029297671532663.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+Add support for freeze security on Intel nvdimm. This locks out any
+changes to security for the DIMM unless a reboot is done. This is triggered
+by writing "freeze" to the "security" sysfs attribute. libnvdimm will
+support the generic freeze_lock API call.
 
-The parsed BER/DER blob obtained from user space contains a TPM_Key
-structure.  This structure has some information about the key as well as
-the public key portion.
-
-This patch extracts this information for future use.
-
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
+ drivers/acpi/nfit/intel.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   29 ++++++++++++++++++++++---
+ include/linux/libnvdimm.h  |    2 ++
+ 3 files changed, 79 insertions(+), 3 deletions(-)
 
- crypto/asymmetric_keys/asym_tpm.c |  112 +++++++++++++++++++++++++++++++++++++
- include/crypto/asym_tpm_subtype.h |    3 +
- 2 files changed, 115 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index d0b2b97e8e54..308c51e055a4 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -7,6 +7,7 @@
- #include <linux/seq_file.h>
- #include <linux/scatterlist.h>
- #include <linux/tpm.h>
-+#include <asm/unaligned.h>
- #include <keys/asymmetric-subtype.h>
- #include <crypto/asym_tpm_subtype.h>
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 21d30222371f..ba886f1f5399 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,53 @@
+ #include "intel.h"
+ #include "nfit.h"
  
-@@ -37,6 +38,110 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
- 	kfree(tk);
- }
- 
-+/*
-+ * Parse enough information out of TPM_KEY structure:
-+ * TPM_STRUCT_VER -> 4 bytes
-+ * TPM_KEY_USAGE -> 2 bytes
-+ * TPM_KEY_FLAGS -> 4 bytes
-+ * TPM_AUTH_DATA_USAGE -> 1 byte
-+ * TPM_KEY_PARMS -> variable
-+ * UINT32 PCRInfoSize -> 4 bytes
-+ * BYTE* -> PCRInfoSize bytes
-+ * TPM_STORE_PUBKEY
-+ * UINT32 encDataSize;
-+ * BYTE* -> encDataSize;
-+ *
-+ * TPM_KEY_PARMS:
-+ * TPM_ALGORITHM_ID -> 4 bytes
-+ * TPM_ENC_SCHEME -> 2 bytes
-+ * TPM_SIG_SCHEME -> 2 bytes
-+ * UINT32 parmSize -> 4 bytes
-+ * BYTE* -> variable
-+ */
-+static int extract_key_parameters(struct tpm_key *tk)
++static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm)
 +{
-+	const void *cur = tk->blob;
-+	uint32_t len = tk->blob_len;
-+	const void *pub_key;
-+	uint32_t sz;
-+	uint32_t key_len;
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_freeze_lock cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_FREEZE_LOCK,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = 0,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
 +
-+	if (len < 11)
-+		return -EBADMSG;
++	if (!test_bit(NVDIMM_INTEL_FREEZE_LOCK, &nfit_mem->dsm_mask))
++		return -ENOTTY;
 +
-+	/* Ensure this is a legacy key */
-+	if (get_unaligned_be16(cur + 4) != 0x0015)
-+		return -EBADMSG;
-+
-+	/* Skip to TPM_KEY_PARMS */
-+	cur += 11;
-+	len -= 11;
-+
-+	if (len < 12)
-+		return -EBADMSG;
-+
-+	/* Make sure this is an RSA key */
-+	if (get_unaligned_be32(cur) != 0x00000001)
-+		return -EBADMSG;
-+
-+	/* Make sure this is TPM_ES_RSAESPKCSv15 encoding scheme */
-+	if (get_unaligned_be16(cur + 4) != 0x0002)
-+		return -EBADMSG;
-+
-+	/* Make sure this is TPM_SS_RSASSAPKCS1v15_DER signature scheme */
-+	if (get_unaligned_be16(cur + 6) != 0x0003)
-+		return -EBADMSG;
-+
-+	sz = get_unaligned_be32(cur + 8);
-+	if (len < sz + 12)
-+		return -EBADMSG;
-+
-+	/* Move to TPM_RSA_KEY_PARMS */
-+	len -= 12;
-+	cur += 12;
-+
-+	/* Grab the RSA key length */
-+	key_len = get_unaligned_be32(cur);
-+
-+	switch (key_len) {
-+	case 512:
-+	case 1024:
-+	case 1536:
-+	case 2048:
-+		break;
-+	default:
-+		return -EINVAL;
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
 +	}
 +
-+	/* Move just past TPM_KEY_PARMS */
-+	cur += sz;
-+	len -= sz;
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
 +
-+	if (len < 4)
-+		return -EBADMSG;
++ out:
++	return rc;
++}
 +
-+	sz = get_unaligned_be32(cur);
-+	if (len < 4 + sz)
-+		return -EBADMSG;
+ static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
+ {
+@@ -254,6 +301,9 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
+ 	else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_ENABLED) {
+ 		if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_LOCKED)
+ 			*state = NVDIMM_SECURITY_LOCKED;
++		else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_FROZEN ||
++				nd_cmd.cmd.state & ND_INTEL_SEC_STATE_PLIMIT)
++			*state = NVDIMM_SECURITY_FROZEN;
+ 		else
+ 			*state = NVDIMM_SECURITY_UNLOCKED;
+ 	} else
+@@ -270,4 +320,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
+ 	.disable = intel_dimm_security_disable,
++	.freeze_lock = intel_dimm_security_freeze_lock,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index ed4a8bece2ef..ff7c6a7cddd9 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -183,6 +183,26 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
+ 
++static int nvdimm_security_freeze_lock(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	int rc;
 +
-+	/* Move to TPM_STORE_PUBKEY */
-+	cur += 4 + sz;
-+	len -= 4 + sz;
++	if (!nvdimm->security_ops)
++		return -EOPNOTSUPP;
 +
-+	/* Grab the size of the public key, it should jive with the key size */
-+	sz = get_unaligned_be32(cur);
-+	if (sz > 256)
-+		return -EINVAL;
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		return -EOPNOTSUPP;
 +
-+	pub_key = cur + 4;
++	rc = nvdimm->security_ops->freeze_lock(nvdimm_bus, nvdimm);
++	if (rc < 0)
++		return rc;
 +
-+	tk->key_len = key_len;
-+	tk->pub_key = pub_key;
-+	tk->pub_key_len = sz;
-+
++	nvdimm_security_get_state(dev);
 +	return 0;
 +}
 +
- /* Given the blob, parse it and load it into the TPM */
- struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
+ static int nvdimm_security_disable(struct device *dev, unsigned int keyid)
  {
-@@ -64,8 +169,15 @@ struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -199,9 +219,9 @@ static int nvdimm_security_disable(struct device *dev, unsigned int keyid)
+ 		return -EOPNOTSUPP;
  
- 	tk->blob_len = blob_len;
+ 	/* look for a key from keyring if exists and remove */
+-	key = nvdimm_get_and_verify_key(dev, old_keyid);
+-	if (IS_ERR(old_key))
+-		return PTR_ERR(old_key);
++	key = nvdimm_get_and_verify_key(dev, keyid);
++	if (IS_ERR(key))
++		return PTR_ERR(key);
+ 	if (!key) {
+ 		/* get old user key */
+ 		key = nvdimm_lookup_user_key(dev, keyid);
+@@ -794,6 +814,9 @@ static ssize_t security_store(struct device *dev,
+ 	} else if (strcmp(cmd, "disable") = 0) {
+ 		dev_dbg(dev, "disable %u\n", old_key);
+ 		rc = nvdimm_security_disable(dev, old_key);
++	} else if (sysfs_streq(buf, "freeze")) {
++		dev_dbg(dev, "freeze\n");
++		rc = nvdimm_security_freeze_lock(dev);
+ 	} else
+ 		return -EINVAL;
  
-+	r = extract_key_parameters(tk);
-+	if (r < 0)
-+		goto error_extract;
-+
- 	return tk;
- 
-+error_extract:
-+	kfree(tk->blob);
-+	tk->blob_len = 0;
- error_memdup:
- 	kfree(tk);
- error:
-diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
-index 03550b850998..48198c36d6b9 100644
---- a/include/crypto/asym_tpm_subtype.h
-+++ b/include/crypto/asym_tpm_subtype.h
-@@ -7,6 +7,9 @@
- struct tpm_key {
- 	void *blob;
- 	u32 blob_len;
-+	uint16_t key_len; /* Size in bits of the key */
-+	const void *pub_key; /* pointer inside blob to the public key bytes */
-+	uint16_t pub_key_len; /* length of the public key */
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index c60ab4b238f3..bcab42caa948 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -185,6 +185,8 @@ struct nvdimm_security_ops {
+ 	int (*disable)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm,
+ 			const struct nvdimm_key_data *nkey);
++	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm);
  };
  
- struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
+ void badrange_init(struct badrange *badrange);
