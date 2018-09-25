@@ -1,150 +1,154 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 04 Sep 2018 13:03:08 +0000
-Subject: [RFC PATCH 1/2] request-key: Provide a command line option to suppress execution
-Message-Id: <153606618827.5731.15114650218923495769.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 25 Sep 2018 23:38:01 +0000
+Subject: [PATCH v9 03/12] nfit/libnvdimm: store dimm id as a member to struct nvdimm
+Message-Id: <153791868172.70158.2917180693535649232.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Allow "-x" to be passed on the command line to the request-key program to
-suppress side effects and target execution.  This makes it easier to debug
-the program and its configuration by allowing it to be driven from the
-command line.
+The generated dimm id is needed for the sysfs attribute as well as being
+used as the identifier/description for the security key. Since it's
+constant and should never change, store it as a member of struct nvdimm.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
+ drivers/acpi/nfit/core.c   |   29 +++++++++++++++++------------
+ drivers/acpi/nfit/nfit.h   |    3 +++
+ drivers/nvdimm/dimm_devs.c |    4 +++-
+ drivers/nvdimm/nd-core.h   |    1 +
+ include/linux/libnvdimm.h  |    2 +-
+ 5 files changed, 25 insertions(+), 14 deletions(-)
 
- request-key.c |   58 ++++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 23 deletions(-)
-
-diff --git a/request-key.c b/request-key.c
-index 3762e9a..f7697f3 100644
---- a/request-key.c
-+++ b/request-key.c
-@@ -24,6 +24,7 @@
- #include <signal.h>
- #include <syslog.h>
- #include <unistd.h>
-+#include <getopt.h>
- #include <fcntl.h>
- #include <errno.h>
- #include <ctype.h>
-@@ -34,6 +35,7 @@
- 
- static int xdebug;
- static int xnolog;
-+static int xnoexec;
- static char *xkey;
- static char *xuid;
- static char *xgid;
-@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
+diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
+index 4f3b89dc9238..94755a4b6327 100644
+--- a/drivers/acpi/nfit/core.c
++++ b/drivers/acpi/nfit/core.c
+@@ -1572,18 +1572,10 @@ static DEVICE_ATTR_RO(flags);
+ static ssize_t id_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
  {
- 	key_serial_t key;
- 	char *ktype, *kdesc, *buf, *callout_info;
--	int ret, ntype, dpos, n, fd;
-+	int ret, ntype, dpos, n, fd, opt;
+-	struct acpi_nfit_control_region *dcr = to_nfit_dcr(dev);
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
  
- 	if (argc = 2 && strcmp(argv[1], "--version") = 0) {
- 		printf("request-key from %s (Built %s)\n",
-@@ -144,22 +146,25 @@ int main(int argc, char *argv[])
- 	signal(SIGBUS, oops);
- 	signal(SIGPIPE, SIG_IGN);
+-	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
+-		return sprintf(buf, "%04x-%02x-%04x-%08x\n",
+-				be16_to_cpu(dcr->vendor_id),
+-				dcr->manufacturing_location,
+-				be16_to_cpu(dcr->manufacturing_date),
+-				be32_to_cpu(dcr->serial_number));
+-	else
+-		return sprintf(buf, "%04x-%08x\n",
+-				be16_to_cpu(dcr->vendor_id),
+-				be32_to_cpu(dcr->serial_number));
++	return sprintf(buf, "%s\n", nfit_mem->id);
+ }
+ static DEVICE_ATTR_RO(id);
  
--	for (;;) {
--		if (argc > 1 && strcmp(argv[1], "-d") = 0) {
-+	while (opt = getopt(argc, argv, "dnx"),
-+	       opt != -1) {
-+		switch (opt) {
-+		case 'd':
- 			xdebug++;
--			argv++;
--			argc--;
--		}
--		else if (argc > 1 && strcmp(argv[1], "-n") = 0) {
-+			break;
-+		case 'n':
- 			xnolog = 1;
--			argv++;
--			argc--;
--		}
--		else
- 			break;
-+		case 'x':
-+			xnoexec = 1;
-+			break;
-+		}
- 	}
+@@ -1712,10 +1704,23 @@ static int acpi_nfit_add_dimm(struct acpi_nfit_desc *acpi_desc,
+ 	const guid_t *guid;
+ 	int i;
+ 	int family = -1;
++	struct acpi_nfit_control_region *dcr = nfit_mem->dcr;
  
--	if (argc != 8 && argc != 9)
-+	argc -= optind;
-+	argv += optind;
+ 	/* nfit test assumes 1:1 relationship between commands and dsms */
+ 	nfit_mem->dsm_mask = acpi_desc->dimm_cmd_force_en;
+ 	nfit_mem->family = NVDIMM_FAMILY_INTEL;
 +
-+	if (argc != 7 && argc != 8)
- 		error("Unexpected argument count: %d\n", argc);
- 
- 	fd = open("/dev/null", O_RDWR);
-@@ -177,21 +182,23 @@ int main(int argc, char *argv[])
- 			error("dup failed: %m\n");
- 	}
- 
--	xkey = argv[2];
--	xuid = argv[3];
--	xgid = argv[4];
--	xthread_keyring = argv[5];
--	xprocess_keyring = argv[6];
--	xsession_keyring = argv[7];
-+	xkey = argv[1];
-+	xuid = argv[2];
-+	xgid = argv[3];
-+	xthread_keyring = argv[4];
-+	xprocess_keyring = argv[5];
-+	xsession_keyring = argv[6];
- 
- 	key = atoi(xkey);
- 
- 	/* assume authority over the key
- 	 * - older kernel doesn't support this function
- 	 */
--	ret = keyctl_assume_authority(key);
--	if (ret < 0 && !(argc = 9 || errno = EOPNOTSUPP))
--		error("Failed to assume authority over key %d (%m)\n", key);
-+	if (!xnoexec) {
-+		ret = keyctl_assume_authority(key);
-+		if (ret < 0 && !(argc = 8 || errno = EOPNOTSUPP))
-+			error("Failed to assume authority over key %d (%m)\n", key);
-+	}
- 
- 	/* ask the kernel to describe the key to us */
- 	if (xdebug < 2) {
-@@ -220,7 +227,7 @@ int main(int argc, char *argv[])
- 	debug("Key desc: %s\n", kdesc);
- 
- 	/* get hold of the callout info */
--	callout_info = argv[8];
-+	callout_info = argv[7];
- 
- 	if (!callout_info) {
- 		void *tmp;
-@@ -234,7 +241,7 @@ int main(int argc, char *argv[])
- 	debug("CALLOUT: '%s'\n", callout_info);
- 
- 	/* determine the action to perform */
--	lookup_action(argv[1],		/* op */
-+	lookup_action(argv[0],		/* op */
- 		      key,		/* ID of key under construction */
- 		      ktype,		/* key type */
- 		      kdesc,		/* key description */
-@@ -611,6 +618,11 @@ static void execute_program(char *op,
- 	/* if the last argument is a single bar, we spawn off the program dangling on the end of
- 	 * three pipes and read the key material from the program, otherwise we just exec
- 	 */
-+	if (xnoexec) {
-+		printf("-- exec disabled --\n");
-+		exit(0);
-+	}
++	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
++		sprintf(nfit_mem->id, "%04x-%02x-%04x-%08x",
++				be16_to_cpu(dcr->vendor_id),
++				dcr->manufacturing_location,
++				be16_to_cpu(dcr->manufacturing_date),
++				be32_to_cpu(dcr->serial_number));
++	else
++		sprintf(nfit_mem->id, "%04x-%08x",
++				be16_to_cpu(dcr->vendor_id),
++				be32_to_cpu(dcr->serial_number));
 +
- 	if (pipeit)
- 		pipe_to_program(op, key, ktype, kdesc, callout_info, prog, argv);
+ 	adev = to_acpi_dev(acpi_desc);
+ 	if (!adev)
+ 		return 0;
+@@ -1899,7 +1904,7 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
+ 		nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
+ 				acpi_nfit_dimm_attribute_groups,
+ 				flags, cmd_mask, flush ? flush->hint_count : 0,
+-				nfit_mem->flush_wpq);
++				nfit_mem->flush_wpq, &nfit_mem->id[0]);
+ 		if (!nvdimm)
+ 			return -ENOMEM;
  
+diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
+index 1c4e26dd6425..36c8695a3d27 100644
+--- a/drivers/acpi/nfit/nfit.h
++++ b/drivers/acpi/nfit/nfit.h
+@@ -174,6 +174,8 @@ struct nfit_memdev {
+ 	struct acpi_nfit_memory_map memdev[0];
+ };
+ 
++#define NFIT_DIMM_ID_LEN	22
++
+ /* assembled tables for a given dimm/memory-device */
+ struct nfit_mem {
+ 	struct nvdimm *nvdimm;
+@@ -196,6 +198,7 @@ struct nfit_mem {
+ 	int family;
+ 	bool has_lsr;
+ 	bool has_lsw;
++	char id[NFIT_DIMM_ID_LEN+1];
+ };
+ 
+ struct acpi_nfit_desc {
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index d058078a82aa..f414ed346215 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -401,7 +401,7 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
+ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		const struct attribute_group **groups, unsigned long flags,
+ 		unsigned long cmd_mask, int num_flush,
+-		struct resource *flush_wpq)
++		struct resource *flush_wpq, const char *dimm_id)
+ {
+ 	struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
+ 	struct device *dev;
+@@ -414,6 +414,8 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		kfree(nvdimm);
+ 		return NULL;
+ 	}
++
++	nvdimm->dimm_id = dimm_id;
+ 	nvdimm->provider_data = provider_data;
+ 	nvdimm->flags = flags;
+ 	nvdimm->cmd_mask = cmd_mask;
+diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
+index 711eaf055455..8f377682a3ac 100644
+--- a/drivers/nvdimm/nd-core.h
++++ b/drivers/nvdimm/nd-core.h
+@@ -42,6 +42,7 @@ struct nvdimm {
+ 	atomic_t busy;
+ 	int id, num_flush;
+ 	struct resource *flush_wpq;
++	const char *dimm_id;
+ };
+ 
+ /**
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index 51084043915c..3c1f18fdf76f 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -181,7 +181,7 @@ void *nvdimm_provider_data(struct nvdimm *nvdimm);
+ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
+ 		const struct attribute_group **groups, unsigned long flags,
+ 		unsigned long cmd_mask, int num_flush,
+-		struct resource *flush_wpq);
++		struct resource *flush_wpq, const char *dimm_id);
+ const struct nd_cmd_desc *nd_cmd_dimm_desc(int cmd);
+ const struct nd_cmd_desc *nd_cmd_bus_desc(int cmd);
+ u32 nd_cmd_in_size(struct nvdimm *nvdimm, int cmd,
