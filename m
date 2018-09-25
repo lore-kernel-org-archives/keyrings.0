@@ -1,7 +1,7 @@
-From: Ben Boeckel <mathstuf@gmail.com>
-Date: Mon, 24 Sep 2018 20:45:18 +0000
+From: Stephan Mueller <smueller@chronox.de>
+Date: Tue, 25 Sep 2018 11:41:25 +0000
 Subject: Re: [PATCH] keyctl_dh_compute_kdf: use a void* for opaque data
-Message-Id: <20180924204518.GA23168@rotor.kitware.com>
+Message-Id: <5028671.HJU6M6CFi3@tauon.chronox.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,19 +10,18 @@ References: <20180924175506.21077-1-mathstuf@gmail.com>
 In-Reply-To: <20180924175506.21077-1-mathstuf@gmail.com>
 To: keyrings@vger.kernel.org
 
-On Mon, Sep 24, 2018 at 13:55:06 -0400, Ben Boeckel wrote:
-> Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
-> ---
->  keyutils.c              | 2 +-
->  keyutils.h              | 4 ++--
->  man/keyctl_dh_compute.3 | 2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
+Am Montag, 24. September 2018, 22:45:18 CEST schrieb Ben Boeckel:
 
-I'll note that these changes seem to need patches applied to the kernel
-as well to at least update the documentation with respect to `const` and
-`void*`, but it's likely code needs updated as well.
+Hi Ben,
 
-I can submit patches for these as well. I assume I should also send them
-here (based on dhowells/keys-asym-keyctl)?
+> I can submit patches for these as well. I assume I should also send them
+> here (based on dhowells/keys-asym-keyctl)?
 
---Ben
+Sure.
+> 
+> --Ben
+
+
+
+Ciao
+Stephan
