@@ -1,224 +1,126 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Sep 2018 14:08:44 +0000
-Subject: [PATCH 1/3] request-key: Provide a command line option to suppress execution
-Message-Id: <153684772475.10049.997401846544926862.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Tue, 25 Sep 2018 23:37:45 +0000
+Subject: [PATCH v9 00/12] Adding security support for nvdimm
+Message-Id: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153684771698.10049.12488548190876920608.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153684771698.10049.12488548190876920608.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-security-module@vger.kernel.org
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Allow "-x" to be passed on the command line to the request-key program to
-suppress side effects and target execution.  This makes it easier to debug
-the program and its configuration by allowing it to be driven from the
-command line.
+The following series implements security support for nvdimm. Mostly adding
+new security DSM support from the Intel NVDIMM DSM spec v1.7, but also
+adding generic support libnvdimm for other vendors. The most important
+security features are unlocking locked nvdimms, and updating/setting security
+passphrase to nvdimms.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+v9:
+- Addressed various misc comments. (David, Dan)
+- Removed init_cred and replaced with current_cred(). (David)
+- Changed NVDIMM_PREFIX to char[] constant (David)
+- Moved NVDIMM_PREFIX to include/uapi/linux/ndctl.h (Dan)
+- Reworked security_update to use old user key to verify against kernel
+  key and then update with new user key. (David)
+- Added requirement of disable and erase to require old user key for
+  verify. (Dan)
+- Updated documentation. (Dave)
+
+v8:
+- Make the keys retained by the kernel user searchable in order to find the
+  key that needs to be updated for key update.
+
+v7:
+- Add CONFIG_KEYS depenency for libnvdimm. (Alison)
+- Export lookup_user_key(). (David)
+- Modified "update" to take two key ids and and use lookup_user_key() in
+  order to improve security.  (David)
+- Use key ptrs and key_validate() for cached keys. (David)
+
+v6:
+- Fix intel DSM data structures to use defined size for passphrase (Robert)
+- Fix memcpy size to use sizeof data structure member (Robert)
+- Fix defined dimm id length (Robert)
+- Making intel_security_ops const (Eric)
+- Remove unused var in nvdimm_key_search() (Eric)
+- Added wbinvd before secure erase is issued (Robert)
+- Removed key_put_sync() usage (David)
+- Use init_cred instead of creating own cred (David)
+    - Exported init_cred symbol
+- Move keyring to dedicated (David)
+- Use logon_key_type and friends instead of creating custom (David)
+- Use key_lookup() with stored key serial (David)
+    - Exported key_lookup() symbol
+- Mark passed in key data as const (David)
+- Added comment for change_pass_phrase to explain how it works (David)
+- Unlink key when it's being removed from keyring. (David)
+- Removed request_key() from all security ops except update and unlock.
+- Update will now update the existing key's payload with the new key's
+  retrieved from userspace when the new payload is accepted by nvdimm.
+
+v5:
+- Moved dimm_id initialization (Dan)
+- Added a key_put_sync() in order to run key_gc_work and cleanup old key. (Dan)
+- Added check to block security state changes while DIMM is active. (Dan)
+
+v4:
+- flip payload layout for update passphrase to make it easier on userland.
+
+v3:
+- Set x86 wrappers for x86 only bits. (Dan)
+- Fixed up some verbiage in commit headers.
+- Put in usage of sysfs_streq() for sysfs inputs.
+- 0-day build fixes for non-x86 archs.
+
+v2:
+- Move inclusion of intel.h to relevant source files and not in nfit.h. (Dan)
+- Moved security ring relevant code to dimm_devs.c. (Dan)
+- Added dimm_id to nfit_mem to avoid recreate per sysfs show call. (Dan)
+- Added routine to return security_ops based on family supplied. (Dan)
+- Added nvdimm_key_data struct to wrap raw passphrase string. (Dan)
+- Allocate firmware package on stack. (Dan)
+- Added missing frozen state detection when retrieving security state.
+
 ---
 
- request-key.c |   78 +++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 45 insertions(+), 33 deletions(-)
+Dave Jiang (12):
+      nfit: add support for Intel DSM 1.7 commands
+      libnvdimm: create keyring to store security keys
+      nfit/libnvdimm: store dimm id as a member to struct nvdimm
+      keys: export lookup_user_key to external users
+      nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
+      nfit/libnvdimm: add set passphrase support for Intel nvdimms
+      nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+      nfit/libnvdimm: add freeze security support to Intel nvdimm
+      nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+      nfit_test: add context to dimm_dev for nfit_test
+      nfit_test: add test support for Intel nvdimm security DSMs
+      libnvdimm: add documentation for nvdimm security support
 
-diff --git a/request-key.c b/request-key.c
-index 3762e9a..ecd7b79 100644
---- a/request-key.c
-+++ b/request-key.c
-@@ -24,6 +24,7 @@
- #include <signal.h>
- #include <syslog.h>
- #include <unistd.h>
-+#include <getopt.h>
- #include <fcntl.h>
- #include <errno.h>
- #include <ctype.h>
-@@ -32,8 +33,9 @@
- #include "keyutils.h"
- 
- 
--static int xdebug;
-+static int verbosity;
- static int xnolog;
-+static int debug_mode;
- static char *xkey;
- static char *xuid;
- static char *xgid;
-@@ -75,7 +77,7 @@ static void debug(const char *fmt, ...)
- {
- 	va_list va;
- 
--	if (xdebug) {
-+	if (verbosity) {
- 		va_start(va, fmt);
- 		vfprintf(stderr, fmt, va);
- 		va_end(va);
-@@ -97,7 +99,7 @@ static void error(const char *fmt, ...)
- {
- 	va_list va;
- 
--	if (xdebug) {
-+	if (verbosity) {
- 		va_start(va, fmt);
- 		vfprintf(stderr, fmt, va);
- 		va_end(va);
-@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
- {
- 	key_serial_t key;
- 	char *ktype, *kdesc, *buf, *callout_info;
--	int ret, ntype, dpos, n, fd;
-+	int ret, ntype, dpos, n, fd, opt;
- 
- 	if (argc = 2 && strcmp(argv[1], "--version") = 0) {
- 		printf("request-key from %s (Built %s)\n",
-@@ -144,22 +146,25 @@ int main(int argc, char *argv[])
- 	signal(SIGBUS, oops);
- 	signal(SIGPIPE, SIG_IGN);
- 
--	for (;;) {
--		if (argc > 1 && strcmp(argv[1], "-d") = 0) {
--			xdebug++;
--			argv++;
--			argc--;
--		}
--		else if (argc > 1 && strcmp(argv[1], "-n") = 0) {
-+	while (opt = getopt(argc, argv, "dnv"),
-+	       opt != -1) {
-+		switch (opt) {
-+		case 'd':
-+			debug_mode = 1;
-+			break;
-+		case 'n':
- 			xnolog = 1;
--			argv++;
--			argc--;
--		}
--		else
- 			break;
-+		case 'v':
-+			verbosity++;
-+			break;
-+		}
- 	}
- 
--	if (argc != 8 && argc != 9)
-+	argc -= optind;
-+	argv += optind;
-+
-+	if (argc != 7 && argc != 8)
- 		error("Unexpected argument count: %d\n", argc);
- 
- 	fd = open("/dev/null", O_RDWR);
-@@ -177,24 +182,26 @@ int main(int argc, char *argv[])
- 			error("dup failed: %m\n");
- 	}
- 
--	xkey = argv[2];
--	xuid = argv[3];
--	xgid = argv[4];
--	xthread_keyring = argv[5];
--	xprocess_keyring = argv[6];
--	xsession_keyring = argv[7];
-+	xkey = argv[1];
-+	xuid = argv[2];
-+	xgid = argv[3];
-+	xthread_keyring = argv[4];
-+	xprocess_keyring = argv[5];
-+	xsession_keyring = argv[6];
- 
- 	key = atoi(xkey);
- 
- 	/* assume authority over the key
- 	 * - older kernel doesn't support this function
- 	 */
--	ret = keyctl_assume_authority(key);
--	if (ret < 0 && !(argc = 9 || errno = EOPNOTSUPP))
--		error("Failed to assume authority over key %d (%m)\n", key);
-+	if (!debug_mode) {
-+		ret = keyctl_assume_authority(key);
-+		if (ret < 0 && !(argc = 8 || errno = EOPNOTSUPP))
-+			error("Failed to assume authority over key %d (%m)\n", key);
-+	}
- 
- 	/* ask the kernel to describe the key to us */
--	if (xdebug < 2) {
-+	if (!debug_mode) {
- 		ret = keyctl_describe_alloc(key, &buf);
- 		if (ret < 0)
- 			goto inaccessible;
-@@ -220,7 +227,7 @@ int main(int argc, char *argv[])
- 	debug("Key desc: %s\n", kdesc);
- 
- 	/* get hold of the callout info */
--	callout_info = argv[8];
-+	callout_info = argv[7];
- 
- 	if (!callout_info) {
- 		void *tmp;
-@@ -234,7 +241,7 @@ int main(int argc, char *argv[])
- 	debug("CALLOUT: '%s'\n", callout_info);
- 
- 	/* determine the action to perform */
--	lookup_action(argv[1],		/* op */
-+	lookup_action(argv[0],		/* op */
- 		      key,		/* ID of key under construction */
- 		      ktype,		/* key type */
- 		      kdesc,		/* key description */
-@@ -267,7 +274,7 @@ static void lookup_action(char *op,
- 
- 	/* search the config file for a command to run */
- 	if (strlen(ktype) <= sizeof(conffile) - 30) {
--		if (xdebug < 2)
-+		if (verbosity < 2)
- 			snprintf(conffile, sizeof(conffile) - 1,
- 				 "/etc/request-key.d/%s.conf", ktype);
- 		else
-@@ -280,7 +287,7 @@ static void lookup_action(char *op,
- 			error("Cannot open %s: %m\n", conffile);
- 	}
- 
--	if (xdebug < 2)
-+	if (verbosity < 2)
- 		snprintf(conffile, sizeof(conffile) - 1, "/etc/request-key.conf");
- 	else
- 		snprintf(conffile, sizeof(conffile) - 1, "request-key.conf");
-@@ -596,7 +603,7 @@ static void execute_program(char *op,
- 
- 	argv[argc] = NULL;
- 
--	if (xdebug) {
-+	if (verbosity) {
- 		char **ap;
- 
- 		debug("%s %s\n", pipeit ? "PipeThru" : "Run", prog);
-@@ -611,6 +618,11 @@ static void execute_program(char *op,
- 	/* if the last argument is a single bar, we spawn off the program dangling on the end of
- 	 * three pipes and read the key material from the program, otherwise we just exec
- 	 */
-+	if (debug_mode) {
-+		printf("-- exec disabled --\n");
-+		exit(0);
-+	}
-+
- 	if (pipeit)
- 		pipe_to_program(op, key, ktype, kdesc, callout_info, prog, argv);
- 
-@@ -791,7 +803,7 @@ static void pipe_to_program(char *op,
- 				nl++;
- 				n = nl - errbuf;
- 
--				if (xdebug)
-+				if (verbosity)
- 					fprintf(stderr, "Child: %*.*s", n, n, errbuf);
- 
- 				if (!xnolog) {
-@@ -815,7 +827,7 @@ static void pipe_to_program(char *op,
- 			if (espace = 0) {
- 				int n = sizeof(errbuf);
- 
--				if (xdebug)
-+				if (verbosity)
- 					fprintf(stderr, "Child: %*.*s", n, n, errbuf);
- 
- 				if (!xnolog) {
+
+ Documentation/nvdimm/security.txt |   99 +++++++
+ drivers/acpi/nfit/Makefile        |    1 
+ drivers/acpi/nfit/core.c          |   58 +++-
+ drivers/acpi/nfit/intel.c         |  382 ++++++++++++++++++++++++++
+ drivers/acpi/nfit/intel.h         |   82 ++++++
+ drivers/acpi/nfit/nfit.h          |   20 +
+ drivers/nvdimm/Kconfig            |    1 
+ drivers/nvdimm/bus.c              |    2 
+ drivers/nvdimm/core.c             |    7 
+ drivers/nvdimm/dimm.c             |    7 
+ drivers/nvdimm/dimm_devs.c        |  549 +++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/nd-core.h          |    6 
+ drivers/nvdimm/nd.h               |    2 
+ include/linux/key.h               |    3 
+ include/linux/libnvdimm.h         |   42 +++
+ include/uapi/linux/ndctl.h        |    6 
+ security/keys/internal.h          |    2 
+ security/keys/process_keys.c      |    1 
+ tools/testing/nvdimm/Kbuild       |    1 
+ tools/testing/nvdimm/test/nfit.c  |  227 ++++++++++++++-
+ 20 files changed, 1462 insertions(+), 36 deletions(-)
+ create mode 100644 Documentation/nvdimm/security.txt
+ create mode 100644 drivers/acpi/nfit/intel.c
+ create mode 100644 drivers/acpi/nfit/intel.h
+
+--
