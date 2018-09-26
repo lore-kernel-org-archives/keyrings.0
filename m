@@ -1,262 +1,192 @@
-From: "Huang, Kai" <kai.huang@intel.com>
-Date: Tue, 11 Sep 2018 01:14:44 +0000
-Subject: Re: [RFC 01/12] docs/x86: Document the Multi-Key Total Memory Encryption API
-Message-Id: <1536628480.5860.0.camel@intel.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Wed, 26 Sep 2018 20:47:23 +0000
+Subject: [PATCH v10 07/12] nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+Message-Id: <153799484384.71621.15520725169719507042.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1536356108.git.alison.schofield@intel.com>
-	 <b9c1e3805c700043d92117462bdb6018bb9f858a.1536356108.git.alison.schofield@intel.com>
-	 <105F7BF4D0229846AF094488D65A098935424996@PGSMSX112.gar.corp.intel.com>
-	 <20180911001301.GB31868@alison-desk.jf.intel.com>
-	 <105F7BF4D0229846AF094488D65A098935426D90@PGSMSX112.gar.corp.intel.com>
-	 <20180911004554.GA646@alison-desk.jf.intel.com>
-In-Reply-To: <20180911004554.GA646@alison-desk.jf.intel.com>
-To: "Schofield, Alison" <alison.schofield@intel.com>
-Cc: "Shutemov, Kirill" <kirill.shutemov@intel.com>, "jmorris@namei.org" <jmorris@namei.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "tglx@linutronix.de" <tglx@linutronix.de>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "dhowells@redhat.com" <dhowells@redhat.com>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>, "Hansen, Dave" <dave.hansen@intel.com>, "Nakajima, Jun" <jun.nakajima@intel.com>
+References: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-T24gTW9uLCAyMDE4LTA5LTEwIGF0IDE3OjQ1IC0wNzAwLCBBbGlzb24gU2Nob2ZpZWxkIHdyb3Rl
-Og0KPiBPbiBNb24sIFNlcCAxMCwgMjAxOCBhdCAwNTozMzozM1BNIC0wNzAwLCBIdWFuZywgS2Fp
-IHdyb3RlOg0KPiA+ID4gLS0tLS1PcmlnaW5hbCBNZXNzYWdlLS0tLS0NCj4gPiA+IEZyb206IG93
-bmVyLWxpbnV4LW1tQGt2YWNrLm9yZyBbbWFpbHRvOm93bmVyLWxpbnV4LW1tQGt2YWNrLm9yZ10N
-Cj4gPiA+IE9uDQo+ID4gPiBCZWhhbGYgT2YgQWxpc29uIFNjaG9maWVsZA0KPiA+ID4gU2VudDog
-VHVlc2RheSwgU2VwdGVtYmVyIDExLCAyMDE4IDEyOjEzIFBNDQo+ID4gPiBUbzogSHVhbmcsIEth
-aSA8a2FpLmh1YW5nQGludGVsLmNvbT4NCj4gPiA+IENjOiBkaG93ZWxsc0ByZWRoYXQuY29tOyB0
-Z2x4QGxpbnV0cm9uaXguZGU7IE5ha2FqaW1hLCBKdW4NCj4gPiA+IDxqdW4ubmFrYWppbWFAaW50
-ZWwuY29tPjsgU2h1dGVtb3YsIEtpcmlsbCA8a2lyaWxsLnNodXRlbW92QGludGVsDQo+ID4gPiAu
-Y29tPjsNCj4gPiA+IEhhbnNlbiwgRGF2ZSA8ZGF2ZS5oYW5zZW5AaW50ZWwuY29tPjsgU2Fra2lu
-ZW4sIEphcmtrbw0KPiA+ID4gPGphcmtrby5zYWtraW5lbkBpbnRlbC5jb20+OyBqbW9ycmlzQG5h
-bWVpLm9yZzsga2V5cmluZ3NAdmdlci5rZXINCj4gPiA+IG5lbC5vcmc7DQo+ID4gPiBsaW51eC1z
-ZWN1cml0eS1tb2R1bGVAdmdlci5rZXJuZWwub3JnOyBtaW5nb0ByZWRoYXQuY29tOyBocGFAenl0
-bw0KPiA+ID4gci5jb207DQo+ID4gPiB4ODZAa2VybmVsLm9yZzsgbGludXgtbW1Aa3ZhY2sub3Jn
-DQo+ID4gPiBTdWJqZWN0OiBSZTogW1JGQyAwMS8xMl0gZG9jcy94ODY6IERvY3VtZW50IHRoZSBN
-dWx0aS1LZXkgVG90YWwNCj4gPiA+IE1lbW9yeQ0KPiA+ID4gRW5jcnlwdGlvbiBBUEkNCj4gPiA+
-IA0KPiA+ID4gT24gU3VuLCBTZXAgMDksIDIwMTggYXQgMDY6Mjg6MjhQTSAtMDcwMCwgSHVhbmcs
-IEthaSB3cm90ZToNCj4gPiA+ID4gDQo+ID4gPiA+ID4gLS0tLS1PcmlnaW5hbCBNZXNzYWdlLS0t
-LS0NCj4gPiA+ID4gPiBGcm9tOiBvd25lci1saW51eC1tbUBrdmFjay5vcmcgW21haWx0bzpvd25l
-ci1saW51eC1tbUBrdmFjay5vDQo+ID4gPiA+ID4gcmddIE9uDQo+ID4gPiA+ID4gQmVoYWxmIE9m
-IEFsaXNvbiBTY2hvZmllbGQNCj4gPiA+ID4gPiBTZW50OiBTYXR1cmRheSwgU2VwdGVtYmVyIDgs
-IDIwMTggMTA6MzQgQU0NCj4gPiA+ID4gPiBUbzogZGhvd2VsbHNAcmVkaGF0LmNvbTsgdGdseEBs
-aW51dHJvbml4LmRlDQo+ID4gPiA+ID4gQ2M6IEh1YW5nLCBLYWkgPGthaS5odWFuZ0BpbnRlbC5j
-b20+OyBOYWthamltYSwgSnVuDQo+ID4gPiA+ID4gPGp1bi5uYWthamltYUBpbnRlbC5jb20+OyBT
-aHV0ZW1vdiwgS2lyaWxsDQo+ID4gPiA+ID4gPGtpcmlsbC5zaHV0ZW1vdkBpbnRlbC5jb20+OyBI
-YW5zZW4sIERhdmUgPGRhdmUuaGFuc2VuQGludGVsLg0KPiA+ID4gPiA+IGNvbT47DQo+ID4gPiA+
-ID4gU2Fra2luZW4sIEphcmtrbyA8amFya2tvLnNha2tpbmVuQGludGVsLmNvbT47IGptb3JyaXNA
-bmFtZWkubw0KPiA+ID4gPiA+IHJnOw0KPiA+ID4gPiA+IGtleXJpbmdzQHZnZXIua2VybmVsLm9y
-ZzsgbGludXgtc2VjdXJpdHktbW9kdWxlQHZnZXIua2VybmVsLm8NCj4gPiA+ID4gPiByZzsNCj4g
-PiA+ID4gPiBtaW5nb0ByZWRoYXQuY29tOyBocGFAenl0b3IuY29tOyB4ODZAa2VybmVsLm9yZzsg
-bGludXgtDQo+ID4gPiANCj4gPiA+IG1tQGt2YWNrLm9yZw0KPiA+ID4gPiA+IFN1YmplY3Q6IFtS
-RkMgMDEvMTJdIGRvY3MveDg2OiBEb2N1bWVudCB0aGUgTXVsdGktS2V5IFRvdGFsDQo+ID4gPiA+
-ID4gTWVtb3J5DQo+ID4gPiA+ID4gRW5jcnlwdGlvbiBBUEkNCj4gPiA+ID4gPiANCj4gPiA+ID4g
-PiBEb2N1bWVudCB0aGUgQVBJJ3MgdXNlZCBmb3IgTUtUTUUgb24gSW50ZWwgcGxhdGZvcm1zLg0K
-PiA+ID4gPiA+IE1LVE1FOiBNdWx0aS1LRVkgVG90YWwgTWVtb3J5IEVuY3J5cHRpb24NCj4gPiA+
-ID4gPiANCj4gPiA+ID4gPiBTaWduZWQtb2ZmLWJ5OiBBbGlzb24gU2Nob2ZpZWxkIDxhbGlzb24u
-c2Nob2ZpZWxkQGludGVsLmNvbT4NCj4gPiA+ID4gPiAtLS0NCj4gPiA+ID4gPiAgRG9jdW1lbnRh
-dGlvbi94ODYvbWt0bWUta2V5cy50eHQgfCAxNTMNCj4gPiA+ID4gPiArKysrKysrKysrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrKysNCj4gPiA+ID4gPiAgMSBmaWxlIGNoYW5nZWQsIDE1MyBp
-bnNlcnRpb25zKCspDQo+ID4gPiA+ID4gIGNyZWF0ZSBtb2RlIDEwMDY0NCBEb2N1bWVudGF0aW9u
-L3g4Ni9ta3RtZS1rZXlzLnR4dA0KPiA+ID4gPiA+IA0KPiA+ID4gPiA+IGRpZmYgLS1naXQgYS9E
-b2N1bWVudGF0aW9uL3g4Ni9ta3RtZS1rZXlzLnR4dA0KPiA+ID4gPiA+IGIvRG9jdW1lbnRhdGlv
-bi94ODYvbWt0bWUtIGtleXMudHh0IG5ldyBmaWxlIG1vZGUgMTAwNjQ0DQo+ID4gPiA+ID4gaW5k
-ZXgNCj4gPiA+ID4gPiAwMDAwMDAwMDAwMDAuLjJkZWE3YWNkMmExNw0KPiA+ID4gPiA+IC0tLSAv
-ZGV2L251bGwNCj4gPiA+ID4gPiArKysgYi9Eb2N1bWVudGF0aW9uL3g4Ni9ta3RtZS1rZXlzLnR4
-dA0KPiA+ID4gPiA+IEBAIC0wLDAgKzEsMTUzIEBADQo+ID4gPiA+ID4gK01LVE1FIChNdWx0aS1L
-ZXkgVG90YWwgTWVtb3J5IEVuY3J5cHRpb24pIGlzIGEgdGVjaG5vbG9neQ0KPiA+ID4gPiA+IHRo
-YXQNCj4gPiA+ID4gPiArYWxsb3dzIG1lbW9yeSBlbmNyeXB0aW9uIG9uIEludGVsIHBsYXRmb3Jt
-cy4gV2hlcmVhcyBUTUUNCj4gPiA+ID4gPiAoVG90YWwNCj4gPiA+ID4gPiArTWVtb3J5DQo+ID4g
-PiA+ID4gK0VuY3J5cHRpb24pIGFsbG93cyBlbmNyeXB0aW9uIG9mIHRoZSBlbnRpcmUgc3lzdGVt
-IG1lbW9yeQ0KPiA+ID4gPiA+IHVzaW5nIGENCj4gPiA+ID4gPiArc2luZ2xlIGtleSwgTUtUTUUg
-YWxsb3dzIG11bHRpcGxlIGVuY3J5cHRpb24gZG9tYWlucywgZWFjaA0KPiA+ID4gPiA+IGhhdmlu
-Zw0KPiA+ID4gPiA+ICt0aGVpciBvd24ga2V5LiBUaGUgbWFpbiB1c2UgY2FzZSBmb3IgdGhlIGZl
-YXR1cmUgaXMgdmlydHVhbA0KPiA+ID4gPiA+IG1hY2hpbmUNCj4gPiA+ID4gPiAraXNvbGF0aW9u
-LiBUaGUgQVBJJ3MgaW50cm9kdWNlZCBoZXJlIGFyZSBpbnRlbmRlZCB0byBvZmZlcg0KPiA+ID4g
-PiA+ICtmbGV4aWJpbGl0eSB0byB3b3JrIGluIGENCj4gPiA+ID4gPiB3aWRlIHJhbmdlIG9mIHVz
-ZXMuDQo+ID4gPiA+ID4gKw0KPiA+ID4gPiA+ICtUaGUgZXh0ZXJuYWxseSBhdmFpbGFibGUgSW50
-ZWwgQXJjaGl0ZWN0dXJlIFNwZWM6DQo+ID4gPiA+ID4gK2h0dHBzOi8vc29mdHdhcmUuaW50ZWwu
-Y29tL3NpdGVzL2RlZmF1bHQvZmlsZXMvbWFuYWdlZC9hNS8xNg0KPiA+ID4gPiA+IC9NdWx0aS0N
-Cj4gPiA+ID4gPiArS2V5LQ0KPiA+ID4gPiA+ICtUb3RhbC1NZW1vcnktRW5jcnlwdGlvbi1TcGVj
-LnBkZg0KPiA+ID4gPiA+ICsNCj4gPiA+ID4gPiArPT09PT09PT09PT09PT09PT09PT09PT09PT09
-PSAgQVBJIE92ZXJ2aWV3DQo+ID4gPiA+ID4gKz09PT09PT09PT09PT09PT09PT09PT09PT09PT0N
-Cj4gPiA+ID4gPiArDQo+ID4gPiA+ID4gK1RoZXJlIGFyZSAyIE1LVE1FIHNwZWNpZmljIEFQSSdz
-IHRoYXQgZW5hYmxlIHVzZXJzcGFjZSB0bw0KPiA+ID4gPiA+IGNyZWF0ZQ0KPiA+ID4gPiA+ICth
-bmQgdXNlIHRoZSBtZW1vcnkgZW5jcnlwdGlvbiBrZXlzOg0KPiA+ID4gPiA+ICsNCj4gPiA+ID4g
-PiArMSkgS2VybmVsIEtleSBTZXJ2aWNlOiBNS1RNRSBUeXBlDQo+ID4gPiA+ID4gKw0KPiA+ID4g
-PiA+ICsgICBNS1RNRSBpcyBhIG5ldyBrZXkgdHlwZSBhZGRlZCB0byB0aGUgZXhpc3RpbmcgS2Vy
-bmVsIEtleQ0KPiA+ID4gPiA+IFNlcnZpY2VzDQo+ID4gPiA+ID4gKyAgIHRvIHN1cHBvcnQgdGhl
-IG1lbW9yeSBlbmNyeXB0aW9uIGtleXMuIFRoZSBNS1RNRSBzZXJ2aWNlDQo+ID4gPiA+ID4gbWFu
-YWdlcw0KPiA+ID4gPiA+ICsgICB0aGUgYWRkaXRpb24gYW5kIHJlbW92YWwgb2YgTUtUTUUga2V5
-cy4gSXQgbWFwcyB1c2Vyc3BhY2UNCj4gPiA+ID4gPiBrZXlzDQo+ID4gPiA+ID4gKyAgIHRvIGhh
-cmR3YXJlIGtleWlkcyBhbmQgcHJvZ3JhbXMgdGhlIGhhcmR3YXJlIHdpdGggdXNlcg0KPiA+ID4g
-PiA+IHJlcXVlc3RlZA0KPiA+ID4gPiA+ICsgICBlbmNyeXB0aW9uIHBhcmFtZXRlcnMuDQo+ID4g
-PiA+ID4gKw0KPiA+ID4gPiA+ICsgICBvIEFuIHVuZGVyc3RhbmRpbmcgb2YgdGhlIEtlcm5lbCBL
-ZXkgU2VydmljZSBpcyByZXF1aXJlZA0KPiA+ID4gPiA+IGluIG9yZGVyDQo+ID4gPiA+ID4gKyAg
-ICAgdG8gdXNlIHRoZSBNS1RNRSBrZXkgdHlwZSBhcyBpdCBpcyBhIHN1YnNldCBvZiB0aGF0DQo+
-ID4gPiA+ID4gc2VydmljZS4NCj4gPiA+ID4gPiArDQo+ID4gPiA+ID4gKyAgIG8gTUtUTUUga2V5
-cyBhcmUgYSBsaW1pdGVkIHJlc291cmNlLiBUaGVyZSBpcyBhIHNpbmdsZQ0KPiA+ID4gPiA+IHBv
-b2wgb2YNCj4gPiA+ID4gPiArICAgICBNS1RNRSBrZXlzIGZvciBhIHN5c3RlbSBhbmQgdGhhdCBw
-b29sIGNhbiBiZSBmcm9tIDMgdG8NCj4gPiA+ID4gPiA2MyBrZXlzLg0KPiA+ID4gPiANCj4gPiA+
-ID4gV2h5IDMgdG8gNjMga2V5cz8gQXJjaGl0ZWN0dXJhbGx5IHdlIGFyZSBhYmxlIHRvIHN1cHBv
-cnQgdXAgdG8NCj4gPiA+ID4gMTUtYml0IGtleUlELA0KPiA+ID4gDQo+ID4gPiBhbHRob3VnaCBp
-biB0aGUgZmlyc3QgZ2VuZXJhdGlvbiBzZXJ2ZXIgd2Ugb25seSBzdXBwb3J0IDYtYml0DQo+ID4g
-PiBrZXlJRCwgd2hpY2ggaXMgNjMNCj4gPiA+IGtleS9rZXlJRHMgKGV4Y2x1ZGluZyBrZXlJRCAw
-LCB3aGljaCBpcyBUTUUncyBrZXlJRCkuDQo+ID4gPiANCj4gPiA+IE15IHVuZGVyc3RhbmRpbmcg
-aXMgdGhhdCBsb3cgbGV2ZWwgU0tVJ3MgY291bGQgaGF2ZSBhcyBmZXcgYXMgMw0KPiA+ID4gYml0
-cyBhdmFpbGFibGUgdG8NCj4gPiA+IGhvbGQgdGhlIGtleWlkLCBhbmQgdGhhdCB0aGUgbWF4IGlz
-IDYgYml0cywgaGVuY2UgNjQuDQo+ID4gPiBJIHByb2JhYmx5IGRvbid0IG5lZWQgdG8gYmUgc3Rh
-dGluZyB0aGF0IGxldmVsIG9mIGRldGFpbCBoZXJlLA0KPiA+ID4gYnV0IHJhdGhlciBqdXN0DQo+
-ID4gPiBpdGVyYXRlIHRoZSBpbXBvcnRhbnQgcG9pbnQgdGhhdCB0aGUgcmVzb3VyY2UgaXMgbGlt
-aXRlZCENCj4gPiA+IA0KPiA+ID4gPiANCj4gPiA+ID4gPiArICAgICBXaXRoIHRoYXQgaW4gbWlu
-ZCwgdXNlcnNwYWNlIG1heSB0YWtlIGFkdmFudGFnZSBvZiB0aGUNCj4gPiA+ID4gPiBrZXJuZWwN
-Cj4gPiA+ID4gPiArICAgICBrZXkgc2VydmljZXMgc2hhcmluZyBhbmQgcGVybWlzc2lvbnMgbW9k
-ZWwgZm9yDQo+ID4gPiA+ID4gdXNlcnNwYWNlIGtleXMuDQo+ID4gPiA+ID4gKyAgICAgT25lIGtl
-eSBjYW4gYmUgc2hhcmVkIGFzIGxvbmcgYXMgZWFjaCB1c2VyIGhhcyB0aGUNCj4gPiA+ID4gPiBw
-ZXJtaXNzaW9uDQo+ID4gPiA+ID4gKyAgICAgb2YgIktFWV9ORUVEX1ZJRVciIHRvIHVzZSBpdC4N
-Cj4gPiA+ID4gPiArDQo+ID4gPiA+ID4gKyAgIG8gTUtUTUUga2V5IHR5cGUgdXNlcyBjYXBhYmls
-aXRpZXMgdG8gcmVzdHJpY3QgdGhlDQo+ID4gPiA+ID4gYWxsb2NhdGlvbg0KPiA+ID4gPiA+ICsg
-ICAgIG9mIGtleXMuIEl0IG9ubHkgcmVxdWlyZXMgQ0FQX1NZU19SRVNPVVJDRSwgYnV0IHdpbGwN
-Cj4gPiA+ID4gPiBhY2NlcHQNCj4gPiA+ID4gPiArICAgICB0aGUgYnJvYWRlciBjYXBhYmlsaXR5
-IG9mIENBUF9TWVNfQURNSU4uICBTZWUNCj4gPiA+ID4gPiBjYXBhYmlsaXRpZXMoNykuDQo+ID4g
-PiA+ID4gKw0KPiA+ID4gPiA+ICsgICBvIFRoZSBNS1RNRSBrZXkgc2VydmljZSBibG9ja3Mga2Vy
-bmVsIGtleSBzZXJ2aWNlDQo+ID4gPiA+ID4gY29tbWFuZHMgdGhhdA0KPiA+ID4gPiA+ICsgICAg
-IGNvdWxkIGxlYWQgdG8gcmVwcm9ncmFtbWluZyBvZiBpbiB1c2Uga2V5cywgb3IgbG9zcyBvZg0K
-PiA+ID4gPiA+IGtleXMgZnJvbQ0KPiA+ID4gPiA+ICsgICAgIHRoZSBwb29sLiBUaGlzIG1lYW5z
-IE1LVE1FIGRvZXMgbm90IGFsbG93IGEga2V5IHRvIGJlDQo+ID4gPiA+ID4gaW52YWxpZGF0ZWQs
-DQo+ID4gPiA+ID4gKyAgICAgdW5saW5rZWQsIG9yIHRpbWVkIG91dC4gVGhlc2Ugb3BlcmF0aW9u
-cyBhcmUgYmxvY2tlZCBieQ0KPiA+ID4gPiA+IE1LVE1FIGFzDQo+ID4gPiA+ID4gKyAgICAgaXQg
-Y3JlYXRlcyBhbGwga2V5cyB3aXRoIHRoZSBpbnRlcm5hbCBmbGFnDQo+ID4gPiA+ID4gS0VZX0ZM
-QUdfS0VFUC4NCj4gPiA+ID4gPiArDQo+ID4gPiA+ID4gKyAgIG8gTUtUTUUgZG9lcyBub3Qgc3Vw
-cG9ydCB0aGUga2V5Y3RsIG9wdGlvbiBvZiBVUERBVEUuDQo+ID4gPiA+ID4gVXNlcnNwYWNlDQo+
-ID4gPiA+ID4gKyAgICAgbWF5IGNoYW5nZSB0aGUgcHJvZ3JhbW1pbmcgb2YgYSBrZXkgYnkgcmV2
-b2tpbmcgaXQgYW5kDQo+ID4gPiA+ID4gYWRkaW5nDQo+ID4gPiA+ID4gKyAgICAgYSBuZXcga2V5
-IHdpdGggdGhlIHVwZGF0ZWQgZW5jcnlwdGlvbiBvcHRpb25zIChvciB2aWNlLQ0KPiA+ID4gPiA+
-IHZlcnNhKS4NCj4gPiA+ID4gPiArDQo+ID4gPiA+ID4gKzIpIFN5c3RlbSBDYWxsOiBlbmNyeXB0
-X21wcm90ZWN0KCkNCj4gPiA+ID4gPiArDQo+ID4gPiA+ID4gKyAgIE1LVE1FIGVuY3J5cHRpb24g
-aXMgcmVxdWVzdGVkIGJ5IGNhbGxpbmcNCj4gPiA+ID4gPiBlbmNyeXB0X21wcm90ZWN0KCkuIFRo
-ZQ0KPiA+ID4gPiA+ICsgICBjYWxsZXIgcGFzc2VzIHRoZSBzZXJpYWwgbnVtYmVyIHRvIGEgcHJl
-dmlvdXNseSBhbGxvY2F0ZWQNCj4gPiA+ID4gPiBhbmQNCj4gPiA+ID4gPiArICAgcHJvZ3JhbW1l
-ZCBlbmNyeXB0aW9uIGtleS4gVGhhdCBoYW5kbGUgd2FzIGNyZWF0ZWQgd2l0aA0KPiA+ID4gPiA+
-IHRoZSBNS1RNRQ0KPiA+ID4gPiA+ICsgICBLZXkgU2VydmljZS4NCj4gPiA+ID4gPiArDQo+ID4g
-PiA+ID4gKyAgIG8gVGhlIGNhbGxlciBtdXN0IGhhdmUgS0VZX05FRURfVklFVyBwZXJtaXNzaW9u
-IG9uIHRoZQ0KPiA+ID4gPiA+IGtleQ0KPiA+ID4gPiA+ICsNCj4gPiA+ID4gPiArICAgbyBUaGUg
-cmFuZ2Ugb2YgbWVtb3J5IHRoYXQgaXMgdG8gYmUgcHJvdGVjdGVkIG11c3QgYmUNCj4gPiA+ID4g
-PiBtYXBwZWQgYXMNCj4gPiA+ID4gPiArICAgICBBTk9OWU1PVVMuIElmIGl0IGlzIG5vdCwgdGhl
-IGVudGlyZSBlbmNyeXB0X21wcm90ZWN0KCkNCj4gPiA+ID4gPiByZXF1ZXN0DQo+ID4gPiA+ID4g
-KyAgICAgZmFpbHMgd2l0aCBFSU5WQUwuDQo+ID4gPiA+ID4gKw0KPiA+ID4gPiA+ICsgICBvIEFz
-IGFuIGV4dGVuc2lvbiB0byB0aGUgZXhpc3RpbmcgbXByb3RlY3QoKSBzeXN0ZW0gY2FsbCwNCj4g
-PiA+ID4gPiArICAgICBlbmNyeXB0X21wcm90ZWN0KCkgc3VwcG9ydHMgdGhlIGxlZ2FjeSBtcHJv
-dGVjdA0KPiA+ID4gPiA+IGJlaGF2aW9yIHBsdXMNCj4gPiA+ID4gPiArICAgICB0aGUgZW5hYmxp
-bmcgb2YgbWVtb3J5IGVuY3J5cHRpb24uIFRoYXQgbWVhbnMgdGhhdCBpbg0KPiA+ID4gPiA+IGFk
-ZGl0aW9uDQo+ID4gPiA+ID4gKyAgICAgdG8gZW5jcnlwdGluZyB0aGUgbWVtb3J5LCB0aGUgcHJv
-dGVjdGlvbiBmbGFncyB3aWxsIGJlDQo+ID4gPiA+ID4gdXBkYXRlZA0KPiA+ID4gPiA+ICsgICAg
-IGFzIHJlcXVlc3RlZCBpbiB0aGUgY2FsbC4NCj4gPiA+ID4gPiArDQo+ID4gPiA+ID4gKyAgIG8g
-QWRkaXRpb25hbCBtcHJvdGVjdCgpIGNhbGxzIHRvIG1lbW9yeSBhbHJlYWR5IHByb3RlY3RlZA0K
-PiA+ID4gPiA+IHdpdGgNCj4gPiA+ID4gPiArICAgICBNS1RNRSB3aWxsIG5vdCBhbHRlciB0aGUg
-TUtUTUUgc3RhdHVzLg0KPiA+ID4gPiANCj4gPiA+ID4gSSB0aGluayBpdCdzIGJldHRlciB0byBz
-ZXBhcmF0ZSBlbmNyeXB0X21wcm90ZWN0KCkgaW50byBhbm90aGVyDQo+ID4gPiA+IGRvYyBzbyBi
-b3RoDQo+ID4gPiANCj4gPiA+IHBhcnRzIGNhbiBiZSByZXZpZXdlZCBlYXNpZXIuDQo+ID4gPiAN
-Cj4gPiA+IEkgY2FuIGRvIHRoYXQuDQo+ID4gPiBBbHNvLCBJIGRvIGtub3cgSSBuZWVkIG1hbiBw
-YWdlIGZvciB0aGF0IHRvby4NCj4gPiA+ID4gDQo+ID4gPiA+ID4gKw0KPiA+ID4gPiA+ICs9PT09
-PT09PT09PT09PT09PT09PT09ICBVc2FnZTogTUtUTUUgS2V5IFNlcnZpY2UNCj4gPiA+ID4gPiAr
-PT09PT09PT09PT09PT09PT09PT09PQ0KPiA+ID4gPiA+ICsNCj4gPiA+ID4gPiArTUtUTUUgaXMg
-ZW5hYmxlZCBvbiBzdXBwb3J0ZWQgSW50ZWwgcGxhdGZvcm1zIGJ5IHNlbGVjdGluZw0KPiA+ID4g
-PiA+ICtDT05GSUdfWDg2X0lOVEVMX01LVE1FIHdoaWNoIHNlbGVjdHMgQ09ORklHX01LVE1FX0tF
-WVMuDQo+ID4gPiA+ID4gKw0KPiA+ID4gPiA+ICtBbGxvY2F0aW5nIE1LVE1FIEtleXMgdmlhIGNv
-bW1hbmQgbGluZSBvciBzeXN0ZW0gY2FsbDoNCj4gPiA+ID4gPiArICAgIGtleWN0bCBhZGQgbWt0
-bWUgbmFtZSAiW29wdGlvbnNdIiByaW5nDQo+ID4gPiA+ID4gKw0KPiA+ID4gPiA+ICsgICAga2V5
-X3NlcmlhbF90IGFkZF9rZXkoY29uc3QgY2hhciAqdHlwZSwgY29uc3QgY2hhcg0KPiA+ID4gPiA+
-ICpkZXNjcmlwdGlvbiwNCj4gPiA+ID4gPiArICAgICAgICAgICAgICAgICAgICAgICAgIGNvbnN0
-IHZvaWQgKnBheWxvYWQsIHNpemVfdCBwbGVuLA0KPiA+ID4gPiA+ICsgICAgICAgICAgICAgICAg
-ICAgICAgICAga2V5X3NlcmlhbF90IGtleXJpbmcpOw0KPiA+ID4gPiA+ICsNCj4gPiA+ID4gPiAr
-UmV2b2tpbmcgTUtUTUUgS2V5cyB2aWEgY29tbWFuZCBsaW5lIG9yIHN5c3RlbSBjYWxsOjoNCj4g
-PiA+ID4gPiArICAga2V5Y3RsIHJldm9rZSA8a2V5Pg0KPiA+ID4gPiA+ICsNCj4gPiA+ID4gPiAr
-ICAgbG9uZyBrZXljdGwoS0VZQ1RMX1JFVk9LRSwga2V5X3NlcmlhbF90IGtleSk7DQo+ID4gPiA+
-ID4gKw0KPiA+ID4gPiA+ICtPcHRpb25zIEZpZWxkIERlZmluaXRpb246DQo+ID4gPiA+ID4gKyAg
-ICB1c2Vya2V5PSAgICAgIEFTQ0lJIEhFWCB2YWx1ZSBlbmNyeXB0aW9uIGtleS4gRGVmYXVsdHMN
-Cj4gPiA+ID4gPiB0byBhIENQVQ0KPiA+ID4gPiA+ICsJCSAgZ2VuZXJhdGVkIGtleSBpZiBhIHVz
-ZXJrZXkgaXMgbm90IGRlZmluZWQNCj4gPiA+ID4gPiBoZXJlLg0KPiA+ID4gPiA+ICsNCj4gPiA+
-ID4gPiArICAgIGFsZ29yaXRobT0gICAgRW5jcnlwdGlvbiBhbGdvcml0aG0gbmFtZSBhcyBhIHN0
-cmluZy4NCj4gPiA+ID4gPiArCQkgIFZhbGlkIGFsZ29yaXRobTogImFlcy14dHMtMTI4Ig0KPiA+
-ID4gPiA+ICsNCj4gPiA+ID4gPiArICAgIHR3ZWFrPSAgICAgICAgQVNDSUkgSEVYIHZhbHVlIHR3
-ZWFrIGtleS4gVHdlYWsga2V5IHdpbGwNCj4gPiA+ID4gPiBiZSBhZGRlZCB0byB0aGUNCj4gPiA+
-ID4gPiArICAgICAgICAgICAgICAgICAgdXNlcmtleS4uLiAgKG5lZWQgdG8gYmUgY2xlYXIgaGVy
-ZSB0aGF0DQo+ID4gPiA+ID4gdGhpcyBpcyBiZWluZyBzZW50DQo+ID4gPiA+ID4gKyAgICAgICAg
-ICAgICAgICAgIHRvIHRoZSBoYXJkd2FyZSAtIGtlcm5lbCBub3QgbWVzc2luZyB3IGl0KQ0KPiA+
-ID4gPiA+ICsNCj4gPiA+ID4gPiArICAgIGVudHJvcHk9ICAgICAgYXNjaWkgaGV4IHZhbHVlIGVu
-dHJvcHkuDQo+ID4gPiA+ID4gKyAgICAgICAgICAgICAgICAgIFRoaXMgZW50cm9weSB3aWxsIGJl
-IHVzZWQgdG8gZ2VuZXJhdGVkIHRoZQ0KPiA+ID4gPiA+IENQVSBrZXkgYW5kDQo+ID4gPiA+ID4g
-KwkJICB0aGUgdHdlYWsga2V5IHdoZW4gQ1BVIGdlbmVyYXRlZCBrZXkgaXMNCj4gPiA+ID4gPiBy
-ZXF1ZXN0ZWQuDQo+ID4gPiA+ID4gKw0KPiA+ID4gPiA+ICtBbGdvcml0aG0gRGVwZW5kZW5jaWVz
-Og0KPiA+ID4gPiA+ICsgICAgQUVTLVhUUyAxMjggaXMgdGhlIG9ubHkgc3VwcG9ydGVkIGFsZ29y
-aXRobS4NCj4gPiA+ID4gPiArICAgIFRoZXJlIGFyZSBvbmx5IDIgd2F5cyB0aGF0IEFFUy1YVFMg
-MTI4IG1heSBiZSB1c2VkOg0KPiA+ID4gPiA+ICsNCj4gPiA+ID4gPiArICAgIDEpIFVzZXIgc3Bl
-Y2lmaWVkIGVuY3J5cHRpb24ga2V5DQo+ID4gPiA+ID4gKwktIFRoZSB1c2VyIHNwZWNpZmllZCBl
-bmNyeXB0aW9uIGtleSBtdXN0IGJlIGV4YWN0bHkNCj4gPiA+ID4gPiArCSAgMTYgQVNDSUkgSGV4
-IGJ5dGVzICgxMjggYml0cykuDQo+ID4gPiA+ID4gKwktIEEgdHdlYWsga2V5IG11c3QgYmUgc3Bl
-Y2lmaWVkIGFuZCBpdCBtdXN0IGJlDQo+ID4gPiA+ID4gZXhhY3RseQ0KPiA+ID4gPiA+ICsJICAx
-NiBBU0NJSSBIZXggYnl0ZXMgKDEyOCBiaXRzKS4NCj4gPiA+ID4gPiArCS0gTm8gZW50cm9weSBm
-aWVsZCBpcyBhY2NlcHRlZC4NCj4gPiA+ID4gPiArDQo+ID4gPiA+ID4gKyAgICAyKSBDUFUgZ2Vu
-ZXJhdGVkIGVuY3J5cHRpb24ga2V5DQo+ID4gPiA+ID4gKwktIFdoZW4gbm8gdXNlciBzcGVjaWZp
-ZWQgZW5jcnlwdGlvbiBrZXkgaXMgcHJvdmlkZWQsDQo+ID4gPiA+ID4gdGhlDQo+ID4gPiA+ID4g
-KwkgIGRlZmF1bHQgZW5jcnlwdGlvbiBrZXkgd2lsbCBiZSBDUFUgZ2VuZXJhdGVkLg0KPiA+ID4g
-PiA+ICsJLSBVc2VyIG11c3Qgc3BlY2lmeSAxNiBBU0NJSSBIZXggYnl0ZXMgb2YgZW50cm9weS4N
-Cj4gPiA+ID4gPiBUaGlzDQo+ID4gPiA+ID4gKwkgIGVudHJvcHkgd2lsbCBiZSB1c2VkIGJ5IHRo
-ZSBDUFUgdG8gZ2VuZXJhdGUgYm90aA0KPiA+ID4gPiA+IHRoZQ0KPiA+ID4gPiA+ICsJICBlbmNy
-eXB0aW9uIGtleSBhbmQgdGhlIHR3ZWFrIGtleS4NCj4gPiA+ID4gPiArCS0gTm8gZW50cm9weSBm
-aWVsZCBpcyBhY2NlcHRlZC4NCj4gPiA+IA0KPiA+ID4gICAgICAgICAgICAgIF5eXl5eXl4gc2hv
-dWxkIGJlIHR3ZWFrDQo+ID4gPiANCj4gPiA+ID4gDQo+ID4gPiA+IFRoaXMgaXMgbm90IHRydWUu
-IFRoZSBzcGVjIHNheXMgaW4gQ1BVIGdlbmVyYXRlZCByYW5kb20gbW9kZSwNCj4gPiA+ID4gYm90
-aCAna2V5JyBhbmQNCj4gPiA+IA0KPiA+ID4gJ3R3ZWFrJyBwYXJ0IGFyZSB1c2VkIHRvIGdlbmVy
-YXRlIHRoZSBmaW5hbCBrZXkgYW5kIHR3ZWFrDQo+ID4gPiByZXNwZWN0aXZlbHkuDQo+ID4gPiA+
-IA0KPiA+ID4gPiBBY3R1YWxseSwgc2ltcGxlICdYT1InIGlzIHVzZWQgdG8gZ2VuZXJhdGUgdGhl
-IGZpbmFsIGtleToNCj4gPiA+ID4gDQo+ID4gPiA+IGNhc2UgS0VZSURfU0VUX0tFWV9SQU5ET006
-DQo+ID4gPiA+IAkuLi4uLi4NCj4gPiA+ID4gCSgqIE1peCB1c2VyIHN1cHBsaWVkIGVudHJvcHkg
-dG8gdGhlIGRhdGEga2V5IGFuZCB0d2Vhaw0KPiA+ID4gPiBrZXkgKikNCj4gPiA+ID4gCVRNUF9S
-TkRfREFUQV9LRVkgPSBUTVBfUk5EX0tFWSBYT1INCj4gPiA+ID4gCQlUTVBfS0VZX1BST0dSQU1f
-U1RSVUNULktFWV9GSUVMRF8xLkJZVEVTWzE1OjBdOw0KPiA+ID4gPiAJVE1QX1JORF9UV0VBS19L
-RVkgPSBUTVBfUk5EX1RXRUFLX0tFWSBYT1INCj4gPiA+ID4gCQlUTVBfS0VZX1BST0dSQU1fU1RS
-VUNULktFWV9GSUVMRF8yLkJZVEVTWzE1OjBdOw0KPiA+ID4gPiANCj4gPiA+ID4gU28gSSB0aGlu
-ayB3ZSBjYW4gZWl0aGVyIGp1c3QgcmVtb3ZlICdlbnRyb3B5JyBwYXJhbWV0ZXIsIHNpbmNlDQo+
-ID4gPiA+IHdlIGNhbiB1c2UNCj4gPiA+IA0KPiA+ID4gYm90aCAndXNlcmtleScgYW5kICd0d2Vh
-aycgZXZlbiBmb3IgcmFuZG9tIGtleSBtb2RlLg0KPiA+ID4gPiANCj4gPiA+ID4gSW4gZmFjdCwg
-d2hpY2ggbWlnaHQgYmUgYmV0dGVyIElNSE8sIHdlIGNhbiBzaW1wbHkgZGlzYWxsb3cgb3INCj4g
-PiA+ID4gaWdub3JlDQo+ID4gPiANCj4gPiA+ICd1c2Vya2V5JyBhbmQgJ3R3ZWFrJyBwYXJ0IGZv
-ciByYW5kb20ga2V5IG1vZGUsIHNpbmNlIGlmIHdlIGFsbG93DQo+ID4gPiB1c2VyIHRvIHNwZWNp
-ZnkNCj4gPiA+IGJvdGggZW50cm9waWVzLCBhbmQgaWYgdXNlciBwYXNzZXMgdmFsdWUgd2l0aCBh
-bGwgMSwgd2UgYXJlDQo+ID4gPiBlZmZlY3RpdmVseSBtYWtpbmcgdGhlDQo+ID4gPiBrZXkgYW5k
-IHR3ZWFrIHRvIGJlIGFsbCAxLCB3aGljaCBpcyBub3QgcmFuZG9tIGFueW1vcmUuDQo+ID4gPiA+
-IA0KPiA+ID4gPiBJbnN0ZWFkLCBrZXJuZWwgY2FuIGdlbmVyYXRlIHJhbmRvbSBmb3IgYm90aCBl
-bnRyb3BpZXMsIG9yIHdlDQo+ID4gPiA+IGNhbiBzaW1wbHkgdXNlcw0KPiA+ID4gDQo+ID4gPiAw
-LCBpZ25vcmluZyB1c2VyIGlucHV0Lg0KPiA+ID4gDQo+ID4gPiBLYWksDQo+ID4gPiBJIHRoaW5r
-IG15IHR5cG8gYWJvdmUsIHRocmV3IHlvdSBvZmYuIFdlIGhhdmUgdGhlIHNhbWUNCj4gPiA+IHVu
-ZGVyc3RhbmRpbmcgb2YgdGhlDQo+ID4gPiBrZXkgZmllbGRzLg0KPiA+ID4gDQo+ID4gPiBJcyB0
-aGlzIHRoZSBzdHJ1Y3R1cmUgeW91IGFyZSBzdWdnZXN0aW5nPw0KPiA+ID4gDQo+ID4gPiAJT3B0
-aW9ucw0KPiA+ID4gDQo+ID4gPiAJa2V5X3R5cGU9CSJ1c2VyIiBvciAiQ1BVIg0KPiA+ID4gDQo+
-ID4gPiAJa2V5PQkJSWYga2V5X3R5cGUgPT0gdXNlcg0KPiA+ID4gCQkJCWtleT0gaXMgdGhlIGRh
-dGEga2V5DQo+ID4gPiAJCQlJZiBrZXlfdHlwZSA9PSBDUFUNCj4gPiA+IAkJCQlrZXk9IGlzIG5v
-dCByZXF1aXJlZA0KPiA+ID4gCQkJCWlmIGtleT0gaXMgcHJlc2VudA0KPiA+ID4gCQkJCQlpdCBp
-cyBlbnRyb3B5IHRvIGJlIG1peGVkIHdpdGgNCj4gPiA+IAkJCQkJQ1BVIGdlbmVyYXRlZCBkYXRh
-IGtleQ0KPiA+ID4gDQo+ID4gPiAJdHdlYWs9CQlJZiBrZXlfdHlwZSA9PSB1c2VyDQo+ID4gPiAJ
-CQkJdHdlYWs9IGlzIHRoZSB0d2VhayBrZXkNCj4gPiA+IAkJCUlmIGtleV90eXBlID09IENQVQ0K
-PiA+ID4gCQkJCXR3ZWFrPSBpcyBub3QgcmVxdWlyZWQNCj4gPiA+IAkJCQlpZiB0d2Vhaz0gaXMg
-cHJlc2VudA0KPiA+ID4gCQkJCQlpdCBpcyBlbnRyb3B5IHRvIGJlIG1peGVkIHdpdGgNCj4gPiA+
-IAkJCQkJQ1BVIGdlbmVyYXRlZCB0d2VhayBrZXkNCj4gPiANCj4gPiBFeGFjdGx5Lg0KPiA+IA0K
-PiA+IEFsdGhvdWdoIEkgYW0gbm90IHN1cmUgd2hldGhlciB3ZSBzaG91bGQgc3VwcG9ydCBvdGhl
-ciAyIG1vZGVzOg0KPiA+IENsZWFyIGtleSAgYW5kICBubyBlbmNyeXB0aW9uOw0KPiANCj4gQSBo
-YXJkd2FyZSBrZXkgZG9lcyBnZXQgQ0xFQVInZWQgd2hlbiB0aGUgdXNlcnNwYWNlIGtleSBpcyBy
-ZXZva2VkLg0KPiBJIGRvbid0IHRoaW5rIHdlIGlkZW50aWZpZWQgYW55IG90aGVyIHVzZXIgZGly
-ZWN0ZWQgbmVlZCB0byBjbGVhciBhDQo+IGtleS4NCj4gDQo+IFRoZSBubyBlbmNyeXB0aW9uIG9w
-dGlvbiBpcyBjdXJyZW50bHkgY29uc2lkZXJlZCBub3QgYSByZXF1aXJlbWVudC4NCj4gVGhhdCBt
-ZWFucywgYWx0aG91Z2ggeW91IHNlZSBpdCBpbiB0aGUgSW50ZWwgSFcgU3BlYywgd2UgZG9uJ3Qg
-aGF2ZQ0KPiB1c2UgY2FzZSB0aGF0IGlzIGRyaXZpbmcgdXMgdG8gaW1wbGVtZW50IGl0Lg0KPiAN
-Cj4gRm9yIG90aGVyJ3MgaW5mbyAtIG5vIGVuY3J5cHRpb24gd291bGQgYmUgYW4gb3B0aW9uIHdo
-ZXJlIHRoZSBrZXkNCj4gdGVsbHMgdGhlIGhhcmR3YXJlIG5vdCB0byBkbyBhbnkgZW5jcnlwdGlv
-biBhdCBhbGwgb24gdGhpcyBwaWVjZSBvZg0KPiBtZW1vcnkuDQo+IEFsbCBvZiBtZW1vcnkgbm90
-IGVuY3J5cHRlZCB3aXRoIHRoZXNlIE1LVE1FIGtleXMsIGlzIGJ5IGRlZmF1bHQsDQo+IGVuY3J5
-cHRlZA0KPiB3aXRoIHRoZSBzeXN0ZW0gbGV2ZWwgVE1FLCBUb3RhbCBNZW1vcnkgRW5jcnlwdGlv
-biBhbGdvcml0aG0uIChPSyAtDQo+IG5vdA0KPiByZWFsbHkgKmFsbCosIHRoZXJlIGlzIGFsc28g
-YSBCSU9TIHNldHRhYmxlIGV4Y2x1c2lvbiB6b25lIGZvciBUTUUpDQoNCkFncmVlZC4gTGV0J3Mg
-Zm9jdXMgb24gdXNlciBtb2RlIGFuZCBDUFUgbW9kZSBmb3Igbm93Lg0KDQpUaGFua3MsDQotS2Fp
-DQo+IA0KPiA+IA0KPiA+IFRoYW5rcywNCj4gPiAtS2FpDQo+ID4gPiANCj4gPiA+IA0KPiA+ID4g
-QWxpc29uDQo+ID4gPiA+IA0KPiA+ID4gPiBUaGFua3MsDQo+ID4gPiA+IC1LYWkNCj4gPiA+IA0K
-PiA+ID4gLi4uLi4uLi5zbmlwLi4uLi4uLi4uLi4
+Add support to disable passphrase (security) for the Intel nvdimm. The
+passphrase used for disabling is pulled from userspace via the kernel
+key management. The action is triggered by writing "disable <old_keyid>" to
+the sysfs attribute "security". libnvdimm will support the generic disable
+API call. The kernel will verify the passphrase of the user key against
+the cached kernel key. If no kernel key exists, then the user key will be
+tried for the op.
+
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+---
+ drivers/acpi/nfit/intel.c  |   53 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   55 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    3 ++
+ 3 files changed, 111 insertions(+)
+
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 314eae7e02d7..21d30222371f 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,58 @@
+ #include "intel.h"
+ #include "nfit.h"
+ 
++static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_disable_passphrase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
++
++	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	memcpy(nd_cmd.cmd.passphrase, nkey->data,
++			sizeof(nd_cmd.cmd.passphrase));
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	return rc;
++}
++
+ /*
+  * The update passphrase takes the old passphrase and the new passphrase
+  * and send those to the nvdimm. The nvdimm will verify the old
+@@ -217,4 +269,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
++	.disable = intel_dimm_security_disable,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index becbe670b572..f2d627201f5e 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -160,6 +160,7 @@ struct key *nvdimm_get_and_verify_key(struct device *dev,
+ 	if (rc < 0)
+ 		key = ERR_PTR(rc);
+ 	return key;
++
+ }
+ 
+ static int nvdimm_check_key_len(unsigned short len)
+@@ -182,6 +183,57 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
+ 
++static int nvdimm_security_disable(struct device *dev, unsigned int keyid)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	int rc;
++	struct user_key_payload *payload;
++	bool is_userkey = false;
++
++	if (!nvdimm->security_ops)
++		return -EOPNOTSUPP;
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		return -EOPNOTSUPP;
++
++	/* look for a key from keyring if exists and remove */
++	key = nvdimm_get_and_verify_key(dev, old_keyid);
++	if (IS_ERR(old_key))
++		return PTR_ERR(old_key);
++	if (!key) {
++		/* get old user key */
++		key = nvdimm_lookup_user_key(dev, keyid);
++		if (!key)
++			return -ENOKEY;
++		is_userkey = true;
++	}
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++
++	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm,
++			(void *)payload->data);
++	up_read(&key->sem);
++	if (rc < 0) {
++		dev_warn(dev, "unlock failed\n");
++		goto out;
++	}
++
++	/* If we succeed then remove the key */
++	if (!is_userkey) {
++		key_unlink(nvdimm_keyring, key);
++		key_invalidate(key);
++		nvdimm->key = NULL;
++	}
++
++ out:
++	key_put(key);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ int nvdimm_security_unlock_dimm(struct device *dev)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -739,6 +791,9 @@ static ssize_t security_store(struct device *dev,
+ 	if (sysfs_streq(cmd, "update"))	{
+ 		dev_dbg(dev, "update %u %u\n", old_key, new_key);
+ 		rc = nvdimm_security_change_key(dev, old_key, new_key);
++	} else if (sysfs_streq(cmd, "disable")) {
++		dev_dbg(dev, "disable %u\n", old_key);
++		rc = nvdimm_security_disable(dev, old_key);
+ 	} else
+ 		return -EINVAL;
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index bd6a413164ee..c60ab4b238f3 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -182,6 +182,9 @@ struct nvdimm_security_ops {
+ 			struct nvdimm *nvdimm,
+ 			const struct nvdimm_key_data *old_data,
+ 			const struct nvdimm_key_data *new_data);
++	int (*disable)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			const struct nvdimm_key_data *nkey);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
