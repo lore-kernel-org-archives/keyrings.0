@@ -1,206 +1,68 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Tue, 25 Sep 2018 23:38:36 +0000
-Subject: [PATCH v9 09/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-Message-Id: <153791871610.70158.9555364033543193511.stgit@djiang5-desk3.ch.intel.com>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Wed, 26 Sep 2018 01:04:56 +0000
+Subject: Re: [PATCH v9 09/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+Message-Id: <CAPcyv4gdvn0=5Dcq4FhPt_fpTtAS+N4TfUQCq0WdhTCBZZZojg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153791805740.70158.12896535066689316343.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+ <153791871610.70158.9555364033543193511.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153791871610.70158.9555364033543193511.stgit@djiang5-desk3.ch.intel.com>
+To: Dave Jiang <dave.jiang@intel.com>
+Cc: "Schofield, Alison" <alison.schofield@intel.com>, Kees Cook <keescook@chromium.org>, linux-nvdimm <linux-nvdimm@lists.01.org>, Eric Biggers <ebiggers3@gmail.com>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
 
-Add support to issue a secure erase DSM to the Intel nvdimm. The
-required passphrase is acquired from userspace through the kernel key
-management. To trigger the action, "erase <old_keyid>" is written to the
-"security" sysfs attribute. libnvdimm will support the erase generic API
-call. The user key provided will be verified against the cached kernel
-key. If no kernel key exists, then the user key will be attempted for the
-operation.
+On Tue, Sep 25, 2018 at 4:41 PM Dave Jiang <dave.jiang@intel.com> wrote:
+>
+> Add support to issue a secure erase DSM to the Intel nvdimm. The
+> required passphrase is acquired from userspace through the kernel key
+> management. To trigger the action, "erase <old_keyid>" is written to the
+> "security" sysfs attribute. libnvdimm will support the erase generic API
+> call. The user key provided will be verified against the cached kernel
+> key. If no kernel key exists, then the user key will be attempted for the
+> operation.
+>
+> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+> Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
----
- drivers/acpi/nfit/intel.c  |   58 ++++++++++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c |   71 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/libnvdimm.h  |    3 ++
- 3 files changed, 132 insertions(+)
+Guess I missed this that last time I looked...
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index ba886f1f5399..419a7d54d4e8 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,63 @@
- #include "intel.h"
- #include "nfit.h"
- 
-+static int intel_dimm_security_erase(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_secure_erase cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_SECURE_ERASE,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
-+	};
-+
-+	if (!test_bit(NVDIMM_INTEL_SECURE_ERASE, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
-+
-+	/* flush all cache before we erase DIMM */
-+	wbinvd_on_all_cpus();
-+	memcpy(nd_cmd.cmd.passphrase, nkey->data,
-+			sizeof(nd_cmd.cmd.passphrase));
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
-+
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
-+
-+	/* DIMM erased, invalidate all CPU caches before we read it */
-+	wbinvd_on_all_cpus();
-+
-+ out:
-+	return rc;
-+}
-+
- static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
- 		struct nvdimm *nvdimm)
- {
-@@ -321,4 +378,5 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.change_key = intel_dimm_security_update_passphrase,
- 	.disable = intel_dimm_security_disable,
- 	.freeze_lock = intel_dimm_security_freeze_lock,
-+	.erase = intel_dimm_security_erase,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index ff7c6a7cddd9..1ce602561d74 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -183,6 +183,74 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
- }
- 
-+static int nvdimm_security_erase(struct device *dev, unsigned int keyid)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key;
-+	struct user_key_payload *payload;
-+	int rc = 0;
-+	bool is_userkey = false;
-+
-+	if (!nvdimm->security_ops)
-+		return -EOPNOTSUPP;
-+
-+	/* lock the device and disallow driver bind */
-+	device_lock(dev);
-+
-+	/* No driver data means dimm is disabled. Proceed if so. */
-+	if (dev_get_drvdata(dev)) {
-+		dev_warn(dev, "Unable to secure erase while DIMM active.\n");
-+		rc = -EBUSY;
-+		goto out;
-+	}
-+
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED) {
-+		dev_warn(dev, "Attempt to secure erase in wrong state.\n");
-+		rc = -EOPNOTSUPP;
-+		goto out;
-+	}
-+
-+	/* look for a key from keyring if exists and remove */
-+	key = nvdimm_get_and_verify_key(dev, keyid);
-+	if (IS_ERR(key)) {
-+		dev_dbg(dev, "Unable to get and verify key\n");
-+		rc = PTR_ERR(key);
-+		goto out;
-+	}
-+	if (!key) {
-+		dev_dbg(dev, "No cached key found\n");
-+		/* get old user key */
-+		key = nvdimm_lookup_user_key(dev, keyid);
-+		if (!key) {
-+			dev_dbg(dev, "Unable to retrieve user key: %d\n",
-+					keyid);
-+			rc = -ENOKEY;
-+			goto out;
-+		}
-+		is_userkey = true;
-+	}
-+
-+	down_read(&key->sem);
-+	payload = key->payload.data[0];
-+	rc = nvdimm->security_ops->erase(nvdimm_bus, nvdimm,
-+			(void *)payload->data);
-+	up_read(&key->sem);
-+	/* remove key since secure erase kills the passphrase */
-+
-+	if (!is_userkey) {
-+		key_unlink(nvdimm_keyring, key);
-+		key_invalidate(key);
-+		nvdimm->key = NULL;
-+	}
-+	key_put(key);
-+
-+ out:
-+	device_unlock(dev);
-+	nvdimm_security_get_state(dev);
-+	return rc;
-+}
-+
- static int nvdimm_security_freeze_lock(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-@@ -817,6 +885,9 @@ static ssize_t security_store(struct device *dev,
- 	} else if (sysfs_streq(buf, "freeze")) {
- 		dev_dbg(dev, "freeze\n");
- 		rc = nvdimm_security_freeze_lock(dev);
-+	} else if (strcmp(cmd, "erase") = 0) {
-+		dev_dbg(dev, "erase %u\n", old_key);
-+		rc = nvdimm_security_erase(dev, old_key);
- 	} else
- 		return -EINVAL;
- 
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index bcab42caa948..0d85e092a6dd 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -187,6 +187,9 @@ struct nvdimm_security_ops {
- 			const struct nvdimm_key_data *nkey);
- 	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
- 			struct nvdimm *nvdimm);
-+	int (*erase)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm,
-+			const struct nvdimm_key_data *nkey);
- };
- 
- void badrange_init(struct badrange *badrange);
+[..]
+> diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+> index ff7c6a7cddd9..1ce602561d74 100644
+> --- a/drivers/nvdimm/dimm_devs.c
+> +++ b/drivers/nvdimm/dimm_devs.c
+> @@ -183,6 +183,74 @@ int nvdimm_security_get_state(struct device *dev)
+>                         &nvdimm->state);
+>  }
+>
+> +static int nvdimm_security_erase(struct device *dev, unsigned int keyid)
+> +{
+> +       struct nvdimm *nvdimm = to_nvdimm(dev);
+> +       struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
+> +       struct key *key;
+> +       struct user_key_payload *payload;
+> +       int rc = 0;
+> +       bool is_userkey = false;
+> +
+> +       if (!nvdimm->security_ops)
+> +               return -EOPNOTSUPP;
+> +
+> +       /* lock the device and disallow driver bind */
+> +       device_lock(dev);
+> +
+> +       /* No driver data means dimm is disabled. Proceed if so. */
+> +       if (dev_get_drvdata(dev)) {
+> +               dev_warn(dev, "Unable to secure erase while DIMM active.\n");
+
+Unfortunately this is not a foolproof method for checking if the
+DIMM's capacity is active. Especially when a DIMM does not have label
+support it is possible for the driver to be detached, but the DIMM's
+capacity is active in a region. So, I would change this to routine to
+take the nvdimm_bus_lock() and check for:
+
+    if (atomic_read(&nvdimm->busy))
+
+That way you know the DIMM is not participating in any active regions,
+and you know that the region driver is prevented from starting up
+namespaces.
