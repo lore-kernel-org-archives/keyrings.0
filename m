@@ -1,64 +1,167 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Sep 2018 14:08:37 +0000
-Subject: [PATCH 0/3] keyutils: request_key and DNS resolver changes
-Message-Id: <153684771698.10049.12488548190876920608.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Wed, 26 Sep 2018 20:47:29 +0000
+Subject: [PATCH v10 08/12] nfit/libnvdimm: add freeze security support to Intel nvdimm
+Message-Id: <153799484954.71621.11164359745920758602.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-security-module@vger.kernel.org
+References: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
+Add support for freeze security on Intel nvdimm. This locks out any
+changes to security for the DIMM unless a reboot is done. This is triggered
+by writing "freeze" to the "security" sysfs attribute. libnvdimm will
+support the generic freeze_lock API call.
 
-Here's a set of keyutils patches that makes it possible to override the DNS
-resolver (or any other upcall target).  This allows the kafs-utils package to
-override requests to the dns resolver and make use of static configuration in
-addition to DNS lookups.  This allows this function to be moved out of
-keyutils and allows the dependency on krb5 to be removed.
-
-The following changes are made:
-
- (1) request-key now has better command-line option support for debugging the
-     configuration.
-
- (2) request-key now reads all its config files and searches for the best
-     match rather than the first match.
-
-     'Best match' is defined as the match with the least number of characters
-     skipped by a wildcard, first in the left most column, then in the next
-     column and so on.
-
-     So in the following two config lines:
-
-    	create  dns_resolver *		*	/sbin/key.dns_resolver %k
-	create  dns_resolver afsdb:*	*	/sbin/dns_afsdb %k
-
-     For dns_resolver keys, the second line is preferred if the description
-     matches "afsdb:*" - no matter the order in which they're encountered -
-     but the first line will be used otherwise.
-
- (3) The AFS cellservdb config file parsing is removed from key.dns_resolver
-     and the dependencies for the krb5 profile functions are dropped.
-    
-The patches can also be found here:
-
-	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git
-
-on branch next (bottom 3 patches).
-
-Thanks,
-David
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
-David Howells (3):
-      request-key: Provide a command line option to suppress execution
-      request-key: Find best match rather than first match
-      Remove the dependency on MIT Kerberos
+ drivers/acpi/nfit/intel.c  |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   29 ++++++++++++++++++++++---
+ include/linux/libnvdimm.h  |    2 ++
+ 3 files changed, 79 insertions(+), 3 deletions(-)
 
-
- Makefile               |    2 
- dns.afsdb.c            |  268 ++++---------------------------
- keyutils.spec          |    2 
- man/request-key.8      |   31 +++-
- man/request-key.conf.5 |   36 ++--
- request-key.c          |  419 +++++++++++++++++++++++++++++-------------------
- 6 files changed, 336 insertions(+), 422 deletions(-)
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 21d30222371f..ba886f1f5399 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,53 @@
+ #include "intel.h"
+ #include "nfit.h"
+ 
++static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_freeze_lock cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_FREEZE_LOCK,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = 0,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
++
++	if (!test_bit(NVDIMM_INTEL_FREEZE_LOCK, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	return rc;
++}
++
+ static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
+ {
+@@ -254,6 +301,9 @@ static int intel_dimm_security_state(struct nvdimm_bus *nvdimm_bus,
+ 	else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_ENABLED) {
+ 		if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_LOCKED)
+ 			*state = NVDIMM_SECURITY_LOCKED;
++		else if (nd_cmd.cmd.state & ND_INTEL_SEC_STATE_FROZEN ||
++				nd_cmd.cmd.state & ND_INTEL_SEC_STATE_PLIMIT)
++			*state = NVDIMM_SECURITY_FROZEN;
+ 		else
+ 			*state = NVDIMM_SECURITY_UNLOCKED;
+ 	} else
+@@ -270,4 +320,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
+ 	.disable = intel_dimm_security_disable,
++	.freeze_lock = intel_dimm_security_freeze_lock,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index f2d627201f5e..75a3f841a7ce 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -183,6 +183,26 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
+ 
++static int nvdimm_security_freeze_lock(struct device *dev)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	int rc;
++
++	if (!nvdimm->security_ops)
++		return -EOPNOTSUPP;
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		return -EOPNOTSUPP;
++
++	rc = nvdimm->security_ops->freeze_lock(nvdimm_bus, nvdimm);
++	if (rc < 0)
++		return rc;
++
++	nvdimm_security_get_state(dev);
++	return 0;
++}
++
+ static int nvdimm_security_disable(struct device *dev, unsigned int keyid)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -199,9 +219,9 @@ static int nvdimm_security_disable(struct device *dev, unsigned int keyid)
+ 		return -EOPNOTSUPP;
+ 
+ 	/* look for a key from keyring if exists and remove */
+-	key = nvdimm_get_and_verify_key(dev, old_keyid);
+-	if (IS_ERR(old_key))
+-		return PTR_ERR(old_key);
++	key = nvdimm_get_and_verify_key(dev, keyid);
++	if (IS_ERR(key))
++		return PTR_ERR(key);
+ 	if (!key) {
+ 		/* get old user key */
+ 		key = nvdimm_lookup_user_key(dev, keyid);
+@@ -794,6 +814,9 @@ static ssize_t security_store(struct device *dev,
+ 	} else if (sysfs_streq(cmd, "disable")) {
+ 		dev_dbg(dev, "disable %u\n", old_key);
+ 		rc = nvdimm_security_disable(dev, old_key);
++	} else if (sysfs_streq(buf, "freeze")) {
++		dev_dbg(dev, "freeze\n");
++		rc = nvdimm_security_freeze_lock(dev);
+ 	} else
+ 		return -EINVAL;
+ 
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index c60ab4b238f3..bcab42caa948 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -185,6 +185,8 @@ struct nvdimm_security_ops {
+ 	int (*disable)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm,
+ 			const struct nvdimm_key_data *nkey);
++	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
