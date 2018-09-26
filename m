@@ -1,81 +1,128 @@
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Fri, 07 Sep 2018 21:08:10 +0000
-Subject: [PATCH 4.18 024/145] Replace magic for trusting the secondary keyring with #define
-Message-Id: <20180907210905.585422810@linuxfoundation.org>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Wed, 26 Sep 2018 20:47:40 +0000
+Subject: [PATCH v10 10/12] nfit_test: add context to dimm_dev for nfit_test
+Message-Id: <153799486070.71621.11412880339298606423.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180907210903.617721278@linuxfoundation.org>
-In-Reply-To: <20180907210903.617721278@linuxfoundation.org>
-To: linux-security-module@vger.kernel.org
+References: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-4.18-stable review patch.  If anyone has any objections, please let me know.
+In order to access the nfit_test context via sideband sysfs knobs, the
+dimm_dev needs to be more than struct device in order to point back to
+struct nfit_test. Wrapping the original struct device with a struct
+nfit_dimm_dev and saving the nfit_test as private driver data. Also
+changing the nfit_mem to be a member of struct nfit_dimm_dev instead of
+saving as private driver data of that device. This is in preparation for
+adding security DSM support and allowing the locking of DIMMs for testing
+via sideband.
 
-------------------
-
-From: Yannik Sembritzki <yannik@sembritzki.me>
-
-commit 817aef260037f33ee0f44c17fe341323d3aebd6d upstream.
-
-Replace the use of a magic number that indicates that verify_*_signature()
-should use the secondary keyring with a symbol.
-
-Signed-off-by: Yannik Sembritzki <yannik@sembritzki.me>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 ---
- certs/system_keyring.c                  |    3 ++-
- crypto/asymmetric_keys/pkcs7_key_type.c |    2 +-
- include/linux/verification.h            |    6 ++++++
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ tools/testing/nvdimm/test/nfit.c |   41 +++++++++++++++++++++++++-------------
+ 1 file changed, 27 insertions(+), 14 deletions(-)
 
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -15,6 +15,7 @@
- #include <linux/cred.h>
- #include <linux/err.h>
- #include <linux/slab.h>
-+#include <linux/verification.h>
- #include <keys/asymmetric-type.h>
- #include <keys/system_keyring.h>
- #include <crypto/pkcs7.h>
-@@ -230,7 +231,7 @@ int verify_pkcs7_signature(const void *d
+diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
+index cffc2c5a778d..1d62222a10da 100644
+--- a/tools/testing/nvdimm/test/nfit.c
++++ b/tools/testing/nvdimm/test/nfit.c
+@@ -172,6 +172,11 @@ struct nfit_test_fw {
+ 	u64 end_time;
+ };
  
- 	if (!trusted_keys) {
- 		trusted_keys = builtin_trusted_keys;
--	} else if (trusted_keys = (void *)1UL) {
-+	} else if (trusted_keys = VERIFY_USE_SECONDARY_KEYRING) {
- #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
- 		trusted_keys = secondary_trusted_keys;
- #else
---- a/crypto/asymmetric_keys/pkcs7_key_type.c
-+++ b/crypto/asymmetric_keys/pkcs7_key_type.c
-@@ -63,7 +63,7 @@ static int pkcs7_preparse(struct key_pre
++struct nfit_dimm_dev {
++	struct device dev;
++	struct nfit_mem *nfit_mem;
++};
++
+ struct nfit_test {
+ 	struct acpi_nfit_desc acpi_desc;
+ 	struct platform_device pdev;
+@@ -203,7 +208,7 @@ struct nfit_test {
+ 		unsigned long deadline;
+ 		spinlock_t lock;
+ 	} ars_state;
+-	struct device *dimm_dev[NUM_DCR];
++	struct nfit_dimm_dev dimm_dev[NUM_DCR];
+ 	struct nd_intel_smart *smart;
+ 	struct nd_intel_smart_threshold *smart_threshold;
+ 	struct badrange badrange;
+@@ -1018,7 +1023,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
+ 						&t->smart_threshold[i -
+ 							t->dcr_idx],
+ 						&t->smart[i - t->dcr_idx],
+-						&t->pdev.dev, t->dimm_dev[i]);
++						&t->pdev.dev,
++						&t->dimm_dev[i].dev);
+ 				break;
+ 			case ND_INTEL_SMART_INJECT:
+ 				rc = nfit_test_cmd_smart_inject(buf,
+@@ -1026,7 +1032,8 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
+ 						&t->smart_threshold[i -
+ 							t->dcr_idx],
+ 						&t->smart[i - t->dcr_idx],
+-						&t->pdev.dev, t->dimm_dev[i]);
++						&t->pdev.dev,
++						&t->dimm_dev[i].dev);
+ 				break;
+ 			default:
+ 				return -ENOTTY;
+@@ -1224,8 +1231,7 @@ static void put_dimms(void *data)
+ 	int i;
  
- 	return verify_pkcs7_signature(NULL, 0,
- 				      prep->data, prep->datalen,
--				      (void *)1UL, usage,
-+				      VERIFY_USE_SECONDARY_KEYRING, usage,
- 				      pkcs7_view_content, prep);
+ 	for (i = 0; i < t->num_dcr; i++)
+-		if (t->dimm_dev[i])
+-			device_unregister(t->dimm_dev[i]);
++		device_unregister(&t->dimm_dev[i].dev);
  }
  
---- a/include/linux/verification.h
-+++ b/include/linux/verification.h
-@@ -13,6 +13,12 @@
- #define _LINUX_VERIFICATION_H
+ static struct class *nfit_test_dimm;
+@@ -1327,19 +1333,27 @@ static const struct attribute_group *nfit_test_dimm_attribute_groups[] = {
+ 	NULL,
+ };
  
- /*
-+ * Indicate that both builtin trusted keys and secondary trusted keys
-+ * should be used.
-+ */
-+#define VERIFY_USE_SECONDARY_KEYRING ((struct key *)1UL)
++static void dimm_dev_release(struct device *dev)
++{
++}
 +
-+/*
-  * The use to which an asymmetric key is being put.
-  */
- enum key_being_used_for {
+ static int nfit_test_dimm_init(struct nfit_test *t)
+ {
+-	int i;
++	int i, rc;
+ 
+ 	if (devm_add_action_or_reset(&t->pdev.dev, put_dimms, t))
+ 		return -ENOMEM;
+ 	for (i = 0; i < t->num_dcr; i++) {
+-		t->dimm_dev[i] = device_create_with_groups(nfit_test_dimm,
+-				&t->pdev.dev, 0, NULL,
+-				nfit_test_dimm_attribute_groups,
+-				"test_dimm%d", i + t->dcr_idx);
+-		if (!t->dimm_dev[i])
+-			return -ENOMEM;
++		t->dimm_dev[i].dev.parent = &t->pdev.dev;
++		dev_set_name(&t->dimm_dev[i].dev, "test_dimm%d",
++				i + t->dcr_idx);
++		t->dimm_dev[i].dev.class = nfit_test_dimm;
++		t->dimm_dev[i].dev.groups = nfit_test_dimm_attribute_groups;
++		t->dimm_dev[i].dev.release = dimm_dev_release;
++		rc = device_register(&t->dimm_dev[i].dev);
++		if (rc < 0)
++			return rc;
++		dev_set_drvdata(&t->dimm_dev[i].dev, t);
+ 	}
+ 	return 0;
+ }
+@@ -2680,8 +2694,7 @@ static int nfit_test_probe(struct platform_device *pdev)
+ 
+ 		for (i = 0; i < NUM_DCR; i++)
+ 			if (nfit_handle = handle[i])
+-				dev_set_drvdata(nfit_test->dimm_dev[i],
+-						nfit_mem);
++				nfit_test->dimm_dev[i].nfit_mem = nfit_mem;
+ 	}
+ 	mutex_unlock(&acpi_desc->init_mutex);
+ 
