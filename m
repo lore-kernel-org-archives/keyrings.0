@@ -1,124 +1,119 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:56:16 +0000
-Subject: [PATCH 18/22] KEYS: asym_tpm: Implement tpm_unbind
-Message-Id: <153618457658.7946.2269119827266208835.stgit@warthog.procyon.org.uk>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Thu, 27 Sep 2018 13:14:29 +0000
+Subject: [PATCH v2 0/7] keyctl_dh_compute_kdf touchups
+Message-Id: <20180927131436.23328-1-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+If splitting or squasing patches is preferred, I can do that too.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Reviewed-by: James Morris <james.morris@microsoft.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Thanks,
+
+--Ben
+
 ---
+Changes from the previous patches:
 
- crypto/asymmetric_keys/asym_tpm.c |   82 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 82 insertions(+)
+  - fix another `error` string which didn't match
+  - mention KEY_REQKEY_DEFL_USER_SESSION_KEYRING in the manpage
+  - fix the declaration for const-ification
+  - various typo fixes
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 6a2d33014ecc..e893b5212222 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -18,8 +18,10 @@
- 
- #define TPM_ORD_FLUSHSPECIFIC	186
- #define TPM_ORD_LOADKEY2	65
-+#define TPM_ORD_UNBIND		30
- #define TPM_LOADKEY2_SIZE		59
- #define TPM_FLUSHSPECIFIC_SIZE		18
-+#define TPM_UNBIND_SIZE			63
- 
- #define TPM_RT_KEY                      0x00000001
- 
-@@ -106,6 +108,86 @@ static int tpm_flushspecific(struct tpm_buf *tb, uint32_t handle)
- 	return trusted_tpm_send(tb->data, MAX_BUF_SIZE);
- }
- 
-+/*
-+ * Decrypt a blob provided by userspace using a specific key handle.
-+ * The handle is a well known handle or previously loaded by e.g. LoadKey2
-+ */
-+static int tpm_unbind(struct tpm_buf *tb,
-+			uint32_t keyhandle, unsigned char *keyauth,
-+			const unsigned char *blob, uint32_t bloblen,
-+			void *out, uint32_t outlen)
-+{
-+	unsigned char nonceodd[TPM_NONCE_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+	unsigned char authdata[SHA1_DIGEST_SIZE];
-+	uint32_t authhandle = 0;
-+	unsigned char cont = 0;
-+	uint32_t ordinal;
-+	uint32_t datalen;
-+	int ret;
-+
-+	ordinal = htonl(TPM_ORD_UNBIND);
-+	datalen = htonl(bloblen);
-+
-+	/* session for loading the key */
-+	ret = oiap(tb, &authhandle, enonce);
-+	if (ret < 0) {
-+		pr_info("oiap failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* generate odd nonce */
-+	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0) {
-+		pr_info("tpm_get_random failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* calculate authorization HMAC value */
-+	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-+			   nonceodd, cont, sizeof(uint32_t), &ordinal,
-+			   sizeof(uint32_t), &datalen,
-+			   bloblen, blob, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* build the request buffer */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
-+	store32(tb, TPM_UNBIND_SIZE + bloblen);
-+	store32(tb, TPM_ORD_UNBIND);
-+	store32(tb, keyhandle);
-+	store32(tb, bloblen);
-+	storebytes(tb, blob, bloblen);
-+	store32(tb, authhandle);
-+	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
-+	store8(tb, cont);
-+	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
-+
-+	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
-+	if (ret < 0) {
-+		pr_info("authhmac failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
-+
-+	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd,
-+			     keyauth, SHA1_DIGEST_SIZE,
-+			     sizeof(uint32_t), TPM_DATA_OFFSET,
-+			     datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
-+			     0, 0);
-+	if (ret < 0) {
-+		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	memcpy(out, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t),
-+	       min(outlen, datalen));
-+
-+	return datalen;
-+}
-+
- /*
-  * Maximum buffer size for the BER/DER encoded public key.  The public key
-  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
+Ben Boeckel (7):
+  keyctl: fix error path message names
+  keyctl_dh_compute.3: mention /proc/crypto for hashnames
+  keyctl_dh_compute.3: clarify keyctl_dh_compute_kdf
+  keyctl_dh_compute_kdf: const-ify input parameters
+  keyctl_dh_compute_kdf: use a void* for opaque data
+  keyctl_set_reqkey_keyring.3: mention
+    KEY_REQKEY_DEFL_USER_SESSION_KEYRING
+  typos: fix various typos
+
+ dns.afsdb.c                     |  2 +-
+ key.dns_resolver.c              |  2 +-
+ keyctl.c                        |  8 ++++----
+ keyutils.c                      |  5 +++--
+ keyutils.h                      |  8 ++++----
+ man/keyctl.1                    |  2 +-
+ man/keyctl_dh_compute.3         | 20 ++++++++++++++------
+ man/keyctl_instantiate.3        |  2 +-
+ man/keyctl_set_reqkey_keyring.3 |  3 +++
+ request-key.c                   |  2 +-
+ 10 files changed, 33 insertions(+), 21 deletions(-)
+
+Range-diff against v1:
+1:  38e9b6c ! 1:  d28b16c keyctl: fix error path message names
+    @@ -5,6 +5,15 @@
+      diff --git a/keyctl.c b/keyctl.c
+      --- a/keyctl.c
+      +++ b/keyctl.c
+    +@@
+    + 	/* get key description */
+    + 	ret = keyctl_describe_alloc(key, &buffer);
+    + 	if (ret < 0)
+    +-		error("keyctl_describe");
+    ++		error("keyctl_describe_alloc");
+    + 
+    + 	/* parse it */
+    + 	uid = 0;
+     @@
+      	ret = keyctl_dh_compute_kdf(private, prime, base, argv[5], NULL,  0,
+      				    buffer, buflen);
+2:  b96ba41 ! 2:  26b0f98 man/keyctl_dh_compute: mention /proc/crypto for hashnames
+    @@ -1,6 +1,6 @@
+     Author: Ben Boeckel <mathstuf@gmail.com>
+     
+    -    man/keyctl_dh_compute: mention /proc/crypto for hashnames
+    +    keyctl_dh_compute.3: mention /proc/crypto for hashnames
+     
+         The kernel does not have a set of known hashnames available. Instead,
+         /proc/crypto contains the information for the running system.
+3:  9e7ade9 ! 3:  9bd3a31 man/keyctl_dh_compute: clarify keyctl_dh_compute_kdf
+    @@ -1,6 +1,6 @@
+     Author: Ben Boeckel <mathstuf@gmail.com>
+     
+    -    man/keyctl_dh_compute: clarify keyctl_dh_compute_kdf
+    +    keyctl_dh_compute.3: clarify keyctl_dh_compute_kdf
+     
+      diff --git a/man/keyctl_dh_compute.3 b/man/keyctl_dh_compute.3
+      --- a/man/keyctl_dh_compute.3
+4:  36aede7 ! 4:  553ab6a keyctl_dh_compute_kdf: const-ify input parameters
+    @@ -32,6 +32,17 @@
+      	uint32_t otherinfolen;
+      	uint32_t __spare[8];
+      };
+    +@@
+    + extern long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
+    + 			      key_serial_t base, char *buffer, size_t buflen);
+    + extern long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
+    +-				  key_serial_t base, char *hashname,
+    +-				  char *otherinfo, size_t otherinfolen,
+    ++				  key_serial_t base, const char *hashname,
+    ++				  const char *otherinfo, size_t otherinfolen,
+    + 				  char *buffer, size_t buflen);
+    + extern long keyctl_restrict_keyring(key_serial_t keyring, const char *type,
+    + 				    const char *restriction);
+     
+      diff --git a/man/keyctl_dh_compute.3 b/man/keyctl_dh_compute.3
+      --- a/man/keyctl_dh_compute.3
+5:  8b10e11 ! 5:  d220293 keyctl_dh_compute_kdf: use a void* for opaque data
+    @@ -30,9 +30,9 @@
+     @@
+      			      key_serial_t base, char *buffer, size_t buflen);
+      extern long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
+    - 				  key_serial_t base, char *hashname,
+    --				  char *otherinfo, size_t otherinfolen,
+    -+				  void *otherinfo, size_t otherinfolen,
+    + 				  key_serial_t base, const char *hashname,
+    +-				  const char *otherinfo, size_t otherinfolen,
+    ++				  const void *otherinfo, size_t otherinfolen,
+      				  char *buffer, size_t buflen);
+      extern long keyctl_restrict_keyring(key_serial_t keyring, const char *type,
+      				    const char *restriction);
+-:  ------- > 6:  ffdbb78 keyctl_set_reqkey_keyring.3: mention KEY_REQKEY_DEFL_USER_SESSION_KEYRING
+-:  ------- > 7:  9e6ae98 typos: fix various typos
+-- 
+2.19.0.221.g150f307afc
