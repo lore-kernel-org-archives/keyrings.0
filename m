@@ -1,197 +1,35 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:55:37 +0000
-Subject: [PATCH 12/22] KEYS: Add parser for TPM-based keys
-Message-Id: <153618453731.7946.4588780807259491173.stgit@warthog.procyon.org.uk>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Thu, 27 Sep 2018 13:14:31 +0000
+Subject: [PATCH v2 2/7] keyctl_dh_compute.3: mention /proc/crypto for hashnames
+Message-Id: <20180927131436.23328-3-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+The kernel does not have a set of known hashnames available. Instead,
+/proc/crypto contains the information for the running system.
 
-For TPM based keys, the only standard seems to be described here:
-http://david.woodhou.se/draft-woodhouse-cert-best-practice.html#rfc.section.4.4
-
-Quote from the relevant section:
-"Rather, a common form of storage for "wrapped" keys is to encode the
-binary TCPA_KEY structure in a single ASN.1 OCTET-STRING, and store the
-result in PEM format with the tag "-----BEGIN TSS KEY BLOB-----". "
-
-This patch implements the above behavior.  It is assumed that the PEM
-encoding is stripped out by userspace and only the raw DER/BER format is
-provided.  This is similar to how PKCS7, PKCS8 and X.509 keys are
-handled.
-
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
+ man/keyctl_dh_compute.3 | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- crypto/asymmetric_keys/Kconfig      |    9 +++
- crypto/asymmetric_keys/Makefile     |   11 ++++
- crypto/asymmetric_keys/tpm.asn1     |    5 ++
- crypto/asymmetric_keys/tpm_parser.c |  102 +++++++++++++++++++++++++++++++++++
- 4 files changed, 127 insertions(+)
- create mode 100644 crypto/asymmetric_keys/tpm.asn1
- create mode 100644 crypto/asymmetric_keys/tpm_parser.c
-
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index b75555c7d8ae..88353a9ebc9b 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -52,6 +52,15 @@ config PKCS8_PRIVATE_KEY_PARSER
- 	  private key data and provides the ability to instantiate a crypto key
- 	  from that data.
- 
-+config TPM_KEY_PARSER
-+	tristate "TPM private key parser"
-+	depends on ASYMMETRIC_TPM_KEY_SUBTYPE
-+	select ASN1
-+	help
-+	  This option provides support for parsing TPM format blobs for
-+	  private key data and provides the ability to instantiate a crypto key
-+	  from that data.
-+
- config PKCS7_MESSAGE_PARSER
- 	tristate "PKCS#7 message parser"
- 	depends on X509_CERTIFICATE_PARSER
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index 73fbe650ff1d..28b91adba2ae 100644
---- a/crypto/asymmetric_keys/Makefile
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -75,3 +75,14 @@ verify_signed_pefile-y := \
- 
- $(obj)/mscode_parser.o: $(obj)/mscode.asn1.h $(obj)/mscode.asn1.h
- $(obj)/mscode.asn1.o: $(obj)/mscode.asn1.c $(obj)/mscode.asn1.h
-+
-+#
-+# TPM private key parsing
-+#
-+obj-$(CONFIG_TPM_KEY_PARSER) += tpm_key_parser.o
-+tpm_key_parser-y := \
-+	tpm.asn1.o \
-+	tpm_parser.o
-+
-+$(obj)/tpm_parser.o: $(obj)/tpm.asn1.h
-+$(obj)/tpm.asn1.o: $(obj)/tpm.asn1.c $(obj)/tpm.asn1.h
-diff --git a/crypto/asymmetric_keys/tpm.asn1 b/crypto/asymmetric_keys/tpm.asn1
-new file mode 100644
-index 000000000000..d7f194232f30
---- /dev/null
-+++ b/crypto/asymmetric_keys/tpm.asn1
-@@ -0,0 +1,5 @@
-+--
-+-- Unencryted TPM Blob.  For details of the format, see:
-+-- http://david.woodhou.se/draft-woodhouse-cert-best-practice.html#I-D.mavrogiannopoulos-tpmuri
-+--
-+PrivateKeyInfo ::= OCTET STRING ({ tpm_note_key })
-diff --git a/crypto/asymmetric_keys/tpm_parser.c b/crypto/asymmetric_keys/tpm_parser.c
-new file mode 100644
-index 000000000000..96405d8dcd98
---- /dev/null
-+++ b/crypto/asymmetric_keys/tpm_parser.c
-@@ -0,0 +1,102 @@
-+// SPDX-License-Identifier: GPL-2.0
-+#define pr_fmt(fmt) "TPM-PARSER: "fmt
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/export.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <keys/asymmetric-subtype.h>
-+#include <keys/asymmetric-parser.h>
-+#include <crypto/asym_tpm_subtype.h>
-+#include "tpm.asn1.h"
-+
-+struct tpm_parse_context {
-+	const void	*blob;
-+	u32		blob_len;
-+};
-+
-+/*
-+ * Note the key data of the ASN.1 blob.
-+ */
-+int tpm_note_key(void *context, size_t hdrlen,
-+		   unsigned char tag,
-+		   const void *value, size_t vlen)
-+{
-+	struct tpm_parse_context *ctx = context;
-+
-+	ctx->blob = value;
-+	ctx->blob_len = vlen;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Parse a TPM-encrypted private key blob.
-+ */
-+static struct tpm_key *tpm_parse(const void *data, size_t datalen)
-+{
-+	struct tpm_parse_context ctx;
-+	long ret;
-+
-+	memset(&ctx, 0, sizeof(ctx));
-+
-+	/* Attempt to decode the private key */
-+	ret = asn1_ber_decoder(&tpm_decoder, &ctx, data, datalen);
-+	if (ret < 0)
-+		goto error;
-+
-+	return tpm_key_create(ctx.blob, ctx.blob_len);
-+
-+error:
-+	return ERR_PTR(ret);
-+}
-+/*
-+ * Attempt to parse a data blob for a key as a TPM private key blob.
-+ */
-+static int tpm_key_preparse(struct key_preparsed_payload *prep)
-+{
-+	struct tpm_key *tk;
-+
-+	/*
-+	 * TPM 1.2 keys are max 2048 bits long, so assume the blob is no
-+	 * more than 4x that
-+	 */
-+	if (prep->datalen > 256 * 4)
-+		return -EMSGSIZE;
-+
-+	tk = tpm_parse(prep->data, prep->datalen);
-+
-+	if (IS_ERR(tk))
-+		return PTR_ERR(tk);
-+
-+	/* We're pinning the module by being linked against it */
-+	__module_get(asym_tpm_subtype.owner);
-+	prep->payload.data[asym_subtype] = &asym_tpm_subtype;
-+	prep->payload.data[asym_key_ids] = NULL;
-+	prep->payload.data[asym_crypto] = tk;
-+	prep->payload.data[asym_auth] = NULL;
-+	prep->quotalen = 100;
-+	return 0;
-+}
-+
-+static struct asymmetric_key_parser tpm_key_parser = {
-+	.owner	= THIS_MODULE,
-+	.name	= "tpm_parser",
-+	.parse	= tpm_key_preparse,
-+};
-+
-+static int __init tpm_key_init(void)
-+{
-+	return register_asymmetric_key_parser(&tpm_key_parser);
-+}
-+
-+static void __exit tpm_key_exit(void)
-+{
-+	unregister_asymmetric_key_parser(&tpm_key_parser);
-+}
-+
-+module_init(tpm_key_init);
-+module_exit(tpm_key_exit);
-+
-+MODULE_DESCRIPTION("TPM private key-blob parser");
-+MODULE_LICENSE("GPL v2");
+diff --git a/man/keyctl_dh_compute.3 b/man/keyctl_dh_compute.3
+index 837c481..bb1274c 100644
+--- a/man/keyctl_dh_compute.3
++++ b/man/keyctl_dh_compute.3
+@@ -86,7 +86,9 @@ function.
+ The
+ .I hashname
+ specifies the Linux kernel crypto API name for a hash that shall be used
+-for the key derivation function, such as sha256.
++for the key derivation function, such as sha256. See
++.I /proc/crypto
++for available hashes on the system.
+ The
+ .I hashname
+ must be a NULL terminated string.
+-- 
+2.19.0.221.g150f307afc
