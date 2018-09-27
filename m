@@ -1,122 +1,65 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 13 Sep 2018 16:09:41 +0000
-Subject: [PATCH 6/6] afs: Sort address lists so that they are in logical ascending order
-Message-Id: <153685498147.16086.4526137363171398613.stgit@warthog.procyon.org.uk>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Thu, 27 Sep 2018 13:14:47 +0000
+Subject: [PATCH 2/5] docs: clarify `keyctl ... trusted` commands
+Message-Id: <20180927131450.23458-3-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153685493441.16086.3483582787020297039.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Sort address lists so that they are in logical ascending order rather than
-being partially in ascending order of the BE representations of those
-values.
+Values to be provided by the user are wrapped in `<>` to indicate such.
+Hex values also do not have a literal leading `0x` on them.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
+ .../security/keys/trusted-encrypted.rst       | 20 +++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
- fs/afs/addr_list.c |   51 ++++++++++++++++++++++++---------------------------
- 1 file changed, 24 insertions(+), 27 deletions(-)
-
-diff --git a/fs/afs/addr_list.c b/fs/afs/addr_list.c
-index a7fdc05ba8d2..99aa75aa5f07 100644
---- a/fs/afs/addr_list.c
-+++ b/fs/afs/addr_list.c
-@@ -251,22 +251,23 @@ struct afs_vlserver_list *afs_dns_query(struct afs_cell *cell, time64_t *_expiry
-  */
- void afs_merge_fs_addr4(struct afs_addr_list *alist, __be32 xdr, u16 port)
- {
--	struct sockaddr_in6 *a;
--	__be16 xport = htons(port);
-+	struct sockaddr_in6 *p;
-+	u32 addr = ntohl(xdr);
- 	int i;
+diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
+index 3bb24e09a332..5f3f1f4038e5 100644
+--- a/Documentation/security/keys/trusted-encrypted.rst
++++ b/Documentation/security/keys/trusted-encrypted.rst
+@@ -24,19 +24,19 @@ trouser's utility: "tpm_takeownership -u -z".
  
- 	if (alist->nr_addrs >= alist->max_addrs)
- 		return;
+ Usage::
  
- 	for (i = 0; i < alist->nr_ipv4; i++) {
--		a = &alist->addrs[i].transport.sin6;
--		if (xdr = a->sin6_addr.s6_addr32[3] &&
--		    xport = a->sin6_port)
-+		struct sockaddr_in6 *a = &alist->addrs[i].transport.sin6;
-+		u32 a_addr = ntohl(a->sin6_addr.s6_addr32[3]);
-+		u16 a_port = ntohs(a->sin6_port);
-+
-+		if (addr = a_addr && port = a_port)
- 			return;
--		if (xdr = a->sin6_addr.s6_addr32[3] &&
--		    (u16 __force)xport < (u16 __force)a->sin6_port)
-+		if (addr = a_addr && port < a_port)
- 			break;
--		if ((u32 __force)xdr < (u32 __force)a->sin6_addr.s6_addr32[3])
-+		if (addr < a_addr)
- 			break;
- 	}
+-    keyctl add trusted name "new keylen [options]" ring
+-    keyctl add trusted name "load hex_blob [pcrlock=pcrnum]" ring
++    keyctl add trusted name "new <keylen> [options]" ring
++    keyctl add trusted name "load <hex_blob> [pcrlock=pcrnum]" ring
+     keyctl update key "update [options]"
+     keyctl print keyid
  
-@@ -275,12 +276,12 @@ void afs_merge_fs_addr4(struct afs_addr_list *alist, __be32 xdr, u16 port)
- 			alist->addrs + i,
- 			sizeof(alist->addrs[0]) * (alist->nr_addrs - i));
+     options:
+-       keyhandle=    ascii hex value of sealing key default 0x40000000 (SRK)
+-       keyauth=	     ascii hex auth for sealing key default 0x00...i
++       keyhandle=    ascii hex value of sealing key; default 40000000 (SRK)
++       keyauth=      ascii hex auth for sealing key; default 00...
+                      (40 ascii zeros)
+-       blobauth=     ascii hex auth for sealed data default 0x00...
++       blobauth=     ascii hex auth for sealed data; default 00...
+                      (40 ascii zeros)
+-       pcrinfo=	     ascii hex of PCR_INFO or PCR_INFO_LONG (no default)
+-       pcrlock=	     pcr number to be extended to "lock" blob
++       pcrinfo=      ascii hex of PCR_INFO or PCR_INFO_LONG (no default)
++       pcrlock=      pcr number to be extended to "lock" blob
+        migratable=   0|1 indicating permission to reseal to new PCR values,
+                      default 1 (resealing allowed)
+        hash=         hash algorithm name as a string. For TPM 1.x the only
+@@ -69,10 +69,10 @@ application specific, which is identified by 'format'.
  
--	a = &alist->addrs[i].transport.sin6;
--	a->sin6_port		  = xport;
--	a->sin6_addr.s6_addr32[0] = 0;
--	a->sin6_addr.s6_addr32[1] = 0;
--	a->sin6_addr.s6_addr32[2] = htonl(0xffff);
--	a->sin6_addr.s6_addr32[3] = xdr;
-+	p = &alist->addrs[i].transport.sin6;
-+	p->sin6_port		  = htons(port);
-+	p->sin6_addr.s6_addr32[0] = 0;
-+	p->sin6_addr.s6_addr32[1] = 0;
-+	p->sin6_addr.s6_addr32[2] = htonl(0xffff);
-+	p->sin6_addr.s6_addr32[3] = xdr;
- 	alist->nr_ipv4++;
- 	alist->nr_addrs++;
- }
-@@ -290,21 +291,20 @@ void afs_merge_fs_addr4(struct afs_addr_list *alist, __be32 xdr, u16 port)
-  */
- void afs_merge_fs_addr6(struct afs_addr_list *alist, __be32 *xdr, u16 port)
- {
--	struct sockaddr_in6 *a;
--	__be16 xport = htons(port);
-+	struct sockaddr_in6 *p;
- 	int i, diff;
+ Usage::
  
- 	if (alist->nr_addrs >= alist->max_addrs)
- 		return;
+-    keyctl add encrypted name "new [format] key-type:master-key-name keylen"
++    keyctl add encrypted name "new [format] <key-type>:<master-key-name> <keylen>"
+         ring
+-    keyctl add encrypted name "load hex_blob" ring
+-    keyctl update keyid "update key-type:master-key-name"
++    keyctl add encrypted name "load <hex_blob>" ring
++    keyctl update keyid "update <key-type>:<master-key-name>"
  
- 	for (i = alist->nr_ipv4; i < alist->nr_addrs; i++) {
--		a = &alist->addrs[i].transport.sin6;
-+		struct sockaddr_in6 *a = &alist->addrs[i].transport.sin6;
-+		u16 a_port = ntohs(a->sin6_port);
-+
- 		diff = memcmp(xdr, &a->sin6_addr, 16);
--		if (diff = 0 &&
--		    xport = a->sin6_port)
-+		if (diff = 0 && port = a_port)
- 			return;
--		if (diff = 0 &&
--		    (u16 __force)xport < (u16 __force)a->sin6_port)
-+		if (diff = 0 && port < a_port)
- 			break;
- 		if (diff < 0)
- 			break;
-@@ -315,12 +315,9 @@ void afs_merge_fs_addr6(struct afs_addr_list *alist, __be32 *xdr, u16 port)
- 			alist->addrs + i,
- 			sizeof(alist->addrs[0]) * (alist->nr_addrs - i));
+ Where::
  
--	a = &alist->addrs[i].transport.sin6;
--	a->sin6_port		  = xport;
--	a->sin6_addr.s6_addr32[0] = xdr[0];
--	a->sin6_addr.s6_addr32[1] = xdr[1];
--	a->sin6_addr.s6_addr32[2] = xdr[2];
--	a->sin6_addr.s6_addr32[3] = xdr[3];
-+	p = &alist->addrs[i].transport.sin6;
-+	p->sin6_port = htons(port);
-+	memcpy(&p->sin6_addr, xdr, 16);
- 	alist->nr_addrs++;
- }
- 
+-- 
+2.17.1
