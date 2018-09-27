@@ -1,45 +1,30 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 28 Sep 2018 08:24:28 +0000
-Subject: Re: [PATCH v10 05/12] nfit/libnvdimm: add unlock of nvdimm support for Intel DIMMs
-Message-Id: <24969.1538123068@warthog.procyon.org.uk>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Thu, 27 Sep 2018 13:14:46 +0000
+Subject: [PATCH 1/5] docs: fix prototype for `request_key`
+Message-Id: <20180927131450.23458-2-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153799483234.71621.9184634994174583985.stgit@djiang5-desk3.ch.intel.com>
- <153799466529.71621.10728628542331983376.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153799483234.71621.9184634994174583985.stgit@djiang5-desk3.ch.intel.com>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Dave Jiang <dave.jiang@intel.com> wrote:
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+---
+ Documentation/security/keys/core.rst | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +/*
-> + * Find key in kernel keyring
-> + */
-> +static struct key *nvdimm_get_key(struct device *dev)
-
-Note that the comment is no longer correct.
-
-> +static struct key *nvdimm_request_key(struct device *dev)
-> +{
-> +	struct nvdimm *nvdimm = to_nvdimm(dev);
-> +	struct key *key = NULL;
-> +	char desc[NVDIMM_KEY_DESC_LEN + sizeof(NVDIMM_PREFIX)];
-> +
-> +	sprintf(desc, "%s%s", NVDIMM_PREFIX, nvdimm->dimm_id);
-> +	key = request_key(&key_type_logon, desc, desc);
-
-I would suggest passing "" as the callout_info rather than duplicating the
-description.  The description is available to the upcall program anyway.
-
-> +			key_link(nvdimm_keyring, key);
-> +			nvdimm->key = key;
-
-Since you're attaching the key to the nvdimm struct, do you actually need a
-kernel keyring also?  You only ever link things into it and unlink things from
-it; you never actually search it that I can see.  I would suggest, therefore,
-just getting rid of the nvdimm_keyring entirely.  The keys are retained by the
-nvdimm struct, so that shouldn't be a problem.
-
-David
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 3d36f42283e6..51b2e10abc55 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -1059,7 +1059,7 @@ payload contents" for more information.
+ 
+ 	struct key *request_key(const struct key_type *type,
+ 				const char *description,
+-				const char *callout_info);
++				const char *callout_string);
+ 
+     This is used to request a key or keyring with a description that matches
+     the description specified according to the key type's match_preparse()
+-- 
+2.17.1
