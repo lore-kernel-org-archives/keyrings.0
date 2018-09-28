@@ -1,54 +1,64 @@
-From: Xiongwei Song <sxwjean@gmail.com>
-Date: Mon, 03 Sep 2018 08:31:56 +0000
-Subject: Question about pe file verification
-Message-Id: <CAEVVKH9sq9oMX0hVen9sX+9GoG=4Y8v7RPMBD_iuZOe9Mgiw1g@mail.gmail.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Fri, 28 Sep 2018 21:53:42 +0000
+Subject: [PATCH v11 03/12] keys: export lookup_user_key to external users
+Message-Id: <153817162279.17152.10685912328747044191.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net
-Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Hi,
+Export lookup_user_key() symbol in order to allow nvdimm passphrase
+update to retrieve user injected keys.
 
-Some code logic I don't understand about the function pefile_digest_pe_contents
- in the file crypto/asymmetric_keys/verify_pefile.c.
-At the end of pefile_digest_pe_contents, please see the comment [sxw] below:
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Acked-by: David Howells <dhowells at redhat.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
+ include/linux/key.h          |    3 +++
+ security/keys/internal.h     |    2 --
+ security/keys/process_keys.c |    1 +
+ 3 files changed, 4 insertions(+), 2 deletions(-)
 
-static int pefile_digest_pe_contents(const void *pebuf, unsigned int pelen,
-                     struct pefile_context *ctx,
-                     struct shash_desc *desc)
-{
-    unsigned *canon, tmp, loop, i, hashed_bytes;
-    int ret;
-
-    ......
-　[sxw] I assume the image has signed by sbsign tool, there is a certificate
-             at the end of image file.
-    if (pelen > hashed_bytes) {
-        tmp = hashed_bytes + ctx->certs_size;
-        [sxw] The tmp value is the end of certificate.
-
-        ret = crypto_shash_update(desc,
-                      pebuf + hashed_bytes,
-                      [sxw] The data address is the beginning of the
-certificate.
-                               Why do we need to hash the
-certification data block?
-
-                      pelen - tmp);
-                      [sxw] However, the data length doesn't include
-the certificate,
-                               sometimes it's zero.
-
-        if (ret < 0)
-            return ret;
-    }
-
-    return 0;
-}
-
-Is that for a special consider or something else?
-
-Regards,
-Xiongwei
+diff --git a/include/linux/key.h b/include/linux/key.h
+index e58ee10f6e58..7099985e35a9 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -346,6 +346,9 @@ static inline key_serial_t key_serial(const struct key *key)
+ 
+ extern void key_set_timeout(struct key *, unsigned);
+ 
++extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
++				 key_perm_t perm);
++
+ /*
+  * The permissions required on a key that we're looking up.
+  */
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 9f8208dc0e55..9968b21a76dd 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -158,8 +158,6 @@ extern struct key *request_key_and_link(struct key_type *type,
+ 
+ extern bool lookup_user_key_possessed(const struct key *key,
+ 				      const struct key_match_data *match_data);
+-extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
+-				 key_perm_t perm);
+ #define KEY_LOOKUP_CREATE	0x01
+ #define KEY_LOOKUP_PARTIAL	0x02
+ #define KEY_LOOKUP_FOR_UNLINK	0x04
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index d5b25e535d3a..ec4fd4531224 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -755,6 +755,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+ 	put_cred(ctx.cred);
+ 	goto try_again;
+ }
++EXPORT_SYMBOL(lookup_user_key);
+ 
+ /*
+  * Join the named keyring as the session keyring if possible else attempt to
