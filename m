@@ -1,125 +1,194 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Sep 2018 21:55:17 +0000
-Subject: [PATCH 09/22] crypto: rsa-pkcs1pad: Allow hash to be optional
-Message-Id: <153618451735.7946.814440477794930423.stgit@warthog.procyon.org.uk>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Fri, 28 Sep 2018 21:54:00 +0000
+Subject: [PATCH v11 06/12] nfit/libnvdimm: add disable passphrase support to Intel nvdimm.
+Message-Id: <153817164043.17152.16903691816029013085.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk>
-To: linux-security-module@vger.kernel.org
+References: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+Add support to disable passphrase (security) for the Intel nvdimm. The
+passphrase used for disabling is pulled from userspace via the kernel
+key management. The action is triggered by writing "disable <old_keyid>" to
+the sysfs attribute "security". libnvdimm will support the generic disable
+API call. The kernel will verify the passphrase of the user key against
+the cached kernel key. If no kernel key exists, then the user key will be
+tried for the op.
 
-The original pkcs1pad implementation allowed to pad/unpad raw RSA
-output.  However, this has been taken out in commit:
-commit c0d20d22e0ad ("crypto: rsa-pkcs1pad - Require hash to be present")
-
-This patch restored this ability as it is needed by the asymmetric key
-implementation.
-
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
+ drivers/acpi/nfit/intel.c  |   53 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c |   56 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/libnvdimm.h  |    3 ++
+ 3 files changed, 112 insertions(+)
 
- crypto/rsa-pkcs1pad.c |   59 ++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 41 insertions(+), 18 deletions(-)
-
-diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
-index 9893dbfc1af4..27b1e2bd4bfb 100644
---- a/crypto/rsa-pkcs1pad.c
-+++ b/crypto/rsa-pkcs1pad.c
-@@ -401,7 +401,8 @@ static int pkcs1pad_sign(struct akcipher_request *req)
- 	if (!ctx->key_size)
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 314eae7e02d7..21d30222371f 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,58 @@
+ #include "intel.h"
+ #include "nfit.h"
+ 
++static int intel_dimm_security_disable(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
++	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_disable_passphrase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_DISABLE_PASSPHRASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
++
++	if (!test_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
++
++	memcpy(nd_cmd.cmd.passphrase, nkey->data,
++			sizeof(nd_cmd.cmd.passphrase));
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++ out:
++	return rc;
++}
++
+ /*
+  * The update passphrase takes the old passphrase and the new passphrase
+  * and send those to the nvdimm. The nvdimm will verify the old
+@@ -217,4 +269,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
++	.disable = intel_dimm_security_disable,
+ };
+diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
+index abfe719558de..85f1816a4f0c 100644
+--- a/drivers/nvdimm/dimm_devs.c
++++ b/drivers/nvdimm/dimm_devs.c
+@@ -160,6 +160,7 @@ struct key *nvdimm_get_and_verify_key(struct device *dev,
+ 	if (rc < 0)
+ 		key = ERR_PTR(rc);
+ 	return key;
++
+ }
+ 
+ static int nvdimm_check_key_len(unsigned short len)
+@@ -182,6 +183,56 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
+ 
++static int nvdimm_security_disable(struct device *dev, unsigned int keyid)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	int rc;
++	struct user_key_payload *payload;
++	bool is_userkey = false;
++
++	if (!nvdimm->security_ops)
++		return -EOPNOTSUPP;
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED)
++		return -EOPNOTSUPP;
++
++	/* look for a key from cached key */
++	key = nvdimm_get_and_verify_key(dev, keyid);
++	if (IS_ERR(key))
++		return PTR_ERR(key);
++	if (!key) {
++		/* get old user key */
++		key = nvdimm_lookup_user_key(dev, keyid);
++		if (!key)
++			return -ENOKEY;
++		is_userkey = true;
++	}
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++
++	rc = nvdimm->security_ops->disable(nvdimm_bus, nvdimm,
++			(void *)payload->data);
++	up_read(&key->sem);
++	if (rc < 0) {
++		dev_warn(dev, "unlock failed\n");
++		goto out;
++	}
++
++	/* If we succeed then remove the key */
++	if (!is_userkey) {
++		key_invalidate(key);
++		nvdimm->key = NULL;
++	}
++
++ out:
++	key_put(key);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ int nvdimm_security_unlock_dimm(struct device *dev)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+@@ -747,6 +798,11 @@ static ssize_t security_store(struct device *dev,
+ 			return -EINVAL;
+ 		dev_dbg(dev, "update %#x %#x\n", old_key, new_key);
+ 		rc = nvdimm_security_change_key(dev, old_key, new_key);
++	} else if (sysfs_streq(cmd, "disable")) {
++		if (rc != 2)
++			return -EINVAL;
++		dev_dbg(dev, "disable %#x\n", old_key);
++		rc = nvdimm_security_disable(dev, old_key);
+ 	} else
  		return -EINVAL;
  
--	digest_size = digest_info->size;
-+	if (digest_info)
-+		digest_size = digest_info->size;
+diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
+index bd6a413164ee..c60ab4b238f3 100644
+--- a/include/linux/libnvdimm.h
++++ b/include/linux/libnvdimm.h
+@@ -182,6 +182,9 @@ struct nvdimm_security_ops {
+ 			struct nvdimm *nvdimm,
+ 			const struct nvdimm_key_data *old_data,
+ 			const struct nvdimm_key_data *new_data);
++	int (*disable)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			const struct nvdimm_key_data *nkey);
+ };
  
- 	if (req->src_len + digest_size > ctx->key_size - 11)
- 		return -EOVERFLOW;
-@@ -421,8 +422,9 @@ static int pkcs1pad_sign(struct akcipher_request *req)
- 	memset(req_ctx->in_buf + 1, 0xff, ps_end - 1);
- 	req_ctx->in_buf[ps_end] = 0x00;
- 
--	memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
--	       digest_info->size);
-+	if (digest_info)
-+		memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
-+		       digest_info->size);
- 
- 	pkcs1pad_sg_set_buf(req_ctx->in_sg, req_ctx->in_buf,
- 			ctx->key_size - 1 - req->src_len, req->src);
-@@ -484,10 +486,13 @@ static int pkcs1pad_verify_complete(struct akcipher_request *req, int err)
- 		goto done;
- 	pos++;
- 
--	if (crypto_memneq(out_buf + pos, digest_info->data, digest_info->size))
--		goto done;
-+	if (digest_info) {
-+		if (crypto_memneq(out_buf + pos, digest_info->data,
-+				  digest_info->size))
-+			goto done;
- 
--	pos += digest_info->size;
-+		pos += digest_info->size;
-+	}
- 
- 	err = 0;
- 
-@@ -617,11 +622,14 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
- 
- 	hash_name = crypto_attr_alg_name(tb[2]);
- 	if (IS_ERR(hash_name))
--		return PTR_ERR(hash_name);
-+		hash_name = NULL;
- 
--	digest_info = rsa_lookup_asn1(hash_name);
--	if (!digest_info)
--		return -EINVAL;
-+	if (hash_name) {
-+		digest_info = rsa_lookup_asn1(hash_name);
-+		if (!digest_info)
-+			return -EINVAL;
-+	} else
-+		digest_info = NULL;
- 
- 	inst = kzalloc(sizeof(*inst) + sizeof(*ctx), GFP_KERNEL);
- 	if (!inst)
-@@ -641,14 +649,29 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
- 
- 	err = -ENAMETOOLONG;
- 
--	if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
--		     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME ||
--	    snprintf(inst->alg.base.cra_driver_name, CRYPTO_MAX_ALG_NAME,
--		     "pkcs1pad(%s,%s)",
--		     rsa_alg->base.cra_driver_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME)
--		goto out_drop_alg;
-+	if (!hash_name) {
-+		if (snprintf(inst->alg.base.cra_name,
-+			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
-+			     rsa_alg->base.cra_name) >= CRYPTO_MAX_ALG_NAME)
-+			goto out_drop_alg;
-+
-+		if (snprintf(inst->alg.base.cra_driver_name,
-+			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
-+			     rsa_alg->base.cra_driver_name) >+			     CRYPTO_MAX_ALG_NAME)
-+			goto out_drop_alg;
-+	} else {
-+		if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
-+			     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name,
-+			     hash_name) >= CRYPTO_MAX_ALG_NAME)
-+			goto out_drop_alg;
-+
-+		if (snprintf(inst->alg.base.cra_driver_name,
-+			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s,%s)",
-+			     rsa_alg->base.cra_driver_name,
-+			     hash_name) >= CRYPTO_MAX_ALG_NAME)
-+			goto out_drop_alg;
-+	}
- 
- 	inst->alg.base.cra_flags = rsa_alg->base.cra_flags & CRYPTO_ALG_ASYNC;
- 	inst->alg.base.cra_priority = rsa_alg->base.cra_priority;
+ void badrange_init(struct badrange *badrange);
