@@ -1,7 +1,7 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Fri, 28 Sep 2018 21:53:37 +0000
-Subject: [PATCH v11 02/12] nfit/libnvdimm: store dimm id as a member to struct nvdimm
-Message-Id: <153817161709.17152.6086378732981496960.stgit@djiang5-desk3.ch.intel.com>
+Date: Fri, 28 Sep 2018 21:54:34 +0000
+Subject: [PATCH v11 12/12] acpi, nfit: Move acpi_nfit_get_security_ops() to generic location
+Message-Id: <153817167456.17152.874519072328282288.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,145 +11,91 @@ In-Reply-To: <153817140052.17152.8594371908103118425.stgit@djiang5-desk3.ch.inte
 To: dan.j.williams@intel.com
 Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-The generated dimm id is needed for the sysfs attribute as well as being
-used as the identifier/description for the security key. Since it's
-constant and should never change, store it as a member of struct nvdimm.
+From: Dan Williams <dan.j.williams@intel.com>
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+In anticipation of other DIMMs adding security operations support, don't
+require them to edit intel.h. Instead have intel.h optionally arrange
+for intel_security_ops to be NULL or not based on build parameters.
+
+Reviewed-by: Dave Jiang <dave.jiang@intel.com>
 Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/acpi/nfit/core.c   |   29 +++++++++++++++++------------
- drivers/acpi/nfit/nfit.h   |    3 +++
- drivers/nvdimm/dimm_devs.c |    4 +++-
- drivers/nvdimm/nd-core.h   |    1 +
- include/linux/libnvdimm.h  |    2 +-
- 5 files changed, 25 insertions(+), 14 deletions(-)
+ drivers/acpi/nfit/core.c  |   10 ++++++++++
+ drivers/acpi/nfit/intel.c |    3 ++-
+ drivers/acpi/nfit/intel.h |   18 +++---------------
+ 3 files changed, 15 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-index 4f3b89dc9238..94755a4b6327 100644
+index e5f7c664a7c8..b7773c70ee81 100644
 --- a/drivers/acpi/nfit/core.c
 +++ b/drivers/acpi/nfit/core.c
-@@ -1572,18 +1572,10 @@ static DEVICE_ATTR_RO(flags);
- static ssize_t id_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
--	struct acpi_nfit_control_region *dcr = to_nfit_dcr(dev);
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
- 
--	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
--		return sprintf(buf, "%04x-%02x-%04x-%08x\n",
--				be16_to_cpu(dcr->vendor_id),
--				dcr->manufacturing_location,
--				be16_to_cpu(dcr->manufacturing_date),
--				be32_to_cpu(dcr->serial_number));
--	else
--		return sprintf(buf, "%04x-%08x\n",
--				be16_to_cpu(dcr->vendor_id),
--				be32_to_cpu(dcr->serial_number));
-+	return sprintf(buf, "%s\n", nfit_mem->id);
+@@ -1835,6 +1835,16 @@ static void shutdown_dimm_notify(void *data)
+ 	mutex_unlock(&acpi_desc->init_mutex);
  }
- static DEVICE_ATTR_RO(id);
  
-@@ -1712,10 +1704,23 @@ static int acpi_nfit_add_dimm(struct acpi_nfit_desc *acpi_desc,
- 	const guid_t *guid;
- 	int i;
- 	int family = -1;
-+	struct acpi_nfit_control_region *dcr = nfit_mem->dcr;
- 
- 	/* nfit test assumes 1:1 relationship between commands and dsms */
- 	nfit_mem->dsm_mask = acpi_desc->dimm_cmd_force_en;
- 	nfit_mem->family = NVDIMM_FAMILY_INTEL;
++static const struct nvdimm_security_ops *acpi_nfit_get_security_ops(int family)
++{
++        switch (family) {
++        case NVDIMM_FAMILY_INTEL:
++                return intel_security_ops;
++        default:
++                return NULL;
++        }
++}
 +
-+	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
-+		sprintf(nfit_mem->id, "%04x-%02x-%04x-%08x",
-+				be16_to_cpu(dcr->vendor_id),
-+				dcr->manufacturing_location,
-+				be16_to_cpu(dcr->manufacturing_date),
-+				be32_to_cpu(dcr->serial_number));
-+	else
-+		sprintf(nfit_mem->id, "%04x-%08x",
-+				be16_to_cpu(dcr->vendor_id),
-+				be32_to_cpu(dcr->serial_number));
-+
- 	adev = to_acpi_dev(acpi_desc);
- 	if (!adev)
- 		return 0;
-@@ -1899,7 +1904,7 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
- 		nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
- 				acpi_nfit_dimm_attribute_groups,
- 				flags, cmd_mask, flush ? flush->hint_count : 0,
--				nfit_mem->flush_wpq);
-+				nfit_mem->flush_wpq, &nfit_mem->id[0]);
- 		if (!nvdimm)
- 			return -ENOMEM;
- 
-diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
-index 1c4e26dd6425..36c8695a3d27 100644
---- a/drivers/acpi/nfit/nfit.h
-+++ b/drivers/acpi/nfit/nfit.h
-@@ -174,6 +174,8 @@ struct nfit_memdev {
- 	struct acpi_nfit_memory_map memdev[0];
- };
- 
-+#define NFIT_DIMM_ID_LEN	22
-+
- /* assembled tables for a given dimm/memory-device */
- struct nfit_mem {
- 	struct nvdimm *nvdimm;
-@@ -196,6 +198,7 @@ struct nfit_mem {
- 	int family;
- 	bool has_lsr;
- 	bool has_lsw;
-+	char id[NFIT_DIMM_ID_LEN+1];
- };
- 
- struct acpi_nfit_desc {
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 863cabc35215..3f02008d75e7 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -398,7 +398,7 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
- struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		const struct attribute_group **groups, unsigned long flags,
- 		unsigned long cmd_mask, int num_flush,
--		struct resource *flush_wpq)
-+		struct resource *flush_wpq, const char *dimm_id)
+ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
  {
- 	struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
- 	struct device *dev;
-@@ -411,6 +411,8 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		kfree(nvdimm);
- 		return NULL;
- 	}
-+
-+	nvdimm->dimm_id = dimm_id;
- 	nvdimm->provider_data = provider_data;
- 	nvdimm->flags = flags;
- 	nvdimm->cmd_mask = cmd_mask;
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 182258f64417..ff26876e6ea3 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -41,6 +41,7 @@ struct nvdimm {
- 	atomic_t busy;
- 	int id, num_flush;
- 	struct resource *flush_wpq;
-+	const char *dimm_id;
- };
+ 	struct nfit_mem *nfit_mem;
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 70bccb0c57e2..8d2413810a5f 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -358,7 +358,7 @@ static int intel_dimm_security_state(struct nvdimm *nvdimm,
+ 	return rc;
+ }
  
- /**
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 472171af7f60..ac9de5ba3536 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -178,7 +178,7 @@ void *nvdimm_provider_data(struct nvdimm *nvdimm);
- struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		const struct attribute_group **groups, unsigned long flags,
- 		unsigned long cmd_mask, int num_flush,
--		struct resource *flush_wpq);
-+		struct resource *flush_wpq, const char *dimm_id);
- const struct nd_cmd_desc *nd_cmd_dimm_desc(int cmd);
- const struct nd_cmd_desc *nd_cmd_bus_desc(int cmd);
- u32 nd_cmd_in_size(struct nvdimm *nvdimm, int cmd,
+-const struct nvdimm_security_ops intel_security_ops = {
++static const struct nvdimm_security_ops __intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
+@@ -366,3 +366,4 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.freeze_lock = intel_dimm_security_freeze_lock,
+ 	.erase = intel_dimm_security_erase,
+ };
++const struct nvdimm_security_ops *intel_security_ops = &__intel_security_ops;
+diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
+index f9ac718776ca..f831084f95fa 100644
+--- a/drivers/acpi/nfit/intel.h
++++ b/drivers/acpi/nfit/intel.h
+@@ -8,7 +8,7 @@
+ 
+ #ifdef CONFIG_X86
+ 
+-extern const struct nvdimm_security_ops intel_security_ops;
++extern const struct nvdimm_security_ops *intel_security_ops;
+ 
+ #define ND_INTEL_STATUS_SIZE		4
+ #define ND_INTEL_PASSPHRASE_SIZE	32
+@@ -64,19 +64,7 @@ struct nd_intel_overwrite {
+ struct nd_intel_query_overwrite {
+ 	u32 status;
+ } __packed;
++#else /* CONFIG_X86 */
++#define intel_security_ops (NULL)
+ #endif /* CONFIG_X86 */
+-
+-static inline const struct nvdimm_security_ops *
+-acpi_nfit_get_security_ops(int family)
+-{
+-	switch (family) {
+-#ifdef CONFIG_X86
+-	case NVDIMM_FAMILY_INTEL:
+-		return &intel_security_ops;
+-#endif
+-	default:
+-		return NULL;
+-	}
+-}
+-
+ #endif
