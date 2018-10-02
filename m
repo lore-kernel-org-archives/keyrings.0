@@ -1,158 +1,196 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:47:23 +0000
-Subject: [PATCH 05/22] KEYS: Provide software public key query function [ver #2]
-Message-Id: <153910364343.12141.6212013403882194768.stgit@warthog.procyon.org.uk>
+From: joeyli <jlee@suse.com>
+Date: Tue, 02 Oct 2018 07:54:39 +0000
+Subject: Re: [PATCH 1/5] PM / hibernate: Create snapshot keys handler
+Message-Id: <20181002075243.GB6040@linux-l9pv.suse>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-To: jmorris@namei.org
-Cc: Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, Denis Kenzior <denkenz@gmail.com>Denis Kenzior <denkenz@gmail.com>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20180912142337.21955-1-jlee@suse.com>
+ <20180912142337.21955-2-jlee@suse.com>
+ <CAG48ez2pRwpv0V0MNbeBN26isW2peebf+S3cqLxUgdUfARfhiw@mail.gmail.com>
+In-Reply-To: <CAG48ez2pRwpv0V0MNbeBN26isW2peebf+S3cqLxUgdUfARfhiw@mail.gmail.com>
+To: Jann Horn <jannh@google.com>
+Cc: joeyli.kernel@gmail.com, rjw@rjwysocki.net, Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, yu.c.chen@intel.com, oneukum@suse.com, yu.chen.surf@gmail.com, David Howells <dhowells@redhat.com>, ggherdovich@suse.cz, keyrings@vger.kernel.org
 
-Provide a query function for the software public key implementation.  This
-permits information about such a key to be obtained using
-query_asymmetric_key() or KEYCTL_PKEY_QUERY.
+Hi Jann,
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Tested-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Denis Kenzior <denkenz@gmail.com>
-Tested-by: Denis Kenzior <denkenz@gmail.com>
----
+Thanks for your review and very sorry for my delay!
 
- crypto/asymmetric_keys/public_key.c |   99 +++++++++++++++++++++++++++++------
- 1 file changed, 82 insertions(+), 17 deletions(-)
+On Thu, Sep 13, 2018 at 04:31:18PM +0200, Jann Horn wrote:
+> +cc keyrings list
+> 
+> On Thu, Sep 13, 2018 at 4:08 PM Lee, Chun-Yi <joeyli.kernel@gmail.com> wrote:
+> > This patch adds a snapshot keys handler for using the key retention
+> > service api to create keys for snapshot image encryption and
+> > authentication.
+[...snip]
+> > +static ssize_t disk_kmk_store(struct kobject *kobj, struct kobj_attribute *attr,
+> > +                             const char *buf, size_t n)
+> > +{
+> > +       int error = 0;
+> > +       char *p;
+> > +       int len;
+> > +
+> > +       if (!capable(CAP_SYS_ADMIN))
+> > +               return -EPERM;
+> 
+> This is wrong, you can't use capable() in a write handler. You'd have
+> to use file_ns_capable(), and I think sysfs currently doesn't give you
+> a pointer to the struct file.
+> If you want to do this in a write handler, you'll have to either get
+> rid of this check or plumb through the cred struct pointer.
+> Alternatively, you could use some interface that doesn't go through a
+> write handler.
+>
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index e929fe1e4106..761bfab352dc 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -59,6 +59,81 @@ static void public_key_destroy(void *payload0, void *payload3)
- 	public_key_signature_free(payload3);
- }
- 
-+/*
-+ * Determine the crypto algorithm name.
-+ */
-+static
-+int software_key_determine_akcipher(const char *encoding,
-+				    const char *hash_algo,
-+				    const struct public_key *pkey,
-+				    char alg_name[CRYPTO_MAX_ALG_NAME])
-+{
-+	int n;
-+
-+	if (strcmp(encoding, "pkcs1") = 0) {
-+		/* The data wangled by the RSA algorithm is typically padded
-+		 * and encoded in some manner, such as EMSA-PKCS1-1_5 [RFC3447
-+		 * sec 8.2].
-+		 */
-+		if (!hash_algo)
-+			n = snprintf(alg_name, CRYPTO_MAX_ALG_NAME,
-+				     "pkcs1pad(%s)",
-+				     pkey->pkey_algo);
-+		else
-+			n = snprintf(alg_name, CRYPTO_MAX_ALG_NAME,
-+				     "pkcs1pad(%s,%s)",
-+				     pkey->pkey_algo, hash_algo);
-+		return n >= CRYPTO_MAX_ALG_NAME ? -EINVAL : 0;
-+	}
-+
-+	if (strcmp(encoding, "raw") = 0) {
-+		strcpy(alg_name, pkey->pkey_algo);
-+		return 0;
-+	}
-+
-+	return -ENOPKG;
-+}
-+
-+/*
-+ * Query information about a key.
-+ */
-+static int software_key_query(const struct kernel_pkey_params *params,
-+			      struct kernel_pkey_query *info)
-+{
-+	struct crypto_akcipher *tfm;
-+	struct public_key *pkey = params->key->payload.data[asym_crypto];
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	int ret, len;
-+
-+	ret = software_key_determine_akcipher(params->encoding,
-+					      params->hash_algo,
-+					      pkey, alg_name);
-+	if (ret < 0)
-+		return ret;
-+
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	ret = crypto_akcipher_set_pub_key(tfm, pkey->key, pkey->keylen);
-+	if (ret < 0)
-+		goto error_free_tfm;
-+
-+	len = crypto_akcipher_maxsize(tfm);
-+	info->key_size = len * 8;
-+	info->max_data_size = len;
-+	info->max_sig_size = len;
-+	info->max_enc_size = len;
-+	info->max_dec_size = len;
-+	info->supported_ops = KEYCTL_SUPPORTS_VERIFY;
-+	ret = 0;
-+
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
- /*
-  * Verify a signature using a public key.
-  */
-@@ -69,8 +144,7 @@ int public_key_verify_signature(const struct public_key *pkey,
- 	struct crypto_akcipher *tfm;
- 	struct akcipher_request *req;
- 	struct scatterlist sig_sg, digest_sg;
--	const char *alg_name;
--	char alg_name_buf[CRYPTO_MAX_ALG_NAME];
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
- 	void *output;
- 	unsigned int outlen;
- 	int ret;
-@@ -81,21 +155,11 @@ int public_key_verify_signature(const struct public_key *pkey,
- 	BUG_ON(!sig);
- 	BUG_ON(!sig->s);
- 
--	if (!sig->digest)
--		return -ENOPKG;
--
--	alg_name = sig->pkey_algo;
--	if (strcmp(sig->pkey_algo, "rsa") = 0) {
--		/* The data wangled by the RSA algorithm is typically padded
--		 * and encoded in some manner, such as EMSA-PKCS1-1_5 [RFC3447
--		 * sec 8.2].
--		 */
--		if (snprintf(alg_name_buf, CRYPTO_MAX_ALG_NAME,
--			     "pkcs1pad(rsa,%s)", sig->hash_algo
--			     ) >= CRYPTO_MAX_ALG_NAME)
--			return -EINVAL;
--		alg_name = alg_name_buf;
--	}
-+	ret = software_key_determine_akcipher(sig->encoding,
-+					      sig->hash_algo,
-+					      pkey, alg_name);
-+	if (ret < 0)
-+		return ret;
- 
- 	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
- 	if (IS_ERR(tfm))
-@@ -167,6 +231,7 @@ struct asymmetric_key_subtype public_key_subtype = {
- 	.name_len		= sizeof("public_key") - 1,
- 	.describe		= public_key_describe,
- 	.destroy		= public_key_destroy,
-+	.query			= software_key_query,
- 	.verify_signature	= public_key_verify_signature_2,
- };
- EXPORT_SYMBOL_GPL(public_key_subtype);
+Thank you for point out this problem.
+
+Actually the evm_write_key() is the example for my code. The
+difference is that evm creates interface file on securityfs, but my
+implementation is on sysfs:
+
+security/integrity/evm/evm_secfs.c
+
+static ssize_t evm_write_key(struct file *file, const char __user *buf,
+			     size_t count, loff_t *ppos)
+{
+	int i, ret;
+
+	if (!capable(CAP_SYS_ADMIN) || (evm_initialized & EVM_SETUP)) 
+		return -EPERM;
+...
+
+On the other hand, the writing handler of /sys/power/wake_lock also
+uses capable() to check the CAP_BLOCK_SUSPEND capability: 
+
+kernel/power/main.c     
+static ssize_t wake_lock_store(struct kobject *kobj,
+			       struct kobj_attribute *attr,
+			       const char *buf, size_t n)
+{
+	int error = pm_wake_lock(buf);
+	return error ? error : n;
+}
+power_attr(wake_lock);
+
+kernel/power/wakelock.c
+int pm_wake_lock(const char *buf)
+{
+...
+	if (!capable(CAP_BLOCK_SUSPEND))
+		return -EPERM;
+...
+
+
+So I confused for when can capable() be used in sysfs interface? Is
+capable() only allowed in reading handler? Why the writing handler
+of securityfs can use capable()?
+
+> > +
+> > +static int user_key_init(void)
+> > +{
+> > +       struct user_key_payload *ukp;
+> > +       struct key *key;
+> > +       int err = 0;
+> > +
+> > +       pr_debug("%s\n", __func__);
+> > +
+> > +       /* find out swsusp-key */
+> > +       key = request_key(&key_type_user, skey.key_name, NULL);
+> 
+> request_key() looks at current's keyring. That shouldn't happen in a
+> write handler.
+>
+
+The evm_write_key() also uses request_key() but it's on securityfs. Should
+I move my sysfs interface to securityfs?
+
+> > +       if (IS_ERR(key)) {
+> > +               pr_err("Request key error: %ld\n", PTR_ERR(key));
+> > +               err = PTR_ERR(key);
+> > +               return err;
+> > +       }
+> > +
+> > +       down_write(&key->sem);
+> > +       ukp = user_key_payload_locked(key);
+> > +       if (!ukp) {
+> > +               /* key was revoked before we acquired its semaphore */
+> > +               err = -EKEYREVOKED;
+> > +               goto key_invalid;
+> > +       }
+> > +       if (invalid_key(ukp->data, ukp->datalen)) {
+> > +               err = -EINVAL;
+> > +               goto key_invalid;
+> > +       }
+> > +       skey.key_len = ukp->datalen;
+> > +       memcpy(skey.key, ukp->data, ukp->datalen);
+> > +       /* burn the original key contents */
+> > +       memzero_explicit(ukp->data, ukp->datalen);
+> 
+> You just zero out the contents of the supplied key? That seems very
+> unidiomatic for the keys subsystem, and makes me wonder why you're
+> using the keys subsystem for this in the first place. It doesn't look
+> like normal use of the keys subsystem.
+> 
+
+Because I want that only one decrypted key in kernel memory. Then hibernation
+can handle the key more easy. In evm_init_key(), it also burned the key
+contents after evm key be initialled: 
+
+security/integrity/evm/evm_crypto.c
+int evm_init_key(void)
+{
+[...snip]
+	/* burn the original key contents */
+	memset(ekp->decrypted_data, 0, ekp->decrypted_datalen);
+	up_read(&evm_key->sem);
+	key_put(evm_key);
+	return rc;
+}
+
+The keys subsystem already handles the interactive with userland and TPM.
+That's the reason for using keys subsystem in hibernation. 
+
+> > +key_invalid:
+> > +       up_write(&key->sem);
+> > +       key_put(key);
+> > +
+> > +       return err;
+> > +}
+> > +
+> > +/* this function may sleeps */
+> > +int snapshot_key_init(void)
+> > +{
+> > +       int err;
+> > +
+> > +       pr_debug("%s\n", __func__);
+> > +
+> > +       if (skey.initialized)
+> > +               return 0;
+> > +
+> > +       hash_tfm = crypto_alloc_shash(hash_alg, 0, CRYPTO_ALG_ASYNC);
+> > +       if (IS_ERR(hash_tfm)) {
+> > +               pr_err("Can't allocate %s transform: %ld\n",
+> > +                       hash_alg, PTR_ERR(hash_tfm));
+> > +               return PTR_ERR(hash_tfm);
+> > +       }
+> > +
+> > +       err = trusted_key_init();
+> > +       if (err)
+> > +               err = user_key_init();
+> > +       if (err)
+> > +               goto key_fail;
+> > +
+> > +       skey.initialized = true;
+> 
+> Does this need a memory barrier to prevent reordering of the
+> "skey.initialized = true" assignment before the key is fully
+> initialized?
+>
+
+Thanks for your reminding. I will add memory barrier here.
+
+
+Thank a lot!
+Joey Lee 
