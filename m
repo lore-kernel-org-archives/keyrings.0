@@ -1,137 +1,37 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:48:58 +0000
-Subject: [PATCH 17/22] KEYS: asym_tpm: Add loadkey2 and flushspecific [ver #2]
-Message-Id: <153910373839.12141.5504385590194752512.stgit@warthog.procyon.org.uk>
+From: Michael Olbrich <m.olbrich@pengutronix.de>
+Date: Wed, 03 Oct 2018 09:59:38 +0000
+Subject: [PATCH] build: use SOURCE_DATE_EPOCH if available to make the build reproducible
+Message-Id: <20181003095938.12014-1-m.olbrich@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-To: jmorris@namei.org
-Cc: Denis Kenzior <denkenz@gmail.com>, James Morris <james.morris@microsoft.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+The build date is included into the binary. As a result, the binaries
+change with the build date.
+Use SOURCE_DATE_EPOCH[1] if defined. This allows packages to make the build
+reproducible by setting SOURCE_DATE_EPOCH to a fixed value.
 
-This commit adds TPM_LoadKey2 and TPM_FlushSpecific operations.
+[1] https://reproducible-builds.org/specs/source-date-epoch/
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <james.morris@microsoft.com>
-Tested-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Michael Olbrich <m.olbrich@pengutronix.de>
 ---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- crypto/asymmetric_keys/asym_tpm.c |   94 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 94 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 8edca3c4c193..6a2d33014ecc 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -7,11 +7,105 @@
- #include <linux/seq_file.h>
- #include <linux/scatterlist.h>
- #include <linux/tpm.h>
-+#include <linux/tpm_command.h>
- #include <crypto/akcipher.h>
-+#include <crypto/hash.h>
-+#include <crypto/sha.h>
- #include <asm/unaligned.h>
- #include <keys/asymmetric-subtype.h>
-+#include <keys/trusted.h>
- #include <crypto/asym_tpm_subtype.h>
+diff --git a/Makefile b/Makefile
+index 96b5df716e4c..bcb4b0704117 100644
+--- a/Makefile
++++ b/Makefile
+@@ -104,7 +104,7 @@ all: keyctl request-key key.dns_resolver
+ ###############################################################################
+ #RPATH = -Wl,-rpath,$(LIBDIR)
  
-+#define TPM_ORD_FLUSHSPECIFIC	186
-+#define TPM_ORD_LOADKEY2	65
-+#define TPM_LOADKEY2_SIZE		59
-+#define TPM_FLUSHSPECIFIC_SIZE		18
-+
-+#define TPM_RT_KEY                      0x00000001
-+
-+/*
-+ * Load a TPM key from the blob provided by userspace
-+ */
-+static int tpm_loadkey2(struct tpm_buf *tb,
-+			uint32_t keyhandle, unsigned char *keyauth,
-+			const unsigned char *keyblob, int keybloblen,
-+			uint32_t *newhandle)
-+{
-+	unsigned char nonceodd[TPM_NONCE_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+	unsigned char authdata[SHA1_DIGEST_SIZE];
-+	uint32_t authhandle = 0;
-+	unsigned char cont = 0;
-+	uint32_t ordinal;
-+	int ret;
-+
-+	ordinal = htonl(TPM_ORD_LOADKEY2);
-+
-+	/* session for loading the key */
-+	ret = oiap(tb, &authhandle, enonce);
-+	if (ret < 0) {
-+		pr_info("oiap failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* generate odd nonce */
-+	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0) {
-+		pr_info("tpm_get_random failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* calculate authorization HMAC value */
-+	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-+			   nonceodd, cont, sizeof(uint32_t), &ordinal,
-+			   keybloblen, keyblob, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* build the request buffer */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
-+	store32(tb, TPM_LOADKEY2_SIZE + keybloblen);
-+	store32(tb, TPM_ORD_LOADKEY2);
-+	store32(tb, keyhandle);
-+	storebytes(tb, keyblob, keybloblen);
-+	store32(tb, authhandle);
-+	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
-+	store8(tb, cont);
-+	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
-+
-+	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
-+	if (ret < 0) {
-+		pr_info("authhmac failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd, keyauth,
-+			     SHA1_DIGEST_SIZE, 0, 0);
-+	if (ret < 0) {
-+		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	*newhandle = LOAD32(tb->data, TPM_DATA_OFFSET);
-+	return 0;
-+}
-+
-+/*
-+ * Execute the FlushSpecific TPM command
-+ */
-+static int tpm_flushspecific(struct tpm_buf *tb, uint32_t handle)
-+{
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_COMMAND);
-+	store32(tb, TPM_FLUSHSPECIFIC_SIZE);
-+	store32(tb, TPM_ORD_FLUSHSPECIFIC);
-+	store32(tb, handle);
-+	store32(tb, TPM_RT_KEY);
-+
-+	return trusted_tpm_send(tb->data, MAX_BUF_SIZE);
-+}
-+
- /*
-  * Maximum buffer size for the BER/DER encoded public key.  The public key
-  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
+-VCPPFLAGS	:= -DPKGBUILD="\"$(shell date -u +%F)\""
++VCPPFLAGS	:= -DPKGBUILD="\"$(shell date $(if $(SOURCE_DATE_EPOCH),--date @$(SOURCE_DATE_EPOCH)) -u +%F)\""
+ VCPPFLAGS	+= -DPKGVERSION="\"keyutils-$(VERSION)\""
+ VCPPFLAGS	+= -DAPIVERSION="\"libkeyutils-$(APIVERSION)\""
+ 
+-- 
+2.19.0
