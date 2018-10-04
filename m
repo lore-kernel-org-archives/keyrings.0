@@ -1,23 +1,24 @@
-From: Andy Lutomirski <luto@kernel.org>
-Date: Wed, 03 Oct 2018 22:08:12 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 04 Oct 2018 04:02:44 +0000
 Subject: Re: [PATCH 1/5] PM / hibernate: Create snapshot keys handler
-Message-Id: <CALCETrVriVL1uhm_6wOLzCPZ++c3E+O6Yhp4it53+Cz9xu9o7Q@mail.gmail.com>
+Message-Id: <1538625764.3702.308.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180912142337.21955-1-jlee@suse.com> <20180912142337.21955-2-jlee@suse.com>
- <CAG48ez2pRwpv0V0MNbeBN26isW2peebf+S3cqLxUgdUfARfhiw@mail.gmail.com>
- <20181002075243.GB6040@linux-l9pv.suse> <CAG48ez3=mpJu8gaAZ4-N3pnB-E7d0WkKG8iyD1J=QL4eLwftSQ@mail.gmail.com>
+References: <20180912142337.21955-1-jlee@suse.com>
+         <20180912142337.21955-2-jlee@suse.com>
+         <CAG48ez2pRwpv0V0MNbeBN26isW2peebf+S3cqLxUgdUfARfhiw@mail.gmail.com>
+         <20181002075243.GB6040@linux-l9pv.suse>
+         <CAG48ez3=mpJu8gaAZ4-N3pnB-E7d0WkKG8iyD1J=QL4eLwftSQ@mail.gmail.com>
 In-Reply-To: <CAG48ez3=mpJu8gaAZ4-N3pnB-E7d0WkKG8iyD1J=QL4eLwftSQ@mail.gmail.com>
-To: Jann Horn <jannh@google.com>
-Cc: joeyli <jlee@suse.com>, Andrew Lutomirski <luto@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, joeyli.kernel@gmail.com, "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, oneukum@suse.com, yu.chen.surf@gmail.com, ggherdovich@suse.cz
+To: Jann Horn <jannh@google.com>, joeyli <jlee@suse.com>, Andy Lutomirski <luto@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: joeyli.kernel@gmail.com, rjw@rjwysocki.net, Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, yu.c.chen@intel.com, oneukum@suse.com, Yu Chen <yu.chen.surf@gmail.com>, ggherdovich@suse.cz
 
-On Tue, Oct 2, 2018 at 12:36 PM Jann Horn <jannh@google.com> wrote:
->
+On Tue, 2018-10-02 at 21:36 +0200, Jann Horn wrote:
 > +Andy for opinions on things in write handlers
 > +Mimi Zohar as EVM maintainer
->
+> 
 > On Tue, Oct 2, 2018 at 9:55 AM joeyli <jlee@suse.com> wrote:
 > > On Thu, Sep 13, 2018 at 04:31:18PM +0200, Jann Horn wrote:
 > > > On Thu, Sep 13, 2018 at 4:08 PM Lee, Chun-Yi <joeyli.kernel@gmail.com> wrote:
@@ -59,9 +60,6 @@ On Tue, Oct 2, 2018 at 12:36 PM Jann Horn <jannh@google.com> wrote:
 > >
 > >         if (!capable(CAP_SYS_ADMIN) || (evm_initialized & EVM_SETUP))
 > >                 return -EPERM;
-
-Yeah, that's a bug.
-
 > > ...
 > >
 > > On the other hand, the writing handler of /sys/power/wake_lock also
@@ -84,22 +82,21 @@ Yeah, that's a bug.
 > >         if (!capable(CAP_BLOCK_SUSPEND))
 > >                 return -EPERM;
 > > ...
-
-Also a bug.
-
 > >
 > >
 > > So I confused for when can capable() be used in sysfs interface? Is
 > > capable() only allowed in reading handler? Why the writing handler
 > > of securityfs can use capable()?
->
+> 
 > They can't, they're all wrong. :P All of these capable() checks in
 > write handlers have to be assumed to be ineffective. But it's not a
 > big deal because you still need UID 0 to access these files.
 
-Why are there capability checks at all?
+Thanks, Jann.  At least EVM should be updated to replace the existing
+"capable" check with "if (file_ns_capable(file, &init_user_ns,
+CAP_SYS_ADMIN))". 
 
->
+> 
 > > > > +static int user_key_init(void)
 > > > > +{
 > > > > +       struct user_key_payload *ukp;
@@ -117,11 +114,72 @@ Why are there capability checks at all?
 > >
 > > The evm_write_key() also uses request_key() but it's on securityfs. Should
 > > I move my sysfs interface to securityfs?
->
+> 
 > I don't think you should be doing this in the context of any
 > filesystem. If EVM does that, EVM is doing it wrong.
 
-EVM sounds buggy.
+This is being executed in the initramfs before pivoting root.
 
-In general if you look at current *at all* in an implementation of
-write() *in any filesystem*, you are doing it wrong.
+> 
+> > > > +       if (IS_ERR(key)) {
+> > > > +               pr_err("Request key error: %ld\n", PTR_ERR(key));
+> > > > +               err = PTR_ERR(key);
+> > > > +               return err;
+> > > > +       }
+> > > > +
+> > > > +       down_write(&key->sem);
+> > > > +       ukp = user_key_payload_locked(key);
+> > > > +       if (!ukp) {
+> > > > +               /* key was revoked before we acquired its semaphore */
+> > > > +               err = -EKEYREVOKED;
+> > > > +               goto key_invalid;
+> > > > +       }
+> > > > +       if (invalid_key(ukp->data, ukp->datalen)) {
+> > > > +               err = -EINVAL;
+> > > > +               goto key_invalid;
+> > > > +       }
+> > > > +       skey.key_len = ukp->datalen;
+> > > > +       memcpy(skey.key, ukp->data, ukp->datalen);
+> > > > +       /* burn the original key contents */
+> > > > +       memzero_explicit(ukp->data, ukp->datalen);
+> > >
+> > > You just zero out the contents of the supplied key? That seems very
+> > > unidiomatic for the keys subsystem, and makes me wonder why you're
+> > > using the keys subsystem for this in the first place. It doesn't look
+> > > like normal use of the keys subsystem.
+> > >
+
+Right, evm_write_key() is normally called from the initramfs to signal
+the kernel that the EVM encrypted key has been loaded onto root's
+keyring.  The decrypted EVM key is then copied to kernel memory.
+ Before returning, the decrypted EVM key on root's keyring is cleared.
+The initramfs then removes the EVM key from the keyring.
+
+For more details about trusted/encrypted keys refer to
+Documentation/security/keys/trusted-encrypted.rst.
+
+Mimi
+
+
+> > Because I want that only one decrypted key in kernel memory. Then hibernation
+> > can handle the key more easy. In evm_init_key(), it also burned the key
+> > contents after evm key be initialled:
+> >
+> > security/integrity/evm/evm_crypto.c
+> > int evm_init_key(void)
+> > {
+> > [...snip]
+> >         /* burn the original key contents */
+> >         memset(ekp->decrypted_data, 0, ekp->decrypted_datalen);
+> >         up_read(&evm_key->sem);
+> >         key_put(evm_key);
+> >         return rc;
+> > }
+> >
+> > The keys subsystem already handles the interactive with userland and TPM.
+> > That's the reason for using keys subsystem in hibernation.
+> 
+> How do you guarantee that the user is allowed to overwrite that key? I
+> don't understand the keys subsystem very well - could this be a key on
+> the trusted keyring, or something like that?
+> 
