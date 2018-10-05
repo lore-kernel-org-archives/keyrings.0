@@ -1,128 +1,85 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:47:53 +0000
-Subject: [PATCH 09/22] crypto: rsa-pkcs1pad: Allow hash to be optional [ver #2]
-Message-Id: <153910367369.12141.13351167409478803724.stgit@warthog.procyon.org.uk>
+From: syzbot <syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com>
+Date: Fri, 05 Oct 2018 11:16:03 +0000
+Subject: kernel BUG at security/keys/keyring.c:LINE!
+Message-Id: <000000000000a722550577796543@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-To: jmorris@namei.org
-Cc: Denis Kenzior <denkenz@gmail.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: dhowells@redhat.com, jmorris@namei.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, serge@hallyn.com, syzkaller-bugs@googlegroups.com
 
-From: Denis Kenzior <denkenz@gmail.com>
-
-The original pkcs1pad implementation allowed to pad/unpad raw RSA
-output.  However, this has been taken out in commit:
-commit c0d20d22e0ad ("crypto: rsa-pkcs1pad - Require hash to be present")
-
-This patch restored this ability as it is needed by the asymmetric key
-implementation.
-
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Tested-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
----
-
- crypto/rsa-pkcs1pad.c |   59 ++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 41 insertions(+), 18 deletions(-)
-
-diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
-index 9893dbfc1af4..27b1e2bd4bfb 100644
---- a/crypto/rsa-pkcs1pad.c
-+++ b/crypto/rsa-pkcs1pad.c
-@@ -401,7 +401,8 @@ static int pkcs1pad_sign(struct akcipher_request *req)
- 	if (!ctx->key_size)
- 		return -EINVAL;
- 
--	digest_size = digest_info->size;
-+	if (digest_info)
-+		digest_size = digest_info->size;
- 
- 	if (req->src_len + digest_size > ctx->key_size - 11)
- 		return -EOVERFLOW;
-@@ -421,8 +422,9 @@ static int pkcs1pad_sign(struct akcipher_request *req)
- 	memset(req_ctx->in_buf + 1, 0xff, ps_end - 1);
- 	req_ctx->in_buf[ps_end] = 0x00;
- 
--	memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
--	       digest_info->size);
-+	if (digest_info)
-+		memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
-+		       digest_info->size);
- 
- 	pkcs1pad_sg_set_buf(req_ctx->in_sg, req_ctx->in_buf,
- 			ctx->key_size - 1 - req->src_len, req->src);
-@@ -484,10 +486,13 @@ static int pkcs1pad_verify_complete(struct akcipher_request *req, int err)
- 		goto done;
- 	pos++;
- 
--	if (crypto_memneq(out_buf + pos, digest_info->data, digest_info->size))
--		goto done;
-+	if (digest_info) {
-+		if (crypto_memneq(out_buf + pos, digest_info->data,
-+				  digest_info->size))
-+			goto done;
- 
--	pos += digest_info->size;
-+		pos += digest_info->size;
-+	}
- 
- 	err = 0;
- 
-@@ -617,11 +622,14 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
- 
- 	hash_name = crypto_attr_alg_name(tb[2]);
- 	if (IS_ERR(hash_name))
--		return PTR_ERR(hash_name);
-+		hash_name = NULL;
- 
--	digest_info = rsa_lookup_asn1(hash_name);
--	if (!digest_info)
--		return -EINVAL;
-+	if (hash_name) {
-+		digest_info = rsa_lookup_asn1(hash_name);
-+		if (!digest_info)
-+			return -EINVAL;
-+	} else
-+		digest_info = NULL;
- 
- 	inst = kzalloc(sizeof(*inst) + sizeof(*ctx), GFP_KERNEL);
- 	if (!inst)
-@@ -641,14 +649,29 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
- 
- 	err = -ENAMETOOLONG;
- 
--	if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
--		     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME ||
--	    snprintf(inst->alg.base.cra_driver_name, CRYPTO_MAX_ALG_NAME,
--		     "pkcs1pad(%s,%s)",
--		     rsa_alg->base.cra_driver_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME)
--		goto out_drop_alg;
-+	if (!hash_name) {
-+		if (snprintf(inst->alg.base.cra_name,
-+			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
-+			     rsa_alg->base.cra_name) >= CRYPTO_MAX_ALG_NAME)
-+			goto out_drop_alg;
-+
-+		if (snprintf(inst->alg.base.cra_driver_name,
-+			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
-+			     rsa_alg->base.cra_driver_name) >+			     CRYPTO_MAX_ALG_NAME)
-+			goto out_drop_alg;
-+	} else {
-+		if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
-+			     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name,
-+			     hash_name) >= CRYPTO_MAX_ALG_NAME)
-+			goto out_drop_alg;
-+
-+		if (snprintf(inst->alg.base.cra_driver_name,
-+			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s,%s)",
-+			     rsa_alg->base.cra_driver_name,
-+			     hash_name) >= CRYPTO_MAX_ALG_NAME)
-+			goto out_drop_alg;
-+	}
- 
- 	inst->alg.base.cra_flags = rsa_alg->base.cra_flags & CRYPTO_ALG_ASYNC;
- 	inst->alg.base.cra_priority = rsa_alg->base.cra_priority;
+SGVsbG8sCgpzeXpib3QgZm91bmQgdGhlIGZvbGxvd2luZyBjcmFzaCBvbjoKCkhFQUQgY29tbWl0
+OiAgICBiZWZhZDk0NGUyMzEgTWVyZ2UgdGFnICdkcm0tZml4ZXMtMjAxOC0xMC0wNScgb2YgZ2l0
+Oi8vYW5vLi4KZ2l0IHRyZWU6ICAgICAgIHVwc3RyZWFtCmNvbnNvbGUgb3V0cHV0OiBodHRwczov
+L3N5emthbGxlci5hcHBzcG90LmNvbS94L2xvZy50eHQ/eBYxZmM5NzY0MDAwMDAKa2VybmVsIGNv
+bmZpZzogIGh0dHBzOi8vc3l6a2FsbGVyLmFwcHNwb3QuY29tL3gvLmNvbmZpZz94wGFmMDNmZTQ1
+MmI2NWZiCmRhc2hib2FyZCBsaW5rOiBodHRwczovL3N5emthbGxlci5hcHBzcG90LmNvbS9idWc/
+ZXh0aWTsMjRlOTVlYTQ4M2RlMGEyNGRhCmNvbXBpbGVyOiAgICAgICBnY2MgKEdDQykgOC4wLjEg
+MjAxODA0MTMgKGV4cGVyaW1lbnRhbCkKc3l6IHJlcHJvOiAgICAgIGh0dHBzOi8vc3l6a2FsbGVy
+LmFwcHNwb3QuY29tL3gvcmVwcm8uc3l6P3gQMTYwZTNhNDAwMDAwCkMgcmVwcm9kdWNlcjogICBo
+dHRwczovL3N5emthbGxlci5hcHBzcG90LmNvbS94L3JlcHJvLmM/eBY5OTU0OTE0MDAwMDAKCklN
+UE9SVEFOVDogaWYgeW91IGZpeCB0aGUgYnVnLCBwbGVhc2UgYWRkIHRoZSBmb2xsb3dpbmcgdGFn
+IHRvIHRoZSBjb21taXQ6ClJlcG9ydGVkLWJ5OiBzeXpib3QrZWMyNGU5NWVhNDgzZGUwYTI0ZGFA
+c3l6a2FsbGVyLmFwcHNwb3RtYWlsLmNvbQoKLS0tLS0tLS0tLS0tWyBjdXQgaGVyZSBdLS0tLS0t
+LS0tLS0tCmtlcm5lbCBCVUcgYXQgc2VjdXJpdHkva2V5cy9rZXlyaW5nLmM6MTIxNCEKaW52YWxp
+ZCBvcGNvZGU6IDAwMDAgWyMxXSBQUkVFTVBUIFNNUCBLQVNBTgpDUFU6IDAgUElEOiA1ODA3IENv
+bW06IHN5ei1leGVjdXRvcjIyNiBOb3QgdGFpbnRlZCA0LjE5LjAtcmM2KyAjMjY4CkhhcmR3YXJl
+IG5hbWU6IEdvb2dsZSBHb29nbGUgQ29tcHV0ZSBFbmdpbmUvR29vZ2xlIENvbXB1dGUgRW5naW5l
+LCBCSU9TICAKR29vZ2xlIDAxLzAxLzIwMTEKUklQOiAwMDEwOl9fa2V5X2xpbmtfYmVnaW4rMHgy
+M2EvMHgzMDAgc2VjdXJpdHkva2V5cy9rZXlyaW5nLmM6MTIxNApDb2RlOiBmZSA0OCBjNyBjNyAy
+MCBhZSA2NyA4OSBlOCBiMyAzNiAyMyBmZSBlYiBhYyBlOCBlYyA2NCA0MiBmZSA0OCBjNyBjNyAg
+CjIwIGFlIDY3IDg5IGU4IDMwIDczIDczIDA0IGU5IGUzIGZlIGZmIGZmIGU4IGQ2IDY0IDQyIGZl
+IDwwZj4gMGIgZTggY2YgNjQgIAo0MiBmZSA0OCA4ZCBiYiBjZSAwMCAwMCAwMCA0OCBiOCAwMCAw
+MCAwMCAwMCAwMCBmYwpSU1A6IDAwMTg6ZmZmZjg4MDFiYmRjN2IxMCBFRkxBR1M6IDAwMDEwMjkz
+ClJBWDogZmZmZjg4MDFkOTI0ZTJjMCBSQlg6IGZmZmY4ODAxZDRlN2UwODAgUkNYOiBmZmZmZmZm
+ZjgzM2M0ZWJmClJEWDogMDAwMDAwMDAwMDAwMDAwMCBSU0k6IGZmZmZmZmZmODMzYzUwYWEgUkRJ
+OiAwMDAwMDAwMDAwMDAwMDA3ClJCUDogZmZmZjg4MDFiYmRjN2I0MCBSMDg6IGZmZmY4ODAxZDky
+NGUyYzAgUjA5OiBmZmZmZmJmZmYxMmNmNGE0ClIxMDogZmZmZmZiZmZmMTJjZjRhNCBSMTE6IGZm
+ZmZmZmZmODk2N2E1MjMgUjEyOiBmZmZmODgwMWJiZGM3YzQ4ClIxMzogMDAwMDAwMDAwMDAwMDAw
+MCBSMTQ6IGZmZmY4ODAxZDRlN2UyMDAgUjE1OiBmZmZmODgwMWQ0ZTdlMDgwCkZTOiAgMDAwMDAw
+MDAwMWNlOTg4MCgwMDAwKSBHUzpmZmZmODgwMWRhZTAwMDAwKDAwMDApIGtubEdTOjAwMDAwMDAw
+MDAwMDAwMDAKQ1M6ICAwMDEwIERTOiAwMDAwIEVTOiAwMDAwIENSMDogMDAwMDAwMDA4MDA1MDAz
+MwpDUjI6IDAwMDAwMDAwMjBjYWIwMDAgQ1IzOiAwMDAwMDAwMWQ4MjlhMDAwIENSNDogMDAwMDAw
+MDAwMDE0MDZmMApDYWxsIFRyYWNlOgogIGNvbnN0cnVjdF9hbGxvY19rZXkgc2VjdXJpdHkva2V5
+cy9yZXF1ZXN0X2tleS5jOjM4OSBbaW5saW5lXQogIGNvbnN0cnVjdF9rZXlfYW5kX2xpbmsgc2Vj
+dXJpdHkva2V5cy9yZXF1ZXN0X2tleS5jOjQ4MCBbaW5saW5lXQogIHJlcXVlc3Rfa2V5X2FuZF9s
+aW5rKzB4NzM3LzB4MTdhMCBzZWN1cml0eS9rZXlzL3JlcXVlc3Rfa2V5LmM6NTkzCiAgX19kb19z
+eXNfcmVxdWVzdF9rZXkgc2VjdXJpdHkva2V5cy9rZXljdGwuYzoyMTMgW2lubGluZV0KICBfX3Nl
+X3N5c19yZXF1ZXN0X2tleSBzZWN1cml0eS9rZXlzL2tleWN0bC5jOjE1OCBbaW5saW5lXQogIF9f
+eDY0X3N5c19yZXF1ZXN0X2tleSsweDMwNS8weDQwMCBzZWN1cml0eS9rZXlzL2tleWN0bC5jOjE1
+OAogIGRvX3N5c2NhbGxfNjQrMHgxYjkvMHg4MjAgYXJjaC94ODYvZW50cnkvY29tbW9uLmM6Mjkw
+CiAgZW50cnlfU1lTQ0FMTF82NF9hZnRlcl9od2ZyYW1lKzB4NDkvMHhiZQpSSVA6IDAwMzM6MHg0
+NDAxNjkKQ29kZTogMTggODkgZDAgYzMgNjYgMmUgMGYgMWYgODQgMDAgMDAgMDAgMDAgMDAgMGYg
+MWYgMDAgNDggODkgZjggNDggODkgZjcgIAo0OCA4OSBkNiA0OCA4OSBjYSA0ZCA4OSBjMiA0ZCA4
+OSBjOCA0YyA4YiA0YyAyNCAwOCAwZiAwNSA8NDg+IDNkIDAxIGYwIGZmICAKZmYgMGYgODMgZmIg
+MTMgZmMgZmYgYzMgNjYgMmUgMGYgMWYgODQgMDAgMDAgMDAgMDAKUlNQOiAwMDJiOjAwMDA3ZmZk
+NzAzMjQ4MDggRUZMQUdTOiAwMDAwMDIxNyBPUklHX1JBWDogMDAwMDAwMDAwMDAwMDBmOQpSQVg6
+IGZmZmZmZmZmZmZmZmZmZGEgUkJYOiAwMDAwMDAwMDAwNDAwMmM4IFJDWDogMDAwMDAwMDAwMDQ0
+MDE2OQpSRFg6IDAwMDAwMDAwMjAwMDAxYzAgUlNJOiAwMDAwMDAwMDIwMDAwMTgwIFJESTogMDAw
+MDAwMDAyMDAwMDBjMApSQlA6IDAwMDAwMDAwMDA2Y2EwMTggUjA4OiAwMDAwMDAwMDAwNDAwMmM4
+IFIwOTogMDAwMDAwMDAwMDQwMDJjOApSMTA6IDAwMDAwMDAwMTExNTIyZDMgUjExOiAwMDAwMDAw
+MDAwMDAwMjE3IFIxMjogMDAwMDAwMDAwMDQwMTlmMApSMTM6IDAwMDAwMDAwMDA0MDFhODAgUjE0
+OiAwMDAwMDAwMDAwMDAwMDAwIFIxNTogMDAwMDAwMDAwMDAwMDAwMApNb2R1bGVzIGxpbmtlZCBp
+bjoKLS0tWyBlbmQgdHJhY2UgNDA4MTVjNGE4ZjFlMjQ3MiBdLS0tClJJUDogMDAxMDpfX2tleV9s
+aW5rX2JlZ2luKzB4MjNhLzB4MzAwIHNlY3VyaXR5L2tleXMva2V5cmluZy5jOjEyMTQKQ29kZTog
+ZmUgNDggYzcgYzcgMjAgYWUgNjcgODkgZTggYjMgMzYgMjMgZmUgZWIgYWMgZTggZWMgNjQgNDIg
+ZmUgNDggYzcgYzcgIAoyMCBhZSA2NyA4OSBlOCAzMCA3MyA3MyAwNCBlOSBlMyBmZSBmZiBmZiBl
+OCBkNiA2NCA0MiBmZSA8MGY+IDBiIGU4IGNmIDY0ICAKNDIgZmUgNDggOGQgYmIgY2UgMDAgMDAg
+MDAgNDggYjggMDAgMDAgMDAgMDAgMDAgZmMKUlNQOiAwMDE4OmZmZmY4ODAxYmJkYzdiMTAgRUZM
+QUdTOiAwMDAxMDI5MwpSQVg6IGZmZmY4ODAxZDkyNGUyYzAgUkJYOiBmZmZmODgwMWQ0ZTdlMDgw
+IFJDWDogZmZmZmZmZmY4MzNjNGViZgpSRFg6IDAwMDAwMDAwMDAwMDAwMDAgUlNJOiBmZmZmZmZm
+ZjgzM2M1MGFhIFJESTogMDAwMDAwMDAwMDAwMDAwNwpSQlA6IGZmZmY4ODAxYmJkYzdiNDAgUjA4
+OiBmZmZmODgwMWQ5MjRlMmMwIFIwOTogZmZmZmZiZmZmMTJjZjRhNApSMTA6IGZmZmZmYmZmZjEy
+Y2Y0YTQgUjExOiBmZmZmZmZmZjg5NjdhNTIzIFIxMjogZmZmZjg4MDFiYmRjN2M0OApSMTM6IDAw
+MDAwMDAwMDAwMDAwMDAgUjE0OiBmZmZmODgwMWQ0ZTdlMjAwIFIxNTogZmZmZjg4MDFkNGU3ZTA4
+MApGUzogIDAwMDAwMDAwMDFjZTk4ODAoMDAwMCkgR1M6ZmZmZjg4MDFkYWUwMDAwMCgwMDAwKSBr
+bmxHUzowMDAwMDAwMDAwMDAwMDAwCkNTOiAgMDAxMCBEUzogMDAwMCBFUzogMDAwMCBDUjA6IDAw
+MDAwMDAwODAwNTAwMzMKQ1IyOiAwMDAwMDAwMDIwY2FiMDAwIENSMzogMDAwMDAwMDFkODI5YTAw
+MCBDUjQ6IDAwMDAwMDAwMDAxNDA2ZjAKCgotLS0KVGhpcyBidWcgaXMgZ2VuZXJhdGVkIGJ5IGEg
+Ym90LiBJdCBtYXkgY29udGFpbiBlcnJvcnMuClNlZSBodHRwczovL2dvby5nbC90cHNtRUogZm9y
+IG1vcmUgaW5mb3JtYXRpb24gYWJvdXQgc3l6Ym90LgpzeXpib3QgZW5naW5lZXJzIGNhbiBiZSBy
+ZWFjaGVkIGF0IHN5emthbGxlckBnb29nbGVncm91cHMuY29tLgoKc3l6Ym90IHdpbGwga2VlcCB0
+cmFjayBvZiB0aGlzIGJ1ZyByZXBvcnQuIFNlZToKaHR0cHM6Ly9nb28uZ2wvdHBzbUVKI2J1Zy1z
+dGF0dXMtdHJhY2tpbmcgZm9yIGhvdyB0byBjb21tdW5pY2F0ZSB3aXRoICAKc3l6Ym90LgpzeXpi
+b3QgY2FuIHRlc3QgcGF0Y2hlcyBmb3IgdGhpcyBidWcsIGZvciBkZXRhaWxzIHNlZToKaHR0cHM6
+Ly9nb28uZ2wvdHBzbUVKI3Rlc3RpbmctcGF0Y2hlcw==
