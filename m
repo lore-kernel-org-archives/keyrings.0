@@ -1,32 +1,101 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Mon, 22 Oct 2018 10:43:36 +0000
-Subject: [PATCH v2 0/4] update sign-file to use generic engine code
-Message-Id: <1540205016.2815.7.camel@HansenPartnership.com>
+From: Dave Jiang <dave.jiang@intel.com>
+Date: Mon, 08 Oct 2018 23:56:36 +0000
+Subject: [PATCH v12 12/12] acpi, nfit: Move acpi_nfit_get_security_ops() to generic location
+Message-Id: <153904299685.60070.3336606945357072947.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.intel.com>
+To: dan.j.williams@intel.com
+Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-This patch does both built in engines and explicitly specified ones as
-per the discussion we had on the "support other engines" patch.
+From: Dan Williams <dan.j.williams@intel.com>
 
-I think this should satisfy everyone's use case without requiring any
-change to the current work flow (or even options people use to build
-and sign modules).
+In anticipation of other DIMMs adding security operations support, don't
+require them to edit intel.h. Instead have intel.h optionally arrange
+for intel_security_ops to be NULL or not based on build parameters.
 
-James
-
+Reviewed-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
+ drivers/acpi/nfit/core.c  |   10 ++++++++++
+ drivers/acpi/nfit/intel.c |    3 ++-
+ drivers/acpi/nfit/intel.h |   18 +++---------------
+ 3 files changed, 15 insertions(+), 16 deletions(-)
 
-James Bottomley (4):
-  sign-file: stop referring to the code as main.c
-  sign-file: remove open coding of ERR_clear_error()
-  sign-file: add generic built-in engine key support
-  sign-file: add explicit engine specification
-
- scripts/sign-file.c | 90 ++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 62 insertions(+), 28 deletions(-)
-
--- 
-2.16.4
+diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
+index e5f7c664a7c8..b7773c70ee81 100644
+--- a/drivers/acpi/nfit/core.c
++++ b/drivers/acpi/nfit/core.c
+@@ -1835,6 +1835,16 @@ static void shutdown_dimm_notify(void *data)
+ 	mutex_unlock(&acpi_desc->init_mutex);
+ }
+ 
++static const struct nvdimm_security_ops *acpi_nfit_get_security_ops(int family)
++{
++        switch (family) {
++        case NVDIMM_FAMILY_INTEL:
++                return intel_security_ops;
++        default:
++                return NULL;
++        }
++}
++
+ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
+ {
+ 	struct nfit_mem *nfit_mem;
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index 70bccb0c57e2..8d2413810a5f 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -358,7 +358,7 @@ static int intel_dimm_security_state(struct nvdimm *nvdimm,
+ 	return rc;
+ }
+ 
+-const struct nvdimm_security_ops intel_security_ops = {
++static const struct nvdimm_security_ops __intel_security_ops = {
+ 	.state = intel_dimm_security_state,
+ 	.unlock = intel_dimm_security_unlock,
+ 	.change_key = intel_dimm_security_update_passphrase,
+@@ -366,3 +366,4 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.freeze_lock = intel_dimm_security_freeze_lock,
+ 	.erase = intel_dimm_security_erase,
+ };
++const struct nvdimm_security_ops *intel_security_ops = &__intel_security_ops;
+diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
+index f9ac718776ca..f831084f95fa 100644
+--- a/drivers/acpi/nfit/intel.h
++++ b/drivers/acpi/nfit/intel.h
+@@ -8,7 +8,7 @@
+ 
+ #ifdef CONFIG_X86
+ 
+-extern const struct nvdimm_security_ops intel_security_ops;
++extern const struct nvdimm_security_ops *intel_security_ops;
+ 
+ #define ND_INTEL_STATUS_SIZE		4
+ #define ND_INTEL_PASSPHRASE_SIZE	32
+@@ -64,19 +64,7 @@ struct nd_intel_overwrite {
+ struct nd_intel_query_overwrite {
+ 	u32 status;
+ } __packed;
++#else /* CONFIG_X86 */
++#define intel_security_ops (NULL)
+ #endif /* CONFIG_X86 */
+-
+-static inline const struct nvdimm_security_ops *
+-acpi_nfit_get_security_ops(int family)
+-{
+-	switch (family) {
+-#ifdef CONFIG_X86
+-	case NVDIMM_FAMILY_INTEL:
+-		return &intel_security_ops;
+-#endif
+-	default:
+-		return NULL;
+-	}
+-}
+-
+ #endif
