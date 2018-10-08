@@ -1,7 +1,7 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 08 Oct 2018 23:56:14 +0000
-Subject: [PATCH v12 08/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
-Message-Id: <153904297419.60070.5451705947184283169.stgit@djiang5-desk3.ch.intel.com>
+Date: Mon, 08 Oct 2018 23:56:25 +0000
+Subject: [PATCH v12 10/12] libnvdimm: add documentation for nvdimm security support
+Message-Id: <153904298565.60070.350988093446570269.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,233 +11,117 @@ In-Reply-To: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.inte
 To: dan.j.williams@intel.com
 Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-Add support to issue a secure erase DSM to the Intel nvdimm. The
-required passphrase is acquired from userspace through the kernel key
-management. To trigger the action, "erase <old_keyid>" is written to the
-"security" sysfs attribute. libnvdimm will support the erase generic API
-call. The user key provided will be verified against the cached kernel
-key. If no kernel key exists, then the user key will be attempted for the
-operation.
+Add theory of operation for the security support that's going into
+libnvdimm.
 
 Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/acpi/nfit/intel.c           |   58 ++++++++++++++++++++++++++++
- drivers/nvdimm/dimm_devs.c          |    5 ++
- drivers/nvdimm/dimm_devs_security.c |   72 +++++++++++++++++++++++++++++++++++
- drivers/nvdimm/nd.h                 |    7 +++
- include/linux/libnvdimm.h           |    3 +
- 5 files changed, 145 insertions(+)
+ Documentation/nvdimm/security.txt |   99 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
+ create mode 100644 Documentation/nvdimm/security.txt
 
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index ba886f1f5399..419a7d54d4e8 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -18,6 +18,63 @@
- #include "intel.h"
- #include "nfit.h"
- 
-+static int intel_dimm_security_erase(struct nvdimm_bus *nvdimm_bus,
-+		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
-+{
-+	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
-+	int cmd_rc, rc = 0;
-+	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
-+	struct {
-+		struct nd_cmd_pkg pkg;
-+		struct nd_intel_secure_erase cmd;
-+	} nd_cmd = {
-+		.pkg = {
-+			.nd_command = NVDIMM_INTEL_SECURE_ERASE,
-+			.nd_family = NVDIMM_FAMILY_INTEL,
-+			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
-+			.nd_size_out = ND_INTEL_STATUS_SIZE,
-+			.nd_fw_size = ND_INTEL_STATUS_SIZE,
-+		},
-+		.cmd = {
-+			.status = 0,
-+		},
-+	};
+diff --git a/Documentation/nvdimm/security.txt b/Documentation/nvdimm/security.txt
+new file mode 100644
+index 000000000000..50cbb6cb96a1
+--- /dev/null
++++ b/Documentation/nvdimm/security.txt
+@@ -0,0 +1,99 @@
++NVDIMM SECURITY
++=======+
++1. Introduction
++---------------
 +
-+	if (!test_bit(NVDIMM_INTEL_SECURE_ERASE, &nfit_mem->dsm_mask))
-+		return -ENOTTY;
++With the introduction of Intel DSM v1.7 specification [1], security DSMs are
++introduced. The spec added the following security DSMs: "get security state",
++"set passphrase", "disable passphrase", "unlock unit", "freeze lock",
++"secure erase", and "overwrite". A security_ops data structure has been
++added to struct dimm in order to support the security operations and generic
++APIs are exposed to allow vendor neutral operations.
 +
-+	/* flush all cache before we erase DIMM */
-+	wbinvd_on_all_cpus();
-+	memcpy(nd_cmd.cmd.passphrase, nkey->data,
-+			sizeof(nd_cmd.cmd.passphrase));
-+	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
-+			sizeof(nd_cmd), &cmd_rc);
-+	if (rc < 0)
-+		goto out;
-+	if (cmd_rc < 0) {
-+		rc = cmd_rc;
-+		goto out;
-+	}
++2. Sysfs Interface
++------------------
++The "security" sysfs attribute is provided in the nvdimm sysfs directory. For
++example:
++/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/security
 +
-+	switch (nd_cmd.cmd.status) {
-+	case 0:
-+		break;
-+	case ND_INTEL_STATUS_INVALID_PASS:
-+		rc = -EINVAL;
-+		goto out;
-+	case ND_INTEL_STATUS_INVALID_STATE:
-+	default:
-+		rc = -ENXIO;
-+		goto out;
-+	}
++The "show" function of that attribute will display the security state for
++that DIMM. The following states are available: disabled, unlocked, locked,
++frozen, and unsupported.
 +
-+	/* DIMM erased, invalidate all CPU caches before we read it */
-+	wbinvd_on_all_cpus();
++The "store" function takes several commands when the attribute is written to
++in order to support some of the security functionalities:
++update <old_keyid> <new_keyid> - enable security. Add or update current key.
++disable <old_keyid> - disable enabled security and remove key.
++freeze - freeze changing of security states.
++erase <old_keyid> - generate new ecryption key for DIMM and crypto-scrambles
++	all existing user data.
 +
-+ out:
-+	return rc;
-+}
++3. Key Management
++-----------------
 +
- static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
- 		struct nvdimm *nvdimm)
- {
-@@ -321,4 +378,5 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.change_key = intel_dimm_security_update_passphrase,
- 	.disable = intel_dimm_security_disable,
- 	.freeze_lock = intel_dimm_security_freeze_lock,
-+	.erase = intel_dimm_security_erase,
- };
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index a1c4c28d951f..1421404a687f 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -445,6 +445,11 @@ static ssize_t security_store(struct device *dev,
- 	} else if (sysfs_streq(buf, "freeze")) {
- 		dev_dbg(dev, "freeze\n");
- 		rc = nvdimm_security_freeze_lock(dev);
-+	} else if (sysfs_streq(cmd, "erase")) {
-+		if (rc != 2)
-+			return -EINVAL;
-+		dev_dbg(dev, "erase %#x\n", old_key);
-+		rc = nvdimm_security_erase(dev, old_key);
- 	} else
- 		return -EINVAL;
- 
-diff --git a/drivers/nvdimm/dimm_devs_security.c b/drivers/nvdimm/dimm_devs_security.c
-index 767c5ae06cb5..4a8bd4d94515 100644
---- a/drivers/nvdimm/dimm_devs_security.c
-+++ b/drivers/nvdimm/dimm_devs_security.c
-@@ -164,6 +164,78 @@ int nvdimm_security_get_state(struct device *dev)
- 			&nvdimm->state);
- }
- 
-+int nvdimm_security_erase(struct device *dev, unsigned int keyid)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
-+	struct key *key;
-+	struct user_key_payload *payload;
-+	int rc = 0;
-+	bool is_userkey = false;
++The key is associted to the payload by the DIMM id. For example:
++# cat /sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/nfit/id
++8089-a2-1740-00000133
++The DIMM id would be provided along with the key payload (passphrase) to
++the kernel.
 +
-+	if (!nvdimm->security_ops)
-+		return -EOPNOTSUPP;
++The security keys are managed on the basis of a single key per DIMM. The
++key "passphrase" is expected to be 32bytes long or padded to 32bytes. This is
++similar to the ATA security specification [2]. A key is initially acquired
++via the request_key() kernel API call and retrieved from userspace. It is up to
++the user to provide an upcall application to retrieve the key in whatever
++fashion meets their security requirements.
 +
-+	nvdimm_bus_lock(&nvdimm_bus->dev);
-+	mutex_lock(&nvdimm->key_mutex);
-+	if (atomic_read(&nvdimm->busy)) {
-+		dev_warn(dev, "Unable to secure erase while DIMM active.\n");
-+		rc = -EBUSY;
-+		goto out;
-+	}
++A nvdimm user logon key has the description format of:
++nvdimm:<bus-provider-specific-unique-id>
 +
-+	if (dev_get_drvdata(dev)) {
-+		dev_warn(dev, "Unable to secure erase while DIMM enabled.\n");
-+		rc = -EBUSY;
-+		goto out;
-+	}
++4. Unlocking
++------------
++When the DIMMs are being enumerated by the kernel, the kernel will attempt to
++retrieve the key from its keyring. If that fails, it will attempt to
++acquire the key from the userspace upcall function. This is the only time
++a locked DIMM can be unlocked. Once unlocked, the DIMM will remain unlocked
++until reboot.
 +
-+	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED) {
-+		dev_warn(dev, "Attempt to secure erase in wrong state.\n");
-+		rc = -EOPNOTSUPP;
-+		goto out;
-+	}
++5. Update
++---------
++When doing an update, it is expected that the new key with the 64bit payload of
++format described above is added via the keyutils API or utility. The update
++command written to the sysfs attribute will be with the format:
++update <old keyid> <new keyid>
 +
-+	/* look for a key from cached key if exists */
-+	key = nvdimm_get_and_verify_key(dev, keyid);
-+	if (IS_ERR(key)) {
-+		dev_dbg(dev, "Unable to get and verify key\n");
-+		rc = PTR_ERR(key);
-+		goto out;
-+	}
-+	if (!key) {
-+		dev_dbg(dev, "No cached key found\n");
-+		/* get old user key */
-+		key = nvdimm_lookup_user_key(dev, keyid);
-+		if (!key) {
-+			dev_dbg(dev, "Unable to retrieve user key: %#x\n",
-+					keyid);
-+			rc = -ENOKEY;
-+			goto out;
-+		}
-+		is_userkey = true;
-+	}
++It is expected that a user logon key has been injected via keyutils to provide
++the payload for the update operation. The kernel will take the new user key,
++attempt the update operation with the nvdimm, and replace the existing key's
++payload with the new passphrase.
 +
-+	down_read(&key->sem);
-+	payload = key->payload.data[0];
-+	rc = nvdimm->security_ops->erase(nvdimm_bus, nvdimm,
-+			(void *)payload->data);
-+	up_read(&key->sem);
++If there is no old key id due to a security enabling, then a 0 should be
++passed in.  If a nvdimm has an existing passphrase, then an "old" key should
++be injected with a key description that does not have the "nvdimm:" prefix.
 +
-+	/* remove key since secure erase kills the passphrase */
-+	if (!is_userkey) {
-+		key_invalidate(key);
-+		nvdimm->key = NULL;
-+	}
-+	key_put(key);
++6. Freeze
++---------
++The freeze operation does not require any keys. The security config can be
++frozen by a user with root privelege.
 +
-+ out:
-+	mutex_unlock(&nvdimm->key_mutex);
-+	nvdimm_bus_unlock(&nvdimm_bus->dev);
-+	nvdimm_security_get_state(dev);
-+	return rc;
-+}
++7. Disable
++----------
++The security disable command format is:
++disable <old keyid>
 +
- int nvdimm_security_freeze_lock(struct device *dev)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-diff --git a/drivers/nvdimm/nd.h b/drivers/nvdimm/nd.h
-index d89fe1423f9a..08e442632a2d 100644
---- a/drivers/nvdimm/nd.h
-+++ b/drivers/nvdimm/nd.h
-@@ -432,6 +432,7 @@ int nvdimm_security_change_key(struct device *dev, unsigned int old_keyid,
- 		unsigned int new_keyid);
- int nvdimm_security_disable(struct device *dev, unsigned int keyid);
- int nvdimm_security_freeze_lock(struct device *dev);
-+int nvdimm_security_erase(struct device *dev, unsigned int keyid);
- #else
- static inline struct key *nvdimm_get_key(struct device *dev)
- {
-@@ -464,5 +465,11 @@ static inline int nvdimm_security_freeze_lock(struct device *dev)
- {
- 	return -EOPNOTSUPP;
- }
++An "old" key with the passphrase payload that is tied to the nvdimm should be
++injected with a key description that does not have the "nvdimm:" prefix and
++its keyid should be passed in via sysfs.
 +
-+static inline int nvdimm_security_erase(struct device *dev,
-+		unsigned int keyid)
-+{
-+	return -EOPNOTSUPP;
-+}
- #endif
- #endif /* __ND_H__ */
-diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index bcab42caa948..0d85e092a6dd 100644
---- a/include/linux/libnvdimm.h
-+++ b/include/linux/libnvdimm.h
-@@ -187,6 +187,9 @@ struct nvdimm_security_ops {
- 			const struct nvdimm_key_data *nkey);
- 	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
- 			struct nvdimm *nvdimm);
-+	int (*erase)(struct nvdimm_bus *nvdimm_bus,
-+			struct nvdimm *nvdimm,
-+			const struct nvdimm_key_data *nkey);
- };
- 
- void badrange_init(struct badrange *badrange);
++8. Secure Erase
++---------------
++The command format for doing a secure erase is:
++erase <old keyid>
++
++An "old" key with the passphrase payload that is tied to the nvdimm should be
++injected with a key description that does not have the "nvdimm:" prefix and
++its keyid should be passed in via sysfs.
++
++[1]: http://pmem.io/documents/NVDIMM_DSM_Interface-V1.7.pdf
++[2]: http://www.t13.org/documents/UploadedDocuments/docs2006/e05179r4-ACS-SecurityClarifications.pdf
