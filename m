@@ -1,7 +1,7 @@
 From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 08 Oct 2018 23:55:40 +0000
-Subject: [PATCH v12 02/12] nfit/libnvdimm: store dimm id as a member to struct nvdimm
-Message-Id: <153904294068.60070.14128466207841976272.stgit@djiang5-desk3.ch.intel.com>
+Date: Mon, 08 Oct 2018 23:56:14 +0000
+Subject: [PATCH v12 08/12] nfit/libnvdimm: add support for issue secure erase DSM to Intel nvdimm
+Message-Id: <153904297419.60070.5451705947184283169.stgit@djiang5-desk3.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,145 +11,233 @@ In-Reply-To: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.inte
 To: dan.j.williams@intel.com
 Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
 
-The generated dimm id is needed for the sysfs attribute as well as being
-used as the identifier/description for the security key. Since it's
-constant and should never change, store it as a member of struct nvdimm.
+Add support to issue a secure erase DSM to the Intel nvdimm. The
+required passphrase is acquired from userspace through the kernel key
+management. To trigger the action, "erase <old_keyid>" is written to the
+"security" sysfs attribute. libnvdimm will support the erase generic API
+call. The user key provided will be verified against the cached kernel
+key. If no kernel key exists, then the user key will be attempted for the
+operation.
 
 Signed-off-by: Dave Jiang <dave.jiang@intel.com>
 Reviewed-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/acpi/nfit/core.c   |   29 +++++++++++++++++------------
- drivers/acpi/nfit/nfit.h   |    3 +++
- drivers/nvdimm/dimm_devs.c |    4 +++-
- drivers/nvdimm/nd-core.h   |    1 +
- include/linux/libnvdimm.h  |    2 +-
- 5 files changed, 25 insertions(+), 14 deletions(-)
+ drivers/acpi/nfit/intel.c           |   58 ++++++++++++++++++++++++++++
+ drivers/nvdimm/dimm_devs.c          |    5 ++
+ drivers/nvdimm/dimm_devs_security.c |   72 +++++++++++++++++++++++++++++++++++
+ drivers/nvdimm/nd.h                 |    7 +++
+ include/linux/libnvdimm.h           |    3 +
+ 5 files changed, 145 insertions(+)
 
-diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-index 4f3b89dc9238..94755a4b6327 100644
---- a/drivers/acpi/nfit/core.c
-+++ b/drivers/acpi/nfit/core.c
-@@ -1572,18 +1572,10 @@ static DEVICE_ATTR_RO(flags);
- static ssize_t id_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
--	struct acpi_nfit_control_region *dcr = to_nfit_dcr(dev);
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
+diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
+index ba886f1f5399..419a7d54d4e8 100644
+--- a/drivers/acpi/nfit/intel.c
++++ b/drivers/acpi/nfit/intel.c
+@@ -18,6 +18,63 @@
+ #include "intel.h"
+ #include "nfit.h"
+ 
++static int intel_dimm_security_erase(struct nvdimm_bus *nvdimm_bus,
++		struct nvdimm *nvdimm, const struct nvdimm_key_data *nkey)
++{
++	struct nvdimm_bus_descriptor *nd_desc = to_nd_desc(nvdimm_bus);
++	int cmd_rc, rc = 0;
 +	struct nfit_mem *nfit_mem = nvdimm_provider_data(nvdimm);
- 
--	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
--		return sprintf(buf, "%04x-%02x-%04x-%08x\n",
--				be16_to_cpu(dcr->vendor_id),
--				dcr->manufacturing_location,
--				be16_to_cpu(dcr->manufacturing_date),
--				be32_to_cpu(dcr->serial_number));
--	else
--		return sprintf(buf, "%04x-%08x\n",
--				be16_to_cpu(dcr->vendor_id),
--				be32_to_cpu(dcr->serial_number));
-+	return sprintf(buf, "%s\n", nfit_mem->id);
- }
- static DEVICE_ATTR_RO(id);
- 
-@@ -1712,10 +1704,23 @@ static int acpi_nfit_add_dimm(struct acpi_nfit_desc *acpi_desc,
- 	const guid_t *guid;
- 	int i;
- 	int family = -1;
-+	struct acpi_nfit_control_region *dcr = nfit_mem->dcr;
- 
- 	/* nfit test assumes 1:1 relationship between commands and dsms */
- 	nfit_mem->dsm_mask = acpi_desc->dimm_cmd_force_en;
- 	nfit_mem->family = NVDIMM_FAMILY_INTEL;
++	struct {
++		struct nd_cmd_pkg pkg;
++		struct nd_intel_secure_erase cmd;
++	} nd_cmd = {
++		.pkg = {
++			.nd_command = NVDIMM_INTEL_SECURE_ERASE,
++			.nd_family = NVDIMM_FAMILY_INTEL,
++			.nd_size_in = ND_INTEL_PASSPHRASE_SIZE,
++			.nd_size_out = ND_INTEL_STATUS_SIZE,
++			.nd_fw_size = ND_INTEL_STATUS_SIZE,
++		},
++		.cmd = {
++			.status = 0,
++		},
++	};
 +
-+	if (dcr->valid_fields & ACPI_NFIT_CONTROL_MFG_INFO_VALID)
-+		sprintf(nfit_mem->id, "%04x-%02x-%04x-%08x",
-+				be16_to_cpu(dcr->vendor_id),
-+				dcr->manufacturing_location,
-+				be16_to_cpu(dcr->manufacturing_date),
-+				be32_to_cpu(dcr->serial_number));
-+	else
-+		sprintf(nfit_mem->id, "%04x-%08x",
-+				be16_to_cpu(dcr->vendor_id),
-+				be32_to_cpu(dcr->serial_number));
++	if (!test_bit(NVDIMM_INTEL_SECURE_ERASE, &nfit_mem->dsm_mask))
++		return -ENOTTY;
 +
- 	adev = to_acpi_dev(acpi_desc);
- 	if (!adev)
- 		return 0;
-@@ -1899,7 +1904,7 @@ static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
- 		nvdimm = nvdimm_create(acpi_desc->nvdimm_bus, nfit_mem,
- 				acpi_nfit_dimm_attribute_groups,
- 				flags, cmd_mask, flush ? flush->hint_count : 0,
--				nfit_mem->flush_wpq);
-+				nfit_mem->flush_wpq, &nfit_mem->id[0]);
- 		if (!nvdimm)
- 			return -ENOMEM;
- 
-diff --git a/drivers/acpi/nfit/nfit.h b/drivers/acpi/nfit/nfit.h
-index 1c4e26dd6425..36c8695a3d27 100644
---- a/drivers/acpi/nfit/nfit.h
-+++ b/drivers/acpi/nfit/nfit.h
-@@ -174,6 +174,8 @@ struct nfit_memdev {
- 	struct acpi_nfit_memory_map memdev[0];
++	/* flush all cache before we erase DIMM */
++	wbinvd_on_all_cpus();
++	memcpy(nd_cmd.cmd.passphrase, nkey->data,
++			sizeof(nd_cmd.cmd.passphrase));
++	rc = nd_desc->ndctl(nd_desc, nvdimm, ND_CMD_CALL, &nd_cmd,
++			sizeof(nd_cmd), &cmd_rc);
++	if (rc < 0)
++		goto out;
++	if (cmd_rc < 0) {
++		rc = cmd_rc;
++		goto out;
++	}
++
++	switch (nd_cmd.cmd.status) {
++	case 0:
++		break;
++	case ND_INTEL_STATUS_INVALID_PASS:
++		rc = -EINVAL;
++		goto out;
++	case ND_INTEL_STATUS_INVALID_STATE:
++	default:
++		rc = -ENXIO;
++		goto out;
++	}
++
++	/* DIMM erased, invalidate all CPU caches before we read it */
++	wbinvd_on_all_cpus();
++
++ out:
++	return rc;
++}
++
+ static int intel_dimm_security_freeze_lock(struct nvdimm_bus *nvdimm_bus,
+ 		struct nvdimm *nvdimm)
+ {
+@@ -321,4 +378,5 @@ const struct nvdimm_security_ops intel_security_ops = {
+ 	.change_key = intel_dimm_security_update_passphrase,
+ 	.disable = intel_dimm_security_disable,
+ 	.freeze_lock = intel_dimm_security_freeze_lock,
++	.erase = intel_dimm_security_erase,
  };
- 
-+#define NFIT_DIMM_ID_LEN	22
-+
- /* assembled tables for a given dimm/memory-device */
- struct nfit_mem {
- 	struct nvdimm *nvdimm;
-@@ -196,6 +198,7 @@ struct nfit_mem {
- 	int family;
- 	bool has_lsr;
- 	bool has_lsw;
-+	char id[NFIT_DIMM_ID_LEN+1];
- };
- 
- struct acpi_nfit_desc {
 diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 863cabc35215..3f02008d75e7 100644
+index a1c4c28d951f..1421404a687f 100644
 --- a/drivers/nvdimm/dimm_devs.c
 +++ b/drivers/nvdimm/dimm_devs.c
-@@ -398,7 +398,7 @@ EXPORT_SYMBOL_GPL(nvdimm_attribute_group);
- struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		const struct attribute_group **groups, unsigned long flags,
- 		unsigned long cmd_mask, int num_flush,
--		struct resource *flush_wpq)
-+		struct resource *flush_wpq, const char *dimm_id)
- {
- 	struct nvdimm *nvdimm = kzalloc(sizeof(*nvdimm), GFP_KERNEL);
- 	struct device *dev;
-@@ -411,6 +411,8 @@ struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		kfree(nvdimm);
- 		return NULL;
- 	}
-+
-+	nvdimm->dimm_id = dimm_id;
- 	nvdimm->provider_data = provider_data;
- 	nvdimm->flags = flags;
- 	nvdimm->cmd_mask = cmd_mask;
-diff --git a/drivers/nvdimm/nd-core.h b/drivers/nvdimm/nd-core.h
-index 182258f64417..ff26876e6ea3 100644
---- a/drivers/nvdimm/nd-core.h
-+++ b/drivers/nvdimm/nd-core.h
-@@ -41,6 +41,7 @@ struct nvdimm {
- 	atomic_t busy;
- 	int id, num_flush;
- 	struct resource *flush_wpq;
-+	const char *dimm_id;
- };
+@@ -445,6 +445,11 @@ static ssize_t security_store(struct device *dev,
+ 	} else if (sysfs_streq(buf, "freeze")) {
+ 		dev_dbg(dev, "freeze\n");
+ 		rc = nvdimm_security_freeze_lock(dev);
++	} else if (sysfs_streq(cmd, "erase")) {
++		if (rc != 2)
++			return -EINVAL;
++		dev_dbg(dev, "erase %#x\n", old_key);
++		rc = nvdimm_security_erase(dev, old_key);
+ 	} else
+ 		return -EINVAL;
  
- /**
+diff --git a/drivers/nvdimm/dimm_devs_security.c b/drivers/nvdimm/dimm_devs_security.c
+index 767c5ae06cb5..4a8bd4d94515 100644
+--- a/drivers/nvdimm/dimm_devs_security.c
++++ b/drivers/nvdimm/dimm_devs_security.c
+@@ -164,6 +164,78 @@ int nvdimm_security_get_state(struct device *dev)
+ 			&nvdimm->state);
+ }
+ 
++int nvdimm_security_erase(struct device *dev, unsigned int keyid)
++{
++	struct nvdimm *nvdimm = to_nvdimm(dev);
++	struct nvdimm_bus *nvdimm_bus = walk_to_nvdimm_bus(dev);
++	struct key *key;
++	struct user_key_payload *payload;
++	int rc = 0;
++	bool is_userkey = false;
++
++	if (!nvdimm->security_ops)
++		return -EOPNOTSUPP;
++
++	nvdimm_bus_lock(&nvdimm_bus->dev);
++	mutex_lock(&nvdimm->key_mutex);
++	if (atomic_read(&nvdimm->busy)) {
++		dev_warn(dev, "Unable to secure erase while DIMM active.\n");
++		rc = -EBUSY;
++		goto out;
++	}
++
++	if (dev_get_drvdata(dev)) {
++		dev_warn(dev, "Unable to secure erase while DIMM enabled.\n");
++		rc = -EBUSY;
++		goto out;
++	}
++
++	if (nvdimm->state = NVDIMM_SECURITY_UNSUPPORTED) {
++		dev_warn(dev, "Attempt to secure erase in wrong state.\n");
++		rc = -EOPNOTSUPP;
++		goto out;
++	}
++
++	/* look for a key from cached key if exists */
++	key = nvdimm_get_and_verify_key(dev, keyid);
++	if (IS_ERR(key)) {
++		dev_dbg(dev, "Unable to get and verify key\n");
++		rc = PTR_ERR(key);
++		goto out;
++	}
++	if (!key) {
++		dev_dbg(dev, "No cached key found\n");
++		/* get old user key */
++		key = nvdimm_lookup_user_key(dev, keyid);
++		if (!key) {
++			dev_dbg(dev, "Unable to retrieve user key: %#x\n",
++					keyid);
++			rc = -ENOKEY;
++			goto out;
++		}
++		is_userkey = true;
++	}
++
++	down_read(&key->sem);
++	payload = key->payload.data[0];
++	rc = nvdimm->security_ops->erase(nvdimm_bus, nvdimm,
++			(void *)payload->data);
++	up_read(&key->sem);
++
++	/* remove key since secure erase kills the passphrase */
++	if (!is_userkey) {
++		key_invalidate(key);
++		nvdimm->key = NULL;
++	}
++	key_put(key);
++
++ out:
++	mutex_unlock(&nvdimm->key_mutex);
++	nvdimm_bus_unlock(&nvdimm_bus->dev);
++	nvdimm_security_get_state(dev);
++	return rc;
++}
++
+ int nvdimm_security_freeze_lock(struct device *dev)
+ {
+ 	struct nvdimm *nvdimm = to_nvdimm(dev);
+diff --git a/drivers/nvdimm/nd.h b/drivers/nvdimm/nd.h
+index d89fe1423f9a..08e442632a2d 100644
+--- a/drivers/nvdimm/nd.h
++++ b/drivers/nvdimm/nd.h
+@@ -432,6 +432,7 @@ int nvdimm_security_change_key(struct device *dev, unsigned int old_keyid,
+ 		unsigned int new_keyid);
+ int nvdimm_security_disable(struct device *dev, unsigned int keyid);
+ int nvdimm_security_freeze_lock(struct device *dev);
++int nvdimm_security_erase(struct device *dev, unsigned int keyid);
+ #else
+ static inline struct key *nvdimm_get_key(struct device *dev)
+ {
+@@ -464,5 +465,11 @@ static inline int nvdimm_security_freeze_lock(struct device *dev)
+ {
+ 	return -EOPNOTSUPP;
+ }
++
++static inline int nvdimm_security_erase(struct device *dev,
++		unsigned int keyid)
++{
++	return -EOPNOTSUPP;
++}
+ #endif
+ #endif /* __ND_H__ */
 diff --git a/include/linux/libnvdimm.h b/include/linux/libnvdimm.h
-index 472171af7f60..ac9de5ba3536 100644
+index bcab42caa948..0d85e092a6dd 100644
 --- a/include/linux/libnvdimm.h
 +++ b/include/linux/libnvdimm.h
-@@ -178,7 +178,7 @@ void *nvdimm_provider_data(struct nvdimm *nvdimm);
- struct nvdimm *nvdimm_create(struct nvdimm_bus *nvdimm_bus, void *provider_data,
- 		const struct attribute_group **groups, unsigned long flags,
- 		unsigned long cmd_mask, int num_flush,
--		struct resource *flush_wpq);
-+		struct resource *flush_wpq, const char *dimm_id);
- const struct nd_cmd_desc *nd_cmd_dimm_desc(int cmd);
- const struct nd_cmd_desc *nd_cmd_bus_desc(int cmd);
- u32 nd_cmd_in_size(struct nvdimm *nvdimm, int cmd,
+@@ -187,6 +187,9 @@ struct nvdimm_security_ops {
+ 			const struct nvdimm_key_data *nkey);
+ 	int (*freeze_lock)(struct nvdimm_bus *nvdimm_bus,
+ 			struct nvdimm *nvdimm);
++	int (*erase)(struct nvdimm_bus *nvdimm_bus,
++			struct nvdimm *nvdimm,
++			const struct nvdimm_key_data *nkey);
+ };
+ 
+ void badrange_init(struct badrange *badrange);
