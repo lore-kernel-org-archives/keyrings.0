@@ -1,358 +1,316 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 08 Oct 2018 23:56:19 +0000
-Subject: [PATCH v12 09/12] nfit_test: add test support for Intel nvdimm security DSMs
-Message-Id: <153904297989.60070.16417611396147609717.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 09 Oct 2018 16:47:46 +0000
+Subject: [PATCH 08/22] KEYS: Implement PKCS#8 RSA Private Key parser [ver #2]
+Message-Id: <153910366633.12141.2246110578436975607.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
+To: jmorris@namei.org
+Cc: Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, Denis Kenzior <denkenz@gmail.com>Denis Kenzior <denkenz@gmail.com>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add nfit_test support for DSM functions "Get Security State",
-"Set Passphrase", "Disable Passphrase", "Unlock Unit", "Freeze Lock",
-and "Secure Erase" for the fake DIMMs.
+Implement PKCS#8 RSA Private Key format [RFC 5208] parser for the
+asymmetric key type.  For the moment, this will only support unencrypted
+DER blobs.  PEM and decryption can be added later.
 
-Also adding a sysfs knob in order to put the DIMMs in "locked" state. The
-order of testing DIMM unlocking would be.
-1a. Disable DIMM X.
-1b. Set Passphrase to DIMM X.
-2. Write to
-/sys/devices/platform/nfit_test.0/nfit_test_dimm/test_dimmX/lock_dimm
-3. Renable DIMM X
-4. Check DIMM X state via sysfs "security" attribute for nmemX.
+PKCS#8 keys can be loaded like this:
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+	openssl pkcs8 -in private_key.pem -topk8 -nocrypt -outform DER | \
+	  keyctl padd asymmetric foo @s
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+Tested-by: Denis Kenzior <denkenz@gmail.com>
 ---
- drivers/nvdimm/dimm_devs.c       |    2 
- drivers/nvdimm/nd.h              |    2 
- tools/testing/nvdimm/Kbuild      |    1 
- tools/testing/nvdimm/dimm_devs.c |   39 ++++++++
- tools/testing/nvdimm/test/nfit.c |  185 ++++++++++++++++++++++++++++++++++++++
- 5 files changed, 228 insertions(+), 1 deletion(-)
- create mode 100644 tools/testing/nvdimm/dimm_devs.c
 
-diff --git a/drivers/nvdimm/dimm_devs.c b/drivers/nvdimm/dimm_devs.c
-index 1421404a687f..9e71e9497536 100644
---- a/drivers/nvdimm/dimm_devs.c
-+++ b/drivers/nvdimm/dimm_devs.c
-@@ -390,7 +390,7 @@ static ssize_t available_slots_show(struct device *dev,
- static DEVICE_ATTR_RO(available_slots);
+ Documentation/crypto/asymmetric-keys.txt |    2 
+ crypto/asymmetric_keys/Kconfig           |   10 ++
+ crypto/asymmetric_keys/Makefile          |   13 ++
+ crypto/asymmetric_keys/pkcs8.asn1        |   24 ++++
+ crypto/asymmetric_keys/pkcs8_parser.c    |  184 ++++++++++++++++++++++++++++++
+ 5 files changed, 233 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/pkcs8.asn1
+ create mode 100644 crypto/asymmetric_keys/pkcs8_parser.c
+
+diff --git a/Documentation/crypto/asymmetric-keys.txt b/Documentation/crypto/asymmetric-keys.txt
+index deb656ef008b..8763866b11cf 100644
+--- a/Documentation/crypto/asymmetric-keys.txt
++++ b/Documentation/crypto/asymmetric-keys.txt
+@@ -248,6 +248,8 @@ Examples of blob formats for which parsers could be implemented include:
+  - X.509 ASN.1 stream.
+  - Pointer to TPM key.
+  - Pointer to UEFI key.
++ - PKCS#8 private key [RFC 5208].
++ - PKCS#5 encrypted private key [RFC 2898].
  
- #ifdef CONFIG_NVDIMM_SECURITY
--static ssize_t security_show(struct device *dev,
-+__weak ssize_t security_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	struct nvdimm *nvdimm = to_nvdimm(dev);
-diff --git a/drivers/nvdimm/nd.h b/drivers/nvdimm/nd.h
-index 08e442632a2d..75ff9b327543 100644
---- a/drivers/nvdimm/nd.h
-+++ b/drivers/nvdimm/nd.h
-@@ -433,6 +433,8 @@ int nvdimm_security_change_key(struct device *dev, unsigned int old_keyid,
- int nvdimm_security_disable(struct device *dev, unsigned int keyid);
- int nvdimm_security_freeze_lock(struct device *dev);
- int nvdimm_security_erase(struct device *dev, unsigned int keyid);
-+ssize_t security_show(struct device *dev, struct device_attribute *attr,
-+		char *buf);
- #else
- static inline struct key *nvdimm_get_key(struct device *dev)
- {
-diff --git a/tools/testing/nvdimm/Kbuild b/tools/testing/nvdimm/Kbuild
-index 80cd0b0399ec..379da8312dc2 100644
---- a/tools/testing/nvdimm/Kbuild
-+++ b/tools/testing/nvdimm/Kbuild
-@@ -79,6 +79,7 @@ libnvdimm-$(CONFIG_ND_CLAIM) += $(NVDIMM_SRC)/claim.o
- libnvdimm-$(CONFIG_BTT) += $(NVDIMM_SRC)/btt_devs.o
- libnvdimm-$(CONFIG_NVDIMM_PFN) += $(NVDIMM_SRC)/pfn_devs.o
- libnvdimm-$(CONFIG_NVDIMM_DAX) += $(NVDIMM_SRC)/dax_devs.o
-+libnvdimm-y += dimm_devs.o
- libnvdimm-y += libnvdimm_test.o
- libnvdimm-y += config_check.o
- libnvdimm-$(CONFIG_NVDIMM_SECURITY) += $(NVDIMM_SRC)/dimm_devs_security.o
-diff --git a/tools/testing/nvdimm/dimm_devs.c b/tools/testing/nvdimm/dimm_devs.c
+ During key instantiation each parser in the list is tried until one doesn't
+ return -EBADMSG.
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index f3702e533ff4..66a7dad7ed3d 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -31,6 +31,16 @@ config X509_CERTIFICATE_PARSER
+ 	  data and provides the ability to instantiate a crypto key from a
+ 	  public key packet found inside the certificate.
+ 
++config PKCS8_PRIVATE_KEY_PARSER
++	tristate "PKCS#8 private key parser"
++	depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE
++	select ASN1
++	select OID_REGISTRY
++	help
++	  This option provides support for parsing PKCS#8 format blobs for
++	  private key data and provides the ability to instantiate a crypto key
++	  from that data.
++
+ config PKCS7_MESSAGE_PARSER
+ 	tristate "PKCS#7 message parser"
+ 	depends on X509_CERTIFICATE_PARSER
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index d4b2e1b2dc65..c38424f55b08 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -29,6 +29,19 @@ $(obj)/x509_cert_parser.o: \
+ $(obj)/x509.asn1.o: $(obj)/x509.asn1.c $(obj)/x509.asn1.h
+ $(obj)/x509_akid.asn1.o: $(obj)/x509_akid.asn1.c $(obj)/x509_akid.asn1.h
+ 
++#
++# PKCS#8 private key handling
++#
++obj-$(CONFIG_PKCS8_PRIVATE_KEY_PARSER) += pkcs8_key_parser.o
++pkcs8_key_parser-y := \
++	pkcs8.asn1.o \
++	pkcs8_parser.o
++
++$(obj)/pkcs8_parser.o: $(obj)/pkcs8.asn1.h
++$(obj)/pkcs8-asn1.o: $(obj)/pkcs8.asn1.c $(obj)/pkcs8.asn1.h
++
++clean-files	+= pkcs8.asn1.c pkcs8.asn1.h
++
+ #
+ # PKCS#7 message handling
+ #
+diff --git a/crypto/asymmetric_keys/pkcs8.asn1 b/crypto/asymmetric_keys/pkcs8.asn1
 new file mode 100644
-index 000000000000..f6717312dbb2
+index 000000000000..702c41a3c713
 --- /dev/null
-+++ b/tools/testing/nvdimm/dimm_devs.c
-@@ -0,0 +1,39 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+/* Copyright Intel Corp. 2018 */
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/nd.h>
-+#include "pmem.h"
-+#include "pfn.h"
-+#include "nd.h"
-+#include "nd-core.h"
-+
-+ssize_t security_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct nvdimm *nvdimm = to_nvdimm(dev);
-+
-+	/*
-+	 * For the test version we need to poll the "hardware" in order
-+	 * to get the updated status for unlock testing.
-+	 */
-+	nvdimm_security_get_state(dev);
-+
-+	switch (nvdimm->state) {
-+	case NVDIMM_SECURITY_DISABLED:
-+		return sprintf(buf, "disabled\n");
-+	case NVDIMM_SECURITY_UNLOCKED:
-+		return sprintf(buf, "unlocked\n");
-+	case NVDIMM_SECURITY_LOCKED:
-+		return sprintf(buf, "locked\n");
-+	case NVDIMM_SECURITY_FROZEN:
-+		return sprintf(buf, "frozen\n");
-+	case NVDIMM_SECURITY_UNSUPPORTED:
-+	default:
-+		return sprintf(buf, "unsupported\n");
-+	}
-+
-+	return -ENOTTY;
++++ b/crypto/asymmetric_keys/pkcs8.asn1
+@@ -0,0 +1,24 @@
++--
++-- This is the unencrypted variant
++--
++PrivateKeyInfo ::= SEQUENCE {
++	version			Version,
++	privateKeyAlgorithm	PrivateKeyAlgorithmIdentifier,
++	privateKey		PrivateKey,
++	attributes		[0] IMPLICIT Attributes OPTIONAL
 +}
 +
-diff --git a/tools/testing/nvdimm/test/nfit.c b/tools/testing/nvdimm/test/nfit.c
-index cffc2c5a778d..1d7ae7aecb46 100644
---- a/tools/testing/nvdimm/test/nfit.c
-+++ b/tools/testing/nvdimm/test/nfit.c
-@@ -24,6 +24,7 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <nd-core.h>
-+#include <intel.h>
- #include <nfit.h>
- #include <nd.h>
- #include "nfit_test.h"
-@@ -139,8 +140,16 @@ static u32 handle[] = {
- 	[6] = NFIT_DIMM_HANDLE(1, 0, 0, 0, 1),
- };
- 
-+/*
-+ * State that needs to be maintained for sysfs where we can't reliably
-+ * look up our nfit_test relative dimm index.
++Version ::= INTEGER  ({ pkcs8_note_version })
++
++PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier ({ pkcs8_note_algo })
++
++PrivateKey ::= OCTET STRING ({ pkcs8_note_key })
++
++Attributes ::= SET OF Attribute
++
++Attribute ::= ANY
++
++AlgorithmIdentifier ::= SEQUENCE {
++	algorithm   OBJECT IDENTIFIER ({ pkcs8_note_OID }),
++	parameters  ANY OPTIONAL
++}
+diff --git a/crypto/asymmetric_keys/pkcs8_parser.c b/crypto/asymmetric_keys/pkcs8_parser.c
+new file mode 100644
+index 000000000000..5f6a7ecc9765
+--- /dev/null
++++ b/crypto/asymmetric_keys/pkcs8_parser.c
+@@ -0,0 +1,184 @@
++/* PKCS#8 Private Key parser [RFC 5208].
++ *
++ * Copyright (C) 2016 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
 + */
- static unsigned long dimm_fail_cmd_flags[NUM_DCR];
- static int dimm_fail_cmd_code[NUM_DCR];
-+struct nfit_test_sec {
-+	u8 state;
-+	u8 passphrase[32];
-+} dimm_sec_info[NUM_DCR];
- 
- static const struct nd_intel_smart smart_def = {
- 	.flags = ND_INTEL_SMART_HEALTH_VALID
-@@ -931,6 +940,138 @@ static int override_return_code(int dimm, unsigned int func, int rc)
- 	return rc;
- }
- 
-+static int nd_intel_test_cmd_security_status(struct nfit_test *t,
-+		struct nd_intel_get_security_state *nd_cmd,
-+		unsigned int buf_len, int dimm)
++
++#define pr_fmt(fmt) "PKCS8: "fmt
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/export.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/oid_registry.h>
++#include <keys/asymmetric-subtype.h>
++#include <keys/asymmetric-parser.h>
++#include <crypto/public_key.h>
++#include "pkcs8.asn1.h"
++
++struct pkcs8_parse_context {
++	struct public_key *pub;
++	unsigned long	data;			/* Start of data */
++	enum OID	last_oid;		/* Last OID encountered */
++	enum OID	algo_oid;		/* Algorithm OID */
++	u32		key_size;
++	const void	*key;
++};
++
++/*
++ * Note an OID when we find one for later processing when we know how to
++ * interpret it.
++ */
++int pkcs8_note_OID(void *context, size_t hdrlen,
++		   unsigned char tag,
++		   const void *value, size_t vlen)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &dimm_sec_info[dimm];
++	struct pkcs8_parse_context *ctx = context;
 +
-+	nd_cmd->status = 0;
-+	nd_cmd->state = sec->state;
-+	dev_dbg(dev, "security state (%#x) returned\n", nd_cmd->state);
++	ctx->last_oid = look_up_OID(value, vlen);
++	if (ctx->last_oid = OID__NR) {
++		char buffer[50];
 +
-+	return 0;
-+}
-+
-+static int nd_intel_test_cmd_unlock_unit(struct nfit_test *t,
-+		struct nd_intel_unlock_unit *nd_cmd,
-+		unsigned int buf_len, int dimm)
-+{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &dimm_sec_info[dimm];
-+
-+	if (!(sec->state & ND_INTEL_SEC_STATE_LOCKED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "unlock unit: invalid state: %#x\n",
-+				sec->state);
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "unlock unit: invalid passphrase\n");
-+	} else {
-+		nd_cmd->status = 0;
-+		sec->state = ND_INTEL_SEC_STATE_ENABLED;
-+		dev_dbg(dev, "Unit unlocked\n");
++		sprint_oid(value, vlen, buffer, sizeof(buffer));
++		pr_info("Unknown OID: [%lu] %s\n",
++			(unsigned long)value - ctx->data, buffer);
 +	}
-+
-+	dev_dbg(dev, "unlocking status returned: %#x\n", nd_cmd->status);
 +	return 0;
 +}
 +
-+static int nd_intel_test_cmd_set_pass(struct nfit_test *t,
-+		struct nd_intel_set_passphrase *nd_cmd,
-+		unsigned int buf_len, int dimm)
++/*
++ * Note the version number of the ASN.1 blob.
++ */
++int pkcs8_note_version(void *context, size_t hdrlen,
++		       unsigned char tag,
++		       const void *value, size_t vlen)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &dimm_sec_info[dimm];
-+
-+	if (sec->state & ND_INTEL_SEC_STATE_FROZEN) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "set passphrase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->old_pass, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "set passphrase: wrong passphrase\n");
-+	} else {
-+		memcpy(sec->passphrase, nd_cmd->new_pass,
-+				ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state |= ND_INTEL_SEC_STATE_ENABLED;
-+		nd_cmd->status = 0;
-+		dev_dbg(dev, "passphrase updated\n");
++	if (vlen != 1 || ((const u8 *)value)[0] != 0) {
++		pr_warn("Unsupported PKCS#8 version\n");
++		return -EBADMSG;
 +	}
-+
 +	return 0;
 +}
 +
-+static int nd_intel_test_cmd_freeze_lock(struct nfit_test *t,
-+		struct nd_intel_freeze_lock *nd_cmd,
-+		unsigned int buf_len, int dimm)
++/*
++ * Note the public algorithm.
++ */
++int pkcs8_note_algo(void *context, size_t hdrlen,
++		    unsigned char tag,
++		    const void *value, size_t vlen)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &dimm_sec_info[dimm];
++	struct pkcs8_parse_context *ctx = context;
 +
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "freeze lock: wrong security state\n");
-+	} else {
-+		sec->state |= ND_INTEL_SEC_STATE_FROZEN;
-+		nd_cmd->status = 0;
-+		dev_dbg(dev, "security frozen\n");
-+	}
++	if (ctx->last_oid != OID_rsaEncryption)
++		return -ENOPKG;
 +
++	ctx->pub->pkey_algo = "rsa";
 +	return 0;
 +}
 +
-+static int nd_intel_test_cmd_disable_pass(struct nfit_test *t,
-+		struct nd_intel_disable_passphrase *nd_cmd,
-+		unsigned int buf_len, int dimm)
++/*
++ * Note the key data of the ASN.1 blob.
++ */
++int pkcs8_note_key(void *context, size_t hdrlen,
++		   unsigned char tag,
++		   const void *value, size_t vlen)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &dimm_sec_info[dimm];
++	struct pkcs8_parse_context *ctx = context;
 +
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "disable passphrase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "disable passphrase: wrong passphrase\n");
-+	} else {
-+		memset(sec->passphrase, 0, ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state = 0;
-+		dev_dbg(dev, "disable passphrase: done\n");
-+	}
-+
++	ctx->key = value;
++	ctx->key_size = vlen;
 +	return 0;
 +}
 +
-+static int nd_intel_test_cmd_secure_erase(struct nfit_test *t,
-+		struct nd_intel_secure_erase *nd_cmd,
-+		unsigned int buf_len, int dimm)
++/*
++ * Parse a PKCS#8 private key blob.
++ */
++static struct public_key *pkcs8_parse(const void *data, size_t datalen)
 +{
-+	struct device *dev = &t->pdev.dev;
-+	struct nfit_test_sec *sec = &dimm_sec_info[dimm];
++	struct pkcs8_parse_context ctx;
++	struct public_key *pub;
++	long ret;
 +
-+	if (!(sec->state & ND_INTEL_SEC_STATE_ENABLED) ||
-+			(sec->state & ND_INTEL_SEC_STATE_FROZEN)) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_STATE;
-+		dev_dbg(dev, "secure erase: wrong security state\n");
-+	} else if (memcmp(nd_cmd->passphrase, sec->passphrase,
-+				ND_INTEL_PASSPHRASE_SIZE) != 0) {
-+		nd_cmd->status = ND_INTEL_STATUS_INVALID_PASS;
-+		dev_dbg(dev, "secure erase: wrong passphrase\n");
-+	} else {
-+		memset(sec->passphrase, 0, ND_INTEL_PASSPHRASE_SIZE);
-+		sec->state = 0;
-+		dev_dbg(dev, "secure erase: done\n");
-+	}
++	memset(&ctx, 0, sizeof(ctx));
 +
++	ret = -ENOMEM;
++	ctx.pub = kzalloc(sizeof(struct public_key), GFP_KERNEL);
++	if (!ctx.pub)
++		goto error;
++
++	ctx.data = (unsigned long)data;
++
++	/* Attempt to decode the private key */
++	ret = asn1_ber_decoder(&pkcs8_decoder, &ctx, data, datalen);
++	if (ret < 0)
++		goto error_decode;
++
++	ret = -ENOMEM;
++	pub = ctx.pub;
++	pub->key = kmemdup(ctx.key, ctx.key_size, GFP_KERNEL);
++	if (!pub->key)
++		goto error_decode;
++
++	pub->keylen = ctx.key_size;
++	pub->key_is_private = true;
++	return pub;
++
++error_decode:
++	kfree(ctx.pub);
++error:
++	return ERR_PTR(ret);
++}
++
++/*
++ * Attempt to parse a data blob for a key as a PKCS#8 private key.
++ */
++static int pkcs8_key_preparse(struct key_preparsed_payload *prep)
++{
++	struct public_key *pub;
++
++	pub = pkcs8_parse(prep->data, prep->datalen);
++	if (IS_ERR(pub))
++		return PTR_ERR(pub);
++
++	pr_devel("Cert Key Algo: %s\n", pub->pkey_algo);
++	pub->id_type = "PKCS8";
++
++	/* We're pinning the module by being linked against it */
++	__module_get(public_key_subtype.owner);
++	prep->payload.data[asym_subtype] = &public_key_subtype;
++	prep->payload.data[asym_key_ids] = NULL;
++	prep->payload.data[asym_crypto] = pub;
++	prep->payload.data[asym_auth] = NULL;
++	prep->quotalen = 100;
 +	return 0;
 +}
 +
- static int get_dimm(struct nfit_mem *nfit_mem, unsigned int func)
- {
- 	int i;
-@@ -978,6 +1119,30 @@ static int nfit_test_ctl(struct nvdimm_bus_descriptor *nd_desc,
- 				return i;
- 
- 			switch (func) {
-+			case NVDIMM_INTEL_GET_SECURITY_STATE:
-+				rc = nd_intel_test_cmd_security_status(t,
-+						buf, buf_len, i);
-+				break;
-+			case NVDIMM_INTEL_UNLOCK_UNIT:
-+				rc = nd_intel_test_cmd_unlock_unit(t,
-+						buf, buf_len, i);
-+				break;
-+			case NVDIMM_INTEL_SET_PASSPHRASE:
-+				rc = nd_intel_test_cmd_set_pass(t,
-+						buf, buf_len, i);
-+				break;
-+			case NVDIMM_INTEL_DISABLE_PASSPHRASE:
-+				rc = nd_intel_test_cmd_disable_pass(t,
-+						buf, buf_len, i);
-+				break;
-+			case NVDIMM_INTEL_FREEZE_LOCK:
-+				rc = nd_intel_test_cmd_freeze_lock(t,
-+						buf, buf_len, i);
-+				break;
-+			case NVDIMM_INTEL_SECURE_ERASE:
-+				rc = nd_intel_test_cmd_secure_erase(t,
-+						buf, buf_len, i);
-+				break;
- 			case ND_INTEL_ENABLE_LSS_STATUS:
- 				rc = nd_intel_test_cmd_set_lss_status(t,
- 						buf, buf_len);
-@@ -1311,10 +1476,22 @@ static ssize_t fail_cmd_code_store(struct device *dev, struct device_attribute *
- }
- static DEVICE_ATTR_RW(fail_cmd_code);
- 
-+static ssize_t lock_dimm_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
++static struct asymmetric_key_parser pkcs8_key_parser = {
++	.owner	= THIS_MODULE,
++	.name	= "pkcs8",
++	.parse	= pkcs8_key_preparse,
++};
++
++/*
++ * Module stuff
++ */
++static int __init pkcs8_key_init(void)
 +{
-+	int dimm = dimm_name_to_id(dev);
-+	struct nfit_test_sec *sec = &dimm_sec_info[dimm];
-+
-+	sec->state = ND_INTEL_SEC_STATE_ENABLED | ND_INTEL_SEC_STATE_LOCKED;
-+	return size;
++	return register_asymmetric_key_parser(&pkcs8_key_parser);
 +}
-+static DEVICE_ATTR_WO(lock_dimm);
 +
- static struct attribute *nfit_test_dimm_attributes[] = {
- 	&dev_attr_fail_cmd.attr,
- 	&dev_attr_fail_cmd_code.attr,
- 	&dev_attr_handle.attr,
-+	&dev_attr_lock_dimm.attr,
- 	NULL,
- };
- 
-@@ -2193,6 +2370,14 @@ static void nfit_test0_setup(struct nfit_test *t)
- 	set_bit(ND_INTEL_FW_FINISH_UPDATE, &acpi_desc->dimm_cmd_force_en);
- 	set_bit(ND_INTEL_FW_FINISH_QUERY, &acpi_desc->dimm_cmd_force_en);
- 	set_bit(ND_INTEL_ENABLE_LSS_STATUS, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_GET_SECURITY_STATE,
-+			&acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_SET_PASSPHRASE, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_DISABLE_PASSPHRASE,
-+			&acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_UNLOCK_UNIT, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_FREEZE_LOCK, &acpi_desc->dimm_cmd_force_en);
-+	set_bit(NVDIMM_INTEL_SECURE_ERASE, &acpi_desc->dimm_cmd_force_en);
- }
- 
- static void nfit_test1_setup(struct nfit_test *t)
++static void __exit pkcs8_key_exit(void)
++{
++	unregister_asymmetric_key_parser(&pkcs8_key_parser);
++}
++
++module_init(pkcs8_key_init);
++module_exit(pkcs8_key_exit);
++
++MODULE_DESCRIPTION("PKCS#8 certificate parser");
++MODULE_LICENSE("GPL");
