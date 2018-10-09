@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:47:38 +0000
-Subject: [PATCH 07/22] KEYS: Implement encrypt, decrypt and sign for software asymmetric key [ver #2]
-Message-Id: <153910365840.12141.5148612002256695339.stgit@warthog.procyon.org.uk>
+Date: Tue, 09 Oct 2018 16:49:35 +0000
+Subject: [PATCH 22/22] KEYS: asym_tpm: Add support for the sign operation [ver #2]
+Message-Id: <153910377563.12141.14769652909465225699.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,149 +9,219 @@ List-Id: <keyrings.vger.kernel.org>
 References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
 In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
 To: jmorris@namei.org
-Cc: Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, Denis Kenzior <denkenz@gmail.com>Denis Kenzior <denkenz@gmail.com>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Denis Kenzior <denkenz@gmail.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Implement the encrypt, decrypt and sign operations for the software
-asymmetric key subtype.  This mostly involves offloading the call to the
-crypto layer.
+From: Denis Kenzior <denkenz@gmail.com>
 
-Note that the decrypt and sign operations require a private key to be
-supplied.  Encrypt (and also verify) will work with either a public or a
-private key.  A public key can be supplied with an X.509 certificate and a
-private key can be supplied using a PKCS#8 blob:
+The sign operation can operate in a non-hashed mode by running the RSA
+sign operation directly on the input.  This assumes that the input is
+less than key_size_in_bytes - 11.  Since the TPM performs its own PKCS1
+padding, it isn't possible to support 'raw' mode, only 'pkcs1'.
 
-	# j=`openssl pkcs8 -in ~/pkcs7/firmwarekey2.priv -topk8 -nocrypt -outform DER | keyctl padd asymmetric foo @s`
-	# keyctl pkey_query $j - enc=pkcs1
-	key_size@96
-	max_data_sizeQ2
-	max_sig_sizeQ2
-	max_enc_sizeQ2
-	max_dec_sizeQ2
-	encrypt=y
-	decrypt=y
-	sign=y
-	verify=y
-	# keyctl pkey_encrypt $j 0 data enc=pkcs1 >/tmp/enc
-	# keyctl pkey_decrypt $j 0 /tmp/enc enc=pkcs1 >/tmp/dec
-	# cmp data /tmp/dec
-	# keyctl pkey_sign $j 0 data enc=pkcs1 hash=sha1 >/tmp/sig
-	# keyctl pkey_verify $j 0 data /tmp/sig enc=pkcs1 hash=sha1
-	#
+Alternatively, a hashed version is also possible.  In this variant the
+input is hashed (by userspace) via the selected hash function first.
+Then this implementation takes care of converting the hash to ASN.1
+format and the sign operation is performed on the result.  This is
+similar to the implementation inside crypto/rsa-pkcs1pad.c.
 
+ASN1 templates were copied from crypto/rsa-pkcs1pad.c.  There seems to
+be no easy way to expose that functionality, but likely the templates
+should be shared somehow.
+
+The sign operation is implemented via TPM_Sign operation on the TPM.
+It is assumed that the TPM wrapped key provided uses
+TPM_SS_RSASSAPKCS1v15_DER signature scheme.  This allows the TPM_Sign
+operation to work on data up to key_len_in_bytes - 11 bytes long.
+
+In theory, we could also use TPM_Unbind instead of TPM_Sign, but we would
+have to manually pkcs1 pad the digest first.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 Tested-by: Marcel Holtmann <marcel@holtmann.org>
 Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Denis Kenzior <denkenz@gmail.com>
-Tested-by: Denis Kenzior <denkenz@gmail.com>
 ---
 
- crypto/asymmetric_keys/public_key.c |   82 +++++++++++++++++++++++++++++++++++
- 1 file changed, 81 insertions(+), 1 deletion(-)
+ crypto/asymmetric_keys/asym_tpm.c |  156 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 155 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index f2dc27897319..f5d85b47fcc6 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -130,7 +130,11 @@ static int software_key_query(const struct kernel_pkey_params *params,
- 	info->max_sig_size = len;
- 	info->max_enc_size = len;
- 	info->max_dec_size = len;
--	info->supported_ops = KEYCTL_SUPPORTS_VERIFY;
-+	info->supported_ops = (KEYCTL_SUPPORTS_ENCRYPT |
-+			       KEYCTL_SUPPORTS_VERIFY);
-+	if (pkey->key_is_private)
-+		info->supported_ops |= (KEYCTL_SUPPORTS_DECRYPT |
-+					KEYCTL_SUPPORTS_SIGN);
- 	ret = 0;
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index a5a5f913a74f..5d4c270463f6 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -435,7 +435,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
  
+ 	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT |
+ 			      KEYCTL_SUPPORTS_DECRYPT |
+-			      KEYCTL_SUPPORTS_VERIFY;
++			      KEYCTL_SUPPORTS_VERIFY |
++			      KEYCTL_SUPPORTS_SIGN;
+ 
+ 	ret = 0;
  error_free_tfm:
-@@ -139,6 +143,81 @@ static int software_key_query(const struct kernel_pkey_params *params,
- 	return ret;
+@@ -556,6 +557,156 @@ static int tpm_key_decrypt(struct tpm_key *tk,
+ 	return r;
  }
  
 +/*
-+ * Do encryption, decryption and signing ops.
++ * Hash algorithm OIDs plus ASN.1 DER wrappings [RFC4880 sec 5.2.2].
 + */
-+static int software_key_eds_op(struct kernel_pkey_params *params,
-+			       const void *in, void *out)
++static const u8 digest_info_md5[] = {
++	0x30, 0x20, 0x30, 0x0c, 0x06, 0x08,
++	0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x02, 0x05, /* OID */
++	0x05, 0x00, 0x04, 0x10
++};
++
++static const u8 digest_info_sha1[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2b, 0x0e, 0x03, 0x02, 0x1a,
++	0x05, 0x00, 0x04, 0x14
++};
++
++static const u8 digest_info_rmd160[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2b, 0x24, 0x03, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x14
++};
++
++static const u8 digest_info_sha224[] = {
++	0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04,
++	0x05, 0x00, 0x04, 0x1c
++};
++
++static const u8 digest_info_sha256[] = {
++	0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x20
++};
++
++static const u8 digest_info_sha384[] = {
++	0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
++	0x05, 0x00, 0x04, 0x30
++};
++
++static const u8 digest_info_sha512[] = {
++	0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
++	0x05, 0x00, 0x04, 0x40
++};
++
++static const struct asn1_template {
++	const char	*name;
++	const u8	*data;
++	size_t		size;
++} asn1_templates[] = {
++#define _(X) { #X, digest_info_##X, sizeof(digest_info_##X) }
++	_(md5),
++	_(sha1),
++	_(rmd160),
++	_(sha256),
++	_(sha384),
++	_(sha512),
++	_(sha224),
++	{ NULL }
++#undef _
++};
++
++static const struct asn1_template *lookup_asn1(const char *name)
 +{
-+	const struct public_key *pkey = params->key->payload.data[asym_crypto];
-+	struct akcipher_request *req;
-+	struct crypto_akcipher *tfm;
-+	struct crypto_wait cwait;
-+	struct scatterlist in_sg, out_sg;
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	int ret;
++	const struct asn1_template *p;
++
++	for (p = asn1_templates; p->name; p++)
++		if (strcmp(name, p->name) = 0)
++			return p;
++	return NULL;
++}
++
++/*
++ * Sign operation is performed with the private key in the TPM.
++ */
++static int tpm_key_sign(struct tpm_key *tk,
++			struct kernel_pkey_params *params,
++			const void *in, void *out)
++{
++	struct tpm_buf *tb;
++	uint32_t keyhandle;
++	uint8_t srkauth[SHA1_DIGEST_SIZE];
++	uint8_t keyauth[SHA1_DIGEST_SIZE];
++	void *asn1_wrapped = NULL;
++	uint32_t in_len = params->in_len;
++	int r;
 +
 +	pr_devel("=>%s()\n", __func__);
 +
-+	ret = software_key_determine_akcipher(params->encoding,
-+					      params->hash_algo,
-+					      pkey, alg_name);
-+	if (ret < 0)
-+		return ret;
++	if (strcmp(params->encoding, "pkcs1"))
++		return -ENOPKG;
 +
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
++	if (params->hash_algo) {
++		const struct asn1_template *asn1 +						lookup_asn1(params->hash_algo);
 +
-+	req = akcipher_request_alloc(tfm, GFP_KERNEL);
-+	if (!req)
-+		goto error_free_tfm;
++		if (!asn1)
++			return -ENOPKG;
 +
-+	if (pkey->key_is_private)
-+		ret = crypto_akcipher_set_priv_key(tfm,
-+						   pkey->key, pkey->keylen);
-+	else
-+		ret = crypto_akcipher_set_pub_key(tfm,
-+						  pkey->key, pkey->keylen);
-+	if (ret)
-+		goto error_free_req;
++		/* request enough space for the ASN.1 template + input hash */
++		asn1_wrapped = kzalloc(in_len + asn1->size, GFP_KERNEL);
++		if (!asn1_wrapped)
++			return -ENOMEM;
 +
-+	sg_init_one(&in_sg, in, params->in_len);
-+	sg_init_one(&out_sg, out, params->out_len);
-+	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
-+				   params->out_len);
-+	crypto_init_wait(&cwait);
-+	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
-+				      CRYPTO_TFM_REQ_MAY_SLEEP,
-+				      crypto_req_done, &cwait);
++		/* Copy ASN.1 template, then the input */
++		memcpy(asn1_wrapped, asn1->data, asn1->size);
++		memcpy(asn1_wrapped + asn1->size, in, in_len);
 +
-+	/* Perform the encryption calculation. */
-+	switch (params->op) {
-+	case kernel_pkey_encrypt:
-+		ret = crypto_akcipher_encrypt(req);
-+		break;
-+	case kernel_pkey_decrypt:
-+		ret = crypto_akcipher_decrypt(req);
-+		break;
-+	case kernel_pkey_sign:
-+		ret = crypto_akcipher_sign(req);
-+		break;
-+	default:
-+		BUG();
++		in = asn1_wrapped;
++		in_len += asn1->size;
 +	}
 +
-+	ret = crypto_wait_req(ret, &cwait);
-+	if (ret = 0)
-+		ret = req->dst_len;
++	if (in_len > tk->key_len / 8 - 11) {
++		r = -EOVERFLOW;
++		goto error_free_asn1_wrapped;
++	}
 +
-+error_free_req:
-+	akcipher_request_free(req);
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
++	r = -ENOMEM;
++	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
++	if (!tb)
++		goto error_free_asn1_wrapped;
++
++	/* TODO: Handle a non-all zero SRK authorization */
++	memset(srkauth, 0, sizeof(srkauth));
++
++	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
++			 tk->blob, tk->blob_len, &keyhandle);
++	if (r < 0) {
++		pr_devel("loadkey2 failed (%d)\n", r);
++		goto error_free_tb;
++	}
++
++	/* TODO: Handle a non-all zero key authorization */
++	memset(keyauth, 0, sizeof(keyauth));
++
++	r = tpm_sign(tb, keyhandle, keyauth, in, in_len, out, params->out_len);
++	if (r < 0)
++		pr_devel("tpm_sign failed (%d)\n", r);
++
++	if (tpm_flushspecific(tb, keyhandle) < 0)
++		pr_devel("flushspecific failed (%d)\n", r);
++
++error_free_tb:
++	kzfree(tb);
++error_free_asn1_wrapped:
++	kfree(asn1_wrapped);
++	pr_devel("<=%s() = %d\n", __func__, r);
++	return r;
 +}
 +
  /*
-  * Verify a signature using a public key.
+  * Do encryption, decryption and signing ops.
   */
-@@ -242,6 +321,7 @@ struct asymmetric_key_subtype public_key_subtype = {
- 	.describe		= public_key_describe,
- 	.destroy		= public_key_destroy,
- 	.query			= software_key_query,
-+	.eds_op			= software_key_eds_op,
- 	.verify_signature	= public_key_verify_signature_2,
- };
- EXPORT_SYMBOL_GPL(public_key_subtype);
+@@ -573,6 +724,9 @@ static int tpm_key_eds_op(struct kernel_pkey_params *params,
+ 	case kernel_pkey_decrypt:
+ 		ret = tpm_key_decrypt(tk, params, in, out);
+ 		break;
++	case kernel_pkey_sign:
++		ret = tpm_key_sign(tk, params, in, out);
++		break;
+ 	default:
+ 		BUG();
+ 	}
