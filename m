@@ -1,101 +1,132 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 08 Oct 2018 23:56:36 +0000
-Subject: [PATCH v12 12/12] acpi, nfit: Move acpi_nfit_get_security_ops() to generic location
-Message-Id: <153904299685.60070.3336606945357072947.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 09 Oct 2018 16:49:28 +0000
+Subject: [PATCH 21/22] KEYS: asym_tpm: Implement tpm_sign [ver #2]
+Message-Id: <153910376829.12141.2972036457232532345.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
+To: jmorris@namei.org
+Cc: Denis Kenzior <denkenz@gmail.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Denis Kenzior <denkenz@gmail.com>
 
-In anticipation of other DIMMs adding security operations support, don't
-require them to edit intel.h. Instead have intel.h optionally arrange
-for intel_security_ops to be NULL or not based on build parameters.
-
-Reviewed-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
 ---
- drivers/acpi/nfit/core.c  |   10 ++++++++++
- drivers/acpi/nfit/intel.c |    3 ++-
- drivers/acpi/nfit/intel.h |   18 +++---------------
- 3 files changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/acpi/nfit/core.c b/drivers/acpi/nfit/core.c
-index e5f7c664a7c8..b7773c70ee81 100644
---- a/drivers/acpi/nfit/core.c
-+++ b/drivers/acpi/nfit/core.c
-@@ -1835,6 +1835,16 @@ static void shutdown_dimm_notify(void *data)
- 	mutex_unlock(&acpi_desc->init_mutex);
+ crypto/asymmetric_keys/asym_tpm.c |   87 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 87 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index a38ba375675e..a5a5f913a74f 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -20,9 +20,11 @@
+ #define TPM_ORD_FLUSHSPECIFIC	186
+ #define TPM_ORD_LOADKEY2	65
+ #define TPM_ORD_UNBIND		30
++#define TPM_ORD_SIGN		60
+ #define TPM_LOADKEY2_SIZE		59
+ #define TPM_FLUSHSPECIFIC_SIZE		18
+ #define TPM_UNBIND_SIZE			63
++#define TPM_SIGN_SIZE			63
+ 
+ #define TPM_RT_KEY                      0x00000001
+ 
+@@ -189,6 +191,91 @@ static int tpm_unbind(struct tpm_buf *tb,
+ 	return datalen;
  }
  
-+static const struct nvdimm_security_ops *acpi_nfit_get_security_ops(int family)
++/*
++ * Sign a blob provided by userspace (that has had the hash function applied)
++ * using a specific key handle.  The handle is assumed to have been previously
++ * loaded by e.g. LoadKey2.
++ *
++ * Note that the key signature scheme of the used key should be set to
++ * TPM_SS_RSASSAPKCS1v15_DER.  This allows the hashed input to be of any size
++ * up to key_length_in_bytes - 11 and not be limited to size 20 like the
++ * TPM_SS_RSASSAPKCS1v15_SHA1 signature scheme.
++ */
++static int tpm_sign(struct tpm_buf *tb,
++		    uint32_t keyhandle, unsigned char *keyauth,
++		    const unsigned char *blob, uint32_t bloblen,
++		    void *out, uint32_t outlen)
 +{
-+        switch (family) {
-+        case NVDIMM_FAMILY_INTEL:
-+                return intel_security_ops;
-+        default:
-+                return NULL;
-+        }
-+}
++	unsigned char nonceodd[TPM_NONCE_SIZE];
++	unsigned char enonce[TPM_NONCE_SIZE];
++	unsigned char authdata[SHA1_DIGEST_SIZE];
++	uint32_t authhandle = 0;
++	unsigned char cont = 0;
++	uint32_t ordinal;
++	uint32_t datalen;
++	int ret;
 +
- static int acpi_nfit_register_dimms(struct acpi_nfit_desc *acpi_desc)
- {
- 	struct nfit_mem *nfit_mem;
-diff --git a/drivers/acpi/nfit/intel.c b/drivers/acpi/nfit/intel.c
-index 70bccb0c57e2..8d2413810a5f 100644
---- a/drivers/acpi/nfit/intel.c
-+++ b/drivers/acpi/nfit/intel.c
-@@ -358,7 +358,7 @@ static int intel_dimm_security_state(struct nvdimm *nvdimm,
- 	return rc;
- }
- 
--const struct nvdimm_security_ops intel_security_ops = {
-+static const struct nvdimm_security_ops __intel_security_ops = {
- 	.state = intel_dimm_security_state,
- 	.unlock = intel_dimm_security_unlock,
- 	.change_key = intel_dimm_security_update_passphrase,
-@@ -366,3 +366,4 @@ const struct nvdimm_security_ops intel_security_ops = {
- 	.freeze_lock = intel_dimm_security_freeze_lock,
- 	.erase = intel_dimm_security_erase,
- };
-+const struct nvdimm_security_ops *intel_security_ops = &__intel_security_ops;
-diff --git a/drivers/acpi/nfit/intel.h b/drivers/acpi/nfit/intel.h
-index f9ac718776ca..f831084f95fa 100644
---- a/drivers/acpi/nfit/intel.h
-+++ b/drivers/acpi/nfit/intel.h
-@@ -8,7 +8,7 @@
- 
- #ifdef CONFIG_X86
- 
--extern const struct nvdimm_security_ops intel_security_ops;
-+extern const struct nvdimm_security_ops *intel_security_ops;
- 
- #define ND_INTEL_STATUS_SIZE		4
- #define ND_INTEL_PASSPHRASE_SIZE	32
-@@ -64,19 +64,7 @@ struct nd_intel_overwrite {
- struct nd_intel_query_overwrite {
- 	u32 status;
- } __packed;
-+#else /* CONFIG_X86 */
-+#define intel_security_ops (NULL)
- #endif /* CONFIG_X86 */
--
--static inline const struct nvdimm_security_ops *
--acpi_nfit_get_security_ops(int family)
--{
--	switch (family) {
--#ifdef CONFIG_X86
--	case NVDIMM_FAMILY_INTEL:
--		return &intel_security_ops;
--#endif
--	default:
--		return NULL;
--	}
--}
--
- #endif
++	ordinal = htonl(TPM_ORD_SIGN);
++	datalen = htonl(bloblen);
++
++	/* session for loading the key */
++	ret = oiap(tb, &authhandle, enonce);
++	if (ret < 0) {
++		pr_info("oiap failed (%d)\n", ret);
++		return ret;
++	}
++
++	/* generate odd nonce */
++	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
++	if (ret < 0) {
++		pr_info("tpm_get_random failed (%d)\n", ret);
++		return ret;
++	}
++
++	/* calculate authorization HMAC value */
++	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
++			   nonceodd, cont, sizeof(uint32_t), &ordinal,
++			   sizeof(uint32_t), &datalen,
++			   bloblen, blob, 0, 0);
++	if (ret < 0)
++		return ret;
++
++	/* build the request buffer */
++	INIT_BUF(tb);
++	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
++	store32(tb, TPM_SIGN_SIZE + bloblen);
++	store32(tb, TPM_ORD_SIGN);
++	store32(tb, keyhandle);
++	store32(tb, bloblen);
++	storebytes(tb, blob, bloblen);
++	store32(tb, authhandle);
++	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
++	store8(tb, cont);
++	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
++
++	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
++	if (ret < 0) {
++		pr_info("authhmac failed (%d)\n", ret);
++		return ret;
++	}
++
++	datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
++
++	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd,
++			     keyauth, SHA1_DIGEST_SIZE,
++			     sizeof(uint32_t), TPM_DATA_OFFSET,
++			     datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
++			     0, 0);
++	if (ret < 0) {
++		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
++		return ret;
++	}
++
++	memcpy(out, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t),
++	       min(datalen, outlen));
++
++	return datalen;
++}
+ /*
+  * Maximum buffer size for the BER/DER encoded public key.  The public key
+  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
