@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:48:10 +0000
-Subject: [PATCH 11/22] KEYS: asym_tpm: extract key size & public key [ver #2]
-Message-Id: <153910369026.12141.17387700226034691682.stgit@warthog.procyon.org.uk>
+Date: Tue, 09 Oct 2018 16:46:51 +0000
+Subject: [PATCH 01/22] KEYS: Provide key type operations for asymmetric key ops [ver #2]
+Message-Id: <153910361191.12141.14323466803518898337.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,176 +9,250 @@ List-Id: <keyrings.vger.kernel.org>
 References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
 In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
 To: jmorris@namei.org
-Cc: Denis Kenzior <denkenz@gmail.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, Denis Kenzior <denkenz@gmail.com>Denis Kenzior <denkenz@gmail.com>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+Provide five new operations in the key_type struct that can be used to
+provide access to asymmetric key operations.  These will be implemented for
+the asymmetric key type in a later patch and may refer to a key retained in
+RAM by the kernel or a key retained in crypto hardware.
 
-The parsed BER/DER blob obtained from user space contains a TPM_Key
-structure.  This structure has some information about the key as well as
-the public key portion.
+     int (*asym_query)(const struct kernel_pkey_params *params,
+		       struct kernel_pkey_query *info);
+     int (*asym_eds_op)(struct kernel_pkey_params *params,
+			const void *in, void *out);
+     int (*asym_verify_signature)(struct kernel_pkey_params *params,
+			          const void *in, const void *in2);
 
-This patch extracts this information for future use.
+Since encrypt, decrypt and sign are identical in their interfaces, they're
+rolled together in the asym_eds_op() operation and there's an operation ID
+in the params argument to distinguish them.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Verify is different in that we supply the data and the signature instead
+and get an error value (or 0) as the only result on the expectation that
+this may well be how a hardware crypto device may work.
+
 Signed-off-by: David Howells <dhowells@redhat.com>
 Tested-by: Marcel Holtmann <marcel@holtmann.org>
 Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+Tested-by: Denis Kenzior <denkenz@gmail.com>
 ---
 
- crypto/asymmetric_keys/asym_tpm.c |  112 +++++++++++++++++++++++++++++++++++++
- include/crypto/asym_tpm_subtype.h |    3 +
- 2 files changed, 115 insertions(+)
+ Documentation/security/keys/core.rst |  106 ++++++++++++++++++++++++++++++++++
+ include/linux/key-type.h             |   11 ++++
+ include/linux/keyctl.h               |   46 +++++++++++++++
+ include/uapi/linux/keyctl.h          |    5 ++
+ 4 files changed, 168 insertions(+)
+ create mode 100644 include/linux/keyctl.h
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index d0b2b97e8e54..308c51e055a4 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -7,6 +7,7 @@
- #include <linux/seq_file.h>
- #include <linux/scatterlist.h>
- #include <linux/tpm.h>
-+#include <asm/unaligned.h>
- #include <keys/asymmetric-subtype.h>
- #include <crypto/asym_tpm_subtype.h>
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 9ce7256c6edb..c144978479d5 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -1483,6 +1483,112 @@ The structure has a number of fields, some of which are mandatory:
+      attempted key link operation. If there is no match, -EINVAL is returned.
  
-@@ -37,6 +38,110 @@ static void asym_tpm_destroy(void *payload0, void *payload3)
- 	kfree(tk);
- }
  
-+/*
-+ * Parse enough information out of TPM_KEY structure:
-+ * TPM_STRUCT_VER -> 4 bytes
-+ * TPM_KEY_USAGE -> 2 bytes
-+ * TPM_KEY_FLAGS -> 4 bytes
-+ * TPM_AUTH_DATA_USAGE -> 1 byte
-+ * TPM_KEY_PARMS -> variable
-+ * UINT32 PCRInfoSize -> 4 bytes
-+ * BYTE* -> PCRInfoSize bytes
-+ * TPM_STORE_PUBKEY
-+ * UINT32 encDataSize;
-+ * BYTE* -> encDataSize;
++  *  ``int (*asym_eds_op)(struct kernel_pkey_params *params,
++			  const void *in, void *out);``
++     ``int (*asym_verify_signature)(struct kernel_pkey_params *params,
++				    const void *in, const void *in2);``
++
++     These methods are optional.  If provided the first allows a key to be
++     used to encrypt, decrypt or sign a blob of data, and the second allows a
++     key to verify a signature.
++
++     In all cases, the following information is provided in the params block::
++
++	struct kernel_pkey_params {
++		struct key	*key;
++		const char	*encoding;
++		const char	*hash_algo;
++		char		*info;
++		__u32		in_len;
++		union {
++			__u32	out_len;
++			__u32	in2_len;
++		};
++		enum kernel_pkey_operation op : 8;
++	};
++
++     This includes the key to be used; a string indicating the encoding to use
++     (for instance, "pkcs1" may be used with an RSA key to indicate
++     RSASSA-PKCS1-v1.5 or RSAES-PKCS1-v1.5 encoding or "raw" if no encoding);
++     the name of the hash algorithm used to generate the data for a signature
++     (if appropriate); the sizes of the input and output (or second input)
++     buffers; and the ID of the operation to be performed.
++
++     For a given operation ID, the input and output buffers are used as
++     follows::
++
++	Operation ID		in,in_len	out,out_len	in2,in2_len
++	============	========	========	=======+	kernel_pkey_encrypt	Raw data	Encrypted data	-
++	kernel_pkey_decrypt	Encrypted data	Raw data	-
++	kernel_pkey_sign	Raw data	Signature	-
++	kernel_pkey_verify	Raw data	-		Signature
++
++     asym_eds_op() deals with encryption, decryption and signature creation as
++     specified by params->op.  Note that params->op is also set for
++     asym_verify_signature().
++
++     Encrypting and signature creation both take raw data in the input buffer
++     and return the encrypted result in the output buffer.  Padding may have
++     been added if an encoding was set.  In the case of signature creation,
++     depending on the encoding, the padding created may need to indicate the
++     digest algorithm - the name of which should be supplied in hash_algo.
++
++     Decryption takes encrypted data in the input buffer and returns the raw
++     data in the output buffer.  Padding will get checked and stripped off if
++     an encoding was set.
++
++     Verification takes raw data in the input buffer and the signature in the
++     second input buffer and checks that the one matches the other.  Padding
++     will be validated.  Depending on the encoding, the digest algorithm used
++     to generate the raw data may need to be indicated in hash_algo.
++
++     If successful, asym_eds_op() should return the number of bytes written
++     into the output buffer.  asym_verify_signature() should return 0.
++
++     A variety of errors may be returned, including EOPNOTSUPP if the operation
++     is not supported; EKEYREJECTED if verification fails; ENOPKG if the
++     required crypto isn't available.
++
++
++  *  ``int (*asym_query)(const struct kernel_pkey_params *params,
++			 struct kernel_pkey_query *info);``
++
++     This method is optional.  If provided it allows information about the
++     public or asymmetric key held in the key to be determined.
++
++     The parameter block is as for asym_eds_op() and co. but in_len and out_len
++     are unused.  The encoding and hash_algo fields should be used to reduce
++     the returned buffer/data sizes as appropriate.
++
++     If successful, the following information is filled in::
++
++	struct kernel_pkey_query {
++		__u32		supported_ops;
++		__u32		key_size;
++		__u16		max_data_size;
++		__u16		max_sig_size;
++		__u16		max_enc_size;
++		__u16		max_dec_size;
++	};
++
++     The supported_ops field will contain a bitmask indicating what operations
++     are supported by the key, including encryption of a blob, decryption of a
++     blob, signing a blob and verifying the signature on a blob.  The following
++     constants are defined for this::
++
++	KEYCTL_SUPPORTS_{ENCRYPT,DECRYPT,SIGN,VERIFY}
++
++     The key_size field is the size of the key in bits.  max_data_size and
++     max_sig_size are the maximum raw data and signature sizes for creation and
++     verification of a signature; max_enc_size and max_dec_size are the maximum
++     raw data and signature sizes for encryption and decryption.  The
++     max_*_size fields are measured in bytes.
++
++     If successful, 0 will be returned.  If the key doesn't support this,
++     EOPNOTSUPP will be returned.
++
++
+ Request-Key Callback Service
+ ==============
+ 
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index 05d8fb5a06c4..bc9af551fc83 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -17,6 +17,9 @@
+ 
+ #ifdef CONFIG_KEYS
+ 
++struct kernel_pkey_query;
++struct kernel_pkey_params;
++
+ /*
+  * key under-construction record
+  * - passed to the request_key actor if supplied
+@@ -155,6 +158,14 @@ struct key_type {
+ 	 */
+ 	struct key_restriction *(*lookup_restriction)(const char *params);
+ 
++	/* Asymmetric key accessor functions. */
++	int (*asym_query)(const struct kernel_pkey_params *params,
++			  struct kernel_pkey_query *info);
++	int (*asym_eds_op)(struct kernel_pkey_params *params,
++			   const void *in, void *out);
++	int (*asym_verify_signature)(struct kernel_pkey_params *params,
++				     const void *in, const void *in2);
++
+ 	/* internal fields */
+ 	struct list_head	link;		/* link in types list */
+ 	struct lock_class_key	lock_class;	/* key->sem lock class */
+diff --git a/include/linux/keyctl.h b/include/linux/keyctl.h
+new file mode 100644
+index 000000000000..c7c48c79ce0e
+--- /dev/null
++++ b/include/linux/keyctl.h
+@@ -0,0 +1,46 @@
++/* keyctl kernel bits
 + *
-+ * TPM_KEY_PARMS:
-+ * TPM_ALGORITHM_ID -> 4 bytes
-+ * TPM_ENC_SCHEME -> 2 bytes
-+ * TPM_SIG_SCHEME -> 2 bytes
-+ * UINT32 parmSize -> 4 bytes
-+ * BYTE* -> variable
++ * Copyright (C) 2016 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
 + */
-+static int extract_key_parameters(struct tpm_key *tk)
-+{
-+	const void *cur = tk->blob;
-+	uint32_t len = tk->blob_len;
-+	const void *pub_key;
-+	uint32_t sz;
-+	uint32_t key_len;
 +
-+	if (len < 11)
-+		return -EBADMSG;
++#ifndef __LINUX_KEYCTL_H
++#define __LINUX_KEYCTL_H
 +
-+	/* Ensure this is a legacy key */
-+	if (get_unaligned_be16(cur + 4) != 0x0015)
-+		return -EBADMSG;
++#include <uapi/linux/keyctl.h>
 +
-+	/* Skip to TPM_KEY_PARMS */
-+	cur += 11;
-+	len -= 11;
++struct kernel_pkey_query {
++	__u32		supported_ops;	/* Which ops are supported */
++	__u32		key_size;	/* Size of the key in bits */
++	__u16		max_data_size;	/* Maximum size of raw data to sign in bytes */
++	__u16		max_sig_size;	/* Maximum size of signature in bytes */
++	__u16		max_enc_size;	/* Maximum size of encrypted blob in bytes */
++	__u16		max_dec_size;	/* Maximum size of decrypted blob in bytes */
++};
 +
-+	if (len < 12)
-+		return -EBADMSG;
++enum kernel_pkey_operation {
++	kernel_pkey_encrypt,
++	kernel_pkey_decrypt,
++	kernel_pkey_sign,
++	kernel_pkey_verify,
++};
 +
-+	/* Make sure this is an RSA key */
-+	if (get_unaligned_be32(cur) != 0x00000001)
-+		return -EBADMSG;
++struct kernel_pkey_params {
++	struct key	*key;
++	const char	*encoding;	/* Encoding (eg. "oaep" or "raw" for none) */
++	const char	*hash_algo;	/* Digest algorithm used (eg. "sha1") or NULL if N/A */
++	char		*info;		/* Modified info string to be released later */
++	__u32		in_len;		/* Input data size */
++	union {
++		__u32	out_len;	/* Output buffer size (enc/dec/sign) */
++		__u32	in2_len;	/* 2nd input data size (verify) */
++	};
++	enum kernel_pkey_operation op : 8;
++};
 +
-+	/* Make sure this is TPM_ES_RSAESPKCSv15 encoding scheme */
-+	if (get_unaligned_be16(cur + 4) != 0x0002)
-+		return -EBADMSG;
-+
-+	/* Make sure this is TPM_SS_RSASSAPKCS1v15_DER signature scheme */
-+	if (get_unaligned_be16(cur + 6) != 0x0003)
-+		return -EBADMSG;
-+
-+	sz = get_unaligned_be32(cur + 8);
-+	if (len < sz + 12)
-+		return -EBADMSG;
-+
-+	/* Move to TPM_RSA_KEY_PARMS */
-+	len -= 12;
-+	cur += 12;
-+
-+	/* Grab the RSA key length */
-+	key_len = get_unaligned_be32(cur);
-+
-+	switch (key_len) {
-+	case 512:
-+	case 1024:
-+	case 1536:
-+	case 2048:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* Move just past TPM_KEY_PARMS */
-+	cur += sz;
-+	len -= sz;
-+
-+	if (len < 4)
-+		return -EBADMSG;
-+
-+	sz = get_unaligned_be32(cur);
-+	if (len < 4 + sz)
-+		return -EBADMSG;
-+
-+	/* Move to TPM_STORE_PUBKEY */
-+	cur += 4 + sz;
-+	len -= 4 + sz;
-+
-+	/* Grab the size of the public key, it should jive with the key size */
-+	sz = get_unaligned_be32(cur);
-+	if (sz > 256)
-+		return -EINVAL;
-+
-+	pub_key = cur + 4;
-+
-+	tk->key_len = key_len;
-+	tk->pub_key = pub_key;
-+	tk->pub_key_len = sz;
-+
-+	return 0;
-+}
-+
- /* Given the blob, parse it and load it into the TPM */
- struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
- {
-@@ -64,8 +169,15 @@ struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len)
- 
- 	tk->blob_len = blob_len;
- 
-+	r = extract_key_parameters(tk);
-+	if (r < 0)
-+		goto error_extract;
-+
- 	return tk;
- 
-+error_extract:
-+	kfree(tk->blob);
-+	tk->blob_len = 0;
- error_memdup:
- 	kfree(tk);
- error:
-diff --git a/include/crypto/asym_tpm_subtype.h b/include/crypto/asym_tpm_subtype.h
-index 03550b850998..48198c36d6b9 100644
---- a/include/crypto/asym_tpm_subtype.h
-+++ b/include/crypto/asym_tpm_subtype.h
-@@ -7,6 +7,9 @@
- struct tpm_key {
- 	void *blob;
- 	u32 blob_len;
-+	uint16_t key_len; /* Size in bits of the key */
-+	const void *pub_key; /* pointer inside blob to the public key bytes */
-+	uint16_t pub_key_len; /* length of the public key */
++#endif /* __LINUX_KEYCTL_H */
+diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+index 7b8c9e19bad1..d5eac15bc00c 100644
+--- a/include/uapi/linux/keyctl.h
++++ b/include/uapi/linux/keyctl.h
+@@ -77,4 +77,9 @@ struct keyctl_kdf_params {
+ 	__u32 __spare[8];
  };
  
- struct tpm_key *tpm_key_create(const void *blob, uint32_t blob_len);
++#define KEYCTL_SUPPORTS_ENCRYPT		0x01
++#define KEYCTL_SUPPORTS_DECRYPT		0x02
++#define KEYCTL_SUPPORTS_SIGN		0x04
++#define KEYCTL_SUPPORTS_VERIFY		0x08
++
+ #endif /*  _LINUX_KEYCTL_H */
