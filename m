@@ -1,63 +1,158 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 15:21:36 +0000
-Subject: Re: [PATCH 05/22] KEYS: Provide software public key query function
-Message-Id: <16730.1539098496@warthog.procyon.org.uk>
+Date: Tue, 09 Oct 2018 16:47:23 +0000
+Subject: [PATCH 05/22] KEYS: Provide software public key query function [ver #2]
+Message-Id: <153910364343.12141.6212013403882194768.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <alpine.LRH.2.21.1810040520570.16168@namei.org> <153618445730.7946.10001472635835806478.stgit@warthog.procyon.org.uk> <153618449119.7946.11025480207548147086.stgit@warthog.procyon.org.uk>
-In-Reply-To: <alpine.LRH.2.21.1810040520570.16168@namei.org>
-To: James Morris <jmorris@namei.org>
-Cc: dhowells@redhat.com, denkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
+To: jmorris@namei.org
+Cc: Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, Denis Kenzior <denkenz@gmail.com>Denis Kenzior <denkenz@gmail.com>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-James Morris <jmorris@namei.org> wrote:
+Provide a query function for the software public key implementation.  This
+permits information about such a key to be obtained using
+query_asymmetric_key() or KEYCTL_PKEY_QUERY.
 
-> > +	if (strcmp(encoding, "raw") = 0) {
-> > +		strcpy(alg_name, pkey->pkey_algo);
-> > +		return 0;
-> > +	}
-> 
-> Can encoding here also be NULL to indicate raw? per patch 01:
-
-Okay, I'm making the attached changes to patch 01.  They're
-documentary/commentary only.
-
-David
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+Tested-by: Denis Kenzior <denkenz@gmail.com>
 ---
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index 2cdccde6c585..c144978479d5 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -1507,12 +1507,12 @@ The structure has a number of fields, some of which are mandatory:
- 		enum kernel_pkey_operation op : 8;
- 	};
+
+ crypto/asymmetric_keys/public_key.c |   99 +++++++++++++++++++++++++++++------
+ 1 file changed, 82 insertions(+), 17 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index e929fe1e4106..761bfab352dc 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -59,6 +59,81 @@ static void public_key_destroy(void *payload0, void *payload3)
+ 	public_key_signature_free(payload3);
+ }
  
--     This includes the key to be used; an optional string indicating the
--     encoding to use (for instance, "pkcs1" may be used with an RSA key to
--     indicate RSASSA-PKCS1-v1.5 or RSAES-PKCS1-v1.5 encoding); the name of the
--     hash algorithm used to generate the data for a signature (if appropriate);
--     the sizes of the input and output (or second input) buffers; and the ID of
--     the operation to be performed.
-+     This includes the key to be used; a string indicating the encoding to use
-+     (for instance, "pkcs1" may be used with an RSA key to indicate
-+     RSASSA-PKCS1-v1.5 or RSAES-PKCS1-v1.5 encoding or "raw" if no encoding);
-+     the name of the hash algorithm used to generate the data for a signature
-+     (if appropriate); the sizes of the input and output (or second input)
-+     buffers; and the ID of the operation to be performed.
++/*
++ * Determine the crypto algorithm name.
++ */
++static
++int software_key_determine_akcipher(const char *encoding,
++				    const char *hash_algo,
++				    const struct public_key *pkey,
++				    char alg_name[CRYPTO_MAX_ALG_NAME])
++{
++	int n;
++
++	if (strcmp(encoding, "pkcs1") = 0) {
++		/* The data wangled by the RSA algorithm is typically padded
++		 * and encoded in some manner, such as EMSA-PKCS1-1_5 [RFC3447
++		 * sec 8.2].
++		 */
++		if (!hash_algo)
++			n = snprintf(alg_name, CRYPTO_MAX_ALG_NAME,
++				     "pkcs1pad(%s)",
++				     pkey->pkey_algo);
++		else
++			n = snprintf(alg_name, CRYPTO_MAX_ALG_NAME,
++				     "pkcs1pad(%s,%s)",
++				     pkey->pkey_algo, hash_algo);
++		return n >= CRYPTO_MAX_ALG_NAME ? -EINVAL : 0;
++	}
++
++	if (strcmp(encoding, "raw") = 0) {
++		strcpy(alg_name, pkey->pkey_algo);
++		return 0;
++	}
++
++	return -ENOPKG;
++}
++
++/*
++ * Query information about a key.
++ */
++static int software_key_query(const struct kernel_pkey_params *params,
++			      struct kernel_pkey_query *info)
++{
++	struct crypto_akcipher *tfm;
++	struct public_key *pkey = params->key->payload.data[asym_crypto];
++	char alg_name[CRYPTO_MAX_ALG_NAME];
++	int ret, len;
++
++	ret = software_key_determine_akcipher(params->encoding,
++					      params->hash_algo,
++					      pkey, alg_name);
++	if (ret < 0)
++		return ret;
++
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	ret = crypto_akcipher_set_pub_key(tfm, pkey->key, pkey->keylen);
++	if (ret < 0)
++		goto error_free_tfm;
++
++	len = crypto_akcipher_maxsize(tfm);
++	info->key_size = len * 8;
++	info->max_data_size = len;
++	info->max_sig_size = len;
++	info->max_enc_size = len;
++	info->max_dec_size = len;
++	info->supported_ops = KEYCTL_SUPPORTS_VERIFY;
++	ret = 0;
++
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
++}
++
+ /*
+  * Verify a signature using a public key.
+  */
+@@ -69,8 +144,7 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	struct crypto_akcipher *tfm;
+ 	struct akcipher_request *req;
+ 	struct scatterlist sig_sg, digest_sg;
+-	const char *alg_name;
+-	char alg_name_buf[CRYPTO_MAX_ALG_NAME];
++	char alg_name[CRYPTO_MAX_ALG_NAME];
+ 	void *output;
+ 	unsigned int outlen;
+ 	int ret;
+@@ -81,21 +155,11 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	BUG_ON(!sig);
+ 	BUG_ON(!sig->s);
  
-      For a given operation ID, the input and output buffers are used as
-      follows::
-diff --git a/include/linux/keyctl.h b/include/linux/keyctl.h
-index e89b4a4e43d0..c7c48c79ce0e 100644
---- a/include/linux/keyctl.h
-+++ b/include/linux/keyctl.h
-@@ -32,7 +32,7 @@ enum kernel_pkey_operation {
+-	if (!sig->digest)
+-		return -ENOPKG;
+-
+-	alg_name = sig->pkey_algo;
+-	if (strcmp(sig->pkey_algo, "rsa") = 0) {
+-		/* The data wangled by the RSA algorithm is typically padded
+-		 * and encoded in some manner, such as EMSA-PKCS1-1_5 [RFC3447
+-		 * sec 8.2].
+-		 */
+-		if (snprintf(alg_name_buf, CRYPTO_MAX_ALG_NAME,
+-			     "pkcs1pad(rsa,%s)", sig->hash_algo
+-			     ) >= CRYPTO_MAX_ALG_NAME)
+-			return -EINVAL;
+-		alg_name = alg_name_buf;
+-	}
++	ret = software_key_determine_akcipher(sig->encoding,
++					      sig->hash_algo,
++					      pkey, alg_name);
++	if (ret < 0)
++		return ret;
  
- struct kernel_pkey_params {
- 	struct key	*key;
--	const char	*encoding;	/* Encoding (eg. "oaep" or NULL for raw) */
-+	const char	*encoding;	/* Encoding (eg. "oaep" or "raw" for none) */
- 	const char	*hash_algo;	/* Digest algorithm used (eg. "sha1") or NULL if N/A */
- 	char		*info;		/* Modified info string to be released later */
- 	__u32		in_len;		/* Input data size */
+ 	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
+ 	if (IS_ERR(tfm))
+@@ -167,6 +231,7 @@ struct asymmetric_key_subtype public_key_subtype = {
+ 	.name_len		= sizeof("public_key") - 1,
+ 	.describe		= public_key_describe,
+ 	.destroy		= public_key_destroy,
++	.query			= software_key_query,
+ 	.verify_signature	= public_key_verify_signature_2,
+ };
+ EXPORT_SYMBOL_GPL(public_key_subtype);
