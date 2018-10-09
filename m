@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:49:05 +0000
-Subject: [PATCH 18/22] KEYS: asym_tpm: Implement tpm_unbind [ver #2]
-Message-Id: <153910374590.12141.16983394369161634140.stgit@warthog.procyon.org.uk>
+Date: Tue, 09 Oct 2018 16:47:38 +0000
+Subject: [PATCH 07/22] KEYS: Implement encrypt, decrypt and sign for software asymmetric key [ver #2]
+Message-Id: <153910365840.12141.5148612002256695339.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,119 +9,149 @@ List-Id: <keyrings.vger.kernel.org>
 References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
 In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
 To: jmorris@namei.org
-Cc: Denis Kenzior <denkenz@gmail.com>, James Morris <james.morris@microsoft.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, Denis Kenzior <denkenz@gmail.com>Denis Kenzior <denkenz@gmail.com>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+Implement the encrypt, decrypt and sign operations for the software
+asymmetric key subtype.  This mostly involves offloading the call to the
+crypto layer.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Reviewed-by: James Morris <james.morris@microsoft.com>
+Note that the decrypt and sign operations require a private key to be
+supplied.  Encrypt (and also verify) will work with either a public or a
+private key.  A public key can be supplied with an X.509 certificate and a
+private key can be supplied using a PKCS#8 blob:
+
+	# j=`openssl pkcs8 -in ~/pkcs7/firmwarekey2.priv -topk8 -nocrypt -outform DER | keyctl padd asymmetric foo @s`
+	# keyctl pkey_query $j - enc=pkcs1
+	key_size@96
+	max_data_sizeQ2
+	max_sig_sizeQ2
+	max_enc_sizeQ2
+	max_dec_sizeQ2
+	encrypt=y
+	decrypt=y
+	sign=y
+	verify=y
+	# keyctl pkey_encrypt $j 0 data enc=pkcs1 >/tmp/enc
+	# keyctl pkey_decrypt $j 0 /tmp/enc enc=pkcs1 >/tmp/dec
+	# cmp data /tmp/dec
+	# keyctl pkey_sign $j 0 data enc=pkcs1 hash=sha1 >/tmp/sig
+	# keyctl pkey_verify $j 0 data /tmp/sig enc=pkcs1 hash=sha1
+	#
+
 Signed-off-by: David Howells <dhowells@redhat.com>
 Tested-by: Marcel Holtmann <marcel@holtmann.org>
 Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+Tested-by: Denis Kenzior <denkenz@gmail.com>
 ---
 
- crypto/asymmetric_keys/asym_tpm.c |   82 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 82 insertions(+)
+ crypto/asymmetric_keys/public_key.c |   82 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 81 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 6a2d33014ecc..e893b5212222 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -18,8 +18,10 @@
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index f2dc27897319..f5d85b47fcc6 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -130,7 +130,11 @@ static int software_key_query(const struct kernel_pkey_params *params,
+ 	info->max_sig_size = len;
+ 	info->max_enc_size = len;
+ 	info->max_dec_size = len;
+-	info->supported_ops = KEYCTL_SUPPORTS_VERIFY;
++	info->supported_ops = (KEYCTL_SUPPORTS_ENCRYPT |
++			       KEYCTL_SUPPORTS_VERIFY);
++	if (pkey->key_is_private)
++		info->supported_ops |= (KEYCTL_SUPPORTS_DECRYPT |
++					KEYCTL_SUPPORTS_SIGN);
+ 	ret = 0;
  
- #define TPM_ORD_FLUSHSPECIFIC	186
- #define TPM_ORD_LOADKEY2	65
-+#define TPM_ORD_UNBIND		30
- #define TPM_LOADKEY2_SIZE		59
- #define TPM_FLUSHSPECIFIC_SIZE		18
-+#define TPM_UNBIND_SIZE			63
- 
- #define TPM_RT_KEY                      0x00000001
- 
-@@ -106,6 +108,86 @@ static int tpm_flushspecific(struct tpm_buf *tb, uint32_t handle)
- 	return trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ error_free_tfm:
+@@ -139,6 +143,81 @@ static int software_key_query(const struct kernel_pkey_params *params,
+ 	return ret;
  }
  
 +/*
-+ * Decrypt a blob provided by userspace using a specific key handle.
-+ * The handle is a well known handle or previously loaded by e.g. LoadKey2
++ * Do encryption, decryption and signing ops.
 + */
-+static int tpm_unbind(struct tpm_buf *tb,
-+			uint32_t keyhandle, unsigned char *keyauth,
-+			const unsigned char *blob, uint32_t bloblen,
-+			void *out, uint32_t outlen)
++static int software_key_eds_op(struct kernel_pkey_params *params,
++			       const void *in, void *out)
 +{
-+	unsigned char nonceodd[TPM_NONCE_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+	unsigned char authdata[SHA1_DIGEST_SIZE];
-+	uint32_t authhandle = 0;
-+	unsigned char cont = 0;
-+	uint32_t ordinal;
-+	uint32_t datalen;
++	const struct public_key *pkey = params->key->payload.data[asym_crypto];
++	struct akcipher_request *req;
++	struct crypto_akcipher *tfm;
++	struct crypto_wait cwait;
++	struct scatterlist in_sg, out_sg;
++	char alg_name[CRYPTO_MAX_ALG_NAME];
 +	int ret;
 +
-+	ordinal = htonl(TPM_ORD_UNBIND);
-+	datalen = htonl(bloblen);
++	pr_devel("=>%s()\n", __func__);
 +
-+	/* session for loading the key */
-+	ret = oiap(tb, &authhandle, enonce);
-+	if (ret < 0) {
-+		pr_info("oiap failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* generate odd nonce */
-+	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0) {
-+		pr_info("tpm_get_random failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	/* calculate authorization HMAC value */
-+	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-+			   nonceodd, cont, sizeof(uint32_t), &ordinal,
-+			   sizeof(uint32_t), &datalen,
-+			   bloblen, blob, 0, 0);
++	ret = software_key_determine_akcipher(params->encoding,
++					      params->hash_algo,
++					      pkey, alg_name);
 +	if (ret < 0)
 +		return ret;
 +
-+	/* build the request buffer */
-+	INIT_BUF(tb);
-+	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
-+	store32(tb, TPM_UNBIND_SIZE + bloblen);
-+	store32(tb, TPM_ORD_UNBIND);
-+	store32(tb, keyhandle);
-+	store32(tb, bloblen);
-+	storebytes(tb, blob, bloblen);
-+	store32(tb, authhandle);
-+	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
-+	store8(tb, cont);
-+	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
++	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
 +
-+	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
-+	if (ret < 0) {
-+		pr_info("authhmac failed (%d)\n", ret);
-+		return ret;
++	req = akcipher_request_alloc(tfm, GFP_KERNEL);
++	if (!req)
++		goto error_free_tfm;
++
++	if (pkey->key_is_private)
++		ret = crypto_akcipher_set_priv_key(tfm,
++						   pkey->key, pkey->keylen);
++	else
++		ret = crypto_akcipher_set_pub_key(tfm,
++						  pkey->key, pkey->keylen);
++	if (ret)
++		goto error_free_req;
++
++	sg_init_one(&in_sg, in, params->in_len);
++	sg_init_one(&out_sg, out, params->out_len);
++	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
++				   params->out_len);
++	crypto_init_wait(&cwait);
++	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
++				      CRYPTO_TFM_REQ_MAY_SLEEP,
++				      crypto_req_done, &cwait);
++
++	/* Perform the encryption calculation. */
++	switch (params->op) {
++	case kernel_pkey_encrypt:
++		ret = crypto_akcipher_encrypt(req);
++		break;
++	case kernel_pkey_decrypt:
++		ret = crypto_akcipher_decrypt(req);
++		break;
++	case kernel_pkey_sign:
++		ret = crypto_akcipher_sign(req);
++		break;
++	default:
++		BUG();
 +	}
 +
-+	datalen = LOAD32(tb->data, TPM_DATA_OFFSET);
++	ret = crypto_wait_req(ret, &cwait);
++	if (ret = 0)
++		ret = req->dst_len;
 +
-+	ret = TSS_checkhmac1(tb->data, ordinal, nonceodd,
-+			     keyauth, SHA1_DIGEST_SIZE,
-+			     sizeof(uint32_t), TPM_DATA_OFFSET,
-+			     datalen, TPM_DATA_OFFSET + sizeof(uint32_t),
-+			     0, 0);
-+	if (ret < 0) {
-+		pr_info("TSS_checkhmac1 failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	memcpy(out, tb->data + TPM_DATA_OFFSET + sizeof(uint32_t),
-+	       min(outlen, datalen));
-+
-+	return datalen;
++error_free_req:
++	akcipher_request_free(req);
++error_free_tfm:
++	crypto_free_akcipher(tfm);
++	pr_devel("<=%s() = %d\n", __func__, ret);
++	return ret;
 +}
 +
  /*
-  * Maximum buffer size for the BER/DER encoded public key.  The public key
-  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
+  * Verify a signature using a public key.
+  */
+@@ -242,6 +321,7 @@ struct asymmetric_key_subtype public_key_subtype = {
+ 	.describe		= public_key_describe,
+ 	.destroy		= public_key_destroy,
+ 	.query			= software_key_query,
++	.eds_op			= software_key_eds_op,
+ 	.verify_signature	= public_key_verify_signature_2,
+ };
+ EXPORT_SYMBOL_GPL(public_key_subtype);
