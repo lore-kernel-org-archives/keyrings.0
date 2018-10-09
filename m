@@ -1,127 +1,128 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Mon, 08 Oct 2018 23:56:25 +0000
-Subject: [PATCH v12 10/12] libnvdimm: add documentation for nvdimm security support
-Message-Id: <153904298565.60070.350988093446570269.stgit@djiang5-desk3.ch.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 09 Oct 2018 16:47:53 +0000
+Subject: [PATCH 09/22] crypto: rsa-pkcs1pad: Allow hash to be optional [ver #2]
+Message-Id: <153910367369.12141.13351167409478803724.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.intel.com>
-In-Reply-To: <153904272246.60070.6230977215877367778.stgit@djiang5-desk3.ch.intel.com>
-To: dan.j.williams@intel.com
-Cc: alison.schofield@intel.com, keescook@chromium.org, linux-nvdimm@lists.01.org, ebiggers3@gmail.com, dhowells@redhat.com, keyrings@vger.kernel.org
+References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
+In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
+To: jmorris@namei.org
+Cc: Denis Kenzior <denkenz@gmail.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add theory of operation for the security support that's going into
-libnvdimm.
+From: Denis Kenzior <denkenz@gmail.com>
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+The original pkcs1pad implementation allowed to pad/unpad raw RSA
+output.  However, this has been taken out in commit:
+commit c0d20d22e0ad ("crypto: rsa-pkcs1pad - Require hash to be present")
+
+This patch restored this ability as it is needed by the asymmetric key
+implementation.
+
+Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
 ---
- Documentation/nvdimm/security.txt |   99 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 99 insertions(+)
- create mode 100644 Documentation/nvdimm/security.txt
 
-diff --git a/Documentation/nvdimm/security.txt b/Documentation/nvdimm/security.txt
-new file mode 100644
-index 000000000000..50cbb6cb96a1
---- /dev/null
-+++ b/Documentation/nvdimm/security.txt
-@@ -0,0 +1,99 @@
-+NVDIMM SECURITY
-+=======+
-+1. Introduction
-+---------------
+ crypto/rsa-pkcs1pad.c |   59 ++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 41 insertions(+), 18 deletions(-)
+
+diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
+index 9893dbfc1af4..27b1e2bd4bfb 100644
+--- a/crypto/rsa-pkcs1pad.c
++++ b/crypto/rsa-pkcs1pad.c
+@@ -401,7 +401,8 @@ static int pkcs1pad_sign(struct akcipher_request *req)
+ 	if (!ctx->key_size)
+ 		return -EINVAL;
+ 
+-	digest_size = digest_info->size;
++	if (digest_info)
++		digest_size = digest_info->size;
+ 
+ 	if (req->src_len + digest_size > ctx->key_size - 11)
+ 		return -EOVERFLOW;
+@@ -421,8 +422,9 @@ static int pkcs1pad_sign(struct akcipher_request *req)
+ 	memset(req_ctx->in_buf + 1, 0xff, ps_end - 1);
+ 	req_ctx->in_buf[ps_end] = 0x00;
+ 
+-	memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
+-	       digest_info->size);
++	if (digest_info)
++		memcpy(req_ctx->in_buf + ps_end + 1, digest_info->data,
++		       digest_info->size);
+ 
+ 	pkcs1pad_sg_set_buf(req_ctx->in_sg, req_ctx->in_buf,
+ 			ctx->key_size - 1 - req->src_len, req->src);
+@@ -484,10 +486,13 @@ static int pkcs1pad_verify_complete(struct akcipher_request *req, int err)
+ 		goto done;
+ 	pos++;
+ 
+-	if (crypto_memneq(out_buf + pos, digest_info->data, digest_info->size))
+-		goto done;
++	if (digest_info) {
++		if (crypto_memneq(out_buf + pos, digest_info->data,
++				  digest_info->size))
++			goto done;
+ 
+-	pos += digest_info->size;
++		pos += digest_info->size;
++	}
+ 
+ 	err = 0;
+ 
+@@ -617,11 +622,14 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
+ 
+ 	hash_name = crypto_attr_alg_name(tb[2]);
+ 	if (IS_ERR(hash_name))
+-		return PTR_ERR(hash_name);
++		hash_name = NULL;
+ 
+-	digest_info = rsa_lookup_asn1(hash_name);
+-	if (!digest_info)
+-		return -EINVAL;
++	if (hash_name) {
++		digest_info = rsa_lookup_asn1(hash_name);
++		if (!digest_info)
++			return -EINVAL;
++	} else
++		digest_info = NULL;
+ 
+ 	inst = kzalloc(sizeof(*inst) + sizeof(*ctx), GFP_KERNEL);
+ 	if (!inst)
+@@ -641,14 +649,29 @@ static int pkcs1pad_create(struct crypto_template *tmpl, struct rtattr **tb)
+ 
+ 	err = -ENAMETOOLONG;
+ 
+-	if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
+-		     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME ||
+-	    snprintf(inst->alg.base.cra_driver_name, CRYPTO_MAX_ALG_NAME,
+-		     "pkcs1pad(%s,%s)",
+-		     rsa_alg->base.cra_driver_name, hash_name) >-	    CRYPTO_MAX_ALG_NAME)
+-		goto out_drop_alg;
++	if (!hash_name) {
++		if (snprintf(inst->alg.base.cra_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
++			     rsa_alg->base.cra_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
 +
-+With the introduction of Intel DSM v1.7 specification [1], security DSMs are
-+introduced. The spec added the following security DSMs: "get security state",
-+"set passphrase", "disable passphrase", "unlock unit", "freeze lock",
-+"secure erase", and "overwrite". A security_ops data structure has been
-+added to struct dimm in order to support the security operations and generic
-+APIs are exposed to allow vendor neutral operations.
++		if (snprintf(inst->alg.base.cra_driver_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s)",
++			     rsa_alg->base.cra_driver_name) >+			     CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
++	} else {
++		if (snprintf(inst->alg.base.cra_name, CRYPTO_MAX_ALG_NAME,
++			     "pkcs1pad(%s,%s)", rsa_alg->base.cra_name,
++			     hash_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
 +
-+2. Sysfs Interface
-+------------------
-+The "security" sysfs attribute is provided in the nvdimm sysfs directory. For
-+example:
-+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/security
-+
-+The "show" function of that attribute will display the security state for
-+that DIMM. The following states are available: disabled, unlocked, locked,
-+frozen, and unsupported.
-+
-+The "store" function takes several commands when the attribute is written to
-+in order to support some of the security functionalities:
-+update <old_keyid> <new_keyid> - enable security. Add or update current key.
-+disable <old_keyid> - disable enabled security and remove key.
-+freeze - freeze changing of security states.
-+erase <old_keyid> - generate new ecryption key for DIMM and crypto-scrambles
-+	all existing user data.
-+
-+3. Key Management
-+-----------------
-+
-+The key is associted to the payload by the DIMM id. For example:
-+# cat /sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0012:00/ndbus0/nmem0/nfit/id
-+8089-a2-1740-00000133
-+The DIMM id would be provided along with the key payload (passphrase) to
-+the kernel.
-+
-+The security keys are managed on the basis of a single key per DIMM. The
-+key "passphrase" is expected to be 32bytes long or padded to 32bytes. This is
-+similar to the ATA security specification [2]. A key is initially acquired
-+via the request_key() kernel API call and retrieved from userspace. It is up to
-+the user to provide an upcall application to retrieve the key in whatever
-+fashion meets their security requirements.
-+
-+A nvdimm user logon key has the description format of:
-+nvdimm:<bus-provider-specific-unique-id>
-+
-+4. Unlocking
-+------------
-+When the DIMMs are being enumerated by the kernel, the kernel will attempt to
-+retrieve the key from its keyring. If that fails, it will attempt to
-+acquire the key from the userspace upcall function. This is the only time
-+a locked DIMM can be unlocked. Once unlocked, the DIMM will remain unlocked
-+until reboot.
-+
-+5. Update
-+---------
-+When doing an update, it is expected that the new key with the 64bit payload of
-+format described above is added via the keyutils API or utility. The update
-+command written to the sysfs attribute will be with the format:
-+update <old keyid> <new keyid>
-+
-+It is expected that a user logon key has been injected via keyutils to provide
-+the payload for the update operation. The kernel will take the new user key,
-+attempt the update operation with the nvdimm, and replace the existing key's
-+payload with the new passphrase.
-+
-+If there is no old key id due to a security enabling, then a 0 should be
-+passed in.  If a nvdimm has an existing passphrase, then an "old" key should
-+be injected with a key description that does not have the "nvdimm:" prefix.
-+
-+6. Freeze
-+---------
-+The freeze operation does not require any keys. The security config can be
-+frozen by a user with root privelege.
-+
-+7. Disable
-+----------
-+The security disable command format is:
-+disable <old keyid>
-+
-+An "old" key with the passphrase payload that is tied to the nvdimm should be
-+injected with a key description that does not have the "nvdimm:" prefix and
-+its keyid should be passed in via sysfs.
-+
-+8. Secure Erase
-+---------------
-+The command format for doing a secure erase is:
-+erase <old keyid>
-+
-+An "old" key with the passphrase payload that is tied to the nvdimm should be
-+injected with a key description that does not have the "nvdimm:" prefix and
-+its keyid should be passed in via sysfs.
-+
-+[1]: http://pmem.io/documents/NVDIMM_DSM_Interface-V1.7.pdf
-+[2]: http://www.t13.org/documents/UploadedDocuments/docs2006/e05179r4-ACS-SecurityClarifications.pdf
++		if (snprintf(inst->alg.base.cra_driver_name,
++			     CRYPTO_MAX_ALG_NAME, "pkcs1pad(%s,%s)",
++			     rsa_alg->base.cra_driver_name,
++			     hash_name) >= CRYPTO_MAX_ALG_NAME)
++			goto out_drop_alg;
++	}
+ 
+ 	inst->alg.base.cra_flags = rsa_alg->base.cra_flags & CRYPTO_ALG_ASYNC;
+ 	inst->alg.base.cra_priority = rsa_alg->base.cra_priority;
