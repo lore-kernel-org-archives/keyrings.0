@@ -1,7 +1,7 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Fri, 12 Oct 2018 18:14:06 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 12 Oct 2018 20:37:29 +0000
 Subject: Re: [PATCH 2/2] conf: add upcall line for nvdimm in request-key.conf
-Message-Id: <CAPcyv4g2zKK76h1z17oqfW=E6K6dZ5kVk9GCZLyqVFAakuh3Lw@mail.gmail.com>
+Message-Id: <30852.1539376649@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,12 +10,18 @@ References: <153936769332.53805.5782268917140745309.stgit@djiang5-desk3.ch.intel
 In-Reply-To: <153936769332.53805.5782268917140745309.stgit@djiang5-desk3.ch.intel.com>
 To: keyrings@vger.kernel.org
 
-On Fri, Oct 12, 2018 at 11:08 AM Dave Jiang <dave.jiang@intel.com> wrote:
->
-> Add support for nvdimm key management.
+You should take a look at this patch:
 
-Kind of sad that we need to edit this top-level conf file. David,
-could you clarify why /etc/request.d can't be used for kernel upcalls?
-Otherwise, assuming that's not an acceptable approach:
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/commit/?h=next&id_2f3c34b0b23e5d2ea4564ac990827c47999992
 
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+on the keyutils next branch.  You should add a file into:
+
+	/etc/request-key.d/
+
+with this line:
+
+	+create  logon   nvdimm*         *               /usr/sbin/nvdimm-upcall %k
+
+in it.  Do you actually want to say "nvdimm:*", btw?
+
+David
