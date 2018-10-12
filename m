@@ -1,106 +1,27 @@
-From: Dave Jiang <dave.jiang@intel.com>
-Date: Fri, 12 Oct 2018 18:08:07 +0000
-Subject: [PATCH 1/2] keyutils: Add pkg-config file for keyutils library
-Message-Id: <153936768778.53805.17270502000080117870.stgit@djiang5-desk3.ch.intel.com>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Fri, 12 Oct 2018 18:11:23 +0000
+Subject: Re: [PATCH 1/2] keyutils: Add pkg-config file for keyutils library
+Message-Id: <CAPcyv4g8MwdL1mKggsv6ABc7tqMDYi0CGBUHBENdPuxrci23RA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <153936768778.53805.17270502000080117870.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <153936768778.53805.17270502000080117870.stgit@djiang5-desk3.ch.intel.com>
 To: keyrings@vger.kernel.org
 
-This is needed so that other projects can add a dependency on libkeyutils
-via PKG_CHECK_MODULES([KEYUTILS], [keyutils]).  This enabling makes 'make
-install' do the right thing, and of course individual distros will need to
-add enabling to their associated packages (rpm, deb, etc.) so the package
-manager installs do the right thing.
+On Fri, Oct 12, 2018 at 11:08 AM Dave Jiang <dave.jiang@intel.com> wrote:
+>
+> This is needed so that other projects can add a dependency on libkeyutils
+> via PKG_CHECK_MODULES([KEYUTILS], [keyutils]).  This enabling makes 'make
+> install' do the right thing, and of course individual distros will need to
+> add enabling to their associated packages (rpm, deb, etc.) so the package
+> manager installs do the right thing.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
- Makefile       |   22 ++++++++++++++++++++++
- keyutils.pc.in |   10 ++++++++++
- keyutils.spec  |    1 +
- 3 files changed, 33 insertions(+)
- create mode 100644 keyutils.pc.in
+This looks good to me and saves people from needing to duplicate the
+same open coded autoconf goop that cifs-utils and nfs-utils have had
+to implement.
 
-diff --git a/Makefile b/Makefile
-index 5ce6746..fdd96d8 100644
---- a/Makefile
-+++ b/Makefile
-@@ -19,6 +19,7 @@ MAN8		:= $(MANDIR)/man8
- INCLUDEDIR	:= /usr/include
- LN		:= ln
- LNS		:= $(LN) -sf
-+PREFIX 		:= /usr
- 
- ###############################################################################
- #
-@@ -78,6 +79,9 @@ endif
- endif
- endif
- 
-+PKGCONFIG 	:= keyutils.pc
-+PKGCONFIG_DIR 	:= $(USRLIBDIR)/pkgconfig
-+
- ###############################################################################
- #
- # This is necessary if glibc doesn't know about the key management error codes
-@@ -163,6 +167,15 @@ dns.afsdb.o: dns.afsdb.c key.dns.h
- # Install everything
- #
- ###############################################################################
-+pkgconfig:
-+	sed \
-+	-e 's,@VERSION\@,$(VERSION),g' \
-+	-e 's,@prefix\@,$(PREFIX),g' \
-+	-e 's,@exec_prefix\@,$(PREFIX),g' \
-+	-e 's,@libdir\@,$(USRLIBDIR),g' \
-+	-e 's,@includedir\@,$(INCLUDEDIR),g' \
-+	< $(PKGCONFIG).in > $(PKGCONFIG) || rm $(PKGCONFIG)
-+
- install: all
- ifeq ($(NO_ARLIB),0)
- 	$(INSTALL) -D -m 0644 $(ARLIB) $(DESTDIR)$(USRLIBDIR)/$(ARLIB)
-@@ -172,6 +185,15 @@ ifeq ($(NO_SOLIB),0)
- 	$(LNS) $(LIBNAME) $(DESTDIR)$(LIBDIR)/$(SONAME)
- 	mkdir -p $(DESTDIR)$(USRLIBDIR)
- 	$(LNS) $(LIBDIR)/$(SONAME) $(DESTDIR)$(USRLIBDIR)/$(DEVELLIB)
-+	sed \
-+	-e 's,@VERSION\@,$(VERSION),g' \
-+	-e 's,@prefix\@,$(PREFIX),g' \
-+	-e 's,@exec_prefix\@,$(PREFIX),g' \
-+	-e 's,@libdir\@,$(USRLIBDIR),g' \
-+	-e 's,@includedir\@,$(INCLUDEDIR),g' \
-+	< $(PKGCONFIG).in > $(PKGCONFIG) || rm $(PKGCONFIG)
-+	$(INSTALL) -D $(PKGCONFIG) $(PKGCONFIG_DIR)/$(PKGCONFIG)
-+	rm $(PKGCONFIG)
- endif
- 	$(INSTALL) -D keyctl $(DESTDIR)$(BINDIR)/keyctl
- 	$(INSTALL) -D request-key $(DESTDIR)$(SBINDIR)/request-key
-diff --git a/keyutils.pc.in b/keyutils.pc.in
-new file mode 100644
-index 0000000..44fd6e1
---- /dev/null
-+++ b/keyutils.pc.in
-@@ -0,0 +1,10 @@
-+prefix=@prefix@
-+exec_prefix=@exec_prefix@
-+libdir=@libdir@
-+includedir=@includedir@
-+
-+Name: keyutils
-+Description: keyutils library
-+Version: @VERSION@
-+Cflags: -I${includedir}
-+Libs: -L${libdir} -lkeyutils
-diff --git a/keyutils.spec b/keyutils.spec
-index 1cffbe1..b78c678 100644
---- a/keyutils.spec
-+++ b/keyutils.spec
-@@ -106,6 +106,7 @@ rm -rf $RPM_BUILD_ROOT
- %{_mandir}/man7/*
- %{_libdir}/libkeyutils.so.%{libapiversion}
- %{_libdir}/libkeyutils.so.%{libapivermajor}
-+%{_libdir}/pkgconfig/keyutils.pc
- 
- %files libs-devel
- %defattr(-,root,root,-)
+> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+
+Reviewed-by: Dan Williams <dan.j.williams@intel.com>
