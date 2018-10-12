@@ -1,7 +1,7 @@
 From: James Bottomley <jejb@linux.ibm.com>
-Date: Fri, 12 Oct 2018 15:22:39 +0000
+Date: Fri, 12 Oct 2018 15:25:51 +0000
 Subject: Re: [PATCH] KEYS: trusted: fix -Wvarags warning
-Message-Id: <1539357759.2656.7.camel@linux.ibm.com>
+Message-Id: <1539357951.2656.9.camel@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -19,21 +19,27 @@ On Fri, 2018-10-12 at 10:13 -0500, Denis Kenzior wrote:
 > Hi James,
 > 
 > > > So can't we simply use 'bool' or uint32 as the type for h3
-> > > instead of re-ordering everything
+> > > instead
+> > > of re-ordering everything
 > > 
 > > The problem is the standard is ambiguious.  The only thing that's
 > > guaranteed to work for all time is a char *.  If you want to keep
-> > the order, what I'd suggest is inserting a dummy pointer argument
-> > which is always expected to be NULL between the h3 and the varargs.
-> 
+> > the
+> > order, what I'd suggest is inserting a dummy pointer argument which
+> > is
+> > always expected to be NULL between the h3 and the varargs.
+> https://patchwork.kernel.org/patch/10274411/
 > So maybe I'm misunderstanding something, but the issue seems to be
-> that unsigned char is promoted to 'unsigned char *' by Clang and
-> probably unsigned int or int by gcc.
+> that 
+> unsigned char is promoted to 'unsigned char *' by Clang and probably 
+> unsigned int or int by gcc.
 > 
 > So instead of having unsigned char h3, can't we simply have bool h3
 > or unsigned int h3?
 
-Given the ambiguity in the standards, the safe thing that will work for
-all time and all potential compilers is a char *
+Or actually, we fix this like I did for tpm2 in an unmerged patch and
+compute the hmac over the constructed buffer not using varargs:
+
+https://patchwork.kernel.org/patch/10274411/
 
 James
