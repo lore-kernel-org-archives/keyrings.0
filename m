@@ -1,325 +1,80 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:48:49 +0000
-Subject: [PATCH 16/22] KEYS: Move trusted.h to include/keys [ver #2]
-Message-Id: <153910372943.12141.4425469446113441736.stgit@warthog.procyon.org.uk>
+From: Robbie Harwood <rharwood@redhat.com>
+Date: Mon, 15 Oct 2018 20:01:59 +0000
+Subject: [PATCH] keyctl: Be more friendly about invocation errors
+Message-Id: <jlgwoqj5688.fsf@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-To: jmorris@namei.org
-Cc: Denis Kenzior <denkenz@gmail.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-From: Denis Kenzior <denkenz@gmail.com>
+From 901cc5241e4a66168aed4998077d8fbe39efa866 Mon Sep 17 00:00:00 2001
+From: Robbie Harwood <rharwood@redhat.com>
+Date: Mon, 15 Oct 2018 15:57:51 -0400
+Subject: [PATCH] keyctl: Be more friendly about invocation errors
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Tested-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+When option parsing fails in main(), display usage information.
+
+Also cleanly handle `keyctl --help`.
+
+Signed-off-by: Robbie Harwood <rharwood@redhat.com>
 ---
+ keyctl.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
- include/keys/trusted.h  |  136 +++++++++++++++++++++++++++++++++++++++++++++++
- security/keys/trusted.c |    2 -
- security/keys/trusted.h |  136 -----------------------------------------------
- 3 files changed, 137 insertions(+), 137 deletions(-)
- create mode 100644 include/keys/trusted.h
- delete mode 100644 security/keys/trusted.h
-
-diff --git a/include/keys/trusted.h b/include/keys/trusted.h
-new file mode 100644
-index 000000000000..adbcb6817826
---- /dev/null
-+++ b/include/keys/trusted.h
-@@ -0,0 +1,136 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+#ifndef __TRUSTED_KEY_H
-+#define __TRUSTED_KEY_H
-+
-+/* implementation specific TPM constants */
-+#define MAX_BUF_SIZE			1024
-+#define TPM_GETRANDOM_SIZE		14
-+#define TPM_OSAP_SIZE			36
-+#define TPM_OIAP_SIZE			10
-+#define TPM_SEAL_SIZE			87
-+#define TPM_UNSEAL_SIZE			104
-+#define TPM_SIZE_OFFSET			2
-+#define TPM_RETURN_OFFSET		6
-+#define TPM_DATA_OFFSET			10
-+
-+#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
-+#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
-+#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
-+
-+struct tpm_buf {
-+	int len;
-+	unsigned char data[MAX_BUF_SIZE];
-+};
-+
-+#define INIT_BUF(tb) (tb->len = 0)
-+
-+struct osapsess {
-+	uint32_t handle;
-+	unsigned char secret[SHA1_DIGEST_SIZE];
-+	unsigned char enonce[TPM_NONCE_SIZE];
-+};
-+
-+/* discrete values, but have to store in uint16_t for TPM use */
-+enum {
-+	SEAL_keytype = 1,
-+	SRK_keytype = 4
-+};
-+
-+int TSS_authhmac(unsigned char *digest, const unsigned char *key,
-+			unsigned int keylen, unsigned char *h1,
-+			unsigned char *h2, unsigned char h3, ...);
-+int TSS_checkhmac1(unsigned char *buffer,
-+			  const uint32_t command,
-+			  const unsigned char *ononce,
-+			  const unsigned char *key,
-+			  unsigned int keylen, ...);
-+
-+int trusted_tpm_send(unsigned char *cmd, size_t buflen);
-+int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
-+
-+#define TPM_DEBUG 0
-+
-+#if TPM_DEBUG
-+static inline void dump_options(struct trusted_key_options *o)
-+{
-+	pr_info("trusted_key: sealing key type %d\n", o->keytype);
-+	pr_info("trusted_key: sealing key handle %0X\n", o->keyhandle);
-+	pr_info("trusted_key: pcrlock %d\n", o->pcrlock);
-+	pr_info("trusted_key: pcrinfo %d\n", o->pcrinfo_len);
-+	print_hex_dump(KERN_INFO, "pcrinfo ", DUMP_PREFIX_NONE,
-+		       16, 1, o->pcrinfo, o->pcrinfo_len, 0);
-+}
-+
-+static inline void dump_payload(struct trusted_key_payload *p)
-+{
-+	pr_info("trusted_key: key_len %d\n", p->key_len);
-+	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
-+		       16, 1, p->key, p->key_len, 0);
-+	pr_info("trusted_key: bloblen %d\n", p->blob_len);
-+	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
-+		       16, 1, p->blob, p->blob_len, 0);
-+	pr_info("trusted_key: migratable %d\n", p->migratable);
-+}
-+
-+static inline void dump_sess(struct osapsess *s)
-+{
-+	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
-+		       16, 1, &s->handle, 4, 0);
-+	pr_info("trusted-key: secret:\n");
-+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
-+		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
-+	pr_info("trusted-key: enonce:\n");
-+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
-+		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
-+}
-+
-+static inline void dump_tpm_buf(unsigned char *buf)
-+{
-+	int len;
-+
-+	pr_info("\ntrusted-key: tpm buffer\n");
-+	len = LOAD32(buf, TPM_SIZE_OFFSET);
-+	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
-+}
-+#else
-+static inline void dump_options(struct trusted_key_options *o)
-+{
-+}
-+
-+static inline void dump_payload(struct trusted_key_payload *p)
-+{
-+}
-+
-+static inline void dump_sess(struct osapsess *s)
-+{
-+}
-+
-+static inline void dump_tpm_buf(unsigned char *buf)
-+{
-+}
-+#endif
-+
-+static inline void store8(struct tpm_buf *buf, const unsigned char value)
-+{
-+	buf->data[buf->len++] = value;
-+}
-+
-+static inline void store16(struct tpm_buf *buf, const uint16_t value)
-+{
-+	*(uint16_t *) & buf->data[buf->len] = htons(value);
-+	buf->len += sizeof value;
-+}
-+
-+static inline void store32(struct tpm_buf *buf, const uint32_t value)
-+{
-+	*(uint32_t *) & buf->data[buf->len] = htonl(value);
-+	buf->len += sizeof value;
-+}
-+
-+static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
-+			      const int len)
-+{
-+	memcpy(buf->data + buf->len, in, len);
-+	buf->len += len;
-+}
-+#endif
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 1c025fdfe0e0..ff6789365a12 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -30,7 +30,7 @@
- #include <linux/tpm.h>
- #include <linux/tpm_command.h>
+diff --git a/keyctl.c b/keyctl.c
+index 61990b4..406f216 100644
+--- a/keyctl.c
++++ b/keyctl.c
+@@ -31,6 +31,7 @@ struct command {
+ #define nr __attribute__((noreturn))
  
--#include "trusted.h"
-+#include <keys/trusted.h>
+ static nr void act_keyctl___version(int argc, char *argv[]);
++static nr void act_keyctl___help(int argc, char *argv[]);
+ static nr void act_keyctl_show(int argc, char *argv[]);
+ static nr void act_keyctl_add(int argc, char *argv[]);
+ static nr void act_keyctl_padd(int argc, char *argv[]);
+@@ -74,6 +75,7 @@ static nr void act_keyctl_restrict_keyring(int argc, char *argv[]);
  
- static const char hmac_alg[] = "hmac(sha1)";
- static const char hash_alg[] = "sha1";
-diff --git a/security/keys/trusted.h b/security/keys/trusted.h
-deleted file mode 100644
-index adbcb6817826..000000000000
---- a/security/keys/trusted.h
-+++ /dev/null
-@@ -1,136 +0,0 @@
--/* SPDX-License-Identifier: GPL-2.0 */
--#ifndef __TRUSTED_KEY_H
--#define __TRUSTED_KEY_H
--
--/* implementation specific TPM constants */
--#define MAX_BUF_SIZE			1024
--#define TPM_GETRANDOM_SIZE		14
--#define TPM_OSAP_SIZE			36
--#define TPM_OIAP_SIZE			10
--#define TPM_SEAL_SIZE			87
--#define TPM_UNSEAL_SIZE			104
--#define TPM_SIZE_OFFSET			2
--#define TPM_RETURN_OFFSET		6
--#define TPM_DATA_OFFSET			10
--
--#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
--#define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
--#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
--
--struct tpm_buf {
--	int len;
--	unsigned char data[MAX_BUF_SIZE];
--};
--
--#define INIT_BUF(tb) (tb->len = 0)
--
--struct osapsess {
--	uint32_t handle;
--	unsigned char secret[SHA1_DIGEST_SIZE];
--	unsigned char enonce[TPM_NONCE_SIZE];
--};
--
--/* discrete values, but have to store in uint16_t for TPM use */
--enum {
--	SEAL_keytype = 1,
--	SRK_keytype = 4
--};
--
--int TSS_authhmac(unsigned char *digest, const unsigned char *key,
--			unsigned int keylen, unsigned char *h1,
--			unsigned char *h2, unsigned char h3, ...);
--int TSS_checkhmac1(unsigned char *buffer,
--			  const uint32_t command,
--			  const unsigned char *ononce,
--			  const unsigned char *key,
--			  unsigned int keylen, ...);
--
--int trusted_tpm_send(unsigned char *cmd, size_t buflen);
--int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
--
--#define TPM_DEBUG 0
--
--#if TPM_DEBUG
--static inline void dump_options(struct trusted_key_options *o)
--{
--	pr_info("trusted_key: sealing key type %d\n", o->keytype);
--	pr_info("trusted_key: sealing key handle %0X\n", o->keyhandle);
--	pr_info("trusted_key: pcrlock %d\n", o->pcrlock);
--	pr_info("trusted_key: pcrinfo %d\n", o->pcrinfo_len);
--	print_hex_dump(KERN_INFO, "pcrinfo ", DUMP_PREFIX_NONE,
--		       16, 1, o->pcrinfo, o->pcrinfo_len, 0);
--}
--
--static inline void dump_payload(struct trusted_key_payload *p)
--{
--	pr_info("trusted_key: key_len %d\n", p->key_len);
--	print_hex_dump(KERN_INFO, "key ", DUMP_PREFIX_NONE,
--		       16, 1, p->key, p->key_len, 0);
--	pr_info("trusted_key: bloblen %d\n", p->blob_len);
--	print_hex_dump(KERN_INFO, "blob ", DUMP_PREFIX_NONE,
--		       16, 1, p->blob, p->blob_len, 0);
--	pr_info("trusted_key: migratable %d\n", p->migratable);
--}
--
--static inline void dump_sess(struct osapsess *s)
--{
--	print_hex_dump(KERN_INFO, "trusted-key: handle ", DUMP_PREFIX_NONE,
--		       16, 1, &s->handle, 4, 0);
--	pr_info("trusted-key: secret:\n");
--	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
--		       16, 1, &s->secret, SHA1_DIGEST_SIZE, 0);
--	pr_info("trusted-key: enonce:\n");
--	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE,
--		       16, 1, &s->enonce, SHA1_DIGEST_SIZE, 0);
--}
--
--static inline void dump_tpm_buf(unsigned char *buf)
--{
--	int len;
--
--	pr_info("\ntrusted-key: tpm buffer\n");
--	len = LOAD32(buf, TPM_SIZE_OFFSET);
--	print_hex_dump(KERN_INFO, "", DUMP_PREFIX_NONE, 16, 1, buf, len, 0);
--}
--#else
--static inline void dump_options(struct trusted_key_options *o)
--{
--}
--
--static inline void dump_payload(struct trusted_key_payload *p)
--{
--}
--
--static inline void dump_sess(struct osapsess *s)
--{
--}
--
--static inline void dump_tpm_buf(unsigned char *buf)
--{
--}
--#endif
--
--static inline void store8(struct tpm_buf *buf, const unsigned char value)
--{
--	buf->data[buf->len++] = value;
--}
--
--static inline void store16(struct tpm_buf *buf, const uint16_t value)
--{
--	*(uint16_t *) & buf->data[buf->len] = htons(value);
--	buf->len += sizeof value;
--}
--
--static inline void store32(struct tpm_buf *buf, const uint32_t value)
--{
--	*(uint32_t *) & buf->data[buf->len] = htonl(value);
--	buf->len += sizeof value;
--}
--
--static inline void storebytes(struct tpm_buf *buf, const unsigned char *in,
--			      const int len)
--{
--	memcpy(buf->data + buf->len, in, len);
--	buf->len += len;
--}
--#endif
+ const struct command commands[] = {
+ 	{ act_keyctl___version,	"--version",	"" },
++	{ act_keyctl___help,	"--help",	"" },
+ 	{ act_keyctl_add,	"add",		"<type> <desc> <data> <keyring>" },
+ 	{ act_keyctl_chgrp,	"chgrp",	"<key> <gid>" },
+ 	{ act_keyctl_chown,	"chown",	"<key> <uid>" },
+@@ -178,7 +180,7 @@ int main(int argc, char *argv[])
+ 		/* partial match */
+ 		if (best) {
+ 			fprintf(stderr, "Ambiguous command\n");
+-			exit(2);
++			format();
+ 		}
+ 
+ 		best = cmd;
+@@ -186,7 +188,7 @@ int main(int argc, char *argv[])
+ 
+ 	if (!best) {
+ 		fprintf(stderr, "Unknown command\n");
+-		exit(2);
++		format();
+ 	}
+ 
+ 	best->action(argc, argv);
+@@ -235,6 +237,15 @@ static void act_keyctl___version(int argc, char *argv[])
+ 	exit(0);
+ }
+ 
++/*****************************************************************************/
++/*
++ * Display help text (wrapper)
++ */
++static void act_keyctl___help(int argc, char *argv[])
++{
++	format();
++}
++
+ /*****************************************************************************/
+ /*
+  * grab data from stdin
+-- 
+2.19.1
