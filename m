@@ -1,85 +1,97 @@
-From: syzbot <syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com>
-Date: Fri, 05 Oct 2018 11:16:03 +0000
-Subject: kernel BUG at security/keys/keyring.c:LINE!
-Message-Id: <000000000000a722550577796543@google.com>
+From: David Gstir <david@sigma-star.at>
+Date: Tue, 16 Oct 2018 10:16:15 +0000
+Subject: Re: [PATCH v2 1/2] security/keys/secure_key: Adds the secure key support based on CAAM.
+Message-Id: <F6B8DD08-A54A-4792-AC36-BF0335B1750A@sigma-star.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com, jmorris@namei.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, serge@hallyn.com, syzkaller-bugs@googlegroups.com
+References: <20180723111432.26830-1-udit.agarwal@nxp.com>
+ <8060.1533226481@warthog.procyon.org.uk>
+ <1533297482.4337.373.camel@linux.ibm.com>
+ <1533306238.4140.1.camel@HansenPartnership.com>
+ <1533307535.4337.415.camel@linux.ibm.com>
+ <1533311338.4140.3.camel@HansenPartnership.com>
+ <1533320921.4337.479.camel@linux.ibm.com>
+In-Reply-To: <1533320921.4337.479.camel@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>, David Howells <dhowells@redhat.com>, Udit Agarwal <udit.agarwal@nxp.com>, zohar@linux.vnet.ibm.com, jmorris@namei.org, serge@hallyn.com, denkenz@gmail.com, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, sahil.malhotra@nxp.com, ruchika.gupta@nxp.com, Horia Geanta <horia.geanta@nxp.com>, aymen.sghaier@nxp.com, Richard Weinberger <richard@sigma-star.at>
 
-SGVsbG8sCgpzeXpib3QgZm91bmQgdGhlIGZvbGxvd2luZyBjcmFzaCBvbjoKCkhFQUQgY29tbWl0
-OiAgICBiZWZhZDk0NGUyMzEgTWVyZ2UgdGFnICdkcm0tZml4ZXMtMjAxOC0xMC0wNScgb2YgZ2l0
-Oi8vYW5vLi4KZ2l0IHRyZWU6ICAgICAgIHVwc3RyZWFtCmNvbnNvbGUgb3V0cHV0OiBodHRwczov
-L3N5emthbGxlci5hcHBzcG90LmNvbS94L2xvZy50eHQ/eBYxZmM5NzY0MDAwMDAKa2VybmVsIGNv
-bmZpZzogIGh0dHBzOi8vc3l6a2FsbGVyLmFwcHNwb3QuY29tL3gvLmNvbmZpZz94wGFmMDNmZTQ1
-MmI2NWZiCmRhc2hib2FyZCBsaW5rOiBodHRwczovL3N5emthbGxlci5hcHBzcG90LmNvbS9idWc/
-ZXh0aWTsMjRlOTVlYTQ4M2RlMGEyNGRhCmNvbXBpbGVyOiAgICAgICBnY2MgKEdDQykgOC4wLjEg
-MjAxODA0MTMgKGV4cGVyaW1lbnRhbCkKc3l6IHJlcHJvOiAgICAgIGh0dHBzOi8vc3l6a2FsbGVy
-LmFwcHNwb3QuY29tL3gvcmVwcm8uc3l6P3gQMTYwZTNhNDAwMDAwCkMgcmVwcm9kdWNlcjogICBo
-dHRwczovL3N5emthbGxlci5hcHBzcG90LmNvbS94L3JlcHJvLmM/eBY5OTU0OTE0MDAwMDAKCklN
-UE9SVEFOVDogaWYgeW91IGZpeCB0aGUgYnVnLCBwbGVhc2UgYWRkIHRoZSBmb2xsb3dpbmcgdGFn
-IHRvIHRoZSBjb21taXQ6ClJlcG9ydGVkLWJ5OiBzeXpib3QrZWMyNGU5NWVhNDgzZGUwYTI0ZGFA
-c3l6a2FsbGVyLmFwcHNwb3RtYWlsLmNvbQoKLS0tLS0tLS0tLS0tWyBjdXQgaGVyZSBdLS0tLS0t
-LS0tLS0tCmtlcm5lbCBCVUcgYXQgc2VjdXJpdHkva2V5cy9rZXlyaW5nLmM6MTIxNCEKaW52YWxp
-ZCBvcGNvZGU6IDAwMDAgWyMxXSBQUkVFTVBUIFNNUCBLQVNBTgpDUFU6IDAgUElEOiA1ODA3IENv
-bW06IHN5ei1leGVjdXRvcjIyNiBOb3QgdGFpbnRlZCA0LjE5LjAtcmM2KyAjMjY4CkhhcmR3YXJl
-IG5hbWU6IEdvb2dsZSBHb29nbGUgQ29tcHV0ZSBFbmdpbmUvR29vZ2xlIENvbXB1dGUgRW5naW5l
-LCBCSU9TICAKR29vZ2xlIDAxLzAxLzIwMTEKUklQOiAwMDEwOl9fa2V5X2xpbmtfYmVnaW4rMHgy
-M2EvMHgzMDAgc2VjdXJpdHkva2V5cy9rZXlyaW5nLmM6MTIxNApDb2RlOiBmZSA0OCBjNyBjNyAy
-MCBhZSA2NyA4OSBlOCBiMyAzNiAyMyBmZSBlYiBhYyBlOCBlYyA2NCA0MiBmZSA0OCBjNyBjNyAg
-CjIwIGFlIDY3IDg5IGU4IDMwIDczIDczIDA0IGU5IGUzIGZlIGZmIGZmIGU4IGQ2IDY0IDQyIGZl
-IDwwZj4gMGIgZTggY2YgNjQgIAo0MiBmZSA0OCA4ZCBiYiBjZSAwMCAwMCAwMCA0OCBiOCAwMCAw
-MCAwMCAwMCAwMCBmYwpSU1A6IDAwMTg6ZmZmZjg4MDFiYmRjN2IxMCBFRkxBR1M6IDAwMDEwMjkz
-ClJBWDogZmZmZjg4MDFkOTI0ZTJjMCBSQlg6IGZmZmY4ODAxZDRlN2UwODAgUkNYOiBmZmZmZmZm
-ZjgzM2M0ZWJmClJEWDogMDAwMDAwMDAwMDAwMDAwMCBSU0k6IGZmZmZmZmZmODMzYzUwYWEgUkRJ
-OiAwMDAwMDAwMDAwMDAwMDA3ClJCUDogZmZmZjg4MDFiYmRjN2I0MCBSMDg6IGZmZmY4ODAxZDky
-NGUyYzAgUjA5OiBmZmZmZmJmZmYxMmNmNGE0ClIxMDogZmZmZmZiZmZmMTJjZjRhNCBSMTE6IGZm
-ZmZmZmZmODk2N2E1MjMgUjEyOiBmZmZmODgwMWJiZGM3YzQ4ClIxMzogMDAwMDAwMDAwMDAwMDAw
-MCBSMTQ6IGZmZmY4ODAxZDRlN2UyMDAgUjE1OiBmZmZmODgwMWQ0ZTdlMDgwCkZTOiAgMDAwMDAw
-MDAwMWNlOTg4MCgwMDAwKSBHUzpmZmZmODgwMWRhZTAwMDAwKDAwMDApIGtubEdTOjAwMDAwMDAw
-MDAwMDAwMDAKQ1M6ICAwMDEwIERTOiAwMDAwIEVTOiAwMDAwIENSMDogMDAwMDAwMDA4MDA1MDAz
-MwpDUjI6IDAwMDAwMDAwMjBjYWIwMDAgQ1IzOiAwMDAwMDAwMWQ4MjlhMDAwIENSNDogMDAwMDAw
-MDAwMDE0MDZmMApDYWxsIFRyYWNlOgogIGNvbnN0cnVjdF9hbGxvY19rZXkgc2VjdXJpdHkva2V5
-cy9yZXF1ZXN0X2tleS5jOjM4OSBbaW5saW5lXQogIGNvbnN0cnVjdF9rZXlfYW5kX2xpbmsgc2Vj
-dXJpdHkva2V5cy9yZXF1ZXN0X2tleS5jOjQ4MCBbaW5saW5lXQogIHJlcXVlc3Rfa2V5X2FuZF9s
-aW5rKzB4NzM3LzB4MTdhMCBzZWN1cml0eS9rZXlzL3JlcXVlc3Rfa2V5LmM6NTkzCiAgX19kb19z
-eXNfcmVxdWVzdF9rZXkgc2VjdXJpdHkva2V5cy9rZXljdGwuYzoyMTMgW2lubGluZV0KICBfX3Nl
-X3N5c19yZXF1ZXN0X2tleSBzZWN1cml0eS9rZXlzL2tleWN0bC5jOjE1OCBbaW5saW5lXQogIF9f
-eDY0X3N5c19yZXF1ZXN0X2tleSsweDMwNS8weDQwMCBzZWN1cml0eS9rZXlzL2tleWN0bC5jOjE1
-OAogIGRvX3N5c2NhbGxfNjQrMHgxYjkvMHg4MjAgYXJjaC94ODYvZW50cnkvY29tbW9uLmM6Mjkw
-CiAgZW50cnlfU1lTQ0FMTF82NF9hZnRlcl9od2ZyYW1lKzB4NDkvMHhiZQpSSVA6IDAwMzM6MHg0
-NDAxNjkKQ29kZTogMTggODkgZDAgYzMgNjYgMmUgMGYgMWYgODQgMDAgMDAgMDAgMDAgMDAgMGYg
-MWYgMDAgNDggODkgZjggNDggODkgZjcgIAo0OCA4OSBkNiA0OCA4OSBjYSA0ZCA4OSBjMiA0ZCA4
-OSBjOCA0YyA4YiA0YyAyNCAwOCAwZiAwNSA8NDg+IDNkIDAxIGYwIGZmICAKZmYgMGYgODMgZmIg
-MTMgZmMgZmYgYzMgNjYgMmUgMGYgMWYgODQgMDAgMDAgMDAgMDAKUlNQOiAwMDJiOjAwMDA3ZmZk
-NzAzMjQ4MDggRUZMQUdTOiAwMDAwMDIxNyBPUklHX1JBWDogMDAwMDAwMDAwMDAwMDBmOQpSQVg6
-IGZmZmZmZmZmZmZmZmZmZGEgUkJYOiAwMDAwMDAwMDAwNDAwMmM4IFJDWDogMDAwMDAwMDAwMDQ0
-MDE2OQpSRFg6IDAwMDAwMDAwMjAwMDAxYzAgUlNJOiAwMDAwMDAwMDIwMDAwMTgwIFJESTogMDAw
-MDAwMDAyMDAwMDBjMApSQlA6IDAwMDAwMDAwMDA2Y2EwMTggUjA4OiAwMDAwMDAwMDAwNDAwMmM4
-IFIwOTogMDAwMDAwMDAwMDQwMDJjOApSMTA6IDAwMDAwMDAwMTExNTIyZDMgUjExOiAwMDAwMDAw
-MDAwMDAwMjE3IFIxMjogMDAwMDAwMDAwMDQwMTlmMApSMTM6IDAwMDAwMDAwMDA0MDFhODAgUjE0
-OiAwMDAwMDAwMDAwMDAwMDAwIFIxNTogMDAwMDAwMDAwMDAwMDAwMApNb2R1bGVzIGxpbmtlZCBp
-bjoKLS0tWyBlbmQgdHJhY2UgNDA4MTVjNGE4ZjFlMjQ3MiBdLS0tClJJUDogMDAxMDpfX2tleV9s
-aW5rX2JlZ2luKzB4MjNhLzB4MzAwIHNlY3VyaXR5L2tleXMva2V5cmluZy5jOjEyMTQKQ29kZTog
-ZmUgNDggYzcgYzcgMjAgYWUgNjcgODkgZTggYjMgMzYgMjMgZmUgZWIgYWMgZTggZWMgNjQgNDIg
-ZmUgNDggYzcgYzcgIAoyMCBhZSA2NyA4OSBlOCAzMCA3MyA3MyAwNCBlOSBlMyBmZSBmZiBmZiBl
-OCBkNiA2NCA0MiBmZSA8MGY+IDBiIGU4IGNmIDY0ICAKNDIgZmUgNDggOGQgYmIgY2UgMDAgMDAg
-MDAgNDggYjggMDAgMDAgMDAgMDAgMDAgZmMKUlNQOiAwMDE4OmZmZmY4ODAxYmJkYzdiMTAgRUZM
-QUdTOiAwMDAxMDI5MwpSQVg6IGZmZmY4ODAxZDkyNGUyYzAgUkJYOiBmZmZmODgwMWQ0ZTdlMDgw
-IFJDWDogZmZmZmZmZmY4MzNjNGViZgpSRFg6IDAwMDAwMDAwMDAwMDAwMDAgUlNJOiBmZmZmZmZm
-ZjgzM2M1MGFhIFJESTogMDAwMDAwMDAwMDAwMDAwNwpSQlA6IGZmZmY4ODAxYmJkYzdiNDAgUjA4
-OiBmZmZmODgwMWQ5MjRlMmMwIFIwOTogZmZmZmZiZmZmMTJjZjRhNApSMTA6IGZmZmZmYmZmZjEy
-Y2Y0YTQgUjExOiBmZmZmZmZmZjg5NjdhNTIzIFIxMjogZmZmZjg4MDFiYmRjN2M0OApSMTM6IDAw
-MDAwMDAwMDAwMDAwMDAgUjE0OiBmZmZmODgwMWQ0ZTdlMjAwIFIxNTogZmZmZjg4MDFkNGU3ZTA4
-MApGUzogIDAwMDAwMDAwMDFjZTk4ODAoMDAwMCkgR1M6ZmZmZjg4MDFkYWUwMDAwMCgwMDAwKSBr
-bmxHUzowMDAwMDAwMDAwMDAwMDAwCkNTOiAgMDAxMCBEUzogMDAwMCBFUzogMDAwMCBDUjA6IDAw
-MDAwMDAwODAwNTAwMzMKQ1IyOiAwMDAwMDAwMDIwY2FiMDAwIENSMzogMDAwMDAwMDFkODI5YTAw
-MCBDUjQ6IDAwMDAwMDAwMDAxNDA2ZjAKCgotLS0KVGhpcyBidWcgaXMgZ2VuZXJhdGVkIGJ5IGEg
-Ym90LiBJdCBtYXkgY29udGFpbiBlcnJvcnMuClNlZSBodHRwczovL2dvby5nbC90cHNtRUogZm9y
-IG1vcmUgaW5mb3JtYXRpb24gYWJvdXQgc3l6Ym90LgpzeXpib3QgZW5naW5lZXJzIGNhbiBiZSBy
-ZWFjaGVkIGF0IHN5emthbGxlckBnb29nbGVncm91cHMuY29tLgoKc3l6Ym90IHdpbGwga2VlcCB0
-cmFjayBvZiB0aGlzIGJ1ZyByZXBvcnQuIFNlZToKaHR0cHM6Ly9nb28uZ2wvdHBzbUVKI2J1Zy1z
-dGF0dXMtdHJhY2tpbmcgZm9yIGhvdyB0byBjb21tdW5pY2F0ZSB3aXRoICAKc3l6Ym90LgpzeXpi
-b3QgY2FuIHRlc3QgcGF0Y2hlcyBmb3IgdGhpcyBidWcsIGZvciBkZXRhaWxzIHNlZToKaHR0cHM6
-Ly9nb28uZ2wvdHBzbUVKI3Rlc3RpbmctcGF0Y2hlcw==
+Hi!
+
+> On 03.08.2018, at 20:28, Mimi Zohar <zohar@linux.ibm.com> wrote:
+> 
+>>>>> If they have symmetric key support, there would be no need for
+>>>>> the
+>>>>> symmetric key ever to leave the device in the clear. The device
+>>>>> would unseal/decrypt data, such as an encrypted key.
+>>>>> 
+>>>>> The "symmetric" key type would be a generic interface for
+>>>>> different
+>>>>> devices.
+>>>> 
+>>>> It's possible, but it would only work for a non-bulk use case; do
+>>>> we
+>>>> have one of those?
+>>> 
+>>> "trusted" keys are currently being used to decrypt other keys (eg.
+>>> encrypted, ecryptfs, ...).
+>> 
+>> Yes, but that's just double encryption: it serves no real security
+>> purpose because at the end of the chain, the symmetric key is released
+>> into kernel memory to use in software crypto.  Unless you're using a
+>> high speed (and high cost) crypto accelerator with HSA, this will
+>> always be the case for bulk crypto.
+>> 
+>> The other slight problem with this chain of crypto is that I can impose
+>> conditions on the key release from the TPM (well TPM2, since TPM1.2 has
+>> a very weak policy engine) but if we use intermediate steps, those
+>> conditions might not be preserved, so I think the ideal would be a
+>> trusted key being released directly to LUKS or ecryptfs because the TPM
+>> can then verify the policy at actual unseal time.  I get that for the
+>> ecryptfs case you might want one key per file for sharding and sharing,
+>> and that's more like a bulk case because the TPM isn't going to keep up
+>> with the number of unseal operations required.
+> 
+> Agreed.  Yet there are a couple of reasons for having this sort of
+> indirection. By having the "encrypted" key encrypted/decrypted by a
+> "trusted" key, the "trusted" key could be updated without impacting
+> the "encrypted" key.  This could be used, for example, for key
+> migration.  Another reason would be to define a single "trusted" key
+> sealed to a set of PCRs, which could be used to encrypt/decrypt
+> multiple symmetric keys.
+> 
+> Nothing is preventing these subsystems from directly using a "trusted"
+> key.
+> 
+> This discussion is the result of Udit Agarwal's posting a "secure" key
+> patch. Before defining a new key type, whether it is called "secure"
+> or "symmetric", we need to understand how the this new key type is
+> going to be used.  Will it have a similar ability to impose conditions
+> on the key release as the TPM?  Will it have symmetric key support, so
+> that the symmetric key never needs to be released from the HW?
+
+
+I'm looking into mainline support for CAAM-protected keys. I currently have
+hacky patches that duplicate trusted keys, and use CAAM instead of TPM to
+seal/unseal keys and make them available to other kernel features like fscrypt.
+This patch by Udit Agarwal looks like an interesting base for my code.
+However, AFAICT there has been no progress for some time now. 
+
+Is anybody still working on this? If not, I'm happy to help out! :)
+
+Regarding the new key type:
+In addition to unsealing a key/data into kernel memory, CAAM also supports
+unsealing a symmetric key directly into a key register of CAAM's crypto
+acceleration engine. This is something I'd like to have, but it will surely
+require changes the the CAAM crypto driver as well. Jan Lübbe already mentioned
+he is interested in this too: https://www.spinics.net/lists/keyrings/msg03919.html
+
+AFAIK, CAAM does not have fine-grained key release restrictions like TPM.
+IMHO such a new key type should provide a generic interface with backends for
+CAAM, TPM and possibly others to seal/unseal arbitrary data. As for supporting
+keys that only reside in the HW, I'm not yet sure what the best approach would be.
+It should probably tie into the crypto API to be usable throughout the kernel...
+
+Thanks!
+David
