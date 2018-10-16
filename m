@@ -1,57 +1,46 @@
-From: Nick Desaulniers <ndesaulniers@google.com>
-Date: Mon, 15 Oct 2018 21:53:49 +0000
-Subject: Re: [PATCH] KEYS: trusted: fix -Wvarags warning
-Message-Id: <CAKwvOdmXVY1iA-VAs-Ns3qVVnMTeU6v4RqxoS2=SJcSeQ23_og@mail.gmail.com>
+From: David Laight <David.Laight@ACULAB.COM>
+Date: Tue, 16 Oct 2018 08:13:25 +0000
+Subject: RE: [PATCH] KEYS: trusted: fix -Wvarags warning
+Message-Id: <0147a993d4a94426afa469a8dcc4e5d7@AcuMS.aculab.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1539274203.2623.56.camel@linux.vnet.ibm.com> <20181011203126.15338-1-ndesaulniers@google.com>
+References: <1539274203.2623.56.camel@linux.vnet.ibm.com>
+ <20181011203126.15338-1-ndesaulniers@google.com>
  <0180360cfcb5458d8ff099744e8884d4@AcuMS.aculab.com>
-In-Reply-To: <0180360cfcb5458d8ff099744e8884d4@AcuMS.aculab.com>
-To: David.Laight@aculab.com
-Cc: "James E.J. Bottomley" <jejb@linux.vnet.ibm.com>, dhowells@redhat.com, Nathan Chancellor <natechancellor@gmail.com>, Eric Biggers <ebiggers@google.com>, zohar@linux.vnet.ibm.com, jmorris@namei.org, serge@hallyn.com, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+ <CAKwvOdmXVY1iA-VAs-Ns3qVVnMTeU6v4RqxoS2=SJcSeQ23_og@mail.gmail.com>
+In-Reply-To: <CAKwvOdmXVY1iA-VAs-Ns3qVVnMTeU6v4RqxoS2=SJcSeQ23_og@mail.gmail.com>
+To: 'Nick Desaulniers' <ndesaulniers@google.com>
+Cc: "James E.J. Bottomley" <jejb@linux.vnet.ibm.com>, "dhowells@redhat.com" <dhowells@redhat.com>, Nathan Chancellor <natechancellor@gmail.com>, Eric Biggers <ebiggers@google.com>, "zohar@linux.vnet.ibm.com" <zohar@linux.vnet.ibm.com>, "jmorris@namei.org" <jmorris@namei.org>, "serge@hallyn.com" <serge@hallyn.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
 
-On Mon, Oct 15, 2018 at 2:26 AM David Laight <David.Laight@aculab.com> wrote:
->
-> From: ndesaulniers@google.com
-> > Sent: 11 October 2018 21:31
-> ...
-> > by swapping h2 and h3.
-> >
-> > security/keys/trusted.c:146:17: warning: passing an object that
-> > undergoes default
-> >       argument promotion to 'va_start' has undefined behavior [-Wvarargs]
-> >         va_start(argp, h3);
-> >                        ^
-> > security/keys/trusted.c:126:37: note: parameter of type 'unsigned
-> > char' is declared here
-> > unsigned char *h2, unsigned char h3, ...)
-> >                                ^
-> > Specifically, it seems that both the C90 (4.8.1.1) and C11 (7.16.1.4)
-> > standards explicitly call this out as undefined behavior:
->
-> I guess that problems arise when all the arguments are stacked
-> and va_start/va_arg use naive pointer manipulation.
-> In that case &h3 might be 4n+3 aligned so va_arg() will access
-> misaligned stack locations.
->
-> I doubt any modern compilers (where va_start and va_arg are builtins)
-> will get this 'wrong' even when all arguments are stacked.
->
-> Seems clang is being over cautious.
-
-Yes; did you have feedback on the Denis' proposed fix, or another?
-
->
->         David
->
-> -
-> Registered Address Lakeside, Bramley Road, Mount Farm, Milton Keynes, MK1 1PT, UK
-> Registration No: 1397386 (Wales)
-
-
-
--- 
-Thanks,
-~Nick Desaulniers
+RnJvbTogTmljayBEZXNhdWxuaWVycw0KPiBTZW50OiAxNSBPY3RvYmVyIDIwMTggMjI6NTQNCj4g
+T24gTW9uLCBPY3QgMTUsIDIwMTggYXQgMjoyNiBBTSBEYXZpZCBMYWlnaHQgPERhdmlkLkxhaWdo
+dEBhY3VsYWIuY29tPiB3cm90ZToNCj4gPg0KPiA+IEZyb206IG5kZXNhdWxuaWVyc0Bnb29nbGUu
+Y29tDQo+ID4gPiBTZW50OiAxMSBPY3RvYmVyIDIwMTggMjE6MzENCj4gPiAuLi4NCj4gPiA+IGJ5
+IHN3YXBwaW5nIGgyIGFuZCBoMy4NCj4gPiA+DQo+ID4gPiBzZWN1cml0eS9rZXlzL3RydXN0ZWQu
+YzoxNDY6MTc6IHdhcm5pbmc6IHBhc3NpbmcgYW4gb2JqZWN0IHRoYXQNCj4gPiA+IHVuZGVyZ29l
+cyBkZWZhdWx0DQo+ID4gPiAgICAgICBhcmd1bWVudCBwcm9tb3Rpb24gdG8gJ3ZhX3N0YXJ0JyBo
+YXMgdW5kZWZpbmVkIGJlaGF2aW9yIFstV3ZhcmFyZ3NdDQo+ID4gPiAgICAgICAgIHZhX3N0YXJ0
+KGFyZ3AsIGgzKTsNCj4gPiA+ICAgICAgICAgICAgICAgICAgICAgICAgXg0KPiA+ID4gc2VjdXJp
+dHkva2V5cy90cnVzdGVkLmM6MTI2OjM3OiBub3RlOiBwYXJhbWV0ZXIgb2YgdHlwZSAndW5zaWdu
+ZWQNCj4gPiA+IGNoYXInIGlzIGRlY2xhcmVkIGhlcmUNCj4gPiA+IHVuc2lnbmVkIGNoYXIgKmgy
+LCB1bnNpZ25lZCBjaGFyIGgzLCAuLi4pDQo+ID4gPiAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgXg0KPiA+ID4gU3BlY2lmaWNhbGx5LCBpdCBzZWVtcyB0aGF0IGJvdGggdGhlIEM5MCAo
+NC44LjEuMSkgYW5kIEMxMSAoNy4xNi4xLjQpDQo+ID4gPiBzdGFuZGFyZHMgZXhwbGljaXRseSBj
+YWxsIHRoaXMgb3V0IGFzIHVuZGVmaW5lZCBiZWhhdmlvcjoNCj4gPg0KPiA+IEkgZ3Vlc3MgdGhh
+dCBwcm9ibGVtcyBhcmlzZSB3aGVuIGFsbCB0aGUgYXJndW1lbnRzIGFyZSBzdGFja2VkDQo+ID4g
+YW5kIHZhX3N0YXJ0L3ZhX2FyZyB1c2UgbmFpdmUgcG9pbnRlciBtYW5pcHVsYXRpb24uDQo+ID4g
+SW4gdGhhdCBjYXNlICZoMyBtaWdodCBiZSA0biszIGFsaWduZWQgc28gdmFfYXJnKCkgd2lsbCBh
+Y2Nlc3MNCj4gPiBtaXNhbGlnbmVkIHN0YWNrIGxvY2F0aW9ucy4NCj4gPg0KPiA+IEkgZG91YnQg
+YW55IG1vZGVybiBjb21waWxlcnMgKHdoZXJlIHZhX3N0YXJ0IGFuZCB2YV9hcmcgYXJlIGJ1aWx0
+aW5zKQ0KPiA+IHdpbGwgZ2V0IHRoaXMgJ3dyb25nJyBldmVuIHdoZW4gYWxsIGFyZ3VtZW50cyBh
+cmUgc3RhY2tlZC4NCj4gPg0KPiA+IFNlZW1zIGNsYW5nIGlzIGJlaW5nIG92ZXIgY2F1dGlvdXMu
+DQo+IA0KPiBZZXM7IGRpZCB5b3UgaGF2ZSBmZWVkYmFjayBvbiB0aGUgRGVuaXMnIHByb3Bvc2Vk
+IGZpeCwgb3IgYW5vdGhlcj8NCg0KUGVyc29uYWxseSBJJ2QgYXZvaWQgY2hhciwgc2hvcnQgYW5k
+IGJvb2wgZm9yIGJvdGggZnVuY3Rpb24NCmFyZ3VtZW50cyBhbmQgcmVzdWx0cyBzaW5jZSB0aGV5
+IHR5cGljYWxseSByZXF1aXJlIGV4dHJhDQppbnN0cnVjdGlvbnMgZm9yIG1hc2tpbmcgdmFsdWVz
+IChldGMpLg0KYm9vbCBpcyBwYXJ0aWN1bGFybHkgb2Jub3hpb3VzLg0KDQpJbiB0aGF0IGNhc2Ug
+ZWl0aGVyIGludCBvciB1bnNpZ25lZCBpbnQgaXMgZ29vZC4NCg0KCURhdmlkDQoNCi0NClJlZ2lz
+dGVyZWQgQWRkcmVzcyBMYWtlc2lkZSwgQnJhbWxleSBSb2FkLCBNb3VudCBGYXJtLCBNaWx0b24g
+S2V5bmVzLCBNSzEgMVBULCBVSw0KUmVnaXN0cmF0aW9uIE5vOiAxMzk3Mzg2IChXYWxlcykNCg=
