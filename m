@@ -1,97 +1,39 @@
 From: David Woodhouse <dwmw2@infradead.org>
-Date: Wed, 17 Oct 2018 15:48:03 +0000
+Date: Wed, 17 Oct 2018 16:03:04 +0000
 Subject: Re: [PATCH] support other engines for module signing
-Message-Id: <713869fcbcc4bade0a5c7f8b2d7a9fb77c11bf79.camel@infradead.org>
+Message-Id: <fe744f66b9538349e2cc6add789628728d417c45.camel@infradead.org>
 MIME-Version: 1
-Content-Type: multipart/mixed; boundary="=-I34poefneqAHRpDRq7Jn"
+Content-Type: multipart/mixed; boundary="=-NZSNdPAsDsnM7w71GI9e"
 List-Id: <keyrings.vger.kernel.org>
 References: <alpine.LFD.2.21.1810171142300.20697@hatman>
 In-Reply-To: <alpine.LFD.2.21.1810171142300.20697@hatman>
 To: keyrings@vger.kernel.org
 
 
---=-I34poefneqAHRpDRq7Jn
+--=-NZSNdPAsDsnM7w71GI9e
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2018-10-17 at 08:28 -0700, James Bottomley wrote:
-> On Wed, 2018-10-17 at 08:18 -0700, David Woodhouse wrote:
-> > It looks just like yours. It uses the UI callbacks, but you can
-> > bypass those by providing the password in advance with an ENGINE_ctrl
-> > if you want.
+On Wed, 2018-10-17 at 08:48 -0700, David Woodhouse wrote:
 >=20
-> Are we talking about the same thing?  This is the current RH code:
-
-Why are you calling this "RH code"? What does Red Hat have to do with
-it? This is code in the upstream kernel, that I added (IIRC).
-
-> 		ENGINE *e;
+>  $ git clone github.com:OpenSC/libp11
+>  $ cd libp11
+>  $ git grep UI_
 >=20
-> 		e =3D ENGINE_by_id("pkcs11");
-> 		ERR(!e, "Load PKCS#11 ENGINE");
-> 		if (ENGINE_init(e))
-> 			ERR_clear_error();
-> 		else
-> 			ERR(1, "ENGINE_init");
-> 		if (key_pass)
-> 			ERR(!ENGINE_ctrl_cmd_string(e, "PIN", key_pass, 0),
-> 			    "Set PKCS#11 PIN");
-> 		private_key =3D ENGINE_load_private_key(e, private_key_name,
-> 						      NULL, NULL);
-> 		ERR(!private_key, "%s", private_key_name);
+> ... probably! You can easily test it.
 >=20
-> It uses an engine control command to load the key password not a UI.=20
 
-James, that "PIN" ENGINE_ctrl is basically identical to what we need to
-do with your TPM2 engine to provide a parent key password (which your
-engine currently can't use a UI for =E2=98=B9). It's hardly a strange and
-unusual concept.
+If you build openconnect and run 'make check' it populates a SoftHSM
+token with its test key and uses that for auth. Both with and without
+passwords. And possibly with the password =C4=82=C5=BB (U+0102 U+017b) in b=
+oth
+UTF-8 and ISO8859-2 locales just for ultimate torture testing, or maybe
+I only did that for file passwords... :)
 
-> Now if it will work with a UI, I can fold the cases.  Can someone tell
-> me if it does work with a UI?
+You could trivially then try running 'sign-file' with the same SoftHSM
+token to test.
 
- $ git clone github.com:OpenSC/libp11
- $ cd libp11
- $ git grep UI_
-
-... probably! You can easily test it.
-
-> > > No, the requirement seemed to be to add the engine to the openssl
-> > > config file.  There's no reason why an additional command parameter
-> > > can't be added, though.
-> >=20
-> > But ENGINE_load_private_key() needs to be used with a specific
-> > ENGINE, doesn't it?
->=20
-> Actually no.  One engine can't load another engine's key (or doesn't
-> understand another engine's URI) so you can iterate over all engines
-> until you get one that succeeds.  That was the principle of the
-> original "integrate engines into the main load paths" patch years ago.=
-=20
-> Even the engine lockout machinery isn't invoked until you actually have
-> a loaded key, so the path is safe.
-
-Ah, OK... so we try ENGINE_load_private_key(NULL, private_key_name, =E2=80=
-=A6)?
-
-> To add a command specifier, you try that engine (and only that engine)
-> but the fallback behaviour would be to try them all because that's how
-> the token works today.  I told Mark I'd be happy to code this.
->=20
-> >  Unless we're actually using the new STORE API, then referencing the
-> > privkey by a name that the engine has registered with the STORE code
-> > =E2=80=94 either a URI scheme, or an ASN.1 parser that gets invoked by =
-the
-> > file_loader.
->=20
-> Tag recognition is useful but not required.  The only requirement is
-> that the engine be able to recognise something that's not its own key
-> an fail without any other implications.
-
-Makes sense.
-
-
---=-I34poefneqAHRpDRq7Jn
+--=-NZSNdPAsDsnM7w71GI9e
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -174,20 +116,20 @@ px9/s81rgzdEZOofSlZHynoSMYIDxzCCA8MCAQEwgawwgZcxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 ExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBD
 QSBMaW1pdGVkMT0wOwYDVQQDEzRDT01PRE8gUlNBIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQg
 U2VjdXJlIEVtYWlsIENBAhBNRhEyk/HZ7naOeTHWrzuAMA0GCWCGSAFlAwQCAQUAoIIB6zAYBgkq
-hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xODEwMTcxNTQ4MDNaMC8GCSqG
-SIb3DQEJBDEiBCAoqMrhcezWpppBx9pCWLxlqOG5Idcu8s1A35NR7O11kDCBvQYJKwYBBAGCNxAE
+hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xODEwMTcxNjAzMDRaMC8GCSqG
+SIb3DQEJBDEiBCDdK671sWx9/zJK9XnFqdsyYiIEeeGedYWDbECgcc93RDCBvQYJKwYBBAGCNxAE
 MYGvMIGsMIGXMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYD
 VQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE9MDsGA1UEAxM0Q09NT0RP
 IFJTQSBDbGllbnQgQXV0aGVudGljYXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQTUYRMpPx2e52
 jnkx1q87gDCBvwYLKoZIhvcNAQkQAgsxga+ggawwgZcxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJH
 cmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBM
 aW1pdGVkMT0wOwYDVQQDEzRDT01PRE8gUlNBIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2Vj
-dXJlIEVtYWlsIENBAhBNRhEyk/HZ7naOeTHWrzuAMA0GCSqGSIb3DQEBAQUABIIBABUeUeoC7Sa0
-OivgFP04ofTcF/bFDZ7JeGkYrMxDDiQEg+aMS7spwrR7S+1RFgUvRTpZlI1V4du+W+EcxxyFUDf2
-rgWruqUHIuvuHOQii3fxz2/PSKjwrCnv+nk5gsEiOGkj+7GIIbAhxA9ijSwkKSHGQl0NfhzAi9zE
-C9yzldm8L9ihfh83DdPq/i57iyikWJeljN+0zr25pIS7vlKl0CTYNRj/Nw5IkJiA8gu1MM5Fsn+i
-0iTwsGsPv5P9q3GmOYcT8pKHJ5O/CUYx3+YeH1Ckkk0lY8a1XP3fFUlbn09W0b4ir56h6XrKHfcZ
-4EZanL7OCvtl/2jKGHgCZqywnR8AAAAAAAA=
+dXJlIEVtYWlsIENBAhBNRhEyk/HZ7naOeTHWrzuAMA0GCSqGSIb3DQEBAQUABIIBACkjfGiMI/68
+rYB3utwWkV2zyOEdhb7wQJra2fUxLtZyHhKV4kOo7/rtjtineuovrWHYi1p5x4c3fVait4YOksTs
+XdfVJ10A4Y+75GDtZT4MOcQP8drkOO9NFNzf5LoAhEJp3bkRfChffQmztPlnKQ8h1Y1a4THiabPM
+be9pIOXtxiLpkk5bioxavAclzW51STPVeuHgHH4z4vIGjxGHCGYtR7bGO4kx7rD2LecNXcMtv/+x
+iGNbeB68QQPC+mQ/EaBmtKNyw3CPPLwhRx+K9Ha4Xpc3rknflDHpdOBj7u/J1F1Btse+KSE8H4YJ
+CXC36nAtmFwqbwoML04zSVz9dY0AAAAAAAA=
 
 
---=-I34poefneqAHRpDRq7Jn--
+--=-NZSNdPAsDsnM7w71GI9e--
