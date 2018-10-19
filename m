@@ -1,88 +1,82 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:47:15 +0000
-Subject: [PATCH 04/22] KEYS: Make the X.509 and PKCS7 parsers supply the sig encoding type [ver #2]
-Message-Id: <153910363539.12141.4210082234235945107.stgit@warthog.procyon.org.uk>
+From: Stefan Berger <stefanb@linux.ibm.com>
+Date: Fri, 19 Oct 2018 10:17:58 +0000
+Subject: [PATCH] docs: Extend trusted keys documentation for TPM 2.0
+Message-Id: <20181019101758.1569-1-stefanb@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-To: jmorris@namei.org
-Cc: Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, Denis Kenzior <denkenz@gmail.com>Denis Kenzior <denkenz@gmail.com>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org
+Cc: zohar@linux.ibm.com, jejb@linux.ibm.com, Alexander.Levin@microsoft.com, jsnitsel@redhat.com, jmorris@namei.org, linux-kernel@vger.kernel.org, Stefan Berger <stefanb@linux.ibm.com>
 
-Make the X.509 and PKCS7 parsers fill in the signature encoding type field
-recently added to the public_key_signature struct.
+Extend the documentation for trusted keys with documentation for how to
+set up a key for a TPM 2.0 so it can be used with a TPM 2.0 as well.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Tested-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Denis Kenzior <denkenz@gmail.com>
-Tested-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ .../security/keys/trusted-encrypted.rst       | 31 ++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
- crypto/asymmetric_keys/pkcs7_parser.c     |    1 +
- crypto/asymmetric_keys/x509_cert_parser.c |   21 +++++++++------------
- 2 files changed, 10 insertions(+), 12 deletions(-)
-
-diff --git a/crypto/asymmetric_keys/pkcs7_parser.c b/crypto/asymmetric_keys/pkcs7_parser.c
-index 0f134162cef4..f0d56e1a8b7e 100644
---- a/crypto/asymmetric_keys/pkcs7_parser.c
-+++ b/crypto/asymmetric_keys/pkcs7_parser.c
-@@ -271,6 +271,7 @@ int pkcs7_sig_note_pkey_algo(void *context, size_t hdrlen,
- 	switch (ctx->last_oid) {
- 	case OID_rsaEncryption:
- 		ctx->sinfo->sig->pkey_algo = "rsa";
-+		ctx->sinfo->sig->encoding = "pkcs1";
- 		break;
- 	default:
- 		printk("Unsupported pkey algo: %u\n", ctx->last_oid);
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index b6cabac4b62b..991f4d735a4e 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -199,35 +199,32 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
+diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
+index 3bb24e09a332..6ec6bb2ac497 100644
+--- a/Documentation/security/keys/trusted-encrypted.rst
++++ b/Documentation/security/keys/trusted-encrypted.rst
+@@ -18,10 +18,33 @@ integrity verifications match.  A loaded Trusted Key can be updated with new
+ when the kernel and initramfs are updated.  The same key can have many saved
+ blobs under different PCR values, so multiple boots are easily supported.
  
- 	case OID_md4WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "md4";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
++TPM 1.2
++-------
++
+ By default, trusted keys are sealed under the SRK, which has the default
+ authorization value (20 zeros).  This can be set at takeownership time with the
+ trouser's utility: "tpm_takeownership -u -z".
  
- 	case OID_sha1WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha1";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
++TPM 2.0
++-------
++
++The user must first create a storage key and make it persistent, so the key is
++available after reboot. This can be done using the following commands.
++
++With the IBM TSS 2 stack::
++
++  #> tsscreateprimary -hi o -st
++  Handle 80000000
++  #> tssevictcontrol -hi o -ho 80000000 -hp 81000001
++
++Or with the Intel TSS 2 stack::
++
++  #> tpm2_createprimary --hierarchy o -G rsa2048 -o key.ctxt
++  [...]
++  handle: 0x800000FF
++  #> tpm2_evictcontrol -c key.ctxt -p 0x81000001
++  persistentHandle: 0x81000001
++
+ Usage::
  
- 	case OID_sha256WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha256";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
+     keyctl add trusted name "new keylen [options]" ring
+@@ -30,7 +53,9 @@ Usage::
+     keyctl print keyid
  
- 	case OID_sha384WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha384";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
+     options:
+-       keyhandle=    ascii hex value of sealing key default 0x40000000 (SRK)
++       keyhandle=    ascii hex value of sealing key
++                       TPM 1.2: default 0x40000000 (SRK)
++                       TPM 2.0: no default; must be passed every time
+        keyauth=	     ascii hex auth for sealing key default 0x00...i
+                      (40 ascii zeros)
+        blobauth=     ascii hex auth for sealed data default 0x00...
+@@ -84,6 +109,10 @@ Examples of trusted and encrypted key usage:
  
- 	case OID_sha512WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha512";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
+ Create and save a trusted key named "kmk" of length 32 bytes::
  
- 	case OID_sha224WithRSAEncryption:
- 		ctx->cert->sig->hash_algo = "sha224";
--		ctx->cert->sig->pkey_algo = "rsa";
--		break;
-+		goto rsa_pkcs1;
- 	}
++Note: When using a TPM 2.0 with a persistent key with handle 0x81000001,
++append 'keyhandle=0x81000001' to statements between quotes, such as
++"new 32 keyhandle=0x81000001".
++
+     $ keyctl add trusted kmk "new 32" @u
+     440502848
  
-+rsa_pkcs1:
-+	ctx->cert->sig->pkey_algo = "rsa";
-+	ctx->cert->sig->encoding = "pkcs1";
- 	ctx->algo_oid = ctx->last_oid;
- 	return 0;
- }
+-- 
+2.17.2
