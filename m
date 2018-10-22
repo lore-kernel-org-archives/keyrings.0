@@ -1,46 +1,101 @@
-From: David Laight <David.Laight@ACULAB.COM>
-Date: Tue, 16 Oct 2018 08:13:25 +0000
-Subject: RE: [PATCH] KEYS: trusted: fix -Wvarags warning
-Message-Id: <0147a993d4a94426afa469a8dcc4e5d7@AcuMS.aculab.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Mon, 22 Oct 2018 10:46:55 +0000
+Subject: [PATCH v2 3/4] sign-file: add generic built-in engine key support
+Message-Id: <1540205215.2815.10.camel@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1539274203.2623.56.camel@linux.vnet.ibm.com>
- <20181011203126.15338-1-ndesaulniers@google.com>
- <0180360cfcb5458d8ff099744e8884d4@AcuMS.aculab.com>
- <CAKwvOdmXVY1iA-VAs-Ns3qVVnMTeU6v4RqxoS2=SJcSeQ23_og@mail.gmail.com>
-In-Reply-To: <CAKwvOdmXVY1iA-VAs-Ns3qVVnMTeU6v4RqxoS2=SJcSeQ23_og@mail.gmail.com>
-To: 'Nick Desaulniers' <ndesaulniers@google.com>
-Cc: "James E.J. Bottomley" <jejb@linux.vnet.ibm.com>, "dhowells@redhat.com" <dhowells@redhat.com>, Nathan Chancellor <natechancellor@gmail.com>, Eric Biggers <ebiggers@google.com>, "zohar@linux.vnet.ibm.com" <zohar@linux.vnet.ibm.com>, "jmorris@namei.org" <jmorris@namei.org>, "serge@hallyn.com" <serge@hallyn.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+To: keyrings@vger.kernel.org
 
-RnJvbTogTmljayBEZXNhdWxuaWVycw0KPiBTZW50OiAxNSBPY3RvYmVyIDIwMTggMjI6NTQNCj4g
-T24gTW9uLCBPY3QgMTUsIDIwMTggYXQgMjoyNiBBTSBEYXZpZCBMYWlnaHQgPERhdmlkLkxhaWdo
-dEBhY3VsYWIuY29tPiB3cm90ZToNCj4gPg0KPiA+IEZyb206IG5kZXNhdWxuaWVyc0Bnb29nbGUu
-Y29tDQo+ID4gPiBTZW50OiAxMSBPY3RvYmVyIDIwMTggMjE6MzENCj4gPiAuLi4NCj4gPiA+IGJ5
-IHN3YXBwaW5nIGgyIGFuZCBoMy4NCj4gPiA+DQo+ID4gPiBzZWN1cml0eS9rZXlzL3RydXN0ZWQu
-YzoxNDY6MTc6IHdhcm5pbmc6IHBhc3NpbmcgYW4gb2JqZWN0IHRoYXQNCj4gPiA+IHVuZGVyZ29l
-cyBkZWZhdWx0DQo+ID4gPiAgICAgICBhcmd1bWVudCBwcm9tb3Rpb24gdG8gJ3ZhX3N0YXJ0JyBo
-YXMgdW5kZWZpbmVkIGJlaGF2aW9yIFstV3ZhcmFyZ3NdDQo+ID4gPiAgICAgICAgIHZhX3N0YXJ0
-KGFyZ3AsIGgzKTsNCj4gPiA+ICAgICAgICAgICAgICAgICAgICAgICAgXg0KPiA+ID4gc2VjdXJp
-dHkva2V5cy90cnVzdGVkLmM6MTI2OjM3OiBub3RlOiBwYXJhbWV0ZXIgb2YgdHlwZSAndW5zaWdu
-ZWQNCj4gPiA+IGNoYXInIGlzIGRlY2xhcmVkIGhlcmUNCj4gPiA+IHVuc2lnbmVkIGNoYXIgKmgy
-LCB1bnNpZ25lZCBjaGFyIGgzLCAuLi4pDQo+ID4gPiAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgXg0KPiA+ID4gU3BlY2lmaWNhbGx5LCBpdCBzZWVtcyB0aGF0IGJvdGggdGhlIEM5MCAo
-NC44LjEuMSkgYW5kIEMxMSAoNy4xNi4xLjQpDQo+ID4gPiBzdGFuZGFyZHMgZXhwbGljaXRseSBj
-YWxsIHRoaXMgb3V0IGFzIHVuZGVmaW5lZCBiZWhhdmlvcjoNCj4gPg0KPiA+IEkgZ3Vlc3MgdGhh
-dCBwcm9ibGVtcyBhcmlzZSB3aGVuIGFsbCB0aGUgYXJndW1lbnRzIGFyZSBzdGFja2VkDQo+ID4g
-YW5kIHZhX3N0YXJ0L3ZhX2FyZyB1c2UgbmFpdmUgcG9pbnRlciBtYW5pcHVsYXRpb24uDQo+ID4g
-SW4gdGhhdCBjYXNlICZoMyBtaWdodCBiZSA0biszIGFsaWduZWQgc28gdmFfYXJnKCkgd2lsbCBh
-Y2Nlc3MNCj4gPiBtaXNhbGlnbmVkIHN0YWNrIGxvY2F0aW9ucy4NCj4gPg0KPiA+IEkgZG91YnQg
-YW55IG1vZGVybiBjb21waWxlcnMgKHdoZXJlIHZhX3N0YXJ0IGFuZCB2YV9hcmcgYXJlIGJ1aWx0
-aW5zKQ0KPiA+IHdpbGwgZ2V0IHRoaXMgJ3dyb25nJyBldmVuIHdoZW4gYWxsIGFyZ3VtZW50cyBh
-cmUgc3RhY2tlZC4NCj4gPg0KPiA+IFNlZW1zIGNsYW5nIGlzIGJlaW5nIG92ZXIgY2F1dGlvdXMu
-DQo+IA0KPiBZZXM7IGRpZCB5b3UgaGF2ZSBmZWVkYmFjayBvbiB0aGUgRGVuaXMnIHByb3Bvc2Vk
-IGZpeCwgb3IgYW5vdGhlcj8NCg0KUGVyc29uYWxseSBJJ2QgYXZvaWQgY2hhciwgc2hvcnQgYW5k
-IGJvb2wgZm9yIGJvdGggZnVuY3Rpb24NCmFyZ3VtZW50cyBhbmQgcmVzdWx0cyBzaW5jZSB0aGV5
-IHR5cGljYWxseSByZXF1aXJlIGV4dHJhDQppbnN0cnVjdGlvbnMgZm9yIG1hc2tpbmcgdmFsdWVz
-IChldGMpLg0KYm9vbCBpcyBwYXJ0aWN1bGFybHkgb2Jub3hpb3VzLg0KDQpJbiB0aGF0IGNhc2Ug
-ZWl0aGVyIGludCBvciB1bnNpZ25lZCBpbnQgaXMgZ29vZC4NCg0KCURhdmlkDQoNCi0NClJlZ2lz
-dGVyZWQgQWRkcmVzcyBMYWtlc2lkZSwgQnJhbWxleSBSb2FkLCBNb3VudCBGYXJtLCBNaWx0b24g
-S2V5bmVzLCBNSzEgMVBULCBVSw0KUmVnaXN0cmF0aW9uIE5vOiAxMzk3Mzg2IChXYWxlcykNCg=
+The current engine code only supports a non-standard pkcs11 engine
+module.  Add code to support any standard engine key module, but leave
+the non-standard code alone because it would likely fail to function
+with the correct UI_method of collecting the password.
+
+Note that in order to use built-in engines, you have to have the
+engine included in the openssl.cnf file
+
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+---
+ scripts/sign-file.c | 39 +++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 37 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index 49f1cf456254..de8d9bb5e657 100644
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -28,6 +28,7 @@
+ #include <openssl/pem.h>
+ #include <openssl/err.h>
+ #include <openssl/engine.h>
++#include <openssl/conf.h>
+ 
+ /*
+  * Use CMS if we have openssl-1.0.0 or newer available - otherwise we have to
+@@ -122,15 +123,29 @@ static int pem_pw_cb(char *buf, int len, int w, void *v)
+ 	return pwlen;
+ }
+ 
++static int ui_read(UI *ui, UI_STRING *uis)
++{
++    if (UI_get_string_type(uis) = UIT_PROMPT) {
++        char password[64];
++
++        pem_pw_cb(password, sizeof(password), 0, NULL);
++        UI_set_result(ui, uis, password);
++
++        return 1;
++    }
++    return 0;
++}
++
+ static EVP_PKEY *read_private_key(const char *private_key_name)
+ {
+ 	EVP_PKEY *private_key;
+ 
++	ENGINE_load_builtin_engines();
++	OPENSSL_config(NULL);
++	ERR_clear_error();
+ 	if (!strncmp(private_key_name, "pkcs11:", 7)) {
+ 		ENGINE *e;
+ 
+-		ENGINE_load_builtin_engines();
+-		ERR_clear_error();
+ 		e = ENGINE_by_id("pkcs11");
+ 		ERR(!e, "Load PKCS#11 ENGINE");
+ 		if (ENGINE_init(e))
+@@ -145,11 +160,31 @@ static EVP_PKEY *read_private_key(const char *private_key_name)
+ 		ERR(!private_key, "%s", private_key_name);
+ 	} else {
+ 		BIO *b;
++		ENGINE *e;
+ 
+ 		b = BIO_new_file(private_key_name, "rb");
+ 		ERR(!b, "%s", private_key_name);
+ 		private_key = PEM_read_bio_PrivateKey(b, NULL, pem_pw_cb,
+ 						      NULL);
++		for (e = ENGINE_get_first(); !private_key && e != NULL;
++		     e = ENGINE_get_next(e)) {
++			UI_METHOD *ui;
++
++			if (!ENGINE_get_load_privkey_function(e))
++				continue;
++
++			ui = UI_create_method("sign-file");
++			if (!ui)
++				continue;
++
++			UI_method_set_reader(ui, ui_read);
++			private_key = ENGINE_load_private_key(e, private_key_name,
++							      ui, NULL);
++			UI_destroy_method(ui);
++			if (private_key)
++				ERR_clear_error(); /* initial key read failed */
++		}
++
+ 		ERR(!private_key, "%s", private_key_name);
+ 		BIO_free(b);
+ 	}
+-- 
+2.16.4
