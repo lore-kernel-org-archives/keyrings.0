@@ -1,27 +1,24 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 02 Nov 2018 14:45:45 +0000
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Fri, 02 Nov 2018 16:04:36 +0000
 Subject: Re: [PATCH v2 5/7] keyctl_dh_compute_kdf: use a void* for opaque data
-Message-Id: <11357.1541169945@warthog.procyon.org.uk>
+Message-Id: <20181102160436.GA17276@rotor.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20180927131436.23328-6-mathstuf@gmail.com>
 In-Reply-To: <20180927131436.23328-6-mathstuf@gmail.com>
 To: keyrings@vger.kernel.org
 
-Ben Boeckel <mathstuf@gmail.com> wrote:
-
->  struct keyctl_kdf_params {
->  	const char *hashname;
-> -	const char *otherinfo;
-> +	const void *otherinfo;
->  	uint32_t otherinfolen;
->  	uint32_t __spare[8];
->  };
-
-Hmmm...  This no longer matches the definition in the kernel's UAPI.
-
-Also note that this *is* a significant change in C++.
-
-David
+T24gRnJpLCBOb3YgMDIsIDIwMTggYXQgMTQ6NDU6NDUgKzAwMDAsIERhdmlkIEhvd2VsbHMgd3Jv
+dGU6Cj4gSG1tbS4uLiAgVGhpcyBubyBsb25nZXIgbWF0Y2hlcyB0aGUgZGVmaW5pdGlvbiBpbiB0
+aGUga2VybmVsJ3MgVUFQSS4KPiAKPiBBbHNvIG5vdGUgdGhhdCB0aGlzICppcyogYSBzaWduaWZp
+Y2FudCBjaGFuZ2UgaW4gQysrLgoKV2VsbCwgSSBoYWQgYSBwYXRjaCB0byBhbHNvIGNoYW5nZSB0
+aGUgVUFQSSB3aGljaCB5b3UgcmVqZWN0ZWQgYmVjYXVzZQppdCBkaWRuJ3QgbWF0Y2ggdGhlIGNv
+ZGUgaW4gbGlia2V5dXRpbHMuIEhvdyBhcmUgcGVvcGxlIG90aGVyIHRoYW4geW91CnN1cHBvc2Vk
+IHRvIGZpeCB0aGluZ3MgaW4gYm90aCBwbGFjZXMgYmVmb3JlIHRoZXkgbGFuZCBpbiBhIGtlcm5l
+bApyZWxlYXNlPyBXaGljaCBJIHN1cHBvc2UgaGFzIG5vdyBoYXBwZW5lZCBldmVuIHRob3VnaCBw
+YXRjaGVzIHRvIGp1c3QKZml4IHRoaW5ncyB3ZXJlIGF2YWlsYWJsZS4KCk5vdGUgdGhhdCBJJ20g
+bm93IG9uIHRoZSBNTCB0byBkbyBkaXJlY3QgcmV2aWV3LCBidXQgd2l0aG91dCBhIHdheSB0bwpy
+ZXBseSB0byBlbWFpbHMgdGhhdCBoYXBwZW5lZCBiZWZvcmUgSSB3YXMgc3Vic2NyaWJlZOKApgoK
+LS1CZW4=
