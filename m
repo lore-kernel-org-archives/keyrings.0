@@ -1,137 +1,115 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2018 16:48:33 +0000
-Subject: [PATCH 14/22] KEYS: asym_tpm: Implement encryption operation [ver #2]
-Message-Id: <153910371304.12141.3922421291748583148.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Fri, 02 Nov 2018 23:15:10 +0000
+Subject: [PATCH] KEYS: always initialize keyring_index_key::desc_len
+Message-Id: <20181102231510.15911-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-In-Reply-To: <153910360263.12141.6032694262361399627.stgit@warthog.procyon.org.uk>
-To: jmorris@namei.org
-Cc: Denis Kenzior <denkenz@gmail.com>, Marcel Holtmann <marcel@holtmann.org>Marcel Holtmann <marcel@holtmann.org>, dhowells@redhat.comdenkenz@gmail.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <000000000000a722550577796543@google.com>
+In-Reply-To: <000000000000a722550577796543@google.com>
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
 
-From: Denis Kenzior <denkenz@gmail.com>
+From: Eric Biggers <ebiggers@google.com>
 
-This patch impelements the pkey_encrypt operation.  The public key
-portion extracted from the TPM key blob is used.  The operation is
-performed entirely in software using the crypto API.
+syzbot hit the 'BUG_ON(index_key->desc_len = 0);' in __key_link_begin()
+called from construct_alloc_key() during sys_request_key(), because the
+length of the key description was never calculated.
 
-Signed-off-by: Denis Kenzior <denkenz@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Tested-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+The problem is that we rely on ->desc_len being initialized by
+search_process_keyrings(), specifically by search_nested_keyrings().
+But, if the process isn't subscribed to any keyrings that never happens.
+
+Fix it by always initializing keyring_index_key::desc_len as soon as the
+description is set, like we already do in some places.
+
+The following program reproduces the BUG_ON() when it's run as root and
+no session keyring has been installed.  If it doesn't work, try removing
+pam_keyinit.so from /etc/pam.d/login and rebooting.
+
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <keyutils.h>
+
+    int main(void)
+    {
+            int id = add_key("keyring", "syz", NULL, 0, KEY_SPEC_USER_KEYRING);
+
+            keyctl_setperm(id, KEY_OTH_WRITE);
+            setreuid(5000, 5000);
+            request_key("user", "desc", "", id);
+    }
+
+Reported-by: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com
+Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
+Cc: <stable@vger.kernel.org> # v3.13+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ security/keys/keyring.c          | 4 +---
+ security/keys/proc.c             | 1 +
+ security/keys/request_key.c      | 1 +
+ security/keys/request_key_auth.c | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
- crypto/asymmetric_keys/asym_tpm.c |   84 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 84 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 837472d107d5..8edca3c4c193 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -165,6 +165,8 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	info->max_enc_size = len;
- 	info->max_dec_size = tk->key_len / 8;
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 41bcf57e96f2..99a55145ddcd 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -661,9 +661,6 @@ static bool search_nested_keyrings(struct key *keyring,
+ 	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
+ 	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
  
-+	info->supported_ops = KEYCTL_SUPPORTS_ENCRYPT;
-+
- 	ret = 0;
- error_free_tfm:
- 	crypto_free_akcipher(tfm);
-@@ -172,6 +174,87 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
- 	return ret;
- }
+-	if (ctx->index_key.description)
+-		ctx->index_key.desc_len = strlen(ctx->index_key.description);
+-
+ 	/* Check to see if this top-level keyring is what we are looking for
+ 	 * and whether it is valid or not.
+ 	 */
+@@ -914,6 +911,7 @@ key_ref_t keyring_search(key_ref_t keyring,
+ 	struct keyring_search_context ctx = {
+ 		.index_key.type		= type,
+ 		.index_key.description	= description,
++		.index_key.desc_len	= strlen(description),
+ 		.cred			= current_cred(),
+ 		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index 5af2934965d8..909f6c5270a1 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -168,6 +168,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	struct keyring_search_context ctx = {
+ 		.index_key.type		= key->type,
+ 		.index_key.description	= key->description,
++		.index_key.desc_len	= strlen(key->description),
+ 		.cred			= m->file->f_cred,
+ 		.match_data.cmp		= lookup_user_key_possessed,
+ 		.match_data.raw_data	= key,
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 114f7408feee..738553698649 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -545,6 +545,7 @@ struct key *request_key_and_link(struct key_type *type,
+ 	struct keyring_search_context ctx = {
+ 		.index_key.type		= type,
+ 		.index_key.description	= description,
++		.index_key.desc_len	= strlen(description),
+ 		.cred			= current_cred(),
+ 		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index 424e1d90412e..6797843154f0 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -246,7 +246,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
+ 	struct key *authkey;
+ 	key_ref_t authkey_ref;
  
-+/*
-+ * Encryption operation is performed with the public key.  Hence it is done
-+ * in software
-+ */
-+static int tpm_key_encrypt(struct tpm_key *tk,
-+			   struct kernel_pkey_params *params,
-+			   const void *in, void *out)
-+{
-+	char alg_name[CRYPTO_MAX_ALG_NAME];
-+	struct crypto_akcipher *tfm;
-+	struct akcipher_request *req;
-+	struct crypto_wait cwait;
-+	struct scatterlist in_sg, out_sg;
-+	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
-+	uint32_t der_pub_key_len;
-+	int ret;
-+
-+	pr_devel("=>%s()\n", __func__);
-+
-+	ret = determine_akcipher(params->encoding, params->hash_algo, alg_name);
-+	if (ret < 0)
-+		return ret;
-+
-+	tfm = crypto_alloc_akcipher(alg_name, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
-+					 der_pub_key);
-+
-+	ret = crypto_akcipher_set_pub_key(tfm, der_pub_key, der_pub_key_len);
-+	if (ret < 0)
-+		goto error_free_tfm;
-+
-+	req = akcipher_request_alloc(tfm, GFP_KERNEL);
-+	if (!req)
-+		goto error_free_tfm;
-+
-+	sg_init_one(&in_sg, in, params->in_len);
-+	sg_init_one(&out_sg, out, params->out_len);
-+	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
-+				   params->out_len);
-+	crypto_init_wait(&cwait);
-+	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
-+				      CRYPTO_TFM_REQ_MAY_SLEEP,
-+				      crypto_req_done, &cwait);
-+
-+	ret = crypto_akcipher_encrypt(req);
-+	ret = crypto_wait_req(ret, &cwait);
-+
-+	if (ret = 0)
-+		ret = req->dst_len;
-+
-+	akcipher_request_free(req);
-+error_free_tfm:
-+	crypto_free_akcipher(tfm);
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
-+/*
-+ * Do encryption, decryption and signing ops.
-+ */
-+static int tpm_key_eds_op(struct kernel_pkey_params *params,
-+			  const void *in, void *out)
-+{
-+	struct tpm_key *tk = params->key->payload.data[asym_crypto];
-+	int ret = -EOPNOTSUPP;
-+
-+	/* Perform the encryption calculation. */
-+	switch (params->op) {
-+	case kernel_pkey_encrypt:
-+		ret = tpm_key_encrypt(tk, params, in, out);
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	return ret;
-+}
-+
- /*
-  * Parse enough information out of TPM_KEY structure:
-  * TPM_STRUCT_VER -> 4 bytes
-@@ -329,6 +412,7 @@ struct asymmetric_key_subtype asym_tpm_subtype = {
- 	.describe		= asym_tpm_describe,
- 	.destroy		= asym_tpm_destroy,
- 	.query			= tpm_key_query,
-+	.eds_op			= tpm_key_eds_op,
- };
- EXPORT_SYMBOL_GPL(asym_tpm_subtype);
+-	sprintf(description, "%x", target_id);
++	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
  
+ 	authkey_ref = search_process_keyrings(&ctx);
+ 
+-- 
+2.19.1.930.g4563a0d9d0-goog
