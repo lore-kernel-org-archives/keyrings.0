@@ -1,91 +1,120 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 28 Nov 2018 16:45:27 +0000
-Subject: Re: [PATCH 0/7] add platform/firmware keys support for kernel verification by IMA
-Message-Id: <1543423527.3902.239.camel@linux.ibm.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Sat, 03 Nov 2018 01:58:54 +0000
+Subject: [PATCH v2] KEYS: always initialize keyring_index_key::desc_len
+Message-Id: <20181103015854.7380-1-ebiggers@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181125151500.8298-1-nayna@linux.ibm.com>
-In-Reply-To: <20181125151500.8298-1-nayna@linux.ibm.com>
-To: Nayna Jain <nayna@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
+References: <000000000000a722550577796543@google.com>
+In-Reply-To: <000000000000a722550577796543@google.com>
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
 
-Hi Nayna,
+From: Eric Biggers <ebiggers@google.com>
 
-On Sun, 2018-11-25 at 20:44 +0530, Nayna Jain wrote:
-> On secure boot enabled systems, a verified kernel may need to kexec
-> additional kernels. For example, it may be used as a bootloader needing
-> to kexec a target kernel or it may need to kexec a crashdump kernel.
-> In such cases, it may want to verify the signature of the next kernel
-> image.
-> 
-> It is possible that the new kernel image is signed with third party keys
-> which are stored as platform or firmware keys in the 'db' variable. The
-> kernel, however, can not directly verify these platform keys, and an
-> administrator may therefore not want to trust them for arbitrary usage.
-> In order to differentiate platform keys from other keys and provide the
-> necessary separation of trust the kernel needs an additional keyring to
-> store platform/firmware keys.
-> 
-> The secure boot key database is expected to store the keys as EFI
-> Signature List(ESL). The patch set uses David Howells and Josh Boyer's
-> patch to access and parse the ESL to extract the certificates and load
-> them onto the platform keyring.
-> 
-> The last patch in this patch set adds support for IMA-appraisal to
-> verify the kexec'ed kernel image based on keys stored in the platform
-> keyring.
-> 
-> Changelog:
-> 
-> v0:
-> - The original patches loaded the certificates onto the secondary
->   trusted keyring. This patch set defines a new keyring named
->   ".platform" and adds the certificates to this new keyring  
-> - removed CONFIG EFI_SIGNATURE_LIST_PARSER and LOAD_UEFI_KEYS
-> - moved files from certs/ to security/integrity/platform_certs/
+syzbot hit the 'BUG_ON(index_key->desc_len = 0);' in __key_link_begin()
+called from construct_alloc_key() during sys_request_key(), because the
+length of the key description was never calculated.
 
-This patch set is looking really good!  There are a couple of
-checkpatch.pl warnings that need to be addressed before these patches
-can be upstreamed.  I'd also like to see some Reviews/Acks for them as
-well.
+The problem is that we rely on ->desc_len being initialized by
+search_process_keyrings(), specifically by search_nested_keyrings().
+But, if the process isn't subscribed to any keyrings that never happens.
 
-For the time being these patches are queued in the #next-integrity-
-queued branch.
+Fix it by always initializing keyring_index_key::desc_len as soon as the
+description is set, like we already do in some places.
 
-https://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity.
-git/
+The following program reproduces the BUG_ON() when it's run as root and
+no session keyring has been installed.  If it doesn't work, try removing
+pam_keyinit.so from /etc/pam.d/login and rebooting.
 
-thanks!
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <keyutils.h>
 
-Mimi
+    int main(void)
+    {
+            int id = add_key("keyring", "syz", NULL, 0, KEY_SPEC_USER_KEYRING);
 
-> 
-> Dave Howells (2):
->   efi: Add EFI signature data types
->   efi: Add an EFI signature blob parser
-> 
-> Josh Boyer (2):
->   efi: Import certificates from UEFI Secure Boot
->   efi: Allow the "db" UEFI variable to be suppressed
-> 
-> Nayna Jain (3):
->   integrity: define a trusted platform keyring
->   integrity: load certs to the platform keyring
->   ima: support platform keyring for kernel appraisal
-> 
->  include/linux/efi.h                                |  34 ++++
->  security/integrity/Kconfig                         |  11 ++
->  security/integrity/Makefile                        |   5 +
->  security/integrity/digsig.c                        | 115 ++++++++----
->  security/integrity/ima/ima_appraise.c              |  11 +-
->  security/integrity/integrity.h                     |  23 ++-
->  security/integrity/platform_certs/efi_parser.c     | 112 ++++++++++++
->  security/integrity/platform_certs/load_uefi.c      | 192 +++++++++++++++++++++
->  .../integrity/platform_certs/platform_keyring.c    |  62 +++++++
->  9 files changed, 527 insertions(+), 38 deletions(-)
->  create mode 100644 security/integrity/platform_certs/efi_parser.c
->  create mode 100644 security/integrity/platform_certs/load_uefi.c
->  create mode 100644 security/integrity/platform_certs/platform_keyring.c
-> 
+            keyctl_setperm(id, KEY_OTH_WRITE);
+            setreuid(5000, 5000);
+            request_key("user", "desc", "", id);
+    }
+
+Reported-by: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com
+Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
+Cc: <stable@vger.kernel.org> # v3.13+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+
+v2: In proc_keys_show(), assign index_key directly
+
+ security/keys/keyring.c          | 4 +---
+ security/keys/proc.c             | 3 +--
+ security/keys/request_key.c      | 1 +
+ security/keys/request_key_auth.c | 2 +-
+ 4 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 41bcf57e96f21..99a55145ddcd2 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -661,9 +661,6 @@ static bool search_nested_keyrings(struct key *keyring,
+ 	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
+ 	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
+ 
+-	if (ctx->index_key.description)
+-		ctx->index_key.desc_len = strlen(ctx->index_key.description);
+-
+ 	/* Check to see if this top-level keyring is what we are looking for
+ 	 * and whether it is valid or not.
+ 	 */
+@@ -914,6 +911,7 @@ key_ref_t keyring_search(key_ref_t keyring,
+ 	struct keyring_search_context ctx = {
+ 		.index_key.type		= type,
+ 		.index_key.description	= description,
++		.index_key.desc_len	= strlen(description),
+ 		.cred			= current_cred(),
+ 		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index 5af2934965d80..d38be9db2cc07 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -166,8 +166,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	int rc;
+ 
+ 	struct keyring_search_context ctx = {
+-		.index_key.type		= key->type,
+-		.index_key.description	= key->description,
++		.index_key		= key->index_key,
+ 		.cred			= m->file->f_cred,
+ 		.match_data.cmp		= lookup_user_key_possessed,
+ 		.match_data.raw_data	= key,
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 114f7408feee6..7385536986497 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -545,6 +545,7 @@ struct key *request_key_and_link(struct key_type *type,
+ 	struct keyring_search_context ctx = {
+ 		.index_key.type		= type,
+ 		.index_key.description	= description,
++		.index_key.desc_len	= strlen(description),
+ 		.cred			= current_cred(),
+ 		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index 424e1d90412ea..6797843154f03 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -246,7 +246,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
+ 	struct key *authkey;
+ 	key_ref_t authkey_ref;
+ 
+-	sprintf(description, "%x", target_id);
++	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
+ 
+ 	authkey_ref = search_process_keyrings(&ctx);
+ 
+-- 
+2.19.1
