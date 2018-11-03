@@ -1,23 +1,27 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 02 Nov 2018 14:47:32 +0000
-Subject: Re: [PATCH v2 6/7] keyctl_set_reqkey_keyring.3: mention KEY_REQKEY_DEFL_USER_SESSION_KEYRING
-Message-Id: <11475.1541170052@warthog.procyon.org.uk>
+From: "Dr Kannan" <sale@allta.com.ua>
+Date: Sat, 03 Nov 2018 16:26:07 +0000
+Subject: Update
+Message-Id: <20181103162556.C662D180387@mail.allta.com.ua>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-Ben Boeckel <mathstuf@gmail.com> wrote:
+Hello dear
 
-> +.B KEY_REQKEY_DEFL_GROUP_KEYRING
-> +This makes the GID-specific session keyring the default destination.
-> +.TP
+Greetings to you,I am Dr.Kannan, a personal account manager to Late Engr. Richard Hernandez, who died with his family in the missing Malaysian Air crash
 
-$subject is at odds with the patch.
+of 2014. His account with us is in intestate with no claim his fixed deposit of U$D 7 Million.
 
-There's a good reason I haven't mentioned KEY_REQKEY_DEFL_GROUP_KEYRING.  I
-don't want to implement it: it's something Linus wanted - but I think it's
-impractical.
+I have been mandated by the Bank Management as his personal account officer, to present his relative or next of kin.
 
-David
+I have searched through notary register of his country here all to no avail, so I wish to present you to the Bank as his only relative and next of kin.
+
+kindly contact me for more details, terms and condition shall be clarified upon your response. There is no risk whatsoever to this transaction as I have all papers and documents to pose of you the inheritance to this. 
+
+I wait for your prompt response.
+
+My regards,
+
+Dr. Kannan.
