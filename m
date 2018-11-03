@@ -1,89 +1,39 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Mon, 12 Nov 2018 10:24:12 +0000
-Subject: [RFC][PATCH 01/12] mpi: introduce mpi_key_length()
-Message-Id: <20181112102423.30415-2-roberto.sassu@huawei.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Sat, 03 Nov 2018 02:10:49 +0000
+Subject: [PATCH] KEYS: reuse keyring_index_key::desc_len in lookup_user_key()
+Message-Id: <20181103021049.11395-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181112102423.30415-1-roberto.sassu@huawei.com>
-In-Reply-To: <20181112102423.30415-1-roberto.sassu@huawei.com>
-To: dhowells@redhat.com, dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net
-Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
+To: keyrings@vger.kernel.org
 
-Introduce the new function to get the number of bits and bytes from an MPI.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+When lookup_user_key() checks whether the key is possessed, it should
+use the key's existing index_key including the 'desc_len' field, rather
+than recomputing the 'desc_len'.  This shouldn't cause any observable
+behavior change; this way is just simpler and faster.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- include/linux/mpi.h |  2 ++
- lib/mpi/mpicoder.c  | 33 ++++++++++++++++++++++++++-------
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ security/keys/process_keys.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/include/linux/mpi.h b/include/linux/mpi.h
-index 7cd1473c64a4..56187bb57c78 100644
---- a/include/linux/mpi.h
-+++ b/include/linux/mpi.h
-@@ -61,6 +61,8 @@ int mpi_resize(MPI a, unsigned nlimbs);
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index d5b25e535d3a5..3bea09e7176d7 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -688,9 +688,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+ 		key_ref = make_key_ref(key, 0);
  
- /*-- mpicoder.c --*/
- MPI mpi_read_raw_data(const void *xbuffer, size_t nbytes);
-+int mpi_key_length(const void *xbuffer, unsigned int ret_nread,
-+		   unsigned int *nbits_arg, unsigned int *nbytes_arg);
- MPI mpi_read_from_buffer(const void *buffer, unsigned *ret_nread);
- MPI mpi_read_raw_from_sgl(struct scatterlist *sgl, unsigned int len);
- void *mpi_get_buffer(MPI a, unsigned *nbytes, int *sign);
-diff --git a/lib/mpi/mpicoder.c b/lib/mpi/mpicoder.c
-index eead4b339466..207cb3b91a51 100644
---- a/lib/mpi/mpicoder.c
-+++ b/lib/mpi/mpicoder.c
-@@ -78,22 +78,41 @@ MPI mpi_read_raw_data(const void *xbuffer, size_t nbytes)
- }
- EXPORT_SYMBOL_GPL(mpi_read_raw_data);
- 
--MPI mpi_read_from_buffer(const void *xbuffer, unsigned *ret_nread)
-+int mpi_key_length(const void *xbuffer, unsigned int ret_nread,
-+		   unsigned int *nbits_arg, unsigned int *nbytes_arg)
- {
- 	const uint8_t *buffer = xbuffer;
--	unsigned int nbits, nbytes;
--	MPI val;
-+	unsigned int nbits;
- 
--	if (*ret_nread < 2)
--		return ERR_PTR(-EINVAL);
-+	if (ret_nread < 2)
-+		return -EINVAL;
- 	nbits = buffer[0] << 8 | buffer[1];
- 
- 	if (nbits > MAX_EXTERN_MPI_BITS) {
- 		pr_info("MPI: mpi too large (%u bits)\n", nbits);
--		return ERR_PTR(-EINVAL);
-+		return -EINVAL;
- 	}
- 
--	nbytes = DIV_ROUND_UP(nbits, 8);
-+	if (nbits_arg)
-+		*nbits_arg = nbits;
-+	if (nbytes_arg)
-+		*nbytes_arg = DIV_ROUND_UP(nbits, 8);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(mpi_key_length);
-+
-+MPI mpi_read_from_buffer(const void *xbuffer, unsigned *ret_nread)
-+{
-+	const uint8_t *buffer = xbuffer;
-+	unsigned int nbytes;
-+	MPI val;
-+	int ret;
-+
-+	ret = mpi_key_length(xbuffer, *ret_nread, NULL, &nbytes);
-+	if (ret < 0)
-+		return ERR_PTR(ret);
-+
- 	if (nbytes + 2 > *ret_nread) {
- 		pr_info("MPI: mpi larger than buffer nbytes=%u ret_nread=%u\n",
- 				nbytes, *ret_nread);
+ 		/* check to see if we possess the key */
+-		ctx.index_key.type		= key->type;
+-		ctx.index_key.description	= key->description;
+-		ctx.index_key.desc_len		= strlen(key->description);
++		ctx.index_key			= key->index_key;
+ 		ctx.match_data.raw_data		= key;
+ 		kdebug("check possessed");
+ 		skey_ref = search_process_keyrings(&ctx);
 -- 
-2.17.1
+2.19.1
