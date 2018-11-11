@@ -1,80 +1,50 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Sun, 11 Nov 2018 19:20:34 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Sun, 11 Nov 2018 20:09:35 +0000
 Subject: Re: [PATCH 02/11] libnvdimm/security: change clear text nvdimm keys to encrypted keys
-Message-Id: <CAPcyv4jMPDap8L6jTo9NGnrJGCjUY_BvSBuPge8NL4QS2Ku0CQ@mail.gmail.com>
+Message-Id: <1541966975.3734.78.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <154180093865.70506.6858789591063128903.stgit@djiang5-desk3.ch.intel.com>
  <154180163666.70506.8805433934495072699.stgit@djiang5-desk3.ch.intel.com>
  <1541957268.3734.53.camel@linux.ibm.com>
-In-Reply-To: <1541957268.3734.53.camel@linux.ibm.com>
-To: zohar@linux.ibm.com
+ <CAPcyv4jMPDap8L6jTo9NGnrJGCjUY_BvSBuPge8NL4QS2Ku0CQ@mail.gmail.com>
+In-Reply-To: <CAPcyv4jMPDap8L6jTo9NGnrJGCjUY_BvSBuPge8NL4QS2Ku0CQ@mail.gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, keyrings@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-nvdimm <linux-nvdimm@lists.01.org>
 
-[ add keyrings and lkml ]
-
-On Sun, Nov 11, 2018 at 9:28 AM Mimi Zohar <zohar@linux.ibm.com> wrote:
->
-> On Fri, 2018-11-09 at 15:13 -0700, Dave Jiang wrote:
-> > In order to make nvdimm more secure, encrypted keys will be used instead of
-> > clear text keys. A master key will be created to seal encrypted nvdimm
-> > keys. The master key can be a trusted key generated from TPM 2.0 or a less
-> > secure user key.
->
-> Trusted keys also work for TPM 1.2.  Are you intentionally limiting
-> the master key to TPM 2.0?
-
-TPM 1.2 is supported from a software perspective, however the
-intersection of hardware platforms deploying security enabled NVDIMMs
-and TPM 1.2 might be a null set.
-
-> Traditionally there is a single master key for the system, which would
-> be sealed to a set of boot time PCR values.  After decrypting all of
-> the encrypted keys, the master key would be removed from the keyring
-> and a PCR extended.  Extending a PCR would prevent the master key from
-> being unsealed again and used to decrypt encrypted keys, without
-> rebooting the system.  Normally this would be done before pivoting
-> root.
->
-> If you're not referring to the system master key and are intentionally
-> limiting usage to TPM 2.0, more details on the master key security
-> requirements should be included.
-
-Oh, interesting point. I think we had been assuming a local +
-unsealed-at-runtime nvdimm master key rather than a system-wide master
-key. Yes, we need to rethink this in terms of supporting a sealed
-system-key. This would seem to limit security actions, outside of
-unlock, to always requiring a reboot. I.e. the nominal case is that we
-boot up and unlock the DIMMs, but any subsequent security operation
-like erase, or change-passphrase would require rebooting into an
-environment where the system-master key is unsealed. I do think
-re-provisioning keys and erasing DIMM contents are sufficiently
-exceptional events that a reboot requirement is tolerable.
-
-Is there already existing tooling around this to be able to schedule
-master-key related actions to be deferred to an initrd environment?
-
-> Using trusted keys that are encrypted/decrypted using a user key
-> should really be limited to testing environments.
-
-Makes sense.
-
-> >
-> > In the process of this conversion, the kernel cached key will be removed
-> > in order to simplify the verification process. The hardware will be used to
-> > verify the decrypted user payload directly.
->
-> Making this sort of change implies there is no concern in breaking
-> existing userspace.  Either the code hasn't yet been upstreamed or
-> there are not any users. If the code hasn't been upstreamed, it would
-> make more sense to squash the git history:
->
-> - making code review easier
-> - making the git history bisect safe
-
-Yes, the old scheme is not upstream. I'll do the squash once we've
-finalized the key-management details.
-
-Thanks for the help Mimi.
+PiA+IFRyYWRpdGlvbmFsbHkgdGhlcmUgaXMgYSBzaW5nbGUgbWFzdGVyIGtleSBmb3IgdGhlIHN5
+c3RlbSwgd2hpY2ggd291bGQKPiA+IGJlIHNlYWxlZCB0byBhIHNldCBvZiBib290IHRpbWUgUENS
+IHZhbHVlcy4gIEFmdGVyIGRlY3J5cHRpbmcgYWxsIG9mCj4gPiB0aGUgZW5jcnlwdGVkIGtleXMs
+IHRoZSBtYXN0ZXIga2V5IHdvdWxkIGJlIHJlbW92ZWQgZnJvbSB0aGUga2V5cmluZwo+ID4gYW5k
+IGEgUENSIGV4dGVuZGVkLiAgRXh0ZW5kaW5nIGEgUENSIHdvdWxkIHByZXZlbnQgdGhlIG1hc3Rl
+ciBrZXkgZnJvbQo+ID4gYmVpbmcgdW5zZWFsZWQgYWdhaW4gYW5kIHVzZWQgdG8gZGVjcnlwdCBl
+bmNyeXB0ZWQga2V5cywgd2l0aG91dAo+ID4gcmVib290aW5nIHRoZSBzeXN0ZW0uICBOb3JtYWxs
+eSB0aGlzIHdvdWxkIGJlIGRvbmUgYmVmb3JlIHBpdm90aW5nCj4gPiByb290Lgo+ID4KPiA+IElm
+IHlvdSdyZSBub3QgcmVmZXJyaW5nIHRvIHRoZSBzeXN0ZW0gbWFzdGVyIGtleSBhbmQgYXJlIGlu
+dGVudGlvbmFsbHkKPiA+IGxpbWl0aW5nIHVzYWdlIHRvIFRQTSAyLjAsIG1vcmUgZGV0YWlscyBv
+biB0aGUgbWFzdGVyIGtleSBzZWN1cml0eQo+ID4gcmVxdWlyZW1lbnRzIHNob3VsZCBiZSBpbmNs
+dWRlZC4KPiAKPiBPaCwgaW50ZXJlc3RpbmcgcG9pbnQuIEkgdGhpbmsgd2UgaGFkIGJlZW4gYXNz
+dW1pbmcgYSBsb2NhbCArCj4gdW5zZWFsZWQtYXQtcnVudGltZSBudmRpbW0gbWFzdGVyIGtleSBy
+YXRoZXIgdGhhbiBhIHN5c3RlbS13aWRlIG1hc3Rlcgo+IGtleS4gWWVzLCB3ZSBuZWVkIHRvIHJl
+dGhpbmsgdGhpcyBpbiB0ZXJtcyBvZiBzdXBwb3J0aW5nIGEgc2VhbGVkCj4gc3lzdGVtLWtleS4g
+VGhpcyB3b3VsZCBzZWVtIHRvIGxpbWl0IHNlY3VyaXR5IGFjdGlvbnMsIG91dHNpZGUgb2YKPiB1
+bmxvY2ssIHRvIGFsd2F5cyByZXF1aXJpbmcgYSByZWJvb3QuIEkuZS4gdGhlIG5vbWluYWwgY2Fz
+ZSBpcyB0aGF0IHdlCj4gYm9vdCB1cCBhbmQgdW5sb2NrIHRoZSBESU1NcywgYnV0IGFueSBzdWJz
+ZXF1ZW50IHNlY3VyaXR5IG9wZXJhdGlvbgo+IGxpa2UgZXJhc2UsIG9yIGNoYW5nZS1wYXNzcGhy
+YXNlIHdvdWxkIHJlcXVpcmUgcmVib290aW5nIGludG8gYW4KPiBlbnZpcm9ubWVudCB3aGVyZSB0
+aGUgc3lzdGVtLW1hc3RlciBrZXkgaXMgdW5zZWFsZWQuIEkgZG8gdGhpbmsKPiByZS1wcm92aXNp
+b25pbmcga2V5cyBhbmQgZXJhc2luZyBESU1NIGNvbnRlbnRzIGFyZSBzdWZmaWNpZW50bHkKPiBl
+eGNlcHRpb25hbCBldmVudHMgdGhhdCBhIHJlYm9vdCByZXF1aXJlbWVudCBpcyB0b2xlcmFibGUu
+Cgo+IElzIHRoZXJlIGFscmVhZHkgZXhpc3RpbmcgdG9vbGluZyBhcm91bmQgdGhpcyB0byBiZSBh
+YmxlIHRvIHNjaGVkdWxlCj4gbWFzdGVyLWtleSByZWxhdGVkIGFjdGlvbnMgdG8gYmUgZGVmZXJy
+ZWQgdG8gYW4gaW5pdHJkIGVudmlyb25tZW50PwoKVGhlcmUncyB0aGUgb3JpZ2luYWwgZHJhY3V0
+IHN1cHBvcnQgZm9yIGxvYWRpbmcgYSBtYXN0ZXJrZXksIHdoaWNoIGlzCnVzZWQgYnkgdGhlIEVW
+TSBhbmQgZWNyeXB0ZnMgZHJhY3V0IG1vZHVsZXMuIMKgQWZ0ZXIgdGhlIGxhc3QgdXNhZ2UsCnRo
+ZSBtYXN0ZXJrZXkgbmVlZHMgdG8gYmUgcmVtb3ZlZCBmcm9tIHRoZSBrZXlyaW5nLgoKRGlmZmVy
+ZW50IHBlb3BsZSBvdmVyIHRoZSB5ZWFycyBoYXZlIHdhbnRlZCB0byBhZGQgc3VwcG9ydCBmb3IK
+Y2FsY3VsYXRpbmcgdGhlIGJvb3QgdGltZSBleHBlY3RlZCBQQ1JzIHZhbHVlcyBpbiBvcmRlciB0
+byByZXNlYWwga2V5cwoodHJ1c3RlZCBrZXkgdXBkYXRlKSwgYnV0IEkgaGF2ZW4ndCBsb29rZWQg
+dG8gc2VlIGlmIHRoZXJlIGFyZSBhbnkKb3BlbiBzb3VyY2UgdG9vbHMgYXZhaWxhYmxlLgoKTWlt
+aQo=
