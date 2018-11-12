@@ -1,124 +1,125 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Fri, 16 Nov 2018 20:07:04 +0000
-Subject: [PATCH v8 06/14] integrity: Introduce asymmetric_sig_has_known_key()
-Message-Id: <20181116200712.14154-7-bauerman@linux.ibm.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Mon, 12 Nov 2018 10:24:18 +0000
+Subject: [RFC][PATCH 07/12] KEYS: Provide PGP key description autogeneration
+Message-Id: <20181112102423.30415-8-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181116200712.14154-1-bauerman@linux.ibm.com>
-In-Reply-To: <20181116200712.14154-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+References: <20181112102423.30415-1-roberto.sassu@huawei.com>
+In-Reply-To: <20181112102423.30415-1-roberto.sassu@huawei.com>
+To: dhowells@redhat.com, dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net
+Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
 
-IMA will only look for a modsig if the xattr sig references a key which is
-not in the expected kernel keyring. To that end, introduce
-asymmetric_sig_has_known_key().
+From: David Howells <dhowells@redhat.com>
 
-The logic of extracting the key used in the xattr sig is factored out from
-asymmetric_verify() so that it can be used by the new function.
+Provide a facility to autogenerate the name of PGP keys from the contents
+of the payload.  If add_key() is given a blank description, a description
+is constructed from the last user ID packet in the payload data plus the
+last 8 hex digits of the key ID.  For instance:
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+	keyctl padd asymmetric "" @s </tmp/key.pub
+
+might create a key with a constructed description that can be seen in
+/proc/keys:
+
+2f674b96 I--Q---     1 perm 39390000     0     0 crypto    \
+			Sample kernel key 31f0ae93: PGP.RSA 31f0ae93 []
+
+Changelog
+
+v0:
+- fix style issues (Roberto Sassu)
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Co-developed-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
- security/integrity/digsig_asymmetric.c | 44 +++++++++++++++++++-------
- security/integrity/integrity.h         |  8 +++++
- 2 files changed, 41 insertions(+), 11 deletions(-)
+ crypto/asymmetric_keys/pgp_public_key.c | 46 ++++++++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 1 deletion(-)
 
-diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-index d775e03fbbcc..4c3c49f919f5 100644
---- a/security/integrity/digsig_asymmetric.c
-+++ b/security/integrity/digsig_asymmetric.c
-@@ -79,26 +79,48 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
- 	return key;
- }
+diff --git a/crypto/asymmetric_keys/pgp_public_key.c b/crypto/asymmetric_keys/pgp_public_key.c
+index a5ce146a1250..371a3e721f69 100644
+--- a/crypto/asymmetric_keys/pgp_public_key.c
++++ b/crypto/asymmetric_keys/pgp_public_key.c
+@@ -35,6 +35,9 @@ struct pgp_key_data_parse_context {
+ 	struct public_key *pub;
+ 	unsigned char *raw_fingerprint;
+ 	char *fingerprint;
++	const char *user_id;
++	size_t user_id_len;
++	size_t fingerprint_len;
+ };
  
--int asymmetric_verify(struct key *keyring, const char *sig,
--		      int siglen, const char *data, int datalen)
-+static struct key *asymmetric_key_from_sig(struct key *keyring, const char *sig,
-+					   int siglen)
- {
--	struct public_key_signature pks;
--	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
--	struct key *key;
--	int ret = -ENOMEM;
-+	const struct signature_v2_hdr *hdr = (struct signature_v2_hdr *) sig;
+ /*
+@@ -155,6 +158,7 @@ static int pgp_generate_fingerprint(struct pgp_key_data_parse_context *ctx,
+ 	if (ret < 0)
+ 		goto cleanup_raw_fingerprint;
  
- 	if (siglen <= sizeof(*hdr))
--		return -EBADMSG;
-+		return ERR_PTR(-EBADMSG);
++	ctx->fingerprint_len = digest_size * 2;
+ 	fingerprint = kmalloc(digest_size * 2 + 1, GFP_KERNEL);
+ 	if (!fingerprint)
+ 		goto cleanup_raw_fingerprint;
+@@ -199,6 +203,13 @@ static int pgp_process_public_key(struct pgp_parse_context *context,
  
- 	siglen -= sizeof(*hdr);
+ 	kenter(",%u,%u,,%zu", type, headerlen, datalen);
  
- 	if (siglen != be16_to_cpu(hdr->sig_size))
--		return -EBADMSG;
-+		return ERR_PTR(-EBADMSG);
- 
- 	if (hdr->hash_algo >= HASH_ALGO__LAST)
--		return -ENOPKG;
-+		return ERR_PTR(-ENOPKG);
++	if (type = PGP_PKT_USER_ID) {
++		ctx->user_id = data;
++		ctx->user_id_len = datalen;
++		kleave(" = 0 [user ID]");
++		return 0;
++	}
 +
-+	return request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
-+}
-+
-+bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
-+				  int siglen)
-+{
-+	struct key *key;
-+
-+	key = asymmetric_key_from_sig(keyring, sig, siglen);
-+	if (IS_ERR_OR_NULL(key))
-+		return false;
-+
-+	key_put(key);
-+
-+	return true;
-+}
-+
-+int asymmetric_verify(struct key *keyring, const char *sig,
-+		      int siglen, const char *data, int datalen)
-+{
-+	struct public_key_signature pks;
-+	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
-+	struct key *key;
-+	int ret = -ENOMEM;
+ 	if (ctx->fingerprint) {
+ 		kleave(" = -ENOKEY [already]");
+ 		return -EBADMSG;
+@@ -291,13 +302,46 @@ static int pgp_key_parse(struct key_preparsed_payload *prep)
+ 	kenter("");
  
--	key = request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
-+	key = asymmetric_key_from_sig(keyring, sig, siglen);
- 	if (IS_ERR(key))
- 		return PTR_ERR(key);
+ 	memset(&ctx, 0, sizeof(ctx));
+-	ctx.pgp.types_of_interest = (1 << PGP_PKT_PUBLIC_KEY);
++	ctx.pgp.types_of_interest = (1 << PGP_PKT_PUBLIC_KEY) |
++				    (1 << PGP_PKT_USER_ID);
+ 	ctx.pgp.process_packet = pgp_process_public_key;
  
-@@ -110,7 +132,7 @@ int asymmetric_verify(struct key *keyring, const char *sig,
- 	pks.digest = (u8 *)data;
- 	pks.digest_size = datalen;
- 	pks.s = hdr->sig;
--	pks.s_size = siglen;
-+	pks.s_size = siglen - sizeof(*hdr);
- 	ret = verify_signature(key, &pks);
- 	key_put(key);
- 	pr_debug("%s() = %d\n", __func__, ret);
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 91c41351e18a..ae3c79c63674 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -182,12 +182,20 @@ static inline int integrity_init_keyring(const unsigned int id)
- #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
- int asymmetric_verify(struct key *keyring, const char *sig,
- 		      int siglen, const char *data, int datalen);
-+bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
-+				  int siglen);
- #else
- static inline int asymmetric_verify(struct key *keyring, const char *sig,
- 				    int siglen, const char *data, int datalen)
- {
- 	return -EOPNOTSUPP;
- }
+ 	ret = pgp_parse_packets(prep->data, prep->datalen, &ctx.pgp);
+ 	if (ret < 0)
+ 		goto error;
+ 
++	if (ctx.user_id && ctx.user_id_len > 0) {
++		/* Propose a description for the key
++		 * (user ID without the comment)
++		 */
++		size_t ulen = ctx.user_id_len, flen = ctx.fingerprint_len;
++		const char *p;
 +
-+static inline bool asymmetric_sig_has_known_key(struct key *keyring,
-+						const char *sig, int siglen)
-+{
-+	return false;
-+}
- #endif
- 
- #ifdef CONFIG_IMA_LOAD_X509
++		p = memchr(ctx.user_id, '(', ulen);
++		if (p) {
++			/* Remove the comment */
++			do {
++				p--;
++			} while (*p = ' ' && p > ctx.user_id);
++			if (*p != ' ')
++				p++;
++			ulen = p - ctx.user_id;
++		}
++
++		if (ulen > 255 - 9)
++			ulen = 255 - 9;
++		prep->description = kmalloc(ulen + 1 + 8 + 1, GFP_KERNEL);
++		ret = -ENOMEM;
++		if (!prep->description)
++			goto error;
++		memcpy(prep->description, ctx.user_id, ulen);
++		prep->description[ulen] = ' ';
++		memcpy(prep->description + ulen + 1,
++		       ctx.fingerprint + flen - 8, 8);
++		prep->description[ulen + 9] = 0;
++		pr_debug("desc '%s'\n", prep->description);
++	}
++
+ 	/* We're pinning the module by being linked against it */
+ 	__module_get(public_key_subtype.owner);
+ 	prep->payload.data[asym_subtype] = &public_key_subtype;
+-- 
+2.17.1
