@@ -1,220 +1,89 @@
-From: Nayna Jain <nayna@linux.ibm.com>
-Date: Sun, 25 Nov 2018 15:26:54 +0000
-Subject: [PATCH 1/7] integrity: Define a trusted platform keyring
-Message-Id: <20181125151500.8298-2-nayna@linux.ibm.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Mon, 12 Nov 2018 10:24:12 +0000
+Subject: [RFC][PATCH 01/12] mpi: introduce mpi_key_length()
+Message-Id: <20181112102423.30415-2-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181125151500.8298-1-nayna@linux.ibm.com>
-In-Reply-To: <20181125151500.8298-1-nayna@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
+References: <20181112102423.30415-1-roberto.sassu@huawei.com>
+In-Reply-To: <20181112102423.30415-1-roberto.sassu@huawei.com>
+To: dhowells@redhat.com, dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net
+Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-On secure boot enabled systems, a verified kernel may need to kexec
-additional kernels. For example, it may be used as a bootloader needing 
-to kexec a target kernel or it may need to kexec a crashdump kernel. In
-such cases, it may want to verify the signature of the next kernel
-image.
+Introduce the new function to get the number of bits and bytes from an MPI.
 
-It is further possible that the kernel image is signed with third party
-keys which are stored as platform or firmware keys in the 'db' variable.
-The kernel, however, can not directly verify these platform keys, and an
-administrator may therefore not want to trust them for arbitrary usage.
-In order to differentiate platform keys from other keys and provide the
-necessary separation of trust, the kernel needs an additional keyring to
-store platform keys.
-
-This patch creates the new keyring called ".platform" to isolate keys
-provided by platform from keys by kernel. These keys are used to
-facilitate signature verification during kexec. Since the scope of this
-keyring is only the platform/firmware keys, it cannot be updated from
-userspace.
-
-This keyring can be enabled by setting CONFIG_INTEGRITY_PLATFORM_KEYRING.
-
-Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
- security/integrity/Kconfig                         | 11 +++++
- security/integrity/Makefile                        |  1 +
- security/integrity/digsig.c                        | 48 +++++++++++++++-------
- security/integrity/integrity.h                     |  3 +-
- .../integrity/platform_certs/platform_keyring.c    | 39 ++++++++++++++++++
- 5 files changed, 87 insertions(+), 15 deletions(-)
- create mode 100644 security/integrity/platform_certs/platform_keyring.c
+ include/linux/mpi.h |  2 ++
+ lib/mpi/mpicoder.c  | 33 ++++++++++++++++++++++++++-------
+ 2 files changed, 28 insertions(+), 7 deletions(-)
 
-diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-index da9565891738..4b4d2aeef539 100644
---- a/security/integrity/Kconfig
-+++ b/security/integrity/Kconfig
-@@ -51,6 +51,17 @@ config INTEGRITY_TRUSTED_KEYRING
- 	   .evm keyrings be signed by a key on the system trusted
- 	   keyring.
+diff --git a/include/linux/mpi.h b/include/linux/mpi.h
+index 7cd1473c64a4..56187bb57c78 100644
+--- a/include/linux/mpi.h
++++ b/include/linux/mpi.h
+@@ -61,6 +61,8 @@ int mpi_resize(MPI a, unsigned nlimbs);
  
-+config INTEGRITY_PLATFORM_KEYRING
-+        bool "Provide keyring for platform/firmware trusted keys"
-+        depends on INTEGRITY_ASYMMETRIC_KEYS
-+        depends on SYSTEM_BLACKLIST_KEYRING
-+        depends on EFI
-+        help
-+         Provide a separate, distinct keyring for platform trusted keys, which
-+         the kernel automatically populates during initialization from values
-+         provided by the platform for verifying the kexec'ed kerned image
-+         and, possibly, the initramfs signature.
-+
- config INTEGRITY_AUDIT
- 	bool "Enables integrity auditing support "
- 	depends on AUDIT
-diff --git a/security/integrity/Makefile b/security/integrity/Makefile
-index 04d6e462b079..046ffc1bb42d 100644
---- a/security/integrity/Makefile
-+++ b/security/integrity/Makefile
-@@ -9,6 +9,7 @@ integrity-y := iint.o
- integrity-$(CONFIG_INTEGRITY_AUDIT) += integrity_audit.o
- integrity-$(CONFIG_INTEGRITY_SIGNATURE) += digsig.o
- integrity-$(CONFIG_INTEGRITY_ASYMMETRIC_KEYS) += digsig_asymmetric.o
-+integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o
- 
- subdir-$(CONFIG_IMA)			+= ima
- obj-$(CONFIG_IMA)			+= ima/
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 5eacba858e4b..fef2a858300c 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -35,6 +35,7 @@ static const char * const keyring_name[INTEGRITY_KEYRING_MAX] = {
- 	".ima",
- #endif
- 	"_module",
-+	".platform",
- };
- 
- #ifdef CONFIG_IMA_KEYRINGS_PERMIT_SIGNED_BY_BUILTIN_OR_SECONDARY
-@@ -73,12 +74,39 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 	return -EOPNOTSUPP;
+ /*-- mpicoder.c --*/
+ MPI mpi_read_raw_data(const void *xbuffer, size_t nbytes);
++int mpi_key_length(const void *xbuffer, unsigned int ret_nread,
++		   unsigned int *nbits_arg, unsigned int *nbytes_arg);
+ MPI mpi_read_from_buffer(const void *buffer, unsigned *ret_nread);
+ MPI mpi_read_raw_from_sgl(struct scatterlist *sgl, unsigned int len);
+ void *mpi_get_buffer(MPI a, unsigned *nbytes, int *sign);
+diff --git a/lib/mpi/mpicoder.c b/lib/mpi/mpicoder.c
+index eead4b339466..207cb3b91a51 100644
+--- a/lib/mpi/mpicoder.c
++++ b/lib/mpi/mpicoder.c
+@@ -78,22 +78,41 @@ MPI mpi_read_raw_data(const void *xbuffer, size_t nbytes)
  }
+ EXPORT_SYMBOL_GPL(mpi_read_raw_data);
  
--int __init integrity_init_keyring(const unsigned int id)
-+static int __integrity_init_keyring(const unsigned int id, key_perm_t perm,
-+				    struct key_restriction *restriction)
+-MPI mpi_read_from_buffer(const void *xbuffer, unsigned *ret_nread)
++int mpi_key_length(const void *xbuffer, unsigned int ret_nread,
++		   unsigned int *nbits_arg, unsigned int *nbytes_arg)
  {
- 	const struct cred *cred = current_cred();
-+	int err = 0;
-+
-+	keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
-+				    KGIDT_INIT(0), cred, perm,
-+				    KEY_ALLOC_NOT_IN_QUOTA,
-+				    restriction, NULL);
-+	if (IS_ERR(keyring[id])) {
-+		err = PTR_ERR(keyring[id]);
-+		pr_info("Can't allocate %s keyring (%d)\n",
-+			keyring_name[id], err);
-+		keyring[id] = NULL;
-+	}
-+
-+	return err;
-+}
-+
-+int __init integrity_init_keyring(const unsigned int id)
-+{
- 	struct key_restriction *restriction;
-+	key_perm_t perm;
- 	int err = 0;
+ 	const uint8_t *buffer = xbuffer;
+-	unsigned int nbits, nbytes;
+-	MPI val;
++	unsigned int nbits;
  
-+	if (id = INTEGRITY_KEYRING_PLATFORM) {
-+		restriction = NULL;
-+		perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW
-+			| KEY_USR_READ | KEY_USR_SEARCH;
-+		goto out;
-+	}
-+
- 	if (!IS_ENABLED(CONFIG_INTEGRITY_TRUSTED_KEYRING))
- 		return 0;
+-	if (*ret_nread < 2)
+-		return ERR_PTR(-EINVAL);
++	if (ret_nread < 2)
++		return -EINVAL;
+ 	nbits = buffer[0] << 8 | buffer[1];
  
-@@ -87,20 +115,12 @@ int __init integrity_init_keyring(const unsigned int id)
- 		return -ENOMEM;
+ 	if (nbits > MAX_EXTERN_MPI_BITS) {
+ 		pr_info("MPI: mpi too large (%u bits)\n", nbits);
+-		return ERR_PTR(-EINVAL);
++		return -EINVAL;
+ 	}
  
- 	restriction->check = restrict_link_to_ima;
-+	perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW | KEY_USR_READ
-+		| KEY_USR_WRITE | KEY_USR_SEARCH;
+-	nbytes = DIV_ROUND_UP(nbits, 8);
++	if (nbits_arg)
++		*nbits_arg = nbits;
++	if (nbytes_arg)
++		*nbytes_arg = DIV_ROUND_UP(nbits, 8);
 +
-+out:
-+	err = __integrity_init_keyring(id, perm, restriction);
- 
--	keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
--				    KGIDT_INIT(0), cred,
--				    ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
--				     KEY_USR_VIEW | KEY_USR_READ |
--				     KEY_USR_WRITE | KEY_USR_SEARCH),
--				    KEY_ALLOC_NOT_IN_QUOTA,
--				    restriction, NULL);
--	if (IS_ERR(keyring[id])) {
--		err = PTR_ERR(keyring[id]);
--		pr_info("Can't allocate %s keyring (%d)\n",
--			keyring_name[id], err);
--		keyring[id] = NULL;
--	}
- 	return err;
- }
- 
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index e60473b13a8d..c2332a44799e 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -142,7 +142,8 @@ int integrity_kernel_read(struct file *file, loff_t offset,
- #define INTEGRITY_KEYRING_EVM		0
- #define INTEGRITY_KEYRING_IMA		1
- #define INTEGRITY_KEYRING_MODULE	2
--#define INTEGRITY_KEYRING_MAX		3
-+#define INTEGRITY_KEYRING_PLATFORM	3
-+#define INTEGRITY_KEYRING_MAX		4
- 
- extern struct dentry *integrity_dir;
- 
-diff --git a/security/integrity/platform_certs/platform_keyring.c b/security/integrity/platform_certs/platform_keyring.c
-new file mode 100644
-index 000000000000..dfc206bbe2ff
---- /dev/null
-+++ b/security/integrity/platform_certs/platform_keyring.c
-@@ -0,0 +1,39 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/* Platform keyring for firmware/platform keys
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/cred.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include "../integrity.h"
-+
-+/*
-+ * Create the trusted keyrings.
-+ */
-+static __init int platform_keyring_init(void)
-+{
-+	int rc;
-+
-+	rc = integrity_init_keyring(INTEGRITY_KEYRING_PLATFORM);
-+	if (rc)
-+		return rc;
-+
-+	pr_notice("Platform Keyring initialized\n");
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(mpi_key_length);
 +
-+/*
-+ * Must be initialised before we try and load the keys into the keyring.
-+ */
-+device_initcall(platform_keyring_init);
++MPI mpi_read_from_buffer(const void *xbuffer, unsigned *ret_nread)
++{
++	const uint8_t *buffer = xbuffer;
++	unsigned int nbytes;
++	MPI val;
++	int ret;
++
++	ret = mpi_key_length(xbuffer, *ret_nread, NULL, &nbytes);
++	if (ret < 0)
++		return ERR_PTR(ret);
++
+ 	if (nbytes + 2 > *ret_nread) {
+ 		pr_info("MPI: mpi larger than buffer nbytes=%u ret_nread=%u\n",
+ 				nbytes, *ret_nread);
 -- 
-2.13.6
+2.17.1
