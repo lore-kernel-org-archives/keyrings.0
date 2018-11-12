@@ -1,88 +1,96 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Fri, 16 Nov 2018 20:07:01 +0000
-Subject: [PATCH v8 03/14] PKCS#7: Introduce pkcs7_get_digest()
-Message-Id: <20181116200712.14154-4-bauerman@linux.ibm.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Mon, 12 Nov 2018 10:24:20 +0000
+Subject: [RFC][PATCH 09/12] verification: introduce verify_pgp_signature()
+Message-Id: <20181112102423.30415-10-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181116200712.14154-1-bauerman@linux.ibm.com>
-In-Reply-To: <20181116200712.14154-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <20181112102423.30415-1-roberto.sassu@huawei.com>
+In-Reply-To: <20181112102423.30415-1-roberto.sassu@huawei.com>
+To: dhowells@redhat.com, dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net
+Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-IMA will need to access the digest of the PKCS7 message (as calculated by
-the kernel) before the signature is verified, so introduce
-pkcs7_get_digest() for that purpose.
+Introduce verify_pgp_signature() to to verify PGP signatures from data or
+a digest. One user of this function would be IMA, that can verify the
+signature of RPM headers when appraisal is enabled.
 
-Also, modify pkcs7_digest() to detect when the digest was already
-calculated so that it doesn't have to do redundant work. Verifying that
-sinfo->sig->digest isn't NULL is sufficient because both places which
-allocate sinfo->sig (pkcs7_parse_message() and pkcs7_note_signed_info())
-use kzalloc() so sig->digest is always initialized to zero.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
- crypto/asymmetric_keys/pkcs7_verify.c | 25 +++++++++++++++++++++++++
- include/crypto/pkcs7.h                |  3 +++
- 2 files changed, 28 insertions(+)
+ certs/system_keyring.c       | 39 ++++++++++++++++++++++++++++++++++++
+ include/linux/verification.h |  5 +++++
+ 2 files changed, 44 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 97c77f66b20d..e61f121bfc87 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -33,6 +33,10 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 81728717523d..e4c59a5c7a9d 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -19,6 +19,7 @@
+ #include <keys/asymmetric-type.h>
+ #include <keys/system_keyring.h>
+ #include <crypto/pkcs7.h>
++#include <linux/pgp_sig.h>
  
- 	kenter(",%u,%s", sinfo->index, sinfo->sig->hash_algo);
- 
-+	/* The digest was calculated already. */
-+	if (sig->digest)
-+		return 0;
-+
- 	if (!sinfo->sig->hash_algo)
- 		return -ENOPKG;
- 
-@@ -122,6 +126,27 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
- 	return ret;
+ static struct key *builtin_trusted_keys;
+ #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
+@@ -265,4 +266,42 @@ int verify_pkcs7_signature(const void *data, size_t len,
  }
+ EXPORT_SYMBOL_GPL(verify_pkcs7_signature);
  
-+int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf, u8 *len)
++/**
++ * verify_pgp_signature - Verify a PGP-based signature on system data.
++ * @data: The data to be verified (NULL if expecting internal data).
++ * @len: Size of @data.
++ * @digest: Digest for signature verification.
++ * @digest_size: Size of @digest.
++ * @raw_pgp: The PGP message that is the signature.
++ * @pgp_len: Size of @raw_pgp.
++ * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
++ *				       (void *)1UL for all trusted keys).
++ */
++int verify_pgp_signature(const void *data, size_t len,
++			 const void *digest, size_t digest_size,
++			 const void *raw_pgp, size_t pgp_len,
++			 struct key *trusted_keys)
 +{
-+	struct pkcs7_signed_info *sinfo = pkcs7->signed_infos;
-+	int ret;
++	int ret = -ENOTSUPP;
 +
-+	/*
-+	 * This function doesn't support messages with more than one signature.
-+	 */
-+	if (sinfo = NULL || sinfo->next != NULL)
-+		return -EBADMSG;
++#ifdef CONFIG_PGP_KEY_PARSER
++	if (!trusted_keys) {
++		trusted_keys = builtin_trusted_keys;
++	} else if (trusted_keys = (void *)1UL) {
++#ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
++		trusted_keys = secondary_trusted_keys;
++#else
++		trusted_keys = builtin_trusted_keys;
++#endif
++	}
 +
-+	ret = pkcs7_digest(pkcs7, sinfo);
-+	if (ret)
-+		return ret;
++	ret = pgp_verify_sig(trusted_keys, data, len, digest, digest_size,
++			     raw_pgp, pgp_len);
 +
-+	*buf = sinfo->sig->digest;
-+	*len = sinfo->sig->digest_size;
++#endif /* CONFIG_PGP_KEY_PARSER */
 +
-+	return 0;
++	return ret;
 +}
++EXPORT_SYMBOL_GPL(verify_pgp_signature);
 +
- /*
-  * Find the key (X.509 certificate) to use to verify a PKCS#7 message.  PKCS#7
-  * uses the issuer's name and the issuing certificate serial number for
-diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
-index 6f51d0cb6d12..cfaea9c37f4a 100644
---- a/include/crypto/pkcs7.h
-+++ b/include/crypto/pkcs7.h
-@@ -46,4 +46,7 @@ extern int pkcs7_verify(struct pkcs7_message *pkcs7,
- extern int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
- 				      const void *data, size_t datalen);
+ #endif /* CONFIG_SYSTEM_DATA_VERIFICATION */
+diff --git a/include/linux/verification.h b/include/linux/verification.h
+index cfa4730d607a..6fd7bf60efaa 100644
+--- a/include/linux/verification.h
++++ b/include/linux/verification.h
+@@ -45,6 +45,11 @@ extern int verify_pkcs7_signature(const void *data, size_t len,
+ 						      size_t asn1hdrlen),
+ 				  void *ctx);
  
-+extern int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf,
-+			    u8 *len);
++extern int verify_pgp_signature(const void *data, size_t len,
++				const void *digest, size_t digest_size,
++				const void *raw_pgp, size_t pgp_len,
++				struct key *trusted_keys);
 +
- #endif /* _CRYPTO_PKCS7_H */
+ #ifdef CONFIG_SIGNED_PE_FILE_VERIFICATION
+ extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
+ 				   struct key *trusted_keys,
+-- 
+2.17.1
