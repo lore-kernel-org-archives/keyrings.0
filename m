@@ -1,48 +1,35 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Sat, 03 Nov 2018 17:41:07 +0000
-Subject: [PATCH] KEYS: asymmetric: return ENOMEM if akcipher_request_alloc() fails
-Message-Id: <20181103174107.25976-1-ebiggers@kernel.org>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 14 Nov 2018 18:00:22 +0000
+Subject: keyutils-1.6 released
+Message-Id: <25167.1542218422@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+I have tagged and push keyutils v1.6 to:
 
-No error code was being set on this error path.
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git
 
-Fixes: ad4b1eb5fb33 ("KEYS: asym_tpm: Implement encryption operation [ver #2]")
-Fixes: c08fed737126 ("KEYS: Implement encrypt, decrypt and sign for software asymmetric key [ver #2]")
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- crypto/asymmetric_keys/asym_tpm.c   | 1 +
- crypto/asymmetric_keys/public_key.c | 1 +
- 2 files changed, 2 insertions(+)
+Significant changes since v1.5.11 include:
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 5d4c270463f60..8eeb2d251a82a 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -479,6 +479,7 @@ static int tpm_key_encrypt(struct tpm_key *tk,
- 	if (ret < 0)
- 		goto error_free_tfm;
- 
-+	ret = -ENOMEM;
- 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
- 	if (!req)
- 		goto error_free_tfm;
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index f5d85b47fcc6d..65fc08d9be087 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -169,6 +169,7 @@ static int software_key_eds_op(struct kernel_pkey_params *params,
- 	if (IS_ERR(tfm))
- 		return PTR_ERR(tfm);
- 
-+	ret = -ENOMEM;
- 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
- 	if (!req)
- 		goto error_free_tfm;
--- 
-2.19.1
+ - When scanning its config files to find a helper to execute, request-key now
+   takes the match with the least number of characters matching a wildcard
+   rather than the first match.
+
+   This allows a more specific match on a particular type to be installed that
+   overrides a general match (say with the DNS resolver).
+
+ - request-key has an additional flag that allows helper execution to be
+   suppressed to make config debugging easier.
+
+ - Support in keyctl for public key operations using asymmetric-type keys
+   (requires kernel v4.20).
+
+ - The dependency on MIT Kerberos is removed.
+
+ - Added pkg-config spec for libkeyutils.
+
+David
