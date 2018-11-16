@@ -1,139 +1,183 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Thu, 29 Nov 2018 20:59:12 +0000
-Subject: Re: [PATCH v8 04/14] integrity: Introduce struct evm_xattr
-Message-Id: <1543525152.3902.411.camel@linux.ibm.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Fri, 16 Nov 2018 20:07:10 +0000
+Subject: [PATCH v8 12/14] ima: Add new "d-sig" template field
+Message-Id: <20181116200712.14154-13-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20181116200712.14154-1-bauerman@linux.ibm.com>
-         <20181116200712.14154-5-bauerman@linux.ibm.com>
-In-Reply-To: <20181116200712.14154-5-bauerman@linux.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+In-Reply-To: <20181116200712.14154-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-On Fri, 2018-11-16 at 18:07 -0200, Thiago Jung Bauermann wrote:
-> Even though struct evm_ima_xattr_data includes a fixed-size array to hold a
-> SHA1 digest, most of the code ignores the array and uses the struct to mean
-> "type indicator followed by data of unspecified size" and tracks the real
-> size of what the struct represents in a separate length variable.
-> 
-> The only exception to that is the EVM code, which correctly uses the
-> definition of struct evm_ima_xattr_data.
-> 
-> So make this explicit in the code by removing the length specification from
-> the array in struct evm_ima_xattr_data. Also, change the name of the
-> element from digest to data since in most places the array doesn't hold a
-> digest.
-> 
-> A separate struct evm_xattr is introduced, with the original definition of
-> evm_ima_xattr_data to be used in the places that actually expect that
-> definition.
+Define new "d-sig" template field which holds the digest that is expected
+to match the one contained in the modsig.
 
-, specifically the EVM HMAC code.
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+---
+ Documentation/security/IMA-templates.rst  |  5 ++++
+ security/integrity/ima/ima.h              |  9 +++++++
+ security/integrity/ima/ima_modsig.c       | 23 ++++++++++++++++
+ security/integrity/ima/ima_template.c     |  4 ++-
+ security/integrity/ima/ima_template_lib.c | 32 ++++++++++++++++++++++-
+ security/integrity/ima/ima_template_lib.h |  2 ++
+ 6 files changed, 73 insertions(+), 2 deletions(-)
 
-> 
-> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-
-Other than commenting the evm_xattr usage is limited to HMAC before
-the structure definition, this looks good.
-
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-
-> ---
->  security/integrity/evm/evm_main.c     | 8 ++++----
->  security/integrity/ima/ima_appraise.c | 7 ++++---
->  security/integrity/integrity.h        | 5 +++++
->  3 files changed, 13 insertions(+), 7 deletions(-)
-> 
-> diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-> index 7f3f54d89a6e..a1b42d10efc7 100644
-> --- a/security/integrity/evm/evm_main.c
-> +++ b/security/integrity/evm/evm_main.c
-> @@ -169,7 +169,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
->  	/* check value type */
->  	switch (xattr_data->type) {
->  	case EVM_XATTR_HMAC:
-> -		if (xattr_len != sizeof(struct evm_ima_xattr_data)) {
-> +		if (xattr_len != sizeof(struct evm_xattr)) {
->  			evm_status = INTEGRITY_FAIL;
->  			goto out;
->  		}
-> @@ -179,7 +179,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
->  				   xattr_value_len, &digest);
->  		if (rc)
->  			break;
-> -		rc = crypto_memneq(xattr_data->digest, digest.digest,
-> +		rc = crypto_memneq(xattr_data->data, digest.digest,
->  				   SHA1_DIGEST_SIZE);
->  		if (rc)
->  			rc = -EINVAL;
-> @@ -523,7 +523,7 @@ int evm_inode_init_security(struct inode *inode,
->  				 const struct xattr *lsm_xattr,
->  				 struct xattr *evm_xattr)
->  {
-> -	struct evm_ima_xattr_data *xattr_data;
-> +	struct evm_xattr *xattr_data;
->  	int rc;
->  
->  	if (!evm_key_loaded() || !evm_protected_xattr(lsm_xattr->name))
-> @@ -533,7 +533,7 @@ int evm_inode_init_security(struct inode *inode,
->  	if (!xattr_data)
->  		return -ENOMEM;
->  
-> -	xattr_data->type = EVM_XATTR_HMAC;
-> +	xattr_data->data.type = EVM_XATTR_HMAC;
->  	rc = evm_init_hmac(inode, lsm_xattr, xattr_data->digest);
->  	if (rc < 0)
->  		goto out;
-> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-> index deec1804a00a..8bcef90939f8 100644
-> --- a/security/integrity/ima/ima_appraise.c
-> +++ b/security/integrity/ima/ima_appraise.c
-> @@ -167,7 +167,8 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
->  		return sig->hash_algo;
->  		break;
->  	case IMA_XATTR_DIGEST_NG:
-> -		ret = xattr_value->digest[0];
-> +		/* first byte contains algorithm id */
-> +		ret = xattr_value->data[0];
->  		if (ret < HASH_ALGO__LAST)
->  			return ret;
->  		break;
-> @@ -175,7 +176,7 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
->  		/* this is for backward compatibility */
->  		if (xattr_len = 21) {
->  			unsigned int zero = 0;
-> -			if (!memcmp(&xattr_value->digest[16], &zero, 4))
-> +			if (!memcmp(&xattr_value->data[16], &zero, 4))
->  				return HASH_ALGO_MD5;
->  			else
->  				return HASH_ALGO_SHA1;
-> @@ -274,7 +275,7 @@ int ima_appraise_measurement(enum ima_hooks func,
->  			/* xattr length may be longer. md5 hash in previous
->  			   version occupied 20 bytes in xattr, instead of 16
->  			 */
-> -			rc = memcmp(&xattr_value->digest[hash_start],
-> +			rc = memcmp(&xattr_value->data[hash_start],
->  				    iint->ima_hash->digest,
->  				    iint->ima_hash->length);
->  		else
-> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-> index e60473b13a8d..20ac02bf1b84 100644
-> --- a/security/integrity/integrity.h
-> +++ b/security/integrity/integrity.h
-> @@ -79,6 +79,11 @@ enum evm_ima_xattr_type {
->  
->  struct evm_ima_xattr_data {
->  	u8 type;
-> +	u8 data[];
-> +} __packed;
-> +
-
-Please add a comment here saying that evm_xattr is limited to HMAC.
-
-> +struct evm_xattr {
-> +	struct evm_ima_xattr_data data;
->  	u8 digest[SHA1_DIGEST_SIZE];
->  } __packed;
->  
+diff --git a/Documentation/security/IMA-templates.rst b/Documentation/security/IMA-templates.rst
+index 2cd0e273cc9a..f2a0f4225857 100644
+--- a/Documentation/security/IMA-templates.rst
++++ b/Documentation/security/IMA-templates.rst
+@@ -68,6 +68,11 @@ descriptors by adding their identifier to the format string
+  - 'd-ng': the digest of the event, calculated with an arbitrary hash
+    algorithm (field format: [<hash algo>:]digest, where the digest
+    prefix is shown only if the hash algorithm is not SHA1 or MD5);
++ - 'd-sig': the digest of the event for files that have an appended modsig. This
++   field is calculated without including the modsig and thus will differ from
++   the total digest of the file, but it is what should match the digest
++   contained in the modsig (if it doesn't, the signature is invalid). It is
++   shown in the same format as 'd-ng';
+  - 'n-ng': the name of the event, without size limitations;
+  - 'sig': the file signature.
+ 
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 312d60cee702..7f88e4b86156 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -313,6 +313,8 @@ bool ima_hook_supports_modsig(enum ima_hooks func);
+ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
+ 		    struct evm_ima_xattr_data **xattr_value,
+ 		    int *xattr_len);
++int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr, enum hash_algo *algo,
++			const u8 **hash, u8 *len);
+ int ima_modsig_verify(const unsigned int keyring_id,
+ 		      struct evm_ima_xattr_data *hdr);
+ void ima_free_xattr_data(struct evm_ima_xattr_data *hdr);
+@@ -330,6 +332,13 @@ static inline int ima_read_modsig(enum ima_hooks func, const void *buf,
+ 	return -EOPNOTSUPP;
+ }
+ 
++static inline int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr,
++				      enum hash_algo *algo, const u8 **hash,
++				      u8 *len)
++{
++	return -EOPNOTSUPP;
++}
++
+ static inline int ima_modsig_verify(const unsigned int keyring_id,
+ 				    struct evm_ima_xattr_data *hdr)
+ {
+diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
+index e095d35d804d..584d9d77b2c4 100644
+--- a/security/integrity/ima/ima_modsig.c
++++ b/security/integrity/ima/ima_modsig.c
+@@ -144,6 +144,29 @@ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
+ 	return rc;
+ }
+ 
++int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr, enum hash_algo *algo,
++			const u8 **hash, u8 *len)
++{
++	struct modsig_hdr *modsig = (typeof(modsig)) hdr;
++	const struct public_key_signature *pks;
++	int i;
++
++	if (!hdr || hdr->type != IMA_MODSIG)
++		return -EINVAL;
++
++	pks = pkcs7_get_message_sig(modsig->pkcs7_msg);
++	if (!pks)
++		return -EBADMSG;
++
++	for (i = 0; i < HASH_ALGO__LAST; i++)
++		if (!strcmp(hash_algo_name[i], pks->hash_algo))
++			break;
++
++	*algo = i;
++
++	return pkcs7_get_digest(modsig->pkcs7_msg, hash, len);
++}
++
+ int ima_modsig_verify(const unsigned int keyring_id,
+ 		      struct evm_ima_xattr_data *hdr)
+ {
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index b631b8bc7624..045ad508cbb8 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -43,8 +43,10 @@ static const struct ima_template_field supported_fields[] = {
+ 	 .field_show = ima_show_template_string},
+ 	{.field_id = "sig", .field_init = ima_eventsig_init,
+ 	 .field_show = ima_show_template_sig},
++	{.field_id = "d-sig", .field_init = ima_eventdigest_sig_init,
++	 .field_show = ima_show_template_digest_ng},
+ };
+-#define MAX_TEMPLATE_NAME_LEN 15
++#define MAX_TEMPLATE_NAME_LEN 24
+ 
+ static struct ima_template_desc *ima_template;
+ static struct ima_template_desc *lookup_template_desc(const char *name);
+diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
+index 300912914b17..36d175816894 100644
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -222,7 +222,8 @@ int ima_parse_buf(void *bufstartp, void *bufendp, void **bufcurp,
+ 	return 0;
+ }
+ 
+-static int ima_eventdigest_init_common(u8 *digest, u32 digestsize, u8 hash_algo,
++static int ima_eventdigest_init_common(const u8 *digest, u32 digestsize,
++				       u8 hash_algo,
+ 				       struct ima_field_data *field_data)
+ {
+ 	/*
+@@ -325,6 +326,35 @@ int ima_eventdigest_ng_init(struct ima_event_data *event_data,
+ 					   hash_algo, field_data);
+ }
+ 
++/*
++ * This function writes the digest of the file which is expected to match the
++ * digest contained in the file's embedded signature.
++ */
++int ima_eventdigest_sig_init(struct ima_event_data *event_data,
++			     struct ima_field_data *field_data)
++{
++	struct evm_ima_xattr_data *xattr_value = event_data->xattr_value;
++	enum hash_algo hash_algo = HASH_ALGO_SHA1;
++	const u8 *cur_digest = NULL;
++	u8 cur_digestsize = 0;
++	int ret;
++
++	if (!xattr_value || xattr_value->type != IMA_MODSIG)
++		return 0;
++
++	if (event_data->violation)	/* recording a violation. */
++		goto out;
++
++	ret = ima_get_modsig_hash(xattr_value, &hash_algo, &cur_digest,
++				  &cur_digestsize);
++	if (ret)
++		return ret;
++
++ out:
++	return ima_eventdigest_init_common(cur_digest, cur_digestsize,
++					   hash_algo, field_data);
++}
++
+ static int ima_eventname_init_common(struct ima_event_data *event_data,
+ 				     struct ima_field_data *field_data,
+ 				     bool size_limit)
+diff --git a/security/integrity/ima/ima_template_lib.h b/security/integrity/ima/ima_template_lib.h
+index 6a3d8b831deb..3cd353e83f73 100644
+--- a/security/integrity/ima/ima_template_lib.h
++++ b/security/integrity/ima/ima_template_lib.h
+@@ -38,6 +38,8 @@ int ima_eventname_init(struct ima_event_data *event_data,
+ 		       struct ima_field_data *field_data);
+ int ima_eventdigest_ng_init(struct ima_event_data *event_data,
+ 			    struct ima_field_data *field_data);
++int ima_eventdigest_sig_init(struct ima_event_data *event_data,
++			     struct ima_field_data *field_data);
+ int ima_eventname_ng_init(struct ima_event_data *event_data,
+ 			  struct ima_field_data *field_data);
+ int ima_eventsig_init(struct ima_event_data *event_data,
