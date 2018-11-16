@@ -1,125 +1,101 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Mon, 12 Nov 2018 10:24:18 +0000
-Subject: [RFC][PATCH 07/12] KEYS: Provide PGP key description autogeneration
-Message-Id: <20181112102423.30415-8-roberto.sassu@huawei.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Fri, 16 Nov 2018 20:07:03 +0000
+Subject: [PATCH v8 05/14] integrity: Introduce integrity_keyring_from_id()
+Message-Id: <20181116200712.14154-6-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181112102423.30415-1-roberto.sassu@huawei.com>
-In-Reply-To: <20181112102423.30415-1-roberto.sassu@huawei.com>
-To: dhowells@redhat.com, dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net
-Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
+References: <20181116200712.14154-1-bauerman@linux.ibm.com>
+In-Reply-To: <20181116200712.14154-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-From: David Howells <dhowells@redhat.com>
+IMA will need to obtain the keyring used to verify file signatures so that
+it can verify the module-style signature appended to files.
 
-Provide a facility to autogenerate the name of PGP keys from the contents
-of the payload.  If add_key() is given a blank description, a description
-is constructed from the last user ID packet in the payload data plus the
-last 8 hex digits of the key ID.  For instance:
-
-	keyctl padd asymmetric "" @s </tmp/key.pub
-
-might create a key with a constructed description that can be seen in
-/proc/keys:
-
-2f674b96 I--Q---     1 perm 39390000     0     0 crypto    \
-			Sample kernel key 31f0ae93: PGP.RSA 31f0ae93 []
-
-Changelog
-
-v0:
-- fix style issues (Roberto Sassu)
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Co-developed-by: Roberto Sassu <roberto.sassu@huawei.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- crypto/asymmetric_keys/pgp_public_key.c | 46 ++++++++++++++++++++++++-
- 1 file changed, 45 insertions(+), 1 deletion(-)
+ security/integrity/digsig.c    | 28 +++++++++++++++++++++-------
+ security/integrity/integrity.h |  6 ++++++
+ 2 files changed, 27 insertions(+), 7 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/pgp_public_key.c b/crypto/asymmetric_keys/pgp_public_key.c
-index a5ce146a1250..371a3e721f69 100644
---- a/crypto/asymmetric_keys/pgp_public_key.c
-+++ b/crypto/asymmetric_keys/pgp_public_key.c
-@@ -35,6 +35,9 @@ struct pgp_key_data_parse_context {
- 	struct public_key *pub;
- 	unsigned char *raw_fingerprint;
- 	char *fingerprint;
-+	const char *user_id;
-+	size_t user_id_len;
-+	size_t fingerprint_len;
- };
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 5eacba858e4b..bfa27f166184 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -43,11 +43,10 @@ static const char * const keyring_name[INTEGRITY_KEYRING_MAX] = {
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
+ #endif
  
- /*
-@@ -155,6 +158,7 @@ static int pgp_generate_fingerprint(struct pgp_key_data_parse_context *ctx,
- 	if (ret < 0)
- 		goto cleanup_raw_fingerprint;
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+-			    const char *digest, int digestlen)
++struct key *integrity_keyring_from_id(const unsigned int id)
+ {
+-	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
+-		return -EINVAL;
++	if (id >= INTEGRITY_KEYRING_MAX)
++		return ERR_PTR(-EINVAL);
  
-+	ctx->fingerprint_len = digest_size * 2;
- 	fingerprint = kmalloc(digest_size * 2 + 1, GFP_KERNEL);
- 	if (!fingerprint)
- 		goto cleanup_raw_fingerprint;
-@@ -199,6 +203,13 @@ static int pgp_process_public_key(struct pgp_parse_context *context,
+ 	if (!keyring[id]) {
+ 		keyring[id] @@ -56,17 +55,32 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			int err = PTR_ERR(keyring[id]);
+ 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
+ 			keyring[id] = NULL;
+-			return err;
++			return ERR_PTR(err);
+ 		}
+ 	}
  
- 	kenter(",%u,%u,,%zu", type, headerlen, datalen);
- 
-+	if (type = PGP_PKT_USER_ID) {
-+		ctx->user_id = data;
-+		ctx->user_id_len = datalen;
-+		kleave(" = 0 [user ID]");
-+		return 0;
-+	}
++	return keyring[id];
++}
 +
- 	if (ctx->fingerprint) {
- 		kleave(" = -ENOKEY [already]");
- 		return -EBADMSG;
-@@ -291,13 +302,46 @@ static int pgp_key_parse(struct key_preparsed_payload *prep)
- 	kenter("");
- 
- 	memset(&ctx, 0, sizeof(ctx));
--	ctx.pgp.types_of_interest = (1 << PGP_PKT_PUBLIC_KEY);
-+	ctx.pgp.types_of_interest = (1 << PGP_PKT_PUBLIC_KEY) |
-+				    (1 << PGP_PKT_USER_ID);
- 	ctx.pgp.process_packet = pgp_process_public_key;
- 
- 	ret = pgp_parse_packets(prep->data, prep->datalen, &ctx.pgp);
- 	if (ret < 0)
- 		goto error;
- 
-+	if (ctx.user_id && ctx.user_id_len > 0) {
-+		/* Propose a description for the key
-+		 * (user ID without the comment)
-+		 */
-+		size_t ulen = ctx.user_id_len, flen = ctx.fingerprint_len;
-+		const char *p;
++int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
++			    const char *digest, int digestlen)
++{
++	struct key *keyring;
 +
-+		p = memchr(ctx.user_id, '(', ulen);
-+		if (p) {
-+			/* Remove the comment */
-+			do {
-+				p--;
-+			} while (*p = ' ' && p > ctx.user_id);
-+			if (*p != ' ')
-+				p++;
-+			ulen = p - ctx.user_id;
-+		}
++	if (siglen < 2)
++		return -EINVAL;
 +
-+		if (ulen > 255 - 9)
-+			ulen = 255 - 9;
-+		prep->description = kmalloc(ulen + 1 + 8 + 1, GFP_KERNEL);
-+		ret = -ENOMEM;
-+		if (!prep->description)
-+			goto error;
-+		memcpy(prep->description, ctx.user_id, ulen);
-+		prep->description[ulen] = ' ';
-+		memcpy(prep->description + ulen + 1,
-+		       ctx.fingerprint + flen - 8, 8);
-+		prep->description[ulen + 9] = 0;
-+		pr_debug("desc '%s'\n", prep->description);
-+	}
++	keyring = integrity_keyring_from_id(id);
++	if (IS_ERR(keyring))
++		return PTR_ERR(keyring);
 +
- 	/* We're pinning the module by being linked against it */
- 	__module_get(public_key_subtype.owner);
- 	prep->payload.data[asym_subtype] = &public_key_subtype;
--- 
-2.17.1
+ 	switch (sig[1]) {
+ 	case 1:
+ 		/* v1 API expect signature without xattr type */
+-		return digsig_verify(keyring[id], sig + 1, siglen - 1,
++		return digsig_verify(keyring, sig + 1, siglen - 1,
+ 				     digest, digestlen);
+ 	case 2:
+-		return asymmetric_verify(keyring[id], sig, siglen,
++		return asymmetric_verify(keyring, sig, siglen,
+ 					 digest, digestlen);
+ 	}
+ 
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 20ac02bf1b84..91c41351e18a 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -153,6 +153,7 @@ extern struct dentry *integrity_dir;
+ 
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 
++struct key *integrity_keyring_from_id(const unsigned int id);
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
+ 
+@@ -160,6 +161,11 @@ int __init integrity_init_keyring(const unsigned int id);
+ int __init integrity_load_x509(const unsigned int id, const char *path);
+ #else
+ 
++static inline struct key *integrity_keyring_from_id(const unsigned int id)
++{
++	return ERR_PTR(-EINVAL);
++}
++
+ static inline int integrity_digsig_verify(const unsigned int id,
+ 					  const char *sig, int siglen,
+ 					  const char *digest, int digestlen)
