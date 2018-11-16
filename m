@@ -1,103 +1,281 @@
-From: Nayna Jain <nayna@linux.ibm.com>
-Date: Sun, 25 Nov 2018 15:26:59 +0000
-Subject: [PATCH 6/7] efi: Allow the "db" UEFI variable to be suppressed
-Message-Id: <20181125151500.8298-7-nayna@linux.ibm.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Fri, 16 Nov 2018 20:07:12 +0000
+Subject: [PATCH v8 14/14] ima: Store the measurement again when appraising a modsig
+Message-Id: <20181116200712.14154-15-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181125151500.8298-1-nayna@linux.ibm.com>
-In-Reply-To: <20181125151500.8298-1-nayna@linux.ibm.com>
+References: <20181116200712.14154-1-bauerman@linux.ibm.com>
+In-Reply-To: <20181116200712.14154-1-bauerman@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Josh Boyer <jwboyer@fedoraproject.org>
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-From: Josh Boyer <jwboyer@fedoraproject.org>
+If the IMA template contains the 'sig' field, then the modsig should be
+added to the measurement list when the file is appraised, and that is what
+normally happens.
 
-If a user tells shim to not use the certs/hashes in the UEFI db variable
-for verification purposes, shim will set a UEFI variable called
-MokIgnoreDB. Have the uefi import code look for this and ignore the db
-variable if it is found.
+But If a measurement rule caused a file containing a modsig to be measured
+before a different rule causes it to be appraised, the resulting
+measurement entry will not contain the modsig because it is only fetched
+during appraisal. When the appraisal rule triggers, it won't store a new
+measurement containing the modsig because the file was already measured.
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Nayna Jain <nayna@linux.ibm.com>
+We need to detect that situation and store an additional measurement with
+the modsig. This is done by defining the appraise subaction flag
+IMA_READ_MEASURE and testing for it in process_measurement().
+
+Suggested-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 ---
-Changelog:
+ security/integrity/ima/ima.h          |  1 +
+ security/integrity/ima/ima_api.c      |  8 +++-
+ security/integrity/ima/ima_main.c     | 16 +++++++-
+ security/integrity/ima/ima_policy.c   | 59 ++++++++++++++++++++++++---
+ security/integrity/ima/ima_template.c | 27 ++++++++++++
+ security/integrity/integrity.h        |  9 ++--
+ 6 files changed, 110 insertions(+), 10 deletions(-)
 
-v0:
-- No changes
-
- security/integrity/platform_certs/load_uefi.c | 44 +++++++++++++++++++++------
- 1 file changed, 34 insertions(+), 10 deletions(-)
-
-diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
-index dbccb45147ef..978c8d0dc151 100644
---- a/security/integrity/platform_certs/load_uefi.c
-+++ b/security/integrity/platform_certs/load_uefi.c
-@@ -13,6 +13,26 @@ static __initdata efi_guid_t efi_cert_x509_sha256_guid = EFI_CERT_X509_SHA256_GU
- static __initdata efi_guid_t efi_cert_sha256_guid = EFI_CERT_SHA256_GUID;
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 8e1b1ddbe14f..c39bed55f6d2 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -147,6 +147,7 @@ int ima_init_crypto(void);
+ void ima_putc(struct seq_file *m, void *data, int datalen);
+ void ima_print_digest(struct seq_file *m, u8 *digest, u32 size);
+ struct ima_template_desc *ima_template_desc_current(void);
++bool ima_current_template_has_sig(void);
+ int ima_restore_measurement_entry(struct ima_template_entry *entry);
+ int ima_restore_measurement_list(loff_t bufsize, void *buf);
+ int ima_measurements_show(struct seq_file *m, void *v);
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index 99dd1d53fc35..a7af114bc6b4 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -289,7 +289,13 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 					    xattr_len, NULL};
+ 	int violation = 0;
  
- /*
-+ * Look to see if a UEFI variable called MokIgnoreDB exists and return true if
-+ * it does.
-+ *
-+ * This UEFI variable is set by the shim if a user tells the shim to not use
-+ * the certs/hashes in the UEFI db variable for verification purposes.  If it
-+ * is set, we should ignore the db variable also and the true return indicates
-+ * this.
-+ */
-+static __init bool uefi_check_ignore_db(void)
-+{
-+	efi_status_t status;
-+	unsigned int db = 0;
-+	unsigned long size = sizeof(db);
-+	efi_guid_t guid = EFI_SHIM_LOCK_GUID;
-+
-+	status = efi.get_variable(L"MokIgnoreDB", &guid, NULL, &size, &db);
-+	return status = EFI_SUCCESS;
-+}
-+
-+/*
-  * Get a certificate list blob from the named EFI variable.
-  */
- static __init void *get_cert_list(efi_char16_t *name, efi_guid_t *guid,
-@@ -113,7 +133,9 @@ static __init efi_element_handler_t get_handler_for_dbx(const efi_guid_t *sig_ty
+-	if (iint->measured_pcrs & (0x1 << pcr))
++	/*
++	 * We still need to store the measurement in the case of MODSIG because
++	 * we only have its contents to put in the list at the time of
++	 * appraisal. See comment in store_measurement_again() for more details.
++	 */
++	if (iint->measured_pcrs & (0x1 << pcr) &&
++	    (!xattr_value || xattr_value->type != IMA_MODSIG))
+ 		return;
+ 
+ 	result = ima_alloc_init_template(&event_data, &entry);
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index d5abd22d502a..807b9b77b813 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -166,6 +166,20 @@ void ima_file_free(struct file *file)
+ 	ima_check_last_writer(iint, inode, file);
  }
  
- /*
-- * Load the certs contained in the UEFI databases
-+ * Load the certs contained in the UEFI databases into the secondary trusted
-+ * keyring and the UEFI blacklisted X.509 cert SHA256 hashes into the blacklist
-+ * keyring.
-  */
- static int __init load_uefi_certs(void)
- {
-@@ -129,15 +151,17 @@ static int __init load_uefi_certs(void)
- 	/* Get db, MokListRT, and dbx.  They might not exist, so it isn't
- 	 * an error if we can't get them.
- 	 */
--	db = get_cert_list(L"db", &secure_var, &dbsize);
--	if (!db) {
--		pr_err("Couldn't get UEFI db list\n");
--	} else {
--		rc = parse_efi_signature_list("UEFI:db",
--					      db, dbsize, get_handler_for_db);
--		if (rc)
--			pr_err("Couldn't parse db signatures: %d\n", rc);
--		kfree(db);
-+	if (!uefi_check_ignore_db()) {
-+		db = get_cert_list(L"db", &secure_var, &dbsize);
-+		if (!db) {
-+			pr_err("MODSIGN: Couldn't get UEFI db list\n");
-+		} else {
-+			rc = parse_efi_signature_list("UEFI:db",
-+					db, dbsize, get_handler_for_db);
-+			if (rc)
-+				pr_err("Couldn't parse db signatures: %d\n", rc);
-+			kfree(db);
-+		}
- 	}
++/*
++ * A file measurement might already exist in the measurement list. Based on
++ * policy, include an additional file measurement containing the appended
++ * signature and file hash, without the appended signature (i.e., the 'd-sig'
++ * field).
++ */
++static bool store_measurement_again(struct integrity_iint_cache *iint,
++				    struct evm_ima_xattr_data *xattr_value)
++{
++	return iint->flags & IMA_READ_MEASURE && xattr_value &&
++		xattr_value->type = IMA_MODSIG &&
++		ima_current_template_has_sig();
++}
++
+ static int process_measurement(struct file *file, const struct cred *cred,
+ 			       u32 secid, char *buf, loff_t size, int mask,
+ 			       enum ima_hooks func)
+@@ -299,7 +313,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	if (!pathbuf)	/* ima_rdwr_violation possibly pre-fetched */
+ 		pathname = ima_d_path(&file->f_path, &pathbuf, filename);
  
- 	mok = get_cert_list(L"MokListRT", &mok_var, &moksize);
--- 
-2.13.6
+-	if (action & IMA_MEASURE)
++	if (action & IMA_MEASURE || store_measurement_again(iint, xattr_value))
+ 		ima_store_measurement(iint, file, pathname,
+ 				      xattr_value, xattr_len, pcr);
+ 	if (rc = 0 && (action & IMA_APPRAISE_SUBMASK)) {
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 3e5a64053aa8..c0b39802e988 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -10,6 +10,9 @@
+  *	- initialize default measure policy rules
+  *
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/list.h>
+ #include <linux/fs.h>
+@@ -367,7 +370,8 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
+  * In addition to knowing that we need to appraise the file in general,
+  * we need to differentiate between calling hooks, for hook specific rules.
+  */
+-static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
++static int get_appraise_subaction(struct ima_rule_entry *rule,
++				  enum ima_hooks func)
+ {
+ 	if (!(rule->flags & IMA_FUNC))
+ 		return IMA_FILE_APPRAISE;
+@@ -388,6 +392,15 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
+ 	}
+ }
+ 
++static int get_measure_subaction(struct ima_rule_entry *rule,
++				 enum ima_hooks func)
++{
++	if (rule->flags & IMA_FUNC && ima_hook_supports_modsig(func))
++		return IMA_READ_MEASURE;
++	else
++		return 0;
++}
++
+ /**
+  * ima_match_policy - decision based on LSM and other conditions
+  * @inode: pointer to an inode for which the policy decision is being made
+@@ -424,11 +437,12 @@ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
+ 
+ 		action |= entry->action & IMA_DO_MASK;
+ 		if (entry->action & IMA_APPRAISE) {
+-			action |= get_subaction(entry, func);
++			action |= get_appraise_subaction(entry, func);
+ 			action &= ~IMA_HASH;
+ 			if (ima_fail_unverifiable_sigs)
+ 				action |= IMA_FAIL_UNVERIFIABLE_SIGS;
+-		}
++		} else if (entry->action & IMA_MEASURE)
++			action |= get_measure_subaction(entry, func);
+ 
+ 		if (entry->action & IMA_DO_MASK)
+ 			actmask &= ~(entry->action | entry->action << 1);
+@@ -756,6 +770,40 @@ static void ima_log_string(struct audit_buffer *ab, char *key, char *value)
+ 	ima_log_string_op(ab, key, value, NULL);
+ }
+ 
++/*
++ * To validate the appended signature included in the measurement list requires
++ * the file hash, without the appended signature (i.e., the 'd-sig' field).
++ * Therefore, notify the user if they have the 'sig' field but not the 'd-sig'
++ * field in the template.
++ */
++static void check_current_template_modsig(void)
++{
++#define MSG "template with 'sig' field also needs 'd-sig' field when modsig is allowed\n"
++	struct ima_template_desc *template;
++	bool has_sig, has_dsig;
++	static bool checked;
++	int i;
++
++	/* We only need to notify the user once. */
++	if (checked)
++		return;
++
++	has_sig = has_dsig = false;
++	template = ima_template_desc_current();
++	for (i = 0; i < template->num_fields; i++) {
++		if (!strcmp(template->fields[i]->field_id, "sig"))
++			has_sig = true;
++		else if (!strcmp(template->fields[i]->field_id, "d-sig"))
++			has_dsig = true;
++	}
++
++	if (has_sig && !has_dsig)
++		pr_notice(MSG);
++
++	checked = true;
++#undef MSG
++}
++
+ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ {
+ 	struct audit_buffer *ab;
+@@ -1035,10 +1083,11 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 			if ((strcmp(args[0].from, "imasig")) = 0)
+ 				entry->flags |= IMA_DIGSIG_REQUIRED;
+ 			else if (ima_hook_supports_modsig(entry->func) &&
+-				 strcmp(args[0].from, "imasig|modsig") = 0)
++				 strcmp(args[0].from, "imasig|modsig") = 0) {
+ 				entry->flags |= IMA_DIGSIG_REQUIRED
+ 						| IMA_MODSIG_ALLOWED;
+-			else
++				check_current_template_modsig();
++			} else
+ 				result = -EINVAL;
+ 			break;
+ 		case Opt_permit_directio:
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index 045ad508cbb8..a58b55e7c1c6 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -231,6 +231,33 @@ struct ima_template_desc *ima_template_desc_current(void)
+ 	return ima_template;
+ }
+ 
++/*
++ * Tells whether the current template has fields which reference a file's
++ * signature.
++ */
++bool ima_current_template_has_sig(void)
++{
++	static int ima_template_has_sig = -1;
++
++	if (ima_template_has_sig < 0) {
++		struct ima_template_desc *template;
++		int i;
++
++		template = ima_template_desc_current();
++		for (i = 0; i < template->num_fields; i++)
++			if (!strcmp(template->fields[i]->field_id, "sig") ||
++			    !strcmp(template->fields[i]->field_id, "d-sig")) {
++				ima_template_has_sig = 1;
++				break;
++			}
++
++		if (ima_template_has_sig < 0)
++			ima_template_has_sig = 0;
++	}
++
++	return ima_template_has_sig;
++}
++
+ int __init ima_init_template(void)
+ {
+ 	struct ima_template_desc *template = ima_template_desc_current();
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index e8c379211a96..9d7cefa5c999 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -39,12 +39,13 @@
+ #define IMA_MODSIG_ALLOWED	0x20000000
+ 
+ #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+-				 IMA_HASH | IMA_APPRAISE_SUBMASK)
++				 IMA_HASH | IMA_APPRAISE_SUBMASK | \
++				 IMA_READ_MEASURE)
+ #define IMA_DONE_MASK		(IMA_MEASURED | IMA_APPRAISED | IMA_AUDITED | \
+ 				 IMA_HASHED | IMA_COLLECTED | \
+-				 IMA_APPRAISED_SUBMASK)
++				 IMA_APPRAISED_SUBMASK | IMA_READ_MEASURED)
+ 
+-/* iint subaction appraise cache flags */
++/* iint subaction appraise and measure cache flags */
+ #define IMA_FILE_APPRAISE	0x00001000
+ #define IMA_FILE_APPRAISED	0x00002000
+ #define IMA_MMAP_APPRAISE	0x00004000
+@@ -55,6 +56,8 @@
+ #define IMA_READ_APPRAISED	0x00080000
+ #define IMA_CREDS_APPRAISE	0x00100000
+ #define IMA_CREDS_APPRAISED	0x00200000
++#define IMA_READ_MEASURE	0x00400000
++#define IMA_READ_MEASURED	0x00800000
+ #define IMA_APPRAISE_SUBMASK	(IMA_FILE_APPRAISE | IMA_MMAP_APPRAISE | \
+ 				 IMA_BPRM_APPRAISE | IMA_READ_APPRAISE | \
+ 				 IMA_CREDS_APPRAISE)
