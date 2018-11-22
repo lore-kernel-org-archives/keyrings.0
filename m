@@ -1,81 +1,61 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Mon, 12 Nov 2018 10:24:11 +0000
-Subject: [RFC][PATCH 00/12] keys: add support for PGP keys and signatures
-Message-Id: <20181112102423.30415-1-roberto.sassu@huawei.com>
+From: Rolf Eike Beer <eb@emlix.com>
+Date: Thu, 22 Nov 2018 16:42:50 +0000
+Subject: [PATCH v2] scripts: use pkg-config to locate libcrypto
+Message-Id: <2429714.x0fLlpPdDl@devpool21>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com, dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net
-Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
+References: <3861016.XCek94Sdvs@devpool21> <d48cd5083490aa717f59c41960d5a02f93fce841.camel@infradead.org>
+In-Reply-To: <d48cd5083490aa717f59c41960d5a02f93fce841.camel@infradead.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
 
-This patch set is based on kernel/git/dhowells/linux-modsign.git
-(branch: pgp-parser) at git.kernel.org.
+Otherwise build fails if the headers are not in the default location. While at
+it also ask pkg-config for the libs, with fallback to the existing value.
 
-The goal of this patch set is to add support for PGP keys and signatures,
-so that it will be possible to verify RPM header signatures (included in
-RPM-based Linux distributions) when IMA Appraisal is enabled.
+Signed-off-by: Rolf Eike Beer <eb@emlix.com>
+Cc: stable@vger.kernel.org
+---
+ scripts/Makefile | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-The patch set includes two preliminary patches: the first introduces
-mpi_key_length(), to get the number of bits and bytes of an MPI; the second
-introduces rsa_parse_priv_key_raw() and rsa_parse_pub_key_raw(), to parse
-an RSA key in RAW format if the ASN.1 parser returns an error.
-
-The remaining of the patch set includes the original patches with
-modifications to work with the current kernel. It additionally introduces
-verify_pgp_signature(), to verify PGP signatures with built-in or secondary
-trusted keys. Trusted keys can be included in the kernel by enabling
-CONFIG_PGP_PRELOAD_PUBLIC_KEYS and by copying the file pubring.gpg
-containing the PGP keyring to the kernel source directory.
-
-The changelog is included in the description of each patch.
-
-David Howells (8):
-  PGPLIB: PGP definitions (RFC 4880)
-  PGPLIB: Basic packet parser
-  PGPLIB: Signature parser
-  KEYS: PGP data parser
-  KEYS: Provide PGP key description autogeneration
-  KEYS: PGP-based public key signature verification
-  PGP: Provide a key type for testing PGP signatures
-  KEYS: Provide a function to load keys from a PGP keyring blob
-
-Roberto Sassu (4):
-  mpi: introduce mpi_key_length()
-  rsa: add parser of raw format
-  verification: introduce verify_pgp_signature()
-  KEYS: Introduce load_pgp_public_keyring()
-
- certs/Kconfig                           |   7 +
- certs/Makefile                          |   3 +
- certs/system_keyring.c                  |  64 +++
- crypto/asymmetric_keys/Kconfig          |  38 ++
- crypto/asymmetric_keys/Makefile         |  15 +
- crypto/asymmetric_keys/pgp_library.c    | 625 ++++++++++++++++++++++++
- crypto/asymmetric_keys/pgp_parser.h     |  22 +
- crypto/asymmetric_keys/pgp_preload.c    | 118 +++++
- crypto/asymmetric_keys/pgp_public_key.c | 380 ++++++++++++++
- crypto/asymmetric_keys/pgp_signature.c  | 428 ++++++++++++++++
- crypto/asymmetric_keys/pgp_test_key.c   | 132 +++++
- crypto/rsa.c                            |  14 +-
- crypto/rsa_helper.c                     |  69 +++
- include/crypto/internal/rsa.h           |   6 +
- include/linux/mpi.h                     |   2 +
- include/linux/pgp.h                     | 215 ++++++++
- include/linux/pgp_sig.h                 |  24 +
- include/linux/pgplib.h                  |  87 ++++
- include/linux/verification.h            |   5 +
- lib/mpi/mpicoder.c                      |  33 +-
- 20 files changed, 2276 insertions(+), 11 deletions(-)
- create mode 100644 crypto/asymmetric_keys/pgp_library.c
- create mode 100644 crypto/asymmetric_keys/pgp_parser.h
- create mode 100644 crypto/asymmetric_keys/pgp_preload.c
- create mode 100644 crypto/asymmetric_keys/pgp_public_key.c
- create mode 100644 crypto/asymmetric_keys/pgp_signature.c
- create mode 100644 crypto/asymmetric_keys/pgp_test_key.c
- create mode 100644 include/linux/pgp.h
- create mode 100644 include/linux/pgp_sig.h
- create mode 100644 include/linux/pgplib.h
+diff --git a/scripts/Makefile b/scripts/Makefile
+index ece52ff20171..769fa6b7b685 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -8,7 +8,11 @@
+ # conmakehash:   Create chartable
+ # conmakehash:	 Create arrays for initializing the kernel console tables
+ 
++PKG_CONFIG?= pkg-config
++
+ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
++CRYPTO_LIBS = $(shell $(PKG_CONFIG) --libs libcrypto 2> /dev/null || -lcrypto)
++CRYPTO_CFLAGS = $(shell $(PKG_CONFIG) --cflags libcrypto 2> /dev/null)
+ 
+ hostprogs-$(CONFIG_BUILD_BIN2C)  += bin2c
+ hostprogs-$(CONFIG_KALLSYMS)     += kallsyms
+@@ -23,8 +27,9 @@ hostprogs-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE) += insert-sys-cert
+ 
+ HOSTCFLAGS_sortextable.o = -I$(srctree)/tools/include
+ HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
+-HOSTLDLIBS_sign-file = -lcrypto
+-HOSTLDLIBS_extract-cert = -lcrypto
++HOSTLDLIBS_sign-file = $(CRYPTO_LIBS)
++HOSTCFLAGS_extract-cert.o = $(CRYPTO_CFLAGS)
++HOSTLDLIBS_extract-cert = $(CRYPTO_LIBS)
+ 
+ always		:= $(hostprogs-y) $(hostprogs-m)
+ 
+-- 
+2.19.1
 
 -- 
-2.17.1
+Rolf Eike Beer, emlix GmbH, http://www.emlix.com
+Fon +49 551 30664-0, Fax +49 551 30664-11
+Gothaer Platz 3, 37083 Göttingen, Germany
+Sitz der Gesellschaft: Göttingen, Amtsgericht Göttingen HR B 3160
+Geschäftsführung: Heike Jordan, Dr. Uwe Kracke – Ust-IdNr.: DE 205 198 055
+
+emlix - smart embedded open source
