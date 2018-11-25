@@ -1,7 +1,7 @@
 From: Nayna Jain <nayna@linux.ibm.com>
-Date: Sun, 25 Nov 2018 15:26:56 +0000
-Subject: [PATCH 3/7] efi: Add EFI signature data types
-Message-Id: <20181125151500.8298-4-nayna@linux.ibm.com>
+Date: Sun, 25 Nov 2018 15:26:59 +0000
+Subject: [PATCH 6/7] efi: Allow the "db" UEFI variable to be suppressed
+Message-Id: <20181125151500.8298-7-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,67 +9,95 @@ List-Id: <keyrings.vger.kernel.org>
 References: <20181125151500.8298-1-nayna@linux.ibm.com>
 In-Reply-To: <20181125151500.8298-1-nayna@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Josh Boyer <jwboyer@fedoraproject.org>
 
-From: Dave Howells <dhowells@redhat.com>
+From: Josh Boyer <jwboyer@fedoraproject.org>
 
-Add the data types that are used for containing hashes, keys and
-certificates for cryptographic verification along with their corresponding
-type GUIDs.
+If a user tells shim to not use the certs/hashes in the UEFI db variable
+for verification purposes, shim will set a UEFI variable called
+MokIgnoreDB. Have the uefi import code look for this and ignore the db
+variable if it is found.
 
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: David Howells <dhowells@redhat.com>
 Acked-by: Nayna Jain <nayna@linux.ibm.com>
 ---
 Changelog:
 
-v0: 
+v0:
 - No changes
 
- include/linux/efi.h | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ security/integrity/platform_certs/load_uefi.c | 44 +++++++++++++++++++++------
+ 1 file changed, 34 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 401e4b254e30..99cba6fe1234 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -663,6 +663,10 @@ void efi_native_runtime_setup(void);
- #define EFI_IMAGE_SECURITY_DATABASE_GUID	EFI_GUID(0xd719b2cb, 0x3d3a, 0x4596,  0xa3, 0xbc, 0xda, 0xd0, 0x0e, 0x67, 0x65, 0x6f)
- #define EFI_SHIM_LOCK_GUID			EFI_GUID(0x605dab50, 0xe046, 0x4300,  0xab, 0xb6, 0x3d, 0xd8, 0x10, 0xdd, 0x8b, 0x23)
+diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
+index dbccb45147ef..978c8d0dc151 100644
+--- a/security/integrity/platform_certs/load_uefi.c
++++ b/security/integrity/platform_certs/load_uefi.c
+@@ -13,6 +13,26 @@ static __initdata efi_guid_t efi_cert_x509_sha256_guid = EFI_CERT_X509_SHA256_GU
+ static __initdata efi_guid_t efi_cert_sha256_guid = EFI_CERT_SHA256_GUID;
  
-+#define EFI_CERT_SHA256_GUID			EFI_GUID(0xc1c41626, 0x504c, 0x4092, 0xac, 0xa9, 0x41, 0xf9, 0x36, 0x93, 0x43, 0x28)
-+#define EFI_CERT_X509_GUID			EFI_GUID(0xa5c059a1, 0x94e4, 0x4aa7, 0x87, 0xb5, 0xab, 0x15, 0x5c, 0x2b, 0xf0, 0x72)
-+#define EFI_CERT_X509_SHA256_GUID		EFI_GUID(0x3bd2a492, 0x96c0, 0x4079, 0xb4, 0x20, 0xfc, 0xf9, 0x8e, 0xf1, 0x03, 0xed)
-+
  /*
-  * This GUID is used to pass to the kernel proper the struct screen_info
-  * structure that was populated by the stub based on the GOP protocol instance
-@@ -933,6 +937,27 @@ typedef struct {
- 	efi_memory_desc_t entry[0];
- } efi_memory_attributes_table_t;
- 
-+typedef struct  {
-+	efi_guid_t signature_owner;
-+	u8 signature_data[];
-+} efi_signature_data_t;
++ * Look to see if a UEFI variable called MokIgnoreDB exists and return true if
++ * it does.
++ *
++ * This UEFI variable is set by the shim if a user tells the shim to not use
++ * the certs/hashes in the UEFI db variable for verification purposes.  If it
++ * is set, we should ignore the db variable also and the true return indicates
++ * this.
++ */
++static __init bool uefi_check_ignore_db(void)
++{
++	efi_status_t status;
++	unsigned int db = 0;
++	unsigned long size = sizeof(db);
++	efi_guid_t guid = EFI_SHIM_LOCK_GUID;
 +
-+typedef struct {
-+	efi_guid_t signature_type;
-+	u32 signature_list_size;
-+	u32 signature_header_size;
-+	u32 signature_size;
-+	u8 signature_header[];
-+	/* efi_signature_data_t signatures[][] */
-+} efi_signature_list_t;
++	status = efi.get_variable(L"MokIgnoreDB", &guid, NULL, &size, &db);
++	return status = EFI_SUCCESS;
++}
 +
-+typedef u8 efi_sha256_hash_t[32];
-+
-+typedef struct {
-+	efi_sha256_hash_t to_be_signed_hash;
-+	efi_time_t time_of_revocation;
-+} efi_cert_x509_sha256_t;
-+
- /*
-  * All runtime access to EFI goes through this structure:
++/*
+  * Get a certificate list blob from the named EFI variable.
   */
+ static __init void *get_cert_list(efi_char16_t *name, efi_guid_t *guid,
+@@ -113,7 +133,9 @@ static __init efi_element_handler_t get_handler_for_dbx(const efi_guid_t *sig_ty
+ }
+ 
+ /*
+- * Load the certs contained in the UEFI databases
++ * Load the certs contained in the UEFI databases into the secondary trusted
++ * keyring and the UEFI blacklisted X.509 cert SHA256 hashes into the blacklist
++ * keyring.
+  */
+ static int __init load_uefi_certs(void)
+ {
+@@ -129,15 +151,17 @@ static int __init load_uefi_certs(void)
+ 	/* Get db, MokListRT, and dbx.  They might not exist, so it isn't
+ 	 * an error if we can't get them.
+ 	 */
+-	db = get_cert_list(L"db", &secure_var, &dbsize);
+-	if (!db) {
+-		pr_err("Couldn't get UEFI db list\n");
+-	} else {
+-		rc = parse_efi_signature_list("UEFI:db",
+-					      db, dbsize, get_handler_for_db);
+-		if (rc)
+-			pr_err("Couldn't parse db signatures: %d\n", rc);
+-		kfree(db);
++	if (!uefi_check_ignore_db()) {
++		db = get_cert_list(L"db", &secure_var, &dbsize);
++		if (!db) {
++			pr_err("MODSIGN: Couldn't get UEFI db list\n");
++		} else {
++			rc = parse_efi_signature_list("UEFI:db",
++					db, dbsize, get_handler_for_db);
++			if (rc)
++				pr_err("Couldn't parse db signatures: %d\n", rc);
++			kfree(db);
++		}
+ 	}
+ 
+ 	mok = get_cert_list(L"MokListRT", &mok_var, &moksize);
 -- 
 2.13.6
