@@ -1,254 +1,75 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Mon, 12 Nov 2018 10:24:14 +0000
-Subject: [RFC][PATCH 03/12] PGPLIB: PGP definitions (RFC 4880)
-Message-Id: <20181112102423.30415-4-roberto.sassu@huawei.com>
+From: Nayna Jain <nayna@linux.ibm.com>
+Date: Sun, 25 Nov 2018 15:26:56 +0000
+Subject: [PATCH 3/7] efi: Add EFI signature data types
+Message-Id: <20181125151500.8298-4-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181112102423.30415-1-roberto.sassu@huawei.com>
-In-Reply-To: <20181112102423.30415-1-roberto.sassu@huawei.com>
-To: dhowells@redhat.com, dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net
-Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
+References: <20181125151500.8298-1-nayna@linux.ibm.com>
+In-Reply-To: <20181125151500.8298-1-nayna@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
 
-From: David Howells <dhowells@redhat.com>
+From: Dave Howells <dhowells@redhat.com>
 
-Provide some useful PGP definitions from RFC 4880.  These describe details
-of public key crypto as used by crypto keys for things like signature
-verification.
-
-Changelog:
-
-v0:
-- fix style issues (Roberto Sassu)
+Add the data types that are used for containing hashes, keys and
+certificates for cryptographic verification along with their corresponding
+type GUIDs.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-Co-developed-by: Roberto Sassu <roberto.sassu@huawei.com>
+Acked-by: Nayna Jain <nayna@linux.ibm.com>
 ---
- include/linux/pgp.h | 215 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 215 insertions(+)
- create mode 100644 include/linux/pgp.h
+Changelog:
 
-diff --git a/include/linux/pgp.h b/include/linux/pgp.h
-new file mode 100644
-index 000000000000..a01a0c219aa8
---- /dev/null
-+++ b/include/linux/pgp.h
-@@ -0,0 +1,215 @@
-+/* PGP definitions (RFC 4880)
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
+v0: 
+- No changes
+
+ include/linux/efi.h | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 401e4b254e30..99cba6fe1234 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -663,6 +663,10 @@ void efi_native_runtime_setup(void);
+ #define EFI_IMAGE_SECURITY_DATABASE_GUID	EFI_GUID(0xd719b2cb, 0x3d3a, 0x4596,  0xa3, 0xbc, 0xda, 0xd0, 0x0e, 0x67, 0x65, 0x6f)
+ #define EFI_SHIM_LOCK_GUID			EFI_GUID(0x605dab50, 0xe046, 0x4300,  0xab, 0xb6, 0x3d, 0xd8, 0x10, 0xdd, 0x8b, 0x23)
+ 
++#define EFI_CERT_SHA256_GUID			EFI_GUID(0xc1c41626, 0x504c, 0x4092, 0xac, 0xa9, 0x41, 0xf9, 0x36, 0x93, 0x43, 0x28)
++#define EFI_CERT_X509_GUID			EFI_GUID(0xa5c059a1, 0x94e4, 0x4aa7, 0x87, 0xb5, 0xab, 0x15, 0x5c, 0x2b, 0xf0, 0x72)
++#define EFI_CERT_X509_SHA256_GUID		EFI_GUID(0x3bd2a492, 0x96c0, 0x4079, 0xb4, 0x20, 0xfc, 0xf9, 0x8e, 0xf1, 0x03, 0xed)
 +
-+#ifndef _LINUX_PGP_H
-+#define _LINUX_PGP_H
+ /*
+  * This GUID is used to pass to the kernel proper the struct screen_info
+  * structure that was populated by the stub based on the GOP protocol instance
+@@ -933,6 +937,27 @@ typedef struct {
+ 	efi_memory_desc_t entry[0];
+ } efi_memory_attributes_table_t;
+ 
++typedef struct  {
++	efi_guid_t signature_owner;
++	u8 signature_data[];
++} efi_signature_data_t;
 +
-+#include <linux/types.h>
++typedef struct {
++	efi_guid_t signature_type;
++	u32 signature_list_size;
++	u32 signature_header_size;
++	u32 signature_size;
++	u8 signature_header[];
++	/* efi_signature_data_t signatures[][] */
++} efi_signature_list_t;
 +
-+struct pgp_key_ID {
-+	u8 id[8];
-+} __packed;
++typedef u8 efi_sha256_hash_t[32];
 +
-+struct pgp_time {
-+	u8 time[4];
-+} __packed;
++typedef struct {
++	efi_sha256_hash_t to_be_signed_hash;
++	efi_time_t time_of_revocation;
++} efi_cert_x509_sha256_t;
 +
-+/*
-+ * PGP public-key algorithm identifiers [RFC4880: 9.1]
-+ */
-+enum pgp_pubkey_algo {
-+	PGP_PUBKEY_RSA_ENC_OR_SIG	= 1,
-+	PGP_PUBKEY_RSA_ENC_ONLY		= 2,
-+	PGP_PUBKEY_RSA_SIG_ONLY		= 3,
-+	PGP_PUBKEY_ELGAMAL		= 16,
-+	PGP_PUBKEY_DSA			= 17,
-+	PGP_PUBKEY__LAST
-+};
-+
-+/*
-+ * PGP symmetric-key algorithm identifiers [RFC4880: 9.2]
-+ */
-+enum pgp_symkey_algo {
-+	PGP_SYMKEY_PLAINTEXT		= 0,
-+	PGP_SYMKEY_IDEA			= 1,
-+	PGP_SYMKEY_3DES			= 2,
-+	PGP_SYMKEY_CAST5		= 3,
-+	PGP_SYMKEY_BLOWFISH		= 4,
-+	PGP_SYMKEY_AES_128KEY		= 7,
-+	PGP_SYMKEY_AES_192KEY		= 8,
-+	PGP_SYMKEY_AES_256KEY		= 9,
-+	PGP_SYMKEY_TWOFISH_256KEY	= 10,
-+};
-+
-+/*
-+ * PGP compression algorithm identifiers [RFC4880: 9.3]
-+ */
-+enum pgp_compr_algo {
-+	PGP_COMPR_UNCOMPRESSED		= 0,
-+	PGP_COMPR_ZIP			= 1,
-+	PGP_COMPR_ZLIB			= 2,
-+	PGP_COMPR_BZIP2			= 3,
-+};
-+
-+/*
-+ * PGP hash algorithm identifiers [RFC4880: 9.4]
-+ */
-+enum pgp_hash_algo {
-+	PGP_HASH_MD5			= 1,
-+	PGP_HASH_SHA1			= 2,
-+	PGP_HASH_RIPE_MD_160		= 3,
-+	PGP_HASH_SHA256			= 8,
-+	PGP_HASH_SHA384			= 9,
-+	PGP_HASH_SHA512			= 10,
-+	PGP_HASH_SHA224			= 11,
-+	PGP_HASH__LAST
-+};
-+
-+extern const char *const pgp_hash_algorithms[PGP_HASH__LAST];
-+
-+/*
-+ * PGP packet type tags [RFC4880: 4.3].
-+ */
-+enum pgp_packet_tag {
-+	PGP_PKT_RESERVED		= 0,
-+	PGP_PKT_PUBKEY_ENC_SESSION_KEY	= 1,
-+	PGP_PKT_SIGNATURE		= 2,
-+	PGP_PKT_SYMKEY_ENC_SESSION_KEY	= 3,
-+	PGP_PKT_ONEPASS_SIGNATURE	= 4,
-+	PGP_PKT_SECRET_KEY		= 5,
-+	PGP_PKT_PUBLIC_KEY		= 6,
-+	PGP_PKT_SECRET_SUBKEY		= 7,
-+	PGP_PKT_COMPRESSED_DATA		= 8,
-+	PGP_PKT_SYM_ENC_DATA		= 9,
-+	PGP_PKT_MARKER			= 10,
-+	PGP_PKT_LITERAL_DATA		= 11,
-+	PGP_PKT_TRUST			= 12,
-+	PGP_PKT_USER_ID			= 13,
-+	PGP_PKT_PUBLIC_SUBKEY		= 14,
-+	PGP_PKT_USER_ATTRIBUTE		= 17,
-+	PGP_PKT_SYM_ENC_AND_INTEG_DATA	= 18,
-+	PGP_PKT_MODIFY_DETECT_CODE	= 19,
-+	PGP_PKT_PRIVATE_0		= 60,
-+	PGP_PKT_PRIVATE_3		= 63,
-+	PGP_PKT__HIGHEST		= 63
-+};
-+
-+/*
-+ * Signature (tag 2) packet [RFC4880: 5.2].
-+ */
-+enum pgp_signature_version {
-+	PGP_SIG_VERSION_3			= 3,
-+	PGP_SIG_VERSION_4			= 4,
-+};
-+
-+enum pgp_signature_type {
-+	PGP_SIG_BINARY_DOCUMENT_SIG		= 0x00,
-+	PGP_SIG_CANONICAL_TEXT_DOCUMENT_SIG	= 0x01,
-+	PGP_SIG_STANDALONE_SIG			= 0x02,
-+	PGP_SIG_GENERAL_CERT_OF_UID_PUBKEY	= 0x10,
-+	PGP_SIG_PERSONAL_CERT_OF_UID_PUBKEY	= 0x11,
-+	PGP_SIG_CASUAL_CERT_OF_UID_PUBKEY	= 0x12,
-+	PGP_SIG_POSTITIVE_CERT_OF_UID_PUBKEY	= 0x13,
-+	PGP_SIG_SUBKEY_BINDING_SIG		= 0x18,
-+	PGP_SIG_PRIMARY_KEY_BINDING_SIG		= 0x19,
-+	PGP_SIG_DIRECTLY_ON_KEY			= 0x1F,
-+	PGP_SIG_KEY_REVOCATION_SIG		= 0x20,
-+	PGP_SIG_SUBKEY_REVOCATION_SIG		= 0x28,
-+	PGP_SIG_CERT_REVOCATION_SIG		= 0x30,
-+	PGP_SIG_TIMESTAMP_SIG			= 0x40,
-+	PGP_SIG_THIRD_PARTY_CONFIRM_SIG		= 0x50,
-+};
-+
-+struct pgp_signature_v3_packet {
-+	enum pgp_signature_version version : 8; /* = PGP_SIG_VERSION_3 */
-+	u8	length_of_hashed;	/* = 5 */
-+	struct {
-+		enum pgp_signature_type signature_type : 8;
-+		struct pgp_time	creation_time;
-+	} __packed hashed;
-+	struct pgp_key_ID issuer;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+} __packed;
-+
-+struct pgp_signature_v4_packet {
-+	enum pgp_signature_version version : 8;	/* = PGP_SIG_VERSION_4 */
-+	enum pgp_signature_type signature_type : 8;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+} __packed;
-+
-+/*
-+ * V4 signature subpacket types [RFC4880: 5.2.3.1].
-+ */
-+enum pgp_sig_subpkt_type {
-+	PGP_SIG_CREATION_TIME			= 2,
-+	PGP_SIG_EXPIRATION_TIME			= 3,
-+	PGP_SIG_EXPORTABLE_CERT			= 4,
-+	PGP_SIG_TRUST_SIG			= 5,
-+	PGP_SIG_REGEXP				= 6,
-+	PGP_SIG_REVOCABLE			= 7,
-+	PGP_SIG_KEY_EXPIRATION_TIME		= 9,
-+	PGP_SIG_PREF_SYM_ALGO			= 11,
-+	PGP_SIG_REVOCATION_KEY			= 12,
-+	PGP_SIG_ISSUER				= 16,
-+	PGP_SIG_NOTATION_DATA			= 20,
-+	PGP_SIG_PREF_HASH_ALGO			= 21,
-+	PGP_SIG_PREF_COMPR_ALGO			= 22,
-+	PGP_SIG_KEY_SERVER_PREFS		= 23,
-+	PGP_SIG_PREF_KEY_SERVER			= 24,
-+	PGP_SIG_PRIMARY_USER_ID			= 25,
-+	PGP_SIG_POLICY_URI			= 26,
-+	PGP_SIG_KEY_FLAGS			= 27,
-+	PGP_SIG_SIGNERS_USER_ID			= 28,
-+	PGP_SIG_REASON_FOR_REVOCATION		= 29,
-+	PGP_SIG_FEATURES			= 30,
-+	PGP_SIG_TARGET				= 31,
-+	PGP_SIG_EMBEDDED_SIG			= 32,
-+	PGP_SIG__LAST
-+};
-+
-+#define PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK	0x80
-+
-+/*
-+ * Key (tag 5, 6, 7 and 14) packet
-+ */
-+enum pgp_key_version {
-+	PGP_KEY_VERSION_2			= 2,
-+	PGP_KEY_VERSION_3			= 3,
-+	PGP_KEY_VERSION_4			= 4,
-+};
-+
-+struct pgp_key_v3_packet {
-+	enum pgp_key_version version : 8;
-+	struct pgp_time	creation_time;
-+	u8 expiry[2];			/* 0 or time in days till expiry */
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	u8 key_material[0];
-+} __packed;
-+
-+struct pgp_key_v4_packet {
-+	enum pgp_key_version version : 8;
-+	struct pgp_time	creation_time;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	u8 key_material[0];
-+} __packed;
-+
-+/*
-+ * Literal Data (tag 11) packet
-+ */
-+enum pgp_literal_data_format {
-+	PGP_LIT_FORMAT_BINARY			= 0x62,
-+	PGP_LIT_FORMAT_TEXT			= 0x74,
-+	PGP_LIT_FORMAT_TEXT_UTF8		= 0x75,
-+};
-+
-+#endif /* _LINUX_PGP_H */
+ /*
+  * All runtime access to EFI goes through this structure:
+  */
 -- 
-2.17.1
+2.13.6
