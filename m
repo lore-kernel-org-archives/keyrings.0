@@ -1,11 +1,53 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 02 Nov 2018 14:50:30 +0000
-Subject: Re: [PATCH v2 7/7] typos: fix various typos
-Message-Id: <11763.1541170230@warthog.procyon.org.uk>
+From: Nayna Jain <nayna@linux.ibm.com>
+Date: Sun, 25 Nov 2018 15:27:00 +0000
+Subject: [PATCH 7/7] ima: Support platform keyring for kernel appraisal
+Message-Id: <20181125151500.8298-8-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20181125151500.8298-1-nayna@linux.ibm.com>
+In-Reply-To: <20181125151500.8298-1-nayna@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
 
-Applied.
+On secure boot enabled systems, the bootloader verifies the kernel
+image and possibly the initramfs signatures based on a set of keys. A
+soft reboot(kexec) of the system, with the same kernel image and
+initramfs, requires access to the original keys to verify the
+signatures.
+
+This patch allows IMA-appraisal access to those original keys, now
+loaded on the platform keyring, needed for verifying the kernel image
+and initramfs signatures.
+
+Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+---
+ security/integrity/ima/ima_appraise.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index deec1804a00a..9c13585e7d3e 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -294,7 +294,16 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 					     iint->ima_hash->length);
+ 		if (rc = -EOPNOTSUPP) {
+ 			status = INTEGRITY_UNKNOWN;
+-		} else if (rc) {
++			break;
++		}
++		if (rc && func = KEXEC_KERNEL_CHECK)
++			rc = integrity_digsig_verify(
++					INTEGRITY_KEYRING_PLATFORM,
++					(const char *)xattr_value,
++					xattr_len,
++					iint->ima_hash->digest,
++					iint->ima_hash->length);
++		if (rc) {
+ 			cause = "invalid-signature";
+ 			status = INTEGRITY_FAIL;
+ 		} else {
+-- 
+2.13.6
