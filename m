@@ -1,141 +1,220 @@
-From: syzbot <syzbot+a22e0dc07567662c50bc@syzkaller.appspotmail.com>
-Date: Sat, 03 Nov 2018 15:48:03 +0000
-Subject: general protection fault in keyctl_pkey_params_get
-Message-Id: <000000000000c220960579c4936d@google.com>
+From: Nayna Jain <nayna@linux.ibm.com>
+Date: Sun, 25 Nov 2018 15:26:54 +0000
+Subject: [PATCH 1/7] integrity: Define a trusted platform keyring
+Message-Id: <20181125151500.8298-2-nayna@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com, jmorris@namei.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, serge@hallyn.com, syzkaller-bugs@googlegroups.com
+References: <20181125151500.8298-1-nayna@linux.ibm.com>
+In-Reply-To: <20181125151500.8298-1-nayna@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
 
-SGVsbG8sCgpzeXpib3QgZm91bmQgdGhlIGZvbGxvd2luZyBjcmFzaCBvbjoKCkhFQUQgY29tbWl0
-OiAgICA1ZjIxNTg1Mzg0YTQgTWVyZ2UgdGFnICdmb3ItbGludXMtMjAxODExMDInIG9mIGdpdDov
-L2dpdC5rLi4KZ2l0IHRyZWU6ICAgICAgIHVwc3RyZWFtCmNvbnNvbGUgb3V0cHV0OiBodHRwczov
-L3N5emthbGxlci5hcHBzcG90LmNvbS94L2xvZy50eHQ/eBBiYTI0NmQ0MDAwMDAKa2VybmVsIGNv
-bmZpZzogIGh0dHBzOi8vc3l6a2FsbGVyLmFwcHNwb3QuY29tL3gvLmNvbmZpZz94kzg0ZWNiMWM5
-NzNiYWVkCmRhc2hib2FyZCBsaW5rOiBodHRwczovL3N5emthbGxlci5hcHBzcG90LmNvbS9idWc/
-ZXh0aWSiMmUwZGMwNzU2NzY2MmM1MGJjCmNvbXBpbGVyOiAgICAgICBnY2MgKEdDQykgOC4wLjEg
-MjAxODA0MTMgKGV4cGVyaW1lbnRhbCkKc3l6IHJlcHJvOiAgICAgIGh0dHBzOi8vc3l6a2FsbGVy
-LmFwcHNwb3QuY29tL3gvcmVwcm8uc3l6P3gQMjZkY2Q1NDAwMDAwCkMgcmVwcm9kdWNlcjogICBo
-dHRwczovL3N5emthbGxlci5hcHBzcG90LmNvbS94L3JlcHJvLmM/eBY3ZTg4MmI0MDAwMDAKCklN
-UE9SVEFOVDogaWYgeW91IGZpeCB0aGUgYnVnLCBwbGVhc2UgYWRkIHRoZSBmb2xsb3dpbmcgdGFn
-IHRvIHRoZSBjb21taXQ6ClJlcG9ydGVkLWJ5OiBzeXpib3QrYTIyZTBkYzA3NTY3NjYyYzUwYmNA
-c3l6a2FsbGVyLmFwcHNwb3RtYWlsLmNvbQoKa2FzYW46IENPTkZJR19LQVNBTl9JTkxJTkUgZW5h
-YmxlZAprYXNhbjogR1BGIGNvdWxkIGJlIGNhdXNlZCBieSBOVUxMLXB0ciBkZXJlZiBvciB1c2Vy
-IG1lbW9yeSBhY2Nlc3MKZ2VuZXJhbCBwcm90ZWN0aW9uIGZhdWx0OiAwMDAwIFsjMV0gUFJFRU1Q
-VCBTTVAgS0FTQU4KQ1BVOiAxIFBJRDogNzI0NyBDb21tOiBzeXotZXhlY3V0b3IyMzYgTm90IHRh
-aW50ZWQgNC4xOS4wKyAjMzE3CkhhcmR3YXJlIG5hbWU6IEdvb2dsZSBHb29nbGUgQ29tcHV0ZSBF
-bmdpbmUvR29vZ2xlIENvbXB1dGUgRW5naW5lLCBCSU9TICAKR29vZ2xlIDAxLzAxLzIwMTEKUklQ
-OiAwMDEwOmtleWN0bF9wa2V5X3BhcmFtc19wYXJzZSBzZWN1cml0eS9rZXlzL2tleWN0bF9wa2V5
-LmM6NTYgW2lubGluZV0KUklQOiAwMDEwOmtleWN0bF9wa2V5X3BhcmFtc19nZXQrMHgyZTcvMHg1
-NTAgc2VjdXJpdHkva2V5cy9rZXljdGxfcGtleS5jOjk2CkNvZGU6IGZlIDQ4IDhiIDQ0IDI0IDM4
-IDQ4IGMxIGU4IDAzIDQyIDgwIDNjIDI4IDAwIDBmIDg1IGY3IDAxIDAwIDAwIDRjIDhiICAKYTQg
-MjQgZTAgMDAgMDAgMDAgNGMgODkgZTAgNGMgODkgZTIgNDggYzEgZTggMDMgODMgZTIgMDcgPDQy
-PiAwZiBiNiAwNCAyOCAgCjM4IGQwIDdmIDA4IDg0IGMwIDBmIDg1IGUwIDAxIDAwIDAwIDQxIDBm
-IGI2IDA0IDI0ClJTUDogMDAxODpmZmZmODgwMWNlODRmYWEwIEVGTEFHUzogMDAwMTAyNDYKUkFY
-OiAwMDAwMDAwMDAwMDAwMDAwIFJCWDogZmZmZjg4MDFjZTg0ZmQ2MCBSQ1g6IGZmZmZmZmZmODM0
-Mjk5OTAKUkRYOiAwMDAwMDAwMDAwMDAwMDAwIFJTSTogZmZmZmZmZmY4MzQyOTk5ZSBSREk6IDAw
-MDAwMDAwMDAwMDAwMDEKUkJQOiBmZmZmODgwMWNlODRmYzA4IFIwODogZmZmZjg4MDFjZTkyODQ4
-MCBSMDk6IGZmZmZlZDAwMzllNzMzMTAKUjEwOiBmZmZmZWQwMDM5ZTczMzEwIFIxMTogMDAwMDAw
-MDAwMDAwMDAwMSBSMTI6IDAwMDAwMDAwMDAwMDAwMDAKUjEzOiBkZmZmZmMwMDAwMDAwMDAwIFIx
-NDogZmZmZmZmZmZmZmZmZmZmZiBSMTU6IGZmZmZmZmZmZmZmZmZmZmYKRlM6ICAwMDAwMDAwMDAx
-ZTFjODgwKDAwMDApIEdTOmZmZmY4ODAxZGFmMDAwMDAoMDAwMCkga25sR1M6MDAwMDAwMDAwMDAw
-MDAwMApDUzogIDAwMTAgRFM6IDAwMDAgRVM6IDAwMDAgQ1IwOiAwMDAwMDAwMDgwMDUwMDMzCkNS
-MjogMDAwMDAwMDAwMDQxNGNkMCBDUjM6IDAwMDAwMDAxY2U1ZTYwMDAgQ1I0OiAwMDAwMDAwMDAw
-MTQwNmUwCkRSMDogMDAwMDAwMDAwMDAwMDAwMCBEUjE6IDAwMDAwMDAwMDAwMDAwMDAgRFIyOiAw
-MDAwMDAwMDAwMDAwMDAwCkRSMzogMDAwMDAwMDAwMDAwMDAwMCBEUjY6IDAwMDAwMDAwZmZmZTBm
-ZjAgRFI3OiAwMDAwMDAwMDAwMDAwNDAwCkNhbGwgVHJhY2U6CiAga2V5Y3RsX3BrZXlfcGFyYW1z
-X2dldF8yKzB4MTJmLzB4NTgwIHNlY3VyaXR5L2tleXMva2V5Y3RsX3BrZXkuYzoxMzAKa2FzYW46
-IENPTkZJR19LQVNBTl9JTkxJTkUgZW5hYmxlZAogIGtleWN0bF9wa2V5X3ZlcmlmeSsweGFhLzB4
-NDAwIHNlY3VyaXR5L2tleXMva2V5Y3RsX3BrZXkuYzoyOTMKa2FzYW46IEdQRiBjb3VsZCBiZSBj
-YXVzZWQgYnkgTlVMTC1wdHIgZGVyZWYgb3IgdXNlciBtZW1vcnkgYWNjZXNzCiAgX19kb19zeXNf
-a2V5Y3RsIHNlY3VyaXR5L2tleXMva2V5Y3RsLmM6MTc2OCBbaW5saW5lXQogIF9fc2Vfc3lzX2tl
-eWN0bCBzZWN1cml0eS9rZXlzL2tleWN0bC5jOjE2MzcgW2lubGluZV0KICBfX3g2NF9zeXNfa2V5
-Y3RsKzB4MTAxLzB4NDMwIHNlY3VyaXR5L2tleXMva2V5Y3RsLmM6MTYzNwogIGRvX3N5c2NhbGxf
-NjQrMHgxYjkvMHg4MjAgYXJjaC94ODYvZW50cnkvY29tbW9uLmM6MjkwCiAgZW50cnlfU1lTQ0FM
-TF82NF9hZnRlcl9od2ZyYW1lKzB4NDkvMHhiZQpSSVA6IDAwMzM6MHg0NDRjMzkKQ29kZTogZTgg
-YWMgZTggZmYgZmYgNDggODMgYzQgMTggYzMgMGYgMWYgODAgMDAgMDAgMDAgMDAgNDggODkgZjgg
-NDggODkgZjcgIAo0OCA4OSBkNiA0OCA4OSBjYSA0ZCA4OSBjMiA0ZCA4OSBjOCA0YyA4YiA0YyAy
-NCAwOCAwZiAwNSA8NDg+IDNkIDAxIGYwIGZmICAKZmYgMGYgODMgMmIgY2UgZmIgZmYgYzMgNjYg
-MmUgMGYgMWYgODQgMDAgMDAgMDAgMDAKUlNQOiAwMDJiOjAwMDA3ZmZlZmRkNTlmODggRUZMQUdT
-OiAwMDAwMDI4NiBPUklHX1JBWDogMDAwMDAwMDAwMDAwMDBmYQpSQVg6IGZmZmZmZmZmZmZmZmZm
-ZGEgUkJYOiAwMDAwMDAwMDAwMDAwMDAwIFJDWDogMDAwMDAwMDAwMDQ0NGMzOQpSRFg6IDAwMDAw
-MDAwMjAwMDAyYzAgUlNJOiAwMDAwMDAwMDIwMDAwMGMwIFJESTogMDAwMDAwMDAwMDAwMDAxYwpS
-QlA6IDAwMDAwMDAwMDAwMDAwMDAgUjA4OiAwMDAwMDAwMDIwMDAwMzgwIFIwOTogMDAwMDAwMDAw
-MDQwMDJlMApSMTA6IDAwMDAwMDAwZmZmZmZkMmEgUjExOiAwMDAwMDAwMDAwMDAwMjg2IFIxMjog
-MDAwMDAwMDAwMDAxMTk1NgpSMTM6IDAwMDAwMDAwMDA0MDFmODAgUjE0OiAwMDAwMDAwMDAwMDAw
-MDAwIFIxNTogMDAwMDAwMDAwMDAwMDAwMApNb2R1bGVzIGxpbmtlZCBpbjoKLS0tWyBlbmQgdHJh
-Y2UgZTVjNDZiYjUyMDBjNjlkYyBdLS0tCmdlbmVyYWwgcHJvdGVjdGlvbiBmYXVsdDogMDAwMCBb
-IzJdIFBSRUVNUFQgU01QIEtBU0FOClJJUDogMDAxMDprZXljdGxfcGtleV9wYXJhbXNfcGFyc2Ug
-c2VjdXJpdHkva2V5cy9rZXljdGxfcGtleS5jOjU2IFtpbmxpbmVdClJJUDogMDAxMDprZXljdGxf
-cGtleV9wYXJhbXNfZ2V0KzB4MmU3LzB4NTUwIHNlY3VyaXR5L2tleXMva2V5Y3RsX3BrZXkuYzo5
-NgpDUFU6IDAgUElEOiA3NDAxIENvbW06IHN5ei1leGVjdXRvcjIzNiBUYWludGVkOiBHICAgICAg
-RCAgICAgICAgICAgNC4xOS4wKyAgCiMzMTcKSGFyZHdhcmUgbmFtZTogR29vZ2xlIEdvb2dsZSBD
-b21wdXRlIEVuZ2luZS9Hb29nbGUgQ29tcHV0ZSBFbmdpbmUsIEJJT1MgIApHb29nbGUgMDEvMDEv
-MjAxMQpSSVA6IDAwMTA6a2V5Y3RsX3BrZXlfcGFyYW1zX3BhcnNlIHNlY3VyaXR5L2tleXMva2V5
-Y3RsX3BrZXkuYzo1NiBbaW5saW5lXQpSSVA6IDAwMTA6a2V5Y3RsX3BrZXlfcGFyYW1zX2dldCsw
-eDJlNy8weDU1MCBzZWN1cml0eS9rZXlzL2tleWN0bF9wa2V5LmM6OTYKQ29kZTogZmUgNDggOGIg
-NDQgMjQgMzggNDggYzEgZTggMDMgNDIgODAgM2MgMjggMDAgMGYgODUgZjcgMDEgMDAgMDAgNGMg
-OGIgIAphNCAyNCBlMCAwMCAwMCAwMCA0YyA4OSBlMCA0YyA4OSBlMiA0OCBjMSBlOCAwMyA4MyBl
-MiAwNyA8NDI+IDBmIGI2IDA0IDI4ICAKMzggZDAgN2YgMDggODQgYzAgMGYgODUgZTAgMDEgMDAg
-MDAgNDEgMGYgYjYgMDQgMjQKQ29kZTogZmUgNDggOGIgNDQgMjQgMzggNDggYzEgZTggMDMgNDIg
-ODAgM2MgMjggMDAgMGYgODUgZjcgMDEgMDAgMDAgNGMgOGIgIAphNCAyNCBlMCAwMCAwMCAwMCA0
-YyA4OSBlMCA0YyA4OSBlMiA0OCBjMSBlOCAwMyA4MyBlMiAwNyA8NDI+IDBmIGI2IDA0IDI4ICAK
-MzggZDAgN2YgMDggODQgYzAgMGYgODUgZTAgMDEgMDAgMDAgNDEgMGYgYjYgMDQgMjQKUlNQOiAw
-MDE4OmZmZmY4ODAxYzUyY2ZhYTAgRUZMQUdTOiAwMDAxMDI0NgpSQVg6IDAwMDAwMDAwMDAwMDAw
-MDIgUkJYOiBmZmZmODgwMWM1MmNmZDYwIFJDWDogZmZmZmZmZmY4MzQyOTk5MApSRFg6IDAwMDAw
-MDAwMDAwMDAwMDAgUlNJOiBmZmZmZmZmZjgzNDI5OTllIFJESTogMDAwMDAwMDAwMDAwMDAwMQpS
-QlA6IGZmZmY4ODAxYzUyY2ZjMDggUjA4OiBmZmZmODgwMWI4YTg2MDAwIFIwOTogZmZmZmVkMDAz
-OWJiMTM3OApSMTA6IGZmZmZlZDAwMzliYjEzNzggUjExOiAwMDAwMDAwMDAwMDAwMDAxIFIxMjog
-MDAwMDAwMDAwMDAwMDAxMApSMTM6IGRmZmZmYzAwMDAwMDAwMDAgUjE0OiBmZmZmZmZmZmZmZmZm
-ZmZmIFIxNTogZmZmZmZmZmZmZmZmZmZmZgpGUzogIDAwMDAwMDAwMDFlMWM4ODAoMDAwMCkgR1M6
-ZmZmZjg4MDFkYWUwMDAwMCgwMDAwKSBrbmxHUzowMDAwMDAwMDAwMDAwMDAwCkNTOiAgMDAxMCBE
-UzogMDAwMCBFUzogMDAwMCBDUjA6IDAwMDAwMDAwODAwNTAwMzMKUlNQOiAwMDE4OmZmZmY4ODAx
-Y2U4NGZhYTAgRUZMQUdTOiAwMDAxMDI0NgpDUjI6IDAwMDAwMDAwMDA0MTRjZDAgQ1IzOiAwMDAw
-MDAwMWNlNjU0MDAwIENSNDogMDAwMDAwMDAwMDE0MDZmMApEUjA6IDAwMDAwMDAwMDAwMDAwMDAg
-RFIxOiAwMDAwMDAwMDAwMDAwMDAwIERSMjogMDAwMDAwMDAwMDAwMDAwMApEUjM6IDAwMDAwMDAw
-MDAwMDAwMDAgRFI2OiAwMDAwMDAwMGZmZmUwZmYwIERSNzogMDAwMDAwMDAwMDAwMDQwMApDYWxs
-IFRyYWNlOgpSQVg6IDAwMDAwMDAwMDAwMDAwMDAgUkJYOiBmZmZmODgwMWNlODRmZDYwIFJDWDog
-ZmZmZmZmZmY4MzQyOTk5MAogIGtleWN0bF9wa2V5X3BhcmFtc19nZXRfMisweDEyZi8weDU4MCBz
-ZWN1cml0eS9rZXlzL2tleWN0bF9wa2V5LmM6MTMwClJEWDogMDAwMDAwMDAwMDAwMDAwMCBSU0k6
-IGZmZmZmZmZmODM0Mjk5OWUgUkRJOiAwMDAwMDAwMDAwMDAwMDAxCiAga2V5Y3RsX3BrZXlfdmVy
-aWZ5KzB4YWEvMHg0MDAgc2VjdXJpdHkva2V5cy9rZXljdGxfcGtleS5jOjI5MwpSQlA6IGZmZmY4
-ODAxY2U4NGZjMDggUjA4OiBmZmZmODgwMWNlOTI4NDgwIFIwOTogZmZmZmVkMDAzOWU3MzMxMApS
-MTA6IGZmZmZlZDAwMzllNzMzMTAgUjExOiAwMDAwMDAwMDAwMDAwMDAxIFIxMjogMDAwMDAwMDAw
-MDAwMDAwMAogIF9fZG9fc3lzX2tleWN0bCBzZWN1cml0eS9rZXlzL2tleWN0bC5jOjE3NjggW2lu
-bGluZV0KICBfX3NlX3N5c19rZXljdGwgc2VjdXJpdHkva2V5cy9rZXljdGwuYzoxNjM3IFtpbmxp
-bmVdCiAgX194NjRfc3lzX2tleWN0bCsweDEwMS8weDQzMCBzZWN1cml0eS9rZXlzL2tleWN0bC5j
-OjE2MzcKICBkb19zeXNjYWxsXzY0KzB4MWI5LzB4ODIwIGFyY2gveDg2L2VudHJ5L2NvbW1vbi5j
-OjI5MApSMTM6IGRmZmZmYzAwMDAwMDAwMDAgUjE0OiBmZmZmZmZmZmZmZmZmZmZmIFIxNTogZmZm
-ZmZmZmZmZmZmZmZmZgpGUzogIDAwMDAwMDAwMDFlMWM4ODAoMDAwMCkgR1M6ZmZmZjg4MDFkYWYw
-MDAwMCgwMDAwKSBrbmxHUzowMDAwMDAwMDAwMDAwMDAwCiAgZW50cnlfU1lTQ0FMTF82NF9hZnRl
-cl9od2ZyYW1lKzB4NDkvMHhiZQpDUzogIDAwMTAgRFM6IDAwMDAgRVM6IDAwMDAgQ1IwOiAwMDAw
-MDAwMDgwMDUwMDMzClJJUDogMDAzMzoweDQ0NGMzOQpDb2RlOiBlOCBhYyBlOCBmZiBmZiA0OCA4
-MyBjNCAxOCBjMyAwZiAxZiA4MCAwMCAwMCAwMCAwMCA0OCA4OSBmOCA0OCA4OSBmNyAgCjQ4IDg5
-IGQ2IDQ4IDg5IGNhIDRkIDg5IGMyIDRkIDg5IGM4IDRjIDhiIDRjIDI0IDA4IDBmIDA1IDw0OD4g
-M2QgMDEgZjAgZmYgIApmZiAwZiA4MyAyYiBjZSBmYiBmZiBjMyA2NiAyZSAwZiAxZiA4NCAwMCAw
-MCAwMCAwMApSU1A6IDAwMmI6MDAwMDdmZmVmZGQ1OWY4OCBFRkxBR1M6IDAwMDAwMjg2IE9SSUdf
-UkFYOiAwMDAwMDAwMDAwMDAwMGZhClJBWDogZmZmZmZmZmZmZmZmZmZkYSBSQlg6IDAwMDAwMDAw
-MDAwMDAwMDAgUkNYOiAwMDAwMDAwMDAwNDQ0YzM5ClJEWDogMDAwMDAwMDAyMDAwMDJjMCBSU0k6
-IDAwMDAwMDAwMjAwMDAwYzAgUkRJOiAwMDAwMDAwMDAwMDAwMDFjClJCUDogMDAwMDAwMDAwMDAw
-MDAwMCBSMDg6IDAwMDAwMDAwMjAwMDAzODAgUjA5OiAwMDAwMDAwMDAwNDAwMmUwClIxMDogMDAw
-MDAwMDBmZmZmZmQyYSBSMTE6IDAwMDAwMDAwMDAwMDAyODYgUjEyOiAwMDAwMDAwMDAwMDExYTI3
-CkNSMjogMDAwMDAwMDAwMDQxNGNkMCBDUjM6IDAwMDAwMDAxY2U1ZTYwMDAgQ1I0OiAwMDAwMDAw
-MDAwMTQwNmUwClIxMzogMDAwMDAwMDAwMDQwMWY4MCBSMTQ6IDAwMDAwMDAwMDAwMDAwMDAgUjE1
-OiAwMDAwMDAwMDAwMDAwMDAwCk1vZHVsZXMgbGlua2VkIGluOgotLS1bIGVuZCB0cmFjZSBlNWM0
-NmJiNTIwMGM2OWRkIF0tLS0KRFIwOiAwMDAwMDAwMDAwMDAwMDAwIERSMTogMDAwMDAwMDAwMDAw
-MDAwMCBEUjI6IDAwMDAwMDAwMDAwMDAwMDAKUklQOiAwMDEwOmtleWN0bF9wa2V5X3BhcmFtc19w
-YXJzZSBzZWN1cml0eS9rZXlzL2tleWN0bF9wa2V5LmM6NTYgW2lubGluZV0KUklQOiAwMDEwOmtl
-eWN0bF9wa2V5X3BhcmFtc19nZXQrMHgyZTcvMHg1NTAgc2VjdXJpdHkva2V5cy9rZXljdGxfcGtl
-eS5jOjk2CkRSMzogMDAwMDAwMDAwMDAwMDAwMCBEUjY6IDAwMDAwMDAwZmZmZTBmZjAgRFI3OiAw
-MDAwMDAwMDAwMDAwNDAwCkNvZGU6IGZlIDQ4IDhiIDQ0IDI0IDM4IDQ4IGMxIGU4IDAzIDQyIDgw
-IDNjIDI4IDAwIDBmIDg1IGY3IDAxIDAwIDAwIDRjIDhiICAKYTQgMjQgZTAgMDAgMDAgMDAgNGMg
-ODkgZTAgNGMgODkgZTIgNDggYzEgZTggMDMgODMgZTIgMDcgPDQyPiAwZiBiNiAwNCAyOCAgCjM4
-IGQwIDdmIDA4IDg0IGMwIDBmIDg1IGUwIDAxIDAwIDAwIDQxIDBmIGI2IDA0IDI0CgoKLS0tClRo
-aXMgYnVnIGlzIGdlbmVyYXRlZCBieSBhIGJvdC4gSXQgbWF5IGNvbnRhaW4gZXJyb3JzLgpTZWUg
-aHR0cHM6Ly9nb28uZ2wvdHBzbUVKIGZvciBtb3JlIGluZm9ybWF0aW9uIGFib3V0IHN5emJvdC4K
-c3l6Ym90IGVuZ2luZWVycyBjYW4gYmUgcmVhY2hlZCBhdCBzeXprYWxsZXJAZ29vZ2xlZ3JvdXBz
-LmNvbS4KCnN5emJvdCB3aWxsIGtlZXAgdHJhY2sgb2YgdGhpcyBidWcgcmVwb3J0LiBTZWU6Cmh0
-dHBzOi8vZ29vLmdsL3Rwc21FSiNidWctc3RhdHVzLXRyYWNraW5nIGZvciBob3cgdG8gY29tbXVu
-aWNhdGUgd2l0aCAgCnN5emJvdC4Kc3l6Ym90IGNhbiB0ZXN0IHBhdGNoZXMgZm9yIHRoaXMgYnVn
-LCBmb3IgZGV0YWlscyBzZWU6Cmh0dHBzOi8vZ29vLmdsL3Rwc21FSiN0ZXN0aW5nLXBhdGNoZXM=
+On secure boot enabled systems, a verified kernel may need to kexec
+additional kernels. For example, it may be used as a bootloader needing 
+to kexec a target kernel or it may need to kexec a crashdump kernel. In
+such cases, it may want to verify the signature of the next kernel
+image.
+
+It is further possible that the kernel image is signed with third party
+keys which are stored as platform or firmware keys in the 'db' variable.
+The kernel, however, can not directly verify these platform keys, and an
+administrator may therefore not want to trust them for arbitrary usage.
+In order to differentiate platform keys from other keys and provide the
+necessary separation of trust, the kernel needs an additional keyring to
+store platform keys.
+
+This patch creates the new keyring called ".platform" to isolate keys
+provided by platform from keys by kernel. These keys are used to
+facilitate signature verification during kexec. Since the scope of this
+keyring is only the platform/firmware keys, it cannot be updated from
+userspace.
+
+This keyring can be enabled by setting CONFIG_INTEGRITY_PLATFORM_KEYRING.
+
+Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+---
+ security/integrity/Kconfig                         | 11 +++++
+ security/integrity/Makefile                        |  1 +
+ security/integrity/digsig.c                        | 48 +++++++++++++++-------
+ security/integrity/integrity.h                     |  3 +-
+ .../integrity/platform_certs/platform_keyring.c    | 39 ++++++++++++++++++
+ 5 files changed, 87 insertions(+), 15 deletions(-)
+ create mode 100644 security/integrity/platform_certs/platform_keyring.c
+
+diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+index da9565891738..4b4d2aeef539 100644
+--- a/security/integrity/Kconfig
++++ b/security/integrity/Kconfig
+@@ -51,6 +51,17 @@ config INTEGRITY_TRUSTED_KEYRING
+ 	   .evm keyrings be signed by a key on the system trusted
+ 	   keyring.
+ 
++config INTEGRITY_PLATFORM_KEYRING
++        bool "Provide keyring for platform/firmware trusted keys"
++        depends on INTEGRITY_ASYMMETRIC_KEYS
++        depends on SYSTEM_BLACKLIST_KEYRING
++        depends on EFI
++        help
++         Provide a separate, distinct keyring for platform trusted keys, which
++         the kernel automatically populates during initialization from values
++         provided by the platform for verifying the kexec'ed kerned image
++         and, possibly, the initramfs signature.
++
+ config INTEGRITY_AUDIT
+ 	bool "Enables integrity auditing support "
+ 	depends on AUDIT
+diff --git a/security/integrity/Makefile b/security/integrity/Makefile
+index 04d6e462b079..046ffc1bb42d 100644
+--- a/security/integrity/Makefile
++++ b/security/integrity/Makefile
+@@ -9,6 +9,7 @@ integrity-y := iint.o
+ integrity-$(CONFIG_INTEGRITY_AUDIT) += integrity_audit.o
+ integrity-$(CONFIG_INTEGRITY_SIGNATURE) += digsig.o
+ integrity-$(CONFIG_INTEGRITY_ASYMMETRIC_KEYS) += digsig_asymmetric.o
++integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o
+ 
+ subdir-$(CONFIG_IMA)			+= ima
+ obj-$(CONFIG_IMA)			+= ima/
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 5eacba858e4b..fef2a858300c 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -35,6 +35,7 @@ static const char * const keyring_name[INTEGRITY_KEYRING_MAX] = {
+ 	".ima",
+ #endif
+ 	"_module",
++	".platform",
+ };
+ 
+ #ifdef CONFIG_IMA_KEYRINGS_PERMIT_SIGNED_BY_BUILTIN_OR_SECONDARY
+@@ -73,12 +74,39 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 	return -EOPNOTSUPP;
+ }
+ 
+-int __init integrity_init_keyring(const unsigned int id)
++static int __integrity_init_keyring(const unsigned int id, key_perm_t perm,
++				    struct key_restriction *restriction)
+ {
+ 	const struct cred *cred = current_cred();
++	int err = 0;
++
++	keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
++				    KGIDT_INIT(0), cred, perm,
++				    KEY_ALLOC_NOT_IN_QUOTA,
++				    restriction, NULL);
++	if (IS_ERR(keyring[id])) {
++		err = PTR_ERR(keyring[id]);
++		pr_info("Can't allocate %s keyring (%d)\n",
++			keyring_name[id], err);
++		keyring[id] = NULL;
++	}
++
++	return err;
++}
++
++int __init integrity_init_keyring(const unsigned int id)
++{
+ 	struct key_restriction *restriction;
++	key_perm_t perm;
+ 	int err = 0;
+ 
++	if (id = INTEGRITY_KEYRING_PLATFORM) {
++		restriction = NULL;
++		perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW
++			| KEY_USR_READ | KEY_USR_SEARCH;
++		goto out;
++	}
++
+ 	if (!IS_ENABLED(CONFIG_INTEGRITY_TRUSTED_KEYRING))
+ 		return 0;
+ 
+@@ -87,20 +115,12 @@ int __init integrity_init_keyring(const unsigned int id)
+ 		return -ENOMEM;
+ 
+ 	restriction->check = restrict_link_to_ima;
++	perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW | KEY_USR_READ
++		| KEY_USR_WRITE | KEY_USR_SEARCH;
++
++out:
++	err = __integrity_init_keyring(id, perm, restriction);
+ 
+-	keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
+-				    KGIDT_INIT(0), cred,
+-				    ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+-				     KEY_USR_VIEW | KEY_USR_READ |
+-				     KEY_USR_WRITE | KEY_USR_SEARCH),
+-				    KEY_ALLOC_NOT_IN_QUOTA,
+-				    restriction, NULL);
+-	if (IS_ERR(keyring[id])) {
+-		err = PTR_ERR(keyring[id]);
+-		pr_info("Can't allocate %s keyring (%d)\n",
+-			keyring_name[id], err);
+-		keyring[id] = NULL;
+-	}
+ 	return err;
+ }
+ 
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index e60473b13a8d..c2332a44799e 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -142,7 +142,8 @@ int integrity_kernel_read(struct file *file, loff_t offset,
+ #define INTEGRITY_KEYRING_EVM		0
+ #define INTEGRITY_KEYRING_IMA		1
+ #define INTEGRITY_KEYRING_MODULE	2
+-#define INTEGRITY_KEYRING_MAX		3
++#define INTEGRITY_KEYRING_PLATFORM	3
++#define INTEGRITY_KEYRING_MAX		4
+ 
+ extern struct dentry *integrity_dir;
+ 
+diff --git a/security/integrity/platform_certs/platform_keyring.c b/security/integrity/platform_certs/platform_keyring.c
+new file mode 100644
+index 000000000000..dfc206bbe2ff
+--- /dev/null
++++ b/security/integrity/platform_certs/platform_keyring.c
+@@ -0,0 +1,39 @@
++// SPDX-License-Identifier: GPL-2.0
++/* Platform keyring for firmware/platform keys
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#include <linux/export.h>
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/cred.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include "../integrity.h"
++
++/*
++ * Create the trusted keyrings.
++ */
++static __init int platform_keyring_init(void)
++{
++	int rc;
++
++	rc = integrity_init_keyring(INTEGRITY_KEYRING_PLATFORM);
++	if (rc)
++		return rc;
++
++	pr_notice("Platform Keyring initialized\n");
++	return 0;
++}
++
++/*
++ * Must be initialised before we try and load the keys into the keyring.
++ */
++device_initcall(platform_keyring_init);
+-- 
+2.13.6
