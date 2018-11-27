@@ -1,51 +1,101 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 28 Nov 2018 15:46:28 +0000
-Subject: Re: [PATCH 5/7] efi: Import certificates from UEFI Secure Boot
-Message-Id: <1543419988.3902.216.camel@linux.ibm.com>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Tue, 27 Nov 2018 07:20:11 +0000
+Subject: Re: [PATCH 01/11] keys-encrypted: add nvdimm key format type to encrypted keys
+Message-Id: <CAPcyv4iKQW+zG1mS-vdbXuU1BE0bQ-zDJt1uQBo6EHkvMF5Y_Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181125151500.8298-1-nayna@linux.ibm.com>
-         <20181125151500.8298-6-nayna@linux.ibm.com>
-In-Reply-To: <20181125151500.8298-6-nayna@linux.ibm.com>
-To: Nayna Jain <nayna@linux.ibm.com>, Josh Boyer <jwboyer@fedoraproject.org>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
+References: <154180093865.70506.6858789591063128903.stgit@djiang5-desk3.ch.intel.com>
+ <154180163107.70506.6894134402057805078.stgit@djiang5-desk3.ch.intel.com>
+In-Reply-To: <154180163107.70506.6894134402057805078.stgit@djiang5-desk3.ch.intel.com>
+To: Dave Jiang <dave.jiang@intel.com>
+Cc: keyrings@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-nvdimm <linux-nvdimm@lists.01.org>
 
-On Sun, 2018-11-25 at 20:44 +0530, Nayna Jain wrote:
-> From: Josh Boyer <jwboyer@fedoraproject.org>
-> 
-> New Patch Description:
-> ===========
-> 
-> Secure Boot stores a list of allowed certificates in the 'db' variable.
-> This patch imports those certificates into the platform keyring. The shim
-> UEFI bootloader has a similar certificate list stored in the 'MokListRT'
-> variable. We import those as well.
-> 
-> Secure Boot also maintains a list of disallowed certificates in the 'dbx'
-> variable. We load those certificates into the system blacklist keyring
-> and forbid any kernel signed with those from loading.
-> 
-> Original Patch Description:
-> ==============
-> 
-> Secure Boot stores a list of allowed certificates in the 'db' variable.
-> This imports those certificates into the system trusted keyring.  This
-> allows for a third party signing certificate to be used in conjunction
-> with signed modules. By importing the public certificate into the 'db'
-> variable, a user can allow a module signed with that certificate to
-> load. The shim UEFI bootloader has a similar certificate list stored
-> in the 'MokListRT' variable. We import those as well.
-> 
-> Secure Boot also maintains a list of disallowed certificates in the 'dbx'
-> variable. We load those certificates into the newly introduced system
-> blacklist keyring and forbid any module signed with those from loading and
-> forbid the use within the kernel of any key with a matching hash.
-> 
-> This facility is enabled by setting CONFIG_LOAD_UEFI_KEYS.
+On Fri, Nov 9, 2018 at 2:13 PM Dave Jiang <dave.jiang@intel.com> wrote:
+>
+> Adding nvdimm key format type to encrypted keys in order to limit the size
 
-There are quite a few checkpatch.pl warnings that need to be
-addressed, including the missing SPDX license.
+s/Adding/Add an/
 
-Mimi
+> of the key to 32-bytes.
+>
+> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+> ---
+>  security/keys/encrypted-keys/encrypted.c |   29 ++++++++++++++++++++---------
+>  1 file changed, 20 insertions(+), 9 deletions(-)
+>
+> diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+> index d92cbf9687c3..182b4f136bdf 100644
+> --- a/security/keys/encrypted-keys/encrypted.c
+> +++ b/security/keys/encrypted-keys/encrypted.c
+> @@ -45,6 +45,7 @@ static const char hmac_alg[] = "hmac(sha256)";
+>  static const char blkcipher_alg[] = "cbc(aes)";
+>  static const char key_format_default[] = "default";
+>  static const char key_format_ecryptfs[] = "ecryptfs";
+> +static const char key_format_nvdimm[] = "nvdimm";
+>  static unsigned int ivsize;
+>  static int blksize;
+>
+> @@ -54,6 +55,7 @@ static int blksize;
+>  #define HASH_SIZE SHA256_DIGEST_SIZE
+>  #define MAX_DATA_SIZE 4096
+>  #define MIN_DATA_SIZE  20
+> +#define KEY_NVDIMM_PAYLOAD_LEN 32
+>
+>  static struct crypto_shash *hash_tfm;
+>
+> @@ -62,12 +64,13 @@ enum {
+>  };
+>
+>  enum {
+> -       Opt_error = -1, Opt_default, Opt_ecryptfs
+> +       Opt_error = -1, Opt_default, Opt_ecryptfs, Opt_nvdimm
+>  };
+>
+>  static const match_table_t key_format_tokens = {
+>         {Opt_default, "default"},
+>         {Opt_ecryptfs, "ecryptfs"},
+> +       {Opt_nvdimm, "nvdimm"},
+>         {Opt_error, NULL}
+>  };
+>
+> @@ -195,6 +198,7 @@ static int datablob_parse(char *datablob, const char **format,
+>         key_format = match_token(p, key_format_tokens, args);
+>         switch (key_format) {
+>         case Opt_ecryptfs:
+> +       case Opt_nvdimm:
+>         case Opt_default:
+>                 *format = p;
+>                 *master_desc = strsep(&datablob, " \t");
+> @@ -625,15 +629,22 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
+>         format_len = (!format) ? strlen(key_format_default) : strlen(format);
+>         decrypted_datalen = dlen;
+>         payload_datalen = decrypted_datalen;
+> -       if (format && !strcmp(format, key_format_ecryptfs)) {
+> -               if (dlen != ECRYPTFS_MAX_KEY_BYTES) {
+> -                       pr_err("encrypted_key: keylen for the ecryptfs format "
+> -                              "must be equal to %d bytes\n",
+> -                              ECRYPTFS_MAX_KEY_BYTES);
+> -                       return ERR_PTR(-EINVAL);
+> +       if (format) {
+> +               if (!strcmp(format, key_format_ecryptfs)) {
+> +                       if (dlen != ECRYPTFS_MAX_KEY_BYTES) {
+> +                               pr_err("encrypted_key: keylen for the ecryptfs format must be equal to %d bytes\n",
+> +                                       ECRYPTFS_MAX_KEY_BYTES);
+> +                               return ERR_PTR(-EINVAL);
+> +                       }
+> +                       decrypted_datalen = ECRYPTFS_MAX_KEY_BYTES;
+> +                       payload_datalen = sizeof(struct ecryptfs_auth_tok);
+> +               } else if (!strcmp(format, key_format_nvdimm)) {
+> +                       if (decrypted_datalen != KEY_NVDIMM_PAYLOAD_LEN) {
+> +                               pr_err("encrypted_key: nvdimm key payload incorrect length: %d\n",
+> +                                               decrypted_datalen);
+> +                               return ERR_PTR(-EINVAL);
+> +                       }
+
+I suspect this may not be the last key type that gets added, but I
+wonder if we should instead create key-types based on the dlen size.
+I.e. create a generic 32-byte key-type "enc32"? That way if another
+32-byte requirement key comes along we don't need to come touch this
+routine again.
