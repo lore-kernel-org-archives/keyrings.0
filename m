@@ -1,133 +1,95 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Tue, 04 Dec 2018 07:39:58 +0000
-Subject: [RFC v2 11/13] keys/mktme: Program memory encryption keys on a system wide basis
-Message-Id: <72dd5f38c1fdbc4c532f8caf2d2010f1ddfa8439.1543903910.git.alison.schofield@intel.com>
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 04 Dec 2018 09:21:45 +0000
+Subject: Re: [RFC v2 11/13] keys/mktme: Program memory encryption keys on a system wide basis
+Message-Id: <20181204092145.GR11614@hirez.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1543903910.git.alison.schofield@intel.com>
-In-Reply-To: <cover.1543903910.git.alison.schofield@intel.com>
-To: dhowells@redhat.com, tglx@linutronix.de
-Cc: jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, peterz@infradead.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
+ <72dd5f38c1fdbc4c532f8caf2d2010f1ddfa8439.1543903910.git.alison.schofield@intel.com>
+In-Reply-To: <72dd5f38c1fdbc4c532f8caf2d2010f1ddfa8439.1543903910.git.alison.schofield@intel.com>
+To: Alison Schofield <alison.schofield@intel.com>
+Cc: dhowells@redhat.com, tglx@linutronix.de, jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
 
-The kernel manages the MKTME (Multi-Key Total Memory Encryption) Keys
-as a system wide single pool of keys. The hardware, however, manages
-the keys on a per physical package basis. Each physical package
-maintains a Key Table that all CPU's in that package share.
+On Mon, Dec 03, 2018 at 11:39:58PM -0800, Alison Schofield wrote:
 
-In order to maintain the consistent, system wide view that the kernel
-requires, program all physical packages during a key program request.
+> +struct mktme_hw_program_info {
+> +	struct mktme_key_program *key_program;
+> +	unsigned long status;
+> +};
+> +
+> +/* Program a KeyID on a single package. */
+> +static void mktme_program_package(void *hw_program_info)
+> +{
+> +	struct mktme_hw_program_info *info = hw_program_info;
+> +	int ret;
+> +
+> +	ret = mktme_key_program(info->key_program);
+> +	if (ret != MKTME_PROG_SUCCESS)
+> +		WRITE_ONCE(info->status, ret);
 
-Change-Id: I0ff46f37fde47a0305842baeb8ea600b6c568639
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
----
- security/keys/mktme_keys.c | 61 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 60 insertions(+), 1 deletion(-)
+What's the purpose of that WRITE_ONCE()?
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index e615eb58e600..7f113146acf2 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -21,6 +21,7 @@
- #include "internal.h"
- 
- struct kmem_cache *mktme_prog_cache;	/* Hardware programming cache */
-+cpumask_var_t mktme_leadcpus;		/* one cpu per pkg to program keys */
- 
- static const char * const mktme_program_err[] = {
- 	"KeyID was successfully programmed",	/* 0 */
-@@ -59,6 +60,37 @@ static void mktme_destroy_key(struct key *key)
- 	key_put_encrypt_ref(mktme_map_keyid_from_key(key));
- }
- 
-+struct mktme_hw_program_info {
-+	struct mktme_key_program *key_program;
-+	unsigned long status;
-+};
-+
-+/* Program a KeyID on a single package. */
-+static void mktme_program_package(void *hw_program_info)
-+{
-+	struct mktme_hw_program_info *info = hw_program_info;
-+	int ret;
-+
-+	ret = mktme_key_program(info->key_program);
-+	if (ret != MKTME_PROG_SUCCESS)
-+		WRITE_ONCE(info->status, ret);
-+}
-+
-+/* Program a KeyID across the entire system. */
-+static int mktme_program_system(struct mktme_key_program *key_program,
-+				cpumask_var_t mktme_cpumask)
-+{
-+	struct mktme_hw_program_info info = {
-+		.key_program = key_program,
-+		.status = MKTME_PROG_SUCCESS,
-+	};
-+	get_online_cpus();
-+	on_each_cpu_mask(mktme_cpumask, mktme_program_package, &info, 1);
-+	put_online_cpus();
-+
-+	return info.status;
-+}
-+
- /* Copy the payload to the HW programming structure and program this KeyID */
- static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
- {
-@@ -84,7 +116,7 @@ static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
- 			kprog->key_field_2[i] ^= kern_entropy[i];
- 		}
- 	}
--	ret = mktme_key_program(kprog);
-+	ret = mktme_program_system(kprog, mktme_leadcpus);
- 	kmem_cache_free(mktme_prog_cache, kprog);
- 	return ret;
- }
-@@ -299,6 +331,28 @@ struct key_type key_type_mktme = {
- 	.destroy	= mktme_destroy_key,
- };
- 
-+static int mktme_build_leadcpus_mask(void)
-+{
-+	int online_cpu, mktme_cpu;
-+	int online_pkgid, mktme_pkgid = -1;
-+
-+	if (!zalloc_cpumask_var(&mktme_leadcpus, GFP_KERNEL))
-+		return -ENOMEM;
-+
-+	for_each_online_cpu(online_cpu) {
-+		online_pkgid = topology_physical_package_id(online_cpu);
-+
-+		for_each_cpu(mktme_cpu, mktme_leadcpus) {
-+			mktme_pkgid = topology_physical_package_id(mktme_cpu);
-+			if (mktme_pkgid = online_pkgid)
-+				break;
-+		}
-+		if (mktme_pkgid != online_pkgid)
-+			cpumask_set_cpu(online_cpu, mktme_leadcpus);
-+	}
-+	return 0;
-+}
-+
- /*
-  * Allocate the global mktme_map structure based on the available keyids.
-  * Create a cache for the hardware structure. Initialize the encrypt_count
-@@ -323,10 +377,15 @@ static int __init init_mktme(void)
- 	if (mktme_alloc_encrypt_array() < 0)
- 		goto free_cache;
- 
-+	if (mktme_build_leadcpus_mask() < 0)
-+		goto free_array;
-+
- 	ret = register_key_type(&key_type_mktme);
- 	if (!ret)
- 		return ret;			/* SUCCESS */
- 
-+	free_cpumask_var(mktme_leadcpus);
-+free_array:
- 	mktme_free_encrypt_array();
- free_cache:
- 	kmem_cache_destroy(mktme_prog_cache);
--- 
-2.14.1
+> +}
+> +
+> +/* Program a KeyID across the entire system. */
+> +static int mktme_program_system(struct mktme_key_program *key_program,
+> +				cpumask_var_t mktme_cpumask)
+> +{
+> +	struct mktme_hw_program_info info = {
+> +		.key_program = key_program,
+> +		.status = MKTME_PROG_SUCCESS,
+> +	};
+> +	get_online_cpus();
+> +	on_each_cpu_mask(mktme_cpumask, mktme_program_package, &info, 1);
+> +	put_online_cpus();
+> +
+> +	return info.status;
+> +}
+> +
+>  /* Copy the payload to the HW programming structure and program this KeyID */
+>  static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
+>  {
+> @@ -84,7 +116,7 @@ static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
+>  			kprog->key_field_2[i] ^= kern_entropy[i];
+>  		}
+>  	}
+> -	ret = mktme_key_program(kprog);
+> +	ret = mktme_program_system(kprog, mktme_leadcpus);
+>  	kmem_cache_free(mktme_prog_cache, kprog);
+>  	return ret;
+>  }
+> @@ -299,6 +331,28 @@ struct key_type key_type_mktme = {
+>  	.destroy	= mktme_destroy_key,
+>  };
+>  
+> +static int mktme_build_leadcpus_mask(void)
+> +{
+> +	int online_cpu, mktme_cpu;
+> +	int online_pkgid, mktme_pkgid = -1;
+> +
+> +	if (!zalloc_cpumask_var(&mktme_leadcpus, GFP_KERNEL))
+> +		return -ENOMEM;
+> +
+> +	for_each_online_cpu(online_cpu) {
+> +		online_pkgid = topology_physical_package_id(online_cpu);
+> +
+> +		for_each_cpu(mktme_cpu, mktme_leadcpus) {
+> +			mktme_pkgid = topology_physical_package_id(mktme_cpu);
+> +			if (mktme_pkgid = online_pkgid)
+> +				break;
+> +		}
+> +		if (mktme_pkgid != online_pkgid)
+> +			cpumask_set_cpu(online_cpu, mktme_leadcpus);
+
+Do you really need LOCK prefixed bit set here?
+
+> +	}
+> +	return 0;
+> +}
+
+How is that serialized and kept relevant in the face of hotplug?
+
+Also, do you really need O(n^2) to find the first occurence of a value
+in an array?
