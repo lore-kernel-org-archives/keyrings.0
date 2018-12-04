@@ -1,78 +1,73 @@
-From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Date: Thu, 06 Dec 2018 08:37:15 +0000
-Subject: Re: [RFC v2 05/13] x86/mm: Set KeyIDs in encrypted VMAs
-Message-Id: <fedb2e7fa0ffb9ee80ca2e8228f2d674781babbd.camel@intel.com>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Tue, 04 Dec 2018 07:39:49 +0000
+Subject: [RFC v2 02/13] mm: Generalize the mprotect implementation to support extensions
+Message-Id: <3389bc8e46479ba102f88c157aebd49b905ac289.1543903910.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1543903910.git.alison.schofield@intel.com>
-	 <f0ff967e2015a9dffceef22ac52ecd736a1ddb7e.1543903910.git.alison.schofield@intel.com>
-In-Reply-To: <f0ff967e2015a9dffceef22ac52ecd736a1ddb7e.1543903910.git.alison.schofield@intel.com>
-To: "tglx@linutronix.de" <tglx@linutronix.de>, "Schofield, Alison" <alison.schofield@intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>
-Cc: "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>, "peterz@infradead.org" <peterz@infradead.org>, "jmorris@namei.org" <jmorris@namei.org>, "Huang, Kai" <kai.huang@intel.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "Williams, Dan J" <dan.j.williams@intel.com>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "luto@kernel.org" <luto@kernel.org>, "bp@alien8.de" <bp@alien8.de>, Hansen, Jun
+In-Reply-To: <cover.1543903910.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, peterz@infradead.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
 
-T24gTW9uLCAyMDE4LTEyLTAzIGF0IDIzOjM5IC0wODAwLCBBbGlzb24gU2Nob2ZpZWxkIHdyb3Rl
-Og0KPiBNS1RNRSBhcmNoaXRlY3R1cmUgcmVxdWlyZXMgdGhlIEtleUlEIHRvIGJlIHBsYWNlZCBp
-biBQVEUgYml0cyA1MTo0Ni4NCj4gVG8gY3JlYXRlIGFuIGVuY3J5cHRlZCBWTUEsIHBsYWNlIHRo
-ZSBLZXlJRCBpbiB0aGUgdXBwZXIgYml0cyBvZg0KPiB2bV9wYWdlX3Byb3QgdGhhdCBtYXRjaGVz
-IHRoZSBwb3NpdGlvbiBvZiB0aG9zZSBQVEUgYml0cy4NCj4gDQo+IFdoZW4gdGhlIFZNQSBpcyBh
-c3NpZ25lZCBhIEtleUlEIGl0IGlzIGFsd2F5cyBjb25zaWRlcmVkIGEgS2V5SUQNCj4gY2hhbmdl
-LiBUaGUgVk1BIGlzIGVpdGhlciBnb2luZyBmcm9tIG5vdCBlbmNyeXB0ZWQgdG8gZW5jcnlwdGVk
-LA0KPiBvciBmcm9tIGVuY3J5cHRlZCB3aXRoIGFueSBLZXlJRCB0byBlbmNyeXB0ZWQgd2l0aCBh
-bnkgb3RoZXIgS2V5SUQuDQo+IFRvIG1ha2UgdGhlIGNoYW5nZSBzYWZlbHksIHJlbW92ZSB0aGUg
-dXNlciBwYWdlcyBoZWxkIGJ5IHRoZSBWTUENCj4gYW5kIHVubGluayB0aGUgVk1BJ3MgYW5vbnlt
-b3VzIGNoYWluLg0KPiANCj4gQ2hhbmdlLUlkOiBJNjc2MDU2NTI1YzQ5Yzg4MDM4OTgzMTVhMTBi
-MTk2ZWY1YTVjNTQxNQ0KDQpSZW1vdmUuDQoNCj4gU2lnbmVkLW9mZi1ieTogQWxpc29uIFNjaG9m
-aWVsZCA8YWxpc29uLnNjaG9maWVsZEBpbnRlbC5jb20+DQo+IFNpZ25lZC1vZmYtYnk6IEtpcmls
-bCBBLiBTaHV0ZW1vdiA8a2lyaWxsLnNodXRlbW92QGxpbnV4LmludGVsLmNvbT4NCj4gLS0tDQo+
-ICBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9ta3RtZS5oIHwgIDQgKysrKw0KPiAgYXJjaC94ODYvbW0v
-bWt0bWUuYyAgICAgICAgICB8IDI2ICsrKysrKysrKysrKysrKysrKysrKysrKysrDQo+ICBpbmNs
-dWRlL2xpbnV4L21tLmggICAgICAgICAgIHwgIDYgKysrKysrDQo+ICAzIGZpbGVzIGNoYW5nZWQs
-IDM2IGluc2VydGlvbnMoKykNCj4gDQo+IGRpZmYgLS1naXQgYS9hcmNoL3g4Ni9pbmNsdWRlL2Fz
-bS9ta3RtZS5oIGIvYXJjaC94ODYvaW5jbHVkZS9hc20vbWt0bWUuaA0KPiBpbmRleCBkYmI0OTkw
-OWQ2NjUuLmRlM2U1MjlmM2FiMCAxMDA2NDQNCj4gLS0tIGEvYXJjaC94ODYvaW5jbHVkZS9hc20v
-bWt0bWUuaA0KPiArKysgYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9ta3RtZS5oDQo+IEBAIC0yNCw2
-ICsyNCwxMCBAQCBleHRlcm4gaW50IG1rdG1lX21hcF9rZXlpZF9mcm9tX2tleSh2b2lkICprZXkp
-Ow0KPiAgZXh0ZXJuIHZvaWQgKm1rdG1lX21hcF9rZXlfZnJvbV9rZXlpZChpbnQga2V5aWQpOw0K
-PiAgZXh0ZXJuIGludCBta3RtZV9tYXBfZ2V0X2ZyZWVfa2V5aWQodm9pZCk7DQo+ICANCj4gKy8q
-IFNldCB0aGUgZW5jcnlwdGlvbiBrZXlpZCBiaXRzIGluIGEgVk1BICovDQo+ICtleHRlcm4gdm9p
-ZCBtcHJvdGVjdF9zZXRfZW5jcnlwdChzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgaW50IG5l
-d2tleWlkLA0KPiArCQkJCXVuc2lnbmVkIGxvbmcgc3RhcnQsIHVuc2lnbmVkIGxvbmcgZW5kKTsN
-Cj4gKw0KPiAgREVDTEFSRV9TVEFUSUNfS0VZX0ZBTFNFKG1rdG1lX2VuYWJsZWRfa2V5KTsNCj4g
-IHN0YXRpYyBpbmxpbmUgYm9vbCBta3RtZV9lbmFibGVkKHZvaWQpDQo+ICB7DQo+IGRpZmYgLS1n
-aXQgYS9hcmNoL3g4Ni9tbS9ta3RtZS5jIGIvYXJjaC94ODYvbW0vbWt0bWUuYw0KPiBpbmRleCAz
-NDIyNGQ0ZTNmNDUuLmUzZmRmN2I0ODE3MyAxMDA2NDQNCj4gLS0tIGEvYXJjaC94ODYvbW0vbWt0
-bWUuYw0KPiArKysgYi9hcmNoL3g4Ni9tbS9ta3RtZS5jDQo+IEBAIC0xLDUgKzEsNiBAQA0KPiAg
-I2luY2x1ZGUgPGxpbnV4L21tLmg+DQo+ICAjaW5jbHVkZSA8bGludXgvaGlnaG1lbS5oPg0KPiAr
-I2luY2x1ZGUgPGxpbnV4L3JtYXAuaD4NCj4gICNpbmNsdWRlIDxhc20vbWt0bWUuaD4NCj4gICNp
-bmNsdWRlIDxhc20vc2V0X21lbW9yeS5oPg0KPiAgDQo+IEBAIC0xMzEsNiArMTMyLDMxIEBAIGlu
-dCBta3RtZV9tYXBfZ2V0X2ZyZWVfa2V5aWQodm9pZCkNCj4gIAlyZXR1cm4gMDsNCj4gIH0NCj4g
-IA0KPiArLyogU2V0IHRoZSBlbmNyeXB0aW9uIGtleWlkIGJpdHMgaW4gYSBWTUEgKi8NCg0KTWF5
-YmUgcHJvcGVyIGtkb2M/DQoNCj4gK3ZvaWQgbXByb3RlY3Rfc2V0X2VuY3J5cHQoc3RydWN0IHZt
-X2FyZWFfc3RydWN0ICp2bWEsIGludCBuZXdrZXlpZCwNCj4gKwkJCSAgdW5zaWduZWQgbG9uZyBz
-dGFydCwgdW5zaWduZWQgbG9uZyBlbmQpDQo+ICt7DQo+ICsJaW50IG9sZGtleWlkID0gdm1hX2tl
-eWlkKHZtYSk7DQo+ICsJcGdwcm90dmFsX3QgbmV3cHJvdDsNCj4gKw0KPiArCS8qIFVubWFwIHBh
-Z2VzIHdpdGggb2xkIEtleUlEIGlmIHRoZXJlJ3MgYW55LiAqLw0KPiArCXphcF9wYWdlX3Jhbmdl
-KHZtYSwgc3RhcnQsIGVuZCAtIHN0YXJ0KTsNCj4gKw0KPiArCWlmIChvbGRrZXlpZCA9PSBuZXdr
-ZXlpZCkNCj4gKwkJcmV0dXJuOw0KPiArDQo+ICsJbmV3cHJvdCA9IHBncHJvdF92YWwodm1hLT52
-bV9wYWdlX3Byb3QpOw0KPiArCW5ld3Byb3QgJj0gfm1rdG1lX2tleWlkX21hc2s7DQo+ICsJbmV3
-cHJvdCB8PSAodW5zaWduZWQgbG9uZyluZXdrZXlpZCA8PCBta3RtZV9rZXlpZF9zaGlmdDsNCj4g
-Kwl2bWEtPnZtX3BhZ2VfcHJvdCA9IF9fcGdwcm90KG5ld3Byb3QpOw0KPiArDQo+ICsJLyoNCg0K
-Tm8gZW1wdHkgY29tbWVudCBsaW5lLg0KDQo+ICsJICogVGhlIFZNQSBkb2Vzbid0IGhhdmUgYW55
-IGluaGVyaXRlZCBwYWdlcy4NCj4gKwkgKiBTdGFydCBhbm9uIFZNQSB0cmVlIGZyb20gc2NyYXRj
-aC4NCj4gKwkgKi8NCj4gK30NCj4gKw0KPiAgLyogUHJlcGFyZSBwYWdlIHRvIGJlIHVzZWQgZm9y
-IGVuY3J5cHRpb24uIENhbGxlZCBmcm9tIHBhZ2UgYWxsb2NhdG9yLiAqLw0KPiAgdm9pZCBfX3By
-ZXBfZW5jcnlwdGVkX3BhZ2Uoc3RydWN0IHBhZ2UgKnBhZ2UsIGludCBvcmRlciwgaW50IGtleWlk
-LCBib29sDQo+IHplcm8pDQo+ICB7DQo+IGRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L21tLmgg
-Yi9pbmNsdWRlL2xpbnV4L21tLmgNCj4gaW5kZXggMTMwOTc2MWJiNmQwLi5lMmQ4N2U5MmNhNzQg
-MTAwNjQ0DQo+IC0tLSBhL2luY2x1ZGUvbGludXgvbW0uaA0KPiArKysgYi9pbmNsdWRlL2xpbnV4
-L21tLmgNCj4gQEAgLTI4MDYsNSArMjgwNiwxMSBAQCB2b2lkIF9faW5pdCBzZXR1cF9ucl9ub2Rl
-X2lkcyh2b2lkKTsNCj4gIHN0YXRpYyBpbmxpbmUgdm9pZCBzZXR1cF9ucl9ub2RlX2lkcyh2b2lk
-KSB7fQ0KPiAgI2VuZGlmDQo+ICANCj4gKyNpZm5kZWYgQ09ORklHX1g4Nl9JTlRFTF9NS1RNRQ0K
-PiArc3RhdGljIGlubGluZSB2b2lkIG1wcm90ZWN0X3NldF9lbmNyeXB0KHN0cnVjdCB2bV9hcmVh
-X3N0cnVjdCAqdm1hLA0KPiArCQkJCQlpbnQgbmV3a2V5aWQsDQo+ICsJCQkJCXVuc2lnbmVkIGxv
-bmcgc3RhcnQsDQo+ICsJCQkJCXVuc2lnbmVkIGxvbmcgZW5kKSB7fQ0KDQpBZGQgYSBuZXcgbGlu
-ZSBhbmQNCg0Kew0KfQ0KDQoNCj4gKyNlbmRpZiAvKiBDT05GSUdfWDg2X0lOVEVMX01LVE1FICov
-DQo+ICAjZW5kaWYgLyogX19LRVJORUxfXyAqLw0KPiAgI2VuZGlmIC8qIF9MSU5VWF9NTV9IICov
-DQoNCi9KYXJra28NCg=
+Today mprotect is implemented to support legacy mprotect behavior
+plus an extension for memory protection keys. Make it more generic
+so that it can support additional extensions in the future.
+
+This is done is preparation for adding a new system call for memory
+encyption keys. The intent is that the new encrypted mprotect will be
+another extension to legacy mprotect.
+
+Change-Id: Ib09b9d1b605b12d0254d7fb4968dfcc8e3c79dd7
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/mprotect.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index df408956dccc..b57075e278fb 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -35,6 +35,8 @@
+ 
+ #include "internal.h"
+ 
++#define NO_KEY	-1
++
+ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+ 		int dirty_accountable, int prot_numa)
+@@ -451,9 +453,9 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
+ }
+ 
+ /*
+- * pkey=-1 when doing a legacy mprotect()
++ * When pkey=NO_KEY we get legacy mprotect behavior here.
+  */
+-static int do_mprotect_pkey(unsigned long start, size_t len,
++static int do_mprotect_ext(unsigned long start, size_t len,
+ 		unsigned long prot, int pkey)
+ {
+ 	unsigned long nstart, end, tmp, reqprot;
+@@ -577,7 +579,7 @@ static int do_mprotect_pkey(unsigned long start, size_t len,
+ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
+ 		unsigned long, prot)
+ {
+-	return do_mprotect_pkey(start, len, prot, -1);
++	return do_mprotect_ext(start, len, prot, NO_KEY);
+ }
+ 
+ #ifdef CONFIG_ARCH_HAS_PKEYS
+@@ -585,7 +587,7 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
+ SYSCALL_DEFINE4(pkey_mprotect, unsigned long, start, size_t, len,
+ 		unsigned long, prot, int, pkey)
+ {
+-	return do_mprotect_pkey(start, len, prot, pkey);
++	return do_mprotect_ext(start, len, prot, pkey);
+ }
+ 
+ SYSCALL_DEFINE2(pkey_alloc, unsigned long, flags, unsigned long, init_val)
+-- 
+2.14.1
