@@ -1,43 +1,71 @@
-From: "FUND ALLIANCE INTERNATIONAL" <info@cent.org>
-Date: Sun, 30 Dec 2018 21:27:08 +0000
-Subject: ALLIANCE LOAN OFFER/PROJECT FUNDING
-Message-Id: <e106a71f61c6aae67086a6159da643ab.squirrel@email.fatcow.com>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Tue, 04 Dec 2018 07:39:55 +0000
+Subject: [RFC v2 08/13] mm: Use reference counting for encrypted VMAs
+Message-Id: <985ba614d49986fdfc0397434fd1dd9eb5646c6f.1543903910.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <cover.1543903910.git.alison.schofield@intel.com>
+In-Reply-To: <cover.1543903910.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, peterz@infradead.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
 
+The MKTME (Multi-Key Total Memory Encryption) Key Service needs
+a reference count on encrypted VMAs. This reference count is used
+to determine when a hardware encryption keyid is in use, which in
+turn, tells the key service what operations can be safely performed
+with this keyid.
 
+The approach is:
+1) Increment/decrement the reference count during encrypt_mprotect()
+system call for initial or updated encryption on a VMA.
 
+2) Piggy back on the new vm_area_dup/free() helpers. If the VMAs being
+duplicated, or freed are encrypted, adjust the reference count.
 
-Good Day,
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ arch/x86/mm/mktme.c | 2 ++
+ kernel/fork.c       | 2 ++
+ 2 files changed, 4 insertions(+)
 
-I'm Olivia Austin a consultant from Fund Alliance International, We are
-currently offering 95% Non-Recourse Loan with our BG Leased Monetization
-Program for trade finance, constructions, credit enhancement, government
-funding, property investment and all-round range of funding, with 2%
-interest rate per annul for a period of 10-years + 1 year grace period
-with no pre-payment penalties. .
-
-    TERMS:
-
-    2 % INTEREST RATE YEARLY
-    10 YEARS DURATION
-    1M-50B USD / EUR REQUIREMENT:
-
-    1.      CLIENT MUST OWN OR REPRESENT A COMPANY.
-
-    2.      CLIENT MUST BE ABLE TO PROVIDE BUSINESS PLAN OR EXECUTIVE
-SUMMARY OR SUMMARY PURPOSE OF THE LOAN.
-
-Let us know if you are interested in our services and meet up with the
-requirements? so as to provide you with more information.
-
-Regards,
-Olivia Austin
-Fund Alliance
-Lutzowplatz 17 10785, Berlin
-Germany
-Phone: +49 (322) 2109 7890
-Email:olistin001@gmail.com
+diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
+index facf08f9cb74..55d34beb9b81 100644
+--- a/arch/x86/mm/mktme.c
++++ b/arch/x86/mm/mktme.c
+@@ -145,10 +145,12 @@ void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
+ 	if (oldkeyid = newkeyid)
+ 		return;
+ 
++	vma_put_encrypt_ref(vma);
+ 	newprot = pgprot_val(vma->vm_page_prot);
+ 	newprot &= ~mktme_keyid_mask;
+ 	newprot |= (unsigned long)newkeyid << mktme_keyid_shift;
+ 	vma->vm_page_prot = __pgprot(newprot);
++	vma_get_encrypt_ref(vma);
+ 
+ 	/*
+ 	 * The VMA doesn't have any inherited pages.
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 07cddff89c7b..d12d27b50966 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -341,12 +341,14 @@ struct vm_area_struct *vm_area_dup(struct vm_area_struct *orig)
+ 	if (new) {
+ 		*new = *orig;
+ 		INIT_LIST_HEAD(&new->anon_vma_chain);
++		vma_get_encrypt_ref(new);
+ 	}
+ 	return new;
+ }
+ 
+ void vm_area_free(struct vm_area_struct *vma)
+ {
++	vma_put_encrypt_ref(vma);
+ 	kmem_cache_free(vm_area_cachep, vma);
+ }
+ 
+-- 
+2.14.1
