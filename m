@@ -1,119 +1,70 @@
-From: Nayna Jain <nayna@linux.ibm.com>
-Date: Wed, 12 Dec 2018 17:43:15 +0000
-Subject: Re: [PATCH v2 5/7] efi: Import certificates from UEFI Secure Boot
-Message-Id: <d36bfd7c-7564-778b-1e75-5b835d40b6f1@linux.ibm.com>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Tue, 04 Dec 2018 07:39:56 +0000
+Subject: [RFC v2 09/13] mm: Restrict memory encryption to anonymous VMA's
+Message-Id: <0b294e74f06a0d6bee51efcd7b0eb1f20b00babe.1543903910.git.alison.schofield@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-1-nayna@linux.ibm.com>
- <20181208202705.18673-6-nayna@linux.ibm.com>
- <alpine.LRH.2.21.1812120547110.11653@namei.org>
-In-Reply-To: <alpine.LRH.2.21.1812120547110.11653@namei.org>
-To: James Morris <jmorris@namei.org>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Josh Boyer <jwboyer@fedoraproject.org>
+References: <cover.1543903910.git.alison.schofield@intel.com>
+In-Reply-To: <cover.1543903910.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, peterz@infradead.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
 
+Memory encryption is only supported for mappings that are ANONYMOUS.
+Test the entire range of VMA's in an encrypt_mprotect() request to
+make sure they all meet that requirement before encrypting any.
 
+The encrypt_mprotect syscall will return -EINVAL and will not encrypt
+any VMA's if this check fails.
 
-On 12/12/2018 12:17 AM, James Morris wrote:
-> On Sun, 9 Dec 2018, Nayna Jain wrote:
->
->> +/*
->> + * Blacklist an X509 TBS hash.
->> + */
->> +static __init void uefi_blacklist_x509_tbs(const char *source,
->> +					   const void *data, size_t len)
->> +{
->> +	char *hash, *p;
->> +
->> +	hash = kmalloc(4 + len * 2 + 1, GFP_KERNEL);
->> +	if (!hash)
->> +		return;
->> +	p = memcpy(hash, "tbs:", 4);
->> +	p += 4;
->> +	bin2hex(p, data, len);
->> +	p += len * 2;
->> +	*p = 0;
->> +
->> +	mark_hash_blacklisted(hash);
->> +	kfree(hash);
->> +}
->> +
->> +/*
->> + * Blacklist the hash of an executable.
->> + */
->> +static __init void uefi_blacklist_binary(const char *source,
->> +					 const void *data, size_t len)
->> +{
->> +	char *hash, *p;
->> +
->> +	hash = kmalloc(4 + len * 2 + 1, GFP_KERNEL);
->> +	if (!hash)
->> +		return;
->> +	p = memcpy(hash, "bin:", 4);
->> +	p += 4;
->> +	bin2hex(p, data, len);
->> +	p += len * 2;
->> +	*p = 0;
->> +
->> +	mark_hash_blacklisted(hash);
->> +	kfree(hash);
->> +}
->>
-> These could be refactored into one function.
->
->
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/mprotect.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-Thanks James for reviewing.
-
-Yes, the code should be refactored.  However, I think making it a single 
-function would require adding a new field to the function callback 
-definitions as well. Probably, a simpler approach would be to define a 
-common function uefi_blacklist_hash(...)  which can then be used by the 
-two functions uefi_blacklist_x509_tbs(...) and 
-uefi_blacklist_binary(...). These two functions now act as wrapper 
-functions. Below is the example code:
-
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index ad8127dc9aac..f1c009409134 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -345,6 +345,24 @@ static int prot_none_walk(struct vm_area_struct *vma, unsigned long start,
+ 	return walk_page_range(start, end, &prot_none_walk);
+ }
+ 
 +/*
-+ * Blacklist a hash.
++ * Encrypted mprotect is only supported on anonymous mappings.
++ * All VMA's in the requested range must be anonymous. If this
++ * test fails on any single VMA, the entire mprotect request fails.
 + */
-+static __init void uefi_blacklist_hash(const char *source, const void 
-*data,
-+                                 size_t len, char *type, size_t type_len)
++bool mem_supports_encryption(struct vm_area_struct *vma, unsigned long end)
 +{
-+       char *hash, *p;
++	struct vm_area_struct *test_vma = vma;
 +
-+       hash = kmalloc(type_len + len * 2 + 1, GFP_KERNEL);
-+       if (!hash)
-+               return;
-+       p = memcpy(hash, type, type_len);
-+       p += type_len;
-+       bin2hex(p, data, len);
-+       p += len * 2;
-+       *p = 0;
++	do {
++		if (!vma_is_anonymous(test_vma))
++			return false;
 +
-+       mark_hash_blacklisted(hash);
-+       kfree(hash);
++		test_vma = test_vma->vm_next;
++	} while (test_vma && test_vma->vm_start < end);
++	return true;
 +}
 +
-+/*
-+ * Blacklist an X509 TBS hash.
-+ */
-+static __init void uefi_blacklist_x509_tbs(const char *source,
-+                                          const void *data, size_t len)
-+{
-+       uefi_blacklist_hash(source, data, len, "tbs:" , 4);
-+}
+ int
+ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
+ 	       unsigned long start, unsigned long end, unsigned long newflags,
+@@ -531,6 +549,12 @@ static int do_mprotect_ext(unsigned long start, size_t len,
+ 				goto out;
+ 		}
+ 	}
 +
-+/*
-+ * Blacklist the hash of an executable.
-+ */
-+static __init void uefi_blacklist_binary(const char *source,
-+                                        const void *data, size_t len)
-+{
-+       uefi_blacklist_hash(source, data, len, "bin:" , 4);
-+}
-
-
-Thanks & Regards,
-    - Nayna
++	if (keyid > 0 && !mem_supports_encryption(vma, end)) {
++		error = -EINVAL;
++		goto out;
++	}
++
+ 	if (start > vma->vm_start)
+ 		prev = vma;
+ 
+-- 
+2.14.1
