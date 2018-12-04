@@ -1,190 +1,264 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 13 Dec 2018 02:09:03 +0000
-Subject: [PATCH v9 10/14] ima: Add modsig appraise_type option for module-style appended signatures
-Message-Id: <20181213020907.13601-11-bauerman@linux.ibm.com>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Tue, 04 Dec 2018 07:40:00 +0000
+Subject: [RFC v2 13/13] keys/mktme: Support CPU Hotplug for MKTME keys
+Message-Id: <c14d24b09ee2ae37ea4106726ce8fe2aea31f6c7.1543903910.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181213020907.13601-1-bauerman@linux.ibm.com>
-In-Reply-To: <20181213020907.13601-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <cover.1543903910.git.alison.schofield@intel.com>
+In-Reply-To: <cover.1543903910.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, peterz@infradead.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
 
-Introduce the modsig keyword to the IMA policy syntax to specify that
-a given hook should expect the file to have the IMA signature appended
-to it. Here is how it can be used in a rule:
+The MKTME (Multi-Key Memory Encryption Keys) hardware resides on each
+physical package. The kernel maintains one Key Table on each physical
+package and these Key Tables must all remain in sync.
+(From here on, package means physical package.)
 
-appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
+Although every CPU on that package has the ability to program the Key
+Table, the kernel uses one 'lead' cpu per package to program the Key
+Tables. Typically, keys are programmed one at a time, across all
+packages, as the 'add key' requests come in from userspace.
 
-With this rule, IMA will accept either a signature stored in the extended
-attribute or an appended signature.
+Some CPU hotplug scenarios are handled quite simply:
+>  Teardown a non lead CPU --> do nothing
+>  Teardown a lead CPU --> pick a new lead CPU
+>  Teardown a lead/last CPU of a package --> forget this package
+>  Startup a CPU in a known package --> do nothing
+>  Startup a CPU in a new package and no keys are programmed --> do nothing
 
-For now, the rule above will behave exactly the same as if
-appraise_type=imasig was specified. The actual modsig implementation
-will be introduced separately.
+Then there is the more interesting case for MKTME: a CPU is starting up
+for a new package and keys are programmed on the existing packages. The Key
+Table on the new package will need to be programmed to match the Key
+Tables on all existing packages.
 
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+The issue is whether or not the Key Service has the information it needs
+to program the new Key Table. To address this, a new kernel commandline
+parameter 'mktme_savekeys' was introduced in a previous patch. It allows
+the kernel to save the data needed to program keys, beyond their first
+add key request.
+
+When 'mktme_savekeys' is not present, new packages may still be added
+if all currently programmed keys are not USER type. This means that
+CPU generated keys are an option for users not wanting to save key
+data, but who also want to support the addition of new packages.
+
+Change-Id: I219192fc59dd9f433963c4959f33d7f013c9f73a
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- Documentation/ABI/testing/ima_policy |  6 +++++-
- security/integrity/ima/Kconfig       | 10 +++++++++
- security/integrity/ima/Makefile      |  1 +
- security/integrity/ima/ima.h         |  9 ++++++++
- security/integrity/ima/ima_modsig.c  | 31 ++++++++++++++++++++++++++++
- security/integrity/ima/ima_policy.c  | 12 +++++++++--
- security/integrity/integrity.h       |  1 +
- 7 files changed, 67 insertions(+), 3 deletions(-)
+ security/keys/mktme_keys.c | 135 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 126 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 74c6702de74e..9d1dfd0a8891 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -37,7 +37,7 @@ Description:
- 			euid:= decimal value
- 			fowner:= decimal value
- 		lsm:  	are LSM specific
--		option:	appraise_type:= [imasig]
-+		option:	appraise_type:= [imasig] [imasig|modsig]
- 			pcr:= decimal value
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index e9c7d306cba1..fb4d4061d2f3 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -86,21 +86,29 @@ static void mktme_program_package(void *hw_program_info)
  
- 		default policy:
-@@ -103,3 +103,7 @@ Description:
- 
- 			measure func=KEXEC_KERNEL_CHECK pcr=4
- 			measure func=KEXEC_INITRAMFS_CHECK pcr=5
+ /* Program a KeyID across the entire system. */
+ static int mktme_program_system(struct mktme_key_program *key_program,
+-				cpumask_var_t mktme_cpumask)
++				cpumask_var_t mktme_cpumask, int hotplug)
+ {
+ 	struct mktme_hw_program_info info = {
+ 		.key_program = key_program,
+ 		.status = MKTME_PROG_SUCCESS,
+ 	};
+-	get_online_cpus();
+-	on_each_cpu_mask(mktme_cpumask, mktme_program_package, &info, 1);
+-	put_online_cpus();
 +
-+		Example of appraise rule allowing modsig appended signatures:
-+
-+			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index a18f8c6d13b5..bba19f9ea184 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -231,6 +231,16 @@ config IMA_APPRAISE_BOOTPARAM
- 	  This option enables the different "ima_appraise=" modes
- 	  (eg. fix, log) from the boot command line.
- 
-+config IMA_APPRAISE_MODSIG
-+	bool "Support module-style signatures for appraisal"
-+	depends on IMA_APPRAISE
-+	default n
-+	help
-+	   Adds support for signatures appended to files. The format of the
-+	   appended signature is the same used for signed kernel modules.
-+	   The modsig keyword can be used in the IMA policy to allow a hook
-+	   to accept such signatures.
-+
- config IMA_TRUSTED_KEYRING
- 	bool "Require all keys on the .ima keyring be signed (deprecated)"
- 	depends on IMA_APPRAISE && SYSTEM_TRUSTED_KEYRING
-diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
-index d921dc4f9eb0..31d57cdf2421 100644
---- a/security/integrity/ima/Makefile
-+++ b/security/integrity/ima/Makefile
-@@ -9,5 +9,6 @@ obj-$(CONFIG_IMA) += ima.o
- ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
- 	 ima_policy.o ima_template.o ima_template_lib.o
- ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
-+ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
- ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
- obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index f0bc2a182cbf..69c06e2d7bd6 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -299,6 +299,15 @@ static inline int ima_read_xattr(struct dentry *dentry,
- 
- #endif /* CONFIG_IMA_APPRAISE */
- 
-+#ifdef CONFIG_IMA_APPRAISE_MODSIG
-+bool ima_hook_supports_modsig(enum ima_hooks func);
-+#else
-+static inline bool ima_hook_supports_modsig(enum ima_hooks func)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_IMA_APPRAISE_MODSIG */
-+
- /* LSM based policy rules require audit */
- #ifdef CONFIG_IMA_LSM_RULES
- 
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-new file mode 100644
-index 000000000000..08182bd7f445
---- /dev/null
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -0,0 +1,31 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/*
-+ * IMA support for appraising module-style appended signatures.
-+ *
-+ * Copyright (C) 2018  IBM Corporation
-+ *
-+ * Author:
-+ * Thiago Jung Bauermann <bauerman@linux.ibm.com>
-+ */
-+
-+#include "ima.h"
-+
-+/**
-+ * ima_hook_supports_modsig - can the policy allow modsig for this hook?
-+ *
-+ * modsig is only supported by hooks using ima_post_read_file, because only they
-+ * preload the contents of the file in a buffer. FILE_CHECK does that in some
-+ * cases, but not when reached from vfs_open. POLICY_CHECK can support it, but
-+ * it's not useful in practice because it's a text file so deny.
-+ */
-+bool ima_hook_supports_modsig(enum ima_hooks func)
-+{
-+	switch (func) {
-+	case KEXEC_KERNEL_CHECK:
-+	case KEXEC_INITRAMFS_CHECK:
-+	case MODULE_CHECK:
-+		return true;
-+	default:
-+		return false;
++	if (!hotplug) {
++		get_online_cpus();
++		on_each_cpu_mask(mktme_cpumask, mktme_program_package,
++				 &info, 1);
++		put_online_cpus();
++	} else {
++		on_each_cpu_mask(mktme_cpumask, mktme_program_package,
++				 &info, 1);
 +	}
-+}
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index b7ee342fbe4a..c38a63f56b7b 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -1036,6 +1036,10 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 			ima_log_string(ab, "appraise_type", args[0].from);
- 			if ((strcmp(args[0].from, "imasig")) = 0)
- 				entry->flags |= IMA_DIGSIG_REQUIRED;
-+			else if (ima_hook_supports_modsig(entry->func) &&
-+				 strcmp(args[0].from, "imasig|modsig") = 0)
-+				entry->flags |= IMA_DIGSIG_REQUIRED
-+						| IMA_MODSIG_ALLOWED;
- 			else
- 				result = -EINVAL;
- 			break;
-@@ -1328,8 +1332,12 @@ int ima_policy_show(struct seq_file *m, void *v)
- 			}
+ 
+ 	return info.status;
+ }
+ 
+ /* Copy the payload to the HW programming structure and program this KeyID */
+-static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
++static int mktme_program_keyid(int keyid, struct mktme_payload *payload,
++			       cpumask_var_t mask, int hotplug)
+ {
+ 	struct mktme_key_program *kprog = NULL;
+ 	u8 kern_entropy[MKTME_AES_XTS_SIZE];
+@@ -124,7 +132,7 @@ static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
+ 			kprog->key_field_2[i] ^= kern_entropy[i];
  		}
  	}
--	if (entry->flags & IMA_DIGSIG_REQUIRED)
--		seq_puts(m, "appraise_type=imasig ");
-+	if (entry->flags & IMA_DIGSIG_REQUIRED) {
-+		if (entry->flags & IMA_MODSIG_ALLOWED)
-+			seq_puts(m, "appraise_type=imasig|modsig ");
-+		else
-+			seq_puts(m, "appraise_type=imasig ");
-+	}
- 	if (entry->flags & IMA_PERMIT_DIRECTIO)
- 		seq_puts(m, "permit_directio ");
- 	rcu_read_unlock();
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index dec5ab8cf9e9..4549488a048a 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -36,6 +36,7 @@
- #define IMA_NEW_FILE		0x04000000
- #define EVM_IMMUTABLE_DIGSIG	0x08000000
- #define IMA_FAIL_UNVERIFIABLE_SIGS	0x10000000
-+#define IMA_MODSIG_ALLOWED	0x20000000
+-	ret = mktme_program_system(kprog, mktme_leadcpus);
++	ret = mktme_program_system(kprog, mktme_leadcpus, hotplug);
+ 	kmem_cache_free(mktme_prog_cache, kprog);
+ 	return ret;
+ }
+@@ -173,7 +181,7 @@ static int mktme_update_key(struct key *key,
+ 	/* Forget if key was user type. */
+ 	clear_bit(keyid, mktme_bitmap_user_type);
  
- #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
- 				 IMA_HASH | IMA_APPRAISE_SUBMASK)
+-	ret = mktme_program_keyid(keyid, payload);
++	ret = mktme_program_keyid(keyid, payload, mktme_leadcpus, 0);
+ 	if (ret != MKTME_PROG_SUCCESS) {
+ 		pr_debug("%s: %s\n", __func__, mktme_program_err[ret]);
+ 		ret = -ENOKEY;
+@@ -202,7 +210,7 @@ int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
+ 		ret = -ENOKEY;
+ 		goto out;
+ 	}
+-	ret = mktme_program_keyid(keyid, payload);
++	ret = mktme_program_keyid(keyid, payload, mktme_leadcpus, 0);
+ 	if (ret != MKTME_PROG_SUCCESS) {
+ 		pr_debug("%s: %s\n", __func__, mktme_program_err[ret]);
+ 		ret = -ENOKEY;
+@@ -375,6 +383,10 @@ struct key_type key_type_mktme = {
+ 	.destroy	= mktme_destroy_key,
+ };
+ 
++/*
++ * Build mktme_leadcpus mask to include one cpu per physical package.
++ * The mask is used to program the Key Table on each physical package.
++ */
+ static int mktme_build_leadcpus_mask(void)
+ {
+ 	int online_cpu, mktme_cpu;
+@@ -397,6 +409,102 @@ static int mktme_build_leadcpus_mask(void)
+ 	return 0;
+ }
+ 
++/* A new packages Key Table is programmed with data saved in mktme_vault. */
++static int mktme_program_new_package(cpumask_var_t mask)
++{
++	struct key *key;
++	int hotplug = 1;
++	int keyid, ret;
++
++	/* When a KeyID slot is freed, it's corresponding Key is 0 */
++	for (keyid = 1; keyid <= mktme_nr_keyids; keyid++) {
++		key = mktme_map_key_from_keyid(keyid);
++		if (!key)
++			continue;
++		/* If one key fails to program, fail the entire package. */
++		ret = mktme_program_keyid(keyid, &mktme_vault[keyid],
++					  mask, hotplug);
++		if (ret != MKTME_PROG_SUCCESS) {
++			pr_debug("%s: %s\n", __func__, mktme_program_err[ret]);
++			ret = -ENOKEY;
++			break;
++		}
++	}
++	return ret;
++}
++
++static int mktme_hotplug_cpu_startup(unsigned int cpu)
++{
++	int lead_cpu, ret = 0;
++	cpumask_var_t newmask;
++	int pkgid = topology_physical_package_id(cpu);
++
++	mktme_map_lock();
++
++	/* Nothing to do if a lead CPU exists for this package. */
++	for_each_cpu(lead_cpu, mktme_leadcpus)
++		if (topology_physical_package_id(lead_cpu) = pkgid)
++			goto out_unlock;
++
++	/* No keys to program. Just add the new lead CPU to mask. */
++	if (!mktme_map_mapped_keyids())
++		goto out_add_cpu;
++
++	/* Keys need to be programmed. Confirm programming can be done. */
++	if (!mktme_savekeys &&
++	    (bitmap_weight(mktme_bitmap_user_type, mktme_nr_keyids))) {
++		ret = -EPERM;
++		goto out_unlock;
++	}
++
++	/* Program only this packages Key Table, not all Key Tables. */
++	if (!zalloc_cpumask_var(&newmask, GFP_KERNEL)) {
++		ret = -ENOMEM;
++		goto out_unlock;
++	}
++	cpumask_set_cpu(cpu, newmask);
++	ret = mktme_program_new_package(newmask);
++	if (ret < 0) {
++		free_cpumask_var(newmask);
++		goto out_unlock;
++	}
++
++	free_cpumask_var(newmask);
++out_add_cpu:
++	/* Make this cpu a lead cpu for all future Key programming requests. */
++	cpumask_set_cpu(cpu, mktme_leadcpus);
++out_unlock:
++	mktme_map_unlock();
++	return ret;
++}
++
++static int mktme_hotplug_cpu_teardown(unsigned int cpu)
++{
++	int pkgid, online_cpu;
++
++	mktme_map_lock();
++	/* Teardown cpu is not a lead cpu, nothing to do. */
++	if (!cpumask_test_and_clear_cpu(cpu, mktme_leadcpus))
++		goto out;
++	/*
++	 * Teardown cpu is a lead cpu. If the physical package
++	 * is still present, pick a new lead cpu. Beware: the
++	 * teardown cpu is still in the online_cpu mask. Do
++	 * not pick it again.
++	 */
++	pkgid = topology_physical_package_id(cpu);
++	for_each_online_cpu(online_cpu)
++		if (online_cpu != cpu &&
++		    pkgid = topology_physical_package_id(online_cpu)) {
++			cpumask_set_cpu(online_cpu, mktme_leadcpus);
++			break;
++	}
++out:
++	mktme_map_unlock();
++	/* Teardowns always succeed. */
++	return 0;
++}
++
+ /*
+  * Allocate the global mktme_map structure based on the available keyids.
+  * Create a cache for the hardware structure. Initialize the encrypt_count
+@@ -405,7 +513,7 @@ static int mktme_build_leadcpus_mask(void)
+  */
+ static int __init init_mktme(void)
+ {
+-	int ret;
++	int ret, cpuhp;
+ 
+ 	/* Verify keys are present */
+ 	if (!(mktme_nr_keyids > 0))
+@@ -433,10 +541,19 @@ static int __init init_mktme(void)
+ 	if (!mktme_vault)
+ 		goto free_bitmap;
+ 
++	cpuhp = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN,
++					  "keys/mktme_keys:online",
++					  mktme_hotplug_cpu_startup,
++					  mktme_hotplug_cpu_teardown);
++	if (cpuhp < 0)
++		goto free_vault;
++
+ 	ret = register_key_type(&key_type_mktme);
+ 	if (!ret)
+ 		return ret;			/* SUCCESS */
+ 
++	cpuhp_remove_state_nocalls(cpuhp);
++free_vault:
+ 	kfree(mktme_vault);
+ free_bitmap:
+ 	bitmap_free(mktme_bitmap_user_type);
+-- 
+2.14.1
