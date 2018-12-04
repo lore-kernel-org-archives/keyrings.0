@@ -1,45 +1,134 @@
-From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Date: Thu, 06 Dec 2018 08:31:24 +0000
-Subject: Re: [RFC v2 04/13] x86/mm: Add helper functions for MKTME memory encryption keys
-Message-Id: <6cabe09dd085f74a3111faebeb285cf0cac1146d.camel@intel.com>
+From: Alison Schofield <alison.schofield@intel.com>
+Date: Tue, 04 Dec 2018 07:39:54 +0000
+Subject: [RFC v2 07/13] x86/mm: Add helpers for reference counting encrypted VMAs
+Message-Id: <e4407d95c74300c4a6b4c5f9321660e9097fff8f.1543903910.git.alison.schofield@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1543903910.git.alison.schofield@intel.com>
-	 <bd83f72d30ccfc7c1bc7ce9ab81bdf66e78a1d7d.1543903910.git.alison.schofield@intel.com>
-In-Reply-To: <bd83f72d30ccfc7c1bc7ce9ab81bdf66e78a1d7d.1543903910.git.alison.schofield@intel.com>
-To: "tglx@linutronix.de" <tglx@linutronix.de>, "Schofield, Alison" <alison.schofield@intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>
-Cc: "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>, "peterz@infradead.org" <peterz@infradead.org>, "jmorris@namei.org" <jmorris@namei.org>, "Huang, Kai" <kai.huang@intel.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "Williams, Dan J" <dan.j.williams@intel.com>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "luto@kernel.org" <luto@kernel.org>, "bp@alien8.de" <bp@alien8.de>, Hansen, Jun
+In-Reply-To: <cover.1543903910.git.alison.schofield@intel.com>
+To: dhowells@redhat.com, tglx@linutronix.de
+Cc: jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, peterz@infradead.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
 
-T24gTW9uLCAyMDE4LTEyLTAzIGF0IDIzOjM5IC0wODAwLCBBbGlzb24gU2Nob2ZpZWxkIHdyb3Rl
-Og0KPiArZXh0ZXJuIGludCBta3RtZV9tYXBfYWxsb2Modm9pZCk7DQo+ICtleHRlcm4gdm9pZCBt
-a3RtZV9tYXBfZnJlZSh2b2lkKTsNCj4gK2V4dGVybiB2b2lkIG1rdG1lX21hcF9sb2NrKHZvaWQp
-Ow0KPiArZXh0ZXJuIHZvaWQgbWt0bWVfbWFwX3VubG9jayh2b2lkKTsNCj4gK2V4dGVybiBpbnQg
-bWt0bWVfbWFwX21hcHBlZF9rZXlpZHModm9pZCk7DQo+ICtleHRlcm4gdm9pZCBta3RtZV9tYXBf
-c2V0X2tleWlkKGludCBrZXlpZCwgdm9pZCAqa2V5KTsNCj4gK2V4dGVybiB2b2lkIG1rdG1lX21h
-cF9mcmVlX2tleWlkKGludCBrZXlpZCk7DQo+ICtleHRlcm4gaW50IG1rdG1lX21hcF9rZXlpZF9m
-cm9tX2tleSh2b2lkICprZXkpOw0KPiArZXh0ZXJuIHZvaWQgKm1rdG1lX21hcF9rZXlfZnJvbV9r
-ZXlpZChpbnQga2V5aWQpOw0KPiArZXh0ZXJuIGludCBta3RtZV9tYXBfZ2V0X2ZyZWVfa2V5aWQo
-dm9pZCk7DQoNCk5vIG5lZWQgZm9yIGV4dGVybiBrZXl3b3JkIGZvciBmdW5jdGlvbiBkZWNsYXJh
-dGlvbnMuIEl0IGlzDQpvbmx5IG5lZWRlZCBmb3IgdmFyaWFibGUgZGVjbGFyYXRpb25zLg0KDQo+
-ICsNCj4gIERFQ0xBUkVfU1RBVElDX0tFWV9GQUxTRShta3RtZV9lbmFibGVkX2tleSk7DQo+ICBz
-dGF0aWMgaW5saW5lIGJvb2wgbWt0bWVfZW5hYmxlZCh2b2lkKQ0KPiAgew0KPiBkaWZmIC0tZ2l0
-IGEvYXJjaC94ODYvbW0vbWt0bWUuYyBiL2FyY2gveDg2L21tL21rdG1lLmMNCj4gaW5kZXggYzgx
-NzI3NTQwZTdjLi4zNDIyNGQ0ZTNmNDUgMTAwNjQ0DQo+IC0tLSBhL2FyY2gveDg2L21tL21rdG1l
-LmMNCj4gKysrIGIvYXJjaC94ODYvbW0vbWt0bWUuYw0KPiBAQCAtNDAsNiArNDAsOTcgQEAgaW50
-IF9fdm1hX2tleWlkKHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hKQ0KPiAgCXJldHVybiAocHJv
-dCAmIG1rdG1lX2tleWlkX21hc2spID4+IG1rdG1lX2tleWlkX3NoaWZ0Ow0KPiAgfQ0KPiAgDQo+
-ICsvKg0KPiArICogc3RydWN0IG1rdG1lX21hcCBhbmQgdGhlIG1rdG1lX21hcF8qIGZ1bmN0aW9u
-cyBtYW5hZ2UgdGhlIG1hcHBpbmcNCj4gKyAqIG9mIHVzZXJzcGFjZSBLZXlzIHRvIGhhcmR3YXJl
-IEtleUlEcy4gVGhlc2UgYXJlIHVzZWQgYnkgdGhlIE1LVE1FIEtleQ0KDQpXaGF0IGFyZSAidXNl
-cnNwYWNlIEtleXMiIGFueXdheSBhbmQgd2h5IEtleSBhbmQgbm90IGtleT8NCg0KPiArICogU2Vy
-dmljZSBBUEkgYW5kIHRoZSBlbmNyeXB0X21wcm90ZWN0KCkgc3lzdGVtIGNhbGwuDQo+ICsgKi8N
-Cj4gKw0KPiArc3RydWN0IG1rdG1lX21hcHBpbmcgew0KPiArCXN0cnVjdCBtdXRleAlsb2NrOwkJ
-LyogcHJvdGVjdCB0aGlzIG1hcCAmIEhXIHN0YXRlICovDQo+ICsJdW5zaWduZWQgaW50CW1hcHBl
-ZF9rZXlpZHM7DQo+ICsJdm9pZAkJKmtleVtdOw0KPiArfTsNCg0KUGVyc29uYWxseSwgSSBwcmVm
-ZXIgbm90IHRvIGFsaWduIHN0cnVjdCBmaWVsZHMgKEkgZG8gYWxpZ24gZW51bXMNCmJlY2F1c2Ug
-dGhlcmUgaXQgbWFrZXMgbW9yZSBzZW5zZSkgYXMgb2Z0ZW4geW91IGVuZCB1cCByZWFsaWduaW5n
-DQpldmVyeXRoaW5nLg0KDQpEb2N1bWVudGF0aW9uIHdvdWxkIGJyaW5nIG1vcmUgY2xhcml0eS4g
-Rm9yIGV4YW1wbGUsIHdoYXQgZG9lcyBrZXlbXQ0KY29udGFpbiwgd2h5IHRoZXJlIGlzIGEgbG9j
-ayBhbmQgd2hhdCBtYXBwZWRfa2V5aWRzIGZpZWxkIGNvbnRhaW5zPw0KDQovSmFya2tvDQo
+In order to safely manage the usage of memory encryption keys, VMAs
+using each KeyID need to be counted. This count allows the MKTME
+(Multi-Key Total Memory Encryption) Key Service to know when the KeyID
+resource is actually in use, or when it is idle and may be considered
+for reuse.
+
+Define a global refcount_t array and provide helper functions to
+manipulate the counts.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ arch/x86/include/asm/mktme.h |  9 +++++++
+ arch/x86/mm/mktme.c          | 58 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mm.h           |  2 ++
+ 3 files changed, 69 insertions(+)
+
+diff --git a/arch/x86/include/asm/mktme.h b/arch/x86/include/asm/mktme.h
+index de3e529f3ab0..22d52635562c 100644
+--- a/arch/x86/include/asm/mktme.h
++++ b/arch/x86/include/asm/mktme.h
+@@ -28,6 +28,15 @@ extern int mktme_map_get_free_keyid(void);
+ extern void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
+ 				unsigned long start, unsigned long end);
+ 
++/* Manage the MTKME encrypt_count references */
++extern int mktme_alloc_encrypt_array(void);
++extern void mktme_free_encrypt_array(void);
++extern int mktme_read_encrypt_ref(int keyid);
++extern void vma_get_encrypt_ref(struct vm_area_struct *vma);
++extern void vma_put_encrypt_ref(struct vm_area_struct *vma);
++extern void key_get_encrypt_ref(int keyid);
++extern void key_put_encrypt_ref(int keyid);
++
+ DECLARE_STATIC_KEY_FALSE(mktme_enabled_key);
+ static inline bool mktme_enabled(void)
+ {
+diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
+index e3fdf7b48173..facf08f9cb74 100644
+--- a/arch/x86/mm/mktme.c
++++ b/arch/x86/mm/mktme.c
+@@ -157,6 +157,64 @@ void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
+ 	unlink_anon_vmas(vma);
+ }
+ 
++/*
++ *  Helper functions manage the encrypt_count[] array that counts
++ *  references on each MKTME hardware keyid. The gets & puts are
++ *  used in core mm code that allocates and free's VMA's. The alloc,
++ *  free, and read functions are used by the MKTME key service to
++ *  manage key allocation and programming.
++ */
++refcount_t *encrypt_count;
++
++int mktme_alloc_encrypt_array(void)
++{
++	encrypt_count = kvcalloc(mktme_nr_keyids, sizeof(refcount_t),
++				 GFP_KERNEL);
++	if (!encrypt_count)
++		return -ENOMEM;
++	return 0;
++}
++
++void mktme_free_encrypt_array(void)
++{
++	kvfree(encrypt_count);
++}
++
++int mktme_read_encrypt_ref(int keyid)
++{
++	return refcount_read(&encrypt_count[keyid]);
++}
++
++void vma_get_encrypt_ref(struct vm_area_struct *vma)
++{
++	if (vma_keyid(vma))
++		refcount_inc(&encrypt_count[vma_keyid(vma)]);
++}
++
++void vma_put_encrypt_ref(struct vm_area_struct *vma)
++{
++	if (vma_keyid(vma))
++		if (refcount_dec_and_test(&encrypt_count[vma_keyid(vma)])) {
++			mktme_map_lock();
++			mktme_map_free_keyid(vma_keyid(vma));
++			mktme_map_unlock();
++		}
++}
++
++void key_get_encrypt_ref(int keyid)
++{
++	refcount_inc(&encrypt_count[keyid]);
++}
++
++void key_put_encrypt_ref(int keyid)
++{
++	if (refcount_dec_and_test(&encrypt_count[keyid])) {
++		mktme_map_lock();
++		mktme_map_free_keyid(keyid);
++		mktme_map_unlock();
++	}
++}
++
+ /* Prepare page to be used for encryption. Called from page allocator. */
+ void __prep_encrypted_page(struct page *page, int order, int keyid, bool zero)
+ {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 09182d78e7b7..453d675dd116 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -2812,6 +2812,8 @@ static inline void mprotect_set_encrypt(struct vm_area_struct *vma,
+ 					int newkeyid,
+ 					unsigned long start,
+ 					unsigned long end) {}
++static inline void vma_get_encrypt_ref(struct vm_area_struct *vma) {}
++static inline void vma_put_encrypt_ref(struct vm_area_struct *vma) {}
+ #endif /* CONFIG_X86_INTEL_MKTME */
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_MM_H */
+-- 
+2.14.1
