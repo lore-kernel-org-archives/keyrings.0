@@ -1,39 +1,39 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Sun, 02 Dec 2018 23:04:26 +0000
-Subject: Re: [PATCH] docs: Extend trusted keys documentation for TPM 2.0
-Message-Id: <20181202230426.GA6718@linux.intel.com>
+From: James Morris <jmorris@namei.org>
+Date: Tue, 04 Dec 2018 21:59:45 +0000
+Subject: Re: [PATCH v8 00/14] Appended signatures support for IMA appraisal
+Message-Id: <alpine.LRH.2.21.1812050855270.22148@namei.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181019101758.1569-1-stefanb@linux.ibm.com>
- <20181106164603.w46wspmdj5e4slwe@cantor>
- <1541528254.8568.48.camel@linux.ibm.com>
- <20181130234507.GA3792@linux.intel.com>
- <20181130234646.GB3792@linux.intel.com>
- <1543763436.4216.196.camel@linux.ibm.com>
-In-Reply-To: <1543763436.4216.196.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: James Bottomley <jejb@linux.ibm.com>, Jerry Snitselaar <jsnitsel@redhat.com>, Stefan Berger <stefanb@linux.ibm.com>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20181116200712.14154-1-bauerman@linux.ibm.com>
+In-Reply-To: <20181116200712.14154-1-bauerman@linux.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-On Sun, Dec 02, 2018 at 10:10:36AM -0500, Mimi Zohar wrote:
-> Are you asking about coordinating staging the trusted key patches to
-> be upstreamed or about moving portions of the encrypted keys code out
-> of the keyring subsystem?
->=20
-> I'm not sure there needs to be a separate encrypted-keys pull request.
-> =A0Either they can be upstreamed via the TPM or the integrity subsystem
-> for now.
+On Fri, 16 Nov 2018, Thiago Jung Bauermann wrote:
 
-Nothing that ought to be rushed.
+> On the OpenPOWER platform, secure boot and trusted boot are being
+> implemented using IMA for taking measurements and verifying signatures.
+> Since the kernel image on Power servers is an ELF binary, kernels are
+> signed using the scripts/sign-file tool and thus use the same signature
+> format as signed kernel modules.
+> 
+> This patch series adds support in IMA for verifying those signatures.
 
-I'm speaking about this situation:
+Are you saying you use IMA to verify kernels during boot?  From a Linux 
+bootloader?
 
-1. TPM 1.x trusted keys code is inside keyring subsystem.
-2. TPM 2.0 trusted keys code is inside tpm subsystem.
+> It adds flexibility to OpenPOWER secure boot, because it allows it to boot
+> kernels with the signature appended to them as well as kernels where the
+> signature is stored in the IMA extended attribute.
 
-We are doing effort to make TPM subsystem more friendly to send custom
-commands outside (tpm_buf, my unnesting effort in progress, Tomas' clean
-ups for TPM 1.x code) so I'm more dilated to the 2nd option.
+Just to clarify, with these patches, IMA will be able to verify the 
+native form of signed kernel modules?  i.e. without xattrs at all, and 
+this will work with existing signed modules?
 
-/Jarkko
+
+
+-- 
+James Morris
+<jmorris@namei.org>
