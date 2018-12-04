@@ -1,7 +1,7 @@
 From: Peter Zijlstra <peterz@infradead.org>
-Date: Tue, 04 Dec 2018 09:28:41 +0000
+Date: Tue, 04 Dec 2018 09:31:16 +0000
 Subject: Re: [RFC v2 13/13] keys/mktme: Support CPU Hotplug for MKTME keys
-Message-Id: <20181204092841.GU11614@hirez.programming.kicks-ass.net>
+Message-Id: <20181204093116.GV11614@hirez.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,11 +13,29 @@ To: Alison Schofield <alison.schofield@intel.com>
 Cc: dhowells@redhat.com, tglx@linutronix.de, jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
 
 On Mon, Dec 03, 2018 at 11:40:00PM -0800, Alison Schofield wrote:
-> +	for_each_online_cpu(online_cpu)
-> +		if (online_cpu != cpu &&
-> +		    pkgid = topology_physical_package_id(online_cpu)) {
-> +			cpumask_set_cpu(online_cpu, mktme_leadcpus);
-> +			break;
+>  static int mktme_program_system(struct mktme_key_program *key_program,
+> -				cpumask_var_t mktme_cpumask)
+> +				cpumask_var_t mktme_cpumask, int hotplug)
+>  {
+>  	struct mktme_hw_program_info info = {
+>  		.key_program = key_program,
+>  		.status = MKTME_PROG_SUCCESS,
+>  	};
+> -	get_online_cpus();
+> -	on_each_cpu_mask(mktme_cpumask, mktme_program_package, &info, 1);
+> -	put_online_cpus();
+> +
+> +	if (!hotplug) {
+> +		get_online_cpus();
+> +		on_each_cpu_mask(mktme_cpumask, mktme_program_package,
+> +				 &info, 1);
+> +		put_online_cpus();
+> +	} else {
+> +		on_each_cpu_mask(mktme_cpumask, mktme_program_package,
+> +				 &info, 1);
 > +	}
+>  
+>  	return info.status;
+>  }
 
-That's a capital offence right there.
+That is pretty horrible; and I think easily avoided.
