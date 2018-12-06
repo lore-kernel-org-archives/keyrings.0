@@ -1,29 +1,130 @@
 From: Dave Hansen <dave.hansen@intel.com>
-Date: Thu, 06 Dec 2018 14:59:10 +0000
+Date: Thu, 06 Dec 2018 15:39:07 +0000
 Subject: Re: [RFC v2 00/13] Multi-Key Total Memory Encryption API (MKTME)
-Message-Id: <a0a1e0d2-ef32-8378-5363-b730afc99c03@intel.com>
+Message-Id: <5e97e1bf-536c-ef73-576e-54145eee1ae9@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1543903910.git.alison.schofield@intel.com>
- <20181204092550.GT11614@hirez.programming.kicks-ass.net>
- <20181204094647.tjsvwjgp3zq6yqce@black.fi.intel.com>
- <063026c66b599ba4ff0b30a5ecc7d2c716e4da5b.camel@intel.com>
- <20181206112255.4bbumbrf5nnz4t2z@kshutemo-mobl1>
-In-Reply-To: <20181206112255.4bbumbrf5nnz4t2z@kshutemo-mobl1>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Cc: "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>, "peterz@infradead.org" <peterz@infradead.org>, "jmorris@namei.org" <jmorris@namei.org>, "Huang, Kai" <kai.huang@intel.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "tglx@linutronix.de" <tglx@linutronix.de>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "dhowells@redhat.com" <dhowells@redhat.com>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "Williams, Dan J" <dan.j.williams@intel.com>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "luto@kernel.org" <luto@kernel.org>, "bp@alien8.de" <bp@alien8.de>, "Schofield, Alison" <alison.schofield@intel.com>, "Nakajima, Jun" <jun.nakajima@intel.com>
+ <CALCETrUqqQiHR_LJoKB2JE6hCZ-e7LiFprEhmo-qoegDZJ9uYQ@mail.gmail.com>
+ <c610138f-32dd-a24c-dc52-4e0006a21409@intel.com>
+ <CALCETrU34U3berTaEQbvNt0rfCdsjwj+xDb8x7bgAMFHEo=eUw@mail.gmail.com>
+In-Reply-To: <CALCETrU34U3berTaEQbvNt0rfCdsjwj+xDb8x7bgAMFHEo=eUw@mail.gmail.com>
+To: Andy Lutomirski <luto@kernel.org>
+Cc: alison.schofield@intel.com, Matthew Wilcox <willy@infradead.org>, Dan Williams <dan.j.williams@intel.com>, David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, James Morris <jmorris@namei.org>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, kai.huang@intel.com, Jun Nakajima <jun.nakajima@intel.com>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, X86 ML <x86@kernel.org>
 
-On 12/6/18 3:22 AM, Kirill A. Shutemov wrote:
->> When you say "disable encryption to a page" does the encryption get
->> actually disabled or does the CPU just decrypt it transparently i.e.
->> what happens physically?
-> Yes, it gets disabled. Physically. It overrides TME encryption.
+On 12/5/18 5:09 PM, Andy Lutomirski wrote:
+> On Wed, Dec 5, 2018 at 3:49 PM Dave Hansen <dave.hansen@intel.com> wrote:
+>> What I was hoping to see was them do this (apologies for the horrible
+>> indentation:
+>>
+>>         ptr = mmap(..., PROT_NONE);
+>>         mprotect_pkey(   addr, len, PROT_NONE, pkey);
+>>         mprotect_encrypt(addr, len, PROT_NONE, keyid);
+>>         mprotect(        addr, len, real_prot);
+>>
+>> The point is that you *can* stack these things and don't have to have an
+>> mprotect_kitchen_sink() if you use PROT_NONE for intermediate
+>> permissions during setup.
+> 
+> Sure, but then why call it mprotect at all?  How about:
+> 
+> mmap(..., PROT_NONE);
+> mencrypt(..., keyid);
+> mprotect_pkey(...);
 
-I know MKTME itself has a runtime overhead and we expect it to have a
-performance impact in the low single digits.  Does TME have that
-overhead?  Presumably MKTME plus no-encryption is not expected to have
-the overhead.
+That would totally work too.  I just like the idea of a family of
+mprotect() syscalls that do mprotect() plus one other thing.  What
+you're proposing is totally equivalent where we have mprotect_pkey()
+always being the *last* thing that gets called, plus a family of things
+that we expect to get called on something that's probably PROT_NONE.
 
-We should probably mention that in the changelogs too.
+> But wouldn't this be much nicer:
+> 
+> int fd = memfd_create(...);
+> memfd_set_tme_key(fd, keyid);  /* fails if len != 0 */
+> mmap(fd, ...);
+
+No. :)
+
+One really big advantage with protection keys, or this implementation is
+that you don't have to implement an allocator.  You can use it with any
+old malloc() as long as you own a whole page.
+
+The pages also fundamentally *stay* anonymous in the VM and get all the
+goodness that comes with that, like THP.
+
+>>> and it's also functionally just MADV_DONTNEED.  In other words, the
+>>> sole user-visible effect appears to be that the existing pages are
+>>> blown away.  The fact that it changes the key in use doesn't seem
+>>> terribly useful, since it's anonymous memory,
+>>
+>> It's functionally MADV_DONTNEED, plus a future promise that your writes
+>> will never show up as plaintext on the DIMM.
+> 
+> But that's mostly vacuous.  If I read the docs right, MKTME systems
+> also support TME, so you *already* have that promise, unless the
+> firmware totally blew it.  If we want a boot option to have the kernel
+> use MKTME to forcibly encrypt everything regardless of what the TME
+> MSRs say, I'd be entirely on board.  Heck, the implementation would be
+> quite simple because we mostly reuse the SME code.
+
+Yeah, that's true.  I seem to always forget about the TME case! :)
+
+"It's functionally MADV_DONTNEED, plus a future promise that your writes
+will never be written to the DIMM with the TME key."
+
+But, this gets us back to your very good question about what good this
+does in the end.  What value does _that_ scheme provide over TME?  We're
+admittedly weak on specific examples there, but I'm working on it.
+
+>>> the direct map as well, probably using the pageattr.c code.
+>>
+>> The current, public hardware spec has a description of what's required
+>> to maintain cache coherency.  Basically, you can keep as many mappings
+>> of a physical page as you want, but only write to one mapping at a time,
+>> and clflush the old one when you want to write to a new one.
+> 
+> Surely you at least have to clflush the old mapping and then the new
+> mapping, since the new mapping could have been speculatively read.
+
+Nope.  The coherency is "fine" unless you have writeback of an older
+cacheline that blows away newer data.  CPUs that support MKTME are
+guaranteed to never do writeback of the lines that could be established
+speculatively or from prefetching.
+
+>>> Finally, If you're going to teach the kernel how to have some user
+>>> pages that aren't in the direct map, you've essentially done XPO,
+>>> which is nifty but expensive.  And I think that doing this gets you
+>>> essentially all the benefit of MKTME for the non-pmem use case.  Why
+>>> exactly would any software want to use anything other than a
+>>> CPU-managed key for anything other than pmem?
+>>
+>> It is handy, for one, to let you "cluster" key usage.  If you have 5
+>> Pepsi VMs and 5 Coke VMs, each Pepsi one using the same key and each
+>> Coke one using the same key, you can boil it down to only 2 hardware
+>> keyid slots that get used, and do this transparently.
+> 
+> I understand this from a marketing perspective but not a security
+> perspective.  Say I'm Coke and you've sold me some VMs that are
+> "encrypted with a Coke-specific key and no other VMs get to use that
+> key."  I can't think of *any* not-exceedingly-contrived attack in
+> which this makes the slightest difference.  If Pepsi tries to attack
+> Coke without MKTME, then they'll either need to get the hypervisor to
+> leak Coke's data through the direct map or they'll have to find some
+> way to corrupt a page table or use something like L1TF to read from a
+> physical address Coke owns.  With MKTME, if they can read through the
+> host direct map, then they'll get Coke's cleartext, and if they can
+> corrupt a page table or use L1TF to read from your memory, they'll get
+> Coke's cleartext.
+
+The design definitely has the hypervisor in the trust boundary.  If the
+hypervisor is evil, or if someone evil compromises the hypervisor, MKTME
+obviously provides less protection.
+
+I guess the question ends up being if this makes its protections weak
+enough that we should not bother merging it in its current form.
+
+I still have the homework assignment to go figure out why folks want the
+protections as they stand.
