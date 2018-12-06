@@ -1,34 +1,51 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 13 Dec 2018 00:17:08 +0000
-Subject: Re: [PATCH v2 2/7] integrity: Load certs to the platform keyring
-Message-Id: <87zhtae0vv.fsf@morokweng.localdomain>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Thu, 06 Dec 2018 18:26:26 +0000
+Subject: Re: [PATCH] KEYS: fix parsing invalid pkey info string
+Message-Id: <20181206182625.GA90507@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-1-nayna@linux.ibm.com> <20181208202705.18673-3-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-3-nayna@linux.ibm.com>
-To: Nayna Jain <nayna@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
+References: <000000000000c220960579c4936d@google.com>
+ <20181103173035.23974-1-ebiggers@kernel.org>
+ <20181128232019.GC131170@gmail.com>
+In-Reply-To: <20181128232019.GC131170@gmail.com>
+To: keyrings@vger.kernel.org, dhowells@redhat.com
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
 
+On Wed, Nov 28, 2018 at 03:20:20PM -0800, Eric Biggers wrote:
+> On Sat, Nov 03, 2018 at 10:30:35AM -0700, Eric Biggers wrote:
+> > From: Eric Biggers <ebiggers@google.com>
+> > 
+> > We need to check the return value of match_token() for Opt_err (-1)
+> > before doing anything with it.
+> > 
+> > Reported-by: syzbot+a22e0dc07567662c50bc@syzkaller.appspotmail.com
+> > Fixes: 00d60fd3b932 ("KEYS: Provide keyctls to drive the new key type ops for asymmetric keys [ver #2]")
+> > Signed-off-by: Eric Biggers <ebiggers@google.com>
+> > ---
+> >  security/keys/keyctl_pkey.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+> > index 783978842f13a..987fac8051d70 100644
+> > --- a/security/keys/keyctl_pkey.c
+> > +++ b/security/keys/keyctl_pkey.c
+> > @@ -50,6 +50,8 @@ static int keyctl_pkey_params_parse(struct kernel_pkey_params *params)
+> >  		if (*p = '\0' || *p = ' ' || *p = '\t')
+> >  			continue;
+> >  		token = match_token(p, param_keys, args);
+> > +		if (token = Opt_err)
+> > +			return -EINVAL;
+> >  		if (__test_and_set_bit(token, &token_mask))
+> >  			return -EINVAL;
+> >  		q = args[0].from;
+> > -- 
+> > 2.19.1
+> 
+> Ping.  David, are you planning to apply this?
+> 
+> - Eric
+> 
 
-Nayna Jain <nayna@linux.ibm.com> writes:
-
-> The patch refactors integrity_load_x509(), making it a wrapper for a new
-> function named integrity_add_key(). This patch also defines a new
-> function named integrity_load_cert() for loading the platform keys.
->
-> Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-> Acked-by: Serge Hallyn <serge@hallyn.com>
-> ---
->  security/integrity/digsig.c                        | 71 ++++++++++++++--------
->  security/integrity/integrity.h                     | 20 ++++++
->  .../integrity/platform_certs/platform_keyring.c    | 23 +++++++
->  3 files changed, 90 insertions(+), 24 deletions(-)
-
-Reviewed-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-
--- 
-Thiago Jung Bauermann
-IBM Linux Technology Center
+Ping.
