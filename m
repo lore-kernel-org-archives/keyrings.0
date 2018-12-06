@@ -1,242 +1,64 @@
-From: Nayna Jain <nayna@linux.ibm.com>
-Date: Wed, 12 Dec 2018 21:44:07 +0000
-Subject: [PATCH v2a 5/7] efi: Import certificates from UEFI Secure Boot
-Message-Id: <20181212213207.12746-1-nayna@linux.ibm.com>
+From: "Serge E. Hallyn" <serge@hallyn.com>
+Date: Thu, 06 Dec 2018 23:09:16 +0000
+Subject: Re: [PATCH 7/7] ima: Support platform keyring for kernel appraisal
+Message-Id: <20181206230916.GA10203@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-6-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-6-nayna@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Josh Boyer <jwboyer@fedoraproject.org>, Nayna Jain <nayna@linux.ibm.com>
+References: <20181125151500.8298-1-nayna@linux.ibm.com>
+ <20181125151500.8298-8-nayna@linux.ibm.com>
+In-Reply-To: <20181125151500.8298-8-nayna@linux.ibm.com>
+To: Nayna Jain <nayna@linux.ibm.com>
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
 
-From: Josh Boyer <jwboyer@fedoraproject.org>
+On Sun, Nov 25, 2018 at 08:45:00PM +0530, Nayna Jain wrote:
+> On secure boot enabled systems, the bootloader verifies the kernel
+> image and possibly the initramfs signatures based on a set of keys. A
+> soft reboot(kexec) of the system, with the same kernel image and
+> initramfs, requires access to the original keys to verify the
+> signatures.
+> 
+> This patch allows IMA-appraisal access to those original keys, now
+> loaded on the platform keyring, needed for verifying the kernel image
+> and initramfs signatures.
+> 
+> Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 
-Secure Boot stores a list of allowed certificates in the 'db' variable.
-This patch imports those certificates into the platform keyring. The shim
-UEFI bootloader has a similar certificate list stored in the 'MokListRT'
-variable. We import those as well.
+The overall set seems sensible to me, and I see no errors here,
 
-Secure Boot also maintains a list of disallowed certificates in the 'dbx'
-variable. We load those certificates into the system blacklist keyring
-and forbid any kernel signed with those from loading.
-
-[zohar@linux.ibm.com: dropped Josh's original patch description]
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
 Acked-by: Serge Hallyn <serge@hallyn.com>
-Signed-off-by: Mimi Zohar <zohar@linux.ibm.com>
----
-Changelog:
 
-v2a:
-- refactored uefi_blacklist_x509_tbs() and  uefi_blacklist_binary()
+I do think that replacing the 'rc' with xattr_len in the previous line might
+help future readers save a few cycles.
 
-v2:
-- Fixed the checkpatch.pl warnings
-
-v0:
-- This patch replaces the loading of certificates onto the secondary
-  keyring with platform keyring
-- removed the CONFIG LOAD_UEFI_KEYS
-- moved the file load_uefi.o from certs to security/integrity/platform_certs
-
- security/integrity/Makefile                   |   5 +-
- security/integrity/platform_certs/load_uefi.c | 169 ++++++++++++++++++++++++++
- 2 files changed, 173 insertions(+), 1 deletion(-)
- create mode 100644 security/integrity/platform_certs/load_uefi.c
-
-diff --git a/security/integrity/Makefile b/security/integrity/Makefile
-index 6ee9058866cd..86df9aba8c0f 100644
---- a/security/integrity/Makefile
-+++ b/security/integrity/Makefile
-@@ -10,7 +10,10 @@ integrity-$(CONFIG_INTEGRITY_AUDIT) += integrity_audit.o
- integrity-$(CONFIG_INTEGRITY_SIGNATURE) += digsig.o
- integrity-$(CONFIG_INTEGRITY_ASYMMETRIC_KEYS) += digsig_asymmetric.o
- integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o \
--						  platform_certs/efi_parser.o
-+						  platform_certs/efi_parser.o \
-+						  platform_certs/load_uefi.o
-+obj-$(CONFIG_LOAD_UEFI_KEYS) += platform_certs/load_uefi.o
-+$(obj)/load_uefi.o: KBUILD_CFLAGS += -fshort-wchar
- 
- subdir-$(CONFIG_IMA)			+= ima
- obj-$(CONFIG_IMA)			+= ima/
-diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
-new file mode 100644
-index 000000000000..8ceafa58d98c
---- /dev/null
-+++ b/security/integrity/platform_certs/load_uefi.c
-@@ -0,0 +1,169 @@
-+// SPDX-License-Identifier: GPL-2.0
-+
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/cred.h>
-+#include <linux/err.h>
-+#include <linux/efi.h>
-+#include <linux/slab.h>
-+#include <keys/asymmetric-type.h>
-+#include <keys/system_keyring.h>
-+#include "../integrity.h"
-+
-+static efi_guid_t efi_cert_x509_guid __initdata = EFI_CERT_X509_GUID;
-+static efi_guid_t efi_cert_x509_sha256_guid __initdata +	EFI_CERT_X509_SHA256_GUID;
-+static efi_guid_t efi_cert_sha256_guid __initdata = EFI_CERT_SHA256_GUID;
-+
-+/*
-+ * Get a certificate list blob from the named EFI variable.
-+ */
-+static __init void *get_cert_list(efi_char16_t *name, efi_guid_t *guid,
-+				  unsigned long *size)
-+{
-+	efi_status_t status;
-+	unsigned long lsize = 4;
-+	unsigned long tmpdb[4];
-+	void *db;
-+
-+	status = efi.get_variable(name, guid, NULL, &lsize, &tmpdb);
-+	if (status != EFI_BUFFER_TOO_SMALL) {
-+		pr_err("Couldn't get size: 0x%lx\n", status);
-+		return NULL;
-+	}
-+
-+	db = kmalloc(lsize, GFP_KERNEL);
-+	if (!db)
-+		return NULL;
-+
-+	status = efi.get_variable(name, guid, NULL, &lsize, db);
-+	if (status != EFI_SUCCESS) {
-+		kfree(db);
-+		pr_err("Error reading db var: 0x%lx\n", status);
-+		return NULL;
-+	}
-+
-+	*size = lsize;
-+	return db;
-+}
-+
-+/*
-+ * Blacklist a hash.
-+ */
-+static __init void uefi_blacklist_hash(const char *source, const void *data,
-+				       size_t len, const char *type,
-+				       size_t type_len)
-+{
-+	char *hash, *p;
-+
-+	hash = kmalloc(type_len + len * 2 + 1, GFP_KERNEL);
-+	if (!hash)
-+		return;
-+	p = memcpy(hash, type, type_len);
-+	p += type_len;
-+	bin2hex(p, data, len);
-+	p += len * 2;
-+	*p = 0;
-+
-+	mark_hash_blacklisted(hash);
-+	kfree(hash);
-+}
-+
-+/*
-+ * Blacklist an X509 TBS hash.
-+ */
-+static __init void uefi_blacklist_x509_tbs(const char *source,
-+					   const void *data, size_t len)
-+{
-+	uefi_blacklist_hash(source, data, len, "tbs:", 4);
-+}
-+
-+/*
-+ * Blacklist the hash of an executable.
-+ */
-+static __init void uefi_blacklist_binary(const char *source,
-+					 const void *data, size_t len)
-+{
-+	uefi_blacklist_hash(source, data, len, "bin:", 4);
-+}
-+
-+/*
-+ * Return the appropriate handler for particular signature list types found in
-+ * the UEFI db and MokListRT tables.
-+ */
-+static __init efi_element_handler_t get_handler_for_db(const efi_guid_t *
-+						       sig_type)
-+{
-+	if (efi_guidcmp(*sig_type, efi_cert_x509_guid) = 0)
-+		return add_to_platform_keyring;
-+	return 0;
-+}
-+
-+/*
-+ * Return the appropriate handler for particular signature list types found in
-+ * the UEFI dbx and MokListXRT tables.
-+ */
-+static __init efi_element_handler_t get_handler_for_dbx(const efi_guid_t *
-+							sig_type)
-+{
-+	if (efi_guidcmp(*sig_type, efi_cert_x509_sha256_guid) = 0)
-+		return uefi_blacklist_x509_tbs;
-+	if (efi_guidcmp(*sig_type, efi_cert_sha256_guid) = 0)
-+		return uefi_blacklist_binary;
-+	return 0;
-+}
-+
-+/*
-+ * Load the certs contained in the UEFI databases
-+ */
-+static int __init load_uefi_certs(void)
-+{
-+	efi_guid_t secure_var = EFI_IMAGE_SECURITY_DATABASE_GUID;
-+	efi_guid_t mok_var = EFI_SHIM_LOCK_GUID;
-+	void *db = NULL, *dbx = NULL, *mok = NULL;
-+	unsigned long dbsize = 0, dbxsize = 0, moksize = 0;
-+	int rc = 0;
-+
-+	if (!efi.get_variable)
-+		return false;
-+
-+	/* Get db, MokListRT, and dbx.  They might not exist, so it isn't
-+	 * an error if we can't get them.
-+	 */
-+	db = get_cert_list(L"db", &secure_var, &dbsize);
-+	if (!db) {
-+		pr_err("Couldn't get UEFI db list\n");
-+	} else {
-+		rc = parse_efi_signature_list("UEFI:db",
-+					      db, dbsize, get_handler_for_db);
-+		if (rc)
-+			pr_err("Couldn't parse db signatures: %d\n", rc);
-+		kfree(db);
-+	}
-+
-+	mok = get_cert_list(L"MokListRT", &mok_var, &moksize);
-+	if (!mok) {
-+		pr_info("Couldn't get UEFI MokListRT\n");
-+	} else {
-+		rc = parse_efi_signature_list("UEFI:MokListRT",
-+					      mok, moksize, get_handler_for_db);
-+		if (rc)
-+			pr_err("Couldn't parse MokListRT signatures: %d\n", rc);
-+		kfree(mok);
-+	}
-+
-+	dbx = get_cert_list(L"dbx", &secure_var, &dbxsize);
-+	if (!dbx) {
-+		pr_info("Couldn't get UEFI dbx list\n");
-+	} else {
-+		rc = parse_efi_signature_list("UEFI:dbx",
-+					      dbx, dbxsize,
-+					      get_handler_for_dbx);
-+		if (rc)
-+			pr_err("Couldn't parse dbx signatures: %d\n", rc);
-+		kfree(dbx);
-+	}
-+
-+	return rc;
-+}
-+late_initcall(load_uefi_certs);
--- 
-2.13.6
+> ---
+>  security/integrity/ima/ima_appraise.c | 11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+> index deec1804a00a..9c13585e7d3e 100644
+> --- a/security/integrity/ima/ima_appraise.c
+> +++ b/security/integrity/ima/ima_appraise.c
+> @@ -294,7 +294,16 @@ int ima_appraise_measurement(enum ima_hooks func,
+>  					     iint->ima_hash->length);
+>  		if (rc = -EOPNOTSUPP) {
+>  			status = INTEGRITY_UNKNOWN;
+> -		} else if (rc) {
+> +			break;
+> +		}
+> +		if (rc && func = KEXEC_KERNEL_CHECK)
+> +			rc = integrity_digsig_verify(
+> +					INTEGRITY_KEYRING_PLATFORM,
+> +					(const char *)xattr_value,
+> +					xattr_len,
+> +					iint->ima_hash->digest,
+> +					iint->ima_hash->length);
+> +		if (rc) {
+>  			cause = "invalid-signature";
+>  			status = INTEGRITY_FAIL;
+>  		} else {
+> -- 
+> 2.13.6
+> 
