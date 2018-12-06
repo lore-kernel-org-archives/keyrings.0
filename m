@@ -1,93 +1,40 @@
-From: Andy Lutomirski <luto@kernel.org>
-Date: Thu, 06 Dec 2018 19:10:43 +0000
+From: Dave Hansen <dave.hansen@intel.com>
+Date: Thu, 06 Dec 2018 19:31:37 +0000
 Subject: Re: [RFC v2 00/13] Multi-Key Total Memory Encryption API (MKTME)
-Message-Id: <CALCETrVPhay-ziRVjL9dDCwJQHhr4HfG5aGJzYh06k6HEMZTiQ@mail.gmail.com>
+Message-Id: <7116c946-4e4b-c7cf-e28a-1a2b932f61f2@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <cover.1543903910.git.alison.schofield@intel.com>
  <CALCETrUqqQiHR_LJoKB2JE6hCZ-e7LiFprEhmo-qoegDZJ9uYQ@mail.gmail.com>
- <c610138f-32dd-a24c-dc52-4e0006a21409@intel.com> <CALCETrU34U3berTaEQbvNt0rfCdsjwj+xDb8x7bgAMFHEo=eUw@mail.gmail.com>
+ <c610138f-32dd-a24c-dc52-4e0006a21409@intel.com>
+ <CALCETrU34U3berTaEQbvNt0rfCdsjwj+xDb8x7bgAMFHEo=eUw@mail.gmail.com>
  <5e97e1bf-536c-ef73-576e-54145eee1ae9@intel.com>
-In-Reply-To: <5e97e1bf-536c-ef73-576e-54145eee1ae9@intel.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Andrew Lutomirski <luto@kernel.org>, Alison Schofield <alison.schofield@intel.com>, Matthew Wilcox <willy@infradead.org>, Dan Williams <dan.j.williams@intel.com>, David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, James Morris <jmorris@namei.org>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, kai.huang@intel.com, Jun Nakajima <jun.nakajima@intel.com>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, X86 ML <x86@kernel.org>
+ <CALCETrVPhay-ziRVjL9dDCwJQHhr4HfG5aGJzYh06k6HEMZTiQ@mail.gmail.com>
+In-Reply-To: <CALCETrVPhay-ziRVjL9dDCwJQHhr4HfG5aGJzYh06k6HEMZTiQ@mail.gmail.com>
+To: Andy Lutomirski <luto@kernel.org>
+Cc: Alison Schofield <alison.schofield@intel.com>, Matthew Wilcox <willy@infradead.org>, Dan Williams <dan.j.williams@intel.com>, David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, James Morris <jmorris@namei.org>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, kai.huang@intel.com, Jun Nakajima <jun.nakajima@intel.com>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, X86 ML <x86@kernel.org>
 
-> On Dec 6, 2018, at 7:39 AM, Dave Hansen <dave.hansen@intel.com> wrote:
-
->>>> the direct map as well, probably using the pageattr.c code.
->>>
->>> The current, public hardware spec has a description of what's required
->>> to maintain cache coherency.  Basically, you can keep as many mappings
->>> of a physical page as you want, but only write to one mapping at a time,
->>> and clflush the old one when you want to write to a new one.
->>
->> Surely you at least have to clflush the old mapping and then the new
->> mapping, since the new mapping could have been speculatively read.
->
-> Nope.  The coherency is "fine" unless you have writeback of an older
-> cacheline that blows away newer data.  CPUs that support MKTME are
-> guaranteed to never do writeback of the lines that could be established
-> speculatively or from prefetching.
-
-How is that sufficient?  Suppose I have some physical page mapped with
-keys 1 and 2. #1 is logically live and I write to it.  Then I prefetch
-or otherwise populate mapping 2 into the cache (in the S state,
-presumably).  Now I clflush mapping 1 and read 2.  It contains garbage
-in the cache, but the garbage in the cache is inconsistent with the
-garbage in memory.  This can’t be a good thing, even if no writeback
-occurs.
-
-I suppose the right fix is to clflush the old mapping and then to zero
-the new mapping.
-
->
->>>> Finally, If you're going to teach the kernel how to have some user
->>>> pages that aren't in the direct map, you've essentially done XPO,
->>>> which is nifty but expensive.  And I think that doing this gets you
->>>> essentially all the benefit of MKTME for the non-pmem use case.  Why
->>>> exactly would any software want to use anything other than a
->>>> CPU-managed key for anything other than pmem?
->>>
->>> It is handy, for one, to let you "cluster" key usage.  If you have 5
->>> Pepsi VMs and 5 Coke VMs, each Pepsi one using the same key and each
->>> Coke one using the same key, you can boil it down to only 2 hardware
->>> keyid slots that get used, and do this transparently.
->>
->> I understand this from a marketing perspective but not a security
->> perspective.  Say I'm Coke and you've sold me some VMs that are
->> "encrypted with a Coke-specific key and no other VMs get to use that
->> key."  I can't think of *any* not-exceedingly-contrived attack in
->> which this makes the slightest difference.  If Pepsi tries to attack
->> Coke without MKTME, then they'll either need to get the hypervisor to
->> leak Coke's data through the direct map or they'll have to find some
->> way to corrupt a page table or use something like L1TF to read from a
->> physical address Coke owns.  With MKTME, if they can read through the
->> host direct map, then they'll get Coke's cleartext, and if they can
->> corrupt a page table or use L1TF to read from your memory, they'll get
->> Coke's cleartext.
->
-> The design definitely has the hypervisor in the trust boundary.  If the
-> hypervisor is evil, or if someone evil compromises the hypervisor, MKTME
-> obviously provides less protection.
->
-> I guess the question ends up being if this makes its protections weak
-> enough that we should not bother merging it in its current form.
-
-Indeed, but I’d ask another question too: I expect that MKTME is weak
-enough that it will be improved, and without seeing the improvement,
-it seems quite plausible that using the improvement will require
-radically reworking the kernel implementation.
-
-As a straw man, suppose we get a way to say “this key may only be
-accessed through such-and-such VPID or by using a special new
-restricted facility for the hypervisor to request access”.    Now we
-have some degree of serious protection, but it doesn’t work, by
-design, for anonymous memory.  Similarly, something that looks more
-like AMD's SEV would be very very awkward to support with anything
-like the current API proposal.
-
->
-> I still have the homework assignment to go figure out why folks want the
-> protections as they stand.
+T24gMTIvNi8xOCAxMToxMCBBTSwgQW5keSBMdXRvbWlyc2tpIHdyb3RlOgo+PiBPbiBEZWMgNiwg
+MjAxOCwgYXQgNzozOSBBTSwgRGF2ZSBIYW5zZW4gPGRhdmUuaGFuc2VuQGludGVsLmNvbT4gd3Jv
+dGU6Cj4+VGhlIGNvaGVyZW5jeSBpcyAiZmluZSIgdW5sZXNzIHlvdSBoYXZlIHdyaXRlYmFjayBv
+ZiBhbiBvbGRlcgo+PiBjYWNoZWxpbmUgdGhhdCBibG93cyBhd2F5IG5ld2VyIGRhdGEuICBDUFVz
+IHRoYXQgc3VwcG9ydCBNS1RNRSBhcmUKPj4gZ3VhcmFudGVlZCB0byBuZXZlciBkbyB3cml0ZWJh
+Y2sgb2YgdGhlIGxpbmVzIHRoYXQgY291bGQgYmUgZXN0YWJsaXNoZWQKPj4gc3BlY3VsYXRpdmVs
+eSBvciBmcm9tIHByZWZldGNoaW5nLgo+IAo+IEhvdyBpcyB0aGF0IHN1ZmZpY2llbnQ/ICBTdXBw
+b3NlIEkgaGF2ZSBzb21lIHBoeXNpY2FsIHBhZ2UgbWFwcGVkIHdpdGgKPiBrZXlzIDEgYW5kIDIu
+ICMxIGlzIGxvZ2ljYWxseSBsaXZlIGFuZCBJIHdyaXRlIHRvIGl0LiAgVGhlbiBJIHByZWZldGNo
+Cj4gb3Igb3RoZXJ3aXNlIHBvcHVsYXRlIG1hcHBpbmcgMiBpbnRvIHRoZSBjYWNoZSAoaW4gdGhl
+IFMgc3RhdGUsCj4gcHJlc3VtYWJseSkuICBOb3cgSSBjbGZsdXNoIG1hcHBpbmcgMSBhbmQgcmVh
+ZCAyLiAgSXQgY29udGFpbnMgZ2FyYmFnZQo+IGluIHRoZSBjYWNoZSwgYnV0IHRoZSBnYXJiYWdl
+IGluIHRoZSBjYWNoZSBpcyBpbmNvbnNpc3RlbnQgd2l0aCB0aGUKPiBnYXJiYWdlIGluIG1lbW9y
+eS4gIFRoaXMgY2Fu4oCZdCBiZSBhIGdvb2QgdGhpbmcsIGV2ZW4gaWYgbm8gd3JpdGViYWNrCj4g
+b2NjdXJzLgo+IAo+IEkgc3VwcG9zZSB0aGUgcmlnaHQgZml4IGlzIHRvIGNsZmx1c2ggdGhlIG9s
+ZCBtYXBwaW5nIGFuZCB0aGVuIHRvIHplcm8KPiB0aGUgbmV3IG1hcHBpbmcuCgpZZXAuICBQcmFj
+dGljYWxseSwgeW91IG5lZWQgdG8gd3JpdGUgdG8gdGhlIG5ldyBtYXBwaW5nIHRvIGdpdmUgaXQg
+YW55Cm1lYW5pbmcuICBUaG9zZSB3cml0ZXMgZWZmZWN0aXZlbHkgYmxvdyBhd2F5IGFueSBwcmV2
+aW91c2x5IGNhY2hlZCwKZ2FyYmFnZSBjb250ZW50cy4KCkkgdGhpbmsgeW91J3JlIHJpZ2h0LCB0
+aG91Z2gsIHRoYXQgdGhlIGNhY2hlZCBkYXRhIG1pZ2h0IG5vdCBiZQpfY29uc2lzdGVudF8gd2l0
+aCB3aGF0IGlzIGluIG1lbW9yeS4gIEl0IGZlZWxzIHJlYWxseSBkaXJ0eSwgYnV0IEkgY2FuJ3QK
+dGhpbmsgb2YgYW55IHByb2JsZW1zIHRoYXQgaXQgYWN0dWFsbHkgY2F1c2VzLg==
