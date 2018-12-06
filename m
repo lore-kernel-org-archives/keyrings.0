@@ -1,38 +1,132 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Sun, 09 Dec 2018 18:39:56 +0000
-Subject: Re: [PATCH v2 0/7] add platform/firmware keys support for kernel verification by IMA
-Message-Id: <1544380796.3794.6.camel@linux.ibm.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Thu, 06 Dec 2018 18:26:44 +0000
+Subject: Re: [PATCH v2] KEYS: always initialize keyring_index_key::desc_len
+Message-Id: <20181206182644.GB90507@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-1-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
-To: Nayna Jain <nayna@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
+References: <000000000000a722550577796543@google.com>
+ <20181103015854.7380-1-ebiggers@kernel.org>
+ <20181128231940.GB131170@gmail.com>
+In-Reply-To: <20181128231940.GB131170@gmail.com>
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
 
-SGkgTmF5bmEsCgpPbiBTdW4sIDIwMTgtMTItMDkgYXQgMDE6NTYgKzA1MzAsIE5heW5hIEphaW4g
-d3JvdGU6Cj4gT24gc2VjdXJlIGJvb3QgZW5hYmxlZCBzeXN0ZW1zLCBhIHZlcmlmaWVkIGtlcm5l
-bCBtYXkgbmVlZCB0byBrZXhlYwo+IGFkZGl0aW9uYWwga2VybmVscy4gRm9yIGV4YW1wbGUsIGl0
-IG1heSBiZSB1c2VkIGFzIGEgYm9vdGxvYWRlciBuZWVkaW5nCj4gdG8ga2V4ZWMgYSB0YXJnZXQg
-a2VybmVsIG9yIGl0IG1heSBuZWVkIHRvIGtleGVjIGEgY3Jhc2hkdW1wIGtlcm5lbC4KPiBJbiBz
-dWNoIGNhc2VzLCBpdCBtYXkgd2FudCB0byB2ZXJpZnkgdGhlIHNpZ25hdHVyZSBvZiB0aGUgbmV4
-dCBrZXJuZWwKPiBpbWFnZS4KPiAKPiBJdCBpcyBwb3NzaWJsZSB0aGF0IHRoZSBuZXcga2VybmVs
-IGltYWdlIGlzIHNpZ25lZCB3aXRoIHRoaXJkIHBhcnR5IGtleXMKPiB3aGljaCBhcmUgc3RvcmVk
-IGFzIHBsYXRmb3JtIG9yIGZpcm13YXJlIGtleXMgaW4gdGhlICdkYicgdmFyaWFibGUuIFRoZQo+
-IGtlcm5lbCwgaG93ZXZlciwgY2FuIG5vdCBkaXJlY3RseSB2ZXJpZnkgdGhlc2UgcGxhdGZvcm0g
-a2V5cywgYW5kIGFuCj4gYWRtaW5pc3RyYXRvciBtYXkgdGhlcmVmb3JlIG5vdCB3YW50IHRvIHRy
-dXN0IHRoZW0gZm9yIGFyYml0cmFyeSB1c2FnZS4KPiBJbiBvcmRlciB0byBkaWZmZXJlbnRpYXRl
-IHBsYXRmb3JtIGtleXMgZnJvbSBvdGhlciBrZXlzIGFuZCBwcm92aWRlIHRoZQo+IG5lY2Vzc2Fy
-eSBzZXBhcmF0aW9uIG9mIHRydXN0IHRoZSBrZXJuZWwgbmVlZHMgYW4gYWRkaXRpb25hbCBrZXly
-aW5nIHRvCj4gc3RvcmUgcGxhdGZvcm0vZmlybXdhcmUga2V5cy4KPiAKPiBUaGUgc2VjdXJlIGJv
-b3Qga2V5IGRhdGFiYXNlIGlzIGV4cGVjdGVkIHRvIHN0b3JlIHRoZSBrZXlzIGFzIEVGSQo+IFNp
-Z25hdHVyZSBMaXN0KEVTTCkuIFRoZSBwYXRjaCBzZXQgdXNlcyBEYXZpZCBIb3dlbGxzIGFuZCBK
-b3NoIEJveWVyJ3MKPiBwYXRjaCB0byBhY2Nlc3MgYW5kIHBhcnNlIHRoZSBFU0wgdG8gZXh0cmFj
-dCB0aGUgY2VydGlmaWNhdGVzIGFuZCBsb2FkCj4gdGhlbSBvbnRvIHRoZSBwbGF0Zm9ybSBrZXly
-aW5nLgo+IAo+IFRoZSBsYXN0IHBhdGNoIGluIHRoaXMgcGF0Y2ggc2V0IGFkZHMgc3VwcG9ydCBm
-b3IgSU1BLWFwcHJhaXNhbCB0bwo+IHZlcmlmeSB0aGUga2V4ZWMnZWQga2VybmVsIGltYWdlIGJh
-c2VkIG9uIGtleXMgc3RvcmVkIGluIHRoZSBwbGF0Zm9ybQo+IGtleXJpbmcuCgpUaGFua3MhIMKg
-VGhpcyBwYXRjaCBzZXQgaXMgbm93IGluIHRoZSAjbmV4dC1pbnRlZ3JpdHkgYnJhbmNoLgoKaHR0
-cHM6Ly9naXQua2VybmVsLm9yZy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvem9oYXIvbGludXgt
-aW50ZWdyaXR5LmdpdC8KCk1pbWkK
+On Wed, Nov 28, 2018 at 03:19:41PM -0800, Eric Biggers wrote:
+> On Fri, Nov 02, 2018 at 06:58:54PM -0700, Eric Biggers wrote:
+> > From: Eric Biggers <ebiggers@google.com>
+> > 
+> > syzbot hit the 'BUG_ON(index_key->desc_len = 0);' in __key_link_begin()
+> > called from construct_alloc_key() during sys_request_key(), because the
+> > length of the key description was never calculated.
+> > 
+> > The problem is that we rely on ->desc_len being initialized by
+> > search_process_keyrings(), specifically by search_nested_keyrings().
+> > But, if the process isn't subscribed to any keyrings that never happens.
+> > 
+> > Fix it by always initializing keyring_index_key::desc_len as soon as the
+> > description is set, like we already do in some places.
+> > 
+> > The following program reproduces the BUG_ON() when it's run as root and
+> > no session keyring has been installed.  If it doesn't work, try removing
+> > pam_keyinit.so from /etc/pam.d/login and rebooting.
+> > 
+> >     #include <stdlib.h>
+> >     #include <unistd.h>
+> >     #include <keyutils.h>
+> > 
+> >     int main(void)
+> >     {
+> >             int id = add_key("keyring", "syz", NULL, 0, KEY_SPEC_USER_KEYRING);
+> > 
+> >             keyctl_setperm(id, KEY_OTH_WRITE);
+> >             setreuid(5000, 5000);
+> >             request_key("user", "desc", "", id);
+> >     }
+> > 
+> > Reported-by: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com
+> > Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
+> > Cc: <stable@vger.kernel.org> # v3.13+
+> > Signed-off-by: Eric Biggers <ebiggers@google.com>
+> > ---
+> > 
+> > v2: In proc_keys_show(), assign index_key directly
+> > 
+> >  security/keys/keyring.c          | 4 +---
+> >  security/keys/proc.c             | 3 +--
+> >  security/keys/request_key.c      | 1 +
+> >  security/keys/request_key_auth.c | 2 +-
+> >  4 files changed, 4 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+> > index 41bcf57e96f21..99a55145ddcd2 100644
+> > --- a/security/keys/keyring.c
+> > +++ b/security/keys/keyring.c
+> > @@ -661,9 +661,6 @@ static bool search_nested_keyrings(struct key *keyring,
+> >  	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
+> >  	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
+> >  
+> > -	if (ctx->index_key.description)
+> > -		ctx->index_key.desc_len = strlen(ctx->index_key.description);
+> > -
+> >  	/* Check to see if this top-level keyring is what we are looking for
+> >  	 * and whether it is valid or not.
+> >  	 */
+> > @@ -914,6 +911,7 @@ key_ref_t keyring_search(key_ref_t keyring,
+> >  	struct keyring_search_context ctx = {
+> >  		.index_key.type		= type,
+> >  		.index_key.description	= description,
+> > +		.index_key.desc_len	= strlen(description),
+> >  		.cred			= current_cred(),
+> >  		.match_data.cmp		= key_default_cmp,
+> >  		.match_data.raw_data	= description,
+> > diff --git a/security/keys/proc.c b/security/keys/proc.c
+> > index 5af2934965d80..d38be9db2cc07 100644
+> > --- a/security/keys/proc.c
+> > +++ b/security/keys/proc.c
+> > @@ -166,8 +166,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
+> >  	int rc;
+> >  
+> >  	struct keyring_search_context ctx = {
+> > -		.index_key.type		= key->type,
+> > -		.index_key.description	= key->description,
+> > +		.index_key		= key->index_key,
+> >  		.cred			= m->file->f_cred,
+> >  		.match_data.cmp		= lookup_user_key_possessed,
+> >  		.match_data.raw_data	= key,
+> > diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+> > index 114f7408feee6..7385536986497 100644
+> > --- a/security/keys/request_key.c
+> > +++ b/security/keys/request_key.c
+> > @@ -545,6 +545,7 @@ struct key *request_key_and_link(struct key_type *type,
+> >  	struct keyring_search_context ctx = {
+> >  		.index_key.type		= type,
+> >  		.index_key.description	= description,
+> > +		.index_key.desc_len	= strlen(description),
+> >  		.cred			= current_cred(),
+> >  		.match_data.cmp		= key_default_cmp,
+> >  		.match_data.raw_data	= description,
+> > diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+> > index 424e1d90412ea..6797843154f03 100644
+> > --- a/security/keys/request_key_auth.c
+> > +++ b/security/keys/request_key_auth.c
+> > @@ -246,7 +246,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
+> >  	struct key *authkey;
+> >  	key_ref_t authkey_ref;
+> >  
+> > -	sprintf(description, "%x", target_id);
+> > +	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
+> >  
+> >  	authkey_ref = search_process_keyrings(&ctx);
+> >  
+> > -- 
+> > 2.19.1
+> > 
+> 
+> Ping.  David, are you planning to apply this?
+> 
+> - Eric
+> 
+
+Ping.
