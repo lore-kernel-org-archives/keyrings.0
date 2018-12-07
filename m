@@ -1,7 +1,7 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Fri, 07 Dec 2018 03:42:17 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Date: Fri, 07 Dec 2018 06:39:19 +0000
 Subject: Re: [RFC v2 12/13] keys/mktme: Save MKTME data if kernel cmdline parameter allows
-Message-Id: <20181207034217.GA13388@alison-desk.jf.intel.com>
+Message-Id: <20181207063918.GB12969@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,13 +11,31 @@ References: <cover.1543903910.git.alison.schofield@intel.com>
  <1544148839.28511.28.camel@intel.com>
 In-Reply-To: <1544148839.28511.28.camel@intel.com>
 To: "Huang, Kai" <kai.huang@intel.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>, "dhowells@redhat.com" <dhowells@redhat.com>, "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>, "peterz@infradead.org" <peterz@infradead.org>, "jmorris@namei.org" <jmorris@namei.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "Williams, Dan J" <dan.j.williams@intel.com>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "luto@kernel.org" <luto@kernel.org>, "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>, "bp@alien8.de" <bp@alien8.de>, "Hansen, Dave" <dave.hansen@intel.com>, "Nakajima, Jun" <jun.nakajima@intel.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>, "Schofield, Alison" <alison.schofield@intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>, "peterz@infradead.org" <peterz@infradead.org>, "jmorris@namei.org" <jmorris@namei.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "Williams, Dan J" <dan.j.williams@intel.com>, "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>, "luto@kernel.org" <luto@kernel.org>, "bp@alien8.de" <bp@alien8.de>, "Hansen, Dave" <dave.hansen@intel.com>, "Nakajima, Jun" <jun.nakajima@intel.com>
 
 On Thu, Dec 06, 2018 at 06:14:03PM -0800, Huang, Kai wrote:
 > On Mon, 2018-12-03 at 23:39 -0800, Alison Schofield wrote:
-
-8< ------------
-
+> > MKTME (Multi-Key Total Memory Encryption) key payloads may include
+> > data encryption keys, tweak keys, and additional entropy bits. These
+> > are used to program the MKTME encryption hardware. By default, the
+> > kernel destroys this payload data once the hardware is programmed.
+> > 
+> > However, in order to fully support CPU Hotplug, saving the key data
+> > becomes important. The MKTME Key Service cannot allow a new physical
+> > package to come online unless it can program the new packages Key Table
+> > to match the Key Tables of all existing physical packages.
+> > 
+> > With CPU generated keys (a.k.a. random keys or ephemeral keys) the
+> > saving of user key data is not an issue. The kernel and MKTME hardware
+> > can generate strong encryption keys without recalling any user supplied
+> > data.
+> > 
+> > With USER directed keys (a.k.a. user type) saving the key programming
+> > data (data and tweak key) becomes an issue. The data and tweak keys
+> > are required to program those keys on a new physical package.
+> > 
+> > In preparation for adding CPU hotplug support:
+> > 
 > >    Add an 'mktme_vault' where key data is stored.
 > > 
 > >    Add 'mktme_savekeys' kernel command line parameter that directs
@@ -28,28 +46,15 @@ On Thu, Dec 06, 2018 at 06:14:03PM -0800, Huang, Kai wrote:
 > >    use. If no USER type keys are currently in use, a physical package
 > >    may be brought online, despite the absence of 'mktme_savekeys'.
 > 
-> Overall, I am not sure whether saving key is good idea, since it breaks coldboot attack IMHO. We
-> need to tradeoff between supporting CPU hotplug and security. I am not sure whether supporting CPU
-> hotplug is that important, since for some other features such as SGX, we don't support CPU hotplug
-> anyway.
+> Overall, I am not sure whether saving key is good idea, since it
+> breaks coldboot attack IMHO. We need to tradeoff between supporting
+> CPU hotplug and security. I am not sure whether supporting CPU hotplug
+> is that important, since for some other features such as SGX, we don't
+> support CPU hotplug anyway.
 
-Yes, saving the key data exposes it in a cold boot attack.
+What is the application for saving the key anyway?
 
-Here we have 2 conflicting requirements. Do not save the data and
-support CPU hotplug. I don't think CPU hotplug support is budging!
-If the risk of offering the mktme_savekeys option is too dangerous,
-then we can't have user type keys.
-Is mktme_savekeys options too risky to offer?
-(That's not just a question for you Kai ;). I'll pursue too.)
-> 
-> Alternatively, we can choose to use per-socket keyID, but not to program keyID globally across all
-> sockets, so you don't have to save key while still supporting CPU hotplug.
+With my current knowledge, I'm not even sure what is the application
+for user provided keys.
 
-An alternative, with a lot of impact to the core linux support for
-MKTME.  I don't think we need to go there. I'll leave this thought for
-a Kirill or Dave to perhaps elaborate on. 
-
-Alison 
-> 
-> Thanks,
-> -Kai
+/Jarkko
