@@ -1,52 +1,76 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Wed, 05 Dec 2018 05:36:15 +0000
-Subject: Re: [RFC v2 13/13] keys/mktme: Support CPU Hotplug for MKTME keys
-Message-Id: <20181205053615.GD18596@alison-desk.jf.intel.com>
+From: Nayna Jain <nayna@linux.ibm.com>
+Date: Sat, 08 Dec 2018 20:39:01 +0000
+Subject: [PATCH v2 3/7] efi: Add EFI signature data types
+Message-Id: <20181208202705.18673-4-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1543903910.git.alison.schofield@intel.com>
- <c14d24b09ee2ae37ea4106726ce8fe2aea31f6c7.1543903910.git.alison.schofield@intel.com>
- <20181204093116.GV11614@hirez.programming.kicks-ass.net>
-In-Reply-To: <20181204093116.GV11614@hirez.programming.kicks-ass.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: dhowells@redhat.com, tglx@linutronix.de, jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
+References: <20181208202705.18673-1-nayna@linux.ibm.com>
+In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
 
-On Tue, Dec 04, 2018 at 10:31:16AM +0100, Peter Zijlstra wrote:
-> On Mon, Dec 03, 2018 at 11:40:00PM -0800, Alison Schofield wrote:
-> >  static int mktme_program_system(struct mktme_key_program *key_program,
-> > -				cpumask_var_t mktme_cpumask)
-> > +				cpumask_var_t mktme_cpumask, int hotplug)
-> >  {
-> >  	struct mktme_hw_program_info info = {
-> >  		.key_program = key_program,
-> >  		.status = MKTME_PROG_SUCCESS,
-> >  	};
-> > -	get_online_cpus();
-> > -	on_each_cpu_mask(mktme_cpumask, mktme_program_package, &info, 1);
-> > -	put_online_cpus();
-> > +
-> > +	if (!hotplug) {
-> > +		get_online_cpus();
-> > +		on_each_cpu_mask(mktme_cpumask, mktme_program_package,
-> > +				 &info, 1);
-> > +		put_online_cpus();
-> > +	} else {
-> > +		on_each_cpu_mask(mktme_cpumask, mktme_program_package,
-> > +				 &info, 1);
-> > +	}
-> >  
-> >  	return info.status;
-> >  }
-> 
-> That is pretty horrible; and I think easily avoided.
-Agree it's ugly. Not sure we share the same reasoning. I realize that
-the hotplug case is on the current cpu and so that whole
-one_each_cpu_mask() call is not needed. mktme_program_package() can just
-be called on the current cpu.
+From: Dave Howells <dhowells@redhat.com>
 
-The ugliness that haunts me is that I wanted to reuse this code path,
-and so I passed that 'hotplug' parameter along as a differentiator
-between hotplug & 'typical' key programming. 
-I'll rework this.
+Add the data types that are used for containing hashes, keys and
+certificates for cryptographic verification along with their corresponding
+type GUIDs.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Nayna Jain <nayna@linux.ibm.com>
+Acked-by: Serge Hallyn <serge@hallyn.com>
+---
+Changelog:
+
+v0:
+- No changes
+
+ include/linux/efi.h | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 845174e113ce..214516b29b36 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -663,6 +663,10 @@ void efi_native_runtime_setup(void);
+ #define EFI_IMAGE_SECURITY_DATABASE_GUID	EFI_GUID(0xd719b2cb, 0x3d3a, 0x4596,  0xa3, 0xbc, 0xda, 0xd0, 0x0e, 0x67, 0x65, 0x6f)
+ #define EFI_SHIM_LOCK_GUID			EFI_GUID(0x605dab50, 0xe046, 0x4300,  0xab, 0xb6, 0x3d, 0xd8, 0x10, 0xdd, 0x8b, 0x23)
+ 
++#define EFI_CERT_SHA256_GUID			EFI_GUID(0xc1c41626, 0x504c, 0x4092, 0xac, 0xa9, 0x41, 0xf9, 0x36, 0x93, 0x43, 0x28)
++#define EFI_CERT_X509_GUID			EFI_GUID(0xa5c059a1, 0x94e4, 0x4aa7, 0x87, 0xb5, 0xab, 0x15, 0x5c, 0x2b, 0xf0, 0x72)
++#define EFI_CERT_X509_SHA256_GUID		EFI_GUID(0x3bd2a492, 0x96c0, 0x4079, 0xb4, 0x20, 0xfc, 0xf9, 0x8e, 0xf1, 0x03, 0xed)
++
+ /*
+  * This GUID is used to pass to the kernel proper the struct screen_info
+  * structure that was populated by the stub based on the GOP protocol instance
+@@ -934,6 +938,27 @@ typedef struct {
+ 	efi_memory_desc_t entry[0];
+ } efi_memory_attributes_table_t;
+ 
++typedef struct  {
++	efi_guid_t signature_owner;
++	u8 signature_data[];
++} efi_signature_data_t;
++
++typedef struct {
++	efi_guid_t signature_type;
++	u32 signature_list_size;
++	u32 signature_header_size;
++	u32 signature_size;
++	u8 signature_header[];
++	/* efi_signature_data_t signatures[][] */
++} efi_signature_list_t;
++
++typedef u8 efi_sha256_hash_t[32];
++
++typedef struct {
++	efi_sha256_hash_t to_be_signed_hash;
++	efi_time_t time_of_revocation;
++} efi_cert_x509_sha256_t;
++
+ /*
+  * All runtime access to EFI goes through this structure:
+  */
+-- 
+2.13.6
