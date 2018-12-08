@@ -1,46 +1,107 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Thu, 13 Dec 2018 11:58:12 +0000
-Subject: Re: [RFC PATCH] akcipher: Introduce verify2 for public key algorithms
-Message-Id: <20181213115811.22ebsv6y6vqclfrz@sole.flsd.net>
+From: Nayna Jain <nayna@linux.ibm.com>
+Date: Sat, 08 Dec 2018 20:39:04 +0000
+Subject: [PATCH v2 6/7] efi: Allow the "db" UEFI variable to be suppressed
+Message-Id: <20181208202705.18673-7-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181211165938.1150-1-vt@altlinux.org>
- <b2e6060c-1e2a-c2c5-0484-715646d16201@microchip.com>
-In-Reply-To: <b2e6060c-1e2a-c2c5-0484-715646d16201@microchip.com>
-To: Tudor.Ambarus@microchip.com
-Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org
+References: <20181208202705.18673-1-nayna@linux.ibm.com>
+In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Josh Boyer <jwboyer@fedoraproject.org>
 
-Tudor,
+From: Josh Boyer <jwboyer@fedoraproject.org>
 
-On Thu, Dec 13, 2018 at 10:26:53AM +0000, Tudor.Ambarus@microchip.com wrote:
-> 
-> On 12/11/2018 06:59 PM, Vitaly Chikunov wrote:
-> > Current akcipher .verify() just decrypts signature to uncover message
-> > hash, which is then verified in upper level public_key_verify_signature
-> > by memcmp with the expected signature value, which is never passed into
-> > verify().
-> > 
-> > This approach is incompatible with ECDSA algorithms, because, to verify
-> 
-> I would love to have ECDSA in kernel but unfortunately it hasn't reached kernel
-> because there is no in-kernel user for it. Do we have an agreement that we will
-> add support for it? If not, who will benefit of these patches?
+If a user tells shim to not use the certs/hashes in the UEFI db variable
+for verification purposes, shim will set a UEFI variable called
+MokIgnoreDB. Have the uefi import code look for this and ignore the db
+variable if it is found.
 
-I will post patchset for EC-RDSA support (which is slightly different from
-ECDSA, but is the same algorithm family). This is intended for use in IMA.
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Nayna Jain <nayna@linux.ibm.com>
+Acked-by: Serge Hallyn <serge@hallyn.com>
+---
+Changelog:
 
-Even though EC-RDSA is different from ECDSA it will require the same changes
-that I propose in these RFCs. Basically, after EC-RDSA is implemented and
-hooked into IMA it will be much easier to implement ECDSA.
+v0:
+- No changes
 
-An additional use case is future possibility to implement other signature
-schemes out of tree, which is currently not possible because API is very
-RSA-centric.
+v2:
+- Fixed the checkpatch.pl warnings
 
-Thanks,
+ security/integrity/platform_certs/load_uefi.c | 45 +++++++++++++++++++++------
+ 1 file changed, 35 insertions(+), 10 deletions(-)
 
-> 
-> Thanks,
-> ta
+diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
+index acd9db90dde7..8bd2e9b421e1 100644
+--- a/security/integrity/platform_certs/load_uefi.c
++++ b/security/integrity/platform_certs/load_uefi.c
+@@ -16,6 +16,26 @@ static efi_guid_t efi_cert_x509_sha256_guid __initdata  static efi_guid_t efi_cert_sha256_guid __initdata = EFI_CERT_SHA256_GUID;
+ 
+ /*
++ * Look to see if a UEFI variable called MokIgnoreDB exists and return true if
++ * it does.
++ *
++ * This UEFI variable is set by the shim if a user tells the shim to not use
++ * the certs/hashes in the UEFI db variable for verification purposes.  If it
++ * is set, we should ignore the db variable also and the true return indicates
++ * this.
++ */
++static __init bool uefi_check_ignore_db(void)
++{
++	efi_status_t status;
++	unsigned int db = 0;
++	unsigned long size = sizeof(db);
++	efi_guid_t guid = EFI_SHIM_LOCK_GUID;
++
++	status = efi.get_variable(L"MokIgnoreDB", &guid, NULL, &size, &db);
++	return status = EFI_SUCCESS;
++}
++
++/*
+  * Get a certificate list blob from the named EFI variable.
+  */
+ static __init void *get_cert_list(efi_char16_t *name, efi_guid_t *guid,
+@@ -116,7 +136,9 @@ static __init efi_element_handler_t get_handler_for_dbx(const efi_guid_t *
+ }
+ 
+ /*
+- * Load the certs contained in the UEFI databases
++ * Load the certs contained in the UEFI databases into the secondary trusted
++ * keyring and the UEFI blacklisted X.509 cert SHA256 hashes into the blacklist
++ * keyring.
+  */
+ static int __init load_uefi_certs(void)
+ {
+@@ -132,15 +154,18 @@ static int __init load_uefi_certs(void)
+ 	/* Get db, MokListRT, and dbx.  They might not exist, so it isn't
+ 	 * an error if we can't get them.
+ 	 */
+-	db = get_cert_list(L"db", &secure_var, &dbsize);
+-	if (!db) {
+-		pr_err("Couldn't get UEFI db list\n");
+-	} else {
+-		rc = parse_efi_signature_list("UEFI:db",
+-					      db, dbsize, get_handler_for_db);
+-		if (rc)
+-			pr_err("Couldn't parse db signatures: %d\n", rc);
+-		kfree(db);
++	if (!uefi_check_ignore_db()) {
++		db = get_cert_list(L"db", &secure_var, &dbsize);
++		if (!db) {
++			pr_err("MODSIGN: Couldn't get UEFI db list\n");
++		} else {
++			rc = parse_efi_signature_list("UEFI:db",
++					db, dbsize, get_handler_for_db);
++			if (rc)
++				pr_err("Couldn't parse db signatures: %d\n",
++				       rc);
++			kfree(db);
++		}
+ 	}
+ 
+ 	mok = get_cert_list(L"MokListRT", &mok_var, &moksize);
+-- 
+2.13.6
