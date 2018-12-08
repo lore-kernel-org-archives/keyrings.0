@@ -1,132 +1,205 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 06 Dec 2018 18:26:44 +0000
-Subject: Re: [PATCH v2] KEYS: always initialize keyring_index_key::desc_len
-Message-Id: <20181206182644.GB90507@gmail.com>
+From: Nayna Jain <nayna@linux.ibm.com>
+Date: Sat, 08 Dec 2018 20:39:00 +0000
+Subject: [PATCH v2 2/7] integrity: Load certs to the platform keyring
+Message-Id: <20181208202705.18673-3-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <000000000000a722550577796543@google.com>
- <20181103015854.7380-1-ebiggers@kernel.org>
- <20181128231940.GB131170@gmail.com>
-In-Reply-To: <20181128231940.GB131170@gmail.com>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
+References: <20181208202705.18673-1-nayna@linux.ibm.com>
+In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
 
-On Wed, Nov 28, 2018 at 03:19:41PM -0800, Eric Biggers wrote:
-> On Fri, Nov 02, 2018 at 06:58:54PM -0700, Eric Biggers wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> > 
-> > syzbot hit the 'BUG_ON(index_key->desc_len = 0);' in __key_link_begin()
-> > called from construct_alloc_key() during sys_request_key(), because the
-> > length of the key description was never calculated.
-> > 
-> > The problem is that we rely on ->desc_len being initialized by
-> > search_process_keyrings(), specifically by search_nested_keyrings().
-> > But, if the process isn't subscribed to any keyrings that never happens.
-> > 
-> > Fix it by always initializing keyring_index_key::desc_len as soon as the
-> > description is set, like we already do in some places.
-> > 
-> > The following program reproduces the BUG_ON() when it's run as root and
-> > no session keyring has been installed.  If it doesn't work, try removing
-> > pam_keyinit.so from /etc/pam.d/login and rebooting.
-> > 
-> >     #include <stdlib.h>
-> >     #include <unistd.h>
-> >     #include <keyutils.h>
-> > 
-> >     int main(void)
-> >     {
-> >             int id = add_key("keyring", "syz", NULL, 0, KEY_SPEC_USER_KEYRING);
-> > 
-> >             keyctl_setperm(id, KEY_OTH_WRITE);
-> >             setreuid(5000, 5000);
-> >             request_key("user", "desc", "", id);
-> >     }
-> > 
-> > Reported-by: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com
-> > Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
-> > Cc: <stable@vger.kernel.org> # v3.13+
-> > Signed-off-by: Eric Biggers <ebiggers@google.com>
-> > ---
-> > 
-> > v2: In proc_keys_show(), assign index_key directly
-> > 
-> >  security/keys/keyring.c          | 4 +---
-> >  security/keys/proc.c             | 3 +--
-> >  security/keys/request_key.c      | 1 +
-> >  security/keys/request_key_auth.c | 2 +-
-> >  4 files changed, 4 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> > index 41bcf57e96f21..99a55145ddcd2 100644
-> > --- a/security/keys/keyring.c
-> > +++ b/security/keys/keyring.c
-> > @@ -661,9 +661,6 @@ static bool search_nested_keyrings(struct key *keyring,
-> >  	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
-> >  	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
-> >  
-> > -	if (ctx->index_key.description)
-> > -		ctx->index_key.desc_len = strlen(ctx->index_key.description);
-> > -
-> >  	/* Check to see if this top-level keyring is what we are looking for
-> >  	 * and whether it is valid or not.
-> >  	 */
-> > @@ -914,6 +911,7 @@ key_ref_t keyring_search(key_ref_t keyring,
-> >  	struct keyring_search_context ctx = {
-> >  		.index_key.type		= type,
-> >  		.index_key.description	= description,
-> > +		.index_key.desc_len	= strlen(description),
-> >  		.cred			= current_cred(),
-> >  		.match_data.cmp		= key_default_cmp,
-> >  		.match_data.raw_data	= description,
-> > diff --git a/security/keys/proc.c b/security/keys/proc.c
-> > index 5af2934965d80..d38be9db2cc07 100644
-> > --- a/security/keys/proc.c
-> > +++ b/security/keys/proc.c
-> > @@ -166,8 +166,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
-> >  	int rc;
-> >  
-> >  	struct keyring_search_context ctx = {
-> > -		.index_key.type		= key->type,
-> > -		.index_key.description	= key->description,
-> > +		.index_key		= key->index_key,
-> >  		.cred			= m->file->f_cred,
-> >  		.match_data.cmp		= lookup_user_key_possessed,
-> >  		.match_data.raw_data	= key,
-> > diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-> > index 114f7408feee6..7385536986497 100644
-> > --- a/security/keys/request_key.c
-> > +++ b/security/keys/request_key.c
-> > @@ -545,6 +545,7 @@ struct key *request_key_and_link(struct key_type *type,
-> >  	struct keyring_search_context ctx = {
-> >  		.index_key.type		= type,
-> >  		.index_key.description	= description,
-> > +		.index_key.desc_len	= strlen(description),
-> >  		.cred			= current_cred(),
-> >  		.match_data.cmp		= key_default_cmp,
-> >  		.match_data.raw_data	= description,
-> > diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-> > index 424e1d90412ea..6797843154f03 100644
-> > --- a/security/keys/request_key_auth.c
-> > +++ b/security/keys/request_key_auth.c
-> > @@ -246,7 +246,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
-> >  	struct key *authkey;
-> >  	key_ref_t authkey_ref;
-> >  
-> > -	sprintf(description, "%x", target_id);
-> > +	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
-> >  
-> >  	authkey_ref = search_process_keyrings(&ctx);
-> >  
-> > -- 
-> > 2.19.1
-> > 
-> 
-> Ping.  David, are you planning to apply this?
-> 
-> - Eric
-> 
+The patch refactors integrity_load_x509(), making it a wrapper for a new
+function named integrity_add_key(). This patch also defines a new
+function named integrity_load_cert() for loading the platform keys.
 
-Ping.
+Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Acked-by: Serge Hallyn <serge@hallyn.com>
+---
+ security/integrity/digsig.c                        | 71 ++++++++++++++--------
+ security/integrity/integrity.h                     | 20 ++++++
+ .../integrity/platform_certs/platform_keyring.c    | 23 +++++++
+ 3 files changed, 90 insertions(+), 24 deletions(-)
+
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index b5b180ff1434..4ba167255225 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -82,8 +82,7 @@ static int __integrity_init_keyring(const unsigned int id, key_perm_t perm,
+ 
+ 	keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
+ 				    KGIDT_INIT(0), cred, perm,
+-				    KEY_ALLOC_NOT_IN_QUOTA,
+-				    restriction, NULL);
++				    KEY_ALLOC_NOT_IN_QUOTA, restriction, NULL);
+ 	if (IS_ERR(keyring[id])) {
+ 		err = PTR_ERR(keyring[id]);
+ 		pr_info("Can't allocate %s keyring (%d)\n",
+@@ -124,16 +123,38 @@ int __init integrity_init_keyring(const unsigned int id)
+ 	return err;
+ }
+ 
+-int __init integrity_load_x509(const unsigned int id, const char *path)
++int __init integrity_add_key(const unsigned int id, const void *data,
++			     off_t size, key_perm_t perm)
+ {
+ 	key_ref_t key;
+-	void *data;
+-	loff_t size;
+-	int rc;
++	int rc = 0;
+ 
+ 	if (!keyring[id])
+ 		return -EINVAL;
+ 
++	key = key_create_or_update(make_key_ref(keyring[id], 1), "asymmetric",
++				   NULL, data, size, perm,
++				   KEY_ALLOC_NOT_IN_QUOTA);
++	if (IS_ERR(key)) {
++		rc = PTR_ERR(key);
++		pr_err("Problem loading X.509 certificate %d\n", rc);
++	} else {
++		pr_notice("Loaded X.509 cert '%s'\n",
++			  key_ref_to_ptr(key)->description);
++		key_ref_put(key);
++	}
++
++	return rc;
++
++}
++
++int __init integrity_load_x509(const unsigned int id, const char *path)
++{
++	void *data;
++	loff_t size;
++	int rc;
++	key_perm_t perm;
++
+ 	rc = kernel_read_file_from_path(path, &data, &size, 0,
+ 					READING_X509_CERTIFICATE);
+ 	if (rc < 0) {
+@@ -141,23 +162,25 @@ int __init integrity_load_x509(const unsigned int id, const char *path)
+ 		return rc;
+ 	}
+ 
+-	key = key_create_or_update(make_key_ref(keyring[id], 1),
+-				   "asymmetric",
+-				   NULL,
+-				   data,
+-				   size,
+-				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+-				    KEY_USR_VIEW | KEY_USR_READ),
+-				   KEY_ALLOC_NOT_IN_QUOTA);
+-	if (IS_ERR(key)) {
+-		rc = PTR_ERR(key);
+-		pr_err("Problem loading X.509 certificate (%d): %s\n",
+-		       rc, path);
+-	} else {
+-		pr_notice("Loaded X.509 cert '%s': %s\n",
+-			  key_ref_to_ptr(key)->description, path);
+-		key_ref_put(key);
+-	}
++	perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW | KEY_USR_READ;
++
++	pr_info("Loading X.509 certificate: %s\n", path);
++	rc = integrity_add_key(id, (const void *)data, size, perm);
++
+ 	vfree(data);
+-	return 0;
++	return rc;
++}
++
++int __init integrity_load_cert(const unsigned int id, const char *source,
++			       const void *data, size_t len, key_perm_t perm)
++{
++	int rc;
++
++	if (!data)
++		return -EINVAL;
++
++	pr_info("Loading X.509 certificate: %s\n", source);
++	rc = integrity_add_key(id, data, len, perm);
++
++	return rc;
+ }
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index c2332a44799e..3517d2852a07 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -154,6 +154,8 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 
+ int __init integrity_init_keyring(const unsigned int id);
+ int __init integrity_load_x509(const unsigned int id, const char *path);
++int __init integrity_load_cert(const unsigned int id, const char *source,
++			       const void *data, size_t len, key_perm_t perm);
+ #else
+ 
+ static inline int integrity_digsig_verify(const unsigned int id,
+@@ -167,6 +169,14 @@ static inline int integrity_init_keyring(const unsigned int id)
+ {
+ 	return 0;
+ }
++
++static inline int __init integrity_load_cert(const unsigned int id,
++					     const char *source,
++					     const void *data, size_t len,
++					     key_perm_t perm)
++{
++	return 0;
++}
+ #endif /* CONFIG_INTEGRITY_SIGNATURE */
+ 
+ #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
+@@ -223,3 +233,13 @@ integrity_audit_log_start(struct audit_context *ctx, gfp_t gfp_mask, int type)
+ }
+ 
+ #endif
++
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++void __init add_to_platform_keyring(const char *source, const void *data,
++				    size_t len);
++#else
++static inline void __init add_to_platform_keyring(const char *source,
++						  const void *data, size_t len)
++{
++}
++#endif
+diff --git a/security/integrity/platform_certs/platform_keyring.c b/security/integrity/platform_certs/platform_keyring.c
+index dfc206bbe2ff..dc49b3b02697 100644
+--- a/security/integrity/platform_certs/platform_keyring.c
++++ b/security/integrity/platform_certs/platform_keyring.c
+@@ -18,6 +18,29 @@
+ #include <linux/slab.h>
+ #include "../integrity.h"
+ 
++/**
++ * add_to_platform_keyring - Add to platform keyring without validation.
++ * @source: Source of key
++ * @data: The blob holding the key
++ * @len: The length of the data blob
++ *
++ * Add a key to the platform keyring without checking its trust chain.  This
++ * is available only during kernel initialisation.
++ */
++void __init add_to_platform_keyring(const char *source, const void *data,
++				    size_t len)
++{
++	key_perm_t perm;
++	int rc;
++
++	perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW;
++
++	rc = integrity_load_cert(INTEGRITY_KEYRING_PLATFORM, source, data, len,
++				 perm);
++	if (rc)
++		pr_info("Error adding keys to platform keyring %s\n", source);
++}
++
+ /*
+  * Create the trusted keyrings.
+  */
+-- 
+2.13.6
