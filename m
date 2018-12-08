@@ -1,180 +1,198 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 13 Dec 2018 02:08:53 +0000
-Subject: [PATCH v9 00/14] Appended signatures support for IMA appraisal
-Message-Id: <20181213020907.13601-1-bauerman@linux.ibm.com>
+From: Nayna Jain <nayna@linux.ibm.com>
+Date: Sat, 08 Dec 2018 20:39:02 +0000
+Subject: [PATCH v2 4/7] efi: Add an EFI signature blob parser
+Message-Id: <20181208202705.18673-5-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20181208202705.18673-1-nayna@linux.ibm.com>
+In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
 
-Hello,
+From: Dave Howells <dhowells@redhat.com>
 
-This version is basically about tidying up the code to make it clearer. Most
-of the changes are in patches 11 and 14.
+Add a function to parse an EFI signature blob looking for elements of
+interest. A list is made up of a series of sublists, where all the
+elements in a sublist are of the same type, but sublists can be of
+different types.
 
-There are two functional changes: one is modifying the list of hooks allowed
-to use modsig to allow verifying signed modules and disallow verifying
-firmware, and the other is to use the platform keyring as fallback for kexec
-kernel verification.
+For each sublist encountered, the function pointed to by the
+get_handler_for_guid argument is called with the type specifier GUID and
+returns either a pointer to a function to handle elements of that type or
+NULL if the type is not of interest.
 
-The changelog below has the details. The patches apply on today's
-linux-integrity/next-integrity.
+If the sublist is of interest, each element is passed to the handler
+function in turn.
 
-Original cover letter:
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+Acked-by: Serge Hallyn <serge@hallyn.com>
+---
+Changelog:
 
-On the OpenPOWER platform, secure boot and trusted boot are being
-implemented using IMA for taking measurements and verifying signatures.
-Since the kernel image on Power servers is an ELF binary, kernels are
-signed using the scripts/sign-file tool and thus use the same signature
-format as signed kernel modules.
+v0:
+- removed the CONFIG EFI_SIGNATURE_LIST_PARSER
+- moved efi_parser.c from certs to security/integrity/platform_certs
+  directory
 
-This patch series adds support in IMA for verifying those signatures.
-It adds flexibility to OpenPOWER secure boot, because it allows it to boot
-kernels with the signature appended to them as well as kernels where the
-signature is stored in the IMA extended attribute.
+v2:
+- Fixed the checkpatch.pl warnings
 
-Changes since v8:
-- Patch "MODSIGN: Export module signature definitions"
-  - Renamed validate_module_sig() to mod_check_sig(). (Suggested by
-    Mimi Zohar).
+ include/linux/efi.h                            |   9 +++
+ security/integrity/Makefile                    |   3 +-
+ security/integrity/platform_certs/efi_parser.c | 108 +++++++++++++++++++++++++
+ 3 files changed, 119 insertions(+), 1 deletion(-)
+ create mode 100644 security/integrity/platform_certs/efi_parser.c
 
-- Patch "integrity: Introduce struct evm_xattr"
-  - Added comment mentioning that the evm_xattr usage is limited to HMAC
-    before the structure definition. (Suggested by Mimi Zohar)
-
-- Patch "ima: Add modsig appraise_type option for module-style appended
-         signatures"
-  - Added MODULE_CHECK to whitelist of hooks allowed to use modsig, and
-    removed FIRMWARE_CHECK. (Suggested by Mimi Zohar and James Morris)
-
-- Patch "ima: Implement support for module-style appended signatures"
-  - Moved call to ima_modsig_verify() from ima_appraise_measurement() to
-    integrity_digsig_verify(). (Suggested by Mimi Zohar)
-  - Renamed ima_read_modsig() to ima_read_collect_modsig() and made it force
-    PKCS7 code to calculate the file hash. (Suggested by Mimi Zohar)
-  - Build sign-file tool if IMA_APPRAISE_MODSIG is enabled.
-  - Check whether the signing key is in the platform keyring as a fallback
-    for the KEXEC_KERNEL hook. (Suggested by Mimi Zohar)
-
-- Patch "ima: Store the measurement again when appraising a modsig"
-  - In process_measurement(), when a new measurement needs to be stored
-    re-add IMA_MEASURE flag when the modsig is read rather than changing the
-    if condition when calling ima_store_measurement(). (Suggested by Mimi
-    Zohar)
-  - Check whether ima_template has "sig" and "d-sig" fields at
-    initialization rather than at the first time the check is needed.
-    (suggested by Mimi Zohar)
-
-Changes since v7:
-- Patch "MODSIGN: Export module signature definitions"
-  - Added module name parameter to validate_module_sig() so that it can be
-    shown in error messages.
-
-- Patch "integrity: Introduce struct evm_xattr"
-  - Dropped use of struct evm_xattr in evm_update_evmxattr() and
-    evm_verify_hmac(). It's not needed there anymore because of changes
-    to support portable EVM signatures.
-
-Changes since v6:
-
-- Patch "PKCS#7: Introduce pkcs7_get_message_sig() and verify_pkcs7_message_sig()"
-  - Retitled to "PKCS#7: Refactor verify_pkcs7_signature() and
-    add pkcs7_get_message_sig()"
-  - Reworded description to clarify why the refactoring is needed.
-    The code is unchanged. (Suggested by Mimi Zohar)
-  - Added Mimi Zohar's Reviewed-by.
-
-- Patch "PKCS#7: Introduce pkcs7_get_digest()"
-  - Added Mimi Zohar's Reviewed-by.
-
-- Patch "integrity: Introduce integrity_keyring_from_id"
-  - Added Mimi Zohar's Signed-off-by.
-
-- Patch "integrity: Introduce asymmetric_sig_has_known_key()"
-  - Added Mimi Zohar's Signed-off-by.
-
-- Patch "integrity: Select CONFIG_KEYS instead of depending on it"
-  - Added Mimi Zohar's Signed-off-by.
-
-- Patch "ima: Introduce is_ima_sig()"
-  - Renamed function to is_signed() (suggested by Mimi Zohar).
-
-- Patch "ima: Add functions to read and verify a modsig signature"
-  - Changed stubs for the !CONFIG_IMA_APPRAISE_MODSIG to return -EOPNOTSUPP
-    instead of -ENOTSUPP, since the latter isn't defined in uapi headers.
-  - Moved functions to the patches which use them and dropped this patch
-    (suggested by Mimi Zohar).
-
-- Patch "ima: Implement support for module-style appended signatures"
-  - Prevent reading and writing of IMA_MODSIG xattr in ima_read_xattr()
-    and ima_inode_setxattr().
-  - Simplify code in process_measurement() which decides whether to try
-    reading a modsig (suggested by Mimi Zohar).
-  - Moved some functions from patch "ima: Add functions to read and verify
-    a modsig signature" into this patch.
-
-- Patch "ima: Add new "d-sig" template field"
-  - New patch containing code from patch "ima: Write modsig to the measurement list"
-    (Suggested by Mimi Zohar).
-
-- Patch "ima: Write modsig to the measurement list"
-  - Moved some functions from patch "ima: Add functions to read and verify
-    a modsig signature" into this patch.
-  - Moved code related to d-sig support to new patch.
-
-- Patch "ima: Store the measurement again when appraising a modsig"
-  - New patch.
-
-Thiago Jung Bauermann (14):
-  MODSIGN: Export module signature definitions
-  PKCS#7: Refactor verify_pkcs7_signature() and add
-    pkcs7_get_message_sig()
-  PKCS#7: Introduce pkcs7_get_digest()
-  integrity: Introduce struct evm_xattr
-  integrity: Introduce integrity_keyring_from_id()
-  integrity: Introduce asymmetric_sig_has_known_key()
-  integrity: Select CONFIG_KEYS instead of depending on it
-  ima: Introduce is_signed()
-  ima: Export func_tokens
-  ima: Add modsig appraise_type option for module-style appended
-    signatures
-  ima: Implement support for module-style appended signatures
-  ima: Add new "d-sig" template field
-  ima: Write modsig to the measurement list
-  ima: Store the measurement again when appraising a modsig
-
- Documentation/ABI/testing/ima_policy      |   6 +-
- Documentation/security/IMA-templates.rst  |   5 +
- certs/system_keyring.c                    |  61 ++++--
- crypto/asymmetric_keys/pkcs7_parser.c     |  16 ++
- crypto/asymmetric_keys/pkcs7_verify.c     |  27 +++
- include/crypto/pkcs7.h                    |   5 +
- include/linux/module.h                    |   3 -
- include/linux/module_signature.h          |  47 +++++
- include/linux/verification.h              |  10 +
- init/Kconfig                              |   6 +-
- kernel/Makefile                           |   2 +-
- kernel/module.c                           |   1 +
- kernel/module_signing.c                   |  82 ++++----
- scripts/Makefile                          |   4 +-
- security/integrity/Kconfig                |   2 +-
- security/integrity/digsig.c               |  31 ++-
- security/integrity/digsig_asymmetric.c    |  44 +++--
- security/integrity/evm/evm_main.c         |   8 +-
- security/integrity/ima/Kconfig            |  13 ++
- security/integrity/ima/Makefile           |   1 +
- security/integrity/ima/ima.h              |  62 ++++++
- security/integrity/ima/ima_api.c          |   9 +-
- security/integrity/ima/ima_appraise.c     |  82 +++++++-
- security/integrity/ima/ima_main.c         |  29 ++-
- security/integrity/ima/ima_modsig.c       | 229 ++++++++++++++++++++++
- security/integrity/ima/ima_policy.c       |  81 ++++++--
- security/integrity/ima/ima_template.c     |  28 ++-
- security/integrity/ima/ima_template_lib.c |  49 ++++-
- security/integrity/ima/ima_template_lib.h |   2 +
- security/integrity/integrity.h            |  40 +++-
- 30 files changed, 861 insertions(+), 124 deletions(-)
- create mode 100644 include/linux/module_signature.h
- create mode 100644 security/integrity/ima/ima_modsig.c
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 214516b29b36..c3206b134137 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -1141,6 +1141,15 @@ extern int efi_memattr_apply_permissions(struct mm_struct *mm,
+ char * __init efi_md_typeattr_format(char *buf, size_t size,
+ 				     const efi_memory_desc_t *md);
+ 
++
++typedef void (*efi_element_handler_t)(const char *source,
++				      const void *element_data,
++				      size_t element_size);
++extern int __init parse_efi_signature_list(
++	const char *source,
++	const void *data, size_t size,
++	efi_element_handler_t (*get_handler_for_guid)(const efi_guid_t *));
++
+ /**
+  * efi_range_is_wc - check the WC bit on an address range
+  * @start: starting kvirt address
+diff --git a/security/integrity/Makefile b/security/integrity/Makefile
+index 046ffc1bb42d..6ee9058866cd 100644
+--- a/security/integrity/Makefile
++++ b/security/integrity/Makefile
+@@ -9,7 +9,8 @@ integrity-y := iint.o
+ integrity-$(CONFIG_INTEGRITY_AUDIT) += integrity_audit.o
+ integrity-$(CONFIG_INTEGRITY_SIGNATURE) += digsig.o
+ integrity-$(CONFIG_INTEGRITY_ASYMMETRIC_KEYS) += digsig_asymmetric.o
+-integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o
++integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o \
++						  platform_certs/efi_parser.o
+ 
+ subdir-$(CONFIG_IMA)			+= ima
+ obj-$(CONFIG_IMA)			+= ima/
+diff --git a/security/integrity/platform_certs/efi_parser.c b/security/integrity/platform_certs/efi_parser.c
+new file mode 100644
+index 000000000000..18f01f36fe6a
+--- /dev/null
++++ b/security/integrity/platform_certs/efi_parser.c
+@@ -0,0 +1,108 @@
++// SPDX-License-Identifier: GPL-2.0+
++/* EFI signature/key/certificate list parser
++ *
++ * Copyright (C) 2012, 2016 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ */
++
++#define pr_fmt(fmt) "EFI: "fmt
++#include <linux/module.h>
++#include <linux/printk.h>
++#include <linux/err.h>
++#include <linux/efi.h>
++
++/**
++ * parse_efi_signature_list - Parse an EFI signature list for certificates
++ * @source: The source of the key
++ * @data: The data blob to parse
++ * @size: The size of the data blob
++ * @get_handler_for_guid: Get the handler func for the sig type (or NULL)
++ *
++ * Parse an EFI signature list looking for elements of interest.  A list is
++ * made up of a series of sublists, where all the elements in a sublist are of
++ * the same type, but sublists can be of different types.
++ *
++ * For each sublist encountered, the @get_handler_for_guid function is called
++ * with the type specifier GUID and returns either a pointer to a function to
++ * handle elements of that type or NULL if the type is not of interest.
++ *
++ * If the sublist is of interest, each element is passed to the handler
++ * function in turn.
++ *
++ * Error EBADMSG is returned if the list doesn't parse correctly and 0 is
++ * returned if the list was parsed correctly.  No error can be returned from
++ * the @get_handler_for_guid function or the element handler function it
++ * returns.
++ */
++int __init parse_efi_signature_list(
++	const char *source,
++	const void *data, size_t size,
++	efi_element_handler_t (*get_handler_for_guid)(const efi_guid_t *))
++{
++	efi_element_handler_t handler;
++	unsigned int offs = 0;
++
++	pr_devel("-->%s(,%zu)\n", __func__, size);
++
++	while (size > 0) {
++		const efi_signature_data_t *elem;
++		efi_signature_list_t list;
++		size_t lsize, esize, hsize, elsize;
++
++		if (size < sizeof(list))
++			return -EBADMSG;
++
++		memcpy(&list, data, sizeof(list));
++		pr_devel("LIST[%04x] guid=%pUl ls=%x hs=%x ss=%x\n",
++			 offs,
++			 list.signature_type.b, list.signature_list_size,
++			 list.signature_header_size, list.signature_size);
++
++		lsize = list.signature_list_size;
++		hsize = list.signature_header_size;
++		esize = list.signature_size;
++		elsize = lsize - sizeof(list) - hsize;
++
++		if (lsize > size) {
++			pr_devel("<--%s() = -EBADMSG [overrun @%x]\n",
++				 __func__, offs);
++			return -EBADMSG;
++		}
++
++		if (lsize < sizeof(list) ||
++		    lsize - sizeof(list) < hsize ||
++		    esize < sizeof(*elem) ||
++		    elsize < esize ||
++		    elsize % esize != 0) {
++			pr_devel("- bad size combo @%x\n", offs);
++			return -EBADMSG;
++		}
++
++		handler = get_handler_for_guid(&list.signature_type);
++		if (!handler) {
++			data += lsize;
++			size -= lsize;
++			offs += lsize;
++			continue;
++		}
++
++		data += sizeof(list) + hsize;
++		size -= sizeof(list) + hsize;
++		offs += sizeof(list) + hsize;
++
++		for (; elsize > 0; elsize -= esize) {
++			elem = data;
++
++			pr_devel("ELEM[%04x]\n", offs);
++			handler(source,
++				&elem->signature_data,
++				esize - sizeof(*elem));
++
++			data += esize;
++			size -= esize;
++			offs += esize;
++		}
++	}
++
++	return 0;
++}
+-- 
+2.13.6
