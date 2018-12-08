@@ -1,43 +1,78 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Wed, 05 Dec 2018 17:26:37 +0000
-Subject: Re: [RFC v2 11/13] keys/mktme: Program memory encryption keys on a system wide basis
-Message-Id: <20181205172637.GA443@alison-desk.jf.intel.com>
+From: Nayna Jain <nayna@linux.ibm.com>
+Date: Sat, 08 Dec 2018 20:38:58 +0000
+Subject: [PATCH v2 0/7] add platform/firmware keys support for kernel verification by IMA
+Message-Id: <20181208202705.18673-1-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1543903910.git.alison.schofield@intel.com>
- <72dd5f38c1fdbc4c532f8caf2d2010f1ddfa8439.1543903910.git.alison.schofield@intel.com>
- <20181204092145.GR11614@hirez.programming.kicks-ass.net>
- <20181205054353.GE18596@alison-desk.jf.intel.com>
- <20181205091029.GB4234@hirez.programming.kicks-ass.net>
-In-Reply-To: <20181205091029.GB4234@hirez.programming.kicks-ass.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: dhowells@redhat.com, tglx@linutronix.de, jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
 
-On Wed, Dec 05, 2018 at 10:10:29AM +0100, Peter Zijlstra wrote:
-> On Tue, Dec 04, 2018 at 09:43:53PM -0800, Alison Schofield wrote:
-> > On Tue, Dec 04, 2018 at 10:21:45AM +0100, Peter Zijlstra wrote:
-> > > On Mon, Dec 03, 2018 at 11:39:58PM -0800, Alison Schofield wrote:
-> > 
-> > > How is that serialized and kept relevant in the face of hotplug?
-> > mktme_leadcpus is updated on hotplug startup and teardowns.
-> 
-> Not in this patch it is not. That is added in a subsequent patch, which
-> means that during bisection hotplug is utterly wrecked if you happen to
-> land between these patches, that is bad.
->
-The Key Service support is split between 4 main patches (10-13), but
-the dependencies go further back in the patchset.
+On secure boot enabled systems, a verified kernel may need to kexec
+additional kernels. For example, it may be used as a bootloader needing
+to kexec a target kernel or it may need to kexec a crashdump kernel.
+In such cases, it may want to verify the signature of the next kernel
+image.
 
-If the bisect need outweighs any benefit from reviewing in pieces,
-then these patches can be squashed to a single patch:
+It is possible that the new kernel image is signed with third party keys
+which are stored as platform or firmware keys in the 'db' variable. The
+kernel, however, can not directly verify these platform keys, and an
+administrator may therefore not want to trust them for arbitrary usage.
+In order to differentiate platform keys from other keys and provide the
+necessary separation of trust the kernel needs an additional keyring to
+store platform/firmware keys.
 
-keys/mktme: Add the MKTME Key Service type for memory encryption
-keys/mktme: Program memory encryption keys on a system wide basis
-keys/mktme: Save MKTME data if kernel cmdline parameter allows
-keys/mktme: Support CPU Hotplug for MKTME keys
+The secure boot key database is expected to store the keys as EFI
+Signature List(ESL). The patch set uses David Howells and Josh Boyer's
+patch to access and parse the ESL to extract the certificates and load
+them onto the platform keyring.
 
-Am I interpreting your point correctly?
-Thanks,
-Alison
+The last patch in this patch set adds support for IMA-appraisal to
+verify the kexec'ed kernel image based on keys stored in the platform
+keyring.
+
+Changelog:
+
+v0:
+- The original patches loaded the certificates onto the secondary
+  trusted keyring. This patch set defines a new keyring named
+  ".platform" and adds the certificates to this new keyring  
+- removed CONFIG EFI_SIGNATURE_LIST_PARSER and LOAD_UEFI_KEYS
+- moved files from certs/ to security/integrity/platform_certs/
+
+v2:
+- fixed the checkpatch warnings and other formatting as suggested by
+  Mimi Zohar 
+- fixed coding style as suggested by Serge Hallyn in Patch "ima: Support
+  platform keyring for kernel appraisal"
+
+Dave Howells (2):
+  efi: Add EFI signature data types
+  efi: Add an EFI signature blob parser
+
+Josh Boyer (2):
+  efi: Import certificates from UEFI Secure Boot
+  efi: Allow the "db" UEFI variable to be suppressed
+
+Nayna Jain (3):
+  integrity: Define a trusted platform keyring
+  integrity: Load certs to the platform keyring
+  ima: Support platform keyring for kernel appraisal
+
+ include/linux/efi.h                                |  34 ++++
+ security/integrity/Kconfig                         |  11 ++
+ security/integrity/Makefile                        |   5 +
+ security/integrity/digsig.c                        | 115 ++++++++----
+ security/integrity/ima/ima_appraise.c              |  13 +-
+ security/integrity/integrity.h                     |  23 ++-
+ security/integrity/platform_certs/efi_parser.c     | 108 ++++++++++++
+ security/integrity/platform_certs/load_uefi.c      | 196 +++++++++++++++++++++
+ .../integrity/platform_certs/platform_keyring.c    |  62 +++++++
+ 9 files changed, 528 insertions(+), 39 deletions(-)
+ create mode 100644 security/integrity/platform_certs/efi_parser.c
+ create mode 100644 security/integrity/platform_certs/load_uefi.c
+ create mode 100644 security/integrity/platform_certs/platform_keyring.c
+
+-- 
+2.13.6
