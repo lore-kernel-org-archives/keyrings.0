@@ -1,78 +1,38 @@
-From: Nayna Jain <nayna@linux.ibm.com>
-Date: Sat, 08 Dec 2018 20:38:58 +0000
-Subject: [PATCH v2 0/7] add platform/firmware keys support for kernel verification by IMA
-Message-Id: <20181208202705.18673-1-nayna@linux.ibm.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Sun, 09 Dec 2018 18:39:56 +0000
+Subject: Re: [PATCH v2 0/7] add platform/firmware keys support for kernel verification by IMA
+Message-Id: <1544380796.3794.6.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
+References: <20181208202705.18673-1-nayna@linux.ibm.com>
+In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
+To: Nayna Jain <nayna@linux.ibm.com>, linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
 
-On secure boot enabled systems, a verified kernel may need to kexec
-additional kernels. For example, it may be used as a bootloader needing
-to kexec a target kernel or it may need to kexec a crashdump kernel.
-In such cases, it may want to verify the signature of the next kernel
-image.
-
-It is possible that the new kernel image is signed with third party keys
-which are stored as platform or firmware keys in the 'db' variable. The
-kernel, however, can not directly verify these platform keys, and an
-administrator may therefore not want to trust them for arbitrary usage.
-In order to differentiate platform keys from other keys and provide the
-necessary separation of trust the kernel needs an additional keyring to
-store platform/firmware keys.
-
-The secure boot key database is expected to store the keys as EFI
-Signature List(ESL). The patch set uses David Howells and Josh Boyer's
-patch to access and parse the ESL to extract the certificates and load
-them onto the platform keyring.
-
-The last patch in this patch set adds support for IMA-appraisal to
-verify the kexec'ed kernel image based on keys stored in the platform
-keyring.
-
-Changelog:
-
-v0:
-- The original patches loaded the certificates onto the secondary
-  trusted keyring. This patch set defines a new keyring named
-  ".platform" and adds the certificates to this new keyring  
-- removed CONFIG EFI_SIGNATURE_LIST_PARSER and LOAD_UEFI_KEYS
-- moved files from certs/ to security/integrity/platform_certs/
-
-v2:
-- fixed the checkpatch warnings and other formatting as suggested by
-  Mimi Zohar 
-- fixed coding style as suggested by Serge Hallyn in Patch "ima: Support
-  platform keyring for kernel appraisal"
-
-Dave Howells (2):
-  efi: Add EFI signature data types
-  efi: Add an EFI signature blob parser
-
-Josh Boyer (2):
-  efi: Import certificates from UEFI Secure Boot
-  efi: Allow the "db" UEFI variable to be suppressed
-
-Nayna Jain (3):
-  integrity: Define a trusted platform keyring
-  integrity: Load certs to the platform keyring
-  ima: Support platform keyring for kernel appraisal
-
- include/linux/efi.h                                |  34 ++++
- security/integrity/Kconfig                         |  11 ++
- security/integrity/Makefile                        |   5 +
- security/integrity/digsig.c                        | 115 ++++++++----
- security/integrity/ima/ima_appraise.c              |  13 +-
- security/integrity/integrity.h                     |  23 ++-
- security/integrity/platform_certs/efi_parser.c     | 108 ++++++++++++
- security/integrity/platform_certs/load_uefi.c      | 196 +++++++++++++++++++++
- .../integrity/platform_certs/platform_keyring.c    |  62 +++++++
- 9 files changed, 528 insertions(+), 39 deletions(-)
- create mode 100644 security/integrity/platform_certs/efi_parser.c
- create mode 100644 security/integrity/platform_certs/load_uefi.c
- create mode 100644 security/integrity/platform_certs/platform_keyring.c
-
--- 
-2.13.6
+SGkgTmF5bmEsCgpPbiBTdW4sIDIwMTgtMTItMDkgYXQgMDE6NTYgKzA1MzAsIE5heW5hIEphaW4g
+d3JvdGU6Cj4gT24gc2VjdXJlIGJvb3QgZW5hYmxlZCBzeXN0ZW1zLCBhIHZlcmlmaWVkIGtlcm5l
+bCBtYXkgbmVlZCB0byBrZXhlYwo+IGFkZGl0aW9uYWwga2VybmVscy4gRm9yIGV4YW1wbGUsIGl0
+IG1heSBiZSB1c2VkIGFzIGEgYm9vdGxvYWRlciBuZWVkaW5nCj4gdG8ga2V4ZWMgYSB0YXJnZXQg
+a2VybmVsIG9yIGl0IG1heSBuZWVkIHRvIGtleGVjIGEgY3Jhc2hkdW1wIGtlcm5lbC4KPiBJbiBz
+dWNoIGNhc2VzLCBpdCBtYXkgd2FudCB0byB2ZXJpZnkgdGhlIHNpZ25hdHVyZSBvZiB0aGUgbmV4
+dCBrZXJuZWwKPiBpbWFnZS4KPiAKPiBJdCBpcyBwb3NzaWJsZSB0aGF0IHRoZSBuZXcga2VybmVs
+IGltYWdlIGlzIHNpZ25lZCB3aXRoIHRoaXJkIHBhcnR5IGtleXMKPiB3aGljaCBhcmUgc3RvcmVk
+IGFzIHBsYXRmb3JtIG9yIGZpcm13YXJlIGtleXMgaW4gdGhlICdkYicgdmFyaWFibGUuIFRoZQo+
+IGtlcm5lbCwgaG93ZXZlciwgY2FuIG5vdCBkaXJlY3RseSB2ZXJpZnkgdGhlc2UgcGxhdGZvcm0g
+a2V5cywgYW5kIGFuCj4gYWRtaW5pc3RyYXRvciBtYXkgdGhlcmVmb3JlIG5vdCB3YW50IHRvIHRy
+dXN0IHRoZW0gZm9yIGFyYml0cmFyeSB1c2FnZS4KPiBJbiBvcmRlciB0byBkaWZmZXJlbnRpYXRl
+IHBsYXRmb3JtIGtleXMgZnJvbSBvdGhlciBrZXlzIGFuZCBwcm92aWRlIHRoZQo+IG5lY2Vzc2Fy
+eSBzZXBhcmF0aW9uIG9mIHRydXN0IHRoZSBrZXJuZWwgbmVlZHMgYW4gYWRkaXRpb25hbCBrZXly
+aW5nIHRvCj4gc3RvcmUgcGxhdGZvcm0vZmlybXdhcmUga2V5cy4KPiAKPiBUaGUgc2VjdXJlIGJv
+b3Qga2V5IGRhdGFiYXNlIGlzIGV4cGVjdGVkIHRvIHN0b3JlIHRoZSBrZXlzIGFzIEVGSQo+IFNp
+Z25hdHVyZSBMaXN0KEVTTCkuIFRoZSBwYXRjaCBzZXQgdXNlcyBEYXZpZCBIb3dlbGxzIGFuZCBK
+b3NoIEJveWVyJ3MKPiBwYXRjaCB0byBhY2Nlc3MgYW5kIHBhcnNlIHRoZSBFU0wgdG8gZXh0cmFj
+dCB0aGUgY2VydGlmaWNhdGVzIGFuZCBsb2FkCj4gdGhlbSBvbnRvIHRoZSBwbGF0Zm9ybSBrZXly
+aW5nLgo+IAo+IFRoZSBsYXN0IHBhdGNoIGluIHRoaXMgcGF0Y2ggc2V0IGFkZHMgc3VwcG9ydCBm
+b3IgSU1BLWFwcHJhaXNhbCB0bwo+IHZlcmlmeSB0aGUga2V4ZWMnZWQga2VybmVsIGltYWdlIGJh
+c2VkIG9uIGtleXMgc3RvcmVkIGluIHRoZSBwbGF0Zm9ybQo+IGtleXJpbmcuCgpUaGFua3MhIMKg
+VGhpcyBwYXRjaCBzZXQgaXMgbm93IGluIHRoZSAjbmV4dC1pbnRlZ3JpdHkgYnJhbmNoLgoKaHR0
+cHM6Ly9naXQua2VybmVsLm9yZy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvem9oYXIvbGludXgt
+aW50ZWdyaXR5LmdpdC8KCk1pbWkK
