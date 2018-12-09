@@ -1,102 +1,57 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 13 Dec 2018 02:09:06 +0000
-Subject: [PATCH v9 13/14] ima: Write modsig to the measurement list
-Message-Id: <20181213020907.13601-14-bauerman@linux.ibm.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Sun, 09 Dec 2018 20:36:30 +0000
+Subject: [PATCH 2/5] keys: remove needless modular infrastructure from ecryptfs_format
+Message-Id: <1544387793-32309-3-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181213020907.13601-1-bauerman@linux.ibm.com>
-In-Reply-To: <20181213020907.13601-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <1544387793-32309-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1544387793-32309-1-git-send-email-paul.gortmaker@windriver.com>
+To: linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Paul Gortmaker <paul.gortmaker@windriver.com>, Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org
 
-Add modsig support to the "sig" template field, allowing the the contents
-of the modsig to be included in the measurement list.
+Even though the support can be modular, only one file needs to use
+all the macros like MODULE_AUTHOR, MODULE_LICENSE etc.  Only the one
+responsible for registering/removal with module_init/module_exit
+needs to declare these.  In this case, that file is "encrypted.c"
+and it already has the MODULE_LICENSE that we are removing here.
 
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Since the file does EXPORT_SYMBOL, we add export.h - and build tests
+show that module.h (which includes everything) was hiding an implicit
+use of string.h - so that is added as well.
+
+Cc: Mimi Zohar <zohar@linux.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-integrity@vger.kernel.org
+Cc: keyrings@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- security/integrity/ima/ima.h              |  7 +++++++
- security/integrity/ima/ima_modsig.c       | 13 +++++++++++++
- security/integrity/ima/ima_template_lib.c | 15 ++++++++++++++-
- 3 files changed, 34 insertions(+), 1 deletion(-)
+ security/keys/encrypted-keys/ecryptfs_format.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 40a6ddfdd9ea..55f8ef65cab4 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -318,6 +318,7 @@ int ima_read_collect_modsig(enum ima_hooks func, const void *buf,
- 			    int *xattr_len);
- int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr, enum hash_algo *algo,
- 			const u8 **hash, u8 *len);
-+int ima_modsig_serialize_data(struct evm_ima_xattr_data **data, int *data_len);
- void ima_free_xattr_data(struct evm_ima_xattr_data *hdr);
- #else
- static inline bool ima_hook_supports_modsig(enum ima_hooks func)
-@@ -340,6 +341,12 @@ static inline int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr,
- 	return -EOPNOTSUPP;
+diff --git a/security/keys/encrypted-keys/ecryptfs_format.c b/security/keys/encrypted-keys/ecryptfs_format.c
+index 6daa3b6ff9ed..efac03047919 100644
+--- a/security/keys/encrypted-keys/ecryptfs_format.c
++++ b/security/keys/encrypted-keys/ecryptfs_format.c
+@@ -15,7 +15,8 @@
+  * the Free Software Foundation, version 2 of the License.
+  */
+ 
+-#include <linux/module.h>
++#include <linux/export.h>
++#include <linux/string.h>
+ #include "ecryptfs_format.h"
+ 
+ u8 *ecryptfs_get_auth_tok_key(struct ecryptfs_auth_tok *auth_tok)
+@@ -77,5 +78,3 @@ int ecryptfs_fill_auth_tok(struct ecryptfs_auth_tok *auth_tok,
+ 	return 0;
  }
- 
-+static inline int ima_modsig_serialize_data(struct evm_ima_xattr_data **data,
-+					    int *data_len)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- static inline void ima_free_xattr_data(struct evm_ima_xattr_data *hdr)
- {
- 	kfree(hdr);
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-index 587b79a9afef..0424f844c4c3 100644
---- a/security/integrity/ima/ima_modsig.c
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -190,6 +190,19 @@ int ima_get_modsig_hash(struct evm_ima_xattr_data *hdr, enum hash_algo *algo,
- 	return pkcs7_get_digest(modsig->pkcs7_msg, hash, len);
- }
- 
-+int ima_modsig_serialize_data(struct evm_ima_xattr_data **data, int *data_len)
-+{
-+	struct modsig_hdr *modsig = (struct modsig_hdr *) *data;
-+
-+	if (!*data || (*data)->type != IMA_MODSIG)
-+		return -EINVAL;
-+
-+	*data = &modsig->raw_pkcs7;
-+	*data_len = modsig->raw_pkcs7_len;
-+
-+	return 0;
-+}
-+
- int ima_modsig_verify(struct key *keyring, const void *hdr)
- {
- 	const struct modsig_hdr *modsig = (const struct modsig_hdr *) hdr;
-diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
-index 36d175816894..417cd153ba60 100644
---- a/security/integrity/ima/ima_template_lib.c
-+++ b/security/integrity/ima/ima_template_lib.c
-@@ -411,10 +411,23 @@ int ima_eventsig_init(struct ima_event_data *event_data,
- 		      struct ima_field_data *field_data)
- {
- 	struct evm_ima_xattr_data *xattr_value = event_data->xattr_value;
-+	int xattr_len = event_data->xattr_len;
- 
- 	if (!is_signed(xattr_value))
- 		return 0;
- 
--	return ima_write_template_field_data(xattr_value, event_data->xattr_len,
-+	/*
-+	 * The xattr_value for IMA_MODSIG is a runtime structure containing
-+	 * pointers. Get its raw data instead.
-+	 */
-+	if (xattr_value->type = IMA_MODSIG) {
-+		int rc;
-+
-+		rc = ima_modsig_serialize_data(&xattr_value, &xattr_len);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	return ima_write_template_field_data(xattr_value, xattr_len,
- 					     DATA_FMT_HEX, field_data);
- }
+ EXPORT_SYMBOL(ecryptfs_fill_auth_tok);
+-
+-MODULE_LICENSE("GPL");
+-- 
+2.7.4
