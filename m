@@ -1,13 +1,13 @@
 From: Nayna Jain <nayna@linux.ibm.com>
-Date: Sat, 08 Dec 2018 20:38:59 +0000
+Date: Sun, 09 Dec 2018 04:52:29 +0000
 Subject: [PATCH v2 1/7] integrity: Define a trusted platform keyring
-Message-Id: <20181208202705.18673-2-nayna@linux.ibm.com>
+Message-Id: <20181209044849.825-1-nayna@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-1-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
+References: <20181208202705.18673-2-nayna@linux.ibm.com>
+In-Reply-To: <20181208202705.18673-2-nayna@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
 
@@ -41,8 +41,8 @@ Acked-by: Serge Hallyn <serge@hallyn.com>
  security/integrity/Makefile                        |  1 +
  security/integrity/digsig.c                        | 48 +++++++++++++++-------
  security/integrity/integrity.h                     |  3 +-
- .../integrity/platform_certs/platform_keyring.c    | 39 ++++++++++++++++++
- 5 files changed, 87 insertions(+), 15 deletions(-)
+ .../integrity/platform_certs/platform_keyring.c    | 35 ++++++++++++++++
+ 5 files changed, 83 insertions(+), 15 deletions(-)
  create mode 100644 security/integrity/platform_certs/platform_keyring.c
 
 diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
@@ -80,7 +80,7 @@ index 04d6e462b079..046ffc1bb42d 100644
  subdir-$(CONFIG_IMA)			+= ima
  obj-$(CONFIG_IMA)			+= ima/
 diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 5eacba858e4b..b5b180ff1434 100644
+index 5eacba858e4b..fef2a858300c 100644
 --- a/security/integrity/digsig.c
 +++ b/security/integrity/digsig.c
 @@ -35,6 +35,7 @@ static const char * const keyring_name[INTEGRITY_KEYRING_MAX] = {
@@ -91,7 +91,7 @@ index 5eacba858e4b..b5b180ff1434 100644
  };
  
  #ifdef CONFIG_IMA_KEYRINGS_PERMIT_SIGNED_BY_BUILTIN_OR_SECONDARY
-@@ -73,12 +74,40 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+@@ -73,12 +74,39 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
  	return -EOPNOTSUPP;
  }
  
@@ -122,22 +122,22 @@ index 5eacba858e4b..b5b180ff1434 100644
 +	key_perm_t perm;
  	int err = 0;
  
-+	perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW
-+		| KEY_USR_READ | KEY_USR_SEARCH;
-+
 +	if (id = INTEGRITY_KEYRING_PLATFORM) {
 +		restriction = NULL;
++		perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW
++			| KEY_USR_READ | KEY_USR_SEARCH;
 +		goto out;
 +	}
 +
  	if (!IS_ENABLED(CONFIG_INTEGRITY_TRUSTED_KEYRING))
  		return 0;
  
-@@ -87,20 +116,11 @@ int __init integrity_init_keyring(const unsigned int id)
+@@ -87,20 +115,12 @@ int __init integrity_init_keyring(const unsigned int id)
  		return -ENOMEM;
  
  	restriction->check = restrict_link_to_ima;
-+	perm |= KEY_USR_WRITE;
++	perm = (KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW | KEY_USR_READ
++		| KEY_USR_WRITE | KEY_USR_SEARCH;
 +
 +out:
 +	err = __integrity_init_keyring(id, perm, restriction);
@@ -174,20 +174,16 @@ index e60473b13a8d..c2332a44799e 100644
  
 diff --git a/security/integrity/platform_certs/platform_keyring.c b/security/integrity/platform_certs/platform_keyring.c
 new file mode 100644
-index 000000000000..dfc206bbe2ff
+index 000000000000..79f80af5b470
 --- /dev/null
 +++ b/security/integrity/platform_certs/platform_keyring.c
-@@ -0,0 +1,39 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/* Platform keyring for firmware/platform keys
+@@ -0,0 +1,35 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Platform keyring for firmware/platform keys
 + *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
++ * Copyright IBM Corporation, 2018
++ * Author(s): Nayna Jain <nayna@linux.ibm.com>
 + */
 +
 +#include <linux/export.h>
