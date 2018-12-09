@@ -1,86 +1,307 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Mon, 10 Dec 2018 18:04:53 +0000
-Subject: Re: [RFC][PATCH 08/12] KEYS: PGP-based public key signature verification
-Message-Id: <12cec606-c31e-9321-b63f-7122ce068179@huawei.com>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Sun, 09 Dec 2018 13:55:48 +0000
+Subject: [RFC PATCH] X.509: Parse public key parameters from x509 for akcipher
+Message-Id: <20181209135548.26232-1-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <e55a9f80-d2ea-f28f-06ab-3d99786096c4@huawei.com>
- <20181112102423.30415-9-roberto.sassu@huawei.com>
- <20181112102423.30415-1-roberto.sassu@huawei.com>
- <19985.1542026635@warthog.procyon.org.uk>
- <17488.1544461088@warthog.procyon.org.uk>
-In-Reply-To: <17488.1544461088@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
+To: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On 12/10/2018 5:58 PM, David Howells wrote:
-> Roberto Sassu <roberto.sassu@huawei.com> wrote:
-> 
->>> You need to consider what it is that the patch trying to achieve.
->>
->> I understood that the purpose is to check PGP signatures with built-in
->> keys or keys provided by the user. Since using the session keyring
->> caused the issue I reported, I thought it was ok to use the user
->> keyring.
->>
->> Just a note: the original patches were relying on KEY_FLAG_TRUSTED to
->> determine if a key is trusted; now the trustworthiness depends on the
->> type of keyring passed to pgp_verify_sig(). I removed the additional key
->> search in the user (session) keyring to prevent that signature
->> verification is done with a key provided by the user even when the
->> caller of pgp_verify_sig() expects that a trusted key is used. The
->> search in the session keyring is done if the caller of pgp_verify_sig()
->> sets the keyring pointer to NULL.
-> 
-> Thinking about these patches further, as you point out, the way that trust is
-> computed has changed.  There is no no KEY_FLAG_TRUSTED; rather, a key is
-> assumed to be trusted if it's on a trusted keyring.
-> 
-> *Getting* it onto that trusted keyring is then the trick.  There are two ways:
-> 
->   (1) A key can be loaded from a trusted source during boot (say a compiled in
->       set of keys).
-> 
->   (2) A key can be added to that keyring later, provided that the key is
->       verified by a key already in the ring and the ring hasn't been closed.
-> 
-> What do we need to check PGP signatures?  Blobs or keys as well?
+Some public key algorithms (like ECDSA) keep in parameters field
+important data such as digest and curve OIDs (possibly more for
+different ECDSA variants). Thus, just setting a public key (as
+for RSA) is not enough.
 
-For my use case, verifying blobs (RPM headers or 'Release' for Debian-
-based distributions) would be sufficient. The keys can be added at
-compile time.
+Introduce set_params() callback for akcipher which will be used to
+pass BER encoded parameters array, with additional argument of
+algorithm OID.
 
+This is done with the intent of adding support for EC-RDSA (ISO/IEC
+14888-3:2018, RFC 7091, and basically ECDSA variant) public keys (which
+will be finally used in IMA subsystem). Thus, also oid_registry.h is
+updated.
 
-> Why does the user keyring need to be a fallback?  (I know the session keyring
-> used to be a fallback when I first did these, but things have changed since
-> then).
+Rationale:
 
-Users can verify signatures with the pgp_test key type (patch 10/12).
-During the first attempt, pgp_test tries to use built-in keys. If
-verification fails, pgp_test tries again with keys in the user keyring.
-But if verification succeeds during the second attempt, the kernel
-prints a warning saying that an untrusted key was used.
+- For such keys just setting public key without parameters is
+  meaningless, so it would be possible to add parameters in
+  crypto_akcipher_set_pub_key (and .set_pub_key) calls. But, this will
+  needlessly change API for RSA akcipher. Also, additional callback
+  making it possible to pass parameters after
+  crypto_akcipher_set_priv_key (and .set_priv_key) in the future.
 
+- Algorithm OID is passed to be validated in .set_params callback,
+  otherwise, it could have the wrong value.
 
-> Should we have a separate built-in keyring for PGP keys?  Actually, I suspect
-> we should probably mark keys in some way with what they're permitted to be
-> used for.
+- Particular algorithm OIDs are checked in x509_note_params, (because
+  this is called from AlgorithmIdentifier (ASN.1) parser, which is
+  called multiple times, as it's used multiple times in X.509
+  certificate), to distinguish a public key call from a signature call.
 
-I kept PGP keys in the main keyring, so that verify_pgp_signature() uses
-the same convention of verify_pkcs7_signature() (keyring = NULL: use
-primary keys, keyring = 1: use secondary keys).
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+---
+ crypto/asymmetric_keys/public_key.c       | 16 +++++++++++++++
+ crypto/asymmetric_keys/x509.asn1          |  2 +-
+ crypto/asymmetric_keys/x509_cert_parser.c | 27 +++++++++++++++++++++++++
+ crypto/testmgr.c                          |  5 +++++
+ crypto/testmgr.h                          |  3 +++
+ include/crypto/akcipher.h                 | 33 +++++++++++++++++++++++++++++++
+ include/crypto/public_key.h               |  4 ++++
+ include/linux/oid_registry.h              |  6 ++++++
+ 8 files changed, 95 insertions(+), 1 deletion(-)
 
-In your patches there was a capability checking mechanism, but it was
-removed with commit db6c43bd2132.
-
-Roberto
-
-
-> David
-> 
-
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index f5d85b47fcc6..3bc090b8adef 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -45,6 +45,7 @@ void public_key_free(struct public_key *key)
+ {
+ 	if (key) {
+ 		kfree(key->key);
++		kfree(key->params);
+ 		kfree(key);
+ 	}
+ }
+@@ -124,6 +125,11 @@ static int software_key_query(const struct kernel_pkey_params *params,
+ 	if (ret < 0)
+ 		goto error_free_tfm;
+ 
++	ret = crypto_akcipher_set_params(tfm, pkey->algo, pkey->params,
++					 pkey->paramlen);
++	if (ret)
++		goto error_free_tfm;
++
+ 	len = crypto_akcipher_maxsize(tfm);
+ 	info->key_size = len * 8;
+ 	info->max_data_size = len;
+@@ -182,6 +188,11 @@ static int software_key_eds_op(struct kernel_pkey_params *params,
+ 	if (ret)
+ 		goto error_free_req;
+ 
++	ret = crypto_akcipher_set_params(tfm, pkey->algo, pkey->params,
++					 pkey->paramlen);
++	if (ret)
++		goto error_free_req;
++
+ 	sg_init_one(&in_sg, in, params->in_len);
+ 	sg_init_one(&out_sg, out, params->out_len);
+ 	akcipher_request_set_crypt(req, &in_sg, &out_sg, params->in_len,
+@@ -263,6 +274,11 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	if (ret)
+ 		goto error_free_req;
+ 
++	ret = crypto_akcipher_set_params(tfm, pkey->algo, pkey->params,
++					 pkey->paramlen);
++	if (ret)
++		goto error_free_req;
++
+ 	ret = -ENOMEM;
+ 	outlen = crypto_akcipher_maxsize(tfm);
+ 	output = kmalloc(outlen, GFP_KERNEL);
+diff --git a/crypto/asymmetric_keys/x509.asn1 b/crypto/asymmetric_keys/x509.asn1
+index aae0cde414e2..5c9f4e4a5231 100644
+--- a/crypto/asymmetric_keys/x509.asn1
++++ b/crypto/asymmetric_keys/x509.asn1
+@@ -22,7 +22,7 @@ CertificateSerialNumber ::= INTEGER
+ 
+ AlgorithmIdentifier ::= SEQUENCE {
+ 	algorithm		OBJECT IDENTIFIER ({ x509_note_OID }),
+-	parameters		ANY OPTIONAL
++	parameters		ANY OPTIONAL ({ x509_note_params })
+ }
+ 
+ Name ::= SEQUENCE OF RelativeDistinguishedName
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 991f4d735a4e..16d8936d143b 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -26,6 +26,9 @@ struct x509_parse_context {
+ 	const void	*cert_start;		/* Start of cert content */
+ 	const void	*key;			/* Key data */
+ 	size_t		key_size;		/* Size of key data */
++	const void	*params;		/* Key parameters */
++	size_t		params_size;		/* Size of key parameters */
++	enum OID	key_algo;		/* Public key algorithm */
+ 	enum OID	last_oid;		/* Last OID encountered */
+ 	enum OID	algo_oid;		/* Algorithm OID */
+ 	unsigned char	nr_mpi;			/* Number of MPIs stored */
+@@ -109,6 +112,13 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
+ 
+ 	cert->pub->keylen = ctx->key_size;
+ 
++	cert->pub->params = kmemdup(ctx->params, ctx->params_size, GFP_KERNEL);
++	if (!cert->pub->params)
++		goto error_decode;
++
++	cert->pub->paramlen = ctx->params_size;
++	cert->pub->algo = ctx->key_algo;
++
+ 	/* Grab the signature bits */
+ 	ret = x509_get_sig_params(cert);
+ 	if (ret < 0)
+@@ -401,6 +411,23 @@ int x509_note_subject(void *context, size_t hdrlen,
+ }
+ 
+ /*
++ * Extract parameters for particular keys
++ */
++int x509_note_params(void *context, size_t hdrlen,
++		     unsigned char tag,
++		     const void *value, size_t vlen)
++{
++	struct x509_parse_context *ctx = context;
++
++	if (ctx->last_oid != OID_gost2012PublicKey256 &&
++	    ctx->last_oid != OID_gost2012PublicKey512)
++		return 0;
++	ctx->params = value;
++	ctx->params_size = vlen;
++	return 0;
++}
++
++/*
+  * Extract the data for the public key algorithm
+  */
+ int x509_extract_key_data(void *context, size_t hdrlen,
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 0f684a414acb..a030526a6609 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -2257,6 +2257,11 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 	if (err)
+ 		goto free_req;
+ 
++	err = crypto_akcipher_set_params(tfm, vecs->algo, vecs->params,
++					 vecs->param_len);
++	if (err)
++		goto free_req;
++
+ 	err = -ENOMEM;
+ 	out_len_max = crypto_akcipher_maxsize(tfm);
+ 	outbuf_enc = kzalloc(out_len_max, GFP_KERNEL);
+diff --git a/crypto/testmgr.h b/crypto/testmgr.h
+index e7e56a8febbc..9855da080eaf 100644
+--- a/crypto/testmgr.h
++++ b/crypto/testmgr.h
+@@ -124,13 +124,16 @@ struct drbg_testvec {
+ 
+ struct akcipher_testvec {
+ 	const unsigned char *key;
++	const unsigned char *params;
+ 	const unsigned char *m;
+ 	const unsigned char *c;
+ 	unsigned int key_len;
++	unsigned int param_len;
+ 	unsigned int m_size;
+ 	unsigned int c_size;
+ 	bool public_key_vec;
+ 	bool siggen_sigver_test;
++	enum OID algo;
+ };
+ 
+ struct kpp_testvec {
+diff --git a/include/crypto/akcipher.h b/include/crypto/akcipher.h
+index afac71119396..d6aba84ed2c4 100644
+--- a/include/crypto/akcipher.h
++++ b/include/crypto/akcipher.h
+@@ -13,6 +13,7 @@
+ #ifndef _CRYPTO_AKCIPHER_H
+ #define _CRYPTO_AKCIPHER_H
+ #include <linux/crypto.h>
++#include <linux/oid_registry.h>
+ 
+ /**
+  * struct akcipher_request - public key request
+@@ -73,6 +74,9 @@ struct crypto_akcipher {
+  * @set_priv_key: Function invokes the algorithm specific set private key
+  *		function, which knows how to decode and interpret
+  *		the BER encoded private key
++ * @set_params: Function invokes the algorithm specific set parameters
++ *		function, which knows how to decode and interpret
++ *		the BER encoded public key
+  * @max_size:	Function returns dest buffer size required for a given key.
+  * @init:	Initialize the cryptographic transformation object.
+  *		This function is used to initialize the cryptographic
+@@ -98,6 +102,8 @@ struct akcipher_alg {
+ 			   unsigned int keylen);
+ 	int (*set_priv_key)(struct crypto_akcipher *tfm, const void *key,
+ 			    unsigned int keylen);
++	int (*set_params)(struct crypto_akcipher *tfm, enum OID algo,
++			  const void *params, unsigned int paramlen);
+ 	unsigned int (*max_size)(struct crypto_akcipher *tfm);
+ 	int (*init)(struct crypto_akcipher *tfm);
+ 	void (*exit)(struct crypto_akcipher *tfm);
+@@ -452,4 +458,31 @@ static inline int crypto_akcipher_set_priv_key(struct crypto_akcipher *tfm,
+ 
+ 	return alg->set_priv_key(tfm, key, keylen);
+ }
++
++/**
++ * crypto_akcipher_set_params() - Invoke set parameters operation
++ *
++ * Function invokes the algorithm specific set parameters function, which
++ * knows how to decode and interpret the encoded parameters
++ *
++ * @tfm:	tfm handle
++ * @algo:	OID of the key algorithm
++ * @params:	BER encoded key parameters
++ * @paramlen:	length of the parameters
++ *
++ * Return: zero on success; error code in case of error
++ */
++static inline int crypto_akcipher_set_params(struct crypto_akcipher *tfm,
++					     enum OID algo,
++					     const void *params,
++					     unsigned int paramlen)
++{
++	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
++
++	if (alg->set_params)
++		return alg->set_params(tfm, algo, params, paramlen);
++	if (!params || !paramlen)
++		return 0;
++	return -ENOTSUPP;
++}
+ #endif
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index be626eac9113..712fe1214b5f 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -15,6 +15,7 @@
+ #define _LINUX_PUBLIC_KEY_H
+ 
+ #include <linux/keyctl.h>
++#include <linux/oid_registry.h>
+ 
+ /*
+  * Cryptographic data for the public-key subtype of the asymmetric key type.
+@@ -25,6 +26,9 @@
+ struct public_key {
+ 	void *key;
+ 	u32 keylen;
++	enum OID algo;
++	void *params;
++	u32 paramlen;
+ 	bool key_is_private;
+ 	const char *id_type;
+ 	const char *pkey_algo;
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index d2fa9ca42e9a..e2e323fd4826 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -93,6 +93,12 @@ enum OID {
+ 	OID_authorityKeyIdentifier,	/* 2.5.29.35 */
+ 	OID_extKeyUsage,		/* 2.5.29.37 */
+ 
++	/* EC-RDSA */
++	OID_gost2012PublicKey256,	/* 1.2.643.7.1.1.1.1 */
++	OID_gost2012PublicKey512,	/* 1.2.643.7.1.1.1.2 */
++	OID_gost2012Signature256,	/* 1.2.643.7.1.1.3.2 */
++	OID_gost2012Signature512,	/* 1.2.643.7.1.1.3.3 */
++
+ 	OID__NR
+ };
+ 
 -- 
-HUAWEI TECHNOLOGIES Duesseldorf GmbH, HRB 56063
-Managing Director: Bo PENG, Jian LI, Yanli SHI
+2.11.0
