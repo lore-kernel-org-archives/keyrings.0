@@ -1,69 +1,38 @@
-From: Nayna Jain <nayna@linux.ibm.com>
-Date: Sat, 08 Dec 2018 20:39:05 +0000
-Subject: [PATCH v2 7/7] ima: Support platform keyring for kernel appraisal
-Message-Id: <20181208202705.18673-8-nayna@linux.ibm.com>
+From: James Morris <jmorris@namei.org>
+Date: Tue, 11 Dec 2018 18:53:30 +0000
+Subject: Re: [PATCH v2 7/7] ima: Support platform keyring for kernel appraisal
+Message-Id: <alpine.LRH.2.21.1812120553170.11653@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-1-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
+References: <20181208202705.18673-1-nayna@linux.ibm.com> <20181208202705.18673-8-nayna@linux.ibm.com>
+In-Reply-To: <20181208202705.18673-8-nayna@linux.ibm.com>
+To: Nayna Jain <nayna@linux.ibm.com>
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
 
-On secure boot enabled systems, the bootloader verifies the kernel
-image and possibly the initramfs signatures based on a set of keys. A
-soft reboot(kexec) of the system, with the same kernel image and
-initramfs, requires access to the original keys to verify the
-signatures.
+On Sun, 9 Dec 2018, Nayna Jain wrote:
 
-This patch allows IMA-appraisal access to those original keys, now
-loaded on the platform keyring, needed for verifying the kernel image
-and initramfs signatures.
+> On secure boot enabled systems, the bootloader verifies the kernel
+> image and possibly the initramfs signatures based on a set of keys. A
+> soft reboot(kexec) of the system, with the same kernel image and
+> initramfs, requires access to the original keys to verify the
+> signatures.
+> 
+> This patch allows IMA-appraisal access to those original keys, now
+> loaded on the platform keyring, needed for verifying the kernel image
+> and initramfs signatures.
+> 
+> Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
+> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+> Acked-by: Serge Hallyn <serge@hallyn.com>
+> - replace 'rc' with 'xattr_len' when calling integrity_digsig_verify()
+> with INTEGRITY_KEYRING_IMA for readability
+> Suggested-by: Serge Hallyn <serge@hallyn.com>
 
-Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-Acked-by: Serge Hallyn <serge@hallyn.com>
-- replace 'rc' with 'xattr_len' when calling integrity_digsig_verify()
-with INTEGRITY_KEYRING_IMA for readability
-Suggested-by: Serge Hallyn <serge@hallyn.com>
----
-Changelog:
 
-v2:
-- replace 'rc' with 'xattr_len' when calling integrity_digsig_verify()
-with INTEGRITY_KEYRING_IMA for readability
+Reviewed-by: James Morris <james.morris@microsoft.com>
 
- security/integrity/ima/ima_appraise.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index deec1804a00a..e8f520450895 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -289,12 +289,21 @@ int ima_appraise_measurement(enum ima_hooks func,
- 	case EVM_IMA_XATTR_DIGSIG:
- 		set_bit(IMA_DIGSIG, &iint->atomic_flags);
- 		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
--					     (const char *)xattr_value, rc,
-+					     (const char *)xattr_value,
-+					     xattr_len,
- 					     iint->ima_hash->digest,
- 					     iint->ima_hash->length);
- 		if (rc = -EOPNOTSUPP) {
- 			status = INTEGRITY_UNKNOWN;
--		} else if (rc) {
-+			break;
-+		}
-+		if (rc && func = KEXEC_KERNEL_CHECK)
-+			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
-+						     (const char *)xattr_value,
-+						     xattr_len,
-+						     iint->ima_hash->digest,
-+						     iint->ima_hash->length);
-+		if (rc) {
- 			cause = "invalid-signature";
- 			status = INTEGRITY_FAIL;
- 		} else {
 -- 
-2.13.6
+James Morris
+<jmorris@namei.org>
