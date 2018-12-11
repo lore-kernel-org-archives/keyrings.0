@@ -1,107 +1,35 @@
-From: Nayna Jain <nayna@linux.ibm.com>
-Date: Sat, 08 Dec 2018 20:39:04 +0000
-Subject: [PATCH v2 6/7] efi: Allow the "db" UEFI variable to be suppressed
-Message-Id: <20181208202705.18673-7-nayna@linux.ibm.com>
+From: James Morris <jmorris@namei.org>
+Date: Tue, 11 Dec 2018 18:49:00 +0000
+Subject: Re: [PATCH v2 6/7] efi: Allow the "db" UEFI variable to be suppressed
+Message-Id: <alpine.LRH.2.21.1812120548480.11653@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20181208202705.18673-1-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Josh Boyer <jwboyer@fedoraproject.org>
+ <20181208202705.18673-7-nayna@linux.ibm.com>
+In-Reply-To: <20181208202705.18673-7-nayna-tEXmvtCZX7AybS5Ee8rs3A@public.gmane.org>
+To: Nayna Jain <nayna-tEXmvtCZX7AybS5Ee8rs3A@public.gmane.org>
+Cc: linux-efi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, mpe-Gsx/Oe8HsFggBc27wqDAHg@public.gmane.org, kexec-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, zohar-tEXmvtCZX7AybS5Ee8rs3A@public.gmane.org, dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, seth.forshee-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, ebiederm-aS9lmoZGLiVWk0Htik3J/w@public.gmane.org, jforbes-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, linux-integrity-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Josh Boyer <jwboyer-rxtnV0ftBwyoClj4AeEUq9i2O/JbrIOy@public.gmane.org>, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
 
-From: Josh Boyer <jwboyer@fedoraproject.org>
+On Sun, 9 Dec 2018, Nayna Jain wrote:
 
-If a user tells shim to not use the certs/hashes in the UEFI db variable
-for verification purposes, shim will set a UEFI variable called
-MokIgnoreDB. Have the uefi import code look for this and ignore the db
-variable if it is found.
+> From: Josh Boyer <jwboyer@fedoraproject.org>
+> 
+> If a user tells shim to not use the certs/hashes in the UEFI db variable
+> for verification purposes, shim will set a UEFI variable called
+> MokIgnoreDB. Have the uefi import code look for this and ignore the db
+> variable if it is found.
+> 
+> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Acked-by: Nayna Jain <nayna@linux.ibm.com>
+> Acked-by: Serge Hallyn <serge@hallyn.com>
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Nayna Jain <nayna@linux.ibm.com>
-Acked-by: Serge Hallyn <serge@hallyn.com>
----
-Changelog:
 
-v0:
-- No changes
+Reviewed-by: James Morris <james.morris@microsoft.com>
 
-v2:
-- Fixed the checkpatch.pl warnings
 
- security/integrity/platform_certs/load_uefi.c | 45 +++++++++++++++++++++------
- 1 file changed, 35 insertions(+), 10 deletions(-)
-
-diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
-index acd9db90dde7..8bd2e9b421e1 100644
---- a/security/integrity/platform_certs/load_uefi.c
-+++ b/security/integrity/platform_certs/load_uefi.c
-@@ -16,6 +16,26 @@ static efi_guid_t efi_cert_x509_sha256_guid __initdata  static efi_guid_t efi_cert_sha256_guid __initdata = EFI_CERT_SHA256_GUID;
- 
- /*
-+ * Look to see if a UEFI variable called MokIgnoreDB exists and return true if
-+ * it does.
-+ *
-+ * This UEFI variable is set by the shim if a user tells the shim to not use
-+ * the certs/hashes in the UEFI db variable for verification purposes.  If it
-+ * is set, we should ignore the db variable also and the true return indicates
-+ * this.
-+ */
-+static __init bool uefi_check_ignore_db(void)
-+{
-+	efi_status_t status;
-+	unsigned int db = 0;
-+	unsigned long size = sizeof(db);
-+	efi_guid_t guid = EFI_SHIM_LOCK_GUID;
-+
-+	status = efi.get_variable(L"MokIgnoreDB", &guid, NULL, &size, &db);
-+	return status = EFI_SUCCESS;
-+}
-+
-+/*
-  * Get a certificate list blob from the named EFI variable.
-  */
- static __init void *get_cert_list(efi_char16_t *name, efi_guid_t *guid,
-@@ -116,7 +136,9 @@ static __init efi_element_handler_t get_handler_for_dbx(const efi_guid_t *
- }
- 
- /*
-- * Load the certs contained in the UEFI databases
-+ * Load the certs contained in the UEFI databases into the secondary trusted
-+ * keyring and the UEFI blacklisted X.509 cert SHA256 hashes into the blacklist
-+ * keyring.
-  */
- static int __init load_uefi_certs(void)
- {
-@@ -132,15 +154,18 @@ static int __init load_uefi_certs(void)
- 	/* Get db, MokListRT, and dbx.  They might not exist, so it isn't
- 	 * an error if we can't get them.
- 	 */
--	db = get_cert_list(L"db", &secure_var, &dbsize);
--	if (!db) {
--		pr_err("Couldn't get UEFI db list\n");
--	} else {
--		rc = parse_efi_signature_list("UEFI:db",
--					      db, dbsize, get_handler_for_db);
--		if (rc)
--			pr_err("Couldn't parse db signatures: %d\n", rc);
--		kfree(db);
-+	if (!uefi_check_ignore_db()) {
-+		db = get_cert_list(L"db", &secure_var, &dbsize);
-+		if (!db) {
-+			pr_err("MODSIGN: Couldn't get UEFI db list\n");
-+		} else {
-+			rc = parse_efi_signature_list("UEFI:db",
-+					db, dbsize, get_handler_for_db);
-+			if (rc)
-+				pr_err("Couldn't parse db signatures: %d\n",
-+				       rc);
-+			kfree(db);
-+		}
- 	}
- 
- 	mok = get_cert_list(L"MokListRT", &mok_var, &moksize);
 -- 
-2.13.6
+James Morris
+<jmorris@namei.org>
