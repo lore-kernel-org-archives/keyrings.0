@@ -1,94 +1,124 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Tue, 04 Dec 2018 07:39:50 +0000
-Subject: [RFC v2 03/13] syscall/x86: Wire up a new system call for memory encryption keys
-Message-Id: <952381f6d8b394242590f03a4f7122789681ffbb.1543903910.git.alison.schofield@intel.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Thu, 13 Dec 2018 02:08:59 +0000
+Subject: [PATCH v9 06/14] integrity: Introduce asymmetric_sig_has_known_key()
+Message-Id: <20181213020907.13601-7-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1543903910.git.alison.schofield@intel.com>
-In-Reply-To: <cover.1543903910.git.alison.schofield@intel.com>
-To: dhowells@redhat.com, tglx@linutronix.de
-Cc: jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, peterz@infradead.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
+References: <20181213020907.13601-1-bauerman@linux.ibm.com>
+In-Reply-To: <20181213020907.13601-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-encrypt_mprotect() is a new system call to support memory encryption.
+IMA will only look for a modsig if the xattr sig references a key which is
+not in the expected kernel keyring. To that end, introduce
+asymmetric_sig_has_known_key().
 
-It takes the same parameters as legacy mprotect, plus an additional
-key serial number that is mapped to an encryption keyid.
+The logic of extracting the key used in the xattr sig is factored out from
+asymmetric_verify() so that it can be used by the new function.
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
- arch/x86/entry/syscalls/syscall_32.tbl | 1 +
- arch/x86/entry/syscalls/syscall_64.tbl | 1 +
- include/linux/syscalls.h               | 2 ++
- include/uapi/asm-generic/unistd.h      | 4 +++-
- kernel/sys_ni.c                        | 2 ++
- 5 files changed, 9 insertions(+), 1 deletion(-)
+ security/integrity/digsig_asymmetric.c | 44 +++++++++++++++++++-------
+ security/integrity/integrity.h         |  8 +++++
+ 2 files changed, 41 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
-index 3cf7b533b3d1..f41ad857d5c6 100644
---- a/arch/x86/entry/syscalls/syscall_32.tbl
-+++ b/arch/x86/entry/syscalls/syscall_32.tbl
-@@ -398,3 +398,4 @@
- 384	i386	arch_prctl		sys_arch_prctl			__ia32_compat_sys_arch_prctl
- 385	i386	io_pgetevents		sys_io_pgetevents		__ia32_compat_sys_io_pgetevents
- 386	i386	rseq			sys_rseq			__ia32_sys_rseq
-+387	i386	encrypt_mprotect	sys_encrypt_mprotect		__ia32_sys_encrypt_mprotect
-diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
-index f0b1709a5ffb..cf2decfa6119 100644
---- a/arch/x86/entry/syscalls/syscall_64.tbl
-+++ b/arch/x86/entry/syscalls/syscall_64.tbl
-@@ -343,6 +343,7 @@
- 332	common	statx			__x64_sys_statx
- 333	common	io_pgetevents		__x64_sys_io_pgetevents
- 334	common	rseq			__x64_sys_rseq
-+335	common	encrypt_mprotect	__x64_sys_encrypt_mprotect
+diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
+index d775e03fbbcc..4c3c49f919f5 100644
+--- a/security/integrity/digsig_asymmetric.c
++++ b/security/integrity/digsig_asymmetric.c
+@@ -79,26 +79,48 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
+ 	return key;
+ }
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 2ac3d13a915b..c728b47e9004 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -907,6 +907,8 @@ asmlinkage long sys_statx(int dfd, const char __user *path, unsigned flags,
- 			  unsigned mask, struct statx __user *buffer);
- asmlinkage long sys_rseq(struct rseq __user *rseq, uint32_t rseq_len,
- 			 int flags, uint32_t sig);
-+asmlinkage long sys_encrypt_mprotect(unsigned long start, size_t len,
-+				     unsigned long prot, key_serial_t serial);
+-int asymmetric_verify(struct key *keyring, const char *sig,
+-		      int siglen, const char *data, int datalen)
++static struct key *asymmetric_key_from_sig(struct key *keyring, const char *sig,
++					   int siglen)
+ {
+-	struct public_key_signature pks;
+-	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
+-	struct key *key;
+-	int ret = -ENOMEM;
++	const struct signature_v2_hdr *hdr = (struct signature_v2_hdr *) sig;
  
- /*
-  * Architecture-specific system calls
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index 538546edbfbd..696c222ebe40 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -738,9 +738,11 @@ __SYSCALL(__NR_statx,     sys_statx)
- __SC_COMP(__NR_io_pgetevents, sys_io_pgetevents, compat_sys_io_pgetevents)
- #define __NR_rseq 293
- __SYSCALL(__NR_rseq, sys_rseq)
-+#define __NR_encrypt_mprotect 294
-+__SYSCALL(__NR_encrypt_mprotect, sys_encrypt_mprotect)
+ 	if (siglen <= sizeof(*hdr))
+-		return -EBADMSG;
++		return ERR_PTR(-EBADMSG);
  
- #undef __NR_syscalls
--#define __NR_syscalls 294
-+#define __NR_syscalls 295
+ 	siglen -= sizeof(*hdr);
  
- /*
-  * 32 bit systems traditionally used different
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index df556175be50..1b48f709c265 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -336,6 +336,8 @@ COND_SYSCALL(pkey_mprotect);
- COND_SYSCALL(pkey_alloc);
- COND_SYSCALL(pkey_free);
+ 	if (siglen != be16_to_cpu(hdr->sig_size))
+-		return -EBADMSG;
++		return ERR_PTR(-EBADMSG);
  
-+/* multi-key total memory encryption keys */
-+COND_SYSCALL(encrypt_mprotect);
+ 	if (hdr->hash_algo >= HASH_ALGO__LAST)
+-		return -ENOPKG;
++		return ERR_PTR(-ENOPKG);
++
++	return request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
++}
++
++bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
++				  int siglen)
++{
++	struct key *key;
++
++	key = asymmetric_key_from_sig(keyring, sig, siglen);
++	if (IS_ERR_OR_NULL(key))
++		return false;
++
++	key_put(key);
++
++	return true;
++}
++
++int asymmetric_verify(struct key *keyring, const char *sig,
++		      int siglen, const char *data, int datalen)
++{
++	struct public_key_signature pks;
++	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
++	struct key *key;
++	int ret = -ENOMEM;
  
- /*
-  * Architecture specific weak syscall entries.
--- 
-2.14.1
+-	key = request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
++	key = asymmetric_key_from_sig(keyring, sig, siglen);
+ 	if (IS_ERR(key))
+ 		return PTR_ERR(key);
+ 
+@@ -110,7 +132,7 @@ int asymmetric_verify(struct key *keyring, const char *sig,
+ 	pks.digest = (u8 *)data;
+ 	pks.digest_size = datalen;
+ 	pks.s = hdr->sig;
+-	pks.s_size = siglen;
++	pks.s_size = siglen - sizeof(*hdr);
+ 	ret = verify_signature(key, &pks);
+ 	key_put(key);
+ 	pr_debug("%s() = %d\n", __func__, ret);
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 6f657260a964..dec5ab8cf9e9 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -194,12 +194,20 @@ static inline int __init integrity_load_cert(const unsigned int id,
+ #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
+ int asymmetric_verify(struct key *keyring, const char *sig,
+ 		      int siglen, const char *data, int datalen);
++bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
++				  int siglen);
+ #else
+ static inline int asymmetric_verify(struct key *keyring, const char *sig,
+ 				    int siglen, const char *data, int datalen)
+ {
+ 	return -EOPNOTSUPP;
+ }
++
++static inline bool asymmetric_sig_has_known_key(struct key *keyring,
++						const char *sig, int siglen)
++{
++	return false;
++}
+ #endif
+ 
+ #ifdef CONFIG_IMA_LOAD_X509
