@@ -1,23 +1,46 @@
-From: <Tudor.Ambarus@microchip.com>
-Date: Thu, 13 Dec 2018 10:26:53 +0000
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Thu, 13 Dec 2018 11:58:12 +0000
 Subject: Re: [RFC PATCH] akcipher: Introduce verify2 for public key algorithms
-Message-Id: <b2e6060c-1e2a-c2c5-0484-715646d16201@microchip.com>
+Message-Id: <20181213115811.22ebsv6y6vqclfrz@sole.flsd.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20181211165938.1150-1-vt@altlinux.org>
-In-Reply-To: <20181211165938.1150-1-vt@altlinux.org>
-To: vt@altlinux.org, dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+ <b2e6060c-1e2a-c2c5-0484-715646d16201@microchip.com>
+In-Reply-To: <b2e6060c-1e2a-c2c5-0484-715646d16201@microchip.com>
+To: Tudor.Ambarus@microchip.com
+Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org
 
-SGksDQoNCk9uIDEyLzExLzIwMTggMDY6NTkgUE0sIFZpdGFseSBDaGlrdW5vdiB3cm90ZToNCj4g
-Q3VycmVudCBha2NpcGhlciAudmVyaWZ5KCkganVzdCBkZWNyeXB0cyBzaWduYXR1cmUgdG8gdW5j
-b3ZlciBtZXNzYWdlDQo+IGhhc2gsIHdoaWNoIGlzIHRoZW4gdmVyaWZpZWQgaW4gdXBwZXIgbGV2
-ZWwgcHVibGljX2tleV92ZXJpZnlfc2lnbmF0dXJlDQo+IGJ5IG1lbWNtcCB3aXRoIHRoZSBleHBl
-Y3RlZCBzaWduYXR1cmUgdmFsdWUsIHdoaWNoIGlzIG5ldmVyIHBhc3NlZCBpbnRvDQo+IHZlcmlm
-eSgpLg0KPiANCj4gVGhpcyBhcHByb2FjaCBpcyBpbmNvbXBhdGlibGUgd2l0aCBFQ0RTQSBhbGdv
-cml0aG1zLCBiZWNhdXNlLCB0byB2ZXJpZnkNCg0KSSB3b3VsZCBsb3ZlIHRvIGhhdmUgRUNEU0Eg
-aW4ga2VybmVsIGJ1dCB1bmZvcnR1bmF0ZWx5IGl0IGhhc24ndCByZWFjaGVkIGtlcm5lbA0KYmVj
-YXVzZSB0aGVyZSBpcyBubyBpbi1rZXJuZWwgdXNlciBmb3IgaXQuIERvIHdlIGhhdmUgYW4gYWdy
-ZWVtZW50IHRoYXQgd2Ugd2lsbA0KYWRkIHN1cHBvcnQgZm9yIGl0PyBJZiBub3QsIHdobyB3aWxs
-IGJlbmVmaXQgb2YgdGhlc2UgcGF0Y2hlcz8NCg0KVGhhbmtzLA0KdGENCg=
+Tudor,
+
+On Thu, Dec 13, 2018 at 10:26:53AM +0000, Tudor.Ambarus@microchip.com wrote:
+> 
+> On 12/11/2018 06:59 PM, Vitaly Chikunov wrote:
+> > Current akcipher .verify() just decrypts signature to uncover message
+> > hash, which is then verified in upper level public_key_verify_signature
+> > by memcmp with the expected signature value, which is never passed into
+> > verify().
+> > 
+> > This approach is incompatible with ECDSA algorithms, because, to verify
+> 
+> I would love to have ECDSA in kernel but unfortunately it hasn't reached kernel
+> because there is no in-kernel user for it. Do we have an agreement that we will
+> add support for it? If not, who will benefit of these patches?
+
+I will post patchset for EC-RDSA support (which is slightly different from
+ECDSA, but is the same algorithm family). This is intended for use in IMA.
+
+Even though EC-RDSA is different from ECDSA it will require the same changes
+that I propose in these RFCs. Basically, after EC-RDSA is implemented and
+hooked into IMA it will be much easier to implement ECDSA.
+
+An additional use case is future possibility to implement other signature
+schemes out of tree, which is currently not possible because API is very
+RSA-centric.
+
+Thanks,
+
+> 
+> Thanks,
+> ta
