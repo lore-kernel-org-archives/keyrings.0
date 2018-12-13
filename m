@@ -1,519 +1,180 @@
 From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 13 Dec 2018 02:09:04 +0000
-Subject: [PATCH v9 11/14] ima: Implement support for module-style appended signatures
-Message-Id: <20181213020907.13601-12-bauerman@linux.ibm.com>
+Date: Thu, 13 Dec 2018 02:08:53 +0000
+Subject: [PATCH v9 00/14] Appended signatures support for IMA appraisal
+Message-Id: <20181213020907.13601-1-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181213020907.13601-1-bauerman@linux.ibm.com>
-In-Reply-To: <20181213020907.13601-1-bauerman@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Implement the appraise_type=imasig|modsig option, allowing IMA to read and
-verify modsig signatures.
+Hello,
 
-In case a file has both an xattr signature and an appended modsig, IMA will
-only use the appended signature if the key used by the xattr signature
-isn't present in the IMA keyring.
+This version is basically about tidying up the code to make it clearer. Most
+of the changes are in patches 11 and 14.
 
-Also enable building the sign-file tool when CONFIG_IMA_APPRAISE_MODSIG is
-enabled, so that the user can sign files using this format.
+There are two functional changes: one is modifying the list of hooks allowed
+to use modsig to allow verifying signed modules and disallow verifying
+firmware, and the other is to use the platform keyring as fallback for kexec
+kernel verification.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
----
- scripts/Makefile                      |   4 +-
- security/integrity/digsig.c           |   3 +
- security/integrity/ima/Kconfig        |   3 +
- security/integrity/ima/ima.h          |  31 ++++-
- security/integrity/ima/ima_appraise.c |  68 ++++++++++-
- security/integrity/ima/ima_main.c     |  18 ++-
- security/integrity/ima/ima_modsig.c   | 162 ++++++++++++++++++++++++++
- security/integrity/integrity.h        |  10 ++
- 8 files changed, 291 insertions(+), 8 deletions(-)
+The changelog below has the details. The patches apply on today's
+linux-integrity/next-integrity.
 
-diff --git a/scripts/Makefile b/scripts/Makefile
-index ece52ff20171..a2cf10661925 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -17,7 +17,9 @@ hostprogs-$(CONFIG_VT)           += conmakehash
- hostprogs-$(BUILD_C_RECORDMCOUNT) += recordmcount
- hostprogs-$(CONFIG_BUILDTIME_EXTABLE_SORT) += sortextable
- hostprogs-$(CONFIG_ASN1)	 += asn1_compiler
--hostprogs-$(CONFIG_MODULE_SIG)	 += sign-file
-+ifneq ($(CONFIG_MODULE_SIG)$(CONFIG_IMA_APPRAISE_MODSIG),)
-+hostprogs-y			 += sign-file
-+endif
- hostprogs-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += extract-cert
- hostprogs-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE) += insert-sys-cert
- 
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index bbfa3085d1b5..c5585e75d5d9 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -75,6 +75,9 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 	if (IS_ERR(keyring))
- 		return PTR_ERR(keyring);
- 
-+	if (sig[0] = IMA_MODSIG)
-+		return ima_modsig_verify(keyring, sig);
-+
- 	switch (sig[1]) {
- 	case 1:
- 		/* v1 API expect signature without xattr type */
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index bba19f9ea184..0fb542455698 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -234,6 +234,9 @@ config IMA_APPRAISE_BOOTPARAM
- config IMA_APPRAISE_MODSIG
- 	bool "Support module-style signatures for appraisal"
- 	depends on IMA_APPRAISE
-+	depends on INTEGRITY_ASYMMETRIC_KEYS
-+	select PKCS7_MESSAGE_PARSER
-+	select MODULE_SIG_FORMAT
- 	default n
- 	help
- 	   Adds support for signatures appended to files. The format of the
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 69c06e2d7bd6..753d59352718 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -156,7 +156,8 @@ void ima_init_template_list(void);
- 
- static inline bool is_signed(const struct evm_ima_xattr_data *xattr_value)
- {
--	return xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG;
-+	return xattr_value && (xattr_value->type = EVM_IMA_XATTR_DIGSIG ||
-+			       xattr_value->type = IMA_MODSIG);
- }
- 
- /*
-@@ -253,6 +254,9 @@ enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
- 					   enum ima_hooks func);
- enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 				 int xattr_len);
-+bool ima_xattr_sig_known_key(enum ima_hooks func,
-+			     const struct evm_ima_xattr_data *xattr_value,
-+			     int xattr_len);
- int ima_read_xattr(struct dentry *dentry,
- 		   struct evm_ima_xattr_data **xattr_value);
- 
-@@ -291,6 +295,13 @@ ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value, int xattr_len)
- 	return ima_hash_algo;
- }
- 
-+static inline bool ima_xattr_sig_known_key(enum ima_hooks func,
-+					   const struct evm_ima_xattr_data
-+					   *xattr_value, int xattr_len)
-+{
-+	return false;
-+}
-+
- static inline int ima_read_xattr(struct dentry *dentry,
- 				 struct evm_ima_xattr_data **xattr_value)
- {
-@@ -301,11 +312,29 @@ static inline int ima_read_xattr(struct dentry *dentry,
- 
- #ifdef CONFIG_IMA_APPRAISE_MODSIG
- bool ima_hook_supports_modsig(enum ima_hooks func);
-+int ima_read_collect_modsig(enum ima_hooks func, const void *buf,
-+			    loff_t buf_len,
-+			    struct evm_ima_xattr_data **xattr_value,
-+			    int *xattr_len);
-+void ima_free_xattr_data(struct evm_ima_xattr_data *hdr);
- #else
- static inline bool ima_hook_supports_modsig(enum ima_hooks func)
- {
- 	return false;
- }
-+
-+static inline int ima_read_collect_modsig(enum ima_hooks func, const void *buf,
-+					loff_t buf_len,
-+					struct evm_ima_xattr_data **xattr_value,
-+					int *xattr_len)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+static inline void ima_free_xattr_data(struct evm_ima_xattr_data *hdr)
-+{
-+	kfree(hdr);
-+}
- #endif /* CONFIG_IMA_APPRAISE_MODSIG */
- 
- /* LSM based policy rules require audit */
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 085386c77b0b..ad3310ebca97 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -189,6 +189,37 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 	return ima_hash_algo;
- }
- 
-+bool ima_xattr_sig_known_key(enum ima_hooks func,
-+			     const struct evm_ima_xattr_data *xattr_value,
-+			     int xattr_len)
-+{
-+	struct key *keyring;
-+	unsigned int keyring_id = INTEGRITY_KEYRING_IMA;
-+	bool ret;
-+
-+	if (xattr_value->type != EVM_IMA_XATTR_DIGSIG)
-+		return false;
-+
-+ retry:
-+	keyring = integrity_keyring_from_id(keyring_id);
-+	if (IS_ERR(keyring))
-+		return false;
-+
-+	ret = asymmetric_sig_has_known_key(keyring, (const char *) xattr_value,
-+					   xattr_len);
-+	if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && !ret &&
-+	    func = KEXEC_KERNEL_CHECK && keyring_id = INTEGRITY_KEYRING_IMA) {
-+		/*
-+		 * When verifying a kexec kernel signature, IMA also looks for
-+		 * the key in the platform keyring.
-+		 */
-+		keyring_id = INTEGRITY_KEYRING_PLATFORM;
-+		goto retry;
-+	}
-+
-+	return ret;
-+}
-+
- int ima_read_xattr(struct dentry *dentry,
- 		   struct evm_ima_xattr_data **xattr_value)
- {
-@@ -198,6 +229,14 @@ int ima_read_xattr(struct dentry *dentry,
- 				 0, GFP_NOFS);
- 	if (ret = -EOPNOTSUPP)
- 		ret = 0;
-+	/* IMA_MODSIG is only allowed when appended to files. */
-+	else if (ret > 0 && (*xattr_value)->type = IMA_MODSIG) {
-+		ret = -EINVAL;
-+
-+		kfree(*xattr_value);
-+		*xattr_value = NULL;
-+	}
-+
- 	return ret;
- }
- 
-@@ -221,8 +260,12 @@ int ima_appraise_measurement(enum ima_hooks func,
- 	struct inode *inode = d_backing_inode(dentry);
- 	enum integrity_status status = INTEGRITY_UNKNOWN;
- 	int rc = xattr_len, hash_start = 0;
-+	size_t xattr_contents_len;
-+	void *xattr_contents;
- 
--	if (!(inode->i_opflags & IOP_XATTR))
-+	/* If not appraising a modsig, we need an xattr. */
-+	if ((xattr_value = NULL || xattr_value->type != IMA_MODSIG) &&
-+	    !(inode->i_opflags & IOP_XATTR))
- 		return INTEGRITY_UNKNOWN;
- 
- 	if (rc <= 0) {
-@@ -241,13 +284,30 @@ int ima_appraise_measurement(enum ima_hooks func,
- 		goto out;
- 	}
- 
--	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
-+	/*
-+	 * If it's a modsig, we don't have the xattr contents to pass to
-+	 * evm_verifyxattr().
-+	 */
-+	if (xattr_value->type = IMA_MODSIG) {
-+		xattr_contents = NULL;
-+		xattr_contents_len = 0;
-+	} else {
-+		xattr_contents = xattr_value;
-+		xattr_contents_len = xattr_len;
-+	}
-+
-+	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_contents,
-+				 xattr_contents_len, iint);
- 	switch (status) {
- 	case INTEGRITY_PASS:
- 	case INTEGRITY_PASS_IMMUTABLE:
- 	case INTEGRITY_UNKNOWN:
- 		break;
- 	case INTEGRITY_NOXATTRS:	/* No EVM protected xattrs. */
-+		/* It's fine not to have xattrs when using a modsig. */
-+		if (xattr_value->type = IMA_MODSIG)
-+			break;
-+		/* fall through */
- 	case INTEGRITY_NOLABEL:		/* No security.evm xattr. */
- 		cause = "missing-HMAC";
- 		goto out;
-@@ -288,6 +348,7 @@ int ima_appraise_measurement(enum ima_hooks func,
- 		status = INTEGRITY_PASS;
- 		break;
- 	case EVM_IMA_XATTR_DIGSIG:
-+	case IMA_MODSIG:
- 		set_bit(IMA_DIGSIG, &iint->atomic_flags);
- 		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
- 					     (const char *)xattr_value,
-@@ -454,7 +515,8 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
- 				   xattr_value_len);
- 	if (result = 1) {
--		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
-+		if (!xattr_value_len || xvalue->type = IMA_MODSIG ||
-+		    xvalue->type >= IMA_XATTR_LAST)
- 			return -EINVAL;
- 		ima_reset_appraise_flags(d_backing_inode(dentry),
- 					 is_signed(xvalue));
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index bd9bd5f88206..448be1e00bab 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -181,6 +181,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	struct evm_ima_xattr_data *xattr_value = NULL;
- 	int xattr_len = 0;
- 	bool violation_check;
-+	bool read_sig;
- 	enum hash_algo hash_algo;
- 
- 	if (!ima_policy_flag || !S_ISREG(inode->i_mode))
-@@ -274,13 +275,24 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	}
- 
- 	template_desc = ima_template_desc_current();
--	if ((action & IMA_APPRAISE_SUBMASK) ||
--		    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0)
-+	read_sig = action & IMA_APPRAISE_SUBMASK ||
-+			strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0;
-+	if (read_sig)
- 		/* read 'security.ima' */
- 		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
- 
- 	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
- 
-+	/*
-+	 * Try to find a modsig if there's no xattr sig or if it is signed by an
-+	 * unknown key.
-+	 */
-+	if (read_sig && iint->flags & IMA_MODSIG_ALLOWED &&
-+	    (xattr_len <= 0 || !ima_xattr_sig_known_key(func, xattr_value,
-+							xattr_len)))
-+		ima_read_collect_modsig(func, buf, size, &xattr_value,
-+					&xattr_len);
-+
- 	rc = ima_collect_measurement(iint, file, buf, size, hash_algo);
- 	if (rc != 0 && rc != -EBADF && rc != -EINVAL)
- 		goto out_locked;
-@@ -307,7 +319,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	     !(iint->flags & IMA_NEW_FILE))
- 		rc = -EACCES;
- 	mutex_unlock(&iint->mutex);
--	kfree(xattr_value);
-+	ima_free_xattr_data(xattr_value);
- out:
- 	if (pathbuf)
- 		__putname(pathbuf);
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-index 08182bd7f445..f228f333509d 100644
---- a/security/integrity/ima/ima_modsig.c
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -8,8 +8,25 @@
-  * Thiago Jung Bauermann <bauerman@linux.ibm.com>
-  */
- 
-+#include <linux/types.h>
-+#include <linux/module_signature.h>
-+#include <keys/asymmetric-type.h>
-+#include <crypto/pkcs7.h>
-+
- #include "ima.h"
- 
-+struct modsig_hdr {
-+	uint8_t type;		/* Should be IMA_MODSIG. */
-+	struct pkcs7_message *pkcs7_msg;
-+	int raw_pkcs7_len;
-+
-+	/*
-+	 * This is what will go to the measurement list if the template requires
-+	 * storing the signature.
-+	 */
-+	struct evm_ima_xattr_data raw_pkcs7;
-+};
-+
- /**
-  * ima_hook_supports_modsig - can the policy allow modsig for this hook?
-  *
-@@ -29,3 +46,148 @@ bool ima_hook_supports_modsig(enum ima_hooks func)
- 		return false;
- 	}
- }
-+
-+static bool modsig_has_known_key(enum ima_hooks func, struct modsig_hdr *hdr)
-+{
-+	unsigned int keyring_id = INTEGRITY_KEYRING_IMA;
-+	const struct public_key_signature *pks;
-+	struct key *keyring;
-+	struct key *key;
-+
-+ retry:
-+	keyring = integrity_keyring_from_id(keyring_id);
-+	if (IS_ERR(keyring))
-+		return false;
-+
-+	pks = pkcs7_get_message_sig(hdr->pkcs7_msg);
-+	if (!pks)
-+		return false;
-+
-+	key = find_asymmetric_key(keyring, pks->auth_ids[0], NULL, false);
-+	if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && IS_ERR(key) &&
-+	    func = KEXEC_KERNEL_CHECK && keyring_id = INTEGRITY_KEYRING_IMA) {
-+		/*
-+		 * When verifying a kexec kernel signature, IMA also looks for
-+		 * the key in the platform keyring.
-+		 */
-+		keyring_id = INTEGRITY_KEYRING_PLATFORM;
-+		goto retry;
-+	} else if (IS_ERR(key))
-+		return false;
-+
-+	key_put(key);
-+
-+	return true;
-+}
-+
-+/**
-+ * ima_read_collect_modsig - Read modsig from buf and calculate the file hash.
-+ *
-+ * Since the modsig is part of the file contents, the hash used in its signature
-+ * isn't the same one calculated in ima_collect_measurement(). Therefore PKCS7
-+ * code calculates a separate one for signature verification.
-+ */
-+int ima_read_collect_modsig(enum ima_hooks func, const void *buf,
-+			    loff_t buf_len,
-+			    struct evm_ima_xattr_data **xattr_value,
-+			    int *xattr_len)
-+{
-+	const size_t marker_len = sizeof(MODULE_SIG_STRING) - 1;
-+	const struct module_signature *sig;
-+	struct modsig_hdr *hdr;
-+	size_t sig_len;
-+	const void *p;
-+	int rc;
-+
-+	/*
-+	 * Not supposed to happen. Hooks that support modsig are whitelisted
-+	 * when parsing the policy using ima_hooks_supports_modsig().
-+	 */
-+	if (!buf || !buf_len) {
-+		WARN_ONCE(true, "%s doesn't support modsig\n",
-+			  func_tokens[func]);
-+		return -ENOENT;
-+	} else if (buf_len <= marker_len + sizeof(*sig))
-+		return -ENOENT;
-+
-+	p = buf + buf_len - marker_len;
-+	if (memcmp(p, MODULE_SIG_STRING, marker_len))
-+		return -ENOENT;
-+
-+	buf_len -= marker_len;
-+	sig = (const struct module_signature *) (p - sizeof(*sig));
-+
-+	rc = mod_check_sig(sig, buf_len, func_tokens[func]);
-+	if (rc)
-+		return rc;
-+
-+	sig_len = be32_to_cpu(sig->sig_len);
-+	buf_len -= sig_len + sizeof(*sig);
-+
-+	/* Allocate sig_len additional bytes to hold the raw PKCS#7 data. */
-+	hdr = kmalloc(sizeof(*hdr) + sig_len, GFP_KERNEL);
-+	if (!hdr)
-+		return -ENOMEM;
-+
-+	hdr->pkcs7_msg = pkcs7_parse_message(buf + buf_len, sig_len);
-+	if (IS_ERR(hdr->pkcs7_msg)) {
-+		rc = PTR_ERR(hdr->pkcs7_msg);
-+		goto err_no_msg;
-+	}
-+
-+	rc = pkcs7_supply_detached_data(hdr->pkcs7_msg, buf, buf_len);
-+	if (rc)
-+		goto err;
-+
-+	if (!modsig_has_known_key(func, hdr)) {
-+		rc = -ENOKEY;
-+		goto err;
-+	}
-+
-+	/* Cause the PKCS7 code to calculate the file hash. */
-+	rc = pkcs7_get_digest(hdr->pkcs7_msg, NULL, NULL);
-+	if (rc)
-+		goto err;
-+
-+	memcpy(hdr->raw_pkcs7.data, buf + buf_len, sig_len);
-+	hdr->raw_pkcs7_len = sig_len + 1;
-+	hdr->raw_pkcs7.type = IMA_MODSIG;
-+
-+	hdr->type = IMA_MODSIG;
-+
-+	*xattr_value = (typeof(*xattr_value)) hdr;
-+	*xattr_len = sizeof(*hdr);
-+
-+	return 0;
-+
-+ err:
-+	pkcs7_free_message(hdr->pkcs7_msg);
-+ err_no_msg:
-+	kfree(hdr);
-+	return rc;
-+}
-+
-+int ima_modsig_verify(struct key *keyring, const void *hdr)
-+{
-+	const struct modsig_hdr *modsig = (const struct modsig_hdr *) hdr;
-+
-+	if (!modsig || modsig->type != IMA_MODSIG)
-+		return -EINVAL;
-+
-+	return verify_pkcs7_message_sig(NULL, 0, modsig->pkcs7_msg, keyring,
-+					VERIFYING_MODULE_SIGNATURE, NULL, NULL);
-+}
-+
-+void ima_free_xattr_data(struct evm_ima_xattr_data *hdr)
-+{
-+	if (!hdr)
-+		return;
-+
-+	if (hdr->type = IMA_MODSIG) {
-+		struct modsig_hdr *modsig = (struct modsig_hdr *) hdr;
-+
-+		pkcs7_free_message(modsig->pkcs7_msg);
-+	}
-+
-+	kfree(hdr);
-+}
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 4549488a048a..8e37ad5e52bd 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -75,6 +75,7 @@ enum evm_ima_xattr_type {
- 	EVM_IMA_XATTR_DIGSIG,
- 	IMA_XATTR_DIGEST_NG,
- 	EVM_XATTR_PORTABLE_DIGSIG,
-+	IMA_MODSIG,
- 	IMA_XATTR_LAST
- };
- 
-@@ -264,3 +265,12 @@ static inline void __init add_to_platform_keyring(const char *source,
- {
- }
- #endif
-+
-+#ifdef CONFIG_IMA_APPRAISE_MODSIG
-+int ima_modsig_verify(struct key *keyring, const void *hdr);
-+#else
-+static inline int ima_modsig_verify(struct key *keyring, const void *hdr)
-+{
-+	return -EOPNOTSUPP;
-+}
-+#endif /* CONFIG_IMA_APPRAISE_MODSIG */
+Original cover letter:
+
+On the OpenPOWER platform, secure boot and trusted boot are being
+implemented using IMA for taking measurements and verifying signatures.
+Since the kernel image on Power servers is an ELF binary, kernels are
+signed using the scripts/sign-file tool and thus use the same signature
+format as signed kernel modules.
+
+This patch series adds support in IMA for verifying those signatures.
+It adds flexibility to OpenPOWER secure boot, because it allows it to boot
+kernels with the signature appended to them as well as kernels where the
+signature is stored in the IMA extended attribute.
+
+Changes since v8:
+- Patch "MODSIGN: Export module signature definitions"
+  - Renamed validate_module_sig() to mod_check_sig(). (Suggested by
+    Mimi Zohar).
+
+- Patch "integrity: Introduce struct evm_xattr"
+  - Added comment mentioning that the evm_xattr usage is limited to HMAC
+    before the structure definition. (Suggested by Mimi Zohar)
+
+- Patch "ima: Add modsig appraise_type option for module-style appended
+         signatures"
+  - Added MODULE_CHECK to whitelist of hooks allowed to use modsig, and
+    removed FIRMWARE_CHECK. (Suggested by Mimi Zohar and James Morris)
+
+- Patch "ima: Implement support for module-style appended signatures"
+  - Moved call to ima_modsig_verify() from ima_appraise_measurement() to
+    integrity_digsig_verify(). (Suggested by Mimi Zohar)
+  - Renamed ima_read_modsig() to ima_read_collect_modsig() and made it force
+    PKCS7 code to calculate the file hash. (Suggested by Mimi Zohar)
+  - Build sign-file tool if IMA_APPRAISE_MODSIG is enabled.
+  - Check whether the signing key is in the platform keyring as a fallback
+    for the KEXEC_KERNEL hook. (Suggested by Mimi Zohar)
+
+- Patch "ima: Store the measurement again when appraising a modsig"
+  - In process_measurement(), when a new measurement needs to be stored
+    re-add IMA_MEASURE flag when the modsig is read rather than changing the
+    if condition when calling ima_store_measurement(). (Suggested by Mimi
+    Zohar)
+  - Check whether ima_template has "sig" and "d-sig" fields at
+    initialization rather than at the first time the check is needed.
+    (suggested by Mimi Zohar)
+
+Changes since v7:
+- Patch "MODSIGN: Export module signature definitions"
+  - Added module name parameter to validate_module_sig() so that it can be
+    shown in error messages.
+
+- Patch "integrity: Introduce struct evm_xattr"
+  - Dropped use of struct evm_xattr in evm_update_evmxattr() and
+    evm_verify_hmac(). It's not needed there anymore because of changes
+    to support portable EVM signatures.
+
+Changes since v6:
+
+- Patch "PKCS#7: Introduce pkcs7_get_message_sig() and verify_pkcs7_message_sig()"
+  - Retitled to "PKCS#7: Refactor verify_pkcs7_signature() and
+    add pkcs7_get_message_sig()"
+  - Reworded description to clarify why the refactoring is needed.
+    The code is unchanged. (Suggested by Mimi Zohar)
+  - Added Mimi Zohar's Reviewed-by.
+
+- Patch "PKCS#7: Introduce pkcs7_get_digest()"
+  - Added Mimi Zohar's Reviewed-by.
+
+- Patch "integrity: Introduce integrity_keyring_from_id"
+  - Added Mimi Zohar's Signed-off-by.
+
+- Patch "integrity: Introduce asymmetric_sig_has_known_key()"
+  - Added Mimi Zohar's Signed-off-by.
+
+- Patch "integrity: Select CONFIG_KEYS instead of depending on it"
+  - Added Mimi Zohar's Signed-off-by.
+
+- Patch "ima: Introduce is_ima_sig()"
+  - Renamed function to is_signed() (suggested by Mimi Zohar).
+
+- Patch "ima: Add functions to read and verify a modsig signature"
+  - Changed stubs for the !CONFIG_IMA_APPRAISE_MODSIG to return -EOPNOTSUPP
+    instead of -ENOTSUPP, since the latter isn't defined in uapi headers.
+  - Moved functions to the patches which use them and dropped this patch
+    (suggested by Mimi Zohar).
+
+- Patch "ima: Implement support for module-style appended signatures"
+  - Prevent reading and writing of IMA_MODSIG xattr in ima_read_xattr()
+    and ima_inode_setxattr().
+  - Simplify code in process_measurement() which decides whether to try
+    reading a modsig (suggested by Mimi Zohar).
+  - Moved some functions from patch "ima: Add functions to read and verify
+    a modsig signature" into this patch.
+
+- Patch "ima: Add new "d-sig" template field"
+  - New patch containing code from patch "ima: Write modsig to the measurement list"
+    (Suggested by Mimi Zohar).
+
+- Patch "ima: Write modsig to the measurement list"
+  - Moved some functions from patch "ima: Add functions to read and verify
+    a modsig signature" into this patch.
+  - Moved code related to d-sig support to new patch.
+
+- Patch "ima: Store the measurement again when appraising a modsig"
+  - New patch.
+
+Thiago Jung Bauermann (14):
+  MODSIGN: Export module signature definitions
+  PKCS#7: Refactor verify_pkcs7_signature() and add
+    pkcs7_get_message_sig()
+  PKCS#7: Introduce pkcs7_get_digest()
+  integrity: Introduce struct evm_xattr
+  integrity: Introduce integrity_keyring_from_id()
+  integrity: Introduce asymmetric_sig_has_known_key()
+  integrity: Select CONFIG_KEYS instead of depending on it
+  ima: Introduce is_signed()
+  ima: Export func_tokens
+  ima: Add modsig appraise_type option for module-style appended
+    signatures
+  ima: Implement support for module-style appended signatures
+  ima: Add new "d-sig" template field
+  ima: Write modsig to the measurement list
+  ima: Store the measurement again when appraising a modsig
+
+ Documentation/ABI/testing/ima_policy      |   6 +-
+ Documentation/security/IMA-templates.rst  |   5 +
+ certs/system_keyring.c                    |  61 ++++--
+ crypto/asymmetric_keys/pkcs7_parser.c     |  16 ++
+ crypto/asymmetric_keys/pkcs7_verify.c     |  27 +++
+ include/crypto/pkcs7.h                    |   5 +
+ include/linux/module.h                    |   3 -
+ include/linux/module_signature.h          |  47 +++++
+ include/linux/verification.h              |  10 +
+ init/Kconfig                              |   6 +-
+ kernel/Makefile                           |   2 +-
+ kernel/module.c                           |   1 +
+ kernel/module_signing.c                   |  82 ++++----
+ scripts/Makefile                          |   4 +-
+ security/integrity/Kconfig                |   2 +-
+ security/integrity/digsig.c               |  31 ++-
+ security/integrity/digsig_asymmetric.c    |  44 +++--
+ security/integrity/evm/evm_main.c         |   8 +-
+ security/integrity/ima/Kconfig            |  13 ++
+ security/integrity/ima/Makefile           |   1 +
+ security/integrity/ima/ima.h              |  62 ++++++
+ security/integrity/ima/ima_api.c          |   9 +-
+ security/integrity/ima/ima_appraise.c     |  82 +++++++-
+ security/integrity/ima/ima_main.c         |  29 ++-
+ security/integrity/ima/ima_modsig.c       | 229 ++++++++++++++++++++++
+ security/integrity/ima/ima_policy.c       |  81 ++++++--
+ security/integrity/ima/ima_template.c     |  28 ++-
+ security/integrity/ima/ima_template_lib.c |  49 ++++-
+ security/integrity/ima/ima_template_lib.h |   2 +
+ security/integrity/integrity.h            |  40 +++-
+ 30 files changed, 861 insertions(+), 124 deletions(-)
+ create mode 100644 include/linux/module_signature.h
+ create mode 100644 security/integrity/ima/ima_modsig.c
