@@ -1,103 +1,33 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Wed, 12 Dec 2018 18:14:47 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 13 Dec 2018 00:18:21 +0000
 Subject: Re: [PATCH v2 7/7] ima: Support platform keyring for kernel appraisal
-Message-Id: <8736r2fw88.fsf@morokweng.localdomain>
+Message-Id: <1544660301.3956.3.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-1-nayna@linux.ibm.com> <20181208202705.18673-8-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-8-nayna@linux.ibm.com>
-To: Nayna Jain <nayna@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
+References: <20181208202705.18673-1-nayna@linux.ibm.com>
+         <20181208202705.18673-8-nayna@linux.ibm.com>
+         <8736r2fw88.fsf@morokweng.localdomain>
+In-Reply-To: <8736r2fw88.fsf@morokweng.localdomain>
+To: Thiago Jung Bauermann <bauerman@linux.ibm.com>, Nayna Jain <nayna@linux.ibm.com>
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au
 
-
-Hello,
-
-Nayna Jain <nayna@linux.ibm.com> writes:
-
-> On secure boot enabled systems, the bootloader verifies the kernel
-> image and possibly the initramfs signatures based on a set of keys. A
-> soft reboot(kexec) of the system, with the same kernel image and
-> initramfs, requires access to the original keys to verify the
-> signatures.
->
-> This patch allows IMA-appraisal access to those original keys, now
-> loaded on the platform keyring, needed for verifying the kernel image
-> and initramfs signatures.
->
-> Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-> Acked-by: Serge Hallyn <serge@hallyn.com>
-> - replace 'rc' with 'xattr_len' when calling integrity_digsig_verify()
-> with INTEGRITY_KEYRING_IMA for readability
-> Suggested-by: Serge Hallyn <serge@hallyn.com>
-> ---
-> Changelog:
->
-> v2:
-> - replace 'rc' with 'xattr_len' when calling integrity_digsig_verify()
-> with INTEGRITY_KEYRING_IMA for readability
->
->  security/integrity/ima/ima_appraise.c | 13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
->
-> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-> index deec1804a00a..e8f520450895 100644
-> --- a/security/integrity/ima/ima_appraise.c
-> +++ b/security/integrity/ima/ima_appraise.c
-> @@ -289,12 +289,21 @@ int ima_appraise_measurement(enum ima_hooks func,
->  	case EVM_IMA_XATTR_DIGSIG:
->  		set_bit(IMA_DIGSIG, &iint->atomic_flags);
->  		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-> -					     (const char *)xattr_value, rc,
-> +					     (const char *)xattr_value,
-> +					     xattr_len,
->  					     iint->ima_hash->digest,
->  					     iint->ima_hash->length);
->  		if (rc = -EOPNOTSUPP) {
->  			status = INTEGRITY_UNKNOWN;
-> -		} else if (rc) {
-> +			break;
-> +		}
-> +		if (rc && func = KEXEC_KERNEL_CHECK)
-> +			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
-> +						     (const char *)xattr_value,
-> +						     xattr_len,
-> +						     iint->ima_hash->digest,
-> +						     iint->ima_hash->length);
-
-If CONFIG_INTEGRITY_PLATFORM_KEYRING=n the second call to
-integrity_digsig_verify() above will always fail, and the audit message
-of failed signature verifications for KEXEC_KERNEL will always log the
-same rc value, which is whatever request_key() returns when asked to
-look for an inexistent keyring.
-
-Here is a patch which only performs the second try if the platform
-keyring is enabled.
-
-
-From d5fb94ab9eb13f6294f8dc44d1344cb85dfa41b8 Mon Sep 17 00:00:00 2001
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Wed, 12 Dec 2018 16:02:09 -0200
-Subject: [PATCH] ima: Only use the platform keyring if it's enabled
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
----
- security/integrity/ima/ima_appraise.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index e8f520450895..f6ac405daabb 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -297,7 +297,8 @@ int ima_appraise_measurement(enum ima_hooks func,
- 			status = INTEGRITY_UNKNOWN;
- 			break;
- 		}
--		if (rc && func = KEXEC_KERNEL_CHECK)
-+		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
-+		    func = KEXEC_KERNEL_CHECK)
- 			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
- 						     (const char *)xattr_value,
- 						     xattr_len,
+T24gV2VkLCAyMDE4LTEyLTEyIGF0IDE2OjE0IC0wMjAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
+d3JvdGU6CltzbmlwXQoKPiBTdWJqZWN0OiBbUEFUQ0hdIGltYTogT25seSB1c2UgdGhlIHBsYXRm
+b3JtIGtleXJpbmcgaWYgaXQncyBlbmFibGVkCj4gCj4gU2lnbmVkLW9mZi1ieTogVGhpYWdvIEp1
+bmcgQmF1ZXJtYW5uIDxiYXVlcm1hbkBsaW51eC5pYm0uY29tPgoKR29vZCBjYXRjaCEgwqBUaGFu
+a3MuCgpNaW1pCgo+IC0tLQo+ICBzZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcHByYWlzZS5j
+IHwgMyArKy0KPiAgMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigt
+KQo+IAo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcHByYWlzZS5j
+IGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXBwcmFpc2UuYwo+IGluZGV4IGU4ZjUyMDQ1
+MDg5NS4uZjZhYzQwNWRhYWJiIDEwMDY0NAo+IC0tLSBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEv
+aW1hX2FwcHJhaXNlLmMKPiArKysgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcHByYWlz
+ZS5jCj4gQEAgLTI5Nyw3ICsyOTcsOCBAQCBpbnQgaW1hX2FwcHJhaXNlX21lYXN1cmVtZW50KGVu
+dW0gaW1hX2hvb2tzIGZ1bmMsCj4gIAkJCXN0YXR1cyA9IElOVEVHUklUWV9VTktOT1dOOwo+ICAJ
+CQlicmVhazsKPiAgCQl9Cj4gLQkJaWYgKHJjICYmIGZ1bmMgPSBLRVhFQ19LRVJORUxfQ0hFQ0sp
+Cj4gKwkJaWYgKElTX0VOQUJMRUQoQ09ORklHX0lOVEVHUklUWV9QTEFURk9STV9LRVlSSU5HKSAm
+JiByYyAmJgo+ICsJCSAgICBmdW5jID0gS0VYRUNfS0VSTkVMX0NIRUNLKQo+ICAJCQlyYyA9IGlu
+dGVncml0eV9kaWdzaWdfdmVyaWZ5KElOVEVHUklUWV9LRVlSSU5HX1BMQVRGT1JNLAo+ICAJCQkJ
+CQkgICAgIChjb25zdCBjaGFyICopeGF0dHJfdmFsdWUsCj4gIAkJCQkJCSAgICAgeGF0dHJfbGVu
+LAo=
