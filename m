@@ -1,17 +1,38 @@
-From: "Mr. Muller Dieter" <lmaita@umc.edu.ve>
-Date: Fri, 07 Dec 2018 14:13:59 +0000
-Subject: Urgently need money? We can help you!
-Message-Id: <20181207141451.468D1468D24F@mail.umc.edu.ve>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Thu, 13 Dec 2018 02:09:00 +0000
+Subject: [PATCH v9 07/14] integrity: Select CONFIG_KEYS instead of depending on it
+Message-Id: <20181213020907.13601-8-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20181213020907.13601-1-bauerman@linux.ibm.com>
+In-Reply-To: <20181213020907.13601-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Urgently need money? We can help you!
-Are you by the current situation in trouble or threatens you in trouble?
-In this way, we give you the ability to take a new development.
-As a rich person I feel obliged to assist people who are struggling to give them a chance. Everyone deserved a second chance and since the Government fails, it will have to come from others.
-No amount is too crazy for us and the maturity we determine by mutual agreement.
-No surprises, no extra costs, but just the agreed amounts and nothing else.
-Don't wait any longer and comment on this post. Please specify the amount you want to borrow and we will contact you with all the possibilities. contact us today at stewarrt.lf01@gmail.com
+This avoids a dependency cycle in soon-to-be-introduced
+CONFIG_IMA_APPRAISE_MODSIG: it will select CONFIG_MODULE_SIG_FORMAT
+which in turn selects CONFIG_KEYS. Kconfig then complains that
+CONFIG_INTEGRITY_SIGNATURE depends on CONFIG_KEYS.
+
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: Mimi Zohar <zohar@linux.ibm.com>
+---
+ security/integrity/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+index 4b4d2aeef539..176905bef20a 100644
+--- a/security/integrity/Kconfig
++++ b/security/integrity/Kconfig
+@@ -17,8 +17,8 @@ if INTEGRITY
+ 
+ config INTEGRITY_SIGNATURE
+ 	bool "Digital signature verification using multiple keyrings"
+-	depends on KEYS
+ 	default n
++	select KEYS
+ 	select SIGNATURE
+ 	help
+ 	  This option enables digital signature verification support
