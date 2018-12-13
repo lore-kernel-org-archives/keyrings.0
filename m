@@ -1,7 +1,7 @@
 From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 13 Dec 2018 02:08:59 +0000
-Subject: [PATCH v9 06/14] integrity: Introduce asymmetric_sig_has_known_key()
-Message-Id: <20181213020907.13601-7-bauerman@linux.ibm.com>
+Date: Thu, 13 Dec 2018 02:08:57 +0000
+Subject: [PATCH v9 04/14] integrity: Introduce struct evm_xattr
+Message-Id: <20181213020907.13601-5-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,114 +11,117 @@ In-Reply-To: <20181213020907.13601-1-bauerman@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-IMA will only look for a modsig if the xattr sig references a key which is
-not in the expected kernel keyring. To that end, introduce
-asymmetric_sig_has_known_key().
+Even though struct evm_ima_xattr_data includes a fixed-size array to hold a
+SHA1 digest, most of the code ignores the array and uses the struct to mean
+"type indicator followed by data of unspecified size" and tracks the real
+size of what the struct represents in a separate length variable.
 
-The logic of extracting the key used in the xattr sig is factored out from
-asymmetric_verify() so that it can be used by the new function.
+The only exception to that is the EVM code, which correctly uses the
+definition of struct evm_ima_xattr_data.
+
+So make this explicit in the code by removing the length specification from
+the array in struct evm_ima_xattr_data. Also, change the name of the
+element from digest to data since in most places the array doesn't hold a
+digest.
+
+A separate struct evm_xattr is introduced, with the original definition of
+evm_ima_xattr_data to be used in the places that actually expect that
+definition, specifically the EVM HMAC code.
 
 Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Signed-off-by: Mimi Zohar <zohar@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
- security/integrity/digsig_asymmetric.c | 44 +++++++++++++++++++-------
- security/integrity/integrity.h         |  8 +++++
- 2 files changed, 41 insertions(+), 11 deletions(-)
+ security/integrity/evm/evm_main.c     | 8 ++++----
+ security/integrity/ima/ima_appraise.c | 7 ++++---
+ security/integrity/integrity.h        | 6 ++++++
+ 3 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-index d775e03fbbcc..4c3c49f919f5 100644
---- a/security/integrity/digsig_asymmetric.c
-+++ b/security/integrity/digsig_asymmetric.c
-@@ -79,26 +79,48 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
- 	return key;
- }
- 
--int asymmetric_verify(struct key *keyring, const char *sig,
--		      int siglen, const char *data, int datalen)
-+static struct key *asymmetric_key_from_sig(struct key *keyring, const char *sig,
-+					   int siglen)
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index 7f3f54d89a6e..a1b42d10efc7 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -169,7 +169,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 	/* check value type */
+ 	switch (xattr_data->type) {
+ 	case EVM_XATTR_HMAC:
+-		if (xattr_len != sizeof(struct evm_ima_xattr_data)) {
++		if (xattr_len != sizeof(struct evm_xattr)) {
+ 			evm_status = INTEGRITY_FAIL;
+ 			goto out;
+ 		}
+@@ -179,7 +179,7 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 				   xattr_value_len, &digest);
+ 		if (rc)
+ 			break;
+-		rc = crypto_memneq(xattr_data->digest, digest.digest,
++		rc = crypto_memneq(xattr_data->data, digest.digest,
+ 				   SHA1_DIGEST_SIZE);
+ 		if (rc)
+ 			rc = -EINVAL;
+@@ -523,7 +523,7 @@ int evm_inode_init_security(struct inode *inode,
+ 				 const struct xattr *lsm_xattr,
+ 				 struct xattr *evm_xattr)
  {
--	struct public_key_signature pks;
--	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
--	struct key *key;
--	int ret = -ENOMEM;
-+	const struct signature_v2_hdr *hdr = (struct signature_v2_hdr *) sig;
+-	struct evm_ima_xattr_data *xattr_data;
++	struct evm_xattr *xattr_data;
+ 	int rc;
  
- 	if (siglen <= sizeof(*hdr))
--		return -EBADMSG;
-+		return ERR_PTR(-EBADMSG);
+ 	if (!evm_key_loaded() || !evm_protected_xattr(lsm_xattr->name))
+@@ -533,7 +533,7 @@ int evm_inode_init_security(struct inode *inode,
+ 	if (!xattr_data)
+ 		return -ENOMEM;
  
- 	siglen -= sizeof(*hdr);
- 
- 	if (siglen != be16_to_cpu(hdr->sig_size))
--		return -EBADMSG;
-+		return ERR_PTR(-EBADMSG);
- 
- 	if (hdr->hash_algo >= HASH_ALGO__LAST)
--		return -ENOPKG;
-+		return ERR_PTR(-ENOPKG);
-+
-+	return request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
-+}
-+
-+bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
-+				  int siglen)
-+{
-+	struct key *key;
-+
-+	key = asymmetric_key_from_sig(keyring, sig, siglen);
-+	if (IS_ERR_OR_NULL(key))
-+		return false;
-+
-+	key_put(key);
-+
-+	return true;
-+}
-+
-+int asymmetric_verify(struct key *keyring, const char *sig,
-+		      int siglen, const char *data, int datalen)
-+{
-+	struct public_key_signature pks;
-+	struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
-+	struct key *key;
-+	int ret = -ENOMEM;
- 
--	key = request_asymmetric_key(keyring, be32_to_cpu(hdr->keyid));
-+	key = asymmetric_key_from_sig(keyring, sig, siglen);
- 	if (IS_ERR(key))
- 		return PTR_ERR(key);
- 
-@@ -110,7 +132,7 @@ int asymmetric_verify(struct key *keyring, const char *sig,
- 	pks.digest = (u8 *)data;
- 	pks.digest_size = datalen;
- 	pks.s = hdr->sig;
--	pks.s_size = siglen;
-+	pks.s_size = siglen - sizeof(*hdr);
- 	ret = verify_signature(key, &pks);
- 	key_put(key);
- 	pr_debug("%s() = %d\n", __func__, ret);
+-	xattr_data->type = EVM_XATTR_HMAC;
++	xattr_data->data.type = EVM_XATTR_HMAC;
+ 	rc = evm_init_hmac(inode, lsm_xattr, xattr_data->digest);
+ 	if (rc < 0)
+ 		goto out;
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index f6ac405daabb..dcb8226972cf 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -167,7 +167,8 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
+ 		return sig->hash_algo;
+ 		break;
+ 	case IMA_XATTR_DIGEST_NG:
+-		ret = xattr_value->digest[0];
++		/* first byte contains algorithm id */
++		ret = xattr_value->data[0];
+ 		if (ret < HASH_ALGO__LAST)
+ 			return ret;
+ 		break;
+@@ -175,7 +176,7 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
+ 		/* this is for backward compatibility */
+ 		if (xattr_len = 21) {
+ 			unsigned int zero = 0;
+-			if (!memcmp(&xattr_value->digest[16], &zero, 4))
++			if (!memcmp(&xattr_value->data[16], &zero, 4))
+ 				return HASH_ALGO_MD5;
+ 			else
+ 				return HASH_ALGO_SHA1;
+@@ -274,7 +275,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 			/* xattr length may be longer. md5 hash in previous
+ 			   version occupied 20 bytes in xattr, instead of 16
+ 			 */
+-			rc = memcmp(&xattr_value->digest[hash_start],
++			rc = memcmp(&xattr_value->data[hash_start],
+ 				    iint->ima_hash->digest,
+ 				    iint->ima_hash->length);
+ 		else
 diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 6f657260a964..dec5ab8cf9e9 100644
+index 3517d2852a07..2bf0fc51752b 100644
 --- a/security/integrity/integrity.h
 +++ b/security/integrity/integrity.h
-@@ -194,12 +194,20 @@ static inline int __init integrity_load_cert(const unsigned int id,
- #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
- int asymmetric_verify(struct key *keyring, const char *sig,
- 		      int siglen, const char *data, int datalen);
-+bool asymmetric_sig_has_known_key(struct key *keyring, const char *sig,
-+				  int siglen);
- #else
- static inline int asymmetric_verify(struct key *keyring, const char *sig,
- 				    int siglen, const char *data, int datalen)
- {
- 	return -EOPNOTSUPP;
- }
-+
-+static inline bool asymmetric_sig_has_known_key(struct key *keyring,
-+						const char *sig, int siglen)
-+{
-+	return false;
-+}
- #endif
+@@ -79,6 +79,12 @@ enum evm_ima_xattr_type {
  
- #ifdef CONFIG_IMA_LOAD_X509
+ struct evm_ima_xattr_data {
+ 	u8 type;
++	u8 data[];
++} __packed;
++
++/* Only used in the EVM HMAC code. */
++struct evm_xattr {
++	struct evm_ima_xattr_data data;
+ 	u8 digest[SHA1_DIGEST_SIZE];
+ } __packed;
+ 
