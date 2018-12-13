@@ -1,44 +1,23 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Thu, 13 Dec 2018 10:12:33 +0000
+From: <Tudor.Ambarus@microchip.com>
+Date: Thu, 13 Dec 2018 10:26:53 +0000
 Subject: Re: [RFC PATCH] akcipher: Introduce verify2 for public key algorithms
-Message-Id: <20181213101233.6t7d5mxxkkavo46h@gondor.apana.org.au>
+Message-Id: <b2e6060c-1e2a-c2c5-0484-715646d16201@microchip.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-In-Reply-To: <20181211165938.1150-1-vt@altlinux.org>
 References: <20181211165938.1150-1-vt@altlinux.org>
 In-Reply-To: <20181211165938.1150-1-vt@altlinux.org>
-To: Vitaly Chikunov <vt@altlinux.org>
-Cc: dhowells@redhat.com, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+To: vt@altlinux.org, dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Vitaly Chikunov <vt@altlinux.org> wrote:
-> Current akcipher .verify() just decrypts signature to uncover message
-> hash, which is then verified in upper level public_key_verify_signature
-> by memcmp with the expected signature value, which is never passed into
-> verify().
-> 
-> This approach is incompatible with ECDSA algorithms, because, to verify
-> a signature ECDSA algorithm also needs a hash value as input; also, hash
-> is used in ECDSA (together with a signature divided into halves `r||s`),
-> not to produce hash, but to produce a number, which is then compared to
-> `r` (first part of the signature) to determine if the signature is
-> correct.  Thus, for ECDSA, nor requirements of .verify() itself, nor its
-> output expectations in public_key_verify_signature aren't satisfied.
-> 
-> Make alternative .verify2() call which gets hash value and produce
-> complete signature check (without any output, thus max_size() call will
-> not be needed for verify2() operation).
-> 
-> If .verify2() call is present, it should be used in place of .verify().
-> 
-> Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
-
-We should convert all existing users to this interface and not
-have both verify/verify2 forever.
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+SGksDQoNCk9uIDEyLzExLzIwMTggMDY6NTkgUE0sIFZpdGFseSBDaGlrdW5vdiB3cm90ZToNCj4g
+Q3VycmVudCBha2NpcGhlciAudmVyaWZ5KCkganVzdCBkZWNyeXB0cyBzaWduYXR1cmUgdG8gdW5j
+b3ZlciBtZXNzYWdlDQo+IGhhc2gsIHdoaWNoIGlzIHRoZW4gdmVyaWZpZWQgaW4gdXBwZXIgbGV2
+ZWwgcHVibGljX2tleV92ZXJpZnlfc2lnbmF0dXJlDQo+IGJ5IG1lbWNtcCB3aXRoIHRoZSBleHBl
+Y3RlZCBzaWduYXR1cmUgdmFsdWUsIHdoaWNoIGlzIG5ldmVyIHBhc3NlZCBpbnRvDQo+IHZlcmlm
+eSgpLg0KPiANCj4gVGhpcyBhcHByb2FjaCBpcyBpbmNvbXBhdGlibGUgd2l0aCBFQ0RTQSBhbGdv
+cml0aG1zLCBiZWNhdXNlLCB0byB2ZXJpZnkNCg0KSSB3b3VsZCBsb3ZlIHRvIGhhdmUgRUNEU0Eg
+aW4ga2VybmVsIGJ1dCB1bmZvcnR1bmF0ZWx5IGl0IGhhc24ndCByZWFjaGVkIGtlcm5lbA0KYmVj
+YXVzZSB0aGVyZSBpcyBubyBpbi1rZXJuZWwgdXNlciBmb3IgaXQuIERvIHdlIGhhdmUgYW4gYWdy
+ZWVtZW50IHRoYXQgd2Ugd2lsbA0KYWRkIHN1cHBvcnQgZm9yIGl0PyBJZiBub3QsIHdobyB3aWxs
+IGJlbmVmaXQgb2YgdGhlc2UgcGF0Y2hlcz8NCg0KVGhhbmtzLA0KdGENCg=
