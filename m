@@ -1,71 +1,86 @@
-From: Alison Schofield <alison.schofield@intel.com>
-Date: Tue, 04 Dec 2018 07:39:55 +0000
-Subject: [RFC v2 08/13] mm: Use reference counting for encrypted VMAs
-Message-Id: <985ba614d49986fdfc0397434fd1dd9eb5646c6f.1543903910.git.alison.schofield@intel.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Thu, 13 Dec 2018 02:09:01 +0000
+Subject: [PATCH v9 08/14] ima: Introduce is_signed()
+Message-Id: <20181213020907.13601-9-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <cover.1543903910.git.alison.schofield@intel.com>
-In-Reply-To: <cover.1543903910.git.alison.schofield@intel.com>
-To: dhowells@redhat.com, tglx@linutronix.de
-Cc: jmorris@namei.org, mingo@redhat.com, hpa@zytor.com, bp@alien8.de, luto@kernel.org, peterz@infradead.org, kirill.shutemov@linux.intel.com, dave.hansen@intel.com, kai.huang@intel.com, jun.nakajima@intel.com, dan.j.williams@intel.com, jarkko.sakkinen@intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org
+References: <20181213020907.13601-1-bauerman@linux.ibm.com>
+In-Reply-To: <20181213020907.13601-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-The MKTME (Multi-Key Total Memory Encryption) Key Service needs
-a reference count on encrypted VMAs. This reference count is used
-to determine when a hardware encryption keyid is in use, which in
-turn, tells the key service what operations can be safely performed
-with this keyid.
+With the introduction of another IMA signature type (modsig), some places
+will need to check for both of them. It is cleaner to do that if there's a
+helper function to tell whether an xattr_value represents an IMA
+signature.
 
-The approach is:
-1) Increment/decrement the reference count during encrypt_mprotect()
-system call for initial or updated encryption on a VMA.
-
-2) Piggy back on the new vm_area_dup/free() helpers. If the VMAs being
-duplicated, or freed are encrypted, adjust the reference count.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 ---
- arch/x86/mm/mktme.c | 2 ++
- kernel/fork.c       | 2 ++
- 2 files changed, 4 insertions(+)
+ security/integrity/ima/ima.h              | 5 +++++
+ security/integrity/ima/ima_appraise.c     | 7 +++----
+ security/integrity/ima/ima_template_lib.c | 2 +-
+ 3 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
-index facf08f9cb74..55d34beb9b81 100644
---- a/arch/x86/mm/mktme.c
-+++ b/arch/x86/mm/mktme.c
-@@ -145,10 +145,12 @@ void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
- 	if (oldkeyid = newkeyid)
- 		return;
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index cc12f3449a72..e4f72b30cb28 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -154,6 +154,11 @@ unsigned long ima_get_binary_runtime_size(void);
+ int ima_init_template(void);
+ void ima_init_template_list(void);
  
-+	vma_put_encrypt_ref(vma);
- 	newprot = pgprot_val(vma->vm_page_prot);
- 	newprot &= ~mktme_keyid_mask;
- 	newprot |= (unsigned long)newkeyid << mktme_keyid_shift;
- 	vma->vm_page_prot = __pgprot(newprot);
-+	vma_get_encrypt_ref(vma);
++static inline bool is_signed(const struct evm_ima_xattr_data *xattr_value)
++{
++	return xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG;
++}
++
+ /*
+  * used to protect h_table and sha_table
+  */
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index dcb8226972cf..085386c77b0b 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -335,15 +335,14 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	} else if (status != INTEGRITY_PASS) {
+ 		/* Fix mode, but don't replace file signatures. */
+ 		if ((ima_appraise & IMA_APPRAISE_FIX) &&
+-		    (!xattr_value ||
+-		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
++		    !is_signed(xattr_value)) {
+ 			if (!ima_fix_xattr(dentry, iint))
+ 				status = INTEGRITY_PASS;
+ 		}
  
- 	/*
- 	 * The VMA doesn't have any inherited pages.
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 07cddff89c7b..d12d27b50966 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -341,12 +341,14 @@ struct vm_area_struct *vm_area_dup(struct vm_area_struct *orig)
- 	if (new) {
- 		*new = *orig;
- 		INIT_LIST_HEAD(&new->anon_vma_chain);
-+		vma_get_encrypt_ref(new);
+ 		/* Permit new files with file signatures, but without data. */
+ 		if (inode->i_size = 0 && iint->flags & IMA_NEW_FILE &&
+-		    xattr_value && xattr_value->type = EVM_IMA_XATTR_DIGSIG) {
++		    is_signed(xattr_value)) {
+ 			status = INTEGRITY_PASS;
+ 		}
+ 
+@@ -458,7 +457,7 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
+ 			return -EINVAL;
+ 		ima_reset_appraise_flags(d_backing_inode(dentry),
+-			xvalue->type = EVM_IMA_XATTR_DIGSIG);
++					 is_signed(xvalue));
+ 		result = 0;
  	}
- 	return new;
- }
- 
- void vm_area_free(struct vm_area_struct *vma)
+ 	return result;
+diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
+index 43752002c222..300912914b17 100644
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -382,7 +382,7 @@ int ima_eventsig_init(struct ima_event_data *event_data,
  {
-+	vma_put_encrypt_ref(vma);
- 	kmem_cache_free(vm_area_cachep, vma);
- }
+ 	struct evm_ima_xattr_data *xattr_value = event_data->xattr_value;
  
--- 
-2.14.1
+-	if ((!xattr_value) || (xattr_value->type != EVM_IMA_XATTR_DIGSIG))
++	if (!is_signed(xattr_value))
+ 		return 0;
+ 
+ 	return ima_write_template_field_data(xattr_value, event_data->xattr_len,
