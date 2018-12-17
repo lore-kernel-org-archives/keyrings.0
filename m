@@ -1,35 +1,34 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Mon, 17 Dec 2018 20:29:18 +0000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 17 Dec 2018 20:31:31 +0000
 Subject: Re: [PATCH RESEND] KEYS: fix parsing invalid pkey info string
-Message-Id: <1545078558.10804.19.camel@linux.ibm.com>
+Message-Id: <CAHk-=whO8vApZK-4zBeEhUm4Mp-OMii1V9oVCmoOaGZ2faitcg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181128232019.GC131170@gmail.com>
-         <20181217181244.220052-1-ebiggers@kernel.org>
-         <CAHk-=whmh8WdcKHdYjioJNjyeewv=fO1H0hxXqDh6kiX0YvzmQ@mail.gmail.com>
-         <CAHk-=wi8iGD8zHuPr38m9MUwDwf3qy2FYSbyoQ_Ygky+D-pU1Q@mail.gmail.com>
-         <CAHk-=wjsMJeEkJbE3QhM3SY-DT9VsnMWNQKMNsG9TetnjREWDQ@mail.gmail.com>
-         <CAHk-=wgGYebCEE-M-6Dnbn5MpC8BD8SLjgw8iPGrgy8zETrdJg@mail.gmail.com>
-         <1545076260.2878.15.camel@HansenPartnership.com>
-         <CAHk-=wjPhKNKRq24wXL3wvqUgfyriDjYNXUPCumbH=64ZMXrSw@mail.gmail.com>
-In-Reply-To: <CAHk-=wjPhKNKRq24wXL3wvqUgfyriDjYNXUPCumbH=64ZMXrSw@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>, James Bottomley <James.Bottomley@hansenpartnership.com>
+References: <20181128232019.GC131170@gmail.com> <20181217181244.220052-1-ebiggers@kernel.org>
+ <CAHk-=whmh8WdcKHdYjioJNjyeewv=fO1H0hxXqDh6kiX0YvzmQ@mail.gmail.com>
+ <CAHk-=wi8iGD8zHuPr38m9MUwDwf3qy2FYSbyoQ_Ygky+D-pU1Q@mail.gmail.com>
+ <CAHk-=wjsMJeEkJbE3QhM3SY-DT9VsnMWNQKMNsG9TetnjREWDQ@mail.gmail.com> <1545078067.10804.13.camel@linux.ibm.com>
+In-Reply-To: <1545078067.10804.13.camel@linux.ibm.com>
+To: zohar@linux.ibm.com
 Cc: ebiggers@kernel.org, James Morris James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, syzkaller-bugs@googlegroups.com
 
-On Mon, 2018-12-17 at 12:02 -0800, Linus Torvalds wrote:
-> Talking about the conflicting ones: Opt_hash checks that
-> Opt_policydigest isn't set. But Opt_policydigest doesn't check that
-> Opt_hash isn't set, so you can mix the two if you just do it in the
-> right order.
-> 
-> But that's a separate bug, and doesn't seem to be a huge deal.
-> 
-> But it *is* an example of how bogus all of this stuff is. Clearly
-> people weren't really paying attention when writing any of this code.
+On Mon, Dec 17, 2018 at 12:21 PM Mimi Zohar <zohar@linux.ibm.com> wrote:
+>
+> It's being used for parsing and displaying the policy, which do need
+> to be in sync.
 
-A file signature is more restrictive than just a file hash. I'll clean
-up this and the other ugliness.
+Yes, but it needs a comment somewhere.
 
-Mimi
+Also, the way you use those enums as array indices also implies that
+for your case, Opt_err should definitely not be -1, and it should
+instead be at the *end* of the enum list (the same way it's at the end
+of the array).
+
+That would also automatically mean that "Opt_measure" would have value
+0, and the pl(token) macro shouldn't need any offsetting at all,
+because the enums and the array indices just automatically match up
+(as long as they are always updated together!)
+
+               Linus
