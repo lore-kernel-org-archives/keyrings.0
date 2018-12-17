@@ -1,48 +1,42 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 17 Dec 2018 18:12:44 +0000
-Subject: [PATCH RESEND] KEYS: fix parsing invalid pkey info string
-Message-Id: <20181217181244.220052-1-ebiggers@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 17 Dec 2018 18:43:34 +0000
+Subject: Re: [PATCH RESEND] KEYS: fix parsing invalid pkey info string
+Message-Id: <CAHk-=whmh8WdcKHdYjioJNjyeewv=fO1H0hxXqDh6kiX0YvzmQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181128232019.GC131170@gmail.com>
-In-Reply-To: <20181128232019.GC131170@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
+References: <20181128232019.GC131170@gmail.com> <20181217181244.220052-1-ebiggers@kernel.org>
+In-Reply-To: <20181217181244.220052-1-ebiggers@kernel.org>
+To: ebiggers@kernel.org, James Morris James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, syzkaller-bugs@googlegroups.com
 
-From: Eric Biggers <ebiggers@google.com>
+On Mon, Dec 17, 2018 at 10:13 AM Eric Biggers <ebiggers@kernel.org> wrote:
+>
+> Hi Linus, please consider applying this patch.  It's been ignored by the
+> keyrings maintainer for a month and a half with multiple reminders.  It
+> fixes an easily reachable stack corruption in the new keyctl operations
+> that were added in v4.20.  It was immediately reached by syzbot even
+> without any definitions for the new keyctls yet.
 
-We need to check the return value of match_token() for Opt_err (-1)
-before doing anything with it.
+The getoptions() code in security/keys/trusted.c has exactly the same
+buggy pattern, and seems to actually be the source of that idiocy.
 
-Reported-by: syzbot+a22e0dc07567662c50bc@syzkaller.appspotmail.com
-Fixes: 00d60fd3b932 ("KEYS: Provide keyctls to drive the new key type ops for asymmetric keys [ver #2]")
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
+Mind fixing that one too and getting rid of this incorrect code entirely?
 
-Hi Linus, please consider applying this patch.  It's been ignored by the
-keyrings maintainer for a month and a half with multiple reminders.  It
-fixes an easily reachable stack corruption in the new keyctl operations
-that were added in v4.20.  It was immediately reached by syzbot even
-without any definitions for the new keyctls yet.
+Also, maybe the right fix is to do the "check for duplicate tokens"
+only *after* all the other validation (ie after the switch())?
 
- security/keys/keyctl_pkey.c | 2 ++
- 1 file changed, 2 insertions(+)
+Or maybe just remove it entirely, since it's clearly entirely
+incorrect from the very start.
 
-diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
-index 783978842f13a..987fac8051d70 100644
---- a/security/keys/keyctl_pkey.c
-+++ b/security/keys/keyctl_pkey.c
-@@ -50,6 +50,8 @@ static int keyctl_pkey_params_parse(struct kernel_pkey_params *params)
- 		if (*p = '\0' || *p = ' ' || *p = '\t')
- 			continue;
- 		token = match_token(p, param_keys, args);
-+		if (token = Opt_err)
-+			return -EINVAL;
- 		if (__test_and_set_bit(token, &token_mask))
- 			return -EINVAL;
- 		q = args[0].from;
--- 
-2.20.0.405.gbc1bbc6f85-goog
+Finally, the code was actually originally introduced in commit
+5208cc83423d ("keys, trusted: fix: *do not* allow duplicate key
+options"), this second place you found is just pattern matching from
+that original garbage, that was acked and "reviewed" by several
+people. The fix should have that clarification. Commit 00d60fd3b932
+wasn't the _origin_ of this bug, even if it made a copy of it.
+
+Looking around, nobody else has picked up that incorrect pattern.
+
+                   Linus
