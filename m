@@ -1,35 +1,54 @@
-From: James Morris <jmorris@namei.org>
-Date: Tue, 11 Dec 2018 18:49:00 +0000
-Subject: Re: [PATCH v2 6/7] efi: Allow the "db" UEFI variable to be suppressed
-Message-Id: <alpine.LRH.2.21.1812120548480.11653@namei.org>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+Date: Sun, 30 Dec 2018 16:29:06 +0000
+Subject: Bug report: unaligned access with ext4 encryption
+Message-Id: <20181230162906.GI27785@darkstar.musicnaut.iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-1-nayna@linux.ibm.com>
- <20181208202705.18673-7-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-7-nayna-tEXmvtCZX7AybS5Ee8rs3A@public.gmane.org>
-To: Nayna Jain <nayna-tEXmvtCZX7AybS5Ee8rs3A@public.gmane.org>
-Cc: linux-efi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, mpe-Gsx/Oe8HsFggBc27wqDAHg@public.gmane.org, kexec-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, zohar-tEXmvtCZX7AybS5Ee8rs3A@public.gmane.org, dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, seth.forshee-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, ebiederm-aS9lmoZGLiVWk0Htik3J/w@public.gmane.org, jforbes-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, linux-integrity-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Josh Boyer <jwboyer-rxtnV0ftBwyoClj4AeEUq9i2O/JbrIOy@public.gmane.org>, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+To: "Theodore Y. Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, David Howells <dhowells@redhat.com>
+Cc: linux-fscrypt@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-On Sun, 9 Dec 2018, Nayna Jain wrote:
+Hi,
 
-> From: Josh Boyer <jwboyer@fedoraproject.org>
-> 
-> If a user tells shim to not use the certs/hashes in the UEFI db variable
-> for verification purposes, shim will set a UEFI variable called
-> MokIgnoreDB. Have the uefi import code look for this and ignore the db
-> variable if it is found.
-> 
-> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Acked-by: Nayna Jain <nayna@linux.ibm.com>
-> Acked-by: Serge Hallyn <serge@hallyn.com>
+When using ext4 encryption on SPARC, there's plenty of dmesg noise about
+unaligned access:
 
+[  167.269526] Kernel unaligned access at TPC[5497a0] find_and_lock_process_key+0x80/0x120
+[  167.270152] Kernel unaligned access at TPC[5497a0] find_and_lock_process_key+0x80/0x120
+[  181.087451] log_unaligned: 5 callbacks suppressed
+[  181.087511] Kernel unaligned access at TPC[5497a0] find_and_lock_process_key+0x80/0x120
+[  181.092435] Kernel unaligned access at TPC[5497a0] find_and_lock_process_key+0x80/0x120
+[  181.095816] Kernel unaligned access at TPC[5497a0] find_and_lock_process_key+0x80/0x120
 
-Reviewed-by: James Morris <james.morris@microsoft.com>
+And also seen on an ARM machine:
 
+$ cat /proc/cpu/alignment
+User:           0
+System:         1028193 (find_and_lock_process_key+0x84/0x10c)
+Skipped:        0
+Half:           0
+Word:           1028193
+DWord:          0
+Multi:          0
+User faults:    0 (ignored)
 
--- 
-James Morris
-<jmorris@namei.org>
+Looks like user_key_payload layout is not optimal when data address
+is used for fscrypt_key... I tried the below change and got rid of the
+messages. Not sure what the proper fix should be?
+
+A.
+
+diff --git a/include/keys/user-type.h b/include/keys/user-type.h
+index e098cbe27db5..6495ffcfe510 100644
+--- a/include/keys/user-type.h
++++ b/include/keys/user-type.h
+@@ -31,7 +31,7 @@
+ struct user_key_payload {
+ 	struct rcu_head	rcu;		/* RCU destructor */
+ 	unsigned short	datalen;	/* length of this data */
+-	char		data[0];	/* actual data */
++	char data[0] __aligned(4);	/* actual data */
+ };
+ 
+ extern struct key_type key_type_user;
