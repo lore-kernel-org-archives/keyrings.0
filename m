@@ -1,358 +1,448 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 29 Jan 2019 21:02:45 +0000
-Subject: Re: [PATCH v8 7/7] tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()
-Message-Id: <20190129210245.GF11615@linux.intel.com>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Date: Thu, 03 Jan 2019 14:32:23 +0000
+Subject: [PATCH 1/5 v2] PM / hibernate: Create snapshot keys handler
+Message-Id: <20190103143227.9138-2-jlee@suse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190124154910.29948-1-roberto.sassu@huawei.com>
- <20190124154910.29948-8-roberto.sassu@huawei.com>
-In-Reply-To: <20190124154910.29948-8-roberto.sassu@huawei.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>
-Cc: zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, silviu.vlasceanu@huawei.com
+References: <20190103143227.9138-1-jlee@suse.com>
+In-Reply-To: <20190103143227.9138-1-jlee@suse.com>
+To: "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
 
-On Thu, Jan 24, 2019 at 04:49:10PM +0100, Roberto Sassu wrote:
-> Currently, tpm_pcr_extend() accepts as an input only a SHA1 digest.
-> 
-> This patch replaces the hash parameter of tpm_pcr_extend() with an array of
-> tpm_digest structures, so that the caller can provide a digest for each PCR
-> bank currently allocated in the TPM.
-> 
-> tpm_pcr_extend() will not extend banks for which no digest was provided,
-> as it happened before this patch, but instead it requires that callers
-> provide the full set of digests. Since the number of digests will always be
-> chip->nr_allocated_banks, the count parameter has been removed.
-> 
-> Due to the API change, ima_pcr_extend() and pcrlock() have been modified.
-> Since the number of allocated banks is not known in advance, the memory for
-> the digests must be dynamically allocated. To avoid performance degradation
-> and to avoid that a PCR extend is not done due to lack of memory, the array
-> of tpm_digest structures is allocated by the users of the TPM driver at
-> initialization time.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-> ---
->  drivers/char/tpm/tpm-interface.c   | 30 ++++++++------------
->  drivers/char/tpm/tpm.h             |  2 +-
->  drivers/char/tpm/tpm2-cmd.c        | 10 ++-----
->  include/linux/tpm.h                |  5 ++--
->  security/integrity/ima/ima.h       |  1 +
->  security/integrity/ima/ima_init.c  | 22 +++++++++++++++
->  security/integrity/ima/ima_queue.c |  6 +++-
->  security/keys/trusted.c            | 44 ++++++++++++++++++++++++------
->  8 files changed, 82 insertions(+), 38 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-> index eb7c79ca8a94..b52242a165e0 100644
-> --- a/drivers/char/tpm/tpm-interface.c
-> +++ b/drivers/char/tpm/tpm-interface.c
-> @@ -478,42 +478,34 @@ EXPORT_SYMBOL_GPL(tpm_pcr_read);
->   * tpm_pcr_extend - extend a PCR value in SHA1 bank.
->   * @chip:	a &struct tpm_chip instance, %NULL for the default chip
->   * @pcr_idx:	the PCR to be retrieved
-> - * @hash:	the hash value used to extend the PCR value
-> + * @digests:	array of tpm_digest structures used to extend PCRs
->   *
-> - * Note: with TPM 2.0 extends also those banks for which no digest was
-> - * specified in order to prevent malicious use of those PCR banks.
-> + * Note: callers must pass a digest for every allocated PCR bank, in the same
-> + * order of the banks in chip->allocated_banks.
->   *
->   * Return: same as with tpm_transmit_cmd()
->   */
-> -int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, const u8 *hash)
-> +int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
-> +		   struct tpm_digest *digests)
->  {
->  	int rc;
-> -	struct tpm_digest *digest_list;
->  	int i;
->  
->  	chip = tpm_find_get_ops(chip);
->  	if (!chip)
->  		return -ENODEV;
->  
-> -	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
-> -		digest_list = kcalloc(chip->nr_allocated_banks,
-> -				      sizeof(*digest_list), GFP_KERNEL);
-> -		if (!digest_list)
-> -			return -ENOMEM;
-> -
-> -		for (i = 0; i < chip->nr_allocated_banks; i++) {
-> -			digest_list[i].alg_id = chip->allocated_banks[i].alg_id;
-> -			memcpy(digest_list[i].digest, hash, TPM_DIGEST_SIZE);
-> -		}
-> +	for (i = 0; i < chip->nr_allocated_banks; i++)
-> +		if (digests[i].alg_id != chip->allocated_banks[i].alg_id)
-> +			return -EINVAL;
->  
-> -		rc = tpm2_pcr_extend(chip, pcr_idx, chip->nr_allocated_banks,
-> -				     digest_list);
-> -		kfree(digest_list);
-> +	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
-> +		rc = tpm2_pcr_extend(chip, pcr_idx, digests);
->  		tpm_put_ops(chip);
->  		return rc;
->  	}
->  
-> -	rc = tpm1_pcr_extend(chip, pcr_idx, hash,
-> +	rc = tpm1_pcr_extend(chip, pcr_idx, digests[0].digest,
->  			     "attempting extend a PCR value");
->  	tpm_put_ops(chip);
->  	return rc;
-> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> index f5f15365b85b..5fb3f8bb279b 100644
-> --- a/drivers/char/tpm/tpm.h
-> +++ b/drivers/char/tpm/tpm.h
-> @@ -453,7 +453,7 @@ static inline u32 tpm2_rc_value(u32 rc)
->  int tpm2_get_timeouts(struct tpm_chip *chip);
->  int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
->  		  struct tpm_digest *digest, u16 *digest_size_ptr);
-> -int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
-> +int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
->  		    struct tpm_digest *digests);
->  int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max);
->  void tpm2_flush_context_cmd(struct tpm_chip *chip, u32 handle,
-> diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-> index 760893957f13..dc115096e280 100644
-> --- a/drivers/char/tpm/tpm2-cmd.c
-> +++ b/drivers/char/tpm/tpm2-cmd.c
-> @@ -247,12 +247,11 @@ struct tpm2_null_auth_area {
->   *
->   * @chip:	TPM chip to use.
->   * @pcr_idx:	index of the PCR.
-> - * @count:	number of digests passed.
->   * @digests:	list of pcr banks and corresponding digest values to extend.
->   *
->   * Return: Same as with tpm_transmit_cmd.
->   */
-> -int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
-> +int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
->  		    struct tpm_digest *digests)
->  {
->  	struct tpm_buf buf;
-> @@ -260,9 +259,6 @@ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
->  	int rc;
->  	int i;
->  
-> -	if (count > chip->nr_allocated_banks)
-> -		return -EINVAL;
-> -
->  	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_PCR_EXTEND);
->  	if (rc)
->  		return rc;
-> @@ -277,9 +273,9 @@ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
->  	tpm_buf_append_u32(&buf, sizeof(struct tpm2_null_auth_area));
->  	tpm_buf_append(&buf, (const unsigned char *)&auth_area,
->  		       sizeof(auth_area));
-> -	tpm_buf_append_u32(&buf, count);
-> +	tpm_buf_append_u32(&buf, chip->nr_allocated_banks);
->  
-> -	for (i = 0; i < count; i++) {
-> +	for (i = 0; i < chip->nr_allocated_banks; i++) {
->  		tpm_buf_append_u16(&buf, digests[i].alg_id);
->  		tpm_buf_append(&buf, (const unsigned char *)&digests[i].digest,
->  			       chip->allocated_banks[i].digest_size);
-> diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-> index 5ad0e58d5e09..08bf38e4c7aa 100644
-> --- a/include/linux/tpm.h
-> +++ b/include/linux/tpm.h
-> @@ -175,7 +175,8 @@ struct tpm_chip {
->  extern int tpm_is_tpm2(struct tpm_chip *chip);
->  extern int tpm_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
->  			struct tpm_digest *digest);
-> -extern int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, const u8 *hash);
-> +extern int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
-> +			  struct tpm_digest *digests);
->  extern int tpm_send(struct tpm_chip *chip, void *cmd, size_t buflen);
->  extern int tpm_get_random(struct tpm_chip *chip, u8 *data, size_t max);
->  extern int tpm_seal_trusted(struct tpm_chip *chip,
-> @@ -198,7 +199,7 @@ static inline int tpm_pcr_read(struct tpm_chip *chip, int pcr_idx,
->  }
->  
->  static inline int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
-> -				 const u8 *hash)
-> +				 struct tpm_digest *digests)
->  {
->  	return -ENODEV;
->  }
-> diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-> index cc12f3449a72..e6b2dcb0846a 100644
-> --- a/security/integrity/ima/ima.h
-> +++ b/security/integrity/ima/ima.h
-> @@ -56,6 +56,7 @@ extern int ima_policy_flag;
->  extern int ima_hash_algo;
->  extern int ima_appraise;
->  extern struct tpm_chip *ima_tpm_chip;
-> +extern struct tpm_digest *digests;
->  
->  /* IMA event related data */
->  struct ima_event_data {
-> diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-> index 6bb42a9c5e47..296a965b11ef 100644
-> --- a/security/integrity/ima/ima_init.c
-> +++ b/security/integrity/ima/ima_init.c
-> @@ -27,6 +27,7 @@
->  /* name for boot aggregate entry */
->  static const char boot_aggregate_name[] = "boot_aggregate";
->  struct tpm_chip *ima_tpm_chip;
-> +struct tpm_digest *digests;
->  
->  /* Add the boot aggregate to the IMA measurement list and extend
->   * the PCR register.
-> @@ -104,6 +105,24 @@ void __init ima_load_x509(void)
->  }
->  #endif
->  
-> +int __init ima_init_digests(void)
-> +{
-> +	int i;
-> +
-> +	if (!ima_tpm_chip)
-> +		return 0;
-> +
-> +	digests = kcalloc(ima_tpm_chip->nr_allocated_banks, sizeof(*digests),
-> +			  GFP_NOFS);
-> +	if (!digests)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < ima_tpm_chip->nr_allocated_banks; i++)
-> +		digests[i].alg_id = ima_tpm_chip->allocated_banks[i].alg_id;
-> +
-> +	return 0;
-> +}
-> +
->  int __init ima_init(void)
->  {
->  	int rc;
-> @@ -125,6 +144,9 @@ int __init ima_init(void)
->  
->  	ima_load_kexec_buffer();
->  
-> +	rc = ima_init_digests();
-> +	if (rc != 0)
-> +		return rc;
->  	rc = ima_add_boot_aggregate();	/* boot aggregate must be first entry */
->  	if (rc != 0)
->  		return rc;
-> diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
-> index 0e41dc1df1d4..719e88ca58f6 100644
-> --- a/security/integrity/ima/ima_queue.c
-> +++ b/security/integrity/ima/ima_queue.c
-> @@ -140,11 +140,15 @@ unsigned long ima_get_binary_runtime_size(void)
->  static int ima_pcr_extend(const u8 *hash, int pcr)
->  {
->  	int result = 0;
-> +	int i;
->  
->  	if (!ima_tpm_chip)
->  		return result;
->  
-> -	result = tpm_pcr_extend(ima_tpm_chip, pcr, hash);
-> +	for (i = 0; i < ima_tpm_chip->nr_allocated_banks; i++)
-> +		memcpy(digests[i].digest, hash, TPM_DIGEST_SIZE);
-> +
-> +	result = tpm_pcr_extend(ima_tpm_chip, pcr, digests);
->  	if (result != 0)
->  		pr_err("Error Communicating to TPM chip, result: %d\n", result);
->  	return result;
-> diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-> index 1a20a9692fef..baba0abc7850 100644
-> --- a/security/keys/trusted.c
-> +++ b/security/keys/trusted.c
-> @@ -35,6 +35,7 @@
->  static const char hmac_alg[] = "hmac(sha1)";
->  static const char hash_alg[] = "sha1";
->  static struct tpm_chip *chip;
-> +static struct tpm_digest *digests;
->  
->  struct sdesc {
->  	struct shash_desc shash;
-> @@ -380,15 +381,10 @@ EXPORT_SYMBOL_GPL(trusted_tpm_send);
->   */
->  static int pcrlock(const int pcrnum)
->  {
-> -	unsigned char hash[SHA1_DIGEST_SIZE];
-> -	int ret;
-> -
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
-> -	ret = tpm_get_random(chip, hash, SHA1_DIGEST_SIZE);
-> -	if (ret != SHA1_DIGEST_SIZE)
-> -		return ret;
-> -	return tpm_pcr_extend(chip, pcrnum, hash) ? -EINVAL : 0;
-> +
-> +	return tpm_pcr_extend(chip, pcrnum, digests) ? -EINVAL : 0;
->  }
->  
->  /*
-> @@ -1222,6 +1218,32 @@ static int __init trusted_shash_alloc(void)
->  	return ret;
->  }
->  
-> +static int __init init_digests(void)
-> +{
-> +	int ret;
-> +	int i;
-> +
-> +	digests = kcalloc(chip->nr_allocated_banks, sizeof(*digests),
-> +			  GFP_KERNEL);
-> +	if (!digests)
-> +		return -ENOMEM;
-> +
-> +	ret = tpm_get_random(chip, digests[0].digest,
-> +			     sizeof(digests[0].digest));
-> +	if (ret != sizeof(digests[0].digest))
-> +		return 0;
+This patch adds a snapshot keys handler for using the key retention
+service api to create keys for snapshot image encryption and
+authentication.
 
-You forgot to free digests i.e. you leak memory.
+This handler uses TPM trusted key as the snapshot master key, and the
+encryption key and authentication key are derived from the snapshot
+key. The user defined key can also be used as the snapshot master key
+, but user must be aware that the security of user key relies on user
+space.
 
-> +
-> +	for (i = 0; i < chip->nr_allocated_banks; i++) {
-> +		digests[i].alg_id = chip->allocated_banks[i].alg_id;
-> +
-> +		if (i)
-> +			memcpy(digests[i].digest, digests[0].digest,
-> +			       sizeof(digests[0].digest));
+The name of snapshot key is fixed to "swsusp-kmk". User should use
+the keyctl tool to load the key blob to root's user keyring. e.g.
 
-This just looks oddball.
+ # /bin/keyctl add trusted swsusp-kmk "load `cat swsusp-kmk.blob`" @u
 
-What I would suggest is to change this definition a bit when you
-move it to include/linux/tpm.h:
+or create a new user key. e.g.
 
-struct tpm2_digest {
-	u16 alg_id;
-	u8 digest[SHA512_DIGEST_SIZE];
-} __packed;
+ # /bin/keyctl add user swsusp-kmk password @u
 
-Create a new constant for clarity:
+Then the disk_kmk sysfs file can be used to trigger the initialization
+of snapshot key:
 
-#define TPM_MAX_DIGEST_SIZE SHA512_DIGEST_SIZE
+ # echo 1 > /sys/power/disk_kmk
 
-And use redefine the struct as:
+After the initialization be triggered, the secret in the payload of
+swsusp-key will be copied by hibernation and be erased. Then user can
+use keyctl to remove swsusp-kmk key from root's keyring.
 
-struct tpm_digest {
-	u16 alg_id
-	u8 digest[TPM_MAX_DIGEST_SIZE];
-} __packed;
+If user does not trigger the initialization by disk_kmk file after
+swsusp-kmk be loaded to kernel. Then the snapshot key will be
+initialled when hibernation be triggered.
 
-This should have been already done when that struct was defined in
-the first place.
+v2:
+- Fixed bug of trusted_key_init's return value.
+- Fixed wording in Kconfig
+- Removed VLA usage
+- Removed the checking of capability for writing disk_kmk.
+- Fixed Kconfig, select trusted key.
+- Add memory barrier before setting key initialized flag.
 
-Then in that function create a temporary variable and grab the
-random number there:
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Chen Yu <yu.c.chen@intel.com>
+Cc: Oliver Neukum <oneukum@suse.com>
+Cc: Ryan Chen <yu.chen.surf@gmail.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Giovanni Gherdovich <ggherdovich@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Jann Horn <jannh@google.com>
+Cc: Andy Lutomirski <luto@kernel.org>
+Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
+---
+ kernel/power/Kconfig        |  14 +++
+ kernel/power/Makefile       |   1 +
+ kernel/power/hibernate.c    |  33 ++++++
+ kernel/power/power.h        |  16 +++
+ kernel/power/snapshot_key.c | 245 ++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 309 insertions(+)
+ create mode 100644 kernel/power/snapshot_key.c
 
-u8 digest[TPM_MAX_DIGEST_SIZE];
-
-/* ... */
-
-ret = tpm_get_random(chip, digest, TPM_MAX_DIGEST_SIZE);
-if (ret < 0)
-	return ret;
-if (ret < TPM_MAX_DIGEST_SIZE)
-	return -EFAULT;
-
-After this you can allocate the array for digests.
-
-/Jarkko
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index f8fe57d1022e..506a3c5a7a0d 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -76,6 +76,20 @@ config HIBERNATION
+ 
+ 	  For more information take a look at <file:Documentation/power/swsusp.txt>.
+ 
++config HIBERNATION_ENC_AUTH
++ 	bool "Hibernation encryption and authentication"
++ 	depends on HIBERNATION
++	select TRUSTED_KEYS
++	select CRYPTO_AES
++ 	select CRYPTO_HMAC
++ 	select CRYPTO_SHA512
++ 	help
++	  This option will encrypt and authenticate the memory snapshot image
++	  of hibernation. It prevents that the snapshot image be arbitrarily
++	  modified. A user can use the TPM's trusted key or user defined key
++	  as the master key of hibernation. The TPM trusted key depends on TPM.
++	  The security of user defined key relies on user space.
++
+ config ARCH_SAVE_PAGE_KEYS
+ 	bool
+ 
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index e7e47d9be1e5..d949adbaf580 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_FREEZER)		+= process.o
+ obj-$(CONFIG_SUSPEND)		+= suspend.o
+ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
+ obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o
++obj-$(CONFIG_HIBERNATION_ENC_AUTH)	+= snapshot_key.o
+ obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
+ obj-$(CONFIG_PM_WAKELOCKS)	+= wakelock.o
+ 
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index abef759de7c8..ecc31e8e40d0 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -1034,6 +1034,36 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 
+ power_attr(disk);
+ 
++#ifdef CONFIG_HIBERNATION_ENC_AUTH
++static ssize_t disk_kmk_show(struct kobject *kobj, struct kobj_attribute *attr,
++			     char *buf)
++{
++	if (snapshot_key_initialized())
++		return sprintf(buf, "initialized\n");
++	else
++		return sprintf(buf, "uninitialized\n");
++}
++
++static ssize_t disk_kmk_store(struct kobject *kobj, struct kobj_attribute *attr,
++			      const char *buf, size_t n)
++{
++	int error = 0;
++	char *p;
++	int len;
++
++	p = memchr(buf, '\n', n);
++	len = p ? p - buf : n;
++	if (strncmp(buf, "1", len))
++		return -EINVAL;
++
++	error = snapshot_key_init();
++
++	return error ? error : n;
++}
++
++power_attr(disk_kmk);
++#endif /* !CONFIG_HIBERNATION_ENC_AUTH */
++
+ static ssize_t resume_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 			   char *buf)
+ {
+@@ -1138,6 +1168,9 @@ power_attr(reserved_size);
+ 
+ static struct attribute * g[] = {
+ 	&disk_attr.attr,
++#ifdef CONFIG_HIBERNATION_ENC_AUTH
++	&disk_kmk_attr.attr,
++#endif
+ 	&resume_offset_attr.attr,
+ 	&resume_attr.attr,
+ 	&image_size_attr.attr,
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 9e58bdc8a562..fe2dfa0d4d36 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -4,6 +4,12 @@
+ #include <linux/utsname.h>
+ #include <linux/freezer.h>
+ #include <linux/compiler.h>
++#include <crypto/sha.h>
++
++/* The max size of encrypted key blob */
++#define KEY_BLOB_BUFF_LEN 512
++#define SNAPSHOT_KEY_SIZE SHA512_DIGEST_SIZE
++#define DERIVED_KEY_SIZE SHA512_DIGEST_SIZE
+ 
+ struct swsusp_info {
+ 	struct new_utsname	uts;
+@@ -20,6 +26,16 @@ struct swsusp_info {
+ extern void __init hibernate_reserved_size_init(void);
+ extern void __init hibernate_image_size_init(void);
+ 
++#ifdef CONFIG_HIBERNATION_ENC_AUTH
++/* kernel/power/snapshot_key.c */
++extern int snapshot_key_init(void);
++extern bool snapshot_key_initialized(void);
++extern int snapshot_get_auth_key(u8 *auth_key, bool may_sleep);
++extern int snapshot_get_enc_key(u8 *enc_key, bool may_sleep);
++#else
++static inline int snapshot_key_init(void) { return 0; }
++#endif	/* !CONFIG_HIBERNATION_ENC_AUTH */
++
+ #ifdef CONFIG_ARCH_HIBERNATION_HEADER
+ /* Maximum size of architecture specific data in a hibernation header */
+ #define MAX_ARCH_HEADER_SIZE	(sizeof(struct new_utsname) + 4)
+diff --git a/kernel/power/snapshot_key.c b/kernel/power/snapshot_key.c
+new file mode 100644
+index 000000000000..3a569b505d8d
+--- /dev/null
++++ b/kernel/power/snapshot_key.c
+@@ -0,0 +1,245 @@
++// SPDX-License-Identifier: GPL-2.0
++
++/* snapshot keys handler
++ *
++ * Copyright (C) 2018 Lee, Chun-Yi <jlee@suse.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/cred.h>
++#include <linux/key-type.h>
++#include <linux/slab.h>
++#include <crypto/hash.h>
++#include <crypto/sha.h>
++#include <keys/trusted-type.h>
++#include <keys/user-type.h>
++
++#include "power.h"
++
++static const char hash_alg[] = "sha512";
++static struct crypto_shash *hash_tfm;
++
++/* The master key of snapshot */
++static struct snapshot_key {
++	const char *key_name;
++	bool initialized;
++	unsigned int key_len;
++	u8 key[SNAPSHOT_KEY_SIZE];
++} skey = {
++	.key_name = "swsusp-kmk",
++};
++
++static int calc_hash(u8 *digest, const u8 *buf, unsigned int buflen,
++		     bool may_sleep)
++{
++	struct shash_desc *desc;
++	int err;
++
++	desc = kzalloc(sizeof(struct shash_desc) +
++		       crypto_shash_descsize(hash_tfm),
++		       may_sleep ? GFP_KERNEL : GFP_ATOMIC);
++	if (!desc)
++		return -ENOMEM;
++
++	desc->tfm = hash_tfm;
++	desc->flags = may_sleep ? CRYPTO_TFM_REQ_MAY_SLEEP : 0;
++	err = crypto_shash_digest(desc, buf, buflen, digest);
++	shash_desc_zero(desc);
++	kzfree(desc);
++
++	return err;
++}
++
++static int calc_key_hash(u8 *key, unsigned int key_len, const char *salt,
++			 u8 *hash, bool may_sleep)
++{
++	unsigned int salted_buf_len;
++	u8 *salted_buf;
++	int ret;
++
++	if (!key || !hash_tfm || !hash)
++		return -EINVAL;
++
++	salted_buf_len = strlen(salt) + 1 + SNAPSHOT_KEY_SIZE;
++	salted_buf = kzalloc(salted_buf_len,
++			may_sleep ? GFP_KERNEL : GFP_ATOMIC);
++	if (!salted_buf)
++		return -ENOMEM;
++
++	strcpy(salted_buf, salt);
++	memcpy(salted_buf + strlen(salted_buf) + 1, key, key_len);
++
++	ret = calc_hash(hash, salted_buf, salted_buf_len, may_sleep);
++	memzero_explicit(salted_buf, salted_buf_len);
++	kzfree(salted_buf);
++
++	return ret;
++}
++
++/* Derive authentication/encryption key */
++static int get_derived_key(u8 *derived_key, const char *derived_type_str,
++			   bool may_sleep)
++{
++	int ret;
++
++	if (!skey.initialized || !hash_tfm)
++		return -EINVAL;
++
++	ret = calc_key_hash(skey.key, skey.key_len, derived_type_str,
++				derived_key, may_sleep);
++
++	return ret;
++}
++
++int snapshot_get_auth_key(u8 *auth_key, bool may_sleep)
++{
++	return get_derived_key(auth_key, "AUTH_KEY", may_sleep);
++}
++
++int snapshot_get_enc_key(u8 *enc_key, bool may_sleep)
++{
++	return get_derived_key(enc_key, "ENC_KEY", may_sleep);
++}
++
++bool snapshot_key_initialized(void)
++{
++	return skey.initialized;
++}
++
++static bool invalid_key(u8 *key, unsigned int key_len)
++{
++	int i;
++
++	if (!key || !key_len)
++		return true;
++
++	if (key_len > SNAPSHOT_KEY_SIZE) {
++		pr_warn("Size of swsusp key more than: %d.\n",
++			SNAPSHOT_KEY_SIZE);
++		return true;
++	}
++
++	/* zero keyblob is invalid key */
++	for (i = 0; i < key_len; i++) {
++		if (key[i] != 0)
++			return false;
++	}
++	pr_warn("The swsusp key should not be zero.\n");
++
++	return true;
++}
++
++static int trusted_key_init(void)
++{
++	struct trusted_key_payload *tkp;
++	struct key *key;
++	int err = 0;
++
++	pr_debug("%s\n", __func__);
++
++	/* find out swsusp-key */
++	key = request_key(&key_type_trusted, skey.key_name, NULL);
++	if (IS_ERR(key)) {
++		pr_err("Request key error: %ld\n", PTR_ERR(key));
++		err = PTR_ERR(key);
++		return err;
++	}
++
++	down_write(&key->sem);
++	tkp = key->payload.data[0];
++	if (invalid_key(tkp->key, tkp->key_len)) {
++		err = -EINVAL;
++		goto key_invalid;
++	}
++	skey.key_len = tkp->key_len;
++	memcpy(skey.key, tkp->key, tkp->key_len);
++	/* burn the original key contents */
++	memzero_explicit(tkp->key, tkp->key_len);
++
++key_invalid:
++	up_write(&key->sem);
++	key_put(key);
++
++	return err;
++}
++
++static int user_key_init(void)
++{
++	struct user_key_payload *ukp;
++	struct key *key;
++	int err = 0;
++
++	pr_debug("%s\n", __func__);
++
++	/* find out swsusp-key */
++	key = request_key(&key_type_user, skey.key_name, NULL);
++	if (IS_ERR(key)) {
++		pr_err("Request key error: %ld\n", PTR_ERR(key));
++		err = PTR_ERR(key);
++		return err;
++	}
++
++	down_write(&key->sem);
++	ukp = user_key_payload_locked(key);
++	if (!ukp) {
++		/* key was revoked before we acquired its semaphore */
++		err = -EKEYREVOKED;
++		goto key_invalid;
++	}
++	if (invalid_key(ukp->data, ukp->datalen)) {
++		err = -EINVAL;
++		goto key_invalid;
++	}
++	skey.key_len = ukp->datalen;
++	memcpy(skey.key, ukp->data, ukp->datalen);
++	/* burn the original key contents */
++	memzero_explicit(ukp->data, ukp->datalen);
++
++key_invalid:
++	up_write(&key->sem);
++	key_put(key);
++
++	return err;
++}
++
++/* this function may sleeps */
++int snapshot_key_init(void)
++{
++	int err;
++
++	pr_debug("%s\n", __func__);
++
++	if (skey.initialized)
++		return 0;
++
++	hash_tfm = crypto_alloc_shash(hash_alg, 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(hash_tfm)) {
++		pr_err("Can't allocate %s transform: %ld\n",
++			hash_alg, PTR_ERR(hash_tfm));
++		return PTR_ERR(hash_tfm);
++	}
++
++	err = trusted_key_init();
++	if (err)
++		err = user_key_init();
++	if (err)
++		goto key_fail;
++
++	barrier();
++	skey.initialized = true;
++
++	pr_info("Snapshot key is initialled.\n");
++
++	return 0;
++
++key_fail:
++	crypto_free_shash(hash_tfm);
++	hash_tfm = NULL;
++
++	return err;
++}
+-- 
+2.13.6
