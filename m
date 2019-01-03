@@ -1,53 +1,80 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Tue, 15 Jan 2019 15:54:49 +0000
-Subject: Re: [RFC PATCH v2 1/2] integrity, KEYS: add a reference to platform keyring
-Message-Id: <1547567689.4156.291.camel@linux.ibm.com>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Date: Thu, 03 Jan 2019 14:32:22 +0000
+Subject: [PATCH 0/5 v2][RFC] Encryption and authentication for hibernate snapshot image
+Message-Id: <20190103143227.9138-1-jlee@suse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190115094542.17129-1-kasong@redhat.com>
-         <20190115094542.17129-2-kasong@redhat.com>
-         <1547566455.4156.283.camel@linux.ibm.com>
-         <CACPcB9fQUNiD8UEVDa+bU67PZSOkckwhwD00Qvu4m3G0JmqqHQ@mail.gmail.com>
-In-Reply-To: <CACPcB9fQUNiD8UEVDa+bU67PZSOkckwhwD00Qvu4m3G0JmqqHQ@mail.gmail.com>
-To: Kairui Song <kasong@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, Eric Biggers <ebiggers@google.com>, nayna@linux.ibm.com, Dave Young <dyoung@redhat.com>, linux-integrity <linux-integrity@vger.kernel.org>, kexec@lists.infradead.org
+To: "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
 
-On Tue, 2019-01-15 at 23:47 +0800, Kairui Song wrote:
-> On Tue, Jan 15, 2019 at 11:34 PM Mimi Zohar <zohar@linux.ibm.com> wrote:
-> >
-> > On Tue, 2019-01-15 at 17:45 +0800, Kairui Song wrote:
-> > [snip]
-> >
-> > > diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-> > > index f45d6edecf99..bfabc2a8111d 100644
-> > > --- a/security/integrity/digsig.c
-> > > +++ b/security/integrity/digsig.c
-> > > @@ -89,6 +89,12 @@ static int __integrity_init_keyring(const unsigned int id, key_perm_t perm,
-> > >               keyring[id] = NULL;
-> > >       }
-> > >
-> > > +#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-> > > +     if (id = INTEGRITY_KEYRING_PLATFORM) {
-> > > +             set_platform_trusted_keys(keyring[id]);
-> > > +     }
-> > > +#endif
-> > > +
-> > >       return err;
-> > >  }
-> > >
-> >
-> > Any reason for setting it here as opposed to in the caller
-> > platform_keyring_init()?
-> >
-> > Mimi
-> >
-> 
-> Yes, "keyring" is static so unless I expose it to other files, it is
-> only accessible here. And I think there should be no problem to put
-> the set_platform_trusted_keys here.
+Hi,
 
-Right, that's a really good reason.
+This patchset is the implementation of encryption and authentication
+for hibernate snapshot image. The image will be encrypted by AES and
+authenticated by HMAC.
 
-Mimi
+The hibernate function can be used to snapshot memory pages to an image,
+then kernel restores the image to memory space in a appropriate time.
+There have secrets in snapshot image and cracker may modifies it for
+hacking system. Encryption and authentication of snapshot image can protect
+the system.
+
+Hibernate function requests the master key through key retention service.
+The snapshot master key can be a trusted key or a user defined key. The
+name of snapshot master key is fixed to "swsusp-kmk". User should loads
+swsusp-kmk to kernel by keyctl tool before the hibernation resume.
+e.g. The swsusp-kmk must be loaded before systemd-hibernate-resume
+
+The TPM trusted key type is preferred to be the master key. But user
+defined key can also be used for testing or when the platform doesn't
+have TPM. User must be aware that the security of user key relies on
+user space. If the root account be compromised, then the user key will
+easy to be grabbed.
+
+v2:
+- Fixed bug of trusted_key_init's return value.
+- Fixed wording in Kconfig
+- Removed VLA usage
+- Removed the checking of capability for writing disk_kmk.
+- Fixed Kconfig, select trusted key.
+- Add memory barrier before setting key initialized flag.
+- Add memory barrier after cleaning key initialized flag.
+
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Chen Yu <yu.c.chen@intel.com>
+Cc: Oliver Neukum <oneukum@suse.com>
+Cc: Ryan Chen <yu.chen.surf@gmail.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Giovanni Gherdovich <ggherdovich@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Jann Horn <jannh@google.com>
+Cc: Andy Lutomirski <luto@kernel.org>
+Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
+
+Lee, Chun-Yi (5):
+  PM / hibernate: Create snapshot keys handler
+  PM / hibernate: Generate and verify signature for snapshot image
+  PM / hibernate: Encrypt snapshot image
+  PM / hibernate: Erase the snapshot master key in snapshot pages
+  PM / hibernate: An option to request that snapshot image must be
+    authenticated
+
+ Documentation/admin-guide/kernel-parameters.txt |   6 +
+ include/linux/kernel.h                          |   3 +-
+ kernel/panic.c                                  |   1 +
+ kernel/power/Kconfig                            |  25 +
+ kernel/power/Makefile                           |   1 +
+ kernel/power/hibernate.c                        |  59 ++-
+ kernel/power/power.h                            |  59 +++
+ kernel/power/snapshot.c                         | 576 +++++++++++++++++++++++-
+ kernel/power/snapshot_key.c                     | 312 +++++++++++++
+ kernel/power/swap.c                             |   6 +
+ kernel/power/user.c                             |  12 +
+ 11 files changed, 1042 insertions(+), 18 deletions(-)
+ create mode 100644 kernel/power/snapshot_key.c
+
+-- 
+2.13.6
