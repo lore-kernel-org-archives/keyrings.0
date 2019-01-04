@@ -1,117 +1,73 @@
-From: Kairui Song <kasong@redhat.com>
-Date: Fri, 18 Jan 2019 15:01:52 +0000
-Subject: Re: [PATCH v4 1/2] integrity, KEYS: add a reference to platform keyring
-Message-Id: <CACPcB9dJ2L8k=jmT23Q72YHjsjzK79ywgU+ASLSe3tkQnosOCQ@mail.gmail.com>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Fri, 04 Jan 2019 10:20:36 +0000
+Subject: Re: [RFC PATCH] akcipher: Introduce verify2 for public key algorithms
+Message-Id: <20190104102035.42qwwv4komjvnswh@sole.flsd.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190118091733.29940-1-kasong@redhat.com> <20190118091733.29940-2-kasong@redhat.com>
- <3c7fa625-e77c-d6b4-35a4-8f8e9af60864@linux.vnet.ibm.com>
-In-Reply-To: <3c7fa625-e77c-d6b4-35a4-8f8e9af60864@linux.vnet.ibm.com>
-To: Nayna <nayna@linux.vnet.ibm.com>
-Cc: jwboyer@fedoraproject.org, Eric Biggers <ebiggers@google.com>, Dave Young <dyoung@redhat.com>, nayna@linux.ibm.com, kexec@lists.infradead.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Mimi Zohar <zohar@linux.ibm.com>, jmorris@namei.org, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-integrity <linux-integrity@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>, bauerman@linux.ibm.com, serge@hallyn.com
+References: <20181211165938.1150-1-vt@altlinux.org>
+ <20181213101233.6t7d5mxxkkavo46h@gondor.apana.org.au>
+In-Reply-To: <20181213101233.6t7d5mxxkkavo46h@gondor.apana.org.au>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: dhowells@redhat.com, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2019 at 10:36 PM Nayna <nayna@linux.vnet.ibm.com> wrote:
-> On 01/18/2019 04:17 AM, Kairui Song wrote:
-> > commit 9dc92c45177a ('integrity: Define a trusted platform keyring')
-> > introduced a .platform keyring for storing preboot keys, used for
-> > verifying kernel images' signature. Currently only IMA-appraisal is able
-> > to use the keyring to verify kernel images that have their signature
-> > stored in xattr.
-> >
-> > This patch exposes the .platform keyring, making it accessible for
-> > verifying PE signed kernel images as well.
-> >
-> > Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-> > Signed-off-by: Kairui Song <kasong@redhat.com>
-> > Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-> > Tested-by: Mimi Zohar <zohar@linux.ibm.com>
-> > ---
-> >   certs/system_keyring.c        | 9 +++++++++
-> >   include/keys/system_keyring.h | 5 +++++
-> >   security/integrity/digsig.c   | 6 ++++++
-> >   3 files changed, 20 insertions(+)
-> >
-> > diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-> > index 81728717523d..4690ef9cda8a 100644
-> > --- a/certs/system_keyring.c
-> > +++ b/certs/system_keyring.c
-> > @@ -24,6 +24,9 @@ static struct key *builtin_trusted_keys;
-> >   #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
-> >   static struct key *secondary_trusted_keys;
-> >   #endif
-> > +#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-> > +static struct key *platform_trusted_keys;
-> > +#endif
-> >
-> >   extern __initconst const u8 system_certificate_list[];
-> >   extern __initconst const unsigned long system_certificate_list_size;
-> > @@ -265,4 +268,10 @@ int verify_pkcs7_signature(const void *data, size_t len,
-> >   }
-> >   EXPORT_SYMBOL_GPL(verify_pkcs7_signature);
-> >
-> > +#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-> > +void __init set_platform_trusted_keys(struct key *keyring) {
-> > +     platform_trusted_keys = keyring;
-> > +}
-> > +#endif
-> > +
-> >   #endif /* CONFIG_SYSTEM_DATA_VERIFICATION */
-> > diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-> > index 359c2f936004..9e1b7849b6aa 100644
-> > --- a/include/keys/system_keyring.h
-> > +++ b/include/keys/system_keyring.h
-> > @@ -61,5 +61,10 @@ static inline struct key *get_ima_blacklist_keyring(void)
-> >   }
-> >   #endif /* CONFIG_IMA_BLACKLIST_KEYRING */
-> >
-> > +#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-> > +
-> > +extern void __init set_platform_trusted_keys(struct key* keyring);
-> > +
-> > +#endif /* CONFIG_INTEGRITY_PLATFORM_KEYRING */
-> >
-> >   #endif /* _KEYS_SYSTEM_KEYRING_H */
-> > diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-> > index f45d6edecf99..bfabc2a8111d 100644
-> > --- a/security/integrity/digsig.c
-> > +++ b/security/integrity/digsig.c
-> > @@ -89,6 +89,12 @@ static int __integrity_init_keyring(const unsigned int id, key_perm_t perm,
-> >               keyring[id] = NULL;
-> >       }
-> >
-> > +#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-> > +     if (id = INTEGRITY_KEYRING_PLATFORM) {
->
-> Shouldn't it also check that keyring[id] is not NULL ?
+On Thu, Dec 13, 2018 at 06:12:33PM +0800, Herbert Xu wrote:
+> Vitaly Chikunov <vt@altlinux.org> wrote:
+> > Current akcipher .verify() just decrypts signature to uncover message
+> > hash, which is then verified in upper level public_key_verify_signature
+> > by memcmp with the expected signature value, which is never passed into
+> > verify().
+> > 
+> > This approach is incompatible with ECDSA algorithms, because, to verify
+> > a signature ECDSA algorithm also needs a hash value as input; also, hash
+> > is used in ECDSA (together with a signature divided into halves `r||s`),
+> > not to produce hash, but to produce a number, which is then compared to
+> > `r` (first part of the signature) to determine if the signature is
+> > correct.  Thus, for ECDSA, nor requirements of .verify() itself, nor its
+> > output expectations in public_key_verify_signature aren't satisfied.
+> > 
+> > Make alternative .verify2() call which gets hash value and produce
+> > complete signature check (without any output, thus max_size() call will
+> > not be needed for verify2() operation).
+> > 
+> > If .verify2() call is present, it should be used in place of .verify().
+> > 
+> > Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+> 
+> We should convert all existing users to this interface and not
+> have both verify/verify2 forever.
 
-Good catch, if it's NULL then platform_trusted_keyring will be set to
-NULL as well, which will work just fine as in this case
-platform_trusted_keyring is still considered not initialized. I'll add
-a sanity check here to check err value just in case.
-Thanks for your suggestion!
+This will be hard to do since there is at least tree device that use
+this interface (and who know how much out of tree):
 
->
-> Thanks & Regards,
->      - Nayna
->
-> > +             set_platform_trusted_keys(keyring[id]);
-> > +     }
-> > +#endif
-> > +
-> >       return err;
-> >   }
-> >
->
->
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+  drivers$ git grep cra_name.*rsa
+  crypto/caam/caampkc.c:          .cra_name = "rsa",
+  crypto/ccp/ccp-crypto-rsa.c:            .cra_name = "rsa",
+  crypto/qat/qat_common/qat_asym_algs.c:          .cra_name = "rsa",
 
+Interface seems to be designed that verify() call is interchangeable
+with encrypt().
 
+Two verify does not seem that bad since there is common code for the old
+interface that removes code duplication and simplifies driver
+implementation (RSA drivers only need to implement encrypt).
 
--- 
-Best Regards,
-Kairui Song
+But, I would remove scatterlist from the new interface. Signature
+verification is not some multi-block encryption. And basically,
+public_key_verify_signature just doing sg_init_one for both required
+src/dst buffers.
+
+ps. And also, in the future, I would allow akcipher to access `struct
+public_key` and `struct public_key_signature` so it could distinguish
+when the key is already validated and skip expensive validation other
+time verify2 is used with the same key. Or maybe flag 'key validation is
+needed' should be maintained outside of akcipher and passed to it in the
+request.
+
+> 
+> Thanks,
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
