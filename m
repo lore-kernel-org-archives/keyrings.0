@@ -1,96 +1,107 @@
-From: Pavel Machek <pavel@ucw.cz>
-Date: Sun, 06 Jan 2019 18:10:27 +0000
+From: joeyli <jlee@suse.com>
+Date: Mon, 07 Jan 2019 17:37:43 +0000
 Subject: Re: [PATCH 0/5 v2][RFC] Encryption and authentication for hibernate snapshot image
-Message-Id: <20190106181026.GA15256@amd>
-MIME-Version: 1
-Content-Type: multipart/mixed; boundary="zhXaljGHf11kAtnf"
+Message-Id: <20190107173743.GC4210@linux-l9pv.suse>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190103143227.9138-1-jlee@suse.com>
-In-Reply-To: <20190103143227.9138-1-jlee@suse.com>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
+ <20190106181026.GA15256@amd>
+In-Reply-To: <20190106181026.GA15256@amd>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
 
+Hi Pavel, 
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for your review!
 
-Hi!
+On Sun, Jan 06, 2019 at 07:10:27PM +0100, Pavel Machek wrote:
+> Hi!
+> 
+> > This patchset is the implementation of encryption and authentication
+> > for hibernate snapshot image. The image will be encrypted by AES and
+> > authenticated by HMAC.
+> 
+> Ok, so you encrypt. 
+>
 
-> This patchset is the implementation of encryption and authentication
-> for hibernate snapshot image. The image will be encrypted by AES and
-> authenticated by HMAC.
+Yes, encryption and authentication. 
+ 
+> > The hibernate function can be used to snapshot memory pages to an image,
+> > then kernel restores the image to memory space in a appropriate time.
+> > There have secrets in snapshot image and cracker may modifies it for
+> > hacking system. Encryption and authentication of snapshot image can protect
+> > the system.
+> > 
+> > Hibernate function requests the master key through key retention service.
+> > The snapshot master key can be a trusted key or a user defined key. The
+> > name of snapshot master key is fixed to "swsusp-kmk". User should loads
+> > swsusp-kmk to kernel by keyctl tool before the hibernation resume.
+> > e.g. The swsusp-kmk must be loaded before systemd-hibernate-resume
+> 
+> But if userspace has a key, encryption is useless against root.
+>
 
-Ok, so you encrypt.=20
+Yes, but this concern is not only for hibernation encryption. This patch
+set does not provide solution against this concern.
 
-> The hibernate function can be used to snapshot memory pages to an image,
-> then kernel restores the image to memory space in a appropriate time.
-> There have secrets in snapshot image and cracker may modifies it for
-> hacking system. Encryption and authentication of snapshot image can prote=
-ct
-> the system.
->=20
-> Hibernate function requests the master key through key retention service.
-> The snapshot master key can be a trusted key or a user defined key. The
-> name of snapshot master key is fixed to "swsusp-kmk". User should loads
-> swsusp-kmk to kernel by keyctl tool before the hibernation resume.
-> e.g. The swsusp-kmk must be loaded before systemd-hibernate-resume
+The purpose of this patch set is to encrypt and authenticate hibernate
+snapshot image in kernel space. It also requests key through keyring
+mechanism. Which means that we can easy to adapt to new key type from
+keyring in the future. 
 
-But if userspace has a key, encryption is useless against root.
+Currently TPM trusted key or user defined key types are not against
+root. Even using the TPM trusted key, it still can be unsealed by root
+before the PCRs be capped (unless we capped PCRs in kernel). 
 
-> The TPM trusted key type is preferred to be the master key. But user
-> defined key can also be used for testing or when the platform doesn't
-> have TPM. User must be aware that the security of user key relies on
-> user space. If the root account be compromised, then the user key will
-> easy to be grabbed.
+My solution for keeping the secret by kernel is the EFI secure key type:
+	https://lkml.org/lkml/2018/8/5/31
 
-In the TPM case, does userland have access to the key?=20
+But the EFI boot variable doesn't design for keeping secret, so Windows
+and OEM/ODM do not use boot variable to keep secret. So this idea can
+not be accepted. We must think other key type against root. 
 
-Please explain your security goals.
+> > The TPM trusted key type is preferred to be the master key. But user
+> > defined key can also be used for testing or when the platform doesn't
+> > have TPM. User must be aware that the security of user key relies on
+> > user space. If the root account be compromised, then the user key will
+> > easy to be grabbed.
+> 
+> In the TPM case, does userland have access to the key? 
+>
 
-								Pavel
+In the TPM case, userland can only touch the sealed key blob. So userland
+doesn't know the real secret. But it has risk that root unseals the key
+before PCRs be capped.
+    
+> Please explain your security goals.
+> 
 
+My security goals:
 
-> Lee, Chun-Yi (5):
->   PM / hibernate: Create snapshot keys handler
->   PM / hibernate: Generate and verify signature for snapshot image
->   PM / hibernate: Encrypt snapshot image
->   PM / hibernate: Erase the snapshot master key in snapshot pages
->   PM / hibernate: An option to request that snapshot image must be
->     authenticated
->=20
->  Documentation/admin-guide/kernel-parameters.txt |   6 +
->  include/linux/kernel.h                          |   3 +-
->  kernel/panic.c                                  |   1 +
->  kernel/power/Kconfig                            |  25 +
->  kernel/power/Makefile                           |   1 +
->  kernel/power/hibernate.c                        |  59 ++-
->  kernel/power/power.h                            |  59 +++
->  kernel/power/snapshot.c                         | 576 ++++++++++++++++++=
-+++++-
->  kernel/power/snapshot_key.c                     | 312 +++++++++++++
->  kernel/power/swap.c                             |   6 +
->  kernel/power/user.c                             |  12 +
->  11 files changed, 1042 insertions(+), 18 deletions(-)
->  create mode 100644 kernel/power/snapshot_key.c
->=20
+- Encrypt and authicate hibernate snapshot image in kernel space. Userspace
+  can only touch an encrypted and signed snapshot image.
 
---=20
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blo=
-g.html
+- The code of encryption are in kernel. They will be signed and verify with
+  kernel binary when secure boot enabled. It's better than using
+  unauthenticated userspace code at runtime.
 
---zhXaljGHf11kAtnf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+- Using TPM trusted key, at least the security of hibernation aligns with
+  other subsystem. e.g. EVM. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+- Using keyring as the key source of hibernation. Then we can easy to
+  adapt to new key type against root be compromised. 
 
-iEYEARECAAYFAlwyRJIACgkQMOfwapXb+vKbGwCgqdFS+SAxvg8NHhZw8KSTwtEn
-xgMAn1tZyKl+ZiX2ewpAPAipm+wK6brO
-=lr4D
------END PGP SIGNATURE-----
+> 
+> > Lee, Chun-Yi (5):
+> >   PM / hibernate: Create snapshot keys handler
+> >   PM / hibernate: Generate and verify signature for snapshot image
+> >   PM / hibernate: Encrypt snapshot image
+> >   PM / hibernate: Erase the snapshot master key in snapshot pages
+> >   PM / hibernate: An option to request that snapshot image must be
+> >     authenticated
+> > 
 
---zhXaljGHf11kAtnf--
+Thanks a lot!
+Joey Lee
