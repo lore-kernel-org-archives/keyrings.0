@@ -1,39 +1,40 @@
-From: Kairui Song <kasong@redhat.com>
-Date: Tue, 08 Jan 2019 08:12:46 +0000
-Subject: [RFC PATCH 0/1] KEYS, integrity: Link .platform keyring to .secondary_trusted_keys
-Message-Id: <20190108081247.2266-1-kasong@redhat.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Tue, 08 Jan 2019 14:31:49 +0000
+Subject: Re: [RFC PATCH 0/1] KEYS, integrity: Link .platform keyring to .secondary_trusted_keys
+Message-Id: <1546957909.19931.101.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, Kairui Song <kasong@redhat.com>
+References: <20190108081247.2266-1-kasong@redhat.com>
+In-Reply-To: <20190108081247.2266-1-kasong@redhat.com>
+To: Kairui Song <kasong@redhat.com>, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com
 
-Hi, as the subject, this is a patch that links the new introduced
-.platform keyring into .secondary_trusted_keys keyring. This is
-mainly for the kexec_file_load, make kexec_file_load be able to verify
-the kernel image agains keys provided by platform or firmware.
-kexec_file_load already could verify the image agains secondary_trusted_keys
-if secondary_trusted_keys exits, so this will make kexec_file_load be ware
-of platform keys as well.
-
-This may also useful for things like module sign verify that are using
-secondary_trusted_keys. I'm not sure if it will be better to move the
-INTEGRITY_PLATFORM_KEYRING to certs/ and let integrity subsystem use
-the keyring there, so just linked the .platform keyring into kernel's
-.secondary_trusted_keys keyring.
-
-It workd for my case, tested in a VM, I signed the kernel image locally
-with pesign and imported the cert to EFI's MokList variable.
-
-Kairui Song (1):
-  KEYS, integrity: Link .platform keyring to .secondary_trusted_keys
-
- certs/system_keyring.c          | 30 ++++++++++++++++++++++++++++++
- include/keys/platform_keyring.h | 12 ++++++++++++
- security/integrity/digsig.c     |  7 +++++++
- 3 files changed, 49 insertions(+)
- create mode 100644 include/keys/platform_keyring.h
-
--- 
-2.20.1
+T24gVHVlLCAyMDE5LTAxLTA4IGF0IDE2OjEyICswODAwLCBLYWlydWkgU29uZyB3cm90ZToKPiBI
+aSwgYXMgdGhlIHN1YmplY3QsIHRoaXMgaXMgYSBwYXRjaCB0aGF0IGxpbmtzIHRoZSBuZXcgaW50
+cm9kdWNlZAo+IC5wbGF0Zm9ybSBrZXlyaW5nIGludG8gLnNlY29uZGFyeV90cnVzdGVkX2tleXMg
+a2V5cmluZy4gVGhpcyBpcwo+IG1haW5seSBmb3IgdGhlIGtleGVjX2ZpbGVfbG9hZCwgbWFrZSBr
+ZXhlY19maWxlX2xvYWQgYmUgYWJsZSB0byB2ZXJpZnkKPiB0aGUga2VybmVsIGltYWdlIGFnYWlu
+cyBrZXlzIHByb3ZpZGVkIGJ5IHBsYXRmb3JtIG9yIGZpcm13YXJlLgo+IGtleGVjX2ZpbGVfbG9h
+ZCBhbHJlYWR5IGNvdWxkIHZlcmlmeSB0aGUgaW1hZ2UgYWdhaW5zIHNlY29uZGFyeV90cnVzdGVk
+X2tleXMKPiBpZiBzZWNvbmRhcnlfdHJ1c3RlZF9rZXlzIGV4aXRzLCBzbyB0aGlzIHdpbGwgbWFr
+ZSBrZXhlY19maWxlX2xvYWQgYmUgd2FyZQo+IG9mIHBsYXRmb3JtIGtleXMgYXMgd2VsbC4KClRo
+ZSBidWlsdGluIGFuZCBzZWNvbmRhcnkga2V5cmluZ3MgaGF2ZSBhIHNpZ25hdHVyZSBjaGFuZ2Ug
+b2YgdHJ1c3QKcm9vdGVkIGluIHRoZSBzaWduZWQga2VybmVsIGltYWdlLiDCoEFkZGluZyB0aGUg
+cHJlLWJvb3Qga2V5cyB0byB0aGUKc2Vjb25kYXJ5IGtleXJpbmcgYnJlYWtzIHRoYXQgc2lnbmF0
+dXJlIGNoYWluIG9mIHRydXN0LgoKTWltaQoKPiAKPiBUaGlzIG1heSBhbHNvIHVzZWZ1bCBmb3Ig
+dGhpbmdzIGxpa2UgbW9kdWxlIHNpZ24gdmVyaWZ5IHRoYXQgYXJlIHVzaW5nCj4gc2Vjb25kYXJ5
+X3RydXN0ZWRfa2V5cy4gSSdtIG5vdCBzdXJlIGlmIGl0IHdpbGwgYmUgYmV0dGVyIHRvIG1vdmUg
+dGhlCj4gSU5URUdSSVRZX1BMQVRGT1JNX0tFWVJJTkcgdG8gY2VydHMvIGFuZCBsZXQgaW50ZWdy
+aXR5IHN1YnN5c3RlbSB1c2UKPiB0aGUga2V5cmluZyB0aGVyZSwgc28ganVzdCBsaW5rZWQgdGhl
+IC5wbGF0Zm9ybSBrZXlyaW5nIGludG8ga2VybmVsJ3MKPiAuc2Vjb25kYXJ5X3RydXN0ZWRfa2V5
+cyBrZXlyaW5nLgo+IAo+IEl0IHdvcmtkIGZvciBteSBjYXNlLCB0ZXN0ZWQgaW4gYSBWTSwgSSBz
+aWduZWQgdGhlIGtlcm5lbCBpbWFnZSBsb2NhbGx5Cj4gd2l0aCBwZXNpZ24gYW5kIGltcG9ydGVk
+IHRoZSBjZXJ0IHRvIEVGSSdzIE1va0xpc3QgdmFyaWFibGUuCj4gCj4gS2FpcnVpIFNvbmcgKDEp
+Ogo+ICAgS0VZUywgaW50ZWdyaXR5OiBMaW5rIC5wbGF0Zm9ybSBrZXlyaW5nIHRvIC5zZWNvbmRh
+cnlfdHJ1c3RlZF9rZXlzCj4gCj4gIGNlcnRzL3N5c3RlbV9rZXlyaW5nLmMgICAgICAgICAgfCAz
+MCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysKPiAgaW5jbHVkZS9rZXlzL3BsYXRmb3Jt
+X2tleXJpbmcuaCB8IDEyICsrKysrKysrKysrKwo+ICBzZWN1cml0eS9pbnRlZ3JpdHkvZGlnc2ln
+LmMgICAgIHwgIDcgKysrKysrKwo+ICAzIGZpbGVzIGNoYW5nZWQsIDQ5IGluc2VydGlvbnMoKykK
+PiAgY3JlYXRlIG1vZGUgMTAwNjQ0IGluY2x1ZGUva2V5cy9wbGF0Zm9ybV9rZXlyaW5nLmgKPiAK
