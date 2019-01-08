@@ -1,37 +1,136 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 29 Jan 2019 19:37:38 +0000
-Subject: Re: [PATCH v8 2/7] tpm: add _head suffix to tcg_efi_specid_event and tcg_pcr_event2
-Message-Id: <20190129193738.GB11615@linux.intel.com>
+From: Kairui Song <kasong@redhat.com>
+Date: Tue, 08 Jan 2019 08:12:47 +0000
+Subject: [RFC PATCH 1/1] KEYS, integrity: Link .platform keyring to .secondary_trusted_keys
+Message-Id: <20190108081247.2266-2-kasong@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190124154910.29948-1-roberto.sassu@huawei.com>
- <20190124154910.29948-3-roberto.sassu@huawei.com>
-In-Reply-To: <20190124154910.29948-3-roberto.sassu@huawei.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>
-Cc: zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, silviu.vlasceanu@huawei.com
+References: <20190108081247.2266-1-kasong@redhat.com>
+In-Reply-To: <20190108081247.2266-1-kasong@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, Kairui Song <kasong@redhat.com>
 
-On Thu, Jan 24, 2019 at 04:49:05PM +0100, Roberto Sassu wrote:
-> TCG defines two structures, TCG_EfiSpecIDEventStruct and TCG_PCR_EVENT2,
-> which contain variable-sized arrays in the middle of the definition.
-> 
-> Since these structures are not suitable for type casting, this patch
-> removes structure members after the variable-sized arrays and adds the
-> _head suffix to the structure name, to indicate that the renamed structures
-> do not contain all fields defined by TCG.
-> 
-> Lastly, given that variable-sized arrays are now in the last position, and
-> given that the size of the arrays cannot be determined in advance, this
-> patch also sets the size of those arrays to zero and removes the definition
-> of TPM2_ACTIVE_PCR_BANKS.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> Tested-by: Nayna Jain <nayna@linux.ibm.com>
+Currently kexec may need to verify the kerne image, and the kernel image
+could be signed with third part keys which are provided by paltform or
+firmware (eg. stored in MokListRT EFI variable). And the same time,
+kexec_file_load will only verify the image agains .builtin_trusted_keys
+or .secondary_trusted_keys according to configuration, but there is no
+way for kexec_file_load to verify the image against any third part keys
+mentioned above.
 
-OK, I applied this to my tree. Does not make to sense to hold this.
+In ea93102f3224 ('integrity: Define a trusted platform keyring') a
+.platform keyring is introduced to store the keys provided by platform
+or firmware. And with a few following commits including 15ea0e1e3e185
+('efi: Import certificates from UEFI Secure Boot'), now keys required to
+verify the image is being imported to .paltform keyring, and later
+IMA-appraisal could access the keyring and verify the image.
 
-Thank you.
+This patch links the .platform keyring to .secondary_trusted_keys so
+kexec_file_load could also leverage the .platform keyring to verify the
+kernel image.
 
-/Jarkko
+Signed-off-by: Kairui Song <kasong@redhat.com>
+---
+ certs/system_keyring.c          | 30 ++++++++++++++++++++++++++++++
+ include/keys/platform_keyring.h | 12 ++++++++++++
+ security/integrity/digsig.c     |  7 +++++++
+ 3 files changed, 49 insertions(+)
+ create mode 100644 include/keys/platform_keyring.h
+
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 81728717523d..dcef0259e149 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -18,12 +18,14 @@
+ #include <linux/verification.h>
+ #include <keys/asymmetric-type.h>
+ #include <keys/system_keyring.h>
++#include <keys/platform_keyring.h>
+ #include <crypto/pkcs7.h>
+ 
+ static struct key *builtin_trusted_keys;
+ #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
+ static struct key *secondary_trusted_keys;
+ #endif
++static struct key *platform_keys = NULL;
+ 
+ extern __initconst const u8 system_certificate_list[];
+ extern __initconst const unsigned long system_certificate_list_size;
+@@ -67,6 +69,12 @@ int restrict_link_by_builtin_and_secondary_trusted(
+ 		/* Allow the builtin keyring to be added to the secondary */
+ 		return 0;
+ 
++	if (type = &key_type_keyring &&
++	    dest_keyring = secondary_trusted_keys &&
++	    payload = &platform_keys->payload)
++		/* Allow the platform keyring to be added to the secondary */
++		return 0;
++
+ 	return restrict_link_by_signature(dest_keyring, type, payload,
+ 					  secondary_trusted_keys);
+ }
+@@ -188,6 +196,28 @@ static __init int load_system_certificate_list(void)
+ }
+ late_initcall(load_system_certificate_list);
+ 
++#if defined(CONFIG_INTEGRITY_PLATFORM_KEYRING) && defined(CONFIG_SECONDARY_TRUSTED_KEYRING)
++
++/*
++ * Link .platform keyring to .secondary_trusted_key keyring
++ */
++static __init int load_platform_certificate_list(void)
++{
++	int ret = 0;
++	platform_keys = integrity_get_platform_keyring();
++	if (!platform_keys) {
++		return 0;
++	}
++	ret = key_link(secondary_trusted_keys, platform_keys);
++	if (ret < 0) {
++		pr_err("Failed to link platform keyring: %d", ret);
++	}
++	return 0;
++}
++late_initcall(load_platform_certificate_list);
++
++#endif
++
+ #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+ 
+ /**
+diff --git a/include/keys/platform_keyring.h b/include/keys/platform_keyring.h
+new file mode 100644
+index 000000000000..4f92ed6c0b42
+--- /dev/null
++++ b/include/keys/platform_keyring.h
+@@ -0,0 +1,12 @@
++#ifndef _KEYS_PLATFORM_KEYRING_H
++#define _KEYS_PLATFORM_KEYRING_H
++
++#include <linux/key.h>
++
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++
++extern const struct key* __init integrity_get_platform_keyring(void);
++
++#endif /* CONFIG_INTEGRITY_PLATFORM_KEYRING */
++
++#endif /* _KEYS_SYSTEM_KEYRING_H */
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index f45d6edecf99..397758d4f12d 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -176,3 +176,10 @@ int __init integrity_load_cert(const unsigned int id, const char *source,
+ 	pr_info("Loading X.509 certificate: %s\n", source);
+ 	return integrity_add_key(id, data, len, perm);
+ }
++
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++struct key* __init integrity_get_platform_keyring(void)
++{
++	return keyring[INTEGRITY_KEYRING_PLATFORM];
++}
++#endif
+-- 
+2.20.1
