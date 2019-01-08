@@ -1,42 +1,33 @@
-From: Stephan Mueller <smueller@chronox.de>
-Date: Mon, 07 Jan 2019 15:52:00 +0000
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Tue, 08 Jan 2019 05:03:58 +0000
 Subject: Re: [PATCH 1/5 v2] PM / hibernate: Create snapshot keys handler
-Message-Id: <4499700.LRS4F2YjjC@tauon.chronox.de>
+Message-Id: <20190108050358.llsox32hggn2jioe@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190103143227.9138-1-jlee@suse.com> <4539995.kc8yiMsNgQ@tauon.chronox.de> <20190107153327.GB4210@linux-l9pv.suse>
-In-Reply-To: <20190107153327.GB4210@linux-l9pv.suse>
-To: herbert@gondor.apana.org.au
+References: <20190103143227.9138-1-jlee@suse.com>
+ <4539995.kc8yiMsNgQ@tauon.chronox.de>
+ <20190107153327.GB4210@linux-l9pv.suse>
+ <4499700.LRS4F2YjjC@tauon.chronox.de>
+In-Reply-To: <4499700.LRS4F2YjjC@tauon.chronox.de>
+To: Stephan Mueller <smueller@chronox.de>
 Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
 
-Am Montag, 7. Januar 2019, 16:33:27 CET schrieb joeyli:
+On Mon, Jan 07, 2019 at 04:52:00PM +0100, Stephan Mueller wrote:
+>
+> Would it make sense to polish these mentioned KDF patches and add them to the 
+> kernel crypto API? The sprawl of key derivation logic here and there which 
+> seemingly does not comply to any standard and thus possibly have issues should 
+> be prevented and cleaned up.
 
-Hi Herbert,
+Are we going to have multiple implementations for the same KDF?
+If not then the crypto API is not a good fit.  To consolidate
+multiple implementations of the same KDF, simply provide helpers
+for them.
 
-> 
-> > use an official KDF type like SP800-108 or HKDF?
-> > 
-> > You find the counter-KDF according to SP800-108 in security/keys/dh.c
-> > (search for functions *kdf*).
-> > 
-> > Or we may start pulling in KDF support into the kernel crypto API via the
-> > patches along the line of [1].
-> > 
-> > [1] http://www.chronox.de/kdf.html
-> 
-> Thanks for your suggestion. I didn't touch any key derivation standard
-> before. I will study it.
-> 
-> But I still want to use my original function currently. Because the same
-> logic is also used in trusted key. I will happy to move to SP800-108 or
-> HKDF when it's available in kernel.
-
-Would it make sense to polish these mentioned KDF patches and add them to the 
-kernel crypto API? The sprawl of key derivation logic here and there which 
-seemingly does not comply to any standard and thus possibly have issues should 
-be prevented and cleaned up.
-
-Ciao
-Stephan
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
