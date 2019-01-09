@@ -1,53 +1,102 @@
 From: Kairui Song <kasong@redhat.com>
-Date: Fri, 18 Jan 2019 02:16:04 +0000
-Subject: Re: [PATCH v3 0/2] let kexec_file_load use platform keyring to verify the kernel image
-Message-Id: <CACPcB9ftKKp_uZf=kN86K2xqbVmaNfs97iyc4zPA_7d7FfL9eg@mail.gmail.com>
+Date: Wed, 09 Jan 2019 16:48:24 +0000
+Subject: [RFC PATCH 2/2] kexec, KEYS: Make use of platform keyring for signature verify
+Message-Id: <20190109164824.19708-3-kasong@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190116101654.7288-1-kasong@redhat.com> <1547773684.4026.10.camel@linux.ibm.com>
- <20190118013530.GA2814@dhcp-128-65.nay.redhat.com> <20190118020006.GB2814@dhcp-128-65.nay.redhat.com>
-In-Reply-To: <20190118020006.GB2814@dhcp-128-65.nay.redhat.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: Mimi Zohar <zohar@linux.ibm.com>, linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, Eric Biggers <ebiggers@google.com>, nayna@linux.ibm.com, linux-integrity <linux-integrity@vger.kernel.org>, kexec@lists.infradead.org
+References: <20190109164824.19708-1-kasong@redhat.com>
+In-Reply-To: <20190109164824.19708-1-kasong@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
 
-T24gRnJpLCBKYW4gMTgsIDIwMTkgYXQgMTA6MDAgQU0gRGF2ZSBZb3VuZyA8ZHlvdW5nQHJlZGhh
-dC5jb20+IHdyb3RlOgo+Cj4gT24gMDEvMTgvMTkgYXQgMDk6MzVhbSwgRGF2ZSBZb3VuZyB3cm90
-ZToKPiA+IE9uIDAxLzE3LzE5IGF0IDA4OjA4cG0sIE1pbWkgWm9oYXIgd3JvdGU6Cj4gPiA+IE9u
-IFdlZCwgMjAxOS0wMS0xNiBhdCAxODoxNiArMDgwMCwgS2FpcnVpIFNvbmcgd3JvdGU6Cj4gPiA+
-ID4gVGhpcyBwYXRjaCBzZXJpZXMgYWRkcyBhIC5wbGF0Zm9ybV90cnVzdGVkX2tleXMgaW4gc3lz
-dGVtX2tleXJpbmcgYXMgdGhlCj4gPiA+ID4gcmVmZXJlbmNlIHRvIC5wbGF0Zm9ybSBrZXlyaW5n
-IGluIGludGVncml0eSBzdWJzeXN0ZW0sIHdoZW4gcGxhdGZvcm0KPiA+ID4gPiBrZXlyaW5nIGlz
-IGJlaW5nIGluaXRpYWxpemVkIGl0IHdpbGwgYmUgdXBkYXRlZC4gU28gb3RoZXIgY29tcG9uZW50
-IGNvdWxkCj4gPiA+ID4gdXNlIHRoaXMga2V5cmluZyBhcyB3ZWxsLgo+ID4gPgo+ID4gPiBSZW1v
-dmUgIm90aGVyIGNvbXBvbmVudCBjb3VsZCB1c2UgLi4uIi4KPiA+ID4gPgo+ID4gPiA+IFRoaXMg
-cGF0Y2ggc2VyaWVzIGFsc28gbGV0IGtleGVjX2ZpbGVfbG9hZCB1c2UgcGxhdGZvcm0ga2V5cmlu
-ZyBhcyBmYWxsCj4gPiA+ID4gYmFjayBpZiBpdCBmYWlsZWQgdG8gdmVyaWZ5IHRoZSBpbWFnZSBh
-Z2FpbnN0IHNlY29uZGFyeSBrZXlyaW5nLCBtYWtlIGl0Cj4gPiA+ID4gcG9zc2libGUgdG8gbG9h
-ZCBrZXJuZWwgc2lnbmVkIGJ5IHRoaXJkIHBhcnQga2V5IGlmIHRoaXJkIHBhcnR5IGtleSBpcwo+
-ID4gPiA+IGltcG9ydGVkIGluIHRoZSBmaXJtd2FyZS4KPiA+ID4KPiA+ID4gVGhpcyBpcyB0aGUg
-b25seSByZWFzb24gZm9yIHRoZXNlIHBhdGNoZXMuICBQbGVhc2UgcmVtb3ZlICJhbHNvIi4KPiA+
-ID4KPiA+ID4gPgo+ID4gPiA+IEFmdGVyIHRoaXMgcGF0Y2gga2V4ZWNfZmlsZV9sb2FkIHdpbGwg
-YmUgYWJsZSB0byB2ZXJpZnkgYSBzaWduZWQgUEUKPiA+ID4gPiBiekltYWdlIHVzaW5nIGtleXMg
-aW4gcGxhdGZvcm0ga2V5cmluZy4KPiA+ID4gPgo+ID4gPiA+IFRlc3RlZCBpbiBhIFZNIHdpdGgg
-bG9jYWxseSBzaWduZWQga2VybmVsIHdpdGggcGVzaWduIGFuZCBpbXBvcnRlZCB0aGUKPiA+ID4g
-PiBjZXJ0IHRvIEVGSSdzIE1va0xpc3QgdmFyaWFibGUuCj4gPiA+Cj4gPiA+IEl0J3MgdGFrZW4g
-c28gbG9uZyBmb3IgbWUgdG8gcmV2aWV3L3Rlc3QgdGhpcyBwYXRjaCBzZXQgZHVlIHRvIGEKPiA+
-ID4gcmVncmVzc2lvbiBpbiBzYW5pdHlfY2hlY2tfc2VnbWVudF9saXN0KCksIGludHJvZHVjZWQg
-c29tZXdoZXJlCj4gPiA+IGJldHdlZW4gNC4yMCBhbmQgNS4wLjAtcmMxLiAgVGhlIHNnZW1lbnQg
-b3ZlcmxhcCB0ZXN0IC0gImlmICgobWVuZCA+Cj4gPiA+IHBzdGFydCkgJiYgKG1zdGFydCA8IHBl
-bmQpKSIgLSBmYWlscywgcmV0dXJuaW5nIGEgLUVJTlZBTC4KPiA+ID4KPiA+ID4gSXMgYW55b25l
-IGVsc2Ugc2VlaW5nIHRoaXM/Cj4gPgo+ID4gTWltaSwgc2hvdWxkIGJlIHRoaXMgaXNzdWU/ICBJ
-IGhhdmUgc2VudCBhIGZpeCBmb3IgdGhhdC4KPiA+IGh0dHBzOi8vbG9yZS5rZXJuZWwub3JnL2xr
-bWwvMjAxODEyMjgwMTEyNDcuR0E5OTk5QGRoY3AtMTI4LTY1Lm5heS5yZWRoYXQuY29tLwo+Cj4g
-SGksIEthaXJ1aSwgSSB0aGluayB5b3Ugc2hvdWxkIGtub3cgdGhpcyB3aGlsZSB3b3JraW5nIG9u
-IHRoaXMgc2VyaWVzLAo+IEl0IGlzIGdvb2QgdG8gbWVudGlvbiB0aGUgdGVzdCBkZXBlbmRlbmN5
-IGluIGNvdmVyIGxldHRlciBzbyB0aGF0IHJldmlld2Vycwo+IGNhbiBzYXZlIHRpbWUuCj4KPiBC
-VFcsIEJvcmlzIHRvb2sgaXQgaW4gdGlwIGFscmVhZHk6Cj4gaHR0cHM6Ly9naXQua2VybmVsLm9y
-Zy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvdGlwL3RpcC5naXQvY29tbWl0Lz9pZJkzYTExMDMx
-OWE0YTYwYWFkYmQwMmY2ZGVmZGViZTA0OGY3NzczYgo+CgpIaSwgdGhhbmtzIGZvciB0aGUgc3Vn
-Z2VzdGlvbiwgSSBkaWQgYXBwbHkgeW91ciBwYXRjaCB0byBhdm9pZCB0aGUKZmFpbHVyZS4gV2ls
-bCBhZGQgc3VjaCBpbmZvIG5leHQgdGltZS4KCldpbGwgc2VuZCBvdXQgVjQgYW5kIHVwZGF0ZSBj
-b21taXQgbWVzc2FnZSBhcyBzdWdnZXN0ZWQgYnkgTWltaQoKCi0tCkJlc3QgUmVnYXJkcywKS2Fp
-cnVpIFNvbmc=
+kexec_file_load will need to verify the kernel signed with third part
+keys, and the keys could be stored in firmware, then got loaded into
+the .platform keyring. Now we have a .platform_trusted_keyring
+as the reference to .platform keyring, this patch makes use if it and
+allow kexec_file_load to verify the image against keys in .platform
+keyring.
+
+This commit adds a VERIFY_USE_PLATFORM_KEYRING similar to previous
+VERIFY_USE_SECONDARY_KEYRING indicating that verify_pkcs7_signature
+should verify the signature using platform keyring. Also, decrease
+the error message log level when verification failed with -ENOKEY,
+so that if called tried multiple time with different keyring it
+won't generate extra noises.
+
+Signed-off-by: Kairui Song <kasong@redhat.com>
+---
+ arch/x86/kernel/kexec-bzimage64.c | 13 ++++++++++---
+ certs/system_keyring.c            |  7 ++++++-
+ include/linux/verification.h      |  1 +
+ 3 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/kexec-bzimage64.c b/arch/x86/kernel/kexec-bzimage64.c
+index 7d97e432cbbc..a8a5c1773ccc 100644
+--- a/arch/x86/kernel/kexec-bzimage64.c
++++ b/arch/x86/kernel/kexec-bzimage64.c
+@@ -534,9 +534,16 @@ static int bzImage64_cleanup(void *loader_data)
+ #ifdef CONFIG_KEXEC_BZIMAGE_VERIFY_SIG
+ static int bzImage64_verify_sig(const char *kernel, unsigned long kernel_len)
+ {
+-	return verify_pefile_signature(kernel, kernel_len,
+-				       VERIFY_USE_SECONDARY_KEYRING,
+-				       VERIFYING_KEXEC_PE_SIGNATURE);
++	int ret;
++	ret = verify_pefile_signature(kernel, kernel_len,
++			VERIFY_USE_SECONDARY_KEYRING,
++			VERIFYING_KEXEC_PE_SIGNATURE);
++	if (ret = -ENOKEY) {
++		ret = verify_pefile_signature(kernel, kernel_len,
++				VERIFY_USE_PLATFORM_KEYRING,
++				VERIFYING_KEXEC_PE_SIGNATURE);
++	}
++	return ret;
+ }
+ #endif
+ 
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index a61b95390b80..7514e69e719f 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -18,6 +18,7 @@
+ #include <linux/verification.h>
+ #include <keys/asymmetric-type.h>
+ #include <keys/system_keyring.h>
++#include <keys/platform_keyring.h>
+ #include <crypto/pkcs7.h>
+ 
+ static struct key *builtin_trusted_keys;
+@@ -239,12 +240,16 @@ int verify_pkcs7_signature(const void *data, size_t len,
+ 		trusted_keys = secondary_trusted_keys;
+ #else
+ 		trusted_keys = builtin_trusted_keys;
++#endif
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++	} else if (trusted_keys = VERIFY_USE_PLATFORM_KEYRING) {
++		trusted_keys = platform_trusted_keys;
+ #endif
+ 	}
+ 	ret = pkcs7_validate_trust(pkcs7, trusted_keys);
+ 	if (ret < 0) {
+ 		if (ret = -ENOKEY)
+-			pr_err("PKCS#7 signature not signed with a trusted key\n");
++			pr_devel("PKCS#7 signature not signed with a trusted key\n");
+ 		goto error;
+ 	}
+ 
+diff --git a/include/linux/verification.h b/include/linux/verification.h
+index cfa4730d607a..018fb5f13d44 100644
+--- a/include/linux/verification.h
++++ b/include/linux/verification.h
+@@ -17,6 +17,7 @@
+  * should be used.
+  */
+ #define VERIFY_USE_SECONDARY_KEYRING ((struct key *)1UL)
++#define VERIFY_USE_PLATFORM_KEYRING  ((struct key *)2UL)
+ 
+ /*
+  * The use to which an asymmetric key is being put.
+-- 
+2.20.1
