@@ -1,56 +1,69 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Wed, 09 Jan 2019 15:34:48 +0000
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 09 Jan 2019 17:34:55 +0000
 Subject: Re: [PATCH 1/5 v2] PM / hibernate: Create snapshot keys handler
-Message-Id: <1547048088.2879.6.camel@HansenPartnership.com>
+Message-Id: <20190109173454.GB249140@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20190103143227.9138-1-jlee@suse.com>
-         <309406107.k3W2fMQUza@tauon.chronox.de>
-         <1547017108.2789.24.camel@HansenPartnership.com>
-         <1894062.aDvIuj92vB@tauon.chronox.de>
-In-Reply-To: <1894062.aDvIuj92vB@tauon.chronox.de>
+ <1894062.aDvIuj92vB@tauon.chronox.de>
+ <20190109082103.GA8586@sol.localdomain>
+ <2344329.gmPllosFfp@tauon.chronox.de>
+In-Reply-To: <2344329.gmPllosFfp@tauon.chronox.de>
 To: Stephan Mueller <smueller@chronox.de>
-Cc: Andy Lutomirski <luto@amacapital.net>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
 
-On Wed, 2019-01-09 at 08:05 +0100, Stephan Mueller wrote:
-> Am Mittwoch, 9. Januar 2019, 07:58:28 CET schrieb James Bottomley:
-> 
-> Hi James,
-> 
-> > On Wed, 2019-01-09 at 07:45 +0100, Stephan Mueller wrote:
-> > > Am Mittwoch, 9. Januar 2019, 01:44:31 CET schrieb James
-> > > Bottomley:
-> > > 
-> > > Hi James,
-> > > 
-> > > > Actually, it would be enormously helpful if we could reuse
-> > > > these pieces for the TPM as well.
-> > > 
-> > > Could you please help me understand whether the KDFs in TPM are
-> > > directly usable as a standalone cipher primitive or does it go
-> > > together with additional  key generation operations?
-> > 
-> > They're used as generators ... which means they deterministically
-> > produce keys from what the TPM calls seeds so we can get crypto
-> > agility of TPM 2.0 ... well KDFa does.  KDFe is simply what NIST
-> > recommends you do when using EC for a shared key agreement ... and
-> > really we shouldn't be using ECDH in the kernel without it.
-> > 
-> 
-> Thanks for clarifying. That would mean that indeed we would have
-> hardware-provided KDF implementations that may be usable with the
-> kernel crypto API.
-
-Just on this point, the TPM doesn't actually provide any KDFa or e API,
-so it can't be used for hardware acceleration (and even if it did, the
-TPM is a pretty slow engine, so software would be faster anyway).  We
-need these algorithms in software because the TPM uses key agreements
-derived from shared secrets to produce session encryption keys to
-ensure confidentiality and integrity (HMAC key), so we establish the
-shared secret then have to derive our key in software and the TPM
-derives the same key internally and we use the shared derived key to
-symmetrically encrypt and/or HMAC secret communications.
-
-James
+T24gV2VkLCBKYW4gMDksIDIwMTkgYXQgMTE6MTc6NDVBTSArMDEwMCwgU3RlcGhhbiBNdWVsbGVy
+IHdyb3RlOgo+IEFtIE1pdHR3b2NoLCA5LiBKYW51YXIgMjAxOSwgMDk6MjE6MDQgQ0VUIHNjaHJp
+ZWIgRXJpYyBCaWdnZXJzOgo+IAo+IEhpIEVyaWMsCj4gPiAKPiA+IEZXSVcsIGl0J3MgYmVlbiB2
+ZXJ5IHNsb3cgZ29pbmcgc2luY2UgSSd2ZSBiZWVuIHdvcmtpbmcgb24gb3RoZXIgcHJvamVjdHMK
+PiA+IGFuZCBJIGFsc28gbmVlZCB0byBiZSB2ZXJ5IHN1cmUgdG8gZ2V0IHRoZSBBUEkgY2hhbmdl
+cyByaWdodCwgYnV0IEkgc3RpbGwKPiA+IHBsYW4gdG8gY2hhbmdlIHRoZSBLREYgaW4gZnNjcnlw
+dCAoYS5rLmEuIGV4dDQvZjJmcy91YmlmcyBlbmNyeXB0aW9uKSB0bwo+ID4gSEtERi1TSEE1MTIg
+YXMgcGFydCBvZiBhIGxhcmdlciBzZXQgb2YgaW1wcm92ZW1lbnRzIHRvIGhvdyBmc2NyeXB0Cj4g
+PiBlbmNyeXB0aW9uIGtleXMgYXJlIG1hbmFnZWQuIEkgc2VudCB0aGUgbGFzdCBwYXRjaHNldCBh
+IHllYXIgYWdvCj4gPiAoaHR0cHM6Ly9tYXJjLmluZm8vP2w9bGludXgtZnNkZXZlbCZtFTA4Nzk0
+OTMyMDYyNTcpIGJ1dCBJJ20gd29ya2luZyB0bwo+ID4gcmV2aXZlIGl0LiAgSW4gdGhlIHdvcmst
+aW4tcHJvZ3Jlc3MgdmVyc2lvbiBpbiBteSBnaXQgdHJlZSwgdGhpcyBpcyB0aGUKPiA+IGNvbW1p
+dCB0aGF0IGFkZHMgYSBIS0RGIGltcGxlbWVudGF0aW9uIGFzIGZzL2NyeXB0by9oa2RmLmM6Cj4g
+PiBodHRwczovL2dpdC5rZXJuZWwub3JnL3B1Yi9zY20vbGludXgva2VybmVsL2dpdC9lYmlnZ2Vy
+cy9saW51eC5naXQvY29tbWl0Lz9pZOhhNzg3NjcxMzFjOTcxN2VlODM4ZjBjNGUzMDc5NDhkNjVh
+NDQyNwo+ID4gSXQgYmFzaWNhbGx5IGp1c3Qgd3JhcHMgYSBjcnlwdG9fc2hhc2ggZm9yICJobWFj
+KHNoYTUxMikiLgo+ID4gCj4gPiBJJ2QgYmUgZmluZSB3aXRoIHVzaW5nIGEgY29tbW9uIGltcGxl
+bWVudGF0aW9uIGluc3RlYWQsIHByb3ZpZGVkIHRoYXQgaXQKPiA+IGdpdmVzIHRoZSBzYW1lIGZ1
+bmN0aW9uYWxpdHksIGluY2x1ZGluZyBzdXBwb3J0aW5nIHVzZXItc3BlY2lmaWVkIHNhbHQgYW5k
+Cj4gPiBhcHBsaWNhdGlvbi1zcGVjaWZpYyBpbmZvIHN0cmluZ3MsIGFuZCBpc24ndCBzbG93ZXIg
+b3IgbW9yZSBjb21wbGV4IHRvIHVzZS4KPiA+IAo+ID4gKFRoaXMgY29tbWVudCBpcyBzb2xlbHkg
+b24gdGhlIHRhbmdlbnRpYWwgZGlzY3Vzc2lvbiBhYm91dCBLREYKPiA+IGltcGxlbWVudGF0aW9u
+czsgSSd2ZSBub3QgbG9va2VkIGF0IHRoZSBoaWJlcm5hdGlvbiBpbWFnZSBlbmNyeXB0aW9uIHN0
+dWZmCj4gPiB5ZXQuKQo+IAo+IFRoYW5rcyBmb3IgdGhlIGNsYXJpZmljYXRpb24uIEkgaGF2ZSBz
+dGFydGVkIGEgZ2VuZXJpYyBIS0RGIGltcGxlbWVudGF0aW9uIGZvciAKPiB0aGUga2VybmVsIGNy
+eXB0byBBUEkgd2hpY2ggbGVhZCB0byB0aGUgcXVlc3Rpb25zIGFib3ZlLiBJIHdvdWxkIHRoZW4g
+YWxzbyB0cnkgCj4gdG8gcHJvdmlkZSBhIEhLREYgcHJvcG9zYWwuCj4gCj4gVG8gdXNlIHRoZSAo
+SClLREYsIEkgY3VycmVudGx5IGVudmlzaW9uIDIgY2FsbHMgYXBhcnQgZnJvbSBhbGxvYy9mcmVl
+LiBUaGUgCj4gZm9sbG93aW5nIGNvZGUgd291bGQgc2VydmUgYXMgYW4gZXhhbXBsZS4KPiAKPiAg
+KiBFeGFtcGxlIHdpdGhvdXQgcHJvcGVyIGVycm9yIGhhbmRsaW5nOgo+ICAqICAgICAgY2hhciAq
+a2V5aW5nX21hdGVyaWFsID0gIlx4MDBceDExXHgyMlx4MzNceDQ0XHg1NVx4NjZceDc3IjsKPiAg
+KiAgICAgIGNoYXIgKmxhYmVsX2NvbnRleHQgPSAiXHhkZVx4YWRceGJlXHhlZlx4MDBceGRlXHhh
+ZFx4YmVceGVmIjsKPiAgKiAgICAgIGtkZiA9IGNyeXB0b19hbGxvY19ybmcobmFtZSwgMCwgMCk7
+Cj4gICogICAgICBjcnlwdG9fcm5nX3Jlc2V0KGtkZiwga2V5aW5nX21hdGVyaWFsLCA4KTsKPiAg
+KiAgICAgIGNyeXB0b19ybmdfZ2VuZXJhdGUoa2RmLCBsYWJlbF9jb250ZXh0LCA5LCBvdXRidWYs
+IG91dGJ1Zmxlbik7Cj4gCj4gVGhhdCBob3BlZnVsbHkgc2hvdWxkIGJlIHNpbXBsZSBlbm91Z2gu
+Cj4gCj4gRm9yIEhLREYsIGFzIG1lbnRpb25lZCwgSSB3b3VsZCBlbnZpc2lvbiB0byB1c2UgYSBz
+dHJ1Y3QgaW5zdGVhZCBvZiBhIGNoYXIgKiAKPiBmb3IgdGhlIGxhYmVsX2NvbnRleHQgdG8gY29t
+bXVuaWNhdGUgSUtNLCBTYWx0LCBhbmQgdGhlIGxhYmVsL2luZm8gCj4gaW5mb3JtYXRpb24uCj4g
+Cj4gQ2lhbwo+IFN0ZXBoYW4KPiAKClRoYXQgd291bGQgbm90IG1lZXQgbXkgcGVyZm9ybWFuY2Ug
+cmVxdWlyZW1lbnRzIGFzIEkgd2FudCB0byBwcmVjb21wdXRlCkhLREYtRXh0cmFjdCwgYW5kIHRo
+ZW4gZG8gSEtERi1FeHBhbmQgbWFueSB0aW1lcy4gIEFsc28gdGhlIEhLREYtRXhwYW5kIHBhcnQK
+c2hvdWxkIGJlIHRocmVhZC1zYWZlIGFuZCBub3QgcmVxdWlyZSBhbGxvY2F0aW5nIG1lbW9yeSwg
+ZXNwZWNpYWxseSBub3QgYSB3aG9sZQpjcnlwdG9fc2hhc2ggdGZtIGV2ZXJ5IHRpbWUuCgpTbyBw
+cmVzdW1hYmx5IHdpdGggY3J5cHRvX3JuZywgY3J5cHRvX3JuZ19yZXNldCgpIHdvdWxkIG5lZWQg
+dG8gdGFrZSB0aGUgaW5wdXQKa2V5cmluZyBtYXRlcmlhbCBhbmQgc2FsdCBhbmQgZG8gSEtERi1F
+eHRyYWN0IChsaWtlIG15IGZzY3J5cHRfaW5pdF9oa2RmKCkpLCBhbmQKY3J5cHRvX3JuZ19nZW5l
+cmF0ZSgpIHdvdWxkIG5lZWQgdG8gdGFrZSB0aGUgYXBwbGljYXRpb24tc3BlY2lmaWMgaW5mbyBz
+dHJpbmcKYW5kIGRvIEhLREYtRXhwYW5kIChsaWtlIG15IGZzY3J5cHRfaGtkZl9leHBhbmQoKSku
+CgpJdCBpcyB1Z2x5IHRob3VnaC4gIFBsZWFzZSBhbHNvIGNvbnNpZGVyIGp1c3QgaGF2aW5nIHNp
+bXBsZSBjcnlwdG9faGtkZl8qKCkKaGVscGVyIGZ1bmN0aW9ucyB3aGljaCB3cmFwIGEgSE1BQyB0
+Zm0gYWxvbmcgdGhlIGxpbmVzIG9mIG15IHBhdGNoLCByYXRoZXIgdGhhbgpzaG9laG9ybmluZyBp
+dCBpbnRvIHRoZSBjcnlwdG9fcm5nIEFQSS4KCi0gRXJpYw==
