@@ -1,41 +1,108 @@
-From: Stephan Mueller <smueller@chronox.de>
-Date: Wed, 09 Jan 2019 18:18:13 +0000
+From: Andy Lutomirski <luto@kernel.org>
+Date: Wed, 09 Jan 2019 18:34:42 +0000
 Subject: Re: [PATCH 1/5 v2] PM / hibernate: Create snapshot keys handler
-Message-Id: <2049180.FbvvROCS3Z@tauon.chronox.de>
+Message-Id: <CALCETrWoSAf4hHCXvqVZhQ5YAMBaZzaBCfnb6sC8JPrSs6FRog@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190103143227.9138-1-jlee@suse.com> <2344329.gmPllosFfp@tauon.chronox.de> <20190109173454.GB249140@gmail.com>
-In-Reply-To: <20190109173454.GB249140@gmail.com>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
+References: <20190103143227.9138-1-jlee@suse.com> <4499700.LRS4F2YjjC@tauon.chronox.de>
+ <20190108050358.llsox32hggn2jioe@gondor.apana.org.au> <1565399.7ulKdI1fm5@tauon.chronox.de>
+ <D70458DE-712B-4767-8143-7DC9107689C3@amacapital.net> <1546994671.6077.10.camel@HansenPartnership.com>
+ <CALCETrWTAYpWv73MgAz=NUfvJSLq965fWMYvJnDepJoRBsgt6Q@mail.gmail.com> <1547016579.2789.17.camel@HansenPartnership.com>
+In-Reply-To: <1547016579.2789.17.camel@HansenPartnership.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Andy Lutomirski <luto@kernel.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Stephan Mueller <smueller@chronox.de>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>
 
-Am Mittwoch, 9. Januar 2019, 18:34:55 CET schrieb Eric Biggers:
+>> On Jan 8, 2019, at 10:49 PM, James Bottomley <James.Bottomley@hansenpartnership.com> wrote:
+>>
+>> On Tue, 2019-01-08 at 17:43 -0800, Andy Lutomirski wrote:
+>> [Adding Jarkko because this stuff relates to the TPM.]
+>
+>> Anyway, if we're talking about the TPM, it seems like the entire
+>> "trusted key" mechanism in the kernel is missing the point.  If I
+>> want to encrypt something like a hibernation image on a machine with
+>> a TPM, it makes essentially no sense to me that we would get a key
+>> with a known raw value that is merely TPM-backed (i.e. the "trusted
+>> key") and use that to decrypt the image.  The right way to do it is
+>> to the use the TPM as it was intended to be used: generate a single-
+>> use key that protects the hibernation image and seal *that* directly
+>> on the TPM, such that it can only be unsealed with appropriate PCR
+>> values.  Heck, we could even use one of the fancy NV counters such
+>> that we *can't* decrypt the image later on.  And using HMAC or any AE
+>> construction the normal way is also wrong -- we should *hash* the
+>> image and sign the hash directly on the TPM so that the restore code
+>> can validate the PCR values that were in place when the hibernation
+>> image was created.  [0]
+>
+> Well, theoretically, trusted keys can be used for PCR sealed bundles,
+> at least in 1.2 ... I'm not sure the 2.0 one actually works because you
+> have to construct the policy session outside the kernel.
 
-Hi Eric,
+I suppose I should go read the 2.0 spec. I’ve read the 1.2 spec, but I
+always assumed that 2.0 was essentially a superset of 1.2
+functionality.
 
-> That would not meet my performance requirements as I want to precompute
-> HKDF-Extract, and then do HKDF-Expand many times.  Also the HKDF-Expand part
-> should be thread-safe and not require allocating memory, especially not a
-> whole crypto_shash tfm every time.
-> 
-> So presumably with crypto_rng, crypto_rng_reset() would need to take the
-> input keyring material and salt and do HKDF-Extract (like my
-> fscrypt_init_hkdf()), and crypto_rng_generate() would need to take the
-> application-specific info string and do HKDF-Expand (like my
-> fscrypt_hkdf_expand()).
+>>  Presumably we should at least try to replay the PCR operations that
+>> have occurred so that we can massage the PCRs into the same state
+>> post-hibernation.  Also, do we have any way for the kernel to sign
+>> something with the TPM along with an attestation that the signature
+>> was requested *by the kernel*?  Something like a sub-hierarchy of
+>> keys that the kernel explicitly prevents userspace from accessing?)
+>
+> We're just growing that now with the TPM asymmetric operations.
+> Attesting that the kernel requested the signature is harder.  The TPM
+> can attest to log entries (as it does for the UEFI log and IMA) and it
+> can certify keys, but that only proves they're TPM resident not who the
+> requestor was.  Effectively the latter is an assertion about who knows
+> the key authority, which is hard to prove.
 
-Great, that was the idea I had in mind as well. Maybe the example was not 
-right to convey that. Let me work on that.
-> 
-> It is ugly though.  Please also consider just having simple crypto_hkdf_*()
-> helper functions which wrap a HMAC tfm along the lines of my patch, rather
-> than shoehorning it into the crypto_rng API.
-> 
-> - Eric
+Can the kernel filter TPM 2.0 operations?  If so, then a signature
+that the kernel would have prevented user code from generating is de
+facto an attestation that the kernel generated it (or that the kernel
+was compromised, which is sort of equivalent).
 
+>
+>> [0] If you take some data, run it through an authenticated encryption
+>> algorithm, and sign (key, nonce, tag), I think you're operating
+>> outside of the accepted security definitions if you expect this to
+>> guarantee that the data wasn't tampered with.  I'm reasonably
+>> confident that there are quite a few excellent AE algorithms that
+>> completely fail if used this like this.  In fact, pretty much all of
+>> the modern fast ones probably fail.  AE is for when the key is
+>> *secret*.
+>
+> Well, I think here, if we were actually trying to solve the problem of
+> proving the hibernated image were the same one we would need to prove
+> some log of the kernel operation came to a particular value *after* the
+> hibernated image were restored ... it's not really possible to
+> condition key release which must occur before the restore on that
+> outcome, so it strikes me we need more than a simple release bound to
+> PCR values.
 
+I’m not sure I follow. Here are the two properties I’d like to see:
 
-Ciao
-Stephan
+1. If you have an encrypted hibernation image, the only thing you
+should be able to do with it is to restore it. So only an actual Linux
+kernel in hibernation restore mode ought to be able to restore it.  We
+get this if the image can only be read with appropriate PCRs and then
+only by the kernel.  This way, you can’t just read out secrets from
+the image if you steal a laptop — you have to actually boot the thing.
+
+2. You shouldn’t be able to create an intentionally corrupt image that
+pwns you when you restore it unless you have already pwned the kernel.
+
+Maybe the “kernel” bit in #1 can be relaxed to “root” without totally
+defeating the purpose, but if some random non-root process that
+happens to have access to /dev/tpm* can make a valid-looking TPM
+image, then I think we fail.  Limiting it to the kernel is only
+dubiously better than limiting it to root until we implement lockdown,
+in which case it's important.
+
+#2 only really matters with lockdown.
+
+I suppose that a good summary of my opinion is that there is no point
+to kernel support for encrypted hibernation images until lockdown is
+upstream.
+
+--Andy
