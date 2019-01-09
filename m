@@ -1,160 +1,45 @@
-From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
-Date: Wed, 16 Jan 2019 11:09:11 +0000
-Subject: [PATCH v2 5/6] crypto: hkdf - add known answer tests
-Message-Id: <2443102.TZCsN2CrQ3@positron.chronox.de>
+From: Kairui Song <kasong@redhat.com>
+Date: Wed, 09 Jan 2019 16:48:22 +0000
+Subject: [RFC PATCH 0/2] let kexec_file_load use platform keyring to verify the kernel image
+Message-Id: <20190109164824.19708-1-kasong@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190103143227.9138-1-jlee@suse.com> <9733066.Vrs4h5eWcW@positron.chronox.de> <2082192.jPI8ve1O8G@positron.chronox.de>
-In-Reply-To: <2082192.jPI8ve1O8G@positron.chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Eric Biggers <ebiggers@kernel.org>, James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>, linux-crypto@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
 
-Add known answer tests to the testmgr for the HKDF (RFC5869) cipher.
+Hi,
 
-The known answer tests are derived from RFC 5869 appendix A.
+This is a different approach for the previous patch:
+[RFC PATCH 0/1] KEYS, integrity: Link .platform keyring to .secondary_trusted_keys
+make kexec_file_load be able to verify the kernel image against keys
+provided by platform or firmware.
 
-Note, the HKDF is considered to be a FIPS 140-2 allowed (not approved)
-cipher as of now. Yet, an allowed cipher is usable under FIPS 140-2
-rules.
+This patch adds a .platform_trusted_keys in system_keyring as the reference
+to .platform keyring in integrity subsystem, when platform keyring is
+being initialized it will be updated.
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/testmgr.c | 26 ++++++++++++++
- crypto/testmgr.h | 91 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 117 insertions(+)
+Another thing on my mind is that now kexec_file_load will still relay on
+CONFIG_INTEGRITY_PLATFORM_KEYRING and all its dependencies to be enabled
+to be able to verify the image against firmware keys. I'm thinking about
+to have something like CONFIG_PLATFORM_KEYRING and make the .platform
+keyring could be enabled for a more wider usage. Not sure if it's a good
+idea though.
 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 309819af55d8..0b06721a70df 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -3189,6 +3189,32 @@ static const struct alg_test_desc alg_test_descs[] = {
- 		.suite = {
- 			.hash = __VECS(ghash_tv_template)
- 		}
-+	}, {
-+		.alg = "hkdf(hmac(sha1))",
-+		.test = alg_test_kdf,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.kdf = __VECS(hkdf_hmac_sha1_tv_template)
-+		}
-+	}, {
-+		.alg = "hkdf(hmac(sha224))",
-+		.test = alg_test_null,
-+		.fips_allowed = 1,
-+	}, {
-+		.alg = "hkdf(hmac(sha256))",
-+		.test = alg_test_kdf,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.kdf = __VECS(hkdf_hmac_sha256_tv_template)
-+		}
-+	}, {
-+		.alg = "hkdf(hmac(sha384))",
-+		.test = alg_test_null,
-+		.fips_allowed = 1,
-+	}, {
-+		.alg = "hkdf(hmac(sha512))",
-+		.test = alg_test_null,
-+		.fips_allowed = 1,
- 	}, {
- 		.alg = "hmac(md5)",
- 		.test = alg_test_hash,
-diff --git a/crypto/testmgr.h b/crypto/testmgr.h
-index 65fe3d4ef082..7ffff184fba2 100644
---- a/crypto/testmgr.h
-+++ b/crypto/testmgr.h
-@@ -27999,6 +27999,97 @@ static const struct kdf_testvec kdf_dpi_hmac_sha256_tv_template[] = {
- 	}
- };
- 
-+/* Test vectors from RFC 5869 appendix A */
-+static const struct kdf_testvec hkdf_hmac_sha256_tv_template[] = {
-+	{
-+		.K1 +#ifdef __LITTLE_ENDIAN
-+			"\x0d\x00\x00\x00"		/* salt length */
-+#else
-+			"\x00\x00\x00\x0d"		/* salt length */
-+#endif
-+			"\x00\x01\x02\x03\x04\x05\x06\x07"
-+			"\x08\x09\x0a\x0b\x0c"		/* salt */
-+			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
-+			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
-+			"\x0b\x0b\x0b\x0b\x0b\x0b",	/* IKM */
-+		.K1len = 39,
-+		.context +			"\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7"
-+			"\xf8\xf9",
-+		.contextlen = 10,
-+		.expected +			"\x3c\xb2\x5f\x25\xfa\xac\xd5\x7a"
-+			"\x90\x43\x4f\x64\xd0\x36\x2f\x2a"
-+			"\x2d\x2d\x0a\x90\xcf\x1a\x5a\x4c"
-+			"\x5d\xb0\x2d\x56\xec\xc4\xc5\xbf"
-+			"\x34\x00\x72\x08\xd5\xb8\x87\x18"
-+			"\x58\x65",
-+		.expectedlen = 42
-+	}, {
-+		.K1 =	"\x00\x00\x00\x00"		/* salt length */
-+			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
-+			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
-+			"\x0b\x0b\x0b\x0b\x0b\x0b",	/* IKM */
-+		.K1len = 26,
-+		.context = NULL,
-+		.contextlen = 0,
-+		.expected +			"\x8d\xa4\xe7\x75\xa5\x63\xc1\x8f"
-+			"\x71\x5f\x80\x2a\x06\x3c\x5a\x31"
-+			"\xb8\xa1\x1f\x5c\x5e\xe1\x87\x9e"
-+			"\xc3\x45\x4e\x5f\x3c\x73\x8d\x2d"
-+			"\x9d\x20\x13\x95\xfa\xa4\xb6\x1a"
-+			"\x96\xc8",
-+		.expectedlen = 42
-+	}
-+};
-+
-+/* Test vectors from RFC 5869 appendix A */
-+static const struct kdf_testvec hkdf_hmac_sha1_tv_template[] = {
-+	{
-+		.K1 +#ifdef __LITTLE_ENDIAN
-+			"\x0d\x00\x00\x00"		/* salt length */
-+#else
-+			"\x00\x00\x00\x0d"		/* salt length */
-+#endif
-+			"\x00\x01\x02\x03\x04\x05\x06\x07"
-+			"\x08\x09\x0a\x0b\x0c"		/* salt */
-+			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
-+			"\x0b\x0b\x0b",			/* IKM */
-+		.K1len = 28,
-+		.context +			"\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7"
-+			"\xf8\xf9",
-+		.contextlen = 10,
-+		.expected +			"\x08\x5a\x01\xea\x1b\x10\xf3\x69"
-+			"\x33\x06\x8b\x56\xef\xa5\xad\x81"
-+			"\xa4\xf1\x4b\x82\x2f\x5b\x09\x15"
-+			"\x68\xa9\xcd\xd4\xf1\x55\xfd\xa2"
-+			"\xc2\x2e\x42\x24\x78\xd3\x05\xf3"
-+			"\xf8\x96",
-+		.expectedlen = 42
-+	}, {
-+		.K1 =	"\x00\x00\x00\x00"		/* salt length */
-+			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
-+			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
-+			"\x0b\x0b\x0b\x0b\x0b\x0b",	/* IKM */
-+		.K1len = 26,
-+		.context = NULL,
-+		.contextlen = 0,
-+		.expected +			"\x0a\xc1\xaf\x70\x02\xb3\xd7\x61"
-+			"\xd1\xe5\x52\x98\xda\x9d\x05\x06"
-+			"\xb9\xae\x52\x05\x72\x20\xa3\x06"
-+			"\xe0\x7b\x6b\x87\xe8\xdf\x21\xd0"
-+			"\xea\x00\x03\x3d\xe0\x39\x84\xd3"
-+			"\x49\x18",
-+		.expectedlen = 42
-+	}
-+};
-+
- /* Cast5 test vectors from RFC 2144 */
- static const struct cipher_testvec cast5_tv_template[] = {
- 	{
+Tested in a VM with locally signed kernel with pesign and imported the
+cert to EFI's MokList variable.
+
+Kairui Song (2):
+  integrity, KEYS: add a reference to platform keyring
+  kexec, KEYS: Make use of platform keyring for signature verify
+
+ arch/x86/kernel/kexec-bzimage64.c | 13 ++++++++++---
+ certs/system_keyring.c            | 10 +++++++++-
+ include/keys/system_keyring.h     |  5 +++++
+ include/linux/verification.h      |  1 +
+ security/integrity/digsig.c       |  4 ++++
+ 5 files changed, 29 insertions(+), 4 deletions(-)
+
 -- 
 2.20.1
