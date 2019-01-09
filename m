@@ -1,87 +1,82 @@
-From: Stephan Mueller <smueller@chronox.de>
-Date: Wed, 09 Jan 2019 07:05:21 +0000
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 09 Jan 2019 08:21:04 +0000
 Subject: Re: [PATCH 1/5 v2] PM / hibernate: Create snapshot keys handler
-Message-Id: <1894062.aDvIuj92vB@tauon.chronox.de>
+Message-Id: <20190109082103.GA8586@sol.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <20190103143227.9138-1-jlee@suse.com> <309406107.k3W2fMQUza@tauon.chronox.de> <1547017108.2789.24.camel@HansenPartnership.com>
-In-Reply-To: <1547017108.2789.24.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
+References: <20190103143227.9138-1-jlee@suse.com>
+ <309406107.k3W2fMQUza@tauon.chronox.de>
+ <1547017108.2789.24.camel@HansenPartnership.com>
+ <1894062.aDvIuj92vB@tauon.chronox.de>
+In-Reply-To: <1894062.aDvIuj92vB@tauon.chronox.de>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
 
-Am Mittwoch, 9. Januar 2019, 07:58:28 CET schrieb James Bottomley:
-
-Hi James,
-
-> On Wed, 2019-01-09 at 07:45 +0100, Stephan Mueller wrote:
-> > Am Mittwoch, 9. Januar 2019, 01:44:31 CET schrieb James Bottomley:
-> > 
-> > Hi James,
-> > 
-> > > Actually, it would be enormously helpful if we could reuse these
-> > > pieces for the TPM as well.
-> > 
-> > Could you please help me understand whether the KDFs in TPM are
-> > directly usable as a standalone cipher primitive or does it go
-> > together with additional  key generation operations?
-> 
-> They're used as generators ... which means they deterministically
-> produce keys from what the TPM calls seeds so we can get crypto agility
-> of TPM 2.0 ... well KDFa does.  KDFe is simply what NIST recommends you
-> do when using EC for a shared key agreement ... and really we shouldn't
-> be using ECDH in the kernel without it.
-> 
-
-Thanks for clarifying. That would mean that indeed we would have hardware-
-provided KDF implementations that may be usable with the kernel crypto API.
-
-[...]
-> 
-> > Would it be appropriate, to implement a type cast to a structure from
-> > the u8 pointer?
-> > 
-> > E.g. for the aforementioned label/context data, we could define
-> > something like
-> > 
-> > struct crypto_kdf_ctr {
-> > 
-> > 	char *label;
-> > 	size_t label_len;
-> > 	u8 *contextU;
-> > 	size_t contextU_len;
-> > 	u8 *contextV;
-> > 	size_t contextV_len;
-> > 
-> > };
-> > 
-> > And the implementation of the generate function for CTR KDF would
-> > 
-> > then have a  type cast along the following lines:
-> > 	if (slen != sizeof(struct crypto_kdf_ctr))
-> > 	
-> > 		return -EINVAL;
-> > 	
-> > 	const struct crypto_kdf_ctr *kdf_ctr_input = (struct
-> > 
-> > crypto_kdf_ctr *)src;
-> > 
-> > 
-> > For different KDFs, different structs would be needed.
-> 
-> Actually, we probably just need the input key (or secret material), the
-> concatenation and the number of output bits.
-
-Thanks for confirming. Though, when it comes to HKDF (not that I see it being 
-needed or required in the kernel), there is a need to split up the src pointer 
-since the mentioned input is used in different ways.
-
-In order to try to get the implementation and thus the interface right, I 
-would suggest to at least have a consensus on how to handle such situations.
-
-Thus, would the proposal be acceptable for such KDFs that may need to have 
-different components communicated as input to the KDF?
-
-Ciao
-Stephan
+T24gV2VkLCBKYW4gMDksIDIwMTkgYXQgMDg6MDU6MjFBTSArMDEwMCwgU3RlcGhhbiBNdWVsbGVy
+IHdyb3RlOgo+IEFtIE1pdHR3b2NoLCA5LiBKYW51YXIgMjAxOSwgMDc6NTg6MjggQ0VUIHNjaHJp
+ZWIgSmFtZXMgQm90dG9tbGV5Ogo+IAo+IEhpIEphbWVzLAo+IAo+ID4gT24gV2VkLCAyMDE5LTAx
+LTA5IGF0IDA3OjQ1ICswMTAwLCBTdGVwaGFuIE11ZWxsZXIgd3JvdGU6Cj4gPiA+IEFtIE1pdHR3
+b2NoLCA5LiBKYW51YXIgMjAxOSwgMDE6NDQ6MzEgQ0VUIHNjaHJpZWIgSmFtZXMgQm90dG9tbGV5
+Ogo+ID4gPiAKPiA+ID4gSGkgSmFtZXMsCj4gPiA+IAo+ID4gPiA+IEFjdHVhbGx5LCBpdCB3b3Vs
+ZCBiZSBlbm9ybW91c2x5IGhlbHBmdWwgaWYgd2UgY291bGQgcmV1c2UgdGhlc2UKPiA+ID4gPiBw
+aWVjZXMgZm9yIHRoZSBUUE0gYXMgd2VsbC4KPiA+ID4gCj4gPiA+IENvdWxkIHlvdSBwbGVhc2Ug
+aGVscCBtZSB1bmRlcnN0YW5kIHdoZXRoZXIgdGhlIEtERnMgaW4gVFBNIGFyZQo+ID4gPiBkaXJl
+Y3RseSB1c2FibGUgYXMgYSBzdGFuZGFsb25lIGNpcGhlciBwcmltaXRpdmUgb3IgZG9lcyBpdCBn
+bwo+ID4gPiB0b2dldGhlciB3aXRoIGFkZGl0aW9uYWwgIGtleSBnZW5lcmF0aW9uIG9wZXJhdGlv
+bnM/Cj4gPiAKPiA+IFRoZXkncmUgdXNlZCBhcyBnZW5lcmF0b3JzIC4uLiB3aGljaCBtZWFucyB0
+aGV5IGRldGVybWluaXN0aWNhbGx5Cj4gPiBwcm9kdWNlIGtleXMgZnJvbSB3aGF0IHRoZSBUUE0g
+Y2FsbHMgc2VlZHMgc28gd2UgY2FuIGdldCBjcnlwdG8gYWdpbGl0eQo+ID4gb2YgVFBNIDIuMCAu
+Li4gd2VsbCBLREZhIGRvZXMuICBLREZlIGlzIHNpbXBseSB3aGF0IE5JU1QgcmVjb21tZW5kcyB5
+b3UKPiA+IGRvIHdoZW4gdXNpbmcgRUMgZm9yIGEgc2hhcmVkIGtleSBhZ3JlZW1lbnQgLi4uIGFu
+ZCByZWFsbHkgd2Ugc2hvdWxkbid0Cj4gPiBiZSB1c2luZyBFQ0RIIGluIHRoZSBrZXJuZWwgd2l0
+aG91dCBpdC4KPiA+IAo+IAo+IFRoYW5rcyBmb3IgY2xhcmlmeWluZy4gVGhhdCB3b3VsZCBtZWFu
+IHRoYXQgaW5kZWVkIHdlIHdvdWxkIGhhdmUgaGFyZHdhcmUtCj4gcHJvdmlkZWQgS0RGIGltcGxl
+bWVudGF0aW9ucyB0aGF0IG1heSBiZSB1c2FibGUgd2l0aCB0aGUga2VybmVsIGNyeXB0byBBUEku
+Cj4gCj4gWy4uLl0KPiA+IAo+ID4gPiBXb3VsZCBpdCBiZSBhcHByb3ByaWF0ZSwgdG8gaW1wbGVt
+ZW50IGEgdHlwZSBjYXN0IHRvIGEgc3RydWN0dXJlIGZyb20KPiA+ID4gdGhlIHU4IHBvaW50ZXI/
+Cj4gPiA+IAo+ID4gPiBFLmcuIGZvciB0aGUgYWZvcmVtZW50aW9uZWQgbGFiZWwvY29udGV4dCBk
+YXRhLCB3ZSBjb3VsZCBkZWZpbmUKPiA+ID4gc29tZXRoaW5nIGxpa2UKPiA+ID4gCj4gPiA+IHN0
+cnVjdCBjcnlwdG9fa2RmX2N0ciB7Cj4gPiA+IAo+ID4gPiAJY2hhciAqbGFiZWw7Cj4gPiA+IAlz
+aXplX3QgbGFiZWxfbGVuOwo+ID4gPiAJdTggKmNvbnRleHRVOwo+ID4gPiAJc2l6ZV90IGNvbnRl
+eHRVX2xlbjsKPiA+ID4gCXU4ICpjb250ZXh0VjsKPiA+ID4gCXNpemVfdCBjb250ZXh0Vl9sZW47
+Cj4gPiA+IAo+ID4gPiB9Owo+ID4gPiAKPiA+ID4gQW5kIHRoZSBpbXBsZW1lbnRhdGlvbiBvZiB0
+aGUgZ2VuZXJhdGUgZnVuY3Rpb24gZm9yIENUUiBLREYgd291bGQKPiA+ID4gCj4gPiA+IHRoZW4g
+aGF2ZSBhICB0eXBlIGNhc3QgYWxvbmcgdGhlIGZvbGxvd2luZyBsaW5lczoKPiA+ID4gCWlmIChz
+bGVuICE9IHNpemVvZihzdHJ1Y3QgY3J5cHRvX2tkZl9jdHIpKQo+ID4gPiAJCj4gPiA+IAkJcmV0
+dXJuIC1FSU5WQUw7Cj4gPiA+IAkKPiA+ID4gCWNvbnN0IHN0cnVjdCBjcnlwdG9fa2RmX2N0ciAq
+a2RmX2N0cl9pbnB1dCA9IChzdHJ1Y3QKPiA+ID4gCj4gPiA+IGNyeXB0b19rZGZfY3RyICopc3Jj
+Owo+ID4gPiAKPiA+ID4gCj4gPiA+IEZvciBkaWZmZXJlbnQgS0RGcywgZGlmZmVyZW50IHN0cnVj
+dHMgd291bGQgYmUgbmVlZGVkLgo+ID4gCj4gPiBBY3R1YWxseSwgd2UgcHJvYmFibHkganVzdCBu
+ZWVkIHRoZSBpbnB1dCBrZXkgKG9yIHNlY3JldCBtYXRlcmlhbCksIHRoZQo+ID4gY29uY2F0ZW5h
+dGlvbiBhbmQgdGhlIG51bWJlciBvZiBvdXRwdXQgYml0cy4KPiAKPiBUaGFua3MgZm9yIGNvbmZp
+cm1pbmcuIFRob3VnaCwgd2hlbiBpdCBjb21lcyB0byBIS0RGIChub3QgdGhhdCBJIHNlZSBpdCBi
+ZWluZyAKPiBuZWVkZWQgb3IgcmVxdWlyZWQgaW4gdGhlIGtlcm5lbCksIHRoZXJlIGlzIGEgbmVl
+ZCB0byBzcGxpdCB1cCB0aGUgc3JjIHBvaW50ZXIgCj4gc2luY2UgdGhlIG1lbnRpb25lZCBpbnB1
+dCBpcyB1c2VkIGluIGRpZmZlcmVudCB3YXlzLgo+IAo+IEluIG9yZGVyIHRvIHRyeSB0byBnZXQg
+dGhlIGltcGxlbWVudGF0aW9uIGFuZCB0aHVzIHRoZSBpbnRlcmZhY2UgcmlnaHQsIEkgCj4gd291
+bGQgc3VnZ2VzdCB0byBhdCBsZWFzdCBoYXZlIGEgY29uc2Vuc3VzIG9uIGhvdyB0byBoYW5kbGUg
+c3VjaCBzaXR1YXRpb25zLgo+IAo+IFRodXMsIHdvdWxkIHRoZSBwcm9wb3NhbCBiZSBhY2NlcHRh
+YmxlIGZvciBzdWNoIEtERnMgdGhhdCBtYXkgbmVlZCB0byBoYXZlIAo+IGRpZmZlcmVudCBjb21w
+b25lbnRzIGNvbW11bmljYXRlZCBhcyBpbnB1dCB0byB0aGUgS0RGPwo+IAoKRldJVywgaXQncyBi
+ZWVuIHZlcnkgc2xvdyBnb2luZyBzaW5jZSBJJ3ZlIGJlZW4gd29ya2luZyBvbiBvdGhlciBwcm9q
+ZWN0cyBhbmQgSQphbHNvIG5lZWQgdG8gYmUgdmVyeSBzdXJlIHRvIGdldCB0aGUgQVBJIGNoYW5n
+ZXMgcmlnaHQsIGJ1dCBJIHN0aWxsIHBsYW4gdG8KY2hhbmdlIHRoZSBLREYgaW4gZnNjcnlwdCAo
+YS5rLmEuIGV4dDQvZjJmcy91YmlmcyBlbmNyeXB0aW9uKSB0byBIS0RGLVNIQTUxMiBhcwpwYXJ0
+IG9mIGEgbGFyZ2VyIHNldCBvZiBpbXByb3ZlbWVudHMgdG8gaG93IGZzY3J5cHQgZW5jcnlwdGlv
+biBrZXlzIGFyZSBtYW5hZ2VkLgpJIHNlbnQgdGhlIGxhc3QgcGF0Y2hzZXQgYSB5ZWFyIGFnbwoo
+aHR0cHM6Ly9tYXJjLmluZm8vP2w9bGludXgtZnNkZXZlbCZtFTA4Nzk0OTMyMDYyNTcpIGJ1dCBJ
+J20gd29ya2luZyB0byByZXZpdmUKaXQuICBJbiB0aGUgd29yay1pbi1wcm9ncmVzcyB2ZXJzaW9u
+IGluIG15IGdpdCB0cmVlLCB0aGlzIGlzIHRoZSBjb21taXQgdGhhdAphZGRzIGEgSEtERiBpbXBs
+ZW1lbnRhdGlvbiBhcyBmcy9jcnlwdG8vaGtkZi5jOgpodHRwczovL2dpdC5rZXJuZWwub3JnL3B1
+Yi9zY20vbGludXgva2VybmVsL2dpdC9lYmlnZ2Vycy9saW51eC5naXQvY29tbWl0Lz9pZOhhNzg3
+NjcxMzFjOTcxN2VlODM4ZjBjNGUzMDc5NDhkNjVhNDQyNwpJdCBiYXNpY2FsbHkganVzdCB3cmFw
+cyBhIGNyeXB0b19zaGFzaCBmb3IgImhtYWMoc2hhNTEyKSIuCgpJJ2QgYmUgZmluZSB3aXRoIHVz
+aW5nIGEgY29tbW9uIGltcGxlbWVudGF0aW9uIGluc3RlYWQsIHByb3ZpZGVkIHRoYXQgaXQgZ2l2
+ZXMKdGhlIHNhbWUgZnVuY3Rpb25hbGl0eSwgaW5jbHVkaW5nIHN1cHBvcnRpbmcgdXNlci1zcGVj
+aWZpZWQgc2FsdCBhbmQKYXBwbGljYXRpb24tc3BlY2lmaWMgaW5mbyBzdHJpbmdzLCBhbmQgaXNu
+J3Qgc2xvd2VyIG9yIG1vcmUgY29tcGxleCB0byB1c2UuCgooVGhpcyBjb21tZW50IGlzIHNvbGVs
+eSBvbiB0aGUgdGFuZ2VudGlhbCBkaXNjdXNzaW9uIGFib3V0IEtERiBpbXBsZW1lbnRhdGlvbnM7
+CkkndmUgbm90IGxvb2tlZCBhdCB0aGUgaGliZXJuYXRpb24gaW1hZ2UgZW5jcnlwdGlvbiBzdHVm
+ZiB5ZXQuKQoKLSBFcmlj
