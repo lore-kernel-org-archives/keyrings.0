@@ -1,50 +1,56 @@
-From: Stephan Mueller <smueller@chronox.de>
-Date: Wed, 09 Jan 2019 10:17:45 +0000
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Wed, 09 Jan 2019 15:34:48 +0000
 Subject: Re: [PATCH 1/5 v2] PM / hibernate: Create snapshot keys handler
-Message-Id: <2344329.gmPllosFfp@tauon.chronox.de>
+Message-Id: <1547048088.2879.6.camel@HansenPartnership.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190103143227.9138-1-jlee@suse.com> <1894062.aDvIuj92vB@tauon.chronox.de> <20190109082103.GA8586@sol.localdomain>
-In-Reply-To: <20190109082103.GA8586@sol.localdomain>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
+References: <20190103143227.9138-1-jlee@suse.com>
+         <309406107.k3W2fMQUza@tauon.chronox.de>
+         <1547017108.2789.24.camel@HansenPartnership.com>
+         <1894062.aDvIuj92vB@tauon.chronox.de>
+In-Reply-To: <1894062.aDvIuj92vB@tauon.chronox.de>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Andy Lutomirski <luto@amacapital.net>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
 
-QW0gTWl0dHdvY2gsIDkuIEphbnVhciAyMDE5LCAwOToyMTowNCBDRVQgc2NocmllYiBFcmljIEJp
-Z2dlcnM6CgpIaSBFcmljLAo+IAo+IEZXSVcsIGl0J3MgYmVlbiB2ZXJ5IHNsb3cgZ29pbmcgc2lu
-Y2UgSSd2ZSBiZWVuIHdvcmtpbmcgb24gb3RoZXIgcHJvamVjdHMKPiBhbmQgSSBhbHNvIG5lZWQg
-dG8gYmUgdmVyeSBzdXJlIHRvIGdldCB0aGUgQVBJIGNoYW5nZXMgcmlnaHQsIGJ1dCBJIHN0aWxs
-Cj4gcGxhbiB0byBjaGFuZ2UgdGhlIEtERiBpbiBmc2NyeXB0IChhLmsuYS4gZXh0NC9mMmZzL3Vi
-aWZzIGVuY3J5cHRpb24pIHRvCj4gSEtERi1TSEE1MTIgYXMgcGFydCBvZiBhIGxhcmdlciBzZXQg
-b2YgaW1wcm92ZW1lbnRzIHRvIGhvdyBmc2NyeXB0Cj4gZW5jcnlwdGlvbiBrZXlzIGFyZSBtYW5h
-Z2VkLiBJIHNlbnQgdGhlIGxhc3QgcGF0Y2hzZXQgYSB5ZWFyIGFnbwo+IChodHRwczovL21hcmMu
-aW5mby8/bD1saW51eC1mc2RldmVsJm0VMDg3OTQ5MzIwNjI1NykgYnV0IEknbSB3b3JraW5nIHRv
-Cj4gcmV2aXZlIGl0LiAgSW4gdGhlIHdvcmstaW4tcHJvZ3Jlc3MgdmVyc2lvbiBpbiBteSBnaXQg
-dHJlZSwgdGhpcyBpcyB0aGUKPiBjb21taXQgdGhhdCBhZGRzIGEgSEtERiBpbXBsZW1lbnRhdGlv
-biBhcyBmcy9jcnlwdG8vaGtkZi5jOgo+IGh0dHBzOi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9s
-aW51eC9rZXJuZWwvZ2l0L2ViaWdnZXJzL2xpbnV4LmdpdC9jb21taXQvP2kKPiBk6GE3ODc2NzEz
-MWM5NzE3ZWU4MzhmMGM0ZTMwNzk0OGQ2NWE0NDI3IEl0IGJhc2ljYWxseSBqdXN0IHdyYXBzIGEK
-PiBjcnlwdG9fc2hhc2ggZm9yICJobWFjKHNoYTUxMikiLgo+IAo+IEknZCBiZSBmaW5lIHdpdGgg
-dXNpbmcgYSBjb21tb24gaW1wbGVtZW50YXRpb24gaW5zdGVhZCwgcHJvdmlkZWQgdGhhdCBpdAo+
-IGdpdmVzIHRoZSBzYW1lIGZ1bmN0aW9uYWxpdHksIGluY2x1ZGluZyBzdXBwb3J0aW5nIHVzZXIt
-c3BlY2lmaWVkIHNhbHQgYW5kCj4gYXBwbGljYXRpb24tc3BlY2lmaWMgaW5mbyBzdHJpbmdzLCBh
-bmQgaXNuJ3Qgc2xvd2VyIG9yIG1vcmUgY29tcGxleCB0byB1c2UuCj4gCj4gKFRoaXMgY29tbWVu
-dCBpcyBzb2xlbHkgb24gdGhlIHRhbmdlbnRpYWwgZGlzY3Vzc2lvbiBhYm91dCBLREYKPiBpbXBs
-ZW1lbnRhdGlvbnM7IEkndmUgbm90IGxvb2tlZCBhdCB0aGUgaGliZXJuYXRpb24gaW1hZ2UgZW5j
-cnlwdGlvbiBzdHVmZgo+IHlldC4pCgpUaGFua3MgZm9yIHRoZSBjbGFyaWZpY2F0aW9uLiBJIGhh
-dmUgc3RhcnRlZCBhIGdlbmVyaWMgSEtERiBpbXBsZW1lbnRhdGlvbiBmb3IgCnRoZSBrZXJuZWwg
-Y3J5cHRvIEFQSSB3aGljaCBsZWFkIHRvIHRoZSBxdWVzdGlvbnMgYWJvdmUuIEkgd291bGQgdGhl
-biBhbHNvIHRyeSAKdG8gcHJvdmlkZSBhIEhLREYgcHJvcG9zYWwuCgpUbyB1c2UgdGhlIChIKUtE
-RiwgSSBjdXJyZW50bHkgZW52aXNpb24gMiBjYWxscyBhcGFydCBmcm9tIGFsbG9jL2ZyZWUuIFRo
-ZSAKZm9sbG93aW5nIGNvZGUgd291bGQgc2VydmUgYXMgYW4gZXhhbXBsZS4KCiAqIEV4YW1wbGUg
-d2l0aG91dCBwcm9wZXIgZXJyb3IgaGFuZGxpbmc6CiAqICAgICAgY2hhciAqa2V5aW5nX21hdGVy
-aWFsID0gIlx4MDBceDExXHgyMlx4MzNceDQ0XHg1NVx4NjZceDc3IjsKICogICAgICBjaGFyICps
-YWJlbF9jb250ZXh0ID0gIlx4ZGVceGFkXHhiZVx4ZWZceDAwXHhkZVx4YWRceGJlXHhlZiI7CiAq
-ICAgICAga2RmID0gY3J5cHRvX2FsbG9jX3JuZyhuYW1lLCAwLCAwKTsKICogICAgICBjcnlwdG9f
-cm5nX3Jlc2V0KGtkZiwga2V5aW5nX21hdGVyaWFsLCA4KTsKICogICAgICBjcnlwdG9fcm5nX2dl
-bmVyYXRlKGtkZiwgbGFiZWxfY29udGV4dCwgOSwgb3V0YnVmLCBvdXRidWZsZW4pOwoKVGhhdCBo
-b3BlZnVsbHkgc2hvdWxkIGJlIHNpbXBsZSBlbm91Z2guCgpGb3IgSEtERiwgYXMgbWVudGlvbmVk
-LCBJIHdvdWxkIGVudmlzaW9uIHRvIHVzZSBhIHN0cnVjdCBpbnN0ZWFkIG9mIGEgY2hhciAqIApm
-b3IgdGhlIGxhYmVsX2NvbnRleHQgdG8gY29tbXVuaWNhdGUgSUtNLCBTYWx0LCBhbmQgdGhlIGxh
-YmVsL2luZm8gCmluZm9ybWF0aW9uLgoKQ2lhbwpTdGVwaGFuCgo=
+On Wed, 2019-01-09 at 08:05 +0100, Stephan Mueller wrote:
+> Am Mittwoch, 9. Januar 2019, 07:58:28 CET schrieb James Bottomley:
+> 
+> Hi James,
+> 
+> > On Wed, 2019-01-09 at 07:45 +0100, Stephan Mueller wrote:
+> > > Am Mittwoch, 9. Januar 2019, 01:44:31 CET schrieb James
+> > > Bottomley:
+> > > 
+> > > Hi James,
+> > > 
+> > > > Actually, it would be enormously helpful if we could reuse
+> > > > these pieces for the TPM as well.
+> > > 
+> > > Could you please help me understand whether the KDFs in TPM are
+> > > directly usable as a standalone cipher primitive or does it go
+> > > together with additional  key generation operations?
+> > 
+> > They're used as generators ... which means they deterministically
+> > produce keys from what the TPM calls seeds so we can get crypto
+> > agility of TPM 2.0 ... well KDFa does.  KDFe is simply what NIST
+> > recommends you do when using EC for a shared key agreement ... and
+> > really we shouldn't be using ECDH in the kernel without it.
+> > 
+> 
+> Thanks for clarifying. That would mean that indeed we would have
+> hardware-provided KDF implementations that may be usable with the
+> kernel crypto API.
+
+Just on this point, the TPM doesn't actually provide any KDFa or e API,
+so it can't be used for hardware acceleration (and even if it did, the
+TPM is a pretty slow engine, so software would be faster anyway).  We
+need these algorithms in software because the TPM uses key agreements
+derived from shared secrets to produce session encryption keys to
+ensure confidentiality and integrity (HMAC key), so we establish the
+shared secret then have to derive our key in software and the TPM
+derives the same key internally and we use the shared derived key to
+symmetrically encrypt and/or HMAC secret communications.
+
+James
