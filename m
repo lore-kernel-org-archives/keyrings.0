@@ -1,83 +1,46 @@
-From: Kairui Song <kasong@redhat.com>
-Date: Wed, 09 Jan 2019 16:48:23 +0000
-Subject: [RFC PATCH 1/2] integrity, KEYS: add a reference to platform keyring
-Message-Id: <20190109164824.19708-2-kasong@redhat.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Wed, 09 Jan 2019 19:21:11 +0000
+Subject: Re: [RFC PATCH 1/2] integrity, KEYS: add a reference to platform keyring
+Message-Id: <1547061671.19931.239.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20190109164824.19708-1-kasong@redhat.com>
-In-Reply-To: <20190109164824.19708-1-kasong@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
+         <20190109164824.19708-2-kasong@redhat.com>
+In-Reply-To: <20190109164824.19708-2-kasong@redhat.com>
+To: Kairui Song <kasong@redhat.com>, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
 
-Currently kexec_file_load will verify the kernel image being loaded
-against .builtin_trusted_keys or .secondary_trusted_keys, but the
-image could be signed with third part keys which will be provided by
-platform or firmware and the keys won't be available in keyrings mentioned
-above.
-
-After commit ea93102f3224 ('integrity: Define a trusted platform keyring')
-a .platform keyring is introduced to store the keys provided by platform
-or firmware. And with a few following commits, now keys required to verify
-the image is being imported to .platform keyring, but currently, only
-IMA-appraisal could use the keyring and verify the image.
-
-This patch exposes the .platform and makes other components, like
-kexec_file_load, could use this .platform keyring to verify the
-kernel image.
-
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-Signed-off-by: Kairui Song <kasong@redhat.com>
----
- certs/system_keyring.c        | 3 +++
- include/keys/system_keyring.h | 5 +++++
- security/integrity/digsig.c   | 4 ++++
- 3 files changed, 12 insertions(+)
-
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index 81728717523d..a61b95390b80 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -24,6 +24,9 @@ static struct key *builtin_trusted_keys;
- #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
- static struct key *secondary_trusted_keys;
- #endif
-+#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-+struct key *platform_trusted_keys;
-+#endif
- 
- extern __initconst const u8 system_certificate_list[];
- extern __initconst const unsigned long system_certificate_list_size;
-diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-index 359c2f936004..9eaf01d01036 100644
---- a/include/keys/system_keyring.h
-+++ b/include/keys/system_keyring.h
-@@ -61,5 +61,10 @@ static inline struct key *get_ima_blacklist_keyring(void)
- }
- #endif /* CONFIG_IMA_BLACKLIST_KEYRING */
- 
-+#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-+
-+extern struct key *platform_trusted_keys;
-+
-+#endif /* CONFIG_INTEGRITY_PLATFORM_KEYRING */
- 
- #endif /* _KEYS_SYSTEM_KEYRING_H */
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index f45d6edecf99..26206240388d 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -89,6 +89,10 @@ static int __integrity_init_keyring(const unsigned int id, key_perm_t perm,
- 		keyring[id] = NULL;
- 	}
- 
-+	if (id = INTEGRITY_KEYRING_PLATFORM) {
-+		platform_trusted_keys = keyring[id];
-+	}
-+
- 	return err;
- }
- 
--- 
-2.20.1
+T24gVGh1LCAyMDE5LTAxLTEwIGF0IDAwOjQ4ICswODAwLCBLYWlydWkgU29uZyB3cm90ZToKPiBD
+dXJyZW50bHkga2V4ZWNfZmlsZV9sb2FkIHdpbGwgdmVyaWZ5IHRoZSBrZXJuZWwgaW1hZ2UgYmVp
+bmcgbG9hZGVkCj4gYWdhaW5zdCAuYnVpbHRpbl90cnVzdGVkX2tleXMgb3IgLnNlY29uZGFyeV90
+cnVzdGVkX2tleXMsIGJ1dCB0aGUKPiBpbWFnZSBjb3VsZCBiZSBzaWduZWQgd2l0aCB0aGlyZCBw
+YXJ0IGtleXMgd2hpY2ggd2lsbCBiZSBwcm92aWRlZCBieQo+IHBsYXRmb3JtIG9yIGZpcm13YXJl
+IGFuZCB0aGUga2V5cyB3b24ndCBiZSBhdmFpbGFibGUgaW4ga2V5cmluZ3MgbWVudGlvbmVkCj4g
+YWJvdmUuCj4gCj4gQWZ0ZXIgY29tbWl0IGVhOTMxMDJmMzIyNCAoJ2ludGVncml0eTogRGVmaW5l
+IGEgdHJ1c3RlZCBwbGF0Zm9ybSBrZXlyaW5nJykKPiBhIC5wbGF0Zm9ybSBrZXlyaW5nIGlzIGlu
+dHJvZHVjZWQgdG8gc3RvcmUgdGhlIGtleXMgcHJvdmlkZWQgYnkgcGxhdGZvcm0KPiBvciBmaXJt
+d2FyZS4gQW5kIHdpdGggYSBmZXcgZm9sbG93aW5nIGNvbW1pdHMsIG5vdyBrZXlzIHJlcXVpcmVk
+IHRvIHZlcmlmeQo+IHRoZSBpbWFnZSBpcyBiZWluZyBpbXBvcnRlZCB0byAucGxhdGZvcm0ga2V5
+cmluZywgYnV0IGN1cnJlbnRseSwgb25seQo+IElNQS1hcHByYWlzYWwgY291bGQgdXNlIHRoZSBr
+ZXlyaW5nIGFuZCB2ZXJpZnkgdGhlIGltYWdlLgo+IAo+IFRoaXMgcGF0Y2ggZXhwb3NlcyB0aGUg
+LnBsYXRmb3JtIGFuZCBtYWtlcyBvdGhlciBjb21wb25lbnRzLCBsaWtlCj4ga2V4ZWNfZmlsZV9s
+b2FkLCBjb3VsZCB1c2UgdGhpcyAucGxhdGZvcm0ga2V5cmluZyB0byB2ZXJpZnkgdGhlCj4ga2Vy
+bmVsIGltYWdlLgoKVGhlICJwbGF0Zm9ybSIga2V5cmluZyB3YXMgdXBzdHJlYW1lZCBpbiBvcmRl
+ciB0byB2ZXJpZnkgdGhlIGtlcm5lbAppbWFnZSBiZWluZyBsb2FkZWQgYnkgdGhlIGtleGVjX2Zp
+bGVfbG9hZCBzeXNjYWxsLiDCoFRoZSBpbnRlbnRpb25zIG9mCnRoaXMgcGF0Y2ggZGVzY3JpcHRp
+b24gbmVlZHMgdG8gYmUgY2xlYXJlci4KCj4gCj4gU3VnZ2VzdGVkLWJ5OiBNaW1pIFpvaGFyIDx6
+b2hhckBsaW51eC5pYm0uY29tPgo+IFNpZ25lZC1vZmYtYnk6IEthaXJ1aSBTb25nIDxrYXNvbmdA
+cmVkaGF0LmNvbT4KPiAtLS0KPiAgY2VydHMvc3lzdGVtX2tleXJpbmcuYyAgICAgICAgfCAzICsr
+Kwo+ICBpbmNsdWRlL2tleXMvc3lzdGVtX2tleXJpbmcuaCB8IDUgKysrKysKPiAgc2VjdXJpdHkv
+aW50ZWdyaXR5L2RpZ3NpZy5jICAgfCA0ICsrKysKPiAgMyBmaWxlcyBjaGFuZ2VkLCAxMiBpbnNl
+cnRpb25zKCspCj4gCj4gZGlmZiAtLWdpdCBhL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMgYi9jZXJ0
+cy9zeXN0ZW1fa2V5cmluZy5jCj4gaW5kZXggODE3Mjg3MTc1MjNkLi5hNjFiOTUzOTBiODAgMTAw
+NjQ0Cj4gLS0tIGEvY2VydHMvc3lzdGVtX2tleXJpbmcuYwo+ICsrKyBiL2NlcnRzL3N5c3RlbV9r
+ZXlyaW5nLmMKPiBAQCAtMjQsNiArMjQsOSBAQCBzdGF0aWMgc3RydWN0IGtleSAqYnVpbHRpbl90
+cnVzdGVkX2tleXM7Cj4gICNpZmRlZiBDT05GSUdfU0VDT05EQVJZX1RSVVNURURfS0VZUklORwo+
+ICBzdGF0aWMgc3RydWN0IGtleSAqc2Vjb25kYXJ5X3RydXN0ZWRfa2V5czsKPiAgI2VuZGlmCj4g
+KyNpZmRlZiBDT05GSUdfSU5URUdSSVRZX1BMQVRGT1JNX0tFWVJJTkcKPiArc3RydWN0IGtleSAq
+cGxhdGZvcm1fdHJ1c3RlZF9rZXlzOwoKUGxlYXNlIG1ha2UgaXQgc3RhdGljLgoKTWltaQoKPiAr
+I2VuZGlmCg==
