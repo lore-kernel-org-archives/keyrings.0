@@ -1,157 +1,51 @@
-From: Andy Lutomirski <luto@kernel.org>
-Date: Wed, 09 Jan 2019 01:43:53 +0000
+From: Stephan Mueller <smueller@chronox.de>
+Date: Wed, 09 Jan 2019 06:27:28 +0000
 Subject: Re: [PATCH 1/5 v2] PM / hibernate: Create snapshot keys handler
-Message-Id: <CALCETrWTAYpWv73MgAz=NUfvJSLq965fWMYvJnDepJoRBsgt6Q@mail.gmail.com>
+Message-Id: <3239276.QO2kezntxR@tauon.chronox.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190103143227.9138-1-jlee@suse.com> <4499700.LRS4F2YjjC@tauon.chronox.de>
- <20190108050358.llsox32hggn2jioe@gondor.apana.org.au> <1565399.7ulKdI1fm5@tauon.chronox.de>
- <D70458DE-712B-4767-8143-7DC9107689C3@amacapital.net> <1546994671.6077.10.camel@HansenPartnership.com>
-In-Reply-To: <1546994671.6077.10.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Stephan Mueller <smueller@chronox.de>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
+References: <20190103143227.9138-1-jlee@suse.com> <1565399.7ulKdI1fm5@tauon.chronox.de> <D70458DE-712B-4767-8143-7DC9107689C3@amacapital.net>
+In-Reply-To: <D70458DE-712B-4767-8143-7DC9107689C3@amacapital.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>
 
-[Adding Jarkko because this stuff relates to the TPM.]
+Am Mittwoch, 9. Januar 2019, 00:54:22 CET schrieb Andy Lutomirski:
 
-On Tue, Jan 8, 2019 at 4:44 PM James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
->
-> On Tue, 2019-01-08 at 15:54 -0800, Andy Lutomirski wrote:
-> > > On Jan 7, 2019, at 11:09 PM, Stephan Mueller <smueller@chronox.de>
-> > > wrote:
-> > >
-> > > Am Dienstag, 8. Januar 2019, 06:03:58 CET schrieb Herbert Xu:
-> > >
-> > > Hi Herbert,
-> > >
-> > > > Are we going to have multiple implementations for the same KDF?
-> > > > If not then the crypto API is not a good fit.  To consolidate
-> > > > multiple implementations of the same KDF, simply provide helpers
-> > > > for them.
-> > >
-> > > It is unlikely to have multiple implementations of a KDF. However,
-> > > KDFs relate to hashes like block chaining modes to raw block
-> > > ciphers. Thus a KDF can be applied with different hashes.
-> > >
-> > > My idea was to add template support to RNGs (because KDFs are
-> > > effectively a type of RNG since they produce an arbitrary output
-> > > from a fixed input). The KDFs would be a template wrapping hashes.
-> > > For example, the CTR-KDF from SP800-108 could be instantiated like
-> > > kdf-ctr(sha256).
-> > >
-> > >
-> >
-> > I think that, if the crypto API is going to grow a KDF facility, it
-> > should be done right. Have a key type or flag or whatever that says
-> > “this key may *only* be used to derive keys using such-and-such
-> > algorithm”, and have a helper to derive a key.  That helper should
-> > take some useful parameters and mix them in:
-> >
-> > - What type of key is being derived?  ECDSA signing key?  HMAC
-> > key?  AES key?
-> >
-> > - Can user code access the derived key?
-> >
-> > - What is the key’s purpose?  “Encrypt and authenticate a hibernation
-> > image” would be a purpose.
-> >
-> > - Number of bytes.
-> >
-> > All of these parameters should be mixed in to the key derivation.
-> >
-> > Also, an AE key, even for AES+HMAC, should be just one derived
-> > key.  If you need 512 bits, ask for a 512-bit key, not two 256-bit
-> > keys.
->
-> Actually, it would be enormously helpful if we could reuse these pieces
-> for the TPM as well.  It has two KDFs: KDFa, which is the CTR-KDF from
-> SP800-108 and KDFe which is the SP800-56A KDF for elliptic curve one
-> pass Diffie Hellman, so if we're going to do the former, I'd really
-> like the latter as well.
->
-> The way the TPM parametrises input to both KDFs is
->
-> (hashAlg, key, label, contextU, contextV, bits)
->
-> Where
->
-> hashAlg  = the hash algorithm used as the PRF
-> key      = the input parameter of variable bit size or
->            the x co-ordinate of the shared point
-> label    = An ASCII string representing the use
-> contextU = public input U
-> contextV = public input V
-> bits     = number of output bits
->
-> Is that a good enough parametrisation (not the only way you distinguish
-> uses is with the label, which is not recoverable)?  ContextU and
-> ContextV are simply concatenated to form the full Context of SP800-108,
-> but we tend to need two separate inputs (for KDFe they're the public x
-> co-ordinates of the points of the two inputs to ECDH for instance; in
-> KDFa they're usually the local and remote nonces).
->
-> The labels for TPM usage are things like "INTEGRITY" for HMAC keys or
-> "CFB" when generating an aes128-cfb session key. For KDFe, the tpm
-> seems to like the label "SECRET".  Although the TPM specifies fixed
-> short strings for the label, nothing prevents them being longer like
-> the purpose you state above (essentially we could mix purpose, use and
-> key type into the label and the contexts).
->
+Hi Andy,
+> 
+> I think that, if the crypto API is going to grow a KDF facility, it should
+> be done right. Have a key type or flag or whatever that says “this key may
+> *only* be used to derive keys using such-and-such algorithm”, and have a
+> helper to derive a key.  That helper should take some useful parameters and
+> mix them in:
+> 
+> - What type of key is being derived?  ECDSA signing key?  HMAC key?  AES
+> key?
+> 
+> - Can user code access the derived key?
+> 
+> - What is the key’s purpose?  “Encrypt and authenticate a hibernation image”
+> would be a purpose.
+> 
+> - Number of bytes.
+> 
+> All of these parameters should be mixed in to the key derivation.
+> 
+> Also, an AE key, even for AES+HMAC, should be just one derived key.  If you
+> need 512 bits, ask for a 512-bit key, not two 256-bit keys.
 
-That really ought to cover anything the kernel needs.
+I concur with your requirements. However, is the kernel crypto API the right 
+place to enforce such policies? To me, the kernel crypto API is a tinker-toy 
+set of ciphers.
 
-But can you explain what's up with with KDFe?  The obvious searches
-end up with just warnings that the US currently has no government :(
+The real policy enforcer would or should be the keyring facility. Thus, may I 
+propose to:
 
-Anyway, if we're talking about the TPM, it seems like the entire
-"trusted key" mechanism in the kernel is missing the point.  If I want
-to encrypt something like a hibernation image on a machine with a TPM,
-it makes essentially no sense to me that we would get a key with a
-known raw value that is merely TPM-backed (i.e. the "trusted key") and
-use that to decrypt the image.  The right way to do it is to the use
-the TPM as it was intended to be used: generate a single-use key that
-protects the hibernation image and seal *that* directly on the TPM,
-such that it can only be unsealed with appropriate PCR values.  Heck,
-we could even use one of the fancy NV counters such that we *can't*
-decrypt the image later on.  And using HMAC or any AE construction the
-normal way is also wrong -- we should *hash* the image and sign the
-hash directly on the TPM so that the restore code can validate the PCR
-values that were in place when the hibernation image was created.  [0]
+- implement the cryptographic primitive of the KDF in the kernel crypto API
 
-In other words, I think that a kernel-based encrypted hibernation
-mechanism should create an image like this:
+- implement the policy system how to use the KDF in the keyring facility
 
-- wrapped key
-- instructions, if needed, for unwrapping
-- hash of the entire image except the hash and signature fields
-- signature of the hash
-
-and the remainder is a regular hiberation image that is encrypted
-against the key.  No AE is needed -- just encryption.  And there's no
-trampoline, no weird per-page hashing, etc.  Of course, this also
-means that someone needs to audit the hibernation restore code to make
-sure that there's no way for a malicious image to gain code execution
-over the restoring kernel before the verification even runs.  Or some
-much more complicated hash can be used that supports incremental
-verification.
-
-
-(Also, do we have a sensible story of how the TPM interacts with
-hibernation at all?  Presumably we should at least try to replay the
-PCR operations that have occurred so that we can massage the PCRs into
-the same state post-hibernation.  Also, do we have any way for the
-kernel to sign something with the TPM along with an attestation that
-the signature was requested *by the kernel*?  Something like a
-sub-hierarchy of keys that the kernel explicitly prevents userspace
-from accessing?)
-
-[0] If you take some data, run it through an authenticated encryption
-algorithm, and sign (key, nonce, tag), I think you're operating
-outside of the accepted security definitions if you expect this to
-guarantee that the data wasn't tampered with.  I'm reasonably
-confident that there are quite a few excellent AE algorithms that
-completely fail if used this like this.  In fact, pretty much all of
-the modern fast ones probably fail.  AE is for when the key is
-*secret*.
+Ciao
+Stephan
