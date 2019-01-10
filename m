@@ -1,40 +1,78 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Fri, 25 Jan 2019 10:00:09 +0000
-Subject: Re: [RFC PATCH v2] akcipher: Introduce verify_rsa/verify for public key algorithms
-Message-Id: <20190125100009.i2ggpc7k7qvzayvj@gondor.apana.org.au>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Thu, 10 Jan 2019 20:31:16 +0000
+Subject: [PATCH RESEND] keyctl: use keyctl_read_alloc() in dump_key_tree_aux()
+Message-Id: <20190110203116.85397-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190116164703.9267-1-vt@altlinux.org>
- <24887.1547658740@warthog.procyon.org.uk>
- <20190116182719.j6ii6nmn4ciiurqr@altlinux.org>
- <20190118204100.6o3ovctanb62nvd2@altlinux.org>
-In-Reply-To: <20190118204100.6o3ovctanb62nvd2@altlinux.org>
-To: David Howells <dhowells@redhat.com>, Tudor Ambarus <tudor-dan.ambarus@nxp.com>, "David S. Miller" <davem@davemloft.net>, Maxime Coquelin <mcoquelin.stm32@gmail.com>, Alexandre Torgue <alexandre.torgue@st.com>, Horia =?utf-8?Q?Geant=C4=83?= <horia.geanta@nxp.com>, Aymen Sghaier <aymen.sghaier@nxp.com>, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, Giovanni Cabiddu <giovanni.cabiddu@intel.com>, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org, qat-linux@intel.com
+To: keyrings@vger.kernel.org
 
-On Fri, Jan 18, 2019 at 11:41:00PM +0300, Vitaly Chikunov wrote:
->
-> a) RSA verify works differently (is it just disguised encrypt),
-> b) We have separate wrapper module for it (pkcs1pad). Thus:
-> 
-> Old API can not be removed. In other words, we can not replace
-> .verify_rsa with .verify in these drivers or PKCS1 will not work.
-> 
-> We can replace .verify_rsa with .verify in pkcs1pad, but there is no
-> need for that if we stay with two API calls, which we can't avoid.
+From: Eric Biggers <ebiggers@google.com>
 
-I think having two API calls during a transition period is fine.
-But it must not be the long-term outcome.
+dump_key_tree_aux() (part of 'keyctl show') was racy: it allocated a
+buffer for the keyring contents, then read the keyring.  But it's
+possible that keys are added to the keyring concurrently.  This is
+problematic for two reasons.  First, when keyctl_read() is passed a
+buffer that is too small, it is unspecified whether it is filled or not.
+Second, even if the buffer is filled, some keys (not necessarily even
+the newest ones) would be omitted from the listing.
 
-In order to keep existing drivers working, I think we should make
-the API wrap the legacy verify_rsa and implement verify directly
-on top of it.  IOW the driver remains unchanged for now but the
-crypto API code should provide a verify API that is implemented
-on top of the driver's verify_rsa call.
+Switch to keyctl_read_alloc() which handles the "buffer too small" case
+correctly by retrying the read.
 
-Cheers,
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ keyctl.c | 22 ++++++----------------
+ 1 file changed, 6 insertions(+), 16 deletions(-)
+
+diff --git a/keyctl.c b/keyctl.c
+index 2c8fdff..fa9e601 100644
+--- a/keyctl.c
++++ b/keyctl.c
+@@ -2231,29 +2231,18 @@ static int dump_key_tree_aux(key_serial_t key, int depth, int more, int hex_key_
+ 	/* if it's a keyring then we're going to want to recursively
+ 	 * display it if we can */
+ 	if (strcmp(type, "keyring") = 0) {
+-		/* find out how big the keyring is */
+-		ret = keyctl_read(key, NULL, 0);
+-		if (ret < 0)
+-			error("keyctl_read");
+-		if (ret = 0)
+-			return 0;
+-		ringlen = ret;
+ 
+ 		/* read its contents */
+-		payload = malloc(ringlen);
+-		if (!payload)
+-			error("malloc");
+-
+-		ret = keyctl_read(key, payload, ringlen);
++		ret = keyctl_read_alloc(key, &payload);
+ 		if (ret < 0)
+-			error("keyctl_read");
++			error("keyctl_read_alloc");
+ 
+-		ringlen = ret < ringlen ? ret : ringlen;
++		ringlen = ret;
+ 		kcount = ringlen / sizeof(key_serial_t);
+ 
+ 		/* walk the keyring */
+ 		pk = payload;
+-		do {
++		while (ringlen >= sizeof(key_serial_t)) {
+ 			key = *pk++;
+ 
+ 			/* recurse into next keyrings */
+@@ -2281,7 +2270,8 @@ static int dump_key_tree_aux(key_serial_t key, int depth, int more, int hex_key_
+ 							    hex_key_IDs);
+ 			}
+ 
+-		} while (ringlen -= 4, ringlen >= sizeof(key_serial_t));
++			ringlen -= sizeof(key_serial_t);
++		}
+ 
+ 		free(payload);
+ 	}
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+2.20.1.97.g81188d93c3-goog
