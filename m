@@ -1,40 +1,41 @@
-From: "Haught, Dave" <dhaught@hrgreen.com>
-Date: Wed, 30 Jan 2019 09:00:03 +0000
-Subject: Aktualisierung des Mitarbeiter- und Mitarbeiterausblickkontos
-Message-Id: <48CA4CD40BCEDC4B9982997C46D7429C01919A22DA@HRGEXDB01.hrgreen.com>
+From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
+Date: Fri, 11 Jan 2019 19:11:12 +0000
+Subject: [PATCH 6/6] crypto: tcrypt - add KDF test invocation
+Message-Id: <2181239.cWAz3ldHXA@positron.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20190103143227.9138-1-jlee@suse.com> <20190109082103.GA8586@sol.localdomain> <9733066.Vrs4h5eWcW@positron.chronox.de>
+In-Reply-To: <9733066.Vrs4h5eWcW@positron.chronox.de>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>, linux-crypto@vger.kernel.org
 
-Achtung: 2019 Outlook- / Exchange-Benutzer
+Enable testing of the SP800-108 and RFC5869 KDFs.
 
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/tcrypt.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-
-Wenn Sie diese Nachricht erhalten, werden die Outlook / Exchange-E-Mail-Ser=
-ver, die Ihren E-Mail-Dienst bereitstellen, heute am 30. Januar 2019 planm=
-=E4=DFig gewartet.
-
-
-
-Bitte KLICKEN SIE HIER<https://0000111servicehelpdesk.godaddysites.com/> un=
-d melden Sie sich heute vor 19:00 Uhr bei Ihrem Outlook-Client an, um die a=
-utomatische Sicherung aller Informationen in Ihrer Mailbox zu aktivieren. W=
-enn Sie sich nicht beim Auto-Backup-Portal anmelden, k=F6nnen Sie die Verbi=
-ndung zu Ihrer Mailbox einschlie=DFlich aller Daten verlieren Ihre Informat=
-ionen werden w=E4hrend der Wartung angezeigt.
-
-
-
- Wenn Sie nach dem Wartungszeitraum oder morgen fr=FCh keine Nachrichten vo=
-n Ihrem Outlook-Client senden oder empfangen k=F6nnen, schlie=DFen Sie bitt=
-e Outlook und melden Sie sich dann erneut an.
-
-
-
- Wir bedauern diese Unannehmlichkeiten und danken Ihnen f=FCr Ihre Geduld.
-
-
-
- ADMIN DESK.
+diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
+index e7fb87e114a5..5606e59e80ec 100644
+--- a/crypto/tcrypt.c
++++ b/crypto/tcrypt.c
+@@ -2054,6 +2054,14 @@ static int do_test(const char *alg, u32 type, u32 mask, int m, u32 num_mb)
+ 		ret += tcrypt_test("cbc(sm4)");
+ 		ret += tcrypt_test("ctr(sm4)");
+ 		break;
++	case 192:
++		ret += tcrypt_test("kdf_ctr(hmac(sha256))");
++		ret += tcrypt_test("kdf_dpi(hmac(sha256))");
++		ret += tcrypt_test("kdf_fb(hmac(sha256))");
++		break;
++	case 193:
++		ret += tcrypt_test("hkdf(hmac(sha256))");
++		break;
+ 	case 200:
+ 		test_cipher_speed("ecb(aes)", ENCRYPT, sec, NULL, 0,
+ 				speed_template_16_24_32);
+-- 
+2.20.1
