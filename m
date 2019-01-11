@@ -1,114 +1,31 @@
-From: Dave Young <dyoung@redhat.com>
-Date: Fri, 11 Jan 2019 13:43:03 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Fri, 11 Jan 2019 16:13:40 +0000
 Subject: Re: [RFC PATCH 2/2] kexec, KEYS: Make use of platform keyring for signature verify
-Message-Id: <20190111134303.GA12760@dhcp-128-65.nay.redhat.com>
+Message-Id: <1547223220.19931.471.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190109164824.19708-1-kasong@redhat.com>
- <20190109164824.19708-3-kasong@redhat.com>
-In-Reply-To: <20190109164824.19708-3-kasong@redhat.com>
-To: Kairui Song <kasong@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
+         <20190109164824.19708-3-kasong@redhat.com>
+         <20190111134303.GA12760@dhcp-128-65.nay.redhat.com>
+In-Reply-To: <20190111134303.GA12760@dhcp-128-65.nay.redhat.com>
+To: Dave Young <dyoung@redhat.com>, Kairui Song <kasong@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
 
-On 01/10/19 at 12:48am, Kairui Song wrote:
-> kexec_file_load will need to verify the kernel signed with third part
-> keys, and the keys could be stored in firmware, then got loaded into
-> the .platform keyring. Now we have a .platform_trusted_keyring
-> as the reference to .platform keyring, this patch makes use if it and
-> allow kexec_file_load to verify the image against keys in .platform
-> keyring.
-> 
-> This commit adds a VERIFY_USE_PLATFORM_KEYRING similar to previous
-> VERIFY_USE_SECONDARY_KEYRING indicating that verify_pkcs7_signature
-> should verify the signature using platform keyring. Also, decrease
-> the error message log level when verification failed with -ENOKEY,
-> so that if called tried multiple time with different keyring it
-> won't generate extra noises.
-> 
-> Signed-off-by: Kairui Song <kasong@redhat.com>
-> ---
->  arch/x86/kernel/kexec-bzimage64.c | 13 ++++++++++---
->  certs/system_keyring.c            |  7 ++++++-
->  include/linux/verification.h      |  1 +
->  3 files changed, 17 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kexec-bzimage64.c b/arch/x86/kernel/kexec-bzimage64.c
-> index 7d97e432cbbc..a8a5c1773ccc 100644
-> --- a/arch/x86/kernel/kexec-bzimage64.c
-> +++ b/arch/x86/kernel/kexec-bzimage64.c
-> @@ -534,9 +534,16 @@ static int bzImage64_cleanup(void *loader_data)
->  #ifdef CONFIG_KEXEC_BZIMAGE_VERIFY_SIG
->  static int bzImage64_verify_sig(const char *kernel, unsigned long kernel_len)
->  {
-> -	return verify_pefile_signature(kernel, kernel_len,
-> -				       VERIFY_USE_SECONDARY_KEYRING,
-> -				       VERIFYING_KEXEC_PE_SIGNATURE);
-> +	int ret;
-> +	ret = verify_pefile_signature(kernel, kernel_len,
-> +			VERIFY_USE_SECONDARY_KEYRING,
-> +			VERIFYING_KEXEC_PE_SIGNATURE);
-> +	if (ret = -ENOKEY) {
-> +		ret = verify_pefile_signature(kernel, kernel_len,
-> +				VERIFY_USE_PLATFORM_KEYRING,
-> +				VERIFYING_KEXEC_PE_SIGNATURE);
-> +	}
-> +	return ret;
->  }
->  #endif
->  
-> diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-> index a61b95390b80..7514e69e719f 100644
-> --- a/certs/system_keyring.c
-> +++ b/certs/system_keyring.c
-> @@ -18,6 +18,7 @@
->  #include <linux/verification.h>
->  #include <keys/asymmetric-type.h>
->  #include <keys/system_keyring.h>
-> +#include <keys/platform_keyring.h>
->  #include <crypto/pkcs7.h>
->  
->  static struct key *builtin_trusted_keys;
-> @@ -239,12 +240,16 @@ int verify_pkcs7_signature(const void *data, size_t len,
->  		trusted_keys = secondary_trusted_keys;
->  #else
->  		trusted_keys = builtin_trusted_keys;
-> +#endif
-> +#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-> +	} else if (trusted_keys = VERIFY_USE_PLATFORM_KEYRING) {
-> +		trusted_keys = platform_trusted_keys;
->  #endif
->  	}
->  	ret = pkcs7_validate_trust(pkcs7, trusted_keys);
->  	if (ret < 0) {
->  		if (ret = -ENOKEY)
-> -			pr_err("PKCS#7 signature not signed with a trusted key\n");
-> +			pr_devel("PKCS#7 signature not signed with a trusted key\n");
->  		goto error;
->  	}
->  
-> diff --git a/include/linux/verification.h b/include/linux/verification.h
-> index cfa4730d607a..018fb5f13d44 100644
-> --- a/include/linux/verification.h
-> +++ b/include/linux/verification.h
-> @@ -17,6 +17,7 @@
->   * should be used.
->   */
->  #define VERIFY_USE_SECONDARY_KEYRING ((struct key *)1UL)
-> +#define VERIFY_USE_PLATFORM_KEYRING  ((struct key *)2UL)
->  
->  /*
->   * The use to which an asymmetric key is being put.
-> -- 
-> 2.20.1
-> 
+On Fri, 2019-01-11 at 21:43 +0800, Dave Young wrote:
+[snip]
 
-Personally I would like to see platform key separated from integrity.
-But for the kexec_file part I think it is good at least it works with
-this fix.
+> Personally I would like to see platform key separated from integrity.
+> But for the kexec_file part I think it is good at least it works with
+> this fix.
+> 
+> Acked-by: Dave Young <dyoung@redhat.com>
 
-Acked-by: Dave Young <dyoung@redhat.com>
+The original "platform" keyring patches that Nayna posted multiple
+times were in the certs directory, but nobody commented/responded.  So
+she reworked the patches, moving them to the integrity directory and
+posted them (cc'ing the kexec mailing list).  It's a bit late to be
+asking to move it, isn't it?
 
-Thanks
-Dave
+Mimi
