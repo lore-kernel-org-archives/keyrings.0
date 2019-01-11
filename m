@@ -1,77 +1,198 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Sun, 20 Jan 2019 16:02:04 +0000
-Subject: Re: [PATCH 1/5 v2] PM / hibernate: Create snapshot keys handler
-Message-Id: <20190120160204.GA30478@linux.intel.com>
+From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
+Date: Fri, 11 Jan 2019 19:10:56 +0000
+Subject: [PATCH 5/6] crypto: hkdf - add known answer tests
+Message-Id: <9857029.1Sm7LFDBlJ@positron.chronox.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <4499700.LRS4F2YjjC@tauon.chronox.de>
- <20190108050358.llsox32hggn2jioe@gondor.apana.org.au>
- <1565399.7ulKdI1fm5@tauon.chronox.de>
- <D70458DE-712B-4767-8143-7DC9107689C3@amacapital.net>
- <1546994671.6077.10.camel@HansenPartnership.com>
- <CALCETrWTAYpWv73MgAz=NUfvJSLq965fWMYvJnDepJoRBsgt6Q@mail.gmail.com>
- <20190111140226.GA6448@linux.intel.com>
- <1547220538.2793.6.camel@HansenPartnership.com>
- <20190118143348.GB4080@linux.intel.com>
- <1547845146.2794.69.camel@HansenPartnership.com>
-In-Reply-To: <1547845146.2794.69.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Andy Lutomirski <luto@kernel.org>, Stephan Mueller <smueller@chronox.de>, Herbert Xu <herbert@gondor.apana.org.au>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>
+References: <20190103143227.9138-1-jlee@suse.com> <20190109082103.GA8586@sol.localdomain> <9733066.Vrs4h5eWcW@positron.chronox.de>
+In-Reply-To: <9733066.Vrs4h5eWcW@positron.chronox.de>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>, linux-crypto@vger.kernel.org
 
-On Fri, Jan 18, 2019 at 12:59:06PM -0800, James Bottomley wrote:
-> On Fri, 2019-01-18 at 16:33 +0200, Jarkko Sakkinen wrote:
-> > On Fri, Jan 11, 2019 at 07:28:58AM -0800, James Bottomley wrote:
-> > > On Fri, 2019-01-11 at 16:02 +0200, Jarkko Sakkinen wrote:
-> > > > On Tue, Jan 08, 2019 at 05:43:53PM -0800, Andy Lutomirski wrote:
-> > > > > (Also, do we have a sensible story of how the TPM interacts
-> > > > > with hibernation at all?  Presumably we should at least try to
-> > > > > replay the PCR operations that have occurred so that we can
-> > > > > massage the PCRs into the same state post-hibernation.  Also,
-> > > > > do we have any way for the kernel to sign something with the
-> > > > > TPM along with an attestation that the signature was requested
-> > > > > *by the kernel*?  Something like a sub-hierarchy of keys that
-> > > > > the kernel explicitly prevents userspace from accessing?)
-> > > > 
-> > > > Kernel can keep it is own key hierarchy in memory as TPM2 chips
-> > > > allow to offload data in encrypted form and load it to TPM when
-> > > > it needs to use it.
-> > > > 
-> > > > The in-kernel resource manager that I initiated couple years ago
-> > > > provides this type of functionality.
-> > > 
-> > > Actually, the resource manager only keeps volatile objects
-> > > separated when in use not when offloaded.  The problem here is that
-> > > the object needs to be persisted across reboots, so either it gets
-> > > written to the NV area, bypassing the resource manager and making
-> > > it globally visible or it has to get stored in TPM form in the
-> > > hibernation image, meaning anyone with access to the TPM who can
-> > > read the image can extract and load it. Further: anyone with access
-> > > to the TPM can create a bogus sealed key and encrypt a malicious
-> > > hibernation image with it.  So there are two additional problems
-> > > 
-> > >    1. Given that the attacker may have access to the binary form of
-> > > the
-> > >       key, can we make sure only the kernel can get it released?
-> > >    2. How do we prevent an attacker with access to the TPM from
-> > > creating a
-> > >       bogus sealed key?
-> > > 
-> > > This is why I was thinking localities.
-> > 
-> > Why you would want to go for localities and not seal to PCRs?
-> 
-> Because the requested functionality was a key that would be accessible
-> to the kernel and not to user space and also guaranteed created by the
-> kernel.  The only discriminator we have to enforce that is the locality
-> (assuming we reserve a locality as accessible to the kernel but
-> inaccessible to userspace).  PCRs alone can't restrict where the key is
-> accessed or created from.
+Add known answer tests to the testmgr for the HKDF (RFC5869) cipher.
 
-OK, locality would probably make sense, assuming that the key is stored
-in nvram.
+The known answer tests are derived from RFC 5869 appendix A.
 
-/Jarkko
+Note, the HKDF is considered to be a FIPS 140-2 allowed (not approved)
+cipher as of now. Yet, an allowed cipher is usable under FIPS 140-2
+rules.
 
-/Jarkko
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/testmgr.c |  32 +++++++++++++
+ crypto/testmgr.h | 115 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 147 insertions(+)
+
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index ff9051bffa1f..aba7a3645293 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -3187,6 +3187,38 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		.suite = {
+ 			.hash = __VECS(ghash_tv_template)
+ 		}
++	}, {
++		.alg = "hkdf(hmac(sha1))",
++		.test = alg_test_kdf,
++		.fips_allowed = 1,
++		.suite = {
++			.kdf = {
++				.vecs = hkdf_hmac_sha1_tv_template,
++				.count = ARRAY_SIZE(hkdf_hmac_sha1_tv_template)
++			}
++		}
++	}, {
++		.alg = "hkdf(hmac(sha224))",
++		.test = alg_test_null,
++		.fips_allowed = 1,
++	}, {
++		.alg = "hkdf(hmac(sha256))",
++		.test = alg_test_kdf,
++		.fips_allowed = 1,
++		.suite = {
++			.kdf = {
++				.vecs = hkdf_hmac_sha256_tv_template,
++				.count = ARRAY_SIZE(hkdf_hmac_sha256_tv_template)
++			}
++		}
++	}, {
++		.alg = "hkdf(hmac(sha384))",
++		.test = alg_test_null,
++		.fips_allowed = 1,
++	}, {
++		.alg = "hkdf(hmac(sha512))",
++		.test = alg_test_null,
++		.fips_allowed = 1,
+ 	}, {
+ 		.alg = "hmac(md5)",
+ 		.test = alg_test_hash,
+diff --git a/crypto/testmgr.h b/crypto/testmgr.h
+index a729b66f8757..7c4aa694e0f3 100644
+--- a/crypto/testmgr.h
++++ b/crypto/testmgr.h
+@@ -28002,6 +28002,121 @@ static struct kdf_testvec kdf_dpi_hmac_sha256_tv_template[] = {
+ 	}
+ };
+ 
++/* Test vectors from RFC 5869 appendix A */
++static struct kdf_testvec hkdf_hmac_sha256_tv_template[] = {
++	{
++		.K1 = (unsigned char *)
++#ifdef __LITTLE_ENDIAN
++			"\x08\x00"			/* rta length */
++			"\x01\x00"			/* rta type */
++			"\x0d\x00\x00\x00"		/* salt length */
++#else
++			"\x00\x08"			/* rta length */
++			"\x00\x01"			/* rta type */
++			"\x00\x00\x00\x0d"		/* salt length */
++#endif
++			"\x00\x01\x02\x03\x04\x05\x06\x07"
++			"\x08\x09\x0a\x0b\x0c"		/* salt */
++			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
++			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
++			"\x0b\x0b\x0b\x0b\x0b\x0b",	/* IKM */
++		.K1len = 43,
++		.context = (unsigned char *)
++			"\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7"
++			"\xf8\xf9",
++		.contextlen = 10,
++		.expected = (unsigned char *)
++			"\x3c\xb2\x5f\x25\xfa\xac\xd5\x7a"
++			"\x90\x43\x4f\x64\xd0\x36\x2f\x2a"
++			"\x2d\x2d\x0a\x90\xcf\x1a\x5a\x4c"
++			"\x5d\xb0\x2d\x56\xec\xc4\xc5\xbf"
++			"\x34\x00\x72\x08\xd5\xb8\x87\x18"
++			"\x58\x65",
++		.expectedlen = 42
++	}, {
++		.K1 = (unsigned char *)
++#ifdef __LITTLE_ENDIAN
++			"\x08\x00"			/* rta length */
++			"\x01\x00"			/* rta type */
++#else
++			"\x00\x08"			/* rta length */
++			"\x00\x01"			/* rta type */
++#endif
++			"\x00\x00\x00\x00"		/* salt length */
++			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
++			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
++			"\x0b\x0b\x0b\x0b\x0b\x0b",	/* IKM */
++		.K1len = 30,
++		.context = NULL,
++		.contextlen = 0,
++		.expected = (unsigned char *)
++			"\x8d\xa4\xe7\x75\xa5\x63\xc1\x8f"
++			"\x71\x5f\x80\x2a\x06\x3c\x5a\x31"
++			"\xb8\xa1\x1f\x5c\x5e\xe1\x87\x9e"
++			"\xc3\x45\x4e\x5f\x3c\x73\x8d\x2d"
++			"\x9d\x20\x13\x95\xfa\xa4\xb6\x1a"
++			"\x96\xc8",
++		.expectedlen = 42
++	}
++};
++
++/* Test vectors from RFC 5869 appendix A */
++static struct kdf_testvec hkdf_hmac_sha1_tv_template[] = {
++	{
++		.K1 = (unsigned char *)
++#ifdef __LITTLE_ENDIAN
++			"\x08\x00"			/* rta length */
++			"\x01\x00"			/* rta type */
++			"\x0d\x00\x00\x00"		/* salt length */
++#else
++			"\x00\x08"			/* rta length */
++			"\x00\x01"			/* rta type */
++			"\x00\x00\x00\x0d"		/* salt length */
++#endif
++			"\x00\x01\x02\x03\x04\x05\x06\x07"
++			"\x08\x09\x0a\x0b\x0c"		/* salt */
++			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
++			"\x0b\x0b\x0b",			/* IKM */
++		.K1len = 32,
++		.context = (unsigned char *)
++			"\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7"
++			"\xf8\xf9",
++		.contextlen = 10,
++		.expected = (unsigned char *)
++			"\x08\x5a\x01\xea\x1b\x10\xf3\x69"
++			"\x33\x06\x8b\x56\xef\xa5\xad\x81"
++			"\xa4\xf1\x4b\x82\x2f\x5b\x09\x15"
++			"\x68\xa9\xcd\xd4\xf1\x55\xfd\xa2"
++			"\xc2\x2e\x42\x24\x78\xd3\x05\xf3"
++			"\xf8\x96",
++		.expectedlen = 42
++	}, {
++		.K1 = (unsigned char *)
++#ifdef __LITTLE_ENDIAN
++			"\x08\x00"			/* rta length */
++			"\x01\x00"			/* rta type */
++#else
++			"\x00\x08"			/* rta length */
++			"\x00\x01"			/* rta type */
++#endif
++			"\x00\x00\x00\x00"		/* salt length */
++			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
++			"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
++			"\x0b\x0b\x0b\x0b\x0b\x0b",	/* IKM */
++		.K1len = 30,
++		.context = NULL,
++		.contextlen = 0,
++		.expected = (unsigned char *)
++			"\x0a\xc1\xaf\x70\x02\xb3\xd7\x61"
++			"\xd1\xe5\x52\x98\xda\x9d\x05\x06"
++			"\xb9\xae\x52\x05\x72\x20\xa3\x06"
++			"\xe0\x7b\x6b\x87\xe8\xdf\x21\xd0"
++			"\xea\x00\x03\x3d\xe0\x39\x84\xd3"
++			"\x49\x18",
++		.expectedlen = 42
++	}
++};
++
+ /* Cast5 test vectors from RFC 2144 */
+ static const struct cipher_testvec cast5_tv_template[] = {
+ 	{
+-- 
+2.20.1
