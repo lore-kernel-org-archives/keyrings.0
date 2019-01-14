@@ -1,33 +1,37 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Fri, 25 Jan 2019 13:46:14 +0000
-Subject: Re: [RFC PATCH v3] akcipher: Introduce verify_rsa/verify for public key algorithms
-Message-Id: <20190125134614.jflpiybs2b5ezbha@gondor.apana.org.au>
+From: Mathieu Malaterre <malat@debian.org>
+Date: Mon, 14 Jan 2019 20:17:23 +0000
+Subject: [PATCH 1/3] security: keys: annotate implicit fall through
+Message-Id: <20190114201725.13289-1-malat@debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190118205846.20309-1-vt@altlinux.org>
- <20190125100929.zxmqbsibnnikh7tv@gondor.apana.org.au>
- <20190125111808.slyoptlns53t7fiw@altlinux.org>
-In-Reply-To: <20190125111808.slyoptlns53t7fiw@altlinux.org>
-To: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+To: David Howells <dhowells@redhat.com>
+Cc: Mathieu Malaterre <malat@debian.org>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2019 at 02:18:09PM +0300, Vitaly Chikunov wrote:
-> 
-> Well, if we allowed to reuse dst* fields why not just put digest over
-> dst scatterlist? That would be much simpler.
+There is a plan to build the kernel with -Wimplicit-fallthrough and
+this place in the code produced a warning (W=1).
 
-Please see below.
- 
-> > The advantage of having it in one scatterlist is that for those
-> > users that already have the two pieces together could simply provide
-> > a single SG element (I don't know how likely that is in practice
-> > though).
-> > 
-> > For others you would simply tack on an extra SG element.
+This commit remove the following warning:
 
-Cheers,
+  security/keys/keyring.c:248:10: warning: this statement may fall through [-Wimplicit-fallthrough=]
+
+Signed-off-by: Mathieu Malaterre <malat@debian.org>
+---
+ security/keys/keyring.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index eadebb92986a..b1ff07d9ce37 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -246,6 +246,7 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
+ 				    (ASSOC_ARRAY_KEY_CHUNK_SIZE - 8));
+ 		n--;
+ 		offset = 1;
++		/* fall through */
+ 	default:
+ 		offset += sizeof(chunk) - 1;
+ 		offset += (level - 3) * sizeof(chunk);
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+2.19.2
