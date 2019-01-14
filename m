@@ -1,43 +1,57 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 10 Jan 2019 20:28:38 +0000
-Subject: Re: [PATCH] KEYS: reuse keyring_index_key::desc_len in lookup_user_key()
-Message-Id: <20190110202837.GD149637@gmail.com>
+From: Mathieu Malaterre <malat@debian.org>
+Date: Mon, 14 Jan 2019 20:17:24 +0000
+Subject: [PATCH 2/3] security: keys: annotate implicit fall throughs
+Message-Id: <20190114201725.13289-2-malat@debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20190114201725.13289-1-malat@debian.org>
+In-Reply-To: <20190114201725.13289-1-malat@debian.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Mathieu Malaterre <malat@debian.org>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2018 at 07:10:49PM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> When lookup_user_key() checks whether the key is possessed, it should
-> use the key's existing index_key including the 'desc_len' field, rather
-> than recomputing the 'desc_len'.  This shouldn't cause any observable
-> behavior change; this way is just simpler and faster.
-> 
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
-> ---
->  security/keys/process_keys.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-> index d5b25e535d3a5..3bea09e7176d7 100644
-> --- a/security/keys/process_keys.c
-> +++ b/security/keys/process_keys.c
-> @@ -688,9 +688,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
->  		key_ref = make_key_ref(key, 0);
->  
->  		/* check to see if we possess the key */
-> -		ctx.index_key.type		= key->type;
-> -		ctx.index_key.description	= key->description;
-> -		ctx.index_key.desc_len		= strlen(key->description);
-> +		ctx.index_key			= key->index_key;
->  		ctx.match_data.raw_data		= key;
->  		kdebug("check possessed");
->  		skey_ref = search_process_keyrings(&ctx);
-> -- 
-> 2.19.1
-> 
+There is a plan to build the kernel with -Wimplicit-fallthrough and
+these places in the code produced warnings (W=1). Fix them up.
 
-Ping.
+This commit remove the following warning:
+
+  security/keys/process_keys.c:380:7: warning: this statement may fall through [-Wimplicit-fallthrough=]
+  security/keys/process_keys.c:404:7: warning: this statement may fall through [-Wimplicit-fallthrough=]
+  security/keys/process_keys.c:424:7: warning: this statement may fall through [-Wimplicit-fallthrough=]
+
+Signed-off-by: Mathieu Malaterre <malat@debian.org>
+---
+ security/keys/process_keys.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 02c77e928f68..3308d738734c 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -379,6 +379,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+ 		case -EAGAIN: /* no key */
+ 			if (ret)
+ 				break;
++			/* fall through */
+ 		case -ENOKEY: /* negative key */
+ 			ret = key_ref;
+ 			break;
+@@ -403,6 +404,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+ 		case -EAGAIN: /* no key */
+ 			if (ret)
+ 				break;
++			/* fall through */
+ 		case -ENOKEY: /* negative key */
+ 			ret = key_ref;
+ 			break;
+@@ -423,6 +425,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+ 		case -EAGAIN: /* no key */
+ 			if (ret)
+ 				break;
++			/* fall through */
+ 		case -ENOKEY: /* negative key */
+ 			ret = key_ref;
+ 			break;
+-- 
+2.19.2
