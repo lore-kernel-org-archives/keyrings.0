@@ -1,57 +1,47 @@
-From: Mathieu Malaterre <malat@debian.org>
-Date: Mon, 14 Jan 2019 20:17:24 +0000
-Subject: [PATCH 2/3] security: keys: annotate implicit fall throughs
-Message-Id: <20190114201725.13289-2-malat@debian.org>
+From: Kairui Song <kasong@redhat.com>
+Date: Tue, 15 Jan 2019 09:45:40 +0000
+Subject: [RFC PATCH v2 0/2] let kexec_file_load use platform keyring to verify the kernel image
+Message-Id: <20190115094542.17129-1-kasong@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190114201725.13289-1-malat@debian.org>
-In-Reply-To: <20190114201725.13289-1-malat@debian.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Mathieu Malaterre <malat@debian.org>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
 
-There is a plan to build the kernel with -Wimplicit-fallthrough and
-these places in the code produced warnings (W=1). Fix them up.
+Hi,
 
-This commit remove the following warning:
+This patch series adds a .platform_trusted_keys in system_keyring as the
+reference to .platform keyring in integrity subsystem, when platform
+keyring is being initialized it will be updated. So other component could
+use this keyring as well.
 
-  security/keys/process_keys.c:380:7: warning: this statement may fall through [-Wimplicit-fallthrough=]
-  security/keys/process_keys.c:404:7: warning: this statement may fall through [-Wimplicit-fallthrough=]
-  security/keys/process_keys.c:424:7: warning: this statement may fall through [-Wimplicit-fallthrough=]
+This patch series also let kexec_file_load use platform keyring as fall
+back if it failed to verify the image against secondary keyring, make it
+possible to load kernel signed by third part key if third party key is
+imported in the firmware.
 
-Signed-off-by: Mathieu Malaterre <malat@debian.org>
----
- security/keys/process_keys.c | 3 +++
- 1 file changed, 3 insertions(+)
+After this patch kexec_file_load will be able to verify a signed PE
+bzImage using keys in platform keyring.
 
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 02c77e928f68..3308d738734c 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -379,6 +379,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- 		case -EAGAIN: /* no key */
- 			if (ret)
- 				break;
-+			/* fall through */
- 		case -ENOKEY: /* negative key */
- 			ret = key_ref;
- 			break;
-@@ -403,6 +404,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- 		case -EAGAIN: /* no key */
- 			if (ret)
- 				break;
-+			/* fall through */
- 		case -ENOKEY: /* negative key */
- 			ret = key_ref;
- 			break;
-@@ -423,6 +425,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- 		case -EAGAIN: /* no key */
- 			if (ret)
- 				break;
-+			/* fall through */
- 		case -ENOKEY: /* negative key */
- 			ret = key_ref;
- 			break;
+Tested in a VM with locally signed kernel with pesign and imported the
+cert to EFI's MokList variable.
+
+Kairui Song (2):
+  integrity, KEYS: add a reference to platform keyring
+  kexec, KEYS: Make use of platform keyring for signature verify
+
+Update from V1:
+  - Make platform_trusted_keys static, and update commit message as suggested
+    by Mimi Zohar
+  - Always check if platform keyring is initialized before use it
+
+ arch/x86/kernel/kexec-bzimage64.c | 15 ++++++++++++---
+ certs/system_keyring.c            | 20 +++++++++++++++++++-
+ include/keys/system_keyring.h     |  5 +++++
+ include/linux/verification.h      |  3 +++
+ security/integrity/digsig.c       |  6 ++++++
+ 5 files changed, 45 insertions(+), 4 deletions(-)
+
 -- 
-2.19.2
+2.20.1
