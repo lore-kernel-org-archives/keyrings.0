@@ -1,62 +1,103 @@
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-Date: Tue, 15 Jan 2019 19:19:33 +0000
-Subject: Re: [PATCH] KEYS: user: Align the payload buffer
-Message-Id: <20190115191933.GA27799@darkstar.musicnaut.iki.fi>
+From: Kairui Song <kasong@redhat.com>
+Date: Tue, 15 Jan 2019 09:45:42 +0000
+Subject: [RFC PATCH v2 2/2] kexec, KEYS: Make use of platform keyring for signature verify
+Message-Id: <20190115094542.17129-3-kasong@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190115033716.18380-1-ebiggers@kernel.org>
-In-Reply-To: <20190115033716.18380-1-ebiggers@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, linux-fscrypt@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190115094542.17129-1-kasong@redhat.com>
+In-Reply-To: <20190115094542.17129-1-kasong@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
 
-Hi,
+With KEXEC_BZIMAGE_VERIFY_SIG enabled, kexec_file_load will need to
+verify the kernel image. The image might be signed with third part keys,
+and the keys could be stored in firmware, then got loaded into the
+.platform keyring. Now we have a symbol .platform_trusted_keyring as the
+reference to .platform keyring, this patch makes use if it and allow
+kexec_file_load to verify the image against keys in .platform keyring.
 
-On Mon, Jan 14, 2019 at 07:37:16PM -0800, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> Align the payload of "user" and "logon" keys so that users of the
-> keyrings service can access it as a struct that requires more than
-> 2-byte alignment.  fscrypt currently does this which results in the read
-> of fscrypt_key::size being misaligned as it needs 4-byte alignment.
-> 
-> Align to __alignof__(u64) rather than __alignof__(long) since in the
-> future it's conceivable that people would use structs beginning with
-> u64, which on some platforms would require more than 'long' alignment.
-> 
-> Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> Fixes: 2aa349f6e37c ("[PATCH] Keys: Export user-defined keyring operations")
-> Fixes: 88bd6ccdcdd6 ("ext4 crypto: add encryption key management facilities")
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+This commit adds a VERIFY_USE_PLATFORM_KEYRING similar to previous
+VERIFY_USE_SECONDARY_KEYRING indicating that verify_pkcs7_signature
+should verify the signature using platform keyring. Also, decrease
+the error message log level when verification failed with -ENOKEY,
+so that if called tried multiple time with different keyring it
+won't generate extra noises.
 
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Kairui Song <kasong@redhat.com>
+---
+ arch/x86/kernel/kexec-bzimage64.c | 15 ++++++++++++---
+ certs/system_keyring.c            | 11 ++++++++++-
+ include/linux/verification.h      |  3 +++
+ 3 files changed, 25 insertions(+), 4 deletions(-)
 
-This fixes the "unaligned access" dmesg spam on SPARC when using ext4
-encryption.
-
-Thanks,
-
-A.
-
-> ---
->  include/keys/user-type.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/keys/user-type.h b/include/keys/user-type.h
-> index e098cbe27db54..12babe9915944 100644
-> --- a/include/keys/user-type.h
-> +++ b/include/keys/user-type.h
-> @@ -31,7 +31,7 @@
->  struct user_key_payload {
->  	struct rcu_head	rcu;		/* RCU destructor */
->  	unsigned short	datalen;	/* length of this data */
-> -	char		data[0];	/* actual data */
-> +	char		data[0] __aligned(__alignof__(u64)); /* actual data */
->  };
->  
->  extern struct key_type key_type_user;
-> -- 
-> 2.20.1
-> 
+diff --git a/arch/x86/kernel/kexec-bzimage64.c b/arch/x86/kernel/kexec-bzimage64.c
+index 7d97e432cbbc..a06b04065bb1 100644
+--- a/arch/x86/kernel/kexec-bzimage64.c
++++ b/arch/x86/kernel/kexec-bzimage64.c
+@@ -534,9 +534,18 @@ static int bzImage64_cleanup(void *loader_data)
+ #ifdef CONFIG_KEXEC_BZIMAGE_VERIFY_SIG
+ static int bzImage64_verify_sig(const char *kernel, unsigned long kernel_len)
+ {
+-	return verify_pefile_signature(kernel, kernel_len,
+-				       VERIFY_USE_SECONDARY_KEYRING,
+-				       VERIFYING_KEXEC_PE_SIGNATURE);
++	int ret;
++	ret = verify_pefile_signature(kernel, kernel_len,
++			VERIFY_USE_SECONDARY_KEYRING,
++			VERIFYING_KEXEC_PE_SIGNATURE);
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++	if (ret = -ENOKEY) {
++		ret = verify_pefile_signature(kernel, kernel_len,
++				VERIFY_USE_PLATFORM_KEYRING,
++				VERIFYING_KEXEC_PE_SIGNATURE);
++	}
++#endif
++	return ret;
+ }
+ #endif
+ 
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 4690ef9cda8a..df2a09599bd8 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -239,12 +239,21 @@ int verify_pkcs7_signature(const void *data, size_t len,
+ 		trusted_keys = secondary_trusted_keys;
+ #else
+ 		trusted_keys = builtin_trusted_keys;
++#endif
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++	} else if (trusted_keys = VERIFY_USE_PLATFORM_KEYRING) {
++		trusted_keys = platform_trusted_keys;
++		if (!trusted_keys) {
++			ret = -ENOKEY;
++			pr_devel("PKCS#7 platform keyring is not available\n");
++			goto error;
++		}
+ #endif
+ 	}
+ 	ret = pkcs7_validate_trust(pkcs7, trusted_keys);
+ 	if (ret < 0) {
+ 		if (ret = -ENOKEY)
+-			pr_err("PKCS#7 signature not signed with a trusted key\n");
++			pr_devel("PKCS#7 signature not signed with a trusted key\n");
+ 		goto error;
+ 	}
+ 
+diff --git a/include/linux/verification.h b/include/linux/verification.h
+index cfa4730d607a..dbd1686e9bc4 100644
+--- a/include/linux/verification.h
++++ b/include/linux/verification.h
+@@ -17,6 +17,9 @@
+  * should be used.
+  */
+ #define VERIFY_USE_SECONDARY_KEYRING ((struct key *)1UL)
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++#define VERIFY_USE_PLATFORM_KEYRING  ((struct key *)2UL)
++#endif
+ 
+ /*
+  * The use to which an asymmetric key is being put.
+-- 
+2.20.1
