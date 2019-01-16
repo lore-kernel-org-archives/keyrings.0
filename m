@@ -1,73 +1,36 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Fri, 04 Jan 2019 10:20:36 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 16 Jan 2019 16:22:37 +0000
 Subject: Re: [RFC PATCH] akcipher: Introduce verify2 for public key algorithms
-Message-Id: <20190104102035.42qwwv4komjvnswh@sole.flsd.net>
+Message-Id: <21904.1547655757@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181211165938.1150-1-vt@altlinux.org>
- <20181213101233.6t7d5mxxkkavo46h@gondor.apana.org.au>
-In-Reply-To: <20181213101233.6t7d5mxxkkavo46h@gondor.apana.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: dhowells@redhat.com, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190104102035.42qwwv4komjvnswh@sole.flsd.net> <20181211165938.1150-1-vt@altlinux.org> <20181213101233.6t7d5mxxkkavo46h@gondor.apana.org.au>
+In-Reply-To: <20190104102035.42qwwv4komjvnswh@sole.flsd.net>
+To: Vitaly Chikunov <vt@altlinux.org>
+Cc: dhowells@redhat.com, Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2018 at 06:12:33PM +0800, Herbert Xu wrote:
-> Vitaly Chikunov <vt@altlinux.org> wrote:
-> > Current akcipher .verify() just decrypts signature to uncover message
-> > hash, which is then verified in upper level public_key_verify_signature
-> > by memcmp with the expected signature value, which is never passed into
-> > verify().
-> > 
-> > This approach is incompatible with ECDSA algorithms, because, to verify
-> > a signature ECDSA algorithm also needs a hash value as input; also, hash
-> > is used in ECDSA (together with a signature divided into halves `r||s`),
-> > not to produce hash, but to produce a number, which is then compared to
-> > `r` (first part of the signature) to determine if the signature is
-> > correct.  Thus, for ECDSA, nor requirements of .verify() itself, nor its
-> > output expectations in public_key_verify_signature aren't satisfied.
-> > 
-> > Make alternative .verify2() call which gets hash value and produce
-> > complete signature check (without any output, thus max_size() call will
-> > not be needed for verify2() operation).
-> > 
-> > If .verify2() call is present, it should be used in place of .verify().
-> > 
-> > Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+Vitaly Chikunov <vt@altlinux.org> wrote:
+
+> This will be hard to do since there is at least tree device that use
+> this interface (and who know how much out of tree):
 > 
-> We should convert all existing users to this interface and not
-> have both verify/verify2 forever.
-
-This will be hard to do since there is at least tree device that use
-this interface (and who know how much out of tree):
-
-  drivers$ git grep cra_name.*rsa
-  crypto/caam/caampkc.c:          .cra_name = "rsa",
-  crypto/ccp/ccp-crypto-rsa.c:            .cra_name = "rsa",
-  crypto/qat/qat_common/qat_asym_algs.c:          .cra_name = "rsa",
-
-Interface seems to be designed that verify() call is interchangeable
-with encrypt().
-
-Two verify does not seem that bad since there is common code for the old
-interface that removes code duplication and simplifies driver
-implementation (RSA drivers only need to implement encrypt).
-
-But, I would remove scatterlist from the new interface. Signature
-verification is not some multi-block encryption. And basically,
-public_key_verify_signature just doing sg_init_one for both required
-src/dst buffers.
-
-ps. And also, in the future, I would allow akcipher to access `struct
-public_key` and `struct public_key_signature` so it could distinguish
-when the key is already validated and skip expensive validation other
-time verify2 is used with the same key. Or maybe flag 'key validation is
-needed' should be maintained outside of akcipher and passed to it in the
-request.
-
+>   drivers$ git grep cra_name.*rsa
+>   crypto/caam/caampkc.c:          .cra_name = "rsa",
+>   crypto/ccp/ccp-crypto-rsa.c:            .cra_name = "rsa",
+>   crypto/qat/qat_common/qat_asym_algs.c:          .cra_name = "rsa",
 > 
-> Thanks,
-> -- 
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> Interface seems to be designed that verify() call is interchangeable
+> with encrypt().
+> 
+> Two verify does not seem that bad since there is common code for the old
+> interface that removes code duplication and simplifies driver
+> implementation (RSA drivers only need to implement encrypt).
+
+You could move the comparison into core crypto code if it's makes more sense
+than moving the comparison to the crypto algorithm ->verify() call.  It makes
+more sense than the upper layers having to cover the differences between the
+algo modules.
+
+David
