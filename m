@@ -1,35 +1,53 @@
-From: Geliang Tang <geliangtang@gmail.com>
-Date: Fri, 25 Jan 2019 07:16:14 +0000
-Subject: [PATCH] security: keys: add NULL checking for key->type->instantiate
-Message-Id: <754d6ccb4012fc11c7b9369e66ba7f3e816fdb57.1548400400.git.geliangtang@gmail.com>
+From: Kairui Song <kasong@redhat.com>
+Date: Wed, 16 Jan 2019 10:16:52 +0000
+Subject: [PATCH v3 0/2] let kexec_file_load use platform keyring to verify the kernel image
+Message-Id: <20190116101654.7288-1-kasong@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Geliang Tang <geliangtang@gmail.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
 
-key->type->instantiate can be NULL, add NULL checking to prevent
-NULL pointer dereference in __key_instantiate_and_link().
+This patch series adds a .platform_trusted_keys in system_keyring as the
+reference to .platform keyring in integrity subsystem, when platform
+keyring is being initialized it will be updated. So other component could
+use this keyring as well.
 
-Signed-off-by: Geliang Tang <geliangtang@gmail.com>
----
- security/keys/key.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+This patch series also let kexec_file_load use platform keyring as fall
+back if it failed to verify the image against secondary keyring, make it
+possible to load kernel signed by third part key if third party key is
+imported in the firmware.
 
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 44a80d6741a1..ae3cc11be0d2 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -438,7 +438,8 @@ static int __key_instantiate_and_link(struct key *key,
- 	/* can't instantiate twice */
- 	if (key->state = KEY_IS_UNINSTANTIATED) {
- 		/* instantiate the key */
--		ret = key->type->instantiate(key, prep);
-+		if (key->type->instantiate)
-+			ret = key->type->instantiate(key, prep);
- 
- 		if (ret = 0) {
- 			/* mark the key as being instantiated */
+After this patch kexec_file_load will be able to verify a signed PE
+bzImage using keys in platform keyring.
+
+Tested in a VM with locally signed kernel with pesign and imported the
+cert to EFI's MokList variable.
+
+Kairui Song (2):
+  integrity, KEYS: add a reference to platform keyring
+  kexec, KEYS: Make use of platform keyring for signature verify
+
+Update from V2:
+  - Use IS_ENABLED in kexec_file_load to judge if platform_trusted_keys
+    should be used for verifying image as suggested by Mimi Zohar
+
+Update from V1:
+  - Make platform_trusted_keys static, and update commit message as suggested
+    by Mimi Zohar
+  - Always check if platform keyring is initialized before use it
+
+Kairui Song (2):
+  integrity, KEYS: add a reference to platform keyring
+  kexec, KEYS: Make use of platform keyring for signature verify
+
+ arch/x86/kernel/kexec-bzimage64.c | 13 ++++++++++---
+ certs/system_keyring.c            | 22 +++++++++++++++++++++-
+ include/keys/system_keyring.h     |  5 +++++
+ include/linux/verification.h      |  1 +
+ security/integrity/digsig.c       |  6 ++++++
+ 5 files changed, 43 insertions(+), 4 deletions(-)
+
 -- 
-2.17.1
+2.20.1
