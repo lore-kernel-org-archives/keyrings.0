@@ -1,44 +1,39 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 31 Jan 2019 16:05:52 +0000
-Subject: Re: [PATCH v8 5/7] tpm: move tpm_chip definition to include/linux/tpm.h
-Message-Id: <20190131160552.GB5629@linux.intel.com>
+From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
+Date: Wed, 16 Jan 2019 11:06:54 +0000
+Subject: [PATCH v2 0/6] General Key Derivation Function Support
+Message-Id: <2082192.jPI8ve1O8G@positron.chronox.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190124154910.29948-1-roberto.sassu@huawei.com>
- <20190124154910.29948-6-roberto.sassu@huawei.com>
- <20190129203422.GD11615@linux.intel.com>
- <011ba997-3a09-8c68-cad2-9733e79e6d0d@huawei.com>
-In-Reply-To: <011ba997-3a09-8c68-cad2-9733e79e6d0d@huawei.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>
-Cc: zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, silviu.vlasceanu@huawei.com
+References: <20190103143227.9138-1-jlee@suse.com> <20190109082103.GA8586@sol.localdomain> <9733066.Vrs4h5eWcW@positron.chronox.de>
+In-Reply-To: <9733066.Vrs4h5eWcW@positron.chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Eric Biggers <ebiggers@kernel.org>, James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>, linux-crypto@vger.kernel.org
 
-On Thu, Jan 31, 2019 at 08:54:50AM +0100, Roberto Sassu wrote:
-> On 1/29/2019 9:34 PM, Jarkko Sakkinen wrote:
-> > On Thu, Jan 24, 2019 at 04:49:08PM +0100, Roberto Sassu wrote:
-> > > -enum tpm_const {
-> > > -	TPM_MINOR = 224,	/* officially assigned */
-> > > -	TPM_BUFSIZE = 4096,
-> > > -	TPM_NUM_DEVICES = 65536,
-> > > -	TPM_RETRY = 50,		/* 5 seconds */
-> > > -	TPM_NUM_EVENT_LOG_FILES = 3,
-> > > -};
-> > 
-> > Here using enum has been a bad idea in the first place, as they don't
-> > relate in any meaningful way.
-> > 
-> > Replace the definition with the following in drivers/char/tpm/tpm.h:
-> > 
-> > #define TPM_MINOR	224 /* misc backwards compatibility */
-> > #define TPM_BUFSIZE	4096
-> > #define TPM_NUM_DEVICES	65536
-> > #define TPM_RETRY	5 /* seconds */
-> 
-> Is 5 correct? TPM_RETRY was 50 before.
+Changes v2:
+* Incorporation of all comments from Eric Biggers
 
-No it isn't.
+Stephan Mueller (6):
+  crypto: add template handling for RNGs
+  crypto: kdf - SP800-108 Key Derivation Function
+  crypto: kdf - add known answer tests
+  crypto: hkdf - HMAC-based Extract-and-Expand KDF
+  crypto: hkdf - add known answer tests
+  crypto: tcrypt - add KDF test invocation
 
-Do no take this by word, I just showed the idea...
+ crypto/Kconfig                |  13 +
+ crypto/Makefile               |   2 +
+ crypto/hkdf.c                 | 272 +++++++++++++++++++
+ crypto/kdf_sp800108.c         | 491 ++++++++++++++++++++++++++++++++++
+ crypto/rng.c                  |  44 +++
+ crypto/tcrypt.c               |   8 +
+ crypto/testmgr.c              | 245 +++++++++++++++++
+ crypto/testmgr.h              | 198 ++++++++++++++
+ include/crypto/internal/rng.h |  26 ++
+ 9 files changed, 1299 insertions(+)
+ create mode 100644 crypto/hkdf.c
+ create mode 100644 crypto/kdf_sp800108.c
 
-/Jarkko
+-- 
+2.20.1
