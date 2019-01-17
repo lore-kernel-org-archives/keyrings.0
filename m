@@ -1,100 +1,85 @@
-From: Kairui Song <kasong@redhat.com>
-Date: Wed, 16 Jan 2019 10:16:54 +0000
-Subject: [PATCH v3 2/2] kexec, KEYS: Make use of platform keyring for signature verify
-Message-Id: <20190116101654.7288-3-kasong@redhat.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 17 Jan 2019 23:25:01 +0000
+Subject: Re: [PATCH v3 2/2] kexec, KEYS: Make use of platform keyring for signature verify
+Message-Id: <1547767501.3931.60.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20190116101654.7288-1-kasong@redhat.com>
-In-Reply-To: <20190116101654.7288-1-kasong@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
+         <20190116101654.7288-3-kasong@redhat.com>
+In-Reply-To: <20190116101654.7288-3-kasong@redhat.com>
+To: Kairui Song <kasong@redhat.com>, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
 
-With KEXEC_BZIMAGE_VERIFY_SIG enabled, kexec_file_load will need to
-verify the kernel image. The image might be signed with third part keys,
-and the keys could be stored in firmware, then got loaded into the
-.platform keyring. Now we have a symbol .platform_trusted_keyring as the
-reference to .platform keyring, this patch makes use if it and allow
-kexec_file_load to verify the image against keys in .platform keyring.
-
-This commit adds a VERIFY_USE_PLATFORM_KEYRING similar to previous
-VERIFY_USE_SECONDARY_KEYRING indicating that verify_pkcs7_signature
-should verify the signature using platform keyring. Also, decrease
-the error message log level when verification failed with -ENOKEY,
-so that if called tried multiple time with different keyring it
-won't generate extra noises.
-
-Signed-off-by: Kairui Song <kasong@redhat.com>
----
- arch/x86/kernel/kexec-bzimage64.c | 13 ++++++++++---
- certs/system_keyring.c            | 13 ++++++++++++-
- include/linux/verification.h      |  1 +
- 3 files changed, 23 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/kexec-bzimage64.c b/arch/x86/kernel/kexec-bzimage64.c
-index 7d97e432cbbc..2c007abd3d40 100644
---- a/arch/x86/kernel/kexec-bzimage64.c
-+++ b/arch/x86/kernel/kexec-bzimage64.c
-@@ -534,9 +534,16 @@ static int bzImage64_cleanup(void *loader_data)
- #ifdef CONFIG_KEXEC_BZIMAGE_VERIFY_SIG
- static int bzImage64_verify_sig(const char *kernel, unsigned long kernel_len)
- {
--	return verify_pefile_signature(kernel, kernel_len,
--				       VERIFY_USE_SECONDARY_KEYRING,
--				       VERIFYING_KEXEC_PE_SIGNATURE);
-+	int ret;
-+	ret = verify_pefile_signature(kernel, kernel_len,
-+				      VERIFY_USE_SECONDARY_KEYRING,
-+				      VERIFYING_KEXEC_PE_SIGNATURE);
-+	if (ret = -ENOKEY && IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING)) {
-+		ret = verify_pefile_signature(kernel, kernel_len,
-+					      VERIFY_USE_PLATFORM_KEYRING,
-+					      VERIFYING_KEXEC_PE_SIGNATURE);
-+	}
-+	return ret;
- }
- #endif
- 
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index 4690ef9cda8a..7085c286f4bd 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -240,11 +240,22 @@ int verify_pkcs7_signature(const void *data, size_t len,
- #else
- 		trusted_keys = builtin_trusted_keys;
- #endif
-+	} else if (trusted_keys = VERIFY_USE_PLATFORM_KEYRING) {
-+#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
-+		trusted_keys = platform_trusted_keys;
-+#else
-+		trusted_keys = NULL;
-+#endif
-+		if (!trusted_keys) {
-+			ret = -ENOKEY;
-+			pr_devel("PKCS#7 platform keyring is not available\n");
-+			goto error;
-+		}
- 	}
- 	ret = pkcs7_validate_trust(pkcs7, trusted_keys);
- 	if (ret < 0) {
- 		if (ret = -ENOKEY)
--			pr_err("PKCS#7 signature not signed with a trusted key\n");
-+			pr_devel("PKCS#7 signature not signed with a trusted key\n");
- 		goto error;
- 	}
- 
-diff --git a/include/linux/verification.h b/include/linux/verification.h
-index cfa4730d607a..018fb5f13d44 100644
---- a/include/linux/verification.h
-+++ b/include/linux/verification.h
-@@ -17,6 +17,7 @@
-  * should be used.
-  */
- #define VERIFY_USE_SECONDARY_KEYRING ((struct key *)1UL)
-+#define VERIFY_USE_PLATFORM_KEYRING  ((struct key *)2UL)
- 
- /*
-  * The use to which an asymmetric key is being put.
--- 
-2.20.1
+T24gV2VkLCAyMDE5LTAxLTE2IGF0IDE4OjE2ICswODAwLCBLYWlydWkgU29uZyB3cm90ZToKPiBX
+aXRoIEtFWEVDX0JaSU1BR0VfVkVSSUZZX1NJRyBlbmFibGVkLCBrZXhlY19maWxlX2xvYWQgd2ls
+bCBuZWVkIHRvCj4gdmVyaWZ5IHRoZSBrZXJuZWwgaW1hZ2UuIAoKVGhlIGtleGVjX2ZpbGVfbG9h
+ZCBzeXNjYWxsIGNhbiB2ZXJpZnkgdGhlIFBFIHNpZ25lZCBrZXJuZWwgaW1hZ2UKc2lnbmF0dXJl
+LCB0aGUga2VybmVsIGltYWdlIHNpZ25hdHVyZSBzdG9yZWQgYXMgYW4geGF0dHIsIG9yIGJvdGgu
+CgpBbnlvbmUgYm9vdGluZyB0aGUgc3lzdGVtIHdpdGggdGhlICJhcHByYWlzZV90Y2IiIHBvbGlj
+eSBvciB3aXRoIGEKc2ltaWxhciBhcHByYWlzZSBwb2xpY3kgcnVsZSwgd2FudGluZyB0byBvbmx5
+IHZlcmlmeWluZyB0aGUgUEUgc2lnbmVkCmtlcm5lbCBpbWFnZSwgd2lsbCBuZWVkIHRvIGluY2x1
+ZGUgYSAiZG9udF9hcHByYWlzZQpmdW5jPUtFWEVDX0tFUk5FTF9DSEVDSyIgcnVsZSBpbiB0aGVp
+ciBjdXN0b20gcG9saWN5LgoKPiBUaGUgaW1hZ2UgbWlnaHQgYmUgc2lnbmVkIHdpdGggdGhpcmQg
+cGFydCBrZXlzLAo+IGFuZCB0aGUga2V5cyBjb3VsZCBiZSBzdG9yZWQgaW4gZmlybXdhcmUsIHRo
+ZW4gZ290IGxvYWRlZCBpbnRvIHRoZQo+IC5wbGF0Zm9ybSBrZXlyaW5nLiBOb3cgd2UgaGF2ZSBh
+IHN5bWJvbCAucGxhdGZvcm1fdHJ1c3RlZF9rZXlyaW5nIGFzIHRoZQo+IHJlZmVyZW5jZSB0byAu
+cGxhdGZvcm0ga2V5cmluZywgdGhpcyBwYXRjaCBtYWtlcyB1c2UgaWYgaXQgYW5kIGFsbG93Cj4g
+a2V4ZWNfZmlsZV9sb2FkIHRvIHZlcmlmeSB0aGUgaW1hZ2UgYWdhaW5zdCBrZXlzIGluIC5wbGF0
+Zm9ybSBrZXlyaW5nLgoKVGhlcmUncyBubyBuZWVkIHRvIGludHJvZHVjZSB0aGUgY29uY2VwdCBv
+ZiAidGhpcmQgcGFydHkiIG9yICJmaXJtd2FyZQprZXlzIiBoZXJlLiDCoFJlZmVycmluZyB0byB0
+aGVtIGFzIHRoZSAicHJlYm9vdCIga2V5cywgY2FuIHNpbXBsaWZ5IHRoZQphYm92ZSBwYXJhZ3Jh
+cGguCgo+IAo+IFRoaXMgY29tbWl0IGFkZHMgYSBWRVJJRllfVVNFX1BMQVRGT1JNX0tFWVJJTkcg
+c2ltaWxhciB0byBwcmV2aW91cwo+IFZFUklGWV9VU0VfU0VDT05EQVJZX0tFWVJJTkcgaW5kaWNh
+dGluZyB0aGF0IHZlcmlmeV9wa2NzN19zaWduYXR1cmUKPiBzaG91bGQgdmVyaWZ5IHRoZSBzaWdu
+YXR1cmUgdXNpbmcgcGxhdGZvcm0ga2V5cmluZy4gQWxzbywgZGVjcmVhc2UKPiB0aGUgZXJyb3Ig
+bWVzc2FnZSBsb2cgbGV2ZWwgd2hlbiB2ZXJpZmljYXRpb24gZmFpbGVkIHdpdGggLUVOT0tFWSwK
+PiBzbyB0aGF0IGlmIGNhbGxlZCB0cmllZCBtdWx0aXBsZSB0aW1lIHdpdGggZGlmZmVyZW50IGtl
+eXJpbmcgaXQKPiB3b24ndCBnZW5lcmF0ZSBleHRyYSBub2lzZXMuCj4gCj4gU2lnbmVkLW9mZi1i
+eTogS2FpcnVpIFNvbmcgPGthc29uZ0ByZWRoYXQuY29tPgoKUmV2aWV3ZWQvVGVzdGVkLWJ5OiBN
+aW1pIFpvaGFyIDx6b2hhckBsaW51eC5pYm0uY29tPgoKPiAtLS0KPiAgYXJjaC94ODYva2VybmVs
+L2tleGVjLWJ6aW1hZ2U2NC5jIHwgMTMgKysrKysrKysrKy0tLQo+ICBjZXJ0cy9zeXN0ZW1fa2V5
+cmluZy5jICAgICAgICAgICAgfCAxMyArKysrKysrKysrKystCj4gIGluY2x1ZGUvbGludXgvdmVy
+aWZpY2F0aW9uLmggICAgICB8ICAxICsKPiAgMyBmaWxlcyBjaGFuZ2VkLCAyMyBpbnNlcnRpb25z
+KCspLCA0IGRlbGV0aW9ucygtKQo+IAo+IGRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwva2V4
+ZWMtYnppbWFnZTY0LmMgYi9hcmNoL3g4Ni9rZXJuZWwva2V4ZWMtYnppbWFnZTY0LmMKPiBpbmRl
+eCA3ZDk3ZTQzMmNiYmMuLjJjMDA3YWJkM2Q0MCAxMDA2NDQKPiAtLS0gYS9hcmNoL3g4Ni9rZXJu
+ZWwva2V4ZWMtYnppbWFnZTY0LmMKPiArKysgYi9hcmNoL3g4Ni9rZXJuZWwva2V4ZWMtYnppbWFn
+ZTY0LmMKPiBAQCAtNTM0LDkgKzUzNCwxNiBAQCBzdGF0aWMgaW50IGJ6SW1hZ2U2NF9jbGVhbnVw
+KHZvaWQgKmxvYWRlcl9kYXRhKQo+ICAjaWZkZWYgQ09ORklHX0tFWEVDX0JaSU1BR0VfVkVSSUZZ
+X1NJRwo+ICBzdGF0aWMgaW50IGJ6SW1hZ2U2NF92ZXJpZnlfc2lnKGNvbnN0IGNoYXIgKmtlcm5l
+bCwgdW5zaWduZWQgbG9uZyBrZXJuZWxfbGVuKQo+ICB7Cj4gLQlyZXR1cm4gdmVyaWZ5X3BlZmls
+ZV9zaWduYXR1cmUoa2VybmVsLCBrZXJuZWxfbGVuLAo+IC0JCQkJICAgICAgIFZFUklGWV9VU0Vf
+U0VDT05EQVJZX0tFWVJJTkcsCj4gLQkJCQkgICAgICAgVkVSSUZZSU5HX0tFWEVDX1BFX1NJR05B
+VFVSRSk7Cj4gKwlpbnQgcmV0Owo+ICsJcmV0ID0gdmVyaWZ5X3BlZmlsZV9zaWduYXR1cmUoa2Vy
+bmVsLCBrZXJuZWxfbGVuLAo+ICsJCQkJICAgICAgVkVSSUZZX1VTRV9TRUNPTkRBUllfS0VZUklO
+RywKPiArCQkJCSAgICAgIFZFUklGWUlOR19LRVhFQ19QRV9TSUdOQVRVUkUpOwo+ICsJaWYgKHJl
+dCA9IC1FTk9LRVkgJiYgSVNfRU5BQkxFRChDT05GSUdfSU5URUdSSVRZX1BMQVRGT1JNX0tFWVJJ
+TkcpKSB7Cj4gKwkJcmV0ID0gdmVyaWZ5X3BlZmlsZV9zaWduYXR1cmUoa2VybmVsLCBrZXJuZWxf
+bGVuLAo+ICsJCQkJCSAgICAgIFZFUklGWV9VU0VfUExBVEZPUk1fS0VZUklORywKPiArCQkJCQkg
+ICAgICBWRVJJRllJTkdfS0VYRUNfUEVfU0lHTkFUVVJFKTsKPiArCX0KPiArCXJldHVybiByZXQ7
+Cj4gIH0KPiAgI2VuZGlmCj4gIAo+IGRpZmYgLS1naXQgYS9jZXJ0cy9zeXN0ZW1fa2V5cmluZy5j
+IGIvY2VydHMvc3lzdGVtX2tleXJpbmcuYwo+IGluZGV4IDQ2OTBlZjljZGE4YS4uNzA4NWMyODZm
+NGJkIDEwMDY0NAo+IC0tLSBhL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMKPiArKysgYi9jZXJ0cy9z
+eXN0ZW1fa2V5cmluZy5jCj4gQEAgLTI0MCwxMSArMjQwLDIyIEBAIGludCB2ZXJpZnlfcGtjczdf
+c2lnbmF0dXJlKGNvbnN0IHZvaWQgKmRhdGEsIHNpemVfdCBsZW4sCj4gICNlbHNlCj4gIAkJdHJ1
+c3RlZF9rZXlzID0gYnVpbHRpbl90cnVzdGVkX2tleXM7Cj4gICNlbmRpZgo+ICsJfSBlbHNlIGlm
+ICh0cnVzdGVkX2tleXMgPSBWRVJJRllfVVNFX1BMQVRGT1JNX0tFWVJJTkcpIHsKPiArI2lmZGVm
+IENPTkZJR19JTlRFR1JJVFlfUExBVEZPUk1fS0VZUklORwo+ICsJCXRydXN0ZWRfa2V5cyA9IHBs
+YXRmb3JtX3RydXN0ZWRfa2V5czsKPiArI2Vsc2UKPiArCQl0cnVzdGVkX2tleXMgPSBOVUxMOwo+
+ICsjZW5kaWYKPiArCQlpZiAoIXRydXN0ZWRfa2V5cykgewo+ICsJCQlyZXQgPSAtRU5PS0VZOwo+
+ICsJCQlwcl9kZXZlbCgiUEtDUyM3IHBsYXRmb3JtIGtleXJpbmcgaXMgbm90IGF2YWlsYWJsZVxu
+Iik7Cj4gKwkJCWdvdG8gZXJyb3I7Cj4gKwkJfQo+ICAJfQo+ICAJcmV0ID0gcGtjczdfdmFsaWRh
+dGVfdHJ1c3QocGtjczcsIHRydXN0ZWRfa2V5cyk7Cj4gIAlpZiAocmV0IDwgMCkgewo+ICAJCWlm
+IChyZXQgPSAtRU5PS0VZKQo+IC0JCQlwcl9lcnIoIlBLQ1MjNyBzaWduYXR1cmUgbm90IHNpZ25l
+ZCB3aXRoIGEgdHJ1c3RlZCBrZXlcbiIpOwo+ICsJCQlwcl9kZXZlbCgiUEtDUyM3IHNpZ25hdHVy
+ZSBub3Qgc2lnbmVkIHdpdGggYSB0cnVzdGVkIGtleVxuIik7Cj4gIAkJZ290byBlcnJvcjsKPiAg
+CX0KPiAgCj4gZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvdmVyaWZpY2F0aW9uLmggYi9pbmNs
+dWRlL2xpbnV4L3ZlcmlmaWNhdGlvbi5oCj4gaW5kZXggY2ZhNDczMGQ2MDdhLi4wMThmYjVmMTNk
+NDQgMTAwNjQ0Cj4gLS0tIGEvaW5jbHVkZS9saW51eC92ZXJpZmljYXRpb24uaAo+ICsrKyBiL2lu
+Y2x1ZGUvbGludXgvdmVyaWZpY2F0aW9uLmgKPiBAQCAtMTcsNiArMTcsNyBAQAo+ICAgKiBzaG91
+bGQgYmUgdXNlZC4KPiAgICovCj4gICNkZWZpbmUgVkVSSUZZX1VTRV9TRUNPTkRBUllfS0VZUklO
+RyAoKHN0cnVjdCBrZXkgKikxVUwpCj4gKyNkZWZpbmUgVkVSSUZZX1VTRV9QTEFURk9STV9LRVlS
+SU5HICAoKHN0cnVjdCBrZXkgKikyVUwpCj4gIAo+ICAvKgo+ICAgKiBUaGUgdXNlIHRvIHdoaWNo
+IGFuIGFzeW1tZXRyaWMga2V5IGlzIGJlaW5nIHB1dC4K
