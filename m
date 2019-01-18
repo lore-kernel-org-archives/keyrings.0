@@ -1,53 +1,51 @@
-From: Kairui Song <kasong@redhat.com>
-Date: Wed, 16 Jan 2019 10:16:52 +0000
-Subject: [PATCH v3 0/2] let kexec_file_load use platform keyring to verify the kernel image
-Message-Id: <20190116101654.7288-1-kasong@redhat.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Fri, 18 Jan 2019 01:08:04 +0000
+Subject: Re: [PATCH v3 0/2] let kexec_file_load use platform keyring to verify the kernel image
+Message-Id: <1547773684.4026.10.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
+References: <20190116101654.7288-1-kasong@redhat.com>
+In-Reply-To: <20190116101654.7288-1-kasong@redhat.com>
+To: Kairui Song <kasong@redhat.com>, linux-kernel@vger.kernel.org, Dave Young <dyoung@redhat.com>
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
 
-This patch series adds a .platform_trusted_keys in system_keyring as the
-reference to .platform keyring in integrity subsystem, when platform
-keyring is being initialized it will be updated. So other component could
-use this keyring as well.
-
-This patch series also let kexec_file_load use platform keyring as fall
-back if it failed to verify the image against secondary keyring, make it
-possible to load kernel signed by third part key if third party key is
-imported in the firmware.
-
-After this patch kexec_file_load will be able to verify a signed PE
-bzImage using keys in platform keyring.
-
-Tested in a VM with locally signed kernel with pesign and imported the
-cert to EFI's MokList variable.
-
-Kairui Song (2):
-  integrity, KEYS: add a reference to platform keyring
-  kexec, KEYS: Make use of platform keyring for signature verify
-
-Update from V2:
-  - Use IS_ENABLED in kexec_file_load to judge if platform_trusted_keys
-    should be used for verifying image as suggested by Mimi Zohar
-
-Update from V1:
-  - Make platform_trusted_keys static, and update commit message as suggested
-    by Mimi Zohar
-  - Always check if platform keyring is initialized before use it
-
-Kairui Song (2):
-  integrity, KEYS: add a reference to platform keyring
-  kexec, KEYS: Make use of platform keyring for signature verify
-
- arch/x86/kernel/kexec-bzimage64.c | 13 ++++++++++---
- certs/system_keyring.c            | 22 +++++++++++++++++++++-
- include/keys/system_keyring.h     |  5 +++++
- include/linux/verification.h      |  1 +
- security/integrity/digsig.c       |  6 ++++++
- 5 files changed, 43 insertions(+), 4 deletions(-)
-
--- 
-2.20.1
+T24gV2VkLCAyMDE5LTAxLTE2IGF0IDE4OjE2ICswODAwLCBLYWlydWkgU29uZyB3cm90ZToKPiBU
+aGlzIHBhdGNoIHNlcmllcyBhZGRzIGEgLnBsYXRmb3JtX3RydXN0ZWRfa2V5cyBpbiBzeXN0ZW1f
+a2V5cmluZyBhcyB0aGUKPiByZWZlcmVuY2UgdG8gLnBsYXRmb3JtIGtleXJpbmcgaW4gaW50ZWdy
+aXR5IHN1YnN5c3RlbSwgd2hlbiBwbGF0Zm9ybQo+IGtleXJpbmcgaXMgYmVpbmcgaW5pdGlhbGl6
+ZWQgaXQgd2lsbCBiZSB1cGRhdGVkLiBTbyBvdGhlciBjb21wb25lbnQgY291bGQKPiB1c2UgdGhp
+cyBrZXlyaW5nIGFzIHdlbGwuCgpSZW1vdmUgIm90aGVyIGNvbXBvbmVudCBjb3VsZCB1c2UgLi4u
+Ii4KPiAKPiBUaGlzIHBhdGNoIHNlcmllcyBhbHNvIGxldCBrZXhlY19maWxlX2xvYWQgdXNlIHBs
+YXRmb3JtIGtleXJpbmcgYXMgZmFsbAo+IGJhY2sgaWYgaXQgZmFpbGVkIHRvIHZlcmlmeSB0aGUg
+aW1hZ2UgYWdhaW5zdCBzZWNvbmRhcnkga2V5cmluZywgbWFrZSBpdAo+IHBvc3NpYmxlIHRvIGxv
+YWQga2VybmVsIHNpZ25lZCBieSB0aGlyZCBwYXJ0IGtleSBpZiB0aGlyZCBwYXJ0eSBrZXkgaXMK
+PiBpbXBvcnRlZCBpbiB0aGUgZmlybXdhcmUuCgpUaGlzIGlzIHRoZSBvbmx5IHJlYXNvbiBmb3Ig
+dGhlc2UgcGF0Y2hlcy4gwqBQbGVhc2UgcmVtb3ZlICJhbHNvIi4KCj4gCj4gQWZ0ZXIgdGhpcyBw
+YXRjaCBrZXhlY19maWxlX2xvYWQgd2lsbCBiZSBhYmxlIHRvIHZlcmlmeSBhIHNpZ25lZCBQRQo+
+IGJ6SW1hZ2UgdXNpbmcga2V5cyBpbiBwbGF0Zm9ybSBrZXlyaW5nLgo+IAo+IFRlc3RlZCBpbiBh
+IFZNIHdpdGggbG9jYWxseSBzaWduZWQga2VybmVsIHdpdGggcGVzaWduIGFuZCBpbXBvcnRlZCB0
+aGUKPiBjZXJ0IHRvIEVGSSdzIE1va0xpc3QgdmFyaWFibGUuCgpJdCdzIHRha2VuIHNvIGxvbmcg
+Zm9yIG1lIHRvIHJldmlldy90ZXN0IHRoaXMgcGF0Y2ggc2V0IGR1ZSB0byBhCnJlZ3Jlc3Npb24g
+aW4gc2FuaXR5X2NoZWNrX3NlZ21lbnRfbGlzdCgpLCBpbnRyb2R1Y2VkIHNvbWV3aGVyZQpiZXR3
+ZWVuIDQuMjAgYW5kIDUuMC4wLXJjMS4gwqBUaGUgc2dlbWVudCBvdmVybGFwIHRlc3QgLSAiaWYg
+KChtZW5kID4KcHN0YXJ0KSAmJiAobXN0YXJ0IDwgcGVuZCkpIiAtIGZhaWxzLCByZXR1cm5pbmcg
+YSAtRUlOVkFMLgoKSXMgYW55b25lIGVsc2Ugc2VlaW5nIHRoaXM/CgpNaW1pCgoKPiAKPiBLYWly
+dWkgU29uZyAoMik6Cj4gICBpbnRlZ3JpdHksIEtFWVM6IGFkZCBhIHJlZmVyZW5jZSB0byBwbGF0
+Zm9ybSBrZXlyaW5nCj4gICBrZXhlYywgS0VZUzogTWFrZSB1c2Ugb2YgcGxhdGZvcm0ga2V5cmlu
+ZyBmb3Igc2lnbmF0dXJlIHZlcmlmeQo+IAo+IFVwZGF0ZSBmcm9tIFYyOgo+ICAgLSBVc2UgSVNf
+RU5BQkxFRCBpbiBrZXhlY19maWxlX2xvYWQgdG8ganVkZ2UgaWYgcGxhdGZvcm1fdHJ1c3RlZF9r
+ZXlzCj4gICAgIHNob3VsZCBiZSB1c2VkIGZvciB2ZXJpZnlpbmcgaW1hZ2UgYXMgc3VnZ2VzdGVk
+IGJ5IE1pbWkgWm9oYXIKPiAKPiBVcGRhdGUgZnJvbSBWMToKPiAgIC0gTWFrZSBwbGF0Zm9ybV90
+cnVzdGVkX2tleXMgc3RhdGljLCBhbmQgdXBkYXRlIGNvbW1pdCBtZXNzYWdlIGFzIHN1Z2dlc3Rl
+ZAo+ICAgICBieSBNaW1pIFpvaGFyCj4gICAtIEFsd2F5cyBjaGVjayBpZiBwbGF0Zm9ybSBrZXly
+aW5nIGlzIGluaXRpYWxpemVkIGJlZm9yZSB1c2UgaXQKPiAKPiBLYWlydWkgU29uZyAoMik6Cj4g
+ICBpbnRlZ3JpdHksIEtFWVM6IGFkZCBhIHJlZmVyZW5jZSB0byBwbGF0Zm9ybSBrZXlyaW5nCj4g
+ICBrZXhlYywgS0VZUzogTWFrZSB1c2Ugb2YgcGxhdGZvcm0ga2V5cmluZyBmb3Igc2lnbmF0dXJl
+IHZlcmlmeQo+IAo+ICBhcmNoL3g4Ni9rZXJuZWwva2V4ZWMtYnppbWFnZTY0LmMgfCAxMyArKysr
+KysrKysrLS0tCj4gIGNlcnRzL3N5c3RlbV9rZXlyaW5nLmMgICAgICAgICAgICB8IDIyICsrKysr
+KysrKysrKysrKysrKysrKy0KPiAgaW5jbHVkZS9rZXlzL3N5c3RlbV9rZXlyaW5nLmggICAgIHwg
+IDUgKysrKysKPiAgaW5jbHVkZS9saW51eC92ZXJpZmljYXRpb24uaCAgICAgIHwgIDEgKwo+ICBz
+ZWN1cml0eS9pbnRlZ3JpdHkvZGlnc2lnLmMgICAgICAgfCAgNiArKysrKysKPiAgNSBmaWxlcyBj
+aGFuZ2VkLCA0MyBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQo+IAo=
