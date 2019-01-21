@@ -1,175 +1,98 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 29 Jan 2019 20:43:07 +0000
-Subject: Re: [PATCH v8 6/7] KEYS: trusted: explicitly use tpm_chip structure from tpm_default_chip()
-Message-Id: <20190129204307.GE11615@linux.intel.com>
+From: Kairui Song <kasong@redhat.com>
+Date: Mon, 21 Jan 2019 09:59:29 +0000
+Subject: [PATCH v5 2/2] kexec, KEYS: Make use of platform keyring for signature verify
+Message-Id: <20190121095929.26915-3-kasong@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190124154910.29948-1-roberto.sassu@huawei.com>
- <20190124154910.29948-7-roberto.sassu@huawei.com>
-In-Reply-To: <20190124154910.29948-7-roberto.sassu@huawei.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>, dhowells@redhat.com, James.Bottomley@HansenPartnership.com
-Cc: zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, silviu.vlasceanu@huawei.com
+References: <20190121095929.26915-1-kasong@redhat.com>
+In-Reply-To: <20190121095929.26915-1-kasong@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
 
-On Thu, Jan 24, 2019 at 04:49:09PM +0100, Roberto Sassu wrote:
-> When crypto agility support will be added to the TPM driver, users of the
-> driver have to retrieve the allocated banks from chip->allocated_banks and
-> use this information to prepare the array of tpm_digest structures to be
-> passed to tpm_pcr_extend().
-> 
-> This patch retrieves a tpm_chip pointer from tpm_default_chip() so that the
-> pointer can be used to prepare the array of tpm_digest structures.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-> ---
->  security/keys/trusted.c | 38 ++++++++++++++++++++++++--------------
->  1 file changed, 24 insertions(+), 14 deletions(-)
-> 
-> diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-> index 4d98f4f87236..1a20a9692fef 100644
-> --- a/security/keys/trusted.c
-> +++ b/security/keys/trusted.c
-> @@ -34,6 +34,7 @@
->  
->  static const char hmac_alg[] = "hmac(sha1)";
->  static const char hash_alg[] = "sha1";
-> +static struct tpm_chip *chip;
->  
->  struct sdesc {
->  	struct shash_desc shash;
-> @@ -362,7 +363,7 @@ int trusted_tpm_send(unsigned char *cmd, size_t buflen)
->  	int rc;
->  
->  	dump_tpm_buf(cmd);
-> -	rc = tpm_send(NULL, cmd, buflen);
-> +	rc = tpm_send(chip, cmd, buflen);
->  	dump_tpm_buf(cmd);
->  	if (rc > 0)
->  		/* Can't return positive return codes values to keyctl */
-> @@ -384,10 +385,10 @@ static int pcrlock(const int pcrnum)
->  
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
-> -	ret = tpm_get_random(NULL, hash, SHA1_DIGEST_SIZE);
-> +	ret = tpm_get_random(chip, hash, SHA1_DIGEST_SIZE);
->  	if (ret != SHA1_DIGEST_SIZE)
->  		return ret;
-> -	return tpm_pcr_extend(NULL, pcrnum, hash) ? -EINVAL : 0;
-> +	return tpm_pcr_extend(chip, pcrnum, hash) ? -EINVAL : 0;
->  }
->  
->  /*
-> @@ -400,7 +401,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
->  	unsigned char ononce[TPM_NONCE_SIZE];
->  	int ret;
->  
-> -	ret = tpm_get_random(NULL, ononce, TPM_NONCE_SIZE);
-> +	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
->  	if (ret != TPM_NONCE_SIZE)
->  		return ret;
->  
-> @@ -496,7 +497,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
->  	if (ret < 0)
->  		goto out;
->  
-> -	ret = tpm_get_random(NULL, td->nonceodd, TPM_NONCE_SIZE);
-> +	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
->  	if (ret != TPM_NONCE_SIZE)
->  		goto out;
->  	ordinal = htonl(TPM_ORD_SEAL);
-> @@ -606,7 +607,7 @@ static int tpm_unseal(struct tpm_buf *tb,
->  
->  	ordinal = htonl(TPM_ORD_UNSEAL);
->  	keyhndl = htonl(SRKHANDLE);
-> -	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
-> +	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
->  	if (ret != TPM_NONCE_SIZE) {
->  		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
->  		return ret;
-> @@ -751,7 +752,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
->  	int i;
->  	int tpm2;
->  
-> -	tpm2 = tpm_is_tpm2(NULL);
-> +	tpm2 = tpm_is_tpm2(chip);
->  	if (tpm2 < 0)
->  		return tpm2;
->  
-> @@ -920,7 +921,7 @@ static struct trusted_key_options *trusted_options_alloc(void)
->  	struct trusted_key_options *options;
->  	int tpm2;
->  
-> -	tpm2 = tpm_is_tpm2(NULL);
-> +	tpm2 = tpm_is_tpm2(chip);
->  	if (tpm2 < 0)
->  		return NULL;
->  
-> @@ -970,7 +971,7 @@ static int trusted_instantiate(struct key *key,
->  	size_t key_len;
->  	int tpm2;
->  
-> -	tpm2 = tpm_is_tpm2(NULL);
-> +	tpm2 = tpm_is_tpm2(chip);
->  	if (tpm2 < 0)
->  		return tpm2;
->  
-> @@ -1011,7 +1012,7 @@ static int trusted_instantiate(struct key *key,
->  	switch (key_cmd) {
->  	case Opt_load:
->  		if (tpm2)
-> -			ret = tpm_unseal_trusted(NULL, payload, options);
-> +			ret = tpm_unseal_trusted(chip, payload, options);
->  		else
->  			ret = key_unseal(payload, options);
->  		dump_payload(payload);
-> @@ -1021,13 +1022,13 @@ static int trusted_instantiate(struct key *key,
->  		break;
->  	case Opt_new:
->  		key_len = payload->key_len;
-> -		ret = tpm_get_random(NULL, payload->key, key_len);
-> +		ret = tpm_get_random(chip, payload->key, key_len);
->  		if (ret != key_len) {
->  			pr_info("trusted_key: key_create failed (%d)\n", ret);
->  			goto out;
->  		}
->  		if (tpm2)
-> -			ret = tpm_seal_trusted(NULL, payload, options);
-> +			ret = tpm_seal_trusted(chip, payload, options);
->  		else
->  			ret = key_seal(payload, options);
->  		if (ret < 0)
-> @@ -1225,17 +1226,26 @@ static int __init init_trusted(void)
->  {
->  	int ret;
->  
-> +	chip = tpm_default_chip();
-> +	if (!chip)
-> +		return -ENOENT;
->  	ret = trusted_shash_alloc();
->  	if (ret < 0)
-> -		return ret;
-> +		goto out_put;
->  	ret = register_key_type(&key_type_trusted);
->  	if (ret < 0)
-> -		trusted_shash_release();
-> +		goto out_release;
-> +	return 0;
-> +out_release:
-> +	trusted_shash_release();
-> +out_put:
-> +	put_device(&chip->dev);
->  	return ret;
->  }
+This patch let kexec_file_load makes use of .platform keyring as fall
+back if it failed to verify a PE signed image against secondary or
+builtin key ring, make it possible to verify kernel image signed with
+preboot keys as well.
 
-Since the labels are *only* used for exception fallbacks, I'd prefer
-err_release and err_put.
+This commit adds a VERIFY_USE_PLATFORM_KEYRING similar to previous
+VERIFY_USE_SECONDARY_KEYRING indicating that verify_pkcs7_signature
+should verify the signature using platform keyring. Also, decrease
+the error message log level when verification failed with -ENOKEY,
+so that if called tried multiple time with different keyring it
+won't generate extra noises.
 
-Other than that, LGTM.
+Signed-off-by: Kairui Song <kasong@redhat.com>
+---
+ arch/x86/kernel/kexec-bzimage64.c | 13 ++++++++++---
+ certs/system_keyring.c            | 13 ++++++++++++-
+ include/linux/verification.h      |  1 +
+ 3 files changed, 23 insertions(+), 4 deletions(-)
 
-Unrelated side-note: I think the TPM subsystem starts to be soon in a
-shape that TPM 2.0 trusted keys code could be eventually moved to
-security/keys/trusted2.c, and TPM 1.2 trusted keys code could start to
-use tpm_buf to build its commands.
-
-/Jarkko
+diff --git a/arch/x86/kernel/kexec-bzimage64.c b/arch/x86/kernel/kexec-bzimage64.c
+index 7d97e432cbbc..2c007abd3d40 100644
+--- a/arch/x86/kernel/kexec-bzimage64.c
++++ b/arch/x86/kernel/kexec-bzimage64.c
+@@ -534,9 +534,16 @@ static int bzImage64_cleanup(void *loader_data)
+ #ifdef CONFIG_KEXEC_BZIMAGE_VERIFY_SIG
+ static int bzImage64_verify_sig(const char *kernel, unsigned long kernel_len)
+ {
+-	return verify_pefile_signature(kernel, kernel_len,
+-				       VERIFY_USE_SECONDARY_KEYRING,
+-				       VERIFYING_KEXEC_PE_SIGNATURE);
++	int ret;
++	ret = verify_pefile_signature(kernel, kernel_len,
++				      VERIFY_USE_SECONDARY_KEYRING,
++				      VERIFYING_KEXEC_PE_SIGNATURE);
++	if (ret = -ENOKEY && IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING)) {
++		ret = verify_pefile_signature(kernel, kernel_len,
++					      VERIFY_USE_PLATFORM_KEYRING,
++					      VERIFYING_KEXEC_PE_SIGNATURE);
++	}
++	return ret;
+ }
+ #endif
+ 
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 4690ef9cda8a..7085c286f4bd 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -240,11 +240,22 @@ int verify_pkcs7_signature(const void *data, size_t len,
+ #else
+ 		trusted_keys = builtin_trusted_keys;
+ #endif
++	} else if (trusted_keys = VERIFY_USE_PLATFORM_KEYRING) {
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++		trusted_keys = platform_trusted_keys;
++#else
++		trusted_keys = NULL;
++#endif
++		if (!trusted_keys) {
++			ret = -ENOKEY;
++			pr_devel("PKCS#7 platform keyring is not available\n");
++			goto error;
++		}
+ 	}
+ 	ret = pkcs7_validate_trust(pkcs7, trusted_keys);
+ 	if (ret < 0) {
+ 		if (ret = -ENOKEY)
+-			pr_err("PKCS#7 signature not signed with a trusted key\n");
++			pr_devel("PKCS#7 signature not signed with a trusted key\n");
+ 		goto error;
+ 	}
+ 
+diff --git a/include/linux/verification.h b/include/linux/verification.h
+index cfa4730d607a..018fb5f13d44 100644
+--- a/include/linux/verification.h
++++ b/include/linux/verification.h
+@@ -17,6 +17,7 @@
+  * should be used.
+  */
+ #define VERIFY_USE_SECONDARY_KEYRING ((struct key *)1UL)
++#define VERIFY_USE_PLATFORM_KEYRING  ((struct key *)2UL)
+ 
+ /*
+  * The use to which an asymmetric key is being put.
+-- 
+2.20.1
