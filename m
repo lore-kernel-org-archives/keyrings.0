@@ -1,46 +1,90 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 29 Jan 2019 20:14:05 +0000
-Subject: Re: [PATCH v8 4/7] tpm: retrieve digest size of unknown algorithms with PCR read
-Message-Id: <20190129201405.GC11615@linux.intel.com>
+From: Kairui Song <kasong@redhat.com>
+Date: Mon, 21 Jan 2019 09:59:28 +0000
+Subject: [PATCH v5 1/2] integrity, KEYS: add a reference to platform keyring
+Message-Id: <20190121095929.26915-2-kasong@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190124154910.29948-1-roberto.sassu@huawei.com>
- <20190124154910.29948-5-roberto.sassu@huawei.com>
-In-Reply-To: <20190124154910.29948-5-roberto.sassu@huawei.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>
-Cc: zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, silviu.vlasceanu@huawei.com
+References: <20190121095929.26915-1-kasong@redhat.com>
+In-Reply-To: <20190121095929.26915-1-kasong@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
 
-On Thu, Jan 24, 2019 at 04:49:07PM +0100, Roberto Sassu wrote:
-> Currently, the TPM driver retrieves the digest size from a table mapping
-> TPM algorithms identifiers to identifiers defined by the crypto subsystem.
-> If the algorithm is not defined by the latter, the digest size can be
-> retrieved from the output of the PCR read command.
-> 
-> The patch modifies the definition of tpm_pcr_read() and tpm2_pcr_read() to
-> pass the desired hash algorithm and obtain the digest size at TPM startup.
-> Algorithms and corresponding digest sizes are stored in the new structure
-> tpm_bank_info, member of tpm_chip, so that the information can be used by
-> other kernel subsystems.
-> 
-> tpm_bank_info contains: the TPM algorithm identifier, necessary to generate
-> the event log as defined by Trusted Computing Group (TCG); the digest size,
-> to pad/truncate a digest calculated with a different algorithm; the crypto
-> subsystem identifier, to calculate the digest of event data.
-> 
-> This patch also protects against data corruption that could happen in the
-> bus, by checking that the digest size returned by the TPM during a PCR read
-> matches the size of the algorithm passed to tpm2_pcr_read().
-> 
-> For the initial PCR read, when digest sizes are not yet available, this
-> patch ensures that the amount of data copied from the output returned by
-> the TPM does not exceed the size of the array data are copied to.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> Acked-by: Mimi Zohar <zohar@linux.ibm.com>
+commit 9dc92c45177a ('integrity: Define a trusted platform keyring')
+introduced a .platform keyring for storing preboot keys, used for
+verifying kernel images' signature. Currently only IMA-appraisal is able
+to use the keyring to verify kernel images that have their signature
+stored in xattr.
 
-Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+This patch exposes the .platform keyring, making it
+accessible for verifying PE signed kernel images as well.
 
-/Jarkko
+Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Kairui Song <kasong@redhat.com>
+---
+ certs/system_keyring.c        | 9 +++++++++
+ include/keys/system_keyring.h | 9 +++++++++
+ security/integrity/digsig.c   | 3 +++
+ 3 files changed, 21 insertions(+)
+
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 81728717523d..4690ef9cda8a 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -24,6 +24,9 @@ static struct key *builtin_trusted_keys;
+ #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
+ static struct key *secondary_trusted_keys;
+ #endif
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++static struct key *platform_trusted_keys;
++#endif
+ 
+ extern __initconst const u8 system_certificate_list[];
+ extern __initconst const unsigned long system_certificate_list_size;
+@@ -265,4 +268,10 @@ int verify_pkcs7_signature(const void *data, size_t len,
+ }
+ EXPORT_SYMBOL_GPL(verify_pkcs7_signature);
+ 
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++void __init set_platform_trusted_keys(struct key *keyring) {
++	platform_trusted_keys = keyring;
++}
++#endif
++
+ #endif /* CONFIG_SYSTEM_DATA_VERIFICATION */
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index 359c2f936004..df766ef8f03c 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -61,5 +61,14 @@ static inline struct key *get_ima_blacklist_keyring(void)
+ }
+ #endif /* CONFIG_IMA_BLACKLIST_KEYRING */
+ 
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++
++extern void __init set_platform_trusted_keys(struct key* keyring);
++
++#else
++
++static inline void set_platform_trusted_keys(struct key* keyring) { };
++
++#endif /* CONFIG_INTEGRITY_PLATFORM_KEYRING */
+ 
+ #endif /* _KEYS_SYSTEM_KEYRING_H */
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index f45d6edecf99..e19c2eb72c51 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -87,6 +87,9 @@ static int __integrity_init_keyring(const unsigned int id, key_perm_t perm,
+ 		pr_info("Can't allocate %s keyring (%d)\n",
+ 			keyring_name[id], err);
+ 		keyring[id] = NULL;
++	} else {
++		if (id = INTEGRITY_KEYRING_PLATFORM)
++			set_platform_trusted_keys(keyring[id]);
+ 	}
+ 
+ 	return err;
+-- 
+2.20.1
