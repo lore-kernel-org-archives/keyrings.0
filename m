@@ -1,18 +1,18 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Tue, 22 Jan 2019 15:37:38 +0000
+From: Dave Young <dyoung@redhat.com>
+Date: Wed, 23 Jan 2019 02:35:37 +0000
 Subject: Re: [PATCH v5 2/2] kexec, KEYS: Make use of platform keyring for signature verify
-Message-Id: <1548171458.4038.3.camel@linux.ibm.com>
+Message-Id: <20190123023537.GA5591@dhcp-128-65.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190121095929.26915-1-kasong@redhat.com>
-         <20190121095929.26915-3-kasong@redhat.com>
+ <20190121095929.26915-3-kasong@redhat.com>
 In-Reply-To: <20190121095929.26915-3-kasong@redhat.com>
-To: Kairui Song <kasong@redhat.com>, linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
+To: Kairui Song <kasong@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
 
-On Mon, 2019-01-21 at 17:59 +0800, Kairui Song wrote:
+On 01/21/19 at 05:59pm, Kairui Song wrote:
 > This patch let kexec_file_load makes use of .platform keyring as fall
 > back if it failed to verify a PE signed image against secondary or
 > builtin key ring, make it possible to verify kernel image signed with
@@ -26,9 +26,6 @@ On Mon, 2019-01-21 at 17:59 +0800, Kairui Song wrote:
 > won't generate extra noises.
 > 
 > Signed-off-by: Kairui Song <kasong@redhat.com>
-
-Reviewed/Tested-by: Mimi Zohar <zohar@linux.ibm.com>
-
 > ---
 >  arch/x86/kernel/kexec-bzimage64.c | 13 ++++++++++---
 >  certs/system_keyring.c            | 13 ++++++++++++-
@@ -99,3 +96,13 @@ Reviewed/Tested-by: Mimi Zohar <zohar@linux.ibm.com>
 >  
 >  /*
 >   * The use to which an asymmetric key is being put.
+> -- 
+> 2.20.1
+> 
+
+For kexec_file part
+
+Acked-by: Dave Young <dyoung@redhat.com>
+
+Thanks
+Dave
