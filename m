@@ -1,56 +1,27 @@
-From: Kairui Song <kasong@redhat.com>
-Date: Mon, 21 Jan 2019 10:03:43 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Wed, 23 Jan 2019 18:36:00 +0000
 Subject: Re: [PATCH v5 0/2] let kexec_file_load use platform keyring to verify the kernel image
-Message-Id: <CACPcB9c2eJ=Wm8Tb6afgyoAQ5TWuGbuqGXq1i9cN8pRFCwXGrw@mail.gmail.com>
+Message-Id: <1548268560.3971.2.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190121095929.26915-1-kasong@redhat.com>
 In-Reply-To: <20190121095929.26915-1-kasong@redhat.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, Eric Biggers <ebiggers@google.com>, nayna@linux.ibm.com, Dave Young <dyoung@redhat.com>, linux-integrity <linux-integrity@vger.kernel.org>, kexec@lists.infradead.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Kairui Song <kasong@redhat.com>, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
 
-T24gTW9uLCBKYW4gMjEsIDIwMTkgYXQgNjowMCBQTSBLYWlydWkgU29uZyA8a2Fzb25nQHJlZGhh
-dC5jb20+IHdyb3RlOgo+Cj4gVGhpcyBwYXRjaCBzZXJpZXMgYWRkcyBhIC5wbGF0Zm9ybV90cnVz
-dGVkX2tleXMgaW4gc3lzdGVtX2tleXJpbmcgYXMgdGhlCj4gcmVmZXJlbmNlIHRvIC5wbGF0Zm9y
-bSBrZXlyaW5nIGluIGludGVncml0eSBzdWJzeXN0ZW0sIHdoZW4gcGxhdGZvcm0KPiBrZXlyaW5n
-IGlzIGJlaW5nIGluaXRpYWxpemVkIGl0IHdpbGwgYmUgdXBkYXRlZCwgc28gaXQgd2lsbCBiZQo+
-IGFjY2Vzc2FibGUgZm9yIHZlcmlmeWluZyBQRSBzaWduZWQga2VybmVsIGltYWdlLgo+Cj4gVGhp
-cyBwYXRjaCBzZXJpZXMgbGV0IGtleGVjX2ZpbGVfbG9hZCB1c2UgcGxhdGZvcm0ga2V5cmluZyBh
-cyBmYWxsCj4gYmFjayBpZiBpdCBmYWlsZWQgdG8gdmVyaWZ5IHRoZSBpbWFnZSBhZ2FpbnN0IHNl
-Y29uZGFyeSBrZXlyaW5nLAo+IHNvIHRoZSBhY3R1YWxseSBQRSBzaWduYXR1cmUgdmVyaWZ5IHBy
-b2Nlc3Mgd2lsbCB1c2Uga2V5cyBwcm92aWRlcwo+IGJ5IGZpcm13YXJlLgo+Cj4gQWZ0ZXIgdGhp
-cyBwYXRjaCBrZXhlY19maWxlX2xvYWQgd2lsbCBiZSBhYmxlIHRvIHZlcmlmeSBhIHNpZ25lZCBQ
-RQo+IGJ6SW1hZ2UgdXNpbmcga2V5cyBpbiBwbGF0Zm9ybSBrZXlyaW5nLgo+Cj4gVGVzdGVkIGlu
-IGEgVk0gd2l0aCBsb2NhbGx5IHNpZ25lZCBrZXJuZWwgd2l0aCBwZXNpZ24gYW5kIGltcG9ydGVk
-IHRoZQo+IGNlcnQgdG8gRUZJJ3MgTW9rTGlzdCB2YXJpYWJsZS4KPgo+IFRvIHRlc3QgdGhpcyBw
-YXRjaCBzZXJpZXMgb24gbGF0ZXN0IGtlcm5lbCwgeW91IG5lZWQgdG8gZW5zdXJlIHRoaXMgY29t
-bWl0Cj4gaXMgYXBwbGllZCBhcyB0aGVyZSBpcyBhbiByZWdyZXNzaW9uIGJ1ZyBpbiBzYW5pdHlf
-Y2hlY2tfc2VnbWVudF9saXN0KCk6Cj4KPiBodHRwczovL2dpdC5rZXJuZWwub3JnL3B1Yi9zY20v
-bGludXgva2VybmVsL2dpdC90aXAvdGlwLmdpdC9jb21taXQvP2lkmTNhMTEwMzE5YTRhNjBhYWRi
-ZDAyZjZkZWZkZWJlMDQ4Zjc3NzNiCj4KPiBVcGRhdGUgZnJvbSBWNDoKPiAgIC0gRHJvcCBpZmRl
-ZiBpbiBzZWN1cml0eS9pbnRlZ3JpdHkvZGlnc2lnLmMgdG8gbWFrZSBjb2RlIGNsZWFyZXIKPiAg
-IC0gRml4IGEgcG90ZW50aWFsIGlzc3VlLCBzZXRfcGxhdGZvcm1fdHJ1c3RlZF9rZXlzIHNob3Vs
-ZCBub3QgYmUKPiAgICAgY2FsbGVkIHdoZW4ga2V5cmluZyBpbml0aWFsaXphdGlvbiBmYWlsZWQK
-Pgo+IFVwZGF0ZSBmcm9tIFYzOgo+ICAgLSBUd2VhayBhbmQgc2ltcGxpZnkgY29tbWl0IG1lc3Nh
-Z2UgYXMgc3VnZ2VzdGVkIGJ5IE1pbWkgWm9oYXIKPgo+IFVwZGF0ZSBmcm9tIFYyOgo+ICAgLSBV
-c2UgSVNfRU5BQkxFRCBpbiBrZXhlY19maWxlX2xvYWQgdG8ganVkZ2UgaWYgcGxhdGZvcm1fdHJ1
-c3RlZF9rZXlzCj4gICAgIHNob3VsZCBiZSB1c2VkIGZvciB2ZXJpZnlpbmcgaW1hZ2UgYXMgc3Vn
-Z2VzdGVkIGJ5IE1pbWkgWm9oYXIKPgo+IFVwZGF0ZSBmcm9tIFYxOgo+ICAgLSBNYWtlIHBsYXRm
-b3JtX3RydXN0ZWRfa2V5cyBzdGF0aWMsIGFuZCB1cGRhdGUgY29tbWl0IG1lc3NhZ2UgYXMgc3Vn
-Z2VzdGVkCj4gICAgIGJ5IE1pbWkgWm9oYXIKPiAgIC0gQWx3YXlzIGNoZWNrIGlmIHBsYXRmb3Jt
-IGtleXJpbmcgaXMgaW5pdGlhbGl6ZWQgYmVmb3JlIHVzZSBpdAo+Cj4gS2FpcnVpIFNvbmcgKDIp
-Ogo+ICAgaW50ZWdyaXR5LCBLRVlTOiBhZGQgYSByZWZlcmVuY2UgdG8gcGxhdGZvcm0ga2V5cmlu
-Zwo+ICAga2V4ZWMsIEtFWVM6IE1ha2UgdXNlIG9mIHBsYXRmb3JtIGtleXJpbmcgZm9yIHNpZ25h
-dHVyZSB2ZXJpZnkKPgo+ICBhcmNoL3g4Ni9rZXJuZWwva2V4ZWMtYnppbWFnZTY0LmMgfCAxMyAr
-KysrKysrKysrLS0tCj4gIGNlcnRzL3N5c3RlbV9rZXlyaW5nLmMgICAgICAgICAgICB8IDIyICsr
-KysrKysrKysrKysrKysrKysrKy0KPiAgaW5jbHVkZS9rZXlzL3N5c3RlbV9rZXlyaW5nLmggICAg
-IHwgIDkgKysrKysrKysrCj4gIGluY2x1ZGUvbGludXgvdmVyaWZpY2F0aW9uLmggICAgICB8ICAx
-ICsKPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2RpZ3NpZy5jICAgICAgIHwgIDMgKysrCj4gIDUgZmls
-ZXMgY2hhbmdlZCwgNDQgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKPgo+IC0tCj4gMi4y
-MC4xCj4KCkhpIE1pbWksCgpJJ3ZlIHVwZGF0ZWQgdGhlIHBhdGNoIHNlcmllcyBhZ2FpbiBhbmQg
-YXMgdGhlIGNvZGUgY2hhbmdlZCBhIGJpdCBJCmRpZG4ndCBpbmNsdWRlIHByZXZpb3VzIFJldmll
-d2QtYnkgLyBUZXN0ZWQtYnksIGl0IHdvcmtlZCB3aXRoIG5vCnByb2JsZW0sIGNvdWxkIHlvdSBo
-ZWxwIGhhdmUgYSByZXZpZXcgYWdhaW4/IFRoYW5rIHlvdS4KCi0tIApCZXN0IFJlZ2FyZHMsCkth
-aXJ1aSBTb25n
+On Mon, 2019-01-21 at 17:59 +0800, Kairui Song wrote:
+> This patch series adds a .platform_trusted_keys in system_keyring as the
+> reference to .platform keyring in integrity subsystem, when platform
+> keyring is being initialized it will be updated, so it will be
+> accessable for verifying PE signed kernel image.
+
+There were some scripts/checkpatch.pl errors/warnings emitted on these
+patches.  I've fixed them, but in the future please follow the
+guidelines in Documentation/process/submitting-patches.rst.
+
+These patches are now queued in the next-integrity branch of
+https://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity.git
+
+Mimi
