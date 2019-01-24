@@ -1,198 +1,282 @@
-From: Nayna Jain <nayna@linux.ibm.com>
-Date: Sat, 08 Dec 2018 20:39:02 +0000
-Subject: [PATCH v2 4/7] efi: Add an EFI signature blob parser
-Message-Id: <20181208202705.18673-5-nayna@linux.ibm.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Thu, 24 Jan 2019 15:49:08 +0000
+Subject: [PATCH v8 5/7] tpm: move tpm_chip definition to include/linux/tpm.h
+Message-Id: <20190124154910.29948-6-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181208202705.18673-1-nayna@linux.ibm.com>
-In-Reply-To: <20181208202705.18673-1-nayna@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, zohar@linux.ibm.com, dhowells@redhat.com, jforbes@redhat.com, seth.forshee@canonical.com, kexec@lists.infradead.org, keyrings@vger.kernel.org, vgoyal@redhat.com, ebiederm@xmission.com, mpe@ellerman.id.au, Nayna Jain <nayna@linux.ibm.com>
+References: <20190124154910.29948-1-roberto.sassu@huawei.com>
+In-Reply-To: <20190124154910.29948-1-roberto.sassu@huawei.com>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-From: Dave Howells <dhowells@redhat.com>
+The tpm_chip structure contains the list of PCR banks currently allocated
+in the TPM. When support for crypto agility will be added to the TPM
+driver, users of the driver have to provide a digest for each allocated
+bank to tpm_pcr_extend(). With this patch, they can obtain the PCR bank
+algorithms directly from chip->allocated_banks.
 
-Add a function to parse an EFI signature blob looking for elements of
-interest. A list is made up of a series of sublists, where all the
-elements in a sublist are of the same type, but sublists can be of
-different types.
-
-For each sublist encountered, the function pointed to by the
-get_handler_for_guid argument is called with the type specifier GUID and
-returns either a pointer to a function to handle elements of that type or
-NULL if the type is not of interest.
-
-If the sublist is of interest, each element is passed to the handler
-function in turn.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Nayna Jain <nayna@linux.ibm.com>
-Acked-by: Serge Hallyn <serge@hallyn.com>
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 ---
-Changelog:
+ drivers/char/tpm/tpm.h | 97 ------------------------------------------
+ include/linux/tpm.h    | 96 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 96 insertions(+), 97 deletions(-)
 
-v0:
-- removed the CONFIG EFI_SIGNATURE_LIST_PARSER
-- moved efi_parser.c from certs to security/integrity/platform_certs
-  directory
-
-v2:
-- Fixed the checkpatch.pl warnings
-
- include/linux/efi.h                            |   9 +++
- security/integrity/Makefile                    |   3 +-
- security/integrity/platform_certs/efi_parser.c | 108 +++++++++++++++++++++++++
- 3 files changed, 119 insertions(+), 1 deletion(-)
- create mode 100644 security/integrity/platform_certs/efi_parser.c
-
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 214516b29b36..c3206b134137 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -1141,6 +1141,15 @@ extern int efi_memattr_apply_permissions(struct mm_struct *mm,
- char * __init efi_md_typeattr_format(char *buf, size_t size,
- 				     const efi_memory_desc_t *md);
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 64d93d26087f..f5f15365b85b 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -25,31 +25,18 @@
  
-+
-+typedef void (*efi_element_handler_t)(const char *source,
-+				      const void *element_data,
-+				      size_t element_size);
-+extern int __init parse_efi_signature_list(
-+	const char *source,
-+	const void *data, size_t size,
-+	efi_element_handler_t (*get_handler_for_guid)(const efi_guid_t *));
-+
- /**
-  * efi_range_is_wc - check the WC bit on an address range
-  * @start: starting kvirt address
-diff --git a/security/integrity/Makefile b/security/integrity/Makefile
-index 046ffc1bb42d..6ee9058866cd 100644
---- a/security/integrity/Makefile
-+++ b/security/integrity/Makefile
-@@ -9,7 +9,8 @@ integrity-y := iint.o
- integrity-$(CONFIG_INTEGRITY_AUDIT) += integrity_audit.o
- integrity-$(CONFIG_INTEGRITY_SIGNATURE) += digsig.o
- integrity-$(CONFIG_INTEGRITY_ASYMMETRIC_KEYS) += digsig_asymmetric.o
--integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o
-+integrity-$(CONFIG_INTEGRITY_PLATFORM_KEYRING) += platform_certs/platform_keyring.o \
-+						  platform_certs/efi_parser.o
+ #include <linux/module.h>
+ #include <linux/delay.h>
+-#include <linux/fs.h>
+-#include <linux/hw_random.h>
+ #include <linux/mutex.h>
+ #include <linux/sched.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/tpm.h>
+-#include <linux/acpi.h>
+-#include <linux/cdev.h>
+ #include <linux/highmem.h>
+ #include <linux/tpm_eventlog.h>
+-#include <crypto/hash_info.h>
  
- subdir-$(CONFIG_IMA)			+= ima
- obj-$(CONFIG_IMA)			+= ima/
-diff --git a/security/integrity/platform_certs/efi_parser.c b/security/integrity/platform_certs/efi_parser.c
-new file mode 100644
-index 000000000000..18f01f36fe6a
---- /dev/null
-+++ b/security/integrity/platform_certs/efi_parser.c
-@@ -0,0 +1,108 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/* EFI signature/key/certificate list parser
-+ *
-+ * Copyright (C) 2012, 2016 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ */
+ #ifdef CONFIG_X86
+ #include <asm/intel-family.h>
+ #endif
+ 
+-enum tpm_const {
+-	TPM_MINOR = 224,	/* officially assigned */
+-	TPM_BUFSIZE = 4096,
+-	TPM_NUM_DEVICES = 65536,
+-	TPM_RETRY = 50,		/* 5 seconds */
+-	TPM_NUM_EVENT_LOG_FILES = 3,
+-};
+-
+ enum tpm_timeout {
+ 	TPM_TIMEOUT = 5,	/* msecs */
+ 	TPM_TIMEOUT_RETRY = 100, /* msecs */
+@@ -65,16 +52,6 @@ enum tpm_addr {
+ 	TPM_ADDR = 0x4E,
+ };
+ 
+-/* Indexes the duration array */
+-enum tpm_duration {
+-	TPM_SHORT = 0,
+-	TPM_MEDIUM = 1,
+-	TPM_LONG = 2,
+-	TPM_LONG_LONG = 3,
+-	TPM_UNDEFINED,
+-	TPM_NUM_DURATIONS = TPM_UNDEFINED,
+-};
+-
+ #define TPM_WARN_RETRY          0x800
+ #define TPM_WARN_DOING_SELFTEST 0x802
+ #define TPM_ERR_DEACTIVATED     0x6
+@@ -179,15 +156,6 @@ enum tpm2_cc_attrs {
+ #define TPM_VID_WINBOND  0x1050
+ #define TPM_VID_STM      0x104A
+ 
+-#define TPM_PPI_VERSION_LEN		3
+-
+-struct tpm_space {
+-	u32 context_tbl[3];
+-	u8 *context_buf;
+-	u32 session_tbl[3];
+-	u8 *session_buf;
+-};
+-
+ enum tpm_chip_flags {
+ 	TPM_CHIP_FLAG_TPM2		= BIT(1),
+ 	TPM_CHIP_FLAG_IRQ		= BIT(2),
+@@ -196,71 +164,6 @@ enum tpm_chip_flags {
+ 	TPM_CHIP_FLAG_ALWAYS_POWERED	= BIT(5),
+ };
+ 
+-struct tpm_bios_log {
+-	void *bios_event_log;
+-	void *bios_event_log_end;
+-};
+-
+-struct tpm_chip_seqops {
+-	struct tpm_chip *chip;
+-	const struct seq_operations *seqops;
+-};
+-
+-struct tpm_chip {
+-	struct device dev;
+-	struct device devs;
+-	struct cdev cdev;
+-	struct cdev cdevs;
+-
+-	/* A driver callback under ops cannot be run unless ops_sem is held
+-	 * (sometimes implicitly, eg for the sysfs code). ops becomes null
+-	 * when the driver is unregistered, see tpm_try_get_ops.
+-	 */
+-	struct rw_semaphore ops_sem;
+-	const struct tpm_class_ops *ops;
+-
+-	struct tpm_bios_log log;
+-	struct tpm_chip_seqops bin_log_seqops;
+-	struct tpm_chip_seqops ascii_log_seqops;
+-
+-	unsigned int flags;
+-
+-	int dev_num;		/* /dev/tpm# */
+-	unsigned long is_open;	/* only one allowed */
+-
+-	char hwrng_name[64];
+-	struct hwrng hwrng;
+-
+-	struct mutex tpm_mutex;	/* tpm is processing */
+-
+-	unsigned long timeout_a; /* jiffies */
+-	unsigned long timeout_b; /* jiffies */
+-	unsigned long timeout_c; /* jiffies */
+-	unsigned long timeout_d; /* jiffies */
+-	bool timeout_adjusted;
+-	unsigned long duration[TPM_NUM_DURATIONS]; /* jiffies */
+-	bool duration_adjusted;
+-
+-	struct dentry *bios_dir[TPM_NUM_EVENT_LOG_FILES];
+-
+-	const struct attribute_group *groups[3];
+-	unsigned int groups_cnt;
+-
+-	u32 nr_allocated_banks;
+-	struct tpm_bank_info *allocated_banks;
+-#ifdef CONFIG_ACPI
+-	acpi_handle acpi_dev_handle;
+-	char ppi_version[TPM_PPI_VERSION_LEN + 1];
+-#endif /* CONFIG_ACPI */
+-
+-	struct tpm_space work_space;
+-	u32 nr_commands;
+-	u32 *cc_attrs_tbl;
+-
+-	/* active locality */
+-	int locality;
+-};
+-
+ #define to_tpm_chip(d) container_of(d, struct tpm_chip, dev)
+ 
+ struct tpm_input_header {
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 72df8d4252ef..5ad0e58d5e09 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -22,6 +22,10 @@
+ #ifndef __LINUX_TPM_H__
+ #define __LINUX_TPM_H__
+ 
++#include <linux/hw_random.h>
++#include <linux/acpi.h>
++#include <linux/cdev.h>
++#include <linux/fs.h>
+ #include <crypto/hash_info.h>
+ 
+ #define TPM_DIGEST_SIZE 20	/* Max TPM v1.2 PCR size */
+@@ -74,6 +78,98 @@ struct tpm_class_ops {
+ 	void (*clk_enable)(struct tpm_chip *chip, bool value);
+ };
+ 
++enum tpm_const {
++	TPM_MINOR = 224,	/* officially assigned */
++	TPM_BUFSIZE = 4096,
++	TPM_NUM_DEVICES = 65536,
++	TPM_RETRY = 50,		/* 5 seconds */
++	TPM_NUM_EVENT_LOG_FILES = 3,
++};
 +
-+#define pr_fmt(fmt) "EFI: "fmt
-+#include <linux/module.h>
-+#include <linux/printk.h>
-+#include <linux/err.h>
-+#include <linux/efi.h>
++/* Indexes the duration array */
++enum tpm_duration {
++	TPM_SHORT = 0,
++	TPM_MEDIUM = 1,
++	TPM_LONG = 2,
++	TPM_LONG_LONG = 3,
++	TPM_UNDEFINED,
++	TPM_NUM_DURATIONS = TPM_UNDEFINED,
++};
 +
-+/**
-+ * parse_efi_signature_list - Parse an EFI signature list for certificates
-+ * @source: The source of the key
-+ * @data: The data blob to parse
-+ * @size: The size of the data blob
-+ * @get_handler_for_guid: Get the handler func for the sig type (or NULL)
-+ *
-+ * Parse an EFI signature list looking for elements of interest.  A list is
-+ * made up of a series of sublists, where all the elements in a sublist are of
-+ * the same type, but sublists can be of different types.
-+ *
-+ * For each sublist encountered, the @get_handler_for_guid function is called
-+ * with the type specifier GUID and returns either a pointer to a function to
-+ * handle elements of that type or NULL if the type is not of interest.
-+ *
-+ * If the sublist is of interest, each element is passed to the handler
-+ * function in turn.
-+ *
-+ * Error EBADMSG is returned if the list doesn't parse correctly and 0 is
-+ * returned if the list was parsed correctly.  No error can be returned from
-+ * the @get_handler_for_guid function or the element handler function it
-+ * returns.
-+ */
-+int __init parse_efi_signature_list(
-+	const char *source,
-+	const void *data, size_t size,
-+	efi_element_handler_t (*get_handler_for_guid)(const efi_guid_t *))
-+{
-+	efi_element_handler_t handler;
-+	unsigned int offs = 0;
++#define TPM_PPI_VERSION_LEN		3
 +
-+	pr_devel("-->%s(,%zu)\n", __func__, size);
++struct tpm_space {
++	u32 context_tbl[3];
++	u8 *context_buf;
++	u32 session_tbl[3];
++	u8 *session_buf;
++};
 +
-+	while (size > 0) {
-+		const efi_signature_data_t *elem;
-+		efi_signature_list_t list;
-+		size_t lsize, esize, hsize, elsize;
++struct tpm_bios_log {
++	void *bios_event_log;
++	void *bios_event_log_end;
++};
 +
-+		if (size < sizeof(list))
-+			return -EBADMSG;
++struct tpm_chip_seqops {
++	struct tpm_chip *chip;
++	const struct seq_operations *seqops;
++};
 +
-+		memcpy(&list, data, sizeof(list));
-+		pr_devel("LIST[%04x] guid=%pUl ls=%x hs=%x ss=%x\n",
-+			 offs,
-+			 list.signature_type.b, list.signature_list_size,
-+			 list.signature_header_size, list.signature_size);
++struct tpm_chip {
++	struct device dev;
++	struct device devs;
++	struct cdev cdev;
++	struct cdev cdevs;
 +
-+		lsize = list.signature_list_size;
-+		hsize = list.signature_header_size;
-+		esize = list.signature_size;
-+		elsize = lsize - sizeof(list) - hsize;
++	/* A driver callback under ops cannot be run unless ops_sem is held
++	 * (sometimes implicitly, eg for the sysfs code). ops becomes null
++	 * when the driver is unregistered, see tpm_try_get_ops.
++	 */
++	struct rw_semaphore ops_sem;
++	const struct tpm_class_ops *ops;
 +
-+		if (lsize > size) {
-+			pr_devel("<--%s() = -EBADMSG [overrun @%x]\n",
-+				 __func__, offs);
-+			return -EBADMSG;
-+		}
++	struct tpm_bios_log log;
++	struct tpm_chip_seqops bin_log_seqops;
++	struct tpm_chip_seqops ascii_log_seqops;
 +
-+		if (lsize < sizeof(list) ||
-+		    lsize - sizeof(list) < hsize ||
-+		    esize < sizeof(*elem) ||
-+		    elsize < esize ||
-+		    elsize % esize != 0) {
-+			pr_devel("- bad size combo @%x\n", offs);
-+			return -EBADMSG;
-+		}
++	unsigned int flags;
 +
-+		handler = get_handler_for_guid(&list.signature_type);
-+		if (!handler) {
-+			data += lsize;
-+			size -= lsize;
-+			offs += lsize;
-+			continue;
-+		}
++	int dev_num;		/* /dev/tpm# */
++	unsigned long is_open;	/* only one allowed */
 +
-+		data += sizeof(list) + hsize;
-+		size -= sizeof(list) + hsize;
-+		offs += sizeof(list) + hsize;
++	char hwrng_name[64];
++	struct hwrng hwrng;
 +
-+		for (; elsize > 0; elsize -= esize) {
-+			elem = data;
++	struct mutex tpm_mutex;	/* tpm is processing */
 +
-+			pr_devel("ELEM[%04x]\n", offs);
-+			handler(source,
-+				&elem->signature_data,
-+				esize - sizeof(*elem));
++	unsigned long timeout_a; /* jiffies */
++	unsigned long timeout_b; /* jiffies */
++	unsigned long timeout_c; /* jiffies */
++	unsigned long timeout_d; /* jiffies */
++	bool timeout_adjusted;
++	unsigned long duration[TPM_NUM_DURATIONS]; /* jiffies */
++	bool duration_adjusted;
 +
-+			data += esize;
-+			size -= esize;
-+			offs += esize;
-+		}
-+	}
++	struct dentry *bios_dir[TPM_NUM_EVENT_LOG_FILES];
 +
-+	return 0;
-+}
++	const struct attribute_group *groups[3];
++	unsigned int groups_cnt;
++
++	u32 nr_allocated_banks;
++	struct tpm_bank_info *allocated_banks;
++#ifdef CONFIG_ACPI
++	acpi_handle acpi_dev_handle;
++	char ppi_version[TPM_PPI_VERSION_LEN + 1];
++#endif /* CONFIG_ACPI */
++
++	struct tpm_space work_space;
++	u32 nr_commands;
++	u32 *cc_attrs_tbl;
++
++	/* active locality */
++	int locality;
++};
++
+ #if defined(CONFIG_TCG_TPM) || defined(CONFIG_TCG_TPM_MODULE)
+ 
+ extern int tpm_is_tpm2(struct tpm_chip *chip);
 -- 
-2.13.6
+2.17.1
