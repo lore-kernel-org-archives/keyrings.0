@@ -1,137 +1,136 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 10 Jan 2019 20:27:46 +0000
-Subject: Re: [PATCH v2] KEYS: always initialize keyring_index_key::desc_len
-Message-Id: <20190110202744.GA149637@gmail.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Thu, 24 Jan 2019 15:49:05 +0000
+Subject: [PATCH v8 2/7] tpm: add _head suffix to tcg_efi_specid_event and tcg_pcr_event2
+Message-Id: <20190124154910.29948-3-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <000000000000a722550577796543@google.com>
- <20181103015854.7380-1-ebiggers@kernel.org>
- <20181128231940.GB131170@gmail.com>
-In-Reply-To: <20181128231940.GB131170@gmail.com>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
+References: <20190124154910.29948-1-roberto.sassu@huawei.com>
+In-Reply-To: <20190124154910.29948-1-roberto.sassu@huawei.com>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-On Wed, Nov 28, 2018 at 03:19:41PM -0800, Eric Biggers wrote:
-> On Fri, Nov 02, 2018 at 06:58:54PM -0700, Eric Biggers wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> > 
-> > syzbot hit the 'BUG_ON(index_key->desc_len = 0);' in __key_link_begin()
-> > called from construct_alloc_key() during sys_request_key(), because the
-> > length of the key description was never calculated.
-> > 
-> > The problem is that we rely on ->desc_len being initialized by
-> > search_process_keyrings(), specifically by search_nested_keyrings().
-> > But, if the process isn't subscribed to any keyrings that never happens.
-> > 
-> > Fix it by always initializing keyring_index_key::desc_len as soon as the
-> > description is set, like we already do in some places.
-> > 
-> > The following program reproduces the BUG_ON() when it's run as root and
-> > no session keyring has been installed.  If it doesn't work, try removing
-> > pam_keyinit.so from /etc/pam.d/login and rebooting.
-> > 
-> >     #include <stdlib.h>
-> >     #include <unistd.h>
-> >     #include <keyutils.h>
-> > 
-> >     int main(void)
-> >     {
-> >             int id = add_key("keyring", "syz", NULL, 0, KEY_SPEC_USER_KEYRING);
-> > 
-> >             keyctl_setperm(id, KEY_OTH_WRITE);
-> >             setreuid(5000, 5000);
-> >             request_key("user", "desc", "", id);
-> >     }
-> > 
-> > Reported-by: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com
-> > Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
-> > Cc: <stable@vger.kernel.org> # v3.13+
-> > Signed-off-by: Eric Biggers <ebiggers@google.com>
-> > ---
-> > 
-> > v2: In proc_keys_show(), assign index_key directly
-> > 
-> >  security/keys/keyring.c          | 4 +---
-> >  security/keys/proc.c             | 3 +--
-> >  security/keys/request_key.c      | 1 +
-> >  security/keys/request_key_auth.c | 2 +-
-> >  4 files changed, 4 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-> > index 41bcf57e96f21..99a55145ddcd2 100644
-> > --- a/security/keys/keyring.c
-> > +++ b/security/keys/keyring.c
-> > @@ -661,9 +661,6 @@ static bool search_nested_keyrings(struct key *keyring,
-> >  	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
-> >  	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
-> >  
-> > -	if (ctx->index_key.description)
-> > -		ctx->index_key.desc_len = strlen(ctx->index_key.description);
-> > -
-> >  	/* Check to see if this top-level keyring is what we are looking for
-> >  	 * and whether it is valid or not.
-> >  	 */
-> > @@ -914,6 +911,7 @@ key_ref_t keyring_search(key_ref_t keyring,
-> >  	struct keyring_search_context ctx = {
-> >  		.index_key.type		= type,
-> >  		.index_key.description	= description,
-> > +		.index_key.desc_len	= strlen(description),
-> >  		.cred			= current_cred(),
-> >  		.match_data.cmp		= key_default_cmp,
-> >  		.match_data.raw_data	= description,
-> > diff --git a/security/keys/proc.c b/security/keys/proc.c
-> > index 5af2934965d80..d38be9db2cc07 100644
-> > --- a/security/keys/proc.c
-> > +++ b/security/keys/proc.c
-> > @@ -166,8 +166,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
-> >  	int rc;
-> >  
-> >  	struct keyring_search_context ctx = {
-> > -		.index_key.type		= key->type,
-> > -		.index_key.description	= key->description,
-> > +		.index_key		= key->index_key,
-> >  		.cred			= m->file->f_cred,
-> >  		.match_data.cmp		= lookup_user_key_possessed,
-> >  		.match_data.raw_data	= key,
-> > diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-> > index 114f7408feee6..7385536986497 100644
-> > --- a/security/keys/request_key.c
-> > +++ b/security/keys/request_key.c
-> > @@ -545,6 +545,7 @@ struct key *request_key_and_link(struct key_type *type,
-> >  	struct keyring_search_context ctx = {
-> >  		.index_key.type		= type,
-> >  		.index_key.description	= description,
-> > +		.index_key.desc_len	= strlen(description),
-> >  		.cred			= current_cred(),
-> >  		.match_data.cmp		= key_default_cmp,
-> >  		.match_data.raw_data	= description,
-> > diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-> > index 424e1d90412ea..6797843154f03 100644
-> > --- a/security/keys/request_key_auth.c
-> > +++ b/security/keys/request_key_auth.c
-> > @@ -246,7 +246,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
-> >  	struct key *authkey;
-> >  	key_ref_t authkey_ref;
-> >  
-> > -	sprintf(description, "%x", target_id);
-> > +	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
-> >  
-> >  	authkey_ref = search_process_keyrings(&ctx);
-> >  
-> > -- 
-> > 2.19.1
-> > 
-> 
-> Ping.  David, are you planning to apply this?
-> 
-> - Eric
-> 
-> -- 
-> You received this message because you are subscribed to the Google Groups "syzkaller-bugs" group.
-> To unsubscribe from this group and stop receiving emails from it, send an email to syzkaller-bugs+unsubscribe@googlegroups.com.
-> To view this discussion on the web visit https://groups.google.com/d/msgid/syzkaller-bugs/20181128231940.GB131170%40gmail.com.
-> For more options, visit https://groups.google.com/d/optout.
+TCG defines two structures, TCG_EfiSpecIDEventStruct and TCG_PCR_EVENT2,
+which contain variable-sized arrays in the middle of the definition.
 
-Ping.
+Since these structures are not suitable for type casting, this patch
+removes structure members after the variable-sized arrays and adds the
+_head suffix to the structure name, to indicate that the renamed structures
+do not contain all fields defined by TCG.
+
+Lastly, given that variable-sized arrays are now in the last position, and
+given that the size of the arrays cannot be determined in advance, this
+patch also sets the size of those arrays to zero and removes the definition
+of TPM2_ACTIVE_PCR_BANKS.
+
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Tested-by: Nayna Jain <nayna@linux.ibm.com>
+---
+ drivers/char/tpm/eventlog/tpm2.c | 12 ++++++------
+ include/linux/tpm_eventlog.h     | 12 ++++--------
+ 2 files changed, 10 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/char/tpm/eventlog/tpm2.c b/drivers/char/tpm/eventlog/tpm2.c
+index 1b8fa9de2cac..d8b77133a83a 100644
+--- a/drivers/char/tpm/eventlog/tpm2.c
++++ b/drivers/char/tpm/eventlog/tpm2.c
+@@ -37,10 +37,10 @@
+  *
+  * Returns size of the event. If it is an invalid event, returns 0.
+  */
+-static int calc_tpm2_event_size(struct tcg_pcr_event2 *event,
++static int calc_tpm2_event_size(struct tcg_pcr_event2_head *event,
+ 				struct tcg_pcr_event *event_header)
+ {
+-	struct tcg_efi_specid_event *efispecid;
++	struct tcg_efi_specid_event_head *efispecid;
+ 	struct tcg_event_field *event_field;
+ 	void *marker;
+ 	void *marker_start;
+@@ -55,7 +55,7 @@ static int calc_tpm2_event_size(struct tcg_pcr_event2 *event,
+ 	marker = marker + sizeof(event->pcr_idx) + sizeof(event->event_type)
+ 		+ sizeof(event->count);
+ 
+-	efispecid = (struct tcg_efi_specid_event *)event_header->event;
++	efispecid = (struct tcg_efi_specid_event_head *)event_header->event;
+ 
+ 	/* Check if event is malformed. */
+ 	if (event->count > efispecid->num_algs)
+@@ -95,7 +95,7 @@ static void *tpm2_bios_measurements_start(struct seq_file *m, loff_t *pos)
+ 	void *addr = log->bios_event_log;
+ 	void *limit = log->bios_event_log_end;
+ 	struct tcg_pcr_event *event_header;
+-	struct tcg_pcr_event2 *event;
++	struct tcg_pcr_event2_head *event;
+ 	size_t size;
+ 	int i;
+ 
+@@ -136,7 +136,7 @@ static void *tpm2_bios_measurements_next(struct seq_file *m, void *v,
+ 					 loff_t *pos)
+ {
+ 	struct tcg_pcr_event *event_header;
+-	struct tcg_pcr_event2 *event;
++	struct tcg_pcr_event2_head *event;
+ 	struct tpm_chip *chip = m->private;
+ 	struct tpm_bios_log *log = &chip->log;
+ 	void *limit = log->bios_event_log_end;
+@@ -180,7 +180,7 @@ static int tpm2_binary_bios_measurements_show(struct seq_file *m, void *v)
+ 	struct tpm_chip *chip = m->private;
+ 	struct tpm_bios_log *log = &chip->log;
+ 	struct tcg_pcr_event *event_header = log->bios_event_log;
+-	struct tcg_pcr_event2 *event = v;
++	struct tcg_pcr_event2_head *event = v;
+ 	void *temp_ptr;
+ 	size_t size;
+ 
+diff --git a/include/linux/tpm_eventlog.h b/include/linux/tpm_eventlog.h
+index 20d9da77fc11..f47342361e87 100644
+--- a/include/linux/tpm_eventlog.h
++++ b/include/linux/tpm_eventlog.h
+@@ -8,7 +8,6 @@
+ #define TCG_EVENT_NAME_LEN_MAX	255
+ #define MAX_TEXT_EVENT		1000	/* Max event string length */
+ #define ACPI_TCPA_SIG		"TCPA"	/* 0x41504354 /'TCPA' */
+-#define TPM2_ACTIVE_PCR_BANKS	3
+ 
+ #define EFI_TCG2_EVENT_LOG_FORMAT_TCG_1_2 0x1
+ #define EFI_TCG2_EVENT_LOG_FORMAT_TCG_2   0x2
+@@ -82,7 +81,7 @@ struct tcg_efi_specid_event_algs {
+ 	u16 digest_size;
+ } __packed;
+ 
+-struct tcg_efi_specid_event {
++struct tcg_efi_specid_event_head {
+ 	u8 signature[16];
+ 	u32 platform_class;
+ 	u8 spec_version_minor;
+@@ -90,9 +89,7 @@ struct tcg_efi_specid_event {
+ 	u8 spec_errata;
+ 	u8 uintnsize;
+ 	u32 num_algs;
+-	struct tcg_efi_specid_event_algs digest_sizes[TPM2_ACTIVE_PCR_BANKS];
+-	u8 vendor_info_size;
+-	u8 vendor_info[0];
++	struct tcg_efi_specid_event_algs digest_sizes[];
+ } __packed;
+ 
+ struct tcg_pcr_event {
+@@ -113,12 +110,11 @@ struct tpm2_digest {
+ 	u8 digest[SHA512_DIGEST_SIZE];
+ } __packed;
+ 
+-struct tcg_pcr_event2 {
++struct tcg_pcr_event2_head {
+ 	u32 pcr_idx;
+ 	u32 event_type;
+ 	u32 count;
+-	struct tpm2_digest digests[TPM2_ACTIVE_PCR_BANKS];
+-	struct tcg_event_field event;
++	struct tpm2_digest digests[];
+ } __packed;
+ 
+ #endif
+-- 
+2.17.1
