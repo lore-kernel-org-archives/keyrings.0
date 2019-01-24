@@ -1,48 +1,170 @@
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 01 Jan 2019 21:08:41 +0000
-Subject: Re: [PATCH RESEND] KEYS: fix parsing invalid pkey info string
-Message-Id: <CAHk-=whb31a-4-ac6iBM-2tDMb9cEHogU788ASpfw+Uk+DAM+w@mail.gmail.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Thu, 24 Jan 2019 15:49:09 +0000
+Subject: [PATCH v8 6/7] KEYS: trusted: explicitly use tpm_chip structure from tpm_default_chip()
+Message-Id: <20190124154910.29948-7-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181128232019.GC131170@gmail.com> <20181217181244.220052-1-ebiggers@kernel.org>
- <CAHk-=whmh8WdcKHdYjioJNjyeewv=fO1H0hxXqDh6kiX0YvzmQ@mail.gmail.com>
- <CAHk-=wi8iGD8zHuPr38m9MUwDwf3qy2FYSbyoQ_Ygky+D-pU1Q@mail.gmail.com>
- <CAHk-=wjsMJeEkJbE3QhM3SY-DT9VsnMWNQKMNsG9TetnjREWDQ@mail.gmail.com>
- <CAHk-=wgGYebCEE-M-6Dnbn5MpC8BD8SLjgw8iPGrgy8zETrdJg@mail.gmail.com>
- <1545076260.2878.15.camel@HansenPartnership.com> <CAHk-=wjPhKNKRq24wXL3wvqUgfyriDjYNXUPCumbH=64ZMXrSw@mail.gmail.com>
- <20181231224530.GA12425@zzz.localdomain>
-In-Reply-To: <20181231224530.GA12425@zzz.localdomain>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, James Bottomley <James.Bottomley@hansenpartnership.com>, James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>, keyrings@vger.kernel.org, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, syzkaller-bugs@googlegroups.com
+References: <20190124154910.29948-1-roberto.sassu@huawei.com>
+In-Reply-To: <20190124154910.29948-1-roberto.sassu@huawei.com>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-On Mon, Dec 31, 2018 at 2:45 PM Eric Biggers <ebiggers@kernel.org> wrote:
->
-> KEYCTL_PKEY_QUERY is still failing basic fuzzing even after Linus' fix that
-> changed Opt_err from -1 to 0.  The crash is still in keyctl_pkey_params_parse():
->
->                 token = match_token(p, param_keys, args);
->                 if (__test_and_set_bit(token, &token_mask))
->                         return -EINVAL;
->                 q = args[0].from;
->                 if (!q[0])
->                         return -EINVAL;
->
-> Now it crashes on '!q[0]' because 'args[0].from' is uninitialized when
-> token = Opt_err.  args[0] is only initialized when the parsed token had a
-> pattern that set it.
+When crypto agility support will be added to the TPM driver, users of the
+driver have to retrieve the allocated banks from chip->allocated_banks and
+use this information to prepare the array of tpm_digest structures to be
+passed to tpm_pcr_extend().
 
-Argh., how embarrassing. And it turns out that James' suggestion to
-initialize token_mask would actually have fixed that, for subtle
-reasons (but subtle was what I didn't want).
+This patch retrieves a tpm_chip pointer from tpm_default_chip() so that the
+pointer can be used to prepare the array of tpm_digest structures.
 
-I detest that match_token() interface, but this key code then mis-uses
-it in ways it wasn't even meant for, and tries to "share" error paths
-that aren't actually common.
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+---
+ security/keys/trusted.c | 38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
 
-I'll take your original patch, which I clearly should have done originally.
-
-Thanks, and sorry for the wasted time,
-
-             Linus
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 4d98f4f87236..1a20a9692fef 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -34,6 +34,7 @@
+ 
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
++static struct tpm_chip *chip;
+ 
+ struct sdesc {
+ 	struct shash_desc shash;
+@@ -362,7 +363,7 @@ int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ 	int rc;
+ 
+ 	dump_tpm_buf(cmd);
+-	rc = tpm_send(NULL, cmd, buflen);
++	rc = tpm_send(chip, cmd, buflen);
+ 	dump_tpm_buf(cmd);
+ 	if (rc > 0)
+ 		/* Can't return positive return codes values to keyctl */
+@@ -384,10 +385,10 @@ static int pcrlock(const int pcrnum)
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+-	ret = tpm_get_random(NULL, hash, SHA1_DIGEST_SIZE);
++	ret = tpm_get_random(chip, hash, SHA1_DIGEST_SIZE);
+ 	if (ret != SHA1_DIGEST_SIZE)
+ 		return ret;
+-	return tpm_pcr_extend(NULL, pcrnum, hash) ? -EINVAL : 0;
++	return tpm_pcr_extend(chip, pcrnum, hash) ? -EINVAL : 0;
+ }
+ 
+ /*
+@@ -400,7 +401,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ 	unsigned char ononce[TPM_NONCE_SIZE];
+ 	int ret;
+ 
+-	ret = tpm_get_random(NULL, ononce, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE)
+ 		return ret;
+ 
+@@ -496,7 +497,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	ret = tpm_get_random(NULL, td->nonceodd, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE)
+ 		goto out;
+ 	ordinal = htonl(TPM_ORD_SEAL);
+@@ -606,7 +607,7 @@ static int tpm_unseal(struct tpm_buf *tb,
+ 
+ 	ordinal = htonl(TPM_ORD_UNSEAL);
+ 	keyhndl = htonl(SRKHANDLE);
+-	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE) {
+ 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
+ 		return ret;
+@@ -751,7 +752,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 	int i;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return tpm2;
+ 
+@@ -920,7 +921,7 @@ static struct trusted_key_options *trusted_options_alloc(void)
+ 	struct trusted_key_options *options;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return NULL;
+ 
+@@ -970,7 +971,7 @@ static int trusted_instantiate(struct key *key,
+ 	size_t key_len;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return tpm2;
+ 
+@@ -1011,7 +1012,7 @@ static int trusted_instantiate(struct key *key,
+ 	switch (key_cmd) {
+ 	case Opt_load:
+ 		if (tpm2)
+-			ret = tpm_unseal_trusted(NULL, payload, options);
++			ret = tpm_unseal_trusted(chip, payload, options);
+ 		else
+ 			ret = key_unseal(payload, options);
+ 		dump_payload(payload);
+@@ -1021,13 +1022,13 @@ static int trusted_instantiate(struct key *key,
+ 		break;
+ 	case Opt_new:
+ 		key_len = payload->key_len;
+-		ret = tpm_get_random(NULL, payload->key, key_len);
++		ret = tpm_get_random(chip, payload->key, key_len);
+ 		if (ret != key_len) {
+ 			pr_info("trusted_key: key_create failed (%d)\n", ret);
+ 			goto out;
+ 		}
+ 		if (tpm2)
+-			ret = tpm_seal_trusted(NULL, payload, options);
++			ret = tpm_seal_trusted(chip, payload, options);
+ 		else
+ 			ret = key_seal(payload, options);
+ 		if (ret < 0)
+@@ -1225,17 +1226,26 @@ static int __init init_trusted(void)
+ {
+ 	int ret;
+ 
++	chip = tpm_default_chip();
++	if (!chip)
++		return -ENOENT;
+ 	ret = trusted_shash_alloc();
+ 	if (ret < 0)
+-		return ret;
++		goto out_put;
+ 	ret = register_key_type(&key_type_trusted);
+ 	if (ret < 0)
+-		trusted_shash_release();
++		goto out_release;
++	return 0;
++out_release:
++	trusted_shash_release();
++out_put:
++	put_device(&chip->dev);
+ 	return ret;
+ }
+ 
+ static void __exit cleanup_trusted(void)
+ {
++	put_device(&chip->dev);
+ 	trusted_shash_release();
+ 	unregister_key_type(&key_type_trusted);
+ }
+-- 
+2.17.1
