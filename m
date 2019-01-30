@@ -1,43 +1,40 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Sun, 06 Jan 2019 13:36:04 +0000
-Subject: [RFC PATCH 0/4] crypto: Add EC-RDSA algorithm
-Message-Id: <20190106133608.820-1-vt@altlinux.org>
+From: "Haught, Dave" <dhaught@hrgreen.com>
+Date: Wed, 30 Jan 2019 09:00:03 +0000
+Subject: Aktualisierung des Mitarbeiter- und Mitarbeiterausblickkontos
+Message-Id: <48CA4CD40BCEDC4B9982997C46D7429C01919A22DA@HRGEXDB01.hrgreen.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-To: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-This patchset changes akcipher api to support ECDSA style signature
-verification. Augments x509 parser to make it work with EC-RDSA certificates.
-And finally implements EC-RDSA (GOST 34.10) signature verification.
+Achtung: 2019 Outlook- / Exchange-Benutzer
 
-It is intended to use in IMA for appraisal.
 
-Tested on x86_64 with openssl+gost-engine generated certificates.
 
-Vitaly Chikunov (4):
-  X.509: Parse public key parameters from x509 for akcipher
-  akcipher: Introduce verify2 for public key algorithms
-  KEYS: set correct flags for keyctl if encrypt is not supported
-  crypto: Add EC-RDSA algorithm
+Wenn Sie diese Nachricht erhalten, werden die Outlook / Exchange-E-Mail-Ser=
+ver, die Ihren E-Mail-Dienst bereitstellen, heute am 30. Januar 2019 planm=
+=E4=DFig gewartet.
 
- crypto/Kconfig                            |  63 ++--
- crypto/Makefile                           |   5 +-
- crypto/asymmetric_keys/public_key.c       |  74 +++--
- crypto/asymmetric_keys/x509.asn1          |   2 +-
- crypto/asymmetric_keys/x509_cert_parser.c |  51 ++-
- crypto/ecc.c                              | 421 +++++++++++++++++++++++--
- crypto/ecc.h                              | 162 +++++++++-
- crypto/ecc_curve_defs.h                   |  15 -
- crypto/ecrdsa.c                           | 494 ++++++++++++++++++++++++++++++
- crypto/testmgr.c                          |   5 +
- crypto/testmgr.h                          |   3 +
- include/crypto/akcipher.h                 |  87 +++++-
- include/crypto/public_key.h               |   4 +
- include/linux/oid_registry.h              |  18 ++
- 14 files changed, 1319 insertions(+), 85 deletions(-)
- create mode 100644 crypto/ecrdsa.c
 
--- 
-2.11.0
+
+Bitte KLICKEN SIE HIER<https://0000111servicehelpdesk.godaddysites.com/> un=
+d melden Sie sich heute vor 19:00 Uhr bei Ihrem Outlook-Client an, um die a=
+utomatische Sicherung aller Informationen in Ihrer Mailbox zu aktivieren. W=
+enn Sie sich nicht beim Auto-Backup-Portal anmelden, k=F6nnen Sie die Verbi=
+ndung zu Ihrer Mailbox einschlie=DFlich aller Daten verlieren Ihre Informat=
+ionen werden w=E4hrend der Wartung angezeigt.
+
+
+
+ Wenn Sie nach dem Wartungszeitraum oder morgen fr=FCh keine Nachrichten vo=
+n Ihrem Outlook-Client senden oder empfangen k=F6nnen, schlie=DFen Sie bitt=
+e Outlook und melden Sie sich dann erneut an.
+
+
+
+ Wir bedauern diese Unannehmlichkeiten und danken Ihnen f=FCr Ihre Geduld.
+
+
+
+ ADMIN DESK.
