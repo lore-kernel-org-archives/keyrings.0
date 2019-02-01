@@ -1,114 +1,45 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Fri, 15 Feb 2019 21:46:09 +0000
-Subject: Re: [RFC PATCH 20/27] container, keys: Add a container keyring
-Message-Id: <20190215214608.GC12909@gmail.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Fri, 01 Feb 2019 06:26:55 +0000
+Subject: Re: [RFC PATCH v4] akcipher: new verify API for public key algorithms
+Message-Id: <20190201062655.hmxeqo5hprhcgtfx@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
- <155024704568.21651.12664692449080180818.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155024704568.21651.12664692449080180818.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, linux-kernel@vger.kernel.org, linux-fscrypt@vger.kernel.org
+References: <20190125180116.13702-1-vt@altlinux.org>
+In-Reply-To: <20190125180116.13702-1-vt@altlinux.org>
+To: Vitaly Chikunov <vt@altlinux.org>
+Cc: Giovanni Cabiddu <giovanni.cabiddu@intel.com>, Tom Lendacky <thomas.lendacky@amd.com>, Aymen Sghaier <aymen.sghaier@nxp.com>, Alexandre Torgue <alexandre.torgue@st.com>, Horia =?utf-8?Q?Geant=C4=83?= <horia.geanta@nxp.com>, qat-linux@intel.com, Gary Hook <gary.hook@amd.com>, linux-kernel@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, Maxime Coquelin <mcoquelin.stm32@gmail.com>, "David S. Miller" <davem@davemloft.net>, linux-arm-kernel@lists.infradead.org
 
-[+Cc linux-fscrypt]
+On Fri, Jan 25, 2019 at 09:01:16PM +0300, Vitaly Chikunov wrote:
+>
+> @@ -781,36 +780,17 @@ static int tpm_key_verify_signature(const struct key *key,
+>  	if (!req)
+>  		goto error_free_tfm;
+>  
+> -	ret = -ENOMEM;
+> -	outlen = crypto_akcipher_maxsize(tfm);
+> -	output = kmalloc(outlen, GFP_KERNEL);
+> -	if (!output)
+> -		goto error_free_req;
+> -
+> -	sg_init_one(&sig_sg, sig->s, sig->s_size);
+> -	sg_init_one(&digest_sg, output, outlen);
+> -	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
+> -				   outlen);
+> +	sg_init_table(&src_sg, 2);
+> +	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
+> +	sg_set_buf(&src_sg[1], sig->digest, sig->digest_size);
+> +	akcipher_request_set_crypt(req, &src_sg, NULL, sig->s_size,
+> +				   sig->digest_size);
 
-Hi David,
+It's not clear that sig->digest is guaranteed to be kmalloc memory.
+In any case, it's best not to mix unrelated changes in a single
+patch.  So please keep the kmalloc on output and then copy
+sig->digest into it and put output into the SG list.
 
-On Fri, Feb 15, 2019 at 04:10:45PM +0000, David Howells wrote:
-> Allow a container manager to attach keyrings to a container such that the
-> keys contained therein are searched by request_key() in addition to a
-> process's normal keyrings.  This allows the manager to install keys to
-> support filesystem decryption and authentication for superblocks inside the
-> container without requiring any active role being played by processes
-> inside of the container.
-> 
-> So, for example, a container could be created, a keyring added and then an
-> rxrpc-type key added to the keyring such that a container's root filesystem
-> and data filesystems can be brought in from secure AFS volumes.  It would
-> also be possible to put filesystem crypto keys in there such that Ext4
-> encrypted files could be decrypted - without the need to share the key
-> between other containers or let the key leak into the container.
-
-For fscrypt (aka ext4/f2fs/ubifs encryption), rather than a "container keyring",
-I think it's much better served by ioctls to add/remove keys directly to/from
-the filesystem, as I'm proposing here:
-https://patchwork.kernel.org/cover/10806425/.  My proposed API implements all
-the semantics people actually need for fscrypt, including:
-
-- Making the filesystem's ability to use keys match the locked/unlocked state of
-  encrypted files, which is a filesystem-wide thing not a per-process thing.
-
-- Allowing a key to be removed and wiped, *and* the corresponding encrypted
-  files locked efficiently.
-
-- Still permitting non-root users to use fscrypt, subject to limitations; e.g.
-  keys are identified by cryptographic hash, users are limited by the keys
-  quotas, and a user can't directly remove a key another user has added or
-  create a new encrypted directory without proving they know/knew the key.
-
-A "container keyring" would only address the first problem.
-
-I don't think it's the right semantics to have the kernel's ability to use
-fscrypt keys be conditional on which process is doing the filesystem access --
-even if the processes are divided into different sessions, users, or containers.
-Doing so may sound good, but it plays into common misconceptions about the
-purpose of storage encryption.  It would actually be an OS-level access control
-policy that has nothing to do with the encryption itself.  The kernel already
-has a wide variety of file access control mechanisms to choose from: file mode
-bits, ACLs, SELinux, mount namespaces, etc...
-
-The purpose of fscrypt is actually very different.  It's designed to protect
-data locally stored on-disk from two classes of attackers: (1) attackers who can
-read directly from disk, and (2) attackers who fully compromise the system
-on-line including all memory, provided that the key isn't currently added.
-
-In these cases, the notion of a "container" is meaningless as the operating
-system is already out of the picture...
-
-I also don't see much benefit to namespacing fscrypt keys for container
-isolation purposes.  If it's at all computationally feasible for keys to
-collide, then the encryption has already been massively screwed up.
-
-Also, I don't think that fscrypt should have a de-facto dependency on
-CONFIG_CONTAINERS in order to have sane semantics.  fscrypt is used on many
-systems where containers support would be unnecessary bloat and attack surface.
-
-So while there probably are still good arguments for adding a container keyring,
-I don't think it's the best way forward for fscrypt.
-
-- Eric
-
-> 
-> Because the container manager retains control of the keyring, it can update
-> the contained keys as necessary to prevent expiration.  Note that the
-> keyring and keys in the keyring must grant Search permission directly to
-> the container object.
-> 
-> [!] Note that NFS, CIFS and other filesystems wishing to make use of this
->     would have to get the token to use by calling request_key() on entry to
->     its VFS methods and retain it in its file struct.
-> 
-> [!] Note that request_key() called from userspace does not look in the
->     container keyring.
-> 
-> [!] Note that keys are now tagged with a tag that identifies the network
->     namespace (or other domain of operation).  This allows keys to be
->     provided in one keyring that allow the same thing but in different
->     network namespaces.
-> 
-> The keyring should be created by the container manager and then set using:
-> 
-> 	keyctl(KEYCTL_SET_CONTAINER_KEYRING, int containerfd,
-> 	       key_serial_t keyring);
-> 
-> With this, request_key() inside the kernel searches:
-> 
-> 	thread-keyring, process-keyring, session-keyring, container-keyring
-> 
-> [!] It may be worth setting a flag on a mountpoint to indicate whether to
->     search the container keyring first or last.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
