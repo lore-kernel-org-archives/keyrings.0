@@ -1,44 +1,51 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 01 Feb 2019 13:41:51 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Fri, 01 Feb 2019 14:33:09 +0000
 Subject: Re: [PATCH v9 6/6] tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()
-Message-Id: <20190201134151.GF17861@linux.intel.com>
+Message-Id: <1549031589.6993.7.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20190201100641.26936-1-roberto.sassu@huawei.com>
- <20190201100641.26936-7-roberto.sassu@huawei.com>
- <20190201133949.GE17861@linux.intel.com>
-In-Reply-To: <20190201133949.GE17861@linux.intel.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>
-Cc: zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
+         <20190201100641.26936-7-roberto.sassu@huawei.com>
+         <20190201133949.GE17861@linux.intel.com>
+         <20190201134151.GF17861@linux.intel.com>
+In-Reply-To: <20190201134151.GF17861@linux.intel.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Roberto Sassu <roberto.sassu@huawei.com>
+Cc: david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
 
-On Fri, Feb 01, 2019 at 03:39:49PM +0200, Jarkko Sakkinen wrote:
-> On Fri, Feb 01, 2019 at 11:06:41AM +0100, Roberto Sassu wrote:
-> > Currently, tpm_pcr_extend() accepts as an input only a SHA1 digest.
-> > 
-> > This patch replaces the hash parameter of tpm_pcr_extend() with an array of
-> > tpm_digest structures, so that the caller can provide a digest for each PCR
-> > bank currently allocated in the TPM.
-> > 
-> > tpm_pcr_extend() will not extend banks for which no digest was provided,
-> > as it happened before this patch, but instead it requires that callers
-> > provide the full set of digests. Since the number of digests will always be
-> > chip->nr_allocated_banks, the count parameter has been removed.
-> > 
-> > Due to the API change, ima_pcr_extend() and pcrlock() have been modified.
-> > Since the number of allocated banks is not known in advance, the memory for
-> > the digests must be dynamically allocated. To avoid performance degradation
-> > and to avoid that a PCR extend is not done due to lack of memory, the array
-> > of tpm_digest structures is allocated by the users of the TPM driver at
-> > initialization time.
-> > 
-> > Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-> 
-> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-
-I tested that this does not break TPM. I'd need someone to check that
-this does not break IMA. After that, I'm ready to apply this series.
-
-/Jarkko
+T24gRnJpLCAyMDE5LTAyLTAxIGF0IDE1OjQxICswMjAwLCBKYXJra28gU2Fra2luZW4gd3JvdGU6
+Cj4gT24gRnJpLCBGZWIgMDEsIDIwMTkgYXQgMDM6Mzk6NDlQTSArMDIwMCwgSmFya2tvIFNha2tp
+bmVuIHdyb3RlOgo+ID4gT24gRnJpLCBGZWIgMDEsIDIwMTkgYXQgMTE6MDY6NDFBTSArMDEwMCwg
+Um9iZXJ0byBTYXNzdSB3cm90ZToKPiA+ID4gQ3VycmVudGx5LCB0cG1fcGNyX2V4dGVuZCgpIGFj
+Y2VwdHMgYXMgYW4gaW5wdXQgb25seSBhIFNIQTEgZGlnZXN0Lgo+ID4gPiAKPiA+ID4gVGhpcyBw
+YXRjaCByZXBsYWNlcyB0aGUgaGFzaCBwYXJhbWV0ZXIgb2YgdHBtX3Bjcl9leHRlbmQoKSB3aXRo
+IGFuIGFycmF5IG9mCj4gPiA+IHRwbV9kaWdlc3Qgc3RydWN0dXJlcywgc28gdGhhdCB0aGUgY2Fs
+bGVyIGNhbiBwcm92aWRlIGEgZGlnZXN0IGZvciBlYWNoIFBDUgo+ID4gPiBiYW5rIGN1cnJlbnRs
+eSBhbGxvY2F0ZWQgaW4gdGhlIFRQTS4KPiA+ID4gCj4gPiA+IHRwbV9wY3JfZXh0ZW5kKCkgd2ls
+bCBub3QgZXh0ZW5kIGJhbmtzIGZvciB3aGljaCBubyBkaWdlc3Qgd2FzIHByb3ZpZGVkLAo+ID4g
+PiBhcyBpdCBoYXBwZW5lZCBiZWZvcmUgdGhpcyBwYXRjaCwgYnV0IGluc3RlYWQgaXQgcmVxdWly
+ZXMgdGhhdCBjYWxsZXJzCj4gPiA+IHByb3ZpZGUgdGhlIGZ1bGwgc2V0IG9mIGRpZ2VzdHMuIFNp
+bmNlIHRoZSBudW1iZXIgb2YgZGlnZXN0cyB3aWxsIGFsd2F5cyBiZQo+ID4gPiBjaGlwLT5ucl9h
+bGxvY2F0ZWRfYmFua3MsIHRoZSBjb3VudCBwYXJhbWV0ZXIgaGFzIGJlZW4gcmVtb3ZlZC4KPiA+
+ID4gCj4gPiA+IER1ZSB0byB0aGUgQVBJIGNoYW5nZSwgaW1hX3Bjcl9leHRlbmQoKSBhbmQgcGNy
+bG9jaygpIGhhdmUgYmVlbiBtb2RpZmllZC4KPiA+ID4gU2luY2UgdGhlIG51bWJlciBvZiBhbGxv
+Y2F0ZWQgYmFua3MgaXMgbm90IGtub3duIGluIGFkdmFuY2UsIHRoZSBtZW1vcnkgZm9yCj4gPiA+
+IHRoZSBkaWdlc3RzIG11c3QgYmUgZHluYW1pY2FsbHkgYWxsb2NhdGVkLiBUbyBhdm9pZCBwZXJm
+b3JtYW5jZSBkZWdyYWRhdGlvbgo+ID4gPiBhbmQgdG8gYXZvaWQgdGhhdCBhIFBDUiBleHRlbmQg
+aXMgbm90IGRvbmUgZHVlIHRvIGxhY2sgb2YgbWVtb3J5LCB0aGUgYXJyYXkKPiA+ID4gb2YgdHBt
+X2RpZ2VzdCBzdHJ1Y3R1cmVzIGlzIGFsbG9jYXRlZCBieSB0aGUgdXNlcnMgb2YgdGhlIFRQTSBk
+cml2ZXIgYXQKPiA+ID4gaW5pdGlhbGl6YXRpb24gdGltZS4KPiA+ID4gCj4gPiA+IFNpZ25lZC1v
+ZmYtYnk6IFJvYmVydG8gU2Fzc3UgPHJvYmVydG8uc2Fzc3VAaHVhd2VpLmNvbT4KPiA+IAo+ID4g
+UmV2aWV3ZWQtYnk6IEphcmtrbyBTYWtraW5lbiA8amFya2tvLnNha2tpbmVuQGxpbnV4LmludGVs
+LmNvbT4KPiA+IFRlc3RlZC1ieTogSmFya2tvIFNha2tpbmVuIDxqYXJra28uc2Fra2luZW5AbGlu
+dXguaW50ZWwuY29tPgo+IAo+IEkgdGVzdGVkIHRoYXQgdGhpcyBkb2VzIG5vdCBicmVhayBUUE0u
+IEknZCBuZWVkIHNvbWVvbmUgdG8gY2hlY2sgdGhhdAo+IHRoaXMgZG9lcyBub3QgYnJlYWsgSU1B
+LiBBZnRlciB0aGF0LCBJJ20gcmVhZHkgdG8gYXBwbHkgdGhpcyBzZXJpZXMuCgpUaGFua3MhICBJ
+IGp1c3QgZmluaXNoZWQgY29tcGlsaW5nLCByZWJvb3RpbmcsIGFuZCB2ZXJpZnlpbmcgdGhlIElN
+QQpib290LWFnZ3JlZ2F0ZSBtYXRjaGVzLgoKV2hpbGUgY29tcGlsaW5nLCBJIHNhdyBzb21lIG1l
+c3NhZ2VzIHRoYXQgIlRQTV9CVUZTSVpFIGlzIHJlZGVmaW5lZCIKZm9yIHRwbV9pMmNfaW5maW5l
+b24sIHRwbV9pMmNfbnV2b3RvbiwgYW5kIHN0MzN6cDI0LiDCoERpZG4ndCBsb29rIHRvCnNlZSBp
+ZiB0aGlzIGlzIGEgcmVzdWx0IG9mIHRoaXMgcGF0Y2ggc2V0IG9yIG5vdC4KClRoZSBJTUEgYm9v
+dC1hZ2dyZWdhdGUgbWF0Y2hlcyB0aGUgUENScy4KClRlc3RlZC1ieTogTWltaSBab2hhciA8em9o
+YXJAbGludXguaWJtLmNvbT4gKG9uIHg4NiBmb3IgVFBNIDEuMiAmIFBUVApUUE0gMi4wKQo=
