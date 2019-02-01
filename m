@@ -1,45 +1,118 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 01 Feb 2019 17:42:56 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Fri, 01 Feb 2019 19:15:06 +0000
 Subject: Re: [PATCH v9 6/6] tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()
-Message-Id: <20190201174256.GA23559@linux.intel.com>
+Message-Id: <1549048506.6993.73.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190201100641.26936-1-roberto.sassu@huawei.com>
- <20190201100641.26936-7-roberto.sassu@huawei.com>
- <20190201133949.GE17861@linux.intel.com>
- <20190201134151.GF17861@linux.intel.com>
- <1549031589.6993.7.camel@linux.ibm.com>
- <20190201173330.GA5522@linux.intel.com>
-In-Reply-To: <20190201173330.GA5522@linux.intel.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, christophe.ricard@gmail.com
-Cc: Roberto Sassu <roberto.sassu@huawei.com>, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
+         <20190201100641.26936-7-roberto.sassu@huawei.com>
+In-Reply-To: <20190201100641.26936-7-roberto.sassu@huawei.com>
+To: Roberto Sassu <roberto.sassu@huawei.com>, jarkko.sakkinen@linux.intel.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
 
-On Fri, Feb 01, 2019 at 07:33:30PM +0200, Jarkko Sakkinen wrote:
-> On Fri, Feb 01, 2019 at 09:33:09AM -0500, Mimi Zohar wrote:
-> > Thanks!  I just finished compiling, rebooting, and verifying the IMA
-> > boot-aggregate matches.
-> >=20
-> > While compiling, I saw some messages that "TPM_BUFSIZE is redefined"
-> > for tpm_i2c_infineon, tpm_i2c_nuvoton, and st33zp24. =A0Didn't look to
-> > see if this is a result of this patch set or not.
-> >=20
-> > The IMA boot-aggregate matches the PCRs.
-> >=20
-> > Tested-by: Mimi Zohar <zohar@linux.ibm.com> (on x86 for TPM 1.2 & PTT
-> > TPM 2.0)
->=20
-> Thank you.
->=20
-> I found the reason for that warning. It is redefined, for reason unknown
-> to me in drivers/char/tpm/st33zp24/st33zp24.h (commit bf38b8710892).
->=20
-> I'll post a fix to that commit ASAP. After that commit has been applied
-> I can apply Roberto's patches.
+Hi Roberto,
 
-Just sent. No need to any testing for that one. Just need one
-reviewed-by or even acked-by, and after that I will apply all Roberto's
-patches.
+Sorry for the delayed review.  A few comments inline below, minor
+suggestions.
 
-/Jarkko
+> diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+> index cc12f3449a72..e6b2dcb0846a 100644
+> --- a/security/integrity/ima/ima.h
+> +++ b/security/integrity/ima/ima.h
+> @@ -56,6 +56,7 @@ extern int ima_policy_flag;
+>  extern int ima_hash_algo;
+>  extern int ima_appraise;
+>  extern struct tpm_chip *ima_tpm_chip;
+> +extern struct tpm_digest *digests;
+>  
+>  /* IMA event related data */
+>  struct ima_event_data {
+> diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
+> index 6bb42a9c5e47..296a965b11ef 100644
+> --- a/security/integrity/ima/ima_init.c
+> +++ b/security/integrity/ima/ima_init.c
+> @@ -27,6 +27,7 @@
+>  /* name for boot aggregate entry */
+>  static const char boot_aggregate_name[] = "boot_aggregate";
+>  struct tpm_chip *ima_tpm_chip;
+> +struct tpm_digest *digests;
+
+"digests" is used in the new ima_init_digests() and in
+ima_pcr_extend().  It's nice that the initialization routines are
+grouped together here in ima_init.c, but wouldn't it better to define
+"digests" in ima_queued.c, where it is currently being used?
+ "digests" could then be defined as static.
+
+>  
+>  /* Add the boot aggregate to the IMA measurement list and extend
+>   * the PCR register.
+> @@ -104,6 +105,24 @@ void __init ima_load_x509(void)
+>  }
+>  #endif
+>  
+> +int __init ima_init_digests(void)
+> +{
+> +	int i;
+> +
+> +	if (!ima_tpm_chip)
+> +		return 0;
+> +
+> +	digests = kcalloc(ima_tpm_chip->nr_allocated_banks, sizeof(*digests),
+> +			  GFP_NOFS);
+> +	if (!digests)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < ima_tpm_chip->nr_allocated_banks; i++)
+> +		digests[i].alg_id = ima_tpm_chip->allocated_banks[i].alg_id;
+> +
+> +	return 0;
+> +}
+> +
+>  int __init ima_init(void)
+>  {
+>  	int rc;
+> @@ -125,6 +144,9 @@ int __init ima_init(void)
+>  
+>  	ima_load_kexec_buffer();
+>  
+> +	rc = ima_init_digests();
+
+Ok. Getting the tpm chip is at the beginning of this function.
+ Deferring allocating "digests" to here, avoids having to free memory
+on failure.
+
+ima_load_kexec_buffer() restores prior measurements, but doesn't
+extend the TPM.  For anyone reading the code, a short comment above
+ima_load_kexec_buffer() would make sense.
+
+Mimi
+   
+> +	if (rc != 0)
+> +		return rc;
+>  	rc = ima_add_boot_aggregate();	/* boot aggregate must be first entry */
+>  	if (rc != 0)
+>  		return rc;
+> diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
+> index 0e41dc1df1d4..719e88ca58f6 100644
+> --- a/security/integrity/ima/ima_queue.c
+> +++ b/security/integrity/ima/ima_queue.c
+> @@ -140,11 +140,15 @@ unsigned long ima_get_binary_runtime_size(void)
+>  static int ima_pcr_extend(const u8 *hash, int pcr)
+>  {
+>  	int result = 0;
+> +	int i;
+>  
+>  	if (!ima_tpm_chip)
+>  		return result;
+>  
+> -	result = tpm_pcr_extend(ima_tpm_chip, pcr, hash);
+> +	for (i = 0; i < ima_tpm_chip->nr_allocated_banks; i++)
+> +		memcpy(digests[i].digest, hash, TPM_DIGEST_SIZE);
+> +
+> +	result = tpm_pcr_extend(ima_tpm_chip, pcr, digests);
+>  	if (result != 0)
+>  		pr_err("Error Communicating to TPM chip, result: %d\n", result);
+>  	return result;
+> 
