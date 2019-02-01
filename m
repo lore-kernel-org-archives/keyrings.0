@@ -1,58 +1,124 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 14 Feb 2019 16:20:15 +0000
-Subject: [PATCH 2/4] assoc_array: Fix shortcut creation
-Message-Id: <155016121107.8115.8131805004120069255.stgit@warthog.procyon.org.uk>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Fri, 01 Feb 2019 10:06:35 +0000
+Subject: [PATCH v9 0/6] tpm: retrieve digest size of unknown algorithms from TPM
+Message-Id: <20190201100641.26936-1-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155016118572.8115.3243711127043478822.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155016118572.8115.3243711127043478822.stgit@warthog.procyon.org.uk>
-To: jmorris@namei.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, dhowells@redhat.com, ebiggers@kernel.org, linux-kernel@vger.kernel.org
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-Fix the creation of shortcuts for which the length of the index key value
-is an exact multiple of the machine word size.  The problem is that the
-code that blanks off the unused bits of the shortcut value malfunctions if
-the number of bits in the last word equals machine word size.  This is due
-to the "<<" operator being given a shift of zero in this case, and so the
-mask that should be all zeros is all ones instead.  This causes the
-subsequent masking operation to clear everything rather than clearing
-nothing.
+Update
 
-Ordinarily, the presence of the hash at the beginning of the tree index key
-makes the issue very hard to test for, but in this case, it was encountered
-due to a development mistake that caused the hash output to be either 0
-(keyring) or 1 (non-keyring) only.  This made it susceptible to the
-keyctl/unlink/valid test in the keyutils package.
+This version of the patch set includes three additional patches (5-7/7)
+that allow users of the TPM driver to provide a digest for each PCR bank to
+tpm_pcr_extend(). The new patches have been included to facilitate the
+review of all the changes to support TPM 2.0 crypto agility for reading and
+extending PCRs.
 
-The fix is simply to skip the blanking if the shift would be 0.  For
-example, an index key that is 64 bits long would produce a 0 shift and thus
-a 'blank' of all 1s.  This would then be inverted and AND'd onto the
-index_key, incorrectly clearing the entire last word.
 
-Fixes: 3cb989501c26 ("Add a generic associative array implementation.")
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Original patch set description
 
- lib/assoc_array.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+The TPM driver currently relies on the crypto subsystem to determine the
+digest size of supported TPM algorithms. In the future, TPM vendors might
+implement new algorithms in their chips, and those algorithms might not
+be supported by the crypto subsystem.
 
-diff --git a/lib/assoc_array.c b/lib/assoc_array.c
-index c6659cb37033..59875eb278ea 100644
---- a/lib/assoc_array.c
-+++ b/lib/assoc_array.c
-@@ -768,9 +768,11 @@ static bool assoc_array_insert_into_terminal_node(struct assoc_array_edit *edit,
- 		new_s0->index_key[i]  			ops->get_key_chunk(index_key, i * ASSOC_ARRAY_KEY_CHUNK_SIZE);
- 
--	blank = ULONG_MAX << (level & ASSOC_ARRAY_KEY_CHUNK_MASK);
--	pr_devel("blank off [%zu] %d: %lx\n", keylen - 1, level, blank);
--	new_s0->index_key[keylen - 1] &= ~blank;
-+	if (level & ASSOC_ARRAY_KEY_CHUNK_MASK) {
-+		blank = ULONG_MAX << (level & ASSOC_ARRAY_KEY_CHUNK_MASK);
-+		pr_devel("blank off [%zu] %d: %lx\n", keylen - 1, level, blank);
-+		new_s0->index_key[keylen - 1] &= ~blank;
-+	}
- 
- 	/* This now reduces to a node splitting exercise for which we'll need
- 	 * to regenerate the disparity table.
+Usually, vendors provide patches for the new hardware, and likely
+the crypto subsystem will be updated before the new algorithm is
+introduced. However, old kernels might be updated later, after patches
+are included in the mainline kernel. This would leave the opportunity
+for attackers to misuse PCRs, as PCR banks with an unknown algorithm
+are not extended.
+
+This patch set provides a long term solution for this issue. If a TPM
+algorithm is not known by the crypto subsystem, the TPM driver retrieves
+the digest size from the TPM with a PCR read. All the PCR banks are
+extended, even if the algorithm is not yet supported by the crypto
+subsystem.
+
+PCR bank information (TPM algorithm ID, digest size, crypto subsystem ID)
+is stored in the tpm_chip structure and available for users of the TPM
+driver.
+
+Changelog
+
+v8:
+- set digest array length in tpm_digest to new constant TPM_MAX_DIGEST_SIZE
+- replace enum tpm_const with #define
+- rename labels in init_trusted()
+- allocate tpm_digest array after retrieving random data in init_digests()
+
+v7:
+- use memchr_inv() in tpm2_get_pcr_allocation()
+- add patch to move tpm_chip to include/linux/tpm.h
+- add patch to set the tpm_chip argument in trusted.c to a pointer from
+  tpm_default_chip()
+- remove definition of tpm_extend_digest
+- remove code in tpm2_pcr_extend() to extend unused PCR banks with the
+  first digest passed by the caller of tpm_pcr_extend()
+- remove count parameter from tpm_pcr_extend() and tpm2_pcr_extend()
+- remove padding of SHA1 digest in tpm_pcr_extend()
+- pre-allocate and initialize array of tpm_digest structures in
+  security/keys/trusted.c and security/integrity/ima/ima_init.c 
+
+v6:
+- squash patches 4-6
+- rename tpm_bank_list to tpm_extend_digest, extend_size and extend_data
+  members to size and data
+- add comment in tpm2_init_bank_info()
+
+v5:
+- rename digest_struct variable to digest
+- add _head suffix to tcg_efi_specid_event and tcg_pcr_event2
+- rename digest_size member of tpm_bank_list to extend_size
+- change type of alg_id member of tpm_bank_list from u8 to u16
+- add missing semi-colon in pcrlock()
+
+v4:
+- rename active_banks to allocated_banks
+- replace kmalloc_array() with kcalloc()
+- increment nr_allocated_banks if at least one PCR in the bank is selected
+- pass multiple digests to tpm_pcr_extend()
+
+v3:
+- remove end marker change
+- replace active_banks static array with pointer to dynamic array
+- remove TPM2_ACTIVE_PCR_BANKS
+
+v2:
+- change the end marker of the active_banks array
+- check digest size from output of PCR read command
+- remove count parameter from tpm_pcr_read() and tpm2_pcr_read()
+
+v1:
+- modify definition of tpm_pcr_read()
+- move hash algorithms and definition of tpm2_digest to include/linux/tpm.h
+
+
+Roberto Sassu (6):
+  tpm: dynamically allocate the allocated_banks array
+  tpm: rename and export tpm2_digest and tpm2_algorithms
+  tpm: retrieve digest size of unknown algorithms with PCR read
+  tpm: move tpm_chip definition to include/linux/tpm.h
+  KEYS: trusted: explicitly use tpm_chip structure from
+    tpm_default_chip()
+  tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()
+
+ drivers/char/tpm/tpm-chip.c         |   1 +
+ drivers/char/tpm/tpm-interface.c    |  38 ++++----
+ drivers/char/tpm/tpm.h              | 117 ++---------------------
+ drivers/char/tpm/tpm1-cmd.c         |  12 +++
+ drivers/char/tpm/tpm2-cmd.c         | 139 ++++++++++++++++++++--------
+ include/linux/tpm.h                 | 126 ++++++++++++++++++++++++-
+ include/linux/tpm_eventlog.h        |   9 +-
+ security/integrity/ima/ima.h        |   1 +
+ security/integrity/ima/ima_crypto.c |  10 +-
+ security/integrity/ima/ima_init.c   |  22 +++++
+ security/integrity/ima/ima_queue.c  |   6 +-
+ security/keys/trusted.c             |  73 +++++++++++----
+ 12 files changed, 346 insertions(+), 208 deletions(-)
+
+-- 
+2.17.1
