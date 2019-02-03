@@ -1,47 +1,82 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 27 Feb 2019 13:07:30 +0000
-Subject: Re: [PATCH] RFC: user-mode extensible trusted key support
-Message-Id: <20190227130730.GA12394@linux.intel.com>
+From: Kairui Song <kasong@redhat.com>
+Date: Sun, 03 Feb 2019 15:59:27 +0000
+Subject: [PATCH] integrity, KEYS: Fix build break with set_platform_trusted_keys
+Message-Id: <20190203155927.24390-1-kasong@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190211173033.2493-1-Janne.Karhunen@gmail.com>
-In-Reply-To: <20190211173033.2493-1-Janne.Karhunen@gmail.com>
-To: janne.karhunen@gmail.com
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, dhowells@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
 
-On Mon, Feb 11, 2019 at 07:30:33PM +0200, janne.karhunen@gmail.com wrote:
-> From: Janne Karhunen <Janne.Karhunen@gmail.com>
-> 
-> Current kernel key subsystem only supports tpm to implement
-> trusted keys. This is fine, but the tpm is poorly supported
-> in the embedded world that primarily use custom trust roots,
-> TEEs or even white box crypto. Problem with these setups is
-> that they are extremely diverse, complex, proprietary and
-> in some cases for valid reasons (white box).
-> 
-> This patch provides trial plumbing to enable declaration
-> of new trust sources via tiny user mode helpers baked as
-> part of the kernel image. If the hardware based trust source
-> is available, the provided um helper can read the given
-> device node and act as a translator for the kernel key
-> requests and the actual device node can be kept out of the
-> 'regular' userland. In the case of white box crypto, the
-> um helper is free to perform any sort of software magic
-> required to mangle the keys within the kernel keyring.
-> 
-> The kernel built-in usermode helper key operations are made
-> available via new key type named 'ext-trusted' that is
-> compatible with the existing userland utilities:
-> keyctl add ext-trusted foo "new_umh 32" @u
-> keyctl pipe `keyctl search @u ext-trusted foo` > foo.key
-> keyctl add ext-trusted bar "load `cat foo.key`" @u
-> ...
-> 
-> Signed-off-by: Janne Karhunen <Janne.Karhunen@gmail.com>
-> Reviewed-by: Pekka Honkanen <Pekka.Honkanen@aalto.fi>
+Commit 15ebb2eb0705 ("integrity, KEYS: add a reference to platform
+keyring") introduced a function set_platform_trusted_keys
+and calls the function in __integrity_init_keyring.
 
-I guess this misses an actual workload to look at.
+It only checks if CONFIG_INTEGRITY_PLATFORM_KEYRING is enabled when
+enabling this function, but actually this function also depends on
+CONFIG_SYSTEM_TRUSTED_KEYRING.
 
-/Jarkko
+So when built with CONFIG_INTEGRITY_PLATFORM_KEYRING &&
+!CONFIG_SYSTEM_TRUSTED_KEYRING. we will get following error:
+
+digsig.c:92: undefined reference to `set_platform_trusted_keys'
+
+And it also mistakenly wrapped the function code in the ifdef block of
+CONFIG_SYSTEM_DATA_VERIFICATION.
+
+This commit fixes the issue by adding the missing check of
+CONFIG_SYSTEM_TRUSTED_KEYRING and move the function code out of
+CONFIG_SYSTEM_DATA_VERIFICATION's ifdef block.
+
+Fixes: 15ebb2eb0705 ("integrity, KEYS: add a reference to platform keyring")
+Signed-off-by: Kairui Song <kasong@redhat.com>
+---
+ certs/system_keyring.c        | 4 ++--
+ include/keys/system_keyring.h | 9 +++------
+ 2 files changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 19bd0504bbcb..c05c29ae4d5d 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -279,11 +279,11 @@ int verify_pkcs7_signature(const void *data, size_t len,
+ }
+ EXPORT_SYMBOL_GPL(verify_pkcs7_signature);
+ 
++#endif /* CONFIG_SYSTEM_DATA_VERIFICATION */
++
+ #ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
+ void __init set_platform_trusted_keys(struct key *keyring)
+ {
+ 	platform_trusted_keys = keyring;
+ }
+ #endif
+-
+-#endif /* CONFIG_SYSTEM_DATA_VERIFICATION */
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index c7f899ee974e..42a93eda331c 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -61,16 +61,13 @@ static inline struct key *get_ima_blacklist_keyring(void)
+ }
+ #endif /* CONFIG_IMA_BLACKLIST_KEYRING */
+ 
+-#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
+-
++#if defined(CONFIG_INTEGRITY_PLATFORM_KEYRING) && \
++	defined(CONFIG_SYSTEM_TRUSTED_KEYRING)
+ extern void __init set_platform_trusted_keys(struct key *keyring);
+-
+ #else
+-
+ static inline void set_platform_trusted_keys(struct key *keyring)
+ {
+ }
+-
+-#endif /* CONFIG_INTEGRITY_PLATFORM_KEYRING */
++#endif
+ 
+ #endif /* _KEYS_SYSTEM_KEYRING_H */
+-- 
+2.20.1
