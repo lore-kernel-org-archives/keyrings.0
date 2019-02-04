@@ -1,82 +1,59 @@
-From: Kairui Song <kasong@redhat.com>
-Date: Sun, 03 Feb 2019 15:59:27 +0000
-Subject: [PATCH] integrity, KEYS: Fix build break with set_platform_trusted_keys
-Message-Id: <20190203155927.24390-1-kasong@redhat.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Mon, 04 Feb 2019 22:20:08 +0000
+Subject: Re: [PATCH] integrity, KEYS: Fix build break with set_platform_trusted_keys
+Message-Id: <1549318808.4146.127.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org, Kairui Song <kasong@redhat.com>
+References: <20190203155927.24390-1-kasong@redhat.com>
+In-Reply-To: <20190203155927.24390-1-kasong@redhat.com>
+To: Kairui Song <kasong@redhat.com>, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
 
-Commit 15ebb2eb0705 ("integrity, KEYS: add a reference to platform
-keyring") introduced a function set_platform_trusted_keys
-and calls the function in __integrity_init_keyring.
-
-It only checks if CONFIG_INTEGRITY_PLATFORM_KEYRING is enabled when
-enabling this function, but actually this function also depends on
-CONFIG_SYSTEM_TRUSTED_KEYRING.
-
-So when built with CONFIG_INTEGRITY_PLATFORM_KEYRING &&
-!CONFIG_SYSTEM_TRUSTED_KEYRING. we will get following error:
-
-digsig.c:92: undefined reference to `set_platform_trusted_keys'
-
-And it also mistakenly wrapped the function code in the ifdef block of
-CONFIG_SYSTEM_DATA_VERIFICATION.
-
-This commit fixes the issue by adding the missing check of
-CONFIG_SYSTEM_TRUSTED_KEYRING and move the function code out of
-CONFIG_SYSTEM_DATA_VERIFICATION's ifdef block.
-
-Fixes: 15ebb2eb0705 ("integrity, KEYS: add a reference to platform keyring")
-Signed-off-by: Kairui Song <kasong@redhat.com>
----
- certs/system_keyring.c        | 4 ++--
- include/keys/system_keyring.h | 9 +++------
- 2 files changed, 5 insertions(+), 8 deletions(-)
-
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index 19bd0504bbcb..c05c29ae4d5d 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -279,11 +279,11 @@ int verify_pkcs7_signature(const void *data, size_t len,
- }
- EXPORT_SYMBOL_GPL(verify_pkcs7_signature);
- 
-+#endif /* CONFIG_SYSTEM_DATA_VERIFICATION */
-+
- #ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
- void __init set_platform_trusted_keys(struct key *keyring)
- {
- 	platform_trusted_keys = keyring;
- }
- #endif
--
--#endif /* CONFIG_SYSTEM_DATA_VERIFICATION */
-diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-index c7f899ee974e..42a93eda331c 100644
---- a/include/keys/system_keyring.h
-+++ b/include/keys/system_keyring.h
-@@ -61,16 +61,13 @@ static inline struct key *get_ima_blacklist_keyring(void)
- }
- #endif /* CONFIG_IMA_BLACKLIST_KEYRING */
- 
--#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
--
-+#if defined(CONFIG_INTEGRITY_PLATFORM_KEYRING) && \
-+	defined(CONFIG_SYSTEM_TRUSTED_KEYRING)
- extern void __init set_platform_trusted_keys(struct key *keyring);
--
- #else
--
- static inline void set_platform_trusted_keys(struct key *keyring)
- {
- }
--
--#endif /* CONFIG_INTEGRITY_PLATFORM_KEYRING */
-+#endif
- 
- #endif /* _KEYS_SYSTEM_KEYRING_H */
--- 
-2.20.1
+T24gU3VuLCAyMDE5LTAyLTAzIGF0IDIzOjU5ICswODAwLCBLYWlydWkgU29uZyB3cm90ZToKPiBD
+b21taXQgMTVlYmIyZWIwNzA1ICgiaW50ZWdyaXR5LCBLRVlTOiBhZGQgYSByZWZlcmVuY2UgdG8g
+cGxhdGZvcm0KPiBrZXlyaW5nIikgaW50cm9kdWNlZCBhIGZ1bmN0aW9uIHNldF9wbGF0Zm9ybV90
+cnVzdGVkX2tleXMKPiBhbmQgY2FsbHMgdGhlIGZ1bmN0aW9uIGluIF9faW50ZWdyaXR5X2luaXRf
+a2V5cmluZy4KPiAKPiBJdCBvbmx5IGNoZWNrcyBpZiBDT05GSUdfSU5URUdSSVRZX1BMQVRGT1JN
+X0tFWVJJTkcgaXMgZW5hYmxlZCB3aGVuCj4gZW5hYmxpbmcgdGhpcyBmdW5jdGlvbiwgYnV0IGFj
+dHVhbGx5IHRoaXMgZnVuY3Rpb24gYWxzbyBkZXBlbmRzIG9uCj4gQ09ORklHX1NZU1RFTV9UUlVT
+VEVEX0tFWVJJTkcuCj4gCj4gU28gd2hlbiBidWlsdCB3aXRoIENPTkZJR19JTlRFR1JJVFlfUExB
+VEZPUk1fS0VZUklORyAmJgo+ICFDT05GSUdfU1lTVEVNX1RSVVNURURfS0VZUklORy4gd2Ugd2ls
+bCBnZXQgZm9sbG93aW5nIGVycm9yOgo+IAo+IGRpZ3NpZy5jOjkyOiB1bmRlZmluZWQgcmVmZXJl
+bmNlIHRvIGBzZXRfcGxhdGZvcm1fdHJ1c3RlZF9rZXlzJwo+IAo+IEFuZCBpdCBhbHNvIG1pc3Rh
+a2VubHkgd3JhcHBlZCB0aGUgZnVuY3Rpb24gY29kZSBpbiB0aGUgaWZkZWYgYmxvY2sgb2YKPiBD
+T05GSUdfU1lTVEVNX0RBVEFfVkVSSUZJQ0FUSU9OLgo+IAo+IFRoaXMgY29tbWl0IGZpeGVzIHRo
+ZSBpc3N1ZSBieSBhZGRpbmcgdGhlIG1pc3NpbmcgY2hlY2sgb2YKPiBDT05GSUdfU1lTVEVNX1RS
+VVNURURfS0VZUklORyBhbmQgbW92ZSB0aGUgZnVuY3Rpb24gY29kZSBvdXQgb2YKPiBDT05GSUdf
+U1lTVEVNX0RBVEFfVkVSSUZJQ0FUSU9OJ3MgaWZkZWYgYmxvY2suCj4gCj4gRml4ZXM6IDE1ZWJi
+MmViMDcwNSAoImludGVncml0eSwgS0VZUzogYWRkIGEgcmVmZXJlbmNlIHRvIHBsYXRmb3JtIGtl
+eXJpbmciKQo+IFNpZ25lZC1vZmYtYnk6IEthaXJ1aSBTb25nIDxrYXNvbmdAcmVkaGF0LmNvbT4K
+ClRoYW5rIHlvdS4gwqBBcyB0aGUgb3JpZ2luYWwgcGF0Y2ggaGFzbid0IHlldCBiZWVuIHVwc3Ry
+ZWFtZWQgLCBJIHBsYW4Kb24gc3F1YXNoaW5nIHRoZW0uCgpNaW1pCgoKPiAtLS0KPiAgY2VydHMv
+c3lzdGVtX2tleXJpbmcuYyAgICAgICAgfCA0ICsrLS0KPiAgaW5jbHVkZS9rZXlzL3N5c3RlbV9r
+ZXlyaW5nLmggfCA5ICsrKy0tLS0tLQo+ICAyIGZpbGVzIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygr
+KSwgOCBkZWxldGlvbnMoLSkKPiAKPiBkaWZmIC0tZ2l0IGEvY2VydHMvc3lzdGVtX2tleXJpbmcu
+YyBiL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMKPiBpbmRleCAxOWJkMDUwNGJiY2IuLmMwNWMyOWFl
+NGQ1ZCAxMDA2NDQKPiAtLS0gYS9jZXJ0cy9zeXN0ZW1fa2V5cmluZy5jCj4gKysrIGIvY2VydHMv
+c3lzdGVtX2tleXJpbmcuYwo+IEBAIC0yNzksMTEgKzI3OSwxMSBAQCBpbnQgdmVyaWZ5X3BrY3M3
+X3NpZ25hdHVyZShjb25zdCB2b2lkICpkYXRhLCBzaXplX3QgbGVuLAo+ICB9Cj4gIEVYUE9SVF9T
+WU1CT0xfR1BMKHZlcmlmeV9wa2NzN19zaWduYXR1cmUpOwo+ICAKPiArI2VuZGlmIC8qIENPTkZJ
+R19TWVNURU1fREFUQV9WRVJJRklDQVRJT04gKi8KPiArCj4gICNpZmRlZiBDT05GSUdfSU5URUdS
+SVRZX1BMQVRGT1JNX0tFWVJJTkcKPiAgdm9pZCBfX2luaXQgc2V0X3BsYXRmb3JtX3RydXN0ZWRf
+a2V5cyhzdHJ1Y3Qga2V5ICprZXlyaW5nKQo+ICB7Cj4gIAlwbGF0Zm9ybV90cnVzdGVkX2tleXMg
+PSBrZXlyaW5nOwo+ICB9Cj4gICNlbmRpZgo+IC0KPiAtI2VuZGlmIC8qIENPTkZJR19TWVNURU1f
+REFUQV9WRVJJRklDQVRJT04gKi8KPiBkaWZmIC0tZ2l0IGEvaW5jbHVkZS9rZXlzL3N5c3RlbV9r
+ZXlyaW5nLmggYi9pbmNsdWRlL2tleXMvc3lzdGVtX2tleXJpbmcuaAo+IGluZGV4IGM3Zjg5OWVl
+OTc0ZS4uNDJhOTNlZGEzMzFjIDEwMDY0NAo+IC0tLSBhL2luY2x1ZGUva2V5cy9zeXN0ZW1fa2V5
+cmluZy5oCj4gKysrIGIvaW5jbHVkZS9rZXlzL3N5c3RlbV9rZXlyaW5nLmgKPiBAQCAtNjEsMTYg
+KzYxLDEzIEBAIHN0YXRpYyBpbmxpbmUgc3RydWN0IGtleSAqZ2V0X2ltYV9ibGFja2xpc3Rfa2V5
+cmluZyh2b2lkKQo+ICB9Cj4gICNlbmRpZiAvKiBDT05GSUdfSU1BX0JMQUNLTElTVF9LRVlSSU5H
+ICovCj4gIAo+IC0jaWZkZWYgQ09ORklHX0lOVEVHUklUWV9QTEFURk9STV9LRVlSSU5HCj4gLQo+
+ICsjaWYgZGVmaW5lZChDT05GSUdfSU5URUdSSVRZX1BMQVRGT1JNX0tFWVJJTkcpICYmIFwKPiAr
+CWRlZmluZWQoQ09ORklHX1NZU1RFTV9UUlVTVEVEX0tFWVJJTkcpCj4gIGV4dGVybiB2b2lkIF9f
+aW5pdCBzZXRfcGxhdGZvcm1fdHJ1c3RlZF9rZXlzKHN0cnVjdCBrZXkgKmtleXJpbmcpOwo+IC0K
+PiAgI2Vsc2UKPiAtCj4gIHN0YXRpYyBpbmxpbmUgdm9pZCBzZXRfcGxhdGZvcm1fdHJ1c3RlZF9r
+ZXlzKHN0cnVjdCBrZXkgKmtleXJpbmcpCj4gIHsKPiAgfQo+IC0KPiAtI2VuZGlmIC8qIENPTkZJ
+R19JTlRFR1JJVFlfUExBVEZPUk1fS0VZUklORyAqLwo+ICsjZW5kaWYKPiAgCj4gICNlbmRpZiAv
+KiBfS0VZU19TWVNURU1fS0VZUklOR19IICovCg==
