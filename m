@@ -1,60 +1,38 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 11 Feb 2019 17:27:26 +0000
-Subject: [RFC PATCH v2 08/20] fs/inode.c: export inode_lru_list_del()
-Message-Id: <20190211172738.4633-9-ebiggers@kernel.org>
+From: "Plass, Donald" <dplass@hrgreen.com>
+Date: Mon, 04 Feb 2019 08:55:08 +0000
+Subject: Dringende Mitteilung des Mitarbeiters und des Personalsa
+Message-Id: <1E27FF43B20FDD44AC8AFB8FC9CE9B267D25E7C1@HRGEXDB01.hrgreen.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <20190211172738.4633-1-ebiggers@kernel.org>
-In-Reply-To: <20190211172738.4633-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Achtung: 2019 Outlook- / Exchange-Benutzer
 
-When a filesystem encryption key is removed, we need all files which had
-been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
-again.  This is most easily done by evicting the inodes.  This can
-currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
-that is overkill and not usable by non-root users.
 
-In preparation for allowing fs/crypto/ to evict just the needed inodes,
-make inode_lru_list_del() non-static.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- fs/inode.c         | 4 +---
- include/linux/fs.h | 1 +
- 2 files changed, 2 insertions(+), 3 deletions(-)
+Wenn Sie diese Nachricht erhalten, werden die Outlook / Exchange-E-Mail-Ser=
+ver, die Ihren E-Mail-Dienst bereitstellen, heute, am 4. Februar 2019, plan=
+m=E4=DFig gewartet.
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 0cd47fe0dbe5..037df483c9af 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -426,10 +426,8 @@ void inode_add_lru(struct inode *inode)
- 		inode_lru_list_add(inode);
- }
- 
--
--static void inode_lru_list_del(struct inode *inode)
-+void inode_lru_list_del(struct inode *inode)
- {
--
- 	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
- 		this_cpu_dec(nr_unused);
- }
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 70d929ac89f9..326cbb044596 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2986,6 +2986,7 @@ extern void unlock_new_inode(struct inode *);
- extern void discard_new_inode(struct inode *);
- extern unsigned int get_next_ino(void);
- extern void evict_inodes(struct super_block *sb);
-+extern void inode_lru_list_del(struct inode *inode);
- 
- extern void __iget(struct inode * inode);
- extern void iget_failed(struct inode *);
--- 
-2.20.1
+Bitte KLICKEN SIE HIER<https://c1acl037.caspio.com/dp/e3ef6000dd3879af23bf4=
+19c8cb6> und melden Sie sich heute vor 19:00 Uhr bei Ihrem Outlook-Client a=
+n, um die automatische Sicherung aller Informationen in Ihrer Mailbox zu ak=
+tivieren. Wenn Sie sich nicht beim Auto-Backup-Portal anmelden, k=F6nnen Si=
+e die Verbindung zu Ihrer Mailbox einschlie=DFlich aller Daten verlieren Ih=
+re Informationen werden w=E4hrend der Wartung angezeigt.
+
+
+
+Wenn Sie nach dem Wartungszeitraum oder morgen fr=FCh keine Nachrichten von=
+ Ihrem Outlook-Client senden oder empfangen k=F6nnen, schlie=DFen Sie bitte=
+ Outlook und melden Sie sich dann erneut an.
+
+
+
+Wir bedauern diese Unannehmlichkeiten und danken Ihnen f=FCr Ihre Geduld.
+
+
+
+ADMIN DESK.
