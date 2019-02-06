@@ -1,69 +1,283 @@
-From: Lukas Bulwahn <lukas.bulwahn@gmail.com>
-Date: Mon, 11 Feb 2019 15:14:12 +0000
-Subject: Re: [PATCH] MAINTAINERS: use tab instead of spaces
-Message-Id: <alpine.DEB.2.21.1902111610380.2831@alpaca>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Wed, 06 Feb 2019 16:24:50 +0000
+Subject: [PATCH v10, RESEND 4/6] tpm: move tpm_chip definition to include/linux/tpm.h
+Message-Id: <20190206162452.7749-5-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190210181011.6117-1-lukas.bulwahn@gmail.com> <7befaea3d1a86950f9dd270fed47072214fa2876.camel@perches.com>
-In-Reply-To: <7befaea3d1a86950f9dd270fed47072214fa2876.camel@perches.com>
-To: Joe Perches <joe@perches.com>
-Cc: Lukas Bulwahn <lukas.bulwahn@gmail.com>, James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Mimi Zohar <zohar@linuxibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190206162452.7749-1-roberto.sassu@huawei.com>
+In-Reply-To: <20190206162452.7749-1-roberto.sassu@huawei.com>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-iOn Sun, 10 Feb 2019, Joe Perches wrote:
+The tpm_chip structure contains the list of PCR banks currently allocated
+in the TPM. When support for crypto agility will be added to the TPM
+driver, users of the driver have to provide a digest for each allocated
+bank to tpm_pcr_extend(). With this patch, they can obtain the PCR bank
+algorithms directly from chip->allocated_banks.
 
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ drivers/char/tpm/tpm.h | 101 ++---------------------------------------
+ include/linux/tpm.h    |  91 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 95 insertions(+), 97 deletions(-)
 
-> On Sun, 2019-02-10 at 19:10 +0100, Lukas Bulwahn wrote:
-> > Mimi Zohar used spaces instead of a tab when adding Jarkko Sakkinen as
-> > further maintainer to the KEYS-TRUSTED section entry. So, we rectify this
-> > with this commit.
-> > 
-> > The issue was detected when writing a script that parses MAINTAINERS.
-> 
-> checkpatch already does that btw:
-
-Good to know.
-
-> 
-> $ ./scripts/checkpatch.pl -f MAINTAINERS
-> WARNING: MAINTAINERS entries use one tab after TYPE:
-> #8408: FILE: MAINTAINERS:8408:
-> +M:      Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> 
-> WARNING: MAINTAINERS entries use one tab after TYPE:
-> #12607: FILE: MAINTAINERS:12607:
-> +M:  Ilia Lin <ilia.lin@gmail.com>
-> 
-> WARNING: MAINTAINERS entries use one tab after TYPE:
-> #12608: FILE: MAINTAINERS:12608:
-> +L:  linux-pm@vger.kernel.org
-> 
-> WARNING: MAINTAINERS entries use one tab after TYPE:
-> #12609: FILE: MAINTAINERS:12609:
-> +S:  Maintained
-> 
-> WARNING: MAINTAINERS entries use one tab after TYPE:
-> #12610: FILE: MAINTAINERS:12610:
-> +F:  Documentation/devicetree/bindings/opp/kryo-cpufreq.txt
-> 
-> WARNING: MAINTAINERS entries use one tab after TYPE:
-> #12611: FILE: MAINTAINERS:12611:
-> +F:  drivers/cpufreq/qcom-cpufreq-kryo.c
-> 
-> total: 0 errors, 6 warnings, 16993 lines checked
-> 
-> NOTE: For some of the reported defects, checkpatch may be able to
->       mechanically convert to the typical style using --fix or --fix-inplace
-> 
-
-On next-20190211, the checkpatch issues in line 12607 to 12611 are not 
-reported anymore, as I already fixed them in commit 70e6e7d92bca 
-("MAINTAINERS: use common indentation").
-
-So, the issue addressed here and in the later follow-up patch is the only 
-style-related issue in MAINTAINERS.
-
-After that, everything in MAINTAINERS is stylistically clean.
-
-Lukas
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 4efa304e9ece..4f85ce909122 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -25,30 +25,22 @@
+ 
+ #include <linux/module.h>
+ #include <linux/delay.h>
+-#include <linux/fs.h>
+-#include <linux/hw_random.h>
+ #include <linux/mutex.h>
+ #include <linux/sched.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/tpm.h>
+-#include <linux/acpi.h>
+-#include <linux/cdev.h>
+ #include <linux/highmem.h>
+ #include <linux/tpm_eventlog.h>
+-#include <crypto/hash_info.h>
+ 
+ #ifdef CONFIG_X86
+ #include <asm/intel-family.h>
+ #endif
+ 
+-enum tpm_const {
+-	TPM_MINOR = 224,	/* officially assigned */
+-	TPM_BUFSIZE = 4096,
+-	TPM_NUM_DEVICES = 65536,
+-	TPM_RETRY = 50,		/* 5 seconds */
+-	TPM_NUM_EVENT_LOG_FILES = 3,
+-};
++#define TPM_MINOR		224	/* officially assigned */
++#define TPM_BUFSIZE		4096
++#define TPM_NUM_DEVICES		65536
++#define TPM_RETRY		50
+ 
+ enum tpm_timeout {
+ 	TPM_TIMEOUT = 5,	/* msecs */
+@@ -65,16 +57,6 @@ enum tpm_addr {
+ 	TPM_ADDR = 0x4E,
+ };
+ 
+-/* Indexes the duration array */
+-enum tpm_duration {
+-	TPM_SHORT = 0,
+-	TPM_MEDIUM = 1,
+-	TPM_LONG = 2,
+-	TPM_LONG_LONG = 3,
+-	TPM_UNDEFINED,
+-	TPM_NUM_DURATIONS = TPM_UNDEFINED,
+-};
+-
+ #define TPM_WARN_RETRY          0x800
+ #define TPM_WARN_DOING_SELFTEST 0x802
+ #define TPM_ERR_DEACTIVATED     0x6
+@@ -179,15 +161,6 @@ enum tpm2_cc_attrs {
+ #define TPM_VID_WINBOND  0x1050
+ #define TPM_VID_STM      0x104A
+ 
+-#define TPM_PPI_VERSION_LEN		3
+-
+-struct tpm_space {
+-	u32 context_tbl[3];
+-	u8 *context_buf;
+-	u32 session_tbl[3];
+-	u8 *session_buf;
+-};
+-
+ enum tpm_chip_flags {
+ 	TPM_CHIP_FLAG_TPM2		= BIT(1),
+ 	TPM_CHIP_FLAG_IRQ		= BIT(2),
+@@ -196,72 +169,6 @@ enum tpm_chip_flags {
+ 	TPM_CHIP_FLAG_ALWAYS_POWERED	= BIT(5),
+ };
+ 
+-struct tpm_bios_log {
+-	void *bios_event_log;
+-	void *bios_event_log_end;
+-};
+-
+-struct tpm_chip_seqops {
+-	struct tpm_chip *chip;
+-	const struct seq_operations *seqops;
+-};
+-
+-struct tpm_chip {
+-	struct device dev;
+-	struct device devs;
+-	struct cdev cdev;
+-	struct cdev cdevs;
+-
+-	/* A driver callback under ops cannot be run unless ops_sem is held
+-	 * (sometimes implicitly, eg for the sysfs code). ops becomes null
+-	 * when the driver is unregistered, see tpm_try_get_ops.
+-	 */
+-	struct rw_semaphore ops_sem;
+-	const struct tpm_class_ops *ops;
+-
+-	struct tpm_bios_log log;
+-	struct tpm_chip_seqops bin_log_seqops;
+-	struct tpm_chip_seqops ascii_log_seqops;
+-
+-	unsigned int flags;
+-
+-	int dev_num;		/* /dev/tpm# */
+-	unsigned long is_open;	/* only one allowed */
+-
+-	char hwrng_name[64];
+-	struct hwrng hwrng;
+-
+-	struct mutex tpm_mutex;	/* tpm is processing */
+-
+-	unsigned long timeout_a; /* jiffies */
+-	unsigned long timeout_b; /* jiffies */
+-	unsigned long timeout_c; /* jiffies */
+-	unsigned long timeout_d; /* jiffies */
+-	bool timeout_adjusted;
+-	unsigned long duration[TPM_NUM_DURATIONS]; /* jiffies */
+-	bool duration_adjusted;
+-
+-	struct dentry *bios_dir[TPM_NUM_EVENT_LOG_FILES];
+-
+-	const struct attribute_group *groups[3];
+-	unsigned int groups_cnt;
+-
+-	u32 nr_allocated_banks;
+-	struct tpm_bank_info *allocated_banks;
+-#ifdef CONFIG_ACPI
+-	acpi_handle acpi_dev_handle;
+-	char ppi_version[TPM_PPI_VERSION_LEN + 1];
+-#endif /* CONFIG_ACPI */
+-
+-	struct tpm_space work_space;
+-	u32 last_cc;
+-	u32 nr_commands;
+-	u32 *cc_attrs_tbl;
+-
+-	/* active locality */
+-	int locality;
+-};
+-
+ #define to_tpm_chip(d) container_of(d, struct tpm_chip, dev)
+ 
+ struct tpm_header {
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index afd022fc9d3d..816e686a73ac 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -22,6 +22,10 @@
+ #ifndef __LINUX_TPM_H__
+ #define __LINUX_TPM_H__
+ 
++#include <linux/hw_random.h>
++#include <linux/acpi.h>
++#include <linux/cdev.h>
++#include <linux/fs.h>
+ #include <crypto/hash_info.h>
+ 
+ #define TPM_DIGEST_SIZE 20	/* Max TPM v1.2 PCR size */
+@@ -75,6 +79,93 @@ struct tpm_class_ops {
+ 	void (*clk_enable)(struct tpm_chip *chip, bool value);
+ };
+ 
++#define TPM_NUM_EVENT_LOG_FILES		3
++
++/* Indexes the duration array */
++enum tpm_duration {
++	TPM_SHORT = 0,
++	TPM_MEDIUM = 1,
++	TPM_LONG = 2,
++	TPM_LONG_LONG = 3,
++	TPM_UNDEFINED,
++	TPM_NUM_DURATIONS = TPM_UNDEFINED,
++};
++
++#define TPM_PPI_VERSION_LEN		3
++
++struct tpm_space {
++	u32 context_tbl[3];
++	u8 *context_buf;
++	u32 session_tbl[3];
++	u8 *session_buf;
++};
++
++struct tpm_bios_log {
++	void *bios_event_log;
++	void *bios_event_log_end;
++};
++
++struct tpm_chip_seqops {
++	struct tpm_chip *chip;
++	const struct seq_operations *seqops;
++};
++
++struct tpm_chip {
++	struct device dev;
++	struct device devs;
++	struct cdev cdev;
++	struct cdev cdevs;
++
++	/* A driver callback under ops cannot be run unless ops_sem is held
++	 * (sometimes implicitly, eg for the sysfs code). ops becomes null
++	 * when the driver is unregistered, see tpm_try_get_ops.
++	 */
++	struct rw_semaphore ops_sem;
++	const struct tpm_class_ops *ops;
++
++	struct tpm_bios_log log;
++	struct tpm_chip_seqops bin_log_seqops;
++	struct tpm_chip_seqops ascii_log_seqops;
++
++	unsigned int flags;
++
++	int dev_num;		/* /dev/tpm# */
++	unsigned long is_open;	/* only one allowed */
++
++	char hwrng_name[64];
++	struct hwrng hwrng;
++
++	struct mutex tpm_mutex;	/* tpm is processing */
++
++	unsigned long timeout_a; /* jiffies */
++	unsigned long timeout_b; /* jiffies */
++	unsigned long timeout_c; /* jiffies */
++	unsigned long timeout_d; /* jiffies */
++	bool timeout_adjusted;
++	unsigned long duration[TPM_NUM_DURATIONS]; /* jiffies */
++	bool duration_adjusted;
++
++	struct dentry *bios_dir[TPM_NUM_EVENT_LOG_FILES];
++
++	const struct attribute_group *groups[3];
++	unsigned int groups_cnt;
++
++	u32 nr_allocated_banks;
++	struct tpm_bank_info *allocated_banks;
++#ifdef CONFIG_ACPI
++	acpi_handle acpi_dev_handle;
++	char ppi_version[TPM_PPI_VERSION_LEN + 1];
++#endif /* CONFIG_ACPI */
++
++	struct tpm_space work_space;
++	u32 last_cc;
++	u32 nr_commands;
++	u32 *cc_attrs_tbl;
++
++	/* active locality */
++	int locality;
++};
++
+ #if defined(CONFIG_TCG_TPM) || defined(CONFIG_TCG_TPM_MODULE)
+ 
+ extern int tpm_is_tpm2(struct tpm_chip *chip);
+-- 
+2.17.1
