@@ -1,252 +1,215 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 14 Feb 2019 16:57:26 +0000
-Subject: [RFC PATCH 3/9] keys: Simplify key description management
-Message-Id: <155016344599.11489.8530271019035388405.stgit@warthog.procyon.org.uk>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Wed, 06 Feb 2019 16:24:48 +0000
+Subject: [PATCH v10, RESEND 2/6] tpm: rename and export tpm2_digest and tpm2_algorithms
+Message-Id: <20190206162452.7749-3-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+References: <20190206162452.7749-1-roberto.sassu@huawei.com>
+In-Reply-To: <20190206162452.7749-1-roberto.sassu@huawei.com>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-Simplify key description management by cramming the word containing the
-length with the first few chars of the description also.  This simplifies
-the code that generates the index-key used by assoc_array.  It should speed
-up key searching a bit too.
+Rename tpm2_* to tpm_* and move the definitions to include/linux/tpm.h so
+that these can be used by other kernel subsystems (e.g. IMA).
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Also, set the length of the digest array in tpm_digest to a new constant
+named TPM_MAX_DIGEST_SIZE, equal to SHA512_DIGEST_SIZE.
+
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Acked-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ drivers/char/tpm/tpm-interface.c |  2 +-
+ drivers/char/tpm/tpm.h           | 13 +------------
+ drivers/char/tpm/tpm1-cmd.c      |  2 +-
+ drivers/char/tpm/tpm2-cmd.c      | 18 +++++++++---------
+ include/linux/tpm.h              | 19 +++++++++++++++++++
+ include/linux/tpm_eventlog.h     |  9 ++-------
+ 6 files changed, 33 insertions(+), 30 deletions(-)
 
- include/linux/key.h        |   14 ++++++++-
- security/keys/internal.h   |    6 ++++
- security/keys/key.c        |    2 +
- security/keys/keyring.c    |   70 +++++++++++++-------------------------------
- security/keys/persistent.c |    1 +
- 5 files changed, 43 insertions(+), 50 deletions(-)
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index aaa93fe3f587..33d87cb2d469 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -86,9 +86,20 @@ struct keyring_list;
- struct keyring_name;
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 24f0eed531a0..9f6e68fbbb4d 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -309,7 +309,7 @@ EXPORT_SYMBOL_GPL(tpm_pcr_read);
+ int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, const u8 *hash)
+ {
+ 	int rc;
+-	struct tpm2_digest *digest_list;
++	struct tpm_digest *digest_list;
+ 	int i;
  
- struct keyring_index_key {
-+	union {
-+		struct {
-+#ifdef __LITTLE_ENDIAN /* Put desc_len at the LSB of x */
-+			u8	desc_len;
-+			char	desc[sizeof(long) - 1];	/* First few chars of description */
-+#else
-+			char	desc[sizeof(long) - 1];	/* First few chars of description */
-+			u8	desc_len;
-+#endif
-+		};
-+		unsigned long x;
-+	};
- 	struct key_type		*type;
- 	const char		*description;
--	size_t			desc_len;
+ 	chip = tpm_find_get_ops(chip);
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index cd330ace6248..0e54061d3fd1 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -122,17 +122,6 @@ enum tpm2_return_codes {
+ 	TPM2_RC_RETRY		= 0x0922,
  };
  
- union key_payload {
-@@ -202,6 +213,7 @@ struct key {
- 	union {
- 		struct keyring_index_key index_key;
- 		struct {
-+			unsigned long	len_desc;
- 			struct key_type	*type;		/* type of key */
- 			char		*description;
- 		};
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 8f533c81aa8d..02592d24f13a 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -90,6 +90,12 @@ extern struct mutex key_construction_mutex;
- extern wait_queue_head_t request_key_conswq;
- 
- 
-+static inline void key_set_index_key(struct keyring_index_key *index_key)
-+{
-+	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
-+	memcpy(index_key->desc, index_key->description, n);
-+}
-+
- extern struct key_type *key_type_lookup(const char *type);
- extern void key_type_put(struct key_type *ktype);
- 
-diff --git a/security/keys/key.c b/security/keys/key.c
-index d705b950ce2a..1d0250a8990e 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -285,6 +285,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 	key->index_key.description = kmemdup(desc, desclen + 1, GFP_KERNEL);
- 	if (!key->index_key.description)
- 		goto no_memory_3;
-+	key_set_index_key(&key->index_key);
- 
- 	refcount_set(&key->usage, 1);
- 	init_rwsem(&key->sem);
-@@ -859,6 +860,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 			goto error_free_prep;
- 	}
- 	index_key.desc_len = strlen(index_key.description);
-+	key_set_index_key(&index_key);
- 
- 	ret = __key_link_begin(keyring, &index_key, &edit);
- 	if (ret < 0) {
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index eadebb92986a..bece229aeccd 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -179,9 +179,9 @@ static unsigned long hash_key_type_and_desc(const struct keyring_index_key *inde
- 	int n, desc_len = index_key->desc_len;
- 
- 	type = (unsigned long)index_key->type;
+-enum tpm2_algorithms {
+-	TPM2_ALG_ERROR		= 0x0000,
+-	TPM2_ALG_SHA1		= 0x0004,
+-	TPM2_ALG_KEYEDHASH	= 0x0008,
+-	TPM2_ALG_SHA256		= 0x000B,
+-	TPM2_ALG_SHA384		= 0x000C,
+-	TPM2_ALG_SHA512		= 0x000D,
+-	TPM2_ALG_NULL		= 0x0010,
+-	TPM2_ALG_SM3_256	= 0x0012,
+-};
 -
- 	acc = mult_64x32_and_fold(type, desc_len + 13);
- 	acc = mult_64x32_and_fold(acc, 9207);
-+
- 	for (;;) {
- 		n = desc_len;
- 		if (n <= 0)
-@@ -215,23 +215,13 @@ static unsigned long hash_key_type_and_desc(const struct keyring_index_key *inde
- /*
-  * Build the next index key chunk.
-  *
-- * On 32-bit systems the index key is laid out as:
-- *
-- *	0	4	5	9...
-- *	hash	desclen	typeptr	desc[]
-- *
-- * On 64-bit systems:
-- *
-- *	0	8	9	17...
-- *	hash	desclen	typeptr	desc[]
-- *
-  * We return it one word-sized chunk at a time.
+ enum tpm2_command_codes {
+ 	TPM2_CC_FIRST		        = 0x011F,
+ 	TPM2_CC_HIERARCHY_CONTROL       = 0x0121,
+@@ -545,7 +534,7 @@ static inline u32 tpm2_rc_value(u32 rc)
+ int tpm2_get_timeouts(struct tpm_chip *chip);
+ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf);
+ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
+-		    struct tpm2_digest *digests);
++		    struct tpm_digest *digests);
+ int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max);
+ void tpm2_flush_context(struct tpm_chip *chip, u32 handle);
+ int tpm2_seal_trusted(struct tpm_chip *chip,
+diff --git a/drivers/char/tpm/tpm1-cmd.c b/drivers/char/tpm/tpm1-cmd.c
+index e7d3228a0f37..3eb7e03889a0 100644
+--- a/drivers/char/tpm/tpm1-cmd.c
++++ b/drivers/char/tpm/tpm1-cmd.c
+@@ -703,7 +703,7 @@ int tpm1_auto_startup(struct tpm_chip *chip)
+ 		goto out;
+ 	}
+ 
+-	chip->allocated_banks[0] = TPM2_ALG_SHA1;
++	chip->allocated_banks[0] = TPM_ALG_SHA1;
+ 	chip->nr_allocated_banks = 1;
+ 
+ 	return rc;
+diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
+index bd20b9a61fc0..440ae6ee29e4 100644
+--- a/drivers/char/tpm/tpm2-cmd.c
++++ b/drivers/char/tpm/tpm2-cmd.c
+@@ -33,11 +33,11 @@ struct tpm2_hash {
+ };
+ 
+ static struct tpm2_hash tpm2_hash_map[] = {
+-	{HASH_ALGO_SHA1, TPM2_ALG_SHA1},
+-	{HASH_ALGO_SHA256, TPM2_ALG_SHA256},
+-	{HASH_ALGO_SHA384, TPM2_ALG_SHA384},
+-	{HASH_ALGO_SHA512, TPM2_ALG_SHA512},
+-	{HASH_ALGO_SM3_256, TPM2_ALG_SM3_256},
++	{HASH_ALGO_SHA1, TPM_ALG_SHA1},
++	{HASH_ALGO_SHA256, TPM_ALG_SHA256},
++	{HASH_ALGO_SHA384, TPM_ALG_SHA384},
++	{HASH_ALGO_SHA512, TPM_ALG_SHA512},
++	{HASH_ALGO_SM3_256, TPM_ALG_SM3_256},
+ };
+ 
+ int tpm2_get_timeouts(struct tpm_chip *chip)
+@@ -192,7 +192,7 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
+ 	pcr_select[pcr_idx >> 3] = 1 << (pcr_idx & 0x7);
+ 
+ 	tpm_buf_append_u32(&buf, 1);
+-	tpm_buf_append_u16(&buf, TPM2_ALG_SHA1);
++	tpm_buf_append_u16(&buf, TPM_ALG_SHA1);
+ 	tpm_buf_append_u8(&buf, TPM2_PCR_SELECT_MIN);
+ 	tpm_buf_append(&buf, (const unsigned char *)pcr_select,
+ 		       sizeof(pcr_select));
+@@ -226,7 +226,7 @@ struct tpm2_null_auth_area {
+  * Return: Same as with tpm_transmit_cmd.
   */
- static unsigned long keyring_get_key_chunk(const void *data, int level)
+ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
+-		    struct tpm2_digest *digests)
++		    struct tpm_digest *digests)
  {
- 	const struct keyring_index_key *index_key = data;
- 	unsigned long chunk = 0;
--	long offset = 0;
-+	const u8 *d;
- 	int desc_len = index_key->desc_len, n = sizeof(chunk);
+ 	struct tpm_buf buf;
+ 	struct tpm2_null_auth_area auth_area;
+@@ -443,7 +443,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
  
- 	level /= ASSOC_ARRAY_KEY_CHUNK_SIZE;
-@@ -239,32 +229,23 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
- 	case 0:
- 		return hash_key_type_and_desc(index_key);
- 	case 1:
--		return ((unsigned long)index_key->type << 8) | desc_len;
-+		return index_key->x;
- 	case 2:
--		if (desc_len = 0)
--			return (u8)((unsigned long)index_key->type >>
--				    (ASSOC_ARRAY_KEY_CHUNK_SIZE - 8));
--		n--;
--		offset = 1;
-+		return (unsigned long)index_key->type;
- 	default:
--		offset += sizeof(chunk) - 1;
--		offset += (level - 3) * sizeof(chunk);
--		if (offset >= desc_len)
-+		level -= 3;
-+		if (desc_len <= sizeof(index_key->desc))
- 			return 0;
--		desc_len -= offset;
-+
-+		d = index_key->description + sizeof(index_key->desc);
-+		d += level * sizeof(long);
-+		desc_len -= sizeof(index_key->desc);
- 		if (desc_len > n)
- 			desc_len = n;
--		offset += desc_len;
- 		do {
- 			chunk <<= 8;
--			chunk |= ((u8*)index_key->description)[--offset];
-+			chunk |= *d++;
- 		} while (--desc_len > 0);
--
--		if (level = 2) {
--			chunk <<= 8;
--			chunk |= (u8)((unsigned long)index_key->type >>
--				      (ASSOC_ARRAY_KEY_CHUNK_SIZE - 8));
--		}
- 		return chunk;
+ 	/* public */
+ 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
+-	tpm_buf_append_u16(&buf, TPM2_ALG_KEYEDHASH);
++	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
+ 	tpm_buf_append_u16(&buf, hash);
+ 
+ 	/* policy */
+@@ -458,7 +458,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
  	}
- }
-@@ -303,39 +284,28 @@ static int keyring_diff_objects(const void *object, const void *data)
- 	seg_b = hash_key_type_and_desc(b);
- 	if ((seg_a ^ seg_b) != 0)
- 		goto differ;
-+	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
  
- 	/* The number of bits contributed by the hash is controlled by a
- 	 * constant in the assoc_array headers.  Everything else thereafter we
- 	 * can deal with as being machine word-size dependent.
- 	 */
--	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
--	seg_a = a->desc_len;
--	seg_b = b->desc_len;
-+	seg_a = a->x;
-+	seg_b = b->x;
- 	if ((seg_a ^ seg_b) != 0)
- 		goto differ;
-+	level += sizeof(unsigned long);
+ 	/* public parameters */
+-	tpm_buf_append_u16(&buf, TPM2_ALG_NULL);
++	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
+ 	tpm_buf_append_u16(&buf, 0);
  
- 	/* The next bit may not work on big endian */
--	level++;
- 	seg_a = (unsigned long)a->type;
- 	seg_b = (unsigned long)b->type;
- 	if ((seg_a ^ seg_b) != 0)
- 		goto differ;
+ 	/* outside info */
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 13563b8c0c3a..9fe8c9816cf0 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -22,12 +22,31 @@
+ #ifndef __LINUX_TPM_H__
+ #define __LINUX_TPM_H__
+ 
++#include <crypto/hash_info.h>
++
+ #define TPM_DIGEST_SIZE 20	/* Max TPM v1.2 PCR size */
++#define TPM_MAX_DIGEST_SIZE SHA512_DIGEST_SIZE
+ 
+ struct tpm_chip;
+ struct trusted_key_payload;
+ struct trusted_key_options;
+ 
++enum tpm_algorithms {
++	TPM_ALG_ERROR		= 0x0000,
++	TPM_ALG_SHA1		= 0x0004,
++	TPM_ALG_KEYEDHASH	= 0x0008,
++	TPM_ALG_SHA256		= 0x000B,
++	TPM_ALG_SHA384		= 0x000C,
++	TPM_ALG_SHA512		= 0x000D,
++	TPM_ALG_NULL		= 0x0010,
++	TPM_ALG_SM3_256		= 0x0012,
++};
++
++struct tpm_digest {
++	u16 alg_id;
++	u8 digest[TPM_MAX_DIGEST_SIZE];
++} __packed;
++
+ enum TPM_OPS_FLAGS {
+ 	TPM_OPS_AUTO_STARTUP = BIT(0),
+ };
+diff --git a/include/linux/tpm_eventlog.h b/include/linux/tpm_eventlog.h
+index f47342361e87..81519f163211 100644
+--- a/include/linux/tpm_eventlog.h
++++ b/include/linux/tpm_eventlog.h
+@@ -3,7 +3,7 @@
+ #ifndef __LINUX_TPM_EVENTLOG_H__
+ #define __LINUX_TPM_EVENTLOG_H__
+ 
+-#include <crypto/hash_info.h>
++#include <linux/tpm.h>
+ 
+ #define TCG_EVENT_NAME_LEN_MAX	255
+ #define MAX_TEXT_EVENT		1000	/* Max event string length */
+@@ -105,16 +105,11 @@ struct tcg_event_field {
+ 	u8 event[0];
+ } __packed;
+ 
+-struct tpm2_digest {
+-	u16 alg_id;
+-	u8 digest[SHA512_DIGEST_SIZE];
+-} __packed;
 -
- 	level += sizeof(unsigned long);
--	if (a->desc_len = 0)
--		goto same;
+ struct tcg_pcr_event2_head {
+ 	u32 pcr_idx;
+ 	u32 event_type;
+ 	u32 count;
+-	struct tpm2_digest digests[];
++	struct tpm_digest digests[];
+ } __packed;
  
--	i = 0;
--	if (((unsigned long)a->description | (unsigned long)b->description) &
--	    (sizeof(unsigned long) - 1)) {
--		do {
--			seg_a = *(unsigned long *)(a->description + i);
--			seg_b = *(unsigned long *)(b->description + i);
--			if ((seg_a ^ seg_b) != 0)
--				goto differ_plus_i;
--			i += sizeof(unsigned long);
--		} while (i < (a->desc_len & (sizeof(unsigned long) - 1)));
--	}
-+	i = sizeof(a->desc);
-+	if (a->desc_len <= i)
-+		goto same;
- 
- 	for (; i < a->desc_len; i++) {
- 		seg_a = *(unsigned char *)(a->description + i);
-@@ -661,8 +631,10 @@ static bool search_nested_keyrings(struct key *keyring,
- 	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
- 	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
- 
--	if (ctx->index_key.description)
-+	if (ctx->index_key.description) {
- 		ctx->index_key.desc_len = strlen(ctx->index_key.description);
-+		key_set_index_key(&ctx->index_key);
-+	}
- 
- 	/* Check to see if this top-level keyring is what we are looking for
- 	 * and whether it is valid or not.
-diff --git a/security/keys/persistent.c b/security/keys/persistent.c
-index d0cb5b32eff7..fc29ec59efa7 100644
---- a/security/keys/persistent.c
-+++ b/security/keys/persistent.c
-@@ -87,6 +87,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
- 	index_key.type = &key_type_keyring;
- 	index_key.description = buf;
- 	index_key.desc_len = sprintf(buf, "_persistent.%u", from_kuid(ns, uid));
-+	key_set_index_key(&index_key);
- 
- 	if (ns->persistent_keyring_register) {
- 		reg_ref = make_key_ref(ns->persistent_keyring_register, true);
+ #endif
+-- 
+2.17.1
