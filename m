@@ -1,59 +1,129 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Mon, 04 Feb 2019 22:20:08 +0000
-Subject: Re: [PATCH] integrity, KEYS: Fix build break with set_platform_trusted_keys
-Message-Id: <1549318808.4146.127.camel@linux.ibm.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Wed, 06 Feb 2019 10:57:18 +0000
+Subject: [PATCH v10 0/6] tpm: retrieve digest size of unknown algorithms from TPM
+Message-Id: <20190206105724.14495-1-roberto.sassu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190203155927.24390-1-kasong@redhat.com>
-In-Reply-To: <20190203155927.24390-1-kasong@redhat.com>
-To: Kairui Song <kasong@redhat.com>, linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, dwmw2@infradead.org, jwboyer@fedoraproject.org, keyrings@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, bauerman@linux.ibm.com, ebiggers@google.com, nayna@linux.ibm.com, dyoung@redhat.com, linux-integrity@vger.kernel.org, kexec@lists.infradead.org
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-T24gU3VuLCAyMDE5LTAyLTAzIGF0IDIzOjU5ICswODAwLCBLYWlydWkgU29uZyB3cm90ZToKPiBD
-b21taXQgMTVlYmIyZWIwNzA1ICgiaW50ZWdyaXR5LCBLRVlTOiBhZGQgYSByZWZlcmVuY2UgdG8g
-cGxhdGZvcm0KPiBrZXlyaW5nIikgaW50cm9kdWNlZCBhIGZ1bmN0aW9uIHNldF9wbGF0Zm9ybV90
-cnVzdGVkX2tleXMKPiBhbmQgY2FsbHMgdGhlIGZ1bmN0aW9uIGluIF9faW50ZWdyaXR5X2luaXRf
-a2V5cmluZy4KPiAKPiBJdCBvbmx5IGNoZWNrcyBpZiBDT05GSUdfSU5URUdSSVRZX1BMQVRGT1JN
-X0tFWVJJTkcgaXMgZW5hYmxlZCB3aGVuCj4gZW5hYmxpbmcgdGhpcyBmdW5jdGlvbiwgYnV0IGFj
-dHVhbGx5IHRoaXMgZnVuY3Rpb24gYWxzbyBkZXBlbmRzIG9uCj4gQ09ORklHX1NZU1RFTV9UUlVT
-VEVEX0tFWVJJTkcuCj4gCj4gU28gd2hlbiBidWlsdCB3aXRoIENPTkZJR19JTlRFR1JJVFlfUExB
-VEZPUk1fS0VZUklORyAmJgo+ICFDT05GSUdfU1lTVEVNX1RSVVNURURfS0VZUklORy4gd2Ugd2ls
-bCBnZXQgZm9sbG93aW5nIGVycm9yOgo+IAo+IGRpZ3NpZy5jOjkyOiB1bmRlZmluZWQgcmVmZXJl
-bmNlIHRvIGBzZXRfcGxhdGZvcm1fdHJ1c3RlZF9rZXlzJwo+IAo+IEFuZCBpdCBhbHNvIG1pc3Rh
-a2VubHkgd3JhcHBlZCB0aGUgZnVuY3Rpb24gY29kZSBpbiB0aGUgaWZkZWYgYmxvY2sgb2YKPiBD
-T05GSUdfU1lTVEVNX0RBVEFfVkVSSUZJQ0FUSU9OLgo+IAo+IFRoaXMgY29tbWl0IGZpeGVzIHRo
-ZSBpc3N1ZSBieSBhZGRpbmcgdGhlIG1pc3NpbmcgY2hlY2sgb2YKPiBDT05GSUdfU1lTVEVNX1RS
-VVNURURfS0VZUklORyBhbmQgbW92ZSB0aGUgZnVuY3Rpb24gY29kZSBvdXQgb2YKPiBDT05GSUdf
-U1lTVEVNX0RBVEFfVkVSSUZJQ0FUSU9OJ3MgaWZkZWYgYmxvY2suCj4gCj4gRml4ZXM6IDE1ZWJi
-MmViMDcwNSAoImludGVncml0eSwgS0VZUzogYWRkIGEgcmVmZXJlbmNlIHRvIHBsYXRmb3JtIGtl
-eXJpbmciKQo+IFNpZ25lZC1vZmYtYnk6IEthaXJ1aSBTb25nIDxrYXNvbmdAcmVkaGF0LmNvbT4K
-ClRoYW5rIHlvdS4gwqBBcyB0aGUgb3JpZ2luYWwgcGF0Y2ggaGFzbid0IHlldCBiZWVuIHVwc3Ry
-ZWFtZWQgLCBJIHBsYW4Kb24gc3F1YXNoaW5nIHRoZW0uCgpNaW1pCgoKPiAtLS0KPiAgY2VydHMv
-c3lzdGVtX2tleXJpbmcuYyAgICAgICAgfCA0ICsrLS0KPiAgaW5jbHVkZS9rZXlzL3N5c3RlbV9r
-ZXlyaW5nLmggfCA5ICsrKy0tLS0tLQo+ICAyIGZpbGVzIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygr
-KSwgOCBkZWxldGlvbnMoLSkKPiAKPiBkaWZmIC0tZ2l0IGEvY2VydHMvc3lzdGVtX2tleXJpbmcu
-YyBiL2NlcnRzL3N5c3RlbV9rZXlyaW5nLmMKPiBpbmRleCAxOWJkMDUwNGJiY2IuLmMwNWMyOWFl
-NGQ1ZCAxMDA2NDQKPiAtLS0gYS9jZXJ0cy9zeXN0ZW1fa2V5cmluZy5jCj4gKysrIGIvY2VydHMv
-c3lzdGVtX2tleXJpbmcuYwo+IEBAIC0yNzksMTEgKzI3OSwxMSBAQCBpbnQgdmVyaWZ5X3BrY3M3
-X3NpZ25hdHVyZShjb25zdCB2b2lkICpkYXRhLCBzaXplX3QgbGVuLAo+ICB9Cj4gIEVYUE9SVF9T
-WU1CT0xfR1BMKHZlcmlmeV9wa2NzN19zaWduYXR1cmUpOwo+ICAKPiArI2VuZGlmIC8qIENPTkZJ
-R19TWVNURU1fREFUQV9WRVJJRklDQVRJT04gKi8KPiArCj4gICNpZmRlZiBDT05GSUdfSU5URUdS
-SVRZX1BMQVRGT1JNX0tFWVJJTkcKPiAgdm9pZCBfX2luaXQgc2V0X3BsYXRmb3JtX3RydXN0ZWRf
-a2V5cyhzdHJ1Y3Qga2V5ICprZXlyaW5nKQo+ICB7Cj4gIAlwbGF0Zm9ybV90cnVzdGVkX2tleXMg
-PSBrZXlyaW5nOwo+ICB9Cj4gICNlbmRpZgo+IC0KPiAtI2VuZGlmIC8qIENPTkZJR19TWVNURU1f
-REFUQV9WRVJJRklDQVRJT04gKi8KPiBkaWZmIC0tZ2l0IGEvaW5jbHVkZS9rZXlzL3N5c3RlbV9r
-ZXlyaW5nLmggYi9pbmNsdWRlL2tleXMvc3lzdGVtX2tleXJpbmcuaAo+IGluZGV4IGM3Zjg5OWVl
-OTc0ZS4uNDJhOTNlZGEzMzFjIDEwMDY0NAo+IC0tLSBhL2luY2x1ZGUva2V5cy9zeXN0ZW1fa2V5
-cmluZy5oCj4gKysrIGIvaW5jbHVkZS9rZXlzL3N5c3RlbV9rZXlyaW5nLmgKPiBAQCAtNjEsMTYg
-KzYxLDEzIEBAIHN0YXRpYyBpbmxpbmUgc3RydWN0IGtleSAqZ2V0X2ltYV9ibGFja2xpc3Rfa2V5
-cmluZyh2b2lkKQo+ICB9Cj4gICNlbmRpZiAvKiBDT05GSUdfSU1BX0JMQUNLTElTVF9LRVlSSU5H
-ICovCj4gIAo+IC0jaWZkZWYgQ09ORklHX0lOVEVHUklUWV9QTEFURk9STV9LRVlSSU5HCj4gLQo+
-ICsjaWYgZGVmaW5lZChDT05GSUdfSU5URUdSSVRZX1BMQVRGT1JNX0tFWVJJTkcpICYmIFwKPiAr
-CWRlZmluZWQoQ09ORklHX1NZU1RFTV9UUlVTVEVEX0tFWVJJTkcpCj4gIGV4dGVybiB2b2lkIF9f
-aW5pdCBzZXRfcGxhdGZvcm1fdHJ1c3RlZF9rZXlzKHN0cnVjdCBrZXkgKmtleXJpbmcpOwo+IC0K
-PiAgI2Vsc2UKPiAtCj4gIHN0YXRpYyBpbmxpbmUgdm9pZCBzZXRfcGxhdGZvcm1fdHJ1c3RlZF9r
-ZXlzKHN0cnVjdCBrZXkgKmtleXJpbmcpCj4gIHsKPiAgfQo+IC0KPiAtI2VuZGlmIC8qIENPTkZJ
-R19JTlRFR1JJVFlfUExBVEZPUk1fS0VZUklORyAqLwo+ICsjZW5kaWYKPiAgCj4gICNlbmRpZiAv
-KiBfS0VZU19TWVNURU1fS0VZUklOR19IICovCg==
+Update
+
+This version of the patch set includes three additional patches (5-7/7)
+that allow users of the TPM driver to provide a digest for each PCR bank to
+tpm_pcr_extend(). The new patches have been included to facilitate the
+review of all the changes to support TPM 2.0 crypto agility for reading and
+extending PCRs.
+
+
+Original patch set description
+
+The TPM driver currently relies on the crypto subsystem to determine the
+digest size of supported TPM algorithms. In the future, TPM vendors might
+implement new algorithms in their chips, and those algorithms might not
+be supported by the crypto subsystem.
+
+Usually, vendors provide patches for the new hardware, and likely
+the crypto subsystem will be updated before the new algorithm is
+introduced. However, old kernels might be updated later, after patches
+are included in the mainline kernel. This would leave the opportunity
+for attackers to misuse PCRs, as PCR banks with an unknown algorithm
+are not extended.
+
+This patch set provides a long term solution for this issue. If a TPM
+algorithm is not known by the crypto subsystem, the TPM driver retrieves
+the digest size from the TPM with a PCR read. All the PCR banks are
+extended, even if the algorithm is not yet supported by the crypto
+subsystem.
+
+PCR bank information (TPM algorithm ID, digest size, crypto subsystem ID)
+is stored in the tpm_chip structure and available for users of the TPM
+driver.
+
+Changelog
+
+v9:
+- add comment for ima_load_kexec_buffer() in ima_init()
+- move 'digests' and ima_init_digests() to ima_queue.c
+- remove comment for TPM_RETRY
+
+v8:
+- set digest array length in tpm_digest to new constant TPM_MAX_DIGEST_SIZE
+- replace enum tpm_const with #define
+- rename labels in init_trusted()
+- allocate tpm_digest array after retrieving random data in init_digests()
+
+v7:
+- use memchr_inv() in tpm2_get_pcr_allocation()
+- add patch to move tpm_chip to include/linux/tpm.h
+- add patch to set the tpm_chip argument in trusted.c to a pointer from
+  tpm_default_chip()
+- remove definition of tpm_extend_digest
+- remove code in tpm2_pcr_extend() to extend unused PCR banks with the
+  first digest passed by the caller of tpm_pcr_extend()
+- remove count parameter from tpm_pcr_extend() and tpm2_pcr_extend()
+- remove padding of SHA1 digest in tpm_pcr_extend()
+- pre-allocate and initialize array of tpm_digest structures in
+  security/keys/trusted.c and security/integrity/ima/ima_init.c 
+
+v6:
+- squash patches 4-6
+- rename tpm_bank_list to tpm_extend_digest, extend_size and extend_data
+  members to size and data
+- add comment in tpm2_init_bank_info()
+
+v5:
+- rename digest_struct variable to digest
+- add _head suffix to tcg_efi_specid_event and tcg_pcr_event2
+- rename digest_size member of tpm_bank_list to extend_size
+- change type of alg_id member of tpm_bank_list from u8 to u16
+- add missing semi-colon in pcrlock()
+
+v4:
+- rename active_banks to allocated_banks
+- replace kmalloc_array() with kcalloc()
+- increment nr_allocated_banks if at least one PCR in the bank is selected
+- pass multiple digests to tpm_pcr_extend()
+
+v3:
+- remove end marker change
+- replace active_banks static array with pointer to dynamic array
+- remove TPM2_ACTIVE_PCR_BANKS
+
+v2:
+- change the end marker of the active_banks array
+- check digest size from output of PCR read command
+- remove count parameter from tpm_pcr_read() and tpm2_pcr_read()
+
+v1:
+- modify definition of tpm_pcr_read()
+- move hash algorithms and definition of tpm2_digest to include/linux/tpm.h
+
+
+Roberto Sassu (6):
+  tpm: dynamically allocate the allocated_banks array
+  tpm: rename and export tpm2_digest and tpm2_algorithms
+  tpm: retrieve digest size of unknown algorithms with PCR read
+  tpm: move tpm_chip definition to include/linux/tpm.h
+  KEYS: trusted: explicitly use tpm_chip structure from
+    tpm_default_chip()
+  tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()
+
+ drivers/char/tpm/tpm-chip.c         |   1 +
+ drivers/char/tpm/tpm-interface.c    |  38 ++++----
+ drivers/char/tpm/tpm.h              | 117 ++---------------------
+ drivers/char/tpm/tpm1-cmd.c         |  12 +++
+ drivers/char/tpm/tpm2-cmd.c         | 139 ++++++++++++++++++++--------
+ include/linux/tpm.h                 | 126 ++++++++++++++++++++++++-
+ include/linux/tpm_eventlog.h        |   9 +-
+ security/integrity/ima/ima.h        |   1 +
+ security/integrity/ima/ima_crypto.c |  10 +-
+ security/integrity/ima/ima_init.c   |   4 +
+ security/integrity/ima/ima_queue.c  |  27 +++++-
+ security/keys/trusted.c             |  73 +++++++++++----
+ 12 files changed, 349 insertions(+), 208 deletions(-)
+
+-- 
+2.17.1
