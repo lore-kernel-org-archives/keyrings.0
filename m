@@ -1,43 +1,172 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Tue, 26 Feb 2019 12:07:43 +0000
-Subject: Re: [PATCH v5 10/10] integrity: support EC-RDSA signatures for asymmetric_verify
-Message-Id: <1551182863.27819.62.camel@linux.ibm.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Wed, 06 Feb 2019 10:57:23 +0000
+Subject: [PATCH v10 5/6] KEYS: trusted: explicitly use tpm_chip structure from tpm_default_chip()
+Message-Id: <20190206105724.14495-6-roberto.sassu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190224060828.2527-1-vt@altlinux.org>
-         <20190224060828.2527-11-vt@altlinux.org>
-         <874l8rr2dq.fsf@morokweng.localdomain>
-         <20190226042546.czh6me47f7xldgk2@altlinux.org>
-In-Reply-To: <20190226042546.czh6me47f7xldgk2@altlinux.org>
-To: Vitaly Chikunov <vt@altlinux.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+References: <20190206105724.14495-1-roberto.sassu@huawei.com>
+In-Reply-To: <20190206105724.14495-1-roberto.sassu@huawei.com>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-Cj4gPiA+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3JpdHkvZGlnc2lnX2FzeW1tZXRyaWMu
-YyBiL3NlY3VyaXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1ldHJpYy5jCj4gPiA+IGluZGV4IGQ3
-NzVlMDNmYmJjYy4uYzRhMzMxM2UwMjEwIDEwMDY0NAo+ID4gPiAtLS0gYS9zZWN1cml0eS9pbnRl
-Z3JpdHkvZGlnc2lnX2FzeW1tZXRyaWMuYwo+ID4gPiArKysgYi9zZWN1cml0eS9pbnRlZ3JpdHkv
-ZGlnc2lnX2FzeW1tZXRyaWMuYwo+ID4gPiBAQCAtMTA0LDkgKzEwNCwxNCBAQCBpbnQgYXN5bW1l
-dHJpY192ZXJpZnkoc3RydWN0IGtleSAqa2V5cmluZywgY29uc3QgY2hhciAqc2lnLAo+ID4gPgo+
-ID4gPiAgCW1lbXNldCgmcGtzLCAwLCBzaXplb2YocGtzKSk7Cj4gPiA+Cj4gPiA+IC0JcGtzLnBr
-ZXlfYWxnbyA9ICJyc2EiOwo+ID4gPiAgCXBrcy5oYXNoX2FsZ28gPSBoYXNoX2FsZ29fbmFtZVto
-ZHItPmhhc2hfYWxnb107Cj4gPiA+IC0JcGtzLmVuY29kaW5nID0gInBrY3MxIjsKPiA+ID4gKwlp
-ZiAoIXN0cm5jbXAocGtzLmhhc2hfYWxnbywgInN0cmVlYm9nIiwgOCkpIHsKPiA+IAo+ID4gSXMg
-aXQgcG9zc2libGUgdG8gdGVzdCBoZHItPmhhc2hfYWxnbyBpbnN0ZWFkIG9mIHBrY3MuaGFzaF9h
-bGdvPyBJTUhPIGlmCj4gPiBhbiBpbnRlZ2VyIHZhbHVlIGlzIGF2YWlsYWJsZSBpdCdzIHByZWZl
-cmFibGUgdG8gY2hlY2sgaXQgcmF0aGVyIHRoYW4KPiA+IGRvaW5nIGEgc3RyaW5nIGNvbXBhcmlz
-b24uCj4gCj4gWWVzLiBCdXQgd2UgaGF2ZSBsb25nIHRyYWRpdGlvbiBvZiBjb21wYXJpbmcgYnkg
-dGhlIG5hbWUgdG9vOgo+IAo+ICAgLS1saW51eCQgZ2l0IGdyZXAgc3RyLipjbXAuKicic2hhWzEy
-XScKPiAgIGRyaXZlcnMvY3J5cHRvL214cy1kY3AuYzogICAgICAgaWYgKHN0cmNtcChoYWxnLT5i
-YXNlLmNyYV9uYW1lLCAic2hhMSIpID0gMCkKPiAgIGRyaXZlcnMvY3J5cHRvL3RhbGl0b3MuYzog
-ICAgICAgICAgICAgICAgICAgKCFzdHJjbXAoYWxnLT5jcmFfbmFtZSwgInNoYTIyNCIpIHx8Cj4g
-ICBuZXQvc2N0cC9zeXNjdGwuYzogICAgICAgICAgICAgIGlmICghc3RybmNtcCh0bXAsICJzaGEx
-IiwgNCkpIHsKPiAgIHNjcmlwdHMvc2lnbi1maWxlLmM6ICAgIGlmIChzdHJjbXAoaGFzaF9hbGdv
-LCAic2hhMSIpICE9IDApIHsKCnNpZ25fZmlsZS5jIGlzIGEgdXNlcnNwYWNlIHByb2dyYW0gdXNl
-ZCBmb3Igc2lnbmluZyBrZXJuZWwgbW9kdWxlcy4KwqBUaGlzIGV4YW1wbGUgaXMgbm90IGFwcGxp
-Y2FibGUuCgo+ICAgc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfbWFpbi5jOiAgICAgICAgICAg
-ICAgaWYgKHN0cm5jbXAoc3RyLCAic2hhMSIsIDQpID0gMCkKCkluIHRoZSBpbWFfbWFpbi5jIGV4
-YW1wbGUsIGl0IGlzIHVzZWQgaW4gYW4gX19pbml0IGZ1bmN0aW9uIHRvIHNldCB1cApjcnlwdG8g
-ZGVmYXVsdHMuIMKgVGhlIGNvZGUgYWxzbyBwcmVkYXRlcyB0aGUgZW51bWVyYXRpb25zIGRlZmlu
-ZWQgaW4KY3J5cHRvL2hhc2hfaW5mby5jLgoKTWltaQo=
+When crypto agility support will be added to the TPM driver, users of the
+driver have to retrieve the allocated banks from chip->allocated_banks and
+use this information to prepare the array of tpm_digest structures to be
+passed to tpm_pcr_extend().
+
+This patch retrieves a tpm_chip pointer from tpm_default_chip() so that the
+pointer can be used to prepare the array of tpm_digest structures.
+
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ security/keys/trusted.c | 38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
+
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 4d98f4f87236..5b852263eae1 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -34,6 +34,7 @@
+ 
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
++static struct tpm_chip *chip;
+ 
+ struct sdesc {
+ 	struct shash_desc shash;
+@@ -362,7 +363,7 @@ int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ 	int rc;
+ 
+ 	dump_tpm_buf(cmd);
+-	rc = tpm_send(NULL, cmd, buflen);
++	rc = tpm_send(chip, cmd, buflen);
+ 	dump_tpm_buf(cmd);
+ 	if (rc > 0)
+ 		/* Can't return positive return codes values to keyctl */
+@@ -384,10 +385,10 @@ static int pcrlock(const int pcrnum)
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+-	ret = tpm_get_random(NULL, hash, SHA1_DIGEST_SIZE);
++	ret = tpm_get_random(chip, hash, SHA1_DIGEST_SIZE);
+ 	if (ret != SHA1_DIGEST_SIZE)
+ 		return ret;
+-	return tpm_pcr_extend(NULL, pcrnum, hash) ? -EINVAL : 0;
++	return tpm_pcr_extend(chip, pcrnum, hash) ? -EINVAL : 0;
+ }
+ 
+ /*
+@@ -400,7 +401,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ 	unsigned char ononce[TPM_NONCE_SIZE];
+ 	int ret;
+ 
+-	ret = tpm_get_random(NULL, ononce, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE)
+ 		return ret;
+ 
+@@ -496,7 +497,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	ret = tpm_get_random(NULL, td->nonceodd, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE)
+ 		goto out;
+ 	ordinal = htonl(TPM_ORD_SEAL);
+@@ -606,7 +607,7 @@ static int tpm_unseal(struct tpm_buf *tb,
+ 
+ 	ordinal = htonl(TPM_ORD_UNSEAL);
+ 	keyhndl = htonl(SRKHANDLE);
+-	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE) {
+ 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
+ 		return ret;
+@@ -751,7 +752,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 	int i;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return tpm2;
+ 
+@@ -920,7 +921,7 @@ static struct trusted_key_options *trusted_options_alloc(void)
+ 	struct trusted_key_options *options;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return NULL;
+ 
+@@ -970,7 +971,7 @@ static int trusted_instantiate(struct key *key,
+ 	size_t key_len;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return tpm2;
+ 
+@@ -1011,7 +1012,7 @@ static int trusted_instantiate(struct key *key,
+ 	switch (key_cmd) {
+ 	case Opt_load:
+ 		if (tpm2)
+-			ret = tpm_unseal_trusted(NULL, payload, options);
++			ret = tpm_unseal_trusted(chip, payload, options);
+ 		else
+ 			ret = key_unseal(payload, options);
+ 		dump_payload(payload);
+@@ -1021,13 +1022,13 @@ static int trusted_instantiate(struct key *key,
+ 		break;
+ 	case Opt_new:
+ 		key_len = payload->key_len;
+-		ret = tpm_get_random(NULL, payload->key, key_len);
++		ret = tpm_get_random(chip, payload->key, key_len);
+ 		if (ret != key_len) {
+ 			pr_info("trusted_key: key_create failed (%d)\n", ret);
+ 			goto out;
+ 		}
+ 		if (tpm2)
+-			ret = tpm_seal_trusted(NULL, payload, options);
++			ret = tpm_seal_trusted(chip, payload, options);
+ 		else
+ 			ret = key_seal(payload, options);
+ 		if (ret < 0)
+@@ -1225,17 +1226,26 @@ static int __init init_trusted(void)
+ {
+ 	int ret;
+ 
++	chip = tpm_default_chip();
++	if (!chip)
++		return -ENOENT;
+ 	ret = trusted_shash_alloc();
+ 	if (ret < 0)
+-		return ret;
++		goto err_put;
+ 	ret = register_key_type(&key_type_trusted);
+ 	if (ret < 0)
+-		trusted_shash_release();
++		goto err_release;
++	return 0;
++err_release:
++	trusted_shash_release();
++err_put:
++	put_device(&chip->dev);
+ 	return ret;
+ }
+ 
+ static void __exit cleanup_trusted(void)
+ {
++	put_device(&chip->dev);
+ 	trusted_shash_release();
+ 	unregister_key_type(&key_type_trusted);
+ }
+-- 
+2.17.1
