@@ -1,28 +1,172 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 19 Feb 2019 23:16:59 +0000
-Subject: Re: [RFC PATCH 04/27] containers: Allow a process to be forked into a container
-Message-Id: <20295.1550618219@warthog.procyon.org.uk>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Wed, 06 Feb 2019 16:24:51 +0000
+Subject: [PATCH v10, RESEND 5/6] KEYS: trusted: explicitly use tpm_chip structure from tpm_default_chip()
+Message-Id: <20190206162452.7749-6-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <87tvgzwx4i.fsf@xmission.com> <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk> <155024686966.21651.5963892339360034863.stgit@warthog.procyon.org.uk>
-In-Reply-To: <87tvgzwx4i.fsf@xmission.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, linux-kernel@vger.kernel.org
+References: <20190206162452.7749-1-roberto.sassu@huawei.com>
+In-Reply-To: <20190206162452.7749-1-roberto.sassu@huawei.com>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-Eric W. Biederman <ebiederm@xmission.com> wrote:
+When crypto agility support will be added to the TPM driver, users of the
+driver have to retrieve the allocated banks from chip->allocated_banks and
+use this information to prepare the array of tpm_digest structures to be
+passed to tpm_pcr_extend().
 
-> > Further attempts to fork into the container will be rejected.
->
-> There are no technical reasons to disallow this, and may good practical
-> reasons to allow this.
+This patch retrieves a tpm_chip pointer from tpm_default_chip() so that the
+pointer can be used to prepare the array of tpm_digest structures.
 
-Fair enough; that can be done.  Could even emulate /sbin/request-key upcalling
-that way, with the manager spawning the daemon into the container with it.
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ security/keys/trusted.c | 38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
 
-> So you are breaking nsenter, and it's like.
-
-It shouldn't stop nsenter() from working.
-
-David
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 4d98f4f87236..5b852263eae1 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -34,6 +34,7 @@
+ 
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
++static struct tpm_chip *chip;
+ 
+ struct sdesc {
+ 	struct shash_desc shash;
+@@ -362,7 +363,7 @@ int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ 	int rc;
+ 
+ 	dump_tpm_buf(cmd);
+-	rc = tpm_send(NULL, cmd, buflen);
++	rc = tpm_send(chip, cmd, buflen);
+ 	dump_tpm_buf(cmd);
+ 	if (rc > 0)
+ 		/* Can't return positive return codes values to keyctl */
+@@ -384,10 +385,10 @@ static int pcrlock(const int pcrnum)
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+-	ret = tpm_get_random(NULL, hash, SHA1_DIGEST_SIZE);
++	ret = tpm_get_random(chip, hash, SHA1_DIGEST_SIZE);
+ 	if (ret != SHA1_DIGEST_SIZE)
+ 		return ret;
+-	return tpm_pcr_extend(NULL, pcrnum, hash) ? -EINVAL : 0;
++	return tpm_pcr_extend(chip, pcrnum, hash) ? -EINVAL : 0;
+ }
+ 
+ /*
+@@ -400,7 +401,7 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ 	unsigned char ononce[TPM_NONCE_SIZE];
+ 	int ret;
+ 
+-	ret = tpm_get_random(NULL, ononce, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE)
+ 		return ret;
+ 
+@@ -496,7 +497,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	ret = tpm_get_random(NULL, td->nonceodd, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE)
+ 		goto out;
+ 	ordinal = htonl(TPM_ORD_SEAL);
+@@ -606,7 +607,7 @@ static int tpm_unseal(struct tpm_buf *tb,
+ 
+ 	ordinal = htonl(TPM_ORD_UNSEAL);
+ 	keyhndl = htonl(SRKHANDLE);
+-	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
++	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE) {
+ 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
+ 		return ret;
+@@ -751,7 +752,7 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 	int i;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return tpm2;
+ 
+@@ -920,7 +921,7 @@ static struct trusted_key_options *trusted_options_alloc(void)
+ 	struct trusted_key_options *options;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return NULL;
+ 
+@@ -970,7 +971,7 @@ static int trusted_instantiate(struct key *key,
+ 	size_t key_len;
+ 	int tpm2;
+ 
+-	tpm2 = tpm_is_tpm2(NULL);
++	tpm2 = tpm_is_tpm2(chip);
+ 	if (tpm2 < 0)
+ 		return tpm2;
+ 
+@@ -1011,7 +1012,7 @@ static int trusted_instantiate(struct key *key,
+ 	switch (key_cmd) {
+ 	case Opt_load:
+ 		if (tpm2)
+-			ret = tpm_unseal_trusted(NULL, payload, options);
++			ret = tpm_unseal_trusted(chip, payload, options);
+ 		else
+ 			ret = key_unseal(payload, options);
+ 		dump_payload(payload);
+@@ -1021,13 +1022,13 @@ static int trusted_instantiate(struct key *key,
+ 		break;
+ 	case Opt_new:
+ 		key_len = payload->key_len;
+-		ret = tpm_get_random(NULL, payload->key, key_len);
++		ret = tpm_get_random(chip, payload->key, key_len);
+ 		if (ret != key_len) {
+ 			pr_info("trusted_key: key_create failed (%d)\n", ret);
+ 			goto out;
+ 		}
+ 		if (tpm2)
+-			ret = tpm_seal_trusted(NULL, payload, options);
++			ret = tpm_seal_trusted(chip, payload, options);
+ 		else
+ 			ret = key_seal(payload, options);
+ 		if (ret < 0)
+@@ -1225,17 +1226,26 @@ static int __init init_trusted(void)
+ {
+ 	int ret;
+ 
++	chip = tpm_default_chip();
++	if (!chip)
++		return -ENOENT;
+ 	ret = trusted_shash_alloc();
+ 	if (ret < 0)
+-		return ret;
++		goto err_put;
+ 	ret = register_key_type(&key_type_trusted);
+ 	if (ret < 0)
+-		trusted_shash_release();
++		goto err_release;
++	return 0;
++err_release:
++	trusted_shash_release();
++err_put:
++	put_device(&chip->dev);
+ 	return ret;
+ }
+ 
+ static void __exit cleanup_trusted(void)
+ {
++	put_device(&chip->dev);
+ 	trusted_shash_release();
+ 	unregister_key_type(&key_type_trusted);
+ }
+-- 
+2.17.1
