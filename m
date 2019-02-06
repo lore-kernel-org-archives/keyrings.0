@@ -1,57 +1,281 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 07 Feb 2019 23:36:02 +0000
-Subject: Re: [PATCH] KEYS: asymmetric: return ENOMEM if akcipher_request_alloc() fails
-Message-Id: <20190207233601.GD125156@gmail.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Wed, 06 Feb 2019 10:57:22 +0000
+Subject: [PATCH v10 4/6] tpm: move tpm_chip definition to include/linux/tpm.h
+Message-Id: <20190206105724.14495-5-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20190206105724.14495-1-roberto.sassu@huawei.com>
+In-Reply-To: <20190206105724.14495-1-roberto.sassu@huawei.com>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-On Thu, Jan 10, 2019 at 12:28:10PM -0800, Eric Biggers wrote:
-> On Sat, Nov 03, 2018 at 10:41:07AM -0700, Eric Biggers wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> > 
-> > No error code was being set on this error path.
-> > 
-> > Fixes: ad4b1eb5fb33 ("KEYS: asym_tpm: Implement encryption operation [ver #2]")
-> > Fixes: c08fed737126 ("KEYS: Implement encrypt, decrypt and sign for software asymmetric key [ver #2]")
-> > Signed-off-by: Eric Biggers <ebiggers@google.com>
-> > ---
-> >  crypto/asymmetric_keys/asym_tpm.c   | 1 +
-> >  crypto/asymmetric_keys/public_key.c | 1 +
-> >  2 files changed, 2 insertions(+)
-> > 
-> > diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-> > index 5d4c270463f60..8eeb2d251a82a 100644
-> > --- a/crypto/asymmetric_keys/asym_tpm.c
-> > +++ b/crypto/asymmetric_keys/asym_tpm.c
-> > @@ -479,6 +479,7 @@ static int tpm_key_encrypt(struct tpm_key *tk,
-> >  	if (ret < 0)
-> >  		goto error_free_tfm;
-> >  
-> > +	ret = -ENOMEM;
-> >  	req = akcipher_request_alloc(tfm, GFP_KERNEL);
-> >  	if (!req)
-> >  		goto error_free_tfm;
-> > diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-> > index f5d85b47fcc6d..65fc08d9be087 100644
-> > --- a/crypto/asymmetric_keys/public_key.c
-> > +++ b/crypto/asymmetric_keys/public_key.c
-> > @@ -169,6 +169,7 @@ static int software_key_eds_op(struct kernel_pkey_params *params,
-> >  	if (IS_ERR(tfm))
-> >  		return PTR_ERR(tfm);
-> >  
-> > +	ret = -ENOMEM;
-> >  	req = akcipher_request_alloc(tfm, GFP_KERNEL);
-> >  	if (!req)
-> >  		goto error_free_tfm;
-> > -- 
-> > 2.19.1
-> > 
-> 
-> Ping.
+The tpm_chip structure contains the list of PCR banks currently allocated
+in the TPM. When support for crypto agility will be added to the TPM
+driver, users of the driver have to provide a digest for each allocated
+bank to tpm_pcr_extend(). With this patch, they can obtain the PCR bank
+algorithms directly from chip->allocated_banks.
 
-Ping.  David, are you planning to apply this?
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ drivers/char/tpm/tpm.h | 100 ++---------------------------------------
+ include/linux/tpm.h    |  90 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 94 insertions(+), 96 deletions(-)
 
-- Eric
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 64d93d26087f..f20433946ca5 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -25,30 +25,22 @@
+ 
+ #include <linux/module.h>
+ #include <linux/delay.h>
+-#include <linux/fs.h>
+-#include <linux/hw_random.h>
+ #include <linux/mutex.h>
+ #include <linux/sched.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/tpm.h>
+-#include <linux/acpi.h>
+-#include <linux/cdev.h>
+ #include <linux/highmem.h>
+ #include <linux/tpm_eventlog.h>
+-#include <crypto/hash_info.h>
+ 
+ #ifdef CONFIG_X86
+ #include <asm/intel-family.h>
+ #endif
+ 
+-enum tpm_const {
+-	TPM_MINOR = 224,	/* officially assigned */
+-	TPM_BUFSIZE = 4096,
+-	TPM_NUM_DEVICES = 65536,
+-	TPM_RETRY = 50,		/* 5 seconds */
+-	TPM_NUM_EVENT_LOG_FILES = 3,
+-};
++#define TPM_MINOR		224	/* officially assigned */
++#define TPM_BUFSIZE		4096
++#define TPM_NUM_DEVICES		65536
++#define TPM_RETRY		50
+ 
+ enum tpm_timeout {
+ 	TPM_TIMEOUT = 5,	/* msecs */
+@@ -65,16 +57,6 @@ enum tpm_addr {
+ 	TPM_ADDR = 0x4E,
+ };
+ 
+-/* Indexes the duration array */
+-enum tpm_duration {
+-	TPM_SHORT = 0,
+-	TPM_MEDIUM = 1,
+-	TPM_LONG = 2,
+-	TPM_LONG_LONG = 3,
+-	TPM_UNDEFINED,
+-	TPM_NUM_DURATIONS = TPM_UNDEFINED,
+-};
+-
+ #define TPM_WARN_RETRY          0x800
+ #define TPM_WARN_DOING_SELFTEST 0x802
+ #define TPM_ERR_DEACTIVATED     0x6
+@@ -179,15 +161,6 @@ enum tpm2_cc_attrs {
+ #define TPM_VID_WINBOND  0x1050
+ #define TPM_VID_STM      0x104A
+ 
+-#define TPM_PPI_VERSION_LEN		3
+-
+-struct tpm_space {
+-	u32 context_tbl[3];
+-	u8 *context_buf;
+-	u32 session_tbl[3];
+-	u8 *session_buf;
+-};
+-
+ enum tpm_chip_flags {
+ 	TPM_CHIP_FLAG_TPM2		= BIT(1),
+ 	TPM_CHIP_FLAG_IRQ		= BIT(2),
+@@ -196,71 +169,6 @@ enum tpm_chip_flags {
+ 	TPM_CHIP_FLAG_ALWAYS_POWERED	= BIT(5),
+ };
+ 
+-struct tpm_bios_log {
+-	void *bios_event_log;
+-	void *bios_event_log_end;
+-};
+-
+-struct tpm_chip_seqops {
+-	struct tpm_chip *chip;
+-	const struct seq_operations *seqops;
+-};
+-
+-struct tpm_chip {
+-	struct device dev;
+-	struct device devs;
+-	struct cdev cdev;
+-	struct cdev cdevs;
+-
+-	/* A driver callback under ops cannot be run unless ops_sem is held
+-	 * (sometimes implicitly, eg for the sysfs code). ops becomes null
+-	 * when the driver is unregistered, see tpm_try_get_ops.
+-	 */
+-	struct rw_semaphore ops_sem;
+-	const struct tpm_class_ops *ops;
+-
+-	struct tpm_bios_log log;
+-	struct tpm_chip_seqops bin_log_seqops;
+-	struct tpm_chip_seqops ascii_log_seqops;
+-
+-	unsigned int flags;
+-
+-	int dev_num;		/* /dev/tpm# */
+-	unsigned long is_open;	/* only one allowed */
+-
+-	char hwrng_name[64];
+-	struct hwrng hwrng;
+-
+-	struct mutex tpm_mutex;	/* tpm is processing */
+-
+-	unsigned long timeout_a; /* jiffies */
+-	unsigned long timeout_b; /* jiffies */
+-	unsigned long timeout_c; /* jiffies */
+-	unsigned long timeout_d; /* jiffies */
+-	bool timeout_adjusted;
+-	unsigned long duration[TPM_NUM_DURATIONS]; /* jiffies */
+-	bool duration_adjusted;
+-
+-	struct dentry *bios_dir[TPM_NUM_EVENT_LOG_FILES];
+-
+-	const struct attribute_group *groups[3];
+-	unsigned int groups_cnt;
+-
+-	u32 nr_allocated_banks;
+-	struct tpm_bank_info *allocated_banks;
+-#ifdef CONFIG_ACPI
+-	acpi_handle acpi_dev_handle;
+-	char ppi_version[TPM_PPI_VERSION_LEN + 1];
+-#endif /* CONFIG_ACPI */
+-
+-	struct tpm_space work_space;
+-	u32 nr_commands;
+-	u32 *cc_attrs_tbl;
+-
+-	/* active locality */
+-	int locality;
+-};
+-
+ #define to_tpm_chip(d) container_of(d, struct tpm_chip, dev)
+ 
+ struct tpm_input_header {
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index afd022fc9d3d..f9fea1e4075e 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -22,6 +22,10 @@
+ #ifndef __LINUX_TPM_H__
+ #define __LINUX_TPM_H__
+ 
++#include <linux/hw_random.h>
++#include <linux/acpi.h>
++#include <linux/cdev.h>
++#include <linux/fs.h>
+ #include <crypto/hash_info.h>
+ 
+ #define TPM_DIGEST_SIZE 20	/* Max TPM v1.2 PCR size */
+@@ -75,6 +79,92 @@ struct tpm_class_ops {
+ 	void (*clk_enable)(struct tpm_chip *chip, bool value);
+ };
+ 
++#define TPM_NUM_EVENT_LOG_FILES		3
++
++/* Indexes the duration array */
++enum tpm_duration {
++	TPM_SHORT = 0,
++	TPM_MEDIUM = 1,
++	TPM_LONG = 2,
++	TPM_LONG_LONG = 3,
++	TPM_UNDEFINED,
++	TPM_NUM_DURATIONS = TPM_UNDEFINED,
++};
++
++#define TPM_PPI_VERSION_LEN		3
++
++struct tpm_space {
++	u32 context_tbl[3];
++	u8 *context_buf;
++	u32 session_tbl[3];
++	u8 *session_buf;
++};
++
++struct tpm_bios_log {
++	void *bios_event_log;
++	void *bios_event_log_end;
++};
++
++struct tpm_chip_seqops {
++	struct tpm_chip *chip;
++	const struct seq_operations *seqops;
++};
++
++struct tpm_chip {
++	struct device dev;
++	struct device devs;
++	struct cdev cdev;
++	struct cdev cdevs;
++
++	/* A driver callback under ops cannot be run unless ops_sem is held
++	 * (sometimes implicitly, eg for the sysfs code). ops becomes null
++	 * when the driver is unregistered, see tpm_try_get_ops.
++	 */
++	struct rw_semaphore ops_sem;
++	const struct tpm_class_ops *ops;
++
++	struct tpm_bios_log log;
++	struct tpm_chip_seqops bin_log_seqops;
++	struct tpm_chip_seqops ascii_log_seqops;
++
++	unsigned int flags;
++
++	int dev_num;		/* /dev/tpm# */
++	unsigned long is_open;	/* only one allowed */
++
++	char hwrng_name[64];
++	struct hwrng hwrng;
++
++	struct mutex tpm_mutex;	/* tpm is processing */
++
++	unsigned long timeout_a; /* jiffies */
++	unsigned long timeout_b; /* jiffies */
++	unsigned long timeout_c; /* jiffies */
++	unsigned long timeout_d; /* jiffies */
++	bool timeout_adjusted;
++	unsigned long duration[TPM_NUM_DURATIONS]; /* jiffies */
++	bool duration_adjusted;
++
++	struct dentry *bios_dir[TPM_NUM_EVENT_LOG_FILES];
++
++	const struct attribute_group *groups[3];
++	unsigned int groups_cnt;
++
++	u32 nr_allocated_banks;
++	struct tpm_bank_info *allocated_banks;
++#ifdef CONFIG_ACPI
++	acpi_handle acpi_dev_handle;
++	char ppi_version[TPM_PPI_VERSION_LEN + 1];
++#endif /* CONFIG_ACPI */
++
++	struct tpm_space work_space;
++	u32 nr_commands;
++	u32 *cc_attrs_tbl;
++
++	/* active locality */
++	int locality;
++};
++
+ #if defined(CONFIG_TCG_TPM) || defined(CONFIG_TCG_TPM_MODULE)
+ 
+ extern int tpm_is_tpm2(struct tpm_chip *chip);
+-- 
+2.17.1
