@@ -1,29 +1,54 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 01 Feb 2019 13:39:15 +0000
-Subject: Re: [PATCH v9 5/6] KEYS: trusted: explicitly use tpm_chip structure from tpm_default_chip()
-Message-Id: <20190201133915.GD17861@linux.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Thu, 07 Feb 2019 23:35:10 +0000
+Subject: Re: [PATCH] KEYS: user: Align the payload buffer
+Message-Id: <20190207233509.GA125156@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190201100641.26936-1-roberto.sassu@huawei.com>
- <20190201100641.26936-6-roberto.sassu@huawei.com>
-In-Reply-To: <20190201100641.26936-6-roberto.sassu@huawei.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>
-Cc: zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com
+References: <20190115033716.18380-1-ebiggers@kernel.org>
+In-Reply-To: <20190115033716.18380-1-ebiggers@kernel.org>
+To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, linux-fscrypt@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2019 at 11:06:40AM +0100, Roberto Sassu wrote:
-> When crypto agility support will be added to the TPM driver, users of the
-> driver have to retrieve the allocated banks from chip->allocated_banks and
-> use this information to prepare the array of tpm_digest structures to be
-> passed to tpm_pcr_extend().
+On Mon, Jan 14, 2019 at 07:37:16PM -0800, Eric Biggers wrote:
+> From: Eric Biggers <ebiggers@google.com>
 > 
-> This patch retrieves a tpm_chip pointer from tpm_default_chip() so that the
-> pointer can be used to prepare the array of tpm_digest structures.
+> Align the payload of "user" and "logon" keys so that users of the
+> keyrings service can access it as a struct that requires more than
+> 2-byte alignment.  fscrypt currently does this which results in the read
+> of fscrypt_key::size being misaligned as it needs 4-byte alignment.
 > 
-> Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+> Align to __alignof__(u64) rather than __alignof__(long) since in the
+> future it's conceivable that people would use structs beginning with
+> u64, which on some platforms would require more than 'long' alignment.
+> 
+> Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> Fixes: 2aa349f6e37c ("[PATCH] Keys: Export user-defined keyring operations")
+> Fixes: 88bd6ccdcdd6 ("ext4 crypto: add encryption key management facilities")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
+> ---
+>  include/keys/user-type.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/keys/user-type.h b/include/keys/user-type.h
+> index e098cbe27db54..12babe9915944 100644
+> --- a/include/keys/user-type.h
+> +++ b/include/keys/user-type.h
+> @@ -31,7 +31,7 @@
+>  struct user_key_payload {
+>  	struct rcu_head	rcu;		/* RCU destructor */
+>  	unsigned short	datalen;	/* length of this data */
+> -	char		data[0];	/* actual data */
+> +	char		data[0] __aligned(__alignof__(u64)); /* actual data */
+>  };
+>  
+>  extern struct key_type key_type_user;
+> -- 
+> 2.20.1
+> 
 
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Ping.  David, are you planning to apply this?
 
-/Jarkko
+- Eric
