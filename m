@@ -1,41 +1,64 @@
-From: Stephan =?ISO-8859-1?Q?M=FCller?= <smueller@chronox.de>
-Date: Fri, 11 Jan 2019 19:11:12 +0000
-Subject: [PATCH 6/6] crypto: tcrypt - add KDF test invocation
-Message-Id: <2181239.cWAz3ldHXA@positron.chronox.de>
+From: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Date: Fri, 08 Feb 2019 14:35:31 +0000
+Subject: [RESEND][PATCH] KEYS: Handle missing Authority Key Identifier x509 extension
+Message-Id: <20190208143531.15655-1-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190103143227.9138-1-jlee@suse.com> <20190109082103.GA8586@sol.localdomain> <9733066.Vrs4h5eWcW@positron.chronox.de>
-In-Reply-To: <9733066.Vrs4h5eWcW@positron.chronox.de>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>, linux-crypto@vger.kernel.org
+References: <20180505060152.21571-1-andrew.zaborowski@intel.com>
+In-Reply-To: <20180505060152.21571-1-andrew.zaborowski@intel.com>
+To: keyrings@vger.kernel.org
 
-Enable testing of the SP800-108 and RFC5869 KDFs.
+If the certificate is self-signed and the Key Identifier is not present
+in the Authority Key Identifier extension (RFC5280 4.2.1.1), fill in the
+sig->auth_ids values with the certificate's own key IDs since they must
+be the same.  A note in 4.2.1.1 makes the AKID keyIdentifier optional
+in self-signed certificates as an exception.
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
+There are root certificates in use where this is the case.  This would
+affect the checks in the restrict functions in
+crypto/asymmetric_keys/restrict.c.  As a consequence the restrict
+functions would behave differently depending on whether the (optional)
+AKID was found or not.
+
+The asymmetric_key_generate_id return value is not checked because it's
+already succeeded once at this point.
+
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
 ---
- crypto/tcrypt.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
-index e7fb87e114a5..5606e59e80ec 100644
---- a/crypto/tcrypt.c
-+++ b/crypto/tcrypt.c
-@@ -2054,6 +2054,14 @@ static int do_test(const char *alg, u32 type, u32 mask, int m, u32 num_mb)
- 		ret += tcrypt_test("cbc(sm4)");
- 		ret += tcrypt_test("ctr(sm4)");
- 		break;
-+	case 192:
-+		ret += tcrypt_test("kdf_ctr(hmac(sha256))");
-+		ret += tcrypt_test("kdf_dpi(hmac(sha256))");
-+		ret += tcrypt_test("kdf_fb(hmac(sha256))");
-+		break;
-+	case 193:
-+		ret += tcrypt_test("hkdf(hmac(sha256))");
-+		break;
- 	case 200:
- 		test_cipher_speed("ecb(aes)", ENCRYPT, sec, NULL, 0,
- 				speed_template_16_24_32);
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index b6cabac4b6..1424f20703 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -130,6 +130,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
+ 	if (ret < 0)
+ 		goto error_decode;
+ 
++	if (cert->self_signed) {
++		if (!cert->sig->auth_ids[0]) {
++			/* Duplicate cert->id */
++			kid = asymmetric_key_generate_id(cert->raw_serial,
++							 cert->raw_serial_size,
++							 cert->raw_issuer,
++							 cert->raw_issuer_size);
++			cert->sig->auth_ids[0] = kid;
++		}
++
++		if (!cert->sig->auth_ids[1] && cert->skid) {
++			/* Duplicate cert->skid */
++			kid = asymmetric_key_generate_id(cert->raw_skid,
++							 cert->raw_skid_size,
++							 "", 0);
++			cert->sig->auth_ids[1] = kid;
++		}
++	}
++
+ 	kfree(ctx);
+ 	return cert;
+ 
 -- 
-2.20.1
+2.14.1
