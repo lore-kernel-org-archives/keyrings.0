@@ -1,117 +1,35 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 22 Feb 2019 15:36:18 +0000
-Subject: [PATCH] KEYS: always initialize keyring_index_key::desc_len
-Message-Id: <155084977835.23242.14844856182331713906.stgit@warthog.procyon.org.uk>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Fri, 08 Feb 2019 07:45:58 +0000
+Subject: Re: [PATCH v2 0/6] General Key Derivation Function Support
+Message-Id: <20190208074558.j3k6gw66q4e2y2lv@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181102231510.15911-1-ebiggers@kernel.org>
-In-Reply-To: <20181102231510.15911-1-ebiggers@kernel.org>
-To: jmorris@namei.org
-Cc: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190103143227.9138-1-jlee@suse.com>
+ <5418064.ltLFQScYi2@tauon.chronox.de>
+ <20190130100854.iey2mbmz6777pn2n@gondor.apana.org.au>
+ <12103603.N4N57GesWC@tauon.chronox.de>
+In-Reply-To: <12103603.N4N57GesWC@tauon.chronox.de>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Eric Biggers <ebiggers@kernel.org>, James Bottomley <James.Bottomley@hansenpartnership.com>, Andy Lutomirski <luto@amacapital.net>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, "Rafael J . Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, keyrings@vger.kernel.org, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Chen Yu <yu.c.chen@intel.com>, Oliver Neukum <oneukum@suse.com>, Ryan Chen <yu.chen.surf@gmail.com>, David Howells <dhowells@redhat.com>, Giovanni Gherdovich <ggherdovich@suse.cz>, Randy Dunlap <rdunlap@infradead.org>, Jann Horn <jannh@google.com>, Andy Lutomirski <luto@kernel.org>, linux-crypto@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+On Wed, Jan 30, 2019 at 03:39:10PM +0100, Stephan Mueller wrote:
+> Am Mittwoch, 30. Januar 2019, 11:08:54 CET schrieb Herbert Xu:
+> 
+> Hi Herbert,
+> 
+> > I'm still not convinced why this needs to go into the crypto API
+> > instead of being hosted in a helper which should achieve pretty
+> > much the same result.
+> 
+> How do you propose to handle the FIPS 140-2 related requirements of enforcing 
+> the integrity test result and the known-answer self tests?
 
-syzbot hit the 'BUG_ON(index_key->desc_len = 0);' in __key_link_begin()
-called from construct_alloc_key() during sys_request_key(), because the
-length of the key description was never calculated.
+We could easily add self-tests for the helper.
 
-The problem is that we rely on ->desc_len being initialized by
-search_process_keyrings(), specifically by search_nested_keyrings().
-But, if the process isn't subscribed to any keyrings that never happens.
-
-Fix it by always initializing keyring_index_key::desc_len as soon as the
-description is set, like we already do in some places.
-
-The following program reproduces the BUG_ON() when it's run as root and
-no session keyring has been installed.  If it doesn't work, try removing
-pam_keyinit.so from /etc/pam.d/login and rebooting.
-
-    #include <stdlib.h>
-    #include <unistd.h>
-    #include <keyutils.h>
-
-    int main(void)
-    {
-            int id = add_key("keyring", "syz", NULL, 0, KEY_SPEC_USER_KEYRING);
-
-            keyctl_setperm(id, KEY_OTH_WRITE);
-            setreuid(5000, 5000);
-            request_key("user", "desc", "", id);
-    }
-
-Reported-by: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com
-Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: stable@vger.kernel.org
----
-
- security/keys/keyring.c          |    4 +---
- security/keys/proc.c             |    3 +--
- security/keys/request_key.c      |    1 +
- security/keys/request_key_auth.c |    2 +-
- 4 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index eadebb92986a..f81372f53dd7 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -661,9 +661,6 @@ static bool search_nested_keyrings(struct key *keyring,
- 	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
- 	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
- 
--	if (ctx->index_key.description)
--		ctx->index_key.desc_len = strlen(ctx->index_key.description);
--
- 	/* Check to see if this top-level keyring is what we are looking for
- 	 * and whether it is valid or not.
- 	 */
-@@ -914,6 +911,7 @@ key_ref_t keyring_search(key_ref_t keyring,
- 	struct keyring_search_context ctx = {
- 		.index_key.type		= type,
- 		.index_key.description	= description,
-+		.index_key.desc_len	= strlen(description),
- 		.cred			= current_cred(),
- 		.match_data.cmp		= key_default_cmp,
- 		.match_data.raw_data	= description,
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index d2b802072693..78ac305d715e 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -165,8 +165,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 	int rc;
- 
- 	struct keyring_search_context ctx = {
--		.index_key.type		= key->type,
--		.index_key.description	= key->description,
-+		.index_key		= key->index_key,
- 		.cred			= m->file->f_cred,
- 		.match_data.cmp		= lookup_user_key_possessed,
- 		.match_data.raw_data	= key,
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 3f56a312dd35..7a0c6b666ff0 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -531,6 +531,7 @@ struct key *request_key_and_link(struct key_type *type,
- 	struct keyring_search_context ctx = {
- 		.index_key.type		= type,
- 		.index_key.description	= description,
-+		.index_key.desc_len	= strlen(description),
- 		.cred			= current_cred(),
- 		.match_data.cmp		= key_default_cmp,
- 		.match_data.raw_data	= description,
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index afc304e8b61e..bda6201c6c45 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -247,7 +247,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
- 	struct key *authkey;
- 	key_ref_t authkey_ref;
- 
--	sprintf(description, "%x", target_id);
-+	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
- 
- 	authkey_ref = search_process_keyrings(&ctx);
- 
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
