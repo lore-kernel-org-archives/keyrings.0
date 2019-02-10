@@ -1,14 +1,14 @@
 From: Lukas Bulwahn <lukas.bulwahn@gmail.com>
-Date: Sun, 10 Feb 2019 18:59:16 +0000
+Date: Sun, 10 Feb 2019 19:00:09 +0000
 Subject: [PATCH] MAINTAINERS: rectify two issues in KEYS-TRUSTED entry
-Message-Id: <20190210185916.9915-1-lukas.bulwahn@gmail.com>
+Message-Id: <20190210190009.9995-1-lukas.bulwahn@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190210185755.9776-1-lukas.bulwahn@gmail.com>
 In-Reply-To: <20190210185755.9776-1-lukas.bulwahn@gmail.com>
-To: James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Mimi Zohar <zohar@linuxibm.com>
+To: James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Mimi Zohar <zohar@linux.ibm.com>
 Cc: paulmck@linux.vnet.ibm.com, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Lukas Bulwahn <lukas.bulwahn@gmail.com>
 
 Mimi Zohar used spaces instead of a tab when adding Jarkko Sakkinen as
