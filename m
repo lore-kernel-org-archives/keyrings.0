@@ -1,53 +1,71 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Sun, 24 Feb 2019 06:08:19 +0000
-Subject: [PATCH v5 01/10] KEYS: report to keyctl only actually supported key ops
-Message-Id: <20190224060828.2527-2-vt@altlinux.org>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 11 Feb 2019 17:27:22 +0000
+Subject: [RFC PATCH v2 04/20] fs: add ->s_master_keys to struct super_block
+Message-Id: <20190211172738.4633-5-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190224060828.2527-1-vt@altlinux.org>
-In-Reply-To: <20190224060828.2527-1-vt@altlinux.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190211172738.4633-1-ebiggers@kernel.org>
+In-Reply-To: <20190211172738.4633-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Because with the introduction of EC-RDSA and change in workings of RSA
-in regard to sign/verify, akcipher may have not all callbacks defined,
-report to keyctl only actually supported ops determined by the presence
-of the akcipher callbacks.
+From: Eric Biggers <ebiggers@google.com>
 
-Cc: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org
-Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+Add an ->s_master_keys keyring to 'struct super_block'.  New fscrypt
+ioctls will allow adding and removing encryption keys from this keyring.
+This will enable solving multiple interrelated problems with how fscrypt
+keys are provided and managed currently, including:
+
+- Making the key status (which is currently per-process) match the
+  filesystem-level status of which encrypted files are "unlocked".
+
+- Supporting a proper API to remove encryption keys, "locking" the
+  corresponding encrypted files.
+
+- Caching an HMAC transform for each master key, allowing the use of
+  HKDF while still retaining good performance.
+
+- Preventing denial of service via keyctl_invalidate().
+
+Similar to the existing ->s_cop, the keyring is added to the VFS-level
+superblock struct rather than separately to the ext4, f2fs, and ubifs
+superblock structs so that it can be used by the shared code in
+fs/crypto/.  To minimize overhead, the keyring will only be allocated if
+userspace actually adds a key; otherwise will stay NULL.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- crypto/asymmetric_keys/public_key.c | 16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ fs/super.c         | 3 +++
+ include/linux/fs.h | 1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index f5d85b47fcc6..c2e4e73fcf06 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -130,11 +130,17 @@ static int software_key_query(const struct kernel_pkey_params *params,
- 	info->max_sig_size = len;
- 	info->max_enc_size = len;
- 	info->max_dec_size = len;
--	info->supported_ops = (KEYCTL_SUPPORTS_ENCRYPT |
--			       KEYCTL_SUPPORTS_VERIFY);
--	if (pkey->key_is_private)
--		info->supported_ops |= (KEYCTL_SUPPORTS_DECRYPT |
--					KEYCTL_SUPPORTS_SIGN);
-+	info->supported_ops = 0;
-+	if (crypto_akcipher_alg(tfm)->verify)
-+		info->supported_ops |= KEYCTL_SUPPORTS_VERIFY;
-+	if (crypto_akcipher_alg(tfm)->encrypt)
-+		info->supported_ops |= KEYCTL_SUPPORTS_ENCRYPT;
-+	if (pkey->key_is_private) {
-+		if (crypto_akcipher_alg(tfm)->decrypt)
-+			info->supported_ops |= KEYCTL_SUPPORTS_DECRYPT;
-+		if (crypto_akcipher_alg(tfm)->sign)
-+			info->supported_ops |= KEYCTL_SUPPORTS_SIGN;
-+	}
- 	ret = 0;
- 
- error_free_tfm:
+diff --git a/fs/super.c b/fs/super.c
+index 48e25eba8465..7ca05dda905c 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -291,6 +291,9 @@ static void __put_super(struct super_block *s)
+ 		security_sb_free(s);
+ 		put_user_ns(s->s_user_ns);
+ 		kfree(s->s_subtype);
++#ifdef CONFIG_FS_ENCRYPTION
++		key_put(s->s_master_keys);
++#endif
+ 		call_rcu(&s->rcu, destroy_super_rcu);
+ 	}
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index ba7889bb9ef6..70d929ac89f9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1405,6 +1405,7 @@ struct super_block {
+ 	const struct xattr_handler **s_xattr;
+ #ifdef CONFIG_FS_ENCRYPTION
+ 	const struct fscrypt_operations	*s_cop;
++	struct key		*s_master_keys; /* master crypto keys in use */
+ #endif
+ 	struct hlist_bl_head	s_roots;	/* alternate root dentries for NFS */
+ 	struct list_head	s_mounts;	/* list of mounts; _not_ for fs use */
 -- 
-2.11.0
+2.20.1
