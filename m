@@ -1,292 +1,108 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 14 Feb 2019 16:58:28 +0000
-Subject: [RFC PATCH 9/9] KEYS: Namespace keyring names
-Message-Id: <155016350891.11489.1919263866882662876.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 11 Feb 2019 17:27:27 +0000
+Subject: [RFC PATCH v2 09/20] fs/inode.c: rename and export dispose_list()
+Message-Id: <20190211172738.4633-10-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+References: <20190211172738.4633-1-ebiggers@kernel.org>
+In-Reply-To: <20190211172738.4633-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Keyring names are held in a single global list that any process can pick
-from by means of keyctl_join_session_keyring (provided the keyring grants
-Search permission).  This isn't very container friendly, however.
+From: Eric Biggers <ebiggers@google.com>
 
-Make the following changes:
+When a filesystem encryption key is removed, we need all files which had
+been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
+again.  This is most easily done by evicting the inodes.  This can
+currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
+that is overkill and not usable by non-root users.  In preparation for
+allowing fs/crypto/ to evict just the needed inodes, make dispose_list()
+non-static.  For clarity also rename it to evict_inode_list().
 
- (1) Make default session, process and thread keyring names begin with a
-     '.' instead of '_'.
-
- (2) Keyrings whose names begin with a '.' aren't added to the list.  Such
-     keyrings are system specials.
-
- (3) Replace the global list with per-user_namespace lists.  A keyring adds
-     its name to the list for the user_namespace that it is currently in.
-
- (4) When a user_namespace is deleted, it just removes itself from the
-     keyring.
-
-The global keyring_name_lock is retained for accessing the name lists.
-This allows (4) to work.
-
-This can be tested by:
-
-	# keyctl newring foo @s
-	995906392
-	# unshare -U
-	$ keyctl show
-	...
-	 995906392 --alswrv  65534 65534   \_ keyring: foo
-	...
-	$ keyctl session foo
-	Joined session keyring: 935622349
-
-As can be seen, a new session keyring was created.
-
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/inode.c         | 18 +++++++++---------
+ include/linux/fs.h |  1 +
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
- include/linux/key.h            |    2 +
- include/linux/user_namespace.h |    5 ++
- kernel/user.c                  |    3 +
- kernel/user_namespace.c        |    7 ++-
- security/keys/keyring.c        |   99 +++++++++++++++++-----------------------
- 5 files changed, 57 insertions(+), 59 deletions(-)
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index dd643e131894..bfa70f3ee8e6 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -369,6 +369,7 @@ extern void key_set_timeout(struct key *, unsigned);
- 
- extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
- 				 key_perm_t perm);
-+extern void key_free_user_ns(struct user_namespace *);
+diff --git a/fs/inode.c b/fs/inode.c
+index 037df483c9af..10147197c1de 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -574,13 +574,13 @@ static void evict(struct inode *inode)
+ }
  
  /*
-  * The permissions required on a key that we're looking up.
-@@ -443,6 +444,7 @@ extern void key_init(void);
- #define key_fsgid_changed(t)		do { } while(0)
- #define key_init()			do { } while(0)
- #define key_put_subject(s)		do { } while(0)
-+#define key_free_user_ns(ns)		do { } while(0)
- 
- #endif /* CONFIG_KEYS */
- #endif /* __KERNEL__ */
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index d6b74b91096b..90457015fa3f 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -64,6 +64,11 @@ struct user_namespace {
- 	struct ns_common	ns;
- 	unsigned long		flags;
- 
-+#ifdef CONFIG_KEYS
-+	/* List of joinable keyrings in this namespace */
-+	struct list_head	keyring_name_list;
-+#endif
-+
- 	/* Register of per-UID persistent keyrings for this namespace */
- #ifdef CONFIG_PERSISTENT_KEYRINGS
- 	struct key		*persistent_keyring_register;
-diff --git a/kernel/user.c b/kernel/user.c
-index 0df9b1640b2a..6a6ccb99f31a 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -62,6 +62,9 @@ struct user_namespace init_user_ns = {
- 	.ns.ops = &userns_operations,
- #endif
- 	.flags = USERNS_INIT_FLAGS,
-+#ifdef CONFIG_KEYS
-+	.keyring_name_list = LIST_HEAD_INIT(init_user_ns.keyring_name_list),
-+#endif
- #ifdef CONFIG_PERSISTENT_KEYRINGS
- 	.persistent_keyring_register_sem  	__RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 923414a246e9..bda6e890ad88 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -133,6 +133,9 @@ int create_user_ns(struct cred *new)
- 	ns->flags = parent_ns->flags;
- 	mutex_unlock(&userns_state_mutex);
- 
-+#ifdef CONFIG_KEYS
-+	INIT_LIST_HEAD(&ns->keyring_name_list);
-+#endif
- #ifdef CONFIG_PERSISTENT_KEYRINGS
- 	init_rwsem(&ns->persistent_keyring_register_sem);
- #endif
-@@ -196,9 +199,7 @@ static void free_user_ns(struct work_struct *work)
- 			kfree(ns->projid_map.reverse);
+- * dispose_list - dispose of the contents of a local list
+- * @head: the head of the list to free
++ * evict_inode_list - evict each inode in a local list of inodes
++ * @head: the head of the list
+  *
+- * Dispose-list gets a local list with local inodes in it, so it doesn't
++ * This gets a local list with local inodes in it, so it doesn't
+  * need to worry about list corruption and SMP locks.
+  */
+-static void dispose_list(struct list_head *head)
++void evict_inode_list(struct list_head *head)
+ {
+ 	while (!list_empty(head)) {
+ 		struct inode *inode;
+@@ -632,13 +632,13 @@ void evict_inodes(struct super_block *sb)
+ 		if (need_resched()) {
+ 			spin_unlock(&sb->s_inode_list_lock);
+ 			cond_resched();
+-			dispose_list(&dispose);
++			evict_inode_list(&dispose);
+ 			goto again;
  		}
- 		retire_userns_sysctls(ns);
--#ifdef CONFIG_PERSISTENT_KEYRINGS
--		key_put(ns->persistent_keyring_register);
--#endif
-+		key_free_user_ns(ns);
- 		ns_free_inum(&ns->ns);
- 		kmem_cache_free(user_ns_cachep, ns);
- 		dec_user_namespaces(ucounts);
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 2fefdc79abff..3e537d927cbb 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -17,6 +17,7 @@
- #include <linux/seq_file.h>
- #include <linux/err.h>
- #include <linux/nsproxy.h>
-+#include <linux/user_namespace.h>
- #include <keys/keyring-type.h>
- #include <keys/user-type.h>
- #include <linux/assoc_array_priv.h>
-@@ -30,11 +31,6 @@
-  */
- #define KEYRING_SEARCH_MAX_DEPTH 6
- 
--/*
-- * We keep all named keyrings in a hash to speed looking them up.
-- */
--#define KEYRING_NAME_HASH_SIZE	(1 << 5)
--
- /*
-  * We mark pointers we pass to the associative array with bit 1 set if
-  * they're keyrings and clear otherwise.
-@@ -57,17 +53,20 @@ static inline void *keyring_key_to_ptr(struct key *key)
- 	return key;
- }
- 
--static struct list_head	keyring_name_hash[KEYRING_NAME_HASH_SIZE];
- static DEFINE_RWLOCK(keyring_name_lock);
- 
--static inline unsigned keyring_hash(const char *desc)
-+/*
-+ * Clean up the bits of user_namespace that belong to us.
-+ */
-+void key_free_user_ns(struct user_namespace *ns)
- {
--	unsigned bucket = 0;
--
--	for (; *desc; desc++)
--		bucket += (unsigned char)*desc;
-+	write_lock(&keyring_name_lock);
-+	list_del_init(&ns->keyring_name_list);
-+	write_unlock(&keyring_name_lock);
- 
--	return bucket & (KEYRING_NAME_HASH_SIZE - 1);
-+#ifdef CONFIG_PERSISTENT_KEYRINGS
-+	key_put(ns->persistent_keyring_register);
-+#endif
- }
- 
- /*
-@@ -106,23 +105,17 @@ static DECLARE_RWSEM(keyring_serialise_link_sem);
- 
- /*
-  * Publish the name of a keyring so that it can be found by name (if it has
-- * one).
-+ * one and it doesn't begin with a dot).
-  */
- static void keyring_publish_name(struct key *keyring)
- {
--	int bucket;
--
--	if (keyring->description) {
--		bucket = keyring_hash(keyring->description);
-+	struct user_namespace *ns = current_user_ns();
- 
-+	if (keyring->description &&
-+	    keyring->description[0] &&
-+	    keyring->description[0] != '.') {
- 		write_lock(&keyring_name_lock);
--
--		if (!keyring_name_hash[bucket].next)
--			INIT_LIST_HEAD(&keyring_name_hash[bucket]);
--
--		list_add_tail(&keyring->name_link,
--			      &keyring_name_hash[bucket]);
--
-+		list_add_tail(&keyring->name_link, &ns->keyring_name_list);
- 		write_unlock(&keyring_name_lock);
  	}
+ 	spin_unlock(&sb->s_inode_list_lock);
+ 
+-	dispose_list(&dispose);
++	evict_inode_list(&dispose);
  }
-@@ -1140,50 +1133,44 @@ key_ref_t find_key_to_update(key_ref_t keyring_ref,
-  */
- struct key *find_keyring_by_name(const char *name, bool uid_keyring)
- {
-+	struct user_namespace *ns = current_user_ns();
- 	struct key *keyring;
--	int bucket;
+ EXPORT_SYMBOL_GPL(evict_inodes);
  
- 	if (!name)
- 		return ERR_PTR(-EINVAL);
- 
--	bucket = keyring_hash(name);
--
- 	read_lock(&keyring_name_lock);
- 
--	if (keyring_name_hash[bucket].next) {
--		/* search this hash bucket for a keyring with a matching name
--		 * that's readable and that hasn't been revoked */
--		list_for_each_entry(keyring,
--				    &keyring_name_hash[bucket],
--				    name_link
--				    ) {
--			if (!kuid_has_mapping(current_user_ns(), keyring->user->uid))
--				continue;
--
--			if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
--				continue;
-+	/* Search this hash bucket for a keyring with a matching name that
-+	 * grants Search permission and that hasn't been revoked
-+	 */
-+	list_for_each_entry(keyring, &ns->keyring_name_list, name_link) {
-+		if (!kuid_has_mapping(ns, keyring->user->uid))
-+			continue;
- 
--			if (strcmp(keyring->description, name) != 0)
--				continue;
-+		if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
-+			continue;
- 
--			if (uid_keyring) {
--				if (!test_bit(KEY_FLAG_UID_KEYRING,
--					      &keyring->flags))
--					continue;
--			} else {
--				if (key_permission(make_key_ref(keyring, 0),
--						   KEY_NEED_SEARCH) < 0)
--					continue;
--			}
-+		if (strcmp(keyring->description, name) != 0)
-+			continue;
- 
--			/* we've got a match but we might end up racing with
--			 * key_cleanup() if the keyring is currently 'dead'
--			 * (ie. it has a zero usage count) */
--			if (!refcount_inc_not_zero(&keyring->usage))
-+		if (uid_keyring) {
-+			if (!test_bit(KEY_FLAG_UID_KEYRING,
-+				      &keyring->flags))
-+				continue;
-+		} else {
-+			if (key_permission(make_key_ref(keyring, 0),
-+					   KEY_NEED_SEARCH) < 0)
- 				continue;
--			keyring->last_used_at = ktime_get_real_seconds();
--			goto out;
- 		}
-+
-+		/* we've got a match but we might end up racing with
-+		 * key_cleanup() if the keyring is currently 'dead'
-+		 * (ie. it has a zero usage count) */
-+		if (!refcount_inc_not_zero(&keyring->usage))
-+			continue;
-+		keyring->last_used_at = ktime_get_real_seconds();
-+		goto out;
+@@ -683,7 +683,7 @@ int invalidate_inodes(struct super_block *sb, bool kill_dirty)
  	}
+ 	spin_unlock(&sb->s_inode_list_lock);
  
- 	keyring = ERR_PTR(-ENOKEY);
+-	dispose_list(&dispose);
++	evict_inode_list(&dispose);
+ 
+ 	return busy;
+ }
+@@ -770,7 +770,7 @@ static enum lru_status inode_lru_isolate(struct list_head *item,
+  * Walk the superblock inode LRU for freeable inodes and attempt to free them.
+  * This is called from the superblock shrinker function with a number of inodes
+  * to trim from the LRU. Inodes to be freed are moved to a temporary list and
+- * then are freed outside inode_lock by dispose_list().
++ * then are freed outside inode_lock by evict_inode_list().
+  */
+ long prune_icache_sb(struct super_block *sb, struct shrink_control *sc)
+ {
+@@ -779,7 +779,7 @@ long prune_icache_sb(struct super_block *sb, struct shrink_control *sc)
+ 
+ 	freed = list_lru_shrink_walk(&sb->s_inode_lru, sc,
+ 				     inode_lru_isolate, &freeable);
+-	dispose_list(&freeable);
++	evict_inode_list(&freeable);
+ 	return freed;
+ }
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 326cbb044596..ce18ece60da4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2987,6 +2987,7 @@ extern void discard_new_inode(struct inode *);
+ extern unsigned int get_next_ino(void);
+ extern void evict_inodes(struct super_block *sb);
+ extern void inode_lru_list_del(struct inode *inode);
++extern void evict_inode_list(struct list_head *head);
+ 
+ extern void __iget(struct inode * inode);
+ extern void iget_failed(struct inode *);
+-- 
+2.20.1
