@@ -1,182 +1,90 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 14 Feb 2019 16:58:10 +0000
-Subject: [RFC PATCH 7/9] keys: Network namespace domain tag
-Message-Id: <155016349003.11489.982193310795564945.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 11 Feb 2019 17:27:28 +0000
+Subject: [RFC PATCH v2 10/20] fs/dcache.c: add shrink_dcache_inode()
+Message-Id: <20190211172738.4633-11-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+References: <20190211172738.4633-1-ebiggers@kernel.org>
+In-Reply-To: <20190211172738.4633-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Create key domain tags for network namespaces and make it possible to
-automatically tag keys that are used by networked services (e.g. AF_RXRPC,
-AFS, DNS) with the default network namespace if not set by the caller.
+From: Eric Biggers <ebiggers@google.com>
 
-This allows keys with the same description but in different namespaces to
-coexist within a keyring.
+When a filesystem encryption key is removed, we need all files which had
+been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
+again.  This is most easily done by evicting the inodes.  This can
+currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
+that is overkill and not usable by non-root users.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: netdev@vger.kernel.org
-cc: linux-nfs@vger.kernel.org
-cc: linux-cifs@vger.kernel.org
-cc: linux-afs@lists.infradead.org
+To evict just the needed inodes we also need the ability to evict those
+inodes' dentries, since an inode is pinned by its dentries.  Therefore,
+add a function shrink_dcache_inode() which iterates through an inode's
+dentries and evicts any unused ones as well as any unused descendants
+(since there may be negative dentries pinning the inode's dentries).
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/dcache.c            | 32 ++++++++++++++++++++++++++++++++
+ include/linux/dcache.h |  1 +
+ 2 files changed, 33 insertions(+)
 
- include/linux/key-type.h    |    3 +++
- include/net/net_namespace.h |    4 ++++
- net/core/net_namespace.c    |   18 ++++++++++++++++++
- net/dns_resolver/dns_key.c  |    1 +
- net/rxrpc/key.c             |    2 ++
- security/keys/keyring.c     |    7 ++++++-
- 6 files changed, 34 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index e49d1de0614e..2148a6bf58f1 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -74,6 +74,9 @@ struct key_type {
- 	 */
- 	size_t def_datalen;
- 
-+	unsigned int flags;
-+#define KEY_TYPE_NET_DOMAIN	0x00000001 /* Keys of this type have a net namespace domain */
-+
- 	/* vet a description */
- 	int (*vet_description)(const char *description);
- 
-diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index 99d4148e0f90..7b31b9eb461b 100644
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -44,6 +44,7 @@ struct net_generic;
- struct uevent_sock;
- struct netns_ipvs;
- struct bpf_prog;
-+struct key_subject;
- 
- 
- #define NETDEV_HASHBITS    8
-@@ -69,6 +70,9 @@ struct net {
- 						 */
- 	struct llist_node	cleanup_list;	/* namespaces on death row */
- 
-+#ifdef CONFIG_KEYS
-+	struct key_tag		*key_domain;	/* Key domain of operation tag */
-+#endif
- 	struct user_namespace   *user_ns;	/* Owning user namespace */
- 	struct ucounts		*ucounts;
- 	spinlock_t		nsid_lock;
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index b02fb19df2cc..bcce7728593c 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -38,9 +38,16 @@ EXPORT_SYMBOL_GPL(net_namespace_list);
- DECLARE_RWSEM(net_rwsem);
- EXPORT_SYMBOL_GPL(net_rwsem);
- 
-+#ifdef CONFIG_KEYS
-+static struct key_tag init_net_key_domain = { .usage = REFCOUNT_INIT(1) };
-+#endif
-+
- struct net init_net = {
- 	.count		= REFCOUNT_INIT(1),
- 	.dev_base_head	= LIST_HEAD_INIT(init_net.dev_base_head),
-+#ifdef CONFIG_KEYS
-+	.key_domain	= &init_net_key_domain,
-+#endif
- };
- EXPORT_SYMBOL(init_net);
- 
-@@ -385,10 +392,20 @@ static struct net *net_alloc(void)
- 	if (!net)
- 		goto out_free;
- 
-+#ifdef CONFIG_KEYS
-+	net->key_domain = kzalloc(sizeof(struct key_tag), GFP_KERNEL);
-+	if (!net->key_domain)
-+		goto out_free_2;
-+#endif
-+
- 	rcu_assign_pointer(net->gen, ng);
- out:
- 	return net;
- 
-+#ifdef CONFIG_KEYS
-+out_free_2:
-+	kmem_cache_free(net_cachep, net);
-+#endif
- out_free:
- 	kfree(ng);
- 	goto out;
-@@ -565,6 +582,7 @@ static void cleanup_net(struct work_struct *work)
- 	list_for_each_entry_safe(net, tmp, &net_exit_list, exit_list) {
- 		list_del_init(&net->exit_list);
- 		dec_net_namespaces(net->ucounts);
-+		key_remove_domain(net->key_domain);
- 		put_user_ns(net->user_ns);
- 		net_drop_ns(net);
- 	}
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index a65d553e730d..3e1a90669006 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -314,6 +314,7 @@ static long dns_resolver_read(const struct key *key,
- 
- struct key_type key_type_dns_resolver = {
- 	.name		= "dns_resolver",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.preparse	= dns_resolver_preparse,
- 	.free_preparse	= dns_resolver_free_preparse,
- 	.instantiate	= generic_key_instantiate,
-diff --git a/net/rxrpc/key.c b/net/rxrpc/key.c
-index e7f6b8823eb6..2722189ec273 100644
---- a/net/rxrpc/key.c
-+++ b/net/rxrpc/key.c
-@@ -43,6 +43,7 @@ static long rxrpc_read(const struct key *, char __user *, size_t);
-  */
- struct key_type key_type_rxrpc = {
- 	.name		= "rxrpc",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.preparse	= rxrpc_preparse,
- 	.free_preparse	= rxrpc_free_preparse,
- 	.instantiate	= generic_key_instantiate,
-@@ -58,6 +59,7 @@ EXPORT_SYMBOL(key_type_rxrpc);
-  */
- struct key_type key_type_rxrpc_s = {
- 	.name		= "rxrpc_s",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.vet_description = rxrpc_vet_description_s,
- 	.preparse	= rxrpc_preparse_s,
- 	.free_preparse	= rxrpc_free_preparse_s,
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 916a52d54e1b..d16c4470e2a0 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -16,10 +16,12 @@
- #include <linux/security.h>
- #include <linux/seq_file.h>
- #include <linux/err.h>
-+#include <linux/nsproxy.h>
- #include <keys/keyring-type.h>
- #include <keys/user-type.h>
- #include <linux/assoc_array_priv.h>
- #include <linux/uaccess.h>
-+#include <net/net_namespace.h>
- #include "internal.h"
- 
- /*
-@@ -226,7 +228,10 @@ void key_set_index_key(struct keyring_index_key *index_key)
- 
- 	memcpy(index_key->desc, index_key->description, n);
- 
--	index_key->domain_tag = &default_domain_tag;
-+	if (index_key->type->flags & KEY_TYPE_NET_DOMAIN)
-+		index_key->domain_tag = current->nsproxy->net_ns->key_domain;
-+	else
-+		index_key->domain_tag = &default_domain_tag;
- 	hash_key_type_and_desc(index_key);
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 2593153471cf..6a7db8797b2d 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1484,6 +1484,38 @@ void shrink_dcache_parent(struct dentry *parent)
  }
+ EXPORT_SYMBOL(shrink_dcache_parent);
  
++/**
++ * shrink_dcache_inode - prune dcache for inode
++ * @inode: inode to prune
++ *
++ * Evict all unused aliases of the specified inode from the dcache.  This is
++ * intended to be used when trying to evict a specific inode, since inodes are
++ * pinned by their dentries.  We also have to descend to ->d_subdirs for each
++ * alias, since aliases may be pinned by negative child dentries.
++ */
++void shrink_dcache_inode(struct inode *inode)
++{
++	for (;;) {
++		struct select_data data;
++		struct dentry *dentry;
++
++		INIT_LIST_HEAD(&data.dispose);
++		data.start = NULL;
++		data.found = 0;
++
++		spin_lock(&inode->i_lock);
++		hlist_for_each_entry(dentry, &inode->i_dentry, d_u.d_alias)
++			d_walk(dentry, &data, select_collect);
++		spin_unlock(&inode->i_lock);
++
++		if (!data.found)
++			break;
++
++		shrink_dentry_list(&data.dispose);
++		cond_resched();
++	}
++}
++
+ static enum d_walk_ret umount_check(void *_data, struct dentry *dentry)
+ {
+ 	/* it has busy descendents; complain about those instead */
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index ef4b70f64f33..c02dab98bc97 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -245,6 +245,7 @@ extern struct dentry * d_obtain_alias(struct inode *);
+ extern struct dentry * d_obtain_root(struct inode *);
+ extern void shrink_dcache_sb(struct super_block *);
+ extern void shrink_dcache_parent(struct dentry *);
++extern void shrink_dcache_inode(struct inode *);
+ extern void shrink_dcache_for_umount(struct super_block *);
+ extern void d_invalidate(struct dentry *);
+ 
+-- 
+2.20.1
