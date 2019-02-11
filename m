@@ -1,7 +1,7 @@
 From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 11 Feb 2019 17:27:21 +0000
-Subject: [RFC PATCH v2 03/20] fscrypt: use FSCRYPT_* definitions, not FS_*
-Message-Id: <20190211172738.4633-4-ebiggers@kernel.org>
+Date: Mon, 11 Feb 2019 17:27:31 +0000
+Subject: [RFC PATCH v2 13/20] fscrypt: add an HKDF-SHA512 implementation
+Message-Id: <20190211172738.4633-14-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,374 +13,288 @@ Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-d
 
 From: Eric Biggers <ebiggers@google.com>
 
-Update fs/crypto/ to use the new names for the UAPI constants rather
-than the old names, then make the old definitions conditional on
-!__KERNEL__.
+Add an implementation of HKDF (RFC 5869) to fscrypt, for the purpose of
+deriving additional key material from the fscrypt master keys for v2
+encryption policies.  HKDF is a key derivation function built on top of
+HMAC.  We choose SHA-512 for the underlying unkeyed hash, and use an
+"hmac(sha512)" transform allocated from the crypto API.
+
+We'll be using this to replace the AES-ECB based KDF currently used to
+derive the per-file encryption keys.  While the AES-ECB based KDF is
+believed to meet the original security requirements, it is nonstandard
+and has problems that don't exist in modern KDFs such as HKDF:
+
+1. It's reversible.  Given a derived key and nonce, an attacker can
+   easily compute the master key.  This is okay if the master key and
+   derived keys are equally hard to compromise, but now we'd like to be
+   more robust against threats such as a derived key being compromised
+   through a timing attack, or a derived key for an in-use file being
+   compromised after the master key has already been removed.
+
+2. It doesn't evenly distribute the entropy from the master key; each 16
+   input bytes only affects the corresponding 16 output bytes.
+
+3. It isn't easily extensible to deriving other values or keys that are
+   or will be needed, such as per-mode keys (which is what DIRECT_KEY
+   policies really should use, rather than the master key directly as
+   they do now) or a public hash for securely identifying the key (to
+   ensure that an encrypted file cannot be set up with the wrong key).
+
+HKDF solves all the above problems.
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- fs/crypto/crypto.c           |  2 +-
- fs/crypto/fname.c            |  2 +-
- fs/crypto/fscrypt_private.h  | 16 +++++------
- fs/crypto/keyinfo.c          | 53 ++++++++++++++++++------------------
- fs/crypto/policy.c           | 14 +++++-----
- include/uapi/linux/fscrypt.h |  2 ++
- 6 files changed, 46 insertions(+), 43 deletions(-)
+ fs/crypto/Kconfig           |   2 +
+ fs/crypto/Makefile          |   1 +
+ fs/crypto/fscrypt_private.h |  15 +++
+ fs/crypto/hkdf.c            | 188 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 206 insertions(+)
+ create mode 100644 fs/crypto/hkdf.c
 
-diff --git a/fs/crypto/crypto.c b/fs/crypto/crypto.c
-index 4dc788e3bc96..8217a4434621 100644
---- a/fs/crypto/crypto.c
-+++ b/fs/crypto/crypto.c
-@@ -139,7 +139,7 @@ void fscrypt_generate_iv(union fscrypt_iv *iv, u64 lblk_num,
- 	memset(iv, 0, ci->ci_mode->ivsize);
- 	iv->lblk_num = cpu_to_le64(lblk_num);
+diff --git a/fs/crypto/Kconfig b/fs/crypto/Kconfig
+index f0de238000c0..c160598a9fe2 100644
+--- a/fs/crypto/Kconfig
++++ b/fs/crypto/Kconfig
+@@ -7,6 +7,8 @@ config FS_ENCRYPTION
+ 	select CRYPTO_XTS
+ 	select CRYPTO_CTS
+ 	select CRYPTO_SHA256
++	select CRYPTO_SHA512
++	select CRYPTO_HMAC
+ 	select KEYS
+ 	help
+ 	  Enable encryption of files and directories.  This
+diff --git a/fs/crypto/Makefile b/fs/crypto/Makefile
+index accdd622c908..4977b4347928 100644
+--- a/fs/crypto/Makefile
++++ b/fs/crypto/Makefile
+@@ -2,6 +2,7 @@ obj-$(CONFIG_FS_ENCRYPTION)	+= fscrypto.o
  
--	if (ci->ci_flags & FS_POLICY_FLAG_DIRECT_KEY)
-+	if (ci->ci_flags & FSCRYPT_POLICY_FLAG_DIRECT_KEY)
- 		memcpy(iv->nonce, ci->ci_nonce, FS_KEY_DERIVATION_NONCE_SIZE);
- 
- 	if (ci->ci_essiv_tfm != NULL)
-diff --git a/fs/crypto/fname.c b/fs/crypto/fname.c
-index 7ff40a73dbec..37c26ad36d0e 100644
---- a/fs/crypto/fname.c
-+++ b/fs/crypto/fname.c
-@@ -187,7 +187,7 @@ bool fscrypt_fname_encrypted_size(const struct inode *inode, u32 orig_len,
- 				  u32 max_len, u32 *encrypted_len_ret)
- {
- 	int padding = 4 << (inode->i_crypt_info->ci_flags &
--			    FS_POLICY_FLAGS_PAD_MASK);
-+			    FSCRYPT_POLICY_FLAGS_PAD_MASK);
- 	u32 encrypted_len;
- 
- 	if (orig_len > max_len)
+ fscrypto-y := crypto.o \
+ 	      fname.o \
++	      hkdf.o \
+ 	      hooks.o \
+ 	      keyring.o \
+ 	      keysetup.o \
 diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
-index 7da276159593..52e09ef40bfa 100644
+index b09fc2939a89..f8b8358e9527 100644
 --- a/fs/crypto/fscrypt_private.h
 +++ b/fs/crypto/fscrypt_private.h
-@@ -34,7 +34,7 @@ struct fscrypt_context {
- 	u8 contents_encryption_mode;
- 	u8 filenames_encryption_mode;
- 	u8 flags;
--	u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-+	u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
- 	u8 nonce[FS_KEY_DERIVATION_NONCE_SIZE];
- } __packed;
+@@ -175,6 +175,21 @@ extern bool fscrypt_fname_encrypted_size(const struct inode *inode,
+ 					 u32 orig_len, u32 max_len,
+ 					 u32 *encrypted_len_ret);
  
-@@ -84,7 +84,7 @@ struct fscrypt_info {
- 	u8 ci_data_mode;
- 	u8 ci_filename_mode;
- 	u8 ci_flags;
--	u8 ci_master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-+	u8 ci_master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
- 	u8 ci_nonce[FS_KEY_DERIVATION_NONCE_SIZE];
- };
- 
-@@ -99,16 +99,16 @@ typedef enum {
- static inline bool fscrypt_valid_enc_modes(u32 contents_mode,
- 					   u32 filenames_mode)
- {
--	if (contents_mode = FS_ENCRYPTION_MODE_AES_128_CBC &&
--	    filenames_mode = FS_ENCRYPTION_MODE_AES_128_CTS)
-+	if (contents_mode = FSCRYPT_MODE_AES_128_CBC &&
-+	    filenames_mode = FSCRYPT_MODE_AES_128_CTS)
- 		return true;
- 
--	if (contents_mode = FS_ENCRYPTION_MODE_AES_256_XTS &&
--	    filenames_mode = FS_ENCRYPTION_MODE_AES_256_CTS)
-+	if (contents_mode = FSCRYPT_MODE_AES_256_XTS &&
-+	    filenames_mode = FSCRYPT_MODE_AES_256_CTS)
- 		return true;
- 
--	if (contents_mode = FS_ENCRYPTION_MODE_ADIANTUM &&
--	    filenames_mode = FS_ENCRYPTION_MODE_ADIANTUM)
-+	if (contents_mode = FSCRYPT_MODE_ADIANTUM &&
-+	    filenames_mode = FSCRYPT_MODE_ADIANTUM)
- 		return true;
- 
- 	return false;
-diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
-index 1e11a683f63d..a8c1e886b0bc 100644
---- a/fs/crypto/keyinfo.c
-+++ b/fs/crypto/keyinfo.c
-@@ -21,7 +21,7 @@
- 
- static struct crypto_shash *essiv_hash_tfm;
- 
--/* Table of keys referenced by FS_POLICY_FLAG_DIRECT_KEY policies */
-+/* Table of keys referenced by DIRECT_KEY policies */
- static DEFINE_HASHTABLE(fscrypt_master_keys, 6); /* 6 bits = 64 buckets */
- static DEFINE_SPINLOCK(fscrypt_master_keys_lock);
- 
-@@ -78,7 +78,7 @@ static int derive_key_aes(const u8 *master_key,
-  */
- static struct key *
- find_and_lock_process_key(const char *prefix,
--			  const u8 descriptor[FS_KEY_DESCRIPTOR_SIZE],
-+			  const u8 descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE],
- 			  unsigned int min_keysize,
- 			  const struct fscrypt_key **payload_ret)
- {
-@@ -88,7 +88,7 @@ find_and_lock_process_key(const char *prefix,
- 	const struct fscrypt_key *payload;
- 
- 	description = kasprintf(GFP_NOFS, "%s%*phN", prefix,
--				FS_KEY_DESCRIPTOR_SIZE, descriptor);
-+				FSCRYPT_KEY_DESCRIPTOR_SIZE, descriptor);
- 	if (!description)
- 		return ERR_PTR(-ENOMEM);
- 
-@@ -106,7 +106,7 @@ find_and_lock_process_key(const char *prefix,
- 	payload = (const struct fscrypt_key *)ukp->data;
- 
- 	if (ukp->datalen != sizeof(struct fscrypt_key) ||
--	    payload->size < 1 || payload->size > FS_MAX_KEY_SIZE) {
-+	    payload->size < 1 || payload->size > FSCRYPT_MAX_KEY_SIZE) {
- 		fscrypt_warn(NULL,
- 			     "key with description '%s' has invalid payload",
- 			     key->description);
-@@ -130,32 +130,32 @@ find_and_lock_process_key(const char *prefix,
- }
- 
- static struct fscrypt_mode available_modes[] = {
--	[FS_ENCRYPTION_MODE_AES_256_XTS] = {
-+	[FSCRYPT_MODE_AES_256_XTS] = {
- 		.friendly_name = "AES-256-XTS",
- 		.cipher_str = "xts(aes)",
- 		.keysize = 64,
- 		.ivsize = 16,
- 	},
--	[FS_ENCRYPTION_MODE_AES_256_CTS] = {
-+	[FSCRYPT_MODE_AES_256_CTS] = {
- 		.friendly_name = "AES-256-CTS-CBC",
- 		.cipher_str = "cts(cbc(aes))",
- 		.keysize = 32,
- 		.ivsize = 16,
- 	},
--	[FS_ENCRYPTION_MODE_AES_128_CBC] = {
-+	[FSCRYPT_MODE_AES_128_CBC] = {
- 		.friendly_name = "AES-128-CBC",
- 		.cipher_str = "cbc(aes)",
- 		.keysize = 16,
- 		.ivsize = 16,
- 		.needs_essiv = true,
- 	},
--	[FS_ENCRYPTION_MODE_AES_128_CTS] = {
-+	[FSCRYPT_MODE_AES_128_CTS] = {
- 		.friendly_name = "AES-128-CTS-CBC",
- 		.cipher_str = "cts(cbc(aes))",
- 		.keysize = 16,
- 		.ivsize = 16,
- 	},
--	[FS_ENCRYPTION_MODE_ADIANTUM] = {
-+	[FSCRYPT_MODE_ADIANTUM] = {
- 		.friendly_name = "Adiantum",
- 		.cipher_str = "adiantum(xchacha12,aes)",
- 		.keysize = 32,
-@@ -194,7 +194,7 @@ static int find_and_derive_key(const struct inode *inode,
- 	const struct fscrypt_key *payload;
- 	int err;
- 
--	key = find_and_lock_process_key(FS_KEY_DESC_PREFIX,
-+	key = find_and_lock_process_key(FSCRYPT_KEY_DESC_PREFIX,
- 					ctx->master_key_descriptor,
- 					mode->keysize, &payload);
- 	if (key = ERR_PTR(-ENOKEY) && inode->i_sb->s_cop->key_prefix) {
-@@ -205,7 +205,7 @@ static int find_and_derive_key(const struct inode *inode,
- 	if (IS_ERR(key))
- 		return PTR_ERR(key);
- 
--	if (ctx->flags & FS_POLICY_FLAG_DIRECT_KEY) {
-+	if (ctx->flags & FSCRYPT_POLICY_FLAG_DIRECT_KEY) {
- 		if (mode->ivsize < offsetofend(union fscrypt_iv, nonce)) {
- 			fscrypt_warn(inode->i_sb,
- 				     "direct key mode not allowed with %s",
-@@ -269,14 +269,14 @@ allocate_skcipher_for_mode(struct fscrypt_mode *mode, const u8 *raw_key,
- 	return ERR_PTR(err);
- }
- 
--/* Master key referenced by FS_POLICY_FLAG_DIRECT_KEY policy */
-+/* Master key referenced by DIRECT_KEY policy */
- struct fscrypt_master_key {
- 	struct hlist_node mk_node;
- 	refcount_t mk_refcount;
- 	const struct fscrypt_mode *mk_mode;
- 	struct crypto_skcipher *mk_ctfm;
--	u8 mk_descriptor[FS_KEY_DESCRIPTOR_SIZE];
--	u8 mk_raw[FS_MAX_KEY_SIZE];
-+	u8 mk_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
-+	u8 mk_raw[FSCRYPT_MAX_KEY_SIZE];
- };
- 
- static void free_master_key(struct fscrypt_master_key *mk)
-@@ -317,13 +317,13 @@ find_or_insert_master_key(struct fscrypt_master_key *to_insert,
- 	 * raw key, and use crypto_memneq() when comparing raw keys.
- 	 */
- 
--	BUILD_BUG_ON(sizeof(hash_key) > FS_KEY_DESCRIPTOR_SIZE);
-+	BUILD_BUG_ON(sizeof(hash_key) > FSCRYPT_KEY_DESCRIPTOR_SIZE);
- 	memcpy(&hash_key, ci->ci_master_key_descriptor, sizeof(hash_key));
- 
- 	spin_lock(&fscrypt_master_keys_lock);
- 	hash_for_each_possible(fscrypt_master_keys, mk, mk_node, hash_key) {
- 		if (memcmp(ci->ci_master_key_descriptor, mk->mk_descriptor,
--			   FS_KEY_DESCRIPTOR_SIZE) != 0)
-+			   FSCRYPT_KEY_DESCRIPTOR_SIZE) != 0)
- 			continue;
- 		if (mode != mk->mk_mode)
- 			continue;
-@@ -367,7 +367,7 @@ fscrypt_get_master_key(const struct fscrypt_info *ci, struct fscrypt_mode *mode,
- 		goto err_free_mk;
- 	}
- 	memcpy(mk->mk_descriptor, ci->ci_master_key_descriptor,
--	       FS_KEY_DESCRIPTOR_SIZE);
-+	       FSCRYPT_KEY_DESCRIPTOR_SIZE);
- 	memcpy(mk->mk_raw, raw_key, mode->keysize);
- 
- 	return find_or_insert_master_key(mk, raw_key, mode, ci);
-@@ -446,8 +446,8 @@ void __exit fscrypt_essiv_cleanup(void)
++/* hkdf.c */
++
++struct fscrypt_hkdf {
++	struct crypto_shash *hmac_tfm;
++};
++
++extern int fscrypt_init_hkdf(struct fscrypt_hkdf *hkdf, const u8 *master_key,
++			     unsigned int master_key_size);
++
++extern int fscrypt_hkdf_expand(struct fscrypt_hkdf *hkdf, u8 context,
++			       const u8 *info, unsigned int infolen,
++			       u8 *okm, unsigned int okmlen);
++
++extern void fscrypt_destroy_hkdf(struct fscrypt_hkdf *hkdf);
++
+ /* keyring.c */
  
  /*
-  * Given the encryption mode and key (normally the derived key, but for
-- * FS_POLICY_FLAG_DIRECT_KEY mode it's the master key), set up the inode's
-- * symmetric cipher transform object(s).
-+ * DIRECT_KEY mode it's the master key), set up the inode's symmetric cipher
-+ * transform object(s).
-  */
- static int setup_crypto_transform(struct fscrypt_info *ci,
- 				  struct fscrypt_mode *mode,
-@@ -457,7 +457,7 @@ static int setup_crypto_transform(struct fscrypt_info *ci,
- 	struct crypto_skcipher *ctfm;
- 	int err;
- 
--	if (ci->ci_flags & FS_POLICY_FLAG_DIRECT_KEY) {
-+	if (ci->ci_flags & FSCRYPT_POLICY_FLAG_DIRECT_KEY) {
- 		mk = fscrypt_get_master_key(ci, mode, raw_key, inode);
- 		if (IS_ERR(mk))
- 			return PTR_ERR(mk);
-@@ -474,7 +474,7 @@ static int setup_crypto_transform(struct fscrypt_info *ci,
- 	if (mode->needs_essiv) {
- 		/* ESSIV implies 16-byte IVs which implies !DIRECT_KEY */
- 		WARN_ON(mode->ivsize != AES_BLOCK_SIZE);
--		WARN_ON(ci->ci_flags & FS_POLICY_FLAG_DIRECT_KEY);
-+		WARN_ON(ci->ci_flags & FSCRYPT_POLICY_FLAG_DIRECT_KEY);
- 
- 		err = init_essiv_generator(ci, raw_key, mode->keysize);
- 		if (err) {
-@@ -524,9 +524,10 @@ int fscrypt_get_encryption_info(struct inode *inode)
- 		/* Fake up a context for an unencrypted directory */
- 		memset(&ctx, 0, sizeof(ctx));
- 		ctx.format = FS_ENCRYPTION_CONTEXT_FORMAT_V1;
--		ctx.contents_encryption_mode = FS_ENCRYPTION_MODE_AES_256_XTS;
--		ctx.filenames_encryption_mode = FS_ENCRYPTION_MODE_AES_256_CTS;
--		memset(ctx.master_key_descriptor, 0x42, FS_KEY_DESCRIPTOR_SIZE);
-+		ctx.contents_encryption_mode = FSCRYPT_MODE_AES_256_XTS;
-+		ctx.filenames_encryption_mode = FSCRYPT_MODE_AES_256_CTS;
-+		memset(ctx.master_key_descriptor, 0x42,
-+		       FSCRYPT_KEY_DESCRIPTOR_SIZE);
- 	} else if (res != sizeof(ctx)) {
- 		return -EINVAL;
- 	}
-@@ -534,7 +535,7 @@ int fscrypt_get_encryption_info(struct inode *inode)
- 	if (ctx.format != FS_ENCRYPTION_CONTEXT_FORMAT_V1)
- 		return -EINVAL;
- 
--	if (ctx.flags & ~FS_POLICY_FLAGS_VALID)
-+	if (ctx.flags & ~FSCRYPT_POLICY_FLAGS_VALID)
- 		return -EINVAL;
- 
- 	crypt_info = kmem_cache_zalloc(fscrypt_info_cachep, GFP_NOFS);
-@@ -545,7 +546,7 @@ int fscrypt_get_encryption_info(struct inode *inode)
- 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
- 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
- 	memcpy(crypt_info->ci_master_key_descriptor, ctx.master_key_descriptor,
--	       FS_KEY_DESCRIPTOR_SIZE);
-+	       FSCRYPT_KEY_DESCRIPTOR_SIZE);
- 	memcpy(crypt_info->ci_nonce, ctx.nonce, FS_KEY_DERIVATION_NONCE_SIZE);
- 
- 	mode = select_encryption_mode(crypt_info, inode);
-diff --git a/fs/crypto/policy.c b/fs/crypto/policy.c
-index bd7eaf9b3f00..1e0563cea1a5 100644
---- a/fs/crypto/policy.c
-+++ b/fs/crypto/policy.c
-@@ -22,7 +22,7 @@ static bool is_encryption_context_consistent_with_policy(
- 				const struct fscrypt_policy *policy)
- {
- 	return memcmp(ctx->master_key_descriptor, policy->master_key_descriptor,
--		      FS_KEY_DESCRIPTOR_SIZE) = 0 &&
-+		      FSCRYPT_KEY_DESCRIPTOR_SIZE) = 0 &&
- 		(ctx->flags = policy->flags) &&
- 		(ctx->contents_encryption_mode =
- 		 policy->contents_encryption_mode) &&
-@@ -37,13 +37,13 @@ static int create_encryption_context_from_policy(struct inode *inode,
- 
- 	ctx.format = FS_ENCRYPTION_CONTEXT_FORMAT_V1;
- 	memcpy(ctx.master_key_descriptor, policy->master_key_descriptor,
--					FS_KEY_DESCRIPTOR_SIZE);
-+					FSCRYPT_KEY_DESCRIPTOR_SIZE);
- 
- 	if (!fscrypt_valid_enc_modes(policy->contents_encryption_mode,
- 				     policy->filenames_encryption_mode))
- 		return -EINVAL;
- 
--	if (policy->flags & ~FS_POLICY_FLAGS_VALID)
-+	if (policy->flags & ~FSCRYPT_POLICY_FLAGS_VALID)
- 		return -EINVAL;
- 
- 	ctx.contents_encryption_mode = policy->contents_encryption_mode;
-@@ -126,7 +126,7 @@ int fscrypt_ioctl_get_policy(struct file *filp, void __user *arg)
- 	policy.filenames_encryption_mode = ctx.filenames_encryption_mode;
- 	policy.flags = ctx.flags;
- 	memcpy(policy.master_key_descriptor, ctx.master_key_descriptor,
--				FS_KEY_DESCRIPTOR_SIZE);
-+				FSCRYPT_KEY_DESCRIPTOR_SIZE);
- 
- 	if (copy_to_user(arg, &policy, sizeof(policy)))
- 		return -EFAULT;
-@@ -200,7 +200,7 @@ int fscrypt_has_permitted_context(struct inode *parent, struct inode *child)
- 	if (parent_ci && child_ci) {
- 		return memcmp(parent_ci->ci_master_key_descriptor,
- 			      child_ci->ci_master_key_descriptor,
--			      FS_KEY_DESCRIPTOR_SIZE) = 0 &&
-+			      FSCRYPT_KEY_DESCRIPTOR_SIZE) = 0 &&
- 			(parent_ci->ci_data_mode = child_ci->ci_data_mode) &&
- 			(parent_ci->ci_filename_mode =
- 			 child_ci->ci_filename_mode) &&
-@@ -217,7 +217,7 @@ int fscrypt_has_permitted_context(struct inode *parent, struct inode *child)
- 
- 	return memcmp(parent_ctx.master_key_descriptor,
- 		      child_ctx.master_key_descriptor,
--		      FS_KEY_DESCRIPTOR_SIZE) = 0 &&
-+		      FSCRYPT_KEY_DESCRIPTOR_SIZE) = 0 &&
- 		(parent_ctx.contents_encryption_mode =
- 		 child_ctx.contents_encryption_mode) &&
- 		(parent_ctx.filenames_encryption_mode =
-@@ -255,7 +255,7 @@ int fscrypt_inherit_context(struct inode *parent, struct inode *child,
- 	ctx.filenames_encryption_mode = ci->ci_filename_mode;
- 	ctx.flags = ci->ci_flags;
- 	memcpy(ctx.master_key_descriptor, ci->ci_master_key_descriptor,
--	       FS_KEY_DESCRIPTOR_SIZE);
-+	       FSCRYPT_KEY_DESCRIPTOR_SIZE);
- 	get_random_bytes(ctx.nonce, FS_KEY_DERIVATION_NONCE_SIZE);
- 	BUILD_BUG_ON(sizeof(ctx) != FSCRYPT_SET_CONTEXT_MAX_SIZE);
- 	res = parent->i_sb->s_cop->set_context(child, &ctx,
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-index f9b99cc028bc..3bbc5dfbde21 100644
---- a/include/uapi/linux/fscrypt.h
-+++ b/include/uapi/linux/fscrypt.h
-@@ -53,6 +53,7 @@ struct fscrypt_key {
- /**********************************************************************/
- 
- /* old names; don't add anything new here! */
-+#ifndef __KERNEL__
- #define FS_KEY_DESCRIPTOR_SIZE		FSCRYPT_KEY_DESCRIPTOR_SIZE
- #define FS_POLICY_FLAGS_PAD_4		FSCRYPT_POLICY_FLAGS_PAD_4
- #define FS_POLICY_FLAGS_PAD_8		FSCRYPT_POLICY_FLAGS_PAD_8
-@@ -74,5 +75,6 @@ struct fscrypt_key {
- #define FS_KEY_DESC_PREFIX		FSCRYPT_KEY_DESC_PREFIX
- #define FS_KEY_DESC_PREFIX_SIZE		FSCRYPT_KEY_DESC_PREFIX_SIZE
- #define FS_MAX_KEY_SIZE			FSCRYPT_MAX_KEY_SIZE
-+#endif /* !__KERNEL__ */
- 
- #endif /* _UAPI_LINUX_FSCRYPT_H */
+diff --git a/fs/crypto/hkdf.c b/fs/crypto/hkdf.c
+new file mode 100644
+index 000000000000..9c6346e3f227
+--- /dev/null
++++ b/fs/crypto/hkdf.c
+@@ -0,0 +1,188 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Implementation of HKDF ("HMAC-based Extract-and-Expand Key Derivation
++ * Function"), aka RFC 5869.  See also the original paper (Krawczyk 2010):
++ * "Cryptographic Extraction and Key Derivation: The HKDF Scheme".
++ *
++ * This is used to derive keys from the fscrypt master keys.
++ *
++ * Copyright 2019 Google LLC
++ */
++
++#include <crypto/hash.h>
++#include <crypto/sha.h>
++
++#include "fscrypt_private.h"
++
++/*
++ * HKDF supports any unkeyed cryptographic hash algorithm, but fscrypt uses
++ * SHA-512 because it is reasonably secure and efficient; and since it produces
++ * a 64-byte digest, deriving an AES-256-XTS key preserves all 64 bytes of
++ * entropy from the master key and requires only one iteration of HKDF-Expand.
++ */
++#define HKDF_HMAC_ALG		"hmac(sha512)"
++#define HKDF_HASHLEN		SHA512_DIGEST_SIZE
++
++/*
++ * HKDF consists of two steps:
++ *
++ * 1. HKDF-Extract: extract a pseudorandom key of length HKDF_HASHLEN bytes from
++ *    the input keying material and optional salt.
++ * 2. HKDF-Expand: expand the pseudorandom key into output keying material of
++ *    any length, parameterized by an application-specific info string.
++ *
++ * HKDF-Extract can be skipped if the input is already a pseudorandom key of
++ * length HKDF_HASHLEN bytes.  However, cipher modes other than AES-256-XTS take
++ * shorter keys, and we don't want to force users of those modes to generate
++ * unnecessarily long keys.  Thus fscrypt still does HKDF-Extract.
++ *
++ * HKDF-Extract also supports a salt.  Choosing a random salt per input key
++ * would permit the input key to come from *any* source with sufficient entropy,
++ * even if it's not distributed uniformly.  However, fscrypt doesn't take
++ * advantage of this because userspace should already provide good pseudorandom
++ * keys, which makes this unnecessary; also, having to persist a random salt per
++ * key from kernel mode would pose significant implementation complexity.  Thus
++ * fscrypt uses a fixed salt.  But to be slightly more robust against userspace
++ * (unwisely) reusing the fscrypt keys for another purpose, and to force
++ * brute-force attacks to target the fscrypt KDF specifically, fscrypt uses
++ * "fscrypt_hkdf_salt" rather than the default of all 0's defined by RFC 5869.
++ */
++
++#define HKDF_SALT		"fscrypt_hkdf_salt"
++#define HKDF_SALT_LEN		CONST_STRLEN(HKDF_SALT)
++
++/* HKDF-Extract (RFC 5869 section 2.2), see explanation above */
++static int hkdf_extract(struct crypto_shash *hmac_tfm, const u8 *ikm,
++			unsigned int ikmlen, u8 prk[HKDF_HASHLEN])
++{
++	SHASH_DESC_ON_STACK(desc, hmac_tfm);
++	int err;
++
++	desc->tfm = hmac_tfm;
++	desc->flags = 0;
++
++	err = crypto_shash_setkey(hmac_tfm, HKDF_SALT, HKDF_SALT_LEN);
++	if (err)
++		goto out;
++
++	err = crypto_shash_digest(desc, ikm, ikmlen, prk);
++out:
++	shash_desc_zero(desc);
++	return err;
++}
++
++/*
++ * Compute HKDF-Extract using the given master key as the input keying material,
++ * and prepare an HMAC transform object keyed by the resulting pseudorandom key.
++ *
++ * Afterwards, the keyed HMAC transform object can be used for HKDF-Expand many
++ * times without having to recompute HKDF-Extract each time.
++ */
++int fscrypt_init_hkdf(struct fscrypt_hkdf *hkdf, const u8 *master_key,
++		      unsigned int master_key_size)
++{
++	struct crypto_shash *hmac_tfm;
++	u8 prk[HKDF_HASHLEN];
++	int err;
++
++	hmac_tfm = crypto_alloc_shash(HKDF_HMAC_ALG, 0, 0);
++	if (IS_ERR(hmac_tfm)) {
++		fscrypt_warn(NULL, "error allocating " HKDF_HMAC_ALG ": %ld",
++			     PTR_ERR(hmac_tfm));
++		return PTR_ERR(hmac_tfm);
++	}
++
++	BUG_ON(crypto_shash_digestsize(hmac_tfm) != sizeof(prk));
++
++	err = hkdf_extract(hmac_tfm, master_key, master_key_size, prk);
++	if (err)
++		goto err_free_tfm;
++
++	err = crypto_shash_setkey(hmac_tfm, prk, sizeof(prk));
++	if (err)
++		goto err_free_tfm;
++
++	hkdf->hmac_tfm = hmac_tfm;
++	goto out;
++
++err_free_tfm:
++	crypto_free_shash(hmac_tfm);
++out:
++	memzero_explicit(prk, sizeof(prk));
++	return err;
++}
++
++/*
++ * HKDF-Expand (RFC 5869 section 2.3).  This expands the pseudorandom key, which
++ * was already keyed into 'hkdf->hmac_tfm' by fscrypt_init_hkdf(), into 'okmlen'
++ * bytes of output keying material parameterized by the application-specific
++ * 'info' of length 'infolen' bytes, prefixed with the 'context' byte.  This is
++ * thread-safe and may be called by multiple threads in parallel.
++ *
++ * ('context' isn't part of the HKDF specification; it's just a prefix fscrypt
++ * adds to its application-specific info strings to guarantee that it doesn't
++ * accidentally repeat an info string when using HKDF for different purposes.)
++ */
++int fscrypt_hkdf_expand(struct fscrypt_hkdf *hkdf, u8 context,
++			const u8 *info, unsigned int infolen,
++			u8 *okm, unsigned int okmlen)
++{
++	SHASH_DESC_ON_STACK(desc, hkdf->hmac_tfm);
++	int err;
++	const u8 *prev = NULL;
++	unsigned int i;
++	u8 counter = 1;
++	u8 tmp[HKDF_HASHLEN];
++
++	desc->tfm = hkdf->hmac_tfm;
++	desc->flags = 0;
++
++	if (WARN_ON(okmlen > 255 * HKDF_HASHLEN))
++		return -EINVAL;
++
++	for (i = 0; i < okmlen; i += HKDF_HASHLEN) {
++
++		err = crypto_shash_init(desc);
++		if (err)
++			goto out;
++
++		if (prev) {
++			err = crypto_shash_update(desc, prev, HKDF_HASHLEN);
++			if (err)
++				goto out;
++		}
++
++		err = crypto_shash_update(desc, &context, 1);
++		if (err)
++			goto out;
++
++		err = crypto_shash_update(desc, info, infolen);
++		if (err)
++			goto out;
++
++		if (okmlen - i < HKDF_HASHLEN) {
++			err = crypto_shash_finup(desc, &counter, 1, tmp);
++			if (err)
++				goto out;
++			memcpy(&okm[i], tmp, okmlen - i);
++			memzero_explicit(tmp, sizeof(tmp));
++		} else {
++			err = crypto_shash_finup(desc, &counter, 1, &okm[i]);
++			if (err)
++				goto out;
++		}
++		counter++;
++		prev = &okm[i];
++	}
++	err = 0;
++out:
++	if (unlikely(err))
++		memzero_explicit(okm, okmlen); /* so caller doesn't need to */
++	shash_desc_zero(desc);
++	return err;
++}
++
++void fscrypt_destroy_hkdf(struct fscrypt_hkdf *hkdf)
++{
++	crypto_free_shash(hkdf->hmac_tfm);
++}
 -- 
 2.20.1
