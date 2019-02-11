@@ -1,62 +1,60 @@
-From: Nick Desaulniers <ndesaulniers@google.com>
-Date: Mon, 11 Feb 2019 18:36:51 +0000
-Subject: Re: [PATCH v2] [PATCH] KEYS: trusted: fix -Wvarags warning
-Message-Id: <CAKwvOdnhDin6TJfBVxm6xsCh_nJeBuA7GqbgJwgLnqc3PrJGxA@mail.gmail.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 11 Feb 2019 17:27:26 +0000
+Subject: [RFC PATCH v2 08/20] fs/inode.c: export inode_lru_list_del()
+Message-Id: <20190211172738.4633-9-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <0147a993d4a94426afa469a8dcc4e5d7@AcuMS.aculab.com>
- <20181022234357.82217-1-ndesaulniers@google.com> <alpine.DEB.2.21.1810241136130.3525@jsakkine-mobl1>
- <CAKwvOdn+V8iFJ_V1vr3GBm-NwxzaDbcmK+nW1q3uVky7bRsB3w@mail.gmail.com>
-In-Reply-To: <CAKwvOdn+V8iFJ_V1vr3GBm-NwxzaDbcmK+nW1q3uVky7bRsB3w@mail.gmail.com>
-To: "James E.J. Bottomley" <jejb@linux.vnet.ibm.com>, jarkko.sakkinen@linux.intel.com, zohar@linux.vnet.ibm.com
-Cc: David Howells <dhowells@redhat.com>, Nathan Chancellor <natechancellor@gmail.com>, David.Laight@aculab.com, denkenz@gmail.com, jmorris@namei.org, serge@hallyn.com, keyrings@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
+References: <20190211172738.4633-1-ebiggers@kernel.org>
+In-Reply-To: <20190211172738.4633-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-On Mon, Oct 29, 2018 at 10:54 AM Nick Desaulniers
-<ndesaulniers@google.com> wrote:
->
-> On Wed, Oct 24, 2018 at 1:37 AM Jarkko Sakkinen
-> <jarkko.sakkinen@linux.intel.com> wrote:
-> >
-> > On Mon, 22 Oct 2018, ndesaulniers@google.com wrote:
-> > > Fixes the warning reported by Clang:
-> > > security/keys/trusted.c:146:17: warning: passing an object that
-> > > undergoes default
-> > >      argument promotion to 'va_start' has undefined behavior [-Wvarargs]
-> > >        va_start(argp, h3);
-> > >                       ^
-> > > security/keys/trusted.c:126:37: note: parameter of type 'unsigned
-> > > char' is declared here
-> > > unsigned char *h2, unsigned char h3, ...)
-> > >                               ^
-> > > Specifically, it seems that both the C90 (4.8.1.1) and C11 (7.16.1.4)
-> > > standards explicitly call this out as undefined behavior:
-> > >
-> > > The parameter parmN is the identifier of the rightmost parameter in
-> > > the variable parameter list in the function definition (the one just
-> > > before the ...). If the parameter parmN is declared with ... or with a
-> > > type that is not compatible with the type that results after
-> > > application of the default argument promotions, the behavior is
-> > > undefined.
-> > >
-> > > Link: https://github.com/ClangBuiltLinux/linux/issues/41
-> > > Link: https://www.eskimo.com/~scs/cclass/int/sx11c.html
-> > > Suggested-by: David Laight <David.Laight@aculab.com>
-> > > Suggested-by: Denis Kenzior <denkenz@gmail.com>
-> > > Suggested-by: James Bottomley <jejb@linux.vnet.ibm.com>
-> > > Suggested-by: Nathan Chancellor <natechancellor@gmail.com>
-> > > Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
-> >
-> > Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> >
-> > /Jarkko
->
-> Bumping the maintainers if this isn't already picked up?
+From: Eric Biggers <ebiggers@google.com>
 
-James, Jarkko, or Mimi, can you please pick this up (and let me know
-what tree it lands in)?
-https://lkml.org/lkml/2018/10/23/116
+When a filesystem encryption key is removed, we need all files which had
+been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
+again.  This is most easily done by evicting the inodes.  This can
+currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
+that is overkill and not usable by non-root users.
+
+In preparation for allowing fs/crypto/ to evict just the needed inodes,
+make inode_lru_list_del() non-static.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ fs/inode.c         | 4 +---
+ include/linux/fs.h | 1 +
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/fs/inode.c b/fs/inode.c
+index 0cd47fe0dbe5..037df483c9af 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -426,10 +426,8 @@ void inode_add_lru(struct inode *inode)
+ 		inode_lru_list_add(inode);
+ }
+ 
+-
+-static void inode_lru_list_del(struct inode *inode)
++void inode_lru_list_del(struct inode *inode)
+ {
+-
+ 	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
+ 		this_cpu_dec(nr_unused);
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 70d929ac89f9..326cbb044596 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2986,6 +2986,7 @@ extern void unlock_new_inode(struct inode *);
+ extern void discard_new_inode(struct inode *);
+ extern unsigned int get_next_ino(void);
+ extern void evict_inodes(struct super_block *sb);
++extern void inode_lru_list_del(struct inode *inode);
+ 
+ extern void __iget(struct inode * inode);
+ extern void iget_failed(struct inode *);
 -- 
-Thanks,
-~Nick Desaulniers
+2.20.1
