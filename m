@@ -1,215 +1,386 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Wed, 06 Feb 2019 16:24:48 +0000
-Subject: [PATCH v10, RESEND 2/6] tpm: rename and export tpm2_digest and tpm2_algorithms
-Message-Id: <20190206162452.7749-3-roberto.sassu@huawei.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 11 Feb 2019 17:27:21 +0000
+Subject: [RFC PATCH v2 03/20] fscrypt: use FSCRYPT_* definitions, not FS_*
+Message-Id: <20190211172738.4633-4-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190206162452.7749-1-roberto.sassu@huawei.com>
-In-Reply-To: <20190206162452.7749-1-roberto.sassu@huawei.com>
-To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
+References: <20190211172738.4633-1-ebiggers@kernel.org>
+In-Reply-To: <20190211172738.4633-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Rename tpm2_* to tpm_* and move the definitions to include/linux/tpm.h so
-that these can be used by other kernel subsystems (e.g. IMA).
+From: Eric Biggers <ebiggers@google.com>
 
-Also, set the length of the digest array in tpm_digest to a new constant
-named TPM_MAX_DIGEST_SIZE, equal to SHA512_DIGEST_SIZE.
+Update fs/crypto/ to use the new names for the UAPI constants rather
+than the old names, then make the old definitions conditional on
+!__KERNEL__.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Acked-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- drivers/char/tpm/tpm-interface.c |  2 +-
- drivers/char/tpm/tpm.h           | 13 +------------
- drivers/char/tpm/tpm1-cmd.c      |  2 +-
- drivers/char/tpm/tpm2-cmd.c      | 18 +++++++++---------
- include/linux/tpm.h              | 19 +++++++++++++++++++
- include/linux/tpm_eventlog.h     |  9 ++-------
- 6 files changed, 33 insertions(+), 30 deletions(-)
+ fs/crypto/crypto.c           |  2 +-
+ fs/crypto/fname.c            |  2 +-
+ fs/crypto/fscrypt_private.h  | 16 +++++------
+ fs/crypto/keyinfo.c          | 53 ++++++++++++++++++------------------
+ fs/crypto/policy.c           | 14 +++++-----
+ include/uapi/linux/fscrypt.h |  2 ++
+ 6 files changed, 46 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 24f0eed531a0..9f6e68fbbb4d 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -309,7 +309,7 @@ EXPORT_SYMBOL_GPL(tpm_pcr_read);
- int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, const u8 *hash)
+diff --git a/fs/crypto/crypto.c b/fs/crypto/crypto.c
+index 4dc788e3bc96..8217a4434621 100644
+--- a/fs/crypto/crypto.c
++++ b/fs/crypto/crypto.c
+@@ -139,7 +139,7 @@ void fscrypt_generate_iv(union fscrypt_iv *iv, u64 lblk_num,
+ 	memset(iv, 0, ci->ci_mode->ivsize);
+ 	iv->lblk_num = cpu_to_le64(lblk_num);
+ 
+-	if (ci->ci_flags & FS_POLICY_FLAG_DIRECT_KEY)
++	if (ci->ci_flags & FSCRYPT_POLICY_FLAG_DIRECT_KEY)
+ 		memcpy(iv->nonce, ci->ci_nonce, FS_KEY_DERIVATION_NONCE_SIZE);
+ 
+ 	if (ci->ci_essiv_tfm != NULL)
+diff --git a/fs/crypto/fname.c b/fs/crypto/fname.c
+index 7ff40a73dbec..37c26ad36d0e 100644
+--- a/fs/crypto/fname.c
++++ b/fs/crypto/fname.c
+@@ -187,7 +187,7 @@ bool fscrypt_fname_encrypted_size(const struct inode *inode, u32 orig_len,
+ 				  u32 max_len, u32 *encrypted_len_ret)
  {
- 	int rc;
--	struct tpm2_digest *digest_list;
-+	struct tpm_digest *digest_list;
- 	int i;
+ 	int padding = 4 << (inode->i_crypt_info->ci_flags &
+-			    FS_POLICY_FLAGS_PAD_MASK);
++			    FSCRYPT_POLICY_FLAGS_PAD_MASK);
+ 	u32 encrypted_len;
  
- 	chip = tpm_find_get_ops(chip);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index cd330ace6248..0e54061d3fd1 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -122,17 +122,6 @@ enum tpm2_return_codes {
- 	TPM2_RC_RETRY		= 0x0922,
+ 	if (orig_len > max_len)
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index 7da276159593..52e09ef40bfa 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -34,7 +34,7 @@ struct fscrypt_context {
+ 	u8 contents_encryption_mode;
+ 	u8 filenames_encryption_mode;
+ 	u8 flags;
+-	u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
++	u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
+ 	u8 nonce[FS_KEY_DERIVATION_NONCE_SIZE];
+ } __packed;
+ 
+@@ -84,7 +84,7 @@ struct fscrypt_info {
+ 	u8 ci_data_mode;
+ 	u8 ci_filename_mode;
+ 	u8 ci_flags;
+-	u8 ci_master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
++	u8 ci_master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
+ 	u8 ci_nonce[FS_KEY_DERIVATION_NONCE_SIZE];
  };
  
--enum tpm2_algorithms {
--	TPM2_ALG_ERROR		= 0x0000,
--	TPM2_ALG_SHA1		= 0x0004,
--	TPM2_ALG_KEYEDHASH	= 0x0008,
--	TPM2_ALG_SHA256		= 0x000B,
--	TPM2_ALG_SHA384		= 0x000C,
--	TPM2_ALG_SHA512		= 0x000D,
--	TPM2_ALG_NULL		= 0x0010,
--	TPM2_ALG_SM3_256	= 0x0012,
--};
--
- enum tpm2_command_codes {
- 	TPM2_CC_FIRST		        = 0x011F,
- 	TPM2_CC_HIERARCHY_CONTROL       = 0x0121,
-@@ -545,7 +534,7 @@ static inline u32 tpm2_rc_value(u32 rc)
- int tpm2_get_timeouts(struct tpm_chip *chip);
- int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf);
- int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
--		    struct tpm2_digest *digests);
-+		    struct tpm_digest *digests);
- int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max);
- void tpm2_flush_context(struct tpm_chip *chip, u32 handle);
- int tpm2_seal_trusted(struct tpm_chip *chip,
-diff --git a/drivers/char/tpm/tpm1-cmd.c b/drivers/char/tpm/tpm1-cmd.c
-index e7d3228a0f37..3eb7e03889a0 100644
---- a/drivers/char/tpm/tpm1-cmd.c
-+++ b/drivers/char/tpm/tpm1-cmd.c
-@@ -703,7 +703,7 @@ int tpm1_auto_startup(struct tpm_chip *chip)
- 		goto out;
- 	}
+@@ -99,16 +99,16 @@ typedef enum {
+ static inline bool fscrypt_valid_enc_modes(u32 contents_mode,
+ 					   u32 filenames_mode)
+ {
+-	if (contents_mode = FS_ENCRYPTION_MODE_AES_128_CBC &&
+-	    filenames_mode = FS_ENCRYPTION_MODE_AES_128_CTS)
++	if (contents_mode = FSCRYPT_MODE_AES_128_CBC &&
++	    filenames_mode = FSCRYPT_MODE_AES_128_CTS)
+ 		return true;
  
--	chip->allocated_banks[0] = TPM2_ALG_SHA1;
-+	chip->allocated_banks[0] = TPM_ALG_SHA1;
- 	chip->nr_allocated_banks = 1;
+-	if (contents_mode = FS_ENCRYPTION_MODE_AES_256_XTS &&
+-	    filenames_mode = FS_ENCRYPTION_MODE_AES_256_CTS)
++	if (contents_mode = FSCRYPT_MODE_AES_256_XTS &&
++	    filenames_mode = FSCRYPT_MODE_AES_256_CTS)
+ 		return true;
  
- 	return rc;
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index bd20b9a61fc0..440ae6ee29e4 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -33,11 +33,11 @@ struct tpm2_hash {
- };
+-	if (contents_mode = FS_ENCRYPTION_MODE_ADIANTUM &&
+-	    filenames_mode = FS_ENCRYPTION_MODE_ADIANTUM)
++	if (contents_mode = FSCRYPT_MODE_ADIANTUM &&
++	    filenames_mode = FSCRYPT_MODE_ADIANTUM)
+ 		return true;
  
- static struct tpm2_hash tpm2_hash_map[] = {
--	{HASH_ALGO_SHA1, TPM2_ALG_SHA1},
--	{HASH_ALGO_SHA256, TPM2_ALG_SHA256},
--	{HASH_ALGO_SHA384, TPM2_ALG_SHA384},
--	{HASH_ALGO_SHA512, TPM2_ALG_SHA512},
--	{HASH_ALGO_SM3_256, TPM2_ALG_SM3_256},
-+	{HASH_ALGO_SHA1, TPM_ALG_SHA1},
-+	{HASH_ALGO_SHA256, TPM_ALG_SHA256},
-+	{HASH_ALGO_SHA384, TPM_ALG_SHA384},
-+	{HASH_ALGO_SHA512, TPM_ALG_SHA512},
-+	{HASH_ALGO_SM3_256, TPM_ALG_SM3_256},
- };
+ 	return false;
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
+index 1e11a683f63d..a8c1e886b0bc 100644
+--- a/fs/crypto/keyinfo.c
++++ b/fs/crypto/keyinfo.c
+@@ -21,7 +21,7 @@
  
- int tpm2_get_timeouts(struct tpm_chip *chip)
-@@ -192,7 +192,7 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
- 	pcr_select[pcr_idx >> 3] = 1 << (pcr_idx & 0x7);
+ static struct crypto_shash *essiv_hash_tfm;
  
- 	tpm_buf_append_u32(&buf, 1);
--	tpm_buf_append_u16(&buf, TPM2_ALG_SHA1);
-+	tpm_buf_append_u16(&buf, TPM_ALG_SHA1);
- 	tpm_buf_append_u8(&buf, TPM2_PCR_SELECT_MIN);
- 	tpm_buf_append(&buf, (const unsigned char *)pcr_select,
- 		       sizeof(pcr_select));
-@@ -226,7 +226,7 @@ struct tpm2_null_auth_area {
-  * Return: Same as with tpm_transmit_cmd.
+-/* Table of keys referenced by FS_POLICY_FLAG_DIRECT_KEY policies */
++/* Table of keys referenced by DIRECT_KEY policies */
+ static DEFINE_HASHTABLE(fscrypt_master_keys, 6); /* 6 bits = 64 buckets */
+ static DEFINE_SPINLOCK(fscrypt_master_keys_lock);
+ 
+@@ -78,7 +78,7 @@ static int derive_key_aes(const u8 *master_key,
   */
- int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
--		    struct tpm2_digest *digests)
-+		    struct tpm_digest *digests)
+ static struct key *
+ find_and_lock_process_key(const char *prefix,
+-			  const u8 descriptor[FS_KEY_DESCRIPTOR_SIZE],
++			  const u8 descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE],
+ 			  unsigned int min_keysize,
+ 			  const struct fscrypt_key **payload_ret)
  {
- 	struct tpm_buf buf;
- 	struct tpm2_null_auth_area auth_area;
-@@ -443,7 +443,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+@@ -88,7 +88,7 @@ find_and_lock_process_key(const char *prefix,
+ 	const struct fscrypt_key *payload;
  
- 	/* public */
- 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
--	tpm_buf_append_u16(&buf, TPM2_ALG_KEYEDHASH);
-+	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
- 	tpm_buf_append_u16(&buf, hash);
+ 	description = kasprintf(GFP_NOFS, "%s%*phN", prefix,
+-				FS_KEY_DESCRIPTOR_SIZE, descriptor);
++				FSCRYPT_KEY_DESCRIPTOR_SIZE, descriptor);
+ 	if (!description)
+ 		return ERR_PTR(-ENOMEM);
  
- 	/* policy */
-@@ -458,7 +458,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 	}
+@@ -106,7 +106,7 @@ find_and_lock_process_key(const char *prefix,
+ 	payload = (const struct fscrypt_key *)ukp->data;
  
- 	/* public parameters */
--	tpm_buf_append_u16(&buf, TPM2_ALG_NULL);
-+	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
- 	tpm_buf_append_u16(&buf, 0);
+ 	if (ukp->datalen != sizeof(struct fscrypt_key) ||
+-	    payload->size < 1 || payload->size > FS_MAX_KEY_SIZE) {
++	    payload->size < 1 || payload->size > FSCRYPT_MAX_KEY_SIZE) {
+ 		fscrypt_warn(NULL,
+ 			     "key with description '%s' has invalid payload",
+ 			     key->description);
+@@ -130,32 +130,32 @@ find_and_lock_process_key(const char *prefix,
+ }
  
- 	/* outside info */
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 13563b8c0c3a..9fe8c9816cf0 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -22,12 +22,31 @@
- #ifndef __LINUX_TPM_H__
- #define __LINUX_TPM_H__
+ static struct fscrypt_mode available_modes[] = {
+-	[FS_ENCRYPTION_MODE_AES_256_XTS] = {
++	[FSCRYPT_MODE_AES_256_XTS] = {
+ 		.friendly_name = "AES-256-XTS",
+ 		.cipher_str = "xts(aes)",
+ 		.keysize = 64,
+ 		.ivsize = 16,
+ 	},
+-	[FS_ENCRYPTION_MODE_AES_256_CTS] = {
++	[FSCRYPT_MODE_AES_256_CTS] = {
+ 		.friendly_name = "AES-256-CTS-CBC",
+ 		.cipher_str = "cts(cbc(aes))",
+ 		.keysize = 32,
+ 		.ivsize = 16,
+ 	},
+-	[FS_ENCRYPTION_MODE_AES_128_CBC] = {
++	[FSCRYPT_MODE_AES_128_CBC] = {
+ 		.friendly_name = "AES-128-CBC",
+ 		.cipher_str = "cbc(aes)",
+ 		.keysize = 16,
+ 		.ivsize = 16,
+ 		.needs_essiv = true,
+ 	},
+-	[FS_ENCRYPTION_MODE_AES_128_CTS] = {
++	[FSCRYPT_MODE_AES_128_CTS] = {
+ 		.friendly_name = "AES-128-CTS-CBC",
+ 		.cipher_str = "cts(cbc(aes))",
+ 		.keysize = 16,
+ 		.ivsize = 16,
+ 	},
+-	[FS_ENCRYPTION_MODE_ADIANTUM] = {
++	[FSCRYPT_MODE_ADIANTUM] = {
+ 		.friendly_name = "Adiantum",
+ 		.cipher_str = "adiantum(xchacha12,aes)",
+ 		.keysize = 32,
+@@ -194,7 +194,7 @@ static int find_and_derive_key(const struct inode *inode,
+ 	const struct fscrypt_key *payload;
+ 	int err;
  
-+#include <crypto/hash_info.h>
-+
- #define TPM_DIGEST_SIZE 20	/* Max TPM v1.2 PCR size */
-+#define TPM_MAX_DIGEST_SIZE SHA512_DIGEST_SIZE
+-	key = find_and_lock_process_key(FS_KEY_DESC_PREFIX,
++	key = find_and_lock_process_key(FSCRYPT_KEY_DESC_PREFIX,
+ 					ctx->master_key_descriptor,
+ 					mode->keysize, &payload);
+ 	if (key = ERR_PTR(-ENOKEY) && inode->i_sb->s_cop->key_prefix) {
+@@ -205,7 +205,7 @@ static int find_and_derive_key(const struct inode *inode,
+ 	if (IS_ERR(key))
+ 		return PTR_ERR(key);
  
- struct tpm_chip;
- struct trusted_key_payload;
- struct trusted_key_options;
+-	if (ctx->flags & FS_POLICY_FLAG_DIRECT_KEY) {
++	if (ctx->flags & FSCRYPT_POLICY_FLAG_DIRECT_KEY) {
+ 		if (mode->ivsize < offsetofend(union fscrypt_iv, nonce)) {
+ 			fscrypt_warn(inode->i_sb,
+ 				     "direct key mode not allowed with %s",
+@@ -269,14 +269,14 @@ allocate_skcipher_for_mode(struct fscrypt_mode *mode, const u8 *raw_key,
+ 	return ERR_PTR(err);
+ }
  
-+enum tpm_algorithms {
-+	TPM_ALG_ERROR		= 0x0000,
-+	TPM_ALG_SHA1		= 0x0004,
-+	TPM_ALG_KEYEDHASH	= 0x0008,
-+	TPM_ALG_SHA256		= 0x000B,
-+	TPM_ALG_SHA384		= 0x000C,
-+	TPM_ALG_SHA512		= 0x000D,
-+	TPM_ALG_NULL		= 0x0010,
-+	TPM_ALG_SM3_256		= 0x0012,
-+};
-+
-+struct tpm_digest {
-+	u16 alg_id;
-+	u8 digest[TPM_MAX_DIGEST_SIZE];
-+} __packed;
-+
- enum TPM_OPS_FLAGS {
- 	TPM_OPS_AUTO_STARTUP = BIT(0),
+-/* Master key referenced by FS_POLICY_FLAG_DIRECT_KEY policy */
++/* Master key referenced by DIRECT_KEY policy */
+ struct fscrypt_master_key {
+ 	struct hlist_node mk_node;
+ 	refcount_t mk_refcount;
+ 	const struct fscrypt_mode *mk_mode;
+ 	struct crypto_skcipher *mk_ctfm;
+-	u8 mk_descriptor[FS_KEY_DESCRIPTOR_SIZE];
+-	u8 mk_raw[FS_MAX_KEY_SIZE];
++	u8 mk_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
++	u8 mk_raw[FSCRYPT_MAX_KEY_SIZE];
  };
-diff --git a/include/linux/tpm_eventlog.h b/include/linux/tpm_eventlog.h
-index f47342361e87..81519f163211 100644
---- a/include/linux/tpm_eventlog.h
-+++ b/include/linux/tpm_eventlog.h
-@@ -3,7 +3,7 @@
- #ifndef __LINUX_TPM_EVENTLOG_H__
- #define __LINUX_TPM_EVENTLOG_H__
  
--#include <crypto/hash_info.h>
-+#include <linux/tpm.h>
+ static void free_master_key(struct fscrypt_master_key *mk)
+@@ -317,13 +317,13 @@ find_or_insert_master_key(struct fscrypt_master_key *to_insert,
+ 	 * raw key, and use crypto_memneq() when comparing raw keys.
+ 	 */
  
- #define TCG_EVENT_NAME_LEN_MAX	255
- #define MAX_TEXT_EVENT		1000	/* Max event string length */
-@@ -105,16 +105,11 @@ struct tcg_event_field {
- 	u8 event[0];
- } __packed;
+-	BUILD_BUG_ON(sizeof(hash_key) > FS_KEY_DESCRIPTOR_SIZE);
++	BUILD_BUG_ON(sizeof(hash_key) > FSCRYPT_KEY_DESCRIPTOR_SIZE);
+ 	memcpy(&hash_key, ci->ci_master_key_descriptor, sizeof(hash_key));
  
--struct tpm2_digest {
--	u16 alg_id;
--	u8 digest[SHA512_DIGEST_SIZE];
--} __packed;
--
- struct tcg_pcr_event2_head {
- 	u32 pcr_idx;
- 	u32 event_type;
- 	u32 count;
--	struct tpm2_digest digests[];
-+	struct tpm_digest digests[];
- } __packed;
+ 	spin_lock(&fscrypt_master_keys_lock);
+ 	hash_for_each_possible(fscrypt_master_keys, mk, mk_node, hash_key) {
+ 		if (memcmp(ci->ci_master_key_descriptor, mk->mk_descriptor,
+-			   FS_KEY_DESCRIPTOR_SIZE) != 0)
++			   FSCRYPT_KEY_DESCRIPTOR_SIZE) != 0)
+ 			continue;
+ 		if (mode != mk->mk_mode)
+ 			continue;
+@@ -367,7 +367,7 @@ fscrypt_get_master_key(const struct fscrypt_info *ci, struct fscrypt_mode *mode,
+ 		goto err_free_mk;
+ 	}
+ 	memcpy(mk->mk_descriptor, ci->ci_master_key_descriptor,
+-	       FS_KEY_DESCRIPTOR_SIZE);
++	       FSCRYPT_KEY_DESCRIPTOR_SIZE);
+ 	memcpy(mk->mk_raw, raw_key, mode->keysize);
  
- #endif
+ 	return find_or_insert_master_key(mk, raw_key, mode, ci);
+@@ -446,8 +446,8 @@ void __exit fscrypt_essiv_cleanup(void)
+ 
+ /*
+  * Given the encryption mode and key (normally the derived key, but for
+- * FS_POLICY_FLAG_DIRECT_KEY mode it's the master key), set up the inode's
+- * symmetric cipher transform object(s).
++ * DIRECT_KEY mode it's the master key), set up the inode's symmetric cipher
++ * transform object(s).
+  */
+ static int setup_crypto_transform(struct fscrypt_info *ci,
+ 				  struct fscrypt_mode *mode,
+@@ -457,7 +457,7 @@ static int setup_crypto_transform(struct fscrypt_info *ci,
+ 	struct crypto_skcipher *ctfm;
+ 	int err;
+ 
+-	if (ci->ci_flags & FS_POLICY_FLAG_DIRECT_KEY) {
++	if (ci->ci_flags & FSCRYPT_POLICY_FLAG_DIRECT_KEY) {
+ 		mk = fscrypt_get_master_key(ci, mode, raw_key, inode);
+ 		if (IS_ERR(mk))
+ 			return PTR_ERR(mk);
+@@ -474,7 +474,7 @@ static int setup_crypto_transform(struct fscrypt_info *ci,
+ 	if (mode->needs_essiv) {
+ 		/* ESSIV implies 16-byte IVs which implies !DIRECT_KEY */
+ 		WARN_ON(mode->ivsize != AES_BLOCK_SIZE);
+-		WARN_ON(ci->ci_flags & FS_POLICY_FLAG_DIRECT_KEY);
++		WARN_ON(ci->ci_flags & FSCRYPT_POLICY_FLAG_DIRECT_KEY);
+ 
+ 		err = init_essiv_generator(ci, raw_key, mode->keysize);
+ 		if (err) {
+@@ -524,9 +524,10 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 		/* Fake up a context for an unencrypted directory */
+ 		memset(&ctx, 0, sizeof(ctx));
+ 		ctx.format = FS_ENCRYPTION_CONTEXT_FORMAT_V1;
+-		ctx.contents_encryption_mode = FS_ENCRYPTION_MODE_AES_256_XTS;
+-		ctx.filenames_encryption_mode = FS_ENCRYPTION_MODE_AES_256_CTS;
+-		memset(ctx.master_key_descriptor, 0x42, FS_KEY_DESCRIPTOR_SIZE);
++		ctx.contents_encryption_mode = FSCRYPT_MODE_AES_256_XTS;
++		ctx.filenames_encryption_mode = FSCRYPT_MODE_AES_256_CTS;
++		memset(ctx.master_key_descriptor, 0x42,
++		       FSCRYPT_KEY_DESCRIPTOR_SIZE);
+ 	} else if (res != sizeof(ctx)) {
+ 		return -EINVAL;
+ 	}
+@@ -534,7 +535,7 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	if (ctx.format != FS_ENCRYPTION_CONTEXT_FORMAT_V1)
+ 		return -EINVAL;
+ 
+-	if (ctx.flags & ~FS_POLICY_FLAGS_VALID)
++	if (ctx.flags & ~FSCRYPT_POLICY_FLAGS_VALID)
+ 		return -EINVAL;
+ 
+ 	crypt_info = kmem_cache_zalloc(fscrypt_info_cachep, GFP_NOFS);
+@@ -545,7 +546,7 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
+ 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
+ 	memcpy(crypt_info->ci_master_key_descriptor, ctx.master_key_descriptor,
+-	       FS_KEY_DESCRIPTOR_SIZE);
++	       FSCRYPT_KEY_DESCRIPTOR_SIZE);
+ 	memcpy(crypt_info->ci_nonce, ctx.nonce, FS_KEY_DERIVATION_NONCE_SIZE);
+ 
+ 	mode = select_encryption_mode(crypt_info, inode);
+diff --git a/fs/crypto/policy.c b/fs/crypto/policy.c
+index bd7eaf9b3f00..1e0563cea1a5 100644
+--- a/fs/crypto/policy.c
++++ b/fs/crypto/policy.c
+@@ -22,7 +22,7 @@ static bool is_encryption_context_consistent_with_policy(
+ 				const struct fscrypt_policy *policy)
+ {
+ 	return memcmp(ctx->master_key_descriptor, policy->master_key_descriptor,
+-		      FS_KEY_DESCRIPTOR_SIZE) = 0 &&
++		      FSCRYPT_KEY_DESCRIPTOR_SIZE) = 0 &&
+ 		(ctx->flags = policy->flags) &&
+ 		(ctx->contents_encryption_mode =
+ 		 policy->contents_encryption_mode) &&
+@@ -37,13 +37,13 @@ static int create_encryption_context_from_policy(struct inode *inode,
+ 
+ 	ctx.format = FS_ENCRYPTION_CONTEXT_FORMAT_V1;
+ 	memcpy(ctx.master_key_descriptor, policy->master_key_descriptor,
+-					FS_KEY_DESCRIPTOR_SIZE);
++					FSCRYPT_KEY_DESCRIPTOR_SIZE);
+ 
+ 	if (!fscrypt_valid_enc_modes(policy->contents_encryption_mode,
+ 				     policy->filenames_encryption_mode))
+ 		return -EINVAL;
+ 
+-	if (policy->flags & ~FS_POLICY_FLAGS_VALID)
++	if (policy->flags & ~FSCRYPT_POLICY_FLAGS_VALID)
+ 		return -EINVAL;
+ 
+ 	ctx.contents_encryption_mode = policy->contents_encryption_mode;
+@@ -126,7 +126,7 @@ int fscrypt_ioctl_get_policy(struct file *filp, void __user *arg)
+ 	policy.filenames_encryption_mode = ctx.filenames_encryption_mode;
+ 	policy.flags = ctx.flags;
+ 	memcpy(policy.master_key_descriptor, ctx.master_key_descriptor,
+-				FS_KEY_DESCRIPTOR_SIZE);
++				FSCRYPT_KEY_DESCRIPTOR_SIZE);
+ 
+ 	if (copy_to_user(arg, &policy, sizeof(policy)))
+ 		return -EFAULT;
+@@ -200,7 +200,7 @@ int fscrypt_has_permitted_context(struct inode *parent, struct inode *child)
+ 	if (parent_ci && child_ci) {
+ 		return memcmp(parent_ci->ci_master_key_descriptor,
+ 			      child_ci->ci_master_key_descriptor,
+-			      FS_KEY_DESCRIPTOR_SIZE) = 0 &&
++			      FSCRYPT_KEY_DESCRIPTOR_SIZE) = 0 &&
+ 			(parent_ci->ci_data_mode = child_ci->ci_data_mode) &&
+ 			(parent_ci->ci_filename_mode =
+ 			 child_ci->ci_filename_mode) &&
+@@ -217,7 +217,7 @@ int fscrypt_has_permitted_context(struct inode *parent, struct inode *child)
+ 
+ 	return memcmp(parent_ctx.master_key_descriptor,
+ 		      child_ctx.master_key_descriptor,
+-		      FS_KEY_DESCRIPTOR_SIZE) = 0 &&
++		      FSCRYPT_KEY_DESCRIPTOR_SIZE) = 0 &&
+ 		(parent_ctx.contents_encryption_mode =
+ 		 child_ctx.contents_encryption_mode) &&
+ 		(parent_ctx.filenames_encryption_mode =
+@@ -255,7 +255,7 @@ int fscrypt_inherit_context(struct inode *parent, struct inode *child,
+ 	ctx.filenames_encryption_mode = ci->ci_filename_mode;
+ 	ctx.flags = ci->ci_flags;
+ 	memcpy(ctx.master_key_descriptor, ci->ci_master_key_descriptor,
+-	       FS_KEY_DESCRIPTOR_SIZE);
++	       FSCRYPT_KEY_DESCRIPTOR_SIZE);
+ 	get_random_bytes(ctx.nonce, FS_KEY_DERIVATION_NONCE_SIZE);
+ 	BUILD_BUG_ON(sizeof(ctx) != FSCRYPT_SET_CONTEXT_MAX_SIZE);
+ 	res = parent->i_sb->s_cop->set_context(child, &ctx,
+diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+index f9b99cc028bc..3bbc5dfbde21 100644
+--- a/include/uapi/linux/fscrypt.h
++++ b/include/uapi/linux/fscrypt.h
+@@ -53,6 +53,7 @@ struct fscrypt_key {
+ /**********************************************************************/
+ 
+ /* old names; don't add anything new here! */
++#ifndef __KERNEL__
+ #define FS_KEY_DESCRIPTOR_SIZE		FSCRYPT_KEY_DESCRIPTOR_SIZE
+ #define FS_POLICY_FLAGS_PAD_4		FSCRYPT_POLICY_FLAGS_PAD_4
+ #define FS_POLICY_FLAGS_PAD_8		FSCRYPT_POLICY_FLAGS_PAD_8
+@@ -74,5 +75,6 @@ struct fscrypt_key {
+ #define FS_KEY_DESC_PREFIX		FSCRYPT_KEY_DESC_PREFIX
+ #define FS_KEY_DESC_PREFIX_SIZE		FSCRYPT_KEY_DESC_PREFIX_SIZE
+ #define FS_MAX_KEY_SIZE			FSCRYPT_MAX_KEY_SIZE
++#endif /* !__KERNEL__ */
+ 
+ #endif /* _UAPI_LINUX_FSCRYPT_H */
 -- 
-2.17.1
+2.20.1
