@@ -1,96 +1,99 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Sun, 24 Feb 2019 06:08:20 +0000
-Subject: [PATCH v5 02/10] crypto: akcipher - check the presence of callback before the call
-Message-Id: <20190224060828.2527-3-vt@altlinux.org>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 11 Feb 2019 17:27:36 +0000
+Subject: [RFC PATCH v2 18/20] f2fs: wire up new fscrypt ioctls
+Message-Id: <20190211172738.4633-19-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190224060828.2527-1-vt@altlinux.org>
-In-Reply-To: <20190224060828.2527-1-vt@altlinux.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190211172738.4633-1-ebiggers@kernel.org>
+In-Reply-To: <20190211172738.4633-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Because with introduction of EC-RDSA and change in workings of RSA in
-regard to sign/verify, akcipher could have not all callbacks defined,
-check the presence of callbacks before calling them to increase
-robustness.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+Wire up the new ioctls for adding and removing fscrypt keys to/from the
+filesystem, and the new ioctl for retrieving v2 encryption policies.
+
+For more details see Documentation/filesystems/fscrypt.rst, as well as
+the fscrypt patches that added the implementation of these ioctls.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- include/crypto/akcipher.h | 25 ++++++++++++++++---------
- 1 file changed, 16 insertions(+), 9 deletions(-)
+ fs/f2fs/file.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-diff --git a/include/crypto/akcipher.h b/include/crypto/akcipher.h
-index 2d690494568c..f537fad1989f 100644
---- a/include/crypto/akcipher.h
-+++ b/include/crypto/akcipher.h
-@@ -268,7 +268,10 @@ static inline unsigned int crypto_akcipher_maxsize(struct crypto_akcipher *tfm)
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index ba5954f41e14..3e6da48e0530 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -2093,6 +2093,40 @@ static int f2fs_ioc_get_encryption_pwsalt(struct file *filp, unsigned long arg)
+ 	return err;
+ }
+ 
++static int f2fs_ioc_get_encryption_policy_ex(struct file *filp,
++					     unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
++}
++
++static int f2fs_ioc_add_encryption_key(struct file *filp, unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_add_key(filp, (void __user *)arg);
++}
++
++static int f2fs_ioc_remove_encryption_key(struct file *filp, unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
++}
++
++static int f2fs_ioc_get_encryption_key_status(struct file *filp,
++					      unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
++}
++
+ static int f2fs_ioc_gc(struct file *filp, unsigned long arg)
  {
- 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
- 
--	return alg->max_size(tfm);
-+	if (alg->max_size)
-+		return alg->max_size(tfm);
-+	else
-+		return 0;
- }
- 
- /**
-@@ -287,10 +290,11 @@ static inline int crypto_akcipher_encrypt(struct akcipher_request *req)
- 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
- 	struct crypto_alg *calg = tfm->base.__crt_alg;
- 	unsigned int src_len = req->src_len;
--	int ret;
-+	int ret = -ENOSYS;
- 
- 	crypto_stats_get(calg);
--	ret = alg->encrypt(req);
-+	if (alg->encrypt)
-+		ret = alg->encrypt(req);
- 	crypto_stats_akcipher_encrypt(src_len, ret, calg);
- 	return ret;
- }
-@@ -311,10 +315,11 @@ static inline int crypto_akcipher_decrypt(struct akcipher_request *req)
- 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
- 	struct crypto_alg *calg = tfm->base.__crt_alg;
- 	unsigned int src_len = req->src_len;
--	int ret;
-+	int ret = -ENOSYS;
- 
- 	crypto_stats_get(calg);
--	ret = alg->decrypt(req);
-+	if (alg->decrypt)
-+		ret = alg->decrypt(req);
- 	crypto_stats_akcipher_decrypt(src_len, ret, calg);
- 	return ret;
- }
-@@ -334,10 +339,11 @@ static inline int crypto_akcipher_sign(struct akcipher_request *req)
- 	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
- 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
- 	struct crypto_alg *calg = tfm->base.__crt_alg;
--	int ret;
-+	int ret = -ENOSYS;
- 
- 	crypto_stats_get(calg);
--	ret = alg->sign(req);
-+	if (alg->sign)
-+		ret = alg->sign(req);
- 	crypto_stats_akcipher_sign(ret, calg);
- 	return ret;
- }
-@@ -357,10 +363,11 @@ static inline int crypto_akcipher_verify(struct akcipher_request *req)
- 	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
- 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
- 	struct crypto_alg *calg = tfm->base.__crt_alg;
--	int ret;
-+	int ret = -ENOSYS;
- 
- 	crypto_stats_get(calg);
--	ret = alg->verify(req);
-+	if (alg->verify)
-+		ret = alg->verify(req);
- 	crypto_stats_akcipher_verify(ret, calg);
- 	return ret;
- }
+ 	struct inode *inode = file_inode(filp);
+@@ -2998,6 +3032,14 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		return f2fs_ioc_get_encryption_policy(filp, arg);
+ 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
+ 		return f2fs_ioc_get_encryption_pwsalt(filp, arg);
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		return f2fs_ioc_get_encryption_policy_ex(filp, arg);
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		return f2fs_ioc_add_encryption_key(filp, arg);
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		return f2fs_ioc_remove_encryption_key(filp, arg);
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		return f2fs_ioc_get_encryption_key_status(filp, arg);
+ 	case F2FS_IOC_GARBAGE_COLLECT:
+ 		return f2fs_ioc_gc(filp, arg);
+ 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
+@@ -3117,6 +3159,10 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
+ 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
+ 	case F2FS_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 	case F2FS_IOC_GARBAGE_COLLECT:
+ 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
+ 	case F2FS_IOC_WRITE_CHECKPOINT:
 -- 
-2.11.0
+2.20.1
