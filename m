@@ -1,215 +1,182 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Wed, 06 Feb 2019 10:57:20 +0000
-Subject: [PATCH v10 2/6] tpm: rename and export tpm2_digest and tpm2_algorithms
-Message-Id: <20190206105724.14495-3-roberto.sassu@huawei.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 11 Feb 2019 17:27:18 +0000
+Subject: [RFC PATCH v2 00/20] fscrypt: key management improvements
+Message-Id: <20190211172738.4633-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190206105724.14495-1-roberto.sassu@huawei.com>
-In-Reply-To: <20190206105724.14495-1-roberto.sassu@huawei.com>
-To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Rename tpm2_* to tpm_* and move the definitions to include/linux/tpm.h so
-that these can be used by other kernel subsystems (e.g. IMA).
+Hello,
 
-Also, set the length of the digest array in tpm_digest to a new constant
-named TPM_MAX_DIGEST_SIZE, equal to SHA512_DIGEST_SIZE.
+This patchset makes major improvements to how keys are added, removed,
+and derived in fscrypt, aka ext4/f2fs/ubifs encryption.  It does this by
+adding new ioctls that add and remove encryption keys directly to/from
+the filesystem, and by adding a new encryption policy version ("v2")
+where the user-provided keys are only used as input to HKDF-SHA512 and
+are identified by their cryptographic hash.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Acked-by: Mimi Zohar <zohar@linux.ibm.com>
----
- drivers/char/tpm/tpm-interface.c |  2 +-
- drivers/char/tpm/tpm.h           | 13 +------------
- drivers/char/tpm/tpm1-cmd.c      |  2 +-
- drivers/char/tpm/tpm2-cmd.c      | 18 +++++++++---------
- include/linux/tpm.h              | 19 +++++++++++++++++++
- include/linux/tpm_eventlog.h     |  9 ++-------
- 6 files changed, 33 insertions(+), 30 deletions(-)
+All new APIs and all cryptosystem changes are documented in
+Documentation/filesystems/fscrypt.rst.  Userspace can use the new key
+management ioctls with existing encrypted directories, but migrating to
+v2 encryption policies is needed for the full benefits.
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 619a2ad3bece..2a85194413e2 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -488,7 +488,7 @@ EXPORT_SYMBOL_GPL(tpm_pcr_read);
- int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, const u8 *hash)
- {
- 	int rc;
--	struct tpm2_digest *digest_list;
-+	struct tpm_digest *digest_list;
- 	int i;
- 
- 	chip = tpm_find_get_ops(chip);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 6b94306ab7c5..e961e5c5d197 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -122,17 +122,6 @@ enum tpm2_return_codes {
- 	TPM2_RC_RETRY		= 0x0922,
- };
- 
--enum tpm2_algorithms {
--	TPM2_ALG_ERROR		= 0x0000,
--	TPM2_ALG_SHA1		= 0x0004,
--	TPM2_ALG_KEYEDHASH	= 0x0008,
--	TPM2_ALG_SHA256		= 0x000B,
--	TPM2_ALG_SHA384		= 0x000C,
--	TPM2_ALG_SHA512		= 0x000D,
--	TPM2_ALG_NULL		= 0x0010,
--	TPM2_ALG_SM3_256	= 0x0012,
--};
--
- enum tpm2_command_codes {
- 	TPM2_CC_FIRST		        = 0x011F,
- 	TPM2_CC_HIERARCHY_CONTROL       = 0x0121,
-@@ -561,7 +550,7 @@ static inline u32 tpm2_rc_value(u32 rc)
- int tpm2_get_timeouts(struct tpm_chip *chip);
- int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf);
- int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
--		    struct tpm2_digest *digests);
-+		    struct tpm_digest *digests);
- int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max);
- void tpm2_flush_context_cmd(struct tpm_chip *chip, u32 handle,
- 			    unsigned int flags);
-diff --git a/drivers/char/tpm/tpm1-cmd.c b/drivers/char/tpm/tpm1-cmd.c
-index 564d599e89ea..1f8699d428be 100644
---- a/drivers/char/tpm/tpm1-cmd.c
-+++ b/drivers/char/tpm/tpm1-cmd.c
-@@ -715,7 +715,7 @@ int tpm1_auto_startup(struct tpm_chip *chip)
- 		goto out;
- 	}
- 
--	chip->allocated_banks[0] = TPM2_ALG_SHA1;
-+	chip->allocated_banks[0] = TPM_ALG_SHA1;
- 	chip->nr_allocated_banks = 1;
- 
- 	return rc;
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index 158c34721c8a..db8e05c8dad3 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -33,11 +33,11 @@ struct tpm2_hash {
- };
- 
- static struct tpm2_hash tpm2_hash_map[] = {
--	{HASH_ALGO_SHA1, TPM2_ALG_SHA1},
--	{HASH_ALGO_SHA256, TPM2_ALG_SHA256},
--	{HASH_ALGO_SHA384, TPM2_ALG_SHA384},
--	{HASH_ALGO_SHA512, TPM2_ALG_SHA512},
--	{HASH_ALGO_SM3_256, TPM2_ALG_SM3_256},
-+	{HASH_ALGO_SHA1, TPM_ALG_SHA1},
-+	{HASH_ALGO_SHA256, TPM_ALG_SHA256},
-+	{HASH_ALGO_SHA384, TPM_ALG_SHA384},
-+	{HASH_ALGO_SHA512, TPM_ALG_SHA512},
-+	{HASH_ALGO_SM3_256, TPM_ALG_SM3_256},
- };
- 
- int tpm2_get_timeouts(struct tpm_chip *chip)
-@@ -192,7 +192,7 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
- 	pcr_select[pcr_idx >> 3] = 1 << (pcr_idx & 0x7);
- 
- 	tpm_buf_append_u32(&buf, 1);
--	tpm_buf_append_u16(&buf, TPM2_ALG_SHA1);
-+	tpm_buf_append_u16(&buf, TPM_ALG_SHA1);
- 	tpm_buf_append_u8(&buf, TPM2_PCR_SELECT_MIN);
- 	tpm_buf_append(&buf, (const unsigned char *)pcr_select,
- 		       sizeof(pcr_select));
-@@ -226,7 +226,7 @@ struct tpm2_null_auth_area {
-  * Return: Same as with tpm_transmit_cmd.
-  */
- int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
--		    struct tpm2_digest *digests)
-+		    struct tpm_digest *digests)
- {
- 	struct tpm_buf buf;
- 	struct tpm2_null_auth_area auth_area;
-@@ -449,7 +449,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 
- 	/* public */
- 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
--	tpm_buf_append_u16(&buf, TPM2_ALG_KEYEDHASH);
-+	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
- 	tpm_buf_append_u16(&buf, hash);
- 
- 	/* policy */
-@@ -464,7 +464,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 	}
- 
- 	/* public parameters */
--	tpm_buf_append_u16(&buf, TPM2_ALG_NULL);
-+	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
- 	tpm_buf_append_u16(&buf, 0);
- 
- 	/* outside info */
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 13563b8c0c3a..9fe8c9816cf0 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -22,12 +22,31 @@
- #ifndef __LINUX_TPM_H__
- #define __LINUX_TPM_H__
- 
-+#include <crypto/hash_info.h>
-+
- #define TPM_DIGEST_SIZE 20	/* Max TPM v1.2 PCR size */
-+#define TPM_MAX_DIGEST_SIZE SHA512_DIGEST_SIZE
- 
- struct tpm_chip;
- struct trusted_key_payload;
- struct trusted_key_options;
- 
-+enum tpm_algorithms {
-+	TPM_ALG_ERROR		= 0x0000,
-+	TPM_ALG_SHA1		= 0x0004,
-+	TPM_ALG_KEYEDHASH	= 0x0008,
-+	TPM_ALG_SHA256		= 0x000B,
-+	TPM_ALG_SHA384		= 0x000C,
-+	TPM_ALG_SHA512		= 0x000D,
-+	TPM_ALG_NULL		= 0x0010,
-+	TPM_ALG_SM3_256		= 0x0012,
-+};
-+
-+struct tpm_digest {
-+	u16 alg_id;
-+	u8 digest[TPM_MAX_DIGEST_SIZE];
-+} __packed;
-+
- enum TPM_OPS_FLAGS {
- 	TPM_OPS_AUTO_STARTUP = BIT(0),
- };
-diff --git a/include/linux/tpm_eventlog.h b/include/linux/tpm_eventlog.h
-index f47342361e87..81519f163211 100644
---- a/include/linux/tpm_eventlog.h
-+++ b/include/linux/tpm_eventlog.h
-@@ -3,7 +3,7 @@
- #ifndef __LINUX_TPM_EVENTLOG_H__
- #define __LINUX_TPM_EVENTLOG_H__
- 
--#include <crypto/hash_info.h>
-+#include <linux/tpm.h>
- 
- #define TCG_EVENT_NAME_LEN_MAX	255
- #define MAX_TEXT_EVENT		1000	/* Max event string length */
-@@ -105,16 +105,11 @@ struct tcg_event_field {
- 	u8 event[0];
- } __packed;
- 
--struct tpm2_digest {
--	u16 alg_id;
--	u8 digest[SHA512_DIGEST_SIZE];
--} __packed;
--
- struct tcg_pcr_event2_head {
- 	u32 pcr_idx;
- 	u32 event_type;
- 	u32 count;
--	struct tpm2_digest digests[];
-+	struct tpm_digest digests[];
- } __packed;
- 
- #endif
+These changes solve four interrelated problems:
+
+(1) Providing fscrypt keys via process-subscribed keyrings is abusing
+    encryption as an OS-level access control mechanism, causing many
+    bugs where processes don't get access to the keys they need -- e.g.,
+    when a 'sudo' command or a system service needs to access encrypted
+    files.  It's also inconsistent with the filesystem/VFS "view" of
+    encrypted files which is global, so sometimes things randomly happen
+    to work anyway due to caching.  Regardless, currently almost all
+    fscrypt users actually do need global keys, so they're having to use
+    workarounds that heavily abuse the session or user keyrings, e.g.
+    Android and Chromium OS both use a systemwide "session keyring" and
+    the 'fscrypt' tool links all user keyrings into root's user keyring.
+
+(2) Currently there's no way to securely and efficiently remove a
+    fscrypt key such that not only is the original key wiped, but also
+    all files and directories protected by that key are "locked" and
+    their per-file keys wiped.  Many users want this and are using
+    'echo 2 > /proc/sys/vm/drop_caches' as a workaround, but this is
+    root-only, and also is overkill so can be a performance disaster.
+
+(3) The key derivation function (KDF) that fscrypt uses to derive
+    per-file keys is nonstandard, inflexible, and has some weaknesses
+    such as being reversible and not evenly distributing the entropy
+    from the user-provided keys.
+
+(4) fscrypt doesn't check that the correct key was supplied.  This can
+    be a security vulnerability, since it allows malicious local users
+    to associate the wrong key with files to which they have read-only
+    access, causing other users' processes to read/write the wrong data.
+
+Ultimately, the solutions to these problems all tie into each other.  By
+adding a filesystem-level encryption keyring with ioctls to add/remove
+keys to/from it, the keys are made usable filesystem-wide (solves
+problem #1).  It also becomes easy to track the inodes that were
+"unlocked" with each key, so they can be evicted when the key is removed
+(solves problem #2).  Moreover, the filesystem-level keyring is a
+natural place to store an HMAC transform keyed by each key, thus making
+it easy and efficient to switch the KDF to HKDF (solves problem #3).
+
+Finally, to check that the correct key was supplied, I use HKDF to
+derive a cryptographically secure key_identifier for each key (solves
+problem #4).  This in combination with key quotas and other careful
+precautions also makes it safe to allow non-root users to add and remove
+keys to/from the filesystem-level keyring.  Thus, all problems are
+solved without having to restrict the fscrypt API to root only.
+
+The patchset is organized as follows:
+
+- Patches 1-12 add new ioctls FS_IOC_ADD_ENCRYPTION_KEY,
+  FS_IOC_REMOVE_ENCRYPTION_KEY, and FS_IOC_GET_ENCRYPTION_KEY_STATUS.
+  Adding a key logically "unlocks" all files on the filesystem that are
+  protected by that key; removing a key "locks" them again.
+
+- Patches 13-16 add support for v2 encryption policies.
+
+- Patches 17-19 wire up the new ioctls to ext4, f2fs, and ubifs.
+
+- Patch 20 updates the fscrypt documentation for all the changes.
+
+v1 of this patchset was sent in October 2017 with title "fscrypt:
+filesystem-level keyring and v2 policy support".  This revived version
+follows the same basic design but incorporates numerous improvements,
+such as splitting keyinfo.c into multiple files for much better
+understandability, and introducing "per-mode" encryption keys to
+implement the semantics of the DIRECT_KEY encryption policy flag.
+
+This applies to the fscrypt.git tree.  You can also get it from git at:
+
+	Repository:   https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/linux.git
+	Branch:       fscrypt-key-mgmt-improvements-v2
+
+I've started writing xfstests for the new APIs.  So far they cover basic
+functionality.  They can be found at:
+
+	Repository:   https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfstests-dev.git
+	Branch:       fscrypt-key-mgmt-improvements
+
+The xfstests depend on new xfs_io commands which can be found at:
+
+	Repository:   https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfsprogs-dev.git
+	Branch:       fscrypt-key-mgmt-improvements
+
+I've also made proof-of-concept changes to the 'fscrypt' userspace
+program (https://github.com/google/fscrypt) to make it support v2
+encryption policies.  You can find these changes in git at:
+
+	Repository:   https://github.com/ebiggers/fscrypt.git
+	Branch:       fscrypt-key-mgmt-improvements
+
+To make the 'fscrypt' userspace program experimentally use v2 encryption
+policies on new encrypted directories, add the following to
+/etc/fscrypt.conf within the "options" section:
+
+	"policy_version": "2"
+
+It's also planned for Android and Chromium OS to switch to the new
+ioctls and eventually to v2 encryption policies.  Work-in-progress,
+proof-of-concept changes by Satya Tangirala for AOSP can be found at
+https://android-review.googlesource.com/q/topic:fscrypt-key-mgmt-improvements
+
+Eric Biggers (20):
+  fs, fscrypt: move uapi definitions to new header <linux/fscrypt.h>
+  fscrypt: use FSCRYPT_ prefix for uapi constants
+  fscrypt: use FSCRYPT_* definitions, not FS_*
+  fs: add ->s_master_keys to struct super_block
+  fscrypt: add ->ci_inode to fscrypt_info
+  fscrypt: refactor v1 policy key setup into keysetup_legacy.c
+  fscrypt: add FS_IOC_ADD_ENCRYPTION_KEY ioctl
+  fs/inode.c: export inode_lru_list_del()
+  fs/inode.c: rename and export dispose_list()
+  fs/dcache.c: add shrink_dcache_inode()
+  fscrypt: add FS_IOC_REMOVE_ENCRYPTION_KEY ioctl
+  fscrypt: add FS_IOC_GET_ENCRYPTION_KEY_STATUS ioctl
+  fscrypt: add an HKDF-SHA512 implementation
+  fscrypt: v2 encryption policy support
+  fscrypt: allow unprivileged users to add/remove keys for v2 policies
+  fscrypt: require that key be added when setting a v2 encryption policy
+  ext4: wire up new fscrypt ioctls
+  f2fs: wire up new fscrypt ioctls
+  ubifs: wire up new fscrypt ioctls
+  fscrypt: document the new ioctls and policy version
+
+ Documentation/filesystems/fscrypt.rst | 668 ++++++++++++++----
+ MAINTAINERS                           |   1 +
+ fs/crypto/Kconfig                     |   2 +
+ fs/crypto/Makefile                    |  10 +-
+ fs/crypto/crypto.c                    |  14 +-
+ fs/crypto/fname.c                     |   5 +-
+ fs/crypto/fscrypt_private.h           | 357 ++++++++--
+ fs/crypto/hkdf.c                      | 188 +++++
+ fs/crypto/keyinfo.c                   | 592 ----------------
+ fs/crypto/keyring.c                   | 950 ++++++++++++++++++++++++++
+ fs/crypto/keysetup.c                  | 504 ++++++++++++++
+ fs/crypto/keysetup_legacy.c           | 342 ++++++++++
+ fs/crypto/policy.c                    | 388 ++++++++---
+ fs/dcache.c                           |  32 +
+ fs/ext4/ioctl.c                       |  24 +
+ fs/f2fs/file.c                        |  46 ++
+ fs/inode.c                            |  22 +-
+ fs/super.c                            |   3 +
+ fs/ubifs/ioctl.c                      |  24 +-
+ include/linux/dcache.h                |   1 +
+ include/linux/fs.h                    |   3 +
+ include/linux/fscrypt.h               |  37 +-
+ include/uapi/linux/fs.h               |  54 +-
+ include/uapi/linux/fscrypt.h          | 163 +++++
+ 24 files changed, 3490 insertions(+), 940 deletions(-)
+ create mode 100644 fs/crypto/hkdf.c
+ delete mode 100644 fs/crypto/keyinfo.c
+ create mode 100644 fs/crypto/keyring.c
+ create mode 100644 fs/crypto/keysetup.c
+ create mode 100644 fs/crypto/keysetup_legacy.c
+ create mode 100644 include/uapi/linux/fscrypt.h
+
 -- 
-2.17.1
+2.20.1
