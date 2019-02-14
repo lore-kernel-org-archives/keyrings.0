@@ -1,7 +1,7 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 12 Feb 2019 23:12:56 +0000
+Date: Thu, 14 Feb 2019 10:52:21 +0000
 Subject: Re: [PATCH v2] [PATCH] KEYS: trusted: fix -Wvarags warning
-Message-Id: <20190212231256.GD3977@linux.intel.com>
+Message-Id: <20190214105221.GB7956@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,56 +11,60 @@ References: <0147a993d4a94426afa469a8dcc4e5d7@AcuMS.aculab.com>
  <alpine.DEB.2.21.1810241136130.3525@jsakkine-mobl1>
  <CAKwvOdn+V8iFJ_V1vr3GBm-NwxzaDbcmK+nW1q3uVky7bRsB3w@mail.gmail.com>
  <CAKwvOdnhDin6TJfBVxm6xsCh_nJeBuA7GqbgJwgLnqc3PrJGxA@mail.gmail.com>
-In-Reply-To: <CAKwvOdnhDin6TJfBVxm6xsCh_nJeBuA7GqbgJwgLnqc3PrJGxA@mail.gmail.com>
+ <20190212231256.GD3977@linux.intel.com>
+In-Reply-To: <20190212231256.GD3977@linux.intel.com>
 To: Nick Desaulniers <ndesaulniers@google.com>
 Cc: "James E.J. Bottomley" <jejb@linux.vnet.ibm.com>, zohar@linux.vnet.ibm.com, David Howells <dhowells@redhat.com>, Nathan Chancellor <natechancellor@gmail.com>, David.Laight@aculab.com, denkenz@gmail.com, jmorris@namei.org, serge@hallyn.com, keyrings@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
 
-On Mon, Feb 11, 2019 at 10:36:51AM -0800, Nick Desaulniers wrote:
-> On Mon, Oct 29, 2018 at 10:54 AM Nick Desaulniers
-> <ndesaulniers@google.com> wrote:
-> >
-> > On Wed, Oct 24, 2018 at 1:37 AM Jarkko Sakkinen
-> > <jarkko.sakkinen@linux.intel.com> wrote:
+On Wed, Feb 13, 2019 at 01:12:56AM +0200, Jarkko Sakkinen wrote:
+> On Mon, Feb 11, 2019 at 10:36:51AM -0800, Nick Desaulniers wrote:
+> > On Mon, Oct 29, 2018 at 10:54 AM Nick Desaulniers
+> > <ndesaulniers@google.com> wrote:
 > > >
-> > > On Mon, 22 Oct 2018, ndesaulniers@google.com wrote:
-> > > > Fixes the warning reported by Clang:
-> > > > security/keys/trusted.c:146:17: warning: passing an object that
-> > > > undergoes default
-> > > >      argument promotion to 'va_start' has undefined behavior [-Wvarargs]
-> > > >        va_start(argp, h3);
-> > > >                       ^
-> > > > security/keys/trusted.c:126:37: note: parameter of type 'unsigned
-> > > > char' is declared here
-> > > > unsigned char *h2, unsigned char h3, ...)
-> > > >                               ^
-> > > > Specifically, it seems that both the C90 (4.8.1.1) and C11 (7.16.1.4)
-> > > > standards explicitly call this out as undefined behavior:
+> > > On Wed, Oct 24, 2018 at 1:37 AM Jarkko Sakkinen
+> > > <jarkko.sakkinen@linux.intel.com> wrote:
 > > > >
-> > > > The parameter parmN is the identifier of the rightmost parameter in
-> > > > the variable parameter list in the function definition (the one just
-> > > > before the ...). If the parameter parmN is declared with ... or with a
-> > > > type that is not compatible with the type that results after
-> > > > application of the default argument promotions, the behavior is
-> > > > undefined.
+> > > > On Mon, 22 Oct 2018, ndesaulniers@google.com wrote:
+> > > > > Fixes the warning reported by Clang:
+> > > > > security/keys/trusted.c:146:17: warning: passing an object that
+> > > > > undergoes default
+> > > > >      argument promotion to 'va_start' has undefined behavior [-Wvarargs]
+> > > > >        va_start(argp, h3);
+> > > > >                       ^
+> > > > > security/keys/trusted.c:126:37: note: parameter of type 'unsigned
+> > > > > char' is declared here
+> > > > > unsigned char *h2, unsigned char h3, ...)
+> > > > >                               ^
+> > > > > Specifically, it seems that both the C90 (4.8.1.1) and C11 (7.16.1.4)
+> > > > > standards explicitly call this out as undefined behavior:
+> > > > >
+> > > > > The parameter parmN is the identifier of the rightmost parameter in
+> > > > > the variable parameter list in the function definition (the one just
+> > > > > before the ...). If the parameter parmN is declared with ... or with a
+> > > > > type that is not compatible with the type that results after
+> > > > > application of the default argument promotions, the behavior is
+> > > > > undefined.
+> > > > >
+> > > > > Link: https://github.com/ClangBuiltLinux/linux/issues/41
+> > > > > Link: https://www.eskimo.com/~scs/cclass/int/sx11c.html
+> > > > > Suggested-by: David Laight <David.Laight@aculab.com>
+> > > > > Suggested-by: Denis Kenzior <denkenz@gmail.com>
+> > > > > Suggested-by: James Bottomley <jejb@linux.vnet.ibm.com>
+> > > > > Suggested-by: Nathan Chancellor <natechancellor@gmail.com>
+> > > > > Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
 > > > >
-> > > > Link: https://github.com/ClangBuiltLinux/linux/issues/41
-> > > > Link: https://www.eskimo.com/~scs/cclass/int/sx11c.html
-> > > > Suggested-by: David Laight <David.Laight@aculab.com>
-> > > > Suggested-by: Denis Kenzior <denkenz@gmail.com>
-> > > > Suggested-by: James Bottomley <jejb@linux.vnet.ibm.com>
-> > > > Suggested-by: Nathan Chancellor <natechancellor@gmail.com>
-> > > > Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
+> > > > Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> > > >
+> > > > /Jarkko
 > > >
-> > > Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > >
-> > > /Jarkko
-> >
-> > Bumping the maintainers if this isn't already picked up?
+> > > Bumping the maintainers if this isn't already picked up?
+> > 
+> > James, Jarkko, or Mimi, can you please pick this up (and let me know
+> > what tree it lands in)?
 > 
-> James, Jarkko, or Mimi, can you please pick this up (and let me know
-> what tree it lands in)?
+> I can volunteer. Have not done yet v5.1 PR so it would land to that
+> release. Is this agreed?
 
-I can volunteer. Have not done yet v5.1 PR so it would land to that
-release. Is this agreed?
+http://git.infradead.org/users/jjs/linux-tpmdd.git/commit/cfb1f7ee3b35e6ba9e9e2de53a8668ced6397f88
 
 /Jarkko
