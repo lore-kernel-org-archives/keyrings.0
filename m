@@ -1,187 +1,292 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 20 Feb 2019 06:52:41 +0000
-Subject: [RFC PATCH v3 10/18] fscrypt: add FS_IOC_GET_ENCRYPTION_KEY_STATUS ioctl
-Message-Id: <20190220065249.32099-11-ebiggers@kernel.org>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 14 Feb 2019 16:58:28 +0000
+Subject: [RFC PATCH 9/9] KEYS: Namespace keyring names
+Message-Id: <155016350891.11489.1919263866882662876.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190220065249.32099-1-ebiggers@kernel.org>
-In-Reply-To: <20190220065249.32099-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+References: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Keyring names are held in a single global list that any process can pick
+from by means of keyctl_join_session_keyring (provided the keyring grants
+Search permission).  This isn't very container friendly, however.
 
-Add a new fscrypt ioctl, FS_IOC_GET_ENCRYPTION_KEY_STATUS.  Given a key
-specified by 'struct fscrypt_key_specifier' (the same way a key is
-specified for the other fscrypt key management ioctls), it returns
-status information in a 'struct fscrypt_get_key_status_arg'.
+Make the following changes:
 
-The main motivation for this is that applications need to be able to
-check whether an encrypted directory is "unlocked" or not, so that they
-can add the key if it is not, and avoid adding the key (which may
-involve prompting the user for a passphrase) if it already is.
+ (1) Make default session, process and thread keyring names begin with a
+     '.' instead of '_'.
 
-It's possible to use some workarounds such as checking whether opening a
-regular file fails with ENOKEY, or checking whether the filenames "look
-like gibberish" or not.  However, no workaround is usable in all cases.
+ (2) Keyrings whose names begin with a '.' aren't added to the list.  Such
+     keyrings are system specials.
 
-Like the other key management ioctls, the keyrings syscalls may seem at
-first to be a good fit for this.  Unfortunately, they are not.  Even if
-we exposed the keyring ID of the ->s_master_keys keyring and gave
-everyone Search permission on it (note: currently the keyrings
-permission system would also allow everyone to "invalidate" the keyring
-too), the fscrypt keys have an additional state that doesn't map cleanly
-to the keyrings API: the secret can be removed, but we can be still
-tracking the files that were using the key, and the removal can be
-re-attempted or the secret added again.
+ (3) Replace the global list with per-user_namespace lists.  A keyring adds
+     its name to the list for the user_namespace that it is currently in.
 
-After later patches, some applications will also need a way to determine
-whether a key was added by the current user vs. by some other user.
-Reserved fields are included in fscrypt_get_key_status_arg for this and
-other future extensions.
+ (4) When a user_namespace is deleted, it just removes itself from the
+     keyring.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+The global keyring_name_lock is retained for accessing the name lists.
+This allows (4) to work.
+
+This can be tested by:
+
+	# keyctl newring foo @s
+	995906392
+	# unshare -U
+	$ keyctl show
+	...
+	 995906392 --alswrv  65534 65534   \_ keyring: foo
+	...
+	$ keyctl session foo
+	Joined session keyring: 935622349
+
+As can be seen, a new session keyring was created.
+
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- fs/crypto/keyring.c          | 60 ++++++++++++++++++++++++++++++++++++
- include/linux/fscrypt.h      |  7 +++++
- include/uapi/linux/fscrypt.h | 15 +++++++++
- 3 files changed, 82 insertions(+)
 
-diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
-index da1bfe5934eb..9be3e15d7ccb 100644
---- a/fs/crypto/keyring.c
-+++ b/fs/crypto/keyring.c
-@@ -11,6 +11,7 @@
-  *
-  * - FS_IOC_ADD_ENCRYPTION_KEY: add a key
-  * - FS_IOC_REMOVE_ENCRYPTION_KEY: remove a key
-+ * - FS_IOC_GET_ENCRYPTION_KEY_STATUS: get key status
+ include/linux/key.h            |    2 +
+ include/linux/user_namespace.h |    5 ++
+ kernel/user.c                  |    3 +
+ kernel/user_namespace.c        |    7 ++-
+ security/keys/keyring.c        |   99 +++++++++++++++++-----------------------
+ 5 files changed, 57 insertions(+), 59 deletions(-)
+
+diff --git a/include/linux/key.h b/include/linux/key.h
+index dd643e131894..bfa70f3ee8e6 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -369,6 +369,7 @@ extern void key_set_timeout(struct key *, unsigned);
+ 
+ extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
+ 				 key_perm_t perm);
++extern void key_free_user_ns(struct user_namespace *);
+ 
+ /*
+  * The permissions required on a key that we're looking up.
+@@ -443,6 +444,7 @@ extern void key_init(void);
+ #define key_fsgid_changed(t)		do { } while(0)
+ #define key_init()			do { } while(0)
+ #define key_put_subject(s)		do { } while(0)
++#define key_free_user_ns(ns)		do { } while(0)
+ 
+ #endif /* CONFIG_KEYS */
+ #endif /* __KERNEL__ */
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index d6b74b91096b..90457015fa3f 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -64,6 +64,11 @@ struct user_namespace {
+ 	struct ns_common	ns;
+ 	unsigned long		flags;
+ 
++#ifdef CONFIG_KEYS
++	/* List of joinable keyrings in this namespace */
++	struct list_head	keyring_name_list;
++#endif
++
+ 	/* Register of per-UID persistent keyrings for this namespace */
+ #ifdef CONFIG_PERSISTENT_KEYRINGS
+ 	struct key		*persistent_keyring_register;
+diff --git a/kernel/user.c b/kernel/user.c
+index 0df9b1640b2a..6a6ccb99f31a 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -62,6 +62,9 @@ struct user_namespace init_user_ns = {
+ 	.ns.ops = &userns_operations,
+ #endif
+ 	.flags = USERNS_INIT_FLAGS,
++#ifdef CONFIG_KEYS
++	.keyring_name_list = LIST_HEAD_INIT(init_user_ns.keyring_name_list),
++#endif
+ #ifdef CONFIG_PERSISTENT_KEYRINGS
+ 	.persistent_keyring_register_sem  	__RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 923414a246e9..bda6e890ad88 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -133,6 +133,9 @@ int create_user_ns(struct cred *new)
+ 	ns->flags = parent_ns->flags;
+ 	mutex_unlock(&userns_state_mutex);
+ 
++#ifdef CONFIG_KEYS
++	INIT_LIST_HEAD(&ns->keyring_name_list);
++#endif
+ #ifdef CONFIG_PERSISTENT_KEYRINGS
+ 	init_rwsem(&ns->persistent_keyring_register_sem);
+ #endif
+@@ -196,9 +199,7 @@ static void free_user_ns(struct work_struct *work)
+ 			kfree(ns->projid_map.reverse);
+ 		}
+ 		retire_userns_sysctls(ns);
+-#ifdef CONFIG_PERSISTENT_KEYRINGS
+-		key_put(ns->persistent_keyring_register);
+-#endif
++		key_free_user_ns(ns);
+ 		ns_free_inum(&ns->ns);
+ 		kmem_cache_free(user_ns_cachep, ns);
+ 		dec_user_namespaces(ucounts);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 2fefdc79abff..3e537d927cbb 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -17,6 +17,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/err.h>
+ #include <linux/nsproxy.h>
++#include <linux/user_namespace.h>
+ #include <keys/keyring-type.h>
+ #include <keys/user-type.h>
+ #include <linux/assoc_array_priv.h>
+@@ -30,11 +31,6 @@
   */
+ #define KEYRING_SEARCH_MAX_DEPTH 6
  
- #include <linux/key-type.h>
-@@ -476,6 +477,65 @@ int fscrypt_ioctl_remove_key(struct file *filp, const void __user *uarg)
+-/*
+- * We keep all named keyrings in a hash to speed looking them up.
+- */
+-#define KEYRING_NAME_HASH_SIZE	(1 << 5)
+-
+ /*
+  * We mark pointers we pass to the associative array with bit 1 set if
+  * they're keyrings and clear otherwise.
+@@ -57,17 +53,20 @@ static inline void *keyring_key_to_ptr(struct key *key)
+ 	return key;
  }
- EXPORT_SYMBOL_GPL(fscrypt_ioctl_remove_key);
  
+-static struct list_head	keyring_name_hash[KEYRING_NAME_HASH_SIZE];
+ static DEFINE_RWLOCK(keyring_name_lock);
+ 
+-static inline unsigned keyring_hash(const char *desc)
 +/*
-+ * Retrieve the status of an fscrypt master encryption key.
-+ *
-+ * We set ->status to indicate whether the key is absent, present, or
-+ * incompletely removed.  "Incompletely removed" means that the master key
-+ * secret has been removed, but some files which had been unlocked with it are
-+ * still in use.  This field allows applications to easily determine the state
-+ * of an encrypted directory without using a hack such as trying to open a
-+ * regular file in it (which can confuse the "incompletely removed" state with
-+ * absent or present).
++ * Clean up the bits of user_namespace that belong to us.
 + */
-+int fscrypt_ioctl_get_key_status(struct file *filp, void __user *uarg)
-+{
-+	struct super_block *sb = file_inode(filp)->i_sb;
-+	struct fscrypt_get_key_status_arg arg;
-+	struct key *key;
-+	struct fscrypt_master_key *mk;
-+	int err;
-+
-+	if (copy_from_user(&arg, uarg, sizeof(arg)))
-+		return -EFAULT;
-+
-+	if (!valid_key_spec(&arg.key_spec))
-+		return -EINVAL;
-+
-+	if (memchr_inv(arg.__reserved, 0, sizeof(arg.__reserved)))
-+		return -EINVAL;
-+
-+	memset(arg.__out_reserved, 0, sizeof(arg.__out_reserved));
-+
-+	key = fscrypt_find_master_key(sb, &arg.key_spec);
-+	if (IS_ERR(key)) {
-+		if (key != ERR_PTR(-ENOKEY))
-+			return PTR_ERR(key);
-+		arg.status = FSCRYPT_KEY_STATUS_ABSENT;
-+		err = 0;
-+		goto out;
-+	}
-+	mk = key->payload.data[0];
-+	down_read(&key->sem);
-+
-+	if (!is_master_key_secret_present(&mk->mk_secret)) {
-+		arg.status = FSCRYPT_KEY_STATUS_INCOMPLETELY_REMOVED;
-+		err = 0;
-+		goto out_release_key;
-+	}
-+
-+	arg.status = FSCRYPT_KEY_STATUS_PRESENT;
-+	err = 0;
-+out_release_key:
-+	up_read(&key->sem);
-+	key_put(key);
-+out:
-+	if (!err && copy_to_user(uarg, &arg, sizeof(arg)))
-+		err = -EFAULT;
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(fscrypt_ioctl_get_key_status);
-+
- int __init fscrypt_init_keyring(void)
++void key_free_user_ns(struct user_namespace *ns)
  {
- 	return register_key_type(&key_type_fscrypt);
-diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
-index c4fff46ce847..43ef149f5c05 100644
---- a/include/linux/fscrypt.h
-+++ b/include/linux/fscrypt.h
-@@ -115,6 +115,7 @@ extern int fscrypt_inherit_context(struct inode *, struct inode *,
- /* keyring.c */
- extern int fscrypt_ioctl_add_key(struct file *filp, void __user *arg);
- extern int fscrypt_ioctl_remove_key(struct file *filp, const void __user *arg);
-+extern int fscrypt_ioctl_get_key_status(struct file *filp, void __user *arg);
+-	unsigned bucket = 0;
+-
+-	for (; *desc; desc++)
+-		bucket += (unsigned char)*desc;
++	write_lock(&keyring_name_lock);
++	list_del_init(&ns->keyring_name_list);
++	write_unlock(&keyring_name_lock);
  
- /* keysetup.c */
- extern int fscrypt_get_encryption_info(struct inode *);
-@@ -329,6 +330,12 @@ static inline int fscrypt_ioctl_remove_key(struct file *filp,
- 	return -EOPNOTSUPP;
+-	return bucket & (KEYRING_NAME_HASH_SIZE - 1);
++#ifdef CONFIG_PERSISTENT_KEYRINGS
++	key_put(ns->persistent_keyring_register);
++#endif
  }
  
-+static inline int fscrypt_ioctl_get_key_status(struct file *filp,
-+					       void __user *arg)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- /* keysetup.c */
- static inline int fscrypt_get_encryption_info(struct inode *inode)
+ /*
+@@ -106,23 +105,17 @@ static DECLARE_RWSEM(keyring_serialise_link_sem);
+ 
+ /*
+  * Publish the name of a keyring so that it can be found by name (if it has
+- * one).
++ * one and it doesn't begin with a dot).
+  */
+ static void keyring_publish_name(struct key *keyring)
  {
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-index 3302a407131e..042e70a4ff7e 100644
---- a/include/uapi/linux/fscrypt.h
-+++ b/include/uapi/linux/fscrypt.h
-@@ -71,11 +71,26 @@ struct fscrypt_remove_key_arg {
- 	__u32 __reserved[6];
- };
+-	int bucket;
+-
+-	if (keyring->description) {
+-		bucket = keyring_hash(keyring->description);
++	struct user_namespace *ns = current_user_ns();
  
-+/* Struct passed to FS_IOC_GET_ENCRYPTION_KEY_STATUS */
-+struct fscrypt_get_key_status_arg {
-+	/* input */
-+	struct fscrypt_key_specifier key_spec;
-+	__u32 __reserved[6];
++	if (keyring->description &&
++	    keyring->description[0] &&
++	    keyring->description[0] != '.') {
+ 		write_lock(&keyring_name_lock);
+-
+-		if (!keyring_name_hash[bucket].next)
+-			INIT_LIST_HEAD(&keyring_name_hash[bucket]);
+-
+-		list_add_tail(&keyring->name_link,
+-			      &keyring_name_hash[bucket]);
+-
++		list_add_tail(&keyring->name_link, &ns->keyring_name_list);
+ 		write_unlock(&keyring_name_lock);
+ 	}
+ }
+@@ -1140,50 +1133,44 @@ key_ref_t find_key_to_update(key_ref_t keyring_ref,
+  */
+ struct key *find_keyring_by_name(const char *name, bool uid_keyring)
+ {
++	struct user_namespace *ns = current_user_ns();
+ 	struct key *keyring;
+-	int bucket;
+ 
+ 	if (!name)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	bucket = keyring_hash(name);
+-
+ 	read_lock(&keyring_name_lock);
+ 
+-	if (keyring_name_hash[bucket].next) {
+-		/* search this hash bucket for a keyring with a matching name
+-		 * that's readable and that hasn't been revoked */
+-		list_for_each_entry(keyring,
+-				    &keyring_name_hash[bucket],
+-				    name_link
+-				    ) {
+-			if (!kuid_has_mapping(current_user_ns(), keyring->user->uid))
+-				continue;
+-
+-			if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
+-				continue;
++	/* Search this hash bucket for a keyring with a matching name that
++	 * grants Search permission and that hasn't been revoked
++	 */
++	list_for_each_entry(keyring, &ns->keyring_name_list, name_link) {
++		if (!kuid_has_mapping(ns, keyring->user->uid))
++			continue;
+ 
+-			if (strcmp(keyring->description, name) != 0)
+-				continue;
++		if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
++			continue;
+ 
+-			if (uid_keyring) {
+-				if (!test_bit(KEY_FLAG_UID_KEYRING,
+-					      &keyring->flags))
+-					continue;
+-			} else {
+-				if (key_permission(make_key_ref(keyring, 0),
+-						   KEY_NEED_SEARCH) < 0)
+-					continue;
+-			}
++		if (strcmp(keyring->description, name) != 0)
++			continue;
+ 
+-			/* we've got a match but we might end up racing with
+-			 * key_cleanup() if the keyring is currently 'dead'
+-			 * (ie. it has a zero usage count) */
+-			if (!refcount_inc_not_zero(&keyring->usage))
++		if (uid_keyring) {
++			if (!test_bit(KEY_FLAG_UID_KEYRING,
++				      &keyring->flags))
++				continue;
++		} else {
++			if (key_permission(make_key_ref(keyring, 0),
++					   KEY_NEED_SEARCH) < 0)
+ 				continue;
+-			keyring->last_used_at = ktime_get_real_seconds();
+-			goto out;
+ 		}
 +
-+	/* output */
-+#define FSCRYPT_KEY_STATUS_ABSENT		1
-+#define FSCRYPT_KEY_STATUS_PRESENT		2
-+#define FSCRYPT_KEY_STATUS_INCOMPLETELY_REMOVED	3
-+	__u32 status;
-+	__u32 __out_reserved[15];
-+};
-+
- #define FS_IOC_SET_ENCRYPTION_POLICY	  _IOR('f', 19, struct fscrypt_policy)
- #define FS_IOC_GET_ENCRYPTION_PWSALT	  _IOW('f', 20, __u8[16])
- #define FS_IOC_GET_ENCRYPTION_POLICY	  _IOW('f', 21, struct fscrypt_policy)
- #define FS_IOC_ADD_ENCRYPTION_KEY	 _IOWR('f', 23, struct fscrypt_add_key_arg)
- #define FS_IOC_REMOVE_ENCRYPTION_KEY	  _IOW('f', 24, struct fscrypt_remove_key_arg)
-+#define FS_IOC_GET_ENCRYPTION_KEY_STATUS _IOWR('f', 25, struct fscrypt_get_key_status_arg)
++		/* we've got a match but we might end up racing with
++		 * key_cleanup() if the keyring is currently 'dead'
++		 * (ie. it has a zero usage count) */
++		if (!refcount_inc_not_zero(&keyring->usage))
++			continue;
++		keyring->last_used_at = ktime_get_real_seconds();
++		goto out;
+ 	}
  
- /**********************************************************************/
- 
--- 
-2.20.1
+ 	keyring = ERR_PTR(-ENOKEY);
