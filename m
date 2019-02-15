@@ -1,35 +1,97 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Thu, 28 Feb 2019 10:37:15 +0000
-Subject: Re: [RFC PATCH 1/4] X.509: Parse public key parameters from x509 for akcipher
-Message-Id: <20190228103715.ijvimcfysiguiwty@gondor.apana.org.au>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 15 Feb 2019 16:08:06 +0000
+Subject: [RFC PATCH 06/27] containers, vfs: Allow syscall dirfd arguments to take a container fd
+Message-Id: <155024688620.21651.16013251077091180213.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190209214240.56gq7ivn3pw3bssf@altlinux.org>
- <20190210184628.yupsxgjlaicwbxg6@altlinux.org>
- <20190219043732.x3sbwzqlz4ikntxo@gondor.apana.org.au>
- <20190224064840.hii4ccjksjdnewae@altlinux.org>
- <20190228061444.3escryzoit3idtwg@gondor.apana.org.au>
- <20190228070449.gjwoq4c2b3x5grie@altlinux.org>
- <20190228075141.s6mftb44yuylbzys@gondor.apana.org.au>
- <20190228082801.2aofw23r2shzwy4n@altlinux.org>
- <20190228090125.6n62v4oxpwl5yzv4@gondor.apana.org.au>
- <20190228103337.sbjujn27qkkgxqt2@altlinux.org>
-In-Reply-To: <20190228103337.sbjujn27qkkgxqt2@altlinux.org>
-To: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
+Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2019 at 01:33:37PM +0300, Vitaly Chikunov wrote:
->
-> To make the same for set_{pub,priv}_key it will require patching RSA
-> drivers anyway, since length of the key is stored just once as keylen
-> argument.
+Some filesystem system calls, such as mkdirat(), take a 'directory fd' to
+specify the pathwalk origin.  This takes either AT_FDCWD or a file
+descriptor that refers to an open directory.
 
-No we don't need to use the same format for different algorithms.
-RSA should stay as is.
+Make it possible to supply a container fd, as obtained from
+container_create(), instead thereby specifying the container's root as the
+origin.  This performs the filesystem operation into the container's mount
+namespace.  For example:
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+	int cfd = container_create("fred", CONTAINER_NEW_MNT_NS, 0);
+	mkdirat(cfd, "/fred", 0755);
+
+A better way to do this might be to temporarily override current->fs and
+current->nsproxy, but this requires splitting those fields so that procfs
+doesn't see the override.
+
+A sequence number and lock are available to protect the root pointer in
+case container_chroot() and/or container_pivot_root() are implemented.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/namei.c |   45 ++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 34 insertions(+), 11 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index a85deb55d0c9..4932b5467285 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2232,20 +2232,43 @@ static const char *path_init(struct nameidata *nd, unsigned flags)
+ 		if (!f.file)
+ 			return ERR_PTR(-EBADF);
+ 
+-		dentry = f.file->f_path.dentry;
++		if (is_container_file(f.file)) {
++			struct container *c = f.file->private_data;
++			unsigned seq;
+ 
+-		if (*s && unlikely(!d_can_lookup(dentry))) {
+-			fdput(f);
+-			return ERR_PTR(-ENOTDIR);
+-		}
++			if (!*s)
++				return ERR_PTR(-EINVAL);
+ 
+-		nd->path = f.file->f_path;
+-		if (flags & LOOKUP_RCU) {
+-			nd->inode = nd->path.dentry->d_inode;
+-			nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
++			if (flags & LOOKUP_RCU) {
++				do {
++					seq = read_seqcount_begin(&c->seq);
++					nd->path = c->root;
++					nd->inode = nd->path.dentry->d_inode;
++					nd->seq = __read_seqcount_begin(&nd->path.dentry->d_seq);
++				} while (read_seqcount_retry(&c->seq, seq));
++			} else {
++				spin_lock(&c->lock);
++				nd->path = c->root;
++				path_get(&nd->path);
++				spin_unlock(&c->lock);
++				nd->inode = nd->path.dentry->d_inode;
++			}
+ 		} else {
+-			path_get(&nd->path);
+-			nd->inode = nd->path.dentry->d_inode;
++			dentry = f.file->f_path.dentry;
++
++			if (*s && unlikely(!d_can_lookup(dentry))) {
++				fdput(f);
++				return ERR_PTR(-ENOTDIR);
++			}
++
++			nd->path = f.file->f_path;
++			if (flags & LOOKUP_RCU) {
++				nd->inode = nd->path.dentry->d_inode;
++				nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
++			} else {
++				path_get(&nd->path);
++				nd->inode = nd->path.dentry->d_inode;
++			}
+ 		}
+ 		fdput(f);
+ 		return s;
