@@ -1,187 +1,162 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 11 Feb 2019 17:27:30 +0000
-Subject: [RFC PATCH v2 12/20] fscrypt: add FS_IOC_GET_ENCRYPTION_KEY_STATUS ioctl
-Message-Id: <20190211172738.4633-13-ebiggers@kernel.org>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 15 Feb 2019 16:07:41 +0000
+Subject: [RFC PATCH 03/27] containers: Provide /proc/containers
+Message-Id: <155024686175.21651.6141317051029384847.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190211172738.4633-1-ebiggers@kernel.org>
-In-Reply-To: <20190211172738.4633-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
+Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Provide /proc/containers to view the current container and all the
+containers created within it:
 
-Add a new fscrypt ioctl, FS_IOC_GET_ENCRYPTION_KEY_STATUS.  Given a key
-specified by 'struct fscrypt_key_specifier' (the same way a key is
-specified for the other fscrypt key management ioctls), it returns
-status information in a 'struct fscrypt_get_key_status_arg'.
+	# ./foo-container
+	NAME                     USE FL OWNER GROUP
+	<current>                141 01 0     0
+	foo-test                   1 04 0     0
 
-The main motivation for this is that applications need to be able to
-check whether an encrypted directory is "unlocked" or not, so that they
-can add the key if it is not, and avoid adding the key (which may
-involve prompting the user for a passphrase) if it already is.
+I'm not sure whether this is really desirable, though.
 
-It's possible to use some workarounds such as checking whether opening a
-regular file fails with ENOKEY, or checking whether the filenames "look
-like gibberish" or not.  However, no workaround is usable in all cases.
-
-Like the other key management ioctls, the keyrings syscalls may seem at
-first to be a good fit for this.  Unfortunately, they are not.  Even if
-we exposed the keyring ID of the ->s_master_keys keyring and gave
-everyone Search permission on it (note: currently the keyrings
-permission system would also allow everyone to "invalidate" the keyring
-too), the fscrypt keys have an additional state that doesn't map cleanly
-to the keyrings API: the secret can be removed, but we can be still
-tracking the files that were using the key, and the removal can be
-re-attempted or the secret added again.
-
-After later patches, some applications will also need a way to determine
-whether a key was added by the current user vs. by some other user.
-Reserved fields are included in fscrypt_get_key_status_arg for this and
-other future extensions.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- fs/crypto/keyring.c          | 60 ++++++++++++++++++++++++++++++++++++
- include/linux/fscrypt.h      |  7 +++++
- include/uapi/linux/fscrypt.h | 15 +++++++++
- 3 files changed, 82 insertions(+)
 
-diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
-index 82d272c20969..73be8bda49bd 100644
---- a/fs/crypto/keyring.c
-+++ b/fs/crypto/keyring.c
-@@ -11,6 +11,7 @@
-  *
-  * - FS_IOC_ADD_ENCRYPTION_KEY: add a key
-  * - FS_IOC_REMOVE_ENCRYPTION_KEY: remove a key
-+ * - FS_IOC_GET_ENCRYPTION_KEY_STATUS: get key status
-  */
+ kernel/container.c |  110 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 110 insertions(+)
+
+diff --git a/kernel/container.c b/kernel/container.c
+index ca4012632cfa..1d2cb1c1e9b1 100644
+--- a/kernel/container.c
++++ b/kernel/container.c
+@@ -20,6 +20,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/printk.h>
+ #include <linux/security.h>
++#include <linux/proc_fs.h>
+ #include "namespaces.h"
  
- #include <linux/key-type.h>
-@@ -515,6 +516,65 @@ int fscrypt_ioctl_remove_key(struct file *filp, const void __user *uarg)
- }
- EXPORT_SYMBOL_GPL(fscrypt_ioctl_remove_key);
- 
-+/*
-+ * Retrieve the status of an fscrypt master encryption key.
-+ *
-+ * We set ->status to indicate whether the key is absent, present, or
-+ * incompletely removed.  "Incompletely removed" means that the master key
-+ * secret has been removed, but some files which had been unlocked with it are
-+ * still in use.  This field allows applications to easily determine the state
-+ * of an encrypted directory without using a hack such as trying to open a
-+ * regular file in it (which can confuse the "incompletely removed" state with
-+ * absent or present).
-+ */
-+int fscrypt_ioctl_get_key_status(struct file *filp, void __user *uarg)
-+{
-+	struct super_block *sb = file_inode(filp)->i_sb;
-+	struct fscrypt_get_key_status_arg arg;
-+	struct key *key;
-+	struct fscrypt_master_key *mk;
-+	int err;
-+
-+	if (copy_from_user(&arg, uarg, sizeof(arg)))
-+		return -EFAULT;
-+
-+	if (memchr_inv(arg.__reserved, 0, sizeof(arg.__reserved)))
-+		return -EINVAL;
-+
-+	if (!valid_key_spec(&arg.key_spec))
-+		return -EINVAL;
-+
-+	memset(arg.__out_reserved, 0, sizeof(arg.__out_reserved));
-+
-+	key = fscrypt_find_master_key(sb, &arg.key_spec);
-+	if (IS_ERR(key)) {
-+		if (key != ERR_PTR(-ENOKEY))
-+			return PTR_ERR(key);
-+		arg.status = FSCRYPT_KEY_STATUS_ABSENT;
-+		err = 0;
-+		goto out;
-+	}
-+	mk = key->payload.data[0];
-+	down_read(&key->sem);
-+
-+	if (!is_master_key_secret_present(&mk->mk_secret)) {
-+		arg.status = FSCRYPT_KEY_STATUS_INCOMPLETELY_REMOVED;
-+		err = 0;
-+		goto out_release_key;
-+	}
-+
-+	arg.status = FSCRYPT_KEY_STATUS_PRESENT;
-+	err = 0;
-+out_release_key:
-+	up_read(&key->sem);
-+	key_put(key);
-+out:
-+	if (!err && copy_to_user(uarg, &arg, sizeof(arg)))
-+		err = -EFAULT;
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(fscrypt_ioctl_get_key_status);
-+
- int __init fscrypt_init_keyring(void)
- {
- 	return register_key_type(&key_type_fscrypt);
-diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
-index a8fabae9a5fe..dace3fd1bf19 100644
---- a/include/linux/fscrypt.h
-+++ b/include/linux/fscrypt.h
-@@ -115,6 +115,7 @@ extern int fscrypt_inherit_context(struct inode *, struct inode *,
- /* keyring.c */
- extern int fscrypt_ioctl_add_key(struct file *filp, void __user *arg);
- extern int fscrypt_ioctl_remove_key(struct file *filp, const void __user *arg);
-+extern int fscrypt_ioctl_get_key_status(struct file *filp, void __user *arg);
- 
- /* keysetup.c */
- extern int fscrypt_get_encryption_info(struct inode *);
-@@ -339,6 +340,12 @@ static inline void fscrypt_put_encryption_info(struct inode *inode)
- 	return;
+ struct container init_container = {
+@@ -69,6 +70,108 @@ void put_container(struct container *c)
+ 	}
  }
  
-+static inline int fscrypt_ioctl_get_key_status(struct file *filp,
-+					       void __user *arg)
++static void *container_proc_start(struct seq_file *m, loff_t *_pos)
 +{
-+	return -EOPNOTSUPP;
++	struct container *c = m->private;
++	struct list_head *p;
++	loff_t pos = *_pos;
++
++	spin_lock(&c->lock);
++
++	if (pos <= 1) {
++		*_pos = 1;
++		return (void *)1UL; /* Banner on first line */
++	}
++
++	if (pos = 2)
++		return m->private; /* Current container on second line */
++
++	/* Subordinate containers thereafter */
++	p = c->children.next;
++	pos--;
++	for (pos--; pos > 0 && p != &c->children; pos--) {
++		p = p->next;
++	}
++
++	if (p = &c->children)
++		return NULL;
++	return container_of(p, struct container, child_link);
 +}
 +
-  /* fname.c */
- static inline int fscrypt_setup_filename(struct inode *dir,
- 					 const struct qstr *iname,
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-index 3302a407131e..042e70a4ff7e 100644
---- a/include/uapi/linux/fscrypt.h
-+++ b/include/uapi/linux/fscrypt.h
-@@ -71,11 +71,26 @@ struct fscrypt_remove_key_arg {
- 	__u32 __reserved[6];
- };
- 
-+/* Struct passed to FS_IOC_GET_ENCRYPTION_KEY_STATUS */
-+struct fscrypt_get_key_status_arg {
-+	/* input */
-+	struct fscrypt_key_specifier key_spec;
-+	__u32 __reserved[6];
++static void *container_proc_next(struct seq_file *m, void *v, loff_t *_pos)
++{
++	struct container *c = m->private, *vc = v;
++	struct list_head *p;
++	loff_t pos = *_pos;
 +
-+	/* output */
-+#define FSCRYPT_KEY_STATUS_ABSENT		1
-+#define FSCRYPT_KEY_STATUS_PRESENT		2
-+#define FSCRYPT_KEY_STATUS_INCOMPLETELY_REMOVED	3
-+	__u32 status;
-+	__u32 __out_reserved[15];
++	pos++;
++	*_pos = pos;
++	if (pos = 2)
++		return c; /* Current container on second line */
++
++	if (pos = 3)
++		p = &c->children;
++	else
++		p = &vc->child_link;
++	p = p->next;
++	if (p = &c->children)
++		return NULL;
++	return container_of(p, struct container, child_link);
++}
++
++static void container_proc_stop(struct seq_file *m, void *v)
++{
++	struct container *c = m->private;
++
++	spin_unlock(&c->lock);
++}
++
++static int container_proc_show(struct seq_file *m, void *v)
++{
++	struct user_namespace *uns = current_user_ns();
++	struct container *c = v;
++	const char *name;
++
++	if (v = (void *)1UL) {
++		seq_puts(m, "NAME                               ID USE FL OWNER GROUP\n");
++		return 0;
++	}
++
++	name = (c = m->private) ? "<current>" : c->name;
++	seq_printf(m, "%-24s %12llu %3u %02lx %5d %5d\n",
++		   name, c->id, refcount_read(&c->usage), c->flags,
++		   from_kuid_munged(uns, c->cred->uid),
++		   from_kgid_munged(uns, c->cred->gid));
++
++	return 0;
++}
++
++static const struct seq_operations container_proc_ops = {
++	.start	= container_proc_start,
++	.next	= container_proc_next,
++	.stop	= container_proc_stop,
++	.show	= container_proc_show,
 +};
 +
- #define FS_IOC_SET_ENCRYPTION_POLICY	  _IOR('f', 19, struct fscrypt_policy)
- #define FS_IOC_GET_ENCRYPTION_PWSALT	  _IOW('f', 20, __u8[16])
- #define FS_IOC_GET_ENCRYPTION_POLICY	  _IOW('f', 21, struct fscrypt_policy)
- #define FS_IOC_ADD_ENCRYPTION_KEY	 _IOWR('f', 23, struct fscrypt_add_key_arg)
- #define FS_IOC_REMOVE_ENCRYPTION_KEY	  _IOW('f', 24, struct fscrypt_remove_key_arg)
-+#define FS_IOC_GET_ENCRYPTION_KEY_STATUS _IOWR('f', 25, struct fscrypt_get_key_status_arg)
++static int container_proc_open(struct inode *inode, struct file *file)
++{
++	struct seq_file *m;
++	int ret = seq_open(file, &container_proc_ops);
++
++	if (ret = 0) {
++		m = file->private_data;
++		m->private = current->container;
++	}
++	return ret;
++}
++
++static const struct file_operations container_proc_fops = {
++	.open		= container_proc_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release,
++};
++
+ /*
+  * Allow the user to poll for the container dying.
+  */
+@@ -345,4 +448,11 @@ SYSCALL_DEFINE5(container_create,
+ 	return fd;
+ }
  
- /**********************************************************************/
- 
--- 
-2.20.1
++static int __init init_container_fs(void)
++{
++	proc_create("containers", 0, NULL, &container_proc_fops);
++	return 0;
++}
++fs_initcall(init_container_fs);
++
+ #endif /* CONFIG_CONTAINERS */
