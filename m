@@ -1,269 +1,114 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 15 Feb 2019 16:10:45 +0000
-Subject: [RFC PATCH 20/27] container, keys: Add a container keyring
-Message-Id: <155024704568.21651.12664692449080180818.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Fri, 15 Feb 2019 21:46:09 +0000
+Subject: Re: [RFC PATCH 20/27] container, keys: Add a container keyring
+Message-Id: <20190215214608.GC12909@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+ <155024704568.21651.12664692449080180818.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155024704568.21651.12664692449080180818.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, linux-kernel@vger.kernel.org, linux-fscrypt@vger.kernel.org
 
-Allow a container manager to attach keyrings to a container such that the
-keys contained therein are searched by request_key() in addition to a
-process's normal keyrings.  This allows the manager to install keys to
-support filesystem decryption and authentication for superblocks inside the
-container without requiring any active role being played by processes
-inside of the container.
+[+Cc linux-fscrypt]
 
-So, for example, a container could be created, a keyring added and then an
-rxrpc-type key added to the keyring such that a container's root filesystem
-and data filesystems can be brought in from secure AFS volumes.  It would
-also be possible to put filesystem crypto keys in there such that Ext4
-encrypted files could be decrypted - without the need to share the key
-between other containers or let the key leak into the container.
+Hi David,
 
-Because the container manager retains control of the keyring, it can update
-the contained keys as necessary to prevent expiration.  Note that the
-keyring and keys in the keyring must grant Search permission directly to
-the container object.
+On Fri, Feb 15, 2019 at 04:10:45PM +0000, David Howells wrote:
+> Allow a container manager to attach keyrings to a container such that the
+> keys contained therein are searched by request_key() in addition to a
+> process's normal keyrings.  This allows the manager to install keys to
+> support filesystem decryption and authentication for superblocks inside the
+> container without requiring any active role being played by processes
+> inside of the container.
+> 
+> So, for example, a container could be created, a keyring added and then an
+> rxrpc-type key added to the keyring such that a container's root filesystem
+> and data filesystems can be brought in from secure AFS volumes.  It would
+> also be possible to put filesystem crypto keys in there such that Ext4
+> encrypted files could be decrypted - without the need to share the key
+> between other containers or let the key leak into the container.
 
-[!] Note that NFS, CIFS and other filesystems wishing to make use of this
-    would have to get the token to use by calling request_key() on entry to
-    its VFS methods and retain it in its file struct.
+For fscrypt (aka ext4/f2fs/ubifs encryption), rather than a "container keyring",
+I think it's much better served by ioctls to add/remove keys directly to/from
+the filesystem, as I'm proposing here:
+https://patchwork.kernel.org/cover/10806425/.  My proposed API implements all
+the semantics people actually need for fscrypt, including:
 
-[!] Note that request_key() called from userspace does not look in the
-    container keyring.
+- Making the filesystem's ability to use keys match the locked/unlocked state of
+  encrypted files, which is a filesystem-wide thing not a per-process thing.
 
-[!] Note that keys are now tagged with a tag that identifies the network
-    namespace (or other domain of operation).  This allows keys to be
-    provided in one keyring that allow the same thing but in different
-    network namespaces.
+- Allowing a key to be removed and wiped, *and* the corresponding encrypted
+  files locked efficiently.
 
-The keyring should be created by the container manager and then set using:
+- Still permitting non-root users to use fscrypt, subject to limitations; e.g.
+  keys are identified by cryptographic hash, users are limited by the keys
+  quotas, and a user can't directly remove a key another user has added or
+  create a new encrypted directory without proving they know/knew the key.
 
-	keyctl(KEYCTL_SET_CONTAINER_KEYRING, int containerfd,
-	       key_serial_t keyring);
+A "container keyring" would only address the first problem.
 
-With this, request_key() inside the kernel searches:
+I don't think it's the right semantics to have the kernel's ability to use
+fscrypt keys be conditional on which process is doing the filesystem access --
+even if the processes are divided into different sessions, users, or containers.
+Doing so may sound good, but it plays into common misconceptions about the
+purpose of storage encryption.  It would actually be an OS-level access control
+policy that has nothing to do with the encryption itself.  The kernel already
+has a wide variety of file access control mechanisms to choose from: file mode
+bits, ACLs, SELinux, mount namespaces, etc...
 
-	thread-keyring, process-keyring, session-keyring, container-keyring
+The purpose of fscrypt is actually very different.  It's designed to protect
+data locally stored on-disk from two classes of attackers: (1) attackers who can
+read directly from disk, and (2) attackers who fully compromise the system
+on-line including all memory, provided that the key isn't currently added.
 
-[!] It may be worth setting a flag on a mountpoint to indicate whether to
-    search the container keyring first or last.
+In these cases, the notion of a "container" is meaningless as the operating
+system is already out of the picture...
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+I also don't see much benefit to namespacing fscrypt keys for container
+isolation purposes.  If it's at all computationally feasible for keys to
+collide, then the encryption has already been massively screwed up.
 
- include/linux/container.h    |    1 +
- include/uapi/linux/keyctl.h  |    1 +
- kernel/container.c           |    1 +
- samples/vfs/test-container.c |   14 +++++++++++++
- security/keys/compat.c       |    2 ++
- security/keys/container.c    |   44 ++++++++++++++++++++++++++++++++++++++++++
- security/keys/internal.h     |    1 +
- security/keys/keyctl.c       |    2 ++
- security/keys/process_keys.c |   23 ++++++++++++++++++++++
- 9 files changed, 89 insertions(+)
+Also, I don't think that fscrypt should have a de-facto dependency on
+CONFIG_CONTAINERS in order to have sane semantics.  fscrypt is used on many
+systems where containers support would be unnecessary bloat and attack surface.
 
-diff --git a/include/linux/container.h b/include/linux/container.h
-index a8cac800ce75..7424f7fb5560 100644
---- a/include/linux/container.h
-+++ b/include/linux/container.h
-@@ -33,6 +33,7 @@ struct container {
- 	refcount_t		usage;
- 	int			exit_code;	/* The exit code of 'init' */
- 	const struct cred	*cred;		/* Creds for this container, including userns */
-+	struct key		*keyring;	/* Externally managed container keyring */
- 	struct nsproxy		*ns;		/* This container's namespaces */
- 	struct path		root;		/* The root of the container's fs namespace */
- 	struct task_struct	*init;		/* The 'init' task for this container */
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index 5b792303a05b..a2afb4512f34 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -72,6 +72,7 @@
- #define KEYCTL_QUERY_REQUEST_KEY_AUTH	32	/* Query a request_key_auth key */
- #define KEYCTL_MOVE			33	/* Move keys between keyrings */
- #define KEYCTL_FIND_LRU			34	/* Find the least-recently used key in a keyring */
-+#define KEYCTL_SET_CONTAINER_KEYRING	35	/* Attach a keyring to a container */
- 
- /* keyctl structures */
- struct keyctl_dh_params {
-diff --git a/kernel/container.c b/kernel/container.c
-index 33e41fe5050b..f2706a45f364 100644
---- a/kernel/container.c
-+++ b/kernel/container.c
-@@ -71,6 +71,7 @@ void put_container(struct container *c)
- 
- 		if (c->cred)
- 			put_cred(c->cred);
-+		key_put(c->keyring);
- 		security_container_free(c);
- 		kfree(c);
- 		c = parent;
-diff --git a/samples/vfs/test-container.c b/samples/vfs/test-container.c
-index 7dc9071399b2..e24048fdbe33 100644
---- a/samples/vfs/test-container.c
-+++ b/samples/vfs/test-container.c
-@@ -21,6 +21,7 @@
- #include <keyutils.h>
- 
- #define KEYCTL_CONTAINER_INTERCEPT	31	/* Intercept upcalls inside a container */
-+#define KEYCTL_SET_CONTAINER_KEYRING	35	/* Attach a keyring to a container */
- 
- /* Hope -1 isn't a syscall */
- #ifndef __NR_fsopen
-@@ -262,6 +263,19 @@ int main(int argc, char *argv[])
- 	E(close(fsfd));
- 	E(close(mfd));
- 
-+	/* Create a container keyring. */
-+	printf("Container keyring...\n");
-+	keyring = add_key("keyring", "_container", NULL, 0, KEY_SPEC_SESSION_KEYRING);
-+	if (keyring = -1) {
-+		perror("add_key/c");
-+		exit(1);
-+	}
-+
-+	if (keyctl(KEYCTL_SET_CONTAINER_KEYRING, cfd, keyring) < 0) {
-+		perror("keyctl_set_container_keyring");
-+		exit(1);
-+	}
-+
- 	/* Create a keyring to catch upcalls. */
- 	printf("Intercepting...\n");
- 	keyring = add_key("keyring", "upcall", NULL, 0, KEY_SPEC_SESSION_KEYRING);
-diff --git a/security/keys/compat.c b/security/keys/compat.c
-index 160fb7b37352..7990ec026237 100644
---- a/security/keys/compat.c
-+++ b/security/keys/compat.c
-@@ -168,6 +168,8 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
- 		return keyctl_query_request_key_auth(arg2, compat_ptr(arg3));
- 	case KEYCTL_FIND_LRU:
- 		return keyctl_find_lru(arg2, compat_ptr(arg3));
-+	case KEYCTL_SET_CONTAINER_KEYRING:
-+		return keyctl_set_container_keyring(arg2, arg3);
- #endif
- 
- 	case KEYCTL_MOVE:
-diff --git a/security/keys/container.c b/security/keys/container.c
-index 8e6b3c8710e2..720600f6a318 100644
---- a/security/keys/container.c
-+++ b/security/keys/container.c
-@@ -373,3 +373,47 @@ long keyctl_find_lru(key_serial_t _keyring, const char __user *type_name)
- 	key_ref_put(keyring_ref);
- 	return ret;
- }
-+
-+/*
-+ * Attach a keyring to a container as the container key, to be searched by
-+ * request_key() after thread, process and session keyrings.  This is only
-+ * permitted once per container.
-+ */
-+long keyctl_set_container_keyring(int containerfd, key_serial_t _keyring)
-+{
-+	struct container *c;
-+	struct fd f;
-+	key_ref_t keyring_ref = NULL;
-+	long ret;
-+
-+	if (containerfd < 0 || _keyring <= 0)
-+		return -EINVAL;
-+
-+	f = fdget(containerfd);
-+	if (!f.file)
-+		return -EBADF;
-+	ret = -EINVAL;
-+	if (!is_container_file(f.file))
-+		goto out_fd;
-+
-+	c = f.file->private_data;
-+
-+	keyring_ref = lookup_user_key(_keyring, 0, KEY_NEED_SEARCH);
-+	if (IS_ERR(keyring_ref)) {
-+		ret = PTR_ERR(keyring_ref);
-+		goto out_fd;
-+	}
-+
-+	ret = -EBUSY;
-+	spin_lock(&c->lock);
-+	if (!c->keyring) {
-+		c->keyring = key_get(key_ref_to_ptr(keyring_ref));
-+		ret = 0;
-+	}
-+	spin_unlock(&c->lock);
-+
-+	key_ref_put(keyring_ref);
-+out_fd:
-+	fdput(f);
-+	return ret;
-+}
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index fe4a4da1ff17..6be76caee874 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -366,6 +366,7 @@ extern long keyctl_container_intercept(int, const char __user *, unsigned int, k
- extern long keyctl_query_request_key_auth(key_serial_t,
- 					  struct keyctl_query_request_key_auth __user *);
- extern long keyctl_find_lru(key_serial_t, const char __user *);
-+extern long keyctl_set_container_keyring(int, key_serial_t);
- #endif
- 
- /*
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 1446bc52e369..a25799249b8a 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1919,6 +1919,8 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 	case KEYCTL_FIND_LRU:
- 		return keyctl_find_lru((key_serial_t)arg2,
- 				       (const char __user *)arg3);
-+	case KEYCTL_SET_CONTAINER_KEYRING:
-+		return keyctl_set_container_keyring((int)arg2, (key_serial_t)arg3);
- #endif
- 
- 	case KEYCTL_MOVE:
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 0e0b9ccad2f8..39d3cbac920c 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -17,6 +17,7 @@
- #include <linux/err.h>
- #include <linux/mutex.h>
- #include <linux/security.h>
-+#include <linux/container.h>
- #include <linux/user_namespace.h>
- #include <linux/uaccess.h>
- #include <keys/request_key_auth-type.h>
-@@ -433,6 +434,28 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- 		}
- 	}
- 
-+	/* Search any container keyring on the end. */
-+#ifdef CONFIG_CONTAINERS
-+	if (current->container->keyring) {
-+		key_ref = keyring_search_aux(
-+			make_key_ref(current->container->keyring, 1), ctx);
-+		if (!IS_ERR(key_ref))
-+			goto found;
-+
-+		switch (PTR_ERR(key_ref)) {
-+		case -EAGAIN: /* no key */
-+			if (ret)
-+				break;
-+		case -ENOKEY: /* negative key */
-+			ret = key_ref;
-+			break;
-+		default:
-+			err = key_ref;
-+			break;
-+		}
-+	}
-+#endif
-+
- 	/* no key - decide on the error we're going to go for */
- 	key_ref = ret ? ret : err;
- 
+So while there probably are still good arguments for adding a container keyring,
+I don't think it's the best way forward for fscrypt.
+
+- Eric
+
+> 
+> Because the container manager retains control of the keyring, it can update
+> the contained keys as necessary to prevent expiration.  Note that the
+> keyring and keys in the keyring must grant Search permission directly to
+> the container object.
+> 
+> [!] Note that NFS, CIFS and other filesystems wishing to make use of this
+>     would have to get the token to use by calling request_key() on entry to
+>     its VFS methods and retain it in its file struct.
+> 
+> [!] Note that request_key() called from userspace does not look in the
+>     container keyring.
+> 
+> [!] Note that keys are now tagged with a tag that identifies the network
+>     namespace (or other domain of operation).  This allows keys to be
+>     provided in one keyring that allow the same thing but in different
+>     network namespaces.
+> 
+> The keyring should be created by the container manager and then set using:
+> 
+> 	keyctl(KEYCTL_SET_CONTAINER_KEYRING, int containerfd,
+> 	       key_serial_t keyring);
+> 
+> With this, request_key() inside the kernel searches:
+> 
+> 	thread-keyring, process-keyring, session-keyring, container-keyring
+> 
+> [!] It may be worth setting a flag on a mountpoint to indicate whether to
+>     search the container keyring first or last.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
