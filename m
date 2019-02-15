@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Fri, 15 Feb 2019 16:11:39 +0000
-Subject: [RFC PATCH 23/27] KEYS: Provide KEYCTL_GRANT_PERMISSION
-Message-Id: <155024709900.21651.6425389370223480666.stgit@warthog.procyon.org.uk>
+Date: Fri, 15 Feb 2019 16:09:05 +0000
+Subject: [RFC PATCH 11/27] containers: Sample program for driving container objects
+Message-Id: <155024694546.21651.828651822893643197.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,246 +11,325 @@ In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.
 To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
 Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
 
-Provide a keyctl() operation to grant/remove permissions.  The grant
-operation, wrapped by libkeyutils, looks like:
+Add a sample program to demonstrate driving a container object.  It is
+called something like:
 
-	int ret = keyctl_grant_permission(key_serial_t key,
-					  enum key_ace_subject_type type,
-					  unsigned int subject,
-					  unsigned int perm);
+	./samples/vfs/test-container /dev/sda3
 
-Where key is the key to be modified, type and subject represent the subject
-to which permission is to be granted (or removed) and perm is the set of
-permissions to be granted.  0 is returned on success.  SET_SECURITY
-permission is required for this.
-
-The subject type currently must be KEY_ACE_SUBJ_STANDARD for the moment
-(other subject types will come along later).
-
-For subject type KEY_ACE_SUBJ_STANDARD, the following subject values are
-available:
-
-	KEY_ACE_POSSESSOR	The possessor of the key
-	KEY_ACE_OWNER		The owner of the key
-	KEY_ACE_GROUP		The key's group
-	KEY_ACE_EVERYONE	Everyone
-
-perm lists the permissions to be granted:
-
-	KEY_ACE_VIEW		Can view the key metadata
-	KEY_ACE_READ		Can read the key content
-	KEY_ACE_WRITE		Can update/modify the key content
-	KEY_ACE_SEARCH		Can find the key by searching/requesting
-	KEY_ACE_LINK		Can make a link to the key
-	KEY_ACE_SET_SECURITY	Can set security
-	KEY_ACE_INVAL		Can invalidate
-	KEY_ACE_REVOKE		Can revoke
-	KEY_ACE_JOIN		Can join this keyring
-	KEY_ACE_CLEAR		Can clear this keyring
-
-If an ACE already exists for the subject, then the permissions mask will be
-overwritten; if perm is 0, it will be deleted.
-
-Currently, the internal ACL is limited to a maximum of 16 entries.
-
-For example:
-
-	int ret = keyctl_grant_permission(key,
-					  KEY_ACE_SUBJ_STANDARD,
-					  KEY_ACE_OWNER,
-					  KEY_ACE_VIEW | KEY_ACE_READ);
+where /dev/sda3 holds an ext4 filesystem that has appropriate /etc, /bin,
+/usr, /lib, /proc directories emplaced such that procfs can be mounted and
+then /bin/bash can be executed within the container.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/uapi/linux/keyctl.h |    1 
- security/keys/compat.c      |    2 +
- security/keys/internal.h    |    5 ++
- security/keys/keyctl.c      |    5 ++
- security/keys/permission.c  |  119 +++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 132 insertions(+)
+ samples/vfs/Makefile         |    5 +
+ samples/vfs/test-container.c |  279 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 283 insertions(+), 1 deletion(-)
+ create mode 100644 samples/vfs/test-container.c
 
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index 50d7b6ca82ab..045dcbb6bb8d 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -136,6 +136,7 @@ enum key_ace_standard_subject {
- #define KEYCTL_MOVE			33	/* Move keys between keyrings */
- #define KEYCTL_FIND_LRU			34	/* Find the least-recently used key in a keyring */
- #define KEYCTL_SET_CONTAINER_KEYRING	35	/* Attach a keyring to a container */
-+#define KEYCTL_GRANT_PERMISSION		36	/* Grant a permit to a key */
+diff --git a/samples/vfs/Makefile b/samples/vfs/Makefile
+index b88655cb2f1d..25420919ee40 100644
+--- a/samples/vfs/Makefile
++++ b/samples/vfs/Makefile
+@@ -4,7 +4,8 @@ hostprogs-$(CONFIG_SAMPLE_VFS) := \
+ 	test-fs-query \
+ 	test-fsmount \
+ 	test-mntinfo \
+-	test-statx
++	test-statx \
++	test-container
  
- /* keyctl structures */
- struct keyctl_dh_params {
-diff --git a/security/keys/compat.c b/security/keys/compat.c
-index 7990ec026237..953156f94320 100644
---- a/security/keys/compat.c
-+++ b/security/keys/compat.c
-@@ -174,6 +174,8 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
- 
- 	case KEYCTL_MOVE:
- 		return keyctl_keyring_move(arg2, arg3, arg4, arg5);
-+	case KEYCTL_GRANT_PERMISSION:
-+		return keyctl_grant_permission(arg2, arg3, arg4, arg5);
- 
- 	default:
- 		return -EOPNOTSUPP;
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 9f9ecc1810c9..6cd7b5c17298 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -377,6 +377,11 @@ extern long keyctl_find_lru(key_serial_t, const char __user *);
- extern long keyctl_set_container_keyring(int, key_serial_t);
- #endif
- 
-+extern long keyctl_grant_permission(key_serial_t keyid,
-+				    enum key_ace_subject_type type,
-+				    unsigned int subject,
-+				    unsigned int perm);
-+
- /*
-  * Debugging key validation
-  */
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 2df896bfb8e4..02bd73d5a05a 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1961,6 +1961,11 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 					   (key_serial_t)arg3,
- 					   (key_serial_t)arg4,
- 					   (unsigned int)arg5);
-+	case KEYCTL_GRANT_PERMISSION:
-+		return keyctl_grant_permission((key_serial_t)arg2,
-+					       (enum key_ace_subject_type)arg3,
-+					       (unsigned int)arg4,
-+					       (unsigned int)arg5);
- 
- 	default:
- 		return -EOPNOTSUPP;
-diff --git a/security/keys/permission.c b/security/keys/permission.c
-index 8dc6e80f6fd0..cb1359f6c668 100644
---- a/security/keys/permission.c
-+++ b/security/keys/permission.c
-@@ -274,3 +274,122 @@ long key_set_acl(struct key *key, struct key_acl *acl)
- 	key_put_acl(acl);
- 	return 0;
- }
-+
-+/*
-+ * Allocate a new ACL with an extra ACE slot.
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+@@ -17,3 +18,5 @@ HOSTLDLIBS_test-mntinfo += -lm
+ HOSTCFLAGS_test-fs-query.o += -I$(objtree)/usr/include
+ HOSTCFLAGS_test-fsmount.o += -I$(objtree)/usr/include
+ HOSTCFLAGS_test-statx.o += -I$(objtree)/usr/include
++HOSTCFLAGS_test-container.o += -I$(objtree)/usr/include
++HOSTLDLIBS_test-container += -lkeyutils
+diff --git a/samples/vfs/test-container.c b/samples/vfs/test-container.c
+new file mode 100644
+index 000000000000..44ff57afb5a4
+--- /dev/null
++++ b/samples/vfs/test-container.c
+@@ -0,0 +1,279 @@
++/* Container test.
++ *
++ * Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
 + */
-+static struct key_acl *key_alloc_acl(const struct key_acl *old_acl, int nr, int skip)
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <errno.h>
++#include <sys/wait.h>
++#include <linux/mount.h>
++#include <linux/unistd.h>
++#include <dirent.h>
++#include <sys/stat.h>
++#include <keyutils.h>
++
++/* Hope -1 isn't a syscall */
++#ifndef __NR_fsopen
++#define __NR_fsopen -1
++#endif
++#ifndef __NR_fsmount
++#define __NR_fsmount -1
++#endif
++#ifndef __NR_fsconfig
++#define __NR_fsconfig -1
++#endif
++#ifndef __NR_move_mount
++#define __NR_move_mount -1
++#endif
++
++
++#define E(x) do { if ((x) = -1) { perror(#x); exit(1); } } while(0)
++
++static void check_messages(int fd)
 +{
-+	struct key_acl *acl;
-+	int nr_ace, i, j = 0;
++	char buf[4096];
++	int err, n;
 +
-+	nr_ace = old_acl->nr_ace + nr;
-+	if (nr_ace > 16)
-+		return ERR_PTR(-EINVAL);
++	err = errno;
 +
-+	acl = kzalloc(struct_size(acl, aces, nr_ace), GFP_KERNEL);
-+	if (!acl)
-+		return ERR_PTR(-ENOMEM);
++	for (;;) {
++		n = read(fd, buf, sizeof(buf));
++		if (n < 0)
++			break;
++		n -= 2;
 +
-+	refcount_set(&acl->usage, 1);
-+	acl->nr_ace = nr_ace;
-+	for (i = 0; i < old_acl->nr_ace; i++) {
-+		if (i = skip)
-+			continue;
-+		acl->aces[j] = old_acl->aces[i];
-+		j++;
++		switch (buf[0]) {
++		case 'e':
++			fprintf(stderr, "Error: %*.*s\n", n, n, buf + 2);
++			break;
++		case 'w':
++			fprintf(stderr, "Warning: %*.*s\n", n, n, buf + 2);
++			break;
++		case 'i':
++			fprintf(stderr, "Info: %*.*s\n", n, n, buf + 2);
++			break;
++		}
 +	}
-+	return acl;
++
++	errno = err;
++}
++
++static __attribute__((noreturn))
++void mount_error(int fd, const char *s)
++{
++	check_messages(fd);
++	fprintf(stderr, "%s: %m\n", s);
++	exit(1);
++}
++
++#define CONTAINER_NEW_FS_NS		0x00000001 /* Dup current fs namespace */
++#define CONTAINER_NEW_EMPTY_FS_NS	0x00000002 /* Provide new empty fs namespace */
++#define CONTAINER_NEW_CGROUP_NS		0x00000004 /* Dup current cgroup namespace [priv] */
++#define CONTAINER_NEW_UTS_NS		0x00000008 /* Dup current uts namespace */
++#define CONTAINER_NEW_IPC_NS		0x00000010 /* Dup current ipc namespace */
++#define CONTAINER_NEW_USER_NS		0x00000020 /* Dup current user namespace */
++#define CONTAINER_NEW_PID_NS		0x00000040 /* Dup current pid namespace */
++#define CONTAINER_NEW_NET_NS		0x00000080 /* Dup current net namespace */
++#define CONTAINER_KILL_ON_CLOSE		0x00000100 /* Kill all member processes when fd closed */
++#define CONTAINER_FD_CLOEXEC		0x00000200 /* Close the fd on exec */
++#define CONTAINER__FLAG_MASK		0x000003ff
++
++static inline int fsopen(const char *fs_name, unsigned int flags)
++{
++	return syscall(__NR_fsopen, fs_name, flags);
++}
++
++static inline int fsconfig(int fsfd, unsigned int cmd,
++			   const char *key, const void *val, int aux)
++{
++	return syscall(__NR_fsconfig, fsfd, cmd, key, val, aux);
++}
++
++static inline int fsmount(int fsfd, unsigned int flags, unsigned int attr_flags)
++{
++	return syscall(__NR_fsmount, fsfd, flags, attr_flags);
++}
++
++static inline int move_mount(int from_dfd, const char *from_pathname,
++			     int to_dfd, const char *to_pathname,
++			     unsigned int flags)
++{
++	return syscall(__NR_move_mount,
++		       from_dfd, from_pathname,
++		       to_dfd, to_pathname, flags);
++}
++
++static inline int container_create(const char *name, unsigned int mask)
++{
++	return syscall(__NR_container_create, name, mask, 0, 0, 0);
++}
++
++static inline int fork_into_container(int containerfd)
++{
++	return syscall(__NR_fork_into_container, containerfd);
++}
++
++#define E_fsconfig(fd, cmd, key, val, aux)				\
++	do {								\
++		if (fsconfig(fd, cmd, key, val, aux) = -1)		\
++			mount_error(fd, key ?: "create");		\
++	} while (0)
++
++/*
++ * The container init process.
++ */
++static __attribute__((noreturn))
++void container_init(void)
++{
++	if (0) {
++		/* Do a bit of debugging on the container. */
++		struct dirent **dlist;
++		struct stat st;
++		char buf[4096];
++		int n, i;
++
++		printf("hello!\n");
++		n = scandir("/", &dlist, NULL, alphasort);
++		if (n = -1) {
++			perror("scandir");
++			exit(1);
++		}
++
++		for (i = 0; i < n; i++) {
++			struct dirent *p = dlist[i];
++
++			if (p)
++				printf("- %u %s\n", p->d_type, p->d_name);
++		}
++
++		n = readlink("/bin", buf, sizeof(buf) - 1);
++		if (n = -1) {
++			perror("readlink");
++			exit(1);
++		}
++
++		buf[n] = 0;
++		printf("/bin -> %s\n", buf);
++
++		if (stat("/lib64/ld-linux-x86-64.so.2", &st) = -1) {
++			perror("stat");
++			exit(1);
++		}
++
++		printf("mode %o\n", st.st_mode);
++	}
++
++	if (keyctl_join_session_keyring(NULL) = -1) {
++		perror("keyctl/join");
++		exit(1);
++	}
++
++	setenv("PS1", "container>", 1);
++	execl("/bin/bash", "bash", NULL);
++	perror("execl");
++	exit(1);
 +}
 +
 +/*
-+ * Generate the revised ACL.
++ * The container manager process.
 + */
-+static long key_change_acl(struct key *key, struct key_ace *new_ace)
++int main(int argc, char *argv[])
 +{
-+	struct key_acl *acl, *old;
-+	int i;
++	pid_t pid;
++	int fsfd, mfd, cfd, ws;
 +
-+	old = rcu_dereference_protected(key->acl, lockdep_is_held(&key->sem));
++	if (argc != 2) {
++		fprintf(stderr, "Format: test-container <root-dev>\n");
++		exit(2);
++	}
 +
-+	for (i = 0; i < old->nr_ace; i++)
-+		if (old->aces[i].type = new_ace->type &&
-+		    old->aces[i].subject_id = new_ace->subject_id)
-+			goto found_match;
++	cfd = container_create("foo-test",
++			       CONTAINER_NEW_EMPTY_FS_NS |
++			       //CONTAINER_NEW_UTS_NS |
++			       //CONTAINER_NEW_IPC_NS |
++			       //CONTAINER_NEW_USER_NS |
++			       CONTAINER_NEW_PID_NS |
++			       CONTAINER_KILL_ON_CLOSE |
++			       CONTAINER_FD_CLOEXEC);
++	if (cfd = -1) {
++		perror("container_create");
++		exit(1);
++	}
 +
-+	if (new_ace->perm = 0)
-+		return 0; /* No permissions to remove.  Add deny record? */
++	system("cat /proc/containers");
 +
-+	acl = key_alloc_acl(old, 1, -1);
-+	if (IS_ERR(acl))
-+		return PTR_ERR(acl);
-+	acl->aces[i] = *new_ace;
-+	goto change;
++	/* Open the filesystem that's going to form the container root. */
++	printf("Creating root...\n");
++	fsfd = fsopen("ext4", 0);
++	if (fsfd = -1) {
++		perror("fsopen/root");
++		exit(1);
++	}
 +
-+found_match:
-+	if (new_ace->perm = 0)
-+		goto delete_ace;
-+	if (new_ace->perm = old->aces[i].perm)
-+		return 0;
-+	acl = key_alloc_acl(old, 0, -1);
-+	if (IS_ERR(acl))
-+		return PTR_ERR(acl);
-+	acl->aces[i].perm = new_ace->perm;
-+	goto change;
++	E_fsconfig(fsfd, FSCONFIG_SET_CONTAINER, NULL, NULL, cfd);
++	E_fsconfig(fsfd, FSCONFIG_SET_STRING, "source", argv[1], 0);
++	E_fsconfig(fsfd, FSCONFIG_SET_FLAG, "user_xattr", NULL, 0);
++	E_fsconfig(fsfd, FSCONFIG_CMD_CREATE, NULL, NULL, 0);
 +
-+delete_ace:
-+	acl = key_alloc_acl(old, -1, i);
-+	if (IS_ERR(acl))
-+		return PTR_ERR(acl);
-+	goto change;
++	/* Mount the container root */
++	printf("Mounting root...\n");
++	mfd = fsmount(fsfd, 0, 0);
++	if (mfd < 0)
++		mount_error(fsfd, "fsmount/root");
 +
-+change:
-+	return key_set_acl(key, acl);
-+}
++	if (move_mount(mfd, "", cfd, "/",
++		       MOVE_MOUNT_F_EMPTY_PATH | MOVE_MOUNT_T_CONTAINER_ROOT) < 0) {
++		perror("move_mount/root");
++		exit(1);
++	}
++	E(close(fsfd));
++	E(close(mfd));
 +
-+/*
-+ * Add, alter or remove (if perm = 0) an ACE in a key's ACL.
-+ */
-+long keyctl_grant_permission(key_serial_t keyid,
-+			     enum key_ace_subject_type type,
-+			     unsigned int subject,
-+			     unsigned int perm)
-+{
-+	struct key_ace new_ace;
-+	struct key *key;
-+	key_ref_t key_ref;
-+	long ret;
++	/* Mount procfs within the container */
++	printf("Creating procfs...\n");
++	fsfd = fsopen("proc", 0);
++	if (fsfd = -1) {
++		perror("fsopen/proc");
++		exit(1);
++	}
 +
-+	new_ace.type = type;
-+	new_ace.perm = perm;
++	E_fsconfig(fsfd, FSCONFIG_SET_CONTAINER, NULL, NULL, cfd);
++	E_fsconfig(fsfd, FSCONFIG_CMD_CREATE, NULL, NULL, 0);
 +
-+	switch (type) {
-+	case KEY_ACE_SUBJ_STANDARD:
-+		if (subject >= nr__key_ace_standard_subject)
-+			return -ENOENT;
-+		new_ace.subject_id = subject;
-+		break;
++	printf("Mounting procfs...\n");
++	mfd = fsmount(fsfd, 0, 0);
++	if (mfd < 0)
++		mount_error(fsfd, "fsmount/proc");
++	if (move_mount(mfd, "", cfd, "proc", MOVE_MOUNT_F_EMPTY_PATH) < 0) {
++		perror("move_mount/proc");
++		exit(1);
++	}
++	E(close(fsfd));
++	E(close(mfd));
 +
++	/* Start the 'init' process. */
++	printf("Forking...\n");
++	switch ((pid = fork_into_container(cfd))) {
++	case -1:
++		perror("fork_into_container");
++		exit(1);
++	case 0:
++		close(cfd);
++		container_init();
 +	default:
-+		return -ENOENT;
++		if (waitpid(pid, &ws, 0) < 0) {
++			perror("waitpid");
++			exit(1);
++		}
 +	}
-+
-+	key_ref = lookup_user_key(keyid, KEY_LOOKUP_PARTIAL, KEY_NEED_SETSEC);
-+	if (IS_ERR(key_ref)) {
-+		ret = PTR_ERR(key_ref);
-+		goto error;
-+	}
-+
-+	key = key_ref_to_ptr(key_ref);
-+
-+	down_write(&key->sem);
-+
-+	/* If we're not the sysadmin, we can only change a key that we own */
-+	ret = -EACCES;
-+	if (capable(CAP_SYS_ADMIN) || uid_eq(key->uid, current_fsuid()))
-+		ret = key_change_acl(key, &new_ace);
-+	up_write(&key->sem);
-+	key_put(key);
-+error:
-+	return ret;
++	E(close(cfd));
++	exit(0);
 +}
