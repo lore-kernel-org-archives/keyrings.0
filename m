@@ -1,84 +1,174 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Sun, 24 Feb 2019 06:08:18 +0000
-Subject: [PATCH v5 00/10] crypto: add EC-RDSA (GOST 34.10) algorithm
-Message-Id: <20190224060828.2527-1-vt@altlinux.org>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 15 Feb 2019 16:12:09 +0000
+Subject: [RFC PATCH 26/27] keys: Allow containers to be included in key ACLs by name
+Message-Id: <155024712939.21651.14094051420890992278.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
+Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
 
-This patchset changes akcipher API to support ECDSA style signature
-verification, augments x509 parser to make it work with EC-RDSA certificates,
-and, finally, implements EC-RDSA (GOST 34.10) signature verification and its
-integration with IMA.
+Allow a container to be specified to KEYCTL_GRANT_PERMISSION by name.  This
+allows processes that don't have access to the container fd to grant
+permission on a key to a container.  This is restricted to the containers
+that are children of the current container.
 
-Changes since RFC (v1-v4):
-- akcipher set_max_size, encrypt, decrypt, sign, verify callbacks may be
-  undefined by the drivers, so their crypto_akcipher_* frontends check for
-  their presence before passing the call.
-- supported_ops flags are set for keyctl, based on the presence of implemented
-  akcipher callbacks.
-- Transition to verify2 API is abandoned because raw RSA does not need
-  sign/verify ops at all, and we can switch to the new verify in one step.
-  For this RSA backends have sign/verify ops removed as they should only
-  be used (and actually used only) via PKCS1 driver.
-- Verify callback requires digest as the input parameter in src SGL, as
-  suggested by Herbert Xu, (instead of a separate parameter, as it was in
-  verify2).
-- For verify op signature is moved into kmalloc'd memory as suggested by
-  Herbert Xu.
-- set_params API should be called before set_{pub,priv}_key, thus set_*_key
-  knows everything it needs to set they key properly. Also, set_params made
-  optional for back compatibility with RSA drivers.
-- Public-key cryptography section is created in Kconfig.
-- ecc.c is made into separate module object, to be used together by ECDH and
-  EC-RDSA.
-- EC-RDSA parameters and public key are parsed using asn1_ber_decoder as
-  suggested by Stephan Mueller and David Howells.
-- Test vectors are added and tests are passing.
-- Curves/parameters definitions are split from ecrdsa.c into ecrdsa_defs.h.
-- Integration with IMA in asymmetric_verify(). Userspace ima-evm-utils already
-  have a patch in the queue to support this. Tested on x86_64.
+This can be effected with something like:
 
+	keyctl(KEYCTL_GRANT_PERMISSION, key,
+	       KEY_ACE_SUBJ_CONTAINER_NAME, "foo-test",
+	       KEY_ACE_SEARCH);
+
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-Vitaly Chikunov (10):
-  KEYS: report to keyctl only actually supported key ops
-  crypto: akcipher - check the presence of callback before the call
-  crypto: rsa - unimplement sign/verify for raw RSA backends
-  crypto: akcipher - new verify API for public key algorithms
-  X.509: parse public key parameters from x509 for akcipher
-  crypto: Kconfig - create Public-key cryptography section
-  crypto: ecc - make ecc into separate module
-  crypto: ecrdsa - add EC-RDSA (GOST 34.10) algorithm
-  crypto: ecrdsa - add EC-RDSA test vectors to testmgr
-  integrity: support EC-RDSA signatures for asymmetric_verify
 
- crypto/Kconfig                                |  63 ++--
- crypto/Makefile                               |  10 +-
- crypto/asymmetric_keys/asym_tpm.c             |  34 +--
- crypto/asymmetric_keys/public_key.c           |  63 ++--
- crypto/asymmetric_keys/x509.asn1              |   2 +-
- crypto/asymmetric_keys/x509_cert_parser.c     |  57 +++-
- crypto/ecc.c                                  | 417 +++++++++++++++++++++++++-
- crypto/ecc.h                                  | 153 +++++++++-
- crypto/ecc_curve_defs.h                       |  15 -
- crypto/ecrdsa.c                               | 297 ++++++++++++++++++
- crypto/ecrdsa_defs.h                          | 225 ++++++++++++++
- crypto/rsa-pkcs1pad.c                         |  33 +-
- crypto/rsa.c                                  | 109 -------
- crypto/testmgr.c                              |  60 ++--
- crypto/testmgr.h                              | 157 ++++++++++
- drivers/crypto/caam/caampkc.c                 |   2 -
- drivers/crypto/ccp/ccp-crypto-rsa.c           |   2 -
- drivers/crypto/qat/qat_common/qat_asym_algs.c |   2 -
- include/crypto/akcipher.h                     |  97 ++++--
- include/crypto/public_key.h                   |   4 +
- include/linux/oid_registry.h                  |  18 ++
- security/integrity/digsig_asymmetric.c        |   9 +-
- 22 files changed, 1545 insertions(+), 284 deletions(-)
- create mode 100644 crypto/ecrdsa.c
- create mode 100644 crypto/ecrdsa_defs.h
+ include/linux/container.h   |    1 +
+ include/uapi/linux/keyctl.h |    1 +
+ kernel/container.c          |   24 ++++++++++++++++++++++++
+ security/keys/compat.c      |    4 ++++
+ security/keys/internal.h    |    2 +-
+ security/keys/keyctl.c      |    2 +-
+ security/keys/permission.c  |   19 ++++++++++++++++++-
+ 7 files changed, 50 insertions(+), 3 deletions(-)
 
--- 
-2.11.0
+diff --git a/include/linux/container.h b/include/linux/container.h
+index cd82074c26a3..fd49ce23467d 100644
+--- a/include/linux/container.h
++++ b/include/linux/container.h
+@@ -61,6 +61,7 @@ extern struct container init_container;
+ #ifdef CONFIG_CONTAINERS
+ extern const struct file_operations container_fops;
+ 
++extern struct container *find_container(const char *name);
+ extern int copy_container(unsigned long flags, struct task_struct *tsk,
+ 			  struct container *container);
+ extern void exit_container(struct task_struct *tsk);
+diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+index 89ab609f774c..31520da17f37 100644
+--- a/include/uapi/linux/keyctl.h
++++ b/include/uapi/linux/keyctl.h
+@@ -21,6 +21,7 @@
+ enum key_ace_subject_type {
+ 	KEY_ACE_SUBJ_STANDARD	= 0,	/* subject is one of key_ace_standard_subject */
+ 	KEY_ACE_SUBJ_CONTAINER	= 1,	/* subject is a container fd */
++	KEY_ACE_SUBJ_CONTAINER_NAME = 2, /* subject is a container name pointer */
+ 	nr__key_ace_subject_type
+ };
+ 
+diff --git a/kernel/container.c b/kernel/container.c
+index 81be4ed915c2..c164c16328d6 100644
+--- a/kernel/container.c
++++ b/kernel/container.c
+@@ -235,6 +235,30 @@ struct container *fd_to_container(int fd)
+ 	return c;
+ }
+ 
++/**
++ * find_container - Find a child container by name.
++ * @name: The name of the container to find.
++ *
++ * Find a child of the current container by name.
++ */
++struct container *find_container(const char *name)
++{
++	struct container *c = current->container, *p;
++
++	spin_lock(&c->lock);
++	list_for_each_entry(p, &c->children, child_link) {
++		if (strcmp(p->name, name) = 0) {
++			get_container(p);
++			goto found;
++		}
++	}
++
++	p = NULL;
++found:
++	spin_unlock(&c->lock);
++	return p;
++}
++
+ /*
+  * Handle fork/clone.
+  *
+diff --git a/security/keys/compat.c b/security/keys/compat.c
+index 953156f94320..78c6c0e0eb59 100644
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -175,6 +175,10 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
+ 	case KEYCTL_MOVE:
+ 		return keyctl_keyring_move(arg2, arg3, arg4, arg5);
+ 	case KEYCTL_GRANT_PERMISSION:
++		if (arg3 = KEY_ACE_SUBJ_CONTAINER_NAME)
++			return keyctl_grant_permission(arg2, arg3,
++						       (unsigned long)compat_ptr(arg4),
++						       arg5);
+ 		return keyctl_grant_permission(arg2, arg3, arg4, arg5);
+ 
+ 	default:
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 6cd7b5c17298..aa4ad9c8002e 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -379,7 +379,7 @@ extern long keyctl_set_container_keyring(int, key_serial_t);
+ 
+ extern long keyctl_grant_permission(key_serial_t keyid,
+ 				    enum key_ace_subject_type type,
+-				    unsigned int subject,
++				    unsigned long subject,
+ 				    unsigned int perm);
+ 
+ /*
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 02bd73d5a05a..978c9008c3b2 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1964,7 +1964,7 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 	case KEYCTL_GRANT_PERMISSION:
+ 		return keyctl_grant_permission((key_serial_t)arg2,
+ 					       (enum key_ace_subject_type)arg3,
+-					       (unsigned int)arg4,
++					       (unsigned long)arg4,
+ 					       (unsigned int)arg5);
+ 
+ 	default:
+diff --git a/security/keys/permission.c b/security/keys/permission.c
+index f16d1665885f..b0e94ccc4635 100644
+--- a/security/keys/permission.c
++++ b/security/keys/permission.c
+@@ -407,7 +407,7 @@ static long key_change_acl(struct key *key, struct key_ace *new_ace)
+  */
+ long keyctl_grant_permission(key_serial_t keyid,
+ 			     enum key_ace_subject_type type,
+-			     unsigned int subject,
++			     unsigned long subject,
+ 			     unsigned int perm)
+ {
+ 	struct key_ace new_ace;
+@@ -436,6 +436,23 @@ long keyctl_grant_permission(key_serial_t keyid,
+ 		put_container(c);
+ 		break;
+ 	}
++	case KEY_ACE_SUBJ_CONTAINER_NAME: {
++		struct container *c;
++		char *name;
++
++		name = strndup_user((const char __user *)subject, 23);
++		if (IS_ERR(name))
++			return PTR_ERR(name);
++		c = find_container(name);
++		kfree(name);
++		if (!c)
++			return -EINVAL;
++		new_ace.type = KEY_ACE_SUBJ_CONTAINER;
++		refcount_inc(&c->tag->usage);
++		new_ace.container_tag = c->tag;
++		put_container(c);
++		break;
++	}
+ #endif
+ 
+ 	default:
