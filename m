@@ -1,188 +1,203 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 15 Feb 2019 16:07:58 +0000
-Subject: [RFC PATCH 05/27] containers: Open a socket inside a container
-Message-Id: <155024687804.21651.13220990774688382294.stgit@warthog.procyon.org.uk>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 19 Feb 2019 16:41:56 +0000
+Subject: Re: [RFC PATCH 05/27] containers: Open a socket inside a container
+Message-Id: <87k1hvwx0r.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+        <155024687804.21651.13220990774688382294.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155024687804.21651.13220990774688382294.stgit@warthog.procyon.org.uk>
+        (David Howells's message of "Fri, 15 Feb 2019 16:07:58 +0000")
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, linux-kernel@vger.kernel.org
 
-Provide a system call to open a socket inside of a container, using that
-container's network namespace.  This allows netlink to be used to manage
-the container.
+David Howells <dhowells@redhat.com> writes:
 
-	fd = container_socket(int container_fd,
-			      int domain, int type, int protocol);
+> Provide a system call to open a socket inside of a container, using that
+> container's network namespace.  This allows netlink to be used to manage
+> the container.
+>
+> 	fd = container_socket(int container_fd,
+> 			      int domain, int type, int protocol);
+>
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
- arch/x86/entry/syscalls/syscall_32.tbl |    1 +
- arch/x86/entry/syscalls/syscall_64.tbl |    1 +
- include/linux/socket.h                 |    3 ++-
- include/linux/syscalls.h               |    2 ++
- kernel/sys_ni.c                        |    1 +
- net/compat.c                           |    2 +-
- net/socket.c                           |   34 +++++++++++++++++++++++++++-----
- 7 files changed, 37 insertions(+), 7 deletions(-)
+Use a namespace file descriptor if you need this.  So far we have not
+added this system call as it is just a performance optimization.  And it
+has been too niche to matter.
 
-diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
-index 8666693510f9..f4c9beff77a6 100644
---- a/arch/x86/entry/syscalls/syscall_32.tbl
-+++ b/arch/x86/entry/syscalls/syscall_32.tbl
-@@ -409,3 +409,4 @@
- 395	i386	sb_notify		sys_sb_notify			__ia32_sys_sb_notify
- 396	i386	container_create	sys_container_create		__ia32_sys_container_create
- 397	i386	fork_into_container	sys_fork_into_container		__ia32_sys_fork_into_container
-+398	i386	container_socket	sys_container_socket		__ia32_sys_container_socket
-diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
-index d40d4790fcb2..e20cdf7b5527 100644
---- a/arch/x86/entry/syscalls/syscall_64.tbl
-+++ b/arch/x86/entry/syscalls/syscall_64.tbl
-@@ -354,6 +354,7 @@
- 343	common	sb_notify		__x64_sys_sb_notify
- 344	common	container_create	__x64_sys_container_create
- 345	common	fork_into_container	__x64_sys_fork_into_container
-+346	common	container_socket	__x64_sys_container_socket
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/socket.h b/include/linux/socket.h
-index ab2041a00e01..154ac900a8a5 100644
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -10,6 +10,7 @@
- #include <linux/compiler.h>		/* __user			*/
- #include <uapi/linux/socket.h>
- 
-+struct net;
- struct pid;
- struct cred;
- 
-@@ -376,7 +377,7 @@ extern int __sys_sendto(int fd, void __user *buff, size_t len,
- 			int addr_len);
- extern int __sys_accept4(int fd, struct sockaddr __user *upeer_sockaddr,
- 			 int __user *upeer_addrlen, int flags);
--extern int __sys_socket(int family, int type, int protocol);
-+extern int __sys_socket(struct net *net, int family, int type, int protocol);
- extern int __sys_bind(int fd, struct sockaddr __user *umyaddr, int addrlen);
- extern int __sys_connect(int fd, struct sockaddr __user *uservaddr,
- 			 int addrlen);
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 15e5cc704df3..547334c6ffc2 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -947,6 +947,8 @@ asmlinkage long sys_container_create(const char __user *name, unsigned int flags
- 				     unsigned long spare3, unsigned long spare4,
- 				     unsigned long spare5);
- asmlinkage long sys_fork_into_container(int containerfd);
-+asmlinkage long sys_container_socket(int containerfd,
-+				     int domain, int type, int protocol);
- 
- /*
-  * Architecture-specific system calls
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index a23ad529d548..ce9c5bb30e7f 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -236,6 +236,7 @@ COND_SYSCALL(shmdt);
- /* net/socket.c */
- COND_SYSCALL(socket);
- COND_SYSCALL(socketpair);
-+COND_SYSCALL(container_socket);
- COND_SYSCALL(bind);
- COND_SYSCALL(listen);
- COND_SYSCALL(accept);
-diff --git a/net/compat.c b/net/compat.c
-index 959d1c51826d..1b2db740fd33 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -856,7 +856,7 @@ COMPAT_SYSCALL_DEFINE2(socketcall, int, call, u32 __user *, args)
- 
- 	switch (call) {
- 	case SYS_SOCKET:
--		ret = __sys_socket(a0, a1, a[2]);
-+		ret = __sys_socket(current->nsproxy->net_ns, a0, a1, a[2]);
- 		break;
- 	case SYS_BIND:
- 		ret = __sys_bind(a0, compat_ptr(a1), a[2]);
-diff --git a/net/socket.c b/net/socket.c
-index 7d271a1d0c7e..7406580598b9 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -80,6 +80,7 @@
- #include <linux/highmem.h>
- #include <linux/mount.h>
- #include <linux/fs_context.h>
-+#include <linux/container.h>
- #include <linux/security.h>
- #include <linux/syscalls.h>
- #include <linux/compat.h>
-@@ -1326,9 +1327,9 @@ int sock_create_kern(struct net *net, int family, int type, int protocol, struct
- }
- EXPORT_SYMBOL(sock_create_kern);
- 
--int __sys_socket(int family, int type, int protocol)
-+int __sys_socket(struct net *net, int family, int type, int protocol)
- {
--	int retval;
-+	long retval;
- 	struct socket *sock;
- 	int flags;
- 
-@@ -1346,7 +1347,7 @@ int __sys_socket(int family, int type, int protocol)
- 	if (SOCK_NONBLOCK != O_NONBLOCK && (flags & SOCK_NONBLOCK))
- 		flags = (flags & ~SOCK_NONBLOCK) | O_NONBLOCK;
- 
--	retval = sock_create(family, type, protocol, &sock);
-+	retval = __sock_create(net, family, type, protocol, &sock, 0);
- 	if (retval < 0)
- 		return retval;
- 
-@@ -1355,9 +1356,32 @@ int __sys_socket(int family, int type, int protocol)
- 
- SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
- {
--	return __sys_socket(family, type, protocol);
-+	return __sys_socket(current->nsproxy->net_ns, family, type, protocol);
- }
- 
-+/*
-+ * Create a socket inside a container.
-+ */
-+#ifdef CONFIG_CONTAINERS
-+SYSCALL_DEFINE4(container_socket,
-+		int, containerfd, int, family, int, type, int, protocol)
-+{
-+	struct fd f = fdget(containerfd);
-+	long ret;
-+
-+	if (!f.file)
-+		return -EBADF;
-+	ret = -EINVAL;
-+	if (is_container_file(f.file)) {
-+		struct container *c = f.file->private_data;
-+
-+		ret = __sys_socket(c->ns->net_ns, family, type, protocol);
-+	}
-+	fdput(f);
-+	return ret;
-+}
-+#endif
-+
- /*
-  *	Create a pair of connected sockets.
-  */
-@@ -2555,7 +2579,7 @@ SYSCALL_DEFINE2(socketcall, int, call, unsigned long __user *, args)
- 
- 	switch (call) {
- 	case SYS_SOCKET:
--		err = __sys_socket(a0, a1, a[2]);
-+		err = __sys_socket(current->nsproxy->net_ns, a0, a1, a[2]);
- 		break;
- 	case SYS_BIND:
- 		err = __sys_bind(a0, (struct sockaddr __user *)a1, a[2]);
+If this that has changed we can add this separately from everything else
+you are doing here.
+
+
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+>
+>  arch/x86/entry/syscalls/syscall_32.tbl |    1 +
+>  arch/x86/entry/syscalls/syscall_64.tbl |    1 +
+>  include/linux/socket.h                 |    3 ++-
+>  include/linux/syscalls.h               |    2 ++
+>  kernel/sys_ni.c                        |    1 +
+>  net/compat.c                           |    2 +-
+>  net/socket.c                           |   34 +++++++++++++++++++++++++++-----
+>  7 files changed, 37 insertions(+), 7 deletions(-)
+>
+> diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+> index 8666693510f9..f4c9beff77a6 100644
+> --- a/arch/x86/entry/syscalls/syscall_32.tbl
+> +++ b/arch/x86/entry/syscalls/syscall_32.tbl
+> @@ -409,3 +409,4 @@
+>  395	i386	sb_notify		sys_sb_notify			__ia32_sys_sb_notify
+>  396	i386	container_create	sys_container_create		__ia32_sys_container_create
+>  397	i386	fork_into_container	sys_fork_into_container		__ia32_sys_fork_into_container
+> +398	i386	container_socket	sys_container_socket		__ia32_sys_container_socket
+> diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+> index d40d4790fcb2..e20cdf7b5527 100644
+> --- a/arch/x86/entry/syscalls/syscall_64.tbl
+> +++ b/arch/x86/entry/syscalls/syscall_64.tbl
+> @@ -354,6 +354,7 @@
+>  343	common	sb_notify		__x64_sys_sb_notify
+>  344	common	container_create	__x64_sys_container_create
+>  345	common	fork_into_container	__x64_sys_fork_into_container
+> +346	common	container_socket	__x64_sys_container_socket
+>  
+>  #
+>  # x32-specific system call numbers start at 512 to avoid cache impact
+> diff --git a/include/linux/socket.h b/include/linux/socket.h
+> index ab2041a00e01..154ac900a8a5 100644
+> --- a/include/linux/socket.h
+> +++ b/include/linux/socket.h
+> @@ -10,6 +10,7 @@
+>  #include <linux/compiler.h>		/* __user			*/
+>  #include <uapi/linux/socket.h>
+>  
+> +struct net;
+>  struct pid;
+>  struct cred;
+>  
+> @@ -376,7 +377,7 @@ extern int __sys_sendto(int fd, void __user *buff, size_t len,
+>  			int addr_len);
+>  extern int __sys_accept4(int fd, struct sockaddr __user *upeer_sockaddr,
+>  			 int __user *upeer_addrlen, int flags);
+> -extern int __sys_socket(int family, int type, int protocol);
+> +extern int __sys_socket(struct net *net, int family, int type, int protocol);
+>  extern int __sys_bind(int fd, struct sockaddr __user *umyaddr, int addrlen);
+>  extern int __sys_connect(int fd, struct sockaddr __user *uservaddr,
+>  			 int addrlen);
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index 15e5cc704df3..547334c6ffc2 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -947,6 +947,8 @@ asmlinkage long sys_container_create(const char __user *name, unsigned int flags
+>  				     unsigned long spare3, unsigned long spare4,
+>  				     unsigned long spare5);
+>  asmlinkage long sys_fork_into_container(int containerfd);
+> +asmlinkage long sys_container_socket(int containerfd,
+> +				     int domain, int type, int protocol);
+>  
+>  /*
+>   * Architecture-specific system calls
+> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+> index a23ad529d548..ce9c5bb30e7f 100644
+> --- a/kernel/sys_ni.c
+> +++ b/kernel/sys_ni.c
+> @@ -236,6 +236,7 @@ COND_SYSCALL(shmdt);
+>  /* net/socket.c */
+>  COND_SYSCALL(socket);
+>  COND_SYSCALL(socketpair);
+> +COND_SYSCALL(container_socket);
+>  COND_SYSCALL(bind);
+>  COND_SYSCALL(listen);
+>  COND_SYSCALL(accept);
+> diff --git a/net/compat.c b/net/compat.c
+> index 959d1c51826d..1b2db740fd33 100644
+> --- a/net/compat.c
+> +++ b/net/compat.c
+> @@ -856,7 +856,7 @@ COMPAT_SYSCALL_DEFINE2(socketcall, int, call, u32 __user *, args)
+>  
+>  	switch (call) {
+>  	case SYS_SOCKET:
+> -		ret = __sys_socket(a0, a1, a[2]);
+> +		ret = __sys_socket(current->nsproxy->net_ns, a0, a1, a[2]);
+>  		break;
+>  	case SYS_BIND:
+>  		ret = __sys_bind(a0, compat_ptr(a1), a[2]);
+> diff --git a/net/socket.c b/net/socket.c
+> index 7d271a1d0c7e..7406580598b9 100644
+> --- a/net/socket.c
+> +++ b/net/socket.c
+> @@ -80,6 +80,7 @@
+>  #include <linux/highmem.h>
+>  #include <linux/mount.h>
+>  #include <linux/fs_context.h>
+> +#include <linux/container.h>
+>  #include <linux/security.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/compat.h>
+> @@ -1326,9 +1327,9 @@ int sock_create_kern(struct net *net, int family, int type, int protocol, struct
+>  }
+>  EXPORT_SYMBOL(sock_create_kern);
+>  
+> -int __sys_socket(int family, int type, int protocol)
+> +int __sys_socket(struct net *net, int family, int type, int protocol)
+>  {
+> -	int retval;
+> +	long retval;
+>  	struct socket *sock;
+>  	int flags;
+>  
+> @@ -1346,7 +1347,7 @@ int __sys_socket(int family, int type, int protocol)
+>  	if (SOCK_NONBLOCK != O_NONBLOCK && (flags & SOCK_NONBLOCK))
+>  		flags = (flags & ~SOCK_NONBLOCK) | O_NONBLOCK;
+>  
+> -	retval = sock_create(family, type, protocol, &sock);
+> +	retval = __sock_create(net, family, type, protocol, &sock, 0);
+>  	if (retval < 0)
+>  		return retval;
+>  
+> @@ -1355,9 +1356,32 @@ int __sys_socket(int family, int type, int protocol)
+>  
+>  SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
+>  {
+> -	return __sys_socket(family, type, protocol);
+> +	return __sys_socket(current->nsproxy->net_ns, family, type, protocol);
+>  }
+>  
+> +/*
+> + * Create a socket inside a container.
+> + */
+> +#ifdef CONFIG_CONTAINERS
+> +SYSCALL_DEFINE4(container_socket,
+> +		int, containerfd, int, family, int, type, int, protocol)
+> +{
+> +	struct fd f = fdget(containerfd);
+> +	long ret;
+> +
+> +	if (!f.file)
+> +		return -EBADF;
+> +	ret = -EINVAL;
+> +	if (is_container_file(f.file)) {
+> +		struct container *c = f.file->private_data;
+> +
+> +		ret = __sys_socket(c->ns->net_ns, family, type, protocol);
+> +	}
+> +	fdput(f);
+> +	return ret;
+> +}
+> +#endif
+> +
+>  /*
+>   *	Create a pair of connected sockets.
+>   */
+> @@ -2555,7 +2579,7 @@ SYSCALL_DEFINE2(socketcall, int, call, unsigned long __user *, args)
+>  
+>  	switch (call) {
+>  	case SYS_SOCKET:
+> -		err = __sys_socket(a0, a1, a[2]);
+> +		err = __sys_socket(current->nsproxy->net_ns, a0, a1, a[2]);
+>  		break;
+>  	case SYS_BIND:
+>  		err = __sys_bind(a0, (struct sockaddr __user *)a1, a[2]);
