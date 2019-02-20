@@ -1,174 +1,131 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 15 Feb 2019 16:12:09 +0000
-Subject: [RFC PATCH 26/27] keys: Allow containers to be included in key ACLs by name
-Message-Id: <155024712939.21651.14094051420890992278.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 20 Feb 2019 06:52:45 +0000
+Subject: [RFC PATCH v3 14/18] fscrypt: require that key be added when setting a v2 encryption policy
+Message-Id: <20190220065249.32099-15-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+References: <20190220065249.32099-1-ebiggers@kernel.org>
+In-Reply-To: <20190220065249.32099-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-Allow a container to be specified to KEYCTL_GRANT_PERMISSION by name.  This
-allows processes that don't have access to the container fd to grant
-permission on a key to a container.  This is restricted to the containers
-that are children of the current container.
+From: Eric Biggers <ebiggers@google.com>
 
-This can be effected with something like:
+By looking up the master keys in a filesystem-level keyring rather than
+in the calling processes' key hierarchy, it becomes possible for a user
+to set an encryption policy which refers to some key they don't actually
+know, then encrypt their files using that key.  Cryptographically this
+isn't much of a problem, but the semantics of this would be a bit weird.
+Thus, enforce that a v2 encryption policy can only be set if the user
+has previously added the key, or has capable(CAP_FOWNER).
 
-	keyctl(KEYCTL_GRANT_PERMISSION, key,
-	       KEY_ACE_SUBJ_CONTAINER_NAME, "foo-test",
-	       KEY_ACE_SEARCH);
+We tolerate that this problem will continue to exist for v1 encryption
+policies, however; there is no way around that.
 
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/crypto/fscrypt_private.h |  3 +++
+ fs/crypto/keyring.c         | 47 +++++++++++++++++++++++++++++++++++++
+ fs/crypto/policy.c          |  6 +++++
+ 3 files changed, 56 insertions(+)
 
- include/linux/container.h   |    1 +
- include/uapi/linux/keyctl.h |    1 +
- kernel/container.c          |   24 ++++++++++++++++++++++++
- security/keys/compat.c      |    4 ++++
- security/keys/internal.h    |    2 +-
- security/keys/keyctl.c      |    2 +-
- security/keys/permission.c  |   19 ++++++++++++++++++-
- 7 files changed, 50 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/container.h b/include/linux/container.h
-index cd82074c26a3..fd49ce23467d 100644
---- a/include/linux/container.h
-+++ b/include/linux/container.h
-@@ -61,6 +61,7 @@ extern struct container init_container;
- #ifdef CONFIG_CONTAINERS
- extern const struct file_operations container_fops;
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index b81d4a59056d..881b43cb1d59 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -409,6 +409,9 @@ extern struct key *
+ fscrypt_find_master_key(struct super_block *sb,
+ 			const struct fscrypt_key_specifier *mk_spec);
  
-+extern struct container *find_container(const char *name);
- extern int copy_container(unsigned long flags, struct task_struct *tsk,
- 			  struct container *container);
- extern void exit_container(struct task_struct *tsk);
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index 89ab609f774c..31520da17f37 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -21,6 +21,7 @@
- enum key_ace_subject_type {
- 	KEY_ACE_SUBJ_STANDARD	= 0,	/* subject is one of key_ace_standard_subject */
- 	KEY_ACE_SUBJ_CONTAINER	= 1,	/* subject is a container fd */
-+	KEY_ACE_SUBJ_CONTAINER_NAME = 2, /* subject is a container name pointer */
- 	nr__key_ace_subject_type
- };
++extern int fscrypt_verify_key_added(struct super_block *sb,
++				    const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE]);
++
+ extern int __init fscrypt_init_keyring(void);
+ extern void fscrypt_exit_keyring(void);
  
-diff --git a/kernel/container.c b/kernel/container.c
-index 81be4ed915c2..c164c16328d6 100644
---- a/kernel/container.c
-+++ b/kernel/container.c
-@@ -235,6 +235,30 @@ struct container *fd_to_container(int fd)
- 	return c;
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+index 48e7ab8a42e5..dae4423c6657 100644
+--- a/fs/crypto/keyring.c
++++ b/fs/crypto/keyring.c
+@@ -556,6 +556,53 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
  }
+ EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
  
-+/**
-+ * find_container - Find a child container by name.
-+ * @name: The name of the container to find.
++/*
++ * Verify that the current user has added a master key with the given identifier
++ * (returns -ENOKEY if not).  This is needed to prevent a user from encrypting
++ * their files using some other user's key which they don't actually know.
++ * Cryptographically this isn't much of a problem, but the semantics of this
++ * would be a bit weird, so it's best to just forbid it.
 + *
-+ * Find a child of the current container by name.
++ * The system administrator (CAP_FOWNER) can override this, which should be
++ * enough for any use cases where encryption policies are being set using keys
++ * that were chosen ahead of time but aren't available at the moment.
++ *
++ * Note that the key may have already removed by the time this returns, but
++ * that's okay; we just care whether the key was there at some point.
++ *
++ * Return: 0 if the key is added, -ENOKEY if it isn't, or another -errno code
 + */
-+struct container *find_container(const char *name)
++int fscrypt_verify_key_added(struct super_block *sb,
++			     const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE])
 +{
-+	struct container *c = current->container, *p;
++	struct fscrypt_key_specifier mk_spec;
++	struct key *key, *mk_user;
++	struct fscrypt_master_key *mk;
++	int err;
 +
-+	spin_lock(&c->lock);
-+	list_for_each_entry(p, &c->children, child_link) {
-+		if (strcmp(p->name, name) = 0) {
-+			get_container(p);
-+			goto found;
-+		}
++	mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER;
++	memcpy(mk_spec.u.identifier, identifier, FSCRYPT_KEY_IDENTIFIER_SIZE);
++
++	key = fscrypt_find_master_key(sb, &mk_spec);
++	if (IS_ERR(key)) {
++		err = PTR_ERR(key);
++		goto out;
 +	}
-+
-+	p = NULL;
-+found:
-+	spin_unlock(&c->lock);
-+	return p;
++	mk = key->payload.data[0];
++	mk_user = find_master_key_user(mk);
++	if (IS_ERR(mk_user)) {
++		err = PTR_ERR(mk_user);
++	} else {
++		key_put(mk_user);
++		err = 0;
++	}
++	key_put(key);
++out:
++	if (err = -ENOKEY && capable(CAP_FOWNER))
++		err = 0;
++	return err;
 +}
 +
- /*
-  * Handle fork/clone.
-  *
-diff --git a/security/keys/compat.c b/security/keys/compat.c
-index 953156f94320..78c6c0e0eb59 100644
---- a/security/keys/compat.c
-+++ b/security/keys/compat.c
-@@ -175,6 +175,10 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
- 	case KEYCTL_MOVE:
- 		return keyctl_keyring_move(arg2, arg3, arg4, arg5);
- 	case KEYCTL_GRANT_PERMISSION:
-+		if (arg3 = KEY_ACE_SUBJ_CONTAINER_NAME)
-+			return keyctl_grant_permission(arg2, arg3,
-+						       (unsigned long)compat_ptr(arg4),
-+						       arg5);
- 		return keyctl_grant_permission(arg2, arg3, arg4, arg5);
- 
- 	default:
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 6cd7b5c17298..aa4ad9c8002e 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -379,7 +379,7 @@ extern long keyctl_set_container_keyring(int, key_serial_t);
- 
- extern long keyctl_grant_permission(key_serial_t keyid,
- 				    enum key_ace_subject_type type,
--				    unsigned int subject,
-+				    unsigned long subject,
- 				    unsigned int perm);
- 
- /*
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 02bd73d5a05a..978c9008c3b2 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1964,7 +1964,7 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 	case KEYCTL_GRANT_PERMISSION:
- 		return keyctl_grant_permission((key_serial_t)arg2,
- 					       (enum key_ace_subject_type)arg3,
--					       (unsigned int)arg4,
-+					       (unsigned long)arg4,
- 					       (unsigned int)arg5);
- 
- 	default:
-diff --git a/security/keys/permission.c b/security/keys/permission.c
-index f16d1665885f..b0e94ccc4635 100644
---- a/security/keys/permission.c
-+++ b/security/keys/permission.c
-@@ -407,7 +407,7 @@ static long key_change_acl(struct key *key, struct key_ace *new_ace)
-  */
- long keyctl_grant_permission(key_serial_t keyid,
- 			     enum key_ace_subject_type type,
--			     unsigned int subject,
-+			     unsigned long subject,
- 			     unsigned int perm)
+ static void evict_dentries_for_decrypted_inodes(struct fscrypt_master_key *mk)
  {
- 	struct key_ace new_ace;
-@@ -436,6 +436,23 @@ long keyctl_grant_permission(key_serial_t keyid,
- 		put_container(c);
- 		break;
- 	}
-+	case KEY_ACE_SUBJ_CONTAINER_NAME: {
-+		struct container *c;
-+		char *name;
-+
-+		name = strndup_user((const char __user *)subject, 23);
-+		if (IS_ERR(name))
-+			return PTR_ERR(name);
-+		c = find_container(name);
-+		kfree(name);
-+		if (!c)
-+			return -EINVAL;
-+		new_ace.type = KEY_ACE_SUBJ_CONTAINER;
-+		refcount_inc(&c->tag->usage);
-+		new_ace.container_tag = c->tag;
-+		put_container(c);
-+		break;
-+	}
- #endif
+ 	struct fscrypt_info *ci;
+diff --git a/fs/crypto/policy.c b/fs/crypto/policy.c
+index 07fec2f7fc72..456c25796844 100644
+--- a/fs/crypto/policy.c
++++ b/fs/crypto/policy.c
+@@ -209,6 +209,7 @@ static int set_encryption_policy(struct inode *inode,
+ {
+ 	union fscrypt_context ctx;
+ 	int ctxsize;
++	int err;
  
- 	default:
+ 	if (!fscrypt_supported_policy(policy))
+ 		return -EINVAL;
+@@ -227,6 +228,11 @@ static int set_encryption_policy(struct inode *inode,
+ 		 */
+ 		pr_warn_once("%s (pid %d) is setting deprecated v1 encryption policy; recommend upgrading to v2.\n",
+ 			     current->comm, current->pid);
++	} else {
++		err = fscrypt_verify_key_added(inode->i_sb,
++					       policy->v2.master_key_identifier);
++		if (err)
++			return err;
+ 	}
+ 
+ 	ctxsize = fscrypt_new_context_from_policy(&ctx, policy);
+-- 
+2.20.1
