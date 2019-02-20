@@ -1,52 +1,31 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 20 Feb 2019 07:54:05 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 20 Feb 2019 18:07:22 +0000
 Subject: Re: [RFC PATCH v3 00/18] fscrypt: key management improvements
-Message-Id: <20190220075404.GA974@sol.localdomain>
+Message-Id: <14023.1550686042@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
 References: <20190220065249.32099-1-ebiggers@kernel.org>
- <1660609D-3525-4485-9652-57976DB020F4@dilger.ca>
-In-Reply-To: <1660609D-3525-4485-9652-57976DB020F4@dilger.ca>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+In-Reply-To: <20190220065249.32099-1-ebiggers@kernel.org>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, dhowells@redhat.com, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-On Tue, Feb 19, 2019 at 11:18:21PM -0800, Andreas Dilger wrote:
-> On Feb 19, 2019, at 10:52 PM, Eric Biggers <ebiggers@kernel.org> wrote:
-> > 
-> > Hello,
-> > 
-> > This patchset makes major improvements to how keys are added, removed,
-> > and derived in fscrypt, aka ext4/f2fs/ubifs encryption.  It does this by
-> > adding new ioctls that add and remove encryption keys directly to/from
-> > the filesystem, and by adding a new encryption policy version ("v2")
-> > where the user-provided keys are only used as input to HKDF-SHA512 and
-> > are identified by their cryptographic hash.
-> 
-> Just to confirm for the layman reader - the fact that the crypto keys
-> are registered with the filesystem and not with the user process doesn't
-> prevent user(s) from having different crypto keys for different subdirs
-> in a single filesystem?
+I have a couple of patches that add ACLs to keyrings, that you can find at =
+the
+top of the branch here:
 
-Correct, that hasn't changed.  Different directories can use different keys.
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/=
+?h=3Dkeys-acl
 
-> 
-> Secondly, does this progress fscrypt toward allowing multiple master keys
-> to decrypt a single per-file key?
-> 
+I have other patches that allow tags to be used as subjects in the ACL, wit=
+h a
+container supplying a tag, e.g.:
 
-It's not a goal of this patchset as no one has really been asking for it yet.
-Per-file keys are still derived from the master key.
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/comm=
+it/?h=3Dcontainer&id=E0fdc5613a32b9475b025f58e7a2267329b3f3a4
 
-Note that it's already possible to wrap the master keys in userspace.  Thus you
-can already have multiple passwords that unlock the same encrypted directory.
-You just can't do this with *individual files*.  Maybe that's good enough.
+Might something similar be of use to you here, perhaps specifying a tag
+referring to the blockdev of interest rather than the container?
 
-However, this patchset does fix the denial of service vulnerabilities that
-currently exist when users share an encrypted directory.  Also, since it adds a
-real KDF, it makes it much easier to derive a wrapping key to wrap the per-file
-keys if that were to become a requirement.  (The master key could be used as the
-wrapping key directly, but that's inflexible and more error-prone.)
-
-- Eric
+David
