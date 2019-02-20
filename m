@@ -1,85 +1,65 @@
-From: Ian Kent <raven@themaw.net>
-Date: Wed, 20 Feb 2019 04:42:42 +0000
+From: Paul Moore <paul@paul-moore.com>
+Date: Wed, 20 Feb 2019 06:57:34 +0000
 Subject: Re: [RFC PATCH 02/27] containers: Implement containers as kernel objects
-Message-Id: <e41d7a4e072ac33774090b6a5aff6d3a45445a36.camel@themaw.net>
+Message-Id: <CAHC9VhQga+bSVEyKbAtfxDsV9RqK5Hv6h-cbs4ArQ3KedxvgpQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1550432358.2809.21.camel@HansenPartnership.com>
-         <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-         <155024685321.21651.1504201877881622756.stgit@warthog.procyon.org.uk>
-         <19562.1550617574@warthog.procyon.org.uk>
-         <1550629220.11684.3.camel@HansenPartnership.com>
-         <054c1e762d28306abd4db9c42fb1c5f4261332fd.camel@themaw.net>
-         <1550634367.11684.6.camel@HansenPartnership.com>
+ <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+ <155024685321.21651.1504201877881622756.stgit@warthog.procyon.org.uk>
+ <19562.1550617574@warthog.procyon.org.uk> <1550629220.11684.3.camel@HansenPartnership.com>
+ <054c1e762d28306abd4db9c42fb1c5f4261332fd.camel@themaw.net> <1550634367.11684.6.camel@HansenPartnership.com>
 In-Reply-To: <1550634367.11684.6.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>, David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org, cgroups@vger.kernel.org
 
-On Tue, 2019-02-19 at 19:46 -0800, James Bottomley wrote:
+On Tue, Feb 19, 2019 at 10:46 PM James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
 > On Wed, 2019-02-20 at 11:04 +0800, Ian Kent wrote:
 > > On Tue, 2019-02-19 at 18:20 -0800, James Bottomley wrote:
 > > > On Tue, 2019-02-19 at 23:06 +0000, David Howells wrote:
 > > > > James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
-> > > > 
+> > > >
 > > > > > I thought we got agreement years ago that containers don't
 > > > > > exist in Linux as a single entity: they're currently a
 > > > > > collection of cgroups and namespaces some of which may and some
 > > > > > of which may not be local to the entity the orchestration
 > > > > > system thinks of as a "container".
-> > > > 
+> > > >
 > > > > I wasn't party to that agreement and don't feel particularly
 > > > > bound by it.
-> > > 
+> > >
 > > > That's not at all relevant, is it?  The point is we have widespread
 > > > uses of namespaces and cgroups that span containers today meaning
 > > > that a "container id" becomes a problematic concept.  What we
 > > > finally got to with the audit people was an unmodifiable label
 > > > which the orchestration system can set ... can't you just use that?
-> > 
+> >
 > > Sorry James, I fail to see how assigning an id to a collection of
 > > objects constitutes a problem or how that could restrict the way a
 > > container is used.
-> 
+>
 > Rather than rehash the whole argument again, what's the reason you
 > can't use the audit label?  It seems to do what you want in a way that
 > doesn't cause problems.  If you can just use it there's little point
 > arguing over what is effectively a moot issue.
 
-David might want to use the audit label for this, I don't know.
-And maybe that's a good choice initially.
+Ignoring for a moment whether or not the audit container ID is
+applicable here, one of the things I've been focused on with the audit
+container ID work is trying to make it difficult for other subsystems
+to use it.  I've taken this stance not because I don't think something
+like a container ID would be useful outside the audit subsystem, but
+rather because I'm afraid of how it might be abused by other
+subsystems and that abuse might threaten the existence of the audit
+container ID.
 
-But going way off topic.
+If there is a willingness to implement a general kernel container ID
+that behaves similarly to how the audit container ID is envisioned,
+I'd much rather do that then implement something which is audit
+specific.
 
-Because there is a need to not clutter kernel space with logging,
-leaving it to user space to handle but also without providing user
-space with sufficient information to do so there will need to be
-some sort of globally unique (sub-system) identifiers of kernel
-objects for which user space needs logging information so that
-if or when that kernel to user space information flow is
-implemented the consistent identifiers that will be needed will
-at least exist for some kernel objects.
-
-Yes, that's way off topic for this series but I think it's something
-that needs at least some consideration for new implementation work.
-
-Unfortunately properly implementing such an encoding scheme probably
-warrants a completely separate project so, as you say moot wrt. this
-series.
-
-> 
-> James
-> 
-> 
-> > Isn't the only problem here the current restrictions on the way
-> > objects need to be combined as a set and the ability to be able add
-> > or subtract from that set.
-> > 
-> > Then again the notion of active vs. inactive might not be sufficient
-> > to allow for the needed flexibility ...
-> > 
-> > Ian
-> > 
-> 
-> 
+-- 
+paul moore
+www.paul-moore.com
