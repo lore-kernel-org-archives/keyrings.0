@@ -1,16 +1,39 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 20 Feb 2019 13:32:56 +0000
-Subject: Re: [PATCH] KEYS: user: Align the payload buffer
-Message-Id: <21126.1550669576@warthog.procyon.org.uk>
+From: David Laight <David.Laight@ACULAB.COM>
+Date: Wed, 20 Feb 2019 13:52:40 +0000
+Subject: RE: [PATCH] KEYS: user: Align the payload buffer
+Message-Id: <6bf441ffc1a54d06ad27ed01c6d06a58@AcuMS.aculab.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190219230800.GD12177@gmail.com> <20190115033716.18380-1-ebiggers@kernel.org> <20190207233509.GA125156@gmail.com>
-In-Reply-To: <20190219230800.GD12177@gmail.com>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>, linux-fscrypt@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155066953188.21038.12015964986007814182.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155066953188.21038.12015964986007814182.stgit@warthog.procyon.org.uk>
+To: 'David Howells' <dhowells@redhat.com>, "jmorris@namei.org" <jmorris@namei.org>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, "stable@vger.kernel.org" <stable@vger.kernel.org>, Eric Biggers <ebiggers@google.com>Aaro Koskinen <aaro.koskinen@iki.fi>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 
-Sent on to James.
-
-David
+RnJvbTogRGF2aWQgSG93ZWxscw0KPiBTZW50OiAyMCBGZWJydWFyeSAyMDE5IDEzOjMyDQo+IA0K
+PiBGcm9tOiBFcmljIEJpZ2dlcnMgPGViaWdnZXJzQGdvb2dsZS5jb20+DQo+IA0KPiBBbGlnbiB0
+aGUgcGF5bG9hZCBvZiAidXNlciIgYW5kICJsb2dvbiIga2V5cyBzbyB0aGF0IHVzZXJzIG9mIHRo
+ZQ0KPiBrZXlyaW5ncyBzZXJ2aWNlIGNhbiBhY2Nlc3MgaXQgYXMgYSBzdHJ1Y3QgdGhhdCByZXF1
+aXJlcyBtb3JlIHRoYW4NCj4gMi1ieXRlIGFsaWdubWVudC4gIGZzY3J5cHQgY3VycmVudGx5IGRv
+ZXMgdGhpcyB3aGljaCByZXN1bHRzIGluIHRoZSByZWFkDQo+IG9mIGZzY3J5cHRfa2V5OjpzaXpl
+IGJlaW5nIG1pc2FsaWduZWQgYXMgaXQgbmVlZHMgNC1ieXRlIGFsaWdubWVudC4NCj4gDQo+IEFs
+aWduIHRvIF9fYWxpZ25vZl9fKHU2NCkgcmF0aGVyIHRoYW4gX19hbGlnbm9mX18obG9uZykgc2lu
+Y2UgaW4gdGhlDQo+IGZ1dHVyZSBpdCdzIGNvbmNlaXZhYmxlIHRoYXQgcGVvcGxlIHdvdWxkIHVz
+ZSBzdHJ1Y3RzIGJlZ2lubmluZyB3aXRoDQo+IHU2NCwgd2hpY2ggb24gc29tZSBwbGF0Zm9ybXMg
+d291bGQgcmVxdWlyZSBtb3JlIHRoYW4gJ2xvbmcnIGFsaWdubWVudC4NCi4uLg0KPiAgaW5jbHVk
+ZS9rZXlzL3VzZXItdHlwZS5oIHwgICAgMiArLQ0KPiAgMSBmaWxlIGNoYW5nZWQsIDEgaW5zZXJ0
+aW9uKCspLCAxIGRlbGV0aW9uKC0pDQo+IA0KPiBkaWZmIC0tZ2l0IGEvaW5jbHVkZS9rZXlzL3Vz
+ZXItdHlwZS5oIGIvaW5jbHVkZS9rZXlzL3VzZXItdHlwZS5oDQo+IGluZGV4IGUwOThjYmUyN2Ri
+NS4uMTJiYWJlOTkxNTk0IDEwMDY0NA0KPiAtLS0gYS9pbmNsdWRlL2tleXMvdXNlci10eXBlLmgN
+Cj4gKysrIGIvaW5jbHVkZS9rZXlzL3VzZXItdHlwZS5oDQo+IEBAIC0zMSw3ICszMSw3IEBADQo+
+ICBzdHJ1Y3QgdXNlcl9rZXlfcGF5bG9hZCB7DQo+ICAJc3RydWN0IHJjdV9oZWFkCXJjdTsJCS8q
+IFJDVSBkZXN0cnVjdG9yICovDQo+ICAJdW5zaWduZWQgc2hvcnQJZGF0YWxlbjsJLyogbGVuZ3Ro
+IG9mIHRoaXMgZGF0YSAqLw0KPiAtCWNoYXIJCWRhdGFbMF07CS8qIGFjdHVhbCBkYXRhICovDQo+
+ICsJY2hhcgkJZGF0YVswXSBfX2FsaWduZWQoX19hbGlnbm9mX18odTY0KSk7IC8qIGFjdHVhbCBk
+YXRhICovDQo+ICB9Ow0KDQpJJ2QgbWFrZSB0aGUgJ2RhdGFsZW4nIGZpZWxkICd1bnNpZ25lZCBp
+bnQnIGF0IHRoZSBzYW1lIHRpbWUuDQpJdCB3aWxsIHVzZSBzb21lIG9mIHRoZSBob2xlIHlvdSd2
+ZSBtYWRlIGFuZCBnZW5lcmF0ZSBiZXR0ZXINCmNvZGUgb24gbW9zdCBhcmNoZXMuDQoNCglEYXZp
+ZA0KDQotDQpSZWdpc3RlcmVkIEFkZHJlc3MgTGFrZXNpZGUsIEJyYW1sZXkgUm9hZCwgTW91bnQg
+RmFybSwgTWlsdG9uIEtleW5lcywgTUsxIDFQVCwgVUsNClJlZ2lzdHJhdGlvbiBObzogMTM5NzM4
+NiAoV2FsZXMpDQo
