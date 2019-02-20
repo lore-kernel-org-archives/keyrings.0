@@ -1,88 +1,71 @@
-From: Geliang Tang <geliangtang@gmail.com>
-Date: Tue, 26 Feb 2019 09:11:18 +0000
-Subject: Re: [PATCH] security: keys: add NULL checking for key->type->instantiate
-Message-Id: <20190226091118.GB3197@OptiPlex>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 20 Feb 2019 06:52:35 +0000
+Subject: [RFC PATCH v3 04/18] fs: add ->s_master_keys to struct super_block
+Message-Id: <20190220065249.32099-5-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <754d6ccb4012fc11c7b9369e66ba7f3e816fdb57.1548400400.git.geliangtang@gmail.com>
- <31395.1549492013@warthog.procyon.org.uk>
-In-Reply-To: <31395.1549492013@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190220065249.32099-1-ebiggers@kernel.org>
+In-Reply-To: <20190220065249.32099-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-On Wed, Feb 06, 2019 at 10:26:53PM +0000, David Howells wrote:
-> Geliang Tang <geliangtang@gmail.com> wrote:
-> 
-> > key->type->instantiate can be NULL, add NULL checking to prevent
-> > NULL pointer dereference in __key_instantiate_and_link().
-> 
-> Do you have an oops report or test case for this?
-> 
-> David
+From: Eric Biggers <ebiggers@google.com>
 
-Here is the test module code. Insmod it, we can get the oops.
+Add an ->s_master_keys keyring to 'struct super_block'.  New fscrypt
+ioctls will allow adding and removing encryption keys from this keyring.
+This will enable solving multiple interrelated problems with how fscrypt
+keys are provided and managed currently, including:
 
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/key.h>
-#include <linux/key-type.h>
-#include <linux/cred.h>
-#include <linux/seq_file.h>
+- Making the key status (which is currently per-process) match the
+  filesystem-level status of which encrypted files are "unlocked".
 
-static int test_instantiate(struct key *key, struct key_preparsed_payload *prep)
-{
-	return 0;
-}
+- Supporting a proper API to remove encryption keys, "locking" the
+  corresponding encrypted files.
 
-static void test_describe(const struct key *key, struct seq_file *m)
-{
-	seq_puts(m, key->description);
-}
+- Caching an HMAC transform for each master key, allowing the use of
+  HKDF while still retaining good performance.
 
-struct key_type test_key_type = {
-        .name           = "test",
-	//.instantiate	= test_instantiate,
-        .describe       = test_describe,
-};
+- Preventing denial of service via keyctl_invalidate().
 
-static int __init test_init(void)
-{
-	const struct cred *cred = current_cred();
-	struct key *key;
-	int ret;
+Similar to the existing ->s_cop, the keyring is added to the VFS-level
+superblock struct rather than separately to the ext4, f2fs, and ubifs
+superblock structs so that it can be used by the shared code in
+fs/crypto/.  To minimize overhead, the keyring will only be allocated if
+userspace actually adds a key; otherwise will stay NULL.
 
-	register_key_type(&test_key_type);
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ fs/super.c         | 3 +++
+ include/linux/fs.h | 1 +
+ 2 files changed, 4 insertions(+)
 
-	key = key_alloc(&test_key_type, "test",
-			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, cred,
-			KEY_POS_SEARCH, KEY_ALLOC_NOT_IN_QUOTA, NULL);
-	if (IS_ERR(key))
-		return -1;
-
-	pr_info("keyring allocated successfully.\n");
-
-	ret = key_instantiate_and_link(key,
-				       NULL,
-				       sizeof(int),
-				       current->cred->user->session_keyring,
-				       NULL);
-	if (ret < 0) {
-		key_revoke(key);
-		key_put(key);
-		return ret;
-	}
-
-	return 0;
-}
-
-static void __exit test_exit(void)
-{
-	unregister_key_type(&test_key_type);
-}
-
-module_init(test_init);
-module_exit(test_exit);
-
-MODULE_LICENSE("GPL");
+diff --git a/fs/super.c b/fs/super.c
+index 48e25eba8465..7ca05dda905c 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -291,6 +291,9 @@ static void __put_super(struct super_block *s)
+ 		security_sb_free(s);
+ 		put_user_ns(s->s_user_ns);
+ 		kfree(s->s_subtype);
++#ifdef CONFIG_FS_ENCRYPTION
++		key_put(s->s_master_keys);
++#endif
+ 		call_rcu(&s->rcu, destroy_super_rcu);
+ 	}
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index ba7889bb9ef6..70d929ac89f9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1405,6 +1405,7 @@ struct super_block {
+ 	const struct xattr_handler **s_xattr;
+ #ifdef CONFIG_FS_ENCRYPTION
+ 	const struct fscrypt_operations	*s_cop;
++	struct key		*s_master_keys; /* master crypto keys in use */
+ #endif
+ 	struct hlist_bl_head	s_roots;	/* alternate root dentries for NFS */
+ 	struct list_head	s_mounts;	/* list of mounts; _not_ for fs use */
+-- 
+2.20.1
