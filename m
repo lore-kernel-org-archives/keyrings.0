@@ -1,65 +1,56 @@
-From: Paul Moore <paul@paul-moore.com>
-Date: Wed, 20 Feb 2019 06:57:34 +0000
+From: Christian Brauner <christian@brauner.io>
+Date: Wed, 20 Feb 2019 13:26:02 +0000
 Subject: Re: [RFC PATCH 02/27] containers: Implement containers as kernel objects
-Message-Id: <CAHC9VhQga+bSVEyKbAtfxDsV9RqK5Hv6h-cbs4ArQ3KedxvgpQ@mail.gmail.com>
+Message-Id: <20190220132600.c5ahsmnoihdrcqeq@brauner.io>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1550432358.2809.21.camel@HansenPartnership.com>
- <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
  <155024685321.21651.1504201877881622756.stgit@warthog.procyon.org.uk>
- <19562.1550617574@warthog.procyon.org.uk> <1550629220.11684.3.camel@HansenPartnership.com>
- <054c1e762d28306abd4db9c42fb1c5f4261332fd.camel@themaw.net> <1550634367.11684.6.camel@HansenPartnership.com>
-In-Reply-To: <1550634367.11684.6.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+ <7923d4aa646fbe4bd71cfb4144f1c96f28cad972.camel@themaw.net>
+In-Reply-To: <7923d4aa646fbe4bd71cfb4144f1c96f28cad972.camel@themaw.net>
+To: Ian Kent <raven@themaw.net>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, James Bottomley <James.Bottomley@HansenPartnership.com>, linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
 
-On Tue, Feb 19, 2019 at 10:46 PM James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Wed, 2019-02-20 at 11:04 +0800, Ian Kent wrote:
-> > On Tue, 2019-02-19 at 18:20 -0800, James Bottomley wrote:
-> > > On Tue, 2019-02-19 at 23:06 +0000, David Howells wrote:
-> > > > James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
-> > > >
-> > > > > I thought we got agreement years ago that containers don't
-> > > > > exist in Linux as a single entity: they're currently a
-> > > > > collection of cgroups and namespaces some of which may and some
-> > > > > of which may not be local to the entity the orchestration
-> > > > > system thinks of as a "container".
-> > > >
-> > > > I wasn't party to that agreement and don't feel particularly
-> > > > bound by it.
-> > >
-> > > That's not at all relevant, is it?  The point is we have widespread
-> > > uses of namespaces and cgroups that span containers today meaning
-> > > that a "container id" becomes a problematic concept.  What we
-> > > finally got to with the audit people was an unmodifiable label
-> > > which the orchestration system can set ... can't you just use that?
-> >
-> > Sorry James, I fail to see how assigning an id to a collection of
-> > objects constitutes a problem or how that could restrict the way a
-> > container is used.
->
-> Rather than rehash the whole argument again, what's the reason you
-> can't use the audit label?  It seems to do what you want in a way that
-> doesn't cause problems.  If you can just use it there's little point
-> arguing over what is effectively a moot issue.
+On Wed, Feb 20, 2019 at 10:46:24AM +0800, Ian Kent wrote:
+> On Fri, 2019-02-15 at 16:07 +0000, David Howells wrote:
+> > Implement a kernel container object such that it contains the following
+> > things:
+> > 
+> >  (1) Namespaces.
+> > 
+> >  (2) A root directory.
+> > 
+> >  (3) A set of processes, including one designated as the 'init' process.
+> 
+> Yeah, I think a name other than init needs to be used for this
+> process.
+> 
+> The problem being that there is no requirement for container
+> process 1 to behave in any way like an "init" process is
+> expected to behave and that leads to confusion (at least
+> it certainly did for me).
 
-Ignoring for a moment whether or not the audit container ID is
-applicable here, one of the things I've been focused on with the audit
-container ID work is trying to make it difficult for other subsystems
-to use it.  I've taken this stance not because I don't think something
-like a container ID would be useful outside the audit subsystem, but
-rather because I'm afraid of how it might be abused by other
-subsystems and that abuse might threaten the existence of the audit
-container ID.
+If you look at the documentation for pid namespaces(7) you can see that
+the pid 1 inside a pid namespace is expected to behave like an init
+process:
+-  "The  first  process created in a new namespace [...] has  the PID 1,
+   and is the "init" process for the namespace (see init(1))."
+- "[...] child process that is orphaned within the namespace will be
+  reparented to this process rather than init(1) [...]"
+- "If the "init" process of a PID namespace terminates, the kernel
+  terminates all of the processes in the  namespace  via a SIGKILL
+  signal. This behavior reflects the fact that the "init" process is
+  essential for the cor‐ rect operation of a PID namespace."
+- "Only signals for which the "init" process has established a signal
+  handler can be sent to the  "init" process by other members of the
+  PID namespace."
+- "[...] the reboot(2) system call causes a signal to be sent to the
+  namespace "init" process."
 
-If there is a willingness to implement a general kernel container ID
-that behaves similarly to how the audit container ID is envisioned,
-I'd much rather do that then implement something which is audit
-specific.
-
--- 
-paul moore
-www.paul-moore.com
+This is one of the reasons why all major current container runtimes
+finally after years of failing to realize this run a stub init process
+that mimicks a dumb init. Sure, you get away with not having an init
+that behaves like an init but this is inherently broken or at least
+against the way pid namespaces were designed.
