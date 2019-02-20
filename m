@@ -1,162 +1,193 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 15 Feb 2019 16:09:24 +0000
-Subject: [RFC PATCH 13/27] keys: Provide a keyctl to query a request_key authentication key
-Message-Id: <155024696409.21651.3488621563034826227.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 20 Feb 2019 06:52:32 +0000
+Subject: [RFC PATCH v3 01/18] fs, fscrypt: move uapi definitions to new header <linux/fscrypt.h>
+Message-Id: <20190220065249.32099-2-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+References: <20190220065249.32099-1-ebiggers@kernel.org>
+In-Reply-To: <20190220065249.32099-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-Provide a keyctl to query a request_key authentication key for situations
-where this information isn't passed on the command line (such as where the
-authentication key is placed in a queue instead of /sbin/request-key being
-invoked):
+From: Eric Biggers <ebiggers@google.com>
 
-	struct keyctl_query_request_key_auth {
-		char		operation[32];
-		uid_t		fsuid;
-		gid_t		fsgid;
-		key_serial_t	target_key;
-		key_serial_t	thread_keyring;
-		key_serial_t	process_keyring;
-		key_serial_t	session_keyring;
-		__u64		spare[1];
-	};
+More fscrypt definitions are being added, and we shouldn't use a
+disproportionate amount of space in <linux/fs.h> for fscrypt stuff.
+So move the fscrypt definitions to a new header <linux/fscrypt.h>.
 
-	keyctl(KEYCTL_QUERY_REQUEST_KEY_AUTH,
-	       key_serial_t key,
-	       struct keyctl_query_request_key_auth *data);
+For source compatibility with existing userspace programs, <linux/fs.h>
+still includes the new header.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ MAINTAINERS                  |  1 +
+ include/linux/fscrypt.h      |  1 +
+ include/uapi/linux/fs.h      | 54 ++-------------------------------
+ include/uapi/linux/fscrypt.h | 58 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 63 insertions(+), 51 deletions(-)
+ create mode 100644 include/uapi/linux/fscrypt.h
 
- include/uapi/linux/keyctl.h |   12 ++++++++++++
- security/keys/compat.c      |    2 ++
- security/keys/container.c   |   42 ++++++++++++++++++++++++++++++++++++++++++
- security/keys/internal.h    |    2 ++
- security/keys/keyctl.c      |    4 ++++
- 5 files changed, 62 insertions(+)
-
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index 85e8fef89bba..bb075ad1827d 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -69,6 +69,7 @@
- #define KEYCTL_RESTRICT_KEYRING		29	/* Restrict keys allowed to link to a keyring */
- #define KEYCTL_WATCH_KEY		30	/* Watch a key or ring of keys for changes */
- #define KEYCTL_CONTAINER_INTERCEPT	31	/* Intercept upcalls inside a container */
-+#define KEYCTL_QUERY_REQUEST_KEY_AUTH	32	/* Query a request_key_auth key */
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 51029a425dbe..f3c60ca897cc 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6199,6 +6199,7 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tytso/fscrypt.git
+ S:	Supported
+ F:	fs/crypto/
+ F:	include/linux/fscrypt*.h
++F:	include/uapi/linux/fscrypt.h
+ F:	Documentation/filesystems/fscrypt.rst
  
- /* keyctl structures */
- struct keyctl_dh_params {
-@@ -114,4 +115,15 @@ struct keyctl_pkey_params {
- 	__u32		__spare[7];
- };
+ FSI-ATTACHED I2C DRIVER
+diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
+index e5194fc3983e..8b1e44421497 100644
+--- a/include/linux/fscrypt.h
++++ b/include/linux/fscrypt.h
+@@ -16,6 +16,7 @@
+ #include <linux/fs.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
++#include <uapi/linux/fscrypt.h>
  
-+struct keyctl_query_request_key_auth {
-+	char		operation[32];	/* Operation name, typically "create" */
-+	uid_t		fsuid;		/* UID of requester */
-+	gid_t		fsgid;		/* GID of requester */
-+	__u32		target_key;	/* The key being instantiated */
-+	__u32		thread_keyring;	/* The requester's thread keyring */
-+	__u32		process_keyring; /* The requester's process keyring */
-+	__u32		session_keyring; /* The requester's session keyring */
-+	__u64		spare[1];
-+};
+ #define FS_CRYPTO_BLOCK_SIZE		16
+ 
+diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+index 121e82ce296b..0f4e66b1bcd0 100644
+--- a/include/uapi/linux/fs.h
++++ b/include/uapi/linux/fs.h
+@@ -13,6 +13,9 @@
+ #include <linux/limits.h>
+ #include <linux/ioctl.h>
+ #include <linux/types.h>
++#ifndef __KERNEL__
++#include <linux/fscrypt.h>
++#endif
+ 
+ /* Use of MS_* flags within the kernel is restricted to core mount(2) code. */
+ #if !defined(__KERNEL__)
+@@ -212,57 +215,6 @@ struct fsxattr {
+ #define FS_IOC_GETFSLABEL		_IOR(0x94, 49, char[FSLABEL_MAX])
+ #define FS_IOC_SETFSLABEL		_IOW(0x94, 50, char[FSLABEL_MAX])
+ 
+-/*
+- * File system encryption support
+- */
+-/* Policy provided via an ioctl on the topmost directory */
+-#define FS_KEY_DESCRIPTOR_SIZE	8
+-
+-#define FS_POLICY_FLAGS_PAD_4		0x00
+-#define FS_POLICY_FLAGS_PAD_8		0x01
+-#define FS_POLICY_FLAGS_PAD_16		0x02
+-#define FS_POLICY_FLAGS_PAD_32		0x03
+-#define FS_POLICY_FLAGS_PAD_MASK	0x03
+-#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
+-#define FS_POLICY_FLAGS_VALID		0x07
+-
+-/* Encryption algorithms */
+-#define FS_ENCRYPTION_MODE_INVALID		0
+-#define FS_ENCRYPTION_MODE_AES_256_XTS		1
+-#define FS_ENCRYPTION_MODE_AES_256_GCM		2
+-#define FS_ENCRYPTION_MODE_AES_256_CBC		3
+-#define FS_ENCRYPTION_MODE_AES_256_CTS		4
+-#define FS_ENCRYPTION_MODE_AES_128_CBC		5
+-#define FS_ENCRYPTION_MODE_AES_128_CTS		6
+-#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
+-#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
+-#define FS_ENCRYPTION_MODE_ADIANTUM		9
+-
+-struct fscrypt_policy {
+-	__u8 version;
+-	__u8 contents_encryption_mode;
+-	__u8 filenames_encryption_mode;
+-	__u8 flags;
+-	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
+-};
+-
+-#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
+-#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
+-#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
+-
+-/* Parameters for passing an encryption key into the kernel keyring */
+-#define FS_KEY_DESC_PREFIX		"fscrypt:"
+-#define FS_KEY_DESC_PREFIX_SIZE		8
+-
+-/* Structure that userspace passes to the kernel keyring */
+-#define FS_MAX_KEY_SIZE			64
+-
+-struct fscrypt_key {
+-	__u32 mode;
+-	__u8 raw[FS_MAX_KEY_SIZE];
+-	__u32 size;
+-};
+-
+ /*
+  * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
+  *
+diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+new file mode 100644
+index 000000000000..193339cb53fd
+--- /dev/null
++++ b/include/uapi/linux/fscrypt.h
+@@ -0,0 +1,58 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++#ifndef _UAPI_LINUX_FSCRYPT_H
++#define _UAPI_LINUX_FSCRYPT_H
 +
- #endif /*  _LINUX_KEYCTL_H */
-diff --git a/security/keys/compat.c b/security/keys/compat.c
-index 6420881e5ce7..30055fc2b629 100644
---- a/security/keys/compat.c
-+++ b/security/keys/compat.c
-@@ -164,6 +164,8 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
- #ifdef CONFIG_CONTAINERS
- 	case KEYCTL_CONTAINER_INTERCEPT:
- 		return keyctl_container_intercept(arg2, compat_ptr(arg3), arg4, arg5);
-+	case KEYCTL_QUERY_REQUEST_KEY_AUTH:
-+		return keyctl_query_request_key_auth(arg2, compat_ptr(arg3));
- #endif
- 
- 	default:
-diff --git a/security/keys/container.c b/security/keys/container.c
-index c61c43658f3b..115998e867cd 100644
---- a/security/keys/container.c
-+++ b/security/keys/container.c
-@@ -225,3 +225,45 @@ int queue_request_key(struct key *authkey)
- 	kleave(" = %d", ret);
- 	return ret;
- }
++#include <linux/types.h>
 +
 +/*
-+ * Query information about a request_key_auth key.
++ * File system encryption support
 + */
-+long keyctl_query_request_key_auth(key_serial_t auth_id,
-+				   struct keyctl_query_request_key_auth __user *_data)
-+{
-+	struct keyctl_query_request_key_auth data;
-+	struct request_key_auth *rka;
-+	struct key *session;
-+	key_ref_t authkey_ref;
++/* Policy provided via an ioctl on the topmost directory */
++#define FS_KEY_DESCRIPTOR_SIZE	8
 +
-+	if (auth_id <= 0 || !_data)
-+		return -EINVAL;
++#define FS_POLICY_FLAGS_PAD_4		0x00
++#define FS_POLICY_FLAGS_PAD_8		0x01
++#define FS_POLICY_FLAGS_PAD_16		0x02
++#define FS_POLICY_FLAGS_PAD_32		0x03
++#define FS_POLICY_FLAGS_PAD_MASK	0x03
++#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
++#define FS_POLICY_FLAGS_VALID		0x07
 +
-+	authkey_ref = lookup_user_key(auth_id, 0, KEY_NEED_SEARCH);
-+	if (IS_ERR(authkey_ref))
-+		return PTR_ERR(authkey_ref);
-+	rka = get_request_key_auth(key_ref_to_ptr(authkey_ref));
++/* Encryption algorithms */
++#define FS_ENCRYPTION_MODE_INVALID		0
++#define FS_ENCRYPTION_MODE_AES_256_XTS		1
++#define FS_ENCRYPTION_MODE_AES_256_GCM		2
++#define FS_ENCRYPTION_MODE_AES_256_CBC		3
++#define FS_ENCRYPTION_MODE_AES_256_CTS		4
++#define FS_ENCRYPTION_MODE_AES_128_CBC		5
++#define FS_ENCRYPTION_MODE_AES_128_CTS		6
++#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
++#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
++#define FS_ENCRYPTION_MODE_ADIANTUM		9
 +
-+	memset(&data, 0, sizeof(data));
-+	strlcpy(data.operation, rka->op, sizeof(data.operation));
-+	data.fsuid = from_kuid(current_user_ns(), rka->cred->fsuid);
-+	data.fsgid = from_kgid(current_user_ns(), rka->cred->fsgid);
-+	data.target_key = rka->target_key->serial;
-+	data.thread_keyring = key_serial(rka->cred->thread_keyring);
-+	data.process_keyring = key_serial(rka->cred->thread_keyring);
++struct fscrypt_policy {
++	__u8 version;
++	__u8 contents_encryption_mode;
++	__u8 filenames_encryption_mode;
++	__u8 flags;
++	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
++};
 +
-+	rcu_read_lock();
-+	session = rcu_dereference(rka->cred->session_keyring);
-+	if (!session)
-+		session = rka->cred->user->session_keyring;
-+	data.session_keyring = key_serial(session);
-+	rcu_read_unlock();
++#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
++#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
++#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
 +
-+	key_ref_put(authkey_ref);
++/* Parameters for passing an encryption key into the kernel keyring */
++#define FS_KEY_DESC_PREFIX		"fscrypt:"
++#define FS_KEY_DESC_PREFIX_SIZE		8
 +
-+	if (copy_to_user(_data, &data, sizeof(data)))
-+		return -EFAULT;
++/* Structure that userspace passes to the kernel keyring */
++#define FS_MAX_KEY_SIZE			64
 +
-+	return 0;
-+}
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index e98fca465146..9f2a6ce67d15 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -362,6 +362,8 @@ static inline long keyctl_watch_key(key_serial_t key_id, int watch_fd, int watch
- 
- #ifdef CONFIG_CONTAINERS
- extern long keyctl_container_intercept(int, const char __user *, unsigned int, key_serial_t);
-+extern long keyctl_query_request_key_auth(key_serial_t,
-+					  struct keyctl_query_request_key_auth __user *);
- #endif
- 
- /*
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 38ff33431f33..a19efc60944d 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1863,6 +1863,10 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 						  (const char __user *)arg3,
- 						  (unsigned int)arg4,
- 						  (key_serial_t)arg5);
-+	case KEYCTL_QUERY_REQUEST_KEY_AUTH:
-+		return keyctl_query_request_key_auth(
-+			(key_serial_t)arg2,
-+			(struct keyctl_query_request_key_auth __user *)arg3);
- #endif
- 
- 	default:
++struct fscrypt_key {
++	__u32 mode;
++	__u8 raw[FS_MAX_KEY_SIZE];
++	__u32 size;
++};
++
++#endif /* _UAPI_LINUX_FSCRYPT_H */
+-- 
+2.20.1
