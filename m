@@ -1,69 +1,53 @@
-From: Christian Brauner <christian@brauner.io>
-Date: Wed, 20 Feb 2019 14:18:37 +0000
+From: Steve French <smfrench@gmail.com>
+Date: Wed, 20 Feb 2019 18:54:17 +0000
 Subject: Re: [RFC PATCH 00/27] Containers and using authenticated filesystems
-Message-Id: <20190220141715.ukjo5d4ctepahl43@brauner.io>
+Message-Id: <CAH2r5muChuoHAM-AhBhTRkp=Lz0onyPa63MpV0qgm1TQKF=R5Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
- <8736ojybw7.fsf@xmission.com>
-In-Reply-To: <8736ojybw7.fsf@xmission.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, linux-api@vger.kernel.org, Linux Containers <containers@lists.linux-foundation.org>, linux-kernel@vger.kernel.org, sfrench@samba.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, trond.myklebust@hammerspace.com
+ <8736ojybw7.fsf@xmission.com> <22055.1550619729@warthog.procyon.org.uk>
+In-Reply-To: <22055.1550619729@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, Steve French <sfrench@samba.org>, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, CIFS <linux-cifs@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, rgb@redhat.com, LKML <linux-kernel@vger.kernel.org>, Linux Containers <containers@lists.linux-foundation.org>, Linux API <linux-api@vger.kernel.org>, samba-technical <samba-technical@lists.samba.org>
 
-On Tue, Feb 19, 2019 at 10:35:20AM -0600, Eric W. Biederman wrote:
-> 
-> So you missed the main mailing lists for discussion of this kind of
-> thing, and the maintainer.  So I have reservations about the quality of
-> your due diligence already.
-> 
-> Looking at your description you are introducing a container id.
-> You don't descibe which namespace your contianer id lives in.
-> Without the container id living in a container this breaks
-> nested containers and process migration aka CRIU.
-> 
-> So based on the your description.
-> 
-> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> 
-> 
-> David Howells <dhowells@redhat.com> writes:
-> 
-> > Here's a collection of patches that containerises the kernel keys and makes
-> > it possible to separate keys by namespace.  This can be extended to any
-> > filesystem that uses request_key() to obtain the pertinent authentication
-> > token on entry to VFS or socket methods.
+On Tue, Feb 19, 2019 at 5:42 PM David Howells <dhowells@redhat.com> wrote:
+>
+> Eric W. Biederman <ebiederm@xmission.com> wrote:
+>
+> > So you missed the main mailing lists for discussion of this kind of
+> > thing
+>
+> Yeah, sorry about that.  I was primarily aiming it at Trond and Steve as I'd
+> like to consider how to go about interpolating request_key() into NFS and CIFS
+> so that they can make use of the key-related facilities that this makes
+> available with AFS.
 
-/me puts on kernel hat:
-I'm not neccessarily opposed to making containers kernel objects even
-though I have been for quite a while (for brevity I'll use "kcontainers"
-for this). But I think the approach taken here is a little misguided.
-This patchsets pushes the argument that kcontainers are needed because
-of keyrings and authenticated filesystems and is designed around this
-use-case. Imho, that is bound to fall short of requirements and
-use-cases that have been piling up over the years.
-If we want to make kcontainers a thing we need to have a separate
-discussion and a separate patchset that is *solely* concerned with
-creating a kcontainer api. And frankly, that is likely going to take a
-long time.
-At this point containers have become a real "thing" on Linux - like it
-or not. So justifying it to making them in-kernel citizens doesn't need
-the detour over keyrings or something else. We should just discuss
-whether we think that the benefits of kcontainers (e.g. security)
-outweight the costs (e.g. maintenance).
+I am interested in this discussion because I have gotten various questions
+about using Containers better on SMB3 mounts, and the question about
+doing request_key better comes up **a lot** on SMB3 mounts (not just
+for kerberos, Active Directory), and usability could be improved of some
+of the cifs-utils that cifs.ko depends on.
 
-/me puts on runtime maintainer hat:
-One thing that is true is that userspace containers (let's call them
-"ucontainers") as implemented by runtimes today will not go away. We
-have been living with this ad-hoc concept and it's various
-implementations on upstream Linux at least since 2008. And kernels
-without kcontainers will be with us until the end of (Linux)time
-probably. So anyone who thinks that kcontainers will replace ucontainers
-and that'll be it will be thoroughly disappointed in the end.
-It is also very likely that not all use-cases we can currently cover
-with ucontainers can be covered by kcontainers. Now that might be ok but
-if we ever introduce kcontainers through a proper kernel api we will end
-up maintaining ucontainers and kcontainers simultaneously. That's a
-burden we shouldn't underestimate.
+Note that various virtualization/container identify features were added to the
+protocol a few years ago (which we don't yet implement in Linux) but which
+probably be **very** useful to followup on how these could be exposed
+to help containers on network mounts in Linux.    See in particular this
+new protocol feature (implemented by various servers including Windows
+but not by Linux client yet) described in the protocol spec (MS-SMB2 section
+2.2.9.2.1) - the "SMB2_REMOTED_IDENTITY_TREE_CONNECT context"
+which can be sent at mount time:
+https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/ee7ff411-93e0-484f-9f73-31916fee4cb8
+
+This may be of interest to Samba server developers as well
+
+> > and the maintainer.
+>
+> That would be me.  I maintain keyrings.
+
+
+-- 
+Thanks,
+
+Steve
