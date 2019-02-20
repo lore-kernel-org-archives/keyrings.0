@@ -1,56 +1,115 @@
-From: Christian Brauner <christian@brauner.io>
-Date: Wed, 20 Feb 2019 13:26:02 +0000
+From: Trond Myklebust <trondmy@hammerspace.com>
+Date: Wed, 20 Feb 2019 14:23:07 +0000
 Subject: Re: [RFC PATCH 02/27] containers: Implement containers as kernel objects
-Message-Id: <20190220132600.c5ahsmnoihdrcqeq@brauner.io>
+Message-Id: <28cdcdbad0bfa048a323c7767e0aa78e281eded2.camel@hammerspace.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
- <155024685321.21651.1504201877881622756.stgit@warthog.procyon.org.uk>
- <7923d4aa646fbe4bd71cfb4144f1c96f28cad972.camel@themaw.net>
-In-Reply-To: <7923d4aa646fbe4bd71cfb4144f1c96f28cad972.camel@themaw.net>
-To: Ian Kent <raven@themaw.net>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org, James Bottomley <James.Bottomley@HansenPartnership.com>, linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
+References: <8c95213ae0981bd7af928902fcb34d6a9dedaa6f.camel@hammerspace.com>
+         <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
+         <155024685321.21651.1504201877881622756.stgit@warthog.procyon.org.uk>
+         <19411.1550617413@warthog.procyon.org.uk>
+In-Reply-To: <19411.1550617413@warthog.procyon.org.uk>
+To: "dhowells@redhat.com" <dhowells@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>, "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "containers@lists.linux-foundation.org" <containers@lists.linux-foundation.org>, "rgb@redhat.com" <rgb@redhat.com>, "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>, "sfrench@samba.org" <sfrench@samba.org>
 
-On Wed, Feb 20, 2019 at 10:46:24AM +0800, Ian Kent wrote:
-> On Fri, 2019-02-15 at 16:07 +0000, David Howells wrote:
-> > Implement a kernel container object such that it contains the following
-> > things:
-> > 
-> >  (1) Namespaces.
-> > 
-> >  (2) A root directory.
-> > 
-> >  (3) A set of processes, including one designated as the 'init' process.
-> 
-> Yeah, I think a name other than init needs to be used for this
-> process.
-> 
-> The problem being that there is no requirement for container
-> process 1 to behave in any way like an "init" process is
-> expected to behave and that leads to confusion (at least
-> it certainly did for me).
-
-If you look at the documentation for pid namespaces(7) you can see that
-the pid 1 inside a pid namespace is expected to behave like an init
-process:
--  "The  first  process created in a new namespace [...] has  the PID 1,
-   and is the "init" process for the namespace (see init(1))."
-- "[...] child process that is orphaned within the namespace will be
-  reparented to this process rather than init(1) [...]"
-- "If the "init" process of a PID namespace terminates, the kernel
-  terminates all of the processes in the  namespace  via a SIGKILL
-  signal. This behavior reflects the fact that the "init" process is
-  essential for the cor‐ rect operation of a PID namespace."
-- "Only signals for which the "init" process has established a signal
-  handler can be sent to the  "init" process by other members of the
-  PID namespace."
-- "[...] the reboot(2) system call causes a signal to be sent to the
-  namespace "init" process."
-
-This is one of the reasons why all major current container runtimes
-finally after years of failing to realize this run a stub init process
-that mimicks a dumb init. Sure, you get away with not having an init
-that behaves like an init but this is inherently broken or at least
-against the way pid namespaces were designed.
+T24gVHVlLCAyMDE5LTAyLTE5IGF0IDIzOjAzICswMDAwLCBEYXZpZCBIb3dlbGxzIHdyb3RlOg0K
+PiBUcm9uZCBNeWtsZWJ1c3QgPHRyb25kbXlAaGFtbWVyc3BhY2UuY29tPiB3cm90ZToNCj4gDQo+
+ID4gRG8gd2UgcmVhbGx5IG5lZWQgYSBuZXcgc3lzdGVtIGNhbGwgdG8gc2V0IHVwIGNvbnRhaW5l
+cnM/IFRoYXQNCj4gPiB3b3VsZA0KPiA+IGZvcmNlIGNoYW5nZXMgdG8gYWxsIGV4aXN0aW5nIG9y
+Y2hlc3RyYXRpb24gc29mdHdhcmUuDQo+IA0KPiBObywgaXQgd291bGRuJ3QuICBOb3RoaW5nIGlu
+IG15IHBhdGNoZXMgZm9yY2VzIGV4aXN0aW5nIG9yY2hlc3RyYXRpb24NCj4gc29mdHdhcmUNCj4g
+dG8gY2hhbmdlLCB1bmxlc3MgaXQgd2FudHMgdG8gdXNlIHRoZSBuZXcgZmFjaWxpdGllcyAtIHRo
+ZW4gaXQgd291bGQNCj4gaGF2ZSB0bw0KPiBiZSBjaGFuZ2VkIGFueXdheSwgcmlnaHQ/ICBJIHdp
+bGwgZ3JhbnQsIHRob3VnaCwgdGhhdCB0aGUgZXh0ZW50IG9mDQo+IHRoZSBjaGFuZ2UNCj4gbWln
+aHQgdmFyeS4NCg0KUmlnaHQuIEl0IGRlcGVuZHMgb24gd2hhdCB5b3Ugd2FudCB0byB0aGUgb3Jj
+aGVzdHJhdG9yIHRvIGRvLiBJZiB5b3UNCndhbnQgaXQgdG8gbWFuYWdlIGF1dGhlbnRpY2F0ZWQg
+c3RvcmFnZSBmb3IgeW91LCB0aGVuIEkgZ3JhbnQgdGhhdCB5b3UNCm1heSBuZWVkIHRvIGNoYW5n
+ZSB0aGUgZXhpc3Rpbmcgb3JjaGVzdHJhdG9yLiBIb3dldmVyIGlmIHlvdSBqdXN0IHdhbnQNCnRo
+ZSBjb250YWluZXJpc2VkIHNvZnR3YXJlIHRvIGJlIGFibGUgdG8gbWFuYWdlIEFGUy9DSUZTLy4u
+LiBrZXlzIGZvcg0KaXRzIG93biBwcm9jZXNzZXMsIHRoZW4gaXQncyBub3Qgb2J2aW91cyB0byBt
+ZSB3aHkgeW91IHdvdWxkIG5lZWQgYSBuZXcNCm9yY2hlc3RyYXRvci4NCg0KPiA+IEdpdmVuIHRo
+YXQgdGhlIG1haW4gdGhpbmcgd2Ugd2FudCB0byBhY2hpZXZlIGlzIHRvIGRpcmVjdCBtZXNzYWdl
+cw0KPiA+IGZyb20NCj4gPiB0aGUga2VybmVsIHRvIGFuIGFwcHJvcHJpYXRlIGhhbmRsZXIsIHdo
+eSBub3QgZm9jdXMgb24gYWRkaW5nDQo+ID4gZnVuY3Rpb25hbGl0eSB0byBkbyBqdXN0IHRoYXQ/
+DQo+IA0KPiBCZWNhdXNlIGl0J3MgKm5vdCoganVzdCB0aGF0IHRoYXQgaXMgYWRkZWQgaGVyZS4g
+IFRoZXJlIGFyZSBhIG51bWJlcg0KPiBvZiB0aGluZ3MNCj4gdGhpcyBwYXRjaHNldCAoYW5kIG9u
+ZSBpdCBkZXBlbmRzIG9uKSBwcm92aWRlczoNCj4gDQo+ICAoMSkgVGhlIGFiaWxpdHkgdG8gaW50
+ZXJjZXB0IHJlcXVlc3Rfa2V5KCkgdXBjYWxscyB0aGF0IGhhcHBlbg0KPiBpbnNpZGUgYQ0KPiAg
+ICAgIGNvbnRhaW5lciwgZmlsdGVyZWQgYnkgb3BlcmF0aXZlIG5hbWVzcGFjZS4NCg0KVGhlIHJl
+cXVpcmVtZW50IHRoYXQgeW91IG5lZWQgdG8gZmlsdGVyIGRlcml2ZXMgZnJvbSB0aGUgZmFjdCB0
+aGF0IHRoZQ0Ka2VybmVsIGlzIGJlaW5nIGZvcmNlZCB0byBydW4gYW4gdW50cnVzdGVkIGV4ZWN1
+dGFibGUgaW4gdXNlciBzcGFjZS4NClRoYXQgbWF5IGJlIGFjY2VwdGFibGUgd2hlbiBydW5uaW5n
+IGluIGFuIHVuY29udGFpbmVyaXNlZCBlbnZpcm9ubWVudCwNCndoZXJlIHRoZSBleGVjdXRhYmxl
+IGNhbiBiZSB2ZXR0ZWQgYnkgdGhlIHN5c2FkbWluLCBidXQgaXQgY2xlYXJseQ0KaXNuJ3QgaW4g
+YW4gZW52aXJvbm1lbnQgd2hlcmUgY29udGFpbmVycyBjYW4gYmUgc2V0IHVwIGJ5IHVudHJ1c3Rl
+ZA0KdXNlcnMuDQoNCklmIHdlIHJlcGxhY2UgdGhlIGV4ZWN1dGFibGUgd2l0aCBhIGRhZW1vbiB0
+aGF0IGlzIHN0YXJ0ZWQgZnJvbSBpbnNpZGUNCnRoZSBjb250YWluZXIgKHByZXN1bWFibHkgYnkg
+dGhlIGluaXQgcHJvY2VzcyBydW5uaW5nIHRoZXJlKSwgdGhlbg0KdGhlcmUgc2hvdWxkIGJlIG5v
+IHJlcXVpcmVtZW50IGZvciB0aGUgb3JjaGVzdHJhdG9yIHRvIGZpbHRlci4NCg0KPiAgKDIpIFRo
+ZSBhYmlsaXR5IHRvIHByb3ZpZGUgYSBwZXItY29udGFpbmVyIGtleXJpbmcgdGhhdCBjYW4gaG9s
+ZA0KPiBrZXlzIHRoYXQNCj4gICAgICBjYW4gYmUgdXNlZCBpbnNpZGUgdGhlIGNvbnRhaW5lciB3
+aXRob3V0IGFueSBhY3Rpb24gb24gYmVoYWxmIG9mDQo+IHRoZQ0KPiAgICAgIGRlbml6ZW5zIG9m
+IHRoZSBjb250YWluZXIuDQoNCktleXJpbmdzIGFscmVhZHkgZGVmaW5lIHNvbWUgaW5oZXJpdGFu
+Y2Ugc2VtYW50aWNzIGZvciBjaGlsZCBwcm9jZXNzZXMuDQpXaHkgY2FuJ3Qgd2UgdHdlYWsgdGhv
+c2Ugc2VtYW50aWNzIHRvIGRvIHdoYXQgaXMgbmVlZGVkPw0KDQpJT1c6IGluc3RlYWQgb2YgYWRk
+aW5nIGEgY29udGFpbmVyIHN5c2NhbGwgYW5kIGEgbmV3IGtleXJpbmcgdHlwZSwgd2h5DQpjYW4n
+dCB3ZSBqdXN0IGRlZmluZSB0aGUgcmVxdWlyZWQga2V5cmluZyB0eXBlIGFuZCBsZXQgaXQgYmUg
+aW5oZXJpdGVkDQp0aHJvdWdoIHRoZSBleGlzdGluZyBjbG9uZSgpIG1lY2hhbmlzbT8NCg0KPiAg
+KDMpIFRoZSBhYmlsaXR5IHRvIGdyYW50IHBlcm1pc3Npb25zIHRvIGEgKmNvbnRhaW5lciogYXMg
+YSBzdWJqZWN0LA0KPiBhbGxvd2luZw0KPiAgICAgIGl0IGFuZCBpdHMgZGVuaXplbnMgdG8gdXNl
+LCBidXQgbm90IG5lY2Vzc2FyaWx5IHJlYWQsIG1vZGlmeSwNCj4gbGluayBvcg0KPiAgICAgIGlu
+dmFsaWRhdGUgYSBrZXkuDQoNCkFnYWluLCB0aGlzIHNvdW5kcyBsaWtlIGEgY2hpbGQgcHJvY2Vz
+cyBrZXlyaW5nIGluaGVyaXRhbmNlIGlzc3VlLg0KUmlnaHQgbm93LCB0aGUgc2Vzc2lvbiBrZXly
+aW5nIGRvZXMgbm90IGFwcGVhciB0byBtYXRjaCB0aGUgc2VtYW50aWNzDQp0aGF0IHlvdSBkZXNj
+cmliZSwgYnV0IHdoeSBjb3VsZG4ndCB3ZSBzZXQgdXAgYSBuZXcga2V5cmluZyB0eXBlIHRoYXQN
+CmNhbiBwcm92aWRlIHRoZW0/DQoNCj4gICg0KSBUaGUgYWJpbGl0eSB0byBjcmVhdGUgc3VwZXJi
+bG9ja3MgaW5zaWRlIGEgY29udGFpbmVyIHdpdGggYQ0KPiBzZXBhcmF0ZQ0KPiAgICAgIG1vdW50
+IG5hbWVzcGFjZSBmcm9tIG91dHNpZGUsIHN1Y2ggdGhhdCB0aGV5IGNhbiB1c2UgdGhlDQo+IGNv
+bnRhaW5lciBrZXlzLA0KPiAgICAgIHRoZXJlYnkgYWxsb3dpbmcgdGhlIHJvb3Qgb2YgYSBjb250
+YWluZXIgdG8gYmUgb24gYW4NCj4gYXV0aGVudGljYXRlZA0KPiAgICAgIGZpbGVzeXN0ZW0uDQo+
+IA0KDQpJJ20gbm90IHN1cmUgdGhhdCBJIHVuZGVyc3RhbmQgdGhlIHByZW1pc2UuIElmIHRoZSBv
+cmNoZXN0cmF0b3IgaXMNCnNldHRpbmcgdXAgYW5kIG1hbmFnaW5nIHRoYXQgYXV0aGVudGljYXRl
+ZCByb290IGZpbGVzeXN0ZW0sIHRoZW4gd2h5IGRvDQp0aGUgY29udGFpbmVyaXNlZCBwcm9jZXNz
+ZXMgbmVlZCB0byBiZSBpbnZvbHZlZCBhdCBhbGw/DQoNCklmLCBPVE9ILCB0aGUgaW50ZW50aW9u
+IGlzIHRvIGFsbG93IHRoZSBjb250YWluZXJpc2VkIHByb2Nlc3NlcyB0bw0KbWFuYWdlIHRoZSBm
+aWxlc3lzdGVtcyB3aXRob3V0IGtub3dsZWRnZSBvZiB0aGUga2V5cmluZyBjb250ZW50cywgdGhl
+bg0KYWdhaW4gaXNuJ3QgdGhhdCByZWFsbHkgdGhlIHNhbWUgaXNzdWUgYXMgKDMpPw0KDQo+ID4g
+SXMgdGhlcmUgYW55IHJlYXNvbiB3aHkgYSBzeXNjYWxsIHRvIGFsbG93IGFuIGFwcHJvcHJpYXRl
+bHkNCj4gPiBwcml2aWxlZ2VkDQo+ID4gcHJvY2VzcyB0byBhZGQgYSBrZXlyaW5nLXNwZWNpZmlj
+IG1lc3NhZ2UgcXVldWUgdG8gaXRzIG93bg0KPiA+IHVzZXJfbmFtZXNwYWNlIGFuZCBvYnRhaW4g
+YSBmaWxlIGRlc2NyaXB0b3IgdG8gdGhhdCBtZXNzYWdlIHF1ZXVlDQo+ID4gbWlnaHQNCj4gPiBu
+b3Qgd29yaz8NCj4gDQo+IFllcy4gIFRoYXQgZm9yY2VzIHRoZSB1c2Ugb2YgYSBuZXcgdXNlcl9u
+YW1lc3BhY2UgZm9yIGV2ZXJ5IGNvbnRhaW5lcg0KPiBpbiB3aGljaA0KPiB5b3Ugd2FudCB0byB1
+c2UgYW55IG9mIHRoZSBhYm92ZSBmZWF0dXJlcy4gIFRoZSB1c2VyX25hbWVzcGFjZSBpcw0KPiBh
+bHJlYWR5IHdheQ0KPiB0b28gYmlnIGFuZCBpbnRydXNpdmUgYSBoYW1tZXIgYXMgaXQgaXMuDQoN
+Ck5vLiBJIHdvdWxkIG5lZWQgYSB1c2VyX25hbWVzcGFjZSBpZiBJIHdhbnQgdG8gYWxsb3cgY2hp
+bGQgcHJvY2Vzc2VzIHRvDQpoYW5kbGUgcmVxdWVzdCB1cGNhbGxzLiBJcyB0aGF0IHVucmVhc29u
+YWJsZT8NCg0KPiA+IFdpdGggc3VjaCBhbiBpbXBsZW1lbnRhdGlvbiwgdGhlIGZhbGxiYWNrIG1l
+Y2hhbmlzbSBjb3VsZCBiZSB0bw0KPiA+IHdhbGsNCj4gPiBiYWNrIHVwIHRoZSBoaWVyYXJjaHkg
+b2YgdXNlcl9uYW1lc3BhY2VzIHVudGlsIGEgbWVzc2FnZSBxdWV1ZSBpcw0KPiA+IGZvdW5kLCBh
+bmQgdG8gaW52b2tlIHRoZSBleGlzdGluZyByZXF1ZXN0X2tleSBtZWNoYW5pc20gaWYgbm90Lg0K
+PiANCj4gVGhhdCdzIGRlZmluaXRlbHkgd3JvbmcuICAvc2Jpbi9yZXF1ZXN0LWtleSBzaG91bGQg
+Km5vdCogYmUgc3Bhd25lZA0KPiBpZiB0aGUga2V5DQo+IHRvIGJlIGluc3RhbnRpYXRlZCBpcyBu
+b3QgaW4gYWxsIHRoZSBpbml0IG5hbWVzcGFjZXMuDQo+IA0KPiBJIHdlbnQgd2l0aCBhIGNvbnRh
+aW5lciBvYmplY3Qgd2l0aCBuYW1lc3BhY2VzIGZvciBhIHJlYXNvbjoNCj4gaW5pdGlhbGx5LCBp
+dCB3YXMNCj4gc28gdGhhdCB0aGUgdXBjYWxsIGNvdWxkIHRha2UgcGxhY2UgaW5zaWRlIG9mIHRo
+ZSBjb250YWluZXIncw0KPiBuYW1lc3BhY2VzLCBidXQNCj4gbm93IGl0J3MgZG8gdGhhdCBhbnkg
+cmVxdWVzdCB0aGF0IGRvZXNuJ3QgbWF0Y2ggdGhlIG5hbWVzcGFjZXMgb24gdGhlDQo+IGNvbnRh
+aW5lciBnZXRzIHJlamVjdGVkIGF0IHRoZSBib3VuZGFyeSAtIHNvIHRoYXQgc29tZSBkYWVtb24g
+dXAgdGhlDQo+IGNoYWluDQo+IGRvZXNuJ3QgdHJ5IHNlcnZpY2luZyBhIHJlcXVlc3QgZm9yIHdo
+aWNoIGl0IGNhbid0IGFjY2VzcyB0aGUgY29uZmlnDQo+IGRhdGEgb3INCj4gd291bGQgZW5kIHVw
+IHRhbGtpbmcgb3V0IG9mIHRoZSB3cm9uZyBOSUMuDQo+IA0KPiBJIGNhbiBkcm9wIHRoZSBjb250
+YWluZXIgb2JqZWN0IHBhcnQgb2YgaXQgZm9yIHRoZSBtb21lbnQuDQo+IA0KPiBJIGNvdWxkIGlu
+c3RlYWQgY3JlYXRlIDEtMyBuZXcgbmFtZXNwYWNlczoNCj4gDQo+ICAoMSkgQSBuYW1lc3BhY2Ug
+d2l0aCBhbiB1cGNhbGwtaW50ZXJjZXB0aW9uIHBvaW50Lg0KPiANCj4gICgyKSBBIG5hbWVzcGFj
+ZSB3aXRoIGEgY29udGFpbmVyIGtleXJpbmcuDQo+IA0KPiAgKDMpIEEgbmFtZXNwYWNlIHdpdGgg
+YSBzdWJqZWN0IElEIGZvciB1c2UgaW4ga2V5IEFDTHMuDQo+IA0KPiBJIHRoaW5rIEkgc2hvdWxk
+IGFsc28gY29uc2lkZXIgYWRkaW5nOg0KPiANCj4gICg0KSBBIG5hbWVzcGFjZSB3aXRoIGtleXJp
+bmcgbmFtZXMgaW4gaXQuICBJJ20gbGVhbmluZyB0b3dhcmRzIHRoaXMNCj4gbm90IGJlaW5nDQo+
+ICAgICAgcGFydCBvZiB1c2VyX25hbWVzcGFjZSBiZWNhdXNlIHRoZXNlIHByb2JhYmx5IHNob3Vs
+ZCBub3QgYmUNCj4gdmlzaWJsZQ0KPiAgICAgIGJldHdlZW4gY29udGFpbmVycy4NCj4gDQo+IERh
+dmlkDQotLSANClRyb25kIE15a2xlYnVzdA0KQ1RPLCBIYW1tZXJzcGFjZSBJbmMNCjQzMDAgRWwg
+Q2FtaW5vIFJlYWwsIFN1aXRlIDEwNQ0KTG9zIEFsdG9zLCBDQSA5NDAyMg0Kd3d3LmhhbW1lci5z
+cGFjZQ0KDQoNCg=
