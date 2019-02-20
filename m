@@ -1,76 +1,88 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 14 Feb 2019 16:58:00 +0000
-Subject: [RFC PATCH 6/9] keys: Garbage collect keys for which the domain has been removed
-Message-Id: <155016348020.11489.15344840955206537503.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 20 Feb 2019 06:52:46 +0000
+Subject: [RFC PATCH v3 15/18] ext4: wire up new fscrypt ioctls
+Message-Id: <20190220065249.32099-16-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+References: <20190220065249.32099-1-ebiggers@kernel.org>
+In-Reply-To: <20190220065249.32099-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-If a key operation domain (such as a network namespace) has been removed
-then attempt to garbage collect all the keys that use it.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Wire up the new ioctls for adding and removing fscrypt keys to/from the
+filesystem, and the new ioctl for retrieving v2 encryption policies.
+
+FS_IOC_REMOVE_ENCRYPTION_KEY also required making ext4_drop_inode() call
+fscrypt_drop_inode().
+
+For more details see Documentation/filesystems/fscrypt.rst, as well as
+the fscrypt patches that added the implementation of these ioctls.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/ext4/ioctl.c | 24 ++++++++++++++++++++++++
+ fs/ext4/super.c |  3 +++
+ 2 files changed, 27 insertions(+)
 
- include/linux/key.h      |    1 +
- security/keys/internal.h |    3 ++-
- security/keys/keyring.c  |   15 +++++++++++++++
- 3 files changed, 18 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index bb716c33bffe..324753fc3efc 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -278,6 +278,7 @@ extern void key_revoke(struct key *key);
- extern void key_invalidate(struct key *key);
- extern void key_put(struct key *key);
- extern bool key_put_tag(struct key_tag *tag);
-+extern void key_remove_domain(struct key_tag *domain_tag);
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index d26bcac291bb..c939dbd2f2ac 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -1020,6 +1020,26 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
+ 		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
  
- static inline struct key *__key_get(struct key *key)
- {
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 3154ba59a2f0..7968c8ebb043 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -203,7 +203,8 @@ static inline bool key_is_dead(const struct key *key, time64_t limit)
- 	return
- 		key->flags & ((1 << KEY_FLAG_DEAD) |
- 			      (1 << KEY_FLAG_INVALIDATED)) ||
--		(key->expiry > 0 && key->expiry <= limit);
-+		(key->expiry > 0 && key->expiry <= limit) ||
-+		key->domain_tag->removed;
- }
- 
- /*
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 0df10221c037..916a52d54e1b 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -247,6 +247,21 @@ bool key_put_tag(struct key_tag *tag)
- 	return false;
- }
- 
-+/**
-+ * key_remove_domain - Kill off a key domain and gc its keys
-+ * @domain_tag: The domain tag to release.
-+ *
-+ * This marks a domain tag as being dead and releases a ref on it.  If that
-+ * wasn't the last reference, the garbage collector is poked to try and delete
-+ * all keys that were in the domain.
-+ */
-+void key_remove_domain(struct key_tag *domain_tag)
-+{
-+	domain_tag->removed = true;
-+	if (!key_put_tag(domain_tag))
-+		key_schedule_gc_links();
-+}
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
 +
- /*
-  * Build the next index key chunk.
-  *
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
++
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
++
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
++
+ 	case EXT4_IOC_FSGETXATTR:
+ 	{
+ 		struct fsxattr fa;
+@@ -1138,6 +1158,10 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
+ 	case EXT4_IOC_GET_ENCRYPTION_PWSALT:
+ 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 	case EXT4_IOC_SHUTDOWN:
+ 	case FS_IOC_GETFSMAP:
+ 		break;
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 60da0a6e4d86..5b260f88c19f 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1093,6 +1093,9 @@ static int ext4_drop_inode(struct inode *inode)
+ {
+ 	int drop = generic_drop_inode(inode);
+ 
++	if (!drop)
++		drop = fscrypt_drop_inode(inode);
++
+ 	trace_ext4_drop_inode(inode, drop);
+ 	return drop;
+ }
+-- 
+2.20.1
