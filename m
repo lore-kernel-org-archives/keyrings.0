@@ -1,469 +1,660 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 15 Feb 2019 16:11:50 +0000
-Subject: [RFC PATCH 24/27] keys: Allow a container to be specified as a subject in a key's ACL
-Message-Id: <155024711079.21651.7490587069155188367.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 20 Feb 2019 06:52:40 +0000
+Subject: [RFC PATCH v3 09/18] fscrypt: add FS_IOC_REMOVE_ENCRYPTION_KEY ioctl
+Message-Id: <20190220065249.32099-10-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+References: <20190220065249.32099-1-ebiggers@kernel.org>
+In-Reply-To: <20190220065249.32099-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-Allow the ACL attached to a key to grant permissions to the denizens of a
-container object when request_key() is called.  This allows separate
-permissions to those granted in the possessor set.
+From: Eric Biggers <ebiggers@google.com>
 
-	int cfd = container_create("foo", 0);
+Add a new fscrypt ioctl, FS_IOC_REMOVE_ENCRYPTION_KEY.  This ioctl
+removes an encryption key that was added by FS_IOC_ADD_ENCRYPTION_KEY.
+It wipes the secret key itself, then "locks" the encrypted files and
+directories that had been unlocked using that key -- implemented by
+evicting the relevant dentries and inodes from the VFS caches.
 
-	int ret = keyctl_grant_permission(key,
-					  KEY_ACE_SUBJ_CONTAINER,
-					  cfd,
-					  KEY_ACE_SEARCH);
+The problem this solves is that many fscrypt users want the ability to
+remove encryption keys, causing the corresponding encrypted directories
+to appear "locked" (presented in ciphertext form) again.  Moreover,
+users want removing an encryption key to *really* remove it, in the
+sense that the removed keys cannot be recovered even if kernel memory is
+compromised, e.g. by the exploit of a kernel security vulnerability or
+by a physical attack.  This is desirable after a user logs out of the
+system, for example.  In many cases users even already assume this to be
+the case and are surprised to hear when it's not.
 
-To allow request_key() to find a key, KEY_ACE_SEARCH must be included in
-the ACE.  This will allow filesystems and network protocols (eg. AFS and
-AF_RXRPC) to use the key.  For the request_key() system call to be able to
-find a key for a process inside the container, KEY_ACE_LINK must be granted
-also.
+It is not sufficient to simply unlink the master key from the keyring
+(or to revoke or invalidate it), since the actual encryption transform
+objects are still pinned in memory by their inodes.  Therefore, to
+really remove a key we must also evict the relevant inodes.
 
-Keys on the container keyring (and the container keyring itself) can be
-accessed directly by ID from inside the container if other KEY_ACE_*
-permits are granted.
+Currently one workaround is to run 'sync && echo 2 >
+/proc/sys/vm/drop_caches'.  But, that evicts all unused inodes in the
+system rather than just the inodes associated with the key being
+removed, causing severe performance problems.  Moreover, it requires
+root privileges, so regular users can't "lock" their encrypted files.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Another workaround, used in Chromium OS kernels, is to add a new
+VFS-level ioctl FS_IOC_DROP_CACHE which is a more restricted version of
+drop_caches that operates on a single super_block.  It does:
+
+        shrink_dcache_sb(sb);
+        invalidate_inodes(sb, false);
+
+But it's still a hack.  Yet, the major users of filesystem encryption
+want this feature badly enough that they are actually using these hacks.
+
+To properly solve the problem, start maintaining a list of the inodes
+which have been "unlocked" using each master key.  Originally this
+wasn't possible because the kernel didn't keep track of in-use master
+keys at all.  But, with the ->s_master_keys keyring it is now possible.
+
+Then, add an ioctl FS_IOC_REMOVE_ENCRYPTION_KEY.  It finds the specified
+master key in ->s_master_keys, then wipes the secret key itself, which
+prevents any additional inodes from being unlocked with the key.  Then,
+it syncs the filesystem and evicts the inodes in the key's list.  The
+normal inode eviction code will free and wipe the per-file keys (in
+->i_crypt_info).  Note that freeing ->i_crypt_info without evicting the
+inodes was also considered, but would have been racy.
+
+Some inodes may still be in use when a master key is removed, and we
+can't simply revoke random file descriptors, mmap's, etc.  Thus, the
+ioctl simply skips in-use inodes, and returns -EBUSY to indicate that
+some inodes weren't evicted.  The master key *secret* is still removed,
+but the fscrypt_master_key struct remains to keep track of the remaining
+inodes.  Userspace can then retry the ioctl to evict the remaining
+inodes.  Alternatively, if userspace adds the key again, the refreshed
+secret will be associated with the existing list of inodes so they
+remain correctly tracked for future key removals.
+
+The ioctl doesn't wipe pagecache pages.  Thus, we tolerate that after a
+kernel compromise some portions of plaintext file contents may still be
+recoverable from memory.  This can be solved be enabling page poisoning
+system-wide, which security conscious users may choose to do.  But it's
+very difficult to solve otherwise, e.g. note that plaintext file
+contents may have been read in other places than pagecache pages.
+
+Like FS_IOC_ADD_ENCRYPTION_KEY, FS_IOC_REMOVE_ENCRYPTION_KEY is
+initially restricted to privileged users only.  This is sufficient for
+some use cases, but not all.  A later patch will relax this restriction,
+but it will require introducing key hashes, among other changes.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/crypto/fscrypt_private.h  |  53 ++++++++-
+ fs/crypto/keyring.c          | 201 ++++++++++++++++++++++++++++++++++-
+ fs/crypto/keysetup.c         | 103 +++++++++++++++++-
+ include/linux/fscrypt.h      |  13 +++
+ include/uapi/linux/fscrypt.h |   7 ++
+ 5 files changed, 372 insertions(+), 5 deletions(-)
 
- include/linux/container.h    |    6 ++-
- include/linux/key.h          |    3 +
- include/uapi/linux/keyctl.h  |    1 
- kernel/container.c           |   41 ++++++++++++++++++-
- samples/vfs/test-container.c |   60 ++++++++++++++++++++++++++++
- security/keys/permission.c   |   90 ++++++++++++++++++++++++++++++++++++++----
- security/keys/process_keys.c |    2 -
- 7 files changed, 188 insertions(+), 15 deletions(-)
-
-diff --git a/include/linux/container.h b/include/linux/container.h
-index 7424f7fb5560..cd82074c26a3 100644
---- a/include/linux/container.h
-+++ b/include/linux/container.h
-@@ -33,7 +33,11 @@ struct container {
- 	refcount_t		usage;
- 	int			exit_code;	/* The exit code of 'init' */
- 	const struct cred	*cred;		/* Creds for this container, including userns */
-+#ifdef CONFIG_KEYS
- 	struct key		*keyring;	/* Externally managed container keyring */
-+	struct key_tag		*tag;		/* Container ID for key ACL */
-+	struct list_head	req_key_traps;	/* Traps for request-key upcalls */
-+#endif
- 	struct nsproxy		*ns;		/* This container's namespaces */
- 	struct path		root;		/* The root of the container's fs namespace */
- 	struct task_struct	*init;		/* The 'init' task for this container */
-@@ -43,7 +47,6 @@ struct container {
- 	struct list_head	members;	/* Member processes, guarded with ->lock */
- 	struct list_head	child_link;	/* Link in parent->children */
- 	struct list_head	children;	/* Child containers */
--	struct list_head	req_key_traps;	/* Traps for request-key upcalls */
- 	wait_queue_head_t	waitq;		/* Someone waiting for init to exit waits here */
- 	unsigned long		flags;
- #define CONTAINER_FLAG_INIT_STARTED	0	/* Init is started - certain ops now prohibited */
-@@ -63,6 +66,7 @@ extern int copy_container(unsigned long flags, struct task_struct *tsk,
- extern void exit_container(struct task_struct *tsk);
- extern void put_container(struct container *c);
- extern long key_del_intercept(struct container *c, const char *type);
-+extern struct container *fd_to_container(int fd);
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index b4c431208555..cc1862c9baa1 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -78,6 +78,19 @@ struct fscrypt_info {
+ 	/* Back-pointer to the inode */
+ 	struct inode *ci_inode;
  
- static inline struct container *get_container(struct container *c)
- {
-diff --git a/include/linux/key.h b/include/linux/key.h
-index a38b89bd414c..01bccaa40047 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -90,6 +90,9 @@ struct key_ace {
- 		kuid_t		uid;
- 		kgid_t		gid;
- 		unsigned int	subject_id;
-+#ifdef CONFIG_CONTAINERS
-+		struct key_tag __rcu *container_tag;
-+#endif
- 	};
- };
- 
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index 045dcbb6bb8d..7136d14dd4d7 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -20,6 +20,7 @@
-  */
- enum key_ace_subject_type {
- 	KEY_ACE_SUBJ_STANDARD	= 0,	/* subject is one of key_ace_standard_subject */
-+	KEY_ACE_SUBJ_CONTAINER	= 1,	/* subject is a container fd */
- 	nr__key_ace_subject_type
- };
- 
-diff --git a/kernel/container.c b/kernel/container.c
-index f2706a45f364..81be4ed915c2 100644
---- a/kernel/container.c
-+++ b/kernel/container.c
-@@ -35,7 +35,9 @@ struct container init_container = {
- 	.members.next	= &init_task.container_link,
- 	.members.prev	= &init_task.container_link,
- 	.children	= LIST_HEAD_INIT(init_container.children),
-+#ifdef CONFIG_KEYS
- 	.req_key_traps	= LIST_HEAD_INIT(init_container.req_key_traps),
-+#endif
- 	.flags		= (1 << CONTAINER_FLAG_INIT_STARTED),
- 	.lock		= __SPIN_LOCK_UNLOCKED(init_container.lock),
- 	.seq		= SEQCNT_ZERO(init_fs.seq),
-@@ -54,8 +56,6 @@ void put_container(struct container *c)
- 
- 	while (c && refcount_dec_and_test(&c->usage)) {
- 		BUG_ON(!list_empty(&c->members));
--		if (!list_empty(&c->req_key_traps))
--			key_del_intercept(c, NULL);
- 		if (c->pid_ns)
- 			put_pid_ns(c->pid_ns);
- 		if (c->ns)
-@@ -71,7 +71,15 @@ void put_container(struct container *c)
- 
- 		if (c->cred)
- 			put_cred(c->cred);
-+#ifdef CONFIG_KEYS
-+		if (!list_empty(&c->req_key_traps))
-+			key_del_intercept(c, NULL);
-+		if (c->tag) {
-+			c->tag->removed = true;
-+			key_put_tag(c->tag);
-+		}
- 		key_put(c->keyring);
-+#endif
- 		security_container_free(c);
- 		kfree(c);
- 		c = parent;
-@@ -209,6 +217,24 @@ const struct file_operations container_fops = {
- 	.release	= container_release,
- };
- 
-+/**
-+ * fd_to_container - Get the container attached to an fd.
-+ */
-+struct container *fd_to_container(int fd)
-+{
-+	struct container *c = ERR_PTR(-EINVAL);
-+	struct fd f = fdget(fd);
-+
-+	if (!f.file)
-+		return ERR_PTR(-EBADF);
-+
-+	if (is_container_file(f.file))
-+		c = get_container(f.file->private_data);
-+
-+	fdput(f);
-+	return c;
-+}
-+
- /*
-  * Handle fork/clone.
-  *
-@@ -290,7 +316,9 @@ static struct container *alloc_container(const char __user *name)
- 
- 	INIT_LIST_HEAD(&c->members);
- 	INIT_LIST_HEAD(&c->children);
-+#ifdef CONFIG_KEYS
- 	INIT_LIST_HEAD(&c->req_key_traps);
-+#endif
- 	init_waitqueue_head(&c->waitq);
- 	spin_lock_init(&c->lock);
- 	refcount_set(&c->usage, 1);
-@@ -305,8 +333,15 @@ static struct container *alloc_container(const char __user *name)
- 	ret = -EINVAL;
- 	if (strchr(c->name, '/'))
- 		goto err;
--
- 	c->name[len] = 0;
-+
-+#ifdef CONFIG_KEYS
-+	ret = -ENOMEM;
-+	c->tag = kzalloc(sizeof(*c->tag), GFP_KERNEL);
-+	if (!c->tag)
-+		goto err;
-+	refcount_set(&c->tag->usage, 1);
-+#endif
- 	return c;
- 
- err:
-diff --git a/samples/vfs/test-container.c b/samples/vfs/test-container.c
-index e24048fdbe33..7b2081693fce 100644
---- a/samples/vfs/test-container.c
-+++ b/samples/vfs/test-container.c
-@@ -22,6 +22,30 @@
- 
- #define KEYCTL_CONTAINER_INTERCEPT	31	/* Intercept upcalls inside a container */
- #define KEYCTL_SET_CONTAINER_KEYRING	35	/* Attach a keyring to a container */
-+#define KEYCTL_GRANT_PERMISSION		36	/* Grant a permit to a key */
-+
-+enum key_ace_subject_type {
-+	KEY_ACE_SUBJ_STANDARD	= 0,	/* subject is one of key_ace_standard_subject */
-+	KEY_ACE_SUBJ_CONTAINER	= 1,	/* subject is a container fd */
-+};
-+
-+enum key_ace_standard_subject {
-+	KEY_ACE_EVERYONE	= 0,	/* Everyone, including owner and group */
-+	KEY_ACE_GROUP		= 1,	/* The key's group */
-+	KEY_ACE_OWNER		= 2,	/* The owner of the key */
-+	KEY_ACE_POSSESSOR	= 3,	/* Any process that possesses of the key */
-+};
-+
-+#define KEY_ACE_VIEW		0x00000001 /* Can describe the key */
-+#define KEY_ACE_READ		0x00000002 /* Can read the key content */
-+#define KEY_ACE_WRITE		0x00000004 /* Can update/modify the key content */
-+#define KEY_ACE_SEARCH		0x00000008 /* Can find the key by search */
-+#define KEY_ACE_LINK		0x00000010 /* Can make a link to the key */
-+#define KEY_ACE_SET_SECURITY	0x00000020 /* Can set owner, group, ACL */
-+#define KEY_ACE_INVAL		0x00000040 /* Can invalidate the key */
-+#define KEY_ACE_REVOKE		0x00000080 /* Can revoke the key */
-+#define KEY_ACE_JOIN		0x00000100 /* Can join keyring */
-+#define KEY_ACE_CLEAR		0x00000200 /* Can clear keyring */
- 
- /* Hope -1 isn't a syscall */
- #ifndef __NR_fsopen
-@@ -190,7 +214,7 @@ void container_init(void)
-  */
- int main(int argc, char *argv[])
- {
--	key_serial_t keyring;
-+	key_serial_t keyring, key;
- 	pid_t pid;
- 	int fsfd, mfd, cfd, ws;
- 
-@@ -271,11 +295,45 @@ int main(int argc, char *argv[])
- 		exit(1);
- 	}
- 
-+	/* We need to grant the container permission to search for keys in the
-+	 * container keyring.
++	/*
++	 * The master key with which this inode was unlocked (decrypted).  This
++	 * will be NULL if the master key was found in a process-subscribed
++	 * keyring rather than in the filesystem-level keyring.
 +	 */
-+	if (keyctl(KEYCTL_GRANT_PERMISSION, keyring, KEY_ACE_SUBJ_CONTAINER, cfd,
-+		   KEY_ACE_SEARCH) < 0) {
-+		perror("keyctl_grant/s");
-+		exit(1);
-+	}
++	struct key *ci_master_key;
 +
-+	if (keyctl(KEYCTL_GRANT_PERMISSION, keyring,
-+		   KEY_ACE_SUBJ_STANDARD, KEY_ACE_OWNER, 0) < 0) {
-+		perror("keyctl_grant/s");
-+		exit(1);
-+	}
++	/*
++	 * Link in list of inodes that were unlocked with the master key.
++	 * Only used when ->ci_master_key is set.
++	 */
++	struct list_head ci_master_key_link;
 +
- 	if (keyctl(KEYCTL_SET_CONTAINER_KEYRING, cfd, keyring) < 0) {
- 		perror("keyctl_set_container_keyring");
- 		exit(1);
- 	}
- 
-+	/* Create a key that can be accessed from within the container */
-+	printf("Sample key...\n");
-+	key = add_key("user", "foobar", "wibble", 6, keyring);
-+	if (key = -1) {
-+		perror("add_key/s");
-+		exit(1);
-+	}
-+
-+	if (keyctl(KEYCTL_GRANT_PERMISSION, key, KEY_ACE_SUBJ_CONTAINER, cfd,
-+		   KEY_ACE_VIEW | KEY_ACE_SEARCH | KEY_ACE_READ | KEY_ACE_LINK) < 0) {
-+		perror("keyctl_grant/s");
-+		exit(1);
-+	}
-+
-+	if (keyctl_link(key, keyring) < 0) {
-+		perror("keyctl_link");
-+		exit(1);
-+	}
-+
- 	/* Create a keyring to catch upcalls. */
- 	printf("Intercepting...\n");
- 	keyring = add_key("keyring", "upcall", NULL, 0, KEY_SPEC_SESSION_KEYRING);
-diff --git a/security/keys/permission.c b/security/keys/permission.c
-index cb1359f6c668..f16d1665885f 100644
---- a/security/keys/permission.c
-+++ b/security/keys/permission.c
-@@ -13,6 +13,7 @@
- #include <linux/security.h>
- #include <linux/user_namespace.h>
- #include <linux/uaccess.h>
-+#include <linux/container.h>
- #include "internal.h"
- 
- struct key_acl default_key_acl = {
-@@ -130,6 +131,15 @@ int key_task_permission(const key_ref_t key_ref, const struct cred *cred,
- 				break;
- 			}
- 			break;
-+#ifdef CONFIG_CONTAINERS
-+		case KEY_ACE_SUBJ_CONTAINER: {
-+			const struct key_tag *tag = rcu_dereference(ace->container_tag);
-+
-+			if (!tag->removed && current->container->tag = tag)
-+				allow |= ace->perm;
-+			break;
-+		}
-+#endif
- 		}
- 	}
- 
-@@ -185,8 +195,7 @@ EXPORT_SYMBOL(key_validate);
+ 	/*
+ 	 * If non-NULL, then encryption is done using the master key directly
+ 	 * and ci_ctfm will equal ci_direct_key->dk_ctfm.
+@@ -186,14 +199,52 @@ struct fscrypt_master_key_secret {
   */
- unsigned int key_acl_to_perm(const struct key_acl *acl)
- {
--	unsigned int perm = 0, tperm;
--	int i;
-+	unsigned int perm = 0, tperm, i;
+ struct fscrypt_master_key {
  
- 	BUILD_BUG_ON(KEY_OTH_VIEW	!= KEY_ACE_VIEW		||
- 		     KEY_OTH_READ	!= KEY_ACE_READ		||
-@@ -237,13 +246,37 @@ unsigned int key_acl_to_perm(const struct key_acl *acl)
- 	return perm;
- }
+-	/* The secret key material */
++	/*
++	 * The secret key material.  After FS_IOC_REMOVE_ENCRYPTION_KEY is
++	 * executed, this is wiped and no new inodes can be unlocked with this
++	 * key; however, there may still be inodes in ->mk_decrypted_inodes
++	 * which could not be evicted.  As long as some inodes still remain,
++	 * FS_IOC_REMOVE_ENCRYPTION_KEY can be retried, or
++	 * FS_IOC_ADD_ENCRYPTION_KEY can add the secret again.
++	 *
++	 * Locking: protected by key->sem.
++	 */
+ 	struct fscrypt_master_key_secret	mk_secret;
  
-+/*
-+ * Clean up an ACL.
-+ */
-+static void key_free_acl(struct rcu_head *rcu)
+ 	/* Arbitrary key descriptor which was assigned by userspace */
+ 	struct fscrypt_key_specifier		mk_spec;
+ 
++	/*
++	 * Length of ->mk_decrypted_inodes, plus one if mk_secret is present.
++	 * Once this goes to 0, the master key is removed from ->s_master_keys.
++	 * The 'struct fscrypt_master_key' will continue to live as long as the
++	 * 'struct key' whose payload it is, but we won't let this reference
++	 * count rise again.
++	 */
++	refcount_t		mk_refcount;
++
++	/*
++	 * List of inodes that were unlocked using this key.  This allows the
++	 * inodes to be evicted efficiently if the key is removed.
++	 */
++	struct list_head	mk_decrypted_inodes;
++	spinlock_t		mk_decrypted_inodes_lock;
++
+ } __randomize_layout;
+ 
++static inline bool
++is_master_key_secret_present(const struct fscrypt_master_key_secret *secret)
 +{
-+	struct key_acl *acl = container_of(rcu, struct key_acl, rcu);
-+#ifdef CONFIG_CONTAINERS
-+	struct key_tag *tag;
-+	unsigned int i;
-+
-+	for (i = 0; i < acl->nr_ace; i++) {
-+		const struct key_ace *ace = &acl->aces[i];
-+		switch (ace->type) {
-+		case KEY_ACE_SUBJ_CONTAINER:
-+			tag = rcu_access_pointer(ace->container_tag);
-+			key_put_tag(ace->container_tag);
-+			break;
-+		}
-+	}
-+#endif
-+
-+	kfree(acl);
++	/*
++	 * The READ_ONCE() is only necessary for fscrypt_drop_inode() and
++	 * fscrypt_key_describe().  These run in atomic context, so they can't
++	 * take key->sem and thus 'secret' can change concurrently which would
++	 * be a data race.  But they only need to know whether the secret *was*
++	 * present at the time of check, so READ_ONCE() suffices.
++	 */
++	return READ_ONCE(secret->size) != 0;
 +}
 +
- /*
-  * Destroy a key's ACL.
+ extern struct key *
+ fscrypt_find_master_key(struct super_block *sb,
+ 			const struct fscrypt_key_specifier *mk_spec);
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+index d44d595b2fd0..da1bfe5934eb 100644
+--- a/fs/crypto/keyring.c
++++ b/fs/crypto/keyring.c
+@@ -10,6 +10,7 @@
+  * filesystem-level keyring, including the ioctls:
+  *
+  * - FS_IOC_ADD_ENCRYPTION_KEY: add a key
++ * - FS_IOC_REMOVE_ENCRYPTION_KEY: remove a key
   */
- void key_put_acl(struct key_acl *acl)
+ 
+ #include <linux/key-type.h>
+@@ -66,6 +67,13 @@ static void fscrypt_key_destroy(struct key *key)
+ static void fscrypt_key_describe(const struct key *key, struct seq_file *m)
  {
- 	if (acl && refcount_dec_and_test(&acl->usage))
--		kfree_rcu(acl, rcu);
-+		call_rcu(&acl->rcu, key_free_acl);
+ 	seq_puts(m, key->description);
++
++	if (key_is_positive(key)) {
++		const struct fscrypt_master_key *mk = key->payload.data[0];
++
++		if (!is_master_key_secret_present(&mk->mk_secret))
++			seq_puts(m, ": secret removed");
++	}
  }
  
  /*
-@@ -297,6 +330,10 @@ static struct key_acl *key_alloc_acl(const struct key_acl *old_acl, int nr, int
- 		if (i = skip)
- 			continue;
- 		acl->aces[j] = old_acl->aces[i];
-+#ifdef CONFIG_CONTAINERS
-+		if (acl->aces[j].type = KEY_ACE_SUBJ_CONTAINER)
-+			refcount_inc(&acl->aces[j].container_tag->usage);
-+#endif
- 		j++;
- 	}
- 	return acl;
-@@ -312,21 +349,39 @@ static long key_change_acl(struct key *key, struct key_ace *new_ace)
+@@ -186,6 +194,10 @@ static int add_new_master_key(struct fscrypt_master_key_secret *secret,
  
- 	old = rcu_dereference_protected(key->acl, lockdep_is_held(&key->sem));
+ 	move_master_key_secret(&mk->mk_secret, secret);
  
--	for (i = 0; i < old->nr_ace; i++)
--		if (old->aces[i].type = new_ace->type &&
--		    old->aces[i].subject_id = new_ace->subject_id)
--			goto found_match;
-+	for (i = 0; i < old->nr_ace; i++) {
-+		if (old->aces[i].type != new_ace->type)
-+			continue;
-+		switch (old->aces[i].type) {
-+		case KEY_ACE_SUBJ_STANDARD:
-+			if (old->aces[i].subject_id = new_ace->subject_id)
-+				goto replace_ace;
-+			break;
-+#ifdef CONFIG_CONTAINERS
-+		case KEY_ACE_SUBJ_CONTAINER:
-+			if (old->aces[i].container_tag = new_ace->container_tag)
-+				goto replace_ace;
-+			break;
-+#endif
-+		default:
-+			break;
-+		}
-+	}
- 
- 	if (new_ace->perm = 0)
--		return 0; /* No permissions to remove.  Add deny record? */
-+		return 0; /* No permissions to cancel.  Add deny record? */
- 
- 	acl = key_alloc_acl(old, 1, -1);
- 	if (IS_ERR(acl))
- 		return PTR_ERR(acl);
- 	acl->aces[i] = *new_ace;
-+#ifdef CONFIG_CONTAINERS
-+	if (acl->aces[i].type = KEY_ACE_SUBJ_CONTAINER)
-+		refcount_inc(&acl->aces[i].container_tag->usage);
-+#endif
- 	goto change;
- 
--found_match:
-+replace_ace:
- 	if (new_ace->perm = 0)
- 		goto delete_ace;
- 	if (new_ace->perm = old->aces[i].perm)
-@@ -360,6 +415,7 @@ long keyctl_grant_permission(key_serial_t keyid,
- 	key_ref_t key_ref;
- 	long ret;
- 
-+	memset(&new_ace, 0, sizeof(new_ace));
- 	new_ace.type = type;
- 	new_ace.perm = perm;
- 
-@@ -370,6 +426,18 @@ long keyctl_grant_permission(key_serial_t keyid,
- 		new_ace.subject_id = subject;
- 		break;
- 
-+#ifdef CONFIG_CONTAINERS
-+	case KEY_ACE_SUBJ_CONTAINER: {
-+		struct container *c = fd_to_container(subject);
-+		if (IS_ERR(c))
-+			return -EINVAL;
-+		refcount_inc(&c->tag->usage);
-+		new_ace.container_tag = c->tag;
-+		put_container(c);
-+		break;
-+	}
-+#endif
++	refcount_set(&mk->mk_refcount, 1); /* secret is present */
++	INIT_LIST_HEAD(&mk->mk_decrypted_inodes);
++	spin_lock_init(&mk->mk_decrypted_inodes_lock);
 +
- 	default:
- 		return -ENOENT;
- 	}
-@@ -391,5 +459,9 @@ long keyctl_grant_permission(key_serial_t keyid,
- 	up_write(&key->sem);
- 	key_put(key);
- error:
-+#ifdef CONFIG_CONTAINERS
-+	if (new_ace.type = KEY_ACE_SUBJ_CONTAINER && new_ace.container_tag)
-+		key_put_tag(new_ace.container_tag);
-+#endif
- 	return ret;
+ 	format_mk_description(description, mk_spec);
+ 	key = key_alloc(&key_type_fscrypt, description,
+ 			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, current_cred(),
+@@ -207,6 +219,22 @@ static int add_new_master_key(struct fscrypt_master_key_secret *secret,
+ 	return err;
  }
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 0a231ede4d2b..f296a1cc979a 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -466,7 +466,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- #ifdef CONFIG_CONTAINERS
- 	if (current->container->keyring) {
- 		key_ref = keyring_search_aux(
--			make_key_ref(current->container->keyring, 1), ctx);
-+			make_key_ref(current->container->keyring, false), ctx);
- 		if (!IS_ERR(key_ref))
- 			goto found;
  
++#define KEY_DEAD	1
++
++static int add_existing_master_key(struct fscrypt_master_key *mk,
++				   struct fscrypt_master_key_secret *secret,
++				   const struct fscrypt_key_specifier *mk_spec)
++{
++	if (is_master_key_secret_present(&mk->mk_secret))
++		return 0;
++
++	if (!refcount_inc_not_zero(&mk->mk_refcount))
++		return KEY_DEAD;
++
++	move_master_key_secret(&mk->mk_secret, secret);
++	return 0;
++}
++
+ static int add_master_key(struct super_block *sb,
+ 			  struct fscrypt_master_key_secret *secret,
+ 			  const struct fscrypt_key_specifier *mk_spec)
+@@ -216,6 +244,7 @@ static int add_master_key(struct super_block *sb,
+ 	int err;
+ 
+ 	mutex_lock(&fscrypt_add_key_mutex); /* serialize find + link */
++retry:
+ 	key = fscrypt_find_master_key(sb, mk_spec);
+ 	if (IS_ERR(key)) {
+ 		err = PTR_ERR(key);
+@@ -227,8 +256,21 @@ static int add_master_key(struct super_block *sb,
+ 			goto out_unlock;
+ 		err = add_new_master_key(secret, mk_spec, sb->s_master_keys);
+ 	} else {
++		/*
++		 * Found the key in ->s_master_keys.  Re-add the secret if
++		 * needed.
++		 */
++		down_write(&key->sem);
++		err = add_existing_master_key(key->payload.data[0], secret,
++					      mk_spec);
++		up_write(&key->sem);
++		if (err = KEY_DEAD) {
++			/* Key being removed or needs to be removed */
++			key_invalidate(key);
++			key_put(key);
++			goto retry;
++		}
+ 		key_put(key);
+-		err = 0;
+ 	}
+ out_unlock:
+ 	mutex_unlock(&fscrypt_add_key_mutex);
+@@ -277,6 +319,163 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
+ }
+ EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
+ 
++static void evict_dentries_for_decrypted_inodes(struct fscrypt_master_key *mk)
++{
++	struct fscrypt_info *ci;
++	struct inode *inode;
++	struct inode *toput_inode = NULL;
++
++	spin_lock(&mk->mk_decrypted_inodes_lock);
++
++	list_for_each_entry(ci, &mk->mk_decrypted_inodes, ci_master_key_link) {
++		inode = ci->ci_inode;
++		spin_lock(&inode->i_lock);
++		if (inode->i_state & (I_FREEING | I_WILL_FREE | I_NEW)) {
++			spin_unlock(&inode->i_lock);
++			continue;
++		}
++		__iget(inode);
++		spin_unlock(&inode->i_lock);
++		spin_unlock(&mk->mk_decrypted_inodes_lock);
++
++		shrink_dcache_inode(inode);
++		iput(toput_inode);
++		toput_inode = inode;
++
++		spin_lock(&mk->mk_decrypted_inodes_lock);
++	}
++
++	spin_unlock(&mk->mk_decrypted_inodes_lock);
++	iput(toput_inode);
++}
++
++static int try_to_lock_encrypted_files(struct super_block *sb,
++				       struct fscrypt_master_key *mk)
++{
++	int err1;
++	int err2;
++
++	/*
++	 * An inode can't be evicted while it is dirty or has dirty pages.
++	 * Thus, we first have to clean the inodes in ->mk_decrypted_inodes.
++	 *
++	 * Just do it the easy way: call sync_filesystem().  It's overkill, but
++	 * it works, and it's more important to minimize the amount of caches we
++	 * drop than the amount of data we sync.  Also, unprivileged users can
++	 * already call sync_filesystem() via sys_syncfs() or sys_sync().
++	 */
++	down_read(&sb->s_umount);
++	err1 = sync_filesystem(sb);
++	up_read(&sb->s_umount);
++	/* If a sync error occurs, still try to evict as much as possible. */
++
++	/*
++	 * Inodes are pinned by their dentries, so we have to evict their
++	 * dentries.  shrink_dcache_sb() would suffice, but would be overkill
++	 * and inappropriate for use by unprivileged users.  So instead go
++	 * through the inodes' alias lists and try to evict each dentry.
++	 */
++	evict_dentries_for_decrypted_inodes(mk);
++
++	/*
++	 * evict_dentries_for_decrypted_inodes() already iput() each inode in
++	 * the list; any inodes for which that dropped the last reference will
++	 * have been evicted due to fscrypt_drop_inode() detecting the key
++	 * removal and telling the VFS to evict the inode.  So to finish, we
++	 * just need to check whether any inodes couldn't be evicted.
++	 */
++	err2 = 0;
++	spin_lock(&mk->mk_decrypted_inodes_lock);
++	if (!list_empty(&mk->mk_decrypted_inodes)) {
++		const struct fscrypt_info *first_ci +			list_first_entry(&mk->mk_decrypted_inodes,
++					 struct fscrypt_info,
++					 ci_master_key_link);
++		fscrypt_warn(sb,
++			     "inodes still busy after removing key with description %*phN (first ino: %lu)",
++			     master_key_spec_len(&mk->mk_spec),
++			     (u8 *)&mk->mk_spec.u, first_ci->ci_inode->i_ino);
++		err2 = -EBUSY;
++	}
++	spin_unlock(&mk->mk_decrypted_inodes_lock);
++
++	return err1 ?: err2;
++}
++
++/*
++ * Try to remove an fscrypt master encryption key.  If other users have also
++ * added the key, we'll remove the current user's usage of the key, then return
++ * -EUSERS.  Otherwise we'll continue on and try to actually remove the key.
++ *
++ * First we wipe the actual master key secret from memory, so that no more
++ * inodes can be unlocked with it.  Then, we try to evict all cached inodes that
++ * had been unlocked using the key.  Since this can fail for in-use inodes, this
++ * is expected to be used in cooperation with userspace ensuring that none of
++ * the files are still open.
++ *
++ * If, nevertheless, some inodes could not be evicted, we return -EBUSY
++ * (although we still evicted as many inodes as possible) and keep the 'struct
++ * key' and the 'struct fscrypt_master_key' around to keep track of the list of
++ * remaining inodes.  Userspace can then retry the ioctl later to retry evicting
++ * the remaining inodes, or alternatively can add the secret key again.
++ *
++ * Note that even though we wipe the encryption *keys* from memory, decrypted
++ * data can likely still be found in memory, e.g. in pagecache pages that have
++ * been freed.  Wiping such data is currently out of scope, short of users who
++ * may choose to enable page and slab poisoning systemwide.
++ */
++int fscrypt_ioctl_remove_key(struct file *filp, const void __user *uarg)
++{
++	struct super_block *sb = file_inode(filp)->i_sb;
++	struct fscrypt_remove_key_arg arg;
++	struct key *key;
++	struct fscrypt_master_key *mk;
++	int err;
++	bool dead;
++
++	if (copy_from_user(&arg, uarg, sizeof(arg)))
++		return -EFAULT;
++
++	if (!valid_key_spec(&arg.key_spec))
++		return -EINVAL;
++
++	if (memchr_inv(arg.__reserved, 0, sizeof(arg.__reserved)))
++		return -EINVAL;
++
++	if (!capable(CAP_SYS_ADMIN))
++		return -EACCES;
++
++	/* Find the key being removed. */
++	key = fscrypt_find_master_key(sb, &arg.key_spec);
++	if (IS_ERR(key))
++		return PTR_ERR(key);
++	mk = key->payload.data[0];
++
++	down_write(&key->sem);
++
++	/* Wipe the secret. */
++	dead = false;
++	if (is_master_key_secret_present(&mk->mk_secret)) {
++		wipe_master_key_secret(&mk->mk_secret);
++		dead = refcount_dec_and_test(&mk->mk_refcount);
++	}
++	up_write(&key->sem);
++	if (dead) {
++		/*
++		 * We wiped the secret and no inodes reference the key anymore,
++		 * so it's free to remove.
++		 */
++		key_invalidate(key);
++		err = 0;
++	} else {
++		/* Some inodes still reference this key; try to evict them. */
++		err = try_to_lock_encrypted_files(sb, mk);
++	}
++	key_put(key);
++	return err;
++}
++EXPORT_SYMBOL_GPL(fscrypt_ioctl_remove_key);
++
+ int __init fscrypt_init_keyring(void)
+ {
+ 	return register_key_type(&key_type_fscrypt);
+diff --git a/fs/crypto/keysetup.c b/fs/crypto/keysetup.c
+index b63fb4e8aebd..fb600cac8ee4 100644
+--- a/fs/crypto/keysetup.c
++++ b/fs/crypto/keysetup.c
+@@ -210,8 +210,16 @@ int fscrypt_set_derived_key(struct fscrypt_info *ci, const u8 *derived_key)
+ 
+ /*
+  * Find the master key, then set up the inode's actual encryption key.
++ *
++ * If the master key is found in the filesystem-level keyring, then the
++ * corresponding 'struct key' is returned in *master_key_ret with
++ * ->sem read-locked.  This is needed to ensure that only one task links the
++ * fscrypt_info into ->mk_decrypted_inodes (as multiple tasks may race to create
++ * an fscrypt_info for the same inode), and to synchronize the key being removed
++ * with a new inode starting to use it.
+  */
+-static int setup_file_encryption_key(struct fscrypt_info *ci)
++static int setup_file_encryption_key(struct fscrypt_info *ci,
++				     struct key **master_key_ret)
+ {
+ 	struct key *key;
+ 	struct fscrypt_master_key *mk = NULL;
+@@ -231,6 +239,13 @@ static int setup_file_encryption_key(struct fscrypt_info *ci)
+ 	}
+ 
+ 	mk = key->payload.data[0];
++	down_read(&key->sem);
++
++	/* Has the secret been removed (via FS_IOC_REMOVE_ENCRYPTION_KEY)? */
++	if (!is_master_key_secret_present(&mk->mk_secret)) {
++		err = -ENOKEY;
++		goto out_release_key;
++	}
+ 
+ 	if (mk->mk_secret.size < ci->ci_mode->keysize) {
+ 		fscrypt_warn(NULL,
+@@ -242,14 +257,22 @@ static int setup_file_encryption_key(struct fscrypt_info *ci)
+ 	}
+ 
+ 	err = fscrypt_setup_v1_file_key(ci, mk->mk_secret.raw);
++	if (err)
++		goto out_release_key;
++
++	*master_key_ret = key;
++	return 0;
+ 
+ out_release_key:
++	up_read(&key->sem);
+ 	key_put(key);
+ 	return err;
+ }
+ 
+ static void put_crypt_info(struct fscrypt_info *ci)
+ {
++	struct key *key;
++
+ 	if (!ci)
+ 		return;
+ 
+@@ -259,6 +282,26 @@ static void put_crypt_info(struct fscrypt_info *ci)
+ 		crypto_free_skcipher(ci->ci_ctfm);
+ 		crypto_free_cipher(ci->ci_essiv_tfm);
+ 	}
++
++	key = ci->ci_master_key;
++	if (key) {
++		struct fscrypt_master_key *mk = key->payload.data[0];
++
++		/*
++		 * Remove this inode from the list of inodes that were unlocked
++		 * with the master key.
++		 *
++		 * In addition, if we're removing the last inode from a key that
++		 * already had its secret removed, invalidate the key so that it
++		 * gets removed from ->s_master_keys.
++		 */
++		spin_lock(&mk->mk_decrypted_inodes_lock);
++		list_del(&ci->ci_master_key_link);
++		spin_unlock(&mk->mk_decrypted_inodes_lock);
++		if (refcount_dec_and_test(&mk->mk_refcount))
++			key_invalidate(key);
++		key_put(key);
++	}
+ 	kmem_cache_free(fscrypt_info_cachep, ci);
+ }
+ 
+@@ -267,6 +310,7 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	struct fscrypt_info *crypt_info;
+ 	struct fscrypt_context ctx;
+ 	struct fscrypt_mode *mode;
++	struct key *master_key = NULL;
+ 	int res;
+ 
+ 	if (inode->i_crypt_info)
+@@ -319,13 +363,30 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	WARN_ON(mode->ivsize > FSCRYPT_MAX_IV_SIZE);
+ 	crypt_info->ci_mode = mode;
+ 
+-	res = setup_file_encryption_key(crypt_info);
++	res = setup_file_encryption_key(crypt_info, &master_key);
+ 	if (res)
+ 		goto out;
+ 
+-	if (cmpxchg(&inode->i_crypt_info, NULL, crypt_info) = NULL)
++	if (cmpxchg(&inode->i_crypt_info, NULL, crypt_info) = NULL) {
++		if (master_key) {
++			struct fscrypt_master_key *mk +				master_key->payload.data[0];
++
++			refcount_inc(&mk->mk_refcount);
++			crypt_info->ci_master_key = key_get(master_key);
++			spin_lock(&mk->mk_decrypted_inodes_lock);
++			list_add(&crypt_info->ci_master_key_link,
++				 &mk->mk_decrypted_inodes);
++			spin_unlock(&mk->mk_decrypted_inodes_lock);
++		}
+ 		crypt_info = NULL;
++	}
++	res = 0;
+ out:
++	if (master_key) {
++		up_read(&master_key->sem);
++		key_put(master_key);
++	}
+ 	if (res = -ENOKEY)
+ 		res = 0;
+ 	put_crypt_info(crypt_info);
+@@ -339,3 +400,39 @@ void fscrypt_put_encryption_info(struct inode *inode)
+ 	inode->i_crypt_info = NULL;
+ }
+ EXPORT_SYMBOL(fscrypt_put_encryption_info);
++
++/**
++ * fscrypt_drop_inode() - check whether the inode's master key has been removed
++ *
++ * Filesystems supporting fscrypt must call this from their ->drop_inode()
++ * method so that encrypted inodes are evicted as soon as they're no longer in
++ * use and their master key has been removed.
++ *
++ * Return: 1 if fscrypt wants the inode to be evicted now, otherwise 0
++ */
++int fscrypt_drop_inode(struct inode *inode)
++{
++	const struct fscrypt_info *ci = inode->i_crypt_info;
++	const struct fscrypt_master_key *mk;
++
++	/*
++	 * If ci is NULL, then the inode doesn't have an encryption key set up
++	 * so it's irrelevant.  If ci_master_key is NULL, then the master key
++	 * was provided via the legacy mechanism of the process-subscribed
++	 * keyrings, so we don't know whether it's been removed or not.
++	 */
++	if (!ci || !ci->ci_master_key)
++		return 0;
++	mk = ci->ci_master_key->payload.data[0];
++
++	/*
++	 * Note: since we aren't holding key->sem, the result here can
++	 * immediately become outdated.  But there's no correctness problem with
++	 * unnecessarily evicting.  Nor is there a correctness problem with not
++	 * evicting while iput() is racing with the key being removed, since
++	 * then the thread removing the key will either evict the inode itself
++	 * or will correctly detect that it wasn't evicted due to the race.
++	 */
++	return !is_master_key_secret_present(&mk->mk_secret);
++}
++EXPORT_SYMBOL(fscrypt_drop_inode);
+diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
+index ddb54b8eab81..c4fff46ce847 100644
+--- a/include/linux/fscrypt.h
++++ b/include/linux/fscrypt.h
+@@ -114,10 +114,12 @@ extern int fscrypt_inherit_context(struct inode *, struct inode *,
+ 					void *, bool);
+ /* keyring.c */
+ extern int fscrypt_ioctl_add_key(struct file *filp, void __user *arg);
++extern int fscrypt_ioctl_remove_key(struct file *filp, const void __user *arg);
+ 
+ /* keysetup.c */
+ extern int fscrypt_get_encryption_info(struct inode *);
+ extern void fscrypt_put_encryption_info(struct inode *);
++extern int fscrypt_drop_inode(struct inode *inode);
+ 
+ /* fname.c */
+ extern int fscrypt_setup_filename(struct inode *, const struct qstr *,
+@@ -321,6 +323,12 @@ static inline int fscrypt_ioctl_add_key(struct file *filp, void __user *arg)
+ 	return -EOPNOTSUPP;
+ }
+ 
++static inline int fscrypt_ioctl_remove_key(struct file *filp,
++					   const void __user *arg)
++{
++	return -EOPNOTSUPP;
++}
++
+ /* keysetup.c */
+ static inline int fscrypt_get_encryption_info(struct inode *inode)
+ {
+@@ -332,6 +340,11 @@ static inline void fscrypt_put_encryption_info(struct inode *inode)
+ 	return;
+ }
+ 
++static inline int fscrypt_drop_inode(struct inode *inode)
++{
++	return 0;
++}
++
+  /* fname.c */
+ static inline int fscrypt_setup_filename(struct inode *dir,
+ 					 const struct qstr *iname,
+diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+index 7bed24632bda..3302a407131e 100644
+--- a/include/uapi/linux/fscrypt.h
++++ b/include/uapi/linux/fscrypt.h
+@@ -65,10 +65,17 @@ struct fscrypt_add_key_arg {
+ 	__u8 raw[];
+ };
+ 
++/* Struct passed to FS_IOC_REMOVE_ENCRYPTION_KEY */
++struct fscrypt_remove_key_arg {
++	struct fscrypt_key_specifier key_spec;
++	__u32 __reserved[6];
++};
++
+ #define FS_IOC_SET_ENCRYPTION_POLICY	  _IOR('f', 19, struct fscrypt_policy)
+ #define FS_IOC_GET_ENCRYPTION_PWSALT	  _IOW('f', 20, __u8[16])
+ #define FS_IOC_GET_ENCRYPTION_POLICY	  _IOW('f', 21, struct fscrypt_policy)
+ #define FS_IOC_ADD_ENCRYPTION_KEY	 _IOWR('f', 23, struct fscrypt_add_key_arg)
++#define FS_IOC_REMOVE_ENCRYPTION_KEY	  _IOW('f', 24, struct fscrypt_remove_key_arg)
+ 
+ /**********************************************************************/
+ 
+-- 
+2.20.1
