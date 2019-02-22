@@ -1,53 +1,117 @@
-From: Steve French <smfrench@gmail.com>
-Date: Wed, 20 Feb 2019 18:54:17 +0000
-Subject: Re: [RFC PATCH 00/27] Containers and using authenticated filesystems
-Message-Id: <CAH2r5muChuoHAM-AhBhTRkp=Lz0onyPa63MpV0qgm1TQKF=R5Q@mail.gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 22 Feb 2019 15:36:18 +0000
+Subject: [PATCH] KEYS: always initialize keyring_index_key::desc_len
+Message-Id: <155084977835.23242.14844856182331713906.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
- <8736ojybw7.fsf@xmission.com> <22055.1550619729@warthog.procyon.org.uk>
-In-Reply-To: <22055.1550619729@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, Steve French <sfrench@samba.org>, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, CIFS <linux-cifs@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, rgb@redhat.com, LKML <linux-kernel@vger.kernel.org>, Linux Containers <containers@lists.linux-foundation.org>, Linux API <linux-api@vger.kernel.org>, samba-technical <samba-technical@lists.samba.org>
+References: <20181102231510.15911-1-ebiggers@kernel.org>
+In-Reply-To: <20181102231510.15911-1-ebiggers@kernel.org>
+To: jmorris@namei.org
+Cc: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com, Eric Biggers <ebiggers@google.com>, stable@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2019 at 5:42 PM David Howells <dhowells@redhat.com> wrote:
->
-> Eric W. Biederman <ebiederm@xmission.com> wrote:
->
-> > So you missed the main mailing lists for discussion of this kind of
-> > thing
->
-> Yeah, sorry about that.  I was primarily aiming it at Trond and Steve as I'd
-> like to consider how to go about interpolating request_key() into NFS and CIFS
-> so that they can make use of the key-related facilities that this makes
-> available with AFS.
+From: Eric Biggers <ebiggers@google.com>
 
-I am interested in this discussion because I have gotten various questions
-about using Containers better on SMB3 mounts, and the question about
-doing request_key better comes up **a lot** on SMB3 mounts (not just
-for kerberos, Active Directory), and usability could be improved of some
-of the cifs-utils that cifs.ko depends on.
+syzbot hit the 'BUG_ON(index_key->desc_len = 0);' in __key_link_begin()
+called from construct_alloc_key() during sys_request_key(), because the
+length of the key description was never calculated.
 
-Note that various virtualization/container identify features were added to the
-protocol a few years ago (which we don't yet implement in Linux) but which
-probably be **very** useful to followup on how these could be exposed
-to help containers on network mounts in Linux.    See in particular this
-new protocol feature (implemented by various servers including Windows
-but not by Linux client yet) described in the protocol spec (MS-SMB2 section
-2.2.9.2.1) - the "SMB2_REMOTED_IDENTITY_TREE_CONNECT context"
-which can be sent at mount time:
-https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/ee7ff411-93e0-484f-9f73-31916fee4cb8
+The problem is that we rely on ->desc_len being initialized by
+search_process_keyrings(), specifically by search_nested_keyrings().
+But, if the process isn't subscribed to any keyrings that never happens.
 
-This may be of interest to Samba server developers as well
+Fix it by always initializing keyring_index_key::desc_len as soon as the
+description is set, like we already do in some places.
 
-> > and the maintainer.
->
-> That would be me.  I maintain keyrings.
+The following program reproduces the BUG_ON() when it's run as root and
+no session keyring has been installed.  If it doesn't work, try removing
+pam_keyinit.so from /etc/pam.d/login and rebooting.
 
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <keyutils.h>
 
--- 
-Thanks,
+    int main(void)
+    {
+            int id = add_key("keyring", "syz", NULL, 0, KEY_SPEC_USER_KEYRING);
 
-Steve
+            keyctl_setperm(id, KEY_OTH_WRITE);
+            setreuid(5000, 5000);
+            request_key("user", "desc", "", id);
+    }
+
+Reported-by: syzbot+ec24e95ea483de0a24da@syzkaller.appspotmail.com
+Fixes: b2a4df200d57 ("KEYS: Expand the capacity of a keyring")
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: stable@vger.kernel.org
+---
+
+ security/keys/keyring.c          |    4 +---
+ security/keys/proc.c             |    3 +--
+ security/keys/request_key.c      |    1 +
+ security/keys/request_key_auth.c |    2 +-
+ 4 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index eadebb92986a..f81372f53dd7 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -661,9 +661,6 @@ static bool search_nested_keyrings(struct key *keyring,
+ 	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
+ 	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
+ 
+-	if (ctx->index_key.description)
+-		ctx->index_key.desc_len = strlen(ctx->index_key.description);
+-
+ 	/* Check to see if this top-level keyring is what we are looking for
+ 	 * and whether it is valid or not.
+ 	 */
+@@ -914,6 +911,7 @@ key_ref_t keyring_search(key_ref_t keyring,
+ 	struct keyring_search_context ctx = {
+ 		.index_key.type		= type,
+ 		.index_key.description	= description,
++		.index_key.desc_len	= strlen(description),
+ 		.cred			= current_cred(),
+ 		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index d2b802072693..78ac305d715e 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -165,8 +165,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	int rc;
+ 
+ 	struct keyring_search_context ctx = {
+-		.index_key.type		= key->type,
+-		.index_key.description	= key->description,
++		.index_key		= key->index_key,
+ 		.cred			= m->file->f_cred,
+ 		.match_data.cmp		= lookup_user_key_possessed,
+ 		.match_data.raw_data	= key,
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 3f56a312dd35..7a0c6b666ff0 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -531,6 +531,7 @@ struct key *request_key_and_link(struct key_type *type,
+ 	struct keyring_search_context ctx = {
+ 		.index_key.type		= type,
+ 		.index_key.description	= description,
++		.index_key.desc_len	= strlen(description),
+ 		.cred			= current_cred(),
+ 		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index afc304e8b61e..bda6201c6c45 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -247,7 +247,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
+ 	struct key *authkey;
+ 	key_ref_t authkey_ref;
+ 
+-	sprintf(description, "%x", target_id);
++	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
+ 
+ 	authkey_ref = search_process_keyrings(&ctx);
+ 
