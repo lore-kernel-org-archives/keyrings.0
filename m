@@ -1,368 +1,329 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Wed, 06 Feb 2019 16:24:49 +0000
-Subject: [PATCH v10, RESEND 3/6] tpm: retrieve digest size of unknown algorithms with PCR read
-Message-Id: <20190206162452.7749-4-roberto.sassu@huawei.com>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Sun, 24 Feb 2019 06:08:25 +0000
+Subject: [PATCH v5 07/10] crypto: ecc - make ecc into separate module
+Message-Id: <20190224060828.2527-8-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190206162452.7749-1-roberto.sassu@huawei.com>
-In-Reply-To: <20190206162452.7749-1-roberto.sassu@huawei.com>
-To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, david.safford@ge.com, monty.wiseman@ge.com, matthewgarrett@google.com
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
+References: <20190224060828.2527-1-vt@altlinux.org>
+In-Reply-To: <20190224060828.2527-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Currently, the TPM driver retrieves the digest size from a table mapping
-TPM algorithms identifiers to identifiers defined by the crypto subsystem.
-If the algorithm is not defined by the latter, the digest size can be
-retrieved from the output of the PCR read command.
+ecc.c have algorithms that could be used togeter by ecdh and ecrdsa.
+Make it separate module. Add CRYPTO_ECC into Kconfig. EXPORT_SYMBOL and
+document to what seems appropriate. Move structs ecc_point and ecc_curve
+from ecc_curve_defs.h into ecc.h.
 
-The patch modifies the definition of tpm_pcr_read() and tpm2_pcr_read() to
-pass the desired hash algorithm and obtain the digest size at TPM startup.
-Algorithms and corresponding digest sizes are stored in the new structure
-tpm_bank_info, member of tpm_chip, so that the information can be used by
-other kernel subsystems.
+No code changes.
 
-tpm_bank_info contains: the TPM algorithm identifier, necessary to generate
-the event log as defined by Trusted Computing Group (TCG); the digest size,
-to pad/truncate a digest calculated with a different algorithm; the crypto
-subsystem identifier, to calculate the digest of event data.
-
-This patch also protects against data corruption that could happen in the
-bus, by checking that the digest size returned by the TPM during a PCR read
-matches the size of the algorithm passed to tpm2_pcr_read().
-
-For the initial PCR read, when digest sizes are not yet available, this
-patch ensures that the amount of data copied from the output returned by
-the TPM does not exceed the size of the array data are copied to.
-
-Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Acked-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
 ---
- drivers/char/tpm/tpm-interface.c    | 16 +++---
- drivers/char/tpm/tpm.h              |  5 +-
- drivers/char/tpm/tpm1-cmd.c         |  4 +-
- drivers/char/tpm/tpm2-cmd.c         | 85 +++++++++++++++++++++++------
- include/linux/tpm.h                 | 12 +++-
- security/integrity/ima/ima_crypto.c | 10 ++--
- 6 files changed, 96 insertions(+), 36 deletions(-)
+ crypto/Kconfig          |  4 ++
+ crypto/Makefile         |  2 +-
+ crypto/ecc.c            | 25 +++++++++----
+ crypto/ecc.h            | 99 +++++++++++++++++++++++++++++++++++++++++++++++++
+ crypto/ecc_curve_defs.h | 15 --------
+ 5 files changed, 122 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 9f6e68fbbb4d..8d19040d6c2a 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -272,11 +272,12 @@ EXPORT_SYMBOL_GPL(tpm_is_tpm2);
-  * tpm_pcr_read - read a PCR value from SHA1 bank
-  * @chip:	a &struct tpm_chip instance, %NULL for the default chip
-  * @pcr_idx:	the PCR to be retrieved
-- * @res_buf:	the value of the PCR
-+ * @digest:	the PCR bank and buffer current PCR value is written to
-  *
-  * Return: same as with tpm_transmit_cmd()
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 370cbdca87a7..cf0bceee0ea5 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -248,8 +248,12 @@ config CRYPTO_DH
+ 	help
+ 	  Generic implementation of the Diffie-Hellman algorithm.
+ 
++config CRYPTO_ECC
++	tristate
++
+ config CRYPTO_ECDH
+ 	tristate "ECDH algorithm"
++	select CRYPTO_ECC
+ 	select CRYPTO_KPP
+ 	select CRYPTO_RNG_DEFAULT
+ 	help
+diff --git a/crypto/Makefile b/crypto/Makefile
+index 799ed5e94606..b660f078651a 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -147,8 +147,8 @@ obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
+ obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
+ obj-$(CONFIG_CRYPTO_ZSTD) += zstd.o
+ obj-$(CONFIG_CRYPTO_OFB) += ofb.o
++obj-$(CONFIG_CRYPTO_ECC) += ecc.o
+ 
+-ecdh_generic-y := ecc.o
+ ecdh_generic-y += ecdh.o
+ ecdh_generic-y += ecdh_helper.o
+ obj-$(CONFIG_CRYPTO_ECDH) += ecdh_generic.o
+diff --git a/crypto/ecc.c b/crypto/ecc.c
+index ed1237115066..5f36792d143d 100644
+--- a/crypto/ecc.c
++++ b/crypto/ecc.c
+@@ -24,6 +24,7 @@
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   */
--int tpm_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
-+int tpm_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
-+		 struct tpm_digest *digest)
- {
- 	int rc;
  
-@@ -285,9 +286,9 @@ int tpm_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
- 		return -ENODEV;
- 
- 	if (chip->flags & TPM_CHIP_FLAG_TPM2)
--		rc = tpm2_pcr_read(chip, pcr_idx, res_buf);
-+		rc = tpm2_pcr_read(chip, pcr_idx, digest, NULL);
- 	else
--		rc = tpm1_pcr_read(chip, pcr_idx, res_buf);
-+		rc = tpm1_pcr_read(chip, pcr_idx, digest->digest);
- 
- 	tpm_put_ops(chip);
- 	return rc;
-@@ -300,9 +301,8 @@ EXPORT_SYMBOL_GPL(tpm_pcr_read);
-  * @pcr_idx:	the PCR to be retrieved
-  * @hash:	the hash value used to extend the PCR value
-  *
-- * Note: with TPM 2.0 extends also those banks with a known digest size to the
-- * cryto subsystem in order to prevent malicious use of those PCR banks. In the
-- * future we should dynamically determine digest sizes.
-+ * Note: with TPM 2.0 extends also those banks for which no digest was
-+ * specified in order to prevent malicious use of those PCR banks.
-  *
-  * Return: same as with tpm_transmit_cmd()
-  */
-@@ -323,7 +323,7 @@ int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, const u8 *hash)
- 			return -ENOMEM;
- 
- 		for (i = 0; i < chip->nr_allocated_banks; i++) {
--			digest_list[i].alg_id = chip->allocated_banks[i];
-+			digest_list[i].alg_id = chip->allocated_banks[i].alg_id;
- 			memcpy(digest_list[i].digest, hash, TPM_DIGEST_SIZE);
- 		}
- 
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 0e54061d3fd1..4efa304e9ece 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -247,7 +247,7 @@ struct tpm_chip {
- 	unsigned int groups_cnt;
- 
- 	u32 nr_allocated_banks;
--	u16 *allocated_banks;
-+	struct tpm_bank_info *allocated_banks;
- #ifdef CONFIG_ACPI
- 	acpi_handle acpi_dev_handle;
- 	char ppi_version[TPM_PPI_VERSION_LEN + 1];
-@@ -532,7 +532,8 @@ static inline u32 tpm2_rc_value(u32 rc)
++#include <linux/module.h>
+ #include <linux/random.h>
+ #include <linux/slab.h>
+ #include <linux/swab.h>
+@@ -112,7 +113,7 @@ static void vli_clear(u64 *vli, unsigned int ndigits)
  }
  
- int tpm2_get_timeouts(struct tpm_chip *chip);
--int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf);
-+int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
-+		  struct tpm_digest *digest, u16 *digest_size_ptr);
- int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
- 		    struct tpm_digest *digests);
- int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max);
-diff --git a/drivers/char/tpm/tpm1-cmd.c b/drivers/char/tpm/tpm1-cmd.c
-index 3eb7e03889a0..85dcf2654d11 100644
---- a/drivers/char/tpm/tpm1-cmd.c
-+++ b/drivers/char/tpm/tpm1-cmd.c
-@@ -703,7 +703,9 @@ int tpm1_auto_startup(struct tpm_chip *chip)
- 		goto out;
- 	}
- 
--	chip->allocated_banks[0] = TPM_ALG_SHA1;
-+	chip->allocated_banks[0].alg_id = TPM_ALG_SHA1;
-+	chip->allocated_banks[0].digest_size = hash_digest_size[HASH_ALGO_SHA1];
-+	chip->allocated_banks[0].crypto_id = HASH_ALGO_SHA1;
- 	chip->nr_allocated_banks = 1;
- 
- 	return rc;
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index 440ae6ee29e4..6967f15a6585 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -171,20 +171,36 @@ struct tpm2_pcr_read_out {
-  * tpm2_pcr_read() - read a PCR value
-  * @chip:	TPM chip to use.
-  * @pcr_idx:	index of the PCR to read.
-- * @res_buf:	buffer to store the resulting hash.
-+ * @digest:	PCR bank and buffer current PCR value is written to.
-+ * @digest_size_ptr:	pointer to variable that stores the digest size.
-  *
-  * Return: Same as with tpm_transmit_cmd.
-  */
--int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
-+int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
-+		  struct tpm_digest *digest, u16 *digest_size_ptr)
+ /* Returns true if vli = 0, false otherwise. */
+-static bool vli_is_zero(const u64 *vli, unsigned int ndigits)
++bool vli_is_zero(const u64 *vli, unsigned int ndigits)
  {
-+	int i;
- 	int rc;
- 	struct tpm_buf buf;
- 	struct tpm2_pcr_read_out *out;
- 	u8 pcr_select[TPM2_PCR_SELECT_MIN] = {0};
-+	u16 digest_size;
-+	u16 expected_digest_size = 0;
- 
- 	if (pcr_idx >= TPM2_PLATFORM_PCR)
- 		return -EINVAL;
- 
-+	if (!digest_size_ptr) {
-+		for (i = 0; i < chip->nr_allocated_banks &&
-+		     chip->allocated_banks[i].alg_id != digest->alg_id; i++)
-+			;
-+
-+		if (i = chip->nr_allocated_banks)
-+			return -EINVAL;
-+
-+		expected_digest_size = chip->allocated_banks[i].digest_size;
-+	}
-+
- 	rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, TPM2_CC_PCR_READ);
- 	if (rc)
- 		return rc;
-@@ -192,18 +208,28 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
- 	pcr_select[pcr_idx >> 3] = 1 << (pcr_idx & 0x7);
- 
- 	tpm_buf_append_u32(&buf, 1);
--	tpm_buf_append_u16(&buf, TPM_ALG_SHA1);
-+	tpm_buf_append_u16(&buf, digest->alg_id);
- 	tpm_buf_append_u8(&buf, TPM2_PCR_SELECT_MIN);
- 	tpm_buf_append(&buf, (const unsigned char *)pcr_select,
- 		       sizeof(pcr_select));
- 
--	rc = tpm_transmit_cmd(chip, &buf, 0, res_buf ?
--			      "attempting to read a pcr value" : NULL);
--	if (rc = 0 && res_buf) {
--		out = (struct tpm2_pcr_read_out *)&buf.data[TPM_HEADER_SIZE];
--		memcpy(res_buf, out->digest, SHA1_DIGEST_SIZE);
-+	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting to read a pcr value");
-+	if (rc)
-+		goto out;
-+
-+	out = (struct tpm2_pcr_read_out *)&buf.data[TPM_HEADER_SIZE];
-+	digest_size = be16_to_cpu(out->digest_size);
-+	if (digest_size > sizeof(digest->digest) ||
-+	    (!digest_size_ptr && digest_size != expected_digest_size)) {
-+		rc = -EINVAL;
-+		goto out;
- 	}
- 
-+	if (digest_size_ptr)
-+		*digest_size_ptr = digest_size;
-+
-+	memcpy(digest->digest, out->digest, digest_size);
-+out:
- 	tpm_buf_destroy(&buf);
- 	return rc;
- }
-@@ -232,7 +258,6 @@ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
- 	struct tpm2_null_auth_area auth_area;
- 	int rc;
  	int i;
--	int j;
  
- 	if (count > chip->nr_allocated_banks)
- 		return -EINVAL;
-@@ -254,14 +279,9 @@ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, u32 count,
- 	tpm_buf_append_u32(&buf, count);
+@@ -123,6 +124,7 @@ static bool vli_is_zero(const u64 *vli, unsigned int ndigits)
  
- 	for (i = 0; i < count; i++) {
--		for (j = 0; j < ARRAY_SIZE(tpm2_hash_map); j++) {
--			if (digests[i].alg_id != tpm2_hash_map[j].tpm_id)
--				continue;
--			tpm_buf_append_u16(&buf, digests[i].alg_id);
--			tpm_buf_append(&buf, (const unsigned char
--					      *)&digests[i].digest,
--			       hash_digest_size[tpm2_hash_map[j].crypto_id]);
--		}
-+		tpm_buf_append_u16(&buf, digests[i].alg_id);
-+		tpm_buf_append(&buf, (const unsigned char *)&digests[i].digest,
-+			       chip->allocated_banks[i].digest_size);
- 	}
- 
- 	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting extend a PCR value");
-@@ -795,6 +815,30 @@ int tpm2_probe(struct tpm_chip *chip)
+ 	return true;
  }
- EXPORT_SYMBOL_GPL(tpm2_probe);
++EXPORT_SYMBOL(vli_is_zero);
  
-+static int tpm2_init_bank_info(struct tpm_chip *chip, u32 bank_index)
-+{
-+	struct tpm_bank_info *bank = chip->allocated_banks + bank_index;
-+	struct tpm_digest digest = { .alg_id = bank->alg_id };
-+	int i;
-+
-+	/*
-+	 * Avoid unnecessary PCR read operations to reduce overhead
-+	 * and obtain identifiers of the crypto subsystem.
-+	 */
-+	for (i = 0; i < ARRAY_SIZE(tpm2_hash_map); i++) {
-+		enum hash_algo crypto_algo = tpm2_hash_map[i].crypto_id;
-+
-+		if (bank->alg_id != tpm2_hash_map[i].tpm_id)
-+			continue;
-+
-+		bank->digest_size = hash_digest_size[crypto_algo];
-+		bank->crypto_id = crypto_algo;
-+		return 0;
-+	}
-+
-+	return tpm2_pcr_read(chip, 0, &digest, &bank->digest_size);
-+}
-+
- struct tpm2_pcr_selection {
- 	__be16  hash_alg;
- 	u8  size_of_select;
-@@ -858,7 +902,12 @@ static ssize_t tpm2_get_pcr_allocation(struct tpm_chip *chip)
- 		pcr_select_offset = memchr_inv(pcr_selection.pcr_select, 0,
- 					       pcr_selection.size_of_select);
- 		if (pcr_select_offset) {
--			chip->allocated_banks[nr_alloc_banks] = hash_alg;
-+			chip->allocated_banks[nr_alloc_banks].alg_id = hash_alg;
-+
-+			rc = tpm2_init_bank_info(chip, nr_alloc_banks);
-+			if (rc < 0)
-+				break;
-+
- 			nr_alloc_banks++;
- 		}
+ /* Returns nonzero if bit bit of vli is set. */
+ static u64 vli_test_bit(const u64 *vli, unsigned int bit)
+@@ -171,7 +173,7 @@ static void vli_set(u64 *dest, const u64 *src, unsigned int ndigits)
+ }
  
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 9fe8c9816cf0..afd022fc9d3d 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -47,6 +47,12 @@ struct tpm_digest {
- 	u8 digest[TPM_MAX_DIGEST_SIZE];
- } __packed;
+ /* Returns sign of left - right. */
+-static int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
++int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
+ {
+ 	int i;
  
-+struct tpm_bank_info {
-+	u16 alg_id;
-+	u16 digest_size;
-+	u16 crypto_id;
+@@ -184,6 +186,7 @@ static int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(vli_cmp);
+ 
+ /* Computes result = in << c, returning carry. Can modify in place
+  * (if result = in). 0 < shift < 64.
+@@ -240,7 +243,7 @@ static u64 vli_add(u64 *result, const u64 *left, const u64 *right,
+ }
+ 
+ /* Computes result = left - right, returning borrow. Can modify in place. */
+-static u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
++u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
+ 		   unsigned int ndigits)
+ {
+ 	u64 borrow = 0;
+@@ -258,6 +261,7 @@ static u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
+ 
+ 	return borrow;
+ }
++EXPORT_SYMBOL(vli_sub);
+ 
+ static uint128_t mul_64_64(u64 left, u64 right)
+ {
+@@ -557,7 +561,7 @@ static void vli_mod_square_fast(u64 *result, const u64 *left,
+  * See "From Euclid's GCD to Montgomery Multiplication to the Great Divide"
+  * https://labs.oracle.com/techrep/2001/smli_tr-2001-95.pdf
+  */
+-static void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
++void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
+ 			unsigned int ndigits)
+ {
+ 	u64 a[ECC_MAX_DIGITS], b[ECC_MAX_DIGITS];
+@@ -630,6 +634,7 @@ static void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
+ 
+ 	vli_set(result, u, ndigits);
+ }
++EXPORT_SYMBOL(vli_mod_inv);
+ 
+ /* ------ Point operations ------ */
+ 
+@@ -948,6 +953,7 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
+ 
+ 	return __ecc_is_key_valid(curve, private_key, ndigits);
+ }
++EXPORT_SYMBOL(ecc_is_key_valid);
+ 
+ /*
+  * ECC private keys are generated using the method of extra random bits,
+@@ -1000,6 +1006,7 @@ int ecc_gen_privkey(unsigned int curve_id, unsigned int ndigits, u64 *privkey)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(ecc_gen_privkey);
+ 
+ int ecc_make_pub_key(unsigned int curve_id, unsigned int ndigits,
+ 		     const u64 *private_key, u64 *public_key)
+@@ -1036,10 +1043,11 @@ int ecc_make_pub_key(unsigned int curve_id, unsigned int ndigits,
+ out:
+ 	return ret;
+ }
++EXPORT_SYMBOL(ecc_make_pub_key);
+ 
+ /* SP800-56A section 5.6.2.3.4 partial verification: ephemeral keys only */
+-static int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
+-				       struct ecc_point *pk)
++int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
++				struct ecc_point *pk)
+ {
+ 	u64 yy[ECC_MAX_DIGITS], xxx[ECC_MAX_DIGITS], w[ECC_MAX_DIGITS];
+ 
+@@ -1064,8 +1072,8 @@ static int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
+ 		return -EINVAL;
+ 
+ 	return 0;
+-
+ }
++EXPORT_SYMBOL(ecc_is_pubkey_valid_partial);
+ 
+ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
+ 			      const u64 *private_key, const u64 *public_key,
+@@ -1121,3 +1129,6 @@ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
+ out:
+ 	return ret;
+ }
++EXPORT_SYMBOL(crypto_ecdh_shared_secret);
++
++MODULE_LICENSE("Dual BSD/GPL");
+diff --git a/crypto/ecc.h b/crypto/ecc.h
+index f75a86baa3bd..3809dbeb699a 100644
+--- a/crypto/ecc.h
++++ b/crypto/ecc.h
+@@ -33,6 +33,41 @@
+ #define ECC_DIGITS_TO_BYTES_SHIFT 3
+ 
+ /**
++ * struct ecc_point - elliptic curve point in affine coordinates
++ *
++ * @x:		X coordinate in vli form.
++ * @y:		Y coordinate in vli form.
++ * @ndigits:	Length of vlis in u64 qwords.
++ */
++struct ecc_point {
++	u64 *x;
++	u64 *y;
++	u8 ndigits;
 +};
 +
- enum TPM_OPS_FLAGS {
- 	TPM_OPS_AUTO_STARTUP = BIT(0),
- };
-@@ -72,7 +78,8 @@ struct tpm_class_ops {
- #if defined(CONFIG_TCG_TPM) || defined(CONFIG_TCG_TPM_MODULE)
++/**
++ * struct ecc_curve - definition of elliptic curve
++ *
++ * @name:	Short name of the curve.
++ * @g:		Generator point of the curve.
++ * @p:		Prime number, if Barrett's reduction is used for this curve
++ *		pre-calculated value 'mu' is appended to the @p after ndigits.
++ *		Use of Barrett's reduction is heuristically determined in
++ *		vli_mmod_fast().
++ * @n:		Order of the curve group.
++ * @a:		Curve parameter a.
++ * @b:		Curve parameter b.
++ */
++struct ecc_curve {
++	char *name;
++	struct ecc_point g;
++	u64 *p;
++	u64 *n;
++	u64 *a;
++	u64 *b;
++};
++
++/**
+  * ecc_is_key_valid() - Validate a given ECDH private key
+  *
+  * @curve_id:		id representing the curve to use
+@@ -91,4 +126,68 @@ int ecc_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
+ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
+ 			      const u64 *private_key, const u64 *public_key,
+ 			      u64 *secret);
++
++/**
++ * ecc_is_pubkey_valid_partial() - Partial public key validation
++ *
++ * @curve:		elliptic curve domain parameters
++ * @pk:			public key as a point
++ *
++ * Valdiate public key according to SP800-56A section 5.6.2.3.4 ECC Partial
++ * Public-Key Validation Routine.
++ *
++ * Note: There is no check that the public key is in the correct elliptic curve
++ * subgroup.
++ *
++ * Return: 0 if validation is successful, -EINVAL if validation is failed.
++ */
++int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
++				struct ecc_point *pk);
++
++/**
++ * vli_is_zero() - Determine is vli is zero
++ *
++ * @vli:		vli to check.
++ * @ndigits:		length of the @vli
++ */
++bool vli_is_zero(const u64 *vli, unsigned int ndigits);
++
++/**
++ * vli_cmp() - compare left and right vlis
++ *
++ * @left:		vli
++ * @right:		vli
++ * @ndigits:		length of both vlis
++ *
++ * Returns sign of @left - @right, i.e. -1 if @left < @right,
++ * 0 if @left = @right, 1 if @left > @right.
++ */
++int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits);
++
++/**
++ * vli_sub() - Subtracts right from left
++ *
++ * @result:		where to write result
++ * @left:		vli
++ * @right		vli
++ * @ndigits:		length of all vlis
++ *
++ * Note: can modify in-place.
++ *
++ * Return: carry bit.
++ */
++u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
++	    unsigned int ndigits);
++
++/**
++ * vli_mod_inv() - Modular inversion
++ *
++ * @result:		where to write vli number
++ * @input:		vli value to operate on
++ * @mod:		modulus
++ * @ndigits:		length of all vlis
++ */
++void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
++		 unsigned int ndigits);
++
+ #endif
+diff --git a/crypto/ecc_curve_defs.h b/crypto/ecc_curve_defs.h
+index 336ab1805639..69be6c7d228f 100644
+--- a/crypto/ecc_curve_defs.h
++++ b/crypto/ecc_curve_defs.h
+@@ -2,21 +2,6 @@
+ #ifndef _CRYTO_ECC_CURVE_DEFS_H
+ #define _CRYTO_ECC_CURVE_DEFS_H
  
- extern int tpm_is_tpm2(struct tpm_chip *chip);
--extern int tpm_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf);
-+extern int tpm_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
-+			struct tpm_digest *digest);
- extern int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx, const u8 *hash);
- extern int tpm_send(struct tpm_chip *chip, void *cmd, size_t buflen);
- extern int tpm_get_random(struct tpm_chip *chip, u8 *data, size_t max);
-@@ -89,7 +96,8 @@ static inline int tpm_is_tpm2(struct tpm_chip *chip)
- 	return -ENODEV;
- }
- 
--static inline int tpm_pcr_read(struct tpm_chip *chip, u32 pcr_idx, u8 *res_buf)
-+static inline int tpm_pcr_read(struct tpm_chip *chip, int pcr_idx,
-+			       struct tpm_digest *digest)
- {
- 	return -ENODEV;
- }
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index acf2c7df7145..16a4f45863b1 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -643,12 +643,12 @@ int ima_calc_buffer_hash(const void *buf, loff_t len,
- 	return calc_buffer_shash(buf, len, hash);
- }
- 
--static void __init ima_pcrread(u32 idx, u8 *pcr)
-+static void __init ima_pcrread(u32 idx, struct tpm_digest *d)
- {
- 	if (!ima_tpm_chip)
- 		return;
- 
--	if (tpm_pcr_read(ima_tpm_chip, idx, pcr) != 0)
-+	if (tpm_pcr_read(ima_tpm_chip, idx, d) != 0)
- 		pr_err("Error Communicating to TPM chip\n");
- }
- 
-@@ -658,7 +658,7 @@ static void __init ima_pcrread(u32 idx, u8 *pcr)
- static int __init ima_calc_boot_aggregate_tfm(char *digest,
- 					      struct crypto_shash *tfm)
- {
--	u8 pcr_i[TPM_DIGEST_SIZE];
-+	struct tpm_digest d = { .alg_id = TPM_ALG_SHA1, .digest = {0} };
- 	int rc;
- 	u32 i;
- 	SHASH_DESC_ON_STACK(shash, tfm);
-@@ -672,9 +672,9 @@ static int __init ima_calc_boot_aggregate_tfm(char *digest,
- 
- 	/* cumulative sha1 over tpm registers 0-7 */
- 	for (i = TPM_PCR0; i < TPM_PCR8; i++) {
--		ima_pcrread(i, pcr_i);
-+		ima_pcrread(i, &d);
- 		/* now accumulate with current aggregate */
--		rc = crypto_shash_update(shash, pcr_i, TPM_DIGEST_SIZE);
-+		rc = crypto_shash_update(shash, d.digest, TPM_DIGEST_SIZE);
- 	}
- 	if (!rc)
- 		crypto_shash_final(shash, digest);
+-struct ecc_point {
+-	u64 *x;
+-	u64 *y;
+-	u8 ndigits;
+-};
+-
+-struct ecc_curve {
+-	char *name;
+-	struct ecc_point g;
+-	u64 *p;
+-	u64 *n;
+-	u64 *a;
+-	u64 *b;
+-};
+-
+ /* NIST P-192: a = p - 3 */
+ static u64 nist_p192_g_x[] = { 0xF4FF0AFD82FF1012ull, 0x7CBF20EB43A18800ull,
+ 				0x188DA80EB03090F6ull };
 -- 
-2.17.1
+2.11.0
