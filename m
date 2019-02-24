@@ -1,104 +1,394 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 07 Feb 2019 23:35:49 +0000
-Subject: Re: [PATCH RESEND] KEYS: remove CONFIG_KEYS_COMPAT
-Message-Id: <20190207233548.GC125156@gmail.com>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Sun, 24 Feb 2019 06:08:22 +0000
+Subject: [PATCH v5 04/10] crypto: akcipher - new verify API for public key algorithms
+Message-Id: <20190224060828.2527-5-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181115005238.70971-1-ebiggers@kernel.org>
-In-Reply-To: <20181115005238.70971-1-ebiggers@kernel.org>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org
+References: <20190224060828.2527-1-vt@altlinux.org>
+In-Reply-To: <20190224060828.2527-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, Nov 14, 2018 at 04:52:38PM -0800, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> KEYS_COMPAT now always takes the value of COMPAT && KEYS.  But the
-> security/keys/ directory is only compiled if KEYS is enabled, so in
-> practice KEYS_COMPAT is the same as COMPAT.  Therefore, remove the
-> unnecessary KEYS_COMPAT and just use COMPAT directly.
-> 
-> (Also remove an outdated comment from compat.c.)
-> 
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
-> ---
->  security/keys/Kconfig    | 4 ----
->  security/keys/Makefile   | 2 +-
->  security/keys/compat.c   | 5 -----
->  security/keys/internal.h | 4 ++--
->  4 files changed, 3 insertions(+), 12 deletions(-)
-> 
-> diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-> index 6462e6654ccf4..e115d691d9776 100644
-> --- a/security/keys/Kconfig
-> +++ b/security/keys/Kconfig
-> @@ -20,10 +20,6 @@ config KEYS
->  
->  	  If you are unsure as to whether this is required, answer N.
->  
-> -config KEYS_COMPAT
-> -	def_bool y
-> -	depends on COMPAT && KEYS
-> -
->  config PERSISTENT_KEYRINGS
->  	bool "Enable register of persistent per-UID keyrings"
->  	depends on KEYS
-> diff --git a/security/keys/Makefile b/security/keys/Makefile
-> index 9cef54064f608..c694458d9a46c 100644
-> --- a/security/keys/Makefile
-> +++ b/security/keys/Makefile
-> @@ -17,7 +17,7 @@ obj-y := \
->  	request_key_auth.o \
->  	user_defined.o
->  compat-obj-$(CONFIG_KEY_DH_OPERATIONS) += compat_dh.o
-> -obj-$(CONFIG_KEYS_COMPAT) += compat.o $(compat-obj-y)
-> +obj-$(CONFIG_COMPAT) += compat.o $(compat-obj-y)
->  obj-$(CONFIG_PROC_FS) += proc.o
->  obj-$(CONFIG_SYSCTL) += sysctl.o
->  obj-$(CONFIG_PERSISTENT_KEYRINGS) += persistent.o
-> diff --git a/security/keys/compat.c b/security/keys/compat.c
-> index 9482df601dc33..f22527e88e3d5 100644
-> --- a/security/keys/compat.c
-> +++ b/security/keys/compat.c
-> @@ -50,11 +50,6 @@ static long compat_keyctl_instantiate_key_iov(
->  
->  /*
->   * The key control system call, 32-bit compatibility version for 64-bit archs
-> - *
-> - * This should only be called if the 64-bit arch uses weird pointers in 32-bit
-> - * mode or doesn't guarantee that the top 32-bits of the argument registers on
-> - * taking a 32-bit syscall are zero.  If you can, you should call sys_keyctl()
-> - * directly.
->   */
->  COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
->  		       u32, arg2, u32, arg3, u32, arg4, u32, arg5)
-> diff --git a/security/keys/internal.h b/security/keys/internal.h
-> index 74cb0ff42fedb..d1836e5d670cb 100644
-> --- a/security/keys/internal.h
-> +++ b/security/keys/internal.h
-> @@ -272,7 +272,7 @@ extern long keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
->  			      size_t, struct keyctl_kdf_params __user *);
->  extern long __keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
->  				size_t, struct keyctl_kdf_params *);
-> -#ifdef CONFIG_KEYS_COMPAT
-> +#ifdef CONFIG_COMPAT
->  extern long compat_keyctl_dh_compute(struct keyctl_dh_params __user *params,
->  				char __user *buffer, size_t buflen,
->  				struct compat_keyctl_kdf_params __user *kdf);
-> @@ -287,7 +287,7 @@ static inline long keyctl_dh_compute(struct keyctl_dh_params __user *params,
->  	return -EOPNOTSUPP;
->  }
->  
-> -#ifdef CONFIG_KEYS_COMPAT
-> +#ifdef CONFIG_COMPAT
->  static inline long compat_keyctl_dh_compute(
->  				struct keyctl_dh_params __user *params,
->  				char __user *buffer, size_t buflen,
-> -- 
-> 2.19.1.930.g4563a0d9d0-goog
-> 
+Previous akcipher .verify() just `decrypts' (using RSA encrypt which is
+using public key) signature to uncover message hash, which was then
+compared in upper level public_key_verify_signature() with the expected
+hash value, which itself was never passed into verify().
 
-Ping.  David, are you planning to apply this?
+This approach was incompatible with EC-DSA family of algorithms,
+because, to verify a signature EC-DSA algorithm also needs a hash value
+as input; then it's used (together with a signature divided into halves
+`r||s') to produce a witness value, which is then compared with `r' to
+determine if the signature is correct. Thus, for EC-DSA, nor
+requirements of .verify() itself, nor its output expectations in
+public_key_verify_signature() wasn't sufficient.
 
-- Eric
+Make improved .verify() call which gets hash value as input and produce
+complete signature check without any output besides status.
+
+Now for the top level verification only crypto_akcipher_verify() needs
+to be called.
+
+Cc: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+---
+ crypto/asymmetric_keys/asym_tpm.c   | 34 ++++++++-----------------
+ crypto/asymmetric_keys/public_key.c | 34 ++++++++-----------------
+ crypto/rsa-pkcs1pad.c               | 29 +++++++++++++--------
+ crypto/testmgr.c                    | 50 ++++++++++++++++++++++---------------
+ include/crypto/akcipher.h           | 40 ++++++++++++++++++-----------
+ 5 files changed, 95 insertions(+), 92 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 5d4c270463f6..4e5b6fb57a94 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -744,12 +744,11 @@ static int tpm_key_verify_signature(const struct key *key,
+ 	struct crypto_wait cwait;
+ 	struct crypto_akcipher *tfm;
+ 	struct akcipher_request *req;
+-	struct scatterlist sig_sg, digest_sg;
++	struct scatterlist src_sg[2];
+ 	char alg_name[CRYPTO_MAX_ALG_NAME];
+ 	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
+ 	uint32_t der_pub_key_len;
+-	void *output;
+-	unsigned int outlen;
++	void *digest;
+ 	int ret;
+ 
+ 	pr_devel("=>%s()\n", __func__);
+@@ -782,35 +781,22 @@ static int tpm_key_verify_signature(const struct key *key,
+ 		goto error_free_tfm;
+ 
+ 	ret = -ENOMEM;
+-	outlen = crypto_akcipher_maxsize(tfm);
+-	output = kmalloc(outlen, GFP_KERNEL);
+-	if (!output)
++	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
++	if (!digest)
+ 		goto error_free_req;
+ 
+-	sg_init_one(&sig_sg, sig->s, sig->s_size);
+-	sg_init_one(&digest_sg, output, outlen);
+-	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
+-				   outlen);
++	sg_init_table(src_sg, 2);
++	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
++	sg_set_buf(&src_sg[1], digest, sig->digest_size);
++	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
++				   sig->digest_size);
+ 	crypto_init_wait(&cwait);
+ 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				      CRYPTO_TFM_REQ_MAY_SLEEP,
+ 				      crypto_req_done, &cwait);
+-
+-	/* Perform the verification calculation.  This doesn't actually do the
+-	 * verification, but rather calculates the hash expected by the
+-	 * signature and returns that to us.
+-	 */
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+-	if (ret)
+-		goto out_free_output;
+-
+-	/* Do the actual verification step. */
+-	if (req->dst_len != sig->digest_size ||
+-	    memcmp(sig->digest, output, sig->digest_size) != 0)
+-		ret = -EKEYREJECTED;
+ 
+-out_free_output:
+-	kfree(output);
++	kfree(digest);
+ error_free_req:
+ 	akcipher_request_free(req);
+ error_free_tfm:
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index c2e4e73fcf06..338f2b5352b1 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -233,10 +233,9 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	struct crypto_wait cwait;
+ 	struct crypto_akcipher *tfm;
+ 	struct akcipher_request *req;
+-	struct scatterlist sig_sg, digest_sg;
++	struct scatterlist src_sg[2];
+ 	char alg_name[CRYPTO_MAX_ALG_NAME];
+-	void *output;
+-	unsigned int outlen;
++	void *digest;
+ 	int ret;
+ 
+ 	pr_devel("=>%s()\n", __func__);
+@@ -270,35 +269,22 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 		goto error_free_req;
+ 
+ 	ret = -ENOMEM;
+-	outlen = crypto_akcipher_maxsize(tfm);
+-	output = kmalloc(outlen, GFP_KERNEL);
+-	if (!output)
++	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
++	if (!digest)
+ 		goto error_free_req;
+ 
+-	sg_init_one(&sig_sg, sig->s, sig->s_size);
+-	sg_init_one(&digest_sg, output, outlen);
+-	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
+-				   outlen);
++	sg_init_table(src_sg, 2);
++	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
++	sg_set_buf(&src_sg[1], digest, sig->digest_size);
++	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
++				   sig->digest_size);
+ 	crypto_init_wait(&cwait);
+ 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				      CRYPTO_TFM_REQ_MAY_SLEEP,
+ 				      crypto_req_done, &cwait);
+-
+-	/* Perform the verification calculation.  This doesn't actually do the
+-	 * verification, but rather calculates the hash expected by the
+-	 * signature and returns that to us.
+-	 */
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+-	if (ret)
+-		goto out_free_output;
+-
+-	/* Do the actual verification step. */
+-	if (req->dst_len != sig->digest_size ||
+-	    memcmp(sig->digest, output, sig->digest_size) != 0)
+-		ret = -EKEYREJECTED;
+ 
+-out_free_output:
+-	kfree(output);
++	kfree(digest);
+ error_free_req:
+ 	akcipher_request_free(req);
+ error_free_tfm:
+diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
+index 94382fa2c6ac..f2fa1ce90cfa 100644
+--- a/crypto/rsa-pkcs1pad.c
++++ b/crypto/rsa-pkcs1pad.c
+@@ -488,14 +488,21 @@ static int pkcs1pad_verify_complete(struct akcipher_request *req, int err)
+ 
+ 	err = 0;
+ 
+-	if (req->dst_len < dst_len - pos)
+-		err = -EOVERFLOW;
+-	req->dst_len = dst_len - pos;
+-
+-	if (!err)
+-		sg_copy_from_buffer(req->dst,
+-				sg_nents_for_len(req->dst, req->dst_len),
+-				out_buf + pos, req->dst_len);
++	if (req->dst_len != dst_len - pos) {
++		err = -EKEYREJECTED;
++		req->dst_len = dst_len - pos;
++		goto done;
++	}
++	/* Extract appended digest. */
++	sg_pcopy_to_buffer(req->src,
++			   sg_nents_for_len(req->src,
++					    req->src_len + req->dst_len),
++			   req_ctx->out_buf + ctx->key_size,
++			   req->dst_len, ctx->key_size);
++	/* Do the actual verification step. */
++	if (memcmp(req_ctx->out_buf + ctx->key_size, out_buf + pos,
++		   req->dst_len))
++		err = -EKEYREJECTED;
+ done:
+ 	kzfree(req_ctx->out_buf);
+ 
+@@ -532,10 +539,12 @@ static int pkcs1pad_verify(struct akcipher_request *req)
+ 	struct pkcs1pad_request *req_ctx = akcipher_request_ctx(req);
+ 	int err;
+ 
+-	if (!ctx->key_size || req->src_len < ctx->key_size)
++	if (WARN_ON(req->dst) ||
++	    WARN_ON(!req->dst_len) ||
++	    !ctx->key_size || req->src_len < ctx->key_size)
+ 		return -EINVAL;
+ 
+-	req_ctx->out_buf = kmalloc(ctx->key_size, GFP_KERNEL);
++	req_ctx->out_buf = kmalloc(ctx->key_size + req->dst_len, GFP_KERNEL);
+ 	if (!req_ctx->out_buf)
+ 		return -ENOMEM;
+ 
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index d582a2758feb..924a1b9cf5ca 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -2501,7 +2501,7 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 	struct crypto_wait wait;
+ 	unsigned int out_len_max, out_len = 0;
+ 	int err = -ENOMEM;
+-	struct scatterlist src, dst, src_tab[2];
++	struct scatterlist src, dst, src_tab[3];
+ 	const char *m, *c;
+ 	unsigned int m_size, c_size;
+ 	const char *op;
+@@ -2524,13 +2524,12 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 	if (err)
+ 		goto free_req;
+ 
+-	err = -ENOMEM;
+-	out_len_max = crypto_akcipher_maxsize(tfm);
+-
+ 	/*
+ 	 * First run test which do not require a private key, such as
+ 	 * encrypt or verify.
+ 	 */
++	err = -ENOMEM;
++	out_len_max = crypto_akcipher_maxsize(tfm);
+ 	outbuf_enc = kzalloc(out_len_max, GFP_KERNEL);
+ 	if (!outbuf_enc)
+ 		goto free_req;
+@@ -2556,12 +2555,20 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 		goto free_all;
+ 	memcpy(xbuf[0], m, m_size);
+ 
+-	sg_init_table(src_tab, 2);
++	sg_init_table(src_tab, 3);
+ 	sg_set_buf(&src_tab[0], xbuf[0], 8);
+ 	sg_set_buf(&src_tab[1], xbuf[0] + 8, m_size - 8);
+-	sg_init_one(&dst, outbuf_enc, out_len_max);
+-	akcipher_request_set_crypt(req, src_tab, &dst, m_size,
+-				   out_len_max);
++	if (vecs->siggen_sigver_test) {
++		if (WARN_ON(c_size > PAGE_SIZE))
++			goto free_all;
++		memcpy(xbuf[1], c, c_size);
++		sg_set_buf(&src_tab[2], xbuf[1], c_size);
++		akcipher_request_set_crypt(req, src_tab, NULL, m_size, c_size);
++	} else {
++		sg_init_one(&dst, outbuf_enc, out_len_max);
++		akcipher_request_set_crypt(req, src_tab, &dst, m_size,
++					   out_len_max);
++	}
+ 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+ 				      crypto_req_done, &wait);
+ 
+@@ -2574,18 +2581,21 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 		pr_err("alg: akcipher: %s test failed. err %d\n", op, err);
+ 		goto free_all;
+ 	}
+-	if (req->dst_len != c_size) {
+-		pr_err("alg: akcipher: %s test failed. Invalid output len\n",
+-		       op);
+-		err = -EINVAL;
+-		goto free_all;
+-	}
+-	/* verify that encrypted message is equal to expected */
+-	if (memcmp(c, outbuf_enc, c_size)) {
+-		pr_err("alg: akcipher: %s test failed. Invalid output\n", op);
+-		hexdump(outbuf_enc, c_size);
+-		err = -EINVAL;
+-		goto free_all;
++	if (!vecs->siggen_sigver_test) {
++		if (req->dst_len != c_size) {
++			pr_err("alg: akcipher: %s test failed. Invalid output len\n",
++			       op);
++			err = -EINVAL;
++			goto free_all;
++		}
++		/* verify that encrypted message is equal to expected */
++		if (memcmp(c, outbuf_enc, c_size)) {
++			pr_err("alg: akcipher: %s test failed. Invalid output\n",
++			       op);
++			hexdump(outbuf_enc, c_size);
++			err = -EINVAL;
++			goto free_all;
++		}
+ 	}
+ 
+ 	/*
+diff --git a/include/crypto/akcipher.h b/include/crypto/akcipher.h
+index f537fad1989f..28ffa9ef03a9 100644
+--- a/include/crypto/akcipher.h
++++ b/include/crypto/akcipher.h
+@@ -19,14 +19,20 @@
+  *
+  * @base:	Common attributes for async crypto requests
+  * @src:	Source data
+- * @dst:	Destination data
++ *		For verify op this is signature + digest, in that case
++ *		total size of @src is @src_len + @dst_len.
++ * @dst:	Destination data (Should be NULL for verify op)
+  * @src_len:	Size of the input buffer
+- * @dst_len:	Size of the output buffer. It needs to be at least
+- *		as big as the expected result depending	on the operation
++ *		For verify op it's size of signature part of @src, this part
++ *		is supposed to be operated by cipher.
++ * @dst_len:	Size of @dst buffer (for all ops except verify).
++ *		It needs to be at least	as big as the expected result
++ *		depending on the operation.
+  *		After operation it will be updated with the actual size of the
+  *		result.
+  *		In case of error where the dst sgl size was insufficient,
+  *		it will be updated to the size required for the operation.
++ *		For verify op this is size of digest part in @src.
+  * @__ctx:	Start of private context data
+  */
+ struct akcipher_request {
+@@ -55,10 +61,9 @@ struct crypto_akcipher {
+  *		algorithm. In case of error, where the dst_len was insufficient,
+  *		the req->dst_len will be updated to the size required for the
+  *		operation
+- * @verify:	Function performs a sign operation as defined by public key
+- *		algorithm. In case of error, where the dst_len was insufficient,
+- *		the req->dst_len will be updated to the size required for the
+- *		operation
++ * @verify:	Function performs a complete verify operation as defined by
++ *		public key algorithm, returning verification status. Requires
++ *		digest value as input parameter.
+  * @encrypt:	Function performs an encrypt operation as defined by public key
+  *		algorithm. In case of error, where the dst_len was insufficient,
+  *		the req->dst_len will be updated to the size required for the
+@@ -238,9 +243,10 @@ static inline void akcipher_request_set_callback(struct akcipher_request *req,
+  *
+  * @req:	public key request
+  * @src:	ptr to input scatter list
+- * @dst:	ptr to output scatter list
++ * @dst:	ptr to output scatter list or NULL for verify op
+  * @src_len:	size of the src input scatter list to be processed
+- * @dst_len:	size of the dst output scatter list
++ * @dst_len:	size of the dst output scatter list or size of signature
++ *		portion in @src for verify op
+  */
+ static inline void akcipher_request_set_crypt(struct akcipher_request *req,
+ 					      struct scatterlist *src,
+@@ -349,14 +355,18 @@ static inline int crypto_akcipher_sign(struct akcipher_request *req)
+ }
+ 
+ /**
+- * crypto_akcipher_verify() - Invoke public key verify operation
++ * crypto_akcipher_verify() - Invoke public key signature verification
+  *
+- * Function invokes the specific public key verify operation for a given
+- * public key algorithm
++ * Function invokes the specific public key signature verification operation
++ * for a given public key algorithm.
+  *
+  * @req:	asymmetric key request
+  *
+- * Return: zero on success; error code in case of error
++ * Note: req->dst should be NULL, req->src should point to SG of size
++ * (req->src_size + req->dst_size), containing signature (of req->src_size
++ * length) with appended digest (of req->dst_size length).
++ *
++ * Return: zero on verification success; error code in case of error.
+  */
+ static inline int crypto_akcipher_verify(struct akcipher_request *req)
+ {
+@@ -366,7 +376,9 @@ static inline int crypto_akcipher_verify(struct akcipher_request *req)
+ 	int ret = -ENOSYS;
+ 
+ 	crypto_stats_get(calg);
+-	if (alg->verify)
++	if (req->dst || !req->dst_len)
++		ret = -EINVAL;
++	else if (alg->verify)
+ 		ret = alg->verify(req);
+ 	crypto_stats_akcipher_verify(ret, calg);
+ 	return ret;
+-- 
+2.11.0
