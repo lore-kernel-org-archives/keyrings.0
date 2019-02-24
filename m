@@ -1,59 +1,96 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 14 Feb 2019 16:56:50 +0000
-Subject: [RFC PATCH 1/9] keys: Invalidate used request_key authentication keys
-Message-Id: <155016341076.11489.17906138075234365532.stgit@warthog.procyon.org.uk>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Sun, 24 Feb 2019 06:08:20 +0000
+Subject: [PATCH v5 02/10] crypto: akcipher - check the presence of callback before the call
+Message-Id: <20190224060828.2527-3-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155016339876.11489.901851271827069026.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+References: <20190224060828.2527-1-vt@altlinux.org>
+In-Reply-To: <20190224060828.2527-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Invalidate used request_key authentication keys rather than revoking them
-so that they get cleaned up immediately rather than potentially hanging
-around.  There doesn't seem any need to keep the revoked keys around.
+Because with introduction of EC-RDSA and change in workings of RSA in
+regard to sign/verify, akcipher could have not all callbacks defined,
+check the presence of callbacks before calling them to increase
+robustness.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
 ---
+ include/crypto/akcipher.h | 25 ++++++++++++++++---------
+ 1 file changed, 16 insertions(+), 9 deletions(-)
 
- security/keys/key.c         |    4 ++--
- security/keys/request_key.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 696f1c092c50..d705b950ce2a 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -459,7 +459,7 @@ static int __key_instantiate_and_link(struct key *key,
+diff --git a/include/crypto/akcipher.h b/include/crypto/akcipher.h
+index 2d690494568c..f537fad1989f 100644
+--- a/include/crypto/akcipher.h
++++ b/include/crypto/akcipher.h
+@@ -268,7 +268,10 @@ static inline unsigned int crypto_akcipher_maxsize(struct crypto_akcipher *tfm)
+ {
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
  
- 			/* disable the authorisation key */
- 			if (authkey)
--				key_revoke(authkey);
-+				key_invalidate(authkey);
+-	return alg->max_size(tfm);
++	if (alg->max_size)
++		return alg->max_size(tfm);
++	else
++		return 0;
+ }
  
- 			if (prep->expiry != TIME64_MAX) {
- 				key->expiry = prep->expiry;
-@@ -607,7 +607,7 @@ int key_reject_and_link(struct key *key,
+ /**
+@@ -287,10 +290,11 @@ static inline int crypto_akcipher_encrypt(struct akcipher_request *req)
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 	struct crypto_alg *calg = tfm->base.__crt_alg;
+ 	unsigned int src_len = req->src_len;
+-	int ret;
++	int ret = -ENOSYS;
  
- 		/* disable the authorisation key */
- 		if (authkey)
--			key_revoke(authkey);
-+			key_invalidate(authkey);
- 	}
+ 	crypto_stats_get(calg);
+-	ret = alg->encrypt(req);
++	if (alg->encrypt)
++		ret = alg->encrypt(req);
+ 	crypto_stats_akcipher_encrypt(src_len, ret, calg);
+ 	return ret;
+ }
+@@ -311,10 +315,11 @@ static inline int crypto_akcipher_decrypt(struct akcipher_request *req)
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 	struct crypto_alg *calg = tfm->base.__crt_alg;
+ 	unsigned int src_len = req->src_len;
+-	int ret;
++	int ret = -ENOSYS;
  
- 	mutex_unlock(&key_construction_mutex);
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 3f56a312dd35..7e935553af2b 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -224,7 +224,7 @@ static int construct_key(struct key *key, const void *callout_info,
- 	/* check that the actor called complete_request_key() prior to
- 	 * returning an error */
- 	WARN_ON(ret < 0 &&
--		!test_bit(KEY_FLAG_REVOKED, &authkey->flags));
-+		!test_bit(KEY_FLAG_INVALIDATED, &authkey->flags));
+ 	crypto_stats_get(calg);
+-	ret = alg->decrypt(req);
++	if (alg->decrypt)
++		ret = alg->decrypt(req);
+ 	crypto_stats_akcipher_decrypt(src_len, ret, calg);
+ 	return ret;
+ }
+@@ -334,10 +339,11 @@ static inline int crypto_akcipher_sign(struct akcipher_request *req)
+ 	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 	struct crypto_alg *calg = tfm->base.__crt_alg;
+-	int ret;
++	int ret = -ENOSYS;
  
- 	key_put(authkey);
- 	kleave(" = %d", ret);
+ 	crypto_stats_get(calg);
+-	ret = alg->sign(req);
++	if (alg->sign)
++		ret = alg->sign(req);
+ 	crypto_stats_akcipher_sign(ret, calg);
+ 	return ret;
+ }
+@@ -357,10 +363,11 @@ static inline int crypto_akcipher_verify(struct akcipher_request *req)
+ 	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 	struct crypto_alg *calg = tfm->base.__crt_alg;
+-	int ret;
++	int ret = -ENOSYS;
+ 
+ 	crypto_stats_get(calg);
+-	ret = alg->verify(req);
++	if (alg->verify)
++		ret = alg->verify(req);
+ 	crypto_stats_akcipher_verify(ret, calg);
+ 	return ret;
+ }
+-- 
+2.11.0
