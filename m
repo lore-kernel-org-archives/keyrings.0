@@ -1,63 +1,109 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Mon, 25 Feb 2019 21:20:49 +0000
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Tue, 26 Feb 2019 04:25:46 +0000
 Subject: Re: [PATCH v5 10/10] integrity: support EC-RDSA signatures for asymmetric_verify
-Message-Id: <874l8rr2dq.fsf@morokweng.localdomain>
+Message-Id: <20190226042546.czh6me47f7xldgk2@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190224060828.2527-1-vt@altlinux.org> <20190224060828.2527-11-vt@altlinux.org>
-In-Reply-To: <20190224060828.2527-11-vt@altlinux.org>
-To: Vitaly Chikunov <vt@altlinux.org>
+References: <20190224060828.2527-1-vt@altlinux.org>
+ <20190224060828.2527-11-vt@altlinux.org>
+ <874l8rr2dq.fsf@morokweng.localdomain>
+In-Reply-To: <874l8rr2dq.fsf@morokweng.localdomain>
+To: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 Cc: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
 
+Thiago,
 
-Hello Vitaly,
+On Mon, Feb 25, 2019 at 06:20:49PM -0300, Thiago Jung Bauermann wrote:
+> Vitaly Chikunov <vt@altlinux.org> writes:
+> 
+> > Allow to use EC-RDSA signatures for IMA by determining signature type by
+> > the hash algorithm name. This works good for EC-RDSA since Streebog and
+> > EC-RDSA should always be used together.
+> >
+> > Cc: Mimi Zohar <zohar@linux.ibm.com>
+> > Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+> > Cc: linux-integrity@vger.kernel.org
+> > Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+> > ---
+> >  security/integrity/digsig_asymmetric.c | 9 +++++++--
+> >  1 file changed, 7 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
+> > index d775e03fbbcc..c4a3313e0210 100644
+> > --- a/security/integrity/digsig_asymmetric.c
+> > +++ b/security/integrity/digsig_asymmetric.c
+> > @@ -104,9 +104,14 @@ int asymmetric_verify(struct key *keyring, const char *sig,
+> >
+> >  	memset(&pks, 0, sizeof(pks));
+> >
+> > -	pks.pkey_algo = "rsa";
+> >  	pks.hash_algo = hash_algo_name[hdr->hash_algo];
+> > -	pks.encoding = "pkcs1";
+> > +	if (!strncmp(pks.hash_algo, "streebog", 8)) {
+> 
+> Is it possible to test hdr->hash_algo instead of pkcs.hash_algo? IMHO if
+> an integer value is available it's preferable to check it rather than
+> doing a string comparison.
 
-Vitaly Chikunov <vt@altlinux.org> writes:
+Yes. But we have long tradition of comparing by the name too:
 
-> Allow to use EC-RDSA signatures for IMA by determining signature type by
-> the hash algorithm name. This works good for EC-RDSA since Streebog and
-> EC-RDSA should always be used together.
->
-> Cc: Mimi Zohar <zohar@linux.ibm.com>
-> Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-> Cc: linux-integrity@vger.kernel.org
-> Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
-> ---
->  security/integrity/digsig_asymmetric.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-> index d775e03fbbcc..c4a3313e0210 100644
-> --- a/security/integrity/digsig_asymmetric.c
-> +++ b/security/integrity/digsig_asymmetric.c
-> @@ -104,9 +104,14 @@ int asymmetric_verify(struct key *keyring, const char *sig,
->
->  	memset(&pks, 0, sizeof(pks));
->
-> -	pks.pkey_algo = "rsa";
->  	pks.hash_algo = hash_algo_name[hdr->hash_algo];
-> -	pks.encoding = "pkcs1";
-> +	if (!strncmp(pks.hash_algo, "streebog", 8)) {
+  --linux$ git grep str.*cmp.*'"sha[12]'
+  drivers/crypto/mxs-dcp.c:       if (strcmp(halg->base.cra_name, "sha1") = 0)
+  drivers/crypto/talitos.c:                   (!strcmp(alg->cra_name, "sha224") ||
+  net/sctp/sysctl.c:              if (!strncmp(tmp, "sha1", 4)) {
+  scripts/sign-file.c:    if (strcmp(hash_algo, "sha1") != 0) {
+  security/integrity/ima/ima_main.c:              if (strncmp(str, "sha1", 4) = 0)
+  --linux$ git grep str.*cmp.*hash_algo
+  fs/ubifs/sb.c:  if (strcmp(hash_algo_name[hash_algo], c->auth_hash_name)) {
+  scripts/sign-file.c:    if (strcmp(hash_algo, "sha1") != 0) {
+  security/integrity/ima/ima_main.c:      if (error && strcmp(hash_algo_name[ima_hash_algo],
+  security/keys/trusted.c:                                if (!strcmp(args[0].from, hash_algo_name[i])) {
+  --linux$ git grep str.*cmp.*cra_name
+  crypto/adiantum.c:      if (strcmp(streamcipher_alg->base.cra_name, "xchacha12") != 0 &&
+  crypto/adiantum.c:          strcmp(streamcipher_alg->base.cra_name, "xchacha20") != 0)
+  crypto/adiantum.c:      if (strcmp(hash_alg->base.cra_name, "nhpoly1305") != 0)
+  crypto/algapi.c:                if (!strcmp(q->cra_driver_name, alg->cra_name) ||
+  crypto/algapi.c:                    !strcmp(q->cra_name, alg->cra_driver_name))
+  crypto/algapi.c:                        if (strcmp(alg->cra_name, q->cra_name) &&
+  crypto/algapi.c:                            strcmp(alg->cra_driver_name, q->cra_name))
+  crypto/algapi.c:                if (strcmp(alg->cra_name, q->cra_name))
+  crypto/api.c:           fuzzy = !strcmp(q->cra_name, name);
+  crypto/crypto_user_base.c:                      match = !strcmp(q->cra_name, p->cru_name);
+  crypto/cts.c:   if (strncmp(alg->base.cra_name, "cbc(", 4))
+  crypto/simd.c:          WARN_ON(strncmp(algs[i].base.cra_name, "__", 2));
+  drivers/crypto/mxs-dcp.c:       if (strcmp(halg->base.cra_name, "sha1") = 0)
+  drivers/crypto/talitos.c:                   !strncmp(alg->cra_name, "authenc(hmac(sha224)", 20)) {
+  drivers/crypto/talitos.c:               if (!strncmp(alg->cra_name, "hmac", 4))
+  drivers/crypto/talitos.c:                   !strncmp(alg->cra_name, "hmac", 4)) {
+  drivers/crypto/talitos.c:                   (!strcmp(alg->cra_name, "sha224") ||
+  drivers/crypto/talitos.c:                    !strcmp(alg->cra_name, "hmac(sha224)"))) {
+  lib/crc-t10dif.c:           strncmp(alg->cra_name, CRC_T10DIF_STRING, strlen(CRC_T10DIF_STRING)))
 
-Is it possible to test hdr->hash_algo instead of pkcs.hash_algo? IMHO if
-an integer value is available it's preferable to check it rather than
-doing a string comparison.
 
-Also, it would be good to have a comment here mentioning that Streebog
-and EC-RDSA should always be used together
+After all pkey_algo, hash_algo, cra_name are set to strings to be used
+somewhere. So both ways looks equal to me.
 
-> +		pks.pkey_algo = "ecrdsa";
-> +		pks.encoding = "raw";
-> +	} else {
-> +		pks.pkey_algo = "rsa";
-> +		pks.encoding = "pkcs1";
-> +	}
->  	pks.digest = (u8 *)data;
->  	pks.digest_size = datalen;
->  	pks.s = hdr->sig;
+[I more wonder if we should leave algo names to be used as they are in
+x509_note_signature() (to check for "rsa" and "ecrdsa"), since there are
+no other pkey_algo's set in x509_note_pkey_algo().]
 
---
-Thiago Jung Bauermann
-IBM Linux Technology Center
+> Also, it would be good to have a comment here mentioning that Streebog
+> and EC-RDSA should always be used together
+
+Thanks,
+
+> > +		pks.pkey_algo = "ecrdsa";
+> > +		pks.encoding = "raw";
+> > +	} else {
+> > +		pks.pkey_algo = "rsa";
+> > +		pks.encoding = "pkcs1";
+> > +	}
+> >  	pks.digest = (u8 *)data;
+> >  	pks.digest_size = datalen;
+> >  	pks.s = hdr->sig;
+> 
+> --
+> Thiago Jung Bauermann
+> IBM Linux Technology Center
