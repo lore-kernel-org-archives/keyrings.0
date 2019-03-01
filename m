@@ -1,46 +1,98 @@
 From: Vitaly Chikunov <vt@altlinux.org>
-Date: Fri, 01 Mar 2019 16:06:38 +0000
-Subject: Re: [RFC PATCH 1/4] X.509: Parse public key parameters from x509 for akcipher
-Message-Id: <20190301160638.z266z767m4ky3ohk@altlinux.org>
+Date: Fri, 01 Mar 2019 17:59:07 +0000
+Subject: [PATCH v7 00/11] crypto: add EC-RDSA (GOST 34.10) algorithm
+Message-Id: <20190301175918.29694-1-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190210184628.yupsxgjlaicwbxg6@altlinux.org>
- <20190219043732.x3sbwzqlz4ikntxo@gondor.apana.org.au>
- <20190224064840.hii4ccjksjdnewae@altlinux.org>
- <20190228061444.3escryzoit3idtwg@gondor.apana.org.au>
- <20190228070449.gjwoq4c2b3x5grie@altlinux.org>
- <20190228075141.s6mftb44yuylbzys@gondor.apana.org.au>
- <20190228082801.2aofw23r2shzwy4n@altlinux.org>
- <20190228090125.6n62v4oxpwl5yzv4@gondor.apana.org.au>
- <20190228103337.sbjujn27qkkgxqt2@altlinux.org>
- <20190228103715.ijvimcfysiguiwty@gondor.apana.org.au>
-In-Reply-To: <20190228103715.ijvimcfysiguiwty@gondor.apana.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Herbert,
+This patchset changes akcipher API to support ECDSA style signature
+verification, augments x509 parser to make it work with EC-RDSA certificates,
+and, finally, implements EC-RDSA (GOST 34.10) signature verification and its
+integration with IMA.
 
-On Thu, Feb 28, 2019 at 06:37:15PM +0800, Herbert Xu wrote:
-> On Thu, Feb 28, 2019 at 01:33:37PM +0300, Vitaly Chikunov wrote:
-> >
-> > To make the same for set_{pub,priv}_key it will require patching RSA
-> > drivers anyway, since length of the key is stored just once as keylen
-> > argument.
-> 
-> No we don't need to use the same format for different algorithms.
-> RSA should stay as is.
+This patchset should be applied over cryptodev commit 0918f18c7179e8cdf718d0.
 
-I will rework as you suggest. But, just want to state that I disagree
-with this approach of implicitly appending parameters data to the key
-stream without any argument signifying it or length covering it. This
-fitting into the old API is also somewhat disagree to your words that
-we could change internal API:
+Changes since (v5-v6):
+- set_params API is removed in favor of appending parameters into a key stream,
+  as requested by Herbert Xu.
+- verify op signature de-kmemdup'ed (as requested by David Howells) in separate
+  patch (as requested by Herbert Xu).
+- Add forgotten ASN.1 parser files to EC-RDSA patch.
+- Tested on x86_64.
 
-On Thu, Feb 28, 2019 at 02:14:44PM +0800, Herbert Xu wrote:
-> On Sun, Feb 24, 2019 at 09:48:40AM +0300, Vitaly Chikunov wrote:
-> ...
-> This compatibility does not matter.  We can always add translating
-> layers into the crypto API to deal with this.  The only ABI that
-> matters is the one to user-space.
+Changes since v5:
+- Comparison of hash algo by enum id instead of text name, as suggested by
+  Thiago Jung Bauermann and Mimi Zohar.
+
+Changes since RFC (v1-v4):
+- akcipher set_max_size, encrypt, decrypt, sign, verify callbacks may be
+  undefined by the drivers, so their crypto_akcipher_* frontends check for
+  their presence before passing the call.
+- supported_ops flags are set for keyctl, based on the presence of implemented
+  akcipher callbacks.
+- Transition to verify2 API is abandoned because raw RSA does not need
+  sign/verify ops at all, and we can switch to the new verify in one step.
+  For this RSA backends have sign/verify ops removed as they should only
+  be used (and actually used only) via PKCS1 driver.
+- Verify callback requires digest as the input parameter in src SGL, as
+  suggested by Herbert Xu, (instead of a separate parameter, as it was in
+  verify2).
+- For verify op signature is moved into kmalloc'd memory as suggested by
+  Herbert Xu.
+- set_params API should be called before set_{pub,priv}_key, thus set_*_key
+  knows everything it needs to set they key properly. Also, set_params made
+  optional for back compatibility with RSA drivers.
+- Public-key cryptography section is created in Kconfig.
+- ecc.c is made into separate module object, to be used together by ECDH and
+  EC-RDSA.
+- EC-RDSA parameters and public key are parsed using asn1_ber_decoder as
+  suggested by Stephan Mueller and David Howells.
+- Test vectors are added and tests are passing.
+- Curves/parameters definitions are split from ecrdsa.c into ecrdsa_defs.h.
+- Integration with IMA in asymmetric_verify(). Userspace ima-evm-utils already
+  have a patch in the queue to support this. Tested on x86_64.
+
+Vitaly Chikunov (11):
+  KEYS: report to keyctl only actually supported key ops
+  crypto: akcipher - check the presence of callback before the call
+  crypto: rsa - unimplement sign/verify for raw RSA backends
+  crypto: akcipher - new verify API for public key algorithms
+  KEYS: do not kmemdup digest in {public,tpm}_key_verify_signature
+  X.509: parse public key parameters from x509 for akcipher
+  crypto: Kconfig - create Public-key cryptography section
+  crypto: ecc - make ecc into separate module
+  crypto: ecrdsa - add EC-RDSA (GOST 34.10) algorithm
+  crypto: ecrdsa - add EC-RDSA test vectors to testmgr
+  integrity: support EC-RDSA signatures for asymmetric_verify
+
+ crypto/Kconfig                                |  63 ++--
+ crypto/Makefile                               |  10 +-
+ crypto/asymmetric_keys/asym_tpm.c             |  77 +++--
+ crypto/asymmetric_keys/public_key.c           | 121 +++++---
+ crypto/asymmetric_keys/x509.asn1              |   2 +-
+ crypto/asymmetric_keys/x509_cert_parser.c     |  57 +++-
+ crypto/ecc.c                                  | 417 +++++++++++++++++++++++++-
+ crypto/ecc.h                                  | 153 +++++++++-
+ crypto/ecc_curve_defs.h                       |  15 -
+ crypto/ecrdsa.c                               | 299 ++++++++++++++++++
+ crypto/ecrdsa_defs.h                          | 225 ++++++++++++++
+ crypto/rsa-pkcs1pad.c                         |  33 +-
+ crypto/rsa.c                                  | 109 -------
+ crypto/testmgr.c                              |  80 +++--
+ crypto/testmgr.h                              | 159 ++++++++++
+ drivers/crypto/caam/caampkc.c                 |   2 -
+ drivers/crypto/ccp/ccp-crypto-rsa.c           |   2 -
+ drivers/crypto/qat/qat_common/qat_asym_algs.c |   2 -
+ include/crypto/akcipher.h                     |  81 +++--
+ include/crypto/public_key.h                   |   4 +
+ include/linux/oid_registry.h                  |  18 ++
+ security/integrity/digsig_asymmetric.c        |  11 +-
+ 22 files changed, 1619 insertions(+), 321 deletions(-)
+ create mode 100644 crypto/ecrdsa.c
+ create mode 100644 crypto/ecrdsa_defs.h
+
+-- 
+2.11.0
