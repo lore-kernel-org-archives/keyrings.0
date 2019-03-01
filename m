@@ -1,28 +1,102 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 26 Mar 2019 11:52:49 +0000
-Subject: Re: [PATCH] KEYS: trusted: allow trusted.ko to initialize w/o a TPM
-Message-Id: <20190326115249.GC10898@linux.intel.com>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Fri, 01 Mar 2019 17:59:12 +0000
+Subject: [PATCH v7 05/11] KEYS: do not kmemdup digest in {public,tpm}_key_verify_signature
+Message-Id: <20190301175918.29694-6-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190325144735.30443-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20190325144735.30443-1-jarkko.sakkinen@linux.intel.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>, stable@vger.kernel.org, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linuxibm.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+References: <20190301175918.29694-1-vt@altlinux.org>
+In-Reply-To: <20190301175918.29694-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2019 at 04:47:35PM +0200, Jarkko Sakkinen wrote:
-> Allow trusted.ko to initialize w/o a TPM. This commit adds checks to the
-> key type callbacks and exported functions to fail when a TPM is not
-> available.
-> 
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: stable@vger.kernel.org
-> Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Treat (struct public_key_signature)'s digest same as its signature (s).
+Since digest should be already in the kmalloc'd memory do not kmemdup
+digest value before calling {public,tpm}_key_verify_signature.
 
-Will send a revised version: since now the key type is not registered,
-none of the callbacks needs the check for the chip instance. Only the
-exported functions should have it.
+Patch is split from the previous as suggested by Herbert Xu.
 
-/Jarkko
+Suggested-by: David Howells <dhowells@redhat.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+---
+ crypto/asymmetric_keys/asym_tpm.c   | 10 +---------
+ crypto/asymmetric_keys/public_key.c |  9 +--------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 4e5b6fb57a94..402fc34ca044 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -748,7 +748,6 @@ static int tpm_key_verify_signature(const struct key *key,
+ 	char alg_name[CRYPTO_MAX_ALG_NAME];
+ 	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
+ 	uint32_t der_pub_key_len;
+-	void *digest;
+ 	int ret;
+ 
+ 	pr_devel("=>%s()\n", __func__);
+@@ -780,14 +779,9 @@ static int tpm_key_verify_signature(const struct key *key,
+ 	if (!req)
+ 		goto error_free_tfm;
+ 
+-	ret = -ENOMEM;
+-	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
+-	if (!digest)
+-		goto error_free_req;
+-
+ 	sg_init_table(src_sg, 2);
+ 	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
+-	sg_set_buf(&src_sg[1], digest, sig->digest_size);
++	sg_set_buf(&src_sg[1], sig->digest, sig->digest_size);
+ 	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
+ 				   sig->digest_size);
+ 	crypto_init_wait(&cwait);
+@@ -796,8 +790,6 @@ static int tpm_key_verify_signature(const struct key *key,
+ 				      crypto_req_done, &cwait);
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+ 
+-	kfree(digest);
+-error_free_req:
+ 	akcipher_request_free(req);
+ error_free_tfm:
+ 	crypto_free_akcipher(tfm);
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index 338f2b5352b1..4dcfe281b898 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -235,7 +235,6 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	struct akcipher_request *req;
+ 	struct scatterlist src_sg[2];
+ 	char alg_name[CRYPTO_MAX_ALG_NAME];
+-	void *digest;
+ 	int ret;
+ 
+ 	pr_devel("=>%s()\n", __func__);
+@@ -268,14 +267,9 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	if (ret)
+ 		goto error_free_req;
+ 
+-	ret = -ENOMEM;
+-	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
+-	if (!digest)
+-		goto error_free_req;
+-
+ 	sg_init_table(src_sg, 2);
+ 	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
+-	sg_set_buf(&src_sg[1], digest, sig->digest_size);
++	sg_set_buf(&src_sg[1], sig->digest, sig->digest_size);
+ 	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
+ 				   sig->digest_size);
+ 	crypto_init_wait(&cwait);
+@@ -284,7 +278,6 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 				      crypto_req_done, &cwait);
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+ 
+-	kfree(digest);
+ error_free_req:
+ 	akcipher_request_free(req);
+ error_free_tfm:
+-- 
+2.11.0
