@@ -1,108 +1,61 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 18 Mar 2019 17:28:02 +0000
-Subject: Re: [PATCH RESEND] KEYS: remove CONFIG_KEYS_COMPAT
-Message-Id: <20190318172801.GA194307@gmail.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Fri, 01 Mar 2019 02:34:09 +0000
+Subject: Re: [PATCH v5 04/10] crypto: akcipher - new verify API for public key algorithms
+Message-Id: <20190301023409.e2zgemssjjrrty4t@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20181115005238.70971-1-ebiggers@kernel.org>
- <20190207233548.GC125156@gmail.com>
-In-Reply-To: <20190207233548.GC125156@gmail.com>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org
+References: <20190228183923.5klzwli5zmeew54j@altlinux.org>
+ <20190224060828.2527-5-vt@altlinux.org>
+ <20190224060828.2527-1-vt@altlinux.org>
+ <14843.1551377934@warthog.procyon.org.uk>
+ <17533.1551380529@warthog.procyon.org.uk>
+ <20190228190741.fv2qxwwtlpdffhwq@altlinux.org>
+In-Reply-To: <20190228190741.fv2qxwwtlpdffhwq@altlinux.org>
+To: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2019 at 03:35:49PM -0800, Eric Biggers wrote:
-> On Wed, Nov 14, 2018 at 04:52:38PM -0800, Eric Biggers wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> > 
-> > KEYS_COMPAT now always takes the value of COMPAT && KEYS.  But the
-> > security/keys/ directory is only compiled if KEYS is enabled, so in
-> > practice KEYS_COMPAT is the same as COMPAT.  Therefore, remove the
-> > unnecessary KEYS_COMPAT and just use COMPAT directly.
-> > 
-> > (Also remove an outdated comment from compat.c.)
-> > 
-> > Signed-off-by: Eric Biggers <ebiggers@google.com>
-> > ---
-> >  security/keys/Kconfig    | 4 ----
-> >  security/keys/Makefile   | 2 +-
-> >  security/keys/compat.c   | 5 -----
-> >  security/keys/internal.h | 4 ++--
-> >  4 files changed, 3 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-> > index 6462e6654ccf4..e115d691d9776 100644
-> > --- a/security/keys/Kconfig
-> > +++ b/security/keys/Kconfig
-> > @@ -20,10 +20,6 @@ config KEYS
-> >  
-> >  	  If you are unsure as to whether this is required, answer N.
-> >  
-> > -config KEYS_COMPAT
-> > -	def_bool y
-> > -	depends on COMPAT && KEYS
-> > -
-> >  config PERSISTENT_KEYRINGS
-> >  	bool "Enable register of persistent per-UID keyrings"
-> >  	depends on KEYS
-> > diff --git a/security/keys/Makefile b/security/keys/Makefile
-> > index 9cef54064f608..c694458d9a46c 100644
-> > --- a/security/keys/Makefile
-> > +++ b/security/keys/Makefile
-> > @@ -17,7 +17,7 @@ obj-y := \
-> >  	request_key_auth.o \
-> >  	user_defined.o
-> >  compat-obj-$(CONFIG_KEY_DH_OPERATIONS) += compat_dh.o
-> > -obj-$(CONFIG_KEYS_COMPAT) += compat.o $(compat-obj-y)
-> > +obj-$(CONFIG_COMPAT) += compat.o $(compat-obj-y)
-> >  obj-$(CONFIG_PROC_FS) += proc.o
-> >  obj-$(CONFIG_SYSCTL) += sysctl.o
-> >  obj-$(CONFIG_PERSISTENT_KEYRINGS) += persistent.o
-> > diff --git a/security/keys/compat.c b/security/keys/compat.c
-> > index 9482df601dc33..f22527e88e3d5 100644
-> > --- a/security/keys/compat.c
-> > +++ b/security/keys/compat.c
-> > @@ -50,11 +50,6 @@ static long compat_keyctl_instantiate_key_iov(
-> >  
-> >  /*
-> >   * The key control system call, 32-bit compatibility version for 64-bit archs
-> > - *
-> > - * This should only be called if the 64-bit arch uses weird pointers in 32-bit
-> > - * mode or doesn't guarantee that the top 32-bits of the argument registers on
-> > - * taking a 32-bit syscall are zero.  If you can, you should call sys_keyctl()
-> > - * directly.
-> >   */
-> >  COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
-> >  		       u32, arg2, u32, arg3, u32, arg4, u32, arg5)
-> > diff --git a/security/keys/internal.h b/security/keys/internal.h
-> > index 74cb0ff42fedb..d1836e5d670cb 100644
-> > --- a/security/keys/internal.h
-> > +++ b/security/keys/internal.h
-> > @@ -272,7 +272,7 @@ extern long keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
-> >  			      size_t, struct keyctl_kdf_params __user *);
-> >  extern long __keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
-> >  				size_t, struct keyctl_kdf_params *);
-> > -#ifdef CONFIG_KEYS_COMPAT
-> > +#ifdef CONFIG_COMPAT
-> >  extern long compat_keyctl_dh_compute(struct keyctl_dh_params __user *params,
-> >  				char __user *buffer, size_t buflen,
-> >  				struct compat_keyctl_kdf_params __user *kdf);
-> > @@ -287,7 +287,7 @@ static inline long keyctl_dh_compute(struct keyctl_dh_params __user *params,
-> >  	return -EOPNOTSUPP;
-> >  }
-> >  
-> > -#ifdef CONFIG_KEYS_COMPAT
-> > +#ifdef CONFIG_COMPAT
-> >  static inline long compat_keyctl_dh_compute(
-> >  				struct keyctl_dh_params __user *params,
-> >  				char __user *buffer, size_t buflen,
-> > -- 
-> > 2.19.1.930.g4563a0d9d0-goog
-> > 
+On Thu, Feb 28, 2019 at 10:07:42PM +0300, Vitaly Chikunov wrote:
+> David,
 > 
-> Ping.  David, are you planning to apply this?
+> On Thu, Feb 28, 2019 at 07:02:09PM +0000, David Howells wrote:
+> > | > It's not clear that sig->digest is guaranteed to be kmalloc memory.
+> > 
+> > Well, public_key_signature_free() will go bang if it's not kfree'able.
 > 
-> - Eric
+> Well, I had similar argument, FYI:
+> 
+> | On Fri, Feb 01, 2019 at 10:09:23AM +0300, Vitaly Chikunov wrote:
+> | > On Fri, Feb 01, 2019 at 02:26:55PM +0800, Herbert Xu wrote:
+> | > >
+> | > > It's not clear that sig->digest is guaranteed to be kmalloc memory.
+> | > > In any case, it's best not to mix unrelated changes in a single
+> | > > patch.  So please keep the kmalloc on output and then copy
+> | > > sig->digest into it and put output into the SG list.
+> | >
+> | > It is not guaranteed that sig->s will be kmalloc memory either. (Except
+> | > we know it for sure like we know the same about sig->digest).
+> | >
+> | > You can see in public_key_signature_free() that both fields are kfree'd
+> | > together.
+> | >
+> | > So, I don't understand why we should treat sig->digest differently than
+> | > sig->s.
+> | >
+> | > I was just removing kmalloc'ed output as crypto_akcipher_verify() does
+> | > not need any output anymore. So, it's not some sort of mixing unrelated
+> | > changes, from my point of view.
+> 
+> But then I thought Herbert knows better and implemented his suggestion.
+> 
+> Now I have contradictory requests from two maintainers.
 
-Ping.
+My main point is to not include unrelated changes into your patch.
+If you want to eliminate the copy that's fine, but please do it in
+a separate patch.
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
