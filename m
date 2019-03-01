@@ -1,36 +1,49 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 28 Mar 2019 12:27:57 +0000
-Subject: Re: [PATCH v3] KEYS: trusted: allow trusted.ko to initialize w/o a TPM
-Message-Id: <20190328122757.GB7094@linux.intel.com>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Fri, 01 Mar 2019 17:59:18 +0000
+Subject: [PATCH v7 11/11] integrity: support EC-RDSA signatures for asymmetric_verify
+Message-Id: <20190301175918.29694-12-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190326121158.13499-1-jarkko.sakkinen@linux.intel.com>
- <CAA9_cmfFpkBLz6TU0sLSV1JYE43sDtfi29Xw4R5Xt-RaWm8ZLA@mail.gmail.com>
-In-Reply-To: <CAA9_cmfFpkBLz6TU0sLSV1JYE43sDtfi29Xw4R5Xt-RaWm8ZLA@mail.gmail.com>
-To: Dan Williams <dan.j.williams@gmail.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, James Morris <jmorris@namei.org>, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linuxibm.com>, David Howells <dhowells@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+References: <20190301175918.29694-1-vt@altlinux.org>
+In-Reply-To: <20190301175918.29694-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2019 at 10:15:50AM -0700, Dan Williams wrote:
-> On Tue, Mar 26, 2019 at 5:13 AM Jarkko Sakkinen
-> <jarkko.sakkinen@linux.intel.com> wrote:
-> >
-> > Allow trusted.ko to initialize w/o a TPM. This commit adds checks to the
-> > key type callbacks and exported functions to fail when a TPM is not
-> > available.
-> >
-> > Cc: James Morris <jmorris@namei.org>
-> > Reported-by: Dan Williams <dan.j.williams@intel.com>
-> > Tested-by: Dan Williams <dan.j.williams@intel.com>
-> > Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
-> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > ---
-> > v3:
-> > - remove unnecessary check for chip in init_trusted()
-> 
-> v3 also tests ok here.
+Allow to use EC-RDSA signatures for IMA by determining signature type by
+the hash algorithm name. This works good for EC-RDSA since Streebog and
+EC-RDSA should always be used together.
 
-Thank you.
+Cc: Mimi Zohar <zohar@linux.ibm.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: linux-integrity@vger.kernel.org
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+---
+ security/integrity/digsig_asymmetric.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-/Jarkko
+diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
+index d775e03fbbcc..99080871eb9f 100644
+--- a/security/integrity/digsig_asymmetric.c
++++ b/security/integrity/digsig_asymmetric.c
+@@ -104,9 +104,16 @@ int asymmetric_verify(struct key *keyring, const char *sig,
+ 
+ 	memset(&pks, 0, sizeof(pks));
+ 
+-	pks.pkey_algo = "rsa";
+ 	pks.hash_algo = hash_algo_name[hdr->hash_algo];
+-	pks.encoding = "pkcs1";
++	if (hdr->hash_algo = HASH_ALGO_STREEBOG_256 ||
++	    hdr->hash_algo = HASH_ALGO_STREEBOG_512) {
++		/* EC-RDSA and Streebog should go together. */
++		pks.pkey_algo = "ecrdsa";
++		pks.encoding = "raw";
++	} else {
++		pks.pkey_algo = "rsa";
++		pks.encoding = "pkcs1";
++	}
+ 	pks.digest = (u8 *)data;
+ 	pks.digest_size = datalen;
+ 	pks.s = hdr->sig;
+-- 
+2.11.0
