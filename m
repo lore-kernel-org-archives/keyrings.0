@@ -1,51 +1,96 @@
 From: Vitaly Chikunov <vt@altlinux.org>
-Date: Thu, 28 Mar 2019 06:16:48 +0000
-Subject: Re: [PATCH v8 10/10] integrity: support EC-RDSA signatures for asymmetric_verify
-Message-Id: <20190328061648.knexdusdcadubeu6@altlinux.org>
+Date: Fri, 01 Mar 2019 17:59:09 +0000
+Subject: [PATCH v7 02/11] crypto: akcipher - check the presence of callback before the call
+Message-Id: <20190301175918.29694-3-vt@altlinux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190326125842.24110-1-vt@altlinux.org>
- <20190326125842.24110-11-vt@altlinux.org>
- <1553710220.4608.9.camel@linux.ibm.com>
- <20190327201441.ikw76qzpgzm6t35b@altlinux.org>
- <1553718067.4608.43.camel@linux.ibm.com>
-In-Reply-To: <1553718067.4608.43.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190301175918.29694-1-vt@altlinux.org>
+In-Reply-To: <20190301175918.29694-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-T24gV2VkLCBNYXIgMjcsIDIwMTkgYXQgMDQ6MjE6MDdQTSAtMDQwMCwgTWltaSBab2hhciB3cm90
-ZToKPiA+ID4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1ldHJp
-Yy5jCj4gYi9zZWN1cml0eS9pbnRlZ3JpdHkvZGlnc2lnX2FzeW1tZXRyaWMuYwo+ID4gPiA+IGlu
-ZGV4IGQ3NzVlMDNmYmJjYy4uOTkwODA4NzFlYjlmIDEwMDY0NAo+ID4gPiA+IC0tLSBhL3NlY3Vy
-aXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1ldHJpYy5jCj4gPiA+ID4gKysrIGIvc2VjdXJpdHkv
-aW50ZWdyaXR5L2RpZ3NpZ19hc3ltbWV0cmljLmMKPiA+ID4gPiBAQCAtMTA0LDkgKzEwNCwxNiBA
-QCBpbnQgYXN5bW1ldHJpY192ZXJpZnkoc3RydWN0IGtleSAqa2V5cmluZywgY29uc3QgY2hhciAq
-c2lnLAo+ID4gPiA+ICAKPiA+ID4gPiAgCW1lbXNldCgmcGtzLCAwLCBzaXplb2YocGtzKSk7Cj4g
-PiA+ID4gIAo+ID4gPiA+IC0JcGtzLnBrZXlfYWxnbyA9ICJyc2EiOwo+ID4gPiA+ICAJcGtzLmhh
-c2hfYWxnbyA9IGhhc2hfYWxnb19uYW1lW2hkci0+aGFzaF9hbGdvXTsKPiA+ID4gPiAtCXBrcy5l
-bmNvZGluZyA9ICJwa2NzMSI7Cj4gPiA+ID4gKwlpZiAoaGRyLT5oYXNoX2FsZ28gPSBIQVNIX0FM
-R09fU1RSRUVCT0dfMjU2IHx8Cj4gPiA+ID4gKwkgICAgaGRyLT5oYXNoX2FsZ28gPSBIQVNIX0FM
-R09fU1RSRUVCT0dfNTEyKSB7Cj4gPiA+ID4gKwkJLyogRUMtUkRTQSBhbmQgU3RyZWVib2cgc2hv
-dWxkIGdvIHRvZ2V0aGVyLiAqLwo+ID4gPiA+ICsJCXBrcy5wa2V5X2FsZ28gPSAiZWNyZHNhIjsK
-PiA+ID4gPiArCQlwa3MuZW5jb2RpbmcgPSAicmF3IjsKPiA+ID4gCj4gPiA+IElNQSBzaWduYXR1
-cmVzIGFyZSBzdG9yZWQgYXMgeGF0dHJzLCBtYWtpbmcgdGhlbSBwZXJzaXN0ZW50LiCaU3VwcG9y
-dAo+ID4gPiBmb3Igc3RyZWVib2cgd2FzIHVwc3RyZWFtZWQgaW4gbGludXgtNS4wLiCaVGhpcyBj
-aGFuZ2Ugd291bGQgYnJlYWsKPiA+ID4gZXhpc3Rpbmcgc3lzdGVtcyB1c2luZyBzdHJlZWJvZy4g
-mkFzIGxvbmcgYXMgdGhpcyBpcyBub3QgeWV0IGEgY29uY2Vybgo+ID4gCj4gPiBJbiB3aGF0IHNl
-bnNlIGl0IHdvdWxkIGJyZWFrIHN5c3RlbXM/Cj4gCj4gRm9yIGV4YW1wbGUsIGlmIGV4ZWN1dGFi
-bGUgZmlsZXMgYXJlIGN1cnJlbnRseSBsYWJlbGVkIHdpdGgKPiByc2Evc3RyZWVib2cgc2lnbmF0
-dXJlcywgdGhlbiBlbmZvcmNpbmcgZmlsZSBkYXRhIGludGVncml0eSBJIGFzc3VtZQo+IHdvdWxk
-IGJyZWFrIGlmIHRoZSBrZXJuZWwgdXNlcyBlY3Jkc2Evc3RyZWVib2cuCgpBaC4gTm8sIEkgZGlk
-IG5vdCBpbXBsZW1lbnQgUlNBKFN0cmVlYm9nKSBpbnRlbnRpb25hbGx5LCBzaW5jZSBTdHJlZWJv
-ZyBpcwpub3QgaW4gdGhlIGxpc3Qgb2YgcGVybWl0dGVkIGhhc2hlcyBmb3IgUEtDUzEuIFlvdSBt
-YXkgbm90aWNlIHRoaXMgYnkgdGhlCmxhY2sgb2YgYXBwcm9wcmlhdGUgcnNhX2FzbjFfdGVtcGxh
-dGVbXSBlbnRyeS4KClRoYW5rcywKCj4gCj4gTWltaQo+IAo+ID4gCj4gPiBVbmxlc3Mga2VybmVs
-IGNyYXNoZXMgb3Igc2lnbmF0dXJlIGlzIHJlY29nbml6ZWQgYXMgdmFsaWQsIEkgdGhpbmssIGl0
-IHNob3VsZAo+ID4gbm90IGJlIGNhbGxlZCBhIGJyZWFrLgo+ID4gCj4gPiA+IFJldmlld2VkLWJ5
-OiCaTWltaSBab2hhciA8em9oYXJAbGludXguaWJtLmNvbT4KPiA+IAo+ID4gVGhhbmtzIQo+ID4g
-Cj4gPiA+IAo+ID4gPiA+ICsJfSBlbHNlIHsKPiA+ID4gPiArCQlwa3MucGtleV9hbGdvID0gInJz
-YSI7Cj4gPiA+ID4gKwkJcGtzLmVuY29kaW5nID0gInBrY3MxIjsKPiA+ID4gPiArCX0KPiA+ID4g
-PiAgCXBrcy5kaWdlc3QgPSAodTggKilkYXRhOwo+ID4gPiA+ICAJcGtzLmRpZ2VzdF9zaXplID0g
-ZGF0YWxlbjsKPiA+ID4gPiAgCXBrcy5zID0gaGRyLT5zaWc7Cj4gPiA=
+Because with introduction of EC-RDSA and change in workings of RSA in
+regard to sign/verify, akcipher could have not all callbacks defined,
+check the presence of callbacks before calling them to increase
+robustness.
+
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+---
+ include/crypto/akcipher.h | 25 ++++++++++++++++---------
+ 1 file changed, 16 insertions(+), 9 deletions(-)
+
+diff --git a/include/crypto/akcipher.h b/include/crypto/akcipher.h
+index 2d690494568c..f537fad1989f 100644
+--- a/include/crypto/akcipher.h
++++ b/include/crypto/akcipher.h
+@@ -268,7 +268,10 @@ static inline unsigned int crypto_akcipher_maxsize(struct crypto_akcipher *tfm)
+ {
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 
+-	return alg->max_size(tfm);
++	if (alg->max_size)
++		return alg->max_size(tfm);
++	else
++		return 0;
+ }
+ 
+ /**
+@@ -287,10 +290,11 @@ static inline int crypto_akcipher_encrypt(struct akcipher_request *req)
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 	struct crypto_alg *calg = tfm->base.__crt_alg;
+ 	unsigned int src_len = req->src_len;
+-	int ret;
++	int ret = -ENOSYS;
+ 
+ 	crypto_stats_get(calg);
+-	ret = alg->encrypt(req);
++	if (alg->encrypt)
++		ret = alg->encrypt(req);
+ 	crypto_stats_akcipher_encrypt(src_len, ret, calg);
+ 	return ret;
+ }
+@@ -311,10 +315,11 @@ static inline int crypto_akcipher_decrypt(struct akcipher_request *req)
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 	struct crypto_alg *calg = tfm->base.__crt_alg;
+ 	unsigned int src_len = req->src_len;
+-	int ret;
++	int ret = -ENOSYS;
+ 
+ 	crypto_stats_get(calg);
+-	ret = alg->decrypt(req);
++	if (alg->decrypt)
++		ret = alg->decrypt(req);
+ 	crypto_stats_akcipher_decrypt(src_len, ret, calg);
+ 	return ret;
+ }
+@@ -334,10 +339,11 @@ static inline int crypto_akcipher_sign(struct akcipher_request *req)
+ 	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 	struct crypto_alg *calg = tfm->base.__crt_alg;
+-	int ret;
++	int ret = -ENOSYS;
+ 
+ 	crypto_stats_get(calg);
+-	ret = alg->sign(req);
++	if (alg->sign)
++		ret = alg->sign(req);
+ 	crypto_stats_akcipher_sign(ret, calg);
+ 	return ret;
+ }
+@@ -357,10 +363,11 @@ static inline int crypto_akcipher_verify(struct akcipher_request *req)
+ 	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
+ 	struct akcipher_alg *alg = crypto_akcipher_alg(tfm);
+ 	struct crypto_alg *calg = tfm->base.__crt_alg;
+-	int ret;
++	int ret = -ENOSYS;
+ 
+ 	crypto_stats_get(calg);
+-	ret = alg->verify(req);
++	if (alg->verify)
++		ret = alg->verify(req);
+ 	crypto_stats_akcipher_verify(ret, calg);
+ 	return ret;
+ }
+-- 
+2.11.0
