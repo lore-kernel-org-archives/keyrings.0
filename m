@@ -1,7 +1,7 @@
-From: James Morris <jmorris@namei.org>
-Date: Tue, 05 Mar 2019 03:28:07 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 05 Mar 2019 07:41:54 +0000
 Subject: Re: [PATCH] keys: fix missing __user in KEYCTL_PKEY_QUERY
-Message-Id: <alpine.LRH.2.21.1903051427590.20560@namei.org>
+Message-Id: <29870.1551771714@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,9 +9,9 @@ List-Id: <keyrings.vger.kernel.org>
 References: <20190301113026.17721-1-ben.dooks@codethink.co.uk>
 In-Reply-To: <20190301113026.17721-1-ben.dooks@codethink.co.uk>
 To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, serge@hallyn.com, linux-kernel@lists.codethink.co.uk
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, jmorris@namei.org, serge@hallyn.com, linux-kernel@lists.codethink.co.uk
 
-On Fri, 1 Mar 2019, Ben Dooks wrote:
+Ben Dooks <ben.dooks@codethink.co.uk> wrote:
 
 > The arg5 of KEYCTL_PKEY_QUERY should have a __user pointer tag on
 > it as it is a user pointer. This clears the following sparse warning
@@ -23,9 +23,4 @@ On Fri, 1 Mar 2019, Ben Dooks wrote:
 > 
 > Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
 
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next-general
-
--- 
-James Morris
-<jmorris@namei.org>
+Acked-by: David Howells <dhowells@redhat.com>
