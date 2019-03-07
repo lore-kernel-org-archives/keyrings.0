@@ -1,74 +1,56 @@
 From: Franck Lenormand <franck.lenormand@nxp.com>
-Date: Thu, 07 Mar 2019 13:02:58 +0000
+Date: Thu, 07 Mar 2019 13:17:48 +0000
 Subject: RE: [RFC PATCH 0/2] Create CAAM HW key in linux keyring and use in dmcrypt
-Message-Id: <AM6PR04MB54479B9BFFC5A8DE1041A6DD924C0@AM6PR04MB5447.eurprd04.prod.outlook.com>
+Message-Id: <AM6PR04MB54473C2D30DDD7CDC8522DF9924C0@AM6PR04MB5447.eurprd04.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1551456599-10603-1-git-send-email-franck.lenormand@nxp.com>
- <1551890866.5086.125.camel@pengutronix.de>
-In-Reply-To: <1551890866.5086.125.camel@pengutronix.de>
-To: =?utf-8?B?SmFuIEzDvGJiZQ==?= <jlu@pengutronix.de>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>
-Cc: Horia Geanta <horia.geanta@nxp.com>, Silvano Di Ninno <silvano.dininno@nxp.com>, "agk@redhat.com" <agk@redhat.com>, "snitzer@redhat.com" <snitzer@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "jmorris@namei.org" <jmorris@namei.org>, "serge@hallyn.com" <serge@hallyn.com>, David Gstir <david@sigma-star.at>
+ <11177.1551893395@warthog.procyon.org.uk>
+In-Reply-To: <11177.1551893395@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, Horia Geanta <horia.geanta@nxp.com>, Silvano Di Ninno <silvano.dininno@nxp.com>, "agk@redhat.com" <agk@redhat.com>, "snitzer@redhat.com" <snitzer@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "jmorris@namei.org" <jmorris@namei.org>, "serge@hallyn.com" <serge@hallyn.com>
 
-PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiBGcm9tOiBKYW4gTMO8YmJlIDxqbHVAcGVu
-Z3V0cm9uaXguZGU+DQo+IFNlbnQ6IFdlZG5lc2RheSwgTWFyY2ggNiwgMjAxOSA1OjQ4IFBNDQo+
-IFRvOiBGcmFuY2sgTGVub3JtYW5kIDxmcmFuY2subGVub3JtYW5kQG54cC5jb20+OyBsaW51eC0N
-Cj4ga2VybmVsQHZnZXIua2VybmVsLm9yZzsgbGludXgtc2VjdXJpdHktbW9kdWxlQHZnZXIua2Vy
-bmVsLm9yZzsNCj4ga2V5cmluZ3NAdmdlci5rZXJuZWwub3JnDQo+IENjOiBIb3JpYSBHZWFudGEg
-PGhvcmlhLmdlYW50YUBueHAuY29tPjsgU2lsdmFubyBEaSBOaW5ubw0KPiA8c2lsdmFuby5kaW5p
-bm5vQG54cC5jb20+OyBhZ2tAcmVkaGF0LmNvbTsgc25pdHplckByZWRoYXQuY29tOyBkbS0NCj4g
-ZGV2ZWxAcmVkaGF0LmNvbTsgZGhvd2VsbHNAcmVkaGF0LmNvbTsgam1vcnJpc0BuYW1laS5vcmc7
-DQo+IHNlcmdlQGhhbGx5bi5jb207IERhdmlkIEdzdGlyIDxkYXZpZEBzaWdtYS1zdGFyLmF0Pg0K
-PiBTdWJqZWN0OiBSZTogW1JGQyBQQVRDSCAwLzJdIENyZWF0ZSBDQUFNIEhXIGtleSBpbiBsaW51
-eCBrZXlyaW5nIGFuZCB1c2UgaW4NCj4gZG1jcnlwdA0KPiANCj4gSGkgRnJhbmNrLA0KPiANCj4g
-dGhhbmtzIGZvciB3b3JraW5nIG9uIHRoaXMhDQo+IA0KPiBPbiBGcmksIDIwMTktMDMtMDEgYXQg
-MTc6MDkgKzAxMDAsIEZyYW5jayBMRU5PUk1BTkQgd3JvdGU6DQo+ID4gVGhlIGNyZWF0aW9uIG9m
-IHN1Y2ggc3RydWN0dXJlcyBhbmQgaXRzIHVzZSB3YXMgbm90IGV4cG9zZWQgdG8NCj4gPiB1c2Vy
-c3BhY2Ugc28gaXQgd2FzIGNvbXBsaWNhdGVkIHRvIHVzZSBhbmQgcmVxdWlyZWQgY3VzdG9tDQo+
-ID4gZGV2ZWxvcG1lbnQuIFdlIHdvdWxkIGxpa2UgdG8gZWFzZSB0aGlzIHVzaW5nIGludGVyZmFj
-ZSB3aGljaCBhcmUga25vd24NCj4gYW5kIHVzZWQ6DQo+ID4gIC0gTGludXgga2V5IHJldGVudGlv
-biBzZXJ2aWNlIDogQWxsb3cgdG8gZ2VuZXJhdGUgb3IgbG9hZCBrZXlzIGluIGENCj4gPiAgICAg
-ICAgIGtleXJpbmcgd2hpY2ggY2FuIGJlIHVzZWQgYnkgYXBwbGljYXRpb25zLg0KPiA+ICAtIGRt
-LWNyeXB0IDogZGV2aWNlIG1hcHBlciBhbGxvd2luZyB0byBlbmNyeXB0IGRhdGEuDQo+ID4NCj4g
-PiBUaGUgY2FwYWNpdHkgdG8gZ2VuZXJhdGUgb3IgbG9hZCBrZXlzIGFscmVhZHkgYXZhaWxhYmxl
-IGluIHRoZSBMaW51eA0KPiA+IGtleSByZXRlbnRpb24gc2VydmljZSBkb2VzIG5vdCBhbGxvd3Mg
-dG8gZXhwbG9pdCBDQUFNIGNhcGFiaWxpdGllcw0KPiA+IGhlbmNlIHdlIG5lZWQgdG8gY3JlYXRl
-IGEgbmV3IGtleV90eXBlLiBUaGUgbmV3IGtleSB0eXBlICJjYWFtX3RrIg0KPiBhbGxvd3MgdG86
-DQo+ID4gIC0gQ3JlYXRlIGEgYmxhY2sga2V5IGZyb20gcmFuZG9tDQo+ID4gIC0gQ3JlYXRlIGEg
-YmxhY2sga2V5IGZyb20gYSByZWQga2V5DQo+ID4gIC0gTG9hZCBhIGJsYWNrIGJsb2IgdG8gcmV0
-cmlldmUgdGhlIGJsYWNrIGtleQ0KPiANCj4gT24gMjAxOC0wNy0yMywgVWRpdCBBZ2Fyd2FsIDx1
-ZGl0LmFnYXJ3YWxAbnhwLmNvbT4gc2VudCBhIHNlcmllcyB3aGljaA0KPiBzZWVtcyByZWxhdGVk
-IHRvIHRoaXM6DQo+IFtQQVRDSCB2MiAxLzJdIHNlY3VyaXR5L2tleXMvc2VjdXJlX2tleTogQWRk
-cyB0aGUgc2VjdXJlIGtleSBzdXBwb3J0IGJhc2VkDQo+IG9uIENBQU0uDQo+IFtQQVRDSCB2MiAy
-LzJdIGVuY3J5cHRlZF9rZXlzOiBBZGRzIHN1cHBvcnQgZm9yIHNlY3VyZSBrZXktdHlwZSBhcyBt
-YXN0ZXINCj4ga2V5Lg0KPiANCj4gSXMgdGhpcyBzZXJpZXMgaW50ZW5kZWQgdG8gY29udGludWUg
-dGhhdCB3b3JrIGFuZCBjb3ZlciB0aGUgc2FtZSB1c2VzLSBjYXNlcz8NCj4gDQo+IElmIEkgcmVt
-ZW1iZXIgY29ycmVjdGx5LCB0aGUgQ0FBTSBhbHNvIHN1cHBvcnRzIG1hcmtpbmcgYmxvYnMgdG8g
-YWxsb3cgb3INCj4gZGlzYWxsb3cgZXhwb3J0aW5nIHRoZSBlbmNhcHN1bGF0ZWQga2V5IGZyb20g
-dGhlIGhhcmR3YXJlLiBPciBpcyB0aGlzDQo+IHVubmVlZGVkIGFuZCB3ZSBjb3VsZCBlbmNyeXB0
-L2RlY3J5cHQgb3RoZXIgKGxlc3MgY3JpdGljYWwpIGtleSBtYXRlcmlhbA0KPiBhZ2FpbnN0IHRo
-ZSB0ayhjYmMoYWVzKSkgQ0FBTSBrZXkgdmlhIHRoZSBrZXlyaW5nIG1lY2hhbmlzbXM/DQo+IA0K
-PiBCZXN0IHJlZ2FyZHMsDQo+IEphbg0KPiAtLQ0KPiBQZW5ndXRyb25peCBlLksuICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgfCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfA0KPiBJbmR1
-c3RyaWFsIExpbnV4IFNvbHV0aW9ucyAgICAgICAgICAgICAgICAgfA0KPiBodHRwczovL2VtZWEw
-MS5zYWZlbGlua3MucHJvdGVjdGlvbi5vdXRsb29rLmNvbS8/dXJsPWh0dHAlM0ElMkYlMkZ3dw0K
-PiB3LnBlbmd1dHJvbml4LmRlJTJGJmFtcDtkYXRhPTAyJTdDMDElN0NmcmFuY2subGVub3JtYW5k
-JTQwbnhwLmNvDQo+IG0lN0MyOWFiODllOTlmOTA0MGUzMGFhOTA4ZDZhMjUzNzk2NyU3QzY4NmVh
-MWQzYmMyYjRjNmZhOTJjZDk5Yw0KPiA1YzMwMTYzNSU3QzAlN0MwJTdDNjM2ODc0ODc2NzMyMTUz
-MDkzJmFtcDtzZGF0YT1ieUtENFNtWWZ6TVRzDQo+IEZLNmNYNUw4MSUyQjloeHhxVGJuT0xmNyUy
-QkFKZ1h5bFUlM0QmYW1wO3Jlc2VydmVkPTAgIHwNCj4gUGVpbmVyIFN0ci4gNi04LCAzMTEzNyBI
-aWxkZXNoZWltLCBHZXJtYW55IHwgUGhvbmU6ICs0OS01MTIxLTIwNjkxNy0wICAgIHwNCj4gQW10
-c2dlcmljaHQgSGlsZGVzaGVpbSwgSFJBIDI2ODYgICAgICAgICAgIHwgRmF4OiAgICs0OS01MTIx
-LTIwNjkxNy01NTU1IHwNCg0KSGVsbG8gSmFuLA0KDQpUaGUgY3VycmVudCBzZXJpZXMgaXMgYWlt
-ZWQgdG8gY2hhbmdlIHdoaWNoIGtleSB0eXBlIGlzIGFjY2VwdGFibGUgaW4gZG0tY3J5cHQuIFdp
-dGhvdXQNCnRoaXMgY2hhbmdlLCB0aGUga2V5IHR5cGUgY2Fubm90IGJlIGludGVncmF0ZWQgcHJv
-cGVybHkuDQoNCkFib3V0IHRoZSBrZXkgdHlwZSBpbXBsZW1lbnRhdGlvbjoNClRoZSBpbXBsZW1l
-bnRhdGlvbiBvZiB0aGUga2V5IHR5cGUgaXMgYW4gaW1wcm92ZW1lbnQgcmVsYXRlZCB0byB0aGUg
-d29yayBvZiBVZGl0IEFnYXJ3YWwuDQoNClRoZSB0cmFuc2Zvcm0gdGsoY2JjKGFlcykpIGlzIGlu
-dGVuZGVkIHRvIHJlY2VpdmUga2V5IG1hdGVyaWFsIHdob3NlIGZvcm1hdCBjYW4gY2hhbmdlDQpo
-ZW5jZSB0aGUgInRhZ2dpbmciIHRvIGhhbmRsZSBpdCBwcm9wZXJseS4gSXQgY291bGQsIGZvciBl
-eGFtcGxlLCBoYW5kbGUgcGxhaW4ga2V5cywgYmxhY2sga2V5cyBvciBibG9icyBhcyBrZXkgbWF0
-ZXJpYWwgYW5kIHRoaXMgbWF0ZXJpYWwgd291bGQgYmUgc3RvcmVkIGluIGtleXJpbmcuDQoNClJl
-Z2FyZHMsDQpGcmFuY2sNCg=
+> -----Original Message-----
+> From: David Howells <dhowells@redhat.com>
+> Sent: Wednesday, March 6, 2019 6:30 PM
+> To: Franck Lenormand <franck.lenormand@nxp.com>
+> Cc: dhowells@redhat.com; linux-kernel@vger.kernel.org; linux-security-
+> module@vger.kernel.org; keyrings@vger.kernel.org; Horia Geanta
+> <horia.geanta@nxp.com>; Silvano Di Ninno <silvano.dininno@nxp.com>;
+> agk@redhat.com; snitzer@redhat.com; dm-devel@redhat.com;
+> jmorris@namei.org; serge@hallyn.com
+> Subject: Re: [RFC PATCH 0/2] Create CAAM HW key in linux keyring and use in
+> dmcrypt
+> 
+> Franck LENORMAND <franck.lenormand@nxp.com> wrote:
+> 
+> > The capacity to generate or load keys already available in the Linux
+> > key retention service does not allows to exploit CAAM capabilities
+> > hence we need to create a new key_type. The new key type "caam_tk"
+> allows to:
+> >  - Create a black key from random
+> >  - Create a black key from a red key
+> >  - Load a black blob to retrieve the black key
+> 
+> Is it possible that this could be done through an existing key type, such as the
+> asymmetric, trusted or encrypted key typed?
+> 
+> David
+
+Hello David,
+
+I didn't know about asymmetric key type so I looked it up, from my
+observation, it would not be possible to use it for the caam_tk as
+we must perform operations on the data provided.
+The name " asymmetric " is also misleading for the use we would have.
+
+The trusted and encrypted does not provides the necessary
+callbacks to do what we would need or require huge modifications.
+
+I would like, for this series to focus on the change related to
+dm-crypt. In effect, it is currently not possible to pass a key
+from the asymmetric key type to it.
+
+Franck
