@@ -1,13 +1,13 @@
 From: Sasha Levin <sashal@kernel.org>
-Date: Wed, 13 Mar 2019 19:09:34 +0000
-Subject: [PATCH AUTOSEL 4.20 13/60] keys: Fix dependency loop between construction record and auth key
-Message-Id: <20190313191021.158171-13-sashal@kernel.org>
+Date: Wed, 13 Mar 2019 19:12:13 +0000
+Subject: [PATCH AUTOSEL 4.19 11/48] keys: Fix dependency loop between construction record and auth key
+Message-Id: <20190313191250.158955-11-sashal@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190313191021.158171-1-sashal@kernel.org>
-In-Reply-To: <20190313191021.158171-1-sashal@kernel.org>
+References: <20190313191250.158955-1-sashal@kernel.org>
+In-Reply-To: <20190313191250.158955-1-sashal@kernel.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: David Howells <dhowells@redhat.com>, James Morris <james.morris@microsoft.com>, Sasha Levin <sashal@kernel.org>, linux-nfs@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
@@ -131,7 +131,7 @@ index 3f23b6840547..bf34ddaa2ad7 100644
  	return ret;
  }
  
-@@ -651,9 +652,10 @@ out:
+@@ -651,9 +652,10 @@ static int nfs_idmap_read_and_verify_message(struct idmap_msg *im,
  static ssize_t
  idmap_pipe_downcall(struct file *filp, const char __user *src, size_t mlen)
  {
@@ -208,12 +208,12 @@ index 000000000000..a726dd3f1dc6
 +
 +#endif /* _KEYS_REQUEST_KEY_AUTH_TYPE_H */
 diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index bc9af551fc83..e49d1de0614e 100644
+index 05d8fb5a06c4..d3c5ae8ad498 100644
 --- a/include/linux/key-type.h
 +++ b/include/linux/key-type.h
-@@ -20,15 +20,6 @@
- struct kernel_pkey_query;
- struct kernel_pkey_params;
+@@ -17,15 +17,6 @@
+ 
+ #ifdef CONFIG_KEYS
  
 -/*
 - * key under-construction record
@@ -227,7 +227,7 @@ index bc9af551fc83..e49d1de0614e 100644
  /*
   * Pre-parsed payload, used by key add, update and instantiate.
   *
-@@ -50,8 +41,7 @@ struct key_preparsed_payload {
+@@ -47,8 +38,7 @@ struct key_preparsed_payload {
  	time64_t	expiry;		/* Expiry time of key */
  } __randomize_layout;
  
@@ -237,7 +237,7 @@ index bc9af551fc83..e49d1de0614e 100644
  
  /*
   * Preparsed matching criterion.
-@@ -181,20 +171,20 @@ extern int key_instantiate_and_link(struct key *key,
+@@ -170,20 +160,20 @@ extern int key_instantiate_and_link(struct key *key,
  				    const void *data,
  				    size_t datalen,
  				    struct key *keyring,
@@ -264,7 +264,7 @@ index bc9af551fc83..e49d1de0614e 100644
  
  extern int generic_key_instantiate(struct key *key, struct key_preparsed_payload *prep);
 diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 74cb0ff42fed..321aea3911f5 100644
+index 9f8208dc0e55..a02742621c8d 100644
 --- a/security/keys/internal.h
 +++ b/security/keys/internal.h
 @@ -188,20 +188,9 @@ static inline int key_permission(const key_ref_t key_ref, unsigned perm)
@@ -290,7 +290,7 @@ index 74cb0ff42fed..321aea3911f5 100644
  					size_t callout_len,
  					struct key *dest_keyring);
 diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 18619690ce77..2d39606e6472 100644
+index 1ffe60bb2845..ca31af186abd 100644
 --- a/security/keys/keyctl.c
 +++ b/security/keys/keyctl.c
 @@ -26,6 +26,7 @@
@@ -393,7 +393,7 @@ index 738553698649..1a547cec8385 100644
  	argv[i++] = key_str;
  	argv[i++] = uid_str;
  	argv[i++] = gid_str;
-@@ -191,7 +188,7 @@ error_link:
+@@ -191,7 +188,7 @@ static int call_sbin_request_key(struct key_construction *cons,
  	key_put(keyring);
  
  error_alloc:
