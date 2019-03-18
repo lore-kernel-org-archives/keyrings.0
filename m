@@ -1,56 +1,51 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Tue, 19 Mar 2019 06:06:47 +0000
-Subject: [PATCH 6/6] security/keys/encrypted: Drop export of key_type_encrypted
-Message-Id: <155297560738.2276575.13044997734939158888.stgit@dwillia2-desk3.amr.corp.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 18 Mar 2019 17:28:13 +0000
+Subject: Re: [PATCH] KEYS: reuse keyring_index_key::desc_len in lookup_user_key()
+Message-Id: <20190318172813.GB194307@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
-In-Reply-To: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
 To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, linux-nvdimm@lists.01.org
 
-Now that all users lookup the key type by name, drop the export and the
-direct module dependency.
+On Thu, Feb 07, 2019 at 03:36:14PM -0800, Eric Biggers wrote:
+> On Thu, Jan 10, 2019 at 12:28:38PM -0800, Eric Biggers wrote:
+> > On Fri, Nov 02, 2018 at 07:10:49PM -0700, Eric Biggers wrote:
+> > > From: Eric Biggers <ebiggers@google.com>
+> > > 
+> > > When lookup_user_key() checks whether the key is possessed, it should
+> > > use the key's existing index_key including the 'desc_len' field, rather
+> > > than recomputing the 'desc_len'.  This shouldn't cause any observable
+> > > behavior change; this way is just simpler and faster.
+> > > 
+> > > Signed-off-by: Eric Biggers <ebiggers@google.com>
+> > > ---
+> > >  security/keys/process_keys.c | 4 +---
+> > >  1 file changed, 1 insertion(+), 3 deletions(-)
+> > > 
+> > > diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+> > > index d5b25e535d3a5..3bea09e7176d7 100644
+> > > --- a/security/keys/process_keys.c
+> > > +++ b/security/keys/process_keys.c
+> > > @@ -688,9 +688,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+> > >  		key_ref = make_key_ref(key, 0);
+> > >  
+> > >  		/* check to see if we possess the key */
+> > > -		ctx.index_key.type		= key->type;
+> > > -		ctx.index_key.description	= key->description;
+> > > -		ctx.index_key.desc_len		= strlen(key->description);
+> > > +		ctx.index_key			= key->index_key;
+> > >  		ctx.match_data.raw_data		= key;
+> > >  		kdebug("check possessed");
+> > >  		skey_ref = search_process_keyrings(&ctx);
+> > > -- 
+> > > 2.19.1
+> > > 
+> > 
+> > Ping.
+> 
+> Ping.  David, are you planning to apply this?
+> 
+> - Eric
 
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- include/keys/encrypted-type.h            |    2 --
- security/keys/encrypted-keys/encrypted.c |    3 +--
- 2 files changed, 1 insertion(+), 4 deletions(-)
-
-diff --git a/include/keys/encrypted-type.h b/include/keys/encrypted-type.h
-index 1d4541370a64..dd509835b4a4 100644
---- a/include/keys/encrypted-type.h
-+++ b/include/keys/encrypted-type.h
-@@ -33,6 +33,4 @@ struct encrypted_key_payload {
- 	u8 payload_data[0];	/* payload data + datablob + hmac */
- };
- 
--extern struct key_type key_type_encrypted;
--
- #endif /* _KEYS_ENCRYPTED_TYPE_H */
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index 06925d3b30c9..c3999d5e2a19 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -1012,7 +1012,7 @@ static void encrypted_destroy(struct key *key)
- 	kzfree(key->payload.data[0]);
- }
- 
--struct key_type key_type_encrypted = {
-+static struct key_type key_type_encrypted = {
- 	.name = "encrypted",
- 	.instantiate = encrypted_instantiate,
- 	.update = encrypted_update,
-@@ -1020,7 +1020,6 @@ struct key_type key_type_encrypted = {
- 	.describe = user_describe,
- 	.read = encrypted_read,
- };
--EXPORT_SYMBOL_GPL(key_type_encrypted);
- 
- static int __init init_encrypted(void)
- {
+Ping.
