@@ -1,56 +1,85 @@
-From: Franck Lenormand <franck.lenormand@nxp.com>
-Date: Thu, 07 Mar 2019 13:17:48 +0000
-Subject: RE: [RFC PATCH 0/2] Create CAAM HW key in linux keyring and use in dmcrypt
-Message-Id: <AM6PR04MB54473C2D30DDD7CDC8522DF9924C0@AM6PR04MB5447.eurprd04.prod.outlook.com>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Mon, 18 Mar 2019 23:45:13 +0000
+Subject: [PATCH] security/keys/trusted: Allow operation without hardware TPM
+Message-Id: <155295271345.1945351.6465460744078693578.stgit@dwillia2-desk3.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1551456599-10603-1-git-send-email-franck.lenormand@nxp.com>
- <11177.1551893395@warthog.procyon.org.uk>
-In-Reply-To: <11177.1551893395@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, Horia Geanta <horia.geanta@nxp.com>, Silvano Di Ninno <silvano.dininno@nxp.com>, "agk@redhat.com" <agk@redhat.com>, "snitzer@redhat.com" <snitzer@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "jmorris@namei.org" <jmorris@namei.org>, "serge@hallyn.com" <serge@hallyn.com>
+To: jarkko.sakkinen@linux.intel.com
+Cc: linux-nvdimm@lists.01.org, James Bottomley <jejb@linux.ibm.com>, Roberto Sassu <roberto.sassu@huawei.com>, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
 
-> -----Original Message-----
-> From: David Howells <dhowells@redhat.com>
-> Sent: Wednesday, March 6, 2019 6:30 PM
-> To: Franck Lenormand <franck.lenormand@nxp.com>
-> Cc: dhowells@redhat.com; linux-kernel@vger.kernel.org; linux-security-
-> module@vger.kernel.org; keyrings@vger.kernel.org; Horia Geanta
-> <horia.geanta@nxp.com>; Silvano Di Ninno <silvano.dininno@nxp.com>;
-> agk@redhat.com; snitzer@redhat.com; dm-devel@redhat.com;
-> jmorris@namei.org; serge@hallyn.com
-> Subject: Re: [RFC PATCH 0/2] Create CAAM HW key in linux keyring and use in
-> dmcrypt
-> 
-> Franck LENORMAND <franck.lenormand@nxp.com> wrote:
-> 
-> > The capacity to generate or load keys already available in the Linux
-> > key retention service does not allows to exploit CAAM capabilities
-> > hence we need to create a new key_type. The new key type "caam_tk"
-> allows to:
-> >  - Create a black key from random
-> >  - Create a black key from a red key
-> >  - Load a black blob to retrieve the black key
-> 
-> Is it possible that this could be done through an existing key type, such as the
-> asymmetric, trusted or encrypted key typed?
-> 
-> David
+Rather than fail initialization of the trusted.ko module, arrange for
+the module to load, but rely on trusted_instantiate() to fail
+trusted-key operations.
 
-Hello David,
+Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
+Cc: Roberto Sassu <roberto.sassu@huawei.com>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: James Bottomley <jejb@linux.ibm.com>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
+ security/keys/trusted.c |   21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
-I didn't know about asymmetric key type so I looked it up, from my
-observation, it would not be possible to use it for the caam_tk as
-we must perform operations on the data provided.
-The name " asymmetric " is also misleading for the use we would have.
-
-The trusted and encrypted does not provides the necessary
-callbacks to do what we would need or require huge modifications.
-
-I would like, for this series to focus on the change related to
-dm-crypt. In effect, it is currently not possible to pass a key
-from the asymmetric key type to it.
-
-Franck
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index bcc9c6ead7fd..d959597a688e 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -45,6 +45,13 @@ struct sdesc {
+ static struct crypto_shash *hashalg;
+ static struct crypto_shash *hmacalg;
+ 
++static struct device *chip_dev(struct tpm_chip *chip)
++{
++	if (chip)
++		return &chip->dev;
++	return NULL;
++}
++
+ static struct sdesc *init_sdesc(struct crypto_shash *alg)
+ {
+ 	struct sdesc *sdesc;
+@@ -1224,6 +1231,14 @@ static int __init init_digests(void)
+ 	int ret;
+ 	int i;
+ 
++	/*
++	 * Hardware tpm operations are disabled, but allow the software
++	 * module to initialize, and depend on trusted_instantiate() to
++	 * fail any attempts to access the missing hardware.
++	 */
++	if (!chip)
++		return 0;
++
+ 	ret = tpm_get_random(chip, digest, TPM_MAX_DIGEST_SIZE);
+ 	if (ret < 0)
+ 		return ret;
+@@ -1246,8 +1261,6 @@ static int __init init_trusted(void)
+ 	int ret;
+ 
+ 	chip = tpm_default_chip();
+-	if (!chip)
+-		return -ENOENT;
+ 	ret = init_digests();
+ 	if (ret < 0)
+ 		goto err_put;
+@@ -1263,13 +1276,13 @@ static int __init init_trusted(void)
+ err_free:
+ 	kfree(digests);
+ err_put:
+-	put_device(&chip->dev);
++	put_device(chip_dev(chip));
+ 	return ret;
+ }
+ 
+ static void __exit cleanup_trusted(void)
+ {
+-	put_device(&chip->dev);
++	put_device(chip_dev(chip));
+ 	kfree(digests);
+ 	trusted_shash_release();
+ 	unregister_key_type(&key_type_trusted);
