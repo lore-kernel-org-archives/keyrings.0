@@ -1,43 +1,63 @@
-From: jlee@suse.com
-Date: Fri, 29 Mar 2019 17:47:07 +0000
-Subject: Re: [PATCH] X.509: Add messages for obsolete OIDs
-Message-Id: <20190329174707.GC3701@localhost>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Tue, 19 Mar 2019 06:06:30 +0000
+Subject: [PATCH 3/6] libnvdimm/security: Drop direct dependency on key_type_encrypted
+Message-Id: <155297559082.2276575.2158004875457450595.stgit@dwillia2-desk3.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190322062738.19852-1-jlee@suse.com>
- <1553715364.4608.36.camel@linux.ibm.com>
-In-Reply-To: <1553715364.4608.36.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S . Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
+In-Reply-To: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
+To: keyrings@vger.kernel.org
+Cc: linux-nvdimm@lists.01.org, linux-kernel@vger.kernel.org
 
-Hi Mimi,
+Lookup the key type by name and protect libnvdimm from encrypted_keys.ko
+module load failures.
 
-On Wed, Mar 27, 2019 at 03:36:04PM -0400, Mimi Zohar wrote:
-> On Fri, 2019-03-22 at 14:27 +0800, Lee, Chun-Yi wrote:
-> > We found that the db in Acer machine has self signed certificates
-> > (CN=3DDisablePW or CN=ABO) that they used obsolete OID 1.3.14.3.2.29
-> > sha1WithRSASignature and 2.5.29.1 subjectKeyIdentifier. Kernel
-> > emits -65 error code when loading those certificates to platform
-> > keyring:
-> >=20
-> > [    1.484388] integrity: Loading X.509 certificate: UEFI:MokListRT
-> > [    1.485557] integrity: Problem loading X.509 certificate -65
-> > [    1.486100] Error adding keys to platform keyring UEFI:MokListRT
-> >=20
-> > Because the -65 error code is not enough for appeasing user when
-> > loading a outdated certificate. This patch add messages against
-> > 1.3.14.3.2.29 and 2.5.29.1 OIDs.
-> >=20
-> > Link: https://bugzilla.opensuse.org/show_bug.cgi?id=1129471
-> > Cc: David Howells <dhowells@redhat.com>=20
-> > Cc: Herbert Xu <herbert@gondor.apana.org.au>=20
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
->=20
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Cc: Vishal Verma <vishal.l.verma@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Keith Busch <keith.busch@intel.com>
+Cc: Ira Weiny <ira.weiny@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
+ drivers/nvdimm/security.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-Thanks for your review!
-
-Joey Lee
+diff --git a/drivers/nvdimm/security.c b/drivers/nvdimm/security.c
+index f8bb746a549f..7f9e412f743a 100644
+--- a/drivers/nvdimm/security.c
++++ b/drivers/nvdimm/security.c
+@@ -48,12 +48,17 @@ static void nvdimm_put_key(struct key *key)
+ static struct key *nvdimm_request_key(struct nvdimm *nvdimm)
+ {
+ 	struct key *key = NULL;
++	struct key_type *type;
+ 	static const char NVDIMM_PREFIX[] = "nvdimm:";
+ 	char desc[NVDIMM_KEY_DESC_LEN + sizeof(NVDIMM_PREFIX)];
+ 	struct device *dev = &nvdimm->dev;
+ 
+ 	sprintf(desc, "%s%s", NVDIMM_PREFIX, nvdimm->dimm_id);
+-	key = request_key(&key_type_encrypted, desc, "");
++	type = key_type_lookup("encrypted");
++	if (IS_ERR(type))
++		return (struct key *) type;
++
++	key = request_key(type, desc, "");
+ 	if (IS_ERR(key)) {
+ 		if (PTR_ERR(key) = -ENOKEY)
+ 			dev_dbg(dev, "request_key() found no key\n");
+@@ -88,7 +93,7 @@ static struct key *nvdimm_lookup_user_key(struct nvdimm *nvdimm,
+ 		return NULL;
+ 
+ 	key = key_ref_to_ptr(keyref);
+-	if (key->type != &key_type_encrypted) {
++	if (strcmp(key->type->name, "encrypted") != 0) {
+ 		key_put(key);
+ 		return NULL;
+ 	}
+@@ -452,3 +457,5 @@ void nvdimm_security_overwrite_query(struct work_struct *work)
+ 	__nvdimm_security_overwrite_query(nvdimm);
+ 	nvdimm_bus_unlock(&nvdimm->dev);
+ }
++
++MODULE_SOFTDEP("pre: encrypted_keys");
