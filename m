@@ -1,61 +1,49 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Fri, 01 Mar 2019 02:34:09 +0000
-Subject: Re: [PATCH v5 04/10] crypto: akcipher - new verify API for public key algorithms
-Message-Id: <20190301023409.e2zgemssjjrrty4t@gondor.apana.org.au>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Tue, 19 Mar 2019 06:06:15 +0000
+Subject: [PATCH 0/6] security/keys/encrypted: Break module dependency chain
+Message-Id: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190228183923.5klzwli5zmeew54j@altlinux.org>
- <20190224060828.2527-5-vt@altlinux.org>
- <20190224060828.2527-1-vt@altlinux.org>
- <14843.1551377934@warthog.procyon.org.uk>
- <17533.1551380529@warthog.procyon.org.uk>
- <20190228190741.fv2qxwwtlpdffhwq@altlinux.org>
-In-Reply-To: <20190228190741.fv2qxwwtlpdffhwq@altlinux.org>
-To: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
+Cc: Ira Weiny <ira.weiny@intel.com>, Dave Jiang <dave.jiang@intel.com>, Tyler Hicks <tyhicks@canonical.com>, Keith Busch <keith.busch@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Howells <dhowells@redhat.com>, Vishal Verma <vishal.l.verma@intel.com>, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, ecryptfs@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>, linux-nvdimm@lists.01.org, linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2019 at 10:07:42PM +0300, Vitaly Chikunov wrote:
-> David,
-> 
-> On Thu, Feb 28, 2019 at 07:02:09PM +0000, David Howells wrote:
-> > | > It's not clear that sig->digest is guaranteed to be kmalloc memory.
-> > 
-> > Well, public_key_signature_free() will go bang if it's not kfree'able.
-> 
-> Well, I had similar argument, FYI:
-> 
-> | On Fri, Feb 01, 2019 at 10:09:23AM +0300, Vitaly Chikunov wrote:
-> | > On Fri, Feb 01, 2019 at 02:26:55PM +0800, Herbert Xu wrote:
-> | > >
-> | > > It's not clear that sig->digest is guaranteed to be kmalloc memory.
-> | > > In any case, it's best not to mix unrelated changes in a single
-> | > > patch.  So please keep the kmalloc on output and then copy
-> | > > sig->digest into it and put output into the SG list.
-> | >
-> | > It is not guaranteed that sig->s will be kmalloc memory either. (Except
-> | > we know it for sure like we know the same about sig->digest).
-> | >
-> | > You can see in public_key_signature_free() that both fields are kfree'd
-> | > together.
-> | >
-> | > So, I don't understand why we should treat sig->digest differently than
-> | > sig->s.
-> | >
-> | > I was just removing kmalloc'ed output as crypto_akcipher_verify() does
-> | > not need any output anymore. So, it's not some sort of mixing unrelated
-> | > changes, from my point of view.
-> 
-> But then I thought Herbert knows better and implemented his suggestion.
-> 
-> Now I have contradictory requests from two maintainers.
+With v5.1-rc1 all the nvdimm sub-system regression tests started failing
+because the libnvdimm module failed to load in the qemu-kvm test
+environment.  Critically that environment does not have a TPM. Commit
+240730437deb "KEYS: trusted: explicitly use tpm_chip structure..."
+started to require a TPM to be present for the trusted.ko module to load
+where there was no requirement for that before.
 
-My main point is to not include unrelated changes into your patch.
-If you want to eliminate the copy that's fine, but please do it in
-a separate patch.
+Rather than undo the "fail if no hardware" behavior James points out
+that the module dependencies can be broken by looking up the key-type by
+name. Remove the dependencies on the "key_type_trusted" and
+"key_type_encrypted" symbol exports, and clean up other boilerplate that
+supported those exports in different configurations.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+---
+
+Dan Williams (6):
+      security/keys/encrypted: Allow operation without trusted.ko
+      security/keys/encrypted: Clean up request_trusted_key()
+      libnvdimm/security: Drop direct dependency on key_type_encrypted
+      security/keys/ecryptfs: Drop direct dependency on key_type_encrypted
+      security/integrity/evm: Drop direct dependency on key_type_encrypted
+      security/keys/encrypted: Drop export of key_type_encrypted
+
+
+ drivers/nvdimm/security.c                        |   11 ++++-
+ fs/ecryptfs/ecryptfs_kernel.h                    |   22 -----------
+ fs/ecryptfs/keystore.c                           |   12 ++++++
+ include/keys/encrypted-type.h                    |    2 -
+ include/linux/key.h                              |    1 
+ security/integrity/evm/evm_crypto.c              |    9 ++++
+ security/keys/encrypted-keys/Makefile            |    3 -
+ security/keys/encrypted-keys/encrypted.c         |   35 ++++++++++++++++-
+ security/keys/encrypted-keys/encrypted.h         |   12 ------
+ security/keys/encrypted-keys/masterkey_trusted.c |   46 ----------------------
+ security/keys/internal.h                         |    2 -
+ security/keys/key.c                              |    1 
+ 12 files changed, 65 insertions(+), 91 deletions(-)
+ delete mode 100644 security/keys/encrypted-keys/masterkey_trusted.c
