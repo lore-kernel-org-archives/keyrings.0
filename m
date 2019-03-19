@@ -1,129 +1,97 @@
-From: Jann Horn <jannh@google.com>
-Date: Wed, 27 Mar 2019 15:39:38 +0000
-Subject: [PATCH] security: don't use RCU accessors for cred->session_keyring
-Message-Id: <20190327153938.82007-1-jannh@google.com>
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Tue, 19 Mar 2019 06:06:36 +0000
+Subject: [PATCH 4/6] security/keys/ecryptfs: Drop direct dependency on key_type_encrypted
+Message-Id: <155297559625.2276575.11539296499176067525.stgit@dwillia2-desk3.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: David Howells <dhowells@redhat.com>, jannh@google.com
-Cc: James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+References: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
+In-Reply-To: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
+To: keyrings@vger.kernel.org
+Cc: linux-nvdimm@lists.01.org, ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org, Tyler Hicks <tyhicks@canonical.com>
 
-sparse complains that a bunch of places in kernel/cred.c access
-cred->session_keyring without the RCU helpers required by the __rcu
-annotation.
+Lookup the key type by name and protect ecryptfs from encrypted_keys.ko
+module load failures, and cleanup the configuration dependencies on the
+definition of the ecryptfs_get_encrypted_key() helper.
 
-cred->session_keyring is written in the following places:
-
- - prepare_kernel_cred() [in a new cred struct]
- - keyctl_session_to_parent() [in a new cred struct]
- - prepare_creds [in a new cred struct, via memcpy]
- - install_session_keyring_to_cred()
-  - from install_session_keyring() on new creds
-  - from join_session_keyring() on new creds [twice]
-  - from umh_keys_init()
-   - from call_usermodehelper_exec_async() on new creds
-
-All of these writes are before the creds are committed; therefore,
-cred->session_keyring doesn't need RCU protection.
-
-Remove the __rcu annotation and fix up all existing users that use __rcu.
-
-Signed-off-by: Jann Horn <jannh@google.com>
+Cc: Tyler Hicks <tyhicks@canonical.com>
+Cc: <ecryptfs@vger.kernel.org>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
- include/linux/cred.h         |  2 +-
- security/keys/process_keys.c | 12 ++++--------
- security/keys/request_key.c  |  9 ++-------
- 3 files changed, 7 insertions(+), 16 deletions(-)
+ fs/ecryptfs/ecryptfs_kernel.h |   22 +---------------------
+ fs/ecryptfs/keystore.c        |   12 ++++++++++++
+ 2 files changed, 13 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index ddd45bb74887..efb6edf32de7 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -138,7 +138,7 @@ struct cred {
- #ifdef CONFIG_KEYS
- 	unsigned char	jit_keyring;	/* default keyring to attach requested
- 					 * keys to */
--	struct key __rcu *session_keyring; /* keyring inherited over fork */
-+	struct key	*session_keyring; /* keyring inherited over fork */
- 	struct key	*process_keyring; /* keyring private to this process */
- 	struct key	*thread_keyring; /* keyring private to this thread */
- 	struct key	*request_key_auth; /* assumed request_key authority */
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 9320424c4a46..bd7243cb4c85 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -227,6 +227,7 @@ static int install_process_keyring(void)
-  * Install the given keyring as the session keyring of the given credentials
-  * struct, replacing the existing one if any.  If the given keyring is NULL,
-  * then install a new anonymous session keyring.
-+ * @cred can not be in use by any task yet.
-  *
-  * Return: 0 on success; -errno on failure.
-  */
-@@ -254,7 +255,7 @@ int install_session_keyring_to_cred(struct cred *cred, struct key *keyring)
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index e74cb2a0b299..3106d23d95f0 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -87,13 +87,12 @@ struct ecryptfs_page_crypt_context {
+ 	} param;
+ };
  
- 	/* install the keyring */
- 	old = cred->session_keyring;
--	rcu_assign_pointer(cred->session_keyring, keyring);
-+	cred->session_keyring = keyring;
+-#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
+ static inline struct ecryptfs_auth_tok *
+ ecryptfs_get_encrypted_key_payload_data(struct key *key)
+ {
+ 	struct encrypted_key_payload *payload;
  
- 	if (old)
- 		key_put(old);
-@@ -392,11 +393,8 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+-	if (key->type != &key_type_encrypted)
++	if (strcmp(key->type->name, "encrypted") != 0)
+ 		return NULL;
  
- 	/* search the session keyring */
- 	if (ctx->cred->session_keyring) {
--		rcu_read_lock();
- 		key_ref = keyring_search_aux(
--			make_key_ref(rcu_dereference(ctx->cred->session_keyring), 1),
--			ctx);
--		rcu_read_unlock();
-+			make_key_ref(ctx->cred->session_keyring, 1), ctx);
+ 	payload = key->payload.data[0];
+@@ -103,25 +102,6 @@ ecryptfs_get_encrypted_key_payload_data(struct key *key)
+ 	return (struct ecryptfs_auth_tok *)payload->payload_data;
+ }
  
- 		if (!IS_ERR(key_ref))
- 			goto found;
-@@ -612,10 +610,8 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 			goto reget_creds;
- 		}
+-static inline struct key *ecryptfs_get_encrypted_key(char *sig)
+-{
+-	return request_key(&key_type_encrypted, sig, NULL);
+-}
+-
+-#else
+-static inline struct ecryptfs_auth_tok *
+-ecryptfs_get_encrypted_key_payload_data(struct key *key)
+-{
+-	return NULL;
+-}
+-
+-static inline struct key *ecryptfs_get_encrypted_key(char *sig)
+-{
+-	return ERR_PTR(-ENOKEY);
+-}
+-
+-#endif /* CONFIG_ENCRYPTED_KEYS */
+-
+ static inline struct ecryptfs_auth_tok *
+ ecryptfs_get_key_payload_data(struct key *key)
+ {
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index e74fe84d0886..52a01dd57f4a 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -1619,6 +1619,17 @@ parse_tag_11_packet(unsigned char *data, unsigned char *contents,
+ 	return rc;
+ }
  
--		rcu_read_lock();
--		key = rcu_dereference(ctx.cred->session_keyring);
-+		key = ctx.cred->session_keyring;
- 		__key_get(key);
--		rcu_read_unlock();
- 		key_ref = make_key_ref(key, 1);
- 		break;
++static struct key *ecryptfs_get_encrypted_key(char *sig)
++{
++	struct key_type *type;
++	struct key *key;
++
++	type = key_type_lookup("encrypted");
++	if (IS_ERR(type))
++		return (struct key *) type;
++	return request_key(type, sig, NULL);
++}
++
+ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
+ 				      struct ecryptfs_auth_tok **auth_tok,
+ 				      char *sig)
+@@ -2542,3 +2553,4 @@ ecryptfs_add_global_auth_tok(struct ecryptfs_mount_crypt_stat *mount_crypt_stat,
+ 	return 0;
+ }
  
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 2f17d84d46f1..db72dc4d7639 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -142,12 +142,10 @@ static int call_sbin_request_key(struct key *authkey, void *aux)
- 		prkey = cred->process_keyring->serial;
- 	sprintf(keyring_str[1], "%d", prkey);
- 
--	rcu_read_lock();
--	session = rcu_dereference(cred->session_keyring);
-+	session = cred->session_keyring;
- 	if (!session)
- 		session = cred->user->session_keyring;
- 	sskey = session->serial;
--	rcu_read_unlock();
- 
- 	sprintf(keyring_str[2], "%d", sskey);
- 
-@@ -287,10 +285,7 @@ static int construct_get_dest_keyring(struct key **_dest_keyring)
- 
- 			/* fall through */
- 		case KEY_REQKEY_DEFL_SESSION_KEYRING:
--			rcu_read_lock();
--			dest_keyring = key_get(
--				rcu_dereference(cred->session_keyring));
--			rcu_read_unlock();
-+			dest_keyring = key_get(cred->session_keyring);
- 
- 			if (dest_keyring)
- 				break;
--- 
-2.21.0.392.gf8f6787159e-goog
++MODULE_SOFTDEP("pre: encrypted_keys");
