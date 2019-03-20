@@ -1,212 +1,41 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Tue, 19 Mar 2019 06:06:25 +0000
-Subject: [PATCH 2/6] security/keys/encrypted: Clean up request_trusted_key()
-Message-Id: <155297558570.2276575.11731393787282486177.stgit@dwillia2-desk3.amr.corp.intel.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Wed, 20 Mar 2019 00:06:38 +0000
+Subject: Re: [PATCH 2/6] security/keys/encrypted: Clean up request_trusted_key()
+Message-Id: <1553040398.4899.149.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
-In-Reply-To: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
-To: keyrings@vger.kernel.org
-Cc: linux-nvdimm@lists.01.org, James Bottomley <jejb@linux.ibm.com>, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>
+ <155297558570.2276575.11731393787282486177.stgit@dwillia2-desk3.amr.corp.intel.com>
+In-Reply-To: <155297558570.2276575.11731393787282486177.stgit@dwillia2-desk3.amr.corp.intel.com>
+To: Dan Williams <dan.j.williams@intel.com>, keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, James Bottomley <jejb@linux.ibm.com>, linux-kernel@vger.kernel.org, linux-nvdimm@lists.01.org
 
-Now that the trusted key type is looked up by name rather than direct
-symbol there is no need to play games with detecting the build
-configuration. Make request_trusted_key() a static facility internal to
-the encrypted-keys implementation.
-
-Suggested-by: James Bottomley <jejb@linux.ibm.com>
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- include/linux/key.h                              |    1 
- security/keys/encrypted-keys/Makefile            |    3 -
- security/keys/encrypted-keys/encrypted.c         |   32 +++++++++++++
- security/keys/encrypted-keys/encrypted.h         |   12 -----
- security/keys/encrypted-keys/masterkey_trusted.c |   55 ----------------------
- security/keys/internal.h                         |    2 -
- security/keys/key.c                              |    1 
- 7 files changed, 34 insertions(+), 72 deletions(-)
- delete mode 100644 security/keys/encrypted-keys/masterkey_trusted.c
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 7099985e35a9..e7bfd037d26f 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -270,6 +270,7 @@ static inline void key_ref_put(key_ref_t key_ref)
- 	key_put(key_ref_to_ptr(key_ref));
- }
- 
-+extern struct key_type *key_type_lookup(const char *type);
- extern struct key *request_key(struct key_type *type,
- 			       const char *description,
- 			       const char *callout_info);
-diff --git a/security/keys/encrypted-keys/Makefile b/security/keys/encrypted-keys/Makefile
-index 7a44dce6f69d..d42487bb3d8a 100644
---- a/security/keys/encrypted-keys/Makefile
-+++ b/security/keys/encrypted-keys/Makefile
-@@ -6,6 +6,3 @@
- obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys.o
- 
- encrypted-keys-y := encrypted.o ecryptfs_format.o
--masterkey-$(CONFIG_TRUSTED_KEYS) := masterkey_trusted.o
--masterkey-$(CONFIG_TRUSTED_KEYS)-$(CONFIG_ENCRYPTED_KEYS) := masterkey_trusted.o
--encrypted-keys-y += $(masterkey-y) $(masterkey-m-m)
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index 347108f660a1..06925d3b30c9 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -423,6 +423,37 @@ static struct skcipher_request *init_skcipher_req(const u8 *key,
- 	return req;
- }
- 
-+/*
-+ * request_trusted_key - request the trusted key
-+ *
-+ * Trusted keys are sealed to PCRs and other metadata. Although userspace
-+ * manages both trusted/encrypted key-types, like the encrypted key type
-+ * data, trusted key type data is not visible decrypted from userspace.
-+ */
-+static struct key *request_trusted_key(const char *trusted_desc,
-+				const u8 **master_key, size_t *master_keylen)
-+{
-+	struct trusted_key_payload *tpayload;
-+	struct key_type *type;
-+	struct key *tkey;
-+
-+	type = key_type_lookup("trusted");
-+	if (IS_ERR(type)) {
-+		tkey = (struct key *)type;
-+		goto error;
-+	}
-+	tkey = request_key(type, trusted_desc, NULL);
-+	if (IS_ERR(tkey))
-+		goto error;
-+
-+	down_read(&tkey->sem);
-+	tpayload = tkey->payload.data[0];
-+	*master_key = tpayload->key;
-+	*master_keylen = tpayload->key_len;
-+error:
-+	return tkey;
-+}
-+
- static struct key *request_master_key(struct encrypted_key_payload *epayload,
- 				      const u8 **master_key, size_t *master_keylen)
- {
-@@ -1025,3 +1056,4 @@ late_initcall(init_encrypted);
- module_exit(cleanup_encrypted);
- 
- MODULE_LICENSE("GPL");
-+MODULE_SOFTDEP("pre: trusted");
-diff --git a/security/keys/encrypted-keys/encrypted.h b/security/keys/encrypted-keys/encrypted.h
-index 1809995db452..0ae67824a24a 100644
---- a/security/keys/encrypted-keys/encrypted.h
-+++ b/security/keys/encrypted-keys/encrypted.h
-@@ -3,18 +3,6 @@
- #define __ENCRYPTED_KEY_H
- 
- #define ENCRYPTED_DEBUG 0
--#if defined(CONFIG_TRUSTED_KEYS) || \
--  (defined(CONFIG_TRUSTED_KEYS_MODULE) && defined(CONFIG_ENCRYPTED_KEYS_MODULE))
--extern struct key *request_trusted_key(const char *trusted_desc,
--				       const u8 **master_key, size_t *master_keylen);
--#else
--static inline struct key *request_trusted_key(const char *trusted_desc,
--					      const u8 **master_key,
--					      size_t *master_keylen)
--{
--	return ERR_PTR(-EOPNOTSUPP);
--}
--#endif
- 
- #if ENCRYPTED_DEBUG
- static inline void dump_master_key(const u8 *master_key, size_t master_keylen)
-diff --git a/security/keys/encrypted-keys/masterkey_trusted.c b/security/keys/encrypted-keys/masterkey_trusted.c
-deleted file mode 100644
-index 7560aea6438d..000000000000
---- a/security/keys/encrypted-keys/masterkey_trusted.c
-+++ /dev/null
-@@ -1,55 +0,0 @@
--/*
-- * Copyright (C) 2010 IBM Corporation
-- * Copyright (C) 2010 Politecnico di Torino, Italy
-- *                    TORSEC group -- http://security.polito.it
-- *
-- * Authors:
-- * Mimi Zohar <zohar@us.ibm.com>
-- * Roberto Sassu <roberto.sassu@polito.it>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation, version 2 of the License.
-- *
-- * See Documentation/security/keys/trusted-encrypted.rst
-- */
--
--#include <linux/uaccess.h>
--#include <linux/err.h>
--#include <keys/trusted-type.h>
--#include <keys/encrypted-type.h>
--#include "encrypted.h"
--#include "../internal.h"
--
--/*
-- * request_trusted_key - request the trusted key
-- *
-- * Trusted keys are sealed to PCRs and other metadata. Although userspace
-- * manages both trusted/encrypted key-types, like the encrypted key type
-- * data, trusted key type data is not visible decrypted from userspace.
-- */
--struct key *request_trusted_key(const char *trusted_desc,
--				const u8 **master_key, size_t *master_keylen)
--{
--	struct trusted_key_payload *tpayload;
--	struct key_type *type;
--	struct key *tkey;
--
--	type = key_type_lookup("trusted");
--	if (IS_ERR(type)) {
--		tkey = (struct key *)type;
--		goto error;
--	}
--	tkey = request_key(type, trusted_desc, NULL);
--	if (IS_ERR(tkey))
--		goto error;
--
--	down_read(&tkey->sem);
--	tpayload = tkey->payload.data[0];
--	*master_key = tpayload->key;
--	*master_keylen = tpayload->key_len;
--error:
--	return tkey;
--}
--
--MODULE_SOFTDEP("pre: trusted");
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 8f533c81aa8d..ea2eb78459bf 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -89,8 +89,6 @@ extern spinlock_t key_serial_lock;
- extern struct mutex key_construction_mutex;
- extern wait_queue_head_t request_key_conswq;
- 
--
--extern struct key_type *key_type_lookup(const char *type);
- extern void key_type_put(struct key_type *ktype);
- 
- extern int __key_link_begin(struct key *keyring,
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 696f1c092c50..9045b62afb04 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -706,6 +706,7 @@ struct key_type *key_type_lookup(const char *type)
- found_kernel_type:
- 	return ktype;
- }
-+EXPORT_SYMBOL_GPL(key_type_lookup);
- 
- void key_set_timeout(struct key *key, unsigned timeout)
- {
+T24gTW9uLCAyMDE5LTAzLTE4IGF0IDIzOjA2IC0wNzAwLCBEYW4gV2lsbGlhbXMgd3JvdGU6Cgo8
+IHNuaXAgPgoKPiArLyoKPiArICogcmVxdWVzdF90cnVzdGVkX2tleSAtIHJlcXVlc3QgdGhlIHRy
+dXN0ZWQga2V5Cj4gKyAqCj4gKyAqIFRydXN0ZWQga2V5cyBhcmUgc2VhbGVkIHRvIFBDUnMgYW5k
+IG90aGVyIG1ldGFkYXRhLiBBbHRob3VnaCB1c2Vyc3BhY2UKPiArICogbWFuYWdlcyBib3RoIHRy
+dXN0ZWQvZW5jcnlwdGVkIGtleS10eXBlcywgbGlrZSB0aGUgZW5jcnlwdGVkIGtleSB0eXBlCj4g
+KyAqIGRhdGEsIHRydXN0ZWQga2V5IHR5cGUgZGF0YSBpcyBub3QgdmlzaWJsZSBkZWNyeXB0ZWQg
+ZnJvbSB1c2Vyc3BhY2UuCj4gKyAqLwo+ICtzdGF0aWMgc3RydWN0IGtleSAqcmVxdWVzdF90cnVz
+dGVkX2tleShjb25zdCBjaGFyICp0cnVzdGVkX2Rlc2MsCj4gKwkJCQljb25zdCB1OCAqKm1hc3Rl
+cl9rZXksIHNpemVfdCAqbWFzdGVyX2tleWxlbikKPiArewo+ICsJc3RydWN0IHRydXN0ZWRfa2V5
+X3BheWxvYWQgKnRwYXlsb2FkOwo+ICsJc3RydWN0IGtleV90eXBlICp0eXBlOwo+ICsJc3RydWN0
+IGtleSAqdGtleTsKPiArCj4gKwl0eXBlID0ga2V5X3R5cGVfbG9va3VwKCJ0cnVzdGVkIik7CgpU
+aGUgYXNzb2NpYXRlZCBrZXlfdHlwZV9wdXQoKSB3aWxsIG5lZWQgdG8gYmUgY2FsbGVkLgoKPiAr
+CWlmIChJU19FUlIodHlwZSkpIHsKPiArCQl0a2V5ID0gKHN0cnVjdCBrZXkgKil0eXBlOwo+ICsJ
+CWdvdG8gZXJyb3I7Cj4gKwl9Cj4gKwl0a2V5ID0gcmVxdWVzdF9rZXkodHlwZSwgdHJ1c3RlZF9k
+ZXNjLCBOVUxMKTsKPiArCWlmIChJU19FUlIodGtleSkpCj4gKwkJZ290byBlcnJvcjsKPiArCj4g
+Kwlkb3duX3JlYWQoJnRrZXktPnNlbSk7Cj4gKwl0cGF5bG9hZCA9IHRrZXktPnBheWxvYWQuZGF0
+YVswXTsKPiArCSptYXN0ZXJfa2V5ID0gdHBheWxvYWQtPmtleTsKPiArCSptYXN0ZXJfa2V5bGVu
+ID0gdHBheWxvYWQtPmtleV9sZW47Cj4gK2Vycm9yOgo+ICsJcmV0dXJuIHRrZXk7Cj4gK30KPiAr
+CgoKCj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2tleXMva2V5LmMgYi9zZWN1cml0eS9rZXlzL2tl
+eS5jCj4gaW5kZXggNjk2ZjFjMDkyYzUwLi45MDQ1YjYyYWZiMDQgMTAwNjQ0Cj4gLS0tIGEvc2Vj
+dXJpdHkva2V5cy9rZXkuYwo+ICsrKyBiL3NlY3VyaXR5L2tleXMva2V5LmMKPiBAQCAtNzA2LDYg
+KzcwNiw3IEBAIHN0cnVjdCBrZXlfdHlwZSAqa2V5X3R5cGVfbG9va3VwKGNvbnN0IGNoYXIgKnR5
+cGUpCj4gIGZvdW5kX2tlcm5lbF90eXBlOgo+ICAJcmV0dXJuIGt0eXBlOwo+ICB9Cj4gK0VYUE9S
+VF9TWU1CT0xfR1BMKGtleV90eXBlX2xvb2t1cCk7CgpPbmx5IHRoZSBrZXJuZWwgaXMgY2FsbGlu
+ZyBrZXlfdHlwZV9sb29rdXAoKS4gwqBXaHkgZG9lcwprZXlfdHlwZV9sb29rdXAoKSBuZWVkIHRv
+IGJlIGV4cG9ydGVkPwoKTWltaQoKPiAgCj4gIHZvaWQga2V5X3NldF90aW1lb3V0KHN0cnVjdCBr
+ZXkgKmtleSwgdW5zaWduZWQgdGltZW91dCkKPiAgewo+IAo=
