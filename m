@@ -1,46 +1,46 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 20 Mar 2019 01:20:47 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Thu, 21 Mar 2019 13:45:49 +0000
 Subject: Re: [PATCH 0/6] security/keys/encrypted: Break module dependency chain
-Message-Id: <1553044847.4899.169.camel@linux.ibm.com>
+Message-Id: <20190321134549.GB4603@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
-         <CAPcyv4ij2nHD7JumKNcNYB4gAGujWzCPkcpoi=XafmG3EP2b0g@mail.gmail.com>
-         <1553029714.2932.43.camel@linux.ibm.com>
-In-Reply-To: <1553029714.2932.43.camel@linux.ibm.com>
-To: James Bottomley <jejb@linux.ibm.com>, Dan Williams <dan.j.williams@intel.com>, keyrings@vger.kernel.org
-Cc: Ira Weiny <ira.weiny@intel.com>, Dave Jiang <dave.jiang@intel.com>, Tyler Hicks <tyhicks@canonical.com>, Keith Busch <keith.busch@intel.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Howells <dhowells@redhat.com>, Vishal Verma <vishal.l.verma@intel.com>, linux-integrity@vger.kernel.org, ecryptfs@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>, linux-nvdimm <linux-nvdimm@lists.01.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+ <CAPcyv4ij2nHD7JumKNcNYB4gAGujWzCPkcpoi=XafmG3EP2b0g@mail.gmail.com>
+In-Reply-To: <CAPcyv4ij2nHD7JumKNcNYB4gAGujWzCPkcpoi=XafmG3EP2b0g@mail.gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: keyrings@vger.kernel.org, Ira Weiny <ira.weiny@intel.com>, Dave Jiang <dave.jiang@intel.com>, Tyler Hicks <tyhicks@canonical.com>, Keith Busch <keith.busch@intel.com>, David Howells <dhowells@redhat.com>, Vishal Verma <vishal.l.verma@intel.com>, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, ecryptfs@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>, linux-nvdimm <linux-nvdimm@lists.01.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-T24gVHVlLCAyMDE5LTAzLTE5IGF0IDE0OjA4IC0wNzAwLCBKYW1lcyBCb3R0b21sZXkgd3JvdGU6
-Cj4gT24gVHVlLCAyMDE5LTAzLTE5IGF0IDE0OjAxIC0wNzAwLCBEYW4gV2lsbGlhbXMgd3JvdGU6
-Cj4gPiBPbiBNb24sIE1hciAxOCwgMjAxOSBhdCAxMToxOCBQTSBEYW4gV2lsbGlhbXMgPGRhbi5q
-LndpbGxpYW1zQGludGVsLmMKPiA+IG9tPiB3cm90ZToKPiA+ID4gCj4gPiA+IFdpdGggdjUuMS1y
-YzEgYWxsIHRoZSBudmRpbW0gc3ViLXN5c3RlbSByZWdyZXNzaW9uIHRlc3RzIHN0YXJ0ZWQKPiA+
-ID4gZmFpbGluZyBiZWNhdXNlIHRoZSBsaWJudmRpbW0gbW9kdWxlIGZhaWxlZCB0byBsb2FkIGlu
-IHRoZSBxZW11LWt2bSAKPiA+ID4gdGVzdCBlbnZpcm9ubWVudC4gIENyaXRpY2FsbHkgdGhhdCBl
-bnZpcm9ubWVudCBkb2VzIG5vdCBoYXZlIGEgVFBNLgo+ID4gPiBDb21taXQgMjQwNzMwNDM3ZGVi
-ICJLRVlTOiB0cnVzdGVkOiBleHBsaWNpdGx5IHVzZSB0cG1fY2hpcAo+ID4gPiBzdHJ1Y3R1cmUu
-Li4iIHN0YXJ0ZWQgdG8gcmVxdWlyZSBhIFRQTSB0byBiZSBwcmVzZW50IGZvciB0aGUKPiA+ID4g
-dHJ1c3RlZC5rbyBtb2R1bGUgdG8gbG9hZCB3aGVyZSB0aGVyZSB3YXMgbm8gcmVxdWlyZW1lbnQg
-Zm9yIHRoYXQKPiA+ID4gYmVmb3JlLgo+ID4gPiAKPiA+ID4gUmF0aGVyIHRoYW4gdW5kbyB0aGUg
-ImZhaWwgaWYgbm8gaGFyZHdhcmUiIGJlaGF2aW9yIEphbWVzIHBvaW50cwo+ID4gPiBvdXQgdGhh
-dCB0aGUgbW9kdWxlIGRlcGVuZGVuY2llcyBjYW4gYmUgYnJva2VuIGJ5IGxvb2tpbmcgdXAgdGhl
-Cj4gPiA+IGtleS10eXBlIGJ5IG5hbWUuIFJlbW92ZSB0aGUgZGVwZW5kZW5jaWVzIG9uIHRoZSAi
-a2V5X3R5cGVfdHJ1c3RlZCIKPiA+ID4gYW5kICJrZXlfdHlwZV9lbmNyeXB0ZWQiIHN5bWJvbCBl
-eHBvcnRzLCBhbmQgY2xlYW4gdXAgb3RoZXIKPiA+ID4gYm9pbGVycGxhdGUgdGhhdCBzdXBwb3J0
-ZWQgdGhvc2UgZXhwb3J0cyBpbiBkaWZmZXJlbnQKPiA+ID4gY29uZmlndXJhdGlvbnMuCj4gPiAK
-PiA+IEFueSBmZWVkYmFjaz8gV2FzIGhvcGluZyB0byBnZXQgYXQgbGVhc3QgcGF0Y2gxIGluIHRo
-ZSBxdWV1ZSBmb3IKPiA+IHY1LjEtcmMyIHNpbmNlIHRoaXMgZWZmZWN0aXZlbHkgZGlzYWJsZXMg
-dGhlIG52ZGltbSBkcml2ZXIgb24gdHlwaWNhbAo+ID4gY29uZmlndXJhdGlvbnMuIEphcmtrbywg
-d291bGQgeW91IGJlIHdpbGxpbmcgdG8gbWVyZ2UgaXQgc2luY2UgdGhlCj4gPiByZWdyZXNzaW9u
-IGNhbWUgdGhyb3VnaCB5b3VyIHRyZWU/Cj4gCj4gVGhlIHJlYXNvbiBJIHNlbnQgb3V0IHRoZSBS
-RkMgd2FzIHRvIHNlZSBpZiB0aGUgcGVvcGxlIHdobyBhY3R1YWxseQo+IHdyb3RlIHRoZSBjb2Rl
-IGhhZCBhbnkgcmVhc29ucyB0aGV5IG5lZWRlZCB0aGUgY3VycmVudCB3YXkgb2YgZG9pbmcKPiB0
-aGluZ3MgcHJlc2VydmluZy4KCk5vLCBpdCBsb29rcyBmaW5lLiDCoFRoZSBlcnJvciByZXR1cm4g
-Y29kZXMgd2lsbCBjaGFuZ2UsIGJ1dCBJIGRvbid0CnRoaW5rIHRoYXQgaXMgYSBwcm9ibGVtLgoK
-TWltaQoKPiAKPiBJIHRoaW5rIHlvdXIgc2VyaWVzIGxvb2tzIGZpbmUgZXhjZXB0IHlvdSBuZWVk
-IHRvIGV4cG9ydAo+IGtleV90eXBlX2xvb2t1cCAocGF0Y2ggMikgYmVmb3JlIHlvdSB1c2UgaXQg
-KHBhdGNoIDEpIHRvIHByZXNlcnZlCj4gYmlzZWN0YWJpbGl0eSBvZiBidWlsZHMuCj4gCj4gSmFt
-ZXMK
+On Tue, Mar 19, 2019 at 02:01:44PM -0700, Dan Williams wrote:
+> On Mon, Mar 18, 2019 at 11:18 PM Dan Williams <dan.j.williams@intel.com> wrote:
+> >
+> > With v5.1-rc1 all the nvdimm sub-system regression tests started failing
+> > because the libnvdimm module failed to load in the qemu-kvm test
+> > environment.  Critically that environment does not have a TPM. Commit
+> > 240730437deb "KEYS: trusted: explicitly use tpm_chip structure..."
+> > started to require a TPM to be present for the trusted.ko module to load
+> > where there was no requirement for that before.
+> >
+> > Rather than undo the "fail if no hardware" behavior James points out
+> > that the module dependencies can be broken by looking up the key-type by
+> > name. Remove the dependencies on the "key_type_trusted" and
+> > "key_type_encrypted" symbol exports, and clean up other boilerplate that
+> > supported those exports in different configurations.
+> 
+> Any feedback? Was hoping to get at least patch1 in the queue for
+> v5.1-rc2 since this effectively disables the nvdimm driver on typical
+> configurations. Jarkko, would you be willing to merge it since the
+> regression came through your tree?
+
+Yes, of course. The feedback has been extremely passive because I've
+been sick leave for the early week :-)
+
+Before I'm merging this I'm just thinking that would it be better
+idea to merge a patch for trusted.c that reverts the old behavior
+with cc to stable and fixes tags as I said in my earlier response.
+
+It would less intrusive for stable kernels. Lets quickly sort out
+the best strategy before merging.
+
+/Jarkko
