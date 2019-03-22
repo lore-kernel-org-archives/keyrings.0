@@ -1,44 +1,84 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 15 Feb 2019 16:11:22 +0000
-Subject: [RFC PATCH 21/27] keys: Fix request_key() lack of Link perm check on found key
-Message-Id: <155024708261.21651.15380024848711404052.stgit@warthog.procyon.org.uk>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Date: Fri, 22 Mar 2019 06:27:38 +0000
+Subject: [PATCH] X.509: Add messages for obsolete OIDs
+Message-Id: <20190322062738.19852-1-jlee@suse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155024683432.21651.14153938339749694146.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, trond.myklebust@hammerspace.com, sfrench@samba.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org, rgb@redhat.com, dhowells@redhat.com, linux-kernel@vger.kernel.org
+To: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S . Miller" <davem@davemloft.net>
+Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
 
-The request_key() syscall allows a process to gain access to the 'possessor'
-permits of any key that grants it Search permission by virtue of request_key()
-not checking whether a key it finds grants Link permission to the caller.
+We found that the db in Acer machine has self signed certificates
+(CN=3DDisablePW or CN=ABO) that they used obsolete OID 1.3.14.3.2.29
+sha1WithRSASignature and 2.5.29.1 subjectKeyIdentifier. Kernel
+emits -65 error code when loading those certificates to platform
+keyring:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+[    1.484388] integrity: Loading X.509 certificate: UEFI:MokListRT
+[    1.485557] integrity: Problem loading X.509 certificate -65
+[    1.486100] Error adding keys to platform keyring UEFI:MokListRT
+
+Because the -65 error code is not enough for appeasing user when
+loading a outdated certificate. This patch add messages against
+1.3.14.3.2.29 and 2.5.29.1 OIDs.
+
+Link: https://bugzilla.opensuse.org/show_bug.cgi?id=1129471
+Cc: David Howells <dhowells@redhat.com>=20
+Cc: Herbert Xu <herbert@gondor.apana.org.au>=20
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
 ---
+ crypto/asymmetric_keys/x509_cert_parser.c | 7 +++++++
+ include/linux/oid_registry.h              | 2 ++
+ 2 files changed, 9 insertions(+)
 
- security/keys/request_key.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index ab1f6de9e623..10244b6fbf5d 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -564,6 +564,16 @@ struct key *request_key_and_link(struct key_type *type,
- 	key_ref = search_process_keyrings(&ctx);
- 
- 	if (!IS_ERR(key_ref)) {
-+		if (dest_keyring) {
-+			ret = key_task_permission(key_ref, current_cred(),
-+						  KEY_NEED_LINK);
-+			if (ret < 0) {
-+				key_ref_put(key_ref);
-+				key = ERR_PTR(ret);
-+				goto error_free;
-+			}
-+		}
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_=
+keys/x509_cert_parser.c
+index 991f4d735a4e..bbd22d5c5b5d 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -192,6 +192,8 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
+ 	pr_debug("PubKey Algo: %u\n", ctx->last_oid);
+=20
+ 	switch (ctx->last_oid) {
++	case OID_sha1WithRSASignature:
++		pr_info("1.3.14.3.2.29 sha1WithRSASignature is obsolete.\n");
+ 	case OID_md2WithRSAEncryption:
+ 	case OID_md3WithRSAEncryption:
+ 	default:
+@@ -464,6 +466,11 @@ int x509_process_extension(void *context, size_t hdrle=
+n,
+ 		return 0;
+ 	}
+=20
++	if (ctx->last_oid =3D OID_subjectKeyIdentifier_obsolete) {
++		pr_info("2.5.29.1 subjectKeyIdentifier OID is obsolete.\n");
++		return -ENOPKG;
++	}
 +
- 		key = key_ref_to_ptr(key_ref);
- 		if (dest_keyring) {
- 			ret = key_link(dest_keyring, key);
+ 	return 0;
+ }
+=20
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index d2fa9ca42e9a..0641d5aa2251 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -62,6 +62,7 @@ enum OID {
+=20
+ 	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
+ 	OID_sha1,			/* 1.3.14.3.2.26 */
++	OID_sha1WithRSASignature,	/* 1.3.14.3.2.29 */
+ 	OID_sha256,			/* 2.16.840.1.101.3.4.2.1 */
+ 	OID_sha384,			/* 2.16.840.1.101.3.4.2.2 */
+ 	OID_sha512,			/* 2.16.840.1.101.3.4.2.3 */
+@@ -83,6 +84,7 @@ enum OID {
+ 	OID_generationalQualifier,	/* 2.5.4.44 */
+=20
+ 	/* Certificate extension IDs */
++	OID_subjectKeyIdentifier_obsolete,	/* 2.5.29.1 */
+ 	OID_subjectKeyIdentifier,	/* 2.5.29.14 */
+ 	OID_keyUsage,			/* 2.5.29.15 */
+ 	OID_subjectAltName,		/* 2.5.29.17 */
+--=20
+2.16.4
