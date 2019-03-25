@@ -1,58 +1,78 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Fri, 22 Mar 2019 19:15:00 +0000
-Subject: Re: [PATCH v7 11/11] integrity: support EC-RDSA signatures for asymmetric_verify
-Message-Id: <20190322191500.wzkbqsij5jyndlxd@altlinux.org>
+From: Joe Perches <joe@perches.com>
+Date: Mon, 25 Mar 2019 21:27:05 +0000
+Subject: Bad file pattern in MAINTAINERS section 'KEYS-TRUSTED'
+Message-Id: <20190325212705.26837-1-joe@perches.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190301175918.29694-1-vt@altlinux.org>
- <20190301175918.29694-12-vt@altlinux.org>
-In-Reply-To: <20190301175918.29694-12-vt@altlinux.org>
-To: Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <7cd8d12f59bcacd18a78f599b46dac555f7f16c0.camel@perches.com>
+In-Reply-To: <7cd8d12f59bcacd18a78f599b46dac555f7f16c0.camel@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, Denis Kenzior <denkenz@gmail.com>, Marcel Holtmann <marcel@holtmann.org>, James Morris <james.morris@microsoft.com>
 
-Mimi, Dmitry,
+A file pattern line in this section of the MAINTAINERS file in linux-next
+does not have a match in the linux source files.
 
-Can you Ack this patch?
+This could occur because a matching filename was never added, was deleted
+or renamed in some other commit.
 
-Thanks,
+The commits that added and if found renamed or removed the file pattern
+are shown below.
 
-On Fri, Mar 01, 2019 at 08:59:18PM +0300, Vitaly Chikunov wrote:
-> Allow to use EC-RDSA signatures for IMA by determining signature type by
-> the hash algorithm name. This works good for EC-RDSA since Streebog and
-> EC-RDSA should always be used together.
-> 
-> Cc: Mimi Zohar <zohar@linux.ibm.com>
-> Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-> Cc: linux-integrity@vger.kernel.org
-> Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
-> ---
->  security/integrity/digsig_asymmetric.c | 11 +++++++++--
->  1 file changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-> index d775e03fbbcc..99080871eb9f 100644
-> --- a/security/integrity/digsig_asymmetric.c
-> +++ b/security/integrity/digsig_asymmetric.c
-> @@ -104,9 +104,16 @@ int asymmetric_verify(struct key *keyring, const char *sig,
->  
->  	memset(&pks, 0, sizeof(pks));
->  
-> -	pks.pkey_algo = "rsa";
->  	pks.hash_algo = hash_algo_name[hdr->hash_algo];
-> -	pks.encoding = "pkcs1";
-> +	if (hdr->hash_algo = HASH_ALGO_STREEBOG_256 ||
-> +	    hdr->hash_algo = HASH_ALGO_STREEBOG_512) {
-> +		/* EC-RDSA and Streebog should go together. */
-> +		pks.pkey_algo = "ecrdsa";
-> +		pks.encoding = "raw";
-> +	} else {
-> +		pks.pkey_algo = "rsa";
-> +		pks.encoding = "pkcs1";
-> +	}
->  	pks.digest = (u8 *)data;
->  	pks.digest_size = datalen;
->  	pks.s = hdr->sig;
-> -- 
-> 2.11.0
+Please fix this defect appropriately.
+
+1: ---------------------------------------------------------------------------
+
+linux-next MAINTAINERS section:
+
+	8587	KEYS-TRUSTED
+	8588	M:	James Bottomley <jejb@linux.ibm.com>
+	8589	M:      Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+	8590	M:	Mimi Zohar <zohar@linux.ibm.com>
+	8591	L:	linux-integrity@vger.kernel.org
+	8592	L:	keyrings@vger.kernel.org
+	8593	S:	Supported
+	8594	F:	Documentation/security/keys/trusted-encrypted.rst
+	8595	F:	include/keys/trusted-type.h
+	8596	F:	security/keys/trusted.c
+-->	8597	F:	security/keys/trusted.h
+
+2: ---------------------------------------------------------------------------
+
+The most recent commit that added or modified file pattern 'security/keys/trusted.h':
+
+commit 7f3c68bee977ab872827e44de017216736fe21d7
+Author: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date:   Tue Jan 18 09:07:13 2011 -0500
+
+    keys: add trusted and encrypted maintainers
+    
+    Add myself and David Safford as maintainers for trusted/encrypted keys.
+    
+    Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+    Acked-by: David Howells <dhowells@redhat.com>
+    Signed-off-by: James Morris <jmorris@namei.org>
+
+ MAINTAINERS | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+3: ---------------------------------------------------------------------------
+
+The last commit with a real presence of file pattern 'security/keys/trusted.h':
+
+commit 22447981fc050b5f1bdd0e7cbee89b4152a2b2d8
+Author: Denis Kenzior <denkenz@gmail.com>
+Date:   Tue Oct 9 17:48:49 2018 +0100
+
+    KEYS: Move trusted.h to include/keys [ver #2]
+    
+    Signed-off-by: Denis Kenzior <denkenz@gmail.com>
+    Signed-off-by: David Howells <dhowells@redhat.com>
+    Tested-by: Marcel Holtmann <marcel@holtmann.org>
+    Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+    Signed-off-by: James Morris <james.morris@microsoft.com>
+
+ {security => include}/keys/trusted.h | 0
+ security/keys/trusted.c              | 2 +-
+ 2 files changed, 1 insertion(+), 1 deletion(-)
