@@ -1,329 +1,234 @@
 From: Vitaly Chikunov <vt@altlinux.org>
-Date: Fri, 01 Mar 2019 17:59:15 +0000
-Subject: [PATCH v7 08/11] crypto: ecc - make ecc into separate module
-Message-Id: <20190301175918.29694-9-vt@altlinux.org>
+Date: Tue, 26 Mar 2019 12:58:34 +0000
+Subject: [PATCH v8 02/10] crypto: rsa - unimplement sign/verify for raw RSA backends
+Message-Id: <20190326125842.24110-3-vt@altlinux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190301175918.29694-1-vt@altlinux.org>
-In-Reply-To: <20190301175918.29694-1-vt@altlinux.org>
+References: <20190326125842.24110-1-vt@altlinux.org>
+In-Reply-To: <20190326125842.24110-1-vt@altlinux.org>
 To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Giovanni Cabiddu <giovanni.cabiddu@intel.com>, qat-linux@intel.com, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, =?UTF-8?q?Horia=20Geant=C4=83?= <horia.geanta@nxp.com>, Aymen Sghaier <aymen.sghaier@nxp.com>
 
-ecc.c have algorithms that could be used togeter by ecdh and ecrdsa.
-Make it separate module. Add CRYPTO_ECC into Kconfig. EXPORT_SYMBOL and
-document to what seems appropriate. Move structs ecc_point and ecc_curve
-from ecc_curve_defs.h into ecc.h.
+In preparation for new akcipher verify call remove sign/verify callbacks
+from RSA backends and make PKCS1 driver call encrypt/decrypt instead.
 
-No code changes.
+This also complies with the well-known idea that raw RSA should never be
+used for sign/verify. It only should be used with proper padding scheme
+such as PKCS1 driver provides.
 
+Cc: Giovanni Cabiddu <giovanni.cabiddu@intel.com>
+Cc: qat-linux@intel.com
+Cc: Tom Lendacky <thomas.lendacky@amd.com>
+Cc: Gary Hook <gary.hook@amd.com>
+Cc: Horia Geantă <horia.geanta@nxp.com>
+Cc: Aymen Sghaier <aymen.sghaier@nxp.com>
 Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+Reviewed-by: Horia Geantă <horia.geanta@nxp.com>
+Acked-by: Gary R Hook <gary.hook@amd.com>
 ---
- crypto/Kconfig          |  4 ++
- crypto/Makefile         |  2 +-
- crypto/ecc.c            | 25 +++++++++----
- crypto/ecc.h            | 99 +++++++++++++++++++++++++++++++++++++++++++++++++
- crypto/ecc_curve_defs.h | 15 --------
- 5 files changed, 122 insertions(+), 23 deletions(-)
+ crypto/rsa-pkcs1pad.c                         |   4 +-
+ crypto/rsa.c                                  | 109 --------------------------
+ drivers/crypto/caam/caampkc.c                 |   2 -
+ drivers/crypto/ccp/ccp-crypto-rsa.c           |   2 -
+ drivers/crypto/qat/qat_common/qat_asym_algs.c |   2 -
+ 5 files changed, 2 insertions(+), 117 deletions(-)
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 370cbdca87a7..cf0bceee0ea5 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -248,8 +248,12 @@ config CRYPTO_DH
- 	help
- 	  Generic implementation of the Diffie-Hellman algorithm.
+diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
+index 0a6680ca8cb6..94382fa2c6ac 100644
+--- a/crypto/rsa-pkcs1pad.c
++++ b/crypto/rsa-pkcs1pad.c
+@@ -429,7 +429,7 @@ static int pkcs1pad_sign(struct akcipher_request *req)
+ 	akcipher_request_set_crypt(&req_ctx->child_req, req_ctx->in_sg,
+ 				   req->dst, ctx->key_size - 1, req->dst_len);
  
-+config CRYPTO_ECC
-+	tristate
-+
- config CRYPTO_ECDH
- 	tristate "ECDH algorithm"
-+	select CRYPTO_ECC
- 	select CRYPTO_KPP
- 	select CRYPTO_RNG_DEFAULT
- 	help
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 799ed5e94606..b660f078651a 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -147,8 +147,8 @@ obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
- obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
- obj-$(CONFIG_CRYPTO_ZSTD) += zstd.o
- obj-$(CONFIG_CRYPTO_OFB) += ofb.o
-+obj-$(CONFIG_CRYPTO_ECC) += ecc.o
+-	err = crypto_akcipher_sign(&req_ctx->child_req);
++	err = crypto_akcipher_decrypt(&req_ctx->child_req);
+ 	if (err != -EINPROGRESS && err != -EBUSY)
+ 		return pkcs1pad_encrypt_sign_complete(req, err);
  
--ecdh_generic-y := ecc.o
- ecdh_generic-y += ecdh.o
- ecdh_generic-y += ecdh_helper.o
- obj-$(CONFIG_CRYPTO_ECDH) += ecdh_generic.o
-diff --git a/crypto/ecc.c b/crypto/ecc.c
-index ed1237115066..5f36792d143d 100644
---- a/crypto/ecc.c
-+++ b/crypto/ecc.c
-@@ -24,6 +24,7 @@
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  */
+@@ -551,7 +551,7 @@ static int pkcs1pad_verify(struct akcipher_request *req)
+ 				   req_ctx->out_sg, req->src_len,
+ 				   ctx->key_size);
  
-+#include <linux/module.h>
- #include <linux/random.h>
- #include <linux/slab.h>
- #include <linux/swab.h>
-@@ -112,7 +113,7 @@ static void vli_clear(u64 *vli, unsigned int ndigits)
+-	err = crypto_akcipher_verify(&req_ctx->child_req);
++	err = crypto_akcipher_encrypt(&req_ctx->child_req);
+ 	if (err != -EINPROGRESS && err != -EBUSY)
+ 		return pkcs1pad_verify_complete(req, err);
+ 
+diff --git a/crypto/rsa.c b/crypto/rsa.c
+index 4167980c243d..5d427c1100d6 100644
+--- a/crypto/rsa.c
++++ b/crypto/rsa.c
+@@ -50,34 +50,6 @@ static int _rsa_dec(const struct rsa_mpi_key *key, MPI m, MPI c)
+ 	return mpi_powm(m, c, key->d, key->n);
  }
  
- /* Returns true if vli = 0, false otherwise. */
--static bool vli_is_zero(const u64 *vli, unsigned int ndigits)
-+bool vli_is_zero(const u64 *vli, unsigned int ndigits)
+-/*
+- * RSASP1 function [RFC3447 sec 5.2.1]
+- * s = m^d mod n
+- */
+-static int _rsa_sign(const struct rsa_mpi_key *key, MPI s, MPI m)
+-{
+-	/* (1) Validate 0 <= m < n */
+-	if (mpi_cmp_ui(m, 0) < 0 || mpi_cmp(m, key->n) >= 0)
+-		return -EINVAL;
+-
+-	/* (2) s = m^d mod n */
+-	return mpi_powm(s, m, key->d, key->n);
+-}
+-
+-/*
+- * RSAVP1 function [RFC3447 sec 5.2.2]
+- * m = s^e mod n;
+- */
+-static int _rsa_verify(const struct rsa_mpi_key *key, MPI m, MPI s)
+-{
+-	/* (1) Validate 0 <= s < n */
+-	if (mpi_cmp_ui(s, 0) < 0 || mpi_cmp(s, key->n) >= 0)
+-		return -EINVAL;
+-
+-	/* (2) m = s^e mod n */
+-	return mpi_powm(m, s, key->e, key->n);
+-}
+-
+ static inline struct rsa_mpi_key *rsa_get_key(struct crypto_akcipher *tfm)
  {
- 	int i;
- 
-@@ -123,6 +124,7 @@ static bool vli_is_zero(const u64 *vli, unsigned int ndigits)
- 
- 	return true;
- }
-+EXPORT_SYMBOL(vli_is_zero);
- 
- /* Returns nonzero if bit bit of vli is set. */
- static u64 vli_test_bit(const u64 *vli, unsigned int bit)
-@@ -171,7 +173,7 @@ static void vli_set(u64 *dest, const u64 *src, unsigned int ndigits)
- }
- 
- /* Returns sign of left - right. */
--static int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
-+int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
- {
- 	int i;
- 
-@@ -184,6 +186,7 @@ static int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(vli_cmp);
- 
- /* Computes result = in << c, returning carry. Can modify in place
-  * (if result = in). 0 < shift < 64.
-@@ -240,7 +243,7 @@ static u64 vli_add(u64 *result, const u64 *left, const u64 *right,
- }
- 
- /* Computes result = left - right, returning borrow. Can modify in place. */
--static u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
-+u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
- 		   unsigned int ndigits)
- {
- 	u64 borrow = 0;
-@@ -258,6 +261,7 @@ static u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
- 
- 	return borrow;
- }
-+EXPORT_SYMBOL(vli_sub);
- 
- static uint128_t mul_64_64(u64 left, u64 right)
- {
-@@ -557,7 +561,7 @@ static void vli_mod_square_fast(u64 *result, const u64 *left,
-  * See "From Euclid's GCD to Montgomery Multiplication to the Great Divide"
-  * https://labs.oracle.com/techrep/2001/smli_tr-2001-95.pdf
-  */
--static void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
-+void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
- 			unsigned int ndigits)
- {
- 	u64 a[ECC_MAX_DIGITS], b[ECC_MAX_DIGITS];
-@@ -630,6 +634,7 @@ static void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
- 
- 	vli_set(result, u, ndigits);
- }
-+EXPORT_SYMBOL(vli_mod_inv);
- 
- /* ------ Point operations ------ */
- 
-@@ -948,6 +953,7 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
- 
- 	return __ecc_is_key_valid(curve, private_key, ndigits);
- }
-+EXPORT_SYMBOL(ecc_is_key_valid);
- 
- /*
-  * ECC private keys are generated using the method of extra random bits,
-@@ -1000,6 +1006,7 @@ int ecc_gen_privkey(unsigned int curve_id, unsigned int ndigits, u64 *privkey)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(ecc_gen_privkey);
- 
- int ecc_make_pub_key(unsigned int curve_id, unsigned int ndigits,
- 		     const u64 *private_key, u64 *public_key)
-@@ -1036,10 +1043,11 @@ int ecc_make_pub_key(unsigned int curve_id, unsigned int ndigits,
- out:
+ 	return akcipher_tfm_ctx(tfm);
+@@ -160,85 +132,6 @@ static int rsa_dec(struct akcipher_request *req)
  	return ret;
  }
-+EXPORT_SYMBOL(ecc_make_pub_key);
  
- /* SP800-56A section 5.6.2.3.4 partial verification: ephemeral keys only */
--static int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
--				       struct ecc_point *pk)
-+int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
-+				struct ecc_point *pk)
+-static int rsa_sign(struct akcipher_request *req)
+-{
+-	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
+-	const struct rsa_mpi_key *pkey = rsa_get_key(tfm);
+-	MPI m, s = mpi_alloc(0);
+-	int ret = 0;
+-	int sign;
+-
+-	if (!s)
+-		return -ENOMEM;
+-
+-	if (unlikely(!pkey->n || !pkey->d)) {
+-		ret = -EINVAL;
+-		goto err_free_s;
+-	}
+-
+-	ret = -ENOMEM;
+-	m = mpi_read_raw_from_sgl(req->src, req->src_len);
+-	if (!m)
+-		goto err_free_s;
+-
+-	ret = _rsa_sign(pkey, s, m);
+-	if (ret)
+-		goto err_free_m;
+-
+-	ret = mpi_write_to_sgl(s, req->dst, req->dst_len, &sign);
+-	if (ret)
+-		goto err_free_m;
+-
+-	if (sign < 0)
+-		ret = -EBADMSG;
+-
+-err_free_m:
+-	mpi_free(m);
+-err_free_s:
+-	mpi_free(s);
+-	return ret;
+-}
+-
+-static int rsa_verify(struct akcipher_request *req)
+-{
+-	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
+-	const struct rsa_mpi_key *pkey = rsa_get_key(tfm);
+-	MPI s, m = mpi_alloc(0);
+-	int ret = 0;
+-	int sign;
+-
+-	if (!m)
+-		return -ENOMEM;
+-
+-	if (unlikely(!pkey->n || !pkey->e)) {
+-		ret = -EINVAL;
+-		goto err_free_m;
+-	}
+-
+-	s = mpi_read_raw_from_sgl(req->src, req->src_len);
+-	if (!s) {
+-		ret = -ENOMEM;
+-		goto err_free_m;
+-	}
+-
+-	ret = _rsa_verify(pkey, m, s);
+-	if (ret)
+-		goto err_free_s;
+-
+-	ret = mpi_write_to_sgl(m, req->dst, req->dst_len, &sign);
+-	if (ret)
+-		goto err_free_s;
+-
+-	if (sign < 0)
+-		ret = -EBADMSG;
+-
+-err_free_s:
+-	mpi_free(s);
+-err_free_m:
+-	mpi_free(m);
+-	return ret;
+-}
+-
+ static void rsa_free_mpi_key(struct rsa_mpi_key *key)
  {
- 	u64 yy[ECC_MAX_DIGITS], xxx[ECC_MAX_DIGITS], w[ECC_MAX_DIGITS];
- 
-@@ -1064,8 +1072,8 @@ static int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
- 		return -EINVAL;
- 
- 	return 0;
--
- }
-+EXPORT_SYMBOL(ecc_is_pubkey_valid_partial);
- 
- int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
- 			      const u64 *private_key, const u64 *public_key,
-@@ -1121,3 +1129,6 @@ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
- out:
- 	return ret;
- }
-+EXPORT_SYMBOL(crypto_ecdh_shared_secret);
-+
-+MODULE_LICENSE("Dual BSD/GPL");
-diff --git a/crypto/ecc.h b/crypto/ecc.h
-index f75a86baa3bd..3809dbeb699a 100644
---- a/crypto/ecc.h
-+++ b/crypto/ecc.h
-@@ -33,6 +33,41 @@
- #define ECC_DIGITS_TO_BYTES_SHIFT 3
- 
- /**
-+ * struct ecc_point - elliptic curve point in affine coordinates
-+ *
-+ * @x:		X coordinate in vli form.
-+ * @y:		Y coordinate in vli form.
-+ * @ndigits:	Length of vlis in u64 qwords.
-+ */
-+struct ecc_point {
-+	u64 *x;
-+	u64 *y;
-+	u8 ndigits;
-+};
-+
-+/**
-+ * struct ecc_curve - definition of elliptic curve
-+ *
-+ * @name:	Short name of the curve.
-+ * @g:		Generator point of the curve.
-+ * @p:		Prime number, if Barrett's reduction is used for this curve
-+ *		pre-calculated value 'mu' is appended to the @p after ndigits.
-+ *		Use of Barrett's reduction is heuristically determined in
-+ *		vli_mmod_fast().
-+ * @n:		Order of the curve group.
-+ * @a:		Curve parameter a.
-+ * @b:		Curve parameter b.
-+ */
-+struct ecc_curve {
-+	char *name;
-+	struct ecc_point g;
-+	u64 *p;
-+	u64 *n;
-+	u64 *a;
-+	u64 *b;
-+};
-+
-+/**
-  * ecc_is_key_valid() - Validate a given ECDH private key
-  *
-  * @curve_id:		id representing the curve to use
-@@ -91,4 +126,68 @@ int ecc_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
- int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
- 			      const u64 *private_key, const u64 *public_key,
- 			      u64 *secret);
-+
-+/**
-+ * ecc_is_pubkey_valid_partial() - Partial public key validation
-+ *
-+ * @curve:		elliptic curve domain parameters
-+ * @pk:			public key as a point
-+ *
-+ * Valdiate public key according to SP800-56A section 5.6.2.3.4 ECC Partial
-+ * Public-Key Validation Routine.
-+ *
-+ * Note: There is no check that the public key is in the correct elliptic curve
-+ * subgroup.
-+ *
-+ * Return: 0 if validation is successful, -EINVAL if validation is failed.
-+ */
-+int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
-+				struct ecc_point *pk);
-+
-+/**
-+ * vli_is_zero() - Determine is vli is zero
-+ *
-+ * @vli:		vli to check.
-+ * @ndigits:		length of the @vli
-+ */
-+bool vli_is_zero(const u64 *vli, unsigned int ndigits);
-+
-+/**
-+ * vli_cmp() - compare left and right vlis
-+ *
-+ * @left:		vli
-+ * @right:		vli
-+ * @ndigits:		length of both vlis
-+ *
-+ * Returns sign of @left - @right, i.e. -1 if @left < @right,
-+ * 0 if @left = @right, 1 if @left > @right.
-+ */
-+int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits);
-+
-+/**
-+ * vli_sub() - Subtracts right from left
-+ *
-+ * @result:		where to write result
-+ * @left:		vli
-+ * @right		vli
-+ * @ndigits:		length of all vlis
-+ *
-+ * Note: can modify in-place.
-+ *
-+ * Return: carry bit.
-+ */
-+u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
-+	    unsigned int ndigits);
-+
-+/**
-+ * vli_mod_inv() - Modular inversion
-+ *
-+ * @result:		where to write vli number
-+ * @input:		vli value to operate on
-+ * @mod:		modulus
-+ * @ndigits:		length of all vlis
-+ */
-+void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
-+		 unsigned int ndigits);
-+
- #endif
-diff --git a/crypto/ecc_curve_defs.h b/crypto/ecc_curve_defs.h
-index 336ab1805639..69be6c7d228f 100644
---- a/crypto/ecc_curve_defs.h
-+++ b/crypto/ecc_curve_defs.h
-@@ -2,21 +2,6 @@
- #ifndef _CRYTO_ECC_CURVE_DEFS_H
- #define _CRYTO_ECC_CURVE_DEFS_H
- 
--struct ecc_point {
--	u64 *x;
--	u64 *y;
--	u8 ndigits;
--};
--
--struct ecc_curve {
--	char *name;
--	struct ecc_point g;
--	u64 *p;
--	u64 *n;
--	u64 *a;
--	u64 *b;
--};
--
- /* NIST P-192: a = p - 3 */
- static u64 nist_p192_g_x[] = { 0xF4FF0AFD82FF1012ull, 0x7CBF20EB43A18800ull,
- 				0x188DA80EB03090F6ull };
+ 	mpi_free(key->d);
+@@ -353,8 +246,6 @@ static void rsa_exit_tfm(struct crypto_akcipher *tfm)
+ static struct akcipher_alg rsa = {
+ 	.encrypt = rsa_enc,
+ 	.decrypt = rsa_dec,
+-	.sign = rsa_sign,
+-	.verify = rsa_verify,
+ 	.set_priv_key = rsa_set_priv_key,
+ 	.set_pub_key = rsa_set_pub_key,
+ 	.max_size = rsa_max_size,
+diff --git a/drivers/crypto/caam/caampkc.c b/drivers/crypto/caam/caampkc.c
+index 58285642306e..fe24485274e1 100644
+--- a/drivers/crypto/caam/caampkc.c
++++ b/drivers/crypto/caam/caampkc.c
+@@ -994,8 +994,6 @@ static void caam_rsa_exit_tfm(struct crypto_akcipher *tfm)
+ static struct akcipher_alg caam_rsa = {
+ 	.encrypt = caam_rsa_enc,
+ 	.decrypt = caam_rsa_dec,
+-	.sign = caam_rsa_dec,
+-	.verify = caam_rsa_enc,
+ 	.set_pub_key = caam_rsa_set_pub_key,
+ 	.set_priv_key = caam_rsa_set_priv_key,
+ 	.max_size = caam_rsa_max_size,
+diff --git a/drivers/crypto/ccp/ccp-crypto-rsa.c b/drivers/crypto/ccp/ccp-crypto-rsa.c
+index 05850dfd7940..71e40680c880 100644
+--- a/drivers/crypto/ccp/ccp-crypto-rsa.c
++++ b/drivers/crypto/ccp/ccp-crypto-rsa.c
+@@ -214,8 +214,6 @@ static void ccp_rsa_exit_tfm(struct crypto_akcipher *tfm)
+ static struct akcipher_alg ccp_rsa_defaults = {
+ 	.encrypt = ccp_rsa_encrypt,
+ 	.decrypt = ccp_rsa_decrypt,
+-	.sign = ccp_rsa_decrypt,
+-	.verify = ccp_rsa_encrypt,
+ 	.set_pub_key = ccp_rsa_setpubkey,
+ 	.set_priv_key = ccp_rsa_setprivkey,
+ 	.max_size = ccp_rsa_maxsize,
+diff --git a/drivers/crypto/qat/qat_common/qat_asym_algs.c b/drivers/crypto/qat/qat_common/qat_asym_algs.c
+index c9f324730d71..692a7aaee749 100644
+--- a/drivers/crypto/qat/qat_common/qat_asym_algs.c
++++ b/drivers/crypto/qat/qat_common/qat_asym_algs.c
+@@ -1300,8 +1300,6 @@ static void qat_rsa_exit_tfm(struct crypto_akcipher *tfm)
+ static struct akcipher_alg rsa = {
+ 	.encrypt = qat_rsa_enc,
+ 	.decrypt = qat_rsa_dec,
+-	.sign = qat_rsa_dec,
+-	.verify = qat_rsa_enc,
+ 	.set_pub_key = qat_rsa_setpubkey,
+ 	.set_priv_key = qat_rsa_setprivkey,
+ 	.max_size = qat_rsa_max_size,
 -- 
 2.11.0
