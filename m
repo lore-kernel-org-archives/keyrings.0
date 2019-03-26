@@ -1,29 +1,28 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 26 Mar 2019 11:50:48 +0000
+Date: Tue, 26 Mar 2019 11:52:49 +0000
 Subject: Re: [PATCH] KEYS: trusted: allow trusted.ko to initialize w/o a TPM
-Message-Id: <20190326115048.GB10898@linux.intel.com>
+Message-Id: <20190326115249.GC10898@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190325144735.30443-1-jarkko.sakkinen@linux.intel.com>
- <CAPcyv4gCvqkAUSb2sC1+hoHF=bu5X8AXvJuRoqcEt4OQGvWk5A@mail.gmail.com>
-In-Reply-To: <CAPcyv4gCvqkAUSb2sC1+hoHF=bu5X8AXvJuRoqcEt4OQGvWk5A@mail.gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, stable <stable@vger.kernel.org>, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linuxibm.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+In-Reply-To: <20190325144735.30443-1-jarkko.sakkinen@linux.intel.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>, stable@vger.kernel.org, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linuxibm.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-On Mon, Mar 25, 2019 at 02:33:38PM -0700, Dan Williams wrote:
-> On Mon, Mar 25, 2019 at 7:48 AM Jarkko Sakkinen
-> <jarkko.sakkinen@linux.intel.com> wrote:
-> >
-> > Allow trusted.ko to initialize w/o a TPM. This commit adds checks to the
-> > key type callbacks and exported functions to fail when a TPM is not
-> > available.
-> >
-> > Cc: Dan Williams <dan.j.williams@intel.com>
+On Mon, Mar 25, 2019 at 04:47:35PM +0200, Jarkko Sakkinen wrote:
+> Allow trusted.ko to initialize w/o a TPM. This commit adds checks to the
+> key type callbacks and exported functions to fail when a TPM is not
+> available.
 > 
-> Reported-and-tested-by: Dan Williams <dan.j.williams@intel.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: stable@vger.kernel.org
+> Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-Thanks Dan!
+Will send a revised version: since now the key type is not registered,
+none of the callbacks needs the check for the chip instance. Only the
+exported functions should have it.
 
 /Jarkko
