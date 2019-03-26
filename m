@@ -1,56 +1,108 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 21 Mar 2019 13:48:31 +0000
-Subject: Re: [PATCH 0/6] security/keys/encrypted: Break module dependency chain
-Message-Id: <20190321134831.GC4603@linux.intel.com>
+Date: Tue, 26 Mar 2019 12:11:58 +0000
+Subject: [PATCH v3] KEYS: trusted: allow trusted.ko to initialize w/o a TPM
+Message-Id: <20190326121158.13499-1-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
- <CAPcyv4ij2nHD7JumKNcNYB4gAGujWzCPkcpoi=XafmG3EP2b0g@mail.gmail.com>
- <20190321134549.GB4603@linux.intel.com>
-In-Reply-To: <20190321134549.GB4603@linux.intel.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: keyrings@vger.kernel.org, Ira Weiny <ira.weiny@intel.com>, Dave Jiang <dave.jiang@intel.com>, Tyler Hicks <tyhicks@canonical.com>, Keith Busch <keith.busch@intel.com>, David Howells <dhowells@redhat.com>, Vishal Verma <vishal.l.verma@intel.com>, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, ecryptfs@vger.kernel.org, Roberto Sassu <roberto.sassu@huawei.com>, linux-nvdimm <linux-nvdimm@lists.01.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linuxibm.com>, David Howells <dhowells@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-On Thu, Mar 21, 2019 at 03:45:49PM +0200, Jarkko Sakkinen wrote:
-> On Tue, Mar 19, 2019 at 02:01:44PM -0700, Dan Williams wrote:
-> > On Mon, Mar 18, 2019 at 11:18 PM Dan Williams <dan.j.williams@intel.com> wrote:
-> > >
-> > > With v5.1-rc1 all the nvdimm sub-system regression tests started failing
-> > > because the libnvdimm module failed to load in the qemu-kvm test
-> > > environment.  Critically that environment does not have a TPM. Commit
-> > > 240730437deb "KEYS: trusted: explicitly use tpm_chip structure..."
-> > > started to require a TPM to be present for the trusted.ko module to load
-> > > where there was no requirement for that before.
-> > >
-> > > Rather than undo the "fail if no hardware" behavior James points out
-> > > that the module dependencies can be broken by looking up the key-type by
-> > > name. Remove the dependencies on the "key_type_trusted" and
-> > > "key_type_encrypted" symbol exports, and clean up other boilerplate that
-> > > supported those exports in different configurations.
-> > 
-> > Any feedback? Was hoping to get at least patch1 in the queue for
-> > v5.1-rc2 since this effectively disables the nvdimm driver on typical
-> > configurations. Jarkko, would you be willing to merge it since the
-> > regression came through your tree?
-> 
-> Yes, of course. The feedback has been extremely passive because I've
-> been sick leave for the early week :-)
-> 
-> Before I'm merging this I'm just thinking that would it be better
-> idea to merge a patch for trusted.c that reverts the old behavior
-> with cc to stable and fixes tags as I said in my earlier response.
-> 
-> It would less intrusive for stable kernels. Lets quickly sort out
-> the best strategy before merging.
+Allow trusted.ko to initialize w/o a TPM. This commit adds checks to the
+key type callbacks and exported functions to fail when a TPM is not
+available.
 
-I.e. the way I see the situation:
+Cc: James Morris <jmorris@namei.org>
+Reported-by: Dan Williams <dan.j.williams@intel.com>
+Tested-by: Dan Williams <dan.j.williams@intel.com>
+Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+v3:
+- remove unnecessary check for chip in init_trusted()
+v2:
+- Remove checks from the key type callbacks because the key type will
+  not be registered.
+- Cc to James Morris because hopefully we can land this 5.1.0.
+ security/keys/trusted.c | 28 +++++++++++++++++++++++-----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
 
-1. Reverting the old behavior in the sense that missing TPM does
-   not prevent init of trusted.ko should be done right now.
-2. Your patch could be definitely merged but not as a bug fix.
-3. At some point we could consider failing the init of trusted.ko
-   if TPM is missing because that is kind of senseful anyway with
-   better testing now that we understand the dependency context
-   better.
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index ecec672d3a77..efdbf17f3915 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -135,6 +135,9 @@ int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 	int ret;
+ 	va_list argp;
+ 
++	if (!chip)
++		return -ENODEV;
++
+ 	sdesc = init_sdesc(hashalg);
+ 	if (IS_ERR(sdesc)) {
+ 		pr_info("trusted_key: can't alloc %s\n", hash_alg);
+@@ -196,6 +199,9 @@ int TSS_checkhmac1(unsigned char *buffer,
+ 	va_list argp;
+ 	int ret;
+ 
++	if (!chip)
++		return -ENODEV;
++
+ 	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
+ 	tag = LOAD16(buffer, 0);
+ 	ordinal = command;
+@@ -363,6 +369,9 @@ int trusted_tpm_send(unsigned char *cmd, size_t buflen)
+ {
+ 	int rc;
+ 
++	if (!chip)
++		return -ENODEV;
++
+ 	dump_tpm_buf(cmd);
+ 	rc = tpm_send(chip, cmd, buflen);
+ 	dump_tpm_buf(cmd);
+@@ -429,6 +438,9 @@ int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ {
+ 	int ret;
+ 
++	if (!chip)
++		return -ENODEV;
++
+ 	INIT_BUF(tb);
+ 	store16(tb, TPM_TAG_RQU_COMMAND);
+ 	store32(tb, TPM_OIAP_SIZE);
+@@ -1245,9 +1257,13 @@ static int __init init_trusted(void)
+ {
+ 	int ret;
+ 
++	/* encrypted_keys.ko depends on successful load of this module even if
++	 * TPM is not used.
++	 */
+ 	chip = tpm_default_chip();
+ 	if (!chip)
+-		return -ENOENT;
++		return 0;
++
+ 	ret = init_digests();
+ 	if (ret < 0)
+ 		goto err_put;
+@@ -1269,10 +1285,12 @@ static int __init init_trusted(void)
+ 
+ static void __exit cleanup_trusted(void)
+ {
+-	put_device(&chip->dev);
+-	kfree(digests);
+-	trusted_shash_release();
+-	unregister_key_type(&key_type_trusted);
++	if (chip) {
++		put_device(&chip->dev);
++		kfree(digests);
++		trusted_shash_release();
++		unregister_key_type(&key_type_trusted);
++	}
+ }
+ 
+ late_initcall(init_trusted);
+-- 
+2.19.1
