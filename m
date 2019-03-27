@@ -1,108 +1,30 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 26 Mar 2019 12:11:58 +0000
-Subject: [PATCH v3] KEYS: trusted: allow trusted.ko to initialize w/o a TPM
-Message-Id: <20190326121158.13499-1-jarkko.sakkinen@linux.intel.com>
+From: Dan Williams <dan.j.williams@gmail.com>
+Date: Wed, 27 Mar 2019 17:15:50 +0000
+Subject: Re: [PATCH v3] KEYS: trusted: allow trusted.ko to initialize w/o a TPM
+Message-Id: <CAA9_cmfFpkBLz6TU0sLSV1JYE43sDtfi29Xw4R5Xt-RaWm8ZLA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linuxibm.com>, David Howells <dhowells@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+References: <20190326121158.13499-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20190326121158.13499-1-jarkko.sakkinen@linux.intel.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, James Morris <jmorris@namei.org>, James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linuxibm.com>, David Howells <dhowells@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-Allow trusted.ko to initialize w/o a TPM. This commit adds checks to the
-key type callbacks and exported functions to fail when a TPM is not
-available.
+On Tue, Mar 26, 2019 at 5:13 AM Jarkko Sakkinen
+<jarkko.sakkinen@linux.intel.com> wrote:
+>
+> Allow trusted.ko to initialize w/o a TPM. This commit adds checks to the
+> key type callbacks and exported functions to fail when a TPM is not
+> available.
+>
+> Cc: James Morris <jmorris@namei.org>
+> Reported-by: Dan Williams <dan.j.williams@intel.com>
+> Tested-by: Dan Williams <dan.j.williams@intel.com>
+> Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> ---
+> v3:
+> - remove unnecessary check for chip in init_trusted()
 
-Cc: James Morris <jmorris@namei.org>
-Reported-by: Dan Williams <dan.j.williams@intel.com>
-Tested-by: Dan Williams <dan.j.williams@intel.com>
-Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
-v3:
-- remove unnecessary check for chip in init_trusted()
-v2:
-- Remove checks from the key type callbacks because the key type will
-  not be registered.
-- Cc to James Morris because hopefully we can land this 5.1.0.
- security/keys/trusted.c | 28 +++++++++++++++++++++++-----
- 1 file changed, 23 insertions(+), 5 deletions(-)
-
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index ecec672d3a77..efdbf17f3915 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -135,6 +135,9 @@ int TSS_authhmac(unsigned char *digest, const unsigned char *key,
- 	int ret;
- 	va_list argp;
- 
-+	if (!chip)
-+		return -ENODEV;
-+
- 	sdesc = init_sdesc(hashalg);
- 	if (IS_ERR(sdesc)) {
- 		pr_info("trusted_key: can't alloc %s\n", hash_alg);
-@@ -196,6 +199,9 @@ int TSS_checkhmac1(unsigned char *buffer,
- 	va_list argp;
- 	int ret;
- 
-+	if (!chip)
-+		return -ENODEV;
-+
- 	bufsize = LOAD32(buffer, TPM_SIZE_OFFSET);
- 	tag = LOAD16(buffer, 0);
- 	ordinal = command;
-@@ -363,6 +369,9 @@ int trusted_tpm_send(unsigned char *cmd, size_t buflen)
- {
- 	int rc;
- 
-+	if (!chip)
-+		return -ENODEV;
-+
- 	dump_tpm_buf(cmd);
- 	rc = tpm_send(chip, cmd, buflen);
- 	dump_tpm_buf(cmd);
-@@ -429,6 +438,9 @@ int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
- {
- 	int ret;
- 
-+	if (!chip)
-+		return -ENODEV;
-+
- 	INIT_BUF(tb);
- 	store16(tb, TPM_TAG_RQU_COMMAND);
- 	store32(tb, TPM_OIAP_SIZE);
-@@ -1245,9 +1257,13 @@ static int __init init_trusted(void)
- {
- 	int ret;
- 
-+	/* encrypted_keys.ko depends on successful load of this module even if
-+	 * TPM is not used.
-+	 */
- 	chip = tpm_default_chip();
- 	if (!chip)
--		return -ENOENT;
-+		return 0;
-+
- 	ret = init_digests();
- 	if (ret < 0)
- 		goto err_put;
-@@ -1269,10 +1285,12 @@ static int __init init_trusted(void)
- 
- static void __exit cleanup_trusted(void)
- {
--	put_device(&chip->dev);
--	kfree(digests);
--	trusted_shash_release();
--	unregister_key_type(&key_type_trusted);
-+	if (chip) {
-+		put_device(&chip->dev);
-+		kfree(digests);
-+		trusted_shash_release();
-+		unregister_key_type(&key_type_trusted);
-+	}
- }
- 
- late_initcall(init_trusted);
--- 
-2.19.1
+v3 also tests ok here.
