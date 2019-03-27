@@ -1,71 +1,129 @@
-From: Richard Weinberger <richard@nod.at>
-Date: Fri, 22 Mar 2019 22:02:49 +0000
-Subject: Re: [RFC PATCH v3 07/18] fscrypt: add FS_IOC_ADD_ENCRYPTION_KEY ioctl
-Message-Id: <4190811.5ckf3pJJgb@blindfold>
+From: Jann Horn <jannh@google.com>
+Date: Wed, 27 Mar 2019 15:39:38 +0000
+Subject: [PATCH] security: don't use RCU accessors for cred->session_keyring
+Message-Id: <20190327153938.82007-1-jannh@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190220065249.32099-1-ebiggers@kernel.org>
- <20190221184203.GB140206@gmail.com> <20190318230830.GA40545@gmail.com>
-In-Reply-To: <20190318230830.GA40545@gmail.com>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: linux-ext4@vger.kernel.org, "open list:ABI/API" <linux-api@vger.kernel.org>, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+To: David Howells <dhowells@redhat.com>, jannh@google.com
+Cc: James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-Ericm
+sparse complains that a bunch of places in kernel/cred.c access
+cred->session_keyring without the RCU helpers required by the __rcu
+annotation.
 
-Am Dienstag, 19. M=E4rz 2019, 00:08:31 CET schrieb Eric Biggers:
-> I tried using sb->s_bdi->name, but it's still "ubifs" for all UBIFS files=
-ystems.
+cred->session_keyring is written in the following places:
 
-hmpf.
-=20
-> Perhaps there's a way you can make ->s_id for UBIFS unique?  There are al=
-ready
-> existing places that log ->s_id, so perhaps you should do it anyway regar=
-dless
-> of this patchset?
+ - prepare_kernel_cred() [in a new cred struct]
+ - keyctl_session_to_parent() [in a new cred struct]
+ - prepare_creds [in a new cred struct, via memcpy]
+ - install_session_keyring_to_cred()
+  - from install_session_keyring() on new creds
+  - from join_session_keyring() on new creds [twice]
+  - from umh_keys_init()
+   - from call_usermodehelper_exec_async() on new creds
 
-Yes, let me implement that.
-ubifs does:
-super_setup_bdi_name(sb, "ubifs_%d_%d", c->vi.ubi_num, c->vi.vol_id);
+All of these writes are before the creds are committed; therefore,
+cred->session_keyring doesn't need RCU protection.
 
-So, I try to set ->s_id also to ubifs_%d_%d.
+Remove the __rcu annotation and fix up all existing users that use __rcu.
 
-> > >=20
-> > > > Note that the keyring name isn't particularly important, since the =
-ioctls will
-> > > > work regardless.  But we might as well choose something logical, si=
-nce the
-> > > > keyring name will still show up in /proc/keys.
-> > >=20
-> > > I'm not done with reviewing your patches, but will it be possible to =
-use keyctl?
-> > > For the a unique name is helpful. :)
-> > >=20
-> >=20
-> > Not for adding keys, removing keys, or getting a key's status -- those =
-are what
-> > the ioctls are for.
-> >=20
-> > See e.g. the discussion in patch 7 ("fscrypt: add FS_IOC_ADD_ENCRYPTION=
-_KEY
-> > ioctl") for why the keyrings syscalls are a poor fit for fscrypt.
-> >=20
->=20
-> Anyway, perhaps I should reconsider whether fscrypt should even use the k=
-eyrings
-> subsystem at all, even just "internally", as its quirks still leak out a =
-bit.
-> I'd prefer a nice clean API without any quirks like having to name the ke=
-yrings
-> and assign SELinux labels to the keys just to make the keyrings subsystem=
- happy.
+Signed-off-by: Jann Horn <jannh@google.com>
+---
+ include/linux/cred.h         |  2 +-
+ security/keys/process_keys.c | 12 ++++--------
+ security/keys/request_key.c  |  9 ++-------
+ 3 files changed, 7 insertions(+), 16 deletions(-)
 
-IMHO the keys subsytem is a good fit. For example for stuff like this one:
-https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg1945778.html
-
-We use UBIFS on many embedded systems with crypto hardware.
-
-Thanks,
-//richard
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index ddd45bb74887..efb6edf32de7 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -138,7 +138,7 @@ struct cred {
+ #ifdef CONFIG_KEYS
+ 	unsigned char	jit_keyring;	/* default keyring to attach requested
+ 					 * keys to */
+-	struct key __rcu *session_keyring; /* keyring inherited over fork */
++	struct key	*session_keyring; /* keyring inherited over fork */
+ 	struct key	*process_keyring; /* keyring private to this process */
+ 	struct key	*thread_keyring; /* keyring private to this thread */
+ 	struct key	*request_key_auth; /* assumed request_key authority */
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 9320424c4a46..bd7243cb4c85 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -227,6 +227,7 @@ static int install_process_keyring(void)
+  * Install the given keyring as the session keyring of the given credentials
+  * struct, replacing the existing one if any.  If the given keyring is NULL,
+  * then install a new anonymous session keyring.
++ * @cred can not be in use by any task yet.
+  *
+  * Return: 0 on success; -errno on failure.
+  */
+@@ -254,7 +255,7 @@ int install_session_keyring_to_cred(struct cred *cred, struct key *keyring)
+ 
+ 	/* install the keyring */
+ 	old = cred->session_keyring;
+-	rcu_assign_pointer(cred->session_keyring, keyring);
++	cred->session_keyring = keyring;
+ 
+ 	if (old)
+ 		key_put(old);
+@@ -392,11 +393,8 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+ 
+ 	/* search the session keyring */
+ 	if (ctx->cred->session_keyring) {
+-		rcu_read_lock();
+ 		key_ref = keyring_search_aux(
+-			make_key_ref(rcu_dereference(ctx->cred->session_keyring), 1),
+-			ctx);
+-		rcu_read_unlock();
++			make_key_ref(ctx->cred->session_keyring, 1), ctx);
+ 
+ 		if (!IS_ERR(key_ref))
+ 			goto found;
+@@ -612,10 +610,8 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+ 			goto reget_creds;
+ 		}
+ 
+-		rcu_read_lock();
+-		key = rcu_dereference(ctx.cred->session_keyring);
++		key = ctx.cred->session_keyring;
+ 		__key_get(key);
+-		rcu_read_unlock();
+ 		key_ref = make_key_ref(key, 1);
+ 		break;
+ 
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 2f17d84d46f1..db72dc4d7639 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -142,12 +142,10 @@ static int call_sbin_request_key(struct key *authkey, void *aux)
+ 		prkey = cred->process_keyring->serial;
+ 	sprintf(keyring_str[1], "%d", prkey);
+ 
+-	rcu_read_lock();
+-	session = rcu_dereference(cred->session_keyring);
++	session = cred->session_keyring;
+ 	if (!session)
+ 		session = cred->user->session_keyring;
+ 	sskey = session->serial;
+-	rcu_read_unlock();
+ 
+ 	sprintf(keyring_str[2], "%d", sskey);
+ 
+@@ -287,10 +285,7 @@ static int construct_get_dest_keyring(struct key **_dest_keyring)
+ 
+ 			/* fall through */
+ 		case KEY_REQKEY_DEFL_SESSION_KEYRING:
+-			rcu_read_lock();
+-			dest_keyring = key_get(
+-				rcu_dereference(cred->session_keyring));
+-			rcu_read_unlock();
++			dest_keyring = key_get(cred->session_keyring);
+ 
+ 			if (dest_keyring)
+ 				break;
+-- 
+2.21.0.392.gf8f6787159e-goog
