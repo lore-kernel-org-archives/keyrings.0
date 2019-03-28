@@ -1,63 +1,51 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 27 Mar 2019 20:21:07 +0000
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Thu, 28 Mar 2019 06:16:48 +0000
 Subject: Re: [PATCH v8 10/10] integrity: support EC-RDSA signatures for asymmetric_verify
-Message-Id: <1553718067.4608.43.camel@linux.ibm.com>
+Message-Id: <20190328061648.knexdusdcadubeu6@altlinux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20190326125842.24110-1-vt@altlinux.org>
-         <20190326125842.24110-11-vt@altlinux.org>
-         <1553710220.4608.9.camel@linux.ibm.com>
-         <20190327201441.ikw76qzpgzm6t35b@altlinux.org>
-In-Reply-To: <20190327201441.ikw76qzpgzm6t35b@altlinux.org>
-To: Vitaly Chikunov <vt@altlinux.org>
+ <20190326125842.24110-11-vt@altlinux.org>
+ <1553710220.4608.9.camel@linux.ibm.com>
+ <20190327201441.ikw76qzpgzm6t35b@altlinux.org>
+ <1553718067.4608.43.camel@linux.ibm.com>
+In-Reply-To: <1553718067.4608.43.camel@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>
 Cc: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-> > diff --git a/security/integrity/digsig_asymmetric.c
-b/security/integrity/digsig_asymmetric.c
-> > > index d775e03fbbcc..99080871eb9f 100644
-> > > --- a/security/integrity/digsig_asymmetric.c
-> > > +++ b/security/integrity/digsig_asymmetric.c
-> > > @@ -104,9 +104,16 @@ int asymmetric_verify(struct key *keyring, const char *sig,
-> > >  
-> > >  	memset(&pks, 0, sizeof(pks));
-> > >  
-> > > -	pks.pkey_algo = "rsa";
-> > >  	pks.hash_algo = hash_algo_name[hdr->hash_algo];
-> > > -	pks.encoding = "pkcs1";
-> > > +	if (hdr->hash_algo = HASH_ALGO_STREEBOG_256 ||
-> > > +	    hdr->hash_algo = HASH_ALGO_STREEBOG_512) {
-> > > +		/* EC-RDSA and Streebog should go together. */
-> > > +		pks.pkey_algo = "ecrdsa";
-> > > +		pks.encoding = "raw";
-> > 
-> > IMA signatures are stored as xattrs, making them persistent.  Support
-> > for streebog was upstreamed in linux-5.0.  This change would break
-> > existing systems using streebog.  As long as this is not yet a concern
-> 
-> In what sense it would break systems?
-
-For example, if executable files are currently labeled with
-rsa/streebog signatures, then enforcing file data integrity I assume
-would break if the kernel uses ecrdsa/streebog.
-
-Mimi
-
-> 
-> Unless kernel crashes or signature is recognized as valid, I think, it should
-> not be called a break.
-> 
-> > Reviewed-by:  Mimi Zohar <zohar@linux.ibm.com>
-> 
-> Thanks!
-> 
-> > 
-> > > +	} else {
-> > > +		pks.pkey_algo = "rsa";
-> > > +		pks.encoding = "pkcs1";
-> > > +	}
-> > >  	pks.digest = (u8 *)data;
-> > >  	pks.digest_size = datalen;
-> > >  	pks.s = hdr->sig;
-> 
+T24gV2VkLCBNYXIgMjcsIDIwMTkgYXQgMDQ6MjE6MDdQTSAtMDQwMCwgTWltaSBab2hhciB3cm90
+ZToKPiA+ID4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1ldHJp
+Yy5jCj4gYi9zZWN1cml0eS9pbnRlZ3JpdHkvZGlnc2lnX2FzeW1tZXRyaWMuYwo+ID4gPiA+IGlu
+ZGV4IGQ3NzVlMDNmYmJjYy4uOTkwODA4NzFlYjlmIDEwMDY0NAo+ID4gPiA+IC0tLSBhL3NlY3Vy
+aXR5L2ludGVncml0eS9kaWdzaWdfYXN5bW1ldHJpYy5jCj4gPiA+ID4gKysrIGIvc2VjdXJpdHkv
+aW50ZWdyaXR5L2RpZ3NpZ19hc3ltbWV0cmljLmMKPiA+ID4gPiBAQCAtMTA0LDkgKzEwNCwxNiBA
+QCBpbnQgYXN5bW1ldHJpY192ZXJpZnkoc3RydWN0IGtleSAqa2V5cmluZywgY29uc3QgY2hhciAq
+c2lnLAo+ID4gPiA+ICAKPiA+ID4gPiAgCW1lbXNldCgmcGtzLCAwLCBzaXplb2YocGtzKSk7Cj4g
+PiA+ID4gIAo+ID4gPiA+IC0JcGtzLnBrZXlfYWxnbyA9ICJyc2EiOwo+ID4gPiA+ICAJcGtzLmhh
+c2hfYWxnbyA9IGhhc2hfYWxnb19uYW1lW2hkci0+aGFzaF9hbGdvXTsKPiA+ID4gPiAtCXBrcy5l
+bmNvZGluZyA9ICJwa2NzMSI7Cj4gPiA+ID4gKwlpZiAoaGRyLT5oYXNoX2FsZ28gPSBIQVNIX0FM
+R09fU1RSRUVCT0dfMjU2IHx8Cj4gPiA+ID4gKwkgICAgaGRyLT5oYXNoX2FsZ28gPSBIQVNIX0FM
+R09fU1RSRUVCT0dfNTEyKSB7Cj4gPiA+ID4gKwkJLyogRUMtUkRTQSBhbmQgU3RyZWVib2cgc2hv
+dWxkIGdvIHRvZ2V0aGVyLiAqLwo+ID4gPiA+ICsJCXBrcy5wa2V5X2FsZ28gPSAiZWNyZHNhIjsK
+PiA+ID4gPiArCQlwa3MuZW5jb2RpbmcgPSAicmF3IjsKPiA+ID4gCj4gPiA+IElNQSBzaWduYXR1
+cmVzIGFyZSBzdG9yZWQgYXMgeGF0dHJzLCBtYWtpbmcgdGhlbSBwZXJzaXN0ZW50LiCaU3VwcG9y
+dAo+ID4gPiBmb3Igc3RyZWVib2cgd2FzIHVwc3RyZWFtZWQgaW4gbGludXgtNS4wLiCaVGhpcyBj
+aGFuZ2Ugd291bGQgYnJlYWsKPiA+ID4gZXhpc3Rpbmcgc3lzdGVtcyB1c2luZyBzdHJlZWJvZy4g
+mkFzIGxvbmcgYXMgdGhpcyBpcyBub3QgeWV0IGEgY29uY2Vybgo+ID4gCj4gPiBJbiB3aGF0IHNl
+bnNlIGl0IHdvdWxkIGJyZWFrIHN5c3RlbXM/Cj4gCj4gRm9yIGV4YW1wbGUsIGlmIGV4ZWN1dGFi
+bGUgZmlsZXMgYXJlIGN1cnJlbnRseSBsYWJlbGVkIHdpdGgKPiByc2Evc3RyZWVib2cgc2lnbmF0
+dXJlcywgdGhlbiBlbmZvcmNpbmcgZmlsZSBkYXRhIGludGVncml0eSBJIGFzc3VtZQo+IHdvdWxk
+IGJyZWFrIGlmIHRoZSBrZXJuZWwgdXNlcyBlY3Jkc2Evc3RyZWVib2cuCgpBaC4gTm8sIEkgZGlk
+IG5vdCBpbXBsZW1lbnQgUlNBKFN0cmVlYm9nKSBpbnRlbnRpb25hbGx5LCBzaW5jZSBTdHJlZWJv
+ZyBpcwpub3QgaW4gdGhlIGxpc3Qgb2YgcGVybWl0dGVkIGhhc2hlcyBmb3IgUEtDUzEuIFlvdSBt
+YXkgbm90aWNlIHRoaXMgYnkgdGhlCmxhY2sgb2YgYXBwcm9wcmlhdGUgcnNhX2FzbjFfdGVtcGxh
+dGVbXSBlbnRyeS4KClRoYW5rcywKCj4gCj4gTWltaQo+IAo+ID4gCj4gPiBVbmxlc3Mga2VybmVs
+IGNyYXNoZXMgb3Igc2lnbmF0dXJlIGlzIHJlY29nbml6ZWQgYXMgdmFsaWQsIEkgdGhpbmssIGl0
+IHNob3VsZAo+ID4gbm90IGJlIGNhbGxlZCBhIGJyZWFrLgo+ID4gCj4gPiA+IFJldmlld2VkLWJ5
+OiCaTWltaSBab2hhciA8em9oYXJAbGludXguaWJtLmNvbT4KPiA+IAo+ID4gVGhhbmtzIQo+ID4g
+Cj4gPiA+IAo+ID4gPiA+ICsJfSBlbHNlIHsKPiA+ID4gPiArCQlwa3MucGtleV9hbGdvID0gInJz
+YSI7Cj4gPiA+ID4gKwkJcGtzLmVuY29kaW5nID0gInBrY3MxIjsKPiA+ID4gPiArCX0KPiA+ID4g
+PiAgCXBrcy5kaWdlc3QgPSAodTggKilkYXRhOwo+ID4gPiA+ICAJcGtzLmRpZ2VzdF9zaXplID0g
+ZGF0YWxlbjsKPiA+ID4gPiAgCXBrcy5zID0gaGRyLT5zaWc7Cj4gPiA=
