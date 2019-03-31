@@ -1,97 +1,123 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Tue, 19 Mar 2019 06:06:36 +0000
-Subject: [PATCH 4/6] security/keys/ecryptfs: Drop direct dependency on key_type_encrypted
-Message-Id: <155297559625.2276575.11539296499176067525.stgit@dwillia2-desk3.amr.corp.intel.com>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Sun, 31 Mar 2019 14:46:12 +0000
+Subject: [PATCH] KEYS: asym_tpm: move setting set_pub_key parameters into derive_pub_key
+Message-Id: <20190331144612.22029-1-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
-In-Reply-To: <155297557534.2276575.16264199708584900090.stgit@dwillia2-desk3.amr.corp.intel.com>
-To: keyrings@vger.kernel.org
-Cc: linux-nvdimm@lists.01.org, ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org, Tyler Hicks <tyhicks@canonical.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Denis Kenzior <denkenz@gmail.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Lookup the key type by name and protect ecryptfs from encrypted_keys.ko
-module load failures, and cleanup the configuration dependencies on the
-definition of the ecryptfs_get_encrypted_key() helper.
+The only reason for derive_pub_key() is to take a TPM-blob formatted
+public key and convert it to ASN.1 format understood by
+crypto_akcipher_set_pub_key. Because we are changing set_pub_key input
+format (adding key parameters) - update that function to generate proper
+zero values instead of generating them each time after the call.
 
-Cc: Tyler Hicks <tyhicks@canonical.com>
-Cc: <ecryptfs@vger.kernel.org>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Suggested-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
 ---
- fs/ecryptfs/ecryptfs_kernel.h |   22 +---------------------
- fs/ecryptfs/keystore.c        |   12 ++++++++++++
- 2 files changed, 13 insertions(+), 21 deletions(-)
+This should be applied after "crypto: add EC-RDSA (GOST 34.10) algorithm" patchset.
 
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index e74cb2a0b299..3106d23d95f0 100644
---- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -87,13 +87,12 @@ struct ecryptfs_page_crypt_context {
- 	} param;
- };
+ crypto/asymmetric_keys/asym_tpm.c | 34 ++++++++++++++--------------------
+ 1 file changed, 14 insertions(+), 20 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index d95d7ec50e5a..b138acf3a5e6 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -276,6 +276,10 @@ static int tpm_sign(struct tpm_buf *tb,
  
--#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
- static inline struct ecryptfs_auth_tok *
- ecryptfs_get_encrypted_key_payload_data(struct key *key)
- {
- 	struct encrypted_key_payload *payload;
- 
--	if (key->type != &key_type_encrypted)
-+	if (strcmp(key->type->name, "encrypted") != 0)
- 		return NULL;
- 
- 	payload = key->payload.data[0];
-@@ -103,25 +102,6 @@ ecryptfs_get_encrypted_key_payload_data(struct key *key)
- 	return (struct ecryptfs_auth_tok *)payload->payload_data;
+ 	return datalen;
  }
- 
--static inline struct key *ecryptfs_get_encrypted_key(char *sig)
--{
--	return request_key(&key_type_encrypted, sig, NULL);
--}
--
--#else
--static inline struct ecryptfs_auth_tok *
--ecryptfs_get_encrypted_key_payload_data(struct key *key)
--{
--	return NULL;
--}
--
--static inline struct key *ecryptfs_get_encrypted_key(char *sig)
--{
--	return ERR_PTR(-ENOKEY);
--}
--
--#endif /* CONFIG_ENCRYPTED_KEYS */
--
- static inline struct ecryptfs_auth_tok *
- ecryptfs_get_key_payload_data(struct key *key)
- {
-diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index e74fe84d0886..52a01dd57f4a 100644
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -1619,6 +1619,17 @@ parse_tag_11_packet(unsigned char *data, unsigned char *contents,
- 	return rc;
- }
- 
-+static struct key *ecryptfs_get_encrypted_key(char *sig)
-+{
-+	struct key_type *type;
-+	struct key *key;
 +
-+	type = key_type_lookup("encrypted");
-+	if (IS_ERR(type))
-+		return (struct key *) type;
-+	return request_key(type, sig, NULL);
-+}
++/* Room to fit two u32 zeros for algo id and parameters length. */
++#define SETKEY_PARAMS_SIZE (sizeof(u32) * 2)
 +
- int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
- 				      struct ecryptfs_auth_tok **auth_tok,
- 				      char *sig)
-@@ -2542,3 +2553,4 @@ ecryptfs_add_global_auth_tok(struct ecryptfs_mount_crypt_stat *mount_crypt_stat,
- 	return 0;
+ /*
+  * Maximum buffer size for the BER/DER encoded public key.  The public key
+  * is of the form SEQUENCE { INTEGER n, INTEGER e } where n is a maximum 2048
+@@ -286,8 +290,9 @@ static int tpm_sign(struct tpm_buf *tb,
+  *     - 257 bytes of n
+  *   - max 2 bytes for INTEGER e type/length
+  *     - 3 bytes of e
++ * - 4+4 of zeros for set_pub_key parameters (SETKEY_PARAMS_SIZE)
+  */
+-#define PUB_KEY_BUF_SIZE (4 + 4 + 257 + 2 + 3)
++#define PUB_KEY_BUF_SIZE (4 + 4 + 257 + 2 + 3 + SETKEY_PARAMS_SIZE)
+ 
+ /*
+  * Provide a part of a description of the key for /proc/keys.
+@@ -364,6 +369,8 @@ static uint32_t derive_pub_key(const void *pub_key, uint32_t len, uint8_t *buf)
+ 	cur = encode_tag_length(cur, 0x02, sizeof(e));
+ 	memcpy(cur, e, sizeof(e));
+ 	cur += sizeof(e);
++	/* Zero parameters to satisfy set_pub_key ABI. */
++	memset(cur, 0, SETKEY_PARAMS_SIZE);
+ 
+ 	return cur - buf;
+ }
+@@ -395,12 +402,6 @@ static int determine_akcipher(const char *encoding, const char *hash_algo,
+ 	return -ENOPKG;
  }
  
-+MODULE_SOFTDEP("pre: encrypted_keys");
+-static u8 *tpm_pack_u32(u8 *dst, u32 val)
+-{
+-	memcpy(dst, &val, sizeof(val));
+-	return dst + sizeof(val);
+-}
+-
+ /*
+  * Query information about a key.
+  */
+@@ -428,14 +429,11 @@ static int tpm_key_query(const struct kernel_pkey_params *params,
+ 	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
+ 					 der_pub_key);
+ 
+-	pkey = kmalloc(der_pub_key_len + sizeof(u32) * 2, GFP_KERNEL);
++	pkey = kmalloc(der_pub_key_len + SETKEY_PARAMS_SIZE, GFP_KERNEL);
+ 	if (!pkey)
+ 		goto error_free_tfm;
+-	memcpy(pkey, der_pub_key, der_pub_key_len);
++	memcpy(pkey, der_pub_key, der_pub_key_len + SETKEY_PARAMS_SIZE);
+ 	ptr = pkey + der_pub_key_len;
+-	/* Set dummy parameters to satisfy set_pub_key ABI. */
+-	ptr = tpm_pack_u32(ptr, 0); /* algo */
+-	ptr = tpm_pack_u32(ptr, 0); /* parameter length */
+ 
+ 	ret = crypto_akcipher_set_pub_key(tfm, pkey, der_pub_key_len);
+ 	if (ret < 0)
+@@ -493,13 +491,11 @@ static int tpm_key_encrypt(struct tpm_key *tk,
+ 	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
+ 					 der_pub_key);
+ 
+-	pkey = kmalloc(der_pub_key_len + sizeof(u32) * 2, GFP_KERNEL);
++	pkey = kmalloc(der_pub_key_len + SETKEY_PARAMS_SIZE, GFP_KERNEL);
+ 	if (!pkey)
+ 		goto error_free_tfm;
+-	memcpy(pkey, der_pub_key, der_pub_key_len);
++	memcpy(pkey, der_pub_key, der_pub_key_len + SETKEY_PARAMS_SIZE);
+ 	ptr = pkey + der_pub_key_len;
+-	ptr = tpm_pack_u32(ptr, 0); /* algo */
+-	ptr = tpm_pack_u32(ptr, 0); /* parameter length */
+ 
+ 	ret = crypto_akcipher_set_pub_key(tfm, pkey, der_pub_key_len);
+ 	if (ret < 0)
+@@ -798,13 +794,11 @@ static int tpm_key_verify_signature(const struct key *key,
+ 	der_pub_key_len = derive_pub_key(tk->pub_key, tk->pub_key_len,
+ 					 der_pub_key);
+ 
+-	pkey = kmalloc(der_pub_key_len + sizeof(u32) * 2, GFP_KERNEL);
++	pkey = kmalloc(der_pub_key_len + SETKEY_PARAMS_SIZE, GFP_KERNEL);
+ 	if (!pkey)
+ 		goto error_free_tfm;
+-	memcpy(pkey, der_pub_key, der_pub_key_len);
++	memcpy(pkey, der_pub_key, der_pub_key_len + SETKEY_PARAMS_SIZE);
+ 	ptr = pkey + der_pub_key_len;
+-	ptr = tpm_pack_u32(ptr, 0); /* algo */
+-	ptr = tpm_pack_u32(ptr, 0); /* parameter length */
+ 
+ 	ret = crypto_akcipher_set_pub_key(tfm, pkey, der_pub_key_len);
+ 	if (ret < 0)
+-- 
+2.11.0
