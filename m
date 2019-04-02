@@ -1,7 +1,7 @@
 From: Eric Biggers <ebiggers@kernel.org>
-Date: Tue, 02 Apr 2019 15:45:47 +0000
-Subject: [PATCH v4 04/17] fscrypt: add ->ci_inode to fscrypt_info
-Message-Id: <20190402154600.32432-5-ebiggers@kernel.org>
+Date: Tue, 02 Apr 2019 15:45:57 +0000
+Subject: [PATCH v4 14/17] ext4: wire up new fscrypt ioctls
+Message-Id: <20190402154600.32432-15-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,52 +13,76 @@ Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-d
 
 From: Eric Biggers <ebiggers@google.com>
 
-Add an inode back-pointer to 'struct fscrypt_info', such that
-inode->i_crypt_info->ci_inode = inode.
+Wire up the new ioctls for adding and removing fscrypt keys to/from the
+filesystem, and the new ioctl for retrieving v2 encryption policies.
 
-This will be useful for:
+FS_IOC_REMOVE_ENCRYPTION_KEY also required making ext4_drop_inode() call
+fscrypt_drop_inode().
 
-1. Evicting the inodes when a fscrypt key is removed, since we'll track
-   the inodes using a given key by linking their fscrypt_infos together,
-   rather than the inodes directly.  This avoids bloating 'struct inode'
-   with a new list_head.
-
-2. Simplifying the per-file key setup, since the inode pointer won't
-   have to be passed around everywhere just in case something goes wrong
-   and it's needed for fscrypt_warn().
+For more details see Documentation/filesystems/fscrypt.rst, as well as
+the fscrypt patches that added the implementation of these ioctls.
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- fs/crypto/fscrypt_private.h | 3 +++
- fs/crypto/keyinfo.c         | 2 ++
- 2 files changed, 5 insertions(+)
+ fs/ext4/ioctl.c | 24 ++++++++++++++++++++++++
+ fs/ext4/super.c |  3 +++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
-index 52e09ef40bfa6..ac24edfc297f1 100644
---- a/fs/crypto/fscrypt_private.h
-+++ b/fs/crypto/fscrypt_private.h
-@@ -73,6 +73,9 @@ struct fscrypt_info {
- 	 */
- 	struct fscrypt_mode *ci_mode;
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index bab3da4f1e0d3..3ed66628e9301 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -1074,6 +1074,26 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
+ 		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
  
-+	/* Back-pointer to the inode */
-+	struct inode *ci_inode;
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
 +
- 	/*
- 	 * If non-NULL, then this inode uses a master key directly rather than a
- 	 * derived key, and ci_ctfm will equal ci_master_key->mk_ctfm.
-diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
-index 058e2e0fda430..148a54fb556a6 100644
---- a/fs/crypto/keyinfo.c
-+++ b/fs/crypto/keyinfo.c
-@@ -542,6 +542,8 @@ int fscrypt_get_encryption_info(struct inode *inode)
- 	if (!crypt_info)
- 		return -ENOMEM;
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
++
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
++
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
++
+ 	case EXT4_IOC_FSGETXATTR:
+ 	{
+ 		struct fsxattr fa;
+@@ -1192,6 +1212,10 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
+ 	case EXT4_IOC_GET_ENCRYPTION_PWSALT:
+ 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 	case EXT4_IOC_SHUTDOWN:
+ 	case FS_IOC_GETFSMAP:
+ 		break;
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 6ed4eb81e6743..624543a3f4d3e 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1103,6 +1103,9 @@ static int ext4_drop_inode(struct inode *inode)
+ {
+ 	int drop = generic_drop_inode(inode);
  
-+	crypt_info->ci_inode = inode;
++	if (!drop)
++		drop = fscrypt_drop_inode(inode);
 +
- 	crypt_info->ci_flags = ctx.flags;
- 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
- 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
+ 	trace_ext4_drop_inode(inode, drop);
+ 	return drop;
+ }
 -- 
 2.21.0
