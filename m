@@ -1,36 +1,116 @@
-From: "MRS.ZARA KUMAR" <fredwilliam543210@gmail.com>
-Date: Fri, 12 Apr 2019 08:02:20 +0000
-Subject: ATTENTION:BENEFICIARY
-Message-Id: <CAJ=SBYacrUhZ061fwDWW3tMxhkpaiJHDghux5b4bwFhW8-RfOw@mail.gmail.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Tue, 02 Apr 2019 15:45:58 +0000
+Subject: [PATCH v4 15/17] f2fs: wire up new fscrypt ioctls
+Message-Id: <20190402154600.32432-16-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20190402154600.32432-1-ebiggers@kernel.org>
+In-Reply-To: <20190402154600.32432-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-DEAR:
+From: Eric Biggers <ebiggers@google.com>
 
-WE FINALLY CONCLUDED TO EFFECT YOUR PAYMENT OF (US$7,5M) VIA MONEY GRAM
-OFFICE THIS MORNING AS THE BEST AND EASIER WAY TO CASH YOUR FUNDS IN ANY OF
-YOUR NEAREST MONEY GRAM OFFICE IN YOUR CITY,
+Wire up the new ioctls for adding and removing fscrypt keys to/from the
+filesystem, and the new ioctl for retrieving v2 encryption policies.
 
-WELL BASED ON MY AGREEMENT WITH MONEY GRAM DIRECTOR, MR JOHN GRECH, YOUR
-TRANSFER WILL START IMMEDIATELY YOU CONTACT HIM WITH ALL YOUR INFORMATION
-AS FOLLOW
+FS_IOC_REMOVE_ENCRYPTION_KEY also required making f2fs_drop_inode() call
+fscrypt_drop_inode().
 
-YOUR NAME___________
-YOUR HOME ADDRESS_______
-YOUR COUNTY/CITY___________
-YOUR AGE/SEX_____________
-DIRECT PHONE NUMBER_______
-ID COPY_______
-OCCUPATION_______
+For more details see Documentation/filesystems/fscrypt.rst, as well as
+the fscrypt patches that added the implementation of these ioctls.
 
-MONEY GRAM OFFICE:
-CONTACT PERSON:MR.JOHN GRECH
-E-MAIL: moneygram.payment@aol.com
-PHONE NO +229 65439498
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ fs/f2fs/file.c  | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/super.c |  2 ++
+ 2 files changed, 48 insertions(+)
 
-YOUR FUNDS AMOUNT DEPOSITED IS US$7.5million
-BEST REGARDS,
-MRS.ZARA KUMAR
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 5742ab8b57dc6..251e374353da8 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -2095,6 +2095,40 @@ static int f2fs_ioc_get_encryption_pwsalt(struct file *filp, unsigned long arg)
+ 	return err;
+ }
+ 
++static int f2fs_ioc_get_encryption_policy_ex(struct file *filp,
++					     unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
++}
++
++static int f2fs_ioc_add_encryption_key(struct file *filp, unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_add_key(filp, (void __user *)arg);
++}
++
++static int f2fs_ioc_remove_encryption_key(struct file *filp, unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
++}
++
++static int f2fs_ioc_get_encryption_key_status(struct file *filp,
++					      unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
++}
++
+ static int f2fs_ioc_gc(struct file *filp, unsigned long arg)
+ {
+ 	struct inode *inode = file_inode(filp);
+@@ -3000,6 +3034,14 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		return f2fs_ioc_get_encryption_policy(filp, arg);
+ 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
+ 		return f2fs_ioc_get_encryption_pwsalt(filp, arg);
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		return f2fs_ioc_get_encryption_policy_ex(filp, arg);
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		return f2fs_ioc_add_encryption_key(filp, arg);
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		return f2fs_ioc_remove_encryption_key(filp, arg);
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		return f2fs_ioc_get_encryption_key_status(filp, arg);
+ 	case F2FS_IOC_GARBAGE_COLLECT:
+ 		return f2fs_ioc_gc(filp, arg);
+ 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
+@@ -3119,6 +3161,10 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
+ 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
+ 	case F2FS_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 	case F2FS_IOC_GARBAGE_COLLECT:
+ 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
+ 	case F2FS_IOC_WRITE_CHECKPOINT:
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index f2aaa2cc6b3e0..7219b3b2af759 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -934,6 +934,8 @@ static int f2fs_drop_inode(struct inode *inode)
+ 		return 0;
+ 	}
+ 	ret = generic_drop_inode(inode);
++	if (!ret)
++		ret = fscrypt_drop_inode(inode);
+ 	trace_f2fs_drop_inode(inode, ret);
+ 	return ret;
+ }
+-- 
+2.21.0
