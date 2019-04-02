@@ -1,191 +1,64 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 18 Apr 2019 03:51:16 +0000
-Subject: [PATCH v10 08/12] ima: Factor xattr_verify() out of ima_appraise_measurement()
-Message-Id: <20190418035120.2354-9-bauerman@linux.ibm.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Tue, 02 Apr 2019 15:45:47 +0000
+Subject: [PATCH v4 04/17] fscrypt: add ->ci_inode to fscrypt_info
+Message-Id: <20190402154600.32432-5-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418035120.2354-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190418035120.2354-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <20190402154600.32432-1-ebiggers@kernel.org>
+In-Reply-To: <20190402154600.32432-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Verify xattr signature in a separate function so that the logic in
-ima_appraise_measurement() remains clear when it gains the ability to also
-verify an appended module signature.
+From: Eric Biggers <ebiggers@google.com>
 
-The code in the switch statement is unchanged except for having to
-dereference the status and cause variables (since they're now pointers),
-and fixing the style of a block comment to appease checkpatch.
+Add an inode back-pointer to 'struct fscrypt_info', such that
+inode->i_crypt_info->ci_inode = inode.
 
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+This will be useful for:
+
+1. Evicting the inodes when a fscrypt key is removed, since we'll track
+   the inodes using a given key by linking their fscrypt_infos together,
+   rather than the inodes directly.  This avoids bloating 'struct inode'
+   with a new list_head.
+
+2. Simplifying the per-file key setup, since the inode pointer won't
+   have to be passed around everywhere just in case something goes wrong
+   and it's needed for fscrypt_warn().
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/integrity/ima/ima_appraise.c | 141 +++++++++++++++-----------
- 1 file changed, 81 insertions(+), 60 deletions(-)
+ fs/crypto/fscrypt_private.h | 3 +++
+ fs/crypto/keyinfo.c         | 2 ++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index ea8fa29f07d3..b3837e26bb27 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -202,6 +202,83 @@ int ima_read_xattr(struct dentry *dentry,
- 	return ret;
- }
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index 52e09ef40bfa6..ac24edfc297f1 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -73,6 +73,9 @@ struct fscrypt_info {
+ 	 */
+ 	struct fscrypt_mode *ci_mode;
  
-+/*
-+ * xattr_verify - verify xattr digest or signature
-+ *
-+ * Verify whether the hash or signature matches the file contents.
-+ *
-+ * Return 0 on success, error code otherwise.
-+ */
-+static int xattr_verify(enum ima_hooks func, struct integrity_iint_cache *iint,
-+			struct evm_ima_xattr_data *xattr_value, int xattr_len,
-+			enum integrity_status *status, const char **cause)
-+{
-+	int rc = -EINVAL, hash_start = 0;
++	/* Back-pointer to the inode */
++	struct inode *ci_inode;
 +
-+	switch (xattr_value->type) {
-+	case IMA_XATTR_DIGEST_NG:
-+		/* first byte contains algorithm id */
-+		hash_start = 1;
-+		/* fall through */
-+	case IMA_XATTR_DIGEST:
-+		if (iint->flags & IMA_DIGSIG_REQUIRED) {
-+			*cause = "IMA-signature-required";
-+			*status = INTEGRITY_FAIL;
-+			break;
-+		}
-+		clear_bit(IMA_DIGSIG, &iint->atomic_flags);
-+		if (xattr_len - sizeof(xattr_value->type) - hash_start >+				iint->ima_hash->length)
-+			/*
-+			 * xattr length may be longer. md5 hash in previous
-+			 * version occupied 20 bytes in xattr, instead of 16
-+			 */
-+			rc = memcmp(&xattr_value->data[hash_start],
-+				    iint->ima_hash->digest,
-+				    iint->ima_hash->length);
-+		else
-+			rc = -EINVAL;
-+		if (rc) {
-+			*cause = "invalid-hash";
-+			*status = INTEGRITY_FAIL;
-+			break;
-+		}
-+		*status = INTEGRITY_PASS;
-+		break;
-+	case EVM_IMA_XATTR_DIGSIG:
-+		set_bit(IMA_DIGSIG, &iint->atomic_flags);
-+		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-+					     (const char *)xattr_value,
-+					     xattr_len,
-+					     iint->ima_hash->digest,
-+					     iint->ima_hash->length);
-+		if (rc = -EOPNOTSUPP) {
-+			*status = INTEGRITY_UNKNOWN;
-+			break;
-+		}
-+		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
-+		    func = KEXEC_KERNEL_CHECK)
-+			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
-+						     (const char *)xattr_value,
-+						     xattr_len,
-+						     iint->ima_hash->digest,
-+						     iint->ima_hash->length);
-+		if (rc) {
-+			*cause = "invalid-signature";
-+			*status = INTEGRITY_FAIL;
-+		} else {
-+			*status = INTEGRITY_PASS;
-+		}
-+		break;
-+	default:
-+		*status = INTEGRITY_UNKNOWN;
-+		*cause = "unknown-ima-data";
-+		break;
-+	}
-+
-+	return rc;
-+}
-+
- /*
-  * ima_appraise_measurement - appraise file measurement
-  *
-@@ -221,7 +298,7 @@ int ima_appraise_measurement(enum ima_hooks func,
- 	struct dentry *dentry = file_dentry(file);
- 	struct inode *inode = d_backing_inode(dentry);
- 	enum integrity_status status = INTEGRITY_UNKNOWN;
--	int rc = xattr_len, hash_start = 0;
-+	int rc = xattr_len;
- 
- 	if (!(inode->i_opflags & IOP_XATTR))
- 		return INTEGRITY_UNKNOWN;
-@@ -259,65 +336,9 @@ int ima_appraise_measurement(enum ima_hooks func,
- 		WARN_ONCE(true, "Unexpected integrity status %d\n", status);
- 	}
- 
--	switch (xattr_value->type) {
--	case IMA_XATTR_DIGEST_NG:
--		/* first byte contains algorithm id */
--		hash_start = 1;
--		/* fall through */
--	case IMA_XATTR_DIGEST:
--		if (iint->flags & IMA_DIGSIG_REQUIRED) {
--			cause = "IMA-signature-required";
--			status = INTEGRITY_FAIL;
--			break;
--		}
--		clear_bit(IMA_DIGSIG, &iint->atomic_flags);
--		if (xattr_len - sizeof(xattr_value->type) - hash_start >-				iint->ima_hash->length)
--			/* xattr length may be longer. md5 hash in previous
--			   version occupied 20 bytes in xattr, instead of 16
--			 */
--			rc = memcmp(&xattr_value->data[hash_start],
--				    iint->ima_hash->digest,
--				    iint->ima_hash->length);
--		else
--			rc = -EINVAL;
--		if (rc) {
--			cause = "invalid-hash";
--			status = INTEGRITY_FAIL;
--			break;
--		}
--		status = INTEGRITY_PASS;
--		break;
--	case EVM_IMA_XATTR_DIGSIG:
--		set_bit(IMA_DIGSIG, &iint->atomic_flags);
--		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
--					     (const char *)xattr_value,
--					     xattr_len,
--					     iint->ima_hash->digest,
--					     iint->ima_hash->length);
--		if (rc = -EOPNOTSUPP) {
--			status = INTEGRITY_UNKNOWN;
--			break;
--		}
--		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
--		    func = KEXEC_KERNEL_CHECK)
--			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
--						     (const char *)xattr_value,
--						     xattr_len,
--						     iint->ima_hash->digest,
--						     iint->ima_hash->length);
--		if (rc) {
--			cause = "invalid-signature";
--			status = INTEGRITY_FAIL;
--		} else {
--			status = INTEGRITY_PASS;
--		}
--		break;
--	default:
--		status = INTEGRITY_UNKNOWN;
--		cause = "unknown-ima-data";
--		break;
--	}
-+	if (xattr_value)
-+		rc = xattr_verify(func, iint, xattr_value, xattr_len, &status,
-+				  &cause);
- 
- out:
  	/*
+ 	 * If non-NULL, then this inode uses a master key directly rather than a
+ 	 * derived key, and ci_ctfm will equal ci_master_key->mk_ctfm.
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
+index 058e2e0fda430..148a54fb556a6 100644
+--- a/fs/crypto/keyinfo.c
++++ b/fs/crypto/keyinfo.c
+@@ -542,6 +542,8 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	if (!crypt_info)
+ 		return -ENOMEM;
+ 
++	crypt_info->ci_inode = inode;
++
+ 	crypt_info->ci_flags = ctx.flags;
+ 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
+ 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
+-- 
+2.21.0
