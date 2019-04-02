@@ -1,70 +1,187 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 18 Apr 2019 03:51:14 +0000
-Subject: [PATCH v10 06/12] ima: Use designated initializers for struct ima_event_data
-Message-Id: <20190418035120.2354-7-bauerman@linux.ibm.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Tue, 02 Apr 2019 15:45:52 +0000
+Subject: [PATCH v4 09/17] fscrypt: add FS_IOC_GET_ENCRYPTION_KEY_STATUS ioctl
+Message-Id: <20190402154600.32432-10-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418035120.2354-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190418035120.2354-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <20190402154600.32432-1-ebiggers@kernel.org>
+In-Reply-To: <20190402154600.32432-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Designated initializers allow specifying only the members of the struct
-that need initialization. Non-mentioned members are initialized to zero.
+From: Eric Biggers <ebiggers@google.com>
 
-This makes the code a bit clearer (particularly in ima_add_boot_aggregate()
-and also allows adding a new member to the struct without having to update
-all struct initializations.
+Add a new fscrypt ioctl, FS_IOC_GET_ENCRYPTION_KEY_STATUS.  Given a key
+specified by 'struct fscrypt_key_specifier' (the same way a key is
+specified for the other fscrypt key management ioctls), it returns
+status information in a 'struct fscrypt_get_key_status_arg'.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+The main motivation for this is that applications need to be able to
+check whether an encrypted directory is "unlocked" or not, so that they
+can add the key if it is not, and avoid adding the key (which may
+involve prompting the user for a passphrase) if it already is.
+
+It's possible to use some workarounds such as checking whether opening a
+regular file fails with ENOKEY, or checking whether the filenames "look
+like gibberish" or not.  However, no workaround is usable in all cases.
+
+Like the other key management ioctls, the keyrings syscalls may seem at
+first to be a good fit for this.  Unfortunately, they are not.  Even if
+we exposed the keyring ID of the ->s_master_keys keyring and gave
+everyone Search permission on it (note: currently the keyrings
+permission system would also allow everyone to "invalidate" the keyring
+too), the fscrypt keys have an additional state that doesn't map cleanly
+to the keyrings API: the secret can be removed, but we can be still
+tracking the files that were using the key, and the removal can be
+re-attempted or the secret added again.
+
+After later patches, some applications will also need a way to determine
+whether a key was added by the current user vs. by some other user.
+Reserved fields are included in fscrypt_get_key_status_arg for this and
+other future extensions.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/integrity/ima/ima_api.c  | 11 +++++++----
- security/integrity/ima/ima_init.c |  4 ++--
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ fs/crypto/keyring.c          | 60 ++++++++++++++++++++++++++++++++++++
+ include/linux/fscrypt.h      |  7 +++++
+ include/uapi/linux/fscrypt.h | 15 +++++++++
+ 3 files changed, 82 insertions(+)
 
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index c7505fb122d4..0639d0631f2c 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -133,8 +133,9 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+index ee9be002c1490..08e14497c8e30 100644
+--- a/fs/crypto/keyring.c
++++ b/fs/crypto/keyring.c
+@@ -11,6 +11,7 @@
+  *
+  * - FS_IOC_ADD_ENCRYPTION_KEY: add a key
+  * - FS_IOC_REMOVE_ENCRYPTION_KEY: remove a key
++ * - FS_IOC_GET_ENCRYPTION_KEY_STATUS: get key status
+  */
+ 
+ #include <linux/key-type.h>
+@@ -482,6 +483,65 @@ int fscrypt_ioctl_remove_key(struct file *filp, const void __user *uarg)
+ }
+ EXPORT_SYMBOL_GPL(fscrypt_ioctl_remove_key);
+ 
++/*
++ * Retrieve the status of an fscrypt master encryption key.
++ *
++ * We set ->status to indicate whether the key is absent, present, or
++ * incompletely removed.  "Incompletely removed" means that the master key
++ * secret has been removed, but some files which had been unlocked with it are
++ * still in use.  This field allows applications to easily determine the state
++ * of an encrypted directory without using a hack such as trying to open a
++ * regular file in it (which can confuse the "incompletely removed" state with
++ * absent or present).
++ */
++int fscrypt_ioctl_get_key_status(struct file *filp, void __user *uarg)
++{
++	struct super_block *sb = file_inode(filp)->i_sb;
++	struct fscrypt_get_key_status_arg arg;
++	struct key *key;
++	struct fscrypt_master_key *mk;
++	int err;
++
++	if (copy_from_user(&arg, uarg, sizeof(arg)))
++		return -EFAULT;
++
++	if (!valid_key_spec(&arg.key_spec))
++		return -EINVAL;
++
++	if (memchr_inv(arg.__reserved, 0, sizeof(arg.__reserved)))
++		return -EINVAL;
++
++	memset(arg.__out_reserved, 0, sizeof(arg.__out_reserved));
++
++	key = fscrypt_find_master_key(sb, &arg.key_spec);
++	if (IS_ERR(key)) {
++		if (key != ERR_PTR(-ENOKEY))
++			return PTR_ERR(key);
++		arg.status = FSCRYPT_KEY_STATUS_ABSENT;
++		err = 0;
++		goto out;
++	}
++	mk = key->payload.data[0];
++	down_read(&key->sem);
++
++	if (!is_master_key_secret_present(&mk->mk_secret)) {
++		arg.status = FSCRYPT_KEY_STATUS_INCOMPLETELY_REMOVED;
++		err = 0;
++		goto out_release_key;
++	}
++
++	arg.status = FSCRYPT_KEY_STATUS_PRESENT;
++	err = 0;
++out_release_key:
++	up_read(&key->sem);
++	key_put(key);
++out:
++	if (!err && copy_to_user(uarg, &arg, sizeof(arg)))
++		err = -EFAULT;
++	return err;
++}
++EXPORT_SYMBOL_GPL(fscrypt_ioctl_get_key_status);
++
+ int __init fscrypt_init_keyring(void)
  {
- 	struct ima_template_entry *entry;
- 	struct inode *inode = file_inode(file);
--	struct ima_event_data event_data = {iint, file, filename, NULL, 0,
--					    cause};
-+	struct ima_event_data event_data = { .iint = iint, .file = file,
-+					     .filename = filename,
-+					     .violation = cause };
- 	int violation = 1;
- 	int result;
+ 	return register_key_type(&key_type_fscrypt);
+diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
+index b6f8832dadba4..5f251cad255b8 100644
+--- a/include/linux/fscrypt.h
++++ b/include/linux/fscrypt.h
+@@ -116,6 +116,7 @@ extern int fscrypt_inherit_context(struct inode *, struct inode *,
+ extern void fscrypt_sb_free(struct super_block *sb);
+ extern int fscrypt_ioctl_add_key(struct file *filp, void __user *arg);
+ extern int fscrypt_ioctl_remove_key(struct file *filp, const void __user *arg);
++extern int fscrypt_ioctl_get_key_status(struct file *filp, void __user *arg);
  
-@@ -284,8 +285,10 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 	int result = -ENOMEM;
- 	struct inode *inode = file_inode(file);
- 	struct ima_template_entry *entry;
--	struct ima_event_data event_data = {iint, file, filename, xattr_value,
--					    xattr_len, NULL};
-+	struct ima_event_data event_data = { .iint = iint, .file = file,
-+					     .filename = filename,
-+					     .xattr_value = xattr_value,
-+					     .xattr_len = xattr_len };
- 	int violation = 0;
+ /* keysetup.c */
+ extern int fscrypt_get_encryption_info(struct inode *);
+@@ -335,6 +336,12 @@ static inline int fscrypt_ioctl_remove_key(struct file *filp,
+ 	return -EOPNOTSUPP;
+ }
  
- 	if (iint->measured_pcrs & (0x1 << pcr))
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 6c9295449751..ef6c3a26296e 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -49,8 +49,8 @@ static int __init ima_add_boot_aggregate(void)
- 	const char *audit_cause = "ENOMEM";
- 	struct ima_template_entry *entry;
- 	struct integrity_iint_cache tmp_iint, *iint = &tmp_iint;
--	struct ima_event_data event_data = {iint, NULL, boot_aggregate_name,
--					    NULL, 0, NULL};
-+	struct ima_event_data event_data = { .iint = iint,
-+					     .filename = boot_aggregate_name };
- 	int result = -ENOMEM;
- 	int violation = 0;
- 	struct {
++static inline int fscrypt_ioctl_get_key_status(struct file *filp,
++					       void __user *arg)
++{
++	return -EOPNOTSUPP;
++}
++
+ /* keysetup.c */
+ static inline int fscrypt_get_encryption_info(struct inode *inode)
+ {
+diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+index 3302a407131e6..042e70a4ff7ee 100644
+--- a/include/uapi/linux/fscrypt.h
++++ b/include/uapi/linux/fscrypt.h
+@@ -71,11 +71,26 @@ struct fscrypt_remove_key_arg {
+ 	__u32 __reserved[6];
+ };
+ 
++/* Struct passed to FS_IOC_GET_ENCRYPTION_KEY_STATUS */
++struct fscrypt_get_key_status_arg {
++	/* input */
++	struct fscrypt_key_specifier key_spec;
++	__u32 __reserved[6];
++
++	/* output */
++#define FSCRYPT_KEY_STATUS_ABSENT		1
++#define FSCRYPT_KEY_STATUS_PRESENT		2
++#define FSCRYPT_KEY_STATUS_INCOMPLETELY_REMOVED	3
++	__u32 status;
++	__u32 __out_reserved[15];
++};
++
+ #define FS_IOC_SET_ENCRYPTION_POLICY	  _IOR('f', 19, struct fscrypt_policy)
+ #define FS_IOC_GET_ENCRYPTION_PWSALT	  _IOW('f', 20, __u8[16])
+ #define FS_IOC_GET_ENCRYPTION_POLICY	  _IOW('f', 21, struct fscrypt_policy)
+ #define FS_IOC_ADD_ENCRYPTION_KEY	 _IOWR('f', 23, struct fscrypt_add_key_arg)
+ #define FS_IOC_REMOVE_ENCRYPTION_KEY	  _IOW('f', 24, struct fscrypt_remove_key_arg)
++#define FS_IOC_GET_ENCRYPTION_KEY_STATUS _IOWR('f', 25, struct fscrypt_get_key_status_arg)
+ 
+ /**********************************************************************/
+ 
+-- 
+2.21.0
