@@ -1,62 +1,90 @@
-From: Denis Kenzior <denkenz@gmail.com>
-Date: Thu, 11 Apr 2019 17:18:36 +0000
-Subject: Re: [PATCH v9 05/10] X.509: parse public key parameters from x509 for akcipher
-Message-Id: <48828e0e-0aef-dece-e7ad-4c0ea9cefbe7@gmail.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Tue, 02 Apr 2019 15:45:50 +0000
+Subject: [PATCH v4 07/17] fs/dcache.c: add shrink_dcache_inode()
+Message-Id: <20190402154600.32432-8-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190411155122.13245-1-vt@altlinux.org>
- <20190411155122.13245-6-vt@altlinux.org>
-In-Reply-To: <20190411155122.13245-6-vt@altlinux.org>
-To: Vitaly Chikunov <vt@altlinux.org>, Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190402154600.32432-1-ebiggers@kernel.org>
+In-Reply-To: <20190402154600.32432-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Hi Vitaly,
+From: Eric Biggers <ebiggers@google.com>
 
-On 04/11/2019 10:51 AM, Vitaly Chikunov wrote:
-> Some public key algorithms (like EC-DSA) keep in parameters field
-> important data such as digest and curve OIDs (possibly more for
-> different EC-DSA variants). Thus, just setting a public key (as
-> for RSA) is not enough.
-> 
-> Append parameters into the key stream for akcipher_set_{pub,priv}_key.
-> Appended data is: (u32) algo OID, (u32) parameters length, parameters
-> data.
-> 
-> This does not affect current akcipher API nor RSA ciphers (they could
-> ignore it). Idea of appending parameters to the key stream is by Herbert
-> Xu.
-> 
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Denis Kenzior <denkenz@gmail.com>
-> Cc: keyrings@vger.kernel.org
-> Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
-> ---
->   crypto/asymmetric_keys/asym_tpm.c         |  9 +++-
->   crypto/asymmetric_keys/public_key.c       | 72 ++++++++++++++++++++++++-------
->   crypto/asymmetric_keys/x509.asn1          |  2 +-
->   crypto/asymmetric_keys/x509_cert_parser.c | 31 +++++++++++++
->   crypto/testmgr.c                          | 24 +++++++++--
->   crypto/testmgr.h                          |  5 +++
->   include/crypto/akcipher.h                 | 18 ++++----
->   include/crypto/public_key.h               |  4 ++
->   8 files changed, 136 insertions(+), 29 deletions(-)
-> 
+When a filesystem encryption key is removed, we need all files which had
+been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
+again.  This is most easily done by evicting the inodes.  This can
+currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
+that is overkill and not usable by non-root users.
 
-Looks good to me.
+To evict just the needed inodes we also need the ability to evict those
+inodes' dentries, since an inode is pinned by its dentries.  Therefore,
+add a function shrink_dcache_inode() which iterates through an inode's
+dentries and evicts any unused ones as well as any unused descendants
+(since there may be negative dentries pinning the inode's dentries).
 
-Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ fs/dcache.c            | 32 ++++++++++++++++++++++++++++++++
+ include/linux/dcache.h |  1 +
+ 2 files changed, 33 insertions(+)
 
-By the way:
-
-> @@ -400,11 +401,12 @@ static inline int crypto_akcipher_set_pub_key(struct crypto_akcipher *tfm,
->    * crypto_akcipher_set_priv_key() - Invoke set private key operation
->    *
->    * Function invokes the algorithm specific set key function, which knows
-> - * how to decode and interpret the encoded key
-> + * how to decode and interpret the encoded keya and parameters
-
-Seems to be a stray 'a' after 'key'?
-
-Regards,
--Denis
+diff --git a/fs/dcache.c b/fs/dcache.c
+index aac41adf47433..1d940484c2d17 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1507,6 +1507,38 @@ void shrink_dcache_parent(struct dentry *parent)
+ }
+ EXPORT_SYMBOL(shrink_dcache_parent);
+ 
++/**
++ * shrink_dcache_inode - prune dcache for inode
++ * @inode: inode to prune
++ *
++ * Evict all unused aliases of the specified inode from the dcache.  This is
++ * intended to be used when trying to evict a specific inode, since inodes are
++ * pinned by their dentries.  We also have to descend to ->d_subdirs for each
++ * alias, since aliases may be pinned by negative child dentries.
++ */
++void shrink_dcache_inode(struct inode *inode)
++{
++	for (;;) {
++		struct select_data data;
++		struct dentry *dentry;
++
++		INIT_LIST_HEAD(&data.dispose);
++		data.start = NULL;
++		data.found = 0;
++
++		spin_lock(&inode->i_lock);
++		hlist_for_each_entry(dentry, &inode->i_dentry, d_u.d_alias)
++			d_walk(dentry, &data, select_collect);
++		spin_unlock(&inode->i_lock);
++
++		if (!data.found)
++			break;
++
++		shrink_dentry_list(&data.dispose);
++		cond_resched();
++	}
++}
++
+ static enum d_walk_ret umount_check(void *_data, struct dentry *dentry)
+ {
+ 	/* it has busy descendents; complain about those instead */
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 60996e64c5798..1b5f295dc1156 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -246,6 +246,7 @@ extern struct dentry * d_obtain_alias(struct inode *);
+ extern struct dentry * d_obtain_root(struct inode *);
+ extern void shrink_dcache_sb(struct super_block *);
+ extern void shrink_dcache_parent(struct dentry *);
++extern void shrink_dcache_inode(struct inode *);
+ extern void shrink_dcache_for_umount(struct super_block *);
+ extern void d_invalidate(struct dentry *);
+ 
+-- 
+2.21.0
