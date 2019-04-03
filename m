@@ -1,90 +1,67 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Tue, 02 Apr 2019 15:45:50 +0000
-Subject: [PATCH v4 07/17] fs/dcache.c: add shrink_dcache_inode()
-Message-Id: <20190402154600.32432-8-ebiggers@kernel.org>
+From: Al Viro <viro@zeniv.linux.org.uk>
+Date: Wed, 03 Apr 2019 18:34:12 +0000
+Subject: Re: [PATCH v4 07/17] fs/dcache.c: add shrink_dcache_inode()
+Message-Id: <20190403183411.GV2217@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190402154600.32432-1-ebiggers@kernel.org>
-In-Reply-To: <20190402154600.32432-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+ <20190402154600.32432-8-ebiggers@kernel.org>
+In-Reply-To: <20190402154600.32432-8-ebiggers@kernel.org>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-From: Eric Biggers <ebiggers@google.com>
+On Tue, Apr 02, 2019 at 08:45:50AM -0700, Eric Biggers wrote:
+> From: Eric Biggers <ebiggers@google.com>
+> 
+> When a filesystem encryption key is removed, we need all files which had
+> been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
+> again.  This is most easily done by evicting the inodes.  This can
+> currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
+> that is overkill and not usable by non-root users.
+> 
+> To evict just the needed inodes we also need the ability to evict those
+> inodes' dentries, since an inode is pinned by its dentries.  Therefore,
+> add a function shrink_dcache_inode() which iterates through an inode's
+> dentries and evicts any unused ones as well as any unused descendants
+> (since there may be negative dentries pinning the inode's dentries).
 
-When a filesystem encryption key is removed, we need all files which had
-been "unlocked" (had ->i_crypt_info set up) with it to appear "locked"
-again.  This is most easily done by evicting the inodes.  This can
-currently be done using 'echo 2 > /proc/sys/vm/drop_caches'; however,
-that is overkill and not usable by non-root users.
+Huh?
 
-To evict just the needed inodes we also need the ability to evict those
-inodes' dentries, since an inode is pinned by its dentries.  Therefore,
-add a function shrink_dcache_inode() which iterates through an inode's
-dentries and evicts any unused ones as well as any unused descendants
-(since there may be negative dentries pinning the inode's dentries).
+> + * Evict all unused aliases of the specified inode from the dcache.  This is
+> + * intended to be used when trying to evict a specific inode, since inodes are
+> + * pinned by their dentries.  We also have to descend to ->d_subdirs for each
+> + * alias, since aliases may be pinned by negative child dentries.
+> + */
+> +void shrink_dcache_inode(struct inode *inode)
+> +{
+> +	for (;;) {
+> +		struct select_data data;
+> +		struct dentry *dentry;
+> +
+> +		INIT_LIST_HEAD(&data.dispose);
+> +		data.start = NULL;
+> +		data.found = 0;
+> +
+> +		spin_lock(&inode->i_lock);
+> +		hlist_for_each_entry(dentry, &inode->i_dentry, d_u.d_alias)
+> +			d_walk(dentry, &data, select_collect);
+> +		spin_unlock(&inode->i_lock);
+> +
+> +		if (!data.found)
+> +			break;
+> +
+> +		shrink_dentry_list(&data.dispose);
+> +		cond_resched();
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- fs/dcache.c            | 32 ++++++++++++++++++++++++++++++++
- include/linux/dcache.h |  1 +
- 2 files changed, 33 insertions(+)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index aac41adf47433..1d940484c2d17 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1507,6 +1507,38 @@ void shrink_dcache_parent(struct dentry *parent)
- }
- EXPORT_SYMBOL(shrink_dcache_parent);
- 
-+/**
-+ * shrink_dcache_inode - prune dcache for inode
-+ * @inode: inode to prune
-+ *
-+ * Evict all unused aliases of the specified inode from the dcache.  This is
-+ * intended to be used when trying to evict a specific inode, since inodes are
-+ * pinned by their dentries.  We also have to descend to ->d_subdirs for each
-+ * alias, since aliases may be pinned by negative child dentries.
-+ */
-+void shrink_dcache_inode(struct inode *inode)
-+{
-+	for (;;) {
-+		struct select_data data;
-+		struct dentry *dentry;
-+
-+		INIT_LIST_HEAD(&data.dispose);
-+		data.start = NULL;
-+		data.found = 0;
-+
-+		spin_lock(&inode->i_lock);
-+		hlist_for_each_entry(dentry, &inode->i_dentry, d_u.d_alias)
-+			d_walk(dentry, &data, select_collect);
-+		spin_unlock(&inode->i_lock);
-+
-+		if (!data.found)
-+			break;
-+
-+		shrink_dentry_list(&data.dispose);
-+		cond_resched();
-+	}
-+}
-+
- static enum d_walk_ret umount_check(void *_data, struct dentry *dentry)
- {
- 	/* it has busy descendents; complain about those instead */
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 60996e64c5798..1b5f295dc1156 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -246,6 +246,7 @@ extern struct dentry * d_obtain_alias(struct inode *);
- extern struct dentry * d_obtain_root(struct inode *);
- extern void shrink_dcache_sb(struct super_block *);
- extern void shrink_dcache_parent(struct dentry *);
-+extern void shrink_dcache_inode(struct inode *);
- extern void shrink_dcache_for_umount(struct super_block *);
- extern void d_invalidate(struct dentry *);
- 
--- 
-2.21.0
+This is... odd.  What's wrong with
+	if (S_ISDIR(inode->i_mode)) {
+		dentry = d_find_any_alias(inode);
+		if (dentry) {
+			shrink_dcache_parent(dentry);
+			dput(dentry);
+		}
+	}
+	d_prune_aliases(inode);
+instead of that thing?
