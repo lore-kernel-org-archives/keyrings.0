@@ -1,50 +1,44 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Thu, 11 Apr 2019 15:51:22 +0000
-Subject: [PATCH v9 10/10] integrity: support EC-RDSA signatures for asymmetric_verify
-Message-Id: <20190411155122.13245-11-vt@altlinux.org>
+From: James Morris <jmorris@namei.org>
+Date: Wed, 10 Apr 2019 17:29:07 +0000
+Subject: Re: [PATCH] security: don't use RCU accessors for cred->session_keyring
+Message-Id: <alpine.LRH.2.21.1904110328490.25754@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190411155122.13245-1-vt@altlinux.org>
-In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190327153938.82007-1-jannh@google.com>
+In-Reply-To: <20190327153938.82007-1-jannh@google.com>
+To: Jann Horn <jannh@google.com>
+Cc: David Howells <dhowells@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-Allow to use EC-RDSA signatures for IMA by determining signature type by
-the hash algorithm name. This works good for EC-RDSA since Streebog and
-EC-RDSA should always be used together.
+On Wed, 27 Mar 2019, Jann Horn wrote:
 
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: linux-integrity@vger.kernel.org
-Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
----
- security/integrity/digsig_asymmetric.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+> sparse complains that a bunch of places in kernel/cred.c access
+> cred->session_keyring without the RCU helpers required by the __rcu
+> annotation.
+> 
+> cred->session_keyring is written in the following places:
+> 
+>  - prepare_kernel_cred() [in a new cred struct]
+>  - keyctl_session_to_parent() [in a new cred struct]
+>  - prepare_creds [in a new cred struct, via memcpy]
+>  - install_session_keyring_to_cred()
+>   - from install_session_keyring() on new creds
+>   - from join_session_keyring() on new creds [twice]
+>   - from umh_keys_init()
+>    - from call_usermodehelper_exec_async() on new creds
+> 
+> All of these writes are before the creds are committed; therefore,
+> cred->session_keyring doesn't need RCU protection.
+> 
+> Remove the __rcu annotation and fix up all existing users that use __rcu.
+> 
+> Signed-off-by: Jann Horn <jannh@google.com>
 
-diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-index d775e03fbbcc..99080871eb9f 100644
---- a/security/integrity/digsig_asymmetric.c
-+++ b/security/integrity/digsig_asymmetric.c
-@@ -104,9 +104,16 @@ int asymmetric_verify(struct key *keyring, const char *sig,
- 
- 	memset(&pks, 0, sizeof(pks));
- 
--	pks.pkey_algo = "rsa";
- 	pks.hash_algo = hash_algo_name[hdr->hash_algo];
--	pks.encoding = "pkcs1";
-+	if (hdr->hash_algo = HASH_ALGO_STREEBOG_256 ||
-+	    hdr->hash_algo = HASH_ALGO_STREEBOG_512) {
-+		/* EC-RDSA and Streebog should go together. */
-+		pks.pkey_algo = "ecrdsa";
-+		pks.encoding = "raw";
-+	} else {
-+		pks.pkey_algo = "rsa";
-+		pks.encoding = "pkcs1";
-+	}
- 	pks.digest = (u8 *)data;
- 	pks.digest_size = datalen;
- 	pks.s = hdr->sig;
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next-general
+
+
 -- 
-2.11.0
+James Morris
+<jmorris@namei.org>
