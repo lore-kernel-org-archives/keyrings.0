@@ -1,31 +1,104 @@
-From: James Morris <jmorris@namei.org>
-Date: Wed, 10 Apr 2019 17:31:01 +0000
-Subject: Re: [PATCH] keys: safe concurrent user->{session,uid}_keyring access
-Message-Id: <alpine.LRH.2.21.1904110330420.25754@namei.org>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Thu, 11 Apr 2019 15:51:16 +0000
+Subject: [PATCH v9 04/10] KEYS: do not kmemdup digest in {public,tpm}_key_verify_signature
+Message-Id: <20190411155122.13245-5-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190327155508.144730-1-jannh@google.com>
-In-Reply-To: <20190327155508.144730-1-jannh@google.com>
-To: Jann Horn <jannh@google.com>
-Cc: David Howells <dhowells@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+References: <20190411155122.13245-1-vt@altlinux.org>
+In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Denis Kenzior <denkenz@gmail.com>
 
-On Wed, 27 Mar 2019, Jann Horn wrote:
+Treat (struct public_key_signature)'s digest same as its signature (s).
+Since digest should be already in the kmalloc'd memory do not kmemdup
+digest value before calling {public,tpm}_key_verify_signature.
 
-> The current code can perform concurrent updates and reads on
-> user->session_keyring and user->uid_keyring. Add a comment to
-> struct user_struct to document the nontrivial locking semantics, and use
-> READ_ONCE() for unlocked readers and smp_store_release() for writers to
-> prevent memory ordering issues.
-> 
-> Fixes: 69664cf16af4 ("keys: don't generate user and user session keyrings unless they're accessed")
-> Signed-off-by: Jann Horn <jannh@google.com>
+Patch is split from the previous as suggested by Herbert Xu.
 
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next-general
+Suggested-by: David Howells <dhowells@redhat.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+---
+ crypto/asymmetric_keys/asym_tpm.c   | 10 +---------
+ crypto/asymmetric_keys/public_key.c |  9 +--------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
 
-
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 4e5b6fb57a94..402fc34ca044 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -748,7 +748,6 @@ static int tpm_key_verify_signature(const struct key *key,
+ 	char alg_name[CRYPTO_MAX_ALG_NAME];
+ 	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
+ 	uint32_t der_pub_key_len;
+-	void *digest;
+ 	int ret;
+ 
+ 	pr_devel("=>%s()\n", __func__);
+@@ -780,14 +779,9 @@ static int tpm_key_verify_signature(const struct key *key,
+ 	if (!req)
+ 		goto error_free_tfm;
+ 
+-	ret = -ENOMEM;
+-	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
+-	if (!digest)
+-		goto error_free_req;
+-
+ 	sg_init_table(src_sg, 2);
+ 	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
+-	sg_set_buf(&src_sg[1], digest, sig->digest_size);
++	sg_set_buf(&src_sg[1], sig->digest, sig->digest_size);
+ 	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
+ 				   sig->digest_size);
+ 	crypto_init_wait(&cwait);
+@@ -796,8 +790,6 @@ static int tpm_key_verify_signature(const struct key *key,
+ 				      crypto_req_done, &cwait);
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+ 
+-	kfree(digest);
+-error_free_req:
+ 	akcipher_request_free(req);
+ error_free_tfm:
+ 	crypto_free_akcipher(tfm);
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index 0c069fe8a59c..33093b7bcc47 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -229,7 +229,6 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	struct akcipher_request *req;
+ 	struct scatterlist src_sg[2];
+ 	char alg_name[CRYPTO_MAX_ALG_NAME];
+-	void *digest;
+ 	int ret;
+ 
+ 	pr_devel("=>%s()\n", __func__);
+@@ -262,14 +261,9 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	if (ret)
+ 		goto error_free_req;
+ 
+-	ret = -ENOMEM;
+-	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
+-	if (!digest)
+-		goto error_free_req;
+-
+ 	sg_init_table(src_sg, 2);
+ 	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
+-	sg_set_buf(&src_sg[1], digest, sig->digest_size);
++	sg_set_buf(&src_sg[1], sig->digest, sig->digest_size);
+ 	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
+ 				   sig->digest_size);
+ 	crypto_init_wait(&cwait);
+@@ -278,7 +272,6 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 				      crypto_req_done, &cwait);
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+ 
+-	kfree(digest);
+ error_free_req:
+ 	akcipher_request_free(req);
+ error_free_tfm:
 -- 
-James Morris
-<jmorris@namei.org>
+2.11.0
