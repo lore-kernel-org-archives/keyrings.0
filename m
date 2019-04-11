@@ -1,110 +1,329 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 18 Apr 2019 03:51:11 +0000
-Subject: [PATCH v10 03/12] PKCS#7: Introduce pkcs7_get_digest()
-Message-Id: <20190418035120.2354-4-bauerman@linux.ibm.com>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Thu, 11 Apr 2019 15:51:19 +0000
+Subject: [PATCH v9 07/10] crypto: ecc - make ecc into separate module
+Message-Id: <20190411155122.13245-8-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418035120.2354-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190418035120.2354-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <20190411155122.13245-1-vt@altlinux.org>
+In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-IMA will need to access the digest of the PKCS7 message (as calculated by
-the kernel) before the signature is verified, so introduce
-pkcs7_get_digest() for that purpose.
+ecc.c have algorithms that could be used togeter by ecdh and ecrdsa.
+Make it separate module. Add CRYPTO_ECC into Kconfig. EXPORT_SYMBOL and
+document to what seems appropriate. Move structs ecc_point and ecc_curve
+from ecc_curve_defs.h into ecc.h.
 
-Also, modify pkcs7_digest() to detect when the digest was already
-calculated so that it doesn't have to do redundant work. Verifying that
-sinfo->sig->digest isn't NULL is sufficient because both places which
-allocate sinfo->sig (pkcs7_parse_message() and pkcs7_note_signed_info())
-use kzalloc() so sig->digest is always initialized to zero.
+No code changes.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
 ---
- crypto/asymmetric_keys/pkcs7_verify.c | 33 +++++++++++++++++++++++++++
- include/crypto/pkcs7.h                |  4 ++++
- 2 files changed, 37 insertions(+)
+ crypto/Kconfig          |  4 ++
+ crypto/Makefile         |  2 +-
+ crypto/ecc.c            | 25 +++++++++----
+ crypto/ecc.h            | 99 +++++++++++++++++++++++++++++++++++++++++++++++++
+ crypto/ecc_curve_defs.h | 15 --------
+ 5 files changed, 122 insertions(+), 23 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 97c77f66b20d..5c3de46b0b73 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -16,6 +16,7 @@
- #include <linux/err.h>
- #include <linux/asn1.h>
- #include <crypto/hash.h>
-+#include <crypto/hash_info.h>
- #include <crypto/public_key.h>
- #include "pkcs7_parser.h"
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index f328026dff75..ecb697b4151f 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -248,8 +248,12 @@ config CRYPTO_DH
+ 	help
+ 	  Generic implementation of the Diffie-Hellman algorithm.
  
-@@ -33,6 +34,10 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
- 
- 	kenter(",%u,%s", sinfo->index, sinfo->sig->hash_algo);
- 
-+	/* The digest was calculated already. */
-+	if (sig->digest)
-+		return 0;
++config CRYPTO_ECC
++	tristate
 +
- 	if (!sinfo->sig->hash_algo)
- 		return -ENOPKG;
+ config CRYPTO_ECDH
+ 	tristate "ECDH algorithm"
++	select CRYPTO_ECC
+ 	select CRYPTO_KPP
+ 	select CRYPTO_RNG_DEFAULT
+ 	help
+diff --git a/crypto/Makefile b/crypto/Makefile
+index fb5bf2a3a666..b5685a01ad31 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -147,8 +147,8 @@ obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
+ obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
+ obj-$(CONFIG_CRYPTO_ZSTD) += zstd.o
+ obj-$(CONFIG_CRYPTO_OFB) += ofb.o
++obj-$(CONFIG_CRYPTO_ECC) += ecc.o
  
-@@ -122,6 +127,34 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
- 	return ret;
+-ecdh_generic-y := ecc.o
+ ecdh_generic-y += ecdh.o
+ ecdh_generic-y += ecdh_helper.o
+ obj-$(CONFIG_CRYPTO_ECDH) += ecdh_generic.o
+diff --git a/crypto/ecc.c b/crypto/ecc.c
+index ed1237115066..5f36792d143d 100644
+--- a/crypto/ecc.c
++++ b/crypto/ecc.c
+@@ -24,6 +24,7 @@
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
++#include <linux/module.h>
+ #include <linux/random.h>
+ #include <linux/slab.h>
+ #include <linux/swab.h>
+@@ -112,7 +113,7 @@ static void vli_clear(u64 *vli, unsigned int ndigits)
  }
  
-+int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf, u32 *len,
-+		     enum hash_algo *hash_algo)
-+{
-+	struct pkcs7_signed_info *sinfo = pkcs7->signed_infos;
-+	int i, ret;
-+
-+	/*
-+	 * This function doesn't support messages with more than one signature.
-+	 */
-+	if (sinfo = NULL || sinfo->next != NULL)
-+		return -EBADMSG;
-+
-+	ret = pkcs7_digest(pkcs7, sinfo);
-+	if (ret)
-+		return ret;
-+
-+	*buf = sinfo->sig->digest;
-+	*len = sinfo->sig->digest_size;
-+
-+	for (i = 0; i < HASH_ALGO__LAST; i++)
-+		if (!strcmp(hash_algo_name[i], sinfo->sig->hash_algo)) {
-+			*hash_algo = i;
-+			break;
-+		}
-+
-+	return 0;
-+}
-+
+ /* Returns true if vli = 0, false otherwise. */
+-static bool vli_is_zero(const u64 *vli, unsigned int ndigits)
++bool vli_is_zero(const u64 *vli, unsigned int ndigits)
+ {
+ 	int i;
+ 
+@@ -123,6 +124,7 @@ static bool vli_is_zero(const u64 *vli, unsigned int ndigits)
+ 
+ 	return true;
+ }
++EXPORT_SYMBOL(vli_is_zero);
+ 
+ /* Returns nonzero if bit bit of vli is set. */
+ static u64 vli_test_bit(const u64 *vli, unsigned int bit)
+@@ -171,7 +173,7 @@ static void vli_set(u64 *dest, const u64 *src, unsigned int ndigits)
+ }
+ 
+ /* Returns sign of left - right. */
+-static int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
++int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
+ {
+ 	int i;
+ 
+@@ -184,6 +186,7 @@ static int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(vli_cmp);
+ 
+ /* Computes result = in << c, returning carry. Can modify in place
+  * (if result = in). 0 < shift < 64.
+@@ -240,7 +243,7 @@ static u64 vli_add(u64 *result, const u64 *left, const u64 *right,
+ }
+ 
+ /* Computes result = left - right, returning borrow. Can modify in place. */
+-static u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
++u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
+ 		   unsigned int ndigits)
+ {
+ 	u64 borrow = 0;
+@@ -258,6 +261,7 @@ static u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
+ 
+ 	return borrow;
+ }
++EXPORT_SYMBOL(vli_sub);
+ 
+ static uint128_t mul_64_64(u64 left, u64 right)
+ {
+@@ -557,7 +561,7 @@ static void vli_mod_square_fast(u64 *result, const u64 *left,
+  * See "From Euclid's GCD to Montgomery Multiplication to the Great Divide"
+  * https://labs.oracle.com/techrep/2001/smli_tr-2001-95.pdf
+  */
+-static void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
++void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
+ 			unsigned int ndigits)
+ {
+ 	u64 a[ECC_MAX_DIGITS], b[ECC_MAX_DIGITS];
+@@ -630,6 +634,7 @@ static void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
+ 
+ 	vli_set(result, u, ndigits);
+ }
++EXPORT_SYMBOL(vli_mod_inv);
+ 
+ /* ------ Point operations ------ */
+ 
+@@ -948,6 +953,7 @@ int ecc_is_key_valid(unsigned int curve_id, unsigned int ndigits,
+ 
+ 	return __ecc_is_key_valid(curve, private_key, ndigits);
+ }
++EXPORT_SYMBOL(ecc_is_key_valid);
+ 
  /*
-  * Find the key (X.509 certificate) to use to verify a PKCS#7 message.  PKCS#7
-  * uses the issuer's name and the issuing certificate serial number for
-diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
-index 583f199400a3..3bfe6829eaae 100644
---- a/include/crypto/pkcs7.h
-+++ b/include/crypto/pkcs7.h
-@@ -13,6 +13,7 @@
- #define _CRYPTO_PKCS7_H
+  * ECC private keys are generated using the method of extra random bits,
+@@ -1000,6 +1006,7 @@ int ecc_gen_privkey(unsigned int curve_id, unsigned int ndigits, u64 *privkey)
  
- #include <linux/verification.h>
-+#include <linux/hash_info.h>
- #include <crypto/public_key.h>
+ 	return 0;
+ }
++EXPORT_SYMBOL(ecc_gen_privkey);
  
- struct key;
-@@ -44,4 +45,7 @@ extern int pkcs7_verify(struct pkcs7_message *pkcs7,
- extern int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
- 				      const void *data, size_t datalen);
+ int ecc_make_pub_key(unsigned int curve_id, unsigned int ndigits,
+ 		     const u64 *private_key, u64 *public_key)
+@@ -1036,10 +1043,11 @@ int ecc_make_pub_key(unsigned int curve_id, unsigned int ndigits,
+ out:
+ 	return ret;
+ }
++EXPORT_SYMBOL(ecc_make_pub_key);
  
-+extern int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf,
-+			    u32 *len, enum hash_algo *hash_algo);
+ /* SP800-56A section 5.6.2.3.4 partial verification: ephemeral keys only */
+-static int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
+-				       struct ecc_point *pk)
++int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
++				struct ecc_point *pk)
+ {
+ 	u64 yy[ECC_MAX_DIGITS], xxx[ECC_MAX_DIGITS], w[ECC_MAX_DIGITS];
+ 
+@@ -1064,8 +1072,8 @@ static int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
+ 		return -EINVAL;
+ 
+ 	return 0;
+-
+ }
++EXPORT_SYMBOL(ecc_is_pubkey_valid_partial);
+ 
+ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
+ 			      const u64 *private_key, const u64 *public_key,
+@@ -1121,3 +1129,6 @@ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
+ out:
+ 	return ret;
+ }
++EXPORT_SYMBOL(crypto_ecdh_shared_secret);
 +
- #endif /* _CRYPTO_PKCS7_H */
++MODULE_LICENSE("Dual BSD/GPL");
+diff --git a/crypto/ecc.h b/crypto/ecc.h
+index f75a86baa3bd..3809dbeb699a 100644
+--- a/crypto/ecc.h
++++ b/crypto/ecc.h
+@@ -33,6 +33,41 @@
+ #define ECC_DIGITS_TO_BYTES_SHIFT 3
+ 
+ /**
++ * struct ecc_point - elliptic curve point in affine coordinates
++ *
++ * @x:		X coordinate in vli form.
++ * @y:		Y coordinate in vli form.
++ * @ndigits:	Length of vlis in u64 qwords.
++ */
++struct ecc_point {
++	u64 *x;
++	u64 *y;
++	u8 ndigits;
++};
++
++/**
++ * struct ecc_curve - definition of elliptic curve
++ *
++ * @name:	Short name of the curve.
++ * @g:		Generator point of the curve.
++ * @p:		Prime number, if Barrett's reduction is used for this curve
++ *		pre-calculated value 'mu' is appended to the @p after ndigits.
++ *		Use of Barrett's reduction is heuristically determined in
++ *		vli_mmod_fast().
++ * @n:		Order of the curve group.
++ * @a:		Curve parameter a.
++ * @b:		Curve parameter b.
++ */
++struct ecc_curve {
++	char *name;
++	struct ecc_point g;
++	u64 *p;
++	u64 *n;
++	u64 *a;
++	u64 *b;
++};
++
++/**
+  * ecc_is_key_valid() - Validate a given ECDH private key
+  *
+  * @curve_id:		id representing the curve to use
+@@ -91,4 +126,68 @@ int ecc_make_pub_key(const unsigned int curve_id, unsigned int ndigits,
+ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
+ 			      const u64 *private_key, const u64 *public_key,
+ 			      u64 *secret);
++
++/**
++ * ecc_is_pubkey_valid_partial() - Partial public key validation
++ *
++ * @curve:		elliptic curve domain parameters
++ * @pk:			public key as a point
++ *
++ * Valdiate public key according to SP800-56A section 5.6.2.3.4 ECC Partial
++ * Public-Key Validation Routine.
++ *
++ * Note: There is no check that the public key is in the correct elliptic curve
++ * subgroup.
++ *
++ * Return: 0 if validation is successful, -EINVAL if validation is failed.
++ */
++int ecc_is_pubkey_valid_partial(const struct ecc_curve *curve,
++				struct ecc_point *pk);
++
++/**
++ * vli_is_zero() - Determine is vli is zero
++ *
++ * @vli:		vli to check.
++ * @ndigits:		length of the @vli
++ */
++bool vli_is_zero(const u64 *vli, unsigned int ndigits);
++
++/**
++ * vli_cmp() - compare left and right vlis
++ *
++ * @left:		vli
++ * @right:		vli
++ * @ndigits:		length of both vlis
++ *
++ * Returns sign of @left - @right, i.e. -1 if @left < @right,
++ * 0 if @left = @right, 1 if @left > @right.
++ */
++int vli_cmp(const u64 *left, const u64 *right, unsigned int ndigits);
++
++/**
++ * vli_sub() - Subtracts right from left
++ *
++ * @result:		where to write result
++ * @left:		vli
++ * @right		vli
++ * @ndigits:		length of all vlis
++ *
++ * Note: can modify in-place.
++ *
++ * Return: carry bit.
++ */
++u64 vli_sub(u64 *result, const u64 *left, const u64 *right,
++	    unsigned int ndigits);
++
++/**
++ * vli_mod_inv() - Modular inversion
++ *
++ * @result:		where to write vli number
++ * @input:		vli value to operate on
++ * @mod:		modulus
++ * @ndigits:		length of all vlis
++ */
++void vli_mod_inv(u64 *result, const u64 *input, const u64 *mod,
++		 unsigned int ndigits);
++
+ #endif
+diff --git a/crypto/ecc_curve_defs.h b/crypto/ecc_curve_defs.h
+index 336ab1805639..69be6c7d228f 100644
+--- a/crypto/ecc_curve_defs.h
++++ b/crypto/ecc_curve_defs.h
+@@ -2,21 +2,6 @@
+ #ifndef _CRYTO_ECC_CURVE_DEFS_H
+ #define _CRYTO_ECC_CURVE_DEFS_H
+ 
+-struct ecc_point {
+-	u64 *x;
+-	u64 *y;
+-	u8 ndigits;
+-};
+-
+-struct ecc_curve {
+-	char *name;
+-	struct ecc_point g;
+-	u64 *p;
+-	u64 *n;
+-	u64 *a;
+-	u64 *b;
+-};
+-
+ /* NIST P-192: a = p - 3 */
+ static u64 nist_p192_g_x[] = { 0xF4FF0AFD82FF1012ull, 0x7CBF20EB43A18800ull,
+ 				0x188DA80EB03090F6ull };
+-- 
+2.11.0
