@@ -1,196 +1,114 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 30 Apr 2019 15:08:04 +0000
-Subject: [PATCH 10/11] keys: Network namespace domain tag [ver #2]
-Message-Id: <155663688450.31331.10931596489401135897.stgit@warthog.procyon.org.uk>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Thu, 11 Apr 2019 15:51:12 +0000
+Subject: [PATCH v9 00/10] crypto: add EC-RDSA (GOST 34.10) algorithm
+Message-Id: <20190411155122.13245-1-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
-To: ebiederm@xmission.com
-Cc: netdev@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-afs@lists.infradead.org, keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Create key domain tags for network namespaces and make it possible to
-automatically tag keys that are used by networked services (e.g. AF_RXRPC,
-AFS, DNS) with the default network namespace if not set by the caller.
+This patchset changes akcipher API to support ECDSA style signature
+verification, augments x509 parser to make it work with EC-RDSA certificates,
+and, finally, implements EC-RDSA (GOST 34.10) signature verification and its
+integration with IMA.
 
-This allows keys with the same description but in different namespaces to
-coexist within a keyring.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: netdev@vger.kernel.org
-cc: linux-nfs@vger.kernel.org
-cc: linux-cifs@vger.kernel.org
-cc: linux-afs@lists.infradead.org
 ---
+Changes since v8:
+- asym_tpm: move setting set_pub_key parameters into derive_pub_key, as
+  suggested by Denis Kenzior.
 
- include/linux/key-type.h    |    3 +++
- include/linux/key.h         |    1 +
- include/net/net_namespace.h |    4 ++++
- net/core/net_namespace.c    |   19 +++++++++++++++++++
- net/dns_resolver/dns_key.c  |    1 +
- net/rxrpc/key.c             |    2 ++
- security/keys/keyring.c     |    7 ++++++-
- 7 files changed, 36 insertions(+), 1 deletion(-)
+Changes since v7:
+- Do not check callback validity in akcipher requests, instead define default
+  callbacks on register, suggested by Herbert Xu.
+- Sanity checks in crypto_akcipher_maxsize are removed (not needed).
+- Sanity checks for `dst' and `dst_len' are removed from verify op (not
+  needed in akcipher API and should be checked by a driver).
+- Patch "KEYS: report to keyctl only actually supported key ops" is removed,
+  as it would affect user-space API.
 
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index e49d1de0614e..2148a6bf58f1 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -74,6 +74,9 @@ struct key_type {
- 	 */
- 	size_t def_datalen;
- 
-+	unsigned int flags;
-+#define KEY_TYPE_NET_DOMAIN	0x00000001 /* Keys of this type have a net namespace domain */
-+
- 	/* vet a description */
- 	int (*vet_description)(const char *description);
- 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index c22e64b9bd91..24db72f3839e 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -440,6 +440,7 @@ extern void key_init(void);
- #define key_init()			do { } while(0)
- #define key_free_user_ns(ns)		do { } while(0)
- #define key_put_subject(s)		do { } while(0)
-+#define key_remove_domain(d)		do { } while(0)
- 
- #endif /* CONFIG_KEYS */
- #endif /* __KERNEL__ */
-diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index a68ced28d8f4..b96de08a3ace 100644
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -45,6 +45,7 @@ struct net_generic;
- struct uevent_sock;
- struct netns_ipvs;
- struct bpf_prog;
-+struct key_subject;
- 
- 
- #define NETDEV_HASHBITS    8
-@@ -70,6 +71,9 @@ struct net {
- 						 */
- 	struct llist_node	cleanup_list;	/* namespaces on death row */
- 
-+#ifdef CONFIG_KEYS
-+	struct key_tag		*key_domain;	/* Key domain of operation tag */
-+#endif
- 	struct user_namespace   *user_ns;	/* Owning user namespace */
- 	struct ucounts		*ucounts;
- 	spinlock_t		nsid_lock;
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index 17f36317363d..a7b38f1d5762 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -38,9 +38,16 @@ EXPORT_SYMBOL_GPL(net_namespace_list);
- DECLARE_RWSEM(net_rwsem);
- EXPORT_SYMBOL_GPL(net_rwsem);
- 
-+#ifdef CONFIG_KEYS
-+static struct key_tag init_net_key_domain = { .usage = REFCOUNT_INIT(1) };
-+#endif
-+
- struct net init_net = {
- 	.count		= REFCOUNT_INIT(1),
- 	.dev_base_head	= LIST_HEAD_INIT(init_net.dev_base_head),
-+#ifdef CONFIG_KEYS
-+	.key_domain	= &init_net_key_domain,
-+#endif
- };
- EXPORT_SYMBOL(init_net);
- 
-@@ -385,10 +392,21 @@ static struct net *net_alloc(void)
- 	if (!net)
- 		goto out_free;
- 
-+#ifdef CONFIG_KEYS
-+	net->key_domain = kzalloc(sizeof(struct key_tag), GFP_KERNEL);
-+	if (!net->key_domain)
-+		goto out_free_2;
-+	refcount_set(&net->key_domain->usage, 1);
-+#endif
-+
- 	rcu_assign_pointer(net->gen, ng);
- out:
- 	return net;
- 
-+#ifdef CONFIG_KEYS
-+out_free_2:
-+	kmem_cache_free(net_cachep, net);
-+#endif
- out_free:
- 	kfree(ng);
- 	goto out;
-@@ -565,6 +583,7 @@ static void cleanup_net(struct work_struct *work)
- 	list_for_each_entry_safe(net, tmp, &net_exit_list, exit_list) {
- 		list_del_init(&net->exit_list);
- 		dec_net_namespaces(net->ucounts);
-+		key_remove_domain(net->key_domain);
- 		put_user_ns(net->user_ns);
- 		net_drop_ns(net);
- 	}
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index a65d553e730d..3e1a90669006 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -314,6 +314,7 @@ static long dns_resolver_read(const struct key *key,
- 
- struct key_type key_type_dns_resolver = {
- 	.name		= "dns_resolver",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.preparse	= dns_resolver_preparse,
- 	.free_preparse	= dns_resolver_free_preparse,
- 	.instantiate	= generic_key_instantiate,
-diff --git a/net/rxrpc/key.c b/net/rxrpc/key.c
-index e7f6b8823eb6..2722189ec273 100644
---- a/net/rxrpc/key.c
-+++ b/net/rxrpc/key.c
-@@ -43,6 +43,7 @@ static long rxrpc_read(const struct key *, char __user *, size_t);
-  */
- struct key_type key_type_rxrpc = {
- 	.name		= "rxrpc",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.preparse	= rxrpc_preparse,
- 	.free_preparse	= rxrpc_free_preparse,
- 	.instantiate	= generic_key_instantiate,
-@@ -58,6 +59,7 @@ EXPORT_SYMBOL(key_type_rxrpc);
-  */
- struct key_type key_type_rxrpc_s = {
- 	.name		= "rxrpc_s",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.vet_description = rxrpc_vet_description_s,
- 	.preparse	= rxrpc_preparse_s,
- 	.free_preparse	= rxrpc_free_preparse_s,
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index d2ad27535624..ffa368594a03 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -17,10 +17,12 @@
- #include <linux/seq_file.h>
- #include <linux/err.h>
- #include <linux/user_namespace.h>
-+#include <linux/nsproxy.h>
- #include <keys/keyring-type.h>
- #include <keys/user-type.h>
- #include <linux/assoc_array_priv.h>
- #include <linux/uaccess.h>
-+#include <net/net_namespace.h>
- #include "internal.h"
- 
- /*
-@@ -220,7 +222,10 @@ void key_set_index_key(struct keyring_index_key *index_key)
- 
- 	memcpy(index_key->desc, index_key->description, n);
- 
--	index_key->domain_tag = &default_domain_tag;
-+	if (index_key->type->flags & KEY_TYPE_NET_DOMAIN)
-+		index_key->domain_tag = current->nsproxy->net_ns->key_domain;
-+	else
-+		index_key->domain_tag = &default_domain_tag;
- 	hash_key_type_and_desc(index_key);
- }
- 
+Changes since (v5-v6):
+- set_params API is removed in favor of appending parameters into a key stream,
+  as requested by Herbert Xu.
+- verify op signature de-kmemdup'ed (as requested by David Howells) in separate
+  patch (as requested by Herbert Xu).
+- Add forgotten ASN.1 parser files to EC-RDSA patch.
+- Tested on x86_64.
+
+Changes since v5:
+- Comparison of hash algo by enum id instead of text name, as suggested by
+  Thiago Jung Bauermann and Mimi Zohar.
+
+Changes since RFC (v1-v4):
+- akcipher set_max_size, encrypt, decrypt, sign, verify callbacks may be
+  undefined by the drivers, so their crypto_akcipher_* frontends check for
+  their presence before passing the call.
+- supported_ops flags are set for keyctl, based on the presence of implemented
+  akcipher callbacks.
+- Transition to verify2 API is abandoned because raw RSA does not need
+  sign/verify ops at all, and we can switch to the new verify in one step.
+  For this RSA backends have sign/verify ops removed as they should only
+  be used (and actually used only) via PKCS1 driver.
+- Verify callback requires digest as the input parameter in src SGL, as
+  suggested by Herbert Xu, (instead of a separate parameter, as it was in
+  verify2).
+- For verify op signature is moved into kmalloc'd memory as suggested by
+  Herbert Xu.
+- set_params API should be called before set_{pub,priv}_key, thus set_*_key
+  knows everything it needs to set they key properly. Also, set_params made
+  optional for back compatibility with RSA drivers.
+- Public-key cryptography section is created in Kconfig.
+- ecc.c is made into separate module object, to be used together by ECDH and
+  EC-RDSA.
+- EC-RDSA parameters and public key are parsed using asn1_ber_decoder as
+  suggested by Stephan Mueller and David Howells.
+- Test vectors are added and tests are passing.
+- Curves/parameters definitions are split from ecrdsa.c into ecrdsa_defs.h.
+- Integration with IMA in asymmetric_verify(). Userspace ima-evm-utils already
+  have a patch in the queue to support this. Tested on x86_64.
+
+Vitaly Chikunov (10):
+  crypto: akcipher - default implementations for request callbacks
+  crypto: rsa - unimplement sign/verify for raw RSA backends
+  crypto: akcipher - new verify API for public key algorithms
+  KEYS: do not kmemdup digest in {public,tpm}_key_verify_signature
+  X.509: parse public key parameters from x509 for akcipher
+  crypto: Kconfig - create Public-key cryptography section
+  crypto: ecc - make ecc into separate module
+  crypto: ecrdsa - add EC-RDSA (GOST 34.10) algorithm
+  crypto: ecrdsa - add EC-RDSA test vectors to testmgr
+  integrity: support EC-RDSA signatures for asymmetric_verify
+
+ crypto/Kconfig                                |  63 ++--
+ crypto/Makefile                               |  10 +-
+ crypto/akcipher.c                             |  14 +
+ crypto/asymmetric_keys/asym_tpm.c             |  43 +--
+ crypto/asymmetric_keys/public_key.c           | 105 ++++---
+ crypto/asymmetric_keys/x509.asn1              |   2 +-
+ crypto/asymmetric_keys/x509_cert_parser.c     |  57 +++-
+ crypto/ecc.c                                  | 417 +++++++++++++++++++++++++-
+ crypto/ecc.h                                  | 153 +++++++++-
+ crypto/ecc_curve_defs.h                       |  15 -
+ crypto/ecrdsa.c                               | 296 ++++++++++++++++++
+ crypto/ecrdsa_defs.h                          | 225 ++++++++++++++
+ crypto/ecrdsa_params.asn1                     |   4 +
+ crypto/ecrdsa_pub_key.asn1                    |   1 +
+ crypto/rsa-pkcs1pad.c                         |  33 +-
+ crypto/rsa.c                                  | 109 -------
+ crypto/testmgr.c                              |  80 +++--
+ crypto/testmgr.h                              | 159 ++++++++++
+ drivers/crypto/caam/caampkc.c                 |   2 -
+ drivers/crypto/ccp/ccp-crypto-rsa.c           |   2 -
+ drivers/crypto/qat/qat_common/qat_asym_algs.c |   2 -
+ include/crypto/akcipher.h                     |  54 ++--
+ include/crypto/public_key.h                   |   4 +
+ include/linux/oid_registry.h                  |  18 ++
+ security/integrity/digsig_asymmetric.c        |  11 +-
+ 25 files changed, 1574 insertions(+), 305 deletions(-)
+ create mode 100644 crypto/ecrdsa.c
+ create mode 100644 crypto/ecrdsa_defs.h
+ create mode 100644 crypto/ecrdsa_params.asn1
+ create mode 100644 crypto/ecrdsa_pub_key.asn1
+
+-- 
+2.11.0
