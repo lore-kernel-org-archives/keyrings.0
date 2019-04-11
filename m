@@ -1,131 +1,87 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Tue, 02 Apr 2019 15:45:56 +0000
-Subject: [PATCH v4 13/17] fscrypt: require that key be added when setting a v2 encryption policy
-Message-Id: <20190402154600.32432-14-ebiggers@kernel.org>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Thu, 11 Apr 2019 15:51:18 +0000
+Subject: [PATCH v9 06/10] crypto: Kconfig - create Public-key cryptography section
+Message-Id: <20190411155122.13245-7-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190402154600.32432-1-ebiggers@kernel.org>
-In-Reply-To: <20190402154600.32432-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+References: <20190411155122.13245-1-vt@altlinux.org>
+In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Group RSA, DH, and ECDH into Public-key cryptography config section.
 
-By looking up the master keys in a filesystem-level keyring rather than
-in the calling processes' key hierarchy, it becomes possible for a user
-to set an encryption policy which refers to some key they don't actually
-know, then encrypt their files using that key.  Cryptographically this
-isn't much of a problem, but the semantics of this would be a bit weird.
-Thus, enforce that a v2 encryption policy can only be set if the user
-has previously added the key, or has capable(CAP_FOWNER).
-
-We tolerate that this problem will continue to exist for v1 encryption
-policies, however; there is no way around that.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
 ---
- fs/crypto/fscrypt_private.h |  3 +++
- fs/crypto/keyring.c         | 47 +++++++++++++++++++++++++++++++++++++
- fs/crypto/policy.c          |  6 +++++
- 3 files changed, 56 insertions(+)
+ crypto/Kconfig | 48 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 25 insertions(+), 23 deletions(-)
 
-diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
-index 5f679ba32cece..a398383ae9e34 100644
---- a/fs/crypto/fscrypt_private.h
-+++ b/fs/crypto/fscrypt_private.h
-@@ -411,6 +411,9 @@ extern struct key *
- fscrypt_find_master_key(struct super_block *sb,
- 			const struct fscrypt_key_specifier *mk_spec);
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 2022b9201e38..f328026dff75 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -113,29 +113,6 @@ config CRYPTO_ACOMP
+ 	select CRYPTO_ALGAPI
+ 	select CRYPTO_ACOMP2
  
-+extern int fscrypt_verify_key_added(struct super_block *sb,
-+				    const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE]);
+-config CRYPTO_RSA
+-	tristate "RSA algorithm"
+-	select CRYPTO_AKCIPHER
+-	select CRYPTO_MANAGER
+-	select MPILIB
+-	select ASN1
+-	help
+-	  Generic implementation of the RSA public key algorithm.
+-
+-config CRYPTO_DH
+-	tristate "Diffie-Hellman algorithm"
+-	select CRYPTO_KPP
+-	select MPILIB
+-	help
+-	  Generic implementation of the Diffie-Hellman algorithm.
+-
+-config CRYPTO_ECDH
+-	tristate "ECDH algorithm"
+-	select CRYPTO_KPP
+-	select CRYPTO_RNG_DEFAULT
+-	help
+-	  Generic implementation of the ECDH algorithm
+-
+ config CRYPTO_MANAGER
+ 	tristate "Cryptographic algorithm manager"
+ 	select CRYPTO_MANAGER2
+@@ -253,6 +230,31 @@ config CRYPTO_GLUE_HELPER_X86
+ config CRYPTO_ENGINE
+ 	tristate
+ 
++comment "Public-key cryptography"
 +
- extern int __init fscrypt_init_keyring(void);
- extern void fscrypt_exit_keyring(void);
- 
-diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
-index 3d17c13136a4a..2ccabf95f294c 100644
---- a/fs/crypto/keyring.c
-+++ b/fs/crypto/keyring.c
-@@ -562,6 +562,53 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
- }
- EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
- 
-+/*
-+ * Verify that the current user has added a master key with the given identifier
-+ * (returns -ENOKEY if not).  This is needed to prevent a user from encrypting
-+ * their files using some other user's key which they don't actually know.
-+ * Cryptographically this isn't much of a problem, but the semantics of this
-+ * would be a bit weird, so it's best to just forbid it.
-+ *
-+ * The system administrator (CAP_FOWNER) can override this, which should be
-+ * enough for any use cases where encryption policies are being set using keys
-+ * that were chosen ahead of time but aren't available at the moment.
-+ *
-+ * Note that the key may have already removed by the time this returns, but
-+ * that's okay; we just care whether the key was there at some point.
-+ *
-+ * Return: 0 if the key is added, -ENOKEY if it isn't, or another -errno code
-+ */
-+int fscrypt_verify_key_added(struct super_block *sb,
-+			     const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE])
-+{
-+	struct fscrypt_key_specifier mk_spec;
-+	struct key *key, *mk_user;
-+	struct fscrypt_master_key *mk;
-+	int err;
++config CRYPTO_RSA
++	tristate "RSA algorithm"
++	select CRYPTO_AKCIPHER
++	select CRYPTO_MANAGER
++	select MPILIB
++	select ASN1
++	help
++	  Generic implementation of the RSA public key algorithm.
 +
-+	mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER;
-+	memcpy(mk_spec.u.identifier, identifier, FSCRYPT_KEY_IDENTIFIER_SIZE);
++config CRYPTO_DH
++	tristate "Diffie-Hellman algorithm"
++	select CRYPTO_KPP
++	select MPILIB
++	help
++	  Generic implementation of the Diffie-Hellman algorithm.
 +
-+	key = fscrypt_find_master_key(sb, &mk_spec);
-+	if (IS_ERR(key)) {
-+		err = PTR_ERR(key);
-+		goto out;
-+	}
-+	mk = key->payload.data[0];
-+	mk_user = find_master_key_user(mk);
-+	if (IS_ERR(mk_user)) {
-+		err = PTR_ERR(mk_user);
-+	} else {
-+		key_put(mk_user);
-+		err = 0;
-+	}
-+	key_put(key);
-+out:
-+	if (err = -ENOKEY && capable(CAP_FOWNER))
-+		err = 0;
-+	return err;
-+}
++config CRYPTO_ECDH
++	tristate "ECDH algorithm"
++	select CRYPTO_KPP
++	select CRYPTO_RNG_DEFAULT
++	help
++	  Generic implementation of the ECDH algorithm
 +
- static void evict_dentries_for_decrypted_inodes(struct fscrypt_master_key *mk)
- {
- 	struct fscrypt_info *ci;
-diff --git a/fs/crypto/policy.c b/fs/crypto/policy.c
-index 912ff1d030796..fa86f96741308 100644
---- a/fs/crypto/policy.c
-+++ b/fs/crypto/policy.c
-@@ -209,6 +209,7 @@ static int set_encryption_policy(struct inode *inode,
- {
- 	union fscrypt_context ctx;
- 	int ctxsize;
-+	int err;
+ comment "Authenticated Encryption with Associated Data"
  
- 	if (!fscrypt_supported_policy(policy))
- 		return -EINVAL;
-@@ -227,6 +228,11 @@ static int set_encryption_policy(struct inode *inode,
- 		 */
- 		pr_warn_once("%s (pid %d) is setting deprecated v1 encryption policy; recommend upgrading to v2.\n",
- 			     current->comm, current->pid);
-+	} else {
-+		err = fscrypt_verify_key_added(inode->i_sb,
-+					       policy->v2.master_key_identifier);
-+		if (err)
-+			return err;
- 	}
- 
- 	ctxsize = fscrypt_new_context_from_policy(&ctx, policy);
+ config CRYPTO_CCM
 -- 
-2.21.0
+2.11.0
