@@ -1,116 +1,389 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 18 Apr 2019 23:29:21 +0000
-Subject: [PATCH v5 14/16] f2fs: wire up new fscrypt ioctls
-Message-Id: <20190418232923.250800-15-ebiggers@kernel.org>
+From: Vitaly Chikunov <vt@altlinux.org>
+Date: Thu, 11 Apr 2019 15:51:15 +0000
+Subject: [PATCH v9 03/10] crypto: akcipher - new verify API for public key algorithms
+Message-Id: <20190411155122.13245-4-vt@altlinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418232923.250800-1-ebiggers@kernel.org>
-In-Reply-To: <20190418232923.250800-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+References: <20190411155122.13245-1-vt@altlinux.org>
+In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Denis Kenzior <denkenz@gmail.com>
 
-From: Eric Biggers <ebiggers@google.com>
+Previous akcipher .verify() just `decrypts' (using RSA encrypt which is
+using public key) signature to uncover message hash, which was then
+compared in upper level public_key_verify_signature() with the expected
+hash value, which itself was never passed into verify().
 
-Wire up the new ioctls for adding and removing fscrypt keys to/from the
-filesystem, and the new ioctl for retrieving v2 encryption policies.
+This approach was incompatible with EC-DSA family of algorithms,
+because, to verify a signature EC-DSA algorithm also needs a hash value
+as input; then it's used (together with a signature divided into halves
+`r||s') to produce a witness value, which is then compared with `r' to
+determine if the signature is correct. Thus, for EC-DSA, nor
+requirements of .verify() itself, nor its output expectations in
+public_key_verify_signature() wasn't sufficient.
 
-FS_IOC_REMOVE_ENCRYPTION_KEY also required making f2fs_drop_inode() call
-fscrypt_drop_inode().
+Make improved .verify() call which gets hash value as input and produce
+complete signature check without any output besides status.
 
-For more details see Documentation/filesystems/fscrypt.rst and the
-fscrypt patches that added the implementation of these ioctls.
+Now for the top level verification only crypto_akcipher_verify() needs
+to be called and its return value inspected.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Make sure that `digest' is in kmalloc'd memory (in place of `output`) in
+{public,tpm}_key_verify_signature() as insisted by Herbert Xu, and will
+be changed in the following commit.
+
+Cc: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org
+Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+Reviewed-by: Denis Kenzior <denkenz@gmail.com>
 ---
- fs/f2fs/file.c  | 46 ++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/super.c |  2 ++
- 2 files changed, 48 insertions(+)
+ crypto/asymmetric_keys/asym_tpm.c   | 34 ++++++++-----------------
+ crypto/asymmetric_keys/public_key.c | 34 ++++++++-----------------
+ crypto/rsa-pkcs1pad.c               | 29 +++++++++++++--------
+ crypto/testmgr.c                    | 50 ++++++++++++++++++++++---------------
+ include/crypto/akcipher.h           | 36 ++++++++++++++++----------
+ 5 files changed, 92 insertions(+), 91 deletions(-)
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 5742ab8b57dc6..251e374353da8 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -2095,6 +2095,40 @@ static int f2fs_ioc_get_encryption_pwsalt(struct file *filp, unsigned long arg)
- 	return err;
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 5d4c270463f6..4e5b6fb57a94 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -744,12 +744,11 @@ static int tpm_key_verify_signature(const struct key *key,
+ 	struct crypto_wait cwait;
+ 	struct crypto_akcipher *tfm;
+ 	struct akcipher_request *req;
+-	struct scatterlist sig_sg, digest_sg;
++	struct scatterlist src_sg[2];
+ 	char alg_name[CRYPTO_MAX_ALG_NAME];
+ 	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
+ 	uint32_t der_pub_key_len;
+-	void *output;
+-	unsigned int outlen;
++	void *digest;
+ 	int ret;
+ 
+ 	pr_devel("=>%s()\n", __func__);
+@@ -782,35 +781,22 @@ static int tpm_key_verify_signature(const struct key *key,
+ 		goto error_free_tfm;
+ 
+ 	ret = -ENOMEM;
+-	outlen = crypto_akcipher_maxsize(tfm);
+-	output = kmalloc(outlen, GFP_KERNEL);
+-	if (!output)
++	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
++	if (!digest)
+ 		goto error_free_req;
+ 
+-	sg_init_one(&sig_sg, sig->s, sig->s_size);
+-	sg_init_one(&digest_sg, output, outlen);
+-	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
+-				   outlen);
++	sg_init_table(src_sg, 2);
++	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
++	sg_set_buf(&src_sg[1], digest, sig->digest_size);
++	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
++				   sig->digest_size);
+ 	crypto_init_wait(&cwait);
+ 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				      CRYPTO_TFM_REQ_MAY_SLEEP,
+ 				      crypto_req_done, &cwait);
+-
+-	/* Perform the verification calculation.  This doesn't actually do the
+-	 * verification, but rather calculates the hash expected by the
+-	 * signature and returns that to us.
+-	 */
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+-	if (ret)
+-		goto out_free_output;
+-
+-	/* Do the actual verification step. */
+-	if (req->dst_len != sig->digest_size ||
+-	    memcmp(sig->digest, output, sig->digest_size) != 0)
+-		ret = -EKEYREJECTED;
+ 
+-out_free_output:
+-	kfree(output);
++	kfree(digest);
+ error_free_req:
+ 	akcipher_request_free(req);
+ error_free_tfm:
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index f5d85b47fcc6..0c069fe8a59c 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -227,10 +227,9 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 	struct crypto_wait cwait;
+ 	struct crypto_akcipher *tfm;
+ 	struct akcipher_request *req;
+-	struct scatterlist sig_sg, digest_sg;
++	struct scatterlist src_sg[2];
+ 	char alg_name[CRYPTO_MAX_ALG_NAME];
+-	void *output;
+-	unsigned int outlen;
++	void *digest;
+ 	int ret;
+ 
+ 	pr_devel("=>%s()\n", __func__);
+@@ -264,35 +263,22 @@ int public_key_verify_signature(const struct public_key *pkey,
+ 		goto error_free_req;
+ 
+ 	ret = -ENOMEM;
+-	outlen = crypto_akcipher_maxsize(tfm);
+-	output = kmalloc(outlen, GFP_KERNEL);
+-	if (!output)
++	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
++	if (!digest)
+ 		goto error_free_req;
+ 
+-	sg_init_one(&sig_sg, sig->s, sig->s_size);
+-	sg_init_one(&digest_sg, output, outlen);
+-	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
+-				   outlen);
++	sg_init_table(src_sg, 2);
++	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
++	sg_set_buf(&src_sg[1], digest, sig->digest_size);
++	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
++				   sig->digest_size);
+ 	crypto_init_wait(&cwait);
+ 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
+ 				      CRYPTO_TFM_REQ_MAY_SLEEP,
+ 				      crypto_req_done, &cwait);
+-
+-	/* Perform the verification calculation.  This doesn't actually do the
+-	 * verification, but rather calculates the hash expected by the
+-	 * signature and returns that to us.
+-	 */
+ 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
+-	if (ret)
+-		goto out_free_output;
+-
+-	/* Do the actual verification step. */
+-	if (req->dst_len != sig->digest_size ||
+-	    memcmp(sig->digest, output, sig->digest_size) != 0)
+-		ret = -EKEYREJECTED;
+ 
+-out_free_output:
+-	kfree(output);
++	kfree(digest);
+ error_free_req:
+ 	akcipher_request_free(req);
+ error_free_tfm:
+diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
+index 94382fa2c6ac..29c336068dc0 100644
+--- a/crypto/rsa-pkcs1pad.c
++++ b/crypto/rsa-pkcs1pad.c
+@@ -488,14 +488,21 @@ static int pkcs1pad_verify_complete(struct akcipher_request *req, int err)
+ 
+ 	err = 0;
+ 
+-	if (req->dst_len < dst_len - pos)
+-		err = -EOVERFLOW;
+-	req->dst_len = dst_len - pos;
+-
+-	if (!err)
+-		sg_copy_from_buffer(req->dst,
+-				sg_nents_for_len(req->dst, req->dst_len),
+-				out_buf + pos, req->dst_len);
++	if (req->dst_len != dst_len - pos) {
++		err = -EKEYREJECTED;
++		req->dst_len = dst_len - pos;
++		goto done;
++	}
++	/* Extract appended digest. */
++	sg_pcopy_to_buffer(req->src,
++			   sg_nents_for_len(req->src,
++					    req->src_len + req->dst_len),
++			   req_ctx->out_buf + ctx->key_size,
++			   req->dst_len, ctx->key_size);
++	/* Do the actual verification step. */
++	if (memcmp(req_ctx->out_buf + ctx->key_size, out_buf + pos,
++		   req->dst_len) != 0)
++		err = -EKEYREJECTED;
+ done:
+ 	kzfree(req_ctx->out_buf);
+ 
+@@ -532,10 +539,12 @@ static int pkcs1pad_verify(struct akcipher_request *req)
+ 	struct pkcs1pad_request *req_ctx = akcipher_request_ctx(req);
+ 	int err;
+ 
+-	if (!ctx->key_size || req->src_len < ctx->key_size)
++	if (WARN_ON(req->dst) ||
++	    WARN_ON(!req->dst_len) ||
++	    !ctx->key_size || req->src_len < ctx->key_size)
+ 		return -EINVAL;
+ 
+-	req_ctx->out_buf = kmalloc(ctx->key_size, GFP_KERNEL);
++	req_ctx->out_buf = kmalloc(ctx->key_size + req->dst_len, GFP_KERNEL);
+ 	if (!req_ctx->out_buf)
+ 		return -ENOMEM;
+ 
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 0f6bfb6ce6a4..21b27996508a 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -2595,7 +2595,7 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 	struct crypto_wait wait;
+ 	unsigned int out_len_max, out_len = 0;
+ 	int err = -ENOMEM;
+-	struct scatterlist src, dst, src_tab[2];
++	struct scatterlist src, dst, src_tab[3];
+ 	const char *m, *c;
+ 	unsigned int m_size, c_size;
+ 	const char *op;
+@@ -2618,13 +2618,12 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 	if (err)
+ 		goto free_req;
+ 
+-	err = -ENOMEM;
+-	out_len_max = crypto_akcipher_maxsize(tfm);
+-
+ 	/*
+ 	 * First run test which do not require a private key, such as
+ 	 * encrypt or verify.
+ 	 */
++	err = -ENOMEM;
++	out_len_max = crypto_akcipher_maxsize(tfm);
+ 	outbuf_enc = kzalloc(out_len_max, GFP_KERNEL);
+ 	if (!outbuf_enc)
+ 		goto free_req;
+@@ -2650,12 +2649,20 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 		goto free_all;
+ 	memcpy(xbuf[0], m, m_size);
+ 
+-	sg_init_table(src_tab, 2);
++	sg_init_table(src_tab, 3);
+ 	sg_set_buf(&src_tab[0], xbuf[0], 8);
+ 	sg_set_buf(&src_tab[1], xbuf[0] + 8, m_size - 8);
+-	sg_init_one(&dst, outbuf_enc, out_len_max);
+-	akcipher_request_set_crypt(req, src_tab, &dst, m_size,
+-				   out_len_max);
++	if (vecs->siggen_sigver_test) {
++		if (WARN_ON(c_size > PAGE_SIZE))
++			goto free_all;
++		memcpy(xbuf[1], c, c_size);
++		sg_set_buf(&src_tab[2], xbuf[1], c_size);
++		akcipher_request_set_crypt(req, src_tab, NULL, m_size, c_size);
++	} else {
++		sg_init_one(&dst, outbuf_enc, out_len_max);
++		akcipher_request_set_crypt(req, src_tab, &dst, m_size,
++					   out_len_max);
++	}
+ 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
+ 				      crypto_req_done, &wait);
+ 
+@@ -2668,18 +2675,21 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 		pr_err("alg: akcipher: %s test failed. err %d\n", op, err);
+ 		goto free_all;
+ 	}
+-	if (req->dst_len != c_size) {
+-		pr_err("alg: akcipher: %s test failed. Invalid output len\n",
+-		       op);
+-		err = -EINVAL;
+-		goto free_all;
+-	}
+-	/* verify that encrypted message is equal to expected */
+-	if (memcmp(c, outbuf_enc, c_size)) {
+-		pr_err("alg: akcipher: %s test failed. Invalid output\n", op);
+-		hexdump(outbuf_enc, c_size);
+-		err = -EINVAL;
+-		goto free_all;
++	if (!vecs->siggen_sigver_test) {
++		if (req->dst_len != c_size) {
++			pr_err("alg: akcipher: %s test failed. Invalid output len\n",
++			       op);
++			err = -EINVAL;
++			goto free_all;
++		}
++		/* verify that encrypted message is equal to expected */
++		if (memcmp(c, outbuf_enc, c_size) != 0) {
++			pr_err("alg: akcipher: %s test failed. Invalid output\n",
++			       op);
++			hexdump(outbuf_enc, c_size);
++			err = -EINVAL;
++			goto free_all;
++		}
+ 	}
+ 
+ 	/*
+diff --git a/include/crypto/akcipher.h b/include/crypto/akcipher.h
+index 2d690494568c..2d26939fff51 100644
+--- a/include/crypto/akcipher.h
++++ b/include/crypto/akcipher.h
+@@ -19,14 +19,20 @@
+  *
+  * @base:	Common attributes for async crypto requests
+  * @src:	Source data
+- * @dst:	Destination data
++ *		For verify op this is signature + digest, in that case
++ *		total size of @src is @src_len + @dst_len.
++ * @dst:	Destination data (Should be NULL for verify op)
+  * @src_len:	Size of the input buffer
+- * @dst_len:	Size of the output buffer. It needs to be at least
+- *		as big as the expected result depending	on the operation
++ *		For verify op it's size of signature part of @src, this part
++ *		is supposed to be operated by cipher.
++ * @dst_len:	Size of @dst buffer (for all ops except verify).
++ *		It needs to be at least	as big as the expected result
++ *		depending on the operation.
+  *		After operation it will be updated with the actual size of the
+  *		result.
+  *		In case of error where the dst sgl size was insufficient,
+  *		it will be updated to the size required for the operation.
++ *		For verify op this is size of digest part in @src.
+  * @__ctx:	Start of private context data
+  */
+ struct akcipher_request {
+@@ -55,10 +61,9 @@ struct crypto_akcipher {
+  *		algorithm. In case of error, where the dst_len was insufficient,
+  *		the req->dst_len will be updated to the size required for the
+  *		operation
+- * @verify:	Function performs a sign operation as defined by public key
+- *		algorithm. In case of error, where the dst_len was insufficient,
+- *		the req->dst_len will be updated to the size required for the
+- *		operation
++ * @verify:	Function performs a complete verify operation as defined by
++ *		public key algorithm, returning verification status. Requires
++ *		digest value as input parameter.
+  * @encrypt:	Function performs an encrypt operation as defined by public key
+  *		algorithm. In case of error, where the dst_len was insufficient,
+  *		the req->dst_len will be updated to the size required for the
+@@ -238,9 +243,10 @@ static inline void akcipher_request_set_callback(struct akcipher_request *req,
+  *
+  * @req:	public key request
+  * @src:	ptr to input scatter list
+- * @dst:	ptr to output scatter list
++ * @dst:	ptr to output scatter list or NULL for verify op
+  * @src_len:	size of the src input scatter list to be processed
+- * @dst_len:	size of the dst output scatter list
++ * @dst_len:	size of the dst output scatter list or size of signature
++ *		portion in @src for verify op
+  */
+ static inline void akcipher_request_set_crypt(struct akcipher_request *req,
+ 					      struct scatterlist *src,
+@@ -343,14 +349,18 @@ static inline int crypto_akcipher_sign(struct akcipher_request *req)
  }
  
-+static int f2fs_ioc_get_encryption_policy_ex(struct file *filp,
-+					     unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
-+}
-+
-+static int f2fs_ioc_add_encryption_key(struct file *filp, unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_add_key(filp, (void __user *)arg);
-+}
-+
-+static int f2fs_ioc_remove_encryption_key(struct file *filp, unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
-+}
-+
-+static int f2fs_ioc_get_encryption_key_status(struct file *filp,
-+					      unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
-+}
-+
- static int f2fs_ioc_gc(struct file *filp, unsigned long arg)
+ /**
+- * crypto_akcipher_verify() - Invoke public key verify operation
++ * crypto_akcipher_verify() - Invoke public key signature verification
+  *
+- * Function invokes the specific public key verify operation for a given
+- * public key algorithm
++ * Function invokes the specific public key signature verification operation
++ * for a given public key algorithm.
+  *
+  * @req:	asymmetric key request
+  *
+- * Return: zero on success; error code in case of error
++ * Note: req->dst should be NULL, req->src should point to SG of size
++ * (req->src_size + req->dst_size), containing signature (of req->src_size
++ * length) with appended digest (of req->dst_size length).
++ *
++ * Return: zero on verification success; error code in case of error.
+  */
+ static inline int crypto_akcipher_verify(struct akcipher_request *req)
  {
- 	struct inode *inode = file_inode(filp);
-@@ -3000,6 +3034,14 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return f2fs_ioc_get_encryption_policy(filp, arg);
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 		return f2fs_ioc_get_encryption_pwsalt(filp, arg);
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		return f2fs_ioc_get_encryption_policy_ex(filp, arg);
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		return f2fs_ioc_add_encryption_key(filp, arg);
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		return f2fs_ioc_remove_encryption_key(filp, arg);
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		return f2fs_ioc_get_encryption_key_status(filp, arg);
- 	case F2FS_IOC_GARBAGE_COLLECT:
- 		return f2fs_ioc_gc(filp, arg);
- 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
-@@ -3119,6 +3161,10 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 	case F2FS_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 	case F2FS_IOC_GARBAGE_COLLECT:
- 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
- 	case F2FS_IOC_WRITE_CHECKPOINT:
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 11b3a039a1881..88f5e45071275 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -934,6 +934,8 @@ static int f2fs_drop_inode(struct inode *inode)
- 		return 0;
- 	}
- 	ret = generic_drop_inode(inode);
-+	if (!ret)
-+		ret = fscrypt_drop_inode(inode);
- 	trace_f2fs_drop_inode(inode, ret);
- 	return ret;
- }
 -- 
-2.21.0.392.gf8f6787159e-goog
+2.11.0
