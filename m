@@ -1,193 +1,187 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 18 Apr 2019 23:29:08 +0000
-Subject: [PATCH v5 01/16] fs, fscrypt: move uapi definitions to new header <linux/fscrypt.h>
-Message-Id: <20190418232923.250800-2-ebiggers@kernel.org>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Thu, 18 Apr 2019 03:51:18 +0000
+Subject: [PATCH v10 10/12] ima: Collect modsig
+Message-Id: <20190418035120.2354-11-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418232923.250800-1-ebiggers@kernel.org>
-In-Reply-To: <20190418232923.250800-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+References: <20190418035120.2354-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190418035120.2354-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-From: Eric Biggers <ebiggers@google.com>
+Obtain the modsig and calculate its corresponding hash in
+ima_collect_measurement().
 
-More fscrypt definitions are being added, and we shouldn't use a
-disproportionate amount of space in <linux/fs.h> for fscrypt stuff.
-So move the fscrypt definitions to a new header <linux/fscrypt.h>.
-
-For source compatibility with existing userspace programs, <linux/fs.h>
-still includes the new header.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 ---
- MAINTAINERS                  |  1 +
- include/linux/fscrypt.h      |  1 +
- include/uapi/linux/fs.h      | 54 ++-------------------------------
- include/uapi/linux/fscrypt.h | 58 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 63 insertions(+), 51 deletions(-)
- create mode 100644 include/uapi/linux/fscrypt.h
+ security/integrity/ima/ima.h          |  8 ++++-
+ security/integrity/ima/ima_api.c      |  5 ++-
+ security/integrity/ima/ima_appraise.c |  2 +-
+ security/integrity/ima/ima_main.c     |  2 +-
+ security/integrity/ima/ima_modsig.c   | 50 ++++++++++++++++++++++++++-
+ 5 files changed, 62 insertions(+), 5 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3671fdea5010e..8228ba0713ab3 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6352,6 +6352,7 @@ T:	git git://git.kernel.org/pub/scm/fs/fscrypt/fscrypt.git
- S:	Supported
- F:	fs/crypto/
- F:	include/linux/fscrypt*.h
-+F:	include/uapi/linux/fscrypt.h
- F:	Documentation/filesystems/fscrypt.rst
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 9f69befd8674..e051477badf4 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -201,7 +201,7 @@ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ int ima_must_measure(struct inode *inode, int mask, enum ima_hooks func);
+ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 			    struct file *file, void *buf, loff_t size,
+-			    enum hash_algo algo);
++			    enum hash_algo algo, struct modsig *modsig);
+ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
+ 			   const unsigned char *filename,
+ 			   struct evm_ima_xattr_data *xattr_value,
+@@ -302,6 +302,7 @@ static inline int ima_read_xattr(struct dentry *dentry,
+ bool ima_hook_supports_modsig(enum ima_hooks func);
+ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
+ 		    struct modsig **modsig);
++void ima_collect_modsig(struct modsig *modsig, const void *buf, loff_t size);
+ void ima_free_modsig(struct modsig *modsig);
+ #else
+ static inline bool ima_hook_supports_modsig(enum ima_hooks func)
+@@ -315,6 +316,11 @@ static inline int ima_read_modsig(enum ima_hooks func, const void *buf,
+ 	return -EOPNOTSUPP;
+ }
  
- FSI-ATTACHED I2C DRIVER
-diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
-index 28c74e0a72310..1ed0bc2b75f3c 100644
---- a/include/linux/fscrypt.h
-+++ b/include/linux/fscrypt.h
-@@ -16,6 +16,7 @@
- #include <linux/fs.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
-+#include <uapi/linux/fscrypt.h>
- 
- #define FS_CRYPTO_BLOCK_SIZE		16
- 
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index 121e82ce296b5..0f4e66b1bcd09 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -13,6 +13,9 @@
- #include <linux/limits.h>
- #include <linux/ioctl.h>
- #include <linux/types.h>
-+#ifndef __KERNEL__
-+#include <linux/fscrypt.h>
-+#endif
- 
- /* Use of MS_* flags within the kernel is restricted to core mount(2) code. */
- #if !defined(__KERNEL__)
-@@ -212,57 +215,6 @@ struct fsxattr {
- #define FS_IOC_GETFSLABEL		_IOR(0x94, 49, char[FSLABEL_MAX])
- #define FS_IOC_SETFSLABEL		_IOW(0x94, 50, char[FSLABEL_MAX])
- 
--/*
-- * File system encryption support
-- */
--/* Policy provided via an ioctl on the topmost directory */
--#define FS_KEY_DESCRIPTOR_SIZE	8
--
--#define FS_POLICY_FLAGS_PAD_4		0x00
--#define FS_POLICY_FLAGS_PAD_8		0x01
--#define FS_POLICY_FLAGS_PAD_16		0x02
--#define FS_POLICY_FLAGS_PAD_32		0x03
--#define FS_POLICY_FLAGS_PAD_MASK	0x03
--#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
--#define FS_POLICY_FLAGS_VALID		0x07
--
--/* Encryption algorithms */
--#define FS_ENCRYPTION_MODE_INVALID		0
--#define FS_ENCRYPTION_MODE_AES_256_XTS		1
--#define FS_ENCRYPTION_MODE_AES_256_GCM		2
--#define FS_ENCRYPTION_MODE_AES_256_CBC		3
--#define FS_ENCRYPTION_MODE_AES_256_CTS		4
--#define FS_ENCRYPTION_MODE_AES_128_CBC		5
--#define FS_ENCRYPTION_MODE_AES_128_CTS		6
--#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
--#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
--#define FS_ENCRYPTION_MODE_ADIANTUM		9
--
--struct fscrypt_policy {
--	__u8 version;
--	__u8 contents_encryption_mode;
--	__u8 filenames_encryption_mode;
--	__u8 flags;
--	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
--};
--
--#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
--#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
--#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
--
--/* Parameters for passing an encryption key into the kernel keyring */
--#define FS_KEY_DESC_PREFIX		"fscrypt:"
--#define FS_KEY_DESC_PREFIX_SIZE		8
--
--/* Structure that userspace passes to the kernel keyring */
--#define FS_MAX_KEY_SIZE			64
--
--struct fscrypt_key {
--	__u32 mode;
--	__u8 raw[FS_MAX_KEY_SIZE];
--	__u32 size;
--};
--
- /*
-  * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
-  *
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-new file mode 100644
-index 0000000000000..193339cb53fdb
---- /dev/null
-+++ b/include/uapi/linux/fscrypt.h
-@@ -0,0 +1,58 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-+#ifndef _UAPI_LINUX_FSCRYPT_H
-+#define _UAPI_LINUX_FSCRYPT_H
++static inline void ima_collect_modsig(struct modsig *modsig, const void *buf,
++				      loff_t size)
++{
++}
 +
-+#include <linux/types.h>
+ static inline void ima_free_modsig(struct modsig *modsig)
+ {
+ }
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index 0639d0631f2c..7c01b0a57a5a 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -198,7 +198,7 @@ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+  */
+ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 			    struct file *file, void *buf, loff_t size,
+-			    enum hash_algo algo)
++			    enum hash_algo algo, struct modsig *modsig)
+ {
+ 	const char *audit_cause = "failed";
+ 	struct inode *inode = file_inode(file);
+@@ -245,6 +245,9 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 	memcpy(iint->ima_hash, &hash, length);
+ 	iint->version = i_version;
+ 
++	if (modsig)
++		ima_collect_modsig(modsig, buf, size);
 +
-+/*
-+ * File system encryption support
+ 	/* Possibly temporary failure due to type of read (eg. O_DIRECT) */
+ 	if (!result)
+ 		iint->flags |= IMA_COLLECTED;
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index b8cc5897f16a..119034a59627 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -437,7 +437,7 @@ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
+ 	    !(iint->flags & IMA_HASH))
+ 		return;
+ 
+-	rc = ima_collect_measurement(iint, file, NULL, 0, ima_hash_algo);
++	rc = ima_collect_measurement(iint, file, NULL, 0, ima_hash_algo, NULL);
+ 	if (rc < 0)
+ 		return;
+ 
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 722d4e9c72ac..b5e44d03a0e3 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -289,7 +289,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 
+ 	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
+ 
+-	rc = ima_collect_measurement(iint, file, buf, size, hash_algo);
++	rc = ima_collect_measurement(iint, file, buf, size, hash_algo, modsig);
+ 	if (rc != 0 && rc != -EBADF && rc != -EINVAL)
+ 		goto out_locked;
+ 
+diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
+index ac0f44fb52ce..22a49f127437 100644
+--- a/security/integrity/ima/ima_modsig.c
++++ b/security/integrity/ima/ima_modsig.c
+@@ -17,6 +17,19 @@
+ 
+ struct modsig {
+ 	struct pkcs7_message *pkcs7_msg;
++
++	enum hash_algo hash_algo;
++
++	/* This digest will go in the 'd-modsig' field of the IMA template. */
++	const u8 *digest;
++	u32 digest_size;
++
++	/*
++	 * This is what will go to the measurement list if the template requires
++	 * storing the signature.
++	 */
++	int raw_pkcs7_len;
++	u8 raw_pkcs7[];
+ };
+ 
+ /**
+@@ -71,7 +84,8 @@ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
+ 	sig_len = be32_to_cpu(sig->sig_len);
+ 	buf_len -= sig_len + sizeof(*sig);
+ 
+-	hdr = kmalloc(sizeof(*hdr), GFP_KERNEL);
++	/* Allocate sig_len additional bytes to hold the raw PKCS#7 data. */
++	hdr = kzalloc(sizeof(*hdr) + sig_len, GFP_KERNEL);
+ 	if (!hdr)
+ 		return -ENOMEM;
+ 
+@@ -81,11 +95,45 @@ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
+ 		return PTR_ERR(hdr->pkcs7_msg);
+ 	}
+ 
++	memcpy(hdr->raw_pkcs7, buf + buf_len, sig_len);
++	hdr->raw_pkcs7_len = sig_len;
++
++	/* We don't know the hash algorithm yet. */
++	hdr->hash_algo = HASH_ALGO__LAST;
++
+ 	*modsig = hdr;
+ 
+ 	return 0;
+ }
+ 
++/**
++ * ima_collect_modsig - Calculate the file hash without the appended signature.
++ *
++ * Since the modsig is part of the file contents, the hash used in its signature
++ * isn't the same one ordinarily calculated by IMA. Therefore PKCS7 code
++ * calculates a separate one for signature verification.
 + */
-+/* Policy provided via an ioctl on the topmost directory */
-+#define FS_KEY_DESCRIPTOR_SIZE	8
++void ima_collect_modsig(struct modsig *modsig, const void *buf, loff_t size)
++{
++	int rc;
 +
-+#define FS_POLICY_FLAGS_PAD_4		0x00
-+#define FS_POLICY_FLAGS_PAD_8		0x01
-+#define FS_POLICY_FLAGS_PAD_16		0x02
-+#define FS_POLICY_FLAGS_PAD_32		0x03
-+#define FS_POLICY_FLAGS_PAD_MASK	0x03
-+#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
-+#define FS_POLICY_FLAGS_VALID		0x07
++	/*
++	 * Provide the file contents (minus the appended sig) so that the PKCS7
++	 * code can calculate the file hash.
++	 */
++	size -= modsig->raw_pkcs7_len + strlen(MODULE_SIG_STRING) +
++		sizeof(struct module_signature);
++	rc = pkcs7_supply_detached_data(modsig->pkcs7_msg, buf, size);
++	if (rc)
++		return;
 +
-+/* Encryption algorithms */
-+#define FS_ENCRYPTION_MODE_INVALID		0
-+#define FS_ENCRYPTION_MODE_AES_256_XTS		1
-+#define FS_ENCRYPTION_MODE_AES_256_GCM		2
-+#define FS_ENCRYPTION_MODE_AES_256_CBC		3
-+#define FS_ENCRYPTION_MODE_AES_256_CTS		4
-+#define FS_ENCRYPTION_MODE_AES_128_CBC		5
-+#define FS_ENCRYPTION_MODE_AES_128_CTS		6
-+#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
-+#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
-+#define FS_ENCRYPTION_MODE_ADIANTUM		9
++	/* Ask the PKCS7 code to calculate the file hash. */
++	rc = pkcs7_get_digest(modsig->pkcs7_msg, &modsig->digest,
++			      &modsig->digest_size, &modsig->hash_algo);
++	if (rc)
++		return;
++}
 +
-+struct fscrypt_policy {
-+	__u8 version;
-+	__u8 contents_encryption_mode;
-+	__u8 filenames_encryption_mode;
-+	__u8 flags;
-+	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-+};
-+
-+#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
-+#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
-+#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
-+
-+/* Parameters for passing an encryption key into the kernel keyring */
-+#define FS_KEY_DESC_PREFIX		"fscrypt:"
-+#define FS_KEY_DESC_PREFIX_SIZE		8
-+
-+/* Structure that userspace passes to the kernel keyring */
-+#define FS_MAX_KEY_SIZE			64
-+
-+struct fscrypt_key {
-+	__u32 mode;
-+	__u8 raw[FS_MAX_KEY_SIZE];
-+	__u32 size;
-+};
-+
-+#endif /* _UAPI_LINUX_FSCRYPT_H */
--- 
-2.21.0.392.gf8f6787159e-goog
+ int ima_modsig_verify(struct key *keyring, const struct modsig *modsig)
+ {
+ 	return verify_pkcs7_message_sig(NULL, 0, modsig->pkcs7_msg, keyring,
