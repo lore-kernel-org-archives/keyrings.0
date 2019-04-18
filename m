@@ -1,114 +1,63 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Thu, 11 Apr 2019 15:51:12 +0000
-Subject: [PATCH v9 00/10] crypto: add EC-RDSA (GOST 34.10) algorithm
-Message-Id: <20190411155122.13245-1-vt@altlinux.org>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Thu, 18 Apr 2019 14:25:05 +0000
+Subject: Re: [PATCH v9 00/10] crypto: add EC-RDSA (GOST 34.10) algorithm
+Message-Id: <20190418142505.tkd4bgf76imzuu3g@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190411155122.13245-1-vt@altlinux.org>
+In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
+To: Vitaly Chikunov <vt@altlinux.org>
+Cc: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
 
-This patchset changes akcipher API to support ECDSA style signature
-verification, augments x509 parser to make it work with EC-RDSA certificates,
-and, finally, implements EC-RDSA (GOST 34.10) signature verification and its
-integration with IMA.
+On Thu, Apr 11, 2019 at 06:51:12PM +0300, Vitaly Chikunov wrote:
+>
+> Vitaly Chikunov (10):
+>   crypto: akcipher - default implementations for request callbacks
+>   crypto: rsa - unimplement sign/verify for raw RSA backends
+>   crypto: akcipher - new verify API for public key algorithms
+>   KEYS: do not kmemdup digest in {public,tpm}_key_verify_signature
+>   X.509: parse public key parameters from x509 for akcipher
+>   crypto: Kconfig - create Public-key cryptography section
+>   crypto: ecc - make ecc into separate module
+>   crypto: ecrdsa - add EC-RDSA (GOST 34.10) algorithm
+>   crypto: ecrdsa - add EC-RDSA test vectors to testmgr
+>   integrity: support EC-RDSA signatures for asymmetric_verify
+> 
+>  crypto/Kconfig                                |  63 ++--
+>  crypto/Makefile                               |  10 +-
+>  crypto/akcipher.c                             |  14 +
+>  crypto/asymmetric_keys/asym_tpm.c             |  43 +--
+>  crypto/asymmetric_keys/public_key.c           | 105 ++++---
+>  crypto/asymmetric_keys/x509.asn1              |   2 +-
+>  crypto/asymmetric_keys/x509_cert_parser.c     |  57 +++-
+>  crypto/ecc.c                                  | 417 +++++++++++++++++++++++++-
+>  crypto/ecc.h                                  | 153 +++++++++-
+>  crypto/ecc_curve_defs.h                       |  15 -
+>  crypto/ecrdsa.c                               | 296 ++++++++++++++++++
+>  crypto/ecrdsa_defs.h                          | 225 ++++++++++++++
+>  crypto/ecrdsa_params.asn1                     |   4 +
+>  crypto/ecrdsa_pub_key.asn1                    |   1 +
+>  crypto/rsa-pkcs1pad.c                         |  33 +-
+>  crypto/rsa.c                                  | 109 -------
+>  crypto/testmgr.c                              |  80 +++--
+>  crypto/testmgr.h                              | 159 ++++++++++
+>  drivers/crypto/caam/caampkc.c                 |   2 -
+>  drivers/crypto/ccp/ccp-crypto-rsa.c           |   2 -
+>  drivers/crypto/qat/qat_common/qat_asym_algs.c |   2 -
+>  include/crypto/akcipher.h                     |  54 ++--
+>  include/crypto/public_key.h                   |   4 +
+>  include/linux/oid_registry.h                  |  18 ++
+>  security/integrity/digsig_asymmetric.c        |  11 +-
+>  25 files changed, 1574 insertions(+), 305 deletions(-)
+>  create mode 100644 crypto/ecrdsa.c
+>  create mode 100644 crypto/ecrdsa_defs.h
+>  create mode 100644 crypto/ecrdsa_params.asn1
+>  create mode 100644 crypto/ecrdsa_pub_key.asn1
 
----
-Changes since v8:
-- asym_tpm: move setting set_pub_key parameters into derive_pub_key, as
-  suggested by Denis Kenzior.
-
-Changes since v7:
-- Do not check callback validity in akcipher requests, instead define default
-  callbacks on register, suggested by Herbert Xu.
-- Sanity checks in crypto_akcipher_maxsize are removed (not needed).
-- Sanity checks for `dst' and `dst_len' are removed from verify op (not
-  needed in akcipher API and should be checked by a driver).
-- Patch "KEYS: report to keyctl only actually supported key ops" is removed,
-  as it would affect user-space API.
-
-Changes since (v5-v6):
-- set_params API is removed in favor of appending parameters into a key stream,
-  as requested by Herbert Xu.
-- verify op signature de-kmemdup'ed (as requested by David Howells) in separate
-  patch (as requested by Herbert Xu).
-- Add forgotten ASN.1 parser files to EC-RDSA patch.
-- Tested on x86_64.
-
-Changes since v5:
-- Comparison of hash algo by enum id instead of text name, as suggested by
-  Thiago Jung Bauermann and Mimi Zohar.
-
-Changes since RFC (v1-v4):
-- akcipher set_max_size, encrypt, decrypt, sign, verify callbacks may be
-  undefined by the drivers, so their crypto_akcipher_* frontends check for
-  their presence before passing the call.
-- supported_ops flags are set for keyctl, based on the presence of implemented
-  akcipher callbacks.
-- Transition to verify2 API is abandoned because raw RSA does not need
-  sign/verify ops at all, and we can switch to the new verify in one step.
-  For this RSA backends have sign/verify ops removed as they should only
-  be used (and actually used only) via PKCS1 driver.
-- Verify callback requires digest as the input parameter in src SGL, as
-  suggested by Herbert Xu, (instead of a separate parameter, as it was in
-  verify2).
-- For verify op signature is moved into kmalloc'd memory as suggested by
-  Herbert Xu.
-- set_params API should be called before set_{pub,priv}_key, thus set_*_key
-  knows everything it needs to set they key properly. Also, set_params made
-  optional for back compatibility with RSA drivers.
-- Public-key cryptography section is created in Kconfig.
-- ecc.c is made into separate module object, to be used together by ECDH and
-  EC-RDSA.
-- EC-RDSA parameters and public key are parsed using asn1_ber_decoder as
-  suggested by Stephan Mueller and David Howells.
-- Test vectors are added and tests are passing.
-- Curves/parameters definitions are split from ecrdsa.c into ecrdsa_defs.h.
-- Integration with IMA in asymmetric_verify(). Userspace ima-evm-utils already
-  have a patch in the queue to support this. Tested on x86_64.
-
-Vitaly Chikunov (10):
-  crypto: akcipher - default implementations for request callbacks
-  crypto: rsa - unimplement sign/verify for raw RSA backends
-  crypto: akcipher - new verify API for public key algorithms
-  KEYS: do not kmemdup digest in {public,tpm}_key_verify_signature
-  X.509: parse public key parameters from x509 for akcipher
-  crypto: Kconfig - create Public-key cryptography section
-  crypto: ecc - make ecc into separate module
-  crypto: ecrdsa - add EC-RDSA (GOST 34.10) algorithm
-  crypto: ecrdsa - add EC-RDSA test vectors to testmgr
-  integrity: support EC-RDSA signatures for asymmetric_verify
-
- crypto/Kconfig                                |  63 ++--
- crypto/Makefile                               |  10 +-
- crypto/akcipher.c                             |  14 +
- crypto/asymmetric_keys/asym_tpm.c             |  43 +--
- crypto/asymmetric_keys/public_key.c           | 105 ++++---
- crypto/asymmetric_keys/x509.asn1              |   2 +-
- crypto/asymmetric_keys/x509_cert_parser.c     |  57 +++-
- crypto/ecc.c                                  | 417 +++++++++++++++++++++++++-
- crypto/ecc.h                                  | 153 +++++++++-
- crypto/ecc_curve_defs.h                       |  15 -
- crypto/ecrdsa.c                               | 296 ++++++++++++++++++
- crypto/ecrdsa_defs.h                          | 225 ++++++++++++++
- crypto/ecrdsa_params.asn1                     |   4 +
- crypto/ecrdsa_pub_key.asn1                    |   1 +
- crypto/rsa-pkcs1pad.c                         |  33 +-
- crypto/rsa.c                                  | 109 -------
- crypto/testmgr.c                              |  80 +++--
- crypto/testmgr.h                              | 159 ++++++++++
- drivers/crypto/caam/caampkc.c                 |   2 -
- drivers/crypto/ccp/ccp-crypto-rsa.c           |   2 -
- drivers/crypto/qat/qat_common/qat_asym_algs.c |   2 -
- include/crypto/akcipher.h                     |  54 ++--
- include/crypto/public_key.h                   |   4 +
- include/linux/oid_registry.h                  |  18 ++
- security/integrity/digsig_asymmetric.c        |  11 +-
- 25 files changed, 1574 insertions(+), 305 deletions(-)
- create mode 100644 crypto/ecrdsa.c
- create mode 100644 crypto/ecrdsa_defs.h
- create mode 100644 crypto/ecrdsa_params.asn1
- create mode 100644 crypto/ecrdsa_pub_key.asn1
-
+All applied.  Thanks.
 -- 
-2.11.0
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
