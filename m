@@ -1,251 +1,300 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 30 Apr 2019 15:07:05 +0000
-Subject: [PATCH 03/11] keys: Simplify key description management [ver #2]
-Message-Id: <155663682554.31331.11535207365829474554.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Thu, 18 Apr 2019 03:51:09 +0000
+Subject: [PATCH v10 01/12] MODSIGN: Export module signature definitions
+Message-Id: <20190418035120.2354-2-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
-To: ebiederm@xmission.com
-Cc: keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
+References: <20190418035120.2354-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190418035120.2354-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Simplify key description management by cramming the word containing the
-length with the first few chars of the description also.  This simplifies
-the code that generates the index-key used by assoc_array.  It should speed
-up key searching a bit too.
+IMA will use the module_signature format for append signatures, so export
+the relevant definitions and factor out the code which verifies that the
+appended signature trailer is valid.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Also, create a CONFIG_MODULE_SIG_FORMAT option so that IMA can select it
+and be able to use mod_check_sig() without having to depend on either
+CONFIG_MODULE_SIG or CONFIG_MODULES.
+
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Cc: Jessica Yu <jeyu@kernel.org>
 ---
+ include/linux/module.h           |  3 --
+ include/linux/module_signature.h | 44 +++++++++++++++++++++++++
+ init/Kconfig                     |  6 +++-
+ kernel/Makefile                  |  1 +
+ kernel/module.c                  |  1 +
+ kernel/module_signature.c        | 45 +++++++++++++++++++++++++
+ kernel/module_signing.c          | 56 +++++---------------------------
+ scripts/Makefile                 |  2 +-
+ 8 files changed, 105 insertions(+), 53 deletions(-)
 
- include/linux/key.h        |   14 ++++++++-
- security/keys/internal.h   |    6 ++++
- security/keys/key.c        |    2 +
- security/keys/keyring.c    |   70 +++++++++++++-------------------------------
- security/keys/persistent.c |    1 +
- 5 files changed, 43 insertions(+), 50 deletions(-)
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index aaa93fe3f587..33d87cb2d469 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -86,9 +86,20 @@ struct keyring_list;
- struct keyring_name;
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 73ee2b10e816..cd919ec972d6 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -25,9 +25,6 @@
+ #include <linux/percpu.h>
+ #include <asm/module.h>
  
- struct keyring_index_key {
-+	union {
-+		struct {
-+#ifdef __LITTLE_ENDIAN /* Put desc_len at the LSB of x */
-+			u8	desc_len;
-+			char	desc[sizeof(long) - 1];	/* First few chars of description */
-+#else
-+			char	desc[sizeof(long) - 1];	/* First few chars of description */
-+			u8	desc_len;
-+#endif
-+		};
-+		unsigned long x;
-+	};
- 	struct key_type		*type;
- 	const char		*description;
--	size_t			desc_len;
- };
+-/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
+-#define MODULE_SIG_STRING "~Module signature appended~\n"
+-
+ /* Not Yet Implemented */
+ #define MODULE_SUPPORTED_DEVICE(name)
  
- union key_payload {
-@@ -202,6 +213,7 @@ struct key {
- 	union {
- 		struct keyring_index_key index_key;
- 		struct {
-+			unsigned long	len_desc;
- 			struct key_type	*type;		/* type of key */
- 			char		*description;
- 		};
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 8f533c81aa8d..02592d24f13a 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -90,6 +90,12 @@ extern struct mutex key_construction_mutex;
- extern wait_queue_head_t request_key_conswq;
+diff --git a/include/linux/module_signature.h b/include/linux/module_signature.h
+new file mode 100644
+index 000000000000..523617fc5b6a
+--- /dev/null
++++ b/include/linux/module_signature.h
+@@ -0,0 +1,44 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++/*
++ * Module signature handling.
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ */
++
++#ifndef _LINUX_MODULE_SIGNATURE_H
++#define _LINUX_MODULE_SIGNATURE_H
++
++/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
++#define MODULE_SIG_STRING "~Module signature appended~\n"
++
++enum pkey_id_type {
++	PKEY_ID_PGP,		/* OpenPGP generated key ID */
++	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
++	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
++};
++
++/*
++ * Module signature information block.
++ *
++ * The constituents of the signature section are, in order:
++ *
++ *	- Signer's name
++ *	- Key identifier
++ *	- Signature data
++ *	- Information block
++ */
++struct module_signature {
++	u8	algo;		/* Public-key crypto algorithm [0] */
++	u8	hash;		/* Digest algorithm [0] */
++	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
++	u8	signer_len;	/* Length of signer's name [0] */
++	u8	key_id_len;	/* Length of key identifier [0] */
++	u8	__pad[3];
++	__be32	sig_len;	/* Length of signature data */
++};
++
++int mod_check_sig(const struct module_signature *ms, size_t file_len,
++		  const char *name);
++
++#endif /* _LINUX_MODULE_SIGNATURE_H */
+diff --git a/init/Kconfig b/init/Kconfig
+index 4592bf7997c0..a71019553ee1 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1906,7 +1906,7 @@ config MODULE_SRCVERSION_ALL
+ config MODULE_SIG
+ 	bool "Module signature verification"
+ 	depends on MODULES
+-	select SYSTEM_DATA_VERIFICATION
++	select MODULE_SIG_FORMAT
+ 	help
+ 	  Check modules for valid signatures upon load: the signature
+ 	  is simply appended to the module. For more information see
+@@ -2036,6 +2036,10 @@ config TRIM_UNUSED_KSYMS
  
+ endif # MODULES
  
-+static inline void key_set_index_key(struct keyring_index_key *index_key)
++config MODULE_SIG_FORMAT
++	def_bool n
++	select SYSTEM_DATA_VERIFICATION
++
+ config MODULES_TREE_LOOKUP
+ 	def_bool y
+ 	depends on PERF_EVENTS || TRACING
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 6c57e78817da..d2f2488f80ab 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -57,6 +57,7 @@ endif
+ obj-$(CONFIG_UID16) += uid16.o
+ obj-$(CONFIG_MODULES) += module.o
+ obj-$(CONFIG_MODULE_SIG) += module_signing.o
++obj-$(CONFIG_MODULE_SIG_FORMAT) += module_signature.o
+ obj-$(CONFIG_KALLSYMS) += kallsyms.o
+ obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
+ obj-$(CONFIG_CRASH_CORE) += crash_core.o
+diff --git a/kernel/module.c b/kernel/module.c
+index 985caa467aef..326ddeb364dd 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -19,6 +19,7 @@
+ #include <linux/export.h>
+ #include <linux/extable.h>
+ #include <linux/moduleloader.h>
++#include <linux/module_signature.h>
+ #include <linux/trace_events.h>
+ #include <linux/init.h>
+ #include <linux/kallsyms.h>
+diff --git a/kernel/module_signature.c b/kernel/module_signature.c
+new file mode 100644
+index 000000000000..6d5e59f27f55
+--- /dev/null
++++ b/kernel/module_signature.c
+@@ -0,0 +1,45 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Module signature checker
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ */
++
++#include <linux/errno.h>
++#include <linux/printk.h>
++#include <linux/module_signature.h>
++#include <asm/byteorder.h>
++
++/**
++ * mod_check_sig - check that the given signature is sane
++ *
++ * @ms:		Signature to check.
++ * @file_len:	Size of the file to which @ms is appended.
++ */
++int mod_check_sig(const struct module_signature *ms, size_t file_len,
++		  const char *name)
 +{
-+	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
-+	memcpy(index_key->desc, index_key->description, n);
++	if (be32_to_cpu(ms->sig_len) >= file_len - sizeof(*ms))
++		return -EBADMSG;
++
++	if (ms->id_type != PKEY_ID_PKCS7) {
++		pr_err("%s: Module is not signed with expected PKCS#7 message\n",
++		       name);
++		return -ENOPKG;
++	}
++
++	if (ms->algo != 0 ||
++	    ms->hash != 0 ||
++	    ms->signer_len != 0 ||
++	    ms->key_id_len != 0 ||
++	    ms->__pad[0] != 0 ||
++	    ms->__pad[1] != 0 ||
++	    ms->__pad[2] != 0) {
++		pr_err("%s: PKCS#7 signature info has unexpected non-zero params\n",
++		       name);
++		return -EBADMSG;
++	}
++
++	return 0;
 +}
-+
- extern struct key_type *key_type_lookup(const char *type);
- extern void key_type_put(struct key_type *ktype);
+diff --git a/kernel/module_signing.c b/kernel/module_signing.c
+index 6b9a926fd86b..cdd04a6b8074 100644
+--- a/kernel/module_signing.c
++++ b/kernel/module_signing.c
+@@ -11,37 +11,13 @@
  
-diff --git a/security/keys/key.c b/security/keys/key.c
-index d705b950ce2a..1d0250a8990e 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -285,6 +285,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 	key->index_key.description = kmemdup(desc, desclen + 1, GFP_KERNEL);
- 	if (!key->index_key.description)
- 		goto no_memory_3;
-+	key_set_index_key(&key->index_key);
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
++#include <linux/module.h>
++#include <linux/module_signature.h>
+ #include <linux/string.h>
+ #include <linux/verification.h>
+ #include <crypto/public_key.h>
+ #include "module-internal.h"
  
- 	refcount_set(&key->usage, 1);
- 	init_rwsem(&key->sem);
-@@ -859,6 +860,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 			goto error_free_prep;
- 	}
- 	index_key.desc_len = strlen(index_key.description);
-+	key_set_index_key(&index_key);
- 
- 	ret = __key_link_begin(keyring, &index_key, &edit);
- 	if (ret < 0) {
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index e14f09e3a4b0..7bb1f499996c 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -179,9 +179,9 @@ static unsigned long hash_key_type_and_desc(const struct keyring_index_key *inde
- 	int n, desc_len = index_key->desc_len;
- 
- 	type = (unsigned long)index_key->type;
+-enum pkey_id_type {
+-	PKEY_ID_PGP,		/* OpenPGP generated key ID */
+-	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
+-	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
+-};
 -
- 	acc = mult_64x32_and_fold(type, desc_len + 13);
- 	acc = mult_64x32_and_fold(acc, 9207);
-+
- 	for (;;) {
- 		n = desc_len;
- 		if (n <= 0)
-@@ -215,23 +215,13 @@ static unsigned long hash_key_type_and_desc(const struct keyring_index_key *inde
+-/*
+- * Module signature information block.
+- *
+- * The constituents of the signature section are, in order:
+- *
+- *	- Signer's name
+- *	- Key identifier
+- *	- Signature data
+- *	- Information block
+- */
+-struct module_signature {
+-	u8	algo;		/* Public-key crypto algorithm [0] */
+-	u8	hash;		/* Digest algorithm [0] */
+-	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
+-	u8	signer_len;	/* Length of signer's name [0] */
+-	u8	key_id_len;	/* Length of key identifier [0] */
+-	u8	__pad[3];
+-	__be32	sig_len;	/* Length of signature data */
+-};
+-
  /*
-  * Build the next index key chunk.
-  *
-- * On 32-bit systems the index key is laid out as:
-- *
-- *	0	4	5	9...
-- *	hash	desclen	typeptr	desc[]
-- *
-- * On 64-bit systems:
-- *
-- *	0	8	9	17...
-- *	hash	desclen	typeptr	desc[]
-- *
-  * We return it one word-sized chunk at a time.
+  * Verify the signature on a module.
   */
- static unsigned long keyring_get_key_chunk(const void *data, int level)
+@@ -49,6 +25,7 @@ int mod_verify_sig(const void *mod, struct load_info *info)
  {
- 	const struct keyring_index_key *index_key = data;
- 	unsigned long chunk = 0;
--	long offset = 0;
-+	const u8 *d;
- 	int desc_len = index_key->desc_len, n = sizeof(chunk);
+ 	struct module_signature ms;
+ 	size_t sig_len, modlen = info->len;
++	int ret;
  
- 	level /= ASSOC_ARRAY_KEY_CHUNK_SIZE;
-@@ -239,33 +229,23 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
- 	case 0:
- 		return hash_key_type_and_desc(index_key);
- 	case 1:
--		return ((unsigned long)index_key->type << 8) | desc_len;
-+		return index_key->x;
- 	case 2:
--		if (desc_len = 0)
--			return (u8)((unsigned long)index_key->type >>
--				    (ASSOC_ARRAY_KEY_CHUNK_SIZE - 8));
--		n--;
--		offset = 1;
--		/* fall through */
-+		return (unsigned long)index_key->type;
- 	default:
--		offset += sizeof(chunk) - 1;
--		offset += (level - 3) * sizeof(chunk);
--		if (offset >= desc_len)
-+		level -= 3;
-+		if (desc_len <= sizeof(index_key->desc))
- 			return 0;
--		desc_len -= offset;
+ 	pr_devel("=>%s(,%zu)\n", __func__, modlen);
+ 
+@@ -56,32 +33,15 @@ int mod_verify_sig(const void *mod, struct load_info *info)
+ 		return -EBADMSG;
+ 
+ 	memcpy(&ms, mod + (modlen - sizeof(ms)), sizeof(ms));
+-	modlen -= sizeof(ms);
 +
-+		d = index_key->description + sizeof(index_key->desc);
-+		d += level * sizeof(long);
-+		desc_len -= sizeof(index_key->desc);
- 		if (desc_len > n)
- 			desc_len = n;
--		offset += desc_len;
- 		do {
- 			chunk <<= 8;
--			chunk |= ((u8*)index_key->description)[--offset];
-+			chunk |= *d++;
- 		} while (--desc_len > 0);
--
--		if (level = 2) {
--			chunk <<= 8;
--			chunk |= (u8)((unsigned long)index_key->type >>
--				      (ASSOC_ARRAY_KEY_CHUNK_SIZE - 8));
--		}
- 		return chunk;
- 	}
- }
-@@ -304,39 +284,28 @@ static int keyring_diff_objects(const void *object, const void *data)
- 	seg_b = hash_key_type_and_desc(b);
- 	if ((seg_a ^ seg_b) != 0)
- 		goto differ;
-+	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
++	ret = mod_check_sig(&ms, modlen, info->name);
++	if (ret)
++		return ret;
  
- 	/* The number of bits contributed by the hash is controlled by a
- 	 * constant in the assoc_array headers.  Everything else thereafter we
- 	 * can deal with as being machine word-size dependent.
- 	 */
--	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
--	seg_a = a->desc_len;
--	seg_b = b->desc_len;
-+	seg_a = a->x;
-+	seg_b = b->x;
- 	if ((seg_a ^ seg_b) != 0)
- 		goto differ;
-+	level += sizeof(unsigned long);
+ 	sig_len = be32_to_cpu(ms.sig_len);
+-	if (sig_len >= modlen)
+-		return -EBADMSG;
+-	modlen -= sig_len;
++	modlen -= sig_len + sizeof(ms);
+ 	info->len = modlen;
  
- 	/* The next bit may not work on big endian */
--	level++;
- 	seg_a = (unsigned long)a->type;
- 	seg_b = (unsigned long)b->type;
- 	if ((seg_a ^ seg_b) != 0)
- 		goto differ;
--
- 	level += sizeof(unsigned long);
--	if (a->desc_len = 0)
--		goto same;
- 
--	i = 0;
--	if (((unsigned long)a->description | (unsigned long)b->description) &
--	    (sizeof(unsigned long) - 1)) {
--		do {
--			seg_a = *(unsigned long *)(a->description + i);
--			seg_b = *(unsigned long *)(b->description + i);
--			if ((seg_a ^ seg_b) != 0)
--				goto differ_plus_i;
--			i += sizeof(unsigned long);
--		} while (i < (a->desc_len & (sizeof(unsigned long) - 1)));
+-	if (ms.id_type != PKEY_ID_PKCS7) {
+-		pr_err("%s: Module is not signed with expected PKCS#7 message\n",
+-		       info->name);
+-		return -ENOPKG;
 -	}
-+	i = sizeof(a->desc);
-+	if (a->desc_len <= i)
-+		goto same;
+-
+-	if (ms.algo != 0 ||
+-	    ms.hash != 0 ||
+-	    ms.signer_len != 0 ||
+-	    ms.key_id_len != 0 ||
+-	    ms.__pad[0] != 0 ||
+-	    ms.__pad[1] != 0 ||
+-	    ms.__pad[2] != 0) {
+-		pr_err("%s: PKCS#7 signature info has unexpected non-zero params\n",
+-		       info->name);
+-		return -EBADMSG;
+-	}
+-
+ 	return verify_pkcs7_signature(mod, modlen, mod + modlen, sig_len,
+ 				      VERIFY_USE_SECONDARY_KEYRING,
+ 				      VERIFYING_MODULE_SIGNATURE,
+diff --git a/scripts/Makefile b/scripts/Makefile
+index 9d442ee050bd..52098b080ab7 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -17,7 +17,7 @@ hostprogs-$(CONFIG_VT)           += conmakehash
+ hostprogs-$(BUILD_C_RECORDMCOUNT) += recordmcount
+ hostprogs-$(CONFIG_BUILDTIME_EXTABLE_SORT) += sortextable
+ hostprogs-$(CONFIG_ASN1)	 += asn1_compiler
+-hostprogs-$(CONFIG_MODULE_SIG)	 += sign-file
++hostprogs-$(CONFIG_MODULE_SIG_FORMAT) += sign-file
+ hostprogs-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += extract-cert
+ hostprogs-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE) += insert-sys-cert
  
- 	for (; i < a->desc_len; i++) {
- 		seg_a = *(unsigned char *)(a->description + i);
-@@ -662,6 +631,9 @@ static bool search_nested_keyrings(struct key *keyring,
- 	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
- 	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
- 
-+	if (ctx->index_key.description)
-+		key_set_index_key(&ctx->index_key);
-+
- 	/* Check to see if this top-level keyring is what we are looking for
- 	 * and whether it is valid or not.
- 	 */
-diff --git a/security/keys/persistent.c b/security/keys/persistent.c
-index d0cb5b32eff7..fc29ec59efa7 100644
---- a/security/keys/persistent.c
-+++ b/security/keys/persistent.c
-@@ -87,6 +87,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
- 	index_key.type = &key_type_keyring;
- 	index_key.description = buf;
- 	index_key.desc_len = sprintf(buf, "_persistent.%u", from_kuid(ns, uid));
-+	key_set_index_key(&index_key);
- 
- 	if (ns->persistent_keyring_register) {
- 		reg_ref = make_key_ref(ns->persistent_keyring_register, true);
