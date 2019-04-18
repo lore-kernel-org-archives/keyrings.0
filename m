@@ -1,389 +1,701 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Thu, 11 Apr 2019 15:51:15 +0000
-Subject: [PATCH v9 03/10] crypto: akcipher - new verify API for public key algorithms
-Message-Id: <20190411155122.13245-4-vt@altlinux.org>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Thu, 18 Apr 2019 23:29:13 +0000
+Subject: [PATCH v5 06/16] fscrypt: add FS_IOC_ADD_ENCRYPTION_KEY ioctl
+Message-Id: <20190418232923.250800-7-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190411155122.13245-1-vt@altlinux.org>
-In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Denis Kenzior <denkenz@gmail.com>
+References: <20190418232923.250800-1-ebiggers@kernel.org>
+In-Reply-To: <20190418232923.250800-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-Previous akcipher .verify() just `decrypts' (using RSA encrypt which is
-using public key) signature to uncover message hash, which was then
-compared in upper level public_key_verify_signature() with the expected
-hash value, which itself was never passed into verify().
+From: Eric Biggers <ebiggers@google.com>
 
-This approach was incompatible with EC-DSA family of algorithms,
-because, to verify a signature EC-DSA algorithm also needs a hash value
-as input; then it's used (together with a signature divided into halves
-`r||s') to produce a witness value, which is then compared with `r' to
-determine if the signature is correct. Thus, for EC-DSA, nor
-requirements of .verify() itself, nor its output expectations in
-public_key_verify_signature() wasn't sufficient.
+Add a new fscrypt ioctl, FS_IOC_ADD_ENCRYPTION_KEY.  This ioctl adds an
+encryption key to the filesystem's fscrypt keyring ->s_master_keys,
+making any files encrypted with that key appear "unlocked".
 
-Make improved .verify() call which gets hash value as input and produce
-complete signature check without any output besides status.
+Why we need this
+~~~~~~~~~~~~~~~~
 
-Now for the top level verification only crypto_akcipher_verify() needs
-to be called and its return value inspected.
+The main problem is that the "locked/unlocked" (ciphertext/plaintext)
+status of encrypted files is global, but the fscrypt keys are not.
+fscrypt only looks for keys in the keyring(s) the process accessing the
+filesystem is subscribed to: the thread keyring, process keyring, and
+session keyring, where the session keyring may contain the user keyring.
 
-Make sure that `digest' is in kmalloc'd memory (in place of `output`) in
-{public,tpm}_key_verify_signature() as insisted by Herbert Xu, and will
-be changed in the following commit.
+Therefore, userspace has to put fscrypt keys in the keyrings for
+individual users or sessions.  But this means that when a process with a
+different keyring tries to access encrypted files, whether they appear
+"unlocked" or not is nondeterministic.  This is because it depends on
+whether the files are currently present in the inode cache.
 
-Cc: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org
-Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
-Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+Fixing this by consistently providing each process its own view of the
+filesystem depending on whether it has the key or not isn't feasible due
+to how the VFS caches work.  Furthermore, while sometimes users expect
+this behavior, it is misguided for two reasons.  First, it would be an
+OS-level access control mechanism largely redundant with existing access
+control mechanisms such as UNIX file permissions, ACLs, LSMs, etc.
+Encryption is actually for protecting the data at rest.
+
+Second, almost all users of fscrypt actually do need the keys to be
+global.  The largest users of fscrypt, Android and Chromium OS, achieve
+this by having PID 1 create a "session keyring" that is inherited by
+every process.  This works, but it isn't scalable because it prevents
+session keyrings from being used for any other purpose.
+
+On general-purpose Linux distros, the 'fscrypt' userspace tool [1] can't
+similarly abuse the session keyring, so to make 'sudo' work on all
+systems it has to link all the user keyrings into root's user keyring
+[2].  This is ugly and raises security concerns.  Moreover it can't make
+the keys available to system services, such as sshd trying to access the
+user's '~/.ssh' directory (see [3], [4]) or NetworkManager trying to
+read certificates from the user's home directory (see [5]); or to Docker
+containers (see [6], [7]).
+
+By having an API to add a key to the *filesystem* we'll be able to fix
+the above bugs, remove userspace workarounds, and clearly express the
+intended semantics: the locked/unlocked status of an encrypted directory
+is global, and encryption is orthogonal to OS-level access control.
+
+Why not use the add_key() syscall
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We use an ioctl for this API rather than the existing add_key() system
+call because the ioctl gives us the flexibility needed to implement
+fscrypt-specific semantics that will be introduced in later patches:
+
+- Supporting key removal with the semantics such that the secret is
+  removed immediately and any unused inodes using the key are evicted;
+  also, the eviction of any in-use inodes can be retried.
+
+- Calculating a key-dependent cryptographic identifier and returning it
+  to userspace.
+
+- Allowing keys to be added and removed by non-root users, but only keys
+  for v2 encryption policies; and to prevent denial-of-service attacks,
+  users can only remove keys they themselves have added, and a key is
+  only really removed after all users who added it have removed it.
+
+Trying to shoehorn these semantics into the keyrings syscalls would be
+very difficult, whereas the ioctls make things much easier.
+
+However, to reuse code the implementation still uses the keyrings
+service internally.  Thus we get lockless RCU-mode key lookups without
+having to re-implement it, and the keys automatically show up in
+/proc/keys for debugging purposes.
+
+References:
+
+    [1] https://github.com/google/fscrypt
+    [2] https://goo.gl/55cCrI#heading=h.vf09isp98isb
+    [3] https://github.com/google/fscrypt/issues/111#issuecomment-444347939
+    [4] https://github.com/google/fscrypt/issues/116
+    [5] https://bugs.launchpad.net/ubuntu/+source/fscrypt/+bug/1770715
+    [6] https://github.com/google/fscrypt/issues/128
+    [7] https://askubuntu.com/questions/1130306/cannot-run-docker-on-an-encrypted-filesystem
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c   | 34 ++++++++-----------------
- crypto/asymmetric_keys/public_key.c | 34 ++++++++-----------------
- crypto/rsa-pkcs1pad.c               | 29 +++++++++++++--------
- crypto/testmgr.c                    | 50 ++++++++++++++++++++++---------------
- include/crypto/akcipher.h           | 36 ++++++++++++++++----------
- 5 files changed, 92 insertions(+), 91 deletions(-)
+ fs/crypto/Makefile           |   1 +
+ fs/crypto/crypto.c           |  11 +-
+ fs/crypto/fscrypt_private.h  |  44 +++++-
+ fs/crypto/keyring.c          | 294 +++++++++++++++++++++++++++++++++++
+ fs/crypto/keysetup.c         |  34 +++-
+ fs/super.c                   |   2 +
+ include/linux/fs.h           |   1 +
+ include/linux/fscrypt.h      |  15 ++
+ include/uapi/linux/fscrypt.h |  40 +++--
+ 9 files changed, 429 insertions(+), 13 deletions(-)
+ create mode 100644 fs/crypto/keyring.c
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 5d4c270463f6..4e5b6fb57a94 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -744,12 +744,11 @@ static int tpm_key_verify_signature(const struct key *key,
- 	struct crypto_wait cwait;
- 	struct crypto_akcipher *tfm;
- 	struct akcipher_request *req;
--	struct scatterlist sig_sg, digest_sg;
-+	struct scatterlist src_sg[2];
- 	char alg_name[CRYPTO_MAX_ALG_NAME];
- 	uint8_t der_pub_key[PUB_KEY_BUF_SIZE];
- 	uint32_t der_pub_key_len;
--	void *output;
--	unsigned int outlen;
-+	void *digest;
- 	int ret;
- 
- 	pr_devel("=>%s()\n", __func__);
-@@ -782,35 +781,22 @@ static int tpm_key_verify_signature(const struct key *key,
- 		goto error_free_tfm;
- 
- 	ret = -ENOMEM;
--	outlen = crypto_akcipher_maxsize(tfm);
--	output = kmalloc(outlen, GFP_KERNEL);
--	if (!output)
-+	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
-+	if (!digest)
- 		goto error_free_req;
- 
--	sg_init_one(&sig_sg, sig->s, sig->s_size);
--	sg_init_one(&digest_sg, output, outlen);
--	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
--				   outlen);
-+	sg_init_table(src_sg, 2);
-+	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
-+	sg_set_buf(&src_sg[1], digest, sig->digest_size);
-+	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
-+				   sig->digest_size);
- 	crypto_init_wait(&cwait);
- 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				      CRYPTO_TFM_REQ_MAY_SLEEP,
- 				      crypto_req_done, &cwait);
--
--	/* Perform the verification calculation.  This doesn't actually do the
--	 * verification, but rather calculates the hash expected by the
--	 * signature and returns that to us.
--	 */
- 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
--	if (ret)
--		goto out_free_output;
--
--	/* Do the actual verification step. */
--	if (req->dst_len != sig->digest_size ||
--	    memcmp(sig->digest, output, sig->digest_size) != 0)
--		ret = -EKEYREJECTED;
- 
--out_free_output:
--	kfree(output);
-+	kfree(digest);
- error_free_req:
- 	akcipher_request_free(req);
- error_free_tfm:
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index f5d85b47fcc6..0c069fe8a59c 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -227,10 +227,9 @@ int public_key_verify_signature(const struct public_key *pkey,
- 	struct crypto_wait cwait;
- 	struct crypto_akcipher *tfm;
- 	struct akcipher_request *req;
--	struct scatterlist sig_sg, digest_sg;
-+	struct scatterlist src_sg[2];
- 	char alg_name[CRYPTO_MAX_ALG_NAME];
--	void *output;
--	unsigned int outlen;
-+	void *digest;
- 	int ret;
- 
- 	pr_devel("=>%s()\n", __func__);
-@@ -264,35 +263,22 @@ int public_key_verify_signature(const struct public_key *pkey,
- 		goto error_free_req;
- 
- 	ret = -ENOMEM;
--	outlen = crypto_akcipher_maxsize(tfm);
--	output = kmalloc(outlen, GFP_KERNEL);
--	if (!output)
-+	digest = kmemdup(sig->digest, sig->digest_size, GFP_KERNEL);
-+	if (!digest)
- 		goto error_free_req;
- 
--	sg_init_one(&sig_sg, sig->s, sig->s_size);
--	sg_init_one(&digest_sg, output, outlen);
--	akcipher_request_set_crypt(req, &sig_sg, &digest_sg, sig->s_size,
--				   outlen);
-+	sg_init_table(src_sg, 2);
-+	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
-+	sg_set_buf(&src_sg[1], digest, sig->digest_size);
-+	akcipher_request_set_crypt(req, src_sg, NULL, sig->s_size,
-+				   sig->digest_size);
- 	crypto_init_wait(&cwait);
- 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
- 				      CRYPTO_TFM_REQ_MAY_SLEEP,
- 				      crypto_req_done, &cwait);
--
--	/* Perform the verification calculation.  This doesn't actually do the
--	 * verification, but rather calculates the hash expected by the
--	 * signature and returns that to us.
--	 */
- 	ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
--	if (ret)
--		goto out_free_output;
--
--	/* Do the actual verification step. */
--	if (req->dst_len != sig->digest_size ||
--	    memcmp(sig->digest, output, sig->digest_size) != 0)
--		ret = -EKEYREJECTED;
- 
--out_free_output:
--	kfree(output);
-+	kfree(digest);
- error_free_req:
- 	akcipher_request_free(req);
- error_free_tfm:
-diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
-index 94382fa2c6ac..29c336068dc0 100644
---- a/crypto/rsa-pkcs1pad.c
-+++ b/crypto/rsa-pkcs1pad.c
-@@ -488,14 +488,21 @@ static int pkcs1pad_verify_complete(struct akcipher_request *req, int err)
- 
- 	err = 0;
- 
--	if (req->dst_len < dst_len - pos)
--		err = -EOVERFLOW;
--	req->dst_len = dst_len - pos;
--
--	if (!err)
--		sg_copy_from_buffer(req->dst,
--				sg_nents_for_len(req->dst, req->dst_len),
--				out_buf + pos, req->dst_len);
-+	if (req->dst_len != dst_len - pos) {
-+		err = -EKEYREJECTED;
-+		req->dst_len = dst_len - pos;
-+		goto done;
-+	}
-+	/* Extract appended digest. */
-+	sg_pcopy_to_buffer(req->src,
-+			   sg_nents_for_len(req->src,
-+					    req->src_len + req->dst_len),
-+			   req_ctx->out_buf + ctx->key_size,
-+			   req->dst_len, ctx->key_size);
-+	/* Do the actual verification step. */
-+	if (memcmp(req_ctx->out_buf + ctx->key_size, out_buf + pos,
-+		   req->dst_len) != 0)
-+		err = -EKEYREJECTED;
- done:
- 	kzfree(req_ctx->out_buf);
- 
-@@ -532,10 +539,12 @@ static int pkcs1pad_verify(struct akcipher_request *req)
- 	struct pkcs1pad_request *req_ctx = akcipher_request_ctx(req);
- 	int err;
- 
--	if (!ctx->key_size || req->src_len < ctx->key_size)
-+	if (WARN_ON(req->dst) ||
-+	    WARN_ON(!req->dst_len) ||
-+	    !ctx->key_size || req->src_len < ctx->key_size)
- 		return -EINVAL;
- 
--	req_ctx->out_buf = kmalloc(ctx->key_size, GFP_KERNEL);
-+	req_ctx->out_buf = kmalloc(ctx->key_size + req->dst_len, GFP_KERNEL);
- 	if (!req_ctx->out_buf)
- 		return -ENOMEM;
- 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 0f6bfb6ce6a4..21b27996508a 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -2595,7 +2595,7 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 	struct crypto_wait wait;
- 	unsigned int out_len_max, out_len = 0;
- 	int err = -ENOMEM;
--	struct scatterlist src, dst, src_tab[2];
-+	struct scatterlist src, dst, src_tab[3];
- 	const char *m, *c;
- 	unsigned int m_size, c_size;
- 	const char *op;
-@@ -2618,13 +2618,12 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 	if (err)
- 		goto free_req;
- 
--	err = -ENOMEM;
--	out_len_max = crypto_akcipher_maxsize(tfm);
--
+diff --git a/fs/crypto/Makefile b/fs/crypto/Makefile
+index 75c0c29fcc627..accdd622c9083 100644
+--- a/fs/crypto/Makefile
++++ b/fs/crypto/Makefile
+@@ -3,6 +3,7 @@ obj-$(CONFIG_FS_ENCRYPTION)	+= fscrypto.o
+ fscrypto-y := crypto.o \
+ 	      fname.o \
+ 	      hooks.o \
++	      keyring.o \
+ 	      keysetup.o \
+ 	      keysetup_legacy.o \
+ 	      policy.o
+diff --git a/fs/crypto/crypto.c b/fs/crypto/crypto.c
+index b10f375ecee81..3fe287952ac95 100644
+--- a/fs/crypto/crypto.c
++++ b/fs/crypto/crypto.c
+@@ -447,6 +447,8 @@ void fscrypt_msg(struct super_block *sb, const char *level,
+  */
+ static int __init fscrypt_init(void)
+ {
++	int err = -ENOMEM;
++
  	/*
- 	 * First run test which do not require a private key, such as
- 	 * encrypt or verify.
- 	 */
-+	err = -ENOMEM;
-+	out_len_max = crypto_akcipher_maxsize(tfm);
- 	outbuf_enc = kzalloc(out_len_max, GFP_KERNEL);
- 	if (!outbuf_enc)
- 		goto free_req;
-@@ -2650,12 +2649,20 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 		goto free_all;
- 	memcpy(xbuf[0], m, m_size);
+ 	 * Use an unbound workqueue to allow bios to be decrypted in parallel
+ 	 * even when they happen to complete on the same CPU.  This sacrifices
+@@ -469,14 +471,20 @@ static int __init fscrypt_init(void)
+ 	if (!fscrypt_info_cachep)
+ 		goto fail_free_ctx;
  
--	sg_init_table(src_tab, 2);
-+	sg_init_table(src_tab, 3);
- 	sg_set_buf(&src_tab[0], xbuf[0], 8);
- 	sg_set_buf(&src_tab[1], xbuf[0] + 8, m_size - 8);
--	sg_init_one(&dst, outbuf_enc, out_len_max);
--	akcipher_request_set_crypt(req, src_tab, &dst, m_size,
--				   out_len_max);
-+	if (vecs->siggen_sigver_test) {
-+		if (WARN_ON(c_size > PAGE_SIZE))
-+			goto free_all;
-+		memcpy(xbuf[1], c, c_size);
-+		sg_set_buf(&src_tab[2], xbuf[1], c_size);
-+		akcipher_request_set_crypt(req, src_tab, NULL, m_size, c_size);
++	err = fscrypt_init_keyring();
++	if (err)
++		goto fail_free_info;
++
+ 	return 0;
+ 
++fail_free_info:
++	kmem_cache_destroy(fscrypt_info_cachep);
+ fail_free_ctx:
+ 	kmem_cache_destroy(fscrypt_ctx_cachep);
+ fail_free_queue:
+ 	destroy_workqueue(fscrypt_read_workqueue);
+ fail:
+-	return -ENOMEM;
++	return err;
+ }
+ module_init(fscrypt_init)
+ 
+@@ -493,6 +501,7 @@ static void __exit fscrypt_exit(void)
+ 	kmem_cache_destroy(fscrypt_info_cachep);
+ 
+ 	fscrypt_essiv_cleanup();
++	fscrypt_exit_keyring();
+ }
+ module_exit(fscrypt_exit);
+ 
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index c5a8181fc26c1..b4c4312085554 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -14,9 +14,12 @@
+ #include <linux/fscrypt.h>
+ #include <crypto/hash.h>
+ 
+-/* Encryption parameters */
++#define CONST_STRLEN(str)	(sizeof(str) - 1)
++
+ #define FS_KEY_DERIVATION_NONCE_SIZE	16
+ 
++#define FSCRYPT_MIN_KEY_SIZE		16
++
+ /**
+  * Encryption context for inode
+  *
+@@ -159,6 +162,45 @@ extern bool fscrypt_fname_encrypted_size(const struct inode *inode,
+ 					 u32 orig_len, u32 max_len,
+ 					 u32 *encrypted_len_ret);
+ 
++/* keyring.c */
++
++/*
++ * fscrypt_master_key_secret - secret key material of an in-use master key
++ */
++struct fscrypt_master_key_secret {
++
++	/* Size of the raw key in bytes */
++	u32			size;
++
++	/* The raw key */
++	u8			raw[FSCRYPT_MAX_KEY_SIZE];
++
++} __randomize_layout;
++
++/*
++ * fscrypt_master_key - an in-use master key
++ *
++ * This represents a master encryption key which has been added to the
++ * filesystem and can be used to "unlock" the encrypted files which were
++ * encrypted with it.
++ */
++struct fscrypt_master_key {
++
++	/* The secret key material */
++	struct fscrypt_master_key_secret	mk_secret;
++
++	/* Arbitrary key descriptor which was assigned by userspace */
++	struct fscrypt_key_specifier		mk_spec;
++
++} __randomize_layout;
++
++extern struct key *
++fscrypt_find_master_key(struct super_block *sb,
++			const struct fscrypt_key_specifier *mk_spec);
++
++extern int __init fscrypt_init_keyring(void);
++extern void fscrypt_exit_keyring(void);
++
+ /* keysetup.c */
+ 
+ struct fscrypt_mode {
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+new file mode 100644
+index 0000000000000..011aeb58806f7
+--- /dev/null
++++ b/fs/crypto/keyring.c
+@@ -0,0 +1,294 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Filesystem-level keyring for fscrypt
++ *
++ * Copyright 2019 Google LLC
++ */
++
++/*
++ * This file implements management of fscrypt master keys in the
++ * filesystem-level keyring, including the ioctls:
++ *
++ * - FS_IOC_ADD_ENCRYPTION_KEY: add a key
++ */
++
++#include <linux/key-type.h>
++#include <linux/seq_file.h>
++
++#include "fscrypt_private.h"
++
++static void wipe_master_key_secret(struct fscrypt_master_key_secret *secret)
++{
++	memzero_explicit(secret, sizeof(*secret));
++}
++
++static void move_master_key_secret(struct fscrypt_master_key_secret *dst,
++				   struct fscrypt_master_key_secret *src)
++{
++	memcpy(dst, src, sizeof(*dst));
++	memzero_explicit(src, sizeof(*src));
++}
++
++static void free_master_key(struct fscrypt_master_key *mk)
++{
++	wipe_master_key_secret(&mk->mk_secret);
++	kzfree(mk);
++}
++
++static inline int master_key_spec_len(const struct fscrypt_key_specifier *spec)
++{
++	switch (spec->type) {
++	case FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR:
++		return FSCRYPT_KEY_DESCRIPTOR_SIZE;
++	}
++	return 0;
++}
++
++static inline bool valid_key_spec(const struct fscrypt_key_specifier *spec)
++{
++	if (spec->__reserved)
++		return false;
++	return master_key_spec_len(spec) != 0;
++}
++
++static int fscrypt_key_instantiate(struct key *key,
++				   struct key_preparsed_payload *prep)
++{
++	key->payload.data[0] = (struct fscrypt_master_key *)prep->data;
++	return 0;
++}
++
++static void fscrypt_key_destroy(struct key *key)
++{
++	free_master_key(key->payload.data[0]);
++}
++
++static void fscrypt_key_describe(const struct key *key, struct seq_file *m)
++{
++	seq_puts(m, key->description);
++}
++
++/*
++ * Type of key in ->s_master_keys.  Each key of this type represents a master
++ * key which has been added to the filesystem.  Its payload is a
++ * 'struct fscrypt_master_key'.  The "." prefix in the key type name prevents
++ * users from adding keys of this type via the keyrings syscalls rather than via
++ * the intended method of FS_IOC_ADD_ENCRYPTION_KEY.
++ */
++static struct key_type key_type_fscrypt = {
++	.name			= "._fscrypt",
++	.instantiate		= fscrypt_key_instantiate,
++	.destroy		= fscrypt_key_destroy,
++	.describe		= fscrypt_key_describe,
++};
++
++/* Search ->s_master_keys */
++static struct key *search_fscrypt_keyring(struct key *keyring,
++					  struct key_type *type,
++					  const char *description)
++{
++	/*
++	 * We need to mark the keyring reference as "possessed" so that we
++	 * acquire permission to search it, via the KEY_POS_SEARCH permission.
++	 */
++	key_ref_t keyref = make_key_ref(keyring, true);
++
++	keyref = keyring_search(keyref, type, description);
++	if (IS_ERR(keyref)) {
++		if (PTR_ERR(keyref) = -EAGAIN || /* not found */
++		    PTR_ERR(keyref) = -EKEYREVOKED) /* recently invalidated */
++			keyref = ERR_PTR(-ENOKEY);
++		return ERR_CAST(keyref);
++	}
++	return key_ref_to_ptr(keyref);
++}
++
++#define FSCRYPT_FS_KEYRING_DESCRIPTION_SIZE	\
++	(CONST_STRLEN("fscrypt-") + FIELD_SIZEOF(struct super_block, s_id))
++
++#define FSCRYPT_MK_DESCRIPTION_SIZE	(2 * FSCRYPT_KEY_DESCRIPTOR_SIZE + 1)
++
++static void format_fs_keyring_description(
++			char description[FSCRYPT_FS_KEYRING_DESCRIPTION_SIZE],
++			const struct super_block *sb)
++{
++	sprintf(description, "fscrypt-%s", sb->s_id);
++}
++
++static void format_mk_description(
++			char description[FSCRYPT_MK_DESCRIPTION_SIZE],
++			const struct fscrypt_key_specifier *mk_spec)
++{
++	sprintf(description, "%*phN",
++		master_key_spec_len(mk_spec), (u8 *)&mk_spec->u);
++}
++
++/* Create ->s_master_keys if needed.  Synchronized by fscrypt_add_key_mutex. */
++static int allocate_filesystem_keyring(struct super_block *sb)
++{
++	char description[FSCRYPT_FS_KEYRING_DESCRIPTION_SIZE];
++	struct key *keyring;
++
++	if (sb->s_master_keys)
++		return 0;
++
++	format_fs_keyring_description(description, sb);
++	keyring = keyring_alloc(description, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
++				current_cred(), KEY_POS_SEARCH |
++				  KEY_USR_SEARCH | KEY_USR_READ | KEY_USR_VIEW,
++				KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
++	if (IS_ERR(keyring))
++		return PTR_ERR(keyring);
++
++	/* Pairs with smp_load_acquire() in fscrypt_find_master_key() */
++	smp_store_release(&sb->s_master_keys, keyring);
++	return 0;
++}
++
++void fscrypt_sb_free(struct super_block *sb)
++{
++	key_put(sb->s_master_keys);
++	sb->s_master_keys = NULL;
++}
++
++/*
++ * Find the specified master key in ->s_master_keys.
++ * Returns ERR_PTR(-ENOKEY) if not found.
++ */
++struct key *fscrypt_find_master_key(struct super_block *sb,
++				    const struct fscrypt_key_specifier *mk_spec)
++{
++	struct key *keyring;
++	char description[FSCRYPT_MK_DESCRIPTION_SIZE];
++
++	/* pairs with smp_store_release() in allocate_filesystem_keyring() */
++	keyring = smp_load_acquire(&sb->s_master_keys);
++	if (keyring = NULL)
++		return ERR_PTR(-ENOKEY); /* No keyring yet, so no keys yet. */
++
++	format_mk_description(description, mk_spec);
++	return search_fscrypt_keyring(keyring, &key_type_fscrypt, description);
++}
++
++/*
++ * Allocate a new fscrypt_master_key which contains the given secret, set it as
++ * the payload of a new 'struct key' of type fscrypt, and link the 'struct key'
++ * into the given keyring.  Synchronized by fscrypt_add_key_mutex.
++ */
++static int add_new_master_key(struct fscrypt_master_key_secret *secret,
++			      const struct fscrypt_key_specifier *mk_spec,
++			      struct key *keyring)
++{
++	struct fscrypt_master_key *mk;
++	char description[FSCRYPT_MK_DESCRIPTION_SIZE];
++	struct key *key;
++	int err;
++
++	mk = kzalloc(sizeof(*mk), GFP_NOFS);
++	if (!mk)
++		return -ENOMEM;
++
++	mk->mk_spec = *mk_spec;
++
++	move_master_key_secret(&mk->mk_secret, secret);
++
++	format_mk_description(description, mk_spec);
++	key = key_alloc(&key_type_fscrypt, description,
++			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, current_cred(),
++			KEY_POS_SEARCH | KEY_USR_SEARCH | KEY_USR_VIEW,
++			KEY_ALLOC_NOT_IN_QUOTA, NULL);
++	if (IS_ERR(key)) {
++		err = PTR_ERR(key);
++		goto out_free_mk;
++	}
++	err = key_instantiate_and_link(key, mk, sizeof(*mk), keyring, NULL);
++	key_put(key);
++	if (err)
++		goto out_free_mk;
++
++	return 0;
++
++out_free_mk:
++	free_master_key(mk);
++	return err;
++}
++
++static int add_master_key(struct super_block *sb,
++			  struct fscrypt_master_key_secret *secret,
++			  const struct fscrypt_key_specifier *mk_spec)
++{
++	static DEFINE_MUTEX(fscrypt_add_key_mutex);
++	struct key *key;
++	int err;
++
++	mutex_lock(&fscrypt_add_key_mutex); /* serialize find + link */
++	key = fscrypt_find_master_key(sb, mk_spec);
++	if (IS_ERR(key)) {
++		err = PTR_ERR(key);
++		if (err != -ENOKEY)
++			goto out_unlock;
++		/* Didn't find the key in ->s_master_keys.  Add it. */
++		err = allocate_filesystem_keyring(sb);
++		if (err)
++			goto out_unlock;
++		err = add_new_master_key(secret, mk_spec, sb->s_master_keys);
 +	} else {
-+		sg_init_one(&dst, outbuf_enc, out_len_max);
-+		akcipher_request_set_crypt(req, src_tab, &dst, m_size,
-+					   out_len_max);
++		key_put(key);
++		err = 0;
 +	}
- 	akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
- 				      crypto_req_done, &wait);
- 
-@@ -2668,18 +2675,21 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 		pr_err("alg: akcipher: %s test failed. err %d\n", op, err);
- 		goto free_all;
- 	}
--	if (req->dst_len != c_size) {
--		pr_err("alg: akcipher: %s test failed. Invalid output len\n",
--		       op);
--		err = -EINVAL;
--		goto free_all;
--	}
--	/* verify that encrypted message is equal to expected */
--	if (memcmp(c, outbuf_enc, c_size)) {
--		pr_err("alg: akcipher: %s test failed. Invalid output\n", op);
--		hexdump(outbuf_enc, c_size);
--		err = -EINVAL;
--		goto free_all;
-+	if (!vecs->siggen_sigver_test) {
-+		if (req->dst_len != c_size) {
-+			pr_err("alg: akcipher: %s test failed. Invalid output len\n",
-+			       op);
-+			err = -EINVAL;
-+			goto free_all;
-+		}
-+		/* verify that encrypted message is equal to expected */
-+		if (memcmp(c, outbuf_enc, c_size) != 0) {
-+			pr_err("alg: akcipher: %s test failed. Invalid output\n",
-+			       op);
-+			hexdump(outbuf_enc, c_size);
-+			err = -EINVAL;
-+			goto free_all;
-+		}
- 	}
- 
- 	/*
-diff --git a/include/crypto/akcipher.h b/include/crypto/akcipher.h
-index 2d690494568c..2d26939fff51 100644
---- a/include/crypto/akcipher.h
-+++ b/include/crypto/akcipher.h
-@@ -19,14 +19,20 @@
-  *
-  * @base:	Common attributes for async crypto requests
-  * @src:	Source data
-- * @dst:	Destination data
-+ *		For verify op this is signature + digest, in that case
-+ *		total size of @src is @src_len + @dst_len.
-+ * @dst:	Destination data (Should be NULL for verify op)
-  * @src_len:	Size of the input buffer
-- * @dst_len:	Size of the output buffer. It needs to be at least
-- *		as big as the expected result depending	on the operation
-+ *		For verify op it's size of signature part of @src, this part
-+ *		is supposed to be operated by cipher.
-+ * @dst_len:	Size of @dst buffer (for all ops except verify).
-+ *		It needs to be at least	as big as the expected result
-+ *		depending on the operation.
-  *		After operation it will be updated with the actual size of the
-  *		result.
-  *		In case of error where the dst sgl size was insufficient,
-  *		it will be updated to the size required for the operation.
-+ *		For verify op this is size of digest part in @src.
-  * @__ctx:	Start of private context data
++out_unlock:
++	mutex_unlock(&fscrypt_add_key_mutex);
++	return err;
++}
++
++/*
++ * Add a master encryption key to the filesystem, causing all files which were
++ * encrypted with it to appear "unlocked" (decrypted) when accessed.
++ */
++int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
++{
++	struct super_block *sb = file_inode(filp)->i_sb;
++	struct fscrypt_add_key_arg __user *uarg = _uarg;
++	struct fscrypt_add_key_arg arg;
++	struct fscrypt_master_key_secret secret;
++	int err;
++
++	if (copy_from_user(&arg, uarg, sizeof(arg)))
++		return -EFAULT;
++
++	if (!valid_key_spec(&arg.key_spec))
++		return -EINVAL;
++
++	if (arg.raw_size < FSCRYPT_MIN_KEY_SIZE ||
++	    arg.raw_size > FSCRYPT_MAX_KEY_SIZE)
++		return -EINVAL;
++
++	if (memchr_inv(arg.__reserved, 0, sizeof(arg.__reserved)))
++		return -EINVAL;
++
++	memset(&secret, 0, sizeof(secret));
++	secret.size = arg.raw_size;
++	err = -EFAULT;
++	if (copy_from_user(secret.raw, uarg->raw, secret.size))
++		goto out_wipe_secret;
++
++	err = -EACCES;
++	if (!capable(CAP_SYS_ADMIN))
++		goto out_wipe_secret;
++
++	err = add_master_key(sb, &secret, &arg.key_spec);
++out_wipe_secret:
++	wipe_master_key_secret(&secret);
++	return err;
++}
++EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
++
++int __init fscrypt_init_keyring(void)
++{
++	return register_key_type(&key_type_fscrypt);
++}
++
++void fscrypt_exit_keyring(void)
++{
++	unregister_key_type(&key_type_fscrypt);
++}
+diff --git a/fs/crypto/keysetup.c b/fs/crypto/keysetup.c
+index 75c14262ba5b9..5fd2f1c301758 100644
+--- a/fs/crypto/keysetup.c
++++ b/fs/crypto/keysetup.c
+@@ -213,7 +213,39 @@ int fscrypt_set_derived_key(struct fscrypt_info *ci, const u8 *derived_key)
   */
- struct akcipher_request {
-@@ -55,10 +61,9 @@ struct crypto_akcipher {
-  *		algorithm. In case of error, where the dst_len was insufficient,
-  *		the req->dst_len will be updated to the size required for the
-  *		operation
-- * @verify:	Function performs a sign operation as defined by public key
-- *		algorithm. In case of error, where the dst_len was insufficient,
-- *		the req->dst_len will be updated to the size required for the
-- *		operation
-+ * @verify:	Function performs a complete verify operation as defined by
-+ *		public key algorithm, returning verification status. Requires
-+ *		digest value as input parameter.
-  * @encrypt:	Function performs an encrypt operation as defined by public key
-  *		algorithm. In case of error, where the dst_len was insufficient,
-  *		the req->dst_len will be updated to the size required for the
-@@ -238,9 +243,10 @@ static inline void akcipher_request_set_callback(struct akcipher_request *req,
-  *
-  * @req:	public key request
-  * @src:	ptr to input scatter list
-- * @dst:	ptr to output scatter list
-+ * @dst:	ptr to output scatter list or NULL for verify op
-  * @src_len:	size of the src input scatter list to be processed
-- * @dst_len:	size of the dst output scatter list
-+ * @dst_len:	size of the dst output scatter list or size of signature
-+ *		portion in @src for verify op
-  */
- static inline void akcipher_request_set_crypt(struct akcipher_request *req,
- 					      struct scatterlist *src,
-@@ -343,14 +349,18 @@ static inline int crypto_akcipher_sign(struct akcipher_request *req)
+ static int setup_file_encryption_key(struct fscrypt_info *ci)
+ {
+-	return fscrypt_setup_v1_file_key_via_subscribed_keyrings(ci);
++	struct key *key;
++	struct fscrypt_master_key *mk = NULL;
++	struct fscrypt_key_specifier mk_spec;
++	int err;
++
++	mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR;
++	memcpy(mk_spec.u.descriptor, ci->ci_master_key_descriptor,
++	       FSCRYPT_KEY_DESCRIPTOR_SIZE);
++
++	key = fscrypt_find_master_key(ci->ci_inode->i_sb, &mk_spec);
++	if (IS_ERR(key)) {
++		if (key != ERR_PTR(-ENOKEY))
++			return PTR_ERR(key);
++
++		return fscrypt_setup_v1_file_key_via_subscribed_keyrings(ci);
++	}
++
++	mk = key->payload.data[0];
++
++	if (mk->mk_secret.size < ci->ci_mode->keysize) {
++		fscrypt_warn(NULL,
++			     "key with description '%s' is too short (got %u bytes, need %u+ bytes)",
++			     key->description, mk->mk_secret.size,
++			     ci->ci_mode->keysize);
++		err = -ENOKEY;
++		goto out_release_key;
++	}
++
++	err = fscrypt_setup_v1_file_key(ci, mk->mk_secret.raw);
++
++out_release_key:
++	key_put(key);
++	return err;
  }
  
- /**
-- * crypto_akcipher_verify() - Invoke public key verify operation
-+ * crypto_akcipher_verify() - Invoke public key signature verification
-  *
-- * Function invokes the specific public key verify operation for a given
-- * public key algorithm
-+ * Function invokes the specific public key signature verification operation
-+ * for a given public key algorithm.
-  *
-  * @req:	asymmetric key request
-  *
-- * Return: zero on success; error code in case of error
-+ * Note: req->dst should be NULL, req->src should point to SG of size
-+ * (req->src_size + req->dst_size), containing signature (of req->src_size
-+ * length) with appended digest (of req->dst_size length).
-+ *
-+ * Return: zero on verification success; error code in case of error.
-  */
- static inline int crypto_akcipher_verify(struct akcipher_request *req)
+ static void put_crypt_info(struct fscrypt_info *ci)
+diff --git a/fs/super.c b/fs/super.c
+index 583a0124bc394..ae3661ade8f32 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -32,6 +32,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/rculist_bl.h>
+ #include <linux/cleancache.h>
++#include <linux/fscrypt.h>
+ #include <linux/fsnotify.h>
+ #include <linux/lockdep.h>
+ #include <linux/user_namespace.h>
+@@ -290,6 +291,7 @@ static void __put_super(struct super_block *s)
+ 		WARN_ON(s->s_inode_lru.node);
+ 		WARN_ON(!list_empty(&s->s_mounts));
+ 		security_sb_free(s);
++		fscrypt_sb_free(s);
+ 		put_user_ns(s->s_user_ns);
+ 		kfree(s->s_subtype);
+ 		call_rcu(&s->rcu, destroy_super_rcu);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index dd28e76790891..76c2551a70506 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1423,6 +1423,7 @@ struct super_block {
+ 	const struct xattr_handler **s_xattr;
+ #ifdef CONFIG_FS_ENCRYPTION
+ 	const struct fscrypt_operations	*s_cop;
++	struct key		*s_master_keys; /* master crypto keys in use */
+ #endif
+ 	struct hlist_bl_head	s_roots;	/* alternate root dentries for NFS */
+ 	struct list_head	s_mounts;	/* list of mounts; _not_ for fs use */
+diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
+index 3bab73f18c4ad..63dd420505b5b 100644
+--- a/include/linux/fscrypt.h
++++ b/include/linux/fscrypt.h
+@@ -126,6 +126,10 @@ extern int fscrypt_ioctl_get_policy(struct file *, void __user *);
+ extern int fscrypt_has_permitted_context(struct inode *, struct inode *);
+ extern int fscrypt_inherit_context(struct inode *, struct inode *,
+ 					void *, bool);
++/* keyring.c */
++extern void fscrypt_sb_free(struct super_block *sb);
++extern int fscrypt_ioctl_add_key(struct file *filp, void __user *arg);
++
+ /* keysetup.c */
+ extern int fscrypt_get_encryption_info(struct inode *);
+ extern void fscrypt_put_encryption_info(struct inode *);
+@@ -332,6 +336,17 @@ static inline int fscrypt_inherit_context(struct inode *parent,
+ 	return -EOPNOTSUPP;
+ }
+ 
++/* keyring.c */
++static inline void fscrypt_sb_free(struct super_block *sb)
++{
++	return;
++}
++
++static inline int fscrypt_ioctl_add_key(struct file *filp, void __user *arg)
++{
++	return -EOPNOTSUPP;
++}
++
+ /* keysetup.c */
+ static inline int fscrypt_get_encryption_info(struct inode *inode)
  {
+diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+index 3bbc5dfbde211..7bed24632bda7 100644
+--- a/include/uapi/linux/fscrypt.h
++++ b/include/uapi/linux/fscrypt.h
+@@ -34,22 +34,42 @@ struct fscrypt_policy {
+ 	__u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
+ };
+ 
+-#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
+-#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
+-#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
+-
+-/* Parameters for passing an encryption key into the kernel keyring */
++/*
++ * Process-subscribed "logon" key description prefix and payload format.
++ * Deprecated; prefer FS_IOC_ADD_ENCRYPTION_KEY instead.
++ */
+ #define FSCRYPT_KEY_DESC_PREFIX		"fscrypt:"
+-#define FSCRYPT_KEY_DESC_PREFIX_SIZE		8
+-
+-/* Structure that userspace passes to the kernel keyring */
+-#define FSCRYPT_MAX_KEY_SIZE			64
+-
++#define FSCRYPT_KEY_DESC_PREFIX_SIZE	8
++#define FSCRYPT_MAX_KEY_SIZE		64
+ struct fscrypt_key {
+ 	__u32 mode;
+ 	__u8 raw[FSCRYPT_MAX_KEY_SIZE];
+ 	__u32 size;
+ };
++
++struct fscrypt_key_specifier {
++#define FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR	1
++	__u32 type;
++	__u32 __reserved;
++	union {
++		__u8 __reserved[32]; /* reserve some extra space */
++		__u8 descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
++	} u;
++};
++
++/* Struct passed to FS_IOC_ADD_ENCRYPTION_KEY */
++struct fscrypt_add_key_arg {
++	struct fscrypt_key_specifier key_spec;
++	__u32 raw_size;
++	__u32 __reserved[9];
++	__u8 raw[];
++};
++
++#define FS_IOC_SET_ENCRYPTION_POLICY	  _IOR('f', 19, struct fscrypt_policy)
++#define FS_IOC_GET_ENCRYPTION_PWSALT	  _IOW('f', 20, __u8[16])
++#define FS_IOC_GET_ENCRYPTION_POLICY	  _IOW('f', 21, struct fscrypt_policy)
++#define FS_IOC_ADD_ENCRYPTION_KEY	 _IOWR('f', 23, struct fscrypt_add_key_arg)
++
+ /**********************************************************************/
+ 
+ /* old names; don't add anything new here! */
 -- 
-2.11.0
+2.21.0.392.gf8f6787159e-goog
