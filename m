@@ -1,193 +1,131 @@
 From: Eric Biggers <ebiggers@kernel.org>
-Date: Tue, 02 Apr 2019 15:45:44 +0000
-Subject: [PATCH v4 01/17] fs, fscrypt: move uapi definitions to new header <linux/fscrypt.h>
-Message-Id: <20190402154600.32432-2-ebiggers@kernel.org>
+Date: Thu, 18 Apr 2019 23:29:19 +0000
+Subject: [PATCH v5 12/16] fscrypt: require that key be added when setting a v2 encryption policy
+Message-Id: <20190418232923.250800-13-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190402154600.32432-1-ebiggers@kernel.org>
-In-Reply-To: <20190402154600.32432-1-ebiggers@kernel.org>
+References: <20190418232923.250800-1-ebiggers@kernel.org>
+In-Reply-To: <20190418232923.250800-1-ebiggers@kernel.org>
 To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
 From: Eric Biggers <ebiggers@google.com>
 
-More fscrypt definitions are being added, and we shouldn't use a
-disproportionate amount of space in <linux/fs.h> for fscrypt stuff.
-So move the fscrypt definitions to a new header <linux/fscrypt.h>.
+By looking up the master keys in a filesystem-level keyring rather than
+in the calling processes' key hierarchy, it becomes possible for a user
+to set an encryption policy which refers to some key they don't actually
+know, then encrypt their files using that key.  Cryptographically this
+isn't much of a problem, but the semantics of this would be a bit weird.
+Thus, enforce that a v2 encryption policy can only be set if the user
+has previously added the key, or has capable(CAP_FOWNER).
 
-For source compatibility with existing userspace programs, <linux/fs.h>
-still includes the new header.
+We tolerate that this problem will continue to exist for v1 encryption
+policies, however; there is no way around that.
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- MAINTAINERS                  |  1 +
- include/linux/fscrypt.h      |  1 +
- include/uapi/linux/fs.h      | 54 ++-------------------------------
- include/uapi/linux/fscrypt.h | 58 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 63 insertions(+), 51 deletions(-)
- create mode 100644 include/uapi/linux/fscrypt.h
+ fs/crypto/fscrypt_private.h |  3 +++
+ fs/crypto/keyring.c         | 47 +++++++++++++++++++++++++++++++++++++
+ fs/crypto/policy.c          |  6 +++++
+ 3 files changed, 56 insertions(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 43b36dbed48e7..3b84bf3bf7cae 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6351,6 +6351,7 @@ T:	git git://git.kernel.org/pub/scm/fs/fscrypt/fscrypt.git
- S:	Supported
- F:	fs/crypto/
- F:	include/linux/fscrypt*.h
-+F:	include/uapi/linux/fscrypt.h
- F:	Documentation/filesystems/fscrypt.rst
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index 5f679ba32cece..a398383ae9e34 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -411,6 +411,9 @@ extern struct key *
+ fscrypt_find_master_key(struct super_block *sb,
+ 			const struct fscrypt_key_specifier *mk_spec);
  
- FSI-ATTACHED I2C DRIVER
-diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
-index e5194fc3983e9..8b1e444214973 100644
---- a/include/linux/fscrypt.h
-+++ b/include/linux/fscrypt.h
-@@ -16,6 +16,7 @@
- #include <linux/fs.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
-+#include <uapi/linux/fscrypt.h>
- 
- #define FS_CRYPTO_BLOCK_SIZE		16
- 
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index 121e82ce296b5..0f4e66b1bcd09 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -13,6 +13,9 @@
- #include <linux/limits.h>
- #include <linux/ioctl.h>
- #include <linux/types.h>
-+#ifndef __KERNEL__
-+#include <linux/fscrypt.h>
-+#endif
- 
- /* Use of MS_* flags within the kernel is restricted to core mount(2) code. */
- #if !defined(__KERNEL__)
-@@ -212,57 +215,6 @@ struct fsxattr {
- #define FS_IOC_GETFSLABEL		_IOR(0x94, 49, char[FSLABEL_MAX])
- #define FS_IOC_SETFSLABEL		_IOW(0x94, 50, char[FSLABEL_MAX])
- 
--/*
-- * File system encryption support
-- */
--/* Policy provided via an ioctl on the topmost directory */
--#define FS_KEY_DESCRIPTOR_SIZE	8
--
--#define FS_POLICY_FLAGS_PAD_4		0x00
--#define FS_POLICY_FLAGS_PAD_8		0x01
--#define FS_POLICY_FLAGS_PAD_16		0x02
--#define FS_POLICY_FLAGS_PAD_32		0x03
--#define FS_POLICY_FLAGS_PAD_MASK	0x03
--#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
--#define FS_POLICY_FLAGS_VALID		0x07
--
--/* Encryption algorithms */
--#define FS_ENCRYPTION_MODE_INVALID		0
--#define FS_ENCRYPTION_MODE_AES_256_XTS		1
--#define FS_ENCRYPTION_MODE_AES_256_GCM		2
--#define FS_ENCRYPTION_MODE_AES_256_CBC		3
--#define FS_ENCRYPTION_MODE_AES_256_CTS		4
--#define FS_ENCRYPTION_MODE_AES_128_CBC		5
--#define FS_ENCRYPTION_MODE_AES_128_CTS		6
--#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
--#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
--#define FS_ENCRYPTION_MODE_ADIANTUM		9
--
--struct fscrypt_policy {
--	__u8 version;
--	__u8 contents_encryption_mode;
--	__u8 filenames_encryption_mode;
--	__u8 flags;
--	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
--};
--
--#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
--#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
--#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
--
--/* Parameters for passing an encryption key into the kernel keyring */
--#define FS_KEY_DESC_PREFIX		"fscrypt:"
--#define FS_KEY_DESC_PREFIX_SIZE		8
--
--/* Structure that userspace passes to the kernel keyring */
--#define FS_MAX_KEY_SIZE			64
--
--struct fscrypt_key {
--	__u32 mode;
--	__u8 raw[FS_MAX_KEY_SIZE];
--	__u32 size;
--};
--
- /*
-  * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
-  *
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-new file mode 100644
-index 0000000000000..193339cb53fdb
---- /dev/null
-+++ b/include/uapi/linux/fscrypt.h
-@@ -0,0 +1,58 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-+#ifndef _UAPI_LINUX_FSCRYPT_H
-+#define _UAPI_LINUX_FSCRYPT_H
++extern int fscrypt_verify_key_added(struct super_block *sb,
++				    const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE]);
 +
-+#include <linux/types.h>
-+
+ extern int __init fscrypt_init_keyring(void);
+ extern void fscrypt_exit_keyring(void);
+ 
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+index 4809ed061b332..73758c649f620 100644
+--- a/fs/crypto/keyring.c
++++ b/fs/crypto/keyring.c
+@@ -562,6 +562,53 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
+ }
+ EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
+ 
 +/*
-+ * File system encryption support
++ * Verify that the current user has added a master key with the given identifier
++ * (returns -ENOKEY if not).  This is needed to prevent a user from encrypting
++ * their files using some other user's key which they don't actually know.
++ * Cryptographically this isn't much of a problem, but the semantics of this
++ * would be a bit weird, so it's best to just forbid it.
++ *
++ * The system administrator (CAP_FOWNER) can override this, which should be
++ * enough for any use cases where encryption policies are being set using keys
++ * that were chosen ahead of time but aren't available at the moment.
++ *
++ * Note that the key may have already removed by the time this returns, but
++ * that's okay; we just care whether the key was there at some point.
++ *
++ * Return: 0 if the key is added, -ENOKEY if it isn't, or another -errno code
 + */
-+/* Policy provided via an ioctl on the topmost directory */
-+#define FS_KEY_DESCRIPTOR_SIZE	8
++int fscrypt_verify_key_added(struct super_block *sb,
++			     const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE])
++{
++	struct fscrypt_key_specifier mk_spec;
++	struct key *key, *mk_user;
++	struct fscrypt_master_key *mk;
++	int err;
 +
-+#define FS_POLICY_FLAGS_PAD_4		0x00
-+#define FS_POLICY_FLAGS_PAD_8		0x01
-+#define FS_POLICY_FLAGS_PAD_16		0x02
-+#define FS_POLICY_FLAGS_PAD_32		0x03
-+#define FS_POLICY_FLAGS_PAD_MASK	0x03
-+#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
-+#define FS_POLICY_FLAGS_VALID		0x07
++	mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER;
++	memcpy(mk_spec.u.identifier, identifier, FSCRYPT_KEY_IDENTIFIER_SIZE);
 +
-+/* Encryption algorithms */
-+#define FS_ENCRYPTION_MODE_INVALID		0
-+#define FS_ENCRYPTION_MODE_AES_256_XTS		1
-+#define FS_ENCRYPTION_MODE_AES_256_GCM		2
-+#define FS_ENCRYPTION_MODE_AES_256_CBC		3
-+#define FS_ENCRYPTION_MODE_AES_256_CTS		4
-+#define FS_ENCRYPTION_MODE_AES_128_CBC		5
-+#define FS_ENCRYPTION_MODE_AES_128_CTS		6
-+#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
-+#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
-+#define FS_ENCRYPTION_MODE_ADIANTUM		9
++	key = fscrypt_find_master_key(sb, &mk_spec);
++	if (IS_ERR(key)) {
++		err = PTR_ERR(key);
++		goto out;
++	}
++	mk = key->payload.data[0];
++	mk_user = find_master_key_user(mk);
++	if (IS_ERR(mk_user)) {
++		err = PTR_ERR(mk_user);
++	} else {
++		key_put(mk_user);
++		err = 0;
++	}
++	key_put(key);
++out:
++	if (err = -ENOKEY && capable(CAP_FOWNER))
++		err = 0;
++	return err;
++}
 +
-+struct fscrypt_policy {
-+	__u8 version;
-+	__u8 contents_encryption_mode;
-+	__u8 filenames_encryption_mode;
-+	__u8 flags;
-+	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-+};
-+
-+#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
-+#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
-+#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
-+
-+/* Parameters for passing an encryption key into the kernel keyring */
-+#define FS_KEY_DESC_PREFIX		"fscrypt:"
-+#define FS_KEY_DESC_PREFIX_SIZE		8
-+
-+/* Structure that userspace passes to the kernel keyring */
-+#define FS_MAX_KEY_SIZE			64
-+
-+struct fscrypt_key {
-+	__u32 mode;
-+	__u8 raw[FS_MAX_KEY_SIZE];
-+	__u32 size;
-+};
-+
-+#endif /* _UAPI_LINUX_FSCRYPT_H */
+ static void shrink_dcache_inode(struct inode *inode)
+ {
+ 	struct dentry *dentry;
+diff --git a/fs/crypto/policy.c b/fs/crypto/policy.c
+index b42e9e3ce8d0f..839ce67581812 100644
+--- a/fs/crypto/policy.c
++++ b/fs/crypto/policy.c
+@@ -211,6 +211,7 @@ static int set_encryption_policy(struct inode *inode,
+ {
+ 	union fscrypt_context ctx;
+ 	int ctxsize;
++	int err;
+ 
+ 	if (!fscrypt_supported_policy(policy))
+ 		return -EINVAL;
+@@ -229,6 +230,11 @@ static int set_encryption_policy(struct inode *inode,
+ 		 */
+ 		pr_warn_once("%s (pid %d) is setting deprecated v1 encryption policy; recommend upgrading to v2.\n",
+ 			     current->comm, current->pid);
++	} else {
++		err = fscrypt_verify_key_added(inode->i_sb,
++					       policy->v2.master_key_identifier);
++		if (err)
++			return err;
+ 	}
+ 
+ 	ctxsize = fscrypt_new_context_from_policy(&ctx, policy);
 -- 
-2.21.0
+2.21.0.392.gf8f6787159e-goog
