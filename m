@@ -1,56 +1,64 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Thu, 11 Apr 2019 15:51:13 +0000
-Subject: [PATCH v9 01/10] crypto: akcipher - default implementations for request callbacks
-Message-Id: <20190411155122.13245-2-vt@altlinux.org>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Thu, 18 Apr 2019 23:29:11 +0000
+Subject: [PATCH v5 04/16] fscrypt: add ->ci_inode to fscrypt_info
+Message-Id: <20190418232923.250800-5-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190411155122.13245-1-vt@altlinux.org>
-In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190418232923.250800-1-ebiggers@kernel.org>
+In-Reply-To: <20190418232923.250800-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-Because with the introduction of EC-RDSA and change in workings of RSA
-in regard to sign/verify, akcipher could have not all callbacks defined,
-check the presence of callbacks in crypto_register_akcipher() and
-provide default implementation if the callback is not implemented.
+From: Eric Biggers <ebiggers@google.com>
 
-This is suggested by Herbert Xu instead of checking the presence of the
-callback on every request.
+Add an inode back-pointer to 'struct fscrypt_info', such that
+inode->i_crypt_info->ci_inode = inode.
 
-Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
+This will be useful for:
+
+1. Evicting the inodes when a fscrypt key is removed, since we'll track
+   the inodes using a given key by linking their fscrypt_infos together,
+   rather than the inodes directly.  This avoids bloating 'struct inode'
+   with a new list_head.
+
+2. Simplifying the per-file key setup, since the inode pointer won't
+   have to be passed around everywhere just in case something goes wrong
+   and it's needed for fscrypt_warn().
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- crypto/akcipher.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/crypto/fscrypt_private.h | 3 +++
+ fs/crypto/keyinfo.c         | 2 ++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/crypto/akcipher.c b/crypto/akcipher.c
-index 0cbeae137e0a..780daa436dac 100644
---- a/crypto/akcipher.c
-+++ b/crypto/akcipher.c
-@@ -119,10 +119,24 @@ static void akcipher_prepare_alg(struct akcipher_alg *alg)
- 	base->cra_flags |= CRYPTO_ALG_TYPE_AKCIPHER;
- }
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index 52e09ef40bfa6..ac24edfc297f1 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -73,6 +73,9 @@ struct fscrypt_info {
+ 	 */
+ 	struct fscrypt_mode *ci_mode;
  
-+static int akcipher_default_op(struct akcipher_request *req)
-+{
-+	return -ENOSYS;
-+}
++	/* Back-pointer to the inode */
++	struct inode *ci_inode;
 +
- int crypto_register_akcipher(struct akcipher_alg *alg)
- {
- 	struct crypto_alg *base = &alg->base;
+ 	/*
+ 	 * If non-NULL, then this inode uses a master key directly rather than a
+ 	 * derived key, and ci_ctfm will equal ci_master_key->mk_ctfm.
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
+index 16349894ef91d..ed253262b0195 100644
+--- a/fs/crypto/keyinfo.c
++++ b/fs/crypto/keyinfo.c
+@@ -542,6 +542,8 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	if (!crypt_info)
+ 		return -ENOMEM;
  
-+	if (!alg->sign)
-+		alg->sign = akcipher_default_op;
-+	if (!alg->verify)
-+		alg->verify = akcipher_default_op;
-+	if (!alg->encrypt)
-+		alg->encrypt = akcipher_default_op;
-+	if (!alg->decrypt)
-+		alg->decrypt = akcipher_default_op;
++	crypt_info->ci_inode = inode;
 +
- 	akcipher_prepare_alg(alg);
- 	return crypto_register_alg(base);
- }
+ 	crypt_info->ci_flags = ctx.flags;
+ 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
+ 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
 -- 
-2.11.0
+2.21.0.392.gf8f6787159e-goog
