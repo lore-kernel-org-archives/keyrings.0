@@ -1,216 +1,492 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 30 Apr 2019 15:07:47 +0000
-Subject: [PATCH 08/11] keys: Include target namespace in match criteria [ver #2]
-Message-Id: <155663686738.31331.14037065651903278208.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Thu, 18 Apr 2019 03:51:17 +0000
+Subject: [PATCH v10 09/12] ima: Implement support for module-style appended signatures
+Message-Id: <20190418035120.2354-10-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
-To: ebiederm@xmission.com
-Cc: keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
+References: <20190418035120.2354-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190418035120.2354-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Currently a key has a standard matching criteria of { type, description } and
-this is used to only allow keys with unique criteria in a keyring.  This
-means, however, that you cannot have keys with the same type and description
-but a different target namespace in the same keyring.
+Implement the appraise_type=imasig|modsig option, allowing IMA to read and
+verify modsig signatures.
 
-This is a potential problem for a containerised environment where, say, a
-container is made up of some parts of its mount space involving netfs
-superblocks from two different network namespaces.
+In case a file has both an xattr signature and an appended modsig, IMA will
+only use the appended signature if the key used by the xattr signature
+isn't present in the IMA or platform keyring.
 
-This is also a problem for shared system management keyrings such as the DNS
-records keyring or the NFS idmapper keyring that might contain keys from
-different network namespaces.
+Because modsig verification needs to convert from an integrity keyring id
+to the keyring itself, add an integrity_keyring_from_id() function in
+digsig.c so that integrity_modsig_verify() can use it.
 
-Fix this by including a namespace component in a key's matching criteria.
-Keyring types are marked to indicate which, if any, namespace is relevant to
-keys of that type, and that namespace is set when the key is created from the
-current task's namespace set.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ security/integrity/digsig.c           | 39 ++++++++++++---
+ security/integrity/ima/Kconfig        |  3 ++
+ security/integrity/ima/ima.h          | 22 ++++++++-
+ security/integrity/ima/ima_appraise.c | 50 +++++++++++++++++--
+ security/integrity/ima/ima_main.c     | 11 ++++-
+ security/integrity/ima/ima_modsig.c   | 71 +++++++++++++++++++++++++++
+ security/integrity/ima/ima_policy.c   | 12 ++---
+ security/integrity/integrity.h        | 19 +++++++
+ 8 files changed, 206 insertions(+), 21 deletions(-)
 
- include/linux/key.h        |   11 +++++++++++
- security/keys/gc.c         |    2 +-
- security/keys/key.c        |    1 +
- security/keys/keyring.c    |   36 ++++++++++++++++++++++++++++++++++--
- security/keys/persistent.c |    1 +
- 5 files changed, 48 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 214b1824c20c..c02f6e171b8c 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -82,9 +82,16 @@ struct cred;
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index e19c2eb72c51..ce79d2f6bc7e 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -43,11 +43,10 @@ static const char * const keyring_name[INTEGRITY_KEYRING_MAX] = {
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
+ #endif
  
- struct key_type;
- struct key_owner;
-+struct key_tag;
- struct keyring_list;
- struct keyring_name;
- 
-+struct key_tag {
-+	struct rcu_head		rcu;
-+	refcount_t		usage;
-+	bool			removed;	/* T when subject removed */
-+};
-+
- struct keyring_index_key {
- 	/* [!] If this structure is altered, the union in struct key must change too! */
- 	unsigned long		hash;			/* Hash value */
-@@ -101,6 +108,7 @@ struct keyring_index_key {
- 		unsigned long x;
- 	};
- 	struct key_type		*type;
-+	struct key_tag		*domain_tag;	/* Domain of operation */
- 	const char		*description;
- };
- 
-@@ -218,6 +226,7 @@ struct key {
- 			unsigned long	hash;
- 			unsigned long	len_desc;
- 			struct key_type	*type;		/* type of key */
-+			struct key_tag	*domain_tag;	/* Domain of operation */
- 			char		*description;
- 		};
- 	};
-@@ -268,6 +277,7 @@ extern struct key *key_alloc(struct key_type *type,
- extern void key_revoke(struct key *key);
- extern void key_invalidate(struct key *key);
- extern void key_put(struct key *key);
-+extern bool key_put_tag(struct key_tag *tag);
- 
- static inline struct key *__key_get(struct key *key)
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+-			    const char *digest, int digestlen)
++static struct key *integrity_keyring_from_id(const unsigned int id)
  {
-@@ -428,6 +438,7 @@ extern void key_init(void);
- #define key_fsgid_changed(t)		do { } while(0)
- #define key_init()			do { } while(0)
- #define key_free_user_ns(ns)		do { } while(0)
-+#define key_put_subject(s)		do { } while(0)
+-	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
+-		return -EINVAL;
++	if (id >= INTEGRITY_KEYRING_MAX)
++		return ERR_PTR(-EINVAL);
  
- #endif /* CONFIG_KEYS */
- #endif /* __KERNEL__ */
-diff --git a/security/keys/gc.c b/security/keys/gc.c
-index 634e96b380e8..83d279fb7793 100644
---- a/security/keys/gc.c
-+++ b/security/keys/gc.c
-@@ -154,7 +154,7 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
- 			atomic_dec(&key->user->nikeys);
+ 	if (!keyring[id]) {
+ 		keyring[id] @@ -56,23 +55,49 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			int err = PTR_ERR(keyring[id]);
+ 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
+ 			keyring[id] = NULL;
+-			return err;
++			return ERR_PTR(err);
+ 		}
+ 	}
  
- 		key_user_put(key->user);
--
-+		key_put_tag(key->domain_tag);
- 		kfree(key->description);
- 
- 		memzero_explicit(key, sizeof(*key));
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 1568b0028ba4..8cd0f98e4fa3 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -317,6 +317,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 		goto security_error;
- 
- 	/* publish the key by giving it a serial number */
-+	refcount_inc(&key->domain_tag->usage);
- 	atomic_inc(&user->nkeys);
- 	key_alloc_serial(key);
- 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 1fc9219ed002..0898d6d91d41 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -175,6 +175,9 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
- 	type = (unsigned long)index_key->type;
- 	acc = mult_64x32_and_fold(type, desc_len + 13);
- 	acc = mult_64x32_and_fold(acc, 9207);
-+	piece = (unsigned long)index_key->domain_tag;
-+	acc = mult_64x32_and_fold(acc, piece);
-+	acc = mult_64x32_and_fold(acc, 9207);
- 
- 	for (;;) {
- 		n = desc_len;
-@@ -208,16 +211,36 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
- 
- /*
-  * Finalise an index key to include a part of the description actually in the
-- * index key and to add in the hash too.
-+ * index key, to set the domain tag and to calculate the hash.
-  */
- void key_set_index_key(struct keyring_index_key *index_key)
- {
-+	static struct key_tag default_domain_tag = { .usage = REFCOUNT_INIT(1), };
- 	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
++	return keyring[id];
++}
 +
- 	memcpy(index_key->desc, index_key->description, n);
++int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
++			    const char *digest, int digestlen)
++{
++	struct key *keyring;
++
++	if (siglen < 2)
++		return -EINVAL;
++
++	keyring = integrity_keyring_from_id(id);
++	if (IS_ERR(keyring))
++		return PTR_ERR(keyring);
++
+ 	switch (sig[1]) {
+ 	case 1:
+ 		/* v1 API expect signature without xattr type */
+-		return digsig_verify(keyring[id], sig + 1, siglen - 1,
++		return digsig_verify(keyring, sig + 1, siglen - 1,
+ 				     digest, digestlen);
+ 	case 2:
+-		return asymmetric_verify(keyring[id], sig, siglen,
++		return asymmetric_verify(keyring, sig, siglen,
+ 					 digest, digestlen);
+ 	}
  
-+	index_key->domain_tag = &default_domain_tag;
- 	hash_key_type_and_desc(index_key);
+ 	return -EOPNOTSUPP;
  }
  
-+/**
-+ * key_put_tag - Release a ref on a tag.
-+ * @tag: The tag to release.
-+ *
-+ * This releases a reference the given tag and returns true if that ref was the
-+ * last one.
-+ */
-+bool key_put_tag(struct key_tag *tag)
++int integrity_modsig_verify(const unsigned int id, const struct modsig *modsig)
 +{
-+	if (refcount_dec_and_test(&tag->usage)) {
-+		kfree_rcu(tag, rcu);
-+		return true;
++	struct key *keyring;
++
++	keyring = integrity_keyring_from_id(id);
++	if (IS_ERR(keyring))
++		return PTR_ERR(keyring);
++
++	return ima_modsig_verify(keyring, modsig);
++}
++
+ static int __integrity_init_keyring(const unsigned int id, key_perm_t perm,
+ 				    struct key_restriction *restriction)
+ {
+diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+index bba19f9ea184..0fb542455698 100644
+--- a/security/integrity/ima/Kconfig
++++ b/security/integrity/ima/Kconfig
+@@ -234,6 +234,9 @@ config IMA_APPRAISE_BOOTPARAM
+ config IMA_APPRAISE_MODSIG
+ 	bool "Support module-style signatures for appraisal"
+ 	depends on IMA_APPRAISE
++	depends on INTEGRITY_ASYMMETRIC_KEYS
++	select PKCS7_MESSAGE_PARSER
++	select MODULE_SIG_FORMAT
+ 	default n
+ 	help
+ 	   Adds support for signatures appended to files. The format of the
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 0c3e5a59270f..9f69befd8674 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -191,6 +191,10 @@ enum ima_hooks {
+ 	__ima_hooks(__ima_hook_enumify)
+ };
+ 
++extern const char *const func_tokens[];
++
++struct modsig;
++
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr);
+@@ -240,7 +244,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 			     struct integrity_iint_cache *iint,
+ 			     struct file *file, const unsigned char *filename,
+ 			     struct evm_ima_xattr_data *xattr_value,
+-			     int xattr_len);
++			     int xattr_len, const struct modsig *modsig);
+ int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func);
+ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file);
+ enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
+@@ -256,7 +260,8 @@ static inline int ima_appraise_measurement(enum ima_hooks func,
+ 					   struct file *file,
+ 					   const unsigned char *filename,
+ 					   struct evm_ima_xattr_data *xattr_value,
+-					   int xattr_len)
++					   int xattr_len,
++					   const struct modsig *modsig)
+ {
+ 	return INTEGRITY_UNKNOWN;
+ }
+@@ -295,11 +300,24 @@ static inline int ima_read_xattr(struct dentry *dentry,
+ 
+ #ifdef CONFIG_IMA_APPRAISE_MODSIG
+ bool ima_hook_supports_modsig(enum ima_hooks func);
++int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
++		    struct modsig **modsig);
++void ima_free_modsig(struct modsig *modsig);
+ #else
+ static inline bool ima_hook_supports_modsig(enum ima_hooks func)
+ {
+ 	return false;
+ }
++
++static inline int ima_read_modsig(enum ima_hooks func, const void *buf,
++				  loff_t buf_len, struct modsig **modsig)
++{
++	return -EOPNOTSUPP;
++}
++
++static inline void ima_free_modsig(struct modsig *modsig)
++{
++}
+ #endif /* CONFIG_IMA_APPRAISE_MODSIG */
+ 
+ /* LSM based policy rules require audit */
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index b3837e26bb27..b8cc5897f16a 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -279,6 +279,33 @@ static int xattr_verify(enum ima_hooks func, struct integrity_iint_cache *iint,
+ 	return rc;
+ }
+ 
++/*
++ * modsig_verify - verify modsig signature
++ *
++ * Verify whether the signature matches the file contents.
++ *
++ * Return 0 on success, error code otherwise.
++ */
++static int modsig_verify(enum ima_hooks func, const struct modsig *modsig,
++			 enum integrity_status *status, const char **cause)
++{
++	int rc;
++
++	rc = integrity_modsig_verify(INTEGRITY_KEYRING_IMA, modsig);
++	if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
++	    func = KEXEC_KERNEL_CHECK)
++		rc = integrity_modsig_verify(INTEGRITY_KEYRING_PLATFORM,
++					     modsig);
++	if (rc) {
++		*cause = "invalid-signature";
++		*status = INTEGRITY_FAIL;
++	} else {
++		*status = INTEGRITY_PASS;
 +	}
 +
-+	return false;
++	return rc;
 +}
 +
  /*
-  * Build the next index key chunk.
+  * ima_appraise_measurement - appraise file measurement
   *
-@@ -238,8 +261,10 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
- 		return index_key->x;
- 	case 2:
- 		return (unsigned long)index_key->type;
-+	case 3:
-+		return (unsigned long)index_key->domain_tag;
- 	default:
--		level -= 3;
-+		level -= 4;
- 		if (desc_len <= sizeof(index_key->desc))
- 			return 0;
+@@ -291,7 +318,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 			     struct integrity_iint_cache *iint,
+ 			     struct file *file, const unsigned char *filename,
+ 			     struct evm_ima_xattr_data *xattr_value,
+-			     int xattr_len)
++			     int xattr_len, const struct modsig *modsig)
+ {
+ 	static const char op[] = "appraise_data";
+ 	const char *cause = "unknown";
+@@ -299,11 +326,14 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	struct inode *inode = d_backing_inode(dentry);
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+ 	int rc = xattr_len;
++	bool try_modsig = iint->flags & IMA_MODSIG_ALLOWED && modsig;
  
-@@ -268,6 +293,7 @@ static bool keyring_compare_object(const void *object, const void *data)
- 	const struct key *key = keyring_ptr_to_key(object);
+-	if (!(inode->i_opflags & IOP_XATTR))
++	/* If not appraising a modsig, we need an xattr. */
++	if (!(inode->i_opflags & IOP_XATTR) && !try_modsig)
+ 		return INTEGRITY_UNKNOWN;
  
- 	return key->index_key.type = index_key->type &&
-+		key->index_key.domain_tag = index_key->domain_tag &&
- 		key->index_key.desc_len = index_key->desc_len &&
- 		memcmp(key->index_key.description, index_key->description,
- 		       index_key->desc_len) = 0;
-@@ -309,6 +335,12 @@ static int keyring_diff_objects(const void *object, const void *data)
- 		goto differ;
- 	level += sizeof(unsigned long);
+-	if (rc <= 0) {
++	/* If reading the xattr failed and there's no modsig, error out. */
++	if (rc <= 0 && !try_modsig) {
+ 		if (rc && rc != -ENODATA)
+ 			goto out;
  
-+	seg_a = (unsigned long)a->domain_tag;
-+	seg_b = (unsigned long)b->domain_tag;
-+	if ((seg_a ^ seg_b) != 0)
-+		goto differ;
-+	level += sizeof(unsigned long);
+@@ -326,6 +356,10 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	case INTEGRITY_UNKNOWN:
+ 		break;
+ 	case INTEGRITY_NOXATTRS:	/* No EVM protected xattrs. */
++		/* It's fine not to have xattrs when using a modsig. */
++		if (try_modsig)
++			break;
++		/* fall through */
+ 	case INTEGRITY_NOLABEL:		/* No security.evm xattr. */
+ 		cause = "missing-HMAC";
+ 		goto out;
+@@ -340,6 +374,14 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 		rc = xattr_verify(func, iint, xattr_value, xattr_len, &status,
+ 				  &cause);
+ 
++	/*
++	 * If we have a modsig and either no imasig or the imasig's key isn't
++	 * known, then try verifying the modsig.
++	 */
++	if (status != INTEGRITY_PASS && try_modsig &&
++	    (!xattr_value || rc = -ENOKEY))
++		rc = modsig_verify(func, modsig, &status, &cause);
 +
- 	i = sizeof(a->desc);
- 	if (a->desc_len <= i)
- 		goto same;
-diff --git a/security/keys/persistent.c b/security/keys/persistent.c
-index 90303fe4a394..9944d855a28d 100644
---- a/security/keys/persistent.c
-+++ b/security/keys/persistent.c
-@@ -84,6 +84,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
- 	long ret;
+ out:
+ 	/*
+ 	 * File signatures on some filesystems can not be properly verified.
+@@ -356,7 +398,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 				    op, cause, rc, 0);
+ 	} else if (status != INTEGRITY_PASS) {
+ 		/* Fix mode, but don't replace file signatures. */
+-		if ((ima_appraise & IMA_APPRAISE_FIX) &&
++		if ((ima_appraise & IMA_APPRAISE_FIX) && !try_modsig &&
+ 		    (!xattr_value ||
+ 		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
+ 			if (!ima_fix_xattr(dentry, iint))
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 357edd140c09..722d4e9c72ac 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -181,6 +181,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	int rc = 0, action, must_appraise = 0;
+ 	int pcr = CONFIG_IMA_MEASURE_PCR_IDX;
+ 	struct evm_ima_xattr_data *xattr_value = NULL;
++	struct modsig *modsig = NULL;
+ 	int xattr_len = 0;
+ 	bool violation_check;
+ 	enum hash_algo hash_algo;
+@@ -277,10 +278,15 @@ static int process_measurement(struct file *file, const struct cred *cred,
  
- 	/* Look in the register if it exists */
-+	memset(&index_key, 0, sizeof(index_key));
- 	index_key.type = &key_type_keyring;
- 	index_key.description = buf;
- 	index_key.desc_len = sprintf(buf, "_persistent.%u", from_kuid(ns, uid));
+ 	template_desc = ima_template_desc_current();
+ 	if ((action & IMA_APPRAISE_SUBMASK) ||
+-		    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0)
++	    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0) {
+ 		/* read 'security.ima' */
+ 		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
+ 
++		/* Read the appended modsig if allowed by the policy. */
++		if (iint->flags & IMA_MODSIG_ALLOWED)
++			ima_read_modsig(func, buf, size, &modsig);
++	}
++
+ 	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
+ 
+ 	rc = ima_collect_measurement(iint, file, buf, size, hash_algo);
+@@ -296,7 +302,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	if (rc = 0 && (action & IMA_APPRAISE_SUBMASK)) {
+ 		inode_lock(inode);
+ 		rc = ima_appraise_measurement(func, iint, file, pathname,
+-					      xattr_value, xattr_len);
++					      xattr_value, xattr_len, modsig);
+ 		inode_unlock(inode);
+ 	}
+ 	if (action & IMA_AUDIT)
+@@ -310,6 +316,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 		rc = -EACCES;
+ 	mutex_unlock(&iint->mutex);
+ 	kfree(xattr_value);
++	ima_free_modsig(modsig);
+ out:
+ 	if (pathbuf)
+ 		__putname(pathbuf);
+diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
+index 87503bfe8c8b..ac0f44fb52ce 100644
+--- a/security/integrity/ima/ima_modsig.c
++++ b/security/integrity/ima/ima_modsig.c
+@@ -8,8 +8,17 @@
+  * Thiago Jung Bauermann <bauerman@linux.ibm.com>
+  */
+ 
++#include <linux/types.h>
++#include <linux/module_signature.h>
++#include <keys/asymmetric-type.h>
++#include <crypto/pkcs7.h>
++
+ #include "ima.h"
+ 
++struct modsig {
++	struct pkcs7_message *pkcs7_msg;
++};
++
+ /**
+  * ima_hook_supports_modsig - can the policy allow modsig for this hook?
+  *
+@@ -29,3 +38,65 @@ bool ima_hook_supports_modsig(enum ima_hooks func)
+ 		return false;
+ 	}
+ }
++
++/*
++ * ima_read_modsig - Read modsig from buf.
++ *
++ * Return: 0 on success, error code otherwise.
++ */
++int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
++		    struct modsig **modsig)
++{
++	const size_t marker_len = strlen(MODULE_SIG_STRING);
++	const struct module_signature *sig;
++	struct modsig *hdr;
++	size_t sig_len;
++	const void *p;
++	int rc;
++
++	if (buf_len <= marker_len + sizeof(*sig))
++		return -ENOENT;
++
++	p = buf + buf_len - marker_len;
++	if (memcmp(p, MODULE_SIG_STRING, marker_len))
++		return -ENOENT;
++
++	buf_len -= marker_len;
++	sig = (const struct module_signature *) (p - sizeof(*sig));
++
++	rc = mod_check_sig(sig, buf_len, func_tokens[func]);
++	if (rc)
++		return rc;
++
++	sig_len = be32_to_cpu(sig->sig_len);
++	buf_len -= sig_len + sizeof(*sig);
++
++	hdr = kmalloc(sizeof(*hdr), GFP_KERNEL);
++	if (!hdr)
++		return -ENOMEM;
++
++	hdr->pkcs7_msg = pkcs7_parse_message(buf + buf_len, sig_len);
++	if (IS_ERR(hdr->pkcs7_msg)) {
++		kfree(hdr);
++		return PTR_ERR(hdr->pkcs7_msg);
++	}
++
++	*modsig = hdr;
++
++	return 0;
++}
++
++int ima_modsig_verify(struct key *keyring, const struct modsig *modsig)
++{
++	return verify_pkcs7_message_sig(NULL, 0, modsig->pkcs7_msg, keyring,
++					VERIFYING_MODULE_SIGNATURE, NULL, NULL);
++}
++
++void ima_free_modsig(struct modsig *modsig)
++{
++	if (!modsig)
++		return;
++
++	pkcs7_free_message(modsig->pkcs7_msg);
++	kfree(modsig);
++}
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index fca7a3f23321..a7a20a8c15c1 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -1144,6 +1144,12 @@ void ima_delete_rules(void)
+ 	}
+ }
+ 
++#define __ima_hook_stringify(str)	(#str),
++
++const char *const func_tokens[] = {
++	__ima_hooks(__ima_hook_stringify)
++};
++
+ #ifdef	CONFIG_IMA_READ_POLICY
+ enum {
+ 	mask_exec = 0, mask_write, mask_read, mask_append
+@@ -1156,12 +1162,6 @@ static const char *const mask_tokens[] = {
+ 	"MAY_APPEND"
+ };
+ 
+-#define __ima_hook_stringify(str)	(#str),
+-
+-static const char *const func_tokens[] = {
+-	__ima_hooks(__ima_hook_stringify)
+-};
+-
+ void *ima_policy_start(struct seq_file *m, loff_t *pos)
+ {
+ 	loff_t l = *pos;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 0e7330a36a9d..c6e7f41db470 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -153,10 +153,13 @@ int integrity_kernel_read(struct file *file, loff_t offset,
+ 
+ extern struct dentry *integrity_dir;
+ 
++struct modsig;
++
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
++int integrity_modsig_verify(unsigned int id, const struct modsig *modsig);
+ 
+ int __init integrity_init_keyring(const unsigned int id);
+ int __init integrity_load_x509(const unsigned int id, const char *path);
+@@ -171,6 +174,12 @@ static inline int integrity_digsig_verify(const unsigned int id,
+ 	return -EOPNOTSUPP;
+ }
+ 
++static inline int integrity_modsig_verify(unsigned int id,
++					  const struct modsig *modsig)
++{
++	return -EOPNOTSUPP;
++}
++
+ static inline int integrity_init_keyring(const unsigned int id)
+ {
+ 	return 0;
+@@ -196,6 +205,16 @@ static inline int asymmetric_verify(struct key *keyring, const char *sig,
+ }
+ #endif
+ 
++#ifdef CONFIG_IMA_APPRAISE_MODSIG
++int ima_modsig_verify(struct key *keyring, const struct modsig *modsig);
++#else
++static inline int ima_modsig_verify(struct key *keyring,
++				    const struct modsig *modsig)
++{
++	return -EOPNOTSUPP;
++}
++#endif
++
+ #ifdef CONFIG_IMA_LOAD_X509
+ void __init ima_load_x509(void);
+ #else
