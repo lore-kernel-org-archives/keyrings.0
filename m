@@ -1,7 +1,7 @@
 From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 18 Apr 2019 03:51:15 +0000
-Subject: [PATCH v10 07/12] ima: Add modsig appraise_type option for module-style appended signatures
-Message-Id: <20190418035120.2354-8-bauerman@linux.ibm.com>
+Date: Thu, 18 Apr 2019 03:51:11 +0000
+Subject: [PATCH v10 03/12] PKCS#7: Introduce pkcs7_get_digest()
+Message-Id: <20190418035120.2354-4-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,180 +11,100 @@ In-Reply-To: <20190418035120.2354-1-bauerman@linux.ibm.com>
 To: linux-integrity@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Introduce the modsig keyword to the IMA policy syntax to specify that
-a given hook should expect the file to have the IMA signature appended
-to it. Here is how it can be used in a rule:
+IMA will need to access the digest of the PKCS7 message (as calculated by
+the kernel) before the signature is verified, so introduce
+pkcs7_get_digest() for that purpose.
 
-appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
+Also, modify pkcs7_digest() to detect when the digest was already
+calculated so that it doesn't have to do redundant work. Verifying that
+sinfo->sig->digest isn't NULL is sufficient because both places which
+allocate sinfo->sig (pkcs7_parse_message() and pkcs7_note_signed_info())
+use kzalloc() so sig->digest is always initialized to zero.
 
-With this rule, IMA will accept either a signature stored in the extended
-attribute or an appended signature.
-
-For now, the rule above will behave exactly the same as if
-appraise_type=imasig was specified. The actual modsig implementation
-will be introduced separately.
-
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
 Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- Documentation/ABI/testing/ima_policy |  6 +++++-
- security/integrity/ima/Kconfig       | 10 +++++++++
- security/integrity/ima/Makefile      |  1 +
- security/integrity/ima/ima.h         |  9 ++++++++
- security/integrity/ima/ima_modsig.c  | 31 ++++++++++++++++++++++++++++
- security/integrity/ima/ima_policy.c  | 12 +++++++++--
- security/integrity/integrity.h       |  1 +
- 7 files changed, 67 insertions(+), 3 deletions(-)
+ crypto/asymmetric_keys/pkcs7_verify.c | 33 +++++++++++++++++++++++++++
+ include/crypto/pkcs7.h                |  4 ++++
+ 2 files changed, 37 insertions(+)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 74c6702de74e..9d1dfd0a8891 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -37,7 +37,7 @@ Description:
- 			euid:= decimal value
- 			fowner:= decimal value
- 		lsm:  	are LSM specific
--		option:	appraise_type:= [imasig]
-+		option:	appraise_type:= [imasig] [imasig|modsig]
- 			pcr:= decimal value
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 97c77f66b20d..5c3de46b0b73 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -16,6 +16,7 @@
+ #include <linux/err.h>
+ #include <linux/asn1.h>
+ #include <crypto/hash.h>
++#include <crypto/hash_info.h>
+ #include <crypto/public_key.h>
+ #include "pkcs7_parser.h"
  
- 		default policy:
-@@ -103,3 +103,7 @@ Description:
+@@ -33,6 +34,10 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
  
- 			measure func=KEXEC_KERNEL_CHECK pcr=4
- 			measure func=KEXEC_INITRAMFS_CHECK pcr=5
+ 	kenter(",%u,%s", sinfo->index, sinfo->sig->hash_algo);
+ 
++	/* The digest was calculated already. */
++	if (sig->digest)
++		return 0;
 +
-+		Example of appraise rule allowing modsig appended signatures:
-+
-+			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index a18f8c6d13b5..bba19f9ea184 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -231,6 +231,16 @@ config IMA_APPRAISE_BOOTPARAM
- 	  This option enables the different "ima_appraise=" modes
- 	  (eg. fix, log) from the boot command line.
+ 	if (!sinfo->sig->hash_algo)
+ 		return -ENOPKG;
  
-+config IMA_APPRAISE_MODSIG
-+	bool "Support module-style signatures for appraisal"
-+	depends on IMA_APPRAISE
-+	default n
-+	help
-+	   Adds support for signatures appended to files. The format of the
-+	   appended signature is the same used for signed kernel modules.
-+	   The modsig keyword can be used in the IMA policy to allow a hook
-+	   to accept such signatures.
-+
- config IMA_TRUSTED_KEYRING
- 	bool "Require all keys on the .ima keyring be signed (deprecated)"
- 	depends on IMA_APPRAISE && SYSTEM_TRUSTED_KEYRING
-diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
-index d921dc4f9eb0..31d57cdf2421 100644
---- a/security/integrity/ima/Makefile
-+++ b/security/integrity/ima/Makefile
-@@ -9,5 +9,6 @@ obj-$(CONFIG_IMA) += ima.o
- ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
- 	 ima_policy.o ima_template.o ima_template_lib.o
- ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
-+ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
- ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
- obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index d213e835c498..0c3e5a59270f 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -293,6 +293,15 @@ static inline int ima_read_xattr(struct dentry *dentry,
+@@ -122,6 +127,34 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
+ 	return ret;
+ }
  
- #endif /* CONFIG_IMA_APPRAISE */
- 
-+#ifdef CONFIG_IMA_APPRAISE_MODSIG
-+bool ima_hook_supports_modsig(enum ima_hooks func);
-+#else
-+static inline bool ima_hook_supports_modsig(enum ima_hooks func)
++int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf, u32 *len,
++		     enum hash_algo *hash_algo)
 +{
-+	return false;
++	struct pkcs7_signed_info *sinfo = pkcs7->signed_infos;
++	int i, ret;
++
++	/*
++	 * This function doesn't support messages with more than one signature.
++	 */
++	if (sinfo = NULL || sinfo->next != NULL)
++		return -EBADMSG;
++
++	ret = pkcs7_digest(pkcs7, sinfo);
++	if (ret)
++		return ret;
++
++	*buf = sinfo->sig->digest;
++	*len = sinfo->sig->digest_size;
++
++	for (i = 0; i < HASH_ALGO__LAST; i++)
++		if (!strcmp(hash_algo_name[i], sinfo->sig->hash_algo)) {
++			*hash_algo = i;
++			break;
++		}
++
++	return 0;
 +}
-+#endif /* CONFIG_IMA_APPRAISE_MODSIG */
 +
- /* LSM based policy rules require audit */
- #ifdef CONFIG_IMA_LSM_RULES
+ /*
+  * Find the key (X.509 certificate) to use to verify a PKCS#7 message.  PKCS#7
+  * uses the issuer's name and the issuing certificate serial number for
+diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
+index 583f199400a3..3bfe6829eaae 100644
+--- a/include/crypto/pkcs7.h
++++ b/include/crypto/pkcs7.h
+@@ -13,6 +13,7 @@
+ #define _CRYPTO_PKCS7_H
  
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-new file mode 100644
-index 000000000000..87503bfe8c8b
---- /dev/null
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -0,0 +1,31 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/*
-+ * IMA support for appraising module-style appended signatures.
-+ *
-+ * Copyright (C) 2019  IBM Corporation
-+ *
-+ * Author:
-+ * Thiago Jung Bauermann <bauerman@linux.ibm.com>
-+ */
-+
-+#include "ima.h"
-+
-+/**
-+ * ima_hook_supports_modsig - can the policy allow modsig for this hook?
-+ *
-+ * modsig is only supported by hooks using ima_post_read_file(), because only
-+ * they preload the contents of the file in a buffer. FILE_CHECK does that in
-+ * some cases, but not when reached from vfs_open(). POLICY_CHECK can support
-+ * it, but it's not useful in practice because it's a text file so deny.
-+ */
-+bool ima_hook_supports_modsig(enum ima_hooks func)
-+{
-+	switch (func) {
-+	case KEXEC_KERNEL_CHECK:
-+	case KEXEC_INITRAMFS_CHECK:
-+	case MODULE_CHECK:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index e0cc323f948f..fca7a3f23321 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -1038,6 +1038,10 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 			ima_log_string(ab, "appraise_type", args[0].from);
- 			if ((strcmp(args[0].from, "imasig")) = 0)
- 				entry->flags |= IMA_DIGSIG_REQUIRED;
-+			else if (ima_hook_supports_modsig(entry->func) &&
-+				 strcmp(args[0].from, "imasig|modsig") = 0)
-+				entry->flags |= IMA_DIGSIG_REQUIRED
-+						| IMA_MODSIG_ALLOWED;
- 			else
- 				result = -EINVAL;
- 			break;
-@@ -1330,8 +1334,12 @@ int ima_policy_show(struct seq_file *m, void *v)
- 			}
- 		}
- 	}
--	if (entry->flags & IMA_DIGSIG_REQUIRED)
--		seq_puts(m, "appraise_type=imasig ");
-+	if (entry->flags & IMA_DIGSIG_REQUIRED) {
-+		if (entry->flags & IMA_MODSIG_ALLOWED)
-+			seq_puts(m, "appraise_type=imasig|modsig ");
-+		else
-+			seq_puts(m, "appraise_type=imasig ");
-+	}
- 	if (entry->flags & IMA_PERMIT_DIRECTIO)
- 		seq_puts(m, "permit_directio ");
- 	rcu_read_unlock();
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 88a29f72a74f..0e7330a36a9d 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -36,6 +36,7 @@
- #define IMA_NEW_FILE		0x04000000
- #define EVM_IMMUTABLE_DIGSIG	0x08000000
- #define IMA_FAIL_UNVERIFIABLE_SIGS	0x10000000
-+#define IMA_MODSIG_ALLOWED	0x20000000
+ #include <linux/verification.h>
++#include <linux/hash_info.h>
+ #include <crypto/public_key.h>
  
- #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
- 				 IMA_HASH | IMA_APPRAISE_SUBMASK)
+ struct key;
+@@ -44,4 +45,7 @@ extern int pkcs7_verify(struct pkcs7_message *pkcs7,
+ extern int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
+ 				      const void *data, size_t datalen);
+ 
++extern int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf,
++			    u32 *len, enum hash_algo *hash_algo);
++
+ #endif /* _CRYPTO_PKCS7_H */
