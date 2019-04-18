@@ -1,172 +1,95 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Thu, 18 Apr 2019 03:51:20 +0000
-Subject: [PATCH v10 12/12] ima: Store the measurement again when appraising a modsig
-Message-Id: <20190418035120.2354-13-bauerman@linux.ibm.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Thu, 18 Apr 2019 23:29:22 +0000
+Subject: [PATCH v5 15/16] ubifs: wire up new fscrypt ioctls
+Message-Id: <20190418232923.250800-16-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418035120.2354-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190418035120.2354-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <20190418232923.250800-1-ebiggers@kernel.org>
+In-Reply-To: <20190418232923.250800-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-If the IMA template contains the "modsig" or "d-modsig" field, then the
-modsig should be added to the measurement list when the file is appraised.
+From: Eric Biggers <ebiggers@google.com>
 
-And that is what normally happens, but if a measurement rule caused a file
-containing a modsig to be measured before a different rule causes it to be
-appraised, the resulting measurement entry will not contain the modsig
-because it is only fetched during appraisal. When the appraisal rule
-triggers, it won't store a new measurement containing the modsig because
-the file was already measured.
+Wire up the new ioctls for adding and removing fscrypt keys to/from the
+filesystem, and the new ioctl for retrieving v2 encryption policies.
 
-We need to detect that situation and store an additional measurement with
-the modsig. This is done by adding an IMA_MEASURE action flag if we read a
-modsig and the IMA template contains a modsig field.
+FS_IOC_REMOVE_ENCRYPTION_KEY also required making UBIFS use
+fscrypt_drop_inode().
 
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+For more details see Documentation/filesystems/fscrypt.rst and the
+fscrypt patches that added the implementation of these ioctls.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/integrity/ima/ima.h          |  1 +
- security/integrity/ima/ima_api.c      | 19 +++++++++++++++----
- security/integrity/ima/ima_main.c     | 14 +++++++++++---
- security/integrity/ima/ima_template.c | 24 ++++++++++++++++++++++++
- 4 files changed, 51 insertions(+), 7 deletions(-)
+ fs/ubifs/ioctl.c | 16 ++++++++++++++++
+ fs/ubifs/super.c | 11 +++++++++++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 4e51290b149d..4e504c011b69 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -148,6 +148,7 @@ int ima_init_crypto(void);
- void ima_putc(struct seq_file *m, void *data, int datalen);
- void ima_print_digest(struct seq_file *m, u8 *digest, u32 size);
- struct ima_template_desc *ima_template_desc_current(void);
-+bool ima_template_has_modsig(void);
- int ima_restore_measurement_entry(struct ima_template_entry *entry);
- int ima_restore_measurement_list(loff_t bufsize, void *buf);
- int ima_measurements_show(struct seq_file *m, void *v);
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 3ef48d516f02..663805887fac 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -212,6 +212,14 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 		char digest[IMA_MAX_DIGEST_SIZE];
- 	} hash;
- 
-+	/*
-+	 * Always collect the modsig, because IMA might have already collected
-+	 * the file digest without collecting the modsig in a previous
-+	 * measurement rule.
-+	 */
-+	if (modsig)
-+		ima_collect_modsig(modsig, buf, size);
-+
- 	if (iint->flags & IMA_COLLECTED)
- 		goto out;
- 
-@@ -245,9 +253,6 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 	memcpy(iint->ima_hash, &hash, length);
- 	iint->version = i_version;
- 
--	if (modsig)
--		ima_collect_modsig(modsig, buf, size);
--
- 	/* Possibly temporary failure due to type of read (eg. O_DIRECT) */
- 	if (!result)
- 		iint->flags |= IMA_COLLECTED;
-@@ -296,7 +301,13 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 					     .modsig = modsig };
- 	int violation = 0;
- 
--	if (iint->measured_pcrs & (0x1 << pcr))
-+	/*
-+	 * We still need to store the measurement in the case of MODSIG because
-+	 * we only have its contents to put in the list at the time of
-+	 * appraisal, but a file measurement from earlier might already exist in
-+	 * the measurement list.
-+	 */
-+	if (iint->measured_pcrs & (0x1 << pcr) && !modsig)
- 		return;
- 
- 	result = ima_alloc_init_template(&event_data, &entry);
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 8e6475854351..f91ed4189f98 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -282,9 +282,17 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 		/* read 'security.ima' */
- 		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
- 
--		/* Read the appended modsig if allowed by the policy. */
--		if (iint->flags & IMA_MODSIG_ALLOWED)
--			ima_read_modsig(func, buf, size, &modsig);
-+		/*
-+		 * Read the appended modsig, if allowed by the policy, and allow
-+		 * an additional measurement list entry, if needed, based on the
-+		 * template format.
-+		 */
-+		if (iint->flags & IMA_MODSIG_ALLOWED) {
-+			rc = ima_read_modsig(func, buf, size, &modsig);
-+
-+			if (!rc && ima_template_has_modsig())
-+				action |= IMA_MEASURE;
-+		}
+diff --git a/fs/ubifs/ioctl.c b/fs/ubifs/ioctl.c
+index 82e4e6a30b044..c379b2505c4df 100644
+--- a/fs/ubifs/ioctl.c
++++ b/fs/ubifs/ioctl.c
+@@ -213,6 +213,18 @@ long ubifs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ #endif
  	}
  
- 	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
-diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index b05a14821a08..db3b4257e58b 100644
---- a/security/integrity/ima/ima_template.c
-+++ b/security/integrity/ima/ima_template.c
-@@ -57,6 +57,26 @@ static int template_desc_init_fields(const char *template_fmt,
- 				     const struct ima_template_field ***fields,
- 				     int *num_fields);
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		return fscrypt_ioctl_get_policy_ex(file, (void __user *)arg);
++
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		return fscrypt_ioctl_add_key(file, (void __user *)arg);
++
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		return fscrypt_ioctl_remove_key(file, (const void __user *)arg);
++
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		return fscrypt_ioctl_get_key_status(file, (void __user *)arg);
++
+ 	default:
+ 		return -ENOTTY;
+ 	}
+@@ -230,6 +242,10 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		break;
+ 	case FS_IOC_SET_ENCRYPTION_POLICY:
+ 	case FS_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 		break;
+ 	default:
+ 		return -ENOIOCTLCMD;
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index 19fd210987457..2d68cfd872f64 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -335,6 +335,16 @@ static int ubifs_write_inode(struct inode *inode, struct writeback_control *wbc)
+ 	return err;
+ }
  
-+/* Whether the current template has fields referencing a file's signature. */
-+static bool template_has_modsig;
-+
-+static bool find_modsig_in_template(void)
++static int ubifs_drop_inode(struct inode *inode)
 +{
-+	int i;
++	int drop = generic_drop_inode(inode);
 +
-+	for (i = 0; i < ima_template->num_fields; i++)
-+		if (!strcmp(ima_template->fields[i]->field_id, "modsig") ||
-+		    !strcmp(ima_template->fields[i]->field_id, "d-modsig"))
-+			return true;
++	if (!drop)
++		drop = fscrypt_drop_inode(inode);
 +
-+	return false;
++	return drop;
 +}
 +
-+bool ima_template_has_modsig(void)
-+{
-+	return template_has_modsig;
-+}
-+
- static int __init ima_template_setup(char *str)
+ static void ubifs_evict_inode(struct inode *inode)
  {
- 	struct ima_template_desc *template_desc;
-@@ -89,6 +109,8 @@ static int __init ima_template_setup(char *str)
- 	}
- 
- 	ima_template = template_desc;
-+	template_has_modsig = find_modsig_in_template();
-+
- 	return 1;
- }
- __setup("ima_template=", ima_template_setup);
-@@ -108,6 +130,7 @@ static int __init ima_template_fmt_setup(char *str)
- 
- 	builtin_templates[num_templates - 1].fmt = str;
- 	ima_template = builtin_templates + num_templates - 1;
-+	template_has_modsig = find_modsig_in_template();
- 
- 	return 1;
- }
-@@ -230,6 +253,7 @@ struct ima_template_desc *ima_template_desc_current(void)
- 		ima_init_template_list();
- 		ima_template  		    lookup_template_desc(CONFIG_IMA_DEFAULT_TEMPLATE);
-+		template_has_modsig = find_modsig_in_template();
- 	}
- 	return ima_template;
- }
+ 	int err;
+@@ -1983,6 +1993,7 @@ const struct super_operations ubifs_super_operations = {
+ 	.destroy_inode = ubifs_destroy_inode,
+ 	.put_super     = ubifs_put_super,
+ 	.write_inode   = ubifs_write_inode,
++	.drop_inode    = ubifs_drop_inode,
+ 	.evict_inode   = ubifs_evict_inode,
+ 	.statfs        = ubifs_statfs,
+ 	.dirty_inode   = ubifs_dirty_inode,
+-- 
+2.21.0.392.gf8f6787159e-goog
