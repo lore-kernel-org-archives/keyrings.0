@@ -1,88 +1,26 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 18 Apr 2019 23:29:20 +0000
-Subject: [PATCH v5 13/16] ext4: wire up new fscrypt ioctls
-Message-Id: <20190418232923.250800-14-ebiggers@kernel.org>
+From: MARK CASADY <suyatiyati2000@gmail.com>
+Date: Fri, 19 Apr 2019 17:32:57 +0000
+Subject: Dear
+Message-Id: <CALdqncnSp8GGT4_SVFpSEa2ntfMykf_tN+TAxERPmzXkL-cONg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418232923.250800-1-ebiggers@kernel.org>
-In-Reply-To: <20190418232923.250800-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Dear,
 
-Wire up the new ioctls for adding and removing fscrypt keys to/from the
-filesystem, and the new ioctl for retrieving v2 encryption policies.
+I am Mr.Marck Csady a solicitor at law, i need your assistance to
+represent my late client fund valued at $2.5 million dollars that his
+bank wants to comfiscate, You bear the same last name with my late
+client and he is also a national of your country.
 
-FS_IOC_REMOVE_ENCRYPTION_KEY also required making ext4_drop_inode() call
-fscrypt_drop_inode().
+Please if you are interested to assist me then get back to me through
+my private email bellow.
 
-For more details see Documentation/filesystems/fscrypt.rst and the
-fscrypt patches that added the implementation of these ioctls.
+i will make all necessary informations known to you,including the name
+of the bank and modes to the repartriation of this fund.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- fs/ext4/ioctl.c | 24 ++++++++++++++++++++++++
- fs/ext4/super.c |  3 +++
- 2 files changed, 27 insertions(+)
-
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index bab3da4f1e0d3..3ed66628e9301 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -1074,6 +1074,26 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
- 		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
- 
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
-+
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
-+
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
-+
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
-+
- 	case EXT4_IOC_FSGETXATTR:
- 	{
- 		struct fsxattr fa;
-@@ -1192,6 +1212,10 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
- 	case EXT4_IOC_GET_ENCRYPTION_PWSALT:
- 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 	case EXT4_IOC_SHUTDOWN:
- 	case FS_IOC_GETFSMAP:
- 		break;
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 5b92054bf8ea0..6640831f77735 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1103,6 +1103,9 @@ static int ext4_drop_inode(struct inode *inode)
- {
- 	int drop = generic_drop_inode(inode);
- 
-+	if (!drop)
-+		drop = fscrypt_drop_inode(inode);
-+
- 	trace_ext4_drop_inode(inode, drop);
- 	return drop;
- }
--- 
-2.21.0.392.gf8f6787159e-goog
+PLEASE REPLY THROUGH MY PRIVATE EMAIL ADDRESS
+Thanks for your understanding
+Marck Csady Esq.
