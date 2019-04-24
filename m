@@ -1,277 +1,216 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 30 Apr 2019 15:07:23 +0000
-Subject: [PATCH 05/11] keys: Add a 'recurse' flag for keyring searches [ver #2]
-Message-Id: <155663684365.31331.17072752052528463604.stgit@warthog.procyon.org.uk>
+Date: Wed, 24 Apr 2019 16:14:35 +0000
+Subject: [PATCH 08/11] keys: Include target namespace in match criteria
+Message-Id: <155612247542.8564.1962415588707569592.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
+References: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com
 Cc: keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
 
-Add a 'recurse' flag for keyring searches so that the flag can be omitted
-and recursion disabled, thereby allowing just the nominated keyring to be
-searched and none of the children.
+Currently a key has a standard matching criteria of { type, description } and
+this is used to only allow keys with unique criteria in a keyring.  This
+means, however, that you cannot have keys with the same type and description
+but a different target namespace in the same keyring.
+
+This is a potential problem for a containerised environment where, say, a
+container is made up of some parts of its mount space involving netfs
+superblocks from two different network namespaces.
+
+This is also a problem for shared system management keyrings such as the DNS
+records keyring or the NFS idmapper keyring that might contain keys from
+different network namespaces.
+
+Fix this by including a namespace component in a key's matching criteria.
+Keyring types are marked to indicate which, if any, namespace is relevant to
+keys of that type, and that namespace is set when the key is created from the
+current task's namespace set.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/security/keys/core.rst     |   10 ++++++----
- certs/blacklist.c                        |    2 +-
- crypto/asymmetric_keys/asymmetric_type.c |    2 +-
- include/linux/key.h                      |    3 ++-
- lib/digsig.c                             |    2 +-
- net/rxrpc/security.c                     |    2 +-
- security/integrity/digsig_asymmetric.c   |    4 ++--
- security/keys/internal.h                 |    1 +
- security/keys/keyctl.c                   |    2 +-
- security/keys/keyring.c                  |   12 ++++++++++--
- security/keys/proc.c                     |    3 ++-
- security/keys/process_keys.c             |    3 ++-
- security/keys/request_key.c              |    3 ++-
- security/keys/request_key_auth.c         |    3 ++-
- 14 files changed, 34 insertions(+), 18 deletions(-)
+ include/linux/key.h        |   11 +++++++++++
+ security/keys/gc.c         |    2 +-
+ security/keys/key.c        |    1 +
+ security/keys/keyring.c    |   36 ++++++++++++++++++++++++++++++++++--
+ security/keys/persistent.c |    1 +
+ 5 files changed, 48 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index 9521c4207f01..99079b664036 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -1159,11 +1159,13 @@ payload contents" for more information.
- 
- 	key_ref_t keyring_search(key_ref_t keyring_ref,
- 				 const struct key_type *type,
--				 const char *description)
-+				 const char *description,
-+				 bool recurse)
- 
--    This searches the keyring tree specified for a matching key. Error ENOKEY
--    is returned upon failure (use IS_ERR/PTR_ERR to determine). If successful,
--    the returned key will need to be released.
-+    This searches the specified keyring only (recurse = false) or keyring tree
-+    (recurse = true) specified for a matching key. Error ENOKEY is returned
-+    upon failure (use IS_ERR/PTR_ERR to determine). If successful, the returned
-+    key will need to be released.
- 
-     The possession attribute from the keyring reference is used to control
-     access through the permissions mask and is propagated to the returned key
-diff --git a/certs/blacklist.c b/certs/blacklist.c
-index 3a507b9e2568..181cb7fa9540 100644
---- a/certs/blacklist.c
-+++ b/certs/blacklist.c
-@@ -128,7 +128,7 @@ int is_hash_blacklisted(const u8 *hash, size_t hash_len, const char *type)
- 	*p = 0;
- 
- 	kref = keyring_search(make_key_ref(blacklist_keyring, true),
--			      &key_type_blacklist, buffer);
-+			      &key_type_blacklist, buffer, false);
- 	if (!IS_ERR(kref)) {
- 		key_ref_put(kref);
- 		ret = -EKEYREJECTED;
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index 69a0788a7de5..084027ef3121 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -87,7 +87,7 @@ struct key *find_asymmetric_key(struct key *keyring,
- 	pr_debug("Look up: \"%s\"\n", req);
- 
- 	ref = keyring_search(make_key_ref(keyring, 1),
--			     &key_type_asymmetric, req);
-+			     &key_type_asymmetric, req, true);
- 	if (IS_ERR(ref))
- 		pr_debug("Request for key '%s' err %ld\n", req, PTR_ERR(ref));
- 	kfree(req);
 diff --git a/include/linux/key.h b/include/linux/key.h
-index b39f5876b66d..433f86fc8661 100644
+index 52334cc7c18d..2b298532dad0 100644
 --- a/include/linux/key.h
 +++ b/include/linux/key.h
-@@ -333,7 +333,8 @@ extern int keyring_clear(struct key *keyring);
+@@ -82,9 +82,16 @@ struct cred;
  
- extern key_ref_t keyring_search(key_ref_t keyring,
- 				struct key_type *type,
--				const char *description);
-+				const char *description,
-+				bool recurse);
+ struct key_type;
+ struct key_owner;
++struct key_tag;
+ struct keyring_list;
+ struct keyring_name;
  
- extern int keyring_add_key(struct key *keyring,
- 			   struct key *key);
-diff --git a/lib/digsig.c b/lib/digsig.c
-index 6ba6fcd92dd1..abec995a0982 100644
---- a/lib/digsig.c
-+++ b/lib/digsig.c
-@@ -221,7 +221,7 @@ int digsig_verify(struct key *keyring, const char *sig, int siglen,
- 		/* search in specific keyring */
- 		key_ref_t kref;
- 		kref = keyring_search(make_key_ref(keyring, 1UL),
--						&key_type_user, name);
-+				      &key_type_user, name, true);
- 		if (IS_ERR(kref))
- 			key = ERR_CAST(kref);
- 		else
-diff --git a/net/rxrpc/security.c b/net/rxrpc/security.c
-index c4479afe8ae7..2cfc7125bc41 100644
---- a/net/rxrpc/security.c
-+++ b/net/rxrpc/security.c
-@@ -148,7 +148,7 @@ int rxrpc_init_server_conn_security(struct rxrpc_connection *conn)
++struct key_tag {
++	struct rcu_head		rcu;
++	refcount_t		usage;
++	bool			removed;	/* T when subject removed */
++};
++
+ struct keyring_index_key {
+ 	/* [!] If this structure is altered, the union in struct key must change too! */
+ 	unsigned long		hash;			/* Hash value */
+@@ -101,6 +108,7 @@ struct keyring_index_key {
+ 		unsigned long x;
+ 	};
+ 	struct key_type		*type;
++	struct key_tag		*domain_tag;	/* Domain of operation */
+ 	const char		*description;
+ };
  
- 	/* look through the service's keyring */
- 	kref = keyring_search(make_key_ref(rx->securities, 1UL),
--			      &key_type_rxrpc_s, kdesc);
-+			      &key_type_rxrpc_s, kdesc, true);
- 	if (IS_ERR(kref)) {
- 		read_unlock(&local->services_lock);
- 		_leave(" = %ld [search]", PTR_ERR(kref));
-diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-index d775e03fbbcc..fa52fbaef520 100644
---- a/security/integrity/digsig_asymmetric.c
-+++ b/security/integrity/digsig_asymmetric.c
-@@ -39,7 +39,7 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
- 		key_ref_t kref;
+@@ -218,6 +226,7 @@ struct key {
+ 			unsigned long	hash;
+ 			unsigned long	len_desc;
+ 			struct key_type	*type;		/* type of key */
++			struct key_tag	*domain_tag;	/* Domain of operation */
+ 			char		*description;
+ 		};
+ 	};
+@@ -268,6 +277,7 @@ extern struct key *key_alloc(struct key_type *type,
+ extern void key_revoke(struct key *key);
+ extern void key_invalidate(struct key *key);
+ extern void key_put(struct key *key);
++extern bool key_put_tag(struct key_tag *tag);
  
- 		kref = keyring_search(make_key_ref(key, 1),
--				     &key_type_asymmetric, name);
-+				      &key_type_asymmetric, name, true);
- 		if (!IS_ERR(kref)) {
- 			pr_err("Key '%s' is in ima_blacklist_keyring\n", name);
- 			return ERR_PTR(-EKEYREJECTED);
-@@ -51,7 +51,7 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
- 		key_ref_t kref;
+ static inline struct key *__key_get(struct key *key)
+ {
+@@ -428,6 +438,7 @@ extern void key_init(void);
+ #define key_fsgid_changed(t)		do { } while(0)
+ #define key_init()			do { } while(0)
+ #define key_free_user_ns(ns)		do { } while(0)
++#define key_put_subject(s)		do { } while(0)
  
- 		kref = keyring_search(make_key_ref(keyring, 1),
--				      &key_type_asymmetric, name);
-+				      &key_type_asymmetric, name, true);
- 		if (IS_ERR(kref))
- 			key = ERR_CAST(kref);
- 		else
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 3154ba59a2f0..8ac7573bf23b 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -123,6 +123,7 @@ struct keyring_search_context {
- #define KEYRING_SEARCH_NO_CHECK_PERM	0x0008	/* Don't check permissions */
- #define KEYRING_SEARCH_DETECT_TOO_DEEP	0x0010	/* Give an error on excessive depth */
- #define KEYRING_SEARCH_SKIP_EXPIRED	0x0020	/* Ignore expired keys (intention to replace) */
-+#define KEYRING_SEARCH_RECURSE		0x0040	/* Search child keyrings also */
+ #endif /* CONFIG_KEYS */
+ #endif /* __KERNEL__ */
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index 634e96b380e8..83d279fb7793 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -154,7 +154,7 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
+ 			atomic_dec(&key->user->nikeys);
  
- 	int (*iterator)(const void *object, void *iterator_data);
+ 		key_user_put(key->user);
+-
++		key_put_tag(key->domain_tag);
+ 		kfree(key->description);
  
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 3e4053a217c3..d2023d550bd6 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -704,7 +704,7 @@ long keyctl_keyring_search(key_serial_t ringid,
- 	}
+ 		memzero_explicit(key, sizeof(*key));
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 1568b0028ba4..8cd0f98e4fa3 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -317,6 +317,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 		goto security_error;
  
- 	/* do the search */
--	key_ref = keyring_search(keyring_ref, ktype, description);
-+	key_ref = keyring_search(keyring_ref, ktype, description, true);
- 	if (IS_ERR(key_ref)) {
- 		ret = PTR_ERR(key_ref);
+ 	/* publish the key by giving it a serial number */
++	refcount_inc(&key->domain_tag->usage);
+ 	atomic_inc(&user->nkeys);
+ 	key_alloc_serial(key);
  
 diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 7f5f8d76dd7d..29a6e3255157 100644
+index 1fc9219ed002..0898d6d91d41 100644
 --- a/security/keys/keyring.c
 +++ b/security/keys/keyring.c
-@@ -685,6 +685,9 @@ static bool search_nested_keyrings(struct key *keyring,
- 	 * Non-keyrings avoid the leftmost branch of the root entirely (root
- 	 * slots 1-15).
- 	 */
-+	if (!(ctx->flags & KEYRING_SEARCH_RECURSE))
-+		goto not_this_keyring;
-+
- 	ptr = READ_ONCE(keyring->keys.root);
- 	if (!ptr)
- 		goto not_this_keyring;
-@@ -885,13 +888,15 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
-  * @keyring: The root of the keyring tree to be searched.
-  * @type: The type of keyring we want to find.
-  * @description: The name of the keyring we want to find.
-+ * @recurse: True to search the children of @keyring also
-  *
-  * As keyring_search_aux() above, but using the current task's credentials and
-  * type's default matching function and preferred search method.
+@@ -175,6 +175,9 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
+ 	type = (unsigned long)index_key->type;
+ 	acc = mult_64x32_and_fold(type, desc_len + 13);
+ 	acc = mult_64x32_and_fold(acc, 9207);
++	piece = (unsigned long)index_key->domain_tag;
++	acc = mult_64x32_and_fold(acc, piece);
++	acc = mult_64x32_and_fold(acc, 9207);
+ 
+ 	for (;;) {
+ 		n = desc_len;
+@@ -208,16 +211,36 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
+ 
+ /*
+  * Finalise an index key to include a part of the description actually in the
+- * index key and to add in the hash too.
++ * index key, to set the domain tag and to calculate the hash.
   */
- key_ref_t keyring_search(key_ref_t keyring,
- 			 struct key_type *type,
--			 const char *description)
-+			 const char *description,
-+			 bool recurse)
+ void key_set_index_key(struct keyring_index_key *index_key)
  {
- 	struct keyring_search_context ctx = {
- 		.index_key.type		= type,
-@@ -906,6 +911,8 @@ key_ref_t keyring_search(key_ref_t keyring,
- 	key_ref_t key;
- 	int ret;
++	static struct key_tag default_domain_tag = { .usage = REFCOUNT_INIT(1), };
+ 	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
++
+ 	memcpy(index_key->desc, index_key->description, n);
  
-+	if (recurse)
-+		ctx.flags |= KEYRING_SEARCH_RECURSE;
- 	if (type->match_preparse) {
- 		ret = type->match_preparse(&ctx.match_data);
- 		if (ret < 0)
-@@ -1170,7 +1177,8 @@ static int keyring_detect_cycle(struct key *A, struct key *B)
- 		.flags			= (KEYRING_SEARCH_NO_STATE_CHECK |
- 					   KEYRING_SEARCH_NO_UPDATE_TIME |
- 					   KEYRING_SEARCH_NO_CHECK_PERM |
--					   KEYRING_SEARCH_DETECT_TOO_DEEP),
-+					   KEYRING_SEARCH_DETECT_TOO_DEEP |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
++	index_key->domain_tag = &default_domain_tag;
+ 	hash_key_type_and_desc(index_key);
+ }
  
- 	rcu_read_lock();
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index 78ac305d715e..8695f6108da9 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -170,7 +170,8 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 		.match_data.cmp		= lookup_user_key_possessed,
- 		.match_data.raw_data	= key,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
--		.flags			= KEYRING_SEARCH_NO_STATE_CHECK,
-+		.flags			= (KEYRING_SEARCH_NO_STATE_CHECK |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
++/**
++ * key_put_tag - Release a ref on a tag.
++ * @tag: The tag to release.
++ *
++ * This releases a reference the given tag and returns true if that ref was the
++ * last one.
++ */
++bool key_put_tag(struct key_tag *tag)
++{
++	if (refcount_dec_and_test(&tag->usage)) {
++		kfree_rcu(tag, rcu);
++		return true;
++	}
++
++	return false;
++}
++
+ /*
+  * Build the next index key chunk.
+  *
+@@ -238,8 +261,10 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
+ 		return index_key->x;
+ 	case 2:
+ 		return (unsigned long)index_key->type;
++	case 3:
++		return (unsigned long)index_key->domain_tag;
+ 	default:
+-		level -= 3;
++		level -= 4;
+ 		if (desc_len <= sizeof(index_key->desc))
+ 			return 0;
  
- 	key_ref = make_key_ref(key, 0);
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index f05f7125a7d5..70fa20888ca8 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -540,7 +540,8 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 	struct keyring_search_context ctx = {
- 		.match_data.cmp		= lookup_user_key_possessed,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
--		.flags			= KEYRING_SEARCH_NO_STATE_CHECK,
-+		.flags			= (KEYRING_SEARCH_NO_STATE_CHECK |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
- 	struct request_key_auth *rka;
- 	struct key *key;
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index a5b74b7758f7..39802540ffff 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -537,7 +537,8 @@ struct key *request_key_and_link(struct key_type *type,
- 		.match_data.raw_data	= description,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
- 		.flags			= (KEYRING_SEARCH_DO_STATE_CHECK |
--					   KEYRING_SEARCH_SKIP_EXPIRED),
-+					   KEYRING_SEARCH_SKIP_EXPIRED |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
- 	struct key *key;
- 	key_ref_t key_ref;
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index bda6201c6c45..b83930581f4d 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -242,7 +242,8 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
- 		.match_data.cmp		= key_default_cmp,
- 		.match_data.raw_data	= description,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
--		.flags			= KEYRING_SEARCH_DO_STATE_CHECK,
-+		.flags			= (KEYRING_SEARCH_DO_STATE_CHECK |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
- 	struct key *authkey;
- 	key_ref_t authkey_ref;
+@@ -268,6 +293,7 @@ static bool keyring_compare_object(const void *object, const void *data)
+ 	const struct key *key = keyring_ptr_to_key(object);
+ 
+ 	return key->index_key.type = index_key->type &&
++		key->index_key.domain_tag = index_key->domain_tag &&
+ 		key->index_key.desc_len = index_key->desc_len &&
+ 		memcmp(key->index_key.description, index_key->description,
+ 		       index_key->desc_len) = 0;
+@@ -309,6 +335,12 @@ static int keyring_diff_objects(const void *object, const void *data)
+ 		goto differ;
+ 	level += sizeof(unsigned long);
+ 
++	seg_a = (unsigned long)a->domain_tag;
++	seg_b = (unsigned long)b->domain_tag;
++	if ((seg_a ^ seg_b) != 0)
++		goto differ;
++	level += sizeof(unsigned long);
++
+ 	i = sizeof(a->desc);
+ 	if (a->desc_len <= i)
+ 		goto same;
+diff --git a/security/keys/persistent.c b/security/keys/persistent.c
+index 90303fe4a394..9944d855a28d 100644
+--- a/security/keys/persistent.c
++++ b/security/keys/persistent.c
+@@ -84,6 +84,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
+ 	long ret;
+ 
+ 	/* Look in the register if it exists */
++	memset(&index_key, 0, sizeof(index_key));
+ 	index_key.type = &key_type_keyring;
+ 	index_key.description = buf;
+ 	index_key.desc_len = sprintf(buf, "_persistent.%u", from_kuid(ns, uid));
