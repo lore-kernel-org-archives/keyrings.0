@@ -1,100 +1,51 @@
-From: Robert Holmes <robeholmes@gmail.com>
-Date: Wed, 24 Apr 2019 17:36:56 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 25 Apr 2019 11:55:50 +0000
 Subject: Re: [PATCH v2] KEYS: Make use of platform keyring for module signature verify
-Message-Id: <CAD_KW27rN-GefFqegdBTYNf4393cF5Kc+jP=au45GfSvmTSn9g@mail.gmail.com>
+Message-Id: <1556193350.3894.92.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <1556116431-7129-1-git-send-email-robeholmes@gmail.com> <20190424160609.EE5ED21901@mail.kernel.org>
-In-Reply-To: <20190424160609.EE5ED21901@mail.kernel.org>
-To: Sasha Levin <sashal@kernel.org>
-Cc: jeyu@kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, stable@vger.kernel.org
+References: <1556116431-7129-1-git-send-email-robeholmes@gmail.com>
+In-Reply-To: <1556116431-7129-1-git-send-email-robeholmes@gmail.com>
+To: Robert Holmes <robeholmes@gmail.com>, jeyu@kernel.org, linux-kernel@vger.kernel.org
+Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, stable@vger.kernel.org
 
-In the v5.0.9 stable tree we also require also cherry-picking commits
-
-https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=219a3e8676f3132d27b530c7d2d6bcab89536b57
-https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=278311e417be60f7caef6fcb12bda4da2711ceff
-
-which, arguably, should be on stable anyway, since it has already picked up
-
-https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?h=linux-5.0.y&id=9dc92c45177ab70e20ae94baa2f2e558da63a9c7
-https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?h=linux-5.0.y&id=60740accf78494e166ec76bdc39b7d75fc2fe1c7
-
-Robert.
-
-On Wed, Apr 24, 2019 at 5:06 PM Sasha Levin <sashal@kernel.org> wrote:
->
-> Hi,
->
-> [This is an automated email]
->
-> This commit has been processed because it contains a -stable tag.
-> The stable tag indicates that it's relevant for the following trees: all
->
-> The bot has tested the following trees: v5.0.9, v4.19.36, v4.14.113, v4.9.170, v4.4.178, v3.18.138.
->
-> v5.0.9: Build failed! Errors:
->     kernel/module_signing.c:92:11: error: ‘VERIFY_USE_PLATFORM_KEYRING’ undeclared (first use in this function); did you mean ‘VERIFY_USE_SECONDARY_KEYRING’?
->
-> v4.19.36: Failed to apply! Possible dependencies:
->     e84cd7ee630e ("modsign: use all trusted keys to verify module signature")
->
-> v4.14.113: Failed to apply! Possible dependencies:
->     81a0abd9f213 ("module: make it clear when we're handling the module copy in info->hdr")
->     e84cd7ee630e ("modsign: use all trusted keys to verify module signature")
->     f314dfea16a0 ("modsign: log module name in the event of an error")
->
-> v4.9.170: Failed to apply! Possible dependencies:
->     3e2e857f9c3a ("module: Add module name to modinfo")
->     490194269665 ("module: Pass struct load_info into symbol checks")
->     71810db27c1c ("modversions: treat symbol CRCs as 32 bit quantities")
->     71d9f5079358 ("module: Fix a comment above strong_try_module_get()")
->     81a0abd9f213 ("module: make it clear when we're handling the module copy in info->hdr")
->     96b5b19459b3 ("module: make the modinfo name const")
->     e84cd7ee630e ("modsign: use all trusted keys to verify module signature")
->     f314dfea16a0 ("modsign: log module name in the event of an error")
->
-> v4.4.178: Failed to apply! Possible dependencies:
->     136cd3450af8 ("powerpc/module: Only try to generate the ftrace_caller() stub once")
->     20ef10c1b306 ("module: Use the same logic for setting and unsetting RO/NX")
->     3e2e857f9c3a ("module: Add module name to modinfo")
->     490194269665 ("module: Pass struct load_info into symbol checks")
->     4c91bd6eeabb ("powerpc: Merge the RELOCATABLE config entries for ppc32 and ppc64")
->     71810db27c1c ("modversions: treat symbol CRCs as 32 bit quantities")
->     7523e4dc5057 ("module: use a structure to encapsulate layout.")
->     81a0abd9f213 ("module: make it clear when we're handling the module copy in info->hdr")
->     96b5b19459b3 ("module: make the modinfo name const")
->     a5967db9af51 ("kbuild: allow architectures to use thin archives instead of ld -r")
->     b67067f1176d ("kbuild: allow archs to select link dead code/data elimination")
->     be7de5f91fdc ("modules: Add kernel parameter to blacklist modules")
->     cd3caefb4663 ("Fix subtle CONFIG_MODVERSIONS problems")
->     da4230714662 ("powerpc/32/booke: Fix the build error when CRASH_DUMP is enabled")
->     f314dfea16a0 ("modsign: log module name in the event of an error")
->     faaae2a58143 ("Re-enable CONFIG_MODVERSIONS in a slightly weaker form")
->
-> v3.18.138: Failed to apply! Possible dependencies:
->     136cd3450af8 ("powerpc/module: Only try to generate the ftrace_caller() stub once")
->     3e2e857f9c3a ("module: Add module name to modinfo")
->     490194269665 ("module: Pass struct load_info into symbol checks")
->     4c91bd6eeabb ("powerpc: Merge the RELOCATABLE config entries for ppc32 and ppc64")
->     6da0b565150b ("kernel:module Fix coding style errors and warnings.")
->     71810db27c1c ("modversions: treat symbol CRCs as 32 bit quantities")
->     7523e4dc5057 ("module: use a structure to encapsulate layout.")
->     7d485f647c1f ("ARM: 8220/1: allow modules outside of bl range")
->     81a0abd9f213 ("module: make it clear when we're handling the module copy in info->hdr")
->     926a59b1dfe2 ("module: Annotate module version magic")
->     96b5b19459b3 ("module: make the modinfo name const")
->     be7de5f91fdc ("modules: Add kernel parameter to blacklist modules")
->     cb9e3c292d01 ("mm: vmalloc: pass additional vm_flags to __vmalloc_node_range()")
->     cd3caefb4663 ("Fix subtle CONFIG_MODVERSIONS problems")
->     da4230714662 ("powerpc/32/booke: Fix the build error when CRASH_DUMP is enabled")
->     f314dfea16a0 ("modsign: log module name in the event of an error")
->     faaae2a58143 ("Re-enable CONFIG_MODVERSIONS in a slightly weaker form")
->
->
-> How should we proceed with this patch?
->
-> --
-> Thanks,
-> Sasha
+T24gV2VkLCAyMDE5LTA0LTI0IGF0IDE0OjMzICswMDAwLCBSb2JlcnQgSG9sbWVzIHdyb3RlOgo+
+IFRoaXMgcGF0Y2ggY29tcGxldGVzIGNvbW1pdCAyNzgzMTFlNDE3YmUgKCJrZXhlYywgS0VZUzog
+TWFrZSB1c2Ugb2YKPiBwbGF0Zm9ybSBrZXlyaW5nIGZvciBzaWduYXR1cmUgdmVyaWZ5Iikgd2hp
+Y2gsIHdoaWxlIGFkZGluZyB0aGUKPiBwbGF0Zm9ybSBrZXlyaW5nIGZvciBiekltYWdlIHZlcmlm
+aWNhdGlvbiwgbmVnbGVjdGVkIHRvIGFsc28gYWRkCj4gdGhpcyBrZXlyaW5nIGZvciBtb2R1bGUg
+dmVyaWZpY2F0aW9uLgo+IAo+IEFzIHN1Y2gsIGtlcm5lbCBtb2R1bGVzIHNpZ25lZCB3aXRoIGtl
+eXMgZnJvbSB0aGUgTW9rTGlzdCB2YXJpYWJsZQo+IHdlcmUgbm90IHN1Y2Nlc3NmdWxseSB2ZXJp
+ZmllZC4KClVzaW5nIHRoZSBwbGF0Zm9ybSBrZXlyaW5nIGtleXMgZm9yIHZlcmlmeWluZyBrZXJu
+ZWwgbW9kdWxlcyB3YXMgbm90Cm5lZ2xlY3RlZCwgYnV0IHJhdGhlciBpbnRlbnRpb25hbC4gwqBU
+aGlzIHBhdGNoIGRlc2NyaXB0aW9uIHNob3VsZApjbGVhcmx5IGV4cGxhaW4gdGhlIHJlYXNvbiBm
+b3IgbmVlZGluZyB0byB2ZXJpZnkga2VybmVsIG1vZHVsZQpzaWduYXR1cmVzIGJhc2VkIG9uIHRo
+ZSBwcmUtYm9vdCBrZXlzLiDCoChIaW50OiB2ZXJpZnlpbmcga2VybmVsCm1vZHVsZXMgYmFzZWQg
+b24gdGhlIHByZS1ib290IGtleXMgd2FzIHByZXZpb3VzbHkgcmVqZWN0ZWQuKQoKTWltaQoKPiAK
+PiBTaWduZWQtb2ZmLWJ5OiBSb2JlcnQgSG9sbWVzIDxyb2JlaG9sbWVzQGdtYWlsLmNvbT4KPiBD
+YzogbGludXgtaW50ZWdyaXR5QHZnZXIua2VybmVsLm9yZwo+IENjOiBrZXlyaW5nc0B2Z2VyLmtl
+cm5lbC5vcmcKPiBDYzogc3RhYmxlQHZnZXIua2VybmVsLm9yZwo+IC0tLQo+ICBrZXJuZWwvbW9k
+dWxlX3NpZ25pbmcuYyB8IDE2ICsrKysrKysrKysrKy0tLS0KPiAgMSBmaWxlIGNoYW5nZWQsIDEy
+IGluc2VydGlvbnMoKyksIDQgZGVsZXRpb25zKC0pCj4gCj4gZGlmZiAtLWdpdCBhL2tlcm5lbC9t
+b2R1bGVfc2lnbmluZy5jIGIva2VybmVsL21vZHVsZV9zaWduaW5nLmMKPiBpbmRleCA2YjlhOTI2
+ZmQ4NmIuLmNmOTQyMjBlOTE1NCAxMDA2NDQKPiAtLS0gYS9rZXJuZWwvbW9kdWxlX3NpZ25pbmcu
+Ywo+ICsrKyBiL2tlcm5lbC9tb2R1bGVfc2lnbmluZy5jCj4gQEAgLTQ5LDYgKzQ5LDcgQEAgaW50
+IG1vZF92ZXJpZnlfc2lnKGNvbnN0IHZvaWQgKm1vZCwgc3RydWN0IGxvYWRfaW5mbyAqaW5mbykK
+PiAgewo+ICAJc3RydWN0IG1vZHVsZV9zaWduYXR1cmUgbXM7Cj4gIAlzaXplX3Qgc2lnX2xlbiwg
+bW9kbGVuID0gaW5mby0+bGVuOwo+ICsJaW50IHJldDsKPiAKPiAgCXByX2RldmVsKCI9PiVzKCwl
+enUpXG4iLCBfX2Z1bmNfXywgbW9kbGVuKTsKPiAKPiBAQCAtODIsOCArODMsMTUgQEAgaW50IG1v
+ZF92ZXJpZnlfc2lnKGNvbnN0IHZvaWQgKm1vZCwgc3RydWN0IGxvYWRfaW5mbyAqaW5mbykKPiAg
+CQlyZXR1cm4gLUVCQURNU0c7Cj4gIAl9Cj4gCj4gLQlyZXR1cm4gdmVyaWZ5X3BrY3M3X3NpZ25h
+dHVyZShtb2QsIG1vZGxlbiwgbW9kICsgbW9kbGVuLCBzaWdfbGVuLAo+IC0JCQkJICAgICAgVkVS
+SUZZX1VTRV9TRUNPTkRBUllfS0VZUklORywKPiAtCQkJCSAgICAgIFZFUklGWUlOR19NT0RVTEVf
+U0lHTkFUVVJFLAo+IC0JCQkJICAgICAgTlVMTCwgTlVMTCk7Cj4gKwlyZXQgPSB2ZXJpZnlfcGtj
+czdfc2lnbmF0dXJlKG1vZCwgbW9kbGVuLCBtb2QgKyBtb2RsZW4sIHNpZ19sZW4sCj4gKwkJCQkg
+ICAgIFZFUklGWV9VU0VfU0VDT05EQVJZX0tFWVJJTkcsCj4gKwkJCQkgICAgIFZFUklGWUlOR19N
+T0RVTEVfU0lHTkFUVVJFLAo+ICsJCQkJICAgICBOVUxMLCBOVUxMKTsKPiArCWlmIChyZXQgPSAt
+RU5PS0VZICYmIElTX0VOQUJMRUQoQ09ORklHX0lOVEVHUklUWV9QTEFURk9STV9LRVlSSU5HKSkg
+ewo+ICsJCXJldCA9IHZlcmlmeV9wa2NzN19zaWduYXR1cmUobW9kLCBtb2RsZW4sIG1vZCArIG1v
+ZGxlbiwgc2lnX2xlbiwKPiArCQkJCQkgICAgIFZFUklGWV9VU0VfUExBVEZPUk1fS0VZUklORywK
+PiArCQkJCQkgICAgIFZFUklGWUlOR19NT0RVTEVfU0lHTkFUVVJFLAo+ICsJCQkJCSAgICAgTlVM
+TCwgTlVMTCk7Cj4gKwl9Cj4gKwlyZXR1cm4gcmV0Owo+ICB9Cg==
