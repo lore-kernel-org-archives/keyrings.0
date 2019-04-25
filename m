@@ -1,67 +1,40 @@
-From: Jeremy Cline <jcline@redhat.com>
-Date: Thu, 25 Apr 2019 18:21:34 +0000
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Thu, 25 Apr 2019 19:46:45 +0000
 Subject: Re: [PATCH v2] KEYS: Make use of platform keyring for module signature verify
-Message-Id: <20190425182134.GA7823@laptop.jcline.org>
+Message-Id: <1556221605.24945.3.camel@HansenPartnership.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1556116431-7129-1-git-send-email-robeholmes@gmail.com>
- <1556193350.3894.92.camel@linux.ibm.com>
+         <1556193350.3894.92.camel@linux.ibm.com>
 In-Reply-To: <1556193350.3894.92.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: Robert Holmes <robeholmes@gmail.com>, jeyu@kernel.org, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, stable@vger.kernel.org, Matthew Garrett <mjg59@google.com>
+To: Mimi Zohar <zohar@linux.ibm.com>, Robert Holmes <robeholmes@gmail.com>, jeyu@kernel.org, linux-kernel@vger.kernel.org
+Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, stable@vger.kernel.org
 
-SGksCgpPbiBUaHUsIEFwciAyNSwgMjAxOSBhdCAwNzo1NTo1MEFNIC0wNDAwLCBNaW1pIFpvaGFy
-IHdyb3RlOgo+IE9uIFdlZCwgMjAxOS0wNC0yNCBhdCAxNDozMyArMDAwMCwgUm9iZXJ0IEhvbG1l
-cyB3cm90ZToKPiA+IFRoaXMgcGF0Y2ggY29tcGxldGVzIGNvbW1pdCAyNzgzMTFlNDE3YmUgKCJr
-ZXhlYywgS0VZUzogTWFrZSB1c2Ugb2YKPiA+IHBsYXRmb3JtIGtleXJpbmcgZm9yIHNpZ25hdHVy
-ZSB2ZXJpZnkiKSB3aGljaCwgd2hpbGUgYWRkaW5nIHRoZQo+ID4gcGxhdGZvcm0ga2V5cmluZyBm
-b3IgYnpJbWFnZSB2ZXJpZmljYXRpb24sIG5lZ2xlY3RlZCB0byBhbHNvIGFkZAo+ID4gdGhpcyBr
-ZXlyaW5nIGZvciBtb2R1bGUgdmVyaWZpY2F0aW9uLgo+ID4gCj4gPiBBcyBzdWNoLCBrZXJuZWwg
-bW9kdWxlcyBzaWduZWQgd2l0aCBrZXlzIGZyb20gdGhlIE1va0xpc3QgdmFyaWFibGUKPiA+IHdl
-cmUgbm90IHN1Y2Nlc3NmdWxseSB2ZXJpZmllZC4KPiAKPiBVc2luZyB0aGUgcGxhdGZvcm0ga2V5
-cmluZyBrZXlzIGZvciB2ZXJpZnlpbmcga2VybmVsIG1vZHVsZXMgd2FzIG5vdAo+IG5lZ2xlY3Rl
-ZCwgYnV0IHJhdGhlciBpbnRlbnRpb25hbC4gwqBUaGlzIHBhdGNoIGRlc2NyaXB0aW9uIHNob3Vs
-ZAo+IGNsZWFybHkgZXhwbGFpbiB0aGUgcmVhc29uIGZvciBuZWVkaW5nIHRvIHZlcmlmeSBrZXJu
-ZWwgbW9kdWxlCj4gc2lnbmF0dXJlcyBiYXNlZCBvbiB0aGUgcHJlLWJvb3Qga2V5cy4gwqAoSGlu
-dDogdmVyaWZ5aW5nIGtlcm5lbAo+IG1vZHVsZXMgYmFzZWQgb24gdGhlIHByZS1ib290IGtleXMg
-d2FzIHByZXZpb3VzbHkgcmVqZWN0ZWQuKQoKU28gdGhlIGJhY2tncm91bmQgZm9yIHRoaXMgcGF0
-Y2ggaXMgdGhhdCBGZWRvcmEsIHdoaWNoIGNhcnJpZXMgdGhlCmxvY2tkb3duIHBhdGNoIHNldCwg
-cmVjZW50bHkgcmVncmVzc2VkWzBdIHdpdGggcmVzcGVjdCB0byB1c2VyLXNpZ25lZAptb2R1bGVz
-LiBQcmV2aW91c2x5LCB3ZSBjYXJyaWVkIGEgcGF0Y2ggdGhhdCBhZGRlZCBhbGwgdGhlIHByZS1i
-b290IGtleXMKdG8gdGhlIHNlY29uZGFyeSBrZXlyaW5nLiBUaGF0IHdheSB1c2VycyBjb3VsZCBh
-ZGQgYSBtYWNoaW5lIG93bmVyIGtleQphbmQgdXNlIHNlY3VyZSBib290IGFuZCBsb2NrZG93biB3
-aXRoIHRoZWlyIHNlbGYtc2lnbmVkIDNyZCBwYXJ0eSBtb2R1bGVzLgoKU2luY2UgdGhlIHByZS1i
-b290IGtleXMgYXJlIG5vdyBsb2FkZWQgaW50byB0aGUgcGxhdGZvcm0ga2V5cmluZywgSQpzdWdn
-ZXN0ZWQgdGhhdCBSb2JlcnQgc3VibWl0IHRoZSBwYXRjaCB1cHN0cmVhbSwgYnV0IHNpbmNlIHRo
-ZSBsb2NrZG93bgpwYXRjaGVzIGFyZW4ndCB1cHN0cmVhbSBwZXJoYXBzIGl0IGRvZXNuJ3QgbWFr
-ZSBtdWNoIHNlbnNlIHRvIHBpY2sgdGhpcwp1cCBhbmQgRmVkb3JhIHNob3VsZCBjb250aW51ZSBj
-YXJyeWluZyBpdC4KClswXSBodHRwczovL2J1Z3ppbGxhLnJlZGhhdC5jb20vc2hvd19idWcuY2dp
-P2lkFzAxMDk2CgpSZWdhcmRzLApKZXJlbXkKCj4gPiAKPiA+IFNpZ25lZC1vZmYtYnk6IFJvYmVy
-dCBIb2xtZXMgPHJvYmVob2xtZXNAZ21haWwuY29tPgo+ID4gQ2M6IGxpbnV4LWludGVncml0eUB2
-Z2VyLmtlcm5lbC5vcmcKPiA+IENjOiBrZXlyaW5nc0B2Z2VyLmtlcm5lbC5vcmcKPiA+IENjOiBz
-dGFibGVAdmdlci5rZXJuZWwub3JnCj4gPiAtLS0KPiA+ICBrZXJuZWwvbW9kdWxlX3NpZ25pbmcu
-YyB8IDE2ICsrKysrKysrKysrKy0tLS0KPiA+ICAxIGZpbGUgY2hhbmdlZCwgMTIgaW5zZXJ0aW9u
-cygrKSwgNCBkZWxldGlvbnMoLSkKPiA+IAo+ID4gZGlmZiAtLWdpdCBhL2tlcm5lbC9tb2R1bGVf
-c2lnbmluZy5jIGIva2VybmVsL21vZHVsZV9zaWduaW5nLmMKPiA+IGluZGV4IDZiOWE5MjZmZDg2
-Yi4uY2Y5NDIyMGU5MTU0IDEwMDY0NAo+ID4gLS0tIGEva2VybmVsL21vZHVsZV9zaWduaW5nLmMK
-PiA+ICsrKyBiL2tlcm5lbC9tb2R1bGVfc2lnbmluZy5jCj4gPiBAQCAtNDksNiArNDksNyBAQCBp
-bnQgbW9kX3ZlcmlmeV9zaWcoY29uc3Qgdm9pZCAqbW9kLCBzdHJ1Y3QgbG9hZF9pbmZvICppbmZv
-KQo+ID4gIHsKPiA+ICAJc3RydWN0IG1vZHVsZV9zaWduYXR1cmUgbXM7Cj4gPiAgCXNpemVfdCBz
-aWdfbGVuLCBtb2RsZW4gPSBpbmZvLT5sZW47Cj4gPiArCWludCByZXQ7Cj4gPiAKPiA+ICAJcHJf
-ZGV2ZWwoIj0+JXMoLCV6dSlcbiIsIF9fZnVuY19fLCBtb2RsZW4pOwo+ID4gCj4gPiBAQCAtODIs
-OCArODMsMTUgQEAgaW50IG1vZF92ZXJpZnlfc2lnKGNvbnN0IHZvaWQgKm1vZCwgc3RydWN0IGxv
-YWRfaW5mbyAqaW5mbykKPiA+ICAJCXJldHVybiAtRUJBRE1TRzsKPiA+ICAJfQo+ID4gCj4gPiAt
-CXJldHVybiB2ZXJpZnlfcGtjczdfc2lnbmF0dXJlKG1vZCwgbW9kbGVuLCBtb2QgKyBtb2RsZW4s
-IHNpZ19sZW4sCj4gPiAtCQkJCSAgICAgIFZFUklGWV9VU0VfU0VDT05EQVJZX0tFWVJJTkcsCj4g
-PiAtCQkJCSAgICAgIFZFUklGWUlOR19NT0RVTEVfU0lHTkFUVVJFLAo+ID4gLQkJCQkgICAgICBO
-VUxMLCBOVUxMKTsKPiA+ICsJcmV0ID0gdmVyaWZ5X3BrY3M3X3NpZ25hdHVyZShtb2QsIG1vZGxl
-biwgbW9kICsgbW9kbGVuLCBzaWdfbGVuLAo+ID4gKwkJCQkgICAgIFZFUklGWV9VU0VfU0VDT05E
-QVJZX0tFWVJJTkcsCj4gPiArCQkJCSAgICAgVkVSSUZZSU5HX01PRFVMRV9TSUdOQVRVUkUsCj4g
-PiArCQkJCSAgICAgTlVMTCwgTlVMTCk7Cj4gPiArCWlmIChyZXQgPSAtRU5PS0VZICYmIElTX0VO
-QUJMRUQoQ09ORklHX0lOVEVHUklUWV9QTEFURk9STV9LRVlSSU5HKSkgewo+ID4gKwkJcmV0ID0g
-dmVyaWZ5X3BrY3M3X3NpZ25hdHVyZShtb2QsIG1vZGxlbiwgbW9kICsgbW9kbGVuLCBzaWdfbGVu
-LAo+ID4gKwkJCQkJICAgICBWRVJJRllfVVNFX1BMQVRGT1JNX0tFWVJJTkcsCj4gPiArCQkJCQkg
-ICAgIFZFUklGWUlOR19NT0RVTEVfU0lHTkFUVVJFLAo+ID4gKwkJCQkJICAgICBOVUxMLCBOVUxM
-KTsKPiA+ICsJfQo+ID4gKwlyZXR1cm4gcmV0Owo+ID4gIH0KPiA=
+On Thu, 2019-04-25 at 07:55 -0400, Mimi Zohar wrote:
+> On Wed, 2019-04-24 at 14:33 +0000, Robert Holmes wrote:
+> > This patch completes commit 278311e417be ("kexec, KEYS: Make use of
+> > platform keyring for signature verify") which, while adding the
+> > platform keyring for bzImage verification, neglected to also add
+> > this keyring for module verification.
+> > 
+> > As such, kernel modules signed with keys from the MokList variable
+> > were not successfully verified.
+> 
+> Using the platform keyring keys for verifying kernel modules was not
+> neglected, but rather intentional.  This patch description should
+> clearly explain the reason for needing to verify kernel module
+> signatures based on the pre-boot keys.  (Hint: verifying kernel
+> modules based on the pre-boot keys was previously rejected.)
+
+To clarify here: most Linux systems use shim/mok to pivot the root of
+trust away from the Secure Boot db variable to the new MokList/shim
+built in keys.  This makes the actual secure boot db outside the
+expected Linux Kernel trust boundary *unless* the user has taken
+ownership of the system and is actually using db for their own trusted
+keys.  This makes the policy for what pre-boot keys to trust within the
+Linux boundary very complex, which is why we default to not using the
+pre-boot keys at all.
+
+James
