@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 24 Apr 2019 22:24:31 +0000
+Date: Thu, 25 Apr 2019 11:38:21 +0000
 Subject: Re: [PATCH 07/11] keys: Move the user and user-session keyrings to the user_namespace
-Message-Id: <3753.1556144671@warthog.procyon.org.uk>
+Message-Id: <3832.1556192301@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,18 +13,77 @@ Cc: dhowells@redhat.com, "Eric W. Biederman" <ebiederm@xmission.com>, keyrings@v
 
 Jann Horn <jannh@google.com> wrote:
 
-> Overall, this looks good to me, apart from some details.
+> > +       struct key              *user_keyring_register;
 > 
-> The user_keyring_register keyring is basically just used like an
-> xarray/idr/... that maps from namespaced UIDs to keyrings, right? (Not
-> saying it's a bad idea, just want to make sure I understand it
-> correctly.)
+> Maybe a comment about locking semantics above user_keyring_register?
+> "Only written once, may be read locklessly with READ_ONCE()", or
+> something like that?
 
-Well, a keyring is a wrapper around an assoc_array object, the keyring search
-functions do the access checks and the keys garbage collector does the
-cleanup.  Also, each UID is mapped to two keyrings.
+Ok.
 
-I'll have a look at applying the rest of your comments tomorrow.
+> > -
+> > +#define __KDEBUG
+> 
+> Was that supposed to be in here, or did you commit that accidentally?
 
-Thanks,
+Accidental.
+
+> > -       struct key *uid_keyring, *session_keyring;
+> > +       struct key *reg_keyring = user_ns->user_keyring_register;
+> 
+> This is a lockless read of a field that may be written concurrently;
+> this should be READ_ONCE(). (Especially on alpha, I think the memory
+> ordering will actually be incorrect without READ_ONCE().)
+
+Yeah, you're right about both of these that you pointed out.  It's not needed
+when the user_ns->keyring_sem is taken for writing, however.
+
+> > +               if (!IS_ERR(reg_keyring))
+> > +                       user_ns->user_keyring_register = reg_keyring;
+> 
+> This is a write of a pointer that may be read concurrently; this
+> should be smp_store_release().
+
+Yep.
+
+> > +       else if ((user_session = get_user_session_keyring())) {
+> > +               key_ref = keyring_search_aux(make_key_ref(user_session, 1),
+> > +                                            ctx);
+> >                 if (!IS_ERR(key_ref))
+> >                         goto found;
+> 
+> I'm not sure I understand this code. In the "goto found" case, the
+> key_put() below is skipped, right? Is that intentional?
+
+Actually, the key_put() should be directly after the keyring_search_aux()
+call, before the error check.
+
+> >  error_alloc:
+> >         complete_request_key(authkey, ret);
+> > +error_us:
+> > +       key_put(user_session);
+> >         kleave(" = %d", ret);
+> >         return ret;
+> >  }
+> 
+> This looks weird. If the look_up_user_keyrings() fails, user_session
+> might still be an uninitialized pointer, right? And then the "goto
+> error_us" jumps down here and calls key_put() on that?
+
+The call to complete_request_key() should be after error_us and the key_put()
+should be before it.
+
+> > @@ -289,16 +291,19 @@ static int construct_get_dest_keyring(struct key **_dest_keyring)
+> >
+> >                         if (dest_keyring)
+> >                                 break;
+> > +                       /* Fall through */
+> >
+> >                         /* fall through */
+> >                 case KEY_REQKEY_DEFL_USER_SESSION_KEYRING:
+> 
+> Why two "fall through" comments?
+
+Someone else added one and when I rebased, I don't think I got a conflict.
+
 David
