@@ -1,234 +1,92 @@
-From: Vitaly Chikunov <vt@altlinux.org>
-Date: Thu, 11 Apr 2019 15:51:14 +0000
-Subject: [PATCH v9 02/10] crypto: rsa - unimplement sign/verify for raw RSA backends
-Message-Id: <20190411155122.13245-3-vt@altlinux.org>
+From: Sasha Levin <sashal@kernel.org>
+Date: Sat, 27 Apr 2019 01:38:11 +0000
+Subject: [PATCH AUTOSEL 5.0 52/79] KEYS: trusted: fix -Wvarags warning
+Message-Id: <20190427013838.6596-52-sashal@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190411155122.13245-1-vt@altlinux.org>
-In-Reply-To: <20190411155122.13245-1-vt@altlinux.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Giovanni Cabiddu <giovanni.cabiddu@intel.com>, qat-linux@intel.com, Tom Lendacky <thomas.lendacky@amd.com>, Gary Hook <gary.hook@amd.com>, =?UTF-8?q?Horia=20Geant=C4=83?= <horia.geanta@nxp.com>, Aymen Sghaier <aymen.sghaier@nxp.com>
+References: <20190427013838.6596-1-sashal@kernel.org>
+In-Reply-To: <20190427013838.6596-1-sashal@kernel.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: "ndesaulniers@google.com" <ndesaulniers@google.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <james.morris@microsoft.com>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
 
-In preparation for new akcipher verify call remove sign/verify callbacks
-from RSA backends and make PKCS1 driver call encrypt/decrypt instead.
+From: "ndesaulniers@google.com" <ndesaulniers@google.com>
 
-This also complies with the well-known idea that raw RSA should never be
-used for sign/verify. It only should be used with proper padding scheme
-such as PKCS1 driver provides.
+[ Upstream commit be24b37e22c20cbaa891971616784dd0f35211e8 ]
 
-Cc: Giovanni Cabiddu <giovanni.cabiddu@intel.com>
-Cc: qat-linux@intel.com
-Cc: Tom Lendacky <thomas.lendacky@amd.com>
-Cc: Gary Hook <gary.hook@amd.com>
-Cc: Horia Geantă <horia.geanta@nxp.com>
-Cc: Aymen Sghaier <aymen.sghaier@nxp.com>
-Signed-off-by: Vitaly Chikunov <vt@altlinux.org>
-Reviewed-by: Horia Geantă <horia.geanta@nxp.com>
-Acked-by: Gary R Hook <gary.hook@amd.com>
+Fixes the warning reported by Clang:
+security/keys/trusted.c:146:17: warning: passing an object that
+undergoes default
+      argument promotion to 'va_start' has undefined behavior [-Wvarargs]
+        va_start(argp, h3);
+                       ^
+security/keys/trusted.c:126:37: note: parameter of type 'unsigned
+char' is declared here
+unsigned char *h2, unsigned char h3, ...)
+                               ^
+Specifically, it seems that both the C90 (4.8.1.1) and C11 (7.16.1.4)
+standards explicitly call this out as undefined behavior:
+
+The parameter parmN is the identifier of the rightmost parameter in
+the variable parameter list in the function definition (the one just
+before the ...). If the parameter parmN is declared with ... or with a
+type that is not compatible with the type that results after
+application of the default argument promotions, the behavior is
+undefined.
+
+Link: https://github.com/ClangBuiltLinux/linux/issues/41
+Link: https://www.eskimo.com/~scs/cclass/int/sx11c.html
+Suggested-by: David Laight <David.Laight@aculab.com>
+Suggested-by: Denis Kenzior <denkenz@gmail.com>
+Suggested-by: James Bottomley <jejb@linux.vnet.ibm.com>
+Suggested-by: Nathan Chancellor <natechancellor@gmail.com>
+Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
+Reviewed-by: Nathan Chancellor <natechancellor@gmail.com>
+Tested-by: Nathan Chancellor <natechancellor@gmail.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: James Morris <james.morris@microsoft.com>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- crypto/rsa-pkcs1pad.c                         |   4 +-
- crypto/rsa.c                                  | 109 --------------------------
- drivers/crypto/caam/caampkc.c                 |   2 -
- drivers/crypto/ccp/ccp-crypto-rsa.c           |   2 -
- drivers/crypto/qat/qat_common/qat_asym_algs.c |   2 -
- 5 files changed, 2 insertions(+), 117 deletions(-)
+ include/keys/trusted.h  | 2 +-
+ security/keys/trusted.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/crypto/rsa-pkcs1pad.c b/crypto/rsa-pkcs1pad.c
-index 0a6680ca8cb6..94382fa2c6ac 100644
---- a/crypto/rsa-pkcs1pad.c
-+++ b/crypto/rsa-pkcs1pad.c
-@@ -429,7 +429,7 @@ static int pkcs1pad_sign(struct akcipher_request *req)
- 	akcipher_request_set_crypt(&req_ctx->child_req, req_ctx->in_sg,
- 				   req->dst, ctx->key_size - 1, req->dst_len);
+diff --git a/include/keys/trusted.h b/include/keys/trusted.h
+index adbcb6817826..0071298b9b28 100644
+--- a/include/keys/trusted.h
++++ b/include/keys/trusted.h
+@@ -38,7 +38,7 @@ enum {
  
--	err = crypto_akcipher_sign(&req_ctx->child_req);
-+	err = crypto_akcipher_decrypt(&req_ctx->child_req);
- 	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_encrypt_sign_complete(req, err);
- 
-@@ -551,7 +551,7 @@ static int pkcs1pad_verify(struct akcipher_request *req)
- 				   req_ctx->out_sg, req->src_len,
- 				   ctx->key_size);
- 
--	err = crypto_akcipher_verify(&req_ctx->child_req);
-+	err = crypto_akcipher_encrypt(&req_ctx->child_req);
- 	if (err != -EINPROGRESS && err != -EBUSY)
- 		return pkcs1pad_verify_complete(req, err);
- 
-diff --git a/crypto/rsa.c b/crypto/rsa.c
-index 4167980c243d..5d427c1100d6 100644
---- a/crypto/rsa.c
-+++ b/crypto/rsa.c
-@@ -50,34 +50,6 @@ static int _rsa_dec(const struct rsa_mpi_key *key, MPI m, MPI c)
- 	return mpi_powm(m, c, key->d, key->n);
- }
- 
--/*
-- * RSASP1 function [RFC3447 sec 5.2.1]
-- * s = m^d mod n
-- */
--static int _rsa_sign(const struct rsa_mpi_key *key, MPI s, MPI m)
--{
--	/* (1) Validate 0 <= m < n */
--	if (mpi_cmp_ui(m, 0) < 0 || mpi_cmp(m, key->n) >= 0)
--		return -EINVAL;
--
--	/* (2) s = m^d mod n */
--	return mpi_powm(s, m, key->d, key->n);
--}
--
--/*
-- * RSAVP1 function [RFC3447 sec 5.2.2]
-- * m = s^e mod n;
-- */
--static int _rsa_verify(const struct rsa_mpi_key *key, MPI m, MPI s)
--{
--	/* (1) Validate 0 <= s < n */
--	if (mpi_cmp_ui(s, 0) < 0 || mpi_cmp(s, key->n) >= 0)
--		return -EINVAL;
--
--	/* (2) m = s^e mod n */
--	return mpi_powm(m, s, key->e, key->n);
--}
--
- static inline struct rsa_mpi_key *rsa_get_key(struct crypto_akcipher *tfm)
+ int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 			unsigned int keylen, unsigned char *h1,
+-			unsigned char *h2, unsigned char h3, ...);
++			unsigned char *h2, unsigned int h3, ...);
+ int TSS_checkhmac1(unsigned char *buffer,
+ 			  const uint32_t command,
+ 			  const unsigned char *ononce,
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 4d98f4f87236..94d2b28c7c22 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -123,7 +123,7 @@ out:
+  */
+ int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 			unsigned int keylen, unsigned char *h1,
+-			unsigned char *h2, unsigned char h3, ...)
++			unsigned char *h2, unsigned int h3, ...)
  {
- 	return akcipher_tfm_ctx(tfm);
-@@ -160,85 +132,6 @@ static int rsa_dec(struct akcipher_request *req)
- 	return ret;
- }
+ 	unsigned char paramdigest[SHA1_DIGEST_SIZE];
+ 	struct sdesc *sdesc;
+@@ -139,7 +139,7 @@ int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 		return PTR_ERR(sdesc);
+ 	}
  
--static int rsa_sign(struct akcipher_request *req)
--{
--	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
--	const struct rsa_mpi_key *pkey = rsa_get_key(tfm);
--	MPI m, s = mpi_alloc(0);
--	int ret = 0;
--	int sign;
--
--	if (!s)
--		return -ENOMEM;
--
--	if (unlikely(!pkey->n || !pkey->d)) {
--		ret = -EINVAL;
--		goto err_free_s;
--	}
--
--	ret = -ENOMEM;
--	m = mpi_read_raw_from_sgl(req->src, req->src_len);
--	if (!m)
--		goto err_free_s;
--
--	ret = _rsa_sign(pkey, s, m);
--	if (ret)
--		goto err_free_m;
--
--	ret = mpi_write_to_sgl(s, req->dst, req->dst_len, &sign);
--	if (ret)
--		goto err_free_m;
--
--	if (sign < 0)
--		ret = -EBADMSG;
--
--err_free_m:
--	mpi_free(m);
--err_free_s:
--	mpi_free(s);
--	return ret;
--}
--
--static int rsa_verify(struct akcipher_request *req)
--{
--	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
--	const struct rsa_mpi_key *pkey = rsa_get_key(tfm);
--	MPI s, m = mpi_alloc(0);
--	int ret = 0;
--	int sign;
--
--	if (!m)
--		return -ENOMEM;
--
--	if (unlikely(!pkey->n || !pkey->e)) {
--		ret = -EINVAL;
--		goto err_free_m;
--	}
--
--	s = mpi_read_raw_from_sgl(req->src, req->src_len);
--	if (!s) {
--		ret = -ENOMEM;
--		goto err_free_m;
--	}
--
--	ret = _rsa_verify(pkey, m, s);
--	if (ret)
--		goto err_free_s;
--
--	ret = mpi_write_to_sgl(m, req->dst, req->dst_len, &sign);
--	if (ret)
--		goto err_free_s;
--
--	if (sign < 0)
--		ret = -EBADMSG;
--
--err_free_s:
--	mpi_free(s);
--err_free_m:
--	mpi_free(m);
--	return ret;
--}
--
- static void rsa_free_mpi_key(struct rsa_mpi_key *key)
- {
- 	mpi_free(key->d);
-@@ -353,8 +246,6 @@ static void rsa_exit_tfm(struct crypto_akcipher *tfm)
- static struct akcipher_alg rsa = {
- 	.encrypt = rsa_enc,
- 	.decrypt = rsa_dec,
--	.sign = rsa_sign,
--	.verify = rsa_verify,
- 	.set_priv_key = rsa_set_priv_key,
- 	.set_pub_key = rsa_set_pub_key,
- 	.max_size = rsa_max_size,
-diff --git a/drivers/crypto/caam/caampkc.c b/drivers/crypto/caam/caampkc.c
-index 58285642306e..fe24485274e1 100644
---- a/drivers/crypto/caam/caampkc.c
-+++ b/drivers/crypto/caam/caampkc.c
-@@ -994,8 +994,6 @@ static void caam_rsa_exit_tfm(struct crypto_akcipher *tfm)
- static struct akcipher_alg caam_rsa = {
- 	.encrypt = caam_rsa_enc,
- 	.decrypt = caam_rsa_dec,
--	.sign = caam_rsa_dec,
--	.verify = caam_rsa_enc,
- 	.set_pub_key = caam_rsa_set_pub_key,
- 	.set_priv_key = caam_rsa_set_priv_key,
- 	.max_size = caam_rsa_max_size,
-diff --git a/drivers/crypto/ccp/ccp-crypto-rsa.c b/drivers/crypto/ccp/ccp-crypto-rsa.c
-index 841acdffbc3c..a2570c0c8cdc 100644
---- a/drivers/crypto/ccp/ccp-crypto-rsa.c
-+++ b/drivers/crypto/ccp/ccp-crypto-rsa.c
-@@ -213,8 +213,6 @@ static void ccp_rsa_exit_tfm(struct crypto_akcipher *tfm)
- static struct akcipher_alg ccp_rsa_defaults = {
- 	.encrypt = ccp_rsa_encrypt,
- 	.decrypt = ccp_rsa_decrypt,
--	.sign = ccp_rsa_decrypt,
--	.verify = ccp_rsa_encrypt,
- 	.set_pub_key = ccp_rsa_setpubkey,
- 	.set_priv_key = ccp_rsa_setprivkey,
- 	.max_size = ccp_rsa_maxsize,
-diff --git a/drivers/crypto/qat/qat_common/qat_asym_algs.c b/drivers/crypto/qat/qat_common/qat_asym_algs.c
-index c9f324730d71..692a7aaee749 100644
---- a/drivers/crypto/qat/qat_common/qat_asym_algs.c
-+++ b/drivers/crypto/qat/qat_common/qat_asym_algs.c
-@@ -1300,8 +1300,6 @@ static void qat_rsa_exit_tfm(struct crypto_akcipher *tfm)
- static struct akcipher_alg rsa = {
- 	.encrypt = qat_rsa_enc,
- 	.decrypt = qat_rsa_dec,
--	.sign = qat_rsa_dec,
--	.verify = qat_rsa_enc,
- 	.set_pub_key = qat_rsa_setpubkey,
- 	.set_priv_key = qat_rsa_setprivkey,
- 	.max_size = qat_rsa_max_size,
+-	c = h3;
++	c = !!h3;
+ 	ret = crypto_shash_init(&sdesc->shash);
+ 	if (ret < 0)
+ 		goto out;
 -- 
-2.11.0
+2.19.1
