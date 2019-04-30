@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 24 Apr 2019 16:14:35 +0000
-Subject: [PATCH 08/11] keys: Include target namespace in match criteria
-Message-Id: <155612247542.8564.1962415588707569592.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Apr 2019 15:07:47 +0000
+Subject: [PATCH 08/11] keys: Include target namespace in match criteria [ver #2]
+Message-Id: <155663686738.31331.14037065651903278208.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
+References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com
 Cc: keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
 
@@ -40,7 +40,7 @@ Signed-off-by: David Howells <dhowells@redhat.com>
  5 files changed, 48 insertions(+), 3 deletions(-)
 
 diff --git a/include/linux/key.h b/include/linux/key.h
-index 52334cc7c18d..2b298532dad0 100644
+index 214b1824c20c..c02f6e171b8c 100644
 --- a/include/linux/key.h
 +++ b/include/linux/key.h
 @@ -82,9 +82,16 @@ struct cred;
