@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 24 Apr 2019 16:15:00 +0000
-Subject: [PATCH 11/11] keys: Pass the network namespace into request_key mechanism
-Message-Id: <155612250048.8564.4366853478854432104.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Apr 2019 15:08:13 +0000
+Subject: [PATCH 11/11] keys: Pass the network namespace into request_key mechanism [ver #2]
+Message-Id: <155663689291.31331.12547059668009374278.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
+References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com
 Cc: netdev@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-afs@lists.infradead.org, keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
 
@@ -123,7 +123,7 @@ index 34a744a1bafc..3855395fa3c0 100644
  
  #endif /* _LINUX_DNS_RESOLVER_H */
 diff --git a/include/linux/key.h b/include/linux/key.h
-index e79802d4c928..5cc4440ccb68 100644
+index 24db72f3839e..b72db0409801 100644
 --- a/include/linux/key.h
 +++ b/include/linux/key.h
 @@ -36,6 +36,7 @@ typedef int32_t key_serial_t;
@@ -261,7 +261,7 @@ index ffa368594a03..2597ae756191 100644
  }
  
 diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index d95627888f5a..4cc27eee9795 100644
+index eed975e57749..2bf00fa37f51 100644
 --- a/security/keys/request_key.c
 +++ b/security/keys/request_key.c
 @@ -17,6 +17,7 @@
@@ -272,7 +272,7 @@ index d95627888f5a..4cc27eee9795 100644
  #include "internal.h"
  #include <keys/request_key_auth-type.h>
  
-@@ -502,16 +503,18 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
+@@ -501,16 +502,18 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
   * request_key_and_link - Request a key and cache it in a keyring.
   * @type: The type of key we want.
   * @description: The searchable description of the key.
@@ -295,7 +295,7 @@ index d95627888f5a..4cc27eee9795 100644
   *
   * If successfully found or created, the key will be linked to the destination
   * keyring if one is provided.
-@@ -527,6 +530,7 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
+@@ -526,6 +529,7 @@ static struct key *construct_key_and_link(struct keyring_search_context *ctx,
   */
  struct key *request_key_and_link(struct key_type *type,
  				 const char *description,
@@ -303,7 +303,7 @@ index d95627888f5a..4cc27eee9795 100644
  				 const void *callout_info,
  				 size_t callout_len,
  				 void *aux,
-@@ -645,7 +649,8 @@ struct key *request_key(struct key_type *type,
+@@ -644,7 +648,8 @@ struct key *request_key(struct key_type *type,
  
  	if (callout_info)
  		callout_len = strlen(callout_info);
@@ -313,7 +313,7 @@ index d95627888f5a..4cc27eee9795 100644
  				   NULL, NULL, KEY_ALLOC_IN_QUOTA);
  	if (!IS_ERR(key)) {
  		ret = wait_for_key_construction(key, false);
-@@ -681,7 +686,8 @@ struct key *request_key_with_auxdata(struct key_type *type,
+@@ -680,7 +685,8 @@ struct key *request_key_with_auxdata(struct key_type *type,
  	struct key *key;
  	int ret;
  
@@ -323,7 +323,7 @@ index d95627888f5a..4cc27eee9795 100644
  				   aux, NULL, KEY_ALLOC_IN_QUOTA);
  	if (!IS_ERR(key)) {
  		ret = wait_for_key_construction(key, false);
-@@ -693,3 +699,43 @@ struct key *request_key_with_auxdata(struct key_type *type,
+@@ -692,3 +698,43 @@ struct key *request_key_with_auxdata(struct key_type *type,
  	return key;
  }
  EXPORT_SYMBOL(request_key_with_auxdata);
