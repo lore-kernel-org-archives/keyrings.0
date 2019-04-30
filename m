@@ -1,95 +1,131 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 18 Apr 2019 23:29:22 +0000
-Subject: [PATCH v5 15/16] ubifs: wire up new fscrypt ioctls
-Message-Id: <20190418232923.250800-16-ebiggers@kernel.org>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 30 Apr 2019 15:06:31 +0000
+Subject: [PATCH 00/11] keys: Namespacing [ver #2]
+Message-Id: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418232923.250800-1-ebiggers@kernel.org>
-In-Reply-To: <20190418232923.250800-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+To: ebiederm@xmission.com
+Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, Jann Horn <jannh@google.com>, keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
 
-From: Eric Biggers <ebiggers@google.com>
 
-Wire up the new ioctls for adding and removing fscrypt keys to/from the
-filesystem, and the new ioctl for retrieving v2 encryption policies.
+Here are some patches to make keys and keyrings more namespace aware.  Note
+that the branch is dependent on security/next-general.
 
-FS_IOC_REMOVE_ENCRYPTION_KEY also required making UBIFS use
-fscrypt_drop_inode().
+Firstly some miscellaneous patches to make the process easier:
 
-For more details see Documentation/filesystems/fscrypt.rst and the
-fscrypt patches that added the implementation of these ioctls.
+ (1) Invalidate rather than revoke request_key() authentication keys to
+     recycle them more quickly.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+ (2) Remove request_key_async*() as they aren't used and would have to be
+     namespaced.
+
+ (3) Simplify key index_key handling so that the word-sized chunks
+     assoc_array requires don't have to be shifted about, making it easier
+     to add more bits into the key.
+
+ (4) Cache the hash value so that we don't have to calculate on every key
+     we examine during a search (it involves a bunch of multiplications).
+
+ (5) Allow keying_search() to search non-recursively.
+
+Then the main patches:
+
+ (6) Make it so that keyring names are per-user_namespace from the point of
+     view of KEYCTL_JOIN_SESSION_KEYRING so that they're not accessible
+     cross-user_namespace.
+
+ (7) Move the user and user-session keyrings to the user_namespace rather
+     than the user_struct.  This prevents them propagating directly across
+     user_namespaces boundaries (ie. the KEY_SPEC_* flags will only pick
+     from the current user_namespace).
+
+ (8) Make it possible to include the target namespace in which the key shall
+     operate in the index_key.  This will allow the possibility of multiple
+     keys with the same description, but different target domains to be held
+     in the same keyring.
+
+ (9) Make it so that keys are implicitly invalidated by removal of a domain
+     tag, causing them to be garbage collected.
+
+(10) Institute a network namespace domain tag that allows keys to be
+     differentiated by the network namespace in which they operate.  New keys
+     that are of a type marked 'KEY_TYPE_NET_DOMAIN' are assigned the network
+     domain in force when they are created.
+
+(11) Make it so that the desired network namespace can be handed down into the
+     request_key() mechanism.  This allows AFS, NFS, etc. to request keys
+     specific to the network namespace of the superblock.
+
+     This also means that the keys in the DNS record cache are thenceforth
+     namespaced, provided network filesystems pass the appropriate network
+     namespace down into dns_query().
+
+     For DNS, AFS and NFS are good; CIFS and Ceph are not.  Other cache
+     keyrings, such as idmapper keyrings, also need to set the domain tag.
+
+
+Changes:
+
+V2 fixes:
+ - Missing initialisation of net key_domain usage count.
+ - Missing barriering on the keyring register pointer.
+ - Use snprintf() rather than sprintf().
+ - Incorrect error handling in search_my_process_keyrings().
+ - Incorrect error handling in call_sbin_request_key().
+
+The patches can be found on the following branch:
+
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-namespace
+
+David
 ---
- fs/ubifs/ioctl.c | 16 ++++++++++++++++
- fs/ubifs/super.c | 11 +++++++++++
- 2 files changed, 27 insertions(+)
+David Howells (11):
+      keys: Invalidate used request_key authentication keys
+      keys: Kill off request_key_async{,_with_auxdata}
+      keys: Simplify key description management
+      keys: Cache the hash value to avoid lots of recalculation
+      keys: Add a 'recurse' flag for keyring searches
+      keys: Namespace keyring names
+      keys: Move the user and user-session keyrings to the user_namespace
+      keys: Include target namespace in match criteria
+      keys: Garbage collect keys for which the domain has been removed
+      keys: Network namespace domain tag
+      keys: Pass the network namespace into request_key mechanism
 
-diff --git a/fs/ubifs/ioctl.c b/fs/ubifs/ioctl.c
-index 82e4e6a30b044..c379b2505c4df 100644
---- a/fs/ubifs/ioctl.c
-+++ b/fs/ubifs/ioctl.c
-@@ -213,6 +213,18 @@ long ubifs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- #endif
- 	}
- 
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		return fscrypt_ioctl_get_policy_ex(file, (void __user *)arg);
-+
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		return fscrypt_ioctl_add_key(file, (void __user *)arg);
-+
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		return fscrypt_ioctl_remove_key(file, (const void __user *)arg);
-+
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		return fscrypt_ioctl_get_key_status(file, (void __user *)arg);
-+
- 	default:
- 		return -ENOTTY;
- 	}
-@@ -230,6 +242,10 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		break;
- 	case FS_IOC_SET_ENCRYPTION_POLICY:
- 	case FS_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 		break;
- 	default:
- 		return -ENOIOCTLCMD;
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 19fd210987457..2d68cfd872f64 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -335,6 +335,16 @@ static int ubifs_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	return err;
- }
- 
-+static int ubifs_drop_inode(struct inode *inode)
-+{
-+	int drop = generic_drop_inode(inode);
-+
-+	if (!drop)
-+		drop = fscrypt_drop_inode(inode);
-+
-+	return drop;
-+}
-+
- static void ubifs_evict_inode(struct inode *inode)
- {
- 	int err;
-@@ -1983,6 +1993,7 @@ const struct super_operations ubifs_super_operations = {
- 	.destroy_inode = ubifs_destroy_inode,
- 	.put_super     = ubifs_put_super,
- 	.write_inode   = ubifs_write_inode,
-+	.drop_inode    = ubifs_drop_inode,
- 	.evict_inode   = ubifs_evict_inode,
- 	.statfs        = ubifs_statfs,
- 	.dirty_inode   = ubifs_dirty_inode,
--- 
-2.21.0.392.gf8f6787159e-goog
+
+ Documentation/security/keys/core.rst     |   10 +
+ certs/blacklist.c                        |    2 
+ crypto/asymmetric_keys/asymmetric_type.c |    2 
+ fs/afs/addr_list.c                       |    4 
+ fs/afs/dynroot.c                         |    7 -
+ fs/cifs/dns_resolve.c                    |    3 
+ fs/nfs/dns_resolve.c                     |    2 
+ include/linux/dns_resolver.h             |    3 
+ include/linux/key-type.h                 |    3 
+ include/linux/key.h                      |   50 ++++--
+ include/linux/sched/user.h               |   14 --
+ include/linux/user_namespace.h           |   12 +
+ include/net/net_namespace.h              |    4 
+ kernel/user.c                            |   10 -
+ kernel/user_namespace.c                  |    9 -
+ lib/digsig.c                             |    2 
+ net/ceph/messenger.c                     |    3 
+ net/core/net_namespace.c                 |   19 ++
+ net/dns_resolver/dns_key.c               |    1 
+ net/dns_resolver/dns_query.c             |    6 -
+ net/rxrpc/key.c                          |    6 -
+ net/rxrpc/security.c                     |    2 
+ security/integrity/digsig_asymmetric.c   |    4 
+ security/keys/gc.c                       |    2 
+ security/keys/internal.h                 |   10 +
+ security/keys/key.c                      |    9 +
+ security/keys/keyctl.c                   |    4 
+ security/keys/keyring.c                  |  263 +++++++++++++++++-------------
+ security/keys/persistent.c               |   10 +
+ security/keys/proc.c                     |    3 
+ security/keys/process_keys.c             |  252 ++++++++++++++++++-----------
+ security/keys/request_key.c              |  113 +++++++------
+ security/keys/request_key_auth.c         |    3 
+ 33 files changed, 508 insertions(+), 339 deletions(-)
