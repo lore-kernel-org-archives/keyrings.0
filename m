@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 24 Apr 2019 16:13:38 +0000
-Subject: [PATCH 02/11] keys: Kill off request_key_async{,_with_auxdata}
-Message-Id: <155612241887.8564.13502395682258297008.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Apr 2019 15:06:51 +0000
+Subject: [PATCH 02/11] keys: Kill off request_key_async{, _with_auxdata} [ver #2]
+Message-Id: <155663681116.31331.16982339995377317063.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
+References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com
 Cc: keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
 
