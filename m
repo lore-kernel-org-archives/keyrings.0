@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 24 Apr 2019 16:14:19 +0000
-Subject: [PATCH 06/11] keys: Namespace keyring names
-Message-Id: <155612245973.8564.6588389291301179408.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Apr 2019 15:07:31 +0000
+Subject: [PATCH 06/11] keys: Namespace keyring names [ver #2]
+Message-Id: <155663685162.31331.2593085809758303775.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
+References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com
 Cc: keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
 
@@ -58,7 +58,7 @@ cc: Eric W. Biederman <ebiederm@xmission.com>
  5 files changed, 57 insertions(+), 59 deletions(-)
 
 diff --git a/include/linux/key.h b/include/linux/key.h
-index bdd179169508..52334cc7c18d 100644
+index 433f86fc8661..214b1824c20c 100644
 --- a/include/linux/key.h
 +++ b/include/linux/key.h
 @@ -353,6 +353,7 @@ extern void key_set_timeout(struct key *, unsigned);
