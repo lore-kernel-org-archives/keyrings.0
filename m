@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 24 Apr 2019 16:13:55 +0000
-Subject: [PATCH 03/11] keys: Simplify key description management
-Message-Id: <155612243551.8564.15079536597203351040.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Apr 2019 15:07:05 +0000
+Subject: [PATCH 03/11] keys: Simplify key description management [ver #2]
+Message-Id: <155663682554.31331.11535207365829474554.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
+References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com
 Cc: keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
 
