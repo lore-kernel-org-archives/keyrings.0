@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 24 Apr 2019 16:14:43 +0000
-Subject: [PATCH 09/11] keys: Garbage collect keys for which the domain has been removed
-Message-Id: <155612248300.8564.2936875957877078716.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Apr 2019 15:07:55 +0000
+Subject: [PATCH 09/11] keys: Garbage collect keys for which the domain has been removed [ver #2]
+Message-Id: <155663687510.31331.10679763975666107254.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155612240208.8564.13865046977065545591.stgit@warthog.procyon.org.uk>
+References: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155663679069.31331.3777091898004242996.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com
 Cc: keyrings@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, dwalsh@redhat.com, vgoyal@redhat.com
 
@@ -23,7 +23,7 @@ Signed-off-by: David Howells <dhowells@redhat.com>
  3 files changed, 18 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/key.h b/include/linux/key.h
-index 2b298532dad0..e79802d4c928 100644
+index c02f6e171b8c..c22e64b9bd91 100644
 --- a/include/linux/key.h
 +++ b/include/linux/key.h
 @@ -278,6 +278,7 @@ extern void key_revoke(struct key *key);
