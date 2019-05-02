@@ -1,140 +1,85 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:58 +0000
-Subject: [PATCH, RFC 38/62] keys/mktme: Support CPU hotplug for MKTME key service
-Message-Id: <20190508144422.13171-39-kirill.shutemov@linux.intel.com>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Date: Thu, 02 May 2019 04:12:02 +0000
+Subject: [PATCH] X.509: Add messages for obsolete OIDs
+Message-Id: <20190502041202.30753-1-jlee@suse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+To: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S . Miller" <davem@davemloft.net>, Mimi Zohar <zohar@linux.ibm.com>
+Cc: keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
 
-From: Alison Schofield <alison.schofield@intel.com>
+We found that the db in Acer machine has self signed certificates
+(CN=3DDisablePW or CN=ABO) that they used obsolete OID 1.3.14.3.2.29
+sha1WithRSASignature and 2.5.29.1 subjectKeyIdentifier. Kernel
+emits -65 error code when loading those certificates to platform
+keyring:
 
-The MKTME encryption hardware resides on each physical package.
-The encryption hardware includes 'Key Tables' that must be
-programmed identically across all physical packages in the
-platform. Although every CPU in a package can program its key
-table, the kernel uses one lead CPU per package for programming.
+[    1.484388] integrity: Loading X.509 certificate: UEFI:MokListRT
+[    1.485557] integrity: Problem loading X.509 certificate -65
+[    1.486100] Error adding keys to platform keyring UEFI:MokListRT
 
-CPU Hotplug Teardown
---------------------
-MKTME manages CPU hotplug teardown to make sure the ability to
-program all packages is preserved when MKTME keys are present.
+Because the -65 error code is not enough for appeasing user when
+loading a outdated certificate. This patch add messages against
+1.3.14.3.2.29 and 2.5.29.1 OIDs.
 
-When MKTME keys are not currently programmed, simply allow
-the teardown, and set "mktme_allow_keys" to false. This will
-force a re-evaluation of the platform topology before the next
-key creation. If this CPU teardown mattered, MKTME key service
-will report an error and fail to create the key. (User can
-online that CPU and try again)
-
-When MKTME keys are currently programmed, allow teardowns
-of non 'lead CPU's' and of CPUs where another, core sibling
-CPU, can take over as lead. Do not allow teardown of any
-lead CPU that would render a hardware key table unreachable!
-
-CPU Hotplug Startup
--------------------
-CPUs coming online are of interest to the key service, but since
-the service never needs to block a CPU startup event, nor does it
-need to prepare for an onlining CPU, a callback is not implemented.
-
-MKTME will catch the availability of the new CPU, if it is
-needed, at the next key creation time. If keys are not allowed,
-that new CPU will be part of the topology evaluation to determine
-if keys should now be allowed.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Link: https://bugzilla.opensuse.org/show_bug.cgi?id=1129471
+Cc: David Howells <dhowells@redhat.com>=20
+Cc: Herbert Xu <herbert@gondor.apana.org.au>=20
+Cc: "David S. Miller" <davem@davemloft.net>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
 ---
- security/keys/mktme_keys.c | 51 +++++++++++++++++++++++++++++++++++---
- 1 file changed, 48 insertions(+), 3 deletions(-)
+ crypto/asymmetric_keys/x509_cert_parser.c | 7 +++++++
+ include/linux/oid_registry.h              | 2 ++
+ 2 files changed, 9 insertions(+)
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 734e1d28eb24..3dfc0647f1e5 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -102,9 +102,9 @@ void mktme_percpu_ref_release(struct percpu_ref *ref)
- 		return;
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_=
+keys/x509_cert_parser.c
+index 991f4d735a4e..bbd22d5c5b5d 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -192,6 +192,8 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
+ 	pr_debug("PubKey Algo: %u\n", ctx->last_oid);
+=20
+ 	switch (ctx->last_oid) {
++	case OID_sha1WithRSASignature:
++		pr_info("1.3.14.3.2.29 sha1WithRSASignature is obsolete.\n");
+ 	case OID_md2WithRSAEncryption:
+ 	case OID_md3WithRSAEncryption:
+ 	default:
+@@ -464,6 +466,11 @@ int x509_process_extension(void *context, size_t hdrle=
+n,
+ 		return 0;
  	}
- 	percpu_ref_exit(ref);
--	spin_lock_irqsave(&mktme_map_lock, flags);
-+	spin_lock_irqsave(&mktme_lock, flags);
- 	mktme_release_keyid(keyid);
--	spin_unlock_irqrestore(&mktme_map_lock, flags);
-+	spin_unlock_irqrestore(&mktme_lock, flags);
- }
- 
- enum mktme_opt_id {
-@@ -506,9 +506,46 @@ static int mktme_alloc_pconfig_targets(void)
+=20
++	if (ctx->last_oid =3D OID_subjectKeyIdentifier_obsolete) {
++		pr_info("2.5.29.1 subjectKeyIdentifier OID is obsolete.\n");
++		return -ENOPKG;
++	}
++
  	return 0;
  }
- 
-+static int mktme_cpu_teardown(unsigned int cpu)
-+{
-+	int new_leadcpu, ret = 0;
-+	unsigned long flags;
-+
-+	/* Do not allow key programming during cpu hotplug event */
-+	spin_lock_irqsave(&mktme_lock, flags);
-+
-+	/*
-+	 * When no keys are in use, allow the teardown, and set
-+	 * mktme_allow_keys to FALSE. That forces an evaluation
-+	 * of the topology before the next key creation.
-+	 */
-+	if (!mktme_map->mapped_keyids) {
-+		mktme_allow_keys = false;
-+		goto out;
-+	}
-+	/* Teardown CPU is not a lead CPU. Allow teardown. */
-+	if (!cpumask_test_cpu(cpu, mktme_leadcpus))
-+		goto out;
-+
-+	/* Teardown CPU is a lead CPU. Look for a new lead CPU. */
-+	new_leadcpu = cpumask_any_but(topology_core_cpumask(cpu), cpu);
-+
-+	if (new_leadcpu < nr_cpumask_bits) {
-+		/* New lead CPU found. Update the programming mask */
-+		__cpumask_clear_cpu(cpu, mktme_leadcpus);
-+		__cpumask_set_cpu(new_leadcpu, mktme_leadcpus);
-+	} else {
-+		/* New lead CPU not found. Do not allow CPU teardown */
-+		ret = -1;
-+	}
-+out:
-+	spin_unlock_irqrestore(&mktme_lock, flags);
-+	return ret;
-+}
-+
- static int __init init_mktme(void)
- {
--	int ret;
-+	int ret, cpuhp;
- 
- 	/* Verify keys are present */
- 	if (mktme_nr_keyids < 1)
-@@ -553,10 +590,18 @@ static int __init init_mktme(void)
- 	if (!mktme_key_store)
- 		goto free_bitmap;
- 
-+	cpuhp = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN,
-+					  "keys/mktme_keys:online",
-+					  NULL, mktme_cpu_teardown);
-+	if (cpuhp < 0)
-+		goto free_store;
-+
- 	ret = register_key_type(&key_type_mktme);
- 	if (!ret)
- 		return ret;			/* SUCCESS */
- 
-+	cpuhp_remove_state_nocalls(cpuhp);
-+free_store:
- 	kfree(mktme_key_store);
- free_bitmap:
- 	bitmap_free(mktme_bitmap_user_type);
--- 
-2.20.1
+=20
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index d2fa9ca42e9a..0641d5aa2251 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -62,6 +62,7 @@ enum OID {
+=20
+ 	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
+ 	OID_sha1,			/* 1.3.14.3.2.26 */
++	OID_sha1WithRSASignature,	/* 1.3.14.3.2.29 */
+ 	OID_sha256,			/* 2.16.840.1.101.3.4.2.1 */
+ 	OID_sha384,			/* 2.16.840.1.101.3.4.2.2 */
+ 	OID_sha512,			/* 2.16.840.1.101.3.4.2.3 */
+@@ -83,6 +84,7 @@ enum OID {
+ 	OID_generationalQualifier,	/* 2.5.4.44 */
+=20
+ 	/* Certificate extension IDs */
++	OID_subjectKeyIdentifier_obsolete,	/* 2.5.29.1 */
+ 	OID_subjectKeyIdentifier,	/* 2.5.29.14 */
+ 	OID_keyUsage,			/* 2.5.29.15 */
+ 	OID_subjectAltName,		/* 2.5.29.17 */
+--=20
+2.16.4
