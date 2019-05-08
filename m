@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:55 +0000
-Subject: [PATCH, RFC 35/62] keys/mktme: Require ACPI HMAT to register the MKTME Key Service
-Message-Id: <20190508144422.13171-36-kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:44:01 +0000
+Subject: [PATCH, RFC 41/62] keys/mktme: Support memory hotplug for MKTME keys
+Message-Id: <20190508144422.13171-42-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,47 +13,114 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
-The ACPI HMAT will be used by the MKTME key service to identify
-topologies that support the safe programming of encryption keys.
-Those decisions will happen at key creation time and during
-hotplug events.
+Newly added memory may mean that there is a newly added physical
+package.  Intel platforms supporting MKTME need to know about the
+new physical packages that may appear during MEM_GOING_ONLINE
+events.
 
-To enable this, we at least need to have the ACPI HMAT present
-at init time. If it's not present, do not register the type.
+Add a memory notifier for MEM_GOING_ONLINE events where MKTME
+can evaluate this new memory before it goes online.
 
-If the HMAT is not present, failure looks like this:
-[ ] MKTME: Registration failed. ACPI HMAT not present.
+MKTME will quickly NOTIFY_OK in MEM_GOING_ONLINE events if no MKTME
+keys are currently programmed. If the newly added memory presents
+an unsafe MKTME topology, that will be found and reported during the
+next key creation attempt. (User can repair and retry.)
+
+When MKTME keys are currently programmed, MKTME will evaluate the
+platform topology, detect if a new PCONFIG target has been added,
+and program that new pconfig target if allowable.
 
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- security/keys/mktme_keys.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ security/keys/mktme_keys.c | 57 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
 
 diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index bcd68850048f..f5fc6cccc81b 100644
+index 489dddb8c623..904748b540c6 100644
 --- a/security/keys/mktme_keys.c
 +++ b/security/keys/mktme_keys.c
-@@ -2,6 +2,7 @@
- 
- /* Documentation/x86/mktme_keys.rst */
- 
-+#include <linux/acpi.h>
- #include <linux/cred.h>
- #include <linux/cpu.h>
+@@ -8,6 +8,7 @@
  #include <linux/init.h>
-@@ -490,6 +491,12 @@ static int __init init_mktme(void)
- 	if (mktme_nr_keyids < 1)
- 		return 0;
+ #include <linux/key.h>
+ #include <linux/key-type.h>
++#include <linux/memory.h>
+ #include <linux/mm.h>
+ #include <linux/parser.h>
+ #include <linux/percpu-refcount.h>
+@@ -626,6 +627,56 @@ static int mktme_program_new_pconfig_target(int new_pkg)
+ 	return ret;
+ }
  
-+	/* Require an ACPI HMAT to identify MKTME safe topologies */
-+	if (!acpi_hmat_present()) {
-+		pr_warn("MKTME: Registration failed. ACPI HMAT not present.\n");
-+		return -EINVAL;
-+	}
++static int mktme_memory_callback(struct notifier_block *nb,
++				 unsigned long action, void *arg)
++{
++	unsigned long flags;
++	int ret, new_target;
 +
- 	/* Mapping of Userspace Keys to Hardware KeyIDs */
- 	if (mktme_map_alloc())
- 		return -ENOMEM;
++	/* MEM_GOING_ONLINE is the only mem event of interest to MKTME */
++	if (action != MEM_GOING_ONLINE)
++		return NOTIFY_OK;
++
++	/* Do not allow key programming during hotplug event */
++	spin_lock_irqsave(&mktme_lock, flags);
++
++	/*
++	 * If no keys are actually programmed let this event proceed.
++	 * The topology will be checked on the next key creation attempt.
++	 */
++	if (!mktme_map->mapped_keyids) {
++		mktme_allow_keys = false;
++		ret = NOTIFY_OK;
++		goto out;
++	}
++	/* Do not allow this event if it creates an unsafe MKTME topology */
++	if (!mktme_hmat_evaluate()) {
++		ret = NOTIFY_BAD;
++		goto out;
++	}
++	/* Topology is safe. Is there a new pconfig target? */
++	new_target = mktme_get_new_pconfig_target();
++
++	/* No new target to program */
++	if (new_target < 0) {
++		ret = NOTIFY_OK;
++		goto out;
++	}
++	if (mktme_program_new_pconfig_target(new_target))
++		ret = NOTIFY_BAD;
++	else
++		ret = NOTIFY_OK;
++
++out:
++	spin_unlock_irqrestore(&mktme_lock, flags);
++	return ret;
++}
++
++static struct notifier_block mktme_memory_nb = {
++	.notifier_call = mktme_memory_callback,
++	.priority = 99,				/* priority ? */
++};
++
+ static int __init init_mktme(void)
+ {
+ 	int ret, cpuhp;
+@@ -679,10 +730,16 @@ static int __init init_mktme(void)
+ 	if (cpuhp < 0)
+ 		goto free_store;
+ 
++	/* Memory hotplug */
++	if (register_memory_notifier(&mktme_memory_nb))
++		goto remove_cpuhp;
++
+ 	ret = register_key_type(&key_type_mktme);
+ 	if (!ret)
+ 		return ret;			/* SUCCESS */
+ 
++	unregister_memory_notifier(&mktme_memory_nb);
++remove_cpuhp:
+ 	cpuhp_remove_state_nocalls(cpuhp);
+ free_store:
+ 	kfree(mktme_key_store);
 -- 
 2.20.1
