@@ -1,43 +1,120 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 30 May 2019 17:26:17 +0000
-Subject: [PATCH 09/10] KEYS: reuse keyring_index_key::desc_len in lookup_user_key() [ver #2]
-Message-Id: <155923717710.949.2790063022835028361.stgit@warthog.procyon.org.uk>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:44:11 +0000
+Subject: [PATCH, RFC 51/62] iommu/vt-d: Support MKTME in DMA remapping
+Message-Id: <20190508144422.13171-52-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: Eric Biggers <ebiggers@google.com>, James Morris <jamorris@linux.microsoft.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, ebiggers@kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-From: Eric Biggers <ebiggers@google.com>
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-When lookup_user_key() checks whether the key is possessed, it should
-use the key's existing index_key including the 'desc_len' field, rather
-than recomputing the 'desc_len'.  This doesn't change the behavior; this
-way is just simpler and faster.
+When MKTME is enabled, keyid is stored in the high order bits of physical
+address. For DMA transactions targeting encrypted physical memory, keyid
+must be included in the IOVA to physical address translation.
 
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <jamorris@linux.microsoft.com>
+This patch appends page keyid when setting up the IOMMU PTEs. On the
+reverse direction, keyid bits are cleared in the physical address lookup.
+Mapping functions of both DMA ops and IOMMU ops are covered.
+
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
+ drivers/iommu/intel-iommu.c | 29 +++++++++++++++++++++++++++--
+ include/linux/intel-iommu.h |  9 ++++++++-
+ 2 files changed, 35 insertions(+), 3 deletions(-)
 
- security/keys/process_keys.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index ba5d3172cafe..39aaa21462bf 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -688,9 +688,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 		key_ref = make_key_ref(key, 0);
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 28cb713d728c..1ff7e87e25f1 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -862,6 +862,28 @@ static void free_context_table(struct intel_iommu *iommu)
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
+ }
  
- 		/* check to see if we possess the key */
--		ctx.index_key.type		= key->type;
--		ctx.index_key.description	= key->description;
--		ctx.index_key.desc_len		= strlen(key->description);
-+		ctx.index_key			= key->index_key;
- 		ctx.match_data.raw_data		= key;
- 		kdebug("check possessed");
- 		skey_ref = search_process_keyrings(&ctx);
++static inline void set_pte_mktme_keyid(unsigned long phys_pfn,
++		phys_addr_t *pteval)
++{
++	unsigned long keyid;
++
++	if (!pfn_valid(phys_pfn))
++		return;
++
++	keyid = page_keyid(pfn_to_page(phys_pfn));
++
++#ifdef CONFIG_X86_INTEL_MKTME
++	/*
++	 * When MKTME is enabled, set keyid in PTE such that DMA
++	 * remapping will include keyid in the translation from IOVA
++	 * to physical address. This applies to both user and kernel
++	 * allocated DMA memory.
++	 */
++	*pteval &= ~mktme_keyid_mask;
++	*pteval |= keyid << mktme_keyid_shift;
++#endif
++}
++
+ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
+ 				      unsigned long pfn, int *target_level)
+ {
+@@ -888,7 +910,7 @@ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
+ 			break;
+ 
+ 		if (!dma_pte_present(pte)) {
+-			uint64_t pteval;
++			phys_addr_t pteval;
+ 
+ 			tmp_page = alloc_pgtable_page(domain->nid);
+ 
+@@ -896,7 +918,8 @@ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
+ 				return NULL;
+ 
+ 			domain_flush_cache(domain, tmp_page, VTD_PAGE_SIZE);
+-			pteval = ((uint64_t)virt_to_dma_pfn(tmp_page) << VTD_PAGE_SHIFT) | DMA_PTE_READ | DMA_PTE_WRITE;
++			pteval = (virt_to_dma_pfn(tmp_page) << VTD_PAGE_SHIFT) | DMA_PTE_READ | DMA_PTE_WRITE;
++			set_pte_mktme_keyid(virt_to_dma_pfn(tmp_page), &pteval);
+ 			if (cmpxchg64(&pte->val, 0ULL, pteval))
+ 				/* Someone else set it while we were thinking; use theirs. */
+ 				free_pgtable_page(tmp_page);
+@@ -2289,6 +2312,8 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
+ 			}
+ 
+ 		}
++		set_pte_mktme_keyid(phys_pfn, &pteval);
++
+ 		/* We don't need lock here, nobody else
+ 		 * touches the iova range
+ 		 */
+diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+index fa364de9db18..48a377a2b896 100644
+--- a/include/linux/intel-iommu.h
++++ b/include/linux/intel-iommu.h
+@@ -34,6 +34,8 @@
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/iommu.h>
++#include <asm/page.h>
++
+ 
+ /*
+  * VT-d hardware uses 4KiB page size regardless of host page size.
+@@ -603,7 +605,12 @@ static inline void dma_clear_pte(struct dma_pte *pte)
+ static inline u64 dma_pte_addr(struct dma_pte *pte)
+ {
+ #ifdef CONFIG_64BIT
+-	return pte->val & VTD_PAGE_MASK;
++	u64 addr = pte->val;
++	addr &= VTD_PAGE_MASK;
++#ifdef CONFIG_X86_INTEL_MKTME
++	addr &= ~mktme_keyid_mask;
++#endif
++	return addr;
+ #else
+ 	/* Must have a full atomic 64-bit read */
+ 	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
+-- 
+2.20.1
