@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:52 +0000
-Subject: [PATCH, RFC 32/62] keys/mktme: Store MKTME payloads if cmdline parameter allows
-Message-Id: <20190508144422.13171-33-kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:43:58 +0000
+Subject: [PATCH, RFC 38/62] keys/mktme: Support CPU hotplug for MKTME key service
+Message-Id: <20190508144422.13171-39-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,168 +13,128 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
-MKTME (Multi-Key Total Memory Encryption) key payloads may include
-data encryption keys, tweak keys, and additional entropy bits. These
-are used to program the MKTME encryption hardware. By default, the
-kernel destroys this payload data once the hardware is programmed.
+The MKTME encryption hardware resides on each physical package.
+The encryption hardware includes 'Key Tables' that must be
+programmed identically across all physical packages in the
+platform. Although every CPU in a package can program its key
+table, the kernel uses one lead CPU per package for programming.
 
-However, in order to fully support Memory Hotplug, saving the key data
-becomes important. The MKTME Key Service cannot allow a new memory
-controller to come online unless it can program the Key Table to match
-the Key Tables of all existing memory controllers.
+CPU Hotplug Teardown
+--------------------
+MKTME manages CPU hotplug teardown to make sure the ability to
+program all packages is preserved when MKTME keys are present.
 
-With CPU generated keys (a.k.a. random keys or ephemeral keys) the
-saving of user key data is not an issue. The kernel and MKTME hardware
-can generate strong encryption keys without recalling any user supplied
-data.
+When MKTME keys are not currently programmed, simply allow
+the teardown, and set "mktme_allow_keys" to false. This will
+force a re-evaluation of the platform topology before the next
+key creation. If this CPU teardown mattered, MKTME key service
+will report an error and fail to create the key. (User can
+online that CPU and try again)
 
-With USER directed keys (a.k.a. user type) saving the key programming
-data (data and tweak key) becomes an issue. The data and tweak keys
-are required to program those keys on a new physical package.
+When MKTME keys are currently programmed, allow teardowns
+of non 'lead CPU's' and of CPUs where another, core sibling
+CPU, can take over as lead. Do not allow teardown of any
+lead CPU that would render a hardware key table unreachable!
 
-In preparation for adding support for onlining new memory:
+CPU Hotplug Startup
+-------------------
+CPUs coming online are of interest to the key service, but since
+the service never needs to block a CPU startup event, nor does it
+need to prepare for an onlining CPU, a callback is not implemented.
 
-   Add an 'mktme_key_store' where key payloads are stored.
-
-   Add 'mktme_storekeys' kernel command line parameter that, when
-   present, allows the kernel to store user type key payloads.
-
-   Add 'mktme_bitmap_user_type' to recall when USER type keys are in
-   use. If no USER type keys are currently in use, new memory
-   may be brought online, despite the absence of 'mktme_storekeys'.
+MKTME will catch the availability of the new CPU, if it is
+needed, at the next key creation time. If keys are not allowed,
+that new CPU will be part of the topology evaluation to determine
+if keys should now be allowed.
 
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- .../admin-guide/kernel-parameters.rst         |  1 +
- .../admin-guide/kernel-parameters.txt         | 11 ++++
- security/keys/mktme_keys.c                    | 51 ++++++++++++++++++-
- 3 files changed, 61 insertions(+), 2 deletions(-)
+ security/keys/mktme_keys.c | 51 +++++++++++++++++++++++++++++++++++---
+ 1 file changed, 48 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/admin-guide/kernel-parameters.rst b/Documentation/admin-guide/kernel-parameters.rst
-index b8d0bc07ed0a..1b62b86d0666 100644
---- a/Documentation/admin-guide/kernel-parameters.rst
-+++ b/Documentation/admin-guide/kernel-parameters.rst
-@@ -120,6 +120,7 @@ parameter is applicable::
- 			Documentation/m68k/kernel-options.txt.
- 	MDA	MDA console support is enabled.
- 	MIPS	MIPS architecture is enabled.
-+	MKTME	Multi-Key Total Memory Encryption is enabled.
- 	MOUSE	Appropriate mouse support is enabled.
- 	MSI	Message Signaled Interrupts (PCI).
- 	MTD	MTD (Memory Technology Device) support is enabled.
-diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
-index 2b8ee90bb644..38ea0ace9533 100644
---- a/Documentation/admin-guide/kernel-parameters.txt
-+++ b/Documentation/admin-guide/kernel-parameters.txt
-@@ -2544,6 +2544,17 @@
- 			in the "bleeding edge" mini2440 support kernel at
- 			http://repo.or.cz/w/linux-2.6/mini2440.git
- 
-+	mktme_storekeys [X86, MKTME] When CONFIG_X86_INTEL_MKTME is set
-+			this parameter allows the kernel to store the user
-+			specified MKTME key payload. Storing this payload
-+			means that the MKTME Key Service can always allow
-+			the addition of new physical packages. If the
-+			mktme_storekeys parameter is not present, users key
-+			data will not be stored, and new physical packages
-+			may only be added to the system if no user type
-+			MKTME keys are programmed.
-+			See Documentation/x86/mktme.rst
-+
- 	mminit_loglevel 			[KNL] When CONFIG_DEBUG_MEMORY_INIT is set, this
- 			parameter allows control of the logging verbosity for
 diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 4b2d3dc1843a..bcd68850048f 100644
+index 734e1d28eb24..3dfc0647f1e5 100644
 --- a/security/keys/mktme_keys.c
 +++ b/security/keys/mktme_keys.c
-@@ -22,6 +22,9 @@ static DEFINE_SPINLOCK(mktme_lock);
- struct kmem_cache *mktme_prog_cache;	/* Hardware programming cache */
- unsigned long *mktme_target_map;	/* Pconfig programming targets */
- cpumask_var_t mktme_leadcpus;		/* One lead CPU per pconfig target */
-+static bool mktme_storekeys;		/* True if key payloads may be stored */
-+unsigned long *mktme_bitmap_user_type;	/* Shows presence of user type keys */
-+struct mktme_payload *mktme_key_store;	/* Payload storage if allowed */
+@@ -102,9 +102,9 @@ void mktme_percpu_ref_release(struct percpu_ref *ref)
+ 		return;
+ 	}
+ 	percpu_ref_exit(ref);
+-	spin_lock_irqsave(&mktme_map_lock, flags);
++	spin_lock_irqsave(&mktme_lock, flags);
+ 	mktme_release_keyid(keyid);
+-	spin_unlock_irqrestore(&mktme_map_lock, flags);
++	spin_unlock_irqrestore(&mktme_lock, flags);
+ }
  
- /* 1:1 Mapping between Userspace Keys (struct key) and Hardware KeyIDs */
- struct mktme_mapping {
-@@ -124,6 +127,27 @@ struct mktme_payload {
- 	u8		tweak_key[MKTME_AES_XTS_SIZE];
- };
+ enum mktme_opt_id {
+@@ -506,9 +506,46 @@ static int mktme_alloc_pconfig_targets(void)
+ 	return 0;
+ }
  
-+void mktme_store_payload(int keyid, struct mktme_payload *payload)
++static int mktme_cpu_teardown(unsigned int cpu)
 +{
-+	/* Always remember if this key is of type "user" */
-+	if ((payload->keyid_ctrl & 0xff) = MKTME_KEYID_SET_KEY_DIRECT)
-+		set_bit(keyid, mktme_bitmap_user_type);
-+	/*
-+	 * Always store the control fields to program newly
-+	 * onlined packages with RANDOM or NO_ENCRYPT keys.
-+	 */
-+	mktme_key_store[keyid].keyid_ctrl = payload->keyid_ctrl;
++	int new_leadcpu, ret = 0;
++	unsigned long flags;
 +
-+	/* Only store "user" type data and tweak keys if allowed */
-+	if (mktme_storekeys &&
-+	    ((payload->keyid_ctrl & 0xff) = MKTME_KEYID_SET_KEY_DIRECT)) {
-+		memcpy(mktme_key_store[keyid].data_key, payload->data_key,
-+		       MKTME_AES_XTS_SIZE);
-+		memcpy(mktme_key_store[keyid].tweak_key, payload->tweak_key,
-+		       MKTME_AES_XTS_SIZE);
++	/* Do not allow key programming during cpu hotplug event */
++	spin_lock_irqsave(&mktme_lock, flags);
++
++	/*
++	 * When no keys are in use, allow the teardown, and set
++	 * mktme_allow_keys to FALSE. That forces an evaluation
++	 * of the topology before the next key creation.
++	 */
++	if (!mktme_map->mapped_keyids) {
++		mktme_allow_keys = false;
++		goto out;
 +	}
++	/* Teardown CPU is not a lead CPU. Allow teardown. */
++	if (!cpumask_test_cpu(cpu, mktme_leadcpus))
++		goto out;
++
++	/* Teardown CPU is a lead CPU. Look for a new lead CPU. */
++	new_leadcpu = cpumask_any_but(topology_core_cpumask(cpu), cpu);
++
++	if (new_leadcpu < nr_cpumask_bits) {
++		/* New lead CPU found. Update the programming mask */
++		__cpumask_clear_cpu(cpu, mktme_leadcpus);
++		__cpumask_set_cpu(new_leadcpu, mktme_leadcpus);
++	} else {
++		/* New lead CPU not found. Do not allow CPU teardown */
++		ret = -1;
++	}
++out:
++	spin_unlock_irqrestore(&mktme_lock, flags);
++	return ret;
 +}
 +
- struct mktme_hw_program_info {
- 	struct mktme_key_program *key_program;
- 	int *status;
-@@ -270,9 +294,10 @@ int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
- 			    0, GFP_KERNEL))
- 		goto err_out;
+ static int __init init_mktme(void)
+ {
+-	int ret;
++	int ret, cpuhp;
  
--	if (!mktme_program_keyid(keyid, payload))
-+	if (!mktme_program_keyid(keyid, payload)) {
-+		mktme_store_payload(keyid, payload);
- 		return MKTME_PROG_SUCCESS;
--
-+	}
- 	percpu_ref_exit(&encrypt_count[keyid]);
- err_out:
- 	spin_lock_irqsave(&mktme_lock, flags);
-@@ -487,10 +512,25 @@ static int __init init_mktme(void)
- 	if (!encrypt_count)
- 		goto free_targets;
+ 	/* Verify keys are present */
+ 	if (mktme_nr_keyids < 1)
+@@ -553,10 +590,18 @@ static int __init init_mktme(void)
+ 	if (!mktme_key_store)
+ 		goto free_bitmap;
  
-+	/* Detect presence of user type keys */
-+	mktme_bitmap_user_type = bitmap_zalloc(mktme_nr_keyids, GFP_KERNEL);
-+	if (!mktme_bitmap_user_type)
-+		goto free_encrypt;
-+
-+	/* Store key payloads if allowable */
-+	mktme_key_store = kzalloc(sizeof(mktme_key_store[0]) *
-+				   (mktme_nr_keyids + 1), GFP_KERNEL);
-+	if (!mktme_key_store)
-+		goto free_bitmap;
++	cpuhp = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN,
++					  "keys/mktme_keys:online",
++					  NULL, mktme_cpu_teardown);
++	if (cpuhp < 0)
++		goto free_store;
 +
  	ret = register_key_type(&key_type_mktme);
  	if (!ret)
  		return ret;			/* SUCCESS */
  
-+	kfree(mktme_key_store);
-+free_bitmap:
-+	bitmap_free(mktme_bitmap_user_type);
-+free_encrypt:
- 	kvfree(encrypt_count);
- free_targets:
- 	free_cpumask_var(mktme_leadcpus);
-@@ -504,3 +544,10 @@ static int __init init_mktme(void)
- }
- 
- late_initcall(init_mktme);
-+
-+static int mktme_enable_storekeys(char *__unused)
-+{
-+	mktme_storekeys = true;
-+	return 1;
-+}
-+__setup("mktme_storekeys", mktme_enable_storekeys);
++	cpuhp_remove_state_nocalls(cpuhp);
++free_store:
+ 	kfree(mktme_key_store);
+ free_bitmap:
+ 	bitmap_free(mktme_bitmap_user_type);
 -- 
 2.20.1
