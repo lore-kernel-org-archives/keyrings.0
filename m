@@ -1,46 +1,102 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Tue, 28 May 2019 19:14:30 +0000
-Subject: Re: [PATCH v10 12/12] ima: Store the measurement again when appraising a modsig
-Message-Id: <871s0i75nt.fsf@morokweng.localdomain>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:44:21 +0000
+Subject: [PATCH, RFC 61/62] x86/mktme: Document the MKTME API for anonymous memory encryption
+Message-Id: <20190508144422.13171-62-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-10"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418035120.2354-1-bauerman@linux.ibm.com> <20190418035120.2354-13-bauerman@linux.ibm.com> <1559052560.4090.14.camel@linux.ibm.com>
-In-Reply-To: <1559052560.4090.14.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
+From: Alison Schofield <alison.schofield@intel.com>
 
-Mimi Zohar <zohar@linux.ibm.com> writes:
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ Documentation/x86/mktme/index.rst         |  1 +
+ Documentation/x86/mktme/mktme_encrypt.rst | 57 +++++++++++++++++++++++
+ 2 files changed, 58 insertions(+)
+ create mode 100644 Documentation/x86/mktme/mktme_encrypt.rst
 
-> Hi Thiago,
->
-> On Thu, 2019-04-18 at 00:51 -0300, Thiago Jung Bauermann wrote:
->> If the IMA template contains the "modsig" or "d-modsig" field, then the
->> modsig should be added to the measurement list when the file is appraised.
->>
->> And that is what normally happens, but if a measurement rule caused a file
->> containing a modsig to be measured before a different rule causes it to be
->> appraised, the resulting measurement entry will not contain the modsig
->> because it is only fetched during appraisal. When the appraisal rule
->> triggers, it won't store a new measurement containing the modsig because
->> the file was already measured.
->>
->> We need to detect that situation and store an additional measurement with
->> the modsig. This is done by adding an IMA_MEASURE action flag if we read a
->> modsig and the IMA template contains a modsig field.
->
-> With the new per policy rule "template" support being added, this
-> patch needs to be modified so that the per policy "template" format is
-> checked. ima_template_has_modsig() should be called with the
-> template_desc being used.
-
-Right. Thanks for point out what needs to be done. After rebasing on top
-of Matthew Garret's "IMA: Allow profiles to define the desired IMA
-template" patch I changed ima_template_has_modsig() to check the
-template_desc obtained from process_measurement().
-
---
-Thiago Jung Bauermann
-IBM Linux Technology Center
+diff --git a/Documentation/x86/mktme/index.rst b/Documentation/x86/mktme/in=
+dex.rst
+index 8cf2b7d62091..ca3c76adc596 100644
+--- a/Documentation/x86/mktme/index.rst
++++ b/Documentation/x86/mktme/index.rst
+@@ -9,3 +9,4 @@ Multi-Key Total Memory Encryption (MKTME)
+    mktme_mitigations
+    mktme_configuration
+    mktme_keys
++   mktme_encrypt
+diff --git a/Documentation/x86/mktme/mktme_encrypt.rst b/Documentation/x86/=
+mktme/mktme_encrypt.rst
+new file mode 100644
+index 000000000000..5cdffabc610f
+--- /dev/null
++++ b/Documentation/x86/mktme/mktme_encrypt.rst
+@@ -0,0 +1,57 @@
++MKTME API: system call encrypt_mprotect()
++=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D+
++Synopsis
++--------
++int encrypt_mprotect(void \*addr, size_t len, int prot, key_serial_t seria=
+l);
++
++Where *key_serial_t serial* is the serial number of a key allocated
++using the MKTME Key Service.
++
++Description
++-----------
++    encrypt_mprotect() encrypts the memory pages containing any part
++    of the address range in the interval specified by addr and len.
++
++    encrypt_mprotect() supports the legacy mprotect() behavior plus
++    the enabling of memory encryption. That means that in addition
++    to encrypting the memory, the protection flags will be updated
++    as requested in the call.
++
++    The *addr* and *len* must be aligned to a page boundary.
++
++    The caller must have *KEY_NEED_VIEW* permission on the key.
++
++    The range of memory that is to be protected must be mapped as
++    *ANONYMOUS*.
++
++Errors
++------
++    In addition to the Errors returned from legacy mprotect()
++    encrypt_mprotect will return:
++
++    ENOKEY *serial* parameter does not represent a valid key.
++
++    EINVAL *len* parameter is not page aligned.
++
++    EACCES Caller does not have *KEY_NEED_VIEW* permission on the key.
++
++EXAMPLE
++--------
++  Allocate an MKTME Key::
++        serial =3D add_key("mktme", "name", "type=3Dcpu algorithm=AEs-xts-=
+128" @u
++
++  Map ANONYMOUS memory::
++        ptr =3D mmap(NULL, size, PROT_NONE, MAP_ANONYMOUS|MAP_PRIVATE, -1,=
+ 0);
++
++  Protect memory::
++        ret =3D syscall(SYS_encrypt_mprotect, ptr, size, PROT_READ|PROT_WR=
+ITE,
++                      serial);
++
++  Use the encrypted memory
++
++  Free memory::
++        ret =3D munmap(ptr, size);
++
++  Free the key resource::
++        ret =3D keyctl(KEYCTL_INVALIDATE, serial);
+--=20
+2.20.1
