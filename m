@@ -1,25 +1,101 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 01 May 2019 17:18:29 +0000
-Subject: Re: [GIT PULL] keys: Namespacing
-Message-Id: <22943.1556731109@warthog.procyon.org.uk>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:44:17 +0000
+Subject: [PATCH, RFC 57/62] x86/mktme: Overview of Multi-Key Total Memory Encryption
+Message-Id: <20190508144422.13171-58-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <alpine.LRH.2.21.1905020306290.14696@namei.org> <561.1556663960@warthog.procyon.org.uk>
-In-Reply-To: <alpine.LRH.2.21.1905020306290.14696@namei.org>
-To: James Morris <jmorris@namei.org>
-Cc: dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-James Morris <jmorris@namei.org> wrote:
+From: Alison Schofield <alison.schofield@intel.com>
 
-> > Can you pull this set of patches into the security tree and pass them along
-> > to Linus in the next merge window?  The primary thrust is to add
-> > namespacing to keyrings.
-> 
-> Not for this merge window, it's too close. Something like this would need 
-> to be in -rc2 or so.
+Provide an overview of MKTME on Intel Platforms.
 
-Okay.
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ Documentation/x86/mktme/index.rst          |  8 +++
+ Documentation/x86/mktme/mktme_overview.rst | 57 ++++++++++++++++++++++
+ 2 files changed, 65 insertions(+)
+ create mode 100644 Documentation/x86/mktme/index.rst
+ create mode 100644 Documentation/x86/mktme/mktme_overview.rst
 
-David
+diff --git a/Documentation/x86/mktme/index.rst b/Documentation/x86/mktme/index.rst
+new file mode 100644
+index 000000000000..1614b52dd3e9
+--- /dev/null
++++ b/Documentation/x86/mktme/index.rst
+@@ -0,0 +1,8 @@
++
++====================+Multi-Key Total Memory Encryption (MKTME)
++====================+
++.. toctree::
++
++   mktme_overview
+diff --git a/Documentation/x86/mktme/mktme_overview.rst b/Documentation/x86/mktme/mktme_overview.rst
+new file mode 100644
+index 000000000000..59c023965554
+--- /dev/null
++++ b/Documentation/x86/mktme/mktme_overview.rst
+@@ -0,0 +1,57 @@
++Overview
++====+Multi-Key Total Memory Encryption (MKTME)[1] is a technology that
++allows transparent memory encryption in upcoming Intel platforms.
++It uses a new instruction (PCONFIG) for key setup and selects a
++key for individual pages by repurposing physical address bits in
++the page tables.
++
++Support for MKTME is added to the existing kernel keyring subsystem
++and via a new mprotect_encrypt() system call that can be used by
++applications to encrypt anonymous memory with keys obtained from
++the keyring.
++
++This architecture supports encrypting both normal, volatile DRAM
++and persistent memory.  However, persistent memory support is
++not included in the Linux kernel implementation at this time.
++(We anticipate adding that support next.)
++
++Hardware Background
++=========+
++MKTME is built on top of an existing single-key technology called
++TME.  TME encrypts all system memory using a single key generated
++by the CPU on every boot of the system. TME provides mitigation
++against physical attacks, such as physically removing a DIMM or
++watching memory bus traffic.
++
++MKTME enables the use of multiple encryption keys[2], allowing
++selection of the encryption key per-page using the page tables.
++Encryption keys are programmed into each memory controller and
++the same set of keys is available to all entities on the system
++with access to that memory (all cores, DMA engines, etc...).
++
++MKTME inherits many of the mitigations against hardware attacks
++from TME.  Like TME, MKTME does not mitigate vulnerable or
++malicious operating systems or virtual machine managers.  MKTME
++offers additional mitigations when compared to TME.
++
++TME and MKTME use the AES encryption algorithm in the AES-XTS
++mode.  This mode, typically used for block-based storage devices,
++takes the physical address of the data into account when
++encrypting each block.  This ensures that the effective key is
++different for each block of memory. Moving encrypted content
++across physical address results in garbage on read, mitigating
++block-relocation attacks.  This property is the reason many of
++the discussed attacks require control of a shared physical page
++to be handed from the victim to the attacker.
++
++--
++1. https://software.intel.com/sites/default/files/managed/a5/16/Multi-Key-Total-Memory-Encryption-Spec.pdf
++2. The MKTME architecture supports up to 16 bits of KeyIDs, so a
++   maximum of 65535 keys on top of the “TME key” at KeyID-0.  The
++   first implementation is expected to support 5 bits, making 63
++   keys available to applications.  However, this is not guaranteed.
++   The number of available keys could be reduced if, for instance,
++   additional physical address space is desired over additional
++   KeyIDs.
+-- 
+2.20.1
