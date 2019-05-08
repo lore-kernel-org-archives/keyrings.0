@@ -1,80 +1,59 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 22 May 2019 22:46:02 +0000
-Subject: [PATCH 0/6] keys: request_key() improvements(vspace)s
-Message-Id: <155856516286.11737.11196637682919902718.stgit@warthog.procyon.org.uk>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:43:55 +0000
+Subject: [PATCH, RFC 35/62] keys/mktme: Require ACPI HMAT to register the MKTME Key Service
+Message-Id: <20190508144422.13171-36-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
+From: Alison Schofield <alison.schofield@intel.com>
 
-Here's a fix and some improvements for request_key() intended for the next
-merge window:
+The ACPI HMAT will be used by the MKTME key service to identify
+topologies that support the safe programming of encryption keys.
+Those decisions will happen at key creation time and during
+hotplug events.
 
- (1) Fix the lack of a Link permission check on a key found by request_key(),
-     thereby enabling request_key() to link keys that don't grant this
-     permission to the target keyring (which must still grant Write
-     permission).
+To enable this, we at least need to have the ACPI HMAT present
+at init time. If it's not present, do not register the type.
 
-     Note that the key must be in the caller's keyrings already to be found.
+If the HMAT is not present, failure looks like this:
+[ ] MKTME: Registration failed. ACPI HMAT not present.
 
- (2) Invalidate used request_key authentication keys rather than revoking
-     them, so that they get cleaned up immediately rather than hanging around
-     till the expiry time is passed.
-
- (3) Move the RCU locks outwards from the keyring search functions so that a
-     request_key_rcu() can be provided.  This can be called in RCU mode, so it
-     can't sleep and can't upcall - but it can be called from LOOKUP_RCU
-     pathwalk mode.
-
- (4) Cache the latest positive result of request_key*() temporarily in
-     task_struct so that filesystems that make a lot of request_key() calls
-     during pathwalk can take advantage of it to avoid having to redo the
-     searching.
-
-     It is assumed that the key just found is unlikely to be superseded
-     between steps in an RCU pathwalk.
-
-     Note that the cleanup of the cache is done on TIF_NOTIFY_RESUME, just
-     before userspace resumes, and on exit.
-
-I've included, for illustration, two patches to the in-kernel AFS filesystem
-to make them use this.
-
-The patches can be found on the following branch:
-
-	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-request
-
-and this depends on keys-misc.  Note that the AFS patches aren't on this branch.
-
-David
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
-David Howells (6):
-      keys: Fix request_key() lack of Link perm check on found key
-      keys: Invalidate used request_key authentication keys
-      keys: Move the RCU locks outwards from the keyring search functions
-      keys: Cache result of request_key*() temporarily in task_struct
-      afs: Provide an RCU-capable key lookup
-      afs: Support RCU pathwalk
+ security/keys/mktme_keys.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-
- Documentation/security/keys/core.rst        |    8 ++
- Documentation/security/keys/request-key.rst |   11 +++
- fs/afs/dir.c                                |   54 ++++++++++++++
- fs/afs/internal.h                           |    1 
- fs/afs/security.c                           |  102 +++++++++++++++++++++++----
- include/keys/request_key_auth-type.h        |    1 
- include/linux/key.h                         |    3 +
- include/linux/sched.h                       |    5 +
- include/linux/tracehook.h                   |    5 +
- kernel/cred.c                               |    9 ++
- security/keys/internal.h                    |    6 +-
- security/keys/key.c                         |    4 +
- security/keys/keyring.c                     |   16 ++--
- security/keys/proc.c                        |    4 +
- security/keys/process_keys.c                |   41 +++++------
- security/keys/request_key.c                 |   97 +++++++++++++++++++++++++-
- security/keys/request_key_auth.c            |   60 ++++++++++------
- 17 files changed, 346 insertions(+), 81 deletions(-)
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index bcd68850048f..f5fc6cccc81b 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -2,6 +2,7 @@
+ 
+ /* Documentation/x86/mktme_keys.rst */
+ 
++#include <linux/acpi.h>
+ #include <linux/cred.h>
+ #include <linux/cpu.h>
+ #include <linux/init.h>
+@@ -490,6 +491,12 @@ static int __init init_mktme(void)
+ 	if (mktme_nr_keyids < 1)
+ 		return 0;
+ 
++	/* Require an ACPI HMAT to identify MKTME safe topologies */
++	if (!acpi_hmat_present()) {
++		pr_warn("MKTME: Registration failed. ACPI HMAT not present.\n");
++		return -EINVAL;
++	}
++
+ 	/* Mapping of Userspace Keys to Hardware KeyIDs */
+ 	if (mktme_map_alloc())
+ 		return -ENOMEM;
+-- 
+2.20.1
