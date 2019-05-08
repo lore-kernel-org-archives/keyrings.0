@@ -1,90 +1,83 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 23 May 2019 15:58:20 +0000
-Subject: [PATCH 0/2] keys: ACLs
-Message-Id: <155862710003.24863.11807972177275927370.stgit@warthog.procyon.org.uk>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:43:45 +0000
+Subject: [PATCH, RFC 25/62] keys/mktme: Instantiate and destroy MKTME keys
+Message-Id: <20190508144422.13171-26-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
+From: Alison Schofield <alison.schofield@intel.com>
 
-Here are some patches to change the permissions model used by keys and
-keyrings to be based on an ACL:
+Instantiating and destroying are two Kernel Key Service methods
+that are invoked by the kernel key service when a key is added
+(add_key, request_key) or removed (invalidate, revoke, timeout).
 
- (1) Replace the permissions mask internally with an ACL that contains a
-     list of ACEs, each with a specific subject with a permissions mask.
-     Potted default ACLs are available for new keys and keyrings.
+During instantiation, MKTME needs to allocate an available hardware
+KeyID and map it to the Userspace Key.
 
-     ACE subjects can be macroised to indicate the UID and GID specified on
-     the key (which remain).  Future commits will be able to add additional
-     subject types, such as specific UIDs or domain tags/namespaces.
+During destroy, MKTME wil returned the hardware KeyID to the pool of
+available keys.
 
-     Also split a number of permissions to give finer control.  Examples
-     include splitting the revocation permit from the change-attributes
-     permit, thereby allowing someone to be granted permission to revoke a
-     key without allowing them to change the owner; also the ability to
-     join a keyring is split from the ability to link to it, thereby
-     stopping a process accessing a keyring by joining it and thus
-     acquiring use of possessor permits.
-
- (2) Provide a keyctl to allow the granting or denial of one or more
-     permits to a specific subject.  Direct access to the ACL is not
-     granted, and the ACL cannot be viewed.
-
-The patches can be found on the following branch:
-
-	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-acl
-
-David
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
-David Howells (2):
-      KEYS: Replace uid/gid/perm permissions checking with an ACL
-      KEYS: Provide KEYCTL_GRANT_PERMISSION
+ security/keys/mktme_keys.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-
- certs/blacklist.c                                  |    7 
- certs/system_keyring.c                             |   12 -
- drivers/md/dm-crypt.c                              |    2 
- drivers/nvdimm/security.c                          |    2 
- fs/afs/security.c                                  |    2 
- fs/cifs/cifs_spnego.c                              |   25 +
- fs/cifs/cifsacl.c                                  |   28 +-
- fs/cifs/connect.c                                  |    4 
- fs/crypto/keyinfo.c                                |    2 
- fs/ecryptfs/ecryptfs_kernel.h                      |    2 
- fs/ecryptfs/keystore.c                             |    2 
- fs/fscache/object-list.c                           |    2 
- fs/nfs/nfs4idmap.c                                 |   30 +-
- fs/ubifs/auth.c                                    |    2 
- include/linux/key.h                                |  121 ++++---
- include/uapi/linux/keyctl.h                        |   64 ++++
- lib/digsig.c                                       |    2 
- net/ceph/ceph_common.c                             |    2 
- net/dns_resolver/dns_key.c                         |   12 +
- net/dns_resolver/dns_query.c                       |   15 +
- net/rxrpc/key.c                                    |   16 +
- security/integrity/digsig.c                        |   31 +-
- security/integrity/digsig_asymmetric.c             |    2 
- security/integrity/evm/evm_crypto.c                |    2 
- security/integrity/ima/ima_mok.c                   |   13 +
- security/integrity/integrity.h                     |    4 
- .../integrity/platform_certs/platform_keyring.c    |   13 +
- security/keys/compat.c                             |    2 
- security/keys/encrypted-keys/encrypted.c           |    2 
- security/keys/encrypted-keys/masterkey_trusted.c   |    2 
- security/keys/gc.c                                 |    2 
- security/keys/internal.h                           |   16 +
- security/keys/key.c                                |   29 +-
- security/keys/keyctl.c                             |   97 ++++-
- security/keys/keyring.c                            |   27 +-
- security/keys/permission.c                         |  356 ++++++++++++++++++--
- security/keys/persistent.c                         |   27 +-
- security/keys/proc.c                               |   20 +
- security/keys/process_keys.c                       |   86 ++++-
- security/keys/request_key.c                        |   34 +-
- security/keys/request_key_auth.c                   |   15 +
- security/selinux/hooks.c                           |   16 +
- security/smack/smack_lsm.c                         |    3 
- 43 files changed, 868 insertions(+), 285 deletions(-)
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index 92a047caa829..14bc4e600978 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -14,6 +14,8 @@
+ 
+ #include "internal.h"
+ 
++static DEFINE_SPINLOCK(mktme_lock);
++
+ /* 1:1 Mapping between Userspace Keys (struct key) and Hardware KeyIDs */
+ struct mktme_mapping {
+ 	unsigned int	mapped_keyids;
+@@ -95,6 +97,26 @@ struct mktme_payload {
+ 	u8		tweak_key[MKTME_AES_XTS_SIZE];
+ };
+ 
++/* Key Service Method called when a Userspace Key is garbage collected. */
++static void mktme_destroy_key(struct key *key)
++{
++	mktme_release_keyid(mktme_keyid_from_key(key));
++}
++
++/* Key Service Method to create a new key. Payload is preparsed. */
++int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
++{
++	unsigned long flags;
++	int keyid;
++
++	spin_lock_irqsave(&mktme_lock, flags);
++	keyid = mktme_reserve_keyid(key);
++	spin_unlock_irqrestore(&mktme_lock, flags);
++	if (!keyid)
++		return -ENOKEY;
++	return 0;
++}
++
+ /* Make sure arguments are correct for the TYPE of key requested */
+ static int mktme_check_options(struct mktme_payload *payload,
+ 			       unsigned long token_mask, enum mktme_type type)
+@@ -236,7 +258,9 @@ struct key_type key_type_mktme = {
+ 	.name		= "mktme",
+ 	.preparse	= mktme_preparse_payload,
+ 	.free_preparse	= mktme_free_preparsed_payload,
++	.instantiate	= mktme_instantiate_key,
+ 	.describe	= user_describe,
++	.destroy	= mktme_destroy_key,
+ };
+ 
+ static int __init init_mktme(void)
+-- 
+2.20.1
