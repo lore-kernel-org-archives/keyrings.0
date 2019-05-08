@@ -1,102 +1,149 @@
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:21 +0000
-Subject: [PATCH, RFC 61/62] x86/mktme: Document the MKTME API for anonymous memory encryption
-Message-Id: <20190508144422.13171-62-kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:44:13 +0000
+Subject: [PATCH, RFC 53/62] x86/mm: Use common code for DMA memory encryption
+Message-Id: <20190508144422.13171-54-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-10"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
 In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
 Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-From: Alison Schofield <alison.schofield@intel.com>
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Replace sme_ code with x86 memory encryption common code such that
+Intel MKTME can be supported underneath generic DMA code.
+dma_to_phys() & phys_to_dma() results will be runtime modified by
+memory encryption code.
+
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- Documentation/x86/mktme/index.rst         |  1 +
- Documentation/x86/mktme/mktme_encrypt.rst | 57 +++++++++++++++++++++++
- 2 files changed, 58 insertions(+)
- create mode 100644 Documentation/x86/mktme/mktme_encrypt.rst
+ arch/x86/include/asm/mem_encrypt.h | 29 +++++++++++++++++++++++++++++
+ arch/x86/mm/mem_encrypt_common.c   |  2 +-
+ include/linux/dma-direct.h         |  4 ++--
+ include/linux/mem_encrypt.h        | 23 ++++++++++-------------
+ 4 files changed, 42 insertions(+), 16 deletions(-)
 
-diff --git a/Documentation/x86/mktme/index.rst b/Documentation/x86/mktme/in=
-dex.rst
-index 8cf2b7d62091..ca3c76adc596 100644
---- a/Documentation/x86/mktme/index.rst
-+++ b/Documentation/x86/mktme/index.rst
-@@ -9,3 +9,4 @@ Multi-Key Total Memory Encryption (MKTME)
-    mktme_mitigations
-    mktme_configuration
-    mktme_keys
-+   mktme_encrypt
-diff --git a/Documentation/x86/mktme/mktme_encrypt.rst b/Documentation/x86/=
-mktme/mktme_encrypt.rst
-new file mode 100644
-index 000000000000..5cdffabc610f
---- /dev/null
-+++ b/Documentation/x86/mktme/mktme_encrypt.rst
-@@ -0,0 +1,57 @@
-+MKTME API: system call encrypt_mprotect()
-+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D+
-+Synopsis
-+--------
-+int encrypt_mprotect(void \*addr, size_t len, int prot, key_serial_t seria=
-l);
+diff --git a/arch/x86/include/asm/mem_encrypt.h b/arch/x86/include/asm/mem_encrypt.h
+index 616f8e637bc3..a2b69cbb0e41 100644
+--- a/arch/x86/include/asm/mem_encrypt.h
++++ b/arch/x86/include/asm/mem_encrypt.h
+@@ -55,8 +55,19 @@ bool sev_active(void);
+ 
+ #define __bss_decrypted __attribute__((__section__(".bss..decrypted")))
+ 
++/*
++ * The __sme_set() and __sme_clr() macros are useful for adding or removing
++ * the encryption mask from a value (e.g. when dealing with pagetable
++ * entries).
++ */
++#define __sme_set(x)		((x) | sme_me_mask)
++#define __sme_clr(x)		((x) & ~sme_me_mask)
 +
-+Where *key_serial_t serial* is the serial number of a key allocated
-+using the MKTME Key Service.
+ #else	/* !CONFIG_AMD_MEM_ENCRYPT */
+ 
++#define __sme_set(x)		(x)
++#define __sme_clr(x)		(x)
 +
-+Description
-+-----------
-+    encrypt_mprotect() encrypts the memory pages containing any part
-+    of the address range in the interval specified by addr and len.
+ #define sme_me_mask	0ULL
+ 
+ static inline void __init sme_early_encrypt(resource_size_t paddr,
+@@ -97,4 +108,22 @@ extern char __start_bss_decrypted[], __end_bss_decrypted[], __start_bss_decrypte
+ 
+ #endif	/* __ASSEMBLY__ */
+ 
++#ifdef CONFIG_X86_MEM_ENCRYPT_COMMON
 +
-+    encrypt_mprotect() supports the legacy mprotect() behavior plus
-+    the enabling of memory encryption. That means that in addition
-+    to encrypting the memory, the protection flags will be updated
-+    as requested in the call.
++extern dma_addr_t __mem_encrypt_dma_set(dma_addr_t daddr, phys_addr_t paddr);
++extern phys_addr_t __mem_encrypt_dma_clear(phys_addr_t paddr);
 +
-+    The *addr* and *len* must be aligned to a page boundary.
++#else
++static inline dma_addr_t __mem_encrypt_dma_set(dma_addr_t daddr, phys_addr_t paddr)
++{
++	return daddr;
++}
 +
-+    The caller must have *KEY_NEED_VIEW* permission on the key.
++static inline phys_addr_t __mem_encrypt_dma_clear(phys_addr_t paddr)
++{
++	return paddr;
++}
++#endif /* CONFIG_X86_MEM_ENCRYPT_COMMON */
 +
-+    The range of memory that is to be protected must be mapped as
-+    *ANONYMOUS*.
 +
-+Errors
-+------
-+    In addition to the Errors returned from legacy mprotect()
-+    encrypt_mprotect will return:
+ #endif	/* __X86_MEM_ENCRYPT_H__ */
+diff --git a/arch/x86/mm/mem_encrypt_common.c b/arch/x86/mm/mem_encrypt_common.c
+index 2adee65eec46..dcc5c710a235 100644
+--- a/arch/x86/mm/mem_encrypt_common.c
++++ b/arch/x86/mm/mem_encrypt_common.c
+@@ -1,5 +1,5 @@
+ #include <linux/mm.h>
+-#include <linux/mem_encrypt.h>
++#include <asm/mem_encrypt.h>
+ #include <asm/mktme.h>
+ 
+ /*
+diff --git a/include/linux/dma-direct.h b/include/linux/dma-direct.h
+index b7338702592a..a949adeb6558 100644
+--- a/include/linux/dma-direct.h
++++ b/include/linux/dma-direct.h
+@@ -40,12 +40,12 @@ static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+  */
+ static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+ {
+-	return __sme_set(__phys_to_dma(dev, paddr));
++	return __mem_encrypt_dma_set(__phys_to_dma(dev, paddr), paddr);
+ }
+ 
+ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+ {
+-	return __sme_clr(__dma_to_phys(dev, daddr));
++	return __mem_encrypt_dma_clear(__dma_to_phys(dev, daddr));
+ }
+ 
+ u64 dma_direct_get_required_mask(struct device *dev);
+diff --git a/include/linux/mem_encrypt.h b/include/linux/mem_encrypt.h
+index b310a9c18113..ce8ff0ead16c 100644
+--- a/include/linux/mem_encrypt.h
++++ b/include/linux/mem_encrypt.h
+@@ -26,6 +26,16 @@
+ static inline bool sme_active(void) { return false; }
+ static inline bool sev_active(void) { return false; }
+ 
++static inline dma_addr_t __mem_encrypt_dma_set(dma_addr_t daddr, phys_addr_t paddr)
++{
++	return daddr;
++}
 +
-+    ENOKEY *serial* parameter does not represent a valid key.
++static inline phys_addr_t __mem_encrypt_dma_clear(phys_addr_t paddr)
++{
++	return paddr;
++}
 +
-+    EINVAL *len* parameter is not page aligned.
-+
-+    EACCES Caller does not have *KEY_NEED_VIEW* permission on the key.
-+
-+EXAMPLE
-+--------
-+  Allocate an MKTME Key::
-+        serial =3D add_key("mktme", "name", "type=3Dcpu algorithm=AEs-xts-=
-128" @u
-+
-+  Map ANONYMOUS memory::
-+        ptr =3D mmap(NULL, size, PROT_NONE, MAP_ANONYMOUS|MAP_PRIVATE, -1,=
- 0);
-+
-+  Protect memory::
-+        ret =3D syscall(SYS_encrypt_mprotect, ptr, size, PROT_READ|PROT_WR=
-ITE,
-+                      serial);
-+
-+  Use the encrypted memory
-+
-+  Free memory::
-+        ret =3D munmap(ptr, size);
-+
-+  Free the key resource::
-+        ret =3D keyctl(KEYCTL_INVALIDATE, serial);
---=20
+ #endif	/* CONFIG_ARCH_HAS_MEM_ENCRYPT */
+ 
+ static inline bool mem_encrypt_active(void)
+@@ -38,19 +48,6 @@ static inline u64 sme_get_me_mask(void)
+ 	return sme_me_mask;
+ }
+ 
+-#ifdef CONFIG_AMD_MEM_ENCRYPT
+-/*
+- * The __sme_set() and __sme_clr() macros are useful for adding or removing
+- * the encryption mask from a value (e.g. when dealing with pagetable
+- * entries).
+- */
+-#define __sme_set(x)		((x) | sme_me_mask)
+-#define __sme_clr(x)		((x) & ~sme_me_mask)
+-#else
+-#define __sme_set(x)		(x)
+-#define __sme_clr(x)		(x)
+-#endif
+-
+ #endif	/* __ASSEMBLY__ */
+ 
+ #endif	/* __MEM_ENCRYPT_H__ */
+-- 
 2.20.1
