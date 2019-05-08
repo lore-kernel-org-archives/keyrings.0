@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:43 +0000
-Subject: [PATCH, RFC 23/62] keys/mktme: Introduce a Kernel Key Service for MKTME
-Message-Id: <20190508144422.13171-24-kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:43:50 +0000
+Subject: [PATCH, RFC 30/62] keys/mktme: Set up a percpu_ref_count for MKTME keys
+Message-Id: <20190508144422.13171-31-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,137 +13,108 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
-MKTME (Multi-Key Total Memory Encryption) is a technology that allows
-transparent memory encryption in upcoming Intel platforms. MKTME will
-support multiple encryption domains, each having their own key.
+The MKTME key service needs to keep usage counts on the encryption
+keys in order to know when it is safe to free a key for reuse.
 
-The MKTME key service will manage the hardware encryption keys. It
-will map Userspace Keys to Hardware KeyIDs and program the hardware
-with the user requested encryption options.
+percpu_ref_count applies well here because the key service will
+take the initial reference and typically hold that reference while
+the intermediary references are get/put. The intermediaries in this
+case are the encrypted VMA's.
 
-Here the mapping structure and associated helpers are introduced,
-as well as the key service initialization and registration.
+Align the percpu_ref_init and percpu_ref_kill with the key service
+instantiate and destroy methods respectively.
 
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- security/keys/Makefile     |  1 +
- security/keys/mktme_keys.c | 98 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 99 insertions(+)
- create mode 100644 security/keys/mktme_keys.c
+ security/keys/mktme_keys.c | 40 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 39 insertions(+), 1 deletion(-)
 
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 9cef54064f60..28799be801a9 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -30,3 +30,4 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
- obj-$(CONFIG_BIG_KEYS) += big_key.o
- obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
- obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
-+obj-$(CONFIG_X86_INTEL_MKTME) += mktme_keys.o
 diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-new file mode 100644
-index 000000000000..b5e8289f041b
---- /dev/null
+index f70533b1a7fd..496b5c1b7461 100644
+--- a/security/keys/mktme_keys.c
 +++ b/security/keys/mktme_keys.c
-@@ -0,0 +1,98 @@
-+// SPDX-License-Identifier: GPL-3.0
-+
-+/* Documentation/x86/mktme_keys.rst */
-+
-+#include <linux/init.h>
-+#include <linux/key.h>
-+#include <linux/key-type.h>
-+#include <linux/mm.h>
-+#include <keys/user-type.h>
-+
-+#include "internal.h"
-+
-+/* 1:1 Mapping between Userspace Keys (struct key) and Hardware KeyIDs */
-+struct mktme_mapping {
-+	unsigned int	mapped_keyids;
-+	struct key	*key[];
-+};
-+
-+struct mktme_mapping *mktme_map;
-+
-+static inline long mktme_map_size(void)
+@@ -8,6 +8,7 @@
+ #include <linux/key-type.h>
+ #include <linux/mm.h>
+ #include <linux/parser.h>
++#include <linux/percpu-refcount.h>
+ #include <linux/random.h>
+ #include <linux/string.h>
+ #include <asm/intel_pconfig.h>
+@@ -80,6 +81,26 @@ int mktme_keyid_from_key(struct key *key)
+ 	return 0;
+ }
+ 
++struct percpu_ref *encrypt_count;
++void mktme_percpu_ref_release(struct percpu_ref *ref)
 +{
-+	long size = 0;
++	unsigned long flags;
++	int keyid;
 +
-+	size += sizeof(*mktme_map);
-+	size += sizeof(mktme_map->key[0]) * (mktme_nr_keyids + 1);
-+	return size;
-+}
-+
-+int mktme_map_alloc(void)
-+{
-+	mktme_map = kvzalloc(mktme_map_size(), GFP_KERNEL);
-+	if (!mktme_map)
-+		return -ENOMEM;
-+	return 0;
-+}
-+
-+int mktme_reserve_keyid(struct key *key)
-+{
-+	int i;
-+
-+	if (mktme_map->mapped_keyids = mktme_nr_keyids)
-+		return 0;
-+
-+	for (i = 1; i <= mktme_nr_keyids; i++) {
-+		if (mktme_map->key[i] = 0) {
-+			mktme_map->key[i] = key;
-+			mktme_map->mapped_keyids++;
-+			return i;
-+		}
++	for (keyid = 1; keyid <= mktme_nr_keyids; keyid++) {
++		if (&encrypt_count[keyid] = ref)
++			break;
 +	}
-+	return 0;
-+}
-+
-+void mktme_release_keyid(int keyid)
-+{
-+	mktme_map->key[keyid] = 0;
-+	mktme_map->mapped_keyids--;
-+}
-+
-+int mktme_keyid_from_key(struct key *key)
-+{
-+	int i;
-+
-+	for (i = 1; i <= mktme_nr_keyids; i++) {
-+		if (mktme_map->key[i] = key)
-+			return i;
++	if (&encrypt_count[keyid] != ref) {
++		pr_debug("%s: invalid ref counter\n", __func__);
++		return;
 +	}
-+	return 0;
++	percpu_ref_exit(ref);
++	spin_lock_irqsave(&mktme_map_lock, flags);
++	mktme_release_keyid(keyid);
++	spin_unlock_irqrestore(&mktme_map_lock, flags);
 +}
 +
-+struct key_type key_type_mktme = {
-+	.name		= "mktme",
-+	.describe	= user_describe,
-+};
+ enum mktme_opt_id {
+ 	OPT_ERROR,
+ 	OPT_TYPE,
+@@ -225,7 +246,10 @@ static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
+ /* Key Service Method called when a Userspace Key is garbage collected. */
+ static void mktme_destroy_key(struct key *key)
+ {
+-	mktme_release_keyid(mktme_keyid_from_key(key));
++	int keyid = mktme_keyid_from_key(key);
 +
-+static int __init init_mktme(void)
-+{
-+	int ret;
++	mktme_map->key[keyid] = (void *)-1;
++	percpu_ref_kill(&encrypt_count[keyid]);
+ }
+ 
+ /* Key Service Method to create a new key. Payload is preparsed. */
+@@ -241,9 +265,15 @@ int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
+ 	if (!keyid)
+ 		return -ENOKEY;
+ 
++	if (percpu_ref_init(&encrypt_count[keyid], mktme_percpu_ref_release,
++			    0, GFP_KERNEL))
++		goto err_out;
 +
-+	/* Verify keys are present */
-+	if (mktme_nr_keyids < 1)
-+		return 0;
+ 	if (!mktme_program_keyid(keyid, payload))
+ 		return MKTME_PROG_SUCCESS;
+ 
++	percpu_ref_exit(&encrypt_count[keyid]);
++err_out:
+ 	spin_lock_irqsave(&mktme_lock, flags);
+ 	mktme_release_keyid(keyid);
+ 	spin_unlock_irqrestore(&mktme_lock, flags);
+@@ -447,10 +477,18 @@ static int __init init_mktme(void)
+ 	/* Initialize first programming targets */
+ 	mktme_update_pconfig_targets();
+ 
++	/* Reference counters to protect in use KeyIDs */
++	encrypt_count = kvcalloc(mktme_nr_keyids + 1, sizeof(encrypt_count[0]),
++				 GFP_KERNEL);
++	if (!encrypt_count)
++		goto free_targets;
 +
-+	/* Mapping of Userspace Keys to Hardware KeyIDs */
-+	if (mktme_map_alloc())
-+		return -ENOMEM;
-+
-+	ret = register_key_type(&key_type_mktme);
-+	if (!ret)
-+		return ret;			/* SUCCESS */
-+
-+	kvfree(mktme_map);
-+
-+	return -ENOMEM;
-+}
-+
-+late_initcall(init_mktme);
+ 	ret = register_key_type(&key_type_mktme);
+ 	if (!ret)
+ 		return ret;			/* SUCCESS */
+ 
++	kvfree(encrypt_count);
++free_targets:
+ 	free_cpumask_var(mktme_leadcpus);
+ 	bitmap_free(mktme_target_map);
+ free_cache:
 -- 
 2.20.1
