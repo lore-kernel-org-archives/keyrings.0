@@ -1,75 +1,94 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 22 May 2019 22:46:38 +0000
-Subject: [PATCH 5/6] afs: Provide an RCU-capable key lookup
-Message-Id: <155856519817.11737.3095092075887198321.stgit@warthog.procyon.org.uk>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:44:22 +0000
+Subject: [PATCH, RFC 62/62] x86/mktme: Demonstration program using the MKTME APIs
+Message-Id: <20190508144422.13171-63-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-10"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <155856516286.11737.11196637682919902718.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155856516286.11737.11196637682919902718.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-Provide an RCU-capable key lookup function.  We don't want to call
-afs_request_key() in RCU-mode pathwalk as request_key() might sleep, even if
-we don't ask it to construct anything as it might find a key that is currently
-undergoing construction.
+From: Alison Schofield <alison.schofield@intel.com>
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
+ Documentation/x86/mktme/index.rst      |  1 +
+ Documentation/x86/mktme/mktme_demo.rst | 53 ++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+)
+ create mode 100644 Documentation/x86/mktme/mktme_demo.rst
 
- fs/afs/internal.h |    1 +
- fs/afs/security.c |   27 +++++++++++++++++++++++++++
- 2 files changed, 28 insertions(+)
-
-diff --git a/fs/afs/internal.h b/fs/afs/internal.h
-index 2073c1a3ab4b..3090efcc823f 100644
---- a/fs/afs/internal.h
-+++ b/fs/afs/internal.h
-@@ -1237,6 +1237,7 @@ extern void afs_cache_permit(struct afs_vnode *, struct key *, unsigned int,
- 			     struct afs_status_cb *);
- extern void afs_zap_permits(struct rcu_head *);
- extern struct key *afs_request_key(struct afs_cell *);
-+extern struct key *afs_request_key_rcu(struct afs_cell *);
- extern int afs_check_permit(struct afs_vnode *, struct key *, afs_access_t *);
- extern int afs_permission(struct inode *, int);
- extern void __exit afs_clean_up_permit_cache(void);
-diff --git a/fs/afs/security.c b/fs/afs/security.c
-index 5d8ece98561e..a6582d6a3882 100644
---- a/fs/afs/security.c
-+++ b/fs/afs/security.c
-@@ -49,6 +49,33 @@ struct key *afs_request_key(struct afs_cell *cell)
- 	}
- }
- 
-+/*
-+ * Get a key when pathwalk is in rcuwalk mode.
-+ */
-+struct key *afs_request_key_rcu(struct afs_cell *cell)
+diff --git a/Documentation/x86/mktme/index.rst b/Documentation/x86/mktme/in=
+dex.rst
+index ca3c76adc596..3af322d13225 100644
+--- a/Documentation/x86/mktme/index.rst
++++ b/Documentation/x86/mktme/index.rst
+@@ -10,3 +10,4 @@ Multi-Key Total Memory Encryption (MKTME)
+    mktme_configuration
+    mktme_keys
+    mktme_encrypt
++   mktme_demo
+diff --git a/Documentation/x86/mktme/mktme_demo.rst b/Documentation/x86/mkt=
+me/mktme_demo.rst
+new file mode 100644
+index 000000000000..49377ad648e7
+--- /dev/null
++++ b/Documentation/x86/mktme/mktme_demo.rst
+@@ -0,0 +1,53 @@
++Demonstration Program using MKTME API's
++=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D+
++/* Compile with the keyutils library: cc -o mdemo mdemo.c -lkeyutils */
++
++#include <sys/mman.h>
++#include <sys/syscall.h>
++#include <sys/types.h>
++#include <keyutils.h>
++#include <stdio.h>
++#include <string.h>
++#include <unistd.h>
++
++#define PAGE_SIZE sysconf(_SC_PAGE_SIZE)
++#define sys_encrypt_mprotect 428
++
++void main(void)
 +{
-+	struct key *key;
++	char *options_CPU =3D "algorithm=AEs-xts-128 type=3Dcpu";
++	long size =3D PAGE_SIZE;
++        key_serial_t key;
++	void *ptra;
++	int ret;
 +
-+	_enter("{%x}", key_serial(cell->anonymous_key));
++        /* Allocate an MKTME Key */
++	key =3D add_key("mktme", "testkey", options_CPU, strlen(options_CPU),
++                      KEY_SPEC_THREAD_KEYRING);
 +
-+	_debug("key %s", cell->anonymous_key->description);
-+	key = request_key_rcu(&key_type_rxrpc, cell->anonymous_key->description);
-+	if (IS_ERR(key)) {
-+		if (PTR_ERR(key) != -ENOKEY) {
-+			_leave(" = %ld", PTR_ERR(key));
-+			return key;
-+		}
-+
-+		/* act as anonymous user */
-+		_leave(" = {%x} [anon]", key_serial(cell->anonymous_key));
-+		return cell->anonymous_key;
-+	} else {
-+		/* act as authorised user */
-+		_leave(" = {%x} [auth]", key_serial(key));
-+		return key;
++	if (key =3D -1) {
++		printf("addkey FAILED\n");
++		return;
 +	}
-+}
++        /* Map a page of ANONYMOUS memory */
++	ptra =3D mmap(NULL, size, PROT_NONE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
++	if (!ptra) {
++		printf("failed to mmap");
++		goto inval_key;
++	}
++        /* Encrypt that page of memory with the MKTME Key */
++	ret =3D syscall(sys_encrypt_mprotect, ptra, size, PROT_NONE, key);
++	if (ret)
++		printf("mprotect error [%d]\n", ret);
 +
- /*
-  * Dispose of a list of permits.
-  */
++        /* Enjoy that page of encrypted memory */
++
++        /* Free the memory */
++	ret =3D munmap(ptra, size);
++
++inval_key:
++        /* Free the Key */
++	if (keyctl(KEYCTL_INVALIDATE, key) =3D -1)
++		printf("invalidate failed on key [%d]\n", key);
++}
+--=20
+2.20.1
