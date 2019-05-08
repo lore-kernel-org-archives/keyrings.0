@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:10 +0000
-Subject: [PATCH, RFC 50/62] kvm, x86, mmu: setup MKTME keyID to spte for given PFN
-Message-Id: <20190508144422.13171-51-kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:43:44 +0000
+Subject: [PATCH, RFC 24/62] keys/mktme: Preparse the MKTME key payload
+Message-Id: <20190508144422.13171-25-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,57 +11,255 @@ In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
 Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-From: Kai Huang <kai.huang@linux.intel.com>
+From: Alison Schofield <alison.schofield@intel.com>
 
-Setup keyID to SPTE, which will be eventually programmed to shadow MMU
-or EPT table, according to page's associated keyID, so that guest is
-able to use correct keyID to access guest memory.
+It is a requirement of the Kernel Keys subsystem to provide a
+preparse method that validates payloads before key instantiate
+methods are called.
 
-Note current shadow_me_mask doesn't suit MKTME's needs, since for MKTME
-there's no fixed memory encryption mask, but can vary from keyID 1 to
-maximum keyID, therefore shadow_me_mask remains 0 for MKTME.
+Verify that userspace provides valid MKTME options and prepare
+the payload for use at key instantiate time.
 
-Signed-off-by: Kai Huang <kai.huang@linux.intel.com>
+Create a method to free the preparsed payload. The Kernel Key
+subsystem will that to clean up after the key is instantiated.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/x86/kvm/mmu.c | 18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ include/keys/mktme-type.h  |  39 +++++++++
+ security/keys/mktme_keys.c | 165 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 204 insertions(+)
+ create mode 100644 include/keys/mktme-type.h
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index d9c7b45d231f..bfee0c194161 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2899,6 +2899,22 @@ static bool kvm_is_mmio_pfn(kvm_pfn_t pfn)
- #define SET_SPTE_WRITE_PROTECTED_PT	BIT(0)
- #define SET_SPTE_NEED_REMOTE_TLB_FLUSH	BIT(1)
+diff --git a/include/keys/mktme-type.h b/include/keys/mktme-type.h
+new file mode 100644
+index 000000000000..032905b288b4
+--- /dev/null
++++ b/include/keys/mktme-type.h
+@@ -0,0 +1,39 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++
++/* Key service for Multi-KEY Total Memory Encryption */
++
++#ifndef _KEYS_MKTME_TYPE_H
++#define _KEYS_MKTME_TYPE_H
++
++#include <linux/key.h>
++
++/*
++ * The AES-XTS 128 encryption algorithm requires 128 bits for each
++ * user supplied data key and tweak key.
++ */
++#define MKTME_AES_XTS_SIZE	16	/* 16 bytes, 128 bits */
++
++enum mktme_alg {
++	MKTME_ALG_AES_XTS_128,
++};
++
++const char *const mktme_alg_names[] = {
++	[MKTME_ALG_AES_XTS_128]	= "aes-xts-128",
++};
++
++enum mktme_type {
++	MKTME_TYPE_ERROR = -1,
++	MKTME_TYPE_USER,
++	MKTME_TYPE_CPU,
++	MKTME_TYPE_NO_ENCRYPT,
++};
++
++const char *const mktme_type_names[] = {
++	[MKTME_TYPE_USER]	= "user",
++	[MKTME_TYPE_CPU]	= "cpu",
++	[MKTME_TYPE_NO_ENCRYPT]	= "no-encrypt",
++};
++
++extern struct key_type key_type_mktme;
++
++#endif /* _KEYS_MKTME_TYPE_H */
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index b5e8289f041b..92a047caa829 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -6,6 +6,10 @@
+ #include <linux/key.h>
+ #include <linux/key-type.h>
+ #include <linux/mm.h>
++#include <linux/parser.h>
++#include <linux/string.h>
++#include <asm/intel_pconfig.h>
++#include <keys/mktme-type.h>
+ #include <keys/user-type.h>
  
-+static u64 get_phys_encryption_mask(kvm_pfn_t pfn)
+ #include "internal.h"
+@@ -69,8 +73,169 @@ int mktme_keyid_from_key(struct key *key)
+ 	return 0;
+ }
+ 
++enum mktme_opt_id {
++	OPT_ERROR,
++	OPT_TYPE,
++	OPT_KEY,
++	OPT_TWEAK,
++	OPT_ALGORITHM,
++};
++
++static const match_table_t mktme_token = {
++	{OPT_TYPE, "type=%s"},
++	{OPT_KEY, "key=%s"},
++	{OPT_TWEAK, "tweak=%s"},
++	{OPT_ALGORITHM, "algorithm=%s"},
++	{OPT_ERROR, NULL}
++};
++
++struct mktme_payload {
++	u32		keyid_ctrl;	/* Command & Encryption Algorithm */
++	u8		data_key[MKTME_AES_XTS_SIZE];
++	u8		tweak_key[MKTME_AES_XTS_SIZE];
++};
++
++/* Make sure arguments are correct for the TYPE of key requested */
++static int mktme_check_options(struct mktme_payload *payload,
++			       unsigned long token_mask, enum mktme_type type)
 +{
-+#ifdef CONFIG_X86_INTEL_MKTME
-+	struct page *page;
++	if (!token_mask)
++		return -EINVAL;
 +
-+	if (!pfn_valid(pfn))
-+		return 0;
++	switch (type) {
++	case MKTME_TYPE_USER:
++		if (test_bit(OPT_ALGORITHM, &token_mask))
++			payload->keyid_ctrl |= MKTME_AES_XTS_128;
++		else
++			return -EINVAL;
 +
-+	page = pfn_to_page(pfn);
++		if ((test_bit(OPT_KEY, &token_mask)) &&
++		    (test_bit(OPT_TWEAK, &token_mask)))
++			payload->keyid_ctrl |= MKTME_KEYID_SET_KEY_DIRECT;
++		else
++			return -EINVAL;
++		break;
 +
-+	return ((u64)page_keyid(page)) << mktme_keyid_shift;
-+#else
-+	return shadow_me_mask;
-+#endif
++	case MKTME_TYPE_CPU:
++		if (test_bit(OPT_ALGORITHM, &token_mask))
++			payload->keyid_ctrl |= MKTME_AES_XTS_128;
++		else
++			return -EINVAL;
++
++		payload->keyid_ctrl |= MKTME_KEYID_SET_KEY_RANDOM;
++		break;
++
++	case MKTME_TYPE_NO_ENCRYPT:
++		payload->keyid_ctrl |= MKTME_KEYID_NO_ENCRYPT;
++		break;
++
++	default:
++		return -EINVAL;
++	}
++	return 0;
 +}
 +
- static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		    unsigned pte_access, int level,
- 		    gfn_t gfn, kvm_pfn_t pfn, bool speculative,
-@@ -2945,7 +2961,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		pte_access &= ~ACC_WRITE_MASK;
- 
- 	if (!kvm_is_mmio_pfn(pfn))
--		spte |= shadow_me_mask;
-+		spte |= get_phys_encryption_mask(pfn);
- 
- 	spte |= (u64)pfn << PAGE_SHIFT;
++/* Parse the options and store the key programming data in the payload. */
++static int mktme_get_options(char *options, struct mktme_payload *payload)
++{
++	enum mktme_type type = MKTME_TYPE_ERROR;
++	substring_t args[MAX_OPT_ARGS];
++	unsigned long token_mask = 0;
++	char *p = options;
++	int ret, token;
++
++	while ((p = strsep(&options, " \t"))) {
++		if (*p = '\0' || *p = ' ' || *p = '\t')
++			continue;
++		token = match_token(p, mktme_token, args);
++		if (token = OPT_ERROR)
++			return -EINVAL;
++		if (test_and_set_bit(token, &token_mask))
++			return -EINVAL;
++
++		switch (token) {
++		case OPT_KEY:
++			ret = hex2bin(payload->data_key, args[0].from,
++				      MKTME_AES_XTS_SIZE);
++			if (ret < 0)
++				return -EINVAL;
++			break;
++
++		case OPT_TWEAK:
++			ret = hex2bin(payload->tweak_key, args[0].from,
++				      MKTME_AES_XTS_SIZE);
++			if (ret < 0)
++				return -EINVAL;
++			break;
++
++		case OPT_TYPE:
++			type = match_string(mktme_type_names,
++					    ARRAY_SIZE(mktme_type_names),
++					    args[0].from);
++			if (type < 0)
++				return -EINVAL;
++			break;
++
++		case OPT_ALGORITHM:
++			ret = match_string(mktme_alg_names,
++					   ARRAY_SIZE(mktme_alg_names),
++					   args[0].from);
++			if (ret < 0)
++				return -EINVAL;
++			break;
++
++		default:
++			return -EINVAL;
++		}
++	}
++	return mktme_check_options(payload, token_mask, type);
++}
++
++void mktme_free_preparsed_payload(struct key_preparsed_payload *prep)
++{
++	kzfree(prep->payload.data[0]);
++}
++
++/*
++ * Key Service Method to preparse a payload before a key is created.
++ * Check permissions and the options. Load the proposed key field
++ * data into the payload for use by the instantiate method.
++ */
++int mktme_preparse_payload(struct key_preparsed_payload *prep)
++{
++	struct mktme_payload *mktme_payload;
++	size_t datalen = prep->datalen;
++	char *options;
++	int ret;
++
++	if (datalen <= 0 || datalen > 1024 || !prep->data)
++		return -EINVAL;
++
++	options = kmemdup_nul(prep->data, datalen, GFP_KERNEL);
++	if (!options)
++		return -ENOMEM;
++
++	mktme_payload = kzalloc(sizeof(*mktme_payload), GFP_KERNEL);
++	if (!mktme_payload) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	ret = mktme_get_options(options, mktme_payload);
++	if (ret < 0) {
++		kzfree(mktme_payload);
++		goto out;
++	}
++	prep->quotalen = sizeof(mktme_payload);
++	prep->payload.data[0] = mktme_payload;
++out:
++	kzfree(options);
++	return ret;
++}
++
+ struct key_type key_type_mktme = {
+ 	.name		= "mktme",
++	.preparse	= mktme_preparse_payload,
++	.free_preparse	= mktme_free_preparsed_payload,
+ 	.describe	= user_describe,
+ };
  
 -- 
 2.20.1
