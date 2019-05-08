@@ -1,55 +1,49 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 22 May 2019 22:28:03 +0000
-Subject: [PATCH 0/7] keys: Miscellany
-Message-Id: <155856408314.10428.17035328117829912815.stgit@warthog.procyon.org.uk>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:43:51 +0000
+Subject: [PATCH, RFC 31/62] keys/mktme: Require CAP_SYS_RESOURCE capability for MKTME keys
+Message-Id: <20190508144422.13171-32-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
+From: Alison Schofield <alison.schofield@intel.com>
 
-Here are some miscellaneous keyrings fixes and improvements intended for
-the next merge window:
+The MKTME key type uses capabilities to restrict the allocation
+of keys to privileged users. CAP_SYS_RESOURCE is required, but
+the broader capability of CAP_SYS_ADMIN is accepted.
 
- (1) Fix a bunch of warnings from sparse, including missing RCU bits and
-     kdoc-function argument mismatches
-
- (2) Implement a keyctl to allow a key to be moved from one keyring to
-     another, with the option of prohibiting key replacement in the
-     destination keyring.
-
- (3) Grant Link permission to possessors of request_key_auth tokens so that
-     upcall servicing daemons can more easily arrange things such that only
-     the necessary auth key is passed to the actual service program, and
-     not all the auth keys a daemon might possesss.
-
-The patches can be found on the following branch:
-
-	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-misc
-
-David
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
-David Howells (7):
-      keys: sparse: Fix key_fs[ug]id_changed()
-      keys: sparse: Fix incorrect RCU accesses
-      keys: sparse: Fix kdoc mismatches
-      keys: Break bits out of key_unlink()
-      keys: Make __key_link_begin() handle lockdep nesting
-      keys: Add a keyctl to move a key between keyrings
-      keys: Grant Link permission to possessers of request_key auth keys
+ security/keys/mktme_keys.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-
- include/linux/key.h              |   13 ++-
- include/uapi/linux/keyctl.h      |    3 +
- kernel/cred.c                    |    4 -
- security/keys/compat.c           |    3 +
- security/keys/internal.h         |    3 -
- security/keys/key.c              |    6 +
- security/keys/keyctl.c           |   58 ++++++++++++
- security/keys/keyring.c          |  178 ++++++++++++++++++++++++++++++++++----
- security/keys/process_keys.c     |   22 ++---
- security/keys/request_key.c      |    4 -
- security/keys/request_key_auth.c |    4 -
- 11 files changed, 250 insertions(+), 48 deletions(-)
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index 496b5c1b7461..4b2d3dc1843a 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -2,6 +2,7 @@
+ 
+ /* Documentation/x86/mktme_keys.rst */
+ 
++#include <linux/cred.h>
+ #include <linux/cpu.h>
+ #include <linux/init.h>
+ #include <linux/key.h>
+@@ -393,6 +394,9 @@ int mktme_preparse_payload(struct key_preparsed_payload *prep)
+ 	char *options;
+ 	int ret;
+ 
++	if (!capable(CAP_SYS_RESOURCE) && !capable(CAP_SYS_ADMIN))
++		return -EACCES;
++
+ 	if (datalen <= 0 || datalen > 1024 || !prep->data)
+ 		return -EINVAL;
+ 
+-- 
+2.20.1
