@@ -1,50 +1,114 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Tue, 28 May 2019 14:09:20 +0000
-Subject: Re: [PATCH v10 12/12] ima: Store the measurement again when appraising a modsig
-Message-Id: <1559052560.4090.14.camel@linux.ibm.com>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:43:57 +0000
+Subject: [PATCH, RFC 37/62] keys/mktme: Do not allow key creation in unsafe topologies
+Message-Id: <20190508144422.13171-38-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418035120.2354-1-bauerman@linux.ibm.com>
-         <20190418035120.2354-13-bauerman@linux.ibm.com>
-In-Reply-To: <20190418035120.2354-13-bauerman@linux.ibm.com>
-To: Thiago Jung Bauermann <bauerman@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-SGkgVGhpYWdvLAoKT24gVGh1LCAyMDE5LTA0LTE4IGF0IDAwOjUxIC0wMzAwLCBUaGlhZ28gSnVu
-ZyBCYXVlcm1hbm4gd3JvdGU6Cj4gSWYgdGhlIElNQSB0ZW1wbGF0ZSBjb250YWlucyB0aGUgIm1v
-ZHNpZyIgb3IgImQtbW9kc2lnIiBmaWVsZCwgdGhlbiB0aGUKPiBtb2RzaWcgc2hvdWxkIGJlIGFk
-ZGVkIHRvIHRoZSBtZWFzdXJlbWVudCBsaXN0IHdoZW4gdGhlIGZpbGUgaXMgYXBwcmFpc2VkLgo+
-IAo+IEFuZCB0aGF0IGlzIHdoYXQgbm9ybWFsbHkgaGFwcGVucywgYnV0IGlmIGEgbWVhc3VyZW1l
-bnQgcnVsZSBjYXVzZWQgYSBmaWxlCj4gY29udGFpbmluZyBhIG1vZHNpZyB0byBiZSBtZWFzdXJl
-ZCBiZWZvcmUgYSBkaWZmZXJlbnQgcnVsZSBjYXVzZXMgaXQgdG8gYmUKPiBhcHByYWlzZWQsIHRo
-ZSByZXN1bHRpbmcgbWVhc3VyZW1lbnQgZW50cnkgd2lsbCBub3QgY29udGFpbiB0aGUgbW9kc2ln
-Cj4gYmVjYXVzZSBpdCBpcyBvbmx5IGZldGNoZWQgZHVyaW5nIGFwcHJhaXNhbC4gV2hlbiB0aGUg
-YXBwcmFpc2FsIHJ1bGUKPiB0cmlnZ2VycywgaXQgd29uJ3Qgc3RvcmUgYSBuZXcgbWVhc3VyZW1l
-bnQgY29udGFpbmluZyB0aGUgbW9kc2lnIGJlY2F1c2UKPiB0aGUgZmlsZSB3YXMgYWxyZWFkeSBt
-ZWFzdXJlZC4KPiAKPiBXZSBuZWVkIHRvIGRldGVjdCB0aGF0IHNpdHVhdGlvbiBhbmQgc3RvcmUg
-YW4gYWRkaXRpb25hbCBtZWFzdXJlbWVudCB3aXRoCj4gdGhlIG1vZHNpZy4gVGhpcyBpcyBkb25l
-IGJ5IGFkZGluZyBhbiBJTUFfTUVBU1VSRSBhY3Rpb24gZmxhZyBpZiB3ZSByZWFkIGEKPiBtb2Rz
-aWcgYW5kIHRoZSBJTUEgdGVtcGxhdGUgY29udGFpbnMgYSBtb2RzaWcgZmllbGQuCgpXaXRoIHRo
-ZSBuZXcgcGVyIHBvbGljeSBydWxlICJ0ZW1wbGF0ZSIgc3VwcG9ydCBiZWluZyBhZGRlZCwgdGhp
-cwpwYXRjaCBuZWVkcyB0byBiZSBtb2RpZmllZCBzbyB0aGF0IHRoZSBwZXIgcG9saWN5ICJ0ZW1w
-bGF0ZSIgZm9ybWF0IGlzCmNoZWNrZWQuIMKgaW1hX3RlbXBsYXRlX2hhc19tb2RzaWcoKSBzaG91
-bGQgYmUgY2FsbGVkIHdpdGggdGhlCnRlbXBsYXRlX2Rlc2MgYmVpbmcgdXNlZC4KCnRoYW5rcywK
-Ck1pbWkKCgo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9tYWluLmMg
-Yi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9tYWluLmMKPiBpbmRleCA4ZTY0NzU4NTQzNTEu
-LmY5MWVkNDE4OWY5OCAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9t
-YWluLmMKPiArKysgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9tYWluLmMKPiBAQCAtMjgy
-LDkgKzI4MiwxNyBAQCBzdGF0aWMgaW50IHByb2Nlc3NfbWVhc3VyZW1lbnQoc3RydWN0IGZpbGUg
-KmZpbGUsIGNvbnN0IHN0cnVjdCBjcmVkICpjcmVkLAo+ICAJCS8qIHJlYWQgJ3NlY3VyaXR5Lmlt
-YScgKi8KPiAgCQl4YXR0cl9sZW4gPSBpbWFfcmVhZF94YXR0cihmaWxlX2RlbnRyeShmaWxlKSwg
-JnhhdHRyX3ZhbHVlKTsKPiAgCj4gLQkJLyogUmVhZCB0aGUgYXBwZW5kZWQgbW9kc2lnIGlmIGFs
-bG93ZWQgYnkgdGhlIHBvbGljeS4gKi8KPiAtCQlpZiAoaWludC0+ZmxhZ3MgJiBJTUFfTU9EU0lH
-X0FMTE9XRUQpCj4gLQkJCWltYV9yZWFkX21vZHNpZyhmdW5jLCBidWYsIHNpemUsICZtb2RzaWcp
-Owo+ICsJCS8qCj4gKwkJICogUmVhZCB0aGUgYXBwZW5kZWQgbW9kc2lnLCBpZiBhbGxvd2VkIGJ5
-IHRoZSBwb2xpY3ksIGFuZCBhbGxvdwo+ICsJCSAqIGFuIGFkZGl0aW9uYWwgbWVhc3VyZW1lbnQg
-bGlzdCBlbnRyeSwgaWYgbmVlZGVkLCBiYXNlZCBvbiB0aGUKPiArCQkgKiB0ZW1wbGF0ZSBmb3Jt
-YXQuCj4gKwkJICovCj4gKwkJaWYgKGlpbnQtPmZsYWdzICYgSU1BX01PRFNJR19BTExPV0VEKSB7
-Cj4gKwkJCXJjID0gaW1hX3JlYWRfbW9kc2lnKGZ1bmMsIGJ1Ziwgc2l6ZSwgJm1vZHNpZyk7Cj4g
-Kwo+ICsJCQlpZiAoIXJjICYmIGltYV90ZW1wbGF0ZV9oYXNfbW9kc2lnKCkpCj4gKwkJCQlhY3Rp
-b24gfD0gSU1BX01FQVNVUkU7Cj4gKwkJfQo+IAo=
+From: Alison Schofield <alison.schofield@intel.com>
+
+MKTME feature depends upon at least one online CPU capable of
+programming each memory controller in the platform.
+
+An unsafe topology for MKTME is a memory only package or a package
+with no online CPUs. Key creation with unsafe topologies will fail
+with EINVAL and a warning will be logged one time.
+For example:
+	[ ] MKTME: no online CPU in proximity domain
+	[ ] MKTME: topology does not support key creation
+
+These are recoverable errors. CPUs may be brought online that are
+capable of programming a previously unprogrammable memory controller,
+or an unprogrammable memory controller may be removed from the
+platform.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ security/keys/mktme_keys.c | 39 ++++++++++++++++++++++++++++++--------
+ 1 file changed, 31 insertions(+), 8 deletions(-)
+
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index f5fc6cccc81b..734e1d28eb24 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -26,6 +26,7 @@ cpumask_var_t mktme_leadcpus;		/* One lead CPU per pconfig target */
+ static bool mktme_storekeys;		/* True if key payloads may be stored */
+ unsigned long *mktme_bitmap_user_type;	/* Shows presence of user type keys */
+ struct mktme_payload *mktme_key_store;	/* Payload storage if allowed */
++bool mktme_allow_keys;			/* True when topology supports keys */
+ 
+ /* 1:1 Mapping between Userspace Keys (struct key) and Hardware KeyIDs */
+ struct mktme_mapping {
+@@ -278,33 +279,55 @@ static void mktme_destroy_key(struct key *key)
+ 	percpu_ref_kill(&encrypt_count[keyid]);
+ }
+ 
++static void mktme_update_pconfig_targets(void);
+ /* Key Service Method to create a new key. Payload is preparsed. */
+ int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
+ {
+ 	struct mktme_payload *payload = prep->payload.data[0];
+ 	unsigned long flags;
++	int ret = -ENOKEY;
+ 	int keyid;
+ 
+ 	spin_lock_irqsave(&mktme_lock, flags);
++
++	/* Topology supports key creation */
++	if (mktme_allow_keys)
++		goto get_key;
++
++	/* Topology unknown, check it. */
++	if (!mktme_hmat_evaluate()) {
++		ret = -EINVAL;
++		goto out_unlock;
++	}
++
++	/* Keys are now allowed. Update the programming targets. */
++	mktme_update_pconfig_targets();
++	mktme_allow_keys = true;
++
++get_key:
+ 	keyid = mktme_reserve_keyid(key);
+ 	spin_unlock_irqrestore(&mktme_lock, flags);
+ 	if (!keyid)
+-		return -ENOKEY;
++		goto out;
+ 
+ 	if (percpu_ref_init(&encrypt_count[keyid], mktme_percpu_ref_release,
+ 			    0, GFP_KERNEL))
+-		goto err_out;
++		goto out_free_key;
+ 
+-	if (!mktme_program_keyid(keyid, payload)) {
+-		mktme_store_payload(keyid, payload);
+-		return MKTME_PROG_SUCCESS;
+-	}
++	ret = mktme_program_keyid(keyid, payload);
++	if (ret = MKTME_PROG_SUCCESS)
++		goto out;
++
++	/* Key programming failed */
+ 	percpu_ref_exit(&encrypt_count[keyid]);
+-err_out:
++
++out_free_key:
+ 	spin_lock_irqsave(&mktme_lock, flags);
+ 	mktme_release_keyid(keyid);
++out_unlock:
+ 	spin_unlock_irqrestore(&mktme_lock, flags);
+-	return -ENOKEY;
++out:
++	return ret;
+ }
+ 
+ /* Make sure arguments are correct for the TYPE of key requested */
+-- 
+2.20.1
