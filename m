@@ -1,208 +1,97 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 23 May 2019 15:18:35 +0000
-Subject: [PATCH 6/9] keys: Include target namespace in match criteria [ver #3]
-Message-Id: <155862471501.15244.6788201725187197845.stgit@warthog.procyon.org.uk>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:44:00 +0000
+Subject: [PATCH, RFC 40/62] keys/mktme: Program new PCONFIG targets with MKTME keys
+Message-Id: <20190508144422.13171-41-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155862466770.15244.16038372267332150004.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155862466770.15244.16038372267332150004.stgit@warthog.procyon.org.uk>
-To: ebiederm@xmission.com
-Cc: dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-Currently a key has a standard matching criteria of { type, description } and
-this is used to only allow keys with unique criteria in a keyring.  This
-means, however, that you cannot have keys with the same type and description
-but a different target namespace in the same keyring.
+From: Alison Schofield <alison.schofield@intel.com>
 
-This is a potential problem for a containerised environment where, say, a
-container is made up of some parts of its mount space involving netfs
-superblocks from two different network namespaces.
+When a new PCONFIG target is added to an MKTME platform, its
+key table needs to be programmed to match the key tables across
+the entire platform. This type of newly added PCONFIG target
+may appear during a memory hotplug event.
 
-This is also a problem for shared system management keyrings such as the DNS
-records keyring or the NFS idmapper keyring that might contain keys from
-different network namespaces.
+This key programming path will differ from the normal key
+programming path in that it will only program a single PCONFIG
+target, AND, it will only do that programming if allowed.
 
-Fix this by including a namespace component in a key's matching criteria.
-Keyring types are marked to indicate which, if any, namespace is relevant to
-keys of that type, and that namespace is set when the key is created from the
-current task's namespace set.
+Allowed means that either user type keys are stored, or, no
+user type keys are currently programmed.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+So, after checking if programming is allowable, this helper
+function will program the one new PCONFIG target, with all
+the currently programmed keys.
+
+This will be used in MKTME's memory notifier callback supporting
+MEM_GOING_ONLINE events.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
+ security/keys/mktme_keys.c | 44 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
 
- include/linux/key.h        |   10 ++++++++++
- security/keys/gc.c         |    2 +-
- security/keys/key.c        |    1 +
- security/keys/keyring.c    |   36 ++++++++++++++++++++++++++++++++++--
- security/keys/persistent.c |    1 +
- 5 files changed, 47 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index ae1177302d70..abc68555bac3 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -82,9 +82,16 @@ struct cred;
- 
- struct key_type;
- struct key_owner;
-+struct key_tag;
- struct keyring_list;
- struct keyring_name;
- 
-+struct key_tag {
-+	struct rcu_head		rcu;
-+	refcount_t		usage;
-+	bool			removed;	/* T when subject removed */
-+};
-+
- struct keyring_index_key {
- 	/* [!] If this structure is altered, the union in struct key must change too! */
- 	unsigned long		hash;			/* Hash value */
-@@ -101,6 +108,7 @@ struct keyring_index_key {
- 		unsigned long x;
- 	};
- 	struct key_type		*type;
-+	struct key_tag		*domain_tag;	/* Domain of operation */
- 	const char		*description;
- };
- 
-@@ -218,6 +226,7 @@ struct key {
- 			unsigned long	hash;
- 			unsigned long	len_desc;
- 			struct key_type	*type;		/* type of key */
-+			struct key_tag	*domain_tag;	/* Domain of operation */
- 			char		*description;
- 		};
- 	};
-@@ -268,6 +277,7 @@ extern struct key *key_alloc(struct key_type *type,
- extern void key_revoke(struct key *key);
- extern void key_invalidate(struct key *key);
- extern void key_put(struct key *key);
-+extern bool key_put_tag(struct key_tag *tag);
- 
- static inline struct key *__key_get(struct key *key)
- {
-diff --git a/security/keys/gc.c b/security/keys/gc.c
-index 634e96b380e8..83d279fb7793 100644
---- a/security/keys/gc.c
-+++ b/security/keys/gc.c
-@@ -154,7 +154,7 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
- 			atomic_dec(&key->user->nikeys);
- 
- 		key_user_put(key->user);
--
-+		key_put_tag(key->domain_tag);
- 		kfree(key->description);
- 
- 		memzero_explicit(key, sizeof(*key));
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 0741024bafe6..43bb06f39611 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -317,6 +317,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 		goto security_error;
- 
- 	/* publish the key by giving it a serial number */
-+	refcount_inc(&key->domain_tag->usage);
- 	atomic_inc(&user->nkeys);
- 	key_alloc_serial(key);
- 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 2468b0861989..7316d1ab382b 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -175,6 +175,9 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
- 	type = (unsigned long)index_key->type;
- 	acc = mult_64x32_and_fold(type, desc_len + 13);
- 	acc = mult_64x32_and_fold(acc, 9207);
-+	piece = (unsigned long)index_key->domain_tag;
-+	acc = mult_64x32_and_fold(acc, piece);
-+	acc = mult_64x32_and_fold(acc, 9207);
- 
- 	for (;;) {
- 		n = desc_len;
-@@ -208,16 +211,36 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
- 
- /*
-  * Finalise an index key to include a part of the description actually in the
-- * index key and to add in the hash too.
-+ * index key, to set the domain tag and to calculate the hash.
-  */
- void key_set_index_key(struct keyring_index_key *index_key)
- {
-+	static struct key_tag default_domain_tag = { .usage = REFCOUNT_INIT(1), };
- 	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
-+
- 	memcpy(index_key->desc, index_key->description, n);
- 
-+	index_key->domain_tag = &default_domain_tag;
- 	hash_key_type_and_desc(index_key);
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index 2c975c48fe44..489dddb8c623 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -582,6 +582,50 @@ static int mktme_get_new_pconfig_target(void)
+ 	return new_target;
  }
  
-+/**
-+ * key_put_tag - Release a ref on a tag.
-+ * @tag: The tag to release.
-+ *
-+ * This releases a reference the given tag and returns true if that ref was the
-+ * last one.
-+ */
-+bool key_put_tag(struct key_tag *tag)
++static int mktme_program_new_pconfig_target(int new_pkg)
 +{
-+	if (refcount_dec_and_test(&tag->usage)) {
-+		kfree_rcu(tag, rcu);
-+		return true;
-+	}
++	struct mktme_payload *payload;
++	int cpu, keyid, ret;
 +
-+	return false;
++	/*
++	 * Only program new target when user type keys are stored or,
++	 * no user type keys are currently programmed.
++	 */
++	if (!mktme_storekeys &&
++	    (bitmap_weight(mktme_bitmap_user_type, mktme_nr_keyids)))
++		return -EPERM;
++
++	/* Set mktme_leadcpus to only include new target */
++	cpumask_clear(mktme_leadcpus);
++	for_each_online_cpu(cpu) {
++		if (topology_physical_package_id(cpu) = new_pkg) {
++			__cpumask_set_cpu(cpu, mktme_leadcpus);
++			break;
++		}
++	}
++	/* Program the stored keys into the new key table */
++	for (keyid = 1; keyid <= mktme_nr_keyids; keyid++) {
++		/*
++		 * When a KeyID slot is not in use, the corresponding key
++		 * pointer is 0. '-1' is an intermediate state where the
++		 * key is on it's way out, but not gone yet. Program '-1's.
++		 */
++		if (mktme_map->key[keyid] = 0)
++			continue;
++
++		payload = &mktme_key_store[keyid];
++		ret = mktme_program_keyid(keyid, payload);
++		if (ret != MKTME_PROG_SUCCESS) {
++			/* Quit on first failure to program key table */
++			pr_debug("mktme: %s\n", mktme_error[ret].msg);
++			ret = -ENOKEY;
++			break;
++		}
++	}
++	mktme_update_pconfig_targets();		/* Restore mktme_leadcpus */
++	return ret;
 +}
 +
- /*
-  * Build the next index key chunk.
-  *
-@@ -238,8 +261,10 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
- 		return index_key->x;
- 	case 2:
- 		return (unsigned long)index_key->type;
-+	case 3:
-+		return (unsigned long)index_key->domain_tag;
- 	default:
--		level -= 3;
-+		level -= 4;
- 		if (desc_len <= sizeof(index_key->desc))
- 			return 0;
- 
-@@ -268,6 +293,7 @@ static bool keyring_compare_object(const void *object, const void *data)
- 	const struct key *key = keyring_ptr_to_key(object);
- 
- 	return key->index_key.type = index_key->type &&
-+		key->index_key.domain_tag = index_key->domain_tag &&
- 		key->index_key.desc_len = index_key->desc_len &&
- 		memcmp(key->index_key.description, index_key->description,
- 		       index_key->desc_len) = 0;
-@@ -309,6 +335,12 @@ static int keyring_diff_objects(const void *object, const void *data)
- 		goto differ;
- 	level += sizeof(unsigned long);
- 
-+	seg_a = (unsigned long)a->domain_tag;
-+	seg_b = (unsigned long)b->domain_tag;
-+	if ((seg_a ^ seg_b) != 0)
-+		goto differ;
-+	level += sizeof(unsigned long);
-+
- 	i = sizeof(a->desc);
- 	if (a->desc_len <= i)
- 		goto same;
-diff --git a/security/keys/persistent.c b/security/keys/persistent.c
-index 90303fe4a394..9944d855a28d 100644
---- a/security/keys/persistent.c
-+++ b/security/keys/persistent.c
-@@ -84,6 +84,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
- 	long ret;
- 
- 	/* Look in the register if it exists */
-+	memset(&index_key, 0, sizeof(index_key));
- 	index_key.type = &key_type_keyring;
- 	index_key.description = buf;
- 	index_key.desc_len = sprintf(buf, "_persistent.%u", from_kuid(ns, uid));
+ static int __init init_mktme(void)
+ {
+ 	int ret, cpuhp;
+-- 
+2.20.1
