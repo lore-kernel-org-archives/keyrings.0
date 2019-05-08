@@ -1,95 +1,65 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 20 May 2019 17:25:51 +0000
-Subject: [PATCH v6 15/16] ubifs: wire up new fscrypt ioctls
-Message-Id: <20190520172552.217253-16-ebiggers@kernel.org>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Wed, 08 May 2019 14:43:47 +0000
+Subject: [PATCH, RFC 27/62] keys/mktme: Strengthen the entropy of CPU generated MKTME keys
+Message-Id: <20190508144422.13171-28-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190520172552.217253-1-ebiggers@kernel.org>
-In-Reply-To: <20190520172552.217253-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-From: Eric Biggers <ebiggers@google.com>
+From: Alison Schofield <alison.schofield@intel.com>
 
-Wire up the new ioctls for adding and removing fscrypt keys to/from the
-filesystem, and the new ioctl for retrieving v2 encryption policies.
+If users request CPU generated keys, mix additional entropy bits
+from the kernel into the key programming fields used by the
+hardware. This additional entropy may compensate for weak user
+supplied, or CPU generated, entropy.
 
-FS_IOC_REMOVE_ENCRYPTION_KEY also required making UBIFS use
-fscrypt_drop_inode().
-
-For more details see Documentation/filesystems/fscrypt.rst and the
-fscrypt patches that added the implementation of these ioctls.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/ubifs/ioctl.c | 16 ++++++++++++++++
- fs/ubifs/super.c | 11 +++++++++++
- 2 files changed, 27 insertions(+)
+ security/keys/mktme_keys.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ubifs/ioctl.c b/fs/ubifs/ioctl.c
-index 6b05b3ec500e1..b2a67618bef91 100644
---- a/fs/ubifs/ioctl.c
-+++ b/fs/ubifs/ioctl.c
-@@ -204,6 +204,18 @@ long ubifs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case FS_IOC_GET_ENCRYPTION_POLICY:
- 		return fscrypt_ioctl_get_policy(file, (void __user *)arg);
- 
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		return fscrypt_ioctl_get_policy_ex(file, (void __user *)arg);
-+
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		return fscrypt_ioctl_add_key(file, (void __user *)arg);
-+
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		return fscrypt_ioctl_remove_key(file, (const void __user *)arg);
-+
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		return fscrypt_ioctl_get_key_status(file, (void __user *)arg);
-+
- 	default:
- 		return -ENOTTY;
- 	}
-@@ -221,6 +233,10 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		break;
- 	case FS_IOC_SET_ENCRYPTION_POLICY:
- 	case FS_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 		break;
- 	default:
- 		return -ENOIOCTLCMD;
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 04b8ecfd34701..ae026a7bb1a62 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -330,6 +330,16 @@ static int ubifs_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	return err;
- }
- 
-+static int ubifs_drop_inode(struct inode *inode)
-+{
-+	int drop = generic_drop_inode(inode);
-+
-+	if (!drop)
-+		drop = fscrypt_drop_inode(inode);
-+
-+	return drop;
-+}
-+
- static void ubifs_evict_inode(struct inode *inode)
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index a7ca32865a1c..9fdf482ea3e6 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -7,6 +7,7 @@
+ #include <linux/key-type.h>
+ #include <linux/mm.h>
+ #include <linux/parser.h>
++#include <linux/random.h>
+ #include <linux/string.h>
+ #include <asm/intel_pconfig.h>
+ #include <keys/mktme-type.h>
+@@ -102,7 +103,8 @@ struct mktme_payload {
+ static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
  {
- 	int err;
-@@ -1980,6 +1990,7 @@ const struct super_operations ubifs_super_operations = {
- 	.free_inode    = ubifs_free_inode,
- 	.put_super     = ubifs_put_super,
- 	.write_inode   = ubifs_write_inode,
-+	.drop_inode    = ubifs_drop_inode,
- 	.evict_inode   = ubifs_evict_inode,
- 	.statfs        = ubifs_statfs,
- 	.dirty_inode   = ubifs_dirty_inode,
+ 	struct mktme_key_program *kprog = NULL;
+-	int ret;
++	u8 kern_entropy[MKTME_AES_XTS_SIZE];
++	int ret, i;
+ 
+ 	kprog = kmem_cache_zalloc(mktme_prog_cache, GFP_ATOMIC);
+ 	if (!kprog)
+@@ -114,6 +116,14 @@ static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
+ 	memcpy(kprog->key_field_1, payload->data_key, MKTME_AES_XTS_SIZE);
+ 	memcpy(kprog->key_field_2, payload->tweak_key, MKTME_AES_XTS_SIZE);
+ 
++	/* Strengthen the entropy fields for CPU generated keys */
++	if ((payload->keyid_ctrl & 0xff) = MKTME_KEYID_SET_KEY_RANDOM) {
++		get_random_bytes(&kern_entropy, sizeof(kern_entropy));
++		for (i = 0; i < (MKTME_AES_XTS_SIZE); i++) {
++			kprog->key_field_1[i] ^= kern_entropy[i];
++			kprog->key_field_2[i] ^= kern_entropy[i];
++		}
++	}
+ 	ret = MKTME_PROG_SUCCESS;	/* Future programming call */
+ 	kmem_cache_free(mktme_prog_cache, kprog);
+ 	return ret;
 -- 
-2.21.0.1020.gf2820cf01a-goog
+2.20.1
