@@ -1,49 +1,60 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:51 +0000
-Subject: [PATCH, RFC 31/62] keys/mktme: Require CAP_SYS_RESOURCE capability for MKTME keys
-Message-Id: <20190508144422.13171-32-kirill.shutemov@linux.intel.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 09 May 2019 15:46:20 +0000
+Subject: Re: [PATCH v10 06/12] ima: Use designated initializers for struct ima_event_data
+Message-Id: <1557416780.10635.66.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190418035120.2354-1-bauerman@linux.ibm.com>
+         <20190418035120.2354-7-bauerman@linux.ibm.com>
+In-Reply-To: <20190418035120.2354-7-bauerman@linux.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.ibm.com>, linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-From: Alison Schofield <alison.schofield@intel.com>
-
-The MKTME key type uses capabilities to restrict the allocation
-of keys to privileged users. CAP_SYS_RESOURCE is required, but
-the broader capability of CAP_SYS_ADMIN is accepted.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- security/keys/mktme_keys.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 496b5c1b7461..4b2d3dc1843a 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -2,6 +2,7 @@
- 
- /* Documentation/x86/mktme_keys.rst */
- 
-+#include <linux/cred.h>
- #include <linux/cpu.h>
- #include <linux/init.h>
- #include <linux/key.h>
-@@ -393,6 +394,9 @@ int mktme_preparse_payload(struct key_preparsed_payload *prep)
- 	char *options;
- 	int ret;
- 
-+	if (!capable(CAP_SYS_RESOURCE) && !capable(CAP_SYS_ADMIN))
-+		return -EACCES;
-+
- 	if (datalen <= 0 || datalen > 1024 || !prep->data)
- 		return -EINVAL;
- 
--- 
-2.20.1
+T24gVGh1LCAyMDE5LTA0LTE4IGF0IDAwOjUxIC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
+d3JvdGU6Cj4gRGVzaWduYXRlZCBpbml0aWFsaXplcnMgYWxsb3cgc3BlY2lmeWluZyBvbmx5IHRo
+ZSBtZW1iZXJzIG9mIHRoZSBzdHJ1Y3QKPiB0aGF0IG5lZWQgaW5pdGlhbGl6YXRpb24uIE5vbi1t
+ZW50aW9uZWQgbWVtYmVycyBhcmUgaW5pdGlhbGl6ZWQgdG8gemVyby4KPiAKPiBUaGlzIG1ha2Vz
+IHRoZSBjb2RlIGEgYml0IGNsZWFyZXIgKHBhcnRpY3VsYXJseSBpbiBpbWFfYWRkX2Jvb3RfYWdn
+cmVnYXRlKCkKPiBhbmQgYWxzbyBhbGxvd3MgYWRkaW5nIGEgbmV3IG1lbWJlciB0byB0aGUgc3Ry
+dWN0IHdpdGhvdXQgaGF2aW5nIHRvIHVwZGF0ZQo+IGFsbCBzdHJ1Y3QgaW5pdGlhbGl6YXRpb25z
+Lgo+IAo+IFNpZ25lZC1vZmYtYnk6IFRoaWFnbyBKdW5nIEJhdWVybWFubiA8YmF1ZXJtYW5AbGlu
+dXguaWJtLmNvbT4KClJldmlld2VkLWJ5OiDCoE1pbWkgWm9oYXIgPHpvaGFyQGxpbnV4LmlibS5j
+b20+Cgo+IC0tLQo+ICBzZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcGkuYyAgfCAxMSArKysr
+KysrLS0tLQo+ICBzZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9pbml0LmMgfCAgNCArKy0tCj4g
+IDIgZmlsZXMgY2hhbmdlZCwgOSBpbnNlcnRpb25zKCspLCA2IGRlbGV0aW9ucygtKQo+IAo+IGRp
+ZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcGkuYyBiL3NlY3VyaXR5L2lu
+dGVncml0eS9pbWEvaW1hX2FwaS5jCj4gaW5kZXggYzc1MDVmYjEyMmQ0Li4wNjM5ZDA2MzFmMmMg
+MTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXBpLmMKPiArKysgYi9z
+ZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hcGkuYwo+IEBAIC0xMzMsOCArMTMzLDkgQEAgdm9p
+ZCBpbWFfYWRkX3Zpb2xhdGlvbihzdHJ1Y3QgZmlsZSAqZmlsZSwgY29uc3QgdW5zaWduZWQgY2hh
+ciAqZmlsZW5hbWUsCj4gIHsKPiAgCXN0cnVjdCBpbWFfdGVtcGxhdGVfZW50cnkgKmVudHJ5Owo+
+ICAJc3RydWN0IGlub2RlICppbm9kZSA9IGZpbGVfaW5vZGUoZmlsZSk7Cj4gLQlzdHJ1Y3QgaW1h
+X2V2ZW50X2RhdGEgZXZlbnRfZGF0YSA9IHtpaW50LCBmaWxlLCBmaWxlbmFtZSwgTlVMTCwgMCwK
+PiAtCQkJCQkgICAgY2F1c2V9Owo+ICsJc3RydWN0IGltYV9ldmVudF9kYXRhIGV2ZW50X2RhdGEg
+PSB7IC5paW50ID0gaWludCwgLmZpbGUgPSBmaWxlLAo+ICsJCQkJCSAgICAgLmZpbGVuYW1lID0g
+ZmlsZW5hbWUsCj4gKwkJCQkJICAgICAudmlvbGF0aW9uID0gY2F1c2UgfTsKPiAgCWludCB2aW9s
+YXRpb24gPSAxOwo+ICAJaW50IHJlc3VsdDsKPiAgCj4gQEAgLTI4NCw4ICsyODUsMTAgQEAgdm9p
+ZCBpbWFfc3RvcmVfbWVhc3VyZW1lbnQoc3RydWN0IGludGVncml0eV9paW50X2NhY2hlICppaW50
+LAo+ICAJaW50IHJlc3VsdCA9IC1FTk9NRU07Cj4gIAlzdHJ1Y3QgaW5vZGUgKmlub2RlID0gZmls
+ZV9pbm9kZShmaWxlKTsKPiAgCXN0cnVjdCBpbWFfdGVtcGxhdGVfZW50cnkgKmVudHJ5Owo+IC0J
+c3RydWN0IGltYV9ldmVudF9kYXRhIGV2ZW50X2RhdGEgPSB7aWludCwgZmlsZSwgZmlsZW5hbWUs
+IHhhdHRyX3ZhbHVlLAo+IC0JCQkJCSAgICB4YXR0cl9sZW4sIE5VTEx9Owo+ICsJc3RydWN0IGlt
+YV9ldmVudF9kYXRhIGV2ZW50X2RhdGEgPSB7IC5paW50ID0gaWludCwgLmZpbGUgPSBmaWxlLAo+
+ICsJCQkJCSAgICAgLmZpbGVuYW1lID0gZmlsZW5hbWUsCj4gKwkJCQkJICAgICAueGF0dHJfdmFs
+dWUgPSB4YXR0cl92YWx1ZSwKPiArCQkJCQkgICAgIC54YXR0cl9sZW4gPSB4YXR0cl9sZW4gfTsK
+PiAgCWludCB2aW9sYXRpb24gPSAwOwo+ICAKPiAgCWlmIChpaW50LT5tZWFzdXJlZF9wY3JzICYg
+KDB4MSA8PCBwY3IpKQo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9p
+bml0LmMgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9pbml0LmMKPiBpbmRleCA2YzkyOTU0
+NDk3NTEuLmVmNmMzYTI2Mjk2ZSAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1h
+L2ltYV9pbml0LmMKPiArKysgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9pbml0LmMKPiBA
+QCAtNDksOCArNDksOCBAQCBzdGF0aWMgaW50IF9faW5pdCBpbWFfYWRkX2Jvb3RfYWdncmVnYXRl
+KHZvaWQpCj4gIAljb25zdCBjaGFyICphdWRpdF9jYXVzZSA9ICJFTk9NRU0iOwo+ICAJc3RydWN0
+IGltYV90ZW1wbGF0ZV9lbnRyeSAqZW50cnk7Cj4gIAlzdHJ1Y3QgaW50ZWdyaXR5X2lpbnRfY2Fj
+aGUgdG1wX2lpbnQsICppaW50ID0gJnRtcF9paW50Owo+IC0Jc3RydWN0IGltYV9ldmVudF9kYXRh
+IGV2ZW50X2RhdGEgPSB7aWludCwgTlVMTCwgYm9vdF9hZ2dyZWdhdGVfbmFtZSwKPiAtCQkJCQkg
+ICAgTlVMTCwgMCwgTlVMTH07Cj4gKwlzdHJ1Y3QgaW1hX2V2ZW50X2RhdGEgZXZlbnRfZGF0YSA9
+IHsgLmlpbnQgPSBpaW50LAo+ICsJCQkJCSAgICAgLmZpbGVuYW1lID0gYm9vdF9hZ2dyZWdhdGVf
+bmFtZSB9Owo+ICAJaW50IHJlc3VsdCA9IC1FTk9NRU07Cj4gIAlpbnQgdmlvbGF0aW9uID0gMDsK
+PiAgCXN0cnVjdCB7Cg==
