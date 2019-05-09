@@ -1,54 +1,25 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 30 May 2019 17:25:26 +0000
-Subject: [PATCH 02/10] keys: sparse: Fix incorrect RCU accesses [ver #2]
-Message-Id: <155923712685.949.15444189913653209060.stgit@warthog.procyon.org.uk>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 09 May 2019 15:53:27 +0000
+Subject: Re: [PATCH v10 08/12] ima: Factor xattr_verify() out of ima_appraise_measurement()
+Message-Id: <1557417207.10635.67.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: James Morris <jamorris@linux.microsoft.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, ebiggers@kernel.org
+References: <20190418035120.2354-1-bauerman@linux.ibm.com>
+         <20190418035120.2354-9-bauerman@linux.ibm.com>
+In-Reply-To: <20190418035120.2354-9-bauerman@linux.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.ibm.com>, linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-Fix a pair of accesses that should be using RCU protection.
-
-rcu_dereference_protected() is needed to access task_struct::real_parent.
-
-current_cred() should be used to access current->cred.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <jamorris@linux.microsoft.com>
----
-
- security/keys/keyctl.c           |    3 ++-
- security/keys/request_key_auth.c |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 3e4053a217c3..0f947bcbad46 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1524,7 +1524,8 @@ long keyctl_session_to_parent(void)
- 
- 	ret = -EPERM;
- 	oldwork = NULL;
--	parent = me->real_parent;
-+	parent = rcu_dereference_protected(me->real_parent,
-+					   lockdep_is_held(&tasklist_lock));
- 
- 	/* the parent mustn't be init and mustn't be a kernel thread */
- 	if (parent->pid <= 1 || !parent->mm)
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index bda6201c6c45..572c7a60473a 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -152,7 +152,7 @@ struct key *request_key_auth_new(struct key *target, const char *op,
- 				 struct key *dest_keyring)
- {
- 	struct request_key_auth *rka, *irka;
--	const struct cred *cred = current->cred;
-+	const struct cred *cred = current_cred();
- 	struct key *authkey = NULL;
- 	char desc[20];
- 	int ret = -ENOMEM;
+T24gVGh1LCAyMDE5LTA0LTE4IGF0IDAwOjUxIC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
+d3JvdGU6Cj4gVmVyaWZ5IHhhdHRyIHNpZ25hdHVyZSBpbiBhIHNlcGFyYXRlIGZ1bmN0aW9uIHNv
+IHRoYXQgdGhlIGxvZ2ljIGluCj4gaW1hX2FwcHJhaXNlX21lYXN1cmVtZW50KCkgcmVtYWlucyBj
+bGVhciB3aGVuIGl0IGdhaW5zIHRoZSBhYmlsaXR5IHRvIGFsc28KPiB2ZXJpZnkgYW4gYXBwZW5k
+ZWQgbW9kdWxlIHNpZ25hdHVyZS4KPiAKPiBUaGUgY29kZSBpbiB0aGUgc3dpdGNoIHN0YXRlbWVu
+dCBpcyB1bmNoYW5nZWQgZXhjZXB0IGZvciBoYXZpbmcgdG8KPiBkZXJlZmVyZW5jZSB0aGUgc3Rh
+dHVzIGFuZCBjYXVzZSB2YXJpYWJsZXMgKHNpbmNlIHRoZXkncmUgbm93IHBvaW50ZXJzKSwKPiBh
+bmQgZml4aW5nIHRoZSBzdHlsZSBvZiBhIGJsb2NrIGNvbW1lbnQgdG8gYXBwZWFzZSBjaGVja3Bh
+dGNoLgo+IAo+IFN1Z2dlc3RlZC1ieTogTWltaSBab2hhciA8em9oYXJAbGludXguaWJtLmNvbT4K
+PiBTaWduZWQtb2ZmLWJ5OiBUaGlhZ28gSnVuZyBCYXVlcm1hbm4gPGJhdWVybWFuQGxpbnV4Lmli
+bS5jb20+CgpSZXZpZXdlZC1ieTrCoMKgTWltaSBab2hhciA8em9oYXJAbGludXguaWJtLmNvbT4K
