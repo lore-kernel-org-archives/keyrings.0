@@ -1,67 +1,53 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:29 +0000
-Subject: [PATCH, RFC 09/62] x86/mm: Preserve KeyID on pte_modify() and pgprot_modify()
-Message-Id: <20190508144422.13171-10-kirill.shutemov@linux.intel.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 09 May 2019 23:01:08 +0000
+Subject: Re: [PATCH v10 09/12] ima: Implement support for module-style appended signatures
+Message-Id: <1557442868.10635.87.camel@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190418035120.2354-1-bauerman@linux.ibm.com>
+         <20190418035120.2354-10-bauerman@linux.ibm.com>
+In-Reply-To: <20190418035120.2354-10-bauerman@linux.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.ibm.com>, linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-An encrypted VMA will have KeyID stored in vma->vm_page_prot. This way
-we don't need to do anything special to setup encrypted page table
-entries and don't need to reserve space for KeyID in a VMA.
+Hi Thiago,
 
-This patch changes _PAGE_CHG_MASK to include KeyID bits. Otherwise they
-are going to be stripped from vm_page_prot on the first pgprot_modify().
+> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> index fca7a3f23321..a7a20a8c15c1 100644
+> --- a/security/integrity/ima/ima_policy.c
+> +++ b/security/integrity/ima/ima_policy.c
+> @@ -1144,6 +1144,12 @@ void ima_delete_rules(void)
+>  	}
+>  }
+>  
+> +#define __ima_hook_stringify(str)	(#str),
+> +
+> +const char *const func_tokens[] = {
+> +	__ima_hooks(__ima_hook_stringify)
+> +};
+> +
+>  #ifdef	CONFIG_IMA_READ_POLICY
+>  enum {
+>  	mask_exec = 0, mask_write, mask_read, mask_append
+> @@ -1156,12 +1162,6 @@ static const char *const mask_tokens[] = {
+>  	"MAY_APPEND"
+>  };
+>  
+> -#define __ima_hook_stringify(str)	(#str),
+> -
+> -static const char *const func_tokens[] = {
+> -	__ima_hooks(__ima_hook_stringify)
+> -};
+> -
+>  void *ima_policy_start(struct seq_file *m, loff_t *pos)
+>  {
+>  	loff_t l = *pos;
 
-Define PTE_PFN_MASK_MAX similar to PTE_PFN_MASK but based on
-__PHYSICAL_MASK_SHIFT. This way we include whole range of bits
-architecturally available for PFN without referencing physical_mask and
-mktme_keyid_mask variables.
+Is moving this something left over from previous versions or there is
+a need for this change?
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- arch/x86/include/asm/pgtable_types.h | 23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+Other than this, the patch looks good.
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index d6ff0bbdb394..7d6f68431538 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -117,12 +117,25 @@
- 				 _PAGE_ACCESSED | _PAGE_DIRTY)
- 
- /*
-- * Set of bits not changed in pte_modify.  The pte's
-- * protection key is treated like _PAGE_RW, for
-- * instance, and is *not* included in this mask since
-- * pte_modify() does modify it.
-+ * Set of bits not changed in pte_modify.
-+ *
-+ * The pte's protection key is treated like _PAGE_RW, for instance, and is
-+ * *not* included in this mask since pte_modify() does modify it.
-+ *
-+ * They include the physical address and the memory encryption keyID.
-+ * The paddr and the keyID never occupy the same bits at the same time.
-+ * But, a given bit might be used for the keyID on one system and used for
-+ * the physical address on another. As an optimization, we manage them in
-+ * one unit here since their combination always occupies the same hardware
-+ * bits. PTE_PFN_MASK_MAX stores combined mask.
-+ *
-+ * Cast PAGE_MASK to a signed type so that it is sign-extended if
-+ * virtual addresses are 32-bits but physical addresses are larger
-+ * (ie, 32-bit PAE).
-  */
--#define _PAGE_CHG_MASK	(PTE_PFN_MASK | _PAGE_PCD | _PAGE_PWT |		\
-+#define PTE_PFN_MASK_MAX \
-+	(((signed long)PAGE_MASK) & ((1ULL << __PHYSICAL_MASK_SHIFT) - 1))
-+#define _PAGE_CHG_MASK	(PTE_PFN_MASK_MAX | _PAGE_PCD | _PAGE_PWT |		\
- 			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY |	\
- 			 _PAGE_SOFT_DIRTY | _PAGE_DEVMAP)
- #define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE)
--- 
-2.20.1
+Mimi
