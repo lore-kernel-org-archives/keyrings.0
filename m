@@ -1,52 +1,109 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 31 May 2019 17:12:42 +0000
-Subject: Re: [PATCH 1/7] General notification queue with user mmap()'able ring buffer
-Message-Id: <15401.1559322762@warthog.procyon.org.uk>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 09 May 2019 23:01:29 +0000
+Subject: Re: [PATCH v10 11/12] ima: Define ima-modsig template
+Message-Id: <1557442889.10635.88.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190531164444.GD2606@hirez.programming.kicks-ass.net> <CAG48ez0R-R3Xs+3Xg9T9qcV3Xv6r4pnx1Z2y=Ltx7RGOayte_w@mail.gmail.com> <20190528162603.GA24097@kroah.com> <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk> <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk> <4031.1559064620@warthog.procyon.org.uk> <20190528231218.GA28384@kroah.com> <31936.1559146000@warthog.procyon.org.uk> <16193.1559163763@warthog.procyon.org.uk> <21942.1559304135@warthog.procyon.org.uk> <606.1559312412@warthog.procyon.org.uk>
-In-Reply-To: <20190531164444.GD2606@hirez.programming.kicks-ass.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: dhowells@redhat.com, Jann Horn <jannh@google.com>, Greg KH <gregkh@linuxfoundation.org>, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>, Kees Cook <keescook@chromium.org>, Kernel Hardening <kernel-hardening@lists.openwall.com>
+References: <20190418035120.2354-1-bauerman@linux.ibm.com>
+         <20190418035120.2354-12-bauerman@linux.ibm.com>
+In-Reply-To: <20190418035120.2354-12-bauerman@linux.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.ibm.com>, linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> > > (and it has already been established that refcount_t doesn't work for
-> > > usage count scenarios)
-> > 
-> > ?
-> > 
-> > Does that mean struct kref doesn't either?
+On Thu, 2019-04-18 at 00:51 -0300, Thiago Jung Bauermann wrote:
+> Define new "d-modsig" template field which holds the digest that is
+> expected to match the one contained in the modsig, and also new "modsig"
+> template field which holds the appended file signature.
 > 
-> Indeed, since kref is just a pointless wrapper around refcount_t it does
-> not either.
+> Add a new "ima-modsig" defined template descriptor with the new fields as
+> well as the ones from the "ima-sig" descriptor.
 > 
-> The main distinction between a reference count and a usage count is that
-> 0 means different things. For a refcount 0 means dead. For a usage count
-> 0 is merely unused but valid.
+> Change ima_store_measurement() to accept a struct modsig * argument so that
+> it can be passed along to the templates via struct ima_event_data.
+> 
+> Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Ah - I consider the terms interchangeable.
+Thanks, Roberto.  Just some thoughts inline below.
 
-Take Documentation/filesystems/vfs.txt for instance:
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 
-  dget: open a new handle for an existing dentry (this just increments
-	the usage count)
+> ---
 
-  dput: close a handle for a dentry (decrements the usage count). ...
+<snip>
 
-  ...
+> +/*
+> + * Validating the appended signature included in the measurement list requires
+> + * the file hash calculated without the appended signature (i.e., the 'd-modsig'
+> + * field). Therefore, notify the user if they have the 'modsig' field but not
+> + * the 'd-modsig' field in the template.
+> + */
+> +static void check_current_template_modsig(void)
+> +{
+> +#define MSG "template with 'modsig' field also needs 'd-modsig' field\n"
+> +	struct ima_template_desc *template;
+> +	bool has_modsig, has_dmodsig;
+> +	static bool checked;
+> +	int i;
+> +
+> +	/* We only need to notify the user once. */
+> +	if (checked)
+> +		return;
+> +
+> +	has_modsig = has_dmodsig = false;
+> +	template = ima_template_desc_current();
+> +	for (i = 0; i < template->num_fields; i++) {
+> +		if (!strcmp(template->fields[i]->field_id, "modsig"))
+> +			has_modsig = true;
+> +		else if (!strcmp(template->fields[i]->field_id, "d-modsig"))
+> +			has_dmodsig = true;
+> +	}
+> +
+> +	if (has_modsig && !has_dmodsig)
+> +		pr_notice(MSG);
+> +
+> +	checked = true;
+> +#undef MSG
+> +}
+> +
 
-  d_lookup: look up a dentry given its parent and path name component
-	It looks up the child of that given name from the dcache
-	hash table. If it is found, the reference count is incremented
-	and the dentry is returned. The caller must use dput()
-	to free the dentry when it finishes using it.
+There was some recent discussion about supporting per IMA policy rule
+template formats.  This feature will allow just the kexec kernel image
+to require ima-modsig.  When per policy rule template formats support
+is upstreamed, this function will need to be updated.
 
-Here we interchange the terms.
+<snip>
+> 
+> @@ -389,3 +425,25 @@ int ima_eventsig_init(struct ima_event_data *event_data,
+>  	return ima_write_template_field_data(xattr_value, event_data->xattr_len,
+>  					     DATA_FMT_HEX, field_data);
+>  }
+> +
+> +int ima_eventmodsig_init(struct ima_event_data *event_data,
+> +			 struct ima_field_data *field_data)
+> +{
+> +	const void *data;
+> +	u32 data_len;
+> +	int rc;
+> +
+> +	if (!event_data->modsig)
+> +		return 0;
+> +
+> +	/*
+> +	 * The xattr_value for IMA_MODSIG is a runtime structure containing
+> +	 * pointers. Get its raw data instead.
+> +	 */
 
-Or https://www.kernel.org/doc/gorman/html/understand/understand013.html
-which seems to interchange the terms in reference to struct page.
+"xattr_value"?  The comment needs some clarification.
 
-David
+Mimi
+
+> +	rc = ima_modsig_serialize(event_data->modsig, &data, &data_len);
+> +	if (rc)
+> +		return rc;
+> +
+> +	return ima_write_template_field_data(data, data_len,
+> +					     DATA_FMT_HEX, field_data);
+> +}
