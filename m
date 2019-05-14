@@ -1,10 +1,10 @@
 From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Thu, 09 May 2019 23:01:08 +0000
+Date: Tue, 14 May 2019 12:09:25 +0000
 Subject: Re: [PATCH v10 09/12] ima: Implement support for module-style appended signatures
-Message-Id: <1557442868.10635.87.camel@linux.ibm.com>
+Message-Id: <1557835765.4139.9.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190418035120.2354-1-bauerman@linux.ibm.com>
          <20190418035120.2354-10-bauerman@linux.ibm.com>
@@ -14,40 +14,38 @@ Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypt
 
 Hi Thiago,
 
-> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-> index fca7a3f23321..a7a20a8c15c1 100644
-> --- a/security/integrity/ima/ima_policy.c
-> +++ b/security/integrity/ima/ima_policy.c
-> @@ -1144,6 +1144,12 @@ void ima_delete_rules(void)
->  	}
->  }
->  
-> +#define __ima_hook_stringify(str)	(#str),
-> +
-> +const char *const func_tokens[] = {
-> +	__ima_hooks(__ima_hook_stringify)
-> +};
-> +
->  #ifdef	CONFIG_IMA_READ_POLICY
->  enum {
->  	mask_exec = 0, mask_write, mask_read, mask_append
-> @@ -1156,12 +1162,6 @@ static const char *const mask_tokens[] = {
->  	"MAY_APPEND"
->  };
->  
-> -#define __ima_hook_stringify(str)	(#str),
-> -
-> -static const char *const func_tokens[] = {
-> -	__ima_hooks(__ima_hook_stringify)
-> -};
-> -
->  void *ima_policy_start(struct seq_file *m, loff_t *pos)
->  {
->  	loff_t l = *pos;
+On Thu, 2019-04-18 at 00:51 -0300, Thiago Jung Bauermann wrote:
+> 
+> @@ -326,6 +356,10 @@ int ima_appraise_measurement(enum ima_hooks func,
+>         case INTEGRITY_UNKNOWN:
+>                 break;
+>         case INTEGRITY_NOXATTRS:        /* No EVM protected xattrs. */
+> +               /* It's fine not to have xattrs when using a modsig. */
+> +               if (try_modsig)
+> +                       break;
+> +               /* fall through */
+>         case INTEGRITY_NOLABEL:         /* No security.evm xattr. */
+>                 cause = "missing-HMAC";
+>                 goto out;
+> @@ -340,6 +374,14 @@ int ima_appraise_measurement(enum ima_hooks func,
+>                 rc = xattr_verify(func, iint, xattr_value, xattr_len, &status,
+>                                   &cause);
+>  
+> +       /*
+> +        * If we have a modsig and either no imasig or the imasig's key isn't
+> +        * known, then try verifying the modsig.
+> +        */
+> +       if (status != INTEGRITY_PASS && try_modsig &&
+> +           (!xattr_value || rc = -ENOKEY))
+> +               rc = modsig_verify(func, modsig, &status, &cause);
 
-Is moving this something left over from previous versions or there is
-a need for this change?
-
-Other than this, the patch looks good.
+EVM protects other security xattrs, not just security.ima, if they
+exist.  As a result, evm_verifyxattr() could pass based on the other
+security xattrs.
 
 Mimi
+
+> +
+>  out:
+>         /*
+>          * File signatures on some filesystems can not be properly verified.
