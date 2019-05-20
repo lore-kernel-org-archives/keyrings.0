@@ -1,65 +1,64 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:47 +0000
-Subject: [PATCH, RFC 27/62] keys/mktme: Strengthen the entropy of CPU generated MKTME keys
-Message-Id: <20190508144422.13171-28-kirill.shutemov@linux.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 20 May 2019 17:25:40 +0000
+Subject: [PATCH v6 04/16] fscrypt: add ->ci_inode to fscrypt_info
+Message-Id: <20190520172552.217253-5-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190520172552.217253-1-ebiggers@kernel.org>
+In-Reply-To: <20190520172552.217253-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-From: Alison Schofield <alison.schofield@intel.com>
+From: Eric Biggers <ebiggers@google.com>
 
-If users request CPU generated keys, mix additional entropy bits
-from the kernel into the key programming fields used by the
-hardware. This additional entropy may compensate for weak user
-supplied, or CPU generated, entropy.
+Add an inode back-pointer to 'struct fscrypt_info', such that
+inode->i_crypt_info->ci_inode = inode.
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+This will be useful for:
+
+1. Evicting the inodes when a fscrypt key is removed, since we'll track
+   the inodes using a given key by linking their fscrypt_infos together,
+   rather than the inodes directly.  This avoids bloating 'struct inode'
+   with a new list_head.
+
+2. Simplifying the per-file key setup, since the inode pointer won't
+   have to be passed around everywhere just in case something goes wrong
+   and it's needed for fscrypt_warn().
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- security/keys/mktme_keys.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ fs/crypto/fscrypt_private.h | 3 +++
+ fs/crypto/keyinfo.c         | 2 ++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index a7ca32865a1c..9fdf482ea3e6 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -7,6 +7,7 @@
- #include <linux/key-type.h>
- #include <linux/mm.h>
- #include <linux/parser.h>
-+#include <linux/random.h>
- #include <linux/string.h>
- #include <asm/intel_pconfig.h>
- #include <keys/mktme-type.h>
-@@ -102,7 +103,8 @@ struct mktme_payload {
- static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
- {
- 	struct mktme_key_program *kprog = NULL;
--	int ret;
-+	u8 kern_entropy[MKTME_AES_XTS_SIZE];
-+	int ret, i;
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index 52e09ef40bfa6..ac24edfc297f1 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -73,6 +73,9 @@ struct fscrypt_info {
+ 	 */
+ 	struct fscrypt_mode *ci_mode;
  
- 	kprog = kmem_cache_zalloc(mktme_prog_cache, GFP_ATOMIC);
- 	if (!kprog)
-@@ -114,6 +116,14 @@ static int mktme_program_keyid(int keyid, struct mktme_payload *payload)
- 	memcpy(kprog->key_field_1, payload->data_key, MKTME_AES_XTS_SIZE);
- 	memcpy(kprog->key_field_2, payload->tweak_key, MKTME_AES_XTS_SIZE);
++	/* Back-pointer to the inode */
++	struct inode *ci_inode;
++
+ 	/*
+ 	 * If non-NULL, then this inode uses a master key directly rather than a
+ 	 * derived key, and ci_ctfm will equal ci_master_key->mk_ctfm.
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
+index 479389a4e0559..49764d335c370 100644
+--- a/fs/crypto/keyinfo.c
++++ b/fs/crypto/keyinfo.c
+@@ -541,6 +541,8 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	if (!crypt_info)
+ 		return -ENOMEM;
  
-+	/* Strengthen the entropy fields for CPU generated keys */
-+	if ((payload->keyid_ctrl & 0xff) = MKTME_KEYID_SET_KEY_RANDOM) {
-+		get_random_bytes(&kern_entropy, sizeof(kern_entropy));
-+		for (i = 0; i < (MKTME_AES_XTS_SIZE); i++) {
-+			kprog->key_field_1[i] ^= kern_entropy[i];
-+			kprog->key_field_2[i] ^= kern_entropy[i];
-+		}
-+	}
- 	ret = MKTME_PROG_SUCCESS;	/* Future programming call */
- 	kmem_cache_free(mktme_prog_cache, kprog);
- 	return ret;
++	crypt_info->ci_inode = inode;
++
+ 	crypt_info->ci_flags = ctx.flags;
+ 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
+ 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
 -- 
-2.20.1
+2.21.0.1020.gf2820cf01a-goog
