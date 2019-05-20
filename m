@@ -1,7 +1,7 @@
 From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 20 May 2019 17:25:50 +0000
-Subject: [PATCH v6 14/16] f2fs: wire up new fscrypt ioctls
-Message-Id: <20190520172552.217253-15-ebiggers@kernel.org>
+Date: Mon, 20 May 2019 17:25:51 +0000
+Subject: [PATCH v6 15/16] ubifs: wire up new fscrypt ioctls
+Message-Id: <20190520172552.217253-16-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -16,7 +16,7 @@ From: Eric Biggers <ebiggers@google.com>
 Wire up the new ioctls for adding and removing fscrypt keys to/from the
 filesystem, and the new ioctl for retrieving v2 encryption policies.
 
-FS_IOC_REMOVE_ENCRYPTION_KEY also required making f2fs_drop_inode() call
+FS_IOC_REMOVE_ENCRYPTION_KEY also required making UBIFS use
 fscrypt_drop_inode().
 
 For more details see Documentation/filesystems/fscrypt.rst and the
@@ -24,93 +24,72 @@ fscrypt patches that added the implementation of these ioctls.
 
 Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- fs/f2fs/file.c  | 46 ++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/super.c |  2 ++
- 2 files changed, 48 insertions(+)
+ fs/ubifs/ioctl.c | 16 ++++++++++++++++
+ fs/ubifs/super.c | 11 +++++++++++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 45b45f37d347e..d88b77a41117c 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -2107,6 +2107,40 @@ static int f2fs_ioc_get_encryption_pwsalt(struct file *filp, unsigned long arg)
+diff --git a/fs/ubifs/ioctl.c b/fs/ubifs/ioctl.c
+index 6b05b3ec500e1..b2a67618bef91 100644
+--- a/fs/ubifs/ioctl.c
++++ b/fs/ubifs/ioctl.c
+@@ -204,6 +204,18 @@ long ubifs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case FS_IOC_GET_ENCRYPTION_POLICY:
+ 		return fscrypt_ioctl_get_policy(file, (void __user *)arg);
+ 
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		return fscrypt_ioctl_get_policy_ex(file, (void __user *)arg);
++
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		return fscrypt_ioctl_add_key(file, (void __user *)arg);
++
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		return fscrypt_ioctl_remove_key(file, (const void __user *)arg);
++
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		return fscrypt_ioctl_get_key_status(file, (void __user *)arg);
++
+ 	default:
+ 		return -ENOTTY;
+ 	}
+@@ -221,6 +233,10 @@ long ubifs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		break;
+ 	case FS_IOC_SET_ENCRYPTION_POLICY:
+ 	case FS_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 		break;
+ 	default:
+ 		return -ENOIOCTLCMD;
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index 04b8ecfd34701..ae026a7bb1a62 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -330,6 +330,16 @@ static int ubifs_write_inode(struct inode *inode, struct writeback_control *wbc)
  	return err;
  }
  
-+static int f2fs_ioc_get_encryption_policy_ex(struct file *filp,
-+					     unsigned long arg)
++static int ubifs_drop_inode(struct inode *inode)
 +{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
++	int drop = generic_drop_inode(inode);
 +
-+	return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
++	if (!drop)
++		drop = fscrypt_drop_inode(inode);
++
++	return drop;
 +}
 +
-+static int f2fs_ioc_add_encryption_key(struct file *filp, unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_add_key(filp, (void __user *)arg);
-+}
-+
-+static int f2fs_ioc_remove_encryption_key(struct file *filp, unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
-+}
-+
-+static int f2fs_ioc_get_encryption_key_status(struct file *filp,
-+					      unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
-+}
-+
- static int f2fs_ioc_gc(struct file *filp, unsigned long arg)
+ static void ubifs_evict_inode(struct inode *inode)
  {
- 	struct inode *inode = file_inode(filp);
-@@ -3012,6 +3046,14 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return f2fs_ioc_get_encryption_policy(filp, arg);
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 		return f2fs_ioc_get_encryption_pwsalt(filp, arg);
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		return f2fs_ioc_get_encryption_policy_ex(filp, arg);
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		return f2fs_ioc_add_encryption_key(filp, arg);
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		return f2fs_ioc_remove_encryption_key(filp, arg);
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		return f2fs_ioc_get_encryption_key_status(filp, arg);
- 	case F2FS_IOC_GARBAGE_COLLECT:
- 		return f2fs_ioc_gc(filp, arg);
- 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
-@@ -3137,6 +3179,10 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 	case F2FS_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 	case F2FS_IOC_GARBAGE_COLLECT:
- 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
- 	case F2FS_IOC_WRITE_CHECKPOINT:
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 6b959bbb336a3..e3bf604e0d58f 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -934,6 +934,8 @@ static int f2fs_drop_inode(struct inode *inode)
- 		return 0;
- 	}
- 	ret = generic_drop_inode(inode);
-+	if (!ret)
-+		ret = fscrypt_drop_inode(inode);
- 	trace_f2fs_drop_inode(inode, ret);
- 	return ret;
- }
+ 	int err;
+@@ -1980,6 +1990,7 @@ const struct super_operations ubifs_super_operations = {
+ 	.free_inode    = ubifs_free_inode,
+ 	.put_super     = ubifs_put_super,
+ 	.write_inode   = ubifs_write_inode,
++	.drop_inode    = ubifs_drop_inode,
+ 	.evict_inode   = ubifs_evict_inode,
+ 	.statfs        = ubifs_statfs,
+ 	.dirty_inode   = ubifs_dirty_inode,
 -- 
 2.21.0.1020.gf2820cf01a-goog
