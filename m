@@ -1,59 +1,88 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 22 May 2019 22:46:17 +0000
-Subject: [PATCH 2/6] keys: Invalidate used request_key authentication keys
-Message-Id: <155856517715.11737.4000419348725296931.stgit@warthog.procyon.org.uk>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 20 May 2019 17:25:49 +0000
+Subject: [PATCH v6 13/16] ext4: wire up new fscrypt ioctls
+Message-Id: <20190520172552.217253-14-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155856516286.11737.11196637682919902718.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155856516286.11737.11196637682919902718.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190520172552.217253-1-ebiggers@kernel.org>
+In-Reply-To: <20190520172552.217253-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-Invalidate used request_key authentication keys rather than revoking them
-so that they get cleaned up immediately rather than potentially hanging
-around.  There doesn't seem any need to keep the revoked keys around.
+From: Eric Biggers <ebiggers@google.com>
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Wire up the new ioctls for adding and removing fscrypt keys to/from the
+filesystem, and the new ioctl for retrieving v2 encryption policies.
+
+FS_IOC_REMOVE_ENCRYPTION_KEY also required making ext4_drop_inode() call
+fscrypt_drop_inode().
+
+For more details see Documentation/filesystems/fscrypt.rst and the
+fscrypt patches that added the implementation of these ioctls.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
+ fs/ext4/ioctl.c | 24 ++++++++++++++++++++++++
+ fs/ext4/super.c |  3 +++
+ 2 files changed, 27 insertions(+)
 
- security/keys/key.c         |    4 ++--
- security/keys/request_key.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/security/keys/key.c b/security/keys/key.c
-index e0750bc85b68..00c7dbfc6a77 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -459,7 +459,7 @@ static int __key_instantiate_and_link(struct key *key,
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index e486e49b31ed7..b51b6384045b8 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -1092,6 +1092,26 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
+ 		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
  
- 			/* disable the authorisation key */
- 			if (authkey)
--				key_revoke(authkey);
-+				key_invalidate(authkey);
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
++
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
++
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
++
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		if (!ext4_has_feature_encrypt(sb))
++			return -EOPNOTSUPP;
++		return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
++
+ 	case EXT4_IOC_FSGETXATTR:
+ 	{
+ 		struct fsxattr fa;
+@@ -1210,6 +1230,10 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
+ 	case EXT4_IOC_GET_ENCRYPTION_PWSALT:
+ 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 	case EXT4_IOC_SHUTDOWN:
+ 	case FS_IOC_GETFSMAP:
+ 		break;
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 4079605d437ae..757819139b8f7 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1107,6 +1107,9 @@ static int ext4_drop_inode(struct inode *inode)
+ {
+ 	int drop = generic_drop_inode(inode);
  
- 			if (prep->expiry != TIME64_MAX) {
- 				key->expiry = prep->expiry;
-@@ -607,7 +607,7 @@ int key_reject_and_link(struct key *key,
- 
- 		/* disable the authorisation key */
- 		if (authkey)
--			key_revoke(authkey);
-+			key_invalidate(authkey);
- 	}
- 
- 	mutex_unlock(&key_construction_mutex);
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index d204d7c0152e..807c32b2c736 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -222,7 +222,7 @@ static int construct_key(struct key *key, const void *callout_info,
- 	/* check that the actor called complete_request_key() prior to
- 	 * returning an error */
- 	WARN_ON(ret < 0 &&
--		!test_bit(KEY_FLAG_REVOKED, &authkey->flags));
-+		!test_bit(KEY_FLAG_INVALIDATED, &authkey->flags));
- 
- 	key_put(authkey);
- 	kleave(" = %d", ret);
++	if (!drop)
++		drop = fscrypt_drop_inode(inode);
++
+ 	trace_ext4_drop_inode(inode, drop);
+ 	return drop;
+ }
+-- 
+2.21.0.1020.gf2820cf01a-goog
