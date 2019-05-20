@@ -1,64 +1,20 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:16 +0000
-Subject: [PATCH, RFC 56/62] x86: Introduce CONFIG_X86_INTEL_MKTME
-Message-Id: <20190508144422.13171-57-kirill.shutemov@linux.intel.com>
+From: Daniel Murray <sinara-group@bk.ru>
+Date: Mon, 20 May 2019 12:13:19 +0000
+Subject: Inquiry 20/May/2019
+Message-Id: <20190520125635.CB7B453B257@mail.boombf2am.ga>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: keyrings@vger.kernel.org
 
-Add new config option to enabled/disable Multi-Key Total Memory
-Encryption support.
+Hi,friend,
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- arch/x86/Kconfig | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+This is Daniel Murray and i am from Sinara Group Co.Ltd in Russia.
+We are glad to know about your company from the web and we are interested in your products.
+Could you kindly send us your Latest catalog and price list for our trial order.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index ce9642e2c31b..4d2cfee50102 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1533,6 +1533,27 @@ config AMD_MEM_ENCRYPT_ACTIVE_BY_DEFAULT
- 	  If set to N, then the encryption of system memory can be
- 	  activated with the mem_encrypt=on command line option.
- 
-+config X86_INTEL_MKTME
-+	bool "Intel Multi-Key Total Memory Encryption"
-+	select DYNAMIC_PHYSICAL_MASK
-+	select PAGE_EXTENSION
-+	select X86_MEM_ENCRYPT_COMMON
-+	depends on X86_64 && CPU_SUP_INTEL && !KASAN
-+	depends on KEYS
-+	depends on !MEMORY_HOTPLUG_DEFAULT_ONLINE
-+	depends on ACPI_HMAT
-+	---help---
-+	  Say yes to enable support for Multi-Key Total Memory Encryption.
-+	  This requires an Intel processor that has support of the feature.
-+
-+	  Multikey Total Memory Encryption (MKTME) is a technology that allows
-+	  transparent memory encryption in upcoming Intel platforms.
-+
-+	  MKTME is built on top of TME. TME allows encryption of the entirety
-+	  of system memory using a single key. MKTME allows having multiple
-+	  encryption domains, each having own key -- different memory pages can
-+	  be encrypted with different keys.
-+
- # Common NUMA Features
- config NUMA
- 	bool "Numa Memory Allocation and Scheduler Support"
-@@ -2207,7 +2228,7 @@ config RANDOMIZE_MEMORY
- 
- config MEMORY_PHYSICAL_PADDING
- 	hex "Physical memory mapping padding" if EXPERT
--	depends on RANDOMIZE_MEMORY
-+	depends on RANDOMIZE_MEMORY || X86_INTEL_MKTME
- 	default "0xa" if MEMORY_HOTPLUG
- 	default "0x0"
- 	range 0x1 0x40 if MEMORY_HOTPLUG
--- 
-2.20.1
+Best Regards,
+
+Daniel Murray
+Purchasing Manager
