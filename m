@@ -1,193 +1,187 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:18 +0000
-Subject: [PATCH, RFC 58/62] x86/mktme: Document the MKTME provided security mitigations
-Message-Id: <20190508144422.13171-59-kirill.shutemov@linux.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 20 May 2019 17:25:44 +0000
+Subject: [PATCH v6 08/16] fscrypt: add FS_IOC_GET_ENCRYPTION_KEY_STATUS ioctl
+Message-Id: <20190520172552.217253-9-ebiggers@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190520172552.217253-1-ebiggers@kernel.org>
+In-Reply-To: <20190520172552.217253-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-From: Alison Schofield <alison.schofield@intel.com>
+From: Eric Biggers <ebiggers@google.com>
 
-Describe the security benefits of Multi-Key Total Memory
-Encryption (MKTME) over Total Memory Encryption (TME) alone.
+Add a new fscrypt ioctl, FS_IOC_GET_ENCRYPTION_KEY_STATUS.  Given a key
+specified by 'struct fscrypt_key_specifier' (the same way a key is
+specified for the other fscrypt key management ioctls), it returns
+status information in a 'struct fscrypt_get_key_status_arg'.
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+The main motivation for this is that applications need to be able to
+check whether an encrypted directory is "unlocked" or not, so that they
+can add the key if it is not, and avoid adding the key (which may
+involve prompting the user for a passphrase) if it already is.
+
+It's possible to use some workarounds such as checking whether opening a
+regular file fails with ENOKEY, or checking whether the filenames "look
+like gibberish" or not.  However, no workaround is usable in all cases.
+
+Like the other key management ioctls, the keyrings syscalls may seem at
+first to be a good fit for this.  Unfortunately, they are not.  Even if
+we exposed the keyring ID of the ->s_master_keys keyring and gave
+everyone Search permission on it (note: currently the keyrings
+permission system would also allow everyone to "invalidate" the keyring
+too), the fscrypt keys have an additional state that doesn't map cleanly
+to the keyrings API: the secret can be removed, but we can be still
+tracking the files that were using the key, and the removal can be
+re-attempted or the secret added again.
+
+After later patches, some applications will also need a way to determine
+whether a key was added by the current user vs. by some other user.
+Reserved fields are included in fscrypt_get_key_status_arg for this and
+other future extensions.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- Documentation/x86/mktme/index.rst             |   1 +
- Documentation/x86/mktme/mktme_mitigations.rst | 150 ++++++++++++++++++
- 2 files changed, 151 insertions(+)
- create mode 100644 Documentation/x86/mktme/mktme_mitigations.rst
+ fs/crypto/keyring.c          | 60 ++++++++++++++++++++++++++++++++++++
+ include/linux/fscrypt.h      |  7 +++++
+ include/uapi/linux/fscrypt.h | 15 +++++++++
+ 3 files changed, 82 insertions(+)
 
-diff --git a/Documentation/x86/mktme/index.rst b/Documentation/x86/mktme/index.rst
-index 1614b52dd3e9..a3a29577b013 100644
---- a/Documentation/x86/mktme/index.rst
-+++ b/Documentation/x86/mktme/index.rst
-@@ -6,3 +6,4 @@ Multi-Key Total Memory Encryption (MKTME)
- .. toctree::
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+index 701da63f01073..97e1360e4610c 100644
+--- a/fs/crypto/keyring.c
++++ b/fs/crypto/keyring.c
+@@ -11,6 +11,7 @@
+  *
+  * - FS_IOC_ADD_ENCRYPTION_KEY: add a key
+  * - FS_IOC_REMOVE_ENCRYPTION_KEY: remove a key
++ * - FS_IOC_GET_ENCRYPTION_KEY_STATUS: get key status
+  */
  
-    mktme_overview
-+   mktme_mitigations
-diff --git a/Documentation/x86/mktme/mktme_mitigations.rst b/Documentation/x86/mktme/mktme_mitigations.rst
-new file mode 100644
-index 000000000000..90699c38750a
---- /dev/null
-+++ b/Documentation/x86/mktme/mktme_mitigations.rst
-@@ -0,0 +1,150 @@
-+MKTME-Provided Mitigations
-+=============
+ #include <linux/key-type.h>
+@@ -528,6 +529,65 @@ int fscrypt_ioctl_remove_key(struct file *filp, const void __user *uarg)
+ }
+ EXPORT_SYMBOL_GPL(fscrypt_ioctl_remove_key);
+ 
++/*
++ * Retrieve the status of an fscrypt master encryption key.
++ *
++ * We set ->status to indicate whether the key is absent, present, or
++ * incompletely removed.  "Incompletely removed" means that the master key
++ * secret has been removed, but some files which had been unlocked with it are
++ * still in use.  This field allows applications to easily determine the state
++ * of an encrypted directory without using a hack such as trying to open a
++ * regular file in it (which can confuse the "incompletely removed" state with
++ * absent or present).
++ */
++int fscrypt_ioctl_get_key_status(struct file *filp, void __user *uarg)
++{
++	struct super_block *sb = file_inode(filp)->i_sb;
++	struct fscrypt_get_key_status_arg arg;
++	struct key *key;
++	struct fscrypt_master_key *mk;
++	int err;
 +
-+MKTME adds a few mitigations against attacks that are not
-+mitigated when using TME alone.  The first set are mitigations
-+against software attacks that are familiar today:
++	if (copy_from_user(&arg, uarg, sizeof(arg)))
++		return -EFAULT;
 +
-+ * Kernel Mapping Attacks: information disclosures that leverage
-+   the kernel direct map are mitigated against disclosing user
-+   data.
-+ * Freed Data Leak Attacks: removing an encryption key from the
-+   hardware mitigates future user information disclosure.
++	if (!valid_key_spec(&arg.key_spec))
++		return -EINVAL;
 +
-+The next set are attacks that depend on specialized hardware,
-+such as an “evil DIMM” or a DDR interposer:
++	if (memchr_inv(arg.__reserved, 0, sizeof(arg.__reserved)))
++		return -EINVAL;
 +
-+ * Cross-Domain Replay Attack: data is captured from one domain
-+(guest) and replayed to another at a later time.
-+ * Cross-Domain Capture and Delayed Compare Attack: data is
-+   captured and later analyzed to discover secrets.
-+ * Key Wear-out Attack: data is captured and analyzed in order
-+   to Weaken the AES encryption itself.
++	memset(arg.__out_reserved, 0, sizeof(arg.__out_reserved));
 +
-+More details on these attacks are below.
++	key = fscrypt_find_master_key(sb, &arg.key_spec);
++	if (IS_ERR(key)) {
++		if (key != ERR_PTR(-ENOKEY))
++			return PTR_ERR(key);
++		arg.status = FSCRYPT_KEY_STATUS_ABSENT;
++		err = 0;
++		goto out;
++	}
++	mk = key->payload.data[0];
++	down_read(&key->sem);
 +
-+Kernel Mapping Attacks
-+----------------------
-+Information disclosure vulnerabilities leverage the kernel direct
-+map because many vulnerabilities involve manipulation of kernel
-+data structures (examples: CVE-2017-7277, CVE-2017-9605).  We
-+normally think of these bugs as leaking valuable *kernel* data,
-+but they can leak application data when application pages are
-+recycled for kernel use.
++	if (!is_master_key_secret_present(&mk->mk_secret)) {
++		arg.status = FSCRYPT_KEY_STATUS_INCOMPLETELY_REMOVED;
++		err = 0;
++		goto out_release_key;
++	}
 +
-+With this MKTME implementation, there is a direct map created for
-+each MKTME KeyID which is used whenever the kernel needs to
-+access plaintext.  But, all kernel data structures are accessed
-+via the direct map for KeyID-0.  Thus, memory reads which are not
-+coordinated with the KeyID get garbage (for example, accessing
-+KeyID-4 data with the KeyID-0 mapping).
++	arg.status = FSCRYPT_KEY_STATUS_PRESENT;
++	err = 0;
++out_release_key:
++	up_read(&key->sem);
++	key_put(key);
++out:
++	if (!err && copy_to_user(uarg, &arg, sizeof(arg)))
++		err = -EFAULT;
++	return err;
++}
++EXPORT_SYMBOL_GPL(fscrypt_ioctl_get_key_status);
 +
-+This means that if sensitive data encrypted using MKTME is leaked
-+via the KeyID-0 direct map, ciphertext decrypted with the wrong
-+key will be disclosed.  To disclose plaintext, an attacker must
-+“pivot” to the correct direct mapping, which is non-trivial
-+because there are no kernel data structures in the KeyID!=0
-+direct mapping.
+ int __init fscrypt_init_keyring(void)
+ {
+ 	return register_key_type(&key_type_fscrypt);
+diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
+index dcbc9636cb8b1..4441a74b967b4 100644
+--- a/include/linux/fscrypt.h
++++ b/include/linux/fscrypt.h
+@@ -130,6 +130,7 @@ extern int fscrypt_inherit_context(struct inode *, struct inode *,
+ extern void fscrypt_sb_free(struct super_block *sb);
+ extern int fscrypt_ioctl_add_key(struct file *filp, void __user *arg);
+ extern int fscrypt_ioctl_remove_key(struct file *filp, const void __user *arg);
++extern int fscrypt_ioctl_get_key_status(struct file *filp, void __user *arg);
+ 
+ /* keysetup.c */
+ extern int fscrypt_get_encryption_info(struct inode *);
+@@ -359,6 +360,12 @@ static inline int fscrypt_ioctl_remove_key(struct file *filp,
+ 	return -EOPNOTSUPP;
+ }
+ 
++static inline int fscrypt_ioctl_get_key_status(struct file *filp,
++					       void __user *arg)
++{
++	return -EOPNOTSUPP;
++}
 +
-+Freed Data Leak Attack
-+----------------------
-+The kernel has a history of bugs around uninitialized data.
-+Usually, we think of these bugs as leaking sensitive kernel data,
-+but they can also be used to leak application secrets.
+ /* keysetup.c */
+ static inline int fscrypt_get_encryption_info(struct inode *inode)
+ {
+diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+index 3302a407131e6..042e70a4ff7ee 100644
+--- a/include/uapi/linux/fscrypt.h
++++ b/include/uapi/linux/fscrypt.h
+@@ -71,11 +71,26 @@ struct fscrypt_remove_key_arg {
+ 	__u32 __reserved[6];
+ };
+ 
++/* Struct passed to FS_IOC_GET_ENCRYPTION_KEY_STATUS */
++struct fscrypt_get_key_status_arg {
++	/* input */
++	struct fscrypt_key_specifier key_spec;
++	__u32 __reserved[6];
 +
-+MKTME can help mitigate the case where application secrets are
-+leaked:
++	/* output */
++#define FSCRYPT_KEY_STATUS_ABSENT		1
++#define FSCRYPT_KEY_STATUS_PRESENT		2
++#define FSCRYPT_KEY_STATUS_INCOMPLETELY_REMOVED	3
++	__u32 status;
++	__u32 __out_reserved[15];
++};
 +
-+ * App (or VM) places a secret in a page * App exits or frees
-+memory to kernel allocator * Page added to allocator free list *
-+Attacker reallocates page to a purpose where it can read the page
-+
-+Now, imagine MKTME was in use on the memory being leaked.  The
-+data can only be leaked as long as the key is programmed in the
-+hardware.  If the key is de-programmed, like after all pages are
-+freed after a guest is shut down, any future reads will just see
-+ciphertext.
-+
-+Basically, the key is a convenient choke-point: you can be more
-+confident that data encrypted with it is inaccessible once the
-+key is removed.
-+
-+Cross-Domain Replay Attack
-+--------------------------
-+MKTME mitigates cross-domain replay attacks where an attacker
-+replaces an encrypted block owned by one domain with a block
-+owned by another domain.  MKTME does not prevent this replacement
-+from occurring, but it does mitigate plaintext from being
-+disclosed if the domains use different keys.
-+
-+With TME, the attack could be executed by:
-+ * A victim places secret in memory, at a given physical address.
-+   Note: AES-XTS is what restricts the attack to being performed
-+   at a single physical address instead of across different
-+   physical addresses
-+ * Attacker captures victim secret’s ciphertext * Later on, after
-+   victim frees the physical address, attacker gains ownership 
-+ * Attacker puts the ciphertext at the address and get the secret
-+   plaintext
-+
-+But, due to the presumably different keys used by the attacker
-+and the victim, the attacker can not successfully decrypt old
-+ciphertext.
-+
-+Cross-Domain Capture and Delayed Compare Attack
-+-----------------------------------------------
-+This is also referred to as a kind of dictionary attack.
-+
-+Similarly, MKTME protects against cross-domain capture-and-compare
-+attacks.  Consider the following scenario:
-+ * A victim places a secret in memory, at a known physical address
-+ * Attacker captures victim’s ciphertext
-+ * Attacker gains control of the target physical address, perhaps
-+   after the victim’s VM is shut down or its memory reclaimed.
-+ * Attacker computes and writes many possible plaintexts until new
-+   ciphertext matches content captured previously.
-+
-+Secrets which have low (plaintext) entropy are more vulnerable to
-+this attack because they reduce the number of possible plaintexts
-+an attacker has to compute and write.
-+
-+The attack will not work if attacker and victim uses different
-+keys.
-+
-+Key Wear-out Attack
-+-------------------
-+Repeated use of an encryption key might be used by an attacker to
-+infer information about the key or the plaintext, weakening the
-+encryption.  The higher the bandwidth of the encryption engine,
-+the more vulnerable the key is to wear-out.  The MKTME memory
-+encryption hardware works at the speed of the memory bus, which
-+has high bandwidth.
-+
-+Such a weakness has been demonstrated[1] on a theoretical cipher
-+with similar properties as AES-XTS.
-+
-+An attack would take the following steps:
-+ * Victim system is using TME with AES-XTS-128
-+ * Attacker repeatedly captures ciphertext/plaintext pairs (can
-+   be Performed with online hardware attack like an interposer).
-+ * Attacker compels repeated use of the key under attack for a
-+   sustained time period without a system reboot[2].
-+ * Attacker discovers a cipertext collision (two plaintexts
-+   translating to the same ciphertext)
-+ * Attacker can induce controlled modifications to the targeted
-+   plaintext by modifying the colliding ciphertext
-+
-+MKTME mitigates key wear-out in two ways:
-+ * Keys can be rotated periodically to mitigate wear-out.  Since
-+   TME keys are generated at boot, rotation of TME keys requires a
-+   reboot.  In contrast, MKTME allows rotation while the system is
-+   booted.  An application could implement a policy to rotate keys
-+   at a frequency which is not feasible to attack.
-+ * In the case that MKTME is used to encrypt two guests’ memory
-+   with two different keys, an attack on one guest’s key would not
-+   weaken the key used in the second guest.
-+
-+--
-+1. http://web.cs.ucdavis.edu/~rogaway/papers/offsets.pdf
-+2. This sustained time required for an attack could vary from days
-+   to years depending on the attacker’s goals.
+ #define FS_IOC_SET_ENCRYPTION_POLICY	  _IOR('f', 19, struct fscrypt_policy)
+ #define FS_IOC_GET_ENCRYPTION_PWSALT	  _IOW('f', 20, __u8[16])
+ #define FS_IOC_GET_ENCRYPTION_POLICY	  _IOW('f', 21, struct fscrypt_policy)
+ #define FS_IOC_ADD_ENCRYPTION_KEY	 _IOWR('f', 23, struct fscrypt_add_key_arg)
+ #define FS_IOC_REMOVE_ENCRYPTION_KEY	  _IOW('f', 24, struct fscrypt_remove_key_arg)
++#define FS_IOC_GET_ENCRYPTION_KEY_STATUS _IOWR('f', 25, struct fscrypt_get_key_status_arg)
+ 
+ /**********************************************************************/
+ 
 -- 
-2.20.1
+2.21.0.1020.gf2820cf01a-goog
