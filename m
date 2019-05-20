@@ -1,74 +1,193 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:02 +0000
-Subject: [PATCH, RFC 42/62] mm: Generalize the mprotect implementation to support extensions
-Message-Id: <20190508144422.13171-43-kirill.shutemov@linux.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 20 May 2019 17:25:37 +0000
+Subject: [PATCH v6 01/16] fs, fscrypt: move uapi definitions to new header <linux/fscrypt.h>
+Message-Id: <20190520172552.217253-2-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190520172552.217253-1-ebiggers@kernel.org>
+In-Reply-To: <20190520172552.217253-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-From: Alison Schofield <alison.schofield@intel.com>
+From: Eric Biggers <ebiggers@google.com>
 
-Today mprotect is implemented to support legacy mprotect behavior
-plus an extension for memory protection keys. Make it more generic
-so that it can support additional extensions in the future.
+More fscrypt definitions are being added, and we shouldn't use a
+disproportionate amount of space in <linux/fs.h> for fscrypt stuff.
+So move the fscrypt definitions to a new header <linux/fscrypt.h>.
 
-This is done is preparation for adding a new system call for memory
-encyption keys. The intent is that the new encrypted mprotect will be
-another extension to legacy mprotect.
+For source compatibility with existing userspace programs, <linux/fs.h>
+still includes the new header.
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- mm/mprotect.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ MAINTAINERS                  |  1 +
+ include/linux/fscrypt.h      |  1 +
+ include/uapi/linux/fs.h      | 54 ++-------------------------------
+ include/uapi/linux/fscrypt.h | 58 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 63 insertions(+), 51 deletions(-)
+ create mode 100644 include/uapi/linux/fscrypt.h
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index e768cd656a48..23e680f4b1d5 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -35,6 +35,8 @@
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5cfbea4ce5750..b55acde12f65f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6475,6 +6475,7 @@ T:	git git://git.kernel.org/pub/scm/fs/fscrypt/fscrypt.git
+ S:	Supported
+ F:	fs/crypto/
+ F:	include/linux/fscrypt*.h
++F:	include/uapi/linux/fscrypt.h
+ F:	Documentation/filesystems/fscrypt.rst
  
- #include "internal.h"
+ FSI-ATTACHED I2C DRIVER
+diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
+index f7680ef1abd2d..a2b2ceaf33a85 100644
+--- a/include/linux/fscrypt.h
++++ b/include/linux/fscrypt.h
+@@ -16,6 +16,7 @@
+ #include <linux/fs.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
++#include <uapi/linux/fscrypt.h>
  
-+#define NO_KEY	-1
-+
- static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable, int prot_numa)
-@@ -452,9 +454,9 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
- }
+ #define FS_CRYPTO_BLOCK_SIZE		16
  
+diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+index 59c71fa8c553a..41bd84d25a980 100644
+--- a/include/uapi/linux/fs.h
++++ b/include/uapi/linux/fs.h
+@@ -13,6 +13,9 @@
+ #include <linux/limits.h>
+ #include <linux/ioctl.h>
+ #include <linux/types.h>
++#ifndef __KERNEL__
++#include <linux/fscrypt.h>
++#endif
+ 
+ /* Use of MS_* flags within the kernel is restricted to core mount(2) code. */
+ #if !defined(__KERNEL__)
+@@ -212,57 +215,6 @@ struct fsxattr {
+ #define FS_IOC_GETFSLABEL		_IOR(0x94, 49, char[FSLABEL_MAX])
+ #define FS_IOC_SETFSLABEL		_IOW(0x94, 50, char[FSLABEL_MAX])
+ 
+-/*
+- * File system encryption support
+- */
+-/* Policy provided via an ioctl on the topmost directory */
+-#define FS_KEY_DESCRIPTOR_SIZE	8
+-
+-#define FS_POLICY_FLAGS_PAD_4		0x00
+-#define FS_POLICY_FLAGS_PAD_8		0x01
+-#define FS_POLICY_FLAGS_PAD_16		0x02
+-#define FS_POLICY_FLAGS_PAD_32		0x03
+-#define FS_POLICY_FLAGS_PAD_MASK	0x03
+-#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
+-#define FS_POLICY_FLAGS_VALID		0x07
+-
+-/* Encryption algorithms */
+-#define FS_ENCRYPTION_MODE_INVALID		0
+-#define FS_ENCRYPTION_MODE_AES_256_XTS		1
+-#define FS_ENCRYPTION_MODE_AES_256_GCM		2
+-#define FS_ENCRYPTION_MODE_AES_256_CBC		3
+-#define FS_ENCRYPTION_MODE_AES_256_CTS		4
+-#define FS_ENCRYPTION_MODE_AES_128_CBC		5
+-#define FS_ENCRYPTION_MODE_AES_128_CTS		6
+-#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
+-#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
+-#define FS_ENCRYPTION_MODE_ADIANTUM		9
+-
+-struct fscrypt_policy {
+-	__u8 version;
+-	__u8 contents_encryption_mode;
+-	__u8 filenames_encryption_mode;
+-	__u8 flags;
+-	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
+-};
+-
+-#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
+-#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
+-#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
+-
+-/* Parameters for passing an encryption key into the kernel keyring */
+-#define FS_KEY_DESC_PREFIX		"fscrypt:"
+-#define FS_KEY_DESC_PREFIX_SIZE		8
+-
+-/* Structure that userspace passes to the kernel keyring */
+-#define FS_MAX_KEY_SIZE			64
+-
+-struct fscrypt_key {
+-	__u32 mode;
+-	__u8 raw[FS_MAX_KEY_SIZE];
+-	__u32 size;
+-};
+-
  /*
-- * pkey=-1 when doing a legacy mprotect()
-+ * When pkey=NO_KEY we get legacy mprotect behavior here.
-  */
--static int do_mprotect_pkey(unsigned long start, size_t len,
-+static int do_mprotect_ext(unsigned long start, size_t len,
- 		unsigned long prot, int pkey)
- {
- 	unsigned long nstart, end, tmp, reqprot;
-@@ -578,7 +580,7 @@ static int do_mprotect_pkey(unsigned long start, size_t len,
- SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
- 		unsigned long, prot)
- {
--	return do_mprotect_pkey(start, len, prot, -1);
-+	return do_mprotect_ext(start, len, prot, NO_KEY);
- }
- 
- #ifdef CONFIG_ARCH_HAS_PKEYS
-@@ -586,7 +588,7 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
- SYSCALL_DEFINE4(pkey_mprotect, unsigned long, start, size_t, len,
- 		unsigned long, prot, int, pkey)
- {
--	return do_mprotect_pkey(start, len, prot, pkey);
-+	return do_mprotect_ext(start, len, prot, pkey);
- }
- 
- SYSCALL_DEFINE2(pkey_alloc, unsigned long, flags, unsigned long, init_val)
+  * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
+  *
+diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+new file mode 100644
+index 0000000000000..193339cb53fdb
+--- /dev/null
++++ b/include/uapi/linux/fscrypt.h
+@@ -0,0 +1,58 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++#ifndef _UAPI_LINUX_FSCRYPT_H
++#define _UAPI_LINUX_FSCRYPT_H
++
++#include <linux/types.h>
++
++/*
++ * File system encryption support
++ */
++/* Policy provided via an ioctl on the topmost directory */
++#define FS_KEY_DESCRIPTOR_SIZE	8
++
++#define FS_POLICY_FLAGS_PAD_4		0x00
++#define FS_POLICY_FLAGS_PAD_8		0x01
++#define FS_POLICY_FLAGS_PAD_16		0x02
++#define FS_POLICY_FLAGS_PAD_32		0x03
++#define FS_POLICY_FLAGS_PAD_MASK	0x03
++#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
++#define FS_POLICY_FLAGS_VALID		0x07
++
++/* Encryption algorithms */
++#define FS_ENCRYPTION_MODE_INVALID		0
++#define FS_ENCRYPTION_MODE_AES_256_XTS		1
++#define FS_ENCRYPTION_MODE_AES_256_GCM		2
++#define FS_ENCRYPTION_MODE_AES_256_CBC		3
++#define FS_ENCRYPTION_MODE_AES_256_CTS		4
++#define FS_ENCRYPTION_MODE_AES_128_CBC		5
++#define FS_ENCRYPTION_MODE_AES_128_CTS		6
++#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
++#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
++#define FS_ENCRYPTION_MODE_ADIANTUM		9
++
++struct fscrypt_policy {
++	__u8 version;
++	__u8 contents_encryption_mode;
++	__u8 filenames_encryption_mode;
++	__u8 flags;
++	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
++};
++
++#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
++#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
++#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
++
++/* Parameters for passing an encryption key into the kernel keyring */
++#define FS_KEY_DESC_PREFIX		"fscrypt:"
++#define FS_KEY_DESC_PREFIX_SIZE		8
++
++/* Structure that userspace passes to the kernel keyring */
++#define FS_MAX_KEY_SIZE			64
++
++struct fscrypt_key {
++	__u32 mode;
++	__u8 raw[FS_MAX_KEY_SIZE];
++	__u32 size;
++};
++
++#endif /* _UAPI_LINUX_FSCRYPT_H */
 -- 
-2.20.1
+2.21.0.1020.gf2820cf01a-goog
