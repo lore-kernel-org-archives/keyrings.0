@@ -1,64 +1,116 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:27 +0000
-Subject: [PATCH, RFC 07/62] x86/mm: Mask out KeyID bits from page table entry pfn
-Message-Id: <20190508144422.13171-8-kirill.shutemov@linux.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 20 May 2019 17:25:50 +0000
+Subject: [PATCH v6 14/16] f2fs: wire up new fscrypt ioctls
+Message-Id: <20190520172552.217253-15-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190520172552.217253-1-ebiggers@kernel.org>
+In-Reply-To: <20190520172552.217253-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-MKTME claims several upper bits of the physical address in a page table
-entry to encode KeyID. It effectively shrinks number of bits for
-physical address. We should exclude KeyID bits from physical addresses.
+From: Eric Biggers <ebiggers@google.com>
 
-For instance, if CPU enumerates 52 physical address bits and number of
-bits claimed for KeyID is 6, bits 51:46 must not be threated as part
-physical address.
+Wire up the new ioctls for adding and removing fscrypt keys to/from the
+filesystem, and the new ioctl for retrieving v2 encryption policies.
 
-This patch adjusts __PHYSICAL_MASK during MKTME enumeration.
+FS_IOC_REMOVE_ENCRYPTION_KEY also required making f2fs_drop_inode() call
+fscrypt_drop_inode().
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+For more details see Documentation/filesystems/fscrypt.rst and the
+fscrypt patches that added the implementation of these ioctls.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- arch/x86/kernel/cpu/intel.c | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ fs/f2fs/file.c  | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/super.c |  2 ++
+ 2 files changed, 48 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 3142fd7a9b32..5dfecc9c2253 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -589,6 +589,29 @@ static void detect_tme(struct cpuinfo_x86 *c)
- 		mktme_status = MKTME_ENABLED;
- 	}
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 45b45f37d347e..d88b77a41117c 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -2107,6 +2107,40 @@ static int f2fs_ioc_get_encryption_pwsalt(struct file *filp, unsigned long arg)
+ 	return err;
+ }
  
-+#ifdef CONFIG_X86_INTEL_MKTME
-+	if (mktme_status = MKTME_ENABLED && nr_keyids) {
-+		/*
-+		 * Mask out bits claimed from KeyID from physical address mask.
-+		 *
-+		 * For instance, if a CPU enumerates 52 physical address bits
-+		 * and number of bits claimed for KeyID is 6, bits 51:46 of
-+		 * physical address is unusable.
-+		 */
-+		phys_addr_t keyid_mask;
++static int f2fs_ioc_get_encryption_policy_ex(struct file *filp,
++					     unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
 +
-+		keyid_mask = GENMASK_ULL(c->x86_phys_bits - 1, c->x86_phys_bits - keyid_bits);
-+		physical_mask &= ~keyid_mask;
-+	} else {
-+		/*
-+		 * Reset __PHYSICAL_MASK.
-+		 * Maybe needed if there's inconsistent configuation
-+		 * between CPUs.
-+		 */
-+		physical_mask = (1ULL << __PHYSICAL_MASK_SHIFT) - 1;
-+	}
-+#endif
++	return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
++}
 +
- 	/*
- 	 * KeyID bits effectively lower the number of physical address
- 	 * bits.  Update cpuinfo_x86::x86_phys_bits accordingly.
++static int f2fs_ioc_add_encryption_key(struct file *filp, unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_add_key(filp, (void __user *)arg);
++}
++
++static int f2fs_ioc_remove_encryption_key(struct file *filp, unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
++}
++
++static int f2fs_ioc_get_encryption_key_status(struct file *filp,
++					      unsigned long arg)
++{
++	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
++		return -EOPNOTSUPP;
++
++	return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
++}
++
+ static int f2fs_ioc_gc(struct file *filp, unsigned long arg)
+ {
+ 	struct inode *inode = file_inode(filp);
+@@ -3012,6 +3046,14 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		return f2fs_ioc_get_encryption_policy(filp, arg);
+ 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
+ 		return f2fs_ioc_get_encryption_pwsalt(filp, arg);
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++		return f2fs_ioc_get_encryption_policy_ex(filp, arg);
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++		return f2fs_ioc_add_encryption_key(filp, arg);
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++		return f2fs_ioc_remove_encryption_key(filp, arg);
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
++		return f2fs_ioc_get_encryption_key_status(filp, arg);
+ 	case F2FS_IOC_GARBAGE_COLLECT:
+ 		return f2fs_ioc_gc(filp, arg);
+ 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
+@@ -3137,6 +3179,10 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
+ 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
+ 	case F2FS_IOC_GET_ENCRYPTION_POLICY:
++	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
++	case FS_IOC_ADD_ENCRYPTION_KEY:
++	case FS_IOC_REMOVE_ENCRYPTION_KEY:
++	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
+ 	case F2FS_IOC_GARBAGE_COLLECT:
+ 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
+ 	case F2FS_IOC_WRITE_CHECKPOINT:
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 6b959bbb336a3..e3bf604e0d58f 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -934,6 +934,8 @@ static int f2fs_drop_inode(struct inode *inode)
+ 		return 0;
+ 	}
+ 	ret = generic_drop_inode(inode);
++	if (!ret)
++		ret = fscrypt_drop_inode(inode);
+ 	trace_f2fs_drop_inode(inode, ret);
+ 	return ret;
+ }
 -- 
-2.20.1
+2.21.0.1020.gf2820cf01a-goog
