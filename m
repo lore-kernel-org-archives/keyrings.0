@@ -1,135 +1,131 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:15 +0000
-Subject: [PATCH, RFC 55/62] x86/mm: Disable MKTME if not all system memory supports encryption
-Message-Id: <20190508144422.13171-56-kirill.shutemov@linux.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 20 May 2019 17:25:48 +0000
+Subject: [PATCH v6 12/16] fscrypt: require that key be added when setting a v2 encryption policy
+Message-Id: <20190520172552.217253-13-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190520172552.217253-1-ebiggers@kernel.org>
+In-Reply-To: <20190520172552.217253-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
 
-UEFI memory attribute EFI_MEMORY_CPU_CRYPTO indicates whether the memory
-region supports encryption.
+From: Eric Biggers <ebiggers@google.com>
 
-Kernel doesn't handle situation when only part of the system memory
-supports encryption.
+By looking up the master keys in a filesystem-level keyring rather than
+in the calling processes' key hierarchy, it becomes possible for a user
+to set an encryption policy which refers to some key they don't actually
+know, then encrypt their files using that key.  Cryptographically this
+isn't much of a problem, but the semantics of this would be a bit weird.
+Thus, enforce that a v2 encryption policy can only be set if the user
+has previously added the key, or has capable(CAP_FOWNER).
 
-Disable MKTME if not all system memory supports encryption.
+We tolerate that this problem will continue to exist for v1 encryption
+policies, however; there is no way around that.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- arch/x86/mm/mktme.c        | 29 +++++++++++++++++++++++++++++
- drivers/firmware/efi/efi.c | 25 +++++++++++++------------
- include/linux/efi.h        |  1 +
- 3 files changed, 43 insertions(+), 12 deletions(-)
+ fs/crypto/fscrypt_private.h |  3 +++
+ fs/crypto/keyring.c         | 47 +++++++++++++++++++++++++++++++++++++
+ fs/crypto/policy.c          |  6 +++++
+ 3 files changed, 56 insertions(+)
 
-diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
-index 12f4266cf7ea..60b479686ea5 100644
---- a/arch/x86/mm/mktme.c
-+++ b/arch/x86/mm/mktme.c
-@@ -1,6 +1,7 @@
- #include <linux/mm.h>
- #include <linux/highmem.h>
- #include <linux/rmap.h>
-+#include <linux/efi.h>
- #include <asm/mktme.h>
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
-@@ -33,9 +34,37 @@ void mktme_disable(void)
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index 5f679ba32cece..a398383ae9e34 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -411,6 +411,9 @@ extern struct key *
+ fscrypt_find_master_key(struct super_block *sb,
+ 			const struct fscrypt_key_specifier *mk_spec);
  
- static bool need_page_mktme(void)
- {
-+	int nid;
++extern int fscrypt_verify_key_added(struct super_block *sb,
++				    const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE]);
 +
- 	/* Make sure keyid doesn't collide with extended page flags */
- 	BUILD_BUG_ON(__NR_PAGE_EXT_FLAGS > 16);
+ extern int __init fscrypt_init_keyring(void);
+ extern void fscrypt_exit_keyring(void);
  
-+	for_each_node_state(nid, N_MEMORY) {
-+		const efi_memory_desc_t *md;
-+		unsigned long node_start, node_end;
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+index 0a92f2998b437..92eadda419278 100644
+--- a/fs/crypto/keyring.c
++++ b/fs/crypto/keyring.c
+@@ -562,6 +562,53 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
+ }
+ EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
+ 
++/*
++ * Verify that the current user has added a master key with the given identifier
++ * (returns -ENOKEY if not).  This is needed to prevent a user from encrypting
++ * their files using some other user's key which they don't actually know.
++ * Cryptographically this isn't much of a problem, but the semantics of this
++ * would be a bit weird, so it's best to just forbid it.
++ *
++ * The system administrator (CAP_FOWNER) can override this, which should be
++ * enough for any use cases where encryption policies are being set using keys
++ * that were chosen ahead of time but aren't available at the moment.
++ *
++ * Note that the key may have already removed by the time this returns, but
++ * that's okay; we just care whether the key was there at some point.
++ *
++ * Return: 0 if the key is added, -ENOKEY if it isn't, or another -errno code
++ */
++int fscrypt_verify_key_added(struct super_block *sb,
++			     const u8 identifier[FSCRYPT_KEY_IDENTIFIER_SIZE])
++{
++	struct fscrypt_key_specifier mk_spec;
++	struct key *key, *mk_user;
++	struct fscrypt_master_key *mk;
++	int err;
 +
-+		node_start = node_start_pfn(nid) << PAGE_SHIFT;
-+		node_end = node_end_pfn(nid) << PAGE_SHIFT;
++	mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER;
++	memcpy(mk_spec.u.identifier, identifier, FSCRYPT_KEY_IDENTIFIER_SIZE);
 +
-+		for_each_efi_memory_desc(md) {
-+			u64 efi_start = md->phys_addr;
-+			u64 efi_end = md->phys_addr + PAGE_SIZE * md->num_pages;
-+
-+			if (md->attribute & EFI_MEMORY_CPU_CRYPTO)
-+				continue;
-+			if (efi_start > node_end)
-+				continue;
-+			if (efi_end  < node_start)
-+				continue;
-+
-+			printk("Memory range %#llx-%#llx: doesn't support encryption\n",
-+					efi_start, efi_end);
-+			printk("Disable MKTME\n");
-+			mktme_disable();
-+			break;
-+		}
++	key = fscrypt_find_master_key(sb, &mk_spec);
++	if (IS_ERR(key)) {
++		err = PTR_ERR(key);
++		goto out;
 +	}
++	mk = key->payload.data[0];
++	mk_user = find_master_key_user(mk);
++	if (IS_ERR(mk_user)) {
++		err = PTR_ERR(mk_user);
++	} else {
++		key_put(mk_user);
++		err = 0;
++	}
++	key_put(key);
++out:
++	if (err = -ENOKEY && capable(CAP_FOWNER))
++		err = 0;
++	return err;
++}
 +
- 	return !!mktme_nr_keyids;
- }
+ static void shrink_dcache_inode(struct inode *inode)
+ {
+ 	struct dentry *dentry;
+diff --git a/fs/crypto/policy.c b/fs/crypto/policy.c
+index 3643156a511a7..8fb9f5ac5f8c0 100644
+--- a/fs/crypto/policy.c
++++ b/fs/crypto/policy.c
+@@ -211,6 +211,7 @@ static int set_encryption_policy(struct inode *inode,
+ {
+ 	union fscrypt_context ctx;
+ 	int ctxsize;
++	int err;
  
-diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-index 55b77c576c42..239b2edc78d3 100644
---- a/drivers/firmware/efi/efi.c
-+++ b/drivers/firmware/efi/efi.c
-@@ -848,25 +848,26 @@ char * __init efi_md_typeattr_format(char *buf, size_t size,
- 	if (attr & ~(EFI_MEMORY_UC | EFI_MEMORY_WC | EFI_MEMORY_WT |
- 		     EFI_MEMORY_WB | EFI_MEMORY_UCE | EFI_MEMORY_RO |
- 		     EFI_MEMORY_WP | EFI_MEMORY_RP | EFI_MEMORY_XP |
--		     EFI_MEMORY_NV |
-+		     EFI_MEMORY_NV | EFI_MEMORY_CPU_CRYPTO |
- 		     EFI_MEMORY_RUNTIME | EFI_MEMORY_MORE_RELIABLE))
- 		snprintf(pos, size, "|attr=0x%016llx]",
- 			 (unsigned long long)attr);
- 	else
- 		snprintf(pos, size,
--			 "|%3s|%2s|%2s|%2s|%2s|%2s|%2s|%3s|%2s|%2s|%2s|%2s]",
-+			 "|%3s|%2s|%2s|%2s|%2s|%2s|%2s|%2s|%3s|%2s|%2s|%2s|%2s]",
- 			 attr & EFI_MEMORY_RUNTIME ? "RUN" : "",
- 			 attr & EFI_MEMORY_MORE_RELIABLE ? "MR" : "",
--			 attr & EFI_MEMORY_NV      ? "NV"  : "",
--			 attr & EFI_MEMORY_XP      ? "XP"  : "",
--			 attr & EFI_MEMORY_RP      ? "RP"  : "",
--			 attr & EFI_MEMORY_WP      ? "WP"  : "",
--			 attr & EFI_MEMORY_RO      ? "RO"  : "",
--			 attr & EFI_MEMORY_UCE     ? "UCE" : "",
--			 attr & EFI_MEMORY_WB      ? "WB"  : "",
--			 attr & EFI_MEMORY_WT      ? "WT"  : "",
--			 attr & EFI_MEMORY_WC      ? "WC"  : "",
--			 attr & EFI_MEMORY_UC      ? "UC"  : "");
-+			 attr & EFI_MEMORY_NV         ? "NV"  : "",
-+			 attr & EFI_MEMORY_CPU_CRYPTO ? "CR"  : "",
-+			 attr & EFI_MEMORY_XP         ? "XP"  : "",
-+			 attr & EFI_MEMORY_RP         ? "RP"  : "",
-+			 attr & EFI_MEMORY_WP         ? "WP"  : "",
-+			 attr & EFI_MEMORY_RO         ? "RO"  : "",
-+			 attr & EFI_MEMORY_UCE        ? "UCE" : "",
-+			 attr & EFI_MEMORY_WB         ? "WB"  : "",
-+			 attr & EFI_MEMORY_WT         ? "WT"  : "",
-+			 attr & EFI_MEMORY_WC         ? "WC"  : "",
-+			 attr & EFI_MEMORY_UC         ? "UC"  : "");
- 	return buf;
- }
+ 	if (!fscrypt_supported_policy(policy))
+ 		return -EINVAL;
+@@ -229,6 +230,11 @@ static int set_encryption_policy(struct inode *inode,
+ 		 */
+ 		pr_warn_once("%s (pid %d) is setting deprecated v1 encryption policy; recommend upgrading to v2.\n",
+ 			     current->comm, current->pid);
++	} else {
++		err = fscrypt_verify_key_added(inode->i_sb,
++					       policy->v2.master_key_identifier);
++		if (err)
++			return err;
+ 	}
  
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 6ebc2098cfe1..4b2d0b1a75dc 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -112,6 +112,7 @@ typedef	struct {
- #define EFI_MEMORY_MORE_RELIABLE \
- 				((u64)0x0000000000010000ULL)	/* higher reliability */
- #define EFI_MEMORY_RO		((u64)0x0000000000020000ULL)	/* read-only */
-+#define EFI_MEMORY_CPU_CRYPTO 	((u64)0x0000000000080000ULL)	/* memory encryption supported */
- #define EFI_MEMORY_RUNTIME	((u64)0x8000000000000000ULL)	/* range requires runtime mapping */
- #define EFI_MEMORY_DESCRIPTOR_VERSION	1
- 
+ 	ctxsize = fscrypt_new_context_from_policy(&ctx, policy);
 -- 
-2.20.1
+2.21.0.1020.gf2820cf01a-goog
