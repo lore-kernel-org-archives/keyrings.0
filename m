@@ -1,112 +1,233 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Tue, 28 May 2019 19:09:55 +0000
-Subject: Re: [PATCH v10 11/12] ima: Define ima-modsig template
-Message-Id: <874l5e75vg.fsf@morokweng.localdomain>
+From: Ondrej Mosnacek <omosnace@redhat.com>
+Date: Tue, 21 May 2019 10:00:34 +0000
+Subject: [PATCH] crypto: af_alg - implement keyring support
+Message-Id: <20190521100034.9651-1-omosnace@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418035120.2354-1-bauerman@linux.ibm.com> <20190418035120.2354-12-bauerman@linux.ibm.com> <1557442889.10635.88.camel@linux.ibm.com>
-In-Reply-To: <1557442889.10635.88.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Stephan Mueller <smueller@chronox.de>, Milan Broz <gmazyland@gmail.com>, Ondrej Kozina <okozina@redhat.com>, Daniel Zatovic <dzatovic@redhat.com>
 
+This patch adds new socket options to AF_ALG that allow setting key from
+kernel keyring. For simplicity, each keyring key type (logon, user,
+trusted, encrypted) has its own socket option name and the value is just
+the key description string that identifies the key to be used. The key
+description doesn't need to be NULL-terminated, but bytes after the
+first zero byte are ignored.
 
-Mimi Zohar <zohar@linux.ibm.com> writes:
+Note that this patch also adds three socket option names that are
+already defined and used in libkcapi [1], but have never been added to
+the kernel...
 
-> On Thu, 2019-04-18 at 00:51 -0300, Thiago Jung Bauermann wrote:
->> Define new "d-modsig" template field which holds the digest that is
->> expected to match the one contained in the modsig, and also new "modsig"
->> template field which holds the appended file signature.
->>
->> Add a new "ima-modsig" defined template descriptor with the new fields as
->> well as the ones from the "ima-sig" descriptor.
->>
->> Change ima_store_measurement() to accept a struct modsig * argument so that
->> it can be passed along to the templates via struct ima_event_data.
->>
->> Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
->> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
->
-> Thanks, Roberto. Just some thoughts inline below.
->
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Tested via libkcapi with keyring patches [2] applied (user and logon key
+types only).
 
-Thanks!
+[1] https://github.com/smuellerDD/libkcapi
+[2] https://github.com/WOnder93/libkcapi/compare/f283458...1fb501c
 
->> +/*
->> + * Validating the appended signature included in the measurement list requires
->> + * the file hash calculated without the appended signature (i.e., the 'd-modsig'
->> + * field). Therefore, notify the user if they have the 'modsig' field but not
->> + * the 'd-modsig' field in the template.
->> + */
->> +static void check_current_template_modsig(void)
->> +{
->> +#define MSG "template with 'modsig' field also needs 'd-modsig' field\n"
->> +	struct ima_template_desc *template;
->> +	bool has_modsig, has_dmodsig;
->> +	static bool checked;
->> +	int i;
->> +
->> +	/* We only need to notify the user once. */
->> +	if (checked)
->> +		return;
->> +
->> +	has_modsig = has_dmodsig = false;
->> +	template = ima_template_desc_current();
->> +	for (i = 0; i < template->num_fields; i++) {
->> +		if (!strcmp(template->fields[i]->field_id, "modsig"))
->> +			has_modsig = true;
->> +		else if (!strcmp(template->fields[i]->field_id, "d-modsig"))
->> +			has_dmodsig = true;
->> +	}
->> +
->> +	if (has_modsig && !has_dmodsig)
->> +		pr_notice(MSG);
->> +
->> +	checked = true;
->> +#undef MSG
->> +}
->> +
->
-> There was some recent discussion about supporting per IMA policy rule
-> template formats. This feature will allow just the kexec kernel image
-> to require ima-modsig. When per policy rule template formats support
-> is upstreamed, this function will need to be updated.
+Signed-off-by: Ondrej Mosnacek <omosnace@redhat.com>
+---
+ crypto/af_alg.c             | 150 +++++++++++++++++++++++++++++++++++-
+ include/uapi/linux/if_alg.h |   7 ++
+ 2 files changed, 156 insertions(+), 1 deletion(-)
 
-Indeed. Thanks for the clarification. For the next iteration I rebased
-on top of Matthew Garret's "IMA: Allow profiles to define the desired
-IMA template" patch. I'm currently adapting this check accordingly.
-
->> @@ -389,3 +425,25 @@ int ima_eventsig_init(struct ima_event_data *event_data,
->>  	return ima_write_template_field_data(xattr_value, event_data->xattr_len,
->>  					     DATA_FMT_HEX, field_data);
->>  }
->> +
->> +int ima_eventmodsig_init(struct ima_event_data *event_data,
->> +			 struct ima_field_data *field_data)
->> +{
->> +	const void *data;
->> +	u32 data_len;
->> +	int rc;
->> +
->> +	if (!event_data->modsig)
->> +		return 0;
->> +
->> +	/*
->> +	 * The xattr_value for IMA_MODSIG is a runtime structure containing
->> +	 * pointers. Get its raw data instead.
->> +	 */
->
-> "xattr_value"? The comment needs some clarification.
-
-Oops, forgot to update this comment. This is the new version:
-
-	/*
-	 * modsig is a runtime structure containing pointers. Get its raw data
-	 * instead.
-	 */
-
---
-Thiago Jung Bauermann
-IBM Linux Technology Center
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index edca0998b2a4..fd6699e4dc3d 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -12,11 +12,15 @@
+  *
+  */
+ 
+-#include <linux/atomic.h>
+ #include <crypto/if_alg.h>
++#include <keys/user-type.h>
++#include <keys/trusted-type.h>
++#include <keys/encrypted-type.h>
++#include <linux/atomic.h>
+ #include <linux/crypto.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
++#include <linux/key.h>
+ #include <linux/list.h>
+ #include <linux/module.h>
+ #include <linux/net.h>
+@@ -230,6 +234,108 @@ out:
+ 	return err;
+ }
+ 
++#ifdef CONFIG_KEYS
++struct alg_keyring_type {
++	struct key_type *key_type;
++	void (*key_from_payload)(void *payload, void **key, unsigned int *len);
++};
++
++static void alg_key_from_payload_user(void *payload, void **key,
++				      unsigned int *len)
++{
++	struct user_key_payload *ukp = payload;
++
++	*key = ukp->data;
++	*len = ukp->datalen;
++}
++
++static const struct alg_keyring_type alg_keyring_type_logon = {
++	.key_type = &key_type_logon,
++	.key_from_payload = &alg_key_from_payload_user,
++};
++static const struct alg_keyring_type alg_keyring_type_user = {
++	.key_type = &key_type_user,
++	.key_from_payload = &alg_key_from_payload_user,
++};
++
++#if IS_REACHABLE(CONFIG_TRUSTED_KEYS)
++static void alg_key_from_payload_trusted(void *payload, void **key,
++					 unsigned int *len)
++{
++	struct trusted_key_payload *tkp = payload;
++
++	*key = tkp->key;
++	*len = tkp->key_len;
++}
++
++static const struct alg_keyring_type alg_keyring_type_trusted = {
++	.key_type = &key_type_trusted,
++	.key_from_payload = &alg_key_from_payload_trusted,
++};
++#endif
++
++#if IS_REACHABLE(CONFIG_ENCRYPTED_KEYS)
++static void alg_key_from_payload_encrypted(void *payload, void **key,
++					   unsigned int *len)
++{
++	struct encrypted_key_payload *ekp = payload;
++
++	*key = ekp->decrypted_data;
++	*len = ekp->decrypted_datalen;
++}
++
++static const struct alg_keyring_type alg_keyring_type_encrypted = {
++	.key_type = &key_type_encrypted,
++	.key_from_payload = &alg_key_from_payload_encrypted,
++};
++#endif
++
++static int alg_setkey_keyring(struct sock *sk,
++			      const struct alg_keyring_type *type,
++			      char __user *udesc, unsigned int desclen)
++{
++	struct alg_sock *ask = alg_sk(sk);
++	struct key *key;
++	char *desc;
++	void *payload;
++	void *key_data;
++	unsigned int key_len;
++	int err;
++
++	desc = sock_kmalloc(sk, desclen + 1, GFP_KERNEL);
++	if (!desc)
++		return -ENOMEM;
++
++	if (copy_from_user(desc, udesc, desclen)) {
++		sock_kzfree_s(sk, desc, desclen + 1);
++		return -EFAULT;
++	}
++	desc[desclen] = '\0';
++
++	key = request_key(type->key_type, desc, NULL);
++	sock_kzfree_s(sk, desc, desclen + 1);
++	if (IS_ERR(key))
++		return PTR_ERR(key);
++
++	down_read(&key->sem);
++
++	payload = dereference_key_locked(key);
++	if (!payload) {
++		err = -EKEYREVOKED;
++		goto out;
++	}
++
++	type->key_from_payload(payload, &key_data, &key_len);
++
++	err = ask->type->setkey(ask->private, key_data, key_len);
++
++out:
++	up_read(&key->sem);
++	key_put(key);
++	return err;
++}
++#endif /* CONFIG_KEYS */
++
+ static int alg_setsockopt(struct socket *sock, int level, int optname,
+ 			  char __user *optval, unsigned int optlen)
+ {
+@@ -256,6 +362,48 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
+ 			goto unlock;
+ 
+ 		err = alg_setkey(sk, optval, optlen);
++#ifdef CONFIG_KEYS
++		break;
++	case ALG_SET_KEY_KEYRING_LOGON:
++		if (sock->state = SS_CONNECTED)
++			goto unlock;
++		if (!type->setkey)
++			goto unlock;
++
++		err = alg_setkey_keyring(sk, &alg_keyring_type_logon,
++					 optval, optlen);
++		break;
++	case ALG_SET_KEY_KEYRING_USER:
++		if (sock->state = SS_CONNECTED)
++			goto unlock;
++		if (!type->setkey)
++			goto unlock;
++
++		err = alg_setkey_keyring(sk, &alg_keyring_type_user,
++					 optval, optlen);
++#if IS_REACHABLE(CONFIG_TRUSTED_KEYS)
++		break;
++	case ALG_SET_KEY_KEYRING_TRUSTED:
++		if (sock->state = SS_CONNECTED)
++			goto unlock;
++		if (!type->setkey)
++			goto unlock;
++
++		err = alg_setkey_keyring(sk, &alg_keyring_type_trusted,
++					 optval, optlen);
++#endif
++#if IS_REACHABLE(CONFIG_ENCRYPTED_KEYS)
++		break;
++	case ALG_SET_KEY_KEYRING_ENCRYPTED:
++		if (sock->state = SS_CONNECTED)
++			goto unlock;
++		if (!type->setkey)
++			goto unlock;
++
++		err = alg_setkey_keyring(sk, &alg_keyring_type_encrypted,
++					 optval, optlen);
++#endif
++#endif /* CONFIG_KEYS */
+ 		break;
+ 	case ALG_SET_AEAD_AUTHSIZE:
+ 		if (sock->state = SS_CONNECTED)
+diff --git a/include/uapi/linux/if_alg.h b/include/uapi/linux/if_alg.h
+index bc2bcdec377b..f2d777901f00 100644
+--- a/include/uapi/linux/if_alg.h
++++ b/include/uapi/linux/if_alg.h
+@@ -35,6 +35,13 @@ struct af_alg_iv {
+ #define ALG_SET_OP			3
+ #define ALG_SET_AEAD_ASSOCLEN		4
+ #define ALG_SET_AEAD_AUTHSIZE		5
++#define ALG_SET_PUBKEY			6 /* reserved for future use */
++#define ALG_SET_DH_PARAMETERS		7 /* reserved for future use */
++#define ALG_SET_ECDH_CURVE		8 /* reserved for future use */
++#define ALG_SET_KEY_KEYRING_LOGON	9
++#define ALG_SET_KEY_KEYRING_USER	10
++#define ALG_SET_KEY_KEYRING_TRUSTED	11
++#define ALG_SET_KEY_KEYRING_ENCRYPTED	12
+ 
+ /* Operations */
+ #define ALG_OP_DECRYPT			0
+-- 
+2.20.1
