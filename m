@@ -1,94 +1,66 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Tue, 28 May 2019 19:03:15 +0000
-Subject: Re: [PATCH v10 01/12] MODSIGN: Export module signature definitions
-Message-Id: <875zpu766k.fsf@morokweng.localdomain>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 22 May 2019 22:28:23 +0000
+Subject: [PATCH 3/7] keys: sparse: Fix kdoc mismatches
+Message-Id: <155856410370.10428.4854212353631906601.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190418035120.2354-1-bauerman@linux.ibm.com> <20190418035120.2354-2-bauerman@linux.ibm.com> <1557416528.10635.62.camel@linux.ibm.com>
-In-Reply-To: <1557416528.10635.62.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
+References: <155856408314.10428.17035328117829912815.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155856408314.10428.17035328117829912815.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
+Fix some kdoc argument description mismatches reported by sparse and give
+keyring_restrict() a description.
 
-Mimi Zohar <zohar@linux.ibm.com> writes:
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Mat Martineau <mathew.j.martineau@linux.intel.com>
+---
 
-> On Thu, 2019-04-18 at 00:51 -0300, Thiago Jung Bauermann wrote:
->> IMA will use the module_signature format for append signatures, so export
->> the relevant definitions and factor out the code which verifies that the
->> appended signature trailer is valid.
->> 
->> Also, create a CONFIG_MODULE_SIG_FORMAT option so that IMA can select it
->> and be able to use mod_check_sig() without having to depend on either
->> CONFIG_MODULE_SIG or CONFIG_MODULES.
->> 
->> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
->> Cc: Jessica Yu <jeyu@kernel.org>
->
-> Just a couple minor questions/comments below.
->
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+ security/keys/keyring.c     |   10 +++++++---
+ security/keys/request_key.c |    2 +-
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-Thanks for your review and your comments!
-
->> diff --git a/init/Kconfig b/init/Kconfig
->> index 4592bf7997c0..a71019553ee1 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -1906,7 +1906,7 @@ config MODULE_SRCVERSION_ALL
->>  config MODULE_SIG
->>  	bool "Module signature verification"
->>  	depends on MODULES
->> -	select SYSTEM_DATA_VERIFICATION
->> +	select MODULE_SIG_FORMAT
->>  	help
->>  	  Check modules for valid signatures upon load: the signature
->>  	  is simply appended to the module. For more information see
->> @@ -2036,6 +2036,10 @@ config TRIM_UNUSED_KSYMS
->>  
->>  endif # MODULES
->>  
->> +config MODULE_SIG_FORMAT
->> +	def_bool n
->> +	select SYSTEM_DATA_VERIFICATION
->
-> Normally Kconfigs, in the same file, are defined before they are used.
->  I'm not sure if that is required or just a convention.
-
-I think it's a convention, because it seemed to work in the current way.
-For the next version I moved the config MODULE_SIG_FORMAT definition to
-just before "menuconfig MODULES"
-
->> diff --git a/kernel/module_signature.c b/kernel/module_signature.c
->> new file mode 100644
->> index 000000000000..6d5e59f27f55
->> --- /dev/null
->> +++ b/kernel/module_signature.c
->> @@ -0,0 +1,45 @@
->> +// SPDX-License-Identifier: GPL-2.0+
->> +/*
->> + * Module signature checker
->> + *
->> + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
->> + * Written by David Howells (dhowells@redhat.com)
->> + */
->> +
->> +#include <linux/errno.h>
->> +#include <linux/printk.h>
->> +#include <linux/module_signature.h>
->> +#include <asm/byteorder.h>
->> +
->> +/**
->> + * mod_check_sig - check that the given signature is sane
->> + *
->> + * @ms:		Signature to check.
->> + * @file_len:	Size of the file to which @ms is appended.
->
-> "name" is missing.
-
-Fixed.
-
--- 
-Thiago Jung Bauermann
-IBM Linux Technology Center
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index e14f09e3a4b0..5b218b270598 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -520,7 +520,7 @@ EXPORT_SYMBOL(keyring_alloc);
+  * @keyring: The keyring being added to.
+  * @type: The type of key being added.
+  * @payload: The payload of the key intended to be added.
+- * @data: Additional data for evaluating restriction.
++ * @restriction_key: Keys providing additional data for evaluating restriction.
+  *
+  * Reject the addition of any links to a keyring.  It can be overridden by
+  * passing KEY_ALLOC_BYPASS_RESTRICTION to key_instantiate_and_link() when
+@@ -976,9 +976,13 @@ static bool keyring_detect_restriction_cycle(const struct key *dest_keyring,
+ 
+ /**
+  * keyring_restrict - Look up and apply a restriction to a keyring
+- *
+- * @keyring: The keyring to be restricted
++ * @keyring_ref: The keyring to be restricted
++ * @type: The key type that will provide the restriction checker.
+  * @restriction: The restriction options to apply to the keyring
++ *
++ * Look up a keyring and apply a restriction to it.  The restriction is managed
++ * by the specific key type, but can be configured by the options specified in
++ * the restriction string.
+  */
+ int keyring_restrict(key_ref_t keyring_ref, const char *type,
+ 		     const char *restriction)
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 75d87f9e0f49..1f234b019437 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -24,7 +24,7 @@
+ 
+ /**
+  * complete_request_key - Complete the construction of a key.
+- * @auth_key: The authorisation key.
++ * @authkey: The authorisation key.
+  * @error: The success or failute of the construction.
+  *
+  * Complete the attempt to construct a key.  The key will be negated
