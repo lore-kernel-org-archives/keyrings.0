@@ -1,114 +1,80 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:48 +0000
-Subject: [PATCH, RFC 28/62] keys/mktme: Set up PCONFIG programming targets for MKTME keys
-Message-Id: <20190508144422.13171-29-kirill.shutemov@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 22 May 2019 22:46:02 +0000
+Subject: [PATCH 0/6] keys: request_key() improvements(vspace)s
+Message-Id: <155856516286.11737.11196637682919902718.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Alison Schofield <alison.schofield@intel.com>
 
-MKTME Key service maintains the hardware key tables. These key tables
-are package scoped per the MKTME hardware definition. This means that
-each physical package on the system needs its key table programmed.
+Here's a fix and some improvements for request_key() intended for the next
+merge window:
 
-These physical packages are the targets of the new PCONFIG programming
-command. So, introduce a PCONFIG targets bitmap as well as a CPU mask
-that includes the lead CPUs capable of programming the targets.
+ (1) Fix the lack of a Link permission check on a key found by request_key(),
+     thereby enabling request_key() to link keys that don't grant this
+     permission to the target keyring (which must still grant Write
+     permission).
 
-The lead CPU mask will be used every time a new key is programmed into
-the hardware.
+     Note that the key must be in the caller's keyrings already to be found.
 
-Keep the PCONFIG targets bit map around for future use during hotplug
-events.
+ (2) Invalidate used request_key authentication keys rather than revoking
+     them, so that they get cleaned up immediately rather than hanging around
+     till the expiry time is passed.
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+ (3) Move the RCU locks outwards from the keyring search functions so that a
+     request_key_rcu() can be provided.  This can be called in RCU mode, so it
+     can't sleep and can't upcall - but it can be called from LOOKUP_RCU
+     pathwalk mode.
+
+ (4) Cache the latest positive result of request_key*() temporarily in
+     task_struct so that filesystems that make a lot of request_key() calls
+     during pathwalk can take advantage of it to avoid having to redo the
+     searching.
+
+     It is assumed that the key just found is unlikely to be superseded
+     between steps in an RCU pathwalk.
+
+     Note that the cleanup of the cache is done on TIF_NOTIFY_RESUME, just
+     before userspace resumes, and on exit.
+
+I've included, for illustration, two patches to the in-kernel AFS filesystem
+to make them use this.
+
+The patches can be found on the following branch:
+
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-request
+
+and this depends on keys-misc.  Note that the AFS patches aren't on this branch.
+
+David
 ---
- security/keys/mktme_keys.c | 42 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+David Howells (6):
+      keys: Fix request_key() lack of Link perm check on found key
+      keys: Invalidate used request_key authentication keys
+      keys: Move the RCU locks outwards from the keyring search functions
+      keys: Cache result of request_key*() temporarily in task_struct
+      afs: Provide an RCU-capable key lookup
+      afs: Support RCU pathwalk
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 9fdf482ea3e6..b5b44decfd3e 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -2,6 +2,7 @@
- 
- /* Documentation/x86/mktme_keys.rst */
- 
-+#include <linux/cpu.h>
- #include <linux/init.h>
- #include <linux/key.h>
- #include <linux/key-type.h>
-@@ -17,6 +18,8 @@
- 
- static DEFINE_SPINLOCK(mktme_lock);
- struct kmem_cache *mktme_prog_cache;	/* Hardware programming cache */
-+unsigned long *mktme_target_map;	/* Pconfig programming targets */
-+cpumask_var_t mktme_leadcpus;		/* One lead CPU per pconfig target */
- 
- /* 1:1 Mapping between Userspace Keys (struct key) and Hardware KeyIDs */
- struct mktme_mapping {
-@@ -303,6 +306,33 @@ struct key_type key_type_mktme = {
- 	.destroy	= mktme_destroy_key,
- };
- 
-+static void mktme_update_pconfig_targets(void)
-+{
-+	int cpu, target_id;
-+
-+	cpumask_clear(mktme_leadcpus);
-+	bitmap_clear(mktme_target_map, 0, sizeof(mktme_target_map));
-+
-+	for_each_online_cpu(cpu) {
-+		target_id = topology_physical_package_id(cpu);
-+		if (!__test_and_set_bit(target_id, mktme_target_map))
-+			__cpumask_set_cpu(cpu, mktme_leadcpus);
-+	}
-+}
-+
-+static int mktme_alloc_pconfig_targets(void)
-+{
-+	if (!alloc_cpumask_var(&mktme_leadcpus, GFP_KERNEL))
-+		return -ENOMEM;
-+
-+	mktme_target_map = bitmap_alloc(topology_max_packages(), GFP_KERNEL);
-+	if (!mktme_target_map) {
-+		free_cpumask_var(mktme_leadcpus);
-+		return -ENOMEM;
-+	}
-+	return 0;
-+}
-+
- static int __init init_mktme(void)
- {
- 	int ret;
-@@ -320,9 +350,21 @@ static int __init init_mktme(void)
- 	if (!mktme_prog_cache)
- 		goto free_map;
- 
-+	/* Hardware programming targets */
-+	if (mktme_alloc_pconfig_targets())
-+		goto free_cache;
-+
-+	/* Initialize first programming targets */
-+	mktme_update_pconfig_targets();
-+
- 	ret = register_key_type(&key_type_mktme);
- 	if (!ret)
- 		return ret;			/* SUCCESS */
-+
-+	free_cpumask_var(mktme_leadcpus);
-+	bitmap_free(mktme_target_map);
-+free_cache:
-+	kmem_cache_destroy(mktme_prog_cache);
- free_map:
- 	kvfree(mktme_map);
- 
--- 
-2.20.1
+
+ Documentation/security/keys/core.rst        |    8 ++
+ Documentation/security/keys/request-key.rst |   11 +++
+ fs/afs/dir.c                                |   54 ++++++++++++++
+ fs/afs/internal.h                           |    1 
+ fs/afs/security.c                           |  102 +++++++++++++++++++++++----
+ include/keys/request_key_auth-type.h        |    1 
+ include/linux/key.h                         |    3 +
+ include/linux/sched.h                       |    5 +
+ include/linux/tracehook.h                   |    5 +
+ kernel/cred.c                               |    9 ++
+ security/keys/internal.h                    |    6 +-
+ security/keys/key.c                         |    4 +
+ security/keys/keyring.c                     |   16 ++--
+ security/keys/proc.c                        |    4 +
+ security/keys/process_keys.c                |   41 +++++------
+ security/keys/request_key.c                 |   97 +++++++++++++++++++++++++-
+ security/keys/request_key_auth.c            |   60 ++++++++++------
+ 17 files changed, 346 insertions(+), 81 deletions(-)
