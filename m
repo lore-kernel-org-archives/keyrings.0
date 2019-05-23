@@ -1,83 +1,117 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:45 +0000
-Subject: [PATCH, RFC 25/62] keys/mktme: Instantiate and destroy MKTME keys
-Message-Id: <20190508144422.13171-26-kirill.shutemov@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 23 May 2019 15:17:47 +0000
+Subject: [PATCH 0/9] keys: Namespacing [ver #3]
+Message-Id: <155862466770.15244.16038372267332150004.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+To: ebiederm@xmission.com
+Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, Jann Horn <jannh@google.com>, dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Alison Schofield <alison.schofield@intel.com>
 
-Instantiating and destroying are two Kernel Key Service methods
-that are invoked by the kernel key service when a key is added
-(add_key, request_key) or removed (invalidate, revoke, timeout).
+Here are some patches to make keys and keyrings more namespace aware.  Note
+that the branch is dependent on security/next-general.
 
-During instantiation, MKTME needs to allocate an available hardware
-KeyID and map it to the Userspace Key.
+Firstly some miscellaneous patches to make the process easier:
 
-During destroy, MKTME wil returned the hardware KeyID to the pool of
-available keys.
+ (1) Simplify key index_key handling so that the word-sized chunks
+     assoc_array requires don't have to be shifted about, making it easier
+     to add more bits into the key.
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+ (2) Cache the hash value in the key so that we don't have to calculate on
+     every key we examine during a search (it involves a bunch of
+     multiplications).
+
+ (3) Allow keying_search() to search non-recursively.
+
+Then the main patches:
+
+ (4) Make it so that keyring names are per-user_namespace from the point of
+     view of KEYCTL_JOIN_SESSION_KEYRING so that they're not accessible
+     cross-user_namespace.
+
+ (5) Move the user and user-session keyrings to the user_namespace rather
+     than the user_struct.  This prevents them propagating directly across
+     user_namespaces boundaries (ie. the KEY_SPEC_* flags will only pick
+     from the current user_namespace).
+
+ (6) Make it possible to include the target namespace in which the key shall
+     operate in the index_key.  This will allow the possibility of multiple
+     keys with the same description, but different target domains to be held
+     in the same keyring.
+
+ (7) Make it so that keys are implicitly invalidated by removal of a domain
+     tag, causing them to be garbage collected.
+
+ (8) Institute a network namespace domain tag that allows keys to be
+     differentiated by the network namespace in which they operate.  New keys
+     that are of a type marked 'KEY_TYPE_NET_DOMAIN' are assigned the network
+     domain in force when they are created.
+
+ (9) Make it so that the desired network namespace can be handed down into the
+     request_key() mechanism.  This allows AFS, NFS, etc. to request keys
+     specific to the network namespace of the superblock.
+
+     This also means that the keys in the DNS record cache are thenceforth
+     namespaced, provided network filesystems pass the appropriate network
+     namespace down into dns_query().
+
+     For DNS, AFS and NFS are good; CIFS and Ceph are not.  Other cache
+     keyrings, such as idmapper keyrings, also need to set the domain tag -
+     for which they need access to the network namespace of the superblock.
+
+The patches can be found on the following branch:
+
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-namespace
+
+David
 ---
- security/keys/mktme_keys.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+David Howells (9):
+      keys: Simplify key description management
+      keys: Cache the hash value to avoid lots of recalculation
+      keys: Add a 'recurse' flag for keyring searches
+      keys: Namespace keyring names
+      keys: Move the user and user-session keyrings to the user_namespace
+      keys: Include target namespace in match criteria
+      keys: Garbage collect keys for which the domain has been removed
+      keys: Network namespace domain tag
+      keys: Pass the network namespace into request_key mechanism
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 92a047caa829..14bc4e600978 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -14,6 +14,8 @@
- 
- #include "internal.h"
- 
-+static DEFINE_SPINLOCK(mktme_lock);
-+
- /* 1:1 Mapping between Userspace Keys (struct key) and Hardware KeyIDs */
- struct mktme_mapping {
- 	unsigned int	mapped_keyids;
-@@ -95,6 +97,26 @@ struct mktme_payload {
- 	u8		tweak_key[MKTME_AES_XTS_SIZE];
- };
- 
-+/* Key Service Method called when a Userspace Key is garbage collected. */
-+static void mktme_destroy_key(struct key *key)
-+{
-+	mktme_release_keyid(mktme_keyid_from_key(key));
-+}
-+
-+/* Key Service Method to create a new key. Payload is preparsed. */
-+int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
-+{
-+	unsigned long flags;
-+	int keyid;
-+
-+	spin_lock_irqsave(&mktme_lock, flags);
-+	keyid = mktme_reserve_keyid(key);
-+	spin_unlock_irqrestore(&mktme_lock, flags);
-+	if (!keyid)
-+		return -ENOKEY;
-+	return 0;
-+}
-+
- /* Make sure arguments are correct for the TYPE of key requested */
- static int mktme_check_options(struct mktme_payload *payload,
- 			       unsigned long token_mask, enum mktme_type type)
-@@ -236,7 +258,9 @@ struct key_type key_type_mktme = {
- 	.name		= "mktme",
- 	.preparse	= mktme_preparse_payload,
- 	.free_preparse	= mktme_free_preparsed_payload,
-+	.instantiate	= mktme_instantiate_key,
- 	.describe	= user_describe,
-+	.destroy	= mktme_destroy_key,
- };
- 
- static int __init init_mktme(void)
--- 
-2.20.1
+
+ Documentation/security/keys/core.rst        |   38 +++-
+ Documentation/security/keys/request-key.rst |   29 ++-
+ certs/blacklist.c                           |    2 
+ crypto/asymmetric_keys/asymmetric_type.c    |    2 
+ fs/afs/addr_list.c                          |    4 
+ fs/afs/dynroot.c                            |    8 +
+ fs/cifs/dns_resolve.c                       |    3 
+ fs/nfs/dns_resolve.c                        |    3 
+ fs/nfs/nfs4idmap.c                          |    2 
+ include/linux/dns_resolver.h                |    3 
+ include/linux/key-type.h                    |    3 
+ include/linux/key.h                         |   81 ++++++++
+ include/linux/sched/user.h                  |   14 -
+ include/linux/user_namespace.h              |   12 +
+ include/net/net_namespace.h                 |    3 
+ kernel/user.c                               |    8 -
+ kernel/user_namespace.c                     |    9 -
+ lib/digsig.c                                |    2 
+ net/ceph/messenger.c                        |    3 
+ net/core/net_namespace.c                    |   19 ++
+ net/dns_resolver/dns_key.c                  |    1 
+ net/dns_resolver/dns_query.c                |    7 +
+ net/rxrpc/key.c                             |    6 -
+ net/rxrpc/security.c                        |    2 
+ security/integrity/digsig_asymmetric.c      |    4 
+ security/keys/gc.c                          |    2 
+ security/keys/internal.h                    |   10 +
+ security/keys/key.c                         |    5 -
+ security/keys/keyctl.c                      |    4 
+ security/keys/keyring.c                     |  263 +++++++++++++++------------
+ security/keys/persistent.c                  |   10 +
+ security/keys/proc.c                        |    3 
+ security/keys/process_keys.c                |  262 +++++++++++++++++----------
+ security/keys/request_key.c                 |   62 ++++--
+ security/keys/request_key_auth.c            |    3 
+ 35 files changed, 583 insertions(+), 309 deletions(-)
