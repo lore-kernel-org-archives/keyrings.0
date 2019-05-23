@@ -1,144 +1,208 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 30 May 2019 17:26:25 +0000
-Subject: [PATCH 10/10] keys: Add capability-checking keyctl function [ver #2]
-Message-Id: <155923718546.949.13039266815245271686.stgit@warthog.procyon.org.uk>
+Date: Thu, 23 May 2019 15:18:35 +0000
+Subject: [PATCH 6/9] keys: Include target namespace in match criteria [ver #3]
+Message-Id: <155862471501.15244.6788201725187197845.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, ebiggers@kernel.org
+References: <155862466770.15244.16038372267332150004.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155862466770.15244.16038372267332150004.stgit@warthog.procyon.org.uk>
+To: ebiederm@xmission.com
+Cc: dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a keyctl function that requests a set of capability bits to find out
-what features are supported.
+Currently a key has a standard matching criteria of { type, description } and
+this is used to only allow keys with unique criteria in a keyring.  This
+means, however, that you cannot have keys with the same type and description
+but a different target namespace in the same keyring.
+
+This is a potential problem for a containerised environment where, say, a
+container is made up of some parts of its mount space involving netfs
+superblocks from two different network namespaces.
+
+This is also a problem for shared system management keyrings such as the DNS
+records keyring or the NFS idmapper keyring that might contain keys from
+different network namespaces.
+
+Fix this by including a namespace component in a key's matching criteria.
+Keyring types are marked to indicate which, if any, namespace is relevant to
+keys of that type, and that namespace is set when the key is created from the
+current task's namespace set.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/uapi/linux/keyctl.h |   14 ++++++++++++++
- security/keys/compat.c      |    3 +++
- security/keys/internal.h    |    2 ++
- security/keys/keyctl.c      |   37 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 56 insertions(+)
+ include/linux/key.h        |   10 ++++++++++
+ security/keys/gc.c         |    2 +-
+ security/keys/key.c        |    1 +
+ security/keys/keyring.c    |   36 ++++++++++++++++++++++++++++++++++--
+ security/keys/persistent.c |    1 +
+ 5 files changed, 47 insertions(+), 3 deletions(-)
 
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index fd9fb11b312b..aa4972163442 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -68,6 +68,7 @@
- #define KEYCTL_PKEY_VERIFY		28	/* Verify a public key signature */
- #define KEYCTL_RESTRICT_KEYRING		29	/* Restrict keys allowed to link to a keyring */
- #define KEYCTL_MOVE			30	/* Move keys between keyrings */
-+#define KEYCTL_CAPABILITIES		31	/* Find capabilities of keyrings subsystem */
+diff --git a/include/linux/key.h b/include/linux/key.h
+index ae1177302d70..abc68555bac3 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -82,9 +82,16 @@ struct cred;
  
- /* keyctl structures */
- struct keyctl_dh_params {
-@@ -115,4 +116,17 @@ struct keyctl_pkey_params {
+ struct key_type;
+ struct key_owner;
++struct key_tag;
+ struct keyring_list;
+ struct keyring_name;
  
- #define KEYCTL_MOVE_EXCL	0x00000001 /* Do not displace from the to-keyring */
- 
-+/*
-+ * Capabilities flags.  The capabilities list is an array of 32-bit integers;
-+ * each integer can carry up to 32 flags.
-+ */
-+#define KEYCTL_CAPS0_CAPABILITIES	0x00000001 /* KEYCTL_CAPABILITIES supported */
-+#define KEYCTL_CAPS0_PERSISTENT_KEYRINGS 0x00000002 /* Persistent keyrings enabled */
-+#define KEYCTL_CAPS0_DIFFIE_HELLMAN	0x00000004 /* Diffie-Hellman computation enabled */
-+#define KEYCTL_CAPS0_PUBLIC_KEY		0x00000008 /* Public key ops enabled */
-+#define KEYCTL_CAPS0_BIG_KEY		0x00000010 /* big_key-type enabled */
-+#define KEYCTL_CAPS0_INVALIDATE		0x00000020 /* KEYCTL_INVALIDATE supported */
-+#define KEYCTL_CAPS0_RESTRICT_KEYRING	0x00000040 /* KEYCTL_RESTRICT_KEYRING supported */
-+#define KEYCTL_CAPS0_MOVE		0x00000080 /* KEYCTL_MOVE supported */
-+
- #endif /*  _LINUX_KEYCTL_H */
-diff --git a/security/keys/compat.c b/security/keys/compat.c
-index b326bc4f84d7..a53e30da20c5 100644
---- a/security/keys/compat.c
-+++ b/security/keys/compat.c
-@@ -162,6 +162,9 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
- 	case KEYCTL_MOVE:
- 		return keyctl_keyring_move(arg2, arg3, arg4, arg5);
- 
-+	case KEYCTL_CAPABILITIES:
-+		return keyctl_capabilities(compat_ptr(arg2), arg3);
-+
- 	default:
- 		return -EOPNOTSUPP;
- 	}
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index b54a58c025ae..884fd796f668 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -329,6 +329,8 @@ static inline long keyctl_pkey_e_d_s(int op,
- }
- #endif
- 
-+extern long keyctl_capabilities(unsigned int __user *_buffer, size_t buflen);
-+
- /*
-  * Debugging key validation
-  */
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index bbfe7d92d41c..b3db363e0b25 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -30,6 +30,18 @@
- 
- #define KEY_MAX_DESC_SIZE 4096
- 
-+static const u32 keyrings_capabilities[1] = {
-+	[0] = (KEYCTL_CAPS0_CAPABILITIES |
-+	       (IS_ENABLED(CONFIG_PERSISTENT_KEYRINGS)	? KEYCTL_CAPS0_PERSISTENT_KEYRINGS : 0) |
-+	       (IS_ENABLED(CONFIG_KEY_DH_OPERATIONS)	? KEYCTL_CAPS0_DIFFIE_HELLMAN : 0) |
-+	       (IS_ENABLED(CONFIG_ASYMMETRIC_KEY_TYPE)	? KEYCTL_CAPS0_PUBLIC_KEY : 0) |
-+	       (IS_ENABLED(CONFIG_BIG_KEYS)		? KEYCTL_CAPS0_BIG_KEY : 0) |
-+	       KEYCTL_CAPS0_INVALIDATE |
-+	       KEYCTL_CAPS0_RESTRICT_KEYRING |
-+	       KEYCTL_CAPS0_MOVE
-+	       ),
++struct key_tag {
++	struct rcu_head		rcu;
++	refcount_t		usage;
++	bool			removed;	/* T when subject removed */
 +};
 +
- static int key_get_type_from_user(char *type,
- 				  const char __user *_type,
- 				  unsigned len)
-@@ -1678,6 +1690,28 @@ long keyctl_restrict_keyring(key_serial_t id, const char __user *_type,
- 	return ret;
+ struct keyring_index_key {
+ 	/* [!] If this structure is altered, the union in struct key must change too! */
+ 	unsigned long		hash;			/* Hash value */
+@@ -101,6 +108,7 @@ struct keyring_index_key {
+ 		unsigned long x;
+ 	};
+ 	struct key_type		*type;
++	struct key_tag		*domain_tag;	/* Domain of operation */
+ 	const char		*description;
+ };
+ 
+@@ -218,6 +226,7 @@ struct key {
+ 			unsigned long	hash;
+ 			unsigned long	len_desc;
+ 			struct key_type	*type;		/* type of key */
++			struct key_tag	*domain_tag;	/* Domain of operation */
+ 			char		*description;
+ 		};
+ 	};
+@@ -268,6 +277,7 @@ extern struct key *key_alloc(struct key_type *type,
+ extern void key_revoke(struct key *key);
+ extern void key_invalidate(struct key *key);
+ extern void key_put(struct key *key);
++extern bool key_put_tag(struct key_tag *tag);
+ 
+ static inline struct key *__key_get(struct key *key)
+ {
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index 634e96b380e8..83d279fb7793 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -154,7 +154,7 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
+ 			atomic_dec(&key->user->nikeys);
+ 
+ 		key_user_put(key->user);
+-
++		key_put_tag(key->domain_tag);
+ 		kfree(key->description);
+ 
+ 		memzero_explicit(key, sizeof(*key));
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 0741024bafe6..43bb06f39611 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -317,6 +317,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 		goto security_error;
+ 
+ 	/* publish the key by giving it a serial number */
++	refcount_inc(&key->domain_tag->usage);
+ 	atomic_inc(&user->nkeys);
+ 	key_alloc_serial(key);
+ 
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 2468b0861989..7316d1ab382b 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -175,6 +175,9 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
+ 	type = (unsigned long)index_key->type;
+ 	acc = mult_64x32_and_fold(type, desc_len + 13);
+ 	acc = mult_64x32_and_fold(acc, 9207);
++	piece = (unsigned long)index_key->domain_tag;
++	acc = mult_64x32_and_fold(acc, piece);
++	acc = mult_64x32_and_fold(acc, 9207);
+ 
+ 	for (;;) {
+ 		n = desc_len;
+@@ -208,16 +211,36 @@ static void hash_key_type_and_desc(struct keyring_index_key *index_key)
+ 
+ /*
+  * Finalise an index key to include a part of the description actually in the
+- * index key and to add in the hash too.
++ * index key, to set the domain tag and to calculate the hash.
+  */
+ void key_set_index_key(struct keyring_index_key *index_key)
+ {
++	static struct key_tag default_domain_tag = { .usage = REFCOUNT_INIT(1), };
+ 	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
++
+ 	memcpy(index_key->desc, index_key->description, n);
+ 
++	index_key->domain_tag = &default_domain_tag;
+ 	hash_key_type_and_desc(index_key);
  }
  
-+/*
-+ * Get keyrings subsystem capabilities.
++/**
++ * key_put_tag - Release a ref on a tag.
++ * @tag: The tag to release.
++ *
++ * This releases a reference the given tag and returns true if that ref was the
++ * last one.
 + */
-+long keyctl_capabilities(unsigned int __user *_buffer, size_t buflen)
++bool key_put_tag(struct key_tag *tag)
 +{
-+	size_t size = buflen;
++	if (refcount_dec_and_test(&tag->usage)) {
++		kfree_rcu(tag, rcu);
++		return true;
++	}
 +
-+	if (size = 0)
-+		return sizeof(keyrings_capabilities);
-+	if (size & 3)
-+		return -EINVAL;
-+	if (size > sizeof(keyrings_capabilities))
-+		size = sizeof(keyrings_capabilities);
-+	if (copy_to_user(_buffer, keyrings_capabilities, size) != 0)
-+		return -EFAULT;
-+	if (size < buflen &&
-+	    clear_user(_buffer + size, buflen - size) != 0)
-+		return -EFAULT;
-+
-+	return sizeof(keyrings_capabilities);
++	return false;
 +}
 +
  /*
-  * The key control system call
-  */
-@@ -1824,6 +1858,9 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 					   (key_serial_t)arg4,
- 					   (unsigned int)arg5);
- 
-+	case KEYCTL_CAPABILITIES:
-+		return keyctl_capabilities((unsigned int __user *)arg2, (size_t)arg3);
-+
+  * Build the next index key chunk.
+  *
+@@ -238,8 +261,10 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
+ 		return index_key->x;
+ 	case 2:
+ 		return (unsigned long)index_key->type;
++	case 3:
++		return (unsigned long)index_key->domain_tag;
  	default:
- 		return -EOPNOTSUPP;
- 	}
+-		level -= 3;
++		level -= 4;
+ 		if (desc_len <= sizeof(index_key->desc))
+ 			return 0;
+ 
+@@ -268,6 +293,7 @@ static bool keyring_compare_object(const void *object, const void *data)
+ 	const struct key *key = keyring_ptr_to_key(object);
+ 
+ 	return key->index_key.type = index_key->type &&
++		key->index_key.domain_tag = index_key->domain_tag &&
+ 		key->index_key.desc_len = index_key->desc_len &&
+ 		memcmp(key->index_key.description, index_key->description,
+ 		       index_key->desc_len) = 0;
+@@ -309,6 +335,12 @@ static int keyring_diff_objects(const void *object, const void *data)
+ 		goto differ;
+ 	level += sizeof(unsigned long);
+ 
++	seg_a = (unsigned long)a->domain_tag;
++	seg_b = (unsigned long)b->domain_tag;
++	if ((seg_a ^ seg_b) != 0)
++		goto differ;
++	level += sizeof(unsigned long);
++
+ 	i = sizeof(a->desc);
+ 	if (a->desc_len <= i)
+ 		goto same;
+diff --git a/security/keys/persistent.c b/security/keys/persistent.c
+index 90303fe4a394..9944d855a28d 100644
+--- a/security/keys/persistent.c
++++ b/security/keys/persistent.c
+@@ -84,6 +84,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
+ 	long ret;
+ 
+ 	/* Look in the register if it exists */
++	memset(&index_key, 0, sizeof(index_key));
+ 	index_key.type = &key_type_keyring;
+ 	index_key.description = buf;
+ 	index_key.desc_len = sprintf(buf, "_persistent.%u", from_kuid(ns, uid));
