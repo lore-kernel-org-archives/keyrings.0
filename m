@@ -1,120 +1,90 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:11 +0000
-Subject: [PATCH, RFC 51/62] iommu/vt-d: Support MKTME in DMA remapping
-Message-Id: <20190508144422.13171-52-kirill.shutemov@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 23 May 2019 15:58:20 +0000
+Subject: [PATCH 0/2] keys: ACLs
+Message-Id: <155862710003.24863.11807972177275927370.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-When MKTME is enabled, keyid is stored in the high order bits of physical
-address. For DMA transactions targeting encrypted physical memory, keyid
-must be included in the IOVA to physical address translation.
+Here are some patches to change the permissions model used by keys and
+keyrings to be based on an ACL:
 
-This patch appends page keyid when setting up the IOMMU PTEs. On the
-reverse direction, keyid bits are cleared in the physical address lookup.
-Mapping functions of both DMA ops and IOMMU ops are covered.
+ (1) Replace the permissions mask internally with an ACL that contains a
+     list of ACEs, each with a specific subject with a permissions mask.
+     Potted default ACLs are available for new keys and keyrings.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+     ACE subjects can be macroised to indicate the UID and GID specified on
+     the key (which remain).  Future commits will be able to add additional
+     subject types, such as specific UIDs or domain tags/namespaces.
+
+     Also split a number of permissions to give finer control.  Examples
+     include splitting the revocation permit from the change-attributes
+     permit, thereby allowing someone to be granted permission to revoke a
+     key without allowing them to change the owner; also the ability to
+     join a keyring is split from the ability to link to it, thereby
+     stopping a process accessing a keyring by joining it and thus
+     acquiring use of possessor permits.
+
+ (2) Provide a keyctl to allow the granting or denial of one or more
+     permits to a specific subject.  Direct access to the ACL is not
+     granted, and the ACL cannot be viewed.
+
+The patches can be found on the following branch:
+
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-acl
+
+David
 ---
- drivers/iommu/intel-iommu.c | 29 +++++++++++++++++++++++++++--
- include/linux/intel-iommu.h |  9 ++++++++-
- 2 files changed, 35 insertions(+), 3 deletions(-)
+David Howells (2):
+      KEYS: Replace uid/gid/perm permissions checking with an ACL
+      KEYS: Provide KEYCTL_GRANT_PERMISSION
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 28cb713d728c..1ff7e87e25f1 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -862,6 +862,28 @@ static void free_context_table(struct intel_iommu *iommu)
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- }
- 
-+static inline void set_pte_mktme_keyid(unsigned long phys_pfn,
-+		phys_addr_t *pteval)
-+{
-+	unsigned long keyid;
-+
-+	if (!pfn_valid(phys_pfn))
-+		return;
-+
-+	keyid = page_keyid(pfn_to_page(phys_pfn));
-+
-+#ifdef CONFIG_X86_INTEL_MKTME
-+	/*
-+	 * When MKTME is enabled, set keyid in PTE such that DMA
-+	 * remapping will include keyid in the translation from IOVA
-+	 * to physical address. This applies to both user and kernel
-+	 * allocated DMA memory.
-+	 */
-+	*pteval &= ~mktme_keyid_mask;
-+	*pteval |= keyid << mktme_keyid_shift;
-+#endif
-+}
-+
- static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
- 				      unsigned long pfn, int *target_level)
- {
-@@ -888,7 +910,7 @@ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
- 			break;
- 
- 		if (!dma_pte_present(pte)) {
--			uint64_t pteval;
-+			phys_addr_t pteval;
- 
- 			tmp_page = alloc_pgtable_page(domain->nid);
- 
-@@ -896,7 +918,8 @@ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
- 				return NULL;
- 
- 			domain_flush_cache(domain, tmp_page, VTD_PAGE_SIZE);
--			pteval = ((uint64_t)virt_to_dma_pfn(tmp_page) << VTD_PAGE_SHIFT) | DMA_PTE_READ | DMA_PTE_WRITE;
-+			pteval = (virt_to_dma_pfn(tmp_page) << VTD_PAGE_SHIFT) | DMA_PTE_READ | DMA_PTE_WRITE;
-+			set_pte_mktme_keyid(virt_to_dma_pfn(tmp_page), &pteval);
- 			if (cmpxchg64(&pte->val, 0ULL, pteval))
- 				/* Someone else set it while we were thinking; use theirs. */
- 				free_pgtable_page(tmp_page);
-@@ -2289,6 +2312,8 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
- 			}
- 
- 		}
-+		set_pte_mktme_keyid(phys_pfn, &pteval);
-+
- 		/* We don't need lock here, nobody else
- 		 * touches the iova range
- 		 */
-diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-index fa364de9db18..48a377a2b896 100644
---- a/include/linux/intel-iommu.h
-+++ b/include/linux/intel-iommu.h
-@@ -34,6 +34,8 @@
- 
- #include <asm/cacheflush.h>
- #include <asm/iommu.h>
-+#include <asm/page.h>
-+
- 
- /*
-  * VT-d hardware uses 4KiB page size regardless of host page size.
-@@ -603,7 +605,12 @@ static inline void dma_clear_pte(struct dma_pte *pte)
- static inline u64 dma_pte_addr(struct dma_pte *pte)
- {
- #ifdef CONFIG_64BIT
--	return pte->val & VTD_PAGE_MASK;
-+	u64 addr = pte->val;
-+	addr &= VTD_PAGE_MASK;
-+#ifdef CONFIG_X86_INTEL_MKTME
-+	addr &= ~mktme_keyid_mask;
-+#endif
-+	return addr;
- #else
- 	/* Must have a full atomic 64-bit read */
- 	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
--- 
-2.20.1
+
+ certs/blacklist.c                                  |    7 
+ certs/system_keyring.c                             |   12 -
+ drivers/md/dm-crypt.c                              |    2 
+ drivers/nvdimm/security.c                          |    2 
+ fs/afs/security.c                                  |    2 
+ fs/cifs/cifs_spnego.c                              |   25 +
+ fs/cifs/cifsacl.c                                  |   28 +-
+ fs/cifs/connect.c                                  |    4 
+ fs/crypto/keyinfo.c                                |    2 
+ fs/ecryptfs/ecryptfs_kernel.h                      |    2 
+ fs/ecryptfs/keystore.c                             |    2 
+ fs/fscache/object-list.c                           |    2 
+ fs/nfs/nfs4idmap.c                                 |   30 +-
+ fs/ubifs/auth.c                                    |    2 
+ include/linux/key.h                                |  121 ++++---
+ include/uapi/linux/keyctl.h                        |   64 ++++
+ lib/digsig.c                                       |    2 
+ net/ceph/ceph_common.c                             |    2 
+ net/dns_resolver/dns_key.c                         |   12 +
+ net/dns_resolver/dns_query.c                       |   15 +
+ net/rxrpc/key.c                                    |   16 +
+ security/integrity/digsig.c                        |   31 +-
+ security/integrity/digsig_asymmetric.c             |    2 
+ security/integrity/evm/evm_crypto.c                |    2 
+ security/integrity/ima/ima_mok.c                   |   13 +
+ security/integrity/integrity.h                     |    4 
+ .../integrity/platform_certs/platform_keyring.c    |   13 +
+ security/keys/compat.c                             |    2 
+ security/keys/encrypted-keys/encrypted.c           |    2 
+ security/keys/encrypted-keys/masterkey_trusted.c   |    2 
+ security/keys/gc.c                                 |    2 
+ security/keys/internal.h                           |   16 +
+ security/keys/key.c                                |   29 +-
+ security/keys/keyctl.c                             |   97 ++++-
+ security/keys/keyring.c                            |   27 +-
+ security/keys/permission.c                         |  356 ++++++++++++++++++--
+ security/keys/persistent.c                         |   27 +-
+ security/keys/proc.c                               |   20 +
+ security/keys/process_keys.c                       |   86 ++++-
+ security/keys/request_key.c                        |   34 +-
+ security/keys/request_key_auth.c                   |   15 +
+ security/selinux/hooks.c                           |   16 +
+ security/smack/smack_lsm.c                         |    3 
+ 43 files changed, 868 insertions(+), 285 deletions(-)
