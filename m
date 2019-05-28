@@ -1,168 +1,155 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 28 May 2019 22:28:35 +0000
+From: Greg KH <gregkh@linuxfoundation.org>
+Date: Tue, 28 May 2019 23:12:18 +0000
 Subject: Re: [PATCH 1/7] General notification queue with user mmap()'able ring buffer
-Message-Id: <11466.1559082515@warthog.procyon.org.uk>
+Message-Id: <20190528231218.GA28384@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAG48ez3L5KzKyKMxUTaaB=r1E1ZXh=m6e9+CwYcXfRnUSjDvWA@mail.gmail.com> <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk> <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk>
-In-Reply-To: <CAG48ez3L5KzKyKMxUTaaB=r1E1ZXh=m6e9+CwYcXfRnUSjDvWA@mail.gmail.com>
-To: Jann Horn <jannh@google.com>
-Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>
+References: <20190528162603.GA24097@kroah.com>
+ <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
+ <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk>
+ <4031.1559064620@warthog.procyon.org.uk>
+In-Reply-To: <4031.1559064620@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Jann Horn <jannh@google.com> wrote:
-
-> I don't see you setting any special properties on the VMA that would
-> prevent userspace from extending its size via mremap() - no
-> VM_DONTEXPAND or VM_PFNMAP. So I think you might get an out-of-bounds
-> access here?
-
-Should I just set VM_DONTEXPAND in watch_queue_mmap()?  Like so:
-
-	vma->vm_flags |= VM_DONTEXPAND;
-
-> > +static void watch_queue_map_pages(struct vm_fault *vmf,
-> > +                                 pgoff_t start_pgoff, pgoff_t end_pgoff)
-> ...
+On Tue, May 28, 2019 at 06:30:20PM +0100, David Howells wrote:
+> Greg KH <gregkh@linuxfoundation.org> wrote:
 > 
-> Same as above.
-
-Same solution as above?  Or do I need ot check start/end_pgoff too?
-
-> > +static int watch_queue_mmap(struct file *file, struct vm_area_struct *vma)
-> > +{
-> > +       struct watch_queue *wqueue = file->private_data;
-> > +
-> > +       if (vma->vm_pgoff != 0 ||
-> > +           vma->vm_end - vma->vm_start > wqueue->nr_pages * PAGE_SIZE ||
-> > +           !(pgprot_val(vma->vm_page_prot) & pgprot_val(PAGE_SHARED)))
-> > +               return -EINVAL;
+> > > Implement a misc device that implements a general notification queue as a
+> > > ring buffer that can be mmap()'d from userspace.
+> > 
+> > "general" but just for filesystems, right?  :(
 > 
-> This thing should probably have locking against concurrent
-> watch_queue_set_size()?
-
-Yeah.
-
-	static int watch_queue_mmap(struct file *file,
-				    struct vm_area_struct *vma)
-	{
-		struct watch_queue *wqueue = file->private_data;
-		struct inode *inode = file_inode(file);
-		u8 nr_pages;
-
-		inode_lock(inode);
-		nr_pages = wqueue->nr_pages;
-		inode_unlock(inode);
-
-		if (nr_pages = 0 ||
-		...
-			return -EINVAL;
-
-> > +       smp_store_release(&buf->meta.head, len);
+> Whatever gave you that idea?  You can watch keyrings events, for example -
+> they're not exactly filesystems.  I've added the ability to watch for mount
+> topology changes and superblock events because those are something I've been
+> asked to do.  I've added something for block events because I've recently had
+> a problem with trying to recover data from a dodgy disk in that every time the
+> disk goes offline, the ddrecover goes "wheeeee!" as it just sees a lot of
+> EIO/ENODATA at a great rate of knots because it doesn't know the driver is now
+> ignoring the disk.
 > 
-> Why is this an smp_store_release()? The entire buffer should not be visible to
-> userspace before this setup is complete, right?
+> I don't know what else people might want to watch, but I've tried to make it
+> as generic as possible so as not to exclude it if possible.
 
-Yes - if I put the above locking in the mmap handler.  OTOH, it's a one-off
-barrier...
+Ok, let me try to dig up some older proposals to see if this fits into
+the same model to work with them as well.
 
-> > +               if (wqueue->buffer)
-> > +                       return -EBUSY;
+> > > +	refcount_t		usage;
+> > 
+> > Usage of what, this structure?  Or something else?
 > 
-> The preceding check occurs without any locks held and therefore has no
-> reliable effect. It should probably be moved below the
-> inode_lock(...).
+> This is the number of usages of this struct (references to if you prefer).  I
+> can add a comment to this effect.
 
-Yeah, it can race.  I'll move it into watch_queue_set_size().
+I think you answer this later on with the kref comment :)
 
-> > +static void free_watch(struct rcu_head *rcu)
-> > +{
-> > +       struct watch *watch = container_of(rcu, struct watch, rcu);
-> > +
-> > +       put_watch_queue(rcu_access_pointer(watch->queue));
+> > > +		return -EOPNOTSUPP;
+> > 
+> > -ENOTTY is the correct "not a valid ioctl" error value, right?
 > 
-> This should be rcu_dereference_protected(..., 1).
+> fs/ioctl.c does both, but I can switch it if it makes you happier.
 
-That shouldn't be necessary.  rcu_access_pointer()'s description says:
+It does.
 
- * It is also permissible to use rcu_access_pointer() when read-side
- * access to the pointer was removed at least one grace period ago, as
- * is the case in the context of the RCU callback that is freeing up
- * the data, ...
-
-It's in an rcu callback function, so accessing the __rcu pointers in the RCU'd
-struct should be fine with rcu_access_pointer().
-
-> > +       /* We don't need the watch list lock for the next bit as RCU is
-> > +        * protecting everything from being deallocated.
+> > > +void put_watch_queue(struct watch_queue *wqueue)
+> > > +{
+> > > +	if (refcount_dec_and_test(&wqueue->usage))
+> > > +		kfree_rcu(wqueue, rcu);
+> > 
+> > Why not just use a kref?
 > 
-> Does "everything" mean "the wqueue" or more than that?
-
-Actually, just 'wqueue' and its buffer.  'watch' is held by us once we've
-dequeued it as we now own the ref 'wlist' had on it.  'wlist' and 'wq' must be
-pinned by the caller.
-
-> > +                       if (release) {
-> > +                               if (wlist->release_watch) {
-> > +                                       rcu_read_unlock();
-> > +                                       /* This might need to call dput(), so
-> > +                                        * we have to drop all the locks.
-> > +                                        */
-> > +                                       wlist->release_watch(wlist, watch);
+> Why use a kref?  It seems like an effort to be a C++ base class, but without
+> the C++ inheritance bit.  Using kref doesn't seem to gain anything.  It's just
+> a wrapper around refcount_t - so why not just use a refcount_t?
 > 
-> How are you holding a reference to `wlist` here? You got the reference through
-> rcu_dereference(), you've dropped the RCU read lock, and I don't see anything
-> that stabilizes the reference.
+> kref_put() could potentially add an unnecessary extra stack frame and would
+> seem to be best avoided, though an optimising compiler ought to be able to
+> inline if it can.
 
-The watch record must hold a ref on the watched object if the watch_list has a
-->release_watch() method.  In the code snippet above, the watch record now
-belongs to us because we unlinked it under the wlist->lock some lines prior.
+If kref_put() is on your fast path, you have worse problems (kfree isn't
+fast, right?)
 
-However, you raise a good point, and I think the thing to do is to cache
-->release_watch from it and not pass wlist into (*release_watch)().  We don't
-need to concern ourselves with cleaning up *wlist as it will be cleaned up
-when the target object is removed.
+Anyway, it's an inline function, how can it add an extra stack frame?
+Don't try to optimize something that isn't needed yet.
 
-Keyrings don't have a ->release_watch method and neither does the block-layer
-notification stuff.
+> Are you now on the convert all refcounts to krefs path?
 
-> > +       if (wqueue->pages && wqueue->pages[0])
-> > +               WARN_ON(page_ref_count(wqueue->pages[0]) != 1);
+"now"?  Remember, I wrote kref all those years ago, everyone should use
+it.  It saves us having to audit the same pattern over and over again.
+And, even nicer, it uses a refcount now, and as you are trying to
+reference count an object, it is exactly what this was written for.
+
+So yes, I do think it should be used here, unless it is deemed to not
+fit the pattern/usage model.
+
+> > > +EXPORT_SYMBOL(add_watch_to_object);
+> > 
+> > Naming nit, shouldn't the "prefix" all be the same for these new
+> > functions?
+> > 
+> > watch_queue_add_object()?  watch_queue_put()?  And so on?
 > 
-> Is there a reason why there couldn't still be references to the pages
-> from get_user_pages()/get_user_pages_fast()?
+> Naming is fun.  watch_queue_add_object - that suggests something different to
+> what the function actually does.  I'll think about adjusting the names.
 
-I'm not sure.  I'm not sure what to do if there are.  What do you suggest?
+Ok, just had to say something.  It's your call, and yes, naming is hard.
 
-> > +       n->info &= (WATCH_INFO_LENGTH | WATCH_INFO_TYPE_FLAGS | WATCH_INFO_ID);
+> > > +module_exit(watch_queue_exit);
+> > 
+> > module_misc_device()?
 > 
-> Should the non-atomic modification of n->info
+> 	warthog>git grep module_misc_device -- Documentation/
+> 	warthog1>
 
-n's an unpublished copy of some userspace data that's local to the function
-instance.  There shouldn't be any way to race with it at this point.
+Do I have to document all helper macros?  Anyway, it saves you
+boilerplate code, but if built in, it's at the module init level, not
+the fs init level, like you are asking for here.  So that might not
+work, it's your call.
 
-> (and perhaps also the
-> following uses of ->debug) be protected by some lock?
+> > > +		struct {
+> > > +			struct watch_notification watch; /* WATCH_TYPE_SKIP */
+> > > +			volatile __u32	head;		/* Ring head index */
+> > > +			volatile __u32	tail;		/* Ring tail index */
+> > 
+> > A uapi structure that has volatile in it?  Are you _SURE_ this is
+> > correct?
+> > 
+> > That feels wrong to me...  This is not a backing-hardware register, it's
+> > "just memory" and slapping volatile on it shouldn't be the correct
+> > solution for telling the compiler to not to optimize away reads/flushes,
+> > right?  You need a proper memory access type primitive for that to work
+> > correctly everywhere I thought.
+> > 
+> > We only have 2 users of volatile in include/uapi, one for WMI structures
+> > that are backed by firmware (seems correct), and one for DRM which I
+> > have no idea how it works as it claims to be a lock.  Why is this new
+> > addition the correct way to do this that no other ring-buffer that was
+> > mmapped has needed to?
 > 
-> > +       if (post_one_notification(wqueue, n, file->f_cred))
-> > +               wqueue->debug = 0;
-> > +       else
-> > +               wqueue->debug++;
-> > +       ret = len;
-> > +       if (wqueue->debug > 20)
-> > +               ret = -EIO;
-
-It's for debugging purposes, so the non-atomiticity doesn't matter.  I'll
-#undef the symbol to disable the code.
-
-> > +#define IOC_WATCH_QUEUE_SET_SIZE       _IO('s', 0x01)  /* Set the size in pages */
-> > +#define IOC_WATCH_QUEUE_SET_FILTER     _IO('s', 0x02)  /* Set the filter */
+> Yeah, I understand your concern with this.
 > 
-> Should these ioctl numbers be registered in
-> Documentation/ioctl/ioctl-number.txt?
+> The reason I put the volatiles in is that the kernel may be modifying the head
+> pointer on one CPU simultaneously with userspace modifying the tail pointer on
+> another CPU.
+> 
+> Note that userspace does not need to enter the kernel to find out if there's
+> anything in the buffer or to read stuff out of the buffer.  Userspace only
+> needs to enter the kernel, using poll() or similar, to wait for something to
+> appear in the buffer.
 
-Quite possibly.  I'm not sure where's best to actually allocate it.  I picked
-'s' out of the air.
+And how does the tracing and perf ring buffers do this without needing
+volatile?  Why not use the same type of interface they provide, as it's
+always good to share code that has already had all of the nasty corner
+cases worked out.
 
-David
+Anyway, I don't want you to think I don't like this code/idea overall, I
+do.  I just want to see it be something that everyone can use, and use
+easily, as it has been something lots of people have been asking for for
+a long time.
+
+thanks,
+
+greg k-h
