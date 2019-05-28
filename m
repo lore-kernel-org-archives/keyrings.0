@@ -1,46 +1,192 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:09 +0000
-Subject: [PATCH, RFC 49/62] mm, x86: export several MKTME variables
-Message-Id: <20190508144422.13171-50-kirill.shutemov@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 28 May 2019 16:01:47 +0000
+Subject: [RFC][PATCH 0/7] Mount, FS, Block and Keyrings notifications
+Message-Id: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Kai Huang <kai.huang@linux.intel.com>
 
-KVM needs those variables to get/set memory encryption mask.
+Hi Al,
 
-Signed-off-by: Kai Huang <kai.huang@linux.intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Here's a set of patches to add a general variable-length notification queue
+concept and to add sources of events for:
+
+ (1) Mount topology events, such as mounting, unmounting, mount expiry,
+     mount reconfiguration.
+
+ (2) Superblock events, such as R/W<->R/O changes, quota overrun and I/O
+     errors (not complete yet).
+
+ (3) Block layer events, such as I/O errors.
+
+ (4) Key/keyring events, such as creating, linking and removal of keys.
+
+One of the reasons for this is so that we can remove the issue of processes
+having to repeatedly and regularly scan /proc/mounts, which has proven to
+be a system performance problem.  To further aid this, the fsinfo() syscall
+on which this patch series depends, provides a way to access superblock and
+mount information in binary form without the need to parse /proc/mounts.
+
+
+Design decisions:
+
+ (1) A misc chardev is used to create and open a ring buffer:
+
+	fd = open("/dev/watch_queue", O_RDWR);
+
+     which is then configured and mmap'd into userspace:
+
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, BUF_SIZE);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	buf = mmap(NULL, BUF_SIZE * page_size, PROT_READ | PROT_WRITE,
+		   MAP_SHARED, fd, 0);
+
+     The fd cannot be read or written (though there is a facility to use
+     write to inject records for debugging) and userspace just pulls data
+     directly out of the buffer.
+
+ (2) The ring index pointers are stored inside the ring and are thus
+     accessible to userspace.  Userspace should only update the tail
+     pointer and never the head pointer or risk breaking the buffer.  The
+     kernel checks that the pointers appear valid before trying to use
+     them.  A 'skip' record is maintained around the pointers.
+
+ (3) poll() can be used to wait for data to appear in the buffer.
+
+ (4) Records in the buffer are binary, typed and have a length so that they
+     can be of varying size.
+
+     This means that multiple heterogeneous sources can share a common
+     buffer.  Tags may be specified when a watchpoint is created to help
+     distinguish the sources.
+
+ (5) The queue is reusable as there are 16 million types available, of
+     which I've used 4, so there is scope for others to be used.
+
+ (6) Records are filterable as types have up to 256 subtypes that can be
+     individually filtered.  Other filtration is also available.
+
+ (7) Each time the buffer is opened, a new buffer is created - this means
+     that there's no interference between watchers.
+
+ (8) When recording a notification, the kernel will not sleep, but will
+     rather mark a queue as overrun if there's insufficient space, thereby
+     avoiding userspace causing the kernel to hang.
+
+ (9) The 'watchpoint' should be specific where possible, meaning that you
+     specify the object that you want to watch.
+
+(10) The buffer is created and then watchpoints are attached to it, using
+     one of:
+
+	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, 0x01);
+	mount_notify(AT_FDCWD, "/", 0, fd, 0x02);
+	sb_notify(AT_FDCWD, "/mnt", 0, fd, 0x03);
+
+     where in all three cases, fd indicates the queue and the number after
+     is a tag between 0 and 255.
+
+(11) The watch must be removed if either the watch buffer is destroyed or
+     the watched object is destroyed.
+
+
+Things I want to avoid:
+
+ (1) Introducing features that make the core VFS dependent on the network
+     stack or networking namespaces (ie. usage of netlink).
+
+ (2) Dumping all this stuff into dmesg and having a daemon that sits there
+     parsing the output and distributing it as this then puts the
+     responsibility for security into userspace and makes handling
+     namespaces tricky.  Further, dmesg might not exist or might be
+     inaccessible inside a container.
+
+ (3) Letting users see events they shouldn't be able to see.
+
+
+Further things that could be considered:
+
+ (1) Adding a keyctl call to allow a watch on a keyring to be extended to
+     "children" of that keyring, such that the watch is removed from the
+     child if it is unlinked from the keyring.
+
+ (2) Adding global superblock event queue.
+
+ (3) Propagating watches to child superblock over automounts.
+
+
+The patches can be found here also:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=notifications
+
+David
 ---
- arch/x86/mm/mktme.c | 3 +++
- 1 file changed, 3 insertions(+)
+David Howells (7):
+      General notification queue with user mmap()'able ring buffer
+      keys: Add a notification facility
+      vfs: Add a mount-notification facility
+      vfs: Add superblock notifications
+      fsinfo: Export superblock notification counter
+      block: Add block layer notifications
+      Add sample notification program
 
-diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
-index df70651816a1..12f4266cf7ea 100644
---- a/arch/x86/mm/mktme.c
-+++ b/arch/x86/mm/mktme.c
-@@ -7,13 +7,16 @@
- 
- /* Mask to extract KeyID from physical address. */
- phys_addr_t mktme_keyid_mask;
-+EXPORT_SYMBOL_GPL(mktme_keyid_mask);
- /*
-  * Number of KeyIDs available for MKTME.
-  * Excludes KeyID-0 which used by TME. MKTME KeyIDs start from 1.
-  */
- int mktme_nr_keyids;
-+EXPORT_SYMBOL_GPL(mktme_nr_keyids);
- /* Shift of KeyID within physical address. */
- int mktme_keyid_shift;
-+EXPORT_SYMBOL_GPL(mktme_keyid_shift);
- 
- DEFINE_STATIC_KEY_FALSE(mktme_enabled_key);
- EXPORT_SYMBOL_GPL(mktme_enabled_key);
--- 
-2.20.1
+
+ Documentation/security/keys/core.rst   |   58 ++
+ Documentation/watch_queue.rst          |  311 +++++++++++
+ arch/x86/entry/syscalls/syscall_32.tbl |    3 
+ arch/x86/entry/syscalls/syscall_64.tbl |    3 
+ block/Kconfig                          |    9 
+ block/Makefile                         |    1 
+ block/blk-core.c                       |   28 +
+ block/blk-notify.c                     |   83 +++
+ drivers/misc/Kconfig                   |   13 
+ drivers/misc/Makefile                  |    1 
+ drivers/misc/watch_queue.c             |  877 ++++++++++++++++++++++++++++++++
+ fs/Kconfig                             |   21 +
+ fs/Makefile                            |    1 
+ fs/fsinfo.c                            |   12 
+ fs/mount.h                             |   33 +
+ fs/mount_notify.c                      |  178 ++++++
+ fs/namespace.c                         |    9 
+ fs/super.c                             |  116 ++++
+ include/linux/blkdev.h                 |   10 
+ include/linux/dcache.h                 |    1 
+ include/linux/fs.h                     |   78 +++
+ include/linux/key.h                    |    4 
+ include/linux/lsm_hooks.h              |   15 +
+ include/linux/security.h               |   14 +
+ include/linux/syscalls.h               |    5 
+ include/linux/watch_queue.h            |   86 +++
+ include/uapi/linux/fsinfo.h            |   10 
+ include/uapi/linux/keyctl.h            |    1 
+ include/uapi/linux/watch_queue.h       |  185 +++++++
+ kernel/sys_ni.c                        |    6 
+ mm/interval_tree.c                     |    2 
+ mm/memory.c                            |    1 
+ samples/Kconfig                        |    6 
+ samples/Makefile                       |    1 
+ samples/vfs/test-fsinfo.c              |   13 
+ samples/watch_queue/Makefile           |    9 
+ samples/watch_queue/watch_test.c       |  284 ++++++++++
+ security/keys/Kconfig                  |   10 
+ security/keys/compat.c                 |    2 
+ security/keys/gc.c                     |    5 
+ security/keys/internal.h               |   30 +
+ security/keys/key.c                    |   37 +
+ security/keys/keyctl.c                 |   88 +++
+ security/keys/keyring.c                |   17 -
+ security/keys/request_key.c            |    4 
+ security/security.c                    |    9 
+ 46 files changed, 2652 insertions(+), 38 deletions(-)
+ create mode 100644 Documentation/watch_queue.rst
+ create mode 100644 block/blk-notify.c
+ create mode 100644 drivers/misc/watch_queue.c
+ create mode 100644 fs/mount_notify.c
+ create mode 100644 include/linux/watch_queue.h
+ create mode 100644 include/uapi/linux/watch_queue.h
+ create mode 100644 samples/watch_queue/Makefile
+ create mode 100644 samples/watch_queue/watch_test.c
