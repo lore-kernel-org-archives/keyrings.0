@@ -1,149 +1,450 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 23 May 2019 15:18:04 +0000
-Subject: [PATCH 2/9] keys: Cache the hash value to avoid lots of recalculation [ver #3]
-Message-Id: <155862468433.15244.10730708295650659853.stgit@warthog.procyon.org.uk>
+Date: Tue, 28 May 2019 16:02:23 +0000
+Subject: [PATCH 4/7] vfs: Add superblock notifications
+Message-Id: <155905934373.7587.10824503964531598726.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155862466770.15244.16038372267332150004.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155862466770.15244.16038372267332150004.stgit@warthog.procyon.org.uk>
-To: ebiederm@xmission.com
-Cc: dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Cache the hash of the key's type and description in the index key so that
-we're not recalculating it every time we look at a key during a search.
-The hash function does a bunch of multiplications, so evading those is
-probably worthwhile - especially as this is done for every key examined
-during a search.
+Add a superblock event notification facility whereby notifications about
+superblock events, such as I/O errors (EIO), quota limits being hit
+(EDQUOT) and running out of space (ENOSPC) can be reported to a monitoring
+process asynchronously.  Note that this does not cover vfsmount topology
+changes.  mount_notify() is used for that.
 
-This also allows the methods used by assoc_array to get chunks of index-key
-to be simplified.
+Firstly, an event queue needs to be created:
+
+	fd = open("/dev/event_queue", O_RDWR);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+
+then a notification can be set up to report notifications via that queue:
+
+	struct watch_notification_filter filter = {
+		.nr_filters = 1,
+		.filters = {
+			[0] = {
+				.type = WATCH_TYPE_SB_NOTIFY,
+				.subtype_filter[0] = UINT_MAX,
+			},
+		},
+	};
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	sb_notify(AT_FDCWD, "/home/dhowells", 0, fd, 0x03);
+
+In this case, it would let me monitor my own homedir for events.  After
+setting the watch, records will be placed into the queue when, for example,
+as superblock switches between read-write and read-only.  Records are of
+the following format:
+
+	struct superblock_notification {
+		struct watch_notification watch;
+		__u64	sb_id;
+	} *n;
+
+Where:
+
+	n->watch.type will be WATCH_TYPE_SB_NOTIFY.
+
+	n->watch.subtype will indicate the type of event, such as
+	NOTIFY_SUPERBLOCK_READONLY.
+
+	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
+	record.
+
+	n->watch.info & WATCH_INFO_ID will be the fifth argument to
+	sb_notify(), shifted.
+
+	n->watch.info & WATCH_INFO_FLAG_0 will be used for
+	NOTIFY_SUPERBLOCK_READONLY, being set if the superblock becomes
+	R/O, and being cleared otherwise.
+
+	n->sb_id will be the ID of the superblock, as can be retrieved with
+	the fsinfo() syscall, as part of the fsinfo_sb_notifications
+	attribute in the the watch_id field.
+
+Note that it is permissible for event records to be of variable length -
+or, at least, the length may be dependent on the subtype.  Note also that
+the queue can be shared between multiple notifications of various types.
+
+[*] QUESTION: Does this want to be per-sb, per-mount_namespace,
+    per-some-new-notify-ns or per-system?  Or do multiple options make
+    sense?
+
+[*] QUESTION: I've done it this way so that anyone could theoretically
+    monitor the superblock of any filesystem they can pathwalk to, but do
+    we need other security controls?
+
+[*] QUESTION: Should the LSM be able to filter the events a queue can
+    receive?  For instance the opener of the queue would grant that queue
+    subject creds (by ->f_cred) that could be used to govern what events
+    could be seen, assuming the target superblock to have some object
+    creds, based on, say, the mounter.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/key.h      |    3 +++
- security/keys/internal.h |    8 +-------
- security/keys/key.c      |    2 +-
- security/keys/keyring.c  |   28 ++++++++++++++++++++--------
- 4 files changed, 25 insertions(+), 16 deletions(-)
+ arch/x86/entry/syscalls/syscall_32.tbl |    1 
+ arch/x86/entry/syscalls/syscall_64.tbl |    1 
+ fs/Kconfig                             |   12 +++
+ fs/super.c                             |  115 ++++++++++++++++++++++++++++++++
+ include/linux/fs.h                     |   77 +++++++++++++++++++++
+ include/linux/syscalls.h               |    2 +
+ include/uapi/linux/watch_queue.h       |   26 +++++++
+ kernel/sys_ni.c                        |    3 +
+ 8 files changed, 237 insertions(+)
 
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 86ccc2d010f6..fb2debcacea0 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -86,6 +86,8 @@ struct keyring_list;
- struct keyring_name;
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index a8416a9a0ccb..429416ce60e1 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -440,3 +440,4 @@
+ 433	i386	fspick			sys_fspick			__ia32_sys_fspick
+ 434	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
+ 435	i386	mount_notify		sys_mount_notify		__ia32_sys_mount_notify
++436	i386	sb_notify		sys_sb_notify			__ia32_sys_sb_notify
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index ea052a94eb97..4ae146e472db 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -357,6 +357,7 @@
+ 433	common	fspick			__x64_sys_fspick
+ 434	common	fsinfo			__x64_sys_fsinfo
+ 435	common	mount_notify		__x64_sys_mount_notify
++436	common	sb_notify		__x64_sys_sb_notify
  
- struct keyring_index_key {
-+	/* [!] If this structure is altered, the union in struct key must change too! */
-+	unsigned long		hash;			/* Hash value */
- 	union {
- 		struct {
- #ifdef __LITTLE_ENDIAN /* Put desc_len at the LSB of x */
-@@ -213,6 +215,7 @@ struct key {
- 	union {
- 		struct keyring_index_key index_key;
- 		struct {
-+			unsigned long	hash;
- 			unsigned long	len_desc;
- 			struct key_type	*type;		/* type of key */
- 			char		*description;
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index de4fbf6afd89..b7a20929e803 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -89,13 +89,7 @@ extern spinlock_t key_serial_lock;
- extern struct mutex key_construction_mutex;
- extern wait_queue_head_t request_key_conswq;
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/fs/Kconfig b/fs/Kconfig
+index a26bbe27a791..fc0fa4b35f3c 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -130,6 +130,18 @@ config MOUNT_NOTIFICATIONS
+ 	  device to handle the notification buffer and provides the
+ 	  mount_notify() system call to enable/disable watchpoints.
  
--
--static inline void key_set_index_key(struct keyring_index_key *index_key)
--{
--	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
--	memcpy(index_key->desc, index_key->description, n);
--}
--
-+extern void key_set_index_key(struct keyring_index_key *index_key);
- extern struct key_type *key_type_lookup(const char *type);
- extern void key_type_put(struct key_type *ktype);
++config SB_NOTIFICATIONS
++	bool "Superblock event notifications"
++	select WATCH_QUEUE
++	help
++	  This option provides support for receiving superblock event
++	  notifications.  This makes use of the /dev/watch_queue misc device to
++	  handle the notification buffer and provides the sb_notify() system
++	  call to enable/disable watches.
++
++	  Events can include things like changing between R/W and R/O, EIO
++	  generation, ENOSPC generation and EDQUOT generation.
++
+ source "fs/quota/Kconfig"
  
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 010d57859446..0741024bafe6 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -285,12 +285,12 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 	key->index_key.description = kmemdup(desc, desclen + 1, GFP_KERNEL);
- 	if (!key->index_key.description)
- 		goto no_memory_3;
-+	key->index_key.type = type;
- 	key_set_index_key(&key->index_key);
+ source "fs/autofs/Kconfig"
+diff --git a/fs/super.c b/fs/super.c
+index 61819e8e5469..991d69d9dbed 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -36,6 +36,8 @@
+ #include <linux/lockdep.h>
+ #include <linux/user_namespace.h>
+ #include <linux/fs_context.h>
++#include <linux/syscalls.h>
++#include <linux/namei.h>
+ #include <uapi/linux/mount.h>
+ #include "internal.h"
  
- 	refcount_set(&key->usage, 1);
- 	init_rwsem(&key->sem);
- 	lockdep_set_class(&key->sem, &type->lock_class);
--	key->index_key.type = type;
- 	key->user = user;
- 	key->quotalen = quotalen;
- 	key->datalen = type->def_datalen;
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 95fb1d90a22c..13841b00ed6f 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -168,7 +168,7 @@ static u64 mult_64x32_and_fold(u64 x, u32 y)
- /*
-  * Hash a key type and description.
-  */
--static unsigned long hash_key_type_and_desc(const struct keyring_index_key *index_key)
-+static void hash_key_type_and_desc(struct keyring_index_key *index_key)
+@@ -350,6 +352,10 @@ void deactivate_locked_super(struct super_block *s)
  {
- 	const unsigned level_shift = ASSOC_ARRAY_LEVEL_STEP;
- 	const unsigned long fan_mask = ASSOC_ARRAY_FAN_MASK;
-@@ -206,10 +206,22 @@ static unsigned long hash_key_type_and_desc(const struct keyring_index_key *inde
- 	 * zero for keyrings and non-zero otherwise.
- 	 */
- 	if (index_key->type != &key_type_keyring && (hash & fan_mask) = 0)
--		return hash | (hash >> (ASSOC_ARRAY_KEY_CHUNK_SIZE - level_shift)) | 1;
--	if (index_key->type = &key_type_keyring && (hash & fan_mask) != 0)
--		return (hash + (hash << level_shift)) & ~fan_mask;
--	return hash;
-+		hash |= (hash >> (ASSOC_ARRAY_KEY_CHUNK_SIZE - level_shift)) | 1;
-+	else if (index_key->type = &key_type_keyring && (hash & fan_mask) != 0)
-+		hash = (hash + (hash << level_shift)) & ~fan_mask;
-+	index_key->hash = hash;
+ 	struct file_system_type *fs = s->s_type;
+ 	if (atomic_dec_and_test(&s->s_active)) {
++#ifdef CONFIG_SB_NOTIFICATIONS
++		if (s->s_watchers)
++			remove_watch_list(s->s_watchers);
++#endif
+ 		cleancache_invalidate_fs(s);
+ 		unregister_shrinker(&s->s_shrink);
+ 		fs->kill_sb(s);
+@@ -990,6 +996,8 @@ int reconfigure_super(struct fs_context *fc)
+ 	/* Needs to be ordered wrt mnt_is_readonly() */
+ 	smp_wmb();
+ 	sb->s_readonly_remount = 0;
++	notify_sb(sb, NOTIFY_SUPERBLOCK_READONLY,
++		  remount_ro ? WATCH_INFO_FLAG_0 : 0);
+ 
+ 	/*
+ 	 * Some filesystems modify their metadata via some other path than the
+@@ -1808,3 +1816,110 @@ int thaw_super(struct super_block *sb)
+ 	return thaw_super_locked(sb);
+ }
+ EXPORT_SYMBOL(thaw_super);
++
++#ifdef CONFIG_SB_NOTIFICATIONS
++/*
++ * Post superblock notifications.
++ */
++void post_sb_notification(struct super_block *s, struct superblock_notification *n)
++{
++	post_watch_notification(s->s_watchers, &n->watch, current_cred(),
++				s->s_unique_id);
 +}
 +
-+/*
-+ * Finalise an index key to include a part of the description actually in the
-+ * index key and to add in the hash too.
-+ */
-+void key_set_index_key(struct keyring_index_key *index_key)
++static void release_sb_watch(struct watch_list *wlist, struct watch *watch)
 +{
-+	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
-+	memcpy(index_key->desc, index_key->description, n);
++	struct super_block *s = watch->private;
 +
-+	hash_key_type_and_desc(index_key);
++	put_super(s);
++}
++
++/**
++ * sys_sb_notify - Watch for superblock events.
++ * @dfd: Base directory to pathwalk from or fd referring to superblock.
++ * @filename: Path to superblock to place the watch upon
++ * @at_flags: Pathwalk control flags
++ * @watch_fd: The watch queue to send notifications to.
++ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
++ */
++SYSCALL_DEFINE5(sb_notify,
++		int, dfd,
++		const char __user *, filename,
++		unsigned int, at_flags,
++		int, watch_fd,
++		int, watch_id)
++{
++	struct watch_queue *wqueue;
++	struct super_block *s;
++	struct watch_list *wlist = NULL;
++	struct watch *watch;
++	struct path path;
++	int ret;
++
++	if (watch_id < -1 || watch_id > 0xff)
++		return -EINVAL;
++
++	ret = user_path_at(dfd, filename, at_flags, &path);
++	if (ret)
++		return ret;
++
++	wqueue = get_watch_queue(watch_fd);
++	if (IS_ERR(wqueue))
++		goto err_path;
++
++	s = path.dentry->d_sb;
++	if (watch_id >= 0) {
++		if (!s->s_watchers) {
++			wlist = kzalloc(sizeof(*wlist), GFP_KERNEL);
++			if (!wlist)
++				goto err_wqueue;
++			INIT_HLIST_HEAD(&wlist->watchers);
++			spin_lock_init(&wlist->lock);
++			wlist->release_watch = release_sb_watch;
++		}
++
++		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
++		if (!watch)
++			goto err_wlist;
++
++		init_watch(watch, wqueue);
++		watch->id		= s->s_unique_id;
++		watch->private		= s;
++		watch->info_id		= (u32)watch_id << 24;
++
++		down_write(&s->s_umount);
++		ret = -EIO;
++		if (atomic_read(&s->s_active)) {
++			if (!s->s_watchers) {
++				s->s_watchers = wlist;
++				wlist = NULL;
++			}
++
++			ret = add_watch_to_object(watch, s->s_watchers);
++			if (ret = 0) {
++				spin_lock(&sb_lock);
++				s->s_count++;
++				spin_unlock(&sb_lock);
++			}
++		}
++		up_write(&s->s_umount);
++		if (ret < 0)
++			kfree(watch);
++	} else if (s->s_watchers) {
++		down_write(&s->s_umount);
++		ret = remove_watch_from_object(s->s_watchers, wqueue,
++					       s->s_unique_id, false);
++		up_write(&s->s_umount);
++	} else {
++		ret = -EBADSLT;
++	}
++
++err_wlist:
++	kfree(wlist);
++err_wqueue:
++	put_watch_queue(wqueue);
++err_path:
++	path_put(&path);
++	return ret;
++}
++#endif
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index f1c74596cd77..79ede28f54cc 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -40,6 +40,7 @@
+ #include <linux/fs_types.h>
+ #include <linux/build_bug.h>
+ #include <linux/stddef.h>
++#include <linux/watch_queue.h>
+ 
+ #include <asm/byteorder.h>
+ #include <uapi/linux/fs.h>
+@@ -1530,6 +1531,10 @@ struct super_block {
+ 
+ 	/* Superblock event notifications */
+ 	u64			s_unique_id;
++
++#ifdef CONFIG_SB_NOTIFICATIONS
++	struct watch_list	*s_watchers;
++#endif
+ } __randomize_layout;
+ 
+ /* Helper functions so that in most cases filesystems will
+@@ -3530,4 +3535,76 @@ static inline struct sock *io_uring_get_socket(struct file *file)
  }
+ #endif
+ 
++extern void post_sb_notification(struct super_block *, struct superblock_notification *);
++
++/**
++ * notify_sb: Post simple superblock notification.
++ * @s: The superblock the notification is about.
++ * @subtype: The type of notification.
++ * @info: WATCH_INFO_FLAG_* flags to be set in the record.
++ */
++static inline void notify_sb(struct super_block *s,
++			     enum superblock_notification_type subtype,
++			     u32 info)
++{
++#ifdef CONFIG_SB_NOTIFICATIONS
++	if (unlikely(s->s_watchers)) {
++		struct superblock_notification n = {
++			.watch.type	= WATCH_TYPE_SB_NOTIFY,
++			.watch.subtype	= subtype,
++			.watch.info	= sizeof(n) | info,
++			.sb_id		= s->s_unique_id,
++		};
++
++		post_sb_notification(s, &n);
++	}
++			     
++#endif
++}
++
++/**
++ * sb_error: Post superblock error notification.
++ * @s: The superblock the notification is about.
++ * @error: The error number to be recorded.
++ */
++static inline int sb_error(struct super_block *s, int error)
++{
++#ifdef CONFIG_SB_NOTIFICATIONS
++	if (unlikely(s->s_watchers)) {
++		struct superblock_error_notification n = {
++			.s.watch.type	= WATCH_TYPE_SB_NOTIFY,
++			.s.watch.subtype = NOTIFY_SUPERBLOCK_ERROR,
++			.s.watch.info	= sizeof(n),
++			.s.sb_id	= s->s_unique_id,
++			.error_number	= error,
++			.error_cookie	= 0,
++		};
++
++		post_sb_notification(s, &n.s);
++	}
++#endif
++	return error;
++}
++
++/**
++ * sb_EDQUOT: Post superblock quota overrun notification.
++ * @s: The superblock the notification is about.
++ */
++static inline int sb_EQDUOT(struct super_block *s)
++{
++#ifdef CONFIG_SB_NOTIFICATIONS
++	if (unlikely(s->s_watchers)) {
++		struct superblock_notification n = {
++			.watch.type	= WATCH_TYPE_SB_NOTIFY,
++			.watch.subtype	= NOTIFY_SUPERBLOCK_EDQUOT,
++			.watch.info	= sizeof(n),
++			.sb_id		= s->s_unique_id,
++		};
++
++		post_sb_notification(s, &n);
++	}
++#endif
++	return -EDQUOT;
++}
++
+ #endif /* _LINUX_FS_H */
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 7c2b66175f3c..204a6dbcc34a 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -1003,6 +1003,8 @@ asmlinkage long sys_fsinfo(int dfd, const char __user *path,
+ 			   void __user *buffer, size_t buf_size);
+ asmlinkage long sys_mount_notify(int dfd, const char __user *path,
+ 				 unsigned int at_flags, int watch_fd, int watch_id);
++asmlinkage long sys_sb_notify(int dfd, const char __user *path,
++			      unsigned int at_flags, int watch_fd, int watch_id);
  
  /*
-@@ -227,7 +239,7 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
- 	level /= ASSOC_ARRAY_KEY_CHUNK_SIZE;
- 	switch (level) {
- 	case 0:
--		return hash_key_type_and_desc(index_key);
-+		return index_key->hash;
- 	case 1:
- 		return index_key->x;
- 	case 2:
-@@ -280,8 +292,8 @@ static int keyring_diff_objects(const void *object, const void *data)
- 	int level, i;
+  * Architecture-specific system calls
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index 388b4141bcee..126afcc98cc6 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -128,4 +128,30 @@ struct mount_notification {
+ 	__u32	changed_mount;		/* The mount that got changed */
+ };
  
- 	level = 0;
--	seg_a = hash_key_type_and_desc(a);
--	seg_b = hash_key_type_and_desc(b);
-+	seg_a = a->hash;
-+	seg_b = b->hash;
- 	if ((seg_a ^ seg_b) != 0)
- 		goto differ;
- 	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
++/*
++ * Type of superblock notification.
++ */
++enum superblock_notification_type {
++	NOTIFY_SUPERBLOCK_READONLY	= 0, /* Filesystem toggled between R/O and R/W */
++	NOTIFY_SUPERBLOCK_ERROR		= 1, /* Error in filesystem or blockdev */
++	NOTIFY_SUPERBLOCK_EDQUOT	= 2, /* EDQUOT notification */
++	NOTIFY_SUPERBLOCK_NETWORK	= 3, /* Network status change */
++};
++
++/*
++ * Superblock notification record.
++ * - watch.type = WATCH_TYPE_MOUNT_NOTIFY
++ * - watch.subtype = enum superblock_notification_subtype
++ */
++struct superblock_notification {
++	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
++	__u64	sb_id;			/* 64-bit superblock ID [fsinfo_ids::f_sb_id] */
++};
++
++struct superblock_error_notification {
++	struct superblock_notification s; /* subtype = notify_superblock_error */
++	__u32	error_number;
++	__u32	error_cookie;
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 97b025e7863c..565d1e3d1bed 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -108,6 +108,9 @@ COND_SYSCALL(quotactl);
+ 
+ /* fs/read_write.c */
+ 
++/* fs/sb_notify.c */
++COND_SYSCALL(sb_notify);
++
+ /* fs/sendfile.c */
+ 
+ /* fs/select.c */
