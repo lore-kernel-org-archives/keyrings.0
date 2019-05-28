@@ -1,41 +1,351 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 21:21:00 +0000
-Subject: Re: [PATCH, RFC 52/62] x86/mm: introduce common code for mem encryption
-Message-Id: <20190508212100.bnkgcy45xqd2o2d7@black.fi.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 28 May 2019 16:02:39 +0000
+Subject: [PATCH 6/7] block: Add block layer notifications
+Message-Id: <155905935953.7587.11815678364029606128.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
- <20190508144422.13171-53-kirill.shutemov@linux.intel.com>
- <20190508165830.GA11815@infradead.org>
- <20190508135225.3cb0e638@jacob-builder>
-In-Reply-To: <20190508135225.3cb0e638@jacob-builder>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2019 at 08:52:25PM +0000, Jacob Pan wrote:
-> On Wed, 8 May 2019 09:58:30 -0700
-> Christoph Hellwig <hch@infradead.org> wrote:
-> 
-> > On Wed, May 08, 2019 at 05:44:12PM +0300, Kirill A. Shutemov wrote:
-> > > +EXPORT_SYMBOL_GPL(__mem_encrypt_dma_set);
-> > > +
-> > > +phys_addr_t __mem_encrypt_dma_clear(phys_addr_t paddr)
-> > > +{
-> > > +	if (sme_active())
-> > > +		return __sme_clr(paddr);
-> > > +
-> > > +	return paddr & ~mktme_keyid_mask;
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(__mem_encrypt_dma_clear);  
-> > 
-> > In general nothing related to low-level dma address should ever
-> > be exposed to modules.  What is your intended user for these two?
-> 
-> Right no need to export. It will be used by IOMMU drivers.
+Add a block layer notification mechanism whereby notifications about
+block-layer events such as I/O errors, can be reported to a monitoring
+process asynchronously.
 
-I will drop these EXPORT_SYMBOL_GPL().
+Firstly, an event queue needs to be created:
 
--- 
- Kirill A. Shutemov
+	fd = open("/dev/event_queue", O_RDWR);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+
+then a notification can be set up to report block notifications via that
+queue:
+
+	struct watch_notification_filter filter = {
+		.nr_filters = 1,
+		.filters = {
+			[0] = {
+				.type = WATCH_TYPE_BLOCK_NOTIFY,
+				.subtype_filter[0] = UINT_MAX;
+			},
+		},
+	};
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	block_notify(fd, 12);
+
+After that, records will be placed into the queue when, for example, errors
+occur on a block device.  Records are of the following format:
+
+	struct block_notification {
+		struct watch_notification watch;
+		__u64	dev;
+		__u64	sector;
+	} *n;
+
+Where:
+
+	n->watch.type will be WATCH_TYPE_BLOCK_NOTIFY
+
+	n->watch.subtype will be the type of notification, such as
+	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM.
+
+	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
+	record.
+
+	n->watch.info & WATCH_INFO_ID will be the second argument to
+	block_notify(), shifted.
+
+	n->dev will be the device numbers munged together.
+
+	n->sector will indicate the affected sector (if appropriate for the
+	event).
+
+Note that it is permissible for event records to be of variable length -
+or, at least, the length may be dependent on the subtype.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/x86/entry/syscalls/syscall_32.tbl |    1 
+ arch/x86/entry/syscalls/syscall_64.tbl |    1 
+ block/Kconfig                          |    9 +++
+ block/Makefile                         |    1 
+ block/blk-core.c                       |   28 +++++++++++
+ block/blk-notify.c                     |   83 ++++++++++++++++++++++++++++++++
+ include/linux/blkdev.h                 |   10 ++++
+ include/linux/syscalls.h               |    1 
+ include/uapi/linux/watch_queue.h       |   28 +++++++++++
+ 9 files changed, 162 insertions(+)
+ create mode 100644 block/blk-notify.c
+
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index 429416ce60e1..22793f77c5f1 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -441,3 +441,4 @@
+ 434	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
+ 435	i386	mount_notify		sys_mount_notify		__ia32_sys_mount_notify
+ 436	i386	sb_notify		sys_sb_notify			__ia32_sys_sb_notify
++437	i386	block_notify		sys_block_notify		__ia32_sys_block_notify
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index 4ae146e472db..3f0b82272a9f 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -358,6 +358,7 @@
+ 434	common	fsinfo			__x64_sys_fsinfo
+ 435	common	mount_notify		__x64_sys_mount_notify
+ 436	common	sb_notify		__x64_sys_sb_notify
++437	common	block_notify		__x64_sys_block_notify
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/block/Kconfig b/block/Kconfig
+index 1b220101a9cb..3b0a0ddb83ef 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -163,6 +163,15 @@ config BLK_SED_OPAL
+ 	Enabling this option enables users to setup/unlock/lock
+ 	Locking ranges for SED devices using the Opal protocol.
+ 
++config BLK_NOTIFICATIONS
++	bool "Block layer event notifications"
++	select WATCH_QUEUE
++	help
++	  This option provides support for getting block layer event
++	  notifications.  This makes use of the /dev/watch_queue misc device to
++	  handle the notification buffer and provides the block_notify() system
++	  call to enable/disable watches.
++
+ menu "Partition Types"
+ 
+ source "block/partitions/Kconfig"
+diff --git a/block/Makefile b/block/Makefile
+index eee1b4ceecf9..2dca6273f8f3 100644
+--- a/block/Makefile
++++ b/block/Makefile
+@@ -35,3 +35,4 @@ obj-$(CONFIG_BLK_DEBUG_FS)	+= blk-mq-debugfs.o
+ obj-$(CONFIG_BLK_DEBUG_FS_ZONED)+= blk-mq-debugfs-zoned.o
+ obj-$(CONFIG_BLK_SED_OPAL)	+= sed-opal.o
+ obj-$(CONFIG_BLK_PM)		+= blk-pm.o
++obj-$(CONFIG_BLK_NOTIFICATIONS)	+= blk-notify.o
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 419d600e6637..8325e33f0bcc 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -144,6 +144,21 @@ static const struct {
+ 	[BLK_STS_IOERR]		= { -EIO,	"I/O" },
+ };
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static const enum block_notification_type blk_notifications[] = {
++	[BLK_STS_TIMEOUT]	= NOTIFY_BLOCK_ERROR_TIMEOUT,
++	[BLK_STS_NOSPC]		= NOTIFY_BLOCK_ERROR_NO_SPACE,
++	[BLK_STS_TRANSPORT]	= NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT,
++	[BLK_STS_TARGET]	= NOTIFY_BLOCK_ERROR_CRITICAL_TARGET,
++	[BLK_STS_NEXUS]		= NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS,
++	[BLK_STS_MEDIUM]	= NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM,
++	[BLK_STS_PROTECTION]	= NOTIFY_BLOCK_ERROR_PROTECTION,
++	[BLK_STS_RESOURCE]	= NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE,
++	[BLK_STS_DEV_RESOURCE]	= NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE,
++	[BLK_STS_IOERR]		= NOTIFY_BLOCK_ERROR_IO,
++};
++#endif
++
+ blk_status_t errno_to_blk_status(int errno)
+ {
+ 	int i;
+@@ -179,6 +194,19 @@ static void print_req_error(struct request *req, blk_status_t status)
+ 				req->rq_disk ?  req->rq_disk->disk_name : "?",
+ 				(unsigned long long)blk_rq_pos(req),
+ 				req->cmd_flags);
++
++#ifdef CONFIG_BLK_NOTIFICATIONS
++	if (blk_notifications[idx]) {
++		struct block_notification n = {
++			.watch.type	= WATCH_TYPE_BLOCK_NOTIFY,
++			.watch.subtype	= blk_notifications[idx],
++			.watch.info	= sizeof(n),
++			.dev		= req->rq_disk ? disk_devt(req->rq_disk) : 0,
++			.sector		= blk_rq_pos(req),
++		};
++		post_block_notification(&n);
++	}
++#endif
+ }
+ 
+ static void req_bio_endio(struct request *rq, struct bio *bio,
+diff --git a/block/blk-notify.c b/block/blk-notify.c
+new file mode 100644
+index 000000000000..b310aaf37e7c
+--- /dev/null
++++ b/block/blk-notify.c
+@@ -0,0 +1,83 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Block layer event notifications.
++ *
++ * Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ */
++
++#include <linux/blkdev.h>
++#include <linux/watch_queue.h>
++#include <linux/syscalls.h>
++#include <linux/init_task.h>
++
++/*
++ * Global queue for watching for block layer events.
++ */
++static struct watch_list blk_watchers = {
++	.watchers	= HLIST_HEAD_INIT,
++	.lock		= __SPIN_LOCK_UNLOCKED(&blk_watchers.lock),
++};
++
++static DEFINE_SPINLOCK(blk_watchers_lock);
++
++/*
++ * Post superblock notifications.
++ *
++ * Note that there's only a global queue to which all events are posted.  Might
++ * want to provide per-dev queues also.
++ */
++void post_block_notification(struct block_notification *n)
++{
++	u64 id = 0; /* Might want to allow dev# here. */
++
++	post_watch_notification(&blk_watchers, &n->watch, &init_cred, id);
++}
++
++/**
++ * sys_block_notify - Watch for superblock events.
++ * @watch_fd: The watch queue to send notifications to.
++ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
++ */
++SYSCALL_DEFINE2(block_notify, int, watch_fd, int, watch_id)
++{
++	struct watch_queue *wqueue;
++	struct watch_list *wlist = &blk_watchers;
++	struct watch *watch;
++	long ret = -ENOMEM;
++	u64 id = 0; /* Might want to allow dev# here. */
++
++	if (watch_id < -1 || watch_id > 0xff)
++		return -EINVAL;
++
++	wqueue = get_watch_queue(watch_fd);
++	if (IS_ERR(wqueue)) {
++		ret = PTR_ERR(wqueue);
++		goto err;
++	}
++
++	if (watch_id >= 0) {
++		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
++		if (!watch)
++			goto err_wqueue;
++
++		init_watch(watch, wqueue);
++		watch->id	= id;
++		watch->info_id	= (u32)watch_id << WATCH_INFO_ID__SHIFT;
++
++		spin_lock(&blk_watchers_lock);
++		ret = add_watch_to_object(watch, wlist);
++		spin_unlock(&blk_watchers_lock);
++		if (ret < 0)
++			kfree(watch);
++	} else {
++		spin_lock(&blk_watchers_lock);
++		ret = remove_watch_from_object(wlist, wqueue, id, false);
++		spin_unlock(&blk_watchers_lock);
++	}
++
++err_wqueue:
++	put_watch_queue(wqueue);
++err:
++	return ret;
++}
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1aafeb923e7b..c28f8647a76d 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -43,6 +43,7 @@ struct pr_ops;
+ struct rq_qos;
+ struct blk_queue_stats;
+ struct blk_stat_callback;
++struct block_notification;
+ 
+ #define BLKDEV_MIN_RQ	4
+ #define BLKDEV_MAX_RQ	128	/* Default maximum */
+@@ -1744,6 +1745,15 @@ static inline bool blk_req_can_dispatch_to_zone(struct request *rq)
+ }
+ #endif /* CONFIG_BLK_DEV_ZONED */
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++extern void post_block_notification(struct block_notification *n);
++#else
++static inline void post_block_notification(struct block_notification *n)
++{
++}
++#endif
++
++
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 204a6dbcc34a..77a9d84f1fbd 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -1005,6 +1005,7 @@ asmlinkage long sys_mount_notify(int dfd, const char __user *path,
+ 				 unsigned int at_flags, int watch_fd, int watch_id);
+ asmlinkage long sys_sb_notify(int dfd, const char __user *path,
+ 			      unsigned int at_flags, int watch_fd, int watch_id);
++asmlinkage long sys_block_notify(int watch_fd, int watch_id);
+ 
+ /*
+  * Architecture-specific system calls
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index 3b5770889bba..fad276ffa2d0 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -44,6 +44,7 @@ struct watch_notification {
+ #define WATCH_INFO_FLAG_6	0x00400000
+ #define WATCH_INFO_FLAG_7	0x00800000
+ #define WATCH_INFO_ID		0xff000000	/* ID of watchpoint */
++#define WATCH_INFO_ID__SHIFT	24
+ };
+ 
+ #define WATCH_LENGTH_SHIFT	3
+@@ -154,4 +155,31 @@ struct superblock_error_notification {
+ 	__u32	error_cookie;
+ };
+ 
++/*
++ * Type of block layer notification.
++ */
++enum block_notification_type {
++	NOTIFY_BLOCK_ERROR_TIMEOUT		= 1, /* Timeout error */
++	NOTIFY_BLOCK_ERROR_NO_SPACE		= 2, /* Critical space allocation error */
++	NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT = 3, /* Recoverable transport error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_TARGET	= 4, /* Critical target error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS	= 5, /* Critical nexus error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM	= 6, /* Critical medium error */
++	NOTIFY_BLOCK_ERROR_PROTECTION		= 7, /* Protection error */
++	NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE	= 8, /* Kernel resource error */
++	NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE	= 9, /* Device resource error */
++	NOTIFY_BLOCK_ERROR_IO			= 10, /* Other I/O error */
++};
++
++/*
++ * Block notification record.
++ * - watch.type = WATCH_TYPE_BLOCK_NOTIFY
++ * - watch.subtype = enum block_notification_type
++ */
++struct block_notification {
++	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
++	__u64	dev;			/* Device number */
++	__u64	sector;			/* Affected sector */
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
