@@ -1,163 +1,103 @@
-From: Jann Horn <jannh@google.com>
-Date: Tue, 28 May 2019 23:16:26 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 29 May 2019 16:06:40 +0000
 Subject: Re: [PATCH 1/7] General notification queue with user mmap()'able ring buffer
-Message-Id: <CAG48ez3W=Og7_9P9X6fatkCw4Zwbz-N35wRGFFNK8q9k0qL5iw@mail.gmail.com>
+Message-Id: <31936.1559146000@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
- <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk>
- <CAG48ez3L5KzKyKMxUTaaB=r1E1ZXh=m6e9+CwYcXfRnUSjDvWA@mail.gmail.com> <11466.1559082515@warthog.procyon.org.uk>
-In-Reply-To: <11466.1559082515@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>
+References: <20190528231218.GA28384@kroah.com> <20190528162603.GA24097@kroah.com> <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk> <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk> <4031.1559064620@warthog.procyon.org.uk>
+In-Reply-To: <20190528231218.GA28384@kroah.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2019 at 12:28 AM David Howells <dhowells@redhat.com> wrote:
-> Jann Horn <jannh@google.com> wrote:
-> > I don't see you setting any special properties on the VMA that would
-> > prevent userspace from extending its size via mremap() - no
-> > VM_DONTEXPAND or VM_PFNMAP. So I think you might get an out-of-bounds
-> > access here?
->
-> Should I just set VM_DONTEXPAND in watch_queue_mmap()?  Like so:
->
->         vma->vm_flags |= VM_DONTEXPAND;
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-Yeah, that should work.
+> > kref_put() could potentially add an unnecessary extra stack frame and would
+> > seem to be best avoided, though an optimising compiler ought to be able to
+> > inline if it can.
+> 
+> If kref_put() is on your fast path, you have worse problems (kfree isn't
+> fast, right?)
+> 
+> Anyway, it's an inline function, how can it add an extra stack frame?
 
-> > > +static void watch_queue_map_pages(struct vm_fault *vmf,
-> > > +                                 pgoff_t start_pgoff, pgoff_t end_pgoff)
-> > ...
-> >
-> > Same as above.
->
-> Same solution as above?  Or do I need ot check start/end_pgoff too?
+The call to the function pointer.  Hopefully the compiler will optimise that
+away for an inlineable function.
 
-Same solution.
+> > Are you now on the convert all refcounts to krefs path?
+> 
+> "now"?  Remember, I wrote kref all those years ago,
 
-> > > +static int watch_queue_mmap(struct file *file, struct vm_area_struct *vma)
-> > > +{
-> > > +       struct watch_queue *wqueue = file->private_data;
-> > > +
-> > > +       if (vma->vm_pgoff != 0 ||
-> > > +           vma->vm_end - vma->vm_start > wqueue->nr_pages * PAGE_SIZE ||
-> > > +           !(pgprot_val(vma->vm_page_prot) & pgprot_val(PAGE_SHARED)))
-> > > +               return -EINVAL;
-> >
-> > This thing should probably have locking against concurrent
-> > watch_queue_set_size()?
->
-> Yeah.
->
->         static int watch_queue_mmap(struct file *file,
->                                     struct vm_area_struct *vma)
->         {
->                 struct watch_queue *wqueue = file->private_data;
->                 struct inode *inode = file_inode(file);
->                 u8 nr_pages;
->
->                 inode_lock(inode);
->                 nr_pages = wqueue->nr_pages;
->                 inode_unlock(inode);
->
->                 if (nr_pages = 0 ||
->                 ...
->                         return -EINVAL;
+Yes - and I thought it wasn't a good idea at the time.  But this is the first
+time you've mentioned it to me, let alone pushed to change to it, that I
+recall.
 
-Looks reasonable.
+> everyone should use
+> it.  It saves us having to audit the same pattern over and over again.
+> And, even nicer, it uses a refcount now, and as you are trying to
+> reference count an object, it is exactly what this was written for.
+> 
+> So yes, I do think it should be used here, unless it is deemed to not
+> fit the pattern/usage model.
 
-> > > +       smp_store_release(&buf->meta.head, len);
-> >
-> > Why is this an smp_store_release()? The entire buffer should not be visible to
-> > userspace before this setup is complete, right?
->
-> Yes - if I put the above locking in the mmap handler.  OTOH, it's a one-off
-> barrier...
->
-> > > +               if (wqueue->buffer)
-> > > +                       return -EBUSY;
-> >
-> > The preceding check occurs without any locks held and therefore has no
-> > reliable effect. It should probably be moved below the
-> > inode_lock(...).
->
-> Yeah, it can race.  I'll move it into watch_queue_set_size().
+kref_put() enforces a very specific destructor signature.  I know of places
+where that doesn't work because the destructor takes more than one argument
+(granted that this is not the case here).  So why does kref_put() exist at
+all?  Why not kref_dec_and_test()?
 
-Sounds good.
+Why doesn't refcount_t get merged into kref, or vice versa?  Having both would
+seem redundant.
 
-> > > +static void free_watch(struct rcu_head *rcu)
-> > > +{
-> > > +       struct watch *watch = container_of(rcu, struct watch, rcu);
-> > > +
-> > > +       put_watch_queue(rcu_access_pointer(watch->queue));
-> >
-> > This should be rcu_dereference_protected(..., 1).
->
-> That shouldn't be necessary.  rcu_access_pointer()'s description says:
->
->  * It is also permissible to use rcu_access_pointer() when read-side
->  * access to the pointer was removed at least one grace period ago, as
->  * is the case in the context of the RCU callback that is freeing up
->  * the data, ...
->
-> It's in an rcu callback function, so accessing the __rcu pointers in the RCU'd
-> struct should be fine with rcu_access_pointer().
+Mind you, I've been gradually reverting atomic_t-to-refcount_t conversions
+because it seems I'm not allowed refcount_inc/dec_return() and I want to get
+at the point refcount for tracing purposes.
 
-Aah, whoops, you're right, I missed that paragraph in the
-documentation of rcu_access_pointer().
+> > > > +module_exit(watch_queue_exit);
+> > > 
+> > > module_misc_device()?
+> > 
+> > 	warthog>git grep module_misc_device -- Documentation/
+> > 	warthog1>
+> 
+> Do I have to document all helper macros?
 
-> > > +       /* We don't need the watch list lock for the next bit as RCU is
-> > > +        * protecting everything from being deallocated.
-> >
-> > Does "everything" mean "the wqueue" or more than that?
->
-> Actually, just 'wqueue' and its buffer.  'watch' is held by us once we've
-> dequeued it as we now own the ref 'wlist' had on it.  'wlist' and 'wq' must be
-> pinned by the caller.
->
-> > > +                       if (release) {
-> > > +                               if (wlist->release_watch) {
-> > > +                                       rcu_read_unlock();
-> > > +                                       /* This might need to call dput(), so
-> > > +                                        * we have to drop all the locks.
-> > > +                                        */
-> > > +                                       wlist->release_watch(wlist, watch);
-> >
-> > How are you holding a reference to `wlist` here? You got the reference through
-> > rcu_dereference(), you've dropped the RCU read lock, and I don't see anything
-> > that stabilizes the reference.
->
-> The watch record must hold a ref on the watched object if the watch_list has a
-> ->release_watch() method.  In the code snippet above, the watch record now
-> belongs to us because we unlinked it under the wlist->lock some lines prior.
+If you add an API, documenting it is your privilege ;-)  It's an important
+test of the API - if you can't describe it, it's probably wrong.
 
-Ah, of course.
+Now I will grant that you didn't add that function...
 
-> However, you raise a good point, and I think the thing to do is to cache
-> ->release_watch from it and not pass wlist into (*release_watch)().  We don't
-> need to concern ourselves with cleaning up *wlist as it will be cleaned up
-> when the target object is removed.
->
-> Keyrings don't have a ->release_watch method and neither does the block-layer
-> notification stuff.
->
-> > > +       if (wqueue->pages && wqueue->pages[0])
-> > > +               WARN_ON(page_ref_count(wqueue->pages[0]) != 1);
-> >
-> > Is there a reason why there couldn't still be references to the pages
-> > from get_user_pages()/get_user_pages_fast()?
->
-> I'm not sure.  I'm not sure what to do if there are.  What do you suggest?
+> Anyway, it saves you boilerplate code, but if built in, it's at the module
+> init level, not the fs init level, like you are asking for here.  So that
+> might not work, it's your call.
 
-I would use put_page() instead of manually freeing it; I think that
-should be enough? I'm not entirely sure though.
+Actually, I probably shouldn't have a module exit function.  It can't be a
+module as it's called by core code.  I'll switch to builtin_misc_device().
 
-> > > +       n->info &= (WATCH_INFO_LENGTH | WATCH_INFO_TYPE_FLAGS | WATCH_INFO_ID);
-> >
-> > Should the non-atomic modification of n->info
->
-> n's an unpublished copy of some userspace data that's local to the function
-> instance.  There shouldn't be any way to race with it at this point.
+> And how does the tracing and perf ring buffers do this without needing
+> volatile?  Why not use the same type of interface they provide, as it's
+> always good to share code that has already had all of the nasty corner
+> cases worked out.
 
-Ah, derp. Yes.
+I've no idea how trace does it - or even where - or even if.  As far as I can
+see, grepping for mmap in kernel/trace/*, there's no mmap support.
+
+Reading Documentation/trace/ring-buffer-design.txt the trace subsystem has
+some sort of transient page fifo which is a lot more complicated than what I
+want and doesn't look like it'll be mmap'able.
+
+Looking at the perf ring buffer, there appears to be a missing barrier in
+perf_aux_output_end():
+
+	rb->user_page->aux_head = rb->aux_head;
+
+should be:
+
+	smp_store_release(&rb->user_page->aux_head, rb->aux_head);
+
+It should also be using smp_load_acquire().  See
+Documentation/core-api/circular-buffers.rst
+
+And a (partial) patch has been proposed: https://lkml.org/lkml/2018/5/10/249
+
+David
