@@ -1,102 +1,57 @@
-From: Casey Schaufler <casey@schaufler-ca.com>
-Date: Wed, 29 May 2019 15:41:43 +0000
+From: Amir Goldstein <amir73il@gmail.com>
+Date: Wed, 29 May 2019 15:53:21 +0000
 Subject: Re: [RFC][PATCH 0/7] Mount, FS, Block and Keyrings notifications
-Message-Id: <c3d76089-cd0a-a378-f6e8-2fe6e9a5c254@schaufler-ca.com>
+Message-Id: <CAOQ4uxjLzURf8c1UH_xCJKkuD2es8i-=P-ZNM=t3aFcZLMwXEg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190528235810.GA5776@kroah.com>
- <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
- <31751.1559120984@warthog.procyon.org.uk>
-In-Reply-To: <31751.1559120984@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, Greg KH <gregkh@linuxfoundation.org>
-Cc: viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, casey@schaufler-ca.com
+References: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
+ <CAOQ4uxjC1M7jwjd9zSaSa6UW2dbEjc+ZbFSo7j9F1YHAQxQ8LQ@mail.gmail.com> <20190529142504.GC32147@quack2.suse.cz>
+In-Reply-To: <20190529142504.GC32147@quack2.suse.cz>
+To: Jan Kara <jack@suse.cz>
+Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>, Ian Kent <raven@themaw.net>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-api@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
 
-On 5/29/2019 2:09 AM, David Howells wrote:
-> Greg KH <gregkh@linuxfoundation.org> wrote:
+> > David,
+> >
+> > I am interested to know how you envision filesystem notifications would
+> > look with this interface.
+> >
+> > fanotify can certainly benefit from providing a ring buffer interface to read
+> > events.
+> >
+> > From what I have seen, a common practice of users is to monitor mounts
+> > (somehow) and place FAN_MARK_MOUNT fanotify watches dynamically.
+> > It'd be good if those users can use a single watch mechanism/API for
+> > watching the mount namespace and filesystem events within mounts.
+> >
+> > A similar usability concern is with sb_notify and FAN_MARK_FILESYSTEM.
+> > It provides users with two complete different mechanisms to watch error
+> > and filesystem events. That is generally not a good thing to have.
+> >
+> > I am not asking that you implement fs_notify() before merging sb_notify()
+> > and I understand that you have a use case for sb_notify().
+> > I am asking that you show me the path towards a unified API (how a
+> > typical program would look like), so that we know before merging your
+> > new API that it could be extended to accommodate fsnotify events
+> > where the final result will look wholesome to users.
 >
->>>  (3) Letting users see events they shouldn't be able to see.
->> How are you handling namespaces then?  Are they determined by the
->> namespace of the process that opened the original device handle, or the
->> namespace that made the new syscall for the events to "start flowing"?
-> So far I haven't had to deal directly with namespaces.
+> Are you sure we want to combine notification about file changes etc. with
+> administrator-type notifications about the filesystem? To me these two
+> sound like rather different (although sometimes related) things.
 >
-> mount_notify() requires you to have access to the mountpoint you want to watch
-> - and the entire tree rooted there is in one namespace, so your event sources
-> are restricted to that namespace.  Further, mount objects don't themselves
-> have any other namespaces, not even a user_ns.
->
-> sb_notify() requires you to have access to the superblock you want to watch.
-> superblocks aren't directly namespaced as a class, though individual
-> superblocks may participate in particular namespaces (ipc, net, etc.).  I'm
-> thinking some of these should be marked unwatchable (all pseudo superblocks,
-> kernfs-class, proc, for example).
->
-> Superblocks, however, do each have a user_ns - but you were allowed to access
-> the superblock by pathwalk, so you must have some access to the user_ns - I
-> think.
->
-> KEYCTL_NOTIFY requires you to have View access on the key you're watching.
-> Currently, keys have no real namespace restrictions, though I have patches to
-> include a namespace tag in the lookup criteria.
->
-> block_notify() doesn't require any direct access since you're watching a
-> global queue and there is no blockdev namespacing.  LSMs are given the option
-> to filter events, though.  The thought here is that if you can access dmesg,
-> you should be able to watch for blockdev events.
->
->
-> Actually, thinking further on this, restricting access to events is trickier
-> than I thought and than perhaps Casey was suggesting.
->
-> Say you're watching a mount object and someone in a different user_ns
-> namespace or with a different security label mounts on it.  What governs
-> whether you are allowed to see the event?
 
-Conceptually it should be simple, but we have a variety of different
-policies in the core OS, never mind what goes on inside the LSMs.
-If you want to treat a notification like a signal you would only deliver
-it if the process that performed the action that triggered the event
-has the same UID as the process receiving the notification. Should you
-decide to treat it like an IP packet only the LSMs would filter delivery.
-If there are mode bits on the thing being watched shouldn't you respect
-them?
+Well I am sure that ring buffer for fanotify events would be useful, so
+seeing that David is proposing a generic notification mechanism, I wanted
+to know how that mechanism could best share infrastructure with fsnotify.
 
-> You're watching the object for changes - and it *has* changed.  Further, you
-> might be able to see the result of this change by other means (/proc/mounts,
-> for instance).
->
-> Should you be denied the event based on the security model?
+But apart from that I foresee the questions from users about why the
+mount notification API and filesystem events API do not have better
+integration.
 
-From a subject/object model view there are two objects and one
-subject involved. The subject (active entity) is the process that
-changes the first object, triggering an event. The watching process
-(that will receive the notification) is the second object, because
-its state will change (be written to) when the notification is
-delivered. For the watching process to receive the notification
-the changing process needs write access to the watching process.
-The indirection of the notification mechanism isn't relevant.
-If the changing process couldn't directly notify the watching process
-it shouldn't be able to do it indirectly, either.
+The way I see it, the notification queue can serve several classes
+of notifications and fsnotify could be one of those classes
+(at least FAN_CLASS_NOTIF fits nicely to the model).
 
-> On the other hand, if you're watching a tree of mount objects, it could be
-> argued that you should be denied access to events on any mount object you
-> can't reach by pathwalk.
->
-> On the third hand, if you can see it in /proc/mounts or by fsinfo(), you
-> should get an event for it.
-
-Right. We've done a pretty good job of muddling the security
-landscape by adding spiffy features to make life easier for
-particular use cases. /proc is chuck full of examples. Objects
-that can be viewed in many different ways make for confusing
-security models. Try explaining /proc/234/fd/2 to a security
-theory student.
-
->> How are you handling namespaces then?
-> So to go back to the original question.  At the moment they haven't impinged
-> directly and I haven't had to deal with them directly.  There are indirect
-> namespace restrictions that I get for free just due to pathwalk, for instance.
->
-> David
+Thanks,
+Amir.
