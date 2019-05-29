@@ -1,78 +1,82 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 29 May 2019 12:58:39 +0000
+From: Jann Horn <jannh@google.com>
+Date: Wed, 29 May 2019 14:16:10 +0000
 Subject: Re: [PATCH 4/7] vfs: Add superblock notifications
-Message-Id: <24577.1559134719@warthog.procyon.org.uk>
+Message-Id: <CAG48ez0Ugv=cfj-v6DaYma0HgyiBjpykSkCr7mCAcMx13LEncg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAG48ez2o1egR13FDd3=CgdXP_MbBsZM4SX=+aqvR6eheWddhFg@mail.gmail.com> <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk> <155905934373.7587.10824503964531598726.stgit@warthog.procyon.org.uk>
-In-Reply-To: <CAG48ez2o1egR13FDd3=CgdXP_MbBsZM4SX=+aqvR6eheWddhFg@mail.gmail.com>
-To: Jann Horn <jannh@google.com>
-Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>
+References: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
+ <155905934373.7587.10824503964531598726.stgit@warthog.procyon.org.uk>
+ <CAG48ez2o1egR13FDd3=CgdXP_MbBsZM4SX=+aqvR6eheWddhFg@mail.gmail.com> <24577.1559134719@warthog.procyon.org.uk>
+In-Reply-To: <24577.1559134719@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>
 
-Jann Horn <jannh@google.com> wrote:
+On Wed, May 29, 2019 at 2:58 PM David Howells <dhowells@redhat.com> wrote:
+> Jann Horn <jannh@google.com> wrote:
+> > It might make sense to require that the path points to the root inode
+> > of the superblock? That way you wouldn't be able to do this on a bind
+> > mount that exposes part of a shared filesystem to a container.
+>
+> Why prevent that?  It doesn't prevent the container denizen from watching a
+> bind mount that exposes the root of a shared filesystem into a container.
 
-> It might make sense to require that the path points to the root inode
-> of the superblock? That way you wouldn't be able to do this on a bind
-> mount that exposes part of a shared filesystem to a container.
+Well, yes, but if you expose the root of the shared filesystem to the
+container, the container is probably meant to have a higher level of
+access than if only a bind mount is exposed? But I don't know.
 
-Why prevent that?  It doesn't prevent the container denizen from watching a
-bind mount that exposes the root of a shared filesystem into a container.
+> It probably makes sense to permit the LSM to rule on whether a watch may be
+> emplaced, however.
 
-It probably makes sense to permit the LSM to rule on whether a watch may be
-emplaced, however.
+We should have some sort of reasonable policy outside of LSM code
+though - the kernel should still be secure even if no LSMs are built
+into it.
 
-> > +                       ret = add_watch_to_object(watch, s->s_watchers);
-> > +                       if (ret = 0) {
-> > +                               spin_lock(&sb_lock);
-> > +                               s->s_count++;
-> > +                               spin_unlock(&sb_lock);
-> 
-> Why do watches hold references on the superblock they're watching?
+> > > +                       }
+> > > +               }
+> > > +               up_write(&s->s_umount);
+> > > +               if (ret < 0)
+> > > +                       kfree(watch);
+> > > +       } else if (s->s_watchers) {
+> >
+> > This should probably have something like a READ_ONCE() for clarity?
+>
+> Note that I think I'll rearrange this to:
+>
+>         } else {
+>                 ret = -EBADSLT;
+>                 if (s->s_watchers) {
+>                         down_write(&s->s_umount);
+>                         ret = remove_watch_from_object(s->s_watchers, wqueue,
+>                                                        s->s_unique_id, false);
+>                         up_write(&s->s_umount);
+>                 }
+>         }
+>
+> I'm not sure READ_ONCE() is necessary, since s_watchers can only be
+> instantiated once and the watch list then persists until the superblock is
+> deactivated.  Furthermore, by the time deactivate_locked_super() is called, we
+> can't be calling sb_notify() on it as it's become inaccessible.
+>
+> So if we see s->s_watchers as non-NULL, we should not see anything different
+> inside the lock.  In fact, I should be able to rewrite the above to:
+>
+>         } else {
+>                 ret = -EBADSLT;
+>                 wlist = s->s_watchers;
+>                 if (wlist) {
+>                         down_write(&s->s_umount);
+>                         ret = remove_watch_from_object(wlist, wqueue,
+>                                                        s->s_unique_id, false);
+>                         up_write(&s->s_umount);
+>                 }
+>         }
 
-Fair point.  It was necessary at one point, but I don't think it is now.  I'll
-see if I can remove it.  Note that it doesn't stop a superblock from being
-unmounted and destroyed.
-
-> > +                       }
-> > +               }
-> > +               up_write(&s->s_umount);
-> > +               if (ret < 0)
-> > +                       kfree(watch);
-> > +       } else if (s->s_watchers) {
-> 
-> This should probably have something like a READ_ONCE() for clarity?
-
-Note that I think I'll rearrange this to:
-
-	} else {
-		ret = -EBADSLT;
-		if (s->s_watchers) {
-			down_write(&s->s_umount);
-			ret = remove_watch_from_object(s->s_watchers, wqueue,
-						       s->s_unique_id, false);
-			up_write(&s->s_umount);
-		}
-	}
-
-I'm not sure READ_ONCE() is necessary, since s_watchers can only be
-instantiated once and the watch list then persists until the superblock is
-deactivated.  Furthermore, by the time deactivate_locked_super() is called, we
-can't be calling sb_notify() on it as it's become inaccessible.
-
-So if we see s->s_watchers as non-NULL, we should not see anything different
-inside the lock.  In fact, I should be able to rewrite the above to:
-
-	} else {
-		ret = -EBADSLT;
-		wlist = s->s_watchers;
-		if (wlist) {
-			down_write(&s->s_umount);
-			ret = remove_watch_from_object(wlist, wqueue,
-						       s->s_unique_id, false);
-			up_write(&s->s_umount);
-		}
-	}
-
-David
+I'm extremely twitchy when it comes to code like this because AFAIK
+gcc at least used to sometimes turn code that read a value from memory
+and then used it multiple times into something with multiple memory
+reads, leading to critical security vulnerabilities; see e.g. slide 36
+of <https://www.blackhat.com/docs/us-16/materials/us-16-Wilhelm-Xenpwn-Breaking-Paravirtualized-Devices.pdf>.
+I am not aware of any spec that requires the compiler to only perform
+one read from the memory location in code like this.
