@@ -1,48 +1,71 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:26 +0000
-Subject: [PATCH, RFC 06/62] mm/khugepaged: Handle encrypted pages
-Message-Id: <20190508144422.13171-7-kirill.shutemov@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 29 May 2019 22:01:35 +0000
+Subject: [GIT PULL] keys: Miscellany
+Message-Id: <18289.1559167295@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: James Morris <jmorris@namei.org>
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-For !NUMA khugepaged allocates page in advance, before we found a VMA
-for collapse. We don't yet know which KeyID to use for the allocation.
+Hi James,
 
-The page is allocated with KeyID-0. Once we know that the VMA is
-suitable for collapsing, we prepare the page for KeyID we need, based on
-vma_keyid().
+Here are some miscellaneous keyrings fixes and improvements intended for
+the next merge window, if you could pull them please.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+ (1) Fix a bunch of warnings from sparse, including missing RCU bits and
+     kdoc-function argument mismatches
+
+ (2) Implement a keyctl to allow a key to be moved from one keyring to
+     another, with the option of prohibiting key replacement in the
+     destination keyring.
+
+ (3) Grant Link permission to possessors of request_key_auth tokens so that
+     upcall servicing daemons can more easily arrange things such that only
+     the necessary auth key is passed to the actual service program, and
+     not all the auth keys a daemon might possesss.
+
+Changes: I made the change you suggested on patch 6 and added the
+reviewed-by's to patches 1-5 and 7.
+
+David
 ---
- mm/khugepaged.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+The following changes since commit a188339ca5a396acc588e5851ed7e19f66b0ebd9:
 
-diff --git a/mm/khugepaged.c b/mm/khugepaged.c
-index 449044378782..96326a7e9d61 100644
---- a/mm/khugepaged.c
-+++ b/mm/khugepaged.c
-@@ -1055,6 +1055,16 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	 */
- 	anon_vma_unlock_write(vma->anon_vma);
- 
-+	/*
-+	 * At this point new_page is allocated as non-encrypted.
-+	 * If VMA's KeyID is non-zero, we need to prepare it to be encrypted
-+	 * before coping data.
-+	 */
-+	if (vma_keyid(vma)) {
-+		prep_encrypted_page(new_page, HPAGE_PMD_ORDER,
-+				vma_keyid(vma), false);
-+	}
-+
- 	__collapse_huge_page_copy(pte, new_page, vma, address, pte_ptl);
- 	pte_unmap(pte);
- 	__SetPageUptodate(new_page);
--- 
-2.20.1
+  Linux 5.2-rc1 (2019-05-19 15:47:09 -0700)
+
+are available in the Git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-misc-20190529
+
+for you to fetch changes up to 39de363a48ae151d766512c8e73a5564a3096c82:
+
+  keys: Grant Link permission to possessers of request_key auth keys (2019-05-29 22:34:52 +0100)
+
+----------------------------------------------------------------
+Miscellaneous keyrings development
+
+----------------------------------------------------------------
+David Howells (7):
+      keys: sparse: Fix key_fs[ug]id_changed()
+      keys: sparse: Fix incorrect RCU accesses
+      keys: sparse: Fix kdoc mismatches
+      keys: Break bits out of key_unlink()
+      keys: Make __key_link_begin() handle lockdep nesting
+      keys: Add a keyctl to move a key between keyrings
+      keys: Grant Link permission to possessers of request_key auth keys
+
+ Documentation/security/keys/core.rst |  21 +++++
+ include/linux/key.h                  |  13 ++-
+ include/uapi/linux/keyctl.h          |   3 +
+ kernel/cred.c                        |   4 +-
+ security/keys/compat.c               |   3 +
+ security/keys/internal.h             |   3 +-
+ security/keys/key.c                  |   6 +-
+ security/keys/keyctl.c               |  56 ++++++++++-
+ security/keys/keyring.c              | 178 ++++++++++++++++++++++++++++++-----
+ security/keys/process_keys.c         |  22 ++---
+ security/keys/request_key.c          |   4 +-
+ security/keys/request_key_auth.c     |   4 +-
+ 12 files changed, 269 insertions(+), 48 deletions(-)
