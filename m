@@ -1,146 +1,78 @@
-From: Jann Horn <jannh@google.com>
-Date: Tue, 28 May 2019 20:27:47 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 29 May 2019 12:58:39 +0000
 Subject: Re: [PATCH 4/7] vfs: Add superblock notifications
-Message-Id: <CAG48ez2o1egR13FDd3=CgdXP_MbBsZM4SX=+aqvR6eheWddhFg@mail.gmail.com>
+Message-Id: <24577.1559134719@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
- <155905934373.7587.10824503964531598726.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155905934373.7587.10824503964531598726.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>
+References: <CAG48ez2o1egR13FDd3=CgdXP_MbBsZM4SX=+aqvR6eheWddhFg@mail.gmail.com> <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk> <155905934373.7587.10824503964531598726.stgit@warthog.procyon.org.uk>
+In-Reply-To: <CAG48ez2o1egR13FDd3=CgdXP_MbBsZM4SX=+aqvR6eheWddhFg@mail.gmail.com>
+To: Jann Horn <jannh@google.com>
+Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>
 
-On Tue, May 28, 2019 at 6:05 PM David Howells <dhowells@redhat.com> wrote:
-> Add a superblock event notification facility whereby notifications about
-> superblock events, such as I/O errors (EIO), quota limits being hit
-> (EDQUOT) and running out of space (ENOSPC) can be reported to a monitoring
-> process asynchronously.  Note that this does not cover vfsmount topology
-> changes.  mount_notify() is used for that.
-[...]
-> +#ifdef CONFIG_SB_NOTIFICATIONS
-> +/*
-> + * Post superblock notifications.
-> + */
-> +void post_sb_notification(struct super_block *s, struct superblock_notification *n)
-> +{
-> +       post_watch_notification(s->s_watchers, &n->watch, current_cred(),
-> +                               s->s_unique_id);
-> +}
+Jann Horn <jannh@google.com> wrote:
 
-You're using current_cred() here? So the idea is that if some random
-process runs into a disk I/O error, the I/O error will come from that
-task's credentials? In general, you're not supposed to look at task
-credentials in ->read/->write handlers.
+> It might make sense to require that the path points to the root inode
+> of the superblock? That way you wouldn't be able to do this on a bind
+> mount that exposes part of a shared filesystem to a container.
 
-> +static void release_sb_watch(struct watch_list *wlist, struct watch *watch)
-> +{
-> +       struct super_block *s = watch->private;
-> +
-> +       put_super(s);
-> +}
-> +
-> +/**
-> + * sys_sb_notify - Watch for superblock events.
-> + * @dfd: Base directory to pathwalk from or fd referring to superblock.
-> + * @filename: Path to superblock to place the watch upon
-> + * @at_flags: Pathwalk control flags
-> + * @watch_fd: The watch queue to send notifications to.
-> + * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
-> + */
-> +SYSCALL_DEFINE5(sb_notify,
-> +               int, dfd,
-> +               const char __user *, filename,
-> +               unsigned int, at_flags,
-> +               int, watch_fd,
-> +               int, watch_id)
-> +{
-> +       struct watch_queue *wqueue;
-> +       struct super_block *s;
-> +       struct watch_list *wlist = NULL;
-> +       struct watch *watch;
-> +       struct path path;
-> +       int ret;
-> +
-> +       if (watch_id < -1 || watch_id > 0xff)
-> +               return -EINVAL;
-> +
-> +       ret = user_path_at(dfd, filename, at_flags, &path);
+Why prevent that?  It doesn't prevent the container denizen from watching a
+bind mount that exposes the root of a shared filesystem into a container.
 
-As in the other patch, I don't think userspace is supposed to be able
-to supply user_path_at()'s third argument.
+It probably makes sense to permit the LSM to rule on whether a watch may be
+emplaced, however.
 
-It might make sense to require that the path points to the root inode
-of the superblock? That way you wouldn't be able to do this on a bind
-mount that exposes part of a shared filesystem to a container.
+> > +                       ret = add_watch_to_object(watch, s->s_watchers);
+> > +                       if (ret = 0) {
+> > +                               spin_lock(&sb_lock);
+> > +                               s->s_count++;
+> > +                               spin_unlock(&sb_lock);
+> 
+> Why do watches hold references on the superblock they're watching?
 
-> +       if (ret)
-> +               return ret;
-> +
-> +       wqueue = get_watch_queue(watch_fd);
-> +       if (IS_ERR(wqueue))
-> +               goto err_path;
-> +
-> +       s = path.dentry->d_sb;
-> +       if (watch_id >= 0) {
-> +               if (!s->s_watchers) {
-> +                       wlist = kzalloc(sizeof(*wlist), GFP_KERNEL);
-> +                       if (!wlist)
-> +                               goto err_wqueue;
-> +                       INIT_HLIST_HEAD(&wlist->watchers);
-> +                       spin_lock_init(&wlist->lock);
-> +                       wlist->release_watch = release_sb_watch;
-> +               }
-> +
-> +               watch = kzalloc(sizeof(*watch), GFP_KERNEL);
-> +               if (!watch)
-> +                       goto err_wlist;
-> +
-> +               init_watch(watch, wqueue);
-> +               watch->id               = s->s_unique_id;
-> +               watch->private          = s;
-> +               watch->info_id          = (u32)watch_id << 24;
-> +
-> +               down_write(&s->s_umount);
-> +               ret = -EIO;
-> +               if (atomic_read(&s->s_active)) {
-> +                       if (!s->s_watchers) {
-> +                               s->s_watchers = wlist;
-> +                               wlist = NULL;
-> +                       }
-> +
-> +                       ret = add_watch_to_object(watch, s->s_watchers);
-> +                       if (ret = 0) {
-> +                               spin_lock(&sb_lock);
-> +                               s->s_count++;
-> +                               spin_unlock(&sb_lock);
+Fair point.  It was necessary at one point, but I don't think it is now.  I'll
+see if I can remove it.  Note that it doesn't stop a superblock from being
+unmounted and destroyed.
 
-Why do watches hold references on the superblock they're watching?
+> > +                       }
+> > +               }
+> > +               up_write(&s->s_umount);
+> > +               if (ret < 0)
+> > +                       kfree(watch);
+> > +       } else if (s->s_watchers) {
+> 
+> This should probably have something like a READ_ONCE() for clarity?
 
-> +                       }
-> +               }
-> +               up_write(&s->s_umount);
-> +               if (ret < 0)
-> +                       kfree(watch);
-> +       } else if (s->s_watchers) {
+Note that I think I'll rearrange this to:
 
-This should probably have something like a READ_ONCE() for clarity?
+	} else {
+		ret = -EBADSLT;
+		if (s->s_watchers) {
+			down_write(&s->s_umount);
+			ret = remove_watch_from_object(s->s_watchers, wqueue,
+						       s->s_unique_id, false);
+			up_write(&s->s_umount);
+		}
+	}
 
-> +               down_write(&s->s_umount);
-> +               ret = remove_watch_from_object(s->s_watchers, wqueue,
-> +                                              s->s_unique_id, false);
-> +               up_write(&s->s_umount);
-> +       } else {
-> +               ret = -EBADSLT;
-> +       }
-> +
-> +err_wlist:
-> +       kfree(wlist);
-> +err_wqueue:
-> +       put_watch_queue(wqueue);
-> +err_path:
-> +       path_put(&path);
-> +       return ret;
-> +}
-> +#endif
+I'm not sure READ_ONCE() is necessary, since s_watchers can only be
+instantiated once and the watch list then persists until the superblock is
+deactivated.  Furthermore, by the time deactivate_locked_super() is called, we
+can't be calling sb_notify() on it as it's become inaccessible.
+
+So if we see s->s_watchers as non-NULL, we should not see anything different
+inside the lock.  In fact, I should be able to rewrite the above to:
+
+	} else {
+		ret = -EBADSLT;
+		wlist = s->s_watchers;
+		if (wlist) {
+			down_write(&s->s_umount);
+			ret = remove_watch_from_object(wlist, wqueue,
+						       s->s_unique_id, false);
+			up_write(&s->s_umount);
+		}
+	}
+
+David
