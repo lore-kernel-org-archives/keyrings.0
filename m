@@ -1,64 +1,137 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:42 +0000
-Subject: [PATCH, RFC 22/62] x86/pconfig: Set a valid encryption algorithm for all MKTME commands
-Message-Id: <20190508144422.13171-23-kirill.shutemov@linux.intel.com>
+From: Mauro Carvalho Chehab <mchehab+samsung@kernel.org>
+Date: Wed, 29 May 2019 23:23:31 +0000
+Subject: [PATCH 00/22] Some documentation fixes
+Message-Id: <cover.1559171394.git.mchehab+samsung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+To: Linux Doc Mailing List <linux-doc@vger.kernel.org>
+Cc: alsa-devel@alsa-project.org, kvm@vger.kernel.org, linux-pci@vger.kernel.org, dri-devel@lists.freedesktop.org, virtualization@lists.linux-foundation.org, linux-mm@kvack.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-i2c@vger.kernel.org, linux-kselftest@vger.kernel.org, Mauro Carvalho Chehab <mchehab+samsung@kernel.org>, devel@driverdev.osuosl.org, Jonathan Corbet <corbet@lwn.net>, x86@kernel.org, linux-acpi@vger.kernel.org, xen-devel@lists.xenproject.org, devicetree@vger.kernel.org, linux-pm@vger.kernel.org, Mauro Carvalho Chehab <mchehab@infradead.org>, linux-gpio@vger.kernel.org, linux-amlogic@lists.infradead.org, bpf@vger.kernel.org, devel@acpica.org, patches@opensource.cirrus.com, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, netdev@vger.kernel.org, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
 
-From: Alison Schofield <alison.schofield@intel.com>
+Fix several warnings and broken links.
 
-The Intel MKTME architecture specification requires a valid encryption
-algorithm for all command types.
+This series was generated against linux-next, but was rebased to be applied at
+docs-next. It should apply cleanly on either tree.
 
-For commands that actually perform encryption, SET_KEY_DIRECT and
-SET_KEY_RANDOM, the user specifies the algorithm when requesting the
-key through the MKTME Key Service.
+There's a git tree with all of them applied on the top of docs/docs-next
+at:
 
-For CLEAR_KEY and NO_ENCRYPT commands, a valid encryption algorithm is
-also required by the MKTME hardware. However, it does not make sense to
-ask userspace to specify one. Define the CLEAR_KEY and NO_ENCRYPT type
-commands to always include a valid encryption algorithm.
+https://git.linuxtv.org/mchehab/experimental.git/log/?h=fix_doc_links_v2
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- arch/x86/include/asm/intel_pconfig.h | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/intel_pconfig.h b/arch/x86/include/asm/intel_pconfig.h
-index 3cb002b1d0f9..15705699a14e 100644
---- a/arch/x86/include/asm/intel_pconfig.h
-+++ b/arch/x86/include/asm/intel_pconfig.h
-@@ -21,14 +21,20 @@ enum pconfig_leaf {
- 
- /* Defines and structure for MKTME_KEY_PROGRAM of PCONFIG instruction */
- 
-+/* mktme_key_program::keyid_ctrl ENC_ALG, bits [23:8] */
-+#define MKTME_AES_XTS_128	(1 << 8)
-+#define MKTME_ANY_VALID_ALG	(1 << 8)
-+
- /* mktme_key_program::keyid_ctrl COMMAND, bits [7:0] */
- #define MKTME_KEYID_SET_KEY_DIRECT	0
- #define MKTME_KEYID_SET_KEY_RANDOM	1
--#define MKTME_KEYID_CLEAR_KEY		2
--#define MKTME_KEYID_NO_ENCRYPT		3
- 
--/* mktme_key_program::keyid_ctrl ENC_ALG, bits [23:8] */
--#define MKTME_AES_XTS_128	(1 << 8)
-+/*
-+ * CLEAR_KEY and NO_ENCRYPT require the COMMAND in bits [7:0]
-+ * and any valid encryption algorithm, ENC_ALG, in bits [23:8]
-+ */
-+#define MKTME_KEYID_CLEAR_KEY  (2 | MKTME_ANY_VALID_ALG)
-+#define MKTME_KEYID_NO_ENCRYPT (3 | MKTME_ANY_VALID_ALG)
- 
- /* Return codes from the PCONFIG MKTME_KEY_PROGRAM */
- #define MKTME_PROG_SUCCESS	0
+Mauro Carvalho Chehab (21):
+  ABI: sysfs-devices-system-cpu: point to the right docs
+  isdn: mISDN: remove a bogus reference to a non-existing doc
+  dt: fix broken references to nand.txt
+  docs: zh_CN: get rid of basic_profiling.txt
+  doc: it_IT: fix reference to magic-number.rst
+  docs: mm: numaperf.rst: get rid of a build warning
+  docs: bpf: get rid of two warnings
+  docs: mark orphan documents as such
+  docs: amd-memory-encryption.rst get rid of warnings
+  gpu: amdgpu: fix broken amdgpu_dma_buf.c references
+  gpu: i915.rst: Fix references to renamed files
+  docs: zh_CN: avoid duplicate citation references
+  docs: vm: hmm.rst: fix some warnings
+  docs: it: license-rules.rst: get rid of warnings
+  docs: gpio: driver.rst: fix a bad tag
+  docs: soundwire: locking: fix tags for a code-block
+  docs: security: trusted-encrypted.rst: fix code-block tag
+  docs: security: core.rst: Fix several warnings
+  docs: net: dpio-driver.rst: fix two codeblock warnings
+  docs: net: sja1105.rst: fix table format
+  docs: fix broken documentation links
+
+Otto Sabart (1):
+  mfd: madera: Fix bad reference to pinctrl.txt file
+
+ .../ABI/testing/sysfs-devices-system-cpu      |  3 +-
+ Documentation/accelerators/ocxl.rst           |  2 +
+ Documentation/acpi/dsd/leds.txt               |  2 +-
+ .../admin-guide/kernel-parameters.rst         |  6 +-
+ .../admin-guide/kernel-parameters.txt         | 16 ++---
+ Documentation/admin-guide/mm/numaperf.rst     |  5 +-
+ Documentation/admin-guide/ras.rst             |  2 +-
+ Documentation/arm/stm32/overview.rst          |  2 +
+ .../arm/stm32/stm32f429-overview.rst          |  2 +
+ .../arm/stm32/stm32f746-overview.rst          |  2 +
+ .../arm/stm32/stm32f769-overview.rst          |  2 +
+ .../arm/stm32/stm32h743-overview.rst          |  2 +
+ .../arm/stm32/stm32mp157-overview.rst         |  2 +
+ Documentation/bpf/btf.rst                     |  2 +
+ .../bindings/mtd/amlogic,meson-nand.txt       |  2 +-
+ .../devicetree/bindings/mtd/gpmc-nand.txt     |  2 +-
+ .../devicetree/bindings/mtd/marvell-nand.txt  |  2 +-
+ .../devicetree/bindings/mtd/tango-nand.txt    |  2 +-
+ .../devicetree/bindings/net/fsl-enetc.txt     |  7 +-
+ .../bindings/pci/amlogic,meson-pcie.txt       |  2 +-
+ .../regulator/qcom,rpmh-regulator.txt         |  2 +-
+ .../devicetree/booting-without-of.txt         |  2 +-
+ Documentation/driver-api/gpio/board.rst       |  2 +-
+ Documentation/driver-api/gpio/consumer.rst    |  2 +-
+ Documentation/driver-api/gpio/driver.rst      |  2 +-
+ .../driver-api/soundwire/locking.rst          |  4 +-
+ .../firmware-guide/acpi/enumeration.rst       |  2 +-
+ .../firmware-guide/acpi/method-tracing.rst    |  2 +-
+ Documentation/gpu/amdgpu.rst                  |  4 +-
+ Documentation/gpu/i915.rst                    |  6 +-
+ Documentation/gpu/msm-crash-dump.rst          |  2 +
+ Documentation/i2c/instantiating-devices       |  2 +-
+ Documentation/interconnect/interconnect.rst   |  2 +
+ Documentation/laptops/lg-laptop.rst           |  2 +
+ .../freescale/dpaa2/dpio-driver.rst           |  4 +-
+ Documentation/networking/dsa/sja1105.rst      |  6 +-
+ Documentation/powerpc/isa-versions.rst        |  2 +
+ Documentation/security/keys/core.rst          | 16 +++--
+ .../security/keys/trusted-encrypted.rst       |  4 +-
+ Documentation/sysctl/kernel.txt               |  4 +-
+ .../translations/it_IT/process/howto.rst      |  2 +-
+ .../it_IT/process/license-rules.rst           | 28 ++++----
+ .../it_IT/process/magic-number.rst            |  2 +-
+ .../it_IT/process/stable-kernel-rules.rst     |  4 +-
+ .../translations/zh_CN/basic_profiling.txt    | 71 -------------------
+ .../translations/zh_CN/process/4.Coding.rst   |  2 +-
+ .../zh_CN/process/management-style.rst        |  4 +-
+ .../zh_CN/process/programming-language.rst    | 28 ++++----
+ .../virtual/kvm/amd-memory-encryption.rst     |  5 ++
+ Documentation/virtual/kvm/vcpu-requests.rst   |  2 +
+ Documentation/vm/hmm.rst                      |  9 ++-
+ Documentation/x86/x86_64/5level-paging.rst    |  2 +-
+ Documentation/x86/x86_64/boot-options.rst     |  4 +-
+ .../x86/x86_64/fake-numa-for-cpusets.rst      |  2 +-
+ MAINTAINERS                                   |  6 +-
+ arch/arm/Kconfig                              |  2 +-
+ arch/arm64/kernel/kexec_image.c               |  2 +-
+ arch/powerpc/Kconfig                          |  2 +-
+ arch/x86/Kconfig                              | 16 ++---
+ arch/x86/Kconfig.debug                        |  2 +-
+ arch/x86/boot/header.S                        |  2 +-
+ arch/x86/entry/entry_64.S                     |  2 +-
+ arch/x86/include/asm/bootparam_utils.h        |  2 +-
+ arch/x86/include/asm/page_64_types.h          |  2 +-
+ arch/x86/include/asm/pgtable_64_types.h       |  2 +-
+ arch/x86/kernel/cpu/microcode/amd.c           |  2 +-
+ arch/x86/kernel/kexec-bzimage64.c             |  2 +-
+ arch/x86/kernel/pci-dma.c                     |  2 +-
+ arch/x86/mm/tlb.c                             |  2 +-
+ arch/x86/platform/pvh/enlighten.c             |  2 +-
+ drivers/acpi/Kconfig                          | 10 +--
+ drivers/isdn/mISDN/dsp_core.c                 |  2 -
+ drivers/net/ethernet/faraday/ftgmac100.c      |  2 +-
+ .../fieldbus/Documentation/fieldbus_dev.txt   |  4 +-
+ drivers/vhost/vhost.c                         |  2 +-
+ include/acpi/acpi_drivers.h                   |  2 +-
+ include/linux/fs_context.h                    |  2 +-
+ include/linux/lsm_hooks.h                     |  2 +-
+ include/linux/mfd/madera/pdata.h              |  3 +-
+ mm/Kconfig                                    |  2 +-
+ security/Kconfig                              |  2 +-
+ tools/include/linux/err.h                     |  2 +-
+ .../Documentation/stack-validation.txt        |  4 +-
+ tools/testing/selftests/x86/protection_keys.c |  2 +-
+ 84 files changed, 183 insertions(+), 212 deletions(-)
+ delete mode 100644 Documentation/translations/zh_CN/basic_profiling.txt
+
 -- 
-2.20.1
+2.21.0
