@@ -1,71 +1,43 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 29 May 2019 22:01:35 +0000
-Subject: [GIT PULL] keys: Miscellany
-Message-Id: <18289.1559167295@warthog.procyon.org.uk>
+Date: Thu, 30 May 2019 17:26:17 +0000
+Subject: [PATCH 09/10] KEYS: reuse keyring_index_key::desc_len in lookup_user_key() [ver #2]
+Message-Id: <155923717710.949.2790063022835028361.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: James Morris <jmorris@namei.org>
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: Eric Biggers <ebiggers@google.com>, James Morris <jamorris@linux.microsoft.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, ebiggers@kernel.org
 
-Hi James,
+From: Eric Biggers <ebiggers@google.com>
 
-Here are some miscellaneous keyrings fixes and improvements intended for
-the next merge window, if you could pull them please.
+When lookup_user_key() checks whether the key is possessed, it should
+use the key's existing index_key including the 'desc_len' field, rather
+than recomputing the 'desc_len'.  This doesn't change the behavior; this
+way is just simpler and faster.
 
- (1) Fix a bunch of warnings from sparse, including missing RCU bits and
-     kdoc-function argument mismatches
-
- (2) Implement a keyctl to allow a key to be moved from one keyring to
-     another, with the option of prohibiting key replacement in the
-     destination keyring.
-
- (3) Grant Link permission to possessors of request_key_auth tokens so that
-     upcall servicing daemons can more easily arrange things such that only
-     the necessary auth key is passed to the actual service program, and
-     not all the auth keys a daemon might possesss.
-
-Changes: I made the change you suggested on patch 6 and added the
-reviewed-by's to patches 1-5 and 7.
-
-David
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: James Morris <jamorris@linux.microsoft.com>
 ---
-The following changes since commit a188339ca5a396acc588e5851ed7e19f66b0ebd9:
 
-  Linux 5.2-rc1 (2019-05-19 15:47:09 -0700)
+ security/keys/process_keys.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-are available in the Git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-misc-20190529
-
-for you to fetch changes up to 39de363a48ae151d766512c8e73a5564a3096c82:
-
-  keys: Grant Link permission to possessers of request_key auth keys (2019-05-29 22:34:52 +0100)
-
-----------------------------------------------------------------
-Miscellaneous keyrings development
-
-----------------------------------------------------------------
-David Howells (7):
-      keys: sparse: Fix key_fs[ug]id_changed()
-      keys: sparse: Fix incorrect RCU accesses
-      keys: sparse: Fix kdoc mismatches
-      keys: Break bits out of key_unlink()
-      keys: Make __key_link_begin() handle lockdep nesting
-      keys: Add a keyctl to move a key between keyrings
-      keys: Grant Link permission to possessers of request_key auth keys
-
- Documentation/security/keys/core.rst |  21 +++++
- include/linux/key.h                  |  13 ++-
- include/uapi/linux/keyctl.h          |   3 +
- kernel/cred.c                        |   4 +-
- security/keys/compat.c               |   3 +
- security/keys/internal.h             |   3 +-
- security/keys/key.c                  |   6 +-
- security/keys/keyctl.c               |  56 ++++++++++-
- security/keys/keyring.c              | 178 ++++++++++++++++++++++++++++++-----
- security/keys/process_keys.c         |  22 ++---
- security/keys/request_key.c          |   4 +-
- security/keys/request_key_auth.c     |   4 +-
- 12 files changed, 269 insertions(+), 48 deletions(-)
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index ba5d3172cafe..39aaa21462bf 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -688,9 +688,7 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+ 		key_ref = make_key_ref(key, 0);
+ 
+ 		/* check to see if we possess the key */
+-		ctx.index_key.type		= key->type;
+-		ctx.index_key.description	= key->description;
+-		ctx.index_key.desc_len		= strlen(key->description);
++		ctx.index_key			= key->index_key;
+ 		ctx.match_data.raw_data		= key;
+ 		kdebug("check possessed");
+ 		skey_ref = search_process_keyrings(&ctx);
