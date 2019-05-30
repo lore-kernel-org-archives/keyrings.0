@@ -1,193 +1,113 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 20 May 2019 17:25:37 +0000
-Subject: [PATCH v6 01/16] fs, fscrypt: move uapi definitions to new header <linux/fscrypt.h>
-Message-Id: <20190520172552.217253-2-ebiggers@kernel.org>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 30 May 2019 17:25:19 +0000
+Subject: [PATCH 01/10] keys: sparse: Fix key_fs[ug]id_changed() [ver #2]
+Message-Id: <155923711951.949.17453975846850465292.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190520172552.217253-1-ebiggers@kernel.org>
-In-Reply-To: <20190520172552.217253-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Satya Tangirala <satyat@google.com>, Paul Crowley <paulcrowley@google.com>
+References: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: James Morris <jamorris@linux.microsoft.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, ebiggers@kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Sparse warnings are incurred by key_fs[ug]id_changed() due to unprotected
+accesses of tsk->cred, which is marked __rcu.
 
-More fscrypt definitions are being added, and we shouldn't use a
-disproportionate amount of space in <linux/fs.h> for fscrypt stuff.
-So move the fscrypt definitions to a new header <linux/fscrypt.h>.
+Fix this by passing the new cred struct to these functions from
+commit_creds() rather than the task pointer.
 
-For source compatibility with existing userspace programs, <linux/fs.h>
-still includes the new header.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: James Morris <jamorris@linux.microsoft.com>
 ---
- MAINTAINERS                  |  1 +
- include/linux/fscrypt.h      |  1 +
- include/uapi/linux/fs.h      | 54 ++-------------------------------
- include/uapi/linux/fscrypt.h | 58 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 63 insertions(+), 51 deletions(-)
- create mode 100644 include/uapi/linux/fscrypt.h
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 5cfbea4ce5750..b55acde12f65f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6475,6 +6475,7 @@ T:	git git://git.kernel.org/pub/scm/fs/fscrypt/fscrypt.git
- S:	Supported
- F:	fs/crypto/
- F:	include/linux/fscrypt*.h
-+F:	include/uapi/linux/fscrypt.h
- F:	Documentation/filesystems/fscrypt.rst
+ include/linux/key.h          |    8 ++++----
+ kernel/cred.c                |    4 ++--
+ security/keys/process_keys.c |   22 ++++++++++------------
+ 3 files changed, 16 insertions(+), 18 deletions(-)
+
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 7099985e35a9..1f09aad1c98c 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -402,8 +402,8 @@ extern struct ctl_table key_sysctls[];
+  * the userspace interface
+  */
+ extern int install_thread_keyring_to_cred(struct cred *cred);
+-extern void key_fsuid_changed(struct task_struct *tsk);
+-extern void key_fsgid_changed(struct task_struct *tsk);
++extern void key_fsuid_changed(struct cred *new_cred);
++extern void key_fsgid_changed(struct cred *new_cred);
+ extern void key_init(void);
  
- FSI-ATTACHED I2C DRIVER
-diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
-index f7680ef1abd2d..a2b2ceaf33a85 100644
---- a/include/linux/fscrypt.h
-+++ b/include/linux/fscrypt.h
-@@ -16,6 +16,7 @@
- #include <linux/fs.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
-+#include <uapi/linux/fscrypt.h>
+ #else /* CONFIG_KEYS */
+@@ -418,8 +418,8 @@ extern void key_init(void);
+ #define make_key_ref(k, p)		NULL
+ #define key_ref_to_ptr(k)		NULL
+ #define is_key_possessed(k)		0
+-#define key_fsuid_changed(t)		do { } while(0)
+-#define key_fsgid_changed(t)		do { } while(0)
++#define key_fsuid_changed(c)		do { } while(0)
++#define key_fsgid_changed(c)		do { } while(0)
+ #define key_init()			do { } while(0)
  
- #define FS_CRYPTO_BLOCK_SIZE		16
+ #endif /* CONFIG_KEYS */
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 45d77284aed0..3bd40de9e192 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -455,9 +455,9 @@ int commit_creds(struct cred *new)
  
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index 59c71fa8c553a..41bd84d25a980 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -13,6 +13,9 @@
- #include <linux/limits.h>
- #include <linux/ioctl.h>
- #include <linux/types.h>
-+#ifndef __KERNEL__
-+#include <linux/fscrypt.h>
-+#endif
+ 	/* alter the thread keyring */
+ 	if (!uid_eq(new->fsuid, old->fsuid))
+-		key_fsuid_changed(task);
++		key_fsuid_changed(new);
+ 	if (!gid_eq(new->fsgid, old->fsgid))
+-		key_fsgid_changed(task);
++		key_fsgid_changed(new);
  
- /* Use of MS_* flags within the kernel is restricted to core mount(2) code. */
- #if !defined(__KERNEL__)
-@@ -212,57 +215,6 @@ struct fsxattr {
- #define FS_IOC_GETFSLABEL		_IOR(0x94, 49, char[FSLABEL_MAX])
- #define FS_IOC_SETFSLABEL		_IOW(0x94, 50, char[FSLABEL_MAX])
- 
--/*
-- * File system encryption support
-- */
--/* Policy provided via an ioctl on the topmost directory */
--#define FS_KEY_DESCRIPTOR_SIZE	8
--
--#define FS_POLICY_FLAGS_PAD_4		0x00
--#define FS_POLICY_FLAGS_PAD_8		0x01
--#define FS_POLICY_FLAGS_PAD_16		0x02
--#define FS_POLICY_FLAGS_PAD_32		0x03
--#define FS_POLICY_FLAGS_PAD_MASK	0x03
--#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
--#define FS_POLICY_FLAGS_VALID		0x07
--
--/* Encryption algorithms */
--#define FS_ENCRYPTION_MODE_INVALID		0
--#define FS_ENCRYPTION_MODE_AES_256_XTS		1
--#define FS_ENCRYPTION_MODE_AES_256_GCM		2
--#define FS_ENCRYPTION_MODE_AES_256_CBC		3
--#define FS_ENCRYPTION_MODE_AES_256_CTS		4
--#define FS_ENCRYPTION_MODE_AES_128_CBC		5
--#define FS_ENCRYPTION_MODE_AES_128_CTS		6
--#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
--#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
--#define FS_ENCRYPTION_MODE_ADIANTUM		9
--
--struct fscrypt_policy {
--	__u8 version;
--	__u8 contents_encryption_mode;
--	__u8 filenames_encryption_mode;
--	__u8 flags;
--	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
--};
--
--#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
--#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
--#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
--
--/* Parameters for passing an encryption key into the kernel keyring */
--#define FS_KEY_DESC_PREFIX		"fscrypt:"
--#define FS_KEY_DESC_PREFIX_SIZE		8
--
--/* Structure that userspace passes to the kernel keyring */
--#define FS_MAX_KEY_SIZE			64
--
--struct fscrypt_key {
--	__u32 mode;
--	__u8 raw[FS_MAX_KEY_SIZE];
--	__u32 size;
--};
--
+ 	/* do it
+ 	 * RLIMIT_NPROC limits on user->processes have already been checked
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index f05f7125a7d5..ba5d3172cafe 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -293,28 +293,26 @@ static int install_session_keyring(struct key *keyring)
  /*
-  * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
-  *
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-new file mode 100644
-index 0000000000000..193339cb53fdb
---- /dev/null
-+++ b/include/uapi/linux/fscrypt.h
-@@ -0,0 +1,58 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-+#ifndef _UAPI_LINUX_FSCRYPT_H
-+#define _UAPI_LINUX_FSCRYPT_H
-+
-+#include <linux/types.h>
-+
-+/*
-+ * File system encryption support
-+ */
-+/* Policy provided via an ioctl on the topmost directory */
-+#define FS_KEY_DESCRIPTOR_SIZE	8
-+
-+#define FS_POLICY_FLAGS_PAD_4		0x00
-+#define FS_POLICY_FLAGS_PAD_8		0x01
-+#define FS_POLICY_FLAGS_PAD_16		0x02
-+#define FS_POLICY_FLAGS_PAD_32		0x03
-+#define FS_POLICY_FLAGS_PAD_MASK	0x03
-+#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
-+#define FS_POLICY_FLAGS_VALID		0x07
-+
-+/* Encryption algorithms */
-+#define FS_ENCRYPTION_MODE_INVALID		0
-+#define FS_ENCRYPTION_MODE_AES_256_XTS		1
-+#define FS_ENCRYPTION_MODE_AES_256_GCM		2
-+#define FS_ENCRYPTION_MODE_AES_256_CBC		3
-+#define FS_ENCRYPTION_MODE_AES_256_CTS		4
-+#define FS_ENCRYPTION_MODE_AES_128_CBC		5
-+#define FS_ENCRYPTION_MODE_AES_128_CTS		6
-+#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
-+#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
-+#define FS_ENCRYPTION_MODE_ADIANTUM		9
-+
-+struct fscrypt_policy {
-+	__u8 version;
-+	__u8 contents_encryption_mode;
-+	__u8 filenames_encryption_mode;
-+	__u8 flags;
-+	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-+};
-+
-+#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
-+#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
-+#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
-+
-+/* Parameters for passing an encryption key into the kernel keyring */
-+#define FS_KEY_DESC_PREFIX		"fscrypt:"
-+#define FS_KEY_DESC_PREFIX_SIZE		8
-+
-+/* Structure that userspace passes to the kernel keyring */
-+#define FS_MAX_KEY_SIZE			64
-+
-+struct fscrypt_key {
-+	__u32 mode;
-+	__u8 raw[FS_MAX_KEY_SIZE];
-+	__u32 size;
-+};
-+
-+#endif /* _UAPI_LINUX_FSCRYPT_H */
--- 
-2.21.0.1020.gf2820cf01a-goog
+  * Handle the fsuid changing.
+  */
+-void key_fsuid_changed(struct task_struct *tsk)
++void key_fsuid_changed(struct cred *new_cred)
+ {
+ 	/* update the ownership of the thread keyring */
+-	BUG_ON(!tsk->cred);
+-	if (tsk->cred->thread_keyring) {
+-		down_write(&tsk->cred->thread_keyring->sem);
+-		tsk->cred->thread_keyring->uid = tsk->cred->fsuid;
+-		up_write(&tsk->cred->thread_keyring->sem);
++	if (new_cred->thread_keyring) {
++		down_write(&new_cred->thread_keyring->sem);
++		new_cred->thread_keyring->uid = new_cred->fsuid;
++		up_write(&new_cred->thread_keyring->sem);
+ 	}
+ }
+ 
+ /*
+  * Handle the fsgid changing.
+  */
+-void key_fsgid_changed(struct task_struct *tsk)
++void key_fsgid_changed(struct cred *new_cred)
+ {
+ 	/* update the ownership of the thread keyring */
+-	BUG_ON(!tsk->cred);
+-	if (tsk->cred->thread_keyring) {
+-		down_write(&tsk->cred->thread_keyring->sem);
+-		tsk->cred->thread_keyring->gid = tsk->cred->fsgid;
+-		up_write(&tsk->cred->thread_keyring->sem);
++	if (new_cred->thread_keyring) {
++		down_write(&new_cred->thread_keyring->sem);
++		new_cred->thread_keyring->gid = new_cred->fsgid;
++		up_write(&new_cred->thread_keyring->sem);
+ 	}
+ }
+ 
