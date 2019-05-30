@@ -1,78 +1,67 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:59 +0000
-Subject: [PATCH, RFC 39/62] keys/mktme: Find new PCONFIG targets during memory hotplug
-Message-Id: <20190508144422.13171-40-kirill.shutemov@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 30 May 2019 17:25:34 +0000
+Subject: [PATCH 03/10] keys: sparse: Fix kdoc mismatches [ver #2]
+Message-Id: <155923713411.949.11422022582308560167.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: James Morris <jamorris@linux.microsoft.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, ebiggers@kernel.org
 
-From: Alison Schofield <alison.schofield@intel.com>
+Fix some kdoc argument description mismatches reported by sparse and give
+keyring_restrict() a description.
 
-Introduce a helper function that detects a newly added PCONFIG
-target. This will be used in the MKTME memory hotplug notifier
-to determine if a new PCONFIG target has been added that needs
-to have its Key Table programmed.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: James Morris <jamorris@linux.microsoft.com>
+cc: Mat Martineau <mathew.j.martineau@linux.intel.com>
 ---
- security/keys/mktme_keys.c | 39 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 3dfc0647f1e5..2c975c48fe44 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -543,6 +543,45 @@ static int mktme_cpu_teardown(unsigned int cpu)
- 	return ret;
- }
+ security/keys/keyring.c     |   10 +++++++---
+ security/keys/request_key.c |    2 +-
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index e14f09e3a4b0..5b218b270598 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -520,7 +520,7 @@ EXPORT_SYMBOL(keyring_alloc);
+  * @keyring: The keyring being added to.
+  * @type: The type of key being added.
+  * @payload: The payload of the key intended to be added.
+- * @data: Additional data for evaluating restriction.
++ * @restriction_key: Keys providing additional data for evaluating restriction.
+  *
+  * Reject the addition of any links to a keyring.  It can be overridden by
+  * passing KEY_ALLOC_BYPASS_RESTRICTION to key_instantiate_and_link() when
+@@ -976,9 +976,13 @@ static bool keyring_detect_restriction_cycle(const struct key *dest_keyring,
  
-+static int mktme_get_new_pconfig_target(void)
-+{
-+	unsigned long *prev_map, *tmp_map;
-+	int new_target;		/* New PCONFIG target to program */
-+
-+	/* Save the current mktme_target_map bitmap */
-+	prev_map = bitmap_alloc(topology_max_packages(), GFP_KERNEL);
-+	bitmap_copy(prev_map, mktme_target_map, sizeof(mktme_target_map));
-+
-+	/* Update the global targets - includes mktme_target_map */
-+	mktme_update_pconfig_targets();
-+
-+	/* Nothing to do if the target bitmap is unchanged */
-+	if (bitmap_equal(prev_map, mktme_target_map, sizeof(prev_map))) {
-+		new_target = -1;
-+		goto free_prev;
-+	}
-+
-+	/* Find the change in the target bitmap */
-+	tmp_map = bitmap_alloc(topology_max_packages(), GFP_KERNEL);
-+	bitmap_andnot(tmp_map, prev_map, mktme_target_map,
-+		      sizeof(prev_map));
-+
-+	/* There should only be one new target */
-+	if (bitmap_weight(tmp_map, sizeof(tmp_map)) != 1) {
-+		pr_err("%s: expected %d new target, got %d\n", __func__, 1,
-+		       bitmap_weight(tmp_map, sizeof(tmp_map)));
-+		new_target = -1;
-+		goto free_tmp;
-+	}
-+	new_target = find_first_bit(tmp_map, sizeof(tmp_map));
-+
-+free_tmp:
-+	bitmap_free(tmp_map);
-+free_prev:
-+	bitmap_free(prev_map);
-+	return new_target;
-+}
-+
- static int __init init_mktme(void)
- {
- 	int ret, cpuhp;
--- 
-2.20.1
+ /**
+  * keyring_restrict - Look up and apply a restriction to a keyring
+- *
+- * @keyring: The keyring to be restricted
++ * @keyring_ref: The keyring to be restricted
++ * @type: The key type that will provide the restriction checker.
+  * @restriction: The restriction options to apply to the keyring
++ *
++ * Look up a keyring and apply a restriction to it.  The restriction is managed
++ * by the specific key type, but can be configured by the options specified in
++ * the restriction string.
+  */
+ int keyring_restrict(key_ref_t keyring_ref, const char *type,
+ 		     const char *restriction)
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 75d87f9e0f49..1f234b019437 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -24,7 +24,7 @@
+ 
+ /**
+  * complete_request_key - Complete the construction of a key.
+- * @auth_key: The authorisation key.
++ * @authkey: The authorisation key.
+  * @error: The success or failute of the construction.
+  *
+  * Complete the attempt to construct a key.  The key will be negated
