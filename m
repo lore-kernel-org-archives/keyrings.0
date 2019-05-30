@@ -1,265 +1,273 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:43:44 +0000
-Subject: [PATCH, RFC 24/62] keys/mktme: Preparse the MKTME key payload
-Message-Id: <20190508144422.13171-25-kirill.shutemov@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 30 May 2019 17:25:55 +0000
+Subject: [PATCH 06/10] keys: Hoist locking out of __key_link_begin() [ver #2]
+Message-Id: <155923715560.949.7666210207871593907.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155923711088.949.14909672457214372214.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, ebiggers@kernel.org
 
-From: Alison Schofield <alison.schofield@intel.com>
+Hoist the locking of out of __key_link_begin() and into its callers.  This
+is necessary to allow the upcoming key_move() operation to correctly order
+taking of the source keyring semaphore, the destination keyring semaphore
+and the keyring serialisation lock.
 
-It is a requirement of the Kernel Keys subsystem to provide a
-preparse method that validates payloads before key instantiate
-methods are called.
-
-Verify that userspace provides valid MKTME options and prepare
-the payload for use at key instantiate time.
-
-Create a method to free the preparsed payload. The Kernel Key
-subsystem will that to clean up after the key is instantiated.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- include/keys/mktme-type.h  |  39 +++++++++
- security/keys/mktme_keys.c | 165 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 204 insertions(+)
- create mode 100644 include/keys/mktme-type.h
 
-diff --git a/include/keys/mktme-type.h b/include/keys/mktme-type.h
-new file mode 100644
-index 000000000000..032905b288b4
---- /dev/null
-+++ b/include/keys/mktme-type.h
-@@ -0,0 +1,39 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+
-+/* Key service for Multi-KEY Total Memory Encryption */
-+
-+#ifndef _KEYS_MKTME_TYPE_H
-+#define _KEYS_MKTME_TYPE_H
-+
-+#include <linux/key.h>
-+
-+/*
-+ * The AES-XTS 128 encryption algorithm requires 128 bits for each
-+ * user supplied data key and tweak key.
-+ */
-+#define MKTME_AES_XTS_SIZE	16	/* 16 bytes, 128 bits */
-+
-+enum mktme_alg {
-+	MKTME_ALG_AES_XTS_128,
-+};
-+
-+const char *const mktme_alg_names[] = {
-+	[MKTME_ALG_AES_XTS_128]	= "aes-xts-128",
-+};
-+
-+enum mktme_type {
-+	MKTME_TYPE_ERROR = -1,
-+	MKTME_TYPE_USER,
-+	MKTME_TYPE_CPU,
-+	MKTME_TYPE_NO_ENCRYPT,
-+};
-+
-+const char *const mktme_type_names[] = {
-+	[MKTME_TYPE_USER]	= "user",
-+	[MKTME_TYPE_CPU]	= "cpu",
-+	[MKTME_TYPE_NO_ENCRYPT]	= "no-encrypt",
-+};
-+
-+extern struct key_type key_type_mktme;
-+
-+#endif /* _KEYS_MKTME_TYPE_H */
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index b5e8289f041b..92a047caa829 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -6,6 +6,10 @@
- #include <linux/key.h>
- #include <linux/key-type.h>
- #include <linux/mm.h>
-+#include <linux/parser.h>
-+#include <linux/string.h>
-+#include <asm/intel_pconfig.h>
-+#include <keys/mktme-type.h>
- #include <keys/user-type.h>
+ security/keys/internal.h    |    2 +
+ security/keys/key.c         |   23 +++++++++++--
+ security/keys/keyring.c     |   77 +++++++++++++++++++++++++------------------
+ security/keys/request_key.c |    5 +++
+ 4 files changed, 71 insertions(+), 36 deletions(-)
+
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 8f533c81aa8d..25cdd0cbdc06 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -93,6 +93,8 @@ extern wait_queue_head_t request_key_conswq;
+ extern struct key_type *key_type_lookup(const char *type);
+ extern void key_type_put(struct key_type *ktype);
  
- #include "internal.h"
-@@ -69,8 +73,169 @@ int mktme_keyid_from_key(struct key *key)
- 	return 0;
++extern int __key_link_lock(struct key *keyring,
++			   const struct keyring_index_key *index_key);
+ extern int __key_link_begin(struct key *keyring,
+ 			    const struct keyring_index_key *index_key,
+ 			    struct assoc_array_edit **_edit);
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 696f1c092c50..591b88f9a51d 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -515,10 +515,14 @@ int key_instantiate_and_link(struct key *key,
+ 	}
+ 
+ 	if (keyring) {
+-		ret = __key_link_begin(keyring, &key->index_key, &edit);
++		ret = __key_link_lock(keyring, &key->index_key);
+ 		if (ret < 0)
+ 			goto error;
+ 
++		ret = __key_link_begin(keyring, &key->index_key, &edit);
++		if (ret < 0)
++			goto error_link_end;
++
+ 		if (keyring->restrict_link && keyring->restrict_link->check) {
+ 			struct key_restriction *keyres = keyring->restrict_link;
+ 
+@@ -570,7 +574,7 @@ int key_reject_and_link(struct key *key,
+ 			struct key *keyring,
+ 			struct key *authkey)
+ {
+-	struct assoc_array_edit *edit;
++	struct assoc_array_edit *edit = NULL;
+ 	int ret, awaken, link_ret = 0;
+ 
+ 	key_check(key);
+@@ -583,7 +587,12 @@ int key_reject_and_link(struct key *key,
+ 		if (keyring->restrict_link)
+ 			return -EPERM;
+ 
+-		link_ret = __key_link_begin(keyring, &key->index_key, &edit);
++		link_ret = __key_link_lock(keyring, &key->index_key);
++		if (link_ret = 0) {
++			link_ret = __key_link_begin(keyring, &key->index_key, &edit);
++			if (link_ret < 0)
++				__key_link_end(keyring, &key->index_key, edit);
++		}
+ 	}
+ 
+ 	mutex_lock(&key_construction_mutex);
+@@ -860,12 +869,18 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	}
+ 	index_key.desc_len = strlen(index_key.description);
+ 
+-	ret = __key_link_begin(keyring, &index_key, &edit);
++	ret = __key_link_lock(keyring, &index_key);
+ 	if (ret < 0) {
+ 		key_ref = ERR_PTR(ret);
+ 		goto error_free_prep;
+ 	}
+ 
++	ret = __key_link_begin(keyring, &index_key, &edit);
++	if (ret < 0) {
++		key_ref = ERR_PTR(ret);
++		goto error_link_end;
++	}
++
+ 	if (restrict_link && restrict_link->check) {
+ 		ret = restrict_link->check(keyring, index_key.type,
+ 					   &prep.payload, restrict_link->key);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 2f91b9a699ef..8838c300ea7b 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -1199,14 +1199,34 @@ static int keyring_detect_cycle(struct key *A, struct key *B)
+ 	return PTR_ERR(ctx.result) = -EAGAIN ? 0 : PTR_ERR(ctx.result);
  }
  
-+enum mktme_opt_id {
-+	OPT_ERROR,
-+	OPT_TYPE,
-+	OPT_KEY,
-+	OPT_TWEAK,
-+	OPT_ALGORITHM,
-+};
-+
-+static const match_table_t mktme_token = {
-+	{OPT_TYPE, "type=%s"},
-+	{OPT_KEY, "key=%s"},
-+	{OPT_TWEAK, "tweak=%s"},
-+	{OPT_ALGORITHM, "algorithm=%s"},
-+	{OPT_ERROR, NULL}
-+};
-+
-+struct mktme_payload {
-+	u32		keyid_ctrl;	/* Command & Encryption Algorithm */
-+	u8		data_key[MKTME_AES_XTS_SIZE];
-+	u8		tweak_key[MKTME_AES_XTS_SIZE];
-+};
-+
-+/* Make sure arguments are correct for the TYPE of key requested */
-+static int mktme_check_options(struct mktme_payload *payload,
-+			       unsigned long token_mask, enum mktme_type type)
++/*
++ * Lock keyring for link.
++ */
++int __key_link_lock(struct key *keyring,
++		    const struct keyring_index_key *index_key)
++	__acquires(&keyring->sem)
++	__acquires(&keyring_serialise_link_lock)
 +{
-+	if (!token_mask)
-+		return -EINVAL;
++	if (keyring->type != &key_type_keyring)
++		return -ENOTDIR;
 +
-+	switch (type) {
-+	case MKTME_TYPE_USER:
-+		if (test_bit(OPT_ALGORITHM, &token_mask))
-+			payload->keyid_ctrl |= MKTME_AES_XTS_128;
-+		else
-+			return -EINVAL;
++	down_write(&keyring->sem);
 +
-+		if ((test_bit(OPT_KEY, &token_mask)) &&
-+		    (test_bit(OPT_TWEAK, &token_mask)))
-+			payload->keyid_ctrl |= MKTME_KEYID_SET_KEY_DIRECT;
-+		else
-+			return -EINVAL;
-+		break;
++	/* Serialise link/link calls to prevent parallel calls causing a cycle
++	 * when linking two keyring in opposite orders.
++	 */
++	if (index_key->type = &key_type_keyring)
++		mutex_lock(&keyring_serialise_link_lock);
 +
-+	case MKTME_TYPE_CPU:
-+		if (test_bit(OPT_ALGORITHM, &token_mask))
-+			payload->keyid_ctrl |= MKTME_AES_XTS_128;
-+		else
-+			return -EINVAL;
-+
-+		payload->keyid_ctrl |= MKTME_KEYID_SET_KEY_RANDOM;
-+		break;
-+
-+	case MKTME_TYPE_NO_ENCRYPT:
-+		payload->keyid_ctrl |= MKTME_KEYID_NO_ENCRYPT;
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
 +	return 0;
 +}
 +
-+/* Parse the options and store the key programming data in the payload. */
-+static int mktme_get_options(char *options, struct mktme_payload *payload)
-+{
-+	enum mktme_type type = MKTME_TYPE_ERROR;
-+	substring_t args[MAX_OPT_ARGS];
-+	unsigned long token_mask = 0;
-+	char *p = options;
-+	int ret, token;
-+
-+	while ((p = strsep(&options, " \t"))) {
-+		if (*p = '\0' || *p = ' ' || *p = '\t')
-+			continue;
-+		token = match_token(p, mktme_token, args);
-+		if (token = OPT_ERROR)
-+			return -EINVAL;
-+		if (test_and_set_bit(token, &token_mask))
-+			return -EINVAL;
-+
-+		switch (token) {
-+		case OPT_KEY:
-+			ret = hex2bin(payload->data_key, args[0].from,
-+				      MKTME_AES_XTS_SIZE);
-+			if (ret < 0)
-+				return -EINVAL;
-+			break;
-+
-+		case OPT_TWEAK:
-+			ret = hex2bin(payload->tweak_key, args[0].from,
-+				      MKTME_AES_XTS_SIZE);
-+			if (ret < 0)
-+				return -EINVAL;
-+			break;
-+
-+		case OPT_TYPE:
-+			type = match_string(mktme_type_names,
-+					    ARRAY_SIZE(mktme_type_names),
-+					    args[0].from);
-+			if (type < 0)
-+				return -EINVAL;
-+			break;
-+
-+		case OPT_ALGORITHM:
-+			ret = match_string(mktme_alg_names,
-+					   ARRAY_SIZE(mktme_alg_names),
-+					   args[0].from);
-+			if (ret < 0)
-+				return -EINVAL;
-+			break;
-+
-+		default:
-+			return -EINVAL;
-+		}
-+	}
-+	return mktme_check_options(payload, token_mask, type);
-+}
-+
-+void mktme_free_preparsed_payload(struct key_preparsed_payload *prep)
-+{
-+	kzfree(prep->payload.data[0]);
-+}
-+
-+/*
-+ * Key Service Method to preparse a payload before a key is created.
-+ * Check permissions and the options. Load the proposed key field
-+ * data into the payload for use by the instantiate method.
-+ */
-+int mktme_preparse_payload(struct key_preparsed_payload *prep)
-+{
-+	struct mktme_payload *mktme_payload;
-+	size_t datalen = prep->datalen;
-+	char *options;
-+	int ret;
-+
-+	if (datalen <= 0 || datalen > 1024 || !prep->data)
-+		return -EINVAL;
-+
-+	options = kmemdup_nul(prep->data, datalen, GFP_KERNEL);
-+	if (!options)
-+		return -ENOMEM;
-+
-+	mktme_payload = kzalloc(sizeof(*mktme_payload), GFP_KERNEL);
-+	if (!mktme_payload) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+	ret = mktme_get_options(options, mktme_payload);
-+	if (ret < 0) {
-+		kzfree(mktme_payload);
-+		goto out;
-+	}
-+	prep->quotalen = sizeof(mktme_payload);
-+	prep->payload.data[0] = mktme_payload;
-+out:
-+	kzfree(options);
-+	return ret;
-+}
-+
- struct key_type key_type_mktme = {
- 	.name		= "mktme",
-+	.preparse	= mktme_preparse_payload,
-+	.free_preparse	= mktme_free_preparsed_payload,
- 	.describe	= user_describe,
- };
+ /*
+  * Preallocate memory so that a key can be linked into to a keyring.
+  */
+ int __key_link_begin(struct key *keyring,
+ 		     const struct keyring_index_key *index_key,
+ 		     struct assoc_array_edit **_edit)
+-	__acquires(&keyring->sem)
+-	__acquires(&keyring_serialise_link_lock)
+ {
+ 	struct assoc_array_edit *edit;
+ 	int ret;
+@@ -1216,19 +1236,9 @@ int __key_link_begin(struct key *keyring,
  
--- 
-2.20.1
+ 	BUG_ON(index_key->desc_len = 0);
+ 
+-	if (keyring->type != &key_type_keyring)
+-		return -ENOTDIR;
+-
+-	down_write(&keyring->sem);
+-
+ 	ret = -EKEYREVOKED;
+ 	if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
+-		goto error_krsem;
+-
+-	/* serialise link/link calls to prevent parallel calls causing a cycle
+-	 * when linking two keyring in opposite orders */
+-	if (index_key->type = &key_type_keyring)
+-		mutex_lock(&keyring_serialise_link_lock);
++		goto error;
+ 
+ 	/* Create an edit script that will insert/replace the key in the
+ 	 * keyring tree.
+@@ -1239,7 +1249,7 @@ int __key_link_begin(struct key *keyring,
+ 				  NULL);
+ 	if (IS_ERR(edit)) {
+ 		ret = PTR_ERR(edit);
+-		goto error_sem;
++		goto error;
+ 	}
+ 
+ 	/* If we're not replacing a link in-place then we're going to need some
+@@ -1258,11 +1268,7 @@ int __key_link_begin(struct key *keyring,
+ 
+ error_cancel:
+ 	assoc_array_cancel_edit(edit);
+-error_sem:
+-	if (index_key->type = &key_type_keyring)
+-		mutex_unlock(&keyring_serialise_link_lock);
+-error_krsem:
+-	up_write(&keyring->sem);
++error:
+ 	kleave(" = %d", ret);
+ 	return ret;
+ }
+@@ -1312,9 +1318,6 @@ void __key_link_end(struct key *keyring,
+ 	BUG_ON(index_key->type = NULL);
+ 	kenter("%d,%s,", keyring->serial, index_key->type->name);
+ 
+-	if (index_key->type = &key_type_keyring)
+-		mutex_unlock(&keyring_serialise_link_lock);
+-
+ 	if (edit) {
+ 		if (!edit->dead_leaf) {
+ 			key_payload_reserve(keyring,
+@@ -1323,6 +1326,9 @@ void __key_link_end(struct key *keyring,
+ 		assoc_array_cancel_edit(edit);
+ 	}
+ 	up_write(&keyring->sem);
++
++	if (index_key->type = &key_type_keyring)
++		mutex_unlock(&keyring_serialise_link_lock);
+ }
+ 
+ /*
+@@ -1358,7 +1364,7 @@ static int __key_link_check_restriction(struct key *keyring, struct key *key)
+  */
+ int key_link(struct key *keyring, struct key *key)
+ {
+-	struct assoc_array_edit *edit;
++	struct assoc_array_edit *edit = NULL;
+ 	int ret;
+ 
+ 	kenter("{%d,%d}", keyring->serial, refcount_read(&keyring->usage));
+@@ -1366,17 +1372,24 @@ int key_link(struct key *keyring, struct key *key)
+ 	key_check(keyring);
+ 	key_check(key);
+ 
++	ret = __key_link_lock(keyring, &key->index_key);
++	if (ret < 0)
++		goto error;
++
+ 	ret = __key_link_begin(keyring, &key->index_key, &edit);
+-	if (ret = 0) {
+-		kdebug("begun {%d,%d}", keyring->serial, refcount_read(&keyring->usage));
+-		ret = __key_link_check_restriction(keyring, key);
+-		if (ret = 0)
+-			ret = __key_link_check_live_key(keyring, key);
+-		if (ret = 0)
+-			__key_link(key, &edit);
+-		__key_link_end(keyring, &key->index_key, edit);
+-	}
++	if (ret < 0)
++		goto error_end;
++
++	kdebug("begun {%d,%d}", keyring->serial, refcount_read(&keyring->usage));
++	ret = __key_link_check_restriction(keyring, key);
++	if (ret = 0)
++		ret = __key_link_check_live_key(keyring, key);
++	if (ret = 0)
++		__key_link(key, &edit);
+ 
++error_end:
++	__key_link_end(keyring, &key->index_key, edit);
++error:
+ 	kleave(" = %d {%d,%d}", ret, keyring->serial, refcount_read(&keyring->usage));
+ 	return ret;
+ }
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 1f234b019437..232505d591dd 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -372,6 +372,9 @@ static int construct_alloc_key(struct keyring_search_context *ctx,
+ 	set_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags);
+ 
+ 	if (dest_keyring) {
++		ret = __key_link_lock(dest_keyring, &ctx->index_key);
++		if (ret < 0)
++			goto link_lock_failed;
+ 		ret = __key_link_begin(dest_keyring, &ctx->index_key, &edit);
+ 		if (ret < 0)
+ 			goto link_prealloc_failed;
+@@ -423,6 +426,8 @@ static int construct_alloc_key(struct keyring_search_context *ctx,
+ 	return ret;
+ 
+ link_prealloc_failed:
++	__key_link_end(dest_keyring, &ctx->index_key, edit);
++link_lock_failed:
+ 	mutex_unlock(&user->cons_lock);
+ 	key_put(key);
+ 	kleave(" = %d [prelink]", ret);
