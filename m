@@ -1,84 +1,43 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Thu, 30 May 2019 07:14:00 +0000
+From: Milan Broz <gmazyland@gmail.com>
+Date: Thu, 30 May 2019 07:39:15 +0000
 Subject: Re: [PATCH] crypto: af_alg - implement keyring support
-Message-Id: <20190530071400.jpadh2fjjaqzyw6m@gondor.apana.org.au>
+Message-Id: <e492858e-a93b-cee9-b50a-e61e23ce9f90@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190521100034.9651-1-omosnace@redhat.com>
 In-Reply-To: <20190521100034.9651-1-omosnace@redhat.com>
-To: Ondrej Mosnacek <omosnace@redhat.com>
-Cc: linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Stephan Mueller <smueller@chronox.de>, Milan Broz <gmazyland@gmail.com>, Ondrej Kozina <okozina@redhat.com>, Daniel Zatovic <dzatovic@redhat.com>
+To: Ondrej Mosnacek <omosnace@redhat.com>, linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Stephan Mueller <smueller@chronox.de>, Ondrej Kozina <okozina@redhat.com>, Daniel Zatovic <dzatovic@redhat.com>
 
-On Tue, May 21, 2019 at 12:00:34PM +0200, Ondrej Mosnacek wrote:
->
-> @@ -256,6 +362,48 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
->  			goto unlock;
->  
->  		err = alg_setkey(sk, optval, optlen);
-> +#ifdef CONFIG_KEYS
-> +		break;
-> +	case ALG_SET_KEY_KEYRING_LOGON:
-> +		if (sock->state = SS_CONNECTED)
-> +			goto unlock;
-> +		if (!type->setkey)
-> +			goto unlock;
-> +
-> +		err = alg_setkey_keyring(sk, &alg_keyring_type_logon,
-> +					 optval, optlen);
-> +		break;
-> +	case ALG_SET_KEY_KEYRING_USER:
-> +		if (sock->state = SS_CONNECTED)
-> +			goto unlock;
-> +		if (!type->setkey)
-> +			goto unlock;
-> +
-> +		err = alg_setkey_keyring(sk, &alg_keyring_type_user,
-> +					 optval, optlen);
-> +#if IS_REACHABLE(CONFIG_TRUSTED_KEYS)
-> +		break;
-> +	case ALG_SET_KEY_KEYRING_TRUSTED:
-> +		if (sock->state = SS_CONNECTED)
-> +			goto unlock;
-> +		if (!type->setkey)
-> +			goto unlock;
-> +
-> +		err = alg_setkey_keyring(sk, &alg_keyring_type_trusted,
-> +					 optval, optlen);
-> +#endif
-> +#if IS_REACHABLE(CONFIG_ENCRYPTED_KEYS)
-> +		break;
-> +	case ALG_SET_KEY_KEYRING_ENCRYPTED:
-> +		if (sock->state = SS_CONNECTED)
-> +			goto unlock;
-> +		if (!type->setkey)
-> +			goto unlock;
-> +
-> +		err = alg_setkey_keyring(sk, &alg_keyring_type_encrypted,
-> +					 optval, optlen);
-> +#endif
-> +#endif /* CONFIG_KEYS */
->  		break;
+Hi,
 
-What's with the funky placement of "break" outside of the ifdefs?
+On 21/05/2019 12:00, Ondrej Mosnacek wrote:
+> This patch adds new socket options to AF_ALG that allow setting key from
+> kernel keyring. For simplicity, each keyring key type (logon, user,
+> trusted, encrypted) has its own socket option name and the value is just
+> the key description string that identifies the key to be used. The key
+> description doesn't need to be NULL-terminated, but bytes after the
+> first zero byte are ignored.
 
-> diff --git a/include/uapi/linux/if_alg.h b/include/uapi/linux/if_alg.h
-> index bc2bcdec377b..f2d777901f00 100644
-> --- a/include/uapi/linux/if_alg.h
-> +++ b/include/uapi/linux/if_alg.h
-> @@ -35,6 +35,13 @@ struct af_alg_iv {
->  #define ALG_SET_OP			3
->  #define ALG_SET_AEAD_ASSOCLEN		4
->  #define ALG_SET_AEAD_AUTHSIZE		5
-> +#define ALG_SET_PUBKEY			6 /* reserved for future use */
-> +#define ALG_SET_DH_PARAMETERS		7 /* reserved for future use */
-> +#define ALG_SET_ECDH_CURVE		8 /* reserved for future use */
+There is one nasty problem with this approach (we hit the same in dmcrypt now).
 
-Why do you need to reserve these values?
+These lines cause hard module dependence on trusted.ko and encrypted.ko
+modules (key_type_* are exported symbols):
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+ +static const struct alg_keyring_type alg_keyring_type_trusted = {
+ +	.key_type = &key_type_trusted,...
+...
+ +	.key_type = &key_type_encrypted,
+
+I do not think this is what we actually want - the dependence should be dynamic,
+the modules should be loaded per-request...
+
+I asked David Howells, and seems kernel keyring does not have such
+interface yet. (There is an internal lookup function already though.)
+
+So until such a lookup interface is present, and the patch is ported to it,
+I think this patch adds module dependency that should not be there.
+
+Milan
