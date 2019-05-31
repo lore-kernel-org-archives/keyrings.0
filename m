@@ -1,7 +1,7 @@
 From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri, 31 May 2019 08:35:42 +0000
+Date: Fri, 31 May 2019 08:47:14 +0000
 Subject: Re: [PATCH 1/7] General notification queue with user mmap()'able ring buffer
-Message-Id: <20190531083542.GL2623@hirez.programming.kicks-ass.net>
+Message-Id: <20190531084714.GL2677@hirez.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -12,41 +12,51 @@ References: <20190528231218.GA28384@kroah.com>
  <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk>
  <4031.1559064620@warthog.procyon.org.uk>
  <31936.1559146000@warthog.procyon.org.uk>
- <20190529231112.GB3164@kroah.com>
- <20190530095039.GA5137@andrea>
-In-Reply-To: <20190530095039.GA5137@andrea>
-To: Andrea Parri <andrea.parri@amarulasolutions.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>, "Paul E. McKenney" <paulmck@linux.ibm.com>, Mark Rutland <mark.rutland@arm.com>
+In-Reply-To: <31936.1559146000@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2019 at 11:50:39AM +0200, Andrea Parri wrote:
-> > > Looking at the perf ring buffer, there appears to be a missing barrier in
-> > > perf_aux_output_end():
-> > > 
-> > > 	rb->user_page->aux_head = rb->aux_head;
-> > > 
-> > > should be:
-> > > 
-> > > 	smp_store_release(&rb->user_page->aux_head, rb->aux_head);
-> > > 
-> > > It should also be using smp_load_acquire().  See
-> > > Documentation/core-api/circular-buffers.rst
-> > > 
-> > > And a (partial) patch has been proposed: https://lkml.org/lkml/2018/5/10/249
-> > 
-> > So, if that's all that needs to be fixed, can you use the same
-> > buffer/code if that patch is merged?
+On Wed, May 29, 2019 at 05:06:40PM +0100, David Howells wrote:
+
+> Looking at the perf ring buffer, there appears to be a missing barrier in
+> perf_aux_output_end():
 > 
-> That's about one year old...: let me add the usual suspects in Cc:  ;-)
-> since I'm not sure what the plan was (or if I'm missing something) ...
+> 	rb->user_page->aux_head = rb->aux_head;
+> 
+> should be:
+> 
+> 	smp_store_release(&rb->user_page->aux_head, rb->aux_head);
 
-The AUX crud is 'special' and smp_store_release() doesn't really help in
-many cases. Notable, AUX is typically used in combination with a
-hardware writer. The driver is in charge of odering here, the generic
-code doesn't know what the appropriate barrier (if any) is and would
-have to resort to the most expensive/heavy one available.
+I've answered that in another email; the aux bit is 'magic'.
 
-Also see the comment right above this function:
+> It should also be using smp_load_acquire().  See
+> Documentation/core-api/circular-buffers.rst
 
- "It is the
-  pmu driver's responsibility to observe ordering rules of the hardware,
-  so that all the data is externally visible before this is called."
+We use the control dependency instead, as described in the comment of
+perf_output_put_handle():
+
+	 *   kernel				user
+	 *
+	 *   if (LOAD ->data_tail) {		LOAD ->data_head
+	 *			(A)		smp_rmb()	(C)
+	 *	STORE $data			LOAD $data
+	 *	smp_wmb()	(B)		smp_mb()	(D)
+	 *	STORE ->data_head		STORE ->data_tail
+	 *   }
+	 *
+	 * Where A pairs with D, and B pairs with C.
+	 *
+	 * In our case (A) is a control dependency that separates the load of
+	 * the ->data_tail and the stores of $data. In case ->data_tail
+	 * indicates there is no room in the buffer to store $data we do not.
+	 *
+	 * D needs to be a full barrier since it separates the data READ
+	 * from the tail WRITE.
+	 *
+	 * For B a WMB is sufficient since it separates two WRITEs, and for C
+	 * an RMB is sufficient since it separates two READs.
+
+Userspace can choose to use smp_load_acquire() over the first smp_rmb()
+if that is efficient for the architecture (for w ahole bunch of archs
+load-acquire would end up using mb() while rmb() is adequate and
+cheaper).
