@@ -1,38 +1,67 @@
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri, 31 May 2019 11:14:45 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 31 May 2019 12:02:15 +0000
 Subject: Re: [PATCH 1/7] General notification queue with user mmap()'able ring buffer
-Message-Id: <20190531111445.GO2677@hirez.programming.kicks-ass.net>
+Message-Id: <21942.1559304135@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAG48ez0R-R3Xs+3Xg9T9qcV3Xv6r4pnx1Z2y=Ltx7RGOayte_w@mail.gmail.com>
- <20190528162603.GA24097@kroah.com>
- <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
- <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk>
- <4031.1559064620@warthog.procyon.org.uk>
- <20190528231218.GA28384@kroah.com>
- <31936.1559146000@warthog.procyon.org.uk>
- <16193.1559163763@warthog.procyon.org.uk>
-In-Reply-To: <16193.1559163763@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Jann Horn <jannh@google.com>, Greg KH <gregkh@linuxfoundation.org>, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>, Kees Cook <keescook@chromium.org>, Kernel Hardening <kernel-hardening@lists.openwall.com>
+References: <20190531111445.GO2677@hirez.programming.kicks-ass.net> <CAG48ez0R-R3Xs+3Xg9T9qcV3Xv6r4pnx1Z2y=Ltx7RGOayte_w@mail.gmail.com> <20190528162603.GA24097@kroah.com> <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk> <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk> <4031.1559064620@warthog.procyon.org.uk> <20190528231218.GA28384@kroah.com> <31936.1559146000@warthog.procyon.org.uk> <16193.1559163763@warthog.procyon.org.uk>
+In-Reply-To: <20190531111445.GO2677@hirez.programming.kicks-ass.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: dhowells@redhat.com, Jann Horn <jannh@google.com>, Greg KH <gregkh@linuxfoundation.org>, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>, Kees Cook <keescook@chromium.org>, Kernel Hardening <kernel-hardening@lists.openwall.com>
 
-On Wed, May 29, 2019 at 10:02:43PM +0100, David Howells wrote:
-> Jann Horn <jannh@google.com> wrote:
-> 
-> > Does this mean that refcount_read() isn't sufficient for what you want
-> > to do with tracing (because for some reason you actually need to know
-> > the values atomically at the time of increment/decrement)?
-> 
-> Correct.  There's a gap and if an interrupt or something occurs, it's
-> sufficiently big for the refcount trace to go weird.
-> 
-> I've seen it in afs/rxrpc where the incoming network packets that are part of
-> the rxrpc call flow disrupt the refcounts noted in trace lines.
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Can you re-iterate the exact problem? I konw we talked about this in the
-past, but I seem to have misplaced those memories :/
+> Can you re-iterate the exact problem? I konw we talked about this in the
+> past, but I seem to have misplaced those memories :/
 
-FWIW I agree that kref is useless fluff, but I've long ago given up on
-that fight.
+Take this for example:
+
+	void afs_put_call(struct afs_call *call)
+	{
+		struct afs_net *net = call->net;
+		int n = atomic_dec_return(&call->usage);
+		int o = atomic_read(&net->nr_outstanding_calls);
+
+		trace_afs_call(call, afs_call_trace_put, n + 1, o,
+			       __builtin_return_address(0));
+
+		ASSERTCMP(n, >=, 0);
+		if (n = 0) {
+			...
+		}
+	}
+
+I am printing the usage count in the afs_call tracepoint so that I can use it
+to debug refcount bugs.  If I do it like this:
+
+	void afs_put_call(struct afs_call *call)
+	{
+		int n = refcount_read(&call->usage);
+		int o = atomic_read(&net->nr_outstanding_calls);
+
+		trace_afs_call(call, afs_call_trace_put, n, o,
+			       __builtin_return_address(0));
+
+		if (refcount_dec_and_test(&call->usage)) {
+			...
+		}
+	}
+
+then there's a temporal gap between the usage count being read and the actual
+atomic decrement in which another CPU can alter the count.  This can be
+exacerbated by an interrupt occurring, a softirq occurring or someone enabling
+the tracepoint.
+
+I can't do the tracepoint after the decrement if refcount_dec_and_test()
+returns false unless I save all the values from the object that I might need
+as the object could be destroyed any time from that point on.  In this
+particular case, that's just call->debug_id, but it could be other things in
+other cases.
+
+Note that I also can't touch the afs_net object in that situation either, and
+the outstanding calls count that I record will potentially be out of date -
+but there's not a lot I can do about that.
+
+David
