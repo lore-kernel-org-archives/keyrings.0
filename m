@@ -1,7 +1,7 @@
-From: Andrea Parri <andrea.parri@amarulasolutions.com>
-Date: Thu, 30 May 2019 09:50:39 +0000
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 31 May 2019 08:35:42 +0000
 Subject: Re: [PATCH 1/7] General notification queue with user mmap()'able ring buffer
-Message-Id: <20190530095039.GA5137@andrea>
+Message-Id: <20190531083542.GL2623@hirez.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,34 +13,40 @@ References: <20190528231218.GA28384@kroah.com>
  <4031.1559064620@warthog.procyon.org.uk>
  <31936.1559146000@warthog.procyon.org.uk>
  <20190529231112.GB3164@kroah.com>
-In-Reply-To: <20190529231112.GB3164@kroah.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>, Will Deacon <will.deacon@arm.com>, "Paul E. McKenney" <paulmck@linux.ibm.com>, Mark Rutland <mark.rutland@arm.com>
+ <20190530095039.GA5137@andrea>
+In-Reply-To: <20190530095039.GA5137@andrea>
+To: Andrea Parri <andrea.parri@amarulasolutions.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>, "Paul E. McKenney" <paulmck@linux.ibm.com>, Mark Rutland <mark.rutland@arm.com>
 
-> > Looking at the perf ring buffer, there appears to be a missing barrier in
-> > perf_aux_output_end():
+On Thu, May 30, 2019 at 11:50:39AM +0200, Andrea Parri wrote:
+> > > Looking at the perf ring buffer, there appears to be a missing barrier in
+> > > perf_aux_output_end():
+> > > 
+> > > 	rb->user_page->aux_head = rb->aux_head;
+> > > 
+> > > should be:
+> > > 
+> > > 	smp_store_release(&rb->user_page->aux_head, rb->aux_head);
+> > > 
+> > > It should also be using smp_load_acquire().  See
+> > > Documentation/core-api/circular-buffers.rst
+> > > 
+> > > And a (partial) patch has been proposed: https://lkml.org/lkml/2018/5/10/249
 > > 
-> > 	rb->user_page->aux_head = rb->aux_head;
-> > 
-> > should be:
-> > 
-> > 	smp_store_release(&rb->user_page->aux_head, rb->aux_head);
-> > 
-> > It should also be using smp_load_acquire().  See
-> > Documentation/core-api/circular-buffers.rst
-> > 
-> > And a (partial) patch has been proposed: https://lkml.org/lkml/2018/5/10/249
+> > So, if that's all that needs to be fixed, can you use the same
+> > buffer/code if that patch is merged?
 > 
-> So, if that's all that needs to be fixed, can you use the same
-> buffer/code if that patch is merged?
+> That's about one year old...: let me add the usual suspects in Cc:  ;-)
+> since I'm not sure what the plan was (or if I'm missing something) ...
 
-That's about one year old...: let me add the usual suspects in Cc:  ;-)
-since I'm not sure what the plan was (or if I'm missing something) ...
+The AUX crud is 'special' and smp_store_release() doesn't really help in
+many cases. Notable, AUX is typically used in combination with a
+hardware writer. The driver is in charge of odering here, the generic
+code doesn't know what the appropriate barrier (if any) is and would
+have to resort to the most expensive/heavy one available.
 
-Speaking of ring buffer implementations (and relatively "old" patches),
-here's another quite interesting:
+Also see the comment right above this function:
 
-  https://lkml.kernel.org/r/20181211034032.32338-1-yuleixzhang@tencent.com
-
-Thanks,
-  Andrea
+ "It is the
+  pmu driver's responsibility to observe ordering rules of the hardware,
+  so that all the data is externally visible before this is called."
