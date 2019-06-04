@@ -1,164 +1,227 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Mon, 24 Jun 2019 19:56:49 +0000
-Subject: Re: [PATCH v11 02/13] PKCS#7: Refactor verify_pkcs7_signature()
-Message-Id: <87h88ekb9a.fsf@morokweng.localdomain>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 04 Jun 2019 16:34:59 +0000
+Subject: [RFC][PATCH 0/8] Mount, FS, Block and Keyrings notifications [ver #2]
+Message-Id: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190611062817.18412-1-bauerman@linux.ibm.com> <20190611062817.18412-3-bauerman@linux.ibm.com>
-In-Reply-To: <20190611062817.18412-3-bauerman@linux.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, linux-integrity@vger.kernel.org
+To: viro@zeniv.linux.org.uk
+Cc: Casey Schaufler <casey@schaufler-ca.com>, dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
 
-Hello David,
+Hi Al,
 
-AFAIK Mimi is happy with this patch set, but I still need acks from
-maintainers of other subsystems that my changes touch before she can
-accept it.
+Here's a set of patches to add a general variable-length notification queue
+concept and to add sources of events for:
 
-Are this patch and the next one ("PKCS#7: Introduce pkcs7_get_digest()")
-OK from your PoV?
+ (1) Mount topology events, such as mounting, unmounting, mount expiry,
+     mount reconfiguration.
 
---
-Thiago Jung Bauermann
-IBM Linux Technology Center
+ (2) Superblock events, such as R/W<->R/O changes, quota overrun and I/O
+     errors (not complete yet).
+
+ (3) Block layer events, such as I/O errors.
+
+ (4) Key/keyring events, such as creating, linking and removal of keys.
+
+One of the reasons for this is so that we can remove the issue of processes
+having to repeatedly and regularly scan /proc/mounts, which has proven to
+be a system performance problem.  To further aid this, the fsinfo() syscall
+on which this patch series depends, provides a way to access superblock and
+mount information in binary form without the need to parse /proc/mounts.
 
 
-Thiago Jung Bauermann <bauerman@linux.ibm.com> writes:
+LSM support is included:
 
-> IMA will need to verify a PKCS#7 signature which has already been parsed.
-> For this reason, factor out the code which does that from
-> verify_pkcs7_signature() into a new function which takes a struct
-> pkcs7_message instead of a data buffer.
->
-> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> ---
->  certs/system_keyring.c       | 61 ++++++++++++++++++++++++++----------
->  include/linux/verification.h | 10 ++++++
->  2 files changed, 55 insertions(+), 16 deletions(-)
->
-> diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-> index c05c29ae4d5d..4ba82e52e4b4 100644
-> --- a/certs/system_keyring.c
-> +++ b/certs/system_keyring.c
-> @@ -194,33 +194,27 @@ late_initcall(load_system_certificate_list);
->  #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
->
->  /**
-> - * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-> + * verify_pkcs7_message_sig - Verify a PKCS#7-based signature on system data.
->   * @data: The data to be verified (NULL if expecting internal data).
->   * @len: Size of @data.
-> - * @raw_pkcs7: The PKCS#7 message that is the signature.
-> - * @pkcs7_len: The size of @raw_pkcs7.
-> + * @pkcs7: The PKCS#7 message that is the signature.
->   * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
->   *					(void *)1UL for all trusted keys).
->   * @usage: The use to which the key is being put.
->   * @view_content: Callback to gain access to content.
->   * @ctx: Context for callback.
->   */
-> -int verify_pkcs7_signature(const void *data, size_t len,
-> -			   const void *raw_pkcs7, size_t pkcs7_len,
-> -			   struct key *trusted_keys,
-> -			   enum key_being_used_for usage,
-> -			   int (*view_content)(void *ctx,
-> -					       const void *data, size_t len,
-> -					       size_t asn1hdrlen),
-> -			   void *ctx)
-> +int verify_pkcs7_message_sig(const void *data, size_t len,
-> +			     struct pkcs7_message *pkcs7,
-> +			     struct key *trusted_keys,
-> +			     enum key_being_used_for usage,
-> +			     int (*view_content)(void *ctx,
-> +						 const void *data, size_t len,
-> +						 size_t asn1hdrlen),
-> +			     void *ctx)
->  {
-> -	struct pkcs7_message *pkcs7;
->  	int ret;
->
-> -	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-> -	if (IS_ERR(pkcs7))
-> -		return PTR_ERR(pkcs7);
-> -
->  	/* The data should be detached - so we need to supply it. */
->  	if (data && pkcs7_supply_detached_data(pkcs7, data, len) < 0) {
->  		pr_err("PKCS#7 signature with non-detached data\n");
-> @@ -273,6 +267,41 @@ int verify_pkcs7_signature(const void *data, size_t len,
->  	}
->
->  error:
-> +	pr_devel("<=%s() = %d\n", __func__, ret);
-> +	return ret;
-> +}
-> +
-> +/**
-> + * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-> + * @data: The data to be verified (NULL if expecting internal data).
-> + * @len: Size of @data.
-> + * @raw_pkcs7: The PKCS#7 message that is the signature.
-> + * @pkcs7_len: The size of @raw_pkcs7.
-> + * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
-> + *					(void *)1UL for all trusted keys).
-> + * @usage: The use to which the key is being put.
-> + * @view_content: Callback to gain access to content.
-> + * @ctx: Context for callback.
-> + */
-> +int verify_pkcs7_signature(const void *data, size_t len,
-> +			   const void *raw_pkcs7, size_t pkcs7_len,
-> +			   struct key *trusted_keys,
-> +			   enum key_being_used_for usage,
-> +			   int (*view_content)(void *ctx,
-> +					       const void *data, size_t len,
-> +					       size_t asn1hdrlen),
-> +			   void *ctx)
-> +{
-> +	struct pkcs7_message *pkcs7;
-> +	int ret;
-> +
-> +	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-> +	if (IS_ERR(pkcs7))
-> +		return PTR_ERR(pkcs7);
-> +
-> +	ret = verify_pkcs7_message_sig(data, len, pkcs7, trusted_keys, usage,
-> +				       view_content, ctx);
-> +
->  	pkcs7_free_message(pkcs7);
->  	pr_devel("<=%s() = %d\n", __func__, ret);
->  	return ret;
-> diff --git a/include/linux/verification.h b/include/linux/verification.h
-> index 018fb5f13d44..5e1d41f2b336 100644
-> --- a/include/linux/verification.h
-> +++ b/include/linux/verification.h
-> @@ -36,6 +36,7 @@ extern const char *const key_being_used_for[NR__KEY_BEING_USED_FOR];
->  #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
->
->  struct key;
-> +struct pkcs7_message;
->
->  extern int verify_pkcs7_signature(const void *data, size_t len,
->  				  const void *raw_pkcs7, size_t pkcs7_len,
-> @@ -45,6 +46,15 @@ extern int verify_pkcs7_signature(const void *data, size_t len,
->  						      const void *data, size_t len,
->  						      size_t asn1hdrlen),
->  				  void *ctx);
-> +extern int verify_pkcs7_message_sig(const void *data, size_t len,
-> +				    struct pkcs7_message *pkcs7,
-> +				    struct key *trusted_keys,
-> +				    enum key_being_used_for usage,
-> +				    int (*view_content)(void *ctx,
-> +							const void *data,
-> +							size_t len,
-> +							size_t asn1hdrlen),
-> +				    void *ctx);
->
->  #ifdef CONFIG_SIGNED_PE_FILE_VERIFICATION
->  extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
+ (1) The creds of the process that did the fput() that reduced the refcount
+     to zero are cached in the file struct.
+
+ (2) __fput() overrides the current creds with the creds from (1) whilst
+     doing the cleanup, thereby making sure that the creds seen by the
+     destruction notification generated by mntput() appears to come from
+     the last fputter.
+
+ (3) security_post_notification() is called for each queue that we might
+     want to post a notification into, thereby allowing the LSM to prevent
+     covert communications.
+
+ (?) Do I need to add security_set_watch(), say, to rule on whether a watch
+     may be set in the first place?  I might need to add a variant per
+     watch-type.
+
+ (?) Do I really need to keep track of the process creds in which an
+     implicit object destruction happened?  For example, imagine you create
+     an fd with fsopen()/fsmount().  It is marked to dissolve the mount it
+     refers to on close unless move_mount() clears that flag.  Now, imagine
+     someone looking at that fd through procfs at the same time as you exit
+     due to an error.  The LSM sees the destruction notification come from
+     the looker if they happen to do their fput() after yours.
+
+
+Design decisions:
+
+ (1) A misc chardev is used to create and open a ring buffer:
+
+	fd = open("/dev/watch_queue", O_RDWR);
+
+     which is then configured and mmap'd into userspace:
+
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, BUF_SIZE);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	buf = mmap(NULL, BUF_SIZE * page_size, PROT_READ | PROT_WRITE,
+		   MAP_SHARED, fd, 0);
+
+     The fd cannot be read or written (though there is a facility to use
+     write to inject records for debugging) and userspace just pulls data
+     directly out of the buffer.
+
+ (2) The ring index pointers are stored inside the ring and are thus
+     accessible to userspace.  Userspace should only update the tail
+     pointer and never the head pointer or risk breaking the buffer.  The
+     kernel checks that the pointers appear valid before trying to use
+     them.  A 'skip' record is maintained around the pointers.
+
+ (3) poll() can be used to wait for data to appear in the buffer.
+
+ (4) Records in the buffer are binary, typed and have a length so that they
+     can be of varying size.
+
+     This means that multiple heterogeneous sources can share a common
+     buffer.  Tags may be specified when a watchpoint is created to help
+     distinguish the sources.
+
+ (5) The queue is reusable as there are 16 million types available, of
+     which I've used 4, so there is scope for others to be used.
+
+ (6) Records are filterable as types have up to 256 subtypes that can be
+     individually filtered.  Other filtration is also available.
+
+ (7) Each time the buffer is opened, a new buffer is created - this means
+     that there's no interference between watchers.
+
+ (8) When recording a notification, the kernel will not sleep, but will
+     rather mark a queue as overrun if there's insufficient space, thereby
+     avoiding userspace causing the kernel to hang.
+
+ (9) The 'watchpoint' should be specific where possible, meaning that you
+     specify the object that you want to watch.
+
+(10) The buffer is created and then watchpoints are attached to it, using
+     one of:
+
+	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, 0x01);
+	mount_notify(AT_FDCWD, "/", 0, fd, 0x02);
+	sb_notify(AT_FDCWD, "/mnt", 0, fd, 0x03);
+
+     where in all three cases, fd indicates the queue and the number after
+     is a tag between 0 and 255.
+
+(11) The watch must be removed if either the watch buffer is destroyed or
+     the watched object is destroyed.
+
+
+Things I want to avoid:
+
+ (1) Introducing features that make the core VFS dependent on the network
+     stack or networking namespaces (ie. usage of netlink).
+
+ (2) Dumping all this stuff into dmesg and having a daemon that sits there
+     parsing the output and distributing it as this then puts the
+     responsibility for security into userspace and makes handling
+     namespaces tricky.  Further, dmesg might not exist or might be
+     inaccessible inside a container.
+
+ (3) Letting users see events they shouldn't be able to see.
+
+
+Further things that could be considered:
+
+ (1) Adding a keyctl call to allow a watch on a keyring to be extended to
+     "children" of that keyring, such that the watch is removed from the
+     child if it is unlinked from the keyring.
+
+ (2) Adding global superblock event queue.
+
+ (3) Propagating watches to child superblock over automounts.
+
+
+The patches can be found here also:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=notifications
+
+Changes:
+
+ v2: I've fixed various issues raised by Jann Horn and GregKH and moved to
+     krefs for refcounting.  I've added some security features to try and
+     give Casey Schaufler the LSM control he wants.
+
+David
+---
+David Howells (8):
+      security: Override creds in __fput() with last fputter's creds
+      General notification queue with user mmap()'able ring buffer
+      keys: Add a notification facility
+      vfs: Add a mount-notification facility
+      vfs: Add superblock notifications
+      fsinfo: Export superblock notification counter
+      block: Add block layer notifications
+      Add sample notification program
+
+
+ Documentation/security/keys/core.rst   |   58 ++
+ Documentation/watch_queue.rst          |  328 ++++++++++++
+ arch/x86/entry/syscalls/syscall_32.tbl |    3 
+ arch/x86/entry/syscalls/syscall_64.tbl |    3 
+ block/Kconfig                          |    9 
+ block/Makefile                         |    1 
+ block/blk-core.c                       |   29 +
+ block/blk-notify.c                     |   83 +++
+ drivers/misc/Kconfig                   |   13 
+ drivers/misc/Makefile                  |    1 
+ drivers/misc/watch_queue.c             |  895 ++++++++++++++++++++++++++++++++
+ fs/Kconfig                             |   21 +
+ fs/Makefile                            |    1 
+ fs/file_table.c                        |   12 
+ fs/fsinfo.c                            |   12 
+ fs/mount.h                             |   33 +
+ fs/mount_notify.c                      |  186 +++++++
+ fs/namespace.c                         |    9 
+ fs/super.c                             |  117 ++++
+ include/linux/blkdev.h                 |   10 
+ include/linux/dcache.h                 |    1 
+ include/linux/fs.h                     |   79 +++
+ include/linux/key.h                    |    4 
+ include/linux/lsm_hooks.h              |   15 +
+ include/linux/security.h               |   14 +
+ include/linux/syscalls.h               |    5 
+ include/linux/watch_queue.h            |   87 +++
+ include/uapi/linux/fsinfo.h            |   10 
+ include/uapi/linux/keyctl.h            |    1 
+ include/uapi/linux/watch_queue.h       |  185 +++++++
+ kernel/sys_ni.c                        |    7 
+ mm/interval_tree.c                     |    2 
+ mm/memory.c                            |    1 
+ samples/Kconfig                        |    6 
+ samples/Makefile                       |    1 
+ samples/vfs/test-fsinfo.c              |   13 
+ samples/watch_queue/Makefile           |    9 
+ samples/watch_queue/watch_test.c       |  284 ++++++++++
+ security/keys/Kconfig                  |   10 
+ security/keys/compat.c                 |    2 
+ security/keys/gc.c                     |    5 
+ security/keys/internal.h               |   30 +
+ security/keys/key.c                    |   37 +
+ security/keys/keyctl.c                 |   89 +++
+ security/keys/keyring.c                |   17 -
+ security/keys/request_key.c            |    4 
+ security/security.c                    |    9 
+ 47 files changed, 2713 insertions(+), 38 deletions(-)
+ create mode 100644 Documentation/watch_queue.rst
+ create mode 100644 block/blk-notify.c
+ create mode 100644 drivers/misc/watch_queue.c
+ create mode 100644 fs/mount_notify.c
+ create mode 100644 include/linux/watch_queue.h
+ create mode 100644 include/uapi/linux/watch_queue.h
+ create mode 100644 samples/watch_queue/Makefile
+ create mode 100644 samples/watch_queue/watch_test.c
