@@ -1,140 +1,196 @@
 From: David Howells <dhowells@redhat.com>
-Date: Fri, 28 Jun 2019 15:48:34 +0000
-Subject: [PATCH 1/9] uapi: General notification ring definitions [ver #5]
-Message-Id: <156173691411.15137.2073887155273175167.stgit@warthog.procyon.org.uk>
+Date: Tue, 04 Jun 2019 16:36:00 +0000
+Subject: [PATCH 6/8] fsinfo: Export superblock notification counter [ver #2]
+Message-Id: <155966616030.17449.8157292331675001618.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
+References: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add UAPI definitions for the general notification ring, including the
-following pieces:
+Provide an fsinfo attribute to export the superblock notification counter
+so that it can be polled in the case of a notification buffer overrun.
+This is accessed with:
 
- (1) struct watch_notification.
+	struct fsinfo_params params = {
+		.request = FSINFO_ATTR_SB_NOTIFICATIONS,
+	};
 
-     This is the metadata header for each entry in the ring.  It includes a
-     type and subtype that indicate the source of the message
-     (eg. WATCH_TYPE_MOUNT_NOTIFY) and the kind of the message
-     (eg. NOTIFY_MOUNT_NEW_MOUNT).
+and returns a structure that looks like:
 
-     The header also contains an information field that conveys the
-     following information:
+	struct fsinfo_sb_notifications {
+		__u64	watch_id;
+		__u32	notify_counter;
+		__u32	__reserved[1];
+	};
 
-	- WATCH_INFO_LENGTH.  The size of the entry (entries are variable
-          length).
-
-	- WATCH_INFO_ID.  The watch ID specified when the watchpoint was
-          set.
-
-	- WATCH_INFO_TYPE_INFO.  (Sub)type-specific information.
-
-	- WATCH_INFO_FLAG_*.  Flag bits overlain on the type-specific
-          information.  For use by the type.
-
-     All the information in the header can be used in filtering messages at
-     the point of writing into the buffer.
-
- (2) struct watch_queue_buffer.
-
-     This describes the layout of the ring.  Note that the first slots in
-     the ring contain a special metadata entry that contains the ring
-     pointers.  The producer in the kernel knows to skip this and it has a
-     proper header (WATCH_TYPE_META, WATCH_META_SKIP_NOTIFICATION) that
-     indicates the size so that the ring consumer can handle it the same as
-     any other record and just skip it.
-
-     Note that this means that ring entries can never be split over the end
-     of the ring, so if an entry would need to be split, a skip record is
-     inserted to wrap the ring first; this is also WATCH_TYPE_META,
-     WATCH_META_SKIP_NOTIFICATION.
-
- (3) WATCH_INFO_NOTIFICATIONS_LOST.
-
-     This is a flag that can be set in the metadata header by the kernel to
-     indicate that at least one message was lost since it was last cleared
-     by userspace.
+Where watch_id is a number uniquely identifying the superblock in
+notification records and notify_counter is incremented for each
+superblock notification posted.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/uapi/linux/watch_queue.h |   67 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 67 insertions(+)
- create mode 100644 include/uapi/linux/watch_queue.h
+ fs/fsinfo.c                      |   12 ++++++++++++
+ fs/super.c                       |    1 +
+ include/linux/fs.h               |    1 +
+ include/uapi/linux/fsinfo.h      |   10 ++++++++++
+ include/uapi/linux/watch_queue.h |    2 +-
+ samples/vfs/test-fsinfo.c        |   13 +++++++++++++
+ 6 files changed, 38 insertions(+), 1 deletion(-)
 
+diff --git a/fs/fsinfo.c b/fs/fsinfo.c
+index 3ec64d3cba08..1456e26d2f7c 100644
+--- a/fs/fsinfo.c
++++ b/fs/fsinfo.c
+@@ -284,6 +284,16 @@ static int fsinfo_generic_param_enum(struct file_system_type *f,
+ 	return sizeof(*p);
+ }
+ 
++static int fsinfo_generic_sb_notifications(struct path *path,
++					   struct fsinfo_sb_notifications *p)
++{
++	struct super_block *sb = path->dentry->d_sb;
++
++	p->watch_id		= sb->s_unique_id;
++	p->notify_counter	= atomic_read(&sb->s_notify_counter);
++	return sizeof(*p);
++}
++
+ static void fsinfo_insert_sb_flag_parameters(struct path *path,
+ 					     struct fsinfo_kparams *params)
+ {
+@@ -331,6 +341,7 @@ int generic_fsinfo(struct path *path, struct fsinfo_kparams *params)
+ 	case _genp(MOUNT_DEVNAME,	mount_devname);
+ 	case _genp(MOUNT_CHILDREN,	mount_children);
+ 	case _genp(MOUNT_SUBMOUNT,	mount_submount);
++	case _gen(SB_NOTIFICATIONS,	sb_notifications);
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+@@ -606,6 +617,7 @@ static const struct fsinfo_attr_info fsinfo_buffer_info[FSINFO_ATTR__NR] = {
+ 	FSINFO_STRING_N		(SERVER_NAME,		server_name),
+ 	FSINFO_STRUCT_NM	(SERVER_ADDRESS,	server_address),
+ 	FSINFO_STRING		(CELL_NAME,		cell_name),
++	FSINFO_STRUCT		(SB_NOTIFICATIONS,	sb_notifications),
+ };
+ 
+ /**
+diff --git a/fs/super.c b/fs/super.c
+index ae44745e6e2c..832d1a1865c9 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1823,6 +1823,7 @@ EXPORT_SYMBOL(thaw_super);
+  */
+ void post_sb_notification(struct super_block *s, struct superblock_notification *n)
+ {
++	atomic_inc(&s->s_notify_counter);
+ 	post_watch_notification(s->s_watchers, &n->watch, current_cred(),
+ 				s->s_unique_id);
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 02ba4bfb9cc3..06e272a25ed7 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1536,6 +1536,7 @@ struct super_block {
+ #ifdef CONFIG_SB_NOTIFICATIONS
+ 	struct watch_list	*s_watchers;
+ #endif
++	atomic_t		s_notify_counter;
+ } __randomize_layout;
+ 
+ /* Helper functions so that in most cases filesystems will
+diff --git a/include/uapi/linux/fsinfo.h b/include/uapi/linux/fsinfo.h
+index 7247088332c2..b4c9446305bb 100644
+--- a/include/uapi/linux/fsinfo.h
++++ b/include/uapi/linux/fsinfo.h
+@@ -39,6 +39,7 @@ enum fsinfo_attribute {
+ 	FSINFO_ATTR_SERVER_NAME		= 21,	/* Name of the Nth server (string) */
+ 	FSINFO_ATTR_SERVER_ADDRESS	= 22,	/* Mth address of the Nth server */
+ 	FSINFO_ATTR_CELL_NAME		= 23,	/* Cell name (string) */
++	FSINFO_ATTR_SB_NOTIFICATIONS	= 24,	/* sb_notify() information */
+ 	FSINFO_ATTR__NR
+ };
+ 
+@@ -308,4 +309,13 @@ struct fsinfo_server_address {
+ 	struct __kernel_sockaddr_storage address;
+ };
+ 
++/*
++ * Information struct for fsinfo(FSINFO_ATTR_SB_NOTIFICATIONS).
++ */
++struct fsinfo_sb_notifications {
++	__u64		watch_id;	/* Watch ID for superblock. */
++	__u32		notify_counter;	/* Number of notifications. */
++	__u32		__reserved[1];
++};
++
+ #endif /* _UAPI_LINUX_FSINFO_H */
 diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-new file mode 100644
-index 000000000000..70f575099968
---- /dev/null
+index 1f09247e49f3..02c330462af8 100644
+--- a/include/uapi/linux/watch_queue.h
 +++ b/include/uapi/linux/watch_queue.h
-@@ -0,0 +1,67 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-+#ifndef _UAPI_LINUX_WATCH_QUEUE_H
-+#define _UAPI_LINUX_WATCH_QUEUE_H
+@@ -145,7 +145,7 @@ enum superblock_notification_type {
+  */
+ struct superblock_notification {
+ 	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
+-	__u64	sb_id;			/* 64-bit superblock ID [fsinfo_ids::f_sb_id] */
++	__u64	sb_id;		/* 64-bit superblock ID [fsinfo_sb_notifications::watch_id] */
+ };
+ 
+ struct superblock_error_notification {
+diff --git a/samples/vfs/test-fsinfo.c b/samples/vfs/test-fsinfo.c
+index af29da74559e..0f8f9ded0925 100644
+--- a/samples/vfs/test-fsinfo.c
++++ b/samples/vfs/test-fsinfo.c
+@@ -90,6 +90,7 @@ static const struct fsinfo_attr_info fsinfo_buffer_info[FSINFO_ATTR__NR] = {
+ 	FSINFO_STRING_N		(SERVER_NAME,		server_name),
+ 	FSINFO_STRUCT_NM	(SERVER_ADDRESS,	server_address),
+ 	FSINFO_STRING		(CELL_NAME,		cell_name),
++	FSINFO_STRUCT		(SB_NOTIFICATIONS,	sb_notifications),
+ };
+ 
+ #define FSINFO_NAME(X,Y) [FSINFO_ATTR_##X] = #Y
+@@ -118,6 +119,7 @@ static const char *fsinfo_attr_names[FSINFO_ATTR__NR] = {
+ 	FSINFO_NAME		(SERVER_NAME,		server_name),
+ 	FSINFO_NAME		(SERVER_ADDRESS,	server_address),
+ 	FSINFO_NAME		(CELL_NAME,		cell_name),
++	FSINFO_NAME		(SB_NOTIFICATIONS,	sb_notifications),
+ };
+ 
+ union reply {
+@@ -133,6 +135,7 @@ union reply {
+ 	struct fsinfo_mount_info mount_info;
+ 	struct fsinfo_mount_child mount_children[1];
+ 	struct fsinfo_server_address srv_addr;
++	struct fsinfo_sb_notifications sb_notifications;
+ };
+ 
+ static void dump_hex(unsigned int *data, int from, int to)
+@@ -377,6 +380,15 @@ static void dump_attr_MOUNT_CHILDREN(union reply *r, int size)
+ 		printf("\t[%u] %8x %8x\n", i++, f->mnt_id, f->notify_counter);
+ }
+ 
++static void dump_attr_SB_NOTIFICATIONS(union reply *r, int size)
++{
++	struct fsinfo_sb_notifications *f = &r->sb_notifications;
 +
-+#include <linux/types.h>
++	printf("\n");
++	printf("\twatch_id: %llx\n", (unsigned long long)f->watch_id);
++	printf("\tnotifs  : %llx\n", (unsigned long long)f->notify_counter);
++}
 +
-+enum watch_notification_type {
-+	WATCH_TYPE_META		= 0,	/* Special record */
-+	WATCH_TYPE___NR		= 1
-+};
-+
-+enum watch_meta_notification_subtype {
-+	WATCH_META_SKIP_NOTIFICATION	= 0,	/* Just skip this record */
-+	WATCH_META_REMOVAL_NOTIFICATION	= 1,	/* Watched object was removed */
-+};
-+
-+#define WATCH_LENGTH_GRANULARITY sizeof(__u64)
-+
-+/*
-+ * Notification record header.  This is aligned to 64-bits so that subclasses
-+ * can contain __u64 fields.
-+ */
-+struct watch_notification {
-+	__u32			type:24;	/* enum watch_notification_type */
-+	__u32			subtype:8;	/* Type-specific subtype (filterable) */
-+	__u32			info;
-+#define WATCH_INFO_LENGTH	0x0000003f	/* Length of record / sizeof(watch_notification) */
-+#define WATCH_INFO_LENGTH__SHIFT 0
-+#define WATCH_INFO_ID		0x0000ff00	/* ID of watchpoint, if type-appropriate */
-+#define WATCH_INFO_ID__SHIFT	8
-+#define WATCH_INFO_TYPE_INFO	0xffff0000	/* Type-specific info */
-+#define WATCH_INFO_TYPE_INFO__SHIFT 16
-+#define WATCH_INFO_FLAG_0	0x00010000	/* Type-specific info, flag bit 0 */
-+#define WATCH_INFO_FLAG_1	0x00020000	/* ... */
-+#define WATCH_INFO_FLAG_2	0x00040000
-+#define WATCH_INFO_FLAG_3	0x00080000
-+#define WATCH_INFO_FLAG_4	0x00100000
-+#define WATCH_INFO_FLAG_5	0x00200000
-+#define WATCH_INFO_FLAG_6	0x00400000
-+#define WATCH_INFO_FLAG_7	0x00800000
-+} __attribute__((aligned(WATCH_LENGTH_GRANULARITY)));
-+
-+struct watch_queue_buffer {
-+	union {
-+		/* The first few entries are special, containing the
-+		 * ring management variables.
-+		 */
-+		struct {
-+			struct watch_notification watch; /* WATCH_TYPE_META */
-+			__u32		head;		/* Ring head index */
-+			__u32		tail;		/* Ring tail index */
-+			__u32		mask;		/* Ring index mask */
-+			__u32		__reserved;
-+		} meta;
-+		struct watch_notification slots[0];
-+	};
-+};
-+
-+/*
-+ * The Metadata pseudo-notification message uses a flag bits in the information
-+ * field to convey the fact that messages have been lost.  We can only use a
-+ * single bit in this manner per word as some arches that support SMP
-+ * (eg. parisc) have no kernel<->user atomic bit ops.
-+ */
-+#define WATCH_INFO_NOTIFICATIONS_LOST WATCH_INFO_FLAG_0
-+
-+#endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+ /*
+  *
+  */
+@@ -395,6 +407,7 @@ static const dumper_t fsinfo_attr_dumper[FSINFO_ATTR__NR] = {
+ 	FSINFO_DUMPER(MOUNT_INFO),
+ 	FSINFO_DUMPER(MOUNT_CHILDREN),
+ 	FSINFO_DUMPER(SERVER_ADDRESS),
++	FSINFO_DUMPER(SB_NOTIFICATIONS),
+ };
+ 
+ static void dump_fsinfo(enum fsinfo_attribute attr,
