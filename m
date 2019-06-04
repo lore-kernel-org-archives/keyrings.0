@@ -1,187 +1,365 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Fri, 28 Jun 2019 02:19:31 +0000
-Subject: [PATCH v12 08/11] ima: Collect modsig
-Message-Id: <20190628021934.4260-9-bauerman@linux.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 04 Jun 2019 16:36:08 +0000
+Subject: [PATCH 7/8] block: Add block layer notifications [ver #2]
+Message-Id: <155966616812.17449.13082369331834865276.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190628021934.4260-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Obtain the modsig and calculate its corresponding hash in
-ima_collect_measurement().
+Add a block layer notification mechanism whereby notifications about
+block-layer events such as I/O errors, can be reported to a monitoring
+process asynchronously.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Firstly, an event queue needs to be created:
+
+	fd = open("/dev/event_queue", O_RDWR);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+
+then a notification can be set up to report block notifications via that
+queue:
+
+	struct watch_notification_filter filter = {
+		.nr_filters = 1,
+		.filters = {
+			[0] = {
+				.type = WATCH_TYPE_BLOCK_NOTIFY,
+				.subtype_filter[0] = UINT_MAX;
+			},
+		},
+	};
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	block_notify(fd, 12);
+
+After that, records will be placed into the queue when, for example, errors
+occur on a block device.  Records are of the following format:
+
+	struct block_notification {
+		struct watch_notification watch;
+		__u64	dev;
+		__u64	sector;
+	} *n;
+
+Where:
+
+	n->watch.type will be WATCH_TYPE_BLOCK_NOTIFY
+
+	n->watch.subtype will be the type of notification, such as
+	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM.
+
+	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
+	record.
+
+	n->watch.info & WATCH_INFO_ID will be the second argument to
+	block_notify(), shifted.
+
+	n->dev will be the device numbers munged together.
+
+	n->sector will indicate the affected sector (if appropriate for the
+	event).
+
+Note that it is permissible for event records to be of variable length -
+or, at least, the length may be dependent on the subtype.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- security/integrity/ima/ima.h          |  8 ++++-
- security/integrity/ima/ima_api.c      |  5 ++-
- security/integrity/ima/ima_appraise.c |  2 +-
- security/integrity/ima/ima_main.c     |  2 +-
- security/integrity/ima/ima_modsig.c   | 50 ++++++++++++++++++++++++++-
- 5 files changed, 62 insertions(+), 5 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index fa188de1cef6..baf2ffd52a41 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -211,7 +211,7 @@ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- int ima_must_measure(struct inode *inode, int mask, enum ima_hooks func);
- int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct file *file, void *buf, loff_t size,
--			    enum hash_algo algo);
-+			    enum hash_algo algo, struct modsig *modsig);
- void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
- 			   const unsigned char *filename,
- 			   struct evm_ima_xattr_data *xattr_value,
-@@ -315,6 +315,7 @@ static inline int ima_read_xattr(struct dentry *dentry,
- bool ima_hook_supports_modsig(enum ima_hooks func);
- int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
- 		    struct modsig **modsig);
-+void ima_collect_modsig(struct modsig *modsig, const void *buf, loff_t size);
- void ima_free_modsig(struct modsig *modsig);
- #else
- static inline bool ima_hook_supports_modsig(enum ima_hooks func)
-@@ -328,6 +329,11 @@ static inline int ima_read_modsig(enum ima_hooks func, const void *buf,
- 	return -EOPNOTSUPP;
- }
+ arch/x86/entry/syscalls/syscall_32.tbl |    1 
+ arch/x86/entry/syscalls/syscall_64.tbl |    1 
+ block/Kconfig                          |    9 +++
+ block/Makefile                         |    1 
+ block/blk-core.c                       |   29 +++++++++++
+ block/blk-notify.c                     |   83 ++++++++++++++++++++++++++++++++
+ include/linux/blkdev.h                 |   10 ++++
+ include/linux/syscalls.h               |    1 
+ include/uapi/linux/watch_queue.h       |   28 +++++++++++
+ kernel/sys_ni.c                        |    1 
+ 10 files changed, 164 insertions(+)
+ create mode 100644 block/blk-notify.c
+
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index 429416ce60e1..22793f77c5f1 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -441,3 +441,4 @@
+ 434	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
+ 435	i386	mount_notify		sys_mount_notify		__ia32_sys_mount_notify
+ 436	i386	sb_notify		sys_sb_notify			__ia32_sys_sb_notify
++437	i386	block_notify		sys_block_notify		__ia32_sys_block_notify
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index 4ae146e472db..3f0b82272a9f 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -358,6 +358,7 @@
+ 434	common	fsinfo			__x64_sys_fsinfo
+ 435	common	mount_notify		__x64_sys_mount_notify
+ 436	common	sb_notify		__x64_sys_sb_notify
++437	common	block_notify		__x64_sys_block_notify
  
-+static inline void ima_collect_modsig(struct modsig *modsig, const void *buf,
-+				      loff_t size)
-+{
-+}
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/block/Kconfig b/block/Kconfig
+index 1b220101a9cb..3b0a0ddb83ef 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -163,6 +163,15 @@ config BLK_SED_OPAL
+ 	Enabling this option enables users to setup/unlock/lock
+ 	Locking ranges for SED devices using the Opal protocol.
+ 
++config BLK_NOTIFICATIONS
++	bool "Block layer event notifications"
++	select WATCH_QUEUE
++	help
++	  This option provides support for getting block layer event
++	  notifications.  This makes use of the /dev/watch_queue misc device to
++	  handle the notification buffer and provides the block_notify() system
++	  call to enable/disable watches.
 +
- static inline void ima_free_modsig(struct modsig *modsig)
- {
- }
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index d426d4d1fe04..ac35bc3d6e35 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -209,7 +209,7 @@ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
-  */
- int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct file *file, void *buf, loff_t size,
--			    enum hash_algo algo)
-+			    enum hash_algo algo, struct modsig *modsig)
- {
- 	const char *audit_cause = "failed";
- 	struct inode *inode = file_inode(file);
-@@ -256,6 +256,9 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 	memcpy(iint->ima_hash, &hash, length);
- 	iint->version = i_version;
+ menu "Partition Types"
  
-+	if (modsig)
-+		ima_collect_modsig(modsig, buf, size);
-+
- 	/* Possibly temporary failure due to type of read (eg. O_DIRECT) */
- 	if (!result)
- 		iint->flags |= IMA_COLLECTED;
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 70252ac3321d..aa14e3fe25d5 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -438,7 +438,7 @@ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
- 	    !(iint->flags & IMA_HASH))
- 		return;
- 
--	rc = ima_collect_measurement(iint, file, NULL, 0, ima_hash_algo);
-+	rc = ima_collect_measurement(iint, file, NULL, 0, ima_hash_algo, NULL);
- 	if (rc < 0)
- 		return;
- 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 309058c1d50e..cc4500f93408 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -318,7 +318,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 
- 	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
- 
--	rc = ima_collect_measurement(iint, file, buf, size, hash_algo);
-+	rc = ima_collect_measurement(iint, file, buf, size, hash_algo, modsig);
- 	if (rc != 0 && rc != -EBADF && rc != -EINVAL)
- 		goto out_locked;
- 
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-index f41ebe370fa0..d438b87dba89 100644
---- a/security/integrity/ima/ima_modsig.c
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -17,6 +17,19 @@
- 
- struct modsig {
- 	struct pkcs7_message *pkcs7_msg;
-+
-+	enum hash_algo hash_algo;
-+
-+	/* This digest will go in the 'd-modsig' field of the IMA template. */
-+	const u8 *digest;
-+	u32 digest_size;
-+
-+	/*
-+	 * This is what will go to the measurement list if the template requires
-+	 * storing the signature.
-+	 */
-+	int raw_pkcs7_len;
-+	u8 raw_pkcs7[];
+ source "block/partitions/Kconfig"
+diff --git a/block/Makefile b/block/Makefile
+index eee1b4ceecf9..2dca6273f8f3 100644
+--- a/block/Makefile
++++ b/block/Makefile
+@@ -35,3 +35,4 @@ obj-$(CONFIG_BLK_DEBUG_FS)	+= blk-mq-debugfs.o
+ obj-$(CONFIG_BLK_DEBUG_FS_ZONED)+= blk-mq-debugfs-zoned.o
+ obj-$(CONFIG_BLK_SED_OPAL)	+= sed-opal.o
+ obj-$(CONFIG_BLK_PM)		+= blk-pm.o
++obj-$(CONFIG_BLK_NOTIFICATIONS)	+= blk-notify.o
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 419d600e6637..edad86172d47 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -144,6 +144,22 @@ static const struct {
+ 	[BLK_STS_IOERR]		= { -EIO,	"I/O" },
  };
  
- /**
-@@ -71,7 +84,8 @@ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
- 	sig_len = be32_to_cpu(sig->sig_len);
- 	buf_len -= sig_len + sizeof(*sig);
- 
--	hdr = kmalloc(sizeof(*hdr), GFP_KERNEL);
-+	/* Allocate sig_len additional bytes to hold the raw PKCS#7 data. */
-+	hdr = kzalloc(sizeof(*hdr) + sig_len, GFP_KERNEL);
- 	if (!hdr)
- 		return -ENOMEM;
- 
-@@ -81,11 +95,45 @@ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
- 		return PTR_ERR(hdr->pkcs7_msg);
- 	}
- 
-+	memcpy(hdr->raw_pkcs7, buf + buf_len, sig_len);
-+	hdr->raw_pkcs7_len = sig_len;
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static const
++enum block_notification_type blk_notifications[ARRAY_SIZE(blk_errors)] = {
++	[BLK_STS_TIMEOUT]	= NOTIFY_BLOCK_ERROR_TIMEOUT,
++	[BLK_STS_NOSPC]		= NOTIFY_BLOCK_ERROR_NO_SPACE,
++	[BLK_STS_TRANSPORT]	= NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT,
++	[BLK_STS_TARGET]	= NOTIFY_BLOCK_ERROR_CRITICAL_TARGET,
++	[BLK_STS_NEXUS]		= NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS,
++	[BLK_STS_MEDIUM]	= NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM,
++	[BLK_STS_PROTECTION]	= NOTIFY_BLOCK_ERROR_PROTECTION,
++	[BLK_STS_RESOURCE]	= NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE,
++	[BLK_STS_DEV_RESOURCE]	= NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE,
++	[BLK_STS_IOERR]		= NOTIFY_BLOCK_ERROR_IO,
++};
++#endif
 +
-+	/* We don't know the hash algorithm yet. */
-+	hdr->hash_algo = HASH_ALGO__LAST;
+ blk_status_t errno_to_blk_status(int errno)
+ {
+ 	int i;
+@@ -179,6 +195,19 @@ static void print_req_error(struct request *req, blk_status_t status)
+ 				req->rq_disk ?  req->rq_disk->disk_name : "?",
+ 				(unsigned long long)blk_rq_pos(req),
+ 				req->cmd_flags);
 +
- 	*modsig = hdr;
- 
- 	return 0;
++#ifdef CONFIG_BLK_NOTIFICATIONS
++	if (blk_notifications[idx]) {
++		struct block_notification n = {
++			.watch.type	= WATCH_TYPE_BLOCK_NOTIFY,
++			.watch.subtype	= blk_notifications[idx],
++			.watch.info	= sizeof(n),
++			.dev		= req->rq_disk ? disk_devt(req->rq_disk) : 0,
++			.sector		= blk_rq_pos(req),
++		};
++		post_block_notification(&n);
++	}
++#endif
  }
  
-+/**
-+ * ima_collect_modsig - Calculate the file hash without the appended signature.
+ static void req_bio_endio(struct request *rq, struct bio *bio,
+diff --git a/block/blk-notify.c b/block/blk-notify.c
+new file mode 100644
+index 000000000000..b310aaf37e7c
+--- /dev/null
++++ b/block/blk-notify.c
+@@ -0,0 +1,83 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Block layer event notifications.
 + *
-+ * Since the modsig is part of the file contents, the hash used in its signature
-+ * isn't the same one ordinarily calculated by IMA. Therefore PKCS7 code
-+ * calculates a separate one for signature verification.
++ * Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
 + */
-+void ima_collect_modsig(struct modsig *modsig, const void *buf, loff_t size)
++
++#include <linux/blkdev.h>
++#include <linux/watch_queue.h>
++#include <linux/syscalls.h>
++#include <linux/init_task.h>
++
++/*
++ * Global queue for watching for block layer events.
++ */
++static struct watch_list blk_watchers = {
++	.watchers	= HLIST_HEAD_INIT,
++	.lock		= __SPIN_LOCK_UNLOCKED(&blk_watchers.lock),
++};
++
++static DEFINE_SPINLOCK(blk_watchers_lock);
++
++/*
++ * Post superblock notifications.
++ *
++ * Note that there's only a global queue to which all events are posted.  Might
++ * want to provide per-dev queues also.
++ */
++void post_block_notification(struct block_notification *n)
 +{
-+	int rc;
++	u64 id = 0; /* Might want to allow dev# here. */
 +
-+	/*
-+	 * Provide the file contents (minus the appended sig) so that the PKCS7
-+	 * code can calculate the file hash.
-+	 */
-+	size -= modsig->raw_pkcs7_len + strlen(MODULE_SIG_STRING) +
-+		sizeof(struct module_signature);
-+	rc = pkcs7_supply_detached_data(modsig->pkcs7_msg, buf, size);
-+	if (rc)
-+		return;
-+
-+	/* Ask the PKCS7 code to calculate the file hash. */
-+	rc = pkcs7_get_digest(modsig->pkcs7_msg, &modsig->digest,
-+			      &modsig->digest_size, &modsig->hash_algo);
-+	if (rc)
-+		return;
++	post_watch_notification(&blk_watchers, &n->watch, &init_cred, id);
 +}
 +
- int ima_modsig_verify(struct key *keyring, const struct modsig *modsig)
- {
- 	return verify_pkcs7_message_sig(NULL, 0, modsig->pkcs7_msg, keyring,
++/**
++ * sys_block_notify - Watch for superblock events.
++ * @watch_fd: The watch queue to send notifications to.
++ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
++ */
++SYSCALL_DEFINE2(block_notify, int, watch_fd, int, watch_id)
++{
++	struct watch_queue *wqueue;
++	struct watch_list *wlist = &blk_watchers;
++	struct watch *watch;
++	long ret = -ENOMEM;
++	u64 id = 0; /* Might want to allow dev# here. */
++
++	if (watch_id < -1 || watch_id > 0xff)
++		return -EINVAL;
++
++	wqueue = get_watch_queue(watch_fd);
++	if (IS_ERR(wqueue)) {
++		ret = PTR_ERR(wqueue);
++		goto err;
++	}
++
++	if (watch_id >= 0) {
++		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
++		if (!watch)
++			goto err_wqueue;
++
++		init_watch(watch, wqueue);
++		watch->id	= id;
++		watch->info_id	= (u32)watch_id << WATCH_INFO_ID__SHIFT;
++
++		spin_lock(&blk_watchers_lock);
++		ret = add_watch_to_object(watch, wlist);
++		spin_unlock(&blk_watchers_lock);
++		if (ret < 0)
++			kfree(watch);
++	} else {
++		spin_lock(&blk_watchers_lock);
++		ret = remove_watch_from_object(wlist, wqueue, id, false);
++		spin_unlock(&blk_watchers_lock);
++	}
++
++err_wqueue:
++	put_watch_queue(wqueue);
++err:
++	return ret;
++}
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1aafeb923e7b..c28f8647a76d 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -43,6 +43,7 @@ struct pr_ops;
+ struct rq_qos;
+ struct blk_queue_stats;
+ struct blk_stat_callback;
++struct block_notification;
+ 
+ #define BLKDEV_MIN_RQ	4
+ #define BLKDEV_MAX_RQ	128	/* Default maximum */
+@@ -1744,6 +1745,15 @@ static inline bool blk_req_can_dispatch_to_zone(struct request *rq)
+ }
+ #endif /* CONFIG_BLK_DEV_ZONED */
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++extern void post_block_notification(struct block_notification *n);
++#else
++static inline void post_block_notification(struct block_notification *n)
++{
++}
++#endif
++
++
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 204a6dbcc34a..77a9d84f1fbd 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -1005,6 +1005,7 @@ asmlinkage long sys_mount_notify(int dfd, const char __user *path,
+ 				 unsigned int at_flags, int watch_fd, int watch_id);
+ asmlinkage long sys_sb_notify(int dfd, const char __user *path,
+ 			      unsigned int at_flags, int watch_fd, int watch_id);
++asmlinkage long sys_block_notify(int watch_fd, int watch_id);
+ 
+ /*
+  * Architecture-specific system calls
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index 02c330462af8..231eafa3df99 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -44,6 +44,7 @@ struct watch_notification {
+ #define WATCH_INFO_FLAG_6	0x00400000
+ #define WATCH_INFO_FLAG_7	0x00800000
+ #define WATCH_INFO_ID		0xff000000	/* ID of watchpoint */
++#define WATCH_INFO_ID__SHIFT	24
+ };
+ 
+ #define WATCH_LENGTH_SHIFT	3
+@@ -154,4 +155,31 @@ struct superblock_error_notification {
+ 	__u32	error_cookie;
+ };
+ 
++/*
++ * Type of block layer notification.
++ */
++enum block_notification_type {
++	NOTIFY_BLOCK_ERROR_TIMEOUT		= 1, /* Timeout error */
++	NOTIFY_BLOCK_ERROR_NO_SPACE		= 2, /* Critical space allocation error */
++	NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT = 3, /* Recoverable transport error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_TARGET	= 4, /* Critical target error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS	= 5, /* Critical nexus error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM	= 6, /* Critical medium error */
++	NOTIFY_BLOCK_ERROR_PROTECTION		= 7, /* Protection error */
++	NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE	= 8, /* Kernel resource error */
++	NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE	= 9, /* Device resource error */
++	NOTIFY_BLOCK_ERROR_IO			= 10, /* Other I/O error */
++};
++
++/*
++ * Block notification record.
++ * - watch.type = WATCH_TYPE_BLOCK_NOTIFY
++ * - watch.subtype = enum block_notification_type
++ */
++struct block_notification {
++	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
++	__u64	dev;			/* Device number */
++	__u64	sector;			/* Affected sector */
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 565d1e3d1bed..6178455ac568 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -51,6 +51,7 @@ COND_SYSCALL_COMPAT(io_pgetevents);
+ COND_SYSCALL(io_uring_setup);
+ COND_SYSCALL(io_uring_enter);
+ COND_SYSCALL(io_uring_register);
++COND_SYSCALL(block_notify);
+ 
+ /* fs/xattr.c */
+ 
