@@ -1,29 +1,37 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Mon, 10 Jun 2019 06:35:01 +0000
-Subject: Re: [RFC PATCH 4/5] crypto: Adds user space interface for ALG_SET_KEY_TYPE
-Message-Id: <20190610063501.u3q2k2vgytvknxs3@gondor.apana.org.au>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 05 Jun 2019 16:56:47 +0000
+Subject: Rational model for UID based controls
+Message-Id: <18357.1559753807@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1547708541-23730-1-git-send-email-kalyani.akula@xilinx.com>
- <18759853.IUaQuE38eh@tauon.chronox.de>
- <SN6PR02MB5135CE53C3E3FB34CA5E6BA8AF320@SN6PR02MB5135.namprd02.prod.outlook.com>
- <2554415.t45IJDmies@tauon.chronox.de>
- <BN7PR02MB5124A7E685AC0F59AFBEFC8DAF130@BN7PR02MB5124.namprd02.prod.outlook.com>
-In-Reply-To: <BN7PR02MB5124A7E685AC0F59AFBEFC8DAF130@BN7PR02MB5124.namprd02.prod.outlook.com>
-To: Kalyani Akula <kalyania@xilinx.com>
-Cc: Stephan Mueller <smueller@chronox.de>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "davem@davemloft.net" <davem@davemloft.net>, "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, Sarat Chand Savitala <saratcha@xilinx.com>
+References: <e4c19d1b-9827-5949-ecb8-6c3cb4648f58@schaufler-ca.com> <50c2ea19-6ae8-1f42-97ef-ba5c95e40475@schaufler-ca.com> <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk> <CALCETrWzDR=Ap8NQ5-YrVhXCEBgr+hwpjw9fBn0m2NkZzZ7XLQ@mail.gmail.com> <20192.1559724094@warthog.procyon.org.uk>
+In-Reply-To: <e4c19d1b-9827-5949-ecb8-6c3cb4648f58@schaufler-ca.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: dhowells@redhat.com, Andy Lutomirski <luto@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, Linux FS Devel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
 
-On Mon, Jun 10, 2019 at 05:20:58AM +0000, Kalyani Akula wrote:
-> Ping!!
+Casey Schaufler <casey@schaufler-ca.com> wrote:
 
-We already have existing drivers supporting hardware keys.  Please
-check out how they're handling this.  You can grep for paes under
-drivers/crypto.
+> YES!
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+I'm trying to decide if that's fervour or irritation at this point ;-)
+
+> And it would be really great if you put some thought into what
+> a rational model would be for UID based controls, too.
+
+I have put some thought into it, but I don't see a single rational model.  It
+depends very much on the situation.
+
+In any case, that's what I was referring to when I said I might need to call
+inode_permission().  But UIDs don't exist for all filesystems, for example,
+and there are no UIDs on superblocks, mount objects or hardware events.
+
+Now, I could see that you ignore UIDs on things like keys and
+hardware-triggered events, but how does this interact with things like mount
+watches that see directories that have UIDs?
+
+Are you advocating making it such that process B can only see events triggered
+by process A if they have the same UID, for example?
+
+David
