@@ -1,130 +1,71 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 05 Jun 2019 17:21:21 +0000
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 05 Jun 2019 17:47:43 +0000
 Subject: Re: [RFC][PATCH 0/8] Mount, FS, Block and Keyrings notifications [ver #2]
-Message-Id: <13377.1559755281@warthog.procyon.org.uk>
+Message-Id: <15CBE0B8-2797-433B-B9D7-B059FD1B9266@amacapital.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <e4c19d1b-9827-5949-ecb8-6c3cb4648f58@schaufler-ca.com> <50c2ea19-6ae8-1f42-97ef-ba5c95e40475@schaufler-ca.com> <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk> <CALCETrWzDR=Ap8NQ5-YrVhXCEBgr+hwpjw9fBn0m2NkZzZ7XLQ@mail.gmail.com> <20192.1559724094@warthog.procyon.org.uk>
-In-Reply-To: <e4c19d1b-9827-5949-ecb8-6c3cb4648f58@schaufler-ca.com>
+References: <50c2ea19-6ae8-1f42-97ef-ba5c95e40475@schaufler-ca.com> <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk> <CALCETrWzDR=Ap8NQ5-YrVhXCEBgr+hwpjw9fBn0m2NkZzZ7XLQ@mail.gmail.com> <20192.1559724094@warthog.procyon.org.uk> <e4c19d1b-9827-5949-ecb8-6c3cb4648f58@schaufler-ca.com> <CALCETrVSBwHEm-1pgBXxth07PZ0XF6FD+7E25=WbiS7jxUe83A@mail.gmail.com> <9a9406ba-eda4-e3ec-2100-9f7cf1d5c130@schaufler-ca.com>
+In-Reply-To: <9a9406ba-eda4-e3ec-2100-9f7cf1d5c130@schaufler-ca.com>
 To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: dhowells@redhat.com, Andy Lutomirski <luto@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, Linux FS Devel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Andy Lutomirski <luto@kernel.org>, David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, Linux FS Devel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
 
-Casey Schaufler <casey@schaufler-ca.com> wrote:
 
-> > But there are problems with not sending the event:
-> >
-> >  (1) B's internal state is then corrupt (or, at least, unknowingly invalid).
+> On Jun 5, 2019, at 10:01 AM, Casey Schaufler <casey@schaufler-ca.com> wrote:
 > 
-> Then B is a badly written program.
-
-No.  It may have the expectation that it will get events but then it is denied
-those events and doesn't even know they've happened.
-
-> >  (2) B can potentially figure out that the event happened by other means.
+>> On 6/5/2019 9:04 AM, Andy Lutomirski wrote:
+>>> On Wed, Jun 5, 2019 at 7:51 AM Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>> On 6/5/2019 1:41 AM, David Howells wrote:
+>>>> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>> 
+>>>>> I will try to explain the problem once again. If process A
+>>>>> sends a signal (writes information) to process B the kernel
+>>>>> checks that either process A has the same UID as process B
+>>>>> or that process A has privilege to override that policy.
+>>>>> Process B is passive in this access control decision, while
+>>>>> process A is active. In the event delivery case, process A
+>>>>> does something (e.g. modifies a keyring) that generates an
+>>>>> event, which is then sent to process B's event buffer.
+>>>> I think this might be the core sticking point here.  It looks like two
+>>>> different situations:
+>>>> 
+>>>> (1) A explicitly sends event to B (eg. signalling, sendmsg, etc.)
+>>>> 
+>>>> (2) A implicitly and unknowingly sends event to B as a side effect of some
+>>>>     other action (eg. B has a watch for the event A did).
+>>>> 
+>>>> The LSM treats them as the same: that is B must have MAC authorisation to send
+>>>> a message to A.
+>>> YES!
+>>> 
+>>> Threat is about what you can do, not what you intend to do.
+>>> 
+>>> And it would be really great if you put some thought into what
+>>> a rational model would be for UID based controls, too.
+>>> 
+>>>> But there are problems with not sending the event:
+>>>> 
+>>>> (1) B's internal state is then corrupt (or, at least, unknowingly invalid).
+>>> Then B is a badly written program.
+>> Either I'm misunderstanding you or I strongly disagree.
 > 
-> Then why does it need the event mechanism in the first place?
+> A program needs to be aware of the conditions under
+> which it gets event, *including the possibility that
+> it may not get an event that it's not allowed*. Do you
+> regularly write programs that go into corrupt states
+> if an open() fails? Or where read() returns less than
+> the amount of data you ask for?
 
-Why does a CPU have interrupt lines?  It can always continuously poll the
-hardware.  Why do poll() and select() exist?
+I do not regularly write programs that handle read() omitting data in the middle of a TCP stream.  I also don’t write programs that wait for processes to die and need to handle the case where a child is dead, waitid() can see it, but SIGCHLD wasn’t sent because “security”.
 
-> > I've implemented four event sources so far:
-> >
-> >  (1) Keys/keyrings.  You can only get events on a key you have View permission
-> >      on and the other process has to have write access to it, so I think this
-> >      is good enough.
 > 
-> Sounds fine.
+>>  If B has
+>> authority to detect a certain action, and A has authority to perform
+>> that action, then refusing to notify B because B is somehow missing
+>> some special authorization to be notified by A is nuts.
 > 
-> >  (2) Block layer.  Currently this will only get you hardware error events,
-> >      which is probably safe.  I'm not sure you can manipulate those without
-> >      permission to directly access the device files.
-> 
-> There's an argument to be made that this should require CAP_SYS_ADMIN,
-> or that an LSM like SELinux might include hardware error events in
-> policy, but generally I agree that system generated events like this
-> are both harmless and pointless for the general public to watch.
+> You are hand-waving the notion of authority. You are assuming
+> that if A can read X and B can read X that A can write B.
 
-CAP_SYS_ADMIN is probably too broad a hammer - this is something you might
-want to let a file manager or desktop environment use.  I wonder if we could
-add a CAP_SYS_NOTIFY - or is it too late for adding new caps?
-
-> >  (3) Superblock.  This is trickier since it can see events that can be
-> >      manufactured (R/W <-> R/O remounting, EDQUOT) as well as events that
-> >      can't without hardware control (EIO, network link loss, RF kill).
-> 
-> The events generated by processes (the 1st set) need controls
-> like keys. The events generated by the system (the 2nd set) may
-> need controls like the block layer.
->
->
-> > (4)  Mount topology.  This is the trickiest since it allows you to see
-> >      events beyond the point at which you placed your watch (in essence,
-> >      you place a subtree watch).
-> 
-> Like keys.
-> 
-> >      The question is what permission checking should I do?  Ideally, I'd
-> >      emulate a pathwalk between the watchpoint and the eventing object to
-> >      see if the owner of the watchpoint could reach it.
-> 
-> That will depend, as I've been saying, on what causes
-> the event to be generated. If it's from a process, the
-> question is "can the active process, the one that generated
-> the event, write to the passive, watching process?"
-> If it's the system on a hardware event, you may want the watcher
-> to have CAP_SYS_ADMIN.
-> 
-> >      I'd need to do a reverse walk, calling
-> >      inode_permission(MAY_NOT_BLOCK) for each directory between the
-> >      eventing object and the watchpoint to see if one rejects it - but
-> >      some filesystems have a permission check that can't be called in this
-> >      state.
-> 
-> This is for setting the watch, right?
-
-No.  Setting the watch requires execute permission on the directory on which
-you're setting the watch, but there's no way to know what permissions will be
-required for an event at that point.
-
-I'm talking about when an event is generated (hence "eventing object").
-Imagine you have a subpath:
-
-	dirA/dirB/dirC/dirD/dirE
-
-where dir* are directories.  If you place a watch on dirA and then an event
-occurs on dirB (such as someone mounting on it), I do a walk back up the
-parental tree, in the order:
-
-	dirE, dirD, dirC, dirB, dirA
-
-If I need to check permissions on all the directories, I would find the
-watchpoint on dirA, then I would have to repeat the walk to find out whether
-the owner of the watchpoint can access all of those directories (perhaps
-skipping dirA since I had permission to place a watchpoint thereon).
-
-Note that this is subject to going awry if there's a race versus rename().
-
-> >      It would also be necessary to do this separately for each watchpoint in
-> >      the parental chain.
-> >
-> >      Further, each permissions check would generate an audit event and
-> >      could generate FAN_ACCESS and/or FAN_ACCESS_PERM fanotify events -
-> >      which could be a problem if fanotify is also trying to post those
-> >      events to the same watch queue.
-> 
-> If you required that the watching process open(dir) what
-> you want to watch you'd get this for free. Or did I miss
-> something obvious?
-
-A subtree watch, such as the mount topology watch, watches not only the
-directory and mount object you pointed directly at, but the subtree rooted
-thereon.
-
-Take the sample program in the last patch.  It places a watch on "/" with no
-filter against WATCH_INFO_RECURSIVE, so it sees all mount topology events that
-happen under the VFS path subtree rooted at "/" - whether or not it can
-actually pathwalk to those mounts.
-
-David
+No, read it again please. I’m assuming that if A can *write* X and B can read X then A can send information to B.
