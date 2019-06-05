@@ -1,25 +1,23 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 10 Jun 2019 17:47:11 +0000
-Subject: Re: [PATCH 06/13] keys: Add a notification facility [ver #4]
-Message-Id: <10632.1560188831@warthog.procyon.org.uk>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Wed, 05 Jun 2019 13:02:47 +0000
+Subject: keyctl_capabilities and buflen
+Message-Id: <20190605130247.GA21275@rotor.kitware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190610111110.72468326@lwn.net> <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk> <155991709983.15579.13232123365803197237.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20190610111110.72468326@lwn.net>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Jonathan Corbet <corbet@lwn.net> wrote:
+Hi,
 
-> > 	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, 0x01);
-> 
-> One little nit: it seems that keyctl_watch_key is actually spelled
-> keyctl(KEYCTL_WATCH_KEY, ...).
+I'm looking at the implementation of `keyctl_capabilities` in the `next`
+branch and it's not clear if `buflen` is the size of the memory pointed
+to by `buffer` in array size or in byte size by its documentation. It
+seems to be the size in bytes by the code (the &3) could probably
+warrant a comment to make it clearer that it is related to
+sizeof(unsigned int) here). This seems very odd to me, or is it just a
+common kernel pattern I haven't seen before?
 
-Yeah - but there'll be a wrapper for it in -lkeyutils.  The syscalls I added
-in other patches are, technically, referred to syscall(__NR_xxx, ...) at the
-moment too.
+Thanks,
 
-David
+--Ben
