@@ -1,55 +1,130 @@
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri, 14 Jun 2019 12:15:14 +0000
-Subject: Re: [PATCH, RFC 00/62] Intel MKTME enabling
-Message-Id: <20190614121514.GK3436@hirez.programming.kicks-ass.net>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 06 Jun 2019 09:42:10 +0000
+Subject: [PATCH 01/10] security: Override creds in __fput() with last fputter's creds [ver #3]
+Message-Id: <155981413016.17513.10540579988392555403.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: Casey Schaufler <casey@schaufler-ca.com>Casey Schaufler <casey@schaufler-ca.com>, dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2019 at 05:43:20PM +0300, Kirill A. Shutemov wrote:
-> = Intro > 
-> The patchset brings enabling of Intel Multi-Key Total Memory Encryption.
-> It consists of changes into multiple subsystems:
-> 
->  * Core MM: infrastructure for allocation pages, dealing with encrypted VMAs
->    and providing API setup encrypted mappings.
+So that the LSM can see the credentials of the last process to do an fput()
+on a file object when the file object is being dismantled, do the following
+steps:
 
-That wasn't eye-bleeding bad. With exception of the refcounting; that
-looks like something that can easily go funny without people noticing.
+ (1) Cache the current credentials in file->f_fput_cred at the point the
+     file object's reference count reaches zero.
 
->  * arch/x86: feature enumeration, program keys into hardware, setup
->    page table entries for encrypted pages and more.
+ (2) In __fput(), use override_creds() to apply those credentials to the
+     dismantling process.  This is necessary so that if we're dismantling a
+     unix socket that has semi-passed fds still in it, their fputs will
+     pick up the same credentials if they're reduced to zero at that point.
 
-That seemed incomplete (pageattr seems to be a giant hole).
+     Note that it's probably not strictly necessary to take an extra ref on
+     the creds here (which override_creds() does).
 
->  * Key management service: setup and management of encryption keys.
->  * DMA/IOMMU: dealing with encrypted memory on IO side.
+ (3) Destroy the fput creds in file_free_rcu().
 
-Just minor nits, someone else would have to look at this.
+This additionally makes the creds available to:
 
->  * KVM: interaction with virtualization side.
+	fsnotify
+	eventpoll
+	file locking
+	->fasync, ->release file ops
+	superblock destruction
+	mountpoint destruction
 
-You really want to limit the damage random modules can do. They have no
-business writing to the mktme variables.
+This allows various notifications about object cleanups/destructions to
+carry appropriate credentials for the LSM to approve/disapprove them based
+on the process that caused them, even if indirectly.
 
->  * Documentation: description of APIs and usage examples.
+Note that this means that someone looking at /proc/<pid>/fd/<n> may end up
+being inadvertently noted as the subject of a cleanup message if the
+process they're looking at croaks whilst they're looking at it.
 
-Didn't bother with those; if the Changelogs are inadequate to make sense
-of the patches documentation isn't the right place to fix things.
+Further, kernel services like nfsd and cachefiles may be seen as the
+fputter and may not have a system credential.  In cachefiles's case, it may
+appear that cachefilesd caused the notification.
 
-> The patchset is huge. This submission aims to give view to the full picture and
-> get feedback on the overall design. The patchset will be split into more
-> digestible pieces later.
-> 
-> Please review. Any feedback is welcome.
+Suggested-by: Casey Schaufler <casey@schaufler-ca.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>
+---
 
-I still can't tell if this is worth the complexity :-/
+ fs/file_table.c    |   12 ++++++++++++
+ include/linux/fs.h |    1 +
+ 2 files changed, 13 insertions(+)
 
-Yes, there's a lot of words, but it doesn't mean anything to me, that
-is, nothing here makes me want to build my kernel with this 'feature'
-enabled.
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 3f9c1b452c1d..9bf2be45b7f9 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -46,6 +46,7 @@ static void file_free_rcu(struct rcu_head *head)
+ 	struct file *f = container_of(head, struct file, f_u.fu_rcuhead);
+ 
+ 	put_cred(f->f_cred);
++	put_cred(f->f_fput_cred);
+ 	kmem_cache_free(filp_cachep, f);
+ }
+ 
+@@ -252,6 +253,7 @@ struct file *alloc_file_clone(struct file *base, int flags,
+  */
+ static void __fput(struct file *file)
+ {
++	const struct cred *saved_cred;
+ 	struct dentry *dentry = file->f_path.dentry;
+ 	struct vfsmount *mnt = file->f_path.mnt;
+ 	struct inode *inode = file->f_inode;
+@@ -262,6 +264,12 @@ static void __fput(struct file *file)
+ 
+ 	might_sleep();
+ 
++	/* Set the creds of whoever triggered the last fput for the LSM.  Note
++	 * that this has to be made available to further fputs, say on fds
++	 * trapped in a unix socket.
++	 */
++	saved_cred = override_creds(file->f_fput_cred);
++
+ 	fsnotify_close(file);
+ 	/*
+ 	 * The function eventpoll_release() should be the first called
+@@ -293,6 +301,8 @@ static void __fput(struct file *file)
+ 	if (unlikely(mode & FMODE_NEED_UNMOUNT))
+ 		dissolve_on_fput(mnt);
+ 	mntput(mnt);
++
++	revert_creds(saved_cred);
+ out:
+ 	file_free(file);
+ }
+@@ -334,6 +344,7 @@ void fput_many(struct file *file, unsigned int refs)
+ 	if (atomic_long_sub_and_test(refs, &file->f_count)) {
+ 		struct task_struct *task = current;
+ 
++		file->f_fput_cred = get_current_cred();
+ 		if (likely(!in_interrupt() && !(task->flags & PF_KTHREAD))) {
+ 			init_task_work(&file->f_u.fu_rcuhead, ____fput);
+ 			if (!task_work_add(task, &file->f_u.fu_rcuhead, true))
+@@ -368,6 +379,7 @@ void __fput_sync(struct file *file)
+ 	if (atomic_long_dec_and_test(&file->f_count)) {
+ 		struct task_struct *task = current;
+ 		BUG_ON(!(task->flags & PF_KTHREAD));
++		file->f_fput_cred = get_current_cred();
+ 		__fput(file);
+ 	}
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index f1c74596cd77..db05738b1951 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -943,6 +943,7 @@ struct file {
+ 	loff_t			f_pos;
+ 	struct fown_struct	f_owner;
+ 	const struct cred	*f_cred;
++	const struct cred	*f_fput_cred;	/* Who did the last fput() (for LSM) */
+ 	struct file_ra_state	f_ra;
+ 
+ 	u64			f_version;
