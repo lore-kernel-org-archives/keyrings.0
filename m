@@ -1,54 +1,60 @@
-From: Felipe Balbi <felipe.balbi@linux.intel.com>
-Date: Wed, 12 Jun 2019 06:58:33 +0000
-Subject: Re: [PATCH 09/10] usb: Add USB subsystem notifications [ver #3]
-Message-Id: <87h88v1e92.fsf@linux.intel.com>
+From: Rolf Eike Beer <eb@emlix.com>
+Date: Thu, 06 Jun 2019 07:55:37 +0000
+Subject: [PATCH v2 RESEND] scripts: use pkg-config to locate libcrypto
+Message-Id: <4904761.bSUFNkusSJ@devpool35>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <Pine.LNX.4.44L0.1906110950440.1535-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1906110950440.1535-100000@iolanthe.rowland.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk, linux-usb@vger.kernel.org, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <3861016.XCek94Sdvs@devpool21> <d48cd5083490aa717f59c41960d5a02f93fce841.camel@infradead.org> <2429714.x0fLlpPdDl@devpool21>
+In-Reply-To: <2429714.x0fLlpPdDl@devpool21>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
 
+From cca931322233827dc21c7609f21f4042d78f220e Mon Sep 17 00:00:00 2001
+From: Rolf Eike Beer <eb@emlix.com>
+Date: Thu, 22 Nov 2018 16:40:49 +0100
+Subject: scripts: use pkg-config to locate libcrypto
 
-Hi,
+Otherwise build fails if the headers are not in the default location. While at
+it also ask pkg-config for the libs, with fallback to the existing value.
 
-Alan Stern <stern@rowland.harvard.edu> writes:
+Signed-off-by: Rolf Eike Beer <eb@emlix.com>
+Cc: stable@vger.kernel.org # 4.19.x
+---
+ scripts/Makefile | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-> On Tue, 11 Jun 2019, Felipe Balbi wrote:
->
->> >> >> > So for "severe" issues, yes, we should do this, but perhaps not for all
->> >> >> > of the "normal" things we see when a device is yanked out of the system
->> >> >> > and the like.
->> >> >> 
->> >> >> Then what counts as a "severe" issue?  Anything besides enumeration 
->> >> >> failure?
->> >> >
->> >> > Not that I can think of at the moment, other than the other recently
->> >> > added KOBJ_CHANGE issue.  I'm sure we have other "hard failure" issues
->> >> > in the USB stack that people will want exposed over time.
->> >> 
->> >> From an XHCI standpoint, Transaction Errors might be one thing. They
->> >> happen rarely and are a strong indication that the bus itself is
->> >> bad. Either bad cable, misbehaving PHYs, improper power management, etc.
->> >
->> > Don't you also get transaction errors if the user unplugs a device in 
->> > the middle of a transfer?  That's not the sort of thing we want to sent 
->> > notifications about.
->> 
->> Mathias, do we get Transaction Error if user removes cable during a
->> transfer? I thought we would just get Port Status Change with CC bit
->> cleared, no?
->
-> Even if xHCI doesn't give Transaction Errors when a cable is unplugged 
-> during a transfer, other host controllers do.  Sometimes quite a lot -- 
-> they continue to occur until the kernel polls the parent hub's 
-> interrupt ep and learns that the port is disconnected, which can take 
-> up to 250 ms.
+Last time I got notice about a build error with 4.19.3, but it works fine for
+me on top of both 4.19 and 4.19.48.
 
-my comment was specific about XHCI. It even started with "From an XHCI
-standpoint" :-)
-
+diff --git a/scripts/Makefile b/scripts/Makefile
+index 9d442ee050bd..bd2a30b43f28 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -8,7 +8,11 @@
+ # conmakehash:   Create chartable
+ # conmakehash:	 Create arrays for initializing the kernel console tables
+ 
++PKG_CONFIG?= pkg-config
++
+ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
++CRYPTO_LIBS = $(shell $(PKG_CONFIG) --libs libcrypto 2> /dev/null || -lcrypto)
++CRYPTO_CFLAGS = $(shell $(PKG_CONFIG) --cflags libcrypto 2> /dev/null)
+ 
+ hostprogs-$(CONFIG_BUILD_BIN2C)  += bin2c
+ hostprogs-$(CONFIG_KALLSYMS)     += kallsyms
+@@ -23,8 +27,9 @@ hostprogs-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE) += insert-sys-cert
+ 
+ HOSTCFLAGS_sortextable.o = -I$(srctree)/tools/include
+ HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
+-HOSTLDLIBS_sign-file = -lcrypto
+-HOSTLDLIBS_extract-cert = -lcrypto
++HOSTLDLIBS_sign-file = $(CRYPTO_LIBS)
++HOSTCFLAGS_extract-cert.o = $(CRYPTO_CFLAGS)
++HOSTLDLIBS_extract-cert = $(CRYPTO_LIBS)
+ 
+ always		:= $(hostprogs-y) $(hostprogs-m)
+ 
 -- 
-balbi
+2.21.0
