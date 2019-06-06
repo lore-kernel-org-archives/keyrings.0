@@ -1,41 +1,72 @@
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 06 Jun 2019 18:51:01 +0000
+From: Casey Schaufler <casey@schaufler-ca.com>
+Date: Thu, 06 Jun 2019 18:56:07 +0000
 Subject: Re: [RFC][PATCH 00/10] Mount, FS, Block and Keyrings notifications [ver #3]
-Message-Id: <E7472FA4-886E-4325-87EA-9812D08CC2D3@amacapital.net>
+Message-Id: <07e92045-2d80-8573-4d36-643deeaff9ec@schaufler-ca.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <b91710d8-cd2d-6b93-8619-130b9d15983d@tycho.nsa.gov> <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk> <3813.1559827003@warthog.procyon.org.uk> <8382af23-548c-f162-0e82-11e308049735@tycho.nsa.gov> <0eb007c5-b4a0-9384-d915-37b0e5a158bf@schaufler-ca.com> <CALCETrWn_C8oReKXGMXiJDOGoYWMs+jg2DWa5ZipKAceyXkx5w@mail.gmail.com> <7afe1a85-bf19-b5b4-fdf3-69d9be475dab@schaufler-ca.com>
-In-Reply-To: <7afe1a85-bf19-b5b4-fdf3-69d9be475dab@schaufler-ca.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Andy Lutomirski <luto@kernel.org>, Stephen Smalley <sds@tycho.nsa.gov>, David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, USB list <linux-usb@vger.kernel.org>, raven@themaw.net, Linux FS Devel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, Paul Moore <paul@paul-moore.com>
+References: <b91710d8-cd2d-6b93-8619-130b9d15983d@tycho.nsa.gov>
+ <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk>
+ <3813.1559827003@warthog.procyon.org.uk>
+ <8382af23-548c-f162-0e82-11e308049735@tycho.nsa.gov>
+ <0eb007c5-b4a0-9384-d915-37b0e5a158bf@schaufler-ca.com>
+ <c82052e5-ca11-67b5-965e-8f828081f31c@tycho.nsa.gov>
+In-Reply-To: <c82052e5-ca11-67b5-965e-8f828081f31c@tycho.nsa.gov>
+To: Stephen Smalley <sds@tycho.nsa.gov>, David Howells <dhowells@redhat.com>
+Cc: viro@zeniv.linux.org.uk, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Paul Moore <paul@paul-moore.com>, casey@schaufler-ca.com
 
-Cgo+IE9uIEp1biA2LCAyMDE5LCBhdCAxMTozMyBBTSwgQ2FzZXkgU2NoYXVmbGVyIDxjYXNleUBz
-Y2hhdWZsZXItY2EuY29tPiB3cm90ZToKPiAKPj4gT24gNi82LzIwMTkgMTA6MTEgQU0sIEFuZHkg
-THV0b21pcnNraSB3cm90ZToKPj4+IE9uIFRodSwgSnVuIDYsIDIwMTkgYXQgOTo0MyBBTSBDYXNl
-eSBTY2hhdWZsZXIgPGNhc2V5QHNjaGF1Zmxlci1jYS5jb20+IHdyb3RlOgo+Pj4gLi4uCj4+PiBJ
-IGRvbid0IGFncmVlLiBUaGF0IGlzLCBJIGRvbid0IGJlbGlldmUgaXQgaXMgc3VmZmljaWVudC4K
-Pj4+IFRoZXJlIGlzIG5vIGd1YXJhbnRlZSB0aGF0IGJlaW5nIGFibGUgdG8gc2V0IGEgd2F0Y2gg
-b24gYW4KPj4+IG9iamVjdCBpbXBsaWVzIHRoYXQgZXZlcnkgcHJvY2VzcyB0aGF0IGNhbiB0cmln
-Z2VyIHRoZSBldmVudAo+Pj4gY2FuIHNlbmQgaXQgdG8geW91Lgo+Pj4gCj4+PiAgICAgICAgV2F0
-Y2hlciBoYXMgU21hY2sgbGFiZWwgVwo+Pj4gICAgICAgIFRyaWdnZXJlciBoYXMgU21hY2sgbGFi
-ZWwgVAo+Pj4gICAgICAgIFdhdGNoZWQgb2JqZWN0IGhhcyBTbWFjayBsYWJlbCBPCj4+PiAKPj4+
-ICAgICAgICBSZWxldmFudCBTbWFjayBydWxlcyBhcmUKPj4+IAo+Pj4gICAgICAgIFcgTyBydwo+
-Pj4gICAgICAgIFQgTyBydwo+Pj4gCj4+PiBUaGUgd2F0Y2hlciB3aWxsIGJlIGFibGUgdG8gc2V0
-IHRoZSB3YXRjaCwKPj4+IHRoZSB0cmlnZ2VyZXIgd2lsbCBiZSBhYmxlIHRvIHRyaWdnZXIgdGhl
-IGV2ZW50LAo+Pj4gYnV0IHRoZXJlIGlzIG5vdGhpbmcgdGhhdCB3b3VsZCBhbGxvdyB0aGUgd2F0
-Y2hlcgo+Pj4gdG8gcmVjZWl2ZSB0aGUgZXZlbnQuIFRoaXMgaXMgbm90IGEgY2FzZSBvZiB3YXRj
-aGVyCj4+PiByZWFkaW5nIHRoZSB3YXRjaGVkIG9iamVjdCwgYXMgdGhlIGV2ZW50IGlzIGRlbGl2
-ZXJlZAo+Pj4gd2l0aG91dCBhbnkgYWN0aW9uIGJ5IHdhdGNoZXIuCj4+IEkgdGhpbmsgdGhpcyBp
-cyBhbiBleGFtcGxlIG9mIGEgYm9ndXMgcG9saWN5IHRoYXQgc2hvdWxkIG5vdCBiZQo+PiBzdXBw
-b3J0ZWQgYnkgdGhlIGtlcm5lbC4KPiAKPiBBdCB0aGlzIHBvaW50IGl0J3MgcHJldHR5IGhhcmQg
-Zm9yIG1lIHRvIGNhcmUgbXVjaCB3aGF0Cj4geW91IHRoaW5rLiBZb3UgZG9uJ3Qgc2VlbSB0byBo
-YXZlIGFueSBpbnNpZ2h0IGludG8gdGhlCj4gaW1wbGljYXRpb25zIG9mIHRoZSBmZWF0dXJlcyB5
-b3UncmUgYWR2b2NhdGluZywgb3IgdGhlaXIKPiBwb3RlbnRpYWwgY29uc2VxdWVuY2VzLgo+IAo+
-IAoKQ2FuIHlvdSB0cnkgdG8gc3BlbGwgaXQgb3V0LCB0aGVuPyAgQSBtb3N0bHkgb3IgZnVsbHkg
-d29ya2VkIG91dCBleGFtcGxlIG1pZ2h0IGhlbHAuCgpBcyBTdGVwaGVuIHNhaWQsIGl0IGxvb2tz
-IGxpa2UgeW91IGFyZSBjb25zaWRlcmluZyBjYXNlcyB3aGVyZSB0aGVyZSBpcyBhbHJlYWR5IGEg
-ZnVsbCBjb21tdW5pY2F0aW9uIGNoYW5uZWwgYmV0d2VlbiB0d28gcHJvY2Vzc2VzLCBhbmQgeW91
-4oCZcmUgY29uY2VybmVkIHRoYXQgdGhpcyBuZXcgbWVjaGFuaXNtIG1pZ2h0IGFkZCBhIHNpZGUg
-Y2hhbm5lbCB0b28uICBJZiB0aGlzIGlzIHdyb25nLCBjYW4geW91IGV4cGxhaW4gaG93Pw==
+On 6/6/2019 10:16 AM, Stephen Smalley wrote:
+> On 6/6/19 12:43 PM, Casey Schaufler wrote:
+>> ...
+>> I don't agree. That is, I don't believe it is sufficient.
+>> There is no guarantee that being able to set a watch on an
+>> object implies that every process that can trigger the event
+>> can send it to you.
+>>
+>>     Watcher has Smack label W
+>>     Triggerer has Smack label T
+>>     Watched object has Smack label O
+>>
+>>     Relevant Smack rules are
+>>
+>>     W O rw
+>>     T O rw
+>>
+>> The watcher will be able to set the watch,
+>> the triggerer will be able to trigger the event,
+>> but there is nothing that would allow the watcher
+>> to receive the event. This is not a case of watcher
+>> reading the watched object, as the event is delivered
+>> without any action by watcher.
+>
+> You are allowing arbitrary information flow between T and W above.  Who cares about notifications?
+
+I do. If Watched object is /dev/null no data flow is possible.
+There are many objects on a modern Linux system for which this
+is true. Even if it's "just a file" the existence of one path
+for data to flow does not justify ignoring the rules for other
+data paths.
+
+>
+> How is it different from W and T mapping the same file as a shared mapping and communicating by reading and writing the shared memory?  You aren't performing a permission check directly between W and T there.
+
+In this case there is one object O, two subjects, W and T and two accesses.
+
+	W open O
+	T open O
+
+They fiddle about with the data in O.
+
+In the event case, there are two objects, O and W, two subjects W and T, and
+three accesses.
+
+	W watch O
+	T trigger O
+	T write-event W
+
+You can't wave away the flow of data. Different objects are involved.
+
+An analogy is that two processes with different UIDs can open a file,
+but still can't signal each other. Different mechanisms have different
+policies. I'm not saying that's good, but it's the context we're in.
