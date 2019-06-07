@@ -1,54 +1,50 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 13:19:00 +0000
-Subject: [PATCH 02/10] keys: sparse: Fix incorrect RCU accesses [ver #3]
-Message-Id: <156095034027.9363.14636937467673662369.stgit@warthog.procyon.org.uk>
+From: Mauro Carvalho Chehab <mchehab+samsung@kernel.org>
+Date: Fri, 07 Jun 2019 18:54:27 +0000
+Subject: [PATCH v3 11/20] docs: security: trusted-encrypted.rst: fix code-block tag
+Message-Id: <d9063d11a7690c91a61938d0bb1f92e8669be95a.1559933665.git.mchehab+samsung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, ebiggers@kernel.org
-Cc: James Morris <jamorris@linux.microsoft.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <ff457774d46d96e8fe56b45409aba39d87a8672a.1559933665.git.mchehab+samsung@kernel.org>
+In-Reply-To: <ff457774d46d96e8fe56b45409aba39d87a8672a.1559933665.git.mchehab+samsung@kernel.org>
+To: Linux Doc Mailing List <linux-doc@vger.kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab+samsung@kernel.org>, Mauro Carvalho Chehab <mchehab@infradead.org>, linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>, Mimi Zohar <zohar@linux.ibm.com>, James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, James Morris <jamorris@linux.microsoft.com>
 
-Fix a pair of accesses that should be using RCU protection.
+The code-block tag is at the wrong place, causing those
+warnings:
 
-rcu_dereference_protected() is needed to access task_struct::real_parent.
+    Documentation/security/keys/trusted-encrypted.rst:112: WARNING: Literal block expected; none found.
+    Documentation/security/keys/trusted-encrypted.rst:121: WARNING: Unexpected indentation.
+    Documentation/security/keys/trusted-encrypted.rst:122: WARNING: Block quote ends without a blank line; unexpected unindent.
+    Documentation/security/keys/trusted-encrypted.rst:123: WARNING: Block quote ends without a blank line; unexpected unindent.
 
-current_cred() should be used to access current->cred.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <jamorris@linux.microsoft.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab+samsung@kernel.org>
+Acked-by: James Morris <jamorris@linux.microsoft.com>
+Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
+ Documentation/security/keys/trusted-encrypted.rst | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- security/keys/keyctl.c           |    3 ++-
- security/keys/request_key_auth.c |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 3e4053a217c3..0f947bcbad46 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1524,7 +1524,8 @@ long keyctl_session_to_parent(void)
+diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
+index 7b35fcb58933..50ac8bcd6970 100644
+--- a/Documentation/security/keys/trusted-encrypted.rst
++++ b/Documentation/security/keys/trusted-encrypted.rst
+@@ -107,12 +107,14 @@ Where::
  
- 	ret = -EPERM;
- 	oldwork = NULL;
--	parent = me->real_parent;
-+	parent = rcu_dereference_protected(me->real_parent,
-+					   lockdep_is_held(&tasklist_lock));
+ Examples of trusted and encrypted key usage:
  
- 	/* the parent mustn't be init and mustn't be a kernel thread */
- 	if (parent->pid <= 1 || !parent->mm)
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index bda6201c6c45..572c7a60473a 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -152,7 +152,7 @@ struct key *request_key_auth_new(struct key *target, const char *op,
- 				 struct key *dest_keyring)
- {
- 	struct request_key_auth *rka, *irka;
--	const struct cred *cred = current->cred;
-+	const struct cred *cred = current_cred();
- 	struct key *authkey = NULL;
- 	char desc[20];
- 	int ret = -ENOMEM;
+-Create and save a trusted key named "kmk" of length 32 bytes::
++Create and save a trusted key named "kmk" of length 32 bytes.
+ 
+ Note: When using a TPM 2.0 with a persistent key with handle 0x81000001,
+ append 'keyhandle=0x81000001' to statements between quotes, such as
+ "new 32 keyhandle=0x81000001".
+ 
++::
++
+     $ keyctl add trusted kmk "new 32" @u
+     440502848
+ 
+-- 
+2.21.0
