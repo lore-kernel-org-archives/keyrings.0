@@ -1,277 +1,515 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 16:47:01 +0000
-Subject: [PATCH 3/9] keys: Add a 'recurse' flag for keyring searches [ver #4]
-Message-Id: <156096282160.28733.4354243497725553504.stgit@warthog.procyon.org.uk>
+Date: Fri, 07 Jun 2019 14:18:30 +0000
+Subject: [PATCH 07/13] vfs: Add a mount-notification facility [ver #4]
+Message-Id: <155991711016.15579.4449417925184028666.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
-To: ebiederm@xmission.com, keyrings@vger.kernel.org
-Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a 'recurse' flag for keyring searches so that the flag can be omitted
-and recursion disabled, thereby allowing just the nominated keyring to be
-searched and none of the children.
+Add a mount notification facility whereby notifications about changes in
+mount topology and configuration can be received.  Note that this only
+covers vfsmount topology changes and not superblock events.  A separate
+facility will be added for that.
+
+Firstly, an event queue needs to be created:
+
+	fd = open("/dev/event_queue", O_RDWR);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+
+then a notification can be set up to report notifications via that queue:
+
+	struct watch_notification_filter filter = {
+		.nr_filters = 1,
+		.filters = {
+			[0] = {
+				.type = WATCH_TYPE_MOUNT_NOTIFY,
+				.subtype_filter[0] = UINT_MAX,
+			},
+		},
+	};
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	watch_mount(AT_FDCWD, "/", 0, fd, 0x02);
+
+In this case, it would let me monitor the mount topology subtree rooted at
+"/" for events.  Mount notifications propagate up the tree towards the
+root, so a watch will catch all of the events happening in the subtree
+rooted at the watch.
+
+After setting the watch, records will be placed into the queue when, for
+example, as superblock switches between read-write and read-only.  Records
+are of the following format:
+
+	struct mount_notification {
+		struct watch_notification watch;
+		__u32	triggered_on;
+		__u32	changed_mount;
+	} *n;
+
+Where:
+
+	n->watch.type will be WATCH_TYPE_MOUNT_NOTIFY.
+
+	n->watch.subtype will indicate the type of event, such as
+	NOTIFY_MOUNT_NEW_MOUNT.
+
+	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
+	record.
+
+	n->watch.info & WATCH_INFO_ID will be the fifth argument to
+	watch_mount(), shifted.
+
+	n->watch.info & WATCH_INFO_FLAG_0 will be used for
+	NOTIFY_MOUNT_READONLY, being set if the superblock becomes R/O, and
+	being cleared otherwise, and for NOTIFY_MOUNT_NEW_MOUNT, being set
+	if the new mount is a submount (e.g. an automount).
+
+	n->triggered_on indicates the ID of the mount on which the watch
+	was installed.
+
+	n->changed_mount indicates the ID of the mount that was affected.
+
+The mount IDs can be retrieved with the fsinfo() syscall, using the
+fsinfo_mount_info and fsinfo_mount_child attributes.  There are
+notification counters there too for when a buffer overrun occurs, thereby
+allowing the mount tree to be quickly rescanned.
+
+Note that it is permissible for event records to be of variable length -
+or, at least, the length may be dependent on the subtype.  Note also that
+the queue can be shared between multiple notifications of various types.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/security/keys/core.rst     |   10 ++++++----
- certs/blacklist.c                        |    2 +-
- crypto/asymmetric_keys/asymmetric_type.c |    2 +-
- include/linux/key.h                      |    3 ++-
- lib/digsig.c                             |    2 +-
- net/rxrpc/security.c                     |    2 +-
- security/integrity/digsig_asymmetric.c   |    4 ++--
- security/keys/internal.h                 |    1 +
- security/keys/keyctl.c                   |    2 +-
- security/keys/keyring.c                  |   12 ++++++++++--
- security/keys/proc.c                     |    3 ++-
- security/keys/process_keys.c             |    3 ++-
- security/keys/request_key.c              |    3 ++-
- security/keys/request_key_auth.c         |    3 ++-
- 14 files changed, 34 insertions(+), 18 deletions(-)
+ arch/x86/entry/syscalls/syscall_32.tbl |    1 
+ arch/x86/entry/syscalls/syscall_64.tbl |    1 
+ fs/Kconfig                             |    9 ++
+ fs/Makefile                            |    1 
+ fs/mount.h                             |   33 ++++--
+ fs/mount_notify.c                      |  187 ++++++++++++++++++++++++++++++++
+ fs/namespace.c                         |    9 +-
+ include/linux/dcache.h                 |    1 
+ include/linux/syscalls.h               |    2 
+ include/uapi/linux/watch_queue.h       |   24 ++++
+ kernel/sys_ni.c                        |    3 +
+ 11 files changed, 257 insertions(+), 14 deletions(-)
+ create mode 100644 fs/mount_notify.c
 
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index a0e245f9576f..ae930ae9d590 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -1162,11 +1162,13 @@ payload contents" for more information.
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index 03decae51513..91164735efe7 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -439,3 +439,4 @@
+ 432	i386	fsmount			sys_fsmount			__ia32_sys_fsmount
+ 433	i386	fspick			sys_fspick			__ia32_sys_fspick
+ 434	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
++435	i386	watch_mount		sys_watch_mount			__ia32_sys_watch_mount
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index ea63df9a1020..858aff7a1239 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -356,6 +356,7 @@
+ 432	common	fsmount			__x64_sys_fsmount
+ 433	common	fspick			__x64_sys_fspick
+ 434	common	fsinfo			__x64_sys_fsinfo
++435	common	watch_mount		__x64_sys_watch_mount
  
- 	key_ref_t keyring_search(key_ref_t keyring_ref,
- 				 const struct key_type *type,
--				 const char *description)
-+				 const char *description,
-+				 bool recurse)
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 9e7d2f2c0111..a26bbe27a791 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -121,6 +121,15 @@ source "fs/crypto/Kconfig"
  
--    This searches the keyring tree specified for a matching key. Error ENOKEY
--    is returned upon failure (use IS_ERR/PTR_ERR to determine). If successful,
--    the returned key will need to be released.
-+    This searches the specified keyring only (recurse = false) or keyring tree
-+    (recurse = true) specified for a matching key. Error ENOKEY is returned
-+    upon failure (use IS_ERR/PTR_ERR to determine). If successful, the returned
-+    key will need to be released.
+ source "fs/notify/Kconfig"
  
-     The possession attribute from the keyring reference is used to control
-     access through the permissions mask and is propagated to the returned key
-diff --git a/certs/blacklist.c b/certs/blacklist.c
-index 3a507b9e2568..181cb7fa9540 100644
---- a/certs/blacklist.c
-+++ b/certs/blacklist.c
-@@ -128,7 +128,7 @@ int is_hash_blacklisted(const u8 *hash, size_t hash_len, const char *type)
- 	*p = 0;
++config MOUNT_NOTIFICATIONS
++	bool "Mount topology change notifications"
++	select WATCH_QUEUE
++	help
++	  This option provides support for getting change notifications on the
++	  mount tree topology.  This makes use of the /dev/watch_queue misc
++	  device to handle the notification buffer and provides the
++	  mount_notify() system call to enable/disable watchpoints.
++
+ source "fs/quota/Kconfig"
  
- 	kref = keyring_search(make_key_ref(blacklist_keyring, true),
--			      &key_type_blacklist, buffer);
-+			      &key_type_blacklist, buffer, false);
- 	if (!IS_ERR(kref)) {
- 		key_ref_put(kref);
- 		ret = -EKEYREJECTED;
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index 69a0788a7de5..084027ef3121 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -87,7 +87,7 @@ struct key *find_asymmetric_key(struct key *keyring,
- 	pr_debug("Look up: \"%s\"\n", req);
+ source "fs/autofs/Kconfig"
+diff --git a/fs/Makefile b/fs/Makefile
+index 26eaeae4b9a1..c6a71daf2464 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -131,3 +131,4 @@ obj-$(CONFIG_F2FS_FS)		+= f2fs/
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
+ obj-$(CONFIG_EFIVAR_FS)		+= efivarfs/
++obj-$(CONFIG_MOUNT_NOTIFICATIONS) += mount_notify.o
+diff --git a/fs/mount.h b/fs/mount.h
+index 47795802f78e..a95b805d00d8 100644
+--- a/fs/mount.h
++++ b/fs/mount.h
+@@ -4,6 +4,7 @@
+ #include <linux/poll.h>
+ #include <linux/ns_common.h>
+ #include <linux/fs_pin.h>
++#include <linux/watch_queue.h>
  
- 	ref = keyring_search(make_key_ref(keyring, 1),
--			     &key_type_asymmetric, req);
-+			     &key_type_asymmetric, req, true);
- 	if (IS_ERR(ref))
- 		pr_debug("Request for key '%s' err %ld\n", req, PTR_ERR(ref));
- 	kfree(req);
-diff --git a/include/linux/key.h b/include/linux/key.h
-index fb2debcacea0..ff102731b3db 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -341,7 +341,8 @@ extern int keyring_clear(struct key *keyring);
+ struct mnt_namespace {
+ 	atomic_t		count;
+@@ -67,9 +68,13 @@ struct mount {
+ 	int mnt_id;			/* mount identifier */
+ 	int mnt_group_id;		/* peer group identifier */
+ 	int mnt_expiry_mark;		/* true if marked for expiry */
++	int mnt_nr_watchers;		/* The number of subtree watches tracking this */
+ 	struct hlist_head mnt_pins;
+ 	struct fs_pin mnt_umount;
+ 	struct dentry *mnt_ex_mountpoint;
++#ifdef CONFIG_MOUNT_NOTIFICATIONS
++	struct watch_list *mnt_watchers; /* Watches on dentries within this mount */
++#endif
+ 	atomic_t mnt_notify_counter;	/* Number of notifications generated */
+ } __randomize_layout;
  
- extern key_ref_t keyring_search(key_ref_t keyring,
- 				struct key_type *type,
--				const char *description);
-+				const char *description,
-+				bool recurse);
+@@ -153,18 +158,8 @@ static inline bool is_anon_ns(struct mnt_namespace *ns)
+ 	return ns->seq = 0;
+ }
  
- extern int keyring_add_key(struct key *keyring,
- 			   struct key *key);
-diff --git a/lib/digsig.c b/lib/digsig.c
-index 3b0a579bdcdf..3782af401c68 100644
---- a/lib/digsig.c
-+++ b/lib/digsig.c
-@@ -221,7 +221,7 @@ int digsig_verify(struct key *keyring, const char *sig, int siglen,
- 		/* search in specific keyring */
- 		key_ref_t kref;
- 		kref = keyring_search(make_key_ref(keyring, 1UL),
--						&key_type_user, name);
-+				      &key_type_user, name, true);
- 		if (IS_ERR(kref))
- 			key = ERR_CAST(kref);
- 		else
-diff --git a/net/rxrpc/security.c b/net/rxrpc/security.c
-index c4479afe8ae7..2cfc7125bc41 100644
---- a/net/rxrpc/security.c
-+++ b/net/rxrpc/security.c
-@@ -148,7 +148,7 @@ int rxrpc_init_server_conn_security(struct rxrpc_connection *conn)
+-/*
+- * Type of mount topology change notification.
+- */
+-enum mount_notification_subtype {
+-	NOTIFY_MOUNT_NEW_MOUNT	= 0, /* New mount added */
+-	NOTIFY_MOUNT_UNMOUNT	= 1, /* Mount removed manually */
+-	NOTIFY_MOUNT_EXPIRY	= 2, /* Automount expired */
+-	NOTIFY_MOUNT_READONLY	= 3, /* Mount R/O state changed */
+-	NOTIFY_MOUNT_SETATTR	= 4, /* Mount attributes changed */
+-	NOTIFY_MOUNT_MOVE_FROM	= 5, /* Mount moved from here */
+-	NOTIFY_MOUNT_MOVE_TO	= 6, /* Mount moved to here (compare op_id) */
+-};
++extern void post_mount_notification(struct mount *changed,
++				    struct mount_notification *notify);
  
- 	/* look through the service's keyring */
- 	kref = keyring_search(make_key_ref(rx->securities, 1UL),
--			      &key_type_rxrpc_s, kdesc);
-+			      &key_type_rxrpc_s, kdesc, true);
- 	if (IS_ERR(kref)) {
- 		read_unlock(&local->services_lock);
- 		_leave(" = %ld [search]", PTR_ERR(kref));
-diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-index 99080871eb9f..358f614811e8 100644
---- a/security/integrity/digsig_asymmetric.c
-+++ b/security/integrity/digsig_asymmetric.c
-@@ -39,7 +39,7 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
- 		key_ref_t kref;
+ static inline void notify_mount(struct mount *changed,
+ 				struct mount *aux,
+@@ -172,4 +167,18 @@ static inline void notify_mount(struct mount *changed,
+ 				u32 info_flags)
+ {
+ 	atomic_inc(&changed->mnt_notify_counter);
++
++#ifdef CONFIG_MOUNT_NOTIFICATIONS
++	{
++		struct mount_notification n = {
++			.watch.type	= WATCH_TYPE_MOUNT_NOTIFY,
++			.watch.subtype	= subtype,
++			.watch.info	= info_flags | sizeof(n),
++			.triggered_on	= changed->mnt_id,
++			.changed_mount	= aux ? aux->mnt_id : 0,
++		};
++
++		post_mount_notification(changed, &n);
++	}
++#endif
+ }
+diff --git a/fs/mount_notify.c b/fs/mount_notify.c
+new file mode 100644
+index 000000000000..2ba81f17cc20
+--- /dev/null
++++ b/fs/mount_notify.c
+@@ -0,0 +1,187 @@
++// SPDX-License-Identifier: GPL-2.0
++/* Provide mount topology/attribute change notifications.
++ *
++ * Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ */
++
++#include <linux/fs.h>
++#include <linux/namei.h>
++#include <linux/syscalls.h>
++#include <linux/slab.h>
++#include <linux/security.h>
++#include "mount.h"
++
++/*
++ * Post mount notifications to all watches going rootwards along the tree.
++ *
++ * Must be called with the mount_lock held.
++ */
++void post_mount_notification(struct mount *changed,
++			     struct mount_notification *notify)
++{
++	const struct cred *cred = current_cred();
++	struct path cursor;
++	struct mount *mnt;
++	unsigned seq;
++
++	seq = 0;
++	rcu_read_lock();
++restart:
++	cursor.mnt = &changed->mnt;
++	cursor.dentry = changed->mnt.mnt_root;
++	mnt = real_mount(cursor.mnt);
++	notify->watch.info &= ~WATCH_INFO_IN_SUBTREE;
++
++	read_seqbegin_or_lock(&rename_lock, &seq);
++	for (;;) {
++		if (mnt->mnt_watchers &&
++		    !hlist_empty(&mnt->mnt_watchers->watchers)) {
++			if (cursor.dentry->d_flags & DCACHE_MOUNT_WATCH)
++				post_watch_notification(mnt->mnt_watchers,
++							&notify->watch, cred,
++							(unsigned long)cursor.dentry);
++		} else {
++			cursor.dentry = mnt->mnt.mnt_root;
++		}
++		notify->watch.info |= WATCH_INFO_IN_SUBTREE;
++
++		if (cursor.dentry = cursor.mnt->mnt_root ||
++		    IS_ROOT(cursor.dentry)) {
++			struct mount *parent = READ_ONCE(mnt->mnt_parent);
++
++			/* Escaped? */
++			if (cursor.dentry != cursor.mnt->mnt_root)
++				break;
++
++			/* Global root? */
++			if (mnt = parent)
++				break;
++
++			cursor.dentry = READ_ONCE(mnt->mnt_mountpoint);
++			mnt = parent;
++			cursor.mnt = &mnt->mnt;
++		} else {
++			cursor.dentry = cursor.dentry->d_parent;
++		}
++	}
++
++	if (need_seqretry(&rename_lock, seq)) {
++		seq = 1;
++		goto restart;
++	}
++
++	done_seqretry(&rename_lock, seq);
++	rcu_read_unlock();
++}
++
++static void release_mount_watch(struct watch *watch)
++{
++	struct vfsmount *mnt = watch->private;
++	struct dentry *dentry = (struct dentry *)(unsigned long)watch->id;
++
++	dput(dentry);
++	mntput(mnt);
++}
++
++/**
++ * sys_watch_mount - Watch for mount topology/attribute changes
++ * @dfd: Base directory to pathwalk from or fd referring to mount.
++ * @filename: Path to mount to place the watch upon
++ * @at_flags: Pathwalk control flags
++ * @watch_fd: The watch queue to send notifications to.
++ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
++ */
++SYSCALL_DEFINE5(watch_mount,
++		int, dfd,
++		const char __user *, filename,
++		unsigned int, at_flags,
++		int, watch_fd,
++		int, watch_id)
++{
++	struct watch_queue *wqueue;
++	struct watch_list *wlist = NULL;
++	struct watch *watch;
++	struct mount *m;
++	struct path path;
++	unsigned int lookup_flags +		LOOKUP_DIRECTORY | LOOKUP_FOLLOW | LOOKUP_AUTOMOUNT;
++	int ret;
++
++	if (watch_id < -1 || watch_id > 0xff)
++		return -EINVAL;
++	if ((at_flags & ~(AT_NO_AUTOMOUNT | AT_EMPTY_PATH)) != 0)
++		return -EINVAL;
++	if (at_flags & AT_NO_AUTOMOUNT)
++		lookup_flags &= ~LOOKUP_AUTOMOUNT;
++	if (at_flags & AT_EMPTY_PATH)
++		lookup_flags |= LOOKUP_EMPTY;
++
++	ret = user_path_at(dfd, filename, lookup_flags, &path);
++	if (ret)
++		return ret;
++
++	wqueue = get_watch_queue(watch_fd);
++	if (IS_ERR(wqueue))
++		goto err_path;
++
++	m = real_mount(path.mnt);
++
++	if (watch_id >= 0) {
++		ret = -ENOMEM;
++		if (!m->mnt_watchers) {
++			wlist = kzalloc(sizeof(*wlist), GFP_KERNEL);
++			if (!wlist)
++				goto err_wqueue;
++			init_watch_list(wlist, release_mount_watch);
++		}
++
++		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
++		if (!watch)
++			goto err_wlist;
++
++		init_watch(watch, wqueue);
++		watch->id		= (unsigned long)path.dentry;
++		watch->private		= path.mnt;
++		watch->info_id		= (u32)watch_id << 24;
++
++		ret = security_watch_mount(watch, &path);
++		if (ret < 0)
++			goto err_watch;
++
++		down_write(&m->mnt.mnt_sb->s_umount);
++		if (!m->mnt_watchers) {
++			m->mnt_watchers = wlist;
++			wlist = NULL;
++		}
++
++		ret = add_watch_to_object(watch, m->mnt_watchers);
++		if (ret = 0) {
++			spin_lock(&path.dentry->d_lock);
++			path.dentry->d_flags |= DCACHE_MOUNT_WATCH;
++			spin_unlock(&path.dentry->d_lock);
++			path_get(&path);
++			watch = NULL;
++		}
++		up_write(&m->mnt.mnt_sb->s_umount);
++	} else {
++		ret = -EBADSLT;
++		if (m->mnt_watchers) {
++			down_write(&m->mnt.mnt_sb->s_umount);
++			ret = remove_watch_from_object(m->mnt_watchers, wqueue,
++						       (unsigned long)path.dentry,
++						       false);
++			up_write(&m->mnt.mnt_sb->s_umount);
++		}
++	}
++
++err_watch:
++	kfree(watch);
++err_wlist:
++	kfree(wlist);
++err_wqueue:
++	put_watch_queue(wqueue);
++err_path:
++	path_put(&path);
++	return ret;
++}
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 2ec7d9d1905a..b4758486ee33 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -515,7 +515,8 @@ static int mnt_make_readonly(struct mount *mnt)
+ 	mnt->mnt.mnt_flags &= ~MNT_WRITE_HOLD;
+ 	unlock_mount_hash();
+ 	if (ret = 0)
+-		notify_mount(mnt, NULL, NOTIFY_MOUNT_READONLY, 0x10000);
++		notify_mount(mnt, NULL, NOTIFY_MOUNT_READONLY,
++			     WATCH_INFO_FLAG_0);
+ 	return ret;
+ }
  
- 		kref = keyring_search(make_key_ref(key, 1),
--				     &key_type_asymmetric, name);
-+				      &key_type_asymmetric, name, true);
- 		if (!IS_ERR(kref)) {
- 			pr_err("Key '%s' is in ima_blacklist_keyring\n", name);
- 			return ERR_PTR(-EKEYREJECTED);
-@@ -51,7 +51,7 @@ static struct key *request_asymmetric_key(struct key *keyring, uint32_t keyid)
- 		key_ref_t kref;
+@@ -1478,6 +1479,10 @@ static void umount_tree(struct mount *mnt, enum umount_tree_flags how)
+ 		list_del_init(&p->mnt_expire);
+ 		list_del_init(&p->mnt_list);
  
- 		kref = keyring_search(make_key_ref(keyring, 1),
--				      &key_type_asymmetric, name);
-+				      &key_type_asymmetric, name, true);
- 		if (IS_ERR(kref))
- 			key = ERR_CAST(kref);
- 		else
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 4305414795ae..aa361299a3ec 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -127,6 +127,7 @@ struct keyring_search_context {
- #define KEYRING_SEARCH_NO_CHECK_PERM	0x0008	/* Don't check permissions */
- #define KEYRING_SEARCH_DETECT_TOO_DEEP	0x0010	/* Give an error on excessive depth */
- #define KEYRING_SEARCH_SKIP_EXPIRED	0x0020	/* Ignore expired keys (intention to replace) */
-+#define KEYRING_SEARCH_RECURSE		0x0040	/* Search child keyrings also */
- 
- 	int (*iterator)(const void *object, void *iterator_data);
- 
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 9f418e66f067..169409b611b0 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -762,7 +762,7 @@ long keyctl_keyring_search(key_serial_t ringid,
++#ifdef CONFIG_MOUNT_NOTIFICATIONS
++		if (p->mnt_watchers)
++			remove_watch_list(p->mnt_watchers);
++#endif
+ 		ns = p->mnt_ns;
+ 		if (ns) {
+ 			ns->mounts--;
+@@ -2115,7 +2120,7 @@ static int attach_recursive_mnt(struct mount *source_mnt,
+ 		mnt_set_mountpoint(dest_mnt, dest_mp, source_mnt);
+ 		notify_mount(dest_mnt, source_mnt, NOTIFY_MOUNT_NEW_MOUNT,
+ 			     source_mnt->mnt.mnt_sb->s_flags & SB_SUBMOUNT ?
+-			     0x10000 : 0);
++			     WATCH_INFO_FLAG_0 : 0);
+ 		commit_tree(source_mnt);
  	}
  
- 	/* do the search */
--	key_ref = keyring_search(keyring_ref, ktype, description);
-+	key_ref = keyring_search(keyring_ref, ktype, description, true);
- 	if (IS_ERR(key_ref)) {
- 		ret = PTR_ERR(key_ref);
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 361305ddd75e..5db8e244d9a0 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -217,6 +217,7 @@ struct dentry_operations {
+ #define DCACHE_PAR_LOOKUP		0x10000000 /* being looked up (with parent locked shared) */
+ #define DCACHE_DENTRY_CURSOR		0x20000000
+ #define DCACHE_NORCU			0x40000000 /* No RCU delay for freeing */
++#define DCACHE_MOUNT_WATCH		0x80000000 /* There's a mount watch here */
  
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index a5ee3b4d2eb8..20891cd198f0 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -685,6 +685,9 @@ static bool search_nested_keyrings(struct key *keyring,
- 	 * Non-keyrings avoid the leftmost branch of the root entirely (root
- 	 * slots 1-15).
- 	 */
-+	if (!(ctx->flags & KEYRING_SEARCH_RECURSE))
-+		goto not_this_keyring;
+ extern seqlock_t rename_lock;
+ 
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 217d25b62b4f..f2e7f18b323a 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -1001,6 +1001,8 @@ asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
+ asmlinkage long sys_fsinfo(int dfd, const char __user *path,
+ 			   struct fsinfo_params __user *params,
+ 			   void __user *buffer, size_t buf_size);
++asmlinkage long sys_watch_mount(int dfd, const char __user *path,
++				unsigned int at_flags, int watch_fd, int watch_id);
+ 
+ /*
+  * Architecture-specific system calls
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index 32177bcf85f1..cf3c0c03a747 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -105,4 +105,28 @@ struct key_notification {
+ 	__u32	aux;		/* Per-type auxiliary data */
+ };
+ 
++/*
++ * Type of mount topology change notification.
++ */
++enum mount_notification_subtype {
++	NOTIFY_MOUNT_NEW_MOUNT	= 0, /* New mount added */
++	NOTIFY_MOUNT_UNMOUNT	= 1, /* Mount removed manually */
++	NOTIFY_MOUNT_EXPIRY	= 2, /* Automount expired */
++	NOTIFY_MOUNT_READONLY	= 3, /* Mount R/O state changed */
++	NOTIFY_MOUNT_SETATTR	= 4, /* Mount attributes changed */
++	NOTIFY_MOUNT_MOVE_FROM	= 5, /* Mount moved from here */
++	NOTIFY_MOUNT_MOVE_TO	= 6, /* Mount moved to here (compare op_id) */
++};
 +
- 	ptr = READ_ONCE(keyring->keys.root);
- 	if (!ptr)
- 		goto not_this_keyring;
-@@ -885,13 +888,15 @@ key_ref_t keyring_search_rcu(key_ref_t keyring_ref,
-  * @keyring: The root of the keyring tree to be searched.
-  * @type: The type of keyring we want to find.
-  * @description: The name of the keyring we want to find.
-+ * @recurse: True to search the children of @keyring also
-  *
-  * As keyring_search_rcu() above, but using the current task's credentials and
-  * type's default matching function and preferred search method.
-  */
- key_ref_t keyring_search(key_ref_t keyring,
- 			 struct key_type *type,
--			 const char *description)
-+			 const char *description,
-+			 bool recurse)
- {
- 	struct keyring_search_context ctx = {
- 		.index_key.type		= type,
-@@ -906,6 +911,8 @@ key_ref_t keyring_search(key_ref_t keyring,
- 	key_ref_t key;
- 	int ret;
++/*
++ * Mount topology/configuration change notification record.
++ * - watch.type = WATCH_TYPE_MOUNT_NOTIFY
++ * - watch.subtype = enum mount_notification_subtype
++ */
++struct mount_notification {
++	struct watch_notification watch; /* WATCH_TYPE_MOUNT_NOTIFY */
++	__u32	triggered_on;		/* The mount that the notify was on */
++	__u32	changed_mount;		/* The mount that got changed */
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index d1d9d76cae1e..97b025e7863c 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -88,6 +88,9 @@ COND_SYSCALL(ioprio_get);
+ /* fs/locks.c */
+ COND_SYSCALL(flock);
  
-+	if (recurse)
-+		ctx.flags |= KEYRING_SEARCH_RECURSE;
- 	if (type->match_preparse) {
- 		ret = type->match_preparse(&ctx.match_data);
- 		if (ret < 0)
-@@ -1176,7 +1183,8 @@ static int keyring_detect_cycle(struct key *A, struct key *B)
- 		.flags			= (KEYRING_SEARCH_NO_STATE_CHECK |
- 					   KEYRING_SEARCH_NO_UPDATE_TIME |
- 					   KEYRING_SEARCH_NO_CHECK_PERM |
--					   KEYRING_SEARCH_DETECT_TOO_DEEP),
-+					   KEYRING_SEARCH_DETECT_TOO_DEEP |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
++/* fs/mount_notify.c */
++COND_SYSCALL(mount_notify);
++
+ /* fs/namei.c */
  
- 	rcu_read_lock();
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index f081dceae3b9..b4f5ba56b9cb 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -170,7 +170,8 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 		.match_data.cmp		= lookup_user_key_possessed,
- 		.match_data.raw_data	= key,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
--		.flags			= KEYRING_SEARCH_NO_STATE_CHECK,
-+		.flags			= (KEYRING_SEARCH_NO_STATE_CHECK |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
- 
- 	key_ref = make_key_ref(key, 0);
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index f8ffb06d0297..b07f768d23dc 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -531,7 +531,8 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 	struct keyring_search_context ctx = {
- 		.match_data.cmp		= lookup_user_key_possessed,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
--		.flags			= KEYRING_SEARCH_NO_STATE_CHECK,
-+		.flags			= (KEYRING_SEARCH_NO_STATE_CHECK |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
- 	struct request_key_auth *rka;
- 	struct key *key;
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 36c55ef47b9e..1ffd3803ce29 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -569,7 +569,8 @@ struct key *request_key_and_link(struct key_type *type,
- 		.match_data.raw_data	= description,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
- 		.flags			= (KEYRING_SEARCH_DO_STATE_CHECK |
--					   KEYRING_SEARCH_SKIP_EXPIRED),
-+					   KEYRING_SEARCH_SKIP_EXPIRED |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
- 	struct key *key;
- 	key_ref_t key_ref;
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index 99ed7a8a273d..f613987e8a63 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -252,7 +252,8 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
- 		.match_data.cmp		= key_default_cmp,
- 		.match_data.raw_data	= description,
- 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
--		.flags			= KEYRING_SEARCH_DO_STATE_CHECK,
-+		.flags			= (KEYRING_SEARCH_DO_STATE_CHECK |
-+					   KEYRING_SEARCH_RECURSE),
- 	};
- 	struct key *authkey;
- 	key_ref_t authkey_ref;
+ /* fs/namespace.c */
