@@ -1,34 +1,240 @@
-From: "Valdis =?utf-8?Q?Kl=c4=93tnieks?=" <valdis.kletnieks@vt.edu>
-Date: Fri, 07 Jun 2019 02:52:28 +0000
-Subject: [PATCH] security/keys/request_key.c - fix kerneldoc
-Message-Id: <29893.1559875948@turing-police>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 07 Jun 2019 14:19:04 +0000
+Subject: [PATCH 11/13] block: Add block layer notifications [ver #4]
+Message-Id: <155991714448.15579.1960242962075486353.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-When building with W=1, gcc complains due to a typo in a kerneldoc comment
+Add a block layer notification mechanism whereby notifications about
+block-layer events such as I/O errors, can be reported to a monitoring
+process asynchronously.
 
-  CC      security/keys/request_key.o
-security/keys/request_key.c:35: warning: Function parameter or member 'authkey' not described in 'complete_request_key'
-security/keys/request_key.c:35: warning: Excess function parameter 'auth_key' description in 'complete_request_key'
+Firstly, an event queue needs to be created:
 
-Fix it up to match the function
+	fd = open("/dev/event_queue", O_RDWR);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
 
-Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu
+then a notification can be set up to report block notifications via that
+queue:
 
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 2f17d84d46f1..2623253ae6c8 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -24,7 +24,7 @@
+	struct watch_notification_filter filter = {
+		.nr_filters = 1,
+		.filters = {
+			[0] = {
+				.type = WATCH_TYPE_BLOCK_NOTIFY,
+				.subtype_filter[0] = UINT_MAX;
+			},
+		},
+	};
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	watch_devices(fd, 12);
+
+After that, records will be placed into the queue when, for example, errors
+occur on a block device.  Records are of the following format:
+
+	struct block_notification {
+		struct watch_notification watch;
+		__u64	dev;
+		__u64	sector;
+	} *n;
+
+Where:
+
+	n->watch.type will be WATCH_TYPE_BLOCK_NOTIFY
+
+	n->watch.subtype will be the type of notification, such as
+	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM.
+
+	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
+	record.
+
+	n->watch.info & WATCH_INFO_ID will be the second argument to
+	watch_devices(), shifted.
+
+	n->dev will be the device numbers munged together.
+
+	n->sector will indicate the affected sector (if appropriate for the
+	event).
+
+Note that it is permissible for event records to be of variable length -
+or, at least, the length may be dependent on the subtype.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ Documentation/watch_queue.rst    |   10 +++++++++-
+ block/Kconfig                    |    9 +++++++++
+ block/blk-core.c                 |   29 +++++++++++++++++++++++++++++
+ include/linux/blkdev.h           |   15 +++++++++++++++
+ include/uapi/linux/watch_queue.h |   27 +++++++++++++++++++++++++++
+ 5 files changed, 89 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
+index e4b8233d5aa8..c2954e191989 100644
+--- a/Documentation/watch_queue.rst
++++ b/Documentation/watch_queue.rst
+@@ -11,7 +11,9 @@ receive notifications from the kernel.  This can be used in conjunction with::
  
- /**
-  * complete_request_key - Complete the construction of a key.
-- * @auth_key: The authorisation key.
-+ * @authkey: The authorisation key.
-  * @error: The success or failute of the construction.
-  *
-  * Complete the attempt to construct a key.  The key will be negated
+   * Superblock event notifications
+ 
+-  * General device event notifications
++  * General device event notifications, including::
++
++    * Block layer event notifications
+ 
+ 
+ The notifications buffers can be enabled by:
+@@ -336,6 +338,12 @@ Any particular buffer can be fed from multiple sources.  Sources include:
+ 
+     See Documentation/security/keys/core.rst for more information.
+ 
++  * WATCH_TYPE_BLOCK_NOTIFY
++
++    Notifications of this type indicate block layer events, such as I/O errors
++    or temporary link loss.  Watchpoints of this type are set on the global
++    device watch list.
++
+ 
+ Event Filtering
+ =======diff --git a/block/Kconfig b/block/Kconfig
+index 1b220101a9cb..4ff4a56ba9f9 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -163,6 +163,15 @@ config BLK_SED_OPAL
+ 	Enabling this option enables users to setup/unlock/lock
+ 	Locking ranges for SED devices using the Opal protocol.
+ 
++config BLK_NOTIFICATIONS
++	bool "Block layer event notifications"
++	select DEVICE_NOTIFICATIONS
++	help
++	  This option provides support for getting block layer event
++	  notifications.  This makes use of the /dev/watch_queue misc device to
++	  handle the notification buffer and provides the device_notify() system
++	  call to enable/disable watches.
++
+ menu "Partition Types"
+ 
+ source "block/partitions/Kconfig"
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 419d600e6637..edad86172d47 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -144,6 +144,22 @@ static const struct {
+ 	[BLK_STS_IOERR]		= { -EIO,	"I/O" },
+ };
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static const
++enum block_notification_type blk_notifications[ARRAY_SIZE(blk_errors)] = {
++	[BLK_STS_TIMEOUT]	= NOTIFY_BLOCK_ERROR_TIMEOUT,
++	[BLK_STS_NOSPC]		= NOTIFY_BLOCK_ERROR_NO_SPACE,
++	[BLK_STS_TRANSPORT]	= NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT,
++	[BLK_STS_TARGET]	= NOTIFY_BLOCK_ERROR_CRITICAL_TARGET,
++	[BLK_STS_NEXUS]		= NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS,
++	[BLK_STS_MEDIUM]	= NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM,
++	[BLK_STS_PROTECTION]	= NOTIFY_BLOCK_ERROR_PROTECTION,
++	[BLK_STS_RESOURCE]	= NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE,
++	[BLK_STS_DEV_RESOURCE]	= NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE,
++	[BLK_STS_IOERR]		= NOTIFY_BLOCK_ERROR_IO,
++};
++#endif
++
+ blk_status_t errno_to_blk_status(int errno)
+ {
+ 	int i;
+@@ -179,6 +195,19 @@ static void print_req_error(struct request *req, blk_status_t status)
+ 				req->rq_disk ?  req->rq_disk->disk_name : "?",
+ 				(unsigned long long)blk_rq_pos(req),
+ 				req->cmd_flags);
++
++#ifdef CONFIG_BLK_NOTIFICATIONS
++	if (blk_notifications[idx]) {
++		struct block_notification n = {
++			.watch.type	= WATCH_TYPE_BLOCK_NOTIFY,
++			.watch.subtype	= blk_notifications[idx],
++			.watch.info	= sizeof(n),
++			.dev		= req->rq_disk ? disk_devt(req->rq_disk) : 0,
++			.sector		= blk_rq_pos(req),
++		};
++		post_block_notification(&n);
++	}
++#endif
+ }
+ 
+ static void req_bio_endio(struct request *rq, struct bio *bio,
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1aafeb923e7b..8b8e235f47c9 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -43,6 +43,7 @@ struct pr_ops;
+ struct rq_qos;
+ struct blk_queue_stats;
+ struct blk_stat_callback;
++struct block_notification;
+ 
+ #define BLKDEV_MIN_RQ	4
+ #define BLKDEV_MAX_RQ	128	/* Default maximum */
+@@ -1744,6 +1745,20 @@ static inline bool blk_req_can_dispatch_to_zone(struct request *rq)
+ }
+ #endif /* CONFIG_BLK_DEV_ZONED */
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static inline void post_block_notification(struct block_notification *n)
++{
++	u64 id = 0; /* Might want to allow dev# here. */
++
++	post_device_notification(&n->watch, id);
++}
++#else
++static inline void post_block_notification(struct block_notification *n)
++{
++}
++#endif
++
++
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index aeffcfd7a742..22e3326b83a6 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -155,4 +155,31 @@ struct superblock_error_notification {
+ 	__u32	error_cookie;
+ };
+ 
++/*
++ * Type of block layer notification.
++ */
++enum block_notification_type {
++	NOTIFY_BLOCK_ERROR_TIMEOUT		= 1, /* Timeout error */
++	NOTIFY_BLOCK_ERROR_NO_SPACE		= 2, /* Critical space allocation error */
++	NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT = 3, /* Recoverable transport error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_TARGET	= 4, /* Critical target error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS	= 5, /* Critical nexus error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM	= 6, /* Critical medium error */
++	NOTIFY_BLOCK_ERROR_PROTECTION		= 7, /* Protection error */
++	NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE	= 8, /* Kernel resource error */
++	NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE	= 9, /* Device resource error */
++	NOTIFY_BLOCK_ERROR_IO			= 10, /* Other I/O error */
++};
++
++/*
++ * Block layer notification record.
++ * - watch.type = WATCH_TYPE_BLOCK_NOTIFY
++ * - watch.subtype = enum block_notification_type
++ */
++struct block_notification {
++	struct watch_notification watch; /* WATCH_TYPE_BLOCK_NOTIFY */
++	__u64	dev;			/* Device number */
++	__u64	sector;			/* Affected sector */
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
