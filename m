@@ -1,36 +1,123 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Tue, 11 Jun 2019 06:28:17 +0000
-Subject: [PATCH v11 13/13] ima: Allow template= option for appraise rules as well
-Message-Id: <20190611062817.18412-14-bauerman@linux.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 07 Jun 2019 14:17:59 +0000
+Subject: [PATCH 04/13] security: Add a hook for the point of notification insertion [ver #4]
+Message-Id: <155991707918.15579.12255928917117357405.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190611062817.18412-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, linux-security-module@vger.kernel.org, dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-It's useful being able to specify a different IMA template on appraise
-policy rules, so allow it.
+Add a security hook that allows an LSM to rule on whether a notification
+message is allowed to be inserted into a particular watch queue.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+The hook is given the following information:
+
+ (1) The credentials of the triggerer (which may be init_cred for a system
+     notification, eg. a hardware error).
+
+ (2) The credentials of the creator of the watch buffer.
+
+ (3) The notification message.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>
+cc: Stephen Smalley <sds@tycho.nsa.gov>
+cc: linux-security-module@vger.kernel.org
 ---
- security/integrity/ima/ima_policy.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 6463ab8921ea..1ac1ef458f2e 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -1110,7 +1110,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 			break;
- 		case Opt_template:
- 			ima_log_string(ab, "template", args[0].from);
--			if (entry->action != MEASURE) {
-+			if (entry->action != MEASURE &&
-+			    entry->action != APPRAISE) {
- 				result = -EINVAL;
- 				break;
- 			}
+ include/linux/lsm_hooks.h |   10 ++++++++++
+ include/linux/security.h  |   10 ++++++++++
+ security/security.c       |    6 ++++++
+ 3 files changed, 26 insertions(+)
+
+diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
+index 0543449c0f6e..94fb6067fed5 100644
+--- a/include/linux/lsm_hooks.h
++++ b/include/linux/lsm_hooks.h
+@@ -1445,6 +1445,12 @@
+  *	from devices (as a global set).
+  *	@watch: The watch object
+  *
++ * @post_notification:
++ *	Check to see if a watch notification can be posted to a particular
++ *	queue.
++ *	@q_cred: The credentials of the target watch queue.
++ *	@cred: The event-triggerer's credentials
++ *	@n: The notification being posted
+  *
+  * Security hooks for using the eBPF maps and programs functionalities through
+  * eBPF syscalls.
+@@ -1729,6 +1735,9 @@ union security_list_options {
+ 	int (*watch_sb)(struct watch *watch, struct super_block *sb);
+ 	int (*watch_key)(struct watch *watch, struct key *key);
+ 	int (*watch_devices)(struct watch *watch);
++	int (*post_notification)(const struct cred *q_cred,
++				 const struct cred *cred,
++				 struct watch_notification *n);
+ #endif /* CONFIG_WATCH_QUEUE */
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+@@ -2014,6 +2023,7 @@ struct security_hook_heads {
+ 	struct hlist_head watch_sb;
+ 	struct hlist_head watch_key;
+ 	struct hlist_head watch_devices;
++	struct hlist_head post_notification;
+ #endif /* CONFIG_WATCH_QUEUE */
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	struct hlist_head unix_stream_connect;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index ac3bf6b5f87b..ed301edeaa19 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -59,6 +59,7 @@ struct fs_parameter;
+ enum fs_value_type;
+ struct fsinfo_kparams;
+ struct watch;
++struct watch_notification;
+ 
+ /* Default (no) options for the capable function */
+ #define CAP_OPT_NONE 0x0
+@@ -402,6 +403,9 @@ int security_watch_mount(struct watch *watch, struct path *path);
+ int security_watch_sb(struct watch *watch, struct super_block *sb);
+ int security_watch_key(struct watch *watch, struct key *key);
+ int security_watch_devices(struct watch *watch);
++int security_post_notification(const struct cred *q_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n);
+ #endif /* CONFIG_WATCH_QUEUE */
+ #else /* CONFIG_SECURITY */
+ 
+@@ -1239,6 +1243,12 @@ static inline int security_watch_devices(struct watch *watch)
+ {
+ 	return 0;
+ }
++static inline int security_post_notification(const struct cred *q_cred,
++					     const struct cred *cred,
++					     struct watch_notification *n)
++{
++	return 0;
++}
+ #endif /* CONFIG_WATCH_QUEUE */
+ #endif	/* CONFIG_SECURITY */
+ 
+diff --git a/security/security.c b/security/security.c
+index ee2f8539a0d5..8a04ac74b4fe 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1950,6 +1950,12 @@ int security_watch_devices(struct watch *watch)
+ 	return call_int_hook(watch_devices, 0, watch);
+ }
+ 
++int security_post_notification(const struct cred *q_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n)
++{
++	return call_int_hook(post_notification, 0, q_cred, cred, n);
++}
+ #endif /* CONFIG_WATCH_QUEUE */
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
