@@ -1,51 +1,34 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Thu, 13 Jun 2019 10:42:31 +0000
-Subject: [RFC 5/7] KEYS: encrypted: Allow TEE based trusted master keys
-Message-Id: <1560421833-27414-6-git-send-email-sumit.garg@linaro.org>
+From: "Valdis =?utf-8?Q?Kl=c4=93tnieks?=" <valdis.kletnieks@vt.edu>
+Date: Fri, 07 Jun 2019 02:52:28 +0000
+Subject: [PATCH] security/keys/request_key.c - fix kerneldoc
+Message-Id: <29893.1559875948@turing-police>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1560421833-27414-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1560421833-27414-1-git-send-email-sumit.garg@linaro.org>
-To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: jens.wiklander@linaro.org, corbet@lwn.net, dhowells@redhat.com, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Allow search for TEE based trusted keys to act as master keys in case
-TPM device is not present.
+When building with W=1, gcc complains due to a typo in a kerneldoc comment
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
----
- security/keys/encrypted-keys/masterkey_trusted.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+  CC      security/keys/request_key.o
+security/keys/request_key.c:35: warning: Function parameter or member 'authkey' not described in 'complete_request_key'
+security/keys/request_key.c:35: warning: Excess function parameter 'auth_key' description in 'complete_request_key'
 
-diff --git a/security/keys/encrypted-keys/masterkey_trusted.c b/security/keys/encrypted-keys/masterkey_trusted.c
-index c68528a..cfac27f 100644
---- a/security/keys/encrypted-keys/masterkey_trusted.c
-+++ b/security/keys/encrypted-keys/masterkey_trusted.c
-@@ -23,6 +23,9 @@
-  * Trusted keys are sealed to PCRs and other metadata. Although userspace
-  * manages both trusted/encrypted key-types, like the encrypted key type
-  * data, trusted key type data is not visible decrypted from userspace.
-+ *
-+ * Also, check for alternate trusted keys provided via TEE in case there
-+ * is no TPM available.
-  */
- struct key *request_trusted_key(const char *trusted_desc,
- 				const u8 **master_key, size_t *master_keylen)
-@@ -31,8 +34,11 @@ struct key *request_trusted_key(const char *trusted_desc,
- 	struct key *tkey;
+Fix it up to match the function
+
+Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu
+
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 2f17d84d46f1..2623253ae6c8 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -24,7 +24,7 @@
  
- 	tkey = request_key(&key_type_trusted, trusted_desc, NULL);
--	if (IS_ERR(tkey))
--		goto error;
-+	if (IS_ERR(tkey)) {
-+		tkey = request_key(&key_type_tee_trusted, trusted_desc, NULL);
-+		if (IS_ERR(tkey))
-+			goto error;
-+	}
- 
- 	down_read(&tkey->sem);
- 	tpayload = tkey->payload.data[0];
--- 
-2.7.4
+ /**
+  * complete_request_key - Complete the construction of a key.
+- * @auth_key: The authorisation key.
++ * @authkey: The authorisation key.
+  * @error: The success or failute of the construction.
+  *
+  * Complete the attempt to construct a key.  The key will be negated
