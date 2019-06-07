@@ -1,48 +1,33 @@
-From: "Miss.Fatima Yusuf" <fatimayusuf20001@gmail.com>
-Date: Sat, 22 Jun 2019 13:42:24 +0000
-Subject: From:Miss: Fatima Yusuf.
-Message-Id: <CAMYDnHBFov=1p9UdOm+gEapaeZm4iSk7h7OZ_xWe1Hzq70xFLA@mail.gmail.com>
+From: Jelle van der Waa <jelle@vdwaa.nl>
+Date: Fri, 07 Jun 2019 10:01:56 +0000
+Subject: [PATCH] Make keyutils reproducible
+Message-Id: <20190607100156.19477-1-jelle@vdwaa.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-From:Miss: Fatima Yusuf.
+Adhere to the SOURCE_DATE_EPOCH standard and use it's date when set
+otherwise fall back to the default behaviour.
 
-For sure this mail would definitely come to you as a surprise, but do
-take your good time to go through it, My name is Ms. Fatima Yusuf,i am
-from Ivory Coast.
+Signed-off-by: Jelle van der Waa <jelle@vdwaa.nl>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I lost my parents a year and couple of months ago. My father was a
-serving director of the Agro-exporting board until his death. He was
-assassinated by his business partners.Before his death, he made a
-deposit of US$9.7 Million Dollars here in Cote d'ivoire which was for
-the purchase of cocoa processing machine and development of another
-factory before his untimely death.
-
-Being that this part of the world experiences political and crises
-time without number, there is no guarantee of lives and properties. I
-cannot invest this money here any long, despite the fact it had been
-my late father's industrial plans.
-
-I want you to do me a favor to receive this funds into your country or
-any safer place as the beneficiary, I have plans to invest this money
-in continuation with the investment vision of my late father, but not
-in this place again rather in your country. I have the vision of going
-into real estate and industrial production or any profitable business
-venture.
-
-I will be ready to compensate you with 20% of the total Amount, now
-all my hope is banked on you and i really wants to invest this money
-in your country, where there is stability of Government, political and
-economic welfare.
-
-My greatest worry now is how to move out of this country because my
-uncle is threatening to kill me as he killed my father,Please do not
-let anybody hear about this, it is between me and you alone because of
-my security reason.
-
-I am waiting to hear from you.
-Yours Sincerely,
-Miss.Fatima Yusuf.
+diff --git a/Makefile b/Makefile
+index 33a451e..9066d5d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -108,7 +108,7 @@ all: keyctl request-key key.dns_resolver
+ ###############################################################################
+ #RPATH = -Wl,-rpath,$(LIBDIR)
+ 
+-VCPPFLAGS	:= -DPKGBUILD="\"$(shell date -u +%F)\""
++VCPPFLAGS	:= -DPKGBUILD="\"$(date --utc --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%F)\""
+ VCPPFLAGS	+= -DPKGVERSION="\"keyutils-$(VERSION)\""
+ VCPPFLAGS	+= -DAPIVERSION="\"libkeyutils-$(APIVERSION)\""
+ 
+-- 
+2.21.0
