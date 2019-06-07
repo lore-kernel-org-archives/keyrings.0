@@ -1,240 +1,130 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 06 Jun 2019 09:43:14 +0000
-Subject: [PATCH 08/10] block: Add block layer notifications [ver #3]
-Message-Id: <155981419467.17513.4571857983219270447.stgit@warthog.procyon.org.uk>
+Date: Fri, 07 Jun 2019 14:17:30 +0000
+Subject: [PATCH 01/13] security: Override creds in __fput() with last fputter's creds [ver #4]
+Message-Id: <155991705018.15579.1610295881980418301.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk>
+References: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Casey Schaufler <casey@schaufler-ca.com>Casey Schaufler <casey@schaufler-ca.com>, dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a block layer notification mechanism whereby notifications about
-block-layer events such as I/O errors, can be reported to a monitoring
-process asynchronously.
+So that the LSM can see the credentials of the last process to do an fput()
+on a file object when the file object is being dismantled, do the following
+steps:
 
-Firstly, an event queue needs to be created:
+ (1) Cache the current credentials in file->f_fput_cred at the point the
+     file object's reference count reaches zero.
 
-	fd = open("/dev/event_queue", O_RDWR);
-	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+ (2) In __fput(), use override_creds() to apply those credentials to the
+     dismantling process.  This is necessary so that if we're dismantling a
+     unix socket that has semi-passed fds still in it, their fputs will
+     pick up the same credentials if they're reduced to zero at that point.
 
-then a notification can be set up to report block notifications via that
-queue:
+     Note that it's probably not strictly necessary to take an extra ref on
+     the creds here (which override_creds() does).
 
-	struct watch_notification_filter filter = {
-		.nr_filters = 1,
-		.filters = {
-			[0] = {
-				.type = WATCH_TYPE_BLOCK_NOTIFY,
-				.subtype_filter[0] = UINT_MAX;
-			},
-		},
-	};
-	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
-	device_notify(fd, 12);
+ (3) Destroy the fput creds in file_free_rcu().
 
-After that, records will be placed into the queue when, for example, errors
-occur on a block device.  Records are of the following format:
+This additionally makes the creds available to:
 
-	struct block_notification {
-		struct watch_notification watch;
-		__u64	dev;
-		__u64	sector;
-	} *n;
+	fsnotify
+	eventpoll
+	file locking
+	->fasync, ->release file ops
+	superblock destruction
+	mountpoint destruction
 
-Where:
+This allows various notifications about object cleanups/destructions to
+carry appropriate credentials for the LSM to approve/disapprove them based
+on the process that caused them, even if indirectly.
 
-	n->watch.type will be WATCH_TYPE_BLOCK_NOTIFY
+Note that this means that someone looking at /proc/<pid>/fd/<n> may end up
+being inadvertently noted as the subject of a cleanup message if the
+process they're looking at croaks whilst they're looking at it.
 
-	n->watch.subtype will be the type of notification, such as
-	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM.
+Further, kernel services like nfsd and cachefiles may be seen as the
+fputter and may not have a system credential.  In cachefiles's case, it may
+appear that cachefilesd caused the notification.
 
-	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
-	record.
-
-	n->watch.info & WATCH_INFO_ID will be the second argument to
-	device_notify(), shifted.
-
-	n->dev will be the device numbers munged together.
-
-	n->sector will indicate the affected sector (if appropriate for the
-	event).
-
-Note that it is permissible for event records to be of variable length -
-or, at least, the length may be dependent on the subtype.
-
+Suggested-by: Casey Schaufler <casey@schaufler-ca.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>
 ---
 
- Documentation/watch_queue.rst    |   10 +++++++++-
- block/Kconfig                    |    9 +++++++++
- block/blk-core.c                 |   29 +++++++++++++++++++++++++++++
- include/linux/blkdev.h           |   15 +++++++++++++++
- include/uapi/linux/watch_queue.h |   27 +++++++++++++++++++++++++++
- 5 files changed, 89 insertions(+), 1 deletion(-)
+ fs/file_table.c    |   12 ++++++++++++
+ include/linux/fs.h |    1 +
+ 2 files changed, 13 insertions(+)
 
-diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
-index e4b8233d5aa8..c2954e191989 100644
---- a/Documentation/watch_queue.rst
-+++ b/Documentation/watch_queue.rst
-@@ -11,7 +11,9 @@ receive notifications from the kernel.  This can be used in conjunction with::
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 3f9c1b452c1d..9bf2be45b7f9 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -46,6 +46,7 @@ static void file_free_rcu(struct rcu_head *head)
+ 	struct file *f = container_of(head, struct file, f_u.fu_rcuhead);
  
-   * Superblock event notifications
+ 	put_cred(f->f_cred);
++	put_cred(f->f_fput_cred);
+ 	kmem_cache_free(filp_cachep, f);
+ }
  
--  * General device event notifications
-+  * General device event notifications, including::
-+
-+    * Block layer event notifications
- 
- 
- The notifications buffers can be enabled by:
-@@ -336,6 +338,12 @@ Any particular buffer can be fed from multiple sources.  Sources include:
- 
-     See Documentation/security/keys/core.rst for more information.
- 
-+  * WATCH_TYPE_BLOCK_NOTIFY
-+
-+    Notifications of this type indicate block layer events, such as I/O errors
-+    or temporary link loss.  Watchpoints of this type are set on the global
-+    device watch list.
-+
- 
- Event Filtering
- =======diff --git a/block/Kconfig b/block/Kconfig
-index 1b220101a9cb..4ff4a56ba9f9 100644
---- a/block/Kconfig
-+++ b/block/Kconfig
-@@ -163,6 +163,15 @@ config BLK_SED_OPAL
- 	Enabling this option enables users to setup/unlock/lock
- 	Locking ranges for SED devices using the Opal protocol.
- 
-+config BLK_NOTIFICATIONS
-+	bool "Block layer event notifications"
-+	select DEVICE_NOTIFICATIONS
-+	help
-+	  This option provides support for getting block layer event
-+	  notifications.  This makes use of the /dev/watch_queue misc device to
-+	  handle the notification buffer and provides the device_notify() system
-+	  call to enable/disable watches.
-+
- menu "Partition Types"
- 
- source "block/partitions/Kconfig"
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 419d600e6637..edad86172d47 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -144,6 +144,22 @@ static const struct {
- 	[BLK_STS_IOERR]		= { -EIO,	"I/O" },
- };
- 
-+#ifdef CONFIG_BLK_NOTIFICATIONS
-+static const
-+enum block_notification_type blk_notifications[ARRAY_SIZE(blk_errors)] = {
-+	[BLK_STS_TIMEOUT]	= NOTIFY_BLOCK_ERROR_TIMEOUT,
-+	[BLK_STS_NOSPC]		= NOTIFY_BLOCK_ERROR_NO_SPACE,
-+	[BLK_STS_TRANSPORT]	= NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT,
-+	[BLK_STS_TARGET]	= NOTIFY_BLOCK_ERROR_CRITICAL_TARGET,
-+	[BLK_STS_NEXUS]		= NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS,
-+	[BLK_STS_MEDIUM]	= NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM,
-+	[BLK_STS_PROTECTION]	= NOTIFY_BLOCK_ERROR_PROTECTION,
-+	[BLK_STS_RESOURCE]	= NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE,
-+	[BLK_STS_DEV_RESOURCE]	= NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE,
-+	[BLK_STS_IOERR]		= NOTIFY_BLOCK_ERROR_IO,
-+};
-+#endif
-+
- blk_status_t errno_to_blk_status(int errno)
+@@ -252,6 +253,7 @@ struct file *alloc_file_clone(struct file *base, int flags,
+  */
+ static void __fput(struct file *file)
  {
- 	int i;
-@@ -179,6 +195,19 @@ static void print_req_error(struct request *req, blk_status_t status)
- 				req->rq_disk ?  req->rq_disk->disk_name : "?",
- 				(unsigned long long)blk_rq_pos(req),
- 				req->cmd_flags);
++	const struct cred *saved_cred;
+ 	struct dentry *dentry = file->f_path.dentry;
+ 	struct vfsmount *mnt = file->f_path.mnt;
+ 	struct inode *inode = file->f_inode;
+@@ -262,6 +264,12 @@ static void __fput(struct file *file)
+ 
+ 	might_sleep();
+ 
++	/* Set the creds of whoever triggered the last fput for the LSM.  Note
++	 * that this has to be made available to further fputs, say on fds
++	 * trapped in a unix socket.
++	 */
++	saved_cred = override_creds(file->f_fput_cred);
 +
-+#ifdef CONFIG_BLK_NOTIFICATIONS
-+	if (blk_notifications[idx]) {
-+		struct block_notification n = {
-+			.watch.type	= WATCH_TYPE_BLOCK_NOTIFY,
-+			.watch.subtype	= blk_notifications[idx],
-+			.watch.info	= sizeof(n),
-+			.dev		= req->rq_disk ? disk_devt(req->rq_disk) : 0,
-+			.sector		= blk_rq_pos(req),
-+		};
-+		post_block_notification(&n);
-+	}
-+#endif
+ 	fsnotify_close(file);
+ 	/*
+ 	 * The function eventpoll_release() should be the first called
+@@ -293,6 +301,8 @@ static void __fput(struct file *file)
+ 	if (unlikely(mode & FMODE_NEED_UNMOUNT))
+ 		dissolve_on_fput(mnt);
+ 	mntput(mnt);
++
++	revert_creds(saved_cred);
+ out:
+ 	file_free(file);
  }
+@@ -334,6 +344,7 @@ void fput_many(struct file *file, unsigned int refs)
+ 	if (atomic_long_sub_and_test(refs, &file->f_count)) {
+ 		struct task_struct *task = current;
  
- static void req_bio_endio(struct request *rq, struct bio *bio,
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1aafeb923e7b..8b8e235f47c9 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -43,6 +43,7 @@ struct pr_ops;
- struct rq_qos;
- struct blk_queue_stats;
- struct blk_stat_callback;
-+struct block_notification;
- 
- #define BLKDEV_MIN_RQ	4
- #define BLKDEV_MAX_RQ	128	/* Default maximum */
-@@ -1744,6 +1745,20 @@ static inline bool blk_req_can_dispatch_to_zone(struct request *rq)
++		file->f_fput_cred = get_current_cred();
+ 		if (likely(!in_interrupt() && !(task->flags & PF_KTHREAD))) {
+ 			init_task_work(&file->f_u.fu_rcuhead, ____fput);
+ 			if (!task_work_add(task, &file->f_u.fu_rcuhead, true))
+@@ -368,6 +379,7 @@ void __fput_sync(struct file *file)
+ 	if (atomic_long_dec_and_test(&file->f_count)) {
+ 		struct task_struct *task = current;
+ 		BUG_ON(!(task->flags & PF_KTHREAD));
++		file->f_fput_cred = get_current_cred();
+ 		__fput(file);
+ 	}
  }
- #endif /* CONFIG_BLK_DEV_ZONED */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index f1c74596cd77..db05738b1951 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -943,6 +943,7 @@ struct file {
+ 	loff_t			f_pos;
+ 	struct fown_struct	f_owner;
+ 	const struct cred	*f_cred;
++	const struct cred	*f_fput_cred;	/* Who did the last fput() (for LSM) */
+ 	struct file_ra_state	f_ra;
  
-+#ifdef CONFIG_BLK_NOTIFICATIONS
-+static inline void post_block_notification(struct block_notification *n)
-+{
-+	u64 id = 0; /* Might want to allow dev# here. */
-+
-+	post_device_notification(&n->watch, id);
-+}
-+#else
-+static inline void post_block_notification(struct block_notification *n)
-+{
-+}
-+#endif
-+
-+
- #else /* CONFIG_BLOCK */
- 
- struct block_device;
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-index aeffcfd7a742..22e3326b83a6 100644
---- a/include/uapi/linux/watch_queue.h
-+++ b/include/uapi/linux/watch_queue.h
-@@ -155,4 +155,31 @@ struct superblock_error_notification {
- 	__u32	error_cookie;
- };
- 
-+/*
-+ * Type of block layer notification.
-+ */
-+enum block_notification_type {
-+	NOTIFY_BLOCK_ERROR_TIMEOUT		= 1, /* Timeout error */
-+	NOTIFY_BLOCK_ERROR_NO_SPACE		= 2, /* Critical space allocation error */
-+	NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT = 3, /* Recoverable transport error */
-+	NOTIFY_BLOCK_ERROR_CRITICAL_TARGET	= 4, /* Critical target error */
-+	NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS	= 5, /* Critical nexus error */
-+	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM	= 6, /* Critical medium error */
-+	NOTIFY_BLOCK_ERROR_PROTECTION		= 7, /* Protection error */
-+	NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE	= 8, /* Kernel resource error */
-+	NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE	= 9, /* Device resource error */
-+	NOTIFY_BLOCK_ERROR_IO			= 10, /* Other I/O error */
-+};
-+
-+/*
-+ * Block layer notification record.
-+ * - watch.type = WATCH_TYPE_BLOCK_NOTIFY
-+ * - watch.subtype = enum block_notification_type
-+ */
-+struct block_notification {
-+	struct watch_notification watch; /* WATCH_TYPE_BLOCK_NOTIFY */
-+	__u64	dev;			/* Device number */
-+	__u64	sector;			/* Affected sector */
-+};
-+
- #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+ 	u64			f_version;
