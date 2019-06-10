@@ -1,126 +1,94 @@
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 08 May 2019 14:44:01 +0000
-Subject: [PATCH, RFC 41/62] keys/mktme: Support memory hotplug for MKTME keys
-Message-Id: <20190508144422.13171-42-kirill.shutemov@linux.intel.com>
+From: Kalyani Akula <kalyania@xilinx.com>
+Date: Mon, 10 Jun 2019 05:20:58 +0000
+Subject: RE: [RFC PATCH 4/5] crypto: Adds user space interface for ALG_SET_KEY_TYPE
+Message-Id: <BN7PR02MB5124A7E685AC0F59AFBEFC8DAF130@BN7PR02MB5124.namprd02.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <1547708541-23730-1-git-send-email-kalyani.akula@xilinx.com>
+ <18759853.IUaQuE38eh@tauon.chronox.de>
+ <SN6PR02MB5135CE53C3E3FB34CA5E6BA8AF320@SN6PR02MB5135.namprd02.prod.outlook.com>
+ <2554415.t45IJDmies@tauon.chronox.de>
+In-Reply-To: <2554415.t45IJDmies@tauon.chronox.de>
+To: Stephan Mueller <smueller@chronox.de>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>
+Cc: "herbert@gondor.apana.org.au" <herbert@gondor.apana.org.au>, "davem@davemloft.net" <davem@davemloft.net>, "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, Sarat Chand Savitala <saratcha@xilinx.com>
 
-From: Alison Schofield <alison.schofield@intel.com>
+Ping!!
 
-Newly added memory may mean that there is a newly added physical
-package.  Intel platforms supporting MKTME need to know about the
-new physical packages that may appear during MEM_GOING_ONLINE
-events.
-
-Add a memory notifier for MEM_GOING_ONLINE events where MKTME
-can evaluate this new memory before it goes online.
-
-MKTME will quickly NOTIFY_OK in MEM_GOING_ONLINE events if no MKTME
-keys are currently programmed. If the newly added memory presents
-an unsafe MKTME topology, that will be found and reported during the
-next key creation attempt. (User can repair and retry.)
-
-When MKTME keys are currently programmed, MKTME will evaluate the
-platform topology, detect if a new PCONFIG target has been added,
-and program that new pconfig target if allowable.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- security/keys/mktme_keys.c | 57 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
-
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 489dddb8c623..904748b540c6 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -8,6 +8,7 @@
- #include <linux/init.h>
- #include <linux/key.h>
- #include <linux/key-type.h>
-+#include <linux/memory.h>
- #include <linux/mm.h>
- #include <linux/parser.h>
- #include <linux/percpu-refcount.h>
-@@ -626,6 +627,56 @@ static int mktme_program_new_pconfig_target(int new_pkg)
- 	return ret;
- }
- 
-+static int mktme_memory_callback(struct notifier_block *nb,
-+				 unsigned long action, void *arg)
-+{
-+	unsigned long flags;
-+	int ret, new_target;
-+
-+	/* MEM_GOING_ONLINE is the only mem event of interest to MKTME */
-+	if (action != MEM_GOING_ONLINE)
-+		return NOTIFY_OK;
-+
-+	/* Do not allow key programming during hotplug event */
-+	spin_lock_irqsave(&mktme_lock, flags);
-+
-+	/*
-+	 * If no keys are actually programmed let this event proceed.
-+	 * The topology will be checked on the next key creation attempt.
-+	 */
-+	if (!mktme_map->mapped_keyids) {
-+		mktme_allow_keys = false;
-+		ret = NOTIFY_OK;
-+		goto out;
-+	}
-+	/* Do not allow this event if it creates an unsafe MKTME topology */
-+	if (!mktme_hmat_evaluate()) {
-+		ret = NOTIFY_BAD;
-+		goto out;
-+	}
-+	/* Topology is safe. Is there a new pconfig target? */
-+	new_target = mktme_get_new_pconfig_target();
-+
-+	/* No new target to program */
-+	if (new_target < 0) {
-+		ret = NOTIFY_OK;
-+		goto out;
-+	}
-+	if (mktme_program_new_pconfig_target(new_target))
-+		ret = NOTIFY_BAD;
-+	else
-+		ret = NOTIFY_OK;
-+
-+out:
-+	spin_unlock_irqrestore(&mktme_lock, flags);
-+	return ret;
-+}
-+
-+static struct notifier_block mktme_memory_nb = {
-+	.notifier_call = mktme_memory_callback,
-+	.priority = 99,				/* priority ? */
-+};
-+
- static int __init init_mktme(void)
- {
- 	int ret, cpuhp;
-@@ -679,10 +730,16 @@ static int __init init_mktme(void)
- 	if (cpuhp < 0)
- 		goto free_store;
- 
-+	/* Memory hotplug */
-+	if (register_memory_notifier(&mktme_memory_nb))
-+		goto remove_cpuhp;
-+
- 	ret = register_key_type(&key_type_mktme);
- 	if (!ret)
- 		return ret;			/* SUCCESS */
- 
-+	unregister_memory_notifier(&mktme_memory_nb);
-+remove_cpuhp:
- 	cpuhp_remove_state_nocalls(cpuhp);
- free_store:
- 	kfree(mktme_key_store);
--- 
-2.20.1
+> -----Original Message-----
+> From: Stephan Mueller <smueller@chronox.de>
+> Sent: Friday, May 24, 2019 12:50 PM
+> To: Kalyani Akula <kalyania@xilinx.com>; keyrings@vger.kernel.org
+> Cc: herbert@gondor.apana.org.au; davem@davemloft.net; linux-
+> crypto@vger.kernel.org; linux-kernel@vger.kernel.org; Sarat Chand Savitala
+> <saratcha@xilinx.com>
+> Subject: Re: [RFC PATCH 4/5] crypto: Adds user space interface for
+> ALG_SET_KEY_TYPE
+> 
+> Am Mittwoch, 8. Mai 2019, 11:31:08 CEST schrieb Kalyani Akula:
+> 
+> Hi Kalyani,
+> 
+> > Hi Stephan,
+> >
+> > Keyrings is in-kernel key-management and retention facility. User can
+> > use it to manage keys used for applications.
+> >
+> > Xilinx cryptographic hardware has a mechanism to store keys in its
+> > internal hardware and do not have mechanism to read it back due to security
+> reasons.
+> > It stores key internally in different forms like simple key, key
+> > encrypted with unique hardware DNA, key encrypted with hardware family
+> > key, key stored in eFUSEs/BBRAM etc.
+> > Based on security level expected, user can select one of the key for
+> > AES operation. Since AES hardware internally has access to these keys,
+> > user do not require to provide key to hardware, but need to tell which
+> > internal hardware key user application like to use for AES operation.
+> >
+> > Basic need is to pass information to AES hardware about which internal
+> > hardware key to be used for AES operation.
+> >
+> > I agree that from general use case perspective we are not selecting
+> > key type but selecting internal hardware keys provided by user. How
+> > about providing option to select custom hardware keys provided by
+> > hardware (AES_SEL_HW_KEY)?
+> 
+> I am not intimately familiary with the keyring facility. Thus, let us ask the experts
+> at the keyring mailing list :-)
+> 
+> >
+> > Thanks
+> > kalyani
+> >
+> > > -----Original Message-----
+> > > From: Stephan Mueller <smueller@chronox.de>
+> > > Sent: Thursday, April 25, 2019 12:01 AM
+> > > To: Kalyani Akula <kalyania@xilinx.com>
+> > > Cc: herbert@gondor.apana.org.au; davem@davemloft.net; linux-
+> > > crypto@vger.kernel.org; linux-kernel@vger.kernel.org
+> > > Subject: Re: [RFC PATCH 4/5] crypto: Adds user space interface for
+> > > ALG_SET_KEY_TYPE
+> > >
+> > > Am Montag, 22. April 2019, 11:17:55 CEST schrieb Kalyani Akula:
+> > >
+> > > Hi Kalyani,
+> > >
+> > > > > Besides, seem to be more a key handling issue. Wouldn't it make
+> > > > > sense to rather have such issue solved with key rings than in
+> > > > > the kernel crypto API?
+> > > >
+> > > > [kalyani] Can you please elaborate on this further ?
+> > >
+> > > The kernel has a keyring support in security/keys which has a user
+> > > space interface with keyutils. That interface is commonly used for
+> > > any sort of key manipulation.
+> > >
+> > > Ciao
+> > > Stephan
+> 
+> 
+> 
+> Ciao
+> Stephan
+> 
