@@ -1,43 +1,25 @@
-From: Jonathan Corbet <corbet@lwn.net>
-Date: Mon, 10 Jun 2019 17:11:10 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 10 Jun 2019 17:47:11 +0000
 Subject: Re: [PATCH 06/13] keys: Add a notification facility [ver #4]
-Message-Id: <20190610111110.72468326@lwn.net>
+Message-Id: <10632.1560188831@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
-        <155991709983.15579.13232123365803197237.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155991709983.15579.13232123365803197237.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190610111110.72468326@lwn.net> <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk> <155991709983.15579.13232123365803197237.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20190610111110.72468326@lwn.net>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, 07 Jun 2019 15:18:19 +0100
-David Howells <dhowells@redhat.com> wrote:
+Jonathan Corbet <corbet@lwn.net> wrote:
 
-> Add a key/keyring change notification facility whereby notifications about
-> changes in key and keyring content and attributes can be received.
+> > 	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, 0x01);
 > 
-> Firstly, an event queue needs to be created:
-> 
-> 	fd = open("/dev/event_queue", O_RDWR);
-> 	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
-> 
-> then a notification can be set up to report notifications via that queue:
-> 
-> 	struct watch_notification_filter filter = {
-> 		.nr_filters = 1,
-> 		.filters = {
-> 			[0] = {
-> 				.type = WATCH_TYPE_KEY_NOTIFY,
-> 				.subtype_filter[0] = UINT_MAX,
-> 			},
-> 		},
-> 	};
-> 	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
-> 	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, 0x01);
+> One little nit: it seems that keyctl_watch_key is actually spelled
+> keyctl(KEYCTL_WATCH_KEY, ...).
 
-One little nit: it seems that keyctl_watch_key is actually spelled
-keyctl(KEYCTL_WATCH_KEY, ...).
+Yeah - but there'll be a wrapper for it in -lkeyutils.  The syscalls I added
+in other patches are, technically, referred to syscall(__NR_xxx, ...) at the
+moment too.
 
-jon
+David
