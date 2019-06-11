@@ -1,67 +1,73 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 13:19:08 +0000
-Subject: [PATCH 03/10] keys: sparse: Fix kdoc mismatches [ver #3]
-Message-Id: <156095034869.9363.6079500929660783450.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Tue, 11 Jun 2019 06:28:10 +0000
+Subject: [PATCH v11 06/13] ima: Use designated initializers for struct ima_event_data
+Message-Id: <20190611062817.18412-7-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, ebiggers@kernel.org
-Cc: James Morris <jamorris@linux.microsoft.com>, Mat Martineau <mathew.j.martineau@linux.intel.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190611062817.18412-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Fix some kdoc argument description mismatches reported by sparse and give
-keyring_restrict() a description.
+Designated initializers allow specifying only the members of the struct
+that need initialization. Non-mentioned members are initialized to zero.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <jamorris@linux.microsoft.com>
-cc: Mat Martineau <mathew.j.martineau@linux.intel.com>
+This makes the code a bit clearer (particularly in ima_add_boot_aggregate)
+and also allows adding a new member to the struct without having to update
+all struct initializations.
+
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ security/integrity/ima/ima_api.c  | 13 +++++++++----
+ security/integrity/ima/ima_init.c |  4 ++--
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
- security/keys/keyring.c     |   10 +++++++---
- security/keys/request_key.c |    2 +-
- 2 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index e14f09e3a4b0..5b218b270598 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -520,7 +520,7 @@ EXPORT_SYMBOL(keyring_alloc);
-  * @keyring: The keyring being added to.
-  * @type: The type of key being added.
-  * @payload: The payload of the key intended to be added.
-- * @data: Additional data for evaluating restriction.
-+ * @restriction_key: Keys providing additional data for evaluating restriction.
-  *
-  * Reject the addition of any links to a keyring.  It can be overridden by
-  * passing KEY_ALLOC_BYPASS_RESTRICTION to key_instantiate_and_link() when
-@@ -976,9 +976,13 @@ static bool keyring_detect_restriction_cycle(const struct key *dest_keyring,
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index 78eb11c7ac07..c0cf4bcfc82f 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -139,8 +139,10 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
+ {
+ 	struct ima_template_entry *entry;
+ 	struct inode *inode = file_inode(file);
+-	struct ima_event_data event_data = {iint, file, filename, NULL, 0,
+-					    cause};
++	struct ima_event_data event_data = { .iint = iint,
++					     .file = file,
++					     .filename = filename,
++					     .violation = cause };
+ 	int violation = 1;
+ 	int result;
  
- /**
-  * keyring_restrict - Look up and apply a restriction to a keyring
-- *
-- * @keyring: The keyring to be restricted
-+ * @keyring_ref: The keyring to be restricted
-+ * @type: The key type that will provide the restriction checker.
-  * @restriction: The restriction options to apply to the keyring
-+ *
-+ * Look up a keyring and apply a restriction to it.  The restriction is managed
-+ * by the specific key type, but can be configured by the options specified in
-+ * the restriction string.
-  */
- int keyring_restrict(key_ref_t keyring_ref, const char *type,
- 		     const char *restriction)
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 75d87f9e0f49..1f234b019437 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -24,7 +24,7 @@
+@@ -294,8 +296,11 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 	int result = -ENOMEM;
+ 	struct inode *inode = file_inode(file);
+ 	struct ima_template_entry *entry;
+-	struct ima_event_data event_data = {iint, file, filename, xattr_value,
+-					    xattr_len, NULL};
++	struct ima_event_data event_data = { .iint = iint,
++					     .file = file,
++					     .filename = filename,
++					     .xattr_value = xattr_value,
++					     .xattr_len = xattr_len };
+ 	int violation = 0;
  
- /**
-  * complete_request_key - Complete the construction of a key.
-- * @auth_key: The authorisation key.
-+ * @authkey: The authorisation key.
-  * @error: The success or failute of the construction.
-  *
-  * Complete the attempt to construct a key.  The key will be negated
+ 	if (iint->measured_pcrs & (0x1 << pcr))
+diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
+index 993d0f1915ff..368ef658a1cd 100644
+--- a/security/integrity/ima/ima_init.c
++++ b/security/integrity/ima/ima_init.c
+@@ -49,8 +49,8 @@ static int __init ima_add_boot_aggregate(void)
+ 	const char *audit_cause = "ENOMEM";
+ 	struct ima_template_entry *entry;
+ 	struct integrity_iint_cache tmp_iint, *iint = &tmp_iint;
+-	struct ima_event_data event_data = {iint, NULL, boot_aggregate_name,
+-					    NULL, 0, NULL};
++	struct ima_event_data event_data = { .iint = iint,
++					     .filename = boot_aggregate_name };
+ 	int result = -ENOMEM;
+ 	int violation = 0;
+ 	struct {
