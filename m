@@ -1,78 +1,38 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 13:19:16 +0000
-Subject: [PATCH 04/10] keys: Change keyring_serialise_link_sem to a mutex [ver #3]
-Message-Id: <156095035684.9363.3671722354273186694.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Tue, 11 Jun 2019 06:28:09 +0000
+Subject: [PATCH v11 05/13] integrity: Select CONFIG_KEYS instead of depending on it
+Message-Id: <20190611062817.18412-6-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, ebiggers@kernel.org
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190611062817.18412-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Change keyring_serialise_link_sem to a mutex as it's only ever
-write-locked.
+This avoids a dependency cycle in soon-to-be-introduced
+CONFIG_IMA_APPRAISE_MODSIG: it will select CONFIG_MODULE_SIG_FORMAT
+which in turn selects CONFIG_KEYS. Kconfig then complains that
+CONFIG_INTEGRITY_SIGNATURE depends on CONFIG_KEYS.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ security/integrity/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- security/keys/keyring.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 5b218b270598..ca6694ba1773 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -100,7 +100,7 @@ EXPORT_SYMBOL(key_type_keyring);
-  * Semaphore to serialise link/link calls to prevent two link calls in parallel
-  * introducing a cycle.
-  */
--static DECLARE_RWSEM(keyring_serialise_link_sem);
-+static DEFINE_MUTEX(keyring_serialise_link_lock);
+diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+index 3ba1168b1756..93d73902c571 100644
+--- a/security/integrity/Kconfig
++++ b/security/integrity/Kconfig
+@@ -17,8 +17,8 @@ if INTEGRITY
  
- /*
-  * Publish the name of a keyring so that it can be found by name (if it has
-@@ -1206,7 +1206,7 @@ int __key_link_begin(struct key *keyring,
- 		     const struct keyring_index_key *index_key,
- 		     struct assoc_array_edit **_edit)
- 	__acquires(&keyring->sem)
--	__acquires(&keyring_serialise_link_sem)
-+	__acquires(&keyring_serialise_link_lock)
- {
- 	struct assoc_array_edit *edit;
- 	int ret;
-@@ -1228,7 +1228,7 @@ int __key_link_begin(struct key *keyring,
- 	/* serialise link/link calls to prevent parallel calls causing a cycle
- 	 * when linking two keyring in opposite orders */
- 	if (index_key->type = &key_type_keyring)
--		down_write(&keyring_serialise_link_sem);
-+		mutex_lock(&keyring_serialise_link_lock);
- 
- 	/* Create an edit script that will insert/replace the key in the
- 	 * keyring tree.
-@@ -1260,7 +1260,7 @@ int __key_link_begin(struct key *keyring,
- 	assoc_array_cancel_edit(edit);
- error_sem:
- 	if (index_key->type = &key_type_keyring)
--		up_write(&keyring_serialise_link_sem);
-+		mutex_unlock(&keyring_serialise_link_lock);
- error_krsem:
- 	up_write(&keyring->sem);
- 	kleave(" = %d", ret);
-@@ -1307,13 +1307,13 @@ void __key_link_end(struct key *keyring,
- 		    const struct keyring_index_key *index_key,
- 		    struct assoc_array_edit *edit)
- 	__releases(&keyring->sem)
--	__releases(&keyring_serialise_link_sem)
-+	__releases(&keyring_serialise_link_lock)
- {
- 	BUG_ON(index_key->type = NULL);
- 	kenter("%d,%s,", keyring->serial, index_key->type->name);
- 
- 	if (index_key->type = &key_type_keyring)
--		up_write(&keyring_serialise_link_sem);
-+		mutex_unlock(&keyring_serialise_link_lock);
- 
- 	if (edit) {
- 		if (!edit->dead_leaf) {
+ config INTEGRITY_SIGNATURE
+ 	bool "Digital signature verification using multiple keyrings"
+-	depends on KEYS
+ 	default n
++	select KEYS
+ 	select SIGNATURE
+ 	help
+ 	  This option enables digital signature verification support
