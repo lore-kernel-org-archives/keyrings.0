@@ -1,113 +1,36 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 13:18:51 +0000
-Subject: [PATCH 01/10] keys: sparse: Fix key_fs[ug]id_changed() [ver #3]
-Message-Id: <156095033115.9363.3778890760816757211.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Tue, 11 Jun 2019 06:28:17 +0000
+Subject: [PATCH v11 13/13] ima: Allow template= option for appraise rules as well
+Message-Id: <20190611062817.18412-14-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, ebiggers@kernel.org
-Cc: James Morris <jamorris@linux.microsoft.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190611062817.18412-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Sparse warnings are incurred by key_fs[ug]id_changed() due to unprotected
-accesses of tsk->cred, which is marked __rcu.
+It's useful being able to specify a different IMA template on appraise
+policy rules, so allow it.
 
-Fix this by passing the new cred struct to these functions from
-commit_creds() rather than the task pointer.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: James Morris <jamorris@linux.microsoft.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ security/integrity/ima/ima_policy.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
- include/linux/key.h          |    8 ++++----
- kernel/cred.c                |    4 ++--
- security/keys/process_keys.c |   22 ++++++++++------------
- 3 files changed, 16 insertions(+), 18 deletions(-)
-
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 7099985e35a9..1f09aad1c98c 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -402,8 +402,8 @@ extern struct ctl_table key_sysctls[];
-  * the userspace interface
-  */
- extern int install_thread_keyring_to_cred(struct cred *cred);
--extern void key_fsuid_changed(struct task_struct *tsk);
--extern void key_fsgid_changed(struct task_struct *tsk);
-+extern void key_fsuid_changed(struct cred *new_cred);
-+extern void key_fsgid_changed(struct cred *new_cred);
- extern void key_init(void);
- 
- #else /* CONFIG_KEYS */
-@@ -418,8 +418,8 @@ extern void key_init(void);
- #define make_key_ref(k, p)		NULL
- #define key_ref_to_ptr(k)		NULL
- #define is_key_possessed(k)		0
--#define key_fsuid_changed(t)		do { } while(0)
--#define key_fsgid_changed(t)		do { } while(0)
-+#define key_fsuid_changed(c)		do { } while(0)
-+#define key_fsgid_changed(c)		do { } while(0)
- #define key_init()			do { } while(0)
- 
- #endif /* CONFIG_KEYS */
-diff --git a/kernel/cred.c b/kernel/cred.c
-index 45d77284aed0..3bd40de9e192 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -455,9 +455,9 @@ int commit_creds(struct cred *new)
- 
- 	/* alter the thread keyring */
- 	if (!uid_eq(new->fsuid, old->fsuid))
--		key_fsuid_changed(task);
-+		key_fsuid_changed(new);
- 	if (!gid_eq(new->fsgid, old->fsgid))
--		key_fsgid_changed(task);
-+		key_fsgid_changed(new);
- 
- 	/* do it
- 	 * RLIMIT_NPROC limits on user->processes have already been checked
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index f05f7125a7d5..ba5d3172cafe 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -293,28 +293,26 @@ static int install_session_keyring(struct key *keyring)
- /*
-  * Handle the fsuid changing.
-  */
--void key_fsuid_changed(struct task_struct *tsk)
-+void key_fsuid_changed(struct cred *new_cred)
- {
- 	/* update the ownership of the thread keyring */
--	BUG_ON(!tsk->cred);
--	if (tsk->cred->thread_keyring) {
--		down_write(&tsk->cred->thread_keyring->sem);
--		tsk->cred->thread_keyring->uid = tsk->cred->fsuid;
--		up_write(&tsk->cred->thread_keyring->sem);
-+	if (new_cred->thread_keyring) {
-+		down_write(&new_cred->thread_keyring->sem);
-+		new_cred->thread_keyring->uid = new_cred->fsuid;
-+		up_write(&new_cred->thread_keyring->sem);
- 	}
- }
- 
- /*
-  * Handle the fsgid changing.
-  */
--void key_fsgid_changed(struct task_struct *tsk)
-+void key_fsgid_changed(struct cred *new_cred)
- {
- 	/* update the ownership of the thread keyring */
--	BUG_ON(!tsk->cred);
--	if (tsk->cred->thread_keyring) {
--		down_write(&tsk->cred->thread_keyring->sem);
--		tsk->cred->thread_keyring->gid = tsk->cred->fsgid;
--		up_write(&tsk->cred->thread_keyring->sem);
-+	if (new_cred->thread_keyring) {
-+		down_write(&new_cred->thread_keyring->sem);
-+		new_cred->thread_keyring->gid = new_cred->fsgid;
-+		up_write(&new_cred->thread_keyring->sem);
- 	}
- }
- 
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 6463ab8921ea..1ac1ef458f2e 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -1110,7 +1110,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 			break;
+ 		case Opt_template:
+ 			ima_log_string(ab, "template", args[0].from);
+-			if (entry->action != MEASURE) {
++			if (entry->action != MEASURE &&
++			    entry->action != APPRAISE) {
+ 				result = -EINVAL;
+ 				break;
+ 			}
