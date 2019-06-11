@@ -1,247 +1,112 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 28 Jun 2019 15:48:21 +0000
-Subject: [PATCH 0/9] Keyrings, Block and USB notifications [ver #5]
-Message-Id: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Tue, 11 Jun 2019 06:28:07 +0000
+Subject: [PATCH v11 03/13] PKCS#7: Introduce pkcs7_get_digest()
+Message-Id: <20190611062817.18412-4-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190611062817.18412-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
+IMA will need to access the digest of the PKCS7 message (as calculated by
+the kernel) before the signature is verified, so introduce
+pkcs7_get_digest() for that purpose.
 
-Here's a set of patches to add a general notification queue concept and to
-add sources of events for:
+Also, modify pkcs7_digest() to detect when the digest was already
+calculated so that it doesn't have to do redundant work. Verifying that
+sinfo->sig->digest isn't NULL is sufficient because both places which
+allocate sinfo->sig (pkcs7_parse_message() and pkcs7_note_signed_info())
+use kzalloc() so sig->digest is always initialized to zero.
 
- (1) Key/keyring events, such as creating, linking and removal of keys.
-
- (2) General device events (single common queue) including:
-
-     - Block layer events, such as device errors
-
-     - USB subsystem events, such as device/bus attach/remove, device
-       reset, device errors.
-
-LSM hooks are included:
-
- (1) A set of hooks are provided that allow an LSM to rule on whether or
-     not a watch may be set.  Each of these hooks takes a different
-     "watched object" parameter, so they're not really shareable.  The LSM
-     should use current's credentials.  [Wanted by SELinux & Smack]
-
- (2) A hook is provided to allow an LSM to rule on whether or not a
-     particular message may be posted to a particular queue.  This is given
-     the credentials from the event generator (which may be the system) and
-     the watch setter.  [Wanted by Smack]
-
-
-Design decisions:
-
- (1) A misc chardev is used to create and open a ring buffer:
-
-	fd = open("/dev/watch_queue", O_RDWR);
-
-     which is then configured and mmap'd into userspace:
-
-	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, BUF_SIZE);
-	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
-	buf = mmap(NULL, BUF_SIZE * page_size, PROT_READ | PROT_WRITE,
-		   MAP_SHARED, fd, 0);
-
-     The fd cannot be read or written (though there is a facility to use
-     write to inject records for debugging) and userspace just pulls data
-     directly out of the buffer.
-
- (2) The ring index pointers are stored inside the ring and are thus
-     accessible to userspace.  Userspace should only update the tail
-     pointer and never the head pointer or risk breaking the buffer.  The
-     kernel checks that the pointers appear valid before trying to use
-     them.  A 'skip' record is maintained around the pointers.
-
- (3) poll() can be used to wait for data to appear in the buffer.
-
- (4) Records in the buffer are binary, typed and have a length so that they
-     can be of varying size.
-
-     This means that multiple heterogeneous sources can share a common
-     buffer.  Tags may be specified when a watchpoint is created to help
-     distinguish the sources.
-
- (5) The queue is reusable as there are 16 million types available, of
-     which I've used just a few, so there is scope for others to be used.
-
- (6) Records are filterable as types have up to 256 subtypes that can be
-     individually filtered.  Other filtration is also available.
-
- (7) Each time the buffer is opened, a new buffer is created - this means
-     that there's no interference between watchers.
-
- (8) When recording a notification, the kernel will not sleep, but will
-     rather mark a queue as overrun if there's insufficient space, thereby
-     avoiding userspace causing the kernel to hang.
-
- (9) The 'watchpoint' should be specific where possible, meaning that you
-     specify the object that you want to watch.
-
-(10) The buffer is created and then watchpoints are attached to it, using
-     one of:
-
-	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, 0x01);
-	watch_devices(fd, 0x02, 0);
-
-     where in both cases, fd indicates the queue and the number after is a
-     tag between 0 and 255.
-
-(11) The watch must be removed if either the watch buffer is destroyed or
-     the watched object is destroyed.
-
-
-Things I want to avoid:
-
- (1) Introducing features that make the core VFS dependent on the network
-     stack or networking namespaces (ie. usage of netlink).
-
- (2) Dumping all this stuff into dmesg and having a daemon that sits there
-     parsing the output and distributing it as this then puts the
-     responsibility for security into userspace and makes handling
-     namespaces tricky.  Further, dmesg might not exist or might be
-     inaccessible inside a container.
-
- (3) Letting users see events they shouldn't be able to see.
-
-
-The patches can be found here also:
-
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=notifications-core
-
-Changes:
-
- ver #5:
-
- (*) Split the superblock watch and mount watch parts out into their own
-     branch (notifications-mount) as they really need certain fsinfo()
-     attributes.
-
- (*) Rearrange the watch notification UAPI header to push the length down
-     to bits 0-5 and remove the lost-message bits.  The userspace's watch
-     ID tag is moved to bits 8-15 and then the message type is allocated
-     all of bits 16-31 for its own purposes.
-
-     The lost-message bit is moved over to the header, rather than being
-     placed in the next message to be generated and given its own word so
-     it can be cleared with xchg(,0) for parisc.
-
- (*) The security_post_notification() hook is no longer called with the
-     spinlock held and softirqs disabled - though the RCU readlock is still
-     held.
-
- (*) Buffer pages are now accounted towards RLIMIT_MEMLOCK and CAP_IPC_LOCK
-     will skip the overuse check.
-
- (*) The buffer is marked VM_DONTEXPAND.
-
- (*) Save the watch-setter's creds in struct watch and give that to the LSM
-     hook for posting a message.
-
- ver #4:
-
- (*) Split the basic UAPI bits out into their own patch and then split the
-     LSM hooks out into an intermediate patch.  Add LSM hooks for setting
-     watches.
-
-     Rename the *_notify() system calls to watch_*() for consistency.
-
- ver #3:
-
- (*) I've added a USB notification source and reformulated the block
-     notification source so that there's now a common watch list, for which
-     the system call is now device_notify().
-
-     I've assigned a pair of unused ioctl numbers in the 'W' series to the
-     ioctls added by this series.
-
-     I've also added a description of the kernel API to the documentation.
-
- ver #2:
-
- (*) I've fixed various issues raised by Jann Horn and GregKH and moved to
-     krefs for refcounting.  I've added some security features to try and
-     give Casey Schaufler the LSM control he wants.
-
-David
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
-David Howells (9):
-      uapi: General notification ring definitions
-      security: Add hooks to rule on setting a watch
-      security: Add a hook for the point of notification insertion
-      General notification queue with user mmap()'able ring buffer
-      keys: Add a notification facility
-      Add a general, global device notification watch list
-      block: Add block layer notifications
-      usb: Add USB subsystem notifications
-      Add sample notification program
+ crypto/asymmetric_keys/pkcs7_verify.c | 33 +++++++++++++++++++++++++++
+ include/crypto/pkcs7.h                |  4 ++++
+ 2 files changed, 37 insertions(+)
 
-
- Documentation/ioctl/ioctl-number.txt        |    1 
- Documentation/security/keys/core.rst        |   58 ++
- Documentation/watch_queue.rst               |  460 ++++++++++++++
- arch/alpha/kernel/syscalls/syscall.tbl      |    1 
- arch/arm/tools/syscall.tbl                  |    1 
- arch/ia64/kernel/syscalls/syscall.tbl       |    1 
- arch/m68k/kernel/syscalls/syscall.tbl       |    1 
- arch/microblaze/kernel/syscalls/syscall.tbl |    1 
- arch/mips/kernel/syscalls/syscall_n32.tbl   |    1 
- arch/mips/kernel/syscalls/syscall_n64.tbl   |    1 
- arch/mips/kernel/syscalls/syscall_o32.tbl   |    1 
- arch/parisc/kernel/syscalls/syscall.tbl     |    1 
- arch/powerpc/kernel/syscalls/syscall.tbl    |    1 
- arch/s390/kernel/syscalls/syscall.tbl       |    1 
- arch/sh/kernel/syscalls/syscall.tbl         |    1 
- arch/sparc/kernel/syscalls/syscall.tbl      |    1 
- arch/x86/entry/syscalls/syscall_32.tbl      |    1 
- arch/x86/entry/syscalls/syscall_64.tbl      |    1 
- arch/xtensa/kernel/syscalls/syscall.tbl     |    1 
- block/Kconfig                               |    9 
- block/blk-core.c                            |   29 +
- drivers/base/Kconfig                        |    9 
- drivers/base/Makefile                       |    1 
- drivers/base/watch.c                        |   90 +++
- drivers/misc/Kconfig                        |   13 
- drivers/misc/Makefile                       |    1 
- drivers/misc/watch_queue.c                  |  890 +++++++++++++++++++++++++++
- drivers/usb/core/Kconfig                    |   10 
- drivers/usb/core/devio.c                    |   56 ++
- drivers/usb/core/hub.c                      |    3 
- include/linux/blkdev.h                      |   15 
- include/linux/device.h                      |    7 
- include/linux/key.h                         |    4 
- include/linux/lsm_hooks.h                   |   32 +
- include/linux/security.h                    |   25 +
- include/linux/syscalls.h                    |    1 
- include/linux/usb.h                         |   19 +
- include/linux/watch_queue.h                 |   94 +++
- include/uapi/asm-generic/unistd.h           |    4 
- include/uapi/linux/keyctl.h                 |    1 
- include/uapi/linux/watch_queue.h            |  170 +++++
- kernel/sys_ni.c                             |    1 
- samples/Kconfig                             |    6 
- samples/Makefile                            |    1 
- samples/watch_queue/Makefile                |    8 
- samples/watch_queue/watch_test.c            |  233 +++++++
- security/keys/Kconfig                       |   10 
- security/keys/compat.c                      |    2 
- security/keys/gc.c                          |    5 
- security/keys/internal.h                    |   30 +
- security/keys/key.c                         |   37 +
- security/keys/keyctl.c                      |   95 +++
- security/keys/keyring.c                     |   17 -
- security/keys/request_key.c                 |    4 
- security/security.c                         |   19 +
- 55 files changed, 2461 insertions(+), 25 deletions(-)
- create mode 100644 Documentation/watch_queue.rst
- create mode 100644 drivers/base/watch.c
- create mode 100644 drivers/misc/watch_queue.c
- create mode 100644 include/linux/watch_queue.h
- create mode 100644 include/uapi/linux/watch_queue.h
- create mode 100644 samples/watch_queue/Makefile
- create mode 100644 samples/watch_queue/watch_test.c
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index f7b0980bf02d..3243981152b5 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -16,6 +16,7 @@
+ #include <linux/err.h>
+ #include <linux/asn1.h>
+ #include <crypto/hash.h>
++#include <crypto/hash_info.h>
+ #include <crypto/public_key.h>
+ #include "pkcs7_parser.h"
+ 
+@@ -33,6 +34,10 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
+ 
+ 	kenter(",%u,%s", sinfo->index, sinfo->sig->hash_algo);
+ 
++	/* The digest was calculated already. */
++	if (sig->digest)
++		return 0;
++
+ 	if (!sinfo->sig->hash_algo)
+ 		return -ENOPKG;
+ 
+@@ -121,6 +126,34 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
+ 	return ret;
+ }
+ 
++int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf, u32 *len,
++		     enum hash_algo *hash_algo)
++{
++	struct pkcs7_signed_info *sinfo = pkcs7->signed_infos;
++	int i, ret;
++
++	/*
++	 * This function doesn't support messages with more than one signature.
++	 */
++	if (sinfo = NULL || sinfo->next != NULL)
++		return -EBADMSG;
++
++	ret = pkcs7_digest(pkcs7, sinfo);
++	if (ret)
++		return ret;
++
++	*buf = sinfo->sig->digest;
++	*len = sinfo->sig->digest_size;
++
++	for (i = 0; i < HASH_ALGO__LAST; i++)
++		if (!strcmp(hash_algo_name[i], sinfo->sig->hash_algo)) {
++			*hash_algo = i;
++			break;
++		}
++
++	return 0;
++}
++
+ /*
+  * Find the key (X.509 certificate) to use to verify a PKCS#7 message.  PKCS#7
+  * uses the issuer's name and the issuing certificate serial number for
+diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
+index 583f199400a3..3bfe6829eaae 100644
+--- a/include/crypto/pkcs7.h
++++ b/include/crypto/pkcs7.h
+@@ -13,6 +13,7 @@
+ #define _CRYPTO_PKCS7_H
+ 
+ #include <linux/verification.h>
++#include <linux/hash_info.h>
+ #include <crypto/public_key.h>
+ 
+ struct key;
+@@ -44,4 +45,7 @@ extern int pkcs7_verify(struct pkcs7_message *pkcs7,
+ extern int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
+ 				      const void *data, size_t datalen);
+ 
++extern int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf,
++			    u32 *len, enum hash_algo *hash_algo);
++
+ #endif /* _CRYPTO_PKCS7_H */
