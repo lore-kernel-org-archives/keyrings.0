@@ -1,196 +1,192 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 04 Jun 2019 16:36:00 +0000
-Subject: [PATCH 6/8] fsinfo: Export superblock notification counter [ver #2]
-Message-Id: <155966616030.17449.8157292331675001618.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Tue, 11 Jun 2019 06:28:12 +0000
+Subject: [PATCH v11 08/13] ima: Factor xattr_verify() out of ima_appraise_measurement()
+Message-Id: <20190611062817.18412-9-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190611062817.18412-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Provide an fsinfo attribute to export the superblock notification counter
-so that it can be polled in the case of a notification buffer overrun.
-This is accessed with:
+Verify xattr signature in a separate function so that the logic in
+ima_appraise_measurement() remains clear when it gains the ability to also
+verify an appended module signature.
 
-	struct fsinfo_params params = {
-		.request = FSINFO_ATTR_SB_NOTIFICATIONS,
-	};
+The code in the switch statement is unchanged except for having to
+dereference the status and cause variables (since they're now pointers),
+and fixing the style of a block comment to appease checkpatch.
 
-and returns a structure that looks like:
-
-	struct fsinfo_sb_notifications {
-		__u64	watch_id;
-		__u32	notify_counter;
-		__u32	__reserved[1];
-	};
-
-Where watch_id is a number uniquely identifying the superblock in
-notification records and notify_counter is incremented for each
-superblock notification posted.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ security/integrity/ima/ima_appraise.c | 141 +++++++++++++++-----------
+ 1 file changed, 81 insertions(+), 60 deletions(-)
 
- fs/fsinfo.c                      |   12 ++++++++++++
- fs/super.c                       |    1 +
- include/linux/fs.h               |    1 +
- include/uapi/linux/fsinfo.h      |   10 ++++++++++
- include/uapi/linux/watch_queue.h |    2 +-
- samples/vfs/test-fsinfo.c        |   13 +++++++++++++
- 6 files changed, 38 insertions(+), 1 deletion(-)
-
-diff --git a/fs/fsinfo.c b/fs/fsinfo.c
-index 3ec64d3cba08..1456e26d2f7c 100644
---- a/fs/fsinfo.c
-+++ b/fs/fsinfo.c
-@@ -284,6 +284,16 @@ static int fsinfo_generic_param_enum(struct file_system_type *f,
- 	return sizeof(*p);
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 18bbe753421a..5d4772f39757 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -202,6 +202,83 @@ int ima_read_xattr(struct dentry *dentry,
+ 	return ret;
  }
- 
-+static int fsinfo_generic_sb_notifications(struct path *path,
-+					   struct fsinfo_sb_notifications *p)
-+{
-+	struct super_block *sb = path->dentry->d_sb;
-+
-+	p->watch_id		= sb->s_unique_id;
-+	p->notify_counter	= atomic_read(&sb->s_notify_counter);
-+	return sizeof(*p);
-+}
-+
- static void fsinfo_insert_sb_flag_parameters(struct path *path,
- 					     struct fsinfo_kparams *params)
- {
-@@ -331,6 +341,7 @@ int generic_fsinfo(struct path *path, struct fsinfo_kparams *params)
- 	case _genp(MOUNT_DEVNAME,	mount_devname);
- 	case _genp(MOUNT_CHILDREN,	mount_children);
- 	case _genp(MOUNT_SUBMOUNT,	mount_submount);
-+	case _gen(SB_NOTIFICATIONS,	sb_notifications);
- 	default:
- 		return -EOPNOTSUPP;
- 	}
-@@ -606,6 +617,7 @@ static const struct fsinfo_attr_info fsinfo_buffer_info[FSINFO_ATTR__NR] = {
- 	FSINFO_STRING_N		(SERVER_NAME,		server_name),
- 	FSINFO_STRUCT_NM	(SERVER_ADDRESS,	server_address),
- 	FSINFO_STRING		(CELL_NAME,		cell_name),
-+	FSINFO_STRUCT		(SB_NOTIFICATIONS,	sb_notifications),
- };
- 
- /**
-diff --git a/fs/super.c b/fs/super.c
-index ae44745e6e2c..832d1a1865c9 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -1823,6 +1823,7 @@ EXPORT_SYMBOL(thaw_super);
-  */
- void post_sb_notification(struct super_block *s, struct superblock_notification *n)
- {
-+	atomic_inc(&s->s_notify_counter);
- 	post_watch_notification(s->s_watchers, &n->watch, current_cred(),
- 				s->s_unique_id);
- }
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 02ba4bfb9cc3..06e272a25ed7 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1536,6 +1536,7 @@ struct super_block {
- #ifdef CONFIG_SB_NOTIFICATIONS
- 	struct watch_list	*s_watchers;
- #endif
-+	atomic_t		s_notify_counter;
- } __randomize_layout;
- 
- /* Helper functions so that in most cases filesystems will
-diff --git a/include/uapi/linux/fsinfo.h b/include/uapi/linux/fsinfo.h
-index 7247088332c2..b4c9446305bb 100644
---- a/include/uapi/linux/fsinfo.h
-+++ b/include/uapi/linux/fsinfo.h
-@@ -39,6 +39,7 @@ enum fsinfo_attribute {
- 	FSINFO_ATTR_SERVER_NAME		= 21,	/* Name of the Nth server (string) */
- 	FSINFO_ATTR_SERVER_ADDRESS	= 22,	/* Mth address of the Nth server */
- 	FSINFO_ATTR_CELL_NAME		= 23,	/* Cell name (string) */
-+	FSINFO_ATTR_SB_NOTIFICATIONS	= 24,	/* sb_notify() information */
- 	FSINFO_ATTR__NR
- };
- 
-@@ -308,4 +309,13 @@ struct fsinfo_server_address {
- 	struct __kernel_sockaddr_storage address;
- };
  
 +/*
-+ * Information struct for fsinfo(FSINFO_ATTR_SB_NOTIFICATIONS).
++ * xattr_verify - verify xattr digest or signature
++ *
++ * Verify whether the hash or signature matches the file contents.
++ *
++ * Return 0 on success, error code otherwise.
 + */
-+struct fsinfo_sb_notifications {
-+	__u64		watch_id;	/* Watch ID for superblock. */
-+	__u32		notify_counter;	/* Number of notifications. */
-+	__u32		__reserved[1];
-+};
-+
- #endif /* _UAPI_LINUX_FSINFO_H */
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-index 1f09247e49f3..02c330462af8 100644
---- a/include/uapi/linux/watch_queue.h
-+++ b/include/uapi/linux/watch_queue.h
-@@ -145,7 +145,7 @@ enum superblock_notification_type {
-  */
- struct superblock_notification {
- 	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
--	__u64	sb_id;			/* 64-bit superblock ID [fsinfo_ids::f_sb_id] */
-+	__u64	sb_id;		/* 64-bit superblock ID [fsinfo_sb_notifications::watch_id] */
- };
- 
- struct superblock_error_notification {
-diff --git a/samples/vfs/test-fsinfo.c b/samples/vfs/test-fsinfo.c
-index af29da74559e..0f8f9ded0925 100644
---- a/samples/vfs/test-fsinfo.c
-+++ b/samples/vfs/test-fsinfo.c
-@@ -90,6 +90,7 @@ static const struct fsinfo_attr_info fsinfo_buffer_info[FSINFO_ATTR__NR] = {
- 	FSINFO_STRING_N		(SERVER_NAME,		server_name),
- 	FSINFO_STRUCT_NM	(SERVER_ADDRESS,	server_address),
- 	FSINFO_STRING		(CELL_NAME,		cell_name),
-+	FSINFO_STRUCT		(SB_NOTIFICATIONS,	sb_notifications),
- };
- 
- #define FSINFO_NAME(X,Y) [FSINFO_ATTR_##X] = #Y
-@@ -118,6 +119,7 @@ static const char *fsinfo_attr_names[FSINFO_ATTR__NR] = {
- 	FSINFO_NAME		(SERVER_NAME,		server_name),
- 	FSINFO_NAME		(SERVER_ADDRESS,	server_address),
- 	FSINFO_NAME		(CELL_NAME,		cell_name),
-+	FSINFO_NAME		(SB_NOTIFICATIONS,	sb_notifications),
- };
- 
- union reply {
-@@ -133,6 +135,7 @@ union reply {
- 	struct fsinfo_mount_info mount_info;
- 	struct fsinfo_mount_child mount_children[1];
- 	struct fsinfo_server_address srv_addr;
-+	struct fsinfo_sb_notifications sb_notifications;
- };
- 
- static void dump_hex(unsigned int *data, int from, int to)
-@@ -377,6 +380,15 @@ static void dump_attr_MOUNT_CHILDREN(union reply *r, int size)
- 		printf("\t[%u] %8x %8x\n", i++, f->mnt_id, f->notify_counter);
- }
- 
-+static void dump_attr_SB_NOTIFICATIONS(union reply *r, int size)
++static int xattr_verify(enum ima_hooks func, struct integrity_iint_cache *iint,
++			struct evm_ima_xattr_data *xattr_value, int xattr_len,
++			enum integrity_status *status, const char **cause)
 +{
-+	struct fsinfo_sb_notifications *f = &r->sb_notifications;
++	int rc = -EINVAL, hash_start = 0;
 +
-+	printf("\n");
-+	printf("\twatch_id: %llx\n", (unsigned long long)f->watch_id);
-+	printf("\tnotifs  : %llx\n", (unsigned long long)f->notify_counter);
++	switch (xattr_value->type) {
++	case IMA_XATTR_DIGEST_NG:
++		/* first byte contains algorithm id */
++		hash_start = 1;
++		/* fall through */
++	case IMA_XATTR_DIGEST:
++		if (iint->flags & IMA_DIGSIG_REQUIRED) {
++			*cause = "IMA-signature-required";
++			*status = INTEGRITY_FAIL;
++			break;
++		}
++		clear_bit(IMA_DIGSIG, &iint->atomic_flags);
++		if (xattr_len - sizeof(xattr_value->type) - hash_start >+				iint->ima_hash->length)
++			/*
++			 * xattr length may be longer. md5 hash in previous
++			 * version occupied 20 bytes in xattr, instead of 16
++			 */
++			rc = memcmp(&xattr_value->data[hash_start],
++				    iint->ima_hash->digest,
++				    iint->ima_hash->length);
++		else
++			rc = -EINVAL;
++		if (rc) {
++			*cause = "invalid-hash";
++			*status = INTEGRITY_FAIL;
++			break;
++		}
++		*status = INTEGRITY_PASS;
++		break;
++	case EVM_IMA_XATTR_DIGSIG:
++		set_bit(IMA_DIGSIG, &iint->atomic_flags);
++		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
++					     (const char *)xattr_value,
++					     xattr_len,
++					     iint->ima_hash->digest,
++					     iint->ima_hash->length);
++		if (rc = -EOPNOTSUPP) {
++			*status = INTEGRITY_UNKNOWN;
++			break;
++		}
++		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
++		    func = KEXEC_KERNEL_CHECK)
++			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
++						     (const char *)xattr_value,
++						     xattr_len,
++						     iint->ima_hash->digest,
++						     iint->ima_hash->length);
++		if (rc) {
++			*cause = "invalid-signature";
++			*status = INTEGRITY_FAIL;
++		} else {
++			*status = INTEGRITY_PASS;
++		}
++		break;
++	default:
++		*status = INTEGRITY_UNKNOWN;
++		*cause = "unknown-ima-data";
++		break;
++	}
++
++	return rc;
 +}
 +
  /*
+  * ima_appraise_measurement - appraise file measurement
   *
-  */
-@@ -395,6 +407,7 @@ static const dumper_t fsinfo_attr_dumper[FSINFO_ATTR__NR] = {
- 	FSINFO_DUMPER(MOUNT_INFO),
- 	FSINFO_DUMPER(MOUNT_CHILDREN),
- 	FSINFO_DUMPER(SERVER_ADDRESS),
-+	FSINFO_DUMPER(SB_NOTIFICATIONS),
- };
+@@ -221,7 +298,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	struct dentry *dentry = file_dentry(file);
+ 	struct inode *inode = d_backing_inode(dentry);
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+-	int rc = xattr_len, hash_start = 0;
++	int rc = xattr_len;
  
- static void dump_fsinfo(enum fsinfo_attribute attr,
+ 	if (!(inode->i_opflags & IOP_XATTR))
+ 		return INTEGRITY_UNKNOWN;
+@@ -259,65 +336,9 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 		WARN_ONCE(true, "Unexpected integrity status %d\n", status);
+ 	}
+ 
+-	switch (xattr_value->type) {
+-	case IMA_XATTR_DIGEST_NG:
+-		/* first byte contains algorithm id */
+-		hash_start = 1;
+-		/* fall through */
+-	case IMA_XATTR_DIGEST:
+-		if (iint->flags & IMA_DIGSIG_REQUIRED) {
+-			cause = "IMA-signature-required";
+-			status = INTEGRITY_FAIL;
+-			break;
+-		}
+-		clear_bit(IMA_DIGSIG, &iint->atomic_flags);
+-		if (xattr_len - sizeof(xattr_value->type) - hash_start >-				iint->ima_hash->length)
+-			/* xattr length may be longer. md5 hash in previous
+-			   version occupied 20 bytes in xattr, instead of 16
+-			 */
+-			rc = memcmp(&xattr_value->data[hash_start],
+-				    iint->ima_hash->digest,
+-				    iint->ima_hash->length);
+-		else
+-			rc = -EINVAL;
+-		if (rc) {
+-			cause = "invalid-hash";
+-			status = INTEGRITY_FAIL;
+-			break;
+-		}
+-		status = INTEGRITY_PASS;
+-		break;
+-	case EVM_IMA_XATTR_DIGSIG:
+-		set_bit(IMA_DIGSIG, &iint->atomic_flags);
+-		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
+-					     (const char *)xattr_value,
+-					     xattr_len,
+-					     iint->ima_hash->digest,
+-					     iint->ima_hash->length);
+-		if (rc = -EOPNOTSUPP) {
+-			status = INTEGRITY_UNKNOWN;
+-			break;
+-		}
+-		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
+-		    func = KEXEC_KERNEL_CHECK)
+-			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
+-						     (const char *)xattr_value,
+-						     xattr_len,
+-						     iint->ima_hash->digest,
+-						     iint->ima_hash->length);
+-		if (rc) {
+-			cause = "invalid-signature";
+-			status = INTEGRITY_FAIL;
+-		} else {
+-			status = INTEGRITY_PASS;
+-		}
+-		break;
+-	default:
+-		status = INTEGRITY_UNKNOWN;
+-		cause = "unknown-ima-data";
+-		break;
+-	}
++	if (xattr_value)
++		rc = xattr_verify(func, iint, xattr_value, xattr_len, &status,
++				  &cause);
+ 
+ out:
+ 	/*
