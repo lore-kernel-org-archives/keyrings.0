@@ -1,313 +1,148 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 06 Jun 2019 09:43:06 +0000
-Subject: [PATCH 07/10] Add a general, global device notification watch list [ver #3]
-Message-Id: <155981418598.17513.1789371699418368415.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Tue, 11 Jun 2019 06:28:16 +0000
+Subject: [PATCH v11 12/13] ima: Store the measurement again when appraising a modsig
+Message-Id: <20190611062817.18412-13-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190611062817.18412-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Create a general, global watch list that can be used for the posting of
-device notification events, for such things as device attachment,
-detachment and errors on sources such as block devices and USB devices.
-This can be enabled with:
+If the IMA template contains the "modsig" or "d-modsig" field, then the
+modsig should be added to the measurement list when the file is appraised.
 
-	CONFIG_DEVICE_NOTIFICATIONS
+And that is what normally happens, but if a measurement rule caused a file
+containing a modsig to be measured before a different rule causes it to be
+appraised, the resulting measurement entry will not contain the modsig
+because it is only fetched during appraisal. When the appraisal rule
+triggers, it won't store a new measurement containing the modsig because
+the file was already measured.
 
-To add a watch on this list, an event queue must be created and configured:
+We need to detect that situation and store an additional measurement with
+the modsig. This is done by adding an IMA_MEASURE action flag if we read a
+modsig and the IMA template contains a modsig field.
 
-        fd = open("/dev/event_queue", O_RDWR);
-        ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
-
-and then a watch can be placed upon it using a system call:
-
-        device_notify(fd, 12);
-
-Unless the application wants to receive all events, it should emplace
-appropriate filters.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
 ---
+ security/integrity/ima/ima.h          |  1 +
+ security/integrity/ima/ima_api.c      | 19 +++++++++++++++----
+ security/integrity/ima/ima_main.c     | 15 ++++++++++++---
+ security/integrity/ima/ima_template.c | 19 +++++++++++++++++++
+ 4 files changed, 47 insertions(+), 7 deletions(-)
 
- Documentation/watch_queue.rst          |   27 ++++++++---
- arch/x86/entry/syscalls/syscall_32.tbl |    1 
- arch/x86/entry/syscalls/syscall_64.tbl |    1 
- drivers/base/Kconfig                   |    9 ++++
- drivers/base/Makefile                  |    1 
- drivers/base/notify.c                  |   82 ++++++++++++++++++++++++++++++++
- include/linux/device.h                 |    7 +++
- include/linux/syscalls.h               |    1 
- include/linux/watch_queue.h            |    3 +
- kernel/sys_ni.c                        |    1 
- 10 files changed, 126 insertions(+), 7 deletions(-)
- create mode 100644 drivers/base/notify.c
-
-diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
-index 0668c4a31710..e4b8233d5aa8 100644
---- a/Documentation/watch_queue.rst
-+++ b/Documentation/watch_queue.rst
-@@ -11,7 +11,7 @@ receive notifications from the kernel.  This can be used in conjunction with::
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index a2b2c13ceda8..44f5f60424c2 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -149,6 +149,7 @@ void ima_putc(struct seq_file *m, void *data, int datalen);
+ void ima_print_digest(struct seq_file *m, u8 *digest, u32 size);
+ struct ima_template_desc *ima_template_desc_current(void);
+ struct ima_template_desc *lookup_template_desc(const char *name);
++bool ima_template_has_modsig(const struct ima_template_desc *ima_template);
+ int ima_restore_measurement_entry(struct ima_template_entry *entry);
+ int ima_restore_measurement_list(loff_t bufsize, void *buf);
+ int ima_measurements_show(struct seq_file *m, void *v);
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index 32297d1e6164..bb887ed3d8a7 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -222,6 +222,14 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 		char digest[IMA_MAX_DIGEST_SIZE];
+ 	} hash;
  
-   * Superblock event notifications
- 
--  * Block layer event notifications
-+  * General device event notifications
- 
- 
- The notifications buffers can be enabled by:
-@@ -292,6 +292,25 @@ The ``id`` is the ID of the source object (such as the serial number on a key).
- Only watches that have the same ID set in them will see this notification.
- 
- 
-+Global Device Watch List
-+============
++	/*
++	 * Always collect the modsig, because IMA might have already collected
++	 * the file digest without collecting the modsig in a previous
++	 * measurement rule.
++	 */
++	if (modsig)
++		ima_collect_modsig(modsig, buf, size);
 +
-+There is a global watch list that hardware generated events, such as device
-+connection, disconnection, failure and error can be posted upon.  It must be
-+enabled using::
-+
-+	CONFIG_DEVICE_NOTIFICATIONS
-+
-+Watchpoints are set in userspace using the device_notify(2) system call.
-+Within the kernel events are posted upon it using::
-+
-+	void post_device_notification(struct watch_notification *n, u64 id);
-+
-+where ``n`` is the formatted notification record to post.  ``id`` is an
-+identifier that can be used to direct to specific watches, but it should be 0
-+for general use on this queue.
-+
-+
- Watch Sources
- ====== 
-@@ -317,12 +336,6 @@ Any particular buffer can be fed from multiple sources.  Sources include:
+ 	if (iint->flags & IMA_COLLECTED)
+ 		goto out;
  
-     See Documentation/security/keys/core.rst for more information.
+@@ -255,9 +263,6 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 	memcpy(iint->ima_hash, &hash, length);
+ 	iint->version = i_version;
  
--  * WATCH_TYPE_BLOCK_NOTIFY
+-	if (modsig)
+-		ima_collect_modsig(modsig, buf, size);
 -
--    Notifications of this type indicate block layer events, such as I/O errors
--    or temporary link loss.  Watchpoints of this type are set on a global
--    queue.
--
+ 	/* Possibly temporary failure due to type of read (eg. O_DIRECT) */
+ 	if (!result)
+ 		iint->flags |= IMA_COLLECTED;
+@@ -307,7 +312,13 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 					     .modsig = modsig };
+ 	int violation = 0;
  
- Event Filtering
- =======diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
-index 429416ce60e1..4a12ab8ac7ef 100644
---- a/arch/x86/entry/syscalls/syscall_32.tbl
-+++ b/arch/x86/entry/syscalls/syscall_32.tbl
-@@ -441,3 +441,4 @@
- 434	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
- 435	i386	mount_notify		sys_mount_notify		__ia32_sys_mount_notify
- 436	i386	sb_notify		sys_sb_notify			__ia32_sys_sb_notify
-+437	i386	device_notify		sys_device_notify		__ia32_sys_device_notify
-diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
-index 4ae146e472db..60f847eb0977 100644
---- a/arch/x86/entry/syscalls/syscall_64.tbl
-+++ b/arch/x86/entry/syscalls/syscall_64.tbl
-@@ -358,6 +358,7 @@
- 434	common	fsinfo			__x64_sys_fsinfo
- 435	common	mount_notify		__x64_sys_mount_notify
- 436	common	sb_notify		__x64_sys_sb_notify
-+437	common	device_notify		__x64_sys_device_notify
+-	if (iint->measured_pcrs & (0x1 << pcr))
++	/*
++	 * We still need to store the measurement in the case of MODSIG because
++	 * we only have its contents to put in the list at the time of
++	 * appraisal, but a file measurement from earlier might already exist in
++	 * the measurement list.
++	 */
++	if (iint->measured_pcrs & (0x1 << pcr) && !modsig)
+ 		return;
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index dc404492381d..63db34efb23b 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -1,6 +1,15 @@
- # SPDX-License-Identifier: GPL-2.0
- menu "Generic Driver Options"
+ 	result = ima_alloc_init_template(&event_data, &entry, template_desc);
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 85afb31fafe0..e0ca39f81a59 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -307,9 +307,18 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 		/* read 'security.ima' */
+ 		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
  
-+config DEVICE_NOTIFICATIONS
-+	bool "Provide device event notifications"
-+	select WATCH_QUEUE
-+	help
-+	  This option provides support for getting hardware event notifications
-+	  on devices, buses and interfaces.  This makes use of the
-+	  /dev/watch_queue misc device to handle the notification buffer.
-+	  device_notify(2) is used to set/remove watches.
+-		/* Read the appended modsig if allowed by the policy. */
+-		if (iint->flags & IMA_MODSIG_ALLOWED)
+-			ima_read_modsig(func, buf, size, &modsig);
++		/*
++		 * Read the appended modsig if allowed by the policy, and allow
++		 * an additional measurement list entry, if needed, based on the
++		 * template format and whether the file was already measured.
++		 */
++		if (iint->flags & IMA_MODSIG_ALLOWED) {
++			rc = ima_read_modsig(func, buf, size, &modsig);
 +
- config UEVENT_HELPER
- 	bool "Support for uevent helper"
- 	help
-diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-index 157452080f3d..9fc43539f970 100644
---- a/drivers/base/Makefile
-+++ b/drivers/base/Makefile
-@@ -7,6 +7,7 @@ obj-y			:= component.o core.o bus.o dd.o syscore.o \
- 			   attribute_container.o transport_class.o \
- 			   topology.o container.o property.o cacheinfo.o \
- 			   devcon.o swnode.o
-+obj-$(CONFIG_DEVICE_NOTIFICATIONS) += notify.o
- obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
- obj-y			+= power/
- obj-$(CONFIG_ISA_BUS_API)	+= isa.o
-diff --git a/drivers/base/notify.c b/drivers/base/notify.c
-new file mode 100644
-index 000000000000..1c4bb55e387b
---- /dev/null
-+++ b/drivers/base/notify.c
-@@ -0,0 +1,82 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/*
-+ * Event notifications.
-+ *
-+ * Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ */
-+
-+#include <linux/watch_queue.h>
-+#include <linux/syscalls.h>
-+#include <linux/init_task.h>
-+
-+/*
-+ * Global queue for watching for device layer events.
-+ */
-+static struct watch_list device_watchers = {
-+	.watchers	= HLIST_HEAD_INIT,
-+	.lock		= __SPIN_LOCK_UNLOCKED(&device_watchers.lock),
-+};
-+
-+static DEFINE_SPINLOCK(device_watchers_lock);
-+
++			if (!rc && ima_template_has_modsig(template_desc) &&
++			    iint->flags & IMA_MEASURED)
++				action |= IMA_MEASURE;
++		}
+ 	}
+ 
+ 	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index e25bef419c87..00d9a6cc8a60 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -56,6 +56,25 @@ static int template_desc_init_fields(const char *template_fmt,
+ 				     const struct ima_template_field ***fields,
+ 				     int *num_fields);
+ 
 +/**
-+ * post_device_notification - Post notification of a device event
-+ * @n - The notification to post
-+ * @id - The device ID
++ * ima_template_has_modsig - Check whether template has modsig-related fields.
++ * @ima_template: IMA template to check.
 + *
-+ * Note that there's only a global queue to which all events are posted.  Might
-+ * want to provide per-dev queues also.
++ * Tells whether the given template has fields referencing a file's appended
++ * signature.
 + */
-+void post_device_notification(struct watch_notification *n, u64 id)
++bool ima_template_has_modsig(const struct ima_template_desc *ima_template)
 +{
-+	post_watch_notification(&device_watchers, n, &init_cred, id);
++	int i;
++
++	for (i = 0; i < ima_template->num_fields; i++)
++		if (!strcmp(ima_template->fields[i]->field_id, "modsig") ||
++		    !strcmp(ima_template->fields[i]->field_id, "d-modsig"))
++			return true;
++
++	return false;
 +}
 +
-+/**
-+ * sys_device_notify - Watch for superdevice events.
-+ * @watch_fd: The watch queue to send notifications to.
-+ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
-+ */
-+SYSCALL_DEFINE2(device_notify, int, watch_fd, int, watch_id)
-+{
-+	struct watch_queue *wqueue;
-+	struct watch_list *wlist = &device_watchers;
-+	struct watch *watch;
-+	long ret = -ENOMEM;
-+	u64 id = 0; /* Might want to allow dev# here. */
-+
-+	if (watch_id < -1 || watch_id > 0xff)
-+		return -EINVAL;
-+
-+	wqueue = get_watch_queue(watch_fd);
-+	if (IS_ERR(wqueue)) {
-+		ret = PTR_ERR(wqueue);
-+		goto err;
-+	}
-+
-+	if (watch_id >= 0) {
-+		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
-+		if (!watch)
-+			goto err_wqueue;
-+
-+		init_watch(watch, wqueue);
-+		watch->id	= id;
-+		watch->info_id	= (u32)watch_id << WATCH_INFO_ID__SHIFT;
-+
-+		spin_lock(&device_watchers_lock);
-+		ret = add_watch_to_object(watch, wlist);
-+		spin_unlock(&device_watchers_lock);
-+		if (ret < 0)
-+			kfree(watch);
-+	} else {
-+		spin_lock(&device_watchers_lock);
-+		ret = remove_watch_from_object(wlist, wqueue, id, false);
-+		spin_unlock(&device_watchers_lock);
-+	}
-+
-+err_wqueue:
-+	put_watch_queue(wqueue);
-+err:
-+	return ret;
-+}
-diff --git a/include/linux/device.h b/include/linux/device.h
-index e85264fb6616..c947c078b1be 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -26,6 +26,7 @@
- #include <linux/uidgid.h>
- #include <linux/gfp.h>
- #include <linux/overflow.h>
-+#include <linux/watch_queue.h>
- #include <asm/device.h>
- 
- struct device;
-@@ -1396,6 +1397,12 @@ struct device_link *device_link_add(struct device *consumer,
- void device_link_del(struct device_link *link);
- void device_link_remove(void *consumer, struct device *supplier);
- 
-+#ifdef CONFIG_DEVICE_NOTIFICATIONS
-+extern void post_device_notification(struct watch_notification *n, u64 id);
-+#else
-+static inline void post_device_notification(struct watch_notification *n, u64 id) {}
-+#endif
-+
- #ifndef dev_fmt
- #define dev_fmt(fmt) fmt
- #endif
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 204a6dbcc34a..8cd9ec564d01 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -1005,6 +1005,7 @@ asmlinkage long sys_mount_notify(int dfd, const char __user *path,
- 				 unsigned int at_flags, int watch_fd, int watch_id);
- asmlinkage long sys_sb_notify(int dfd, const char __user *path,
- 			      unsigned int at_flags, int watch_fd, int watch_id);
-+asmlinkage long sys_device_notify(int watch_fd, int watch_id);
- 
- /*
-  * Architecture-specific system calls
-diff --git a/include/linux/watch_queue.h b/include/linux/watch_queue.h
-index 91777119db5e..8a5d586dfdf8 100644
---- a/include/linux/watch_queue.h
-+++ b/include/linux/watch_queue.h
-@@ -12,10 +12,12 @@
- 
- #include <uapi/linux/watch_queue.h>
- #include <linux/kref.h>
-+#include <linux/rcupdate.h>
- 
- #ifdef CONFIG_WATCH_QUEUE
- 
- struct watch_queue;
-+struct cred;
- 
- /*
-  * Representation of a watch on an object.
-@@ -53,6 +55,7 @@ extern void put_watch_queue(struct watch_queue *);
- extern void init_watch(struct watch *, struct watch_queue *);
- extern int add_watch_to_object(struct watch *, struct watch_list *);
- extern int remove_watch_from_object(struct watch_list *, struct watch_queue *, u64, bool);
-+extern void post_device_notification(struct watch_notification *, u64);
- 
- static inline void init_watch_list(struct watch_list *wlist,
- 				   void (*release_watch)(struct watch *))
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 565d1e3d1bed..580374089f8d 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -51,6 +51,7 @@ COND_SYSCALL_COMPAT(io_pgetevents);
- COND_SYSCALL(io_uring_setup);
- COND_SYSCALL(io_uring_enter);
- COND_SYSCALL(io_uring_register);
-+COND_SYSCALL(device_notify);
- 
- /* fs/xattr.c */
- 
+ static int __init ima_template_setup(char *str)
+ {
+ 	struct ima_template_desc *template_desc;
