@@ -1,28 +1,61 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 06 Jun 2019 22:50:48 +0000
-Subject: Re: [RFC][PATCH 00/10] Mount, FS, Block and Keyrings notifications [ver #3]
-Message-Id: <31428.1559861448@warthog.procyon.org.uk>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Thu, 13 Jun 2019 10:42:26 +0000
+Subject: [RFC 0/7] Introduce TEE based Trusted Keys support
+Message-Id: <1560421833-27414-1-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <D2BD8FEB-5DF5-449B-AF81-83BA65E0E643@amacapital.net> <AD7898AE-B92C-4DE6-B895-7116FEDB3091@amacapital.net> <CALCETrVuNRPgEzv-XY4M9m6sEsCiRHxPenN_MpcMYc1h26vVwQ@mail.gmail.com> <b91710d8-cd2d-6b93-8619-130b9d15983d@tycho.nsa.gov> <155981411940.17513.7137844619951358374.stgit@warthog.procyon.org.uk> <3813.1559827003@warthog.procyon.org.uk> <8382af23-548c-f162-0e82-11e308049735@tycho.nsa.gov> <0eb007c5-b4a0-9384-d915-37b0e5a158bf@schaufler-ca.com> <c82052e5-ca11-67b5-965e-8f828081f31c@tycho.nsa.gov> <07e92045-2d80-8573-4d36-643deeaff9ec@schaufler-ca.com> <23611.1559855827@warthog.procyon.org.uk> <30567.1559860681@warthog.procyon.org.uk>
-In-Reply-To: <D2BD8FEB-5DF5-449B-AF81-83BA65E0E643@amacapital.net>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: dhowells@redhat.com, Andy Lutomirski <luto@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, USB list <linux-usb@vger.kernel.org>, raven@themaw.net, Linux FS Devel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, Paul Moore <paul@paul-moore.com>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: jens.wiklander@linaro.org, corbet@lwn.net, dhowells@redhat.com, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-Andy Lutomirski <luto@amacapital.net> wrote:
+Add support for TEE based trusted keys where TEE provides the functionality
+to seal and unseal trusted keys using hardware unique key. Also, this is
+an alternative in case platform doesn't possess a TPM device.
 
-> They can call fsinfo() anyway, or just read /proc/self/mounts. As far as I’m
-> concerned, if you have CAP_SYS_ADMIN over a mount namespace and LSM policy
-> lets you mount things, the of course you can get information to basically
-> anyone who can use that mount namespace.
+This series also adds some TEE features like:
 
-And automounts?  You don't need CAP_SYS_ADMIN to trigger one of those, but
-they still generate events.  On the other hand, you need CSA to mount
-something that has automounts in the first place, and if you're particularly
-concerned about security, you probably don't want the processes you might be
-suspicious of having access to things that contain automounts (typically
-network filesystems).
+Patch #1, #2 enables support for registered kernel shared memory with TEE.
 
-David
+Patch #3 enables support for private kernel login method required for
+cases like trusted keys where we don't wan't user-space to directly access
+TEE service to retrieve trusted key contents.
+
+Rest of the patches from #4 to #7 adds support for TEE based trusted keys.
+
+This patch-set has been tested with OP-TEE based pseudo TA which can be
+found here [1].
+
+Looking forward to your valuable feedback/suggestions.
+
+[1] https://github.com/OP-TEE/optee_os/pull/3082
+
+Sumit Garg (7):
+  tee: optee: allow kernel pages to register as shm
+  tee: enable support to register kernel memory
+  tee: add private login method for kernel clients
+  KEYS: trusted: Introduce TEE based Trusted Keys
+  KEYS: encrypted: Allow TEE based trusted master keys
+  doc: keys: Document usage of TEE based Trusted Keys
+  MAINTAINERS: Add entry for TEE based Trusted Keys
+
+ Documentation/security/keys/tee-trusted.rst      |  93 +++++
+ MAINTAINERS                                      |   9 +
+ drivers/tee/optee/call.c                         |   7 +
+ drivers/tee/tee_core.c                           |   6 +
+ drivers/tee/tee_shm.c                            |  16 +-
+ include/keys/tee_trusted.h                       |  84 ++++
+ include/keys/trusted-type.h                      |   1 +
+ include/linux/tee_drv.h                          |   1 +
+ include/uapi/linux/tee.h                         |   2 +
+ security/keys/Kconfig                            |   3 +
+ security/keys/Makefile                           |   3 +
+ security/keys/encrypted-keys/masterkey_trusted.c |  10 +-
+ security/keys/tee_trusted.c                      | 506 +++++++++++++++++++++++
+ 13 files changed, 737 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/security/keys/tee-trusted.rst
+ create mode 100644 include/keys/tee_trusted.h
+ create mode 100644 security/keys/tee_trusted.c
+
+-- 
+2.7.4
