@@ -1,85 +1,37 @@
-From: Randy Dunlap <rdunlap@infradead.org>
-Date: Sun, 09 Jun 2019 04:35:33 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 13 Jun 2019 13:34:45 +0000
 Subject: Re: [PATCH 02/13] uapi: General notification ring definitions [ver #4]
-Message-Id: <6b6f5bb0-1426-239b-ac9f-281e31ddcd04@infradead.org>
+Message-Id: <30226.1560432885@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190607151228.GA1872258@magnolia>
- <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
- <155991706083.15579.16359443779582362339.stgit@warthog.procyon.org.uk>
- <29222.1559922719@warthog.procyon.org.uk>
-In-Reply-To: <29222.1559922719@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <6b6f5bb0-1426-239b-ac9f-281e31ddcd04@infradead.org> <20190607151228.GA1872258@magnolia> <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk> <155991706083.15579.16359443779582362339.stgit@warthog.procyon.org.uk> <29222.1559922719@warthog.procyon.org.uk>
+In-Reply-To: <6b6f5bb0-1426-239b-ac9f-281e31ddcd04@infradead.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: dhowells@redhat.com, "Darrick J. Wong" <darrick.wong@oracle.com>, viro@zeniv.linux.org.uk, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On 6/7/19 8:51 AM, David Howells wrote:
-> Darrick J. Wong <darrick.wong@oracle.com> wrote:
+Randy Dunlap <rdunlap@infradead.org> wrote:
+
+> What is the problem with inline functions in UAPI headers?
+
+It makes compiler problems more likely; it increases the potential for name
+collisions with userspace; it makes for more potential problems if the headers
+are imported into some other language; and it's not easy to fix a bug in one
+if userspace uses it, just in case fixing the bug breaks userspace.
+
+Further, in this case, the first of Darrick's functions (calculating the
+length) is probably reasonable, but the second is not.  It should crank the
+tail pointer and then use that, but that requires 
+
+> >> Also, weird multiline comment style.
+> > 
+> > Not really.
 > 
+> Yes really.
 
->>> +	__u32			info;
->>> +#define WATCH_INFO_OVERRUN	0x00000001	/* Event(s) lost due to overrun */
->>> +#define WATCH_INFO_ENOMEM	0x00000002	/* Event(s) lost due to ENOMEM */
->>> +#define WATCH_INFO_RECURSIVE	0x00000004	/* Change was recursive */
->>> +#define WATCH_INFO_LENGTH	0x000001f8	/* Length of record / sizeof(watch_notification) */
->>
->> This is a mask, isn't it?  Could we perhaps have some helpers here?
->> Something along the lines of...
->>
->> #define WATCH_INFO_LENGTH_MASK	0x000001f8
->> #define WATCH_INFO_LENGTH_SHIFT	3
->>
->> static inline size_t watch_notification_length(struct watch_notification *wn)
->> {
->> 	return (wn->info & WATCH_INFO_LENGTH_MASK) >> WATCH_INFO_LENGTH_SHIFT *
->> 			sizeof(struct watch_notification);
->> }
->>
->> static inline struct watch_notification *watch_notification_next(
->> 		struct watch_notification *wn)
->> {
->> 	return wn + ((wn->info & WATCH_INFO_LENGTH_MASK) >>
->> 			WATCH_INFO_LENGTH_SHIFT);
->> }
-> 
-> No inline functions in UAPI headers, please.  I'd love to kill off the ones
-> that we have, but that would break things.
+No.  It's not weird.  If anything, the default style is less good for several
+reasons.  I'm going to deal with this separately as I need to generate some
+stats first.
 
-Hi David,
-
-What is the problem with inline functions in UAPI headers?
-
->> ...so that we don't have to opencode all of the ring buffer walking
->> magic and stuff?
-> 
-> There'll end up being a small userspace library, I think.
-
->>> +};
->>> +
->>> +#define WATCH_LENGTH_SHIFT	3
->>> +
->>> +struct watch_queue_buffer {
->>> +	union {
->>> +		/* The first few entries are special, containing the
->>> +		 * ring management variables.
->>
->> The first /two/ entries, correct?
-> 
-> Currently two.
-> 
->> Also, weird multiline comment style.
-> 
-> Not really.
-
-Yes really.
-
->>> +		 */
-
-It does not match the preferred coding style for multi-line comments
-according to coding-style.rst.
-
-
-thanks.
--- 
-~Randy
+David
