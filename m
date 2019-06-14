@@ -1,55 +1,36 @@
-From: Lennert Buytenhek <buytenh@wantstofly.org>
-Date: Thu, 13 Jun 2019 15:46:08 +0000
-Subject: [PATCH 2/3] Fix syscall signature for KEYCTL_PKEY_QUERY
-Message-Id: <20190613154608.GE9017@wantstofly.org>
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 14 Jun 2019 12:04:24 +0000
+Subject: Re: [PATCH, RFC 51/62] iommu/vt-d: Support MKTME in DMA remapping
+Message-Id: <20190614120424.GJ3436@hirez.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+ <20190508144422.13171-52-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-52-kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Currently, running 'keyctl pkey_query' (or pkey_{encrypt,decrypt,sign},
-due to those using pkey_query internally) will always return:
+On Wed, May 08, 2019 at 05:44:11PM +0300, Kirill A. Shutemov wrote:
+> @@ -603,7 +605,12 @@ static inline void dma_clear_pte(struct dma_pte *pte)
+>  static inline u64 dma_pte_addr(struct dma_pte *pte)
+>  {
+>  #ifdef CONFIG_64BIT
+> -	return pte->val & VTD_PAGE_MASK;
 
-	keyctl_pkey_query: Invalid argument
+I don't know this code, but going by the below cmpxchg64, this wants to
+be READ_ONCE().
 
-This is because we invoke KEYCTL_PKEY_QUERY as:
-
-	return keyctl(KEYCTL_PKEY_QUERY, key_id, info, result);
-
-While the kernel code (security/keys/keyctl.c) does this:
-
-	[...]
-	case KEYCTL_PKEY_QUERY:
-		if (arg3 != 0)
-			return -EINVAL;
-		return keyctl_pkey_query((key_serial_t)arg2,
-					 (const char __user *)arg4,
-					 (struct keyctl_pkey_query __user *)arg5);
-	[...]
-
-In other words, there is supposed to be an argument between 'key_id'
-and 'info' (presumably for the (currently unsupported) key password
-field?) which is supposed to be NULL.  Adding a NULL argument seems to
-make things happy.
-
-Signed-off-by: Lennert Buytenhek <buytenh@wantstofly.org>
----
- keyutils.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/keyutils.c b/keyutils.c
-index 18f2ab4..7234f9d 100644
---- a/keyutils.c
-+++ b/keyutils.c
-@@ -268,7 +268,7 @@ long keyctl_pkey_query(key_serial_t key_id,
- 		       const char *info,
- 		       struct keyctl_pkey_query *result)
- {
--	return keyctl(KEYCTL_PKEY_QUERY, key_id, info, result);
-+	return keyctl(KEYCTL_PKEY_QUERY, key_id, NULL, info, result);
- }
- 
- long keyctl_pkey_encrypt(key_serial_t key_id,
--- 
-2.21.0
+> +	u64 addr = pte->val;
+> +	addr &= VTD_PAGE_MASK;
+> +#ifdef CONFIG_X86_INTEL_MKTME
+> +	addr &= ~mktme_keyid_mask;
+> +#endif
+> +	return addr;
+>  #else
+>  	/* Must have a full atomic 64-bit read */
+>  	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
+> -- 
+> 2.20.1
+> 
