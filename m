@@ -1,91 +1,28 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 04 Jun 2019 12:33:01 +0000
-Subject: Re: [RFC][PATCH 0/7] Mount, FS, Block and Keyrings notifications
-Message-Id: <16167.1559651581@warthog.procyon.org.uk>
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 14 Jun 2019 11:55:20 +0000
+Subject: Re: [PATCH, RFC 47/62] mm: Restrict MKTME memory encryption to anonymous VMAs
+Message-Id: <20190614115520.GH3436@hirez.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAOQ4uxjLzURf8c1UH_xCJKkuD2es8i-=P-ZNM=t3aFcZLMwXEg@mail.gmail.com> <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk> <CAOQ4uxjC1M7jwjd9zSaSa6UW2dbEjc+ZbFSo7j9F1YHAQxQ8LQ@mail.gmail.com> <20190529142504.GC32147@quack2.suse.cz>
-In-Reply-To: <CAOQ4uxjLzURf8c1UH_xCJKkuD2es8i-=P-ZNM=t3aFcZLMwXEg@mail.gmail.com>
-To: Amir Goldstein <amir73il@gmail.com>
-Cc: dhowells@redhat.com, Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>, Ian Kent <raven@themaw.net>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-api@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+ <20190508144422.13171-48-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-48-kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Amir Goldstein <amir73il@gmail.com> wrote:
+On Wed, May 08, 2019 at 05:44:07PM +0300, Kirill A. Shutemov wrote:
+> From: Alison Schofield <alison.schofield@intel.com>
+> 
+> Memory encryption is only supported for mappings that are ANONYMOUS.
+> Test the VMA's in an encrypt_mprotect() request to make sure they all
+> meet that requirement before encrypting any.
+> 
+> The encrypt_mprotect syscall will return -EINVAL and will not encrypt
+> any VMA's if this check fails.
+> 
+> Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-> Well I am sure that ring buffer for fanotify events would be useful, so
-> seeing that David is proposing a generic notification mechanism, I wanted
-> to know how that mechanism could best share infrastructure with fsnotify.
->
-> But apart from that I foresee the questions from users about why the
-> mount notification API and filesystem events API do not have better
-> integration.
->
-> The way I see it, the notification queue can serve several classes
-> of notifications and fsnotify could be one of those classes
-> (at least FAN_CLASS_NOTIF fits nicely to the model).
-
-It could be done; the main thing that concerns me is that the buffer is of
-limited capacity.
-
-However, I could take this:
-
-	struct fanotify_event_metadata {
-		__u32 event_len;
-		__u8 vers;
-		__u8 reserved;
-		__u16 metadata_len;
-		__aligned_u64 mask;
-		__s32 fd;
-		__s32 pid;
-	};
-
-and map it to:
-
-	struct fanotify_notification {
-		struct watch_notification watch; /* WATCH_TYPE_FANOTIFY */
-		__aligned_u64	mask;
-		__u16		metadata_len;
-		__u8		vers;
-		__u8		reserved;
-		__u32		reserved2;
-		__s32		fd;
-		__s32		pid;
-	};
-
-and some of the watch::info bit could be used:
-
-	n->watch.info & WATCH_INFO_OVERRUN	watch queue overran
-	n->watch.info & WATCH_INFO_LENGTH	event_len
-	n->watch.info & WATCH_INFO_RECURSIVE	FAN_EVENT_ON_CHILD
-	n->watch.info & WATCH_INFO_FLAG_0	FAN_*_PERM
-	n->watch.info & WATCH_INFO_FLAG_1	FAN_Q_OVERFLOW
-	n->watch.info & WATCH_INFO_FLAG_2	FAN_ON_DIR
-	n->subtype				ffs(n->mask)
-
-Ideally, I'd dispense with metadata_len, vers, reserved* and set the version
-when setting the watch.
-
-	fanotify_watch(int watchfd, unsigned int flags, u64 *mask,
-		       int dirfd, const char *pathname, unsigned int at_flags);
-
-We might also want to extend the watch_filter to allow you to, say, filter on
-the first __u64 after the watch member so that you could filter on specific
-events:
-
-	struct watch_notification_type_filter {
-		__u32	type;
-		__u32	info_filter;
-		__u32	info_mask;
-		__u32	subtype_filter[8];
-		__u64	payload_mask[1];
-		__u64	payload_set[1];
-	};
-
-So, in this case, it would require:
-
-	n->mask & wf->payload_mask[0] = wf->payload_set[0]
-
-to be true to record the message.
-
-David
+This should be folded back into the initial implemention, methinks.
