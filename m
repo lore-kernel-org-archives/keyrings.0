@@ -1,302 +1,55 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Fri, 28 Jun 2019 02:19:24 +0000
-Subject: [PATCH v12 01/11] MODSIGN: Export module signature definitions
-Message-Id: <20190628021934.4260-2-bauerman@linux.ibm.com>
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 14 Jun 2019 12:15:14 +0000
+Subject: Re: [PATCH, RFC 00/62] Intel MKTME enabling
+Message-Id: <20190614121514.GK3436@hirez.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190628021934.4260-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-IMA will use the module_signature format for append signatures, so export
-the relevant definitions and factor out the code which verifies that the
-appended signature trailer is valid.
+On Wed, May 08, 2019 at 05:43:20PM +0300, Kirill A. Shutemov wrote:
+> = Intro > 
+> The patchset brings enabling of Intel Multi-Key Total Memory Encryption.
+> It consists of changes into multiple subsystems:
+> 
+>  * Core MM: infrastructure for allocation pages, dealing with encrypted VMAs
+>    and providing API setup encrypted mappings.
 
-Also, create a CONFIG_MODULE_SIG_FORMAT option so that IMA can select it
-and be able to use mod_check_sig() without having to depend on either
-CONFIG_MODULE_SIG or CONFIG_MODULES.
+That wasn't eye-bleeding bad. With exception of the refcounting; that
+looks like something that can easily go funny without people noticing.
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-Cc: Jessica Yu <jeyu@kernel.org>
----
- include/linux/module.h           |  3 --
- include/linux/module_signature.h | 44 +++++++++++++++++++++++++
- init/Kconfig                     |  6 +++-
- kernel/Makefile                  |  1 +
- kernel/module.c                  |  1 +
- kernel/module_signature.c        | 46 ++++++++++++++++++++++++++
- kernel/module_signing.c          | 56 +++++---------------------------
- scripts/Makefile                 |  2 +-
- 8 files changed, 106 insertions(+), 53 deletions(-)
+>  * arch/x86: feature enumeration, program keys into hardware, setup
+>    page table entries for encrypted pages and more.
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 188998d3dca9..aa56f531cf1e 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -25,9 +25,6 @@
- #include <linux/percpu.h>
- #include <asm/module.h>
- 
--/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
--#define MODULE_SIG_STRING "~Module signature appended~\n"
--
- /* Not Yet Implemented */
- #define MODULE_SUPPORTED_DEVICE(name)
- 
-diff --git a/include/linux/module_signature.h b/include/linux/module_signature.h
-new file mode 100644
-index 000000000000..523617fc5b6a
---- /dev/null
-+++ b/include/linux/module_signature.h
-@@ -0,0 +1,44 @@
-+/* SPDX-License-Identifier: GPL-2.0+ */
-+/*
-+ * Module signature handling.
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ */
-+
-+#ifndef _LINUX_MODULE_SIGNATURE_H
-+#define _LINUX_MODULE_SIGNATURE_H
-+
-+/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
-+#define MODULE_SIG_STRING "~Module signature appended~\n"
-+
-+enum pkey_id_type {
-+	PKEY_ID_PGP,		/* OpenPGP generated key ID */
-+	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
-+	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
-+};
-+
-+/*
-+ * Module signature information block.
-+ *
-+ * The constituents of the signature section are, in order:
-+ *
-+ *	- Signer's name
-+ *	- Key identifier
-+ *	- Signature data
-+ *	- Information block
-+ */
-+struct module_signature {
-+	u8	algo;		/* Public-key crypto algorithm [0] */
-+	u8	hash;		/* Digest algorithm [0] */
-+	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
-+	u8	signer_len;	/* Length of signer's name [0] */
-+	u8	key_id_len;	/* Length of key identifier [0] */
-+	u8	__pad[3];
-+	__be32	sig_len;	/* Length of signature data */
-+};
-+
-+int mod_check_sig(const struct module_signature *ms, size_t file_len,
-+		  const char *name);
-+
-+#endif /* _LINUX_MODULE_SIGNATURE_H */
-diff --git a/init/Kconfig b/init/Kconfig
-index 8b9ffe236e4f..c2286a3c74c5 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1852,6 +1852,10 @@ config BASE_SMALL
- 	default 0 if BASE_FULL
- 	default 1 if !BASE_FULL
- 
-+config MODULE_SIG_FORMAT
-+	def_bool n
-+	select SYSTEM_DATA_VERIFICATION
-+
- menuconfig MODULES
- 	bool "Enable loadable module support"
- 	option modules
-@@ -1929,7 +1933,7 @@ config MODULE_SRCVERSION_ALL
- config MODULE_SIG
- 	bool "Module signature verification"
- 	depends on MODULES
--	select SYSTEM_DATA_VERIFICATION
-+	select MODULE_SIG_FORMAT
- 	help
- 	  Check modules for valid signatures upon load: the signature
- 	  is simply appended to the module. For more information see
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 33824f0385b3..f29ae2997a43 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -58,6 +58,7 @@ endif
- obj-$(CONFIG_UID16) += uid16.o
- obj-$(CONFIG_MODULES) += module.o
- obj-$(CONFIG_MODULE_SIG) += module_signing.o
-+obj-$(CONFIG_MODULE_SIG_FORMAT) += module_signature.o
- obj-$(CONFIG_KALLSYMS) += kallsyms.o
- obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
- obj-$(CONFIG_CRASH_CORE) += crash_core.o
-diff --git a/kernel/module.c b/kernel/module.c
-index 6e6712b3aaf5..2712f4d217f5 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -19,6 +19,7 @@
- #include <linux/export.h>
- #include <linux/extable.h>
- #include <linux/moduleloader.h>
-+#include <linux/module_signature.h>
- #include <linux/trace_events.h>
- #include <linux/init.h>
- #include <linux/kallsyms.h>
-diff --git a/kernel/module_signature.c b/kernel/module_signature.c
-new file mode 100644
-index 000000000000..4224a1086b7d
---- /dev/null
-+++ b/kernel/module_signature.c
-@@ -0,0 +1,46 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/*
-+ * Module signature checker
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/printk.h>
-+#include <linux/module_signature.h>
-+#include <asm/byteorder.h>
-+
-+/**
-+ * mod_check_sig - check that the given signature is sane
-+ *
-+ * @ms:		Signature to check.
-+ * @file_len:	Size of the file to which @ms is appended.
-+ * @name:	What is being checked. Used for error messages.
-+ */
-+int mod_check_sig(const struct module_signature *ms, size_t file_len,
-+		  const char *name)
-+{
-+	if (be32_to_cpu(ms->sig_len) >= file_len - sizeof(*ms))
-+		return -EBADMSG;
-+
-+	if (ms->id_type != PKEY_ID_PKCS7) {
-+		pr_err("%s: Module is not signed with expected PKCS#7 message\n",
-+		       name);
-+		return -ENOPKG;
-+	}
-+
-+	if (ms->algo != 0 ||
-+	    ms->hash != 0 ||
-+	    ms->signer_len != 0 ||
-+	    ms->key_id_len != 0 ||
-+	    ms->__pad[0] != 0 ||
-+	    ms->__pad[1] != 0 ||
-+	    ms->__pad[2] != 0) {
-+		pr_err("%s: PKCS#7 signature info has unexpected non-zero params\n",
-+		       name);
-+		return -EBADMSG;
-+	}
-+
-+	return 0;
-+}
-diff --git a/kernel/module_signing.c b/kernel/module_signing.c
-index 6b9a926fd86b..cdd04a6b8074 100644
---- a/kernel/module_signing.c
-+++ b/kernel/module_signing.c
-@@ -11,37 +11,13 @@
- 
- #include <linux/kernel.h>
- #include <linux/errno.h>
-+#include <linux/module.h>
-+#include <linux/module_signature.h>
- #include <linux/string.h>
- #include <linux/verification.h>
- #include <crypto/public_key.h>
- #include "module-internal.h"
- 
--enum pkey_id_type {
--	PKEY_ID_PGP,		/* OpenPGP generated key ID */
--	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
--	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
--};
--
--/*
-- * Module signature information block.
-- *
-- * The constituents of the signature section are, in order:
-- *
-- *	- Signer's name
-- *	- Key identifier
-- *	- Signature data
-- *	- Information block
-- */
--struct module_signature {
--	u8	algo;		/* Public-key crypto algorithm [0] */
--	u8	hash;		/* Digest algorithm [0] */
--	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
--	u8	signer_len;	/* Length of signer's name [0] */
--	u8	key_id_len;	/* Length of key identifier [0] */
--	u8	__pad[3];
--	__be32	sig_len;	/* Length of signature data */
--};
--
- /*
-  * Verify the signature on a module.
-  */
-@@ -49,6 +25,7 @@ int mod_verify_sig(const void *mod, struct load_info *info)
- {
- 	struct module_signature ms;
- 	size_t sig_len, modlen = info->len;
-+	int ret;
- 
- 	pr_devel("=>%s(,%zu)\n", __func__, modlen);
- 
-@@ -56,32 +33,15 @@ int mod_verify_sig(const void *mod, struct load_info *info)
- 		return -EBADMSG;
- 
- 	memcpy(&ms, mod + (modlen - sizeof(ms)), sizeof(ms));
--	modlen -= sizeof(ms);
-+
-+	ret = mod_check_sig(&ms, modlen, info->name);
-+	if (ret)
-+		return ret;
- 
- 	sig_len = be32_to_cpu(ms.sig_len);
--	if (sig_len >= modlen)
--		return -EBADMSG;
--	modlen -= sig_len;
-+	modlen -= sig_len + sizeof(ms);
- 	info->len = modlen;
- 
--	if (ms.id_type != PKEY_ID_PKCS7) {
--		pr_err("%s: Module is not signed with expected PKCS#7 message\n",
--		       info->name);
--		return -ENOPKG;
--	}
--
--	if (ms.algo != 0 ||
--	    ms.hash != 0 ||
--	    ms.signer_len != 0 ||
--	    ms.key_id_len != 0 ||
--	    ms.__pad[0] != 0 ||
--	    ms.__pad[1] != 0 ||
--	    ms.__pad[2] != 0) {
--		pr_err("%s: PKCS#7 signature info has unexpected non-zero params\n",
--		       info->name);
--		return -EBADMSG;
--	}
--
- 	return verify_pkcs7_signature(mod, modlen, mod + modlen, sig_len,
- 				      VERIFY_USE_SECONDARY_KEYRING,
- 				      VERIFYING_MODULE_SIGNATURE,
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 9d442ee050bd..52098b080ab7 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -17,7 +17,7 @@ hostprogs-$(CONFIG_VT)           += conmakehash
- hostprogs-$(BUILD_C_RECORDMCOUNT) += recordmcount
- hostprogs-$(CONFIG_BUILDTIME_EXTABLE_SORT) += sortextable
- hostprogs-$(CONFIG_ASN1)	 += asn1_compiler
--hostprogs-$(CONFIG_MODULE_SIG)	 += sign-file
-+hostprogs-$(CONFIG_MODULE_SIG_FORMAT) += sign-file
- hostprogs-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += extract-cert
- hostprogs-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE) += insert-sys-cert
- 
+That seemed incomplete (pageattr seems to be a giant hole).
+
+>  * Key management service: setup and management of encryption keys.
+>  * DMA/IOMMU: dealing with encrypted memory on IO side.
+
+Just minor nits, someone else would have to look at this.
+
+>  * KVM: interaction with virtualization side.
+
+You really want to limit the damage random modules can do. They have no
+business writing to the mktme variables.
+
+>  * Documentation: description of APIs and usage examples.
+
+Didn't bother with those; if the Changelogs are inadequate to make sense
+of the patches documentation isn't the right place to fix things.
+
+> The patchset is huge. This submission aims to give view to the full picture and
+> get feedback on the overall design. The patchset will be split into more
+> digestible pieces later.
+> 
+> Please review. Any feedback is welcome.
+
+I still can't tell if this is worth the complexity :-/
+
+Yes, there's a lot of words, but it doesn't mean anything to me, that
+is, nothing here makes me want to build my kernel with this 'feature'
+enabled.
