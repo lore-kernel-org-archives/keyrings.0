@@ -1,72 +1,121 @@
-From: Dave Hansen <dave.hansen@intel.com>
-Date: Mon, 17 Jun 2019 15:28:27 +0000
+From: Andy Lutomirski <luto@kernel.org>
+Date: Mon, 17 Jun 2019 15:46:12 +0000
 Subject: Re: [PATCH, RFC 45/62] mm: Add the encrypt_mprotect() system call for MKTME
-Message-Id: <3c658cce-7b7e-7d45-59a0-e17dae986713@intel.com>
+Message-Id: <CALCETrUPSv4Xae3iO+2i_HecJLfx4mqFfmtfp+cwBdab8JUZrg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
- <20190508144422.13171-46-kirill.shutemov@linux.intel.com>
- <CALCETrVCdp4LyCasvGkc0+S6fvS+dna=_ytLdDPuD2xeAr5c-w@mail.gmail.com>
-In-Reply-To: <CALCETrVCdp4LyCasvGkc0+S6fvS+dna=_ytLdDPuD2xeAr5c-w@mail.gmail.com>
-To: Andy Lutomirski <luto@kernel.org>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, Linux-MM <linux-mm@kvack.org>, kvm list <kvm@vger.kernel.org>, keyrings@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+ <20190508144422.13171-46-kirill.shutemov@linux.intel.com> <CALCETrVCdp4LyCasvGkc0+S6fvS+dna=_ytLdDPuD2xeAr5c-w@mail.gmail.com>
+ <3c658cce-7b7e-7d45-59a0-e17dae986713@intel.com>
+In-Reply-To: <3c658cce-7b7e-7d45-59a0-e17dae986713@intel.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Andy Lutomirski <luto@kernel.org>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>, X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, Linux-MM <linux-mm@kvack.org>, kvm list <kvm@vger.kernel.org>, keyrings@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 
-On 6/17/19 8:07 AM, Andy Lutomirski wrote:
-> I still find it bizarre that this is conflated with mprotect().
+On Mon, Jun 17, 2019 at 8:28 AM Dave Hansen <dave.hansen@intel.com> wrote:
+>
+> On 6/17/19 8:07 AM, Andy Lutomirski wrote:
+> > I still find it bizarre that this is conflated with mprotect().
+>
+> This needs to be in the changelog.  But, for better or worse, it's
+> following the mprotect_pkey() pattern.
+>
+> Other than the obvious "set the key on this memory", we're looking for
+> two other properties: atomicity (ensuring there is no transient state
+> where the memory is usable without the desired properties) and that it
+> is usable on existing allocations.
+>
+> For atomicity, we have a model where we can allocate things with
+> PROT_NONE, then do mprotect_pkey() and mprotect_encrypt() (plus any
+> future features), then the last mprotect_*() call takes us from
+> PROT_NONE to the desired end permisions.  We could just require a plain
+> old mprotect() to do that instead of embedding mprotect()-like behavior
+> in these, of course, but that isn't the path we're on at the moment with
+> mprotect_pkey().
+>
+> So, for this series it's just a matter of whether we do this:
+>
+>         ptr = mmap(..., PROT_NONE);
+>         mprotect_pkey(protect_key, ptr, PROT_NONE);
+>         mprotect_encrypt(encr_key, ptr, PROT_READ|PROT_WRITE);
+>         // good to go
+>
+> or this:
+>
+>         ptr = mmap(..., PROT_NONE);
+>         mprotect_pkey(protect_key, ptr, PROT_NONE);
+>         sys_encrypt(key, ptr);
+>         mprotect(ptr, PROT_READ|PROT_WRITE);
+>         // good to go
+>
+> I actually don't care all that much which one we end up with.  It's not
+> like the extra syscall in the second options means much.
 
-This needs to be in the changelog.  But, for better or worse, it's
-following the mprotect_pkey() pattern.
+The benefit of the second one is that, if sys_encrypt is absent, it
+just works.  In the first model, programs need a fallback because
+they'll segfault of mprotect_encrypt() gets ENOSYS.
 
-Other than the obvious "set the key on this memory", we're looking for
-two other properties: atomicity (ensuring there is no transient state
-where the memory is usable without the desired properties) and that it
-is usable on existing allocations.
+>
+> > This is part of why I much prefer the idea of making this style of
+> > MKTME a driver or some other non-intrusive interface.  Then, once
+> > everyone gets tired of it, the driver can just get turned off with no
+> > side effects.
+>
+> I like the concept, but not where it leads.  I'd call it the 'hugetlbfs
+> approach". :)  Hugetblfs certainly go us huge pages, but it's continued
+> to be a parallel set of code with parallel bugs and parallel
+> implementations of many VM features.  It's not that you can't implement
+> new things on hugetlbfs, it's that you *need* to.  You never get them
+> for free.
 
-For atomicity, we have a model where we can allocate things with
-PROT_NONE, then do mprotect_pkey() and mprotect_encrypt() (plus any
-future features), then the last mprotect_*() call takes us from
-PROT_NONE to the desired end permisions.  We could just require a plain
-old mprotect() to do that instead of embedding mprotect()-like behavior
-in these, of course, but that isn't the path we're on at the moment with
-mprotect_pkey().
+Fair enough, but...
 
-So, for this series it's just a matter of whether we do this:
+>
+> For instance, if we do a driver, how do we get large pages?  How do we
+> swap/reclaim the pages?  How do we do NUMA affinity?
 
-	ptr = mmap(..., PROT_NONE);
-	mprotect_pkey(protect_key, ptr, PROT_NONE);
-	mprotect_encrypt(encr_key, ptr, PROT_READ|PROT_WRITE);
-	// good to go
+Those all make sense.
 
-or this:
+>  How do we
+> eventually stack it on top of persistent memory filesystems or Device
+> DAX?
 
-	ptr = mmap(..., PROT_NONE);
-	mprotect_pkey(protect_key, ptr, PROT_NONE);
-	sys_encrypt(key, ptr);
-	mprotect(ptr, PROT_READ|PROT_WRITE);
-	// good to go
+How do we stack anonymous memory on top of persistent memory or Device
+DAX?  I'm confused.
 
-I actually don't care all that much which one we end up with.  It's not
-like the extra syscall in the second options means much.
+Just to throw this out there, what if we had a new device /dev/xpfo
+and MKTME were one of its features.  You open /dev/xpfo, optionally do
+an ioctl to set a key, and them map it.  The pages you get are
+unmapped entirely from the direct map, and you get a PFNMAP VMA with
+all its limitations.  This seems much more useful -- it's limited, but
+it's limited *because the kernel can't accidentally read it*.
 
-> This is part of why I much prefer the idea of making this style of
-> MKTME a driver or some other non-intrusive interface.  Then, once
-> everyone gets tired of it, the driver can just get turned off with no
-> side effects.
+I think that, in the long run, we're going to have to either expand
+the core mm's concept of what "memory" is or just have a whole
+parallel set of mechanisms for memory that doesn't work like memory.
+We're already accumulating a set of things that are backed by memory
+but aren't usable as memory. SGX EPC pages and SEV pages come to mind.
+They are faster when they're in big contiguous chunks (well, not SGX
+AFAIK, but maybe some day), they have NUMA node affinity, and they
+show up in page tables, but the hardware restricts who can read and
+write them.  If Intel isn't planning to do something like this with
+the MKTME hardware, I'll eat my hat.
 
-I like the concept, but not where it leads.  I'd call it the 'hugetlbfs
-approach". :)  Hugetblfs certainly go us huge pages, but it's continued
-to be a parallel set of code with parallel bugs and parallel
-implementations of many VM features.  It's not that you can't implement
-new things on hugetlbfs, it's that you *need* to.  You never get them
-for free.
+I expect that some day normal memory will  be able to be repurposed as
+SGX pages on the fly, and that will also look a lot more like SEV or
+XPFO than like the this model of MKTME.
 
-For instance, if we do a driver, how do we get large pages?  How do we
-swap/reclaim the pages?  How do we do NUMA affinity?  How do we
-eventually stack it on top of persistent memory filesystems or Device
-DAX?  With a driver approach, I think we're stuck basically
-reimplementing things or gluing them back together.  Nothing comes for free.
+So, if we upstream MKTME as anonymous memory with a magic config
+syscall, I predict that, in a few years, it will be end up inheriting
+all downsides of both approaches with few of the upsides.  Programs
+like QEMU will need to learn to manipulate pages that can't be
+accessed outside the VM without special VM buy-in, so the fact that
+MKTME pages are fully functional and can be GUP-ed won't be very
+useful.  And the VM will learn about all these things, but MKTME won't
+really fit in.
 
-With this approach, we basically start with our normal, full feature set
-(modulo weirdo interactions like with KSM).
+And, one of these days, someone will come up with a version of XPFO
+that could actually be upstreamed, and it seems entirely plausible
+that it will be totally incompatible with MKTME-as-anonymous-memory
+and that users of MKTME will actually get *worse* security.
