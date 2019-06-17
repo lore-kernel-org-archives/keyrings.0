@@ -1,54 +1,49 @@
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Mon, 17 Jun 2019 09:08:27 +0000
+From: Andy Lutomirski <luto@kernel.org>
+Date: Mon, 17 Jun 2019 15:07:29 +0000
 Subject: Re: [PATCH, RFC 45/62] mm: Add the encrypt_mprotect() system call for MKTME
-Message-Id: <20190617090827.GY3436@hirez.programming.kicks-ass.net>
+Message-Id: <CALCETrVCdp4LyCasvGkc0+S6fvS+dna=_ytLdDPuD2xeAr5c-w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
- <20190508144422.13171-46-kirill.shutemov@linux.intel.com>
- <20190614115137.GF3436@hirez.programming.kicks-ass.net>
- <20190615003231.GA15479@alison-desk.jf.intel.com>
-In-Reply-To: <20190615003231.GA15479@alison-desk.jf.intel.com>
-To: Alison Schofield <alison.schofield@intel.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com> <20190508144422.13171-46-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190508144422.13171-46-kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, Linux-MM <linux-mm@kvack.org>, kvm list <kvm@vger.kernel.org>, keyrings@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 
-On Fri, Jun 14, 2019 at 05:32:31PM -0700, Alison Schofield wrote:
-> On Fri, Jun 14, 2019 at 01:51:37PM +0200, Peter Zijlstra wrote:
-> > On Wed, May 08, 2019 at 05:44:05PM +0300, Kirill A. Shutemov wrote:
-> snip
-> > >  /*
-> > > - * When pkey=NO_KEY we get legacy mprotect behavior here.
-> > > + * do_mprotect_ext() supports the legacy mprotect behavior plus extensions
-> > > + * for Protection Keys and Memory Encryption Keys. These extensions are
-> > > + * mutually exclusive and the behavior is:
+On Wed, May 8, 2019 at 7:44 AM Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+>
+> From: Alison Schofield <alison.schofield@intel.com>
+>
+> Implement memory encryption for MKTME (Multi-Key Total Memory
+> Encryption) with a new system call that is an extension of the
+> legacy mprotect() system call.
+>
+> In encrypt_mprotect the caller must pass a handle to a previously
+> allocated and programmed MKTME encryption key. The key can be
+> obtained through the kernel key service type "mktme". The caller
+> must have KEY_NEED_VIEW permission on the key.
+>
+> MKTME places an additional restriction on the protected data:
+> The length of the data must be page aligned. This is in addition
+> to the existing mprotect restriction that the addr must be page
+> aligned.
 
-Well, here it states that the extentions are mutually exclusive.
+I still find it bizarre that this is conflated with mprotect().
 
-> > > + *	(pkey=NO_KEY && keyid=NO_KEY) => legacy mprotect
-> > > + *	(pkey is valid)  => legacy mprotect plus Protection Key extensions
-> > > + *	(keyid is valid) => legacy mprotect plus Encryption Key extensions
-> > >   */
-> > >  static int do_mprotect_ext(unsigned long start, size_t len,
-> > > -		unsigned long prot, int pkey)
-> > > +			   unsigned long prot, int pkey, int keyid)
-> > >  {
-> 
-> snip
-> 
-> >
-> > I've missed the part where pkey && keyid results in a WARN or error or
-> > whatever.
-> > 
-> I wasn't so sure about that since do_mprotect_ext()
-> is the call 'behind' the system calls. 
-> 
-> legacy mprotect always calls with: NO_KEY, NO_KEY
-> pkey_mprotect always calls with:  pkey, NO_KEY
-> encrypt_mprotect always calls with  NO_KEY, keyid
-> 
-> Would a check on those arguments be debug only 
-> to future proof this?
+I also remain entirely unconvinced that MKTME on anonymous memory is
+useful in the long run.  There will inevitably be all kinds of fancy
+new CPU features that make the underlying MKTME mechanisms much more
+useful.  For example, some way to bind a key to a VM, or a way to
+*sanely* encrypt persistent memory.  By making this thing a syscall
+that does more than just MKTME, you're adding combinatorial complexity
+(you forget pkey!) and you're tying other functionality (change of
+protection) to this likely-to-be-deprecated interface.
 
-But you then don't check that, anywhere, afaict.
+This is part of why I much prefer the idea of making this style of
+MKTME a driver or some other non-intrusive interface.  Then, once
+everyone gets tired of it, the driver can just get turned off with no
+side effects.
+
+--Andy
