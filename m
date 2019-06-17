@@ -1,223 +1,67 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Fri, 28 Jun 2019 02:19:23 +0000
-Subject: [PATCH v12 00/11] Appended signatures support for IMA appraisal
-Message-Id: <20190628021934.4260-1-bauerman@linux.ibm.com>
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Mon, 17 Jun 2019 16:24:55 +0000
+Subject: Re: [PATCH 1/7] General notification queue with user mmap()'able ring buffer
+Message-Id: <20190617162455.GL3436@hirez.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <20190528162603.GA24097@kroah.com>
+ <155905930702.7587.7100265859075976147.stgit@warthog.procyon.org.uk>
+ <155905931502.7587.11705449537368497489.stgit@warthog.procyon.org.uk>
+ <4031.1559064620@warthog.procyon.org.uk>
+ <20190528231218.GA28384@kroah.com>
+ <31936.1559146000@warthog.procyon.org.uk>
+ <16193.1559163763@warthog.procyon.org.uk>
+ <21942.1559304135@warthog.procyon.org.uk>
+ <606.1559312412@warthog.procyon.org.uk>
+ <15401.1559322762@warthog.procyon.org.uk>
+In-Reply-To: <15401.1559322762@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Jann Horn <jannh@google.com>, Greg KH <gregkh@linuxfoundation.org>, Al Viro <viro@zeniv.linux.org.uk>, raven@themaw.net, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module <linux-security-module@vger.kernel.org>, kernel list <linux-kernel@vger.kernel.org>, Kees Cook <keescook@chromium.org>, Kernel Hardening <kernel-hardening@lists.openwall.com>
 
-Hello,
+On Fri, May 31, 2019 at 06:12:42PM +0100, David Howells wrote:
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > > > (and it has already been established that refcount_t doesn't work for
+> > > > usage count scenarios)
+> > > 
+> > > ?
+> > > 
+> > > Does that mean struct kref doesn't either?
+> > 
+> > Indeed, since kref is just a pointless wrapper around refcount_t it does
+> > not either.
+> > 
+> > The main distinction between a reference count and a usage count is that
+> > 0 means different things. For a refcount 0 means dead. For a usage count
+> > 0 is merely unused but valid.
+> 
+> Ah - I consider the terms interchangeable.
+> 
+> Take Documentation/filesystems/vfs.txt for instance:
+> 
+>   dget: open a new handle for an existing dentry (this just increments
+> 	the usage count)
+> 
+>   dput: close a handle for a dentry (decrements the usage count). ...
+> 
+>   ...
+> 
+>   d_lookup: look up a dentry given its parent and path name component
+> 	It looks up the child of that given name from the dcache
+> 	hash table. If it is found, the reference count is incremented
+> 	and the dentry is returned. The caller must use dput()
+> 	to free the dentry when it finishes using it.
+> 
+> Here we interchange the terms.
+> 
+> Or https://www.kernel.org/doc/gorman/html/understand/understand013.html
+> which seems to interchange the terms in reference to struct page.
 
-This version is essentially identical to the last one.
+Right, but we have two distinct set of semantics, I figured it makes
+sense to have two different names for them. Do you have an alternative
+naming scheme we could use?
 
-It is only a rebase on top of today's linux-integrity/next-queued-testing,
-prompted by conflicts with Prakhar Srivastava's patches to measure the
-kernel command line. It also drops two patches that are already present in
-that branch.
-
-As I mentioned in an earlier email, I believe Mimi is happy with this
-version but before she can accept it I still need acks from maintainers of
-the module and asymmetric keys subsystems for the first three patches.
-
-Many thanks to Mimi Zohar for her help with the development of this patch
-series.
-
-This patch which I sent earlier today needs to be applied first:
-
-ima: Update MAX_TEMPLATE_NAME_LEN to fit largest reasonable definition
-
-Original cover letter:
-
-On the OpenPOWER platform, secure boot and trusted boot are being
-implemented using IMA for taking measurements and verifying signatures.
-Since the kernel image on Power servers is an ELF binary, kernels are
-signed using the scripts/sign-file tool and thus use the same signature
-format as signed kernel modules.
-
-This patch series adds support in IMA for verifying those signatures.
-It adds flexibility to OpenPOWER secure boot, because it allows it to boot
-kernels with the signature appended to them as well as kernels where the
-signature is stored in the IMA extended attribute.
-
-Changes since v11:
-
-- Patch "integrity: Introduce struct evm_xattr"
-  - Dropped since it's already in linux-integrity/next-queued-testing.
-
-- Patch "ima: Use designated initializers for struct ima_event_data"
-  - Dropped since it's already in linux-integrity/next-queued-testing.
-
-Changes since v10:
-
-- Patch "MODSIGN: Export module signature definitions"
-  - Moved config MODULE_SIG_FORMAT definition before its use. Suggested by
-    Mimi Zohar.
-  - Added missing kerneldoc for @name parameter. Suggested by Mimi Zohar.
-
-- Patch "ima: Implement support for module-style appended signatures"
-  - Bugfix: don't check status variable when deciding whether to verify
-    modsig in ima_appraise_measurement(). Suggested by Mimi Zohar.
-  - Bugfix: verify the modsig in ima_appraise_measurement() if the xattr
-    contains a digest. Suggested by Mimi Zohar.
-
-- Patch "ima: Define ima-modsig template"
-  - Renamed ima_modsig_serialize() to ima_get_raw_modsig().
-  - Renamed check_current_template_modsig() to check_template_modsig().
-  - Fixed outdated comment in ima_eventmodsig_init(). Suggested by Mimi
-    Zohar.
-  - Check either the global or the per-rule template when an appraisal rule
-    allows modsig. Suggested by Mimi Zohar.
-
-- Patch "ima: Store the measurement again when appraising a modsig"
-  - Bugfix: Only re-measure file containing modsig if it was measured
-    before.
-  - Check for modsig-related fields in the template_desc obtained in
-    process_measurement() which can be a per-rule template. Suggested by Mimi
-    Zohar.
-
-- Patch "ima: Allow template= option for appraise rules as well"
-  - New patch. Suggested by Mimi Zohar.
-
-Changes since v9:
-
-- Patch "MODSIGN: Export module signature definitions"
-  - Moved mod_check_sig() to a new file so that CONFIG_IMA_APPRAISE_MODSIG
-    doesn't have to depend on CONFIG_MODULES.
-  - Changed scripts/Makefile to build sign-file if CONFIG_MODULE_SIG_FORMAT
-    is set.
-  - Removed Mimi's Reviewed-by because of the changes in this version.
-
-- Patch "PKCS#7: Refactor verify_pkcs7_signature()"
-  - Don't add function pkcs7_get_message_sig() anymore, since it's not
-    needed in the current version.
-
-- Patch "PKCS#7: Introduce pkcs7_get_digest()"
-  - Changed 'len' argument from 'u8 *' to 'u32 *'.
-  - Added 'hash_algo' argument to obtain the algo used for the digest.
-  - Don't check whether 'buf', 'len' and 'hash_algo' output arguments are NULL,
-    since the function's only caller always sets them.
-  - Removed Mimi's Reviewed-by because of the changes in this version.
-
-- Patch "integrity: Introduce asymmetric_sig_has_known_key()"
-  - Dropped.
-
-- Patch "integrity: Introduce integrity_keyring_from_id"
-  - Squashed into "ima: Implement support for module-style appended signatures"
-  - Changed integrity_keyring_from_id() to a static function (suggested by Mimi
-    Zohar).
-
-- Patch "ima: Introduce is_signed()"
-  - Dropped.
-
-- Patch "ima: Export func_tokens"
-  - Squashed into "ima: Implement support for module-style appended signatures"
-
-- Patch "ima: Use designated initializers for struct ima_event_data"
-  - New patch.
-
-- Patch "ima: Factor xattr_verify() out of ima_appraise_measurement()"
-  - New patch.
-
-- Patch "ima: Implement support for module-style appended signatures"
-  - Renamed 'struct modsig_hdr' to 'struct modsig'.
-  - Added integrity_modsig_verify() to integrity/digsig.c so that it's not
-    necessary to export integrity_keyring_from_id() (Suggested by Mimi Zohar).
-  - Don't add functions ima_xattr_sig_known_key() and
-    modsig_has_known_key() since they're not necessary anymore.
-  - Added modsig argument to ima_appraise_measurement().
-  - Verify modsig in a separate function called by ima_appraise_measurement().
-  - Renamed ima_read_collect_modsig() to ima_read_modsig(), with a separate
-    collect function added in patch "ima: Collect modsig" (suggested by Mimi
-    Zohar).
-  - In ima_read_modsig(), moved code saving of raw PKCS7 data to 'struct
-    modsig' to patch "ima: Collect modsig".
-  - In ima_read_modsig(), moved all parts related to the modsig hash to
-    patch "ima: Collect modsig".
-  - In ima_read_modsig(), don't check if the buf pointer is NULL since it's
-    never supposed to happen.
-  - Renamed ima_free_xattr_data() to ima_free_modsig().
-  - No need to check for modsig in ima_read_xattr() and
-    ima_inode_set_xattr() anymore.
-  - In ima_modsig_verify(), don't check if the modsig pointer is NULL since
-    it's not supposed to happen.
-  - Don't define IMA_MODSIG element in enum evm_ima_xattr_type.
-
-- Patch "ima: Collect modsig"
-  - New patch.
-
-- Patch "ima: Define ima-modsig template"
-  - Patch renamed from "ima: Add new "d-sig" template field"
-  - Renamed 'd-sig' template field to 'd-modsig'.
-  - Added 'modsig' template field.
-  - Added 'ima-modsig' defined template descriptor.
-  - Renamed ima_modsig_serialize_data() to ima_modsig_serialize().
-  - Renamed ima_get_modsig_hash() to ima_get_modsig_digest(). Also the
-    function is a lot simpler now since what it used to do is now done in
-    ima_collect_modsig() and pkcs7_get_digest().
-  - Added check for failed modsig collection in ima_eventdigest_modsig_init().
-  - Added modsig argument to ima_store_measurement().
-  - Added 'modsig' field to struct ima_event_data.
-  - Removed check for modsig = NULL in ima_get_modsig_digest() and in
-    ima_modsig_serialize_data() since their callers already performs that
-    check.
-  - Moved check_current_template_modsig() to this patch, previously was in
-    "ima: Store the measurement again when appraising a modsig".
-
-- Patch "ima: Store the measurement again when appraising a modsig"
-  - Renamed ima_template_has_sig() to ima_template_has_modsig().
-  - Added a change to ima_collect_measurement(), making it to call
-    ima_collect_modsig() even if IMA_COLLECT is set in iint->flags.
-  - Removed IMA_READ_MEASURE flag.
-  - Renamed template_has_sig global variable to template_has_modsig.
-  - Renamed find_sig_in_template() to find_modsig_in_template().
-
-
-Thiago Jung Bauermann (11):
-  MODSIGN: Export module signature definitions
-  PKCS#7: Refactor verify_pkcs7_signature()
-  PKCS#7: Introduce pkcs7_get_digest()
-  integrity: Select CONFIG_KEYS instead of depending on it
-  ima: Add modsig appraise_type option for module-style appended
-    signatures
-  ima: Factor xattr_verify() out of ima_appraise_measurement()
-  ima: Implement support for module-style appended signatures
-  ima: Collect modsig
-  ima: Define ima-modsig template
-  ima: Store the measurement again when appraising a modsig
-  ima: Allow template= option for appraise rules as well
-
- Documentation/ABI/testing/ima_policy      |   6 +-
- Documentation/security/IMA-templates.rst  |   3 +
- certs/system_keyring.c                    |  61 +++++--
- crypto/asymmetric_keys/pkcs7_verify.c     |  33 ++++
- include/crypto/pkcs7.h                    |   4 +
- include/linux/module.h                    |   3 -
- include/linux/module_signature.h          |  44 +++++
- include/linux/verification.h              |  10 ++
- init/Kconfig                              |   6 +-
- kernel/Makefile                           |   1 +
- kernel/module.c                           |   1 +
- kernel/module_signature.c                 |  46 +++++
- kernel/module_signing.c                   |  56 +------
- scripts/Makefile                          |   2 +-
- security/integrity/Kconfig                |   2 +-
- security/integrity/digsig.c               |  43 ++++-
- security/integrity/ima/Kconfig            |  13 ++
- security/integrity/ima/Makefile           |   1 +
- security/integrity/ima/ima.h              |  60 ++++++-
- security/integrity/ima/ima_api.c          |  23 ++-
- security/integrity/ima/ima_appraise.c     | 194 ++++++++++++++--------
- security/integrity/ima/ima_main.c         |  24 ++-
- security/integrity/ima/ima_modsig.c       | 169 +++++++++++++++++++
- security/integrity/ima/ima_policy.c       |  68 +++++++-
- security/integrity/ima/ima_template.c     |  26 ++-
- security/integrity/ima/ima_template_lib.c |  64 ++++++-
- security/integrity/ima/ima_template_lib.h |   4 +
- security/integrity/integrity.h            |  20 +++
- 28 files changed, 819 insertions(+), 168 deletions(-)
- create mode 100644 include/linux/module_signature.h
- create mode 100644 kernel/module_signature.c
- create mode 100644 security/integrity/ima/ima_modsig.c
+Or should we better document our distinction between reference and usage
+count?
