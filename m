@@ -1,48 +1,87 @@
-From: "Lendacky, Thomas" <Thomas.Lendacky@amd.com>
-Date: Tue, 18 Jun 2019 02:02:00 +0000
+From: Kai Huang <kai.huang@linux.intel.com>
+Date: Tue, 18 Jun 2019 02:11:39 +0000
 Subject: Re: [PATCH, RFC 45/62] mm: Add the encrypt_mprotect() system call for MKTME
-Message-Id: <ac6c02da-5439-1f24-1975-7ba626599d14@amd.com>
+Message-Id: <1560823899.5187.92.camel@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190508144422.13171-1-kirill.shutemov@linux.intel.com>
- <20190508144422.13171-46-kirill.shutemov@linux.intel.com>
- <CALCETrVCdp4LyCasvGkc0+S6fvS+dna=_ytLdDPuD2xeAr5c-w@mail.gmail.com>
- <3c658cce-7b7e-7d45-59a0-e17dae986713@intel.com>
- <CALCETrUPSv4Xae3iO+2i_HecJLfx4mqFfmtfp+cwBdab8JUZrg@mail.gmail.com>
- <5cbfa2da-ba2e-ed91-d0e8-add67753fc12@intel.com>
- <1560815959.5187.57.camel@linux.intel.com>
- <cbbc6af7-36f8-a81f-48b1-2ad4eefc2417@amd.com>
- <CALCETrWq98--AgXXj=h1R70CiCWNncCThN2fEdxj2ZkedMw6=A@mail.gmail.com>
-In-Reply-To: <CALCETrWq98--AgXXj=h1R70CiCWNncCThN2fEdxj2ZkedMw6=A@mail.gmail.com>
+         <20190508144422.13171-46-kirill.shutemov@linux.intel.com>
+         <CALCETrVCdp4LyCasvGkc0+S6fvS+dna=_ytLdDPuD2xeAr5c-w@mail.gmail.com>
+         <3c658cce-7b7e-7d45-59a0-e17dae986713@intel.com>
+         <CALCETrUPSv4Xae3iO+2i_HecJLfx4mqFfmtfp+cwBdab8JUZrg@mail.gmail.com>
+         <5cbfa2da-ba2e-ed91-d0e8-add67753fc12@intel.com>
+         <CALCETrWFXSndmPH0OH4DVVrAyPEeKUUfNwo_9CxO-3xy9awq0g@mail.gmail.com>
+         <d599b1d7-9455-3012-0115-96ddbad31833@intel.com>
+         <1560818931.5187.70.camel@linux.intel.com>
+         <CALCETrXNCmSnrTwGiwuF9=wLu797WBPZ0gt92D-CyU+V3sq7hA@mail.gmail.com>
+In-Reply-To: <CALCETrXNCmSnrTwGiwuF9=wLu797WBPZ0gt92D-CyU+V3sq7hA@mail.gmail.com>
 To: Andy Lutomirski <luto@kernel.org>
-Cc: Kai Huang <kai.huang@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>, X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, Linux-MM <linux-mm@kvack.org>, kvm list <kvm@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Dave Hansen <dave.hansen@intel.com>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>, X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, Linux-MM <linux-mm@kvack.org>, kvm list <kvm@vger.kernel.org>, keyrings@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, Tom Lendacky <thomas.lendacky@amd.com>
 
-T24gNi8xNy8xOSA4OjQwIFBNLCBBbmR5IEx1dG9taXJza2kgd3JvdGU6DQo+IE9uIE1vbiwgSnVu
-IDE3LCAyMDE5IGF0IDY6MzQgUE0gTGVuZGFja3ksIFRob21hcw0KPiA8VGhvbWFzLkxlbmRhY2t5
-QGFtZC5jb20+IHdyb3RlOg0KPj4NCj4+IE9uIDYvMTcvMTkgNjo1OSBQTSwgS2FpIEh1YW5nIHdy
-b3RlOg0KPj4+IE9uIE1vbiwgMjAxOS0wNi0xNyBhdCAxMToyNyAtMDcwMCwgRGF2ZSBIYW5zZW4g
-d3JvdGU6DQo+IA0KPj4+DQo+Pj4gQW5kIHllcyBmcm9tIG15IHJlYWRpbmcgKGJldHRlciB0byBo
-YXZlIEFNRCBndXlzIHRvIGNvbmZpcm0pIFNFViBndWVzdCB1c2VzIGFub255bW91cyBtZW1vcnks
-IGJ1dCBpdA0KPj4+IGFsc28gcGlucyBhbGwgZ3Vlc3QgbWVtb3J5IChieSBjYWxsaW5nIEdVUCBm
-cm9tIEtWTSAtLSBTRVYgc3BlY2lmaWNhbGx5IGludHJvZHVjZWQgMiBLVk0gaW9jdGxzIGZvcg0K
-Pj4+IHRoaXMgcHVycG9zZSksIHNpbmNlIFNFViBhcmNoaXRlY3R1cmFsbHkgY2Fubm90IHN1cHBv
-cnQgc3dhcHBpbmcsIG1pZ3JhaXRvbiBvZiBTRVYtZW5jcnlwdGVkIGd1ZXN0DQo+Pj4gbWVtb3J5
-LCBiZWNhdXNlIFNNRS9TRVYgYWxzbyB1c2VzIHBoeXNpY2FsIGFkZHJlc3MgYXMgInR3ZWFrIiwg
-YW5kIHRoZXJlJ3Mgbm8gd2F5IHRoYXQga2VybmVsIGNhbg0KPj4+IGdldCBvciB1c2UgU0VWLWd1
-ZXN0J3MgbWVtb3J5IGVuY3J5cHRpb24ga2V5LiBJbiBvcmRlciB0byBzd2FwL21pZ3JhdGUgU0VW
-LWd1ZXN0IG1lbW9yeSwgd2UgbmVlZCBTR1gNCj4+PiBFUEMgZXZpY3Rpb24vcmVsb2FkIHNpbWls
-YXIgdGhpbmcsIHdoaWNoIFNFViBkb2Vzbid0IGhhdmUgdG9kYXkuDQo+Pg0KPj4gWWVzLCBhbGwg
-dGhlIGd1ZXN0IG1lbW9yeSBpcyBjdXJyZW50bHkgcGlubmVkIGJ5IGNhbGxpbmcgR1VQIHdoZW4g
-Y3JlYXRpbmcNCj4+IGFuIFNFViBndWVzdC4NCj4gDQo+IEljay4NCj4gDQo+IFdoYXQgaGFwcGVu
-cyBpZiBRRU1VIHRyaWVzIHRvIHJlYWQgdGhlIG1lbW9yeT8gIERvZXMgaXQganVzdCBzZWUNCj4g
-Y2lwaGVydGV4dD8gIElzIGNhY2hlIGNvaGVyZW5jeSBsb3N0IGlmIFFFTVUgd3JpdGVzIGl0Pw0K
-DQpJZiBRRU1VIHRyaWVzIHRvIHJlYWQgdGhlIG1lbW9yeSBpcyB3b3VsZCBqdXN0IHNlZSBjaXBo
-ZXJ0ZXh0LiBJJ2xsDQpkb3VibGUgY2hlY2sgb24gdGhlIHdyaXRlIHNpdHVhdGlvbiwgYnV0IEkg
-dGhpbmsgeW91IHdvdWxkIGVuZCB1cCB3aXRoDQphIGNhY2hlIGNvaGVyZW5jeSBpc3N1ZSBiZWNh
-dXNlIHRoZSB3cml0ZSBieSBRRU1VIHdvdWxkIGJlIHdpdGggdGhlDQpoeXBlcnZpc29yIGtleSBh
-bmQgdGFnZ2VkIHNlcGFyYXRlbHkgaW4gdGhlIGNhY2hlIGZyb20gdGhlIGd1ZXN0IGNhY2hlDQpl
-bnRyeS4gU0VWIHByb3ZpZGVzIGNvbmZpZGVudGlhbGl0eSBvZiBndWVzdCBtZW1vcnkgZnJvbSB0
-aGUgaHlwZXJ2aXNvciwNCml0IGRvZXNuJ3QgcHJldmVudCB0aGUgaHlwZXJ2aXNvciBmcm9tIHRy
-YXNoaW5nIHRoZSBndWVzdCBtZW1vcnkuDQoNCg0KVGhhbmtzLA0KVG9tDQoNCj4gDQo
+On Mon, 2019-06-17 at 18:50 -0700, Andy Lutomirski wrote:
+> On Mon, Jun 17, 2019 at 5:48 PM Kai Huang <kai.huang@linux.intel.com> wrote:
+> > 
+> > 
+> > > 
+> > > > And another silly argument: if we had /dev/mktme, then we could
+> > > > possibly get away with avoiding all the keyring stuff entirely.
+> > > > Instead, you open /dev/mktme and you get your own key under the hook.
+> > > > If you want two keys, you open /dev/mktme twice.  If you want some
+> > > > other program to be able to see your memory, you pass it the fd.
+> > > 
+> > > We still like the keyring because it's one-stop-shopping as the place
+> > > that *owns* the hardware KeyID slots.  Those are global resources and
+> > > scream for a single global place to allocate and manage them.  The
+> > > hardware slots also need to be shared between any anonymous and
+> > > file-based users, no matter what the APIs for the anonymous side.
+> > 
+> > MKTME driver (who creates /dev/mktme) can also be the one-stop-shopping. I think whether to
+> > choose
+> > keyring to manage MKTME key should be based on whether we need/should take advantage of existing
+> > key
+> > retention service functionalities. For example, with key retention service we can
+> > revoke/invalidate/set expiry for a key (not sure whether MKTME needs those although), and we
+> > have
+> > several keyrings -- thread specific keyring, process specific keyring, user specific keyring,
+> > etc,
+> > thus we can control who can/cannot find the key, etc. I think managing MKTME key in MKTME driver
+> > doesn't have those advantages.
+> > 
+> 
+> Trying to evaluate this with the current proposed code is a bit odd, I
+> think.  Suppose you create a thread-specific key and then fork().  The
+> child can presumably still use the key regardless of whether the child
+> can nominally access the key in the keyring because the PTEs are still
+> there.
+
+Right. This is a little bit odd, although virtualization (Qemu, which is the main use case of MKTME
+at least so far) doesn't use fork().
+
+> 
+> More fundamentally, in some sense, the current code has no semantics.
+> Associating a key with memory and "encrypting" it doesn't actually do
+> anything unless you are attacking the memory bus but you haven't
+> compromised the kernel.  There's no protection against a guest that
+> can corrupt its EPT tables, there's no protection against kernel bugs
+> (*especially* if the duplicate direct map design stays), and there
+> isn't even any fd or other object around by which you can only access
+> the data if you can see the key.
+
+I am not saying managing MKTME key/keyID in key retention service is definitely better, but it seems
+all those you mentioned are not related to whether to choose key retention service to manage MKTME
+key/keyID? Or you are saying it doesn't matter we manage key/keyID in key retention service or in
+MKTME driver, since MKTME barely have any security benefits (besides physical attack)?
+
+> 
+> I'm also wondering whether the kernel will always be able to be a
+> one-stop shop for key allocation -- if the MKTME hardware gains
+> interesting new uses down the road, who knows how key allocation will
+> work?
+
+I by now don't have any use case which requires to manage key/keyID specifically for its own use,
+rather than letting kernel to manage keyID allocation. Please inspire us if you have any potential.
+
+Thanks,
+-Kai
