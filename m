@@ -1,147 +1,134 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Fri, 28 Jun 2019 02:19:25 +0000
-Subject: [PATCH v12 02/11] PKCS#7: Refactor verify_pkcs7_signature()
-Message-Id: <20190628021934.4260-3-bauerman@linux.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 19 Jun 2019 13:19:23 +0000
+Subject: [PATCH 05/10] keys: Break bits out of key_unlink() [ver #3]
+Message-Id: <156095036385.9363.921620306060848348.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190628021934.4260-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org, ebiggers@kernel.org
+Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-IMA will need to verify a PKCS#7 signature which has already been parsed.
-For this reason, factor out the code which does that from
-verify_pkcs7_signature() into a new function which takes a struct
-pkcs7_message instead of a data buffer.
+Break bits out of key_unlink() into helper functions so that they can be
+used in implementing key_move().
 
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- certs/system_keyring.c       | 61 ++++++++++++++++++++++++++----------
- include/linux/verification.h | 10 ++++++
- 2 files changed, 55 insertions(+), 16 deletions(-)
 
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index c05c29ae4d5d..4ba82e52e4b4 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -194,33 +194,27 @@ late_initcall(load_system_certificate_list);
- #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
+ security/keys/keyring.c |   88 ++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 67 insertions(+), 21 deletions(-)
+
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index ca6694ba1773..6990c7761eaa 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -1382,6 +1382,65 @@ int key_link(struct key *keyring, struct key *key)
+ }
+ EXPORT_SYMBOL(key_link);
  
- /**
-- * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-+ * verify_pkcs7_message_sig - Verify a PKCS#7-based signature on system data.
-  * @data: The data to be verified (NULL if expecting internal data).
-  * @len: Size of @data.
-- * @raw_pkcs7: The PKCS#7 message that is the signature.
-- * @pkcs7_len: The size of @raw_pkcs7.
-+ * @pkcs7: The PKCS#7 message that is the signature.
-  * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
-  *					(void *)1UL for all trusted keys).
-  * @usage: The use to which the key is being put.
-  * @view_content: Callback to gain access to content.
-  * @ctx: Context for callback.
-  */
--int verify_pkcs7_signature(const void *data, size_t len,
--			   const void *raw_pkcs7, size_t pkcs7_len,
--			   struct key *trusted_keys,
--			   enum key_being_used_for usage,
--			   int (*view_content)(void *ctx,
--					       const void *data, size_t len,
--					       size_t asn1hdrlen),
--			   void *ctx)
-+int verify_pkcs7_message_sig(const void *data, size_t len,
-+			     struct pkcs7_message *pkcs7,
-+			     struct key *trusted_keys,
-+			     enum key_being_used_for usage,
-+			     int (*view_content)(void *ctx,
-+						 const void *data, size_t len,
-+						 size_t asn1hdrlen),
-+			     void *ctx)
- {
--	struct pkcs7_message *pkcs7;
- 	int ret;
- 
--	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
--	if (IS_ERR(pkcs7))
--		return PTR_ERR(pkcs7);
--
- 	/* The data should be detached - so we need to supply it. */
- 	if (data && pkcs7_supply_detached_data(pkcs7, data, len) < 0) {
- 		pr_err("PKCS#7 signature with non-detached data\n");
-@@ -273,6 +267,41 @@ int verify_pkcs7_signature(const void *data, size_t len,
- 	}
- 
- error:
-+	pr_devel("<=%s() = %d\n", __func__, ret);
-+	return ret;
++/*
++ * Lock a keyring for unlink.
++ */
++static int __key_unlink_lock(struct key *keyring)
++	__acquires(&keyring->sem)
++{
++	if (keyring->type != &key_type_keyring)
++		return -ENOTDIR;
++
++	down_write(&keyring->sem);
++	return 0;
 +}
 +
-+/**
-+ * verify_pkcs7_signature - Verify a PKCS#7-based signature on system data.
-+ * @data: The data to be verified (NULL if expecting internal data).
-+ * @len: Size of @data.
-+ * @raw_pkcs7: The PKCS#7 message that is the signature.
-+ * @pkcs7_len: The size of @raw_pkcs7.
-+ * @trusted_keys: Trusted keys to use (NULL for builtin trusted keys only,
-+ *					(void *)1UL for all trusted keys).
-+ * @usage: The use to which the key is being put.
-+ * @view_content: Callback to gain access to content.
-+ * @ctx: Context for callback.
++/*
++ * Begin the process of unlinking a key from a keyring.
 + */
-+int verify_pkcs7_signature(const void *data, size_t len,
-+			   const void *raw_pkcs7, size_t pkcs7_len,
-+			   struct key *trusted_keys,
-+			   enum key_being_used_for usage,
-+			   int (*view_content)(void *ctx,
-+					       const void *data, size_t len,
-+					       size_t asn1hdrlen),
-+			   void *ctx)
++static int __key_unlink_begin(struct key *keyring, struct key *key,
++			      struct assoc_array_edit **_edit)
 +{
-+	struct pkcs7_message *pkcs7;
-+	int ret;
++	struct assoc_array_edit *edit;
 +
-+	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-+	if (IS_ERR(pkcs7))
-+		return PTR_ERR(pkcs7);
++	BUG_ON(*_edit != NULL);
++	
++	edit = assoc_array_delete(&keyring->keys, &keyring_assoc_array_ops,
++				  &key->index_key);
++	if (IS_ERR(edit))
++		return PTR_ERR(edit);
 +
-+	ret = verify_pkcs7_message_sig(data, len, pkcs7, trusted_keys, usage,
-+				       view_content, ctx);
++	if (!edit)
++		return -ENOENT;
 +
- 	pkcs7_free_message(pkcs7);
- 	pr_devel("<=%s() = %d\n", __func__, ret);
++	*_edit = edit;
++	return 0;
++}
++
++/*
++ * Apply an unlink change.
++ */
++static void __key_unlink(struct key *keyring, struct key *key,
++			 struct assoc_array_edit **_edit)
++{
++	assoc_array_apply_edit(*_edit);
++	*_edit = NULL;
++	key_payload_reserve(keyring, keyring->datalen - KEYQUOTA_LINK_BYTES);
++}
++
++/*
++ * Finish unlinking a key from to a keyring.
++ */
++static void __key_unlink_end(struct key *keyring,
++			     struct key *key,
++			     struct assoc_array_edit *edit)
++	__releases(&keyring->sem)
++{
++	if (edit)
++		assoc_array_cancel_edit(edit);
++	up_write(&keyring->sem);
++}
++
+ /**
+  * key_unlink - Unlink the first link to a key from a keyring.
+  * @keyring: The keyring to remove the link from.
+@@ -1401,33 +1460,20 @@ EXPORT_SYMBOL(key_link);
+  */
+ int key_unlink(struct key *keyring, struct key *key)
+ {
+-	struct assoc_array_edit *edit;
++	struct assoc_array_edit *edit = NULL;
+ 	int ret;
+ 
+ 	key_check(keyring);
+ 	key_check(key);
+ 
+-	if (keyring->type != &key_type_keyring)
+-		return -ENOTDIR;
+-
+-	down_write(&keyring->sem);
+-
+-	edit = assoc_array_delete(&keyring->keys, &keyring_assoc_array_ops,
+-				  &key->index_key);
+-	if (IS_ERR(edit)) {
+-		ret = PTR_ERR(edit);
+-		goto error;
+-	}
+-	ret = -ENOENT;
+-	if (edit = NULL)
+-		goto error;
+-
+-	assoc_array_apply_edit(edit);
+-	key_payload_reserve(keyring, keyring->datalen - KEYQUOTA_LINK_BYTES);
+-	ret = 0;
++	ret = __key_unlink_lock(keyring);
++	if (ret < 0)
++		return ret;
+ 
+-error:
+-	up_write(&keyring->sem);
++	ret = __key_unlink_begin(keyring, key, &edit);
++	if (ret = 0)
++		__key_unlink(keyring, key, &edit);
++	__key_unlink_end(keyring, key, edit);
  	return ret;
-diff --git a/include/linux/verification.h b/include/linux/verification.h
-index 018fb5f13d44..5e1d41f2b336 100644
---- a/include/linux/verification.h
-+++ b/include/linux/verification.h
-@@ -36,6 +36,7 @@ extern const char *const key_being_used_for[NR__KEY_BEING_USED_FOR];
- #ifdef CONFIG_SYSTEM_DATA_VERIFICATION
- 
- struct key;
-+struct pkcs7_message;
- 
- extern int verify_pkcs7_signature(const void *data, size_t len,
- 				  const void *raw_pkcs7, size_t pkcs7_len,
-@@ -45,6 +46,15 @@ extern int verify_pkcs7_signature(const void *data, size_t len,
- 						      const void *data, size_t len,
- 						      size_t asn1hdrlen),
- 				  void *ctx);
-+extern int verify_pkcs7_message_sig(const void *data, size_t len,
-+				    struct pkcs7_message *pkcs7,
-+				    struct key *trusted_keys,
-+				    enum key_being_used_for usage,
-+				    int (*view_content)(void *ctx,
-+							const void *data,
-+							size_t len,
-+							size_t asn1hdrlen),
-+				    void *ctx);
- 
- #ifdef CONFIG_SIGNED_PE_FILE_VERIFICATION
- extern int verify_pefile_signature(const void *pebuf, unsigned pelen,
+ }
+ EXPORT_SYMBOL(key_unlink);
