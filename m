@@ -1,148 +1,141 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Tue, 11 Jun 2019 06:28:16 +0000
-Subject: [PATCH v11 12/13] ima: Store the measurement again when appraising a modsig
-Message-Id: <20190611062817.18412-13-bauerman@linux.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 19 Jun 2019 15:36:25 +0000
+Subject: [PATCH 4/6] keys: Provide request_key_rcu() [ver #2]
+Message-Id: <156095858592.25264.17369833581092140668.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190611062817.18412-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-If the IMA template contains the "modsig" or "d-modsig" field, then the
-modsig should be added to the measurement list when the file is appraised.
+Provide a request_key_rcu() function that can be used to request a key
+under RCU conditions.  It can only search and check permissions; it cannot
+allocate a new key, upcall or wait for an upcall to complete.  It may
+return a partially constructed key.
 
-And that is what normally happens, but if a measurement rule caused a file
-containing a modsig to be measured before a different rule causes it to be
-appraised, the resulting measurement entry will not contain the modsig
-because it is only fetched during appraisal. When the appraisal rule
-triggers, it won't store a new measurement containing the modsig because
-the file was already measured.
-
-We need to detect that situation and store an additional measurement with
-the modsig. This is done by adding an IMA_MEASURE action flag if we read a
-modsig and the IMA template contains a modsig field.
-
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- security/integrity/ima/ima.h          |  1 +
- security/integrity/ima/ima_api.c      | 19 +++++++++++++++----
- security/integrity/ima/ima_main.c     | 15 ++++++++++++---
- security/integrity/ima/ima_template.c | 19 +++++++++++++++++++
- 4 files changed, 47 insertions(+), 7 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index a2b2c13ceda8..44f5f60424c2 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -149,6 +149,7 @@ void ima_putc(struct seq_file *m, void *data, int datalen);
- void ima_print_digest(struct seq_file *m, u8 *digest, u32 size);
- struct ima_template_desc *ima_template_desc_current(void);
- struct ima_template_desc *lookup_template_desc(const char *name);
-+bool ima_template_has_modsig(const struct ima_template_desc *ima_template);
- int ima_restore_measurement_entry(struct ima_template_entry *entry);
- int ima_restore_measurement_list(loff_t bufsize, void *buf);
- int ima_measurements_show(struct seq_file *m, void *v);
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 32297d1e6164..bb887ed3d8a7 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -222,6 +222,14 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 		char digest[IMA_MAX_DIGEST_SIZE];
- 	} hash;
+ Documentation/security/keys/core.rst        |   10 ++++++
+ Documentation/security/keys/request-key.rst |    9 ++++++
+ include/linux/key.h                         |    3 ++
+ security/keys/request_key.c                 |   44 +++++++++++++++++++++++++++
+ 4 files changed, 66 insertions(+)
+
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 82dd457ff78d..003f1452a5b7 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -1147,6 +1147,16 @@ payload contents" for more information.
+     case error ERESTARTSYS will be returned.
  
-+	/*
-+	 * Always collect the modsig, because IMA might have already collected
-+	 * the file digest without collecting the modsig in a previous
-+	 * measurement rule.
-+	 */
-+	if (modsig)
-+		ima_collect_modsig(modsig, buf, size);
+ 
++ *  To search for a key under RCU conditions, call::
 +
- 	if (iint->flags & IMA_COLLECTED)
- 		goto out;
- 
-@@ -255,9 +263,6 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 	memcpy(iint->ima_hash, &hash, length);
- 	iint->version = i_version;
- 
--	if (modsig)
--		ima_collect_modsig(modsig, buf, size);
--
- 	/* Possibly temporary failure due to type of read (eg. O_DIRECT) */
- 	if (!result)
- 		iint->flags |= IMA_COLLECTED;
-@@ -307,7 +312,13 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 					     .modsig = modsig };
- 	int violation = 0;
- 
--	if (iint->measured_pcrs & (0x1 << pcr))
-+	/*
-+	 * We still need to store the measurement in the case of MODSIG because
-+	 * we only have its contents to put in the list at the time of
-+	 * appraisal, but a file measurement from earlier might already exist in
-+	 * the measurement list.
-+	 */
-+	if (iint->measured_pcrs & (0x1 << pcr) && !modsig)
- 		return;
- 
- 	result = ima_alloc_init_template(&event_data, &entry, template_desc);
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 85afb31fafe0..e0ca39f81a59 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -307,9 +307,18 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 		/* read 'security.ima' */
- 		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
- 
--		/* Read the appended modsig if allowed by the policy. */
--		if (iint->flags & IMA_MODSIG_ALLOWED)
--			ima_read_modsig(func, buf, size, &modsig);
-+		/*
-+		 * Read the appended modsig if allowed by the policy, and allow
-+		 * an additional measurement list entry, if needed, based on the
-+		 * template format and whether the file was already measured.
-+		 */
-+		if (iint->flags & IMA_MODSIG_ALLOWED) {
-+			rc = ima_read_modsig(func, buf, size, &modsig);
++	struct key *request_key_rcu(const struct key_type *type,
++				    const char *description);
 +
-+			if (!rc && ima_template_has_modsig(template_desc) &&
-+			    iint->flags & IMA_MEASURED)
-+				action |= IMA_MEASURE;
-+		}
- 	}
++    which is similar to request_key() except that it does not check for keys
++    that are under construction and it will not call out to userspace to
++    construct a key if it can't find a match.
++
++
+  *  When it is no longer required, the key should be released using::
  
- 	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
-diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index e25bef419c87..00d9a6cc8a60 100644
---- a/security/integrity/ima/ima_template.c
-+++ b/security/integrity/ima/ima_template.c
-@@ -56,6 +56,25 @@ static int template_desc_init_fields(const char *template_fmt,
- 				     const struct ima_template_field ***fields,
- 				     int *num_fields);
+ 	void key_put(struct key *key);
+diff --git a/Documentation/security/keys/request-key.rst b/Documentation/security/keys/request-key.rst
+index 07af991463b5..7caedc4d29f1 100644
+--- a/Documentation/security/keys/request-key.rst
++++ b/Documentation/security/keys/request-key.rst
+@@ -36,6 +36,11 @@ or::
+ 					     	   size_t callout_len,
+ 						   void *aux);
  
++or::
++
++	struct key *request_key_rcu(const struct key_type *type,
++				    const char *description);
++
+ Or by userspace invoking the request_key system call::
+ 
+ 	key_serial_t request_key(const char *type,
+@@ -57,6 +62,10 @@ The two async in-kernel calls may return keys that are still in the process of
+ being constructed.  The two non-async ones will wait for construction to
+ complete first.
+ 
++The request_key_rcu() call is like the in-kernel request_key() call, except
++that it doesn't check for keys that are under construction and doesn't attempt
++to construct missing keys.
++
+ The userspace interface links the key to a keyring associated with the process
+ to prevent the key from going away, and returns the serial number of the key to
+ the caller.
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 612e1cf84049..3604a554df99 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -274,6 +274,9 @@ extern struct key *request_key(struct key_type *type,
+ 			       const char *description,
+ 			       const char *callout_info);
+ 
++extern struct key *request_key_rcu(struct key_type *type,
++				   const char *description);
++
+ extern struct key *request_key_with_auxdata(struct key_type *type,
+ 					    const char *description,
+ 					    const void *callout_info,
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index bf1d223ec21c..b4b3677657d6 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -756,3 +756,47 @@ struct key *request_key_async_with_auxdata(struct key_type *type,
+ 				    callout_len, aux, NULL, KEY_ALLOC_IN_QUOTA);
+ }
+ EXPORT_SYMBOL(request_key_async_with_auxdata);
++
 +/**
-+ * ima_template_has_modsig - Check whether template has modsig-related fields.
-+ * @ima_template: IMA template to check.
++ * request_key_rcu - Request key from RCU-read-locked context
++ * @type: The type of key we want.
++ * @description: The name of the key we want.
 + *
-+ * Tells whether the given template has fields referencing a file's appended
-+ * signature.
++ * Request a key from a context that we may not sleep in (such as RCU-mode
++ * pathwalk).  Keys under construction are ignored.
++ *
++ * Return a pointer to the found key if successful, -ENOKEY if we couldn't find
++ * a key or some other error if the key found was unsuitable or inaccessible.
 + */
-+bool ima_template_has_modsig(const struct ima_template_desc *ima_template)
++struct key *request_key_rcu(struct key_type *type, const char *description)
 +{
-+	int i;
++	struct keyring_search_context ctx = {
++		.index_key.type		= type,
++		.index_key.description	= description,
++		.index_key.desc_len	= strlen(description),
++		.cred			= current_cred(),
++		.match_data.cmp		= key_default_cmp,
++		.match_data.raw_data	= description,
++		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
++		.flags			= (KEYRING_SEARCH_DO_STATE_CHECK |
++					   KEYRING_SEARCH_SKIP_EXPIRED),
++	};
++	struct key *key;
++	key_ref_t key_ref;
 +
-+	for (i = 0; i < ima_template->num_fields; i++)
-+		if (!strcmp(ima_template->fields[i]->field_id, "modsig") ||
-+		    !strcmp(ima_template->fields[i]->field_id, "d-modsig"))
-+			return true;
++	kenter("%s,%s", type->name, description);
 +
-+	return false;
++	/* search all the process keyrings for a key */
++	key_ref = search_process_keyrings_rcu(&ctx);
++	if (IS_ERR(key_ref)) {
++		key = ERR_CAST(key_ref);
++		if (PTR_ERR(key_ref) = -EAGAIN)
++			key = ERR_PTR(-ENOKEY);
++	} else {
++		key = key_ref_to_ptr(key_ref);
++	}
++
++	kleave(" = %p", key);
++	return key;
 +}
-+
- static int __init ima_template_setup(char *str)
- {
- 	struct ima_template_desc *template_desc;
++EXPORT_SYMBOL(request_key_rcu);
