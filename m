@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 16:06:41 +0000
+Date: Wed, 19 Jun 2019 16:47:12 +0000
 Subject: [PATCH 4/9] keys: Namespace keyring names [ver #4]
-Message-Id: <156096040113.6697.9084605159071066530.stgit@warthog.procyon.org.uk>
+Message-Id: <156096283248.28733.3232554427821180571.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156096036064.6697.2432500504898119675.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156096036064.6697.2432500504898119675.stgit@warthog.procyon.org.uk>
+References: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com, keyrings@vger.kernel.org
 Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
@@ -58,9 +58,9 @@ cc: Eric W. Biederman <ebiederm@xmission.com>
  include/uapi/linux/keyctl.h    |    1 
  kernel/user.c                  |    3 +
  kernel/user_namespace.c        |    7 ++-
- security/keys/keyctl.c         |    1 
+ security/keys/keyctl.c         |    3 +
  security/keys/keyring.c        |   99 +++++++++++++++++-----------------------
- 7 files changed, 59 insertions(+), 59 deletions(-)
+ 7 files changed, 60 insertions(+), 60 deletions(-)
 
 diff --git a/include/linux/key.h b/include/linux/key.h
 index ff102731b3db..ae1177302d70 100644
@@ -148,9 +148,18 @@ index 923414a246e9..bda6e890ad88 100644
  		kmem_cache_free(user_ns_cachep, ns);
  		dec_user_namespaces(ucounts);
 diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 169409b611b0..37d2940cb10a 100644
+index 169409b611b0..8a813220f269 100644
 --- a/security/keys/keyctl.c
 +++ b/security/keys/keyctl.c
+@@ -30,7 +30,7 @@
+ 
+ #define KEY_MAX_DESC_SIZE 4096
+ 
+-static const unsigned char keyrings_capabilities[1] = {
++static const unsigned char keyrings_capabilities[2] = {
+ 	[0] = (KEYCTL_CAPS0_CAPABILITIES |
+ 	       (IS_ENABLED(CONFIG_PERSISTENT_KEYRINGS)	? KEYCTL_CAPS0_PERSISTENT_KEYRINGS : 0) |
+ 	       (IS_ENABLED(CONFIG_KEY_DH_OPERATIONS)	? KEYCTL_CAPS0_DIFFIE_HELLMAN : 0) |
 @@ -40,6 +40,7 @@ static const unsigned char keyrings_capabilities[1] = {
  	       KEYCTL_CAPS0_RESTRICT_KEYRING |
  	       KEYCTL_CAPS0_MOVE
