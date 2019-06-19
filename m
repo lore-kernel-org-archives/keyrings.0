@@ -1,329 +1,251 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 16:47:12 +0000
-Subject: [PATCH 4/9] keys: Namespace keyring names [ver #4]
-Message-Id: <156096283248.28733.3232554427821180571.stgit@warthog.procyon.org.uk>
+Date: Wed, 19 Jun 2019 16:06:11 +0000
+Subject: [PATCH 1/9] keys: Simplify key description management [ver #4]
+Message-Id: <156096037132.6697.518054118891337103.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
+References: <156096036064.6697.2432500504898119675.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156096036064.6697.2432500504898119675.stgit@warthog.procyon.org.uk>
 To: ebiederm@xmission.com, keyrings@vger.kernel.org
 Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Keyring names are held in a single global list that any process can pick
-from by means of keyctl_join_session_keyring (provided the keyring grants
-Search permission).  This isn't very container friendly, however.
-
-Make the following changes:
-
- (1) Make default session, process and thread keyring names begin with a
-     '.' instead of '_'.
-
- (2) Keyrings whose names begin with a '.' aren't added to the list.  Such
-     keyrings are system specials.
-
- (3) Replace the global list with per-user_namespace lists.  A keyring adds
-     its name to the list for the user_namespace that it is currently in.
-
- (4) When a user_namespace is deleted, it just removes itself from the
-     keyring name list.
-
-The global keyring_name_lock is retained for accessing the name lists.
-This allows (4) to work.
-
-This can be tested by:
-
-	# keyctl newring foo @s
-	995906392
-	# unshare -U
-	$ keyctl show
-	...
-	 995906392 --alswrv  65534 65534   \_ keyring: foo
-	...
-	$ keyctl session foo
-	Joined session keyring: 935622349
-
-As can be seen, a new session keyring was created.
-
-The capability bit KEYCTL_CAPS1_NS_KEYRING_NAME is set if the kernel is
-employing this feature.
+Simplify key description management by cramming the word containing the
+length with the first few chars of the description also.  This simplifies
+the code that generates the index-key used by assoc_array.  It should speed
+up key searching a bit too.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Eric W. Biederman <ebiederm@xmission.com>
 ---
 
- include/linux/key.h            |    2 +
- include/linux/user_namespace.h |    5 ++
- include/uapi/linux/keyctl.h    |    1 
- kernel/user.c                  |    3 +
- kernel/user_namespace.c        |    7 ++-
- security/keys/keyctl.c         |    3 +
- security/keys/keyring.c        |   99 +++++++++++++++++-----------------------
- 7 files changed, 60 insertions(+), 60 deletions(-)
+ include/linux/key.h        |   14 ++++++++-
+ security/keys/internal.h   |    6 ++++
+ security/keys/key.c        |    2 +
+ security/keys/keyring.c    |   70 +++++++++++++-------------------------------
+ security/keys/persistent.c |    1 +
+ 5 files changed, 43 insertions(+), 50 deletions(-)
 
 diff --git a/include/linux/key.h b/include/linux/key.h
-index ff102731b3db..ae1177302d70 100644
+index 4cd5669184f3..86ccc2d010f6 100644
 --- a/include/linux/key.h
 +++ b/include/linux/key.h
-@@ -361,6 +361,7 @@ extern void key_set_timeout(struct key *, unsigned);
+@@ -86,9 +86,20 @@ struct keyring_list;
+ struct keyring_name;
  
- extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
- 				 key_perm_t perm);
-+extern void key_free_user_ns(struct user_namespace *);
- 
- /*
-  * The permissions required on a key that we're looking up.
-@@ -434,6 +435,7 @@ extern void key_init(void);
- #define key_fsuid_changed(c)		do { } while(0)
- #define key_fsgid_changed(c)		do { } while(0)
- #define key_init()			do { } while(0)
-+#define key_free_user_ns(ns)		do { } while(0)
- 
- #endif /* CONFIG_KEYS */
- #endif /* __KERNEL__ */
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index d6b74b91096b..90457015fa3f 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -64,6 +64,11 @@ struct user_namespace {
- 	struct ns_common	ns;
- 	unsigned long		flags;
- 
-+#ifdef CONFIG_KEYS
-+	/* List of joinable keyrings in this namespace */
-+	struct list_head	keyring_name_list;
+ struct keyring_index_key {
++	union {
++		struct {
++#ifdef __LITTLE_ENDIAN /* Put desc_len at the LSB of x */
++			u8	desc_len;
++			char	desc[sizeof(long) - 1];	/* First few chars of description */
++#else
++			char	desc[sizeof(long) - 1];	/* First few chars of description */
++			u8	desc_len;
 +#endif
-+
- 	/* Register of per-UID persistent keyrings for this namespace */
- #ifdef CONFIG_PERSISTENT_KEYRINGS
- 	struct key		*persistent_keyring_register;
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index 551b5814f53e..35b405034674 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -128,5 +128,6 @@ struct keyctl_pkey_params {
- #define KEYCTL_CAPS0_INVALIDATE		0x20 /* KEYCTL_INVALIDATE supported */
- #define KEYCTL_CAPS0_RESTRICT_KEYRING	0x40 /* KEYCTL_RESTRICT_KEYRING supported */
- #define KEYCTL_CAPS0_MOVE		0x80 /* KEYCTL_MOVE supported */
-+#define KEYCTL_CAPS1_NS_KEYRING_NAME	0x01 /* Keyring names are per-user_namespace */
- 
- #endif /*  _LINUX_KEYCTL_H */
-diff --git a/kernel/user.c b/kernel/user.c
-index 88b834f0eebc..50979fd1b7aa 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -62,6 +62,9 @@ struct user_namespace init_user_ns = {
- 	.ns.ops = &userns_operations,
- #endif
- 	.flags = USERNS_INIT_FLAGS,
-+#ifdef CONFIG_KEYS
-+	.keyring_name_list = LIST_HEAD_INIT(init_user_ns.keyring_name_list),
-+#endif
- #ifdef CONFIG_PERSISTENT_KEYRINGS
- 	.persistent_keyring_register_sem  	__RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 923414a246e9..bda6e890ad88 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -133,6 +133,9 @@ int create_user_ns(struct cred *new)
- 	ns->flags = parent_ns->flags;
- 	mutex_unlock(&userns_state_mutex);
- 
-+#ifdef CONFIG_KEYS
-+	INIT_LIST_HEAD(&ns->keyring_name_list);
-+#endif
- #ifdef CONFIG_PERSISTENT_KEYRINGS
- 	init_rwsem(&ns->persistent_keyring_register_sem);
- #endif
-@@ -196,9 +199,7 @@ static void free_user_ns(struct work_struct *work)
- 			kfree(ns->projid_map.reverse);
- 		}
- 		retire_userns_sysctls(ns);
--#ifdef CONFIG_PERSISTENT_KEYRINGS
--		key_put(ns->persistent_keyring_register);
--#endif
-+		key_free_user_ns(ns);
- 		ns_free_inum(&ns->ns);
- 		kmem_cache_free(user_ns_cachep, ns);
- 		dec_user_namespaces(ucounts);
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 169409b611b0..8a813220f269 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -30,7 +30,7 @@
- 
- #define KEY_MAX_DESC_SIZE 4096
- 
--static const unsigned char keyrings_capabilities[1] = {
-+static const unsigned char keyrings_capabilities[2] = {
- 	[0] = (KEYCTL_CAPS0_CAPABILITIES |
- 	       (IS_ENABLED(CONFIG_PERSISTENT_KEYRINGS)	? KEYCTL_CAPS0_PERSISTENT_KEYRINGS : 0) |
- 	       (IS_ENABLED(CONFIG_KEY_DH_OPERATIONS)	? KEYCTL_CAPS0_DIFFIE_HELLMAN : 0) |
-@@ -40,6 +40,7 @@ static const unsigned char keyrings_capabilities[1] = {
- 	       KEYCTL_CAPS0_RESTRICT_KEYRING |
- 	       KEYCTL_CAPS0_MOVE
- 	       ),
-+	[1] = (KEYCTL_CAPS1_NS_KEYRING_NAME),
++		};
++		unsigned long x;
++	};
+ 	struct key_type		*type;
+ 	const char		*description;
+-	size_t			desc_len;
  };
  
- static int key_get_type_from_user(char *type,
+ union key_payload {
+@@ -202,6 +213,7 @@ struct key {
+ 	union {
+ 		struct keyring_index_key index_key;
+ 		struct {
++			unsigned long	len_desc;
+ 			struct key_type	*type;		/* type of key */
+ 			char		*description;
+ 		};
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 3d5c08db74d2..ee71c72fc5f0 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -90,6 +90,12 @@ extern struct mutex key_construction_mutex;
+ extern wait_queue_head_t request_key_conswq;
+ 
+ 
++static inline void key_set_index_key(struct keyring_index_key *index_key)
++{
++	size_t n = min_t(size_t, index_key->desc_len, sizeof(index_key->desc));
++	memcpy(index_key->desc, index_key->description, n);
++}
++
+ extern struct key_type *key_type_lookup(const char *type);
+ extern void key_type_put(struct key_type *ktype);
+ 
+diff --git a/security/keys/key.c b/security/keys/key.c
+index e792d65c0af8..0a3828f15f57 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -285,6 +285,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	key->index_key.description = kmemdup(desc, desclen + 1, GFP_KERNEL);
+ 	if (!key->index_key.description)
+ 		goto no_memory_3;
++	key_set_index_key(&key->index_key);
+ 
+ 	refcount_set(&key->usage, 1);
+ 	init_rwsem(&key->sem);
+@@ -868,6 +869,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 			goto error_free_prep;
+ 	}
+ 	index_key.desc_len = strlen(index_key.description);
++	key_set_index_key(&index_key);
+ 
+ 	ret = __key_link_lock(keyring, &index_key);
+ 	if (ret < 0) {
 diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 20891cd198f0..fe851292509e 100644
+index afa6d4024c67..ebf52077598f 100644
 --- a/security/keys/keyring.c
 +++ b/security/keys/keyring.c
-@@ -16,6 +16,7 @@
- #include <linux/security.h>
- #include <linux/seq_file.h>
- #include <linux/err.h>
-+#include <linux/user_namespace.h>
- #include <keys/keyring-type.h>
- #include <keys/user-type.h>
- #include <linux/assoc_array_priv.h>
-@@ -28,11 +29,6 @@
-  */
- #define KEYRING_SEARCH_MAX_DEPTH 6
+@@ -179,9 +179,9 @@ static unsigned long hash_key_type_and_desc(const struct keyring_index_key *inde
+ 	int n, desc_len = index_key->desc_len;
  
--/*
-- * We keep all named keyrings in a hash to speed looking them up.
-- */
--#define KEYRING_NAME_HASH_SIZE	(1 << 5)
+ 	type = (unsigned long)index_key->type;
 -
- /*
-  * We mark pointers we pass to the associative array with bit 1 set if
-  * they're keyrings and clear otherwise.
-@@ -55,17 +51,20 @@ static inline void *keyring_key_to_ptr(struct key *key)
- 	return key;
- }
- 
--static struct list_head	keyring_name_hash[KEYRING_NAME_HASH_SIZE];
- static DEFINE_RWLOCK(keyring_name_lock);
- 
--static inline unsigned keyring_hash(const char *desc)
-+/*
-+ * Clean up the bits of user_namespace that belong to us.
-+ */
-+void key_free_user_ns(struct user_namespace *ns)
- {
--	unsigned bucket = 0;
--
--	for (; *desc; desc++)
--		bucket += (unsigned char)*desc;
-+	write_lock(&keyring_name_lock);
-+	list_del_init(&ns->keyring_name_list);
-+	write_unlock(&keyring_name_lock);
- 
--	return bucket & (KEYRING_NAME_HASH_SIZE - 1);
-+#ifdef CONFIG_PERSISTENT_KEYRINGS
-+	key_put(ns->persistent_keyring_register);
-+#endif
- }
- 
- /*
-@@ -104,23 +103,17 @@ static DEFINE_MUTEX(keyring_serialise_link_lock);
- 
- /*
-  * Publish the name of a keyring so that it can be found by name (if it has
-- * one).
-+ * one and it doesn't begin with a dot).
-  */
- static void keyring_publish_name(struct key *keyring)
- {
--	int bucket;
--
--	if (keyring->description) {
--		bucket = keyring_hash(keyring->description);
-+	struct user_namespace *ns = current_user_ns();
- 
-+	if (keyring->description &&
-+	    keyring->description[0] &&
-+	    keyring->description[0] != '.') {
- 		write_lock(&keyring_name_lock);
--
--		if (!keyring_name_hash[bucket].next)
--			INIT_LIST_HEAD(&keyring_name_hash[bucket]);
--
--		list_add_tail(&keyring->name_link,
--			      &keyring_name_hash[bucket]);
--
-+		list_add_tail(&keyring->name_link, &ns->keyring_name_list);
- 		write_unlock(&keyring_name_lock);
- 	}
- }
-@@ -1097,50 +1090,44 @@ key_ref_t find_key_to_update(key_ref_t keyring_ref,
-  */
- struct key *find_keyring_by_name(const char *name, bool uid_keyring)
- {
-+	struct user_namespace *ns = current_user_ns();
- 	struct key *keyring;
--	int bucket;
- 
- 	if (!name)
- 		return ERR_PTR(-EINVAL);
- 
--	bucket = keyring_hash(name);
--
- 	read_lock(&keyring_name_lock);
- 
--	if (keyring_name_hash[bucket].next) {
--		/* search this hash bucket for a keyring with a matching name
--		 * that's readable and that hasn't been revoked */
--		list_for_each_entry(keyring,
--				    &keyring_name_hash[bucket],
--				    name_link
--				    ) {
--			if (!kuid_has_mapping(current_user_ns(), keyring->user->uid))
--				continue;
--
--			if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
--				continue;
-+	/* Search this hash bucket for a keyring with a matching name that
-+	 * grants Search permission and that hasn't been revoked
-+	 */
-+	list_for_each_entry(keyring, &ns->keyring_name_list, name_link) {
-+		if (!kuid_has_mapping(ns, keyring->user->uid))
-+			continue;
- 
--			if (strcmp(keyring->description, name) != 0)
--				continue;
-+		if (test_bit(KEY_FLAG_REVOKED, &keyring->flags))
-+			continue;
- 
--			if (uid_keyring) {
--				if (!test_bit(KEY_FLAG_UID_KEYRING,
--					      &keyring->flags))
--					continue;
--			} else {
--				if (key_permission(make_key_ref(keyring, 0),
--						   KEY_NEED_SEARCH) < 0)
--					continue;
--			}
-+		if (strcmp(keyring->description, name) != 0)
-+			continue;
- 
--			/* we've got a match but we might end up racing with
--			 * key_cleanup() if the keyring is currently 'dead'
--			 * (ie. it has a zero usage count) */
--			if (!refcount_inc_not_zero(&keyring->usage))
-+		if (uid_keyring) {
-+			if (!test_bit(KEY_FLAG_UID_KEYRING,
-+				      &keyring->flags))
-+				continue;
-+		} else {
-+			if (key_permission(make_key_ref(keyring, 0),
-+					   KEY_NEED_SEARCH) < 0)
- 				continue;
--			keyring->last_used_at = ktime_get_real_seconds();
--			goto out;
- 		}
+ 	acc = mult_64x32_and_fold(type, desc_len + 13);
+ 	acc = mult_64x32_and_fold(acc, 9207);
 +
-+		/* we've got a match but we might end up racing with
-+		 * key_cleanup() if the keyring is currently 'dead'
-+		 * (ie. it has a zero usage count) */
-+		if (!refcount_inc_not_zero(&keyring->usage))
-+			continue;
-+		keyring->last_used_at = ktime_get_real_seconds();
-+		goto out;
- 	}
+ 	for (;;) {
+ 		n = desc_len;
+ 		if (n <= 0)
+@@ -215,23 +215,13 @@ static unsigned long hash_key_type_and_desc(const struct keyring_index_key *inde
+ /*
+  * Build the next index key chunk.
+  *
+- * On 32-bit systems the index key is laid out as:
+- *
+- *	0	4	5	9...
+- *	hash	desclen	typeptr	desc[]
+- *
+- * On 64-bit systems:
+- *
+- *	0	8	9	17...
+- *	hash	desclen	typeptr	desc[]
+- *
+  * We return it one word-sized chunk at a time.
+  */
+ static unsigned long keyring_get_key_chunk(const void *data, int level)
+ {
+ 	const struct keyring_index_key *index_key = data;
+ 	unsigned long chunk = 0;
+-	long offset = 0;
++	const u8 *d;
+ 	int desc_len = index_key->desc_len, n = sizeof(chunk);
  
- 	keyring = ERR_PTR(-ENOKEY);
+ 	level /= ASSOC_ARRAY_KEY_CHUNK_SIZE;
+@@ -239,33 +229,23 @@ static unsigned long keyring_get_key_chunk(const void *data, int level)
+ 	case 0:
+ 		return hash_key_type_and_desc(index_key);
+ 	case 1:
+-		return ((unsigned long)index_key->type << 8) | desc_len;
++		return index_key->x;
+ 	case 2:
+-		if (desc_len = 0)
+-			return (u8)((unsigned long)index_key->type >>
+-				    (ASSOC_ARRAY_KEY_CHUNK_SIZE - 8));
+-		n--;
+-		offset = 1;
+-		/* fall through */
++		return (unsigned long)index_key->type;
+ 	default:
+-		offset += sizeof(chunk) - 1;
+-		offset += (level - 3) * sizeof(chunk);
+-		if (offset >= desc_len)
++		level -= 3;
++		if (desc_len <= sizeof(index_key->desc))
+ 			return 0;
+-		desc_len -= offset;
++
++		d = index_key->description + sizeof(index_key->desc);
++		d += level * sizeof(long);
++		desc_len -= sizeof(index_key->desc);
+ 		if (desc_len > n)
+ 			desc_len = n;
+-		offset += desc_len;
+ 		do {
+ 			chunk <<= 8;
+-			chunk |= ((u8*)index_key->description)[--offset];
++			chunk |= *d++;
+ 		} while (--desc_len > 0);
+-
+-		if (level = 2) {
+-			chunk <<= 8;
+-			chunk |= (u8)((unsigned long)index_key->type >>
+-				      (ASSOC_ARRAY_KEY_CHUNK_SIZE - 8));
+-		}
+ 		return chunk;
+ 	}
+ }
+@@ -304,39 +284,28 @@ static int keyring_diff_objects(const void *object, const void *data)
+ 	seg_b = hash_key_type_and_desc(b);
+ 	if ((seg_a ^ seg_b) != 0)
+ 		goto differ;
++	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
+ 
+ 	/* The number of bits contributed by the hash is controlled by a
+ 	 * constant in the assoc_array headers.  Everything else thereafter we
+ 	 * can deal with as being machine word-size dependent.
+ 	 */
+-	level += ASSOC_ARRAY_KEY_CHUNK_SIZE / 8;
+-	seg_a = a->desc_len;
+-	seg_b = b->desc_len;
++	seg_a = a->x;
++	seg_b = b->x;
+ 	if ((seg_a ^ seg_b) != 0)
+ 		goto differ;
++	level += sizeof(unsigned long);
+ 
+ 	/* The next bit may not work on big endian */
+-	level++;
+ 	seg_a = (unsigned long)a->type;
+ 	seg_b = (unsigned long)b->type;
+ 	if ((seg_a ^ seg_b) != 0)
+ 		goto differ;
+-
+ 	level += sizeof(unsigned long);
+-	if (a->desc_len = 0)
+-		goto same;
+ 
+-	i = 0;
+-	if (((unsigned long)a->description | (unsigned long)b->description) &
+-	    (sizeof(unsigned long) - 1)) {
+-		do {
+-			seg_a = *(unsigned long *)(a->description + i);
+-			seg_b = *(unsigned long *)(b->description + i);
+-			if ((seg_a ^ seg_b) != 0)
+-				goto differ_plus_i;
+-			i += sizeof(unsigned long);
+-		} while (i < (a->desc_len & (sizeof(unsigned long) - 1)));
+-	}
++	i = sizeof(a->desc);
++	if (a->desc_len <= i)
++		goto same;
+ 
+ 	for (; i < a->desc_len; i++) {
+ 		seg_a = *(unsigned char *)(a->description + i);
+@@ -662,6 +631,9 @@ static bool search_nested_keyrings(struct key *keyring,
+ 	BUG_ON((ctx->flags & STATE_CHECKS) = 0 ||
+ 	       (ctx->flags & STATE_CHECKS) = STATE_CHECKS);
+ 
++	if (ctx->index_key.description)
++		key_set_index_key(&ctx->index_key);
++
+ 	/* Check to see if this top-level keyring is what we are looking for
+ 	 * and whether it is valid or not.
+ 	 */
+diff --git a/security/keys/persistent.c b/security/keys/persistent.c
+index d0cb5b32eff7..fc29ec59efa7 100644
+--- a/security/keys/persistent.c
++++ b/security/keys/persistent.c
+@@ -87,6 +87,7 @@ static long key_get_persistent(struct user_namespace *ns, kuid_t uid,
+ 	index_key.type = &key_type_keyring;
+ 	index_key.description = buf;
+ 	index_key.desc_len = sprintf(buf, "_persistent.%u", from_kuid(ns, uid));
++	key_set_index_key(&index_key);
+ 
+ 	if (ns->persistent_keyring_register) {
+ 		reg_ref = make_key_ref(ns->persistent_keyring_register, true);
