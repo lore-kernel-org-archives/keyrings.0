@@ -1,73 +1,60 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Tue, 11 Jun 2019 06:28:10 +0000
-Subject: [PATCH v11 06/13] ima: Use designated initializers for struct ima_event_data
-Message-Id: <20190611062817.18412-7-bauerman@linux.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 19 Jun 2019 15:36:03 +0000
+Subject: [PATCH 1/6] keys: Fix request_key() lack of Link perm check on found key [ver #2]
+Message-Id: <156095856342.25264.11029423243013014147.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190611062817.18412-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190611062817.18412-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Designated initializers allow specifying only the members of the struct
-that need initialization. Non-mentioned members are initialized to zero.
+The request_key() syscall allows a process to gain access to the 'possessor'
+permits of any key that grants it Search permission by virtue of request_key()
+not checking whether a key it finds grants Link permission to the caller.
 
-This makes the code a bit clearer (particularly in ima_add_boot_aggregate)
-and also allows adding a new member to the struct without having to update
-all struct initializations.
-
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- security/integrity/ima/ima_api.c  | 13 +++++++++----
- security/integrity/ima/ima_init.c |  4 ++--
- 2 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 78eb11c7ac07..c0cf4bcfc82f 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -139,8 +139,10 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
- {
- 	struct ima_template_entry *entry;
- 	struct inode *inode = file_inode(file);
--	struct ima_event_data event_data = {iint, file, filename, NULL, 0,
--					    cause};
-+	struct ima_event_data event_data = { .iint = iint,
-+					     .file = file,
-+					     .filename = filename,
-+					     .violation = cause };
- 	int violation = 1;
- 	int result;
+ Documentation/security/keys/core.rst |    4 ++++
+ security/keys/request_key.c          |   10 ++++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 823d29bf44f7..82dd457ff78d 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -433,6 +433,10 @@ The main syscalls are:
+      /sbin/request-key will be invoked in an attempt to obtain a key. The
+      callout_info string will be passed as an argument to the program.
  
-@@ -294,8 +296,11 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 	int result = -ENOMEM;
- 	struct inode *inode = file_inode(file);
- 	struct ima_template_entry *entry;
--	struct ima_event_data event_data = {iint, file, filename, xattr_value,
--					    xattr_len, NULL};
-+	struct ima_event_data event_data = { .iint = iint,
-+					     .file = file,
-+					     .filename = filename,
-+					     .xattr_value = xattr_value,
-+					     .xattr_len = xattr_len };
- 	int violation = 0;
++     To link a key into the destination keyring the key must grant link
++     permission on the key to the caller and the keyring must grant write
++     permission.
++
+      See also Documentation/security/keys/request-key.rst.
  
- 	if (iint->measured_pcrs & (0x1 << pcr))
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 993d0f1915ff..368ef658a1cd 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -49,8 +49,8 @@ static int __init ima_add_boot_aggregate(void)
- 	const char *audit_cause = "ENOMEM";
- 	struct ima_template_entry *entry;
- 	struct integrity_iint_cache tmp_iint, *iint = &tmp_iint;
--	struct ima_event_data event_data = {iint, NULL, boot_aggregate_name,
--					    NULL, 0, NULL};
-+	struct ima_event_data event_data = { .iint = iint,
-+					     .filename = boot_aggregate_name };
- 	int result = -ENOMEM;
- 	int violation = 0;
- 	struct {
+ 
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 857da65e1940..a6543ed98b1f 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -564,6 +564,16 @@ struct key *request_key_and_link(struct key_type *type,
+ 	key_ref = search_process_keyrings(&ctx);
+ 
+ 	if (!IS_ERR(key_ref)) {
++		if (dest_keyring) {
++			ret = key_task_permission(key_ref, current_cred(),
++						  KEY_NEED_LINK);
++			if (ret < 0) {
++				key_ref_put(key_ref);
++				key = ERR_PTR(ret);
++				goto error_free;
++			}
++		}
++
+ 		key = key_ref_to_ptr(key_ref);
+ 		if (dest_keyring) {
+ 			ret = key_link(dest_keyring, key);
