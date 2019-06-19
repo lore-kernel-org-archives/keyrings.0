@@ -1,85 +1,77 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 13:18:40 +0000
-Subject: [PATCH 00/10] keys: Miscellany [ver #3]
-Message-Id: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
+Date: Wed, 19 Jun 2019 15:35:56 +0000
+Subject: [PATCH 0/6] keys: request_key() improvements [ver #2]
+Message-Id: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org, ebiggers@kernel.org
-Cc: Mat Martineau <mathew.j.martineau@linux.intel.com>, Eric Biggers <ebiggers@google.com>, James Morris <jamorris@linux.microsoft.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
 
-Here are some miscellaneous keyrings fixes and improvements intended for
-the next merge window:
+Here's a fix and some improvements for request_key() intended for the next
+merge window:
 
- (1) Fix a bunch of warnings from sparse, including missing RCU bits and
-     kdoc-function argument mismatches
+ (1) Fix the lack of a Link permission check on a key found by
+     request_key(), thereby enabling request_key() to link keys that don't
+     grant this permission to the target keyring (which must still grant
+     Write permission).
 
- (2) Implement a keyctl to allow a key to be moved from one keyring to
-     another, with the option of prohibiting key replacement in the
-     destination keyring.
+     Note that the key must be in the caller's keyrings already to be
+     found.
 
- (3) Grant Link permission to possessors of request_key_auth tokens so that
-     upcall servicing daemons can more easily arrange things such that only
-     the necessary auth key is passed to the actual service program, and
-     not all the auth keys a daemon might possesss.
+ (2) Invalidate used request_key authentication keys rather than revoking
+     them, so that they get cleaned up immediately rather than hanging
+     around till the expiry time is passed.
 
- (4) Improvement in lookup_user_key().
+ (3) Move the RCU locks outwards from the keyring search functions so that
+     a request_key_rcu() can be provided.  This can be called in RCU mode,
+     so it can't sleep and can't upcall - but it can be called from
+     LOOKUP_RCU pathwalk mode.
 
- (5) Implement a keyctl to allow keyrings subsystem capabilities to be
-     queried.
+ (4) Cache the latest positive result of request_key*() temporarily in
+     task_struct so that filesystems that make a lot of request_key() calls
+     during pathwalk can take advantage of it to avoid having to redo the
+     searching.
+
+     It is assumed that the key just found is likely to be used multiple
+     times in each step in an RCU pathwalk, and is likely to be reused for
+     the next step too.
+
+     Note that the cleanup of the cache is done on TIF_NOTIFY_RESUME, just
+     before userspace resumes, and on exit.
 
 The patches can be found on the following branch:
 
-	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-misc
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-request
 
-The keyutils next branch has commits to make available, document and test
-the move-key and capabilities code:
-
-	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/log/?h=next
-
-Changes:
-
-V3:
-
- (*) Made the capabilities array unsigned char[] rather than unsigned int[].
-
-V2:
-
- (*) Fixed lock ordering bug in KEYCTL_MOVE.
-
- (*) Added improvement patch from Eric.
-
- (*) Added capabilities patch.
+and this depends on keys-misc.
 
 David
 ---
-David Howells (9):
-      keys: sparse: Fix key_fs[ug]id_changed()
-      keys: sparse: Fix incorrect RCU accesses
-      keys: sparse: Fix kdoc mismatches
-      keys: Change keyring_serialise_link_sem to a mutex
-      keys: Break bits out of key_unlink()
-      keys: Hoist locking out of __key_link_begin()
-      keys: Add a keyctl to move a key between keyrings
-      keys: Grant Link permission to possessers of request_key auth keys
-      keys: Add capability-checking keyctl function
-
-Eric Biggers (1):
-      keys: Reuse keyring_index_key::desc_len in lookup_user_key()
+David Howells (6):
+      keys: Fix request_key() lack of Link perm check on found key
+      keys: Invalidate used request_key authentication keys
+      keys: Move the RCU locks outwards from the keyring search functions
+      keys: Provide request_key_rcu()
+      keys: Cache result of request_key*() temporarily in task_struct
+      keys: Kill off request_key_async{,_with_auxdata}
 
 
- Documentation/security/keys/core.rst |   21 +++
- include/linux/key.h                  |   13 +-
- include/uapi/linux/keyctl.h          |   17 ++
- kernel/cred.c                        |    4 
- security/keys/compat.c               |    6 +
- security/keys/internal.h             |    7 +
- security/keys/key.c                  |   27 +++
- security/keys/keyctl.c               |   90 +++++++++++
- security/keys/keyring.c              |  278 ++++++++++++++++++++++++++++------
- security/keys/process_keys.c         |   26 +--
- security/keys/request_key.c          |    9 +
- security/keys/request_key_auth.c     |    4 
- 12 files changed, 418 insertions(+), 84 deletions(-)
+ Documentation/security/keys/core.rst        |   38 ++-----
+ Documentation/security/keys/request-key.rst |   33 +++----
+ include/keys/request_key_auth-type.h        |    1 
+ include/linux/key.h                         |   14 +--
+ include/linux/sched.h                       |    5 +
+ include/linux/tracehook.h                   |    7 +
+ kernel/cred.c                               |    9 ++
+ security/keys/Kconfig                       |   17 +++
+ security/keys/internal.h                    |    6 +
+ security/keys/key.c                         |    4 -
+ security/keys/keyring.c                     |   16 ++-
+ security/keys/proc.c                        |    4 +
+ security/keys/process_keys.c                |   41 ++++----
+ security/keys/request_key.c                 |  137 ++++++++++++++++++---------
+ security/keys/request_key_auth.c            |   60 +++++++-----
+ 15 files changed, 228 insertions(+), 164 deletions(-)
