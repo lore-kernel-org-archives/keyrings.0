@@ -1,455 +1,78 @@
 From: David Howells <dhowells@redhat.com>
-Date: Fri, 07 Jun 2019 14:18:39 +0000
-Subject: [PATCH 08/13] vfs: Add superblock notifications [ver #4]
-Message-Id: <155991711918.15579.2013190109048657848.stgit@warthog.procyon.org.uk>
+Date: Wed, 19 Jun 2019 13:19:16 +0000
+Subject: [PATCH 04/10] keys: Change keyring_serialise_link_sem to a mutex [ver #3]
+Message-Id: <156095035684.9363.3671722354273186694.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155991702981.15579.6007568669839441045.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org, ebiggers@kernel.org
+Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a superblock event notification facility whereby notifications about
-superblock events, such as I/O errors (EIO), quota limits being hit
-(EDQUOT) and running out of space (ENOSPC) can be reported to a monitoring
-process asynchronously.  Note that this does not cover vfsmount topology
-changes.  watch_mount() is used for that.
-
-Firstly, an event queue needs to be created:
-
-	fd = open("/dev/event_queue", O_RDWR);
-	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
-
-then a notification can be set up to report notifications via that queue:
-
-	struct watch_notification_filter filter = {
-		.nr_filters = 1,
-		.filters = {
-			[0] = {
-				.type = WATCH_TYPE_SB_NOTIFY,
-				.subtype_filter[0] = UINT_MAX,
-			},
-		},
-	};
-	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
-	watch_sb(AT_FDCWD, "/home/dhowells", 0, fd, 0x03);
-
-In this case, it would let me monitor my own homedir for events.  After
-setting the watch, records will be placed into the queue when, for example,
-as superblock switches between read-write and read-only.  Records are of
-the following format:
-
-	struct superblock_notification {
-		struct watch_notification watch;
-		__u64	sb_id;
-	} *n;
-
-Where:
-
-	n->watch.type will be WATCH_TYPE_SB_NOTIFY.
-
-	n->watch.subtype will indicate the type of event, such as
-	NOTIFY_SUPERBLOCK_READONLY.
-
-	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
-	record.
-
-	n->watch.info & WATCH_INFO_ID will be the fifth argument to
-	watch_sb(), shifted.
-
-	n->watch.info & WATCH_INFO_FLAG_0 will be used for
-	NOTIFY_SUPERBLOCK_READONLY, being set if the superblock becomes
-	R/O, and being cleared otherwise.
-
-	n->sb_id will be the ID of the superblock, as can be retrieved with
-	the fsinfo() syscall, as part of the fsinfo_sb_notifications
-	attribute in the the watch_id field.
-
-Note that it is permissible for event records to be of variable length -
-or, at least, the length may be dependent on the subtype.  Note also that
-the queue can be shared between multiple notifications of various types.
-
-[*] QUESTION: Does this want to be per-sb, per-mount_namespace,
-    per-some-new-notify-ns or per-system?  Or do multiple options make
-    sense?
-
-[*] QUESTION: I've done it this way so that anyone could theoretically
-    monitor the superblock of any filesystem they can pathwalk to, but do
-    we need other security controls?
-
-[*] QUESTION: Should the LSM be able to filter the events a queue can
-    receive?  For instance the opener of the queue would grant that queue
-    subject creds (by ->f_cred) that could be used to govern what events
-    could be seen, assuming the target superblock to have some object
-    creds, based on, say, the mounter.
+Change keyring_serialise_link_sem to a mutex as it's only ever
+write-locked.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/x86/entry/syscalls/syscall_32.tbl |    1 
- arch/x86/entry/syscalls/syscall_64.tbl |    1 
- fs/Kconfig                             |   12 +++
- fs/super.c                             |  121 ++++++++++++++++++++++++++++++++
- include/linux/fs.h                     |   77 ++++++++++++++++++++
- include/linux/syscalls.h               |    2 +
- include/uapi/linux/watch_queue.h       |   26 +++++++
- kernel/sys_ni.c                        |    3 +
- 8 files changed, 243 insertions(+)
+ security/keys/keyring.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
-index 91164735efe7..ef6035f71db4 100644
---- a/arch/x86/entry/syscalls/syscall_32.tbl
-+++ b/arch/x86/entry/syscalls/syscall_32.tbl
-@@ -440,3 +440,4 @@
- 433	i386	fspick			sys_fspick			__ia32_sys_fspick
- 434	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
- 435	i386	watch_mount		sys_watch_mount			__ia32_sys_watch_mount
-+436	i386	watch_sb		sys_watch_sb			__ia32_sys_watch_sb
-diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
-index 858aff7a1239..072f5dbac6a3 100644
---- a/arch/x86/entry/syscalls/syscall_64.tbl
-+++ b/arch/x86/entry/syscalls/syscall_64.tbl
-@@ -357,6 +357,7 @@
- 433	common	fspick			__x64_sys_fspick
- 434	common	fsinfo			__x64_sys_fsinfo
- 435	common	watch_mount		__x64_sys_watch_mount
-+436	common	watch_sb		__x64_sys_watch_sb
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/fs/Kconfig b/fs/Kconfig
-index a26bbe27a791..fc0fa4b35f3c 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -130,6 +130,18 @@ config MOUNT_NOTIFICATIONS
- 	  device to handle the notification buffer and provides the
- 	  mount_notify() system call to enable/disable watchpoints.
- 
-+config SB_NOTIFICATIONS
-+	bool "Superblock event notifications"
-+	select WATCH_QUEUE
-+	help
-+	  This option provides support for receiving superblock event
-+	  notifications.  This makes use of the /dev/watch_queue misc device to
-+	  handle the notification buffer and provides the sb_notify() system
-+	  call to enable/disable watches.
-+
-+	  Events can include things like changing between R/W and R/O, EIO
-+	  generation, ENOSPC generation and EDQUOT generation.
-+
- source "fs/quota/Kconfig"
- 
- source "fs/autofs/Kconfig"
-diff --git a/fs/super.c b/fs/super.c
-index 61819e8e5469..5bfe409a4fbe 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -36,6 +36,8 @@
- #include <linux/lockdep.h>
- #include <linux/user_namespace.h>
- #include <linux/fs_context.h>
-+#include <linux/syscalls.h>
-+#include <linux/namei.h>
- #include <uapi/linux/mount.h>
- #include "internal.h"
- 
-@@ -350,6 +352,10 @@ void deactivate_locked_super(struct super_block *s)
- {
- 	struct file_system_type *fs = s->s_type;
- 	if (atomic_dec_and_test(&s->s_active)) {
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+		if (s->s_watchers)
-+			remove_watch_list(s->s_watchers);
-+#endif
- 		cleancache_invalidate_fs(s);
- 		unregister_shrinker(&s->s_shrink);
- 		fs->kill_sb(s);
-@@ -990,6 +996,8 @@ int reconfigure_super(struct fs_context *fc)
- 	/* Needs to be ordered wrt mnt_is_readonly() */
- 	smp_wmb();
- 	sb->s_readonly_remount = 0;
-+	notify_sb(sb, NOTIFY_SUPERBLOCK_READONLY,
-+		  remount_ro ? WATCH_INFO_FLAG_0 : 0);
- 
- 	/*
- 	 * Some filesystems modify their metadata via some other path than the
-@@ -1808,3 +1816,116 @@ int thaw_super(struct super_block *sb)
- 	return thaw_super_locked(sb);
- }
- EXPORT_SYMBOL(thaw_super);
-+
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+/*
-+ * Post superblock notifications.
-+ */
-+void post_sb_notification(struct super_block *s, struct superblock_notification *n)
-+{
-+	post_watch_notification(s->s_watchers, &n->watch, current_cred(),
-+				s->s_unique_id);
-+}
-+
-+/**
-+ * sys_watch_sb - Watch for superblock events.
-+ * @dfd: Base directory to pathwalk from or fd referring to superblock.
-+ * @filename: Path to superblock to place the watch upon
-+ * @at_flags: Pathwalk control flags
-+ * @watch_fd: The watch queue to send notifications to.
-+ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
-+ */
-+SYSCALL_DEFINE5(watch_sb,
-+		int, dfd,
-+		const char __user *, filename,
-+		unsigned int, at_flags,
-+		int, watch_fd,
-+		int, watch_id)
-+{
-+	struct watch_queue *wqueue;
-+	struct super_block *s;
-+	struct watch_list *wlist = NULL;
-+	struct watch *watch;
-+	struct path path;
-+	unsigned int lookup_flags +		LOOKUP_DIRECTORY | LOOKUP_FOLLOW | LOOKUP_AUTOMOUNT;
-+	int ret;
-+
-+	if (watch_id < -1 || watch_id > 0xff)
-+		return -EINVAL;
-+	if ((at_flags & ~(AT_NO_AUTOMOUNT | AT_EMPTY_PATH)) != 0)
-+		return -EINVAL;
-+	if (at_flags & AT_NO_AUTOMOUNT)
-+		lookup_flags &= ~LOOKUP_AUTOMOUNT;
-+	if (at_flags & AT_EMPTY_PATH)
-+		lookup_flags |= LOOKUP_EMPTY;
-+
-+	ret = user_path_at(dfd, filename, at_flags, &path);
-+	if (ret)
-+		return ret;
-+
-+	wqueue = get_watch_queue(watch_fd);
-+	if (IS_ERR(wqueue))
-+		goto err_path;
-+
-+	s = path.dentry->d_sb;
-+	if (watch_id >= 0) {
-+		ret = -ENOMEM;
-+		if (!s->s_watchers) {
-+			wlist = kzalloc(sizeof(*wlist), GFP_KERNEL);
-+			if (!wlist)
-+				goto err_wqueue;
-+			init_watch_list(wlist, NULL);
-+		}
-+
-+		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
-+		if (!watch)
-+			goto err_wlist;
-+
-+		init_watch(watch, wqueue);
-+		watch->id		= s->s_unique_id;
-+		watch->private		= s;
-+		watch->info_id		= (u32)watch_id << 24;
-+
-+		ret = security_watch_sb(watch, s);
-+		if (ret < 0)
-+			goto err_watch;
-+
-+		down_write(&s->s_umount);
-+		ret = -EIO;
-+		if (atomic_read(&s->s_active)) {
-+			if (!s->s_watchers) {
-+				s->s_watchers = wlist;
-+				wlist = NULL;
-+			}
-+
-+			ret = add_watch_to_object(watch, s->s_watchers);
-+			if (ret = 0) {
-+				spin_lock(&sb_lock);
-+				s->s_count++;
-+				spin_unlock(&sb_lock);
-+				watch = NULL;
-+			}
-+		}
-+		up_write(&s->s_umount);
-+	} else {
-+		ret = -EBADSLT;
-+		if (READ_ONCE(s->s_watchers)) {
-+			down_write(&s->s_umount);
-+			ret = remove_watch_from_object(s->s_watchers, wqueue,
-+						       s->s_unique_id, false);
-+			up_write(&s->s_umount);
-+		}
-+	}
-+
-+err_watch:
-+	kfree(watch);
-+err_wlist:
-+	kfree(wlist);
-+err_wqueue:
-+	put_watch_queue(wqueue);
-+err_path:
-+	path_put(&path);
-+	return ret;
-+}
-+#endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index db05738b1951..02ba4bfb9cc3 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -40,6 +40,7 @@
- #include <linux/fs_types.h>
- #include <linux/build_bug.h>
- #include <linux/stddef.h>
-+#include <linux/watch_queue.h>
- 
- #include <asm/byteorder.h>
- #include <uapi/linux/fs.h>
-@@ -1531,6 +1532,10 @@ struct super_block {
- 
- 	/* Superblock event notifications */
- 	u64			s_unique_id;
-+
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	struct watch_list	*s_watchers;
-+#endif
- } __randomize_layout;
- 
- /* Helper functions so that in most cases filesystems will
-@@ -3531,4 +3536,76 @@ static inline struct sock *io_uring_get_socket(struct file *file)
- }
- #endif
- 
-+extern void post_sb_notification(struct super_block *, struct superblock_notification *);
-+
-+/**
-+ * notify_sb: Post simple superblock notification.
-+ * @s: The superblock the notification is about.
-+ * @subtype: The type of notification.
-+ * @info: WATCH_INFO_FLAG_* flags to be set in the record.
-+ */
-+static inline void notify_sb(struct super_block *s,
-+			     enum superblock_notification_type subtype,
-+			     u32 info)
-+{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	if (unlikely(s->s_watchers)) {
-+		struct superblock_notification n = {
-+			.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.watch.subtype	= subtype,
-+			.watch.info	= sizeof(n) | info,
-+			.sb_id		= s->s_unique_id,
-+		};
-+
-+		post_sb_notification(s, &n);
-+	}
-+			     
-+#endif
-+}
-+
-+/**
-+ * notify_sb_error: Post superblock error notification.
-+ * @s: The superblock the notification is about.
-+ * @error: The error number to be recorded.
-+ */
-+static inline int notify_sb_error(struct super_block *s, int error)
-+{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	if (unlikely(s->s_watchers)) {
-+		struct superblock_error_notification n = {
-+			.s.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.s.watch.subtype = NOTIFY_SUPERBLOCK_ERROR,
-+			.s.watch.info	= sizeof(n),
-+			.s.sb_id	= s->s_unique_id,
-+			.error_number	= error,
-+			.error_cookie	= 0,
-+		};
-+
-+		post_sb_notification(s, &n.s);
-+	}
-+#endif
-+	return error;
-+}
-+
-+/**
-+ * notify_sb_EDQUOT: Post superblock quota overrun notification.
-+ * @s: The superblock the notification is about.
-+ */
-+static inline int notify_sb_EQDUOT(struct super_block *s)
-+{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	if (unlikely(s->s_watchers)) {
-+		struct superblock_notification n = {
-+			.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.watch.subtype	= NOTIFY_SUPERBLOCK_EDQUOT,
-+			.watch.info	= sizeof(n),
-+			.sb_id		= s->s_unique_id,
-+		};
-+
-+		post_sb_notification(s, &n);
-+	}
-+#endif
-+	return -EDQUOT;
-+}
-+
- #endif /* _LINUX_FS_H */
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index f2e7f18b323a..308141bc3f69 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -1003,6 +1003,8 @@ asmlinkage long sys_fsinfo(int dfd, const char __user *path,
- 			   void __user *buffer, size_t buf_size);
- asmlinkage long sys_watch_mount(int dfd, const char __user *path,
- 				unsigned int at_flags, int watch_fd, int watch_id);
-+asmlinkage long sys_watch_sb(int dfd, const char __user *path,
-+			     unsigned int at_flags, int watch_fd, int watch_id);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 5b218b270598..ca6694ba1773 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -100,7 +100,7 @@ EXPORT_SYMBOL(key_type_keyring);
+  * Semaphore to serialise link/link calls to prevent two link calls in parallel
+  * introducing a cycle.
+  */
+-static DECLARE_RWSEM(keyring_serialise_link_sem);
++static DEFINE_MUTEX(keyring_serialise_link_lock);
  
  /*
-  * Architecture-specific system calls
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-index cf3c0c03a747..66b0da7cf888 100644
---- a/include/uapi/linux/watch_queue.h
-+++ b/include/uapi/linux/watch_queue.h
-@@ -129,4 +129,30 @@ struct mount_notification {
- 	__u32	changed_mount;		/* The mount that got changed */
- };
+  * Publish the name of a keyring so that it can be found by name (if it has
+@@ -1206,7 +1206,7 @@ int __key_link_begin(struct key *keyring,
+ 		     const struct keyring_index_key *index_key,
+ 		     struct assoc_array_edit **_edit)
+ 	__acquires(&keyring->sem)
+-	__acquires(&keyring_serialise_link_sem)
++	__acquires(&keyring_serialise_link_lock)
+ {
+ 	struct assoc_array_edit *edit;
+ 	int ret;
+@@ -1228,7 +1228,7 @@ int __key_link_begin(struct key *keyring,
+ 	/* serialise link/link calls to prevent parallel calls causing a cycle
+ 	 * when linking two keyring in opposite orders */
+ 	if (index_key->type = &key_type_keyring)
+-		down_write(&keyring_serialise_link_sem);
++		mutex_lock(&keyring_serialise_link_lock);
  
-+/*
-+ * Type of superblock notification.
-+ */
-+enum superblock_notification_type {
-+	NOTIFY_SUPERBLOCK_READONLY	= 0, /* Filesystem toggled between R/O and R/W */
-+	NOTIFY_SUPERBLOCK_ERROR		= 1, /* Error in filesystem or blockdev */
-+	NOTIFY_SUPERBLOCK_EDQUOT	= 2, /* EDQUOT notification */
-+	NOTIFY_SUPERBLOCK_NETWORK	= 3, /* Network status change */
-+};
-+
-+/*
-+ * Superblock notification record.
-+ * - watch.type = WATCH_TYPE_MOUNT_NOTIFY
-+ * - watch.subtype = enum superblock_notification_subtype
-+ */
-+struct superblock_notification {
-+	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
-+	__u64	sb_id;			/* 64-bit superblock ID [fsinfo_ids::f_sb_id] */
-+};
-+
-+struct superblock_error_notification {
-+	struct superblock_notification s; /* subtype = notify_superblock_error */
-+	__u32	error_number;
-+	__u32	error_cookie;
-+};
-+
- #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 97b025e7863c..565d1e3d1bed 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -108,6 +108,9 @@ COND_SYSCALL(quotactl);
+ 	/* Create an edit script that will insert/replace the key in the
+ 	 * keyring tree.
+@@ -1260,7 +1260,7 @@ int __key_link_begin(struct key *keyring,
+ 	assoc_array_cancel_edit(edit);
+ error_sem:
+ 	if (index_key->type = &key_type_keyring)
+-		up_write(&keyring_serialise_link_sem);
++		mutex_unlock(&keyring_serialise_link_lock);
+ error_krsem:
+ 	up_write(&keyring->sem);
+ 	kleave(" = %d", ret);
+@@ -1307,13 +1307,13 @@ void __key_link_end(struct key *keyring,
+ 		    const struct keyring_index_key *index_key,
+ 		    struct assoc_array_edit *edit)
+ 	__releases(&keyring->sem)
+-	__releases(&keyring_serialise_link_sem)
++	__releases(&keyring_serialise_link_lock)
+ {
+ 	BUG_ON(index_key->type = NULL);
+ 	kenter("%d,%s,", keyring->serial, index_key->type->name);
  
- /* fs/read_write.c */
+ 	if (index_key->type = &key_type_keyring)
+-		up_write(&keyring_serialise_link_sem);
++		mutex_unlock(&keyring_serialise_link_lock);
  
-+/* fs/sb_notify.c */
-+COND_SYSCALL(sb_notify);
-+
- /* fs/sendfile.c */
- 
- /* fs/select.c */
+ 	if (edit) {
+ 		if (!edit->dead_leaf) {
