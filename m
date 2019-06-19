@@ -1,318 +1,175 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Mon, 24 Jun 2019 19:52:09 +0000
-Subject: Re: [PATCH v11 01/13] MODSIGN: Export module signature definitions
-Message-Id: <87imsukbh2.fsf@morokweng.localdomain>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 19 Jun 2019 16:47:51 +0000
+Subject: [PATCH 8/9] keys: Network namespace domain tag [ver #4]
+Message-Id: <156096287188.28733.15342608110117616221.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190611062817.18412-1-bauerman@linux.ibm.com> <20190611062817.18412-2-bauerman@linux.ibm.com>
-In-Reply-To: <20190611062817.18412-2-bauerman@linux.ibm.com>
-To: Jessica Yu <jeyu@kernel.org>
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, linux-integrity@vger.kernel.org
+References: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
+To: ebiederm@xmission.com, keyrings@vger.kernel.org
+Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
+Create key domain tags for network namespaces and make it possible to
+automatically tag keys that are used by networked services (e.g. AF_RXRPC,
+AFS, DNS) with the default network namespace if not set by the caller.
 
-Hello Jessica,
+This allows keys with the same description but in different namespaces to
+coexist within a keyring.
 
-AFAIK Mimi is happy with this patch set, but I still need acks from
-maintainers of other subsystems that my changes touch before she can
-accept it.
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: netdev@vger.kernel.org
+cc: linux-nfs@vger.kernel.org
+cc: linux-cifs@vger.kernel.org
+cc: linux-afs@lists.infradead.org
+---
 
-Is this patch OK from your PoV?
+ include/linux/key-type.h    |    3 +++
+ include/net/net_namespace.h |    3 +++
+ net/core/net_namespace.c    |   19 +++++++++++++++++++
+ net/dns_resolver/dns_key.c  |    1 +
+ net/rxrpc/key.c             |    2 ++
+ security/keys/keyring.c     |    7 ++++++-
+ 6 files changed, 34 insertions(+), 1 deletion(-)
 
---
-Thiago Jung Bauermann
-IBM Linux Technology Center
-
-
-Thiago Jung Bauermann <bauerman@linux.ibm.com> writes:
-
-> IMA will use the module_signature format for append signatures, so export
-> the relevant definitions and factor out the code which verifies that the
-> appended signature trailer is valid.
->
-> Also, create a CONFIG_MODULE_SIG_FORMAT option so that IMA can select it
-> and be able to use mod_check_sig() without having to depend on either
-> CONFIG_MODULE_SIG or CONFIG_MODULES.
->
-> Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-> Cc: Jessica Yu <jeyu@kernel.org>
-> ---
->  include/linux/module.h           |  3 --
->  include/linux/module_signature.h | 44 +++++++++++++++++++++++++
->  init/Kconfig                     |  6 +++-
->  kernel/Makefile                  |  1 +
->  kernel/module.c                  |  1 +
->  kernel/module_signature.c        | 46 ++++++++++++++++++++++++++
->  kernel/module_signing.c          | 56 +++++---------------------------
->  scripts/Makefile                 |  2 +-
->  8 files changed, 106 insertions(+), 53 deletions(-)
->
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index 188998d3dca9..aa56f531cf1e 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -25,9 +25,6 @@
->  #include <linux/percpu.h>
->  #include <asm/module.h>
->
-> -/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
-> -#define MODULE_SIG_STRING "~Module signature appended~\n"
-> -
->  /* Not Yet Implemented */
->  #define MODULE_SUPPORTED_DEVICE(name)
->
-> diff --git a/include/linux/module_signature.h b/include/linux/module_signature.h
-> new file mode 100644
-> index 000000000000..523617fc5b6a
-> --- /dev/null
-> +++ b/include/linux/module_signature.h
-> @@ -0,0 +1,44 @@
-> +/* SPDX-License-Identifier: GPL-2.0+ */
-> +/*
-> + * Module signature handling.
-> + *
-> + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-> + * Written by David Howells (dhowells@redhat.com)
-> + */
-> +
-> +#ifndef _LINUX_MODULE_SIGNATURE_H
-> +#define _LINUX_MODULE_SIGNATURE_H
-> +
-> +/* In stripped ARM and x86-64 modules, ~ is surprisingly rare. */
-> +#define MODULE_SIG_STRING "~Module signature appended~\n"
-> +
-> +enum pkey_id_type {
-> +	PKEY_ID_PGP,		/* OpenPGP generated key ID */
-> +	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
-> +	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
-> +};
-> +
-> +/*
-> + * Module signature information block.
-> + *
-> + * The constituents of the signature section are, in order:
-> + *
-> + *	- Signer's name
-> + *	- Key identifier
-> + *	- Signature data
-> + *	- Information block
-> + */
-> +struct module_signature {
-> +	u8	algo;		/* Public-key crypto algorithm [0] */
-> +	u8	hash;		/* Digest algorithm [0] */
-> +	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
-> +	u8	signer_len;	/* Length of signer's name [0] */
-> +	u8	key_id_len;	/* Length of key identifier [0] */
-> +	u8	__pad[3];
-> +	__be32	sig_len;	/* Length of signature data */
-> +};
-> +
-> +int mod_check_sig(const struct module_signature *ms, size_t file_len,
-> +		  const char *name);
-> +
-> +#endif /* _LINUX_MODULE_SIGNATURE_H */
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 8b9ffe236e4f..c2286a3c74c5 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1852,6 +1852,10 @@ config BASE_SMALL
->  	default 0 if BASE_FULL
->  	default 1 if !BASE_FULL
->
-> +config MODULE_SIG_FORMAT
-> +	def_bool n
-> +	select SYSTEM_DATA_VERIFICATION
-> +
->  menuconfig MODULES
->  	bool "Enable loadable module support"
->  	option modules
-> @@ -1929,7 +1933,7 @@ config MODULE_SRCVERSION_ALL
->  config MODULE_SIG
->  	bool "Module signature verification"
->  	depends on MODULES
-> -	select SYSTEM_DATA_VERIFICATION
-> +	select MODULE_SIG_FORMAT
->  	help
->  	  Check modules for valid signatures upon load: the signature
->  	  is simply appended to the module. For more information see
-> diff --git a/kernel/Makefile b/kernel/Makefile
-> index 33824f0385b3..f29ae2997a43 100644
-> --- a/kernel/Makefile
-> +++ b/kernel/Makefile
-> @@ -58,6 +58,7 @@ endif
->  obj-$(CONFIG_UID16) += uid16.o
->  obj-$(CONFIG_MODULES) += module.o
->  obj-$(CONFIG_MODULE_SIG) += module_signing.o
-> +obj-$(CONFIG_MODULE_SIG_FORMAT) += module_signature.o
->  obj-$(CONFIG_KALLSYMS) += kallsyms.o
->  obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
->  obj-$(CONFIG_CRASH_CORE) += crash_core.o
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 6e6712b3aaf5..2712f4d217f5 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -19,6 +19,7 @@
->  #include <linux/export.h>
->  #include <linux/extable.h>
->  #include <linux/moduleloader.h>
-> +#include <linux/module_signature.h>
->  #include <linux/trace_events.h>
->  #include <linux/init.h>
->  #include <linux/kallsyms.h>
-> diff --git a/kernel/module_signature.c b/kernel/module_signature.c
-> new file mode 100644
-> index 000000000000..4224a1086b7d
-> --- /dev/null
-> +++ b/kernel/module_signature.c
-> @@ -0,0 +1,46 @@
-> +// SPDX-License-Identifier: GPL-2.0+
-> +/*
-> + * Module signature checker
-> + *
-> + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-> + * Written by David Howells (dhowells@redhat.com)
-> + */
-> +
-> +#include <linux/errno.h>
-> +#include <linux/printk.h>
-> +#include <linux/module_signature.h>
-> +#include <asm/byteorder.h>
-> +
-> +/**
-> + * mod_check_sig - check that the given signature is sane
-> + *
-> + * @ms:		Signature to check.
-> + * @file_len:	Size of the file to which @ms is appended.
-> + * @name:	What is being checked. Used for error messages.
-> + */
-> +int mod_check_sig(const struct module_signature *ms, size_t file_len,
-> +		  const char *name)
-> +{
-> +	if (be32_to_cpu(ms->sig_len) >= file_len - sizeof(*ms))
-> +		return -EBADMSG;
-> +
-> +	if (ms->id_type != PKEY_ID_PKCS7) {
-> +		pr_err("%s: Module is not signed with expected PKCS#7 message\n",
-> +		       name);
-> +		return -ENOPKG;
-> +	}
-> +
-> +	if (ms->algo != 0 ||
-> +	    ms->hash != 0 ||
-> +	    ms->signer_len != 0 ||
-> +	    ms->key_id_len != 0 ||
-> +	    ms->__pad[0] != 0 ||
-> +	    ms->__pad[1] != 0 ||
-> +	    ms->__pad[2] != 0) {
-> +		pr_err("%s: PKCS#7 signature info has unexpected non-zero params\n",
-> +		       name);
-> +		return -EBADMSG;
-> +	}
-> +
-> +	return 0;
-> +}
-> diff --git a/kernel/module_signing.c b/kernel/module_signing.c
-> index 6b9a926fd86b..cdd04a6b8074 100644
-> --- a/kernel/module_signing.c
-> +++ b/kernel/module_signing.c
-> @@ -11,37 +11,13 @@
->
->  #include <linux/kernel.h>
->  #include <linux/errno.h>
-> +#include <linux/module.h>
-> +#include <linux/module_signature.h>
->  #include <linux/string.h>
->  #include <linux/verification.h>
->  #include <crypto/public_key.h>
->  #include "module-internal.h"
->
-> -enum pkey_id_type {
-> -	PKEY_ID_PGP,		/* OpenPGP generated key ID */
-> -	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
-> -	PKEY_ID_PKCS7,		/* Signature in PKCS#7 message */
-> -};
-> -
-> -/*
-> - * Module signature information block.
-> - *
-> - * The constituents of the signature section are, in order:
-> - *
-> - *	- Signer's name
-> - *	- Key identifier
-> - *	- Signature data
-> - *	- Information block
-> - */
-> -struct module_signature {
-> -	u8	algo;		/* Public-key crypto algorithm [0] */
-> -	u8	hash;		/* Digest algorithm [0] */
-> -	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
-> -	u8	signer_len;	/* Length of signer's name [0] */
-> -	u8	key_id_len;	/* Length of key identifier [0] */
-> -	u8	__pad[3];
-> -	__be32	sig_len;	/* Length of signature data */
-> -};
-> -
->  /*
->   * Verify the signature on a module.
->   */
-> @@ -49,6 +25,7 @@ int mod_verify_sig(const void *mod, struct load_info *info)
->  {
->  	struct module_signature ms;
->  	size_t sig_len, modlen = info->len;
-> +	int ret;
->
->  	pr_devel("=>%s(,%zu)\n", __func__, modlen);
->
-> @@ -56,32 +33,15 @@ int mod_verify_sig(const void *mod, struct load_info *info)
->  		return -EBADMSG;
->
->  	memcpy(&ms, mod + (modlen - sizeof(ms)), sizeof(ms));
-> -	modlen -= sizeof(ms);
-> +
-> +	ret = mod_check_sig(&ms, modlen, info->name);
-> +	if (ret)
-> +		return ret;
->
->  	sig_len = be32_to_cpu(ms.sig_len);
-> -	if (sig_len >= modlen)
-> -		return -EBADMSG;
-> -	modlen -= sig_len;
-> +	modlen -= sig_len + sizeof(ms);
->  	info->len = modlen;
->
-> -	if (ms.id_type != PKEY_ID_PKCS7) {
-> -		pr_err("%s: Module is not signed with expected PKCS#7 message\n",
-> -		       info->name);
-> -		return -ENOPKG;
-> -	}
-> -
-> -	if (ms.algo != 0 ||
-> -	    ms.hash != 0 ||
-> -	    ms.signer_len != 0 ||
-> -	    ms.key_id_len != 0 ||
-> -	    ms.__pad[0] != 0 ||
-> -	    ms.__pad[1] != 0 ||
-> -	    ms.__pad[2] != 0) {
-> -		pr_err("%s: PKCS#7 signature info has unexpected non-zero params\n",
-> -		       info->name);
-> -		return -EBADMSG;
-> -	}
-> -
->  	return verify_pkcs7_signature(mod, modlen, mod + modlen, sig_len,
->  				      VERIFY_USE_SECONDARY_KEYRING,
->  				      VERIFYING_MODULE_SIGNATURE,
-> diff --git a/scripts/Makefile b/scripts/Makefile
-> index 9d442ee050bd..52098b080ab7 100644
-> --- a/scripts/Makefile
-> +++ b/scripts/Makefile
-> @@ -17,7 +17,7 @@ hostprogs-$(CONFIG_VT)           += conmakehash
->  hostprogs-$(BUILD_C_RECORDMCOUNT) += recordmcount
->  hostprogs-$(CONFIG_BUILDTIME_EXTABLE_SORT) += sortextable
->  hostprogs-$(CONFIG_ASN1)	 += asn1_compiler
-> -hostprogs-$(CONFIG_MODULE_SIG)	 += sign-file
-> +hostprogs-$(CONFIG_MODULE_SIG_FORMAT) += sign-file
->  hostprogs-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += extract-cert
->  hostprogs-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE) += insert-sys-cert
->
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index e49d1de0614e..2148a6bf58f1 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -74,6 +74,9 @@ struct key_type {
+ 	 */
+ 	size_t def_datalen;
+ 
++	unsigned int flags;
++#define KEY_TYPE_NET_DOMAIN	0x00000001 /* Keys of this type have a net namespace domain */
++
+ 	/* vet a description */
+ 	int (*vet_description)(const char *description);
+ 
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index 12689ddfc24c..a56bf7fc7c2b 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -71,6 +71,9 @@ struct net {
+ 						 */
+ 	struct llist_node	cleanup_list;	/* namespaces on death row */
+ 
++#ifdef CONFIG_KEYS
++	struct key_tag		*key_domain;	/* Key domain of operation tag */
++#endif
+ 	struct user_namespace   *user_ns;	/* Owning user namespace */
+ 	struct ucounts		*ucounts;
+ 	spinlock_t		nsid_lock;
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 711b161505ac..076a75c73c9e 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -38,9 +38,16 @@ EXPORT_SYMBOL_GPL(net_namespace_list);
+ DECLARE_RWSEM(net_rwsem);
+ EXPORT_SYMBOL_GPL(net_rwsem);
+ 
++#ifdef CONFIG_KEYS
++static struct key_tag init_net_key_domain = { .usage = REFCOUNT_INIT(1) };
++#endif
++
+ struct net init_net = {
+ 	.count		= REFCOUNT_INIT(1),
+ 	.dev_base_head	= LIST_HEAD_INIT(init_net.dev_base_head),
++#ifdef CONFIG_KEYS
++	.key_domain	= &init_net_key_domain,
++#endif
+ };
+ EXPORT_SYMBOL(init_net);
+ 
+@@ -386,10 +393,21 @@ static struct net *net_alloc(void)
+ 	if (!net)
+ 		goto out_free;
+ 
++#ifdef CONFIG_KEYS
++	net->key_domain = kzalloc(sizeof(struct key_tag), GFP_KERNEL);
++	if (!net->key_domain)
++		goto out_free_2;
++	refcount_set(&net->key_domain->usage, 1);
++#endif
++
+ 	rcu_assign_pointer(net->gen, ng);
+ out:
+ 	return net;
+ 
++#ifdef CONFIG_KEYS
++out_free_2:
++	kmem_cache_free(net_cachep, net);
++#endif
+ out_free:
+ 	kfree(ng);
+ 	goto out;
+@@ -566,6 +584,7 @@ static void cleanup_net(struct work_struct *work)
+ 	list_for_each_entry_safe(net, tmp, &net_exit_list, exit_list) {
+ 		list_del_init(&net->exit_list);
+ 		dec_net_namespaces(net->ucounts);
++		key_remove_domain(net->key_domain);
+ 		put_user_ns(net->user_ns);
+ 		net_drop_ns(net);
+ 	}
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index a65d553e730d..3e1a90669006 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -314,6 +314,7 @@ static long dns_resolver_read(const struct key *key,
+ 
+ struct key_type key_type_dns_resolver = {
+ 	.name		= "dns_resolver",
++	.flags		= KEY_TYPE_NET_DOMAIN,
+ 	.preparse	= dns_resolver_preparse,
+ 	.free_preparse	= dns_resolver_free_preparse,
+ 	.instantiate	= generic_key_instantiate,
+diff --git a/net/rxrpc/key.c b/net/rxrpc/key.c
+index e7f6b8823eb6..2722189ec273 100644
+--- a/net/rxrpc/key.c
++++ b/net/rxrpc/key.c
+@@ -43,6 +43,7 @@ static long rxrpc_read(const struct key *, char __user *, size_t);
+  */
+ struct key_type key_type_rxrpc = {
+ 	.name		= "rxrpc",
++	.flags		= KEY_TYPE_NET_DOMAIN,
+ 	.preparse	= rxrpc_preparse,
+ 	.free_preparse	= rxrpc_free_preparse,
+ 	.instantiate	= generic_key_instantiate,
+@@ -58,6 +59,7 @@ EXPORT_SYMBOL(key_type_rxrpc);
+  */
+ struct key_type key_type_rxrpc_s = {
+ 	.name		= "rxrpc_s",
++	.flags		= KEY_TYPE_NET_DOMAIN,
+ 	.vet_description = rxrpc_vet_description_s,
+ 	.preparse	= rxrpc_preparse_s,
+ 	.free_preparse	= rxrpc_free_preparse_s,
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index d3c86fda1510..bca070f6ab46 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -17,10 +17,12 @@
+ #include <linux/seq_file.h>
+ #include <linux/err.h>
+ #include <linux/user_namespace.h>
++#include <linux/nsproxy.h>
+ #include <keys/keyring-type.h>
+ #include <keys/user-type.h>
+ #include <linux/assoc_array_priv.h>
+ #include <linux/uaccess.h>
++#include <net/net_namespace.h>
+ #include "internal.h"
+ 
+ /*
+@@ -220,7 +222,10 @@ void key_set_index_key(struct keyring_index_key *index_key)
+ 
+ 	memcpy(index_key->desc, index_key->description, n);
+ 
+-	index_key->domain_tag = &default_domain_tag;
++	if (index_key->type->flags & KEY_TYPE_NET_DOMAIN)
++		index_key->domain_tag = current->nsproxy->net_ns->key_domain;
++	else
++		index_key->domain_tag = &default_domain_tag;
+ 	hash_key_type_and_desc(index_key);
+ }
+ 
