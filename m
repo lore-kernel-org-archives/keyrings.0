@@ -1,342 +1,420 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 13:19:41 +0000
-Subject: [PATCH 07/10] keys: Add a keyctl to move a key between keyrings [ver #3]
-Message-Id: <156095038101.9363.17063850083466117267.stgit@warthog.procyon.org.uk>
+Date: Wed, 19 Jun 2019 15:36:18 +0000
+Subject: [PATCH 3/6] keys: Move the RCU locks outwards from the keyring search functions [ver #2]
+Message-Id: <156095857859.25264.1843382792417643880.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, ebiggers@kernel.org
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a keyctl to atomically move a link to a key from one keyring to
-another.  The key must exist in "from" keyring and a flag can be given to
-cause the operation to fail if there's a matching key already in the "to"
-keyring.
-
-This can be done with:
-
-	keyctl(KEYCTL_MOVE,
-	       key_serial_t key,
-	       key_serial_t from_keyring,
-	       key_serial_t to_keyring,
-	       unsigned int flags);
-
-The key being moved must grant Link permission and both keyrings must grant
-Write permission.
-
-flags should be 0 or KEYCTL_MOVE_EXCL, with the latter preventing
-displacement of a matching key from the "to" keyring.
+Move the RCU locks outwards from the keyring search functions so that it
+will become possible to provide an RCU-capable partial request_key()
+function in a later commit.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/security/keys/core.rst |   21 +++++++
- include/linux/key.h                  |    5 ++
- include/uapi/linux/keyctl.h          |    3 +
- security/keys/compat.c               |    3 +
- security/keys/internal.h             |    3 +
- security/keys/keyctl.c               |   52 ++++++++++++++++
- security/keys/keyring.c              |  108 ++++++++++++++++++++++++++++++++++
- 7 files changed, 195 insertions(+)
+ Documentation/security/keys/request-key.rst |    2 -
+ include/keys/request_key_auth-type.h        |    1 
+ security/keys/internal.h                    |    6 +--
+ security/keys/keyring.c                     |   16 ++++---
+ security/keys/proc.c                        |    4 +-
+ security/keys/process_keys.c                |   41 ++++++++----------
+ security/keys/request_key.c                 |    8 +++-
+ security/keys/request_key_auth.c            |   60 ++++++++++++++++-----------
+ 8 files changed, 77 insertions(+), 61 deletions(-)
 
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index 9521c4207f01..823d29bf44f7 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -577,6 +577,27 @@ The keyctl syscall functions are:
-      added.
+diff --git a/Documentation/security/keys/request-key.rst b/Documentation/security/keys/request-key.rst
+index 600ad67d1707..07af991463b5 100644
+--- a/Documentation/security/keys/request-key.rst
++++ b/Documentation/security/keys/request-key.rst
+@@ -148,7 +148,7 @@ The Search Algorithm
  
+ A search of any particular keyring proceeds in the following fashion:
  
-+  *  Move a key from one keyring to another::
-+
-+	long keyctl(KEYCTL_MOVE,
-+		    key_serial_t id,
-+		    key_serial_t from_ring_id,
-+		    key_serial_t to_ring_id,
-+		    unsigned int flags);
-+
-+     Move the key specified by "id" from the keyring specified by
-+     "from_ring_id" to the keyring specified by "to_ring_id".  If the two
-+     keyrings are the same, nothing is done.
-+
-+     "flags" can have KEYCTL_MOVE_EXCL set in it to cause the operation to fail
-+     with EEXIST if a matching key exists in the destination keyring, otherwise
-+     such a key will be replaced.
-+
-+     A process must have link permission on the key for this function to be
-+     successful and write permission on both keyrings.  Any errors that can
-+     occur from KEYCTL_LINK also apply on the destination keyring here.
-+
-+
-   *  Unlink a key or keyring from another keyring::
+-  1) When the key management code searches for a key (keyring_search_aux) it
++  1) When the key management code searches for a key (keyring_search_rcu) it
+      firstly calls key_permission(SEARCH) on the keyring it's starting with,
+      if this denies permission, it doesn't search further.
  
- 	long keyctl(KEYCTL_UNLINK, key_serial_t keyring, key_serial_t key);
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 1f09aad1c98c..612e1cf84049 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -310,6 +310,11 @@ extern int key_update(key_ref_t key,
- extern int key_link(struct key *keyring,
- 		    struct key *key);
- 
-+extern int key_move(struct key *key,
-+		    struct key *from_keyring,
-+		    struct key *to_keyring,
-+		    unsigned int flags);
-+
- extern int key_unlink(struct key *keyring,
- 		      struct key *key);
- 
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index f45ee0f69c0c..fd9fb11b312b 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -67,6 +67,7 @@
- #define KEYCTL_PKEY_SIGN		27	/* Create a public key signature */
- #define KEYCTL_PKEY_VERIFY		28	/* Verify a public key signature */
- #define KEYCTL_RESTRICT_KEYRING		29	/* Restrict keys allowed to link to a keyring */
-+#define KEYCTL_MOVE			30	/* Move keys between keyrings */
- 
- /* keyctl structures */
- struct keyctl_dh_params {
-@@ -112,4 +113,6 @@ struct keyctl_pkey_params {
- 	__u32		__spare[7];
- };
- 
-+#define KEYCTL_MOVE_EXCL	0x00000001 /* Do not displace from the to-keyring */
-+
- #endif /*  _LINUX_KEYCTL_H */
-diff --git a/security/keys/compat.c b/security/keys/compat.c
-index 9482df601dc3..b326bc4f84d7 100644
---- a/security/keys/compat.c
-+++ b/security/keys/compat.c
-@@ -159,6 +159,9 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
- 		return keyctl_pkey_verify(compat_ptr(arg2), compat_ptr(arg3),
- 					  compat_ptr(arg4), compat_ptr(arg5));
- 
-+	case KEYCTL_MOVE:
-+		return keyctl_keyring_move(arg2, arg3, arg4, arg5);
-+
- 	default:
- 		return -EOPNOTSUPP;
- 	}
+diff --git a/include/keys/request_key_auth-type.h b/include/keys/request_key_auth-type.h
+index a726dd3f1dc6..2a046062bb42 100644
+--- a/include/keys/request_key_auth-type.h
++++ b/include/keys/request_key_auth-type.h
+@@ -18,6 +18,7 @@
+  * Authorisation record for request_key().
+  */
+ struct request_key_auth {
++	struct rcu_head		rcu;
+ 	struct key		*target_key;
+ 	struct key		*dest_keyring;
+ 	const struct cred	*cred;
 diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 25cdd0cbdc06..b54a58c025ae 100644
+index d04bff631227..3d5c08db74d2 100644
 --- a/security/keys/internal.h
 +++ b/security/keys/internal.h
-@@ -95,6 +95,8 @@ extern void key_type_put(struct key_type *ktype);
+@@ -139,11 +139,11 @@ struct keyring_search_context {
  
- extern int __key_link_lock(struct key *keyring,
- 			   const struct keyring_index_key *index_key);
-+extern int __key_move_lock(struct key *l_keyring, struct key *u_keyring,
-+			   const struct keyring_index_key *index_key);
- extern int __key_link_begin(struct key *keyring,
- 			    const struct keyring_index_key *index_key,
- 			    struct assoc_array_edit **_edit);
-@@ -217,6 +219,7 @@ extern long keyctl_update_key(key_serial_t, const void __user *, size_t);
- extern long keyctl_revoke_key(key_serial_t);
- extern long keyctl_keyring_clear(key_serial_t);
- extern long keyctl_keyring_link(key_serial_t, key_serial_t);
-+extern long keyctl_keyring_move(key_serial_t, key_serial_t, key_serial_t, unsigned int);
- extern long keyctl_keyring_unlink(key_serial_t, key_serial_t);
- extern long keyctl_describe_key(key_serial_t, char __user *, size_t);
- extern long keyctl_keyring_search(key_serial_t, const char __user *,
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 0f947bcbad46..bbfe7d92d41c 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -572,6 +572,52 @@ long keyctl_keyring_unlink(key_serial_t id, key_serial_t ringid)
- 	return ret;
- }
+ extern bool key_default_cmp(const struct key *key,
+ 			    const struct key_match_data *match_data);
+-extern key_ref_t keyring_search_aux(key_ref_t keyring_ref,
++extern key_ref_t keyring_search_rcu(key_ref_t keyring_ref,
+ 				    struct keyring_search_context *ctx);
  
-+/*
-+ * Move a link to a key from one keyring to another, displacing any matching
-+ * key from the destination keyring.
-+ *
-+ * The key must grant the caller Link permission and both keyrings must grant
-+ * the caller Write permission.  There must also be a link in the from keyring
-+ * to the key.  If both keyrings are the same, nothing is done.
-+ *
-+ * If successful, 0 will be returned.
-+ */
-+long keyctl_keyring_move(key_serial_t id, key_serial_t from_ringid,
-+			 key_serial_t to_ringid, unsigned int flags)
-+{
-+	key_ref_t key_ref, from_ref, to_ref;
-+	long ret;
-+
-+	if (flags & ~KEYCTL_MOVE_EXCL)
-+		return -EINVAL;
-+
-+	key_ref = lookup_user_key(id, KEY_LOOKUP_CREATE, KEY_NEED_LINK);
-+	if (IS_ERR(key_ref))
-+		return PTR_ERR(key_ref);
-+
-+	from_ref = lookup_user_key(from_ringid, 0, KEY_NEED_WRITE);
-+	if (IS_ERR(from_ref)) {
-+		ret = PTR_ERR(from_ref);
-+		goto error2;
-+	}
-+
-+	to_ref = lookup_user_key(to_ringid, KEY_LOOKUP_CREATE, KEY_NEED_WRITE);
-+	if (IS_ERR(to_ref)) {
-+		ret = PTR_ERR(to_ref);
-+		goto error3;
-+	}
-+
-+	ret = key_move(key_ref_to_ptr(key_ref), key_ref_to_ptr(from_ref),
-+		       key_ref_to_ptr(to_ref), flags);
-+
-+	key_ref_put(to_ref);
-+error3:
-+	key_ref_put(from_ref);
-+error2:
-+	key_ref_put(key_ref);
-+	return ret;
-+}
-+
- /*
-  * Return a description of a key to userspace.
-  *
-@@ -1772,6 +1818,12 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 			(const void __user *)arg4,
- 			(const void __user *)arg5);
+-extern key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx);
+-extern key_ref_t search_process_keyrings(struct keyring_search_context *ctx);
++extern key_ref_t search_cred_keyrings_rcu(struct keyring_search_context *ctx);
++extern key_ref_t search_process_keyrings_rcu(struct keyring_search_context *ctx);
  
-+	case KEYCTL_MOVE:
-+		return keyctl_keyring_move((key_serial_t)arg2,
-+					   (key_serial_t)arg3,
-+					   (key_serial_t)arg4,
-+					   (unsigned int)arg5);
-+
- 	default:
- 		return -EOPNOTSUPP;
- 	}
+ extern struct key *find_keyring_by_name(const char *name, bool uid_keyring);
+ 
 diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 12acad3db6cf..67066bb58b83 100644
+index 67066bb58b83..afa6d4024c67 100644
 --- a/security/keys/keyring.c
 +++ b/security/keys/keyring.c
-@@ -1221,6 +1221,40 @@ int __key_link_lock(struct key *keyring,
+@@ -835,7 +835,7 @@ static bool search_nested_keyrings(struct key *keyring,
+ }
+ 
+ /**
+- * keyring_search_aux - Search a keyring tree for a key matching some criteria
++ * keyring_search_rcu - Search a keyring tree for a matching key under RCU
+  * @keyring_ref: A pointer to the keyring with possession indicator.
+  * @ctx: The keyring search context.
+  *
+@@ -847,7 +847,9 @@ static bool search_nested_keyrings(struct key *keyring,
+  * addition, the LSM gets to forbid keyring searches and key matches.
+  *
+  * The search is performed as a breadth-then-depth search up to the prescribed
+- * limit (KEYRING_SEARCH_MAX_DEPTH).
++ * limit (KEYRING_SEARCH_MAX_DEPTH).  The caller must hold the RCU read lock to
++ * prevent keyrings from being destroyed or rearranged whilst they are being
++ * searched.
+  *
+  * Keys are matched to the type provided and are then filtered by the match
+  * function, which is given the description to use in any way it sees fit.  The
+@@ -866,7 +868,7 @@ static bool search_nested_keyrings(struct key *keyring,
+  * In the case of a successful return, the possession attribute from
+  * @keyring_ref is propagated to the returned key reference.
+  */
+-key_ref_t keyring_search_aux(key_ref_t keyring_ref,
++key_ref_t keyring_search_rcu(key_ref_t keyring_ref,
+ 			     struct keyring_search_context *ctx)
+ {
+ 	struct key *keyring;
+@@ -888,11 +890,9 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+ 			return ERR_PTR(err);
+ 	}
+ 
+-	rcu_read_lock();
+ 	ctx->now = ktime_get_real_seconds();
+ 	if (search_nested_keyrings(keyring, ctx))
+ 		__key_get(key_ref_to_ptr(ctx->result));
+-	rcu_read_unlock();
+ 	return ctx->result;
+ }
+ 
+@@ -902,7 +902,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+  * @type: The type of keyring we want to find.
+  * @description: The name of the keyring we want to find.
+  *
+- * As keyring_search_aux() above, but using the current task's credentials and
++ * As keyring_search_rcu() above, but using the current task's credentials and
+  * type's default matching function and preferred search method.
+  */
+ key_ref_t keyring_search(key_ref_t keyring,
+@@ -928,7 +928,9 @@ key_ref_t keyring_search(key_ref_t keyring,
+ 			return ERR_PTR(ret);
+ 	}
+ 
+-	key = keyring_search_aux(keyring, &ctx);
++	rcu_read_lock();
++	key = keyring_search_rcu(keyring, &ctx);
++	rcu_read_unlock();
+ 
+ 	if (type->match_free)
+ 		type->match_free(&ctx.match_data);
+diff --git a/security/keys/proc.c b/security/keys/proc.c
+index 78ac305d715e..f081dceae3b9 100644
+--- a/security/keys/proc.c
++++ b/security/keys/proc.c
+@@ -179,7 +179,9 @@ static int proc_keys_show(struct seq_file *m, void *v)
+ 	 * skip if the key does not indicate the possessor can view it
+ 	 */
+ 	if (key->perm & KEY_POS_VIEW) {
+-		skey_ref = search_my_process_keyrings(&ctx);
++		rcu_read_lock();
++		skey_ref = search_cred_keyrings_rcu(&ctx);
++		rcu_read_unlock();
+ 		if (!IS_ERR(skey_ref)) {
+ 			key_ref_put(skey_ref);
+ 			key_ref = make_key_ref(key, 1);
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 39aaa21462bf..f8ffb06d0297 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -318,7 +318,8 @@ void key_fsgid_changed(struct cred *new_cred)
+ 
+ /*
+  * Search the process keyrings attached to the supplied cred for the first
+- * matching key.
++ * matching key under RCU conditions (the caller must be holding the RCU read
++ * lock).
+  *
+  * The search criteria are the type and the match function.  The description is
+  * given to the match function as a parameter, but doesn't otherwise influence
+@@ -337,7 +338,7 @@ void key_fsgid_changed(struct cred *new_cred)
+  * In the case of a successful return, the possession attribute is set on the
+  * returned key reference.
+  */
+-key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
++key_ref_t search_cred_keyrings_rcu(struct keyring_search_context *ctx)
+ {
+ 	key_ref_t key_ref, ret, err;
+ 	const struct cred *cred = ctx->cred;
+@@ -355,7 +356,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+ 
+ 	/* search the thread keyring first */
+ 	if (cred->thread_keyring) {
+-		key_ref = keyring_search_aux(
++		key_ref = keyring_search_rcu(
+ 			make_key_ref(cred->thread_keyring, 1), ctx);
+ 		if (!IS_ERR(key_ref))
+ 			goto found;
+@@ -373,7 +374,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+ 
+ 	/* search the process keyring second */
+ 	if (cred->process_keyring) {
+-		key_ref = keyring_search_aux(
++		key_ref = keyring_search_rcu(
+ 			make_key_ref(cred->process_keyring, 1), ctx);
+ 		if (!IS_ERR(key_ref))
+ 			goto found;
+@@ -394,7 +395,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+ 
+ 	/* search the session keyring */
+ 	if (cred->session_keyring) {
+-		key_ref = keyring_search_aux(
++		key_ref = keyring_search_rcu(
+ 			make_key_ref(cred->session_keyring, 1), ctx);
+ 
+ 		if (!IS_ERR(key_ref))
+@@ -415,7 +416,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+ 	}
+ 	/* or search the user-session keyring */
+ 	else if (READ_ONCE(cred->user->session_keyring)) {
+-		key_ref = keyring_search_aux(
++		key_ref = keyring_search_rcu(
+ 			make_key_ref(READ_ONCE(cred->user->session_keyring), 1),
+ 			ctx);
+ 		if (!IS_ERR(key_ref))
+@@ -448,16 +449,16 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
+  * the keys attached to the assumed authorisation key using its credentials if
+  * one is available.
+  *
+- * Return same as search_my_process_keyrings().
++ * The caller must be holding the RCU read lock.
++ *
++ * Return same as search_cred_keyrings_rcu().
+  */
+-key_ref_t search_process_keyrings(struct keyring_search_context *ctx)
++key_ref_t search_process_keyrings_rcu(struct keyring_search_context *ctx)
+ {
+ 	struct request_key_auth *rka;
+ 	key_ref_t key_ref, ret = ERR_PTR(-EACCES), err;
+ 
+-	might_sleep();
+-
+-	key_ref = search_my_process_keyrings(ctx);
++	key_ref = search_cred_keyrings_rcu(ctx);
+ 	if (!IS_ERR(key_ref))
+ 		goto found;
+ 	err = key_ref;
+@@ -472,24 +473,17 @@ key_ref_t search_process_keyrings(struct keyring_search_context *ctx)
+ 	    ) {
+ 		const struct cred *cred = ctx->cred;
+ 
+-		/* defend against the auth key being revoked */
+-		down_read(&cred->request_key_auth->sem);
+-
+-		if (key_validate(ctx->cred->request_key_auth) = 0) {
++		if (key_validate(cred->request_key_auth) = 0) {
+ 			rka = ctx->cred->request_key_auth->payload.data[0];
+ 
++			//// was search_process_keyrings() [ie. recursive]
+ 			ctx->cred = rka->cred;
+-			key_ref = search_process_keyrings(ctx);
++			key_ref = search_cred_keyrings_rcu(ctx);
+ 			ctx->cred = cred;
+ 
+-			up_read(&cred->request_key_auth->sem);
+-
+ 			if (!IS_ERR(key_ref))
+ 				goto found;
+-
+ 			ret = key_ref;
+-		} else {
+-			up_read(&cred->request_key_auth->sem);
+ 		}
+ 	}
+ 
+@@ -504,7 +498,6 @@ key_ref_t search_process_keyrings(struct keyring_search_context *ctx)
+ found:
+ 	return key_ref;
+ }
+-
+ /*
+  * See if the key we're looking at is the target key.
+  */
+@@ -691,7 +684,9 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
+ 		ctx.index_key			= key->index_key;
+ 		ctx.match_data.raw_data		= key;
+ 		kdebug("check possessed");
+-		skey_ref = search_process_keyrings(&ctx);
++		rcu_read_lock();
++		skey_ref = search_process_keyrings_rcu(&ctx);
++		rcu_read_unlock();
+ 		kdebug("possessed=%p", skey_ref);
+ 
+ 		if (!IS_ERR(skey_ref)) {
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 244e538d113f..bf1d223ec21c 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -385,7 +385,9 @@ static int construct_alloc_key(struct keyring_search_context *ctx,
+ 	 * waited for locks */
+ 	mutex_lock(&key_construction_mutex);
+ 
+-	key_ref = search_process_keyrings(ctx);
++	rcu_read_lock();
++	key_ref = search_process_keyrings_rcu(ctx);
++	rcu_read_unlock();
+ 	if (!IS_ERR(key_ref))
+ 		goto key_already_present;
+ 
+@@ -561,7 +563,9 @@ struct key *request_key_and_link(struct key_type *type,
+ 	}
+ 
+ 	/* search all the process keyrings for a key */
+-	key_ref = search_process_keyrings(&ctx);
++	rcu_read_lock();
++	key_ref = search_process_keyrings_rcu(&ctx);
++	rcu_read_unlock();
+ 
+ 	if (!IS_ERR(key_ref)) {
+ 		if (dest_keyring) {
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index ec5226557023..99ed7a8a273d 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -58,7 +58,7 @@ static void request_key_auth_free_preparse(struct key_preparsed_payload *prep)
+ static int request_key_auth_instantiate(struct key *key,
+ 					struct key_preparsed_payload *prep)
+ {
+-	key->payload.data[0] = (struct request_key_auth *)prep->data;
++	rcu_assign_keypointer(key, (struct request_key_auth *)prep->data);
  	return 0;
  }
  
+@@ -68,7 +68,7 @@ static int request_key_auth_instantiate(struct key *key,
+ static void request_key_auth_describe(const struct key *key,
+ 				      struct seq_file *m)
+ {
+-	struct request_key_auth *rka = get_request_key_auth(key);
++	struct request_key_auth *rka = dereference_key_rcu(key);
+ 
+ 	seq_puts(m, "key:");
+ 	seq_puts(m, key->description);
+@@ -83,7 +83,7 @@ static void request_key_auth_describe(const struct key *key,
+ static long request_key_auth_read(const struct key *key,
+ 				  char __user *buffer, size_t buflen)
+ {
+-	struct request_key_auth *rka = get_request_key_auth(key);
++	struct request_key_auth *rka = dereference_key_locked(key);
+ 	size_t datalen;
+ 	long ret;
+ 
+@@ -102,23 +102,6 @@ static long request_key_auth_read(const struct key *key,
+ 	return ret;
+ }
+ 
+-/*
+- * Handle revocation of an authorisation token key.
+- *
+- * Called with the key sem write-locked.
+- */
+-static void request_key_auth_revoke(struct key *key)
+-{
+-	struct request_key_auth *rka = get_request_key_auth(key);
+-
+-	kenter("{%d}", key->serial);
+-
+-	if (rka->cred) {
+-		put_cred(rka->cred);
+-		rka->cred = NULL;
+-	}
+-}
+-
+ static void free_request_key_auth(struct request_key_auth *rka)
+ {
+ 	if (!rka)
+@@ -131,16 +114,43 @@ static void free_request_key_auth(struct request_key_auth *rka)
+ 	kfree(rka);
+ }
+ 
 +/*
-+ * Lock keyrings for move (link/unlink combination).
++ * Dispose of the request_key_auth record under RCU conditions
 + */
-+int __key_move_lock(struct key *l_keyring, struct key *u_keyring,
-+		    const struct keyring_index_key *index_key)
-+	__acquires(&l_keyring->sem)
-+	__acquires(&u_keyring->sem)
-+	__acquires(&keyring_serialise_link_lock)
++static void request_key_auth_rcu_disposal(struct rcu_head *rcu)
 +{
-+	if (l_keyring->type != &key_type_keyring ||
-+	    u_keyring->type != &key_type_keyring)
-+		return -ENOTDIR;
++	struct request_key_auth *rka +		container_of(rcu, struct request_key_auth, rcu);
 +
-+	/* We have to be very careful here to take the keyring locks in the
-+	 * right order, lest we open ourselves to deadlocking against another
-+	 * move operation.
-+	 */
-+	if (l_keyring < u_keyring) {
-+		down_write(&l_keyring->sem);
-+		down_write_nested(&u_keyring->sem, 1);
-+	} else {
-+		down_write(&u_keyring->sem);
-+		down_write_nested(&l_keyring->sem, 1);
-+	}
++	free_request_key_auth(rka);
++}
 +
-+	/* Serialise link/link calls to prevent parallel calls causing a cycle
-+	 * when linking two keyring in opposite orders.
-+	 */
-+	if (index_key->type = &key_type_keyring)
-+		mutex_lock(&keyring_serialise_link_lock);
++/*
++ * Handle revocation of an authorisation token key.
++ *
++ * Called with the key sem write-locked.
++ */
++static void request_key_auth_revoke(struct key *key)
++{
++	struct request_key_auth *rka = dereference_key_locked(key);
 +
-+	return 0;
++	kenter("{%d}", key->serial);
++	rcu_assign_keypointer(key, NULL);
++	call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
 +}
 +
  /*
-  * Preallocate memory so that a key can be linked into to a keyring.
+  * Destroy an instantiation authorisation token key.
   */
-@@ -1494,6 +1528,80 @@ int key_unlink(struct key *keyring, struct key *key)
- }
- EXPORT_SYMBOL(key_unlink);
+ static void request_key_auth_destroy(struct key *key)
+ {
+-	struct request_key_auth *rka = get_request_key_auth(key);
++	struct request_key_auth *rka = rcu_access_pointer(key->payload.rcu_data0);
  
-+/**
-+ * key_move - Move a key from one keyring to another
-+ * @key: The key to move
-+ * @from_keyring: The keyring to remove the link from.
-+ * @to_keyring: The keyring to make the link in.
-+ * @flags: Qualifying flags, such as KEYCTL_MOVE_EXCL.
-+ *
-+ * Make a link in @to_keyring to a key, such that the keyring holds a reference
-+ * on that key and the key can potentially be found by searching that keyring
-+ * whilst simultaneously removing a link to the key from @from_keyring.
-+ *
-+ * This function will write-lock both keyring's semaphores and will consume
-+ * some of the user's key data quota to hold the link on @to_keyring.
-+ *
-+ * Returns 0 if successful, -ENOTDIR if either keyring isn't a keyring,
-+ * -EKEYREVOKED if either keyring has been revoked, -ENFILE if the second
-+ * keyring is full, -EDQUOT if there is insufficient key data quota remaining
-+ * to add another link or -ENOMEM if there's insufficient memory.  If
-+ * KEYCTL_MOVE_EXCL is set, then -EEXIST will be returned if there's already a
-+ * matching key in @to_keyring.
-+ *
-+ * It is assumed that the caller has checked that it is permitted for a link to
-+ * be made (the keyring should have Write permission and the key Link
-+ * permission).
-+ */
-+int key_move(struct key *key,
-+	     struct key *from_keyring,
-+	     struct key *to_keyring,
-+	     unsigned int flags)
-+{
-+	struct assoc_array_edit *from_edit = NULL, *to_edit = NULL;
-+	int ret;
-+
-+	kenter("%d,%d,%d", key->serial, from_keyring->serial, to_keyring->serial);
-+
-+	if (from_keyring = to_keyring)
-+		return 0;
-+
-+	key_check(key);
-+	key_check(from_keyring);
-+	key_check(to_keyring);
-+
-+	ret = __key_move_lock(from_keyring, to_keyring, &key->index_key);
-+	if (ret < 0)
-+		goto out;
-+	ret = __key_unlink_begin(from_keyring, key, &from_edit);
-+	if (ret < 0)
-+		goto error;
-+	ret = __key_link_begin(to_keyring, &key->index_key, &to_edit);
-+	if (ret < 0)
-+		goto error;
-+
-+	ret = -EEXIST;
-+	if (to_edit->dead_leaf && (flags & KEYCTL_MOVE_EXCL))
-+		goto error;
-+
-+	ret = __key_link_check_restriction(to_keyring, key);
-+	if (ret < 0)
-+		goto error;
-+	ret = __key_link_check_live_key(to_keyring, key);
-+	if (ret < 0)
-+		goto error;
-+
-+	__key_unlink(from_keyring, key, &from_edit);
-+	__key_link(key, &to_edit);
-+error:
-+	__key_link_end(to_keyring, &key->index_key, to_edit);
-+	__key_unlink_end(from_keyring, key, from_edit);
-+out:
-+	kleave(" = %d", ret);
-+	return ret;
-+}
-+EXPORT_SYMBOL(key_move);
-+
- /**
-  * keyring_clear - Clear a keyring
-  * @keyring: The keyring to clear.
+ 	kenter("{%d}", key->serial);
+-
+-	free_request_key_auth(rka);
++	if (rka) {
++		rcu_assign_keypointer(key, NULL);
++		call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
++	}
+ }
+ 
+ /*
+@@ -249,7 +259,9 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
+ 
+ 	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
+ 
+-	authkey_ref = search_process_keyrings(&ctx);
++	rcu_read_lock();
++	authkey_ref = search_process_keyrings_rcu(&ctx);
++	rcu_read_unlock();
+ 
+ 	if (IS_ERR(authkey_ref)) {
+ 		authkey = ERR_CAST(authkey_ref);
