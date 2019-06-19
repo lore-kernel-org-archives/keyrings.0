@@ -1,190 +1,54 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Fri, 28 Jun 2019 02:19:28 +0000
-Subject: [PATCH v12 05/11] ima: Add modsig appraise_type option for module-style appended signatures
-Message-Id: <20190628021934.4260-6-bauerman@linux.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 19 Jun 2019 13:19:00 +0000
+Subject: [PATCH 02/10] keys: sparse: Fix incorrect RCU accesses [ver #3]
+Message-Id: <156095034027.9363.14636937467673662369.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190628021934.4260-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156095032052.9363.8954337545422131435.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org, ebiggers@kernel.org
+Cc: James Morris <jamorris@linux.microsoft.com>, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Introduce the modsig keyword to the IMA policy syntax to specify that
-a given hook should expect the file to have the IMA signature appended
-to it. Here is how it can be used in a rule:
+Fix a pair of accesses that should be using RCU protection.
 
-appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
+rcu_dereference_protected() is needed to access task_struct::real_parent.
 
-With this rule, IMA will accept either a signature stored in the extended
-attribute or an appended signature.
+current_cred() should be used to access current->cred.
 
-For now, the rule above will behave exactly the same as if
-appraise_type=imasig was specified. The actual modsig implementation
-will be introduced separately.
-
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: James Morris <jamorris@linux.microsoft.com>
 ---
- Documentation/ABI/testing/ima_policy |  6 +++++-
- security/integrity/ima/Kconfig       | 10 +++++++++
- security/integrity/ima/Makefile      |  1 +
- security/integrity/ima/ima.h         |  9 ++++++++
- security/integrity/ima/ima_modsig.c  | 31 ++++++++++++++++++++++++++++
- security/integrity/ima/ima_policy.c  | 12 +++++++++--
- security/integrity/integrity.h       |  1 +
- 7 files changed, 67 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index fc376a323908..29ebe9afdac4 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -37,7 +37,7 @@ Description:
- 			euid:= decimal value
- 			fowner:= decimal value
- 		lsm:  	are LSM specific
--		option:	appraise_type:= [imasig]
-+		option:	appraise_type:= [imasig] [imasig|modsig]
- 			template:= name of a defined IMA template type
- 			(eg, ima-ng). Only valid when action is "measure".
- 			pcr:= decimal value
-@@ -105,3 +105,7 @@ Description:
+ security/keys/keyctl.c           |    3 ++-
+ security/keys/request_key_auth.c |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 3e4053a217c3..0f947bcbad46 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1524,7 +1524,8 @@ long keyctl_session_to_parent(void)
  
- 			measure func=KEXEC_KERNEL_CHECK pcr=4
- 			measure func=KEXEC_INITRAMFS_CHECK pcr=5
-+
-+		Example of appraise rule allowing modsig appended signatures:
-+
-+			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index df65d2d41905..6fa78fbc8c30 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -232,6 +232,16 @@ config IMA_APPRAISE_BOOTPARAM
- 	  This option enables the different "ima_appraise=" modes
- 	  (eg. fix, log) from the boot command line.
+ 	ret = -EPERM;
+ 	oldwork = NULL;
+-	parent = me->real_parent;
++	parent = rcu_dereference_protected(me->real_parent,
++					   lockdep_is_held(&tasklist_lock));
  
-+config IMA_APPRAISE_MODSIG
-+	bool "Support module-style signatures for appraisal"
-+	depends on IMA_APPRAISE
-+	default n
-+	help
-+	   Adds support for signatures appended to files. The format of the
-+	   appended signature is the same used for signed kernel modules.
-+	   The modsig keyword can be used in the IMA policy to allow a hook
-+	   to accept such signatures.
-+
- config IMA_TRUSTED_KEYRING
- 	bool "Require all keys on the .ima keyring be signed (deprecated)"
- 	depends on IMA_APPRAISE && SYSTEM_TRUSTED_KEYRING
-diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
-index d921dc4f9eb0..31d57cdf2421 100644
---- a/security/integrity/ima/Makefile
-+++ b/security/integrity/ima/Makefile
-@@ -9,5 +9,6 @@ obj-$(CONFIG_IMA) += ima.o
- ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
- 	 ima_policy.o ima_template.o ima_template_lib.o
- ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
-+ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
- ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
- obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 6aa28ab53d27..904f7dd78007 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -306,6 +306,15 @@ static inline int ima_read_xattr(struct dentry *dentry,
- 
- #endif /* CONFIG_IMA_APPRAISE */
- 
-+#ifdef CONFIG_IMA_APPRAISE_MODSIG
-+bool ima_hook_supports_modsig(enum ima_hooks func);
-+#else
-+static inline bool ima_hook_supports_modsig(enum ima_hooks func)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_IMA_APPRAISE_MODSIG */
-+
- /* LSM based policy rules require audit */
- #ifdef CONFIG_IMA_LSM_RULES
- 
-diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
-new file mode 100644
-index 000000000000..87503bfe8c8b
---- /dev/null
-+++ b/security/integrity/ima/ima_modsig.c
-@@ -0,0 +1,31 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/*
-+ * IMA support for appraising module-style appended signatures.
-+ *
-+ * Copyright (C) 2019  IBM Corporation
-+ *
-+ * Author:
-+ * Thiago Jung Bauermann <bauerman@linux.ibm.com>
-+ */
-+
-+#include "ima.h"
-+
-+/**
-+ * ima_hook_supports_modsig - can the policy allow modsig for this hook?
-+ *
-+ * modsig is only supported by hooks using ima_post_read_file(), because only
-+ * they preload the contents of the file in a buffer. FILE_CHECK does that in
-+ * some cases, but not when reached from vfs_open(). POLICY_CHECK can support
-+ * it, but it's not useful in practice because it's a text file so deny.
-+ */
-+bool ima_hook_supports_modsig(enum ima_hooks func)
-+{
-+	switch (func) {
-+	case KEXEC_KERNEL_CHECK:
-+	case KEXEC_INITRAMFS_CHECK:
-+	case MODULE_CHECK:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index a3058b03a955..ac258df2f1f4 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -1132,6 +1132,10 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 			ima_log_string(ab, "appraise_type", args[0].from);
- 			if ((strcmp(args[0].from, "imasig")) = 0)
- 				entry->flags |= IMA_DIGSIG_REQUIRED;
-+			else if (ima_hook_supports_modsig(entry->func) &&
-+				 strcmp(args[0].from, "imasig|modsig") = 0)
-+				entry->flags |= IMA_DIGSIG_REQUIRED |
-+						IMA_MODSIG_ALLOWED;
- 			else
- 				result = -EINVAL;
- 			break;
-@@ -1451,8 +1455,12 @@ int ima_policy_show(struct seq_file *m, void *v)
- 	}
- 	if (entry->template)
- 		seq_printf(m, "template=%s ", entry->template->name);
--	if (entry->flags & IMA_DIGSIG_REQUIRED)
--		seq_puts(m, "appraise_type=imasig ");
-+	if (entry->flags & IMA_DIGSIG_REQUIRED) {
-+		if (entry->flags & IMA_MODSIG_ALLOWED)
-+			seq_puts(m, "appraise_type=imasig|modsig ");
-+		else
-+			seq_puts(m, "appraise_type=imasig ");
-+	}
- 	if (entry->flags & IMA_PERMIT_DIRECTIO)
- 		seq_puts(m, "permit_directio ");
- 	rcu_read_unlock();
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 88a29f72a74f..0e7330a36a9d 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -36,6 +36,7 @@
- #define IMA_NEW_FILE		0x04000000
- #define EVM_IMMUTABLE_DIGSIG	0x08000000
- #define IMA_FAIL_UNVERIFIABLE_SIGS	0x10000000
-+#define IMA_MODSIG_ALLOWED	0x20000000
- 
- #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
- 				 IMA_HASH | IMA_APPRAISE_SUBMASK)
+ 	/* the parent mustn't be init and mustn't be a kernel thread */
+ 	if (parent->pid <= 1 || !parent->mm)
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index bda6201c6c45..572c7a60473a 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -152,7 +152,7 @@ struct key *request_key_auth_new(struct key *target, const char *op,
+ 				 struct key *dest_keyring)
+ {
+ 	struct request_key_auth *rka, *irka;
+-	const struct cred *cred = current->cred;
++	const struct cred *cred = current_cred();
+ 	struct key *authkey = NULL;
+ 	char desc[20];
+ 	int ret = -ENOMEM;
