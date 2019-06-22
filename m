@@ -1,194 +1,48 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 15:36:40 +0000
-Subject: [PATCH 6/6] keys: Kill off request_key_async{, _with_auxdata} [ver #2]
-Message-Id: <156095860083.25264.540321479286679885.stgit@warthog.procyon.org.uk>
+From: "Miss.Fatima Yusuf" <fatimayusuf20001@gmail.com>
+Date: Sat, 22 Jun 2019 13:42:24 +0000
+Subject: From:Miss: Fatima Yusuf.
+Message-Id: <CAMYDnHBFov=1p9UdOm+gEapaeZm4iSk7h7OZ_xWe1Hzq70xFLA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
 To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Kill off request_key_async{,_with_auxdata}() as they're not currently used.
+From:Miss: Fatima Yusuf.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+For sure this mail would definitely come to you as a surprise, but do
+take your good time to go through it, My name is Ms. Fatima Yusuf,i am
+from Ivory Coast.
 
- Documentation/security/keys/core.rst        |   32 -----------------
- Documentation/security/keys/request-key.rst |   23 +-----------
- include/linux/key.h                         |   11 ------
- security/keys/request_key.c                 |   50 ---------------------------
- 4 files changed, 2 insertions(+), 114 deletions(-)
+I lost my parents a year and couple of months ago. My father was a
+serving director of the Agro-exporting board until his death. He was
+assassinated by his business partners.Before his death, he made a
+deposit of US$9.7 Million Dollars here in Cote d'ivoire which was for
+the purchase of cocoa processing machine and development of another
+factory before his untimely death.
 
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index 003f1452a5b7..a0e245f9576f 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -1115,38 +1115,6 @@ payload contents" for more information.
-     is a blob of length callout_len, if given (the length may be 0).
- 
- 
-- *  A key can be requested asynchronously by calling one of::
--
--	struct key *request_key_async(const struct key_type *type,
--				      const char *description,
--				      const void *callout_info,
--				      size_t callout_len);
--
--    or::
--
--	struct key *request_key_async_with_auxdata(const struct key_type *type,
--						   const char *description,
--						   const char *callout_info,
--					     	   size_t callout_len,
--					     	   void *aux);
--
--    which are asynchronous equivalents of request_key() and
--    request_key_with_auxdata() respectively.
--
--    These two functions return with the key potentially still under
--    construction.  To wait for construction completion, the following should be
--    called::
--
--	int wait_for_key_construction(struct key *key, bool intr);
--
--    The function will wait for the key to finish being constructed and then
--    invokes key_validate() to return an appropriate value to indicate the state
--    of the key (0 indicates the key is usable).
--
--    If intr is true, then the wait can be interrupted by a signal, in which
--    case error ERESTARTSYS will be returned.
--
--
-  *  To search for a key under RCU conditions, call::
- 
- 	struct key *request_key_rcu(const struct key_type *type,
-diff --git a/Documentation/security/keys/request-key.rst b/Documentation/security/keys/request-key.rst
-index 45049abdf290..5a210baa583a 100644
---- a/Documentation/security/keys/request-key.rst
-+++ b/Documentation/security/keys/request-key.rst
-@@ -21,21 +21,6 @@ or::
- 					     size_t callout_len,
- 					     void *aux);
- 
--or::
--
--	struct key *request_key_async(const struct key_type *type,
--				      const char *description,
--				      const char *callout_info,
--				      size_t callout_len);
--
--or::
--
--	struct key *request_key_async_with_auxdata(const struct key_type *type,
--						   const char *description,
--						   const char *callout_info,
--					     	   size_t callout_len,
--						   void *aux);
--
- or::
- 
- 	struct key *request_key_rcu(const struct key_type *type,
-@@ -53,15 +38,11 @@ does not need to link the key to a keyring to prevent it from being immediately
- destroyed.  The kernel interface returns a pointer directly to the key, and
- it's up to the caller to destroy the key.
- 
--The request_key*_with_auxdata() calls are like the in-kernel request_key*()
--calls, except that they permit auxiliary data to be passed to the upcaller (the
-+The request_key_with_auxdata() calls is like the in-kernel request_key() call,
-+except that they permit auxiliary data to be passed to the upcaller (the
- default is NULL).  This is only useful for those key types that define their
- own upcall mechanism rather than using /sbin/request-key.
- 
--The two async in-kernel calls may return keys that are still in the process of
--being constructed.  The two non-async ones will wait for construction to
--complete first.
--
- The request_key_rcu() call is like the in-kernel request_key() call, except
- that it doesn't check for keys that are under construction and doesn't attempt
- to construct missing keys.
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 3604a554df99..4cd5669184f3 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -283,17 +283,6 @@ extern struct key *request_key_with_auxdata(struct key_type *type,
- 					    size_t callout_len,
- 					    void *aux);
- 
--extern struct key *request_key_async(struct key_type *type,
--				     const char *description,
--				     const void *callout_info,
--				     size_t callout_len);
--
--extern struct key *request_key_async_with_auxdata(struct key_type *type,
--						  const char *description,
--						  const void *callout_info,
--						  size_t callout_len,
--						  void *aux);
--
- extern int wait_for_key_construction(struct key *key, bool intr);
- 
- extern int key_validate(const struct key *key);
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index f289982cb5db..36c55ef47b9e 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -739,56 +739,6 @@ struct key *request_key_with_auxdata(struct key_type *type,
- }
- EXPORT_SYMBOL(request_key_with_auxdata);
- 
--/*
-- * request_key_async - Request a key (allow async construction)
-- * @type: Type of key.
-- * @description: The searchable description of the key.
-- * @callout_info: The data to pass to the instantiation upcall (or NULL).
-- * @callout_len: The length of callout_info.
-- *
-- * As for request_key_and_link() except that it does not add the returned key
-- * to a keyring if found, new keys are always allocated in the user's quota and
-- * no auxiliary data can be passed.
-- *
-- * The caller should call wait_for_key_construction() to wait for the
-- * completion of the returned key if it is still undergoing construction.
-- */
--struct key *request_key_async(struct key_type *type,
--			      const char *description,
--			      const void *callout_info,
--			      size_t callout_len)
--{
--	return request_key_and_link(type, description, callout_info,
--				    callout_len, NULL, NULL,
--				    KEY_ALLOC_IN_QUOTA);
--}
--EXPORT_SYMBOL(request_key_async);
--
--/*
-- * request a key with auxiliary data for the upcaller (allow async construction)
-- * @type: Type of key.
-- * @description: The searchable description of the key.
-- * @callout_info: The data to pass to the instantiation upcall (or NULL).
-- * @callout_len: The length of callout_info.
-- * @aux: Auxiliary data for the upcall.
-- *
-- * As for request_key_and_link() except that it does not add the returned key
-- * to a keyring if found and new keys are always allocated in the user's quota.
-- *
-- * The caller should call wait_for_key_construction() to wait for the
-- * completion of the returned key if it is still undergoing construction.
-- */
--struct key *request_key_async_with_auxdata(struct key_type *type,
--					   const char *description,
--					   const void *callout_info,
--					   size_t callout_len,
--					   void *aux)
--{
--	return request_key_and_link(type, description, callout_info,
--				    callout_len, aux, NULL, KEY_ALLOC_IN_QUOTA);
--}
--EXPORT_SYMBOL(request_key_async_with_auxdata);
--
- /**
-  * request_key_rcu - Request key from RCU-read-locked context
-  * @type: The type of key we want.
+Being that this part of the world experiences political and crises
+time without number, there is no guarantee of lives and properties. I
+cannot invest this money here any long, despite the fact it had been
+my late father's industrial plans.
+
+I want you to do me a favor to receive this funds into your country or
+any safer place as the beneficiary, I have plans to invest this money
+in continuation with the investment vision of my late father, but not
+in this place again rather in your country. I have the vision of going
+into real estate and industrial production or any profitable business
+venture.
+
+I will be ready to compensate you with 20% of the total Amount, now
+all my hope is banked on you and i really wants to invest this money
+in your country, where there is stability of Government, political and
+economic welfare.
+
+My greatest worry now is how to move out of this country because my
+uncle is threatening to kill me as he killed my father,Please do not
+let anybody hear about this, it is between me and you alone because of
+my security reason.
+
+I am waiting to hear from you.
+Yours Sincerely,
+Miss.Fatima Yusuf.
