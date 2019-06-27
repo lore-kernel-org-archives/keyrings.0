@@ -1,175 +1,161 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 16:47:51 +0000
-Subject: [PATCH 8/9] keys: Network namespace domain tag [ver #4]
-Message-Id: <156096287188.28733.15342608110117616221.stgit@warthog.procyon.org.uk>
+From: Willem de Bruijn <willemdebruijn.kernel@gmail.com>
+Date: Thu, 27 Jun 2019 20:55:29 +0000
+Subject: Re: [PATCH 8/9] keys: Network namespace domain tag [ver #4]
+Message-Id: <CAF=yD-Kgdwt5=0iboxhvZz4zvNewSGow74U15mQQvO1u8VUGcw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156096279115.28733.8761881995303698232.stgit@warthog.procyon.org.uk>
-To: ebiederm@xmission.com, keyrings@vger.kernel.org
-Cc: linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, dhowells@redhat.com, dwalsh@redhat.com, vgoyal@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+ <156096287188.28733.15342608110117616221.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156096287188.28733.15342608110117616221.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, keyrings@vger.kernel.org, linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, Network Development <netdev@vger.kernel.org>, linux-afs@lists.infradead.org, dwalsh@redhat.com, vgoyal@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 
-Create key domain tags for network namespaces and make it possible to
-automatically tag keys that are used by networked services (e.g. AF_RXRPC,
-AFS, DNS) with the default network namespace if not set by the caller.
+On Wed, Jun 19, 2019 at 12:49 PM David Howells <dhowells@redhat.com> wrote:
+>
+> Create key domain tags for network namespaces and make it possible to
+> automatically tag keys that are used by networked services (e.g. AF_RXRPC,
+> AFS, DNS) with the default network namespace if not set by the caller.
+>
+> This allows keys with the same description but in different namespaces to
+> coexist within a keyring.
+>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> cc: netdev@vger.kernel.org
+> cc: linux-nfs@vger.kernel.org
+> cc: linux-cifs@vger.kernel.org
+> cc: linux-afs@lists.infradead.org
+> ---
 
-This allows keys with the same description but in different namespaces to
-coexist within a keyring.
+> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> index 711b161505ac..076a75c73c9e 100644
+> --- a/net/core/net_namespace.c
+> +++ b/net/core/net_namespace.c
+> @@ -38,9 +38,16 @@ EXPORT_SYMBOL_GPL(net_namespace_list);
+>  DECLARE_RWSEM(net_rwsem);
+>  EXPORT_SYMBOL_GPL(net_rwsem);
+>
+> +#ifdef CONFIG_KEYS
+> +static struct key_tag init_net_key_domain = { .usage = REFCOUNT_INIT(1) };
+> +#endif
+> +
+>  struct net init_net = {
+>         .count          = REFCOUNT_INIT(1),
+>         .dev_base_head  = LIST_HEAD_INIT(init_net.dev_base_head),
+> +#ifdef CONFIG_KEYS
+> +       .key_domain     = &init_net_key_domain,
+> +#endif
+>  };
+>  EXPORT_SYMBOL(init_net);
+>
+> @@ -386,10 +393,21 @@ static struct net *net_alloc(void)
+>         if (!net)
+>                 goto out_free;
+>
+> +#ifdef CONFIG_KEYS
+> +       net->key_domain = kzalloc(sizeof(struct key_tag), GFP_KERNEL);
+> +       if (!net->key_domain)
+> +               goto out_free_2;
+> +       refcount_set(&net->key_domain->usage, 1);
+> +#endif
+> +
+>         rcu_assign_pointer(net->gen, ng);
+>  out:
+>         return net;
+>
+> +#ifdef CONFIG_KEYS
+> +out_free_2:
+> +       kmem_cache_free(net_cachep, net);
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: netdev@vger.kernel.org
-cc: linux-nfs@vger.kernel.org
-cc: linux-cifs@vger.kernel.org
-cc: linux-afs@lists.infradead.org
----
+needs
+            net = NULL;
 
- include/linux/key-type.h    |    3 +++
- include/net/net_namespace.h |    3 +++
- net/core/net_namespace.c    |   19 +++++++++++++++++++
- net/dns_resolver/dns_key.c  |    1 +
- net/rxrpc/key.c             |    2 ++
- security/keys/keyring.c     |    7 ++++++-
- 6 files changed, 34 insertions(+), 1 deletion(-)
+to signal failure
 
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index e49d1de0614e..2148a6bf58f1 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -74,6 +74,9 @@ struct key_type {
- 	 */
- 	size_t def_datalen;
- 
-+	unsigned int flags;
-+#define KEY_TYPE_NET_DOMAIN	0x00000001 /* Keys of this type have a net namespace domain */
-+
- 	/* vet a description */
- 	int (*vet_description)(const char *description);
- 
-diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index 12689ddfc24c..a56bf7fc7c2b 100644
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -71,6 +71,9 @@ struct net {
- 						 */
- 	struct llist_node	cleanup_list;	/* namespaces on death row */
- 
-+#ifdef CONFIG_KEYS
-+	struct key_tag		*key_domain;	/* Key domain of operation tag */
-+#endif
- 	struct user_namespace   *user_ns;	/* Owning user namespace */
- 	struct ucounts		*ucounts;
- 	spinlock_t		nsid_lock;
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index 711b161505ac..076a75c73c9e 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -38,9 +38,16 @@ EXPORT_SYMBOL_GPL(net_namespace_list);
- DECLARE_RWSEM(net_rwsem);
- EXPORT_SYMBOL_GPL(net_rwsem);
- 
-+#ifdef CONFIG_KEYS
-+static struct key_tag init_net_key_domain = { .usage = REFCOUNT_INIT(1) };
-+#endif
-+
- struct net init_net = {
- 	.count		= REFCOUNT_INIT(1),
- 	.dev_base_head	= LIST_HEAD_INIT(init_net.dev_base_head),
-+#ifdef CONFIG_KEYS
-+	.key_domain	= &init_net_key_domain,
-+#endif
- };
- EXPORT_SYMBOL(init_net);
- 
-@@ -386,10 +393,21 @@ static struct net *net_alloc(void)
- 	if (!net)
- 		goto out_free;
- 
-+#ifdef CONFIG_KEYS
-+	net->key_domain = kzalloc(sizeof(struct key_tag), GFP_KERNEL);
-+	if (!net->key_domain)
-+		goto out_free_2;
-+	refcount_set(&net->key_domain->usage, 1);
-+#endif
-+
- 	rcu_assign_pointer(net->gen, ng);
- out:
- 	return net;
- 
-+#ifdef CONFIG_KEYS
-+out_free_2:
-+	kmem_cache_free(net_cachep, net);
-+#endif
- out_free:
- 	kfree(ng);
- 	goto out;
-@@ -566,6 +584,7 @@ static void cleanup_net(struct work_struct *work)
- 	list_for_each_entry_safe(net, tmp, &net_exit_list, exit_list) {
- 		list_del_init(&net->exit_list);
- 		dec_net_namespaces(net->ucounts);
-+		key_remove_domain(net->key_domain);
- 		put_user_ns(net->user_ns);
- 		net_drop_ns(net);
- 	}
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index a65d553e730d..3e1a90669006 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -314,6 +314,7 @@ static long dns_resolver_read(const struct key *key,
- 
- struct key_type key_type_dns_resolver = {
- 	.name		= "dns_resolver",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.preparse	= dns_resolver_preparse,
- 	.free_preparse	= dns_resolver_free_preparse,
- 	.instantiate	= generic_key_instantiate,
-diff --git a/net/rxrpc/key.c b/net/rxrpc/key.c
-index e7f6b8823eb6..2722189ec273 100644
---- a/net/rxrpc/key.c
-+++ b/net/rxrpc/key.c
-@@ -43,6 +43,7 @@ static long rxrpc_read(const struct key *, char __user *, size_t);
-  */
- struct key_type key_type_rxrpc = {
- 	.name		= "rxrpc",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.preparse	= rxrpc_preparse,
- 	.free_preparse	= rxrpc_free_preparse,
- 	.instantiate	= generic_key_instantiate,
-@@ -58,6 +59,7 @@ EXPORT_SYMBOL(key_type_rxrpc);
-  */
- struct key_type key_type_rxrpc_s = {
- 	.name		= "rxrpc_s",
-+	.flags		= KEY_TYPE_NET_DOMAIN,
- 	.vet_description = rxrpc_vet_description_s,
- 	.preparse	= rxrpc_preparse_s,
- 	.free_preparse	= rxrpc_free_preparse_s,
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index d3c86fda1510..bca070f6ab46 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -17,10 +17,12 @@
- #include <linux/seq_file.h>
- #include <linux/err.h>
- #include <linux/user_namespace.h>
-+#include <linux/nsproxy.h>
- #include <keys/keyring-type.h>
- #include <keys/user-type.h>
- #include <linux/assoc_array_priv.h>
- #include <linux/uaccess.h>
-+#include <net/net_namespace.h>
- #include "internal.h"
- 
- /*
-@@ -220,7 +222,10 @@ void key_set_index_key(struct keyring_index_key *index_key)
- 
- 	memcpy(index_key->desc, index_key->description, n);
- 
--	index_key->domain_tag = &default_domain_tag;
-+	if (index_key->type->flags & KEY_TYPE_NET_DOMAIN)
-+		index_key->domain_tag = current->nsproxy->net_ns->key_domain;
-+	else
-+		index_key->domain_tag = &default_domain_tag;
- 	hash_key_type_and_desc(index_key);
- }
- 
+> +#endif
+>  out_free:
+>         kfree(ng);
+>         goto out;
+
+Reported-by: syzbot <syzkaller@googlegroups.com>
+
+BUG: KASAN: use-after-free in atomic_set
+include/asm-generic/atomic-instrumented.h:44 [inline]
+BUG: KASAN: use-after-free in refcount_set include/linux/refcount.h:32 [inline]
+BUG: KASAN: use-after-free in copy_net_ns+0x1e8/0x431
+net/core/net_namespace.c:466
+Write of size 4 at addr ffff88809c9de080 by task syz-executor.1/12624
+
+CPU: 1 PID: 12624 Comm: syz-executor.1 Not tainted 5.2.0-rc6-next-20190626 #23
+Hardware name: Google Google Compute Engine/Google Compute Engine,
+BIOS Google 01/01/2011
+Call Trace:
+ __dump_stack lib/dump_stack.c:77 [inline]
+ dump_stack+0x172/0x1f0 lib/dump_stack.c:113
+ print_address_description.cold+0xd4/0x306 mm/kasan/report.c:351
+ __kasan_report.cold+0x1b/0x36 mm/kasan/report.c:482
+ kasan_report+0x12/0x17 mm/kasan/common.c:614
+ check_memory_region_inline mm/kasan/generic.c:185 [inline]
+ check_memory_region+0x123/0x190 mm/kasan/generic.c:191
+ kasan_check_write+0x14/0x20 mm/kasan/common.c:100
+ atomic_set include/asm-generic/atomic-instrumented.h:44 [inline]
+ refcount_set include/linux/refcount.h:32 [inline]
+ copy_net_ns+0x1e8/0x431 net/core/net_namespace.c:466
+ create_new_namespaces+0x400/0x7b0 kernel/nsproxy.c:103
+ unshare_nsproxy_namespaces+0xc2/0x200 kernel/nsproxy.c:202
+ ksys_unshare+0x444/0x980 kernel/fork.c:2828
+ __do_sys_unshare kernel/fork.c:2896 [inline]
+ __se_sys_unshare kernel/fork.c:2894 [inline]
+ __x64_sys_unshare+0x31/0x40 kernel/fork.c:2894
+ do_syscall_64+0xfd/0x6a0 arch/x86/entry/common.c:301
+ entry_SYSCALL_64_after_hwframe+0x49/0xbe
+RIP: 0033:0x459519
+Code: fd b7 fb ff c3 66 2e 0f 1f 84 00 00 00 00 00 66 90 48 89 f8 48
+89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d
+01 f0 ff ff 0f 83 cb b7 fb ff c3 66 2e 0f 1f 84 00 00 00 00
+RSP: 002b:00007f2202261c78 EFLAGS: 00000246 ORIG_RAX: 0000000000000110
+RAX: ffffffffffffffda RBX: 00007f2202261c90 RCX: 0000000000459519
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000040000000
+RBP: 000000000075bf20 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000246 R12: 00007f22022626d4
+R13: 00000000004c8a2c R14: 00000000004df7d0 R15: 0000000000000006
+
+Allocated by task 12624:
+ save_stack+0x23/0x90 mm/kasan/common.c:71
+ set_track mm/kasan/common.c:79 [inline]
+ __kasan_kmalloc mm/kasan/common.c:489 [inline]
+ __kasan_kmalloc.constprop.0+0xcf/0xe0 mm/kasan/common.c:462
+ kasan_slab_alloc+0xf/0x20 mm/kasan/common.c:497
+ slab_post_alloc_hook mm/slab.h:520 [inline]
+ slab_alloc mm/slab.c:3320 [inline]
+ kmem_cache_alloc+0x121/0x710 mm/slab.c:3484
+ kmem_cache_zalloc include/linux/slab.h:737 [inline]
+ net_alloc net/core/net_namespace.c:410 [inline]
+ copy_net_ns+0xf1/0x431 net/core/net_namespace.c:461
+ create_new_namespaces+0x400/0x7b0 kernel/nsproxy.c:103
+ unshare_nsproxy_namespaces+0xc2/0x200 kernel/nsproxy.c:202
+ ksys_unshare+0x444/0x980 kernel/fork.c:2828
+ __do_sys_unshare kernel/fork.c:2896 [inline]
+ __se_sys_unshare kernel/fork.c:2894 [inline]
+ __x64_sys_unshare+0x31/0x40 kernel/fork.c:2894
+ do_syscall_64+0xfd/0x6a0 arch/x86/entry/common.c:301
+ entry_SYSCALL_64_after_hwframe+0x49/0xbe
+
+Freed by task 12624:
+ save_stack+0x23/0x90 mm/kasan/common.c:71
+ set_track mm/kasan/common.c:79 [inline]
+ __kasan_slab_free+0x102/0x150 mm/kasan/common.c:451
+ kasan_slab_free+0xe/0x10 mm/kasan/common.c:459
+ __cache_free mm/slab.c:3426 [inline]
+ kmem_cache_free+0x86/0x320 mm/slab.c:3694
+ net_alloc net/core/net_namespace.c:427 [inline]
+ copy_net_ns+0x3b1/0x431 net/core/net_namespace.c:461
+ create_new_namespaces+0x400/0x7b0 kernel/nsproxy.c:103
+ unshare_nsproxy_namespaces+0xc2/0x200 kernel/nsproxy.c:202
+ ksys_unshare+0x444/0x980 kernel/fork.c:2828
+ __do_sys_unshare kernel/fork.c:2896 [inline]
+ __se_sys_unshare kernel/fork.c:2894 [inline]
+ __x64_sys_unshare+0x31/0x40 kernel/fork.c:2894
+ do_syscall_64+0xfd/0x6a0 arch/x86/entry/common.c:301
+ entry_SYSCALL_64_after_hwframe+0x49/0xbe
