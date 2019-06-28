@@ -1,450 +1,495 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 04 Jun 2019 16:35:52 +0000
-Subject: [PATCH 5/8] vfs: Add superblock notifications [ver #2]
-Message-Id: <155966615248.17449.14413143922640762240.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Fri, 28 Jun 2019 02:19:30 +0000
+Subject: [PATCH v12 07/11] ima: Implement support for module-style appended signatures
+Message-Id: <20190628021934.4260-8-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190628021934.4260-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Add a superblock event notification facility whereby notifications about
-superblock events, such as I/O errors (EIO), quota limits being hit
-(EDQUOT) and running out of space (ENOSPC) can be reported to a monitoring
-process asynchronously.  Note that this does not cover vfsmount topology
-changes.  mount_notify() is used for that.
+Implement the appraise_type=imasig|modsig option, allowing IMA to read and
+verify modsig signatures.
 
-Firstly, an event queue needs to be created:
+In case a file has both an xattr signature and an appended modsig, IMA will
+only use the appended signature if the key used by the xattr signature
+isn't present in the IMA or platform keyring.
 
-	fd = open("/dev/event_queue", O_RDWR);
-	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+Because modsig verification needs to convert from an integrity keyring id
+to the keyring itself, add an integrity_keyring_from_id() function in
+digsig.c so that integrity_modsig_verify() can use it.
 
-then a notification can be set up to report notifications via that queue:
-
-	struct watch_notification_filter filter = {
-		.nr_filters = 1,
-		.filters = {
-			[0] = {
-				.type = WATCH_TYPE_SB_NOTIFY,
-				.subtype_filter[0] = UINT_MAX,
-			},
-		},
-	};
-	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
-	sb_notify(AT_FDCWD, "/home/dhowells", 0, fd, 0x03);
-
-In this case, it would let me monitor my own homedir for events.  After
-setting the watch, records will be placed into the queue when, for example,
-as superblock switches between read-write and read-only.  Records are of
-the following format:
-
-	struct superblock_notification {
-		struct watch_notification watch;
-		__u64	sb_id;
-	} *n;
-
-Where:
-
-	n->watch.type will be WATCH_TYPE_SB_NOTIFY.
-
-	n->watch.subtype will indicate the type of event, such as
-	NOTIFY_SUPERBLOCK_READONLY.
-
-	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
-	record.
-
-	n->watch.info & WATCH_INFO_ID will be the fifth argument to
-	sb_notify(), shifted.
-
-	n->watch.info & WATCH_INFO_FLAG_0 will be used for
-	NOTIFY_SUPERBLOCK_READONLY, being set if the superblock becomes
-	R/O, and being cleared otherwise.
-
-	n->sb_id will be the ID of the superblock, as can be retrieved with
-	the fsinfo() syscall, as part of the fsinfo_sb_notifications
-	attribute in the the watch_id field.
-
-Note that it is permissible for event records to be of variable length -
-or, at least, the length may be dependent on the subtype.  Note also that
-the queue can be shared between multiple notifications of various types.
-
-[*] QUESTION: Does this want to be per-sb, per-mount_namespace,
-    per-some-new-notify-ns or per-system?  Or do multiple options make
-    sense?
-
-[*] QUESTION: I've done it this way so that anyone could theoretically
-    monitor the superblock of any filesystem they can pathwalk to, but do
-    we need other security controls?
-
-[*] QUESTION: Should the LSM be able to filter the events a queue can
-    receive?  For instance the opener of the queue would grant that queue
-    subject creds (by ->f_cred) that could be used to govern what events
-    could be seen, assuming the target superblock to have some object
-    creds, based on, say, the mounter.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Signed-off-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ security/integrity/digsig.c           | 43 ++++++++++++----
+ security/integrity/ima/Kconfig        |  3 ++
+ security/integrity/ima/ima.h          | 22 ++++++++-
+ security/integrity/ima/ima_appraise.c | 51 +++++++++++++++++--
+ security/integrity/ima/ima_main.c     | 11 ++++-
+ security/integrity/ima/ima_modsig.c   | 71 +++++++++++++++++++++++++++
+ security/integrity/ima/ima_policy.c   | 12 ++---
+ security/integrity/integrity.h        | 19 +++++++
+ 8 files changed, 209 insertions(+), 23 deletions(-)
 
- arch/x86/entry/syscalls/syscall_32.tbl |    1 
- arch/x86/entry/syscalls/syscall_64.tbl |    1 
- fs/Kconfig                             |   12 +++
- fs/super.c                             |  116 ++++++++++++++++++++++++++++++++
- include/linux/fs.h                     |   77 +++++++++++++++++++++
- include/linux/syscalls.h               |    2 +
- include/uapi/linux/watch_queue.h       |   26 +++++++
- kernel/sys_ni.c                        |    3 +
- 8 files changed, 238 insertions(+)
-
-diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
-index a8416a9a0ccb..429416ce60e1 100644
---- a/arch/x86/entry/syscalls/syscall_32.tbl
-+++ b/arch/x86/entry/syscalls/syscall_32.tbl
-@@ -440,3 +440,4 @@
- 433	i386	fspick			sys_fspick			__ia32_sys_fspick
- 434	i386	fsinfo			sys_fsinfo			__ia32_sys_fsinfo
- 435	i386	mount_notify		sys_mount_notify		__ia32_sys_mount_notify
-+436	i386	sb_notify		sys_sb_notify			__ia32_sys_sb_notify
-diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
-index ea052a94eb97..4ae146e472db 100644
---- a/arch/x86/entry/syscalls/syscall_64.tbl
-+++ b/arch/x86/entry/syscalls/syscall_64.tbl
-@@ -357,6 +357,7 @@
- 433	common	fspick			__x64_sys_fspick
- 434	common	fsinfo			__x64_sys_fsinfo
- 435	common	mount_notify		__x64_sys_mount_notify
-+436	common	sb_notify		__x64_sys_sb_notify
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 37869214c243..1c353b1a6ec5 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -43,11 +43,10 @@ static const char * const keyring_name[INTEGRITY_KEYRING_MAX] = {
+ #define restrict_link_to_ima restrict_link_by_builtin_trusted
+ #endif
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/fs/Kconfig b/fs/Kconfig
-index a26bbe27a791..fc0fa4b35f3c 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -130,6 +130,18 @@ config MOUNT_NOTIFICATIONS
- 	  device to handle the notification buffer and provides the
- 	  mount_notify() system call to enable/disable watchpoints.
- 
-+config SB_NOTIFICATIONS
-+	bool "Superblock event notifications"
-+	select WATCH_QUEUE
-+	help
-+	  This option provides support for receiving superblock event
-+	  notifications.  This makes use of the /dev/watch_queue misc device to
-+	  handle the notification buffer and provides the sb_notify() system
-+	  call to enable/disable watches.
-+
-+	  Events can include things like changing between R/W and R/O, EIO
-+	  generation, ENOSPC generation and EDQUOT generation.
-+
- source "fs/quota/Kconfig"
- 
- source "fs/autofs/Kconfig"
-diff --git a/fs/super.c b/fs/super.c
-index 61819e8e5469..ae44745e6e2c 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -36,6 +36,8 @@
- #include <linux/lockdep.h>
- #include <linux/user_namespace.h>
- #include <linux/fs_context.h>
-+#include <linux/syscalls.h>
-+#include <linux/namei.h>
- #include <uapi/linux/mount.h>
- #include "internal.h"
- 
-@@ -350,6 +352,10 @@ void deactivate_locked_super(struct super_block *s)
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+-			    const char *digest, int digestlen)
++static struct key *integrity_keyring_from_id(const unsigned int id)
  {
- 	struct file_system_type *fs = s->s_type;
- 	if (atomic_dec_and_test(&s->s_active)) {
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+		if (s->s_watchers)
-+			remove_watch_list(s->s_watchers);
-+#endif
- 		cleancache_invalidate_fs(s);
- 		unregister_shrinker(&s->s_shrink);
- 		fs->kill_sb(s);
-@@ -990,6 +996,8 @@ int reconfigure_super(struct fs_context *fc)
- 	/* Needs to be ordered wrt mnt_is_readonly() */
- 	smp_wmb();
- 	sb->s_readonly_remount = 0;
-+	notify_sb(sb, NOTIFY_SUPERBLOCK_READONLY,
-+		  remount_ro ? WATCH_INFO_FLAG_0 : 0);
+-	if (id >= INTEGRITY_KEYRING_MAX || siglen < 2)
+-		return -EINVAL;
++	if (id >= INTEGRITY_KEYRING_MAX)
++		return ERR_PTR(-EINVAL);
  
- 	/*
- 	 * Some filesystems modify their metadata via some other path than the
-@@ -1808,3 +1816,111 @@ int thaw_super(struct super_block *sb)
- 	return thaw_super_locked(sb);
- }
- EXPORT_SYMBOL(thaw_super);
-+
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+/*
-+ * Post superblock notifications.
-+ */
-+void post_sb_notification(struct super_block *s, struct superblock_notification *n)
-+{
-+	post_watch_notification(s->s_watchers, &n->watch, current_cred(),
-+				s->s_unique_id);
+ 	if (!keyring[id]) {
+ 		keyring[id] @@ -56,23 +55,49 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			int err = PTR_ERR(keyring[id]);
+ 			pr_err("no %s keyring: %d\n", keyring_name[id], err);
+ 			keyring[id] = NULL;
+-			return err;
++			return ERR_PTR(err);
+ 		}
+ 	}
+ 
++	return keyring[id];
 +}
 +
-+/**
-+ * sys_sb_notify - Watch for superblock events.
-+ * @dfd: Base directory to pathwalk from or fd referring to superblock.
-+ * @filename: Path to superblock to place the watch upon
-+ * @at_flags: Pathwalk control flags
-+ * @watch_fd: The watch queue to send notifications to.
-+ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
-+ */
-+SYSCALL_DEFINE5(sb_notify,
-+		int, dfd,
-+		const char __user *, filename,
-+		unsigned int, at_flags,
-+		int, watch_fd,
-+		int, watch_id)
++int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
++			    const char *digest, int digestlen)
 +{
-+	struct watch_queue *wqueue;
-+	struct super_block *s;
-+	struct watch_list *wlist = NULL;
-+	struct watch *watch;
-+	struct path path;
-+	unsigned int lookup_flags +		LOOKUP_DIRECTORY | LOOKUP_FOLLOW | LOOKUP_AUTOMOUNT;
-+	int ret;
++	struct key *keyring;
 +
-+	if (watch_id < -1 || watch_id > 0xff)
++	if (siglen < 2)
 +		return -EINVAL;
-+	if ((at_flags & ~(AT_NO_AUTOMOUNT | AT_EMPTY_PATH)) != 0)
-+		return -EINVAL;
-+	if (at_flags & AT_NO_AUTOMOUNT)
-+		lookup_flags &= ~LOOKUP_AUTOMOUNT;
-+	if (at_flags & AT_EMPTY_PATH)
-+		lookup_flags |= LOOKUP_EMPTY;
 +
-+	ret = user_path_at(dfd, filename, at_flags, &path);
-+	if (ret)
-+		return ret;
++	keyring = integrity_keyring_from_id(id);
++	if (IS_ERR(keyring))
++		return PTR_ERR(keyring);
 +
-+	wqueue = get_watch_queue(watch_fd);
-+	if (IS_ERR(wqueue))
-+		goto err_path;
+ 	switch (sig[1]) {
+ 	case 1:
+ 		/* v1 API expect signature without xattr type */
+-		return digsig_verify(keyring[id], sig + 1, siglen - 1,
+-				     digest, digestlen);
++		return digsig_verify(keyring, sig + 1, siglen - 1, digest,
++				     digestlen);
+ 	case 2:
+-		return asymmetric_verify(keyring[id], sig, siglen,
+-					 digest, digestlen);
++		return asymmetric_verify(keyring, sig, siglen, digest,
++					 digestlen);
+ 	}
+ 
+ 	return -EOPNOTSUPP;
+ }
+ 
++int integrity_modsig_verify(const unsigned int id, const struct modsig *modsig)
++{
++	struct key *keyring;
 +
-+	s = path.dentry->d_sb;
-+	if (watch_id >= 0) {
-+		if (!s->s_watchers) {
-+			wlist = kzalloc(sizeof(*wlist), GFP_KERNEL);
-+			if (!wlist)
-+				goto err_wqueue;
-+			INIT_HLIST_HEAD(&wlist->watchers);
-+			spin_lock_init(&wlist->lock);
-+		}
++	keyring = integrity_keyring_from_id(id);
++	if (IS_ERR(keyring))
++		return PTR_ERR(keyring);
 +
-+		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
-+		if (!watch)
-+			goto err_wlist;
++	return ima_modsig_verify(keyring, modsig);
++}
 +
-+		init_watch(watch, wqueue);
-+		watch->id		= s->s_unique_id;
-+		watch->private		= s;
-+		watch->info_id		= (u32)watch_id << 24;
+ static int __init __integrity_init_keyring(const unsigned int id,
+ 					   key_perm_t perm,
+ 					   struct key_restriction *restriction)
+diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+index 6fa78fbc8c30..5a109707e907 100644
+--- a/security/integrity/ima/Kconfig
++++ b/security/integrity/ima/Kconfig
+@@ -235,6 +235,9 @@ config IMA_APPRAISE_BOOTPARAM
+ config IMA_APPRAISE_MODSIG
+ 	bool "Support module-style signatures for appraisal"
+ 	depends on IMA_APPRAISE
++	depends on INTEGRITY_ASYMMETRIC_KEYS
++	select PKCS7_MESSAGE_PARSER
++	select MODULE_SIG_FORMAT
+ 	default n
+ 	help
+ 	   Adds support for signatures appended to files. The format of the
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 904f7dd78007..fa188de1cef6 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -200,6 +200,10 @@ enum ima_hooks {
+ 	__ima_hooks(__ima_hook_enumify)
+ };
+ 
++extern const char *const func_tokens[];
 +
-+		down_write(&s->s_umount);
-+		ret = -EIO;
-+		if (atomic_read(&s->s_active)) {
-+			if (!s->s_watchers) {
-+				s->s_watchers = wlist;
-+				wlist = NULL;
-+			}
++struct modsig;
 +
-+			ret = add_watch_to_object(watch, s->s_watchers);
-+			if (ret = 0) {
-+				spin_lock(&sb_lock);
-+				s->s_count++;
-+				spin_unlock(&sb_lock);
-+			}
-+		}
-+		up_write(&s->s_umount);
-+		if (ret < 0)
-+			kfree(watch);
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+@@ -253,7 +257,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 			     struct integrity_iint_cache *iint,
+ 			     struct file *file, const unsigned char *filename,
+ 			     struct evm_ima_xattr_data *xattr_value,
+-			     int xattr_len);
++			     int xattr_len, const struct modsig *modsig);
+ int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func);
+ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file);
+ enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
+@@ -269,7 +273,8 @@ static inline int ima_appraise_measurement(enum ima_hooks func,
+ 					   struct file *file,
+ 					   const unsigned char *filename,
+ 					   struct evm_ima_xattr_data *xattr_value,
+-					   int xattr_len)
++					   int xattr_len,
++					   const struct modsig *modsig)
+ {
+ 	return INTEGRITY_UNKNOWN;
+ }
+@@ -308,11 +313,24 @@ static inline int ima_read_xattr(struct dentry *dentry,
+ 
+ #ifdef CONFIG_IMA_APPRAISE_MODSIG
+ bool ima_hook_supports_modsig(enum ima_hooks func);
++int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
++		    struct modsig **modsig);
++void ima_free_modsig(struct modsig *modsig);
+ #else
+ static inline bool ima_hook_supports_modsig(enum ima_hooks func)
+ {
+ 	return false;
+ }
++
++static inline int ima_read_modsig(enum ima_hooks func, const void *buf,
++				  loff_t buf_len, struct modsig **modsig)
++{
++	return -EOPNOTSUPP;
++}
++
++static inline void ima_free_modsig(struct modsig *modsig)
++{
++}
+ #endif /* CONFIG_IMA_APPRAISE_MODSIG */
+ 
+ /* LSM based policy rules require audit */
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 5d4772f39757..70252ac3321d 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -279,6 +279,33 @@ static int xattr_verify(enum ima_hooks func, struct integrity_iint_cache *iint,
+ 	return rc;
+ }
+ 
++/*
++ * modsig_verify - verify modsig signature
++ *
++ * Verify whether the signature matches the file contents.
++ *
++ * Return 0 on success, error code otherwise.
++ */
++static int modsig_verify(enum ima_hooks func, const struct modsig *modsig,
++			 enum integrity_status *status, const char **cause)
++{
++	int rc;
++
++	rc = integrity_modsig_verify(INTEGRITY_KEYRING_IMA, modsig);
++	if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
++	    func = KEXEC_KERNEL_CHECK)
++		rc = integrity_modsig_verify(INTEGRITY_KEYRING_PLATFORM,
++					     modsig);
++	if (rc) {
++		*cause = "invalid-signature";
++		*status = INTEGRITY_FAIL;
 +	} else {
-+		ret = -EBADSLT;
-+		if (READ_ONCE(s->s_watchers)) {
-+			down_write(&s->s_umount);
-+			ret = remove_watch_from_object(s->s_watchers, wqueue,
-+						       s->s_unique_id, false);
-+			up_write(&s->s_umount);
-+		}
++		*status = INTEGRITY_PASS;
 +	}
 +
-+err_wlist:
-+	kfree(wlist);
-+err_wqueue:
-+	put_watch_queue(wqueue);
-+err_path:
-+	path_put(&path);
-+	return ret;
++	return rc;
 +}
-+#endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index db05738b1951..02ba4bfb9cc3 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -40,6 +40,7 @@
- #include <linux/fs_types.h>
- #include <linux/build_bug.h>
- #include <linux/stddef.h>
-+#include <linux/watch_queue.h>
- 
- #include <asm/byteorder.h>
- #include <uapi/linux/fs.h>
-@@ -1531,6 +1532,10 @@ struct super_block {
- 
- 	/* Superblock event notifications */
- 	u64			s_unique_id;
 +
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	struct watch_list	*s_watchers;
-+#endif
- } __randomize_layout;
+ /*
+  * ima_appraise_measurement - appraise file measurement
+  *
+@@ -291,7 +318,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 			     struct integrity_iint_cache *iint,
+ 			     struct file *file, const unsigned char *filename,
+ 			     struct evm_ima_xattr_data *xattr_value,
+-			     int xattr_len)
++			     int xattr_len, const struct modsig *modsig)
+ {
+ 	static const char op[] = "appraise_data";
+ 	const char *cause = "unknown";
+@@ -299,11 +326,14 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	struct inode *inode = d_backing_inode(dentry);
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+ 	int rc = xattr_len;
++	bool try_modsig = iint->flags & IMA_MODSIG_ALLOWED && modsig;
  
- /* Helper functions so that in most cases filesystems will
-@@ -3531,4 +3536,76 @@ static inline struct sock *io_uring_get_socket(struct file *file)
+-	if (!(inode->i_opflags & IOP_XATTR))
++	/* If not appraising a modsig, we need an xattr. */
++	if (!(inode->i_opflags & IOP_XATTR) && !try_modsig)
+ 		return INTEGRITY_UNKNOWN;
+ 
+-	if (rc <= 0) {
++	/* If reading the xattr failed and there's no modsig, error out. */
++	if (rc <= 0 && !try_modsig) {
+ 		if (rc && rc != -ENODATA)
+ 			goto out;
+ 
+@@ -326,6 +356,10 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	case INTEGRITY_UNKNOWN:
+ 		break;
+ 	case INTEGRITY_NOXATTRS:	/* No EVM protected xattrs. */
++		/* It's fine not to have xattrs when using a modsig. */
++		if (try_modsig)
++			break;
++		/* fall through */
+ 	case INTEGRITY_NOLABEL:		/* No security.evm xattr. */
+ 		cause = "missing-HMAC";
+ 		goto out;
+@@ -340,6 +374,15 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 		rc = xattr_verify(func, iint, xattr_value, xattr_len, &status,
+ 				  &cause);
+ 
++	/*
++	 * If we have a modsig and either no imasig or the imasig's key isn't
++	 * known, then try verifying the modsig.
++	 */
++	if (try_modsig &&
++	    (!xattr_value || xattr_value->type = IMA_XATTR_DIGEST_NG ||
++	     rc = -ENOKEY))
++		rc = modsig_verify(func, modsig, &status, &cause);
++
+ out:
+ 	/*
+ 	 * File signatures on some filesystems can not be properly verified.
+@@ -356,7 +399,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 				    op, cause, rc, 0);
+ 	} else if (status != INTEGRITY_PASS) {
+ 		/* Fix mode, but don't replace file signatures. */
+-		if ((ima_appraise & IMA_APPRAISE_FIX) &&
++		if ((ima_appraise & IMA_APPRAISE_FIX) && !try_modsig &&
+ 		    (!xattr_value ||
+ 		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
+ 			if (!ima_fix_xattr(dentry, iint))
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 317c4b6f2c18..309058c1d50e 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -206,6 +206,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	int rc = 0, action, must_appraise = 0;
+ 	int pcr = CONFIG_IMA_MEASURE_PCR_IDX;
+ 	struct evm_ima_xattr_data *xattr_value = NULL;
++	struct modsig *modsig = NULL;
+ 	int xattr_len = 0;
+ 	bool violation_check;
+ 	enum hash_algo hash_algo;
+@@ -306,10 +307,15 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	}
+ 
+ 	if ((action & IMA_APPRAISE_SUBMASK) ||
+-		    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0)
++	    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0) {
+ 		/* read 'security.ima' */
+ 		xattr_len = ima_read_xattr(file_dentry(file), &xattr_value);
+ 
++		/* Read the appended modsig if allowed by the policy. */
++		if (iint->flags & IMA_MODSIG_ALLOWED)
++			ima_read_modsig(func, buf, size, &modsig);
++	}
++
+ 	hash_algo = ima_get_hash_algo(xattr_value, xattr_len);
+ 
+ 	rc = ima_collect_measurement(iint, file, buf, size, hash_algo);
+@@ -326,7 +332,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	if (rc = 0 && (action & IMA_APPRAISE_SUBMASK)) {
+ 		inode_lock(inode);
+ 		rc = ima_appraise_measurement(func, iint, file, pathname,
+-					      xattr_value, xattr_len);
++					      xattr_value, xattr_len, modsig);
+ 		inode_unlock(inode);
+ 		if (!rc)
+ 			rc = mmap_violation_check(func, file, &pathbuf,
+@@ -343,6 +349,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 		rc = -EACCES;
+ 	mutex_unlock(&iint->mutex);
+ 	kfree(xattr_value);
++	ima_free_modsig(modsig);
+ out:
+ 	if (pathbuf)
+ 		__putname(pathbuf);
+diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
+index 87503bfe8c8b..f41ebe370fa0 100644
+--- a/security/integrity/ima/ima_modsig.c
++++ b/security/integrity/ima/ima_modsig.c
+@@ -8,8 +8,17 @@
+  * Thiago Jung Bauermann <bauerman@linux.ibm.com>
+  */
+ 
++#include <linux/types.h>
++#include <linux/module_signature.h>
++#include <keys/asymmetric-type.h>
++#include <crypto/pkcs7.h>
++
+ #include "ima.h"
+ 
++struct modsig {
++	struct pkcs7_message *pkcs7_msg;
++};
++
+ /**
+  * ima_hook_supports_modsig - can the policy allow modsig for this hook?
+  *
+@@ -29,3 +38,65 @@ bool ima_hook_supports_modsig(enum ima_hooks func)
+ 		return false;
+ 	}
+ }
++
++/*
++ * ima_read_modsig - Read modsig from buf.
++ *
++ * Return: 0 on success, error code otherwise.
++ */
++int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
++		    struct modsig **modsig)
++{
++	const size_t marker_len = strlen(MODULE_SIG_STRING);
++	const struct module_signature *sig;
++	struct modsig *hdr;
++	size_t sig_len;
++	const void *p;
++	int rc;
++
++	if (buf_len <= marker_len + sizeof(*sig))
++		return -ENOENT;
++
++	p = buf + buf_len - marker_len;
++	if (memcmp(p, MODULE_SIG_STRING, marker_len))
++		return -ENOENT;
++
++	buf_len -= marker_len;
++	sig = (const struct module_signature *)(p - sizeof(*sig));
++
++	rc = mod_check_sig(sig, buf_len, func_tokens[func]);
++	if (rc)
++		return rc;
++
++	sig_len = be32_to_cpu(sig->sig_len);
++	buf_len -= sig_len + sizeof(*sig);
++
++	hdr = kmalloc(sizeof(*hdr), GFP_KERNEL);
++	if (!hdr)
++		return -ENOMEM;
++
++	hdr->pkcs7_msg = pkcs7_parse_message(buf + buf_len, sig_len);
++	if (IS_ERR(hdr->pkcs7_msg)) {
++		kfree(hdr);
++		return PTR_ERR(hdr->pkcs7_msg);
++	}
++
++	*modsig = hdr;
++
++	return 0;
++}
++
++int ima_modsig_verify(struct key *keyring, const struct modsig *modsig)
++{
++	return verify_pkcs7_message_sig(NULL, 0, modsig->pkcs7_msg, keyring,
++					VERIFYING_MODULE_SIGNATURE, NULL, NULL);
++}
++
++void ima_free_modsig(struct modsig *modsig)
++{
++	if (!modsig)
++		return;
++
++	pkcs7_free_message(modsig->pkcs7_msg);
++	kfree(modsig);
++}
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index ac258df2f1f4..4c5b968c4721 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -1260,6 +1260,12 @@ void ima_delete_rules(void)
+ 	}
+ }
+ 
++#define __ima_hook_stringify(str)	(#str),
++
++const char *const func_tokens[] = {
++	__ima_hooks(__ima_hook_stringify)
++};
++
+ #ifdef	CONFIG_IMA_READ_POLICY
+ enum {
+ 	mask_exec = 0, mask_write, mask_read, mask_append
+@@ -1272,12 +1278,6 @@ static const char *const mask_tokens[] = {
+ 	"^MAY_APPEND"
+ };
+ 
+-#define __ima_hook_stringify(str)	(#str),
+-
+-static const char *const func_tokens[] = {
+-	__ima_hooks(__ima_hook_stringify)
+-};
+-
+ void *ima_policy_start(struct seq_file *m, loff_t *pos)
+ {
+ 	loff_t l = *pos;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 0e7330a36a9d..c6e7f41db470 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -153,10 +153,13 @@ int integrity_kernel_read(struct file *file, loff_t offset,
+ 
+ extern struct dentry *integrity_dir;
+ 
++struct modsig;
++
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
++int integrity_modsig_verify(unsigned int id, const struct modsig *modsig);
+ 
+ int __init integrity_init_keyring(const unsigned int id);
+ int __init integrity_load_x509(const unsigned int id, const char *path);
+@@ -171,6 +174,12 @@ static inline int integrity_digsig_verify(const unsigned int id,
+ 	return -EOPNOTSUPP;
+ }
+ 
++static inline int integrity_modsig_verify(unsigned int id,
++					  const struct modsig *modsig)
++{
++	return -EOPNOTSUPP;
++}
++
+ static inline int integrity_init_keyring(const unsigned int id)
+ {
+ 	return 0;
+@@ -196,6 +205,16 @@ static inline int asymmetric_verify(struct key *keyring, const char *sig,
  }
  #endif
  
-+extern void post_sb_notification(struct super_block *, struct superblock_notification *);
-+
-+/**
-+ * notify_sb: Post simple superblock notification.
-+ * @s: The superblock the notification is about.
-+ * @subtype: The type of notification.
-+ * @info: WATCH_INFO_FLAG_* flags to be set in the record.
-+ */
-+static inline void notify_sb(struct super_block *s,
-+			     enum superblock_notification_type subtype,
-+			     u32 info)
++#ifdef CONFIG_IMA_APPRAISE_MODSIG
++int ima_modsig_verify(struct key *keyring, const struct modsig *modsig);
++#else
++static inline int ima_modsig_verify(struct key *keyring,
++				    const struct modsig *modsig)
 +{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	if (unlikely(s->s_watchers)) {
-+		struct superblock_notification n = {
-+			.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.watch.subtype	= subtype,
-+			.watch.info	= sizeof(n) | info,
-+			.sb_id		= s->s_unique_id,
-+		};
-+
-+		post_sb_notification(s, &n);
-+	}
-+			     
-+#endif
++	return -EOPNOTSUPP;
 +}
-+
-+/**
-+ * notify_sb_error: Post superblock error notification.
-+ * @s: The superblock the notification is about.
-+ * @error: The error number to be recorded.
-+ */
-+static inline int notify_sb_error(struct super_block *s, int error)
-+{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	if (unlikely(s->s_watchers)) {
-+		struct superblock_error_notification n = {
-+			.s.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.s.watch.subtype = NOTIFY_SUPERBLOCK_ERROR,
-+			.s.watch.info	= sizeof(n),
-+			.s.sb_id	= s->s_unique_id,
-+			.error_number	= error,
-+			.error_cookie	= 0,
-+		};
-+
-+		post_sb_notification(s, &n.s);
-+	}
 +#endif
-+	return error;
-+}
 +
-+/**
-+ * notify_sb_EDQUOT: Post superblock quota overrun notification.
-+ * @s: The superblock the notification is about.
-+ */
-+static inline int notify_sb_EQDUOT(struct super_block *s)
-+{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	if (unlikely(s->s_watchers)) {
-+		struct superblock_notification n = {
-+			.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.watch.subtype	= NOTIFY_SUPERBLOCK_EDQUOT,
-+			.watch.info	= sizeof(n),
-+			.sb_id		= s->s_unique_id,
-+		};
-+
-+		post_sb_notification(s, &n);
-+	}
-+#endif
-+	return -EDQUOT;
-+}
-+
- #endif /* _LINUX_FS_H */
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 7c2b66175f3c..204a6dbcc34a 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -1003,6 +1003,8 @@ asmlinkage long sys_fsinfo(int dfd, const char __user *path,
- 			   void __user *buffer, size_t buf_size);
- asmlinkage long sys_mount_notify(int dfd, const char __user *path,
- 				 unsigned int at_flags, int watch_fd, int watch_id);
-+asmlinkage long sys_sb_notify(int dfd, const char __user *path,
-+			      unsigned int at_flags, int watch_fd, int watch_id);
- 
- /*
-  * Architecture-specific system calls
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-index 6cb923f3454e..1f09247e49f3 100644
---- a/include/uapi/linux/watch_queue.h
-+++ b/include/uapi/linux/watch_queue.h
-@@ -128,4 +128,30 @@ struct mount_notification {
- 	__u32	changed_mount;		/* The mount that got changed */
- };
- 
-+/*
-+ * Type of superblock notification.
-+ */
-+enum superblock_notification_type {
-+	NOTIFY_SUPERBLOCK_READONLY	= 0, /* Filesystem toggled between R/O and R/W */
-+	NOTIFY_SUPERBLOCK_ERROR		= 1, /* Error in filesystem or blockdev */
-+	NOTIFY_SUPERBLOCK_EDQUOT	= 2, /* EDQUOT notification */
-+	NOTIFY_SUPERBLOCK_NETWORK	= 3, /* Network status change */
-+};
-+
-+/*
-+ * Superblock notification record.
-+ * - watch.type = WATCH_TYPE_MOUNT_NOTIFY
-+ * - watch.subtype = enum superblock_notification_subtype
-+ */
-+struct superblock_notification {
-+	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
-+	__u64	sb_id;			/* 64-bit superblock ID [fsinfo_ids::f_sb_id] */
-+};
-+
-+struct superblock_error_notification {
-+	struct superblock_notification s; /* subtype = notify_superblock_error */
-+	__u32	error_number;
-+	__u32	error_cookie;
-+};
-+
- #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 97b025e7863c..565d1e3d1bed 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -108,6 +108,9 @@ COND_SYSCALL(quotactl);
- 
- /* fs/read_write.c */
- 
-+/* fs/sb_notify.c */
-+COND_SYSCALL(sb_notify);
-+
- /* fs/sendfile.c */
- 
- /* fs/select.c */
+ #ifdef CONFIG_IMA_LOAD_X509
+ void __init ima_load_x509(void);
+ #else
