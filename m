@@ -1,141 +1,192 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 15:36:25 +0000
-Subject: [PATCH 4/6] keys: Provide request_key_rcu() [ver #2]
-Message-Id: <156095858592.25264.17369833581092140668.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Fri, 28 Jun 2019 02:19:29 +0000
+Subject: [PATCH v12 06/11] ima: Factor xattr_verify() out of ima_appraise_measurement()
+Message-Id: <20190628021934.4260-7-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190628021934.4260-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Provide a request_key_rcu() function that can be used to request a key
-under RCU conditions.  It can only search and check permissions; it cannot
-allocate a new key, upcall or wait for an upcall to complete.  It may
-return a partially constructed key.
+Verify xattr signature in a separate function so that the logic in
+ima_appraise_measurement() remains clear when it gains the ability to also
+verify an appended module signature.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+The code in the switch statement is unchanged except for having to
+dereference the status and cause variables (since they're now pointers),
+and fixing the style of a block comment to appease checkpatch.
+
+Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ security/integrity/ima/ima_appraise.c | 141 +++++++++++++++-----------
+ 1 file changed, 81 insertions(+), 60 deletions(-)
 
- Documentation/security/keys/core.rst        |   10 ++++++
- Documentation/security/keys/request-key.rst |    9 ++++++
- include/linux/key.h                         |    3 ++
- security/keys/request_key.c                 |   44 +++++++++++++++++++++++++++
- 4 files changed, 66 insertions(+)
-
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index 82dd457ff78d..003f1452a5b7 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -1147,6 +1147,16 @@ payload contents" for more information.
-     case error ERESTARTSYS will be returned.
- 
- 
-+ *  To search for a key under RCU conditions, call::
-+
-+	struct key *request_key_rcu(const struct key_type *type,
-+				    const char *description);
-+
-+    which is similar to request_key() except that it does not check for keys
-+    that are under construction and it will not call out to userspace to
-+    construct a key if it can't find a match.
-+
-+
-  *  When it is no longer required, the key should be released using::
- 
- 	void key_put(struct key *key);
-diff --git a/Documentation/security/keys/request-key.rst b/Documentation/security/keys/request-key.rst
-index 07af991463b5..7caedc4d29f1 100644
---- a/Documentation/security/keys/request-key.rst
-+++ b/Documentation/security/keys/request-key.rst
-@@ -36,6 +36,11 @@ or::
- 					     	   size_t callout_len,
- 						   void *aux);
- 
-+or::
-+
-+	struct key *request_key_rcu(const struct key_type *type,
-+				    const char *description);
-+
- Or by userspace invoking the request_key system call::
- 
- 	key_serial_t request_key(const char *type,
-@@ -57,6 +62,10 @@ The two async in-kernel calls may return keys that are still in the process of
- being constructed.  The two non-async ones will wait for construction to
- complete first.
- 
-+The request_key_rcu() call is like the in-kernel request_key() call, except
-+that it doesn't check for keys that are under construction and doesn't attempt
-+to construct missing keys.
-+
- The userspace interface links the key to a keyring associated with the process
- to prevent the key from going away, and returns the serial number of the key to
- the caller.
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 612e1cf84049..3604a554df99 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -274,6 +274,9 @@ extern struct key *request_key(struct key_type *type,
- 			       const char *description,
- 			       const char *callout_info);
- 
-+extern struct key *request_key_rcu(struct key_type *type,
-+				   const char *description);
-+
- extern struct key *request_key_with_auxdata(struct key_type *type,
- 					    const char *description,
- 					    const void *callout_info,
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index bf1d223ec21c..b4b3677657d6 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -756,3 +756,47 @@ struct key *request_key_async_with_auxdata(struct key_type *type,
- 				    callout_len, aux, NULL, KEY_ALLOC_IN_QUOTA);
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 18bbe753421a..5d4772f39757 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -202,6 +202,83 @@ int ima_read_xattr(struct dentry *dentry,
+ 	return ret;
  }
- EXPORT_SYMBOL(request_key_async_with_auxdata);
-+
-+/**
-+ * request_key_rcu - Request key from RCU-read-locked context
-+ * @type: The type of key we want.
-+ * @description: The name of the key we want.
+ 
++/*
++ * xattr_verify - verify xattr digest or signature
 + *
-+ * Request a key from a context that we may not sleep in (such as RCU-mode
-+ * pathwalk).  Keys under construction are ignored.
++ * Verify whether the hash or signature matches the file contents.
 + *
-+ * Return a pointer to the found key if successful, -ENOKEY if we couldn't find
-+ * a key or some other error if the key found was unsuitable or inaccessible.
++ * Return 0 on success, error code otherwise.
 + */
-+struct key *request_key_rcu(struct key_type *type, const char *description)
++static int xattr_verify(enum ima_hooks func, struct integrity_iint_cache *iint,
++			struct evm_ima_xattr_data *xattr_value, int xattr_len,
++			enum integrity_status *status, const char **cause)
 +{
-+	struct keyring_search_context ctx = {
-+		.index_key.type		= type,
-+		.index_key.description	= description,
-+		.index_key.desc_len	= strlen(description),
-+		.cred			= current_cred(),
-+		.match_data.cmp		= key_default_cmp,
-+		.match_data.raw_data	= description,
-+		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
-+		.flags			= (KEYRING_SEARCH_DO_STATE_CHECK |
-+					   KEYRING_SEARCH_SKIP_EXPIRED),
-+	};
-+	struct key *key;
-+	key_ref_t key_ref;
++	int rc = -EINVAL, hash_start = 0;
 +
-+	kenter("%s,%s", type->name, description);
-+
-+	/* search all the process keyrings for a key */
-+	key_ref = search_process_keyrings_rcu(&ctx);
-+	if (IS_ERR(key_ref)) {
-+		key = ERR_CAST(key_ref);
-+		if (PTR_ERR(key_ref) = -EAGAIN)
-+			key = ERR_PTR(-ENOKEY);
-+	} else {
-+		key = key_ref_to_ptr(key_ref);
++	switch (xattr_value->type) {
++	case IMA_XATTR_DIGEST_NG:
++		/* first byte contains algorithm id */
++		hash_start = 1;
++		/* fall through */
++	case IMA_XATTR_DIGEST:
++		if (iint->flags & IMA_DIGSIG_REQUIRED) {
++			*cause = "IMA-signature-required";
++			*status = INTEGRITY_FAIL;
++			break;
++		}
++		clear_bit(IMA_DIGSIG, &iint->atomic_flags);
++		if (xattr_len - sizeof(xattr_value->type) - hash_start >+				iint->ima_hash->length)
++			/*
++			 * xattr length may be longer. md5 hash in previous
++			 * version occupied 20 bytes in xattr, instead of 16
++			 */
++			rc = memcmp(&xattr_value->data[hash_start],
++				    iint->ima_hash->digest,
++				    iint->ima_hash->length);
++		else
++			rc = -EINVAL;
++		if (rc) {
++			*cause = "invalid-hash";
++			*status = INTEGRITY_FAIL;
++			break;
++		}
++		*status = INTEGRITY_PASS;
++		break;
++	case EVM_IMA_XATTR_DIGSIG:
++		set_bit(IMA_DIGSIG, &iint->atomic_flags);
++		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
++					     (const char *)xattr_value,
++					     xattr_len,
++					     iint->ima_hash->digest,
++					     iint->ima_hash->length);
++		if (rc = -EOPNOTSUPP) {
++			*status = INTEGRITY_UNKNOWN;
++			break;
++		}
++		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
++		    func = KEXEC_KERNEL_CHECK)
++			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
++						     (const char *)xattr_value,
++						     xattr_len,
++						     iint->ima_hash->digest,
++						     iint->ima_hash->length);
++		if (rc) {
++			*cause = "invalid-signature";
++			*status = INTEGRITY_FAIL;
++		} else {
++			*status = INTEGRITY_PASS;
++		}
++		break;
++	default:
++		*status = INTEGRITY_UNKNOWN;
++		*cause = "unknown-ima-data";
++		break;
 +	}
 +
-+	kleave(" = %p", key);
-+	return key;
++	return rc;
 +}
-+EXPORT_SYMBOL(request_key_rcu);
++
+ /*
+  * ima_appraise_measurement - appraise file measurement
+  *
+@@ -221,7 +298,7 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 	struct dentry *dentry = file_dentry(file);
+ 	struct inode *inode = d_backing_inode(dentry);
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+-	int rc = xattr_len, hash_start = 0;
++	int rc = xattr_len;
+ 
+ 	if (!(inode->i_opflags & IOP_XATTR))
+ 		return INTEGRITY_UNKNOWN;
+@@ -259,65 +336,9 @@ int ima_appraise_measurement(enum ima_hooks func,
+ 		WARN_ONCE(true, "Unexpected integrity status %d\n", status);
+ 	}
+ 
+-	switch (xattr_value->type) {
+-	case IMA_XATTR_DIGEST_NG:
+-		/* first byte contains algorithm id */
+-		hash_start = 1;
+-		/* fall through */
+-	case IMA_XATTR_DIGEST:
+-		if (iint->flags & IMA_DIGSIG_REQUIRED) {
+-			cause = "IMA-signature-required";
+-			status = INTEGRITY_FAIL;
+-			break;
+-		}
+-		clear_bit(IMA_DIGSIG, &iint->atomic_flags);
+-		if (xattr_len - sizeof(xattr_value->type) - hash_start >-				iint->ima_hash->length)
+-			/* xattr length may be longer. md5 hash in previous
+-			   version occupied 20 bytes in xattr, instead of 16
+-			 */
+-			rc = memcmp(&xattr_value->data[hash_start],
+-				    iint->ima_hash->digest,
+-				    iint->ima_hash->length);
+-		else
+-			rc = -EINVAL;
+-		if (rc) {
+-			cause = "invalid-hash";
+-			status = INTEGRITY_FAIL;
+-			break;
+-		}
+-		status = INTEGRITY_PASS;
+-		break;
+-	case EVM_IMA_XATTR_DIGSIG:
+-		set_bit(IMA_DIGSIG, &iint->atomic_flags);
+-		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
+-					     (const char *)xattr_value,
+-					     xattr_len,
+-					     iint->ima_hash->digest,
+-					     iint->ima_hash->length);
+-		if (rc = -EOPNOTSUPP) {
+-			status = INTEGRITY_UNKNOWN;
+-			break;
+-		}
+-		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
+-		    func = KEXEC_KERNEL_CHECK)
+-			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
+-						     (const char *)xattr_value,
+-						     xattr_len,
+-						     iint->ima_hash->digest,
+-						     iint->ima_hash->length);
+-		if (rc) {
+-			cause = "invalid-signature";
+-			status = INTEGRITY_FAIL;
+-		} else {
+-			status = INTEGRITY_PASS;
+-		}
+-		break;
+-	default:
+-		status = INTEGRITY_UNKNOWN;
+-		cause = "unknown-ima-data";
+-		break;
+-	}
++	if (xattr_value)
++		rc = xattr_verify(func, iint, xattr_value, xattr_len, &status,
++				  &cause);
+ 
+ out:
+ 	/*
