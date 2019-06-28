@@ -1,139 +1,112 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 28 Jun 2019 15:48:47 +0000
-Subject: [PATCH 2/9] security: Add hooks to rule on setting a watch [ver #5]
-Message-Id: <156173692760.15137.9636883182556029747.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Fri, 28 Jun 2019 02:19:26 +0000
+Subject: [PATCH v12 03/11] PKCS#7: Introduce pkcs7_get_digest()
+Message-Id: <20190628021934.4260-4-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190628021934.4260-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Add security hooks that will allow an LSM to rule on whether or not a watch
-may be set.  More than one hook is required as the watches watch different
-types of object.
+IMA will need to access the digest of the PKCS7 message (as calculated by
+the kernel) before the signature is verified, so introduce
+pkcs7_get_digest() for that purpose.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
+Also, modify pkcs7_digest() to detect when the digest was already
+calculated so that it doesn't have to do redundant work. Verifying that
+sinfo->sig->digest isn't NULL is sufficient because both places which
+allocate sinfo->sig (pkcs7_parse_message() and pkcs7_note_signed_info())
+use kzalloc() so sig->digest is always initialized to zero.
+
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
+ crypto/asymmetric_keys/pkcs7_verify.c | 33 +++++++++++++++++++++++++++
+ include/crypto/pkcs7.h                |  4 ++++
+ 2 files changed, 37 insertions(+)
 
- include/linux/lsm_hooks.h |   22 ++++++++++++++++++++++
- include/linux/security.h  |   15 +++++++++++++++
- security/security.c       |   13 +++++++++++++
- 3 files changed, 50 insertions(+)
-
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index 47f58cfb6a19..f9d31f6445e4 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1413,6 +1413,20 @@
-  *	@ctx is a pointer in which to place the allocated security context.
-  *	@ctxlen points to the place to put the length of @ctx.
-  *
-+ * Security hooks for the general notification queue:
-+ *
-+ * @watch_key:
-+ *	Check to see if a process is allowed to watch for event notifications
-+ *	from a key or keyring.
-+ *	@watch: The watch object
-+ *	@key: The key to watch.
-+ *
-+ * @watch_devices:
-+ *	Check to see if a process is allowed to watch for event notifications
-+ *	from devices (as a global set).
-+ *	@watch: The watch object
-+ *
-+ *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-  *
-@@ -1688,6 +1702,10 @@ union security_list_options {
- 	int (*inode_notifysecctx)(struct inode *inode, void *ctx, u32 ctxlen);
- 	int (*inode_setsecctx)(struct dentry *dentry, void *ctx, u32 ctxlen);
- 	int (*inode_getsecctx)(struct inode *inode, void **ctx, u32 *ctxlen);
-+#ifdef CONFIG_WATCH_QUEUE
-+	int (*watch_key)(struct watch *watch, struct key *key);
-+	int (*watch_devices)(struct watch *watch);
-+#endif /* CONFIG_WATCH_QUEUE */
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index f7b0980bf02d..3243981152b5 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -16,6 +16,7 @@
+ #include <linux/err.h>
+ #include <linux/asn1.h>
+ #include <crypto/hash.h>
++#include <crypto/hash_info.h>
+ #include <crypto/public_key.h>
+ #include "pkcs7_parser.h"
  
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -1964,6 +1982,10 @@ struct security_hook_heads {
- 	struct hlist_head inode_notifysecctx;
- 	struct hlist_head inode_setsecctx;
- 	struct hlist_head inode_getsecctx;
-+#ifdef CONFIG_WATCH_QUEUE
-+	struct hlist_head watch_key;
-+	struct hlist_head watch_devices;
-+#endif /* CONFIG_WATCH_QUEUE */
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 659071c2e57c..540863678355 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -57,6 +57,7 @@ struct mm_struct;
- struct fs_context;
- struct fs_parameter;
- enum fs_value_type;
-+struct watch;
+@@ -33,6 +34,10 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
  
- /* Default (no) options for the capable function */
- #define CAP_OPT_NONE 0x0
-@@ -392,6 +393,10 @@ void security_inode_invalidate_secctx(struct inode *inode);
- int security_inode_notifysecctx(struct inode *inode, void *ctx, u32 ctxlen);
- int security_inode_setsecctx(struct dentry *dentry, void *ctx, u32 ctxlen);
- int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen);
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_watch_key(struct watch *watch, struct key *key);
-+int security_watch_devices(struct watch *watch);
-+#endif /* CONFIG_WATCH_QUEUE */
- #else /* CONFIG_SECURITY */
+ 	kenter(",%u,%s", sinfo->index, sinfo->sig->hash_algo);
  
- static inline int call_lsm_notifier(enum lsm_event event, void *data)
-@@ -1204,6 +1209,16 @@ static inline int security_inode_getsecctx(struct inode *inode, void **ctx, u32
- {
- 	return -EOPNOTSUPP;
++	/* The digest was calculated already. */
++	if (sig->digest)
++		return 0;
++
+ 	if (!sinfo->sig->hash_algo)
+ 		return -ENOPKG;
+ 
+@@ -121,6 +126,34 @@ static int pkcs7_digest(struct pkcs7_message *pkcs7,
+ 	return ret;
  }
-+#ifdef CONFIG_WATCH_QUEUE
-+static inline int security_watch_key(struct watch *watch, struct key *key)
+ 
++int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf, u32 *len,
++		     enum hash_algo *hash_algo)
 +{
++	struct pkcs7_signed_info *sinfo = pkcs7->signed_infos;
++	int i, ret;
++
++	/*
++	 * This function doesn't support messages with more than one signature.
++	 */
++	if (sinfo = NULL || sinfo->next != NULL)
++		return -EBADMSG;
++
++	ret = pkcs7_digest(pkcs7, sinfo);
++	if (ret)
++		return ret;
++
++	*buf = sinfo->sig->digest;
++	*len = sinfo->sig->digest_size;
++
++	for (i = 0; i < HASH_ALGO__LAST; i++)
++		if (!strcmp(hash_algo_name[i], sinfo->sig->hash_algo)) {
++			*hash_algo = i;
++			break;
++		}
++
 +	return 0;
 +}
-+static inline int security_watch_devices(struct watch *watch)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_WATCH_QUEUE */
- #endif	/* CONFIG_SECURITY */
- 
- #ifdef CONFIG_SECURITY_NETWORK
-diff --git a/security/security.c b/security/security.c
-index 613a5c00e602..2c9919226ad1 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1917,6 +1917,19 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_watch_key(struct watch *watch, struct key *key)
-+{
-+	return call_int_hook(watch_key, 0, watch, key);
-+}
 +
-+int security_watch_devices(struct watch *watch)
-+{
-+	return call_int_hook(watch_devices, 0, watch);
-+}
-+
-+#endif /* CONFIG_WATCH_QUEUE */
-+
- #ifdef CONFIG_SECURITY_NETWORK
+ /*
+  * Find the key (X.509 certificate) to use to verify a PKCS#7 message.  PKCS#7
+  * uses the issuer's name and the issuing certificate serial number for
+diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
+index 583f199400a3..3bfe6829eaae 100644
+--- a/include/crypto/pkcs7.h
++++ b/include/crypto/pkcs7.h
+@@ -13,6 +13,7 @@
+ #define _CRYPTO_PKCS7_H
  
- int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk)
+ #include <linux/verification.h>
++#include <linux/hash_info.h>
+ #include <crypto/public_key.h>
+ 
+ struct key;
+@@ -44,4 +45,7 @@ extern int pkcs7_verify(struct pkcs7_message *pkcs7,
+ extern int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
+ 				      const void *data, size_t datalen);
+ 
++extern int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf,
++			    u32 *len, enum hash_algo *hash_algo);
++
+ #endif /* _CRYPTO_PKCS7_H */
