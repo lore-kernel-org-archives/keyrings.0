@@ -1,420 +1,238 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 19 Jun 2019 15:36:18 +0000
-Subject: [PATCH 3/6] keys: Move the RCU locks outwards from the keyring search functions [ver #2]
-Message-Id: <156095857859.25264.1843382792417643880.stgit@warthog.procyon.org.uk>
+Date: Fri, 28 Jun 2019 15:49:39 +0000
+Subject: [PATCH 7/9] block: Add block layer notifications [ver #5]
+Message-Id: <156173697982.15137.16498832075840240161.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156095855610.25264.16666970456822465537.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Move the RCU locks outwards from the keyring search functions so that it
-will become possible to provide an RCU-capable partial request_key()
-function in a later commit.
+Add a block layer notification mechanism whereby notifications about
+block-layer events such as I/O errors, can be reported to a monitoring
+process asynchronously.
+
+Firstly, an event queue needs to be created:
+
+	fd = open("/dev/event_queue", O_RDWR);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+
+then a notification can be set up to report block notifications via that
+queue:
+
+	struct watch_notification_filter filter = {
+		.nr_filters = 1,
+		.filters = {
+			[0] = {
+				.type = WATCH_TYPE_BLOCK_NOTIFY,
+				.subtype_filter[0] = UINT_MAX;
+			},
+		},
+	};
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	watch_devices(fd, 12);
+
+After that, records will be placed into the queue when, for example, errors
+occur on a block device.  Records are of the following format:
+
+	struct block_notification {
+		struct watch_notification watch;
+		__u64	dev;
+		__u64	sector;
+	} *n;
+
+Where:
+
+	n->watch.type will be WATCH_TYPE_BLOCK_NOTIFY
+
+	n->watch.subtype will be the type of notification, such as
+	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM.
+
+	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
+	record.
+
+	n->watch.info & WATCH_INFO_ID will be the second argument to
+	watch_devices(), shifted.
+
+	n->dev will be the device numbers munged together.
+
+	n->sector will indicate the affected sector (if appropriate for the
+	event).
+
+Note that it is permissible for event records to be of variable length -
+or, at least, the length may be dependent on the subtype.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/security/keys/request-key.rst |    2 -
- include/keys/request_key_auth-type.h        |    1 
- security/keys/internal.h                    |    6 +--
- security/keys/keyring.c                     |   16 ++++---
- security/keys/proc.c                        |    4 +-
- security/keys/process_keys.c                |   41 ++++++++----------
- security/keys/request_key.c                 |    8 +++-
- security/keys/request_key_auth.c            |   60 ++++++++++++++++-----------
- 8 files changed, 77 insertions(+), 61 deletions(-)
+ Documentation/watch_queue.rst    |    4 +++-
+ block/Kconfig                    |    9 +++++++++
+ block/blk-core.c                 |   29 +++++++++++++++++++++++++++++
+ include/linux/blkdev.h           |   15 +++++++++++++++
+ include/uapi/linux/watch_queue.h |   30 +++++++++++++++++++++++++++++-
+ 5 files changed, 85 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/security/keys/request-key.rst b/Documentation/security/keys/request-key.rst
-index 600ad67d1707..07af991463b5 100644
---- a/Documentation/security/keys/request-key.rst
-+++ b/Documentation/security/keys/request-key.rst
-@@ -148,7 +148,7 @@ The Search Algorithm
+diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
+index 393905b904c8..5cc9c6924727 100644
+--- a/Documentation/watch_queue.rst
++++ b/Documentation/watch_queue.rst
+@@ -7,7 +7,9 @@ receive notifications from the kernel.  This can be used in conjunction with::
  
- A search of any particular keyring proceeds in the following fashion:
+   * Key/keyring notifications
  
--  1) When the key management code searches for a key (keyring_search_aux) it
-+  1) When the key management code searches for a key (keyring_search_rcu) it
-      firstly calls key_permission(SEARCH) on the keyring it's starting with,
-      if this denies permission, it doesn't search further.
- 
-diff --git a/include/keys/request_key_auth-type.h b/include/keys/request_key_auth-type.h
-index a726dd3f1dc6..2a046062bb42 100644
---- a/include/keys/request_key_auth-type.h
-+++ b/include/keys/request_key_auth-type.h
-@@ -18,6 +18,7 @@
-  * Authorisation record for request_key().
-  */
- struct request_key_auth {
-+	struct rcu_head		rcu;
- 	struct key		*target_key;
- 	struct key		*dest_keyring;
- 	const struct cred	*cred;
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index d04bff631227..3d5c08db74d2 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -139,11 +139,11 @@ struct keyring_search_context {
- 
- extern bool key_default_cmp(const struct key *key,
- 			    const struct key_match_data *match_data);
--extern key_ref_t keyring_search_aux(key_ref_t keyring_ref,
-+extern key_ref_t keyring_search_rcu(key_ref_t keyring_ref,
- 				    struct keyring_search_context *ctx);
- 
--extern key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx);
--extern key_ref_t search_process_keyrings(struct keyring_search_context *ctx);
-+extern key_ref_t search_cred_keyrings_rcu(struct keyring_search_context *ctx);
-+extern key_ref_t search_process_keyrings_rcu(struct keyring_search_context *ctx);
- 
- extern struct key *find_keyring_by_name(const char *name, bool uid_keyring);
- 
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 67066bb58b83..afa6d4024c67 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -835,7 +835,7 @@ static bool search_nested_keyrings(struct key *keyring,
- }
- 
- /**
-- * keyring_search_aux - Search a keyring tree for a key matching some criteria
-+ * keyring_search_rcu - Search a keyring tree for a matching key under RCU
-  * @keyring_ref: A pointer to the keyring with possession indicator.
-  * @ctx: The keyring search context.
-  *
-@@ -847,7 +847,9 @@ static bool search_nested_keyrings(struct key *keyring,
-  * addition, the LSM gets to forbid keyring searches and key matches.
-  *
-  * The search is performed as a breadth-then-depth search up to the prescribed
-- * limit (KEYRING_SEARCH_MAX_DEPTH).
-+ * limit (KEYRING_SEARCH_MAX_DEPTH).  The caller must hold the RCU read lock to
-+ * prevent keyrings from being destroyed or rearranged whilst they are being
-+ * searched.
-  *
-  * Keys are matched to the type provided and are then filtered by the match
-  * function, which is given the description to use in any way it sees fit.  The
-@@ -866,7 +868,7 @@ static bool search_nested_keyrings(struct key *keyring,
-  * In the case of a successful return, the possession attribute from
-  * @keyring_ref is propagated to the returned key reference.
-  */
--key_ref_t keyring_search_aux(key_ref_t keyring_ref,
-+key_ref_t keyring_search_rcu(key_ref_t keyring_ref,
- 			     struct keyring_search_context *ctx)
- {
- 	struct key *keyring;
-@@ -888,11 +890,9 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
- 			return ERR_PTR(err);
- 	}
- 
--	rcu_read_lock();
- 	ctx->now = ktime_get_real_seconds();
- 	if (search_nested_keyrings(keyring, ctx))
- 		__key_get(key_ref_to_ptr(ctx->result));
--	rcu_read_unlock();
- 	return ctx->result;
- }
- 
-@@ -902,7 +902,7 @@ key_ref_t keyring_search_aux(key_ref_t keyring_ref,
-  * @type: The type of keyring we want to find.
-  * @description: The name of the keyring we want to find.
-  *
-- * As keyring_search_aux() above, but using the current task's credentials and
-+ * As keyring_search_rcu() above, but using the current task's credentials and
-  * type's default matching function and preferred search method.
-  */
- key_ref_t keyring_search(key_ref_t keyring,
-@@ -928,7 +928,9 @@ key_ref_t keyring_search(key_ref_t keyring,
- 			return ERR_PTR(ret);
- 	}
- 
--	key = keyring_search_aux(keyring, &ctx);
-+	rcu_read_lock();
-+	key = keyring_search_rcu(keyring, &ctx);
-+	rcu_read_unlock();
- 
- 	if (type->match_free)
- 		type->match_free(&ctx.match_data);
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index 78ac305d715e..f081dceae3b9 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -179,7 +179,9 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 	 * skip if the key does not indicate the possessor can view it
- 	 */
- 	if (key->perm & KEY_POS_VIEW) {
--		skey_ref = search_my_process_keyrings(&ctx);
-+		rcu_read_lock();
-+		skey_ref = search_cred_keyrings_rcu(&ctx);
-+		rcu_read_unlock();
- 		if (!IS_ERR(skey_ref)) {
- 			key_ref_put(skey_ref);
- 			key_ref = make_key_ref(key, 1);
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 39aaa21462bf..f8ffb06d0297 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -318,7 +318,8 @@ void key_fsgid_changed(struct cred *new_cred)
- 
- /*
-  * Search the process keyrings attached to the supplied cred for the first
-- * matching key.
-+ * matching key under RCU conditions (the caller must be holding the RCU read
-+ * lock).
-  *
-  * The search criteria are the type and the match function.  The description is
-  * given to the match function as a parameter, but doesn't otherwise influence
-@@ -337,7 +338,7 @@ void key_fsgid_changed(struct cred *new_cred)
-  * In the case of a successful return, the possession attribute is set on the
-  * returned key reference.
-  */
--key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
-+key_ref_t search_cred_keyrings_rcu(struct keyring_search_context *ctx)
- {
- 	key_ref_t key_ref, ret, err;
- 	const struct cred *cred = ctx->cred;
-@@ -355,7 +356,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- 
- 	/* search the thread keyring first */
- 	if (cred->thread_keyring) {
--		key_ref = keyring_search_aux(
-+		key_ref = keyring_search_rcu(
- 			make_key_ref(cred->thread_keyring, 1), ctx);
- 		if (!IS_ERR(key_ref))
- 			goto found;
-@@ -373,7 +374,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- 
- 	/* search the process keyring second */
- 	if (cred->process_keyring) {
--		key_ref = keyring_search_aux(
-+		key_ref = keyring_search_rcu(
- 			make_key_ref(cred->process_keyring, 1), ctx);
- 		if (!IS_ERR(key_ref))
- 			goto found;
-@@ -394,7 +395,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- 
- 	/* search the session keyring */
- 	if (cred->session_keyring) {
--		key_ref = keyring_search_aux(
-+		key_ref = keyring_search_rcu(
- 			make_key_ref(cred->session_keyring, 1), ctx);
- 
- 		if (!IS_ERR(key_ref))
-@@ -415,7 +416,7 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
- 	}
- 	/* or search the user-session keyring */
- 	else if (READ_ONCE(cred->user->session_keyring)) {
--		key_ref = keyring_search_aux(
-+		key_ref = keyring_search_rcu(
- 			make_key_ref(READ_ONCE(cred->user->session_keyring), 1),
- 			ctx);
- 		if (!IS_ERR(key_ref))
-@@ -448,16 +449,16 @@ key_ref_t search_my_process_keyrings(struct keyring_search_context *ctx)
-  * the keys attached to the assumed authorisation key using its credentials if
-  * one is available.
-  *
-- * Return same as search_my_process_keyrings().
-+ * The caller must be holding the RCU read lock.
-+ *
-+ * Return same as search_cred_keyrings_rcu().
-  */
--key_ref_t search_process_keyrings(struct keyring_search_context *ctx)
-+key_ref_t search_process_keyrings_rcu(struct keyring_search_context *ctx)
- {
- 	struct request_key_auth *rka;
- 	key_ref_t key_ref, ret = ERR_PTR(-EACCES), err;
- 
--	might_sleep();
--
--	key_ref = search_my_process_keyrings(ctx);
-+	key_ref = search_cred_keyrings_rcu(ctx);
- 	if (!IS_ERR(key_ref))
- 		goto found;
- 	err = key_ref;
-@@ -472,24 +473,17 @@ key_ref_t search_process_keyrings(struct keyring_search_context *ctx)
- 	    ) {
- 		const struct cred *cred = ctx->cred;
- 
--		/* defend against the auth key being revoked */
--		down_read(&cred->request_key_auth->sem);
--
--		if (key_validate(ctx->cred->request_key_auth) = 0) {
-+		if (key_validate(cred->request_key_auth) = 0) {
- 			rka = ctx->cred->request_key_auth->payload.data[0];
- 
-+			//// was search_process_keyrings() [ie. recursive]
- 			ctx->cred = rka->cred;
--			key_ref = search_process_keyrings(ctx);
-+			key_ref = search_cred_keyrings_rcu(ctx);
- 			ctx->cred = cred;
- 
--			up_read(&cred->request_key_auth->sem);
--
- 			if (!IS_ERR(key_ref))
- 				goto found;
--
- 			ret = key_ref;
--		} else {
--			up_read(&cred->request_key_auth->sem);
- 		}
- 	}
- 
-@@ -504,7 +498,6 @@ key_ref_t search_process_keyrings(struct keyring_search_context *ctx)
- found:
- 	return key_ref;
- }
--
- /*
-  * See if the key we're looking at is the target key.
-  */
-@@ -691,7 +684,9 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 		ctx.index_key			= key->index_key;
- 		ctx.match_data.raw_data		= key;
- 		kdebug("check possessed");
--		skey_ref = search_process_keyrings(&ctx);
-+		rcu_read_lock();
-+		skey_ref = search_process_keyrings_rcu(&ctx);
-+		rcu_read_unlock();
- 		kdebug("possessed=%p", skey_ref);
- 
- 		if (!IS_ERR(skey_ref)) {
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 244e538d113f..bf1d223ec21c 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -385,7 +385,9 @@ static int construct_alloc_key(struct keyring_search_context *ctx,
- 	 * waited for locks */
- 	mutex_lock(&key_construction_mutex);
- 
--	key_ref = search_process_keyrings(ctx);
-+	rcu_read_lock();
-+	key_ref = search_process_keyrings_rcu(ctx);
-+	rcu_read_unlock();
- 	if (!IS_ERR(key_ref))
- 		goto key_already_present;
- 
-@@ -561,7 +563,9 @@ struct key *request_key_and_link(struct key_type *type,
- 	}
- 
- 	/* search all the process keyrings for a key */
--	key_ref = search_process_keyrings(&ctx);
-+	rcu_read_lock();
-+	key_ref = search_process_keyrings_rcu(&ctx);
-+	rcu_read_unlock();
- 
- 	if (!IS_ERR(key_ref)) {
- 		if (dest_keyring) {
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index ec5226557023..99ed7a8a273d 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -58,7 +58,7 @@ static void request_key_auth_free_preparse(struct key_preparsed_payload *prep)
- static int request_key_auth_instantiate(struct key *key,
- 					struct key_preparsed_payload *prep)
- {
--	key->payload.data[0] = (struct request_key_auth *)prep->data;
-+	rcu_assign_keypointer(key, (struct request_key_auth *)prep->data);
- 	return 0;
- }
- 
-@@ -68,7 +68,7 @@ static int request_key_auth_instantiate(struct key *key,
- static void request_key_auth_describe(const struct key *key,
- 				      struct seq_file *m)
- {
--	struct request_key_auth *rka = get_request_key_auth(key);
-+	struct request_key_auth *rka = dereference_key_rcu(key);
- 
- 	seq_puts(m, "key:");
- 	seq_puts(m, key->description);
-@@ -83,7 +83,7 @@ static void request_key_auth_describe(const struct key *key,
- static long request_key_auth_read(const struct key *key,
- 				  char __user *buffer, size_t buflen)
- {
--	struct request_key_auth *rka = get_request_key_auth(key);
-+	struct request_key_auth *rka = dereference_key_locked(key);
- 	size_t datalen;
- 	long ret;
- 
-@@ -102,23 +102,6 @@ static long request_key_auth_read(const struct key *key,
- 	return ret;
- }
- 
--/*
-- * Handle revocation of an authorisation token key.
-- *
-- * Called with the key sem write-locked.
-- */
--static void request_key_auth_revoke(struct key *key)
--{
--	struct request_key_auth *rka = get_request_key_auth(key);
--
--	kenter("{%d}", key->serial);
--
--	if (rka->cred) {
--		put_cred(rka->cred);
--		rka->cred = NULL;
--	}
--}
--
- static void free_request_key_auth(struct request_key_auth *rka)
- {
- 	if (!rka)
-@@ -131,16 +114,43 @@ static void free_request_key_auth(struct request_key_auth *rka)
- 	kfree(rka);
- }
- 
-+/*
-+ * Dispose of the request_key_auth record under RCU conditions
-+ */
-+static void request_key_auth_rcu_disposal(struct rcu_head *rcu)
-+{
-+	struct request_key_auth *rka +		container_of(rcu, struct request_key_auth, rcu);
+-  * General device event notifications
++  * General device event notifications, including::
 +
-+	free_request_key_auth(rka);
-+}
-+
-+/*
-+ * Handle revocation of an authorisation token key.
-+ *
-+ * Called with the key sem write-locked.
-+ */
-+static void request_key_auth_revoke(struct key *key)
-+{
-+	struct request_key_auth *rka = dereference_key_locked(key);
-+
-+	kenter("{%d}", key->serial);
-+	rcu_assign_keypointer(key, NULL);
-+	call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
-+}
-+
- /*
-  * Destroy an instantiation authorisation token key.
-  */
- static void request_key_auth_destroy(struct key *key)
- {
--	struct request_key_auth *rka = get_request_key_auth(key);
-+	struct request_key_auth *rka = rcu_access_pointer(key->payload.rcu_data0);
++    * Block layer event notifications
  
- 	kenter("{%d}", key->serial);
--
--	free_request_key_auth(rka);
-+	if (rka) {
-+		rcu_assign_keypointer(key, NULL);
-+		call_rcu(&rka->rcu, request_key_auth_rcu_disposal);
+ 
+ The notifications buffers can be enabled by:
+diff --git a/block/Kconfig b/block/Kconfig
+index 1b220101a9cb..4ff4a56ba9f9 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -163,6 +163,15 @@ config BLK_SED_OPAL
+ 	Enabling this option enables users to setup/unlock/lock
+ 	Locking ranges for SED devices using the Opal protocol.
+ 
++config BLK_NOTIFICATIONS
++	bool "Block layer event notifications"
++	select DEVICE_NOTIFICATIONS
++	help
++	  This option provides support for getting block layer event
++	  notifications.  This makes use of the /dev/watch_queue misc device to
++	  handle the notification buffer and provides the device_notify() system
++	  call to enable/disable watches.
++
+ menu "Partition Types"
+ 
+ source "block/partitions/Kconfig"
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 419d600e6637..6b81a2b1af4b 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -144,6 +144,22 @@ static const struct {
+ 	[BLK_STS_IOERR]		= { -EIO,	"I/O" },
+ };
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static const
++enum block_notification_type blk_notifications[ARRAY_SIZE(blk_errors)] = {
++	[BLK_STS_TIMEOUT]	= NOTIFY_BLOCK_ERROR_TIMEOUT,
++	[BLK_STS_NOSPC]		= NOTIFY_BLOCK_ERROR_NO_SPACE,
++	[BLK_STS_TRANSPORT]	= NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT,
++	[BLK_STS_TARGET]	= NOTIFY_BLOCK_ERROR_CRITICAL_TARGET,
++	[BLK_STS_NEXUS]		= NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS,
++	[BLK_STS_MEDIUM]	= NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM,
++	[BLK_STS_PROTECTION]	= NOTIFY_BLOCK_ERROR_PROTECTION,
++	[BLK_STS_RESOURCE]	= NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE,
++	[BLK_STS_DEV_RESOURCE]	= NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE,
++	[BLK_STS_IOERR]		= NOTIFY_BLOCK_ERROR_IO,
++};
++#endif
++
+ blk_status_t errno_to_blk_status(int errno)
+ {
+ 	int i;
+@@ -179,6 +195,19 @@ static void print_req_error(struct request *req, blk_status_t status)
+ 				req->rq_disk ?  req->rq_disk->disk_name : "?",
+ 				(unsigned long long)blk_rq_pos(req),
+ 				req->cmd_flags);
++
++#ifdef CONFIG_BLK_NOTIFICATIONS
++	if (blk_notifications[idx]) {
++		struct block_notification n = {
++			.watch.type	= WATCH_TYPE_BLOCK_NOTIFY,
++			.watch.subtype	= blk_notifications[idx],
++			.watch.info	= watch_sizeof(n),
++			.dev		= req->rq_disk ? disk_devt(req->rq_disk) : 0,
++			.sector		= blk_rq_pos(req),
++		};
++		post_block_notification(&n);
 +	}
++#endif
  }
  
- /*
-@@ -249,7 +259,9 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
+ static void req_bio_endio(struct request *rq, struct bio *bio,
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1aafeb923e7b..8b8e235f47c9 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -43,6 +43,7 @@ struct pr_ops;
+ struct rq_qos;
+ struct blk_queue_stats;
+ struct blk_stat_callback;
++struct block_notification;
  
- 	ctx.index_key.desc_len = sprintf(description, "%x", target_id);
+ #define BLKDEV_MIN_RQ	4
+ #define BLKDEV_MAX_RQ	128	/* Default maximum */
+@@ -1744,6 +1745,20 @@ static inline bool blk_req_can_dispatch_to_zone(struct request *rq)
+ }
+ #endif /* CONFIG_BLK_DEV_ZONED */
  
--	authkey_ref = search_process_keyrings(&ctx);
-+	rcu_read_lock();
-+	authkey_ref = search_process_keyrings_rcu(&ctx);
-+	rcu_read_unlock();
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static inline void post_block_notification(struct block_notification *n)
++{
++	u64 id = 0; /* Might want to allow dev# here. */
++
++	post_device_notification(&n->watch, id);
++}
++#else
++static inline void post_block_notification(struct block_notification *n)
++{
++}
++#endif
++
++
+ #else /* CONFIG_BLOCK */
  
- 	if (IS_ERR(authkey_ref)) {
- 		authkey = ERR_CAST(authkey_ref);
+ struct block_device;
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index bcffd599c07b..776666c3bde9 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -11,7 +11,8 @@
+ enum watch_notification_type {
+ 	WATCH_TYPE_META		= 0,	/* Special record */
+ 	WATCH_TYPE_KEY_NOTIFY	= 1,	/* Key change event notification */
+-	WATCH_TYPE___NR		= 2
++	WATCH_TYPE_BLOCK_NOTIFY	= 2,	/* Block layer event notification */
++	WATCH_TYPE___NR		= 3
+ };
+ 
+ enum watch_meta_notification_subtype {
+@@ -111,4 +112,31 @@ struct key_notification {
+ 	__u32	aux;		/* Per-type auxiliary data */
+ };
+ 
++/*
++ * Type of block layer notification.
++ */
++enum block_notification_type {
++	NOTIFY_BLOCK_ERROR_TIMEOUT		= 1, /* Timeout error */
++	NOTIFY_BLOCK_ERROR_NO_SPACE		= 2, /* Critical space allocation error */
++	NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT = 3, /* Recoverable transport error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_TARGET	= 4, /* Critical target error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS	= 5, /* Critical nexus error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM	= 6, /* Critical medium error */
++	NOTIFY_BLOCK_ERROR_PROTECTION		= 7, /* Protection error */
++	NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE	= 8, /* Kernel resource error */
++	NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE	= 9, /* Device resource error */
++	NOTIFY_BLOCK_ERROR_IO			= 10, /* Other I/O error */
++};
++
++/*
++ * Block layer notification record.
++ * - watch.type = WATCH_TYPE_BLOCK_NOTIFY
++ * - watch.subtype = enum block_notification_type
++ */
++struct block_notification {
++	struct watch_notification watch; /* WATCH_TYPE_BLOCK_NOTIFY */
++	__u64	dev;			/* Device number */
++	__u64	sector;			/* Affected sector */
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
