@@ -1,15 +1,15 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 04 Jun 2019 16:35:21 +0000
-Subject: [PATCH 2/8] General notification queue with user mmap()'able ring buffer [ver #2]
-Message-Id: <155966612134.17449.13148843973585888906.stgit@warthog.procyon.org.uk>
+Date: Fri, 28 Jun 2019 15:49:10 +0000
+Subject: [PATCH 4/9] General notification queue with user mmap()'able ring buffer [ver #5]
+Message-Id: <156173695061.15137.17196611619288074120.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155966609977.17449.5624614375035334363.stgit@warthog.procyon.org.uk>
+References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
 Implement a misc device that implements a general notification queue as a
 ring buffer that can be mmap()'d from userspace.
@@ -61,29 +61,36 @@ attached in additional slots.
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/watch_queue.rst    |  328 ++++++++++++++
- drivers/misc/Kconfig             |   13 +
- drivers/misc/Makefile            |    1 
- drivers/misc/watch_queue.c       |  895 ++++++++++++++++++++++++++++++++++++++
- include/linux/lsm_hooks.h        |   15 +
- include/linux/security.h         |   14 +
- include/linux/watch_queue.h      |   87 ++++
- include/uapi/linux/watch_queue.h |   82 +++
- mm/interval_tree.c               |    2 
- mm/memory.c                      |    1 
- security/security.c              |    9 
- 11 files changed, 1447 insertions(+)
+ Documentation/ioctl/ioctl-number.txt |    1 
+ Documentation/watch_queue.rst        |  429 ++++++++++++++++
+ drivers/misc/Kconfig                 |   13 
+ drivers/misc/Makefile                |    1 
+ drivers/misc/watch_queue.c           |  890 ++++++++++++++++++++++++++++++++++
+ include/linux/watch_queue.h          |   94 ++++
+ include/uapi/linux/watch_queue.h     |   21 +
+ 7 files changed, 1449 insertions(+)
  create mode 100644 Documentation/watch_queue.rst
  create mode 100644 drivers/misc/watch_queue.c
  create mode 100644 include/linux/watch_queue.h
- create mode 100644 include/uapi/linux/watch_queue.h
 
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index c9558146ac58..e7b2e56fcfdd 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -194,6 +194,7 @@ Code  Seq#(hex)	Include File		Comments
+ 'W'	00-1F	linux/wanrouter.h	conflict!		(pre 3.9)
+ 'W'	00-3F	sound/asound.h		conflict!
+ 'W'	40-5F   drivers/pci/switch/switchtec.c
++'W'	60-61	linux/watch_queue.h
+ 'X'	all	fs/xfs/xfs_fs.h		conflict!
+ 		and fs/xfs/linux-2.6/xfs_ioctl32.h
+ 		and include/linux/falloc.h
 diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
 new file mode 100644
-index 000000000000..7c7d299d1dee
+index 000000000000..6fb3aa3356d3
 --- /dev/null
 +++ b/Documentation/watch_queue.rst
-@@ -0,0 +1,328 @@
+@@ -0,0 +1,429 @@
 +==============
 +Mappable notifications queue
 +==============
@@ -93,11 +100,7 @@ index 000000000000..7c7d299d1dee
 +
 +  * Key/keyring notifications
 +
-+  * Mount topology change notifications
-+
-+  * Superblock event notifications
-+
-+  * Block layer event notifications
++  * General device event notifications
 +
 +
 +The notifications buffers can be enabled by:
@@ -147,7 +150,7 @@ index 000000000000..7c7d299d1dee
 +		__u32	type:24;
 +		__u32	subtype:8;
 +		__u32	info;
-+	};
++	} __attribute__((aligned(WATCH_LENGTH_GRANULARITY)));
 +
 +"type" indicates the source of the notification record and "subtype" indicates
 +the type of record from that source (see the Watch Sources section below).  The
@@ -159,35 +162,26 @@ index 000000000000..7c7d299d1dee
 +  * WATCH_META_REMOVAL_NOTIFICATION
 +
 +The former indicates a record that should just be skipped and the latter
-+indicates that an object on which a watchpoint was installed was removed or
++indicates that an object on which a watch was installed was removed or
 +destroyed.
 +
 +"info" indicates a bunch of things, including:
 +
-+  * The length of the record (mask with WATCH_INFO_LENGTH).  This indicates the
-+    size of the record, which may be between 1 and 63 slots.  Note that this is
-+    placed appropriately within the info value so that no shifting is required
-+    to convert number of occupied slots to byte length.
++  * The length of the record in units of buffer slots (mask with
++    WATCH_INFO_LENGTH and shift by WATCH_INFO_LENGTH__SHIFT).  This indicates
++    the size of the record, which may be between 1 and 63 slots.  To turn this
++    into a number of bytes, multiply by WATCH_LENGTH_GRANULARITY.
 +
-+  * The watchpoint ID (mask with WATCH_INFO_ID).  This indicates that caller's
-+    ID of the watchpoint, which may be between 0 and 255.  Multiple watchpoints
-+    may share a queue, and this provides a means to distinguish them.
++  * The watch ID (mask with WATCH_INFO_ID and shift by WATCH_INFO_ID__SHIFT).
++    This indicates that caller's ID of the watch, which may be between 0
++    and 255.  Multiple watches may share a queue, and this provides a means to
++    distinguish them.
 +
-+  * A buffer overrun flag (WATCH_INFO_OVERRUN flag).  If this is set in a
-+    notification record, some of the preceding records were discarded.
++  * In the metadata header in slot 0, a flag (WATCH_INFO_NOTIFICATIONS_LOST)
++    that indicates that some notifications were lost for some reason, including
++    buffer overrun, insufficient memory and inconsistent tail index.
 +
-+  * An ENOMEM-loss flag (WATCH_INFO_ENOMEM flag).  This is set to indicate that
-+    an event was lost to ENOMEM.
-+
-+  * A recursive-change flag (WATCH_INFO_RECURSIVE flag).  This is set to
-+    indicate that the change that happened was recursive - for instance
-+    changing the attributes on an entire mount subtree.
-+
-+  * An exact-match flag (WATCH_INFO_IN_SUBTREE flag).  This is set if the event
-+    didn't happen exactly at the watchpoint, but rather somewhere in the
-+    subtree thereunder.
-+
-+  * Some type-specific flags (WATCH_INFO_TYPE_FLAGS).  These are set by the
++  * A type-specific field (WATCH_INFO_TYPE_INFO).  This is set by the
 +    notification producer to indicate some meaning specific to the type and
 +    subtype.
 +
@@ -197,9 +191,10 @@ index 000000000000..7c7d299d1dee
 +Ring Structure
 +=======
 +
-+The ring is divided into 8-byte slots.  The caller uses an ioctl() to set the
-+size of the ring after opening and this must be a power-of-2 multiple of the
-+system page size (so that the mask can be used with AND).
++The ring is divided into slots of size WATCH_LENGTH_GRANULARITY (8 bytes).  The
++caller uses an ioctl() to set the size of the ring after opening and this must
++be a power-of-2 multiple of the system page size (so that the mask can be used
++with AND).
 +
 +The head and tail indices are stored in the first two slots in the ring, which
 +are marked out as a skippable entry::
@@ -244,22 +239,138 @@ index 000000000000..7c7d299d1dee
 +resolved.
 +
 +
++Watch List (Notification Source) API
++==================
++
++A "watch list" is a list of watchers that are subscribed to a source of
++notifications.  A list may be attached to an object (say a key or a superblock)
++or may be global (say for device events).  From a userspace perspective, a
++non-global watch list is typically referred to by reference to the object it
++belongs to (such as using KEYCTL_NOTIFY and giving it a key serial number to
++watch that specific key).
++
++To manage a watch list, the following functions are provided:
++
++  * ``void init_watch_list(struct watch_list *wlist,
++			   void (*release_watch)(struct watch *wlist));``
++
++    Initialise a watch list.  If ``release_watch`` is not NULL, then this
++    indicates a function that should be called when the watch_list object is
++    destroyed to discard any references the watch list holds on the watched
++    object.
++
++  * ``void remove_watch_list(struct watch_list *wlist);``
++
++    This removes all of the watches subscribed to a watch_list and frees them
++    and then destroys the watch_list object itself.
++
++
++Watch Queue (Notification Buffer) API
++==================+
++A "watch queue" is the buffer allocated by or on behalf of the application that
++notification records will be written into.  The workings of this are hidden
++entirely inside of the watch_queue device driver, but it is necessary to gain a
++reference to it to place a watch.  These can be managed with:
++
++  * ``struct watch_queue *get_watch_queue(int fd);``
++
++    Since watch queues are indicated to the kernel by the fd of the character
++    device that implements the buffer, userspace must hand that fd through a
++    system call.  This can be used to look up an opaque pointer to the watch
++    queue from the system call.
++
++  * ``void put_watch_queue(struct watch_queue *wqueue);``
++
++    This discards the reference obtained from ``get_watch_queue()``.
++
++
++Watch Subscription API
++===========
++
++A "watch" is a subscription on a watch list, indicating the watch queue, and
++thus the buffer, into which notification records should be written.  The watch
++queue object may also carry filtering rules for that object, as set by
++userspace.  Some parts of the watch struct can be set by the driver::
++
++	struct watch {
++		union {
++			u32		info_id;	/* ID to be OR'd in to info field */
++			...
++		};
++		void			*private;	/* Private data for the watched object */
++		u64			id;		/* Internal identifier */
++		...
++	};
++
++The ``info_id`` value should be an 8-bit number obtained from userspace and
++shifted by WATCH_INFO_ID__SHIFT.  This is OR'd into the WATCH_INFO_ID field of
++struct watch_notification::info when and if the notification is written into
++the associated watch queue buffer.
++
++The ``private`` field is the driver's data associated with the watch_list and
++is cleaned up by the ``watch_list::release_watch()`` method.
++
++The ``id`` field is the source's ID.  Notifications that are posted with a
++different ID are ignored.
++
++The following functions are provided to manage watches:
++
++  * ``void init_watch(struct watch *watch, struct watch_queue *wqueue);``
++
++    Initialise a watch object, setting its pointer to the watch queue, using
++    appropriate barriering to avoid lockdep complaints.
++
++  * ``int add_watch_to_object(struct watch *watch, struct watch_list *wlist);``
++
++    Subscribe a watch to a watch list (notification source).  The
++    driver-settable fields in the watch struct must have been set before this
++    is called.
++
++  * ``int remove_watch_from_object(struct watch_list *wlist,
++				   struct watch_queue *wqueue,
++				   u64 id, false);``
++
++    Remove a watch from a watch list, where the watch must match the specified
++    watch queue (``wqueue``) and object identifier (``id``).  A notification
++    (``WATCH_META_REMOVAL_NOTIFICATION``) is sent to the watch queue to
++    indicate that the watch got removed.
++
++  * ``int remove_watch_from_object(struct watch_list *wlist, NULL, 0, true);``
++
++    Remove all the watches from a watch list.  It is expected that this will be
++    called preparatory to destruction and that the watch list will be
++    inaccessible to new watches by this point.  A notification
++    (``WATCH_META_REMOVAL_NOTIFICATION``) is sent to the watch queue of each
++    subscribed watch to indicate that the watch got removed.
++
++
++Notification Posting API
++============
++
++To post a notification to watch list so that the subscribed watches can see it,
++the following function should be used::
++
++	void post_watch_notification(struct watch_list *wlist,
++				     struct watch_notification *n,
++				     const struct cred *cred,
++				     u64 id);
++
++The notification should be preformatted and a pointer to the header (``n``)
++should be passed in.  The notification may be larger than this and the size in
++units of buffer slots is noted in ``n->info & WATCH_INFO_LENGTH``.
++
++The ``cred`` struct indicates the credentials of the source (subject) and is
++passed to the LSMs, such as SELinux, to allow or suppress the recording of the
++note in each individual queue according to the credentials of that queue
++(object).
++
++The ``id`` is the ID of the source object (such as the serial number on a key).
++Only watches that have the same ID set in them will see this notification.
++
++
 +Watch Sources
 +======+
 +Any particular buffer can be fed from multiple sources.  Sources include:
-+
-+  * WATCH_TYPE_MOUNT_NOTIFY
-+
-+    Notifications of this type indicate mount tree topology changes and mount
-+    attribute changes.  A watchpoint can be set on a particular file or
-+    directory and notifications from the path subtree rooted at that point will
-+    be intercepted.
-+
-+  * WATCH_TYPE_SB_NOTIFY
-+
-+    Notifications of this type indicate superblock events, such as quota limits
-+    being hit, I/O errors being produced or network server loss/reconnection.
-+    Watchpoints of this type are set directly on superblocks.
 +
 +  * WATCH_TYPE_KEY_NOTIFY
 +
@@ -271,8 +382,7 @@ index 000000000000..7c7d299d1dee
 +  * WATCH_TYPE_BLOCK_NOTIFY
 +
 +    Notifications of this type indicate block layer events, such as I/O errors
-+    or temporary link loss.  Watchpoints of this type are set on a global
-+    queue.
++    or temporary link loss.  Watches of this type are set on a global queue.
 +
 +
 +Event Filtering
@@ -306,16 +416,15 @@ index 000000000000..7c7d299d1dee
 +Where:
 +
 +  * ``type`` is the event type to filter for and should be something like
-+    "WATCH_TYPE_MOUNT_NOTIFY"
++    "WATCH_TYPE_KEY_NOTIFY"
 +
 +  * ``info_filter`` and ``info_mask`` act as a filter on the info field of the
 +    notification record.  The notification is only written into the buffer if::
 +
 +	(watch.info & info_mask) = info_filter
 +
-+    This can be used, for example, to ignore events that are not exactly on the
-+    watched point in a mount tree by specifying WATCH_INFO_IN_SUBTREE must
-+    be 0.
++    This could be used, for example, to ignore events that are not exactly on
++    the watched point in a mount tree.
 +
 +  * ``subtype_filter`` is a bitmask indicating the subtypes that are of
 +    interest.  Bit 0 of subtype_filter[0] corresponds to subtype 0, bit 1 to
@@ -325,16 +434,18 @@ index 000000000000..7c7d299d1dee
 +all events from the watched sources will come through.
 +
 +
-+Polling
-+===+
++Waiting For Events
++=========
++
 +The file descriptor that holds the buffer may be used with poll() and similar.
 +POLLIN and POLLRDNORM are set if the buffer indices differ.  POLLERR is set if
 +the buffer indices are further apart than the size of the buffer.  Wake-up
 +events are only generated if the buffer is transitioned from an empty state.
 +
 +
-+Example
-+===+
++Userspace Code Example
++===========
++
 +A buffer is created with something like the following::
 +
 +	fd = open("/dev/watch_queue", O_RDWR);
@@ -346,31 +457,24 @@ index 000000000000..7c7d299d1dee
 +	buf = mmap(NULL, BUF_SIZE * page_size,
 +		   PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 +
-+It can then be set to receive mount topology change notifications, keyring
-+change notifications and superblock notifications::
++It can then be set to receive keyring change notifications and device event
++notifications::
 +
-+	memset(&filter, 0, sizeof(filter));
-+	filter.subtype_filter[0] = ~0ULL;
-+	filter.info_mask	 = WATCH_INFO_IN_SUBTREE;
-+	filter.info_filter	 = 0;
-+	filter.info_id		 = 0x01000000;
++	keyctl(KEYCTL_WATCH_KEY, KEY_SPEC_SESSION_KEYRING, fd, 0x01);
 +
-+	keyctl(KEYCTL_WATCH_KEY, KEY_SPEC_SESSION_KEYRING, fd, &filter);
-+
-+	mount_notify(AT_FDCWD, "/", 0, fd, &filter);
-+
-+	sb_notify(AT_FDCWD, "/", 0, fd, &filter);
++	watch_devices(fd, 0x2);
 +
 +The notifications can then be consumed by something like the following::
 +
-+	extern void saw_mount_change(struct watch_notification *n);
 +	extern void saw_key_change(struct watch_notification *n);
++	extern void saw_block_event(struct watch_notification *n);
++	extern void saw_usb_event(struct watch_notification *n);
 +
 +	static int consumer(int fd, struct watch_queue_buffer *buf)
 +	{
 +		struct watch_notification *n;
 +		struct pollfd p[1];
-+		unsigned int head, tail, mask = buf->meta.mask;
++		unsigned int len, head, tail, mask = buf->meta.mask;
 +
 +		for (;;) {
 +			p[0].fd = fd;
@@ -385,19 +489,24 @@ index 000000000000..7c7d299d1dee
 +			       tail != head
 +			       ) {
 +				n = &buf->slots[tail & mask];
-+				if ((n->info & WATCH_INFO_LENGTH) = 0)
++				len = (n->info & WATCH_INFO_LENGTH) >>
++					WATCH_INFO_LENGTH__SHIFT;
++				if (len = 0)
 +					goto went_wrong;
 +
 +				switch (n->type) {
-+				case WATCH_TYPE_MOUNT_NOTIFY:
-+					saw_mount_change(n);
-+					break;
 +				case WATCH_TYPE_KEY_NOTIFY:
 +					saw_key_change(n);
 +					break;
++				case WATCH_TYPE_BLOCK_NOTIFY:
++					saw_block_event(n);
++					break;
++				case WATCH_TYPE_USB_NOTIFY:
++					saw_usb_event(n);
++					break;
 +				}
 +
-+				tail += (n->info & WATCH_INFO_LENGTH) >> WATCH_LENGTH_SHIFT;
++				tail += len;
 +				_atomic_store_release(buf->meta.tail, tail);
 +			}
 +		}
@@ -409,7 +518,7 @@ index 000000000000..7c7d299d1dee
 +Note the memory barriers when loading the head pointer and storing the tail
 +pointer!
 diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 6a0365b2332c..19668c0ebe03 100644
+index 6a0365b2332c..e53f88783fe7 100644
 --- a/drivers/misc/Kconfig
 +++ b/drivers/misc/Kconfig
 @@ -4,6 +4,19 @@
@@ -423,8 +532,8 @@ index 6a0365b2332c..19668c0ebe03 100644
 +	help
 +	  This is a general notification queue for the kernel to pass events to
 +	  userspace through a mmap()'able ring buffer.  It can be used in
-+	  conjunction with watches for mount topology change notifications,
-+	  superblock change notifications and key/keyring change notifications.
++	  conjunction with watches for key/keyring change notifications and device
++	  notifications.
 +
 +	  Note that in theory this should work fine with NOMMU, but I'm not
 +	  sure how to make that work.
@@ -446,19 +555,15 @@ index b9affcdaa3d6..bf16acd9f8cc 100644
  obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
 diff --git a/drivers/misc/watch_queue.c b/drivers/misc/watch_queue.c
 new file mode 100644
-index 000000000000..c8242eab4c71
+index 000000000000..d80d469f8cf8
 --- /dev/null
 +++ b/drivers/misc/watch_queue.c
-@@ -0,0 +1,895 @@
+@@ -0,0 +1,890 @@
++// SPDX-License-Identifier: GPL-2.0
 +/* User-mappable watch queue
 + *
-+ * Copyright (C) 2018 Red Hat, Inc. All Rights Reserved.
++ * Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
 + *
 + * See Documentation/watch_queue.rst
 + */
@@ -479,9 +584,8 @@ index 000000000000..c8242eab4c71
 +#include <linux/file.h>
 +#include <linux/security.h>
 +#include <linux/cred.h>
++#include <linux/sched/signal.h>
 +#include <linux/watch_queue.h>
-+
-+#undef DEBUG_WITH_WRITE /* Allow use of write() to record notifications */
 +
 +MODULE_DESCRIPTION("Watch queue");
 +MODULE_AUTHOR("Red Hat, Inc.");
@@ -506,7 +610,7 @@ index 000000000000..c8242eab4c71
 +struct watch_queue {
 +	struct rcu_head		rcu;
 +	struct address_space	mapping;
-+	const struct cred	*cred;		/* Creds of the owner of the queue */
++	struct user_struct	*owner;		/* Owner of the queue for rlimit purposes */
 +	struct watch_filter __rcu *filter;
 +	wait_queue_head_t	waiters;
 +	struct hlist_head	watches;	/* Contributory watches */
@@ -515,9 +619,6 @@ index 000000000000..c8242eab4c71
 +	bool			defunct;	/* T when queues closed */
 +	u8			nr_pages;	/* Size of pages[] */
 +	u8			flag_next;	/* Flag to apply to next item */
-+#ifdef DEBUG_WITH_WRITE
-+	u8			debug;
-+#endif
 +	u32			size;
 +	struct watch_queue_buffer *buffer;	/* Pointer to first record */
 +
@@ -525,42 +626,21 @@ index 000000000000..c8242eab4c71
 +	struct page		**pages;
 +};
 +
-+/**
-+ * post_one_notification - Post an event notification to one queue
-+ * @wqueue: The watch queue to add the event to.
-+ * @n: The notification record to post.
-+ * @cred: The credentials to use in security checks.
-+ *
-+ * Post a notification of an event into an mmap'd queue and let the user know.
++/*
++ * Write a notification of an event into an mmap'd queue and let the user know.
 + * Returns true if successful and false on failure (eg. buffer overrun or
 + * userspace mucked up the ring indices).
-+ *
-+ *
-+ * The size of the notification should be set in n->flags & WATCH_LENGTH and
-+ * should be in units of sizeof(*n).
 + */
-+static bool post_one_notification(struct watch_queue *wqueue,
-+				  struct watch_notification *n,
-+				  const struct cred *cred)
++static bool write_one_notification(struct watch_queue *wqueue,
++				   struct watch_notification *n)
 +{
 +	struct watch_queue_buffer *buf = wqueue->buffer;
-+	unsigned int metalen = sizeof(buf->meta) / sizeof(buf->slots[0]);
++	struct watch_notification *p;
++	unsigned int gran = WATCH_LENGTH_GRANULARITY;
++	unsigned int metalen = sizeof(buf->meta) / gran;
 +	unsigned int size = wqueue->size, mask = size - 1;
 +	unsigned int len;
-+	unsigned int ring_tail, tail, head, used, segment, h;
-+
-+	if (!buf)
-+		return false;
-+
-+	len = (n->info & WATCH_INFO_LENGTH) >> WATCH_LENGTH_SHIFT;
-+	if (len = 0)
-+		return false;
-+
-+	spin_lock_bh(&wqueue->lock); /* Protect head pointer */
-+
-+	if (wqueue->defunct ||
-+	    security_post_notification(wqueue->cred, cred, n) < 0)
-+		goto out;
++	unsigned int ring_tail, tail, head, used, gap, h;
 +
 +	ring_tail = READ_ONCE(buf->meta.tail);
 +	head = READ_ONCE(buf->meta.head);
@@ -568,74 +648,93 @@ index 000000000000..c8242eab4c71
 +
 +	/* Check to see if userspace mucked up the pointers */
 +	if (used >= size)
-+		goto overrun;
++		goto lost_event; /* Inconsistent */
 +	tail = ring_tail & mask;
 +	if (tail > 0 && tail < metalen)
-+		goto overrun;
++		goto lost_event; /* Inconsistent */
 +
++	len = (n->info & WATCH_INFO_LENGTH) >> WATCH_INFO_LENGTH__SHIFT;
 +	h = head & mask;
 +	if (h >= tail) {
 +		/* Head is at or after tail in the buffer.  There may then be
-+		 * two segments: one to the end of buffer and one at the
-+		 * beginning of the buffer between the metadata block and the
-+		 * tail pointer.
++		 * two gaps: one to the end of buffer and one at the beginning
++		 * of the buffer between the metadata block and the tail
++		 * pointer.
 +		 */
-+		segment = size - h;
-+		if (len > segment) {
-+			/* Not enough space in the post-head segment; we need
-+			 * to wrap.  When wrapping, we will have to skip the
++		gap = size - h;
++		if (len > gap) {
++			/* Not enough space in the post-head gap; we need to
++			 * wrap.  When wrapping, we will have to skip the
 +			 * metadata at the beginning of the buffer.
 +			 */
 +			if (len > tail - metalen)
-+				goto overrun;
++				goto lost_event; /* Overrun */
 +
 +			/* Fill the space at the end of the page */
-+			buf->slots[h].type	= WATCH_TYPE_META;
-+			buf->slots[h].subtype	= WATCH_META_SKIP_NOTIFICATION;
-+			buf->slots[h].info	= segment << WATCH_LENGTH_SHIFT;
-+			head += segment;
++			p = &buf->slots[h];
++			p->type		= WATCH_TYPE_META;
++			p->subtype	= WATCH_META_SKIP_NOTIFICATION;
++			p->info		= gap << WATCH_INFO_LENGTH__SHIFT;
++			head += gap;
 +			h = 0;
 +			if (h >= tail)
-+				goto overrun;
++				goto lost_event; /* Overrun */
 +		}
 +	}
 +
 +	if (h = 0) {
 +		/* Reset and skip the header metadata */
-+		buf->meta.watch.type = WATCH_TYPE_META;
-+		buf->meta.watch.subtype = WATCH_META_SKIP_NOTIFICATION;
-+		buf->meta.watch.info = metalen << WATCH_LENGTH_SHIFT;
++		p = &buf->meta.watch;
++		p->type		= WATCH_TYPE_META;
++		p->subtype	= WATCH_META_SKIP_NOTIFICATION;
++		p->info		= metalen << WATCH_INFO_LENGTH__SHIFT;
 +		head += metalen;
 +		h = metalen;
-+		if (h >= tail)
-+			goto overrun;
++		if (h = tail)
++			goto lost_event; /* Overrun */
 +	}
 +
 +	if (h < tail) {
-+		/* Head is before tail in the buffer.  There may be one segment
-+		 * between the two, but we may need to skip the metadata block.
-+		 */
-+		segment = tail - h;
-+		if (len > segment)
-+			goto overrun;
++		/* Head is before tail in the buffer. */
++		gap = tail - h;
++		if (len > gap)
++			goto lost_event; /* Overrun */
 +	}
 +
 +	n->info |= wqueue->flag_next;
 +	wqueue->flag_next = 0;
-+	memcpy(buf->slots + h, n, len * sizeof(buf->slots[0]));
++	p = &buf->slots[h];
++	memcpy(p, n, len * gran);
 +	head += len;
 +
 +	smp_store_release(&buf->meta.head, head);
-+	spin_unlock_bh(&wqueue->lock);
 +	if (used = 0)
 +		wake_up(&wqueue->waiters);
 +	return true;
 +
-+overrun:
-+	wqueue->flag_next = WATCH_INFO_OVERRUN;
-+out:
-+	spin_unlock_bh(&wqueue->lock);
++lost_event:
++	WRITE_ONCE(buf->meta.watch.info,
++		   buf->meta.watch.info | WATCH_INFO_NOTIFICATIONS_LOST);
 +	return false;
++}
++
++/*
++ * Post a notification to a watch queue.
++ */
++static bool post_one_notification(struct watch_queue *wqueue,
++				  struct watch_notification *n)
++{
++	bool done = false;
++
++	if (!wqueue->buffer)
++		return false;
++
++	spin_lock_bh(&wqueue->lock); /* Protect head pointer */
++
++	if (!wqueue->defunct)
++		done = write_one_notification(wqueue, n);
++	spin_unlock_bh(&wqueue->lock);
++	return done;
 +}
 +
 +/*
@@ -671,8 +770,6 @@ index 000000000000..c8242eab4c71
 + * Post a notification of an event into a set of watch queues and let the users
 + * know.
 + *
-+ * If @n is NULL then WATCH_INFO_LENGTH will be set on the next event posted.
-+ *
 + * The size of the notification should be set in n->info & WATCH_INFO_LENGTH and
 + * should be in units of sizeof(*n).
 + */
@@ -685,12 +782,17 @@ index 000000000000..c8242eab4c71
 +	struct watch_queue *wqueue;
 +	struct watch *watch;
 +
++	if (((n->info & WATCH_INFO_LENGTH) >> WATCH_INFO_LENGTH__SHIFT) = 0) {
++		WARN_ON(1);
++		return;
++	}
++
 +	rcu_read_lock();
 +
 +	hlist_for_each_entry_rcu(watch, &wlist->watchers, list_node) {
 +		if (watch->id != id)
 +			continue;
-+		n->info &= ~(WATCH_INFO_ID | WATCH_INFO_OVERRUN);
++		n->info &= ~WATCH_INFO_ID;
 +		n->info |= watch->info_id;
 +
 +		wqueue = rcu_dereference(watch->queue);
@@ -698,7 +800,10 @@ index 000000000000..c8242eab4c71
 +		if (wf && !filter_watch_notification(wf, n))
 +			continue;
 +
-+		post_one_notification(wqueue, n, cred);
++		if (security_post_notification(watch->cred, cred, n) < 0)
++			continue;
++
++		post_one_notification(wqueue, n);
 +	}
 +
 +	rcu_read_unlock();
@@ -714,6 +819,9 @@ index 000000000000..c8242eab4c71
 +	struct watch_queue_buffer *buf = wqueue->buffer;
 +	unsigned int head, tail;
 +	__poll_t mask = 0;
++
++	if (!buf)
++		return EPOLLERR;
 +
 +	poll_wait(file, &wqueue->waiters, wait);
 +
@@ -749,6 +857,37 @@ index 000000000000..c8242eab4c71
 +	}
 +	vmf->page = page;
 +	return VM_FAULT_LOCKED;
++}
++
++static int watch_queue_account_mem(struct watch_queue *wqueue,
++				   unsigned long nr_pages)
++{
++	struct user_struct *user = wqueue->owner;
++	unsigned long page_limit, cur_pages, new_pages;
++
++	/* Don't allow more pages than we can safely lock */
++	page_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
++	cur_pages = atomic_long_read(&user->locked_vm);
++
++	do {
++		new_pages = cur_pages + nr_pages;
++		if (new_pages > page_limit && !capable(CAP_IPC_LOCK))
++			return -ENOMEM;
++	} while (atomic_long_try_cmpxchg_relaxed(&user->locked_vm, &cur_pages,
++						 new_pages));
++
++	wqueue->nr_pages = nr_pages;
++	return 0;
++}
++
++static void watch_queue_unaccount_mem(struct watch_queue *wqueue)
++{
++	struct user_struct *user = wqueue->owner;
++
++	if (wqueue->nr_pages) {
++		atomic_long_sub(wqueue->nr_pages, &user->locked_vm);
++		wqueue->nr_pages = 0;
++	}
 +}
 +
 +static void watch_queue_map_pages(struct vm_fault *vmf,
@@ -812,8 +951,11 @@ index 000000000000..c8242eab4c71
 +static long watch_queue_set_size(struct watch_queue *wqueue, unsigned long nr_pages)
 +{
 +	struct watch_queue_buffer *buf;
-+	u32 len;
++	unsigned int gran = WATCH_LENGTH_GRANULARITY;
++	unsigned int metalen = sizeof(buf->meta) / gran;
 +	int i;
++
++	BUILD_BUG_ON(gran != sizeof(__u64));
 +
 +	if (wqueue->buffer)
 +		return -EBUSY;
@@ -823,9 +965,12 @@ index 000000000000..c8242eab4c71
 +	    !is_power_of_2(nr_pages))
 +		return -EINVAL;
 +
++	if (watch_queue_account_mem(wqueue, nr_pages) < 0)
++		goto err;
++
 +	wqueue->pages = kcalloc(nr_pages, sizeof(struct page *), GFP_KERNEL);
 +	if (!wqueue->pages)
-+		goto err;
++		goto err_unaccount;
 +
 +	for (i = 0; i < nr_pages; i++) {
 +		wqueue->pages[i] = alloc_page(GFP_KERNEL | __GFP_ZERO);
@@ -840,19 +985,17 @@ index 000000000000..c8242eab4c71
 +		goto err_some_pages;
 +
 +	wqueue->buffer = buf;
-+	wqueue->nr_pages = nr_pages;
 +	wqueue->size = ((nr_pages * PAGE_SIZE) / sizeof(struct watch_notification));
 +
 +	/* The first four slots in the buffer contain metadata about the ring,
 +	 * including the head and tail indices and mask.
 +	 */
-+	len = sizeof(buf->meta) / sizeof(buf->slots[0]);
-+	buf->meta.watch.info	= len << WATCH_LENGTH_SHIFT;
++	buf->meta.watch.info	= metalen << WATCH_INFO_LENGTH__SHIFT;
 +	buf->meta.watch.type	= WATCH_TYPE_META;
 +	buf->meta.watch.subtype	= WATCH_META_SKIP_NOTIFICATION;
 +	buf->meta.mask		= wqueue->size - 1;
-+	buf->meta.head		= len;
-+	buf->meta.tail		= len;
++	buf->meta.head		= metalen;
++	buf->meta.tail		= metalen;
 +	return 0;
 +
 +err_some_pages:
@@ -864,6 +1007,8 @@ index 000000000000..c8242eab4c71
 +
 +	kfree(wqueue->pages);
 +	wqueue->pages = NULL;
++err_unaccount:
++	watch_queue_unaccount_mem(wqueue);
 +err:
 +	return -ENOMEM;
 +}
@@ -993,7 +1138,7 @@ index 000000000000..c8242eab4c71
 +	kref_init(&wqueue->usage);
 +	spin_lock_init(&wqueue->lock);
 +	init_waitqueue_head(&wqueue->waiters);
-+	wqueue->cred = get_cred(file->f_cred);
++	wqueue->owner = get_uid(file->f_cred->user);
 +
 +	file->private_data = wqueue;
 +	return 0;
@@ -1002,7 +1147,12 @@ index 000000000000..c8242eab4c71
 +static void __put_watch_queue(struct kref *kref)
 +{
 +	struct watch_queue *wqueue +		container_of(kref, struct watch_queue, usage);
++	struct watch_filter *wfilter;
 +
++	wfilter = rcu_access_pointer(wqueue->filter);
++	if (wfilter)
++		kfree_rcu(wfilter, rcu);
++	free_uid(wqueue->owner);
 +	kfree_rcu(wqueue, rcu);
 +}
 +
@@ -1021,6 +1171,7 @@ index 000000000000..c8242eab4c71
 +	struct watch *watch = container_of(rcu, struct watch, rcu);
 +
 +	put_watch_queue(rcu_access_pointer(watch->queue));
++	put_cred(watch->cred);
 +}
 +
 +static void __put_watch(struct kref *kref)
@@ -1070,11 +1221,13 @@ index 000000000000..c8242eab4c71
 +	struct watch *w;
 +
 +	hlist_for_each_entry(w, &wlist->watchers, list_node) {
-+		if (watch->id = w->id)
++		struct watch_queue *wq = rcu_access_pointer(w->queue);
++		if (wqueue = wq && watch->id = w->id)
 +			return -EBUSY;
 +	}
 +
 +	rcu_assign_pointer(watch->watch_list, wlist);
++	watch->cred = get_current_cred();
 +
 +	spin_lock_bh(&wqueue->lock);
 +	kref_get(&wqueue->usage);
@@ -1134,7 +1287,7 @@ index 000000000000..c8242eab4c71
 +	 * protecting *wqueue from deallocation.
 +	 */
 +	if (wqueue) {
-+		post_one_notification(wqueue, &n, wq ? wq->cred : NULL);
++		post_one_notification(wqueue, &n);
 +
 +		spin_lock_bh(&wqueue->lock);
 +
@@ -1235,71 +1388,25 @@ index 000000000000..c8242eab4c71
 + */
 +static int watch_queue_release(struct inode *inode, struct file *file)
 +{
-+	struct watch_filter *wfilter;
 +	struct watch_queue *wqueue = file->private_data;
-+	int i, pgref;
++	int i;
 +
 +	watch_queue_clear(wqueue);
 +
-+	if (wqueue->pages && wqueue->pages[0])
-+		WARN_ON(page_ref_count(wqueue->pages[0]) != 1);
-+
 +	if (wqueue->buffer)
-+		vfree(wqueue->buffer);
++		vunmap(wqueue->buffer);
++
 +	for (i = 0; i < wqueue->nr_pages; i++) {
 +		ClearPageUptodate(wqueue->pages[i]);
 +		wqueue->pages[i]->mapping = NULL;
-+		pgref = page_ref_count(wqueue->pages[i]);
-+		WARN(pgref != 1,
-+		     "FREE PAGE[%d] refcount %d\n", i, page_ref_count(wqueue->pages[i]));
 +		__free_page(wqueue->pages[i]);
 +	}
 +
-+	wfilter = rcu_dereference_protected(wqueue->filter, true);
-+	if (wfilter)
-+		kfree_rcu(wfilter, rcu);
 +	kfree(wqueue->pages);
-+	put_cred(wqueue->cred);
++	watch_queue_unaccount_mem(wqueue);
 +	put_watch_queue(wqueue);
 +	return 0;
 +}
-+
-+#ifdef DEBUG_WITH_WRITE
-+static ssize_t watch_queue_write(struct file *file,
-+				 const char __user *_buf, size_t len, loff_t *pos)
-+{
-+	struct watch_notification *n;
-+	struct watch_queue *wqueue = file->private_data;
-+	ssize_t ret;
-+
-+	if (!wqueue->buffer)
-+		return -ENOBUFS;
-+
-+	if (len & ~WATCH_INFO_LENGTH || len = 0 || !_buf)
-+		return -EINVAL;
-+
-+	n = memdup_user(_buf, len);
-+	if (IS_ERR(n))
-+		return PTR_ERR(n);
-+
-+	ret = -EINVAL;
-+	if ((n->info & WATCH_INFO_LENGTH) != len)
-+		goto error;
-+	n->info &= (WATCH_INFO_LENGTH | WATCH_INFO_TYPE_FLAGS | WATCH_INFO_ID);
-+
-+	if (post_one_notification(wqueue, n, file->f_cred))
-+		wqueue->debug = 0;
-+	else
-+		wqueue->debug++;
-+	ret = len;
-+	if (wqueue->debug > 20)
-+		ret = -EIO;
-+
-+error:
-+	kfree(n);
-+	return ret;
-+}
-+#endif
 +
 +static const struct file_operations watch_queue_fops = {
 +	.owner		= THIS_MODULE,
@@ -1308,9 +1415,6 @@ index 000000000000..c8242eab4c71
 +	.unlocked_ioctl	= watch_queue_ioctl,
 +	.poll		= watch_queue_poll,
 +	.mmap		= watch_queue_mmap,
-+#ifdef DEBUG_WITH_WRITE
-+	.write		= watch_queue_write,
-+#endif
 +	.llseek		= no_llseek,
 +};
 +
@@ -1344,100 +1448,17 @@ index 000000000000..c8242eab4c71
 +	.mode	= 0666,
 +};
 +builtin_misc_device(watch_queue_dev);
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index 2474c3f785ca..2f72ea80d4fe 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1420,6 +1420,13 @@
-  *	@ctx is a pointer in which to place the allocated security context.
-  *	@ctxlen points to the place to put the length of @ctx.
-  *
-+ * @post_notification:
-+ *	Check to see if a watch notification can be posted to a particular
-+ *	queue.
-+ *	@q_cred: The credentials of the target watch queue.
-+ *	@cred: The event-triggerer's credentials
-+ *	@n: The notification being posted
-+ *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-  *
-@@ -1698,6 +1705,11 @@ union security_list_options {
- 	int (*inode_notifysecctx)(struct inode *inode, void *ctx, u32 ctxlen);
- 	int (*inode_setsecctx)(struct dentry *dentry, void *ctx, u32 ctxlen);
- 	int (*inode_getsecctx)(struct inode *inode, void **ctx, u32 *ctxlen);
-+#ifdef CONFIG_WATCH_QUEUE
-+	int (*post_notification)(const struct cred *q_cred,
-+				 const struct cred *cred,
-+				 struct watch_notification *n);
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -1977,6 +1989,9 @@ struct security_hook_heads {
- 	struct hlist_head inode_notifysecctx;
- 	struct hlist_head inode_setsecctx;
- 	struct hlist_head inode_getsecctx;
-+#ifdef CONFIG_WATCH_QUEUE
-+	struct hlist_head post_notification;
-+#endif
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 23c8b602c0ab..1df8d55de8da 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -58,6 +58,7 @@ struct fs_context;
- struct fs_parameter;
- enum fs_value_type;
- struct fsinfo_kparams;
-+struct watch_notification;
- 
- /* Default (no) options for the capable function */
- #define CAP_OPT_NONE 0x0
-@@ -396,6 +397,11 @@ void security_inode_invalidate_secctx(struct inode *inode);
- int security_inode_notifysecctx(struct inode *inode, void *ctx, u32 ctxlen);
- int security_inode_setsecctx(struct dentry *dentry, void *ctx, u32 ctxlen);
- int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen);
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_post_notification(const struct cred *q_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n);
-+#endif
- #else /* CONFIG_SECURITY */
- 
- static inline int call_lsm_notifier(enum lsm_event event, void *data)
-@@ -1215,6 +1221,14 @@ static inline int security_inode_getsecctx(struct inode *inode, void **ctx, u32
- {
- 	return -EOPNOTSUPP;
- }
-+#ifdef CONFIG_WATCH_QUEUE
-+static inline int security_post_notification(const struct cred *q_cred,
-+					     const struct cred *cred,
-+					     struct watch_notification *n)
-+{
-+	return 0;
-+}
-+#endif
- #endif	/* CONFIG_SECURITY */
- 
- #ifdef CONFIG_SECURITY_NETWORK
 diff --git a/include/linux/watch_queue.h b/include/linux/watch_queue.h
 new file mode 100644
-index 000000000000..18e0834e8aa7
+index 000000000000..aa9b251a469c
 --- /dev/null
 +++ b/include/linux/watch_queue.h
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,94 @@
++// SPDX-License-Identifier: GPL-2.0
 +/* User-mappable watch queue
 + *
-+ * Copyright (C) 2018 Red Hat, Inc. All Rights Reserved.
++ * Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
 + *
 + * See Documentation/watch_queue.rst
 + */
@@ -1447,10 +1468,12 @@ index 000000000000..18e0834e8aa7
 +
 +#include <uapi/linux/watch_queue.h>
 +#include <linux/kref.h>
++#include <linux/rcupdate.h>
 +
 +#ifdef CONFIG_WATCH_QUEUE
 +
 +struct watch_queue;
++struct cred;
 +
 +/*
 + * Representation of a watch on an object.
@@ -1464,6 +1487,7 @@ index 000000000000..18e0834e8aa7
 +	struct hlist_node	queue_node;	/* Link in queue->watches */
 +	struct watch_list __rcu	*watch_list;
 +	struct hlist_node	list_node;	/* Link in watch_list->watchers */
++	const struct cred	*cred;		/* Creds of the owner of the watch */
 +	void			*private;	/* Private data for the watched object */
 +	u64			id;		/* Internal identifier */
 +	struct kref		usage;		/* Object usage count */
@@ -1485,15 +1509,16 @@ index 000000000000..18e0834e8aa7
 +				      u64);
 +extern struct watch_queue *get_watch_queue(int);
 +extern void put_watch_queue(struct watch_queue *);
-+extern void put_watch_list(struct watch_list *);
 +extern void init_watch(struct watch *, struct watch_queue *);
 +extern int add_watch_to_object(struct watch *, struct watch_list *);
 +extern int remove_watch_from_object(struct watch_list *, struct watch_queue *, u64, bool);
 +
-+static inline void init_watch_list(struct watch_list *wlist)
++static inline void init_watch_list(struct watch_list *wlist,
++				   void (*release_watch)(struct watch *))
 +{
 +	INIT_HLIST_HEAD(&wlist->watchers);
 +	spin_lock_init(&wlist->lock);
++	wlist->release_watch = release_watch;
 +}
 +
 +static inline void post_watch_notification(struct watch_list *wlist,
@@ -1513,80 +1538,35 @@ index 000000000000..18e0834e8aa7
 +	}
 +}
 +
++/**
++ * watch_sizeof - Calculate the information part of the size of a watch record,
++ * given the structure size.
++ */
++#define watch_sizeof(STRUCT) \
++	((sizeof(STRUCT) / WATCH_LENGTH_GRANULARITY) << WATCH_INFO_LENGTH__SHIFT)
++
 +#endif
 +
 +#endif /* _LINUX_WATCH_QUEUE_H */
 diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-new file mode 100644
-index 000000000000..4a7e0f735f4f
---- /dev/null
+index 70f575099968..eabd7601ba0a 100644
+--- a/include/uapi/linux/watch_queue.h
 +++ b/include/uapi/linux/watch_queue.h
-@@ -0,0 +1,82 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-+#ifndef _UAPI_LINUX_WATCH_QUEUE_H
-+#define _UAPI_LINUX_WATCH_QUEUE_H
-+
-+#include <linux/types.h>
+@@ -3,6 +3,10 @@
+ #define _UAPI_LINUX_WATCH_QUEUE_H
+ 
+ #include <linux/types.h>
 +#include <linux/ioctl.h>
 +
-+#define IOC_WATCH_QUEUE_SET_SIZE	_IO('s', 0x01)	/* Set the size in pages */
-+#define IOC_WATCH_QUEUE_SET_FILTER	_IO('s', 0x02)	/* Set the filter */
-+
-+enum watch_notification_type {
-+	WATCH_TYPE_META		= 0,	/* Special record */
-+	WATCH_TYPE_MOUNT_NOTIFY	= 1,	/* Mount notification record */
-+	WATCH_TYPE_SB_NOTIFY	= 2,	/* Superblock notification */
-+	WATCH_TYPE_KEY_NOTIFY	= 3,	/* Key/keyring change notification */
-+	WATCH_TYPE_BLOCK_NOTIFY	= 4,	/* Block layer notifications */
-+#define WATCH_TYPE___NR 5
-+};
-+
-+enum watch_meta_notification_subtype {
-+	WATCH_META_SKIP_NOTIFICATION	= 0,	/* Just skip this record */
-+	WATCH_META_REMOVAL_NOTIFICATION	= 1,	/* Watched object was removed */
-+};
-+
-+/*
-+ * Notification record
-+ */
-+struct watch_notification {
-+	__u32			type:24;	/* enum watch_notification_type */
-+	__u32			subtype:8;	/* Type-specific subtype (filterable) */
-+	__u32			info;
-+#define WATCH_INFO_OVERRUN	0x00000001	/* Event(s) lost due to overrun */
-+#define WATCH_INFO_ENOMEM	0x00000002	/* Event(s) lost due to ENOMEM */
-+#define WATCH_INFO_RECURSIVE	0x00000004	/* Change was recursive */
-+#define WATCH_INFO_LENGTH	0x000001f8	/* Length of record / sizeof(watch_notification) */
-+#define WATCH_INFO_IN_SUBTREE	0x00000200	/* Change was not at watched root */
-+#define WATCH_INFO_TYPE_FLAGS	0x00ff0000	/* Type-specific flags */
-+#define WATCH_INFO_FLAG_0	0x00010000
-+#define WATCH_INFO_FLAG_1	0x00020000
-+#define WATCH_INFO_FLAG_2	0x00040000
-+#define WATCH_INFO_FLAG_3	0x00080000
-+#define WATCH_INFO_FLAG_4	0x00100000
-+#define WATCH_INFO_FLAG_5	0x00200000
-+#define WATCH_INFO_FLAG_6	0x00400000
-+#define WATCH_INFO_FLAG_7	0x00800000
-+#define WATCH_INFO_ID		0xff000000	/* ID of watchpoint */
-+};
-+
-+#define WATCH_LENGTH_SHIFT	3
-+
-+struct watch_queue_buffer {
-+	union {
-+		/* The first few entries are special, containing the
-+		 * ring management variables.
-+		 */
-+		struct {
-+			struct watch_notification watch; /* WATCH_TYPE_META */
-+			__u32		head;		/* Ring head index */
-+			__u32		tail;		/* Ring tail index */
-+			__u32		mask;		/* Ring index mask */
-+		} meta;
-+		struct watch_notification slots[0];
-+	};
-+};
-+
++#define IOC_WATCH_QUEUE_SET_SIZE	_IO('W', 0x60)	/* Set the size in pages */
++#define IOC_WATCH_QUEUE_SET_FILTER	_IO('W', 0x61)	/* Set the filter */
+ 
+ enum watch_notification_type {
+ 	WATCH_TYPE_META		= 0,	/* Special record */
+@@ -64,4 +68,21 @@ struct watch_queue_buffer {
+  */
+ #define WATCH_INFO_NOTIFICATIONS_LOST WATCH_INFO_FLAG_0
+ 
 +/*
 + * Notification filtering rules (IOC_WATCH_QUEUE_SET_FILTER).
 + */
@@ -1603,49 +1583,5 @@ index 000000000000..4a7e0f735f4f
 +	struct watch_notification_type_filter filters[];
 +};
 +
-+#endif /* _UAPI_LINUX_WATCH_QUEUE_H */
-diff --git a/mm/interval_tree.c b/mm/interval_tree.c
-index 27ddfd29112a..9a53ddf4bd62 100644
---- a/mm/interval_tree.c
-+++ b/mm/interval_tree.c
-@@ -25,6 +25,8 @@ INTERVAL_TREE_DEFINE(struct vm_area_struct, shared.rb,
- 		     unsigned long, shared.rb_subtree_last,
- 		     vma_start_pgoff, vma_last_pgoff,, vma_interval_tree)
- 
-+EXPORT_SYMBOL_GPL(vma_interval_tree_insert);
 +
- /* Insert node immediately after prev in the interval tree */
- void vma_interval_tree_insert_after(struct vm_area_struct *node,
- 				    struct vm_area_struct *prev,
-diff --git a/mm/memory.c b/mm/memory.c
-index 96f1d473c89a..9f2fa2138287 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3360,6 +3360,7 @@ vm_fault_t alloc_set_pte(struct vm_fault *vmf, struct mem_cgroup *memcg,
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(alloc_set_pte);
- 
- 
- /**
-diff --git a/security/security.c b/security/security.c
-index 3af886e8fced..af758dc71e24 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1929,6 +1929,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_post_notification(const struct cred *q_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n)
-+{
-+	return call_int_hook(post_notification, 0, q_cred, cred, n);
-+}
-+#endif
-+
- #ifdef CONFIG_SECURITY_NETWORK
- 
- int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk)
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
