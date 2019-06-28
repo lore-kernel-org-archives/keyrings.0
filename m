@@ -1,192 +1,123 @@
-From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Date: Fri, 28 Jun 2019 02:19:29 +0000
-Subject: [PATCH v12 06/11] ima: Factor xattr_verify() out of ima_appraise_measurement()
-Message-Id: <20190628021934.4260-7-bauerman@linux.ibm.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 28 Jun 2019 15:49:02 +0000
+Subject: [PATCH 3/9] security: Add a hook for the point of notification insertion [ver #5]
+Message-Id: <156173694190.15137.8939274212328721351.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190628021934.4260-1-bauerman@linux.ibm.com>
-In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
-To: linux-integrity@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
+References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Verify xattr signature in a separate function so that the logic in
-ima_appraise_measurement() remains clear when it gains the ability to also
-verify an appended module signature.
+Add a security hook that allows an LSM to rule on whether a notification
+message is allowed to be inserted into a particular watch queue.
 
-The code in the switch statement is unchanged except for having to
-dereference the status and cause variables (since they're now pointers),
-and fixing the style of a block comment to appease checkpatch.
+The hook is given the following information:
 
-Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
-Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+ (1) The credentials of the triggerer (which may be init_cred for a system
+     notification, eg. a hardware error).
+
+ (2) The credentials of the whoever set the watch.
+
+ (3) The notification message.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>
+cc: Stephen Smalley <sds@tycho.nsa.gov>
+cc: linux-security-module@vger.kernel.org
 ---
- security/integrity/ima/ima_appraise.c | 141 +++++++++++++++-----------
- 1 file changed, 81 insertions(+), 60 deletions(-)
 
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 18bbe753421a..5d4772f39757 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -202,6 +202,83 @@ int ima_read_xattr(struct dentry *dentry,
- 	return ret;
+ include/linux/lsm_hooks.h |   10 ++++++++++
+ include/linux/security.h  |   10 ++++++++++
+ security/security.c       |    6 ++++++
+ 3 files changed, 26 insertions(+)
+
+diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
+index f9d31f6445e4..fd4b2b14e7d0 100644
+--- a/include/linux/lsm_hooks.h
++++ b/include/linux/lsm_hooks.h
+@@ -1426,6 +1426,12 @@
+  *	from devices (as a global set).
+  *	@watch: The watch object
+  *
++ * @post_notification:
++ *	Check to see if a watch notification can be posted to a particular
++ *	queue.
++ *	@w_cred: The credentials of the whoever set the watch.
++ *	@cred: The event-triggerer's credentials
++ *	@n: The notification being posted
+  *
+  * Security hooks for using the eBPF maps and programs functionalities through
+  * eBPF syscalls.
+@@ -1705,6 +1711,9 @@ union security_list_options {
+ #ifdef CONFIG_WATCH_QUEUE
+ 	int (*watch_key)(struct watch *watch, struct key *key);
+ 	int (*watch_devices)(struct watch *watch);
++	int (*post_notification)(const struct cred *w_cred,
++				 const struct cred *cred,
++				 struct watch_notification *n);
+ #endif /* CONFIG_WATCH_QUEUE */
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+@@ -1985,6 +1994,7 @@ struct security_hook_heads {
+ #ifdef CONFIG_WATCH_QUEUE
+ 	struct hlist_head watch_key;
+ 	struct hlist_head watch_devices;
++	struct hlist_head post_notification;
+ #endif /* CONFIG_WATCH_QUEUE */
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	struct hlist_head unix_stream_connect;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 540863678355..5c074bf18bea 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -58,6 +58,7 @@ struct fs_context;
+ struct fs_parameter;
+ enum fs_value_type;
+ struct watch;
++struct watch_notification;
+ 
+ /* Default (no) options for the capable function */
+ #define CAP_OPT_NONE 0x0
+@@ -396,6 +397,9 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen);
+ #ifdef CONFIG_WATCH_QUEUE
+ int security_watch_key(struct watch *watch, struct key *key);
+ int security_watch_devices(struct watch *watch);
++int security_post_notification(const struct cred *w_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n);
+ #endif /* CONFIG_WATCH_QUEUE */
+ #else /* CONFIG_SECURITY */
+ 
+@@ -1218,6 +1222,12 @@ static inline int security_watch_devices(struct watch *watch)
+ {
+ 	return 0;
+ }
++static inline int security_post_notification(const struct cred *w_cred,
++					     const struct cred *cred,
++					     struct watch_notification *n)
++{
++	return 0;
++}
+ #endif /* CONFIG_WATCH_QUEUE */
+ #endif	/* CONFIG_SECURITY */
+ 
+diff --git a/security/security.c b/security/security.c
+index 2c9919226ad1..459e87d55ac9 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1928,6 +1928,12 @@ int security_watch_devices(struct watch *watch)
+ 	return call_int_hook(watch_devices, 0, watch);
  }
  
-+/*
-+ * xattr_verify - verify xattr digest or signature
-+ *
-+ * Verify whether the hash or signature matches the file contents.
-+ *
-+ * Return 0 on success, error code otherwise.
-+ */
-+static int xattr_verify(enum ima_hooks func, struct integrity_iint_cache *iint,
-+			struct evm_ima_xattr_data *xattr_value, int xattr_len,
-+			enum integrity_status *status, const char **cause)
++int security_post_notification(const struct cred *w_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n)
 +{
-+	int rc = -EINVAL, hash_start = 0;
-+
-+	switch (xattr_value->type) {
-+	case IMA_XATTR_DIGEST_NG:
-+		/* first byte contains algorithm id */
-+		hash_start = 1;
-+		/* fall through */
-+	case IMA_XATTR_DIGEST:
-+		if (iint->flags & IMA_DIGSIG_REQUIRED) {
-+			*cause = "IMA-signature-required";
-+			*status = INTEGRITY_FAIL;
-+			break;
-+		}
-+		clear_bit(IMA_DIGSIG, &iint->atomic_flags);
-+		if (xattr_len - sizeof(xattr_value->type) - hash_start >+				iint->ima_hash->length)
-+			/*
-+			 * xattr length may be longer. md5 hash in previous
-+			 * version occupied 20 bytes in xattr, instead of 16
-+			 */
-+			rc = memcmp(&xattr_value->data[hash_start],
-+				    iint->ima_hash->digest,
-+				    iint->ima_hash->length);
-+		else
-+			rc = -EINVAL;
-+		if (rc) {
-+			*cause = "invalid-hash";
-+			*status = INTEGRITY_FAIL;
-+			break;
-+		}
-+		*status = INTEGRITY_PASS;
-+		break;
-+	case EVM_IMA_XATTR_DIGSIG:
-+		set_bit(IMA_DIGSIG, &iint->atomic_flags);
-+		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-+					     (const char *)xattr_value,
-+					     xattr_len,
-+					     iint->ima_hash->digest,
-+					     iint->ima_hash->length);
-+		if (rc = -EOPNOTSUPP) {
-+			*status = INTEGRITY_UNKNOWN;
-+			break;
-+		}
-+		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
-+		    func = KEXEC_KERNEL_CHECK)
-+			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
-+						     (const char *)xattr_value,
-+						     xattr_len,
-+						     iint->ima_hash->digest,
-+						     iint->ima_hash->length);
-+		if (rc) {
-+			*cause = "invalid-signature";
-+			*status = INTEGRITY_FAIL;
-+		} else {
-+			*status = INTEGRITY_PASS;
-+		}
-+		break;
-+	default:
-+		*status = INTEGRITY_UNKNOWN;
-+		*cause = "unknown-ima-data";
-+		break;
-+	}
-+
-+	return rc;
++	return call_int_hook(post_notification, 0, w_cred, cred, n);
 +}
-+
- /*
-  * ima_appraise_measurement - appraise file measurement
-  *
-@@ -221,7 +298,7 @@ int ima_appraise_measurement(enum ima_hooks func,
- 	struct dentry *dentry = file_dentry(file);
- 	struct inode *inode = d_backing_inode(dentry);
- 	enum integrity_status status = INTEGRITY_UNKNOWN;
--	int rc = xattr_len, hash_start = 0;
-+	int rc = xattr_len;
+ #endif /* CONFIG_WATCH_QUEUE */
  
- 	if (!(inode->i_opflags & IOP_XATTR))
- 		return INTEGRITY_UNKNOWN;
-@@ -259,65 +336,9 @@ int ima_appraise_measurement(enum ima_hooks func,
- 		WARN_ONCE(true, "Unexpected integrity status %d\n", status);
- 	}
- 
--	switch (xattr_value->type) {
--	case IMA_XATTR_DIGEST_NG:
--		/* first byte contains algorithm id */
--		hash_start = 1;
--		/* fall through */
--	case IMA_XATTR_DIGEST:
--		if (iint->flags & IMA_DIGSIG_REQUIRED) {
--			cause = "IMA-signature-required";
--			status = INTEGRITY_FAIL;
--			break;
--		}
--		clear_bit(IMA_DIGSIG, &iint->atomic_flags);
--		if (xattr_len - sizeof(xattr_value->type) - hash_start >-				iint->ima_hash->length)
--			/* xattr length may be longer. md5 hash in previous
--			   version occupied 20 bytes in xattr, instead of 16
--			 */
--			rc = memcmp(&xattr_value->data[hash_start],
--				    iint->ima_hash->digest,
--				    iint->ima_hash->length);
--		else
--			rc = -EINVAL;
--		if (rc) {
--			cause = "invalid-hash";
--			status = INTEGRITY_FAIL;
--			break;
--		}
--		status = INTEGRITY_PASS;
--		break;
--	case EVM_IMA_XATTR_DIGSIG:
--		set_bit(IMA_DIGSIG, &iint->atomic_flags);
--		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
--					     (const char *)xattr_value,
--					     xattr_len,
--					     iint->ima_hash->digest,
--					     iint->ima_hash->length);
--		if (rc = -EOPNOTSUPP) {
--			status = INTEGRITY_UNKNOWN;
--			break;
--		}
--		if (IS_ENABLED(CONFIG_INTEGRITY_PLATFORM_KEYRING) && rc &&
--		    func = KEXEC_KERNEL_CHECK)
--			rc = integrity_digsig_verify(INTEGRITY_KEYRING_PLATFORM,
--						     (const char *)xattr_value,
--						     xattr_len,
--						     iint->ima_hash->digest,
--						     iint->ima_hash->length);
--		if (rc) {
--			cause = "invalid-signature";
--			status = INTEGRITY_FAIL;
--		} else {
--			status = INTEGRITY_PASS;
--		}
--		break;
--	default:
--		status = INTEGRITY_UNKNOWN;
--		cause = "unknown-ima-data";
--		break;
--	}
-+	if (xattr_value)
-+		rc = xattr_verify(func, iint, xattr_value, xattr_len, &status,
-+				  &cause);
- 
- out:
- 	/*
+ #ifdef CONFIG_SECURITY_NETWORK
