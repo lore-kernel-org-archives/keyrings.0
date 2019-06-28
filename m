@@ -1,238 +1,382 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 28 Jun 2019 15:49:39 +0000
-Subject: [PATCH 7/9] block: Add block layer notifications [ver #5]
-Message-Id: <156173697982.15137.16498832075840240161.stgit@warthog.procyon.org.uk>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Fri, 28 Jun 2019 02:19:32 +0000
+Subject: [PATCH v12 09/11] ima: Define ima-modsig template
+Message-Id: <20190628021934.4260-10-bauerman@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190628021934.4260-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
+To: linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>, Thiago Jung Bauermann <bauerman@linux.ibm.com>
 
-Add a block layer notification mechanism whereby notifications about
-block-layer events such as I/O errors, can be reported to a monitoring
-process asynchronously.
+Define new "d-modsig" template field which holds the digest that is
+expected to match the one contained in the modsig, and also new "modsig"
+template field which holds the appended file signature.
 
-Firstly, an event queue needs to be created:
+Add a new "ima-modsig" defined template descriptor with the new fields as
+well as the ones from the "ima-sig" descriptor.
 
-	fd = open("/dev/event_queue", O_RDWR);
-	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+Change ima_store_measurement() to accept a struct modsig * argument so that
+it can be passed along to the templates via struct ima_event_data.
 
-then a notification can be set up to report block notifications via that
-queue:
-
-	struct watch_notification_filter filter = {
-		.nr_filters = 1,
-		.filters = {
-			[0] = {
-				.type = WATCH_TYPE_BLOCK_NOTIFY,
-				.subtype_filter[0] = UINT_MAX;
-			},
-		},
-	};
-	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
-	watch_devices(fd, 12);
-
-After that, records will be placed into the queue when, for example, errors
-occur on a block device.  Records are of the following format:
-
-	struct block_notification {
-		struct watch_notification watch;
-		__u64	dev;
-		__u64	sector;
-	} *n;
-
-Where:
-
-	n->watch.type will be WATCH_TYPE_BLOCK_NOTIFY
-
-	n->watch.subtype will be the type of notification, such as
-	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM.
-
-	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
-	record.
-
-	n->watch.info & WATCH_INFO_ID will be the second argument to
-	watch_devices(), shifted.
-
-	n->dev will be the device numbers munged together.
-
-	n->sector will indicate the affected sector (if appropriate for the
-	event).
-
-Note that it is permissible for event records to be of variable length -
-or, at least, the length may be dependent on the subtype.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+Signed-off-by: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
 ---
+ Documentation/security/IMA-templates.rst  |  3 ++
+ security/integrity/ima/ima.h              | 20 ++++++-
+ security/integrity/ima/ima_api.c          |  5 +-
+ security/integrity/ima/ima_main.c         |  2 +-
+ security/integrity/ima/ima_modsig.c       | 19 +++++++
+ security/integrity/ima/ima_policy.c       | 41 +++++++++++++++
+ security/integrity/ima/ima_template.c     |  7 ++-
+ security/integrity/ima/ima_template_lib.c | 64 ++++++++++++++++++++++-
+ security/integrity/ima/ima_template_lib.h |  4 ++
+ 9 files changed, 159 insertions(+), 6 deletions(-)
 
- Documentation/watch_queue.rst    |    4 +++-
- block/Kconfig                    |    9 +++++++++
- block/blk-core.c                 |   29 +++++++++++++++++++++++++++++
- include/linux/blkdev.h           |   15 +++++++++++++++
- include/uapi/linux/watch_queue.h |   30 +++++++++++++++++++++++++++++-
- 5 files changed, 85 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
-index 393905b904c8..5cc9c6924727 100644
---- a/Documentation/watch_queue.rst
-+++ b/Documentation/watch_queue.rst
-@@ -7,7 +7,9 @@ receive notifications from the kernel.  This can be used in conjunction with::
- 
-   * Key/keyring notifications
- 
--  * General device event notifications
-+  * General device event notifications, including::
-+
-+    * Block layer event notifications
+diff --git a/Documentation/security/IMA-templates.rst b/Documentation/security/IMA-templates.rst
+index 3d1cca287aa4..c5a8432972ef 100644
+--- a/Documentation/security/IMA-templates.rst
++++ b/Documentation/security/IMA-templates.rst
+@@ -68,8 +68,10 @@ descriptors by adding their identifier to the format string
+  - 'd-ng': the digest of the event, calculated with an arbitrary hash
+    algorithm (field format: [<hash algo>:]digest, where the digest
+    prefix is shown only if the hash algorithm is not SHA1 or MD5);
++ - 'd-modsig': the digest of the event without the appended modsig;
+  - 'n-ng': the name of the event, without size limitations;
+  - 'sig': the file signature;
++ - 'modsig' the appended file signature;
+  - 'buf': the buffer data that was used to generate the hash without size limitations;
  
  
- The notifications buffers can be enabled by:
-diff --git a/block/Kconfig b/block/Kconfig
-index 1b220101a9cb..4ff4a56ba9f9 100644
---- a/block/Kconfig
-+++ b/block/Kconfig
-@@ -163,6 +163,15 @@ config BLK_SED_OPAL
- 	Enabling this option enables users to setup/unlock/lock
- 	Locking ranges for SED devices using the Opal protocol.
+@@ -79,6 +81,7 @@ Below, there is the list of defined template descriptors:
+  - "ima-ng" (default): its format is ``d-ng|n-ng``;
+  - "ima-sig": its format is ``d-ng|n-ng|sig``;
+  - "ima-buf": its format is ``d-ng|n-ng|buf``;
++ - "ima-modsig": its format is ``d-ng|n-ng|sig|d-modsig|modsig``;
  
-+config BLK_NOTIFICATIONS
-+	bool "Block layer event notifications"
-+	select DEVICE_NOTIFICATIONS
-+	help
-+	  This option provides support for getting block layer event
-+	  notifications.  This makes use of the /dev/watch_queue misc device to
-+	  handle the notification buffer and provides the device_notify() system
-+	  call to enable/disable watches.
-+
- menu "Partition Types"
  
- source "block/partitions/Kconfig"
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 419d600e6637..6b81a2b1af4b 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -144,6 +144,22 @@ static const struct {
- 	[BLK_STS_IOERR]		= { -EIO,	"I/O" },
- };
- 
-+#ifdef CONFIG_BLK_NOTIFICATIONS
-+static const
-+enum block_notification_type blk_notifications[ARRAY_SIZE(blk_errors)] = {
-+	[BLK_STS_TIMEOUT]	= NOTIFY_BLOCK_ERROR_TIMEOUT,
-+	[BLK_STS_NOSPC]		= NOTIFY_BLOCK_ERROR_NO_SPACE,
-+	[BLK_STS_TRANSPORT]	= NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT,
-+	[BLK_STS_TARGET]	= NOTIFY_BLOCK_ERROR_CRITICAL_TARGET,
-+	[BLK_STS_NEXUS]		= NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS,
-+	[BLK_STS_MEDIUM]	= NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM,
-+	[BLK_STS_PROTECTION]	= NOTIFY_BLOCK_ERROR_PROTECTION,
-+	[BLK_STS_RESOURCE]	= NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE,
-+	[BLK_STS_DEV_RESOURCE]	= NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE,
-+	[BLK_STS_IOERR]		= NOTIFY_BLOCK_ERROR_IO,
-+};
-+#endif
-+
- blk_status_t errno_to_blk_status(int errno)
+ Use
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index baf2ffd52a41..3293dd07b6c9 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -64,6 +64,7 @@ struct ima_event_data {
+ 	const unsigned char *filename;
+ 	struct evm_ima_xattr_data *xattr_value;
+ 	int xattr_len;
++	const struct modsig *modsig;
+ 	const char *violation;
+ 	const void *buf;
+ 	int buf_len;
+@@ -215,7 +216,7 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
+ 			   const unsigned char *filename,
+ 			   struct evm_ima_xattr_data *xattr_value,
+-			   int xattr_len, int pcr,
++			   int xattr_len, const struct modsig *modsig, int pcr,
+ 			   struct ima_template_desc *template_desc);
+ void ima_audit_measurement(struct integrity_iint_cache *iint,
+ 			   const unsigned char *filename);
+@@ -316,6 +317,10 @@ bool ima_hook_supports_modsig(enum ima_hooks func);
+ int ima_read_modsig(enum ima_hooks func, const void *buf, loff_t buf_len,
+ 		    struct modsig **modsig);
+ void ima_collect_modsig(struct modsig *modsig, const void *buf, loff_t size);
++int ima_get_modsig_digest(const struct modsig *modsig, enum hash_algo *algo,
++			  const u8 **digest, u32 *digest_size);
++int ima_get_raw_modsig(const struct modsig *modsig, const void **data,
++		       u32 *data_len);
+ void ima_free_modsig(struct modsig *modsig);
+ #else
+ static inline bool ima_hook_supports_modsig(enum ima_hooks func)
+@@ -334,6 +339,19 @@ static inline void ima_collect_modsig(struct modsig *modsig, const void *buf,
  {
- 	int i;
-@@ -179,6 +195,19 @@ static void print_req_error(struct request *req, blk_status_t status)
- 				req->rq_disk ?  req->rq_disk->disk_name : "?",
- 				(unsigned long long)blk_rq_pos(req),
- 				req->cmd_flags);
+ }
+ 
++static inline int ima_get_modsig_digest(const struct modsig *modsig,
++					enum hash_algo *algo, const u8 **digest,
++					u32 *digest_size)
++{
++	return -EOPNOTSUPP;
++}
 +
-+#ifdef CONFIG_BLK_NOTIFICATIONS
-+	if (blk_notifications[idx]) {
-+		struct block_notification n = {
-+			.watch.type	= WATCH_TYPE_BLOCK_NOTIFY,
-+			.watch.subtype	= blk_notifications[idx],
-+			.watch.info	= watch_sizeof(n),
-+			.dev		= req->rq_disk ? disk_devt(req->rq_disk) : 0,
-+			.sector		= blk_rq_pos(req),
-+		};
-+		post_block_notification(&n);
++static inline int ima_get_raw_modsig(const struct modsig *modsig,
++				     const void **data, u32 *data_len)
++{
++	return -EOPNOTSUPP;
++}
++
+ static inline void ima_free_modsig(struct modsig *modsig)
+ {
+ }
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index ac35bc3d6e35..9d1fe712a6cc 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -292,7 +292,7 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 			   struct file *file, const unsigned char *filename,
+ 			   struct evm_ima_xattr_data *xattr_value,
+-			   int xattr_len, int pcr,
++			   int xattr_len, const struct modsig *modsig, int pcr,
+ 			   struct ima_template_desc *template_desc)
+ {
+ 	static const char op[] = "add_template_measure";
+@@ -304,7 +304,8 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 					     .file = file,
+ 					     .filename = filename,
+ 					     .xattr_value = xattr_value,
+-					     .xattr_len = xattr_len };
++					     .xattr_len = xattr_len,
++					     .modsig = modsig };
+ 	int violation = 0;
+ 
+ 	if (iint->measured_pcrs & (0x1 << pcr))
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index cc4500f93408..8b35a200e0cc 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -327,7 +327,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 
+ 	if (action & IMA_MEASURE)
+ 		ima_store_measurement(iint, file, pathname,
+-				      xattr_value, xattr_len, pcr,
++				      xattr_value, xattr_len, modsig, pcr,
+ 				      template_desc);
+ 	if (rc = 0 && (action & IMA_APPRAISE_SUBMASK)) {
+ 		inode_lock(inode);
+diff --git a/security/integrity/ima/ima_modsig.c b/security/integrity/ima/ima_modsig.c
+index d438b87dba89..b01bbfeb1d98 100644
+--- a/security/integrity/ima/ima_modsig.c
++++ b/security/integrity/ima/ima_modsig.c
+@@ -140,6 +140,25 @@ int ima_modsig_verify(struct key *keyring, const struct modsig *modsig)
+ 					VERIFYING_MODULE_SIGNATURE, NULL, NULL);
+ }
+ 
++int ima_get_modsig_digest(const struct modsig *modsig, enum hash_algo *algo,
++			  const u8 **digest, u32 *digest_size)
++{
++	*algo = modsig->hash_algo;
++	*digest = modsig->digest;
++	*digest_size = modsig->digest_size;
++
++	return 0;
++}
++
++int ima_get_raw_modsig(const struct modsig *modsig, const void **data,
++		       u32 *data_len)
++{
++	*data = &modsig->raw_pkcs7;
++	*data_len = modsig->raw_pkcs7_len;
++
++	return 0;
++}
++
+ void ima_free_modsig(struct modsig *modsig)
+ {
+ 	if (!modsig)
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 4c5b968c4721..4fc13e591f1d 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -10,6 +10,9 @@
+  *	- initialize default measure policy rules
+  *
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/init.h>
+ #include <linux/list.h>
+ #include <linux/fs.h>
+@@ -847,6 +850,38 @@ static void ima_log_string(struct audit_buffer *ab, char *key, char *value)
+ 	ima_log_string_op(ab, key, value, NULL);
+ }
+ 
++/*
++ * Validating the appended signature included in the measurement list requires
++ * the file hash calculated without the appended signature (i.e., the 'd-modsig'
++ * field). Therefore, notify the user if they have the 'modsig' field but not
++ * the 'd-modsig' field in the template.
++ */
++static void check_template_modsig(const struct ima_template_desc *template)
++{
++#define MSG "template with 'modsig' field also needs 'd-modsig' field\n"
++	bool has_modsig, has_dmodsig;
++	static bool checked;
++	int i;
++
++	/* We only need to notify the user once. */
++	if (checked)
++		return;
++
++	has_modsig = has_dmodsig = false;
++	for (i = 0; i < template->num_fields; i++) {
++		if (!strcmp(template->fields[i]->field_id, "modsig"))
++			has_modsig = true;
++		else if (!strcmp(template->fields[i]->field_id, "d-modsig"))
++			has_dmodsig = true;
 +	}
-+#endif
- }
- 
- static void req_bio_endio(struct request *rq, struct bio *bio,
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1aafeb923e7b..8b8e235f47c9 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -43,6 +43,7 @@ struct pr_ops;
- struct rq_qos;
- struct blk_queue_stats;
- struct blk_stat_callback;
-+struct block_notification;
- 
- #define BLKDEV_MIN_RQ	4
- #define BLKDEV_MAX_RQ	128	/* Default maximum */
-@@ -1744,6 +1745,20 @@ static inline bool blk_req_can_dispatch_to_zone(struct request *rq)
- }
- #endif /* CONFIG_BLK_DEV_ZONED */
- 
-+#ifdef CONFIG_BLK_NOTIFICATIONS
-+static inline void post_block_notification(struct block_notification *n)
-+{
-+	u64 id = 0; /* Might want to allow dev# here. */
 +
-+	post_device_notification(&n->watch, id);
++	if (has_modsig && !has_dmodsig)
++		pr_notice(MSG);
++
++	checked = true;
++#undef MSG
 +}
-+#else
-+static inline void post_block_notification(struct block_notification *n)
-+{
-+}
-+#endif
 +
-+
- #else /* CONFIG_BLOCK */
+ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ {
+ 	struct audit_buffer *ab;
+@@ -1189,6 +1224,12 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 	else if (entry->action = APPRAISE)
+ 		temp_ima_appraise |= ima_appraise_flag(entry->func);
  
- struct block_device;
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-index bcffd599c07b..776666c3bde9 100644
---- a/include/uapi/linux/watch_queue.h
-+++ b/include/uapi/linux/watch_queue.h
-@@ -11,7 +11,8 @@
- enum watch_notification_type {
- 	WATCH_TYPE_META		= 0,	/* Special record */
- 	WATCH_TYPE_KEY_NOTIFY	= 1,	/* Key change event notification */
--	WATCH_TYPE___NR		= 2
-+	WATCH_TYPE_BLOCK_NOTIFY	= 2,	/* Block layer event notification */
-+	WATCH_TYPE___NR		= 3
++	if (!result && entry->flags & IMA_MODSIG_ALLOWED) {
++		template_desc = entry->template ? entry->template :
++						  ima_template_desc_current();
++		check_template_modsig(template_desc);
++	}
++
+ 	audit_log_format(ab, "res=%d", !result);
+ 	audit_log_end(ab);
+ 	return result;
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index 7343e8e0ae2f..ac526b34973f 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -27,6 +27,7 @@ static struct ima_template_desc builtin_templates[] = {
+ 	{.name = "ima-ng", .fmt = "d-ng|n-ng"},
+ 	{.name = "ima-sig", .fmt = "d-ng|n-ng|sig"},
+ 	{.name = "ima-buf", .fmt = "d-ng|n-ng|buf"},
++	{.name = "ima-modsig", .fmt = "d-ng|n-ng|sig|d-modsig|modsig"},
+ 	{.name = "", .fmt = ""},	/* placeholder for a custom format */
  };
  
- enum watch_meta_notification_subtype {
-@@ -111,4 +112,31 @@ struct key_notification {
- 	__u32	aux;		/* Per-type auxiliary data */
+@@ -46,6 +47,10 @@ static const struct ima_template_field supported_fields[] = {
+ 	 .field_show = ima_show_template_sig},
+ 	{.field_id = "buf", .field_init = ima_eventbuf_init,
+ 	 .field_show = ima_show_template_buf},
++	{.field_id = "d-modsig", .field_init = ima_eventdigest_modsig_init,
++	 .field_show = ima_show_template_digest_ng},
++	{.field_id = "modsig", .field_init = ima_eventmodsig_init,
++	 .field_show = ima_show_template_sig},
  };
  
+ /*
+@@ -53,7 +58,7 @@ static const struct ima_template_field supported_fields[] = {
+  * need to be accounted for since they shouldn't be defined in the same template
+  * description as 'd-ng' and 'n-ng' respectively.
+  */
+-#define MAX_TEMPLATE_NAME_LEN sizeof("d-ng|n-ng|sig|buf")
++#define MAX_TEMPLATE_NAME_LEN sizeof("d-ng|n-ng|sig|buf|d-modisg|modsig")
+ 
+ static struct ima_template_desc *ima_template;
+ 
+diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
+index baf4de45c5aa..22e71cd5ca02 100644
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -229,7 +229,8 @@ int ima_parse_buf(void *bufstartp, void *bufendp, void **bufcurp,
+ 	return 0;
+ }
+ 
+-static int ima_eventdigest_init_common(u8 *digest, u32 digestsize, u8 hash_algo,
++static int ima_eventdigest_init_common(const u8 *digest, u32 digestsize,
++				       u8 hash_algo,
+ 				       struct ima_field_data *field_data)
+ {
+ 	/*
+@@ -332,6 +333,41 @@ int ima_eventdigest_ng_init(struct ima_event_data *event_data,
+ 					   hash_algo, field_data);
+ }
+ 
 +/*
-+ * Type of block layer notification.
++ * This function writes the digest of the file which is expected to match the
++ * digest contained in the file's appended signature.
 + */
-+enum block_notification_type {
-+	NOTIFY_BLOCK_ERROR_TIMEOUT		= 1, /* Timeout error */
-+	NOTIFY_BLOCK_ERROR_NO_SPACE		= 2, /* Critical space allocation error */
-+	NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT = 3, /* Recoverable transport error */
-+	NOTIFY_BLOCK_ERROR_CRITICAL_TARGET	= 4, /* Critical target error */
-+	NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS	= 5, /* Critical nexus error */
-+	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM	= 6, /* Critical medium error */
-+	NOTIFY_BLOCK_ERROR_PROTECTION		= 7, /* Protection error */
-+	NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE	= 8, /* Kernel resource error */
-+	NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE	= 9, /* Device resource error */
-+	NOTIFY_BLOCK_ERROR_IO			= 10, /* Other I/O error */
-+};
++int ima_eventdigest_modsig_init(struct ima_event_data *event_data,
++				struct ima_field_data *field_data)
++{
++	enum hash_algo hash_algo;
++	const u8 *cur_digest;
++	u32 cur_digestsize;
++
++	if (!event_data->modsig)
++		return 0;
++
++	if (event_data->violation) {
++		/* Recording a violation. */
++		hash_algo = HASH_ALGO_SHA1;
++		cur_digest = NULL;
++		cur_digestsize = 0;
++	} else {
++		int rc;
++
++		rc = ima_get_modsig_digest(event_data->modsig, &hash_algo,
++					   &cur_digest, &cur_digestsize);
++		if (rc)
++			return rc;
++		else if (hash_algo = HASH_ALGO__LAST || cur_digestsize = 0)
++			/* There was some error collecting the digest. */
++			return -EINVAL;
++	}
++
++	return ima_eventdigest_init_common(cur_digest, cur_digestsize,
++					   hash_algo, field_data);
++}
++
+ static int ima_eventname_init_common(struct ima_event_data *event_data,
+ 				     struct ima_field_data *field_data,
+ 				     bool size_limit)
+@@ -410,3 +446,29 @@ int ima_eventbuf_init(struct ima_event_data *event_data,
+ 					     event_data->buf_len, DATA_FMT_HEX,
+ 					     field_data);
+ }
 +
 +/*
-+ * Block layer notification record.
-+ * - watch.type = WATCH_TYPE_BLOCK_NOTIFY
-+ * - watch.subtype = enum block_notification_type
++ *  ima_eventmodsig_init - include the appended file signature as part of the
++ *  template data
 + */
-+struct block_notification {
-+	struct watch_notification watch; /* WATCH_TYPE_BLOCK_NOTIFY */
-+	__u64	dev;			/* Device number */
-+	__u64	sector;			/* Affected sector */
-+};
++int ima_eventmodsig_init(struct ima_event_data *event_data,
++			 struct ima_field_data *field_data)
++{
++	const void *data;
++	u32 data_len;
++	int rc;
 +
- #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
++	if (!event_data->modsig)
++		return 0;
++
++	/*
++	 * modsig is a runtime structure containing pointers. Get its raw data
++	 * instead.
++	 */
++	rc = ima_get_raw_modsig(event_data->modsig, &data, &data_len);
++	if (rc)
++		return rc;
++
++	return ima_write_template_field_data(data, data_len, DATA_FMT_HEX,
++					     field_data);
++}
+diff --git a/security/integrity/ima/ima_template_lib.h b/security/integrity/ima/ima_template_lib.h
+index 12f1a8578b31..6544eac1c77d 100644
+--- a/security/integrity/ima/ima_template_lib.h
++++ b/security/integrity/ima/ima_template_lib.h
+@@ -40,10 +40,14 @@ int ima_eventname_init(struct ima_event_data *event_data,
+ 		       struct ima_field_data *field_data);
+ int ima_eventdigest_ng_init(struct ima_event_data *event_data,
+ 			    struct ima_field_data *field_data);
++int ima_eventdigest_modsig_init(struct ima_event_data *event_data,
++				struct ima_field_data *field_data);
+ int ima_eventname_ng_init(struct ima_event_data *event_data,
+ 			  struct ima_field_data *field_data);
+ int ima_eventsig_init(struct ima_event_data *event_data,
+ 		      struct ima_field_data *field_data);
+ int ima_eventbuf_init(struct ima_event_data *event_data,
+ 		      struct ima_field_data *field_data);
++int ima_eventmodsig_init(struct ima_event_data *event_data,
++			 struct ima_field_data *field_data);
+ #endif /* __LINUX_IMA_TEMPLATE_LIB_H */
