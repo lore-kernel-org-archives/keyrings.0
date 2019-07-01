@@ -1,57 +1,22 @@
 From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Thu, 04 Jul 2019 12:42:05 +0000
-Subject: Re: Problem with the kernels trusted module on "inactive" TPM
-Message-Id: <1562244125.6165.95.camel@linux.ibm.com>
+Date: Mon, 01 Jul 2019 14:38:54 +0000
+Subject: Re: [PATCH v12 00/11] Appended signatures support for IMA appraisal
+Message-Id: <1561991934.4067.17.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
+Content-Type: text/plain; charset="ibm852"
 Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <CACnrVGfhkpsSWbCai4+5WEOhRukEr7JWDUnFdM-5D+FUyov+nQ@mail.gmail.com>
-         <f4b36912-0fb0-1e83-1ad2-fb1d2313c08e@huawei.com>
-         <4e3579a4d84aa7e2c80e5068eb1f7a30e17a655b.camel@linux.intel.com>
-         <cb46e05d-f9bd-2d58-0996-390cfbf6f786@huawei.com>
-In-Reply-To: <cb46e05d-f9bd-2d58-0996-390cfbf6f786@huawei.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, CrazyT <crazyt2019+lml@gmail.com>, keyrings@vger.kernel.org
-Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, jejb@linux.ibm.com, Nayna Jain <nayna@linux.ibm.com>
+References: <20190628021934.4260-1-bauerman@linux.ibm.com>
+In-Reply-To: <20190628021934.4260-1-bauerman@linux.ibm.com>
+To: Thiago Jung Bauermann <bauerman@linux.ibm.com>, linux-integrity@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-W0NjJ2luZyBOYXluYV0KCk9uIFRodSwgMjAxOS0wNy0wNCBhdCAxNDoyNSArMDIwMCwgUm9iZXJ0
-byBTYXNzdSB3cm90ZToKPiBPbiA3LzQvMjAxOSAxMjo0MiBQTSwgSmFya2tvIFNha2tpbmVuIHdy
-b3RlOgo+ID4gT24gTW9uLCAyMDE5LTA3LTAxIGF0IDE3OjIyICswMzAwLCBSb2JlcnRvIFNhc3N1
-IHdyb3RlOgo+ID4+IEFkZGluZyB0byB0aGUgZGlzY3Vzc2lvbiBKYXJra28gKHRoZSBtYWludGFp
-bmVyIG9mIHRoZSB0cnVzdGVkIGtleSkgYW5kCj4gPj4gdGhlIGxpbnV4LWludGVncml0eSBtYWls
-aW5nIGxpc3QuCj4gPiAKPiA+IEknbSBhIGNvLW1haW50YWluZXIgKGFkZGVkIEphbWVzIGFuZCBN
-aW1pKS4KPiA+IAo+ID4+PiBzb21lIHBlb3BsZSAoaW5jbHVkaW5nIG1lKSBoYXZlIHByb2JsZW1z
-IHdpdGggdGhlICJ0cnVzdGVkIiBrZXJuZWwgbW9kdWxlLgo+ID4+PiBBcyBhIHJlc3VsdCB0byB0
-aGlzIGFsc28gdGhlIGVjcnlwdGZzLW1vZHVsZSB3b24ndCBsb2FkLgo+ID4+PiAoaHR0cHM6Ly9i
-dWdzLmFyY2hsaW51eC5vcmcvdGFzay82MjY3OCkKPiA+Pj4gSWYgeW91IHVzZSBhbiAiaW5hY3Rp
-dmUiIFRQTSBtb2R1bGUsIHRoZSAidHJ1c3RlZCIgbW9kdWxlIHdvbid0IGxvYWQKPiA+Pj4gYW55
-bW9yZS4KPiA+Pj4gVGhlIGNvbW1hbmQgbW9kcHJvYmUganVzdCByZXNwb25kcyB3aXRoICJCYWQg
-YWRkcmVzcyIuCj4gPj4+IFRoZSBzdHJhY2UtY29tbWFuZCBzaG93cyB0aGF0IGluaXRfbW9kdWxl
-IGZhaWxzIHdpdGggRUZBVUxULgo+ID4+PiBJIGJlbGlldmUgdGhlIHJlYXNvbiBmb3IgdGhpcyBp
-cyB0aGF0IHRoZSB0cnVzdGVkLW1vZHVsZSBoYW5kbGVzCj4gPj4+IGluYWN0aXZlIG1vZHVsZXMg
-dGhlIHNhbWUgYXMgYWN0aXZlIG1vZHVsZXMuCj4gPj4+IFRoaXMgcmVzdWx0cyBpbiBhbiBlcnJv
-ci4KPiA+Pj4KPiA+Pj4gRm9yIGV4YW1wbGU6Cj4gPj4+Cj4gPiBodHRwczovL2dpdGh1Yi5jb20v
-dG9ydmFsZHMvbGludXgvY29tbWl0LzBiNmNmNmI5N2I3ZWYxZmEzYzdmZWZhYjBjYWM4OTdhMWM0
-YTM0MDAjZGlmZi1jMDEyMjhlNmQzODZhZmIyOWRmNmFhYzE3ZDlkZDdhYlIxMjUxCj4gPj4+Cj4g
-Pj4+IE15IGd1ZXNzIGlzIHRoYXQgaW5pdF9kaWdlc3RzKCk7IHJldHVybnMgRUZBVUxUIGluIHRo
-YXQgY2FzZS4KPiA+Pj4gVGhlICIgaWYgKCFjaGlwKSIgY2hlY2sgYWJvdmUgcHJvYmFibHkgbmVl
-ZHMgdG8gY2hlY2sgaWYgdGhlIGNoaXAgaXMKPiA+Pj4gImluYWN0aXZlIi4KPiA+Pj4KPiA+Pj4g
-ImluYWN0aXZlIiA9IHN0aWxsIHZpc2libGUgdG8gdGhlIHN5c3RlbSwgYnV0IG5vdCBmdW5jdGlv
-bmFsLgo+ID4+PiBJdCBzZWVtcyB0byBiZSB0aGUgZGVmYXVsdCBiaW9zLXNldHRpbmcgZm9yIFRQ
-TSBvbiB0aGlua3BhZC4KPiA+Pj4gKGJ0dy46IGkgaGF2ZSBubyBjbHVlIHdoeSBhbnlib2R5IHdv
-dWxkIG5lZWQgc29tZXRoaW5nIGxpa2UgdGhhdCkKPiA+Pj4KPiA+Pj4gU2FkbHkgaSBoYXZlIG5v
-IGlkZWEgaG93IHlvdSB3b3VsZCBjaGVjayBmb3IgYW4gaW5hY3RpdmUgY2hpcCxlbHNlIGkKPiA+
-Pj4gd291bGQgaGF2ZSBzZW5kIGEgcGF0Y2ggaW5zdGVhZC4KPiA+Pj4gQnV0IEkgaG9wZSB0aGUg
-aW5mbyBpIHdyb3RlIGlzIGVub3VnaCB0byBnZXQgaXQgZml4ZWQgYnkgc29tZWJvZHkuCj4gPj4K
-PiA+PiBUaGFua3MgZm9yIHRoZSByZXBvcnQuIElmIHlvdSBzZWUgLUVGQVVMVCwgdHBtX2dldF9y
-YW5kb20oKSBpcyBwcm9iYWJseQo+ID4+IHJldHVybmluZyAwLgo+ID4+Cj4gPj4gSmFya2tvLCB3
-ZSBjb3VsZCBjb25zaWRlciBpdCBhcyBub24tY3JpdGljYWwgZXJyb3IsIGFuZCBoYW5kbGUgaXQg
-YXMgaWYKPiA+PiB0aGUgVFBNIGlzIG5vdCBmb3VuZC4gV2hhdCBkbyB5b3UgdGhpbms/Cj4gPiAK
-PiA+IE5vdCBzdXJlIEkgZ2V0IHRoaXMuIFdhc24ndCB0aGUgaXNzdWUgZml4ZWQgaW4gYzc4NzE5
-MjAzZmM2IG9yIGlzIHRoZXJlCj4gPiBzb21ldGhpbmcgbWlzc2luZz8KPiAKPiBJdCBzZWVtcyBp
-dCBpcyBub3QgZW5vdWdoLiBBIFRQTSBpcyBmb3VuZCBidXQgZG9lcyBub3QgcmV0dXJuIGRhdGEg
-dG8KPiB0cG1fZ2V0X3JhbmRvbSgpLCBJIHRoaW5rLgoKV2hpbGUgd29ya2luZyB3aXRoIE5heW5h
-IChhbmQgR2VvcmdlKSBvbiB0aGUgInRwbTogZml4ZXMgdW5pbml0aWFsaXplZAphbGxvY2F0ZWQg
-YmFua3MgZm9yIElCTSB2dHBtIGRyaXZlciIgcGF0Y2gsIEkgd29uZGVyZWQgd2hhdCBoYXBwZW5z
-IGlmCnRoZSBjaGlwIGlzIGVuYWJsZWQsIGJ1dCBub25lIG9mIHRoZSBiYW5rcyB3ZXJlIGVuYWJs
-ZWQuIMKgQ291bGQgdGhpcwpiZSB0aGUgImluYWN0aXZlIiBzdGF0ZT8KCk1pbWkK
+T24gVGh1LCAyMDE5LTA2LTI3IGF0IDIzOjE5IC0wMzAwLCBUaGlhZ28gSnVuZyBCYXVlcm1hbm4g
+d3JvdGU6Cj4gSGVsbG8sCj4gCj4gVGhpcyB2ZXJzaW9uIGlzIGVzc2VudGlhbGx5IGlkZW50aWNh
+bCB0byB0aGUgbGFzdCBvbmUuCj4gCj4gSXQgaXMgb25seSBhIHJlYmFzZSBvbiB0b3Agb2YgdG9k
+YXkncyBsaW51eC1pbnRlZ3JpdHkvbmV4dC1xdWV1ZWQtdGVzdGluZywKPiBwcm9tcHRlZCBieSBj
+b25mbGljdHMgd2l0aCBQcmFraGFyIFNyaXZhc3RhdmEncyBwYXRjaGVzIHRvIG1lYXN1cmUgdGhl
+Cj4ga2VybmVsIGNvbW1hbmQgbGluZS4gSXQgYWxzbyBkcm9wcyB0d28gcGF0Y2hlcyB0aGF0IGFy
+ZSBhbHJlYWR5IHByZXNlbnQgaW4KPiB0aGF0IGJyYW5jaC4KClRoYW5rcywgVGhpYWdvLiDCoFRo
+ZXNlIHBhdGNoZXMgYXJlIG5vdyBpbiBuZXh0LXF1ZXVlZC10ZXN0aW5nIHdhaXRpbmcKZm9yIHNv
+bWUgYWRkaXRpb25hbCByZXZpZXdzL2Fja3MuCgpNaW1pCg==
