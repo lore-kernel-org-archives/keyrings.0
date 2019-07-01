@@ -1,71 +1,78 @@
-From: Nayna <nayna@linux.vnet.ibm.com>
-Date: Fri, 05 Jul 2019 15:20:53 +0000
-Subject: Re: [PATCH] Revert "tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()"
-Message-Id: <abcc3748-8471-8965-046e-9d9431b4f0e9@linux.vnet.ibm.com>
+From: Randy Dunlap <rdunlap@infradead.org>
+Date: Mon, 01 Jul 2019 02:59:33 +0000
+Subject: Re: [PATCH 2/6] Adjust watch_queue documentation to mention mount and superblock watches. [ver #5]
+Message-Id: <7a288c2c-11a1-87df-9550-b247d6ce3010@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190701131505.17759-1-msuchanek@suse.de>
- <8e4cc105b748c5395132b4d3d29d0d9b30a8720c.camel@linux.intel.com>
- <cf2ea579-41c2-42da-2df3-0b1f12e1c639@huawei.com>
- <1562240882.6165.78.camel@linux.ibm.com>
- <1562255201.6165.143.camel@linux.ibm.com> <20190704195857.GB6105@elm>
-In-Reply-To: <20190704195857.GB6105@elm>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Roberto Sassu <roberto.sassu@huawei.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Michal Suchanek <msuchanek@suse.de>, linux-integrity@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, James Bottomley <jejb@linux.ibm.com>, David Howells <dhowells@redhat.com>, Tomas Winkler <tomas.winkler@intel.com>, Armijn Hemel <armijn@tjaldur.nl>, Stefan Berger <stefanb@linux.vnet.ibm.com>, Jerry Snitselaar <jsnitsel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+References: <156173701358.15650.8735203424342507015.stgit@warthog.procyon.org.uk>
+ <156173703546.15650.14319137940607993268.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156173703546.15650.14319137940607993268.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk
+Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Hi Tyler,
+Hi David,
+
+On 6/28/19 8:50 AM, David Howells wrote:
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+> 
+>  Documentation/watch_queue.rst |   20 +++++++++++++++++++-
+>  drivers/misc/Kconfig          |    5 +++--
+>  2 files changed, 22 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
+> index 4087a8e670a8..1bec2018d549 100644
+> --- a/Documentation/watch_queue.rst
+> +++ b/Documentation/watch_queue.rst
+> @@ -13,6 +13,10 @@ receive notifications from the kernel.  This can be used in conjunction with::
+>  
+>      * USB subsystem event notifications
+>  
+> +  * Mount topology change notifications
+> +
+> +  * Superblock event notifications
+> +
+>  
+>  The notifications buffers can be enabled by:
+>  
+> @@ -324,6 +328,19 @@ Any particular buffer can be fed from multiple sources.  Sources include:
+>      for buses and devices.  Watchpoints of this type are set on the global
+>      device watch list.
+>  
+> +  * WATCH_TYPE_MOUNT_NOTIFY
+> +
+> +    Notifications of this type indicate mount tree topology changes and mount
+> +    attribute changes.  A watch can be set on a particular file or directory
+> +    and notifications from the path subtree rooted at that point will be
+> +    intercepted.
+> +
+> +  * WATCH_TYPE_SB_NOTIFY
+> +
+> +    Notifications of this type indicate superblock events, such as quota limits
+> +    being hit, I/O errors being produced or network server loss/reconnection.
+> +    Watches of this type are set directly on superblocks.
+> +
+>  
+>  Event Filtering
+>  =======> @@ -365,7 +382,8 @@ Where:
+>  	(watch.info & info_mask) = info_filter
+>  
+>      This could be used, for example, to ignore events that are not exactly on
+> -    the watched point in a mount tree.
+> +    the watched point in a mount tree by specifying NOTIFY_MOUNT_IN_SUBTREE
+> +    must be 0.
+
+I'm having a little trouble parsing that sentence.
+Could you clarify it or maybe rewrite/modify it?
+Thanks.
+
+>  
+>    * ``subtype_filter`` is a bitmask indicating the subtypes that are of
+>      interest.  Bit 0 of subtype_filter[0] corresponds to subtype 0, bit 1 to
 
 
-On 07/04/2019 03:58 PM, Tyler Hicks wrote:
-> Hey Mimi!
->
-> On 2019-07-04 11:46:41, Mimi Zohar wrote:
->> Hi Jarkko,
->>
->> On Thu, 2019-07-04 at 07:48 -0400, Mimi Zohar wrote:
->>> On Thu, 2019-07-04 at 13:28 +0200, Roberto Sassu wrote:
->>>> On 7/4/2019 12:03 PM, Jarkko Sakkinen wrote:
->>>>> On Mon, 2019-07-01 at 15:15 +0200, Michal Suchanek wrote:
->>>>>> This reverts commit 0b6cf6b97b7ef1fa3c7fefab0cac897a1c4a3400 to avoid
->>>>>> following crash:
->>>>> Thank you. I think this the right choice for the moment. I fixed
->>>>> a trivial checkpatch.pl error and added the mandatory tags. Can
->>>>> you check quickly v2 (just posted)?
->>>>>
->>>>> I already made it available in my master and next.
->>>> Could you please wait few days? I would prefer to fix this issue instead
->>>> of reverting the whole patch.
->>> Nayna posted a patch late yesterday titled "tpm: fixes uninitialized
->>> allocated banks for IBM vtpm driver", which addresses this bug.
->> Now with my review, and with Sachin Sant's and Michal Suchánek
->> testing, instead of reverting this patch could you pick up Nayna's
->> patch instead?
-> It looks to me like the revert would also fix a bug that is keeping the
-> eCryptfs module from loading when the TPM is in an "inactive" state:
->
->    https://bugzilla.kernel.org/show_bug.cgi?id 3953
->
-> I just noticed that it was recently discussed here, too:
->
->    https://lore.kernel.org/linux-integrity/1562244125.6165.95.camel@linux.ibm.com/T/#t
->
-> I believe that the revert would fix it because the call to
-> init_digests()/tpm_get_random() would no longer be in the path of
-> loading ecryptfs.ko (which depends on encrypted-keys.ko, which depends
-> on trusted.ko).
->
-> If the revert isn't used, we'll need a different fix for bug 203953. It
-> should be an easy fix but I don't want it to be forgotten.
 
-
-I think if TPM is inactive/disabled, it needs to be handled during 
-tpm_chip_register() itself. However, probably that needs more analysis 
-and discussion. For now, in context of the trusted.ko module, it seems 
-init_trusted() should "put_device", but continue even if init_digests() 
-fails, that will fix the issue.
-
-
-Thanks & Regards,
-         - Nayna
+-- 
+~Randy
