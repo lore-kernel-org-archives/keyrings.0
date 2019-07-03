@@ -1,40 +1,44 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Fri, 12 Jul 2019 05:25:38 +0000
-Subject: Re: [RFC/RFT] KEYS: trusted: Add generic trusted keys framework
-Message-Id: <CAFA6WYMOyKo2vXY8bO448ikmdGioK3s5JMZLz6c2y8ObPm4zHw@mail.gmail.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Wed, 03 Jul 2019 17:16:23 +0000
+Subject: Re: [PATCH 6/9] Add a general, global device notification watch list [ver #5]
+Message-Id: <20190703171623.GD24672@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1562337154-26376-1-git-send-email-sumit.garg@linaro.org> <20190711192215.5w3fzdjwsebgoesh@linux.intel.com>
-In-Reply-To: <20190711192215.5w3fzdjwsebgoesh@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, linux-security-module@vger.kernel.org, dhowells@redhat.com, Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net, jejb@linux.ibm.com, Mimi Zohar <zohar@linux.ibm.com>, jmorris@namei.org, serge@hallyn.com, Casey Schaufler <casey@schaufler-ca.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, tee-dev@lists.linaro.org
+References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
+ <156173697086.15137.9549379251509621554.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156173697086.15137.9549379251509621554.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@zeniv.linux.org.uk, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, 12 Jul 2019 at 00:52, Jarkko Sakkinen
-<jarkko.sakkinen@linux.intel.com> wrote:
->
-> On Fri, Jul 05, 2019 at 08:02:34PM +0530, Sumit Garg wrote:
-> > Current trusted keys framework is tightly coupled to use TPM device as
-> > an underlying implementation which makes it difficult for implementations
-> > like Trusted Execution Environment (TEE) etc. to provide trusked keys
-> > support in case platform doesn't posses a TPM device.
-> >
-> > So this patch tries to add generic trusted keys framework where underlying
-> > implemtations like TPM, TEE etc. could be easily plugged-in.
-> >
-> > Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
->
-> 1. Needs to be somehow dissected into digestable/reviewable pieces.
+On Fri, Jun 28, 2019 at 04:49:30PM +0100, David Howells wrote:
+> Create a general, global watch list that can be used for the posting of
+> device notification events, for such things as device attachment,
+> detachment and errors on sources such as block devices and USB devices.
+> This can be enabled with:
+> 
+> 	CONFIG_DEVICE_NOTIFICATIONS
+> 
+> To add a watch on this list, an event queue must be created and configured:
+> 
+>         fd = open("/dev/event_queue", O_RDWR);
+>         ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
+> 
+> and then a watch can be placed upon it using a system call:
+> 
+>         watch_devices(fd, 12, 0);
+> 
+> Unless the application wants to receive all events, it should employ
+> appropriate filters.
 
-Sure, will try to split this patch in next version.
+What "filter"?  Who is going to use this and why a new system call for
+this?  You can do this today with udev/netlink/hotplug/whatever so why
+create yet-another-way?
 
-> 2. As a precursory step probably would make sense to move all
->    existing trusted keys code into one subsystem first.
+I don't think this is a good idea unless we really nail down the api and
+who is going to be using it.
 
-Okay.
+thanks,
 
--Sumit
-
->
-> /Jarkko
+greg k-h
