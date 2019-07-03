@@ -1,101 +1,51 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Tue, 09 Jul 2019 05:59:12 +0000
-Subject: Re: [RFC 0/7] Introduce TEE based Trusted Keys support
-Message-Id: <CAFA6WYO0QmCVup6kEhodrf2+WS8p_iaLsb-CLPMaMbnPjapa2Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+From: Rolf Eike Beer <eb@emlix.com>
+Date: Wed, 03 Jul 2019 09:57:07 +0000
+Subject: Re: [PATCH v3] scripts: use pkg-config to locate libcrypto
+Message-Id: <1811702.YVQuMqyDZo@devpool35>
+MIME-Version: 1
+Content-Type: multipart/mixed; boundary="nextPart1729975.KOner38kvF"
 List-Id: <keyrings.vger.kernel.org>
-References: <1560421833-27414-1-git-send-email-sumit.garg@linaro.org>
- <CAFA6WYPn3HB6BRocKmKTR+ZPE=Fav5w1TUdRgmLp-NkYobp3rw@mail.gmail.com> <20190708163140.GB28253@jax>
-In-Reply-To: <20190708163140.GB28253@jax>
-To: Jens Wiklander <jens.wiklander@linaro.org>
-Cc: corbet@lwn.net, dhowells@redhat.com, jejb@linux.ibm.com, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Mimi Zohar <zohar@linux.ibm.com>, jmorris@namei.org, serge@hallyn.com, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, linux-doc@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, tee-dev@lists.linaro.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org
+References: <20538915.Wj2CyUsUYa@devpool35>
+In-Reply-To: <20538915.Wj2CyUsUYa@devpool35>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
 
-On Mon, 8 Jul 2019 at 22:01, Jens Wiklander <jens.wiklander@linaro.org> wrote:
->
-> Hi Sumit,
->
-> On Mon, Jul 08, 2019 at 06:11:39PM +0530, Sumit Garg wrote:
-> > Hi Jens,
-> >
-> > On Thu, 13 Jun 2019 at 16:01, Sumit Garg <sumit.garg@linaro.org> wrote:
-> > >
-> > > Add support for TEE based trusted keys where TEE provides the functionality
-> > > to seal and unseal trusted keys using hardware unique key. Also, this is
-> > > an alternative in case platform doesn't possess a TPM device.
-> > >
-> > > This series also adds some TEE features like:
-> > >
-> > > Patch #1, #2 enables support for registered kernel shared memory with TEE.
-> > >
-> >
-> > Would you like to pick up Patch #1, #2 separately? I think both these
-> > patches add independent functionality and also got reviewed-by tags
-> > too.
->
-> I think it makes more sense to keep them together in the same patch
-> series or could end up with dependencies between trees.
->
+--nextPart1729975.KOner38kvF
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="UTF-8"
 
-I understand your point. Let me keep this patch-set together to avoid
-any dependencies.
+> From 71e19be4247fbaa2540dfb321e2b148234680a13 Mon Sep 17 00:00:00 2001
+> From: Rolf Eike Beer <eb@emlix.com>
+> Date: Thu, 22 Nov 2018 16:40:49 +0100
+> Subject: [PATCH] scripts: use pkg-config to locate libcrypto
+>=20
+> Otherwise build fails if the headers are not in the default location. Whi=
+le
+> at it also ask pkg-config for the libs, with fallback to the existing
+> value.
 
--Sumit
+Ping?
+=2D-=20
+Rolf Eike Beer, emlix GmbH, http://www.emlix.com
+=46on +49 551 30664-0, Fax +49 551 30664-11
+Gothaer Platz 3, 37083 G=C3=B6ttingen, Germany
+Sitz der Gesellschaft: G=C3=B6ttingen, Amtsgericht G=C3=B6ttingen HR B 3160
+Gesch=C3=A4ftsf=C3=BChrung: Heike Jordan, Dr. Uwe Kracke =E2=80=93 Ust-IdNr=
+=2E: DE 205 198 055
 
-> If you don't think dependencies will be an issue then I don't mind
-> picking them up, in that case they'd likely sit in an arm-soc branch
-> until next merge window. However, I think that #3 (support for private
-> kernel login method) should be included too and that one isn't ready
-> yet.
->
-> Thanks,
-> Jens
->
-> >
-> >
-> > -Sumit
-> >
-> > > Patch #3 enables support for private kernel login method required for
-> > > cases like trusted keys where we don't wan't user-space to directly access
-> > > TEE service to retrieve trusted key contents.
-> > >
-> > > Rest of the patches from #4 to #7 adds support for TEE based trusted keys.
-> > >
-> > > This patch-set has been tested with OP-TEE based pseudo TA which can be
-> > > found here [1].
-> > >
-> > > Looking forward to your valuable feedback/suggestions.
-> > >
-> > > [1] https://github.com/OP-TEE/optee_os/pull/3082
-> > >
-> > > Sumit Garg (7):
-> > >   tee: optee: allow kernel pages to register as shm
-> > >   tee: enable support to register kernel memory
-> > >   tee: add private login method for kernel clients
-> > >   KEYS: trusted: Introduce TEE based Trusted Keys
-> > >   KEYS: encrypted: Allow TEE based trusted master keys
-> > >   doc: keys: Document usage of TEE based Trusted Keys
-> > >   MAINTAINERS: Add entry for TEE based Trusted Keys
-> > >
-> > >  Documentation/security/keys/tee-trusted.rst      |  93 +++++
-> > >  MAINTAINERS                                      |   9 +
-> > >  drivers/tee/optee/call.c                         |   7 +
-> > >  drivers/tee/tee_core.c                           |   6 +
-> > >  drivers/tee/tee_shm.c                            |  16 +-
-> > >  include/keys/tee_trusted.h                       |  84 ++++
-> > >  include/keys/trusted-type.h                      |   1 +
-> > >  include/linux/tee_drv.h                          |   1 +
-> > >  include/uapi/linux/tee.h                         |   2 +
-> > >  security/keys/Kconfig                            |   3 +
-> > >  security/keys/Makefile                           |   3 +
-> > >  security/keys/encrypted-keys/masterkey_trusted.c |  10 +-
-> > >  security/keys/tee_trusted.c                      | 506 +++++++++++++++++++++++
-> > >  13 files changed, 737 insertions(+), 4 deletions(-)
-> > >  create mode 100644 Documentation/security/keys/tee-trusted.rst
-> > >  create mode 100644 include/keys/tee_trusted.h
-> > >  create mode 100644 security/keys/tee_trusted.c
-> > >
-> > > --
-> > > 2.7.4
-> > >
+emlix - smart embedded open source
+--nextPart1729975.KOner38kvF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+
+iLMEAAEIAB0WIQQ/Uctzh31xzAxFCLur5FH7Xu2t/AUCXRx78wAKCRCr5FH7Xu2t
+/Ji/BACRSuxQHEqsw0qcdlknyNcG9PldpGMWh1OAgJeYQtOUH0cecj2XfUQuOXhL
+chxN4YJsu6GCZG6sLYdoCPdYDO8WNN33vqXXD5JMYBzWIStR8ZyyzfJj1qFlgTRL
+JqjrwrHLHAuGhJVyxHKr1IFjdLFfVgefpKkdaHFnK9CoEST2gg==
+=yMur
+-----END PGP SIGNATURE-----
+
+--nextPart1729975.KOner38kvF--
