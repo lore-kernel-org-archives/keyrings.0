@@ -1,66 +1,57 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Thu, 04 Jul 2019 12:25:16 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 04 Jul 2019 12:42:05 +0000
 Subject: Re: Problem with the kernels trusted module on "inactive" TPM
-Message-Id: <cb46e05d-f9bd-2d58-0996-390cfbf6f786@huawei.com>
+Message-Id: <1562244125.6165.95.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <CACnrVGfhkpsSWbCai4+5WEOhRukEr7JWDUnFdM-5D+FUyov+nQ@mail.gmail.com>
- <f4b36912-0fb0-1e83-1ad2-fb1d2313c08e@huawei.com>
- <4e3579a4d84aa7e2c80e5068eb1f7a30e17a655b.camel@linux.intel.com>
-In-Reply-To: <4e3579a4d84aa7e2c80e5068eb1f7a30e17a655b.camel@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, CrazyT <crazyt2019+lml@gmail.com>, keyrings@vger.kernel.org
-Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, jejb@linux.ibm.com, zohar@linux.ibm.com
+         <f4b36912-0fb0-1e83-1ad2-fb1d2313c08e@huawei.com>
+         <4e3579a4d84aa7e2c80e5068eb1f7a30e17a655b.camel@linux.intel.com>
+         <cb46e05d-f9bd-2d58-0996-390cfbf6f786@huawei.com>
+In-Reply-To: <cb46e05d-f9bd-2d58-0996-390cfbf6f786@huawei.com>
+To: Roberto Sassu <roberto.sassu@huawei.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, CrazyT <crazyt2019+lml@gmail.com>, keyrings@vger.kernel.org
+Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, jejb@linux.ibm.com, Nayna Jain <nayna@linux.ibm.com>
 
-On 7/4/2019 12:42 PM, Jarkko Sakkinen wrote:
-> On Mon, 2019-07-01 at 17:22 +0300, Roberto Sassu wrote:
->> Adding to the discussion Jarkko (the maintainer of the trusted key) and
->> the linux-integrity mailing list.
-> 
-> I'm a co-maintainer (added James and Mimi).
-> 
->>> some people (including me) have problems with the "trusted" kernel module.
->>> As a result to this also the ecryptfs-module won't load.
->>> (https://bugs.archlinux.org/task/62678)
->>> If you use an "inactive" TPM module, the "trusted" module won't load
->>> anymore.
->>> The command modprobe just responds with "Bad address".
->>> The strace-command shows that init_module fails with EFAULT.
->>> I believe the reason for this is that the trusted-module handles
->>> inactive modules the same as active modules.
->>> This results in an error.
->>>
->>> For example:
->>>
-> https://github.com/torvalds/linux/commit/0b6cf6b97b7ef1fa3c7fefab0cac897a1c4a3400#diff-c01228e6d386afb29df6aac17d9dd7abR1251
->>>
->>> My guess is that init_digests(); returns EFAULT in that case.
->>> The " if (!chip)" check above probably needs to check if the chip is
->>> "inactive".
->>>
->>> "inactive" = still visible to the system, but not functional.
->>> It seems to be the default bios-setting for TPM on thinkpad.
->>> (btw.: i have no clue why anybody would need something like that)
->>>
->>> Sadly i have no idea how you would check for an inactive chip,else i
->>> would have send a patch instead.
->>> But I hope the info i wrote is enough to get it fixed by somebody.
->>
->> Thanks for the report. If you see -EFAULT, tpm_get_random() is probably
->> returning 0.
->>
->> Jarkko, we could consider it as non-critical error, and handle it as if
->> the TPM is not found. What do you think?
-> 
-> Not sure I get this. Wasn't the issue fixed in c78719203fc6 or is there
-> something missing?
-
-It seems it is not enough. A TPM is found but does not return data to
-tpm_get_random(), I think.
-
-Roberto
-
--- 
-HUAWEI TECHNOLOGIES Duesseldorf GmbH, HRB 56063
-Managing Director: Bo PENG, Jian LI, Yanli SHI
+W0NjJ2luZyBOYXluYV0KCk9uIFRodSwgMjAxOS0wNy0wNCBhdCAxNDoyNSArMDIwMCwgUm9iZXJ0
+byBTYXNzdSB3cm90ZToKPiBPbiA3LzQvMjAxOSAxMjo0MiBQTSwgSmFya2tvIFNha2tpbmVuIHdy
+b3RlOgo+ID4gT24gTW9uLCAyMDE5LTA3LTAxIGF0IDE3OjIyICswMzAwLCBSb2JlcnRvIFNhc3N1
+IHdyb3RlOgo+ID4+IEFkZGluZyB0byB0aGUgZGlzY3Vzc2lvbiBKYXJra28gKHRoZSBtYWludGFp
+bmVyIG9mIHRoZSB0cnVzdGVkIGtleSkgYW5kCj4gPj4gdGhlIGxpbnV4LWludGVncml0eSBtYWls
+aW5nIGxpc3QuCj4gPiAKPiA+IEknbSBhIGNvLW1haW50YWluZXIgKGFkZGVkIEphbWVzIGFuZCBN
+aW1pKS4KPiA+IAo+ID4+PiBzb21lIHBlb3BsZSAoaW5jbHVkaW5nIG1lKSBoYXZlIHByb2JsZW1z
+IHdpdGggdGhlICJ0cnVzdGVkIiBrZXJuZWwgbW9kdWxlLgo+ID4+PiBBcyBhIHJlc3VsdCB0byB0
+aGlzIGFsc28gdGhlIGVjcnlwdGZzLW1vZHVsZSB3b24ndCBsb2FkLgo+ID4+PiAoaHR0cHM6Ly9i
+dWdzLmFyY2hsaW51eC5vcmcvdGFzay82MjY3OCkKPiA+Pj4gSWYgeW91IHVzZSBhbiAiaW5hY3Rp
+dmUiIFRQTSBtb2R1bGUsIHRoZSAidHJ1c3RlZCIgbW9kdWxlIHdvbid0IGxvYWQKPiA+Pj4gYW55
+bW9yZS4KPiA+Pj4gVGhlIGNvbW1hbmQgbW9kcHJvYmUganVzdCByZXNwb25kcyB3aXRoICJCYWQg
+YWRkcmVzcyIuCj4gPj4+IFRoZSBzdHJhY2UtY29tbWFuZCBzaG93cyB0aGF0IGluaXRfbW9kdWxl
+IGZhaWxzIHdpdGggRUZBVUxULgo+ID4+PiBJIGJlbGlldmUgdGhlIHJlYXNvbiBmb3IgdGhpcyBp
+cyB0aGF0IHRoZSB0cnVzdGVkLW1vZHVsZSBoYW5kbGVzCj4gPj4+IGluYWN0aXZlIG1vZHVsZXMg
+dGhlIHNhbWUgYXMgYWN0aXZlIG1vZHVsZXMuCj4gPj4+IFRoaXMgcmVzdWx0cyBpbiBhbiBlcnJv
+ci4KPiA+Pj4KPiA+Pj4gRm9yIGV4YW1wbGU6Cj4gPj4+Cj4gPiBodHRwczovL2dpdGh1Yi5jb20v
+dG9ydmFsZHMvbGludXgvY29tbWl0LzBiNmNmNmI5N2I3ZWYxZmEzYzdmZWZhYjBjYWM4OTdhMWM0
+YTM0MDAjZGlmZi1jMDEyMjhlNmQzODZhZmIyOWRmNmFhYzE3ZDlkZDdhYlIxMjUxCj4gPj4+Cj4g
+Pj4+IE15IGd1ZXNzIGlzIHRoYXQgaW5pdF9kaWdlc3RzKCk7IHJldHVybnMgRUZBVUxUIGluIHRo
+YXQgY2FzZS4KPiA+Pj4gVGhlICIgaWYgKCFjaGlwKSIgY2hlY2sgYWJvdmUgcHJvYmFibHkgbmVl
+ZHMgdG8gY2hlY2sgaWYgdGhlIGNoaXAgaXMKPiA+Pj4gImluYWN0aXZlIi4KPiA+Pj4KPiA+Pj4g
+ImluYWN0aXZlIiA9IHN0aWxsIHZpc2libGUgdG8gdGhlIHN5c3RlbSwgYnV0IG5vdCBmdW5jdGlv
+bmFsLgo+ID4+PiBJdCBzZWVtcyB0byBiZSB0aGUgZGVmYXVsdCBiaW9zLXNldHRpbmcgZm9yIFRQ
+TSBvbiB0aGlua3BhZC4KPiA+Pj4gKGJ0dy46IGkgaGF2ZSBubyBjbHVlIHdoeSBhbnlib2R5IHdv
+dWxkIG5lZWQgc29tZXRoaW5nIGxpa2UgdGhhdCkKPiA+Pj4KPiA+Pj4gU2FkbHkgaSBoYXZlIG5v
+IGlkZWEgaG93IHlvdSB3b3VsZCBjaGVjayBmb3IgYW4gaW5hY3RpdmUgY2hpcCxlbHNlIGkKPiA+
+Pj4gd291bGQgaGF2ZSBzZW5kIGEgcGF0Y2ggaW5zdGVhZC4KPiA+Pj4gQnV0IEkgaG9wZSB0aGUg
+aW5mbyBpIHdyb3RlIGlzIGVub3VnaCB0byBnZXQgaXQgZml4ZWQgYnkgc29tZWJvZHkuCj4gPj4K
+PiA+PiBUaGFua3MgZm9yIHRoZSByZXBvcnQuIElmIHlvdSBzZWUgLUVGQVVMVCwgdHBtX2dldF9y
+YW5kb20oKSBpcyBwcm9iYWJseQo+ID4+IHJldHVybmluZyAwLgo+ID4+Cj4gPj4gSmFya2tvLCB3
+ZSBjb3VsZCBjb25zaWRlciBpdCBhcyBub24tY3JpdGljYWwgZXJyb3IsIGFuZCBoYW5kbGUgaXQg
+YXMgaWYKPiA+PiB0aGUgVFBNIGlzIG5vdCBmb3VuZC4gV2hhdCBkbyB5b3UgdGhpbms/Cj4gPiAK
+PiA+IE5vdCBzdXJlIEkgZ2V0IHRoaXMuIFdhc24ndCB0aGUgaXNzdWUgZml4ZWQgaW4gYzc4NzE5
+MjAzZmM2IG9yIGlzIHRoZXJlCj4gPiBzb21ldGhpbmcgbWlzc2luZz8KPiAKPiBJdCBzZWVtcyBp
+dCBpcyBub3QgZW5vdWdoLiBBIFRQTSBpcyBmb3VuZCBidXQgZG9lcyBub3QgcmV0dXJuIGRhdGEg
+dG8KPiB0cG1fZ2V0X3JhbmRvbSgpLCBJIHRoaW5rLgoKV2hpbGUgd29ya2luZyB3aXRoIE5heW5h
+IChhbmQgR2VvcmdlKSBvbiB0aGUgInRwbTogZml4ZXMgdW5pbml0aWFsaXplZAphbGxvY2F0ZWQg
+YmFua3MgZm9yIElCTSB2dHBtIGRyaXZlciIgcGF0Y2gsIEkgd29uZGVyZWQgd2hhdCBoYXBwZW5z
+IGlmCnRoZSBjaGlwIGlzIGVuYWJsZWQsIGJ1dCBub25lIG9mIHRoZSBiYW5rcyB3ZXJlIGVuYWJs
+ZWQuIMKgQ291bGQgdGhpcwpiZSB0aGUgImluYWN0aXZlIiBzdGF0ZT8KCk1pbWkK
