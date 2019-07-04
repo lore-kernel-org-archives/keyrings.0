@@ -1,34 +1,49 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Thu, 04 Jul 2019 15:46:41 +0000
+From: Tyler Hicks <tyhicks@canonical.com>
+Date: Thu, 04 Jul 2019 19:58:58 +0000
 Subject: Re: [PATCH] Revert "tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()"
-Message-Id: <1562255201.6165.143.camel@linux.ibm.com>
+Message-Id: <20190704195857.GB6105@elm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
+Content-Type: text/plain; charset="windows-1250"
 Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20190701131505.17759-1-msuchanek@suse.de>
-         <8e4cc105b748c5395132b4d3d29d0d9b30a8720c.camel@linux.intel.com>
-         <cf2ea579-41c2-42da-2df3-0b1f12e1c639@huawei.com>
-         <1562240882.6165.78.camel@linux.ibm.com>
-In-Reply-To: <1562240882.6165.78.camel@linux.ibm.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Michal Suchanek <msuchanek@suse.de>, linux-integrity@vger.kernel.org
-Cc: Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, James Bottomley <jejb@linux.ibm.com>, David Howells <dhowells@redhat.com>, Tomas Winkler <tomas.winkler@intel.com>, Armijn Hemel <armijn@tjaldur.nl>, Stefan Berger <stefanb@linux.vnet.ibm.com>, Jerry Snitselaar <jsnitsel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+ <8e4cc105b748c5395132b4d3d29d0d9b30a8720c.camel@linux.intel.com>
+ <cf2ea579-41c2-42da-2df3-0b1f12e1c639@huawei.com>
+ <1562240882.6165.78.camel@linux.ibm.com>
+ <1562255201.6165.143.camel@linux.ibm.com>
+In-Reply-To: <1562255201.6165.143.camel@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>
+Cc: Roberto Sassu <roberto.sassu@huawei.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Michal Suchanek <msuchanek@suse.de>, linux-integrity@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, James Bottomley <jejb@linux.ibm.com>, David Howells <dhowells@redhat.com>, Tomas Winkler <tomas.winkler@intel.com>, Armijn Hemel <armijn@tjaldur.nl>, Stefan Berger <stefanb@linux.vnet.ibm.com>, Jerry Snitselaar <jsnitsel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
 
-SGkgSmFya2tvLAoKT24gVGh1LCAyMDE5LTA3LTA0IGF0IDA3OjQ4IC0wNDAwLCBNaW1pIFpvaGFy
-IHdyb3RlOgo+IE9uIFRodSwgMjAxOS0wNy0wNCBhdCAxMzoyOCArMDIwMCwgUm9iZXJ0byBTYXNz
-dSB3cm90ZToKPiA+IE9uIDcvNC8yMDE5IDEyOjAzIFBNLCBKYXJra28gU2Fra2luZW4gd3JvdGU6
-Cj4gPiA+IE9uIE1vbiwgMjAxOS0wNy0wMSBhdCAxNToxNSArMDIwMCwgTWljaGFsIFN1Y2hhbmVr
-IHdyb3RlOgo+ID4gPj4gVGhpcyByZXZlcnRzIGNvbW1pdCAwYjZjZjZiOTdiN2VmMWZhM2M3ZmVm
-YWIwY2FjODk3YTFjNGEzNDAwIHRvIGF2b2lkCj4gPiA+PiBmb2xsb3dpbmcgY3Jhc2g6Cj4gPiA+
-IAo+ID4gPiBUaGFuayB5b3UuIEkgdGhpbmsgdGhpcyB0aGUgcmlnaHQgY2hvaWNlIGZvciB0aGUg
-bW9tZW50LiBJIGZpeGVkCj4gPiA+IGEgdHJpdmlhbCBjaGVja3BhdGNoLnBsIGVycm9yIGFuZCBh
-ZGRlZCB0aGUgbWFuZGF0b3J5IHRhZ3MuIENhbgo+ID4gPiB5b3UgY2hlY2sgcXVpY2tseSB2MiAo
-anVzdCBwb3N0ZWQpPwo+ID4gPiAKPiA+ID4gSSBhbHJlYWR5IG1hZGUgaXQgYXZhaWxhYmxlIGlu
-IG15IG1hc3RlciBhbmQgbmV4dC4KPiA+IAo+ID4gQ291bGQgeW91IHBsZWFzZSB3YWl0IGZldyBk
-YXlzPyBJIHdvdWxkIHByZWZlciB0byBmaXggdGhpcyBpc3N1ZSBpbnN0ZWFkCj4gPiBvZiByZXZl
-cnRpbmcgdGhlIHdob2xlIHBhdGNoLgo+IAo+IE5heW5hIHBvc3RlZCBhIHBhdGNoIGxhdGUgeWVz
-dGVyZGF5IHRpdGxlZCAidHBtOiBmaXhlcyB1bmluaXRpYWxpemVkCj4gYWxsb2NhdGVkIGJhbmtz
-IGZvciBJQk0gdnRwbSBkcml2ZXIiLCB3aGljaCBhZGRyZXNzZXMgdGhpcyBidWcuCgpOb3cgd2l0
-aCBteSByZXZpZXcsIGFuZCB3aXRoIFNhY2hpbiBTYW50J3MgYW5kIE1pY2hhbCBTdWNow6FuZWsK
-dGVzdGluZywgaW5zdGVhZCBvZiByZXZlcnRpbmcgdGhpcyBwYXRjaCBjb3VsZCB5b3UgcGljayB1
-cCBOYXluYSdzCnBhdGNoIGluc3RlYWQ/Cgp0aGFua3MhCgpNaW1pCg==
+SGV5IE1pbWkhCgpPbiAyMDE5LTA3LTA0IDExOjQ2OjQxLCBNaW1pIFpvaGFyIHdyb3RlOgo+IEhp
+IEphcmtrbywKPiAKPiBPbiBUaHUsIDIwMTktMDctMDQgYXQgMDc6NDggLTA0MDAsIE1pbWkgWm9o
+YXIgd3JvdGU6Cj4gPiBPbiBUaHUsIDIwMTktMDctMDQgYXQgMTM6MjggKzAyMDAsIFJvYmVydG8g
+U2Fzc3Ugd3JvdGU6Cj4gPiA+IE9uIDcvNC8yMDE5IDEyOjAzIFBNLCBKYXJra28gU2Fra2luZW4g
+d3JvdGU6Cj4gPiA+ID4gT24gTW9uLCAyMDE5LTA3LTAxIGF0IDE1OjE1ICswMjAwLCBNaWNoYWwg
+U3VjaGFuZWsgd3JvdGU6Cj4gPiA+ID4+IFRoaXMgcmV2ZXJ0cyBjb21taXQgMGI2Y2Y2Yjk3Yjdl
+ZjFmYTNjN2ZlZmFiMGNhYzg5N2ExYzRhMzQwMCB0byBhdm9pZAo+ID4gPiA+PiBmb2xsb3dpbmcg
+Y3Jhc2g6Cj4gPiA+ID4gCj4gPiA+ID4gVGhhbmsgeW91LiBJIHRoaW5rIHRoaXMgdGhlIHJpZ2h0
+IGNob2ljZSBmb3IgdGhlIG1vbWVudC4gSSBmaXhlZAo+ID4gPiA+IGEgdHJpdmlhbCBjaGVja3Bh
+dGNoLnBsIGVycm9yIGFuZCBhZGRlZCB0aGUgbWFuZGF0b3J5IHRhZ3MuIENhbgo+ID4gPiA+IHlv
+dSBjaGVjayBxdWlja2x5IHYyIChqdXN0IHBvc3RlZCk/Cj4gPiA+ID4gCj4gPiA+ID4gSSBhbHJl
+YWR5IG1hZGUgaXQgYXZhaWxhYmxlIGluIG15IG1hc3RlciBhbmQgbmV4dC4KPiA+ID4gCj4gPiA+
+IENvdWxkIHlvdSBwbGVhc2Ugd2FpdCBmZXcgZGF5cz8gSSB3b3VsZCBwcmVmZXIgdG8gZml4IHRo
+aXMgaXNzdWUgaW5zdGVhZAo+ID4gPiBvZiByZXZlcnRpbmcgdGhlIHdob2xlIHBhdGNoLgo+ID4g
+Cj4gPiBOYXluYSBwb3N0ZWQgYSBwYXRjaCBsYXRlIHllc3RlcmRheSB0aXRsZWQgInRwbTogZml4
+ZXMgdW5pbml0aWFsaXplZAo+ID4gYWxsb2NhdGVkIGJhbmtzIGZvciBJQk0gdnRwbSBkcml2ZXIi
+LCB3aGljaCBhZGRyZXNzZXMgdGhpcyBidWcuCj4gCj4gTm93IHdpdGggbXkgcmV2aWV3LCBhbmQg
+d2l0aCBTYWNoaW4gU2FudCdzIGFuZCBNaWNoYWwgU3VjaOFuZWsKPiB0ZXN0aW5nLCBpbnN0ZWFk
+IG9mIHJldmVydGluZyB0aGlzIHBhdGNoIGNvdWxkIHlvdSBwaWNrIHVwIE5heW5hJ3MKPiBwYXRj
+aCBpbnN0ZWFkPwoKSXQgbG9va3MgdG8gbWUgbGlrZSB0aGUgcmV2ZXJ0IHdvdWxkIGFsc28gZml4
+IGEgYnVnIHRoYXQgaXMga2VlcGluZyB0aGUKZUNyeXB0ZnMgbW9kdWxlIGZyb20gbG9hZGluZyB3
+aGVuIHRoZSBUUE0gaXMgaW4gYW4gImluYWN0aXZlIiBzdGF0ZToKCiAgaHR0cHM6Ly9idWd6aWxs
+YS5rZXJuZWwub3JnL3Nob3dfYnVnLmNnaT9pZCAzOTUzCgpJIGp1c3Qgbm90aWNlZCB0aGF0IGl0
+IHdhcyByZWNlbnRseSBkaXNjdXNzZWQgaGVyZSwgdG9vOgoKICBodHRwczovL2xvcmUua2VybmVs
+Lm9yZy9saW51eC1pbnRlZ3JpdHkvMTU2MjI0NDEyNS42MTY1Ljk1LmNhbWVsQGxpbnV4LmlibS5j
+b20vVC8jdAoKSSBiZWxpZXZlIHRoYXQgdGhlIHJldmVydCB3b3VsZCBmaXggaXQgYmVjYXVzZSB0
+aGUgY2FsbCB0bwppbml0X2RpZ2VzdHMoKS90cG1fZ2V0X3JhbmRvbSgpIHdvdWxkIG5vIGxvbmdl
+ciBiZSBpbiB0aGUgcGF0aCBvZgpsb2FkaW5nIGVjcnlwdGZzLmtvICh3aGljaCBkZXBlbmRzIG9u
+IGVuY3J5cHRlZC1rZXlzLmtvLCB3aGljaCBkZXBlbmRzCm9uIHRydXN0ZWQua28pLgoKSWYgdGhl
+IHJldmVydCBpc24ndCB1c2VkLCB3ZSdsbCBuZWVkIGEgZGlmZmVyZW50IGZpeCBmb3IgYnVnIDIw
+Mzk1My4gSXQKc2hvdWxkIGJlIGFuIGVhc3kgZml4IGJ1dCBJIGRvbid0IHdhbnQgaXQgdG8gYmUg
+Zm9yZ290dGVuLgoKVHlsZXIKCj4gCj4gdGhhbmtzIQo+IAo+IE1pbWkKPiA=
