@@ -1,79 +1,88 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 10 Jul 2019 01:32:25 +0000
-Subject: Re: next-20190705 - problems generating certs/x509_certificate_list
-Message-Id: <20190710013225.GB7973@sol.localdomain>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 05 Jul 2019 21:03:39 +0000
+Subject: [GIT PULL] Keys: Set 1 - Miscellany for 5.3
+Message-Id: <26702.1562360619@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <27671.1562384658@turing-police>
- <20190709201712.GI641@sol.localdomain>
-In-Reply-To: <20190709201712.GI641@sol.localdomain>
-To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, Valdis =?utf-8?Q?Kl=C4=93tnieks?= <valdis.kletnieks@vt.edu>, David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2019 at 01:17:14PM -0700, Eric Biggers wrote:
-> On Fri, Jul 05, 2019 at 11:44:18PM -0400, Valdis Kl=C4=93tnieks wrote:
-> > This worked fine in next-20190618, but in next-20190701 I'm seeing dmesg
-> > entries at boot:
-> >=20
-> > dmesg | grep -i x.509
-> > [    8.345699] Loading compiled-in X.509 certificates
-> > [    8.366137] Problem loading in-kernel X.509 certificate (-13)
-> > [    8.507348] cfg80211: Loading compiled-in X.509 certificates for reg=
-ulatory database
-> > [    8.526556] cfg80211: Problem loading in-kernel X.509 certificate (-=
-13)
-> >=20
-> > I start debugging, and discover that certs/x509_certificate_list is a z=
-ero-length file.
-> > I rm it, and 'make V=3D1 certs/system_certificates.o', which tells me:
-> >=20
-> > (....)
-> > make -f ./scripts/Makefile.headersinst obj=3Dinclude/uapi
-> > make -f ./scripts/Makefile.headersinst obj=3Darch/x86/include/uapi
-> > make -f ./scripts/Makefile.build obj=CErts certs/system_certificates.o
-> > ---- smoking gun alert
-> >   scripts/extract-cert "" certs/x509_certificate_list
-> > ----
-> >   gcc -Wp,-MD,certs/.system_certificates.o.d  -nostdinc -isystem /usr/l=
-ib/gcc/x86_64-redhat-linux/9/include -I./arch/x86/include -I./arch/x86/incl=
-ude/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/g=
-enerated/uapi -I./include/uapi -I./include/generated/uapi -include ./includ=
-e/linux/kconfig.h -D__KERNEL__ -D__ASSEMBLY__ -fno-PIE -m64 -DCONFIG_AS_CFI=
-=3D1 -DCONFIG_AS_CFI_SIGNAL_FRAME=3D1 -DCONFIG_AS_CFI_SECTIONS=3D1 -DCONFIG=
-_AS_SSSE3=3D1 -DCONFIG_AS_AVX=3D1 -DCONFIG_AS_AVX2=3D1 -DCONFIG_AS_AVX512=
-=3D1 -DCONFIG_AS_SHA1_NI=3D1 -DCONFIG_AS_SHA256_NI=3D1 -Wa,-gdwarf-2 -DCC_U=
-SING_FENTRY -I.   -c -o certs/system_certificates.o certs/system_certificat=
-es.S
-> >=20
-> > I go look at extract-cert.c, and sure enough, if the first parameter is=
- a null string
-> > it just goes and creates an empty file.
-> >=20
-> > The Makefile says:
-> >=20
-> > quiet_cmd_extract_certs  =3D EXTRACT_CERTS   $(patsubst "%",%,$(2))
-> >       cmd_extract_certs  =3D scripts/extract-cert $(2) $@
-> >=20
-> > and damned if I know why $(2) is "". Diffed the config files from -0618=
- and -0705,
-> > not seeing anything relevant difference.
-> >=20
-> > Any ideas?
-> >=20
->=20
-> I'm seeing on mainline now:
->=20
-> [   10.915386] Problem loading in-kernel X.509 certificate (-13)
->=20
-> - Eric
+Hi Linus,
 
-This is caused by
+Here's my first block of keyrings changes for the next merge window.  I've
+divided up the set into four blocks, but they need to be applied in order
+as they would otherwise conflict with each other.
 
-commit 2e12256b9a76584fa3a6da19210509d4775aee36
-Author: David Howells <dhowells@redhat.com>
-Date:   Thu Jun 27 23:03:07 2019 +0100
+These are some miscellaneous keyrings fixes and improvements:
 
-    keys: Replace uid/gid/perm permissions checking with an ACL
+ (1) Fix a bunch of warnings from sparse, including missing RCU bits and
+     kdoc-function argument mismatches
 
-- Eric
+ (2) Implement a keyctl to allow a key to be moved from one keyring to
+     another, with the option of prohibiting key replacement in the
+     destination keyring.
+
+ (3) Grant Link permission to possessors of request_key_auth tokens so that
+     upcall servicing daemons can more easily arrange things such that only
+     the necessary auth key is passed to the actual service program, and
+     not all the auth keys a daemon might possesss.
+
+ (4) Improvement in lookup_user_key().
+
+ (5) Implement a keyctl to allow keyrings subsystem capabilities to be
+     queried.
+
+The keyutils next branch has commits to make available, document and test
+the move-key and capabilities code:
+
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/log
+
+They're currently on the 'next' branch.
+
+David
+---
+The following changes since commit a188339ca5a396acc588e5851ed7e19f66b0ebd9:
+
+  Linux 5.2-rc1 (2019-05-19 15:47:09 -0700)
+
+are available in the Git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-misc-20190619
+
+for you to fetch changes up to 45e0f30c30bb131663fbe1752974d6f2e39611e2:
+
+  keys: Add capability-checking keyctl function (2019-06-19 13:27:45 +0100)
+
+----------------------------------------------------------------
+Keyrings miscellany
+
+----------------------------------------------------------------
+David Howells (9):
+      keys: sparse: Fix key_fs[ug]id_changed()
+      keys: sparse: Fix incorrect RCU accesses
+      keys: sparse: Fix kdoc mismatches
+      keys: Change keyring_serialise_link_sem to a mutex
+      keys: Break bits out of key_unlink()
+      keys: Hoist locking out of __key_link_begin()
+      keys: Add a keyctl to move a key between keyrings
+      keys: Grant Link permission to possessers of request_key auth keys
+      keys: Add capability-checking keyctl function
+
+Eric Biggers (1):
+      keys: Reuse keyring_index_key::desc_len in lookup_user_key()
+
+ Documentation/security/keys/core.rst |  21 +++
+ include/linux/key.h                  |  13 +-
+ include/uapi/linux/keyctl.h          |  17 +++
+ kernel/cred.c                        |   4 +-
+ security/keys/compat.c               |   6 +
+ security/keys/internal.h             |   7 +
+ security/keys/key.c                  |  27 +++-
+ security/keys/keyctl.c               |  90 +++++++++++-
+ security/keys/keyring.c              | 278 ++++++++++++++++++++++++++++-------
+ security/keys/process_keys.c         |  26 ++--
+ security/keys/request_key.c          |   9 +-
+ security/keys/request_key_auth.c     |   4 +-
+ 12 files changed, 418 insertions(+), 84 deletions(-)
