@@ -1,226 +1,106 @@
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:39 +0000
-Subject: [PATCHv2 25/59] keys/mktme: Preparse the MKTME key payload
-Message-Id: <20190731150813.26289-26-kirill.shutemov@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 05 Jul 2019 21:30:39 +0000
+Subject: [GIT PULL] Keys: Set 4 - Key ACLs for 5.3
+Message-Id: <28477.1562362239@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, jmorris@namei.org, keyrings@vger.kernel.org, netdev@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Alison Schofield <alison.schofield@intel.com>
+Hi Linus,
 
-It is a requirement of the Kernel Keys subsystem to provide a
-preparse method that validates payloads before key instantiate
-methods are called.
+Here's my fourth block of keyrings changes for the next merge window.  They
+change the permissions model used by keys and keyrings to be based on an
+internal ACL by the following means:
 
-Verify that userspace provides valid MKTME options and prepare
-the payload for use at key instantiate time.
+ (1) Replace the permissions mask internally with an ACL that contains a
+     list of ACEs, each with a specific subject with a permissions mask.
+     Potted default ACLs are available for new keys and keyrings.
 
-Create a method to free the preparsed payload. The Kernel Key
-subsystem will that to clean up after the key is instantiated.
+     ACE subjects can be macroised to indicate the UID and GID specified on
+     the key (which remain).  Future commits will be able to add additional
+     subject types, such as specific UIDs or domain tags/namespaces.
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+     Also split a number of permissions to give finer control.  Examples
+     include splitting the revocation permit from the change-attributes
+     permit, thereby allowing someone to be granted permission to revoke a
+     key without allowing them to change the owner; also the ability to
+     join a keyring is split from the ability to link to it, thereby
+     stopping a process accessing a keyring by joining it and thus
+     acquiring use of possessor permits.
+
+ (2) Provide a keyctl to allow the granting or denial of one or more
+     permits to a specific subject.  Direct access to the ACL is not
+     granted, and the ACL cannot be viewed.
+
+David
 ---
- include/keys/mktme-type.h  |  31 +++++++++
- security/keys/mktme_keys.c | 134 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 165 insertions(+)
- create mode 100644 include/keys/mktme-type.h
+The following changes since commit a58946c158a040068e7c94dc1d58bbd273258068:
 
-diff --git a/include/keys/mktme-type.h b/include/keys/mktme-type.h
-new file mode 100644
-index 000000000000..9dad92f17179
---- /dev/null
-+++ b/include/keys/mktme-type.h
-@@ -0,0 +1,31 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+
-+/* Key service for Multi-KEY Total Memory Encryption */
-+
-+#ifndef _KEYS_MKTME_TYPE_H
-+#define _KEYS_MKTME_TYPE_H
-+
-+#include <linux/key.h>
-+
-+enum mktme_alg {
-+	MKTME_ALG_AES_XTS_128,
-+};
-+
-+const char *const mktme_alg_names[] = {
-+	[MKTME_ALG_AES_XTS_128]	= "aes-xts-128",
-+};
-+
-+enum mktme_type {
-+	MKTME_TYPE_ERROR = -1,
-+	MKTME_TYPE_CPU,
-+	MKTME_TYPE_NO_ENCRYPT,
-+};
-+
-+const char *const mktme_type_names[] = {
-+	[MKTME_TYPE_CPU]	= "cpu",
-+	[MKTME_TYPE_NO_ENCRYPT]	= "no-encrypt",
-+};
-+
-+extern struct key_type key_type_mktme;
-+
-+#endif /* _KEYS_MKTME_TYPE_H */
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index d262e0f348e4..fe119a155235 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -6,6 +6,10 @@
- #include <linux/key.h>
- #include <linux/key-type.h>
- #include <linux/mm.h>
-+#include <linux/parser.h>
-+#include <linux/string.h>
-+#include <asm/intel_pconfig.h>
-+#include <keys/mktme-type.h>
- #include <keys/user-type.h>
- 
- #include "internal.h"
-@@ -27,8 +31,138 @@ struct mktme_mapping {
- 
- static struct mktme_mapping *mktme_map;
- 
-+enum mktme_opt_id {
-+	OPT_ERROR,
-+	OPT_TYPE,
-+	OPT_ALGORITHM,
-+};
-+
-+static const match_table_t mktme_token = {
-+	{OPT_TYPE, "type=%s"},
-+	{OPT_ALGORITHM, "algorithm=%s"},
-+	{OPT_ERROR, NULL}
-+};
-+
-+/* Make sure arguments are correct for the TYPE of key requested */
-+static int mktme_check_options(u32 *payload, unsigned long token_mask,
-+			       enum mktme_type type, enum mktme_alg alg)
-+{
-+	if (!token_mask)
-+		return -EINVAL;
-+
-+	switch (type) {
-+	case MKTME_TYPE_CPU:
-+		if (test_bit(OPT_ALGORITHM, &token_mask))
-+			*payload |= (1 << alg) << 8;
-+		else
-+			return -EINVAL;
-+
-+		*payload |= MKTME_KEYID_SET_KEY_RANDOM;
-+		break;
-+
-+	case MKTME_TYPE_NO_ENCRYPT:
-+		*payload |= MKTME_KEYID_NO_ENCRYPT;
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+/* Parse the options and store the key programming data in the payload. */
-+static int mktme_get_options(char *options, u32 *payload)
-+{
-+	enum mktme_alg alg = MKTME_ALG_AES_XTS_128;
-+	enum mktme_type type = MKTME_TYPE_ERROR;
-+	substring_t args[MAX_OPT_ARGS];
-+	unsigned long token_mask = 0;
-+	char *p = options;
-+	int token;
-+
-+	while ((p = strsep(&options, " \t"))) {
-+		if (*p = '\0' || *p = ' ' || *p = '\t')
-+			continue;
-+		token = match_token(p, mktme_token, args);
-+		if (token = OPT_ERROR)
-+			return -EINVAL;
-+		if (test_and_set_bit(token, &token_mask))
-+			return -EINVAL;
-+
-+		switch (token) {
-+		case OPT_TYPE:
-+			type = match_string(mktme_type_names,
-+					    ARRAY_SIZE(mktme_type_names),
-+					    args[0].from);
-+			if (type < 0)
-+				return -EINVAL;
-+			break;
-+
-+		case OPT_ALGORITHM:
-+			/* Algorithm must be generally supported */
-+			alg = match_string(mktme_alg_names,
-+					   ARRAY_SIZE(mktme_alg_names),
-+					   args[0].from);
-+			if (alg < 0)
-+				return -EINVAL;
-+
-+			/* Algorithm must be activated on this platform */
-+			if (!(mktme_algs & (1 << alg)))
-+				return -EINVAL;
-+			break;
-+
-+		default:
-+			return -EINVAL;
-+		}
-+	}
-+	return mktme_check_options(payload, token_mask, type, alg);
-+}
-+
-+void mktme_free_preparsed_payload(struct key_preparsed_payload *prep)
-+{
-+	kzfree(prep->payload.data[0]);
-+}
-+
-+/*
-+ * Key Service Method to preparse a payload before a key is created.
-+ * Check permissions and the options. Load the proposed key field
-+ * data into the payload for use by the instantiate method.
-+ */
-+int mktme_preparse_payload(struct key_preparsed_payload *prep)
-+{
-+	size_t datalen = prep->datalen;
-+	u32 *mktme_payload;
-+	char *options;
-+	int ret;
-+
-+	if (datalen <= 0 || datalen > 1024 || !prep->data)
-+		return -EINVAL;
-+
-+	options = kmemdup_nul(prep->data, datalen, GFP_KERNEL);
-+	if (!options)
-+		return -ENOMEM;
-+
-+	mktme_payload = kzalloc(sizeof(*mktme_payload), GFP_KERNEL);
-+	if (!mktme_payload) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+	ret = mktme_get_options(options, mktme_payload);
-+	if (ret < 0) {
-+		kzfree(mktme_payload);
-+		goto out;
-+	}
-+	prep->quotalen = sizeof(mktme_payload);
-+	prep->payload.data[0] = mktme_payload;
-+out:
-+	kzfree(options);
-+	return ret;
-+}
-+
- struct key_type key_type_mktme = {
- 	.name		= "mktme",
-+	.preparse	= mktme_preparse_payload,
-+	.free_preparse	= mktme_free_preparsed_payload,
- 	.describe	= user_describe,
- };
- 
--- 
-2.21.0
+  keys: Pass the network namespace into request_key mechanism (2019-06-27 23:02:12 +0100)
+
+are available in the Git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-acl-20190703
+
+for you to fetch changes up to 7a1ade847596dadc94b37e49f8c03f167fd71748:
+
+  keys: Provide KEYCTL_GRANT_PERMISSION (2019-07-03 13:05:22 +0100)
+
+----------------------------------------------------------------
+Keyrings ACL
+
+----------------------------------------------------------------
+David Howells (2):
+      keys: Replace uid/gid/perm permissions checking with an ACL
+      keys: Provide KEYCTL_GRANT_PERMISSION
+
+ Documentation/security/keys/core.rst               | 128 ++++++--
+ Documentation/security/keys/request-key.rst        |   9 +-
+ certs/blacklist.c                                  |   7 +-
+ certs/system_keyring.c                             |  12 +-
+ drivers/md/dm-crypt.c                              |   2 +-
+ drivers/nvdimm/security.c                          |   2 +-
+ fs/afs/security.c                                  |   2 +-
+ fs/cifs/cifs_spnego.c                              |  25 +-
+ fs/cifs/cifsacl.c                                  |  28 +-
+ fs/cifs/connect.c                                  |   4 +-
+ fs/crypto/keyinfo.c                                |   2 +-
+ fs/ecryptfs/ecryptfs_kernel.h                      |   2 +-
+ fs/ecryptfs/keystore.c                             |   2 +-
+ fs/fscache/object-list.c                           |   2 +-
+ fs/nfs/nfs4idmap.c                                 |  30 +-
+ fs/ubifs/auth.c                                    |   2 +-
+ include/linux/key.h                                | 121 +++----
+ include/uapi/linux/keyctl.h                        |  65 ++++
+ lib/digsig.c                                       |   2 +-
+ net/ceph/ceph_common.c                             |   2 +-
+ net/dns_resolver/dns_key.c                         |  12 +-
+ net/dns_resolver/dns_query.c                       |  15 +-
+ net/rxrpc/key.c                                    |  19 +-
+ net/wireless/reg.c                                 |   6 +-
+ security/integrity/digsig.c                        |  31 +-
+ security/integrity/digsig_asymmetric.c             |   2 +-
+ security/integrity/evm/evm_crypto.c                |   2 +-
+ security/integrity/ima/ima_mok.c                   |  13 +-
+ security/integrity/integrity.h                     |   6 +-
+ .../integrity/platform_certs/platform_keyring.c    |  14 +-
+ security/keys/compat.c                             |   2 +
+ security/keys/encrypted-keys/encrypted.c           |   2 +-
+ security/keys/encrypted-keys/masterkey_trusted.c   |   2 +-
+ security/keys/gc.c                                 |   2 +-
+ security/keys/internal.h                           |  16 +-
+ security/keys/key.c                                |  29 +-
+ security/keys/keyctl.c                             | 104 ++++--
+ security/keys/keyring.c                            |  27 +-
+ security/keys/permission.c                         | 361 +++++++++++++++++++--
+ security/keys/persistent.c                         |  27 +-
+ security/keys/proc.c                               |  22 +-
+ security/keys/process_keys.c                       |  86 +++--
+ security/keys/request_key.c                        |  34 +-
+ security/keys/request_key_auth.c                   |  15 +-
+ security/selinux/hooks.c                           |  16 +-
+ security/smack/smack_lsm.c                         |   3 +-
+ 46 files changed, 992 insertions(+), 325 deletions(-)
