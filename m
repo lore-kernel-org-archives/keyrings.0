@@ -1,88 +1,133 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 29 Jul 2019 20:46:28 +0000
-Subject: Re: [PATCH v7 10/16] fscrypt: v2 encryption policy support
-Message-Id: <20190729204627.GH169027@gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 05 Jul 2019 21:20:44 +0000
+Subject: [GIT PULL] Keys: Set 3 - Keyrings namespacing for 5.3
+Message-Id: <27850.1562361644@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190726224141.14044-1-ebiggers@kernel.org>
- <20190726224141.14044-11-ebiggers@kernel.org>
- <20190728211730.GK6088@mit.edu>
-In-Reply-To: <20190728211730.GK6088@mit.edu>
-To: "Theodore Y. Ts'o" <tytso@mit.edu>
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, jmorris@namei.org, ebiederm@xmission.com, dwalsh@redhat.com, keyrings@vger.kernel.org, netdev@vger.kernel.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-afs@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Sun, Jul 28, 2019 at 05:17:30PM -0400, Theodore Y. Ts'o wrote:
-> On Fri, Jul 26, 2019 at 03:41:35PM -0700, Eric Biggers wrote:
-> > @@ -319,6 +329,31 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
-> >  	if (!capable(CAP_SYS_ADMIN))
-> >  		goto out_wipe_secret;
-> >  
-> > +	if (arg.key_spec.type != FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR) {
-> 
-> This should be "= FSCRYPT_KEY_SPEC_TYPE_INDENTIFIER" instead.  That's
-> because you use the identifier part of the union:
-> 
-> > +		/* Calculate the key identifier and return it to userspace. */
-> > +		err = fscrypt_hkdf_expand(&secret.hkdf,
-> > +					  HKDF_CONTEXT_KEY_IDENTIFIER,
-> > +					  NULL, 0, arg.key_spec.u.identifier,
-> 
-> If we ever add a new key specifier type, and alternative in the union,
-> this is going to come back to bite us.
+Here's my third block of keyrings changes for the next merge window.
 
-Well, I did it this way because the next patch changes the code to:
+These patches help make keys and keyrings more namespace aware.  Firstly
+some miscellaneous patches to make the process easier:
 
-	if (arg.key_spec.type = FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR) {
-		...
-	} else {
-		...
-	}
+ (1) Simplify key index_key handling so that the word-sized chunks
+     assoc_array requires don't have to be shifted about, making it easier
+     to add more bits into the key.
 
-We already validated that it's either TYPE_DESCRIPTOR or TYPE_IDENTIFIER.
+ (2) Cache the hash value in the key so that we don't have to calculate on
+     every key we examine during a search (it involves a bunch of
+     multiplications).
 
-But I guess to be more clear I'll just make it handle the default case again.
+ (3) Allow keying_search() to search non-recursively.
 
-	switch (arg.key_spec.type) {
-	case FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR:
-		...
-		break;
-	case FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER:
-		...
-		break;
-	default:
-		err = -EINVAL;
-		break;
-	}
+Then the main patches:
 
-> 
-> > +	if (policy->version = FSCRYPT_POLICY_V1) {
-> > +		/*
-> > +		 * The original encryption policy version provided no way of
-> > +		 * verifying that the correct master key was supplied, which was
-> > +		 * insecure in scenarios where multiple users have access to the
-> > +		 * same encrypted files (even just read-only access).
-> 
-> Which scenario do you have in mind?  With read-only access, Alice can
-> fetch the encryption policy for a directory, and introduce a key with
-> the same descriptor, but the "wrong" key, but that's only going to
-> affect Alice's use of the key.  It won't affect what key is used by
-> Bob, since Alice doesn't have write access to Bob's keyrings.
-> 
-> If what you mean is the risk when there is a single global
-> filesystem-specific keyring, where Alice could introduce a "wrong" key
-> identified with a specific descriptor, then sure, Alice could trick
-> Bob into encrypting his data with the wrong key (one known to Alice).
-> But we don't allow keys usable by V1 policies to be used in the
-> filesystem-specific keyring, do we?
-> 
+ (4) Make it so that keyring names are per-user_namespace from the point of
+     view of KEYCTL_JOIN_SESSION_KEYRING so that they're not accessible
+     cross-user_namespace.
 
-The scenario is that Alice lists the directory with the wrong key, then Bob
-lists the directory too and gets the wrong filenames.  This happens because the
-inode, fscrypt_info, dentry cache, page cache, etc. are the same for everyone.
-Bob's key is never looked up because the inode already has a key cached.
+     keyctl_capabilities() shows KEYCTL_CAPS1_NS_KEYRING_NAME for this.
 
-This also applies to regular files and symlinks.
+ (5) Move the user and user-session keyrings to the user_namespace rather
+     than the user_struct.  This prevents them propagating directly across
+     user_namespaces boundaries (ie. the KEY_SPEC_* flags will only pick
+     from the current user_namespace).
 
-- Eric
+ (6) Make it possible to include the target namespace in which the key shall
+     operate in the index_key.  This will allow the possibility of multiple
+     keys with the same description, but different target domains to be held
+     in the same keyring.
+
+     keyctl_capabilities() shows KEYCTL_CAPS1_NS_KEY_TAG for this.
+
+ (7) Make it so that keys are implicitly invalidated by removal of a domain
+     tag, causing them to be garbage collected.
+
+ (8) Institute a network namespace domain tag that allows keys to be
+     differentiated by the network namespace in which they operate.  New keys
+     that are of a type marked 'KEY_TYPE_NET_DOMAIN' are assigned the network
+     domain in force when they are created.
+
+ (9) Make it so that the desired network namespace can be handed down into the
+     request_key() mechanism.  This allows AFS, NFS, etc. to request keys
+     specific to the network namespace of the superblock.
+
+     This also means that the keys in the DNS record cache are thenceforth
+     namespaced, provided network filesystems pass the appropriate network
+     namespace down into dns_query().
+
+     For DNS, AFS and NFS are good, whilst CIFS and Ceph are not.  Other
+     cache keyrings, such as idmapper keyrings, also need to set the domain
+     tag - for which they need access to the network namespace of the
+     superblock.
+
+David
+---
+The following changes since commit 3b8c4a08a471d56ecaaca939c972fdf5b8255629:
+
+  keys: Kill off request_key_async{,_with_auxdata} (2019-06-26 20:58:13 +0100)
+
+are available in the Git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-namespace-20190627
+
+for you to fetch changes up to a58946c158a040068e7c94dc1d58bbd273258068:
+
+  keys: Pass the network namespace into request_key mechanism (2019-06-27 23:02:12 +0100)
+
+----------------------------------------------------------------
+Keyrings namespacing
+
+----------------------------------------------------------------
+David Howells (9):
+      keys: Simplify key description management
+      keys: Cache the hash value to avoid lots of recalculation
+      keys: Add a 'recurse' flag for keyring searches
+      keys: Namespace keyring names
+      keys: Move the user and user-session keyrings to the user_namespace
+      keys: Include target namespace in match criteria
+      keys: Garbage collect keys for which the domain has been removed
+      keys: Network namespace domain tag
+      keys: Pass the network namespace into request_key mechanism
+
+ Documentation/security/keys/core.rst        |  38 ++--
+ Documentation/security/keys/request-key.rst |  29 ++-
+ certs/blacklist.c                           |   2 +-
+ crypto/asymmetric_keys/asymmetric_type.c    |   2 +-
+ fs/afs/addr_list.c                          |   4 +-
+ fs/afs/dynroot.c                            |   8 +-
+ fs/cifs/dns_resolve.c                       |   3 +-
+ fs/nfs/dns_resolve.c                        |   3 +-
+ fs/nfs/nfs4idmap.c                          |   2 +-
+ include/linux/dns_resolver.h                |   3 +-
+ include/linux/key-type.h                    |   3 +
+ include/linux/key.h                         |  81 ++++++++-
+ include/linux/sched/user.h                  |  14 --
+ include/linux/user_namespace.h              |  12 +-
+ include/net/net_namespace.h                 |   3 +
+ include/uapi/linux/keyctl.h                 |   2 +
+ kernel/user.c                               |   8 +-
+ kernel/user_namespace.c                     |   9 +-
+ lib/digsig.c                                |   2 +-
+ net/ceph/messenger.c                        |   3 +-
+ net/core/net_namespace.c                    |  20 +++
+ net/dns_resolver/dns_key.c                  |   1 +
+ net/dns_resolver/dns_query.c                |   7 +-
+ net/rxrpc/key.c                             |   6 +-
+ net/rxrpc/security.c                        |   2 +-
+ security/integrity/digsig_asymmetric.c      |   4 +-
+ security/keys/gc.c                          |   2 +-
+ security/keys/internal.h                    |  10 +-
+ security/keys/key.c                         |   5 +-
+ security/keys/keyctl.c                      |   8 +-
+ security/keys/keyring.c                     | 263 ++++++++++++++++------------
+ security/keys/persistent.c                  |  10 +-
+ security/keys/proc.c                        |   3 +-
+ security/keys/process_keys.c                | 262 +++++++++++++++++----------
+ security/keys/request_key.c                 |  62 ++++---
+ security/keys/request_key_auth.c            |   3 +-
+ 36 files changed, 589 insertions(+), 310 deletions(-)
