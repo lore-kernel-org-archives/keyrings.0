@@ -1,23 +1,27 @@
-From: Tyler Hicks <tyhicks@canonical.com>
-Date: Mon, 08 Jul 2019 19:55:32 +0000
+From: James Bottomley <jejb@linux.ibm.com>
+Date: Mon, 08 Jul 2019 20:34:59 +0000
 Subject: Re: [PATCH] KEYS: trusted: allow module init if TPM is inactive or deactivated
-Message-Id: <20190708195532.GB5292@elm>
+Message-Id: <1562618099.20748.13.camel@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190705163735.11539-1-roberto.sassu@huawei.com>
 In-Reply-To: <20190705163735.11539-1-roberto.sassu@huawei.com>
-To: Roberto Sassu <roberto.sassu@huawei.com>
-Cc: jarkko.sakkinen@linux.intel.com, jejb@linux.ibm.com, zohar@linux.ibm.com, jgg@ziepe.ca, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com
+To: Roberto Sassu <roberto.sassu@huawei.com>, jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jgg@ziepe.ca
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, tyhicks@canonical.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com
 
-On 2019-07-05 18:37:35, Roberto Sassu wrote:
-> Commit c78719203fc6 ("KEYS: trusted: allow trusted.ko to initialize w/o a
-> TPM") allows the trusted module to be loaded even a TPM is not found to
+On Fri, 2019-07-05 at 18:37 +0200, Roberto Sassu wrote:
+> Commit c78719203fc6 ("KEYS: trusted: allow trusted.ko to initialize
+> w/o a
+> TPM") allows the trusted module to be loaded even a TPM is not found
+> to
 > avoid module dependency problems.
 > 
-> Unfortunately, this does not completely solve the issue, as there could be
-> a case where a TPM is found but is not functional (the TPM commands return
+> Unfortunately, this does not completely solve the issue, as there
+> could be
+> a case where a TPM is found but is not functional (the TPM commands
+> return
 > an error). Specifically, after the tpm_chip structure is returned by
 > tpm_default_chip() in init_trusted(), the execution terminates after
 > init_digests() returns -EFAULT (due to the fact that tpm_get_random()
@@ -26,7 +30,8 @@ On 2019-07-05 18:37:35, Roberto Sassu wrote:
 > This patch fixes the issue by ignoring the TPM_ERR_DEACTIVATED and
 > TPM_ERR_DISABLED errors.
 > 
-> Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
+> Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip
+> structure...")
 > Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
 > ---
 >  drivers/char/tpm/tpm.h  | 2 --
@@ -80,38 +85,12 @@ On 2019-07-05 18:37:35, Roberto Sassu wrote:
 >  	int i;
 >  
 >  	ret = tpm_get_random(chip, digest, TPM_MAX_DIGEST_SIZE);
-> -	if (ret < 0)
-> +	if (ret < 0 || ret = TPM_ERR_DEACTIVATED || ret = TPM_ERR_DISABLED)
->  		return ret;
 
-As someone who hasn't looked at much of the TPM code, I would have
-expected tpm_get_random() to return a positive value that only ever
-indicates the number of random bytes saved to the buffer. From the
-function documentation:
+Not a criticism of your patch, but can we please stop doing this. 
+Single random number sources are horrendously bad practice because it
+gives an attacker a single target to subvert.  We should ensure the TPM
+is plugged into the kernel RNG as a source and then take randomness
+from the mixed pool so it's harder for an attacker because they have to
+subvert all our sources to predict what came out.
 
-  Return: number of random bytes read or a negative error value.
-
-Despite the function documentation and as your patch suggests, I can
-see that it is possible for tpm_transmit_cmd() to return
-a positive value that's also returned by tpm_get_random() even though it
-may not have filled the buffer when the TPM is in an
-inactive/deactivated state.
-
-I think there are other callers which are not prepared for positive
-return values that indicate a failure to fill the buffer with random
-data. For instance, the way that tpm_hwrng_read() is calling
-tpm_get_random() looks a little worrisome.
-
-This patch would likely fix the bug reported against eCryptfs
-(https://bugzilla.kernel.org/show_bug.cgi?id 3953) but I can't help to
-think that callers of tpm_get_random() would benefit from a more
-consolidated approach of handling TPM_ERR_* return values rather than
-handling them at this single call site.
-
-Tyler
-
->  	if (ret < TPM_MAX_DIGEST_SIZE)
->  		return -EFAULT;
-> -- 
-> 2.17.1
-> 
+James
