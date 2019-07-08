@@ -1,34 +1,74 @@
-From: "Theodore Y. Ts'o" <tytso@mit.edu>
-Date: Mon, 29 Jul 2019 20:14:45 +0000
-Subject: Re: [PATCH v7 06/16] fscrypt: add FS_IOC_ADD_ENCRYPTION_KEY ioctl
-Message-Id: <20190729201445.GA16445@mit.edu>
+From: Jens Wiklander <jens.wiklander@linaro.org>
+Date: Mon, 08 Jul 2019 15:39:09 +0000
+Subject: Re: [RFC 3/7] tee: add private login method for kernel clients
+Message-Id: <20190708153908.GA28253@jax>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190726224141.14044-1-ebiggers@kernel.org>
- <20190726224141.14044-7-ebiggers@kernel.org>
- <20190728185003.GF6088@mit.edu> <20190729194644.GE169027@gmail.com>
-In-Reply-To: <20190729194644.GE169027@gmail.com>
-To: linux-fscrypt@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Paul Crowley <paulcrowley@google.com>, Satya Tangirala <satyat@google.com>
+References: <1560421833-27414-1-git-send-email-sumit.garg@linaro.org>
+ <1560421833-27414-4-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1560421833-27414-4-git-send-email-sumit.garg@linaro.org>
+To: Sumit Garg <sumit.garg@linaro.org>
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, corbet@lwn.net, dhowells@redhat.com, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org
 
-On Mon, Jul 29, 2019 at 12:46:45PM -0700, Eric Biggers wrote:
-> > For that matter, we could just add a new ioctl which returns the file
-> > system's keyring id.  That way an application program won't have to
-> > try to figure out what a file's underlying sb->s_id happens to be.
-> > (Especially if things like overlayfs are involved.)
+Hi Sumit,
+
+On Thu, Jun 13, 2019 at 04:00:29PM +0530, Sumit Garg wrote:
+> There are use-cases where user-space shouldn't be allowed to communicate
+> directly with a TEE device which is dedicated to provide a specific
+> service for a kernel client. So add a private login method for kernel
+> clients and disallow user-space to open-session using this login method.
 > 
-> Keep in mind that the new ioctls (FS_IOC_ADD_ENCRYPTION_KEY,
-> FS_IOC_REMOVE_ENCRYPTION_KEY, FS_IOC_GET_ENCRYPTION_KEY_STATUS) don't take the
-> keyring ID as a parameter, since it's already known from the filesystem the
-> ioctl is executed on.  So there actually isn't much that can be done with the
-> keyring ID.  But sure, if it's needed later we can add an API to get it.
+> Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+> ---
+>  drivers/tee/tee_core.c   | 6 ++++++
+>  include/uapi/linux/tee.h | 2 ++
+>  2 files changed, 8 insertions(+)
+> 
+> diff --git a/drivers/tee/tee_core.c b/drivers/tee/tee_core.c
+> index 0f16d9f..4581bd1 100644
+> --- a/drivers/tee/tee_core.c
+> +++ b/drivers/tee/tee_core.c
+> @@ -334,6 +334,12 @@ static int tee_ioctl_open_session(struct tee_context *ctx,
+>  			goto out;
+>  	}
+>  
+> +	if (arg.clnt_login = TEE_IOCTL_LOGIN_REE_KERNEL) {
+TEE_IOCTL_LOGIN_REE_KERNEL is defined as 0x80000000 which is in the
+range specified and implementation defined by the GP spec. I wonder if
+we shouldn't filter the entire implementation defined range instead of
+just this value.
 
-Yeah, I was thinking about for testing/debugging purposes so that we
-could use keyctl to examine the per-file system keyring and see what
-keys are attached to a file system.  This is only going to be usable
-by root, so I guess we can just try to figure it out by going through
-/proc/keys and searching by sb->s_id.  If there are ambiguities that
-make this hard to do, we can add an interface to make this easier.
+> +		pr_err("login method not allowed for user-space client\n");
+pr_debug(), if it's needed at all.
 
-     	       	      	     - Ted
+> +		rc = -EPERM;
+> +		goto out;
+> +	}
+> +
+>  	rc = ctx->teedev->desc->ops->open_session(ctx, &arg, params);
+>  	if (rc)
+>  		goto out;
+> diff --git a/include/uapi/linux/tee.h b/include/uapi/linux/tee.h
+> index 4b9eb06..f33c69c 100644
+> --- a/include/uapi/linux/tee.h
+> +++ b/include/uapi/linux/tee.h
+> @@ -172,6 +172,8 @@ struct tee_ioctl_buf_data {
+>  #define TEE_IOCTL_LOGIN_APPLICATION		4
+>  #define TEE_IOCTL_LOGIN_USER_APPLICATION	5
+>  #define TEE_IOCTL_LOGIN_GROUP_APPLICATION	6
+> +/* Private login method for REE kernel clients */
+It's worth noting that this is filtered by the TEE framework, compared
+to everything else which is treated opaquely.
+
+> +#define TEE_IOCTL_LOGIN_REE_KERNEL		0x80000000
+>  
+>  /**
+>   * struct tee_ioctl_param - parameter
+> -- 
+> 2.7.4
+> 
+
+Thanks,
+Jens
