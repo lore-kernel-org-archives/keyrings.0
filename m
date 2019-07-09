@@ -1,69 +1,73 @@
-From: Sasha Levin <sashal@kernel.org>
-Date: Mon, 15 Jul 2019 14:36:17 +0000
-Subject: [PATCH AUTOSEL 4.9 61/73] crypto: asymmetric_keys - select CRYPTO_HASH where needed
-Message-Id: <20190715143629.10893-61-sashal@kernel.org>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Tue, 09 Jul 2019 20:42:25 +0000
+Subject: Re: [PATCH 2/2] KEYS: Provide KEYCTL_GRANT_PERMISSION
+Message-Id: <20190709204225.GM641@sol.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190715143629.10893-1-sashal@kernel.org>
-In-Reply-To: <20190715143629.10893-1-sashal@kernel.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Herbert Xu <herbert@gondor.apana.org.au>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <155862710003.24863.11807972177275927370.stgit@warthog.procyon.org.uk>
+ <155862712317.24863.13455329541359881229.stgit@warthog.procyon.org.uk>
+In-Reply-To: <155862712317.24863.13455329541359881229.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On Thu, May 23, 2019 at 04:58:43PM +0100, David Howells wrote:
+> Provide a keyctl() operation to grant/remove permissions.  The grant
+> operation, wrapped by libkeyutils, looks like:
+> 
+> 	int ret = keyctl_grant_permission(key_serial_t key,
+> 					  enum key_ace_subject_type type,
+> 					  unsigned int subject,
+> 					  unsigned int perm);
+> 
+> Where key is the key to be modified, type and subject represent the subject
+> to which permission is to be granted (or removed) and perm is the set of
+> permissions to be granted.  0 is returned on success.  SET_SECURITY
+> permission is required for this.
+> 
+> The subject type currently must be KEY_ACE_SUBJ_STANDARD for the moment
+> (other subject types will come along later).
+> 
+> For subject type KEY_ACE_SUBJ_STANDARD, the following subject values are
+> available:
+> 
+> 	KEY_ACE_POSSESSOR	The possessor of the key
+> 	KEY_ACE_OWNER		The owner of the key
+> 	KEY_ACE_GROUP		The key's group
+> 	KEY_ACE_EVERYONE	Everyone
+> 
+> perm lists the permissions to be granted:
+> 
+> 	KEY_ACE_VIEW		Can view the key metadata
+> 	KEY_ACE_READ		Can read the key content
+> 	KEY_ACE_WRITE		Can update/modify the key content
+> 	KEY_ACE_SEARCH		Can find the key by searching/requesting
+> 	KEY_ACE_LINK		Can make a link to the key
+> 	KEY_ACE_SET_SECURITY	Can set security
+> 	KEY_ACE_INVAL		Can invalidate
+> 	KEY_ACE_REVOKE		Can revoke
+> 	KEY_ACE_JOIN		Can join this keyring
+> 	KEY_ACE_CLEAR		Can clear this keyring
+> 
+> If an ACE already exists for the subject, then the permissions mask will be
+> overwritten; if perm is 0, it will be deleted.
+> 
+> Currently, the internal ACL is limited to a maximum of 16 entries.
+> 
+> For example:
+> 
+> 	int ret = keyctl_grant_permission(key,
+> 					  KEY_ACE_SUBJ_STANDARD,
+> 					  KEY_ACE_OWNER,
+> 					  KEY_ACE_VIEW | KEY_ACE_READ);
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-[ Upstream commit 90acc0653d2bee203174e66d519fbaaa513502de ]
+Where is the documentation and tests for this?  I want to add syzkaller
+definitions for this, but there is no documentation (a commit message doesn't
+count).  I checked the 'next' branch of keyutils as well.
 
-Build testing with some core crypto options disabled revealed
-a few modules that are missing CRYPTO_HASH:
+How is anyone supposed to use this if there is no documentation?
 
-crypto/asymmetric_keys/x509_public_key.o: In function `x509_get_sig_params':
-x509_public_key.c:(.text+0x4c7): undefined reference to `crypto_alloc_shash'
-x509_public_key.c:(.text+0x5e5): undefined reference to `crypto_shash_digest'
-crypto/asymmetric_keys/pkcs7_verify.o: In function `pkcs7_digest.isra.0':
-pkcs7_verify.c:(.text+0xab): undefined reference to `crypto_alloc_shash'
-pkcs7_verify.c:(.text+0x1b2): undefined reference to `crypto_shash_digest'
-pkcs7_verify.c:(.text+0x3c1): undefined reference to `crypto_shash_update'
-pkcs7_verify.c:(.text+0x411): undefined reference to `crypto_shash_finup'
-
-This normally doesn't show up in randconfig tests because there is
-a large number of other options that select CRYPTO_HASH.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
----
- crypto/asymmetric_keys/Kconfig | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 331f6baf2df8..13f3de68b479 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -14,6 +14,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- 	select MPILIB
- 	select CRYPTO_HASH_INFO
- 	select CRYPTO_AKCIPHER
-+	select CRYPTO_HASH
- 	help
- 	  This option provides support for asymmetric public key type handling.
- 	  If signature generation and/or verification are to be used,
-@@ -33,6 +34,7 @@ config X509_CERTIFICATE_PARSER
- config PKCS7_MESSAGE_PARSER
- 	tristate "PKCS#7 message parser"
- 	depends on X509_CERTIFICATE_PARSER
-+	select CRYPTO_HASH
- 	select ASN1
- 	select OID_REGISTRY
- 	help
-@@ -55,6 +57,7 @@ config SIGNED_PE_FILE_VERIFICATION
- 	bool "Support for PE file signature verification"
- 	depends on PKCS7_MESSAGE_PARSER=y
- 	depends on SYSTEM_DATA_VERIFICATION
-+	select CRYPTO_HASH
- 	select ASN1
- 	select OID_REGISTRY
- 	help
--- 
-2.20.1
+- Eric
