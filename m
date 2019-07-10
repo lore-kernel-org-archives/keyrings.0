@@ -1,77 +1,85 @@
 From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 10 Jul 2019 19:46:22 +0000
+Date: Wed, 10 Jul 2019 20:15:53 +0000
 Subject: Re: [GIT PULL] Keys: Set 4 - Key ACLs for 5.3
-Message-Id: <20190710194620.GA83443@gmail.com>
+Message-Id: <20190710201552.GB83443@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <28477.1562362239@warthog.procyon.org.uk>
  <CAHk-=wjxoeMJfeBahnWH=9zShKp2bsVy527vo3_y8HfOdhwAAw@mail.gmail.com>
-In-Reply-To: <CAHk-=wjxoeMJfeBahnWH=9zShKp2bsVy527vo3_y8HfOdhwAAw@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, James Morris James Morris <jmorris@namei.org>, keyrings@vger.kernel.org, Netdev <netdev@vger.kernel.org>, linux-nfs@vger.kernel.org, CIFS <linux-cifs@vger.kernel.org>, linux-afs@lists.infradead.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-integrity@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>
+ <20190710194620.GA83443@gmail.com>
+In-Reply-To: <20190710194620.GA83443@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, keyrings@vger.kernel.org, Netdev <netdev@vger.kernel.org>, linux-nfs@vger.kernel.org, CIFS <linux-cifs@vger.kernel.org>, linux-afs@lists.infradead.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-integrity@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>
 
-On Wed, Jul 10, 2019 at 11:35:07AM -0700, Linus Torvalds wrote:
-> On Fri, Jul 5, 2019 at 2:30 PM David Howells <dhowells@redhat.com> wrote:
-> >
-> > Here's my fourth block of keyrings changes for the next merge window.  They
-> > change the permissions model used by keys and keyrings to be based on an
-> > internal ACL by the following means:
+On Wed, Jul 10, 2019 at 12:46:22PM -0700, Eric Biggers wrote:
+> On Wed, Jul 10, 2019 at 11:35:07AM -0700, Linus Torvalds wrote:
+> > On Fri, Jul 5, 2019 at 2:30 PM David Howells <dhowells@redhat.com> wrote:
+> > >
+> > > Here's my fourth block of keyrings changes for the next merge window.  They
+> > > change the permissions model used by keys and keyrings to be based on an
+> > > internal ACL by the following means:
+> > 
+> > It turns out that this is broken, and I'll probably have to revert the
+> > merge entirely.
+> > 
+> > With this merge in place, I can't boot any of the machines that have
+> > an encrypted disk setup. The boot just stops at
+> > 
+> >   systemd[1]: Started Forward Password Requests to Plymouth Directory Watch.
+> >   systemd[1]: Reached target Paths.
+> > 
+> > and never gets any further. I never get the prompt for a passphrase
+> > for the disk encryption.
+> > 
+> > Apparently not a lot of developers are using encrypted volumes for
+> > their development machines.
+> > 
+> > I'm not sure if the only requirement is an encrypted volume, or if
+> > this is also particular to a F30 install in case you need to be able
+> > to reproduce. But considering that you have a redhat email address,
+> > I'm sure you can find a F30 install somewhere with an encrypted disk.
+> > 
+> > David, if you can fix this quickly, I'll hold off on the revert of it
+> > all, but I can wait only so long. I've stopped merging stuff since I
+> > noticed my machines don't work (this merge window has not been
+> > pleasant so far - in addition to this issue I had another entirely
+> > unrelated boot failure which made bisecting this one even more fun).
+> > 
+> > So if I don't see a quick fix, I'll just revert in order to then
+> > continue to do pull requests later today. Because I do not want to do
+> > further pulls with something that I can't boot as a base.
+> > 
+> >                  Linus
 > 
-> It turns out that this is broken, and I'll probably have to revert the
-> merge entirely.
+> This also broke 'keyctl new_session' and hence all the fscrypt tests
+> (https://lkml.kernel.org/lkml/20190710011559.GA7973@sol.localdomain/), and it
+> also broke loading in-kernel X.509 certificates
+> (https://lore.kernel.org/lkml/27671.1562384658@turing-police/T/#u).
 > 
-> With this merge in place, I can't boot any of the machines that have
-> an encrypted disk setup. The boot just stops at
+> I'm *guessing* these are all some underlying issue where keyrings aren't being
+> given all the needed permissions anymore.
 > 
->   systemd[1]: Started Forward Password Requests to Plymouth Directory Watch.
->   systemd[1]: Reached target Paths.
+> But just FYI, David had said he's on vacation with no laptop or email access for
+> 2 weeks starting from Sunday (3 days ago).  So I don't think you can expect a
+> quick fix from him.
 > 
-> and never gets any further. I never get the prompt for a passphrase
-> for the disk encryption.
+> I was planning to look into this to fix the fscrypt tests, but it might be a few
+> days before I get to it.  And while I'm *guessing* it will be a simple fix, it
+> might not be.  So I can't speak for David, but personally I'm fine with the
+> commits being reverted for now.
 > 
-> Apparently not a lot of developers are using encrypted volumes for
-> their development machines.
+> I'm also unhappy that the new keyctl KEYCTL_GRANT_PERMISSION doesn't have any
+> documentation or tests.  (Which seems to be a common problem with David's
+> work...  None of the new mount syscalls in v5.2 have any tests, for example, and
+> the man pages are still work-in-progress and last sent out for review a year
+> ago, despite API changes that occurred before the syscalls were merged.)
 > 
-> I'm not sure if the only requirement is an encrypted volume, or if
-> this is also particular to a F30 install in case you need to be able
-> to reproduce. But considering that you have a redhat email address,
-> I'm sure you can find a F30 install somewhere with an encrypted disk.
-> 
-> David, if you can fix this quickly, I'll hold off on the revert of it
-> all, but I can wait only so long. I've stopped merging stuff since I
-> noticed my machines don't work (this merge window has not been
-> pleasant so far - in addition to this issue I had another entirely
-> unrelated boot failure which made bisecting this one even more fun).
-> 
-> So if I don't see a quick fix, I'll just revert in order to then
-> continue to do pull requests later today. Because I do not want to do
-> further pulls with something that I can't boot as a base.
-> 
->                  Linus
 
-This also broke 'keyctl new_session' and hence all the fscrypt tests
-(https://lkml.kernel.org/lkml/20190710011559.GA7973@sol.localdomain/), and it
-also broke loading in-kernel X.509 certificates
-(https://lore.kernel.org/lkml/27671.1562384658@turing-police/T/#u).
-
-I'm *guessing* these are all some underlying issue where keyrings aren't being
-given all the needed permissions anymore.
-
-But just FYI, David had said he's on vacation with no laptop or email access for
-2 weeks starting from Sunday (3 days ago).  So I don't think you can expect a
-quick fix from him.
-
-I was planning to look into this to fix the fscrypt tests, but it might be a few
-days before I get to it.  And while I'm *guessing* it will be a simple fix, it
-might not be.  So I can't speak for David, but personally I'm fine with the
-commits being reverted for now.
-
-I'm also unhappy that the new keyctl KEYCTL_GRANT_PERMISSION doesn't have any
-documentation or tests.  (Which seems to be a common problem with David's
-work...  None of the new mount syscalls in v5.2 have any tests, for example, and
-the man pages are still work-in-progress and last sent out for review a year
-ago, despite API changes that occurred before the syscalls were merged.)
+Also worth noting that the key ACL patches were only in linux-next for 9 days
+before the pull request was sent.  The X.509 certificate loading bug (which
+might be the same underlying bug) was reported on July 6 by someone testing
+linux-next, but the pull request had already been sent on July 5.  I suspect
+these bug(s) would have been fixed if they had been in linux-next for longer.
 
 - Eric
