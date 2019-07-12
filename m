@@ -1,78 +1,37 @@
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Wed, 03 Jul 2019 17:07:38 +0000
-Subject: Re: [PATCH 8/9] usb: Add USB subsystem notifications [ver #5]
-Message-Id: <20190703170738.GA24672@kroah.com>
+From: James Morris <jmorris@namei.org>
+Date: Fri, 12 Jul 2019 20:11:39 +0000
+Subject: Re: [PATCH 1/6] security: Add hooks to rule on setting a superblock or mount watch [ver #5]
+Message-Id: <alpine.LRH.2.21.1907130611040.4685@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
- <156173698939.15137.11150923486478934112.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156173698939.15137.11150923486478934112.stgit@warthog.procyon.org.uk>
+References: <156173701358.15650.8735203424342507015.stgit@warthog.procyon.org.uk> <156173702349.15650.1484210092464492434.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156173702349.15650.1484210092464492434.stgit@warthog.procyon.org.uk>
 To: David Howells <dhowells@redhat.com>
-Cc: viro@zeniv.linux.org.uk, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: viro@zeniv.linux.org.uk, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, Jun 28, 2019 at 04:49:49PM +0100, David Howells wrote:
-> Add a USB subsystem notification mechanism whereby notifications about
-> hardware events such as device connection, disconnection, reset and I/O
-> errors, can be reported to a monitoring process asynchronously.
-> 
-> Firstly, an event queue needs to be created:
-> 
-> 	fd = open("/dev/event_queue", O_RDWR);
-> 	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
-> 
-> then a notification can be set up to report USB notifications via that
-> queue:
-> 
-> 	struct watch_notification_filter filter = {
-> 		.nr_filters = 1,
-> 		.filters = {
-> 			[0] = {
-> 				.type = WATCH_TYPE_USB_NOTIFY,
-> 				.subtype_filter[0] = UINT_MAX;
-> 			},
-> 		},
-> 	};
-> 	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
-> 	notify_devices(fd, 12);
-> 
-> After that, records will be placed into the queue when events occur on a
-> USB device or bus.  Records are of the following format:
-> 
-> 	struct usb_notification {
-> 		struct watch_notification watch;
-> 		__u32	error;
-> 		__u32	reserved;
-> 		__u8	name_len;
-> 		__u8	name[0];
-> 	} *n;
-> 
-> Where:
-> 
-> 	n->watch.type will be WATCH_TYPE_USB_NOTIFY
-> 
-> 	n->watch.subtype will be the type of notification, such as
-> 	NOTIFY_USB_DEVICE_ADD.
-> 
-> 	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
-> 	record.
-> 
-> 	n->watch.info & WATCH_INFO_ID will be the second argument to
-> 	device_notify(), shifted.
-> 
-> 	n->error and n->reserved are intended to convey information such as
-> 	error codes, but are currently not used
-> 
-> 	n->name_len and n->name convey the USB device name as an
-> 	unterminated string.  This may be truncated - it is currently
-> 	limited to a maximum 63 chars.
-> 
-> Note that it is permissible for event records to be of variable length -
-> or, at least, the length may be dependent on the subtype.
+On Fri, 28 Jun 2019, David Howells wrote:
+
+> Add security hooks that will allow an LSM to rule on whether or not a watch
+> may be set on a mount or on a superblock.  More than one hook is required
+> as the watches watch different types of object.
 > 
 > Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> cc: linux-usb@vger.kernel.org
+> cc: Casey Schaufler <casey@schaufler-ca.com>
+> cc: Stephen Smalley <sds@tycho.nsa.gov>
+> cc: linux-security-module@vger.kernel.org
+> ---
+> 
+>  include/linux/lsm_hooks.h |   16 ++++++++++++++++
+>  include/linux/security.h  |   10 ++++++++++
+>  security/security.c       |   10 ++++++++++
+>  3 files changed, 36 insertions(+)
 
-Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+Acked-by: James Morris <jamorris@linux.microsoft.com>
+
+
+-- 
+James Morris
+<jmorris@namei.org>
