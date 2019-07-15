@@ -1,60 +1,69 @@
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:25 +0000
-Subject: [PATCHv2 11/59] x86/mm: Detect MKTME early
-Message-Id: <20190731150813.26289-12-kirill.shutemov@linux.intel.com>
+From: Sasha Levin <sashal@kernel.org>
+Date: Mon, 15 Jul 2019 14:28:19 +0000
+Subject: [PATCH AUTOSEL 4.14 085/105] crypto: asymmetric_keys - select CRYPTO_HASH where needed
+Message-Id: <20190715142839.9896-85-sashal@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190715142839.9896-1-sashal@kernel.org>
+In-Reply-To: <20190715142839.9896-1-sashal@kernel.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Herbert Xu <herbert@gondor.apana.org.au>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
 
-We need to know the number of KeyIDs before page_ext is initialized.
-We are going to use page_ext to store KeyID and it would be handly to
-avoid page_ext allocation if there's no MKMTE in the system.
+From: Arnd Bergmann <arnd@arndb.de>
 
-page_ext initialization happens before full CPU initizliation is complete.
-Move detect_tme() call to early_init_intel().
+[ Upstream commit 90acc0653d2bee203174e66d519fbaaa513502de ]
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Build testing with some core crypto options disabled revealed
+a few modules that are missing CRYPTO_HASH:
+
+crypto/asymmetric_keys/x509_public_key.o: In function `x509_get_sig_params':
+x509_public_key.c:(.text+0x4c7): undefined reference to `crypto_alloc_shash'
+x509_public_key.c:(.text+0x5e5): undefined reference to `crypto_shash_digest'
+crypto/asymmetric_keys/pkcs7_verify.o: In function `pkcs7_digest.isra.0':
+pkcs7_verify.c:(.text+0xab): undefined reference to `crypto_alloc_shash'
+pkcs7_verify.c:(.text+0x1b2): undefined reference to `crypto_shash_digest'
+pkcs7_verify.c:(.text+0x3c1): undefined reference to `crypto_shash_update'
+pkcs7_verify.c:(.text+0x411): undefined reference to `crypto_shash_finup'
+
+This normally doesn't show up in randconfig tests because there is
+a large number of other options that select CRYPTO_HASH.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- arch/x86/kernel/cpu/intel.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ crypto/asymmetric_keys/Kconfig | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 991bdcb2a55a..4c2d70287eb4 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -187,6 +187,8 @@ static bool bad_spectre_microcode(struct cpuinfo_x86 *c)
- 	return false;
- }
- 
-+static void detect_tme(struct cpuinfo_x86 *c);
-+
- static void early_init_intel(struct cpuinfo_x86 *c)
- {
- 	u64 misc_enable;
-@@ -338,6 +340,9 @@ static void early_init_intel(struct cpuinfo_x86 *c)
- 	 */
- 	if (detect_extended_topology_early(c) < 0)
- 		detect_ht_early(c);
-+
-+	if (cpu_has(c, X86_FEATURE_TME))
-+		detect_tme(c);
- }
- 
- #ifdef CONFIG_X86_32
-@@ -793,9 +798,6 @@ static void init_intel(struct cpuinfo_x86 *c)
- 	if (cpu_has(c, X86_FEATURE_VMX))
- 		detect_vmx_virtcap(c);
- 
--	if (cpu_has(c, X86_FEATURE_TME))
--		detect_tme(c);
--
- 	init_intel_misc_features(c);
- }
- 
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index f3702e533ff4..d8a73d94bb30 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -15,6 +15,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ 	select MPILIB
+ 	select CRYPTO_HASH_INFO
+ 	select CRYPTO_AKCIPHER
++	select CRYPTO_HASH
+ 	help
+ 	  This option provides support for asymmetric public key type handling.
+ 	  If signature generation and/or verification are to be used,
+@@ -34,6 +35,7 @@ config X509_CERTIFICATE_PARSER
+ config PKCS7_MESSAGE_PARSER
+ 	tristate "PKCS#7 message parser"
+ 	depends on X509_CERTIFICATE_PARSER
++	select CRYPTO_HASH
+ 	select ASN1
+ 	select OID_REGISTRY
+ 	help
+@@ -56,6 +58,7 @@ config SIGNED_PE_FILE_VERIFICATION
+ 	bool "Support for PE file signature verification"
+ 	depends on PKCS7_MESSAGE_PARSER=y
+ 	depends on SYSTEM_DATA_VERIFICATION
++	select CRYPTO_HASH
+ 	select ASN1
+ 	select OID_REGISTRY
+ 	help
 -- 
-2.21.0
+2.20.1
