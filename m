@@ -1,69 +1,14 @@
-From: Sasha Levin <sashal@kernel.org>
-Date: Mon, 15 Jul 2019 14:28:19 +0000
-Subject: [PATCH AUTOSEL 4.14 085/105] crypto: asymmetric_keys - select CRYPTO_HASH where needed
-Message-Id: <20190715142839.9896-85-sashal@kernel.org>
+From: "Smith Jerry" <morita@nakagawa-consul.com>
+Date: Mon, 15 Jul 2019 08:11:02 +0000
+Subject: Loan offer !!
+Message-Id: <3372.174.128.236.106.1563178262.risu@webmail.nakagawa-consul.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190715142839.9896-1-sashal@kernel.org>
-In-Reply-To: <20190715142839.9896-1-sashal@kernel.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Herbert Xu <herbert@gondor.apana.org.au>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
 
-[ Upstream commit 90acc0653d2bee203174e66d519fbaaa513502de ]
 
-Build testing with some core crypto options disabled revealed
-a few modules that are missing CRYPTO_HASH:
 
-crypto/asymmetric_keys/x509_public_key.o: In function `x509_get_sig_params':
-x509_public_key.c:(.text+0x4c7): undefined reference to `crypto_alloc_shash'
-x509_public_key.c:(.text+0x5e5): undefined reference to `crypto_shash_digest'
-crypto/asymmetric_keys/pkcs7_verify.o: In function `pkcs7_digest.isra.0':
-pkcs7_verify.c:(.text+0xab): undefined reference to `crypto_alloc_shash'
-pkcs7_verify.c:(.text+0x1b2): undefined reference to `crypto_shash_digest'
-pkcs7_verify.c:(.text+0x3c1): undefined reference to `crypto_shash_update'
-pkcs7_verify.c:(.text+0x411): undefined reference to `crypto_shash_finup'
-
-This normally doesn't show up in randconfig tests because there is
-a large number of other options that select CRYPTO_HASH.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
----
- crypto/asymmetric_keys/Kconfig | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index f3702e533ff4..d8a73d94bb30 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -15,6 +15,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- 	select MPILIB
- 	select CRYPTO_HASH_INFO
- 	select CRYPTO_AKCIPHER
-+	select CRYPTO_HASH
- 	help
- 	  This option provides support for asymmetric public key type handling.
- 	  If signature generation and/or verification are to be used,
-@@ -34,6 +35,7 @@ config X509_CERTIFICATE_PARSER
- config PKCS7_MESSAGE_PARSER
- 	tristate "PKCS#7 message parser"
- 	depends on X509_CERTIFICATE_PARSER
-+	select CRYPTO_HASH
- 	select ASN1
- 	select OID_REGISTRY
- 	help
-@@ -56,6 +58,7 @@ config SIGNED_PE_FILE_VERIFICATION
- 	bool "Support for PE file signature verification"
- 	depends on PKCS7_MESSAGE_PARSER=y
- 	depends on SYSTEM_DATA_VERIFICATION
-+	select CRYPTO_HASH
- 	select ASN1
- 	select OID_REGISTRY
- 	help
--- 
-2.20.1
+Do you need a Loan? email us now on kasaperkoloans@yahoo.com.hk and get
+more details on the loan we offer
