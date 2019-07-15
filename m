@@ -1,72 +1,69 @@
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:08:00 +0000
-Subject: [PATCHv2 46/59] mm: Restrict MKTME memory encryption to anonymous VMAs
-Message-Id: <20190731150813.26289-47-kirill.shutemov@linux.intel.com>
+From: Sasha Levin <sashal@kernel.org>
+Date: Mon, 15 Jul 2019 13:45:49 +0000
+Subject: [PATCH AUTOSEL 5.2 184/249] crypto: asymmetric_keys - select CRYPTO_HASH where needed
+Message-Id: <20190715134655.4076-184-sashal@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190715134655.4076-1-sashal@kernel.org>
+In-Reply-To: <20190715134655.4076-1-sashal@kernel.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Herbert Xu <herbert@gondor.apana.org.au>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
 
-From: Alison Schofield <alison.schofield@intel.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-Memory encryption is only supported for mappings that are ANONYMOUS.
-Test the VMA's in an encrypt_mprotect() request to make sure they all
-meet that requirement before encrypting any.
+[ Upstream commit 90acc0653d2bee203174e66d519fbaaa513502de ]
 
-The encrypt_mprotect syscall will return -EINVAL and will not encrypt
-any VMA's if this check fails.
+Build testing with some core crypto options disabled revealed
+a few modules that are missing CRYPTO_HASH:
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+crypto/asymmetric_keys/x509_public_key.o: In function `x509_get_sig_params':
+x509_public_key.c:(.text+0x4c7): undefined reference to `crypto_alloc_shash'
+x509_public_key.c:(.text+0x5e5): undefined reference to `crypto_shash_digest'
+crypto/asymmetric_keys/pkcs7_verify.o: In function `pkcs7_digest.isra.0':
+pkcs7_verify.c:(.text+0xab): undefined reference to `crypto_alloc_shash'
+pkcs7_verify.c:(.text+0x1b2): undefined reference to `crypto_shash_digest'
+pkcs7_verify.c:(.text+0x3c1): undefined reference to `crypto_shash_update'
+pkcs7_verify.c:(.text+0x411): undefined reference to `crypto_shash_finup'
+
+This normally doesn't show up in randconfig tests because there is
+a large number of other options that select CRYPTO_HASH.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- mm/mprotect.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ crypto/asymmetric_keys/Kconfig | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 518d75582e7b..4b079e1b2d6f 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -347,6 +347,24 @@ static int prot_none_walk(struct vm_area_struct *vma, unsigned long start,
- 	return walk_page_range(start, end, &prot_none_walk);
- }
- 
-+/*
-+ * Encrypted mprotect is only supported on anonymous mappings.
-+ * If this test fails on any single VMA, the entire mprotect
-+ * request fails.
-+ */
-+static bool mem_supports_encryption(struct vm_area_struct *vma, unsigned long end)
-+{
-+	struct vm_area_struct *test_vma = vma;
-+
-+	do {
-+		if (!vma_is_anonymous(test_vma))
-+			return false;
-+
-+		test_vma = test_vma->vm_next;
-+	} while (test_vma && test_vma->vm_start < end);
-+	return true;
-+}
-+
- int
- mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
- 	       unsigned long start, unsigned long end, unsigned long newflags,
-@@ -533,6 +551,12 @@ static int do_mprotect_ext(unsigned long start, size_t len,
- 				goto out;
- 		}
- 	}
-+
-+	if (keyid > 0 && !mem_supports_encryption(vma, end)) {
-+		error = -EINVAL;
-+		goto out;
-+	}
-+
- 	if (start > vma->vm_start)
- 		prev = vma;
- 
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index be70ca6c85d3..1f1f004dc757 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -15,6 +15,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+ 	select MPILIB
+ 	select CRYPTO_HASH_INFO
+ 	select CRYPTO_AKCIPHER
++	select CRYPTO_HASH
+ 	help
+ 	  This option provides support for asymmetric public key type handling.
+ 	  If signature generation and/or verification are to be used,
+@@ -65,6 +66,7 @@ config TPM_KEY_PARSER
+ config PKCS7_MESSAGE_PARSER
+ 	tristate "PKCS#7 message parser"
+ 	depends on X509_CERTIFICATE_PARSER
++	select CRYPTO_HASH
+ 	select ASN1
+ 	select OID_REGISTRY
+ 	help
+@@ -87,6 +89,7 @@ config SIGNED_PE_FILE_VERIFICATION
+ 	bool "Support for PE file signature verification"
+ 	depends on PKCS7_MESSAGE_PARSER=y
+ 	depends on SYSTEM_DATA_VERIFICATION
++	select CRYPTO_HASH
+ 	select ASN1
+ 	select OID_REGISTRY
+ 	help
 -- 
-2.21.0
+2.20.1
