@@ -1,95 +1,43 @@
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:40 +0000
-Subject: [PATCHv2 26/59] keys/mktme: Instantiate MKTME keys
-Message-Id: <20190731150813.26289-27-kirill.shutemov@linux.intel.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Thu, 18 Jul 2019 11:36:44 +0000
+Subject: [RFC/RFT v2 0/2] KEYS: trusted: Add generic trusted keys framework
+Message-Id: <1563449086-13183-1-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-From: Alison Schofield <alison.schofield@intel.com>
+This patch-set is an outcome of discussion here [1].
 
-Instantiate is a Kernel Key Service method invoked when a key is
-added (add_key, request_key) by the user.
+I have tested this framework with trusted keys support provided via TEE
+but I wasn't able to test it with a TPM device as I don't possess one. It
+would be really helpful if others could test this patch-set using a TPM
+device.
 
-During instantiation, MKTME allocates an available hardware KeyID
-and maps it to the Userspace Key.
+[1] https://www.mail-archive.com/linux-doc@vger.kernel.org/msg30591.html
 
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- security/keys/mktme_keys.c | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+Changes in v2:
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index fe119a155235..beca852db01a 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -14,6 +14,7 @@
- 
- #include "internal.h"
- 
-+static DEFINE_SPINLOCK(mktme_lock);
- static unsigned int mktme_available_keyids;  /* Free Hardware KeyIDs */
- 
- enum mktme_keyid_state {
-@@ -31,6 +32,24 @@ struct mktme_mapping {
- 
- static struct mktme_mapping *mktme_map;
- 
-+int mktme_reserve_keyid(struct key *key)
-+{
-+	int i;
-+
-+	if (!mktme_available_keyids)
-+		return 0;
-+
-+	for (i = 1; i <= mktme_nr_keyids(); i++) {
-+		if (mktme_map[i].state = KEYID_AVAILABLE) {
-+			mktme_map[i].state = KEYID_ASSIGNED;
-+			mktme_map[i].key = key;
-+			mktme_available_keyids--;
-+			return i;
-+		}
-+	}
-+	return 0;
-+}
-+
- enum mktme_opt_id {
- 	OPT_ERROR,
- 	OPT_TYPE,
-@@ -43,6 +62,20 @@ static const match_table_t mktme_token = {
- 	{OPT_ERROR, NULL}
- };
- 
-+/* Key Service Method to create a new key. Payload is preparsed. */
-+int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
-+{
-+	unsigned long flags;
-+	int keyid;
-+
-+	spin_lock_irqsave(&mktme_lock, flags);
-+	keyid = mktme_reserve_keyid(key);
-+	spin_unlock_irqrestore(&mktme_lock, flags);
-+	if (!keyid)
-+		return -ENOKEY;
-+	return 0;
-+}
-+
- /* Make sure arguments are correct for the TYPE of key requested */
- static int mktme_check_options(u32 *payload, unsigned long token_mask,
- 			       enum mktme_type type, enum mktme_alg alg)
-@@ -163,6 +196,7 @@ struct key_type key_type_mktme = {
- 	.name		= "mktme",
- 	.preparse	= mktme_preparse_payload,
- 	.free_preparse	= mktme_free_preparsed_payload,
-+	.instantiate	= mktme_instantiate_key,
- 	.describe	= user_describe,
- };
- 
+Split trusted keys abstraction patch for ease of review.
+
+Sumit Garg (2):
+  KEYS: trusted: create trusted keys subsystem
+  KEYS: trusted: Add generic trusted keys framework
+
+ crypto/asymmetric_keys/asym_tpm.c                  |   2 +-
+ include/keys/trusted-type.h                        |  45 +++
+ include/keys/{trusted.h => trusted_tpm.h}          |  19 +-
+ security/keys/Makefile                             |   2 +-
+ security/keys/trusted-keys/Makefile                |   7 +
+ .../keys/{trusted.c => trusted-keys/trusted-tpm.c} | 347 ++++-----------------
+ security/keys/trusted-keys/trusted.c               | 343 ++++++++++++++++++++
+ 7 files changed, 458 insertions(+), 307 deletions(-)
+ rename include/keys/{trusted.h => trusted_tpm.h} (85%)
+ create mode 100644 security/keys/trusted-keys/Makefile
+ rename security/keys/{trusted.c => trusted-keys/trusted-tpm.c} (77%)
+ create mode 100644 security/keys/trusted-keys/trusted.c
+
 -- 
-2.21.0
+2.7.4
