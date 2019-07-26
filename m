@@ -1,99 +1,64 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Thu, 18 Jul 2019 11:36:45 +0000
-Subject: [RFC/RFT v2 1/2] KEYS: trusted: create trusted keys subsystem
-Message-Id: <1563449086-13183-2-git-send-email-sumit.garg@linaro.org>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Fri, 26 Jul 2019 22:41:29 +0000
+Subject: [PATCH v7 04/16] fscrypt: add ->ci_inode to fscrypt_info
+Message-Id: <20190726224141.14044-5-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1563449086-13183-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1563449086-13183-1-git-send-email-sumit.garg@linaro.org>
-To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
+References: <20190726224141.14044-1-ebiggers@kernel.org>
+In-Reply-To: <20190726224141.14044-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Move existing code to trusted keys subsystem. Also, rename files with
-"tpm" as suffix which provides the underlying implementation.
+From: Eric Biggers <ebiggers@google.com>
 
-Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+Add an inode back-pointer to 'struct fscrypt_info', such that
+inode->i_crypt_info->ci_inode = inode.
+
+This will be useful for:
+
+1. Evicting the inodes when a fscrypt key is removed, since we'll track
+   the inodes using a given key by linking their fscrypt_infos together,
+   rather than the inodes directly.  This avoids bloating 'struct inode'
+   with a new list_head.
+
+2. Simplifying the per-file key setup, since the inode pointer won't
+   have to be passed around everywhere just in case something goes wrong
+   and it's needed for fscrypt_warn().
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- crypto/asymmetric_keys/asym_tpm.c                       | 2 +-
- include/keys/{trusted.h => trusted_tpm.h}               | 4 ++--
- security/keys/Makefile                                  | 2 +-
- security/keys/trusted-keys/Makefile                     | 6 ++++++
- security/keys/{trusted.c => trusted-keys/trusted-tpm.c} | 2 +-
- 5 files changed, 11 insertions(+), 5 deletions(-)
- rename include/keys/{trusted.h => trusted_tpm.h} (98%)
- create mode 100644 security/keys/trusted-keys/Makefile
- rename security/keys/{trusted.c => trusted-keys/trusted-tpm.c} (99%)
+ fs/crypto/fscrypt_private.h | 3 +++
+ fs/crypto/keyinfo.c         | 2 ++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 76d2ce3..ec3f309 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -13,7 +13,7 @@
- #include <crypto/sha.h>
- #include <asm/unaligned.h>
- #include <keys/asymmetric-subtype.h>
--#include <keys/trusted.h>
-+#include <keys/trusted_tpm.h>
- #include <crypto/asym_tpm_subtype.h>
- #include <crypto/public_key.h>
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index fae411b2f78dc..d345a7d28df8c 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -73,6 +73,9 @@ struct fscrypt_info {
+ 	 */
+ 	struct fscrypt_mode *ci_mode;
  
-diff --git a/include/keys/trusted.h b/include/keys/trusted_tpm.h
-similarity index 98%
-rename from include/keys/trusted.h
-rename to include/keys/trusted_tpm.h
-index 0071298..7d7b108 100644
---- a/include/keys/trusted.h
-+++ b/include/keys/trusted_tpm.h
-@@ -1,6 +1,6 @@
- /* SPDX-License-Identifier: GPL-2.0 */
--#ifndef __TRUSTED_KEY_H
--#define __TRUSTED_KEY_H
-+#ifndef __TRUSTED_TPM_H
-+#define __TRUSTED_TPM_H
- 
- /* implementation specific TPM constants */
- #define MAX_BUF_SIZE			1024
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 9cef540..074f275 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -28,5 +28,5 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
- # Key types
- #
- obj-$(CONFIG_BIG_KEYS) += big_key.o
--obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
-+obj-$(CONFIG_TRUSTED_KEYS) += trusted-keys/
- obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
-diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
-new file mode 100644
-index 0000000..ad34d17
---- /dev/null
-+++ b/security/keys/trusted-keys/Makefile
-@@ -0,0 +1,6 @@
-+# SPDX-License-Identifier: GPL-2.0
-+#
-+# Makefile for trusted keys
-+#
++	/* Back-pointer to the inode */
++	struct inode *ci_inode;
 +
-+obj-$(CONFIG_TRUSTED_KEYS) += trusted-tpm.o
-diff --git a/security/keys/trusted.c b/security/keys/trusted-keys/trusted-tpm.c
-similarity index 99%
-rename from security/keys/trusted.c
-rename to security/keys/trusted-keys/trusted-tpm.c
-index 9a94672..b7e53a3 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted-keys/trusted-tpm.c
-@@ -27,7 +27,7 @@
- #include <linux/tpm.h>
- #include <linux/tpm_command.h>
+ 	/*
+ 	 * If non-NULL, then this inode uses a master key directly rather than a
+ 	 * derived key, and ci_ctfm will equal ci_master_key->mk_ctfm.
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
+index 22345ddede119..2d45a86f09db2 100644
+--- a/fs/crypto/keyinfo.c
++++ b/fs/crypto/keyinfo.c
+@@ -556,6 +556,8 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	if (!crypt_info)
+ 		return -ENOMEM;
  
--#include <keys/trusted.h>
-+#include <keys/trusted_tpm.h>
- 
- static const char hmac_alg[] = "hmac(sha1)";
- static const char hash_alg[] = "sha1";
++	crypt_info->ci_inode = inode;
++
+ 	crypt_info->ci_flags = ctx.flags;
+ 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
+ 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
 -- 
-2.7.4
+2.22.0
