@@ -1,88 +1,33 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Fri, 26 Jul 2019 22:41:38 +0000
-Subject: [PATCH v7 13/16] ext4: wire up new fscrypt ioctls
-Message-Id: <20190726224141.14044-14-ebiggers@kernel.org>
+From: "Theodore Y. Ts'o" <tytso@mit.edu>
+Date: Sun, 28 Jul 2019 21:24:31 +0000
+Subject: Re: [PATCH v7 13/16] ext4: wire up new fscrypt ioctls
+Message-Id: <20190728212431.GN6088@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190726224141.14044-1-ebiggers@kernel.org>
-In-Reply-To: <20190726224141.14044-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+ <20190726224141.14044-14-ebiggers@kernel.org>
+In-Reply-To: <20190726224141.14044-14-ebiggers@kernel.org>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-From: Eric Biggers <ebiggers@google.com>
+On Fri, Jul 26, 2019 at 03:41:38PM -0700, Eric Biggers wrote:
+> From: Eric Biggers <ebiggers@google.com>
+> 
+> Wire up the new ioctls for adding and removing fscrypt keys to/from the
+> filesystem, and the new ioctl for retrieving v2 encryption policies.
+> 
+> FS_IOC_REMOVE_ENCRYPTION_KEY also required making ext4_drop_inode() call
+> fscrypt_drop_inode().
+> 
+> For more details see Documentation/filesystems/fscrypt.rst and the
+> fscrypt patches that added the implementation of these ioctls.
+> 
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
 
-Wire up the new ioctls for adding and removing fscrypt keys to/from the
-filesystem, and the new ioctl for retrieving v2 encryption policies.
+Looks good, feel free to add:
 
-FS_IOC_REMOVE_ENCRYPTION_KEY also required making ext4_drop_inode() call
-fscrypt_drop_inode().
+Reviewed-by: Theodore Ts'o <tytso@mit.edu>
 
-For more details see Documentation/filesystems/fscrypt.rst and the
-fscrypt patches that added the implementation of these ioctls.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- fs/ext4/ioctl.c | 24 ++++++++++++++++++++++++
- fs/ext4/super.c |  3 +++
- 2 files changed, 27 insertions(+)
-
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index 442f7ef873fc3..616fcf9eb52ec 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -1115,6 +1115,26 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
- 		return fscrypt_ioctl_get_policy(filp, (void __user *)arg);
- 
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
-+
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_add_key(filp, (void __user *)arg);
-+
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_remove_key(filp, (const void __user *)arg);
-+
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		if (!ext4_has_feature_encrypt(sb))
-+			return -EOPNOTSUPP;
-+		return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
-+
- 	case EXT4_IOC_FSGETXATTR:
- 	{
- 		struct fsxattr fa;
-@@ -1231,6 +1251,10 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case EXT4_IOC_SET_ENCRYPTION_POLICY:
- 	case EXT4_IOC_GET_ENCRYPTION_PWSALT:
- 	case EXT4_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 	case EXT4_IOC_SHUTDOWN:
- 	case FS_IOC_GETFSMAP:
- 		break;
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 4079605d437ae..757819139b8f7 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1107,6 +1107,9 @@ static int ext4_drop_inode(struct inode *inode)
- {
- 	int drop = generic_drop_inode(inode);
- 
-+	if (!drop)
-+		drop = fscrypt_drop_inode(inode);
-+
- 	trace_ext4_drop_inode(inode, drop);
- 	return drop;
- }
--- 
-2.22.0
+						- Ted
