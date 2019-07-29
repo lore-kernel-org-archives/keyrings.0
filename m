@@ -1,42 +1,48 @@
-From: "Theodore Y. Ts'o" <tytso@mit.edu>
-Date: Sun, 28 Jul 2019 15:40:32 +0000
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 29 Jul 2019 19:37:42 +0000
 Subject: Re: [PATCH v7 05/16] fscrypt: refactor v1 policy key setup into keysetup_legacy.c
-Message-Id: <20190728154032.GE6088@mit.edu>
+Message-Id: <20190729193740.GD169027@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190726224141.14044-1-ebiggers@kernel.org>
  <20190726224141.14044-6-ebiggers@kernel.org>
-In-Reply-To: <20190726224141.14044-6-ebiggers@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
+ <20190728154032.GE6088@mit.edu>
+In-Reply-To: <20190728154032.GE6088@mit.edu>
+To: "Theodore Y. Ts'o" <tytso@mit.edu>
 Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-On Fri, Jul 26, 2019 at 03:41:30PM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
+Hi Ted, thanks for the review!
+
+On Sun, Jul 28, 2019 at 11:40:32AM -0400, Theodore Y. Ts'o wrote:
+> On Fri, Jul 26, 2019 at 03:41:30PM -0700, Eric Biggers wrote:
+> > From: Eric Biggers <ebiggers@google.com>
+> > 
+> > In preparation for introducing v2 encryption policies which will find
+> > and derive encryption keys differently from the current v1 encryption
+> > policies, refactor the v1 policy-specific key setup code from keyinfo.c
+> > into keysetup_legacy.c.  Then rename keyinfo.c to keysetup.c.
 > 
-> In preparation for introducing v2 encryption policies which will find
-> and derive encryption keys differently from the current v1 encryption
-> policies, refactor the v1 policy-specific key setup code from keyinfo.c
-> into keysetup_legacy.c.  Then rename keyinfo.c to keysetup.c.
+> I'd use keysetup_v1.c, myself.  We can hope that we've gotten it right
+> with v2 and we'll never need to do another version, but *something* is
+> going to come up eventually which will require a v3 keysetup , whether
+> it's post-quantuum cryptography or something else we can't anticipate
+> right now.
+> 
+> For an example of the confusion that can result, one good example is
+> in the fs/quota subsystem, where QFMT_VFS_OLD, QFMT_VFS_V0, and
+> QFMT_VFS_V1 maps to quota_v1 and quota_v2 in an amusing and
+> non-obvious way.  (Go ahead, try to guess before you go look at the
+> code.  :-)
+> 
+> Other than that, looks good.  We can always move code around or rename
+> files in the future, so I'm not going to insist on doing it now (but
+> it would be my preference).
+> 
+> Reviewed-by: Theodore Ts'o <tytso@mit.edu>
+> 
 
-I'd use keysetup_v1.c, myself.  We can hope that we've gotten it right
-with v2 and we'll never need to do another version, but *something* is
-going to come up eventually which will require a v3 keysetup , whether
-it's post-quantuum cryptography or something else we can't anticipate
-right now.
+Agreed, I'll call it keysetup_v1.c instead.
 
-For an example of the confusion that can result, one good example is
-in the fs/quota subsystem, where QFMT_VFS_OLD, QFMT_VFS_V0, and
-QFMT_VFS_V1 maps to quota_v1 and quota_v2 in an amusing and
-non-obvious way.  (Go ahead, try to guess before you go look at the
-code.  :-)
-
-Other than that, looks good.  We can always move code around or rename
-files in the future, so I'm not going to insist on doing it now (but
-it would be my preference).
-
-Reviewed-by: Theodore Ts'o <tytso@mit.edu>
-
-						- Ted
-						
+- Eric
