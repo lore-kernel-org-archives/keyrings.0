@@ -1,73 +1,34 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 29 Jul 2019 19:46:45 +0000
+From: "Theodore Y. Ts'o" <tytso@mit.edu>
+Date: Mon, 29 Jul 2019 20:14:45 +0000
 Subject: Re: [PATCH v7 06/16] fscrypt: add FS_IOC_ADD_ENCRYPTION_KEY ioctl
-Message-Id: <20190729194644.GE169027@gmail.com>
+Message-Id: <20190729201445.GA16445@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190726224141.14044-1-ebiggers@kernel.org>
  <20190726224141.14044-7-ebiggers@kernel.org>
- <20190728185003.GF6088@mit.edu>
-In-Reply-To: <20190728185003.GF6088@mit.edu>
-To: "Theodore Y. Ts'o" <tytso@mit.edu>
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+ <20190728185003.GF6088@mit.edu> <20190729194644.GE169027@gmail.com>
+In-Reply-To: <20190729194644.GE169027@gmail.com>
+To: linux-fscrypt@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Paul Crowley <paulcrowley@google.com>, Satya Tangirala <satyat@google.com>
 
-On Sun, Jul 28, 2019 at 02:50:03PM -0400, Theodore Y. Ts'o wrote:
-> On Fri, Jul 26, 2019 at 03:41:31PM -0700, Eric Biggers wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> > 
-> > Add a new fscrypt ioctl, FS_IOC_ADD_ENCRYPTION_KEY.  This ioctl adds an
-> > encryption key to the filesystem's fscrypt keyring ->s_master_keys,
-> > making any files encrypted with that key appear "unlocked".
+On Mon, Jul 29, 2019 at 12:46:45PM -0700, Eric Biggers wrote:
+> > For that matter, we could just add a new ioctl which returns the file
+> > system's keyring id.  That way an application program won't have to
+> > try to figure out what a file's underlying sb->s_id happens to be.
+> > (Especially if things like overlayfs are involved.)
 > 
-> Note: it think it's going to be useful to make the keyring id
-> available someplace like /sys/fs/<fs>/<blkdev>/keyring, or preferably
-> in the new fsinfo system call.  Yes, the system administrator can paw
-> through /proc/keys and try to figure it out, but it will be nicer if
-> there's a direct way to do that.
-> 
-> For that matter, we could just add a new ioctl which returns the file
-> system's keyring id.  That way an application program won't have to
-> try to figure out what a file's underlying sb->s_id happens to be.
-> (Especially if things like overlayfs are involved.)
+> Keep in mind that the new ioctls (FS_IOC_ADD_ENCRYPTION_KEY,
+> FS_IOC_REMOVE_ENCRYPTION_KEY, FS_IOC_GET_ENCRYPTION_KEY_STATUS) don't take the
+> keyring ID as a parameter, since it's already known from the filesystem the
+> ioctl is executed on.  So there actually isn't much that can be done with the
+> keyring ID.  But sure, if it's needed later we can add an API to get it.
 
-Keep in mind that the new ioctls (FS_IOC_ADD_ENCRYPTION_KEY,
-FS_IOC_REMOVE_ENCRYPTION_KEY, FS_IOC_GET_ENCRYPTION_KEY_STATUS) don't take the
-keyring ID as a parameter, since it's already known from the filesystem the
-ioctl is executed on.  So there actually isn't much that can be done with the
-keyring ID.  But sure, if it's needed later we can add an API to get it.
+Yeah, I was thinking about for testing/debugging purposes so that we
+could use keyctl to examine the per-file system keyring and see what
+keys are attached to a file system.  This is only going to be usable
+by root, so I guess we can just try to figure it out by going through
+/proc/keys and searching by sb->s_id.  If there are ambiguities that
+make this hard to do, we can add an interface to make this easier.
 
-> 
-> > diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-> > index 29a945d165def..93d6eabaa7de4 100644
-> > --- a/include/uapi/linux/fscrypt.h
-> > +++ b/include/uapi/linux/fscrypt.h
-> > +
-> > +struct fscrypt_key_specifier {
-> > +#define FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR	1
-> > +	__u32 type;
-> > +	__u32 __reserved;
-> 
-> Can you move the definition of FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR
-> outside of the structure definition, and then add a comment about what
-> is a "descriptor" key spec?  (And then in a later patch, please add a
-> comment about what is an "identifier" key type.)  There's an
-> explanation in Documentation/filesystems/fscrypt.rst, I know, but a
-> one or two line comment plus a pointer to
-> Documentation/filesystems/fscrypt.rst in the header file would be
-> really helpful.
-
-I'll add a brief comment that explains the key specifier.
-
-I've already added a pointer to Documentation/filesystems/fscrypt.rst at the top
-of the header (this was one of the cleanups in v6 => v7):
-
-/*
- * fscrypt user API
- *
- * These ioctls can be used on filesystems that support fscrypt.  See the
- * "User API" section of Documentation/filesystems/fscrypt.rst.
- */
-
-- Eric
+     	       	      	     - Ted
