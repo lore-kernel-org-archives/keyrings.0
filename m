@@ -1,7 +1,7 @@
 From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 10 Jul 2019 01:35:53 +0000
+Date: Tue, 30 Jul 2019 03:49:56 +0000
 Subject: Re: [PATCH 1/2] KEYS: Replace uid/gid/perm permissions checking with an ACL
-Message-Id: <20190710013553.GC7973@sol.localdomain>
+Message-Id: <20190730034956.GB1966@sol.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,6 +11,8 @@ References: <155862710003.24863.11807972177275927370.stgit@warthog.procyon.org.u
  <20190710011559.GA7973@sol.localdomain>
 In-Reply-To: <20190710011559.GA7973@sol.localdomain>
 To: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+
+Hi David,
 
 On Tue, Jul 09, 2019 at 06:16:01PM -0700, Eric Biggers wrote:
 > On Thu, May 23, 2019 at 04:58:27PM +0100, David Howells wrote:
@@ -33,7 +35,6 @@ On Tue, Jul 09, 2019 at 06:16:01PM -0700, Eric Biggers wrote:
 > 
 > - Eric
 
-... and this also broke loading in-kernel X.509 certificates.  See the other
-thread: https://lore.kernel.org/lkml/27671.1562384658@turing-police/T/#u
+This bug is still present in next-20190729.
 
 - Eric
