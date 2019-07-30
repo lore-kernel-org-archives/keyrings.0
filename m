@@ -1,106 +1,63 @@
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:51 +0000
-Subject: [PATCHv2 37/59] acpi/hmat: Evaluate topology presented in ACPI HMAT for MKTME
-Message-Id: <20190731150813.26289-38-kirill.shutemov@linux.intel.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Tue, 30 Jul 2019 12:35:37 +0000
+Subject: [RFC v2 3/6] tee: add private login method for kernel clients
+Message-Id: <1564489420-677-4-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, casey@schaufler-ca.com, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-From: Alison Schofield <alison.schofield@intel.com>
+There are use-cases where user-space shouldn't be allowed to communicate
+directly with a TEE device which is dedicated to provide a specific
+service for a kernel client. So add a private login method for kernel
+clients and disallow user-space to open-session using GP implementation
+defined login method range: (0x80000000 - 0xFFFFFFFF).
 
-MKTME, Multi-Key Total Memory Encryption, is a feature on Intel
-platforms. The ACPI HMAT table can be used to verify that the
-platform topology is safe for the usage of MKTME.
-
-The kernel must be capable of programming every memory controller
-on the platform. This means that there must be a CPU online, in
-the same proximity domain of each memory controller.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
 ---
- drivers/acpi/hmat/hmat.c | 54 ++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi.h     |  1 +
- 2 files changed, 55 insertions(+)
+ drivers/tee/tee_core.c   | 6 ++++++
+ include/uapi/linux/tee.h | 8 ++++++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/drivers/acpi/hmat/hmat.c b/drivers/acpi/hmat/hmat.c
-index 38e3341f569f..936a403c0694 100644
---- a/drivers/acpi/hmat/hmat.c
-+++ b/drivers/acpi/hmat/hmat.c
-@@ -677,3 +677,57 @@ bool acpi_hmat_present(void)
- 	acpi_put_table(tbl);
- 	return true;
- }
-+
-+static int mktme_parse_proximity_domains(union acpi_subtable_headers *header,
-+					 const unsigned long end)
-+{
-+	struct acpi_hmat_proximity_domain *mar = (void *)header;
-+	struct acpi_hmat_structure *hdr = (void *)header;
-+
-+	const struct cpumask *tmp_mask;
-+
-+	if (!hdr || hdr->type != ACPI_HMAT_TYPE_PROXIMITY)
-+		return -EINVAL;
-+
-+	if (mar->header.length != sizeof(*mar)) {
-+		pr_warn("MKTME: invalid header length in HMAT\n");
-+		return -1;
-+	}
-+	/*
-+	 * Require a valid processor proximity domain.
-+	 * This will catch memory only physical packages with
-+	 * no processor capable of programming the key table.
-+	 */
-+	if (!(mar->flags & ACPI_HMAT_PROCESSOR_PD_VALID)) {
-+		pr_warn("MKTME: no valid processor proximity domain\n");
-+		return -1;
-+	}
-+	/* Require an online CPU in the processor proximity domain. */
-+	tmp_mask = cpumask_of_node(pxm_to_node(mar->processor_PD));
-+	if (!cpumask_intersects(tmp_mask, cpu_online_mask)) {
-+		pr_warn("MKTME: no online CPU in proximity domain\n");
-+		return -1;
-+	}
-+	return 0;
-+}
-+
-+/* Returns true if topology is safe for MKTME key creation */
-+bool mktme_hmat_evaluate(void)
-+{
-+	struct acpi_table_header *tbl;
-+	bool ret = true;
-+	acpi_status status;
-+
-+	status = acpi_get_table(ACPI_SIG_HMAT, 0, &tbl);
-+	if (ACPI_FAILURE(status))
-+		return -EINVAL;
-+
-+	if (acpi_table_parse_entries(ACPI_SIG_HMAT,
-+				     sizeof(struct acpi_table_hmat),
-+				     ACPI_HMAT_TYPE_PROXIMITY,
-+				     mktme_parse_proximity_domains, 0) < 0) {
-+		ret = false;
-+	}
-+	acpi_put_table(tbl);
-+	return ret;
-+}
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index d27f4d17dfb3..8854ae942e37 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -1337,6 +1337,7 @@ acpi_platform_notify(struct device *dev, enum kobject_action action)
+diff --git a/drivers/tee/tee_core.c b/drivers/tee/tee_core.c
+index 0f16d9f..2c2f646 100644
+--- a/drivers/tee/tee_core.c
++++ b/drivers/tee/tee_core.c
+@@ -334,6 +334,12 @@ static int tee_ioctl_open_session(struct tee_context *ctx,
+ 			goto out;
+ 	}
  
- #ifdef CONFIG_X86_INTEL_MKTME
- extern bool acpi_hmat_present(void);
-+extern bool mktme_hmat_evaluate(void);
- #endif /* CONFIG_X86_INTEL_MKTME */
++	if (arg.clnt_login & TEE_IOCTL_LOGIN_MASK) {
++		pr_debug("login method not allowed for user-space client\n");
++		rc = -EPERM;
++		goto out;
++	}
++
+ 	rc = ctx->teedev->desc->ops->open_session(ctx, &arg, params);
+ 	if (rc)
+ 		goto out;
+diff --git a/include/uapi/linux/tee.h b/include/uapi/linux/tee.h
+index 4b9eb06..a0a3d52 100644
+--- a/include/uapi/linux/tee.h
++++ b/include/uapi/linux/tee.h
+@@ -172,6 +172,14 @@ struct tee_ioctl_buf_data {
+ #define TEE_IOCTL_LOGIN_APPLICATION		4
+ #define TEE_IOCTL_LOGIN_USER_APPLICATION	5
+ #define TEE_IOCTL_LOGIN_GROUP_APPLICATION	6
++/*
++ * Disallow user-space to use GP implementation specific login
++ * method range (0x80000000 - 0xFFFFFFFF). This range is rather
++ * being reserved for REE kernel clients or TEE implementation.
++ */
++#define TEE_IOCTL_LOGIN_MASK			0x80000000
++/* Private login method for REE kernel clients */
++#define TEE_IOCTL_LOGIN_REE_KERNEL		0x80000000
  
- #endif	/*_LINUX_ACPI_H*/
+ /**
+  * struct tee_ioctl_param - parameter
 -- 
-2.21.0
+2.7.4
