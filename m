@@ -1,62 +1,133 @@
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:08:07 +0000
-Subject: [PATCHv2 53/59] x86: Introduce CONFIG_X86_INTEL_MKTME
-Message-Id: <20190731150813.26289-54-kirill.shutemov@linux.intel.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Tue, 30 Jul 2019 12:35:39 +0000
+Subject: [RFC v2 5/6] doc: keys: Document usage of TEE based Trusted Keys
+Message-Id: <1564489420-677-6-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, casey@schaufler-ca.com, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-Add new config option to enabled/disable Multi-Key Total Memory
-Encryption support.
+Provide documentation for usage of TEE based Trusted Keys via existing
+user-space "keyctl" utility. Also, document various use-cases.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
 ---
- arch/x86/Kconfig | 21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ Documentation/security/keys/index.rst       |  1 +
+ Documentation/security/keys/tee-trusted.rst | 93 +++++++++++++++++++++++++++++
+ 2 files changed, 94 insertions(+)
+ create mode 100644 Documentation/security/keys/tee-trusted.rst
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index f2cc88fe8ada..d8551b612f3b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1550,6 +1550,25 @@ config AMD_MEM_ENCRYPT_ACTIVE_BY_DEFAULT
- 	  If set to N, then the encryption of system memory can be
- 	  activated with the mem_encrypt=on command line option.
- 
-+config X86_INTEL_MKTME
-+	bool "Intel Multi-Key Total Memory Encryption"
-+	depends on X86_64 && CPU_SUP_INTEL && !KASAN
-+	select X86_MEM_ENCRYPT_COMMON
-+	select PAGE_EXTENSION
-+	select KEYS
-+	select ACPI_HMAT
-+	---help---
-+	  Say yes to enable support for Multi-Key Total Memory Encryption.
-+	  This requires an Intel processor that has support of the feature.
+diff --git a/Documentation/security/keys/index.rst b/Documentation/security/keys/index.rst
+index 647d58f..f9ef557 100644
+--- a/Documentation/security/keys/index.rst
++++ b/Documentation/security/keys/index.rst
+@@ -9,3 +9,4 @@ Kernel Keys
+    ecryptfs
+    request-key
+    trusted-encrypted
++   tee-trusted
+diff --git a/Documentation/security/keys/tee-trusted.rst b/Documentation/security/keys/tee-trusted.rst
+new file mode 100644
+index 0000000..ef03745
+--- /dev/null
++++ b/Documentation/security/keys/tee-trusted.rst
+@@ -0,0 +1,93 @@
++===========
++TEE based Trusted Keys
++===========
 +
-+	  Multikey Total Memory Encryption (MKTME) is a technology that allows
-+	  transparent memory encryption in upcoming Intel platforms.
++TEE based Trusted Keys provides an alternative approach for providing Trusted
++Keys in case TPM chip isn't present.
 +
-+	  MKTME is built on top of TME. TME allows encryption of the entirety
-+	  of system memory using a single key. MKTME allows having multiple
-+	  encryption domains, each having own key -- different memory pages can
-+	  be encrypted with different keys.
++Trusted Keys use a TEE service/device both to generate and to seal the keys.
++Keys are sealed under a hardware unique key in the TEE, and only unsealed by
++the TEE.
 +
- # Common NUMA Features
- config NUMA
- 	bool "Numa Memory Allocation and Scheduler Support"
-@@ -2220,7 +2239,7 @@ config RANDOMIZE_MEMORY
- 
- config MEMORY_PHYSICAL_PADDING
- 	hex "Physical memory mapping padding" if EXPERT
--	depends on RANDOMIZE_MEMORY
-+	depends on RANDOMIZE_MEMORY || X86_INTEL_MKTME
- 	default "0xa" if MEMORY_HOTPLUG
- 	default "0x0"
- 	range 0x1 0x40 if MEMORY_HOTPLUG
++For more information about TEE, refer to ``Documentation/tee.txt``.
++
++Usage::
++
++    keyctl add trusted name "new keylen" ring
++    keyctl add trusted name "load hex_blob" ring
++    keyctl print keyid
++
++"keyctl print" returns an ascii hex copy of the sealed key, which is in format
++specific to TEE device implementation.  The key length for new keys are always
++in bytes. Trusted Keys can be 32 - 128 bytes (256 - 1024 bits).
++
++Examples of trusted key and its usage as 'master' key for encrypted key usage:
++
++More details about encrypted keys can be found here:
++``Documentation/security/keys/trusted-encrypted.rst``
++
++Create and save a trusted key named "kmk" of length 32 bytes::
++
++    $ keyctl add trusted kmk "new 32" @u
++    754414669
++
++    $ keyctl show
++    Session Keyring
++     827385718 --alswrv      0 65534  keyring: _uid_ses.0
++     274124851 --alswrv      0 65534   \_ keyring: _uid.0
++     754414669 --als-rv      0     0       \_ trusted: kmk
++
++    $ keyctl print 754414669
++    15676790697861b422175596ae001c2f505cea2c6f3ebbc5fb08eeb1f343a07e
++
++    $ keyctl pipe 754414669 > kmk.blob
++
++Load a trusted key from the saved blob::
++
++    $ keyctl add trusted kmk "load `cat kmk.blob`" @u
++    491638700
++
++    $ keyctl print 491638700
++    15676790697861b422175596ae001c2f505cea2c6f3ebbc5fb08eeb1f343a07e
++
++The initial consumer of trusted keys is EVM, which at boot time needs a high
++quality symmetric key for HMAC protection of file metadata.  The use of a
++TEE based trusted key provides security that the EVM key has not been
++compromised by a user level problem and tied to particular hardware.
++
++Create and save an encrypted key "evm" using the above trusted key "kmk":
++
++option 1: omitting 'format'::
++
++    $ keyctl add encrypted evm "new trusted:kmk 32" @u
++    608915065
++
++option 2: explicitly defining 'format' as 'default'::
++
++    $ keyctl add encrypted evm "new default trusted:kmk 32" @u
++    608915065
++
++    $ keyctl print 608915065
++    default trusted:kmk 32 f380ac588a925f488d5be007cf23e4c900b8b652ab62241c8
++    ed54906189b6659d139d619d4b51752a2645537b11fd44673f13154a65b3f595d5fb2131
++    2fe45529ea0407c644ea4026f2a1a75661f2c9b66
++
++    $ keyctl pipe 608915065 > evm.blob
++
++Load an encrypted key "evm" from saved blob::
++
++    $ keyctl add encrypted evm "load `cat evm.blob`" @u
++    831684262
++
++    $ keyctl print 831684262
++    default trusted:kmk 32 f380ac588a925f488d5be007cf23e4c900b8b652ab62241c8
++    ed54906189b6659d139d619d4b51752a2645537b11fd44673f13154a65b3f595d5fb2131
++    2fe45529ea0407c644ea4026f2a1a75661f2c9b66
++
++Other uses for trusted and encrypted keys, such as for disk and file encryption
++are anticipated.  In particular the 'ecryptfs' encrypted keys format can be used
++to mount an eCryptfs filesystem.  More details about the usage can be found in
++the file ``Documentation/security/keys/ecryptfs.rst``.
++
++Another format 'enc32' can be used to support encrypted keys with payload size
++of 32 bytes.
 -- 
-2.21.0
+2.7.4
