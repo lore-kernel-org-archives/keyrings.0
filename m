@@ -1,206 +1,85 @@
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:58 +0000
-Subject: [PATCHv2 44/59] mm: Add the encrypt_mprotect() system call for MKTME
-Message-Id: <20190731150813.26289-45-kirill.shutemov@linux.intel.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Tue, 30 Jul 2019 12:35:36 +0000
+Subject: [RFC v2 2/6] tee: enable support to register kernel memory
+Message-Id: <1564489420-677-3-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, casey@schaufler-ca.com, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-From: Alison Schofield <alison.schofield@intel.com>
+Enable support to register kernel memory reference with TEE. This change
+will allow TEE bus drivers to register memory references.
 
-Implement memory encryption for MKTME (Multi-Key Total Memory
-Encryption) with a new system call that is an extension of the
-legacy mprotect() system call.
-
-In encrypt_mprotect the caller must pass a handle to a previously
-allocated and programmed MKTME encryption key. The key can be
-obtained through the kernel key service type "mktme". The caller
-must have KEY_NEED_VIEW permission on the key.
-
-MKTME places an additional restriction on the protected data:
-The length of the data must be page aligned. This is in addition
-to the existing mprotect restriction that the addr must be page
-aligned.
-
-encrypt_mprotect() will lookup the hardware keyid for the given
-userspace key. It will use previously defined helpers to insert
-that keyid in the VMAs during legacy mprotect() execution.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Reviewed-by: Jens Wiklander <jens.wiklander@linaro.org>
 ---
- fs/exec.c          |  4 +--
- include/linux/mm.h |  3 +-
- mm/mprotect.c      | 68 +++++++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 65 insertions(+), 10 deletions(-)
+ drivers/tee/tee_shm.c   | 16 ++++++++++++++--
+ include/linux/tee_drv.h |  1 +
+ 2 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index c71cbfe6826a..261e81b7e3a4 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -756,8 +756,8 @@ int setup_arg_pages(struct linux_binprm *bprm,
- 	vm_flags |= mm->def_flags;
- 	vm_flags |= VM_STACK_INCOMPLETE_SETUP;
+diff --git a/drivers/tee/tee_shm.c b/drivers/tee/tee_shm.c
+index 2da026f..5c69b89 100644
+--- a/drivers/tee/tee_shm.c
++++ b/drivers/tee/tee_shm.c
+@@ -9,6 +9,7 @@
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/tee_drv.h>
++#include <linux/uio.h>
+ #include "tee_private.h"
  
--	ret = mprotect_fixup(vma, &prev, vma->vm_start, vma->vm_end,
--			vm_flags);
-+	ret = mprotect_fixup(vma, &prev, vma->vm_start, vma->vm_end, vm_flags,
-+			     -1);
- 	if (ret)
- 		goto out_unlock;
- 	BUG_ON(prev != vma);
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 98a6d2bd66a6..8551b5ebdedf 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1660,7 +1660,8 @@ extern unsigned long change_protection(struct vm_area_struct *vma, unsigned long
- 			      int dirty_accountable, int prot_numa);
- extern int mprotect_fixup(struct vm_area_struct *vma,
- 			  struct vm_area_struct **pprev, unsigned long start,
--			  unsigned long end, unsigned long newflags);
-+			  unsigned long end, unsigned long newflags,
-+			  int newkeyid);
- 
- /*
-  * doesn't attempt to fault and will return short.
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 4d55725228e3..518d75582e7b 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -28,6 +28,7 @@
- #include <linux/ksm.h>
- #include <linux/uaccess.h>
- #include <linux/mm_inline.h>
-+#include <linux/key.h>
- #include <asm/pgtable.h>
- #include <asm/cacheflush.h>
- #include <asm/mmu_context.h>
-@@ -348,7 +349,8 @@ static int prot_none_walk(struct vm_area_struct *vma, unsigned long start,
- 
- int
- mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
--	unsigned long start, unsigned long end, unsigned long newflags)
-+	       unsigned long start, unsigned long end, unsigned long newflags,
-+	       int newkeyid)
+ static void tee_shm_release(struct tee_shm *shm)
+@@ -224,13 +225,14 @@ struct tee_shm *tee_shm_register(struct tee_context *ctx, unsigned long addr,
  {
- 	struct mm_struct *mm = vma->vm_mm;
- 	unsigned long oldflags = vma->vm_flags;
-@@ -358,7 +360,14 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
- 	int error;
- 	int dirty_accountable = 0;
+ 	struct tee_device *teedev = ctx->teedev;
+ 	const u32 req_flags = TEE_SHM_DMA_BUF | TEE_SHM_USER_MAPPED;
++	const u32 req_ker_flags = TEE_SHM_DMA_BUF | TEE_SHM_KERNEL_MAPPED;
+ 	struct tee_shm *shm;
+ 	void *ret;
+ 	int rc;
+ 	int num_pages;
+ 	unsigned long start;
  
--	if (newflags = oldflags) {
-+	/*
-+	 * Flags match and Keyids match or we have NO_KEY.
-+	 * This _fixup is usually called from do_mprotect_ext() except
-+	 * for one special case: caller fs/exec.c/setup_arg_pages()
-+	 * In that case, newkeyid is passed as -1 (NO_KEY).
-+	 */
-+	if (newflags = oldflags &&
-+	    (newkeyid = vma_keyid(vma) || newkeyid = NO_KEY)) {
- 		*pprev = vma;
- 		return 0;
- 	}
-@@ -424,6 +433,8 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
+-	if (flags != req_flags)
++	if (flags != req_flags && flags != req_ker_flags)
+ 		return ERR_PTR(-ENOTSUPP);
+ 
+ 	if (!tee_device_get(teedev))
+@@ -264,7 +266,17 @@ struct tee_shm *tee_shm_register(struct tee_context *ctx, unsigned long addr,
+ 		goto err;
  	}
  
- success:
-+	if (newkeyid != NO_KEY)
-+		mprotect_set_encrypt(vma, newkeyid, start, end);
- 	/*
- 	 * vm_flags and vm_page_prot are protected by the mmap_sem
- 	 * held in write mode.
-@@ -455,10 +466,15 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
- }
- 
- /*
-- * When pkey=NO_KEY we get legacy mprotect behavior here.
-+ * do_mprotect_ext() supports the legacy mprotect behavior plus extensions
-+ * for Protection Keys and Memory Encryption Keys. These extensions are
-+ * mutually exclusive and the behavior is:
-+ *	(pkey=NO_KEY && keyid=NO_KEY) => legacy mprotect
-+ *	(pkey is valid)  => legacy mprotect plus Protection Key extensions
-+ *	(keyid is valid) => legacy mprotect plus Encryption Key extensions
-  */
- static int do_mprotect_ext(unsigned long start, size_t len,
--		unsigned long prot, int pkey)
-+			   unsigned long prot, int pkey, int keyid)
- {
- 	unsigned long nstart, end, tmp, reqprot;
- 	struct vm_area_struct *vma, *prev;
-@@ -556,7 +572,8 @@ static int do_mprotect_ext(unsigned long start, size_t len,
- 		tmp = vma->vm_end;
- 		if (tmp > end)
- 			tmp = end;
--		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags);
-+		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags,
-+				       keyid);
- 		if (error)
- 			goto out;
- 		nstart = tmp;
-@@ -581,7 +598,7 @@ static int do_mprotect_ext(unsigned long start, size_t len,
- SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
- 		unsigned long, prot)
- {
--	return do_mprotect_ext(start, len, prot, NO_KEY);
-+	return do_mprotect_ext(start, len, prot, NO_KEY, NO_KEY);
- }
- 
- #ifdef CONFIG_ARCH_HAS_PKEYS
-@@ -589,7 +606,7 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
- SYSCALL_DEFINE4(pkey_mprotect, unsigned long, start, size_t, len,
- 		unsigned long, prot, int, pkey)
- {
--	return do_mprotect_ext(start, len, prot, pkey);
-+	return do_mprotect_ext(start, len, prot, pkey, NO_KEY);
- }
- 
- SYSCALL_DEFINE2(pkey_alloc, unsigned long, flags, unsigned long, init_val)
-@@ -638,3 +655,40 @@ SYSCALL_DEFINE1(pkey_free, int, pkey)
- }
- 
- #endif /* CONFIG_ARCH_HAS_PKEYS */
+-	rc = get_user_pages_fast(start, num_pages, FOLL_WRITE, shm->pages);
++	if (flags & TEE_SHM_USER_MAPPED) {
++		rc = get_user_pages_fast(start, num_pages, FOLL_WRITE,
++					 shm->pages);
++	} else {
++		const struct kvec kiov = {
++			.iov_base = (void *)start,
++			.iov_len = PAGE_SIZE
++		};
 +
-+#ifdef CONFIG_X86_INTEL_MKTME
-+
-+extern int mktme_keyid_from_key(struct key *key);
-+
-+SYSCALL_DEFINE4(encrypt_mprotect, unsigned long, start, size_t, len,
-+		unsigned long, prot, key_serial_t, serial)
-+{
-+	key_ref_t key_ref;
-+	struct key *key;
-+	int ret, keyid;
-+
-+	/* MKTME restriction */
-+	if (!PAGE_ALIGNED(len))
-+		return -EINVAL;
-+
-+	/*
-+	 * key_ref prevents the destruction of the key
-+	 * while the memory encryption is being set up.
-+	 */
-+
-+	key_ref = lookup_user_key(serial, 0, KEY_NEED_VIEW);
-+	if (IS_ERR(key_ref))
-+		return PTR_ERR(key_ref);
-+
-+	key = key_ref_to_ptr(key_ref);
-+	keyid = mktme_keyid_from_key(key);
-+	if (!keyid) {
-+		key_ref_put(key_ref);
-+		return -EINVAL;
++		rc = get_kernel_pages(&kiov, num_pages, 0, shm->pages);
 +	}
-+	ret = do_mprotect_ext(start, len, prot, NO_KEY, keyid);
-+	key_ref_put(key_ref);
-+	return ret;
-+}
-+
-+#endif /* CONFIG_X86_INTEL_MKTME */
+ 	if (rc > 0)
+ 		shm->num_pages = rc;
+ 	if (rc != num_pages) {
+diff --git a/include/linux/tee_drv.h b/include/linux/tee_drv.h
+index 7a03f68..dedf8fa 100644
+--- a/include/linux/tee_drv.h
++++ b/include/linux/tee_drv.h
+@@ -26,6 +26,7 @@
+ #define TEE_SHM_REGISTER	BIT(3)  /* Memory registered in secure world */
+ #define TEE_SHM_USER_MAPPED	BIT(4)  /* Memory mapped in user space */
+ #define TEE_SHM_POOL		BIT(5)  /* Memory allocated from pool */
++#define TEE_SHM_KERNEL_MAPPED	BIT(6)  /* Memory mapped in kernel space */
+ 
+ struct device;
+ struct tee_device;
 -- 
-2.21.0
+2.7.4
