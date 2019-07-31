@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:42 +0000
-Subject: [PATCHv2 28/59] keys/mktme: Move the MKTME payload into a cache aligned structure
-Message-Id: <20190731150813.26289-29-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:07:56 +0000
+Subject: [PATCHv2 42/59] syscall/x86: Wire up a system call for MKTME encryption keys
+Message-Id: <20190731150813.26289-43-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,96 +13,84 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
-In preparation for programming the key into the hardware, move
-the key payload into a cache aligned structure. This alignment
-is a requirement of the MKTME hardware.
+encrypt_mprotect() is a new system call to support memory encryption.
 
-Use the slab allocator to have this structure readily available.
+It takes the same parameters as legacy mprotect, plus an additional
+key serial number that is mapped to an encryption keyid.
 
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- security/keys/mktme_keys.c | 37 +++++++++++++++++++++++++++++++++++--
- 1 file changed, 35 insertions(+), 2 deletions(-)
+ arch/x86/entry/syscalls/syscall_32.tbl | 1 +
+ arch/x86/entry/syscalls/syscall_64.tbl | 1 +
+ include/linux/syscalls.h               | 2 ++
+ include/uapi/asm-generic/unistd.h      | 4 +++-
+ kernel/sys_ni.c                        | 2 ++
+ 5 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 10fcdbf5a08f..8ac75b1e6188 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -16,6 +16,7 @@
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index c00019abd076..1b30cd007a6a 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -440,3 +440,4 @@
+ 433	i386	fspick			sys_fspick			__ia32_sys_fspick
+ 434	i386	pidfd_open		sys_pidfd_open			__ia32_sys_pidfd_open
+ 435	i386	clone3			sys_clone3			__ia32_sys_clone3
++436	i386	encrypt_mprotect	sys_encrypt_mprotect		__ia32_sys_encrypt_mprotect
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index c29976eca4a8..716d8a89159b 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -357,6 +357,7 @@
+ 433	common	fspick			__x64_sys_fspick
+ 434	common	pidfd_open		__x64_sys_pidfd_open
+ 435	common	clone3			__x64_sys_clone3/ptregs
++436	common	encrypt_mprotect	__x64_sys_encrypt_mprotect
  
- static DEFINE_SPINLOCK(mktme_lock);
- static unsigned int mktme_available_keyids;  /* Free Hardware KeyIDs */
-+static struct kmem_cache *mktme_prog_cache;  /* Hardware programming cache */
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 88145da7d140..4494b1d9c85a 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -1000,6 +1000,8 @@ asmlinkage long sys_fspick(int dfd, const char __user *path, unsigned int flags)
+ asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
+ 				       siginfo_t __user *info,
+ 				       unsigned int flags);
++asmlinkage long sys_encrypt_mprotect(unsigned long start, size_t len,
++				     unsigned long prot, key_serial_t serial);
  
- enum mktme_keyid_state {
- 	KEYID_AVAILABLE,	/* Available to be assigned */
-@@ -79,6 +80,25 @@ static const match_table_t mktme_token = {
- 	{OPT_ERROR, NULL}
- };
+ /*
+  * Architecture-specific system calls
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index 1be0e798e362..7c1cd13f6aaf 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -850,9 +850,11 @@ __SYSCALL(__NR_pidfd_open, sys_pidfd_open)
+ #define __NR_clone3 435
+ __SYSCALL(__NR_clone3, sys_clone3)
+ #endif
++#define __NR_encrypt_mprotect 436
++__SYSCALL(__NR_encrypt_mprotect, sys_encrypt_mprotect)
  
-+/* Copy the payload to the HW programming structure and program this KeyID */
-+static int mktme_program_keyid(int keyid, u32 payload)
-+{
-+	struct mktme_key_program *kprog = NULL;
-+	int ret;
-+
-+	kprog = kmem_cache_zalloc(mktme_prog_cache, GFP_KERNEL);
-+	if (!kprog)
-+		return -ENOMEM;
-+
-+	/* Hardware programming requires cached aligned struct */
-+	kprog->keyid = keyid;
-+	kprog->keyid_ctrl = payload;
-+
-+	ret = MKTME_PROG_SUCCESS;	/* Future programming call */
-+	kmem_cache_free(mktme_prog_cache, kprog);
-+	return ret;
-+}
-+
- /* Key Service Method called when a Userspace Key is garbage collected. */
- static void mktme_destroy_key(struct key *key)
- {
-@@ -93,6 +113,7 @@ static void mktme_destroy_key(struct key *key)
- /* Key Service Method to create a new key. Payload is preparsed. */
- int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
- {
-+	u32 *payload = prep->payload.data[0];
- 	unsigned long flags;
- 	int keyid;
+ #undef __NR_syscalls
+-#define __NR_syscalls 436
++#define __NR_syscalls 437
  
-@@ -101,7 +122,14 @@ int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
- 	spin_unlock_irqrestore(&mktme_lock, flags);
- 	if (!keyid)
- 		return -ENOKEY;
--	return 0;
-+
-+	if (!mktme_program_keyid(keyid, *payload))
-+		return MKTME_PROG_SUCCESS;
-+
-+	spin_lock_irqsave(&mktme_lock, flags);
-+	mktme_release_keyid(keyid);
-+	spin_unlock_irqrestore(&mktme_lock, flags);
-+	return -ENOKEY;
- }
+ /*
+  * 32 bit systems traditionally used different
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 34b76895b81e..84c8c47cf9d6 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -349,6 +349,8 @@ COND_SYSCALL(pkey_mprotect);
+ COND_SYSCALL(pkey_alloc);
+ COND_SYSCALL(pkey_free);
  
- /* Make sure arguments are correct for the TYPE of key requested */
-@@ -245,10 +273,15 @@ static int __init init_mktme(void)
- 	if (!mktme_map)
- 		return -ENOMEM;
++/* multi-key total memory encryption keys */
++COND_SYSCALL(encrypt_mprotect);
  
-+	/* Used to program the hardware key tables */
-+	mktme_prog_cache = KMEM_CACHE(mktme_key_program, SLAB_PANIC);
-+	if (!mktme_prog_cache)
-+		goto free_map;
-+
- 	ret = register_key_type(&key_type_mktme);
- 	if (!ret)
- 		return ret;			/* SUCCESS */
--
-+free_map:
- 	kvfree(mktme_map);
- 
- 	return -ENOMEM;
+ /*
+  * Architecture specific weak syscall entries.
 -- 
 2.21.0
