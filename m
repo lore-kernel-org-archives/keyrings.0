@@ -1,7 +1,7 @@
-From: Janne Karhunen <janne.karhunen@gmail.com>
-Date: Wed, 31 Jul 2019 10:21:41 +0000
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Wed, 31 Jul 2019 10:38:12 +0000
 Subject: Re: [RFC v2 0/6] Introduce TEE based Trusted Keys support
-Message-Id: <CAE=NcrY7b8eTTovOszBhGhVbjfJAXoAYehiUJyPENGfwWoVcPw@mail.gmail.com>
+Message-Id: <CAFA6WYPJAzbPdcpBqioxjY=T8RLw-73B_hpzX4cGnwVvm5zpJw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,38 +9,36 @@ List-Id: <keyrings.vger.kernel.org>
 References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
  <CAE=Ncrb63dQLe-nDQyO9OPv7XjwM_9mzL9SrcLiUi2Dr10cD4A@mail.gmail.com>
 In-Reply-To: <CAE=Ncrb63dQLe-nDQyO9OPv7XjwM_9mzL9SrcLiUi2Dr10cD4A@mail.gmail.com>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, James Morris <jmorris@namei.org>, jarkko.sakkinen@linux.intel.com, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, "Serge E. Hallyn" <serge@hallyn.com>
+To: Janne Karhunen <janne.karhunen@gmail.com>
+Cc: "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, Jonathan Corbet <corbet@lwn.net>, jejb@linux.ibm.com, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, James Morris <jmorris@namei.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, Jens Wiklander <jens.wiklander@linaro.org>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
 
-Hi,
+Hi Janne,
 
-To clarify a bit further - my thought was to support any type of trust
-source. Remote, local or both. Just having one particular type of
-locally bound 'TEE' sounded very limited, especially when nothing from
-the TEE execution side is really needed for supporting the kernel
-crypto. What you really need is the seal/unseal transaction going
-somewhere and where that somewhere is does not matter much. With the
-user mode helper in between anyone can easily add their own thing in
-there.
-
-
---
-Janne
-
-On Wed, Jul 31, 2019 at 10:11 AM Janne Karhunen
-<janne.karhunen@gmail.com> wrote:
+On Wed, 31 Jul 2019 at 12:41, Janne Karhunen <janne.karhunen@gmail.com> wrote:
 >
 > Hi,
 >
 > Interesting, I wrote something similar and posted it to the lists a while back:
 > https://github.com/jkrh/linux/commit/d77ea03afedcb5fd42234cd834da8f8a0809f6a6
 >
-> Since there are no generic 'TEEs' available, I implemented the same
+> Since there are no generic 'TEEs' available,
+
+There is already a generic TEE interface driver available in kernel.
+Have a look here: "Documentation/tee.txt".
+
+> I implemented the same
 > thing as a generic protocol translator. The shared memory binding for
 > instance already assumes fair amount about the TEE and how that is
 > physically present in the system. Besides, the help from usage of shm
 > is pretty limited due to the size of the keydata.
 >
+
+If you look at patch #1 and #2, they add support to register kernel
+memory buffer (keydata buffer in this case) with TEE to operate on. So
+there isn't any limitation due to the size of the keydata.
+
+-Sumit
+
 >
 > --
 > Janne
