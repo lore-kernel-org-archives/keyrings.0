@@ -1,217 +1,194 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Fri, 26 Jul 2019 22:41:25 +0000
-Subject: [PATCH v7 00/16] fscrypt: key management improvements
-Message-Id: <20190726224141.14044-1-ebiggers@kernel.org>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:08:09 +0000
+Subject: [PATCHv2 55/59] x86/mktme: Document the MKTME provided security mitigations
+Message-Id: <20190731150813.26289-56-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-Hello,
+From: Alison Schofield <alison.schofield@intel.com>
 
-[Note: I'd like to apply this for v5.4.  Additional review is greatly
- appreciated, especially of the API before it's set in stone.  Thanks!]
+Describe the security benefits of Multi-Key Total Memory
+Encryption (MKTME) over Total Memory Encryption (TME) alone.
 
-This patchset makes major improvements to how keys are added, removed,
-and derived in fscrypt, aka ext4/f2fs/ubifs encryption.  It does this by
-adding new ioctls that add and remove encryption keys directly to/from
-the filesystem, and by adding a new encryption policy version ("v2")
-where the user-provided keys are only used as input to HKDF-SHA512 and
-are identified by their cryptographic hash.
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ Documentation/x86/mktme/index.rst             |   1 +
+ Documentation/x86/mktme/mktme_mitigations.rst | 151 ++++++++++++++++++
+ 2 files changed, 152 insertions(+)
+ create mode 100644 Documentation/x86/mktme/mktme_mitigations.rst
 
-All new APIs and all cryptosystem changes are documented in
-Documentation/filesystems/fscrypt.rst.  Userspace can use the new key
-management ioctls with existing encrypted directories, but migrating to
-v2 encryption policies is needed for the full benefits.
-
-These changes solve four interrelated problems:
-
-(1) Providing fscrypt keys via process-subscribed keyrings is abusing
-    encryption as an OS-level access control mechanism, causing many
-    bugs where processes don't get access to the keys they need -- e.g.,
-    when a 'sudo' command or a system service needs to access encrypted
-    files.  It's also inconsistent with the filesystem/VFS "view" of
-    encrypted files which is global, so sometimes things randomly happen
-    to work anyway due to caching.  Regardless, currently almost all
-    fscrypt users actually do need global keys, so they're having to use
-    workarounds that heavily abuse the session or user keyrings, e.g.
-    Android and Chromium OS both use a systemwide "session keyring" and
-    the 'fscrypt' tool links all user keyrings into root's user keyring.
-
-(2) Currently there's no way to securely and efficiently remove a
-    fscrypt key such that not only is the original key wiped, but also
-    all files and directories protected by that key are "locked" and
-    their per-file keys wiped.  Many users want this and are using
-    'echo 2 > /proc/sys/vm/drop_caches' as a workaround, but this is
-    root-only, and also is overkill so can be a performance disaster.
-
-(3) The key derivation function (KDF) that fscrypt uses to derive
-    per-file keys is nonstandard, inflexible, and has some weaknesses
-    such as being reversible and not evenly distributing the entropy
-    from the user-provided keys.
-
-(4) fscrypt doesn't check that the correct key was supplied.  This can
-    be a security vulnerability, since it allows malicious local users
-    to associate the wrong key with files to which they have read-only
-    access, causing other users' processes to read/write the wrong data.
-
-Ultimately, the solutions to these problems all tie into each other.  By
-adding a filesystem-level encryption keyring with ioctls to add/remove
-keys to/from it, the keys are made usable filesystem-wide (solves
-problem #1).  It also becomes easy to track the inodes that were
-"unlocked" with each key, so they can be evicted when the key is removed
-(solves problem #2).  Moreover, the filesystem-level keyring is a
-natural place to store an HMAC transform keyed by each key, thus making
-it easy and efficient to switch the KDF to HKDF (solves problem #3).
-
-Finally, to check that the correct key was supplied, I use HKDF to
-derive a cryptographically secure key_identifier for each key (solves
-problem #4).  This in combination with key quotas and other careful
-precautions also makes it safe to allow non-root users to add and remove
-keys to/from the filesystem-level keyring.  Thus, all problems are
-solved without having to restrict the fscrypt API to root only.
-
-The patchset is organized as follows:
-
-- Patches 1-8 add new ioctls FS_IOC_ADD_ENCRYPTION_KEY,
-  FS_IOC_REMOVE_ENCRYPTION_KEY, and FS_IOC_GET_ENCRYPTION_KEY_STATUS.
-  Adding a key logically "unlocks" all files on the filesystem that are
-  protected by that key; removing a key "locks" them again.
-
-- Patches 9-12 add support for v2 encryption policies.
-
-- Patches 13-15 wire up the new ioctls to ext4, f2fs, and ubifs.
-
-- Patch 16 updates the fscrypt documentation for all the changes.
-
-This patchset applies to v5.3-rc1 with the pending fscrypt cleanup
-patches applied (https://patchwork.kernel.org/patch/11057589/ and
-https://patchwork.kernel.org/cover/11057583/).
-You can also get it from git at:
-
-	Repository:   https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/linux.git
-	Branch:       fscrypt-key-mgmt-improvements-v7
-
-I've written xfstests for the new APIs.  They test the APIs themselves
-as well as verify the correctness of the ciphertext stored on-disk for
-v2 encryption policies.  The tests can be found at:
-
-	Repository:   https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfstests-dev.git
-	Branch:       fscrypt-key-mgmt-improvements
-
-The xfstests depend on new xfs_io commands which can be found at:
-
-	Repository:   https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfsprogs-dev.git
-	Branch:       fscrypt-key-mgmt-improvements
-
-I've also made proof-of-concept changes to the 'fscrypt' userspace
-program (https://github.com/google/fscrypt) to make it support v2
-encryption policies.  You can find these changes in git at:
-
-	Repository:   https://github.com/ebiggers/fscrypt.git
-	Branch:       fscrypt-key-mgmt-improvements
-
-To make the 'fscrypt' userspace program experimentally use v2 encryption
-policies on new encrypted directories, add the following to
-/etc/fscrypt.conf within the "options" section:
-
-	"policy_version": "2"
-
-Finally, it's also planned for Android and Chromium OS to switch to the
-new ioctls and eventually to v2 encryption policies.  Work-in-progress,
-proof-of-concept changes by Satya Tangirala for AOSP can be found at
-https://android-review.googlesource.com/q/topic:fscrypt-key-mgmt-improvements
-
-Changes v6 => v7:
-    - Rebase onto v5.3-rc1 and the pending fscrypt cleanups.
-    - Work around false positive compile-time buffer overflow check in
-      copy_from_user() in fscrypt_ioctl_set_policy() when building an
-      i386 kernel in a specific config with an old gcc version.
-    - A few very minor cleanups.
-
-Changes v5 => v6:
-    - Change HKDF to use the specification-defined default salt rather
-      than a custom fixed salt, and prepend the string "fscrypt" to
-      'info' instead.  This is arguably needed to match how RFC 5869 and
-      SP 800-56C are worded.  Both ways are secure in this context, so
-      prefer the "boring" way that clearly matches the standards.
-    - Rebase onto v5.2-rc1.
-    - A few small cleanups.
-
-Changes v4 => v5:
-    - Simplify shrink_dcache_inode(), as suggested by Al Viro;
-      also move it into fs/crypto/.
-    - Fix a build error on some architectures by calling
-      copy_from_user() rather than get_user() with a __u64 pointer.
-
-Changes v3 => v4:
-    - Introduce fscrypt_sb_free() to avoid an extra #ifdef.
-    - Fix UBIFS's ->drop_inode().
-    - Add 'version' to union fscrypt_policy and union fscrypt_context.
-
-Changes v2 => v3:
-    - Use ->drop_inode() to trigger the inode eviction during/after
-      FS_IOC_REMOVE_ENCRYPTION_KEY, as suggested by Dave Chinner.
-    - A few small cleanups.
-
-v1 of this patchset was sent in October 2017 with title "fscrypt:
-filesystem-level keyring and v2 policy support".  This revived version
-follows the same basic design but incorporates numerous improvements,
-such as splitting keyinfo.c into multiple files for much better
-understandability, and introducing "per-mode" encryption keys to
-implement the semantics of the DIRECT_KEY encryption policy flag.
-
-Eric Biggers (16):
-  fs, fscrypt: move uapi definitions to new header <linux/fscrypt.h>
-  fscrypt: use FSCRYPT_ prefix for uapi constants
-  fscrypt: use FSCRYPT_* definitions, not FS_*
-  fscrypt: add ->ci_inode to fscrypt_info
-  fscrypt: refactor v1 policy key setup into keysetup_legacy.c
-  fscrypt: add FS_IOC_ADD_ENCRYPTION_KEY ioctl
-  fscrypt: add FS_IOC_REMOVE_ENCRYPTION_KEY ioctl
-  fscrypt: add FS_IOC_GET_ENCRYPTION_KEY_STATUS ioctl
-  fscrypt: add an HKDF-SHA512 implementation
-  fscrypt: v2 encryption policy support
-  fscrypt: allow unprivileged users to add/remove keys for v2 policies
-  fscrypt: require that key be added when setting a v2 encryption policy
-  ext4: wire up new fscrypt ioctls
-  f2fs: wire up new fscrypt ioctls
-  ubifs: wire up new fscrypt ioctls
-  fscrypt: document the new ioctls and policy version
-
- Documentation/filesystems/fscrypt.rst | 670 ++++++++++++++----
- MAINTAINERS                           |   1 +
- fs/crypto/Kconfig                     |   2 +
- fs/crypto/Makefile                    |  10 +-
- fs/crypto/crypto.c                    |  12 +-
- fs/crypto/fname.c                     |   5 +-
- fs/crypto/fscrypt_private.h           | 366 +++++++++-
- fs/crypto/hkdf.c                      | 181 +++++
- fs/crypto/keyinfo.c                   | 627 -----------------
- fs/crypto/keyring.c                   | 957 ++++++++++++++++++++++++++
- fs/crypto/keysetup.c                  | 569 +++++++++++++++
- fs/crypto/keysetup_legacy.c           | 340 +++++++++
- fs/crypto/policy.c                    | 428 +++++++++---
- fs/ext4/ioctl.c                       |  24 +
- fs/ext4/super.c                       |   3 +
- fs/f2fs/file.c                        |  46 ++
- fs/f2fs/super.c                       |   2 +
- fs/super.c                            |   2 +
- fs/ubifs/ioctl.c                      |  16 +
- fs/ubifs/super.c                      |  11 +
- include/linux/fs.h                    |   1 +
- include/linux/fscrypt.h               |  48 +-
- include/uapi/linux/fs.h               |  54 +-
- include/uapi/linux/fscrypt.h          | 164 +++++
- 24 files changed, 3583 insertions(+), 956 deletions(-)
- create mode 100644 fs/crypto/hkdf.c
- delete mode 100644 fs/crypto/keyinfo.c
- create mode 100644 fs/crypto/keyring.c
- create mode 100644 fs/crypto/keysetup.c
- create mode 100644 fs/crypto/keysetup_legacy.c
- create mode 100644 include/uapi/linux/fscrypt.h
-
+diff --git a/Documentation/x86/mktme/index.rst b/Documentation/x86/mktme/index.rst
+index 1614b52dd3e9..a3a29577b013 100644
+--- a/Documentation/x86/mktme/index.rst
++++ b/Documentation/x86/mktme/index.rst
+@@ -6,3 +6,4 @@ Multi-Key Total Memory Encryption (MKTME)
+ .. toctree::
+ 
+    mktme_overview
++   mktme_mitigations
+diff --git a/Documentation/x86/mktme/mktme_mitigations.rst b/Documentation/x86/mktme/mktme_mitigations.rst
+new file mode 100644
+index 000000000000..c593784851fb
+--- /dev/null
++++ b/Documentation/x86/mktme/mktme_mitigations.rst
+@@ -0,0 +1,151 @@
++MKTME-Provided Mitigations
++=============
++:Author: Dave Hansen <dave.hansen@intel.com>
++
++MKTME adds a few mitigations against attacks that are not
++mitigated when using TME alone.  The first set are mitigations
++against software attacks that are familiar today:
++
++ * Kernel Mapping Attacks: information disclosures that leverage
++   the kernel direct map are mitigated against disclosing user
++   data.
++ * Freed Data Leak Attacks: removing an encryption key from the
++   hardware mitigates future user information disclosure.
++
++The next set are attacks that depend on specialized hardware,
++such as an “evil DIMM” or a DDR interposer:
++
++ * Cross-Domain Replay Attack: data is captured from one domain
++(guest) and replayed to another at a later time.
++ * Cross-Domain Capture and Delayed Compare Attack: data is
++   captured and later analyzed to discover secrets.
++ * Key Wear-out Attack: data is captured and analyzed in order
++   to Weaken the AES encryption itself.
++
++More details on these attacks are below.
++
++Kernel Mapping Attacks
++----------------------
++Information disclosure vulnerabilities leverage the kernel direct
++map because many vulnerabilities involve manipulation of kernel
++data structures (examples: CVE-2017-7277, CVE-2017-9605).  We
++normally think of these bugs as leaking valuable *kernel* data,
++but they can leak application data when application pages are
++recycled for kernel use.
++
++With this MKTME implementation, there is a direct map created for
++each MKTME KeyID which is used whenever the kernel needs to
++access plaintext.  But, all kernel data structures are accessed
++via the direct map for KeyID-0.  Thus, memory reads which are not
++coordinated with the KeyID get garbage (for example, accessing
++KeyID-4 data with the KeyID-0 mapping).
++
++This means that if sensitive data encrypted using MKTME is leaked
++via the KeyID-0 direct map, ciphertext decrypted with the wrong
++key will be disclosed.  To disclose plaintext, an attacker must
++“pivot” to the correct direct mapping, which is non-trivial
++because there are no kernel data structures in the KeyID!=0
++direct mapping.
++
++Freed Data Leak Attack
++----------------------
++The kernel has a history of bugs around uninitialized data.
++Usually, we think of these bugs as leaking sensitive kernel data,
++but they can also be used to leak application secrets.
++
++MKTME can help mitigate the case where application secrets are
++leaked:
++
++ * App (or VM) places a secret in a page * App exits or frees
++memory to kernel allocator * Page added to allocator free list *
++Attacker reallocates page to a purpose where it can read the page
++
++Now, imagine MKTME was in use on the memory being leaked.  The
++data can only be leaked as long as the key is programmed in the
++hardware.  If the key is de-programmed, like after all pages are
++freed after a guest is shut down, any future reads will just see
++ciphertext.
++
++Basically, the key is a convenient choke-point: you can be more
++confident that data encrypted with it is inaccessible once the
++key is removed.
++
++Cross-Domain Replay Attack
++--------------------------
++MKTME mitigates cross-domain replay attacks where an attacker
++replaces an encrypted block owned by one domain with a block
++owned by another domain.  MKTME does not prevent this replacement
++from occurring, but it does mitigate plaintext from being
++disclosed if the domains use different keys.
++
++With TME, the attack could be executed by:
++ * A victim places secret in memory, at a given physical address.
++   Note: AES-XTS is what restricts the attack to being performed
++   at a single physical address instead of across different
++   physical addresses
++ * Attacker captures victim secret’s ciphertext * Later on, after
++   victim frees the physical address, attacker gains ownership 
++ * Attacker puts the ciphertext at the address and get the secret
++   plaintext
++
++But, due to the presumably different keys used by the attacker
++and the victim, the attacker can not successfully decrypt old
++ciphertext.
++
++Cross-Domain Capture and Delayed Compare Attack
++-----------------------------------------------
++This is also referred to as a kind of dictionary attack.
++
++Similarly, MKTME protects against cross-domain capture-and-compare
++attacks.  Consider the following scenario:
++ * A victim places a secret in memory, at a known physical address
++ * Attacker captures victim’s ciphertext
++ * Attacker gains control of the target physical address, perhaps
++   after the victim’s VM is shut down or its memory reclaimed.
++ * Attacker computes and writes many possible plaintexts until new
++   ciphertext matches content captured previously.
++
++Secrets which have low (plaintext) entropy are more vulnerable to
++this attack because they reduce the number of possible plaintexts
++an attacker has to compute and write.
++
++The attack will not work if attacker and victim uses different
++keys.
++
++Key Wear-out Attack
++-------------------
++Repeated use of an encryption key might be used by an attacker to
++infer information about the key or the plaintext, weakening the
++encryption.  The higher the bandwidth of the encryption engine,
++the more vulnerable the key is to wear-out.  The MKTME memory
++encryption hardware works at the speed of the memory bus, which
++has high bandwidth.
++
++Such a weakness has been demonstrated[1] on a theoretical cipher
++with similar properties as AES-XTS.
++
++An attack would take the following steps:
++ * Victim system is using TME with AES-XTS-128
++ * Attacker repeatedly captures ciphertext/plaintext pairs (can
++   be Performed with online hardware attack like an interposer).
++ * Attacker compels repeated use of the key under attack for a
++   sustained time period without a system reboot[2].
++ * Attacker discovers a cipertext collision (two plaintexts
++   translating to the same ciphertext)
++ * Attacker can induce controlled modifications to the targeted
++   plaintext by modifying the colliding ciphertext
++
++MKTME mitigates key wear-out in two ways:
++ * Keys can be rotated periodically to mitigate wear-out.  Since
++   TME keys are generated at boot, rotation of TME keys requires a
++   reboot.  In contrast, MKTME allows rotation while the system is
++   booted.  An application could implement a policy to rotate keys
++   at a frequency which is not feasible to attack.
++ * In the case that MKTME is used to encrypt two guests’ memory
++   with two different keys, an attack on one guest’s key would not
++   weaken the key used in the second guest.
++
++--
++1. http://web.cs.ucdavis.edu/~rogaway/papers/offsets.pdf
++2. This sustained time required for an attack could vary from days
++   to years depending on the attacker’s goals.
 -- 
-2.22.0
+2.21.0
