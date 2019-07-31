@@ -1,142 +1,109 @@
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Date: Mon, 08 Jul 2019 19:13:09 +0000
-Subject: Re: [PATCH 3/9] security: Add a hook for the point of notification insertion [ver #5]
-Message-Id: <541e5cb3-142b-fe87-dff6-260b46d34f2d@tycho.nsa.gov>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:07:57 +0000
+Subject: [PATCHv2 43/59] x86/mm: Set KeyIDs in encrypted VMAs for MKTME
+Message-Id: <20190731150813.26289-44-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
- <156173694190.15137.8939274212328721351.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156173694190.15137.8939274212328721351.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk
-Cc: Casey Schaufler <casey@schaufler-ca.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-On 6/28/19 11:49 AM, David Howells wrote:
-> Add a security hook that allows an LSM to rule on whether a notification
-> message is allowed to be inserted into a particular watch queue.
-> 
-> The hook is given the following information:
-> 
->   (1) The credentials of the triggerer (which may be init_cred for a system
->       notification, eg. a hardware error).
-> 
->   (2) The credentials of the whoever set the watch.
-> 
->   (3) The notification message.
+From: Alison Schofield <alison.schofield@intel.com>
 
-As with the other proposed hooks, it is difficult to evaluate this hook 
-without at least one implementation of the hook.  Since Casey is the 
-only one requesting this hook, a Smack implementation would be the 
-natural choice; I do not intend to implement this hook for SELinux. 
-However, by providing this hook, you are in effect taking a position wrt 
-the earlier controversy over it, i.e. that application developers must 
-deal with the possibility that notifications can be dropped if a 
-security module does not permit the triggerer to post the notification 
-to the watcher, without any indication to either the triggerer or the 
-watcher.  This is a choice you are making by providing this hook.  The 
-alternative is to require that permission to set a watch imply the 
-ability to receive all notifications for the watched object.  Aside from 
-friendliness to application developers, the latter also yields stable, 
-sane policy and better performance.
+MKTME architecture requires the KeyID to be placed in PTE bits 51:46.
+To create an encrypted VMA, place the KeyID in the upper bits of
+vm_page_prot that matches the position of those PTE bits.
 
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Casey Schaufler <casey@schaufler-ca.com>
-> cc: Stephen Smalley <sds@tycho.nsa.gov>
-> cc: linux-security-module@vger.kernel.org
-> ---
-> 
->   include/linux/lsm_hooks.h |   10 ++++++++++
->   include/linux/security.h  |   10 ++++++++++
->   security/security.c       |    6 ++++++
->   3 files changed, 26 insertions(+)
-> 
-> diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-> index f9d31f6445e4..fd4b2b14e7d0 100644
-> --- a/include/linux/lsm_hooks.h
-> +++ b/include/linux/lsm_hooks.h
-> @@ -1426,6 +1426,12 @@
->    *	from devices (as a global set).
->    *	@watch: The watch object
->    *
-> + * @post_notification:
-> + *	Check to see if a watch notification can be posted to a particular
-> + *	queue.
-> + *	@w_cred: The credentials of the whoever set the watch.
-> + *	@cred: The event-triggerer's credentials
-> + *	@n: The notification being posted
->    *
->    * Security hooks for using the eBPF maps and programs functionalities through
->    * eBPF syscalls.
-> @@ -1705,6 +1711,9 @@ union security_list_options {
->   #ifdef CONFIG_WATCH_QUEUE
->   	int (*watch_key)(struct watch *watch, struct key *key);
->   	int (*watch_devices)(struct watch *watch);
-> +	int (*post_notification)(const struct cred *w_cred,
-> +				 const struct cred *cred,
-> +				 struct watch_notification *n);
->   #endif /* CONFIG_WATCH_QUEUE */
->   
->   #ifdef CONFIG_SECURITY_NETWORK
-> @@ -1985,6 +1994,7 @@ struct security_hook_heads {
->   #ifdef CONFIG_WATCH_QUEUE
->   	struct hlist_head watch_key;
->   	struct hlist_head watch_devices;
-> +	struct hlist_head post_notification;
->   #endif /* CONFIG_WATCH_QUEUE */
->   #ifdef CONFIG_SECURITY_NETWORK
->   	struct hlist_head unix_stream_connect;
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 540863678355..5c074bf18bea 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -58,6 +58,7 @@ struct fs_context;
->   struct fs_parameter;
->   enum fs_value_type;
->   struct watch;
-> +struct watch_notification;
->   
->   /* Default (no) options for the capable function */
->   #define CAP_OPT_NONE 0x0
-> @@ -396,6 +397,9 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen);
->   #ifdef CONFIG_WATCH_QUEUE
->   int security_watch_key(struct watch *watch, struct key *key);
->   int security_watch_devices(struct watch *watch);
-> +int security_post_notification(const struct cred *w_cred,
-> +			       const struct cred *cred,
-> +			       struct watch_notification *n);
->   #endif /* CONFIG_WATCH_QUEUE */
->   #else /* CONFIG_SECURITY */
->   
-> @@ -1218,6 +1222,12 @@ static inline int security_watch_devices(struct watch *watch)
->   {
->   	return 0;
->   }
-> +static inline int security_post_notification(const struct cred *w_cred,
-> +					     const struct cred *cred,
-> +					     struct watch_notification *n)
-> +{
-> +	return 0;
-> +}
->   #endif /* CONFIG_WATCH_QUEUE */
->   #endif	/* CONFIG_SECURITY */
->   
-> diff --git a/security/security.c b/security/security.c
-> index 2c9919226ad1..459e87d55ac9 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -1928,6 +1928,12 @@ int security_watch_devices(struct watch *watch)
->   	return call_int_hook(watch_devices, 0, watch);
->   }
->   
-> +int security_post_notification(const struct cred *w_cred,
-> +			       const struct cred *cred,
-> +			       struct watch_notification *n)
-> +{
-> +	return call_int_hook(post_notification, 0, w_cred, cred, n);
-> +}
->   #endif /* CONFIG_WATCH_QUEUE */
->   
->   #ifdef CONFIG_SECURITY_NETWORK
-> 
+When the VMA is assigned a KeyID it is always considered a KeyID
+change. The VMA is either going from not encrypted to encrypted,
+or from encrypted with any KeyID to encrypted with any other KeyID.
+To make the change safely, remove the user pages held by the VMA
+and unlink the VMA's anonymous chain.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ arch/x86/include/asm/mktme.h |  4 ++++
+ arch/x86/mm/mktme.c          | 26 ++++++++++++++++++++++++++
+ include/linux/mm.h           |  6 ++++++
+ 3 files changed, 36 insertions(+)
+
+diff --git a/arch/x86/include/asm/mktme.h b/arch/x86/include/asm/mktme.h
+index d26ada6b65f7..e8f7f80bb013 100644
+--- a/arch/x86/include/asm/mktme.h
++++ b/arch/x86/include/asm/mktme.h
+@@ -16,6 +16,10 @@ extern int __mktme_nr_keyids;
+ extern int mktme_nr_keyids(void);
+ extern unsigned int mktme_algs;
+ 
++/* Set the encryption keyid bits in a VMA */
++extern void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
++				unsigned long start, unsigned long end);
++
+ DECLARE_STATIC_KEY_FALSE(mktme_enabled_key);
+ static inline bool mktme_enabled(void)
+ {
+diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
+index ed13967bb543..05bbf5058ade 100644
+--- a/arch/x86/mm/mktme.c
++++ b/arch/x86/mm/mktme.c
+@@ -1,5 +1,6 @@
+ #include <linux/mm.h>
+ #include <linux/highmem.h>
++#include <linux/rmap.h>
+ #include <asm/mktme.h>
+ #include <asm/pgalloc.h>
+ #include <asm/tlbflush.h>
+@@ -71,6 +72,31 @@ int __vma_keyid(struct vm_area_struct *vma)
+ 	return (prot & mktme_keyid_mask()) >> mktme_keyid_shift();
+ }
+ 
++/* Set the encryption keyid bits in a VMA */
++void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
++			  unsigned long start, unsigned long end)
++{
++	int oldkeyid = vma_keyid(vma);
++	pgprotval_t newprot;
++
++	/* Unmap pages with old KeyID if there's any. */
++	zap_page_range(vma, start, end - start);
++
++	if (oldkeyid = newkeyid)
++		return;
++
++	newprot = pgprot_val(vma->vm_page_prot);
++	newprot &= ~mktme_keyid_mask();
++	newprot |= (unsigned long)newkeyid << mktme_keyid_shift();
++	vma->vm_page_prot = __pgprot(newprot);
++
++	/*
++	 * The VMA doesn't have any inherited pages.
++	 * Start anon VMA tree from scratch.
++	 */
++	unlink_anon_vmas(vma);
++}
++
+ /* Prepare page to be used for encryption. Called from page allocator. */
+ void __prep_encrypted_page(struct page *page, int order, int keyid, bool zero)
+ {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3f9640f388ac..98a6d2bd66a6 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -2905,5 +2905,11 @@ void __init setup_nr_node_ids(void);
+ static inline void setup_nr_node_ids(void) {}
+ #endif
+ 
++#ifndef CONFIG_X86_INTEL_MKTME
++static inline void mprotect_set_encrypt(struct vm_area_struct *vma,
++					int newkeyid,
++					unsigned long start,
++					unsigned long end) {}
++#endif /* CONFIG_X86_INTEL_MKTME */
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_MM_H */
+-- 
+2.21.0
