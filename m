@@ -1,43 +1,65 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Tue, 30 Jul 2019 12:35:35 +0000
-Subject: [RFC v2 1/6] tee: optee: allow kernel pages to register as shm
-Message-Id: <1564489420-677-2-git-send-email-sumit.garg@linaro.org>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:07:49 +0000
+Subject: [PATCHv2 35/59] acpi/hmat: Determine existence of an ACPI HMAT
+Message-Id: <20190731150813.26289-36-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
-To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, casey@schaufler-ca.com, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-Kernel pages are marked as normal type memory only so allow kernel pages
-to be registered as shared memory with OP-TEE.
+From: Alison Schofield <alison.schofield@intel.com>
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Reviewed-by: Jens Wiklander <jens.wiklander@linaro.org>
+Platforms that need to confirm the presence of an HMAT table
+can use this function that simply reports the HMATs existence.
+
+This is added in support of the Multi-Key Total Memory Encryption
+(MKTME), a feature on future Intel platforms. These platforms will
+need to confirm an HMAT is present at init time.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- drivers/tee/optee/call.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/acpi/hmat/hmat.c | 13 +++++++++++++
+ include/linux/acpi.h     |  4 ++++
+ 2 files changed, 17 insertions(+)
 
-diff --git a/drivers/tee/optee/call.c b/drivers/tee/optee/call.c
-index aa94270..bce45b1 100644
---- a/drivers/tee/optee/call.c
-+++ b/drivers/tee/optee/call.c
-@@ -553,6 +553,13 @@ static int check_mem_type(unsigned long start, size_t num_pages)
- 	struct mm_struct *mm = current->mm;
- 	int rc;
- 
-+	/*
-+	 * Allow kernel address to register with OP-TEE as kernel
-+	 * pages are configured as normal memory only.
-+	 */
-+	if (virt_addr_valid(start))
-+		return 0;
+diff --git a/drivers/acpi/hmat/hmat.c b/drivers/acpi/hmat/hmat.c
+index 96b7d39a97c6..38e3341f569f 100644
+--- a/drivers/acpi/hmat/hmat.c
++++ b/drivers/acpi/hmat/hmat.c
+@@ -664,3 +664,16 @@ static __init int hmat_init(void)
+ 	return 0;
+ }
+ subsys_initcall(hmat_init);
 +
- 	down_read(&mm->mmap_sem);
- 	rc = __check_mem_type(find_vma(mm, start),
- 			      start + num_pages * PAGE_SIZE);
++bool acpi_hmat_present(void)
++{
++	struct acpi_table_header *tbl;
++	acpi_status status;
++
++	status = acpi_get_table(ACPI_SIG_HMAT, 0, &tbl);
++	if (ACPI_FAILURE(status))
++		return false;
++
++	acpi_put_table(tbl);
++	return true;
++}
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index fc1e7d4648bf..d27f4d17dfb3 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -1335,4 +1335,8 @@ acpi_platform_notify(struct device *dev, enum kobject_action action)
+ }
+ #endif
+ 
++#ifdef CONFIG_X86_INTEL_MKTME
++extern bool acpi_hmat_present(void);
++#endif /* CONFIG_X86_INTEL_MKTME */
++
+ #endif	/*_LINUX_ACPI_H*/
 -- 
-2.7.4
+2.21.0
