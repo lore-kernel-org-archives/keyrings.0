@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:38 +0000
-Subject: [PATCHv2 24/59] keys/mktme: Introduce a Kernel Key Service for MKTME
-Message-Id: <20190731150813.26289-25-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:07:51 +0000
+Subject: [PATCHv2 37/59] acpi/hmat: Evaluate topology presented in ACPI HMAT for MKTME
+Message-Id: <20190731150813.26289-38-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,99 +13,94 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
-MKTME (Multi-Key Total Memory Encryption) is a technology that allows
-transparent memory encryption in upcoming Intel platforms. MKTME will
-support multiple encryption domains, each having their own key.
+MKTME, Multi-Key Total Memory Encryption, is a feature on Intel
+platforms. The ACPI HMAT table can be used to verify that the
+platform topology is safe for the usage of MKTME.
 
-The MKTME key service will manage the hardware encryption keys. It
-will map Userspace Keys to Hardware KeyIDs and program the hardware
-with the user requested encryption options.
-
-Here the mapping structure is introduced, as well as the key service
-initialization and registration.
+The kernel must be capable of programming every memory controller
+on the platform. This means that there must be a CPU online, in
+the same proximity domain of each memory controller.
 
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- security/keys/Makefile     |  1 +
- security/keys/mktme_keys.c | 60 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 61 insertions(+)
- create mode 100644 security/keys/mktme_keys.c
+ drivers/acpi/hmat/hmat.c | 54 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h     |  1 +
+ 2 files changed, 55 insertions(+)
 
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 9cef54064f60..28799be801a9 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -30,3 +30,4 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
- obj-$(CONFIG_BIG_KEYS) += big_key.o
- obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
- obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
-+obj-$(CONFIG_X86_INTEL_MKTME) += mktme_keys.o
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-new file mode 100644
-index 000000000000..d262e0f348e4
---- /dev/null
-+++ b/security/keys/mktme_keys.c
-@@ -0,0 +1,60 @@
-+// SPDX-License-Identifier: GPL-3.0
+diff --git a/drivers/acpi/hmat/hmat.c b/drivers/acpi/hmat/hmat.c
+index 38e3341f569f..936a403c0694 100644
+--- a/drivers/acpi/hmat/hmat.c
++++ b/drivers/acpi/hmat/hmat.c
+@@ -677,3 +677,57 @@ bool acpi_hmat_present(void)
+ 	acpi_put_table(tbl);
+ 	return true;
+ }
 +
-+/* Documentation/x86/mktme/ */
-+
-+#include <linux/init.h>
-+#include <linux/key.h>
-+#include <linux/key-type.h>
-+#include <linux/mm.h>
-+#include <keys/user-type.h>
-+
-+#include "internal.h"
-+
-+static unsigned int mktme_available_keyids;  /* Free Hardware KeyIDs */
-+
-+enum mktme_keyid_state {
-+	KEYID_AVAILABLE,	/* Available to be assigned */
-+	KEYID_ASSIGNED,		/* Assigned to a userspace key */
-+	KEYID_REF_KILLED,	/* Userspace key has been destroyed */
-+	KEYID_REF_RELEASED,	/* Last reference is released */
-+};
-+
-+/* 1:1 Mapping between Userspace Keys (struct key) and Hardware KeyIDs */
-+struct mktme_mapping {
-+	struct key		*key;
-+	enum mktme_keyid_state	state;
-+};
-+
-+static struct mktme_mapping *mktme_map;
-+
-+struct key_type key_type_mktme = {
-+	.name		= "mktme",
-+	.describe	= user_describe,
-+};
-+
-+static int __init init_mktme(void)
++static int mktme_parse_proximity_domains(union acpi_subtable_headers *header,
++					 const unsigned long end)
 +{
-+	int ret;
++	struct acpi_hmat_proximity_domain *mar = (void *)header;
++	struct acpi_hmat_structure *hdr = (void *)header;
 +
-+	/* Verify keys are present */
-+	if (mktme_nr_keyids() < 1)
-+		return 0;
++	const struct cpumask *tmp_mask;
 +
-+	mktme_available_keyids = mktme_nr_keyids();
++	if (!hdr || hdr->type != ACPI_HMAT_TYPE_PROXIMITY)
++		return -EINVAL;
 +
-+	/* Mapping of Userspace Keys to Hardware KeyIDs */
-+	mktme_map = kvzalloc((sizeof(*mktme_map) * (mktme_nr_keyids() + 1)),
-+			     GFP_KERNEL);
-+	if (!mktme_map)
-+		return -ENOMEM;
-+
-+	ret = register_key_type(&key_type_mktme);
-+	if (!ret)
-+		return ret;			/* SUCCESS */
-+
-+	kvfree(mktme_map);
-+
-+	return -ENOMEM;
++	if (mar->header.length != sizeof(*mar)) {
++		pr_warn("MKTME: invalid header length in HMAT\n");
++		return -1;
++	}
++	/*
++	 * Require a valid processor proximity domain.
++	 * This will catch memory only physical packages with
++	 * no processor capable of programming the key table.
++	 */
++	if (!(mar->flags & ACPI_HMAT_PROCESSOR_PD_VALID)) {
++		pr_warn("MKTME: no valid processor proximity domain\n");
++		return -1;
++	}
++	/* Require an online CPU in the processor proximity domain. */
++	tmp_mask = cpumask_of_node(pxm_to_node(mar->processor_PD));
++	if (!cpumask_intersects(tmp_mask, cpu_online_mask)) {
++		pr_warn("MKTME: no online CPU in proximity domain\n");
++		return -1;
++	}
++	return 0;
 +}
 +
-+late_initcall(init_mktme);
++/* Returns true if topology is safe for MKTME key creation */
++bool mktme_hmat_evaluate(void)
++{
++	struct acpi_table_header *tbl;
++	bool ret = true;
++	acpi_status status;
++
++	status = acpi_get_table(ACPI_SIG_HMAT, 0, &tbl);
++	if (ACPI_FAILURE(status))
++		return -EINVAL;
++
++	if (acpi_table_parse_entries(ACPI_SIG_HMAT,
++				     sizeof(struct acpi_table_hmat),
++				     ACPI_HMAT_TYPE_PROXIMITY,
++				     mktme_parse_proximity_domains, 0) < 0) {
++		ret = false;
++	}
++	acpi_put_table(tbl);
++	return ret;
++}
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index d27f4d17dfb3..8854ae942e37 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -1337,6 +1337,7 @@ acpi_platform_notify(struct device *dev, enum kobject_action action)
+ 
+ #ifdef CONFIG_X86_INTEL_MKTME
+ extern bool acpi_hmat_present(void);
++extern bool mktme_hmat_evaluate(void);
+ #endif /* CONFIG_X86_INTEL_MKTME */
+ 
+ #endif	/*_LINUX_ACPI_H*/
 -- 
 2.21.0
