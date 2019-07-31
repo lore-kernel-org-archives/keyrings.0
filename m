@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:56 +0000
-Subject: [PATCHv2 42/59] syscall/x86: Wire up a system call for MKTME encryption keys
-Message-Id: <20190731150813.26289-43-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:07:46 +0000
+Subject: [PATCHv2 32/59] keys/mktme: Clear the key programming from the MKTME hardware
+Message-Id: <20190731150813.26289-33-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,84 +13,74 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
-encrypt_mprotect() is a new system call to support memory encryption.
+Send a request to the MKTME hardware to clear a previously
+programmed key. This will be used when userspace keys are
+destroyed and the key slot is no longer in use. No longer
+in use means that the reference has been released, and its
+usage count has returned to zero.
 
-It takes the same parameters as legacy mprotect, plus an additional
-key serial number that is mapped to an encryption keyid.
+This clear command is not offered as an option to userspace,
+since the key service can execute it automatically, and at
+the right time, safely.
 
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/x86/entry/syscalls/syscall_32.tbl | 1 +
- arch/x86/entry/syscalls/syscall_64.tbl | 1 +
- include/linux/syscalls.h               | 2 ++
- include/uapi/asm-generic/unistd.h      | 4 +++-
- kernel/sys_ni.c                        | 2 ++
- 5 files changed, 9 insertions(+), 1 deletion(-)
+ security/keys/mktme_keys.c | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
-index c00019abd076..1b30cd007a6a 100644
---- a/arch/x86/entry/syscalls/syscall_32.tbl
-+++ b/arch/x86/entry/syscalls/syscall_32.tbl
-@@ -440,3 +440,4 @@
- 433	i386	fspick			sys_fspick			__ia32_sys_fspick
- 434	i386	pidfd_open		sys_pidfd_open			__ia32_sys_pidfd_open
- 435	i386	clone3			sys_clone3			__ia32_sys_clone3
-+436	i386	encrypt_mprotect	sys_encrypt_mprotect		__ia32_sys_encrypt_mprotect
-diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
-index c29976eca4a8..716d8a89159b 100644
---- a/arch/x86/entry/syscalls/syscall_64.tbl
-+++ b/arch/x86/entry/syscalls/syscall_64.tbl
-@@ -357,6 +357,7 @@
- 433	common	fspick			__x64_sys_fspick
- 434	common	pidfd_open		__x64_sys_pidfd_open
- 435	common	clone3			__x64_sys_clone3/ptregs
-+436	common	encrypt_mprotect	__x64_sys_encrypt_mprotect
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index 18cb57be5193..1e2afcce7d85 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -72,6 +72,9 @@ int mktme_keyid_from_key(struct key *key)
+ 	return 0;
+ }
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 88145da7d140..4494b1d9c85a 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -1000,6 +1000,8 @@ asmlinkage long sys_fspick(int dfd, const char __user *path, unsigned int flags)
- asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
- 				       siginfo_t __user *info,
- 				       unsigned int flags);
-+asmlinkage long sys_encrypt_mprotect(unsigned long start, size_t len,
-+				     unsigned long prot, key_serial_t serial);
++static void mktme_clear_hardware_keyid(struct work_struct *work);
++static DECLARE_WORK(mktme_clear_work, mktme_clear_hardware_keyid);
++
+ struct percpu_ref *encrypt_count;
+ void mktme_percpu_ref_release(struct percpu_ref *ref)
+ {
+@@ -88,8 +91,9 @@ void mktme_percpu_ref_release(struct percpu_ref *ref)
+ 	}
+ 	percpu_ref_exit(ref);
+ 	spin_lock_irqsave(&mktme_lock, flags);
+-	mktme_release_keyid(keyid);
++	mktme_map[keyid].state = KEYID_REF_RELEASED;
+ 	spin_unlock_irqrestore(&mktme_lock, flags);
++	schedule_work(&mktme_clear_work);
+ }
  
- /*
-  * Architecture-specific system calls
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index 1be0e798e362..7c1cd13f6aaf 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -850,9 +850,11 @@ __SYSCALL(__NR_pidfd_open, sys_pidfd_open)
- #define __NR_clone3 435
- __SYSCALL(__NR_clone3, sys_clone3)
- #endif
-+#define __NR_encrypt_mprotect 436
-+__SYSCALL(__NR_encrypt_mprotect, sys_encrypt_mprotect)
+ enum mktme_opt_id {
+@@ -213,6 +217,27 @@ static int mktme_program_keyid(int keyid, u32 payload)
+ 	return ret;
+ }
  
- #undef __NR_syscalls
--#define __NR_syscalls 436
-+#define __NR_syscalls 437
- 
- /*
-  * 32 bit systems traditionally used different
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 34b76895b81e..84c8c47cf9d6 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -349,6 +349,8 @@ COND_SYSCALL(pkey_mprotect);
- COND_SYSCALL(pkey_alloc);
- COND_SYSCALL(pkey_free);
- 
-+/* multi-key total memory encryption keys */
-+COND_SYSCALL(encrypt_mprotect);
- 
- /*
-  * Architecture specific weak syscall entries.
++static void mktme_clear_hardware_keyid(struct work_struct *work)
++{
++	u32 clear_payload = MKTME_KEYID_CLEAR_KEY;
++	unsigned long flags;
++	int keyid, ret;
++
++	for (keyid = 1; keyid <= mktme_nr_keyids(); keyid++) {
++		if (mktme_map[keyid].state != KEYID_REF_RELEASED)
++			continue;
++
++		ret = mktme_program_keyid(keyid, clear_payload);
++		if (ret != MKTME_PROG_SUCCESS)
++			pr_debug("mktme: clear key failed [%s]\n",
++				 mktme_error[ret].msg);
++
++		spin_lock_irqsave(&mktme_lock, flags);
++		mktme_release_keyid(keyid);
++		spin_unlock_irqrestore(&mktme_lock, flags);
++	}
++}
++
+ /* Key Service Method called when a Userspace Key is garbage collected. */
+ static void mktme_destroy_key(struct key *key)
+ {
 -- 
 2.21.0
