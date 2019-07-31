@@ -1,149 +1,150 @@
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Date: Mon, 08 Jul 2019 18:46:11 +0000
-Subject: Re: [PATCH 2/9] security: Add hooks to rule on setting a watch [ver #5]
-Message-Id: <cd657aab-e11c-c0b1-2e36-dd796ca75b75@tycho.nsa.gov>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:08:04 +0000
+Subject: [PATCHv2 50/59] x86/mm: Use common code for DMA memory encryption
+Message-Id: <20190731150813.26289-51-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156173690158.15137.3985163001079120218.stgit@warthog.procyon.org.uk>
- <156173692760.15137.9636883182556029747.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156173692760.15137.9636883182556029747.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk
-Cc: Casey Schaufler <casey@schaufler-ca.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-On 6/28/19 11:48 AM, David Howells wrote:
-> Add security hooks that will allow an LSM to rule on whether or not a watch
-> may be set.  More than one hook is required as the watches watch different
-> types of object.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Casey Schaufler <casey@schaufler-ca.com>
-> cc: Stephen Smalley <sds@tycho.nsa.gov>
-> cc: linux-security-module@vger.kernel.org
-> ---
-> 
->   include/linux/lsm_hooks.h |   22 ++++++++++++++++++++++
->   include/linux/security.h  |   15 +++++++++++++++
->   security/security.c       |   13 +++++++++++++
->   3 files changed, 50 insertions(+)
-> 
-> diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-> index 47f58cfb6a19..f9d31f6445e4 100644
-> --- a/include/linux/lsm_hooks.h
-> +++ b/include/linux/lsm_hooks.h
-> @@ -1413,6 +1413,20 @@
->    *	@ctx is a pointer in which to place the allocated security context.
->    *	@ctxlen points to the place to put the length of @ctx.
->    *
-> + * Security hooks for the general notification queue:
-> + *
-> + * @watch_key:
-> + *	Check to see if a process is allowed to watch for event notifications
-> + *	from a key or keyring.
-> + *	@watch: The watch object
-> + *	@key: The key to watch.
-> + *
-> + * @watch_devices:
-> + *	Check to see if a process is allowed to watch for event notifications
-> + *	from devices (as a global set).
-> + *	@watch: The watch object
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-It is difficult to evaluate these without at least one implementation of 
-each hook.  I am unclear as to how any security module would use the 
-watch argument, since it has no security field/blob and does not appear 
-to contain any information that would be relevant to deciding whether or 
-not to permit the watch to be set.
+Replace sme_ code with x86 memory encryption common code such that
+Intel MKTME can be supported underneath generic DMA code.
+dma_to_phys() & phys_to_dma() results will be runtime modified by
+memory encryption code.
 
-> + *
-> + *
->    * Security hooks for using the eBPF maps and programs functionalities through
->    * eBPF syscalls.
->    *
-> @@ -1688,6 +1702,10 @@ union security_list_options {
->   	int (*inode_notifysecctx)(struct inode *inode, void *ctx, u32 ctxlen);
->   	int (*inode_setsecctx)(struct dentry *dentry, void *ctx, u32 ctxlen);
->   	int (*inode_getsecctx)(struct inode *inode, void **ctx, u32 *ctxlen);
-> +#ifdef CONFIG_WATCH_QUEUE
-> +	int (*watch_key)(struct watch *watch, struct key *key);
-> +	int (*watch_devices)(struct watch *watch);
-> +#endif /* CONFIG_WATCH_QUEUE */
->   
->   #ifdef CONFIG_SECURITY_NETWORK
->   	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-> @@ -1964,6 +1982,10 @@ struct security_hook_heads {
->   	struct hlist_head inode_notifysecctx;
->   	struct hlist_head inode_setsecctx;
->   	struct hlist_head inode_getsecctx;
-> +#ifdef CONFIG_WATCH_QUEUE
-> +	struct hlist_head watch_key;
-> +	struct hlist_head watch_devices;
-> +#endif /* CONFIG_WATCH_QUEUE */
->   #ifdef CONFIG_SECURITY_NETWORK
->   	struct hlist_head unix_stream_connect;
->   	struct hlist_head unix_may_send;
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 659071c2e57c..540863678355 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -57,6 +57,7 @@ struct mm_struct;
->   struct fs_context;
->   struct fs_parameter;
->   enum fs_value_type;
-> +struct watch;
->   
->   /* Default (no) options for the capable function */
->   #define CAP_OPT_NONE 0x0
-> @@ -392,6 +393,10 @@ void security_inode_invalidate_secctx(struct inode *inode);
->   int security_inode_notifysecctx(struct inode *inode, void *ctx, u32 ctxlen);
->   int security_inode_setsecctx(struct dentry *dentry, void *ctx, u32 ctxlen);
->   int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen);
-> +#ifdef CONFIG_WATCH_QUEUE
-> +int security_watch_key(struct watch *watch, struct key *key);
-> +int security_watch_devices(struct watch *watch);
-> +#endif /* CONFIG_WATCH_QUEUE */
->   #else /* CONFIG_SECURITY */
->   
->   static inline int call_lsm_notifier(enum lsm_event event, void *data)
-> @@ -1204,6 +1209,16 @@ static inline int security_inode_getsecctx(struct inode *inode, void **ctx, u32
->   {
->   	return -EOPNOTSUPP;
->   }
-> +#ifdef CONFIG_WATCH_QUEUE
-> +static inline int security_watch_key(struct watch *watch, struct key *key)
-> +{
-> +	return 0;
-> +}
-> +static inline int security_watch_devices(struct watch *watch)
-> +{
-> +	return 0;
-> +}
-> +#endif /* CONFIG_WATCH_QUEUE */
->   #endif	/* CONFIG_SECURITY */
->   
->   #ifdef CONFIG_SECURITY_NETWORK
-> diff --git a/security/security.c b/security/security.c
-> index 613a5c00e602..2c9919226ad1 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -1917,6 +1917,19 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
->   }
->   EXPORT_SYMBOL(security_inode_getsecctx);
->   
-> +#ifdef CONFIG_WATCH_QUEUE
-> +int security_watch_key(struct watch *watch, struct key *key)
-> +{
-> +	return call_int_hook(watch_key, 0, watch, key);
-> +}
-> +
-> +int security_watch_devices(struct watch *watch)
-> +{
-> +	return call_int_hook(watch_devices, 0, watch);
-> +}
-> +
-> +#endif /* CONFIG_WATCH_QUEUE */
-> +
->   #ifdef CONFIG_SECURITY_NETWORK
->   
->   int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk)
-> 
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ arch/x86/include/asm/mem_encrypt.h | 29 +++++++++++++++++++++++++++++
+ arch/x86/mm/mem_encrypt_common.c   |  2 +-
+ include/linux/dma-direct.h         |  4 ++--
+ include/linux/mem_encrypt.h        | 23 ++++++++++-------------
+ 4 files changed, 42 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/include/asm/mem_encrypt.h b/arch/x86/include/asm/mem_encrypt.h
+index 0c196c47d621..62a1493f389c 100644
+--- a/arch/x86/include/asm/mem_encrypt.h
++++ b/arch/x86/include/asm/mem_encrypt.h
+@@ -52,8 +52,19 @@ bool sev_active(void);
+ 
+ #define __bss_decrypted __attribute__((__section__(".bss..decrypted")))
+ 
++/*
++ * The __sme_set() and __sme_clr() macros are useful for adding or removing
++ * the encryption mask from a value (e.g. when dealing with pagetable
++ * entries).
++ */
++#define __sme_set(x)		((x) | sme_me_mask)
++#define __sme_clr(x)		((x) & ~sme_me_mask)
++
+ #else	/* !CONFIG_AMD_MEM_ENCRYPT */
+ 
++#define __sme_set(x)		(x)
++#define __sme_clr(x)		(x)
++
+ #define sme_me_mask	0ULL
+ 
+ static inline void __init sme_early_encrypt(resource_size_t paddr,
+@@ -94,4 +105,22 @@ extern char __start_bss_decrypted[], __end_bss_decrypted[], __start_bss_decrypte
+ 
+ #endif	/* __ASSEMBLY__ */
+ 
++#ifdef CONFIG_X86_MEM_ENCRYPT_COMMON
++
++extern dma_addr_t __mem_encrypt_dma_set(dma_addr_t daddr, phys_addr_t paddr);
++extern phys_addr_t __mem_encrypt_dma_clear(phys_addr_t paddr);
++
++#else
++static inline dma_addr_t __mem_encrypt_dma_set(dma_addr_t daddr, phys_addr_t paddr)
++{
++	return daddr;
++}
++
++static inline phys_addr_t __mem_encrypt_dma_clear(phys_addr_t paddr)
++{
++	return paddr;
++}
++#endif /* CONFIG_X86_MEM_ENCRYPT_COMMON */
++
++
+ #endif	/* __X86_MEM_ENCRYPT_H__ */
+diff --git a/arch/x86/mm/mem_encrypt_common.c b/arch/x86/mm/mem_encrypt_common.c
+index c11d70151735..588d6ea45624 100644
+--- a/arch/x86/mm/mem_encrypt_common.c
++++ b/arch/x86/mm/mem_encrypt_common.c
+@@ -1,6 +1,6 @@
+ #include <linux/mm.h>
+-#include <linux/mem_encrypt.h>
+ #include <linux/dma-mapping.h>
++#include <asm/mem_encrypt.h>
+ #include <asm/mktme.h>
+ 
+ /*
+diff --git a/include/linux/dma-direct.h b/include/linux/dma-direct.h
+index adf993a3bd58..6ce96b06c440 100644
+--- a/include/linux/dma-direct.h
++++ b/include/linux/dma-direct.h
+@@ -49,12 +49,12 @@ static inline bool force_dma_unencrypted(struct device *dev)
+  */
+ static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+ {
+-	return __sme_set(__phys_to_dma(dev, paddr));
++	return __mem_encrypt_dma_set(__phys_to_dma(dev, paddr), paddr);
+ }
+ 
+ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+ {
+-	return __sme_clr(__dma_to_phys(dev, daddr));
++	return __mem_encrypt_dma_clear(__dma_to_phys(dev, daddr));
+ }
+ 
+ u64 dma_direct_get_required_mask(struct device *dev);
+diff --git a/include/linux/mem_encrypt.h b/include/linux/mem_encrypt.h
+index 470bd53a89df..88724aa7c065 100644
+--- a/include/linux/mem_encrypt.h
++++ b/include/linux/mem_encrypt.h
+@@ -23,6 +23,16 @@
+ static inline bool sme_active(void) { return false; }
+ static inline bool sev_active(void) { return false; }
+ 
++static inline dma_addr_t __mem_encrypt_dma_set(dma_addr_t daddr, phys_addr_t paddr)
++{
++	return daddr;
++}
++
++static inline phys_addr_t __mem_encrypt_dma_clear(phys_addr_t paddr)
++{
++	return paddr;
++}
++
+ #endif	/* CONFIG_ARCH_HAS_MEM_ENCRYPT */
+ 
+ static inline bool mem_encrypt_active(void)
+@@ -35,19 +45,6 @@ static inline u64 sme_get_me_mask(void)
+ 	return sme_me_mask;
+ }
+ 
+-#ifdef CONFIG_AMD_MEM_ENCRYPT
+-/*
+- * The __sme_set() and __sme_clr() macros are useful for adding or removing
+- * the encryption mask from a value (e.g. when dealing with pagetable
+- * entries).
+- */
+-#define __sme_set(x)		((x) | sme_me_mask)
+-#define __sme_clr(x)		((x) & ~sme_me_mask)
+-#else
+-#define __sme_set(x)		(x)
+-#define __sme_clr(x)		(x)
+-#endif
+-
+ #endif	/* __ASSEMBLY__ */
+ 
+ #endif	/* __MEM_ENCRYPT_H__ */
+-- 
+2.21.0
