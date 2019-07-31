@@ -1,69 +1,95 @@
-From: Sasha Levin <sashal@kernel.org>
-Date: Mon, 15 Jul 2019 14:17:30 +0000
-Subject: [PATCH AUTOSEL 4.19 119/158] crypto: asymmetric_keys - select CRYPTO_HASH where needed
-Message-Id: <20190715141809.8445-119-sashal@kernel.org>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:07:40 +0000
+Subject: [PATCHv2 26/59] keys/mktme: Instantiate MKTME keys
+Message-Id: <20190731150813.26289-27-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190715141809.8445-1-sashal@kernel.org>
-In-Reply-To: <20190715141809.8445-1-sashal@kernel.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Herbert Xu <herbert@gondor.apana.org.au>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Alison Schofield <alison.schofield@intel.com>
 
-[ Upstream commit 90acc0653d2bee203174e66d519fbaaa513502de ]
+Instantiate is a Kernel Key Service method invoked when a key is
+added (add_key, request_key) by the user.
 
-Build testing with some core crypto options disabled revealed
-a few modules that are missing CRYPTO_HASH:
+During instantiation, MKTME allocates an available hardware KeyID
+and maps it to the Userspace Key.
 
-crypto/asymmetric_keys/x509_public_key.o: In function `x509_get_sig_params':
-x509_public_key.c:(.text+0x4c7): undefined reference to `crypto_alloc_shash'
-x509_public_key.c:(.text+0x5e5): undefined reference to `crypto_shash_digest'
-crypto/asymmetric_keys/pkcs7_verify.o: In function `pkcs7_digest.isra.0':
-pkcs7_verify.c:(.text+0xab): undefined reference to `crypto_alloc_shash'
-pkcs7_verify.c:(.text+0x1b2): undefined reference to `crypto_shash_digest'
-pkcs7_verify.c:(.text+0x3c1): undefined reference to `crypto_shash_update'
-pkcs7_verify.c:(.text+0x411): undefined reference to `crypto_shash_finup'
-
-This normally doesn't show up in randconfig tests because there is
-a large number of other options that select CRYPTO_HASH.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- crypto/asymmetric_keys/Kconfig | 3 +++
- 1 file changed, 3 insertions(+)
+ security/keys/mktme_keys.c | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index f3702e533ff4..d8a73d94bb30 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -15,6 +15,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- 	select MPILIB
- 	select CRYPTO_HASH_INFO
- 	select CRYPTO_AKCIPHER
-+	select CRYPTO_HASH
- 	help
- 	  This option provides support for asymmetric public key type handling.
- 	  If signature generation and/or verification are to be used,
-@@ -34,6 +35,7 @@ config X509_CERTIFICATE_PARSER
- config PKCS7_MESSAGE_PARSER
- 	tristate "PKCS#7 message parser"
- 	depends on X509_CERTIFICATE_PARSER
-+	select CRYPTO_HASH
- 	select ASN1
- 	select OID_REGISTRY
- 	help
-@@ -56,6 +58,7 @@ config SIGNED_PE_FILE_VERIFICATION
- 	bool "Support for PE file signature verification"
- 	depends on PKCS7_MESSAGE_PARSER=y
- 	depends on SYSTEM_DATA_VERIFICATION
-+	select CRYPTO_HASH
- 	select ASN1
- 	select OID_REGISTRY
- 	help
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index fe119a155235..beca852db01a 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -14,6 +14,7 @@
+ 
+ #include "internal.h"
+ 
++static DEFINE_SPINLOCK(mktme_lock);
+ static unsigned int mktme_available_keyids;  /* Free Hardware KeyIDs */
+ 
+ enum mktme_keyid_state {
+@@ -31,6 +32,24 @@ struct mktme_mapping {
+ 
+ static struct mktme_mapping *mktme_map;
+ 
++int mktme_reserve_keyid(struct key *key)
++{
++	int i;
++
++	if (!mktme_available_keyids)
++		return 0;
++
++	for (i = 1; i <= mktme_nr_keyids(); i++) {
++		if (mktme_map[i].state = KEYID_AVAILABLE) {
++			mktme_map[i].state = KEYID_ASSIGNED;
++			mktme_map[i].key = key;
++			mktme_available_keyids--;
++			return i;
++		}
++	}
++	return 0;
++}
++
+ enum mktme_opt_id {
+ 	OPT_ERROR,
+ 	OPT_TYPE,
+@@ -43,6 +62,20 @@ static const match_table_t mktme_token = {
+ 	{OPT_ERROR, NULL}
+ };
+ 
++/* Key Service Method to create a new key. Payload is preparsed. */
++int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
++{
++	unsigned long flags;
++	int keyid;
++
++	spin_lock_irqsave(&mktme_lock, flags);
++	keyid = mktme_reserve_keyid(key);
++	spin_unlock_irqrestore(&mktme_lock, flags);
++	if (!keyid)
++		return -ENOKEY;
++	return 0;
++}
++
+ /* Make sure arguments are correct for the TYPE of key requested */
+ static int mktme_check_options(u32 *payload, unsigned long token_mask,
+ 			       enum mktme_type type, enum mktme_alg alg)
+@@ -163,6 +196,7 @@ struct key_type key_type_mktme = {
+ 	.name		= "mktme",
+ 	.preparse	= mktme_preparse_payload,
+ 	.free_preparse	= mktme_free_preparsed_payload,
++	.instantiate	= mktme_instantiate_key,
+ 	.describe	= user_describe,
+ };
+ 
 -- 
-2.20.1
+2.21.0
