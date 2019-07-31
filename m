@@ -1,110 +1,123 @@
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 09 Jul 2019 03:25:07 +0000
-Subject: Re: keyrings pull requests for the next merge window
-Message-Id: <CAHk-=wjEowdfG7v_4ttu3xhf9gqopj1+q1nGG86+mGfGDTEBBg@mail.gmail.com>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:07:16 +0000
+Subject: [PATCHv2 02/59] mm: Add helpers to setup zero page mappings
+Message-Id: <20190731150813.26289-3-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <10976.1562256893@warthog.procyon.org.uk>
-In-Reply-To: <10976.1562256893@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: LSM List <linux-security-module@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, James Morris <jmorris@namei.org>, keyrings@vger.kernel.org
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-[ Adding a few mailing lists, since the thrust of my email is about
-more people being around and involved, and the pull requests
-themselves were indeed cc'd to the mailing lists too ]
+When kernel sets up an encrypted page mapping, encryption KeyID is
+derived from a VMA. KeyID is going to be part of vma->vm_page_prot and
+it will be propagated transparently to page table entry on mk_pte().
 
-On Thu, Jul 4, 2019 at 9:15 AM David Howells <dhowells@redhat.com> wrote:
->
-> I have a bunch of keyrings patches to be pulled in during the merge window.  I
-> believe you want security patches to go directly to you rather than through
-> James now?
->
-> I've divided these patches into four logical sets, though due to conflicting
-> changes the sets are in a sequence, built one upon another.
->
-> How do you want them presenting?  Do you want a pull request for each set, one
-> for all of them or would you prefer they go through James's security tree?
+But there is an exception: zero page is never encrypted and its mapping
+must use KeyID-0, regardless VMA's KeyID.
 
-So I was traveling when this email came in, but in the meantime you
-sent the four pull requests and I have now pulled them all. You should
-have gotten the pr-tracker-bot notification already (or it will happen
-soon).
+Introduce helpers that create a page table entry for zero page.
 
-An initial very positive comment: the pull requests themselves with
-all the explanations were very good. That part of the process worked
-very well, I think.
+The generic implementation will be overridden by architecture-specific
+code that takes care about using correct KeyID.
 
-I felt like I got an explanation of what I pulled, and I think the
-merge commits themselves are the better for it, so that the
-explanation now remains in the git history, and other people too can
-see what got merged and why.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ fs/dax.c                      | 3 +--
+ include/asm-generic/pgtable.h | 8 ++++++++
+ mm/huge_memory.c              | 6 ++----
+ mm/memory.c                   | 3 +--
+ mm/userfaultfd.c              | 3 +--
+ 5 files changed, 13 insertions(+), 10 deletions(-)
 
-HOWEVER.
-
-There are parts I really didn't much like was when I look at all the
-individual commits themselves.
-
-Again, the commit messages there are good and that part all looks fine.
-
-BUT.
-
-The history itself looks questionable. The dates don't make sense, and
-the different branches were obviously all done together as a linear
-history, rebased, and worked on as one single branch, . Fine - it was
-then at least partitioned into sensible parts, and sometimes this is
-how it really ends up working, but I did get the feeling that this was
-all very artificial and more importantly I get the feeling that none
-of the commits had any real-life exposure.
-
-That lack of real-life exposure also shows in the almost complete lack
-of any reviews, any commentary from other people, and absolutely
-nobody else seems to have been involved. Not as an author, but not in
-any other capacity either. There were a couple of initial commits that
-had reviewed-by's, but apart from that there really was *no* sign of
-any outside involvement at all.
-
-I looked up a couple of the patches on patchwork too, and saw zero
-discussion. Maybe the ones I picked just happened to have none, but I
-really get the feeling that pretty much none of this had any external
-input what-so-ever.
-
-And that makes me unhappy.
-
-In other words: the pull requests, the explanations, everything looked
-very good and I enjoyed that part. I don't see any new warnings, and
-everything built fine at every stage. I have no real technical
-complaints from that angle.
-
-But I absolutely abhor how this seems to all have been developed in a
-complete and utter vacuum. That just fundamentally worries me.  I
-can't point to anything being bad, but the lack of any kind of work
-from anybody else just makes me antsy.
-
-Is there really nobody else working or caring about this at all?
-
-This is not new, and I do note that your afs work tends to have the
-same pattern (but honestly, when it comes to one particular odd
-filesystem or driver, it's not something I react to). It's just
-perhaps more noticeable to me now that I pull directly, and it's much
-more noticeable when it's a _subsystem_ rather than something like a
-end-point driver/filesystem. I think the pulls themselves worked, and
-I don't mind the direct pulling, but I *do* notice that I end up
-minding the fact that now with the direct pulls, there's even _less_
-of a "at least somebody else looked and cared".
-
-Put another way: I'd like other people to be involved. Either as
-reviewers, or as intermediate people, or _something_. The "David
-Howells lives in his own world and nobody else looks at it and then he
-sends it directly to Linus" model makes me somewhat unhappy.
-
-Again, I'd like to stress that the pull requests themselves were fine,
-and I have no complaints on that side and I have (at least as of yet)
-no reason to worry about the code itself. It's really the "lone
-developer sends directly to me" that stands out as not happening
-elsewhere that I'm worried about.
-
-Hmm?
-
-                   Linus
+diff --git a/fs/dax.c b/fs/dax.c
+index a237141d8787..6ecc9c560e62 100644
+--- a/fs/dax.c
++++ b/fs/dax.c
+@@ -1445,8 +1445,7 @@ static vm_fault_t dax_pmd_load_hole(struct xa_state *xas, struct vm_fault *vmf,
+ 		pgtable_trans_huge_deposit(vma->vm_mm, vmf->pmd, pgtable);
+ 		mm_inc_nr_ptes(vma->vm_mm);
+ 	}
+-	pmd_entry = mk_pmd(zero_page, vmf->vma->vm_page_prot);
+-	pmd_entry = pmd_mkhuge(pmd_entry);
++	pmd_entry = mk_zero_pmd(zero_page, vmf->vma->vm_page_prot);
+ 	set_pmd_at(vmf->vma->vm_mm, pmd_addr, vmf->pmd, pmd_entry);
+ 	spin_unlock(ptl);
+ 	trace_dax_pmd_load_hole(inode, vmf, zero_page, *entry);
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 75d9d68a6de7..afcfbb4af4b2 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -879,8 +879,16 @@ static inline unsigned long my_zero_pfn(unsigned long addr)
+ }
+ #endif
+ 
++#ifndef mk_zero_pte
++#define mk_zero_pte(addr, prot) pte_mkspecial(pfn_pte(my_zero_pfn(addr), prot))
++#endif
++
+ #ifdef CONFIG_MMU
+ 
++#ifndef mk_zero_pmd
++#define mk_zero_pmd(zero_page, prot) pmd_mkhuge(mk_pmd(zero_page, prot))
++#endif
++
+ #ifndef CONFIG_TRANSPARENT_HUGEPAGE
+ static inline int pmd_trans_huge(pmd_t pmd)
+ {
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 1334ede667a8..e9a791413730 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -678,8 +678,7 @@ static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
+ 	pmd_t entry;
+ 	if (!pmd_none(*pmd))
+ 		return false;
+-	entry = mk_pmd(zero_page, vma->vm_page_prot);
+-	entry = pmd_mkhuge(entry);
++	entry = mk_zero_pmd(zero_page, vma->vm_page_prot);
+ 	if (pgtable)
+ 		pgtable_trans_huge_deposit(mm, pmd, pgtable);
+ 	set_pmd_at(mm, haddr, pmd, entry);
+@@ -2109,8 +2108,7 @@ static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
+ 
+ 	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+ 		pte_t *pte, entry;
+-		entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
+-		entry = pte_mkspecial(entry);
++		entry = mk_zero_pte(haddr, vma->vm_page_prot);
+ 		pte = pte_offset_map(&_pmd, haddr);
+ 		VM_BUG_ON(!pte_none(*pte));
+ 		set_pte_at(mm, haddr, pte, entry);
+diff --git a/mm/memory.c b/mm/memory.c
+index e2bb51b6242e..81ae8c39f75b 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2970,8 +2970,7 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
+ 	/* Use the zero-page for reads */
+ 	if (!(vmf->flags & FAULT_FLAG_WRITE) &&
+ 			!mm_forbids_zeropage(vma->vm_mm)) {
+-		entry = pte_mkspecial(pfn_pte(my_zero_pfn(vmf->address),
+-						vma->vm_page_prot));
++		entry = mk_zero_pte(vmf->address, vma->vm_page_prot);
+ 		vmf->pte = pte_offset_map_lock(vma->vm_mm, vmf->pmd,
+ 				vmf->address, &vmf->ptl);
+ 		if (!pte_none(*vmf->pte))
+diff --git a/mm/userfaultfd.c b/mm/userfaultfd.c
+index c7ae74ce5ff3..06bf4ea3ee05 100644
+--- a/mm/userfaultfd.c
++++ b/mm/userfaultfd.c
+@@ -120,8 +120,7 @@ static int mfill_zeropage_pte(struct mm_struct *dst_mm,
+ 	pgoff_t offset, max_off;
+ 	struct inode *inode;
+ 
+-	_dst_pte = pte_mkspecial(pfn_pte(my_zero_pfn(dst_addr),
+-					 dst_vma->vm_page_prot));
++	_dst_pte = mk_zero_pte(dst_addr, dst_vma->vm_page_prot);
+ 	dst_pte = pte_offset_map_lock(dst_mm, dst_pmd, dst_addr, &ptl);
+ 	if (dst_vma->vm_file) {
+ 		/* the shmem MAP_PRIVATE case requires checking the i_size */
+-- 
+2.21.0
