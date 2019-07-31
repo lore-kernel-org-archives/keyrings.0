@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:20 +0000
-Subject: [PATCHv2 06/59] mm/khugepaged: Handle encrypted pages
-Message-Id: <20190731150813.26289-7-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:07:38 +0000
+Subject: [PATCHv2 24/59] keys/mktme: Introduce a Kernel Key Service for MKTME
+Message-Id: <20190731150813.26289-25-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,40 +9,103 @@ List-Id: <keyrings.vger.kernel.org>
 References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
 In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-For !NUMA khugepaged allocates page in advance, before we found a VMA
-for collapse. We don't yet know which KeyID to use for the allocation.
+From: Alison Schofield <alison.schofield@intel.com>
 
-The page is allocated with KeyID-0. Once we know that the VMA is
-suitable for collapsing, we prepare the page for KeyID we need, based on
-vma_keyid().
+MKTME (Multi-Key Total Memory Encryption) is a technology that allows
+transparent memory encryption in upcoming Intel platforms. MKTME will
+support multiple encryption domains, each having their own key.
 
+The MKTME key service will manage the hardware encryption keys. It
+will map Userspace Keys to Hardware KeyIDs and program the hardware
+with the user requested encryption options.
+
+Here the mapping structure is introduced, as well as the key service
+initialization and registration.
+
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/khugepaged.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ security/keys/Makefile     |  1 +
+ security/keys/mktme_keys.c | 60 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+)
+ create mode 100644 security/keys/mktme_keys.c
 
-diff --git a/mm/khugepaged.c b/mm/khugepaged.c
-index eaaa21b23215..ae9bd3b18aa1 100644
---- a/mm/khugepaged.c
-+++ b/mm/khugepaged.c
-@@ -1059,6 +1059,16 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	 */
- 	anon_vma_unlock_write(vma->anon_vma);
- 
-+	/*
-+	 * At this point new_page is allocated as non-encrypted.
-+	 * If VMA's KeyID is non-zero, we need to prepare it to be encrypted
-+	 * before coping data.
-+	 */
-+	if (vma_keyid(vma)) {
-+		prep_encrypted_page(new_page, HPAGE_PMD_ORDER,
-+				vma_keyid(vma), false);
-+	}
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index 9cef54064f60..28799be801a9 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -30,3 +30,4 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
+ obj-$(CONFIG_BIG_KEYS) += big_key.o
+ obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
+ obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
++obj-$(CONFIG_X86_INTEL_MKTME) += mktme_keys.o
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+new file mode 100644
+index 000000000000..d262e0f348e4
+--- /dev/null
++++ b/security/keys/mktme_keys.c
+@@ -0,0 +1,60 @@
++// SPDX-License-Identifier: GPL-3.0
 +
- 	__collapse_huge_page_copy(pte, new_page, vma, address, pte_ptl);
- 	pte_unmap(pte);
- 	__SetPageUptodate(new_page);
++/* Documentation/x86/mktme/ */
++
++#include <linux/init.h>
++#include <linux/key.h>
++#include <linux/key-type.h>
++#include <linux/mm.h>
++#include <keys/user-type.h>
++
++#include "internal.h"
++
++static unsigned int mktme_available_keyids;  /* Free Hardware KeyIDs */
++
++enum mktme_keyid_state {
++	KEYID_AVAILABLE,	/* Available to be assigned */
++	KEYID_ASSIGNED,		/* Assigned to a userspace key */
++	KEYID_REF_KILLED,	/* Userspace key has been destroyed */
++	KEYID_REF_RELEASED,	/* Last reference is released */
++};
++
++/* 1:1 Mapping between Userspace Keys (struct key) and Hardware KeyIDs */
++struct mktme_mapping {
++	struct key		*key;
++	enum mktme_keyid_state	state;
++};
++
++static struct mktme_mapping *mktme_map;
++
++struct key_type key_type_mktme = {
++	.name		= "mktme",
++	.describe	= user_describe,
++};
++
++static int __init init_mktme(void)
++{
++	int ret;
++
++	/* Verify keys are present */
++	if (mktme_nr_keyids() < 1)
++		return 0;
++
++	mktme_available_keyids = mktme_nr_keyids();
++
++	/* Mapping of Userspace Keys to Hardware KeyIDs */
++	mktme_map = kvzalloc((sizeof(*mktme_map) * (mktme_nr_keyids() + 1)),
++			     GFP_KERNEL);
++	if (!mktme_map)
++		return -ENOMEM;
++
++	ret = register_key_type(&key_type_mktme);
++	if (!ret)
++		return ret;			/* SUCCESS */
++
++	kvfree(mktme_map);
++
++	return -ENOMEM;
++}
++
++late_initcall(init_mktme);
 -- 
 2.21.0
