@@ -1,73 +1,54 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Tue, 09 Jul 2019 20:42:25 +0000
-Subject: Re: [PATCH 2/2] KEYS: Provide KEYCTL_GRANT_PERMISSION
-Message-Id: <20190709204225.GM641@sol.localdomain>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:07:34 +0000
+Subject: [PATCHv2 20/59] x86/mm: Handle encrypted memory in page_to_virt() and __pa()
+Message-Id: <20190731150813.26289-21-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <155862710003.24863.11807972177275927370.stgit@warthog.procyon.org.uk>
- <155862712317.24863.13455329541359881229.stgit@warthog.procyon.org.uk>
-In-Reply-To: <155862712317.24863.13455329541359881229.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-On Thu, May 23, 2019 at 04:58:43PM +0100, David Howells wrote:
-> Provide a keyctl() operation to grant/remove permissions.  The grant
-> operation, wrapped by libkeyutils, looks like:
-> 
-> 	int ret = keyctl_grant_permission(key_serial_t key,
-> 					  enum key_ace_subject_type type,
-> 					  unsigned int subject,
-> 					  unsigned int perm);
-> 
-> Where key is the key to be modified, type and subject represent the subject
-> to which permission is to be granted (or removed) and perm is the set of
-> permissions to be granted.  0 is returned on success.  SET_SECURITY
-> permission is required for this.
-> 
-> The subject type currently must be KEY_ACE_SUBJ_STANDARD for the moment
-> (other subject types will come along later).
-> 
-> For subject type KEY_ACE_SUBJ_STANDARD, the following subject values are
-> available:
-> 
-> 	KEY_ACE_POSSESSOR	The possessor of the key
-> 	KEY_ACE_OWNER		The owner of the key
-> 	KEY_ACE_GROUP		The key's group
-> 	KEY_ACE_EVERYONE	Everyone
-> 
-> perm lists the permissions to be granted:
-> 
-> 	KEY_ACE_VIEW		Can view the key metadata
-> 	KEY_ACE_READ		Can read the key content
-> 	KEY_ACE_WRITE		Can update/modify the key content
-> 	KEY_ACE_SEARCH		Can find the key by searching/requesting
-> 	KEY_ACE_LINK		Can make a link to the key
-> 	KEY_ACE_SET_SECURITY	Can set security
-> 	KEY_ACE_INVAL		Can invalidate
-> 	KEY_ACE_REVOKE		Can revoke
-> 	KEY_ACE_JOIN		Can join this keyring
-> 	KEY_ACE_CLEAR		Can clear this keyring
-> 
-> If an ACE already exists for the subject, then the permissions mask will be
-> overwritten; if perm is 0, it will be deleted.
-> 
-> Currently, the internal ACL is limited to a maximum of 16 entries.
-> 
-> For example:
-> 
-> 	int ret = keyctl_grant_permission(key,
-> 					  KEY_ACE_SUBJ_STANDARD,
-> 					  KEY_ACE_OWNER,
-> 					  KEY_ACE_VIEW | KEY_ACE_READ);
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
+Per-KeyID direct mappings require changes into how we find the right
+virtual address for a page and virt-to-phys address translations.
 
-Where is the documentation and tests for this?  I want to add syzkaller
-definitions for this, but there is no documentation (a commit message doesn't
-count).  I checked the 'next' branch of keyutils as well.
+page_to_virt() definition overwrites default macros provided by
+<linux/mm.h>.
 
-How is anyone supposed to use this if there is no documentation?
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ arch/x86/include/asm/page.h    | 3 +++
+ arch/x86/include/asm/page_64.h | 2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-- Eric
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index 39af59487d5f..aff30554f38e 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -72,6 +72,9 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
+ extern bool __virt_addr_valid(unsigned long kaddr);
+ #define virt_addr_valid(kaddr)	__virt_addr_valid((unsigned long) (kaddr))
+ 
++#define page_to_virt(x) \
++	(__va(PFN_PHYS(page_to_pfn(x))) + page_keyid(x) * direct_mapping_size)
++
+ #endif	/* __ASSEMBLY__ */
+ 
+ #include <asm-generic/memory_model.h>
+diff --git a/arch/x86/include/asm/page_64.h b/arch/x86/include/asm/page_64.h
+index f57fc3cc2246..a4f394e3471d 100644
+--- a/arch/x86/include/asm/page_64.h
++++ b/arch/x86/include/asm/page_64.h
+@@ -24,7 +24,7 @@ static inline unsigned long __phys_addr_nodebug(unsigned long x)
+ 	/* use the carry flag to determine if x was < __START_KERNEL_map */
+ 	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
+ 
+-	return x;
++	return x & direct_mapping_mask;
+ }
+ 
+ #ifdef CONFIG_DEBUG_VIRTUAL
+-- 
+2.21.0
