@@ -1,63 +1,59 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Tue, 30 Jul 2019 12:35:37 +0000
-Subject: [RFC v2 3/6] tee: add private login method for kernel clients
-Message-Id: <1564489420-677-4-git-send-email-sumit.garg@linaro.org>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:07:29 +0000
+Subject: [PATCHv2 15/59] x86/mm: Map zero pages into encrypted mappings correctly
+Message-Id: <20190731150813.26289-16-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
-To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, casey@schaufler-ca.com, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-There are use-cases where user-space shouldn't be allowed to communicate
-directly with a TEE device which is dedicated to provide a specific
-service for a kernel client. So add a private login method for kernel
-clients and disallow user-space to open-session using GP implementation
-defined login method range: (0x80000000 - 0xFFFFFFFF).
+Zero pages are never encrypted. Keep KeyID-0 for them.
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- drivers/tee/tee_core.c   | 6 ++++++
- include/uapi/linux/tee.h | 8 ++++++++
- 2 files changed, 14 insertions(+)
+ arch/x86/include/asm/pgtable.h | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/drivers/tee/tee_core.c b/drivers/tee/tee_core.c
-index 0f16d9f..2c2f646 100644
---- a/drivers/tee/tee_core.c
-+++ b/drivers/tee/tee_core.c
-@@ -334,6 +334,12 @@ static int tee_ioctl_open_session(struct tee_context *ctx,
- 			goto out;
- 	}
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 0bc530c4eb13..f0dd80a920a9 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -820,6 +820,19 @@ static inline unsigned long pmd_index(unsigned long address)
+  */
+ #define mk_pte(page, pgprot)   pfn_pte(page_to_pfn(page), (pgprot))
  
-+	if (arg.clnt_login & TEE_IOCTL_LOGIN_MASK) {
-+		pr_debug("login method not allowed for user-space client\n");
-+		rc = -EPERM;
-+		goto out;
-+	}
++#define mk_zero_pte mk_zero_pte
++static inline pte_t mk_zero_pte(unsigned long addr, pgprot_t prot)
++{
++	extern unsigned long zero_pfn;
++	pte_t entry;
 +
- 	rc = ctx->teedev->desc->ops->open_session(ctx, &arg, params);
- 	if (rc)
- 		goto out;
-diff --git a/include/uapi/linux/tee.h b/include/uapi/linux/tee.h
-index 4b9eb06..a0a3d52 100644
---- a/include/uapi/linux/tee.h
-+++ b/include/uapi/linux/tee.h
-@@ -172,6 +172,14 @@ struct tee_ioctl_buf_data {
- #define TEE_IOCTL_LOGIN_APPLICATION		4
- #define TEE_IOCTL_LOGIN_USER_APPLICATION	5
- #define TEE_IOCTL_LOGIN_GROUP_APPLICATION	6
-+/*
-+ * Disallow user-space to use GP implementation specific login
-+ * method range (0x80000000 - 0xFFFFFFFF). This range is rather
-+ * being reserved for REE kernel clients or TEE implementation.
-+ */
-+#define TEE_IOCTL_LOGIN_MASK			0x80000000
-+/* Private login method for REE kernel clients */
-+#define TEE_IOCTL_LOGIN_REE_KERNEL		0x80000000
++	prot.pgprot &= ~mktme_keyid_mask();
++	entry = pfn_pte(zero_pfn, prot);
++	entry = pte_mkspecial(entry);
++
++	return entry;
++}
++
+ /*
+  * the pte page can be thought of an array like this: pte_t[PTRS_PER_PTE]
+  *
+@@ -1153,6 +1166,12 @@ static inline void ptep_set_wrprotect(struct mm_struct *mm,
  
- /**
-  * struct tee_ioctl_param - parameter
+ #define mk_pmd(page, pgprot)   pfn_pmd(page_to_pfn(page), (pgprot))
+ 
++#define mk_zero_pmd(zero_page, prot)					\
++({									\
++	prot.pgprot &= ~mktme_keyid_mask();				\
++	pmd_mkhuge(mk_pmd(zero_page, prot));				\
++})
++
+ #define  __HAVE_ARCH_PMDP_SET_ACCESS_FLAGS
+ extern int pmdp_set_access_flags(struct vm_area_struct *vma,
+ 				 unsigned long address, pmd_t *pmdp,
 -- 
-2.7.4
+2.21.0
