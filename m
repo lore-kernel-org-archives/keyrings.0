@@ -1,69 +1,143 @@
-From: Sasha Levin <sashal@kernel.org>
-Date: Mon, 15 Jul 2019 13:45:49 +0000
-Subject: [PATCH AUTOSEL 5.2 184/249] crypto: asymmetric_keys - select CRYPTO_HASH where needed
-Message-Id: <20190715134655.4076-184-sashal@kernel.org>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:07:44 +0000
+Subject: [PATCHv2 30/59] keys/mktme: Program MKTME keys into the platform hardware
+Message-Id: <20190731150813.26289-31-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190715134655.4076-1-sashal@kernel.org>
-In-Reply-To: <20190715134655.4076-1-sashal@kernel.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Herbert Xu <herbert@gondor.apana.org.au>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Alison Schofield <alison.schofield@intel.com>
 
-[ Upstream commit 90acc0653d2bee203174e66d519fbaaa513502de ]
+Finally, the keys are programmed into the hardware via each
+lead CPU. Every package has to be programmed successfully.
+There is no partial success allowed here.
 
-Build testing with some core crypto options disabled revealed
-a few modules that are missing CRYPTO_HASH:
+Here a retry scheme is included for two errors that may succeed
+on retry: MKTME_DEVICE_BUSY and MKTME_ENTROPY_ERROR.
+However, it's not clear if even those errors should be retried
+at this level. Perhaps they too, should be returned to user space
+for handling.
 
-crypto/asymmetric_keys/x509_public_key.o: In function `x509_get_sig_params':
-x509_public_key.c:(.text+0x4c7): undefined reference to `crypto_alloc_shash'
-x509_public_key.c:(.text+0x5e5): undefined reference to `crypto_shash_digest'
-crypto/asymmetric_keys/pkcs7_verify.o: In function `pkcs7_digest.isra.0':
-pkcs7_verify.c:(.text+0xab): undefined reference to `crypto_alloc_shash'
-pkcs7_verify.c:(.text+0x1b2): undefined reference to `crypto_shash_digest'
-pkcs7_verify.c:(.text+0x3c1): undefined reference to `crypto_shash_update'
-pkcs7_verify.c:(.text+0x411): undefined reference to `crypto_shash_finup'
-
-This normally doesn't show up in randconfig tests because there is
-a large number of other options that select CRYPTO_HASH.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
+Signed-off-by: Alison Schofield <alison.schofield@intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- crypto/asymmetric_keys/Kconfig | 3 +++
- 1 file changed, 3 insertions(+)
+ security/keys/mktme_keys.c | 92 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 91 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index be70ca6c85d3..1f1f004dc757 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -15,6 +15,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- 	select MPILIB
- 	select CRYPTO_HASH_INFO
- 	select CRYPTO_AKCIPHER
-+	select CRYPTO_HASH
- 	help
- 	  This option provides support for asymmetric public key type handling.
- 	  If signature generation and/or verification are to be used,
-@@ -65,6 +66,7 @@ config TPM_KEY_PARSER
- config PKCS7_MESSAGE_PARSER
- 	tristate "PKCS#7 message parser"
- 	depends on X509_CERTIFICATE_PARSER
-+	select CRYPTO_HASH
- 	select ASN1
- 	select OID_REGISTRY
- 	help
-@@ -87,6 +89,7 @@ config SIGNED_PE_FILE_VERIFICATION
- 	bool "Support for PE file signature verification"
- 	depends on PKCS7_MESSAGE_PARSER=y
- 	depends on SYSTEM_DATA_VERIFICATION
-+	select CRYPTO_HASH
- 	select ASN1
- 	select OID_REGISTRY
- 	help
+diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
+index 272bff8591b7..3c641f3ee794 100644
+--- a/security/keys/mktme_keys.c
++++ b/security/keys/mktme_keys.c
+@@ -83,6 +83,96 @@ static const match_table_t mktme_token = {
+ 	{OPT_ERROR, NULL}
+ };
+ 
++struct mktme_hw_program_info {
++	struct mktme_key_program *key_program;
++	int *status;
++};
++
++struct mktme_err_table {
++	const char *msg;
++	bool retry;
++};
++
++static const struct mktme_err_table mktme_error[] = {
++/* MKTME_PROG_SUCCESS     */ {"KeyID was successfully programmed",   false},
++/* MKTME_INVALID_PROG_CMD */ {"Invalid KeyID programming command",   false},
++/* MKTME_ENTROPY_ERROR    */ {"Insufficient entropy",		      true},
++/* MKTME_INVALID_KEYID    */ {"KeyID not valid",		     false},
++/* MKTME_INVALID_ENC_ALG  */ {"Invalid encryption algorithm chosen", false},
++/* MKTME_DEVICE_BUSY      */ {"Failure to access key table",	      true},
++};
++
++static int mktme_parse_program_status(int status[])
++{
++	int cpu, sum = 0;
++
++	/* Success: all CPU(s) programmed all key table(s) */
++	for_each_cpu(cpu, mktme_leadcpus)
++		sum += status[cpu];
++	if (!sum)
++		return MKTME_PROG_SUCCESS;
++
++	/* Invalid Parameters: log the error and return the error. */
++	for_each_cpu(cpu, mktme_leadcpus) {
++		switch (status[cpu]) {
++		case MKTME_INVALID_KEYID:
++		case MKTME_INVALID_PROG_CMD:
++		case MKTME_INVALID_ENC_ALG:
++			pr_err("mktme: %s\n", mktme_error[status[cpu]].msg);
++			return status[cpu];
++
++		default:
++			break;
++		}
++	}
++	/*
++	 * Device Busy or Insufficient Entropy: do not log the
++	 * error. These will be retried and if retries (time or
++	 * count runs out) caller will log the error.
++	 */
++	for_each_cpu(cpu, mktme_leadcpus) {
++		if (status[cpu] = MKTME_DEVICE_BUSY)
++			return status[cpu];
++	}
++	return MKTME_ENTROPY_ERROR;
++}
++
++/* Program a single key using one CPU. */
++static void mktme_do_program(void *hw_program_info)
++{
++	struct mktme_hw_program_info *info = hw_program_info;
++	int cpu;
++
++	cpu = smp_processor_id();
++	info->status[cpu] = mktme_key_program(info->key_program);
++}
++
++static int mktme_program_all_keytables(struct mktme_key_program *key_program)
++{
++	struct mktme_hw_program_info info;
++	int err, retries = 10; /* Maybe users should handle retries */
++
++	info.key_program = key_program;
++	info.status = kcalloc(num_possible_cpus(), sizeof(info.status[0]),
++			      GFP_KERNEL);
++
++	while (retries--) {
++		get_online_cpus();
++		on_each_cpu_mask(mktme_leadcpus, mktme_do_program,
++				 &info, 1);
++		put_online_cpus();
++
++		err = mktme_parse_program_status(info.status);
++		if (!err)			   /* Success */
++			return err;
++		else if (!mktme_error[err].retry)  /* Error no retry */
++			return -ENOKEY;
++	}
++	/* Ran out of retries */
++	pr_err("mktme: %s\n", mktme_error[err].msg);
++	return err;
++}
++
+ /* Copy the payload to the HW programming structure and program this KeyID */
+ static int mktme_program_keyid(int keyid, u32 payload)
+ {
+@@ -97,7 +187,7 @@ static int mktme_program_keyid(int keyid, u32 payload)
+ 	kprog->keyid = keyid;
+ 	kprog->keyid_ctrl = payload;
+ 
+-	ret = MKTME_PROG_SUCCESS;	/* Future programming call */
++	ret = mktme_program_all_keytables(kprog);
+ 	kmem_cache_free(mktme_prog_cache, kprog);
+ 	return ret;
+ }
 -- 
-2.20.1
+2.21.0
