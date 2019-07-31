@@ -1,10 +1,10 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:43 +0000
-Subject: [PATCHv2 29/59] keys/mktme: Set up PCONFIG programming targets for MKTME keys
-Message-Id: <20190731150813.26289-30-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:08:12 +0000
+Subject: [PATCHv2 58/59] x86/mktme: Document the MKTME API for anonymous memory encryption
+Message-Id: <20190731150813.26289-59-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-10"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
 References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
 In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
@@ -13,102 +13,89 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
-MKTME Key service maintains the hardware key tables. These key tables
-are package scoped per the MKTME hardware definition. This means that
-each physical package on the system needs its key table programmed.
-
-These physical packages are the targets of the new PCONFIG programming
-command. So, introduce a PCONFIG targets bitmap as well as a CPU mask
-that includes the lead CPUs capable of programming the targets.
-
-The lead CPU mask will be used every time a new key is programmed into
-the hardware.
-
-Keep the PCONFIG targets bit map around for future use during CPU
-hotplug events.
-
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- security/keys/mktme_keys.c | 42 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+ Documentation/x86/mktme/index.rst         |  1 +
+ Documentation/x86/mktme/mktme_encrypt.rst | 56 +++++++++++++++++++++++
+ 2 files changed, 57 insertions(+)
+ create mode 100644 Documentation/x86/mktme/mktme_encrypt.rst
 
-diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 8ac75b1e6188..272bff8591b7 100644
---- a/security/keys/mktme_keys.c
-+++ b/security/keys/mktme_keys.c
-@@ -2,6 +2,7 @@
- 
- /* Documentation/x86/mktme/ */
- 
-+#include <linux/cpu.h>
- #include <linux/init.h>
- #include <linux/key.h>
- #include <linux/key-type.h>
-@@ -17,6 +18,8 @@
- static DEFINE_SPINLOCK(mktme_lock);
- static unsigned int mktme_available_keyids;  /* Free Hardware KeyIDs */
- static struct kmem_cache *mktme_prog_cache;  /* Hardware programming cache */
-+static unsigned long *mktme_target_map;	     /* PCONFIG programming target */
-+static cpumask_var_t mktme_leadcpus;	     /* One CPU per PCONFIG target */
- 
- enum mktme_keyid_state {
- 	KEYID_AVAILABLE,	/* Available to be assigned */
-@@ -257,6 +260,33 @@ struct key_type key_type_mktme = {
- 	.destroy	= mktme_destroy_key,
- };
- 
-+static void mktme_update_pconfig_targets(void)
-+{
-+	int cpu, target_id;
+diff --git a/Documentation/x86/mktme/index.rst b/Documentation/x86/mktme/in=
+dex.rst
+index 8cf2b7d62091..ca3c76adc596 100644
+--- a/Documentation/x86/mktme/index.rst
++++ b/Documentation/x86/mktme/index.rst
+@@ -9,3 +9,4 @@ Multi-Key Total Memory Encryption (MKTME)
+    mktme_mitigations
+    mktme_configuration
+    mktme_keys
++   mktme_encrypt
+diff --git a/Documentation/x86/mktme/mktme_encrypt.rst b/Documentation/x86/=
+mktme/mktme_encrypt.rst
+new file mode 100644
+index 000000000000..6dc8ae11f1cb
+--- /dev/null
++++ b/Documentation/x86/mktme/mktme_encrypt.rst
+@@ -0,0 +1,56 @@
++MKTME API: system call encrypt_mprotect()
++=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D+
++Synopsis
++--------
++int encrypt_mprotect(void \*addr, size_t len, int prot, key_serial_t seria=
+l);
 +
-+	cpumask_clear(mktme_leadcpus);
-+	bitmap_clear(mktme_target_map, 0, sizeof(mktme_target_map));
++Where *key_serial_t serial* is the serial number of a key allocated
++using the MKTME Key Service.
 +
-+	for_each_online_cpu(cpu) {
-+		target_id = topology_physical_package_id(cpu);
-+		if (!__test_and_set_bit(target_id, mktme_target_map))
-+			__cpumask_set_cpu(cpu, mktme_leadcpus);
-+	}
-+}
++Description
++-----------
++    encrypt_mprotect() encrypts the memory pages containing any part
++    of the address range in the interval specified by addr and len.
 +
-+static int mktme_alloc_pconfig_targets(void)
-+{
-+	if (!alloc_cpumask_var(&mktme_leadcpus, GFP_KERNEL))
-+		return -ENOMEM;
++    encrypt_mprotect() supports the legacy mprotect() behavior plus
++    the enabling of memory encryption. That means that in addition
++    to encrypting the memory, the protection flags will be updated
++    as requested in the call.
 +
-+	mktme_target_map = bitmap_alloc(topology_max_packages(), GFP_KERNEL);
-+	if (!mktme_target_map) {
-+		free_cpumask_var(mktme_leadcpus);
-+		return -ENOMEM;
-+	}
-+	return 0;
-+}
++    The *addr* and *len* must be aligned to a page boundary.
 +
- static int __init init_mktme(void)
- {
- 	int ret;
-@@ -278,9 +308,21 @@ static int __init init_mktme(void)
- 	if (!mktme_prog_cache)
- 		goto free_map;
- 
-+	/* Hardware programming targets */
-+	if (mktme_alloc_pconfig_targets())
-+		goto free_cache;
++    The caller must have *KEY_NEED_VIEW* permission on the key.
 +
-+	/* Initialize first programming targets */
-+	mktme_update_pconfig_targets();
++    The memory that is to be protected must be mapped *ANONYMOUS*.
 +
- 	ret = register_key_type(&key_type_mktme);
- 	if (!ret)
- 		return ret;			/* SUCCESS */
++Errors
++------
++    In addition to the Errors returned from legacy mprotect()
++    encrypt_mprotect will return:
 +
-+	free_cpumask_var(mktme_leadcpus);
-+	bitmap_free(mktme_target_map);
-+free_cache:
-+	kmem_cache_destroy(mktme_prog_cache);
- free_map:
- 	kvfree(mktme_map);
- 
--- 
++    ENOKEY *serial* parameter does not represent a valid key.
++
++    EINVAL *len* parameter is not page aligned.
++
++    EACCES Caller does not have *KEY_NEED_VIEW* permission on the key.
++
++EXAMPLE
++--------
++  Allocate an MKTME Key::
++        serial =3D add_key("mktme", "name", "type=3Dcpu algorithm=AEs-xts-=
+128" @u
++
++  Map ANONYMOUS memory::
++        ptr =3D mmap(NULL, size, PROT_NONE, MAP_ANONYMOUS|MAP_PRIVATE, -1,=
+ 0);
++
++  Protect memory::
++        ret =3D syscall(SYS_encrypt_mprotect, ptr, size, PROT_READ|PROT_WR=
+ITE,
++                      serial);
++
++  Use the encrypted memory
++
++  Free memory::
++        ret =3D munmap(ptr, size);
++
++  Free the key resource::
++        ret =3D keyctl(KEYCTL_INVALIDATE, serial);
+--=20
 2.21.0
