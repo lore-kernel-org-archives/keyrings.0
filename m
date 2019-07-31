@@ -1,10 +1,10 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:08:12 +0000
-Subject: [PATCHv2 58/59] x86/mktme: Document the MKTME API for anonymous memory encryption
-Message-Id: <20190731150813.26289-59-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:07:58 +0000
+Subject: [PATCHv2 44/59] mm: Add the encrypt_mprotect() system call for MKTME
+Message-Id: <20190731150813.26289-45-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-10"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
 In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
@@ -13,89 +13,194 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
+Implement memory encryption for MKTME (Multi-Key Total Memory
+Encryption) with a new system call that is an extension of the
+legacy mprotect() system call.
+
+In encrypt_mprotect the caller must pass a handle to a previously
+allocated and programmed MKTME encryption key. The key can be
+obtained through the kernel key service type "mktme". The caller
+must have KEY_NEED_VIEW permission on the key.
+
+MKTME places an additional restriction on the protected data:
+The length of the data must be page aligned. This is in addition
+to the existing mprotect restriction that the addr must be page
+aligned.
+
+encrypt_mprotect() will lookup the hardware keyid for the given
+userspace key. It will use previously defined helpers to insert
+that keyid in the VMAs during legacy mprotect() execution.
+
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- Documentation/x86/mktme/index.rst         |  1 +
- Documentation/x86/mktme/mktme_encrypt.rst | 56 +++++++++++++++++++++++
- 2 files changed, 57 insertions(+)
- create mode 100644 Documentation/x86/mktme/mktme_encrypt.rst
+ fs/exec.c          |  4 +--
+ include/linux/mm.h |  3 +-
+ mm/mprotect.c      | 68 +++++++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 65 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/x86/mktme/index.rst b/Documentation/x86/mktme/in=
-dex.rst
-index 8cf2b7d62091..ca3c76adc596 100644
---- a/Documentation/x86/mktme/index.rst
-+++ b/Documentation/x86/mktme/index.rst
-@@ -9,3 +9,4 @@ Multi-Key Total Memory Encryption (MKTME)
-    mktme_mitigations
-    mktme_configuration
-    mktme_keys
-+   mktme_encrypt
-diff --git a/Documentation/x86/mktme/mktme_encrypt.rst b/Documentation/x86/=
-mktme/mktme_encrypt.rst
-new file mode 100644
-index 000000000000..6dc8ae11f1cb
---- /dev/null
-+++ b/Documentation/x86/mktme/mktme_encrypt.rst
-@@ -0,0 +1,56 @@
-+MKTME API: system call encrypt_mprotect()
-+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D+
-+Synopsis
-+--------
-+int encrypt_mprotect(void \*addr, size_t len, int prot, key_serial_t seria=
-l);
+diff --git a/fs/exec.c b/fs/exec.c
+index c71cbfe6826a..261e81b7e3a4 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -756,8 +756,8 @@ int setup_arg_pages(struct linux_binprm *bprm,
+ 	vm_flags |= mm->def_flags;
+ 	vm_flags |= VM_STACK_INCOMPLETE_SETUP;
+ 
+-	ret = mprotect_fixup(vma, &prev, vma->vm_start, vma->vm_end,
+-			vm_flags);
++	ret = mprotect_fixup(vma, &prev, vma->vm_start, vma->vm_end, vm_flags,
++			     -1);
+ 	if (ret)
+ 		goto out_unlock;
+ 	BUG_ON(prev != vma);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 98a6d2bd66a6..8551b5ebdedf 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1660,7 +1660,8 @@ extern unsigned long change_protection(struct vm_area_struct *vma, unsigned long
+ 			      int dirty_accountable, int prot_numa);
+ extern int mprotect_fixup(struct vm_area_struct *vma,
+ 			  struct vm_area_struct **pprev, unsigned long start,
+-			  unsigned long end, unsigned long newflags);
++			  unsigned long end, unsigned long newflags,
++			  int newkeyid);
+ 
+ /*
+  * doesn't attempt to fault and will return short.
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 4d55725228e3..518d75582e7b 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -28,6 +28,7 @@
+ #include <linux/ksm.h>
+ #include <linux/uaccess.h>
+ #include <linux/mm_inline.h>
++#include <linux/key.h>
+ #include <asm/pgtable.h>
+ #include <asm/cacheflush.h>
+ #include <asm/mmu_context.h>
+@@ -348,7 +349,8 @@ static int prot_none_walk(struct vm_area_struct *vma, unsigned long start,
+ 
+ int
+ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
+-	unsigned long start, unsigned long end, unsigned long newflags)
++	       unsigned long start, unsigned long end, unsigned long newflags,
++	       int newkeyid)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long oldflags = vma->vm_flags;
+@@ -358,7 +360,14 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
+ 	int error;
+ 	int dirty_accountable = 0;
+ 
+-	if (newflags = oldflags) {
++	/*
++	 * Flags match and Keyids match or we have NO_KEY.
++	 * This _fixup is usually called from do_mprotect_ext() except
++	 * for one special case: caller fs/exec.c/setup_arg_pages()
++	 * In that case, newkeyid is passed as -1 (NO_KEY).
++	 */
++	if (newflags = oldflags &&
++	    (newkeyid = vma_keyid(vma) || newkeyid = NO_KEY)) {
+ 		*pprev = vma;
+ 		return 0;
+ 	}
+@@ -424,6 +433,8 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
+ 	}
+ 
+ success:
++	if (newkeyid != NO_KEY)
++		mprotect_set_encrypt(vma, newkeyid, start, end);
+ 	/*
+ 	 * vm_flags and vm_page_prot are protected by the mmap_sem
+ 	 * held in write mode.
+@@ -455,10 +466,15 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
+ }
+ 
+ /*
+- * When pkey=NO_KEY we get legacy mprotect behavior here.
++ * do_mprotect_ext() supports the legacy mprotect behavior plus extensions
++ * for Protection Keys and Memory Encryption Keys. These extensions are
++ * mutually exclusive and the behavior is:
++ *	(pkey=NO_KEY && keyid=NO_KEY) => legacy mprotect
++ *	(pkey is valid)  => legacy mprotect plus Protection Key extensions
++ *	(keyid is valid) => legacy mprotect plus Encryption Key extensions
+  */
+ static int do_mprotect_ext(unsigned long start, size_t len,
+-		unsigned long prot, int pkey)
++			   unsigned long prot, int pkey, int keyid)
+ {
+ 	unsigned long nstart, end, tmp, reqprot;
+ 	struct vm_area_struct *vma, *prev;
+@@ -556,7 +572,8 @@ static int do_mprotect_ext(unsigned long start, size_t len,
+ 		tmp = vma->vm_end;
+ 		if (tmp > end)
+ 			tmp = end;
+-		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags);
++		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags,
++				       keyid);
+ 		if (error)
+ 			goto out;
+ 		nstart = tmp;
+@@ -581,7 +598,7 @@ static int do_mprotect_ext(unsigned long start, size_t len,
+ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
+ 		unsigned long, prot)
+ {
+-	return do_mprotect_ext(start, len, prot, NO_KEY);
++	return do_mprotect_ext(start, len, prot, NO_KEY, NO_KEY);
+ }
+ 
+ #ifdef CONFIG_ARCH_HAS_PKEYS
+@@ -589,7 +606,7 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
+ SYSCALL_DEFINE4(pkey_mprotect, unsigned long, start, size_t, len,
+ 		unsigned long, prot, int, pkey)
+ {
+-	return do_mprotect_ext(start, len, prot, pkey);
++	return do_mprotect_ext(start, len, prot, pkey, NO_KEY);
+ }
+ 
+ SYSCALL_DEFINE2(pkey_alloc, unsigned long, flags, unsigned long, init_val)
+@@ -638,3 +655,40 @@ SYSCALL_DEFINE1(pkey_free, int, pkey)
+ }
+ 
+ #endif /* CONFIG_ARCH_HAS_PKEYS */
 +
-+Where *key_serial_t serial* is the serial number of a key allocated
-+using the MKTME Key Service.
++#ifdef CONFIG_X86_INTEL_MKTME
 +
-+Description
-+-----------
-+    encrypt_mprotect() encrypts the memory pages containing any part
-+    of the address range in the interval specified by addr and len.
++extern int mktme_keyid_from_key(struct key *key);
 +
-+    encrypt_mprotect() supports the legacy mprotect() behavior plus
-+    the enabling of memory encryption. That means that in addition
-+    to encrypting the memory, the protection flags will be updated
-+    as requested in the call.
++SYSCALL_DEFINE4(encrypt_mprotect, unsigned long, start, size_t, len,
++		unsigned long, prot, key_serial_t, serial)
++{
++	key_ref_t key_ref;
++	struct key *key;
++	int ret, keyid;
 +
-+    The *addr* and *len* must be aligned to a page boundary.
++	/* MKTME restriction */
++	if (!PAGE_ALIGNED(len))
++		return -EINVAL;
 +
-+    The caller must have *KEY_NEED_VIEW* permission on the key.
++	/*
++	 * key_ref prevents the destruction of the key
++	 * while the memory encryption is being set up.
++	 */
 +
-+    The memory that is to be protected must be mapped *ANONYMOUS*.
++	key_ref = lookup_user_key(serial, 0, KEY_NEED_VIEW);
++	if (IS_ERR(key_ref))
++		return PTR_ERR(key_ref);
 +
-+Errors
-+------
-+    In addition to the Errors returned from legacy mprotect()
-+    encrypt_mprotect will return:
++	key = key_ref_to_ptr(key_ref);
++	keyid = mktme_keyid_from_key(key);
++	if (!keyid) {
++		key_ref_put(key_ref);
++		return -EINVAL;
++	}
++	ret = do_mprotect_ext(start, len, prot, NO_KEY, keyid);
++	key_ref_put(key_ref);
++	return ret;
++}
 +
-+    ENOKEY *serial* parameter does not represent a valid key.
-+
-+    EINVAL *len* parameter is not page aligned.
-+
-+    EACCES Caller does not have *KEY_NEED_VIEW* permission on the key.
-+
-+EXAMPLE
-+--------
-+  Allocate an MKTME Key::
-+        serial =3D add_key("mktme", "name", "type=3Dcpu algorithm=AEs-xts-=
-128" @u
-+
-+  Map ANONYMOUS memory::
-+        ptr =3D mmap(NULL, size, PROT_NONE, MAP_ANONYMOUS|MAP_PRIVATE, -1,=
- 0);
-+
-+  Protect memory::
-+        ret =3D syscall(SYS_encrypt_mprotect, ptr, size, PROT_READ|PROT_WR=
-ITE,
-+                      serial);
-+
-+  Use the encrypted memory
-+
-+  Free memory::
-+        ret =3D munmap(ptr, size);
-+
-+  Free the key resource::
-+        ret =3D keyctl(KEYCTL_INVALIDATE, serial);
---=20
++#endif /* CONFIG_X86_INTEL_MKTME */
+-- 
 2.21.0
