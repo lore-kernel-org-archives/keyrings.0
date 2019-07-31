@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:59 +0000
-Subject: [PATCHv2 45/59] x86/mm: Keep reference counts on hardware key usage for MKTME
-Message-Id: <20190731150813.26289-46-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:07:23 +0000
+Subject: [PATCHv2 09/59] x86/mm: Store bitmask of the encryption algorithms supported by MKTME
+Message-Id: <20190731150813.26289-10-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,156 +9,71 @@ List-Id: <keyrings.vger.kernel.org>
 References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
 In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-From: Alison Schofield <alison.schofield@intel.com>
+Store bitmask of the supported encryption algorithms in 'mktme_algs'.
+This will be used by key management service.
 
-The MKTME (Multi-Key Total Memory Encryption) Key Service needs
-a reference count the key usage. This reference count is used
-to determine when a hardware encryption KeyID is no longer in use
-and can be freed and reassigned to another Userspace Key.
-
-The MKTME Key service does the percpu_ref_init and _kill.
-
-Encrypted VMA's and encrypted pages are included in the reference
-counts per keyid.
-
-Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/x86/include/asm/mktme.h |  5 +++++
- arch/x86/mm/mktme.c          | 37 ++++++++++++++++++++++++++++++++++--
- include/linux/mm.h           |  2 ++
- kernel/fork.c                |  2 ++
- 4 files changed, 44 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/mktme.h | 2 ++
+ arch/x86/kernel/cpu/intel.c  | 6 +++++-
+ arch/x86/mm/mktme.c          | 2 ++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/include/asm/mktme.h b/arch/x86/include/asm/mktme.h
-index e8f7f80bb013..a5f664d3805b 100644
+index b9ba2ea5b600..42a3b1b44669 100644
 --- a/arch/x86/include/asm/mktme.h
 +++ b/arch/x86/include/asm/mktme.h
-@@ -20,6 +20,11 @@ extern unsigned int mktme_algs;
- extern void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
- 				unsigned long start, unsigned long end);
- 
-+/* MTKME encrypt_count for VMAs */
-+extern struct percpu_ref *encrypt_count;
-+extern void vma_get_encrypt_ref(struct vm_area_struct *vma);
-+extern void vma_put_encrypt_ref(struct vm_area_struct *vma);
+@@ -10,6 +10,8 @@ extern int __mktme_keyid_shift;
+ extern int mktme_keyid_shift(void);
+ extern int __mktme_nr_keyids;
+ extern int mktme_nr_keyids(void);
++extern unsigned int mktme_algs;
 +
- DECLARE_STATIC_KEY_FALSE(mktme_enabled_key);
- static inline bool mktme_enabled(void)
- {
+ #else
+ #define mktme_keyid_mask()	((phys_addr_t)0)
+ #define mktme_nr_keyids()	0
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 7ba44825be42..991bdcb2a55a 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -553,6 +553,8 @@ static void detect_vmx_virtcap(struct cpuinfo_x86 *c)
+ #define TME_ACTIVATE_CRYPTO_ALGS(x)	((x >> 48) & 0xffff)	/* Bits 63:48 */
+ #define TME_ACTIVATE_CRYPTO_AES_XTS_128	1
+ 
++#define TME_ACTIVATE_CRYPTO_KNOWN_ALGS	TME_ACTIVATE_CRYPTO_AES_XTS_128
++
+ /* Values for mktme_status (SW only construct) */
+ #define MKTME_ENABLED			0
+ #define MKTME_DISABLED			1
+@@ -596,7 +598,7 @@ static void detect_tme(struct cpuinfo_x86 *c)
+ 		pr_warn("x86/tme: Unknown policy is active: %#llx\n", tme_policy);
+ 
+ 	tme_crypto_algs = TME_ACTIVATE_CRYPTO_ALGS(tme_activate);
+-	if (!(tme_crypto_algs & TME_ACTIVATE_CRYPTO_AES_XTS_128)) {
++	if (!(tme_crypto_algs & TME_ACTIVATE_CRYPTO_KNOWN_ALGS)) {
+ 		pr_err("x86/mktme: No known encryption algorithm is supported: %#llx\n",
+ 				tme_crypto_algs);
+ 		mktme_status = MKTME_DISABLED;
+@@ -631,6 +633,8 @@ static void detect_tme(struct cpuinfo_x86 *c)
+ 		__mktme_keyid_mask = GENMASK_ULL(c->x86_phys_bits - 1, mktme_keyid_shift());
+ 		physical_mask &= ~mktme_keyid_mask();
+ 
++		tme_crypto_algs = TME_ACTIVATE_CRYPTO_ALGS(tme_activate);
++		mktme_algs = tme_crypto_algs & TME_ACTIVATE_CRYPTO_KNOWN_ALGS;
+ 	} else {
+ 		/*
+ 		 * Reset __PHYSICAL_MASK.
 diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
-index 05bbf5058ade..17366d81c21b 100644
+index 0f48ef2720cc..755afc6935b5 100644
 --- a/arch/x86/mm/mktme.c
 +++ b/arch/x86/mm/mktme.c
-@@ -84,11 +84,12 @@ void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
- 
- 	if (oldkeyid = newkeyid)
- 		return;
--
-+	vma_put_encrypt_ref(vma);
- 	newprot = pgprot_val(vma->vm_page_prot);
- 	newprot &= ~mktme_keyid_mask();
- 	newprot |= (unsigned long)newkeyid << mktme_keyid_shift();
- 	vma->vm_page_prot = __pgprot(newprot);
-+	vma_get_encrypt_ref(vma);
- 
- 	/*
- 	 * The VMA doesn't have any inherited pages.
-@@ -97,6 +98,18 @@ void mprotect_set_encrypt(struct vm_area_struct *vma, int newkeyid,
- 	unlink_anon_vmas(vma);
- }
- 
-+void vma_get_encrypt_ref(struct vm_area_struct *vma)
-+{
-+	if (vma_keyid(vma))
-+		percpu_ref_get(&encrypt_count[vma_keyid(vma)]);
-+}
-+
-+void vma_put_encrypt_ref(struct vm_area_struct *vma)
-+{
-+	if (vma_keyid(vma))
-+		percpu_ref_put(&encrypt_count[vma_keyid(vma)]);
-+}
-+
- /* Prepare page to be used for encryption. Called from page allocator. */
- void __prep_encrypted_page(struct page *page, int order, int keyid, bool zero)
+@@ -25,3 +25,5 @@ int mktme_nr_keyids(void)
  {
-@@ -137,6 +150,22 @@ void __prep_encrypted_page(struct page *page, int order, int keyid, bool zero)
- 
- 		page++;
- 	}
-+
-+	/*
-+	 * Make sure the KeyID cannot be freed until the last page that
-+	 * uses the KeyID is gone.
-+	 *
-+	 * This is required because the page may live longer than VMA it
-+	 * is mapped into (i.e. in get_user_pages() case) and having
-+	 * refcounting per-VMA is not enough.
-+	 *
-+	 * Taking a reference per-4K helps in case if the page will be
-+	 * split after the allocation. free_encrypted_page() will balance
-+	 * out the refcount even if the page was split and freed as bunch
-+	 * of 4K pages.
-+	 */
-+
-+	percpu_ref_get_many(&encrypt_count[keyid], 1 << order);
+ 	return __mktme_nr_keyids;
  }
- 
- /*
-@@ -145,7 +174,9 @@ void __prep_encrypted_page(struct page *page, int order, int keyid, bool zero)
-  */
- void free_encrypted_page(struct page *page, int order)
- {
--	int i;
-+	int i, keyid;
 +
-+	keyid = page_keyid(page);
- 
- 	/*
- 	 * The hardware/CPU does not enforce coherency between mappings
-@@ -177,6 +208,8 @@ void free_encrypted_page(struct page *page, int order)
- 		lookup_page_ext(page)->keyid = 0;
- 		page++;
- 	}
-+
-+	percpu_ref_put_many(&encrypt_count[keyid], 1 << order);
- }
- 
- static int sync_direct_mapping_pte(unsigned long keyid,
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 8551b5ebdedf..be27cb0cc0c7 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -2911,6 +2911,8 @@ static inline void mprotect_set_encrypt(struct vm_area_struct *vma,
- 					int newkeyid,
- 					unsigned long start,
- 					unsigned long end) {}
-+static inline void vma_get_encrypt_ref(struct vm_area_struct *vma) {}
-+static inline void vma_put_encrypt_ref(struct vm_area_struct *vma) {}
- #endif /* CONFIG_X86_INTEL_MKTME */
- #endif /* __KERNEL__ */
- #endif /* _LINUX_MM_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d8ae0f1b4148..00735092d370 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -349,12 +349,14 @@ struct vm_area_struct *vm_area_dup(struct vm_area_struct *orig)
- 	if (new) {
- 		*new = *orig;
- 		INIT_LIST_HEAD(&new->anon_vma_chain);
-+		vma_get_encrypt_ref(new);
- 	}
- 	return new;
- }
- 
- void vm_area_free(struct vm_area_struct *vma)
- {
-+	vma_put_encrypt_ref(vma);
- 	kmem_cache_free(vm_area_cachep, vma);
- }
- 
++unsigned int mktme_algs;
 -- 
 2.21.0
