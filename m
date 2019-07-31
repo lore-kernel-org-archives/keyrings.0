@@ -1,236 +1,60 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Fri, 26 Jul 2019 22:41:27 +0000
-Subject: [PATCH v7 02/16] fscrypt: use FSCRYPT_ prefix for uapi constants
-Message-Id: <20190726224141.14044-3-ebiggers@kernel.org>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 31 Jul 2019 15:07:25 +0000
+Subject: [PATCHv2 11/59] x86/mm: Detect MKTME early
+Message-Id: <20190731150813.26289-12-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190726224141.14044-1-ebiggers@kernel.org>
-In-Reply-To: <20190726224141.14044-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-From: Eric Biggers <ebiggers@google.com>
+We need to know the number of KeyIDs before page_ext is initialized.
+We are going to use page_ext to store KeyID and it would be handly to
+avoid page_ext allocation if there's no MKMTE in the system.
 
-Prefix all filesystem encryption UAPI constants except the ioctl numbers
-with "FSCRYPT_" rather than with "FS_".  This namespaces the constants
-more appropriately and makes it clear that they are related specifically
-to the filesystem encryption feature, and to the 'fscrypt_*' structures.
-With some of the old names like "FS_POLICY_FLAGS_VALID", it was not
-immediately clear that the constant had anything to do with encryption.
+page_ext initialization happens before full CPU initizliation is complete.
+Move detect_tme() call to early_init_intel().
 
-This is also useful because we'll be adding more encryption-related
-constants, e.g. for the policy version, and we'd otherwise have to
-choose whether to use unclear names like FS_POLICY_V1 or inconsistent
-names like FS_ENCRYPTION_POLICY_V1.
-
-For source compatibility with existing userspace programs, keep the old
-names defined as aliases to the new names.
-
-Finally, as long as new names are being defined anyway, I skipped
-defining new names for the fscrypt mode numbers that aren't actually
-used: INVALID (0), AES_256_GCM (2), AES_256_CBC (3), SPECK128_256_XTS
-(7), and SPECK128_256_CTS (8).
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- Documentation/filesystems/fscrypt.rst | 36 +++++++--------
- include/uapi/linux/fscrypt.h          | 65 +++++++++++++++++----------
- 2 files changed, 60 insertions(+), 41 deletions(-)
+ arch/x86/kernel/cpu/intel.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/filesystems/fscrypt.rst b/Documentation/filesystems/fscrypt.rst
-index 82efa41b0e6c0..2c4b6e56b81c5 100644
---- a/Documentation/filesystems/fscrypt.rst
-+++ b/Documentation/filesystems/fscrypt.rst
-@@ -225,9 +225,10 @@ a little endian number, except that:
-   is encrypted with AES-256 where the AES-256 key is the SHA-256 hash
-   of the file's data encryption key.
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 991bdcb2a55a..4c2d70287eb4 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -187,6 +187,8 @@ static bool bad_spectre_microcode(struct cpuinfo_x86 *c)
+ 	return false;
+ }
  
--- In the "direct key" configuration (FS_POLICY_FLAG_DIRECT_KEY set in
--  the fscrypt_policy), the file's nonce is also appended to the IV.
--  Currently this is only allowed with the Adiantum encryption mode.
-+- In the "direct key" configuration (FSCRYPT_POLICY_FLAG_DIRECT_KEY
-+  set in the fscrypt_policy), the file's nonce is also appended to the
-+  IV.  Currently this is only allowed with the Adiantum encryption
-+  mode.
- 
- Filenames encryption
- --------------------
-@@ -274,14 +275,14 @@ empty directory or verifies that a directory or regular file already
- has the specified encryption policy.  It takes in a pointer to a
- :c:type:`struct fscrypt_policy`, defined as follows::
- 
--    #define FS_KEY_DESCRIPTOR_SIZE  8
-+    #define FSCRYPT_KEY_DESCRIPTOR_SIZE  8
- 
-     struct fscrypt_policy {
-             __u8 version;
-             __u8 contents_encryption_mode;
-             __u8 filenames_encryption_mode;
-             __u8 flags;
--            __u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-+            __u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
-     };
- 
- This structure must be initialized as follows:
-@@ -290,18 +291,17 @@ This structure must be initialized as follows:
- 
- - ``contents_encryption_mode`` and ``filenames_encryption_mode`` must
-   be set to constants from ``<linux/fs.h>`` which identify the
--  encryption modes to use.  If unsure, use
--  FS_ENCRYPTION_MODE_AES_256_XTS (1) for ``contents_encryption_mode``
--  and FS_ENCRYPTION_MODE_AES_256_CTS (4) for
--  ``filenames_encryption_mode``.
-+  encryption modes to use.  If unsure, use FSCRYPT_MODE_AES_256_XTS
-+  (1) for ``contents_encryption_mode`` and FSCRYPT_MODE_AES_256_CTS
-+  (4) for ``filenames_encryption_mode``.
- 
- - ``flags`` must contain a value from ``<linux/fs.h>`` which
-   identifies the amount of NUL-padding to use when encrypting
--  filenames.  If unsure, use FS_POLICY_FLAGS_PAD_32 (0x3).
--  In addition, if the chosen encryption modes are both
--  FS_ENCRYPTION_MODE_ADIANTUM, this can contain
--  FS_POLICY_FLAG_DIRECT_KEY to specify that the master key should be
--  used directly, without key derivation.
-+  filenames.  If unsure, use FSCRYPT_POLICY_FLAGS_PAD_32 (0x3).  In
-+  addition, if the chosen encryption modes are both
-+  FSCRYPT_MODE_ADIANTUM, this can contain
-+  FSCRYPT_POLICY_FLAG_DIRECT_KEY to specify that the master key should
-+  be used directly, without key derivation.
- 
- - ``master_key_descriptor`` specifies how to find the master key in
-   the keyring; see `Adding keys`_.  It is up to userspace to choose a
-@@ -401,11 +401,11 @@ followed by the 16-character lower case hex representation of the
- ``master_key_descriptor`` that was set in the encryption policy.  The
- key payload must conform to the following structure::
- 
--    #define FS_MAX_KEY_SIZE 64
-+    #define FSCRYPT_MAX_KEY_SIZE 64
- 
-     struct fscrypt_key {
-             u32 mode;
--            u8 raw[FS_MAX_KEY_SIZE];
-+            u8 raw[FSCRYPT_MAX_KEY_SIZE];
-             u32 size;
-     };
- 
-@@ -574,7 +574,7 @@ much confusion if an encryption policy were to be added to or removed
- from anything other than an empty directory.)  The struct is defined
- as follows::
- 
--    #define FS_KEY_DESCRIPTOR_SIZE  8
-+    #define FSCRYPT_KEY_DESCRIPTOR_SIZE  8
-     #define FS_KEY_DERIVATION_NONCE_SIZE 16
- 
-     struct fscrypt_context {
-@@ -582,7 +582,7 @@ as follows::
-             u8 contents_encryption_mode;
-             u8 filenames_encryption_mode;
-             u8 flags;
--            u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-+            u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
-             u8 nonce[FS_KEY_DERIVATION_NONCE_SIZE];
-     };
- 
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-index 26f6d2c19afd3..674b0452ef575 100644
---- a/include/uapi/linux/fscrypt.h
-+++ b/include/uapi/linux/fscrypt.h
-@@ -10,35 +10,30 @@
- 
- #include <linux/types.h>
- 
--#define FS_KEY_DESCRIPTOR_SIZE	8
-+#define FSCRYPT_KEY_DESCRIPTOR_SIZE	8
- 
- /* Encryption policy flags */
--#define FS_POLICY_FLAGS_PAD_4		0x00
--#define FS_POLICY_FLAGS_PAD_8		0x01
--#define FS_POLICY_FLAGS_PAD_16		0x02
--#define FS_POLICY_FLAGS_PAD_32		0x03
--#define FS_POLICY_FLAGS_PAD_MASK	0x03
--#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
--#define FS_POLICY_FLAGS_VALID		0x07
-+#define FSCRYPT_POLICY_FLAGS_PAD_4		0x00
-+#define FSCRYPT_POLICY_FLAGS_PAD_8		0x01
-+#define FSCRYPT_POLICY_FLAGS_PAD_16		0x02
-+#define FSCRYPT_POLICY_FLAGS_PAD_32		0x03
-+#define FSCRYPT_POLICY_FLAGS_PAD_MASK		0x03
-+#define FSCRYPT_POLICY_FLAG_DIRECT_KEY		0x04	/* use master key directly */
-+#define FSCRYPT_POLICY_FLAGS_VALID		0x07
- 
- /* Encryption algorithms */
--#define FS_ENCRYPTION_MODE_INVALID		0
--#define FS_ENCRYPTION_MODE_AES_256_XTS		1
--#define FS_ENCRYPTION_MODE_AES_256_GCM		2
--#define FS_ENCRYPTION_MODE_AES_256_CBC		3
--#define FS_ENCRYPTION_MODE_AES_256_CTS		4
--#define FS_ENCRYPTION_MODE_AES_128_CBC		5
--#define FS_ENCRYPTION_MODE_AES_128_CTS		6
--#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
--#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
--#define FS_ENCRYPTION_MODE_ADIANTUM		9
-+#define FSCRYPT_MODE_AES_256_XTS		1
-+#define FSCRYPT_MODE_AES_256_CTS		4
-+#define FSCRYPT_MODE_AES_128_CBC		5
-+#define FSCRYPT_MODE_AES_128_CTS		6
-+#define FSCRYPT_MODE_ADIANTUM			9
- 
- struct fscrypt_policy {
- 	__u8 version;
- 	__u8 contents_encryption_mode;
- 	__u8 filenames_encryption_mode;
- 	__u8 flags;
--	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
-+	__u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
- };
- 
- #define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
-@@ -46,16 +41,40 @@ struct fscrypt_policy {
- #define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
- 
- /* Parameters for passing an encryption key into the kernel keyring */
--#define FS_KEY_DESC_PREFIX		"fscrypt:"
--#define FS_KEY_DESC_PREFIX_SIZE		8
-+#define FSCRYPT_KEY_DESC_PREFIX		"fscrypt:"
-+#define FSCRYPT_KEY_DESC_PREFIX_SIZE		8
- 
- /* Structure that userspace passes to the kernel keyring */
--#define FS_MAX_KEY_SIZE			64
-+#define FSCRYPT_MAX_KEY_SIZE			64
- 
- struct fscrypt_key {
- 	__u32 mode;
--	__u8 raw[FS_MAX_KEY_SIZE];
-+	__u8 raw[FSCRYPT_MAX_KEY_SIZE];
- 	__u32 size;
- };
-+/**********************************************************************/
++static void detect_tme(struct cpuinfo_x86 *c);
 +
-+/* old names; don't add anything new here! */
-+#define FS_KEY_DESCRIPTOR_SIZE		FSCRYPT_KEY_DESCRIPTOR_SIZE
-+#define FS_POLICY_FLAGS_PAD_4		FSCRYPT_POLICY_FLAGS_PAD_4
-+#define FS_POLICY_FLAGS_PAD_8		FSCRYPT_POLICY_FLAGS_PAD_8
-+#define FS_POLICY_FLAGS_PAD_16		FSCRYPT_POLICY_FLAGS_PAD_16
-+#define FS_POLICY_FLAGS_PAD_32		FSCRYPT_POLICY_FLAGS_PAD_32
-+#define FS_POLICY_FLAGS_PAD_MASK	FSCRYPT_POLICY_FLAGS_PAD_MASK
-+#define FS_POLICY_FLAG_DIRECT_KEY	FSCRYPT_POLICY_FLAG_DIRECT_KEY
-+#define FS_POLICY_FLAGS_VALID		FSCRYPT_POLICY_FLAGS_VALID
-+#define FS_ENCRYPTION_MODE_INVALID	0	/* never used */
-+#define FS_ENCRYPTION_MODE_AES_256_XTS	FSCRYPT_MODE_AES_256_XTS
-+#define FS_ENCRYPTION_MODE_AES_256_GCM	2	/* never used */
-+#define FS_ENCRYPTION_MODE_AES_256_CBC	3	/* never used */
-+#define FS_ENCRYPTION_MODE_AES_256_CTS	FSCRYPT_MODE_AES_256_CTS
-+#define FS_ENCRYPTION_MODE_AES_128_CBC	FSCRYPT_MODE_AES_128_CBC
-+#define FS_ENCRYPTION_MODE_AES_128_CTS	FSCRYPT_MODE_AES_128_CTS
-+#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7	/* removed */
-+#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8	/* removed */
-+#define FS_ENCRYPTION_MODE_ADIANTUM	FSCRYPT_MODE_ADIANTUM
-+#define FS_KEY_DESC_PREFIX		FSCRYPT_KEY_DESC_PREFIX
-+#define FS_KEY_DESC_PREFIX_SIZE		FSCRYPT_KEY_DESC_PREFIX_SIZE
-+#define FS_MAX_KEY_SIZE			FSCRYPT_MAX_KEY_SIZE
+ static void early_init_intel(struct cpuinfo_x86 *c)
+ {
+ 	u64 misc_enable;
+@@ -338,6 +340,9 @@ static void early_init_intel(struct cpuinfo_x86 *c)
+ 	 */
+ 	if (detect_extended_topology_early(c) < 0)
+ 		detect_ht_early(c);
++
++	if (cpu_has(c, X86_FEATURE_TME))
++		detect_tme(c);
+ }
  
- #endif /* _UAPI_LINUX_FSCRYPT_H */
+ #ifdef CONFIG_X86_32
+@@ -793,9 +798,6 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 	if (cpu_has(c, X86_FEATURE_VMX))
+ 		detect_vmx_virtcap(c);
+ 
+-	if (cpu_has(c, X86_FEATURE_TME))
+-		detect_tme(c);
+-
+ 	init_intel_misc_features(c);
+ }
+ 
 -- 
-2.22.0
+2.21.0
