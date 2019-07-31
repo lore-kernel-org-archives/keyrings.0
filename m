@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:50 +0000
-Subject: [PATCHv2 36/59] keys/mktme: Require ACPI HMAT to register the MKTME Key Service
-Message-Id: <20190731150813.26289-37-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:07:41 +0000
+Subject: [PATCHv2 27/59] keys/mktme: Destroy MKTME keys
+Message-Id: <20190731150813.26289-28-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,47 +13,71 @@ Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai 
 
 From: Alison Schofield <alison.schofield@intel.com>
 
-The ACPI HMAT will be used by the MKTME key service to identify
-topologies that support the safe programming of encryption keys.
-Those decisions will happen at key creation time and during
-hotplug events.
+Destroy is a method invoked by the kernel key service when a
+userspace key is being removed. (invalidate, revoke, timeout).
 
-To enable this, we at least need to have the ACPI HMAT present
-at init time. If it's not present, do not register the type.
-
-If the HMAT is not present, failure looks like this:
-[ ] MKTME: Registration failed. ACPI HMAT not present.
+During destroy, MKTME wil returned the hardware KeyID to the pool
+of available keyids.
 
 Signed-off-by: Alison Schofield <alison.schofield@intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- security/keys/mktme_keys.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ security/keys/mktme_keys.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
 diff --git a/security/keys/mktme_keys.c b/security/keys/mktme_keys.c
-index 2d90cc83e5ce..6265b62801e9 100644
+index beca852db01a..10fcdbf5a08f 100644
 --- a/security/keys/mktme_keys.c
 +++ b/security/keys/mktme_keys.c
-@@ -2,6 +2,7 @@
+@@ -50,6 +50,23 @@ int mktme_reserve_keyid(struct key *key)
+ 	return 0;
+ }
  
- /* Documentation/x86/mktme/ */
- 
-+#include <linux/acpi.h>
- #include <linux/cred.h>
- #include <linux/cpu.h>
- #include <linux/init.h>
-@@ -445,6 +446,12 @@ static int __init init_mktme(void)
- 
- 	mktme_available_keyids = mktme_nr_keyids();
- 
-+	/* Require an ACPI HMAT to identify MKTME safe topologies */
-+	if (!acpi_hmat_present()) {
-+		pr_warn("MKTME: Registration failed. ACPI HMAT not present.\n");
-+		return -EINVAL;
-+	}
++static void mktme_release_keyid(int keyid)
++{
++	 mktme_map[keyid].state = KEYID_AVAILABLE;
++	 mktme_available_keyids++;
++}
 +
- 	/* Mapping of Userspace Keys to Hardware KeyIDs */
- 	mktme_map = kvzalloc((sizeof(*mktme_map) * (mktme_nr_keyids() + 1)),
- 			     GFP_KERNEL);
++int mktme_keyid_from_key(struct key *key)
++{
++	int i;
++
++	for (i = 1; i <= mktme_nr_keyids(); i++) {
++		if (mktme_map[i].key = key)
++			return i;
++	}
++	return 0;
++}
++
+ enum mktme_opt_id {
+ 	OPT_ERROR,
+ 	OPT_TYPE,
+@@ -62,6 +79,17 @@ static const match_table_t mktme_token = {
+ 	{OPT_ERROR, NULL}
+ };
+ 
++/* Key Service Method called when a Userspace Key is garbage collected. */
++static void mktme_destroy_key(struct key *key)
++{
++	int keyid = mktme_keyid_from_key(key);
++	unsigned long flags;
++
++	spin_lock_irqsave(&mktme_lock, flags);
++	mktme_release_keyid(keyid);
++	spin_unlock_irqrestore(&mktme_lock, flags);
++}
++
+ /* Key Service Method to create a new key. Payload is preparsed. */
+ int mktme_instantiate_key(struct key *key, struct key_preparsed_payload *prep)
+ {
+@@ -198,6 +226,7 @@ struct key_type key_type_mktme = {
+ 	.free_preparse	= mktme_free_preparsed_payload,
+ 	.instantiate	= mktme_instantiate_key,
+ 	.describe	= user_describe,
++	.destroy	= mktme_destroy_key,
+ };
+ 
+ static int __init init_mktme(void)
 -- 
 2.21.0
