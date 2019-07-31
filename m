@@ -1,7 +1,7 @@
 From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 31 Jul 2019 15:07:27 +0000
-Subject: [PATCHv2 13/59] x86/mm: Add a helper to retrieve KeyID for a VMA
-Message-Id: <20190731150813.26289-14-kirill.shutemov@linux.intel.com>
+Date: Wed, 31 Jul 2019 15:07:28 +0000
+Subject: [PATCHv2 14/59] x86/mm: Add hooks to allocate and free encrypted pages
+Message-Id: <20190731150813.26289-15-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,66 +11,152 @@ In-Reply-To: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
 Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-We store KeyID in upper bits for vm_page_prot that match position of
-KeyID in PTE. vma_keyid() extracts KeyID from vm_page_prot.
+Hook up into page allocator to allocate and free encrypted page
+properly.
 
-With KeyID in vm_page_prot we don't need to modify any page table helper
-to propagate the KeyID to page table entires.
+The hardware/CPU does not enforce coherency between mappings of the same
+physical page with different KeyIDs or encryption keys.
+We are responsible for cache management.
+
+Flush cache on allocating encrypted page and on returning the page to
+the free pool.
+
+prep_encrypted_page() also takes care about zeroing the page. We have to
+do this after KeyID is set for the page.
+
+The patch relies on page_address() to return virtual address of the page
+mapping with the current KeyID. It will be implemented later in the
+patchset.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/x86/include/asm/mktme.h | 12 ++++++++++++
- arch/x86/mm/mktme.c          |  7 +++++++
- 2 files changed, 19 insertions(+)
+ arch/x86/include/asm/mktme.h | 17 ++++++++
+ arch/x86/mm/mktme.c          | 83 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 100 insertions(+)
 
 diff --git a/arch/x86/include/asm/mktme.h b/arch/x86/include/asm/mktme.h
-index 46041075f617..52b115b30a42 100644
+index 52b115b30a42..a61b45fca4b1 100644
 --- a/arch/x86/include/asm/mktme.h
 +++ b/arch/x86/include/asm/mktme.h
-@@ -5,6 +5,8 @@
- #include <linux/page_ext.h>
- #include <linux/jump_label.h>
- 
-+struct vm_area_struct;
-+
- #ifdef CONFIG_X86_INTEL_MKTME
- extern phys_addr_t __mktme_keyid_mask;
- extern phys_addr_t mktme_keyid_mask(void);
-@@ -31,6 +33,16 @@ static inline int page_keyid(const struct page *page)
- 	return lookup_page_ext(page)->keyid;
+@@ -43,6 +43,23 @@ static inline int vma_keyid(struct vm_area_struct *vma)
+ 	return __vma_keyid(vma);
  }
  
-+#define vma_keyid vma_keyid
-+int __vma_keyid(struct vm_area_struct *vma);
-+static inline int vma_keyid(struct vm_area_struct *vma)
++#define prep_encrypted_page prep_encrypted_page
++void __prep_encrypted_page(struct page *page, int order, int keyid, bool zero);
++static inline void prep_encrypted_page(struct page *page, int order,
++		int keyid, bool zero)
 +{
-+	if (!mktme_enabled())
-+		return 0;
++	if (keyid)
++		__prep_encrypted_page(page, order, keyid, zero);
++}
 +
-+	return __vma_keyid(vma);
++#define HAVE_ARCH_FREE_PAGE
++void free_encrypted_page(struct page *page, int order);
++static inline void arch_free_page(struct page *page, int order)
++{
++	if (page_keyid(page))
++		free_encrypted_page(page, order);
 +}
 +
  #else
  #define mktme_keyid_mask()	((phys_addr_t)0)
  #define mktme_nr_keyids()	0
 diff --git a/arch/x86/mm/mktme.c b/arch/x86/mm/mktme.c
-index 48c2d4c97356..d02867212e33 100644
+index d02867212e33..8015e7822c9b 100644
 --- a/arch/x86/mm/mktme.c
 +++ b/arch/x86/mm/mktme.c
-@@ -1,3 +1,4 @@
-+#include <linux/mm.h>
+@@ -1,4 +1,5 @@
+ #include <linux/mm.h>
++#include <linux/highmem.h>
  #include <asm/mktme.h>
  
  /* Mask to extract KeyID from physical address. */
-@@ -48,3 +49,9 @@ struct page_ext_operations page_mktme_ops = {
- 	.need = need_page_mktme,
- 	.init = init_page_mktme,
- };
+@@ -55,3 +56,85 @@ int __vma_keyid(struct vm_area_struct *vma)
+ 	pgprotval_t prot = pgprot_val(vma->vm_page_prot);
+ 	return (prot & mktme_keyid_mask()) >> mktme_keyid_shift();
+ }
 +
-+int __vma_keyid(struct vm_area_struct *vma)
++/* Prepare page to be used for encryption. Called from page allocator. */
++void __prep_encrypted_page(struct page *page, int order, int keyid, bool zero)
 +{
-+	pgprotval_t prot = pgprot_val(vma->vm_page_prot);
-+	return (prot & mktme_keyid_mask()) >> mktme_keyid_shift();
++	int i;
++
++	/*
++	 * The hardware/CPU does not enforce coherency between mappings
++	 * of the same physical page with different KeyIDs or
++	 * encryption keys. We are responsible for cache management.
++	 *
++	 * Flush cache lines with KeyID-0. page_address() returns virtual
++	 * address of the page mapping with the current (zero) KeyID.
++	 */
++	clflush_cache_range(page_address(page), PAGE_SIZE * (1UL << order));
++
++	for (i = 0; i < (1 << order); i++) {
++		/* All pages coming out of the allocator should have KeyID 0 */
++		WARN_ON_ONCE(lookup_page_ext(page)->keyid);
++
++		/*
++		 * Change KeyID. From now on page_address() will return address
++		 * of the page mapping with the new KeyID.
++		 *
++		 * We don't need barrier() before the KeyID change because
++		 * clflush_cache_range() above stops compiler from reordring
++		 * past the point with mb().
++		 *
++		 * And we don't need a barrier() after the assignment because
++		 * any future reference of KeyID (i.e. from page_address())
++		 * will create address dependency and compiler is not allow to
++		 * mess with this.
++		 */
++		lookup_page_ext(page)->keyid = keyid;
++
++		/* Clear the page after the KeyID is set. */
++		if (zero)
++			clear_highpage(page);
++
++		page++;
++	}
++}
++
++/*
++ * Handles freeing of encrypted page.
++ * Called from page allocator on freeing encrypted page.
++ */
++void free_encrypted_page(struct page *page, int order)
++{
++	int i;
++
++	/*
++	 * The hardware/CPU does not enforce coherency between mappings
++	 * of the same physical page with different KeyIDs or
++	 * encryption keys. We are responsible for cache management.
++	 *
++	 * Flush cache lines with non-0 KeyID. page_address() returns virtual
++	 * address of the page mapping with the current (non-zero) KeyID.
++	 */
++	clflush_cache_range(page_address(page), PAGE_SIZE * (1UL << order));
++
++	for (i = 0; i < (1 << order); i++) {
++		/* Check if the page has reasonable KeyID */
++		WARN_ON_ONCE(!lookup_page_ext(page)->keyid);
++		WARN_ON_ONCE(lookup_page_ext(page)->keyid > mktme_nr_keyids());
++
++		/*
++		 * Switch the page back to zero KeyID.
++		 *
++		 * We don't need barrier() before the KeyID change because
++		 * clflush_cache_range() above stops compiler from reordring
++		 * past the point with mb().
++		 *
++		 * And we don't need a barrier() after the assignment because
++		 * any future reference of KeyID (i.e. from page_address())
++		 * will create address dependency and compiler is not allow to
++		 * mess with this.
++		 */
++		lookup_page_ext(page)->keyid = 0;
++		page++;
++	}
 +}
 -- 
 2.21.0
