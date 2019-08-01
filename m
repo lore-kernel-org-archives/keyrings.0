@@ -1,70 +1,22 @@
-From: Jia Zhang <zhang.jia@linux.alibaba.com>
-Date: Thu, 01 Aug 2019 01:23:45 +0000
-Subject: [PATCH] ima: Allow to import the blacklisted cert signed by secondary CA cert
-Message-Id: <1564622625-112173-1-git-send-email-zhang.jia@linux.alibaba.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 01 Aug 2019 22:57:09 +0000
+Subject: Re: [PATCH] ima: Allow to import the blacklisted cert signed by secondary CA cert
+Message-Id: <1564700229.11223.9.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com, zohar@linux.ibm.com, dmitry.kasatkin@gmail.com
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, zhang.jia@linux.alibaba.com
+References: <1564622625-112173-1-git-send-email-zhang.jia@linux.alibaba.com>
+In-Reply-To: <1564622625-112173-1-git-send-email-zhang.jia@linux.alibaba.com>
+To: Jia Zhang <zhang.jia@linux.alibaba.com>, dhowells@redhat.com, dmitry.kasatkin@gmail.com
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, "Mark D. Baushke" <mdb@juniper.net>, Petko Manolov <petkan@mip-labs.com>
 
-Similar to .ima, the cert imported to .ima_blacklist is able to be
-authenticated by a secondary CA cert.
-
-Signed-off-by: Jia Zhang <zhang.jia@linux.alibaba.com>
----
- include/keys/system_keyring.h    | 6 ++++++
- security/integrity/digsig.c      | 6 ------
- security/integrity/ima/ima_mok.c | 2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-index c1a96fd..7dc91db 100644
---- a/include/keys/system_keyring.h
-+++ b/include/keys/system_keyring.h
-@@ -31,6 +31,12 @@ extern int restrict_link_by_builtin_and_secondary_trusted(
- #define restrict_link_by_builtin_and_secondary_trusted restrict_link_by_builtin_trusted
- #endif
- 
-+#ifdef CONFIG_IMA_KEYRINGS_PERMIT_SIGNED_BY_BUILTIN_OR_SECONDARY
-+#define restrict_link_to_ima restrict_link_by_builtin_and_secondary_trusted
-+#else
-+#define restrict_link_to_ima restrict_link_by_builtin_trusted
-+#endif
-+
- #ifdef CONFIG_SYSTEM_BLACKLIST_KEYRING
- extern int mark_hash_blacklisted(const char *hash);
- extern int is_hash_blacklisted(const u8 *hash, size_t hash_len,
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 868ade3..c6f3384 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -33,12 +33,6 @@
- 	".platform",
- };
- 
--#ifdef CONFIG_IMA_KEYRINGS_PERMIT_SIGNED_BY_BUILTIN_OR_SECONDARY
--#define restrict_link_to_ima restrict_link_by_builtin_and_secondary_trusted
--#else
--#define restrict_link_to_ima restrict_link_by_builtin_trusted
--#endif
--
- int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			    const char *digest, int digestlen)
- {
-diff --git a/security/integrity/ima/ima_mok.c b/security/integrity/ima/ima_mok.c
-index 36cadad..6d0b12d 100644
---- a/security/integrity/ima/ima_mok.c
-+++ b/security/integrity/ima/ima_mok.c
-@@ -31,7 +31,7 @@ __init int ima_mok_init(void)
- 	if (!restriction)
- 		panic("Can't allocate IMA blacklist restriction.");
- 
--	restriction->check = restrict_link_by_builtin_trusted;
-+	restriction->check = restrict_link_to_ima;
- 
- 	ima_blacklist_keyring = keyring_alloc(".ima_blacklist",
- 				KUIDT_INIT(0), KGIDT_INIT(0), current_cred(),
--- 
-1.8.3.1
+SGkgSmlhLAoKT24gVGh1LCAyMDE5LTA4LTAxIGF0IDA5OjIzICswODAwLCBKaWEgWmhhbmcgd3Jv
+dGU6Cj4gU2ltaWxhciB0byAuaW1hLCB0aGUgY2VydCBpbXBvcnRlZCB0byAuaW1hX2JsYWNrbGlz
+dCBpcyBhYmxlIHRvIGJlCj4gYXV0aGVudGljYXRlZCBieSBhIHNlY29uZGFyeSBDQSBjZXJ0Lgo+
+IAo+IFNpZ25lZC1vZmYtYnk6IEppYSBaaGFuZyA8emhhbmcuamlhQGxpbnV4LmFsaWJhYmEuY29t
+PgoKVGhlIElNQSBibGFja2xpc3QsIHdoaWNoIGlzIGRlZmluZWQgYXMgZXhwZXJpbWVudGFsIGZv
+ciBhIHJlYXNvbiwgd2FzCnVwc3RyZWFtZWQgcHJpb3IgdG8gdGhlIHN5c3RlbSBibGFja2xpc3Qu
+IMKgQW55IHJlYXNvbiB5b3UncmUgbm90IHVzaW5nCnRoZSBzeXN0ZW0gYmxhY2tsaXN0PyDCoEJl
+Zm9yZSBtYWtpbmcgdGhpcyBzb3J0IG9mIGNoYW5nZSwgSSdkIGxpa2UKc29tZSBpbnB1dCBmcm9t
+IG90aGVycy4KCnRoYW5rcywKCk1pbWkK
