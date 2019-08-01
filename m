@@ -1,93 +1,58 @@
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-Date: Wed, 07 Aug 2019 14:28:50 +0000
-Subject: Re: [PATCHv2 47/59] kvm, x86, mmu: setup MKTME keyID to spte for given PFN
-Message-Id: <20190807142850.mjp4ctqc7wttpser@box>
+From: Janne Karhunen <janne.karhunen@gmail.com>
+Date: Thu, 01 Aug 2019 06:21:39 +0000
+Subject: Re: [RFC v2 0/6] Introduce TEE based Trusted Keys support
+Message-Id: <CAE=NcraDkm5cxE=ceq_9XkQz=NZ6KdVXkNUsdD4G2LrWz-bpDw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
- <20190731150813.26289-48-kirill.shutemov@linux.intel.com>
- <a3aee9ea-a3ce-1219-b7ff-5a1b291bffdd@amd.com>
-In-Reply-To: <a3aee9ea-a3ce-1219-b7ff-5a1b291bffdd@amd.com>
-To: "Lendacky, Thomas" <Thomas.Lendacky@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, "x86@kernel.org" <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
+ <CAE=Ncrb63dQLe-nDQyO9OPv7XjwM_9mzL9SrcLiUi2Dr10cD4A@mail.gmail.com>
+ <CAE=NcrY7b8eTTovOszBhGhVbjfJAXoAYehiUJyPENGfwWoVcPw@mail.gmail.com>
+ <CAFA6WYOEqe1a1DCyVYKA+oZaZ0n5hnjxdubstUnrwdUW1-4xHw@mail.gmail.com>
+In-Reply-To: <CAFA6WYOEqe1a1DCyVYKA+oZaZ0n5hnjxdubstUnrwdUW1-4xHw@mail.gmail.com>
+To: Sumit Garg <sumit.garg@linaro.org>
+Cc: "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, Jonathan Corbet <corbet@lwn.net>, jejb@linux.ibm.com, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, James Morris <jmorris@namei.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, Jens Wiklander <jens.wiklander@linaro.org>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
 
-On Tue, Aug 06, 2019 at 08:26:52PM +0000, Lendacky, Thomas wrote:
-> On 7/31/19 10:08 AM, Kirill A. Shutemov wrote:
-> > From: Kai Huang <kai.huang@linux.intel.com>
-> > 
-> > Setup keyID to SPTE, which will be eventually programmed to shadow MMU
-> > or EPT table, according to page's associated keyID, so that guest is
-> > able to use correct keyID to access guest memory.
-> > 
-> > Note current shadow_me_mask doesn't suit MKTME's needs, since for MKTME
-> > there's no fixed memory encryption mask, but can vary from keyID 1 to
-> > maximum keyID, therefore shadow_me_mask remains 0 for MKTME.
-> > 
-> > Signed-off-by: Kai Huang <kai.huang@linux.intel.com>
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  arch/x86/kvm/mmu.c | 18 +++++++++++++++++-
-> >  1 file changed, 17 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> > index 8f72526e2f68..b8742e6219f6 100644
-> > --- a/arch/x86/kvm/mmu.c
-> > +++ b/arch/x86/kvm/mmu.c
-> > @@ -2936,6 +2936,22 @@ static bool kvm_is_mmio_pfn(kvm_pfn_t pfn)
-> >  #define SET_SPTE_WRITE_PROTECTED_PT	BIT(0)
-> >  #define SET_SPTE_NEED_REMOTE_TLB_FLUSH	BIT(1)
-> >  
-> > +static u64 get_phys_encryption_mask(kvm_pfn_t pfn)
-> > +{
-> > +#ifdef CONFIG_X86_INTEL_MKTME
-> > +	struct page *page;
-> > +
-> > +	if (!pfn_valid(pfn))
-> > +		return 0;
-> > +
-> > +	page = pfn_to_page(pfn);
-> > +
-> > +	return ((u64)page_keyid(page)) << mktme_keyid_shift();
-> > +#else
-> > +	return shadow_me_mask;
-> > +#endif
-> > +}
-> 
-> This patch breaks AMD virtualization (SVM) in general (non-SEV and SEV
-> guests) when SME is active. Shouldn't this be a run time, vs build time,
-> check for MKTME being active?
+On Wed, Jul 31, 2019 at 4:58 PM Sumit Garg <sumit.garg@linaro.org> wrote:
 
-Thanks, I've missed this.
+> > To clarify a bit further - my thought was to support any type of trust
+> > source.
+>
+> That could be very well accomplished via Trusted Keys abstraction
+> framework [1]. A trust source just need to implement following APIs:
+>
+> struct trusted_key_ops ts_trusted_key_ops = {
+>        .migratable = 0, /* non-migratable */
+>        .init = init_ts_trusted,
+>        .seal = ts_key_seal,
+>        .unseal = ts_key_unseal,
+>        .get_random = ts_get_random,
+>        .cleanup = cleanup_ts_trusted,
+> };
 
-This fixup should help:
+Which is basically the same as implementing a new keytype in the
+kernel; abstraction is not raised in any considerable manner this way?
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 00d17bdfec0f..54931acf260e 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2947,18 +2947,17 @@ static bool kvm_is_mmio_pfn(kvm_pfn_t pfn)
- 
- static u64 get_phys_encryption_mask(kvm_pfn_t pfn)
- {
--#ifdef CONFIG_X86_INTEL_MKTME
- 	struct page *page;
- 
-+	if (!mktme_enabled())
-+		return shadow_me_mask;
-+
- 	if (!pfn_valid(pfn))
- 		return 0;
- 
- 	page = pfn_to_page(pfn);
- 
- 	return ((u64)page_keyid(page)) << mktme_keyid_shift();
--#else
--	return shadow_me_mask;
--#endif
- }
- 
- static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
--- 
- Kirill A. Shutemov
+I chose the userspace plugin due to this, you can use userspace aids
+to provide any type of service. Use the crypto library you desire to
+do the magic you want.
+
+
+> > With the
+> > user mode helper in between anyone can easily add their own thing in
+> > there.
+>
+> Isn't actual purpose to have trusted keys is to protect user-space
+> from access to kernel keys in plain format? Doesn't user mode helper
+> defeat that purpose in one way or another?
+
+Not really. CPU is in the user mode while running the code, but the
+code or the secure keydata being is not available to the 'normal'
+userspace. It's like microkernel service/driver this way. The usermode
+driver is part of the kernel image and it runs on top of a invisible
+rootfs.
+
+
+--
+Janne
