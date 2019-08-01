@@ -1,7 +1,7 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Thu, 01 Aug 2019 07:58:47 +0000
+From: Janne Karhunen <janne.karhunen@gmail.com>
+Date: Thu, 01 Aug 2019 08:30:05 +0000
 Subject: Re: [Tee-dev] [RFC v2 0/6] Introduce TEE based Trusted Keys support
-Message-Id: <CAFA6WYPt4q+jaJbaoauXKr2qKgBHvtQ663s4t=W3nuPJPe2xpw@mail.gmail.com>
+Message-Id: <CAE=NcrbujsM8wYJXq+s=o5Vy1xY1b0uKYBGvp6UP5ex70HrB2Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -14,55 +14,30 @@ References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
  <CAE=NcrYz8bT9zDhS_ZcvY84fpeTDxZ-KhJKeQGGyf=o4pG2J-Q@mail.gmail.com>
  <19d9be198619e951750dedeb4d0a7f372083b42c.camel@pengutronix.de>
  <CAE=NcraqD9FNM0Gk9UGhPGi3heVzZrAKGc1gNZxoe1OnDaQ=pA@mail.gmail.com>
-In-Reply-To: <CAE=NcraqD9FNM0Gk9UGhPGi3heVzZrAKGc1gNZxoe1OnDaQ=pA@mail.gmail.com>
-To: Janne Karhunen <janne.karhunen@gmail.com>
+ <CAFA6WYPt4q+jaJbaoauXKr2qKgBHvtQ663s4t=W3nuPJPe2xpw@mail.gmail.com>
+In-Reply-To: <CAFA6WYPt4q+jaJbaoauXKr2qKgBHvtQ663s4t=W3nuPJPe2xpw@mail.gmail.com>
+To: Sumit Garg <sumit.garg@linaro.org>
 Cc: dhowells@redhat.com, Daniel Thompson <daniel.thompson@linaro.org>, Rouven Czerwinski <r.czerwinski@pengutronix.de>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, jejb@linux.ibm.com, Jonathan Corbet <corbet@lwn.net>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
 
-On Thu, 1 Aug 2019 at 13:00, Janne Karhunen <janne.karhunen@gmail.com> wrote:
+On Thu, Aug 1, 2019 at 10:58 AM Sumit Garg <sumit.garg@linaro.org> wrote:
+
+> > Anyway, just my .02c. I guess having any new support in the kernel for
+> > new trust sources is good and improvement from the current state. I
+> > can certainly make my stuff work with your setup as well, what ever
+> > people think is the best.
 >
-> On Thu, Aug 1, 2019 at 9:50 AM Rouven Czerwinski
-> <r.czerwinski@pengutronix.de> wrote:
->
-> > > I'm aware of it - I have implemented a large part of the GP TEE APIs
-> > > earlier (primarily the crypto functions). Does the TEE you work with
-> > > actually support GP properly? Can I take a look at the code?
-> >
-> > AFAIK Sumit is working with the OP-TEE implementation, which can be
-> > found on github: https://github.com/op-tee/optee_os
->
-> Thanks, I will take a look.
+> Yes your implementation can very well fit under trusted keys
+> abstraction framework without creating a new keytype: "ext-trusted".
 
-For documentation, refer to: https://optee.readthedocs.io/
+The fundamental problem with the 'standardized kernel tee' still
+exists - it will never be generic in real life. Getting all this in
+the kernel will solve your problem and sell this particular product,
+but it is quite unlikely to help that many users. If the security is
+truly important to you, would you really trust any of this code to
+someone else? In this day and age, I really doubt many do. Everyone
+does their own thing, so this is why I really see all that as a
+userspace problem.
 
-> The fundamental problem with these things
-> is that there are infinite amount of ways how TEEs and ROTs can be
-> done in terms of the hardware and software. I really doubt there are 2
-> implementations in existence that are even remotely compatible in real
-> life.
 
-I agree with you regarding implementation specific nature of TEE but
-having a standardized client interface does solves the problem.
-
-> As such, all things TEE/ROT would logically really belong in the
-> userland and thanks to the bpfilter folks now the umh logic really
-> makes that possible ... I think. The key implementation I did was just
-> an RFC on the concept, what if we start to move the stuff that really
-> belongs in the userspace to this pseudo-userland. It's not kernel, but
-> it's not commonly accessible userland either. The shared memory would
-> also work without any modifications between the umh based TEE/ROT
-> driver and the userland if needed.
->
-> Anyway, just my .02c. I guess having any new support in the kernel for
-> new trust sources is good and improvement from the current state. I
-> can certainly make my stuff work with your setup as well, what ever
-> people think is the best.
-
-Yes your implementation can very well fit under trusted keys
-abstraction framework without creating a new keytype: "ext-trusted".
-
--Sumit
-
->
->
-> --
-> Janne
+--
+Janne
