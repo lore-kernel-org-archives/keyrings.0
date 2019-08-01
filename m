@@ -1,132 +1,24 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 30 Aug 2019 13:57:39 +0000
-Subject: [PATCH 03/11] security: Add a hook for the point of notification insertion [ver #7]
-Message-Id: <156717345929.2204.8865868667476300227.stgit@warthog.procyon.org.uk>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Thu, 01 Aug 2019 17:24:15 +0000
+Subject: Re: [RFC/RFT v2 1/2] KEYS: trusted: create trusted keys subsystem
+Message-Id: <20190801172310.cldcftfdoh5vyfjg@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
-To: viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1563449086-13183-1-git-send-email-sumit.garg@linaro.org>
+ <1563449086-13183-2-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1563449086-13183-2-git-send-email-sumit.garg@linaro.org>
+To: Sumit Garg <sumit.garg@linaro.org>
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, jejb@linux.ibm.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org
 
-Add a security hook that allows an LSM to rule on whether a notification
-message is allowed to be inserted into a particular watch queue.
+On Thu, Jul 18, 2019 at 04:54:45PM +0530, Sumit Garg wrote:
+> Move existing code to trusted keys subsystem. Also, rename files with
+> "tpm" as suffix which provides the underlying implementation.
+> 
+> Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
 
-The hook is given the following information:
+What about TPM2 trusted keys code?
 
- (1) The credentials of the triggerer (which may be init_cred for a system
-     notification, eg. a hardware error).
-
- (2) The credentials of the whoever set the watch.
-
- (3) The notification message.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
----
-
- include/linux/lsm_hooks.h |   14 ++++++++++++++
- include/linux/security.h  |   15 ++++++++++++++-
- security/security.c       |    9 +++++++++
- 3 files changed, 37 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index b0cdefcda4e6..257d803dcf6f 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1424,6 +1424,12 @@
-  *	Check to see if a process is allowed to watch for event notifications
-  *	from devices (as a global set).
-  *
-+ * @post_notification:
-+ *	Check to see if a watch notification can be posted to a particular
-+ *	queue.
-+ *	@w_cred: The credentials of the whoever set the watch.
-+ *	@cred: The event-triggerer's credentials
-+ *	@n: The notification being posted
-  *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-@@ -1706,6 +1712,11 @@ union security_list_options {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	int (*watch_devices)(void);
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	int (*post_notification)(const struct cred *w_cred,
-+				 const struct cred *cred,
-+				 struct watch_notification *n);
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -1988,6 +1999,9 @@ struct security_hook_heads {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	struct hlist_head watch_devices;
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	struct hlist_head post_notification;
-+#endif /* CONFIG_WATCH_QUEUE */
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 3be44354d308..24c54b9ff0a1 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -57,6 +57,8 @@ struct mm_struct;
- struct fs_context;
- struct fs_parameter;
- enum fs_value_type;
-+struct watch;
-+struct watch_notification;
- 
- /* Default (no) options for the capable function */
- #define CAP_OPT_NONE 0x0
-@@ -1222,6 +1224,18 @@ static inline int security_watch_devices(void)
- 	return 0;
- }
- #endif
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n);
-+#else
-+static inline int security_post_notification(const struct cred *w_cred,
-+					     const struct cred *cred,
-+					     struct watch_notification *n)
-+{
-+	return 0;
-+}
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 
-@@ -1847,4 +1861,3 @@ static inline void security_bpf_prog_free(struct bpf_prog_aux *aux)
- #endif /* CONFIG_BPF_SYSCALL */
- 
- #endif /* ! __LINUX_SECURITY_H */
--
-diff --git a/security/security.c b/security/security.c
-index 007eb48bc848..b719c5a5b2ba 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1916,6 +1916,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n)
-+{
-+	return call_int_hook(post_notification, 0, w_cred, cred, n);
-+}
-+#endif /* CONFIG_WATCH_QUEUE */
-+
- #ifdef CONFIG_KEY_NOTIFICATIONS
- int security_watch_key(struct key *key)
- {
+/Jarkko
