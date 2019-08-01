@@ -1,131 +1,42 @@
-From: Jia Zhang <zhang.jia@linux.alibaba.com>
-Date: Sat, 31 Aug 2019 14:27:49 +0000
-Subject: Re: [PATCH 1/2] sign-file: introduce check_module_sig
-Message-Id: <d02fabb7-057f-430e-4fc1-0f1cf0343334@linux.alibaba.com>
+From: Rouven Czerwinski <r.czerwinski@pengutronix.de>
+Date: Thu, 01 Aug 2019 06:50:22 +0000
+Subject: Re: [Tee-dev] [RFC v2 0/6] Introduce TEE based Trusted Keys support
+Message-Id: <19d9be198619e951750dedeb4d0a7f372083b42c.camel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <92f6ccea-f36e-61b9-9013-2c037ef24b14@linux.alibaba.com>
-In-Reply-To: <92f6ccea-f36e-61b9-9013-2c037ef24b14@linux.alibaba.com>
-To: keyrings@vger.kernel.org
+References: <1564489420-677-1-git-send-email-sumit.garg@linaro.org>
+ <CAE=Ncrb63dQLe-nDQyO9OPv7XjwM_9mzL9SrcLiUi2Dr10cD4A@mail.gmail.com>
+ <CAFA6WYPJAzbPdcpBqioxjY=T8RLw-73B_hpzX4cGnwVvm5zpJw@mail.gmail.com>
+ <CAE=Ncrb23q++z8R8UMbjDE2epEq4YVcNGzrRD31eH3JAooYejg@mail.gmail.com>
+ <CAFA6WYOKcOzSwakHhgshZcebD8ZBMSi7xQdjWYFS79=Xc+odOg@mail.gmail.com>
+ <CAE=NcrYz8bT9zDhS_ZcvY84fpeTDxZ-KhJKeQGGyf=o4pG2J-Q@mail.gmail.com>
+In-Reply-To: <CAE=NcrYz8bT9zDhS_ZcvY84fpeTDxZ-KhJKeQGGyf=o4pG2J-Q@mail.gmail.com>
+To: Janne Karhunen <janne.karhunen@gmail.com>, Sumit Garg <sumit.garg@linaro.org>
+Cc: Jonathan Corbet <corbet@lwn.net>, Daniel Thompson <daniel.thompson@linaro.org>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, jejb@linux.ibm.com, Linux Doc Mailing List <linux-doc@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
 
-
-
-On 2019/8/31 下午4:22, Yihao Wu wrote:
-> This method checks if there's any existing signature. And it returns the
-> actual module size, which excludes the signature.
+On Thu, 2019-08-01 at 09:36 +0300, Janne Karhunen wrote:
+> On Wed, Jul 31, 2019 at 5:23 PM Sumit Garg <sumit.garg@linaro.org>
+> wrote:
 > 
-> Signed-off-by: Yihao Wu <wuyihao@linux.alibaba.com>
-> ---
->  scripts/sign-file.c | 70 +++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 70 insertions(+)
-
-I'm assuming your patch is based on the latest upstream.
-
+> > > I guess my wording was wrong, tried to say that physical TEEs in
+> > > the
+> > > wild vary massively hardware wise. Generalizing these things is
+> > > rough.
+> > > 
+> > 
+> > There are already well defined GlobalPlatform Standards to
+> > generalize
+> > the TEE interface. One of them is GlobalPlatform TEE Client API [1]
+> > which provides the basis for this TEE interface.
 > 
-> diff --git a/scripts/sign-file.c b/scripts/sign-file.c
-> index fbd34b8e8f57..8647a78368d3 100644
-> --- a/scripts/sign-file.c
-> +++ b/scripts/sign-file.c
-> @@ -62,9 +62,11 @@ struct module_signature {
->  	uint32_t	sig_len;	/* Length of signature data */
->  };
->  
-> +#define SIGSIZ (sizeof(struct module_signature))
->  #define PKEY_ID_PKCS7 2
->  
->  static char magic_number[] = "~Module signature appended~\n";
-> +#define MAGIC_SIZE (sizeof(magic_number) - 1)
->  
->  static __attribute__((noreturn))
->  void format(void)
-> @@ -132,6 +134,74 @@ static int pem_pw_cb(char *buf, int len, int w, void *v)
->  	return pwlen;
->  }
->  
-> +/*
-> + * Check if there is at least one valid PKCS#7 signature
-> + */
-> +static bool check_module_sig(char *module_name, unsigned long *module_size)
-> +{
-> +	int sig_offset, magic_offset;
-> +	unsigned long file_size, offset;
-> +	uint32_t sig_len;
-> +	char buf[4096];
-> +	uint16_t type;
-> +	BIO *bm;
-> +
-> +	bm = BIO_new_file(module_name, "rb");
-> +	ERR(!bm, "%s", module_name);
-> +
-> +	while (BIO_read(bm, buf, 4096) > 0)
+> I'm aware of it - I have implemented a large part of the GP TEE APIs
+> earlier (primarily the crypto functions). Does the TEE you work with
+> actually support GP properly? Can I take a look at the code?
 
-> +		;
-> +	file_size = *module_size = offset = BIO_number_read(bm);
+AFAIK Sumit is working with the OP-TEE implementation, which can be
+found on github: https://github.com/op-tee/optee_os
 
-Use the combination of BIO_seek() and BIO_tell() to get file size instead.
-
-> +
-> +	for (;;) {
-> +		magic_offset = offset - MAGIC_SIZE;
-> +		if (magic_offset < 0)
-> +			break;
-> +
-> +		if (BIO_seek(bm, magic_offset))
-> +			break;
-> +
-> +		if (BIO_read(bm, buf, MAGIC_SIZE) != MAGIC_SIZE)
-> +			break;
-> +
-> +		if (memcmp(buf, magic_number, MAGIC_SIZE))
-> +			break;
-> +
-> +		if (magic_offset <= SIGSIZ)
-> +			break;
-> +
-> +		sig_offset = magic_offset - 4;
-> +		if (BIO_seek(bm, sig_offset))
-> +			break;
-> +
-> +		if (BIO_read(bm, &sig_len, 4) != 4)
-
-Change all hardcoding "4" to sizeof(sig_len).
-
-> +			break;
-> +
-> +		sig_len = ntohl(sig_len);
-> +
-> +		offset -= MAGIC_SIZE + SIGSIZ + sig_len;
-> +		if (offset <= 0)
-> +			break;
-> +
-> +		if (BIO_seek(bm, offset))
-> +			break;
-> +
-> +		if (BIO_read(bm, &type, 2) != 2)
-
-
-Change all hardcoding "2" to sizeof(type).
-
-Jia
-
-> +			break;
-> +
-> +		/* The structured type must be a sequence. And the length of the
-> +		 * content info must be at the next 2 bytes (0x82 - 0x80 = 0x2)
-> +		 */
-> +		if (type != 0x8230)
-> +			break;
-> +
-> +		*module_size = offset;
-> +	}
-> +
-> +	ERR(BIO_free(bm) < 0, "%s", module_name);
-> +	return *module_size < file_size;
-> +}
-> +
->  static EVP_PKEY *read_private_key(const char *private_key_name)
->  {
->  	EVP_PKEY *private_key;
-> 
+Regards,
+Rouven
