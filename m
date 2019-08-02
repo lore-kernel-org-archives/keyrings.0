@@ -1,7 +1,7 @@
 From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 01 Aug 2019 22:04:34 +0000
+Date: Fri, 02 Aug 2019 04:38:27 +0000
 Subject: Re: [PATCH v7 07/16] fscrypt: add FS_IOC_REMOVE_ENCRYPTION_KEY ioctl
-Message-Id: <20190801220432.GC223822@gmail.com>
+Message-Id: <20190802043827.GA19201@sol.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -12,47 +12,54 @@ References: <20190726224141.14044-1-ebiggers@kernel.org>
  <20190731183802.GA687@sol.localdomain>
  <20190731233843.GA2769@mit.edu>
  <20190801011140.GB687@sol.localdomain>
- <20190801053108.GD2769@mit.edu>
-In-Reply-To: <20190801053108.GD2769@mit.edu>
-To: "Theodore Y. Ts'o" <tytso@mit.edu>
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+ <20190801053108.GD2769@mit.edu> <20190801220432.GC223822@gmail.com>
+In-Reply-To: <20190801220432.GC223822@gmail.com>
+To: "Theodore Y. Ts'o" <tytso@mit.edu>, linux-fscrypt@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Paul Crowley <paulcrowley@google.com>, Satya Tangirala <satyat@google.com>
 
-On Thu, Aug 01, 2019 at 01:31:08AM -0400, Theodore Y. Ts'o wrote:
-> On Wed, Jul 31, 2019 at 06:11:40PM -0700, Eric Biggers wrote:
+On Thu, Aug 01, 2019 at 03:04:34PM -0700, Eric Biggers wrote:
+> On Thu, Aug 01, 2019 at 01:31:08AM -0400, Theodore Y. Ts'o wrote:
+> > On Wed, Jul 31, 2019 at 06:11:40PM -0700, Eric Biggers wrote:
+> > > 
+> > > Well, it's either
+> > > 
+> > > 1a. Remove the user's handle.
+> > > 	OR 
+> > > 1b. Remove all users' handles.  (FSCRYPT_REMOVE_KEY_FLAG_ALL_USERS)
+> > > 
+> > > Then
+> > > 
+> > > 2. If no handles remain, try to evict all inodes that use the key.
+> > > 
+> > > By "purge all keys" do you mean step (2)?  Note that it doesn't require root by
+> > > itself; root is only required to remove other users' handles (1b).
 > > 
-> > Well, it's either
+> > No, I was talking about 1b.  I'd argue that 1a and 1b should be
+> > different ioctl.  1b requires root, and 1a doesn't.
 > > 
-> > 1a. Remove the user's handle.
-> > 	OR 
-> > 1b. Remove all users' handles.  (FSCRYPT_REMOVE_KEY_FLAG_ALL_USERS)
+> [...]
+> > > 
+> > > Do you mean use a positive return value, or do you mean add an output field to
+> > > the struct passed to the ioctl?
 > > 
-> > Then
-> > 
-> > 2. If no handles remain, try to evict all inodes that use the key.
-> > 
-> > By "purge all keys" do you mean step (2)?  Note that it doesn't require root by
-> > itself; root is only required to remove other users' handles (1b).
+> > I meant adding an output field.  I see EBUSY and EUSERS as status bits
+> > which *some* use cases might find useful.
 > 
-> No, I was talking about 1b.  I'd argue that 1a and 1b should be
-> different ioctl.  1b requires root, and 1a doesn't.
+> Ted, would you be happy with the following API?
 > 
-[...]
-> > 
-> > Do you mean use a positive return value, or do you mean add an output field to
-> > the struct passed to the ioctl?
-> 
-> I meant adding an output field.  I see EBUSY and EUSERS as status bits
-> which *some* use cases might find useful.
 
-Ted, would you be happy with the following API?
+Here's a slightly updated version (I missed removing some stale text):
 
 Removing keys
 -------------
 
 Two ioctls are available for removing a key that was added by
-FS_IOC_ADD_ENCRYPTION_KEY: FS_IOC_REMOVE_ENCRYPTION_KEY and
-FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS.  They differ only in cases
-where v2 policy keys are added or removed by non-root users.
+`FS_IOC_ADD_ENCRYPTION_KEY`_:
+
+- `FS_IOC_REMOVE_ENCRYPTION_KEY`_
+- `FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS`_
+
+These two ioctls differ only in cases where v2 policy keys are added
+or removed by non-root users.
 
 These ioctls don't work on keys that were added via the legacy
 process-subscribed keyrings mechanism.
@@ -64,17 +71,17 @@ these ioctls.
 FS_IOC_REMOVE_ENCRYPTION_KEY
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The FS_IOC_REMOVE_ENCRYPTION_KEY ioctl removes a claim to an fscrypt
-master encryption key from the filesystem, and possibly removes the
-key itself.  It can be executed on any file or directory on the target
+The FS_IOC_REMOVE_ENCRYPTION_KEY ioctl removes a claim to a master
+encryption key from the filesystem, and possibly removes the key
+itself.  It can be executed on any file or directory on the target
 filesystem, but using the filesystem's root directory is recommended.
 It takes in a pointer to a :c:type:`struct fscrypt_remove_key_arg`,
 defined as follows::
 
     struct fscrypt_remove_key_arg {
             struct fscrypt_key_specifier key_spec;
-    #define FSCRYPT_KEY_REMOVAL_STATUS_FLAG_OTHER_USERS     0x00000001
-    #define FSCRYPT_KEY_REMOVAL_STATUS_FLAG_FILES_BUSY      0x00000002
+    #define FSCRYPT_KEY_REMOVAL_STATUS_FLAG_FILES_BUSY      0x00000001
+    #define FSCRYPT_KEY_REMOVAL_STATUS_FLAG_OTHER_USERS     0x00000002
             __u32 removal_status_flags;     /* output */
             __u32 __reserved[5];
     };
@@ -91,10 +98,7 @@ This structure must be zeroed, then initialized as follows:
 
     - To remove a key used by v2 encryption policies, set
       ``key_spec.type`` to FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER and fill
-      in ``key_spec.u.identifier``.  To remove this type of key, no
-      privileges are needed.  However, users can only remove keys that
-      they added themselves, subject to privileged override with
-      FSCRYPT_REMOVE_KEY_FLAG_ALL_USERS.
+      in ``key_spec.u.identifier``.
 
 For v2 policy keys, this ioctl is usable by non-root users.  However,
 to make this possible, it actually just removes the current user's
@@ -111,8 +115,10 @@ unlinking a file that may have hard links.)
 
 If FS_IOC_REMOVE_ENCRYPTION_KEY really removes the key, it will also
 try to "lock" all files that had been unlocked with the key.  It won't
-lock files that are still in-use.  If necessary, the ioctl can be
-executed again later to retry locking any remaining files.
+lock files that are still in-use, so this ioctl is expected to be used
+in cooperation with userspace ensuring that none of the files are
+still open.  However, if necessary, the ioctl can be executed again
+later to retry locking any remaining files.
 
 FS_IOC_REMOVE_ENCRYPTION_KEY returns 0 if either the key was removed
 (but may still have files remaining to be locked), the user's claim to
@@ -121,19 +127,18 @@ remaining to be the locked so the ioctl retried locking them.  In any
 of these cases, ``removal_status_flags`` is filled in with the
 following informational status flags:
 
-- ``FSCRYPT_KEY_REMOVAL_STATUS_FLAG_OTHER_USERS``: set if only the
-  user's claim to the key was removed, not the key itself
 - ``FSCRYPT_KEY_REMOVAL_STATUS_FLAG_FILES_BUSY``: set if some file(s)
   are still in-use.  Not guaranteed to be set in the case where only
   the user's claim to the key was removed.
+- ``FSCRYPT_KEY_REMOVAL_STATUS_FLAG_OTHER_USERS``: set if only the
+  user's claim to the key was removed, not the key itself
 
 FS_IOC_REMOVE_ENCRYPTION_KEY can fail with the following errors:
 
 - ``EACCES``: The FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR key specifier type
   was specified, but the caller does not have the CAP_SYS_ADMIN
   capability in the initial user namespace
-- ``EINVAL``: invalid flags or key specifier type, or reserved bits
-  were set
+- ``EINVAL``: invalid key specifier type, or reserved bits were set
 - ``ENOKEY``: the key object was not found at all, i.e. it was never
   added in the first place or was already fully removed including all
   files locked; or, the user does not have a claim to the key.
@@ -146,7 +151,7 @@ FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS is exactly the same as
-FS_IOC_REMOVE_ENCRYPTION_KEY, except that for v2 policy keys, the
+`FS_IOC_REMOVE_ENCRYPTION_KEY`_, except that for v2 policy keys, the
 ALL_USERS version of the ioctl will remove all users' claims to the
 key, not just the current user's.  I.e., the key itself will always be
 removed, no matter how many users have added it.  This difference is
