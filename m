@@ -1,40 +1,56 @@
-From: Tyler Hicks <tyhicks@canonical.com>
-Date: Fri, 02 Aug 2019 21:18:43 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Sat, 03 Aug 2019 14:44:37 +0000
 Subject: Re: [PATCH] KEYS: trusted: allow module init if TPM is inactive or deactivated
-Message-Id: <20190802211843.GH26616@elm>
+Message-Id: <aff3502c598fb76a1517795edaacd8c8ea330051.camel@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190705163735.11539-1-roberto.sassu@huawei.com>
- <1562618099.20748.13.camel@linux.ibm.com>
- <20190709162458.f4fjteokcmidv7w6@linux.intel.com>
- <1562689905.28089.52.camel@linux.ibm.com>
-In-Reply-To: <1562689905.28089.52.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, Roberto Sassu <roberto.sassu@huawei.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Bottomley <jejb@linux.ibm.com>, jgg@ziepe.ca, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com
+         <20190711194811.rfsohbfc3a7carpa@linux.intel.com>
+         <b4454a78-1f1b-cc75-114a-99926e097b05@huawei.com>
+         <20190801163215.mfkagoafkxscesne@linux.intel.com>
+         <e50c4cfa-1f0c-6f4d-1910-010a8d874393@huawei.com>
+         <20190802142721.GA26616@elm>
+         <20190802194226.oiztvme5klkmw6fh@linux.intel.com>
+         <20190802202343.GE26616@elm>
+In-Reply-To: <20190802202343.GE26616@elm>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: Roberto Sassu <roberto.sassu@huawei.com>, jejb@linux.ibm.com, zohar@linux.ibm.com, jgg@ziepe.ca, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com
 
-On 2019-07-09 12:31:45, Mimi Zohar wrote:
-> On Tue, 2019-07-09 at 19:24 +0300, Jarkko Sakkinen wrote:
-> > On Mon, Jul 08, 2019 at 01:34:59PM -0700, James Bottomley wrote:
-> > > Not a criticism of your patch, but can we please stop doing this. 
-> > > Single random number sources are horrendously bad practice because it
-> > > gives an attacker a single target to subvert.  We should ensure the TPM
-> > > is plugged into the kernel RNG as a source and then take randomness
-> > > from the mixed pool so it's harder for an attacker because they have to
-> > > subvert all our sources to predict what came out.
-> > 
-> > It is and I agree.
+On Fri, 2019-08-02 at 15:23 -0500, Tyler Hicks wrote:
+> That wasn't the conclusion that I came to. I prefer Robert's proposed
+> change to trusted.ko.
 > 
-> I still haven't quite figured out why the digests need to be
-> initialized to anything other than 0.
+> How do you propose that this be fixed in eCryptfs?
+> 
+> Removing encrypted_key support from eCryptfs is the only way that I can
+> see to fix the bug in eCryptfs. That support has been there since 2011.
+> I'm not sure of the number of users that would be broken by removing
+> encrypted_key support. I don't think the number is high but I can't say
+> that confidently.
 
-After looking into 0b6cf6b97b7ef1fa3c7fefab0cac897a1c4a3400, I have to
-agree. I don't see the purpose of using tpm_get_random() in
-init_digests().
+Looking at the documentation [1] it is stated that
 
-Roberto, why can't we just initialize the digests with zeroes? It would
-fix the bug for eCryptfs and NVDIMM and address the concern that James
-had regarding the single random number source.
+"Encrypted keys do not depend on a TPM, and are faster, as they use AES
+for encryption/decryption."
 
-Tyler
+Why would you need to remove support for encrypted keys? Isn't it a
+regression in encrypted keys to hard depend on trusted keys given
+what the documentation says?
+
+> Roberto, what was your use case when you added encrypted_key support to
+> eCryptfs back then? Are you aware of any users of eCryptfs +
+> encrypted_keys?
+> 
+> Jarkko, removing a long-standing feature is potentially more disruptive
+> to users than adding a workaround to trusted.ko which already requires a
+> similar workaround. I don't think that I agree with you on the proper
+> fix here.
+
+There is nothing to disagree or agree. I just try to get the picture
+since ecryptfs is relatively alien to me.
+
+[1] https://www.kernel.org/doc/html/v4.13/security/keys/trusted-encrypted.html
+
+/Jarkko
