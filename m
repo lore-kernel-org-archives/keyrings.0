@@ -1,10 +1,10 @@
-From: Tyler Hicks <tyhicks@canonical.com>
-Date: Mon, 05 Aug 2019 16:04:52 +0000
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Mon, 05 Aug 2019 16:51:09 +0000
 Subject: Re: [PATCH] KEYS: trusted: allow module init if TPM is inactive or deactivated
-Message-Id: <20190805160451.GB3449@elm>
+Message-Id: <0d9f2f6f-9a69-5169-a92d-9ca7de3c0d18@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190705163735.11539-1-roberto.sassu@huawei.com>
  <20190711194811.rfsohbfc3a7carpa@linux.intel.com>
@@ -15,41 +15,44 @@ References: <20190705163735.11539-1-roberto.sassu@huawei.com>
  <20190802194226.oiztvme5klkmw6fh@linux.intel.com>
  <20190802202343.GE26616@elm>
  <e10f7b04-3d63-435e-180e-72a084ac4bab@huawei.com>
- <1565020459.11223.179.camel@linux.ibm.com>
-In-Reply-To: <1565020459.11223.179.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: Roberto Sassu <roberto.sassu@huawei.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, jejb@linux.ibm.com, jgg@ziepe.ca, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com
+ <1565020459.11223.179.camel@linux.ibm.com> <20190805160451.GB3449@elm>
+In-Reply-To: <20190805160451.GB3449@elm>
+To: Tyler Hicks <tyhicks@canonical.com>, Mimi Zohar <zohar@linux.ibm.com>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, jejb@linux.ibm.com, jgg@ziepe.ca, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com
 
-On 2019-08-05 11:54:19, Mimi Zohar wrote:
-> On Mon, 2019-08-05 at 16:50 +0200, Roberto Sassu wrote:
-> > Regarding Mimi's proposal to avoid the issue by extending the PCR with
-> > zeros, I think it also achieve the goal.=20
->=20
-> Roberto, removing the following code from init_digests() would be the
-> equivalent to the prior code, without needing to make any other
-> changes. =A0Let's keep it simple. =A0Do you want to post the patch with
-> the change, or should I?
->=20
->         ret =3D tpm_get_random(chip, digest, TPM_MAX_DIGEST_SIZE);
->         if (ret < 0)
->                 return ret;
->         if (ret < TPM_MAX_DIGEST_SIZE)
->                 return -EFAULT;
->=20
-> As I can't duplicate the problem, it would need to be tested by others
-> experiencing the problem.
+On 8/5/2019 6:04 PM, Tyler Hicks wrote:
+> On 2019-08-05 11:54:19, Mimi Zohar wrote:
+>> On Mon, 2019-08-05 at 16:50 +0200, Roberto Sassu wrote:
+>>> Regarding Mimi's proposal to avoid the issue by extending the PCR with
+>>> zeros, I think it also achieve the goal.
+>>
+>> Roberto, removing the following code from init_digests() would be the
+>> equivalent to the prior code, without needing to make any other
+>> changes.  Let's keep it simple.  Do you want to post the patch with
+>> the change, or should I?
+>>
+>>          ret = tpm_get_random(chip, digest, TPM_MAX_DIGEST_SIZE);
+>>          if (ret < 0)
+>>                  return ret;
+>>          if (ret < TPM_MAX_DIGEST_SIZE)
+>>                  return -EFAULT;
+>>
+>> As I can't duplicate the problem, it would need to be tested by others
+>> experiencing the problem.
+> 
+> The bug reporter tested Roberto's last patch:
+> 
+>   https://bugzilla.kernel.org/show_bug.cgi?id 3953#c8
+> 
+> We should Cc the reporter on future patches or at least leave another
+> testing request in the bugzilla.
 
-The bug reporter tested Roberto's last patch:
+I don't see the reporter's email. Please ask him to test the new patch.
 
- https://bugzilla.kernel.org/show_bug.cgi?id 3953#c8
+Thanks
 
-We should Cc the reporter on future patches or at least leave another
-testing request in the bugzilla.
+Roberto
 
-Tyler
-
->=20
-> thanks,
->=20
-> Mimi
->=20
+-- 
+HUAWEI TECHNOLOGIES Duesseldorf GmbH, HRB 56063
+Managing Director: Li Peng, Li Jian, Shi Yanli
