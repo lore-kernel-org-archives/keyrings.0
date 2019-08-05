@@ -1,32 +1,81 @@
-From: "Theodore Y. Ts'o" <tytso@mit.edu>
-Date: Tue, 13 Aug 2019 00:15:55 +0000
-Subject: Re: [PATCH v8 15/20] fscrypt: add FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS ioctl
-Message-Id: <20190813001555.GJ28705@mit.edu>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 05 Aug 2019 16:25:09 +0000
+Subject: [PATCH v8 08/20] fscrypt: rename keyinfo.c to keysetup.c
+Message-Id: <20190805162521.90882-9-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190805162521.90882-1-ebiggers@kernel.org>
- <20190805162521.90882-16-ebiggers@kernel.org>
-In-Reply-To: <20190805162521.90882-16-ebiggers@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+In-Reply-To: <20190805162521.90882-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, Theodore Ts'o <tytso@mit.edu>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-On Mon, Aug 05, 2019 at 09:25:16AM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> Add a root-only variant of the FS_IOC_REMOVE_ENCRYPTION_KEY ioctl which
-> removes all users' claims of the key, not just the current user's claim.
-> I.e., it always removes the key itself, no matter how many users have
-> added it.
-> 
-> This is useful for forcing a directory to be locked, without having to
-> figure out which user ID(s) the key was added under.  This is planned to
-> be used by a command like 'sudo fscrypt lock DIR --all-users' in the
-> fscrypt userspace tool (http://github.com/google/fscrypt).
-> 
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+From: Eric Biggers <ebiggers@google.com>
 
-Looks good, thanks.   Feel free to add:
+Rename keyinfo.c to keysetup.c since this better describes what the file
+does (sets up the key), and it matches the new file keysetup_v1.c.
 
-Reviewed-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ fs/crypto/Makefile                  | 2 +-
+ fs/crypto/fscrypt_private.h         | 2 +-
+ fs/crypto/{keyinfo.c => keysetup.c} | 0
+ include/linux/fscrypt.h             | 4 ++--
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+ rename fs/crypto/{keyinfo.c => keysetup.c} (100%)
+
+diff --git a/fs/crypto/Makefile b/fs/crypto/Makefile
+index 1fba255c34ca56..ad14d4c29784a6 100644
+--- a/fs/crypto/Makefile
++++ b/fs/crypto/Makefile
+@@ -4,7 +4,7 @@ obj-$(CONFIG_FS_ENCRYPTION)	+= fscrypto.o
+ fscrypto-y := crypto.o \
+ 	      fname.o \
+ 	      hooks.o \
+-	      keyinfo.o \
++	      keysetup.o \
+ 	      keysetup_v1.o \
+ 	      policy.o
+ 
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index 387b44b255f6ab..794dcba25ca826 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -156,7 +156,7 @@ extern bool fscrypt_fname_encrypted_size(const struct inode *inode,
+ 					 u32 orig_len, u32 max_len,
+ 					 u32 *encrypted_len_ret);
+ 
+-/* keyinfo.c */
++/* keysetup.c */
+ 
+ struct fscrypt_mode {
+ 	const char *friendly_name;
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keysetup.c
+similarity index 100%
+rename from fs/crypto/keyinfo.c
+rename to fs/crypto/keysetup.c
+diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
+index 81c0c754f8b21b..583802cb2e35d0 100644
+--- a/include/linux/fscrypt.h
++++ b/include/linux/fscrypt.h
+@@ -138,7 +138,7 @@ extern int fscrypt_ioctl_get_policy(struct file *, void __user *);
+ extern int fscrypt_has_permitted_context(struct inode *, struct inode *);
+ extern int fscrypt_inherit_context(struct inode *, struct inode *,
+ 					void *, bool);
+-/* keyinfo.c */
++/* keysetup.c */
+ extern int fscrypt_get_encryption_info(struct inode *);
+ extern void fscrypt_put_encryption_info(struct inode *);
+ extern void fscrypt_free_inode(struct inode *);
+@@ -367,7 +367,7 @@ static inline int fscrypt_inherit_context(struct inode *parent,
+ 	return -EOPNOTSUPP;
+ }
+ 
+-/* keyinfo.c */
++/* keysetup.c */
+ static inline int fscrypt_get_encryption_info(struct inode *inode)
+ {
+ 	return -EOPNOTSUPP;
+-- 
+2.22.0.770.g0f2c4a37fd-goog
