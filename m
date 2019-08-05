@@ -1,27 +1,240 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 27 Aug 2019 13:48:08 +0000
-Subject: Re: [PATCH v5 1/4] tpm: move tpm_buf code to include/linux/
-Message-Id: <20190827134808.4mtnzugshylnqwss@linux.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 05 Aug 2019 16:25:03 +0000
+Subject: [PATCH v8 02/20] fscrypt: use FSCRYPT_ prefix for uapi constants
+Message-Id: <20190805162521.90882-3-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1566392345-15419-1-git-send-email-sumit.garg@linaro.org>
- <1566392345-15419-2-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1566392345-15419-2-git-send-email-sumit.garg@linaro.org>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, arnd@arndb.de, gregkh@linuxfoundation.org, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org
+References: <20190805162521.90882-1-ebiggers@kernel.org>
+In-Reply-To: <20190805162521.90882-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, Theodore Ts'o <tytso@mit.edu>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-On Wed, Aug 21, 2019 at 06:29:02PM +0530, Sumit Garg wrote:
-> Move tpm_buf code to common include/linux/tpm.h header so that it can
-> be reused via other subsystems like trusted keys etc.
-> 
-> Also rename trusted keys TPM 1.x buffer implementation to tpm1_buf to
-> avoid any compilation errors.
-> 
-> Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+From: Eric Biggers <ebiggers@google.com>
 
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Prefix all filesystem encryption UAPI constants except the ioctl numbers
+with "FSCRYPT_" rather than with "FS_".  This namespaces the constants
+more appropriately and makes it clear that they are related specifically
+to the filesystem encryption feature, and to the 'fscrypt_*' structures.
+With some of the old names like "FS_POLICY_FLAGS_VALID", it was not
+immediately clear that the constant had anything to do with encryption.
 
-/Jarkko
+This is also useful because we'll be adding more encryption-related
+constants, e.g. for the policy version, and we'd otherwise have to
+choose whether to use unclear names like FS_POLICY_V1 or inconsistent
+names like FS_ENCRYPTION_POLICY_V1.
+
+For source compatibility with existing userspace programs, keep the old
+names defined as aliases to the new names.
+
+Finally, as long as new names are being defined anyway, I skipped
+defining new names for the fscrypt mode numbers that aren't actually
+used: INVALID (0), AES_256_GCM (2), AES_256_CBC (3), SPECK128_256_XTS
+(7), and SPECK128_256_CTS (8).
+
+Reviewed-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ Documentation/filesystems/fscrypt.rst | 40 ++++++++---------
+ include/uapi/linux/fscrypt.h          | 65 +++++++++++++++++----------
+ 2 files changed, 62 insertions(+), 43 deletions(-)
+
+diff --git a/Documentation/filesystems/fscrypt.rst b/Documentation/filesystems/fscrypt.rst
+index 82efa41b0e6c02..d60b885c402401 100644
+--- a/Documentation/filesystems/fscrypt.rst
++++ b/Documentation/filesystems/fscrypt.rst
+@@ -225,9 +225,10 @@ a little endian number, except that:
+   is encrypted with AES-256 where the AES-256 key is the SHA-256 hash
+   of the file's data encryption key.
+ 
+-- In the "direct key" configuration (FS_POLICY_FLAG_DIRECT_KEY set in
+-  the fscrypt_policy), the file's nonce is also appended to the IV.
+-  Currently this is only allowed with the Adiantum encryption mode.
++- In the "direct key" configuration (FSCRYPT_POLICY_FLAG_DIRECT_KEY
++  set in the fscrypt_policy), the file's nonce is also appended to the
++  IV.  Currently this is only allowed with the Adiantum encryption
++  mode.
+ 
+ Filenames encryption
+ --------------------
+@@ -274,14 +275,14 @@ empty directory or verifies that a directory or regular file already
+ has the specified encryption policy.  It takes in a pointer to a
+ :c:type:`struct fscrypt_policy`, defined as follows::
+ 
+-    #define FS_KEY_DESCRIPTOR_SIZE  8
++    #define FSCRYPT_KEY_DESCRIPTOR_SIZE  8
+ 
+     struct fscrypt_policy {
+             __u8 version;
+             __u8 contents_encryption_mode;
+             __u8 filenames_encryption_mode;
+             __u8 flags;
+-            __u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
++            __u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
+     };
+ 
+ This structure must be initialized as follows:
+@@ -289,19 +290,18 @@ This structure must be initialized as follows:
+ - ``version`` must be 0.
+ 
+ - ``contents_encryption_mode`` and ``filenames_encryption_mode`` must
+-  be set to constants from ``<linux/fs.h>`` which identify the
+-  encryption modes to use.  If unsure, use
+-  FS_ENCRYPTION_MODE_AES_256_XTS (1) for ``contents_encryption_mode``
+-  and FS_ENCRYPTION_MODE_AES_256_CTS (4) for
+-  ``filenames_encryption_mode``.
++  be set to constants from ``<linux/fscrypt.h>`` which identify the
++  encryption modes to use.  If unsure, use FSCRYPT_MODE_AES_256_XTS
++  (1) for ``contents_encryption_mode`` and FSCRYPT_MODE_AES_256_CTS
++  (4) for ``filenames_encryption_mode``.
+ 
+-- ``flags`` must contain a value from ``<linux/fs.h>`` which
++- ``flags`` must contain a value from ``<linux/fscrypt.h>`` which
+   identifies the amount of NUL-padding to use when encrypting
+-  filenames.  If unsure, use FS_POLICY_FLAGS_PAD_32 (0x3).
+-  In addition, if the chosen encryption modes are both
+-  FS_ENCRYPTION_MODE_ADIANTUM, this can contain
+-  FS_POLICY_FLAG_DIRECT_KEY to specify that the master key should be
+-  used directly, without key derivation.
++  filenames.  If unsure, use FSCRYPT_POLICY_FLAGS_PAD_32 (0x3).  In
++  addition, if the chosen encryption modes are both
++  FSCRYPT_MODE_ADIANTUM, this can contain
++  FSCRYPT_POLICY_FLAG_DIRECT_KEY to specify that the master key should
++  be used directly, without key derivation.
+ 
+ - ``master_key_descriptor`` specifies how to find the master key in
+   the keyring; see `Adding keys`_.  It is up to userspace to choose a
+@@ -401,11 +401,11 @@ followed by the 16-character lower case hex representation of the
+ ``master_key_descriptor`` that was set in the encryption policy.  The
+ key payload must conform to the following structure::
+ 
+-    #define FS_MAX_KEY_SIZE 64
++    #define FSCRYPT_MAX_KEY_SIZE 64
+ 
+     struct fscrypt_key {
+             u32 mode;
+-            u8 raw[FS_MAX_KEY_SIZE];
++            u8 raw[FSCRYPT_MAX_KEY_SIZE];
+             u32 size;
+     };
+ 
+@@ -574,7 +574,7 @@ much confusion if an encryption policy were to be added to or removed
+ from anything other than an empty directory.)  The struct is defined
+ as follows::
+ 
+-    #define FS_KEY_DESCRIPTOR_SIZE  8
++    #define FSCRYPT_KEY_DESCRIPTOR_SIZE  8
+     #define FS_KEY_DERIVATION_NONCE_SIZE 16
+ 
+     struct fscrypt_context {
+@@ -582,7 +582,7 @@ as follows::
+             u8 contents_encryption_mode;
+             u8 filenames_encryption_mode;
+             u8 flags;
+-            u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
++            u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
+             u8 nonce[FS_KEY_DERIVATION_NONCE_SIZE];
+     };
+ 
+diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+index 26f6d2c19afd3f..674b0452ef5759 100644
+--- a/include/uapi/linux/fscrypt.h
++++ b/include/uapi/linux/fscrypt.h
+@@ -10,35 +10,30 @@
+ 
+ #include <linux/types.h>
+ 
+-#define FS_KEY_DESCRIPTOR_SIZE	8
++#define FSCRYPT_KEY_DESCRIPTOR_SIZE	8
+ 
+ /* Encryption policy flags */
+-#define FS_POLICY_FLAGS_PAD_4		0x00
+-#define FS_POLICY_FLAGS_PAD_8		0x01
+-#define FS_POLICY_FLAGS_PAD_16		0x02
+-#define FS_POLICY_FLAGS_PAD_32		0x03
+-#define FS_POLICY_FLAGS_PAD_MASK	0x03
+-#define FS_POLICY_FLAG_DIRECT_KEY	0x04	/* use master key directly */
+-#define FS_POLICY_FLAGS_VALID		0x07
++#define FSCRYPT_POLICY_FLAGS_PAD_4		0x00
++#define FSCRYPT_POLICY_FLAGS_PAD_8		0x01
++#define FSCRYPT_POLICY_FLAGS_PAD_16		0x02
++#define FSCRYPT_POLICY_FLAGS_PAD_32		0x03
++#define FSCRYPT_POLICY_FLAGS_PAD_MASK		0x03
++#define FSCRYPT_POLICY_FLAG_DIRECT_KEY		0x04	/* use master key directly */
++#define FSCRYPT_POLICY_FLAGS_VALID		0x07
+ 
+ /* Encryption algorithms */
+-#define FS_ENCRYPTION_MODE_INVALID		0
+-#define FS_ENCRYPTION_MODE_AES_256_XTS		1
+-#define FS_ENCRYPTION_MODE_AES_256_GCM		2
+-#define FS_ENCRYPTION_MODE_AES_256_CBC		3
+-#define FS_ENCRYPTION_MODE_AES_256_CTS		4
+-#define FS_ENCRYPTION_MODE_AES_128_CBC		5
+-#define FS_ENCRYPTION_MODE_AES_128_CTS		6
+-#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7 /* Removed, do not use. */
+-#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8 /* Removed, do not use. */
+-#define FS_ENCRYPTION_MODE_ADIANTUM		9
++#define FSCRYPT_MODE_AES_256_XTS		1
++#define FSCRYPT_MODE_AES_256_CTS		4
++#define FSCRYPT_MODE_AES_128_CBC		5
++#define FSCRYPT_MODE_AES_128_CTS		6
++#define FSCRYPT_MODE_ADIANTUM			9
+ 
+ struct fscrypt_policy {
+ 	__u8 version;
+ 	__u8 contents_encryption_mode;
+ 	__u8 filenames_encryption_mode;
+ 	__u8 flags;
+-	__u8 master_key_descriptor[FS_KEY_DESCRIPTOR_SIZE];
++	__u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
+ };
+ 
+ #define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
+@@ -46,16 +41,40 @@ struct fscrypt_policy {
+ #define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
+ 
+ /* Parameters for passing an encryption key into the kernel keyring */
+-#define FS_KEY_DESC_PREFIX		"fscrypt:"
+-#define FS_KEY_DESC_PREFIX_SIZE		8
++#define FSCRYPT_KEY_DESC_PREFIX		"fscrypt:"
++#define FSCRYPT_KEY_DESC_PREFIX_SIZE		8
+ 
+ /* Structure that userspace passes to the kernel keyring */
+-#define FS_MAX_KEY_SIZE			64
++#define FSCRYPT_MAX_KEY_SIZE			64
+ 
+ struct fscrypt_key {
+ 	__u32 mode;
+-	__u8 raw[FS_MAX_KEY_SIZE];
++	__u8 raw[FSCRYPT_MAX_KEY_SIZE];
+ 	__u32 size;
+ };
++/**********************************************************************/
++
++/* old names; don't add anything new here! */
++#define FS_KEY_DESCRIPTOR_SIZE		FSCRYPT_KEY_DESCRIPTOR_SIZE
++#define FS_POLICY_FLAGS_PAD_4		FSCRYPT_POLICY_FLAGS_PAD_4
++#define FS_POLICY_FLAGS_PAD_8		FSCRYPT_POLICY_FLAGS_PAD_8
++#define FS_POLICY_FLAGS_PAD_16		FSCRYPT_POLICY_FLAGS_PAD_16
++#define FS_POLICY_FLAGS_PAD_32		FSCRYPT_POLICY_FLAGS_PAD_32
++#define FS_POLICY_FLAGS_PAD_MASK	FSCRYPT_POLICY_FLAGS_PAD_MASK
++#define FS_POLICY_FLAG_DIRECT_KEY	FSCRYPT_POLICY_FLAG_DIRECT_KEY
++#define FS_POLICY_FLAGS_VALID		FSCRYPT_POLICY_FLAGS_VALID
++#define FS_ENCRYPTION_MODE_INVALID	0	/* never used */
++#define FS_ENCRYPTION_MODE_AES_256_XTS	FSCRYPT_MODE_AES_256_XTS
++#define FS_ENCRYPTION_MODE_AES_256_GCM	2	/* never used */
++#define FS_ENCRYPTION_MODE_AES_256_CBC	3	/* never used */
++#define FS_ENCRYPTION_MODE_AES_256_CTS	FSCRYPT_MODE_AES_256_CTS
++#define FS_ENCRYPTION_MODE_AES_128_CBC	FSCRYPT_MODE_AES_128_CBC
++#define FS_ENCRYPTION_MODE_AES_128_CTS	FSCRYPT_MODE_AES_128_CTS
++#define FS_ENCRYPTION_MODE_SPECK128_256_XTS	7	/* removed */
++#define FS_ENCRYPTION_MODE_SPECK128_256_CTS	8	/* removed */
++#define FS_ENCRYPTION_MODE_ADIANTUM	FSCRYPT_MODE_ADIANTUM
++#define FS_KEY_DESC_PREFIX		FSCRYPT_KEY_DESC_PREFIX
++#define FS_KEY_DESC_PREFIX_SIZE		FSCRYPT_KEY_DESC_PREFIX_SIZE
++#define FS_MAX_KEY_SIZE			FSCRYPT_MAX_KEY_SIZE
+ 
+ #endif /* _UAPI_LINUX_FSCRYPT_H */
+-- 
+2.22.0.770.g0f2c4a37fd-goog
