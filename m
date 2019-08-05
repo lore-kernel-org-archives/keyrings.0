@@ -1,19 +1,41 @@
-From: Sachin Sant <sachinp@linux.vnet.ibm.com>
-Date: Sat, 31 Aug 2019 04:58:03 +0000
-Subject: Re: Oops (request_key_auth_describe) while running cve-2016-7042 from LTP
-Message-Id: <B5F9CFC3-2B4E-4121-9EA2-F110B79832C6@linux.vnet.ibm.com>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Mon, 05 Aug 2019 11:58:19 +0000
+Subject: Re: [PATCHv2 25/59] keys/mktme: Preparse the MKTME key payload
+Message-Id: <20190805115819.GA31656@rotor>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <85B7196E-D717-4F19-A7E8-82A18287A3DE@linux.vnet.ibm.com>
- <11986.1567178014@warthog.procyon.org.uk>
-In-Reply-To: <11986.1567178014@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: linuxppc-dev@ozlabs.org, Hillf Danton <hdanton@sina.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
+ <20190731150813.26289-26-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20190731150813.26289-26-kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-Cgo+IE9uIDMwLUF1Zy0yMDE5LCBhdCA4OjQzIFBNLCBEYXZpZCBIb3dlbGxzIDxkaG93ZWxsc0By
-ZWRoYXQuY29tPiB3cm90ZToKPiAKPiBDYW4geW91IHRyeSB0aGlzIHBhdGNoIGluc3RlYWQgb2Yg
-SGlsbGbigJlzPwoKV29ya3MgZm9yIG1lLiBUZXN0IHJhbiBmaW5lIHdpdGhvdXQgYW55IHByb2Js
-ZW0uCgpUZXN0ZWQtYnk6IFNhY2hpbiBTYW50IDxzYWNoaW5wQGxpbnV4LnZuZXQuaWJtLmNvbT4K
-ClRoYW5rcwotU2FjaGluCg==
+On Wed, Jul 31, 2019 at 18:07:39 +0300, Kirill A. Shutemov wrote:
+> From: Alison Schofield <alison.schofield@intel.com>
+> +/* Make sure arguments are correct for the TYPE of key requested */
+> +static int mktme_check_options(u32 *payload, unsigned long token_mask,
+> +			       enum mktme_type type, enum mktme_alg alg)
+> +{
+> +	if (!token_mask)
+> +		return -EINVAL;
+> +
+> +	switch (type) {
+> +	case MKTME_TYPE_CPU:
+> +		if (test_bit(OPT_ALGORITHM, &token_mask))
+> +			*payload |= (1 << alg) << 8;
+> +		else
+> +			return -EINVAL;
+> +
+> +		*payload |= MKTME_KEYID_SET_KEY_RANDOM;
+> +		break;
+> +
+> +	case MKTME_TYPE_NO_ENCRYPT:
+> +		*payload |= MKTME_KEYID_NO_ENCRYPT;
+> +		break;
+
+The documentation states that for `type=no-encrypt`, algorithm must not
+be specified at all. Where is that checked?
+
+--Ben
