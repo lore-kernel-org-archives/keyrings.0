@@ -1,10 +1,10 @@
-From: Roberto Sassu <roberto.sassu@huawei.com>
-Date: Mon, 05 Aug 2019 16:04:06 +0000
+From: Tyler Hicks <tyhicks@canonical.com>
+Date: Mon, 05 Aug 2019 16:04:52 +0000
 Subject: Re: [PATCH] KEYS: trusted: allow module init if TPM is inactive or deactivated
-Message-Id: <02f749ef-2438-a99b-c5b3-22bc97cc6b7a@huawei.com>
+Message-Id: <20190805160451.GB3449@elm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
 References: <20190705163735.11539-1-roberto.sassu@huawei.com>
  <20190711194811.rfsohbfc3a7carpa@linux.intel.com>
@@ -17,23 +17,39 @@ References: <20190705163735.11539-1-roberto.sassu@huawei.com>
  <e10f7b04-3d63-435e-180e-72a084ac4bab@huawei.com>
  <1565020459.11223.179.camel@linux.ibm.com>
 In-Reply-To: <1565020459.11223.179.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, Tyler Hicks <tyhicks@canonical.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: jejb@linux.ibm.com, jgg@ziepe.ca, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com
+To: Mimi Zohar <zohar@linux.ibm.com>
+Cc: Roberto Sassu <roberto.sassu@huawei.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, jejb@linux.ibm.com, jgg@ziepe.ca, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com
 
-On 8/5/2019 5:54 PM, Mimi Zohar wrote:
+On 2019-08-05 11:54:19, Mimi Zohar wrote:
 > On Mon, 2019-08-05 at 16:50 +0200, Roberto Sassu wrote:
->> Regarding Mimi's proposal to avoid the issue by extending the PCR with
->> zeros, I think it also achieve the goal.
-> 
+> > Regarding Mimi's proposal to avoid the issue by extending the PCR with
+> > zeros, I think it also achieve the goal.=20
+>=20
 > Roberto, removing the following code from init_digests() would be the
 > equivalent to the prior code, without needing to make any other
-> changes.  Let's keep it simple.  Do you want to post the patch with
+> changes. =A0Let's keep it simple. =A0Do you want to post the patch with
 > the change, or should I?
+>=20
+>         ret =3D tpm_get_random(chip, digest, TPM_MAX_DIGEST_SIZE);
+>         if (ret < 0)
+>                 return ret;
+>         if (ret < TPM_MAX_DIGEST_SIZE)
+>                 return -EFAULT;
+>=20
+> As I can't duplicate the problem, it would need to be tested by others
+> experiencing the problem.
 
-I will send the new patch.
+The bug reporter tested Roberto's last patch:
 
-Roberto
+ https://bugzilla.kernel.org/show_bug.cgi?id 3953#c8
 
--- 
-HUAWEI TECHNOLOGIES Duesseldorf GmbH, HRB 56063
-Managing Director: Li Peng, Li Jian, Shi Yanli
+We should Cc the reporter on future patches or at least leave another
+testing request in the bugzilla.
+
+Tyler
+
+>=20
+> thanks,
+>=20
+> Mimi
+>=20
