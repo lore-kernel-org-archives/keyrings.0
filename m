@@ -1,151 +1,66 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 15 Aug 2019 16:24:58 +0000
-Subject: Re: Merge resolution for fscrypt and keyrings trees
-Message-Id: <20190815162456.GA121345@gmail.com>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Mon, 05 Aug 2019 16:44:27 +0000
+Subject: [PATCH v3] KEYS: trusted: allow module init if TPM is inactive or deactivated
+Message-Id: <20190805164427.17408-1-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190814222822.GA101319@gmail.com>
- <12089.1565876240@warthog.procyon.org.uk>
-In-Reply-To: <12089.1565876240@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-fscrypt@vger.kernel.org, linux-next@vger.kernel.org, keyrings@vger.kernel.org
+To: jarkko.sakkinen@linux.intel.com, jejb@linux.ibm.com, zohar@linux.ibm.com, jgg@ziepe.ca, tyhicks@canonical.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, crazyt2019+lml@gmail.com, nayna@linux.vnet.ibm.com, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-Hi David,
+Commit c78719203fc6 ("KEYS: trusted: allow trusted.ko to initialize w/o a
+TPM") allows the trusted module to be loaded even if a TPM is not found, to
+avoid module dependency problems.
 
-On Thu, Aug 15, 2019 at 02:37:20PM +0100, David Howells wrote:
-> Eric Biggers <ebiggers@kernel.org> wrote:
-> 
-> > +static struct key_acl fscrypt_keyring_acl = {
-> > +	.usage = REFCOUNT_INIT(1),
-> > +	.nr_ace	= 2,
-> > +	.aces = {
-> > +		KEY_POSSESSOR_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL |
-> > +				  KEY_ACE_JOIN),
-> > +		KEY_OWNER_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL | KEY_ACE_JOIN |
-> > +			      KEY_ACE_READ | KEY_ACE_VIEW),
-> > +	}
-> > +};
-> 
-> Does you really want JOIN permission for these keyrings?  Are you permitting
-> them to be used with KEYCTL_JOIN_SESSION_KEYRING?  Do you also want INVAL for
-> the keyring rather than just the keys it contains?  Would CLEAR be more
-> appropriate?
+However, trusted module initialization can still fail if the TPM is
+inactive or deactivated. tpm_get_random() returns an error.
 
-I don't actually want any of JOIN, INVAL, or CLEAR on any of these keys or
-keyrings.  But it's not really appropriate to make semantic changes in a merge
-resolution; remember that pre-merge, SEARCH implied INVAL and JOIN.  Instead
-I'll remove the unneeded permissions in a separate patch later.
+This patch removes the call to tpm_get_random() and instead extends the PCR
+specified by the user with zeros. The security of this alternative is
+equivalent to the previous one, as either option prevents with a PCR update
+unsealing and misuse of sealed data by a user space process.
 
-> 
-> > +static struct key_acl fscrypt_key_acl = {
-> > +	.usage = REFCOUNT_INIT(1),
-> > +	.nr_ace	= 2,
-> > +	.aces = {
-> > +		KEY_POSSESSOR_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL |
-> > +				  KEY_ACE_JOIN),
-> > +		KEY_OWNER_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL | KEY_ACE_JOIN |
-> > +			      KEY_ACE_VIEW),
-> > +	}
-> > +};
-> 
-> JOIN permission is useless here.  This is only used for keys of type
-> key_type_fscrypt that I can see - and those aren't keyrings and so aren't
-> joinable.
-> 
+Even if a PCR is extended with zeros, instead of random data, it is still
+computationally infeasible to find a value as input for a new PCR extend
+operation, to obtain again the PCR value that would allow unsealing.
 
-Okay, let's remove JOIN from the non-keyrings now then.  So now it's:
+Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure...")
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Reviewed-by: Tyler Hicks <tyhicks@canonical.com>
+Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
+---
+ security/keys/trusted.c | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
-index c34fa7c61b43b0..fb4f6a44ffcd09 100644
---- a/fs/crypto/keyring.c
-+++ b/fs/crypto/keyring.c
-@@ -127,6 +127,35 @@ static struct key_type key_type_fscrypt_user = {
- 	.describe		= fscrypt_user_key_describe,
- };
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 9a94672e7adc..ade699131065 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -1228,24 +1228,11 @@ static int __init trusted_shash_alloc(void)
  
-+static struct key_acl fscrypt_keyring_acl = {
-+	.usage = REFCOUNT_INIT(1),
-+	.nr_ace	= 2,
-+	.aces = {
-+		KEY_POSSESSOR_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL |
-+				  KEY_ACE_JOIN),
-+		KEY_OWNER_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL | KEY_ACE_JOIN |
-+			      KEY_ACE_READ | KEY_ACE_VIEW),
-+	}
-+};
-+
-+static struct key_acl fscrypt_key_acl = {
-+	.usage = REFCOUNT_INIT(1),
-+	.nr_ace	= 2,
-+	.aces = {
-+		KEY_POSSESSOR_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL),
-+		KEY_OWNER_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL | KEY_ACE_VIEW),
-+	}
-+};
-+
-+static struct key_acl fscrypt_user_key_acl = {
-+	.usage = REFCOUNT_INIT(1),
-+	.nr_ace	= 2,
-+	.aces = {
-+		KEY_POSSESSOR_ACE(KEY_ACE_SEARCH | KEY_ACE_INVAL),
-+		KEY_OWNER_ACE(KEY_ACE_VIEW),
-+	}
-+};
-+
- /* Search ->s_master_keys or ->mk_users */
- static struct key *search_fscrypt_keyring(struct key *keyring,
- 					  struct key_type *type,
-@@ -203,8 +232,7 @@ static int allocate_filesystem_keyring(struct super_block *sb)
+ static int __init init_digests(void)
+ {
+-	u8 digest[TPM_MAX_DIGEST_SIZE];
+-	int ret;
+-	int i;
+-
+-	ret = tpm_get_random(chip, digest, TPM_MAX_DIGEST_SIZE);
+-	if (ret < 0)
+-		return ret;
+-	if (ret < TPM_MAX_DIGEST_SIZE)
+-		return -EFAULT;
+-
+ 	digests = kcalloc(chip->nr_allocated_banks, sizeof(*digests),
+ 			  GFP_KERNEL);
+ 	if (!digests)
+ 		return -ENOMEM;
  
- 	format_fs_keyring_description(description, sb);
- 	keyring = keyring_alloc(description, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
--				current_cred(), KEY_POS_SEARCH |
--				  KEY_USR_SEARCH | KEY_USR_READ | KEY_USR_VIEW,
-+				current_cred(), &fscrypt_keyring_acl,
- 				KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
- 	if (IS_ERR(keyring))
- 		return PTR_ERR(keyring);
-@@ -247,8 +275,7 @@ static int allocate_master_key_users_keyring(struct fscrypt_master_key *mk)
- 	format_mk_users_keyring_description(description,
- 					    mk->mk_spec.u.identifier);
- 	keyring = keyring_alloc(description, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
--				current_cred(), KEY_POS_SEARCH |
--				  KEY_USR_SEARCH | KEY_USR_READ | KEY_USR_VIEW,
-+				current_cred(), &fscrypt_keyring_acl,
- 				KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
- 	if (IS_ERR(keyring))
- 		return PTR_ERR(keyring);
-@@ -285,7 +312,7 @@ static int add_master_key_user(struct fscrypt_master_key *mk)
- 	format_mk_user_description(description, mk->mk_spec.u.identifier);
- 	mk_user = key_alloc(&key_type_fscrypt_user, description,
- 			    current_fsuid(), current_gid(), current_cred(),
--			    KEY_POS_SEARCH | KEY_USR_VIEW, 0, NULL);
-+			    &fscrypt_user_key_acl, 0, NULL);
- 	if (IS_ERR(mk_user))
- 		return PTR_ERR(mk_user);
+-	for (i = 0; i < chip->nr_allocated_banks; i++)
+-		memcpy(digests[i].digest, digest, TPM_MAX_DIGEST_SIZE);
+-
+ 	return 0;
+ }
  
-@@ -357,8 +384,7 @@ static int add_new_master_key(struct fscrypt_master_key_secret *secret,
- 	format_mk_description(description, mk_spec);
- 	key = key_alloc(&key_type_fscrypt, description,
- 			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, current_cred(),
--			KEY_POS_SEARCH | KEY_USR_SEARCH | KEY_USR_VIEW,
--			KEY_ALLOC_NOT_IN_QUOTA, NULL);
-+			&fscrypt_key_acl, KEY_ALLOC_NOT_IN_QUOTA, NULL);
- 	if (IS_ERR(key)) {
- 		err = PTR_ERR(key);
- 		goto out_free_mk;
-diff --git a/fs/crypto/keysetup_v1.c b/fs/crypto/keysetup_v1.c
-index ad1a36c370c3fb..0727251be865b7 100644
---- a/fs/crypto/keysetup_v1.c
-+++ b/fs/crypto/keysetup_v1.c
-@@ -104,7 +104,7 @@ find_and_lock_process_key(const char *prefix,
- 	if (!description)
- 		return ERR_PTR(-ENOMEM);
- 
--	key = request_key(&key_type_logon, description, NULL);
-+	key = request_key(&key_type_logon, description, NULL, NULL);
- 	kfree(description);
- 	if (IS_ERR(key))
- 		return key;
+-- 
+2.17.1
