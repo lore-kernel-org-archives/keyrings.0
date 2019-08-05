@@ -1,30 +1,65 @@
-From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:43:10 +0000
-Subject: [PATCH v2 02/13] tests: fix some typos in marker lines
-Message-Id: <20190829204322.8015-3-mathstuf@gmail.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 05 Aug 2019 16:25:05 +0000
+Subject: [PATCH v8 04/20] fscrypt: add ->ci_inode to fscrypt_info
+Message-Id: <20190805162521.90882-5-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20190805162521.90882-1-ebiggers@kernel.org>
+In-Reply-To: <20190805162521.90882-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: Satya Tangirala <satyat@google.com>, Theodore Ts'o <tytso@mit.edu>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
 
-Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+From: Eric Biggers <ebiggers@google.com>
+
+Add an inode back-pointer to 'struct fscrypt_info', such that
+inode->i_crypt_info->ci_inode = inode.
+
+This will be useful for:
+
+1. Evicting the inodes when a fscrypt key is removed, since we'll track
+   the inodes using a given key by linking their fscrypt_infos together,
+   rather than the inodes directly.  This avoids bloating 'struct inode'
+   with a new list_head.
+
+2. Simplifying the per-file key setup, since the inode pointer won't
+   have to be passed around everywhere just in case something goes wrong
+   and it's needed for fscrypt_warn().
+
+Reviewed-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
 ---
- tests/keyctl/clear/valid/runtest.sh | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/crypto/fscrypt_private.h | 3 +++
+ fs/crypto/keyinfo.c         | 2 ++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/tests/keyctl/clear/valid/runtest.sh b/tests/keyctl/clear/valid/runtest.sh
-index bdefa46..e162bdd 100644
---- a/tests/keyctl/clear/valid/runtest.sh
-+++ b/tests/keyctl/clear/valid/runtest.sh
-@@ -75,7 +75,7 @@ then
- fi
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index fae411b2f78dcb..d345a7d28df8c2 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -73,6 +73,9 @@ struct fscrypt_info {
+ 	 */
+ 	struct fscrypt_mode *ci_mode;
  
- # clear the keyring
--marker "CLEAR KEYRING WITH ONE"
-+marker "CLEAR KEYRING WITH MANY"
- clear_keyring $keyringid
++	/* Back-pointer to the inode */
++	struct inode *ci_inode;
++
+ 	/*
+ 	 * If non-NULL, then this inode uses a master key directly rather than a
+ 	 * derived key, and ci_ctfm will equal ci_master_key->mk_ctfm.
+diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
+index 22345ddede1199..2d45a86f09db25 100644
+--- a/fs/crypto/keyinfo.c
++++ b/fs/crypto/keyinfo.c
+@@ -556,6 +556,8 @@ int fscrypt_get_encryption_info(struct inode *inode)
+ 	if (!crypt_info)
+ 		return -ENOMEM;
  
- # check that it's now empty yet again
++	crypt_info->ci_inode = inode;
++
+ 	crypt_info->ci_flags = ctx.flags;
+ 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
+ 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
 -- 
-2.21.0
+2.22.0.770.g0f2c4a37fd-goog
