@@ -1,26 +1,99 @@
-From: "Theodore Y. Ts'o" <tytso@mit.edu>
-Date: Tue, 13 Aug 2019 00:49:27 +0000
-Subject: Re: [PATCH v8 20/20] fscrypt: document the new ioctls and policy version
-Message-Id: <20190813004927.GL28705@mit.edu>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Tue, 06 Aug 2019 13:49:18 +0000
+Subject: [RFC/RFT v3 1/3] KEYS: trusted: create trusted keys subsystem
+Message-Id: <1565098640-12536-2-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190805162521.90882-1-ebiggers@kernel.org>
- <20190805162521.90882-21-ebiggers@kernel.org>
-In-Reply-To: <20190805162521.90882-21-ebiggers@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+References: <1565098640-12536-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1565098640-12536-1-git-send-email-sumit.garg@linaro.org>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, arnd@arndb.de, gregkh@linuxfoundation.org, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-On Mon, Aug 05, 2019 at 09:25:21AM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> Update the fscrypt documentation file to catch up to all the latest
-> changes, including the new ioctls to manage master encryption keys in
-> the filesystem-level keyring and the support for v2 encryption policies.
-> 
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+Move existing code to trusted keys subsystem. Also, rename files with
+"tpm" as suffix which provides the underlying implementation.
 
-Looks good, thanks!  Feel free to add:
+Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+---
+ crypto/asymmetric_keys/asym_tpm.c                       | 2 +-
+ include/keys/{trusted.h => trusted_tpm.h}               | 4 ++--
+ security/keys/Makefile                                  | 2 +-
+ security/keys/trusted-keys/Makefile                     | 6 ++++++
+ security/keys/{trusted.c => trusted-keys/trusted-tpm.c} | 2 +-
+ 5 files changed, 11 insertions(+), 5 deletions(-)
+ rename include/keys/{trusted.h => trusted_tpm.h} (98%)
+ create mode 100644 security/keys/trusted-keys/Makefile
+ rename security/keys/{trusted.c => trusted-keys/trusted-tpm.c} (99%)
 
-Reviewed-by: Theodore Ts'o <tytso@mit.edu>
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 76d2ce3..ec3f309 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -13,7 +13,7 @@
+ #include <crypto/sha.h>
+ #include <asm/unaligned.h>
+ #include <keys/asymmetric-subtype.h>
+-#include <keys/trusted.h>
++#include <keys/trusted_tpm.h>
+ #include <crypto/asym_tpm_subtype.h>
+ #include <crypto/public_key.h>
+ 
+diff --git a/include/keys/trusted.h b/include/keys/trusted_tpm.h
+similarity index 98%
+rename from include/keys/trusted.h
+rename to include/keys/trusted_tpm.h
+index 0071298..7d7b108 100644
+--- a/include/keys/trusted.h
++++ b/include/keys/trusted_tpm.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef __TRUSTED_KEY_H
+-#define __TRUSTED_KEY_H
++#ifndef __TRUSTED_TPM_H
++#define __TRUSTED_TPM_H
+ 
+ /* implementation specific TPM constants */
+ #define MAX_BUF_SIZE			1024
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index 9cef540..074f275 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -28,5 +28,5 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
+ # Key types
+ #
+ obj-$(CONFIG_BIG_KEYS) += big_key.o
+-obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
++obj-$(CONFIG_TRUSTED_KEYS) += trusted-keys/
+ obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
+diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
+new file mode 100644
+index 0000000..ad34d17
+--- /dev/null
++++ b/security/keys/trusted-keys/Makefile
+@@ -0,0 +1,6 @@
++# SPDX-License-Identifier: GPL-2.0
++#
++# Makefile for trusted keys
++#
++
++obj-$(CONFIG_TRUSTED_KEYS) += trusted-tpm.o
+diff --git a/security/keys/trusted.c b/security/keys/trusted-keys/trusted-tpm.c
+similarity index 99%
+rename from security/keys/trusted.c
+rename to security/keys/trusted-keys/trusted-tpm.c
+index 9a94672..b7e53a3 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted-keys/trusted-tpm.c
+@@ -27,7 +27,7 @@
+ #include <linux/tpm.h>
+ #include <linux/tpm_command.h>
+ 
+-#include <keys/trusted.h>
++#include <keys/trusted_tpm.h>
+ 
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
+-- 
+2.7.4
