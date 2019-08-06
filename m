@@ -1,80 +1,38 @@
-From: "Theodore Y. Ts'o" <tytso@mit.edu>
-Date: Tue, 13 Aug 2019 00:39:37 +0000
-Subject: Re: [PATCH v8 13/20] fscrypt: v2 encryption policy support
-Message-Id: <20190813003937.GK28705@mit.edu>
+From: Greg KH <gregkh@linuxfoundation.org>
+Date: Tue, 06 Aug 2019 13:43:22 +0000
+Subject: Re: [RFC/RFT v3 2/3] KEYS: trusted: move tpm2 trusted keys code
+Message-Id: <20190806134322.GA10783@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190805162521.90882-1-ebiggers@kernel.org>
- <20190805162521.90882-14-ebiggers@kernel.org>
-In-Reply-To: <20190805162521.90882-14-ebiggers@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+References: <1565098640-12536-1-git-send-email-sumit.garg@linaro.org>
+ <1565098640-12536-3-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1565098640-12536-3-git-send-email-sumit.garg@linaro.org>
+To: Sumit Garg <sumit.garg@linaro.org>
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, arnd@arndb.de, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org
 
-On Mon, Aug 05, 2019 at 09:25:14AM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
+On Tue, Aug 06, 2019 at 07:07:19PM +0530, Sumit Garg wrote:
+> Move TPM2 trusted keys code to trusted keys subsystem.
 > 
-> Add a new fscrypt policy version, "v2".  It has the following changes
-> from the original policy version, which we call "v1" (*):
-> 
-> - Master keys (the user-provided encryption keys) are only ever used as
->   input to HKDF-SHA512.  This is more flexible and less error-prone, and
->   it avoids the quirks and limitations of the AES-128-ECB based KDF.
->   Three classes of cryptographically isolated subkeys are defined:
-> 
->     - Per-file keys, like used in v1 policies except for the new KDF.
-> 
->     - Per-mode keys.  These implement the semantics of the DIRECT_KEY
->       flag, which for v1 policies made the master key be used directly.
->       These are also planned to be used for inline encryption when
->       support for it is added.
-> 
->     - Key identifiers (see below).
-> 
-> - Each master key is identified by a 16-byte master_key_identifier,
->   which is derived from the key itself using HKDF-SHA512.  This prevents
->   users from associating the wrong key with an encrypted file or
->   directory.  This was easily possible with v1 policies, which
->   identified the key by an arbitrary 8-byte master_key_descriptor.
-> 
-> - The key must be provided in the filesystem-level keyring, not in a
->   process-subscribed keyring.
-> 
-> The following UAPI additions are made:
-> 
-> - The existing ioctl FS_IOC_SET_ENCRYPTION_POLICY can now be passed a
->   fscrypt_policy_v2 to set a v2 encryption policy.  It's disambiguated
->   from fscrypt_policy/fscrypt_policy_v1 by the version code prefix.
-> 
-> - A new ioctl FS_IOC_GET_ENCRYPTION_POLICY_EX is added.  It allows
->   getting the v1 or v2 encryption policy of an encrypted file or
->   directory.  The existing FS_IOC_GET_ENCRYPTION_POLICY ioctl could not
->   be used because it did not have a way for userspace to indicate which
->   policy structure is expected.  The new ioctl includes a size field, so
->   it is extensible to future fscrypt policy versions.
-> 
-> - The ioctls FS_IOC_ADD_ENCRYPTION_KEY, FS_IOC_REMOVE_ENCRYPTION_KEY,
->   and FS_IOC_GET_ENCRYPTION_KEY_STATUS now support managing keys for v2
->   encryption policies.  Such keys are kept logically separate from keys
->   for v1 encryption policies, and are identified by 'identifier' rather
->   than by 'descriptor'.  The 'identifier' need not be provided when
->   adding a key, since the kernel will calculate it anyway.
-> 
-> This patch temporarily keeps adding/removing v2 policy keys behind the
-> same permission check done for adding/removing v1 policy keys:
-> capable(CAP_SYS_ADMIN).  However, the next patch will carefully take
-> advantage of the cryptographically secure master_key_identifier to allow
-> non-root users to add/remove v2 policy keys, thus providing a full
-> replacement for v1 policies.
-> 
-> (*) Actually, in the API fscrypt_policy::version is 0 while on-disk
->     fscrypt_context::format is 1.  But I believe it makes the most sense
->     to advance both to '2' to have them be in sync, and to consider the
->     numbering to start at 1 except for the API quirk.
-> 
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+> Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+> ---
+>  drivers/char/tpm/tpm-interface.c          |  56 -----
+>  drivers/char/tpm/tpm.h                    | 224 ------------------
+>  drivers/char/tpm/tpm2-cmd.c               | 307 ------------------------
+>  include/keys/trusted_tpm.h                |  23 +-
+>  include/linux/tpm.h                       | 264 +++++++++++++++++++--
+>  security/keys/trusted-keys/Makefile       |   3 +-
+>  security/keys/trusted-keys/trusted-tpm.c  |  16 +-
+>  security/keys/trusted-keys/trusted-tpm2.c | 378 ++++++++++++++++++++++++++++++
+>  8 files changed, 652 insertions(+), 619 deletions(-)
+>  create mode 100644 security/keys/trusted-keys/trusted-tpm2.c
 
-Looks good, feel free to add:
+'git format-patch -M' will create a patch that shows the rename, and
+then any tiny differences that happened after that.  A patch like this
+is hard to see what changed in the move.
 
-Reviewed-by: Theodore Ts'o <tytso@mit.edu>
+thanks,
+
+greg k-h
