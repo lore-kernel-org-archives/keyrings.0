@@ -1,50 +1,93 @@
-From: "Lendacky, Thomas" <Thomas.Lendacky@amd.com>
-Date: Tue, 06 Aug 2019 20:26:52 +0000
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 07 Aug 2019 14:28:50 +0000
 Subject: Re: [PATCHv2 47/59] kvm, x86, mmu: setup MKTME keyID to spte for given PFN
-Message-Id: <a3aee9ea-a3ce-1219-b7ff-5a1b291bffdd@amd.com>
+Message-Id: <20190807142850.mjp4ctqc7wttpser@box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
  <20190731150813.26289-48-kirill.shutemov@linux.intel.com>
-In-Reply-To: <20190731150813.26289-48-kirill.shutemov@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>, Andrew Morton <akpm@linux-foundation.org>, "x86@kernel.org" <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+ <a3aee9ea-a3ce-1219-b7ff-5a1b291bffdd@amd.com>
+In-Reply-To: <a3aee9ea-a3ce-1219-b7ff-5a1b291bffdd@amd.com>
+To: "Lendacky, Thomas" <Thomas.Lendacky@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, "x86@kernel.org" <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, Alison Schofield <alison.schofield@intel.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
 
-T24gNy8zMS8xOSAxMDowOCBBTSwgS2lyaWxsIEEuIFNodXRlbW92IHdyb3RlOg0KPiBGcm9tOiBL
-YWkgSHVhbmcgPGthaS5odWFuZ0BsaW51eC5pbnRlbC5jb20+DQo+IA0KPiBTZXR1cCBrZXlJRCB0
-byBTUFRFLCB3aGljaCB3aWxsIGJlIGV2ZW50dWFsbHkgcHJvZ3JhbW1lZCB0byBzaGFkb3cgTU1V
-DQo+IG9yIEVQVCB0YWJsZSwgYWNjb3JkaW5nIHRvIHBhZ2UncyBhc3NvY2lhdGVkIGtleUlELCBz
-byB0aGF0IGd1ZXN0IGlzDQo+IGFibGUgdG8gdXNlIGNvcnJlY3Qga2V5SUQgdG8gYWNjZXNzIGd1
-ZXN0IG1lbW9yeS4NCj4gDQo+IE5vdGUgY3VycmVudCBzaGFkb3dfbWVfbWFzayBkb2Vzbid0IHN1
-aXQgTUtUTUUncyBuZWVkcywgc2luY2UgZm9yIE1LVE1FDQo+IHRoZXJlJ3Mgbm8gZml4ZWQgbWVt
-b3J5IGVuY3J5cHRpb24gbWFzaywgYnV0IGNhbiB2YXJ5IGZyb20ga2V5SUQgMSB0bw0KPiBtYXhp
-bXVtIGtleUlELCB0aGVyZWZvcmUgc2hhZG93X21lX21hc2sgcmVtYWlucyAwIGZvciBNS1RNRS4N
-Cj4gDQo+IFNpZ25lZC1vZmYtYnk6IEthaSBIdWFuZyA8a2FpLmh1YW5nQGxpbnV4LmludGVsLmNv
-bT4NCj4gU2lnbmVkLW9mZi1ieTogS2lyaWxsIEEuIFNodXRlbW92IDxraXJpbGwuc2h1dGVtb3ZA
-bGludXguaW50ZWwuY29tPg0KPiAtLS0NCj4gIGFyY2gveDg2L2t2bS9tbXUuYyB8IDE4ICsrKysr
-KysrKysrKysrKysrLQ0KPiAgMSBmaWxlIGNoYW5nZWQsIDE3IGluc2VydGlvbnMoKyksIDEgZGVs
-ZXRpb24oLSkNCj4gDQo+IGRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rdm0vbW11LmMgYi9hcmNoL3g4
-Ni9rdm0vbW11LmMNCj4gaW5kZXggOGY3MjUyNmUyZjY4Li5iODc0MmU2MjE5ZjYgMTAwNjQ0DQo+
-IC0tLSBhL2FyY2gveDg2L2t2bS9tbXUuYw0KPiArKysgYi9hcmNoL3g4Ni9rdm0vbW11LmMNCj4g
-QEAgLTI5MzYsNiArMjkzNiwyMiBAQCBzdGF0aWMgYm9vbCBrdm1faXNfbW1pb19wZm4oa3ZtX3Bm
-bl90IHBmbikNCj4gICNkZWZpbmUgU0VUX1NQVEVfV1JJVEVfUFJPVEVDVEVEX1BUCUJJVCgwKQ0K
-PiAgI2RlZmluZSBTRVRfU1BURV9ORUVEX1JFTU9URV9UTEJfRkxVU0gJQklUKDEpDQo+ICANCj4g
-K3N0YXRpYyB1NjQgZ2V0X3BoeXNfZW5jcnlwdGlvbl9tYXNrKGt2bV9wZm5fdCBwZm4pDQo+ICt7
-DQo+ICsjaWZkZWYgQ09ORklHX1g4Nl9JTlRFTF9NS1RNRQ0KPiArCXN0cnVjdCBwYWdlICpwYWdl
-Ow0KPiArDQo+ICsJaWYgKCFwZm5fdmFsaWQocGZuKSkNCj4gKwkJcmV0dXJuIDA7DQo+ICsNCj4g
-KwlwYWdlID0gcGZuX3RvX3BhZ2UocGZuKTsNCj4gKw0KPiArCXJldHVybiAoKHU2NClwYWdlX2tl
-eWlkKHBhZ2UpKSA8PCBta3RtZV9rZXlpZF9zaGlmdCgpOw0KPiArI2Vsc2UNCj4gKwlyZXR1cm4g
-c2hhZG93X21lX21hc2s7DQo+ICsjZW5kaWYNCj4gK30NCg0KVGhpcyBwYXRjaCBicmVha3MgQU1E
-IHZpcnR1YWxpemF0aW9uIChTVk0pIGluIGdlbmVyYWwgKG5vbi1TRVYgYW5kIFNFVg0KZ3Vlc3Rz
-KSB3aGVuIFNNRSBpcyBhY3RpdmUuIFNob3VsZG4ndCB0aGlzIGJlIGEgcnVuIHRpbWUsIHZzIGJ1
-aWxkIHRpbWUsDQpjaGVjayBmb3IgTUtUTUUgYmVpbmcgYWN0aXZlPw0KDQpUaGFua3MsDQpUb20N
-Cg0KPiArDQo+ICBzdGF0aWMgaW50IHNldF9zcHRlKHN0cnVjdCBrdm1fdmNwdSAqdmNwdSwgdTY0
-ICpzcHRlcCwNCj4gIAkJICAgIHVuc2lnbmVkIHB0ZV9hY2Nlc3MsIGludCBsZXZlbCwNCj4gIAkJ
-ICAgIGdmbl90IGdmbiwga3ZtX3Bmbl90IHBmbiwgYm9vbCBzcGVjdWxhdGl2ZSwNCj4gQEAgLTI5
-ODIsNyArMjk5OCw3IEBAIHN0YXRpYyBpbnQgc2V0X3NwdGUoc3RydWN0IGt2bV92Y3B1ICp2Y3B1
-LCB1NjQgKnNwdGVwLA0KPiAgCQlwdGVfYWNjZXNzICY9IH5BQ0NfV1JJVEVfTUFTSzsNCj4gIA0K
-PiAgCWlmICgha3ZtX2lzX21taW9fcGZuKHBmbikpDQo+IC0JCXNwdGUgfD0gc2hhZG93X21lX21h
-c2s7DQo+ICsJCXNwdGUgfD0gZ2V0X3BoeXNfZW5jcnlwdGlvbl9tYXNrKHBmbik7DQo+ICANCj4g
-IAlzcHRlIHw9ICh1NjQpcGZuIDw8IFBBR0VfU0hJRlQ7DQo+ICANCj4gDQo
+On Tue, Aug 06, 2019 at 08:26:52PM +0000, Lendacky, Thomas wrote:
+> On 7/31/19 10:08 AM, Kirill A. Shutemov wrote:
+> > From: Kai Huang <kai.huang@linux.intel.com>
+> > 
+> > Setup keyID to SPTE, which will be eventually programmed to shadow MMU
+> > or EPT table, according to page's associated keyID, so that guest is
+> > able to use correct keyID to access guest memory.
+> > 
+> > Note current shadow_me_mask doesn't suit MKTME's needs, since for MKTME
+> > there's no fixed memory encryption mask, but can vary from keyID 1 to
+> > maximum keyID, therefore shadow_me_mask remains 0 for MKTME.
+> > 
+> > Signed-off-by: Kai Huang <kai.huang@linux.intel.com>
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > ---
+> >  arch/x86/kvm/mmu.c | 18 +++++++++++++++++-
+> >  1 file changed, 17 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> > index 8f72526e2f68..b8742e6219f6 100644
+> > --- a/arch/x86/kvm/mmu.c
+> > +++ b/arch/x86/kvm/mmu.c
+> > @@ -2936,6 +2936,22 @@ static bool kvm_is_mmio_pfn(kvm_pfn_t pfn)
+> >  #define SET_SPTE_WRITE_PROTECTED_PT	BIT(0)
+> >  #define SET_SPTE_NEED_REMOTE_TLB_FLUSH	BIT(1)
+> >  
+> > +static u64 get_phys_encryption_mask(kvm_pfn_t pfn)
+> > +{
+> > +#ifdef CONFIG_X86_INTEL_MKTME
+> > +	struct page *page;
+> > +
+> > +	if (!pfn_valid(pfn))
+> > +		return 0;
+> > +
+> > +	page = pfn_to_page(pfn);
+> > +
+> > +	return ((u64)page_keyid(page)) << mktme_keyid_shift();
+> > +#else
+> > +	return shadow_me_mask;
+> > +#endif
+> > +}
+> 
+> This patch breaks AMD virtualization (SVM) in general (non-SEV and SEV
+> guests) when SME is active. Shouldn't this be a run time, vs build time,
+> check for MKTME being active?
+
+Thanks, I've missed this.
+
+This fixup should help:
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 00d17bdfec0f..54931acf260e 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2947,18 +2947,17 @@ static bool kvm_is_mmio_pfn(kvm_pfn_t pfn)
+ 
+ static u64 get_phys_encryption_mask(kvm_pfn_t pfn)
+ {
+-#ifdef CONFIG_X86_INTEL_MKTME
+ 	struct page *page;
+ 
++	if (!mktme_enabled())
++		return shadow_me_mask;
++
+ 	if (!pfn_valid(pfn))
+ 		return 0;
+ 
+ 	page = pfn_to_page(pfn);
+ 
+ 	return ((u64)page_keyid(page)) << mktme_keyid_shift();
+-#else
+-	return shadow_me_mask;
+-#endif
+ }
+ 
+ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+-- 
+ Kirill A. Shutemov
