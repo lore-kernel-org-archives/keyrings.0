@@ -1,7 +1,7 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 05 Aug 2019 22:12:43 +0000
+Date: Fri, 09 Aug 2019 15:50:50 +0000
 Subject: Re: [PATCH v3] KEYS: trusted: allow module init if TPM is inactive or deactivated
-Message-Id: <20190805221243.chp4x5h2ow76nmz4@linux.intel.com>
+Message-Id: <20190809155050.5n7dbmabysdlra4m@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -33,6 +33,7 @@ On Mon, Aug 05, 2019 at 06:44:27PM +0200, Roberto Sassu wrote:
 > Reviewed-by: Tyler Hicks <tyhicks@canonical.com>
 > Suggested-by: Mimi Zohar <zohar@linux.ibm.com>
 
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+OK so this has been now applied. I'm going to do a PR over
+the weekend, which means that the fix will land to 5.3.
 
 /Jarkko
