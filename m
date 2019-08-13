@@ -1,54 +1,64 @@
-From: Paul Crowley <paulcrowley@google.com>
-Date: Tue, 06 Aug 2019 20:43:27 +0000
-Subject: Re: [PATCH v8 12/20] fscrypt: add an HKDF-SHA512 implementation
-Message-Id: <CA+_SqcBkR_8Z9EUTpK-dEW4PN+9P5OgJnqYDHtOhG+P1LjotPA@mail.gmail.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Tue, 13 Aug 2019 07:53:54 +0000
+Subject: [RFC/RFT v4 0/5] Add generic trusted keys framework/subsystem
+Message-Id: <1565682784-10234-1-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190805162521.90882-1-ebiggers@kernel.org>
- <20190805162521.90882-13-ebiggers@kernel.org>
-In-Reply-To: <20190805162521.90882-13-ebiggers@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: Satya Tangirala <satyat@google.com>, Theodore Ts'o <tytso@mit.edu>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, arnd@arndb.de, gregkh@linuxfoundation.org, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-On Mon, 5 Aug 2019 at 09:28, Eric Biggers <ebiggers@kernel.org> wrote:
->
-> From: Eric Biggers <ebiggers@google.com>
->
-> Add an implementation of HKDF (RFC 5869) to fscrypt, for the purpose of
-> deriving additional key material from the fscrypt master keys for v2
-> encryption policies.  HKDF is a key derivation function built on top of
-> HMAC.  We choose SHA-512 for the underlying unkeyed hash, and use an
-> "hmac(sha512)" transform allocated from the crypto API.
->
-> We'll be using this to replace the AES-ECB based KDF currently used to
-> derive the per-file encryption keys.  While the AES-ECB based KDF is
-> believed to meet the original security requirements, it is nonstandard
-> and has problems that don't exist in modern KDFs such as HKDF:
->
-> 1. It's reversible.  Given a derived key and nonce, an attacker can
->    easily compute the master key.  This is okay if the master key and
->    derived keys are equally hard to compromise, but now we'd like to be
->    more robust against threats such as a derived key being compromised
->    through a timing attack, or a derived key for an in-use file being
->    compromised after the master key has already been removed.
->
-> 2. It doesn't evenly distribute the entropy from the master key; each 16
->    input bytes only affects the corresponding 16 output bytes.
->
-> 3. It isn't easily extensible to deriving other values or keys, such as
->    a public hash for securely identifying the key, or per-mode keys.
->    Per-mode keys will be immediately useful for Adiantum encryption, for
->    which fscrypt currently uses the master key directly, introducing
->    unnecessary usage constraints.  Per-mode keys will also be useful for
->    hardware inline encryption, which is currently being worked on.
->
-> HKDF solves all the above problems.
->
-> Reviewed-by: Theodore Ts'o <tytso@mit.edu>
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+This patch-set is an outcome of discussion here [1]. It has evolved very
+much since v1 to create, consolidate and generalize trusted keys
+subsystem.
 
-Looks good, feel free to add:
+This framework has been tested with trusted keys support provided via TEE
+but I wasn't able to test it with a TPM device as I don't possess one. It
+would be really helpful if others could test this patch-set using a TPM
+device.
 
-Reviewed-by: Paul Crowley <paulcrowley@google.com>
+[1] https://www.mail-archive.com/linux-doc@vger.kernel.org/msg30591.html
+
+Changes in v4:
+1. Separate patch for export of tpm_buf code to include/linux/tpm.h
+2. Change TPM1.x trusted keys code to use common tpm_buf
+3. Keep module name as trusted.ko only
+
+Changes in v3:
+
+Move TPM2 trusted keys code to trusted keys subsystem.
+
+Changes in v2:
+
+Split trusted keys abstraction patch for ease of review.
+
+Sumit Garg (5):
+  tpm: move tpm_buf code to include/linux/
+  KEYS: trusted: use common tpm_buf for TPM1.x code
+  KEYS: trusted: create trusted keys subsystem
+  KEYS: trusted: move tpm2 trusted keys code
+  KEYS: trusted: Add generic trusted keys framework
+
+ crypto/asymmetric_keys/asym_tpm.c                  |   2 +-
+ drivers/char/tpm/tpm-chip.c                        |   1 +
+ drivers/char/tpm/tpm-interface.c                   |  56 ---
+ drivers/char/tpm/tpm.h                             | 230 -----------
+ drivers/char/tpm/tpm2-cmd.c                        | 308 +--------------
+ include/keys/trusted-type.h                        |  45 +++
+ include/keys/{trusted.h => trusted_tpm.h}          |  61 +--
+ include/linux/tpm.h                                | 270 ++++++++++++-
+ security/keys/Makefile                             |   2 +-
+ security/keys/trusted-keys/Makefile                |   9 +
+ security/keys/trusted-keys/trusted-common.c        | 343 ++++++++++++++++
+ .../keys/{trusted.c => trusted-keys/trusted-tpm.c} | 437 +++++----------------
+ security/keys/trusted-keys/trusted-tpm2.c          | 378 ++++++++++++++++++
+ 13 files changed, 1141 insertions(+), 1001 deletions(-)
+ rename include/keys/{trusted.h => trusted_tpm.h} (64%)
+ create mode 100644 security/keys/trusted-keys/Makefile
+ create mode 100644 security/keys/trusted-keys/trusted-common.c
+ rename security/keys/{trusted.c => trusted-keys/trusted-tpm.c} (72%)
+ create mode 100644 security/keys/trusted-keys/trusted-tpm2.c
+
+-- 
+2.7.4
