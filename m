@@ -1,39 +1,100 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 30 Aug 2019 15:52:26 +0000
-Subject: [PATCH] keys: ensure that ->match_free() is called in request_key_and_link()
-Message-Id: <156718034654.6899.18350327020509594564.stgit@warthog.procyon.org.uk>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Tue, 13 Aug 2019 07:54:31 +0000
+Subject: [RFC/RFT v4 3/5] KEYS: trusted: create trusted keys subsystem
+Message-Id: <1565682784-10234-4-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190822152901.8229-1-ebiggers@kernel.org>
-In-Reply-To: <20190822152901.8229-1-ebiggers@kernel.org>
-To: torvalds@linux-foundation.org
-Cc: Eric Biggers <ebiggers@google.com>, dhowells@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1565682784-10234-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1565682784-10234-1-git-send-email-sumit.garg@linaro.org>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, arnd@arndb.de, gregkh@linuxfoundation.org, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-From: Eric Biggers <ebiggers@google.com>
+Move existing code to trusted keys subsystem. Also, rename files with
+"tpm" as suffix which provides the underlying implementation.
 
-If check_cached_key() returns a non-NULL value, we still need to call
-key_type::match_free() to undo key_type::match_preparse().
-
-Fixes: 7743c48e54ee ("keys: Cache result of request_key*() temporarily in task_struct")
-Signed-off-by: Eric Biggers <ebiggers@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
 ---
+ crypto/asymmetric_keys/asym_tpm.c                       | 2 +-
+ include/keys/{trusted.h => trusted_tpm.h}               | 4 ++--
+ security/keys/Makefile                                  | 2 +-
+ security/keys/trusted-keys/Makefile                     | 7 +++++++
+ security/keys/{trusted.c => trusted-keys/trusted-tpm.c} | 2 +-
+ 5 files changed, 12 insertions(+), 5 deletions(-)
+ rename include/keys/{trusted.h => trusted_tpm.h} (98%)
+ create mode 100644 security/keys/trusted-keys/Makefile
+ rename security/keys/{trusted.c => trusted-keys/trusted-tpm.c} (99%)
 
- security/keys/request_key.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 7325f382dbf4..957b9e3e1492 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -595,7 +595,7 @@ struct key *request_key_and_link(struct key_type *type,
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 76d2ce3..ec3f309 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -13,7 +13,7 @@
+ #include <crypto/sha.h>
+ #include <asm/unaligned.h>
+ #include <keys/asymmetric-subtype.h>
+-#include <keys/trusted.h>
++#include <keys/trusted_tpm.h>
+ #include <crypto/asym_tpm_subtype.h>
+ #include <crypto/public_key.h>
  
- 	key = check_cached_key(&ctx);
- 	if (key)
--		return key;
-+		goto error_free;
+diff --git a/include/keys/trusted.h b/include/keys/trusted_tpm.h
+similarity index 98%
+rename from include/keys/trusted.h
+rename to include/keys/trusted_tpm.h
+index 29e3e9b..9bdf5f4 100644
+--- a/include/keys/trusted.h
++++ b/include/keys/trusted_tpm.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef __TRUSTED_KEY_H
+-#define __TRUSTED_KEY_H
++#ifndef __TRUSTED_TPM_H
++#define __TRUSTED_TPM_H
  
- 	/* search all the process keyrings for a key */
- 	rcu_read_lock();
+ /* implementation specific TPM constants */
+ #define MAX_BUF_SIZE			1024
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index 9cef540..074f275 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -28,5 +28,5 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
+ # Key types
+ #
+ obj-$(CONFIG_BIG_KEYS) += big_key.o
+-obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
++obj-$(CONFIG_TRUSTED_KEYS) += trusted-keys/
+ obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
+diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
+new file mode 100644
+index 0000000..4e8963a
+--- /dev/null
++++ b/security/keys/trusted-keys/Makefile
+@@ -0,0 +1,7 @@
++# SPDX-License-Identifier: GPL-2.0
++#
++# Makefile for trusted keys
++#
++
++obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
++trusted-y += trusted-tpm.o
+diff --git a/security/keys/trusted.c b/security/keys/trusted-keys/trusted-tpm.c
+similarity index 99%
+rename from security/keys/trusted.c
+rename to security/keys/trusted-keys/trusted-tpm.c
+index f7134d6..66687e7 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted-keys/trusted-tpm.c
+@@ -27,7 +27,7 @@
+ #include <linux/tpm.h>
+ #include <linux/tpm_command.h>
+ 
+-#include <keys/trusted.h>
++#include <keys/trusted_tpm.h>
+ 
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
+-- 
+2.7.4
