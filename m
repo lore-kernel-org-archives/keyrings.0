@@ -1,160 +1,285 @@
-From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:43:13 +0000
-Subject: [PATCH v2 05/13] tests: fix typos in test comments
-Message-Id: <20190829204322.8015-6-mathstuf@gmail.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Wed, 21 Aug 2019 13:11:03 +0000
+Subject: [PATCH v5 2/4] KEYS: trusted: use common tpm_buf for TPM1.x code
+Message-Id: <1566392345-15419-3-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <1566392345-15419-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1566392345-15419-1-git-send-email-sumit.garg@linaro.org>
+To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, arnd@arndb.de, gregkh@linuxfoundation.org, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+Utilize common heap based tpm_buf code for TPM1.x trusted keys rather
+than using stack based tpm1_buf code. Also, remove tpm1_buf code.
+
+Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
- tests/keyctl/add/bad-args/runtest.sh        | 2 +-
- tests/keyctl/link/recursion/runtest.sh      | 2 +-
- tests/keyctl/newring/bad-args/runtest.sh    | 2 +-
- tests/keyctl/padd/bad-args/runtest.sh       | 2 +-
- tests/keyctl/requesting/bad-args/runtest.sh | 2 +-
- tests/keyctl/requesting/piped/runtest.sh    | 4 ++--
- tests/keyctl/requesting/valid/runtest.sh    | 4 ++--
- tests/keyctl/search/bad-args/runtest.sh     | 2 +-
- tests/keyctl/session/bad-args/runtest.sh    | 2 +-
- 9 files changed, 11 insertions(+), 11 deletions(-)
+ include/keys/trusted.h  | 37 +------------------
+ security/keys/trusted.c | 98 ++++++++++++++++++++++---------------------------
+ 2 files changed, 44 insertions(+), 91 deletions(-)
 
-diff --git a/tests/keyctl/add/bad-args/runtest.sh b/tests/keyctl/add/bad-args/runtest.sh
-index 270ee0a..69121b2 100644
---- a/tests/keyctl/add/bad-args/runtest.sh
-+++ b/tests/keyctl/add/bad-args/runtest.sh
-@@ -51,7 +51,7 @@ else
-     expect_error EDQUOT
- fi
+diff --git a/include/keys/trusted.h b/include/keys/trusted.h
+index 841ae11..29e3e9b 100644
+--- a/include/keys/trusted.h
++++ b/include/keys/trusted.h
+@@ -5,10 +5,6 @@
+ /* implementation specific TPM constants */
+ #define MAX_BUF_SIZE			1024
+ #define TPM_GETRANDOM_SIZE		14
+-#define TPM_OSAP_SIZE			36
+-#define TPM_OIAP_SIZE			10
+-#define TPM_SEAL_SIZE			87
+-#define TPM_UNSEAL_SIZE			104
+ #define TPM_SIZE_OFFSET			2
+ #define TPM_RETURN_OFFSET		6
+ #define TPM_DATA_OFFSET			10
+@@ -17,13 +13,6 @@
+ #define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
+ #define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
  
--# This doesn't work on MIPS earler than 3.19 because of a kernel bug
-+# This doesn't work on MIPS earlier than 3.19 because of a kernel bug
- kver=`uname -r`
- kmch=`uname -m`
- if kernel_at_or_later_than 3.19 ||
-diff --git a/tests/keyctl/link/recursion/runtest.sh b/tests/keyctl/link/recursion/runtest.sh
-index 65abd9c..d258c83 100644
---- a/tests/keyctl/link/recursion/runtest.sh
-+++ b/tests/keyctl/link/recursion/runtest.sh
-@@ -79,7 +79,7 @@ marker "RECURSE 7"
- link_key --fail $keyringid $keyring7id
- expect_error EDEADLK
+-struct tpm1_buf {
+-	int len;
+-	unsigned char data[MAX_BUF_SIZE];
+-};
+-
+-#define INIT_BUF(tb) (tb->len = 0)
+-
+ struct osapsess {
+ 	uint32_t handle;
+ 	unsigned char secret[SHA1_DIGEST_SIZE];
+@@ -46,7 +35,7 @@ int TSS_checkhmac1(unsigned char *buffer,
+ 			  unsigned int keylen, ...);
  
--# create an eigth keyring in the seventh
-+# create an eighth keyring in the seventh
- marker "CREATE KEYRING 8"
- create_keyring --new=keyring8id "eighth" @s
- set_key_perm $keyring8id 0x3f3f0000
-diff --git a/tests/keyctl/newring/bad-args/runtest.sh b/tests/keyctl/newring/bad-args/runtest.sh
-index 734b44e..f35c4c6 100644
---- a/tests/keyctl/newring/bad-args/runtest.sh
-+++ b/tests/keyctl/newring/bad-args/runtest.sh
-@@ -21,7 +21,7 @@ else
-     expect_error EDQUOT
- fi
+ int trusted_tpm_send(unsigned char *cmd, size_t buflen);
+-int oiap(struct tpm1_buf *tb, uint32_t *handle, unsigned char *nonce);
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
  
--# This doesn't work on MIPS earler than 3.19 because of a kernel bug
-+# This doesn't work on MIPS earlier than 3.19 because of a kernel bug
- kver=`uname -r`
- kmch=`uname -m`
- if kernel_at_or_later_than 3.19 ||
-diff --git a/tests/keyctl/padd/bad-args/runtest.sh b/tests/keyctl/padd/bad-args/runtest.sh
-index 291584e..c59393c 100644
---- a/tests/keyctl/padd/bad-args/runtest.sh
-+++ b/tests/keyctl/padd/bad-args/runtest.sh
-@@ -51,7 +51,7 @@ else
-     expect_error EDQUOT
- fi
+ #define TPM_DEBUG 0
  
--# This doesn't work on MIPS earler than 3.19 because of a kernel bug
-+# This doesn't work on MIPS earlier than 3.19 because of a kernel bug
- kver=`uname -r`
- kmch=`uname -m`
- if kernel_at_or_later_than 3.19 ||
-diff --git a/tests/keyctl/requesting/bad-args/runtest.sh b/tests/keyctl/requesting/bad-args/runtest.sh
-index 83c114f..cf822e2 100644
---- a/tests/keyctl/requesting/bad-args/runtest.sh
-+++ b/tests/keyctl/requesting/bad-args/runtest.sh
-@@ -90,7 +90,7 @@ marker "CHECK MAXLEN DESC"
- request_key --fail user $maxdesc
- expect_error ENOKEY
+@@ -109,28 +98,4 @@ static inline void dump_tpm_buf(unsigned char *buf)
+ {
+ }
+ #endif
+-
+-static inline void store8(struct tpm1_buf *buf, const unsigned char value)
+-{
+-	buf->data[buf->len++] = value;
+-}
+-
+-static inline void store16(struct tpm1_buf *buf, const uint16_t value)
+-{
+-	*(uint16_t *) & buf->data[buf->len] = htons(value);
+-	buf->len += sizeof value;
+-}
+-
+-static inline void store32(struct tpm1_buf *buf, const uint32_t value)
+-{
+-	*(uint32_t *) & buf->data[buf->len] = htonl(value);
+-	buf->len += sizeof value;
+-}
+-
+-static inline void storebytes(struct tpm1_buf *buf, const unsigned char *in,
+-			      const int len)
+-{
+-	memcpy(buf->data + buf->len, in, len);
+-	buf->len += len;
+-}
+ #endif
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 0736671..f7134d6 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -395,7 +395,7 @@ static int pcrlock(const int pcrnum)
+ /*
+  * Create an object specific authorisation protocol (OSAP) session
+  */
+-static int osap(struct tpm1_buf *tb, struct osapsess *s,
++static int osap(struct tpm_buf *tb, struct osapsess *s,
+ 		const unsigned char *key, uint16_t type, uint32_t handle)
+ {
+ 	unsigned char enonce[TPM_NONCE_SIZE];
+@@ -406,13 +406,10 @@ static int osap(struct tpm1_buf *tb, struct osapsess *s,
+ 	if (ret != TPM_NONCE_SIZE)
+ 		return ret;
  
--# This doesn't work on MIPS earler than 3.19 because of a kernel bug
-+# This doesn't work on MIPS earlier than 3.19 because of a kernel bug
- kver=`uname -r`
- kmch=`uname -m`
- if kernel_at_or_later_than 3.19 ||
-diff --git a/tests/keyctl/requesting/piped/runtest.sh b/tests/keyctl/requesting/piped/runtest.sh
-index 010af33..1496d06 100644
---- a/tests/keyctl/requesting/piped/runtest.sh
-+++ b/tests/keyctl/requesting/piped/runtest.sh
-@@ -49,7 +49,7 @@ marker "CHECK ATTACHMENT TO SESSION KEYRING"
- list_keyring @s
- expect_keyring_rlist rlist $keyid
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_COMMAND);
+-	store32(tb, TPM_OSAP_SIZE);
+-	store32(tb, TPM_ORD_OSAP);
+-	store16(tb, type);
+-	store32(tb, handle);
+-	storebytes(tb, ononce, TPM_NONCE_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OSAP);
++	tpm_buf_append_u16(tb, type);
++	tpm_buf_append_u32(tb, handle);
++	tpm_buf_append(tb, ononce, TPM_NONCE_SIZE);
  
--# rerequesting should pick up that key again
-+# re-requesting should pick up that key again
- marker "REDO PIPED CALL OUT REQUEST KEY TO SESSION"
- prequest_key_callout --old=$keyid gizzard user debug:lizard
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0)
+@@ -430,17 +427,14 @@ static int osap(struct tpm1_buf *tb, struct osapsess *s,
+ /*
+  * Create an object independent authorisation protocol (oiap) session
+  */
+-int oiap(struct tpm1_buf *tb, uint32_t *handle, unsigned char *nonce)
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ {
+ 	int ret;
  
-@@ -76,7 +76,7 @@ marker "CHECK ATTACHMENT TO SESSION"
- list_keyring @s
- expect_keyring_rlist rlist $keyid
+ 	if (!chip)
+ 		return -ENODEV;
  
--# rerequesting should pick up that key again
-+# re-requesting should pick up that key again
- marker "REDO PIPED CALL OUT REQUEST KEY TO KEYRING"
- prequest_key_callout --old=$keyid gizzard user debug:lizard $keyringid
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_COMMAND);
+-	store32(tb, TPM_OIAP_SIZE);
+-	store32(tb, TPM_ORD_OIAP);
++	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OIAP);
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0)
+ 		return ret;
+@@ -464,7 +458,7 @@ struct tpm_digests {
+  * Have the TPM seal(encrypt) the trusted key, possibly based on
+  * Platform Configuration Registers (PCRs). AUTH1 for sealing key.
+  */
+-static int tpm_seal(struct tpm1_buf *tb, uint16_t keytype,
++static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+ 		    uint32_t keyhandle, const unsigned char *keyauth,
+ 		    const unsigned char *data, uint32_t datalen,
+ 		    unsigned char *blob, uint32_t *bloblen,
+@@ -535,20 +529,17 @@ static int tpm_seal(struct tpm1_buf *tb, uint16_t keytype,
+ 		goto out;
  
-diff --git a/tests/keyctl/requesting/valid/runtest.sh b/tests/keyctl/requesting/valid/runtest.sh
-index 824b700..06834c2 100644
---- a/tests/keyctl/requesting/valid/runtest.sh
-+++ b/tests/keyctl/requesting/valid/runtest.sh
-@@ -49,7 +49,7 @@ marker "CHECK ATTACHMENT TO SESSION KEYRING"
- list_keyring @s
- expect_keyring_rlist rlist $keyid
+ 	/* build and send the TPM request packet */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
+-	store32(tb, TPM_SEAL_SIZE + pcrinfosize + datalen);
+-	store32(tb, TPM_ORD_SEAL);
+-	store32(tb, keyhandle);
+-	storebytes(tb, td->encauth, SHA1_DIGEST_SIZE);
+-	store32(tb, pcrinfosize);
+-	storebytes(tb, pcrinfo, pcrinfosize);
+-	store32(tb, datalen);
+-	storebytes(tb, data, datalen);
+-	store32(tb, sess.handle);
+-	storebytes(tb, td->nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, td->pubauth, SHA1_DIGEST_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_AUTH1_COMMAND, TPM_ORD_SEAL);
++	tpm_buf_append_u32(tb, keyhandle);
++	tpm_buf_append(tb, td->encauth, SHA1_DIGEST_SIZE);
++	tpm_buf_append_u32(tb, pcrinfosize);
++	tpm_buf_append(tb, pcrinfo, pcrinfosize);
++	tpm_buf_append_u32(tb, datalen);
++	tpm_buf_append(tb, data, datalen);
++	tpm_buf_append_u32(tb, sess.handle);
++	tpm_buf_append(tb, td->nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, td->pubauth, SHA1_DIGEST_SIZE);
  
--# rerequesting should pick up that key again
-+# re-requesting should pick up that key again
- marker "REDO CALL OUT REQUEST KEY TO SESSION"
- request_key_callout --old=$keyid user debug:lizard gizzard
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0)
+@@ -579,7 +570,7 @@ static int tpm_seal(struct tpm1_buf *tb, uint16_t keytype,
+ /*
+  * use the AUTH2_COMMAND form of unseal, to authorize both key and blob
+  */
+-static int tpm_unseal(struct tpm1_buf *tb,
++static int tpm_unseal(struct tpm_buf *tb,
+ 		      uint32_t keyhandle, const unsigned char *keyauth,
+ 		      const unsigned char *blob, int bloblen,
+ 		      const unsigned char *blobauth,
+@@ -628,20 +619,17 @@ static int tpm_unseal(struct tpm1_buf *tb,
+ 		return ret;
  
-@@ -77,7 +77,7 @@ marker "CHECK ATTACHMENT TO SESSION"
- list_keyring @s
- expect_keyring_rlist rlist $keyid
+ 	/* build and send TPM request packet */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH2_COMMAND);
+-	store32(tb, TPM_UNSEAL_SIZE + bloblen);
+-	store32(tb, TPM_ORD_UNSEAL);
+-	store32(tb, keyhandle);
+-	storebytes(tb, blob, bloblen);
+-	store32(tb, authhandle1);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata1, SHA1_DIGEST_SIZE);
+-	store32(tb, authhandle2);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata2, SHA1_DIGEST_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_AUTH2_COMMAND, TPM_ORD_UNSEAL);
++	tpm_buf_append_u32(tb, keyhandle);
++	tpm_buf_append(tb, blob, bloblen);
++	tpm_buf_append_u32(tb, authhandle1);
++	tpm_buf_append(tb, nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, authdata1, SHA1_DIGEST_SIZE);
++	tpm_buf_append_u32(tb, authhandle2);
++	tpm_buf_append(tb, nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, authdata2, SHA1_DIGEST_SIZE);
  
--# rerequesting should pick up that key again
-+# re-requesting should pick up that key again
- marker "REDO CALL OUT REQUEST KEY TO KEYRING"
- request_key_callout --old=$keyid user debug:lizard gizzard $keyringid
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0) {
+@@ -670,23 +658,23 @@ static int tpm_unseal(struct tpm1_buf *tb,
+ static int key_seal(struct trusted_key_payload *p,
+ 		    struct trusted_key_options *o)
+ {
+-	struct tpm1_buf *tb;
++	struct tpm_buf tb;
+ 	int ret;
  
-diff --git a/tests/keyctl/search/bad-args/runtest.sh b/tests/keyctl/search/bad-args/runtest.sh
-index 2128790..8650ae5 100644
---- a/tests/keyctl/search/bad-args/runtest.sh
-+++ b/tests/keyctl/search/bad-args/runtest.sh
-@@ -45,7 +45,7 @@ expect_error ENOKEY
- search_for_key --fail @s user $maxdesc @p
- expect_error ENOKEY
+-	tb = kzalloc(sizeof *tb, GFP_KERNEL);
+-	if (!tb)
+-		return -ENOMEM;
++	ret = tpm_buf_init(&tb, 0, 0);
++	if (ret)
++		return ret;
  
--# This doesn't work on MIPS earler than 3.19 because of a kernel bug
-+# This doesn't work on MIPS earlier than 3.19 because of a kernel bug
- kver=`uname -r`
- kmch=`uname -m`
- if kernel_at_or_later_than 3.19 ||
-diff --git a/tests/keyctl/session/bad-args/runtest.sh b/tests/keyctl/session/bad-args/runtest.sh
-index 8bae0d4..45a9984 100644
---- a/tests/keyctl/session/bad-args/runtest.sh
-+++ b/tests/keyctl/session/bad-args/runtest.sh
-@@ -14,7 +14,7 @@ marker "SESSION WITH EMPTY KEYRING NAME"
- new_session --fail ""
- expect_error EINVAL
+ 	/* include migratable flag at end of sealed key */
+ 	p->key[p->key_len] = p->migratable;
  
--# This doesn't work on MIPS earler than 3.19 because of a kernel bug
-+# This doesn't work on MIPS earlier than 3.19 because of a kernel bug
- kver=`uname -r`
- kmch=`uname -m`
- if kernel_at_or_later_than 3.19 ||
+-	ret = tpm_seal(tb, o->keytype, o->keyhandle, o->keyauth,
++	ret = tpm_seal(&tb, o->keytype, o->keyhandle, o->keyauth,
+ 		       p->key, p->key_len + 1, p->blob, &p->blob_len,
+ 		       o->blobauth, o->pcrinfo, o->pcrinfo_len);
+ 	if (ret < 0)
+ 		pr_info("trusted_key: srkseal failed (%d)\n", ret);
+ 
+-	kzfree(tb);
++	tpm_buf_destroy(&tb);
+ 	return ret;
+ }
+ 
+@@ -696,14 +684,14 @@ static int key_seal(struct trusted_key_payload *p,
+ static int key_unseal(struct trusted_key_payload *p,
+ 		      struct trusted_key_options *o)
+ {
+-	struct tpm1_buf *tb;
++	struct tpm_buf tb;
+ 	int ret;
+ 
+-	tb = kzalloc(sizeof *tb, GFP_KERNEL);
+-	if (!tb)
+-		return -ENOMEM;
++	ret = tpm_buf_init(&tb, 0, 0);
++	if (ret)
++		return ret;
+ 
+-	ret = tpm_unseal(tb, o->keyhandle, o->keyauth, p->blob, p->blob_len,
++	ret = tpm_unseal(&tb, o->keyhandle, o->keyauth, p->blob, p->blob_len,
+ 			 o->blobauth, p->key, &p->key_len);
+ 	if (ret < 0)
+ 		pr_info("trusted_key: srkunseal failed (%d)\n", ret);
+@@ -711,7 +699,7 @@ static int key_unseal(struct trusted_key_payload *p,
+ 		/* pull migratable flag out of sealed key */
+ 		p->migratable = p->key[--p->key_len];
+ 
+-	kzfree(tb);
++	tpm_buf_destroy(&tb);
+ 	return ret;
+ }
+ 
 -- 
-2.21.0
+2.7.4
