@@ -1,41 +1,51 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Thu, 08 Aug 2019 12:38:57 +0000
-Subject: Re: [RFC/RFT v3 1/3] KEYS: trusted: create trusted keys subsystem
-Message-Id: <CAFA6WYPsNuN=F9y+Q0r8-6MQAGGZeKUtRheQgKv3HmE1ViyviA@mail.gmail.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Thu, 22 Aug 2019 15:35:50 +0000
+Subject: [PATCH RESEND] KEYS: asymmetric: return ENOMEM if akcipher_request_alloc() fails
+Message-Id: <20190822153550.9777-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1565098640-12536-1-git-send-email-sumit.garg@linaro.org>
- <1565098640-12536-2-git-send-email-sumit.garg@linaro.org> <20190807185921.lhdt3ek6tphj33bo@linux.intel.com>
-In-Reply-To: <20190807185921.lhdt3ek6tphj33bo@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, linux-security-module@vger.kernel.org, dhowells@redhat.com, Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Mimi Zohar <zohar@linux.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Casey Schaufler <casey@schaufler-ca.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>
+References: <20190529210132.120114-1-ebiggers@kernel.org>
+In-Reply-To: <20190529210132.120114-1-ebiggers@kernel.org>
+To: keyrings@vger.kernel.org
 
-On Thu, 8 Aug 2019 at 00:29, Jarkko Sakkinen
-<jarkko.sakkinen@linux.intel.com> wrote:
->
-> On Tue, Aug 06, 2019 at 07:07:18PM +0530, Sumit Garg wrote:
-> > Move existing code to trusted keys subsystem. Also, rename files with
-> > "tpm" as suffix which provides the underlying implementation.
-> >
-> > Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
->
-> The name for should be still trusted.ko even if new backends are added.
-> Must be done in order not to break user space.
+From: Eric Biggers <ebiggers@google.com>
 
-Agree. I think I need to update Makefile as follows:
+No error code was being set on this error path.
 
-obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
-trusted-y += trusted-tpm.o
+Fixes: ad4b1eb5fb33 ("KEYS: asym_tpm: Implement encryption operation [ver #2]")
+Fixes: c08fed737126 ("KEYS: Implement encrypt, decrypt and sign for software asymmetric key [ver #2]")
+Reviewed-by: James Morris <jamorris@linux.microsoft.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ crypto/asymmetric_keys/asym_tpm.c   | 1 +
+ crypto/asymmetric_keys/public_key.c | 1 +
+ 2 files changed, 2 insertions(+)
 
--Sumit
-
->
-> Situation is quite similar as when new backends were added to tpm_tis
-> some time ago: MMIO backed implementation was kept as tpm_tis.ko, the
-> core module was named as tpm_tis_core and SPI backed implementation was
-> named as tpm_tis_spi.ko.
->
-> /Jarkko
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 76d2ce3a1b5b..5154e280ada2 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -486,6 +486,7 @@ static int tpm_key_encrypt(struct tpm_key *tk,
+ 	if (ret < 0)
+ 		goto error_free_tfm;
+ 
++	ret = -ENOMEM;
+ 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
+ 	if (!req)
+ 		goto error_free_tfm;
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index 364b9df9d631..d7f43d4ea925 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -184,6 +184,7 @@ static int software_key_eds_op(struct kernel_pkey_params *params,
+ 	if (IS_ERR(tfm))
+ 		return PTR_ERR(tfm);
+ 
++	ret = -ENOMEM;
+ 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
+ 	if (!req)
+ 		goto error_free_tfm;
+-- 
+2.22.1
