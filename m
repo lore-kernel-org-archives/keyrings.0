@@ -1,93 +1,42 @@
-From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:35:33 +0000
-Subject: [PATCH 7/9] test/instantiating: test bad arguments for `keyctl reject`
-Message-Id: <20190829203542.4410-11-mathstuf@gmail.com>
+From: "Law firm(Eku and Associates)" <elenabaltach66@gmail.com>
+Date: Thu, 22 Aug 2019 12:30:08 +0000
+Subject: MY $25,000,000.00 INVESTMENT PROPOSAL WITH YOU AND IN YOUR COUNTRY.
+Message-Id: <CAOGpsp5-jtxg0EF9UNKiS2JiLByUAiDoKpw7HM0DuZo7wP=xMw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
 
-Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
----
- .../keyctl/instantiating/bad-args/runtest.sh  | 14 ++++++++++++
- tests/toolbox.inc.sh                          | 22 +++++++++++++++++++
- 2 files changed, 36 insertions(+)
-
-diff --git a/tests/keyctl/instantiating/bad-args/runtest.sh b/tests/keyctl/instantiating/bad-args/runtest.sh
-index a585e20..52fa45c 100644
---- a/tests/keyctl/instantiating/bad-args/runtest.sh
-+++ b/tests/keyctl/instantiating/bad-args/runtest.sh
-@@ -17,6 +17,8 @@ pinstantiate_key --fail a 0 @p
- expect_error EPERM
- negate_key --fail 0 10 @p
- expect_error EPERM
-+reject_key --fail 0 10 rejected @p
-+expect_error EPERM
- 
- # create a non-keyring
- marker "CREATE KEY"
-@@ -29,9 +31,19 @@ instantiate_key --fail $keyid a @p
- expect_error EPERM
- pinstantiate_key --fail a $keyid @p
- expect_error EPERM
-+reject_key --fail $keyid 10 rejected @p
-+expect_error EPERM
- negate_key --fail $keyid 10 @p
- expect_error EPERM
- 
-+# check reject key timeout must be a number
-+marker "CHECK REJECT TIMEOUT"
-+expect_args_error keyctl reject $keyid aa rejected @p
-+
-+# check reject key timeout must be a number
-+marker "CHECK REJECT ERRORS"
-+expect_args_error keyctl reject $keyid 10 notanerror @p
-+
- # check negative key timeout must be a number
- marker "CHECK NEGATE TIMEOUT"
- expect_args_error keyctl negate $keyid aa @p
-@@ -46,6 +58,8 @@ instantiate_key --fail $keyid a @p
- expect_error EPERM
- pinstantiate_key --fail a $keyid @p
- expect_error EPERM
-+reject_key --fail $keyid 10 rejected @p
-+expect_error EPERM
- negate_key --fail $keyid 10 @p
- expect_error EPERM
- 
-diff --git a/tests/toolbox.inc.sh b/tests/toolbox.inc.sh
-index 9ba7e4f..8d37d13 100644
---- a/tests/toolbox.inc.sh
-+++ b/tests/toolbox.inc.sh
-@@ -1047,6 +1047,28 @@ function pinstantiate_key ()
-     fi
- }
- 
-+###############################################################################
-+#
-+# reject a key
-+#
-+###############################################################################
-+function reject_key ()
-+{
-+    my_exitval=0
-+    if [ "x$1" = "x--fail" ]
-+    then
-+	my_exitval=1
-+	shift
-+    fi
-+
-+    echo keyctl reject "$@" >>$OUTPUTFILE
-+    keyctl reject "$@" >>$OUTPUTFILE 2>&1
-+    if [ $? != $my_exitval ]
-+    then
-+	failed
-+    fi
-+}
-+
- ###############################################################################
- #
- # negate a key
 -- 
-2.21.0
+Dear,
+With due respect this is not spam or Scam mail, because I have
+contacted you before and there was no response from you,I apologise if
+the contents of this mail are contrary to your moral ethics, which I
+feel may be of great disturbance to your person, but please treat this
+with absolute confidentiality, believing that this email reaches you
+in good faith. My contacting you is not a mistake or a coincidence
+because God can use any person known or unknown to accomplish great
+things.
+I am a lawyer and I have an investment business proposal to offer you.
+It is not official but should be considered as legal and confidential
+business. I have a customer's deposit of $US25 million dollars ready
+to be moved for investment if you can partner with us. We are ready to
+offer you 10% of this total amount as your compensation for supporting
+the transaction to completion. If you are interested to help me please
+reply me with your full details as stated below:
+(1) Your full names:
+(2) Your address:
+(3) Your occupation:
+(4) Your mobile telephone number:
+(5) Your nationality:
+(6) Your present location:
+(7) Your age:
+So that I will provide you more details on what to do and what is
+required for successful completion.
+Note: DO NOT REPLY ME IF YOU ARE NOT INTERESTED AND WITHOUT THE ABOVE
+MENTIONED DETAILS
+
+Sincèrement vôtre,
+Avocat Etienne Eku Esq.(Lawfirm)
+Procureur principal. De Cabinet d’avocats de l’Afrique de l’ouest.
+Skype:westafricalawfirm
