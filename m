@@ -1,31 +1,44 @@
-From: Ben Boeckel <mathstuf@gmail.com>
-Date: Tue, 13 Aug 2019 13:07:02 +0000
-Subject: Re: [PATCHv2 57/59] x86/mktme: Document the MKTME Key Service API
-Message-Id: <20190813130702.GC9079@rotor.kitware.com>
+From: Thiago Jung Bauermann <bauerman@linux.ibm.com>
+Date: Tue, 27 Aug 2019 01:04:43 +0000
+Subject: Re: [PATCH v12 00/11] Appended signatures support for IMA appraisal
+Message-Id: <87k1azpges.fsf@morokweng.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190731150813.26289-1-kirill.shutemov@linux.intel.com>
- <20190731150813.26289-58-kirill.shutemov@linux.intel.com>
- <20190805115837.GB31656@rotor>
- <20190805204453.GB7592@alison-desk.jf.intel.com>
-In-Reply-To: <20190805204453.GB7592@alison-desk.jf.intel.com>
-To: Alison Schofield <alison.schofield@intel.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>, Andy Lutomirski <luto@amacapital.net>, David Howells <dhowells@redhat.com>, Kees Cook <keescook@chromium.org>, Dave Hansen <dave.hansen@intel.com>, Kai Huang <kai.huang@linux.intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>, linux-mm@kvack.org, kvm@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>
+References: <20190628021934.4260-1-bauerman@linux.ibm.com> <9682b5d0-1634-2dd0-2cbb-eb1fa8ba7423@linux.microsoft.com>
+In-Reply-To: <9682b5d0-1634-2dd0-2cbb-eb1fa8ba7423@linux.microsoft.com>
+To: Jordan Hand <jorhand@linux.microsoft.com>
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>, Jessica Yu <jeyu@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, "AKASHI, Takahiro" <takahiro.akashi@linaro.org>
 
-On Mon, Aug 05, 2019 at 13:44:53 -0700, Alison Schofield wrote:
-> Yes. Fixed up as follows:
-> 
-> 	Add a "no-encrypt' type key::
-> 
->         char \*options_NOENCRYPT = "type=no-encrypt";
-> 
->         key = add_key("mktme", "name", options_NOENCRYPT,
->                       strlen(options_NOENCRYPT), KEY_SPEC_THREAD_KEYRING);
 
-Thanks. Looks good to me.
+Hello Jordan,
 
-Reviewed-by: Ben Boeckel <mathstuf@gmail.com>
+Jordan Hand <jorhand@linux.microsoft.com> writes:
 
---Ben
+> On 6/27/19 7:19 PM, Thiago Jung Bauermann wrote:
+>> On the OpenPOWER platform, secure boot and trusted boot are being
+>> implemented using IMA for taking measurements and verifying signatures.
+>> Since the kernel image on Power servers is an ELF binary, kernels are
+>> signed using the scripts/sign-file tool and thus use the same signature
+>> format as signed kernel modules.
+>> 
+>> This patch series adds support in IMA for verifying those signatures.
+>> It adds flexibility to OpenPOWER secure boot, because it allows it to boot
+>> kernels with the signature appended to them as well as kernels where the
+>> signature is stored in the IMA extended attribute.
+>
+> I know this is pretty late, but I just wanted to let you know that I
+> tested this patch set on x86_64 with QEMU.
+>
+> That is, I enrolled a key to _ima keyring, signed my kernel and modules
+> with appended signatures (with scripts/sign-file), set the IMA policy to
+> appraise and measure my kernel and modules. Also tested kexec appraisal.
+>
+> You can add my tested-by if you'd like.
+
+Thanks for testing!
+
+-- 
+Thiago Jung Bauermann
+IBM Linux Technology Center
