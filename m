@@ -1,42 +1,61 @@
-From: "Theodore Y. Ts'o" <tytso@mit.edu>
-Date: Mon, 12 Aug 2019 22:38:22 +0000
-Subject: Re: [PATCH v8 06/20] fscrypt: refactor key setup code in preparation for v2 policies
-Message-Id: <20190812223822.GE28705@mit.edu>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 29 Aug 2019 18:31:20 +0000
+Subject: [PATCH 10/11] selinux: Implement the watch_key security hook [ver #6]
+Message-Id: <156710348066.10009.17986469867635955040.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190805162521.90882-1-ebiggers@kernel.org>
- <20190805162521.90882-7-ebiggers@kernel.org>
-In-Reply-To: <20190805162521.90882-7-ebiggers@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: Satya Tangirala <satyat@google.com>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2019 at 09:25:07AM -0700, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> Do some more refactoring of the key setup code, in preparation for
-> introducing a filesystem-level keyring and v2 encryption policies:
-> 
-> - Now that ci_inode exists, don't pass around the inode unnecessarily.
-> 
-> - Define a function setup_file_encryption_key() which handles the crypto
->   key setup given an under-construction fscrypt_info.  Don't pass the
->   fscrypt_context, since everything is in the fscrypt_info.
->   [This will be extended for v2 policies and the fs-level keyring.]
-> 
-> - Define a function fscrypt_set_derived_key() which sets the per-file
->   key, without depending on anything specific to v1 policies.
->   [This will also be used for v2 policies.]
-> 
-> - Define a function fscrypt_setup_v1_file_key() which takes the raw
->   master key, thus separating finding the key from using it.
->   [This will also be used if the key is found in the fs-level keyring.]
-> 
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
+Implement the watch_key security hook to make sure that a key grants the
+caller View permission in order to set a watch on a key.
 
-Looks good, you can add:
+For the moment, the watch_devices security hook is left unimplemented as
+it's not obvious what the object should be since the queue is global and
+didn't previously exist.
 
-Reviewed-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-						- Ted
+ security/selinux/hooks.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 74dd46de01b6..371f2ebc879b 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -6533,6 +6533,20 @@ static int selinux_key_getsecurity(struct key *key, char **_buffer)
+ 	*_buffer = context;
+ 	return rc;
+ }
++
++#ifdef CONFIG_KEY_NOTIFICATIONS
++static int selinux_watch_key(struct watch *watch, struct key *key)
++{
++	struct key_security_struct *ksec;
++	u32 sid;
++
++	sid = cred_sid(watch->cred);
++	ksec = key->security;
++
++	return avc_has_perm(&selinux_state,
++			    sid, ksec->sid, SECCLASS_KEY, KEY_NEED_VIEW, NULL);
++}
++#endif
+ #endif
+ 
+ #ifdef CONFIG_SECURITY_INFINIBAND
+@@ -6965,6 +6979,9 @@ static struct security_hook_list selinux_hooks[] __lsm_ro_after_init = {
+ 	LSM_HOOK_INIT(key_free, selinux_key_free),
+ 	LSM_HOOK_INIT(key_permission, selinux_key_permission),
+ 	LSM_HOOK_INIT(key_getsecurity, selinux_key_getsecurity),
++#ifdef CONFIG_KEY_NOTIFICATIONS
++	LSM_HOOK_INIT(watch_key, selinux_watch_key),
++#endif
+ #endif
+ 
+ #ifdef CONFIG_AUDIT
