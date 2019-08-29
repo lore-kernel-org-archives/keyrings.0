@@ -1,35 +1,84 @@
 From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:43:21 +0000
-Subject: [PATCH v2 12/13] tests/search: test searching with a mismatched type
-Message-Id: <20190829204322.8015-14-mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:35:32 +0000
+Subject: [PATCH 06/13] tests/revoke: test key revokation in the revoke tests
+Message-Id: <20190829203542.4410-10-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-This should fail because the actually found key has a type mismatch.
-
 Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
- tests/keyctl/search/valid/runtest.sh | 5 +++++
- 1 file changed, 5 insertions(+)
+ tests/keyctl/revoke/valid/runtest.sh  | 20 ++++++++++++++++++++
+ tests/keyctl/timeout/valid/runtest.sh | 17 -----------------
+ 2 files changed, 20 insertions(+), 17 deletions(-)
 
-diff --git a/tests/keyctl/search/valid/runtest.sh b/tests/keyctl/search/valid/runtest.sh
-index d60ea61..a9912ee 100644
---- a/tests/keyctl/search/valid/runtest.sh
-+++ b/tests/keyctl/search/valid/runtest.sh
-@@ -32,6 +32,11 @@ expect_error ENOKEY
- marker "SEARCH SESSION"
- search_for_key --expect=$keyid @s user lizard
+diff --git a/tests/keyctl/revoke/valid/runtest.sh b/tests/keyctl/revoke/valid/runtest.sh
+index b015acc..a499c0b 100644
+--- a/tests/keyctl/revoke/valid/runtest.sh
++++ b/tests/keyctl/revoke/valid/runtest.sh
+@@ -45,6 +45,16 @@ marker "CHECK NO READ PAYLOAD"
+ print_key --fail $keyid
+ expect_error EKEYREVOKED
  
-+# search the session keyring for the key using the wrong type
-+marker "SEARCH SESSION USING WRONG TYPE"
-+search_for_key --fail @s keyring lizard $keyring2id
-+expect_error ENOKEY
++# invalidating the new keyring should also fail
++marker "CHECK NO SET KEY TIMEOUT"
++timeout_key --fail $keyid 20
++expect_error EKEYREVOKED
 +
- # search the session keyring for the key and attach to second keyring
- marker "SEARCH SESSION AND ATTACH"
- search_for_key --expect=$keyid @s user lizard $keyring2id
++# invalidating the new keyring should also fail
++marker "CHECK NO INVALIDATE KEY"
++invalidate_key --fail $keyid
++expect_error EKEYREVOKED
++
+ # remove the key we added
+ marker "UNLINK KEY"
+ unlink_key $keyid $keyringid
+@@ -63,6 +73,16 @@ marker "CHECK NO VALIDATE KEYRING"
+ describe_key --fail $keyringid
+ expect_error EKEYREVOKED
+ 
++# invalidating the new keyring should also fail
++marker "CHECK NO SET KEYRING TIMEOUT"
++timeout_key --fail $keyringid 20
++expect_error EKEYREVOKED
++
++# invalidating the new keyring should also fail
++marker "CHECK NO INVALIDATE KEYRING"
++invalidate_key --fail $keyringid
++expect_error EKEYREVOKED
++
+ # remove the keyring we added
+ marker "UNLINK KEYRING"
+ unlink_key $keyringid @s
+diff --git a/tests/keyctl/timeout/valid/runtest.sh b/tests/keyctl/timeout/valid/runtest.sh
+index 5f7f2f3..ce27b68 100644
+--- a/tests/keyctl/timeout/valid/runtest.sh
++++ b/tests/keyctl/timeout/valid/runtest.sh
+@@ -77,23 +77,6 @@ unlink_key $keyid $keyringid
+ marker "ADD KEY"
+ create_key --new=keyid user lizard gizzard $keyringid
+ 
+-# set a silly timeout on the key
+-marker "SET BIG TIMEOUT"
+-timeout_key $keyid 10000000
+-
+-# revoke the key
+-marker "REVOKE KEY"
+-revoke_key $keyid
+-
+-# check we can no longer set the key's timeout
+-marker "CHECK NO SET KEY TIMEOUT"
+-timeout_key --fail $keyid 20
+-expect_error EKEYREVOKED
+-
+-# remove the key we added
+-marker "UNLINK KEY"
+-unlink_key $keyid $keyringid
+-
+ # revoke the keyring
+ marker "TIMEOUT KEYRING"
+ timeout_key $keyringid 1
 -- 
 2.21.0
