@@ -1,65 +1,93 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 05 Aug 2019 16:25:05 +0000
-Subject: [PATCH v8 04/20] fscrypt: add ->ci_inode to fscrypt_info
-Message-Id: <20190805162521.90882-5-ebiggers@kernel.org>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:35:37 +0000
+Subject: [PATCH 09/13] test/instantiating: test bad arguments for `keyctl reject`
+Message-Id: <20190829203542.4410-15-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190805162521.90882-1-ebiggers@kernel.org>
-In-Reply-To: <20190805162521.90882-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, Theodore Ts'o <tytso@mit.edu>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
-
-Add an inode back-pointer to 'struct fscrypt_info', such that
-inode->i_crypt_info->ci_inode = inode.
-
-This will be useful for:
-
-1. Evicting the inodes when a fscrypt key is removed, since we'll track
-   the inodes using a given key by linking their fscrypt_infos together,
-   rather than the inodes directly.  This avoids bloating 'struct inode'
-   with a new list_head.
-
-2. Simplifying the per-file key setup, since the inode pointer won't
-   have to be passed around everywhere just in case something goes wrong
-   and it's needed for fscrypt_warn().
-
-Reviewed-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
- fs/crypto/fscrypt_private.h | 3 +++
- fs/crypto/keyinfo.c         | 2 ++
- 2 files changed, 5 insertions(+)
+ .../keyctl/instantiating/bad-args/runtest.sh  | 14 ++++++++++++
+ tests/toolbox.inc.sh                          | 22 +++++++++++++++++++
+ 2 files changed, 36 insertions(+)
 
-diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
-index fae411b2f78dcb..d345a7d28df8c2 100644
---- a/fs/crypto/fscrypt_private.h
-+++ b/fs/crypto/fscrypt_private.h
-@@ -73,6 +73,9 @@ struct fscrypt_info {
- 	 */
- 	struct fscrypt_mode *ci_mode;
+diff --git a/tests/keyctl/instantiating/bad-args/runtest.sh b/tests/keyctl/instantiating/bad-args/runtest.sh
+index d611fb9..21bbf10 100644
+--- a/tests/keyctl/instantiating/bad-args/runtest.sh
++++ b/tests/keyctl/instantiating/bad-args/runtest.sh
+@@ -17,6 +17,8 @@ pinstantiate_key --fail a 0 @p
+ expect_error EPERM
+ negate_key --fail 0 10 @p
+ expect_error EPERM
++reject_key --fail 0 10 rejected @p
++expect_error EPERM
  
-+	/* Back-pointer to the inode */
-+	struct inode *ci_inode;
-+
- 	/*
- 	 * If non-NULL, then this inode uses a master key directly rather than a
- 	 * derived key, and ci_ctfm will equal ci_master_key->mk_ctfm.
-diff --git a/fs/crypto/keyinfo.c b/fs/crypto/keyinfo.c
-index 22345ddede1199..2d45a86f09db25 100644
---- a/fs/crypto/keyinfo.c
-+++ b/fs/crypto/keyinfo.c
-@@ -556,6 +556,8 @@ int fscrypt_get_encryption_info(struct inode *inode)
- 	if (!crypt_info)
- 		return -ENOMEM;
+ # create a non-keyring
+ marker "CREATE KEY"
+@@ -28,9 +30,19 @@ instantiate_key --fail $keyid a @p
+ expect_error EPERM
+ pinstantiate_key --fail a $keyid @p
+ expect_error EPERM
++reject_key --fail $keyid 10 rejected @p
++expect_error EPERM
+ negate_key --fail $keyid 10 @p
+ expect_error EPERM
  
-+	crypt_info->ci_inode = inode;
++# check reject key timeout must be a number
++marker "CHECK REJECT TIMEOUT"
++expect_args_error keyctl reject $keyid aa rejected @p
 +
- 	crypt_info->ci_flags = ctx.flags;
- 	crypt_info->ci_data_mode = ctx.contents_encryption_mode;
- 	crypt_info->ci_filename_mode = ctx.filenames_encryption_mode;
++# check reject key timeout must be a number
++marker "CHECK REJECT ERRORS"
++expect_args_error keyctl reject $keyid 10 notanerror @p
++
+ # check negative key timeout must be a number
+ marker "CHECK NEGATE TIMEOUT"
+ expect_args_error keyctl negate $keyid aa @p
+@@ -45,6 +57,8 @@ instantiate_key --fail $keyid a @p
+ expect_error EPERM
+ pinstantiate_key --fail a $keyid @p
+ expect_error EPERM
++reject_key --fail $keyid 10 rejected @p
++expect_error EPERM
+ negate_key --fail $keyid 10 @p
+ expect_error EPERM
+ 
+diff --git a/tests/toolbox.inc.sh b/tests/toolbox.inc.sh
+index 9c819e5..b8c27c2 100644
+--- a/tests/toolbox.inc.sh
++++ b/tests/toolbox.inc.sh
+@@ -1626,6 +1626,28 @@ function pinstantiate_key ()
+     fi
+ }
+ 
++###############################################################################
++#
++# reject a key
++#
++###############################################################################
++function reject_key ()
++{
++    my_exitval=0
++    if [ "x$1" = "x--fail" ]
++    then
++	my_exitval=1
++	shift
++    fi
++
++    echo keyctl reject "$@" >>$OUTPUTFILE
++    keyctl reject "$@" >>$OUTPUTFILE 2>&1
++    if [ $? != $my_exitval ]
++    then
++	failed
++    fi
++}
++
+ ###############################################################################
+ #
+ # negate a key
 -- 
-2.22.0.770.g0f2c4a37fd-goog
+2.21.0
