@@ -1,139 +1,238 @@
-From: "Theodore Y. Ts'o" <tytso@mit.edu>
-Date: Mon, 12 Aug 2019 14:16:55 +0000
-Subject: Re: [PATCH v7 07/16] fscrypt: add FS_IOC_REMOVE_ENCRYPTION_KEY ioctl
-Message-Id: <20190812141655.GA11831@mit.edu>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 29 Aug 2019 18:30:52 +0000
+Subject: [PATCH 07/11] block: Add block layer notifications [ver #6]
+Message-Id: <156710345252.10009.17322041078073529572.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190726224141.14044-1-ebiggers@kernel.org>
- <20190726224141.14044-8-ebiggers@kernel.org>
- <20190728192417.GG6088@mit.edu> <20190729195827.GF169027@gmail.com>
- <20190731183802.GA687@sol.localdomain>
- <20190731233843.GA2769@mit.edu>
- <20190801011140.GB687@sol.localdomain>
- <20190801053108.GD2769@mit.edu> <20190801220432.GC223822@gmail.com>
- <20190802043827.GA19201@sol.localdomain>
-In-Reply-To: <20190802043827.GA19201@sol.localdomain>
-To: linux-fscrypt@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, linux-api@vger.kernel.org, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, Paul Crowley <paulcrowley@google.com>, Satya Tangirala <satyat@google.com>
+References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2019 at 09:38:27PM -0700, Eric Biggers wrote:
-> 
-> Here's a slightly updated version (I missed removing some stale text):
+Add a block layer notification mechanism whereby notifications about
+block-layer events such as I/O errors, can be reported to a monitoring
+process asynchronously.
 
-Apologies for the delaying in getting back.  Thanks, this looks great.
+Firstly, an event queue needs to be created:
 
-	      	  	      	      	     - Ted
+	fd = open("/dev/event_queue", O_RDWR);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
 
-> 
-> Removing keys
-> -------------
-> 
-> Two ioctls are available for removing a key that was added by
-> `FS_IOC_ADD_ENCRYPTION_KEY`_:
-> 
-> - `FS_IOC_REMOVE_ENCRYPTION_KEY`_
-> - `FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS`_
-> 
-> These two ioctls differ only in cases where v2 policy keys are added
-> or removed by non-root users.
-> 
-> These ioctls don't work on keys that were added via the legacy
-> process-subscribed keyrings mechanism.
-> 
-> Before using these ioctls, read the `Kernel memory compromise`_
-> section for a discussion of the security goals and limitations of
-> these ioctls.
-> 
-> FS_IOC_REMOVE_ENCRYPTION_KEY
-> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> 
-> The FS_IOC_REMOVE_ENCRYPTION_KEY ioctl removes a claim to a master
-> encryption key from the filesystem, and possibly removes the key
-> itself.  It can be executed on any file or directory on the target
-> filesystem, but using the filesystem's root directory is recommended.
-> It takes in a pointer to a :c:type:`struct fscrypt_remove_key_arg`,
-> defined as follows::
-> 
->     struct fscrypt_remove_key_arg {
->             struct fscrypt_key_specifier key_spec;
->     #define FSCRYPT_KEY_REMOVAL_STATUS_FLAG_FILES_BUSY      0x00000001
->     #define FSCRYPT_KEY_REMOVAL_STATUS_FLAG_OTHER_USERS     0x00000002
->             __u32 removal_status_flags;     /* output */
->             __u32 __reserved[5];
->     };
-> 
-> This structure must be zeroed, then initialized as follows:
-> 
-> - The key to remove is specified by ``key_spec``:
-> 
->     - To remove a key used by v1 encryption policies, set
->       ``key_spec.type`` to FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR and fill
->       in ``key_spec.u.descriptor``.  To remove this type of key, the
->       calling process must have the CAP_SYS_ADMIN capability in the
->       initial user namespace.
-> 
->     - To remove a key used by v2 encryption policies, set
->       ``key_spec.type`` to FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER and fill
->       in ``key_spec.u.identifier``.
-> 
-> For v2 policy keys, this ioctl is usable by non-root users.  However,
-> to make this possible, it actually just removes the current user's
-> claim to the key, undoing a single call to FS_IOC_ADD_ENCRYPTION_KEY.
-> Only after all claims are removed is the key really removed.
-> 
-> For example, if FS_IOC_ADD_ENCRYPTION_KEY was called with uid 1000,
-> then the key will be "claimed" by uid 1000, and
-> FS_IOC_REMOVE_ENCRYPTION_KEY will only succeed as uid 1000.  Or, if
-> both uids 1000 and 2000 added the key, then for each uid
-> FS_IOC_REMOVE_ENCRYPTION_KEY will only remove their own claim.  Only
-> once *both* are removed is the key really removed.  (Think of it like
-> unlinking a file that may have hard links.)
-> 
-> If FS_IOC_REMOVE_ENCRYPTION_KEY really removes the key, it will also
-> try to "lock" all files that had been unlocked with the key.  It won't
-> lock files that are still in-use, so this ioctl is expected to be used
-> in cooperation with userspace ensuring that none of the files are
-> still open.  However, if necessary, the ioctl can be executed again
-> later to retry locking any remaining files.
-> 
-> FS_IOC_REMOVE_ENCRYPTION_KEY returns 0 if either the key was removed
-> (but may still have files remaining to be locked), the user's claim to
-> the key was removed, or the key was already removed but had files
-> remaining to be the locked so the ioctl retried locking them.  In any
-> of these cases, ``removal_status_flags`` is filled in with the
-> following informational status flags:
-> 
-> - ``FSCRYPT_KEY_REMOVAL_STATUS_FLAG_FILES_BUSY``: set if some file(s)
->   are still in-use.  Not guaranteed to be set in the case where only
->   the user's claim to the key was removed.
-> - ``FSCRYPT_KEY_REMOVAL_STATUS_FLAG_OTHER_USERS``: set if only the
->   user's claim to the key was removed, not the key itself
-> 
-> FS_IOC_REMOVE_ENCRYPTION_KEY can fail with the following errors:
-> 
-> - ``EACCES``: The FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR key specifier type
->   was specified, but the caller does not have the CAP_SYS_ADMIN
->   capability in the initial user namespace
-> - ``EINVAL``: invalid key specifier type, or reserved bits were set
-> - ``ENOKEY``: the key object was not found at all, i.e. it was never
->   added in the first place or was already fully removed including all
->   files locked; or, the user does not have a claim to the key.
-> - ``ENOTTY``: this type of filesystem does not implement encryption
-> - ``EOPNOTSUPP``: the kernel was not configured with encryption
->   support for this filesystem, or the filesystem superblock has not
->   had encryption enabled on it
-> 
-> FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS
-> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> 
-> FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS is exactly the same as
-> `FS_IOC_REMOVE_ENCRYPTION_KEY`_, except that for v2 policy keys, the
-> ALL_USERS version of the ioctl will remove all users' claims to the
-> key, not just the current user's.  I.e., the key itself will always be
-> removed, no matter how many users have added it.  This difference is
-> only meaningful if non-root users are adding and removing keys.
-> 
-> Because of this, FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS also requires
-> "root", namely the CAP_SYS_ADMIN capability in the initial user
-> namespace.  Otherwise it will fail with ``EACCES``.
+then a notification can be set up to report block notifications via that
+queue:
+
+	struct watch_notification_filter filter = {
+		.nr_filters = 1,
+		.filters = {
+			[0] = {
+				.type = WATCH_TYPE_BLOCK_NOTIFY,
+				.subtype_filter[0] = UINT_MAX;
+			},
+		},
+	};
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	watch_devices(fd, 12);
+
+After that, records will be placed into the queue when, for example, errors
+occur on a block device.  Records are of the following format:
+
+	struct block_notification {
+		struct watch_notification watch;
+		__u64	dev;
+		__u64	sector;
+	} *n;
+
+Where:
+
+	n->watch.type will be WATCH_TYPE_BLOCK_NOTIFY
+
+	n->watch.subtype will be the type of notification, such as
+	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM.
+
+	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
+	record.
+
+	n->watch.info & WATCH_INFO_ID will be the second argument to
+	watch_devices(), shifted.
+
+	n->dev will be the device numbers munged together.
+
+	n->sector will indicate the affected sector (if appropriate for the
+	event).
+
+Note that it is permissible for event records to be of variable length -
+or, at least, the length may be dependent on the subtype.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ Documentation/watch_queue.rst    |    4 +++-
+ block/Kconfig                    |    9 +++++++++
+ block/blk-core.c                 |   29 +++++++++++++++++++++++++++++
+ include/linux/blkdev.h           |   15 +++++++++++++++
+ include/uapi/linux/watch_queue.h |   30 +++++++++++++++++++++++++++++-
+ 5 files changed, 85 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
+index 393905b904c8..5cc9c6924727 100644
+--- a/Documentation/watch_queue.rst
++++ b/Documentation/watch_queue.rst
+@@ -7,7 +7,9 @@ receive notifications from the kernel.  This can be used in conjunction with::
+ 
+   * Key/keyring notifications
+ 
+-  * General device event notifications
++  * General device event notifications, including::
++
++    * Block layer event notifications
+ 
+ 
+ The notifications buffers can be enabled by:
+diff --git a/block/Kconfig b/block/Kconfig
+index 8b5f8e560eb4..cc93e4ca29a7 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -164,6 +164,15 @@ config BLK_SED_OPAL
+ 	Enabling this option enables users to setup/unlock/lock
+ 	Locking ranges for SED devices using the Opal protocol.
+ 
++config BLK_NOTIFICATIONS
++	bool "Block layer event notifications"
++	depends on DEVICE_NOTIFICATIONS
++	help
++	  This option provides support for getting block layer event
++	  notifications.  This makes use of the /dev/watch_queue misc device to
++	  handle the notification buffer and provides the device_notify() system
++	  call to enable/disable watches.
++
+ menu "Partition Types"
+ 
+ source "block/partitions/Kconfig"
+diff --git a/block/blk-core.c b/block/blk-core.c
+index d0cc6e14d2f0..8ab1e07aa311 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -181,6 +181,22 @@ static const struct {
+ 	[BLK_STS_IOERR]		= { -EIO,	"I/O" },
+ };
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static const
++enum block_notification_type blk_notifications[ARRAY_SIZE(blk_errors)] = {
++	[BLK_STS_TIMEOUT]	= NOTIFY_BLOCK_ERROR_TIMEOUT,
++	[BLK_STS_NOSPC]		= NOTIFY_BLOCK_ERROR_NO_SPACE,
++	[BLK_STS_TRANSPORT]	= NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT,
++	[BLK_STS_TARGET]	= NOTIFY_BLOCK_ERROR_CRITICAL_TARGET,
++	[BLK_STS_NEXUS]		= NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS,
++	[BLK_STS_MEDIUM]	= NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM,
++	[BLK_STS_PROTECTION]	= NOTIFY_BLOCK_ERROR_PROTECTION,
++	[BLK_STS_RESOURCE]	= NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE,
++	[BLK_STS_DEV_RESOURCE]	= NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE,
++	[BLK_STS_IOERR]		= NOTIFY_BLOCK_ERROR_IO,
++};
++#endif
++
+ blk_status_t errno_to_blk_status(int errno)
+ {
+ 	int i;
+@@ -221,6 +237,19 @@ static void print_req_error(struct request *req, blk_status_t status,
+ 		req->cmd_flags & ~REQ_OP_MASK,
+ 		req->nr_phys_segments,
+ 		IOPRIO_PRIO_CLASS(req->ioprio));
++
++#ifdef CONFIG_BLK_NOTIFICATIONS
++	if (blk_notifications[idx]) {
++		struct block_notification n = {
++			.watch.type	= WATCH_TYPE_BLOCK_NOTIFY,
++			.watch.subtype	= blk_notifications[idx],
++			.watch.info	= watch_sizeof(n),
++			.dev		= req->rq_disk ? disk_devt(req->rq_disk) : 0,
++			.sector		= blk_rq_pos(req),
++		};
++		post_block_notification(&n);
++	}
++#endif
+ }
+ 
+ static void req_bio_endio(struct request *rq, struct bio *bio,
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1ef375dafb1c..5d856f670a8f 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -27,6 +27,7 @@
+ #include <linux/percpu-refcount.h>
+ #include <linux/scatterlist.h>
+ #include <linux/blkzoned.h>
++#include <linux/watch_queue.h>
+ 
+ struct module;
+ struct scsi_ioctl_command;
+@@ -1742,6 +1743,20 @@ static inline bool blk_req_can_dispatch_to_zone(struct request *rq)
+ }
+ #endif /* CONFIG_BLK_DEV_ZONED */
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static inline void post_block_notification(struct block_notification *n)
++{
++	u64 id = 0; /* Might want to allow dev# here. */
++
++	post_device_notification(&n->watch, id);
++}
++#else
++static inline void post_block_notification(struct block_notification *n)
++{
++}
++#endif
++
++
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index 654d4ba8b909..9a6c059af09d 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -11,7 +11,8 @@
+ enum watch_notification_type {
+ 	WATCH_TYPE_META		= 0,	/* Special record */
+ 	WATCH_TYPE_KEY_NOTIFY	= 1,	/* Key change event notification */
+-	WATCH_TYPE___NR		= 2
++	WATCH_TYPE_BLOCK_NOTIFY	= 2,	/* Block layer event notification */
++	WATCH_TYPE___NR		= 3
+ };
+ 
+ enum watch_meta_notification_subtype {
+@@ -124,4 +125,31 @@ struct key_notification {
+ 	__u32	aux;		/* Per-type auxiliary data */
+ };
+ 
++/*
++ * Type of block layer notification.
++ */
++enum block_notification_type {
++	NOTIFY_BLOCK_ERROR_TIMEOUT		= 1, /* Timeout error */
++	NOTIFY_BLOCK_ERROR_NO_SPACE		= 2, /* Critical space allocation error */
++	NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT = 3, /* Recoverable transport error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_TARGET	= 4, /* Critical target error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS	= 5, /* Critical nexus error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM	= 6, /* Critical medium error */
++	NOTIFY_BLOCK_ERROR_PROTECTION		= 7, /* Protection error */
++	NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE	= 8, /* Kernel resource error */
++	NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE	= 9, /* Device resource error */
++	NOTIFY_BLOCK_ERROR_IO			= 10, /* Other I/O error */
++};
++
++/*
++ * Block layer notification record.
++ * - watch.type = WATCH_TYPE_BLOCK_NOTIFY
++ * - watch.subtype = enum block_notification_type
++ */
++struct block_notification {
++	struct watch_notification watch; /* WATCH_TYPE_BLOCK_NOTIFY */
++	__u64	dev;			/* Device number */
++	__u64	sector;			/* Affected sector */
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
