@@ -1,35 +1,36 @@
 From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:35:41 +0000
-Subject: [PATCH 12/13] tests/search: test searching with a mismatched type
-Message-Id: <20190829203542.4410-19-mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:43:20 +0000
+Subject: [PATCH v2 11/13] tests/readming: remove revokation test
+Message-Id: <20190829204322.8015-13-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-This should fail because the actually found key has a type mismatch.
+This is already tested in the revokation test script.
 
 Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
- tests/keyctl/search/valid/runtest.sh | 5 +++++
- 1 file changed, 5 insertions(+)
+ tests/keyctl/reading/valid/runtest.sh | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/tests/keyctl/search/valid/runtest.sh b/tests/keyctl/search/valid/runtest.sh
-index d60ea61..a9912ee 100644
---- a/tests/keyctl/search/valid/runtest.sh
-+++ b/tests/keyctl/search/valid/runtest.sh
-@@ -32,6 +32,11 @@ expect_error ENOKEY
- marker "SEARCH SESSION"
- search_for_key --expect=$keyid @s user lizard
+diff --git a/tests/keyctl/reading/valid/runtest.sh b/tests/keyctl/reading/valid/runtest.sh
+index 2fb88b9..9a533ef 100644
+--- a/tests/keyctl/reading/valid/runtest.sh
++++ b/tests/keyctl/reading/valid/runtest.sh
+@@ -78,12 +78,6 @@ set_key_perm $keyid 0x370000
+ print_key $keyid
+ expect_payload payload "gizzard"
  
-+# search the session keyring for the key using the wrong type
-+marker "SEARCH SESSION USING WRONG TYPE"
-+search_for_key --fail @s keyring lizard $keyring2id
-+expect_error ENOKEY
-+
- # search the session keyring for the key and attach to second keyring
- marker "SEARCH SESSION AND ATTACH"
- search_for_key --expect=$keyid @s user lizard $keyring2id
+-# revoke the key
+-marker "REVOKE KEY"
+-revoke_key $keyid
+-print_key --fail $keyid
+-expect_error EKEYREVOKED
+-
+ # remove the keyring we added
+ marker "UNLINK KEYRING"
+ unlink_key $keyringid @s
 -- 
 2.21.0
