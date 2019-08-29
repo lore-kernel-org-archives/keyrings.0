@@ -1,24 +1,44 @@
 From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:35:24 +0000
-Subject: [PATCH 01/13] tests/toolbox: detect endianness with PIE executables
-Message-Id: <20190829203542.4410-2-mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:43:22 +0000
+Subject: [PATCH v2 13/13] tests/search: test a found key without search permissions
+Message-Id: <20190829204322.8015-15-mathstuf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1258"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-U2lnbmVkLW9mZi1ieTogQmVuIEJvZWNrZWwgPG1hdGhzdHVmQGdtYWlsLmNvbT4KLS0tCiB0ZXN0
-cy90b29sYm94LmluYy5zaCB8IDQgKystLQogMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygr
-KSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS90ZXN0cy90b29sYm94LmluYy5zaCBiL3Rl
-c3RzL3Rvb2xib3guaW5jLnNoCmluZGV4IDVhNmQzZjIuLjljODE5ZTUgMTAwNjQ0Ci0tLSBhL3Rl
-c3RzL3Rvb2xib3guaW5jLnNoCisrKyBiL3Rlc3RzL3Rvb2xib3guaW5jLnNoCkBAIC0xMywxMCAr
-MTMsMTAgQEAKIGVjaG8gPT0gJE9VVFBVVEZJTEUgPSAKIGVuZGlhbj1gZmlsZSAtTCAvcHJvYy8k
-JC9leGVgCi1pZiBleHByICIkZW5kaWFuIiA6ICcuKiBNU0IgXCtcKGV4ZWN1dGFibGVcfHNoYXJl
-ZCBvYmplY3RcKS4qJyA+Ji9kZXYvbnVsbAoraWYgZXhwciAiJGVuZGlhbiIgOiAnLiogTVNCIFwr
-XChwaWUgZXhlY3V0YWJsZVx8ZXhlY3V0YWJsZVx8c2hhcmVkIG9iamVjdFwpLionID4mL2Rldi9u
-dWxsCiB0aGVuCiAgICAgZW5kaWFuvgotZWxpZiBleHByICIkZW5kaWFuIiA6ICcuKiBMU0IgXCtc
-KGV4ZWN1dGFibGVcfHNoYXJlZCBvYmplY3RcKS4qJyA+Ji9kZXYvbnVsbAorZWxpZiBleHByICIk
-ZW5kaWFuIiA6ICcuKiBMU0IgXCtcKHBpZSBleGVjdXRhYmxlXHxleGVjdXRhYmxlXHxzaGFyZWQg
-b2JqZWN0XCkuKicgPiYvZGV2L251bGwKIHRoZW4KICAgICBlbmRpYW49TEUKIGVsc2UKLS0gCjIu
-MjEuMAo=
+These stanzas were essentially duplicates of the previous blocks.
+Instead, test removing the search permission from the target key and
+that EACCES is returned when this happens.
+
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+---
+ tests/keyctl/search/valid/runtest.sh | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/tests/keyctl/search/valid/runtest.sh b/tests/keyctl/search/valid/runtest.sh
+index a9912ee..e597170 100644
+--- a/tests/keyctl/search/valid/runtest.sh
++++ b/tests/keyctl/search/valid/runtest.sh
+@@ -135,14 +135,14 @@ set_key_perm $keyring2id 0x3f0000
+ search_for_key --expect=$keyid2 $keyringid user lizard
+ 
+ # removing search permission on the second key should hide the key
+-marker "SEARCH WITH NO-SEARCH KEYRING2"
+-set_key_perm $keyring2id 0x370000
++marker "SEARCH WITH NO-SEARCH KEY2"
++set_key_perm $keyid2 0x370000
+ search_for_key --fail $keyringid user lizard
+-expect_error ENOKEY
++expect_error EACCES
+ 
+ # putting search permission on the second key back again should make it
+ # available again
+-set_key_perm $keyring2id 0x3f0000
++set_key_perm $keyid2 0x3f0000
+ search_for_key --expect=$keyid2 $keyringid user lizard
+ 
+ # revoking the key should make the key unavailable
+-- 
+2.21.0
