@@ -1,36 +1,24 @@
 From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:43:19 +0000
-Subject: [PATCH v2 11/13] tests/reading: remove revokation test
-Message-Id: <20190829204322.8015-12-mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:35:24 +0000
+Subject: [PATCH 01/13] tests/toolbox: detect endianness with PIE executables
+Message-Id: <20190829203542.4410-2-mathstuf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1258"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-This is already tested in the revokation test script.
-
-Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
----
- tests/keyctl/reading/valid/runtest.sh | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/tests/keyctl/reading/valid/runtest.sh b/tests/keyctl/reading/valid/runtest.sh
-index 2fb88b9..9a533ef 100644
---- a/tests/keyctl/reading/valid/runtest.sh
-+++ b/tests/keyctl/reading/valid/runtest.sh
-@@ -78,12 +78,6 @@ set_key_perm $keyid 0x370000
- print_key $keyid
- expect_payload payload "gizzard"
- 
--# revoke the key
--marker "REVOKE KEY"
--revoke_key $keyid
--print_key --fail $keyid
--expect_error EKEYREVOKED
--
- # remove the keyring we added
- marker "UNLINK KEYRING"
- unlink_key $keyringid @s
--- 
-2.21.0
+U2lnbmVkLW9mZi1ieTogQmVuIEJvZWNrZWwgPG1hdGhzdHVmQGdtYWlsLmNvbT4KLS0tCiB0ZXN0
+cy90b29sYm94LmluYy5zaCB8IDQgKystLQogMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygr
+KSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS90ZXN0cy90b29sYm94LmluYy5zaCBiL3Rl
+c3RzL3Rvb2xib3guaW5jLnNoCmluZGV4IDVhNmQzZjIuLjljODE5ZTUgMTAwNjQ0Ci0tLSBhL3Rl
+c3RzL3Rvb2xib3guaW5jLnNoCisrKyBiL3Rlc3RzL3Rvb2xib3guaW5jLnNoCkBAIC0xMywxMCAr
+MTMsMTAgQEAKIGVjaG8gPT0gJE9VVFBVVEZJTEUgPSAKIGVuZGlhbj1gZmlsZSAtTCAvcHJvYy8k
+JC9leGVgCi1pZiBleHByICIkZW5kaWFuIiA6ICcuKiBNU0IgXCtcKGV4ZWN1dGFibGVcfHNoYXJl
+ZCBvYmplY3RcKS4qJyA+Ji9kZXYvbnVsbAoraWYgZXhwciAiJGVuZGlhbiIgOiAnLiogTVNCIFwr
+XChwaWUgZXhlY3V0YWJsZVx8ZXhlY3V0YWJsZVx8c2hhcmVkIG9iamVjdFwpLionID4mL2Rldi9u
+dWxsCiB0aGVuCiAgICAgZW5kaWFuvgotZWxpZiBleHByICIkZW5kaWFuIiA6ICcuKiBMU0IgXCtc
+KGV4ZWN1dGFibGVcfHNoYXJlZCBvYmplY3RcKS4qJyA+Ji9kZXYvbnVsbAorZWxpZiBleHByICIk
+ZW5kaWFuIiA6ICcuKiBMU0IgXCtcKHBpZSBleGVjdXRhYmxlXHxleGVjdXRhYmxlXHxzaGFyZWQg
+b2JqZWN0XCkuKicgPiYvZGV2L251bGwKIHRoZW4KICAgICBlbmRpYW49TEUKIGVsc2UKLS0gCjIu
+MjEuMAo=
