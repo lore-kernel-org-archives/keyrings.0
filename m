@@ -1,33 +1,43 @@
 From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:35:39 +0000
-Subject: [PATCH 10/13] tests/reading: fix test comment
-Message-Id: <20190829203542.4410-17-mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:35:30 +0000
+Subject: [PATCH 5/9] tests/timeout: test actions on an expired keyring as well
+Message-Id: <20190829203542.4410-8-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-This comment was copied from another test. This one actually fails
-because search permissions were also removed.
-
 Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
- tests/keyctl/reading/valid/runtest.sh | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tests/keyctl/timeout/valid/runtest.sh | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/tests/keyctl/reading/valid/runtest.sh b/tests/keyctl/reading/valid/runtest.sh
-index a40ccaf..2fb88b9 100644
---- a/tests/keyctl/reading/valid/runtest.sh
-+++ b/tests/keyctl/reading/valid/runtest.sh
-@@ -57,7 +57,7 @@ print_key $keyid
- expect_payload payload "gizzard"
+diff --git a/tests/keyctl/timeout/valid/runtest.sh b/tests/keyctl/timeout/valid/runtest.sh
+index 01dc48f..9c98309 100644
+--- a/tests/keyctl/timeout/valid/runtest.sh
++++ b/tests/keyctl/timeout/valid/runtest.sh
+@@ -103,6 +103,21 @@ marker "CHECK NO VALIDATE KEYRING"
+ describe_key --fail $keyringid
+ expect_error EKEYEXPIRED
  
- # remove search permission from the key as well
--# - we should still have read permission because it's searchable in our
-+# - we do not have read permission because it's no longer searchable in our
- #   keyrings
- marker "REMOVE SEARCH PERM"
- set_key_perm $keyid 0x350000
++# validating the new keyring's name and type should also fail
++marker "CHECK NO SET KEYRING TIMEOUT"
++timeout_key --fail $keyringid 20
++expect_error EKEYEXPIRED
++
++# validating the new keyring's name and type should also fail
++marker "CHECK NO INVALIDATE KEYRING"
++invalidate_key --fail $keyringid
++expect_error EKEYEXPIRED
++
++# validating the new keyring's name and type should also fail
++marker "CHECK NO REVOKE KEYRING"
++revoke_key --fail $keyringid
++expect_error EKEYEXPIRED
++
+ # remove the keyring we added
+ marker "UNLINK KEYRING"
+ unlink_key $keyringid @s
 -- 
 2.21.0
