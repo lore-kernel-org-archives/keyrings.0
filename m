@@ -1,24 +1,71 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 27 Aug 2019 13:48:53 +0000
-Subject: Re: [PATCH v5 3/4] KEYS: trusted: create trusted keys subsystem
-Message-Id: <20190827134853.kh4v7qdtsk47ogqw@linux.intel.com>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:35:23 +0000
+Subject: [PATCH 00/13] Test suite tidiness
+Message-Id: <20190829203542.4410-1-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1566392345-15419-1-git-send-email-sumit.garg@linaro.org>
- <1566392345-15419-4-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1566392345-15419-4-git-send-email-sumit.garg@linaro.org>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, arnd@arndb.de, gregkh@linuxfoundation.org, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org
+To: keyrings@vger.kernel.org
 
-On Wed, Aug 21, 2019 at 06:29:04PM +0530, Sumit Garg wrote:
-> Move existing code to trusted keys subsystem. Also, rename files with
-> "tpm" as suffix which provides the underlying implementation.
-> 
-> Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+A collection of minor patches to the test suite I discovered while
+porting to the Rust bindings I've been working on:
 
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+    https://github.com/mathstuf/rust-keyutils
+    https://github.com/mathstuf/rust-keyutils/pull/34 (for the porting of the test suite)
 
-/Jarkko
+Mostly typos, relocating some tests to what seems to be more sensible
+location, fixing some copy/pasta, and adding some missed test cases.
+The patches were developed against master, but have been rebased here
+against `next` to make it easier to add to it. If that is incorrect, I
+can rebase onto `master` and respin.
+
+Note that I'm sending these for review now, but I'll be on vacation for
+a few weeks. Feel free to leave review comments; I'll act on them once I
+return.
+
+Thanks,
+
+--Ben
+
+Ben Boeckel (13):
+  tests/toolbox: detect endianness with PIE executables
+  tests: fix some typos in marker lines
+  tests: remove some trailing whitespace
+  keyctl: unify spelling of "unparsable"
+  tests: fix typos in test comments
+  tests/revoke: test key revokation in the revoke tests
+  tests/timeout: test actions on an expired keyring as well
+  tests/instantiating: test the unlinked keyid
+  test/instantiating: test bad arguments for `keyctl reject`
+  tests/reading: fix test comment
+  tests/reading: remove revokation test
+  tests/search: test searching with a mismatched type
+  tests/search: test a found key without search permissions
+
+ keyctl.c                                      |  6 ++--
+ tests/keyctl/add/bad-args/runtest.sh          |  2 +-
+ tests/keyctl/clear/valid/runtest.sh           |  2 +-
+ tests/keyctl/dh_compute/bad-args/runtest.sh   |  2 +-
+ .../keyctl/instantiating/bad-args/runtest.sh  | 20 ++++++++++--
+ tests/keyctl/link/recursion/runtest.sh        |  2 +-
+ tests/keyctl/newring/bad-args/runtest.sh      |  2 +-
+ tests/keyctl/padd/bad-args/runtest.sh         |  2 +-
+ tests/keyctl/pupdate/userupdate/runtest.sh    | 10 +++---
+ tests/keyctl/reading/valid/runtest.sh         |  8 +----
+ tests/keyctl/requesting/bad-args/runtest.sh   |  2 +-
+ tests/keyctl/requesting/piped/runtest.sh      |  4 +--
+ tests/keyctl/requesting/valid/runtest.sh      |  4 +--
+ tests/keyctl/revoke/valid/runtest.sh          | 20 ++++++++++++
+ tests/keyctl/search/bad-args/runtest.sh       |  2 +-
+ tests/keyctl/search/valid/runtest.sh          | 13 +++++---
+ tests/keyctl/session/bad-args/runtest.sh      |  2 +-
+ tests/keyctl/timeout/valid/runtest.sh         | 32 +++++++++----------
+ tests/keyctl/unlink/all/runtest.sh            |  2 +-
+ tests/keyctl/unlink/valid/runtest.sh          |  4 +--
+ tests/keyctl/update/userupdate/runtest.sh     | 14 ++++----
+ tests/toolbox.inc.sh                          | 26 +++++++++++++--
+ 22 files changed, 117 insertions(+), 64 deletions(-)
+
+-- 
+2.21.0
