@@ -1,33 +1,44 @@
 From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:43:18 +0000
-Subject: [PATCH v2 10/13] tests/reading: fix test comment
-Message-Id: <20190829204322.8015-11-mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:35:42 +0000
+Subject: [PATCH 13/13] tests/search: test a found key without search permissions
+Message-Id: <20190829203542.4410-20-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-This comment was copied from another test. This one actually fails
-because search permissions were also removed.
+These stanzas were essentially duplicates of the previous blocks.
+Instead, test removing the search permission from the target key and
+that EACCES is returned when this happens.
 
 Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
- tests/keyctl/reading/valid/runtest.sh | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tests/keyctl/search/valid/runtest.sh | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tests/keyctl/reading/valid/runtest.sh b/tests/keyctl/reading/valid/runtest.sh
-index a40ccaf..2fb88b9 100644
---- a/tests/keyctl/reading/valid/runtest.sh
-+++ b/tests/keyctl/reading/valid/runtest.sh
-@@ -57,7 +57,7 @@ print_key $keyid
- expect_payload payload "gizzard"
+diff --git a/tests/keyctl/search/valid/runtest.sh b/tests/keyctl/search/valid/runtest.sh
+index a9912ee..e597170 100644
+--- a/tests/keyctl/search/valid/runtest.sh
++++ b/tests/keyctl/search/valid/runtest.sh
+@@ -135,14 +135,14 @@ set_key_perm $keyring2id 0x3f0000
+ search_for_key --expect=$keyid2 $keyringid user lizard
  
- # remove search permission from the key as well
--# - we should still have read permission because it's searchable in our
-+# - we do not have read permission because it's no longer searchable in our
- #   keyrings
- marker "REMOVE SEARCH PERM"
- set_key_perm $keyid 0x350000
+ # removing search permission on the second key should hide the key
+-marker "SEARCH WITH NO-SEARCH KEYRING2"
+-set_key_perm $keyring2id 0x370000
++marker "SEARCH WITH NO-SEARCH KEY2"
++set_key_perm $keyid2 0x370000
+ search_for_key --fail $keyringid user lizard
+-expect_error ENOKEY
++expect_error EACCES
+ 
+ # putting search permission on the second key back again should make it
+ # available again
+-set_key_perm $keyring2id 0x3f0000
++set_key_perm $keyid2 0x3f0000
+ search_for_key --expect=$keyid2 $keyringid user lizard
+ 
+ # revoking the key should make the key unavailable
 -- 
 2.21.0
