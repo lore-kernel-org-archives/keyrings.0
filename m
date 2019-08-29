@@ -1,130 +1,36 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 05 Aug 2019 16:25:19 +0000
-Subject: [PATCH v8 18/20] f2fs: wire up new fscrypt ioctls
-Message-Id: <20190805162521.90882-19-ebiggers@kernel.org>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:43:19 +0000
+Subject: [PATCH v2 11/13] tests/reading: remove revokation test
+Message-Id: <20190829204322.8015-12-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190805162521.90882-1-ebiggers@kernel.org>
-In-Reply-To: <20190805162521.90882-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, Theodore Ts'o <tytso@mit.edu>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+This is already tested in the revokation test script.
 
-Wire up the new ioctls for adding and removing fscrypt keys to/from the
-filesystem, and the new ioctl for retrieving v2 encryption policies.
-
-The key removal ioctls also required making f2fs_drop_inode() call
-fscrypt_drop_inode().
-
-For more details see Documentation/filesystems/fscrypt.rst and the
-fscrypt patches that added the implementation of these ioctls.
-
-Acked-by: Jaegeuk Kim <jaegeuk@kernel.org>
-Reviewed-by: Chao Yu <yuchao0@huawei.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
- fs/f2fs/file.c  | 58 +++++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/super.c |  2 ++
- 2 files changed, 60 insertions(+)
+ tests/keyctl/reading/valid/runtest.sh | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 3e58a6f697dd8c..6a7349f9ac15ec 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -2184,6 +2184,49 @@ static int f2fs_ioc_get_encryption_pwsalt(struct file *filp, unsigned long arg)
- 	return err;
- }
+diff --git a/tests/keyctl/reading/valid/runtest.sh b/tests/keyctl/reading/valid/runtest.sh
+index 2fb88b9..9a533ef 100644
+--- a/tests/keyctl/reading/valid/runtest.sh
++++ b/tests/keyctl/reading/valid/runtest.sh
+@@ -78,12 +78,6 @@ set_key_perm $keyid 0x370000
+ print_key $keyid
+ expect_payload payload "gizzard"
  
-+static int f2fs_ioc_get_encryption_policy_ex(struct file *filp,
-+					     unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_get_policy_ex(filp, (void __user *)arg);
-+}
-+
-+static int f2fs_ioc_add_encryption_key(struct file *filp, unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_add_key(filp, (void __user *)arg);
-+}
-+
-+static int f2fs_ioc_remove_encryption_key(struct file *filp, unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_remove_key(filp, (void __user *)arg);
-+}
-+
-+static int f2fs_ioc_remove_encryption_key_all_users(struct file *filp,
-+						    unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_remove_key_all_users(filp, (void __user *)arg);
-+}
-+
-+static int f2fs_ioc_get_encryption_key_status(struct file *filp,
-+					      unsigned long arg)
-+{
-+	if (!f2fs_sb_has_encrypt(F2FS_I_SB(file_inode(filp))))
-+		return -EOPNOTSUPP;
-+
-+	return fscrypt_ioctl_get_key_status(filp, (void __user *)arg);
-+}
-+
- static int f2fs_ioc_gc(struct file *filp, unsigned long arg)
- {
- 	struct inode *inode = file_inode(filp);
-@@ -3092,6 +3135,16 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return f2fs_ioc_get_encryption_policy(filp, arg);
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 		return f2fs_ioc_get_encryption_pwsalt(filp, arg);
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+		return f2fs_ioc_get_encryption_policy_ex(filp, arg);
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+		return f2fs_ioc_add_encryption_key(filp, arg);
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+		return f2fs_ioc_remove_encryption_key(filp, arg);
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS:
-+		return f2fs_ioc_remove_encryption_key_all_users(filp, arg);
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
-+		return f2fs_ioc_get_encryption_key_status(filp, arg);
- 	case F2FS_IOC_GARBAGE_COLLECT:
- 		return f2fs_ioc_gc(filp, arg);
- 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
-@@ -3219,6 +3272,11 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case F2FS_IOC_SET_ENCRYPTION_POLICY:
- 	case F2FS_IOC_GET_ENCRYPTION_PWSALT:
- 	case F2FS_IOC_GET_ENCRYPTION_POLICY:
-+	case FS_IOC_GET_ENCRYPTION_POLICY_EX:
-+	case FS_IOC_ADD_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY:
-+	case FS_IOC_REMOVE_ENCRYPTION_KEY_ALL_USERS:
-+	case FS_IOC_GET_ENCRYPTION_KEY_STATUS:
- 	case F2FS_IOC_GARBAGE_COLLECT:
- 	case F2FS_IOC_GARBAGE_COLLECT_RANGE:
- 	case F2FS_IOC_WRITE_CHECKPOINT:
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 78a1b873e48ade..e15bd29bd45340 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -913,6 +913,8 @@ static int f2fs_drop_inode(struct inode *inode)
- 		return 0;
- 	}
- 	ret = generic_drop_inode(inode);
-+	if (!ret)
-+		ret = fscrypt_drop_inode(inode);
- 	trace_f2fs_drop_inode(inode, ret);
- 	return ret;
- }
+-# revoke the key
+-marker "REVOKE KEY"
+-revoke_key $keyid
+-print_key --fail $keyid
+-expect_error EKEYREVOKED
+-
+ # remove the keyring we added
+ marker "UNLINK KEYRING"
+ unlink_key $keyringid @s
 -- 
-2.22.0.770.g0f2c4a37fd-goog
+2.21.0
