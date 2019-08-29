@@ -1,40 +1,93 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Tue, 27 Aug 2019 19:18:24 +0000
-Subject: [PATCH keys-next] keys: Fix permissions assigned to anonymous session keyrings
-Message-Id: <20190827191824.259566-1-ebiggers@kernel.org>
+From: Ben Boeckel <mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:35:33 +0000
+Subject: [PATCH 7/9] test/instantiating: test bad arguments for `keyctl reject`
+Message-Id: <20190829203542.4410-11-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190814224106.GG101319@gmail.com>
-In-Reply-To: <20190814224106.GG101319@gmail.com>
-To: keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org, James Morris <jmorris@namei.org>
+To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
-
-JOIN permission was incorrectly removed from anonymous session keyrings
-when the old-style key permissions were translated to an ACL, thus
-breaking 'keyctl new_session'.
-
-Fixes: f802f2b3a991 ("keys: Replace uid/gid/perm permissions checking with an ACL")
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
- security/keys/process_keys.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ .../keyctl/instantiating/bad-args/runtest.sh  | 14 ++++++++++++
+ tests/toolbox.inc.sh                          | 22 +++++++++++++++++++
+ 2 files changed, 36 insertions(+)
 
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index aa3bfcadbc6600..519c94f1cc3c2c 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -58,7 +58,7 @@ static struct key_acl session_keyring_acl = {
- 	.possessor_viewable = true,
- 	.nr_ace	= 2,
- 	.aces = {
--		KEY_POSSESSOR_ACE(KEY_ACE__PERMS & ~KEY_ACE_JOIN),
-+		KEY_POSSESSOR_ACE(KEY_ACE__PERMS),
- 		KEY_OWNER_ACE(KEY_ACE_VIEW | KEY_ACE_READ),
- 	}
- };
+diff --git a/tests/keyctl/instantiating/bad-args/runtest.sh b/tests/keyctl/instantiating/bad-args/runtest.sh
+index a585e20..52fa45c 100644
+--- a/tests/keyctl/instantiating/bad-args/runtest.sh
++++ b/tests/keyctl/instantiating/bad-args/runtest.sh
+@@ -17,6 +17,8 @@ pinstantiate_key --fail a 0 @p
+ expect_error EPERM
+ negate_key --fail 0 10 @p
+ expect_error EPERM
++reject_key --fail 0 10 rejected @p
++expect_error EPERM
+ 
+ # create a non-keyring
+ marker "CREATE KEY"
+@@ -29,9 +31,19 @@ instantiate_key --fail $keyid a @p
+ expect_error EPERM
+ pinstantiate_key --fail a $keyid @p
+ expect_error EPERM
++reject_key --fail $keyid 10 rejected @p
++expect_error EPERM
+ negate_key --fail $keyid 10 @p
+ expect_error EPERM
+ 
++# check reject key timeout must be a number
++marker "CHECK REJECT TIMEOUT"
++expect_args_error keyctl reject $keyid aa rejected @p
++
++# check reject key timeout must be a number
++marker "CHECK REJECT ERRORS"
++expect_args_error keyctl reject $keyid 10 notanerror @p
++
+ # check negative key timeout must be a number
+ marker "CHECK NEGATE TIMEOUT"
+ expect_args_error keyctl negate $keyid aa @p
+@@ -46,6 +58,8 @@ instantiate_key --fail $keyid a @p
+ expect_error EPERM
+ pinstantiate_key --fail a $keyid @p
+ expect_error EPERM
++reject_key --fail $keyid 10 rejected @p
++expect_error EPERM
+ negate_key --fail $keyid 10 @p
+ expect_error EPERM
+ 
+diff --git a/tests/toolbox.inc.sh b/tests/toolbox.inc.sh
+index 9ba7e4f..8d37d13 100644
+--- a/tests/toolbox.inc.sh
++++ b/tests/toolbox.inc.sh
+@@ -1047,6 +1047,28 @@ function pinstantiate_key ()
+     fi
+ }
+ 
++###############################################################################
++#
++# reject a key
++#
++###############################################################################
++function reject_key ()
++{
++    my_exitval=0
++    if [ "x$1" = "x--fail" ]
++    then
++	my_exitval=1
++	shift
++    fi
++
++    echo keyctl reject "$@" >>$OUTPUTFILE
++    keyctl reject "$@" >>$OUTPUTFILE 2>&1
++    if [ $? != $my_exitval ]
++    then
++	failed
++    fi
++}
++
+ ###############################################################################
+ #
+ # negate a key
 -- 
-2.23.0.187.g17f5b7556c-goog
+2.21.0
