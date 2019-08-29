@@ -1,93 +1,39 @@
 From: Ben Boeckel <mathstuf@gmail.com>
-Date: Thu, 29 Aug 2019 20:43:17 +0000
-Subject: [PATCH v2 09/13] test/instantiating: test bad arguments for `keyctl reject`
-Message-Id: <20190829204322.8015-10-mathstuf@gmail.com>
+Date: Thu, 29 Aug 2019 20:35:35 +0000
+Subject: [PATCH 08/13] tests/instantiating: test the unlinked keyid
+Message-Id: <20190829203542.4410-13-mathstuf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
+Testing the `0` ID just repeats the "BAD KEY" tests at the beginning of
+the file.
+
 Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
 ---
- .../keyctl/instantiating/bad-args/runtest.sh  | 14 ++++++++++++
- tests/toolbox.inc.sh                          | 22 +++++++++++++++++++
- 2 files changed, 36 insertions(+)
+ tests/keyctl/instantiating/bad-args/runtest.sh | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/tests/keyctl/instantiating/bad-args/runtest.sh b/tests/keyctl/instantiating/bad-args/runtest.sh
-index d611fb9..21bbf10 100644
+index 0b01395..d611fb9 100644
 --- a/tests/keyctl/instantiating/bad-args/runtest.sh
 +++ b/tests/keyctl/instantiating/bad-args/runtest.sh
-@@ -17,6 +17,8 @@ pinstantiate_key --fail a 0 @p
- expect_error EPERM
- negate_key --fail 0 10 @p
- expect_error EPERM
-+reject_key --fail 0 10 rejected @p
-+expect_error EPERM
+@@ -41,11 +41,11 @@ unlink_key --wait $keyid @s
  
- # create a non-keyring
- marker "CREATE KEY"
-@@ -28,9 +30,19 @@ instantiate_key --fail $keyid a @p
+ # check that a non-existent key ID fails correctly
+ marker "CHECK NON-EXISTENT KEY ID"
+-instantiate_key --fail 0 a @p
++instantiate_key --fail $keyid a @p
  expect_error EPERM
- pinstantiate_key --fail a $keyid @p
+-pinstantiate_key --fail a 0 @p
++pinstantiate_key --fail a $keyid @p
  expect_error EPERM
-+reject_key --fail $keyid 10 rejected @p
-+expect_error EPERM
- negate_key --fail $keyid 10 @p
+-negate_key --fail 0 10 @p
++negate_key --fail $keyid 10 @p
  expect_error EPERM
  
-+# check reject key timeout must be a number
-+marker "CHECK REJECT TIMEOUT"
-+expect_args_error keyctl reject $keyid aa rejected @p
-+
-+# check reject key timeout must be a number
-+marker "CHECK REJECT ERRORS"
-+expect_args_error keyctl reject $keyid 10 notanerror @p
-+
- # check negative key timeout must be a number
- marker "CHECK NEGATE TIMEOUT"
- expect_args_error keyctl negate $keyid aa @p
-@@ -45,6 +57,8 @@ instantiate_key --fail $keyid a @p
- expect_error EPERM
- pinstantiate_key --fail a $keyid @p
- expect_error EPERM
-+reject_key --fail $keyid 10 rejected @p
-+expect_error EPERM
- negate_key --fail $keyid 10 @p
- expect_error EPERM
- 
-diff --git a/tests/toolbox.inc.sh b/tests/toolbox.inc.sh
-index 9c819e5..b8c27c2 100644
---- a/tests/toolbox.inc.sh
-+++ b/tests/toolbox.inc.sh
-@@ -1626,6 +1626,28 @@ function pinstantiate_key ()
-     fi
- }
- 
-+###############################################################################
-+#
-+# reject a key
-+#
-+###############################################################################
-+function reject_key ()
-+{
-+    my_exitval=0
-+    if [ "x$1" = "x--fail" ]
-+    then
-+	my_exitval=1
-+	shift
-+    fi
-+
-+    echo keyctl reject "$@" >>$OUTPUTFILE
-+    keyctl reject "$@" >>$OUTPUTFILE 2>&1
-+    if [ $? != $my_exitval ]
-+    then
-+	failed
-+    fi
-+}
-+
- ###############################################################################
- #
- # negate a key
+ echo "++++ FINISHED TEST: $result" >>$OUTPUTFILE
 -- 
 2.21.0
