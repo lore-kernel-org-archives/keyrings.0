@@ -1,29 +1,141 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 30 Aug 2019 17:24:05 +0000
-Subject: Re: [RFC/RFT v4 5/5] KEYS: trusted: Add generic trusted keys framework
-Message-Id: <20190830172405.rafhm362tsuufbqb@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 29 Aug 2019 18:29:58 +0000
+Subject: [PATCH 01/11] uapi: General notification ring definitions [ver #6]
+Message-Id: <156710339856.10009.1556595458056359912.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1565682784-10234-1-git-send-email-sumit.garg@linaro.org>
- <1565682784-10234-6-git-send-email-sumit.garg@linaro.org>
- <CAFA6WYO7Z-Enmnqt8zA_+VV_p=mAc+AotTetv9hhf2xHm0mR9g@mail.gmail.com>
- <20190830172031.dm5icfyakko6eqak@linux.intel.com>
-In-Reply-To: <20190830172031.dm5icfyakko6eqak@linux.intel.com>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, linux-security-module@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Casey Schaufler <casey@schaufler-ca.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>
+References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2019 at 08:20:31PM +0300, Jarkko Sakkinen wrote:
-> On Fri, Aug 30, 2019 at 02:49:31PM +0530, Sumit Garg wrote:
-> > Any comments/feedback on this patch before I send next version of TEE
-> > patch-set with this patch included?
-> 
-> Unfortunately don't have time before LPC to go deep with the follow up.
-> 
-> I will look into this in detail after LPC.
+Add UAPI definitions for the general notification ring, including the
+following pieces:
 
-I'll ping you once your first row of patches are in my tree so you
-can rebase these on top of that.
+ (1) struct watch_notification.
 
-/JArkko
+     This is the metadata header for each entry in the ring.  It includes a
+     type and subtype that indicate the source of the message
+     (eg. WATCH_TYPE_MOUNT_NOTIFY) and the kind of the message
+     (eg. NOTIFY_MOUNT_NEW_MOUNT).
+
+     The header also contains an information field that conveys the
+     following information:
+
+	- WATCH_INFO_LENGTH.  The size of the entry (entries are variable
+          length).
+
+	- WATCH_INFO_ID.  The watch ID specified when the watchpoint was
+          set.
+
+	- WATCH_INFO_TYPE_INFO.  (Sub)type-specific information.
+
+	- WATCH_INFO_FLAG_*.  Flag bits overlain on the type-specific
+          information.  For use by the type.
+
+     All the information in the header can be used in filtering messages at
+     the point of writing into the buffer.
+
+ (2) struct watch_queue_buffer.
+
+     This describes the layout of the ring.  Note that the first slots in
+     the ring contain a special metadata entry that contains the ring
+     pointers.  The producer in the kernel knows to skip this and it has a
+     proper header (WATCH_TYPE_META, WATCH_META_SKIP_NOTIFICATION) that
+     indicates the size so that the ring consumer can handle it the same as
+     any other record and just skip it.
+
+     Note that this means that ring entries can never be split over the end
+     of the ring, so if an entry would need to be split, a skip record is
+     inserted to wrap the ring first; this is also WATCH_TYPE_META,
+     WATCH_META_SKIP_NOTIFICATION.
+
+ (3) WATCH_INFO_NOTIFICATIONS_LOST.
+
+     This is a flag that can be set in the metadata header by the kernel to
+     indicate that at least one message was lost since it was last cleared
+     by userspace.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+
+ include/uapi/linux/watch_queue.h |   67 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
+ create mode 100644 include/uapi/linux/watch_queue.h
+
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+new file mode 100644
+index 000000000000..70f575099968
+--- /dev/null
++++ b/include/uapi/linux/watch_queue.h
+@@ -0,0 +1,67 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++#ifndef _UAPI_LINUX_WATCH_QUEUE_H
++#define _UAPI_LINUX_WATCH_QUEUE_H
++
++#include <linux/types.h>
++
++enum watch_notification_type {
++	WATCH_TYPE_META		= 0,	/* Special record */
++	WATCH_TYPE___NR		= 1
++};
++
++enum watch_meta_notification_subtype {
++	WATCH_META_SKIP_NOTIFICATION	= 0,	/* Just skip this record */
++	WATCH_META_REMOVAL_NOTIFICATION	= 1,	/* Watched object was removed */
++};
++
++#define WATCH_LENGTH_GRANULARITY sizeof(__u64)
++
++/*
++ * Notification record header.  This is aligned to 64-bits so that subclasses
++ * can contain __u64 fields.
++ */
++struct watch_notification {
++	__u32			type:24;	/* enum watch_notification_type */
++	__u32			subtype:8;	/* Type-specific subtype (filterable) */
++	__u32			info;
++#define WATCH_INFO_LENGTH	0x0000003f	/* Length of record / sizeof(watch_notification) */
++#define WATCH_INFO_LENGTH__SHIFT 0
++#define WATCH_INFO_ID		0x0000ff00	/* ID of watchpoint, if type-appropriate */
++#define WATCH_INFO_ID__SHIFT	8
++#define WATCH_INFO_TYPE_INFO	0xffff0000	/* Type-specific info */
++#define WATCH_INFO_TYPE_INFO__SHIFT 16
++#define WATCH_INFO_FLAG_0	0x00010000	/* Type-specific info, flag bit 0 */
++#define WATCH_INFO_FLAG_1	0x00020000	/* ... */
++#define WATCH_INFO_FLAG_2	0x00040000
++#define WATCH_INFO_FLAG_3	0x00080000
++#define WATCH_INFO_FLAG_4	0x00100000
++#define WATCH_INFO_FLAG_5	0x00200000
++#define WATCH_INFO_FLAG_6	0x00400000
++#define WATCH_INFO_FLAG_7	0x00800000
++} __attribute__((aligned(WATCH_LENGTH_GRANULARITY)));
++
++struct watch_queue_buffer {
++	union {
++		/* The first few entries are special, containing the
++		 * ring management variables.
++		 */
++		struct {
++			struct watch_notification watch; /* WATCH_TYPE_META */
++			__u32		head;		/* Ring head index */
++			__u32		tail;		/* Ring tail index */
++			__u32		mask;		/* Ring index mask */
++			__u32		__reserved;
++		} meta;
++		struct watch_notification slots[0];
++	};
++};
++
++/*
++ * The Metadata pseudo-notification message uses a flag bits in the information
++ * field to convey the fact that messages have been lost.  We can only use a
++ * single bit in this manner per word as some arches that support SMP
++ * (eg. parisc) have no kernel<->user atomic bit ops.
++ */
++#define WATCH_INFO_NOTIFICATIONS_LOST WATCH_INFO_FLAG_0
++
++#endif /* _UAPI_LINUX_WATCH_QUEUE_H */
