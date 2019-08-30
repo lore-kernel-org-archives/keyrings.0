@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 29 Aug 2019 18:31:29 +0000
-Subject: [PATCH 11/11] smack: Implement the watch_key and post_notification hooks [untested] [ver #6]
-Message-Id: <156710348929.10009.9818343561641033452.stgit@warthog.procyon.org.uk>
+Date: Fri, 30 Aug 2019 13:58:49 +0000
+Subject: [PATCH 11/11] smack: Implement the watch_key and post_notification hooks [untested] [ver #7]
+Message-Id: <156717352917.2204.17206219813087348132.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
 Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
@@ -25,8 +25,8 @@ Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
  include/linux/lsm_audit.h  |    1 +
- security/smack/smack_lsm.c |   81 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+)
+ security/smack/smack_lsm.c |   82 +++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 82 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/lsm_audit.h b/include/linux/lsm_audit.h
 index 915330abf6e5..734d67889826 100644
@@ -41,10 +41,19 @@ index 915330abf6e5..734d67889826 100644
  		struct path path;
  		struct dentry *dentry;
 diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 4c5e5a438f8b..ef3fb70649f0 100644
+index 4c5e5a438f8b..1c2a908c6446 100644
 --- a/security/smack/smack_lsm.c
 +++ b/security/smack/smack_lsm.c
-@@ -4320,8 +4320,82 @@ static int smack_key_getsecurity(struct key *key, char **_buffer)
+@@ -4274,7 +4274,7 @@ static int smack_key_permission(key_ref_t key_ref,
+ 	if (tkp = NULL)
+ 		return -EACCES;
+ 
+-	if (smack_privileged_cred(CAP_MAC_OVERRIDE, cred))
++	if (smack_privileged(CAP_MAC_OVERRIDE))
+ 		return 0;
+ 
+ #ifdef CONFIG_AUDIT
+@@ -4320,8 +4320,81 @@ static int smack_key_getsecurity(struct key *key, char **_buffer)
  	return length;
  }
  
@@ -52,16 +61,15 @@ index 4c5e5a438f8b..ef3fb70649f0 100644
 +#ifdef CONFIG_KEY_NOTIFICATIONS
 +/**
 + * smack_watch_key - Smack access to watch a key for notifications.
-+ * @watch: The watch to be set
 + * @key: The key to be watched
 + *
 + * Return 0 if the @watch->cred has permission to read from the key object and
 + * an error otherwise.
 + */
-+static int smack_watch_key(struct watch *watch, struct key *key)
++static int smack_watch_key(struct key *key)
 +{
 +	struct smk_audit_info ad;
-+	struct smack_known *tkp = smk_of_task(smack_cred(watch->cred));
++	struct smack_known *tkp = smk_of_current();
 +	int rc;
 +
 +	if (key = NULL)
@@ -78,7 +86,7 @@ index 4c5e5a438f8b..ef3fb70649f0 100644
 +	if (tkp = NULL)
 +		return -EACCES;
 +
-+	if (smack_privileged_cred(CAP_MAC_OVERRIDE, watch->cred))
++	if (smack_privileged_cred(CAP_MAC_OVERRIDE, current_cred()))
 +		return 0;
 +
 +#ifdef CONFIG_AUDIT
@@ -127,7 +135,7 @@ index 4c5e5a438f8b..ef3fb70649f0 100644
  /*
   * Smack Audit hooks
   *
-@@ -4710,8 +4784,15 @@ static struct security_hook_list smack_hooks[] __lsm_ro_after_init = {
+@@ -4710,8 +4783,15 @@ static struct security_hook_list smack_hooks[] __lsm_ro_after_init = {
  	LSM_HOOK_INIT(key_free, smack_key_free),
  	LSM_HOOK_INIT(key_permission, smack_key_permission),
  	LSM_HOOK_INIT(key_getsecurity, smack_key_getsecurity),
