@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 29 Aug 2019 18:30:25 +0000
-Subject: [PATCH 04/11] General notification queue with user mmap()'able ring buffer [ver #6]
-Message-Id: <156710342566.10009.455334718012397324.stgit@warthog.procyon.org.uk>
+Date: Fri, 30 Aug 2019 13:57:48 +0000
+Subject: [PATCH 04/11] General notification queue with user mmap()'able ring buffer [ver #7]
+Message-Id: <156717346827.2204.5560091831679857758.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
 Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
@@ -66,10 +66,10 @@ Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  Documentation/watch_queue.rst        |  429 ++++++++++++++++
  drivers/misc/Kconfig                 |   13 
  drivers/misc/Makefile                |    1 
- drivers/misc/watch_queue.c           |  892 ++++++++++++++++++++++++++++++++++
+ drivers/misc/watch_queue.c           |  893 ++++++++++++++++++++++++++++++++++
  include/linux/watch_queue.h          |   94 ++++
  include/uapi/linux/watch_queue.h     |   34 +
- 7 files changed, 1464 insertions(+)
+ 7 files changed, 1465 insertions(+)
  create mode 100644 Documentation/watch_queue.rst
  create mode 100644 drivers/misc/watch_queue.c
  create mode 100644 include/linux/watch_queue.h
@@ -556,10 +556,10 @@ index abd8ae249746..d36b14a5cb79 100644
  obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
 diff --git a/drivers/misc/watch_queue.c b/drivers/misc/watch_queue.c
 new file mode 100644
-index 000000000000..287e7631feaf
+index 000000000000..bef58948cf1b
 --- /dev/null
 +++ b/drivers/misc/watch_queue.c
-@@ -0,0 +1,892 @@
+@@ -0,0 +1,893 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/* User-mappable watch queue
 + *
@@ -1227,6 +1227,7 @@ index 000000000000..287e7631feaf
 +			return -EBUSY;
 +	}
 +
++	watch->cred = get_current_cred();
 +	rcu_assign_pointer(watch->watch_list, wlist);
 +
 +	spin_lock_bh(&wqueue->lock);
