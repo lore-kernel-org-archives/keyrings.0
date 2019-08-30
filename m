@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 29 Aug 2019 18:30:43 +0000
-Subject: [PATCH 06/11] Add a general, global device notification watch list [ver #6]
-Message-Id: <156710344356.10009.11680201608328709843.stgit@warthog.procyon.org.uk>
+Date: Fri, 30 Aug 2019 13:58:06 +0000
+Subject: [PATCH 06/11] Add a general, global device notification watch list [ver #7]
+Message-Id: <156717348608.2204.16592073177201775472.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
 Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
@@ -45,7 +45,7 @@ could do:
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/watch_queue.rst               |   22 ++++++
+ Documentation/watch_queue.rst               |   22 ++++++-
  arch/alpha/kernel/syscalls/syscall.tbl      |    1 
  arch/arm/tools/syscall.tbl                  |    1 
  arch/ia64/kernel/syscalls/syscall.tbl       |    1 
@@ -64,12 +64,12 @@ Signed-off-by: David Howells <dhowells@redhat.com>
  arch/xtensa/kernel/syscalls/syscall.tbl     |    1 
  drivers/base/Kconfig                        |    9 +++
  drivers/base/Makefile                       |    1 
- drivers/base/watch.c                        |   94 +++++++++++++++++++++++++++
+ drivers/base/watch.c                        |   90 +++++++++++++++++++++++++++
  include/linux/device.h                      |    7 ++
  include/linux/syscalls.h                    |    1 
  include/uapi/asm-generic/unistd.h           |    4 +
  kernel/sys_ni.c                             |    1 
- 24 files changed, 153 insertions(+), 2 deletions(-)
+ 24 files changed, 149 insertions(+), 2 deletions(-)
  create mode 100644 drivers/base/watch.c
 
 diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
@@ -292,10 +292,10 @@ index 157452080f3d..4db2e8f1a1f4 100644
  obj-$(CONFIG_ISA_BUS_API)	+= isa.o
 diff --git a/drivers/base/watch.c b/drivers/base/watch.c
 new file mode 100644
-index 000000000000..879f82225979
+index 000000000000..725aaa24275b
 --- /dev/null
 +++ b/drivers/base/watch.c
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,90 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Event notifications.
@@ -362,9 +362,8 @@ index 000000000000..879f82225979
 +
 +		init_watch(watch, wqueue);
 +		watch->info_id = (u32)watch_id << WATCH_INFO_ID__SHIFT;
-+		watch->cred = get_current_cred();
 +
-+		ret = security_watch_devices(watch);
++		ret = security_watch_devices();
 +		if (ret < 0)
 +			goto err_watch;
 +
@@ -381,10 +380,7 @@ index 000000000000..879f82225979
 +	}
 +
 +err_watch:
-+	if (watch) {
-+		put_cred(watch->cred);
-+		kfree(watch);
-+	}
++	kfree(watch);
 +err_wqueue:
 +	put_watch_queue(wqueue);
 +err:
