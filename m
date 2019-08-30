@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 29 Aug 2019 18:30:34 +0000
-Subject: [PATCH 05/11] keys: Add a notification facility [ver #6]
-Message-Id: <156710343480.10009.5063333889020557796.stgit@warthog.procyon.org.uk>
+Date: Fri, 30 Aug 2019 13:57:57 +0000
+Subject: [PATCH 05/11] keys: Add a notification facility [ver #7]
+Message-Id: <156717347738.2204.16974496076717721709.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
 Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
@@ -68,19 +68,19 @@ the queue can be shared between multiple notifications of various types.
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/security/keys/core.rst |   58 +++++++++++++++++++
+ Documentation/security/keys/core.rst |   58 ++++++++++++++++++++
  include/linux/key.h                  |    3 +
  include/uapi/linux/keyctl.h          |    2 +
- include/uapi/linux/watch_queue.h     |   28 +++++++++
+ include/uapi/linux/watch_queue.h     |   28 +++++++++-
  security/keys/Kconfig                |    9 +++
  security/keys/compat.c               |    3 +
  security/keys/gc.c                   |    5 ++
  security/keys/internal.h             |   30 ++++++++++
  security/keys/key.c                  |   38 ++++++++-----
- security/keys/keyctl.c               |  103 +++++++++++++++++++++++++++++++++-
+ security/keys/keyctl.c               |   99 +++++++++++++++++++++++++++++++++-
  security/keys/keyring.c              |   20 ++++---
  security/keys/request_key.c          |    4 +
- 12 files changed, 275 insertions(+), 28 deletions(-)
+ 12 files changed, 271 insertions(+), 28 deletions(-)
 
 diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
 index d6d8b0b756b6..957179f8cea9 100644
@@ -447,7 +447,7 @@ index 764f4c57913e..83e8d7c4bb6f 100644
  	}
  }
 diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 9b898c969558..684d60228ac0 100644
+index 9b898c969558..6610649514fb 100644
 --- a/security/keys/keyctl.c
 +++ b/security/keys/keyctl.c
 @@ -37,7 +37,9 @@ static const unsigned char keyrings_capabilities[2] = {
@@ -492,7 +492,7 @@ index 9b898c969558..684d60228ac0 100644
  	key_put(key);
  
  error:
-@@ -1688,6 +1694,94 @@ long keyctl_restrict_keyring(key_serial_t id, const char __user *_type,
+@@ -1688,6 +1694,90 @@ long keyctl_restrict_keyring(key_serial_t id, const char __user *_type,
  	return ret;
  }
  
@@ -541,9 +541,8 @@ index 9b898c969558..684d60228ac0 100644
 +		init_watch(watch, wqueue);
 +		watch->id	= key->serial;
 +		watch->info_id	= (u32)watch_id << WATCH_INFO_ID__SHIFT;
-+		watch->cred = get_current_cred();
 +
-+		ret = security_watch_key(watch, key);
++		ret = security_watch_key(key);
 +		if (ret < 0)
 +			goto err_watch;
 +
@@ -570,10 +569,7 @@ index 9b898c969558..684d60228ac0 100644
 +	}
 +
 +err_watch:
-+	if (watch) {
-+		put_cred(watch->cred);
-+		kfree(watch);
-+	}
++	kfree(watch);
 +err_wlist:
 +	kfree(wlist);
 +err_wqueue:
@@ -587,7 +583,7 @@ index 9b898c969558..684d60228ac0 100644
  /*
   * Get keyrings subsystem capabilities.
   */
-@@ -1857,6 +1951,9 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
+@@ -1857,6 +1947,9 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
  	case KEYCTL_CAPABILITIES:
  		return keyctl_capabilities((unsigned char __user *)arg2, (size_t)arg3);
  
