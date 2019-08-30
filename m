@@ -1,11 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 29 Aug 2019 18:29:49 +0000
-Subject: [PATCH 00/11] Keyrings, Block and USB notifications [ver #6]
-Message-Id: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+Date: Fri, 30 Aug 2019 13:57:12 +0000
+Subject: [PATCH 00/11] Keyrings, Block and USB notifications [ver #7]
+Message-Id: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
 Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
@@ -130,6 +132,12 @@ The patches can be found here also:
 
 Changes:
 
+ ver #7:
+
+ (*) Removed the 'watch' argument from the security_watch_key() and
+     security_watch_devices() hooks as current_cred() can be used instead
+     of watch->cred.
+
  ver #6:
 
  (*) Fix mmap bug in watch_queue driver.
@@ -236,10 +244,10 @@ David Howells (11):
  block/blk-core.c                            |   29 +
  drivers/base/Kconfig                        |    9 
  drivers/base/Makefile                       |    1 
- drivers/base/watch.c                        |   94 +++
+ drivers/base/watch.c                        |   90 +++
  drivers/misc/Kconfig                        |   13 
  drivers/misc/Makefile                       |    1 
- drivers/misc/watch_queue.c                  |  892 +++++++++++++++++++++++++++
+ drivers/misc/watch_queue.c                  |  893 +++++++++++++++++++++++++++
  drivers/usb/core/Kconfig                    |    9 
  drivers/usb/core/devio.c                    |   56 ++
  drivers/usb/core/hub.c                      |    4 
@@ -247,8 +255,8 @@ David Howells (11):
  include/linux/device.h                      |    7 
  include/linux/key.h                         |    3 
  include/linux/lsm_audit.h                   |    1 
- include/linux/lsm_hooks.h                   |   32 +
- include/linux/security.h                    |   25 +
+ include/linux/lsm_hooks.h                   |   38 +
+ include/linux/security.h                    |   32 +
  include/linux/syscalls.h                    |    1 
  include/linux/usb.h                         |   18 +
  include/linux/watch_queue.h                 |   94 +++
@@ -265,13 +273,13 @@ David Howells (11):
  security/keys/gc.c                          |    5 
  security/keys/internal.h                    |   30 +
  security/keys/key.c                         |   38 +
- security/keys/keyctl.c                      |  103 +++
+ security/keys/keyctl.c                      |   99 +++
  security/keys/keyring.c                     |   20 -
  security/keys/request_key.c                 |    4 
- security/security.c                         |   19 +
- security/selinux/hooks.c                    |   17 +
- security/smack/smack_lsm.c                  |   81 ++
- 58 files changed, 2587 insertions(+), 28 deletions(-)
+ security/security.c                         |   23 +
+ security/selinux/hooks.c                    |   14 
+ security/smack/smack_lsm.c                  |   82 ++
+ 58 files changed, 2593 insertions(+), 30 deletions(-)
  create mode 100644 Documentation/watch_queue.rst
  create mode 100644 drivers/base/watch.c
  create mode 100644 drivers/misc/watch_queue.c
