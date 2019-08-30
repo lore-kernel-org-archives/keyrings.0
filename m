@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 29 Aug 2019 18:30:16 +0000
-Subject: [PATCH 03/11] security: Add a hook for the point of notification insertion [ver #6]
-Message-Id: <156710341641.10009.9324038712143541997.stgit@warthog.procyon.org.uk>
+Date: Fri, 30 Aug 2019 13:57:39 +0000
+Subject: [PATCH 03/11] security: Add a hook for the point of notification insertion [ver #7]
+Message-Id: <156717345929.2204.8865868667476300227.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
 Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
@@ -29,18 +29,18 @@ cc: Stephen Smalley <sds@tycho.nsa.gov>
 cc: linux-security-module@vger.kernel.org
 ---
 
- include/linux/lsm_hooks.h |   10 ++++++++++
- include/linux/security.h  |   10 ++++++++++
- security/security.c       |    6 ++++++
- 3 files changed, 26 insertions(+)
+ include/linux/lsm_hooks.h |   14 ++++++++++++++
+ include/linux/security.h  |   15 ++++++++++++++-
+ security/security.c       |    9 +++++++++
+ 3 files changed, 37 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index 19108185b254..e9f1f69cd04d 100644
+index b0cdefcda4e6..257d803dcf6f 100644
 --- a/include/linux/lsm_hooks.h
 +++ b/include/linux/lsm_hooks.h
-@@ -1426,6 +1426,12 @@
+@@ -1424,6 +1424,12 @@
+  *	Check to see if a process is allowed to watch for event notifications
   *	from devices (as a global set).
-  *	@watch: The watch object
   *
 + * @post_notification:
 + *	Check to see if a watch notification can be posted to a particular
@@ -51,73 +51,82 @@ index 19108185b254..e9f1f69cd04d 100644
   *
   * Security hooks for using the eBPF maps and programs functionalities through
   * eBPF syscalls.
-@@ -1705,6 +1711,9 @@ union security_list_options {
- #ifdef CONFIG_WATCH_QUEUE
- 	int (*watch_key)(struct watch *watch, struct key *key);
- 	int (*watch_devices)(struct watch *watch);
+@@ -1706,6 +1712,11 @@ union security_list_options {
+ #ifdef CONFIG_DEVICE_NOTIFICATIONS
+ 	int (*watch_devices)(void);
+ #endif
++#ifdef CONFIG_WATCH_QUEUE
 +	int (*post_notification)(const struct cred *w_cred,
 +				 const struct cred *cred,
 +				 struct watch_notification *n);
- #endif /* CONFIG_WATCH_QUEUE */
++#endif
  
  #ifdef CONFIG_SECURITY_NETWORK
-@@ -1985,6 +1994,7 @@ struct security_hook_heads {
- #ifdef CONFIG_WATCH_QUEUE
- 	struct hlist_head watch_key;
+ 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
+@@ -1988,6 +1999,9 @@ struct security_hook_heads {
+ #ifdef CONFIG_DEVICE_NOTIFICATIONS
  	struct hlist_head watch_devices;
+ #endif
++#ifdef CONFIG_WATCH_QUEUE
 +	struct hlist_head post_notification;
- #endif /* CONFIG_WATCH_QUEUE */
++#endif /* CONFIG_WATCH_QUEUE */
  #ifdef CONFIG_SECURITY_NETWORK
  	struct hlist_head unix_stream_connect;
+ 	struct hlist_head unix_may_send;
 diff --git a/include/linux/security.h b/include/linux/security.h
-index feeade454308..003437714eee 100644
+index 3be44354d308..24c54b9ff0a1 100644
 --- a/include/linux/security.h
 +++ b/include/linux/security.h
-@@ -58,6 +58,7 @@ struct fs_context;
+@@ -57,6 +57,8 @@ struct mm_struct;
+ struct fs_context;
  struct fs_parameter;
  enum fs_value_type;
- struct watch;
++struct watch;
 +struct watch_notification;
  
  /* Default (no) options for the capable function */
  #define CAP_OPT_NONE 0x0
-@@ -396,6 +397,9 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen);
- #ifdef CONFIG_WATCH_QUEUE
- int security_watch_key(struct watch *watch, struct key *key);
- int security_watch_devices(struct watch *watch);
+@@ -1222,6 +1224,18 @@ static inline int security_watch_devices(void)
+ 	return 0;
+ }
+ #endif
++#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
 +int security_post_notification(const struct cred *w_cred,
 +			       const struct cred *cred,
 +			       struct watch_notification *n);
- #endif /* CONFIG_WATCH_QUEUE */
- #else /* CONFIG_SECURITY */
- 
-@@ -1218,6 +1222,12 @@ static inline int security_watch_devices(struct watch *watch)
- {
- 	return 0;
- }
++#else
 +static inline int security_post_notification(const struct cred *w_cred,
 +					     const struct cred *cred,
 +					     struct watch_notification *n)
 +{
 +	return 0;
 +}
- #endif /* CONFIG_WATCH_QUEUE */
- #endif	/* CONFIG_SECURITY */
++#endif
  
+ #ifdef CONFIG_SECURITY_NETWORK
+ 
+@@ -1847,4 +1861,3 @@ static inline void security_bpf_prog_free(struct bpf_prog_aux *aux)
+ #endif /* CONFIG_BPF_SYSCALL */
+ 
+ #endif /* ! __LINUX_SECURITY_H */
+-
 diff --git a/security/security.c b/security/security.c
-index 1ebd2c936a57..5afe966aea4e 100644
+index 007eb48bc848..b719c5a5b2ba 100644
 --- a/security/security.c
 +++ b/security/security.c
-@@ -1927,6 +1927,12 @@ int security_watch_devices(struct watch *watch)
- 	return call_int_hook(watch_devices, 0, watch);
+@@ -1916,6 +1916,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
  }
+ EXPORT_SYMBOL(security_inode_getsecctx);
  
++#ifdef CONFIG_WATCH_QUEUE
 +int security_post_notification(const struct cred *w_cred,
 +			       const struct cred *cred,
 +			       struct watch_notification *n)
 +{
 +	return call_int_hook(post_notification, 0, w_cred, cred, n);
 +}
- #endif /* CONFIG_WATCH_QUEUE */
- 
- #ifdef CONFIG_SECURITY_NETWORK
++#endif /* CONFIG_WATCH_QUEUE */
++
+ #ifdef CONFIG_KEY_NOTIFICATIONS
+ int security_watch_key(struct key *key)
+ {
