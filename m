@@ -1,54 +1,230 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Tue, 06 Aug 2019 13:49:17 +0000
-Subject: [RFC/RFT v3 0/3] KEYS: trusted: Add generic trusted keys framework
-Message-Id: <1565098640-12536-1-git-send-email-sumit.garg@linaro.org>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 30 Aug 2019 14:15:49 +0000
+Subject: watch_devices(2) manpage
+Message-Id: <4596.1567174549@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: dhowells@redhat.com, herbert@gondor.apana.org.au, davem@davemloft.net, peterhuewe@gmx.de, jgg@ziepe.ca, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, arnd@arndb.de, gregkh@linuxfoundation.org, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, casey@schaufler-ca.com, ard.biesheuvel@linaro.org, daniel.thompson@linaro.org, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, Sumit Garg <sumit.garg@linaro.org>
+References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
 
-This patch-set is an outcome of discussion here [1].
+'\" t
+.\" Copyright (c) 2019 David Howells <dhowells@redhat.com>
+.\"
+.\" %%%LICENSE_START(VERBATIM)
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\"
+.\" Since the Linux kernel and libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\"
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\" %%%LICENSE_END
+.\"
+.TH WATCH_DEVICES 2 2019-08-29 "Linux" "Linux Programmer's Manual"
+.SH NAME
+watch_devices \- Watch for global device notifications
+.SH SYNOPSIS
+.nf
+.B #include <linux/watch_queue.h>
+.br
+.B #include <unistd.h>
+.br
+.BI "int watch_devices(int " watch_fd ", int " watch_id ", unsigned int " flags );
+.fi
+.PP
+.IR Note :
+There are no glibc wrappers for these system calls.
+.SH DESCRIPTION
+.PP
+.BR watch_devices ()
+attaches a watch on the global device notification source to a previously
+opened and configured watch queue.  See
+.BR watch_queue (7)
+for more information on how to set up and use those.
+.PP
+The global device notification source is provided with events from a number of
+sources, including block device errors and USB events.  Each notification type
+has a specific format.
 
-I have tested this framework with trusted keys support provided via TEE
-but I wasn't able to test it with a TPM device as I don't possess one. It
-would be really helpful if others could test this patch-set using a TPM
-device.
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SS Block Device Notifications
+Events on block devices, such as I/O errors are posted to any watching queues.
+The message format is:
+.PP
+.in +4n
+.EX
+struct block_notification {
+	struct watch_notification watch;
+	__u64	dev;
+	__u64	sector;
+};
+.EE
+.in
+.PP
+The
+.I watch.type
+field will be set to
+.BR WATCH_TYPE_BLOCK_NOTIFY ,
+the
+.I watch.subtype
+field will contain a constant that indicates the particular event that occurred
+and the watch_id passed to watch_devices() will be placed in
+.I watch.info
+in the ID field.
+.PP
+.I dev
+will contain the major and minor device numbers in
+.B dev_t
+form and
+.I sector
+will contain the first sector the notification pertains to.
+.PP
+The following events are defined:
+.PP
+.in +4n
+.TS
+lB l.
+NOTIFY_BLOCK_ERROR_TIMEOUT
+NOTIFY_BLOCK_ERROR_NO_SPACE
+NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT
+NOTIFY_BLOCK_ERROR_CRITICAL_TARGET
+NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS
+NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM
+NOTIFY_BLOCK_ERROR_PROTECTION
+NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE
+NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE
+NOTIFY_BLOCK_ERROR_IO
+.TE
+.in
+.PP
+All of which indicate error conditions.
 
-[1] https://www.mail-archive.com/linux-doc@vger.kernel.org/msg30591.html
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SS USB Device Notifications
+Events on USB devices, such as I/O errors are posted to any watching queues.
+The message format is:
+.PP
+.in +4n
+.EX
+struct usb_notification {
+        struct watch_notification watch;
+        __u32   error;
+        __u32   reserved;
+        __u8    name_len;
+        __u8    name[0];
+};
+.EE
+.in
+.PP
+The
+.I watch.type
+field will be set to
+.BR WATCH_TYPE_USB_NOTIFY ,
+the
+.I watch.subtype
+field will contain a constant that indicates the particular event that occurred
+and the watch_id passed to watch_devices() will be placed in
+.I watch.info
+in the ID field.
+.PP
+.IR name " and " name_len
+indicates the textual name of the USB device that originated the notification.
+The name will be truncated to
+.B USB_NOTIFICATION_MAX_NAME_LEN
+if it is longer than that.
+.PP
+The following subtypes are currently defined:
+.TP
+.B NOTIFY_USB_DEVICE_ADD
+A new USB device has been plugged in.
+.TP
+.B NOTIFY_USB_DEVICE_REMOVE
+A USB device has been unplugged.
+.TP
+.B NOTIFY_USB_BUS_ADD
+A new USB bus is now available.
+.TP
+.B NOTIFY_USB_BUS_REMOVE
+A USB bus has been removed.
+.TP
+.B NOTIFY_USB_DEVICE_RESET
+A USB device has been reset.
+.TP
+.B NOTIFY_USB_DEVICE_ERROR
+A USB device has generated an error; a suitable error code will have been
+placed in
+.IR error .
 
-Changes in v3:
 
-Move TPM2 trusted keys code to trusted keys subsystem.
-
-Changes in v2:
-
-Split trusted keys abstraction patch for ease of review.
-
-Sumit Garg (3):
-  KEYS: trusted: create trusted keys subsystem
-  KEYS: trusted: move tpm2 trusted keys code
-  KEYS: trusted: Add generic trusted keys framework
-
- crypto/asymmetric_keys/asym_tpm.c                  |   2 +-
- drivers/char/tpm/tpm-interface.c                   |  56 ---
- drivers/char/tpm/tpm.h                             | 224 ------------
- drivers/char/tpm/tpm2-cmd.c                        | 307 -----------------
- include/keys/trusted-type.h                        |  45 +++
- include/keys/{trusted.h => trusted_tpm.h}          |  42 +--
- include/linux/tpm.h                                | 264 +++++++++++++-
- security/keys/Makefile                             |   2 +-
- security/keys/trusted-keys/Makefile                |   8 +
- .../keys/{trusted.c => trusted-keys/trusted-tpm.c} | 363 ++++----------------
- security/keys/trusted-keys/trusted-tpm2.c          | 378 +++++++++++++++++++++
- security/keys/trusted-keys/trusted.c               | 343 +++++++++++++++++++
- 12 files changed, 1109 insertions(+), 925 deletions(-)
- rename include/keys/{trusted.h => trusted_tpm.h} (72%)
- create mode 100644 security/keys/trusted-keys/Makefile
- rename security/keys/{trusted.c => trusted-keys/trusted-tpm.c} (76%)
- create mode 100644 security/keys/trusted-keys/trusted-tpm2.c
- create mode 100644 security/keys/trusted-keys/trusted.c
-
--- 
-2.7.4
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH RETURN VALUE
+On success, the function returns 0.  On error, \-1 is returned, and
+.I errno
+is set appropriately.
+.SH ERRORS
+The following errors may be returned:
+.TP
+.B EBADF
+.I watch_fd
+is an invalid file descriptor.
+.TP
+.B EBADSLT
+The watch does not exist and so cannot be removed.
+.TP
+.B EBUSY
+The source is already attached to the watch device instance specified by
+.I watch_fd
+and so cannot be added.
+.TP
+.B EINVAL
+.I watch_fd
+does not refer to a watch_queue device file.
+.TP
+.B EINVAL
+.IR watch_fd " or " watch_id
+is out of range.
+.TP
+.B EINVAL
+Unsupported
+.I flags
+set.
+.TP
+.B ENOMEM
+Insufficient memory available to allocate a watch record.
+.TP
+.B EPERM
+The caller does not have the required privileges.
+.SH CONFORMING TO
+These functions are Linux-specific and should not be used in programs intended
+to be portable.
+.SH VERSIONS
+The notification queue driver first appeared in v??? of the Linux kernel.
+.SH NOTES
+Glibc does not (yet) provide a wrapper for the
+.BR watch_devices "()"
+system call; call it using
+.BR syscall (2).
+.SH SEE ALSO
+.BR watch_queue (7)
