@@ -1,712 +1,407 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 05 Aug 2019 16:25:10 +0000
-Subject: [PATCH v8 09/20] fscrypt: add FS_IOC_ADD_ENCRYPTION_KEY ioctl
-Message-Id: <20190805162521.90882-10-ebiggers@kernel.org>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 30 Aug 2019 14:15:25 +0000
+Subject: watch_queue(7) manpage
+Message-Id: <4553.1567174525@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190805162521.90882-1-ebiggers@kernel.org>
-In-Reply-To: <20190805162521.90882-1-ebiggers@kernel.org>
-To: linux-fscrypt@vger.kernel.org
-Cc: Satya Tangirala <satyat@google.com>, Theodore Ts'o <tytso@mit.edu>, linux-api@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, linux-crypto@vger.kernel.org, linux-fsdevel@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+.\"
+.\" Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
+.\" Written by David Howells (dhowells@redhat.com)
+.\"
+.\" This program is free software; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public Licence
+.\" as published by the Free Software Foundation; either version
+.\" 2 of the Licence, or (at your option) any later version.
+.\"
+.TH WATCH_QUEUE 7 "28 Aug 2019" Linux "General Kernel Notifications"
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH NAME
+/dev/watch_queue \- General kernel notification queue
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH SYNOPSIS
+#include <linux/watch_queue.h>
+.EX
 
-Add a new fscrypt ioctl, FS_IOC_ADD_ENCRYPTION_KEY.  This ioctl adds an
-encryption key to the filesystem's fscrypt keyring ->s_master_keys,
-making any files encrypted with that key appear "unlocked".
+int fd = open("/dev/watch_queue", O_RDWR);
+ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, size / page_size);
+ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+buf = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+.EE
+.SH OVERVIEW
+.PP
+The general kernel notification queue is a general purpose transport for kernel
+notification messages to userspace.  Notification messages are marked with type
+information so that events from multiple sources can be distinguished.
+Messages are also of variable length to accommodate different information for
+each type.
+.PP
+This queue is implemented as a misc device that can be opened multiple times,
+each opening creating a fully independent queue.  Queues are then configured
+with the size and filtering, event sources are attached and the queue is mapped
+into a process's VM.
+.PP
+Queues take the form of a ring buffer with shared index pointers, all of which
+is accessed directly within the mapping.  There are no read and write methods,
+though poll is provided so that the buffer can be waited upon.
+.PP
+A queue pins a certain amount of locked kernel memory (so that the kernel can
+write a notification into it from contexts where swapping cannot be performed),
+and so is subject to resource limit restrictions on
+.BR RLIMIT_MEMLOCK .
+.PP
+Sources must be attached to a queue manually; there's no single global event
+source, but rather a variety of sources, each of which can be attached to by
+multiple queues.  Attachments can be set up by:
+.TP
+.BR keyctl_watch_key (3)
+Monitor a key or keyring for changes.
+.TP
+.BR device_notify (2)
+Monitor a global source of device events from USB and block devices, such as
+device detection, device removal and I/O errors.
+.PP
+Because a source can produce a lot of different events, not all of which may be
+of interest to the watcher, a filter can be set on a queue to determine whether
+a particular event will get inserted in a queue at the point of posting inside
+the kernel.
 
-Why we need this
-~~~~~~~~~~~~~~~~
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH RING STRUCTURE
+.PP
+The ring buffer is divided into 8-byte slots and notification message occupies
+between 1 and 63 of those slots.  Each message begins with a header of the
+form:
+.PP
+.in +4n
+.EX
+struct watch_notification {
+	__u32	type:24;
+	__u32	subtype:8;
+	__u32	info;
+};
+.EE
+.in
+.PP
+Where
+.I type
+indicates the general class of notification,
+.I subtype
+indicates the specific type of notification within that class and
+.I info
+includes the length (in slots), the watcher's ID and some type-specific
+information.
+.PP
+Messages inserted into the buffer aren't allowed to split over the end of the
+buffer; instead a
+.I skip
+notification will be inserted to pad to the end of the buffer.  A skip
+notification will have the type set to
+.B WATCH_TYPE_META
+and the subtype set to
+.BR WATCH_META_SKIP_NOTIFICATION ,
+with the length indicating how much should be skipped.
+.PP
+To avoid the need for an extra page dedicated solely to metadata pointers, the
+first few slots are covered by a permanent skip notification and contain ring
+metadata including the pointers.  The buffer has a 'header' of the form:
+.PP
+.in +4n
+.EX
+struct {
+	struct watch_notification watch;
+	__u32	head;
+	__u32	tail;
+	__u32	mask;
+	__u32	__reserved;
+};
+.EE
+.in
+.PP
+This includes the ring indices,
+.IR head " and " tail ,
+and a
+.I mask
+to mask them off with before use.  When using the ring indices, the following
+precautions should be observed:
+.TP
+.B (1)
+.I head
+indicates where the kernel will insert the next message into the buffer.  Only
+the kernel is allowed to change head.
+.TP
+.B (2)
+.I tail
+indicates where the next message for userspace to consume can be found; tail
+will never be changed by the kernel.
+.TP
+.B (3)
+An
+.IR acquire -class
+memory barrier must be used to read head.  It is not necessary to use a memory
+barrier to read tail.
+.TP
+.B (4)
+The buffer is empty if tail = head.
+.TP
+.B (5)
+head and tail should not be masked off after increment, but rather left to wrap
+naturally; this means that the index must be masked off before being used to
+access the buffer.
+.TP
+.B (6)
+After consuming a message, the length (in slots) of the message should be added
+to tail and tail must not be then masked off.
+.TP
+.B (7)
+A
+.IR release -class
+memory barrier must be used to update
+.IR tail .
+.PP
+If the head and tail values become too far separated or head points to a
+forbidden area of the buffer, no further message insertion will take place and
+.IR poll ()
+will flag
+.BR POLLERR .
+Otherwise, poll() will flag
+.BR POLLIN " and " POLLRDNORM
+if tail != head.
+.PP
+The ring as a whole is described by the following structure:
+.PP
+.in +4n
+.EX
+struct watch_queue_buffer {
+	union {
+		struct {
+			struct watch_notification watch;
+			__u32	head;
+			__u32	tail;
+			__u32	mask;
+			__u32	__reserved;
+		} meta;
+		struct watch_notification slots[0];
+	};
+};
+.EE
+.in
+.PP
+Where
+.I meta
+covers the slots holding the ring indices and other metadata.  Note that the
+metadata may be extended in future.  It's size can be determined by checking
+the length of the skip pseudo-message that covers it (see
+.IR meta.watch ).
+.PP
+In the event that the ring is full when the kernel needs to write in a
+notification, it will set
+.B WATCH_INFO_NOTIFICATIONS_LOST
+in
+.IR meta.watch.info
+to indicate an overrun.  If the flag is noticed as being unset, the entire word
+can be simply cleared without bothering the kernel as the kernel doesn't ever
+read it.
 
-The main problem is that the "locked/unlocked" (ciphertext/plaintext)
-status of encrypted files is global, but the fscrypt keys are not.
-fscrypt only looks for keys in the keyring(s) the process accessing the
-filesystem is subscribed to: the thread keyring, process keyring, and
-session keyring, where the session keyring may contain the user keyring.
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH IOCTL COMMANDS
+The device has the following
+.IR ioctl ()
+commands:
+.TP
+.B IOC_WATCH_QUEUE_SET_SIZE
+The ioctl argument is indicates the size of the buffer in pages and must be a
+power of two.  This command allocates the memory to back the buffer.
+.IP
+This may only be done once and the buffer cannot be mmap'd until this command
+has been done.
+.TP
+.B IOC_WATCH_QUEUE_SET_FILTER
+This is used to set filters on the notifications that get written into the
+buffer.  The ioctl argument points to a structure of the following form:
+.IP
+.in +4n
+.EX
+struct watch_notification_filter {
+	__u32	nr_filters;
+	__u32	__reserved;
+	struct watch_notification_type_filter filters[];
+};
+.EE
+.in
+.IP
+Where
+.I nr_filters
+indicates the number of elements in the
+.IR filters []
+array.  Each element in the filters array specifies a filter and is of the
+following form:
+.IP
+.in +4n
+.EX
+struct watch_notification_type_filter {
+	__u32	type;
+	__u32	info_filter;
+	__u32	info_mask;
+	__u32	subtype_filter[8];
+};
+.EE
+.in
+.IP
+Where
+.I type
+refer to the type field in a notification record header, info_filter and
+info_mask refer to the info field and subtype_filter is a bit-mask of subtypes.
+.IP
+If no filters are installed, all notifications are allowed by default and if
+one or more filters are installed, notifications are disallowed by default.
+.IP
+A notifications matches a filter if, for notification N and filter F:
+.IP
+.in +4n
+.EX
+N->type = F->type &&
+(F->subtype_filter[N->subtype >> 5] &
+	(1U << (N->subtype & 31))) &&
+(N->info & F->info_mask) = F->info_filter)
+.EE
+.in
+.IP
 
-Therefore, userspace has to put fscrypt keys in the keyrings for
-individual users or sessions.  But this means that when a process with a
-different keyring tries to access encrypted files, whether they appear
-"unlocked" or not is nondeterministic.  This is because it depends on
-whether the files are currently present in the inode cache.
 
-Fixing this by consistently providing each process its own view of the
-filesystem depending on whether it has the key or not isn't feasible due
-to how the VFS caches work.  Furthermore, while sometimes users expect
-this behavior, it is misguided for two reasons.  First, it would be an
-OS-level access control mechanism largely redundant with existing access
-control mechanisms such as UNIX file permissions, ACLs, LSMs, etc.
-Encryption is actually for protecting the data at rest.
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH EXAMPLE
+To use the notification mechanism, first of all the device has to be opened,
+the size must be set and the buffer mapped:
+.PP
+.in +4n
+.EX
+int wfd = open("/dev/watch_queue", O_RDWR);
 
-Second, almost all users of fscrypt actually do need the keys to be
-global.  The largest users of fscrypt, Android and Chromium OS, achieve
-this by having PID 1 create a "session keyring" that is inherited by
-every process.  This works, but it isn't scalable because it prevents
-session keyrings from being used for any other purpose.
+ioctl(wfd, IOC_WATCH_QUEUE_SET_SIZE, 1);
 
-On general-purpose Linux distros, the 'fscrypt' userspace tool [1] can't
-similarly abuse the session keyring, so to make 'sudo' work on all
-systems it has to link all the user keyrings into root's user keyring
-[2].  This is ugly and raises security concerns.  Moreover it can't make
-the keys available to system services, such as sshd trying to access the
-user's '~/.ssh' directory (see [3], [4]) or NetworkManager trying to
-read certificates from the user's home directory (see [5]); or to Docker
-containers (see [6], [7]).
+struct watch_queue_buffer *buf 	mmap(NULL, 1 * PAGE_SIZE, PROT_READ | PROT_WRITE,
+	     MAP_SHARED, wfd, 0);
 
-By having an API to add a key to the *filesystem* we'll be able to fix
-the above bugs, remove userspace workarounds, and clearly express the
-intended semantics: the locked/unlocked status of an encrypted directory
-is global, and encryption is orthogonal to OS-level access control.
+.EE
+.in
+.PP
+From this point, the buffer is open for business.  Filters can be set to
+restrict the notifications that get inserted into the buffer from the sources
+that are watched.  For example:
+.PP
+.in +4n
+.EX
+static struct watch_notification_filter filter = {
+	.nr_filters	= 2,
+	.__reserved	= 0,
+	.filters = {
+		[0]	= {
+			.type			= WATCH_TYPE_KEY_NOTIFY,
+			.subtype_filter[0]	= 1 << NOTIFY_KEY_LINKED,
+			.info_filter		= 1 << WATCH_INFO_FLAG_2,
+			.info_mask		= 1 << WATCH_INFO_FLAG_2,
+		},
+		[1]	= {
+			.type			= WATCH_TYPE_USB_NOTIFY,
+			.subtype_filter[0]	= 1 << NOTIFY_USB_DEVICE_ADD,
+		},
+	},
+};
 
-Why not use the add_key() syscall
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+.EE
+.in
+.PP
+will only allow key-change notifications that indicate a key is linked into a
+keyring and then only if type-specific flag WATCH_INFO_FLAG_2 is set on the
+notification and will only allow USB device-add notifications, blocking other
+USB notifications and all block device notifications.
+.PP
+Sources can then be watched, for example:
+.PP
+.in +4n
+.EX
+keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, wfd, 0x33);
+watch_devices(wfd, 0x55, 0);
+.EE
+.in
+.PP
+The first places a watch on the process's session keyring, directing the
+notifications to the buffer we just created and specifying that they should be
+tagged with 0x33 in the info ID field.  The second places a watch on the global
+device notifications queue, specifying that notifications from that should be
+tagged with info ID 0x55.
+.PP
+The device file descriptor can then be polled to find out when the kernel
+writes something into the buffer or if the ring indices become incoherent:
+.PP
+.in +4n
+.EX
+struct pollfd p[1];
+p[0].fd = wfd;
+p[0].events = POLLIN | POLLERR;
+p[0].revents = 0;
+poll(p, 1, -1);
+.EE
+.in
+.PP
+When it is determined that there is something in the buffer, messages can be
+read out of the ring with something like the following:
+.PP
+.in +4n
+.EX
+struct watch_notification *n;
+unsigned int len, head, tail, mask = buf->meta.mask;
 
-We use an ioctl for this API rather than the existing add_key() system
-call because the ioctl gives us the flexibility needed to implement
-fscrypt-specific semantics that will be introduced in later patches:
+while (head = __atomic_load_n(&buf->meta.head,
+                              __ATOMIC_ACQUIRE),
+       tail = buf->meta.tail,
+       tail != head
+       ) {
+        n = &buf->slots[tail & mask];
+        len = n->info & WATCH_INFO_LENGTH;
+        len >>= WATCH_INFO_LENGTH__SHIFT;
+        if (len = 0)
+                abort();
 
-- Supporting key removal with the semantics such that the secret is
-  removed immediately and any unused inodes using the key are evicted;
-  also, the eviction of any in-use inodes can be retried.
+        switch (n->type) {
+        case WATCH_TYPE_META:
+                switch (n->subtype) {
+                case WATCH_META_REMOVAL_NOTIFICATION:
+                        saw_removal_notification(n);
+                        break;
+                }
+                break;
+        case WATCH_TYPE_KEY_NOTIFY:
+                saw_key_change(n);
+                break;
+        case WATCH_TYPE_USB_NOTIFY:
+                saw_usb_event(n);
+                break;
+        }
 
-- Calculating a key-dependent cryptographic identifier and returning it
-  to userspace.
+        tail += len;
+        __atomic_store_n(&buf->meta.tail, tail, __ATOMIC_RELEASE);
+}
+.EE
+.in
+.PP
 
-- Allowing keys to be added and removed by non-root users, but only keys
-  for v2 encryption policies; and to prevent denial-of-service attacks,
-  users can only remove keys they themselves have added, and a key is
-  only really removed after all users who added it have removed it.
-
-Trying to shoehorn these semantics into the keyrings syscalls would be
-very difficult, whereas the ioctls make things much easier.
-
-However, to reuse code the implementation still uses the keyrings
-service internally.  Thus we get lockless RCU-mode key lookups without
-having to re-implement it, and the keys automatically show up in
-/proc/keys for debugging purposes.
-
-References:
-
-    [1] https://github.com/google/fscrypt
-    [2] https://goo.gl/55cCrI#heading=h.vf09isp98isb
-    [3] https://github.com/google/fscrypt/issues/111#issuecomment-444347939
-    [4] https://github.com/google/fscrypt/issues/116
-    [5] https://bugs.launchpad.net/ubuntu/+source/fscrypt/+bug/1770715
-    [6] https://github.com/google/fscrypt/issues/128
-    [7] https://askubuntu.com/questions/1130306/cannot-run-docker-on-an-encrypted-filesystem
-
-Reviewed-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- fs/crypto/Makefile           |   1 +
- fs/crypto/crypto.c           |  10 +-
- fs/crypto/fscrypt_private.h  |  62 +++++++-
- fs/crypto/keyring.c          | 286 +++++++++++++++++++++++++++++++++++
- fs/crypto/keysetup.c         |  35 ++++-
- fs/super.c                   |   2 +
- include/linux/fs.h           |   1 +
- include/linux/fscrypt.h      |  14 ++
- include/uapi/linux/fscrypt.h |  49 ++++--
- 9 files changed, 447 insertions(+), 13 deletions(-)
- create mode 100644 fs/crypto/keyring.c
-
-diff --git a/fs/crypto/Makefile b/fs/crypto/Makefile
-index ad14d4c29784a6..6b2485b4139335 100644
---- a/fs/crypto/Makefile
-+++ b/fs/crypto/Makefile
-@@ -4,6 +4,7 @@ obj-$(CONFIG_FS_ENCRYPTION)	+= fscrypto.o
- fscrypto-y := crypto.o \
- 	      fname.o \
- 	      hooks.o \
-+	      keyring.o \
- 	      keysetup.o \
- 	      keysetup_v1.o \
- 	      policy.o
-diff --git a/fs/crypto/crypto.c b/fs/crypto/crypto.c
-index 7502c1f0ede9e9..65ca077e8d585f 100644
---- a/fs/crypto/crypto.c
-+++ b/fs/crypto/crypto.c
-@@ -478,6 +478,8 @@ void fscrypt_msg(const struct inode *inode, const char *level,
-  */
- static int __init fscrypt_init(void)
- {
-+	int err = -ENOMEM;
-+
- 	/*
- 	 * Use an unbound workqueue to allow bios to be decrypted in parallel
- 	 * even when they happen to complete on the same CPU.  This sacrifices
-@@ -500,13 +502,19 @@ static int __init fscrypt_init(void)
- 	if (!fscrypt_info_cachep)
- 		goto fail_free_ctx;
- 
-+	err = fscrypt_init_keyring();
-+	if (err)
-+		goto fail_free_info;
-+
- 	return 0;
- 
-+fail_free_info:
-+	kmem_cache_destroy(fscrypt_info_cachep);
- fail_free_ctx:
- 	kmem_cache_destroy(fscrypt_ctx_cachep);
- fail_free_queue:
- 	destroy_workqueue(fscrypt_read_workqueue);
- fail:
--	return -ENOMEM;
-+	return err;
- }
- late_initcall(fscrypt_init)
-diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
-index 794dcba25ca826..0d9ebfd3bf3a54 100644
---- a/fs/crypto/fscrypt_private.h
-+++ b/fs/crypto/fscrypt_private.h
-@@ -14,9 +14,12 @@
- #include <linux/fscrypt.h>
- #include <crypto/hash.h>
- 
--/* Encryption parameters */
-+#define CONST_STRLEN(str)	(sizeof(str) - 1)
-+
- #define FS_KEY_DERIVATION_NONCE_SIZE	16
- 
-+#define FSCRYPT_MIN_KEY_SIZE		16
-+
- /**
-  * Encryption context for inode
-  *
-@@ -156,6 +159,63 @@ extern bool fscrypt_fname_encrypted_size(const struct inode *inode,
- 					 u32 orig_len, u32 max_len,
- 					 u32 *encrypted_len_ret);
- 
-+/* keyring.c */
-+
-+/*
-+ * fscrypt_master_key_secret - secret key material of an in-use master key
-+ */
-+struct fscrypt_master_key_secret {
-+
-+	/* Size of the raw key in bytes */
-+	u32			size;
-+
-+	/* The raw key */
-+	u8			raw[FSCRYPT_MAX_KEY_SIZE];
-+
-+} __randomize_layout;
-+
-+/*
-+ * fscrypt_master_key - an in-use master key
-+ *
-+ * This represents a master encryption key which has been added to the
-+ * filesystem and can be used to "unlock" the encrypted files which were
-+ * encrypted with it.
-+ */
-+struct fscrypt_master_key {
-+
-+	/* The secret key material */
-+	struct fscrypt_master_key_secret	mk_secret;
-+
-+	/* Arbitrary key descriptor which was assigned by userspace */
-+	struct fscrypt_key_specifier		mk_spec;
-+
-+} __randomize_layout;
-+
-+static inline const char *master_key_spec_type(
-+				const struct fscrypt_key_specifier *spec)
-+{
-+	switch (spec->type) {
-+	case FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR:
-+		return "descriptor";
-+	}
-+	return "[unknown]";
-+}
-+
-+static inline int master_key_spec_len(const struct fscrypt_key_specifier *spec)
-+{
-+	switch (spec->type) {
-+	case FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR:
-+		return FSCRYPT_KEY_DESCRIPTOR_SIZE;
-+	}
-+	return 0;
-+}
-+
-+extern struct key *
-+fscrypt_find_master_key(struct super_block *sb,
-+			const struct fscrypt_key_specifier *mk_spec);
-+
-+extern int __init fscrypt_init_keyring(void);
-+
- /* keysetup.c */
- 
- struct fscrypt_mode {
-diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
-new file mode 100644
-index 00000000000000..bcd7d2836e1e4c
---- /dev/null
-+++ b/fs/crypto/keyring.c
-@@ -0,0 +1,286 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/*
-+ * Filesystem-level keyring for fscrypt
-+ *
-+ * Copyright 2019 Google LLC
-+ */
-+
-+/*
-+ * This file implements management of fscrypt master keys in the
-+ * filesystem-level keyring, including the ioctls:
-+ *
-+ * - FS_IOC_ADD_ENCRYPTION_KEY
-+ *
-+ * See the "User API" section of Documentation/filesystems/fscrypt.rst for more
-+ * information about these ioctls.
-+ */
-+
-+#include <linux/key-type.h>
-+#include <linux/seq_file.h>
-+
-+#include "fscrypt_private.h"
-+
-+static void wipe_master_key_secret(struct fscrypt_master_key_secret *secret)
-+{
-+	memzero_explicit(secret, sizeof(*secret));
-+}
-+
-+static void move_master_key_secret(struct fscrypt_master_key_secret *dst,
-+				   struct fscrypt_master_key_secret *src)
-+{
-+	memcpy(dst, src, sizeof(*dst));
-+	memzero_explicit(src, sizeof(*src));
-+}
-+
-+static void free_master_key(struct fscrypt_master_key *mk)
-+{
-+	wipe_master_key_secret(&mk->mk_secret);
-+	kzfree(mk);
-+}
-+
-+static inline bool valid_key_spec(const struct fscrypt_key_specifier *spec)
-+{
-+	if (spec->__reserved)
-+		return false;
-+	return master_key_spec_len(spec) != 0;
-+}
-+
-+static int fscrypt_key_instantiate(struct key *key,
-+				   struct key_preparsed_payload *prep)
-+{
-+	key->payload.data[0] = (struct fscrypt_master_key *)prep->data;
-+	return 0;
-+}
-+
-+static void fscrypt_key_destroy(struct key *key)
-+{
-+	free_master_key(key->payload.data[0]);
-+}
-+
-+static void fscrypt_key_describe(const struct key *key, struct seq_file *m)
-+{
-+	seq_puts(m, key->description);
-+}
-+
-+/*
-+ * Type of key in ->s_master_keys.  Each key of this type represents a master
-+ * key which has been added to the filesystem.  Its payload is a
-+ * 'struct fscrypt_master_key'.  The "." prefix in the key type name prevents
-+ * users from adding keys of this type via the keyrings syscalls rather than via
-+ * the intended method of FS_IOC_ADD_ENCRYPTION_KEY.
-+ */
-+static struct key_type key_type_fscrypt = {
-+	.name			= "._fscrypt",
-+	.instantiate		= fscrypt_key_instantiate,
-+	.destroy		= fscrypt_key_destroy,
-+	.describe		= fscrypt_key_describe,
-+};
-+
-+/* Search ->s_master_keys */
-+static struct key *search_fscrypt_keyring(struct key *keyring,
-+					  struct key_type *type,
-+					  const char *description)
-+{
-+	/*
-+	 * We need to mark the keyring reference as "possessed" so that we
-+	 * acquire permission to search it, via the KEY_POS_SEARCH permission.
-+	 */
-+	key_ref_t keyref = make_key_ref(keyring, true /* possessed */);
-+
-+	keyref = keyring_search(keyref, type, description, false);
-+	if (IS_ERR(keyref)) {
-+		if (PTR_ERR(keyref) = -EAGAIN || /* not found */
-+		    PTR_ERR(keyref) = -EKEYREVOKED) /* recently invalidated */
-+			keyref = ERR_PTR(-ENOKEY);
-+		return ERR_CAST(keyref);
-+	}
-+	return key_ref_to_ptr(keyref);
-+}
-+
-+#define FSCRYPT_FS_KEYRING_DESCRIPTION_SIZE	\
-+	(CONST_STRLEN("fscrypt-") + FIELD_SIZEOF(struct super_block, s_id))
-+
-+#define FSCRYPT_MK_DESCRIPTION_SIZE	(2 * FSCRYPT_KEY_DESCRIPTOR_SIZE + 1)
-+
-+static void format_fs_keyring_description(
-+			char description[FSCRYPT_FS_KEYRING_DESCRIPTION_SIZE],
-+			const struct super_block *sb)
-+{
-+	sprintf(description, "fscrypt-%s", sb->s_id);
-+}
-+
-+static void format_mk_description(
-+			char description[FSCRYPT_MK_DESCRIPTION_SIZE],
-+			const struct fscrypt_key_specifier *mk_spec)
-+{
-+	sprintf(description, "%*phN",
-+		master_key_spec_len(mk_spec), (u8 *)&mk_spec->u);
-+}
-+
-+/* Create ->s_master_keys if needed.  Synchronized by fscrypt_add_key_mutex. */
-+static int allocate_filesystem_keyring(struct super_block *sb)
-+{
-+	char description[FSCRYPT_FS_KEYRING_DESCRIPTION_SIZE];
-+	struct key *keyring;
-+
-+	if (sb->s_master_keys)
-+		return 0;
-+
-+	format_fs_keyring_description(description, sb);
-+	keyring = keyring_alloc(description, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
-+				current_cred(), KEY_POS_SEARCH |
-+				  KEY_USR_SEARCH | KEY_USR_READ | KEY_USR_VIEW,
-+				KEY_ALLOC_NOT_IN_QUOTA, NULL, NULL);
-+	if (IS_ERR(keyring))
-+		return PTR_ERR(keyring);
-+
-+	/* Pairs with READ_ONCE() in fscrypt_find_master_key() */
-+	smp_store_release(&sb->s_master_keys, keyring);
-+	return 0;
-+}
-+
-+void fscrypt_sb_free(struct super_block *sb)
-+{
-+	key_put(sb->s_master_keys);
-+	sb->s_master_keys = NULL;
-+}
-+
-+/*
-+ * Find the specified master key in ->s_master_keys.
-+ * Returns ERR_PTR(-ENOKEY) if not found.
-+ */
-+struct key *fscrypt_find_master_key(struct super_block *sb,
-+				    const struct fscrypt_key_specifier *mk_spec)
-+{
-+	struct key *keyring;
-+	char description[FSCRYPT_MK_DESCRIPTION_SIZE];
-+
-+	/* pairs with smp_store_release() in allocate_filesystem_keyring() */
-+	keyring = READ_ONCE(sb->s_master_keys);
-+	if (keyring = NULL)
-+		return ERR_PTR(-ENOKEY); /* No keyring yet, so no keys yet. */
-+
-+	format_mk_description(description, mk_spec);
-+	return search_fscrypt_keyring(keyring, &key_type_fscrypt, description);
-+}
-+
-+/*
-+ * Allocate a new fscrypt_master_key which contains the given secret, set it as
-+ * the payload of a new 'struct key' of type fscrypt, and link the 'struct key'
-+ * into the given keyring.  Synchronized by fscrypt_add_key_mutex.
-+ */
-+static int add_new_master_key(struct fscrypt_master_key_secret *secret,
-+			      const struct fscrypt_key_specifier *mk_spec,
-+			      struct key *keyring)
-+{
-+	struct fscrypt_master_key *mk;
-+	char description[FSCRYPT_MK_DESCRIPTION_SIZE];
-+	struct key *key;
-+	int err;
-+
-+	mk = kzalloc(sizeof(*mk), GFP_KERNEL);
-+	if (!mk)
-+		return -ENOMEM;
-+
-+	mk->mk_spec = *mk_spec;
-+
-+	move_master_key_secret(&mk->mk_secret, secret);
-+
-+	format_mk_description(description, mk_spec);
-+	key = key_alloc(&key_type_fscrypt, description,
-+			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, current_cred(),
-+			KEY_POS_SEARCH | KEY_USR_SEARCH | KEY_USR_VIEW,
-+			KEY_ALLOC_NOT_IN_QUOTA, NULL);
-+	if (IS_ERR(key)) {
-+		err = PTR_ERR(key);
-+		goto out_free_mk;
-+	}
-+	err = key_instantiate_and_link(key, mk, sizeof(*mk), keyring, NULL);
-+	key_put(key);
-+	if (err)
-+		goto out_free_mk;
-+
-+	return 0;
-+
-+out_free_mk:
-+	free_master_key(mk);
-+	return err;
-+}
-+
-+static int add_master_key(struct super_block *sb,
-+			  struct fscrypt_master_key_secret *secret,
-+			  const struct fscrypt_key_specifier *mk_spec)
-+{
-+	static DEFINE_MUTEX(fscrypt_add_key_mutex);
-+	struct key *key;
-+	int err;
-+
-+	mutex_lock(&fscrypt_add_key_mutex); /* serialize find + link */
-+	key = fscrypt_find_master_key(sb, mk_spec);
-+	if (IS_ERR(key)) {
-+		err = PTR_ERR(key);
-+		if (err != -ENOKEY)
-+			goto out_unlock;
-+		/* Didn't find the key in ->s_master_keys.  Add it. */
-+		err = allocate_filesystem_keyring(sb);
-+		if (err)
-+			goto out_unlock;
-+		err = add_new_master_key(secret, mk_spec, sb->s_master_keys);
-+	} else {
-+		key_put(key);
-+		err = 0;
-+	}
-+out_unlock:
-+	mutex_unlock(&fscrypt_add_key_mutex);
-+	return err;
-+}
-+
-+/*
-+ * Add a master encryption key to the filesystem, causing all files which were
-+ * encrypted with it to appear "unlocked" (decrypted) when accessed.
-+ *
-+ * For more details, see the "FS_IOC_ADD_ENCRYPTION_KEY" section of
-+ * Documentation/filesystems/fscrypt.rst.
-+ */
-+int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
-+{
-+	struct super_block *sb = file_inode(filp)->i_sb;
-+	struct fscrypt_add_key_arg __user *uarg = _uarg;
-+	struct fscrypt_add_key_arg arg;
-+	struct fscrypt_master_key_secret secret;
-+	int err;
-+
-+	if (copy_from_user(&arg, uarg, sizeof(arg)))
-+		return -EFAULT;
-+
-+	if (!valid_key_spec(&arg.key_spec))
-+		return -EINVAL;
-+
-+	if (arg.raw_size < FSCRYPT_MIN_KEY_SIZE ||
-+	    arg.raw_size > FSCRYPT_MAX_KEY_SIZE)
-+		return -EINVAL;
-+
-+	if (memchr_inv(arg.__reserved, 0, sizeof(arg.__reserved)))
-+		return -EINVAL;
-+
-+	memset(&secret, 0, sizeof(secret));
-+	secret.size = arg.raw_size;
-+	err = -EFAULT;
-+	if (copy_from_user(secret.raw, uarg->raw, secret.size))
-+		goto out_wipe_secret;
-+
-+	err = -EACCES;
-+	if (!capable(CAP_SYS_ADMIN))
-+		goto out_wipe_secret;
-+
-+	err = add_master_key(sb, &secret, &arg.key_spec);
-+out_wipe_secret:
-+	wipe_master_key_secret(&secret);
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(fscrypt_ioctl_add_key);
-+
-+int __init fscrypt_init_keyring(void)
-+{
-+	return register_key_type(&key_type_fscrypt);
-+}
-diff --git a/fs/crypto/keysetup.c b/fs/crypto/keysetup.c
-index f4a47448e9efa1..1c6d18bcdc7b64 100644
---- a/fs/crypto/keysetup.c
-+++ b/fs/crypto/keysetup.c
-@@ -216,7 +216,40 @@ int fscrypt_set_derived_key(struct fscrypt_info *ci, const u8 *derived_key)
-  */
- static int setup_file_encryption_key(struct fscrypt_info *ci)
- {
--	return fscrypt_setup_v1_file_key_via_subscribed_keyrings(ci);
-+	struct key *key;
-+	struct fscrypt_master_key *mk = NULL;
-+	struct fscrypt_key_specifier mk_spec;
-+	int err;
-+
-+	mk_spec.type = FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR;
-+	memcpy(mk_spec.u.descriptor, ci->ci_master_key_descriptor,
-+	       FSCRYPT_KEY_DESCRIPTOR_SIZE);
-+
-+	key = fscrypt_find_master_key(ci->ci_inode->i_sb, &mk_spec);
-+	if (IS_ERR(key)) {
-+		if (key != ERR_PTR(-ENOKEY))
-+			return PTR_ERR(key);
-+
-+		return fscrypt_setup_v1_file_key_via_subscribed_keyrings(ci);
-+	}
-+
-+	mk = key->payload.data[0];
-+
-+	if (mk->mk_secret.size < ci->ci_mode->keysize) {
-+		fscrypt_warn(NULL,
-+			     "key with %s %*phN is too short (got %u bytes, need %u+ bytes)",
-+			     master_key_spec_type(&mk_spec),
-+			     master_key_spec_len(&mk_spec), (u8 *)&mk_spec.u,
-+			     mk->mk_secret.size, ci->ci_mode->keysize);
-+		err = -ENOKEY;
-+		goto out_release_key;
-+	}
-+
-+	err = fscrypt_setup_v1_file_key(ci, mk->mk_secret.raw);
-+
-+out_release_key:
-+	key_put(key);
-+	return err;
- }
- 
- static void put_crypt_info(struct fscrypt_info *ci)
-diff --git a/fs/super.c b/fs/super.c
-index 5960578a40760a..e486a442a61fb2 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -32,6 +32,7 @@
- #include <linux/backing-dev.h>
- #include <linux/rculist_bl.h>
- #include <linux/cleancache.h>
-+#include <linux/fscrypt.h>
- #include <linux/fsnotify.h>
- #include <linux/lockdep.h>
- #include <linux/user_namespace.h>
-@@ -290,6 +291,7 @@ static void __put_super(struct super_block *s)
- 		WARN_ON(s->s_inode_lru.node);
- 		WARN_ON(!list_empty(&s->s_mounts));
- 		security_sb_free(s);
-+		fscrypt_sb_free(s);
- 		put_user_ns(s->s_user_ns);
- 		kfree(s->s_subtype);
- 		call_rcu(&s->rcu, destroy_super_rcu);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 997a530ff4e9d0..5dff77326cec60 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1427,6 +1427,7 @@ struct super_block {
- 	const struct xattr_handler **s_xattr;
- #ifdef CONFIG_FS_ENCRYPTION
- 	const struct fscrypt_operations	*s_cop;
-+	struct key		*s_master_keys; /* master crypto keys in use */
- #endif
- 	struct hlist_bl_head	s_roots;	/* alternate root dentries for NFS */
- 	struct list_head	s_mounts;	/* list of mounts; _not_ for fs use */
-diff --git a/include/linux/fscrypt.h b/include/linux/fscrypt.h
-index 583802cb2e35d0..46bf66cf76ef88 100644
---- a/include/linux/fscrypt.h
-+++ b/include/linux/fscrypt.h
-@@ -138,6 +138,10 @@ extern int fscrypt_ioctl_get_policy(struct file *, void __user *);
- extern int fscrypt_has_permitted_context(struct inode *, struct inode *);
- extern int fscrypt_inherit_context(struct inode *, struct inode *,
- 					void *, bool);
-+/* keyring.c */
-+extern void fscrypt_sb_free(struct super_block *sb);
-+extern int fscrypt_ioctl_add_key(struct file *filp, void __user *arg);
-+
- /* keysetup.c */
- extern int fscrypt_get_encryption_info(struct inode *);
- extern void fscrypt_put_encryption_info(struct inode *);
-@@ -367,6 +371,16 @@ static inline int fscrypt_inherit_context(struct inode *parent,
- 	return -EOPNOTSUPP;
- }
- 
-+/* keyring.c */
-+static inline void fscrypt_sb_free(struct super_block *sb)
-+{
-+}
-+
-+static inline int fscrypt_ioctl_add_key(struct file *filp, void __user *arg)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- /* keysetup.c */
- static inline int fscrypt_get_encryption_info(struct inode *inode)
- {
-diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
-index 29a945d165def3..6aeca3cb0a2dec 100644
---- a/include/uapi/linux/fscrypt.h
-+++ b/include/uapi/linux/fscrypt.h
-@@ -36,22 +36,51 @@ struct fscrypt_policy {
- 	__u8 master_key_descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
- };
- 
--#define FS_IOC_SET_ENCRYPTION_POLICY	_IOR('f', 19, struct fscrypt_policy)
--#define FS_IOC_GET_ENCRYPTION_PWSALT	_IOW('f', 20, __u8[16])
--#define FS_IOC_GET_ENCRYPTION_POLICY	_IOW('f', 21, struct fscrypt_policy)
--
--/* Parameters for passing an encryption key into the kernel keyring */
-+/*
-+ * Process-subscribed "logon" key description prefix and payload format.
-+ * Deprecated; prefer FS_IOC_ADD_ENCRYPTION_KEY instead.
-+ */
- #define FSCRYPT_KEY_DESC_PREFIX		"fscrypt:"
--#define FSCRYPT_KEY_DESC_PREFIX_SIZE		8
--
--/* Structure that userspace passes to the kernel keyring */
--#define FSCRYPT_MAX_KEY_SIZE			64
--
-+#define FSCRYPT_KEY_DESC_PREFIX_SIZE	8
-+#define FSCRYPT_MAX_KEY_SIZE		64
- struct fscrypt_key {
- 	__u32 mode;
- 	__u8 raw[FSCRYPT_MAX_KEY_SIZE];
- 	__u32 size;
- };
-+
-+/*
-+ * Keys are specified by an arbitrary 8-byte key "descriptor",
-+ * matching fscrypt_policy::master_key_descriptor.
-+ */
-+#define FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR	1
-+
-+/*
-+ * Specifies a key.  This doesn't contain the actual key itself; this is just
-+ * the "name" of the key.
-+ */
-+struct fscrypt_key_specifier {
-+	__u32 type;	/* one of FSCRYPT_KEY_SPEC_TYPE_* */
-+	__u32 __reserved;
-+	union {
-+		__u8 __reserved[32]; /* reserve some extra space */
-+		__u8 descriptor[FSCRYPT_KEY_DESCRIPTOR_SIZE];
-+	} u;
-+};
-+
-+/* Struct passed to FS_IOC_ADD_ENCRYPTION_KEY */
-+struct fscrypt_add_key_arg {
-+	struct fscrypt_key_specifier key_spec;
-+	__u32 raw_size;
-+	__u32 __reserved[9];
-+	__u8 raw[];
-+};
-+
-+#define FS_IOC_SET_ENCRYPTION_POLICY		_IOR('f', 19, struct fscrypt_policy)
-+#define FS_IOC_GET_ENCRYPTION_PWSALT		_IOW('f', 20, __u8[16])
-+#define FS_IOC_GET_ENCRYPTION_POLICY		_IOW('f', 21, struct fscrypt_policy)
-+#define FS_IOC_ADD_ENCRYPTION_KEY		_IOWR('f', 23, struct fscrypt_add_key_arg)
-+
- /**********************************************************************/
- 
- /* old names; don't add anything new here! */
--- 
-2.22.0.770.g0f2c4a37fd-goog
+.\"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+.SH VERSIONS
+The notification queue driver first appeared in v??? of the Linux kernel.
+.SH SEE ALSO
+.ad l
+.nh
+.BR ioctl (2),
+.BR keyctl (1),
+.BR keyctl_watch_key (3),
+.BR poll (2),
+.BR setrlimit (2)
