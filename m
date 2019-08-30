@@ -1,13 +1,13 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 29 Aug 2019 18:31:01 +0000
-Subject: [PATCH 08/11] usb: Add USB subsystem notifications [ver #6]
-Message-Id: <156710346128.10009.5355561301144071271.stgit@warthog.procyon.org.uk>
+Date: Fri, 30 Aug 2019 13:58:23 +0000
+Subject: [PATCH 08/11] usb: Add USB subsystem notifications [ver #7]
+Message-Id: <156717350329.2204.7056537095039252263.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156710338860.10009.12524626894838499011.stgit@warthog.procyon.org.uk>
+References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
 To: viro@zeniv.linux.org.uk
 Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
