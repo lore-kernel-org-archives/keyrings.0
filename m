@@ -1,37 +1,111 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 05 Aug 2019 20:59:15 +0000
-Subject: Re: [RFC/RFT v2 1/2] KEYS: trusted: create trusted keys subsystem
-Message-Id: <20190805205915.k5enrfob2cocqyff@linux.intel.com>
+From: Yihao Wu <wuyihao@linux.alibaba.com>
+Date: Sat, 31 Aug 2019 08:22:03 +0000
+Subject: [PATCH 1/2] sign-file: introduce check_module_sig
+Message-Id: <92f6ccea-f36e-61b9-9013-2c037ef24b14@linux.alibaba.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1563449086-13183-1-git-send-email-sumit.garg@linaro.org>
- <1563449086-13183-2-git-send-email-sumit.garg@linaro.org>
- <20190801172310.cldcftfdoh5vyfjg@linux.intel.com>
- <CAFA6WYM+FQuXA9Saj5+ffOGsc-shhiF5Uos4g14Qndvu6w97Sg@mail.gmail.com>
- <20190802193802.jn56jhoz5crebggt@linux.intel.com>
- <CAFA6WYOMXc2y=vXOwRv+PYyF8oBV70G7CrJ81jvD5yJT41zLZw@mail.gmail.com>
-In-Reply-To: <CAFA6WYOMXc2y=vXOwRv+PYyF8oBV70G7CrJ81jvD5yJT41zLZw@mail.gmail.com>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, linux-security-module@vger.kernel.org, dhowells@redhat.com, Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net, jejb@linux.ibm.com, Mimi Zohar <zohar@linux.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Casey Schaufler <casey@schaufler-ca.com>, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>
+To: keyrings@vger.kernel.org
 
-On Mon, Aug 05, 2019 at 10:32:59AM +0530, Sumit Garg wrote:
-> Okay, I will try to move TPM2 trusted keys code also.
+This method checks if there's any existing signature. And it returns the
+actual module size, which excludes the signature.
 
-I'm definitely for extending trusted keys beyond TPMs. Before that can be
-done, however, the current mess needs to be cleaned up.
+Signed-off-by: Yihao Wu <wuyihao@linux.alibaba.com>
+---
+ scripts/sign-file.c | 70 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
 
-I did a lot of work recently [1] to clean up TPM transmit code to better
-suited to be used outside of the TPM drivers (remove recursive calls,
-put the whole stack use tpm_buf for everything).
-
-What still needs to be done is to move tpm_buf stuff to include/linux in
-order to be usable in the keyring code. Also for TPM 2.0 trusted keys,
-TPM2 constants need to be moved to include/linux. For the latter, I'd
-suggest to move all protocol constants there and not just what is
-required for trusted keys. Better to have them in one place.
-
-[1] https://lkml.org/lkml/2019/2/13/176
-
-/Jarkko
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index fbd34b8e8f57..8647a78368d3 100644
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -62,9 +62,11 @@ struct module_signature {
+ 	uint32_t	sig_len;	/* Length of signature data */
+ };
+ 
++#define SIGSIZ (sizeof(struct module_signature))
+ #define PKEY_ID_PKCS7 2
+ 
+ static char magic_number[] = "~Module signature appended~\n";
++#define MAGIC_SIZE (sizeof(magic_number) - 1)
+ 
+ static __attribute__((noreturn))
+ void format(void)
+@@ -132,6 +134,74 @@ static int pem_pw_cb(char *buf, int len, int w, void *v)
+ 	return pwlen;
+ }
+ 
++/*
++ * Check if there is at least one valid PKCS#7 signature
++ */
++static bool check_module_sig(char *module_name, unsigned long *module_size)
++{
++	int sig_offset, magic_offset;
++	unsigned long file_size, offset;
++	uint32_t sig_len;
++	char buf[4096];
++	uint16_t type;
++	BIO *bm;
++
++	bm = BIO_new_file(module_name, "rb");
++	ERR(!bm, "%s", module_name);
++
++	while (BIO_read(bm, buf, 4096) > 0)
++		;
++	file_size = *module_size = offset = BIO_number_read(bm);
++
++	for (;;) {
++		magic_offset = offset - MAGIC_SIZE;
++		if (magic_offset < 0)
++			break;
++
++		if (BIO_seek(bm, magic_offset))
++			break;
++
++		if (BIO_read(bm, buf, MAGIC_SIZE) != MAGIC_SIZE)
++			break;
++
++		if (memcmp(buf, magic_number, MAGIC_SIZE))
++			break;
++
++		if (magic_offset <= SIGSIZ)
++			break;
++
++		sig_offset = magic_offset - 4;
++		if (BIO_seek(bm, sig_offset))
++			break;
++
++		if (BIO_read(bm, &sig_len, 4) != 4)
++			break;
++
++		sig_len = ntohl(sig_len);
++
++		offset -= MAGIC_SIZE + SIGSIZ + sig_len;
++		if (offset <= 0)
++			break;
++
++		if (BIO_seek(bm, offset))
++			break;
++
++		if (BIO_read(bm, &type, 2) != 2)
++			break;
++
++		/* The structured type must be a sequence. And the length of the
++		 * content info must be at the next 2 bytes (0x82 - 0x80 = 0x2)
++		 */
++		if (type != 0x8230)
++			break;
++
++		*module_size = offset;
++	}
++
++	ERR(BIO_free(bm) < 0, "%s", module_name);
++	return *module_size < file_size;
++}
++
+ static EVP_PKEY *read_private_key(const char *private_key_name)
+ {
+ 	EVP_PKEY *private_key;
+-- 
+2.21.0
