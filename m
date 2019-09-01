@@ -1,24 +1,53 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 02 Sep 2019 07:19:31 +0000
-Subject: Re: [PATCH RESEND] KEYS: pass expiry from X.509 cert to key structure
-Message-Id: <1380.1567408771@warthog.procyon.org.uk>
+From: Yihao Wu <wuyihao@linux.alibaba.com>
+Date: Sun, 01 Sep 2019 10:31:56 +0000
+Subject: Re: [PATCH 2/2] sign-file: detect existing signature and handle it
+Message-Id: <3c825d6a-4dd9-cd77-5af4-9d5af1fef843@linux.alibaba.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <9453.1567178718@warthog.procyon.org.uk>
-In-Reply-To: <9453.1567178718@warthog.procyon.org.uk>
+References: <33691ba1-6427-4439-5aa9-792ec8b4e7de@linux.alibaba.com>
+In-Reply-To: <33691ba1-6427-4439-5aa9-792ec8b4e7de@linux.alibaba.com>
 To: keyrings@vger.kernel.org
 
-Yihao Wu <wuyihao@linux.alibaba.com> wrote:
+On 2019/8/31 11:10 PM, Jia Zhang wrote:
+>> +	       n > 0) {
+>> +		ERR(BIO_write(bm, buf, n) < 0, "%s", dest_name);
+>> +		left -= n;
+>> +	}
+>> +	BIO_free(bo);
+>> +	ERR(BIO_reset(bm) < 0, "%s", raw_module_name);
+>>  
+> How about not creating a temporary ~raw~ file?
+> 
+> You already get the unsigned module size, so you can write it to a new
+> mem BIO object as following:
+> 
+> BIO *bm = BIO_new(BIO_s_mem());
+> BIO *bf = BIO_new_file(module_name, "rb");
+> 
+> while (1) {
+> 	int sz = BIO_read(bf, buf, sizeof(buf));
+> 	if (sz <= 0)
+> 		break;
+> 
+> 	BIO_write(bm, buf, sz);
+> }
+> 
+> BIO_reset(bm);
+> 
+> and then reuse the original codes.
+> 
+> Jia
+> 
+>>  	if (!raw_sig) {
+>>  		/* Read the private key and the X.509 cert the PKCS#7 message
+>> @@ -415,10 +435,17 @@ int main(int argc, char **argv)
 
-> Expiry time is not utilized by X.509 cert yet. This patch reads expiry
-> from X.509 cert into key_preparsed_payload. Then it is passed to key
-> structure when the key is being instantiated.
 
-Thinking on it again, it's more complicated than you think: Unless you can
-guarantee that the system clock is correct at time of boot, this may cause the
-system to fail to boot.  The certs used for module signing and suchlike may
-appear to be expired because the clock is wrong and thus not be usable.
+Great ideas! But there's limitation on the read end of BIO_s_mem, that data can't
+be read twice. What have been read will be wiped out immediately by BIO.
+So I will try some workaround to it.
 
-David
+Thanks,
+Yihao
