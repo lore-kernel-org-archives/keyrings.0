@@ -1,23 +1,35 @@
-From: Julian Smith <juliansmith2015@mail.ru>
-Date: Wed, 11 Sep 2019 11:25:24 +0000
-Subject: Inquiry 11/Sept/2019
-Message-Id: <20190911112815.543FCD9BA0@mail.qeaudio.ga>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Mon, 02 Sep 2019 14:08:00 +0000
+Subject: Re: [RESEND][PATCH v2-resend] MAINTAINERS: fix style in KEYS-TRUSTED entry
+Message-Id: <20190902140800.oonp4yr5673fpyd5@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190911111608.058D67ABB2@mail.qeaudio.ga>
-In-Reply-To: <20190911111608.058D67ABB2@mail.qeaudio.ga>
-To: keyrings@vger.kernel.org
+References: <20190825170015.3199-1-lukas.bulwahn@gmail.com>
+ <20190826054024.fjx3robu464ndvi7@linux.intel.com>
+In-Reply-To: <20190826054024.fjx3robu464ndvi7@linux.intel.com>
+To: Lukas Bulwahn <lukas.bulwahn@gmail.com>
+Cc: James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Hi,friend,
+On Mon, Aug 26, 2019 at 08:40:24AM +0300, Jarkko Sakkinen wrote:
+> On Sun, Aug 25, 2019 at 07:00:15PM +0200, Lukas Bulwahn wrote:
+> > Mimi Zohar used spaces instead of a tab when adding Jarkko Sakkinen as
+> > further maintainer to the KEYS-TRUSTED section entry.
+> > 
+> > In fact, ./scripts/checkpatch.pl -f MAINTAINERS complains:
+> > 
+> >   WARNING: MAINTAINERS entries use one tab after TYPE:
+> >   #8581: FILE: MAINTAINERS:8581:
+> >   +M:      Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> > 
+> > The issue was detected when writing a script that parses MAINTAINERS.
+> > 
+> > Fixes: 34bccd61b139 ("MAINTAINERS: add Jarkko as maintainer for trusted keys")
+> > Signed-off-by: Lukas Bulwahn <lukas.bulwahn@gmail.com>
+> 
+> Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-This is Julian Smith and i am purchasing manager from E-cloth Co.,LTD in the UK.
-We are glad to know about your company from the web and we are interested in your products.
-Could you kindly send us your Latest catalog and price list for our trial order.
+Including to my v5.4 PR.
 
-Thanks and Best Regards,
-
-Ms Julian Smith
-Purchasing Manager
-E-cloth Co.,LTD
+/Jarkko
