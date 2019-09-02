@@ -1,19 +1,15 @@
-From: Sasha Levin <sashal@kernel.org>
-Date: Mon, 09 Sep 2019 15:40:50 +0000
-Subject: [PATCH AUTOSEL 5.2 10/12] keys: Fix missing null pointer check in request_key_auth_describe()
-Message-Id: <20190909154052.30941-10-sashal@kernel.org>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 02 Sep 2019 12:37:29 +0000
+Subject: [PATCH] keys: Fix missing null pointer check in request_key_auth_describe()
+Message-Id: <156742784963.20310.17991758398365196262.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190909154052.30941-1-sashal@kernel.org>
-In-Reply-To: <20190909154052.30941-1-sashal@kernel.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Hillf Danton <hdanton@sina.com>, Sachin Sant <sachinp@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+To: torvalds@linux-foundation.org
+Cc: Sachin Sant <sachinp@linux.vnet.ibm.com>, Hillf Danton <hdanton@sina.com>Sachin Sant <sachinp@linux.vnet.ibm.com>, dhowells@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
 From: Hillf Danton <hdanton@sina.com>
-
-[ Upstream commit d41a3effbb53b1bcea41e328d16a4d046a508381 ]
 
 If a request_key authentication token key gets revoked, there's a window in
 which request_key_auth_describe() can see it with a NULL payload - but it
@@ -47,19 +43,18 @@ Reported-by: Sachin Sant <sachinp@linux.vnet.ibm.com>
 Signed-off-by: Hillf Danton <hdanton@sina.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 Tested-by: Sachin Sant <sachinp@linux.vnet.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- security/keys/request_key_auth.c | 6 ++++++
+
+ security/keys/request_key_auth.c |    6 ++++++
  1 file changed, 6 insertions(+)
 
 diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index e45b5cf3b97fd..8491becb57270 100644
+index e73ec040e250..ecba39c93fd9 100644
 --- a/security/keys/request_key_auth.c
 +++ b/security/keys/request_key_auth.c
 @@ -66,6 +66,9 @@ static void request_key_auth_describe(const struct key *key,
  {
- 	struct request_key_auth *rka = get_request_key_auth(key);
+ 	struct request_key_auth *rka = dereference_key_rcu(key);
  
 +	if (!rka)
 +		return;
@@ -77,5 +72,3 @@ index e45b5cf3b97fd..8491becb57270 100644
  	datalen = rka->callout_len;
  	ret = datalen;
  
--- 
-2.20.1
