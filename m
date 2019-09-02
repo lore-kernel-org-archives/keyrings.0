@@ -1,152 +1,24 @@
-From: Yihao Wu <wuyihao@linux.alibaba.com>
-Date: Sun, 01 Sep 2019 10:23:29 +0000
-Subject: Re: [PATCH 1/2] sign-file: introduce check_module_sig
-Message-Id: <3111722c-0950-58a5-d8e9-0f95b46bd15b@linux.alibaba.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 02 Sep 2019 07:19:31 +0000
+Subject: Re: [PATCH RESEND] KEYS: pass expiry from X.509 cert to key structure
+Message-Id: <1380.1567408771@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <92f6ccea-f36e-61b9-9013-2c037ef24b14@linux.alibaba.com>
-In-Reply-To: <92f6ccea-f36e-61b9-9013-2c037ef24b14@linux.alibaba.com>
+References: <9453.1567178718@warthog.procyon.org.uk>
+In-Reply-To: <9453.1567178718@warthog.procyon.org.uk>
 To: keyrings@vger.kernel.org
 
-On 2019/8/31 10:27 PM, Jia Zhang wrote:
-> 
-> 
-> On 2019/8/31 下午4:22, Yihao Wu wrote:
->> This method checks if there's any existing signature. And it returns the
->> actual module size, which excludes the signature.
->>
->> Signed-off-by: Yihao Wu <wuyihao@linux.alibaba.com>
->> ---
->>  scripts/sign-file.c | 70 +++++++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 70 insertions(+)
-> 
-> I'm assuming your patch is based on the latest upstream.
-> 
-Yes, it is.
+Yihao Wu <wuyihao@linux.alibaba.com> wrote:
 
-Thanks,
-Yihao
+> Expiry time is not utilized by X.509 cert yet. This patch reads expiry
+> from X.509 cert into key_preparsed_payload. Then it is passed to key
+> structure when the key is being instantiated.
 
->>
->> diff --git a/scripts/sign-file.c b/scripts/sign-file.c
->> index fbd34b8e8f57..8647a78368d3 100644
->> --- a/scripts/sign-file.c
->> +++ b/scripts/sign-file.c
->> @@ -62,9 +62,11 @@ struct module_signature {
->>  	uint32_t	sig_len;	/* Length of signature data */
->>  };
->>  
->> +#define SIGSIZ (sizeof(struct module_signature))
->>  #define PKEY_ID_PKCS7 2
->>  
->>  static char magic_number[] = "~Module signature appended~\n";
->> +#define MAGIC_SIZE (sizeof(magic_number) - 1)
->>  
->>  static __attribute__((noreturn))
->>  void format(void)
->> @@ -132,6 +134,74 @@ static int pem_pw_cb(char *buf, int len, int w, void *v)
->>  	return pwlen;
->>  }
->>  
->> +/*
->> + * Check if there is at least one valid PKCS#7 signature
->> + */
->> +static bool check_module_sig(char *module_name, unsigned long *module_size)
->> +{
->> +	int sig_offset, magic_offset;
->> +	unsigned long file_size, offset;
->> +	uint32_t sig_len;
->> +	char buf[4096];
->> +	uint16_t type;
->> +	BIO *bm;
->> +
->> +	bm = BIO_new_file(module_name, "rb");
->> +	ERR(!bm, "%s", module_name);
->> +
->> +	while (BIO_read(bm, buf, 4096) > 0)
-> 
->> +		;
->> +	file_size = *module_size = offset = BIO_number_read(bm);
-> 
-> Use the combination of BIO_seek() and BIO_tell() to get file size instead.
-> 
+Thinking on it again, it's more complicated than you think: Unless you can
+guarantee that the system clock is correct at time of boot, this may cause the
+system to fail to boot.  The certs used for module signing and suchlike may
+appear to be expired because the clock is wrong and thus not be usable.
 
-There might be no elegant way to do this I suppose, since
-openssl BIOs doesn't support SEEK_END.
-Maybe the best we can do is to use POSIX function lseek.
-Or could you help us decide on this, David?
-
-Thanks,
-Yihao
->> +
->> +	for (;;) {
->> +		magic_offset = offset - MAGIC_SIZE;
->> +		if (magic_offset < 0)
->> +			break;
->> +
->> +		if (BIO_seek(bm, magic_offset))
->> +			break;
->> +
->> +		if (BIO_read(bm, buf, MAGIC_SIZE) != MAGIC_SIZE)
->> +			break;
->> +
->> +		if (memcmp(buf, magic_number, MAGIC_SIZE))
->> +			break;
->> +
->> +		if (magic_offset <= SIGSIZ)
->> +			break;
->> +
->> +		sig_offset = magic_offset - 4;
->> +		if (BIO_seek(bm, sig_offset))
->> +			break;
->> +
->> +		if (BIO_read(bm, &sig_len, 4) != 4)
-> 
-> Change all hardcoding "4" to sizeof(sig_len).
-> Okay
-
-Thanks,
-Yihao
->> +			break;
->> +
->> +		sig_len = ntohl(sig_len);
->> +
->> +		offset -= MAGIC_SIZE + SIGSIZ + sig_len;
->> +		if (offset <= 0)
->> +			break;
->> +
->> +		if (BIO_seek(bm, offset))
->> +			break;
->> +
->> +		if (BIO_read(bm, &type, 2) != 2)
-> 
-> 
-> Change all hardcoding "2" to sizeof(type).
-> 
-> Jia
-> 
-Okay
-
-Thanks,
-Yihao
->> +			break;
->> +
->> +		/* The structured type must be a sequence. And the length of the
->> +		 * content info must be at the next 2 bytes (0x82 - 0x80 = 0x2)
->> +		 */
->> +		if (type != 0x8230)
->> +			break;
->> +
->> +		*module_size = offset;
->> +	}
->> +
->> +	ERR(BIO_free(bm) < 0, "%s", module_name);
->> +	return *module_size < file_size;
->> +}
->> +
->>  static EVP_PKEY *read_private_key(const char *private_key_name)
->>  {
->>  	EVP_PKEY *private_key;
->>
+David
