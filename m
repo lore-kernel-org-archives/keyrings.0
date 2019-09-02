@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Mon, 02 Sep 2019 12:39:33 +0000
+Date: Mon, 02 Sep 2019 13:26:05 +0000
 Subject: Re: [PATCH 00/11] Keyrings, Block and USB notifications [ver #7]
-Message-Id: <20964.1567427973@warthog.procyon.org.uk>
+Message-Id: <30970.1567430765@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -20,10 +20,7 @@ Casey Schaufler <casey@schaufler-ca.com> wrote:
 > I'm having trouble with the "make install" on Fedora. Is there an
 > unusual dependency?
 
-What's the symptom you're seeing?  Is it this:
-
-install -D -m 0644 libkeyutils.a /tmp/opt/lib64 libcrypt.so.2 => /lib64/libcrypt.so.2 (0x00007f7dcbf6d000)/libkeyutils.a
-/bin/sh: -c: line 0: syntax error near unexpected token `('
-/bin/sh: -c: line 0: `install -D -m 0644 libkeyutils.a /tmp/opt/lib64 libcrypt.so.2 => /lib64/libcrypt.so.2 (0x00007f7dcbf6d000)/libkeyutils.a'
+I've pushed a couple of patches to my next branch.  Do "make install" and
+"make rpm" now work for you?
 
 David
