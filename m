@@ -1,27 +1,58 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 03 Sep 2019 16:29:21 +0000
+From: Alan Stern <stern@rowland.harvard.edu>
+Date: Tue, 03 Sep 2019 17:06:07 +0000
 Subject: Re: [PATCH 08/11] usb: Add USB subsystem notifications [ver #7]
-Message-Id: <29419.1567528161@warthog.procyon.org.uk>
+Message-Id: <Pine.LNX.4.44L0.1909031303500.1859-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190903161202.GB22754@roeck-us.net> <20190903125129.GA18838@roeck-us.net> <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk> <156717350329.2204.7056537095039252263.stgit@warthog.procyon.org.uk> <7481.1567526867@warthog.procyon.org.uk>
-In-Reply-To: <20190903161202.GB22754@roeck-us.net>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <29419.1567528161@warthog.procyon.org.uk>
+In-Reply-To: <29419.1567528161@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, viro@zeniv.linux.org.uk, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Guenter Roeck <linux@roeck-us.net> wrote:
+On Tue, 3 Sep 2019, David Howells wrote:
 
-> > > This added call to usbdev_remove() results in a crash when running
-> > > the qemu "tosa" emulation. Removing the call fixes the problem.
-> > 
-> > Yeah - I'm going to drop the bus notification messages for now.
-> > 
-> It is not the bus notification itself causing problems. It is the
-> call to usbdev_remove().
+> Guenter Roeck <linux@roeck-us.net> wrote:
+> 
+> > > > This added call to usbdev_remove() results in a crash when running
+> > > > the qemu "tosa" emulation. Removing the call fixes the problem.
+> > > 
+> > > Yeah - I'm going to drop the bus notification messages for now.
+> > > 
+> > It is not the bus notification itself causing problems. It is the
+> > call to usbdev_remove().
+> 
+> Unfortunately, I don't know how to fix it and don't have much time to
+> investigate it right now - and it's something that can be added back later.
 
-Unfortunately, I don't know how to fix it and don't have much time to
-investigate it right now - and it's something that can be added back later.
+The cause of your problem is quite simple:
 
-David
+ static int usbdev_notify(struct notifier_block *self,
+ 			       unsigned long action, void *dev)
+ {
+ 	switch (action) {
+ 	case USB_DEVICE_ADD:
++		post_usb_device_notification(dev, NOTIFY_USB_DEVICE_ADD, 0);
+ 		break;
+ 	case USB_DEVICE_REMOVE:
++		post_usb_device_notification(dev, NOTIFY_USB_DEVICE_REMOVE, 0);
++		usbdev_remove(dev);
++		break;
++	case USB_BUS_ADD:
++		post_usb_bus_notification(dev, NOTIFY_USB_BUS_ADD, 0);
++		break;
++	case USB_BUS_REMOVE:
++		post_usb_bus_notification(dev, NOTIFY_USB_BUS_REMOVE, 0);
+ 		usbdev_remove(dev);
+ 		break;
+ 	}
+
+The original code had usbdev_remove(dev) under the USB_DEVICE_REMOVE
+case.  The patch mistakenly moves it, putting it under the
+USB_BUS_REMOVE case.
+
+If the usbdev_remove() call were left where it was originally, the 
+problem would be solved.
+
+Alan Stern
