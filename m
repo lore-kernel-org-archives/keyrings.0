@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 03 Sep 2019 16:06:37 +0000
+Date: Tue, 03 Sep 2019 16:37:10 +0000
 Subject: Re: [PATCH 04/11] General notification queue with user mmap()'able ring buffer [ver #7]
-Message-Id: <7403.1567526797@warthog.procyon.org.uk>
+Message-Id: <27533.1567528630@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,23 +13,37 @@ Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, Casey Schaufler <casey@schaufl
 
 Hillf Danton <hdanton@sina.com> wrote:
 
-> > +	smp_store_release(&buf->meta.head, head);
+> > +	for (i = 0; i < wf->nr_filters; i++) {
+> > +		wt = &wf->filters[i];
+> > +		if (n->type = wt->type &&
+> > +		    (wt->subtype_filter[n->subtype >> 5] &
+> > +		     (1U << (n->subtype & 31))) &&
 > 
-> Add a line of comment for the paring smp_load_acquire().
-> I did not find it in 04/11.
+> Replace the pure numbers with something easier to understand.
 
-You won't find smp_load_acquire() - it's not in the kernel, though if you look
-in the sample, you'll find the corresponding barrier in userspace.  Note that
-there's a further implicit barrier you don't see.
+How about the following:
 
-I've added the comments:
+static bool filter_watch_notification(const struct watch_filter *wf,
+				      const struct watch_notification *n)
+{
+	const struct watch_type_filter *wt;
+	unsigned int st_bits = sizeof(wt->subtype_filter[0]) * 8;
+	unsigned int st_index = n->subtype / st_bits;
+	unsigned int st_bit = 1U << (n->subtype % st_bits);
+	int i;
 
-	/* Barrier against userspace, ordering data read before tail read */
-	ring_tail = READ_ONCE(buf->meta.tail);
+	if (!test_bit(n->type, wf->type_filter))
+		return false;
 
-and:
+	for (i = 0; i < wf->nr_filters; i++) {
+		wt = &wf->filters[i];
+		if (n->type = wt->type &&
+		    (wt->subtype_filter[st_index] & st_bit) &&
+		    (n->info & wt->info_mask) = wt->info_filter)
+			return true;
+	}
 
-	/* Barrier against userspace, ordering head update after data write. */
-	smp_store_release(&buf->meta.head, head);
+	return false; /* If there is a filter, the default is to reject. */
+}
 
 David
