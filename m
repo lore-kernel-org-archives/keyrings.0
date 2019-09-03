@@ -1,117 +1,72 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Mon, 16 Sep 2019 10:46:23 +0000
-Subject: [Patch v6 3/4] KEYS: trusted: Create trusted keys subsystem
-Message-Id: <1568630064-14887-4-git-send-email-sumit.garg@linaro.org>
+From: Sasha Levin <sashal@kernel.org>
+Date: Tue, 03 Sep 2019 16:22:37 +0000
+Subject: [PATCH AUTOSEL 4.19 005/167] keys: Fix the use of the C++ keyword "private" in uapi/linux/keyctl.h
+Message-Id: <20190903162519.7136-5-sashal@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1568630064-14887-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1568630064-14887-1-git-send-email-sumit.garg@linaro.org>
-To: jarkko.sakkinen@linux.intel.com, dhowells@redhat.com, peterhuewe@gmx.de
-Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, herbert@gondor.apana.org.au, davem@davemloft.net, jgg@ziepe.ca, arnd@arndb.de, gregkh@linuxfoundation.org, jejb@linux.ibm.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, jsnitsel@redhat.com, linux-kernel@vger.kernel.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>
+References: <20190903162519.7136-1-sashal@kernel.org>
+In-Reply-To: <20190903162519.7136-1-sashal@kernel.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, Randy Dunlap <rdunlap@infradead.org>, Lubomir Rintel <lkundrak@v3.sk>, James Morris <jmorris@namei.org>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Stephan Mueller <smueller@chronox.de>, Andrew Morton <akpm@linux-foundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, James Morris <james.morris@microsoft.com>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org
 
-Move existing code to trusted keys subsystem. Also, rename files with
-"tpm" as suffix which provides the underlying implementation.
+From: David Howells <dhowells@redhat.com>
 
-Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+[ Upstream commit 2ecefa0a15fd0ef88b9cd5d15ceb813008136431 ]
+
+The keyctl_dh_params struct in uapi/linux/keyctl.h contains the symbol
+"private" which means that the header file will cause compilation failure
+if #included in to a C++ program.  Further, the patch that added the same
+struct to the keyutils package named the symbol "priv", not "private".
+
+The previous attempt to fix this (commit 8a2336e549d3) did so by simply
+renaming the kernel's copy of the field to dh_private, but this then breaks
+existing userspace and as such has been reverted (commit 8c0f9f5b309d).
+
+[And note, to those who think that wrapping the struct in extern "C" {}
+ will work: it won't; that only changes how symbol names are presented to
+ the assembler and linker.].
+
+Instead, insert an anonymous union around the "private" member and add a
+second member in there with the name "priv" to match the one in the
+keyutils package.  The "private" member is then wrapped in !__cplusplus
+cpp-conditionals to hide it from C++.
+
+Fixes: ddbb41148724 ("KEYS: Add KEYCTL_DH_COMPUTE command")
+Fixes: 8a2336e549d3 ("uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name")
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Randy Dunlap <rdunlap@infradead.org>
+cc: Lubomir Rintel <lkundrak@v3.sk>
+cc: James Morris <jmorris@namei.org>
+cc: Mat Martineau <mathew.j.martineau@linux.intel.com>
+cc: Stephan Mueller <smueller@chronox.de>
+cc: Andrew Morton <akpm@linux-foundation.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>
+cc: stable@vger.kernel.org
+Signed-off-by: James Morris <james.morris@microsoft.com>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- crypto/asymmetric_keys/asym_tpm.c                        | 2 +-
- include/Kbuild                                           | 1 -
- include/keys/{trusted.h => trusted_tpm.h}                | 7 +++++--
- security/keys/Makefile                                   | 2 +-
- security/keys/trusted-keys/Makefile                      | 7 +++++++
- security/keys/{trusted.c => trusted-keys/trusted_tpm1.c} | 2 +-
- 6 files changed, 15 insertions(+), 6 deletions(-)
- rename include/keys/{trusted.h => trusted_tpm.h} (96%)
- create mode 100644 security/keys/trusted-keys/Makefile
- rename security/keys/{trusted.c => trusted-keys/trusted_tpm1.c} (99%)
+ include/uapi/linux/keyctl.h | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index a2b2a61..d16d893 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -13,7 +13,7 @@
- #include <crypto/sha.h>
- #include <asm/unaligned.h>
- #include <keys/asymmetric-subtype.h>
--#include <keys/trusted.h>
-+#include <keys/trusted_tpm.h>
- #include <crypto/asym_tpm_subtype.h>
- #include <crypto/public_key.h>
+diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+index 7b8c9e19bad1c..0f3cb13db8e93 100644
+--- a/include/uapi/linux/keyctl.h
++++ b/include/uapi/linux/keyctl.h
+@@ -65,7 +65,12 @@
  
-diff --git a/include/Kbuild b/include/Kbuild
-index c38f0d4..a5801c0 100644
---- a/include/Kbuild
-+++ b/include/Kbuild
-@@ -65,7 +65,6 @@ header-test-			+= keys/asymmetric-subtype.h
- header-test-			+= keys/asymmetric-type.h
- header-test-			+= keys/big_key-type.h
- header-test-			+= keys/request_key_auth-type.h
--header-test-			+= keys/trusted.h
- header-test-			+= kvm/arm_arch_timer.h
- header-test-			+= kvm/arm_pmu.h
- header-test-$(CONFIG_ARM)	+= kvm/arm_psci.h
-diff --git a/include/keys/trusted.h b/include/keys/trusted_tpm.h
-similarity index 96%
-rename from include/keys/trusted.h
-rename to include/keys/trusted_tpm.h
-index 29e3e9b..7b9d7b4 100644
---- a/include/keys/trusted.h
-+++ b/include/keys/trusted_tpm.h
-@@ -1,6 +1,9 @@
- /* SPDX-License-Identifier: GPL-2.0 */
--#ifndef __TRUSTED_KEY_H
--#define __TRUSTED_KEY_H
-+#ifndef __TRUSTED_TPM_H
-+#define __TRUSTED_TPM_H
-+
-+#include <keys/trusted-type.h>
-+#include <linux/tpm_command.h>
- 
- /* implementation specific TPM constants */
- #define MAX_BUF_SIZE			1024
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 9cef540..074f275 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -28,5 +28,5 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
- # Key types
- #
- obj-$(CONFIG_BIG_KEYS) += big_key.o
--obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
-+obj-$(CONFIG_TRUSTED_KEYS) += trusted-keys/
- obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
-diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
-new file mode 100644
-index 0000000..1a24680
---- /dev/null
-+++ b/security/keys/trusted-keys/Makefile
-@@ -0,0 +1,7 @@
-+# SPDX-License-Identifier: GPL-2.0
-+#
-+# Makefile for trusted keys
-+#
-+
-+obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
-+trusted-y += trusted_tpm1.o
-diff --git a/security/keys/trusted.c b/security/keys/trusted-keys/trusted_tpm1.c
-similarity index 99%
-rename from security/keys/trusted.c
-rename to security/keys/trusted-keys/trusted_tpm1.c
-index 7071011..e3155fd 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -27,7 +27,7 @@
- #include <linux/tpm.h>
- #include <linux/tpm_command.h>
- 
--#include <keys/trusted.h>
-+#include <keys/trusted_tpm.h>
- 
- static const char hmac_alg[] = "hmac(sha1)";
- static const char hash_alg[] = "sha1";
+ /* keyctl structures */
+ struct keyctl_dh_params {
+-	__s32 private;
++	union {
++#ifndef __cplusplus
++		__s32 private;
++#endif
++		__s32 priv;
++	};
+ 	__s32 prime;
+ 	__s32 base;
+ };
 -- 
-2.7.4
+2.20.1
