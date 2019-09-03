@@ -1,47 +1,20 @@
-From: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-Date: Tue, 03 Sep 2019 08:34:49 +0000
-Subject: RE: [PATCH 06/11] Add a general, global device notification watch list [ver #7]
-Message-Id: <TYAPR01MB454492E48362BED351E797B2D8B90@TYAPR01MB4544.jpnprd01.prod.outlook.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 03 Sep 2019 16:41:03 +0000
+Subject: Re: [PATCH 06/11] Add a general, global device notification watch list [ver #7]
+Message-Id: <28301.1567528863@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk>
- <156717348608.2204.16592073177201775472.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156717348608.2204.16592073177201775472.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, "nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>, "raven@themaw.net" <raven@themaw.net>, Christian Brauner <christian@brauner.io>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>, "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>"linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.k>
+References: <TYAPR01MB454492E48362BED351E797B2D8B90@TYAPR01MB4544.jpnprd01.prod.outlook.com> <156717343223.2204.15875738850129174524.stgit@warthog.procyon.org.uk> <156717348608.2204.16592073177201775472.stgit@warthog.procyon.org.uk>
+In-Reply-To: <TYAPR01MB454492E48362BED351E797B2D8B90@TYAPR01MB4544.jpnprd01.prod.outlook.com>
+To: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Cc: dhowells@redhat.com, "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, "nicolas.dichtel@6wind.com" <nicolas.dichtel@6wind.com>, "raven@themaw.net" <raven@themaw.net>, Christian Brauner <christian@brauner.io>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>, "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.or>
 
-SGksDQoNCj4gRnJvbTogRGF2aWQgSG93ZWxscywgU2VudDogRnJpZGF5LCBBdWd1c3QgMzAsIDIw
-MTkgMTA6NTggUE0NCjxzbmlwPg0KPiAtLS0NCj4gDQo+ICBEb2N1bWVudGF0aW9uL3dhdGNoX3F1
-ZXVlLnJzdCAgICAgICAgICAgICAgIHwgICAyMiArKysrKystDQo+ICBhcmNoL2FscGhhL2tlcm5l
-bC9zeXNjYWxscy9zeXNjYWxsLnRibCAgICAgIHwgICAgMQ0KPiAgYXJjaC9hcm0vdG9vbHMvc3lz
-Y2FsbC50YmwgICAgICAgICAgICAgICAgICB8ICAgIDENCj4gIGFyY2gvaWE2NC9rZXJuZWwvc3lz
-Y2FsbHMvc3lzY2FsbC50YmwgICAgICAgfCAgICAxDQoNCkl0IHNlZW1zIHRvIGxhY2sgbW9kaWZp
-Y2F0aW9uIGZvciBhcmNoL2FybTY0Lg0KDQpJJ20gbm90IHN1cmUgd2hldGhlciB0aGlzIGlzIHJl
-bGF0ZWQsIGJ1dCBteSBlbnZpcm9ubWVudCAoUi1DYXIgSDMgLyByOGE3Nzk1KQ0KY2Fubm90IGJv
-b3Qgb24gbmV4dC0yMDE5MDkwMiB3aGljaCBjb250YWlucyB0aGlzIHBhdGNoLiBJIGZvdW5kIGFu
-IGlzc3VlDQpvbiB0aGUgcGF0Y2ggMDgvMTEsIHNvIEknbGwgcmVwb3J0IG9uIHRoZSBlbWFpbCB0
-aHJlYWQgbGF0ZXIuDQoNCj4gIGFyY2gvbTY4ay9rZXJuZWwvc3lzY2FsbHMvc3lzY2FsbC50Ymwg
-ICAgICAgfCAgICAxDQo+ICBhcmNoL21pY3JvYmxhemUva2VybmVsL3N5c2NhbGxzL3N5c2NhbGwu
-dGJsIHwgICAgMQ0KPiAgYXJjaC9taXBzL2tlcm5lbC9zeXNjYWxscy9zeXNjYWxsX24zMi50Ymwg
-ICB8ICAgIDENCj4gIGFyY2gvbWlwcy9rZXJuZWwvc3lzY2FsbHMvc3lzY2FsbF9uNjQudGJsICAg
-fCAgICAxDQo+ICBhcmNoL21pcHMva2VybmVsL3N5c2NhbGxzL3N5c2NhbGxfbzMyLnRibCAgIHwg
-ICAgMQ0KPiAgYXJjaC9wYXJpc2Mva2VybmVsL3N5c2NhbGxzL3N5c2NhbGwudGJsICAgICB8ICAg
-IDENCj4gIGFyY2gvcG93ZXJwYy9rZXJuZWwvc3lzY2FsbHMvc3lzY2FsbC50YmwgICAgfCAgICAx
-DQo+ICBhcmNoL3MzOTAva2VybmVsL3N5c2NhbGxzL3N5c2NhbGwudGJsICAgICAgIHwgICAgMQ0K
-PiAgYXJjaC9zaC9rZXJuZWwvc3lzY2FsbHMvc3lzY2FsbC50YmwgICAgICAgICB8ICAgIDENCj4g
-IGFyY2gvc3BhcmMva2VybmVsL3N5c2NhbGxzL3N5c2NhbGwudGJsICAgICAgfCAgICAxDQo+ICBh
-cmNoL3g4Ni9lbnRyeS9zeXNjYWxscy9zeXNjYWxsXzMyLnRibCAgICAgIHwgICAgMQ0KPiAgYXJj
-aC94ODYvZW50cnkvc3lzY2FsbHMvc3lzY2FsbF82NC50YmwgICAgICB8ICAgIDENCj4gIGFyY2gv
-eHRlbnNhL2tlcm5lbC9zeXNjYWxscy9zeXNjYWxsLnRibCAgICAgfCAgICAxDQo+ICBkcml2ZXJz
-L2Jhc2UvS2NvbmZpZyAgICAgICAgICAgICAgICAgICAgICAgIHwgICAgOSArKysNCj4gIGRyaXZl
-cnMvYmFzZS9NYWtlZmlsZSAgICAgICAgICAgICAgICAgICAgICAgfCAgICAxDQo+ICBkcml2ZXJz
-L2Jhc2Uvd2F0Y2guYyAgICAgICAgICAgICAgICAgICAgICAgIHwgICA5MCArKysrKysrKysrKysr
-KysrKysrKysrKysrKysNCj4gIGluY2x1ZGUvbGludXgvZGV2aWNlLmggICAgICAgICAgICAgICAg
-ICAgICAgfCAgICA3ICsrDQo+ICBpbmNsdWRlL2xpbnV4L3N5c2NhbGxzLmggICAgICAgICAgICAg
-ICAgICAgIHwgICAgMQ0KPiAgaW5jbHVkZS91YXBpL2FzbS1nZW5lcmljL3VuaXN0ZC5oICAgICAg
-ICAgICB8ICAgIDQgKw0KPiAga2VybmVsL3N5c19uaS5jICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICB8ICAgIDENCj4gIDI0IGZpbGVzIGNoYW5nZWQsIDE0OSBpbnNlcnRpb25zKCspLCAyIGRl
-bGV0aW9ucygtKQ0KPiAgY3JlYXRlIG1vZGUgMTAwNjQ0IGRyaXZlcnMvYmFzZS93YXRjaC5jDQoN
-CkJlc3QgcmVnYXJkcywNCllvc2hpaGlybyBTaGltb2RhDQoNCg=
+Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com> wrote:
+
+> It seems to lack modification for arch/arm64.
+
+Fixed.
+
+David
