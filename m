@@ -1,72 +1,71 @@
-From: Sasha Levin <sashal@kernel.org>
-Date: Tue, 03 Sep 2019 16:22:37 +0000
-Subject: [PATCH AUTOSEL 4.19 005/167] keys: Fix the use of the C++ keyword "private" in uapi/linux/keyctl.h
-Message-Id: <20190903162519.7136-5-sashal@kernel.org>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Wed, 04 Sep 2019 17:23:18 +0000
+Subject: [PATCH] KEYS: trusted: correctly initialize digests and fix locking issue
+Message-Id: <20190904172318.610-1-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190903162519.7136-1-sashal@kernel.org>
-In-Reply-To: <20190903162519.7136-1-sashal@kernel.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Randy Dunlap <rdunlap@infradead.org>, Lubomir Rintel <lkundrak@v3.sk>, James Morris <jmorris@namei.org>, Mat Martineau <mathew.j.martineau@linux.intel.com>, Stephan Mueller <smueller@chronox.de>, Andrew Morton <akpm@linux-foundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, James Morris <james.morris@microsoft.com>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-From: David Howells <dhowells@redhat.com>
+This patch fixes two issues introduced with commit 240730437deb ("KEYS:
+trusted: explicitly use tpm_chip structure from tpm_default_chip()").
 
-[ Upstream commit 2ecefa0a15fd0ef88b9cd5d15ceb813008136431 ]
+It initializes the algorithm in init_digests() for trusted keys, and moves
+the algorithm check in tpm_pcr_extend() before locks are taken in
+tpm_find_get_ops().
 
-The keyctl_dh_params struct in uapi/linux/keyctl.h contains the symbol
-"private" which means that the header file will cause compilation failure
-if #included in to a C++ program.  Further, the patch that added the same
-struct to the keyutils package named the symbol "priv", not "private".
-
-The previous attempt to fix this (commit 8a2336e549d3) did so by simply
-renaming the kernel's copy of the field to dh_private, but this then breaks
-existing userspace and as such has been reverted (commit 8c0f9f5b309d).
-
-[And note, to those who think that wrapping the struct in extern "C" {}
- will work: it won't; that only changes how symbol names are presented to
- the assembler and linker.].
-
-Instead, insert an anonymous union around the "private" member and add a
-second member in there with the name "priv" to match the one in the
-keyutils package.  The "private" member is then wrapped in !__cplusplus
-cpp-conditionals to hide it from C++.
-
-Fixes: ddbb41148724 ("KEYS: Add KEYCTL_DH_COMPUTE command")
-Fixes: 8a2336e549d3 ("uapi/linux/keyctl.h: don't use C++ reserved keyword as a struct member name")
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Randy Dunlap <rdunlap@infradead.org>
-cc: Lubomir Rintel <lkundrak@v3.sk>
-cc: James Morris <jmorris@namei.org>
-cc: Mat Martineau <mathew.j.martineau@linux.intel.com>
-cc: Stephan Mueller <smueller@chronox.de>
-cc: Andrew Morton <akpm@linux-foundation.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>
-cc: stable@vger.kernel.org
-Signed-off-by: James Morris <james.morris@microsoft.com>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Fixes: 240730437deb ("KEYS: trusted: explicitly use tpm_chip structure from tpm_default_chip()")
 ---
- include/uapi/linux/keyctl.h | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/char/tpm/tpm-interface.c | 8 ++++----
+ security/keys/trusted.c          | 5 +++++
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
-index 7b8c9e19bad1c..0f3cb13db8e93 100644
---- a/include/uapi/linux/keyctl.h
-+++ b/include/uapi/linux/keyctl.h
-@@ -65,7 +65,12 @@
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 1b4f95c13e00..1fffa91fc148 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -316,14 +316,14 @@ int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
+ 	int rc;
+ 	int i;
  
- /* keyctl structures */
- struct keyctl_dh_params {
--	__s32 private;
-+	union {
-+#ifndef __cplusplus
-+		__s32 private;
-+#endif
-+		__s32 priv;
-+	};
- 	__s32 prime;
- 	__s32 base;
- };
+-	chip = tpm_find_get_ops(chip);
+-	if (!chip)
+-		return -ENODEV;
+-
+ 	for (i = 0; i < chip->nr_allocated_banks; i++)
+ 		if (digests[i].alg_id != chip->allocated_banks[i].alg_id)
+ 			return -EINVAL;
+ 
++	chip = tpm_find_get_ops(chip);
++	if (!chip)
++		return -ENODEV;
++
+ 	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
+ 		rc = tpm2_pcr_extend(chip, pcr_idx, digests);
+ 		tpm_put_ops(chip);
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index ade699131065..1fbd77816610 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -1228,11 +1228,16 @@ static int __init trusted_shash_alloc(void)
+ 
+ static int __init init_digests(void)
+ {
++	int i;
++
+ 	digests = kcalloc(chip->nr_allocated_banks, sizeof(*digests),
+ 			  GFP_KERNEL);
+ 	if (!digests)
+ 		return -ENOMEM;
+ 
++	for (i = 0; i < chip->nr_allocated_banks; i++)
++		digests[i].alg_id = chip->allocated_banks[i].alg_id;
++
+ 	return 0;
+ }
+ 
 -- 
-2.20.1
+2.17.1
