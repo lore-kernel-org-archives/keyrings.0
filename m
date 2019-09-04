@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 03 Sep 2019 22:39:08 +0000
+Date: Wed, 04 Sep 2019 12:08:59 +0000
 Subject: Re: [PATCH 11/11] smack: Implement the watch_key and post_notification hooks [untested] [ver #7]
-Message-Id: <14969.1567550348@warthog.procyon.org.uk>
+Message-Id: <31205.1567598939@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -16,11 +16,7 @@ Casey Schaufler <casey@schaufler-ca.com> wrote:
 > I rebuilt with keys-next, updated the tests again, and now
 > the suite looks to be running trouble free.
 
-Glad to hear that, thanks.
+Can I put you down as an Acked-by or something on this patch?
 
-> I do see a message SKIP DUE TO DISABLED SELINUX which I take to mean that
-> there is an SELinux specific test.
-
-tests/bugzillas/bz1031154/runtest.sh
-
+Thanks,
 David
