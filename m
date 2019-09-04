@@ -1,146 +1,238 @@
-From: Jia Zhang <zhang.jia@linux.alibaba.com>
-Date: Sun, 01 Sep 2019 11:48:27 +0000
-Subject: Re: [PATCH 2/2 v2] sign-file: detect existing signature and handle it
-Message-Id: <0da907fe-ffcd-7616-6413-a6df3c7cdc4d@linux.alibaba.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 04 Sep 2019 22:16:48 +0000
+Subject: [PATCH 07/11] block: Add block layer notifications [ver #8]
+Message-Id: <156763540841.18676.14358801295475248408.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <a1a7ed84-972b-2630-952f-d5abe96c1d84@linux.alibaba.com>
-In-Reply-To: <a1a7ed84-972b-2630-952f-d5abe96c1d84@linux.alibaba.com>
-To: keyrings@vger.kernel.org
+References: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org
+Cc: dhowells@redhat.com, torvalds@linux-foundation.org, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
+Add a block layer notification mechanism whereby notifications about
+block-layer events such as I/O errors, can be reported to a monitoring
+process asynchronously.
 
+Firstly, an event queue needs to be created:
 
-On 2019/9/1 下午6:34, Yihao Wu wrote:
-> With -f option, we can delete signature of a module before signing it
-> again. Without -f option, sign-file forbids us from signing again. Also,
-> when -d/-p is specified, the p7s file will be the signature of just the
-> kernel module itself, instead of the module plus the old signature.
-> 
-> Signed-off-by: Yihao Wu <wuyihao@linux.alibaba.com>
-> ---
-> v1->v2: Replace the assistant temp ~raw~ file to a BIO_s_mem
-> 
->  scripts/sign-file.c | 42 ++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 38 insertions(+), 4 deletions(-)
-> 
-> diff --git a/scripts/sign-file.c b/scripts/sign-file.c
-> index bb8fff025a95..bf5d821db36b 100644
-> --- a/scripts/sign-file.c
-> +++ b/scripts/sign-file.c
-> @@ -20,6 +20,7 @@
->  #include <stdbool.h>
->  #include <string.h>
->  #include <getopt.h>
-> +#include <unistd.h>
->  #include <err.h>
->  #include <arpa/inet.h>
->  #include <openssl/opensslv.h>
-> @@ -282,11 +283,15 @@ int main(int argc, char **argv)
->  	char *hash_algo = NULL;
->  	char *private_key_name = NULL, *raw_sig_name = NULL;
->  	char *x509_name, *module_name, *dest_name;
-> +	char *mem_buf;
-> +	long mem_buf_len;
->  	bool save_sig = false, replace_orig;
->  	bool sign_only = false;
->  	bool raw_sig = false;
-> +	bool overwrite_sig = false;
-> +	bool has_sig = false;
->  	unsigned char buf[4096];
-> -	unsigned long module_size, sig_size;
-> +	unsigned long module_size, sig_size, left;
->  	unsigned int use_signed_attrs;
->  	const EVP_MD *digest_algo;
->  	EVP_PKEY *private_key;
-> @@ -297,7 +302,7 @@ int main(int argc, char **argv)
->  	PKCS7 *pkcs7 = NULL;
->  #endif
->  	X509 *x509;
-> -	BIO *bd, *bm;
-> +	BIO *bd, *bm, *br;
->  	int opt, n;
->  	OpenSSL_add_all_algorithms();
->  	ERR_load_crypto_strings();
-> @@ -312,7 +317,7 @@ int main(int argc, char **argv)
->  #endif
->  
->  	do {
-> -		opt = getopt(argc, argv, "sdpk");
-> +		opt = getopt(argc, argv, "sdpkf");
->  		switch (opt) {
->  		case 's': raw_sig = true; break;
->  		case 'p': save_sig = true; break;
-> @@ -320,6 +325,7 @@ int main(int argc, char **argv)
->  #ifndef USE_PKCS7
->  		case 'k': use_keyid = CMS_USE_KEYID; break;
->  #endif
-> +		case 'f': overwrite_sig = true; break;
->  		case -1: break;
->  		default: format();
->  		}
-> @@ -355,11 +361,35 @@ int main(int argc, char **argv)
->  		exit(3);
->  	}
->  #endif
-> +	has_sig = check_module_sig(module_name, &module_size);
->  
->  	/* Open the module file */
->  	bm = BIO_new_file(module_name, "rb");
->  	ERR(!bm, "%s", module_name);
->  
-> +	/* Read the raw kernel module into a memory BIO */
-> +	br = BIO_new(BIO_s_mem());
-> +	ERR(!br, "%s", "BIO_s_mem");
-> +
-> +	left = module_size;
-> +	while ((n = BIO_read(bm, buf, sizeof(buf) < left ?
-> +				      sizeof(buf) : left)),
-> +	       n > 0) {
-> +		ERR(BIO_write(br, buf, n) < 0, "%s", dest_name);
-> +		left -= n;
-> +	}
-> +	BIO_free(bm);
-> +	ERR(n < 0, "%s", module_name);
-> +
-> +	/* Convert raw module BIO to a read-only one.
-> +	 * So that we can read it twice from the start
-> +	 */
-> +	mem_buf_len = BIO_get_mem_data(br, &mem_buf);
-> +	bm = BIO_new_mem_buf(mem_buf, mem_buf_len);
-> +	ERR(!bm, "%s", module_name);
-> +	BIO_set_close(br, BIO_NOCLOSE);
-> +	BIO_free(br);
-> +
->  	if (!raw_sig) {
->  		/* Read the private key and the X.509 cert the PKCS#7 message
->  		 * will point to.
-> @@ -419,6 +449,11 @@ int main(int argc, char **argv)
->  		}
->  	}
->  
-> +	if (has_sig && !overwrite_sig) {
-> +		fprintf(stderr, "Signature exists, use -f to overwrite.\n");
-> +		exit(1);
-> +	}
-> +
+	fd = open("/dev/event_queue", O_RDWR);
+	ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, page_size << n);
 
-You should move this check earlier, right before opening module file.
+then a notification can be set up to report block notifications via that
+queue:
 
-Others look good to me.
+	struct watch_notification_filter filter = {
+		.nr_filters = 1,
+		.filters = {
+			[0] = {
+				.type = WATCH_TYPE_BLOCK_NOTIFY,
+				.subtype_filter[0] = UINT_MAX;
+			},
+		},
+	};
+	ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter);
+	watch_devices(fd, 12);
 
-Jia
+After that, records will be placed into the queue when, for example, errors
+occur on a block device.  Records are of the following format:
 
->  	/* Open the destination file now so that we can shovel the module data
->  	 * across as we read it.
->  	 */
-> @@ -433,7 +468,6 @@ int main(int argc, char **argv)
->  	}
->  	BIO_free(bm);
->  	ERR(n < 0, "%s", module_name);
-> -	module_size = BIO_number_written(bd);
->  
->  	if (!raw_sig) {
->  #ifndef USE_PKCS7
-> 
+	struct block_notification {
+		struct watch_notification watch;
+		__u64	dev;
+		__u64	sector;
+	} *n;
+
+Where:
+
+	n->watch.type will be WATCH_TYPE_BLOCK_NOTIFY
+
+	n->watch.subtype will be the type of notification, such as
+	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM.
+
+	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
+	record.
+
+	n->watch.info & WATCH_INFO_ID will be the second argument to
+	watch_devices(), shifted.
+
+	n->dev will be the device numbers munged together.
+
+	n->sector will indicate the affected sector (if appropriate for the
+	event).
+
+Note that it is permissible for event records to be of variable length -
+or, at least, the length may be dependent on the subtype.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ Documentation/watch_queue.rst    |    4 +++-
+ block/Kconfig                    |    9 +++++++++
+ block/blk-core.c                 |   29 +++++++++++++++++++++++++++++
+ include/linux/blkdev.h           |   15 +++++++++++++++
+ include/uapi/linux/watch_queue.h |   30 +++++++++++++++++++++++++++++-
+ 5 files changed, 85 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
+index 393905b904c8..5cc9c6924727 100644
+--- a/Documentation/watch_queue.rst
++++ b/Documentation/watch_queue.rst
+@@ -7,7 +7,9 @@ receive notifications from the kernel.  This can be used in conjunction with::
+ 
+   * Key/keyring notifications
+ 
+-  * General device event notifications
++  * General device event notifications, including::
++
++    * Block layer event notifications
+ 
+ 
+ The notifications buffers can be enabled by:
+diff --git a/block/Kconfig b/block/Kconfig
+index 8b5f8e560eb4..cc93e4ca29a7 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -164,6 +164,15 @@ config BLK_SED_OPAL
+ 	Enabling this option enables users to setup/unlock/lock
+ 	Locking ranges for SED devices using the Opal protocol.
+ 
++config BLK_NOTIFICATIONS
++	bool "Block layer event notifications"
++	depends on DEVICE_NOTIFICATIONS
++	help
++	  This option provides support for getting block layer event
++	  notifications.  This makes use of the /dev/watch_queue misc device to
++	  handle the notification buffer and provides the device_notify() system
++	  call to enable/disable watches.
++
+ menu "Partition Types"
+ 
+ source "block/partitions/Kconfig"
+diff --git a/block/blk-core.c b/block/blk-core.c
+index d0cc6e14d2f0..8ab1e07aa311 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -181,6 +181,22 @@ static const struct {
+ 	[BLK_STS_IOERR]		= { -EIO,	"I/O" },
+ };
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static const
++enum block_notification_type blk_notifications[ARRAY_SIZE(blk_errors)] = {
++	[BLK_STS_TIMEOUT]	= NOTIFY_BLOCK_ERROR_TIMEOUT,
++	[BLK_STS_NOSPC]		= NOTIFY_BLOCK_ERROR_NO_SPACE,
++	[BLK_STS_TRANSPORT]	= NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT,
++	[BLK_STS_TARGET]	= NOTIFY_BLOCK_ERROR_CRITICAL_TARGET,
++	[BLK_STS_NEXUS]		= NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS,
++	[BLK_STS_MEDIUM]	= NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM,
++	[BLK_STS_PROTECTION]	= NOTIFY_BLOCK_ERROR_PROTECTION,
++	[BLK_STS_RESOURCE]	= NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE,
++	[BLK_STS_DEV_RESOURCE]	= NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE,
++	[BLK_STS_IOERR]		= NOTIFY_BLOCK_ERROR_IO,
++};
++#endif
++
+ blk_status_t errno_to_blk_status(int errno)
+ {
+ 	int i;
+@@ -221,6 +237,19 @@ static void print_req_error(struct request *req, blk_status_t status,
+ 		req->cmd_flags & ~REQ_OP_MASK,
+ 		req->nr_phys_segments,
+ 		IOPRIO_PRIO_CLASS(req->ioprio));
++
++#ifdef CONFIG_BLK_NOTIFICATIONS
++	if (blk_notifications[idx]) {
++		struct block_notification n = {
++			.watch.type	= WATCH_TYPE_BLOCK_NOTIFY,
++			.watch.subtype	= blk_notifications[idx],
++			.watch.info	= watch_sizeof(n),
++			.dev		= req->rq_disk ? disk_devt(req->rq_disk) : 0,
++			.sector		= blk_rq_pos(req),
++		};
++		post_block_notification(&n);
++	}
++#endif
+ }
+ 
+ static void req_bio_endio(struct request *rq, struct bio *bio,
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1ef375dafb1c..5d856f670a8f 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -27,6 +27,7 @@
+ #include <linux/percpu-refcount.h>
+ #include <linux/scatterlist.h>
+ #include <linux/blkzoned.h>
++#include <linux/watch_queue.h>
+ 
+ struct module;
+ struct scsi_ioctl_command;
+@@ -1742,6 +1743,20 @@ static inline bool blk_req_can_dispatch_to_zone(struct request *rq)
+ }
+ #endif /* CONFIG_BLK_DEV_ZONED */
+ 
++#ifdef CONFIG_BLK_NOTIFICATIONS
++static inline void post_block_notification(struct block_notification *n)
++{
++	u64 id = 0; /* Might want to allow dev# here. */
++
++	post_device_notification(&n->watch, id);
++}
++#else
++static inline void post_block_notification(struct block_notification *n)
++{
++}
++#endif
++
++
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+index 654d4ba8b909..9a6c059af09d 100644
+--- a/include/uapi/linux/watch_queue.h
++++ b/include/uapi/linux/watch_queue.h
+@@ -11,7 +11,8 @@
+ enum watch_notification_type {
+ 	WATCH_TYPE_META		= 0,	/* Special record */
+ 	WATCH_TYPE_KEY_NOTIFY	= 1,	/* Key change event notification */
+-	WATCH_TYPE___NR		= 2
++	WATCH_TYPE_BLOCK_NOTIFY	= 2,	/* Block layer event notification */
++	WATCH_TYPE___NR		= 3
+ };
+ 
+ enum watch_meta_notification_subtype {
+@@ -124,4 +125,31 @@ struct key_notification {
+ 	__u32	aux;		/* Per-type auxiliary data */
+ };
+ 
++/*
++ * Type of block layer notification.
++ */
++enum block_notification_type {
++	NOTIFY_BLOCK_ERROR_TIMEOUT		= 1, /* Timeout error */
++	NOTIFY_BLOCK_ERROR_NO_SPACE		= 2, /* Critical space allocation error */
++	NOTIFY_BLOCK_ERROR_RECOVERABLE_TRANSPORT = 3, /* Recoverable transport error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_TARGET	= 4, /* Critical target error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_NEXUS	= 5, /* Critical nexus error */
++	NOTIFY_BLOCK_ERROR_CRITICAL_MEDIUM	= 6, /* Critical medium error */
++	NOTIFY_BLOCK_ERROR_PROTECTION		= 7, /* Protection error */
++	NOTIFY_BLOCK_ERROR_KERNEL_RESOURCE	= 8, /* Kernel resource error */
++	NOTIFY_BLOCK_ERROR_DEVICE_RESOURCE	= 9, /* Device resource error */
++	NOTIFY_BLOCK_ERROR_IO			= 10, /* Other I/O error */
++};
++
++/*
++ * Block layer notification record.
++ * - watch.type = WATCH_TYPE_BLOCK_NOTIFY
++ * - watch.subtype = enum block_notification_type
++ */
++struct block_notification {
++	struct watch_notification watch; /* WATCH_TYPE_BLOCK_NOTIFY */
++	__u64	dev;			/* Device number */
++	__u64	sector;			/* Affected sector */
++};
++
+ #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
