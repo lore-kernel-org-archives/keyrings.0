@@ -1,26 +1,132 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 25 Sep 2019 01:11:15 +0000
-Subject: Re: [Patch v6 4/4] KEYS: trusted: Move TPM2 trusted keys code
-Message-Id: <20190925011115.GA3503@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 04 Sep 2019 22:16:12 +0000
+Subject: [PATCH 03/11] security: Add a hook for the point of notification insertion [ver #8]
+Message-Id: <156763537237.18676.12991040129330701275.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1568630064-14887-1-git-send-email-sumit.garg@linaro.org>
- <1568630064-14887-5-git-send-email-sumit.garg@linaro.org>
- <20190917181415.GA8472@linux.intel.com>
- <20190917181507.GB8472@linux.intel.com>
- <CAFA6WYMbUGQ6+-XvR9_qSc=oVe1QSTg4kB-+y6rBmQLq+B6skg@mail.gmail.com>
-In-Reply-To: <CAFA6WYMbUGQ6+-XvR9_qSc=oVe1QSTg4kB-+y6rBmQLq+B6skg@mail.gmail.com>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: dhowells@redhat.com, peterhuewe@gmx.de, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, linux-security-module@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net, jgg@ziepe.ca, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jejb@linux.ibm.com, Mimi Zohar <zohar@linux.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Jerry Snitselaar <jsnitsel@redhat.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Daniel Thompson <daniel.thompson@linaro.org>
+References: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
+In-Reply-To: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
+To: keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org
+Cc: dhowells@redhat.com, torvalds@linux-foundation.org, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, Sep 18, 2019 at 11:53:08AM +0530, Sumit Garg wrote:
-> No worries :). I will send next version of patch-set.
-> 
-> FYI, I will be travelling for Linaro Connect next week so you could
-> expect some delays in my responses.
+Add a security hook that allows an LSM to rule on whether a notification
+message is allowed to be inserted into a particular watch queue.
 
-These patches will go to v5.5. There is nothing to rush.
+The hook is given the following information:
 
-/Jarkko
+ (1) The credentials of the triggerer (which may be init_cred for a system
+     notification, eg. a hardware error).
+
+ (2) The credentials of the whoever set the watch.
+
+ (3) The notification message.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>
+cc: Stephen Smalley <sds@tycho.nsa.gov>
+cc: linux-security-module@vger.kernel.org
+---
+
+ include/linux/lsm_hooks.h |   14 ++++++++++++++
+ include/linux/security.h  |   15 ++++++++++++++-
+ security/security.c       |    9 +++++++++
+ 3 files changed, 37 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
+index b0cdefcda4e6..257d803dcf6f 100644
+--- a/include/linux/lsm_hooks.h
++++ b/include/linux/lsm_hooks.h
+@@ -1424,6 +1424,12 @@
+  *	Check to see if a process is allowed to watch for event notifications
+  *	from devices (as a global set).
+  *
++ * @post_notification:
++ *	Check to see if a watch notification can be posted to a particular
++ *	queue.
++ *	@w_cred: The credentials of the whoever set the watch.
++ *	@cred: The event-triggerer's credentials
++ *	@n: The notification being posted
+  *
+  * Security hooks for using the eBPF maps and programs functionalities through
+  * eBPF syscalls.
+@@ -1706,6 +1712,11 @@ union security_list_options {
+ #ifdef CONFIG_DEVICE_NOTIFICATIONS
+ 	int (*watch_devices)(void);
+ #endif
++#ifdef CONFIG_WATCH_QUEUE
++	int (*post_notification)(const struct cred *w_cred,
++				 const struct cred *cred,
++				 struct watch_notification *n);
++#endif
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
+@@ -1988,6 +1999,9 @@ struct security_hook_heads {
+ #ifdef CONFIG_DEVICE_NOTIFICATIONS
+ 	struct hlist_head watch_devices;
+ #endif
++#ifdef CONFIG_WATCH_QUEUE
++	struct hlist_head post_notification;
++#endif /* CONFIG_WATCH_QUEUE */
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	struct hlist_head unix_stream_connect;
+ 	struct hlist_head unix_may_send;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 3be44354d308..24c54b9ff0a1 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -57,6 +57,8 @@ struct mm_struct;
+ struct fs_context;
+ struct fs_parameter;
+ enum fs_value_type;
++struct watch;
++struct watch_notification;
+ 
+ /* Default (no) options for the capable function */
+ #define CAP_OPT_NONE 0x0
+@@ -1222,6 +1224,18 @@ static inline int security_watch_devices(void)
+ 	return 0;
+ }
+ #endif
++#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
++int security_post_notification(const struct cred *w_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n);
++#else
++static inline int security_post_notification(const struct cred *w_cred,
++					     const struct cred *cred,
++					     struct watch_notification *n)
++{
++	return 0;
++}
++#endif
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+ 
+@@ -1847,4 +1861,3 @@ static inline void security_bpf_prog_free(struct bpf_prog_aux *aux)
+ #endif /* CONFIG_BPF_SYSCALL */
+ 
+ #endif /* ! __LINUX_SECURITY_H */
+-
+diff --git a/security/security.c b/security/security.c
+index 007eb48bc848..b719c5a5b2ba 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1916,6 +1916,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
+ }
+ EXPORT_SYMBOL(security_inode_getsecctx);
+ 
++#ifdef CONFIG_WATCH_QUEUE
++int security_post_notification(const struct cred *w_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n)
++{
++	return call_int_hook(post_notification, 0, w_cred, cred, n);
++}
++#endif /* CONFIG_WATCH_QUEUE */
++
+ #ifdef CONFIG_KEY_NOTIFICATIONS
+ int security_watch_key(struct key *key)
+ {
