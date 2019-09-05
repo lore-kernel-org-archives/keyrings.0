@@ -1,84 +1,50 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 05 Sep 2019 21:32:44 +0000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 05 Sep 2019 22:08:42 +0000
 Subject: Re: Why add the general notification queue and its sources
-Message-Id: <5396.1567719164@warthog.procyon.org.uk>
+Message-Id: <CAHk-=wgbCXea1a9OTWgMMvcsCGGiNiPp+ty-edZrBWn63NCYdw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAHk-=wjcsxQ8QB_v=cwBQw4pkJg7pp-bBsdWyPivFO_OeF-y+g@mail.gmail.com> <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk> <CAHk-=wh5ZNE9pBwrnr5MX3iqkUP4nspz17rtozrSxs5-OGygNw@mail.gmail.com> <17703.1567702907@warthog.procyon.org.uk> <CAHk-=wjQ5Fpv0D7rxX0W=obx9xoOAxJ_Cr+pGCYOAi2S9FiCNg@mail.gmail.com> <CAKCoTu7ms_Mr-q08d9XB3uascpzwBa5LF9JTT2aq8uUsoFE8aQ@mail.gmail.com>
-In-Reply-To: <CAHk-=wjcsxQ8QB_v=cwBQw4pkJg7pp-bBsdWyPivFO_OeF-y+g@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, Ray Strode <rstrode@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Steven Whitehouse <swhiteho@redhat.com>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, "Ray, Debarshi" <debarshi.ray@gmail.com>, Robbie Harwood <rharwood@redhat.com>
+References: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
+ <CAHk-=wh5ZNE9pBwrnr5MX3iqkUP4nspz17rtozrSxs5-OGygNw@mail.gmail.com>
+ <17703.1567702907@warthog.procyon.org.uk> <CAHk-=wjQ5Fpv0D7rxX0W=obx9xoOAxJ_Cr+pGCYOAi2S9FiCNg@mail.gmail.com>
+ <CAKCoTu7ms_Mr-q08d9XB3uascpzwBa5LF9JTT2aq8uUsoFE8aQ@mail.gmail.com>
+ <CAHk-=wjcsxQ8QB_v=cwBQw4pkJg7pp-bBsdWyPivFO_OeF-y+g@mail.gmail.com> <5396.1567719164@warthog.procyon.org.uk>
+In-Reply-To: <5396.1567719164@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Ray Strode <rstrode@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Steven Whitehouse <swhiteho@redhat.com>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, "Ray, Debarshi" <debarshi.ray@gmail.com>, Robbie Harwood <rharwood@redhat.com>
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> Also, what is the security model here? Open a special character
-> device, and you get access to random notifications from random
-> sources?
+On Thu, Sep 5, 2019 at 2:32 PM David Howells <dhowells@redhat.com> wrote:
 >
-> That makes no sense. Do they have the same security permissions?
+>  (1) /dev/watch_queue just implements locked-in-memory buffers.  It gets you
+>      no events by simply opening it.
 
-Sigh.  It doesn't work like that.  I tried to describe this in the manpages I
-referred to in the cover note.  Obviously I didn't do a good enough job.  Let
-me try and explain the general workings and the security model here.
+Cool. In-memory buffers.
 
- (1) /dev/watch_queue just implements locked-in-memory buffers.  It gets you
-     no events by simply opening it.
+But I know - we *have* one of those. There's already a system call for
+it, and has been forever. One that we then extended to allow people to
+change the buffer size, and do a lot of other things with.
 
-     Each time you open it you get your own private buffer.  Buffers are not
-     shares.  Creation of buffers is limited by ENFILE, EMFILE and
-     RLIMIT_MEMLOCK.
+It's called "pipe()". And you can give the writing side to other user
+space processes too, in case you are running an older kernel that
+didn't have some "event pipe support". It comes with resource
+management, because people already use those things.
 
- (2) A buffer is implemented as a pollable ring buffer, with the head pointer
-     belonging to the kernel and the tail pointer belonging to userspace.
-     Userspace mmaps the buffer.
+If you want to make a message protocol on top of it, it has cool
+atomicity guarantees for any message size less than PIPE_BUF, but to
+make things simple, maybe just say "fixed record sizes of 64 bytes" or
+something like that for events.
 
-     The kernel *only ever* reads the head and tail pointer from a buffer; it
-     never reads anything else.
+Then you can use them from things like perl scripts, not just magical
+C programs.
 
-     When it wants to post a message to a buffer, the kernel reads the
-     pointers and then does one of three things:
+Why do we need a new kind of super-fancy high-speed thing for event reporting?
 
-	(a) If the pointers were incoherent it drops the message.
+If you have *so* many events that pipe handling is a performance
+issue, you have something seriously wrong going on.
 
-	(b) If the buffer was full the kernel writes a flag to indicate this
-	    and drops the message.
+So no. I'm not interested in a magical memory-mapped pipe that is
+actually more limited than the real thing.
 
-	(c) Otherwise, the kernel writes a message and maybe padding at the
-     	    place(s) it expects and writes the head pointer.  If userspace was
-     	    busy trashing the place, that should not cause a problem for the
-     	    kernel.
-
-     The buffer pointers are expected to run to the end and wrap naturally;
-     they're only masked off at the point of actually accessing the buffer.
-
- (3) You connect event sources to your buffer, e.g.:
-
-	fd = open("/dev/watch_queue", ...);
-	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, ...);
-
-     or:
-
-	watch_mount(AT_FDCWD, "/net", 0, fd, ...);
-
-     Security is checked at the point of connection to make sure you have
-     permission to access that source.  You have to have View permission on a
-     key/keyring for key events, for example, and you have to have execute
-     permission on a directory for mount events.
-
-     The LSM gets a look-in too: Smack checks you have read permission on a
-     key for example.
-
- (4) You can connect multiple sources of different types to your buffer and a
-     source can be connected to multiple buffers at a time.
-
- (5) Security is checked when an event is delivered to make sure the triggerer
-     of the event has permission to give you that event.  Smack requires that
-     the triggerer has write permission on the opener of the buffer for
-     example.
-
- (6) poll() signals POLLIN|POLLRDNORM if there is stuff in the buffer and
-     POLLERR if the pointers are incoherent.
-
-David
+                  Linus
