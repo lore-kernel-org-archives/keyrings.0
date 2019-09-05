@@ -1,64 +1,84 @@
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 05 Sep 2019 20:39:00 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 05 Sep 2019 21:32:44 +0000
 Subject: Re: Why add the general notification queue and its sources
-Message-Id: <CAHk-=wjcsxQ8QB_v=cwBQw4pkJg7pp-bBsdWyPivFO_OeF-y+g@mail.gmail.com>
+Message-Id: <5396.1567719164@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
- <CAHk-=wh5ZNE9pBwrnr5MX3iqkUP4nspz17rtozrSxs5-OGygNw@mail.gmail.com>
- <17703.1567702907@warthog.procyon.org.uk> <CAHk-=wjQ5Fpv0D7rxX0W=obx9xoOAxJ_Cr+pGCYOAi2S9FiCNg@mail.gmail.com>
- <CAKCoTu7ms_Mr-q08d9XB3uascpzwBa5LF9JTT2aq8uUsoFE8aQ@mail.gmail.com>
-In-Reply-To: <CAKCoTu7ms_Mr-q08d9XB3uascpzwBa5LF9JTT2aq8uUsoFE8aQ@mail.gmail.com>
-To: Ray Strode <rstrode@redhat.com>
-Cc: David Howells <dhowells@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Steven Whitehouse <swhiteho@redhat.com>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, "Ray, Debarshi" <debarshi.ray@gmail.com>, Robbie Harwood <rharwood@redhat.com>
+References: <CAHk-=wjcsxQ8QB_v=cwBQw4pkJg7pp-bBsdWyPivFO_OeF-y+g@mail.gmail.com> <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk> <CAHk-=wh5ZNE9pBwrnr5MX3iqkUP4nspz17rtozrSxs5-OGygNw@mail.gmail.com> <17703.1567702907@warthog.procyon.org.uk> <CAHk-=wjQ5Fpv0D7rxX0W=obx9xoOAxJ_Cr+pGCYOAi2S9FiCNg@mail.gmail.com> <CAKCoTu7ms_Mr-q08d9XB3uascpzwBa5LF9JTT2aq8uUsoFE8aQ@mail.gmail.com>
+In-Reply-To: <CAHk-=wjcsxQ8QB_v=cwBQw4pkJg7pp-bBsdWyPivFO_OeF-y+g@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, Ray Strode <rstrode@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Steven Whitehouse <swhiteho@redhat.com>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, "Ray, Debarshi" <debarshi.ray@gmail.com>, Robbie Harwood <rharwood@redhat.com>
 
-T24gVGh1LCBTZXAgNSwgMjAxOSBhdCAxMTozMyBBTSBSYXkgU3Ryb2RlIDxyc3Ryb2RlQHJlZGhh
-dC5jb20+IHdyb3RlOgo+Cj4gSGksCj4KPiBPbiBUaHUsIFNlcCA1LCAyMDE5IGF0IDE6MjAgUE0g
-TGludXMgVG9ydmFsZHMKPiA8dG9ydmFsZHNAbGludXgtZm91bmRhdGlvbi5vcmc+IHdyb3RlOgo+
-ID4gWW91J3ZlIGF0IGxlYXN0IG5vdyBhbnN3ZXJlZCBwYXJ0IG9mIHRoZSAiV2h5IiwgYnV0IHlv
-dSBkaWRuJ3QKPiA+IGFjdHVhbGx5IGFuc3dlciB0aGUgd2hvbGUgImFub3RoZXIgZGV2ZWxvcGVy
-IiBwYXJ0Lgo+IEl0J3MgY2VydGFpbmx5IHNvbWV0aGluZyB3ZSd2ZSB3YW50ZWQgaW4gdGhlIEdO
-T01FIHdvcmxkIGZvciBhIGxvbmcgdGltZToKPgo+IFNlZSBmb3IgaW5zdGFuY2UKPgo+IGh0dHBz
-Oi8vYnVnemlsbGEucmVkaGF0LmNvbS9zaG93X2J1Zy5jZ2k/aWSZMTExMAoKVGhhdCBpcyAqd2F5
-KiB0b28gc3BlY2lmaWMgdG8gbWFrZSBmb3IgYW55IGtpbmQgb2YgZ2VuZXJpYwpub3RpZmljYXRp
-b24gbWVjaGFuaXNtLgoKQWxzbywgd2hhdCBpcyB0aGUgc2VjdXJpdHkgbW9kZWwgaGVyZT8gT3Bl
-biBhIHNwZWNpYWwgY2hhcmFjdGVyCmRldmljZSwgYW5kIHlvdSBnZXQgYWNjZXNzIHRvIHJhbmRv
-bSBub3RpZmljYXRpb25zIGZyb20gcmFuZG9tCnNvdXJjZXM/CgpUaGF0IG1ha2VzIG5vIHNlbnNl
-LiBEbyB0aGV5IGhhdmUgdGhlIHNhbWUgc2VjdXJpdHkgcGVybWlzc2lvbnM/CgpVU0IgZXJyb3Ig
-cmVwb3J0aW5nIGlzIG9uZSB0aGluZyAtIGFuZCBoYXMgY29tcGxldGVseSBkaWZmZXJlbnQKc2Vj
-dXJpdHkgcnVsZXMgdGhhbiBzb21lIHBlci11c2VyIGtleSB0aGluZyAob3Igc3lzdGVtPyBvciBu
-YW1lc3BhY2U/Ck9yIHdoYXQ/KQoKQW5kIHdoeSB3b3VsZCB5b3UgZG8gYSBicm9rZW4gYmlnLWtl
-eSB0aGluZyBpbiB0aGUga2VybmVsIGluIHRoZSBmaXJzdApwbGFjZT8gV2h5IGRvbid0IHlvdSBq
-dXN0IGhhdmUgYSBrZXJuZWwga2V5IHRvIGluZGlyZWN0bHkgZW5jcnlwdAp1c2luZyBhIGtleSBh
-bmQgImFkZGl0aW9uYWwgdXNlciBzcGFjZSBkYXRhIi4gVGhlIGtlcm5lbCBzaG91bGQgc2ltcGx5
-Cm5vdCB0YWtlIGNhcmUgb2YgaW5zYW5lIDFNQiBrZXlzLgoKQmlnIGtleXMganVzdCBkb24ndCBt
-YWtlIHNlbnNlIGZvciBhIGtlcm5lbC4gSnVzdCB1c2UgdGhlIGJhY2tpbmcKc3RvcmUgVEhBVCBZ
-T1UgSEFWRSBUTyBIQVZFIEFOWVdBWS4gSW50cm9kdWNlIHNvbWUgImluZGlyZWN0IGtleSIKaW5z
-dGVhZCB0aGF0IGlzIHVzZWQgdG8gZW5jcnlwdCBhbmQgYXV0aGVudGljYXRlIHRoZSBiYWNraW5n
-IHN0b3JlLgoKQW5kIG1peCBpbiAvcHJvYy9tb3VudHMgdHJhY2tpbmcsIHdoaWNoIGhhcyBhIG5h
-bWVzcGFjZSBjb21wb25lbnQgYW5kCmNvbXBsZXRlbHkgZGlmZmVyZW50IGV2ZW50cyBhbmQgc2Vj
-dXJpdHkgbW9kZWwgKGxpa2VseSAibm9uZSIgLSBzaW5jZQp5b3UgY2FuIGFsd2F5cyByZWFkIHlv
-dXIgb3duIC9wcm9jL21vdW50cykuCgpTbyBob25lc3RseSwgdGhpcyBhbGwganVzdCBtYWtlcyBt
-ZSBnbyAidXNlciBpbnRlcmZhY2VzIGFyZSBoYXJkLCBhbGwKdGhlIHVzZXJzIHNlZW0gdG8gaGF2
-ZSAqY29tcGxldGVseSogZGlmZmVyZW50IHJlcXVpcmVtZW50cywgYW5kIG5vYm9keQpoYXMgYXBw
-YXJlbnRseSByZWFsbHkgdGVzdGVkIHRoaXMgaW4gcHJhY3RpY2UiLgoKTWF5YmUgYSBnZW5lcmlj
-IG5vdGlmaWNhdGlvbiBtZWNoYW5pc20gaXMgc2Vuc2libGUuIEJ1dCBJIGRvbid0IHNlZQpob3cg
-c2VjdXJpdHkgaXNzdWVzIGNvdWxkICpwb3NzaWJseSogYmUgdW5pZmllZCwgYW5kIHNvbWUgb2Yg
-dGhlCmV4YW1wbGVzIGdpdmVuIChwYXJ0aWN1bGFybHkgInRyYWNrIGNoYW5nZXMgdG8gL3Byb2Mv
-bW91bnRzIikgc2VlbSB0bwpoYXZlIG9idmlvdXNseSBiZXR0ZXIgYWx0ZXJuYXRpdmVzIChhcyBp
-biAianVzdCBzdXBwb3J0IHBvbGwoKSBvbgppdCIpLgoKQWxsIHRoaXMgZGlzY3Vzc2lvbiBoYXMg
-Y29udmluY2VkIG1lIG9mIGlzIHRoYXQgdGhpcyB3aG9sZSB0aGluZyBpcwpoYWxmLWJha2VkIGFu
-ZCBub3QgcmVhZHkgZXZlbiBvbiBhIGNvbmNlcHR1YWwgbGV2ZWwuCgpTbyBhcyBmYXIgYXMgSSdt
-IGNvbmNlcm5lZCwgSSB0aGluayBJIHdhbnQgdGhpbmdzIGxpa2UgYWN0dWFsCiJUZXN0ZWQtYnk6
-IiBsaW5lcyBmcm9tIGFjdHVhbCB1c2VycywgYmVjYXVzZSBpdCdzIG5vdCBjbGVhciB0aGF0IHRo
-aXMKbWFrZXMgc2Vuc2UuIEdub21lIGNlcnRhaW5seSBzaG91bGQgd29yayBhcyBhIHJlZ3VsYXIg
-dXNlciwgaWYgeW91Cm5lZWQgYSBzeXN0ZW0gZGFlbW9uIGZvciBpdCB3aXRoIHJvb3QgcHJpdmls
-ZWdlcyB5b3UgbWlnaHQgYXMgd2VsbApqdXN0IGRvIGFueSBub3RpZmljYXRpb24gZW50aXJlbHkg
-aW5zaWRlIHRoYXQgZGFlbW9uIGluIHVzZXIgc3BhY2UuClNhbWUgZ29lcyBmb3IgL3Byb2MvbW91
-bnRzIC0gd2hpY2ggYXMgbWVudGlvbmVkIGhhcyBhIG11Y2ggbW9yZQpvYnZpb3VzIGludGVyZmFj
-ZSBmb3Igd2FpdGluZyBhbnl3YXkuCgpVc2VyIGludGVyZmFjZXMgbmVlZCBhIGxvdCBvZiB0aG91
-Z2h0IGFuZCB0ZXN0aW5nLiBUaGV5IHNob3VsZG4ndCBiZQphZC1ob2MgIm1heWJlIHRoaXMgY291
-bGQgd29yayBmb3IgWCwgWSBhbmQgWiIgdGhlb3JpZXMuCgogICAgICAgICAgICAgICAgICAgIExp
-bnVz
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> Also, what is the security model here? Open a special character
+> device, and you get access to random notifications from random
+> sources?
+>
+> That makes no sense. Do they have the same security permissions?
+
+Sigh.  It doesn't work like that.  I tried to describe this in the manpages I
+referred to in the cover note.  Obviously I didn't do a good enough job.  Let
+me try and explain the general workings and the security model here.
+
+ (1) /dev/watch_queue just implements locked-in-memory buffers.  It gets you
+     no events by simply opening it.
+
+     Each time you open it you get your own private buffer.  Buffers are not
+     shares.  Creation of buffers is limited by ENFILE, EMFILE and
+     RLIMIT_MEMLOCK.
+
+ (2) A buffer is implemented as a pollable ring buffer, with the head pointer
+     belonging to the kernel and the tail pointer belonging to userspace.
+     Userspace mmaps the buffer.
+
+     The kernel *only ever* reads the head and tail pointer from a buffer; it
+     never reads anything else.
+
+     When it wants to post a message to a buffer, the kernel reads the
+     pointers and then does one of three things:
+
+	(a) If the pointers were incoherent it drops the message.
+
+	(b) If the buffer was full the kernel writes a flag to indicate this
+	    and drops the message.
+
+	(c) Otherwise, the kernel writes a message and maybe padding at the
+     	    place(s) it expects and writes the head pointer.  If userspace was
+     	    busy trashing the place, that should not cause a problem for the
+     	    kernel.
+
+     The buffer pointers are expected to run to the end and wrap naturally;
+     they're only masked off at the point of actually accessing the buffer.
+
+ (3) You connect event sources to your buffer, e.g.:
+
+	fd = open("/dev/watch_queue", ...);
+	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, ...);
+
+     or:
+
+	watch_mount(AT_FDCWD, "/net", 0, fd, ...);
+
+     Security is checked at the point of connection to make sure you have
+     permission to access that source.  You have to have View permission on a
+     key/keyring for key events, for example, and you have to have execute
+     permission on a directory for mount events.
+
+     The LSM gets a look-in too: Smack checks you have read permission on a
+     key for example.
+
+ (4) You can connect multiple sources of different types to your buffer and a
+     source can be connected to multiple buffers at a time.
+
+ (5) Security is checked when an event is delivered to make sure the triggerer
+     of the event has permission to give you that event.  Smack requires that
+     the triggerer has write permission on the opener of the buffer for
+     example.
+
+ (6) poll() signals POLLIN|POLLRDNORM if there is stuff in the buffer and
+     POLLERR if the pointers are incoherent.
+
+David
