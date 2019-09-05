@@ -1,63 +1,64 @@
-From: David Lehman <dlehman@redhat.com>
-Date: Thu, 05 Sep 2019 20:09:58 +0000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 05 Sep 2019 20:39:00 +0000
 Subject: Re: Why add the general notification queue and its sources
-Message-Id: <d19e8783e7fe47e51fbc12bf33c95fea16c93070.camel@redhat.com>
+Message-Id: <CAHk-=wjcsxQ8QB_v=cwBQw4pkJg7pp-bBsdWyPivFO_OeF-y+g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
-         <CAHk-=wh5ZNE9pBwrnr5MX3iqkUP4nspz17rtozrSxs5-OGygNw@mail.gmail.com>
-         <17703.1567702907@warthog.procyon.org.uk>
-         <CAHk-=wjQ5Fpv0D7rxX0W=obx9xoOAxJ_Cr+pGCYOAi2S9FiCNg@mail.gmail.com>
-         <11667f69-fbb5-28d2-3c31-7f865f2b93e5@redhat.com>
-         <CAKCoTu7ms4ckwDA_-onuJg+famnMzGZE9gGUcqqMz0kCAAECRg@mail.gmail.com>
-In-Reply-To: <CAKCoTu7ms4ckwDA_-onuJg+famnMzGZE9gGUcqqMz0kCAAECRg@mail.gmail.com>
-To: Ray Strode <rstrode@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, David Howells <dhowells@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, Ian Kent <ikent@redhat.com>
+ <CAHk-=wh5ZNE9pBwrnr5MX3iqkUP4nspz17rtozrSxs5-OGygNw@mail.gmail.com>
+ <17703.1567702907@warthog.procyon.org.uk> <CAHk-=wjQ5Fpv0D7rxX0W=obx9xoOAxJ_Cr+pGCYOAi2S9FiCNg@mail.gmail.com>
+ <CAKCoTu7ms_Mr-q08d9XB3uascpzwBa5LF9JTT2aq8uUsoFE8aQ@mail.gmail.com>
+In-Reply-To: <CAKCoTu7ms_Mr-q08d9XB3uascpzwBa5LF9JTT2aq8uUsoFE8aQ@mail.gmail.com>
+To: Ray Strode <rstrode@redhat.com>
+Cc: David Howells <dhowells@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Steven Whitehouse <swhiteho@redhat.com>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, "Ray, Debarshi" <debarshi.ray@gmail.com>, Robbie Harwood <rharwood@redhat.com>
 
-On Thu, 2019-09-05 at 14:51 -0400, Ray Strode wrote:
-> Hi,
-> 
-> On Thu, Sep 5, 2019 at 2:37 PM Steven Whitehouse <swhiteho@redhat.com
-> > wrote:
-> > The original reason for the mount notification mechanism was so
-> > that we
-> > are able to provide information to GUIs and similar filesystem and
-> > storage management tools, matching the state of the filesystem with
-> > the
-> > state of the underlying devices. This is part of a larger project
-> > entitled "Project Springfield" to try and provide better management
-> > tools for storage and filesystems. I've copied David Lehman in,
-> > since he
-> > can provide a wider view on this topic.
-> So one problem that I've heard discussed before is what happens in a
-> thinp
-> setup when the disk space is overallocated and gets used up. IIRC,
-> the
-> volumes just sort of eat themselves?
-> 
-> Getting proper notification of looming catastrophic failure to the
-> workstation user
-> before it's too late would be useful, indeed.
-> 
-> I don't know if this new mechanism dhowells has development can help
-> with that,
-
-My understanding is that there is already a dm devent that gets sent
-when the low water mark is crossed for a thin pool, but there is
-nothing in userspace that knows how to effectively get the user's
-attention at that time.
-
-> and/or if solving that problem is part of the Project Springfield
-> initiative or not. Do you
-> know off hand?
-
-We have been looking into building a userspace event notification
-service (for storage, initially) to aggregate and add context to low-
-level events such as these, providing a single source for all kinds of
-storage events with an excellent signal:noise ratio. Thin pool
-exhaustion is high on the list of problems we would want to address.
-
-
-David
+T24gVGh1LCBTZXAgNSwgMjAxOSBhdCAxMTozMyBBTSBSYXkgU3Ryb2RlIDxyc3Ryb2RlQHJlZGhh
+dC5jb20+IHdyb3RlOgo+Cj4gSGksCj4KPiBPbiBUaHUsIFNlcCA1LCAyMDE5IGF0IDE6MjAgUE0g
+TGludXMgVG9ydmFsZHMKPiA8dG9ydmFsZHNAbGludXgtZm91bmRhdGlvbi5vcmc+IHdyb3RlOgo+
+ID4gWW91J3ZlIGF0IGxlYXN0IG5vdyBhbnN3ZXJlZCBwYXJ0IG9mIHRoZSAiV2h5IiwgYnV0IHlv
+dSBkaWRuJ3QKPiA+IGFjdHVhbGx5IGFuc3dlciB0aGUgd2hvbGUgImFub3RoZXIgZGV2ZWxvcGVy
+IiBwYXJ0Lgo+IEl0J3MgY2VydGFpbmx5IHNvbWV0aGluZyB3ZSd2ZSB3YW50ZWQgaW4gdGhlIEdO
+T01FIHdvcmxkIGZvciBhIGxvbmcgdGltZToKPgo+IFNlZSBmb3IgaW5zdGFuY2UKPgo+IGh0dHBz
+Oi8vYnVnemlsbGEucmVkaGF0LmNvbS9zaG93X2J1Zy5jZ2k/aWSZMTExMAoKVGhhdCBpcyAqd2F5
+KiB0b28gc3BlY2lmaWMgdG8gbWFrZSBmb3IgYW55IGtpbmQgb2YgZ2VuZXJpYwpub3RpZmljYXRp
+b24gbWVjaGFuaXNtLgoKQWxzbywgd2hhdCBpcyB0aGUgc2VjdXJpdHkgbW9kZWwgaGVyZT8gT3Bl
+biBhIHNwZWNpYWwgY2hhcmFjdGVyCmRldmljZSwgYW5kIHlvdSBnZXQgYWNjZXNzIHRvIHJhbmRv
+bSBub3RpZmljYXRpb25zIGZyb20gcmFuZG9tCnNvdXJjZXM/CgpUaGF0IG1ha2VzIG5vIHNlbnNl
+LiBEbyB0aGV5IGhhdmUgdGhlIHNhbWUgc2VjdXJpdHkgcGVybWlzc2lvbnM/CgpVU0IgZXJyb3Ig
+cmVwb3J0aW5nIGlzIG9uZSB0aGluZyAtIGFuZCBoYXMgY29tcGxldGVseSBkaWZmZXJlbnQKc2Vj
+dXJpdHkgcnVsZXMgdGhhbiBzb21lIHBlci11c2VyIGtleSB0aGluZyAob3Igc3lzdGVtPyBvciBu
+YW1lc3BhY2U/Ck9yIHdoYXQ/KQoKQW5kIHdoeSB3b3VsZCB5b3UgZG8gYSBicm9rZW4gYmlnLWtl
+eSB0aGluZyBpbiB0aGUga2VybmVsIGluIHRoZSBmaXJzdApwbGFjZT8gV2h5IGRvbid0IHlvdSBq
+dXN0IGhhdmUgYSBrZXJuZWwga2V5IHRvIGluZGlyZWN0bHkgZW5jcnlwdAp1c2luZyBhIGtleSBh
+bmQgImFkZGl0aW9uYWwgdXNlciBzcGFjZSBkYXRhIi4gVGhlIGtlcm5lbCBzaG91bGQgc2ltcGx5
+Cm5vdCB0YWtlIGNhcmUgb2YgaW5zYW5lIDFNQiBrZXlzLgoKQmlnIGtleXMganVzdCBkb24ndCBt
+YWtlIHNlbnNlIGZvciBhIGtlcm5lbC4gSnVzdCB1c2UgdGhlIGJhY2tpbmcKc3RvcmUgVEhBVCBZ
+T1UgSEFWRSBUTyBIQVZFIEFOWVdBWS4gSW50cm9kdWNlIHNvbWUgImluZGlyZWN0IGtleSIKaW5z
+dGVhZCB0aGF0IGlzIHVzZWQgdG8gZW5jcnlwdCBhbmQgYXV0aGVudGljYXRlIHRoZSBiYWNraW5n
+IHN0b3JlLgoKQW5kIG1peCBpbiAvcHJvYy9tb3VudHMgdHJhY2tpbmcsIHdoaWNoIGhhcyBhIG5h
+bWVzcGFjZSBjb21wb25lbnQgYW5kCmNvbXBsZXRlbHkgZGlmZmVyZW50IGV2ZW50cyBhbmQgc2Vj
+dXJpdHkgbW9kZWwgKGxpa2VseSAibm9uZSIgLSBzaW5jZQp5b3UgY2FuIGFsd2F5cyByZWFkIHlv
+dXIgb3duIC9wcm9jL21vdW50cykuCgpTbyBob25lc3RseSwgdGhpcyBhbGwganVzdCBtYWtlcyBt
+ZSBnbyAidXNlciBpbnRlcmZhY2VzIGFyZSBoYXJkLCBhbGwKdGhlIHVzZXJzIHNlZW0gdG8gaGF2
+ZSAqY29tcGxldGVseSogZGlmZmVyZW50IHJlcXVpcmVtZW50cywgYW5kIG5vYm9keQpoYXMgYXBw
+YXJlbnRseSByZWFsbHkgdGVzdGVkIHRoaXMgaW4gcHJhY3RpY2UiLgoKTWF5YmUgYSBnZW5lcmlj
+IG5vdGlmaWNhdGlvbiBtZWNoYW5pc20gaXMgc2Vuc2libGUuIEJ1dCBJIGRvbid0IHNlZQpob3cg
+c2VjdXJpdHkgaXNzdWVzIGNvdWxkICpwb3NzaWJseSogYmUgdW5pZmllZCwgYW5kIHNvbWUgb2Yg
+dGhlCmV4YW1wbGVzIGdpdmVuIChwYXJ0aWN1bGFybHkgInRyYWNrIGNoYW5nZXMgdG8gL3Byb2Mv
+bW91bnRzIikgc2VlbSB0bwpoYXZlIG9idmlvdXNseSBiZXR0ZXIgYWx0ZXJuYXRpdmVzIChhcyBp
+biAianVzdCBzdXBwb3J0IHBvbGwoKSBvbgppdCIpLgoKQWxsIHRoaXMgZGlzY3Vzc2lvbiBoYXMg
+Y29udmluY2VkIG1lIG9mIGlzIHRoYXQgdGhpcyB3aG9sZSB0aGluZyBpcwpoYWxmLWJha2VkIGFu
+ZCBub3QgcmVhZHkgZXZlbiBvbiBhIGNvbmNlcHR1YWwgbGV2ZWwuCgpTbyBhcyBmYXIgYXMgSSdt
+IGNvbmNlcm5lZCwgSSB0aGluayBJIHdhbnQgdGhpbmdzIGxpa2UgYWN0dWFsCiJUZXN0ZWQtYnk6
+IiBsaW5lcyBmcm9tIGFjdHVhbCB1c2VycywgYmVjYXVzZSBpdCdzIG5vdCBjbGVhciB0aGF0IHRo
+aXMKbWFrZXMgc2Vuc2UuIEdub21lIGNlcnRhaW5seSBzaG91bGQgd29yayBhcyBhIHJlZ3VsYXIg
+dXNlciwgaWYgeW91Cm5lZWQgYSBzeXN0ZW0gZGFlbW9uIGZvciBpdCB3aXRoIHJvb3QgcHJpdmls
+ZWdlcyB5b3UgbWlnaHQgYXMgd2VsbApqdXN0IGRvIGFueSBub3RpZmljYXRpb24gZW50aXJlbHkg
+aW5zaWRlIHRoYXQgZGFlbW9uIGluIHVzZXIgc3BhY2UuClNhbWUgZ29lcyBmb3IgL3Byb2MvbW91
+bnRzIC0gd2hpY2ggYXMgbWVudGlvbmVkIGhhcyBhIG11Y2ggbW9yZQpvYnZpb3VzIGludGVyZmFj
+ZSBmb3Igd2FpdGluZyBhbnl3YXkuCgpVc2VyIGludGVyZmFjZXMgbmVlZCBhIGxvdCBvZiB0aG91
+Z2h0IGFuZCB0ZXN0aW5nLiBUaGV5IHNob3VsZG4ndCBiZQphZC1ob2MgIm1heWJlIHRoaXMgY291
+bGQgd29yayBmb3IgWCwgWSBhbmQgWiIgdGhlb3JpZXMuCgogICAgICAgICAgICAgICAgICAgIExp
+bnVz
