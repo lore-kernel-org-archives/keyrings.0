@@ -1,58 +1,37 @@
-From: Ray Strode <rstrode@redhat.com>
-Date: Thu, 05 Sep 2019 18:32:40 +0000
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 05 Sep 2019 18:33:05 +0000
 Subject: Re: Why add the general notification queue and its sources
-Message-Id: <CAKCoTu7ms_Mr-q08d9XB3uascpzwBa5LF9JTT2aq8uUsoFE8aQ@mail.gmail.com>
+Message-Id: <20190905183305.GA22877@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
- <CAHk-=wh5ZNE9pBwrnr5MX3iqkUP4nspz17rtozrSxs5-OGygNw@mail.gmail.com>
- <17703.1567702907@warthog.procyon.org.uk> <CAHk-=wjQ5Fpv0D7rxX0W=obx9xoOAxJ_Cr+pGCYOAi2S9FiCNg@mail.gmail.com>
-In-Reply-To: <CAHk-=wjQ5Fpv0D7rxX0W=obx9xoOAxJ_Cr+pGCYOAi2S9FiCNg@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Steven Whitehouse <swhiteho@redhat.com>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, "Ray, Debarshi" <debarshi.ray@gmail.com>, Robbie Harwood <rharwood@redhat.com>
+References: <CAHk-=wh5ZNE9pBwrnr5MX3iqkUP4nspz17rtozrSxs5-OGygNw@mail.gmail.com>
+ <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
+ <17703.1567702907@warthog.procyon.org.uk>
+In-Reply-To: <17703.1567702907@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, rstrode@redhat.com, swhiteho@redhat.com, nicolas.dichtel@6wind.com, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>
 
-SGksCgpPbiBUaHUsIFNlcCA1LCAyMDE5IGF0IDE6MjAgUE0gTGludXMgVG9ydmFsZHMKPHRvcnZh
-bGRzQGxpbnV4LWZvdW5kYXRpb24ub3JnPiB3cm90ZToKPiBZb3UndmUgYXQgbGVhc3Qgbm93IGFu
-c3dlcmVkIHBhcnQgb2YgdGhlICJXaHkiLCBidXQgeW91IGRpZG4ndAo+IGFjdHVhbGx5IGFuc3dl
-ciB0aGUgd2hvbGUgImFub3RoZXIgZGV2ZWxvcGVyIiBwYXJ0LgpJdCdzIGNlcnRhaW5seSBzb21l
-dGhpbmcgd2UndmUgd2FudGVkIGluIHRoZSBHTk9NRSB3b3JsZCBmb3IgYSBsb25nIHRpbWU6CgpT
-ZWUgZm9yIGluc3RhbmNlCgpodHRwczovL2J1Z3ppbGxhLnJlZGhhdC5jb20vc2hvd19idWcuY2dp
-P2lkmTExMTAKCmFuZAoKaHR0cHM6Ly9idWd6aWxsYS5nbm9tZS5vcmcvc2hvd19idWcuY2dpP2lk
-cDc0MDIKCmZyb20gYWxsIHRoZSB3YXkgYmFjayAyMDEzLiAgVGhlc2UgYXJlIHRoZSBhbHRlcm5h
-dGl2ZXMgSSBjYW4gdGhpbmsgb2Y6CgotIHBvbGw/IHN0YXR1cyBxdW8sIGJ1dCBub3QgZ3JlYXQg
-Zm9yIG9idmlvdXMgd2FrZXVwIHJlYXNvbnMKLSB1c2UgYSBkaWZmZXJlbnQgY3JlZGVudGlhbCBj
-YWNoZSBjb2xsZWN0aW9uIHR5cGUgdGhhdCBkb2VzIHN1cHBvcnQKY2hhbmdlIG5vdGlmaWNhdGlv
-bj8Kc29tZSBvZiB0aGUgb3RoZXIgdHlwZXMgZG8gc3VwcG9ydCBjaGFuZ2Ugbm90aWZpY2F0aW9u
-LCBidXQgaGF2ZSB0aGVpcgpvd24gc2V0IG9mCnByb2JsZW1zLiBCdXQgbWF5YmUgd2Ugc2hvdWxk
-IGp1c3QgZ28gYmFjayB0byBESVIgdHlwZSBjcmVkZW50aWFsCmNhY2hlIGNvbGxlY3Rpb25zCmFu
-ZCB0cnkgdG8gZmlndXJlIG91dCB0aGUgbGlmZSBjeWNsZSBwcm9ibGVtcyB0aGV5IHBvc2UsIGkg
-ZG9uJ3QKa25vdy4uLiBvciBnZXQgbW9yZQptYW4gcG93ZXIgYmVoaW5kIEtDTS4uLgotIG1hbmFn
-ZSBjaGFuZ2Ugbm90aWZpY2F0aW9uIGVudGlyZWx5IGZyb20gdXNlcnNwYWNlLiAgYXNzdW1lIGNy
-ZWRlbnRpYWxzIHdpbGwKYWx3YXlzIGJlIHB1dCBpbiBwbGFjZSBmcm9tIGtyYjUtbGlicyBlbnRy
-eSBwb2ludHMsIGFuZCBqdXN0IHNraXAKbm90aWZpY2F0aW9uIGlmCml0IGhhcHBlbnMgb3V0IGZy
-b20gdW5kZXIgdGhlIGxpYnJhcmllcy4gbWF5YmUgdXBzdHJlYW0ga2VyYmVyb3MgZ3V5cyB3b3Vs
-ZApiZSBvbmJvYXJkIHdpdGggdGhpcywgSSBkb24ndCBrbm93LiBUaGlzIHNlZW1zIGxlc3Mgcm9i
-dXN0IHRoYW4gaGF2aW5nCnRoZSBrZXJuZWwKaW4gdGhlIGxvb3AsIHRob3VnaC4KCj4gSSByZWFs
-bHkgZG9uJ3QgbGlrZSBob3cgbm9ib2R5IGVsc2UgdGhhbiB5b3Ugc2VlbXMgdG8gZXZlbiBsb29r
-IGF0IGFueQo+IG9mIHRoZSBrZXkgaGFuZGxpbmcgcGF0Y2hlcy4gQmVjYXVzZSBub2JvZHkgZWxz
-ZSBzZWVtcyB0byBjYXJlLgpJJ3ZlIGdvdCBubyBpbnNpZ2h0IGhlcmUsIHNvIGknbGwganVzdCB0
-aHJvdyBhIGRhcnQuLi4KCnZpcm8sIGlzIHRoaXMgc29tZXRoaW5nIHlvdSBoYXZlIGFueSBpbnRl
-cmVzdCBpbiB3YXRjaGluZyBjbG9zZXI/Cgo+IFNlZSB3aGF0IEknbSBzYXlpbmc/IFRoaXMgd2hv
-bGUgIkRhdmlkIEhvd2VsbHMgZG9lcyBoaXMgb3duIGZlYXR1cmVzCj4gdGhhdCBub2JvZHkgZWxz
-ZSB1c2VzIiBuZWVkcyB0byBzdG9wLiBZb3UgbmVlZCB0byBoYXZlIGEgY2hhbXBpb24uIEkKPiBq
-dXN0IGRvbid0IGZlZWwgc2FmZSBwdWxsaW5nIHRoZXNlIGtpbmRzIG9mIGNoYW5nZXMgZnJvbSB5
-b3UsIGJlY2F1c2UKPiBJIGdldCB0aGUgZmVlbGluZyB0aGF0IEFCU09MVVRFTFkgTk9CT0RZIEVM
-U0UgZXZlciByZWFsbHkgbG9va2VkIGF0IGl0Cj4gb3IgcmVhbGx5IGNhcmVkLgpJIGdldCB0aGUg
-Im9uZSBtYW4gaXMgbm90IGVub3VnaCBmb3IgcHJvcGVyIG1haW50ZW5hbmNlIiBhcmd1bWVudCwg
-YW5kCm1heWJlIGl0J3MgdHJ1ZS4gIEkgZG9uJ3Qga25vdy4KCkJ1dCBJIGp1c3Qgd2FudCB0byBw
-b2ludCBvdXQsIEkgaGF2ZSBiZWVuIGFza2luZyBkaG93ZWxscyBmb3IgdGhpcyBjaGFuZ2UKbm90
-aWZpY2F0aW9uIEFQSSBmb3IgeWVhcnMsIHNvIGl0J3Mgbm90IHNvbWV0aGluZyBoZSBkaWQgb24g
-aGlzIG93biBhbmQgZm9yCm5vIHBhcnRpY3VsYXJseSBnb29kIHJlYXNvbi4gSXQgc29sdmVzIGEg
-cmVhbCBwcm9ibGVtIGFuZCBoYXMgYSByZWFsLXdvcmxkCnVzZSBjYXNlLgoKSGUga2luZGx5IGRp
-ZCBpdCBiZWNhdXNlIEkgKGFuZCBSb2JiaWUgSGFyd29vZCBhbmQgb3RoZXJzKSBhc2tlZCBoaW0g
-YWJvdXQKaXQsIG9mZiBhbmQgb24sIGFuZCAgaGUgd2FzIGFibGUgdG8gZml0IGl0IG9udG8gaGlz
-IHByaW9yaXR5IGxpc3QgZm9yIHVzLgpGcm9tIHRoaXMgdGhyZWFkLCBpdCBzb3VuZHMgbGlrZSBo
-ZSBzb2x2ZWQgYSBwcm9ibGVtIGZvciBHcmVnIHRvbywga2lsbGluZyBhCmNvdXBsZSBiaXJkcyB3
-aXRoIG9uZSBzdG9uZT8KCi0tUmF5
+On Thu, Sep 05, 2019 at 06:01:47PM +0100, David Howells wrote:
+>  (2) USB notifications.
+> 
+>      GregKH was looking for a way to do USB notifications as I was looking to
+>      find additional sources to implement.  I'm not sure how he wants to use
+>      them, but I'll let him speak to that himself.
+
+We are getting people asking for all sorts of "error reporting" events
+that can happen in the USB subsystem that we have started to abuse the
+KOBJ_CHANGE uevent notification for.  At the same time your patches were
+submitted, someone else submitted yet-another-USB-error patchset.  This
+type of user/kernel interface is much easier to use than abusing uevents
+for USB errors and general notifications about what happened with USB
+devices (more than just add/remove that uevents have).
+
+So yes, I would like this, and I am sure the ChromeOS people would like
+it too given that I rejected their patcheset with the assumption that
+this could be done with the notification queue api "soon" :)
+
+thanks,
+
+greg k-h
