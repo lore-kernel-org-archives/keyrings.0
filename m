@@ -1,7 +1,7 @@
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 06 Sep 2019 15:35:46 +0000
+Date: Fri, 06 Sep 2019 15:53:09 +0000
 Subject: Re: Why add the general notification queue and its sources
-Message-Id: <CAHk-=wiR1fpahgKuxSOQY6OfgjWD+MKz8UF6qUQ6V_y2TC_V6w@mail.gmail.com>
+Message-Id: <CAHk-=wioHmz69394xKRqFkhK8si86P_704KgcwjKxawLAYAiug@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,125 +13,66 @@ References: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk
  <CAHk-=wjcsxQ8QB_v=cwBQw4pkJg7pp-bBsdWyPivFO_OeF-y+g@mail.gmail.com>
  <5396.1567719164@warthog.procyon.org.uk> <CAHk-=wgbCXea1a9OTWgMMvcsCGGiNiPp+ty-edZrBWn63NCYdw@mail.gmail.com>
  <14883.1567725508@warthog.procyon.org.uk> <CAHk-=wjt2Eb+yEDOcQwCa0SrZ4cWu967OtQG8Vz21c=n5ZP1Nw@mail.gmail.com>
- <27732.1567764557@warthog.procyon.org.uk>
-In-Reply-To: <27732.1567764557@warthog.procyon.org.uk>
+ <27732.1567764557@warthog.procyon.org.uk> <CAHk-=wiR1fpahgKuxSOQY6OfgjWD+MKz8UF6qUQ6V_y2TC_V6w@mail.gmail.com>
+In-Reply-To: <CAHk-=wiR1fpahgKuxSOQY6OfgjWD+MKz8UF6qUQ6V_y2TC_V6w@mail.gmail.com>
 To: David Howells <dhowells@redhat.com>
 Cc: Ray Strode <rstrode@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Steven Whitehouse <swhiteho@redhat.com>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, Christian Brauner <christian@brauner.io>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>, "Ray, Debarshi" <debarshi.ray@gmail.com>, Robbie Harwood <rharwood@redhat.com>
 
-On Fri, Sep 6, 2019 at 3:09 AM David Howells <dhowells@redhat.com> wrote:
+On Fri, Sep 6, 2019 at 8:35 AM Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
->
-> > But it's *literally* just finding the places that work with
-> > pipe->curbuf/nrbufs and making them use atomic updates.
->
-> No.  It really isn't.  That's two variables that describe the occupied section
-> of the buffer.  Unless you have something like a 68020 with CAS2, or put them
-> next to each other so you can use CMPXCHG8, you can't do that.
->
-> They need converting to head/tail pointers first.
+> This is why I like pipes. You can use them today. They are simple, and
+> extensible, and you don't need to come up with a new subsystem and
+> some untested ad-hoc thing that nobody has actually used.
 
-You misunderstand - because I phrased it badly. I meant "atomic" in
-the traditional kernel sense, as in "usable in not thread context" (eg
-GFP_ATOMIC etc).
+The only _real_ complexity is to make sure that events are reliably parseable.
 
-I'd start out just using a spinlock.
+That's where you really want to use the Linux-only "packet pipe"
+thing, becasue otherwise you have to have size markers or other things
+to delineate events. But if you do that, then it really becomes
+trivial.
 
-I do agree that we could try to be fancy and do it entirely locklessly
-too, and I mentioned that in another part:
+And I checked, we made it available to user space, even if the
+original reason for that code was kernel-only autofs use: you just
+need to make the pipe be O_DIRECT.
 
- "[..] it should not
-  be all that hard to just make the whole "curbuf/nrbufs" handling use
-  its own locking (maybe even some lockless atomics and cmpxchg)"
+This overly stupid program shows off the feature:
 
-but I also very much agree that it's much more complex.
+        #define _GNU_SOURCE
+        #include <fcntl.h>
+        #include <unistd.h>
 
-The main complexity of a lockless thing is actually almost certainly
-not in curbuf/nrbufs, because those could easily be packed as two
-16-bit values in a 32-bit entity and then regular cmpxchg works fine.
+        int main(int argc, char **argv)
+        {
+                int fd[2];
+                char buf[10];
 
-No, the complexity in the lockless model is that then you have to be
-very careful with the "buf[]" array update too.  Maybe that's trivial
-(just make sure that they are NULL when not used), but it just looks
-less than wonderfully easy.
+                pipe2(fd, O_DIRECT | O_NONBLOCK);
+                write(fd[1], "hello", 5);
+                write(fd[1], "hi", 2);
+                read(fd[0], buf, sizeof(buf));
+                read(fd[0], buf, sizeof(buf));
+                return 0;
+        }
 
-So a lockless update I'm sure is _doable_ with some cleverness, but is
-probably not really worth it.
+and it you strace it (because I was too lazy to add error handling or
+printing of results), you'll see
 
-That's particularly true since we already *have* a spinlock that we
-would take anyway: the we could strive to use the waitqueue spinlock
-in pipe->wait, and not even really add any new locking. That would
-require a bit of cleverness too and re-ordering things more, but we do
-that in other places (eg completions, but the fs_pin code does it too,
-and a few other cases.
+    write(4, "hello", 5)                    = 5
+    write(4, "hi", 2)                       = 2
+    read(3, "hello", 10)                    = 5
+    read(3, "hi", 10)                       = 2
 
-Look for "wake_up_locked()" and friends, which is a sure-fire sign
-that somebody is playing games and taking the wait-queue lock manually
-for their own nefarious reasons.
+note how you got packets of data on the reader side, instead of
+getting the traditional "just buffer it as a stream".
 
-> > They really would work with almost anything. You could even mix-and-match
-> > "data generated by kernel" and "data done by 'write()' or 'splice()' by a
-> > user process".
->
-> Imagine that userspace writes a large message and takes the mutex.  At the
-> same time something in softirq context decides *it* wants to write a message -
-> it can't take the mutex and it can't wait, so the userspace write would have
-> to cause the kernel message to be dropped.
+So now you can even have multiple readers of the same event pipe, and
+packetization is obvious and trivial. Of course, I'm not sure why
+you'd want to have multiple readers, and you'd lose _ordering_, but if
+all events are independent, this _might_ be a useful thing in a
+threaded environment. Maybe.
 
-No. You're missing the point entirely.
+(Side note: a zero-sized write will not cause a zero-sized packet. It
+will just be dropped).
 
-The mutex is entirely immaterial for the "insert a message". It is
-only used for user-space synchronization. The "add message to the pipe
-buffers" would only do the low-level buffer updates (whether using a
-new spinlock, re-using the pipe waitqueue lock, or entirely
-locklessly, ends up being then just an implementation detail).
-
-Note that user-space writes are defined to be atomic, but they are (a)
-not ordered and (b) only atomic up to a single buffer entry (which is
-that PIPE_BUF limit). So you can always put in a new buffer entry at
-any time.
-
-Obviously if a user space write just fills up the whole queue (or
-_other_ messages fill up the whole queue) you'd have to drop the
-notification. But that's always true. That's true even in your thing.
-The only difference is that we _allow_ other user spaces to write to
-the notification queue too.
-
-But if you don't want to allow that, then don't give out the write
-side of the pipe to any untrusted user space.
-
-But in *general*, allowing user space to write to the pipe is a great
-feature: it means that your notification source *can* be a user space
-daemon that you gave the write side of the pipe to (possibly using fd
-passing, possibly by just forking your own user-space child or cloning
-a thread).
-
-So for example, from a consumer standpoint, you can start off doing
-these things in user space with a helper thread that feeds the pipe
-(for example, polling /proc/mounts every second), and then when you've
-prototyped it and are happy with it, you can add the system call (or
-ioctl or whatever) to make the kernel generate the messages so that
-you don't have to poll.
-
-But now, once you have the kernel patch, you already have a proven
-user, and you can show numbers ("My user-space thing works, but it
-uses up 0.1% CPU time and has that nasty up-to-one-second latency
-because of polling"). Ta-daa!
-
-End result: it's backwards compatible, it's prototypable, and it's
-fairly easily extensible. Want to add a new source of events? Just
-pass the pipe to any random piece of code you want. It needs kernel
-support only when you've proven the concept _and_ you can show that
-"yeah, this user space polling model is a real performance or
-complexity problem" or whatever.
-
-This is why I like pipes. You can use them today. They are simple, and
-extensible, and you don't need to come up with a new subsystem and
-some untested ad-hoc thing that nobody has actually used.
-
-And they work automatically with all the existing infrastructure. They
-work with whatever perl or shell scripts, they work with poll/select
-loops, they work with user-space sources of events, they are just very
-flexible.
-
-                     Linus
+               Linus
