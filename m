@@ -1,113 +1,57 @@
-From: Yihao Wu <wuyihao@linux.alibaba.com>
-Date: Sun, 01 Sep 2019 10:26:37 +0000
-Subject: [PATCH 1/2 v2] sign-file: introduce check_module_sig
-Message-Id: <2fec8230-1ed1-b17e-01e5-111106363829@linux.alibaba.com>
+From: Alice Walton <saraharmony501@gmail.com>
+Date: Sat, 07 Sep 2019 01:35:52 +0000
+Subject: Please forgive me
+Message-Id: <CAHoQAbVi2eUJHHAx8-i6uv=tXXkdZbDQj+bGXrd4foXr+8goAQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
 
-This method checks if there's any existing signature. And it returns the
-actual module size, which excludes the signature.
+My Dearest,
 
-Signed-off-by: Yihao Wu <wuyihao@linux.alibaba.com>
----
-v1->v2: Replace magic numbers by sizeof(type)
+Please forgive me for stressing you with my predicaments as I know
+that this letter may come to you as a big surprise.
 
- scripts/sign-file.c | 70 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 70 insertions(+)
+Actually, I came across your E-mail from my personal search afterward
+I decided to email you directly believing that you will be honest to
+fulfil my final wish before anything happens to me. Meanwhile, I am
+Madam Alice Walton, 71 years old childless widow from France but i
+reside and doing Gold mining business in Africa before i fall sick.
 
-diff --git a/scripts/sign-file.c b/scripts/sign-file.c
-index fbd34b8e8f57..bb8fff025a95 100644
---- a/scripts/sign-file.c
-+++ b/scripts/sign-file.c
-@@ -62,9 +62,11 @@ struct module_signature {
- 	uint32_t	sig_len;	/* Length of signature data */
- };
- 
-+#define SIGSIZ (sizeof(struct module_signature))
- #define PKEY_ID_PKCS7 2
- 
- static char magic_number[] = "~Module signature appended~\n";
-+#define MAGIC_SIZE (sizeof(magic_number) - 1)
- 
- static __attribute__((noreturn))
- void format(void)
-@@ -132,6 +134,74 @@ static int pem_pw_cb(char *buf, int len, int w, void *v)
- 	return pwlen;
- }
- 
-+/*
-+ * Check if there is at least one valid PKCS#7 signature
-+ */
-+static bool check_module_sig(char *module_name, unsigned long *module_size)
-+{
-+	int sig_offset, magic_offset;
-+	unsigned long file_size, offset;
-+	uint32_t sig_len;
-+	char buf[4096];
-+	uint16_t type;
-+	BIO *bm;
-+
-+	bm = BIO_new_file(module_name, "rb");
-+	ERR(!bm, "%s", module_name);
-+
-+	while (BIO_read(bm, buf, 4096) > 0)
-+		;
-+	file_size = *module_size = offset = BIO_number_read(bm);
-+
-+	for (;;) {
-+		magic_offset = offset - MAGIC_SIZE;
-+		if (magic_offset < 0)
-+			break;
-+
-+		if (BIO_seek(bm, magic_offset))
-+			break;
-+
-+		if (BIO_read(bm, buf, MAGIC_SIZE) != MAGIC_SIZE)
-+			break;
-+
-+		if (memcmp(buf, magic_number, MAGIC_SIZE))
-+			break;
-+
-+		if (magic_offset <= SIGSIZ)
-+			break;
-+
-+		sig_offset = magic_offset - sizeof(sig_len);
-+		if (BIO_seek(bm, sig_offset))
-+			break;
-+
-+		if (BIO_read(bm, &sig_len, sizeof(sig_len)) != sizeof(sig_len))
-+			break;
-+
-+		sig_len = ntohl(sig_len);
-+
-+		offset -= MAGIC_SIZE + SIGSIZ + sig_len;
-+		if (offset <= 0)
-+			break;
-+
-+		if (BIO_seek(bm, offset))
-+			break;
-+
-+		if (BIO_read(bm, &type, sizeof(type)) != sizeof(type))
-+			break;
-+
-+		/* The structured type must be a sequence. And the length of the
-+		 * content info must be at the next 2 bytes (0x82 - 0x80 = 0x2)
-+		 */
-+		if (type != 0x8230)
-+			break;
-+
-+		*module_size = offset;
-+	}
-+
-+	ERR(BIO_free(bm) < 0, "%s", module_name);
-+	return *module_size < file_size;
-+}
-+
- static EVP_PKEY *read_private_key(const char *private_key_name)
- {
- 	EVP_PKEY *private_key;
--- 
-2.21.0
+I am suffering from Adenocarcinoma Cancer of the lungs for the past 8
+years and from all indication my condition is really deteriorating as
+my doctors have confirmed and courageously advised me that I may not
+live beyond 3 weeks from now for the reason that my tumor has reached
+a critical stage which has defiled all forms of medical treatment.
+
+Since my days are numbered, I’ve decided willingly to fulfil my
+long-time vow to donate to the less privileges the sum of($18.5
+million dollars) I deposited in my offshore account over 7 years now
+because I have tried to handle this project by myself but I have seen
+that my health could not allow me to do so anymore.
+
+My promise to God includes building of well-equipped charity
+foundation/hospital and a technical school for the orphans and less
+privileges.
+
+Since i am not capable to handle this again myself due to my critical
+health condition,please i need your consent to help me receive my
+money from the bank and use it to do this divine works of God in your
+country in my name so that my soul can be at rest if anything happens
+to me.
+
+If you will be honest, kind and willing to assist me handle this
+charity project as I’ve mentioned here, I will like you to provide me
+your personal data like,
+
+(1) Your full name:
+(2) country:
+(3) Occupation:
+(4) phone number:
+(5) Age:
+
+Let me have this data so that i can link you up with my bank as my
+representative and receiver of the funds now that i am still alive.
+
+Warmest Regards!
+Mrs. Alice Walton
