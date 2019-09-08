@@ -1,132 +1,84 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 04 Sep 2019 22:16:12 +0000
-Subject: [PATCH 03/11] security: Add a hook for the point of notification insertion [ver #8]
-Message-Id: <156763537237.18676.12991040129330701275.stgit@warthog.procyon.org.uk>
+From: Roberto Sassu <roberto.sassu@huawei.com>
+Date: Sun, 08 Sep 2019 17:45:42 +0000
+Subject: [PATCH v3] KEYS: trusted: correctly initialize digests and fix locking issue
+Message-Id: <20190908174542.509-1-roberto.sassu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
-In-Reply-To: <156763534546.18676.3530557439501101639.stgit@warthog.procyon.org.uk>
-To: keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com
+Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, silviu.vlasceanu@huawei.com, Roberto Sassu <roberto.sassu@huawei.com>
 
-Add a security hook that allows an LSM to rule on whether a notification
-message is allowed to be inserted into a particular watch queue.
+Commit 0b6cf6b97b7e ("tpm: pass an array of tpm_extend_digest structures to
+tpm_pcr_extend()") modifies tpm_pcr_extend() to accept a digest for each
+PCR bank. After modification, tpm_pcr_extend() expects that digests are
+passed in the same order as the algorithms set in chip->allocated_banks.
 
-The hook is given the following information:
+This patch fixes two issues introduced in the last iterations of the patch
+set: missing initialization of the TPM algorithm ID in the tpm_digest
+structures passed to tpm_pcr_extend() by the trusted key module, and
+unreleased locks in the TPM driver due to returning from tpm_pcr_extend()
+without calling tpm_put_ops(). To avoid the second issue, input check is
+done before locks are taken.
 
- (1) The credentials of the triggerer (which may be init_cred for a system
-     notification, eg. a hardware error).
-
- (2) The credentials of the whoever set the watch.
-
- (3) The notification message.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
+Signed-off-by: Roberto Sassu <roberto.sassu@huawei.com>
+Fixes: 0b6cf6b97b7e ("tpm: pass an array of tpm_extend_digest structures to tpm_pcr_extend()")
 ---
+Changelog
 
- include/linux/lsm_hooks.h |   14 ++++++++++++++
- include/linux/security.h  |   15 ++++++++++++++-
- security/security.c       |    9 +++++++++
- 3 files changed, 37 insertions(+), 1 deletion(-)
+v2:
+- provide explanation of the problem
 
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index b0cdefcda4e6..257d803dcf6f 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1424,6 +1424,12 @@
-  *	Check to see if a process is allowed to watch for event notifications
-  *	from devices (as a global set).
-  *
-+ * @post_notification:
-+ *	Check to see if a watch notification can be posted to a particular
-+ *	queue.
-+ *	@w_cred: The credentials of the whoever set the watch.
-+ *	@cred: The event-triggerer's credentials
-+ *	@n: The notification being posted
-  *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-@@ -1706,6 +1712,11 @@ union security_list_options {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	int (*watch_devices)(void);
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	int (*post_notification)(const struct cred *w_cred,
-+				 const struct cred *cred,
-+				 struct watch_notification *n);
-+#endif
+v1:
+- correct referenced commit
+
+ drivers/char/tpm/tpm-interface.c | 8 ++++----
+ security/keys/trusted.c          | 5 +++++
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 1b4f95c13e00..1fffa91fc148 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -316,14 +316,14 @@ int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
+ 	int rc;
+ 	int i;
  
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -1988,6 +1999,9 @@ struct security_hook_heads {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	struct hlist_head watch_devices;
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	struct hlist_head post_notification;
-+#endif /* CONFIG_WATCH_QUEUE */
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 3be44354d308..24c54b9ff0a1 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -57,6 +57,8 @@ struct mm_struct;
- struct fs_context;
- struct fs_parameter;
- enum fs_value_type;
-+struct watch;
-+struct watch_notification;
+-	chip = tpm_find_get_ops(chip);
+-	if (!chip)
+-		return -ENODEV;
+-
+ 	for (i = 0; i < chip->nr_allocated_banks; i++)
+ 		if (digests[i].alg_id != chip->allocated_banks[i].alg_id)
+ 			return -EINVAL;
  
- /* Default (no) options for the capable function */
- #define CAP_OPT_NONE 0x0
-@@ -1222,6 +1224,18 @@ static inline int security_watch_devices(void)
++	chip = tpm_find_get_ops(chip);
++	if (!chip)
++		return -ENODEV;
++
+ 	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
+ 		rc = tpm2_pcr_extend(chip, pcr_idx, digests);
+ 		tpm_put_ops(chip);
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index ade699131065..1fbd77816610 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -1228,11 +1228,16 @@ static int __init trusted_shash_alloc(void)
+ 
+ static int __init init_digests(void)
+ {
++	int i;
++
+ 	digests = kcalloc(chip->nr_allocated_banks, sizeof(*digests),
+ 			  GFP_KERNEL);
+ 	if (!digests)
+ 		return -ENOMEM;
+ 
++	for (i = 0; i < chip->nr_allocated_banks; i++)
++		digests[i].alg_id = chip->allocated_banks[i].alg_id;
++
  	return 0;
  }
- #endif
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n);
-+#else
-+static inline int security_post_notification(const struct cred *w_cred,
-+					     const struct cred *cred,
-+					     struct watch_notification *n)
-+{
-+	return 0;
-+}
-+#endif
  
- #ifdef CONFIG_SECURITY_NETWORK
- 
-@@ -1847,4 +1861,3 @@ static inline void security_bpf_prog_free(struct bpf_prog_aux *aux)
- #endif /* CONFIG_BPF_SYSCALL */
- 
- #endif /* ! __LINUX_SECURITY_H */
--
-diff --git a/security/security.c b/security/security.c
-index 007eb48bc848..b719c5a5b2ba 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1916,6 +1916,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n)
-+{
-+	return call_int_hook(post_notification, 0, w_cred, cred, n);
-+}
-+#endif /* CONFIG_WATCH_QUEUE */
-+
- #ifdef CONFIG_KEY_NOTIFICATIONS
- int security_watch_key(struct key *key)
- {
+-- 
+2.17.1
