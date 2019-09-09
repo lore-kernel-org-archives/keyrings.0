@@ -1,13 +1,13 @@
 From: Sasha Levin <sashal@kernel.org>
-Date: Mon, 09 Sep 2019 15:42:21 +0000
-Subject: [PATCH AUTOSEL 4.4 2/2] keys: Fix missing null pointer check in request_key_auth_describe()
-Message-Id: <20190909154221.31473-2-sashal@kernel.org>
+Date: Mon, 09 Sep 2019 15:40:50 +0000
+Subject: [PATCH AUTOSEL 5.2 10/12] keys: Fix missing null pointer check in request_key_auth_describe()
+Message-Id: <20190909154052.30941-10-sashal@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20190909154221.31473-1-sashal@kernel.org>
-In-Reply-To: <20190909154221.31473-1-sashal@kernel.org>
+References: <20190909154052.30941-1-sashal@kernel.org>
+In-Reply-To: <20190909154052.30941-1-sashal@kernel.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Hillf Danton <hdanton@sina.com>, Sachin Sant <sachinp@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
@@ -54,12 +54,12 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 6 insertions(+)
 
 diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index 8882b729924dd..976deea0569e3 100644
+index e45b5cf3b97fd..8491becb57270 100644
 --- a/security/keys/request_key_auth.c
 +++ b/security/keys/request_key_auth.c
-@@ -71,6 +71,9 @@ static void request_key_auth_describe(const struct key *key,
+@@ -66,6 +66,9 @@ static void request_key_auth_describe(const struct key *key,
  {
- 	struct request_key_auth *rka = key->payload.data[0];
+ 	struct request_key_auth *rka = get_request_key_auth(key);
  
 +	if (!rka)
 +		return;
@@ -67,7 +67,7 @@ index 8882b729924dd..976deea0569e3 100644
  	seq_puts(m, "key:");
  	seq_puts(m, key->description);
  	if (key_is_positive(key))
-@@ -88,6 +91,9 @@ static long request_key_auth_read(const struct key *key,
+@@ -83,6 +86,9 @@ static long request_key_auth_read(const struct key *key,
  	size_t datalen;
  	long ret;
  
