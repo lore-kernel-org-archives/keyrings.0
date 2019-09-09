@@ -1,57 +1,81 @@
-From: Alice Walton <saraharmony501@gmail.com>
-Date: Sat, 07 Sep 2019 01:35:52 +0000
-Subject: Please forgive me
-Message-Id: <CAHoQAbVi2eUJHHAx8-i6uv=tXXkdZbDQj+bGXrd4foXr+8goAQ@mail.gmail.com>
+From: Sasha Levin <sashal@kernel.org>
+Date: Mon, 09 Sep 2019 15:42:21 +0000
+Subject: [PATCH AUTOSEL 4.4 2/2] keys: Fix missing null pointer check in request_key_auth_describe()
+Message-Id: <20190909154221.31473-2-sashal@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20190909154221.31473-1-sashal@kernel.org>
+In-Reply-To: <20190909154221.31473-1-sashal@kernel.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Hillf Danton <hdanton@sina.com>, Sachin Sant <sachinp@linux.vnet.ibm.com>, David Howells <dhowells@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-My Dearest,
+From: Hillf Danton <hdanton@sina.com>
 
-Please forgive me for stressing you with my predicaments as I know
-that this letter may come to you as a big surprise.
+[ Upstream commit d41a3effbb53b1bcea41e328d16a4d046a508381 ]
 
-Actually, I came across your E-mail from my personal search afterward
-I decided to email you directly believing that you will be honest to
-fulfil my final wish before anything happens to me. Meanwhile, I am
-Madam Alice Walton, 71 years old childless widow from France but i
-reside and doing Gold mining business in Africa before i fall sick.
+If a request_key authentication token key gets revoked, there's a window in
+which request_key_auth_describe() can see it with a NULL payload - but it
+makes no check for this and something like the following oops may occur:
 
-I am suffering from Adenocarcinoma Cancer of the lungs for the past 8
-years and from all indication my condition is really deteriorating as
-my doctors have confirmed and courageously advised me that I may not
-live beyond 3 weeks from now for the reason that my tumor has reached
-a critical stage which has defiled all forms of medical treatment.
+	BUG: Kernel NULL pointer dereference at 0x00000038
+	Faulting instruction address: 0xc0000000004ddf30
+	Oops: Kernel access of bad area, sig: 11 [#1]
+	...
+	NIP [...] request_key_auth_describe+0x90/0xd0
+	LR [...] request_key_auth_describe+0x54/0xd0
+	Call Trace:
+	[...] request_key_auth_describe+0x54/0xd0 (unreliable)
+	[...] proc_keys_show+0x308/0x4c0
+	[...] seq_read+0x3d0/0x540
+	[...] proc_reg_read+0x90/0x110
+	[...] __vfs_read+0x3c/0x70
+	[...] vfs_read+0xb4/0x1b0
+	[...] ksys_read+0x7c/0x130
+	[...] system_call+0x5c/0x70
 
-Since my days are numbered, I’ve decided willingly to fulfil my
-long-time vow to donate to the less privileges the sum of($18.5
-million dollars) I deposited in my offshore account over 7 years now
-because I have tried to handle this project by myself but I have seen
-that my health could not allow me to do so anymore.
+Fix this by checking for a NULL pointer when describing such a key.
 
-My promise to God includes building of well-equipped charity
-foundation/hospital and a technical school for the orphans and less
-privileges.
+Also make the read routine check for a NULL pointer to be on the safe side.
 
-Since i am not capable to handle this again myself due to my critical
-health condition,please i need your consent to help me receive my
-money from the bank and use it to do this divine works of God in your
-country in my name so that my soul can be at rest if anything happens
-to me.
+[DH: Modified to not take already-held rcu lock and modified to also check
+ in the read routine]
 
-If you will be honest, kind and willing to assist me handle this
-charity project as I’ve mentioned here, I will like you to provide me
-your personal data like,
+Fixes: 04c567d9313e ("[PATCH] Keys: Fix race between two instantiators of a key")
+Reported-by: Sachin Sant <sachinp@linux.vnet.ibm.com>
+Signed-off-by: Hillf Danton <hdanton@sina.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Sachin Sant <sachinp@linux.vnet.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ security/keys/request_key_auth.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-(1) Your full name:
-(2) country:
-(3) Occupation:
-(4) phone number:
-(5) Age:
-
-Let me have this data so that i can link you up with my bank as my
-representative and receiver of the funds now that i am still alive.
-
-Warmest Regards!
-Mrs. Alice Walton
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index 8882b729924dd..976deea0569e3 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -71,6 +71,9 @@ static void request_key_auth_describe(const struct key *key,
+ {
+ 	struct request_key_auth *rka = key->payload.data[0];
+ 
++	if (!rka)
++		return;
++
+ 	seq_puts(m, "key:");
+ 	seq_puts(m, key->description);
+ 	if (key_is_positive(key))
+@@ -88,6 +91,9 @@ static long request_key_auth_read(const struct key *key,
+ 	size_t datalen;
+ 	long ret;
+ 
++	if (!rka)
++		return -EKEYREVOKED;
++
+ 	datalen = rka->callout_len;
+ 	ret = datalen;
+ 
+-- 
+2.20.1
