@@ -1,11 +1,13 @@
 From: Julian Smith <juliansmith2015@mail.ru>
-Date: Wed, 11 Sep 2019 11:15:38 +0000
+Date: Wed, 11 Sep 2019 11:25:24 +0000
 Subject: Inquiry 11/Sept/2019
-Message-Id: <20190911111608.058D67ABB2@mail.qeaudio.ga>
+Message-Id: <20190911112815.543FCD9BA0@mail.qeaudio.ga>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20190911111608.058D67ABB2@mail.qeaudio.ga>
+In-Reply-To: <20190911111608.058D67ABB2@mail.qeaudio.ga>
 To: keyrings@vger.kernel.org
 
 Hi,friend,
