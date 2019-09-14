@@ -1,18 +1,18 @@
-From: Joe Perches <joe@perches.com>
-Date: Fri, 13 Sep 2019 17:36:15 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Sat, 14 Sep 2019 12:53:41 +0000
 Subject: Re: [PATCH] MAINTAINERS: Add a git and a maintainer entry to keyring subsystems
-Message-Id: <33da71451cbc5836efd61ccf125be89c6e946253.camel@perches.com>
+Message-Id: <20190914125341.GB9560@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20190910143228.30305-1-jarkko.sakkinen@linux.intel.com>
-         <11580.1568387033@warthog.procyon.org.uk>
+ <11580.1568387033@warthog.procyon.org.uk>
 In-Reply-To: <11580.1568387033@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: David Howells <dhowells@redhat.com>
 Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, James Bottomley <jejb@linux.ibm.com>, Mauro Carvalho Chehab <mchehab+samsung@kernel.org>, "David S. Miller" <davem@davemloft.net>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Nicolas Ferre <nicolas.ferre@microchip.com>, open list <linux-kernel@vger.kernel.org>
 
-On Fri, 2019-09-13 at 16:03 +0100, David Howells wrote:
+On Fri, Sep 13, 2019 at 04:03:53PM +0100, David Howells wrote:
 > Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
 > 
 > > Subject: [PATCH] MAINTAINERS: Add a git and a maintainer entry to keyring subsystems
@@ -23,4 +23,6 @@ On Fri, 2019-09-13 at 16:03 +0100, David Howells wrote:
 > 
 > as the subject of the keyrings maintainership one.
 
-Why is there utility in micro splitting such a trivial patch?
+Thanks, I'll refine accordingly.
+
+/Jarkko
