@@ -1,80 +1,55 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 02 Sep 2019 07:14:15 +0000
-Subject: Re: Oops (request_key_auth_describe) while running cve-2016-7042 from LTP
-Message-Id: <761.1567408455@warthog.procyon.org.uk>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Wed, 18 Sep 2019 14:27:02 +0000
+Subject: Can KEY_DH_OPERATIONS become tristate? (was: Re: Kernel 5.3.0 stuck during boot on Amiga)
+Message-Id: <CAMuHMdVHZ9srJcK+PY=YoP55z1NSjBAtkSr2ROA8i84C75v0zQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <11986.1567178014@warthog.procyon.org.uk>
- <85B7196E-D717-4F19-A7E8-82A18287A3DE@linux.vnet.ibm.com>
-In-Reply-To: <11986.1567178014@warthog.procyon.org.uk>
-To: Hillf Danton <hdanton@sina.com>
-Cc: dhowells@redhat.com, Sachin Sant <sachinp@linux.vnet.ibm.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+References: <278d9706-162d-28a4-4640-31b697924473@physik.fu-berlin.de>
+ <c5acb1c0-7a5b-ce42-8b2f-5fd30cbdab6e@physik.fu-berlin.de>
+ <6304acd1-7b71-b1fb-f8d8-298cb3025e69@physik.fu-berlin.de>
+ <6725b972-05d4-fed4-7094-16401e86b452@gmail.com> <578d8a91-aaee-087f-1742-65e64001b8fa@physik.fu-berlin.de>
+ <CAMuHMdUU6ejc168-ksqXrkE+PjCXFJumaRaWjRtj12NjG_TFSg@mail.gmail.com>
+ <CAMuHMdWfTrx8VuJoifEEBc1n+3MiiuwKNWcRnUw+TgWJCtOWag@mail.gmail.com>
+ <fea74ca3-4b24-780f-af74-a786646b1668@physik.fu-berlin.de> <CAMuHMdVeedJZE6mrGdYqRgawUtfu_ww5p-Qg1rLXNmGWiY7Nxg@mail.gmail.com>
+In-Reply-To: <CAMuHMdVeedJZE6mrGdYqRgawUtfu_ww5p-Qg1rLXNmGWiY7Nxg@mail.gmail.com>
+To: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Cc: Michael Schmitz <schmitzmic@gmail.com>, linux-m68k <linux-m68k@lists.linux-m68k.org>, Mat Martineau <mathew.j.martineau@linux.intel.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-Hi Hillf,
-
-Would you like to me to put you down as the author of this patch?  If so, I'll
-need a Signed-off-by from you.
-
-David
----
-commit df882ad6d4e24a3763719c1798ea58e87d56c2d7
-Author: Hillf Danton <hdanton@sina.com>
-Date:   Fri Aug 30 15:54:33 2019 +0100
-
-    keys: Fix missing null pointer check in request_key_auth_describe()
-    
-    If a request_key authentication token key gets revoked, there's a window in
-    which request_key_auth_describe() can see it with a NULL payload - but it
-    makes no check for this and something like the following oops may occur:
-    
-            BUG: Kernel NULL pointer dereference at 0x00000038
-            Faulting instruction address: 0xc0000000004ddf30
-            Oops: Kernel access of bad area, sig: 11 [#1]
-            ...
-            NIP [...] request_key_auth_describe+0x90/0xd0
-            LR [...] request_key_auth_describe+0x54/0xd0
-            Call Trace:
-            [...] request_key_auth_describe+0x54/0xd0 (unreliable)
-            [...] proc_keys_show+0x308/0x4c0
-            [...] seq_read+0x3d0/0x540
-            [...] proc_reg_read+0x90/0x110
-            [...] __vfs_read+0x3c/0x70
-            [...] vfs_read+0xb4/0x1b0
-            [...] ksys_read+0x7c/0x130
-            [...] system_call+0x5c/0x70
-    
-    Fix this by checking for a NULL pointer when describing such a key.
-    
-    Also make the read routine check for a NULL pointer to be on the safe side.
-    
-    Fixes: 04c567d9313e ("[PATCH] Keys: Fix race between two instantiators of a key")
-    Reported-by: Sachin Sant <sachinp@linux.vnet.ibm.com>
-    Signed-off-by: David Howells <dhowells@redhat.com>
-    Tested-by: Sachin Sant <sachinp@linux.vnet.ibm.com>
-
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index e73ec040e250..ecba39c93fd9 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -66,6 +66,9 @@ static void request_key_auth_describe(const struct key *key,
- {
- 	struct request_key_auth *rka = dereference_key_rcu(key);
- 
-+	if (!rka)
-+		return;
-+
- 	seq_puts(m, "key:");
- 	seq_puts(m, key->description);
- 	if (key_is_positive(key))
-@@ -83,6 +86,9 @@ static long request_key_auth_read(const struct key *key,
- 	size_t datalen;
- 	long ret;
- 
-+	if (!rka)
-+		return -EKEYREVOKED;
-+
- 	datalen = rka->callout_len;
- 	ret = datalen;
- 
+Q0MgY3J5cHRvIGtleXMgcGVvcGxlCgpUTDtEUjogQ09ORklHX0NSWVBUT19ESD15IGlzIHJlcG9y
+dGVkIHRvIGNhdXNlIGJvb3QgZGVsYXlzIG9mIHNldmVyYWwKbWludXRlcyBvbiBvbGQgYW5kIHNs
+b3cgbWFjaGluZXMuIENhbiBLRVlfREhfT1BFUkFUSU9OUyBiZSBtYWRlIHRyaXN0YXRlPwoKT24g
+V2VkLCBTZXAgMTgsIDIwMTkgYXQgNDowOCBQTSBHZWVydCBVeXR0ZXJob2V2ZW4gPGdlZXJ0QGxp
+bnV4LW02OGsub3JnPiB3cm90ZToKPiBPbiBXZWQsIFNlcCAxOCwgMjAxOSBhdCAzOjU3IFBNIEpv
+aG4gUGF1bCBBZHJpYW4gR2xhdWJpdHoKPiA8Z2xhdWJpdHpAcGh5c2lrLmZ1LWJlcmxpbi5kZT4g
+d3JvdGU6Cj4gPiBPbiA5LzE4LzE5IDM6NDggUE0sIEdlZXJ0IFV5dHRlcmhvZXZlbiB3cm90ZToK
+PiA+ID4+IERpZmZpZS1IZWxsbWFuIGRvaW5nIHNvbWUgaGVhdnkgY3J5cHRvIGxpZnRpbmcgb24g
+YSBwb29yIG02OGsgQ1BVPwo+ID4gPj4KPiA+ID4+IERpc2FibGUgQ09ORklHX0NSWVBUT19ESD8K
+PiA+ID4KPiA+ID4gU2VlIGFsc28gaHR0cHM6Ly9saXN0cy5kZWJpYW4ub3JnL2RlYmlhbi02OGsv
+MjAxOS8wNC9tc2cwMDAzMy5odG1sCj4gPiA+Cj4gPiA+IENSWVBUT19ESCBpcyBzZWxlY3RlZCBi
+eSBDUllQVE9fREVWX1FBVCBhbmQgS0VZX0RIX09QRVJBVElPTlMuCj4gPiA+IFRoZSBsYXR0ZXIg
+aXMgYm9vbCwgZm9yY2luZyBDUllQVE9fREggYnVpbHRpbi4KPiA+ID4KPiA+ID4gSWYgS0VZX0RI
+X09QRVJBVElPTlMgbmVlZHMgdG8gYmUgZW5hYmxlZCBpbiBhIERlYmlhbiBrZXJuZWwsIHBlcmhh
+cHMKPiA+ID4gaXQgY2FuIGJlIG1hZGUgdHJpc3RhdGU/Cj4gPiBJdCB3YXMgZW5hYmxlZCBpbiBb
+MV0gYXMgaXQncyByZXF1aXJlZCBmb3IgY2VydGFpbiBXaUZpIGRyaXZlcnMgWzJdLgo+ID4KPiA+
+IFNvLCBzaG91bGQgaXQgYmUgZml4ZWQgYXMgeW91IHN1Z2dlc3Qgb3Igc2hvdWxkIHdlIHNlbGVj
+dGl2ZWx5IGRpc2FibGUgaXQgb24gbTY4az8KPgo+IERpc2FibGluZyBpdCBvbiBtNjhrIGNvdWxk
+IGJlIGEgZmlyc3Qgc3RlcCAoYW55IFdpRmkgZHJpdmVycyBzdXBwb3J0ZWQKPiBvbiBtNjhrIHll
+dD8pLgo+Cj4gTWFraW5nIGl0IHRyaXN0YXRlIGlzIG5vbi10cml2aWFsLCBhcyB0aGVyZSBhcmUg
+c29tZSBpbnRlcmRlcGVuZGVuY2llczoKPgo+ICAgICBzZWN1cml0eS9rZXlzL01ha2VmaWxlOmNv
+bXBhdC1vYmotJChDT05GSUdfS0VZX0RIX09QRVJBVElPTlMpICs9IGNvbXBhdF9kaC5vCj4gICAg
+IHNlY3VyaXR5L2tleXMvTWFrZWZpbGU6b2JqLSQoQ09ORklHX0tFWV9ESF9PUEVSQVRJT05TKSAr
+PSBkaC5vCj4gICAgIHNlY3VyaXR5L2tleXMvaW50ZXJuYWwuaDojaWZkZWYgQ09ORklHX0tFWV9E
+SF9PUEVSQVRJT05TCj4gICAgIHNlY3VyaXR5L2tleXMva2V5Y3RsLmM6Cj4gKElTX0VOQUJMRUQo
+Q09ORklHX0tFWV9ESF9PUEVSQVRJT05TKSAgICA/IEtFWUNUTF9DQVBTMF9ESUZGSUVfSEVMTE1B
+Tgo+IDogMCkgfAo+Cj4gPiA+IFsxXSBodHRwczovL3NhbHNhLmRlYmlhbi5vcmcva2VybmVsLXRl
+YW0vbGludXgvY29tbWl0Lzg4ZjQ0Y2I5ZWIzNDA5ODEzOGM3OWJkYWI1ZmFlNDM0NDkyODY2ZDEK
+PiA+ID4gWzJdIGh0dHBzOi8vYnVncy5kZWJpYW4ub3JnL2NnaS1iaW4vYnVncmVwb3J0LmNnaT9i
+dWeRMTk5OAoKR3J7b2V0amUsZWV0aW5nfXMsCgogICAgICAgICAgICAgICAgICAgICAgICBHZWVy
+dAoKLS0gCkdlZXJ0IFV5dHRlcmhvZXZlbiAtLSBUaGVyZSdzIGxvdHMgb2YgTGludXggYmV5b25k
+IGlhMzIgLS0gZ2VlcnRAbGludXgtbTY4ay5vcmcKCkluIHBlcnNvbmFsIGNvbnZlcnNhdGlvbnMg
+d2l0aCB0ZWNobmljYWwgcGVvcGxlLCBJIGNhbGwgbXlzZWxmIGEgaGFja2VyLiBCdXQKd2hlbiBJ
+J20gdGFsa2luZyB0byBqb3VybmFsaXN0cyBJIGp1c3Qgc2F5ICJwcm9ncmFtbWVyIiBvciBzb21l
+dGhpbmcgbGlrZSB0aGF0LgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC0tIExpbnVz
+IFRvcnZhbGRz
