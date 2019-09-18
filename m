@@ -1,55 +1,29 @@
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Wed, 18 Sep 2019 14:27:02 +0000
-Subject: Can KEY_DH_OPERATIONS become tristate? (was: Re: Kernel 5.3.0 stuck during boot on Amiga)
-Message-Id: <CAMuHMdVHZ9srJcK+PY=YoP55z1NSjBAtkSr2ROA8i84C75v0zQ@mail.gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 18 Sep 2019 15:54:17 +0000
+Subject: Re: Can KEY_DH_OPERATIONS become tristate? (was: Re: Kernel 5.3.0 stuck during boot on Amiga)
+Message-Id: <16476.1568822057@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <278d9706-162d-28a4-4640-31b697924473@physik.fu-berlin.de>
- <c5acb1c0-7a5b-ce42-8b2f-5fd30cbdab6e@physik.fu-berlin.de>
- <6304acd1-7b71-b1fb-f8d8-298cb3025e69@physik.fu-berlin.de>
- <6725b972-05d4-fed4-7094-16401e86b452@gmail.com> <578d8a91-aaee-087f-1742-65e64001b8fa@physik.fu-berlin.de>
- <CAMuHMdUU6ejc168-ksqXrkE+PjCXFJumaRaWjRtj12NjG_TFSg@mail.gmail.com>
- <CAMuHMdWfTrx8VuJoifEEBc1n+3MiiuwKNWcRnUw+TgWJCtOWag@mail.gmail.com>
- <fea74ca3-4b24-780f-af74-a786646b1668@physik.fu-berlin.de> <CAMuHMdVeedJZE6mrGdYqRgawUtfu_ww5p-Qg1rLXNmGWiY7Nxg@mail.gmail.com>
-In-Reply-To: <CAMuHMdVeedJZE6mrGdYqRgawUtfu_ww5p-Qg1rLXNmGWiY7Nxg@mail.gmail.com>
-To: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
-Cc: Michael Schmitz <schmitzmic@gmail.com>, linux-m68k <linux-m68k@lists.linux-m68k.org>, Mat Martineau <mathew.j.martineau@linux.intel.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CAMuHMdVHZ9srJcK+PY=YoP55z1NSjBAtkSr2ROA8i84C75v0zQ@mail.gmail.com> <278d9706-162d-28a4-4640-31b697924473@physik.fu-berlin.de> <c5acb1c0-7a5b-ce42-8b2f-5fd30cbdab6e@physik.fu-berlin.de> <6304acd1-7b71-b1fb-f8d8-298cb3025e69@physik.fu-berlin.de> <6725b972-05d4-fed4-7094-16401e86b452@gmail.com> <578d8a91-aaee-087f-1742-65e64001b8fa@physik.fu-berlin.de> <CAMuHMdUU6ejc168-ksqXrkE+PjCXFJumaRaWjRtj12NjG_TFSg@mail.gmail.com> <CAMuHMdWfTrx8VuJoifEEBc1n+3MiiuwKNWcRnUw+TgWJCtOWag@mail.gmail.com> <fea74ca3-4b24-780f-af74-a786646b1668@physik.fu-berlin.de> <CAMuHMdVeedJZE6mrGdYqRgawUtfu_ww5p-Qg1rLXNmGWiY7Nxg@mail.gmail.com>
+In-Reply-To: <CAMuHMdVHZ9srJcK+PY=YoP55z1NSjBAtkSr2ROA8i84C75v0zQ@mail.gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: dhowells@redhat.com, John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>, Michael Schmitz <schmitzmic@gmail.com>, linux-m68k <linux-m68k@lists.linux-m68k.org>, Mat Martineau <mathew.j.martineau@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-Q0MgY3J5cHRvIGtleXMgcGVvcGxlCgpUTDtEUjogQ09ORklHX0NSWVBUT19ESD15IGlzIHJlcG9y
-dGVkIHRvIGNhdXNlIGJvb3QgZGVsYXlzIG9mIHNldmVyYWwKbWludXRlcyBvbiBvbGQgYW5kIHNs
-b3cgbWFjaGluZXMuIENhbiBLRVlfREhfT1BFUkFUSU9OUyBiZSBtYWRlIHRyaXN0YXRlPwoKT24g
-V2VkLCBTZXAgMTgsIDIwMTkgYXQgNDowOCBQTSBHZWVydCBVeXR0ZXJob2V2ZW4gPGdlZXJ0QGxp
-bnV4LW02OGsub3JnPiB3cm90ZToKPiBPbiBXZWQsIFNlcCAxOCwgMjAxOSBhdCAzOjU3IFBNIEpv
-aG4gUGF1bCBBZHJpYW4gR2xhdWJpdHoKPiA8Z2xhdWJpdHpAcGh5c2lrLmZ1LWJlcmxpbi5kZT4g
-d3JvdGU6Cj4gPiBPbiA5LzE4LzE5IDM6NDggUE0sIEdlZXJ0IFV5dHRlcmhvZXZlbiB3cm90ZToK
-PiA+ID4+IERpZmZpZS1IZWxsbWFuIGRvaW5nIHNvbWUgaGVhdnkgY3J5cHRvIGxpZnRpbmcgb24g
-YSBwb29yIG02OGsgQ1BVPwo+ID4gPj4KPiA+ID4+IERpc2FibGUgQ09ORklHX0NSWVBUT19ESD8K
-PiA+ID4KPiA+ID4gU2VlIGFsc28gaHR0cHM6Ly9saXN0cy5kZWJpYW4ub3JnL2RlYmlhbi02OGsv
-MjAxOS8wNC9tc2cwMDAzMy5odG1sCj4gPiA+Cj4gPiA+IENSWVBUT19ESCBpcyBzZWxlY3RlZCBi
-eSBDUllQVE9fREVWX1FBVCBhbmQgS0VZX0RIX09QRVJBVElPTlMuCj4gPiA+IFRoZSBsYXR0ZXIg
-aXMgYm9vbCwgZm9yY2luZyBDUllQVE9fREggYnVpbHRpbi4KPiA+ID4KPiA+ID4gSWYgS0VZX0RI
-X09QRVJBVElPTlMgbmVlZHMgdG8gYmUgZW5hYmxlZCBpbiBhIERlYmlhbiBrZXJuZWwsIHBlcmhh
-cHMKPiA+ID4gaXQgY2FuIGJlIG1hZGUgdHJpc3RhdGU/Cj4gPiBJdCB3YXMgZW5hYmxlZCBpbiBb
-MV0gYXMgaXQncyByZXF1aXJlZCBmb3IgY2VydGFpbiBXaUZpIGRyaXZlcnMgWzJdLgo+ID4KPiA+
-IFNvLCBzaG91bGQgaXQgYmUgZml4ZWQgYXMgeW91IHN1Z2dlc3Qgb3Igc2hvdWxkIHdlIHNlbGVj
-dGl2ZWx5IGRpc2FibGUgaXQgb24gbTY4az8KPgo+IERpc2FibGluZyBpdCBvbiBtNjhrIGNvdWxk
-IGJlIGEgZmlyc3Qgc3RlcCAoYW55IFdpRmkgZHJpdmVycyBzdXBwb3J0ZWQKPiBvbiBtNjhrIHll
-dD8pLgo+Cj4gTWFraW5nIGl0IHRyaXN0YXRlIGlzIG5vbi10cml2aWFsLCBhcyB0aGVyZSBhcmUg
-c29tZSBpbnRlcmRlcGVuZGVuY2llczoKPgo+ICAgICBzZWN1cml0eS9rZXlzL01ha2VmaWxlOmNv
-bXBhdC1vYmotJChDT05GSUdfS0VZX0RIX09QRVJBVElPTlMpICs9IGNvbXBhdF9kaC5vCj4gICAg
-IHNlY3VyaXR5L2tleXMvTWFrZWZpbGU6b2JqLSQoQ09ORklHX0tFWV9ESF9PUEVSQVRJT05TKSAr
-PSBkaC5vCj4gICAgIHNlY3VyaXR5L2tleXMvaW50ZXJuYWwuaDojaWZkZWYgQ09ORklHX0tFWV9E
-SF9PUEVSQVRJT05TCj4gICAgIHNlY3VyaXR5L2tleXMva2V5Y3RsLmM6Cj4gKElTX0VOQUJMRUQo
-Q09ORklHX0tFWV9ESF9PUEVSQVRJT05TKSAgICA/IEtFWUNUTF9DQVBTMF9ESUZGSUVfSEVMTE1B
-Tgo+IDogMCkgfAo+Cj4gPiA+IFsxXSBodHRwczovL3NhbHNhLmRlYmlhbi5vcmcva2VybmVsLXRl
-YW0vbGludXgvY29tbWl0Lzg4ZjQ0Y2I5ZWIzNDA5ODEzOGM3OWJkYWI1ZmFlNDM0NDkyODY2ZDEK
-PiA+ID4gWzJdIGh0dHBzOi8vYnVncy5kZWJpYW4ub3JnL2NnaS1iaW4vYnVncmVwb3J0LmNnaT9i
-dWeRMTk5OAoKR3J7b2V0amUsZWV0aW5nfXMsCgogICAgICAgICAgICAgICAgICAgICAgICBHZWVy
-dAoKLS0gCkdlZXJ0IFV5dHRlcmhvZXZlbiAtLSBUaGVyZSdzIGxvdHMgb2YgTGludXggYmV5b25k
-IGlhMzIgLS0gZ2VlcnRAbGludXgtbTY4ay5vcmcKCkluIHBlcnNvbmFsIGNvbnZlcnNhdGlvbnMg
-d2l0aCB0ZWNobmljYWwgcGVvcGxlLCBJIGNhbGwgbXlzZWxmIGEgaGFja2VyLiBCdXQKd2hlbiBJ
-J20gdGFsa2luZyB0byBqb3VybmFsaXN0cyBJIGp1c3Qgc2F5ICJwcm9ncmFtbWVyIiBvciBzb21l
-dGhpbmcgbGlrZSB0aGF0LgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC0tIExpbnVz
-IFRvcnZhbGRz
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+
+> CC crypto keys people
+> 
+> TL;DR: CONFIG_CRYPTO_DH=y is reported to cause boot delays of several
+> minutes on old and slow machines.
+
+Why is it doing that?  It doesn't do anything unless it is called, so
+something must be calling it.
+
+> Can KEY_DH_OPERATIONS be made tristate?
+
+Um.  It's non-trivial since it's implementing a keyctl() function for
+userspace to call and there's currently no ops table to jump through.
+
+David
