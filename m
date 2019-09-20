@@ -1,65 +1,95 @@
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Thu, 19 Sep 2019 19:17:43 +0000
-Subject: Re: Can KEY_DH_OPERATIONS become tristate? (was: Re: Kernel 5.3.0 stuck during boot on Amiga)
-Message-Id: <CAMuHMdX=CdsMVBh4sGt+KcZTgqGRCU9Tua37L2zLvpfATorXHw@mail.gmail.com>
+From: Trond Myklebust <trondmy@hammerspace.com>
+Date: Fri, 20 Sep 2019 19:12:38 +0000
+Subject: Re: PROBLEM: nfs? crash in Linux 5.3 (possible regression)
+Message-Id: <c573ebd9d835e2bf2d2b2a4dcb682b6d913b0c5e.camel@hammerspace.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <278d9706-162d-28a4-4640-31b697924473@physik.fu-berlin.de>
- <c5acb1c0-7a5b-ce42-8b2f-5fd30cbdab6e@physik.fu-berlin.de>
- <6304acd1-7b71-b1fb-f8d8-298cb3025e69@physik.fu-berlin.de>
- <6725b972-05d4-fed4-7094-16401e86b452@gmail.com> <578d8a91-aaee-087f-1742-65e64001b8fa@physik.fu-berlin.de>
- <CAMuHMdUU6ejc168-ksqXrkE+PjCXFJumaRaWjRtj12NjG_TFSg@mail.gmail.com>
- <CAMuHMdWfTrx8VuJoifEEBc1n+3MiiuwKNWcRnUw+TgWJCtOWag@mail.gmail.com>
- <fea74ca3-4b24-780f-af74-a786646b1668@physik.fu-berlin.de>
- <CAMuHMdVeedJZE6mrGdYqRgawUtfu_ww5p-Qg1rLXNmGWiY7Nxg@mail.gmail.com>
- <CAMuHMdVHZ9srJcK+PY=YoP55z1NSjBAtkSr2ROA8i84C75v0zQ@mail.gmail.com>
- <16476.1568822057@warthog.procyon.org.uk> <CAMuHMdU_2RWFc=xs3tM38Nt_44k3dp5MMuKAT2MacyuCbO+1Hw@mail.gmail.com>
- <13304.1568825025@warthog.procyon.org.uk>
-In-Reply-To: <13304.1568825025@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>, Michael Schmitz <schmitzmic@gmail.com>, linux-m68k <linux-m68k@lists.linux-m68k.org>, Mat Martineau <mathew.j.martineau@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, Linux Crypto Mailing List <linux-crypto@vger.kernel.org>, linux-security-module@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CADyTPExOnxS+FS6Uqoxu3jNWRy93SQri4Xo1+00aiiVru8XDkg@mail.gmail.com>
+In-Reply-To: <CADyTPExOnxS+FS6Uqoxu3jNWRy93SQri4Xo1+00aiiVru8XDkg@mail.gmail.com>
+To: "nbowler@draconx.ca" <nbowler@draconx.ca>, "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 
-Hi David,
-
-On Wed, Sep 18, 2019 at 6:43 PM David Howells <dhowells@redhat.com> wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> > > > TL;DR: CONFIG_CRYPTO_DH=y is reported to cause boot delays of several
-> > > > minutes on old and slow machines.
-> > >
-> > > Why is it doing that?  It doesn't do anything unless it is called, so
-> > > something must be calling it.
-> >
-> > I don't know.  Enabling initcall_debug shows that dh_init() takes a very long
-> > time.
->
-> Ah...  The bit that handles keyctl_dh_compute() doesn't do anything unless
-> asked, but the bit in the crypto layer that does dh does (ie. dh_init()).  I
-> guess it's doing some sort of self-test, but I can't see how it effects that.
-> I think you need to consult the author/maintainer of crypto/dh.c.
-
-Apparently the Debian kernel config had not enabled
-CONFIG_CRYPTO_MANAGER_DISABLE_TESTS, so all crypto tests
-were run at boot time :-(
-
-> It might be possible to make CONFIG_KEY_DH_OPERATIONS not depend on
-> CONFIG_CRYPTO_DH and have crypto_alloc_kpp() load the *crypto* part on
-> demand.  Failing that, I can look into demand-loading keyctl operations.
-
-Regardless, it may be a good idea to make KEY_DH_OPERATIONS tristate
-one day, so enabling wireless as a module doesn't force CONFIG_CRYPTO_DH
-builtin.
-
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
--- 
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+T24gRnJpLCAyMDE5LTA5LTIwIGF0IDE0OjIzIC0wNDAwLCBOaWNrIEJvd2xlciB3cm90ZToNCj4g
+SGkgYWxsLA0KPiANCj4gSSBoaXQgdGhpcyBvb3BzIG9uIExpbnV4IDUuMyB5ZXN0ZXJkYXkuICBU
+aGUgY3Jhc2ggaXRzZWxmIG9jY3VycmVkDQo+IHdoaWxlDQo+IGNvbXBpbGluZyBMaW51eCAoc291
+cmNlIGFuZCBidWlsZCBkaXJzIG9uIE5GUykuICBBZnRlcndhcmRzLCB0aGUNCj4gc3lzdGVtDQo+
+IHJlbWFpbmVkIG1vc3RseSBhbGl2ZSBidXQgbXkgTkZTIG1vdW50cyBiZWNhbWUgdmVyeSBidXN0
+ZWQgd2l0aCBsb3RzDQo+IChidXQgbm90IGFsbCkgSS9PIG9wZXJhdGlvbnMgYXBwZWFyaW5nIHRv
+IGhhbmcgZm9yZXZlci4NCj4gDQo+IE5vdCBzdXJlIGhvdyByZXByb2R1Y2libGUgdGhpcyBpcy4g
+IFNpbmNlIEkndmUgbmV2ZXIgc2VlbiBhIGNyYXNoDQo+IGxpa2UgdGhpcyBiZWZvcmUgaXQgbWF5
+IGJlIGEgcmVncmVzc2lvbiBjb21wYXJlZCB0bywgc2F5LCBMaW51eCA0LjE5DQo+IGJ1dCBJIGFt
+IG5vdCBjZXJ0YWluIGJlY2F1c2UgdGhpcyBwYXJ0aWN1bGFyIG1hY2hpbmUgaXMgYnJhbmQgbmV3
+IHNvDQo+IEkgZG9uJ3QgaGF2ZSBleHBlcmllbmNlIHdpdGggb2xkZXIga2VybmVscyBvbiBpdC4u
+Lg0KPiANCj4gRnVsbCBkbWVzZyBpcyBhdHRhY2hlZCAoZ3ppcHBlZCkuDQo+IA0KPiBMZXQgbWUg
+a25vdyBpZiB5b3UgbmVlZCBhbnkgbW9yZSBpbmZvLg0KPiANCj4gWyAgNzk2LjA1MDAyNV0gQlVH
+OiBrZXJuZWwgTlVMTCBwb2ludGVyIGRlcmVmZXJlbmNlLCBhZGRyZXNzOg0KPiAwMDAwMDAwMDAw
+MDAwMDE0DQo+IFsgIDc5Ni4wNTEyODBdICNQRjogc3VwZXJ2aXNvciByZWFkIGFjY2VzcyBpbiBr
+ZXJuZWwgbW9kZQ0KPiBbICA3OTYuMDUzMDYzXSAjUEY6IGVycm9yX2NvZGUoMHgwMDAwKSAtIG5v
+dC1wcmVzZW50IHBhZ2UNCj4gWyAgNzk2LjA1NDYzNl0gUEdEIDAgUDREIDANCj4gWyAgNzk2LjA1
+NTY4OF0gT29wczogMDAwMCBbIzFdIFBSRUVNUFQgU01QDQo+IFsgIDc5Ni4wNTY3NjhdIENQVTog
+MiBQSUQ6IDE5MCBDb21tOiBrd29ya2VyLzI6MiBUYWludGVkOiBHICAgICAgICBXDQo+ICAgICAg
+IDUuMy4wICM2DQo+IFsgIDc5Ni4wNTc5NTNdIEhhcmR3YXJlIG5hbWU6IFRvIEJlIEZpbGxlZCBC
+eSBPLkUuTS4gVG8gQmUgRmlsbGVkIEJ5DQo+IE8uRS5NLi9CNDUwIEdhbWluZy1JVFgvYWMsIEJJ
+T1MgUDMuMzAgMDUvMTcvMjAxOQ0KPiBbICA3OTYuMDU5MzI5XSBXb3JrcXVldWU6IGV2ZW50cyBr
+ZXlfZ2FyYmFnZV9jb2xsZWN0b3INCj4gWyAgNzk2LjA2MDYyM10gUklQOiAwMDEwOmtleXJpbmdf
+Z2NfY2hlY2tfaXRlcmF0b3IrMHgyNy8weDMwDQoNClRoYXQgd291bGQgYmUgdGhlIGtleXJpbmcg
+Z2FyYmFnZSBjb2xsZWN0b3IsIG5vdCBORlMuDQoNCkNjZWQga2V5cmluZ3NAdmdlci5rZXJuZWwu
+b3JnDQoNCg0KPiBbICA3OTYuMDYxODQ1XSBDb2RlOiA0NCAwMCAwMCA0OCA4MyBlNyBmYyBiOCAw
+MSAwMCAwMCAwMCBmNiA4NyA4MCAwMA0KPiAwMCAwMCAyMSA3NSAxOSA0OCA4YiA1NyA1OCA0OCAz
+OSAxNiA3YyAwNSA0OCA4NSBkMiA3ZiAwYiA0OCA4YiA4NyBhMA0KPiAwMCAwMCAwMCA8MGY+IGI2
+IDQwIDE0IGMzIDBmIDFmIDQwIDAwIDQ4IDgzIGU3IGZjIGU5IDI3IGViIGZmIGZmIDBmDQo+IDFm
+DQo+IDgwIDAwDQo+IFsgIDc5Ni4wNjQ2MzhdIFJTUDogMDAxODpmZmZmYjQwZmMwNzU3ZGY4IEVG
+TEFHUzogMDAwMTAyODINCj4gWyAgNzk2LjA2NjA1OF0gUkFYOiAwMDAwMDAwMDAwMDAwMDAwIFJC
+WDogZmZmZmExNDMzOGNhZWQ4MCBSQ1g6DQo+IGZmZmZiNDBmYzA3NTdlNDANCj4gWyAgNzk2LjA2
+NzUzMV0gUkRYOiBmZmZmYTE0MzNhZTg1NTU4IFJTSTogZmZmZmI0MGZjMDc1N2U0MCBSREk6DQo+
+IGZmZmZhMTQzM2FlODU1MDANCj4gWyAgNzk2LjA2OTAxNF0gUkJQOiBmZmZmYjQwZmMwNzU3ZTQw
+IFIwODogMDAwMDAwMDAwMDAwMDAwMCBSMDk6DQo+IDAwMDAwMDAwMDAwMDAwMGYNCj4gWyAgNzk2
+LjA3MDUxM10gUjEwOiA4MDgwODA4MDgwODA4MDgwIFIxMTogMDAwMDAwMDAwMDAwMDAwMSBSMTI6
+DQo+IGZmZmZmZmZmYTRjZDYxODANCj4gWyAgNzk2LjA3MjAyNV0gUjEzOiBmZmZmYTE0MzM4Y2Fl
+ZTEwIFIxNDogZmZmZmExNDMzOGNhZWRmMCBSMTU6DQo+IGZmZmZhMTQzM2ZmZWZmMDANCj4gWyAg
+Nzk2LjA3MzU2N10gRlM6ICAwMDAwMDAwMDAwMDAwMDAwKDAwMDApIEdTOmZmZmZhMTQzNDA0ODAw
+MDAoMDAwMCkNCj4ga25sR1M6MDAwMDAwMDAwMDAwMDAwMA0KPiBbICA3OTYuMDc1MTcxXSBDUzog
+IDAwMTAgRFM6IDAwMDAgRVM6IDAwMDAgQ1IwOiAwMDAwMDAwMDgwMDUwMDMzDQo+IFsgIDc5Ni4w
+NzY3ODVdIENSMjogMDAwMDAwMDAwMDAwMDAxNCBDUjM6IDAwMDAwMDA3NDdjZTYwMDAgQ1I0Og0K
+PiAwMDAwMDAwMDAwMzQwNmUwDQo+IFsgIDc5Ni4wNzg0NDVdIENhbGwgVHJhY2U6DQo+IFsgIDc5
+Ni4wODAwOTFdICBhc3NvY19hcnJheV9zdWJ0cmVlX2l0ZXJhdGUrMHg1NS8weDEwMA0KPiBbICA3
+OTYuMDgxNzcwXSAga2V5cmluZ19nYysweDNmLzB4ODANCj4gWyAgNzk2LjA4MzQ0N10gIGtleV9n
+YXJiYWdlX2NvbGxlY3RvcisweDMzMC8weDNkMA0KPiBbICA3OTYuMDg1MTU1XSAgcHJvY2Vzc19v
+bmVfd29yaysweDFjYi8weDMyMA0KPiBbICA3OTYuMDg2ODY5XSAgd29ya2VyX3RocmVhZCsweDI4
+LzB4M2MwDQo+IFsgIDc5Ni4wODg2MDNdICA/IHByb2Nlc3Nfb25lX3dvcmsrMHgzMjAvMHgzMjAN
+Cj4gWyAgNzk2LjA5MDMzNV0gIGt0aHJlYWQrMHgxMDYvMHgxMjANCj4gWyAgNzk2LjA5MjA1M10g
+ID8ga3RocmVhZF9jcmVhdGVfb25fbm9kZSsweDQwLzB4NDANCj4gWyAgNzk2LjA5MzgxMF0gIHJl
+dF9mcm9tX2ZvcmsrMHgxZi8weDMwDQo+IFsgIDc5Ni4wOTU1NjldIE1vZHVsZXMgbGlua2VkIGlu
+OiBzaGExX3Nzc2UzIHNoYTFfZ2VuZXJpYyBjYmMgY3RzDQo+IHJwY3NlY19nc3Nfa3JiNSBhdXRo
+X3JwY2dzcyBuZnN2NCBuZnMgbG9ja2QgZ3JhY2UgZXh0NCBjcmMxNiBtYmNhY2hlDQo+IGpiZDIg
+aXdsbXZtIG1hYzgwMjExIGxpYmFyYzQgYW1kZ3B1IGl3bHdpZmkgc25kX2hkYV9jb2RlY19yZWFs
+dGVrDQo+IHNuZF9oZGFfY29kZWNfZ2VuZXJpYyBrdm1fYW1kIGdwdV9zY2hlZCBrdm0gc25kX2hk
+YV9jb2RlY19oZG1pDQo+IGRybV9rbXNfaGVscGVyIGlycWJ5cGFzcyBrMTB0ZW1wIHN5c2NvcHlh
+cmVhIHN5c2ZpbGxyZWN0IHN5c2ltZ2JsdA0KPiBmYl9zeXNfZm9wcyB2aWRlbyB0dG0gY2ZnODAy
+MTEgc25kX2hkYV9pbnRlbCBzbmRfaGRhX2NvZGVjIGRybQ0KPiBzbmRfaHdkZXAgcmZraWxsIHNu
+ZF9oZGFfY29yZSBiYWNrbGlnaHQgc25kX3BjbSBldmRldiBzbmRfdGltZXIgc25kDQo+IHNvdW5k
+Y29yZSBlZml2YXJmcyBkbV9jcnlwdCBoaWRfZ2VuZXJpYyBpZ2IgaHdtb24gaTJjX2FsZ29fYml0
+IHNyX21vZA0KPiBjZHJvbSBzdW5ycGMgZG1fbW9kDQo+IFsgIDc5Ni4xMDQwMzNdIENSMjogMDAw
+MDAwMDAwMDAwMDAxNA0KPiBbICA3OTYuMTA2MzA0XSAtLS1bIGVuZCB0cmFjZSA2OTVhZWUxMGY5
+MjAyMzQ3IF0tLS0NCj4gWyAgNzk2LjEwODU4NV0gUklQOiAwMDEwOmtleXJpbmdfZ2NfY2hlY2tf
+aXRlcmF0b3IrMHgyNy8weDMwDQo+IFsgIDc5Ni4xMTA4OTRdIENvZGU6IDQ0IDAwIDAwIDQ4IDgz
+IGU3IGZjIGI4IDAxIDAwIDAwIDAwIGY2IDg3IDgwIDAwDQo+IDAwIDAwIDIxIDc1IDE5IDQ4IDhi
+IDU3IDU4IDQ4IDM5IDE2IDdjIDA1IDQ4IDg1IGQyIDdmIDBiIDQ4IDhiIDg3IGEwDQo+IDAwIDAw
+IDAwIDwwZj4gYjYgNDAgMTQgYzMgMGYgMWYgNDAgMDAgNDggODMgZTcgZmMgZTkgMjcgZWIgZmYg
+ZmYgMGYNCj4gMWYNCj4gODAgMDANCj4gWyAgNzk2LjExNTc3M10gUlNQOiAwMDE4OmZmZmZiNDBm
+YzA3NTdkZjggRUZMQUdTOiAwMDAxMDI4Mg0KPiBbICA3OTYuMTE4MjA5XSBSQVg6IDAwMDAwMDAw
+MDAwMDAwMDAgUkJYOiBmZmZmYTE0MzM4Y2FlZDgwIFJDWDoNCj4gZmZmZmI0MGZjMDc1N2U0MA0K
+PiBbICA3OTYuMTIwNjgzXSBSRFg6IGZmZmZhMTQzM2FlODU1NTggUlNJOiBmZmZmYjQwZmMwNzU3
+ZTQwIFJESToNCj4gZmZmZmExNDMzYWU4NTUwMA0KPiBbICA3OTYuMTIzMTc2XSBSQlA6IGZmZmZi
+NDBmYzA3NTdlNDAgUjA4OiAwMDAwMDAwMDAwMDAwMDAwIFIwOToNCj4gMDAwMDAwMDAwMDAwMDAw
+Zg0KPiBbICA3OTYuMTI1NjY4XSBSMTA6IDgwODA4MDgwODA4MDgwODAgUjExOiAwMDAwMDAwMDAw
+MDAwMDAxIFIxMjoNCj4gZmZmZmZmZmZhNGNkNjE4MA0KPiBbICA3OTYuMTI4MTA0XSBSMTM6IGZm
+ZmZhMTQzMzhjYWVlMTAgUjE0OiBmZmZmYTE0MzM4Y2FlZGYwIFIxNToNCj4gZmZmZmExNDMzZmZl
+ZmYwMA0KPiBbICA3OTYuMTMwNDkzXSBGUzogIDAwMDAwMDAwMDAwMDAwMDAoMDAwMCkgR1M6ZmZm
+ZmExNDM0MDQ4MDAwMCgwMDAwKQ0KPiBrbmxHUzowMDAwMDAwMDAwMDAwMDAwDQo+IFsgIDc5Ni4x
+MzI5MjNdIENTOiAgMDAxMCBEUzogMDAwMCBFUzogMDAwMCBDUjA6IDAwMDAwMDAwODAwNTAwMzMN
+Cj4gWyAgNzk2LjEzNTI2Nl0gQ1IyOiAwMDAwMDAwMDAwMDAwMDE0IENSMzogMDAwMDAwMDc0N2Nl
+NjAwMCBDUjQ6DQo+IDAwMDAwMDAwMDAzNDA2ZTANCj4gDQo+IFRoYW5rcywNCj4gICBOaWNrDQot
+LSANClRyb25kIE15a2xlYnVzdA0KTGludXggTkZTIGNsaWVudCBtYWludGFpbmVyLCBIYW1tZXJz
+cGFjZQ0KdHJvbmQubXlrbGVidXN0QGhhbW1lcnNwYWNlLmNvbQ0KDQoNCg=
