@@ -1,93 +1,60 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 23 Oct 2019 13:21:24 +0000
-Subject: Re: [PATCH v1 2/6] KEYS: ima: Refactored process_buffer_measurement function so that it can measure 
-Message-Id: <1571836884.5104.94.camel@linux.ibm.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Tue, 01 Oct 2019 20:54:45 +0000
+Subject: Re: [PATCH] KEYS: asym_tpm: Switch to get_random_bytes()
+Message-Id: <20191001205445.GC26709@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191023001818.3684-1-nramas@linux.microsoft.com>
-         <20191023001818.3684-3-nramas@linux.microsoft.com>
-In-Reply-To: <20191023001818.3684-3-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20190926171601.30404-1-jarkko.sakkinen@linux.intel.com>
+ <20190928180559.jivt5zlisr43fnva@cantor>
+In-Reply-To: <20190928180559.jivt5zlisr43fnva@cantor>
+To: linux-integrity@vger.kernel.org, stable@vger.kernel.org, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, "open list:CRYPTO API" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-On Tue, 2019-10-22 at 17:18 -0700, Lakshmi Ramasubramanian wrote:
+On Sat, Sep 28, 2019 at 11:05:59AM -0700, Jerry Snitselaar wrote:
+> On Thu Sep 26 19, Jarkko Sakkinen wrote:
+> > Only the kernel random pool should be used for generating random numbers.
+> > TPM contributes to that pool among the other sources of entropy. In here it
+> > is not, agreed, absolutely critical because TPM is what is trusted anyway
+> > but in order to remove tpm_get_random() we need to first remove all the > > call sites.  > > 
+> > Cc: stable@vger.kernel.org
+> > Fixes: 0c36264aa1d5 ("KEYS: asym_tpm: Add loadkey2 and flushspecific [ver #2]")
+> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> > ---
+> > crypto/asymmetric_keys/asym_tpm.c | 7 ++-----
+> > 1 file changed, 2 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+> > index 76d2ce3a1b5b..c14b8d186e93 100644
+> > --- a/crypto/asymmetric_keys/asym_tpm.c
+> > +++ b/crypto/asymmetric_keys/asym_tpm.c
+> > @@ -6,6 +6,7 @@
+> > #include <linux/kernel.h>
+> > #include <linux/seq_file.h>
+> > #include <linux/scatterlist.h>
+> > +#include <linux/random.h>
+> > #include <linux/tpm.h>
+> > #include <linux/tpm_command.h>
+> > #include <crypto/akcipher.h>
+> > @@ -54,11 +55,7 @@ static int tpm_loadkey2(struct tpm_buf *tb,
+> > 	}
+> > 
+> > 	/* generate odd nonce */
+> > -	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
+> > -	if (ret < 0) {
+> > -		pr_info("tpm_get_random failed (%d)\n", ret);
+> > -		return ret;
+> > -	}
+> > +	get_random_bytes(nonceodd, TPM_NONCE_SIZE);
+> > 
+> > 	/* calculate authorization HMAC value */
+> > 	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
+> > -- 
+> > 2.20.1
+> > 
+> 
+> Should tpm_unbind and tpm_sign in asym_tpm.c be switched as well then?
 
-> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-> index 584019728660..8e965d18fb21 100644
-> --- a/security/integrity/ima/ima_main.c
-> +++ b/security/integrity/ima/ima_main.c
-> @@ -610,14 +610,14 @@ int ima_load_data(enum kernel_load_data_id id)
->   * @buf: pointer to the buffer that needs to be added to the log.
->   * @size: size of buffer(in bytes).
->   * @eventname: event name to be used for the buffer entry.
-> - * @cred: a pointer to a credentials structure for user validation.
-> - * @secid: the secid of the task to be validated.
-> + * @pcr: pcr to extend the measurement
-> + * @template_desc: template description
->   *
->   * Based on policy, the buffer is measured into the ima log.
->   */
-> -static void process_buffer_measurement(const void *buf, int size,
-> -				       const char *eventname,
-> -				       const struct cred *cred, u32 secid)
-> +void process_buffer_measurement(const void *buf, int size,
-> +				const char *eventname, int pcr,
-> +				struct ima_template_desc *template_desc)
->  {
->  	int ret = 0;
->  	struct ima_template_entry *entry = NULL;
-> @@ -626,19 +626,11 @@ static void process_buffer_measurement(const void *buf, int size,
->  					    .filename = eventname,
->  					    .buf = buf,
->  					    .buf_len = size};
-> -	struct ima_template_desc *template_desc = NULL;
->  	struct {
->  		struct ima_digest_data hdr;
->  		char digest[IMA_MAX_DIGEST_SIZE];
->  	} hash = {};
->  	int violation = 0;
-> -	int pcr = CONFIG_IMA_MEASURE_PCR_IDX;
-> -	int action = 0;
-> -
-> -	action = ima_get_action(NULL, cred, secid, 0, KEXEC_CMDLINE, &pcr,
-> -				&template_desc);
-> -	if (!(action & IMA_MEASURE))
-> -		return;
->  
->  	iint.ima_hash = &hash.hdr;
->  	iint.ima_hash->algo = ima_hash_algo;
+Without doubt. Thanks. I'll send an update soon.
 
-
-This patch is based on Nayna's version of this change, without any
-acknowledgment.  Moving this code out of process_buffer_measurement is
-going to result in code duplication.  Nayna has posted a newer version
-of this patch without the code duplication.  As soon as she posts the
-patch with an updated patch description, I plan on picking up that
-version.
-
-Mimi
-
-
-> @@ -670,12 +662,19 @@ static void process_buffer_measurement(const void *buf, int size,
->   */
->  void ima_kexec_cmdline(const void *buf, int size)
->  {
-> +	int pcr = CONFIG_IMA_MEASURE_PCR_IDX;
-> +	struct ima_template_desc *template_desc = ima_template_desc_current();
-> +	int action;
->  	u32 secid;
->  
->  	if (buf && size != 0) {
->  		security_task_getsecid(current, &secid);
-> -		process_buffer_measurement(buf, size, "kexec-cmdline",
-> -					   current_cred(), secid);
-> +		action = ima_get_action(NULL, current_cred(), secid, 0,
-> +					KEXEC_CMDLINE, &pcr, &template_desc);
-> +		if (!(action & IMA_MEASURE))
-> +			return;
-> +		process_buffer_measurement(buf, size, "kexec-cmdline", pcr,
-> +					   template_desc);
->  	}
->  }
->  
+/Jarkko
