@@ -1,66 +1,43 @@
-From: Tim Chen <tim.c.chen@linux.intel.com>
-Date: Wed, 16 Oct 2019 17:02:24 +0000
-Subject: Re: [RFC PATCH 02/21] Add a prelocked wake-up
-Message-Id: <533ca3c5-1592-e59b-eafe-bc4a352a442d@linux.intel.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Fri, 04 Oct 2019 06:17:29 +0000
+Subject: Re: [Patch v6 4/4] KEYS: trusted: Move TPM2 trusted keys code
+Message-Id: <CAFA6WYObsZnTptYg1Qorxt0FMaxHKoZ6D53Wjsj05OEGNhpckg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
- <157117608708.15019.1998141309054662114.stgit@warthog.procyon.org.uk>
- <CAHk-=whiz1sHXu8SVZKEC2dup=r5JMrftPtEt6ff9Ea8dyH8yQ@mail.gmail.com>
-In-Reply-To: <CAHk-=whiz1sHXu8SVZKEC2dup=r5JMrftPtEt6ff9Ea8dyH8yQ@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>, David Howells <dhowells@redhat.com>, Kan Liang <kan.liang@intel.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1568630064-14887-1-git-send-email-sumit.garg@linaro.org>
+ <1568630064-14887-5-git-send-email-sumit.garg@linaro.org> <20190917181415.GA8472@linux.intel.com>
+ <20190917181507.GB8472@linux.intel.com> <CAFA6WYMbUGQ6+-XvR9_qSc=oVe1QSTg4kB-+y6rBmQLq+B6skg@mail.gmail.com>
+ <20190925011115.GA3503@linux.intel.com>
+In-Reply-To: <20190925011115.GA3503@linux.intel.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: dhowells@redhat.com, peterhuewe@gmx.de, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, linux-security-module@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net, jgg@ziepe.ca, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jejb@linux.ibm.com, Mimi Zohar <zohar@linux.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Jerry Snitselaar <jsnitsel@redhat.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Daniel Thompson <daniel.thompson@linaro.org>
 
-On 10/15/19 3:14 PM, Linus Torvalds wrote:
-> On Tue, Oct 15, 2019 at 2:48 PM David Howells <dhowells@redhat.com> wrote:
->>
->> Add a wakeup call for a case whereby the caller already has the waitqueue
->> spinlock held.
-> 
-> That naming is crazy.
-> 
-> We already have helper functions like this, and they are just called
-> "wake_up_locked()".
-> 
-> So the "prelocked" naming is just odd. Make it be
-> wake_up_interruptible_sync_poll_locked().
-> 
-> The helper function should likely be
-> 
->   void __wake_up_locked_sync_key(struct wait_queue_head *wq_head,
-> unsigned int mode, void *key)
->   {
->         __wake_up_common(wq_head, mode, 1, WF_SYNC, key, NULL);
->   }
->   EXPORT_SYMBOL_GPL(__wake_up_locked_sync_key);
-> 
-> to match the other naming patterns there.
-> 
-> [ Unrelated ]
-> 
-> Looking at that mess of functions, I also wonder if we should try to
-> just remove the bookmark code again. It was cute, and it was useful,
-> but I think the problem with the page lock list may have been fixed by
-> commit 9a1ea439b16b ("mm: put_and_wait_on_page_locked() while page is
-> migrated") which avoids the retry condition with
-> migrate_page_move_mapping().
-> 
-> Tim/Kan? Do you have the problematic load still?
-> 
+Hi Jarkko,
 
-Unfortunately, we do not have ready access to that problematic load
-which was run by a customer on 8 socket system.  They were not
-willing to give the workload to us, and have not responded to my
-request to rerun their load with commit 9a1ea439b16b.
+On Wed, 25 Sep 2019 at 06:41, Jarkko Sakkinen
+<jarkko.sakkinen@linux.intel.com> wrote:
+>
+> On Wed, Sep 18, 2019 at 11:53:08AM +0530, Sumit Garg wrote:
+> > No worries :). I will send next version of patch-set.
+> >
+> > FYI, I will be travelling for Linaro Connect next week so you could
+> > expect some delays in my responses.
+>
+> These patches will go to v5.5. There is nothing to rush.
 
-The commit greatly reduced migration failures with concurrent page faulting.
-And successful migrations could have prevented the big
-pile up of waiters faulting and waiting on the page, which was the
-problem the bookmark code was trying to solve.
+I am back now on my regular schedule after Linaro Connect. And I see
+your patch-set [1] to detach page allocation from tpm_buf. It seems
+like either this patch-set needs rebase over yours or vice-versa.
 
-So I also tend to think that the problem should have been resolved.
-But unfortunately I don't have a ready workload to confirm.
+So should I wait to send next version of this patch-set until your
+patch-set arrives in tpmdd master/next branch or would you like to
+rebase your patch-set over this?
 
-Tim
+[1] https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg2119910.html
+
+-Sumit
+
+>
+> /Jarkko
