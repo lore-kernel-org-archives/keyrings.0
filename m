@@ -1,7 +1,7 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Thu, 03 Oct 2019 23:59:37 +0000
-Subject: Re: [PATCH] KEYS: asym_tpm: Switch to get_random_bytes()
-Message-Id: <1570147177.10818.11.camel@HansenPartnership.com>
+From: "Safford, David (GE Global Research, US)" <david.safford@ge.com>
+Date: Fri, 04 Oct 2019 13:26:58 +0000
+Subject: [PATCH] KEYS: asym_tpm: Switch to get_random_bytes()
+Message-Id: <BCA04D5D9A3B764C9B7405BBA4D4A3C035F2A22E@ALPMBAPA12.e2k.ad.ge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,98 +11,73 @@ References: <20190926171601.30404-1-jarkko.sakkinen@linux.intel.com>
          <20191003114119.GF8933@linux.intel.com>
          <1570107752.4421.183.camel@linux.ibm.com>
          <20191003175854.GB19679@linux.intel.com>
-         <1570128827.5046.19.camel@linux.ibm.com>
-         <20191003215125.GA30511@linux.intel.com>
-         <20191003215743.GB30511@linux.intel.com>
-         <1570140491.5046.33.camel@linux.ibm.com>
-In-Reply-To: <1570140491.5046.33.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: David Safford <david.safford@ge.com>, linux-integrity@vger.kernel.org, stable@vger.kernel.org, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, "open list:CRYPTO API" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+ <1570128827.5046.19.camel@linux.ibm.com>
+In-Reply-To: <1570128827.5046.19.camel@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, "Wiseman, Monty (GE Global Research, US)" <monty.wiseman@ge.com>
+Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "stable@vger.kernel.org" <stable@vger.kernel.org>, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, "open list:CRYPTO API" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-On Thu, 2019-10-03 at 18:08 -0400, Mimi Zohar wrote:
-> On Fri, 2019-10-04 at 00:57 +0300, Jarkko Sakkinen wrote:
-> > On Fri, Oct 04, 2019 at 12:51:25AM +0300, Jarkko Sakkinen wrote:
-> > > On Thu, Oct 03, 2019 at 02:53:47PM -0400, Mimi Zohar wrote:
-> > > > [Cc'ing David Safford]
-> > > > 
-> > > > On Thu, 2019-10-03 at 20:58 +0300, Jarkko Sakkinen wrote:
-> > > > > On Thu, Oct 03, 2019 at 09:02:32AM -0400, Mimi Zohar wrote:
-> > > > > > On Thu, 2019-10-03 at 14:41 +0300, Jarkko Sakkinen wrote:
-> > > > > > > On Wed, Oct 02, 2019 at 10:00:19AM -0400, Mimi Zohar
-> > > > > > > wrote:
-> > > > > > > > On Thu, 2019-09-26 at 20:16 +0300, Jarkko Sakkinen
-> > > > > > > > wrote:
-> > > > > > > > > Only the kernel random pool should be used for
-> > > > > > > > > generating random numbers.
-> > > > > > > > > TPM contributes to that pool among the other sources
-> > > > > > > > > of entropy. In here it
-> > > > > > > > > is not, agreed, absolutely critical because TPM is
-> > > > > > > > > what is trusted anyway
-> > > > > > > > > but in order to remove tpm_get_random() we need to
-> > > > > > > > > first remove all the
-> > > > > > > > > call sites.
-> > > > > > > > 
-> > > > > > > > At what point during boot is the kernel random pool
-> > > > > > > > available?  Does this imply that you're planning on
-> > > > > > > > changing trusted keys as well?
-> > > > > > > 
-> > > > > > > Well trusted keys *must* be changed to use it. It is not
-> > > > > > > a choice because using a proprietary random number
-> > > > > > > generator instead of defacto one in the kernel can be
-> > > > > > > categorized as a *regression*.
-> > > > > > 
-> > > > > > I really don't see how using the TPM random number for TPM
-> > > > > > trusted keys would be considered a regression.  That by
-> > > > > > definition is a trusted key.  If anything, changing what is
-> > > > > > currently being done would be the regression. 
-> > > > > 
-> > > > > It is really not a TPM trusted key. It trusted key that gets
-> > > > > sealed with the TPM. The key itself is used in clear by
-> > > > > kernel. The random number generator exists in the kernel to
-> > > > > for a reason.
-> > > > > 
-> > > > > It is without doubt a regression.
-> > > > 
-> > > > You're misusing the term "regression" here.  A regression is
-> > > > something that previously worked and has stopped working.  In
-> > > > this case, trusted keys has always been based on the TPM random
-> > > > number generator.  Before changing this, there needs to be some
-> > > > guarantees that the kernel random number generator has a pool
-> > > > of random numbers early, on all systems including embedded
-> > > > devices, not just servers.
-> > > 
-> > > I'm not using the term regression incorrectly here. Wrong
-> > > function was used to generate random numbers for the payload
-> > > here. It is an obvious bug.
-> > 
-> > At the time when trusted keys was introduced I'd say that it was a
-> > wrong design decision and badly implemented code. But you are right
-> > in that as far that code is considered it would unfair to speak of
-> > a regression.
-
-I think that's a bit unfair: when the code was written, a decade ago,
-the TPM was thought to be the state of the art in terms of random
-number generators.  Of course, since then the kernel RNG has become way
-better and we've become more aware of nation state actors thinking that
-influencing the RNG is the best way to compromise strong crypto.
-
-> > asym-tpm.c on the other hand this is fresh new code. There has been
-> > *countless* of discussions over the years that random numbers
-> > should come from multiple sources of entropy. There is no other
-> > categorization than a bug for the tpm_get_random() there.
-> 
-> This week's LWN article on "5.4 Merge window, part 2" discusses
-> "boot- time entropy".  This article couldn't have been more perfectly
-> timed.
-
-I think the principle of using multiple RNG sources for strong keys is
-a sound one, so could I propose a compromise:  We have a tpm subsystem
-random number generator that, when asked for <n> random bytes first
-extracts <n> bytes from the TPM RNG and places it into the kernel
-entropy pool and then asks for <n> random bytes from the kernel RNG? 
-That way, it will always have the entropy to satisfy the request and in
-the worst case, where the kernel has picked up no other entropy sources
-at all it will be equivalent to what we have now (single entropy
-source) but usually it will be a much better mixed entropy source.
-
-James
+PiBGcm9tOiBNaW1pIFpvaGFyIDx6b2hhckBsaW51eC5pYm0uY29tPg0KPiBTZW50OiBUaHVyc2Rh
+eSwgT2N0b2JlciAzLCAyMDE5IDI6NTQgUE0NCj4gVG86IEphcmtrbyBTYWtraW5lbiA8amFya2tv
+LnNha2tpbmVuQGxpbnV4LmludGVsLmNvbT47IFNhZmZvcmQsIERhdmlkIChHRQ0KPiBTdWJqZWN0
+OiBFWFQ6IFJlOiBbUEFUQ0hdIEtFWVM6IGFzeW1fdHBtOiBTd2l0Y2ggdG8gZ2V0X3JhbmRvbV9i
+eXRlcygpDQo+IA0KPiBbQ2MnaW5nIERhdmlkIFNhZmZvcmRdDQo+IA0KPiBPbiBUaHUsIDIwMTkt
+MTAtMDMgYXQgMjA6NTggKzAzMDAsIEphcmtrbyBTYWtraW5lbiB3cm90ZToNCj4gPiBPbiBUaHUs
+IE9jdCAwMywgMjAxOSBhdCAwOTowMjozMkFNIC0wNDAwLCBNaW1pIFpvaGFyIHdyb3RlOg0KPiA+
+ID4gT24gVGh1LCAyMDE5LTEwLTAzIGF0IDE0OjQxICswMzAwLCBKYXJra28gU2Fra2luZW4gd3Jv
+dGU6DQo+ID4gPiA+IE9uIFdlZCwgT2N0IDAyLCAyMDE5IGF0IDEwOjAwOjE5QU0gLTA0MDAsIE1p
+bWkgWm9oYXIgd3JvdGU6DQo+ID4gPiA+ID4gT24gVGh1LCAyMDE5LTA5LTI2IGF0IDIwOjE2ICsw
+MzAwLCBKYXJra28gU2Fra2luZW4gd3JvdGU6DQo+ID4gPiA+ID4gPiBPbmx5IHRoZSBrZXJuZWwg
+cmFuZG9tIHBvb2wgc2hvdWxkIGJlIHVzZWQgZm9yIGdlbmVyYXRpbmcgcmFuZG9tDQo+IG51bWJl
+cnMuDQo+ID4gPiA+ID4gPiBUUE0gY29udHJpYnV0ZXMgdG8gdGhhdCBwb29sIGFtb25nIHRoZSBv
+dGhlciBzb3VyY2VzIG9mDQo+ID4gPiA+ID4gPiBlbnRyb3B5LiBJbiBoZXJlIGl0IGlzIG5vdCwg
+YWdyZWVkLCBhYnNvbHV0ZWx5IGNyaXRpY2FsDQo+ID4gPiA+ID4gPiBiZWNhdXNlIFRQTSBpcyB3
+aGF0IGlzIHRydXN0ZWQgYW55d2F5IGJ1dCBpbiBvcmRlciB0byByZW1vdmUNCj4gPiA+ID4gPiA+
+IHRwbV9nZXRfcmFuZG9tKCkgd2UgbmVlZCB0byBmaXJzdCByZW1vdmUgYWxsIHRoZSBjYWxsIHNp
+dGVzLg0KPiA+ID4gPiA+DQo+ID4gPiA+ID4gQXQgd2hhdCBwb2ludCBkdXJpbmcgYm9vdCBpcyB0
+aGUga2VybmVsIHJhbmRvbSBwb29sIGF2YWlsYWJsZT8NCj4gPiA+ID4gPiBEb2VzIHRoaXMgaW1w
+bHkgdGhhdCB5b3UncmUgcGxhbm5pbmcgb24gY2hhbmdpbmcgdHJ1c3RlZCBrZXlzIGFzIHdlbGw/
+DQo+ID4gPiA+DQo+ID4gPiA+IFdlbGwgdHJ1c3RlZCBrZXlzICptdXN0KiBiZSBjaGFuZ2VkIHRv
+IHVzZSBpdC4gSXQgaXMgbm90IGEgY2hvaWNlDQo+ID4gPiA+IGJlY2F1c2UgdXNpbmcgYSBwcm9w
+cmlldGFyeSByYW5kb20gbnVtYmVyIGdlbmVyYXRvciBpbnN0ZWFkIG9mDQo+ID4gPiA+IGRlZmFj
+dG8gb25lIGluIHRoZSBrZXJuZWwgY2FuIGJlIGNhdGVnb3JpemVkIGFzIGEgKnJlZ3Jlc3Npb24q
+Lg0KPiA+ID4NCj4gPiA+IEkgcmVhbGx5IGRvbid0IHNlZSBob3cgdXNpbmcgdGhlIFRQTSByYW5k
+b20gbnVtYmVyIGZvciBUUE0gdHJ1c3RlZA0KPiA+ID4ga2V5cyB3b3VsZCBiZSBjb25zaWRlcmVk
+IGEgcmVncmVzc2lvbi4gwqBUaGF0IGJ5IGRlZmluaXRpb24gaXMgYQ0KPiA+ID4gdHJ1c3RlZCBr
+ZXkuIMKgSWYgYW55dGhpbmcsIGNoYW5naW5nIHdoYXQgaXMgY3VycmVudGx5IGJlaW5nIGRvbmUN
+Cj4gPiA+IHdvdWxkIGJlIHRoZSByZWdyZXNzaW9uLg0KPiA+DQo+ID4gSXQgaXMgcmVhbGx5IG5v
+dCBhIFRQTSB0cnVzdGVkIGtleS4gSXQgdHJ1c3RlZCBrZXkgdGhhdCBnZXRzIHNlYWxlZA0KPiA+
+IHdpdGggdGhlIFRQTS4gVGhlIGtleSBpdHNlbGYgaXMgdXNlZCBpbiBjbGVhciBieSBrZXJuZWwu
+IFRoZSByYW5kb20NCj4gPiBudW1iZXIgZ2VuZXJhdG9yIGV4aXN0cyBpbiB0aGUga2VybmVsIHRv
+IGZvciBhIHJlYXNvbi4NCj4gPg0KPiA+IEl0IGlzIHdpdGhvdXQgZG91YnQgYSByZWdyZXNzaW9u
+Lg0KPiANCj4gWW91J3JlIG1pc3VzaW5nIHRoZSB0ZXJtICJyZWdyZXNzaW9uIiBoZXJlLiDCoEEg
+cmVncmVzc2lvbiBpcyBzb21ldGhpbmcgdGhhdA0KPiBwcmV2aW91c2x5IHdvcmtlZCBhbmQgaGFz
+IHN0b3BwZWQgd29ya2luZy4gwqBJbiB0aGlzIGNhc2UsIHRydXN0ZWQga2V5cyBoYXMNCj4gYWx3
+YXlzIGJlZW4gYmFzZWQgb24gdGhlIFRQTSByYW5kb20gbnVtYmVyIGdlbmVyYXRvci4gwqBCZWZv
+cmUgY2hhbmdpbmcNCj4gdGhpcywgdGhlcmUgbmVlZHMgdG8gYmUgc29tZSBndWFyYW50ZWVzIHRo
+YXQgdGhlIGtlcm5lbCByYW5kb20gbnVtYmVyDQo+IGdlbmVyYXRvciBoYXMgYSBwb29sIG9mIHJh
+bmRvbSBudW1iZXJzIGVhcmx5LCBvbiBhbGwgc3lzdGVtcyBpbmNsdWRpbmcNCj4gZW1iZWRkZWQg
+ZGV2aWNlcywgbm90IGp1c3Qgc2VydmVycy4NCj4gDQo+IE1pbWkNCg0KQXMgdGhlIG9yaWdpbmFs
+IGF1dGhvciBvZiB0cnVzdGVkIGtleXMsIGxldCBtZSBtYWtlIGEgZmV3IGNvbW1lbnRzLg0KRmly
+c3QsIHRydXN0ZWQga2V5cyB3ZXJlIHNwZWNpZmljYWxseSBpbXBsZW1lbnRlZCBhbmQgKmRvY3Vt
+ZW50ZWQqIHRvDQp1c2UgdGhlIFRQTSB0byBib3RoIGdlbmVyYXRlIGFuZCBzZWFsIGtleXMuIEl0
+cyBrZXJuZWwgZG9jdW1lbnRhdGlvbg0Kc3BlY2lmaWNhbGx5IHN0YXRlcyB0aGlzIGFzIGEgcHJv
+bWlzZSB0byB1c2VyIHNwYWNlLiBJZiB5b3Ugd2FudCB0byBoYXZlIA0KYSBkaWZmZXJlbnQga2V5
+IHN5c3RlbSB0aGF0IHVzZXMgdGhlIHJhbmRvbSBwb29sIHRvIGdlbmVyYXRlIHRoZSBrZXlzLA0K
+ZmluZSwgYnV0IGRvbid0IGNoYW5nZSB0cnVzdGVkIGtleXMsIGFzIHRoYXQgY2hhbmdlcyB0aGUg
+ZXhpc3RpbmcgcHJvbWlzZQ0KdG8gdXNlciBzcGFjZS4gDQoNClRoZXJlIGFyZSBtYW55IGdvb2Qg
+cmVhc29ucyBmb3Igd2FudGluZyB0aGUga2V5cyB0byBiZSBiYXNlZCBvbiB0aGUNClRQTSBnZW5l
+cmF0b3IuICBBcyB0aGUgc291cmNlIGZvciB0aGUga2VybmVsIHJhbmRvbSBudW1iZXIgZ2VuZXJh
+dG9yDQppdHNlbGYgc2F5cywgc29tZSBzeXN0ZW1zIGxhY2sgZ29vZCByYW5kb21uZXNzIGF0IHN0
+YXJ0dXAsIGFuZCBzeXN0ZW1zDQpzaG91bGQgcHJlc2VydmUgYW5kIHJlbG9hZCB0aGUgcG9vbCBh
+Y3Jvc3Mgc2h1dGRvd24gYW5kIHN0YXJ0dXAuDQpUaGVyZSBhcmUgdXNlIGNhc2VzIGZvciB0cnVz
+dGVkIGtleXMgd2hpY2ggbmVlZCB0byBnZW5lcmF0ZSBrZXlzIA0KYmVmb3JlIHN1Y2ggc2NyaXB0
+cyBoYXZlIHJ1bi4gQWxzbywgaW4gc29tZSB1c2UgY2FzZXMsIHdlIG5lZWQgdG8gc2hvdw0KdGhh
+dCB0cnVzdGVkIGtleXMgYXJlIEZJUFMgY29tcGxpYW50LCB3aGljaCBpcyBwb3NzaWJsZSB3aXRo
+IFRQTQ0KZ2VuZXJhdGVkIGtleXMuDQoNClNlY29uZCwgdGhlIFRQTSBpcyBoYXJkbHkgYSAicHJv
+cHJpZXRhcnkgcmFuZG9tIG51bWJlciBnZW5lcmF0b3IiLg0KSXQgaXMgYW4gb3BlbiBzdGFuZGFy
+ZCB3aXRoIG11bHRpcGxlIGltcGxlbWVudGF0aW9ucywgbWFueSBvZiB3aGljaCBhcmUNCkZJUFMg
+Y2VydGlmaWVkLg0KDQpUaGlyZCwgYXMgTWltaSBzdGF0ZXMsIHVzaW5nIGEgVFBNIGlzIG5vdCBh
+ICJyZWdyZXNzaW9uIi4gSXQgd291bGQgYmUgYQ0KcmVncmVzc2lvbiB0byBjaGFuZ2UgdHJ1c3Rl
+ZCBrZXlzIF9ub3RfIHRvIHVzZSB0aGUgVFBNLCBiZWNhdXNlIHRoYXQNCmlzIHdoYXQgdHJ1c3Rl
+ZCBrZXlzIGFyZSBkb2N1bWVudGVkIHRvIHByb3ZpZGUgdG8gdXNlciBzcGFjZS4NCg0KZGF2ZQ0K
+DQo
