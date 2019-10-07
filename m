@@ -1,155 +1,73 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Thu, 31 Oct 2019 12:10:51 +0000
-Subject: Re: [PATCH v3 3/9] KEYS: Added KEYRING_CHECK policy for key measurement
-Message-Id: <1572523851.5028.45.camel@linux.ibm.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Mon, 07 Oct 2019 05:37:31 +0000
+Subject: [Patch v7 0/4] Create and consolidate trusted keys subsystem
+Message-Id: <1570425935-7435-1-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191031011910.2574-1-nramas@linux.microsoft.com>
-         <20191031011910.2574-4-nramas@linux.microsoft.com>
-In-Reply-To: <20191031011910.2574-4-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
-Cc: prsriva@linux.microsoft.com
+To: jarkko.sakkinen@linux.intel.com, dhowells@redhat.com, peterhuewe@gmx.de
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, herbert@gondor.apana.org.au, davem@davemloft.net, jgg@ziepe.ca, arnd@arndb.de, gregkh@linuxfoundation.org, jejb@linux.ibm.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, jsnitsel@redhat.com, linux-kernel@vger.kernel.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-On Wed, 2019-10-30 at 18:19 -0700, Lakshmi Ramasubramanian wrote:
-> An IMA policy to manage measurement of keys is not supported.
-> A new IMA policy is needed to manage the measurement of keys.
-> A policy option is also needed to allow measurement of keys
-> linked to a given set of keyrings only.
-> 
-> This patch defines KEYRING_CHECK and keyrings in IMA policy
-> for this purpose. 
+This patch-set does restructuring of trusted keys code to create and
+consolidate trusted keys subsystem.
 
-"KEYRING_CHECK" and "keyrings" are not related.   One is a "func"
-name, while the other is an IMA policy option.  This should be broken
-up into two different patches.  When defining a new policy option, the
-only code in that patch should be the new policy option.
+Also, patch #2 replaces tpm1_buf code used in security/keys/trusted.c and
+crypto/asymmertic_keys/asym_tpm.c files to use the common tpm_buf code.
 
-> 
-> KEYRING_CHECK can be added in the IMA policy to measure keys.
-> keyrings can be, optionally, set to only measure keys
-> added or updated to a given set of keyrings. If keyrings is not
-> specified for KEYRING_CHECK, keys added or updated in
-> all keyrings are measured.
-> 
-> Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-> ---
->  Documentation/ABI/testing/ima_policy | 15 +++++++++++++++
->  security/integrity/ima/ima.h         |  1 +
->  security/integrity/ima/ima_main.c    |  2 +-
->  security/integrity/ima/ima_policy.c  |  2 +-
->  security/integrity/ima/ima_queue.c   |  2 +-
->  5 files changed, 19 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-> index fc376a323908..757faf1a1a27 100644
-> --- a/Documentation/ABI/testing/ima_policy
-> +++ b/Documentation/ABI/testing/ima_policy
-> @@ -25,10 +25,12 @@ Description:
->  			lsm:	[[subj_user=] [subj_role=] [subj_type=]
->  				 [obj_user=] [obj_role=] [obj_type=]]
->  			option:	[[appraise_type=]] [template=] [permit_directio]
-> +				[keyrings=]
->  		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
->  				[FIRMWARE_CHECK]
->  				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
->  				[KEXEC_CMDLINE]
-> +				[KEYRING_CHECK]
+Changes in v7:
+1. Rebased to top of tpmdd/master
+2. Patch #4: update tpm2 trusted keys code to use tpm_send() instead of
+   tpm_transmit_cmd() which is an internal function.
 
-This patch is measuring keys, not keyrings.
+Changes in v6:
+1. Switch TPM asymmetric code also to use common tpm_buf code. These
+   changes required patches #1 and #2 update, so I have dropped review
+   tags from those patches.
+2. Incorporated miscellaneous comments from Jarkko.
 
+Changes in v5:
+1. Drop 5/5 patch as its more relavant along with TEE patch-set.
+2. Add Reviewed-by tag for patch #2.
+3. Fix build failure when "CONFIG_HEADER_TEST" and
+   "CONFIG_KERNEL_HEADER_TEST" config options are enabled.
+4. Misc changes to rename files.
 
->  			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
->  			       [[^]MAY_EXEC]
->  			fsmagic:= hex value
-> @@ -38,6 +40,9 @@ Description:
->  			fowner:= decimal value
->  		lsm:  	are LSM specific
->  		option:	appraise_type:= [imasig]
-> +			keyrings: = list of keyrings to measure
-> +			(eg, .builtin_trusted_keys|.ima). Only valid
-> +			when action is "measure" and func is KEYRING_CHECK.
->  			template:= name of a defined IMA template type
->  			(eg, ima-ng). Only valid when action is "measure".
->  			pcr:= decimal value
-> @@ -105,3 +110,13 @@ Description:
->  
->  			measure func=KEXEC_KERNEL_CHECK pcr=4
->  			measure func=KEXEC_INITRAMFS_CHECK pcr=5
-> +
-> +		Example of measure rules using KEYRING_CHECK
-> +			To measure keys added to
-> +			.builtin_trusted_keys or .ima keyring:
-> +
-> +			measure func=KEYRING_CHECK keyrings=.builtin_trusted_keys|.ima
-> +
-> +			To measure keys added to all keyrings:
-> +
-> +			measure func=KEYRING_CHECK
+Changes in v4:
+1. Separate patch for export of tpm_buf code to include/linux/tpm.h
+2. Change TPM1.x trusted keys code to use common tpm_buf
+3. Keep module name as trusted.ko only
 
-The patch that introduces the new IMA "func" should document the new
-IMA "func".  The patch that introduces the new "keyring=" policy
-option should document the new IMA policy option.  Examples could be
-included in each of the patches descriptions.
+Changes in v3:
 
+Move TPM2 trusted keys code to trusted keys subsystem.
 
-> diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-> index b9600070e415..12e9ec6847b5 100644
-> --- a/security/integrity/ima/ima.h
-> +++ b/security/integrity/ima/ima.h
-> @@ -191,6 +191,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
->  	hook(KEXEC_INITRAMFS_CHECK)	\
->  	hook(POLICY_CHECK)		\
->  	hook(KEXEC_CMDLINE)		\
-> +	hook(KEYRING_CHECK)		\
->  	hook(MAX_CHECK)
->  #define __ima_hook_enumify(ENUM)	ENUM,
->  
-> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-> index 18e1bc105be7..72ae0878ec5d 100644
-> --- a/security/integrity/ima/ima_main.c
-> +++ b/security/integrity/ima/ima_main.c
-> @@ -718,7 +718,7 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
->  	pk = key->payload.data[asym_crypto];
->  	process_buffer_measurement(pk->key, pk->keylen,
->  				   keyring->description,
-> -				   NONE, 0);
-> +				   KEYRING_CHECK, 0);
->  }
->  
->  static int __init init_ima(void)
-> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-> index 6df7f641ff66..0cc49f2d5233 100644
-> --- a/security/integrity/ima/ima_policy.c
-> +++ b/security/integrity/ima/ima_policy.c
-> @@ -370,7 +370,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
->  {
->  	int i;
->  
-> -	if (func = KEXEC_CMDLINE) {
-> +	if ((func = KEXEC_CMDLINE) || (func = KEYRING_CHECK)) {
->  		if ((rule->flags & IMA_FUNC) && (rule->func = func))
->  			return true;
->  		return false;
-> diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
-> index f2503f10abf4..5625381c5a97 100644
-> --- a/security/integrity/ima/ima_queue.c
-> +++ b/security/integrity/ima/ima_queue.c
-> @@ -317,7 +317,7 @@ void ima_measure_queued_keys(void)
->  		process_buffer_measurement(entry->public_key,
->  					   entry->public_key_len,
->  					   entry->keyring_name,
-> -					   NONE, 0);
-> +					   KEYRING_CHECK, 0);
+Changes in v2:
 
-Changing a newly defined call should be an indication that the patch
-ordering is wrong.  If the new "func" was defined prior or with the
-new IMA hook, then this change wouldn't be needed.
+Split trusted keys abstraction patch for ease of review.
 
-Mimi
+Sumit Garg (4):
+  tpm: Move tpm_buf code to include/linux/
+  KEYS: Use common tpm_buf for trusted and asymmetric keys
+  KEYS: trusted: Create trusted keys subsystem
+  KEYS: trusted: Move TPM2 trusted keys code
 
+ crypto/asymmetric_keys/asym_tpm.c                  | 101 +++----
+ drivers/char/tpm/tpm-interface.c                   |  56 ----
+ drivers/char/tpm/tpm.h                             | 226 ---------------
+ drivers/char/tpm/tpm2-cmd.c                        | 307 --------------------
+ include/Kbuild                                     |   1 -
+ include/keys/{trusted.h => trusted_tpm.h}          |  49 +---
+ include/linux/tpm.h                                | 251 ++++++++++++++--
+ security/keys/Makefile                             |   2 +-
+ security/keys/trusted-keys/Makefile                |   8 +
+ .../{trusted.c => trusted-keys/trusted_tpm1.c}     |  96 +++----
+ security/keys/trusted-keys/trusted_tpm2.c          | 314 +++++++++++++++++++++
+ 11 files changed, 652 insertions(+), 759 deletions(-)
+ rename include/keys/{trusted.h => trusted_tpm.h} (77%)
+ create mode 100644 security/keys/trusted-keys/Makefile
+ rename security/keys/{trusted.c => trusted-keys/trusted_tpm1.c} (94%)
+ create mode 100644 security/keys/trusted-keys/trusted_tpm2.c
 
->  		list_del(&entry->list);
->  		ima_free_measure_key_entry(entry);
->  	}
+-- 
+2.7.4
