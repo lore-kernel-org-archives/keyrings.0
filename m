@@ -1,34 +1,41 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Mon, 07 Oct 2019 18:08:15 +0000
+From: Ken Goldman <kgold@linux.ibm.com>
+Date: Mon, 07 Oct 2019 22:13:01 +0000
 Subject: Re: [PATCH] KEYS: asym_tpm: Switch to get_random_bytes()
-Message-Id: <1570471695.5046.186.camel@linux.ibm.com>
+Message-Id: <59b88042-9c56-c891-f75e-7c0719eb5ff9@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1570140491.5046.33.camel@linux.ibm.com>
-         <1570147177.10818.11.camel@HansenPartnership.com>
-         <20191004182216.GB6945@linux.intel.com>
-         <1570213491.3563.27.camel@HansenPartnership.com>
-         <20191004183342.y63qdvspojyf3m55@cantor>
-         <1570214574.3563.32.camel@HansenPartnership.com>
-         <20191004200728.xoj6jlgbhv57gepc@cantor>
-         <20191004201134.nuesk6hxtxajnxh2@cantor>
-         <1570227068.17537.4.camel@HansenPartnership.com>
-         <1570322333.5046.145.camel@linux.ibm.com>
-         <20191006235238.GA16641@linux.intel.com>
-In-Reply-To: <20191006235238.GA16641@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>, Jerry Snitselaar <jsnitsel@redhat.com>, David Safford <david.safford@ge.com>, linux-integrity@vger.kernel.org, stable@vger.kernel.org, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, "open list:CRYPTO API" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+References: <20190926171601.30404-1-jarkko.sakkinen@linux.intel.com>
+ <1570024819.4999.119.camel@linux.ibm.com>
+ <20191003114119.GF8933@linux.intel.com>
+ <1570107752.4421.183.camel@linux.ibm.com>
+ <20191003175854.GB19679@linux.intel.com>
+ <1570128827.5046.19.camel@linux.ibm.com>
+ <BCA04D5D9A3B764C9B7405BBA4D4A3C035F2A22E@ALPMBAPA12.e2k.ad.ge.com>
+ <20191004182711.GC6945@linux.intel.com>
+ <BCA04D5D9A3B764C9B7405BBA4D4A3C035F2A38B@ALPMBAPA12.e2k.ad.ge.com>
+ <20191007000520.GA17116@linux.intel.com>
+In-Reply-To: <20191007000520.GA17116@linux.intel.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, "Safford, David (GE Global Research, US)" <david.safford@ge.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "stable@vger.kernel.org" <stable@vger.kernel.org>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, "open list:CRYPTO API" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-T24gTW9uLCAyMDE5LTEwLTA3IGF0IDAyOjUyICswMzAwLCBKYXJra28gU2Fra2luZW4gd3JvdGU6
-Cj4gCj4gV2l0aCBURUUgY29taW5nIGluLCBUUE0gaXMgbm90IHRoZSBvbmx5IGhhcmR3YXJlIG1l
-YXN1cmUgYW55bW9yZSBzZWFsaW5nCj4gdGhlIGtleXMgYW5kIHdlIGRvbid0IHdhbnQgYSBtZXNz
-IHdoZXJlIGV2ZXJ5IGhhcmR3YXJlIGFzc2V0IGRvZXMgdGhlaXIKPiBvd24gcHJvcHJpZXRhcnkg
-a2V5IGdlbmVyYXRpb24uIFRoZSBwcm9wcmlldGFyeSB0ZWNobm9sb2d5IHNob3VsZCBvbmx5Cj4g
-dGFrZSBjYXJlIG9mIHRoZSBzZWFsaW5nIHBhcnQuCgpJJ20gZmluZSB3aXRoIHRoZSBjb25jZXB0
-IG9mICJ0cnVzdGVkIiBrZXlzIGJlaW5nIGV4dGVuZGVkIGJleW9uZCBqdXN0ClRQTS4gwqBCdXQg
-anVzdCBhcyB0aGUgVkZTIGxheWVyIGRlZmluZXMgYSBzZXQgb2YgY2FsbGJhY2tzIGFuZCBnZW5l
-cmljCmZ1bmN0aW9ucywgd2hpY2ggY2FuIGJlIHVzZWQgaW4gbGlldSBvZiBmaWxlIHN5c3RlbSBz
-cGVjaWZpYyBjYWxsYmFjawpmdW5jdGlvbnMsIGEgc2ltaWxhciBhcHByb2FjaCBjb3VsZCBiZSB1
-c2VkIGhlcmUuCgpNaW1pCg==
+The TPM library specification states that the TPM must comply with NIST 
+SP800-90 A.
+
+https://trustedcomputinggroup.org/membership/certification/tpm-certified-products/
+
+shows that the TPMs get third party certification, Common Criteria EAL 4+.
+
+While it's theoretically possible that an attacker could compromise
+both the TPM vendors and the evaluation agencies, we do have EAL 4+ 
+assurance against both 1 and 2.
+
+On 10/6/2019 8:05 PM, Jarkko Sakkinen wrote:
+> 
+> Kernel has the random number generator for two reasons:
+> 
+> 1. To protect against bugs in hwrng's.
+> 2. To protect against deliberate backdoors in hwrng's.
+> 
+> How TPM RNG is guaranteed to protect against both 1 and 2?
