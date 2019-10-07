@@ -1,145 +1,117 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 23 Oct 2019 20:18:19 +0000
-Subject: [RFC PATCH 08/10] pipe: Rearrange sequence in pipe_write() to preallocate slot [ver #2]
-Message-Id: <157186189940.3995.3273332042636743290.stgit@warthog.procyon.org.uk>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Mon, 07 Oct 2019 05:37:34 +0000
+Subject: [Patch v7 3/4] KEYS: trusted: Create trusted keys subsystem
+Message-Id: <1570425935-7435-4-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1570425935-7435-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1570425935-7435-1-git-send-email-sumit.garg@linaro.org>
+To: jarkko.sakkinen@linux.intel.com, dhowells@redhat.com, peterhuewe@gmx.de
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, herbert@gondor.apana.org.au, davem@davemloft.net, jgg@ziepe.ca, arnd@arndb.de, gregkh@linuxfoundation.org, jejb@linux.ibm.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, jsnitsel@redhat.com, linux-kernel@vger.kernel.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-Rearrange the sequence in pipe_write() so that the allocation of the new
-buffer, the allocation of a ring slot and the attachment to the ring is
-done under the pipe wait spinlock and then the lock is dropped and the
-buffer can be filled.
+Move existing code to trusted keys subsystem. Also, rename files with
+"tpm" as suffix which provides the underlying implementation.
 
-The data copy needs to be done with the spinlock unheld and irqs enabled,
-so the lock needs to be dropped first.  However, the reader can't progress
-as we're holding pipe->mutex.
-
-We also need to drop the lock as that would impact others looking at the
-pipe waitqueue, such as poll(), the consumer and a future kernel message
-writer.
-
-We just abandon the preallocated slot if we get a copy error.  Future
-writes may continue it and a future read will eventually recycle it.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
+ crypto/asymmetric_keys/asym_tpm.c                        | 2 +-
+ include/Kbuild                                           | 1 -
+ include/keys/{trusted.h => trusted_tpm.h}                | 7 +++++--
+ security/keys/Makefile                                   | 2 +-
+ security/keys/trusted-keys/Makefile                      | 7 +++++++
+ security/keys/{trusted.c => trusted-keys/trusted_tpm1.c} | 2 +-
+ 6 files changed, 15 insertions(+), 6 deletions(-)
+ rename include/keys/{trusted.h => trusted_tpm.h} (96%)
+ create mode 100644 security/keys/trusted-keys/Makefile
+ rename security/keys/{trusted.c => trusted-keys/trusted_tpm1.c} (99%)
 
- fs/pipe.c |   51 +++++++++++++++++++++++++++++++++------------------
- 1 file changed, 33 insertions(+), 18 deletions(-)
-
-diff --git a/fs/pipe.c b/fs/pipe.c
-index e3a8f10750c9..1bfad2212b95 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -386,7 +386,7 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- {
- 	struct file *filp = iocb->ki_filp;
- 	struct pipe_inode_info *pipe = filp->private_data;
--	unsigned int head, tail, max_usage, mask;
-+	unsigned int head, max_usage, mask;
- 	ssize_t ret = 0;
- 	int do_wakeup = 0;
- 	size_t total_len = iov_iter_count(from);
-@@ -404,14 +404,13 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 		goto out;
- 	}
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index a2b2a61..d16d893 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -13,7 +13,7 @@
+ #include <crypto/sha.h>
+ #include <asm/unaligned.h>
+ #include <keys/asymmetric-subtype.h>
+-#include <keys/trusted.h>
++#include <keys/trusted_tpm.h>
+ #include <crypto/asym_tpm_subtype.h>
+ #include <crypto/public_key.h>
  
--	tail = pipe->tail;
- 	head = pipe->head;
- 	max_usage = pipe->max_usage;
- 	mask = pipe->ring_size - 1;
- 
- 	/* We try to merge small writes */
- 	chars = total_len & (PAGE_SIZE-1); /* size of the last buffer */
--	if (!pipe_empty(head, tail) && chars != 0) {
-+	if (!pipe_empty(head, pipe->tail) && chars != 0) {
- 		struct pipe_buffer *buf = &pipe->bufs[(head - 1) & mask];
- 		int offset = buf->offset + buf->len;
- 
-@@ -440,8 +439,8 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 			break;
- 		}
- 
--		tail = pipe->tail;
--		if (!pipe_full(head, tail, max_usage)) {
-+		head = pipe->head;
-+		if (!pipe_full(head, pipe->tail, max_usage)) {
- 			struct pipe_buffer *buf = &pipe->bufs[head & mask];
- 			struct page *page = pipe->tmp_page;
- 			int copied;
-@@ -454,40 +453,56 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 				}
- 				pipe->tmp_page = page;
- 			}
+diff --git a/include/Kbuild b/include/Kbuild
+index ffba794..6f9ec5a 100644
+--- a/include/Kbuild
++++ b/include/Kbuild
+@@ -65,7 +65,6 @@ header-test-			+= keys/asymmetric-subtype.h
+ header-test-			+= keys/asymmetric-type.h
+ header-test-			+= keys/big_key-type.h
+ header-test-			+= keys/request_key_auth-type.h
+-header-test-			+= keys/trusted.h
+ header-test-			+= kvm/arm_arch_timer.h
+ header-test-			+= kvm/arm_pmu.h
+ header-test-$(CONFIG_ARM)	+= kvm/arm_psci.h
+diff --git a/include/keys/trusted.h b/include/keys/trusted_tpm.h
+similarity index 96%
+rename from include/keys/trusted.h
+rename to include/keys/trusted_tpm.h
+index 29e3e9b..7b9d7b4 100644
+--- a/include/keys/trusted.h
++++ b/include/keys/trusted_tpm.h
+@@ -1,6 +1,9 @@
+ /* SPDX-License-Identifier: GPL-2.0 */
+-#ifndef __TRUSTED_KEY_H
+-#define __TRUSTED_KEY_H
++#ifndef __TRUSTED_TPM_H
++#define __TRUSTED_TPM_H
 +
-+			/* Allocate a slot in the ring in advance and attach an
-+			 * empty buffer.  If we fault or otherwise fail to use
-+			 * it, either the reader will consume it or it'll still
-+			 * be there for the next write.
-+			 */
-+			spin_lock_irq(&pipe->wait.lock);
-+
-+			head = pipe->head;
-+			pipe_commit_write(pipe, head + 1);
-+
- 			/* Always wake up, even if the copy fails. Otherwise
- 			 * we lock up (O_NONBLOCK-)readers that sleep due to
- 			 * syscall merging.
- 			 * FIXME! Is this really true?
- 			 */
--			do_wakeup = 1;
--			copied = copy_page_from_iter(page, 0, PAGE_SIZE, from);
--			if (unlikely(copied < PAGE_SIZE && iov_iter_count(from))) {
--				if (!ret)
--					ret = -EFAULT;
--				break;
--			}
--			ret += copied;
-+			wake_up_interruptible_sync_poll_locked(
-+				&pipe->wait, EPOLLIN | EPOLLRDNORM);
-+
-+			spin_unlock_irq(&pipe->wait.lock);
-+			kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
++#include <keys/trusted-type.h>
++#include <linux/tpm_command.h>
  
- 			/* Insert it into the buffer array */
-+			buf = &pipe->bufs[head & mask];
- 			buf->page = page;
- 			buf->ops = &anon_pipe_buf_ops;
- 			buf->offset = 0;
--			buf->len = copied;
-+			buf->len = 0;
- 			buf->flags = 0;
- 			if (is_packetized(filp)) {
- 				buf->ops = &packet_pipe_buf_ops;
- 				buf->flags = PIPE_BUF_FLAG_PACKET;
- 			}
--
--			head++;
--			pipe_commit_write(pipe, head);
- 			pipe->tmp_page = NULL;
- 
-+			copied = copy_page_from_iter(page, 0, PAGE_SIZE, from);
-+			if (unlikely(copied < PAGE_SIZE && iov_iter_count(from))) {
-+				if (!ret)
-+					ret = -EFAULT;
-+				break;
-+			}
-+			ret += copied;
-+			buf->offset = 0;
-+			buf->len = copied;
+ /* implementation specific TPM constants */
+ #define MAX_BUF_SIZE			1024
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index 9cef540..074f275 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -28,5 +28,5 @@ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += keyctl_pkey.o
+ # Key types
+ #
+ obj-$(CONFIG_BIG_KEYS) += big_key.o
+-obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
++obj-$(CONFIG_TRUSTED_KEYS) += trusted-keys/
+ obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
+diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
+new file mode 100644
+index 0000000..1a24680
+--- /dev/null
++++ b/security/keys/trusted-keys/Makefile
+@@ -0,0 +1,7 @@
++# SPDX-License-Identifier: GPL-2.0
++#
++# Makefile for trusted keys
++#
 +
- 			if (!iov_iter_count(from))
- 				break;
- 		}
++obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
++trusted-y += trusted_tpm1.o
+diff --git a/security/keys/trusted.c b/security/keys/trusted-keys/trusted_tpm1.c
+similarity index 99%
+rename from security/keys/trusted.c
+rename to security/keys/trusted-keys/trusted_tpm1.c
+index 7071011..e3155fd 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -27,7 +27,7 @@
+ #include <linux/tpm.h>
+ #include <linux/tpm_command.h>
  
--		if (!pipe_full(head, tail, max_usage))
-+		if (!pipe_full(head, pipe->tail, max_usage))
- 			continue;
+-#include <keys/trusted.h>
++#include <keys/trusted_tpm.h>
  
- 		/* Wait for buffer space to become available. */
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
+-- 
+2.7.4
