@@ -1,39 +1,51 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 23 Oct 2019 17:03:21 +0000
-Subject: Re: [PATCH v1 3/6] KEYS: ima hook to measure builtin_trusted_keys
-Message-Id: <1571850201.5104.149.camel@linux.ibm.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 09 Oct 2019 23:03:49 +0000
+Subject: [PATCH RESEND] KEYS: asymmetric: return ENOMEM if akcipher_request_alloc() fails
+Message-Id: <20191009230349.127215-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191023001818.3684-1-nramas@linux.microsoft.com>
-         <20191023001818.3684-4-nramas@linux.microsoft.com>
-         <1571836931.5104.95.camel@linux.ibm.com>
-         <6a3f2efa-fc05-7bfd-368a-910dd4525f4c@linux.microsoft.com>
-In-Reply-To: <6a3f2efa-fc05-7bfd-368a-910dd4525f4c@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20190529210132.120114-1-ebiggers@kernel.org>
+In-Reply-To: <20190529210132.120114-1-ebiggers@kernel.org>
+To: keyrings@vger.kernel.org
 
-On Wed, 2019-10-23 at 07:49 -0700, Lakshmi Ramasubramanian wrote:
-> On 10/23/19 6:22 AM, Mimi Zohar wrote:
-> 
-> Thanks for reviewing the changes Mimi.
-> I'll address your comments and post an updated patch set shortly.
-> 
-> >> Add a new ima hook to measure keys added to builtin_trusted_keys
-> >> keyring.
-> > 
-> > There is no IMA hook in this patch.
-> > 
-> 
-> >> +			else if (strcmp(args[0].from,
-> >> +					"BUILTIN_TRUSTED_KEYS") = 0)
-> >> +				entry->func = BUILTIN_TRUSTED_KEYS;
-> >>   			else
-> >>   				result = -EINVAL;
-> >>   			if (!result)
-> > 
-> > Any new options need to be displayed as well.
-> 
-> Not that I can think of. Please correct me if I am wrong.
+From: Eric Biggers <ebiggers@google.com>
 
-True, since you're hard coding the policy.
+No error code was being set on this error path.
+
+Fixes: ad4b1eb5fb33 ("KEYS: asym_tpm: Implement encryption operation [ver #2]")
+Fixes: c08fed737126 ("KEYS: Implement encrypt, decrypt and sign for software asymmetric key [ver #2]")
+Reviewed-by: James Morris <jamorris@linux.microsoft.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ crypto/asymmetric_keys/asym_tpm.c   | 1 +
+ crypto/asymmetric_keys/public_key.c | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index 76d2ce3a1b5b1..5154e280ada22 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -486,6 +486,7 @@ static int tpm_key_encrypt(struct tpm_key *tk,
+ 	if (ret < 0)
+ 		goto error_free_tfm;
+ 
++	ret = -ENOMEM;
+ 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
+ 	if (!req)
+ 		goto error_free_tfm;
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index 364b9df9d631f..d7f43d4ea925a 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -184,6 +184,7 @@ static int software_key_eds_op(struct kernel_pkey_params *params,
+ 	if (IS_ERR(tfm))
+ 		return PTR_ERR(tfm);
+ 
++	ret = -ENOMEM;
+ 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
+ 	if (!req)
+ 		goto error_free_tfm;
+-- 
+2.23.0.581.g78d2f28ef7-goog
