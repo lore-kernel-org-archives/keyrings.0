@@ -1,25 +1,98 @@
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 15 Oct 2019 22:32:08 +0000
-Subject: Re: [RFC PATCH 00/21] pipe: Keyrings, Block and USB notifications
-Message-Id: <CAHk-=whfCy+WCZ5SXZGi4QEhxXm=EjZjj4R9+o4q-QR3saMyfg@mail.gmail.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 09 Oct 2019 23:04:43 +0000
+Subject: [PATCH RESEND] KEYS: remove CONFIG_KEYS_COMPAT
+Message-Id: <20191009230443.127512-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20180105191947.91775-1-ebiggers3@gmail.com>
+In-Reply-To: <20180105191947.91775-1-ebiggers3@gmail.com>
+To: keyrings@vger.kernel.org
 
-Aside from the two small comments, the pipe side looked reasonable,
-but I stopped looking when the patches moved on to the notificaiton
-part, and maybe I missed something in the earlier ones too.
+From: Eric Biggers <ebiggers@google.com>
 
-Which does bring me to the meat of this email: can we please keep the
-pipe cleanups and prepwork (and benchmarking) as a separate patch
-series? I'd like that to be done separately from the notification
-code, since it's re-organization and cleanup - while the eventual goal
-is to be able to add messages to the pipe atomically, I think the
-series makes sense (and should make sense) on its own.
+KEYS_COMPAT now always takes the value of COMPAT && KEYS.  But the
+security/keys/ directory is only compiled if KEYS is enabled, so in
+practice KEYS_COMPAT is the same as COMPAT.  Therefore, remove the
+unnecessary KEYS_COMPAT and just use COMPAT directly.
 
-          Linus
+(Also remove an outdated comment from compat.c.)
+
+Reviewed-by: James Morris <jamorris@linux.microsoft.com>
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ security/keys/Kconfig    | 4 ----
+ security/keys/Makefile   | 2 +-
+ security/keys/compat.c   | 5 -----
+ security/keys/internal.h | 4 ++--
+ 4 files changed, 3 insertions(+), 12 deletions(-)
+
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index dd313438fecf9..47c041563d41c 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -21,10 +21,6 @@ config KEYS
+ 
+ 	  If you are unsure as to whether this is required, answer N.
+ 
+-config KEYS_COMPAT
+-	def_bool y
+-	depends on COMPAT && KEYS
+-
+ config KEYS_REQUEST_CACHE
+ 	bool "Enable temporary caching of the last request_key() result"
+ 	depends on KEYS
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index 9cef54064f608..c694458d9a46c 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -17,7 +17,7 @@ obj-y := \
+ 	request_key_auth.o \
+ 	user_defined.o
+ compat-obj-$(CONFIG_KEY_DH_OPERATIONS) += compat_dh.o
+-obj-$(CONFIG_KEYS_COMPAT) += compat.o $(compat-obj-y)
++obj-$(CONFIG_COMPAT) += compat.o $(compat-obj-y)
+ obj-$(CONFIG_PROC_FS) += proc.o
+ obj-$(CONFIG_SYSCTL) += sysctl.o
+ obj-$(CONFIG_PERSISTENT_KEYRINGS) += persistent.o
+diff --git a/security/keys/compat.c b/security/keys/compat.c
+index 9bcc404131aa0..b975f8f11124b 100644
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -46,11 +46,6 @@ static long compat_keyctl_instantiate_key_iov(
+ 
+ /*
+  * The key control system call, 32-bit compatibility version for 64-bit archs
+- *
+- * This should only be called if the 64-bit arch uses weird pointers in 32-bit
+- * mode or doesn't guarantee that the top 32-bits of the argument registers on
+- * taking a 32-bit syscall are zero.  If you can, you should call sys_keyctl()
+- * directly.
+  */
+ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
+ 		       u32, arg2, u32, arg3, u32, arg4, u32, arg5)
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index c039373488bd9..ba3e2da14ceff 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -264,7 +264,7 @@ extern long keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
+ 			      size_t, struct keyctl_kdf_params __user *);
+ extern long __keyctl_dh_compute(struct keyctl_dh_params __user *, char __user *,
+ 				size_t, struct keyctl_kdf_params *);
+-#ifdef CONFIG_KEYS_COMPAT
++#ifdef CONFIG_COMPAT
+ extern long compat_keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 				char __user *buffer, size_t buflen,
+ 				struct compat_keyctl_kdf_params __user *kdf);
+@@ -279,7 +279,7 @@ static inline long keyctl_dh_compute(struct keyctl_dh_params __user *params,
+ 	return -EOPNOTSUPP;
+ }
+ 
+-#ifdef CONFIG_KEYS_COMPAT
++#ifdef CONFIG_COMPAT
+ static inline long compat_keyctl_dh_compute(
+ 				struct keyctl_dh_params __user *params,
+ 				char __user *buffer, size_t buflen,
+-- 
+2.23.0.581.g78d2f28ef7-goog
