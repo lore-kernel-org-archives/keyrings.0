@@ -1,86 +1,55 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 31 Oct 2019 21:03:30 +0000
-Subject: Re: [PATCH] KEYS: asym_tpm: Switch to get_random_bytes()
-Message-Id: <20191031210330.GA10507@linux.intel.com>
+From: Marcus =?utf-8?B?SMO8d2U=?= <suse-tux@gmx.de>
+Date: Mon, 14 Oct 2019 13:06:05 +0000
+Subject: Re: [PATCH] keys: Do not check the retval of commit_creds in join_session_keyring
+Message-Id: <20191014130604.u65ohezf6usjkico@linux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191014190033.GA15552@linux.intel.com>
- <1571081397.3728.9.camel@HansenPartnership.com>
- <20191016110031.GE10184@linux.intel.com>
- <1571229252.3477.7.camel@HansenPartnership.com>
- <20191016162543.GB6279@linux.intel.com>
- <1571253029.17520.5.camel@HansenPartnership.com>
- <20191017180440.GG6667@linux.intel.com>
- <20191021113939.GA11649@linux.intel.com>
- <20191029084258.GA5649@linux.intel.com>
- <1572361096.4812.3.camel@HansenPartnership.com>
-In-Reply-To: <1572361096.4812.3.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: "Safford, David (GE Global Research, US)" <david.safford@ge.com>, Ken Goldman <kgold@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "stable@vger.kernel.org" <stable@vger.kernel.org>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, "open list:CRYPTO API" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+References: <044b34c4388405e995e38fb57fc120361bf962db.1568124150.git.suse-tux@gmx.de>
+In-Reply-To: <044b34c4388405e995e38fb57fc120361bf962db.1568124150.git.suse-tux@gmx.de>
+To: keyrings@vger.kernel.org
 
-On Tue, Oct 29, 2019 at 07:58:16AM -0700, James Bottomley wrote:
-> On Tue, 2019-10-29 at 10:42 +0200, Jarkko Sakkinen wrote:
-> > On Mon, Oct 21, 2019 at 02:39:39PM +0300, Jarkko Sakkinen wrote:
-> > > On Thu, Oct 17, 2019 at 09:04:40PM +0300, Jarkko Sakkinen wrote:
-> > > > On Wed, Oct 16, 2019 at 03:10:29PM -0400, James Bottomley wrote:
-> > > > > On Wed, 2019-10-16 at 19:25 +0300, Jarkko Sakkinen wrote:
-> > > > > > On Wed, Oct 16, 2019 at 08:34:12AM -0400, James Bottomley
-> > > > > > wrote:
-> > > > > > > reversible ciphers are generally frowned upon in random
-> > > > > > > number
-> > > > > > > generation, that's why the krng uses chacha20.  In general
-> > > > > > > I think
-> > > > > > > we shouldn't try to code our own mixing and instead should
-> > > > > > > get the
-> > > > > > > krng to do it for us using whatever the algorithm du jour
-> > > > > > > that the
-> > > > > > > crypto guys have blessed is.  That's why I proposed adding
-> > > > > > > the TPM
-> > > > > > > output to the krng as entropy input and then taking the
-> > > > > > > output of
-> > > > > > > the krng.
-> > > > > > 
-> > > > > > It is already registered as hwrng. What else?
-> > > > > 
-> > > > > It only contributes entropy once at start of OS.
-> > > > 
-> > > > Ok.
-> > > > 
-> > > > > >  Was the issue that it is only used as seed when the rng is
-> > > > > > init'd
-> > > > > > first? I haven't at this point gone to the internals of krng.
-> > > > > 
-> > > > > Basically it was similar to your xor patch except I got the
-> > > > > kernel rng
-> > > > > to do the mixing, so it would use the chacha20 cipher at the
-> > > > > moment
-> > > > > until they decide that's unsafe and change it to something
-> > > > > else:
-> > > > > 
-> > > > > https://lore.kernel.org/linux-crypto/1570227068.17537.4.camel@H
-> > > > > ansenPartnership.com/
-> > > > > 
-> > > > > It uses add_hwgenerator_randomness() to do the mixing.  It also
-> > > > > has an
-> > > > > unmixed source so that read of the TPM hwrng device works as
-> > > > > expected.
-> > > > 
-> > > > Thinking that could this potentially racy? I.e. between the calls
-> > > > something else could eat the entropy added?
-> > > 
-> > > Also, what is wrong just taking one value from krng and mixing
-> > > it with a value from TPM RNG where needed? That would be non-racy
-> > > too.
-> > 
-> > I guess we can move forward with this?
-> 
-> Sure I suppose; can we can figure out how to get the mixing function du
-> jour exposed?
+Just a gentle ping - any news on this?:)
 
-Maybe it is best to reflect the whole issue in the context of the
-Sumit's 2nd patch set, which adds ARM TEE support in order to move
-forward.
-
-/Jarkko
+On 2019-09-10 16:07:59 +0200, Marcus Huewe wrote:
+> Do not check the return value of the commit_creds call in
+> join_session_keyring in order to make the code more concise.
+> Since commit_creds always returns 0, the if-statement is not needed
+> and the session keyring's serial can be directly assigned to the
+> "ret" variable.
+>
+> Signed-off-by: Marcus Huewe <suse-tux@gmx.de>
+> ---
+>  security/keys/process_keys.c | 8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
+>
+> diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+> index 09541de31f2f..e7cd1ff84709 100644
+> --- a/security/keys/process_keys.c
+> +++ b/security/keys/process_keys.c
+> @@ -840,7 +840,7 @@ long join_session_keyring(const char *name)
+>  	const struct cred *old;
+>  	struct cred *new;
+>  	struct key *keyring;
+> -	long ret, serial;
+> +	long ret;
+>
+>  	new = prepare_creds();
+>  	if (!new)
+> @@ -853,10 +853,8 @@ long join_session_keyring(const char *name)
+>  		if (ret < 0)
+>  			goto error;
+>
+> -		serial = new->session_keyring->serial;
+> -		ret = commit_creds(new);
+> -		if (ret == 0)
+> -			ret = serial;
+> +		ret = new->session_keyring->serial;
+> +		commit_creds(new);
+>  		goto okay;
+>  	}
+>
+> --
+> 2.22.0
+>
