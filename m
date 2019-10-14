@@ -1,7 +1,7 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 09 Oct 2019 23:03:49 +0000
-Subject: [PATCH RESEND] KEYS: asymmetric: return ENOMEM if akcipher_request_alloc() fails
-Message-Id: <20191009230349.127215-1-ebiggers@kernel.org>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Mon, 14 Oct 2019 19:48:46 +0000
+Subject: Re: [PATCH RESEND] KEYS: asymmetric: return ENOMEM if akcipher_request_alloc() fails
+Message-Id: <20191014194846.GI15552@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,42 +10,19 @@ References: <20190529210132.120114-1-ebiggers@kernel.org>
 In-Reply-To: <20190529210132.120114-1-ebiggers@kernel.org>
 To: keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+On Wed, Oct 09, 2019 at 04:03:49PM -0700, Eric Biggers wrote:
+> From: Eric Biggers <ebiggers@google.com>
+> 
+> No error code was being set on this error path.
+> 
+> Fixes: ad4b1eb5fb33 ("KEYS: asym_tpm: Implement encryption operation [ver #2]")
+> Fixes: c08fed737126 ("KEYS: Implement encrypt, decrypt and sign for software asymmetric key [ver #2]")
+> Reviewed-by: James Morris <jamorris@linux.microsoft.com>
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
 
-No error code was being set on this error path.
+Cc: stable@vger.kernel.org
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-Fixes: ad4b1eb5fb33 ("KEYS: asym_tpm: Implement encryption operation [ver #2]")
-Fixes: c08fed737126 ("KEYS: Implement encrypt, decrypt and sign for software asymmetric key [ver #2]")
-Reviewed-by: James Morris <jamorris@linux.microsoft.com>
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- crypto/asymmetric_keys/asym_tpm.c   | 1 +
- crypto/asymmetric_keys/public_key.c | 1 +
- 2 files changed, 2 insertions(+)
+I can pick this up to my tree given the TPM association. David?
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 76d2ce3a1b5b1..5154e280ada22 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -486,6 +486,7 @@ static int tpm_key_encrypt(struct tpm_key *tk,
- 	if (ret < 0)
- 		goto error_free_tfm;
- 
-+	ret = -ENOMEM;
- 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
- 	if (!req)
- 		goto error_free_tfm;
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index 364b9df9d631f..d7f43d4ea925a 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -184,6 +184,7 @@ static int software_key_eds_op(struct kernel_pkey_params *params,
- 	if (IS_ERR(tfm))
- 		return PTR_ERR(tfm);
- 
-+	ret = -ENOMEM;
- 	req = akcipher_request_alloc(tfm, GFP_KERNEL);
- 	if (!req)
- 		goto error_free_tfm;
--- 
-2.23.0.581.g78d2f28ef7-goog
+/Jarkko
