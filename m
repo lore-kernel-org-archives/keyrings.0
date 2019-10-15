@@ -1,83 +1,108 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 03 Oct 2019 12:50:09 +0000
-Subject: [PATCH v2] KEYS: asym_tpm: Switch to get_random_bytes()
-Message-Id: <20191003125009.30195-1-jarkko.sakkinen@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 15 Oct 2019 21:49:09 +0000
+Subject: [RFC PATCH 09/21] uapi: General notification queue definitions
+Message-Id: <157117614968.15019.16151148059437139065.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, stable@vger.kernel.org, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, "open list:CRYPTO API" <linux-crypto@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Only the kernel random pool should be used for generating random numbers.
-TPM contributes to that pool among the other sources of entropy. In here it
-is not, agreed, absolutely critical because TPM is what is trusted anyway
-but in order to remove tpm_get_random() we need to first remove all the
-call sites.
+Add UAPI definitions for the general notification queue, including the
+following pieces:
 
-Cc: stable@vger.kernel.org
-Fixes: 0c36264aa1d5 ("KEYS: asym_tpm: Add loadkey2 and flushspecific [ver #2]")
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+ (*) struct watch_notification.
+
+     This is the metadata header for notification messages.  It includes a
+     type and subtype that indicate the source of the message
+     (eg. WATCH_TYPE_MOUNT_NOTIFY) and the kind of the message
+     (eg. NOTIFY_MOUNT_NEW_MOUNT).
+
+     The header also contains an information field that conveys the
+     following information:
+
+	- WATCH_INFO_LENGTH.  The size of the entry (entries are variable
+          length).
+
+	- WATCH_INFO_ID.  The watch ID specified when the watchpoint was
+          set.
+
+	- WATCH_INFO_TYPE_INFO.  (Sub)type-specific information.
+
+	- WATCH_INFO_FLAG_*.  Flag bits overlain on the type-specific
+          information.  For use by the type.
+
+     All the information in the header can be used in filtering messages at
+     the point of writing into the buffer.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-v2:
-* Changed two remaining call sites to use get_random_bytes()
-* Removed "stating the obvious" comments.
- crypto/asymmetric_keys/asym_tpm.c | 22 ++++------------------
- 1 file changed, 4 insertions(+), 18 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
-index 76d2ce3a1b5b..4eaf57483b9a 100644
---- a/crypto/asymmetric_keys/asym_tpm.c
-+++ b/crypto/asymmetric_keys/asym_tpm.c
-@@ -6,6 +6,7 @@
- #include <linux/kernel.h>
- #include <linux/seq_file.h>
- #include <linux/scatterlist.h>
-+#include <linux/random.h>
- #include <linux/tpm.h>
- #include <linux/tpm_command.h>
- #include <crypto/akcipher.h>
-@@ -53,12 +54,7 @@ static int tpm_loadkey2(struct tpm_buf *tb,
- 		return ret;
- 	}
- 
--	/* generate odd nonce */
--	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
--	if (ret < 0) {
--		pr_info("tpm_get_random failed (%d)\n", ret);
--		return ret;
--	}
-+	get_random_bytes(nonceodd, TPM_NONCE_SIZE);
- 
- 	/* calculate authorization HMAC value */
- 	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-@@ -139,12 +135,7 @@ static int tpm_unbind(struct tpm_buf *tb,
- 		return ret;
- 	}
- 
--	/* generate odd nonce */
--	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
--	if (ret < 0) {
--		pr_info("tpm_get_random failed (%d)\n", ret);
--		return ret;
--	}
-+	get_random_bytes(nonceodd, TPM_NONCE_SIZE);
- 
- 	/* calculate authorization HMAC value */
- 	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
-@@ -225,12 +216,7 @@ static int tpm_sign(struct tpm_buf *tb,
- 		return ret;
- 	}
- 
--	/* generate odd nonce */
--	ret = tpm_get_random(NULL, nonceodd, TPM_NONCE_SIZE);
--	if (ret < 0) {
--		pr_info("tpm_get_random failed (%d)\n", ret);
--		return ret;
--	}
-+	get_random_bytes(nonceodd, TPM_NONCE_SIZE);
- 
- 	/* calculate authorization HMAC value */
- 	ret = TSS_authhmac(authdata, keyauth, SHA1_DIGEST_SIZE, enonce,
--- 
-2.20.1
+ include/uapi/linux/watch_queue.h |   55 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+ create mode 100644 include/uapi/linux/watch_queue.h
+
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+new file mode 100644
+index 000000000000..d90c5488d666
+--- /dev/null
++++ b/include/uapi/linux/watch_queue.h
+@@ -0,0 +1,55 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++#ifndef _UAPI_LINUX_WATCH_QUEUE_H
++#define _UAPI_LINUX_WATCH_QUEUE_H
++
++#include <linux/types.h>
++
++enum watch_notification_type {
++	WATCH_TYPE_META		= 0,	/* Special record */
++	WATCH_TYPE___NR		= 1
++};
++
++enum watch_meta_notification_subtype {
++	WATCH_META_REMOVAL_NOTIFICATION	= 0,	/* Watched object was removed */
++	WATCH_META_LOSS_NOTIFICATION	= 1,	/* Data loss occurred */
++};
++
++/*
++ * Notification record header.  This is aligned to 64-bits so that subclasses
++ * can contain __u64 fields.
++ */
++struct watch_notification {
++	__u32			type:24;	/* enum watch_notification_type */
++	__u32			subtype:8;	/* Type-specific subtype (filterable) */
++	__u32			info;
++#define WATCH_INFO_LENGTH	0x0000007f	/* Length of record / sizeof(watch_notification) */
++#define WATCH_INFO_LENGTH__SHIFT 0
++#define WATCH_INFO_ID		0x0000ff00	/* ID of watchpoint, if type-appropriate */
++#define WATCH_INFO_ID__SHIFT	8
++#define WATCH_INFO_TYPE_INFO	0xffff0000	/* Type-specific info */
++#define WATCH_INFO_TYPE_INFO__SHIFT 16
++#define WATCH_INFO_FLAG_0	0x00010000	/* Type-specific info, flag bit 0 */
++#define WATCH_INFO_FLAG_1	0x00020000	/* ... */
++#define WATCH_INFO_FLAG_2	0x00040000
++#define WATCH_INFO_FLAG_3	0x00080000
++#define WATCH_INFO_FLAG_4	0x00100000
++#define WATCH_INFO_FLAG_5	0x00200000
++#define WATCH_INFO_FLAG_6	0x00400000
++#define WATCH_INFO_FLAG_7	0x00800000
++};
++
++
++/*
++ * Extended watch removal notification.  This is used optionally if the type
++ * wants to indicate an identifier for the object being watched, if there is
++ * such.  This can be distinguished by the length.
++ *
++ * type -> WATCH_TYPE_META
++ * subtype -> WATCH_META_REMOVAL_NOTIFICATION
++ */
++struct watch_notification_removal {
++	struct watch_notification watch;
++	__u64	id;		/* Type-dependent identifier */
++};
++
++#endif /* _UAPI_LINUX_WATCH_QUEUE_H */
