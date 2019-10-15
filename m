@@ -1,51 +1,90 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 23 Oct 2019 00:18:13 +0000
-Subject: [PATCH v1 1/6] KEYS: Helper function to check if the given keyring is builtin_trusted_keys
-Message-Id: <20191023001818.3684-2-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 15 Oct 2019 21:50:02 +0000
+Subject: [RFC PATCH 15/21] pipe: Allow buffers to be marked read-whole-or-error for notifications
+Message-Id: <157117620241.15019.14840217828666282360.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191023001818.3684-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191023001818.3684-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
-Cc: nramas@linux.microsoft.com
+References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Helper function to check if the given keyring is
-the builtin_trusted_keys keyring.
+Allow a buffer to be marked such that read() must return the entire buffer
+in one go or return ENOBUFS.  Multiple buffers can be amalgamated into a
+single read, but a short read will occur if the next "whole" buffer won't
+fit.
 
-This function is used by ima to determine if a key is
-added to the builtin_trusted_keys keyring.
+This is useful for watch queue notifications to make sure we don't split a
+notification across multiple reads, especially given that we need to
+fabricate an overrun record under some circumstances - and that isn't in
+the buffers.
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- certs/system_keyring.c        | 5 +++++
- include/keys/system_keyring.h | 2 ++
- 2 files changed, 7 insertions(+)
 
-diff --git a/certs/system_keyring.c b/certs/system_keyring.c
-index 1eba08a1af82..5533c7f92fef 100644
---- a/certs/system_keyring.c
-+++ b/certs/system_keyring.c
-@@ -283,3 +283,8 @@ void __init set_platform_trusted_keys(struct key *keyring)
- 	platform_trusted_keys = keyring;
- }
- #endif
-+
-+inline bool is_builtin_trusted_keyring(struct key *keyring)
-+{
-+	return (keyring = builtin_trusted_keys);
-+}
-diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-index c1a96fdf598b..2bc0aaa07f05 100644
---- a/include/keys/system_keyring.h
-+++ b/include/keys/system_keyring.h
-@@ -66,4 +66,6 @@ static inline void set_platform_trusted_keys(struct key *keyring)
- }
- #endif
+ fs/pipe.c                        |    8 +++++++-
+ include/linux/pipe_fs_i.h        |    1 +
+ kernel/watch_queue.c             |    2 +-
+ samples/watch_queue/watch_test.c |    2 +-
+ 4 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/fs/pipe.c b/fs/pipe.c
+index d385e3a5492e..f4c9d5480636 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -297,8 +297,14 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+ 			size_t written;
+ 			int error;
  
-+extern bool is_builtin_trusted_keyring(struct key *keyring);
-+
- #endif /* _KEYS_SYSTEM_KEYRING_H */
--- 
-2.17.1
+-			if (chars > total_len)
++			if (chars > total_len) {
++				if (buf->flags & PIPE_BUF_FLAG_WHOLE) {
++					if (ret = 0)
++						ret = -ENOBUFS;
++					break;
++				}
+ 				chars = total_len;
++			}
+ 
+ 			error = pipe_buf_confirm(pipe, buf);
+ 			if (error) {
+diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
+index e42a98d98c3d..58583ba056e8 100644
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -8,6 +8,7 @@
+ #define PIPE_BUF_FLAG_ATOMIC	0x02	/* was atomically mapped */
+ #define PIPE_BUF_FLAG_GIFT	0x04	/* page is a gift */
+ #define PIPE_BUF_FLAG_PACKET	0x08	/* read() as a packet */
++#define PIPE_BUF_FLAG_WHOLE	0x10	/* read() must return entire buffer or error */
+ 
+ /**
+  *	struct pipe_buffer - a linux kernel pipe buffer
+diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
+index 40dae7dda6d6..f1d78da5309d 100644
+--- a/kernel/watch_queue.c
++++ b/kernel/watch_queue.c
+@@ -115,7 +115,7 @@ static bool post_one_notification(struct watch_queue *wqueue,
+ 	buf->ops = &watch_queue_pipe_buf_ops;
+ 	buf->offset = offset;
+ 	buf->len = len;
+-	buf->flags = 0;
++	buf->flags = PIPE_BUF_FLAG_WHOLE;
+ 	pipe_commit_write(pipe, head + 1);
+ 
+ 	if (!test_and_clear_bit(note, wqueue->notes_bitmap)) {
+diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
+index 19b82e9b0853..363f1d77386f 100644
+--- a/samples/watch_queue/watch_test.c
++++ b/samples/watch_queue/watch_test.c
+@@ -64,7 +64,7 @@ static void saw_key_change(struct watch_notification *n, size_t len)
+  */
+ static void consumer(int fd)
+ {
+-	unsigned char buffer[4096], *p, *end;
++	unsigned char buffer[433], *p, *end;
+ 	union {
+ 		struct watch_notification n;
+ 		unsigned char buf1[128];
