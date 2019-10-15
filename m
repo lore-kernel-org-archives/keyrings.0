@@ -1,252 +1,154 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 23 Oct 2019 00:18:16 +0000
-Subject: [PATCH v1 4/6] KEYS: ima functions to queue and dequeue keys to measure
-Message-Id: <20191023001818.3684-5-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 15 Oct 2019 21:50:58 +0000
+Subject: [RFC PATCH 21/21] smack: Implement the watch_key and post_notification hooks
+Message-Id: <157117625816.15019.16199730634258730255.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191023001818.3684-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191023001818.3684-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
-Cc: nramas@linux.microsoft.com
+References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Implement functions to queue a key for measurement if ima is not yet
-initialized. And, when ima initialization is complete, process
-any queued key measurement requests.
+Implement the watch_key security hook in Smack to make sure that a key
+grants the caller Read permission in order to set a watch on a key.
 
-This change set implements the functions to queue and de-queue requests.
-The change to actually measure the keys is in another patch.
+Also implement the post_notification security hook to make sure that the
+notification source is granted Write permission by the watch queue.
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+For the moment, the watch_devices security hook is left unimplemented as
+it's not obvious what the object should be since the queue is global and
+didn't previously exist.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Casey Schaufler <casey@schaufler-ca.com>
 ---
- security/integrity/ima/ima.h       |  15 ++++
- security/integrity/ima/ima_init.c  |  11 ++-
- security/integrity/ima/ima_queue.c | 128 +++++++++++++++++++++++++++++
- 3 files changed, 153 insertions(+), 1 deletion(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 0d2908036882..7e4d4169798d 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -21,6 +21,7 @@
- #include <linux/tpm.h>
- #include <linux/audit.h>
- #include <crypto/hash_info.h>
-+#include <keys/asymmetric-type.h>
+ include/linux/lsm_audit.h  |    1 +
+ security/smack/smack_lsm.c |   82 +++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 82 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/lsm_audit.h b/include/linux/lsm_audit.h
+index 915330abf6e5..734d67889826 100644
+--- a/include/linux/lsm_audit.h
++++ b/include/linux/lsm_audit.h
+@@ -74,6 +74,7 @@ struct common_audit_data {
+ #define LSM_AUDIT_DATA_FILE	12
+ #define LSM_AUDIT_DATA_IBPKEY	13
+ #define LSM_AUDIT_DATA_IBENDPORT 14
++#define LSM_AUDIT_DATA_NOTIFICATION 15
+ 	union 	{
+ 		struct path path;
+ 		struct dentry *dentry;
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index ecea41ce919b..71b6f37d49c1 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -4273,7 +4273,7 @@ static int smack_key_permission(key_ref_t key_ref,
+ 	if (tkp = NULL)
+ 		return -EACCES;
  
- #include "../integrity.h"
+-	if (smack_privileged_cred(CAP_MAC_OVERRIDE, cred))
++	if (smack_privileged(CAP_MAC_OVERRIDE))
+ 		return 0;
  
-@@ -52,6 +53,7 @@ extern int ima_policy_flag;
- extern int ima_hash_algo;
- extern int ima_appraise;
- extern struct tpm_chip *ima_tpm_chip;
-+extern bool ima_initialized;
- 
- /* IMA event related data */
- struct ima_event_data {
-@@ -158,6 +160,8 @@ void ima_init_template_list(void);
- int __init ima_init_digests(void);
- int ima_lsm_policy_change(struct notifier_block *nb, unsigned long event,
- 			  void *lsm_data);
-+int ima_measure_key(struct key *keyring, struct key *key);
-+void ima_measure_queued_trusted_keys(void);
- 
- /*
-  * used to protect h_table and sha_table
-@@ -197,6 +201,17 @@ enum ima_hooks {
- 	__ima_hooks(__ima_hook_enumify)
- };
- 
-+/*
-+ * To track trusted keys that need to be measured when IMA is initialized.
-+ */
-+struct ima_trusted_key_entry {
-+	struct list_head list;
-+	void *public_key;
-+	u32  public_key_len;
-+	char *key_description;
-+	enum ima_hooks func;
-+};
-+
- /* LIM API function definitions */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 5d55ade5f3b9..32b9147fe410 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -23,6 +23,7 @@
- /* name for boot aggregate entry */
- static const char boot_aggregate_name[] = "boot_aggregate";
- struct tpm_chip *ima_tpm_chip;
-+bool ima_initialized;
- 
- /* Add the boot aggregate to the IMA measurement list and extend
-  * the PCR register.
-@@ -131,5 +132,13 @@ int __init ima_init(void)
- 
- 	ima_init_policy();
- 
--	return ima_fs_init();
-+	rc = ima_fs_init();
-+	if (rc != 0)
-+		return rc;
-+
-+	ima_initialized = true;
-+
-+	ima_measure_queued_trusted_keys();
-+
-+	return 0;
+ #ifdef CONFIG_AUDIT
+@@ -4319,8 +4319,81 @@ static int smack_key_getsecurity(struct key *key, char **_buffer)
+ 	return length;
  }
-diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
-index 1ce8b1701566..a262e289615b 100644
---- a/security/integrity/ima/ima_queue.c
-+++ b/security/integrity/ima/ima_queue.c
-@@ -19,6 +19,8 @@
  
- #include <linux/rculist.h>
- #include <linux/slab.h>
-+#include <crypto/public_key.h>
-+#include <keys/system_keyring.h>
- #include "ima.h"
- 
- #define AUDIT_CAUSE_LEN_MAX 32
-@@ -46,6 +48,13 @@ struct ima_h_table ima_htable = {
-  */
- static DEFINE_MUTEX(ima_extend_list_mutex);
- 
-+/*
-+ * Used to synchronize access to the list of trusted keys (ima_trusted_keys)
-+ * that need to be measured when IMA is initialized.
-+ */
-+static DEFINE_MUTEX(ima_trusted_keys_mutex);
-+static LIST_HEAD(ima_trusted_keys);
 +
- /* lookup up the digest value in the hash table, and return the entry */
- static struct ima_queue_entry *ima_lookup_digest_entry(u8 *digest_value,
- 						       int pcr)
-@@ -232,3 +241,122 @@ int __init ima_init_digests(void)
- 
- 	return 0;
- }
-+
-+/*
-+ * Maps the given keyring to a IMA Hook.
-+ * @keyring: A keyring to which a key maybe linked to.
++#ifdef CONFIG_KEY_NOTIFICATIONS
++/**
++ * smack_watch_key - Smack access to watch a key for notifications.
++ * @key: The key to be watched
 + *
-+ * This function currently handles only builtin_trusted_keys.
-+ * To handle more keyrings, this function, ima hook and
-+ * ima policy handler need to be updated.
++ * Return 0 if the @watch->cred has permission to read from the key object and
++ * an error otherwise.
 + */
-+static enum ima_hooks keyring_policy_map(struct key *keyring)
++static int smack_watch_key(struct key *key)
 +{
-+	enum ima_hooks func = NONE;
++	struct smk_audit_info ad;
++	struct smack_known *tkp = smk_of_current();
++	int rc;
 +
-+	if (is_builtin_trusted_keyring(keyring))
-+		func = BUILTIN_TRUSTED_KEYS;
++	if (key = NULL)
++		return -EINVAL;
++	/*
++	 * If the key hasn't been initialized give it access so that
++	 * it may do so.
++	 */
++	if (key->security = NULL)
++		return 0;
++	/*
++	 * This should not occur
++	 */
++	if (tkp = NULL)
++		return -EACCES;
 +
-+	return func;
-+}
-+
-+static void ima_free_trusted_key_entry(struct ima_trusted_key_entry *entry)
-+{
-+	if (entry != NULL) {
-+		if (entry->public_key != NULL)
-+			kzfree(entry->public_key);
-+		if (entry->key_description != NULL)
-+			kzfree(entry->key_description);
-+		kzfree(entry);
-+	}
-+}
-+
-+static struct ima_trusted_key_entry *ima_alloc_trusted_queue_entry(
-+	struct key *key,
-+	enum ima_hooks func)
-+{
-+	int rc = 0;
-+	const struct public_key *pk;
-+	size_t key_description_len;
-+	struct ima_trusted_key_entry *entry = NULL;
-+
-+	pk = key->payload.data[asym_crypto];
-+	key_description_len = strlen(key->description) + 1;
-+	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-+	if (entry != NULL) {
-+		entry->public_key = kzalloc(pk->keylen, GFP_KERNEL);
-+		entry->key_description +			kzalloc(key_description_len, GFP_KERNEL);
-+	}
-+
-+	if ((entry = NULL) || (entry->public_key = NULL) ||
-+	    (entry->key_description = NULL)) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	strcpy(entry->key_description, key->description);
-+	memcpy(entry->public_key, pk->key, pk->keylen);
-+	entry->public_key_len = pk->keylen;
-+	entry->func = func;
-+	rc = 0;
-+
-+out:
-+	if (rc) {
-+		ima_free_trusted_key_entry(entry);
-+		entry = NULL;
-+	}
-+
-+	return entry;
-+}
-+
-+/*
-+ * ima_measure_key
-+ *     @keyring the keyring to which the key is linked to.
-+ *     @key the key being created or updated
-+ * Measure keys created or updated in the system
-+ *
-+ * On success return 0.
-+ * Return appropriate error code on error
-+ */
-+int ima_measure_key(struct key *keyring, struct key *key)
-+{
-+	int rc = 0;
-+	struct ima_trusted_key_entry *entry = NULL;
-+	enum ima_hooks func;
-+	bool queued = false;
-+
-+	func = keyring_policy_map(keyring);
-+	if (func = NONE)
++	if (smack_privileged_cred(CAP_MAC_OVERRIDE, current_cred()))
 +		return 0;
 +
-+	mutex_lock(&ima_trusted_keys_mutex);
-+
-+	if (!ima_initialized) {
-+		entry = ima_alloc_trusted_queue_entry(key, func);
-+		if (entry != NULL) {
-+			INIT_LIST_HEAD(&entry->list);
-+			list_add_tail(&entry->list, &ima_trusted_keys);
-+			queued = true;
-+		} else
-+			rc = -ENOMEM;
-+	}
-+
-+	mutex_unlock(&ima_trusted_keys_mutex);
-+
++#ifdef CONFIG_AUDIT
++	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_KEY);
++	ad.a.u.key_struct.key = key->serial;
++	ad.a.u.key_struct.key_desc = key->description;
++#endif
++	rc = smk_access(tkp, key->security, MAY_READ, &ad);
++	rc = smk_bu_note("key watch", tkp, key->security, MAY_READ, rc);
 +	return rc;
 +}
-+
-+void ima_measure_queued_trusted_keys(void)
++#endif /* CONFIG_KEY_NOTIFICATIONS */
+ #endif /* CONFIG_KEYS */
+ 
++#ifdef CONFIG_WATCH_QUEUE
++/**
++ * smack_post_notification - Smack access to post a notification to a queue
++ * @w_cred: The credentials of the watcher.
++ * @cred: The credentials of the event source (may be NULL).
++ * @n: The notification message to be posted.
++ */
++static int smack_post_notification(const struct cred *w_cred,
++				   const struct cred *cred,
++				   struct watch_notification *n)
 +{
-+	struct ima_trusted_key_entry *entry, *tmp;
++	struct smk_audit_info ad;
++	struct smack_known *subj, *obj;
++	int rc;
 +
-+	mutex_lock(&ima_trusted_keys_mutex);
++	/* Always let maintenance notifications through. */
++	if (n->type = WATCH_TYPE_META)
++		return 0;
 +
-+	list_for_each_entry_safe(entry, tmp, &ima_trusted_keys, list) {
-+		list_del(&entry->list);
-+		ima_free_trusted_key_entry(entry);
-+	}
++	if (!cred)
++		return 0;
++	subj = smk_of_task(smack_cred(cred));
++	obj = smk_of_task(smack_cred(w_cred));
 +
-+	mutex_unlock(&ima_trusted_keys_mutex);
++	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_NOTIFICATION);
++	rc = smk_access(subj, obj, MAY_WRITE, &ad);
++	rc = smk_bu_note("notification", subj, obj, MAY_WRITE, rc);
++	return rc;
 +}
--- 
-2.17.1
++#endif /* CONFIG_WATCH_QUEUE */
++
+ /*
+  * Smack Audit hooks
+  *
+@@ -4709,8 +4782,15 @@ static struct security_hook_list smack_hooks[] __lsm_ro_after_init = {
+ 	LSM_HOOK_INIT(key_free, smack_key_free),
+ 	LSM_HOOK_INIT(key_permission, smack_key_permission),
+ 	LSM_HOOK_INIT(key_getsecurity, smack_key_getsecurity),
++#ifdef CONFIG_KEY_NOTIFICATIONS
++	LSM_HOOK_INIT(watch_key, smack_watch_key),
++#endif
+ #endif /* CONFIG_KEYS */
+ 
++#ifdef CONFIG_WATCH_QUEUE
++	LSM_HOOK_INIT(post_notification, smack_post_notification),
++#endif
++
+  /* Audit hooks */
+ #ifdef CONFIG_AUDIT
+ 	LSM_HOOK_INIT(audit_rule_init, smack_audit_rule_init),
