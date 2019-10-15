@@ -1,26 +1,55 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 31 Oct 2019 13:23:24 +0000
-Subject: Re: [PATCH] keyctl: try to wipe keys from memory after use
-Message-Id: <23324.1572528204@warthog.procyon.org.uk>
+Date: Tue, 15 Oct 2019 21:48:07 +0000
+Subject: [RFC PATCH 02/21] Add a prelocked wake-up
+Message-Id: <157117608708.15019.1998141309054662114.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191029143451.327761-1-mail@maciej.szmigiero.name>
-In-Reply-To: <20191029143451.327761-1-mail@maciej.szmigiero.name>
-To: keyrings@vger.kernel.org
+References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Maciej S. Szmigiero <mail@maciej.szmigiero.name> wrote:
+Add a wakeup call for a case whereby the caller already has the waitqueue
+spinlock held.  This can be used by pipes to alter the ring buffer indices
+under the spinlock.
 
-> The key being added or updated likely contains secrets so it would be best
-> not to leave it in memory or in a core dump when no longer needed.
-> 
-> Glibc 2.25+ provides the explicit_bzero() function that can be used for
-> this purpose, let's utilize it if it is present.
-> 
-> Tested by redefining exit(n) to abort() and inspecting the resulting core
-> file for key data.
-> 
-> Signed-off-by: Maciej S. Szmigiero <mail@maciej.szmigiero.name>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Applied.
+ include/linux/wait.h |    2 ++
+ kernel/sched/wait.c  |    7 +++++++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 3eb7cae8206c..d511b298a20c 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -229,6 +229,8 @@ void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode, int nr);
+ 	__wake_up(x, TASK_INTERRUPTIBLE, 1, poll_to_key(m))
+ #define wake_up_interruptible_sync_poll(x, m)					\
+ 	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, poll_to_key(m))
++void prelocked_wake_up_interruptible_sync_poll(struct wait_queue_head *wq_head,
++					       __poll_t mask);
+ 
+ #define ___wait_cond_timeout(condition)						\
+ ({										\
+diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+index c1e566a114ca..43fbbbe9af27 100644
+--- a/kernel/sched/wait.c
++++ b/kernel/sched/wait.c
+@@ -126,6 +126,13 @@ static void __wake_up_common_lock(struct wait_queue_head *wq_head, unsigned int
+ 	} while (bookmark.flags & WQ_FLAG_BOOKMARK);
+ }
+ 
++void prelocked_wake_up_interruptible_sync_poll(struct wait_queue_head *wq_head,
++					       __poll_t mask)
++{
++	__wake_up_common(wq_head, TASK_INTERRUPTIBLE, 1, WF_SYNC,
++			 poll_to_key(mask), NULL);
++}
++
+ /**
+  * __wake_up - wake up threads blocked on a waitqueue.
+  * @wq_head: the waitqueue
