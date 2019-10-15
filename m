@@ -1,42 +1,60 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Thu, 31 Oct 2019 14:10:43 +0000
-Subject: [Patch v3 7/7] MAINTAINERS: Add entry for TEE based Trusted Keys
-Message-Id: <1572530323-14802-8-git-send-email-sumit.garg@linaro.org>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 15 Oct 2019 21:47:58 +0000
+Subject: [RFC PATCH 01/21] pipe: Reduce #inclusion of pipe_fs_i.h
+Message-Id: <157117607843.15019.8325197788819637475.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
-To: jens.wiklander@linaro.org, jarkko.sakkinen@linux.intel.com, dhowells@redhat.com
-Cc: Sumit Garg <sumit.garg@linaro.org>, daniel.thompson@linaro.org, janne.karhunen@gmail.com, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, stuart.yoder@arm.com, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add MAINTAINERS entry for TEE based Trusted Keys framework.
+Remove some #inclusions of linux/pipe_fs_i.h that don't seem to be
+necessary any more.
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- MAINTAINERS | 9 +++++++++
- 1 file changed, 9 insertions(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c6c34d0..08d0282 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9059,6 +9059,15 @@ F:	include/keys/trusted-type.h
- F:	security/keys/trusted.c
- F:	include/keys/trusted.h
- 
-+KEYS-TEE-TRUSTED
-+M:	Sumit Garg <sumit.garg@linaro.org>
-+L:	linux-integrity@vger.kernel.org
-+L:	keyrings@vger.kernel.org
-+S:	Supported
-+F:	Documentation/security/keys/tee-trusted.rst
-+F:	include/keys/trusted_tee.h
-+F:	security/keys/trusted-keys/trusted_tee.c
-+
- KEYS/KEYRINGS:
- M:	David Howells <dhowells@redhat.com>
- M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
--- 
-2.7.4
+ fs/exec.c                  |    1 -
+ fs/ocfs2/aops.c            |    1 -
+ security/smack/smack_lsm.c |    1 -
+ 3 files changed, 3 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 555e93c7dec8..57bc7ef8d31b 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -59,7 +59,6 @@
+ #include <linux/kmod.h>
+ #include <linux/fsnotify.h>
+ #include <linux/fs_struct.h>
+-#include <linux/pipe_fs_i.h>
+ #include <linux/oom.h>
+ #include <linux/compat.h>
+ #include <linux/vmalloc.h>
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 8de1c9d644f6..c50ac6b7415b 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -11,7 +11,6 @@
+ #include <linux/pagemap.h>
+ #include <asm/byteorder.h>
+ #include <linux/swap.h>
+-#include <linux/pipe_fs_i.h>
+ #include <linux/mpage.h>
+ #include <linux/quotaops.h>
+ #include <linux/blkdev.h>
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index abeb09c30633..ecea41ce919b 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -28,7 +28,6 @@
+ #include <linux/icmpv6.h>
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
+-#include <linux/pipe_fs_i.h>
+ #include <net/cipso_ipv4.h>
+ #include <net/ip.h>
+ #include <net/ipv6.h>
