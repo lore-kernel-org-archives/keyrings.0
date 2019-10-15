@@ -1,42 +1,24 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 15 Oct 2019 21:49:01 +0000
-Subject: [RFC PATCH 08/21] pipe: Check for ring full inside of the spinlock in pipe_write()
-Message-Id: <157117614109.15019.15677943675625422728.stgit@warthog.procyon.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 15 Oct 2019 22:20:47 +0000
+Subject: Re: [RFC PATCH 08/21] pipe: Check for ring full inside of the spinlock in pipe_write()
+Message-Id: <CAHk-=wivjB8Va7K_eK_fx+Z1vpbJ82DW=eVfyP33ZDusaK44EA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+ <157117614109.15019.15677943675625422728.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157117614109.15019.15677943675625422728.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-Make pipe_write() check to see if the ring has become full between it
-taking the pipe mutex, checking the ring status and then taking the
-spinlock.
+On Tue, Oct 15, 2019 at 2:49 PM David Howells <dhowells@redhat.com> wrote:
+>
+> +                       if (head - pipe->tail = buffers) {
 
-This can happen if a notification is written into the pipe as that happens
-without the pipe mutex.
+Can we just have helper inline functions for these things?
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+You describe them in the commit message of 03/21 (good), but it would
+be even better if the code was just self-describing..
 
- fs/pipe.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/fs/pipe.c b/fs/pipe.c
-index 289a887f6b5b..0255a5ca5097 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -462,6 +462,11 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 			spin_lock_irq(&pipe->wait.lock);
- 
- 			head = pipe->head;
-+			if (head - pipe->tail = buffers) {
-+				spin_unlock_irq(&pipe->wait.lock);
-+				continue;
-+			}
-+
- 			pipe_commit_write(pipe, head + 1);
- 
- 			/* Always wake up, even if the copy fails. Otherwise
+           Linus
