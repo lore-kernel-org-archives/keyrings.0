@@ -1,33 +1,66 @@
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Oct 2019 15:31:48 +0000
+From: Tim Chen <tim.c.chen@linux.intel.com>
+Date: Wed, 16 Oct 2019 17:02:24 +0000
 Subject: Re: [RFC PATCH 02/21] Add a prelocked wake-up
-Message-Id: <CAHk-=wgMZR8TWpmRBPytGmWJX=C=-bCb5D2PsCx0LUNemAPexA@mail.gmail.com>
+Message-Id: <533ca3c5-1592-e59b-eafe-bc4a352a442d@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
  <157117608708.15019.1998141309054662114.stgit@warthog.procyon.org.uk>
- <CAHk-=whiz1sHXu8SVZKEC2dup=r5JMrftPtEt6ff9Ea8dyH8yQ@mail.gmail.com> <6900.1571235985@warthog.procyon.org.uk>
-In-Reply-To: <6900.1571235985@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Kan Liang <kan.liang@intel.com>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+ <CAHk-=whiz1sHXu8SVZKEC2dup=r5JMrftPtEt6ff9Ea8dyH8yQ@mail.gmail.com>
+In-Reply-To: <CAHk-=whiz1sHXu8SVZKEC2dup=r5JMrftPtEt6ff9Ea8dyH8yQ@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>, David Howells <dhowells@redhat.com>, Kan Liang <kan.liang@intel.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-On Wed, Oct 16, 2019 at 7:26 AM David Howells <dhowells@redhat.com> wrote:
->
-> Btw, is there any point in __wake_up_sync_key() taking a nr_exclusive
-> argument since it clears WF_SYNC if nr_exclusive != 1 and doesn't make sense
-> to be >1 anyway.
+On 10/15/19 3:14 PM, Linus Torvalds wrote:
+> On Tue, Oct 15, 2019 at 2:48 PM David Howells <dhowells@redhat.com> wrote:
+>>
+>> Add a wakeup call for a case whereby the caller already has the waitqueue
+>> spinlock held.
+> 
+> That naming is crazy.
+> 
+> We already have helper functions like this, and they are just called
+> "wake_up_locked()".
+> 
+> So the "prelocked" naming is just odd. Make it be
+> wake_up_interruptible_sync_poll_locked().
+> 
+> The helper function should likely be
+> 
+>   void __wake_up_locked_sync_key(struct wait_queue_head *wq_head,
+> unsigned int mode, void *key)
+>   {
+>         __wake_up_common(wq_head, mode, 1, WF_SYNC, key, NULL);
+>   }
+>   EXPORT_SYMBOL_GPL(__wake_up_locked_sync_key);
+> 
+> to match the other naming patterns there.
+> 
+> [ Unrelated ]
+> 
+> Looking at that mess of functions, I also wonder if we should try to
+> just remove the bookmark code again. It was cute, and it was useful,
+> but I think the problem with the page lock list may have been fixed by
+> commit 9a1ea439b16b ("mm: put_and_wait_on_page_locked() while page is
+> migrated") which avoids the retry condition with
+> migrate_page_move_mapping().
+> 
+> Tim/Kan? Do you have the problematic load still?
+> 
 
-Ack, looks sane to me.
+Unfortunately, we do not have ready access to that problematic load
+which was run by a customer on 8 socket system.  They were not
+willing to give the workload to us, and have not responded to my
+request to rerun their load with commit 9a1ea439b16b.
 
-We have _very_ few users of nr_exclusive. I wonder if it's even worth
-having at all, but it's definitely not worth it here.
+The commit greatly reduced migration failures with concurrent page faulting.
+And successful migrations could have prevented the big
+pile up of waiters faulting and waiting on the page, which was the
+problem the bookmark code was trying to solve.
 
-I'd love for nr_exclusive to go away and be replaced by WF_ALL
-instead. Right now it looks like there is one SGI driver that uses it,
-and the sbitmap code. That was all I could find.
+So I also tend to think that the problem should have been resolved.
+But unfortunately I don't have a ready workload to confirm.
 
-Oh well. You removing one case is at last a small amount of progress.
-
-         Linus
+Tim
