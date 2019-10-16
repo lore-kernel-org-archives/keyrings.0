@@ -1,108 +1,519 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 15 Oct 2019 21:49:09 +0000
-Subject: [RFC PATCH 09/21] uapi: General notification queue definitions
-Message-Id: <157117614968.15019.16151148059437139065.stgit@warthog.procyon.org.uk>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Wed, 16 Oct 2019 05:26:53 +0000
+Subject: [Patch v8 2/4] KEYS: Use common tpm_buf for trusted and asymmetric keys
+Message-Id: <1571202895-32651-3-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1571202895-32651-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1571202895-32651-1-git-send-email-sumit.garg@linaro.org>
+To: jarkko.sakkinen@linux.intel.com, dhowells@redhat.com, peterhuewe@gmx.de
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, herbert@gondor.apana.org.au, davem@davemloft.net, jgg@ziepe.ca, arnd@arndb.de, gregkh@linuxfoundation.org, jejb@linux.ibm.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, jsnitsel@redhat.com, linux-kernel@vger.kernel.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>
 
-Add UAPI definitions for the general notification queue, including the
-following pieces:
+Switch to utilize common heap based tpm_buf code for TPM based trusted
+and asymmetric keys rather than using stack based tpm1_buf code. Also,
+remove tpm1_buf code.
 
- (*) struct watch_notification.
-
-     This is the metadata header for notification messages.  It includes a
-     type and subtype that indicate the source of the message
-     (eg. WATCH_TYPE_MOUNT_NOTIFY) and the kind of the message
-     (eg. NOTIFY_MOUNT_NEW_MOUNT).
-
-     The header also contains an information field that conveys the
-     following information:
-
-	- WATCH_INFO_LENGTH.  The size of the entry (entries are variable
-          length).
-
-	- WATCH_INFO_ID.  The watch ID specified when the watchpoint was
-          set.
-
-	- WATCH_INFO_TYPE_INFO.  (Sub)type-specific information.
-
-	- WATCH_INFO_FLAG_*.  Flag bits overlain on the type-specific
-          information.  For use by the type.
-
-     All the information in the header can be used in filtering messages at
-     the point of writing into the buffer.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Reviewed-by: Jerry Snitselaar <jsnitsel@redhat.com>
 ---
+ crypto/asymmetric_keys/asym_tpm.c | 107 ++++++++++++++++----------------------
+ include/keys/trusted.h            |  37 +------------
+ security/keys/trusted.c           |  98 +++++++++++++++-------------------
+ 3 files changed, 89 insertions(+), 153 deletions(-)
 
- include/uapi/linux/watch_queue.h |   55 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
- create mode 100644 include/uapi/linux/watch_queue.h
-
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-new file mode 100644
-index 000000000000..d90c5488d666
---- /dev/null
-+++ b/include/uapi/linux/watch_queue.h
-@@ -0,0 +1,55 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-+#ifndef _UAPI_LINUX_WATCH_QUEUE_H
-+#define _UAPI_LINUX_WATCH_QUEUE_H
-+
-+#include <linux/types.h>
-+
-+enum watch_notification_type {
-+	WATCH_TYPE_META		= 0,	/* Special record */
-+	WATCH_TYPE___NR		= 1
-+};
-+
-+enum watch_meta_notification_subtype {
-+	WATCH_META_REMOVAL_NOTIFICATION	= 0,	/* Watched object was removed */
-+	WATCH_META_LOSS_NOTIFICATION	= 1,	/* Data loss occurred */
-+};
-+
-+/*
-+ * Notification record header.  This is aligned to 64-bits so that subclasses
-+ * can contain __u64 fields.
-+ */
-+struct watch_notification {
-+	__u32			type:24;	/* enum watch_notification_type */
-+	__u32			subtype:8;	/* Type-specific subtype (filterable) */
-+	__u32			info;
-+#define WATCH_INFO_LENGTH	0x0000007f	/* Length of record / sizeof(watch_notification) */
-+#define WATCH_INFO_LENGTH__SHIFT 0
-+#define WATCH_INFO_ID		0x0000ff00	/* ID of watchpoint, if type-appropriate */
-+#define WATCH_INFO_ID__SHIFT	8
-+#define WATCH_INFO_TYPE_INFO	0xffff0000	/* Type-specific info */
-+#define WATCH_INFO_TYPE_INFO__SHIFT 16
-+#define WATCH_INFO_FLAG_0	0x00010000	/* Type-specific info, flag bit 0 */
-+#define WATCH_INFO_FLAG_1	0x00020000	/* ... */
-+#define WATCH_INFO_FLAG_2	0x00040000
-+#define WATCH_INFO_FLAG_3	0x00080000
-+#define WATCH_INFO_FLAG_4	0x00100000
-+#define WATCH_INFO_FLAG_5	0x00200000
-+#define WATCH_INFO_FLAG_6	0x00400000
-+#define WATCH_INFO_FLAG_7	0x00800000
-+};
-+
-+
-+/*
-+ * Extended watch removal notification.  This is used optionally if the type
-+ * wants to indicate an identifier for the object being watched, if there is
-+ * such.  This can be distinguished by the length.
-+ *
-+ * type -> WATCH_TYPE_META
-+ * subtype -> WATCH_META_REMOVAL_NOTIFICATION
-+ */
-+struct watch_notification_removal {
-+	struct watch_notification watch;
-+	__u64	id;		/* Type-dependent identifier */
-+};
-+
-+#endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+diff --git a/crypto/asymmetric_keys/asym_tpm.c b/crypto/asymmetric_keys/asym_tpm.c
+index b88968d..a2b2a61 100644
+--- a/crypto/asymmetric_keys/asym_tpm.c
++++ b/crypto/asymmetric_keys/asym_tpm.c
+@@ -21,17 +21,13 @@
+ #define TPM_ORD_LOADKEY2	65
+ #define TPM_ORD_UNBIND		30
+ #define TPM_ORD_SIGN		60
+-#define TPM_LOADKEY2_SIZE		59
+-#define TPM_FLUSHSPECIFIC_SIZE		18
+-#define TPM_UNBIND_SIZE			63
+-#define TPM_SIGN_SIZE			63
+ 
+ #define TPM_RT_KEY                      0x00000001
+ 
+ /*
+  * Load a TPM key from the blob provided by userspace
+  */
+-static int tpm_loadkey2(struct tpm1_buf *tb,
++static int tpm_loadkey2(struct tpm_buf *tb,
+ 			uint32_t keyhandle, unsigned char *keyauth,
+ 			const unsigned char *keyblob, int keybloblen,
+ 			uint32_t *newhandle)
+@@ -68,16 +64,13 @@ static int tpm_loadkey2(struct tpm1_buf *tb,
+ 		return ret;
+ 
+ 	/* build the request buffer */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
+-	store32(tb, TPM_LOADKEY2_SIZE + keybloblen);
+-	store32(tb, TPM_ORD_LOADKEY2);
+-	store32(tb, keyhandle);
+-	storebytes(tb, keyblob, keybloblen);
+-	store32(tb, authhandle);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_AUTH1_COMMAND, TPM_ORD_LOADKEY2);
++	tpm_buf_append_u32(tb, keyhandle);
++	tpm_buf_append(tb, keyblob, keybloblen);
++	tpm_buf_append_u32(tb, authhandle);
++	tpm_buf_append(tb, nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, authdata, SHA1_DIGEST_SIZE);
+ 
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0) {
+@@ -99,14 +92,11 @@ static int tpm_loadkey2(struct tpm1_buf *tb,
+ /*
+  * Execute the FlushSpecific TPM command
+  */
+-static int tpm_flushspecific(struct tpm1_buf *tb, uint32_t handle)
++static int tpm_flushspecific(struct tpm_buf *tb, uint32_t handle)
+ {
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_COMMAND);
+-	store32(tb, TPM_FLUSHSPECIFIC_SIZE);
+-	store32(tb, TPM_ORD_FLUSHSPECIFIC);
+-	store32(tb, handle);
+-	store32(tb, TPM_RT_KEY);
++	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_FLUSHSPECIFIC);
++	tpm_buf_append_u32(tb, handle);
++	tpm_buf_append_u32(tb, TPM_RT_KEY);
+ 
+ 	return trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ }
+@@ -115,7 +105,7 @@ static int tpm_flushspecific(struct tpm1_buf *tb, uint32_t handle)
+  * Decrypt a blob provided by userspace using a specific key handle.
+  * The handle is a well known handle or previously loaded by e.g. LoadKey2
+  */
+-static int tpm_unbind(struct tpm1_buf *tb,
++static int tpm_unbind(struct tpm_buf *tb,
+ 			uint32_t keyhandle, unsigned char *keyauth,
+ 			const unsigned char *blob, uint32_t bloblen,
+ 			void *out, uint32_t outlen)
+@@ -155,17 +145,14 @@ static int tpm_unbind(struct tpm1_buf *tb,
+ 		return ret;
+ 
+ 	/* build the request buffer */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
+-	store32(tb, TPM_UNBIND_SIZE + bloblen);
+-	store32(tb, TPM_ORD_UNBIND);
+-	store32(tb, keyhandle);
+-	store32(tb, bloblen);
+-	storebytes(tb, blob, bloblen);
+-	store32(tb, authhandle);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_AUTH1_COMMAND, TPM_ORD_UNBIND);
++	tpm_buf_append_u32(tb, keyhandle);
++	tpm_buf_append_u32(tb, bloblen);
++	tpm_buf_append(tb, blob, bloblen);
++	tpm_buf_append_u32(tb, authhandle);
++	tpm_buf_append(tb, nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, authdata, SHA1_DIGEST_SIZE);
+ 
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0) {
+@@ -201,7 +188,7 @@ static int tpm_unbind(struct tpm1_buf *tb,
+  * up to key_length_in_bytes - 11 and not be limited to size 20 like the
+  * TPM_SS_RSASSAPKCS1v15_SHA1 signature scheme.
+  */
+-static int tpm_sign(struct tpm1_buf *tb,
++static int tpm_sign(struct tpm_buf *tb,
+ 		    uint32_t keyhandle, unsigned char *keyauth,
+ 		    const unsigned char *blob, uint32_t bloblen,
+ 		    void *out, uint32_t outlen)
+@@ -241,17 +228,14 @@ static int tpm_sign(struct tpm1_buf *tb,
+ 		return ret;
+ 
+ 	/* build the request buffer */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
+-	store32(tb, TPM_SIGN_SIZE + bloblen);
+-	store32(tb, TPM_ORD_SIGN);
+-	store32(tb, keyhandle);
+-	store32(tb, bloblen);
+-	storebytes(tb, blob, bloblen);
+-	store32(tb, authhandle);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata, SHA1_DIGEST_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_AUTH1_COMMAND, TPM_ORD_SIGN);
++	tpm_buf_append_u32(tb, keyhandle);
++	tpm_buf_append_u32(tb, bloblen);
++	tpm_buf_append(tb, blob, bloblen);
++	tpm_buf_append_u32(tb, authhandle);
++	tpm_buf_append(tb, nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, authdata, SHA1_DIGEST_SIZE);
+ 
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0) {
+@@ -519,7 +503,7 @@ static int tpm_key_decrypt(struct tpm_key *tk,
+ 			   struct kernel_pkey_params *params,
+ 			   const void *in, void *out)
+ {
+-	struct tpm1_buf *tb;
++	struct tpm_buf tb;
+ 	uint32_t keyhandle;
+ 	uint8_t srkauth[SHA1_DIGEST_SIZE];
+ 	uint8_t keyauth[SHA1_DIGEST_SIZE];
+@@ -533,14 +517,14 @@ static int tpm_key_decrypt(struct tpm_key *tk,
+ 	if (strcmp(params->encoding, "pkcs1"))
+ 		return -ENOPKG;
+ 
+-	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
+-	if (!tb)
+-		return -ENOMEM;
++	r = tpm_buf_init(&tb, 0, 0);
++	if (r)
++		return r;
+ 
+ 	/* TODO: Handle a non-all zero SRK authorization */
+ 	memset(srkauth, 0, sizeof(srkauth));
+ 
+-	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
++	r = tpm_loadkey2(&tb, SRKHANDLE, srkauth,
+ 				tk->blob, tk->blob_len, &keyhandle);
+ 	if (r < 0) {
+ 		pr_devel("loadkey2 failed (%d)\n", r);
+@@ -550,16 +534,16 @@ static int tpm_key_decrypt(struct tpm_key *tk,
+ 	/* TODO: Handle a non-all zero key authorization */
+ 	memset(keyauth, 0, sizeof(keyauth));
+ 
+-	r = tpm_unbind(tb, keyhandle, keyauth,
++	r = tpm_unbind(&tb, keyhandle, keyauth,
+ 		       in, params->in_len, out, params->out_len);
+ 	if (r < 0)
+ 		pr_devel("tpm_unbind failed (%d)\n", r);
+ 
+-	if (tpm_flushspecific(tb, keyhandle) < 0)
++	if (tpm_flushspecific(&tb, keyhandle) < 0)
+ 		pr_devel("flushspecific failed (%d)\n", r);
+ 
+ error:
+-	kzfree(tb);
++	tpm_buf_destroy(&tb);
+ 	pr_devel("<=%s() = %d\n", __func__, r);
+ 	return r;
+ }
+@@ -643,7 +627,7 @@ static int tpm_key_sign(struct tpm_key *tk,
+ 			struct kernel_pkey_params *params,
+ 			const void *in, void *out)
+ {
+-	struct tpm1_buf *tb;
++	struct tpm_buf tb;
+ 	uint32_t keyhandle;
+ 	uint8_t srkauth[SHA1_DIGEST_SIZE];
+ 	uint8_t keyauth[SHA1_DIGEST_SIZE];
+@@ -681,15 +665,14 @@ static int tpm_key_sign(struct tpm_key *tk,
+ 		goto error_free_asn1_wrapped;
+ 	}
+ 
+-	r = -ENOMEM;
+-	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
+-	if (!tb)
++	r = tpm_buf_init(&tb, 0, 0);
++	if (r)
+ 		goto error_free_asn1_wrapped;
+ 
+ 	/* TODO: Handle a non-all zero SRK authorization */
+ 	memset(srkauth, 0, sizeof(srkauth));
+ 
+-	r = tpm_loadkey2(tb, SRKHANDLE, srkauth,
++	r = tpm_loadkey2(&tb, SRKHANDLE, srkauth,
+ 			 tk->blob, tk->blob_len, &keyhandle);
+ 	if (r < 0) {
+ 		pr_devel("loadkey2 failed (%d)\n", r);
+@@ -699,15 +682,15 @@ static int tpm_key_sign(struct tpm_key *tk,
+ 	/* TODO: Handle a non-all zero key authorization */
+ 	memset(keyauth, 0, sizeof(keyauth));
+ 
+-	r = tpm_sign(tb, keyhandle, keyauth, in, in_len, out, params->out_len);
++	r = tpm_sign(&tb, keyhandle, keyauth, in, in_len, out, params->out_len);
+ 	if (r < 0)
+ 		pr_devel("tpm_sign failed (%d)\n", r);
+ 
+-	if (tpm_flushspecific(tb, keyhandle) < 0)
++	if (tpm_flushspecific(&tb, keyhandle) < 0)
+ 		pr_devel("flushspecific failed (%d)\n", r);
+ 
+ error_free_tb:
+-	kzfree(tb);
++	tpm_buf_destroy(&tb);
+ error_free_asn1_wrapped:
+ 	kfree(asn1_wrapped);
+ 	pr_devel("<=%s() = %d\n", __func__, r);
+diff --git a/include/keys/trusted.h b/include/keys/trusted.h
+index 841ae11..29e3e9b 100644
+--- a/include/keys/trusted.h
++++ b/include/keys/trusted.h
+@@ -5,10 +5,6 @@
+ /* implementation specific TPM constants */
+ #define MAX_BUF_SIZE			1024
+ #define TPM_GETRANDOM_SIZE		14
+-#define TPM_OSAP_SIZE			36
+-#define TPM_OIAP_SIZE			10
+-#define TPM_SEAL_SIZE			87
+-#define TPM_UNSEAL_SIZE			104
+ #define TPM_SIZE_OFFSET			2
+ #define TPM_RETURN_OFFSET		6
+ #define TPM_DATA_OFFSET			10
+@@ -17,13 +13,6 @@
+ #define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
+ #define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
+ 
+-struct tpm1_buf {
+-	int len;
+-	unsigned char data[MAX_BUF_SIZE];
+-};
+-
+-#define INIT_BUF(tb) (tb->len = 0)
+-
+ struct osapsess {
+ 	uint32_t handle;
+ 	unsigned char secret[SHA1_DIGEST_SIZE];
+@@ -46,7 +35,7 @@ int TSS_checkhmac1(unsigned char *buffer,
+ 			  unsigned int keylen, ...);
+ 
+ int trusted_tpm_send(unsigned char *cmd, size_t buflen);
+-int oiap(struct tpm1_buf *tb, uint32_t *handle, unsigned char *nonce);
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce);
+ 
+ #define TPM_DEBUG 0
+ 
+@@ -109,28 +98,4 @@ static inline void dump_tpm_buf(unsigned char *buf)
+ {
+ }
+ #endif
+-
+-static inline void store8(struct tpm1_buf *buf, const unsigned char value)
+-{
+-	buf->data[buf->len++] = value;
+-}
+-
+-static inline void store16(struct tpm1_buf *buf, const uint16_t value)
+-{
+-	*(uint16_t *) & buf->data[buf->len] = htons(value);
+-	buf->len += sizeof value;
+-}
+-
+-static inline void store32(struct tpm1_buf *buf, const uint32_t value)
+-{
+-	*(uint32_t *) & buf->data[buf->len] = htonl(value);
+-	buf->len += sizeof value;
+-}
+-
+-static inline void storebytes(struct tpm1_buf *buf, const unsigned char *in,
+-			      const int len)
+-{
+-	memcpy(buf->data + buf->len, in, len);
+-	buf->len += len;
+-}
+ #endif
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 4cfae208..7071011 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -395,7 +395,7 @@ static int pcrlock(const int pcrnum)
+ /*
+  * Create an object specific authorisation protocol (OSAP) session
+  */
+-static int osap(struct tpm1_buf *tb, struct osapsess *s,
++static int osap(struct tpm_buf *tb, struct osapsess *s,
+ 		const unsigned char *key, uint16_t type, uint32_t handle)
+ {
+ 	unsigned char enonce[TPM_NONCE_SIZE];
+@@ -406,13 +406,10 @@ static int osap(struct tpm1_buf *tb, struct osapsess *s,
+ 	if (ret != TPM_NONCE_SIZE)
+ 		return ret;
+ 
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_COMMAND);
+-	store32(tb, TPM_OSAP_SIZE);
+-	store32(tb, TPM_ORD_OSAP);
+-	store16(tb, type);
+-	store32(tb, handle);
+-	storebytes(tb, ononce, TPM_NONCE_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OSAP);
++	tpm_buf_append_u16(tb, type);
++	tpm_buf_append_u32(tb, handle);
++	tpm_buf_append(tb, ononce, TPM_NONCE_SIZE);
+ 
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0)
+@@ -430,17 +427,14 @@ static int osap(struct tpm1_buf *tb, struct osapsess *s,
+ /*
+  * Create an object independent authorisation protocol (oiap) session
+  */
+-int oiap(struct tpm1_buf *tb, uint32_t *handle, unsigned char *nonce)
++int oiap(struct tpm_buf *tb, uint32_t *handle, unsigned char *nonce)
+ {
+ 	int ret;
+ 
+ 	if (!chip)
+ 		return -ENODEV;
+ 
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_COMMAND);
+-	store32(tb, TPM_OIAP_SIZE);
+-	store32(tb, TPM_ORD_OIAP);
++	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OIAP);
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0)
+ 		return ret;
+@@ -464,7 +458,7 @@ struct tpm_digests {
+  * Have the TPM seal(encrypt) the trusted key, possibly based on
+  * Platform Configuration Registers (PCRs). AUTH1 for sealing key.
+  */
+-static int tpm_seal(struct tpm1_buf *tb, uint16_t keytype,
++static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+ 		    uint32_t keyhandle, const unsigned char *keyauth,
+ 		    const unsigned char *data, uint32_t datalen,
+ 		    unsigned char *blob, uint32_t *bloblen,
+@@ -535,20 +529,17 @@ static int tpm_seal(struct tpm1_buf *tb, uint16_t keytype,
+ 		goto out;
+ 
+ 	/* build and send the TPM request packet */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH1_COMMAND);
+-	store32(tb, TPM_SEAL_SIZE + pcrinfosize + datalen);
+-	store32(tb, TPM_ORD_SEAL);
+-	store32(tb, keyhandle);
+-	storebytes(tb, td->encauth, SHA1_DIGEST_SIZE);
+-	store32(tb, pcrinfosize);
+-	storebytes(tb, pcrinfo, pcrinfosize);
+-	store32(tb, datalen);
+-	storebytes(tb, data, datalen);
+-	store32(tb, sess.handle);
+-	storebytes(tb, td->nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, td->pubauth, SHA1_DIGEST_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_AUTH1_COMMAND, TPM_ORD_SEAL);
++	tpm_buf_append_u32(tb, keyhandle);
++	tpm_buf_append(tb, td->encauth, SHA1_DIGEST_SIZE);
++	tpm_buf_append_u32(tb, pcrinfosize);
++	tpm_buf_append(tb, pcrinfo, pcrinfosize);
++	tpm_buf_append_u32(tb, datalen);
++	tpm_buf_append(tb, data, datalen);
++	tpm_buf_append_u32(tb, sess.handle);
++	tpm_buf_append(tb, td->nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, td->pubauth, SHA1_DIGEST_SIZE);
+ 
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0)
+@@ -579,7 +570,7 @@ static int tpm_seal(struct tpm1_buf *tb, uint16_t keytype,
+ /*
+  * use the AUTH2_COMMAND form of unseal, to authorize both key and blob
+  */
+-static int tpm_unseal(struct tpm1_buf *tb,
++static int tpm_unseal(struct tpm_buf *tb,
+ 		      uint32_t keyhandle, const unsigned char *keyauth,
+ 		      const unsigned char *blob, int bloblen,
+ 		      const unsigned char *blobauth,
+@@ -628,20 +619,17 @@ static int tpm_unseal(struct tpm1_buf *tb,
+ 		return ret;
+ 
+ 	/* build and send TPM request packet */
+-	INIT_BUF(tb);
+-	store16(tb, TPM_TAG_RQU_AUTH2_COMMAND);
+-	store32(tb, TPM_UNSEAL_SIZE + bloblen);
+-	store32(tb, TPM_ORD_UNSEAL);
+-	store32(tb, keyhandle);
+-	storebytes(tb, blob, bloblen);
+-	store32(tb, authhandle1);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata1, SHA1_DIGEST_SIZE);
+-	store32(tb, authhandle2);
+-	storebytes(tb, nonceodd, TPM_NONCE_SIZE);
+-	store8(tb, cont);
+-	storebytes(tb, authdata2, SHA1_DIGEST_SIZE);
++	tpm_buf_reset(tb, TPM_TAG_RQU_AUTH2_COMMAND, TPM_ORD_UNSEAL);
++	tpm_buf_append_u32(tb, keyhandle);
++	tpm_buf_append(tb, blob, bloblen);
++	tpm_buf_append_u32(tb, authhandle1);
++	tpm_buf_append(tb, nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, authdata1, SHA1_DIGEST_SIZE);
++	tpm_buf_append_u32(tb, authhandle2);
++	tpm_buf_append(tb, nonceodd, TPM_NONCE_SIZE);
++	tpm_buf_append_u8(tb, cont);
++	tpm_buf_append(tb, authdata2, SHA1_DIGEST_SIZE);
+ 
+ 	ret = trusted_tpm_send(tb->data, MAX_BUF_SIZE);
+ 	if (ret < 0) {
+@@ -670,23 +658,23 @@ static int tpm_unseal(struct tpm1_buf *tb,
+ static int key_seal(struct trusted_key_payload *p,
+ 		    struct trusted_key_options *o)
+ {
+-	struct tpm1_buf *tb;
++	struct tpm_buf tb;
+ 	int ret;
+ 
+-	tb = kzalloc(sizeof *tb, GFP_KERNEL);
+-	if (!tb)
+-		return -ENOMEM;
++	ret = tpm_buf_init(&tb, 0, 0);
++	if (ret)
++		return ret;
+ 
+ 	/* include migratable flag at end of sealed key */
+ 	p->key[p->key_len] = p->migratable;
+ 
+-	ret = tpm_seal(tb, o->keytype, o->keyhandle, o->keyauth,
++	ret = tpm_seal(&tb, o->keytype, o->keyhandle, o->keyauth,
+ 		       p->key, p->key_len + 1, p->blob, &p->blob_len,
+ 		       o->blobauth, o->pcrinfo, o->pcrinfo_len);
+ 	if (ret < 0)
+ 		pr_info("trusted_key: srkseal failed (%d)\n", ret);
+ 
+-	kzfree(tb);
++	tpm_buf_destroy(&tb);
+ 	return ret;
+ }
+ 
+@@ -696,14 +684,14 @@ static int key_seal(struct trusted_key_payload *p,
+ static int key_unseal(struct trusted_key_payload *p,
+ 		      struct trusted_key_options *o)
+ {
+-	struct tpm1_buf *tb;
++	struct tpm_buf tb;
+ 	int ret;
+ 
+-	tb = kzalloc(sizeof *tb, GFP_KERNEL);
+-	if (!tb)
+-		return -ENOMEM;
++	ret = tpm_buf_init(&tb, 0, 0);
++	if (ret)
++		return ret;
+ 
+-	ret = tpm_unseal(tb, o->keyhandle, o->keyauth, p->blob, p->blob_len,
++	ret = tpm_unseal(&tb, o->keyhandle, o->keyauth, p->blob, p->blob_len,
+ 			 o->blobauth, p->key, &p->key_len);
+ 	if (ret < 0)
+ 		pr_info("trusted_key: srkunseal failed (%d)\n", ret);
+@@ -711,7 +699,7 @@ static int key_unseal(struct trusted_key_payload *p,
+ 		/* pull migratable flag out of sealed key */
+ 		p->migratable = p->key[--p->key_len];
+ 
+-	kzfree(tb);
++	tpm_buf_destroy(&tb);
+ 	return ret;
+ }
+ 
+-- 
+2.7.4
