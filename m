@@ -1,36 +1,52 @@
-From: syzbot <syzbot+6455648abc28dbdd1e7f@syzkaller.appspotmail.com>
-Date: Thu, 17 Oct 2019 02:42:00 +0000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Oct 2019 15:53:06 +0000
 Subject: Re: WARNING: refcount bug in find_key_to_update
-Message-Id: <00000000000071e2fc05951229ad@google.com>
+Message-Id: <CAHk-=wjFozfjV34_qy3_Z155uz_Z7qFVfE8h=_9ceGU-SVk9hA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-In-Reply-To: <000000000000830fe50595115344@google.com>
 References: <000000000000830fe50595115344@google.com>
-In-Reply-To: <000000000000830fe50595115344@google.com>
-To: aou@eecs.berkeley.edu, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-riscv@lists.infradead.org, linux-security-module@vger.kernel.org, palmer@sifive.com, serge@hallyn.com, syzkaller-bugs@googlegroups.com, torvalds@linux-foundation.org
+ <00000000000071e2fc05951229ad@google.com>
+In-Reply-To: <00000000000071e2fc05951229ad@google.com>
+To: syzbot <syzbot+6455648abc28dbdd1e7f@syzkaller.appspotmail.com>
+Cc: aou@eecs.berkeley.edu, Palmer Dabbelt <palmer@sifive.com>, syzkaller-bugs <syzkaller-bugs@googlegroups.com>, James Morris James Morris <jmorris@namei.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, LSM List <linux-security-module@vger.kernel.org>, keyrings@vger.kernel.org, linux-riscv@lists.infradead.org, "Serge E. Hallyn" <serge@hallyn.com>
 
-syzbot has bisected this bug to:
+On Wed, Oct 16, 2019 at 7:42 PM syzbot
+<syzbot+6455648abc28dbdd1e7f@syzkaller.appspotmail.com> wrote:
+>
+> syzbot has bisected this bug to 0570bc8b7c9b ("Merge tag
+>  'riscv/for-v5.3-rc1' ...")
 
-commit 0570bc8b7c9b41deba6f61ac218922e7168ad648
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Thu Jul 18 19:26:59 2019 +0000
+Yeah, that looks unlikely. The only non-riscv changes are from
+documentation updates and moving a config variable around.
 
-     Merge tag 'riscv/for-v5.3-rc1' of =20
-git://git.kernel.org/pub/scm/linux/kernel/git/riscv/linux
+Looks like the crash is quite unlikely, and only happens in one out of
+ten runs for the ones it has happened to.
 
-bisection log:  https://syzkaller.appspot.com/x/bisect.txt?x=11b6e2bb600000
-start commit:   bc88f85c kthread: make __kthread_queue_delayed_work static
-git tree:       upstream
-final crash:    https://syzkaller.appspot.com/x/report.txt?x=13b6e2bb600000
-console output: https://syzkaller.appspot.com/x/log.txt?x=15b6e2bb600000
-kernel config:  https://syzkaller.appspot.com/x/.config?x=E0ac4d9b35046343
-dashboard link: https://syzkaller.appspot.com/bug?extidd55648abc28dbdd1e7f
-syz repro:      https://syzkaller.appspot.com/x/repro.syz?x=11c8adab600000
+The backtrace looks simple enough, though:
 
-Reported-by: syzbot+6455648abc28dbdd1e7f@syzkaller.appspotmail.com
-Fixes: 0570bc8b7c9b ("Merge tag 'riscv/for-v5.3-rc1' of =20
-git://git.kernel.org/pub/scm/linux/kernel/git/riscv/linux")
+  RIP: 0010:refcount_inc_checked+0x2b/0x30 lib/refcount.c:156
+   __key_get include/linux/key.h:281 [inline]
+   find_key_to_update+0x67/0x80 security/keys/keyring.c:1127
+   key_create_or_update+0x4e5/0xb20 security/keys/key.c:905
+   __do_sys_add_key security/keys/keyctl.c:132 [inline]
+   __se_sys_add_key security/keys/keyctl.c:72 [inline]
+   __x64_sys_add_key+0x219/0x3f0 security/keys/keyctl.c:72
+   do_syscall_64+0xd0/0x540 arch/x86/entry/common.c:296
+   entry_SYSCALL_64_after_hwframe+0x49/0xbe
 
-For information about bisection process see: https://goo.gl/tpsmEJ#bisection
+which to me implies that there's some locking bug, and somebody
+released the key without holding a lock.
+
+That code looks a bit confused to me. Releasing a key without holding
+a lock looks permitted, but if that's the case then __key_get() is
+complete garbage. It would need to use 'refcount_inc_not_zero()' and
+failure would require failing the caller.
+
+But I haven't followed the key locking rules, so who knows. That "put
+without lock" scenario would explain the crash, though.
+
+David?
+
+              Linus
