@@ -1,46 +1,271 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 04 Oct 2019 18:49:02 +0000
-Subject: Re: [Patch v6 4/4] KEYS: trusted: Move TPM2 trusted keys code
-Message-Id: <20191004184902.GG6945@linux.intel.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Fri, 18 Oct 2019 19:53:28 +0000
+Subject: [PATCH v0] KEYS: Security LSM Hook for key_create_or_update
+Message-Id: <20191018195328.6704-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1568630064-14887-1-git-send-email-sumit.garg@linaro.org>
- <1568630064-14887-5-git-send-email-sumit.garg@linaro.org>
- <20190917181415.GA8472@linux.intel.com>
- <20190917181507.GB8472@linux.intel.com>
- <CAFA6WYMbUGQ6+-XvR9_qSc=oVe1QSTg4kB-+y6rBmQLq+B6skg@mail.gmail.com>
- <20190925011115.GA3503@linux.intel.com>
- <CAFA6WYObsZnTptYg1Qorxt0FMaxHKoZ6D53Wjsj05OEGNhpckg@mail.gmail.com>
-In-Reply-To: <CAFA6WYObsZnTptYg1Qorxt0FMaxHKoZ6D53Wjsj05OEGNhpckg@mail.gmail.com>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: dhowells@redhat.com, peterhuewe@gmx.de, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, linux-security-module@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net, jgg@ziepe.ca, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jejb@linux.ibm.com, Mimi Zohar <zohar@linux.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Jerry Snitselaar <jsnitsel@redhat.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Daniel Thompson <daniel.thompson@linaro.org>
+To: zohar@linux.ibm.com, dhowells@redhat.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, sashal@kernel.org, jamorris@linux.microsoft.com
+Cc: msft-linux-kernel@linux.microsoft.com, nramas@linux.microsoft.com, prsriva@linux.microsoft.com
 
-On Fri, Oct 04, 2019 at 11:35:29AM +0530, Sumit Garg wrote:
-> Hi Jarkko,
-> 
-> On Wed, 25 Sep 2019 at 06:41, Jarkko Sakkinen
-> <jarkko.sakkinen@linux.intel.com> wrote:
-> >
-> > On Wed, Sep 18, 2019 at 11:53:08AM +0530, Sumit Garg wrote:
-> > > No worries :). I will send next version of patch-set.
-> > >
-> > > FYI, I will be travelling for Linaro Connect next week so you could
-> > > expect some delays in my responses.
-> >
-> > These patches will go to v5.5. There is nothing to rush.
-> 
-> I am back now on my regular schedule after Linaro Connect. And I see
-> your patch-set [1] to detach page allocation from tpm_buf. It seems
-> like either this patch-set needs rebase over yours or vice-versa.
-> 
-> So should I wait to send next version of this patch-set until your
-> patch-set arrives in tpmdd master/next branch or would you like to
-> rebase your patch-set over this?
+Problem Statement:
+key_create_or_update function currently does not have
+a security LSM hook. The hook is needed to allow security
+subsystems to use key create or update information.
 
-For me either way works. If you patch set is earlier ready for
-merge I'll rework mine. Doing it otherwise would be unnecessary
-micromanagement.
+security_key_alloc LSM hook that is currently available is not
+providing enough information about the key (the key payload,
+the target keyring, etc.). Also, this LSM hook is only available
+for key create.
 
-/Jarkko
+Changes made:
+Adding a new LSM hook for key key_create_or_update,
+security_key_create_or_update, which is called after
+   => A newly created key is instantiated and linked to the target
+      keyring (__key_instantiate_and_link).
+   => An existing key is updated with a new payload (__key_update)
+
+security_key_create_or_update is passed the target keyring, key,
+cred, key creation flags, and a boolean flag indicating whether
+the key was newly created or updated.
+
+Security subsystems can use this hook for handling key create or update.
+For example, IMA subsystem can measure the key when it is created or
+updated.
+
+Testing performed:
+  * Booted the kernel with this change.
+  * Executed keyctl tests from the Linux Test Project (LTP)
+  * Added a new key to a keyring and verified "key create" code path.
+    => In this case added a key to builtin_trusted_keys keyring.
+  * Added the same key again and verified "key update" code path.
+    => Add the same key to builtin_trusted_keys keyring.
+    => find_key_to_update found the key and LSM hook was
+       called for key update (create flag set to false).
+  * Forced the LSM hook (security_key_create_or_update) to
+    return an error and verified that the key was not added to
+    the keyring ("keyctl list <keyring>" does not list the key).
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ include/linux/lsm_hooks.h | 13 +++++++
+ include/linux/security.h  | 10 +++++
+ security/keys/key.c       | 78 ++++++++++++++++++++++++++++++++++-----
+ security/security.c       |  8 ++++
+ 4 files changed, 100 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
+index df1318d85f7d..2f2e95df62f3 100644
+--- a/include/linux/lsm_hooks.h
++++ b/include/linux/lsm_hooks.h
+@@ -1066,6 +1066,15 @@
+  *
+  * Security hooks affecting all Key Management operations
+  *
++ * @key_create_or_update:
++ *      Notification of key create or update.
++ *      @keyring points to the keyring to which the key belongs
++ *      @key points to the key being created or updated
++ *      @cred current cred
++ *      @flags is the allocation flags
++ *      @create flag set to true if the key was created.
++ *              flag set to false if the key was updated.
++ *      Return 0 if permission is granted, -ve error otherwise.
+  * @key_alloc:
+  *	Permit allocation of a key and assign security data. Note that key does
+  *	not have a serial number assigned at this point.
+@@ -1781,6 +1790,9 @@ union security_list_options {
+ 
+ 	/* key management security hooks */
+ #ifdef CONFIG_KEYS
++	int (*key_create_or_update)(struct key *keyring, struct key *key,
++				    const struct cred *cred,
++				    unsigned long flags, bool create);
+ 	int (*key_alloc)(struct key *key, const struct cred *cred,
+ 				unsigned long flags);
+ 	void (*key_free)(struct key *key);
+@@ -2026,6 +2038,7 @@ struct security_hook_heads {
+ 	struct hlist_head xfrm_decode_session;
+ #endif	/* CONFIG_SECURITY_NETWORK_XFRM */
+ #ifdef CONFIG_KEYS
++	struct hlist_head key_create_or_update;
+ 	struct hlist_head key_alloc;
+ 	struct hlist_head key_free;
+ 	struct hlist_head key_permission;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 5f7441abbf42..27e1c0a3057b 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1672,6 +1672,9 @@ static inline int security_path_chroot(const struct path *path)
+ #ifdef CONFIG_KEYS
+ #ifdef CONFIG_SECURITY
+ 
++int security_key_create_or_update(struct key *keyring, struct key *key,
++				  const struct cred *cred,
++				  unsigned long flags, bool create);
+ int security_key_alloc(struct key *key, const struct cred *cred, unsigned long flags);
+ void security_key_free(struct key *key);
+ int security_key_permission(key_ref_t key_ref,
+@@ -1680,6 +1683,13 @@ int security_key_getsecurity(struct key *key, char **_buffer);
+ 
+ #else
+ 
++int security_key_create_or_update(struct key *keyring, struct key *key,
++				  const struct cred *cred,
++				  unsigned long flags, bool create)
++{
++	return 0;
++}
++
+ static inline int security_key_alloc(struct key *key,
+ 				     const struct cred *cred,
+ 				     unsigned long flags)
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 764f4c57913e..b913feaf196e 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -781,7 +781,7 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+ }
+ 
+ /**
+- * key_create_or_update - Update or create and instantiate a key.
++ * __key_create_or_update - Update or create and instantiate a key.
+  * @keyring_ref: A pointer to the destination keyring with possession flag.
+  * @type: The type of key.
+  * @description: The searchable description for the key.
+@@ -789,6 +789,8 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+  * @plen: The length of @payload.
+  * @perm: The permissions mask for a new key.
+  * @flags: The quota flags for a new key.
++ * @create: Set to true if the key was newly created.
++ *          Set to false if the key was updated.
+  *
+  * Search the destination keyring for a key of the same description and if one
+  * is found, update it, otherwise create and instantiate a new one and create a
+@@ -805,13 +807,14 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+  * On success, the possession flag from the keyring ref will be tacked on to
+  * the key ref before it is returned.
+  */
+-key_ref_t key_create_or_update(key_ref_t keyring_ref,
+-			       const char *type,
+-			       const char *description,
+-			       const void *payload,
+-			       size_t plen,
+-			       key_perm_t perm,
+-			       unsigned long flags)
++static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
++					const char *type,
++					const char *description,
++					const void *payload,
++					size_t plen,
++					key_perm_t perm,
++					unsigned long flags,
++					bool *create)
+ {
+ 	struct keyring_index_key index_key = {
+ 		.description	= description,
+@@ -936,6 +939,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		goto error_link_end;
+ 	}
+ 
++	*create = true;
+ 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
+ 
+ error_link_end:
+@@ -948,7 +952,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ error:
+ 	return key_ref;
+ 
+- found_matching_key:
++found_matching_key:
+ 	/* we found a matching key, so we're going to try to update it
+ 	 * - we can drop the locks first as we have the key pinned
+ 	 */
+@@ -964,9 +968,65 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		}
+ 	}
+ 
++	*create = false;
+ 	key_ref = __key_update(key_ref, &prep);
+ 	goto error_free_prep;
+ }
++
++/**
++ * key_create_or_update - Update or create and instantiate a key.
++ * @keyring_ref: A pointer to the destination keyring with possession flag.
++ * @type: The type of key.
++ * @description: The searchable description for the key.
++ * @payload: The data to use to instantiate or update the key.
++ * @plen: The length of @payload.
++ * @perm: The permissions mask for a new key.
++ * @flags: The quota flags for a new key.
++ *
++ * Calls the internal function __key_create_or_update.
++ * If successful calls the security LSM hook.
++ */
++key_ref_t key_create_or_update(key_ref_t keyring_ref,
++			       const char *type,
++			       const char *description,
++			       const void *payload,
++			       size_t plen,
++			       key_perm_t perm,
++			       unsigned long flags)
++{
++	key_ref_t key_ref;
++	struct key *keyring, *key = NULL;
++	int ret = 0;
++	bool create = false;
++
++	key_ref = __key_create_or_update(keyring_ref, type, description,
++					 payload, plen, perm, flags,
++					 &create);
++	if (IS_ERR(key_ref))
++		goto out;
++
++	keyring = key_ref_to_ptr(keyring_ref);
++	key = key_ref_to_ptr(key_ref);
++
++	/* let the security module know about
++	 * the created or updated key.
++	 */
++	ret = security_key_create_or_update(keyring, key,
++					    current_cred(),
++					    flags, create);
++	if (ret < 0)
++		goto security_error;
++	else
++		goto out;
++
++security_error:
++	key_unlink(keyring, key);
++	key_put(key);
++	key_ref = ERR_PTR(ret);
++
++out:
++	return key_ref;
++}
+ EXPORT_SYMBOL(key_create_or_update);
+ 
+ /**
+diff --git a/security/security.c b/security/security.c
+index 250ee2d76406..fc1e4984fb53 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -2280,6 +2280,14 @@ EXPORT_SYMBOL(security_skb_classify_flow);
+ 
+ #ifdef CONFIG_KEYS
+ 
++int security_key_create_or_update(struct key *keyring, struct key *key,
++				  const struct cred *cred,
++				  unsigned long flags, bool create)
++{
++	return call_int_hook(key_create_or_update, 0,
++			     keyring, key, cred, flags, create);
++}
++
+ int security_key_alloc(struct key *key, const struct cred *cred,
+ 		       unsigned long flags)
+ {
+-- 
+2.17.1
