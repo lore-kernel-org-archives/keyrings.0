@@ -1,25 +1,20 @@
 From: David Howells <dhowells@redhat.com>
-Date: Fri, 18 Oct 2019 16:46:27 +0000
+Date: Mon, 21 Oct 2019 15:59:13 +0000
 Subject: Re: WARNING: refcount bug in find_key_to_update
-Message-Id: <32000.1571417187@warthog.procyon.org.uk>
+Message-Id: <8509.1571673553@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191017092428.7336-1-hdanton@sina.com>
-In-Reply-To: <20191017092428.7336-1-hdanton@sina.com>
-To: Hillf Danton <hdanton@sina.com>
-Cc: dhowells@redhat.com, syzbot <syzbot+6455648abc28dbdd1e7f@syzkaller.appspotmail.com>, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, serge@hallyn.com, syzkaller-bugs@googlegroups.com
+References: <000000000000830fe50595115344@google.com>
+In-Reply-To: <000000000000830fe50595115344@google.com>
+To: syzbot <syzbot+6455648abc28dbdd1e7f@syzkaller.appspotmail.com>
+Cc: dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, serge@hallyn.com, syzkaller-bugs@googlegroups.com
 
-Hillf Danton <hdanton@sina.com> wrote:
+syzbot <syzbot+6455648abc28dbdd1e7f@syzkaller.appspotmail.com> wrote:
 
-> -			  (1 << KEY_FLAG_REVOKED))) {
-> +			  (1 << KEY_FLAG_REVOKED)) || !key_tryget(key)) {
->  		kleave(" = NULL [x]");
->  		return NULL;
->  	}
-> -	__key_get(key);
+> syz repro:      https://syzkaller.appspot.com/x/repro.syz?x=11c8adab600000
 
-That should be ineffective and ought not to fix the bug.
+How do I tell what's been passed into the add_key for the encrypted key?
 
 David
