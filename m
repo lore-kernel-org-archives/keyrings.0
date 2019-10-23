@@ -1,130 +1,60 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 15 Oct 2019 21:50:13 +0000
-Subject: [RFC PATCH 16/21] pipe: Add notification lossage handling
-Message-Id: <157117621377.15019.972929561165477583.stgit@warthog.procyon.org.uk>
+Date: Wed, 23 Oct 2019 20:17:14 +0000
+Subject: [RFC PATCH 01/10] pipe: Reduce #inclusion of pipe_fs_i.h [ver #2]
+Message-Id: <157186183402.3995.13580610732742590957.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
+References: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk>
 To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add handling for loss of notifications by having read() insert a
-loss-notification message after it has read the pipe buffer that was last
-in the ring when the loss occurred.
-
-Lossage can come about either by running out of notification descriptors or
-by running out of space in the pipe ring.
+Remove some #inclusions of linux/pipe_fs_i.h that don't seem to be
+necessary any more.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/pipe.c                        |   26 ++++++++++++++++++++++++++
- include/linux/pipe_fs_i.h        |    5 +++++
- kernel/watch_queue.c             |    2 ++
- samples/watch_queue/watch_test.c |    3 +++
- 4 files changed, 36 insertions(+)
+ fs/exec.c                  |    1 -
+ fs/ocfs2/aops.c            |    1 -
+ security/smack/smack_lsm.c |    1 -
+ 3 files changed, 3 deletions(-)
 
-diff --git a/fs/pipe.c b/fs/pipe.c
-index f4c9d5480636..4685fa6d6c56 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -291,6 +291,30 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
- 		unsigned int tail = pipe->tail;
- 		unsigned int mask = pipe->ring_size - 1;
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+		if (pipe->note_loss) {
-+			struct watch_notification n;
-+
-+			if (total_len < 8) {
-+				if (ret = 0)
-+					ret = -ENOBUFS;
-+				break;
-+			}
-+
-+			n.type = WATCH_TYPE_META;
-+			n.subtype = WATCH_META_LOSS_NOTIFICATION;
-+			n.info = watch_sizeof(n);
-+			if (copy_to_iter(&n, sizeof(n), to) != sizeof(n)) {
-+				if (ret = 0)
-+					ret = -EFAULT;
-+				break;
-+			}
-+			ret += sizeof(n);
-+			total_len -= sizeof(n);
-+			pipe->note_loss = false;
-+		}
-+#endif
-+
- 		if (tail != head) {
- 			struct pipe_buffer *buf = &pipe->bufs[tail & mask];
- 			size_t chars = buf->len;
-@@ -332,6 +356,8 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
- 			if (!buf->len) {
- 				pipe_buf_release(pipe, buf);
- 				spin_lock_irq(&pipe->wait.lock);
-+				if (buf->flags & PIPE_BUF_FLAG_LOSS)
-+					pipe->note_loss = true;
- 				tail++;
- 				pipe_commit_read(pipe, tail);
- 				do_wakeup = 1;
-diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
-index 58583ba056e8..66822b39626e 100644
---- a/include/linux/pipe_fs_i.h
-+++ b/include/linux/pipe_fs_i.h
-@@ -9,6 +9,9 @@
- #define PIPE_BUF_FLAG_GIFT	0x04	/* page is a gift */
- #define PIPE_BUF_FLAG_PACKET	0x08	/* read() as a packet */
- #define PIPE_BUF_FLAG_WHOLE	0x10	/* read() must return entire buffer or error */
-+#ifdef CONFIG_WATCH_QUEUE
-+#define PIPE_BUF_FLAG_LOSS	0x20	/* Message loss happened after this buffer */
-+#endif
- 
- /**
-  *	struct pipe_buffer - a linux kernel pipe buffer
-@@ -33,6 +36,7 @@ struct pipe_buffer {
-  *	@wait: reader/writer wait point in case of empty/full pipe
-  *	@head: The point of buffer production
-  *	@tail: The point of buffer consumption
-+ *	@note_loss: The next read() should insert a data-lost message
-  *	@max_usage: The maximum number of slots that may be used in the ring
-  *	@ring_size: total number of buffers (should be a power of 2)
-  *	@nr_accounted: The amount this pipe accounts for in user->pipe_bufs
-@@ -56,6 +60,7 @@ struct pipe_inode_info {
- 	unsigned int tail;
- 	unsigned int max_usage;
- 	unsigned int ring_size;
-+	bool note_loss;
- 	unsigned int nr_accounted;
- 	unsigned int readers;
- 	unsigned int writers;
-diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
-index f1d78da5309d..c7a3d8cef378 100644
---- a/kernel/watch_queue.c
-+++ b/kernel/watch_queue.c
-@@ -132,6 +132,8 @@ static bool post_one_notification(struct watch_queue *wqueue,
- 	return done;
- 
- lost:
-+	buf = &pipe->bufs[(head - 1) & mask];
-+	buf->flags |= PIPE_BUF_FLAG_LOSS;
- 	goto out;
- }
- 
-diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
-index 363f1d77386f..1ffed42bfece 100644
---- a/samples/watch_queue/watch_test.c
-+++ b/samples/watch_queue/watch_test.c
-@@ -121,6 +121,9 @@ static void consumer(int fd)
- 					       (n.n.info & WATCH_INFO_ID) >>
- 					       WATCH_INFO_ID__SHIFT);
- 					break;
-+				case WATCH_META_LOSS_NOTIFICATION:
-+					printf("-- LOSS --\n");
-+					break;
- 				default:
- 					printf("other meta record\n");
- 					break;
+diff --git a/fs/exec.c b/fs/exec.c
+index 555e93c7dec8..57bc7ef8d31b 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -59,7 +59,6 @@
+ #include <linux/kmod.h>
+ #include <linux/fsnotify.h>
+ #include <linux/fs_struct.h>
+-#include <linux/pipe_fs_i.h>
+ #include <linux/oom.h>
+ #include <linux/compat.h>
+ #include <linux/vmalloc.h>
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 8de1c9d644f6..c50ac6b7415b 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -11,7 +11,6 @@
+ #include <linux/pagemap.h>
+ #include <asm/byteorder.h>
+ #include <linux/swap.h>
+-#include <linux/pipe_fs_i.h>
+ #include <linux/mpage.h>
+ #include <linux/quotaops.h>
+ #include <linux/blkdev.h>
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index abeb09c30633..ecea41ce919b 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -28,7 +28,6 @@
+ #include <linux/icmpv6.h>
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
+-#include <linux/pipe_fs_i.h>
+ #include <net/cipso_ipv4.h>
+ #include <net/ip.h>
+ #include <net/ipv6.h>
