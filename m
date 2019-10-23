@@ -1,37 +1,252 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 23 Oct 2019 20:18:28 +0000
-Subject: [RFC PATCH 09/10] pipe: Remove redundant wakeup from pipe_write() [ver #2]
-Message-Id: <157186190801.3995.3420819228734631242.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 23 Oct 2019 00:18:16 +0000
+Subject: [PATCH v1 4/6] KEYS: ima functions to queue and dequeue keys to measure
+Message-Id: <20191023001818.3684-5-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191023001818.3684-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191023001818.3684-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+Cc: nramas@linux.microsoft.com
 
-Remove a redundant wakeup from pipe_write().
+Implement functions to queue a key for measurement if ima is not yet
+initialized. And, when ima initialization is complete, process
+any queued key measurement requests.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+This change set implements the functions to queue and de-queue requests.
+The change to actually measure the keys is in another patch.
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
+ security/integrity/ima/ima.h       |  15 ++++
+ security/integrity/ima/ima_init.c  |  11 ++-
+ security/integrity/ima/ima_queue.c | 128 +++++++++++++++++++++++++++++
+ 3 files changed, 153 insertions(+), 1 deletion(-)
 
- fs/pipe.c |    5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/fs/pipe.c b/fs/pipe.c
-index 1bfad2212b95..3df93990dd9d 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -516,11 +516,6 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 				ret = -ERESTARTSYS;
- 			break;
- 		}
--		if (do_wakeup) {
--			wake_up_interruptible_sync_poll(&pipe->wait, EPOLLIN | EPOLLRDNORM);
--			kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
--			do_wakeup = 0;
--		}
- 		pipe->waiting_writers++;
- 		pipe_wait(pipe);
- 		pipe->waiting_writers--;
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 0d2908036882..7e4d4169798d 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -21,6 +21,7 @@
+ #include <linux/tpm.h>
+ #include <linux/audit.h>
+ #include <crypto/hash_info.h>
++#include <keys/asymmetric-type.h>
+ 
+ #include "../integrity.h"
+ 
+@@ -52,6 +53,7 @@ extern int ima_policy_flag;
+ extern int ima_hash_algo;
+ extern int ima_appraise;
+ extern struct tpm_chip *ima_tpm_chip;
++extern bool ima_initialized;
+ 
+ /* IMA event related data */
+ struct ima_event_data {
+@@ -158,6 +160,8 @@ void ima_init_template_list(void);
+ int __init ima_init_digests(void);
+ int ima_lsm_policy_change(struct notifier_block *nb, unsigned long event,
+ 			  void *lsm_data);
++int ima_measure_key(struct key *keyring, struct key *key);
++void ima_measure_queued_trusted_keys(void);
+ 
+ /*
+  * used to protect h_table and sha_table
+@@ -197,6 +201,17 @@ enum ima_hooks {
+ 	__ima_hooks(__ima_hook_enumify)
+ };
+ 
++/*
++ * To track trusted keys that need to be measured when IMA is initialized.
++ */
++struct ima_trusted_key_entry {
++	struct list_head list;
++	void *public_key;
++	u32  public_key_len;
++	char *key_description;
++	enum ima_hooks func;
++};
++
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
+index 5d55ade5f3b9..32b9147fe410 100644
+--- a/security/integrity/ima/ima_init.c
++++ b/security/integrity/ima/ima_init.c
+@@ -23,6 +23,7 @@
+ /* name for boot aggregate entry */
+ static const char boot_aggregate_name[] = "boot_aggregate";
+ struct tpm_chip *ima_tpm_chip;
++bool ima_initialized;
+ 
+ /* Add the boot aggregate to the IMA measurement list and extend
+  * the PCR register.
+@@ -131,5 +132,13 @@ int __init ima_init(void)
+ 
+ 	ima_init_policy();
+ 
+-	return ima_fs_init();
++	rc = ima_fs_init();
++	if (rc != 0)
++		return rc;
++
++	ima_initialized = true;
++
++	ima_measure_queued_trusted_keys();
++
++	return 0;
+ }
+diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
+index 1ce8b1701566..a262e289615b 100644
+--- a/security/integrity/ima/ima_queue.c
++++ b/security/integrity/ima/ima_queue.c
+@@ -19,6 +19,8 @@
+ 
+ #include <linux/rculist.h>
+ #include <linux/slab.h>
++#include <crypto/public_key.h>
++#include <keys/system_keyring.h>
+ #include "ima.h"
+ 
+ #define AUDIT_CAUSE_LEN_MAX 32
+@@ -46,6 +48,13 @@ struct ima_h_table ima_htable = {
+  */
+ static DEFINE_MUTEX(ima_extend_list_mutex);
+ 
++/*
++ * Used to synchronize access to the list of trusted keys (ima_trusted_keys)
++ * that need to be measured when IMA is initialized.
++ */
++static DEFINE_MUTEX(ima_trusted_keys_mutex);
++static LIST_HEAD(ima_trusted_keys);
++
+ /* lookup up the digest value in the hash table, and return the entry */
+ static struct ima_queue_entry *ima_lookup_digest_entry(u8 *digest_value,
+ 						       int pcr)
+@@ -232,3 +241,122 @@ int __init ima_init_digests(void)
+ 
+ 	return 0;
+ }
++
++/*
++ * Maps the given keyring to a IMA Hook.
++ * @keyring: A keyring to which a key maybe linked to.
++ *
++ * This function currently handles only builtin_trusted_keys.
++ * To handle more keyrings, this function, ima hook and
++ * ima policy handler need to be updated.
++ */
++static enum ima_hooks keyring_policy_map(struct key *keyring)
++{
++	enum ima_hooks func = NONE;
++
++	if (is_builtin_trusted_keyring(keyring))
++		func = BUILTIN_TRUSTED_KEYS;
++
++	return func;
++}
++
++static void ima_free_trusted_key_entry(struct ima_trusted_key_entry *entry)
++{
++	if (entry != NULL) {
++		if (entry->public_key != NULL)
++			kzfree(entry->public_key);
++		if (entry->key_description != NULL)
++			kzfree(entry->key_description);
++		kzfree(entry);
++	}
++}
++
++static struct ima_trusted_key_entry *ima_alloc_trusted_queue_entry(
++	struct key *key,
++	enum ima_hooks func)
++{
++	int rc = 0;
++	const struct public_key *pk;
++	size_t key_description_len;
++	struct ima_trusted_key_entry *entry = NULL;
++
++	pk = key->payload.data[asym_crypto];
++	key_description_len = strlen(key->description) + 1;
++	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
++	if (entry != NULL) {
++		entry->public_key = kzalloc(pk->keylen, GFP_KERNEL);
++		entry->key_description +			kzalloc(key_description_len, GFP_KERNEL);
++	}
++
++	if ((entry = NULL) || (entry->public_key = NULL) ||
++	    (entry->key_description = NULL)) {
++		rc = -ENOMEM;
++		goto out;
++	}
++
++	strcpy(entry->key_description, key->description);
++	memcpy(entry->public_key, pk->key, pk->keylen);
++	entry->public_key_len = pk->keylen;
++	entry->func = func;
++	rc = 0;
++
++out:
++	if (rc) {
++		ima_free_trusted_key_entry(entry);
++		entry = NULL;
++	}
++
++	return entry;
++}
++
++/*
++ * ima_measure_key
++ *     @keyring the keyring to which the key is linked to.
++ *     @key the key being created or updated
++ * Measure keys created or updated in the system
++ *
++ * On success return 0.
++ * Return appropriate error code on error
++ */
++int ima_measure_key(struct key *keyring, struct key *key)
++{
++	int rc = 0;
++	struct ima_trusted_key_entry *entry = NULL;
++	enum ima_hooks func;
++	bool queued = false;
++
++	func = keyring_policy_map(keyring);
++	if (func = NONE)
++		return 0;
++
++	mutex_lock(&ima_trusted_keys_mutex);
++
++	if (!ima_initialized) {
++		entry = ima_alloc_trusted_queue_entry(key, func);
++		if (entry != NULL) {
++			INIT_LIST_HEAD(&entry->list);
++			list_add_tail(&entry->list, &ima_trusted_keys);
++			queued = true;
++		} else
++			rc = -ENOMEM;
++	}
++
++	mutex_unlock(&ima_trusted_keys_mutex);
++
++	return rc;
++}
++
++void ima_measure_queued_trusted_keys(void)
++{
++	struct ima_trusted_key_entry *entry, *tmp;
++
++	mutex_lock(&ima_trusted_keys_mutex);
++
++	list_for_each_entry_safe(entry, tmp, &ima_trusted_keys, list) {
++		list_del(&entry->list);
++		ima_free_trusted_key_entry(entry);
++	}
++
++	mutex_unlock(&ima_trusted_keys_mutex);
++}
+-- 
+2.17.1
