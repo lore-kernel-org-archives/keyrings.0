@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 23 Oct 2019 20:17:31 +0000
-Subject: [RFC PATCH 03/10] Add wake_up_interruptible_sync_poll_locked() [ver #2]
-Message-Id: <157186185154.3995.9042853314167941790.stgit@warthog.procyon.org.uk>
+Date: Wed, 23 Oct 2019 20:17:50 +0000
+Subject: [RFC PATCH 05/10] pipe: Allow pipes to have kernel-reserved slots [ver #2]
+Message-Id: <157186187074.3995.5299010277211516015.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,69 +11,284 @@ In-Reply-To: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.u
 To: torvalds@linux-foundation.org
 Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a wakeup call for a case whereby the caller already has the waitqueue
-spinlock held.  This can be used by pipes to alter the ring buffer indices
-and issue a wakeup under the same spinlock.
+Split pipe->ring_size into two numbers:
+
+ (1) pipe->ring_size - indicates the hard size of the pipe ring.
+
+ (2) pipe->max_usage - indicates the maximum number of pipe ring slots that
+     userspace orchestrated events can fill.
+
+This allows for a pipe that is both writable by the general kernel
+notification facility and by userspace, allowing plenty of ring space for
+notifications to be added whilst preventing userspace from being able to
+pin too much unswappable kernel space.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/wait.h |    3 +++
- kernel/sched/wait.c  |   23 +++++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+ fs/fuse/dev.c             |    8 ++++----
+ fs/pipe.c                 |   10 ++++++----
+ fs/splice.c               |   26 +++++++++++++-------------
+ include/linux/pipe_fs_i.h |    6 +++++-
+ lib/iov_iter.c            |    4 ++--
+ 5 files changed, 30 insertions(+), 24 deletions(-)
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index bb7676d396cd..3283c8d02137 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -202,6 +202,7 @@ void __wake_up_locked_key(struct wait_queue_head *wq_head, unsigned int mode, vo
- void __wake_up_locked_key_bookmark(struct wait_queue_head *wq_head,
- 		unsigned int mode, void *key, wait_queue_entry_t *bookmark);
- void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode, void *key);
-+void __wake_up_locked_sync_key(struct wait_queue_head *wq_head, unsigned int mode, void *key);
- void __wake_up_locked(struct wait_queue_head *wq_head, unsigned int mode, int nr);
- void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode);
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index 1e4bc27573cc..5ef57a322cb8 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -703,7 +703,7 @@ static int fuse_copy_fill(struct fuse_copy_state *cs)
+ 			cs->pipebufs++;
+ 			cs->nr_segs--;
+ 		} else {
+-			if (cs->nr_segs >= cs->pipe->ring_size)
++			if (cs->nr_segs >= cs->pipe->max_usage)
+ 				return -EIO;
  
-@@ -229,6 +230,8 @@ void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode);
- 	__wake_up(x, TASK_INTERRUPTIBLE, 1, poll_to_key(m))
- #define wake_up_interruptible_sync_poll(x, m)					\
- 	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, poll_to_key(m))
-+#define wake_up_interruptible_sync_poll_locked(x, m)				\
-+	__wake_up_locked_sync_key((x), TASK_INTERRUPTIBLE, poll_to_key(m))
+ 			page = alloc_page(GFP_HIGHUSER);
+@@ -879,7 +879,7 @@ static int fuse_ref_page(struct fuse_copy_state *cs, struct page *page,
+ 	struct pipe_buffer *buf;
+ 	int err;
  
- #define ___wait_cond_timeout(condition)						\
- ({										\
-diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index b4b52361dab7..ba059fbfc53a 100644
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -191,6 +191,29 @@ void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode,
- }
- EXPORT_SYMBOL_GPL(__wake_up_sync_key);
+-	if (cs->nr_segs >= cs->pipe->ring_size)
++	if (cs->nr_segs >= cs->pipe->max_usage)
+ 		return -EIO;
  
-+/**
-+ * __wake_up_locked_sync_key - wake up a thread blocked on a locked waitqueue.
-+ * @wq_head: the waitqueue
-+ * @mode: which threads
-+ * @key: opaque value to be passed to wakeup targets
-+ *
-+ * The sync wakeup differs in that the waker knows that it will schedule
-+ * away soon, so while the target thread will be woken up, it will not
-+ * be migrated to another CPU - ie. the two threads are 'synchronized'
-+ * with each other. This can prevent needless bouncing between CPUs.
-+ *
-+ * On UP it can prevent extra preemption.
-+ *
-+ * If this function wakes up a task, it executes a full memory barrier before
-+ * accessing the task state.
-+ */
-+void __wake_up_locked_sync_key(struct wait_queue_head *wq_head,
-+			       unsigned int mode, void *key)
-+{
-+        __wake_up_common(wq_head, mode, 1, WF_SYNC, key, NULL);
-+}
-+EXPORT_SYMBOL_GPL(__wake_up_locked_sync_key);
-+
- /*
-  * __wake_up_sync - see __wake_up_sync_key()
+ 	err = unlock_request(cs->req);
+@@ -1341,7 +1341,7 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+ 	if (!fud)
+ 		return -EPERM;
+ 
+-	bufs = kvmalloc_array(pipe->ring_size, sizeof(struct pipe_buffer),
++	bufs = kvmalloc_array(pipe->max_usage, sizeof(struct pipe_buffer),
+ 			      GFP_KERNEL);
+ 	if (!bufs)
+ 		return -ENOMEM;
+@@ -1353,7 +1353,7 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	if (pipe_occupancy(pipe->head, pipe->tail) + cs.nr_segs > pipe->ring_size) {
++	if (pipe_occupancy(pipe->head, pipe->tail) + cs.nr_segs > pipe->max_usage) {
+ 		ret = -EIO;
+ 		goto out;
+ 	}
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 8a0806fe12d3..12e47cae9425 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -403,7 +403,7 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ 
+ 	tail = pipe->tail;
+ 	head = pipe->head;
+-	max_usage = pipe->ring_size;
++	max_usage = pipe->max_usage;
+ 	mask = pipe->ring_size - 1;
+ 
+ 	/* We try to merge small writes */
+@@ -570,7 +570,7 @@ pipe_poll(struct file *filp, poll_table *wait)
+ 	}
+ 
+ 	if (filp->f_mode & FMODE_WRITE) {
+-		if (!pipe_full(head, tail, pipe->ring_size))
++		if (!pipe_full(head, tail, pipe->max_usage))
+ 			mask |= EPOLLOUT | EPOLLWRNORM;
+ 		/*
+ 		 * Most Unices do not set EPOLLERR for FIFOs but on Linux they
+@@ -695,6 +695,7 @@ struct pipe_inode_info *alloc_pipe_info(void)
+ 	if (pipe->bufs) {
+ 		init_waitqueue_head(&pipe->wait);
+ 		pipe->r_counter = pipe->w_counter = 1;
++		pipe->max_usage = pipe_bufs;
+ 		pipe->ring_size = pipe_bufs;
+ 		pipe->user = user;
+ 		mutex_init(&pipe->mutex);
+@@ -1149,9 +1150,10 @@ static long pipe_set_size(struct pipe_inode_info *pipe, unsigned long arg)
+ 	kfree(pipe->bufs);
+ 	pipe->bufs = bufs;
+ 	pipe->ring_size = nr_slots;
++	pipe->max_usage = nr_slots;
+ 	pipe->tail = tail;
+ 	pipe->head = head;
+-	return pipe->ring_size * PAGE_SIZE;
++	return pipe->max_usage * PAGE_SIZE;
+ 
+ out_revert_acct:
+ 	(void) account_pipe_buffers(pipe->user, nr_slots, pipe->ring_size);
+@@ -1184,7 +1186,7 @@ long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		ret = pipe_set_size(pipe, arg);
+ 		break;
+ 	case F_GETPIPE_SZ:
+-		ret = pipe->ring_size * PAGE_SIZE;
++		ret = pipe->max_usage * PAGE_SIZE;
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
+diff --git a/fs/splice.c b/fs/splice.c
+index bbc025236ff9..03b96eae084b 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -199,7 +199,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
+ 		goto out;
+ 	}
+ 
+-	while (!pipe_full(head, tail, pipe->ring_size)) {
++	while (!pipe_full(head, tail, pipe->max_usage)) {
+ 		struct pipe_buffer *buf = &pipe->bufs[head & mask];
+ 
+ 		buf->page = spd->pages[page_nr];
+@@ -239,7 +239,7 @@ ssize_t add_to_pipe(struct pipe_inode_info *pipe, struct pipe_buffer *buf)
+ 	if (unlikely(!pipe->readers)) {
+ 		send_sig(SIGPIPE, current, 0);
+ 		ret = -EPIPE;
+-	} else if (pipe_full(head, tail, pipe->ring_size)) {
++	} else if (pipe_full(head, tail, pipe->max_usage)) {
+ 		ret = -EAGAIN;
+ 	} else {
+ 		pipe->bufs[head & mask] = *buf;
+@@ -257,7 +257,7 @@ EXPORT_SYMBOL(add_to_pipe);
   */
+ int splice_grow_spd(const struct pipe_inode_info *pipe, struct splice_pipe_desc *spd)
+ {
+-	unsigned int max_usage = READ_ONCE(pipe->ring_size);
++	unsigned int max_usage = READ_ONCE(pipe->max_usage);
+ 
+ 	spd->nr_pages_max = max_usage;
+ 	if (max_usage <= PIPE_DEF_BUFFERS)
+@@ -381,7 +381,7 @@ static ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
+ 	ssize_t res;
+ 	int i;
+ 
+-	if (pipe_full(pipe->head, pipe->tail, pipe->ring_size))
++	if (pipe_full(pipe->head, pipe->tail, pipe->max_usage))
+ 		return -EAGAIN;
+ 
+ 	/*
+@@ -698,7 +698,7 @@ iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+ 		.pos = *ppos,
+ 		.u.file = out,
+ 	};
+-	int nbufs = pipe->ring_size;
++	int nbufs = pipe->max_usage;
+ 	struct bio_vec *array = kcalloc(nbufs, sizeof(struct bio_vec),
+ 					GFP_KERNEL);
+ 	ssize_t ret;
+@@ -721,9 +721,9 @@ iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+ 		if (ret <= 0)
+ 			break;
+ 
+-		if (unlikely(nbufs < pipe->ring_size)) {
++		if (unlikely(nbufs < pipe->max_usage)) {
+ 			kfree(array);
+-			nbufs = pipe->ring_size;
++			nbufs = pipe->max_usage;
+ 			array = kcalloc(nbufs, sizeof(struct bio_vec),
+ 					GFP_KERNEL);
+ 			if (!array) {
+@@ -963,7 +963,7 @@ ssize_t splice_direct_to_actor(struct file *in, struct splice_desc *sd,
+ 		loff_t pos = sd->pos, prev_pos = pos;
+ 
+ 		/* Don't try to read more the pipe has space for. */
+-		p_space = pipe->ring_size -
++		p_space = pipe->max_usage -
+ 			pipe_occupancy(pipe->head, pipe->tail);
+ 		read_len = min_t(size_t, len, p_space << PAGE_SHIFT);
+ 		ret = do_splice_to(in, &pos, pipe, read_len, flags);
+@@ -1090,7 +1090,7 @@ static int wait_for_space(struct pipe_inode_info *pipe, unsigned flags)
+ 			send_sig(SIGPIPE, current, 0);
+ 			return -EPIPE;
+ 		}
+-		if (!pipe_full(pipe->head, pipe->tail, pipe->ring_size))
++		if (!pipe_full(pipe->head, pipe->tail, pipe->max_usage))
+ 			return 0;
+ 		if (flags & SPLICE_F_NONBLOCK)
+ 			return -EAGAIN;
+@@ -1498,13 +1498,13 @@ static int opipe_prep(struct pipe_inode_info *pipe, unsigned int flags)
+ 	 * Check ->nrbufs without the inode lock first. This function
+ 	 * is speculative anyways, so missing one is ok.
+ 	 */
+-	if (pipe_full(pipe->head, pipe->tail, pipe->ring_size))
++	if (pipe_full(pipe->head, pipe->tail, pipe->max_usage))
+ 		return 0;
+ 
+ 	ret = 0;
+ 	pipe_lock(pipe);
+ 
+-	while (pipe_full(pipe->head, pipe->tail, pipe->ring_size)) {
++	while (pipe_full(pipe->head, pipe->tail, pipe->max_usage)) {
+ 		if (!pipe->readers) {
+ 			send_sig(SIGPIPE, current, 0);
+ 			ret = -EPIPE;
+@@ -1584,7 +1584,7 @@ static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
+ 		 * pipe is empty or the output pipe is full.
+ 		 */
+ 		if (pipe_empty(i_head, i_tail) ||
+-		    pipe_full(o_head, o_tail, opipe->ring_size)) {
++		    pipe_full(o_head, o_tail, opipe->max_usage)) {
+ 			/* Already processed some buffers, break */
+ 			if (ret)
+ 				break;
+@@ -1706,7 +1706,7 @@ static int link_pipe(struct pipe_inode_info *ipipe,
+ 		 * output room, break.
+ 		 */
+ 		if (pipe_empty(i_head, i_tail) ||
+-		    pipe_full(o_head, o_tail, opipe->ring_size))
++		    pipe_full(o_head, o_tail, opipe->max_usage))
+ 			break;
+ 
+ 		ibuf = &ipipe->bufs[i_tail & i_mask];
+diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
+index fad096697ff5..90055ff16550 100644
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -32,6 +32,7 @@ struct pipe_buffer {
+  *	@wait: reader/writer wait point in case of empty/full pipe
+  *	@head: The point of buffer production
+  *	@tail: The point of buffer consumption
++ *	@max_usage: The maximum number of slots that may be used in the ring
+  *	@ring_size: total number of buffers (should be a power of 2)
+  *	@tmp_page: cached released page
+  *	@readers: number of current readers of this pipe
+@@ -50,6 +51,7 @@ struct pipe_inode_info {
+ 	wait_queue_head_t wait;
+ 	unsigned int head;
+ 	unsigned int tail;
++	unsigned int max_usage;
+ 	unsigned int ring_size;
+ 	unsigned int readers;
+ 	unsigned int writers;
+@@ -176,9 +178,11 @@ static inline unsigned int pipe_space_for_user(unsigned int head, unsigned int t
+ 	unsigned int p_occupancy, p_space;
+ 
+ 	p_occupancy = pipe_occupancy(head, tail);
+-	if (p_occupancy >= pipe->ring_size)
++	if (p_occupancy >= pipe->max_usage)
+ 		return 0;
+ 	p_space = pipe->ring_size - p_occupancy;
++	if (p_space > pipe->max_usage)
++		p_space = pipe->max_usage;
+ 	return p_space;
+ }
+ 
+diff --git a/lib/iov_iter.c b/lib/iov_iter.c
+index 150a40bdb21a..134737e9d4ee 100644
+--- a/lib/iov_iter.c
++++ b/lib/iov_iter.c
+@@ -395,7 +395,7 @@ static size_t copy_page_to_iter_pipe(struct page *page, size_t offset, size_t by
+ 		i_head++;
+ 		buf = &pipe->bufs[i_head & p_mask];
+ 	}
+-	if (pipe_full(i_head, p_tail, pipe->ring_size))
++	if (pipe_full(i_head, p_tail, pipe->max_usage))
+ 		return 0;
+ 
+ 	buf->ops = &page_cache_pipe_buf_ops;
+@@ -528,7 +528,7 @@ static size_t push_pipe(struct iov_iter *i, size_t size,
+ 		pipe->bufs[iter_head & p_mask].len = PAGE_SIZE;
+ 		iter_head++;
+ 	}
+-	while (!pipe_full(iter_head, p_tail, pipe->ring_size)) {
++	while (!pipe_full(iter_head, p_tail, pipe->max_usage)) {
+ 		struct pipe_buffer *buf = &pipe->bufs[iter_head & p_mask];
+ 		struct page *page = alloc_page(GFP_USER);
+ 		if (!page)
