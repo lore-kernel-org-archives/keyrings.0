@@ -1,73 +1,247 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 31 Oct 2019 16:38:04 +0000
-Subject: Re: [RFC PATCH 07/10] pipe: Conditionalise wakeup in pipe_read() [ver #2]
-Message-Id: <3165.1572539884@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 23 Oct 2019 00:18:18 +0000
+Subject: [PATCH v1 6/6] KEYS: measure keys when they are created or updated
+Message-Id: <20191023001818.3684-7-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <fe167a90-1503-7ca2-4150-eeffd5cb1378@yandex-team.ru> <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk> <157186189069.3995.10292601951655075484.stgit@warthog.procyon.org.uk>
-In-Reply-To: <fe167a90-1503-7ca2-4150-eeffd5cb1378@yandex-team.ru>
-To: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191023001818.3684-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191023001818.3684-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+Cc: nramas@linux.microsoft.com
 
-Okay, attached is a change that might give you what you want.  I tried my
-pipe-bench program (see cover note) with perf.  The output of the program with
-the patch applied was:
+A new LSM function namely, security_key_create_or_update, has
+been added. This function is called by key_create_or_update
+function when a new key is created or an existing key is updated.
+This call is made when the key has been instantiated and linked
+to the target keyring.
 
--       pipe                  305127298     36262221772       302185181         7887690
+security_key_create_or_update is passed the target keyring, key,
+key creation flags, and a boolean flag indicating whether
+the key was newly created or an existing key was updated.
+This function calls the ima function ima_post_key_create_or_update
+to measure the key.
 
-The output of perf with the patch applied:
-
-        239,943.92 msec task-clock                #    1.997 CPUs utilized
-            17,728      context-switches          #   73.884 M/sec
-               124      cpu-migrations            #    0.517 M/sec
-             9,330      page-faults               #   38.884 M/sec
-   885,107,207,365      cycles                    # 3688822.793 GHz
- 1,386,873,499,490      instructions              #    1.57  insn per cycle
-   311,037,372,339      branches                  # 1296296921.931 M/sec
-        33,467,827      branch-misses             #    0.01% of all branches
-
-And without:
-
-        239,891.87 msec task-clock                #    1.997 CPUs utilized
-            22,187      context-switches          #   92.488 M/sec
-               133      cpu-migrations            #    0.554 M/sec
-             9,334      page-faults               #   38.909 M/sec
-   884,906,976,128      cycles                    # 3688787.725 GHz
- 1,391,986,932,265      instructions              #    1.57  insn per cycle
-   311,394,686,857      branches                  # 1298067400.849 M/sec
-        30,242,823      branch-misses             #    0.01% of all branches
-
-So it did make something like a 20% reduction in context switches.
-
-David
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
-diff --git a/fs/pipe.c b/fs/pipe.c
-index e3d5f7a39123..5167921edd73 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -276,7 +276,7 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
- 	size_t total_len = iov_iter_count(to);
- 	struct file *filp = iocb->ki_filp;
- 	struct pipe_inode_info *pipe = filp->private_data;
--	int do_wakeup;
-+	int do_wakeup, wake;
- 	ssize_t ret;
+ include/linux/ima.h      | 15 +++++++-
+ include/linux/security.h | 13 ++++++-
+ security/keys/key.c      | 78 +++++++++++++++++++++++++++++++++++-----
+ security/security.c      | 10 ++++++
+ 4 files changed, 105 insertions(+), 11 deletions(-)
 
- 	/* Null read succeeds. */
-@@ -329,11 +329,12 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
- 				tail++;
- 				pipe->tail = tail;
- 				do_wakeup = 1;
--				if (head - (tail - 1) == pipe->max_usage)
-+				wake = head - (tail - 1) == pipe->max_usage / 2;
-+				if (wake)
- 					wake_up_interruptible_sync_poll_locked(
- 						&pipe->wait, EPOLLOUT | EPOLLWRNORM);
- 				spin_unlock_irq(&pipe->wait.lock);
--				if (head - (tail - 1) == pipe->max_usage)
-+				if (wake)
- 					kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
- 			}
- 			total_len -= chars;
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index a20ad398d260..ce763901380d 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -24,7 +24,11 @@ extern int ima_post_read_file(struct file *file, void *buf, loff_t size,
+ 			      enum kernel_read_file_id id);
+ extern void ima_post_path_mknod(struct dentry *dentry);
+ extern void ima_kexec_cmdline(const void *buf, int size);
+-
++extern int ima_post_key_create_or_update(struct key *keyring,
++					 struct key *key,
++					 const struct cred *cred,
++					 unsigned long flags,
++					 bool create);
+ #ifdef CONFIG_IMA_KEXEC
+ extern void ima_add_kexec_buffer(struct kimage *image);
+ #endif
+@@ -91,6 +95,15 @@ static inline void ima_post_path_mknod(struct dentry *dentry)
+ }
+ 
+ static inline void ima_kexec_cmdline(const void *buf, int size) {}
++
++static inline int ima_post_key_create_or_update(struct key *keyring,
++						struct key *key,
++						const struct cred *cred,
++						unsigned long flags,
++						bool create)
++{
++	return 0;
++}
+ #endif /* CONFIG_IMA */
+ 
+ #ifndef CONFIG_IMA_KEXEC
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 5f7441abbf42..c8348da3db2e 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1677,7 +1677,9 @@ void security_key_free(struct key *key);
+ int security_key_permission(key_ref_t key_ref,
+ 			    const struct cred *cred, unsigned perm);
+ int security_key_getsecurity(struct key *key, char **_buffer);
+-
++int security_key_create_or_update(struct key *keyring, struct key *key,
++				  const struct cred *cred,
++				  unsigned long flags, bool create);
+ #else
+ 
+ static inline int security_key_alloc(struct key *key,
+@@ -1704,6 +1706,15 @@ static inline int security_key_getsecurity(struct key *key, char **_buffer)
+ 	return 0;
+ }
+ 
++static inline int security_key_create_or_update(struct key *keyring,
++						struct key *key,
++						const struct cred *cred,
++						unsigned long flags,
++						bool create)
++{
++	return 0;
++}
++
+ #endif
+ #endif /* CONFIG_KEYS */
+ 
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 764f4c57913e..b913feaf196e 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -781,7 +781,7 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+ }
+ 
+ /**
+- * key_create_or_update - Update or create and instantiate a key.
++ * __key_create_or_update - Update or create and instantiate a key.
+  * @keyring_ref: A pointer to the destination keyring with possession flag.
+  * @type: The type of key.
+  * @description: The searchable description for the key.
+@@ -789,6 +789,8 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+  * @plen: The length of @payload.
+  * @perm: The permissions mask for a new key.
+  * @flags: The quota flags for a new key.
++ * @create: Set to true if the key was newly created.
++ *          Set to false if the key was updated.
+  *
+  * Search the destination keyring for a key of the same description and if one
+  * is found, update it, otherwise create and instantiate a new one and create a
+@@ -805,13 +807,14 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
+  * On success, the possession flag from the keyring ref will be tacked on to
+  * the key ref before it is returned.
+  */
+-key_ref_t key_create_or_update(key_ref_t keyring_ref,
+-			       const char *type,
+-			       const char *description,
+-			       const void *payload,
+-			       size_t plen,
+-			       key_perm_t perm,
+-			       unsigned long flags)
++static key_ref_t __key_create_or_update(key_ref_t keyring_ref,
++					const char *type,
++					const char *description,
++					const void *payload,
++					size_t plen,
++					key_perm_t perm,
++					unsigned long flags,
++					bool *create)
+ {
+ 	struct keyring_index_key index_key = {
+ 		.description	= description,
+@@ -936,6 +939,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		goto error_link_end;
+ 	}
+ 
++	*create = true;
+ 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
+ 
+ error_link_end:
+@@ -948,7 +952,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ error:
+ 	return key_ref;
+ 
+- found_matching_key:
++found_matching_key:
+ 	/* we found a matching key, so we're going to try to update it
+ 	 * - we can drop the locks first as we have the key pinned
+ 	 */
+@@ -964,9 +968,65 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		}
+ 	}
+ 
++	*create = false;
+ 	key_ref = __key_update(key_ref, &prep);
+ 	goto error_free_prep;
+ }
++
++/**
++ * key_create_or_update - Update or create and instantiate a key.
++ * @keyring_ref: A pointer to the destination keyring with possession flag.
++ * @type: The type of key.
++ * @description: The searchable description for the key.
++ * @payload: The data to use to instantiate or update the key.
++ * @plen: The length of @payload.
++ * @perm: The permissions mask for a new key.
++ * @flags: The quota flags for a new key.
++ *
++ * Calls the internal function __key_create_or_update.
++ * If successful calls the security LSM hook.
++ */
++key_ref_t key_create_or_update(key_ref_t keyring_ref,
++			       const char *type,
++			       const char *description,
++			       const void *payload,
++			       size_t plen,
++			       key_perm_t perm,
++			       unsigned long flags)
++{
++	key_ref_t key_ref;
++	struct key *keyring, *key = NULL;
++	int ret = 0;
++	bool create = false;
++
++	key_ref = __key_create_or_update(keyring_ref, type, description,
++					 payload, plen, perm, flags,
++					 &create);
++	if (IS_ERR(key_ref))
++		goto out;
++
++	keyring = key_ref_to_ptr(keyring_ref);
++	key = key_ref_to_ptr(key_ref);
++
++	/* let the security module know about
++	 * the created or updated key.
++	 */
++	ret = security_key_create_or_update(keyring, key,
++					    current_cred(),
++					    flags, create);
++	if (ret < 0)
++		goto security_error;
++	else
++		goto out;
++
++security_error:
++	key_unlink(keyring, key);
++	key_put(key);
++	key_ref = ERR_PTR(ret);
++
++out:
++	return key_ref;
++}
+ EXPORT_SYMBOL(key_create_or_update);
+ 
+ /**
+diff --git a/security/security.c b/security/security.c
+index 250ee2d76406..707a9e7fa94d 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -2303,6 +2303,16 @@ int security_key_getsecurity(struct key *key, char **_buffer)
+ 	return call_int_hook(key_getsecurity, 0, key, _buffer);
+ }
+ 
++int security_key_create_or_update(struct key *keyring,
++				  struct key *key,
++				  const struct cred *cred,
++				  unsigned long flags,
++				  bool create)
++{
++	return ima_post_key_create_or_update(keyring, key, cred,
++					     flags, create);
++}
++
+ #endif	/* CONFIG_KEYS */
+ 
+ #ifdef CONFIG_AUDIT
+-- 
+2.17.1
