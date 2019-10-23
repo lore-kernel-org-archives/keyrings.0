@@ -1,50 +1,107 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 22 Oct 2019 13:17:36 +0000
-Subject: Re: WARNING: refcount bug in find_key_to_update
-Message-Id: <24777.1571750256@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 23 Oct 2019 00:18:14 +0000
+Subject: [PATCH v1 2/6] KEYS: ima: Refactored process_buffer_measurement function so that it can measure any 
+Message-Id: <20191023001818.3684-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <11434.1571740533@warthog.procyon.org.uk>
- <CAHk-=wjFozfjV34_qy3_Z155uz_Z7qFVfE8h=_9ceGU-SVk9hA@mail.gmail.com>
- <000000000000830fe50595115344@google.com>
- <00000000000071e2fc05951229ad@google.com>
-In-Reply-To: <11434.1571740533@warthog.procyon.org.uk>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: aou@eecs.berkeley.edu, syzbot <syzbot+6455648abc28dbdd1e7f@syzkaller.appspotmail.com>, Palmer Dabbelt <palmer@sifive.com>, syzkaller-bugs <syzkaller-bugs@googlegroups.com>, James Morris James Morris <jmorris@namei.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dhowells@redhat.com, LSM List <linux-security-module@vger.kernel.org>, keyrings@vger.kernel.org, linux-riscv@lists.infradead.org, Linus Torvalds <torvalds@linux-foundation.org>, "Serge E. Hallyn" <serge@hallyn.com>
+References: <20191023001818.3684-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191023001818.3684-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+Cc: nramas@linux.microsoft.com
 
-Okay, I managed to catch a backtrace for this line:
+process_buffer_measurement currently supports measuring kexec command line
+only. This function has been refactored to support more than kexec_cmdline.
+With this change this function can be used for measuring any buffer.
+This function is now also used by ima to measure keys besides used for
+measuring kexec command line.
 
-	encrypted_key: key user:syz not found (-126)
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ security/integrity/ima/ima.h      |  3 +++
+ security/integrity/ima/ima_main.c | 29 ++++++++++++++---------------
+ 2 files changed, 17 insertions(+), 15 deletions(-)
 
-looking like:
-
-	CPU: 0 PID: 8878 Comm: syz-executor.0 Not tainted 5.4.0-rc3+ #0
-	Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS Google 01/01/2011
-	Call Trace:
-	 dump_stack+0x172/0x1f0
-	 request_master_key.isra.0.cold+0x62/0xc3
-	 encrypted_read+0x221/0x830
-	 ? get_derived_key+0xf0/0xf0
-	 ? keyctl_read_key+0x1c2/0x2b0
-	 ? __kasan_check_write+0x14/0x20
-	 ? down_read+0x109/0x430
-	 ? security_key_permission+0x8d/0xc0
-	 ? down_read_killable+0x490/0x490
-	 ? key_task_permission+0x1b5/0x3a0
-	 keyctl_read_key+0x231/0x2b0
-	 __x64_sys_keyctl+0x171/0x470
-	 do_syscall_64+0xfa/0x760
-	entry_SYSCALL_64_after_hwframe+0x49/0xbe
-
-So something somewhere is calling keyctl_read() in userspace on the encrypted
-key and that is then referring across to the user key added.
-
-Also, the encrypted key is being given the following payload:
-
-	ENCRYPTED: 'new default user:syz 04096'
-
-in at least one of the cases that encrypted_update() being called.
-
-David
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 011b91c79351..b6847ee1f47a 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -209,6 +209,9 @@ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
+ 			   struct evm_ima_xattr_data *xattr_value,
+ 			   int xattr_len, int pcr,
+ 			   struct ima_template_desc *template_desc);
++void process_buffer_measurement(const void *buf, int size,
++				const char *eventname, int pcr,
++				struct ima_template_desc *template_desc);
+ void ima_audit_measurement(struct integrity_iint_cache *iint,
+ 			   const unsigned char *filename);
+ int ima_alloc_init_template(struct ima_event_data *event_data,
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 584019728660..8e965d18fb21 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -610,14 +610,14 @@ int ima_load_data(enum kernel_load_data_id id)
+  * @buf: pointer to the buffer that needs to be added to the log.
+  * @size: size of buffer(in bytes).
+  * @eventname: event name to be used for the buffer entry.
+- * @cred: a pointer to a credentials structure for user validation.
+- * @secid: the secid of the task to be validated.
++ * @pcr: pcr to extend the measurement
++ * @template_desc: template description
+  *
+  * Based on policy, the buffer is measured into the ima log.
+  */
+-static void process_buffer_measurement(const void *buf, int size,
+-				       const char *eventname,
+-				       const struct cred *cred, u32 secid)
++void process_buffer_measurement(const void *buf, int size,
++				const char *eventname, int pcr,
++				struct ima_template_desc *template_desc)
+ {
+ 	int ret = 0;
+ 	struct ima_template_entry *entry = NULL;
+@@ -626,19 +626,11 @@ static void process_buffer_measurement(const void *buf, int size,
+ 					    .filename = eventname,
+ 					    .buf = buf,
+ 					    .buf_len = size};
+-	struct ima_template_desc *template_desc = NULL;
+ 	struct {
+ 		struct ima_digest_data hdr;
+ 		char digest[IMA_MAX_DIGEST_SIZE];
+ 	} hash = {};
+ 	int violation = 0;
+-	int pcr = CONFIG_IMA_MEASURE_PCR_IDX;
+-	int action = 0;
+-
+-	action = ima_get_action(NULL, cred, secid, 0, KEXEC_CMDLINE, &pcr,
+-				&template_desc);
+-	if (!(action & IMA_MEASURE))
+-		return;
+ 
+ 	iint.ima_hash = &hash.hdr;
+ 	iint.ima_hash->algo = ima_hash_algo;
+@@ -670,12 +662,19 @@ static void process_buffer_measurement(const void *buf, int size,
+  */
+ void ima_kexec_cmdline(const void *buf, int size)
+ {
++	int pcr = CONFIG_IMA_MEASURE_PCR_IDX;
++	struct ima_template_desc *template_desc = ima_template_desc_current();
++	int action;
+ 	u32 secid;
+ 
+ 	if (buf && size != 0) {
+ 		security_task_getsecid(current, &secid);
+-		process_buffer_measurement(buf, size, "kexec-cmdline",
+-					   current_cred(), secid);
++		action = ima_get_action(NULL, current_cred(), secid, 0,
++					KEXEC_CMDLINE, &pcr, &template_desc);
++		if (!(action & IMA_MEASURE))
++			return;
++		process_buffer_measurement(buf, size, "kexec-cmdline", pcr,
++					   template_desc);
+ 	}
+ }
+ 
+-- 
+2.17.1
