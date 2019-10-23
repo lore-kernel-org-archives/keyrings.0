@@ -1,60 +1,208 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 15 Oct 2019 21:47:58 +0000
-Subject: [RFC PATCH 01/21] pipe: Reduce #inclusion of pipe_fs_i.h
-Message-Id: <157117607843.15019.8325197788819637475.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 23 Oct 2019 00:18:12 +0000
+Subject: [PATCH v1 0/6] KEYS: measure keys when they are created or updated
+Message-Id: <20191023001818.3684-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+To: zohar@linux.ibm.com, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+Cc: nramas@linux.microsoft.com
 
-Remove some #inclusions of linux/pipe_fs_i.h that don't seem to be
-necessary any more.
+Problem Statement:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Keys created or updated in the system are currently not being measured.
+Therefore an attestation service, for instance, would not be able to
+attest whether or not the trusted keys keyring(s), for instance, contain
+only known good (trusted) keys.
 
- fs/exec.c                  |    1 -
- fs/ocfs2/aops.c            |    1 -
- security/smack/smack_lsm.c |    1 -
- 3 files changed, 3 deletions(-)
+ima measures system files, command line arguments passed to kexec, and
+boot aggregate. It can be used to measure keys as well. But there is
+no mechanism available in the kernel for ima to know when a key is
+created or updated.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 555e93c7dec8..57bc7ef8d31b 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -59,7 +59,6 @@
- #include <linux/kmod.h>
- #include <linux/fsnotify.h>
- #include <linux/fs_struct.h>
--#include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
- #include <linux/compat.h>
- #include <linux/vmalloc.h>
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 8de1c9d644f6..c50ac6b7415b 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -11,7 +11,6 @@
- #include <linux/pagemap.h>
- #include <asm/byteorder.h>
- #include <linux/swap.h>
--#include <linux/pipe_fs_i.h>
- #include <linux/mpage.h>
- #include <linux/quotaops.h>
- #include <linux/blkdev.h>
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index abeb09c30633..ecea41ce919b 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -28,7 +28,6 @@
- #include <linux/icmpv6.h>
- #include <linux/slab.h>
- #include <linux/mutex.h>
--#include <linux/pipe_fs_i.h>
- #include <net/cipso_ipv4.h>
- #include <net/ip.h>
- #include <net/ipv6.h>
+This change aims to address measuring keys created or updated
+in the system.
+
+To achieve the above the following changes have been made:
+
+ - A new LSM function namely, security_key_create_or_update, has
+   been added. This function is called by key_create_or_update
+   function when a new key is created or an existing key is updated.
+   This call is made when the key has been instantiated and linked
+   to the target keyring.
+
+   security_key_create_or_update is passed the target keyring, key,
+   key creation flags, and a boolean flag indicating whether
+   the key was newly created or an existing key was updated.
+
+ - Added a new ima hook namely, ima_post_key_create_or_update, which
+   measures the key. The measurement can be controlled through ima policy.
+
+   In this change set a new ima policy BUILTIN_TRUSTED_KEYS has been
+   added to measure keys added to the builtin_trusted_keys keyring.
+   In future, this can be extended to measure keys added to
+   other keyrings.
+
+Change Log:
+
+  v1:
+
+  => LSM function for key_create_or_update. It calls ima.
+  => Added ima hook for measuring keys
+  => ima measures keys based on ima policy.
+
+  v0:
+
+  => Added LSM hook for key_create_or_update.
+  => Measure keys added to builtin or secondary trusted keys keyring.
+
+Background:
+
+Currently ima measures file hashes and .ima signatures. ima signatures
+are validated against keys in the ".ima" keyring. If the kernel is built
+with CONFIG_IMA_KEYRINGS_PERMIT_SIGNED_BY_BUILTIN_OR_SECONDARY enabled,
+then all keys in ".ima" keyring must be signed by a key in
+".builtin_trusted_keys" or ".secondary_trusted_keys" keyrings.
+
+Although ima supports the above configuration, not having an insight
+into what keys are present in these trusted keys keyrings would prevent
+an attestation service from validating a client machine.
+ 
+On systems with CONFIG_IMA_KEYRINGS_PERMIT_SIGNED_BY_BUILTIN_OR_SECONDARY
+enabled, measuring keys in the  ".builtin_trusted_keys" keyring provides
+a mechanism to attest that the client's system binaries are indeed signed
+by signers that chain to known trusted keys.
+
+Without this change, to attest the clients one needs to maintain
+an "allowed list" of file hashes of all versions of all client binaries
+that are deployed on the clients in the enterprise. That is a huge
+operational challenge in a large scale environment of clients with
+heterogenous builds. This also limits scalability and agility of
+rolling out frequent client binary updates.
+
+Testing performed:
+
+  * Booted the kernel with this change.
+  * Executed keyctl tests from the Linux Test Project (LTP)
+  * Added a new key to a keyring and verified "key create" code path.
+    => In this case added a key to builtin_trusted_keys keyring.
+    => Verified ima measured this key only when a policy is set.
+  * Added the same key again and verified "key update" code path.
+    => Add the same key to builtin_trusted_keys keyring.
+    => Verified ima measured the key only when a policy is set.
+  * Forced the LSM function security_key_create_or_update to
+    return an error and verified that the key was not added to
+    the keyring ("keyctl list <keyring>" does not list the key).
+
+Questions and concerns raised by reviewers on this patch set:
+
+Question 1:
+Is "Signed with a trusted key" equal to "Trusted file"?
+Doesn't the service need the hashes of the system files to determine
+whether a file is trusted or not?
+"Signed with a trusted key" does not equal "Trusted"
+
+Answer:
+Agree "Signed with a trusted key" may not equal "Trusted".
+To address this, the attesting service can maintain a small
+manageable set of bad hashes (a "Blocked list") and a list of
+trusted keys expected in client's .builtin_trusted_keys" keyring.
+Using this data, the service can detect the presence of
+"Disallowed (untrusted) version of client binaries".
+
+Question 2:
+Providing more data to the service (such as ".builtin_trusted_keys"),
+empowers the service  to deny access to clients (block clients).
+IMA walks a fine line in enforcing and measuring file integrity.
+This patchset breaches that fine line and in doing so brings back
+the fears of trusted computing.
+
+Answer:
+Any new measurement we add in IMA will provide more data to service
+and can enable it to deny access to clients. It is not clear why this patch
+set would breach the fine line between measuring and enforcing.
+Since this patch set is disabled by default and enabled through
+CONFIG_IMA_MEASURE_TRUSTED_KEYS, only those enterprises that
+require this new measurement can opt-in for it. Since it is disabled
+by default, it does not restrict the autonomy of independent users
+who are unaffected by attestation.
+
+Question 3:
+IMA log already contains a pointer to the IMA keys used for signature
+verification. Why does the service need to care what keys were used
+to sign (install) the IMA keys? What is gained by measuring the keys
+in the ".builtin_trusted_keys"
+
+
+Answer:
+To attest the clients using the current IMA log, service needs to maintain
+hashes of all the deployed versions of all the system binaries for their
+enterprise. This will introduce a very high operational overhead in
+a large scale environment of clients with heterogenous builds.
+This limits scalability and agility of rolling out frequent client
+binary updates.
+
+
+On the other hand, with the current patch set, we will have IMA
+validate the file signature on the clients and the service validate
+that the IMA keys were installed using trusted keys.
+
+
+This provides a chain of trust:
+    => IMA Key validates file signature on the client
+    => Built-In trusted key attests IMA key on the client
+    => Attestation service attests the Built-In trusted keys
+         reported by the client in the IMA log
+
+
+This approach, therefore, would require the service to maintain
+a manageble set of trusted keys that it receives from a trusted source.
+And, verify if the clients only have keys from that set of trusted keys.
+
+Question 4:
+Where will the attestation service receive the keys to validate against?
+
+Answer:
+Attestation service will receive the keys from a trusted source such as
+the enterprise build services that provides the client builds.
+The service will use this set of keys to verify that the keys reported by
+the clients in the IMA log contains only keys from this trusted list.
+
+
+Question 5:
+What is changing in the IMA log through this patch set?
+
+
+Answer:
+This patch set does not remove any data that is currently included
+in the IMA log. It only adds more data to the IMA log - the data on
+".builtin_trusted_keys"
+
+Lakshmi Ramasubramanian (6):
+  KEYS: Helper function to check if the given keyring is
+    builtin_trusted_keys
+  ima: Refactored process_buffer_measurement function so that it can
+    measure any buffer (and not just KEXEC_CMDLINE one)
+  KEYS: ima hook to measure builtin_trusted_keys
+  KEYS: ima functions to queue and dequeue keys to measure
+  KEYS: measure queued keys
+  KEYS: measure keys when they are created or updated
+
+ Documentation/ABI/testing/ima_policy |   1 +
+ certs/system_keyring.c               |   5 +
+ include/keys/system_keyring.h        |   2 +
+ include/linux/ima.h                  |  15 ++-
+ include/linux/security.h             |  13 ++-
+ security/integrity/ima/ima.h         |  19 ++++
+ security/integrity/ima/ima_api.c     |   1 +
+ security/integrity/ima/ima_init.c    |  11 +-
+ security/integrity/ima/ima_main.c    |  52 ++++++---
+ security/integrity/ima/ima_policy.c  |   5 +-
+ security/integrity/ima/ima_queue.c   | 160 +++++++++++++++++++++++++++
+ security/keys/key.c                  |  78 +++++++++++--
+ security/security.c                  |  10 ++
+ 13 files changed, 344 insertions(+), 28 deletions(-)
+
+-- 
+2.17.1
