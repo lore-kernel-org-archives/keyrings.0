@@ -1,132 +1,203 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 15 Oct 2019 21:49:27 +0000
-Subject: [RFC PATCH 11/21] security: Add a hook for the point of notification insertion
-Message-Id: <157117616761.15019.7679238411987421969.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 23 Oct 2019 23:39:48 +0000
+Subject: [PATCH v2 2/4] KEYS: Queue key for measurement if ima is not initialized. Measure queued keys when i
+Message-Id: <20191023233950.22072-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191023233950.22072-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191023233950.22072-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+Cc: nramas@linux.microsoft.com
 
-Add a security hook that allows an LSM to rule on whether a notification
-message is allowed to be inserted into a particular watch queue.
+Defined functions to queue key for measurement if ima is not yet
+initialized. ima hook function ima_post_key_create_or_update will
+queue the key if ima is not yet initialized.
 
-The hook is given the following information:
+Process queued keys and measure them when ima initialization
+is completed.
 
- (1) The credentials of the triggerer (which may be init_cred for a system
-     notification, eg. a hardware error).
-
- (2) The credentials of the whoever set the watch.
-
- (3) The notification message.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
+ security/integrity/ima/ima.h       | 13 +++++
+ security/integrity/ima/ima_init.c  |  9 ++-
+ security/integrity/ima/ima_main.c  |  4 +-
+ security/integrity/ima/ima_queue.c | 94 ++++++++++++++++++++++++++++++
+ 4 files changed, 118 insertions(+), 2 deletions(-)
 
- include/linux/lsm_hooks.h |   14 ++++++++++++++
- include/linux/security.h  |   15 ++++++++++++++-
- security/security.c       |    9 +++++++++
- 3 files changed, 37 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index d62e92b768c4..8e1cbc27fc62 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1427,6 +1427,12 @@
-  *	Check to see if a process is allowed to watch for event notifications
-  *	from devices (as a global set).
-  *
-+ * @post_notification:
-+ *	Check to see if a watch notification can be posted to a particular
-+ *	queue.
-+ *	@w_cred: The credentials of the whoever set the watch.
-+ *	@cred: The event-triggerer's credentials
-+ *	@n: The notification being posted
-  *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-@@ -1716,6 +1722,11 @@ union security_list_options {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	int (*watch_devices)(void);
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	int (*post_notification)(const struct cred *w_cred,
-+				 const struct cred *cred,
-+				 struct watch_notification *n);
-+#endif
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 2d4130ff5655..38279707632a 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -199,6 +199,17 @@ enum ima_hooks {
+ 	__ima_hooks(__ima_hook_enumify)
+ };
  
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -2001,6 +2012,9 @@ struct security_hook_heads {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	struct hlist_head watch_devices;
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	struct hlist_head post_notification;
-+#endif /* CONFIG_WATCH_QUEUE */
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 5d1867772022..ee98e020c749 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -57,6 +57,8 @@ struct mm_struct;
- struct fs_context;
- struct fs_parameter;
- enum fs_value_type;
-+struct watch;
-+struct watch_notification;
++/*
++ * To track trusted keys that need to be measured when IMA is initialized.
++ */
++struct ima_trusted_key_entry {
++	struct list_head list;
++	void *public_key;
++	u32  public_key_len;
++	char *key_description;
++	enum ima_hooks func;
++};
++
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+@@ -225,6 +236,8 @@ int ima_store_template(struct ima_template_entry *entry, int violation,
+ 		       const unsigned char *filename, int pcr);
+ void ima_free_template_entry(struct ima_template_entry *entry);
+ const char *ima_d_path(const struct path *path, char **pathbuf, char *filename);
++int ima_queue_key_for_measurement(struct key *key, enum ima_hooks func);
++void ima_measure_queued_keys(void);
  
- /* Default (no) options for the capable function */
- #define CAP_OPT_NONE 0x0
-@@ -1287,6 +1289,18 @@ static inline int security_watch_devices(void)
+ /* IMA policy related functions */
+ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
+diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
+index 52847ce765a4..8734ed5322c7 100644
+--- a/security/integrity/ima/ima_init.c
++++ b/security/integrity/ima/ima_init.c
+@@ -132,5 +132,12 @@ int __init ima_init(void)
+ 
+ 	ima_init_policy();
+ 
+-	return ima_fs_init();
++	rc = ima_fs_init();
++	if (rc != 0)
++		return rc;
++
++	ima_initialized = true;
++
++	ima_measure_queued_keys();
++	return 0;
+ }
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 8bde12385912..bce430b3386e 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -710,8 +710,10 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
+ 	if (key->type != &key_type_asymmetric)
+ 		return;
+ 
+-	if (!ima_initialized)
++	if (!ima_initialized) {
++		ima_queue_key_for_measurement(key, NONE);
+ 		return;
++	}
+ 
+ 	pk = key->payload.data[asym_crypto];
+ 	process_buffer_measurement(pk->key, pk->keylen,
+diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
+index 1ce8b1701566..d42987022c12 100644
+--- a/security/integrity/ima/ima_queue.c
++++ b/security/integrity/ima/ima_queue.c
+@@ -46,6 +46,13 @@ struct ima_h_table ima_htable = {
+  */
+ static DEFINE_MUTEX(ima_extend_list_mutex);
+ 
++/*
++ * Used to synchronize access to the list of trusted keys (ima_trusted_keys)
++ * that need to be measured when IMA is initialized.
++ */
++static DEFINE_MUTEX(ima_trusted_keys_mutex);
++static LIST_HEAD(ima_trusted_keys);
++
+ /* lookup up the digest value in the hash table, and return the entry */
+ static struct ima_queue_entry *ima_lookup_digest_entry(u8 *digest_value,
+ 						       int pcr)
+@@ -232,3 +239,90 @@ int __init ima_init_digests(void)
+ 
  	return 0;
  }
- #endif
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n);
-+#else
-+static inline int security_post_notification(const struct cred *w_cred,
-+					     const struct cred *cred,
-+					     struct watch_notification *n)
-+{
-+	return 0;
-+}
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 
-@@ -1912,4 +1926,3 @@ static inline void security_bpf_prog_free(struct bpf_prog_aux *aux)
- #endif /* CONFIG_BPF_SYSCALL */
- 
- #endif /* ! __LINUX_SECURITY_H */
--
-diff --git a/security/security.c b/security/security.c
-index 4f970716fa6c..c9d5c3d5472a 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1956,6 +1956,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n)
-+{
-+	return call_int_hook(post_notification, 0, w_cred, cred, n);
-+}
-+#endif /* CONFIG_WATCH_QUEUE */
 +
- #ifdef CONFIG_KEY_NOTIFICATIONS
- int security_watch_key(struct key *key)
- {
++static void ima_free_trusted_key_entry(struct ima_trusted_key_entry *entry)
++{
++	if (entry != NULL) {
++		if (entry->public_key != NULL)
++			kzfree(entry->public_key);
++		if (entry->key_description != NULL)
++			kzfree(entry->key_description);
++		kzfree(entry);
++	}
++}
++
++static struct ima_trusted_key_entry *ima_alloc_trusted_queue_entry(
++	struct key *key,
++	enum ima_hooks func)
++{
++	int rc = 0;
++	const struct public_key *pk;
++	size_t key_description_len;
++	struct ima_trusted_key_entry *entry = NULL;
++
++	pk = key->payload.data[asym_crypto];
++	key_description_len = strlen(key->description) + 1;
++	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
++	if (entry != NULL) {
++		entry->public_key = kzalloc(pk->keylen, GFP_KERNEL);
++		entry->key_description +			kzalloc(key_description_len, GFP_KERNEL);
++	}
++
++	if ((entry = NULL) || (entry->public_key = NULL) ||
++	    (entry->key_description = NULL)) {
++		rc = -ENOMEM;
++		goto out;
++	}
++
++	strcpy(entry->key_description, key->description);
++	memcpy(entry->public_key, pk->key, pk->keylen);
++	entry->public_key_len = pk->keylen;
++	entry->func = func;
++	rc = 0;
++
++out:
++	if (rc) {
++		ima_free_trusted_key_entry(entry);
++		entry = NULL;
++	}
++
++	return entry;
++}
++
++int ima_queue_key_for_measurement(struct key *key, enum ima_hooks func)
++{
++	int rc = 0;
++	struct ima_trusted_key_entry *entry = NULL;
++
++	mutex_lock(&ima_trusted_keys_mutex);
++
++	entry = ima_alloc_trusted_queue_entry(key, func);
++	if (entry != NULL) {
++		INIT_LIST_HEAD(&entry->list);
++		list_add_tail(&entry->list, &ima_trusted_keys);
++	} else
++		rc = -ENOMEM;
++
++	mutex_unlock(&ima_trusted_keys_mutex);
++
++	return rc;
++}
++
++void ima_measure_queued_keys(void)
++{
++	struct ima_trusted_key_entry *entry, *tmp;
++
++	mutex_lock(&ima_trusted_keys_mutex);
++
++	list_for_each_entry_safe(entry, tmp, &ima_trusted_keys, list) {
++		process_buffer_measurement(entry->public_key,
++					   entry->public_key_len,
++					   entry->key_description,
++					   NONE, 0);
++		list_del(&entry->list);
++		ima_free_trusted_key_entry(entry);
++	}
++
++	mutex_unlock(&ima_trusted_keys_mutex);
++}
+-- 
+2.17.1
