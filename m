@@ -1,53 +1,89 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Mon, 28 Oct 2019 14:58:36 +0000
-Subject: Re: [PATCH v2 1/4] KEYS: Defined an ima hook for measuring keys on key create or update
-Message-Id: <1d7730ff-9847-c6be-4f4f-8cf1e90a71f2@linux.microsoft.com>
+Date: Wed, 23 Oct 2019 00:18:15 +0000
+Subject: [PATCH v1 3/6] KEYS: ima hook to measure builtin_trusted_keys
+Message-Id: <20191023001818.3684-4-nramas@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191023233950.22072-1-nramas@linux.microsoft.com>
- <20191023233950.22072-2-nramas@linux.microsoft.com>
- <1572032428.4532.72.camel@linux.ibm.com>
- <c1de8055-89a7-25dd-d99a-427e2c2c4c59@linux.microsoft.com>
- <1572187644.4532.211.camel@linux.ibm.com>
-In-Reply-To: <1572187644.4532.211.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20191023001818.3684-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191023001818.3684-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+Cc: nramas@linux.microsoft.com
 
-On 10/27/19 7:47 AM, Mimi Zohar wrote:
+Add a new ima hook to measure keys added to builtin_trusted_keys
+keyring.
 
->>> There's no reason to define a new variable to determine if IMA is
->>> initialized.  Use ima_policy_flag.
->>
->> Please correct me if I am wrong -
->>
->> ima_policy_flag will be set to 0 if IMA is not yet initialized
->> OR
->> IMA is initialized, but ima_policy_flag could be still set to 0 (say,
->> due to the configured policy).
->>
->> In the latter case the measurement request should be a NOP immediately.
-> 
-> I'm not sure.  The builtin keys most likely will be loaded prior to a
-> custom IMA policy containing "keyring" rules are defined.
-> 
-> Mimi
+Updated ima_match_rules function to handle the new ima hook.
+This is used to determine if ima policy requires measurement
+of keys added to builtin_trusted_keys keyring.
 
-I am not sure if I described it clearly - let me clarify:
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ Documentation/ABI/testing/ima_policy | 1 +
+ security/integrity/ima/ima.h         | 1 +
+ security/integrity/ima/ima_api.c     | 1 +
+ security/integrity/ima/ima_policy.c  | 5 ++++-
+ 4 files changed, 7 insertions(+), 1 deletion(-)
 
-Say, we use ima_policy_flag to determine whether to
-measure the key immediately or
-queue the key for measurement and, measure when IMA is initialized.
-
-We can incorrectly keep queuing keys in the case when IMA is 
-initialized, but due to the way IMA policy is configured ima_policy_flag 
-is still 0.
-
-That's why I feel a separate boolean flag would be needed to know 
-whether IMA is initialized or not.
-
-If IMA is initialized, ima_policy_flag will dictate whether to measure 
-the key or not.
-
-thanks,
-  -lakshmi
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index fc376a323908..25566c74e679 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -29,6 +29,7 @@ Description:
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+ 				[KEXEC_CMDLINE]
++				[BUILTIN_TRUSTED_KEYS]
+ 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
+ 			       [[^]MAY_EXEC]
+ 			fsmagic:= hex value
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index b6847ee1f47a..0d2908036882 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -189,6 +189,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ 	hook(KEXEC_INITRAMFS_CHECK)	\
+ 	hook(POLICY_CHECK)		\
+ 	hook(KEXEC_CMDLINE)		\
++	hook(BUILTIN_TRUSTED_KEYS)	\
+ 	hook(MAX_CHECK)
+ #define __ima_hook_enumify(ENUM)	ENUM,
+ 
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index f614e22bf39f..cc04706b7e7a 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -175,6 +175,7 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
+  *	subj,obj, and type: are LSM specific.
+  *	func: FILE_CHECK | BPRM_CHECK | CREDS_CHECK | MMAP_CHECK | MODULE_CHECK
+  *	| KEXEC_CMDLINE
++ *	| BUILTIN_TRUSTED_KEYS
+  *	mask: contains the permission mask
+  *	fsmagic: hex value
+  *
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 6df7f641ff66..944636076152 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -370,7 +370,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
+ {
+ 	int i;
+ 
+-	if (func = KEXEC_CMDLINE) {
++	if ((func = KEXEC_CMDLINE) || (func = BUILTIN_TRUSTED_KEYS)) {
+ 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
+ 			return true;
+ 		return false;
+@@ -959,6 +959,9 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 				entry->func = POLICY_CHECK;
+ 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
+ 				entry->func = KEXEC_CMDLINE;
++			else if (strcmp(args[0].from,
++					"BUILTIN_TRUSTED_KEYS") = 0)
++				entry->func = BUILTIN_TRUSTED_KEYS;
+ 			else
+ 				result = -EINVAL;
+ 			if (!result)
+-- 
+2.17.1
