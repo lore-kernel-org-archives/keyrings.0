@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 23 Oct 2019 20:17:22 +0000
-Subject: [RFC PATCH 02/10] Remove the nr_exclusive argument from __wake_up_sync_key() [ver #2]
-Message-Id: <157186184284.3995.13755220637594977072.stgit@warthog.procyon.org.uk>
+Date: Wed, 23 Oct 2019 20:18:19 +0000
+Subject: [RFC PATCH 08/10] pipe: Rearrange sequence in pipe_write() to preallocate slot [ver #2]
+Message-Id: <157186189940.3995.3273332042636743290.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,105 +11,135 @@ In-Reply-To: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.u
 To: torvalds@linux-foundation.org
 Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Remove the nr_exclusive argument from __wake_up_sync_key() and derived
-functions as everything seems to set it to 1.  Note also that if it wasn't
-set to 1, it would clear WF_SYNC anyway.
+Rearrange the sequence in pipe_write() so that the allocation of the new
+buffer, the allocation of a ring slot and the attachment to the ring is
+done under the pipe wait spinlock and then the lock is dropped and the
+buffer can be filled.
+
+The data copy needs to be done with the spinlock unheld and irqs enabled,
+so the lock needs to be dropped first.  However, the reader can't progress
+as we're holding pipe->mutex.
+
+We also need to drop the lock as that would impact others looking at the
+pipe waitqueue, such as poll(), the consumer and a future kernel message
+writer.
+
+We just abandon the preallocated slot if we get a copy error.  Future
+writes may continue it and a future read will eventually recycle it.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/wait.h |    8 ++++----
- kernel/exit.c        |    2 +-
- kernel/sched/wait.c  |   14 ++++----------
- 3 files changed, 9 insertions(+), 15 deletions(-)
+ fs/pipe.c |   51 +++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 33 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 3eb7cae8206c..bb7676d396cd 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -201,9 +201,9 @@ void __wake_up(struct wait_queue_head *wq_head, unsigned int mode, int nr, void
- void __wake_up_locked_key(struct wait_queue_head *wq_head, unsigned int mode, void *key);
- void __wake_up_locked_key_bookmark(struct wait_queue_head *wq_head,
- 		unsigned int mode, void *key, wait_queue_entry_t *bookmark);
--void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode, int nr, void *key);
-+void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode, void *key);
- void __wake_up_locked(struct wait_queue_head *wq_head, unsigned int mode, int nr);
--void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode, int nr);
-+void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode);
- 
- #define wake_up(x)			__wake_up(x, TASK_NORMAL, 1, NULL)
- #define wake_up_nr(x, nr)		__wake_up(x, TASK_NORMAL, nr, NULL)
-@@ -214,7 +214,7 @@ void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode, int nr);
- #define wake_up_interruptible(x)	__wake_up(x, TASK_INTERRUPTIBLE, 1, NULL)
- #define wake_up_interruptible_nr(x, nr)	__wake_up(x, TASK_INTERRUPTIBLE, nr, NULL)
- #define wake_up_interruptible_all(x)	__wake_up(x, TASK_INTERRUPTIBLE, 0, NULL)
--#define wake_up_interruptible_sync(x)	__wake_up_sync((x), TASK_INTERRUPTIBLE, 1)
-+#define wake_up_interruptible_sync(x)	__wake_up_sync((x), TASK_INTERRUPTIBLE)
- 
- /*
-  * Wakeup macros to be used to report events to the targets.
-@@ -228,7 +228,7 @@ void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode, int nr);
- #define wake_up_interruptible_poll(x, m)					\
- 	__wake_up(x, TASK_INTERRUPTIBLE, 1, poll_to_key(m))
- #define wake_up_interruptible_sync_poll(x, m)					\
--	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, poll_to_key(m))
-+	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, poll_to_key(m))
- 
- #define ___wait_cond_timeout(condition)						\
- ({										\
-diff --git a/kernel/exit.c b/kernel/exit.c
-index a46a50d67002..a1ff25ef050e 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1435,7 +1435,7 @@ static int child_wait_callback(wait_queue_entry_t *wait, unsigned mode,
- void __wake_up_parent(struct task_struct *p, struct task_struct *parent)
+diff --git a/fs/pipe.c b/fs/pipe.c
+index e3a8f10750c9..1bfad2212b95 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -386,7 +386,7 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
  {
- 	__wake_up_sync_key(&parent->signal->wait_chldexit,
--				TASK_INTERRUPTIBLE, 1, p);
-+			   TASK_INTERRUPTIBLE, p);
- }
+ 	struct file *filp = iocb->ki_filp;
+ 	struct pipe_inode_info *pipe = filp->private_data;
+-	unsigned int head, tail, max_usage, mask;
++	unsigned int head, max_usage, mask;
+ 	ssize_t ret = 0;
+ 	int do_wakeup = 0;
+ 	size_t total_len = iov_iter_count(from);
+@@ -404,14 +404,13 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ 		goto out;
+ 	}
  
- static long do_wait(struct wait_opts *wo)
-diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index c1e566a114ca..b4b52361dab7 100644
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -169,7 +169,6 @@ EXPORT_SYMBOL_GPL(__wake_up_locked_key_bookmark);
-  * __wake_up_sync_key - wake up threads blocked on a waitqueue.
-  * @wq_head: the waitqueue
-  * @mode: which threads
-- * @nr_exclusive: how many wake-one or wake-many threads to wake up
-  * @key: opaque value to be passed to wakeup targets
-  *
-  * The sync wakeup differs that the waker knows that it will schedule
-@@ -183,26 +182,21 @@ EXPORT_SYMBOL_GPL(__wake_up_locked_key_bookmark);
-  * accessing the task state.
-  */
- void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode,
--			int nr_exclusive, void *key)
-+			void *key)
- {
--	int wake_flags = 1; /* XXX WF_SYNC */
+-	tail = pipe->tail;
+ 	head = pipe->head;
+ 	max_usage = pipe->max_usage;
+ 	mask = pipe->ring_size - 1;
+ 
+ 	/* We try to merge small writes */
+ 	chars = total_len & (PAGE_SIZE-1); /* size of the last buffer */
+-	if (!pipe_empty(head, tail) && chars != 0) {
++	if (!pipe_empty(head, pipe->tail) && chars != 0) {
+ 		struct pipe_buffer *buf = &pipe->bufs[(head - 1) & mask];
+ 		int offset = buf->offset + buf->len;
+ 
+@@ -440,8 +439,8 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ 			break;
+ 		}
+ 
+-		tail = pipe->tail;
+-		if (!pipe_full(head, tail, max_usage)) {
++		head = pipe->head;
++		if (!pipe_full(head, pipe->tail, max_usage)) {
+ 			struct pipe_buffer *buf = &pipe->bufs[head & mask];
+ 			struct page *page = pipe->tmp_page;
+ 			int copied;
+@@ -454,40 +453,56 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ 				}
+ 				pipe->tmp_page = page;
+ 			}
++
++			/* Allocate a slot in the ring in advance and attach an
++			 * empty buffer.  If we fault or otherwise fail to use
++			 * it, either the reader will consume it or it'll still
++			 * be there for the next write.
++			 */
++			spin_lock_irq(&pipe->wait.lock);
++
++			head = pipe->head;
++			pipe_commit_write(pipe, head + 1);
++
+ 			/* Always wake up, even if the copy fails. Otherwise
+ 			 * we lock up (O_NONBLOCK-)readers that sleep due to
+ 			 * syscall merging.
+ 			 * FIXME! Is this really true?
+ 			 */
+-			do_wakeup = 1;
+-			copied = copy_page_from_iter(page, 0, PAGE_SIZE, from);
+-			if (unlikely(copied < PAGE_SIZE && iov_iter_count(from))) {
+-				if (!ret)
+-					ret = -EFAULT;
+-				break;
+-			}
+-			ret += copied;
++			wake_up_interruptible_sync_poll_locked(
++				&pipe->wait, EPOLLIN | EPOLLRDNORM);
++
++			spin_unlock_irq(&pipe->wait.lock);
++			kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+ 
+ 			/* Insert it into the buffer array */
++			buf = &pipe->bufs[head & mask];
+ 			buf->page = page;
+ 			buf->ops = &anon_pipe_buf_ops;
+ 			buf->offset = 0;
+-			buf->len = copied;
++			buf->len = 0;
+ 			buf->flags = 0;
+ 			if (is_packetized(filp)) {
+ 				buf->ops = &packet_pipe_buf_ops;
+ 				buf->flags = PIPE_BUF_FLAG_PACKET;
+ 			}
 -
- 	if (unlikely(!wq_head))
- 		return;
+-			head++;
+-			pipe_commit_write(pipe, head);
+ 			pipe->tmp_page = NULL;
  
--	if (unlikely(nr_exclusive != 1))
--		wake_flags = 0;
--
--	__wake_up_common_lock(wq_head, mode, nr_exclusive, wake_flags, key);
-+	__wake_up_common_lock(wq_head, mode, 1, WF_SYNC, key);
- }
- EXPORT_SYMBOL_GPL(__wake_up_sync_key);
++			copied = copy_page_from_iter(page, 0, PAGE_SIZE, from);
++			if (unlikely(copied < PAGE_SIZE && iov_iter_count(from))) {
++				if (!ret)
++					ret = -EFAULT;
++				break;
++			}
++			ret += copied;
++			buf->offset = 0;
++			buf->len = copied;
++
+ 			if (!iov_iter_count(from))
+ 				break;
+ 		}
  
- /*
-  * __wake_up_sync - see __wake_up_sync_key()
-  */
--void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode, int nr_exclusive)
-+void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode)
- {
--	__wake_up_sync_key(wq_head, mode, nr_exclusive, NULL);
-+	__wake_up_sync_key(wq_head, mode, NULL);
- }
- EXPORT_SYMBOL_GPL(__wake_up_sync);	/* For internal use only */
+-		if (!pipe_full(head, tail, max_usage))
++		if (!pipe_full(head, pipe->tail, max_usage))
+ 			continue;
  
+ 		/* Wait for buffer space to become available. */
