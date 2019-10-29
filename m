@@ -1,24 +1,47 @@
-From: Jerry Snitselaar <jsnitsel@redhat.com>
-Date: Fri, 11 Oct 2019 22:34:49 +0000
-Subject: Re: [Patch v7 2/4] KEYS: Use common tpm_buf for trusted and asymmetric keys
-Message-Id: <20191011223448.7kycskba5mfsbvvw@cantor>
+From: zhengbin <zhengbin13@huawei.com>
+Date: Tue, 29 Oct 2019 09:33:32 +0000
+Subject: [PATCH] KEYS: trusted: Remove set but not used variable 'keyhndl'
+Message-Id: <1572341612-31893-1-git-send-email-zhengbin13@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1570425935-7435-1-git-send-email-sumit.garg@linaro.org>
- <1570425935-7435-3-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1570425935-7435-3-git-send-email-sumit.garg@linaro.org>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: jarkko.sakkinen@linux.intel.com, dhowells@redhat.com, peterhuewe@gmx.de, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org, herbert@gondor.apana.org.au, davem@davemloft.net, jgg@ziepe.ca, arnd@arndb.de, gregkh@linuxfoundation.org, jejb@linux.ibm.com, zohar@linux.ibm.com, jmorris@namei.org, serge@hallyn.com, linux-kernel@vger.kernel.org, daniel.thompson@linaro.org
+To: dhowells@redhat.com, jmorris@namei.org, serge@hallyn.com, sumit.garg@linaro.org, jarkko.sakkinen@linux.intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: yi.zhang@huawei.com, zhengbin13@huawei.com
 
-On Mon Oct 07 19, Sumit Garg wrote:
->Switch to utilize common heap based tpm_buf code for TPM based trusted
->and asymmetric keys rather than using stack based tpm1_buf code. Also,
->remove tpm1_buf code.
->
->Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
->Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
->---
+Fixes gcc '-Wunused-but-set-variable' warning:
 
-Reviewed-by: Jerry Snitselaar <jsnitsel@redhat.com>
+security/keys/trusted-keys/trusted_tpm1.c: In function tpm_unseal:
+security/keys/trusted-keys/trusted_tpm1.c:588:11: warning: variable keyhndl set but not used [-Wunused-but-set-variable]
+
+It is introduced by commit 00aa975bd031 ("KEYS: trusted:
+Create trusted keys subsystem"), but never used, so remove it.
+
+Reported-by: Hulk Robot <hulkci@huawei.com>
+Signed-off-by: zhengbin <zhengbin13@huawei.com>
+---
+ security/keys/trusted-keys/trusted_tpm1.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index eb5074e..d2c5ec1 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -585,7 +585,6 @@ static int tpm_unseal(struct tpm_buf *tb,
+ 	uint32_t authhandle2 = 0;
+ 	unsigned char cont = 0;
+ 	uint32_t ordinal;
+-	uint32_t keyhndl;
+ 	int ret;
+
+ 	/* sessions for unsealing key and data */
+@@ -601,7 +600,6 @@ static int tpm_unseal(struct tpm_buf *tb,
+ 	}
+
+ 	ordinal = htonl(TPM_ORD_UNSEAL);
+-	keyhndl = htonl(SRKHANDLE);
+ 	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
+ 	if (ret != TPM_NONCE_SIZE) {
+ 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
+--
+2.7.4
