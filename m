@@ -1,51 +1,26 @@
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Date: Wed, 30 Oct 2019 22:38:38 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 31 Oct 2019 14:57:51 +0000
 Subject: Re: [RFC PATCH 04/10] pipe: Use head and tail pointers for the ring, not cursor and length [ver #2]
-Message-Id: <d08d13d9-8eee-9c1e-2f8d-e846063882d7@rasmusvillemoes.dk>
+Message-Id: <24075.1572533871@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk>
- <157186186167.3995.7568100174393739543.stgit@warthog.procyon.org.uk>
- <CAOi1vP97DMX8zweOLfBDOFstrjC78=6RgxK3PPj_mehCOSeoaw@mail.gmail.com>
- <4892d186-8eb0-a282-e7e6-e79958431a54@rasmusvillemoes.dk>
- <CAOi1vP9paV2-2_S0NgfbZDE6+5kqHXVc9xabHVC-2Ss1MmXkCg@mail.gmail.com>
-In-Reply-To: <CAOi1vP9paV2-2_S0NgfbZDE6+5kqHXVc9xabHVC-2Ss1MmXkCg@mail.gmail.com>
-To: Ilya Dryomov <idryomov@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, linux-security-module@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-api@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+References: <CAHk-=wh7cf3ANq-G9MmwSQiUK2d-=083C0HV_8hTGe2Mb4X7JA@mail.gmail.com> <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk> <157186186167.3995.7568100174393739543.stgit@warthog.procyon.org.uk>
+In-Reply-To: <CAHk-=wh7cf3ANq-G9MmwSQiUK2d-=083C0HV_8hTGe2Mb4X7JA@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-On 30/10/2019 23.16, Ilya Dryomov wrote:
-> On Wed, Oct 30, 2019 at 9:35 PM Rasmus Villemoes
-> <linux@rasmusvillemoes.dk> wrote:
->>
->> On 30/10/2019 17.19, Ilya Dryomov wrote:
->>> On Thu, Oct 24, 2019 at 11:49 AM David Howells <dhowells@redhat.com> wrote:
->>>>  /*
->>>> - * We use a start+len construction, which provides full use of the
->>>> - * allocated memory.
->>>> - * -- Florian Coosmann (FGC)
->>>> - *
->>>> + * We use head and tail indices that aren't masked off, except at the point of
->>>> + * dereference, but rather they're allowed to wrap naturally.  This means there
->>>> + * isn't a dead spot in the buffer, provided the ring size < INT_MAX.
->>>> + * -- David Howells 2019-09-23.
->>>
->>> Hi David,
->>>
->>> Is "ring size < INT_MAX" constraint correct?
->>
->> No. As long as one always uses a[idx % size] to access the array, the
->> only requirement is that size is representable in an unsigned int. Then
->> because one also wants to do the % using simple bitmasking, that further
->> restricts one to sizes that are a power of 2, so the end result is that
->> the max size is 2^31 (aka INT_MAX+1).
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> It's shorter and more obvious to just write
 > 
-> I think the fact that indices are free running and wrap at a power of
-> two already restricts you to sizes the are a power of two,
+>    pipe->head = head;
+> 
+> than it is to write
+> 
+>    pipe_commit_write(pipe, head);
 
-Ah, yes, of course. When reducing indices mod n that may already have
-been implicitly reduced mod N, N must be a multiple of n for the result
-to be well-defined.
+But easier to find the latter.  But whatever.
 
-Rasmus
+David
