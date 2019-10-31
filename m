@@ -1,96 +1,35 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Thu, 31 Oct 2019 12:10:31 +0000
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 31 Oct 2019 15:08:48 +0000
 Subject: Re: [PATCH v3 1/9] KEYS: Defined an IMA hook to measure keys on key create or update
-Message-Id: <1572523831.5028.43.camel@linux.ibm.com>
+Message-Id: <b83bd7ef-ce7f-e750-e30b-30d5a6469a28@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191031011910.2574-1-nramas@linux.microsoft.com>
-         <20191031011910.2574-2-nramas@linux.microsoft.com>
-In-Reply-To: <20191031011910.2574-2-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+ <20191031011910.2574-2-nramas@linux.microsoft.com>
+ <1572523831.5028.43.camel@linux.ibm.com>
+In-Reply-To: <1572523831.5028.43.camel@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
 Cc: prsriva@linux.microsoft.com
 
-On Wed, 2019-10-30 at 18:19 -0700, Lakshmi Ramasubramanian wrote:
-> Asymmetric keys used for verifying file signatures or certificates
-> are currently not included in the IMA measurement list.
-> 
-> This patch defines a new IMA hook namely ima_post_key_create_or_update()
-> to measure asymmetric keys.
-
-It's not enough for the kernel to be able to compile the kernel after
-applying all the patches in a patch set.  After applying each patch,
-the kernel should build properly, otherwise it is not bi-sect safe.
- Refer to "3) Separate your changes" of
-"Documentation/process/submitting-patches.rst.
- 
-> 
-> Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-> ---
->  security/integrity/ima/ima.h      |  2 ++
->  security/integrity/ima/ima_main.c | 26 ++++++++++++++++++++++++++
->  2 files changed, 28 insertions(+)
-> 
-> diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-> index 997a57137351..22d0628faf56 100644
-> --- a/security/integrity/ima/ima.h
-> +++ b/security/integrity/ima/ima.h
-> @@ -21,6 +21,8 @@
->  #include <linux/tpm.h>
->  #include <linux/audit.h>
->  #include <crypto/hash_info.h>
-> +#include <crypto/public_key.h>
-> +#include <keys/asymmetric-type.h>
->  
->  #include "../integrity.h"
->  
-> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-> index 492b8f241d39..18e1bc105be7 100644
-> --- a/security/integrity/ima/ima_main.c
-> +++ b/security/integrity/ima/ima_main.c
-> @@ -635,6 +635,9 @@ void process_buffer_measurement(const void *buf, int size,
->  	int action = 0;
->  	u32 secid;
->  
-> +	if (!ima_policy_flag)
-> +		return;
-> +
->  	if (func) {
->  		security_task_getsecid(current, &secid);
->  		action = ima_get_action(NULL, current_cred(), secid, 0, func,
-> @@ -695,6 +698,29 @@ void ima_kexec_cmdline(const void *buf, int size)
->  	}
->  }
->  
-> +/**
-> + * ima_post_key_create_or_update - measure asymmetric keys
-> + * @keyring: keyring to which the key is linked to
-> + * @key: created or updated key
-> + * @flags: key flags
-> + * @create: flag indicating whether the key was created or updated
-> + *
-> + * Keys can only be measured, not appraised.
-> + */
-> +void ima_post_key_create_or_update(struct key *keyring, struct key *key,
-> +				   unsigned long flags, bool create)
-> +{
-> +	const struct public_key *pk;
-> +
-> +	if (key->type != &key_type_asymmetric)
-> +		return;
-> +
-> +	pk = key->payload.data[asym_crypto];
-> +	process_buffer_measurement(pk->key, pk->keylen,
-> +				   keyring->description,
-> +				   NONE, 0);
-
-This patch should also define the new "func".
-
-Mimi
-
-> +}
-> +
->  static int __init init_ima(void)
->  {
->  	int error;
+T24gMTAvMzEvMTkgNToxMCBBTSwgTWltaSBab2hhciB3cm90ZToKCj4gT24gV2VkLCAyMDE5LTEw
+LTMwIGF0IDE4OjE5IC0wNzAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlhbiB3cm90ZToKPj4gQXN5
+bW1ldHJpYyBrZXlzIHVzZWQgZm9yIHZlcmlmeWluZyBmaWxlIHNpZ25hdHVyZXMgb3IgY2VydGlm
+aWNhdGVzCj4+IGFyZSBjdXJyZW50bHkgbm90IGluY2x1ZGVkIGluIHRoZSBJTUEgbWVhc3VyZW1l
+bnQgbGlzdC4KPj4KPj4gVGhpcyBwYXRjaCBkZWZpbmVzIGEgbmV3IElNQSBob29rIG5hbWVseSBp
+bWFfcG9zdF9rZXlfY3JlYXRlX29yX3VwZGF0ZSgpCj4+IHRvIG1lYXN1cmUgYXN5bW1ldHJpYyBr
+ZXlzLgo+IAo+IEl0J3Mgbm90IGVub3VnaCBmb3IgdGhlIGtlcm5lbCB0byBiZSBhYmxlIHRvIGNv
+bXBpbGUgdGhlIGtlcm5lbCBhZnRlcgo+IGFwcGx5aW5nIGFsbCB0aGUgcGF0Y2hlcyBpbiBhIHBh
+dGNoIHNldC4gwqBBZnRlciBhcHBseWluZyBlYWNoIHBhdGNoLAo+IHRoZSBrZXJuZWwgc2hvdWxk
+IGJ1aWxkIHByb3Blcmx5LCBvdGhlcndpc2UgaXQgaXMgbm90IGJpLXNlY3Qgc2FmZS4KPiAgwqBS
+ZWZlciB0byAiMykgU2VwYXJhdGUgeW91ciBjaGFuZ2VzIiBvZgo+ICJEb2N1bWVudGF0aW9uL3By
+b2Nlc3Mvc3VibWl0dGluZy1wYXRjaGVzLnJzdC4KCkkgc3RhcnRlZCB3aXRoIGtlcm5lbCB2ZXJz
+aW9uIDUuMyBmb3IgdGhpcyBwYXRjaCBzZXQuCkkgYXBwbGllZCBOYXluYSdzIHByb2Nlc3NfYnVm
+ZmVyX21lYXN1cmVtZW50KCkgcGF0Y2ggYW5kIHRoZW4gYnVpbHQgbXkgCmNoYW5nZXMgb24gdG9w
+IG9mIHRoYXQuClRoaXMgcGF0Y2ggaGFzIG5vIG90aGVyIGRlcGVuZGVuY3kgYXMgZmFyIGFzIEkg
+a25vdy4KCkFyZSB5b3Ugc2VlaW5nIGEgYnVpbGQgYnJlYWsgYWZ0ZXIgYXBwbHlpbmcgdGhpcyBw
+YXRjaCBhbG9uZT8KCihQQVRDSCB2MyAxLzkpIEtFWVM6IERlZmluZWQgYW4gSU1BIGhvb2sgdG8g
+bWVhc3VyZSBrZXlzIG9uIGtleSBjcmVhdGUgCm9yIHVwZGF0ZQo+IAo+IFRoaXMgcGF0Y2ggc2hv
+dWxkIGFsc28gZGVmaW5lIHRoZSBuZXcgImZ1bmMiLgo+IAoKT2sgLSBJJ2xsIG1ha2UgdGhhdCBj
+aGFuZ2UuCgp0aGFua3MsCiAgLWxha3NobWk=
