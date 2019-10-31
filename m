@@ -1,35 +1,49 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 31 Oct 2019 15:08:48 +0000
+From: Sasha Levin <sashal@kernel.org>
+Date: Thu, 31 Oct 2019 15:27:30 +0000
 Subject: Re: [PATCH v3 1/9] KEYS: Defined an IMA hook to measure keys on key create or update
-Message-Id: <b83bd7ef-ce7f-e750-e30b-30d5a6469a28@linux.microsoft.com>
+Message-Id: <20191031152730.GQ1554@sasha-vm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
 References: <20191031011910.2574-1-nramas@linux.microsoft.com>
  <20191031011910.2574-2-nramas@linux.microsoft.com>
  <1572523831.5028.43.camel@linux.ibm.com>
-In-Reply-To: <1572523831.5028.43.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
-Cc: prsriva@linux.microsoft.com
+ <b83bd7ef-ce7f-e750-e30b-30d5a6469a28@linux.microsoft.com>
+In-Reply-To: <b83bd7ef-ce7f-e750-e30b-30d5a6469a28@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, matthewgarrett@google.com, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, prsriva@linux.microsoft.com
 
-T24gMTAvMzEvMTkgNToxMCBBTSwgTWltaSBab2hhciB3cm90ZToKCj4gT24gV2VkLCAyMDE5LTEw
-LTMwIGF0IDE4OjE5IC0wNzAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlhbiB3cm90ZToKPj4gQXN5
-bW1ldHJpYyBrZXlzIHVzZWQgZm9yIHZlcmlmeWluZyBmaWxlIHNpZ25hdHVyZXMgb3IgY2VydGlm
-aWNhdGVzCj4+IGFyZSBjdXJyZW50bHkgbm90IGluY2x1ZGVkIGluIHRoZSBJTUEgbWVhc3VyZW1l
-bnQgbGlzdC4KPj4KPj4gVGhpcyBwYXRjaCBkZWZpbmVzIGEgbmV3IElNQSBob29rIG5hbWVseSBp
-bWFfcG9zdF9rZXlfY3JlYXRlX29yX3VwZGF0ZSgpCj4+IHRvIG1lYXN1cmUgYXN5bW1ldHJpYyBr
-ZXlzLgo+IAo+IEl0J3Mgbm90IGVub3VnaCBmb3IgdGhlIGtlcm5lbCB0byBiZSBhYmxlIHRvIGNv
-bXBpbGUgdGhlIGtlcm5lbCBhZnRlcgo+IGFwcGx5aW5nIGFsbCB0aGUgcGF0Y2hlcyBpbiBhIHBh
-dGNoIHNldC4gwqBBZnRlciBhcHBseWluZyBlYWNoIHBhdGNoLAo+IHRoZSBrZXJuZWwgc2hvdWxk
-IGJ1aWxkIHByb3Blcmx5LCBvdGhlcndpc2UgaXQgaXMgbm90IGJpLXNlY3Qgc2FmZS4KPiAgwqBS
-ZWZlciB0byAiMykgU2VwYXJhdGUgeW91ciBjaGFuZ2VzIiBvZgo+ICJEb2N1bWVudGF0aW9uL3By
-b2Nlc3Mvc3VibWl0dGluZy1wYXRjaGVzLnJzdC4KCkkgc3RhcnRlZCB3aXRoIGtlcm5lbCB2ZXJz
-aW9uIDUuMyBmb3IgdGhpcyBwYXRjaCBzZXQuCkkgYXBwbGllZCBOYXluYSdzIHByb2Nlc3NfYnVm
-ZmVyX21lYXN1cmVtZW50KCkgcGF0Y2ggYW5kIHRoZW4gYnVpbHQgbXkgCmNoYW5nZXMgb24gdG9w
-IG9mIHRoYXQuClRoaXMgcGF0Y2ggaGFzIG5vIG90aGVyIGRlcGVuZGVuY3kgYXMgZmFyIGFzIEkg
-a25vdy4KCkFyZSB5b3Ugc2VlaW5nIGEgYnVpbGQgYnJlYWsgYWZ0ZXIgYXBwbHlpbmcgdGhpcyBw
-YXRjaCBhbG9uZT8KCihQQVRDSCB2MyAxLzkpIEtFWVM6IERlZmluZWQgYW4gSU1BIGhvb2sgdG8g
-bWVhc3VyZSBrZXlzIG9uIGtleSBjcmVhdGUgCm9yIHVwZGF0ZQo+IAo+IFRoaXMgcGF0Y2ggc2hv
-dWxkIGFsc28gZGVmaW5lIHRoZSBuZXcgImZ1bmMiLgo+IAoKT2sgLSBJJ2xsIG1ha2UgdGhhdCBj
-aGFuZ2UuCgp0aGFua3MsCiAgLWxha3NobWk=
+On Thu, Oct 31, 2019 at 08:08:48AM -0700, Lakshmi Ramasubramanian wrote:
+>On 10/31/19 5:10 AM, Mimi Zohar wrote:
+>
+>>On Wed, 2019-10-30 at 18:19 -0700, Lakshmi Ramasubramanian wrote:
+>>>Asymmetric keys used for verifying file signatures or certificates
+>>>are currently not included in the IMA measurement list.
+>>>
+>>>This patch defines a new IMA hook namely ima_post_key_create_or_update()
+>>>to measure asymmetric keys.
+>>
+>>It's not enough for the kernel to be able to compile the kernel after
+>>applying all the patches in a patch set. =A0After applying each patch,
+>>the kernel should build properly, otherwise it is not bi-sect safe.
+>> =A0Refer to "3) Separate your changes" of
+>>"Documentation/process/submitting-patches.rst.
+>
+>I started with kernel version 5.3 for this patch set.
+>I applied Nayna's process_buffer_measurement() patch and then built my=20
+>changes on top of that.
+>This patch has no other dependency as far as I know.
+>
+>Are you seeing a build break after applying this patch alone?
+>
+>(PATCH v3 1/9) KEYS: Defined an IMA hook to measure keys on key create=20
+>or update
+
+I couldn't even apply this patch: Nayna's series (v10) doesn't apply on
+top of 5.3 to begin with, and while it does apply on mainline, this
+first patch wouldn't apply on top.
+
+--=20
+Thanks,
+Sasha
