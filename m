@@ -1,93 +1,106 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Thu, 31 Oct 2019 13:59:54 +0000
-Subject: [Patch v3 2/7] tee: enable support to register kernel memory
-Message-Id: <1572530323-14802-3-git-send-email-sumit.garg@linaro.org>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 31 Oct 2019 01:19:06 +0000
+Subject: [PATCH v3 5/9] KEYS: Updated ima_get_action() to return keyrings if specified in the policy
+Message-Id: <20191031011910.2574-6-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
-To: jens.wiklander@linaro.org, jarkko.sakkinen@linux.intel.com, dhowells@redhat.com
-Cc: Sumit Garg <sumit.garg@linaro.org>, daniel.thompson@linaro.org, janne.karhunen@gmail.com, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, stuart.yoder@arm.com, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+References: <20191031011910.2574-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191031011910.2574-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+Cc: prsriva@linux.microsoft.com
 
-Enable support to register kernel memory reference with TEE. This change
-will allow TEE bus drivers to register memory references.
+Information regarding what keyrings need to be measured is missing.
+ima_get_action() needs to retrieve the keyrings, if specified for
+KEYRING_CHECK. 
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+This patch adds a new out parameter to ima_get_action() to return
+keyrings read from the policy.
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
- drivers/tee/tee_shm.c   | 26 ++++++++++++++++++++++++--
- include/linux/tee_drv.h |  1 +
- 2 files changed, 25 insertions(+), 2 deletions(-)
+ security/integrity/ima/ima.h      | 3 ++-
+ security/integrity/ima/ima_api.c  | 6 ++++--
+ security/integrity/ima/ima_main.c | 8 ++++++--
+ 3 files changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/tee/tee_shm.c b/drivers/tee/tee_shm.c
-index 09ddcd0..1ec1577 100644
---- a/drivers/tee/tee_shm.c
-+++ b/drivers/tee/tee_shm.c
-@@ -9,6 +9,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/tee_drv.h>
-+#include <linux/uio.h>
- #include "tee_private.h"
- 
- static void tee_shm_release(struct tee_shm *shm)
-@@ -224,13 +225,14 @@ struct tee_shm *tee_shm_register(struct tee_context *ctx, unsigned long addr,
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 3539a159a7ac..ded78af94e69 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -212,7 +212,8 @@ struct ima_measure_key_entry {
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+-		   struct ima_template_desc **template_desc);
++		   struct ima_template_desc **template_desc,
++		   char **keyrings);
+ int ima_must_measure(struct inode *inode, int mask, enum ima_hooks func);
+ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 			    struct file *file, void *buf, loff_t size,
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index f488d1cead79..77ac076672e1 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -169,6 +169,7 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
+  * @func: caller identifier
+  * @pcr: pointer filled in if matched measure policy sets pcr  * @template_desc: pointer filled in if matched measure policy sets template+ * @keyrings: pointer filled in if matched measure policy sets keyrings  *
+  * The policy is defined in terms of keypairs:
+  *		subj=, obj=, type=, func=, mask=, fsmagic@@ -184,14 +185,15 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
+  */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+-		   struct ima_template_desc **template_desc)
++		   struct ima_template_desc **template_desc,
++		   char **keyrings)
  {
- 	struct tee_device *teedev = ctx->teedev;
- 	const u32 req_flags = TEE_SHM_DMA_BUF | TEE_SHM_USER_MAPPED;
-+	const u32 req_ker_flags = TEE_SHM_DMA_BUF | TEE_SHM_KERNEL_MAPPED;
- 	struct tee_shm *shm;
- 	void *ret;
- 	int rc;
- 	int num_pages;
- 	unsigned long start;
+ 	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE | IMA_HASH;
  
--	if (flags != req_flags)
-+	if (flags != req_flags && flags != req_ker_flags)
- 		return ERR_PTR(-ENOTSUPP);
+ 	flags &= ima_policy_flag;
  
- 	if (!tee_device_get(teedev))
-@@ -265,7 +267,27 @@ struct tee_shm *tee_shm_register(struct tee_context *ctx, unsigned long addr,
- 		goto err;
+ 	return ima_match_policy(inode, cred, secid, func, mask, flags, pcr,
+-				template_desc, NULL);
++				template_desc, keyrings);
+ }
+ 
+ /*
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 72ae0878ec5d..cbc7de87106f 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -214,7 +214,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	 * Included is the appraise submask.
+ 	 */
+ 	action = ima_get_action(inode, cred, secid, mask, func, &pcr,
+-				&template_desc);
++				&template_desc, NULL);
+ 	violation_check = ((func = FILE_CHECK || func = MMAP_CHECK) &&
+ 			   (ima_policy_flag & IMA_MEASURE));
+ 	if (!action && !violation_check)
+@@ -627,6 +627,7 @@ void process_buffer_measurement(const void *buf, int size,
+ 					    .buf = buf,
+ 					    .buf_len = size};
+ 	struct ima_template_desc *template = NULL;
++	char *keyrings = NULL;
+ 	struct {
+ 		struct ima_digest_data hdr;
+ 		char digest[IMA_MAX_DIGEST_SIZE];
+@@ -641,11 +642,14 @@ void process_buffer_measurement(const void *buf, int size,
+ 	if (func) {
+ 		security_task_getsecid(current, &secid);
+ 		action = ima_get_action(NULL, current_cred(), secid, 0, func,
+-					&pcr, &template);
++					&pcr, &template, &keyrings);
+ 		if (!(action & IMA_MEASURE))
+ 			return;
  	}
  
--	rc = get_user_pages_fast(start, num_pages, FOLL_WRITE, shm->pages);
-+	if (flags & TEE_SHM_USER_MAPPED) {
-+		rc = get_user_pages_fast(start, num_pages, FOLL_WRITE,
-+					 shm->pages);
-+	} else {
-+		struct kvec *kiov;
-+		int i;
++	if (keyrings != NULL)
++		keyrings = NULL;
 +
-+		kiov = kcalloc(num_pages, sizeof(*kiov), GFP_KERNEL);
-+		if (!kiov) {
-+			ret = ERR_PTR(-ENOMEM);
-+			goto err;
-+		}
-+
-+		for (i = 0; i < num_pages; i++) {
-+			kiov[i].iov_base = (void *)(start + i * PAGE_SIZE);
-+			kiov[i].iov_len = PAGE_SIZE;
-+		}
-+
-+		rc = get_kernel_pages(kiov, num_pages, 0, shm->pages);
-+		kfree(kiov);
-+	}
- 	if (rc > 0)
- 		shm->num_pages = rc;
- 	if (rc != num_pages) {
-diff --git a/include/linux/tee_drv.h b/include/linux/tee_drv.h
-index 7a03f68..dedf8fa 100644
---- a/include/linux/tee_drv.h
-+++ b/include/linux/tee_drv.h
-@@ -26,6 +26,7 @@
- #define TEE_SHM_REGISTER	BIT(3)  /* Memory registered in secure world */
- #define TEE_SHM_USER_MAPPED	BIT(4)  /* Memory mapped in user space */
- #define TEE_SHM_POOL		BIT(5)  /* Memory allocated from pool */
-+#define TEE_SHM_KERNEL_MAPPED	BIT(6)  /* Memory mapped in kernel space */
+ 	if (!pcr)
+ 		pcr = CONFIG_IMA_MEASURE_PCR_IDX;
  
- struct device;
- struct tee_device;
 -- 
-2.7.4
+2.17.1
