@@ -1,43 +1,86 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Thu, 31 Oct 2019 13:59:43 +0000
-Subject: [Patch v3 1/7] tee: optee: allow kernel pages to register as shm
-Message-Id: <1572530323-14802-2-git-send-email-sumit.garg@linaro.org>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 31 Oct 2019 01:19:10 +0000
+Subject: [PATCH v3 9/9] KEYS: Call the IMA hook to measure key when a new key is created or an existing key i
+Message-Id: <20191031011910.2574-10-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
-To: jens.wiklander@linaro.org, jarkko.sakkinen@linux.intel.com, dhowells@redhat.com
-Cc: Sumit Garg <sumit.garg@linaro.org>, daniel.thompson@linaro.org, janne.karhunen@gmail.com, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, stuart.yoder@arm.com, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+References: <20191031011910.2574-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191031011910.2574-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+Cc: prsriva@linux.microsoft.com
 
-Kernel pages are marked as normal type memory only so allow kernel pages
-to be registered as shared memory with OP-TEE.
+key_create_or_update function needs to call the IMA hook to measure
+the key when a new key is created or an existing key is updated.
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Reviewed-by: Jens Wiklander <jens.wiklander@linaro.org>
+This patch adds the call to the IMA hook from key_create_or_update
+function.
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
- drivers/tee/optee/call.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ include/linux/ima.h | 7 +++++++
+ security/keys/key.c | 9 +++++++++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/tee/optee/call.c b/drivers/tee/optee/call.c
-index 13b0269..cf2367b 100644
---- a/drivers/tee/optee/call.c
-+++ b/drivers/tee/optee/call.c
-@@ -554,6 +554,13 @@ static int check_mem_type(unsigned long start, size_t num_pages)
- 	struct mm_struct *mm = current->mm;
- 	int rc;
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index a20ad398d260..f085f1c6ef34 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -24,6 +24,9 @@ extern int ima_post_read_file(struct file *file, void *buf, loff_t size,
+ 			      enum kernel_read_file_id id);
+ extern void ima_post_path_mknod(struct dentry *dentry);
+ extern void ima_kexec_cmdline(const void *buf, int size);
++extern void ima_post_key_create_or_update(struct key *keyring,
++					  struct key *key,
++					  unsigned long flags, bool create);
  
-+	/*
-+	 * Allow kernel address to register with OP-TEE as kernel
-+	 * pages are configured as normal memory only.
-+	 */
-+	if (virt_addr_valid(start))
-+		return 0;
+ #ifdef CONFIG_IMA_KEXEC
+ extern void ima_add_kexec_buffer(struct kimage *image);
+@@ -91,6 +94,10 @@ static inline void ima_post_path_mknod(struct dentry *dentry)
+ }
+ 
+ static inline void ima_kexec_cmdline(const void *buf, int size) {}
++static inline void ima_post_key_create_or_update(struct key *keyring,
++						 struct key *key,
++						 unsigned long flags,
++						 bool create) {}
+ #endif /* CONFIG_IMA */
+ 
+ #ifndef CONFIG_IMA_KEXEC
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 764f4c57913e..7c39054d8da6 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -13,6 +13,7 @@
+ #include <linux/security.h>
+ #include <linux/workqueue.h>
+ #include <linux/random.h>
++#include <linux/ima.h>
+ #include <linux/err.h>
+ #include "internal.h"
+ 
+@@ -936,6 +937,9 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		goto error_link_end;
+ 	}
+ 
++	/* let the ima module know about the created key. */
++	ima_post_key_create_or_update(keyring, key, flags, true);
 +
- 	down_read(&mm->mmap_sem);
- 	rc = __check_mem_type(find_vma(mm, start),
- 			      start + num_pages * PAGE_SIZE);
+ 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
+ 
+ error_link_end:
+@@ -965,6 +969,11 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	}
+ 
+ 	key_ref = __key_update(key_ref, &prep);
++	if (!IS_ERR(key_ref)) {
++		/* let the ima module know about the updated key. */
++		ima_post_key_create_or_update(keyring, key, flags, false);
++	}
++
+ 	goto error_free_prep;
+ }
+ EXPORT_SYMBOL(key_create_or_update);
 -- 
-2.7.4
+2.17.1
