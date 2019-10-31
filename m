@@ -1,48 +1,130 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Mon, 28 Oct 2019 17:08:38 +0000
-Subject: Re: [PATCH v2 3/4] KEYS: Added BUILTIN_TRUSTED_KEYS enum to measure keys added to builtin_trusted_ke
-Message-Id: <1572282518.4532.260.camel@linux.ibm.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 31 Oct 2019 01:19:04 +0000
+Subject: [PATCH v3 3/9] KEYS: Added KEYRING_CHECK policy for key measurement
+Message-Id: <20191031011910.2574-4-nramas@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191023233950.22072-1-nramas@linux.microsoft.com>
-         <20191023233950.22072-4-nramas@linux.microsoft.com>
-         <1572186810.4532.206.camel@linux.ibm.com>
-         <8494baa1-c4db-f08b-26c9-2e56279075d0@linux.microsoft.com>
-In-Reply-To: <8494baa1-c4db-f08b-26c9-2e56279075d0@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, casey@schaufler-ca.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20191031011910.2574-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191031011910.2574-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+Cc: prsriva@linux.microsoft.com
 
-On Mon, 2019-10-28 at 08:12 -0700, Lakshmi Ramasubramanian wrote:
-> On 10/27/19 7:33 AM, Mimi Zohar wrote:
-> 
-> > .builtin_trusted_keys is a trusted keyring, which is created by the
-> > kernel.  It cannot be deleted or replaced by userspace, so it should
-> > be possible to correlate a keyring name with a keyring number on
-> > policy load.
-> 
-> Yes - at policy load we can map a keyring name to a keyring number.
-> 
-> But at runtime we still need to know if the keyring parameter passed to 
-> the IMA hook function is configured to be measured.
-> 
-> void ima_post_key_create_or_update(struct key *keyring, struct key *key,
-> 				   unsigned long flags, bool create);
-> {
->     => Get the keyring number for the given "keyring".
+An IMA policy to manage measurement of keys is not supported.
+A new IMA policy is needed to manage the measurement of keys.
+A policy option is also needed to allow measurement of keys
+linked to a given set of keyrings only.
 
-There is no "getting" involved here.  Pass "keyring" to
-process_buffer_measurement and on to ima_get_action().
+This patch defines KEYRING_CHECK and keyrings in IMA policy
+for this purpose. 
 
->     => Check if the keyring number is in the configured IMA policy.
+KEYRING_CHECK can be added in the IMA policy to measure keys.
+keyrings can be, optionally, set to only measure keys
+added or updated to a given set of keyrings. If keyrings is not
+specified for KEYRING_CHECK, keys added or updated in
+all keyrings are measured.
 
-ima_get_action() should do a simple compare of the valued stored in
-the IMA policy with the value returned by key_serial().
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ Documentation/ABI/testing/ima_policy | 15 +++++++++++++++
+ security/integrity/ima/ima.h         |  1 +
+ security/integrity/ima/ima_main.c    |  2 +-
+ security/integrity/ima/ima_policy.c  |  2 +-
+ security/integrity/ima/ima_queue.c   |  2 +-
+ 5 files changed, 19 insertions(+), 3 deletions(-)
 
-Mimi
-
->     => If yes, measure the key.
->     => Else, do nothing.
-> }
-
-> Did I misunderstand what you had stated?
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index fc376a323908..757faf1a1a27 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -25,10 +25,12 @@ Description:
+ 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
+ 				 [obj_user=] [obj_role=] [obj_type=]]
+ 			option:	[[appraise_type=]] [template=] [permit_directio]
++				[keyrings=]
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+ 				[KEXEC_CMDLINE]
++				[KEYRING_CHECK]
+ 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
+ 			       [[^]MAY_EXEC]
+ 			fsmagic:= hex value
+@@ -38,6 +40,9 @@ Description:
+ 			fowner:= decimal value
+ 		lsm:  	are LSM specific
+ 		option:	appraise_type:= [imasig]
++			keyrings: = list of keyrings to measure
++			(eg, .builtin_trusted_keys|.ima). Only valid
++			when action is "measure" and func is KEYRING_CHECK.
+ 			template:= name of a defined IMA template type
+ 			(eg, ima-ng). Only valid when action is "measure".
+ 			pcr:= decimal value
+@@ -105,3 +110,13 @@ Description:
+ 
+ 			measure func=KEXEC_KERNEL_CHECK pcr=4
+ 			measure func=KEXEC_INITRAMFS_CHECK pcr=5
++
++		Example of measure rules using KEYRING_CHECK
++			To measure keys added to
++			.builtin_trusted_keys or .ima keyring:
++
++			measure func=KEYRING_CHECK keyrings=.builtin_trusted_keys|.ima
++
++			To measure keys added to all keyrings:
++
++			measure func=KEYRING_CHECK
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index b9600070e415..12e9ec6847b5 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -191,6 +191,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ 	hook(KEXEC_INITRAMFS_CHECK)	\
+ 	hook(POLICY_CHECK)		\
+ 	hook(KEXEC_CMDLINE)		\
++	hook(KEYRING_CHECK)		\
+ 	hook(MAX_CHECK)
+ #define __ima_hook_enumify(ENUM)	ENUM,
+ 
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 18e1bc105be7..72ae0878ec5d 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -718,7 +718,7 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
+ 	pk = key->payload.data[asym_crypto];
+ 	process_buffer_measurement(pk->key, pk->keylen,
+ 				   keyring->description,
+-				   NONE, 0);
++				   KEYRING_CHECK, 0);
+ }
+ 
+ static int __init init_ima(void)
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 6df7f641ff66..0cc49f2d5233 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -370,7 +370,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
+ {
+ 	int i;
+ 
+-	if (func = KEXEC_CMDLINE) {
++	if ((func = KEXEC_CMDLINE) || (func = KEYRING_CHECK)) {
+ 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
+ 			return true;
+ 		return false;
+diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
+index f2503f10abf4..5625381c5a97 100644
+--- a/security/integrity/ima/ima_queue.c
++++ b/security/integrity/ima/ima_queue.c
+@@ -317,7 +317,7 @@ void ima_measure_queued_keys(void)
+ 		process_buffer_measurement(entry->public_key,
+ 					   entry->public_key_len,
+ 					   entry->keyring_name,
+-					   NONE, 0);
++					   KEYRING_CHECK, 0);
+ 		list_del(&entry->list);
+ 		ima_free_measure_key_entry(entry);
+ 	}
+-- 
+2.17.1
