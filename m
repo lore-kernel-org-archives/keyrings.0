@@ -1,363 +1,93 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 15 Oct 2019 21:50:40 +0000
-Subject: [RFC PATCH 19/21] usb: Add USB subsystem notifications
-Message-Id: <157117624044.15019.15681888621457119329.stgit@warthog.procyon.org.uk>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Thu, 31 Oct 2019 13:59:54 +0000
+Subject: [Patch v3 2/7] tee: enable support to register kernel memory
+Message-Id: <1572530323-14802-3-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157117606853.15019.15459271147790470307.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
+To: jens.wiklander@linaro.org, jarkko.sakkinen@linux.intel.com, dhowells@redhat.com
+Cc: Sumit Garg <sumit.garg@linaro.org>, daniel.thompson@linaro.org, janne.karhunen@gmail.com, corbet@lwn.net, jejb@linux.ibm.com, ard.biesheuvel@linaro.org, linux-doc@vger.kernel.org, jmorris@namei.org, zohar@linux.ibm.com, linux-kernel@vger.kernel.org, tee-dev@lists.linaro.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, stuart.yoder@arm.com, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-Add a USB subsystem notification mechanism whereby notifications about
-hardware events such as device connection, disconnection, reset and I/O
-errors, can be reported to a monitoring process asynchronously.
+Enable support to register kernel memory reference with TEE. This change
+will allow TEE bus drivers to register memory references.
 
-Firstly, an event queue needs to be created:
-
-	pipe2(fds, O_TMPFILE);
-	ioctl(fds[1], IOC_WATCH_QUEUE_SET_SIZE, 256);
-
-then a notification can be set up to report USB notifications via that
-queue:
-
-	struct watch_notification_filter filter = {
-		.nr_filters = 1,
-		.filters = {
-			[0] = {
-				.type = WATCH_TYPE_USB_NOTIFY,
-				.subtype_filter[0] = UINT_MAX;
-			},
-		},
-	};
-	ioctl(fds[1], IOC_WATCH_QUEUE_SET_FILTER, &filter);
-	notify_devices(fds[1], 12);
-
-After that, messages will be placed into the queue when events occur on a
-USB device or bus.  Messages are of the following format:
-
-	struct usb_notification {
-		struct watch_notification watch;
-		__u32	error;
-		__u32	reserved;
-		__u8	name_len;
-		__u8	name[0];
-	} *n;
-
-Where:
-
-	n->watch.type will be WATCH_TYPE_USB_NOTIFY
-
-	n->watch.subtype will be the type of notification, such as
-	NOTIFY_USB_DEVICE_ADD.
-
-	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
-	message.
-
-	n->watch.info & WATCH_INFO_ID will be the second argument to
-	device_notify(), shifted.
-
-	n->error and n->reserved are intended to convey information such as
-	error codes, but are currently not used
-
-	n->name_len and n->name convey the USB device name as an
-	unterminated string.  This may be truncated - it is currently
-	limited to a maximum 63 chars.
-
-Note that it is permissible for messages to be of variable length - or, at
-least, the length may be dependent on the subtype.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-usb@vger.kernel.org
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
 ---
+ drivers/tee/tee_shm.c   | 26 ++++++++++++++++++++++++--
+ include/linux/tee_drv.h |  1 +
+ 2 files changed, 25 insertions(+), 2 deletions(-)
 
- Documentation/watch_queue.rst    |    9 +++++++
- drivers/usb/core/Kconfig         |    9 +++++++
- drivers/usb/core/devio.c         |   47 ++++++++++++++++++++++++++++++++++++++
- drivers/usb/core/hub.c           |    4 +++
- include/linux/usb.h              |   18 +++++++++++++++
- include/uapi/linux/watch_queue.h |   28 ++++++++++++++++++++++-
- samples/watch_queue/watch_test.c |   29 +++++++++++++++++++++++
- 7 files changed, 142 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
-index f2299f631ae8..5321a9cb1ab2 100644
---- a/Documentation/watch_queue.rst
-+++ b/Documentation/watch_queue.rst
-@@ -12,6 +12,8 @@ opened by userspace.  This can be used in conjunction with::
+diff --git a/drivers/tee/tee_shm.c b/drivers/tee/tee_shm.c
+index 09ddcd0..1ec1577 100644
+--- a/drivers/tee/tee_shm.c
++++ b/drivers/tee/tee_shm.c
+@@ -9,6 +9,7 @@
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/tee_drv.h>
++#include <linux/uio.h>
+ #include "tee_private.h"
  
-     * Block layer event notifications
- 
-+    * USB subsystem event notifications
-+
- 
- The notifications buffers can be enabled by:
- 
-@@ -262,6 +264,13 @@ Any particular buffer can be fed from multiple sources.  Sources include:
-     or temporary link loss.  Watches of this type are set on the global device
-     watch list.
- 
-+  * WATCH_TYPE_USB_NOTIFY
-+
-+    Notifications of this type indicate USB subsystem events, such as
-+    attachment, removal, reset and I/O errors.  Separate events are generated
-+    for buses and devices.  Watchpoints of this type are set on the global
-+    device watch list.
-+
- 
- Event Filtering
- =======diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
-index ecaacc8ed311..57e7b649e48b 100644
---- a/drivers/usb/core/Kconfig
-+++ b/drivers/usb/core/Kconfig
-@@ -102,3 +102,12 @@ config USB_AUTOSUSPEND_DELAY
- 	  The default value Linux has always had is 2 seconds.  Change
- 	  this value if you want a different delay and cannot modify
- 	  the command line or module parameter.
-+
-+config USB_NOTIFICATIONS
-+	bool "Provide USB hardware event notifications"
-+	depends on USB && DEVICE_NOTIFICATIONS
-+	help
-+	  This option provides support for getting hardware event notifications
-+	  on USB devices and interfaces.  This makes use of the
-+	  /dev/watch_queue misc device to handle the notification buffer.
-+	  device_notify(2) is used to set/remove watches.
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 3f899552f6e3..693a5657dba3 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -41,6 +41,7 @@
- #include <linux/dma-mapping.h>
- #include <asm/byteorder.h>
- #include <linux/moduleparam.h>
-+#include <linux/watch_queue.h>
- 
- #include "usb.h"
- 
-@@ -2748,13 +2749,59 @@ static void usbdev_remove(struct usb_device *udev)
- 	mutex_unlock(&usbfs_mutex);
- }
- 
-+#ifdef CONFIG_USB_NOTIFICATIONS
-+static noinline void post_usb_notification(const char *devname,
-+					   enum usb_notification_type subtype,
-+					   u32 error)
-+{
-+	unsigned int name_len, n_len;
-+	u64 id = 0; /* We can put a device ID here for separate dev watches */
-+
-+	struct {
-+		struct usb_notification n;
-+		char more_name[USB_NOTIFICATION_MAX_NAME_LEN -
-+			       (sizeof(struct usb_notification) -
-+				offsetof(struct usb_notification, name))];
-+	} n;
-+
-+	name_len = strlen(devname);
-+	name_len = min_t(size_t, name_len, USB_NOTIFICATION_MAX_NAME_LEN);
-+	n_len = offsetof(struct usb_notification, name) + name_len;
-+
-+	memset(&n, 0, sizeof(n));
-+	memcpy(n.n.name, devname, n_len);
-+
-+	n.n.watch.type		= WATCH_TYPE_USB_NOTIFY;
-+	n.n.watch.subtype	= subtype;
-+	n.n.watch.info		= n_len;
-+	n.n.error		= error;
-+	n.n.name_len		= name_len;
-+
-+	post_device_notification(&n.n.watch, id);
-+}
-+
-+void post_usb_device_notification(const struct usb_device *udev,
-+				  enum usb_notification_type subtype, u32 error)
-+{
-+	post_usb_notification(dev_name(&udev->dev), subtype, error);
-+}
-+
-+void post_usb_bus_notification(const struct usb_bus *ubus,
-+			       enum usb_notification_type subtype, u32 error)
-+{
-+	post_usb_notification(ubus->bus_name, subtype, error);
-+}
-+#endif
-+
- static int usbdev_notify(struct notifier_block *self,
- 			       unsigned long action, void *dev)
+ static void tee_shm_release(struct tee_shm *shm)
+@@ -224,13 +225,14 @@ struct tee_shm *tee_shm_register(struct tee_context *ctx, unsigned long addr,
  {
- 	switch (action) {
- 	case USB_DEVICE_ADD:
-+		post_usb_device_notification(dev, NOTIFY_USB_DEVICE_ADD, 0);
- 		break;
- 	case USB_DEVICE_REMOVE:
-+		post_usb_device_notification(dev, NOTIFY_USB_DEVICE_REMOVE, 0);
- 		usbdev_remove(dev);
- 		break;
+ 	struct tee_device *teedev = ctx->teedev;
+ 	const u32 req_flags = TEE_SHM_DMA_BUF | TEE_SHM_USER_MAPPED;
++	const u32 req_ker_flags = TEE_SHM_DMA_BUF | TEE_SHM_KERNEL_MAPPED;
+ 	struct tee_shm *shm;
+ 	void *ret;
+ 	int rc;
+ 	int num_pages;
+ 	unsigned long start;
+ 
+-	if (flags != req_flags)
++	if (flags != req_flags && flags != req_ker_flags)
+ 		return ERR_PTR(-ENOTSUPP);
+ 
+ 	if (!tee_device_get(teedev))
+@@ -265,7 +267,27 @@ struct tee_shm *tee_shm_register(struct tee_context *ctx, unsigned long addr,
+ 		goto err;
  	}
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 236313f41f4a..e8ebacc15a32 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -29,6 +29,7 @@
- #include <linux/random.h>
- #include <linux/pm_qos.h>
- #include <linux/kobject.h>
-+#include <linux/watch_queue.h>
  
- #include <linux/uaccess.h>
- #include <asm/byteorder.h>
-@@ -4605,6 +4606,9 @@ hub_port_init(struct usb_hub *hub, struct usb_device *udev, int port1,
- 				(udev->config) ? "reset" : "new", speed,
- 				devnum, driver_name);
- 
-+	if (udev->config)
-+		post_usb_device_notification(udev, NOTIFY_USB_DEVICE_RESET, 0);
+-	rc = get_user_pages_fast(start, num_pages, FOLL_WRITE, shm->pages);
++	if (flags & TEE_SHM_USER_MAPPED) {
++		rc = get_user_pages_fast(start, num_pages, FOLL_WRITE,
++					 shm->pages);
++	} else {
++		struct kvec *kiov;
++		int i;
 +
- 	/* Set up TT records, if needed  */
- 	if (hdev->tt) {
- 		udev->tt = hdev->tt;
-diff --git a/include/linux/usb.h b/include/linux/usb.h
-index e656e7b4b1e4..93fa0666f95a 100644
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
++		kiov = kcalloc(num_pages, sizeof(*kiov), GFP_KERNEL);
++		if (!kiov) {
++			ret = ERR_PTR(-ENOMEM);
++			goto err;
++		}
++
++		for (i = 0; i < num_pages; i++) {
++			kiov[i].iov_base = (void *)(start + i * PAGE_SIZE);
++			kiov[i].iov_len = PAGE_SIZE;
++		}
++
++		rc = get_kernel_pages(kiov, num_pages, 0, shm->pages);
++		kfree(kiov);
++	}
+ 	if (rc > 0)
+ 		shm->num_pages = rc;
+ 	if (rc != num_pages) {
+diff --git a/include/linux/tee_drv.h b/include/linux/tee_drv.h
+index 7a03f68..dedf8fa 100644
+--- a/include/linux/tee_drv.h
++++ b/include/linux/tee_drv.h
 @@ -26,6 +26,7 @@
- struct usb_device;
- struct usb_driver;
- struct wusb_dev;
-+enum usb_notification_type;
+ #define TEE_SHM_REGISTER	BIT(3)  /* Memory registered in secure world */
+ #define TEE_SHM_USER_MAPPED	BIT(4)  /* Memory mapped in user space */
+ #define TEE_SHM_POOL		BIT(5)  /* Memory allocated from pool */
++#define TEE_SHM_KERNEL_MAPPED	BIT(6)  /* Memory mapped in kernel space */
  
- /*-------------------------------------------------------------------------*/
- 
-@@ -2015,6 +2016,23 @@ extern void usb_led_activity(enum usb_led_event ev);
- static inline void usb_led_activity(enum usb_led_event ev) {}
- #endif
- 
-+/*
-+ * Notification functions.
-+ */
-+#ifdef CONFIG_USB_NOTIFICATIONS
-+extern void post_usb_device_notification(const struct usb_device *udev,
-+					 enum usb_notification_type subtype,
-+					 u32 error);
-+extern void post_usb_bus_notification(const struct usb_bus *ubus,
-+				      enum usb_notification_type subtype,
-+				      u32 error);
-+#else
-+static inline void post_usb_device_notification(const struct usb_device *udev,
-+						unsigned int subtype, u32 error) {}
-+static inline void post_usb_bus_notification(const struct usb_bus *ubus,
-+					     unsigned int subtype, u32 error) {}
-+#endif
-+
- #endif  /* __KERNEL__ */
- 
- #endif
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-index 65b127ca272b..f6aa1e39ceea 100644
---- a/include/uapi/linux/watch_queue.h
-+++ b/include/uapi/linux/watch_queue.h
-@@ -12,7 +12,8 @@ enum watch_notification_type {
- 	WATCH_TYPE_META		= 0,	/* Special record */
- 	WATCH_TYPE_KEY_NOTIFY	= 1,	/* Key change event notification */
- 	WATCH_TYPE_BLOCK_NOTIFY	= 2,	/* Block layer event notification */
--	WATCH_TYPE___NR		= 3
-+	WATCH_TYPE_USB_NOTIFY	= 3,	/* USB subsystem event notification */
-+	WATCH_TYPE___NR		= 4
- };
- 
- enum watch_meta_notification_subtype {
-@@ -126,4 +127,29 @@ struct block_notification {
- 	__u64	sector;			/* Affected sector */
- };
- 
-+/*
-+ * Type of USB layer notification.
-+ */
-+enum usb_notification_type {
-+	NOTIFY_USB_DEVICE_ADD		= 0, /* USB device added */
-+	NOTIFY_USB_DEVICE_REMOVE	= 1, /* USB device removed */
-+	NOTIFY_USB_DEVICE_RESET		= 2, /* USB device reset */
-+	NOTIFY_USB_DEVICE_ERROR		= 3, /* USB device error */
-+};
-+
-+/*
-+ * USB subsystem notification record.
-+ * - watch.type = WATCH_TYPE_USB_NOTIFY
-+ * - watch.subtype = enum usb_notification_type
-+ */
-+struct usb_notification {
-+	struct watch_notification watch; /* WATCH_TYPE_USB_NOTIFY */
-+	__u32	error;
-+	__u32	reserved;
-+	__u8	name_len;		/* Length of device name */
-+	__u8	name[0];		/* Device name (padded to __u64, truncated at 63 chars) */
-+};
-+
-+#define USB_NOTIFICATION_MAX_NAME_LEN 63
-+
- #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
-diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
-index 263dbba59651..ca3d55208852 100644
---- a/samples/watch_queue/watch_test.c
-+++ b/samples/watch_queue/watch_test.c
-@@ -85,6 +85,26 @@ static void saw_block_change(struct watch_notification *n, size_t len)
- 	       (unsigned long long)b->sector);
- }
- 
-+static const char *usb_subtypes[256] = {
-+	[NOTIFY_USB_DEVICE_ADD]		= "dev-add",
-+	[NOTIFY_USB_DEVICE_REMOVE]	= "dev-remove",
-+	[NOTIFY_USB_DEVICE_RESET]	= "dev-reset",
-+	[NOTIFY_USB_DEVICE_ERROR]	= "dev-error",
-+};
-+
-+static void saw_usb_event(struct watch_notification *n, size_t len)
-+{
-+	struct usb_notification *u = (struct usb_notification *)n;
-+
-+	if (len < sizeof(struct usb_notification))
-+		return;
-+
-+	printf("USB %*.*s %s e=%x r=%x\n",
-+	       u->name_len, u->name_len, u->name,
-+	       usb_subtypes[n->subtype],
-+	       u->error, u->reserved);
-+}
-+
- /*
-  * Consume and display events.
-  */
-@@ -161,6 +181,9 @@ static void consumer(int fd)
- 			case WATCH_TYPE_BLOCK_NOTIFY:
- 				saw_block_change(&n.n, len);
- 				break;
-+			case WATCH_TYPE_USB_NOTIFY:
-+				saw_usb_event(&n.n, len);
-+				break;
- 			default:
- 				printf("other type\n");
- 				break;
-@@ -172,7 +195,7 @@ static void consumer(int fd)
- }
- 
- static struct watch_notification_filter filter = {
--	.nr_filters	= 2,
-+	.nr_filters	= 3,
- 	.filters = {
- 		[0]	= {
- 			.type			= WATCH_TYPE_KEY_NOTIFY,
-@@ -182,6 +205,10 @@ static struct watch_notification_filter filter = {
- 			.type			= WATCH_TYPE_BLOCK_NOTIFY,
- 			.subtype_filter[0]	= UINT_MAX,
- 		},
-+		[2]	= {
-+			.type			= WATCH_TYPE_USB_NOTIFY,
-+			.subtype_filter[0]	= UINT_MAX,
-+		},
- 	},
- };
- 
+ struct device;
+ struct tee_device;
+-- 
+2.7.4
