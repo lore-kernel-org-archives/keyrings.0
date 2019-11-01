@@ -1,39 +1,145 @@
-From: "Ms.Mary Coster" <info.zennitbankplcnigerian@gmail.com>
-Date: Fri, 15 Nov 2019 15:49:07 +0000
-Subject: Goodnews, I have deposited your transfer total amount US$4.8million Dollars with Money Gram this mor
-Message-Id: <CABHzvrmypb4iEkfX0yr_sS+ZzXejHbQoznfDnH3aVoOB9wq8jA@mail.gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 01 Nov 2019 17:35:15 +0000
+Subject: [RFC PATCH 08/11] pipe: Rearrange sequence in pipe_write() to preallocate slot [ver #3]
+Message-Id: <157262971590.13142.1426435250123334464.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Attn, Dear
-Goodnews, I have deposited your transfer total amount US$4.8million
-Dollars with Money Gram this morning. we agreed you will be receiving
-it $5000.00 daily.
-Contact Mr. John Dave Director, Money Gram to pick up your first Money
-Gram payment $5000.00 today.
-Contact Person; Mr. John Dave Director, Money Gram,International
-Remittance-Benin
-Email; moneygram.1820@outlook.fr
-Telephone; +229 62619517
-Please re-confirm your address to him once again such as listed below.
-1.Your Full Name..............................
-2.Address.........................
-3.Country....................
-4.Sex.........................................
-5.Your telephone numbers..........................
-6. Copy of your ID...........................
-This is to avoid sending your funds to wrong person, He is waiting to
-hear from you urgent today.
-Let me know once you pick up your transfer $5000.00 today.
-Finally, Note I have paid for the service fees, but only money will
-send to him is $90.00 transfer fee before you can pick up the transfer
-today.
-Ask, Mr. John Dave Director, Money Gram to give you direction where to
-send your transfer fee $90.00 only to Him Immediately so that you can
-pick up $5000.00 us dollars today.
-Thanks for undrstanding.
-Mary Coster
-m.coster@aol.com
+Rearrange the sequence in pipe_write() so that the allocation of the new
+buffer, the allocation of a ring slot and the attachment to the ring is
+done under the pipe wait spinlock and then the lock is dropped and the
+buffer can be filled.
+
+The data copy needs to be done with the spinlock unheld and irqs enabled,
+so the lock needs to be dropped first.  However, the reader can't progress
+as we're holding pipe->mutex.
+
+We also need to drop the lock as that would impact others looking at the
+pipe waitqueue, such as poll(), the consumer and a future kernel message
+writer.
+
+We just abandon the preallocated slot if we get a copy error.  Future
+writes may continue it and a future read will eventually recycle it.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/pipe.c |   51 +++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 33 insertions(+), 18 deletions(-)
+
+diff --git a/fs/pipe.c b/fs/pipe.c
+index c16950e36ded..ce77ac0d8901 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -387,7 +387,7 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ {
+ 	struct file *filp = iocb->ki_filp;
+ 	struct pipe_inode_info *pipe = filp->private_data;
+-	unsigned int head, tail, max_usage, mask;
++	unsigned int head, max_usage, mask;
+ 	ssize_t ret = 0;
+ 	int do_wakeup = 0;
+ 	size_t total_len = iov_iter_count(from);
+@@ -405,14 +405,13 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ 		goto out;
+ 	}
+ 
+-	tail = pipe->tail;
+ 	head = pipe->head;
+ 	max_usage = pipe->max_usage;
+ 	mask = pipe->ring_size - 1;
+ 
+ 	/* We try to merge small writes */
+ 	chars = total_len & (PAGE_SIZE-1); /* size of the last buffer */
+-	if (!pipe_empty(head, tail) && chars != 0) {
++	if (!pipe_empty(head, pipe->tail) && chars != 0) {
+ 		struct pipe_buffer *buf = &pipe->bufs[(head - 1) & mask];
+ 		int offset = buf->offset + buf->len;
+ 
+@@ -441,8 +440,8 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ 			break;
+ 		}
+ 
+-		tail = pipe->tail;
+-		if (!pipe_full(head, tail, max_usage)) {
++		head = pipe->head;
++		if (!pipe_full(head, pipe->tail, max_usage)) {
+ 			struct pipe_buffer *buf = &pipe->bufs[head & mask];
+ 			struct page *page = pipe->tmp_page;
+ 			int copied;
+@@ -455,40 +454,56 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ 				}
+ 				pipe->tmp_page = page;
+ 			}
++
++			/* Allocate a slot in the ring in advance and attach an
++			 * empty buffer.  If we fault or otherwise fail to use
++			 * it, either the reader will consume it or it'll still
++			 * be there for the next write.
++			 */
++			spin_lock_irq(&pipe->wait.lock);
++
++			head = pipe->head;
++			pipe->head = head + 1;
++
+ 			/* Always wake up, even if the copy fails. Otherwise
+ 			 * we lock up (O_NONBLOCK-)readers that sleep due to
+ 			 * syscall merging.
+ 			 * FIXME! Is this really true?
+ 			 */
+-			do_wakeup = 1;
+-			copied = copy_page_from_iter(page, 0, PAGE_SIZE, from);
+-			if (unlikely(copied < PAGE_SIZE && iov_iter_count(from))) {
+-				if (!ret)
+-					ret = -EFAULT;
+-				break;
+-			}
+-			ret += copied;
++			wake_up_interruptible_sync_poll_locked(
++				&pipe->wait, EPOLLIN | EPOLLRDNORM);
++
++			spin_unlock_irq(&pipe->wait.lock);
++			kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+ 
+ 			/* Insert it into the buffer array */
++			buf = &pipe->bufs[head & mask];
+ 			buf->page = page;
+ 			buf->ops = &anon_pipe_buf_ops;
+ 			buf->offset = 0;
+-			buf->len = copied;
++			buf->len = 0;
+ 			buf->flags = 0;
+ 			if (is_packetized(filp)) {
+ 				buf->ops = &packet_pipe_buf_ops;
+ 				buf->flags = PIPE_BUF_FLAG_PACKET;
+ 			}
+-
+-			head++;
+-			pipe->head = head;
+ 			pipe->tmp_page = NULL;
+ 
++			copied = copy_page_from_iter(page, 0, PAGE_SIZE, from);
++			if (unlikely(copied < PAGE_SIZE && iov_iter_count(from))) {
++				if (!ret)
++					ret = -EFAULT;
++				break;
++			}
++			ret += copied;
++			buf->offset = 0;
++			buf->len = copied;
++
+ 			if (!iov_iter_count(from))
+ 				break;
+ 		}
+ 
+-		if (!pipe_full(head, tail, max_usage))
++		if (!pipe_full(head, pipe->tail, max_usage))
+ 			continue;
+ 
+ 		/* Wait for buffer space to become available. */
