@@ -1,106 +1,73 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 31 Oct 2019 01:19:06 +0000
-Subject: [PATCH v3 5/9] KEYS: Updated ima_get_action() to return keyrings if specified in the policy
-Message-Id: <20191031011910.2574-6-nramas@linux.microsoft.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Fri, 01 Nov 2019 09:46:18 +0000
+Subject: Re: [Patch v3 6/7] doc: keys: Document usage of TEE based Trusted Keys
+Message-Id: <CAFA6WYMkE928v-v76gGtWmsS0PwRp-OHUtkS0+Ts4V6x0AKBqQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191031011910.2574-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191031011910.2574-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
-Cc: prsriva@linux.microsoft.com
+References: <1572530323-14802-1-git-send-email-sumit.garg@linaro.org>
+ <1572530323-14802-7-git-send-email-sumit.garg@linaro.org>
+ <20191031214745.GG10507@linux.intel.com>
+In-Reply-To: <20191031214745.GG10507@linux.intel.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, Janne Karhunen <janne.karhunen@gmail.com>, Jonathan Corbet <corbet@lwn.net>, jejb@linux.ibm.com, Ard Biesheuvel <ard.biesheuvel@linaro.org>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.ibm.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dhowells@redhat.com, linux-security-module@vger.kernel.org, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, Stuart Yoder <stuart.yoder@arm.com>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, Jens Wiklander <jens.wiklander@linaro.org>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
 
-Information regarding what keyrings need to be measured is missing.
-ima_get_action() needs to retrieve the keyrings, if specified for
-KEYRING_CHECK. 
+On Fri, 1 Nov 2019 at 03:17, Jarkko Sakkinen
+<jarkko.sakkinen@linux.intel.com> wrote:
+>
+> On Thu, Oct 31, 2019 at 07:28:42PM +0530, Sumit Garg wrote:
+> > Provide documentation for usage of TEE based Trusted Keys via existing
+> > user-space "keyctl" utility. Also, document various use-cases.
+> >
+> > Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+>
+> This is the most important commit in order for someone who don't deal
+> that much with ARM TEE to get right.
+>
 
-This patch adds a new out parameter to ima_get_action() to return
-keyrings read from the policy.
+I agree that documentation needs to be updated and your following
+comments seems to be somewhat similar to comments from Mimi here [1].
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima.h      | 3 ++-
- security/integrity/ima/ima_api.c  | 6 ++++--
- security/integrity/ima/ima_main.c | 8 ++++++--
- 3 files changed, 12 insertions(+), 5 deletions(-)
+> Until this commit is right, I don't
+> unfortunately have much to say about other commits.
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 3539a159a7ac..ded78af94e69 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -212,7 +212,8 @@ struct ima_measure_key_entry {
- /* LIM API function definitions */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
--		   struct ima_template_desc **template_desc);
-+		   struct ima_template_desc **template_desc,
-+		   char **keyrings);
- int ima_must_measure(struct inode *inode, int mask, enum ima_hooks func);
- int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct file *file, void *buf, loff_t size,
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index f488d1cead79..77ac076672e1 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -169,6 +169,7 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
-  * @func: caller identifier
-  * @pcr: pointer filled in if matched measure policy sets pcr  * @template_desc: pointer filled in if matched measure policy sets template+ * @keyrings: pointer filled in if matched measure policy sets keyrings  *
-  * The policy is defined in terms of keypairs:
-  *		subj=, obj=, type=, func=, mask=, fsmagic@@ -184,14 +185,15 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
-  */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
--		   struct ima_template_desc **template_desc)
-+		   struct ima_template_desc **template_desc,
-+		   char **keyrings)
- {
- 	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE | IMA_HASH;
- 
- 	flags &= ima_policy_flag;
- 
- 	return ima_match_policy(inode, cred, secid, func, mask, flags, pcr,
--				template_desc, NULL);
-+				template_desc, keyrings);
- }
- 
- /*
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 72ae0878ec5d..cbc7de87106f 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -214,7 +214,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	 * Included is the appraise submask.
- 	 */
- 	action = ima_get_action(inode, cred, secid, mask, func, &pcr,
--				&template_desc);
-+				&template_desc, NULL);
- 	violation_check = ((func = FILE_CHECK || func = MMAP_CHECK) &&
- 			   (ima_policy_flag & IMA_MEASURE));
- 	if (!action && !violation_check)
-@@ -627,6 +627,7 @@ void process_buffer_measurement(const void *buf, int size,
- 					    .buf = buf,
- 					    .buf_len = size};
- 	struct ima_template_desc *template = NULL;
-+	char *keyrings = NULL;
- 	struct {
- 		struct ima_digest_data hdr;
- 		char digest[IMA_MAX_DIGEST_SIZE];
-@@ -641,11 +642,14 @@ void process_buffer_measurement(const void *buf, int size,
- 	if (func) {
- 		security_task_getsecid(current, &secid);
- 		action = ima_get_action(NULL, current_cred(), secid, 0, func,
--					&pcr, &template);
-+					&pcr, &template, &keyrings);
- 		if (!(action & IMA_MEASURE))
- 			return;
- 	}
- 
-+	if (keyrings != NULL)
-+		keyrings = NULL;
-+
- 	if (!pcr)
- 		pcr = CONFIG_IMA_MEASURE_PCR_IDX;
- 
--- 
-2.17.1
+Isn't this statement contradicting with your earlier statement
+regarding the right order would be to complete TEE patches review
+first and then come up with documentation here [2]?
+
+[1] https://lore.kernel.org/linux-integrity/1568025601.4614.253.camel@linux.ibm.com/
+[2] https://lore.kernel.org/linux-integrity/20190909163643.qxmzpcggi567hmhv@linux.intel.com/
+
+> Instead of making disjoint islands, you should edit trusted-encrypted.rst
+> so that it describes commonalities and differences.
+>
+> What the document currently describes is the usage model. It could be a
+> section of its own. In that you should describe first the common
+> parameters and separetely the backend specific parametrs.
+>
+> From kernel internals (there could be a section with this name)  the
+> document describe the key generation e.g. is the hardware used and how
+> it is used, is there salting with krng and so forth.
+
+BTW, here is the info regarding RNG provided by OP-TEE (an open-source
+TEE implementation).
+
+It's either direct output from hardware based RNG (if platform
+supports one) [3] or a software based Fortuna CSPRNG (executing in
+trusted environment) [4] which is seeded via multiple entropy sources
+as described here [5].
+
+Overall, I think salting this with krng sounds reasonable to address
+single RNG source concern. So I would suggest to have a common wrapper
+API that would do salting of trust source (TPM or TEE) RNG output with
+krng.
+
+[3] https://github.com/OP-TEE/optee_os/blob/master/core/crypto/rng_hw.c
+[4] https://github.com/OP-TEE/optee_os/blob/master/core/crypto/rng_fortuna.c
+[5] https://github.com/OP-TEE/optee_os/blob/master/core/include/crypto/crypto.h#L272
+
+-Sumit
+
+>
+> /Jarkko
