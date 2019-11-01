@@ -1,83 +1,54 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 27 Nov 2019 01:56:50 +0000
-Subject: [PATCH v9 2/6] IMA: Add KEY_CHECK func to measure keys
-Message-Id: <20191127015654.3744-3-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 01 Nov 2019 17:35:41 +0000
+Subject: [RFC PATCH 11/11] pipe: Increase the writer-wakeup threshold to reduce context-switch count [ver #3]
+Message-Id: <157262974145.13142.5910403713310791673.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191127015654.3744-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191127015654.3744-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Measure keys loaded onto any keyring.
+Increase the threshold at which the reader sends a wake event to the
+writers in the queue such that the queue must be half empty before the wake
+is issued rather than the wake being issued when just a single slot
+available.
 
-This patch defines a new IMA policy func namely KEY_CHECK to
-measure keys. Updated ima_match_rules() to check for KEY_CHECK
-and ima_parse_rule() to handle KEY_CHECK.
+This reduces the number of context switches in the tests significantly,
+without altering the amount of work achieved.  With my pipe-bench program,
+there's a 20% reduction versus an unpatched kernel.
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Suggested-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- Documentation/ABI/testing/ima_policy | 6 +++++-
- security/integrity/ima/ima.h         | 1 +
- security/integrity/ima/ima_policy.c  | 4 +++-
- 3 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 29aaedf33246..066d32797500 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -29,7 +29,7 @@ Description:
- 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
- 				[FIRMWARE_CHECK]
- 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
--				[KEXEC_CMDLINE]
-+				[KEXEC_CMDLINE] [KEY_CHECK]
- 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
- 			       [[^]MAY_EXEC]
- 			fsmagic:= hex value
-@@ -113,3 +113,7 @@ Description:
- 		Example of appraise rule allowing modsig appended signatures:
+ fs/pipe.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/fs/pipe.c b/fs/pipe.c
+index aba2455caabe..9cd5cbef9552 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -324,16 +324,18 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+ 			}
  
- 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
-+
-+		Example of measure rule using KEY_CHECK to measure all keys:
-+
-+			measure func=KEY_CHECK
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index df4ca482fb53..fe6c698617bd 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
- 	hook(KEXEC_INITRAMFS_CHECK)	\
- 	hook(POLICY_CHECK)		\
- 	hook(KEXEC_CMDLINE)		\
-+	hook(KEY_CHECK)			\
- 	hook(MAX_CHECK)
- #define __ima_hook_enumify(ENUM)	ENUM,
- 
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index f19a895ad7cd..1525a28fd705 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
- {
- 	int i;
- 
--	if (func = KEXEC_CMDLINE) {
-+	if ((func = KEXEC_CMDLINE) || (func = KEY_CHECK)) {
- 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
- 			return true;
- 		return false;
-@@ -997,6 +997,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 				entry->func = POLICY_CHECK;
- 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
- 				entry->func = KEXEC_CMDLINE;
-+			else if (strcmp(args[0].from, "KEY_CHECK") = 0)
-+				entry->func = KEY_CHECK;
- 			else
- 				result = -EINVAL;
- 			if (!result)
--- 
-2.17.1
+ 			if (!buf->len) {
++				bool wake;
+ 				pipe_buf_release(pipe, buf);
+ 				spin_lock_irq(&pipe->wait.lock);
+ 				tail++;
+ 				pipe->tail = tail;
+ 				do_wakeup = 1;
+-				if (head - (tail - 1) == pipe->max_usage)
++				wake = head - (tail - 1) == pipe->max_usage / 2;
++				if (wake)
+ 					wake_up_interruptible_sync_poll_locked(
+ 						&pipe->wait, EPOLLOUT | EPOLLWRNORM);
+ 				spin_unlock_irq(&pipe->wait.lock);
+-				if (head - (tail - 1) == pipe->max_usage)
++				if (wake)
+ 					kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
+ 			}
+ 			total_len -= chars;
