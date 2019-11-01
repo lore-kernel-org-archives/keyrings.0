@@ -1,86 +1,80 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 06 Nov 2019 19:01:16 +0000
-Subject: [PATCH v4 10/10] KEYS: Call the IMA hook to measure key when a new key is created or an existing key
-Message-Id: <20191106190116.2578-11-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 01 Nov 2019 17:34:26 +0000
+Subject: [RFC PATCH 03/11] Add wake_up_interruptible_sync_poll_locked() [ver #3]
+Message-Id: <157262966653.13142.15080563290216609050.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191106190116.2578-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-key_create_or_update function needs to call the IMA hook to measure
-the key when a new key is created or an existing key is updated.
+Add a wakeup call for a case whereby the caller already has the waitqueue
+spinlock held.  This can be used by pipes to alter the ring buffer indices
+and issue a wakeup under the same spinlock.
 
-This patch adds the call to the IMA hook from key_create_or_update
-function.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
 ---
- include/linux/ima.h | 8 ++++++++
- security/keys/key.c | 9 +++++++++
- 2 files changed, 17 insertions(+)
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 6d904754d858..069879242a15 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -24,6 +24,9 @@ extern int ima_post_read_file(struct file *file, void *buf, loff_t size,
- 			      enum kernel_read_file_id id);
- extern void ima_post_path_mknod(struct dentry *dentry);
- extern void ima_kexec_cmdline(const void *buf, int size);
-+extern void ima_post_key_create_or_update(struct key *keyring,
-+					  struct key *key,
-+					  unsigned long flags, bool create);
+ include/linux/wait.h |    3 +++
+ kernel/sched/wait.c  |   23 +++++++++++++++++++++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index bb7676d396cd..3283c8d02137 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -202,6 +202,7 @@ void __wake_up_locked_key(struct wait_queue_head *wq_head, unsigned int mode, vo
+ void __wake_up_locked_key_bookmark(struct wait_queue_head *wq_head,
+ 		unsigned int mode, void *key, wait_queue_entry_t *bookmark);
+ void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode, void *key);
++void __wake_up_locked_sync_key(struct wait_queue_head *wq_head, unsigned int mode, void *key);
+ void __wake_up_locked(struct wait_queue_head *wq_head, unsigned int mode, int nr);
+ void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode);
  
- #ifdef CONFIG_IMA_KEXEC
- extern void ima_add_kexec_buffer(struct kimage *image);
-@@ -92,6 +95,11 @@ static inline void ima_post_path_mknod(struct dentry *dentry)
+@@ -229,6 +230,8 @@ void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode);
+ 	__wake_up(x, TASK_INTERRUPTIBLE, 1, poll_to_key(m))
+ #define wake_up_interruptible_sync_poll(x, m)					\
+ 	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, poll_to_key(m))
++#define wake_up_interruptible_sync_poll_locked(x, m)				\
++	__wake_up_locked_sync_key((x), TASK_INTERRUPTIBLE, poll_to_key(m))
+ 
+ #define ___wait_cond_timeout(condition)						\
+ ({										\
+diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+index b4b52361dab7..ba059fbfc53a 100644
+--- a/kernel/sched/wait.c
++++ b/kernel/sched/wait.c
+@@ -191,6 +191,29 @@ void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode,
  }
+ EXPORT_SYMBOL_GPL(__wake_up_sync_key);
  
- static inline void ima_kexec_cmdline(const void *buf, int size) {}
++/**
++ * __wake_up_locked_sync_key - wake up a thread blocked on a locked waitqueue.
++ * @wq_head: the waitqueue
++ * @mode: which threads
++ * @key: opaque value to be passed to wakeup targets
++ *
++ * The sync wakeup differs in that the waker knows that it will schedule
++ * away soon, so while the target thread will be woken up, it will not
++ * be migrated to another CPU - ie. the two threads are 'synchronized'
++ * with each other. This can prevent needless bouncing between CPUs.
++ *
++ * On UP it can prevent extra preemption.
++ *
++ * If this function wakes up a task, it executes a full memory barrier before
++ * accessing the task state.
++ */
++void __wake_up_locked_sync_key(struct wait_queue_head *wq_head,
++			       unsigned int mode, void *key)
++{
++        __wake_up_common(wq_head, mode, 1, WF_SYNC, key, NULL);
++}
++EXPORT_SYMBOL_GPL(__wake_up_locked_sync_key);
 +
-+static inline void ima_post_key_create_or_update(struct key *keyring,
-+						 struct key *key,
-+						 unsigned long flags,
-+						 bool create) {}
- #endif /* CONFIG_IMA */
- 
- #ifndef CONFIG_IMA_KEXEC
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 764f4c57913e..9782d4d046fd 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -13,6 +13,7 @@
- #include <linux/security.h>
- #include <linux/workqueue.h>
- #include <linux/random.h>
-+#include <linux/ima.h>
- #include <linux/err.h>
- #include "internal.h"
- 
-@@ -936,6 +937,9 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 		goto error_link_end;
- 	}
- 
-+	/* let the ima module know about the created key. */
-+	ima_post_key_create_or_update(keyring, key, flags, true);
-+
- 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
- 
- error_link_end:
-@@ -965,6 +969,11 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 	}
- 
- 	key_ref = __key_update(key_ref, &prep);
-+
-+	/* let the ima module know about the updated key. */
-+	if (!IS_ERR(key_ref))
-+		ima_post_key_create_or_update(keyring, key, flags, false);
-+
- 	goto error_free_prep;
- }
- EXPORT_SYMBOL(key_create_or_update);
--- 
-2.17.1
+ /*
+  * __wake_up_sync - see __wake_up_sync_key()
+  */
