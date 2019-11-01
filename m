@@ -1,98 +1,42 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 27 Nov 2019 01:56:51 +0000
-Subject: [PATCH v9 3/6] IMA: Define an IMA hook to measure keys
-Message-Id: <20191127015654.3744-4-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 01 Nov 2019 17:35:32 +0000
+Subject: [RFC PATCH 10/11] pipe: Check for ring full inside of the spinlock in pipe_write() [ver #3]
+Message-Id: <157262973277.13142.11996381016183033698.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191127015654.3744-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191127015654.3744-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Measure asymmetric keys used for verifying file signatures,
-certificates, etc.
+Make pipe_write() check to see if the ring has become full between it
+taking the pipe mutex, checking the ring status and then taking the
+spinlock.
 
-This patch defines a new IMA hook namely ima_post_key_create_or_update()
-to measure the payload used to create a new key or update an existing key.
+This can happen if a notification is written into the pipe as that happens
+without the pipe mutex.
 
-The IMA hook is defined in a new file namely ima_asymmetric_keys.c
-which is built only if CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE is enabled.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- security/integrity/ima/Makefile              |  1 +
- security/integrity/ima/ima_asymmetric_keys.c | 52 ++++++++++++++++++++
- 2 files changed, 53 insertions(+)
- create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
 
-diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
-index 31d57cdf2421..207a0a9eb72c 100644
---- a/security/integrity/ima/Makefile
-+++ b/security/integrity/ima/Makefile
-@@ -12,3 +12,4 @@ ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
- ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
- ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
- obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
-+obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += ima_asymmetric_keys.o
-diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
-new file mode 100644
-index 000000000000..2308adcdeff3
---- /dev/null
-+++ b/security/integrity/ima/ima_asymmetric_keys.c
-@@ -0,0 +1,52 @@
-+// SPDX-License-Identifier: GPL-2.0+
-+/*
-+ * Copyright (C) 2019 Microsoft Corporation
-+ *
-+ * Author: Lakshmi Ramasubramanian (nramas@linux.microsoft.com)
-+ *
-+ * File: ima_asymmetric_keys.c
-+ *       Defines an IMA hook to measure asymmetric keys on key
-+ *       create or update.
-+ */
+ fs/pipe.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/fs/pipe.c b/fs/pipe.c
+index d7b8d3f22987..aba2455caabe 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -463,6 +463,11 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
+ 			spin_lock_irq(&pipe->wait.lock);
+ 
+ 			head = pipe->head;
++			if (pipe_full(head, pipe->tail, max_usage)) {
++				spin_unlock_irq(&pipe->wait.lock);
++				continue;
++			}
 +
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <keys/asymmetric-type.h>
-+#include "ima.h"
-+
-+/**
-+ * ima_post_key_create_or_update - measure asymmetric keys
-+ * @keyring: keyring to which the key is linked to
-+ * @key: created or updated key
-+ * @payload: The data used to instantiate or update the key.
-+ * @plen: The length of @payload.
-+ * @flags: key flags
-+ * @create: flag indicating whether the key was created or updated
-+ *
-+ * Keys can only be measured, not appraised.
-+ * The payload data used to instantiate or update the key is measured.
-+ */
-+void ima_post_key_create_or_update(struct key *keyring, struct key *key,
-+				   const void *payload, size_t plen,
-+				   unsigned long flags, bool create)
-+{
-+	/* Only asymmetric keys are handled by this hook. */
-+	if (key->type != &key_type_asymmetric)
-+		return;
-+
-+	if (!payload || (plen = 0))
-+		return;
-+
-+	/*
-+	 * keyring->description points to the name of the keyring
-+	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
-+	 * which the given key is linked to.
-+	 *
-+	 * The name of the keyring is passed in the "eventname"
-+	 * parameter to process_buffer_measurement() and is set
-+	 * in the "eventname" field in ima_event_data for
-+	 * the key measurement IMA event.
-+	 */
-+	process_buffer_measurement(payload, plen,
-+				   keyring->description, KEY_CHECK, 0);
-+}
--- 
-2.17.1
+ 			pipe->head = head + 1;
+ 
+ 			/* Always wake up, even if the copy fails. Otherwise
