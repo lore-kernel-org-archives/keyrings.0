@@ -1,118 +1,83 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 27 Nov 2019 22:57:59 +0000
-Subject: Re: [RFC PATCH 0/3] xfstests: test adding filesystem-level fscrypt key via key_id
-Message-Id: <20191127225759.GA303989@sol.localdomain>
+From: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+Date: Sun, 03 Nov 2019 11:04:23 +0000
+Subject: Re: [RFC PATCH 07/10] pipe: Conditionalise wakeup in pipe_read() [ver #2]
+Message-Id: <f8810057-d92a-bcd2-c703-0a947336ce8d@yandex-team.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191119223130.228341-1-ebiggers@kernel.org>
- <20191127204536.GA12520@linux.intel.com>
-In-Reply-To: <20191127204536.GA12520@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: fstests@vger.kernel.org, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org
+References: <fe167a90-1503-7ca2-4150-eeffd5cb1378@yandex-team.ru>
+ <157186182463.3995.13922458878706311997.stgit@warthog.procyon.org.uk>
+ <157186189069.3995.10292601951655075484.stgit@warthog.procyon.org.uk>
+ <3165.1572539884@warthog.procyon.org.uk>
+In-Reply-To: <3165.1572539884@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2019 at 10:45:36PM +0200, Jarkko Sakkinen wrote:
-> On Tue, Nov 19, 2019 at 02:31:27PM -0800, Eric Biggers wrote:
-> > This series adds a test which tests adding a key to a filesystem's
-> > fscrypt keyring via an "fscrypt-provisioning" keyring key.  This is an
-> > alternative to the normal method where the raw key is given directly.
-> > 
-> > I'm sending this out for comment, but it shouldn't be merged until the
-> > corresponding kernel patch has reached mainline.  For more details, see
-> > the kernel patch:
-> > https://lkml.kernel.org/linux-fscrypt/20191119222447.226853-1-ebiggers@kernel.org/T/#u
-> > 
-> > This test depends on an xfs_io patch which adds the '-k' option to the
-> > 'add_enckey' command, e.g.:
-> > 
-> > 	xfs_io -c "add_enckey -k KEY_ID" MOUNTPOINT
-> > 
-> > This test is skipped if the needed kernel or xfs_io support is absent.
-> > 
-> > This has been tested on ext4, f2fs, and ubifs.
-> > 
-> > To apply cleanly, my other xfstests patch series
-> > "[RFC PATCH 0/5] xfstests: verify ciphertext of IV_INO_LBLK_64 encryption policies"
-> > must be applied first.
-> > 
-> > This series can also be retrieved from
-> > https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfstests-dev.git
-> > tag "fscrypt-provisioning_2019-11-19".
-> > 
-> > Eric Biggers (3):
-> >   common/rc: handle option with argument in _require_xfs_io_command()
-> >   common/encrypt: move constant test key to common code
-> >   generic: test adding filesystem-level fscrypt key via key_id
-> > 
-> >  common/encrypt        |  95 +++++++++++++++++++++----
-> >  common/rc             |   2 +-
-> >  tests/generic/580     |  17 ++---
-> >  tests/generic/806     | 156 ++++++++++++++++++++++++++++++++++++++++++
-> >  tests/generic/806.out |  73 ++++++++++++++++++++
-> >  tests/generic/group   |   1 +
-> >  6 files changed, 316 insertions(+), 28 deletions(-)
-> >  create mode 100644 tests/generic/806
-> >  create mode 100644 tests/generic/806.out
-> > 
-> > -- 
-> > 2.24.0.432.g9d3f5f5b63-goog
-> > 
+On 31/10/2019 19.38, David Howells wrote:
+> Okay, attached is a change that might give you what you want.  I tried my
+> pipe-bench program (see cover note) with perf.  The output of the program with
+> the patch applied was:
 > 
-> I'm newbie with fscrypt so I started by encrypting a directory without
-> the new feature
+> -       pipe                  305127298     36262221772       302185181         7887690
 > 
-> sudo tune2fs -O encrypt /dev/sda2
-> sudo fscrypt setup /
-> fscrypt encrypt foo
+> The output of perf with the patch applied:
 > 
-> Worked.
+>          239,943.92 msec task-clock                #    1.997 CPUs utilized
+>              17,728      context-switches          #   73.884 M/sec
+>                 124      cpu-migrations            #    0.517 M/sec
+>               9,330      page-faults               #   38.884 M/sec
+>     885,107,207,365      cycles                    # 3688822.793 GHz
+>   1,386,873,499,490      instructions              #    1.57  insn per cycle
+>     311,037,372,339      branches                  # 1296296921.931 M/sec
+>          33,467,827      branch-misses             #    0.01% of all branches
 > 
-> Generally speaking I'd appreciate a usage example like here to the
-> commit message:
+> And without:
 > 
-> https://lwn.net/Articles/692514/
+>          239,891.87 msec task-clock                #    1.997 CPUs utilized
+>              22,187      context-switches          #   92.488 M/sec
+>                 133      cpu-migrations            #    0.554 M/sec
+>               9,334      page-faults               #   38.909 M/sec
+>     884,906,976,128      cycles                    # 3688787.725 GHz
+>   1,391,986,932,265      instructions              #    1.57  insn per cycle
+>     311,394,686,857      branches                  # 1298067400.849 M/sec
+>          30,242,823      branch-misses             #    0.01% of all branches
 > 
-> Is this doable?
-> 
-> I might consider trying out the XFS test suite some day but right now it
-> would be first nice to smoke test the feature quickly.
-> 
-> I think for this patch that would actually be mostly sufficient testing.
-> 
+> So it did make something like a 20% reduction in context switches.
 
-You could manually do what the xfstest does, which is more or less the following
-(requires xfs_io patched with https://patchwork.kernel.org/patch/11252795/):
+Ok. Looks promising. Depending on workload reduction might be much bigger.
 
-	mkfs.ext4 -O encrypt /dev/vdc
-	mount /dev/vdc /vdc
-	keyctl new_session
-	payload='\x02\x00\x00\x00\x00\x00\x00\x00'
-	for i in {1..64}; do
-		payload+="\\x$(printf "%02x" $i)"
-	done
-	keyid=$(echo -ne "$payload" | keyctl padd fscrypt-provisioning desc @s)
-	keyspec=$(xfs_io -c "add_enckey -k $keyid" /vdc | awk '{print $NF}')
-	mkdir /vdc/edir
-	xfs_io -c "set_encpolicy $keyspec" /vdc/edir
-	echo contents > /vdc/edir/file
+I suppose buffer resize (grow) makes wakeup unconditionally. Should be ok.
 
-I'm not yet planning to use this feature in the 'fscrypt' userspace tool
-https://github.com/google/fscrypt.  The user who actually wants this feature
-(Android) isn't using the 'fscrypt' tool, but rather is using custom code.
-
-Also, the 'fscrypt' tool isn't meant for testing or exposing every corner of the
-fscrypt kernel API.  Rather, it's meant to be a user-friendly tool for creating
-encrypted directories on "regular" Linux distros, supporting lots of higher
-level userspace features like passphrase hashing with Argon2, multiple
-protectors, and auto-unlocking directories with PAM.
-
-So for now, the important thing is to have an xfstest that fully tests this new
-API.  For that, like the other fscrypt tests, I'm using keyctl and xfs_io to
-access the kernel API directly.
-
-Later, if people really need the 'fscrypt' tool to do something that requires
-this feature, we can add it.  This would likely take the form of a user-friendly
-option to 'fscrypt unlock' rather than a direct translation of the kernel API.
-
-- Eric
+> 
+> David
+> ---
+> diff --git a/fs/pipe.c b/fs/pipe.c
+> index e3d5f7a39123..5167921edd73 100644
+> --- a/fs/pipe.c
+> +++ b/fs/pipe.c
+> @@ -276,7 +276,7 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+>   	size_t total_len = iov_iter_count(to);
+>   	struct file *filp = iocb->ki_filp;
+>   	struct pipe_inode_info *pipe = filp->private_data;
+> -	int do_wakeup;
+> +	int do_wakeup, wake;
+>   	ssize_t ret;
+> 
+>   	/* Null read succeeds. */
+> @@ -329,11 +329,12 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+>   				tail++;
+>   				pipe->tail = tail;
+>   				do_wakeup = 1;
+> -				if (head - (tail - 1) = pipe->max_usage)
+> +				wake = head - (tail - 1) = pipe->max_usage / 2;
+> +				if (wake)
+>   					wake_up_interruptible_sync_poll_locked(
+>   						&pipe->wait, EPOLLOUT | EPOLLWRNORM);
+>   				spin_unlock_irq(&pipe->wait.lock);
+> -				if (head - (tail - 1) = pipe->max_usage)
+> +				if (wake)
+>   					kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
+>   			}
+>   			total_len -= chars;
+> 
