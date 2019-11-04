@@ -1,23 +1,22 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 29 Nov 2019 20:57:41 +0000
-Subject: Re: [PATCH] Documentation: security: core.rst: fix warnings
-Message-Id: <20191129205741.GA12055@linux.intel.com>
+From: Peter Wong <choimj@isd.co.kr>
+Date: Mon, 04 Nov 2019 12:32:49 +0000
+Subject: Investment opportunity
+Message-Id: <252868.286096.1572870771326.JavaMail.cash@211.53.128.215>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191122041806.68650-1-dwlsalmeida@gmail.com>
-In-Reply-To: <20191122041806.68650-1-dwlsalmeida@gmail.com>
-To: "Daniel W. S. Almeida" <dwlsalmeida@gmail.com>
-Cc: dhowells@redhat.com, corbet@lwn.net, keyrings@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, skhan@linuxfoundation.org, linux-kernel-mentees@lists.linuxfoundation.org
+To: keyrings@vger.kernel.org
 
-On Fri, Nov 22, 2019 at 01:18:06AM -0300, Daniel W. S. Almeida wrote:
-> From: "Daniel W. S. Almeida" <dwlsalmeida@gmail.com>
-> 
-> Fix warnings due to missing markup, no change in content otherwise.
-> 
-> Signed-off-by: Daniel W. S. Almeida <dwlsalmeida@gmail.com>
+Greetings,
 
-Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Find the attached mail very confidential. reply for more details
 
-/Jarkko
+Thanks.
+Peter Wong
+
+
+
+
+----------------------------------------------------
+This email was sent by the shareware version of Postman Professional.
