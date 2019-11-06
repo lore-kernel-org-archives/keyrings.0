@@ -1,52 +1,43 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 06 Nov 2019 19:01:07 +0000
-Subject: [PATCH v4 01/10] IMA: Defined an IMA hook to measure keys on key create or update
-Message-Id: <20191106190116.2578-2-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Wed, 06 Nov 2019 22:43:09 +0000
+Subject: Re: [PATCH v4 01/10] IMA: Defined an IMA hook to measure keys on key create or update
+Message-Id: <1573080189.5028.313.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191106190116.2578-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+         <20191106190116.2578-2-nramas@linux.microsoft.com>
+In-Reply-To: <20191106190116.2578-2-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Asymmetric keys used for verifying file signatures or certificates
-are currently not included in the IMA measurement list.
-
-This patch defines a new IMA hook namely ima_post_key_create_or_update()
-to measure asymmetric keys.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima_main.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index d7e987baf127..a0e233afe876 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -721,6 +721,22 @@ void ima_kexec_cmdline(const void *buf, int size)
- 					   KEXEC_CMDLINE, 0);
- }
- 
-+/**
-+ * ima_post_key_create_or_update - measure asymmetric keys
-+ * @keyring: keyring to which the key is linked to
-+ * @key: created or updated key
-+ * @flags: key flags
-+ * @create: flag indicating whether the key was created or updated
-+ *
-+ * Keys can only be measured, not appraised.
-+ */
-+void ima_post_key_create_or_update(struct key *keyring, struct key *key,
-+				   unsigned long flags, bool create)
-+{
-+	if ((keyring != NULL) && (key != NULL))
-+		return;
-+}
-+
- static int __init init_ima(void)
- {
- 	int error;
--- 
-2.17.1
+T24gV2VkLCAyMDE5LTExLTA2IGF0IDExOjAxIC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBBc3ltbWV0cmljIGtleXMgdXNlZCBmb3IgdmVyaWZ5aW5nIGZpbGUgc2lnbmF0
+dXJlcyBvciBjZXJ0aWZpY2F0ZXMKPiBhcmUgY3VycmVudGx5IG5vdCBpbmNsdWRlZCBpbiB0aGUg
+SU1BIG1lYXN1cmVtZW50IGxpc3QuCj4gCj4gVGhpcyBwYXRjaCBkZWZpbmVzIGEgbmV3IElNQSBo
+b29rIG5hbWVseSBpbWFfcG9zdF9rZXlfY3JlYXRlX29yX3VwZGF0ZSgpCj4gdG8gbWVhc3VyZSBh
+c3ltbWV0cmljIGtleXMuCj4gCj4gU2lnbmVkLW9mZi1ieTogTGFrc2htaSBSYW1hc3VicmFtYW5p
+YW4gPG5yYW1hc0BsaW51eC5taWNyb3NvZnQuY29tPgo+IC0tLQo+ICBzZWN1cml0eS9pbnRlZ3Jp
+dHkvaW1hL2ltYV9tYWluLmMgfCAxNiArKysrKysrKysrKysrKysrCj4gIDEgZmlsZSBjaGFuZ2Vk
+LCAxNiBpbnNlcnRpb25zKCspCj4gCj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVncml0eS9p
+bWEvaW1hX21haW4uYyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX21haW4uYwo+IGluZGV4
+IGQ3ZTk4N2JhZjEyNy4uYTBlMjMzYWZlODc2IDEwMDY0NAo+IC0tLSBhL3NlY3VyaXR5L2ludGVn
+cml0eS9pbWEvaW1hX21haW4uYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX21h
+aW4uYwo+IEBAIC03MjEsNiArNzIxLDIyIEBAIHZvaWQgaW1hX2tleGVjX2NtZGxpbmUoY29uc3Qg
+dm9pZCAqYnVmLCBpbnQgc2l6ZSkKPiAgCQkJCQkgICBLRVhFQ19DTURMSU5FLCAwKTsKPiAgfQo+
+ICAKPiArLyoqCj4gKyAqIGltYV9wb3N0X2tleV9jcmVhdGVfb3JfdXBkYXRlIC0gbWVhc3VyZSBh
+c3ltbWV0cmljIGtleXMKPiArICogQGtleXJpbmc6IGtleXJpbmcgdG8gd2hpY2ggdGhlIGtleSBp
+cyBsaW5rZWQgdG8KPiArICogQGtleTogY3JlYXRlZCBvciB1cGRhdGVkIGtleQo+ICsgKiBAZmxh
+Z3M6IGtleSBmbGFncwo+ICsgKiBAY3JlYXRlOiBmbGFnIGluZGljYXRpbmcgd2hldGhlciB0aGUg
+a2V5IHdhcyBjcmVhdGVkIG9yIHVwZGF0ZWQKPiArICoKPiArICogS2V5cyBjYW4gb25seSBiZSBt
+ZWFzdXJlZCwgbm90IGFwcHJhaXNlZC4KPiArICovCj4gK3ZvaWQgaW1hX3Bvc3Rfa2V5X2NyZWF0
+ZV9vcl91cGRhdGUoc3RydWN0IGtleSAqa2V5cmluZywgc3RydWN0IGtleSAqa2V5LAo+ICsJCQkJ
+ICAgdW5zaWduZWQgbG9uZyBmbGFncywgYm9vbCBjcmVhdGUpCj4gK3sKPiArCWlmICgoa2V5cmlu
+ZyAhPSBOVUxMKSAmJiAoa2V5ICE9IE5VTEwpKQo+ICsJCXJldHVybjsKCkkgd291bGQgbW92ZSB0
+aGUgcGF0Y2ggdGhhdCBkZWZpbmVzIHRoZSAia2V5cmluZz0iIHBvbGljeSBvcHRpb24gcHJpb3IK
+dG8gdGhpcyBvbmUuIMKgSW5jbHVkZSB0aGUgY2FsbCB0byBwcm9jZXNzX2J1ZmZlcl9tZWFzdXJl
+bWVudCgpIGluIHRoaXMKcGF0Y2guIMKgQSBzdWJzZXF1ZW50IHBhdGNoIHdvdWxkIGFkZCBzdXBw
+b3J0IHRvIGRlZmVyIG1lYXN1cmluZyB0aGUKa2V5LCBieSBjYWxsaW5nIGEgZnVuY3Rpb24gbmFt
+ZWQgc29tZXRoaW5nIGxpa2UKaW1hX3F1ZXVlX2tleV9tZWFzdXJlbWVudCgpLgoKTWltaQoKPiAr
+fQo+ICsKPiAgc3RhdGljIGludCBfX2luaXQgaW5pdF9pbWEodm9pZCkKPiAgewo+ICAJaW50IGVy
+cm9yOwo=
