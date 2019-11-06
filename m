@@ -1,97 +1,122 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 14 Nov 2019 03:12:02 +0000
-Subject: [PATCH v7 5/5] IMA: Read keyrings= option from the IMA policy
-Message-Id: <20191114031202.18012-6-nramas@linux.microsoft.com>
+Date: Wed, 06 Nov 2019 19:01:12 +0000
+Subject: [PATCH v4 06/10] IMA: Measure key if the IMA policy allows measurement for the keyring to which the 
+Message-Id: <20191106190116.2578-7-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191114031202.18012-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191114031202.18012-1-nramas@linux.microsoft.com>
+References: <20191106190116.2578-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
 To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Read "keyrings=" option, if specified in the IMA policy, and store in
-the list of IMA rules when the configured IMA policy is read.
+process_buffer_measurement() needs to check if the keyring to which
+the given key is linked to is listed in the keyrings option in
+the IMA policy.
 
-This patch defines a new policy token enum namely Opt_keyrings
-and an option flag IMA_KEYRINGS for reading "keyrings=" option
-from the IMA policy.
+This patch adds a new parameter "keyring" to process_buffer_measurement().
 
-Updated ima_parse_rule() to parse "keyrings=" option in the policy.
-Updated ima_policy_show() to display "keyrings=" option.
+If process_buffer_measurement() is called with func KEYRING_CHECK and
+the name of the keyring to which the key is linked to, then the given
+key is measured if:
+  1, IMA policy did not specify "keyrings=" option.
+  2, Or, the given keyring name is listed in the "keyrings=" option.
 
 Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
- security/integrity/ima/ima_policy.c | 29 ++++++++++++++++++++++++++++-
- 1 file changed, 28 insertions(+), 1 deletion(-)
+ security/integrity/ima/ima.h          |  2 +-
+ security/integrity/ima/ima_appraise.c |  2 +-
+ security/integrity/ima/ima_main.c     | 26 ++++++++++++++++++++++++--
+ 3 files changed, 26 insertions(+), 4 deletions(-)
 
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 76da4f17bc79..577a51a548fb 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -34,6 +34,7 @@
- #define IMA_EUID	0x0080
- #define IMA_PCR		0x0100
- #define IMA_FSNAME	0x0200
-+#define IMA_KEYRINGS	0x0400
- 
- #define UNKNOWN		0
- #define MEASURE		0x0001	/* same as IMA_MEASURE */
-@@ -795,7 +796,8 @@ enum {
- 	Opt_uid_gt, Opt_euid_gt, Opt_fowner_gt,
- 	Opt_uid_lt, Opt_euid_lt, Opt_fowner_lt,
- 	Opt_appraise_type, Opt_appraise_flag,
--	Opt_permit_directio, Opt_pcr, Opt_template, Opt_err
-+	Opt_permit_directio, Opt_pcr, Opt_template, Opt_keyrings,
-+	Opt_err
- };
- 
- static const match_table_t policy_tokens = {
-@@ -831,6 +833,7 @@ static const match_table_t policy_tokens = {
- 	{Opt_permit_directio, "permit_directio"},
- 	{Opt_pcr, "pcr=%s"},
- 	{Opt_template, "template=%s"},
-+	{Opt_keyrings, "keyrings=%s"},
- 	{Opt_err, NULL}
- };
- 
-@@ -1080,6 +1083,23 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 			result = 0;
- 			entry->flags |= IMA_FSNAME;
- 			break;
-+		case Opt_keyrings:
-+			ima_log_string(ab, "keyrings", args[0].from);
-+
-+			if ((entry->keyrings) ||
-+			    (entry->action != MEASURE) ||
-+			    (entry->func != KEY_CHECK)) {
-+				result = -EINVAL;
-+				break;
-+			}
-+			entry->keyrings = kstrdup(args[0].from, GFP_KERNEL);
-+			if (!entry->keyrings) {
-+				result = -ENOMEM;
-+				break;
-+			}
-+			result = 0;
-+			entry->flags |= IMA_KEYRINGS;
-+			break;
- 		case Opt_fsuuid:
- 			ima_log_string(ab, "fsuuid", args[0].from);
- 
-@@ -1455,6 +1475,13 @@ int ima_policy_show(struct seq_file *m, void *v)
- 		seq_puts(m, " ");
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 387829afb9a2..f15199f7ff2a 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -221,7 +221,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
+ 			   struct ima_template_desc *template_desc);
+ void process_buffer_measurement(const void *buf, int size,
+ 				const char *eventname, enum ima_hooks func,
+-				int pcr);
++				int pcr, const char *keyring);
+ void ima_audit_measurement(struct integrity_iint_cache *iint,
+ 			   const unsigned char *filename);
+ int ima_alloc_init_template(struct ima_event_data *event_data,
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 47ad4f56c0a8..a9649b04b9f1 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -330,7 +330,7 @@ int ima_check_blacklist(struct integrity_iint_cache *iint,
+ 		if ((rc = -EPERM) && (iint->flags & IMA_MEASURE))
+ 			process_buffer_measurement(digest, digestsize,
+ 						   "blacklisted-hash", NONE,
+-						   pcr);
++						   pcr, NULL);
  	}
  
-+	if (entry->flags & IMA_KEYRINGS) {
-+		if (entry->keyrings != NULL)
-+			snprintf(tbuf, sizeof(tbuf), "%s", entry->keyrings);
-+		seq_printf(m, pt(Opt_keyrings), tbuf);
-+		seq_puts(m, " ");
+ 	return rc;
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index b6d17f37ba61..56540357c854 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -632,12 +632,22 @@ int ima_load_data(enum kernel_load_data_id id)
+  * @eventname: event name to be used for the buffer entry.
+  * @func: IMA hook
+  * @pcr: pcr to extend the measurement
++ * @keyring: keyring for the measurement
++ *
++ *	The following scenarios are possible with respect to
++ *	the parameter "keyring":
++ *	1, keyring is NULL. In this case buffer is measured.
++ *	2, keyring is not NULL, but ima_get_action returned
++ *	   a NULL keyrings. In this case also the buffer is measured.
++ *	3, keyring is not NULL and ima_get_action returned
++ *	   a non-NULL keyrings. In this case measure the buffer
++ *	   only if the given keyring is present in the keyrings.
+  *
+  * Based on policy, the buffer is measured into the ima log.
+  */
+ void process_buffer_measurement(const void *buf, int size,
+ 				const char *eventname, enum ima_hooks func,
+-				int pcr)
++				int pcr, const char *keyring)
+ {
+ 	int ret = 0;
+ 	struct ima_template_entry *entry = NULL;
+@@ -656,6 +666,13 @@ void process_buffer_measurement(const void *buf, int size,
+ 	int action = 0;
+ 	u32 secid;
+ 
++	/*
++	 * If IMA is not yet initialized or IMA policy is empty
++	 * then there is no need to measure.
++	 */
++	if (!ima_policy_flag)
++		return;
++
+ 	/*
+ 	 * Both LSM hooks and auxilary based buffer measurements are
+ 	 * based on policy.  To avoid code duplication, differentiate
+@@ -671,6 +688,11 @@ void process_buffer_measurement(const void *buf, int size,
+ 			return;
+ 	}
+ 
++	if ((keyring != NULL) && (keyrings != NULL)
++	    && (strstr(keyrings, keyring) = NULL)) {
++		return;
 +	}
 +
- 	if (entry->flags & IMA_PCR) {
- 		snprintf(tbuf, sizeof(tbuf), "%d", entry->pcr);
- 		seq_printf(m, pt(Opt_pcr), tbuf);
+ 	if (!pcr)
+ 		pcr = CONFIG_IMA_MEASURE_PCR_IDX;
+ 
+@@ -719,7 +741,7 @@ void ima_kexec_cmdline(const void *buf, int size)
+ {
+ 	if (buf && size != 0)
+ 		process_buffer_measurement(buf, size, "kexec-cmdline",
+-					   KEXEC_CMDLINE, 0);
++					   KEXEC_CMDLINE, 0, NULL);
+ }
+ 
+ /**
 -- 
 2.17.1
