@@ -1,132 +1,83 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 07 Nov 2019 13:35:47 +0000
-Subject: [RFC PATCH 03/14] security: Add a hook for the point of notification insertion [ver #2]
-Message-Id: <157313374753.29677.10499095666351592097.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 06 Nov 2019 19:01:09 +0000
+Subject: [PATCH v4 03/10] IMA: Added keyrings= option in IMA policy to only measure keys added to the specifi
+Message-Id: <20191106190116.2578-4-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191106190116.2578-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a security hook that allows an LSM to rule on whether a notification
-message is allowed to be inserted into a particular watch queue.
+IMA policy needs to support measuring only those keys linked to
+a specific set of keyrings.
 
-The hook is given the following information:
+This patch defines a new IMA policy option namely "keyrings=" that
+can be used to specify a set of keyrings. If this option is specified
+in the policy for func=KEYRING_CHECK then only the keys linked to
+the keyrings given in "keyrings=" option are measured.
 
- (1) The credentials of the triggerer (which may be init_cred for a system
-     notification, eg. a hardware error).
+If "keyrings=" option is not specified for func=KEYRING_CHECK then
+all keys are measured.
 
- (2) The credentials of the whoever set the watch.
-
- (3) The notification message.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
+ Documentation/ABI/testing/ima_policy | 10 +++++++++-
+ security/integrity/ima/ima_policy.c  |  2 ++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
- include/linux/lsm_hooks.h |   14 ++++++++++++++
- include/linux/security.h  |   15 ++++++++++++++-
- security/security.c       |    9 +++++++++
- 3 files changed, 37 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index d62e92b768c4..8e1cbc27fc62 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1427,6 +1427,12 @@
-  *	Check to see if a process is allowed to watch for event notifications
-  *	from devices (as a global set).
-  *
-+ * @post_notification:
-+ *	Check to see if a watch notification can be posted to a particular
-+ *	queue.
-+ *	@w_cred: The credentials of the whoever set the watch.
-+ *	@cred: The event-triggerer's credentials
-+ *	@n: The notification being posted
-  *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-@@ -1716,6 +1722,11 @@ union security_list_options {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	int (*watch_devices)(void);
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	int (*post_notification)(const struct cred *w_cred,
-+				 const struct cred *cred,
-+				 struct watch_notification *n);
-+#endif
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 341df49b5ad1..be2874fa3928 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -25,7 +25,7 @@ Description:
+ 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
+ 				 [obj_user=] [obj_role=] [obj_type=]]
+ 			option:	[[appraise_type=]] [template=] [permit_directio]
+-				[appraise_flag=]
++				[appraise_flag=] [keyrings=]
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+@@ -43,6 +43,9 @@ Description:
+ 			appraise_flag:= [check_blacklist]
+ 			Currently, blacklist check is only for files signed with appended
+ 			signature.
++			keyrings:= list of keyrings
++			(eg, .builtin_trusted_keys|.ima). Only valid
++			when action is "measure" and func is KEYRING_CHECK.
+ 			template:= name of a defined IMA template type
+ 			(eg, ima-ng). Only valid when action is "measure".
+ 			pcr:= decimal value
+@@ -119,3 +122,8 @@ Description:
+ 		all keys:
  
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -2001,6 +2012,9 @@ struct security_hook_heads {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	struct hlist_head watch_devices;
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	struct hlist_head post_notification;
-+#endif /* CONFIG_WATCH_QUEUE */
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 5d1867772022..ee98e020c749 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -57,6 +57,8 @@ struct mm_struct;
- struct fs_context;
- struct fs_parameter;
- enum fs_value_type;
-+struct watch;
-+struct watch_notification;
- 
- /* Default (no) options for the capable function */
- #define CAP_OPT_NONE 0x0
-@@ -1287,6 +1289,18 @@ static inline int security_watch_devices(void)
- 	return 0;
- }
- #endif
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n);
-+#else
-+static inline int security_post_notification(const struct cred *w_cred,
-+					     const struct cred *cred,
-+					     struct watch_notification *n)
-+{
-+	return 0;
-+}
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 
-@@ -1912,4 +1926,3 @@ static inline void security_bpf_prog_free(struct bpf_prog_aux *aux)
- #endif /* CONFIG_BPF_SYSCALL */
- 
- #endif /* ! __LINUX_SECURITY_H */
--
-diff --git a/security/security.c b/security/security.c
-index 4f970716fa6c..c9d5c3d5472a 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1956,6 +1956,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n)
-+{
-+	return call_int_hook(post_notification, 0, w_cred, cred, n);
-+}
-+#endif /* CONFIG_WATCH_QUEUE */
+ 			measure func=KEYRING_CHECK
 +
- #ifdef CONFIG_KEY_NOTIFICATIONS
- int security_watch_key(struct key *key)
- {
++		Example of measure rule using KEYRING_CHECK to only measure
++		keys added to .builtin_trusted_keys or .ima keyring:
++
++			measure func=KEYRING_CHECK keyrings=.builtin_trusted_keys|.ima
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 4344b7354fc5..4d68ad8ed91c 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -34,6 +34,7 @@
+ #define IMA_EUID	0x0080
+ #define IMA_PCR		0x0100
+ #define IMA_FSNAME	0x0200
++#define IMA_KEYRINGS	0x0400
+ 
+ #define UNKNOWN		0
+ #define MEASURE		0x0001	/* same as IMA_MEASURE */
+@@ -79,6 +80,7 @@ struct ima_rule_entry {
+ 		int type;	/* audit type */
+ 	} lsm[MAX_LSM_RULES];
+ 	char *fsname;
++	char *keyrings; /* Measure keys added to these keyrings */
+ 	struct ima_template_desc *template;
+ };
+ 
+-- 
+2.17.1
