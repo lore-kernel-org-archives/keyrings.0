@@ -1,56 +1,68 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 01 Nov 2019 17:35:05 +0000
-Subject: [RFC PATCH 07/11] pipe: Conditionalise wakeup in pipe_read() [ver #3]
-Message-Id: <157262970587.13142.9476858866693533437.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 06 Nov 2019 19:01:13 +0000
+Subject: [PATCH v4 07/10] IMA: Added a boolean flag to track IMA initialization status
+Message-Id: <20191106190116.2578-8-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191106190116.2578-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Only do a wakeup in pipe_read() if we made space in a completely full
-buffer.  The producer shouldn't be waiting on pipe->wait otherwise.
+IMA initialization status need to be checked before attempting to
+determine the action (measure, appraise, etc.) and any related options
+specified in the IMA policy.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+This patch defines a flag namely ima_initialized to track
+IMA initialization status.
+
+ima_policy_flag cannot be relied upon for knowing IMA initialization
+status because ima_policy_flag will be set to 0 when either IMA
+is not initialized or the IMA policy itself is empty.
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
+ security/integrity/ima/ima.h      | 1 +
+ security/integrity/ima/ima_init.c | 9 ++++++++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
- fs/pipe.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
-
-diff --git a/fs/pipe.c b/fs/pipe.c
-index ea134f69a292..c16950e36ded 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -328,11 +328,13 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
- 				spin_lock_irq(&pipe->wait.lock);
- 				tail++;
- 				pipe->tail = tail;
--				do_wakeup = 0;
--				wake_up_interruptible_sync_poll_locked(
--					&pipe->wait, EPOLLOUT | EPOLLWRNORM);
-+				do_wakeup = 1;
-+				if (head - (tail - 1) == pipe->max_usage)
-+					wake_up_interruptible_sync_poll_locked(
-+						&pipe->wait, EPOLLOUT | EPOLLWRNORM);
- 				spin_unlock_irq(&pipe->wait.lock);
--				kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
-+				if (head - (tail - 1) == pipe->max_usage)
-+					kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
- 			}
- 			total_len -= chars;
- 			if (!total_len)
-@@ -361,11 +363,6 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
- 				ret = -ERESTARTSYS;
- 			break;
- 		}
--		if (do_wakeup) {
--			wake_up_interruptible_sync_poll(&pipe->wait, EPOLLOUT | EPOLLWRNORM);
-- 			kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
--			do_wakeup = 0;
--		}
- 		pipe_wait(pipe);
- 	}
- 	__pipe_unlock(pipe);
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index f15199f7ff2a..6a86daa62c5b 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -52,6 +52,7 @@ extern int ima_policy_flag;
+ extern int ima_hash_algo;
+ extern int ima_appraise;
+ extern struct tpm_chip *ima_tpm_chip;
++extern bool ima_initialized;
+ 
+ /* IMA event related data */
+ struct ima_event_data {
+diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
+index 5d55ade5f3b9..a810af6df587 100644
+--- a/security/integrity/ima/ima_init.c
++++ b/security/integrity/ima/ima_init.c
+@@ -23,6 +23,7 @@
+ /* name for boot aggregate entry */
+ static const char boot_aggregate_name[] = "boot_aggregate";
+ struct tpm_chip *ima_tpm_chip;
++bool ima_initialized;
+ 
+ /* Add the boot aggregate to the IMA measurement list and extend
+  * the PCR register.
+@@ -131,5 +132,11 @@ int __init ima_init(void)
+ 
+ 	ima_init_policy();
+ 
+-	return ima_fs_init();
++	rc = ima_fs_init();
++	if (rc != 0)
++		return rc;
++
++	ima_initialized = true;
++
++	return 0;
+ }
+-- 
+2.17.1
