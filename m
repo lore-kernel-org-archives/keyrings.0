@@ -1,55 +1,90 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 27 Nov 2019 22:05:56 +0000
-Subject: Re: [PATCH v9 6/6] IMA: Read keyrings= option from the IMA policy
-Message-Id: <3fb64c8a-59d3-3390-07c6-283099f55f86@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 07 Nov 2019 13:36:33 +0000
+Subject: [RFC PATCH 08/14] pipe: Allow buffers to be marked read-whole-or-error for notifications [ver #2]
+Message-Id: <157313379331.29677.5209561321495531328.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191127015654.3744-1-nramas@linux.microsoft.com>
- <20191127015654.3744-7-nramas@linux.microsoft.com>
- <1574883174.4793.318.camel@linux.ibm.com>
-In-Reply-To: <1574883174.4793.318.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-T24gMTEvMjcvMTkgMTE6MzIgQU0sIE1pbWkgWm9oYXIgd3JvdGU6Cgo+IAo+IFRoZSBleGFtcGxl
-IGlzIHJlYWxseSB0b28gY29sbG9xdWlhbC92ZXJib3NlLiDCoFBsZWFzZSB0cnVuY2F0ZSBpdCwK
-PiBsZWF2aW5nIGp1c3QgYSBzYW1wbGUgImtleSIgcG9saWN5IHJ1bGUsIHdpdGggZGlyZWN0aW9u
-cyBmb3IgdmVyaWZ5aW5nCj4gdGhlIHRlbXBsYXRlIGRhdGEgYWdhaW5zdCB0aGUgZGlnZXN0IGlu
-Y2x1ZGVkIGluIHRoZSBtZWFzdXJlbWVudCBsaXN0LgoKSSdsbCB0cnVuY2F0ZSB0aGUgZXhhbXBs
-ZSBhbmQga2VlcCBpdCB0byB0aGUgcG9pbnQuCgo+PiBUaGUgZm9sbG93aW5nIGNvbW1hbmQgdmVy
-aWZpZXMgaWYgdGhlIFNIQTI1NiBoYXNoIGdlbmVyYXRlZCBmcm9tCj4+IHRoZSBwYXlsb2FkIGlu
-IHRoZSBJTUEgbG9nIGVudHJ5IChsaXN0ZWQgYWJvdmUpIGZvciB0aGUgLmltYSBrZXkKPj4gbWF0
-Y2hlcyB0aGUgU0hBMjU2IGhhc2ggaW4gdGhlIElNQSBsb2cgZW50cnkuIFRoZSBvdXRwdXQgb2Yg
-dGhpcwo+PiBjb21tYW5kIHNob3VsZCBtYXRjaCB0aGUgU0hBMjU2IGhhc2ggZ2l2ZW4gaW4gdGhl
-IElNQSBsb2cgZW50cnkKPj4gKEluIHRoaXMgY2FzZSwgaXQgc2hvdWxkIGJlCj4+IDI3YzkxNWI4
-ZGRiOWZhZTcyMTRjZjBhOGE3MDQzY2MzZWVlYWE3NTM5YmNiMTM2Zjg0MjcwNjdiNWY2YzNiN2Ip
-Cj4gCj4gUHJldmlvdXNseSB5b3UgZGlkbid0IHVzZSB0aGUgaGFzaCB2YWx1ZSwgYnV0ICIuaW1h
-IiB0byBsb2NhdGUgdGhlCj4gImtleSIgbWVhc3VyZW1lbnQgaW4gdGhlIG1lYXN1cmVtZW50IGxp
-c3QuIMKgSW4gZWFjaCBvZiB0aGUgY29tbWFuZHMKPiBhYm92ZSwgaXQgbWlnaHQgYmUgY2xlYXJl
-ci4KCklmIHRoZSBJTUEgbWVhc3VyZW1lbnQgbGlzdCBoYXMgb25seSBvbmUgSU1BIGtleSB0aGVu
-IGxvY2F0aW5nIGl0IHdpdGggCiIuaW1hIiB3b3VsZCB3b3JrIC0gaGFzaCB3b24ndCBiZSBuZWVk
-ZWQgZm9yIGxvY2F0aW5nIHRoZSBlbnRyeS4KCkJ1dCBmb3IgZGVzY3JpYmluZyBrZXkgdmVyaWZp
-Y2F0aW9uIHdlIGNhbiBoYXZlIGp1c3Qgb25lIElNQSBrZXkuIEknbGwgCmNoYW5nZSB0aGUgZGVz
-Y3JpcHRpb24gdG8gbG9jYXRlIHRoZSBlbnRyeSB1c2luZyAiLmltYSIuCgo+PiAjIGNhdCAvc3lz
-L2tlcm5lbC9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2FzY2lpX3J1bnRpbWVfbWVhc3VyZW1lbnRz
-Cj4+IHwgZ3JlcAo+PiAyN2M5MTViOGRkYjlmYWU3MjE0Y2YwYThhNzA0M2NjM2VlZWFhNzUzOWJj
-YjEzNmY4NDI3MDY3YjVmNmMzYjdiIHwKPiAKPj4gY3V0IC1kJyAnIC1mIDYgfCB4eGQgLXIgLXAg
-fHRlZSBpbWEtY2VydC5kZXIgfCBzaGEyNTZzdW0gfCBjdXQgLWQnICcKPj4gLWYgMQo+Pgo+PiBU
-aGUgYWJvdmUgY29tbWFuZCBhbHNvIGNyZWF0ZXMgYSBiaW5hcnkgZmlsZSBuYW1lbHkgaW1hLWNl
-cnQuZGVyCj4+IHVzaW5nIHRoZSBwYXlsb2FkIGluIHRoZSBJTUEgbG9nIGVudHJ5LiBUaGlzIGZp
-bGUgc2hvdWxkIGJlIGEgdmFsaWQKPj4geDUwOSBjZXJ0aWZpY2F0ZSB3aGljaCBjYW4gYmUgdmVy
-aWZpZWQgdXNpbmcgb3BlbnNzbCBhcyBnaXZlbiBiZWxvdzoKPj4KPj4gcm9vdEBucmFtYXM6L2hv
-bWUvbnJhbWFzCj4gCj4gZGl0dG8KPiAKPiAKPj4gIyBvcGVuc3NsIHg1MDkgLWluIGltYS1jZXJ0
-LmRlciAtaW5mb3JtIERFUiAtdGV4dAo+Pgo+PiBUaGUgYWJvdmUgY29tbWFuZCBzaG91bGQgZGlz
-cGxheSB0aGUgY29udGVudHMgb2YgdGhlIGZpbGUgaW1hLWNlcnQuZGVyCj4+IGFzIGFuIHg1MDkg
-Y2VydGlmaWNhdGUuCj4gCj4gRWl0aGVyIHRoZSBjb21tZW50cyBzaG91bGQgYmUgYWJvdmUgb3Ig
-YmVsb3cgdGhlIGNvbW1hbmRzLCBub3QgYm90aC4KCkknbGwgdXBkYXRlIHRoZSBjb21tZW50LgoK
-PiAKPj4KPj4gVGhlIElNQSBwb2xpY3kgdXNlZCBoZXJlIGFsbG93cyBtZWFzdXJlbWVudCBvZiBr
-ZXlzIGFkZGVkIHRvCj4+ICIuaW1hIiBhbmQgIi5ldm0iIGtleXJpbmdzIG9ubHkuIEFkZCBhIGtl
-eSB0byBhbnkgb3RoZXIga2V5cmluZyBhbmQKPj4gdmVyaWZ5IHRoYXQgdGhlIGtleSBpcyBub3Qg
-bWVhc3VyZWQuCj4gCj4gVGhpcyBjb21tZW50IHdvdWxkIGJlIGluY2x1ZGVkLCBpZiBkZXNpcmVk
-LCB3aGVuIGRlZmluaW5nIHRoZSBwb2xpY3kKPiBydWxlLCBub3QgaGVyZS4KCldpbGwgcmVtb3Zl
-IHRoZSBhYm92ZSBmcm9tIHRoaXMgcGF0Y2ggZGVzY3JpcHRpb24uCgp0aGFua3MsCiAgLWxha3No
-bWkKCg==
+Allow a buffer to be marked such that read() must return the entire buffer
+in one go or return ENOBUFS.  Multiple buffers can be amalgamated into a
+single read, but a short read will occur if the next "whole" buffer won't
+fit.
+
+This is useful for watch queue notifications to make sure we don't split a
+notification across multiple reads, especially given that we need to
+fabricate an overrun record under some circumstances - and that isn't in
+the buffers.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/pipe.c                        |    8 +++++++-
+ include/linux/pipe_fs_i.h        |    1 +
+ kernel/watch_queue.c             |    2 +-
+ samples/watch_queue/watch_test.c |    2 +-
+ 4 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 099bf4b657dd..588355c24ee0 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -298,8 +298,14 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+ 			size_t written;
+ 			int error;
+ 
+-			if (chars > total_len)
++			if (chars > total_len) {
++				if (buf->flags & PIPE_BUF_FLAG_WHOLE) {
++					if (ret == 0)
++						ret = -ENOBUFS;
++					break;
++				}
+ 				chars = total_len;
++			}
+ 
+ 			error = pipe_buf_confirm(pipe, buf);
+ 			if (error) {
+diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
+index 816bc0d3aecd..a19d60a06869 100644
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -8,6 +8,7 @@
+ #define PIPE_BUF_FLAG_ATOMIC	0x02	/* was atomically mapped */
+ #define PIPE_BUF_FLAG_GIFT	0x04	/* page is a gift */
+ #define PIPE_BUF_FLAG_PACKET	0x08	/* read() as a packet */
++#define PIPE_BUF_FLAG_WHOLE	0x10	/* read() must return entire buffer or error */
+ 
+ /**
+  *	struct pipe_buffer - a linux kernel pipe buffer
+diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
+index b73fbfe0d467..b1d30296e29b 100644
+--- a/kernel/watch_queue.c
++++ b/kernel/watch_queue.c
+@@ -115,7 +115,7 @@ static bool post_one_notification(struct watch_queue *wqueue,
+ 	buf->ops = &watch_queue_pipe_buf_ops;
+ 	buf->offset = offset;
+ 	buf->len = len;
+-	buf->flags = 0;
++	buf->flags = PIPE_BUF_FLAG_WHOLE;
+ 	pipe->head = head + 1;
+ 
+ 	if (!test_and_clear_bit(note, wqueue->notes_bitmap)) {
+diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
+index 8925593bdb9b..f6fb6e813551 100644
+--- a/samples/watch_queue/watch_test.c
++++ b/samples/watch_queue/watch_test.c
+@@ -63,7 +63,7 @@ static void saw_key_change(struct watch_notification *n, size_t len)
+  */
+ static void consumer(int fd)
+ {
+-	unsigned char buffer[4096], *p, *end;
++	unsigned char buffer[433], *p, *end;
+ 	union {
+ 		struct watch_notification n;
+ 		unsigned char buf1[128];
