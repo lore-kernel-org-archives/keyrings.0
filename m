@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 07 Nov 2019 13:37:30 +0000
-Subject: [RFC PATCH 14/14] smack: Implement the watch_key and post_notification hooks [ver #2]
-Message-Id: <157313385046.29677.1508444632181965475.stgit@warthog.procyon.org.uk>
+Date: Thu, 07 Nov 2019 13:35:38 +0000
+Subject: [RFC PATCH 02/14] security: Add hooks to rule on setting a watch [ver #2]
+Message-Id: <157313373855.29677.3888607349866181437.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,144 +11,120 @@ In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.
 To: torvalds@linux-foundation.org
 Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Implement the watch_key security hook in Smack to make sure that a key
-grants the caller Read permission in order to set a watch on a key.
-
-Also implement the post_notification security hook to make sure that the
-notification source is granted Write permission by the watch queue.
-
-For the moment, the watch_devices security hook is left unimplemented as
-it's not obvious what the object should be since the queue is global and
-didn't previously exist.
+Add security hooks that will allow an LSM to rule on whether or not a watch
+may be set.  More than one hook is required as the watches watch different
+types of object.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Casey Schaufler <casey@schaufler-ca.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>
+cc: Stephen Smalley <sds@tycho.nsa.gov>
+cc: linux-security-module@vger.kernel.org
 ---
 
- include/linux/lsm_audit.h  |    1 +
- security/smack/smack_lsm.c |   82 +++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 82 insertions(+), 1 deletion(-)
+ include/linux/lsm_hooks.h |   24 ++++++++++++++++++++++++
+ include/linux/security.h  |   17 +++++++++++++++++
+ security/security.c       |   14 ++++++++++++++
+ 3 files changed, 55 insertions(+)
 
-diff --git a/include/linux/lsm_audit.h b/include/linux/lsm_audit.h
-index 915330abf6e5..734d67889826 100644
---- a/include/linux/lsm_audit.h
-+++ b/include/linux/lsm_audit.h
-@@ -74,6 +74,7 @@ struct common_audit_data {
- #define LSM_AUDIT_DATA_FILE	12
- #define LSM_AUDIT_DATA_IBPKEY	13
- #define LSM_AUDIT_DATA_IBENDPORT 14
-+#define LSM_AUDIT_DATA_NOTIFICATION 15
- 	union 	{
- 		struct path path;
- 		struct dentry *dentry;
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index ecea41ce919b..71b6f37d49c1 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -4273,7 +4273,7 @@ static int smack_key_permission(key_ref_t key_ref,
- 	if (tkp == NULL)
- 		return -EACCES;
- 
--	if (smack_privileged_cred(CAP_MAC_OVERRIDE, cred))
-+	if (smack_privileged(CAP_MAC_OVERRIDE))
- 		return 0;
- 
- #ifdef CONFIG_AUDIT
-@@ -4319,8 +4319,81 @@ static int smack_key_getsecurity(struct key *key, char **_buffer)
- 	return length;
- }
- 
-+
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+/**
-+ * smack_watch_key - Smack access to watch a key for notifications.
-+ * @key: The key to be watched
-+ *
-+ * Return 0 if the @watch->cred has permission to read from the key object and
-+ * an error otherwise.
-+ */
-+static int smack_watch_key(struct key *key)
-+{
-+	struct smk_audit_info ad;
-+	struct smack_known *tkp = smk_of_current();
-+	int rc;
-+
-+	if (key == NULL)
-+		return -EINVAL;
-+	/*
-+	 * If the key hasn't been initialized give it access so that
-+	 * it may do so.
-+	 */
-+	if (key->security == NULL)
-+		return 0;
-+	/*
-+	 * This should not occur
-+	 */
-+	if (tkp == NULL)
-+		return -EACCES;
-+
-+	if (smack_privileged_cred(CAP_MAC_OVERRIDE, current_cred()))
-+		return 0;
-+
-+#ifdef CONFIG_AUDIT
-+	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_KEY);
-+	ad.a.u.key_struct.key = key->serial;
-+	ad.a.u.key_struct.key_desc = key->description;
-+#endif
-+	rc = smk_access(tkp, key->security, MAY_READ, &ad);
-+	rc = smk_bu_note("key watch", tkp, key->security, MAY_READ, rc);
-+	return rc;
-+}
-+#endif /* CONFIG_KEY_NOTIFICATIONS */
- #endif /* CONFIG_KEYS */
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+/**
-+ * smack_post_notification - Smack access to post a notification to a queue
-+ * @w_cred: The credentials of the watcher.
-+ * @cred: The credentials of the event source (may be NULL).
-+ * @n: The notification message to be posted.
-+ */
-+static int smack_post_notification(const struct cred *w_cred,
-+				   const struct cred *cred,
-+				   struct watch_notification *n)
-+{
-+	struct smk_audit_info ad;
-+	struct smack_known *subj, *obj;
-+	int rc;
-+
-+	/* Always let maintenance notifications through. */
-+	if (n->type == WATCH_TYPE_META)
-+		return 0;
-+
-+	if (!cred)
-+		return 0;
-+	subj = smk_of_task(smack_cred(cred));
-+	obj = smk_of_task(smack_cred(w_cred));
-+
-+	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_NOTIFICATION);
-+	rc = smk_access(subj, obj, MAY_WRITE, &ad);
-+	rc = smk_bu_note("notification", subj, obj, MAY_WRITE, rc);
-+	return rc;
-+}
-+#endif /* CONFIG_WATCH_QUEUE */
-+
- /*
-  * Smack Audit hooks
+diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
+index a3763247547c..d62e92b768c4 100644
+--- a/include/linux/lsm_hooks.h
++++ b/include/linux/lsm_hooks.h
+@@ -1416,6 +1416,18 @@
+  *	@ctx is a pointer in which to place the allocated security context.
+  *	@ctxlen points to the place to put the length of @ctx.
   *
-@@ -4709,8 +4782,15 @@ static struct security_hook_list smack_hooks[] __lsm_ro_after_init = {
- 	LSM_HOOK_INIT(key_free, smack_key_free),
- 	LSM_HOOK_INIT(key_permission, smack_key_permission),
- 	LSM_HOOK_INIT(key_getsecurity, smack_key_getsecurity),
++ * Security hooks for the general notification queue:
++ *
++ * @watch_key:
++ *	Check to see if a process is allowed to watch for event notifications
++ *	from a key or keyring.
++ *	@key: The key to watch.
++ *
++ * @watch_devices:
++ *	Check to see if a process is allowed to watch for event notifications
++ *	from devices (as a global set).
++ *
++ *
+  * Security hooks for using the eBPF maps and programs functionalities through
+  * eBPF syscalls.
+  *
+@@ -1698,6 +1710,12 @@ union security_list_options {
+ 	int (*inode_notifysecctx)(struct inode *inode, void *ctx, u32 ctxlen);
+ 	int (*inode_setsecctx)(struct dentry *dentry, void *ctx, u32 ctxlen);
+ 	int (*inode_getsecctx)(struct inode *inode, void **ctx, u32 *ctxlen);
 +#ifdef CONFIG_KEY_NOTIFICATIONS
-+	LSM_HOOK_INIT(watch_key, smack_watch_key),
++	int (*watch_key)(struct key *key);
 +#endif
- #endif /* CONFIG_KEYS */
++#ifdef CONFIG_DEVICE_NOTIFICATIONS
++	int (*watch_devices)(void);
++#endif
  
-+#ifdef CONFIG_WATCH_QUEUE
-+	LSM_HOOK_INIT(post_notification, smack_post_notification),
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
+@@ -1977,6 +1995,12 @@ struct security_hook_heads {
+ 	struct hlist_head inode_notifysecctx;
+ 	struct hlist_head inode_setsecctx;
+ 	struct hlist_head inode_getsecctx;
++#ifdef CONFIG_KEY_NOTIFICATIONS
++	struct hlist_head watch_key;
++#endif
++#ifdef CONFIG_DEVICE_NOTIFICATIONS
++	struct hlist_head watch_devices;
++#endif
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	struct hlist_head unix_stream_connect;
+ 	struct hlist_head unix_may_send;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index a8d59d612d27..5d1867772022 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1271,6 +1271,23 @@ static inline int security_locked_down(enum lockdown_reason what)
+ }
+ #endif	/* CONFIG_SECURITY */
+ 
++#if defined(CONFIG_SECURITY) && defined(CONFIG_KEY_NOTIFICATIONS)
++int security_watch_key(struct key *key);
++#else
++static inline int security_watch_key(struct key *key)
++{
++	return 0;
++}
++#endif
++#if defined(CONFIG_SECURITY) && defined(CONFIG_DEVICE_NOTIFICATIONS)
++int security_watch_devices(void);
++#else
++static inline int security_watch_devices(void)
++{
++	return 0;
++}
 +#endif
 +
-  /* Audit hooks */
- #ifdef CONFIG_AUDIT
- 	LSM_HOOK_INIT(audit_rule_init, smack_audit_rule_init),
+ #ifdef CONFIG_SECURITY_NETWORK
+ 
+ int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk);
+diff --git a/security/security.c b/security/security.c
+index 1bc000f834e2..4f970716fa6c 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1956,6 +1956,20 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
+ }
+ EXPORT_SYMBOL(security_inode_getsecctx);
+ 
++#ifdef CONFIG_KEY_NOTIFICATIONS
++int security_watch_key(struct key *key)
++{
++	return call_int_hook(watch_key, 0, key);
++}
++#endif
++
++#ifdef CONFIG_DEVICE_NOTIFICATIONS
++int security_watch_devices(void)
++{
++	return call_int_hook(watch_devices, 0);
++}
++#endif
++
+ #ifdef CONFIG_SECURITY_NETWORK
+ 
+ int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk)
