@@ -1,38 +1,45 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 07 Nov 2019 00:21:43 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 07 Nov 2019 03:40:37 +0000
 Subject: Re: [PATCH v4 01/10] IMA: Defined an IMA hook to measure keys on key create or update
-Message-Id: <c838a233-28fb-cad2-4694-18366c2643a4@linux.microsoft.com>
+Message-Id: <1573098037.5028.325.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191106190116.2578-1-nramas@linux.microsoft.com>
- <20191106190116.2578-2-nramas@linux.microsoft.com>
- <1573080189.5028.313.camel@linux.ibm.com>
-In-Reply-To: <1573080189.5028.313.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+         <20191106190116.2578-2-nramas@linux.microsoft.com>
+         <1573080189.5028.313.camel@linux.ibm.com>
+         <c838a233-28fb-cad2-4694-18366c2643a4@linux.microsoft.com>
+In-Reply-To: <c838a233-28fb-cad2-4694-18366c2643a4@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Ck9uIDExLzYvMjAxOSAyOjQzIFBNLCBNaW1pIFpvaGFyIHdyb3RlOgoKPj4gK3ZvaWQgaW1hX3Bv
-c3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoc3RydWN0IGtleSAqa2V5cmluZywgc3RydWN0IGtleSAq
-a2V5LAo+PiArCQkJCSAgIHVuc2lnbmVkIGxvbmcgZmxhZ3MsIGJvb2wgY3JlYXRlKQo+PiArewo+
-PiArCWlmICgoa2V5cmluZyAhPSBOVUxMKSAmJiAoa2V5ICE9IE5VTEwpKQo+PiArCQlyZXR1cm47
-Cj4gCj4gSSB3b3VsZCBtb3ZlIHRoZSBwYXRjaCB0aGF0IGRlZmluZXMgdGhlICJrZXlyaW5nPSIg
-cG9saWN5IG9wdGlvbiBwcmlvcgo+IHRvIHRoaXMgb25lLiDCoEluY2x1ZGUgdGhlIGNhbGwgdG8g
-cHJvY2Vzc19idWZmZXJfbWVhc3VyZW1lbnQoKSBpbiB0aGlzCj4gcGF0Y2guIMKgQSBzdWJzZXF1
-ZW50IHBhdGNoIHdvdWxkIGFkZCBzdXBwb3J0IHRvIGRlZmVyIG1lYXN1cmluZyB0aGUKPiBrZXks
-IGJ5IGNhbGxpbmcgYSBmdW5jdGlvbiBuYW1lZCBzb21ldGhpbmcgbGlrZQo+IGltYV9xdWV1ZV9r
-ZXlfbWVhc3VyZW1lbnQoKS4KPiAKPiBNaW1pCgpBcyBJJ2Qgc3RhdGVkIGluIHRoZSBvdGhlciBy
-ZXNwb25zZSwgSSB3YW50ZWQgdG8gaXNvbGF0ZSBhbGwga2V5IHJlbGF0ZWQgCmNvZGUgaW4gYSBz
-ZXBhcmF0ZSBDIGZpbGUgYW5kIGJ1aWxkIGl0IGlmIGFuZCBvbmx5IGlmIGFsbCBDT05GSUcgCmRl
-cGVuZGVuY2llcyBhcmUgbWV0LgoKSSBjYW4gZG8gdGhlIGZvbGxvd2luZzoKCj0+IERlZmluZSB0
-aGUgSU1BIGhvb2sgaW4gaW1hX2FzeW1tZXRyaWNfa2V5cy5jIGluc3RlYWQgb2YgaW1hX21haW4u
-YwoKPT4gSW4gaW5jbHVkZS9saW51eC9pbWEuaCBkZWNsYXJlIHRoZSBJTUEgaG9vayBpZiAKQ09O
-RklHX0lNQV9NRUFTVVJFX0FTWU1NRVRSSUNfS0VZUyBpcyBlbmFibGVkLgpFbHNlLCBOT1AgaXQu
-CgojaWZkZWYgQ09ORklHX0lNQV9NRUFTVVJFX0FTWU1NRVRSSUNfS0VZUwpleHRlcm4gdm9pZCBp
-bWFfcG9zdF9rZXlfY3JlYXRlX29yX3VwZGF0ZShzdHJ1Y3Qga2V5ICprZXlyaW5nLAoJCQkJCSAg
-c3RydWN0IGtleSAqa2V5LAoJCQkJCSAgdW5zaWduZWQgbG9uZyBmbGFncywKICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGJvb2wgY3JlYXRlKTsKI2Vsc2UKc3RhdGlj
-IGlubGluZSB2b2lkIGltYV9wb3N0X2tleV9jcmVhdGVfb3JfdXBkYXRlKHN0cnVjdCBrZXkgKmtl
-eXJpbmcsCgkJCQkJCSBzdHJ1Y3Qga2V5ICprZXksCgkJCQkJCSB1bnNpZ25lZCBsb25nIGZsYWdz
-LAoJCQkJCQkgYm9vbCBjcmVhdGUpIHt9CiNlbmRpZgoKV291bGQgdGhhdCBiZSBhY2NlcHRhYmxl
-PwoKdGhhbmtzLAogIC1sYWtzaG1pCgo=
+On Wed, 2019-11-06 at 16:21 -0800, Lakshmi Ramasubramanian wrote:
+> On 11/6/2019 2:43 PM, Mimi Zohar wrote:
+> 
+> >> +void ima_post_key_create_or_update(struct key *keyring, struct key *key,
+> >> +				   unsigned long flags, bool create)
+> >> +{
+> >> +	if ((keyring != NULL) && (key != NULL))
+> >> +		return;
+> > 
+> > I would move the patch that defines the "keyring=" policy option prior
+> > to this one.  Include the call to process_buffer_measurement() in this
+> > patch.  A subsequent patch would add support to defer measuring the
+> > key, by calling a function named something like
+> > ima_queue_key_measurement().
+> > 
+> > Mimi
+> 
+> As I'd stated in the other response, I wanted to isolate all key related 
+> code in a separate C file and build it if and only if all CONFIG 
+> dependencies are met.
+
+The basic measuring of keys shouldn't be any different than any other
+policy rule, other than it is a key and not a file.  This is the
+reason that I keep saying start out with the basics and then add
+support to defer measuring keys on the trusted keyrings.
+
+Only the queueing code needed for measuring keys on the trusted
+keyrings would be in a separate file.
+
+Mimi
