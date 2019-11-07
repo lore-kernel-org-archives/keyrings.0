@@ -1,70 +1,24 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 07 Nov 2019 21:12:31 +0000
-Subject: Re: [PATCH v4 01/10] IMA: Defined an IMA hook to measure keys on key create or update
-Message-Id: <f45593ae-823e-6d61-d14c-20726bd8cacc@linux.microsoft.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 07 Nov 2019 16:51:50 +0000
+Subject: Re: [pipe] d60337eff1: phoronix-test-suite.noise-level.0.activity_level 144.0% improvement
+Message-Id: <CAHk-=wiJ+jaT5Ev-wCg7iGNNO_JFUyMDcat0KDdA2b_+n_cZCQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191106190116.2578-1-nramas@linux.microsoft.com>
- <20191106190116.2578-2-nramas@linux.microsoft.com>
- <1573080189.5028.313.camel@linux.ibm.com>
- <c838a233-28fb-cad2-4694-18366c2643a4@linux.microsoft.com>
- <1573098037.5028.325.camel@linux.ibm.com>
- <7ce84aa0-729e-c58e-f16a-25490b4e336d@linux.microsoft.com>
- <1573159988.5028.400.camel@linux.ibm.com>
-In-Reply-To: <1573159988.5028.400.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <157262967752.13142.696874122947836210.stgit@warthog.procyon.org.uk>
+ <20191107090306.GV29418@shao2-debian>
+In-Reply-To: <20191107090306.GV29418@shao2-debian>
+To: lkp report check <rong.a.chen@intel.com>
+Cc: David Howells <dhowells@redhat.com>, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lkp@lists.01.org
 
-On 11/7/19 12:53 PM, Mimi Zohar wrote:
+On Thu, Nov 7, 2019 at 1:03 AM lkp report check <rong.a.chen@intel.com> wrote:
+>
+> FYI, we noticed a 144.0% improvement of phoronix-test-suite.noise-level.0.activity_level due to commit:
+>
+> commit: d60337eff18a3c587832ab8053a567f1da9710d2 ("[RFC PATCH 04/11] pipe: Use head and tail pointers for the ring, not cursor and length [ver #3]")
 
->>
->> The measurement decision is not based on whether the keyring is a
->> trusted one or an untrusted one. As long as the IMA policy allows
->> (through the "keyrings=" option) the key will be measured.
-> 
-> We should be able to measure all keys being loaded onto any keyring or
-> onto a specific "keyring=".   This shouldn't be any different than any
-> other policy rule.  Once you have this basic feature working, you
-> would address loading keys during early boot.
-Perfect - that's exactly how I have implemented it right now. Will 
-continue to test it.
+That sounds nice, but is odd. That commit really shouldn't change
+anything noticeable. David, any idea?
 
->> Do you want only trusted keyrings to be allowed in the measurement?
->> In my opinion, that decision should be deferred to whoever is setting up
->> the IMA policy.
-> 
-> Right, but it shouldn't be limited to just "trusted" keyrings.  This
-> way you can first test loading keys onto any keyring.
-Thank you.
-
-> Queuing the keys should be independent of measuring the keys.
->   Initially you would start with just measuring the key.  From a high
-> level it would look like:
-> 
->      ima_post_key_create_or_update(...)
->      {
->         "measure key based on
->      policy(key, keyring, ...)"
->      }
-> 
-> This requires the IMA "keyring=" policy option support be defined
-> first.
-> 
-> Subsequently you would add key queuing support, and then update
-> ima_post_key_create_or_update().  It would look like:
-> 
->          ima_post_key_create_or_update(...)
->          {
->              if (custom policy is loaded)
->                 "measure key based on policy(key, keyring, ...)"
->              else
->                  "queue key(key, keyring)"
->          }
-> 
-> Mimi
-
-Yes - I have the above change working. Will continue testing.
-
-thanks,
-  -lakshmi
+               Linus
