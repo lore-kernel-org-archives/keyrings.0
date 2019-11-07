@@ -1,171 +1,154 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 27 Nov 2019 01:56:48 +0000
-Subject: [PATCH v9 0/6] KEYS: Measure keys when they are created or updated
-Message-Id: <20191127015654.3744-1-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 07 Nov 2019 13:37:30 +0000
+Subject: [RFC PATCH 14/14] smack: Implement the watch_key and post_notification hooks [ver #2]
+Message-Id: <157313385046.29677.1508444632181965475.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Keys created or updated in the system are currently not measured.
-Therefore an attestation service, for instance, would not be able to
-attest whether or not the trusted keys keyring(s), for instance, contain
-only known good (trusted) keys.
+Implement the watch_key security hook in Smack to make sure that a key
+grants the caller Read permission in order to set a watch on a key.
 
-IMA measures system files, command line arguments passed to kexec,
-boot aggregate, etc. It can be used to measure keys as well.
-But there is no mechanism available in the kernel for IMA to
-know when a key is created or updated.
+Also implement the post_notification security hook to make sure that the
+notification source is granted Write permission by the watch queue.
 
-This change aims to address measuring keys created or updated
-in the system.
+For the moment, the watch_devices security hook is left unimplemented as
+it's not obvious what the object should be since the queue is global and
+didn't previously exist.
 
-To achieve the above the following changes have been made:
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Casey Schaufler <casey@schaufler-ca.com>
+---
 
- - Added a new IMA hook namely, ima_post_key_create_or_update, which
-   measures the key. This IMA hook is called from key_create_or_update
-   function. The key measurement can be controlled through IMA policy.
+ include/linux/lsm_audit.h  |    1 +
+ security/smack/smack_lsm.c |   82 +++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 82 insertions(+), 1 deletion(-)
 
-   A new IMA policy function KEY_CHECK has been added to measure keys.
-   "keyrings=" option can be specified for KEY_CHECK to limit
-   measuring the keys loaded onto the specified keyrings only.
-
-   # measure keys loaded onto any keyring
-   measure func=KEY_CHECK
-
-   # measure keys loaded onto the IMA keyring only
-   measure func=KEY_CHECK keyring=".ima"
-
-   # measure keys on the BUILTIN and IMA keyrings into a different PCR
-   measure func=KEY_CHECK keyring=".builtin_trusted_keys|.ima" pcr
-
-Testing performed:
-
-  * Booted the kernel with this change.
-  * When KEY_CHECK policy is set IMA measures keys loaded
-    onto any keyring (keyrings= option not specified).
-  * Keys are not measured when KEY_CHECK is not set.
-  * When keyrings= option is specified for KEY_CHECK then only the keys
-    loaded onto a keyring specified in the option is measured.
-  * Added a new key to a keyring.
-    => Added keys to .ima and .evm keyrings.
-  * Added the same key again.
-    => Add the same key to .ima and .evm keyrings.
-
-Change Log:
-
-  v9:
-
-  => Changed the measured key data from just the public key to
-     the entire payload passed to key_create_or_update() function.
-     This payload is the certificate from which the key is created
-     or updated by key_create_or_update() function.
-  => Added check in process_buffer_measurement() to return
-     immediately if ima_policy_flag is set to zero.
-
-  v8:
-
-  => Updated ima_match_keyring() function to check for
-     whole keyring name match.
-  => Used CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE instead of
-     CONFIG_KEYS to build ima_asymmetric_keys.c and enable
-     the IMA hook to measure keys since this config handles
-     the required build time dependencies better.
-  => Updated patch description to illustrate verification
-     of key measurement.
-
-  v7:
-
-  => Removed CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS option and used
-     CONFIG_KEYS instead for ima_asymmetric_keys.c
-  => Added the patches related to "keyrings=" option support to
-     this patch set.
-
-  v6:
-
-  => Rebased the changes to v5.4-rc7
-  => Renamed KEYRING_CHECK to KEY_CHECK per Mimi's suggestion.
-  => Excluded the patches that add support for limiting key
-     measurement to specific keyrings ("keyrings=" option
-     for "measure func=KEY_CHECK" in the IMA policy).
-     Also, excluded the patches that add support for deferred
-     processing of keys (queue support).
-     These patches will be added in separate patch sets later.
-
-  v5:
-
-  => Reorganized the patches to add measurement of keys through
-     the IMA hook without any queuing and then added queuing support.
-  => Updated the queuing functions to minimize code executed inside mutex.
-  => Process queued keys after custom IMA policies have been applied.
-
-  v4:
-
-  => Rebased the changes to v5.4-rc3
-  => Applied the following dependent patch set first
-     and then added new changes.
-  https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
-  => Refactored the patch set to separate out changes related to
-     func KEYRING_CHECK and options keyrings into different patches.
-  => Moved the functions to queue and dequeue keys for measurement
-     from ima_queue.c to a new file ima_asymmetric_keys.c.
-  => Added a new config namely CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
-     to compile ima_asymmetric_keys.c
-
-  v3:
-
-  => Added KEYRING_CHECK for measuring keys. This can optionally specify
-     keyrings to measure.
-  => Updated ima_get_action() and related functions to return
-     the keyrings if specified in the policy.
-  => process_buffer_measurement() function is updated to take keyring
-     as a parameter. The key will be measured if the policy includes
-     the keyring in the list of measured keyrings. If the policy does not
-     specify any keyrings then all keys are measured.
-
-  v2:
-
-  => Per suggestion from Mimi reordered the patch set to first
-     enable measuring keys added or updated in the system.
-     And, then scope the measurement to keys added to 
-     builtin_trusted_keys keyring through ima policy.
-  => Removed security_key_create_or_update function and instead
-     call ima hook, to measure the key, directly from 
-     key_create_or_update function.
-
-  v1:
-
-  => LSM function for key_create_or_update. It calls ima.
-  => Added ima hook for measuring keys
-  => ima measures keys based on ima policy.
-
-  v0:
-
-  => Added LSM hook for key_create_or_update.
-  => Measure keys added to builtin or secondary trusted keys keyring.
-
-Lakshmi Ramasubramanian (6):
-  IMA: Check IMA policy flag
-  IMA: Add KEY_CHECK func to measure keys
-  IMA: Define an IMA hook to measure keys
-  KEYS: Call the IMA hook to measure keys
-  IMA: Add support to limit measuring keys
-  IMA: Read keyrings= option from the IMA policy
-
- Documentation/ABI/testing/ima_policy         |  16 ++-
- include/linux/ima.h                          |  14 +++
- security/integrity/ima/Makefile              |   1 +
- security/integrity/ima/ima.h                 |   9 +-
- security/integrity/ima/ima_api.c             |   8 +-
- security/integrity/ima/ima_appraise.c        |   4 +-
- security/integrity/ima/ima_asymmetric_keys.c |  58 +++++++++++
- security/integrity/ima/ima_main.c            |  12 ++-
- security/integrity/ima/ima_policy.c          | 100 +++++++++++++++++--
- security/keys/key.c                          |  10 ++
- 10 files changed, 212 insertions(+), 20 deletions(-)
- create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
-
--- 
-2.17.1
+diff --git a/include/linux/lsm_audit.h b/include/linux/lsm_audit.h
+index 915330abf6e5..734d67889826 100644
+--- a/include/linux/lsm_audit.h
++++ b/include/linux/lsm_audit.h
+@@ -74,6 +74,7 @@ struct common_audit_data {
+ #define LSM_AUDIT_DATA_FILE	12
+ #define LSM_AUDIT_DATA_IBPKEY	13
+ #define LSM_AUDIT_DATA_IBENDPORT 14
++#define LSM_AUDIT_DATA_NOTIFICATION 15
+ 	union 	{
+ 		struct path path;
+ 		struct dentry *dentry;
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index ecea41ce919b..71b6f37d49c1 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -4273,7 +4273,7 @@ static int smack_key_permission(key_ref_t key_ref,
+ 	if (tkp == NULL)
+ 		return -EACCES;
+ 
+-	if (smack_privileged_cred(CAP_MAC_OVERRIDE, cred))
++	if (smack_privileged(CAP_MAC_OVERRIDE))
+ 		return 0;
+ 
+ #ifdef CONFIG_AUDIT
+@@ -4319,8 +4319,81 @@ static int smack_key_getsecurity(struct key *key, char **_buffer)
+ 	return length;
+ }
+ 
++
++#ifdef CONFIG_KEY_NOTIFICATIONS
++/**
++ * smack_watch_key - Smack access to watch a key for notifications.
++ * @key: The key to be watched
++ *
++ * Return 0 if the @watch->cred has permission to read from the key object and
++ * an error otherwise.
++ */
++static int smack_watch_key(struct key *key)
++{
++	struct smk_audit_info ad;
++	struct smack_known *tkp = smk_of_current();
++	int rc;
++
++	if (key == NULL)
++		return -EINVAL;
++	/*
++	 * If the key hasn't been initialized give it access so that
++	 * it may do so.
++	 */
++	if (key->security == NULL)
++		return 0;
++	/*
++	 * This should not occur
++	 */
++	if (tkp == NULL)
++		return -EACCES;
++
++	if (smack_privileged_cred(CAP_MAC_OVERRIDE, current_cred()))
++		return 0;
++
++#ifdef CONFIG_AUDIT
++	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_KEY);
++	ad.a.u.key_struct.key = key->serial;
++	ad.a.u.key_struct.key_desc = key->description;
++#endif
++	rc = smk_access(tkp, key->security, MAY_READ, &ad);
++	rc = smk_bu_note("key watch", tkp, key->security, MAY_READ, rc);
++	return rc;
++}
++#endif /* CONFIG_KEY_NOTIFICATIONS */
+ #endif /* CONFIG_KEYS */
+ 
++#ifdef CONFIG_WATCH_QUEUE
++/**
++ * smack_post_notification - Smack access to post a notification to a queue
++ * @w_cred: The credentials of the watcher.
++ * @cred: The credentials of the event source (may be NULL).
++ * @n: The notification message to be posted.
++ */
++static int smack_post_notification(const struct cred *w_cred,
++				   const struct cred *cred,
++				   struct watch_notification *n)
++{
++	struct smk_audit_info ad;
++	struct smack_known *subj, *obj;
++	int rc;
++
++	/* Always let maintenance notifications through. */
++	if (n->type == WATCH_TYPE_META)
++		return 0;
++
++	if (!cred)
++		return 0;
++	subj = smk_of_task(smack_cred(cred));
++	obj = smk_of_task(smack_cred(w_cred));
++
++	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_NOTIFICATION);
++	rc = smk_access(subj, obj, MAY_WRITE, &ad);
++	rc = smk_bu_note("notification", subj, obj, MAY_WRITE, rc);
++	return rc;
++}
++#endif /* CONFIG_WATCH_QUEUE */
++
+ /*
+  * Smack Audit hooks
+  *
+@@ -4709,8 +4782,15 @@ static struct security_hook_list smack_hooks[] __lsm_ro_after_init = {
+ 	LSM_HOOK_INIT(key_free, smack_key_free),
+ 	LSM_HOOK_INIT(key_permission, smack_key_permission),
+ 	LSM_HOOK_INIT(key_getsecurity, smack_key_getsecurity),
++#ifdef CONFIG_KEY_NOTIFICATIONS
++	LSM_HOOK_INIT(watch_key, smack_watch_key),
++#endif
+ #endif /* CONFIG_KEYS */
+ 
++#ifdef CONFIG_WATCH_QUEUE
++	LSM_HOOK_INIT(post_notification, smack_post_notification),
++#endif
++
+  /* Audit hooks */
+ #ifdef CONFIG_AUDIT
+ 	LSM_HOOK_INIT(audit_rule_init, smack_audit_rule_init),
