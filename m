@@ -1,10 +1,10 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 06 Nov 2019 23:52:31 +0000
+Date: Thu, 07 Nov 2019 02:20:11 +0000
 Subject: Re: [PATCH v4 08/10] IMA: Defined functions to queue and dequeue keys for measurement
-Message-Id: <8b2fd578-7429-f5b8-4286-1face91e1ae6@linux.microsoft.com>
+Message-Id: <b9f293d8-6e58-4d56-1917-5819f0b8931a@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191106190116.2578-1-nramas@linux.microsoft.com>
  <20191106190116.2578-9-nramas@linux.microsoft.com>
@@ -12,39 +12,28 @@ References: <20191106190116.2578-1-nramas@linux.microsoft.com>
 In-Reply-To: <1573080281.5028.314.camel@linux.ibm.com>
 To: Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Ck9uIDExLzYvMjAxOSAyOjQ0IFBNLCBNaW1pIFpvaGFyIHdyb3RlOgoKPj4gK2ludCBpbWFfcXVl
-dWVfb3JfcHJvY2Vzc19rZXlfZm9yX21lYXN1cmVtZW50KHN0cnVjdCBrZXkgKmtleXJpbmcsCj4+
-ICsJCQkJCSAgICAgc3RydWN0IGtleSAqa2V5KQo+PiArewo+PiArCWludCByYyA9IDA7Cj4+ICsJ
-c3RydWN0IGltYV9tZWFzdXJlX2tleV9lbnRyeSAqZW50cnkgPSBOVUxMOwo+PiArCWNvbnN0IHN0
-cnVjdCBwdWJsaWNfa2V5ICpwazsKPj4gKwo+PiArCWlmIChrZXktPnR5cGUgIT0gJmtleV90eXBl
-X2FzeW1tZXRyaWMpCj4+ICsJCXJldHVybiAwOwo+PiArCj4+ICsJbXV0ZXhfbG9jaygmaW1hX21l
-YXN1cmVfa2V5c19tdXRleCk7Cgo+IAo+IFVubGVzcyB0aGUga2V5IGlzIGJlaW5nIHF1ZXVlZCwg
-dGhlcmUncyBubyByZWFzb24gdG8gdGFrZSB0aGUgbG9jay4KClJlYXNvbiB0aGUgbG9jayBpcyB0
-YWtlbiBldmVuIGluIHRoZSBjYXNlIHRoZSBrZXkgaXMgbm90IHF1ZXVlZCBpcyB0byAKYXZvaWQg
-dGhlIGZvbGxvd2luZyByYWNlIGNvbmRpdGlvbjoKCiAgPT4gaW1hX2luaXQoKSBzZXRzIGltYV9p
-bml0aWFsaXplZCBmbGFnIGFuZCBjYWxscyB0aGUgZGVxdWV1ZSBmdW5jdGlvbgoKICA9PiBJZiBJ
-TUEgaG9vayBjaGVja3MgaW1hX2luaXRpYWxpemVkIGZsYWcgb3V0c2lkZSB0aGUgbG9jayBhbmQg
-c2VlcyAKdGhlIGZsYWcgaXMgbm90IHNldCwgaXQgd2lsbCBjYWxsIHRoZSBxdWV1ZSBmdW5jdGlv
-bi4KCiAgPT4gSWYgdGhlIGFib3ZlIHR3byBzdGVwcyByYWNlLCB0aGUga2V5IGNvdWxkIGdldCBh
-ZGRlZCB0byB0aGUgcXVldWUgCmFmdGVyIGltYV9pbml0KCkgaGFzIHByb2Nlc3NlZCB0aGUgcXVl
-dWVkIGtleXMuCgpUaGF0J3MgdGhlIHJlYXNvbiBJIG5hbWVkIHRoZSBmdW5jdGlvbiBjYWxsZWQg
-YnkgdGhlIElNQSBob29rIHRvIAppbWFfcXVldWVfb3JfcHJvY2Vzc19rZXlfZm9yX21lYXN1cmVt
-ZW50KCkuCgpCdXQgSSBjYW4gbWFrZSB0aGUgZm9sbG93aW5nIGNoYW5nZToKCiAgPT4gSU1BIGhv
-b2sgY2hlY2tzIHRoZSBmbGFnLgogID0+IElmIGl0IGlzIHNldCwgcHJvY2VzcyBrZXkgaW1tZWRp
-YXRlbHkKICA9PiBJZiB0aGUgZmxhZyBpcyBub3Qgc2V0LCBjYWxsIGltYV9xdWV1ZV9vcl9wcm9j
-ZXNzX2tleV9mb3JfbWVhc3VyZW1lbnQoKQoKaW1hX3F1ZXVlX29yX3Byb2Nlc3Nfa2V5X2Zvcl9t
-ZWFzdXJlbWVudCgpIHdpbGwgZG8gdGhlIGZvbGxvd2luZzoKCiAgPT4gV2l0aCB0aGUgbG9jayBo
-ZWxkIGNoZWNrIGltYV9pbml0aWFsaXplZCBmbGFnCiAgPT4gSWYgdHJ1ZSByZWxlYXNlIHRoZSBs
-b2NrIGFuZCBjYWxsIHByb2Nlc3NfYnVmZmVyX21lYXN1cmVtZW50KCkKICA9PiBJZiBmYWxzZSwg
-cXVldWUgdGhlIGtleSBhbmQgdGhlbiByZWxlYXNlIHRoZSBsb2NrCgpXb3VsZCB0aGF0IGJlIGFj
-Y2VwdGFibGU/Cgo+IE1lYXN1cmluZyB0aGUga2V5IHNob3VsZCBiZSBkb25lIGluIGltYV9wb3N0
-X2tleV9jcmVhdGVfb3JfdXBkYXRlKCkKPiB1bmxlc3MsIGl0IGlzIGJlaW5nIGRlZmVycmVkLiDC
-oFBsZWFzZSB1cGRhdGUgdGhlIGZ1bmN0aW9uIG5hbWUgdG8KPiByZWZsZWN0IHRoaXMuCgpKdXN0
-IHdhbnRlZCB0byBjb25maXJtOgpSZW5hbWUgaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUo
-KSB0byBhIG1vcmUgYXBwcm9wcmlhdGUgbmFtZT8KCkFub3RoZXIgcmVhc29uIGZvciBkb2luZyBh
-bGwga2V5IHJlbGF0ZWQgb3BlcmF0aW9ucyBpbiAKaW1hX3F1ZXVlX29yX3Byb2Nlc3Nfa2V5X2Zv
-cl9tZWFzdXJlbWVudCgpIGlzIHRvIGlzb2xhdGUga2V5IHJlbGF0ZWQgCmNvZGUgaW4gYSBzZXBh
-cmF0ZSBDIGZpbGUgYW5kIGJ1aWxkIGl0IGlmIGFuZCBvbmx5IGlmIHRoZSBDT05GSUcgCmRlcGVu
-ZGVuY2llcyBhcmUgbWV0LgoKV2l0aCByZXNwZWN0IHRvIGxvYWRpbmcgY3VzdG9tIHBvbGljeSwg
-SSB3aWxsIHRha2UgYSBsb29rIGF0IGhvdyB0byAKaGFuZGxlIHRoYXQgY2FzZS4gVGhhbmtzIGZv
-ciBwb2ludGluZyB0aGF0IG91dC4KCj4gTWltaQoKdGhhbmtzLAogIC1sYWtzaG1p
+On 11/6/19 2:44 PM, Mimi Zohar wrote:
+
+Hi Mimi,
+
+>> +
+>> +	if (ima_initialized) {
+> 
+> ima_initialized is being set in ima_init(), before a custom policy is
+> loaded.  I would think that is too early.  ima_update_policy() is
+> called after loading a custom policy.  Please see how to detect when a
+> custom policy is loaded.
+
+ima_init_policy() is called before ima_initialized flag is set.
+
+As far as I understand ima_init_policy() loads custom policies as well. 
+So custom policies (such as arch specific policies, secure boot 
+policies, etc.) are loaded before the queued keys are processed.
+
+But if CONFIG_IMA_WRITE_POLICY is enabled, the policy can be updated 
+anytime. This scenario is not handled in my implementation.
+
+Please correct me if my understanding is wrong.
+
+thanks,
+  -lakshmi
