@@ -1,122 +1,134 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Mon, 11 Nov 2019 19:32:58 +0000
-Subject: [PATCH v5 05/10] IMA: Measure key if the IMA policy allows measurement for the keyring to which the 
-Message-Id: <20191111193303.12781-6-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 07 Nov 2019 13:36:41 +0000
+Subject: [RFC PATCH 09/14] pipe: Add notification lossage handling [ver #2]
+Message-Id: <157313380189.29677.220998621067398332.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191111193303.12781-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191111193303.12781-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-process_buffer_measurement() needs to check if the keyring to which
-the given key is linked to is listed in the keyrings option in
-the IMA policy.
+Add handling for loss of notifications by having read() insert a
+loss-notification message after it has read the pipe buffer that was last
+in the ring when the loss occurred.
 
-This patch adds a new parameter "keyring" to process_buffer_measurement().
+Lossage can come about either by running out of notification descriptors or
+by running out of space in the pipe ring.
 
-If process_buffer_measurement() is called with func KEYRING_CHECK and
-the name of the keyring to which the key is linked to, then the given
-key is measured if:
-  1, IMA policy did not specify "keyrings=" option.
-  2, Or, the given keyring name is listed in the "keyrings=" option.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- security/integrity/ima/ima.h          |  2 +-
- security/integrity/ima/ima_appraise.c |  2 +-
- security/integrity/ima/ima_main.c     | 26 ++++++++++++++++++++++++--
- 3 files changed, 26 insertions(+), 4 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 387829afb9a2..f15199f7ff2a 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -221,7 +221,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
- 			   struct ima_template_desc *template_desc);
- void process_buffer_measurement(const void *buf, int size,
- 				const char *eventname, enum ima_hooks func,
--				int pcr);
-+				int pcr, const char *keyring);
- void ima_audit_measurement(struct integrity_iint_cache *iint,
- 			   const unsigned char *filename);
- int ima_alloc_init_template(struct ima_event_data *event_data,
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 47ad4f56c0a8..a9649b04b9f1 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -330,7 +330,7 @@ int ima_check_blacklist(struct integrity_iint_cache *iint,
- 		if ((rc = -EPERM) && (iint->flags & IMA_MEASURE))
- 			process_buffer_measurement(digest, digestsize,
- 						   "blacklisted-hash", NONE,
--						   pcr);
-+						   pcr, NULL);
- 	}
+ fs/pipe.c                        |   28 ++++++++++++++++++++++++++++
+ include/linux/pipe_fs_i.h        |    7 +++++++
+ kernel/watch_queue.c             |    2 ++
+ samples/watch_queue/watch_test.c |    3 +++
+ 4 files changed, 40 insertions(+)
+
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 588355c24ee0..955a4ec1dc50 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -292,6 +292,30 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+ 		unsigned int tail = pipe->tail;
+ 		unsigned int mask = pipe->ring_size - 1;
  
- 	return rc;
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 68e15ff1fe8d..1bd5dbd8a077 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -632,12 +632,22 @@ int ima_load_data(enum kernel_load_data_id id)
-  * @eventname: event name to be used for the buffer entry.
-  * @func: IMA hook
-  * @pcr: pcr to extend the measurement
-+ * @keyring: keyring for the measurement
-+ *
-+ *	The following scenarios are possible with respect to
-+ *	the parameter "keyring":
-+ *	1, keyring is NULL. In this case buffer is measured.
-+ *	2, keyring is not NULL, but ima_get_action returned
-+ *	   a NULL keyrings. In this case also the buffer is measured.
-+ *	3, keyring is not NULL and ima_get_action returned
-+ *	   a non-NULL keyrings. In this case measure the buffer
-+ *	   only if the given keyring is present in the keyrings.
-  *
-  * Based on policy, the buffer is measured into the ima log.
-  */
- void process_buffer_measurement(const void *buf, int size,
- 				const char *eventname, enum ima_hooks func,
--				int pcr)
-+				int pcr, const char *keyring)
- {
- 	int ret = 0;
- 	struct ima_template_entry *entry = NULL;
-@@ -656,6 +666,13 @@ void process_buffer_measurement(const void *buf, int size,
- 	int action = 0;
- 	u32 secid;
- 
-+	/*
-+	 * If IMA is not yet initialized or IMA policy is empty
-+	 * then there is no need to measure.
-+	 */
-+	if (!ima_policy_flag)
-+		return;
++#ifdef CONFIG_WATCH_QUEUE
++		if (pipe->note_loss) {
++			struct watch_notification n;
 +
- 	/*
- 	 * Both LSM hooks and auxilary based buffer measurements are
- 	 * based on policy.  To avoid code duplication, differentiate
-@@ -671,6 +688,11 @@ void process_buffer_measurement(const void *buf, int size,
- 			return;
- 	}
- 
-+	if ((keyring != NULL) && (keyrings != NULL)
-+	    && (strstr(keyrings, keyring) = NULL)) {
-+		return;
-+	}
++			if (total_len < 8) {
++				if (ret == 0)
++					ret = -ENOBUFS;
++				break;
++			}
 +
- 	if (!pcr)
- 		pcr = CONFIG_IMA_MEASURE_PCR_IDX;
++			n.type = WATCH_TYPE_META;
++			n.subtype = WATCH_META_LOSS_NOTIFICATION;
++			n.info = watch_sizeof(n);
++			if (copy_to_iter(&n, sizeof(n), to) != sizeof(n)) {
++				if (ret == 0)
++					ret = -EFAULT;
++				break;
++			}
++			ret += sizeof(n);
++			total_len -= sizeof(n);
++			pipe->note_loss = false;
++		}
++#endif
++
+ 		if (!pipe_empty(head, tail)) {
+ 			struct pipe_buffer *buf = &pipe->bufs[tail & mask];
+ 			size_t chars = buf->len;
+@@ -334,6 +358,10 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+ 				bool wake;
+ 				pipe_buf_release(pipe, buf);
+ 				spin_lock_irq(&pipe->wait.lock);
++#ifdef CONFIG_WATCH_QUEUE
++				if (buf->flags & PIPE_BUF_FLAG_LOSS)
++					pipe->note_loss = true;
++#endif
+ 				tail++;
+ 				pipe->tail = tail;
+ 				do_wakeup = 1;
+diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
+index a19d60a06869..5be6fdf5134d 100644
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -9,6 +9,9 @@
+ #define PIPE_BUF_FLAG_GIFT	0x04	/* page is a gift */
+ #define PIPE_BUF_FLAG_PACKET	0x08	/* read() as a packet */
+ #define PIPE_BUF_FLAG_WHOLE	0x10	/* read() must return entire buffer or error */
++#ifdef CONFIG_WATCH_QUEUE
++#define PIPE_BUF_FLAG_LOSS	0x20	/* Message loss happened after this buffer */
++#endif
  
-@@ -719,7 +741,7 @@ void ima_kexec_cmdline(const void *buf, int size)
- {
- 	if (buf && size != 0)
- 		process_buffer_measurement(buf, size, "kexec-cmdline",
--					   KEXEC_CMDLINE, 0);
-+					   KEXEC_CMDLINE, 0, NULL);
+ /**
+  *	struct pipe_buffer - a linux kernel pipe buffer
+@@ -33,6 +36,7 @@ struct pipe_buffer {
+  *	@wait: reader/writer wait point in case of empty/full pipe
+  *	@head: The point of buffer production
+  *	@tail: The point of buffer consumption
++ *	@note_loss: The next read() should insert a data-lost message
+  *	@max_usage: The maximum number of slots that may be used in the ring
+  *	@ring_size: total number of buffers (should be a power of 2)
+  *	@nr_accounted: The amount this pipe accounts for in user->pipe_bufs
+@@ -56,6 +60,9 @@ struct pipe_inode_info {
+ 	unsigned int tail;
+ 	unsigned int max_usage;
+ 	unsigned int ring_size;
++#ifdef CONFIG_WATCH_QUEUE
++	bool note_loss;
++#endif
+ 	unsigned int nr_accounted;
+ 	unsigned int readers;
+ 	unsigned int writers;
+diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
+index b1d30296e29b..b34ad1b170a4 100644
+--- a/kernel/watch_queue.c
++++ b/kernel/watch_queue.c
+@@ -132,6 +132,8 @@ static bool post_one_notification(struct watch_queue *wqueue,
+ 	return done;
+ 
+ lost:
++	buf = &pipe->bufs[(head - 1) & mask];
++	buf->flags |= PIPE_BUF_FLAG_LOSS;
+ 	goto out;
  }
  
- static int __init init_ima(void)
--- 
-2.17.1
+diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
+index f6fb6e813551..58e826109ecc 100644
+--- a/samples/watch_queue/watch_test.c
++++ b/samples/watch_queue/watch_test.c
+@@ -120,6 +120,9 @@ static void consumer(int fd)
+ 					       (n.n.info & WATCH_INFO_ID) >>
+ 					       WATCH_INFO_ID__SHIFT);
+ 					break;
++				case WATCH_META_LOSS_NOTIFICATION:
++					printf("-- LOSS --\n");
++					break;
+ 				default:
+ 					printf("other meta record\n");
+ 					break;
