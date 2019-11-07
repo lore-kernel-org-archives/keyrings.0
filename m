@@ -1,54 +1,59 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 06 Nov 2019 19:01:15 +0000
-Subject: [PATCH v4 09/10] IMA: Call queue and dequeue functions to measure keys
-Message-Id: <20191106190116.2578-10-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 07 Nov 2019 13:37:20 +0000
+Subject: [RFC PATCH 13/14] selinux: Implement the watch_key security hook [ver #2]
+Message-Id: <157313384065.29677.12354003434069581212.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191106190116.2578-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Keys should be queued for measurement if IMA is not yet initialized.
-Keys queued for measurement, if any, need to be processed when IMA
-initialization is completed.
+Implement the watch_key security hook to make sure that a key grants the
+caller View permission in order to set a watch on a key.
 
-This patch updates the IMA hook for key_create_or_update 
-to call ima_queue_or_process_key_for_measurement() and
-adds the call to process queued keys upon IMA initialization
-completion.
+For the moment, the watch_devices security hook is left unimplemented as
+it's not obvious what the object should be since the queue is global and
+didn't previously exist.
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
 ---
- security/integrity/ima/ima_init.c | 1 +
- security/integrity/ima/ima_main.c | 2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index a810af6df587..74817a9f78e5 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -137,6 +137,7 @@ int __init ima_init(void)
- 		return rc;
- 
- 	ima_initialized = true;
-+	ima_measure_queued_keys();
- 
- 	return 0;
+ security/selinux/hooks.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 9625b99e677f..53637dccee00 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -6579,6 +6579,17 @@ static int selinux_key_getsecurity(struct key *key, char **_buffer)
+ 	*_buffer = context;
+ 	return rc;
  }
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 56540357c854..8733990867f2 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -757,7 +757,7 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
- 				   unsigned long flags, bool create)
- {
- 	if ((keyring != NULL) && (key != NULL))
--		return;
-+		ima_queue_or_process_key_for_measurement(keyring, key);
- }
++
++#ifdef CONFIG_KEY_NOTIFICATIONS
++static int selinux_watch_key(struct key *key)
++{
++	struct key_security_struct *ksec = key->security;
++	u32 sid = current_sid();
++
++	return avc_has_perm(&selinux_state,
++			    sid, ksec->sid, SECCLASS_KEY, KEY_NEED_VIEW, NULL);
++}
++#endif
+ #endif
  
- static int __init init_ima(void)
--- 
-2.17.1
+ #ifdef CONFIG_SECURITY_INFINIBAND
+@@ -7012,6 +7023,9 @@ static struct security_hook_list selinux_hooks[] __lsm_ro_after_init = {
+ 	LSM_HOOK_INIT(key_free, selinux_key_free),
+ 	LSM_HOOK_INIT(key_permission, selinux_key_permission),
+ 	LSM_HOOK_INIT(key_getsecurity, selinux_key_getsecurity),
++#ifdef CONFIG_KEY_NOTIFICATIONS
++	LSM_HOOK_INIT(watch_key, selinux_watch_key),
++#endif
+ #endif
+ 
+ #ifdef CONFIG_AUDIT
