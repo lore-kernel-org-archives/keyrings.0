@@ -1,41 +1,132 @@
 From: David Howells <dhowells@redhat.com>
-Date: Tue, 05 Nov 2019 16:02:59 +0000
-Subject: Details on the UAPI of implementing notifications on pipes
-Message-Id: <18580.1572969779@warthog.procyon.org.uk>
+Date: Thu, 07 Nov 2019 13:35:47 +0000
+Subject: [RFC PATCH 03/14] security: Add a hook for the point of notification insertion [ver #2]
+Message-Id: <157313374753.29677.10499095666351592097.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-So to implement notifications on top of pipes, I've hacked it together a bit
-in the following ways:
+Add a security hook that allows an LSM to rule on whether a notification
+message is allowed to be inserted into a particular watch queue.
 
- (1) I'm passing O_TMPFILE to the pipe2() system call to indicate that you
-     want a notifications pipe.  This prohibits splice and co. from being
-     called on it as I don't want to have to try to fix iov_iter_revert() to
-     handle kernel notifications being intermixed with splices.
+The hook is given the following information:
 
-     The choice of O_TMPFILE was just for convenience, but it needs to be
-     something different.  I could, for instance, add a constant,
-     O_NOTIFICATION_PIPE with the same *value* as O_TMPFILE.  I don't think
-     it's likely that it will make sense to use O_TMPFILE with a pipe, but I
-     also don't want to eat up another O_* constant just for this.
+ (1) The credentials of the triggerer (which may be init_cred for a system
+     notification, eg. a hardware error).
 
-     Unfortunately, pipe2() doesn't have any other arguments into from which I
-     can steal a bit.
+ (2) The credentials of the whoever set the watch.
 
- (2) I've added a pair of ioctls to configure the notifications bits.  They're
-     ioctls as I just reused the ioctl code from my devmisc driver.  Should I
-     use fcntl() instead, such as is done for F_SETPIPE_SZ?
+ (3) The notification message.
 
-     The ioctls do two things: set the ring size to a number of slots (so
-     similarish to F_SETPIPE_SZ) and set filters.
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>
+cc: Stephen Smalley <sds@tycho.nsa.gov>
+cc: linux-security-module@vger.kernel.org
+---
 
-Any thoughts on how better to represent these bits?
+ include/linux/lsm_hooks.h |   14 ++++++++++++++
+ include/linux/security.h  |   15 ++++++++++++++-
+ security/security.c       |    9 +++++++++
+ 3 files changed, 37 insertions(+), 1 deletion(-)
 
-Thanks,
-David
+diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
+index d62e92b768c4..8e1cbc27fc62 100644
+--- a/include/linux/lsm_hooks.h
++++ b/include/linux/lsm_hooks.h
+@@ -1427,6 +1427,12 @@
+  *	Check to see if a process is allowed to watch for event notifications
+  *	from devices (as a global set).
+  *
++ * @post_notification:
++ *	Check to see if a watch notification can be posted to a particular
++ *	queue.
++ *	@w_cred: The credentials of the whoever set the watch.
++ *	@cred: The event-triggerer's credentials
++ *	@n: The notification being posted
+  *
+  * Security hooks for using the eBPF maps and programs functionalities through
+  * eBPF syscalls.
+@@ -1716,6 +1722,11 @@ union security_list_options {
+ #ifdef CONFIG_DEVICE_NOTIFICATIONS
+ 	int (*watch_devices)(void);
+ #endif
++#ifdef CONFIG_WATCH_QUEUE
++	int (*post_notification)(const struct cred *w_cred,
++				 const struct cred *cred,
++				 struct watch_notification *n);
++#endif
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
+@@ -2001,6 +2012,9 @@ struct security_hook_heads {
+ #ifdef CONFIG_DEVICE_NOTIFICATIONS
+ 	struct hlist_head watch_devices;
+ #endif
++#ifdef CONFIG_WATCH_QUEUE
++	struct hlist_head post_notification;
++#endif /* CONFIG_WATCH_QUEUE */
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	struct hlist_head unix_stream_connect;
+ 	struct hlist_head unix_may_send;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 5d1867772022..ee98e020c749 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -57,6 +57,8 @@ struct mm_struct;
+ struct fs_context;
+ struct fs_parameter;
+ enum fs_value_type;
++struct watch;
++struct watch_notification;
+ 
+ /* Default (no) options for the capable function */
+ #define CAP_OPT_NONE 0x0
+@@ -1287,6 +1289,18 @@ static inline int security_watch_devices(void)
+ 	return 0;
+ }
+ #endif
++#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
++int security_post_notification(const struct cred *w_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n);
++#else
++static inline int security_post_notification(const struct cred *w_cred,
++					     const struct cred *cred,
++					     struct watch_notification *n)
++{
++	return 0;
++}
++#endif
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+ 
+@@ -1912,4 +1926,3 @@ static inline void security_bpf_prog_free(struct bpf_prog_aux *aux)
+ #endif /* CONFIG_BPF_SYSCALL */
+ 
+ #endif /* ! __LINUX_SECURITY_H */
+-
+diff --git a/security/security.c b/security/security.c
+index 4f970716fa6c..c9d5c3d5472a 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1956,6 +1956,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
+ }
+ EXPORT_SYMBOL(security_inode_getsecctx);
+ 
++#ifdef CONFIG_WATCH_QUEUE
++int security_post_notification(const struct cred *w_cred,
++			       const struct cred *cred,
++			       struct watch_notification *n)
++{
++	return call_int_hook(post_notification, 0, w_cred, cred, n);
++}
++#endif /* CONFIG_WATCH_QUEUE */
++
+ #ifdef CONFIG_KEY_NOTIFICATIONS
+ int security_watch_key(struct key *key)
+ {
