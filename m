@@ -1,294 +1,206 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 01 Nov 2019 17:34:46 +0000
-Subject: [RFC PATCH 05/11] pipe: Allow pipes to have kernel-reserved slots [ver #3]
-Message-Id: <157262968684.13142.910827322486465736.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Mon, 11 Nov 2019 19:33:02 +0000
+Subject: [PATCH v5 09/10] IMA: Defined functions to queue and dequeue keys for measurement
+Message-Id: <20191111193303.12781-10-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191111193303.12781-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191111193303.12781-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Split pipe->ring_size into two numbers:
+A key can be measured right away only if custom IMA policies
+have been applied. Otherwise, the key should be queued up and
+processed when custom IMA policies have been applied.
 
- (1) pipe->ring_size - indicates the hard size of the pipe ring.
+This patch defines functions to queue and dequeue keys for
+measurement.
 
- (2) pipe->max_usage - indicates the maximum number of pipe ring slots that
-     userspace orchestrated events can fill.
-
-This allows for a pipe that is both writable by the general kernel
-notification facility and by userspace, allowing plenty of ring space for
-notifications to be added whilst preventing userspace from being able to
-pin too much unswappable kernel space.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
+ security/integrity/ima/ima.h                 |  23 ++++
+ security/integrity/ima/ima_asymmetric_keys.c | 128 +++++++++++++++++++
+ 2 files changed, 151 insertions(+)
 
- fs/fuse/dev.c             |    8 ++++----
- fs/pipe.c                 |   10 ++++++----
- fs/splice.c               |   26 +++++++++++++-------------
- include/linux/pipe_fs_i.h |    6 +++++-
- lib/iov_iter.c            |    4 ++--
- 5 files changed, 30 insertions(+), 24 deletions(-)
-
-diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-index c56011f95a87..423b6c657bf0 100644
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -703,7 +703,7 @@ static int fuse_copy_fill(struct fuse_copy_state *cs)
- 			cs->pipebufs++;
- 			cs->nr_segs--;
- 		} else {
--			if (cs->nr_segs >= cs->pipe->ring_size)
-+			if (cs->nr_segs >= cs->pipe->max_usage)
- 				return -EIO;
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index f15199f7ff2a..4e7fed8d224e 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -205,6 +205,29 @@ extern const char *const func_tokens[];
  
- 			page = alloc_page(GFP_HIGHUSER);
-@@ -879,7 +879,7 @@ static int fuse_ref_page(struct fuse_copy_state *cs, struct page *page,
- 	struct pipe_buffer *buf;
- 	int err;
+ struct modsig;
  
--	if (cs->nr_segs >= cs->pipe->ring_size)
-+	if (cs->nr_segs >= cs->pipe->max_usage)
- 		return -EIO;
- 
- 	err = unlock_request(cs->req);
-@@ -1341,7 +1341,7 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
- 	if (!fud)
- 		return -EPERM;
- 
--	bufs = kvmalloc_array(pipe->ring_size, sizeof(struct pipe_buffer),
-+	bufs = kvmalloc_array(pipe->max_usage, sizeof(struct pipe_buffer),
- 			      GFP_KERNEL);
- 	if (!bufs)
- 		return -ENOMEM;
-@@ -1353,7 +1353,7 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
- 	if (ret < 0)
- 		goto out;
- 
--	if (pipe_occupancy(pipe->head, pipe->tail) + cs.nr_segs > pipe->ring_size) {
-+	if (pipe_occupancy(pipe->head, pipe->tail) + cs.nr_segs > pipe->max_usage) {
- 		ret = -EIO;
- 		goto out;
- 	}
-diff --git a/fs/pipe.c b/fs/pipe.c
-index e9b361cb093e..69afeab8a73a 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -404,7 +404,7 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 
- 	tail = pipe->tail;
- 	head = pipe->head;
--	max_usage = pipe->ring_size;
-+	max_usage = pipe->max_usage;
- 	mask = pipe->ring_size - 1;
- 
- 	/* We try to merge small writes */
-@@ -571,7 +571,7 @@ pipe_poll(struct file *filp, poll_table *wait)
- 	}
- 
- 	if (filp->f_mode & FMODE_WRITE) {
--		if (!pipe_full(head, tail, pipe->ring_size))
-+		if (!pipe_full(head, tail, pipe->max_usage))
- 			mask |= EPOLLOUT | EPOLLWRNORM;
- 		/*
- 		 * Most Unices do not set EPOLLERR for FIFOs but on Linux they
-@@ -696,6 +696,7 @@ struct pipe_inode_info *alloc_pipe_info(void)
- 	if (pipe->bufs) {
- 		init_waitqueue_head(&pipe->wait);
- 		pipe->r_counter = pipe->w_counter = 1;
-+		pipe->max_usage = pipe_bufs;
- 		pipe->ring_size = pipe_bufs;
- 		pipe->user = user;
- 		mutex_init(&pipe->mutex);
-@@ -1150,9 +1151,10 @@ static long pipe_set_size(struct pipe_inode_info *pipe, unsigned long arg)
- 	kfree(pipe->bufs);
- 	pipe->bufs = bufs;
- 	pipe->ring_size = nr_slots;
-+	pipe->max_usage = nr_slots;
- 	pipe->tail = tail;
- 	pipe->head = head;
--	return pipe->ring_size * PAGE_SIZE;
-+	return pipe->max_usage * PAGE_SIZE;
- 
- out_revert_acct:
- 	(void) account_pipe_buffers(pipe->user, nr_slots, pipe->ring_size);
-@@ -1185,7 +1187,7 @@ long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
- 		ret = pipe_set_size(pipe, arg);
- 		break;
- 	case F_GETPIPE_SZ:
--		ret = pipe->ring_size * PAGE_SIZE;
-+		ret = pipe->max_usage * PAGE_SIZE;
- 		break;
- 	default:
- 		ret = -EINVAL;
-diff --git a/fs/splice.c b/fs/splice.c
-index 22b0a47a35c0..c521090a0469 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -199,7 +199,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
- 		goto out;
- 	}
- 
--	while (!pipe_full(head, tail, pipe->ring_size)) {
-+	while (!pipe_full(head, tail, pipe->max_usage)) {
- 		struct pipe_buffer *buf = &pipe->bufs[head & mask];
- 
- 		buf->page = spd->pages[page_nr];
-@@ -239,7 +239,7 @@ ssize_t add_to_pipe(struct pipe_inode_info *pipe, struct pipe_buffer *buf)
- 	if (unlikely(!pipe->readers)) {
- 		send_sig(SIGPIPE, current, 0);
- 		ret = -EPIPE;
--	} else if (pipe_full(head, tail, pipe->ring_size)) {
-+	} else if (pipe_full(head, tail, pipe->max_usage)) {
- 		ret = -EAGAIN;
- 	} else {
- 		pipe->bufs[head & mask] = *buf;
-@@ -257,7 +257,7 @@ EXPORT_SYMBOL(add_to_pipe);
++#ifdef CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
++/*
++ * To track keys that need to be measured.
++ */
++struct ima_measure_key_entry {
++	struct list_head list;
++	void *public_key;
++	u32  public_key_len;
++	char *keyring_name;
++};
++
++bool ima_queue_key_for_measurement(struct key *keyring,
++				   struct key *key);
++void ima_process_queued_keys_for_measurement(void);
++#else
++static inline bool ima_queue_key_for_measurement(struct key *keyring,
++						 struct key *key)
++{
++	return false;
++}
++static inline void ima_process_queued_keys_for_measurement(void) {}
++#endif /* CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS */
++
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+index 61c42d06a636..4a38b4957b8c 100644
+--- a/security/integrity/ima/ima_asymmetric_keys.c
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -7,6 +7,7 @@
+  * File: ima_asymmetric_keys.c
+  *       Defines an IMA hook to measure asymmetric keys on key
+  *       create or update.
++ *       Queue and de-queue functions for measuring asymmetric keys.
   */
- int splice_grow_spd(const struct pipe_inode_info *pipe, struct splice_pipe_desc *spd)
- {
--	unsigned int max_usage = READ_ONCE(pipe->ring_size);
-+	unsigned int max_usage = READ_ONCE(pipe->max_usage);
  
- 	spd->nr_pages_max = max_usage;
- 	if (max_usage <= PIPE_DEF_BUFFERS)
-@@ -381,7 +381,7 @@ static ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
- 	ssize_t res;
- 	int i;
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+@@ -17,6 +18,133 @@
  
--	if (pipe_full(pipe->head, pipe->tail, pipe->ring_size))
-+	if (pipe_full(pipe->head, pipe->tail, pipe->max_usage))
- 		return -EAGAIN;
+ bool ima_process_keys_for_measurement;
  
- 	/*
-@@ -698,7 +698,7 @@ iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
- 		.pos = *ppos,
- 		.u.file = out,
- 	};
--	int nbufs = pipe->ring_size;
-+	int nbufs = pipe->max_usage;
- 	struct bio_vec *array = kcalloc(nbufs, sizeof(struct bio_vec),
- 					GFP_KERNEL);
- 	ssize_t ret;
-@@ -721,9 +721,9 @@ iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
- 		if (ret <= 0)
- 			break;
- 
--		if (unlikely(nbufs < pipe->ring_size)) {
-+		if (unlikely(nbufs < pipe->max_usage)) {
- 			kfree(array);
--			nbufs = pipe->ring_size;
-+			nbufs = pipe->max_usage;
- 			array = kcalloc(nbufs, sizeof(struct bio_vec),
- 					GFP_KERNEL);
- 			if (!array) {
-@@ -963,7 +963,7 @@ ssize_t splice_direct_to_actor(struct file *in, struct splice_desc *sd,
- 		loff_t pos = sd->pos, prev_pos = pos;
- 
- 		/* Don't try to read more the pipe has space for. */
--		p_space = pipe->ring_size -
-+		p_space = pipe->max_usage -
- 			pipe_occupancy(pipe->head, pipe->tail);
- 		read_len = min_t(size_t, len, p_space << PAGE_SHIFT);
- 		ret = do_splice_to(in, &pos, pipe, read_len, flags);
-@@ -1090,7 +1090,7 @@ static int wait_for_space(struct pipe_inode_info *pipe, unsigned flags)
- 			send_sig(SIGPIPE, current, 0);
- 			return -EPIPE;
- 		}
--		if (!pipe_full(pipe->head, pipe->tail, pipe->ring_size))
-+		if (!pipe_full(pipe->head, pipe->tail, pipe->max_usage))
- 			return 0;
- 		if (flags & SPLICE_F_NONBLOCK)
- 			return -EAGAIN;
-@@ -1498,13 +1498,13 @@ static int opipe_prep(struct pipe_inode_info *pipe, unsigned int flags)
- 	 * Check pipe occupancy without the inode lock first. This function
- 	 * is speculative anyways, so missing one is ok.
- 	 */
--	if (pipe_full(pipe->head, pipe->tail, pipe->ring_size))
-+	if (pipe_full(pipe->head, pipe->tail, pipe->max_usage))
- 		return 0;
- 
- 	ret = 0;
- 	pipe_lock(pipe);
- 
--	while (pipe_full(pipe->head, pipe->tail, pipe->ring_size)) {
-+	while (pipe_full(pipe->head, pipe->tail, pipe->max_usage)) {
- 		if (!pipe->readers) {
- 			send_sig(SIGPIPE, current, 0);
- 			ret = -EPIPE;
-@@ -1584,7 +1584,7 @@ static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
- 		 * pipe is empty or the output pipe is full.
- 		 */
- 		if (pipe_empty(i_head, i_tail) ||
--		    pipe_full(o_head, o_tail, opipe->ring_size)) {
-+		    pipe_full(o_head, o_tail, opipe->max_usage)) {
- 			/* Already processed some buffers, break */
- 			if (ret)
- 				break;
-@@ -1706,7 +1706,7 @@ static int link_pipe(struct pipe_inode_info *ipipe,
- 		 * output room, break.
- 		 */
- 		if (pipe_empty(i_head, i_tail) ||
--		    pipe_full(o_head, o_tail, opipe->ring_size))
-+		    pipe_full(o_head, o_tail, opipe->max_usage))
- 			break;
- 
- 		ibuf = &ipipe->bufs[i_tail & i_mask];
-diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
-index 96158ca80456..44f2245debda 100644
---- a/include/linux/pipe_fs_i.h
-+++ b/include/linux/pipe_fs_i.h
-@@ -32,6 +32,7 @@ struct pipe_buffer {
-  *	@wait: reader/writer wait point in case of empty/full pipe
-  *	@head: The point of buffer production
-  *	@tail: The point of buffer consumption
-+ *	@max_usage: The maximum number of slots that may be used in the ring
-  *	@ring_size: total number of buffers (should be a power of 2)
-  *	@tmp_page: cached released page
-  *	@readers: number of current readers of this pipe
-@@ -50,6 +51,7 @@ struct pipe_inode_info {
- 	wait_queue_head_t wait;
- 	unsigned int head;
- 	unsigned int tail;
-+	unsigned int max_usage;
- 	unsigned int ring_size;
- 	unsigned int readers;
- 	unsigned int writers;
-@@ -150,9 +152,11 @@ static inline unsigned int pipe_space_for_user(unsigned int head, unsigned int t
- 	unsigned int p_occupancy, p_space;
- 
- 	p_occupancy = pipe_occupancy(head, tail);
--	if (p_occupancy >= pipe->ring_size)
-+	if (p_occupancy >= pipe->max_usage)
- 		return 0;
- 	p_space = pipe->ring_size - p_occupancy;
-+	if (p_space > pipe->max_usage)
-+		p_space = pipe->max_usage;
- 	return p_space;
- }
- 
-diff --git a/lib/iov_iter.c b/lib/iov_iter.c
-index 6607e9c875ce..8225279b96e3 100644
---- a/lib/iov_iter.c
-+++ b/lib/iov_iter.c
-@@ -395,7 +395,7 @@ static size_t copy_page_to_iter_pipe(struct page *page, size_t offset, size_t by
- 		i_head++;
- 		buf = &pipe->bufs[i_head & p_mask];
- 	}
--	if (pipe_full(i_head, p_tail, pipe->ring_size))
-+	if (pipe_full(i_head, p_tail, pipe->max_usage))
- 		return 0;
- 
- 	buf->ops = &page_cache_pipe_buf_ops;
-@@ -528,7 +528,7 @@ static size_t push_pipe(struct iov_iter *i, size_t size,
- 		pipe->bufs[iter_head & p_mask].len = PAGE_SIZE;
- 		iter_head++;
- 	}
--	while (!pipe_full(iter_head, p_tail, pipe->ring_size)) {
-+	while (!pipe_full(iter_head, p_tail, pipe->max_usage)) {
- 		struct pipe_buffer *buf = &pipe->bufs[iter_head & p_mask];
- 		struct page *page = alloc_page(GFP_USER);
- 		if (!page)
++/*
++ * To synchronize access to the list of keys that need to be measured
++ */
++static DEFINE_MUTEX(ima_measure_keys_mutex);
++static LIST_HEAD(ima_measure_keys);
++
++static void ima_free_measure_key_entry(struct ima_measure_key_entry *entry)
++{
++	if (entry != NULL) {
++		if (entry->public_key != NULL)
++			kzfree(entry->public_key);
++		if (entry->keyring_name != NULL)
++			kzfree(entry->keyring_name);
++		kzfree(entry);
++	}
++}
++
++static struct ima_measure_key_entry *ima_alloc_measure_key_entry(
++	struct key *keyring,
++	struct key *key)
++{
++	int rc = 0;
++	const struct public_key *pk;
++	size_t keyring_name_len;
++	struct ima_measure_key_entry *entry = NULL;
++
++	pk = key->payload.data[asym_crypto];
++	keyring_name_len = strlen(keyring->description) + 1;
++	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
++	if (entry != NULL) {
++		entry->public_key = kzalloc(pk->keylen, GFP_KERNEL);
++		entry->keyring_name +			kzalloc(keyring_name_len, GFP_KERNEL);
++	}
++
++	if ((entry = NULL) || (entry->public_key = NULL) ||
++	    (entry->keyring_name = NULL)) {
++		rc = -ENOMEM;
++		goto out;
++	}
++
++	strcpy(entry->keyring_name, keyring->description);
++	memcpy(entry->public_key, pk->key, pk->keylen);
++	entry->public_key_len = pk->keylen;
++	rc = 0;
++
++out:
++	if (rc) {
++		ima_free_measure_key_entry(entry);
++		entry = NULL;
++	}
++
++	return entry;
++}
++
++bool ima_queue_key_for_measurement(struct key *keyring,
++				   struct key *key)
++{
++	bool queued = false;
++	struct ima_measure_key_entry *entry = NULL;
++
++	/*
++	 * ima_measure_keys_mutex should be taken before checking
++	 * ima_process_keys_for_measurement flag to avoid the race
++	 * condition between the IMA hook checking this flag and
++	 * calling ima_queue_key_for_measurement() to queue the key and
++	 * ima_process_queued_keys_for_measurement() setting this flag.
++	 */
++	mutex_lock(&ima_measure_keys_mutex);
++
++	if (!ima_process_keys_for_measurement) {
++		entry = ima_alloc_measure_key_entry(keyring, key);
++		if (entry != NULL) {
++			INIT_LIST_HEAD(&entry->list);
++			list_add_tail(&entry->list, &ima_measure_keys);
++			queued = true;
++		}
++	}
++
++	mutex_unlock(&ima_measure_keys_mutex);
++
++	return queued;
++}
++
++void ima_process_queued_keys_for_measurement(void)
++{
++	struct ima_measure_key_entry *entry, *tmp;
++	LIST_HEAD(temp_ima_measure_keys);
++
++	if (ima_process_keys_for_measurement)
++		return;
++
++	/*
++	 * Any queued keys will be processed now. From here on
++	 * keys should be processed right away.
++	 */
++	ima_process_keys_for_measurement = true;
++
++	/*
++	 * To avoid holding the mutex when processing queued keys,
++	 * transfer the queued keys with the mutex held to a temp list,
++	 * release the mutex, and then process the queued keys from
++	 * the temp list.
++	 *
++	 * Since ima_process_keys_for_measurement is set to true above,
++	 * any new key will be processed immediately and not be queued.
++	 */
++	INIT_LIST_HEAD(&temp_ima_measure_keys);
++	mutex_lock(&ima_measure_keys_mutex);
++	list_for_each_entry_safe(entry, tmp, &ima_measure_keys, list) {
++		list_del(&entry->list);
++		list_add_tail(&entry->list, &temp_ima_measure_keys);
++	}
++	mutex_unlock(&ima_measure_keys_mutex);
++
++	list_for_each_entry_safe(entry, tmp,
++				 &temp_ima_measure_keys, list) {
++		process_buffer_measurement(entry->public_key,
++					   entry->public_key_len,
++					   entry->keyring_name,
++					   KEYRING_CHECK, 0,
++					   entry->keyring_name);
++		list_del(&entry->list);
++		ima_free_measure_key_entry(entry);
++	}
++}
++
+ /**
+  * ima_post_key_create_or_update - measure asymmetric keys
+  * @keyring: keyring to which the key is linked to
+-- 
+2.17.1
