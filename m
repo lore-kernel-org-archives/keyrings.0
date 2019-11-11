@@ -1,83 +1,42 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 06 Nov 2019 19:01:09 +0000
-Subject: [PATCH v4 03/10] IMA: Added keyrings= option in IMA policy to only measure keys added to the specifi
-Message-Id: <20191106190116.2578-4-nramas@linux.microsoft.com>
+Date: Mon, 11 Nov 2019 19:33:01 +0000
+Subject: [PATCH v5 08/10] IMA: Added a flag to determine whether IMA hook can process the key now or has to q
+Message-Id: <20191111193303.12781-9-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191106190116.2578-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
+References: <20191111193303.12781-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191111193303.12781-1-nramas@linux.microsoft.com>
 To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-IMA policy needs to support measuring only those keys linked to
-a specific set of keyrings.
+Keys should be processed only if custom IMA policies have been
+applied. Prior to that the keys should be queued for processing later.
 
-This patch defines a new IMA policy option namely "keyrings=" that
-can be used to specify a set of keyrings. If this option is specified
-in the policy for func=KEYRING_CHECK then only the keys linked to
-the keyrings given in "keyrings=" option are measured.
+This patch defines a flag namely ima_process_keys_for_measurement
+to check if the key should be processed immediately or should be queued.
 
-If "keyrings=" option is not specified for func=KEYRING_CHECK then
-all keys are measured.
+ima_policy_flag cannot be relied upon because ima_policy_flag will
+be set to 0 when either IMA is not initialized or the IMA policy
+itself is empty.
 
 Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
- Documentation/ABI/testing/ima_policy | 10 +++++++++-
- security/integrity/ima/ima_policy.c  |  2 ++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ security/integrity/ima/ima_asymmetric_keys.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 341df49b5ad1..be2874fa3928 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -25,7 +25,7 @@ Description:
- 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
- 				 [obj_user=] [obj_role=] [obj_type=]]
- 			option:	[[appraise_type=]] [template=] [permit_directio]
--				[appraise_flag=]
-+				[appraise_flag=] [keyrings=]
- 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
- 				[FIRMWARE_CHECK]
- 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
-@@ -43,6 +43,9 @@ Description:
- 			appraise_flag:= [check_blacklist]
- 			Currently, blacklist check is only for files signed with appended
- 			signature.
-+			keyrings:= list of keyrings
-+			(eg, .builtin_trusted_keys|.ima). Only valid
-+			when action is "measure" and func is KEYRING_CHECK.
- 			template:= name of a defined IMA template type
- 			(eg, ima-ng). Only valid when action is "measure".
- 			pcr:= decimal value
-@@ -119,3 +122,8 @@ Description:
- 		all keys:
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+index 7d6603bfcc06..61c42d06a636 100644
+--- a/security/integrity/ima/ima_asymmetric_keys.c
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -15,6 +15,8 @@
+ #include <keys/asymmetric-type.h>
+ #include "ima.h"
  
- 			measure func=KEYRING_CHECK
++bool ima_process_keys_for_measurement;
 +
-+		Example of measure rule using KEYRING_CHECK to only measure
-+		keys added to .builtin_trusted_keys or .ima keyring:
-+
-+			measure func=KEYRING_CHECK keyrings=.builtin_trusted_keys|.ima
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 4344b7354fc5..4d68ad8ed91c 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -34,6 +34,7 @@
- #define IMA_EUID	0x0080
- #define IMA_PCR		0x0100
- #define IMA_FSNAME	0x0200
-+#define IMA_KEYRINGS	0x0400
- 
- #define UNKNOWN		0
- #define MEASURE		0x0001	/* same as IMA_MEASURE */
-@@ -79,6 +80,7 @@ struct ima_rule_entry {
- 		int type;	/* audit type */
- 	} lsm[MAX_LSM_RULES];
- 	char *fsname;
-+	char *keyrings; /* Measure keys added to these keyrings */
- 	struct ima_template_desc *template;
- };
- 
+ /**
+  * ima_post_key_create_or_update - measure asymmetric keys
+  * @keyring: keyring to which the key is linked to
 -- 
 2.17.1
