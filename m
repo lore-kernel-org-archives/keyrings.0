@@ -1,29 +1,161 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 14 Nov 2019 18:18:55 +0000
-Subject: Re: [PATCH v7 4/5] IMA: Add support to limit measuring keys
-Message-Id: <1deec85d-78b1-0cf2-ec2c-7dacaa2c3672@linux.microsoft.com>
+Date: Mon, 11 Nov 2019 19:32:57 +0000
+Subject: [PATCH v5 04/10] IMA: Updated IMA policy functions to return keyrings option read from the policy
+Message-Id: <20191111193303.12781-5-nramas@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191114031202.18012-1-nramas@linux.microsoft.com>
- <20191114031202.18012-5-nramas@linux.microsoft.com>
- <1573742237.4793.30.camel@linux.ibm.com>
-In-Reply-To: <1573742237.4793.30.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191111193303.12781-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191111193303.12781-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On 11/14/2019 6:37 AM, Mimi Zohar wrote:
-> Keyrings may be created by userspace with any name (e.g. foo, foobar,
-> ...).  A keyring name might be a subset of another keyring name.  For
-> example, with the policy "keyrings=foobar", keys being loaded on "foo"
-> would also be measured.  Using strstr() will not achieve what is
-> needed.
-> 
-> Mimi
+keyrings option read from the IMA policy needs to be provided to
+the callers that determine the action to be performed.
 
-Very good catch - I missed that :(
+This patch updates ima_get_action() and ima_match_policy() functions
+to return the keyrings option specified in the IMA policy.
 
-Will fix and send an update.
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ security/integrity/ima/ima.h          | 6 ++++--
+ security/integrity/ima/ima_api.c      | 8 +++++---
+ security/integrity/ima/ima_appraise.c | 2 +-
+ security/integrity/ima/ima_main.c     | 5 +++--
+ security/integrity/ima/ima_policy.c   | 7 ++++++-
+ 5 files changed, 19 insertions(+), 9 deletions(-)
 
-thanks,
-  -lakshmi
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 7f23405b2718..387829afb9a2 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -208,7 +208,8 @@ struct modsig;
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+-		   struct ima_template_desc **template_desc);
++		   struct ima_template_desc **template_desc,
++		   char **keyrings);
+ int ima_must_measure(struct inode *inode, int mask, enum ima_hooks func);
+ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 			    struct file *file, void *buf, loff_t size,
+@@ -235,7 +236,8 @@ const char *ima_d_path(const struct path *path, char **pathbuf, char *filename);
+ /* IMA policy related functions */
+ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
+ 		     enum ima_hooks func, int mask, int flags, int *pcr,
+-		     struct ima_template_desc **template_desc);
++		     struct ima_template_desc **template_desc,
++		     char **keyrings);
+ void ima_init_policy(void);
+ void ima_update_policy(void);
+ void ima_update_policy_flag(void);
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index 610759fe63b8..fa2cd71ddf1a 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -169,12 +169,13 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
+  * @func: caller identifier
+  * @pcr: pointer filled in if matched measure policy sets pcr  * @template_desc: pointer filled in if matched measure policy sets template+ * @keyrings: pointer filled in if matched measure policy sets keyrings  *
+  * The policy is defined in terms of keypairs:
+  *		subj=, obj=, type=, func=, mask=, fsmagic  *	subj,obj, and type: are LSM specific.
+  *	func: FILE_CHECK | BPRM_CHECK | CREDS_CHECK | MMAP_CHECK | MODULE_CHECK
+- *	| KEXEC_CMDLINE
++ *	| KEXEC_CMDLINE | KEYRING_CHECK
+  *	mask: contains the permission mask
+  *	fsmagic: hex value
+  *
+@@ -183,14 +184,15 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
+  */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+-		   struct ima_template_desc **template_desc)
++		   struct ima_template_desc **template_desc,
++		   char **keyrings)
+ {
+ 	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE | IMA_HASH;
+ 
+ 	flags &= ima_policy_flag;
+ 
+ 	return ima_match_policy(inode, cred, secid, func, mask, flags, pcr,
+-				template_desc);
++				template_desc, keyrings);
+ }
+ 
+ /*
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 300c8d2943c5..47ad4f56c0a8 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -55,7 +55,7 @@ int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func)
+ 
+ 	security_task_getsecid(current, &secid);
+ 	return ima_match_policy(inode, current_cred(), secid, func, mask,
+-				IMA_APPRAISE | IMA_HASH, NULL, NULL);
++				IMA_APPRAISE | IMA_HASH, NULL, NULL, NULL);
+ }
+ 
+ static int ima_fix_xattr(struct dentry *dentry,
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index d7e987baf127..68e15ff1fe8d 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -215,7 +215,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
+ 	 * Included is the appraise submask.
+ 	 */
+ 	action = ima_get_action(inode, cred, secid, mask, func, &pcr,
+-				&template_desc);
++				&template_desc, NULL);
+ 	violation_check = ((func = FILE_CHECK || func = MMAP_CHECK) &&
+ 			   (ima_policy_flag & IMA_MEASURE));
+ 	if (!action && !violation_check)
+@@ -647,6 +647,7 @@ void process_buffer_measurement(const void *buf, int size,
+ 					    .buf = buf,
+ 					    .buf_len = size};
+ 	struct ima_template_desc *template = NULL;
++	char *keyrings = NULL;
+ 	struct {
+ 		struct ima_digest_data hdr;
+ 		char digest[IMA_MAX_DIGEST_SIZE];
+@@ -665,7 +666,7 @@ void process_buffer_measurement(const void *buf, int size,
+ 	if (func) {
+ 		security_task_getsecid(current, &secid);
+ 		action = ima_get_action(NULL, current_cred(), secid, 0, func,
+-					&pcr, &template);
++					&pcr, &template, &keyrings);
+ 		if (!(action & IMA_MEASURE))
+ 			return;
+ 	}
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 1aee3c8b9cf6..d1889eee9287 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -481,6 +481,7 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
+  * @mask: requested action (MAY_READ | MAY_WRITE | MAY_APPEND | MAY_EXEC)
+  * @pcr: set the pcr to extend
+  * @template_desc: the template that should be used for this rule
++ * @keyrings: set the keyrings for this rule, if specified
+  *
+  * Measure decision based on func/mask/fsmagic and LSM(subj/obj/type)
+  * conditions.
+@@ -491,7 +492,8 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
+  */
+ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
+ 		     enum ima_hooks func, int mask, int flags, int *pcr,
+-		     struct ima_template_desc **template_desc)
++		     struct ima_template_desc **template_desc,
++		     char **keyrings)
+ {
+ 	struct ima_rule_entry *entry;
+ 	int action = 0, actmask = flags | (flags << 1);
+@@ -527,6 +529,9 @@ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
+ 		if ((pcr) && (entry->flags & IMA_PCR))
+ 			*pcr = entry->pcr;
+ 
++		if ((keyrings) && (entry->flags & IMA_KEYRINGS))
++			*keyrings = entry->keyrings;
++
+ 		if (template_desc && entry->template)
+ 			*template_desc = entry->template;
+ 
+-- 
+2.17.1
