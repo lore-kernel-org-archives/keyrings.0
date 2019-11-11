@@ -1,364 +1,106 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 07 Nov 2019 13:37:08 +0000
-Subject: [RFC PATCH 12/14] usb: Add USB subsystem notifications [ver #2]
-Message-Id: <157313382877.29677.8555697148149429709.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Mon, 11 Nov 2019 19:33:03 +0000
+Subject: [PATCH v5 10/10] IMA: Call queue and dequeue functions to measure keys.
+Message-Id: <20191111193303.12781-11-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191111193303.12781-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191111193303.12781-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a USB subsystem notification mechanism whereby notifications about
-hardware events such as device connection, disconnection, reset and I/O
-errors, can be reported to a monitoring process asynchronously.
+Keys should be queued for measurement if custom IMA policies have
+not been applied. Keys queued for measurement, if any, need to be
+processed when custom IMA policies have been applied.
 
-Firstly, an event queue needs to be created:
+This patch adds the call to ima_queue_key_for_measurement in the IMA hook
+function and the call to ima_process_queued_keys_for_measurement when
+custom IMA policies have been applied.
 
-	pipe2(fds, O_NOTIFICATION_PIPE);
-	ioctl(fds[1], IOC_WATCH_QUEUE_SET_SIZE, 256);
+NOTE:
+If the kernel is built with CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
+then the IMA policy for measuring keys should be applied as part of
+custom IMA policies. Keys will be queued up until custom policies
+are applied and processed when applied.
 
-then a notification can be set up to report USB notifications via that
-queue:
-
-	struct watch_notification_filter filter = {
-		.nr_filters = 1,
-		.filters = {
-			[0] = {
-				.type = WATCH_TYPE_USB_NOTIFY,
-				.subtype_filter[0] = UINT_MAX;
-			},
-		},
-	};
-	ioctl(fds[1], IOC_WATCH_QUEUE_SET_FILTER, &filter);
-	notify_devices(fds[1], 12);
-
-After that, messages will be placed into the queue when events occur on a
-USB device or bus.  Messages are of the following format:
-
-	struct usb_notification {
-		struct watch_notification watch;
-		__u32	error;
-		__u32	reserved;
-		__u8	name_len;
-		__u8	name[0];
-	} *n;
-
-Where:
-
-	n->watch.type will be WATCH_TYPE_USB_NOTIFY
-
-	n->watch.subtype will be the type of notification, such as
-	NOTIFY_USB_DEVICE_ADD.
-
-	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
-	message.
-
-	n->watch.info & WATCH_INFO_ID will be the second argument to
-	device_notify(), shifted.
-
-	n->error and n->reserved are intended to convey information such as
-	error codes, but are currently not used
-
-	n->name_len and n->name convey the USB device name as an
-	unterminated string.  This may be truncated - it is currently
-	limited to a maximum 63 chars.
-
-Note that it is permissible for messages to be of variable length - or, at
-least, the length may be dependent on the subtype.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-usb@vger.kernel.org
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
+ security/integrity/ima/ima_asymmetric_keys.c | 31 ++++++++++++++++++--
+ security/integrity/ima/ima_policy.c          | 12 ++++++++
+ 2 files changed, 41 insertions(+), 2 deletions(-)
 
- Documentation/watch_queue.rst    |    9 +++++++
- drivers/usb/core/Kconfig         |    9 +++++++
- drivers/usb/core/devio.c         |   47 ++++++++++++++++++++++++++++++++++++++
- drivers/usb/core/hub.c           |    4 +++
- include/linux/usb.h              |   18 +++++++++++++++
- include/uapi/linux/watch_queue.h |   28 ++++++++++++++++++++++-
- samples/watch_queue/watch_test.c |   29 +++++++++++++++++++++++
- 7 files changed, 142 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/watch_queue.rst b/Documentation/watch_queue.rst
-index f2299f631ae8..5321a9cb1ab2 100644
---- a/Documentation/watch_queue.rst
-+++ b/Documentation/watch_queue.rst
-@@ -12,6 +12,8 @@ opened by userspace.  This can be used in conjunction with::
- 
-     * Block layer event notifications
- 
-+    * USB subsystem event notifications
-+
- 
- The notifications buffers can be enabled by:
- 
-@@ -262,6 +264,13 @@ Any particular buffer can be fed from multiple sources.  Sources include:
-     or temporary link loss.  Watches of this type are set on the global device
-     watch list.
- 
-+  * WATCH_TYPE_USB_NOTIFY
-+
-+    Notifications of this type indicate USB subsystem events, such as
-+    attachment, removal, reset and I/O errors.  Separate events are generated
-+    for buses and devices.  Watchpoints of this type are set on the global
-+    device watch list.
-+
- 
- Event Filtering
- ===============
-diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
-index ecaacc8ed311..57e7b649e48b 100644
---- a/drivers/usb/core/Kconfig
-+++ b/drivers/usb/core/Kconfig
-@@ -102,3 +102,12 @@ config USB_AUTOSUSPEND_DELAY
- 	  The default value Linux has always had is 2 seconds.  Change
- 	  this value if you want a different delay and cannot modify
- 	  the command line or module parameter.
-+
-+config USB_NOTIFICATIONS
-+	bool "Provide USB hardware event notifications"
-+	depends on USB && DEVICE_NOTIFICATIONS
-+	help
-+	  This option provides support for getting hardware event notifications
-+	  on USB devices and interfaces.  This makes use of the
-+	  /dev/watch_queue misc device to handle the notification buffer.
-+	  device_notify(2) is used to set/remove watches.
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 3f899552f6e3..693a5657dba3 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -41,6 +41,7 @@
- #include <linux/dma-mapping.h>
- #include <asm/byteorder.h>
- #include <linux/moduleparam.h>
-+#include <linux/watch_queue.h>
- 
- #include "usb.h"
- 
-@@ -2748,13 +2749,59 @@ static void usbdev_remove(struct usb_device *udev)
- 	mutex_unlock(&usbfs_mutex);
- }
- 
-+#ifdef CONFIG_USB_NOTIFICATIONS
-+static noinline void post_usb_notification(const char *devname,
-+					   enum usb_notification_type subtype,
-+					   u32 error)
-+{
-+	unsigned int name_len, n_len;
-+	u64 id = 0; /* We can put a device ID here for separate dev watches */
-+
-+	struct {
-+		struct usb_notification n;
-+		char more_name[USB_NOTIFICATION_MAX_NAME_LEN -
-+			       (sizeof(struct usb_notification) -
-+				offsetof(struct usb_notification, name))];
-+	} n;
-+
-+	name_len = strlen(devname);
-+	name_len = min_t(size_t, name_len, USB_NOTIFICATION_MAX_NAME_LEN);
-+	n_len = offsetof(struct usb_notification, name) + name_len;
-+
-+	memset(&n, 0, sizeof(n));
-+	memcpy(n.n.name, devname, n_len);
-+
-+	n.n.watch.type		= WATCH_TYPE_USB_NOTIFY;
-+	n.n.watch.subtype	= subtype;
-+	n.n.watch.info		= n_len;
-+	n.n.error		= error;
-+	n.n.name_len		= name_len;
-+
-+	post_device_notification(&n.n.watch, id);
-+}
-+
-+void post_usb_device_notification(const struct usb_device *udev,
-+				  enum usb_notification_type subtype, u32 error)
-+{
-+	post_usb_notification(dev_name(&udev->dev), subtype, error);
-+}
-+
-+void post_usb_bus_notification(const struct usb_bus *ubus,
-+			       enum usb_notification_type subtype, u32 error)
-+{
-+	post_usb_notification(ubus->bus_name, subtype, error);
-+}
-+#endif
-+
- static int usbdev_notify(struct notifier_block *self,
- 			       unsigned long action, void *dev)
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+index 4a38b4957b8c..fab1d4672715 100644
+--- a/security/integrity/ima/ima_asymmetric_keys.c
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -158,15 +158,42 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
+ 				   unsigned long flags, bool create)
  {
- 	switch (action) {
- 	case USB_DEVICE_ADD:
-+		post_usb_device_notification(dev, NOTIFY_USB_DEVICE_ADD, 0);
- 		break;
- 	case USB_DEVICE_REMOVE:
-+		post_usb_device_notification(dev, NOTIFY_USB_DEVICE_REMOVE, 0);
- 		usbdev_remove(dev);
- 		break;
- 	}
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 236313f41f4a..e8ebacc15a32 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -29,6 +29,7 @@
- #include <linux/random.h>
- #include <linux/pm_qos.h>
- #include <linux/kobject.h>
-+#include <linux/watch_queue.h>
+ 	const struct public_key *pk;
++	bool key_queued = false;
  
- #include <linux/uaccess.h>
- #include <asm/byteorder.h>
-@@ -4605,6 +4606,9 @@ hub_port_init(struct usb_hub *hub, struct usb_device *udev, int port1,
- 				(udev->config) ? "reset" : "new", speed,
- 				devnum, driver_name);
+-	/* Only asymmetric keys are handled */
++	/* Only asymmetric keys are handled by this hook. */
+ 	if (key->type != &key_type_asymmetric)
+ 		return;
  
-+	if (udev->config)
-+		post_usb_device_notification(udev, NOTIFY_USB_DEVICE_RESET, 0);
++	if (!ima_process_keys_for_measurement)
++		key_queued = ima_queue_key_for_measurement(keyring, key);
 +
- 	/* Set up TT records, if needed  */
- 	if (hdev->tt) {
- 		udev->tt = hdev->tt;
-diff --git a/include/linux/usb.h b/include/linux/usb.h
-index e656e7b4b1e4..93fa0666f95a 100644
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -26,6 +26,7 @@
- struct usb_device;
- struct usb_driver;
- struct wusb_dev;
-+enum usb_notification_type;
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -2015,6 +2016,23 @@ extern void usb_led_activity(enum usb_led_event ev);
- static inline void usb_led_activity(enum usb_led_event ev) {}
- #endif
- 
-+/*
-+ * Notification functions.
-+ */
-+#ifdef CONFIG_USB_NOTIFICATIONS
-+extern void post_usb_device_notification(const struct usb_device *udev,
-+					 enum usb_notification_type subtype,
-+					 u32 error);
-+extern void post_usb_bus_notification(const struct usb_bus *ubus,
-+				      enum usb_notification_type subtype,
-+				      u32 error);
-+#else
-+static inline void post_usb_device_notification(const struct usb_device *udev,
-+						unsigned int subtype, u32 error) {}
-+static inline void post_usb_bus_notification(const struct usb_bus *ubus,
-+					     unsigned int subtype, u32 error) {}
-+#endif
-+
- #endif  /* __KERNEL__ */
- 
- #endif
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-index 557771413242..ad1ae229674a 100644
---- a/include/uapi/linux/watch_queue.h
-+++ b/include/uapi/linux/watch_queue.h
-@@ -15,7 +15,8 @@ enum watch_notification_type {
- 	WATCH_TYPE_META		= 0,	/* Special record */
- 	WATCH_TYPE_KEY_NOTIFY	= 1,	/* Key change event notification */
- 	WATCH_TYPE_BLOCK_NOTIFY	= 2,	/* Block layer event notification */
--	WATCH_TYPE__NR		= 3
-+	WATCH_TYPE_USB_NOTIFY	= 3,	/* USB subsystem event notification */
-+	WATCH_TYPE__NR		= 4
- };
- 
- enum watch_meta_notification_subtype {
-@@ -129,4 +130,29 @@ struct block_notification {
- 	__u64	sector;			/* Affected sector */
- };
- 
-+/*
-+ * Type of USB layer notification.
-+ */
-+enum usb_notification_type {
-+	NOTIFY_USB_DEVICE_ADD		= 0, /* USB device added */
-+	NOTIFY_USB_DEVICE_REMOVE	= 1, /* USB device removed */
-+	NOTIFY_USB_DEVICE_RESET		= 2, /* USB device reset */
-+	NOTIFY_USB_DEVICE_ERROR		= 3, /* USB device error */
-+};
-+
-+/*
-+ * USB subsystem notification record.
-+ * - watch.type = WATCH_TYPE_USB_NOTIFY
-+ * - watch.subtype = enum usb_notification_type
-+ */
-+struct usb_notification {
-+	struct watch_notification watch; /* WATCH_TYPE_USB_NOTIFY */
-+	__u32	error;
-+	__u32	reserved;
-+	__u8	name_len;		/* Length of device name */
-+	__u8	name[0];		/* Device name (padded to __u64, truncated at 63 chars) */
-+};
-+
-+#define USB_NOTIFICATION_MAX_NAME_LEN 63
-+
- #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
-diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
-index 55879531a7d5..37461295e825 100644
---- a/samples/watch_queue/watch_test.c
-+++ b/samples/watch_queue/watch_test.c
-@@ -84,6 +84,26 @@ static void saw_block_change(struct watch_notification *n, size_t len)
- 	       (unsigned long long)b->sector);
- }
- 
-+static const char *usb_subtypes[256] = {
-+	[NOTIFY_USB_DEVICE_ADD]		= "dev-add",
-+	[NOTIFY_USB_DEVICE_REMOVE]	= "dev-remove",
-+	[NOTIFY_USB_DEVICE_RESET]	= "dev-reset",
-+	[NOTIFY_USB_DEVICE_ERROR]	= "dev-error",
-+};
-+
-+static void saw_usb_event(struct watch_notification *n, size_t len)
-+{
-+	struct usb_notification *u = (struct usb_notification *)n;
-+
-+	if (len < sizeof(struct usb_notification))
+ 	/*
+-	 * Get the public_key of the given asymmetric key to measure.
++	 * Need to check again if the key was queued or not because
++	 * ima_process_keys_for_measurement could have flipped from
++	 * false to true after it was checked above, but before the key
++	 * could be queued by ima_queue_key_for_measurement().
+ 	 */
++	if (key_queued)
 +		return;
 +
-+	printf("USB %*.*s %s e=%x r=%x\n",
-+	       u->name_len, u->name_len, u->name,
-+	       usb_subtypes[n->subtype],
-+	       u->error, u->reserved);
-+}
++	/* Public key of the given asymmetric key is measured. */
+ 	pk = key->payload.data[asym_crypto];
 +
- /*
-  * Consume and display events.
-  */
-@@ -160,6 +180,9 @@ static void consumer(int fd)
- 			case WATCH_TYPE_BLOCK_NOTIFY:
- 				saw_block_change(&n.n, len);
- 				break;
-+			case WATCH_TYPE_USB_NOTIFY:
-+				saw_usb_event(&n.n, len);
-+				break;
- 			default:
- 				printf("other type\n");
- 				break;
-@@ -171,7 +194,7 @@ static void consumer(int fd)
++	/*
++	 * keyring->description points to the name of the keyring
++	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
++	 * which the given key is linked to.
++	 *
++	 * The name of the keyring is passed in the "eventname"
++	 * parameter to process_buffer_measurement() and is set
++	 * in the "eventname" field in ima_event_data for
++	 * the key measurement IMA event.
++	 *
++	 * The name of the keyring is also passed in the "keyring"
++	 * parameter to process_buffer_measurement() to check
++	 * if the IMA policy is configured to measure a key linked
++	 * to the given keyring.
++	 */
+ 	process_buffer_measurement(pk->key, pk->keylen,
+ 				   keyring->description,
+ 				   KEYRING_CHECK, 0,
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index d1889eee9287..d130bdcbc174 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -759,6 +759,18 @@ void ima_update_policy(void)
+ 		kfree(arch_policy_entry);
+ 	}
+ 	ima_update_policy_flag();
++
++	/*
++	 * Custom IMA policies have been setup.
++	 * Process key(s) queued up for measurement now.
++	 *
++	 * NOTE:
++	 *   Custom IMA policies always overwrite builtin policies
++	 *   (policies compiled in code). If one wants measurement
++	 *   of asymmetric keys then it has to be configured in
++	 *   custom policies and updated here.
++	 */
++	ima_process_queued_keys_for_measurement();
  }
  
- static struct watch_notification_filter filter = {
--	.nr_filters	= 2,
-+	.nr_filters	= 3,
- 	.filters = {
- 		[0]	= {
- 			.type			= WATCH_TYPE_KEY_NOTIFY,
-@@ -181,6 +204,10 @@ static struct watch_notification_filter filter = {
- 			.type			= WATCH_TYPE_BLOCK_NOTIFY,
- 			.subtype_filter[0]	= UINT_MAX,
- 		},
-+		[2]	= {
-+			.type			= WATCH_TYPE_USB_NOTIFY,
-+			.subtype_filter[0]	= UINT_MAX,
-+		},
- 	},
- };
- 
+ /* Keep the enumeration in sync with the policy_tokens! */
+-- 
+2.17.1
