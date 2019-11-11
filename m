@@ -1,24 +1,83 @@
-From: pr-tracker-bot@kernel.org
-Date: Sat, 30 Nov 2019 23:05:02 +0000
-Subject: Re: [GIT PULL] pipe: Notification queue preparation
-Message-Id: <157515510281.27985.4081388238466676103.pr-tracker-bot@kernel.org>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Mon, 11 Nov 2019 19:32:55 +0000
+Subject: [PATCH v5 02/10] IMA: Added keyrings= option in IMA policy to only measure keys added to the specifi
+Message-Id: <20191111193303.12781-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <31452.1574721589@warthog.procyon.org.uk>
-In-Reply-To: <31452.1574721589@warthog.procyon.org.uk>
-Cc: torvalds@linux-foundation.org, dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191111193303.12781-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191111193303.12781-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-The pull request you sent on Mon, 25 Nov 2019 22:39:49 +0000:
+IMA policy needs to support measuring only those keys linked to
+a specific set of keyrings.
 
-> git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/notifications-pipe-prep-20191115
+This patch defines a new IMA policy option namely "keyrings=" that
+can be used to specify a set of keyrings. If this option is specified
+in the policy for func=KEYRING_CHECK then only the keys linked to
+the keyrings given in "keyrings=" option are measured.
 
-has been merged into torvalds/linux.git:
-https://git.kernel.org/torvalds/c/6a965666b7e7475c2f8c8e724703db58b8a8a445
+If "keyrings=" option is not specified for func=KEYRING_CHECK then
+all keys are measured.
 
-Thank you!
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ Documentation/ABI/testing/ima_policy | 10 +++++++++-
+ security/integrity/ima/ima_policy.c  |  2 ++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 341df49b5ad1..be2874fa3928 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -25,7 +25,7 @@ Description:
+ 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
+ 				 [obj_user=] [obj_role=] [obj_type=]]
+ 			option:	[[appraise_type=]] [template=] [permit_directio]
+-				[appraise_flag=]
++				[appraise_flag=] [keyrings=]
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+@@ -43,6 +43,9 @@ Description:
+ 			appraise_flag:= [check_blacklist]
+ 			Currently, blacklist check is only for files signed with appended
+ 			signature.
++			keyrings:= list of keyrings
++			(eg, .builtin_trusted_keys|.ima). Only valid
++			when action is "measure" and func is KEYRING_CHECK.
+ 			template:= name of a defined IMA template type
+ 			(eg, ima-ng). Only valid when action is "measure".
+ 			pcr:= decimal value
+@@ -119,3 +122,8 @@ Description:
+ 		all keys:
+ 
+ 			measure func=KEYRING_CHECK
++
++		Example of measure rule using KEYRING_CHECK to only measure
++		keys added to .builtin_trusted_keys or .ima keyring:
++
++			measure func=KEYRING_CHECK keyrings=.builtin_trusted_keys|.ima
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 9ca32ffaaa9d..a0f7ffa80736 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -34,6 +34,7 @@
+ #define IMA_EUID	0x0080
+ #define IMA_PCR		0x0100
+ #define IMA_FSNAME	0x0200
++#define IMA_KEYRINGS	0x0400
+ 
+ #define UNKNOWN		0
+ #define MEASURE		0x0001	/* same as IMA_MEASURE */
+@@ -79,6 +80,7 @@ struct ima_rule_entry {
+ 		int type;	/* audit type */
+ 	} lsm[MAX_LSM_RULES];
+ 	char *fsname;
++	char *keyrings; /* Measure keys added to these keyrings */
+ 	struct ima_template_desc *template;
+ };
+ 
 -- 
-Deet-doot-dot, I am a bot.
-https://korg.wiki.kernel.org/userdoc/prtracker
+2.17.1
