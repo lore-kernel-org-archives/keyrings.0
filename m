@@ -1,161 +1,44 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Mon, 11 Nov 2019 19:32:57 +0000
-Subject: [PATCH v5 04/10] IMA: Updated IMA policy functions to return keyrings option read from the policy
-Message-Id: <20191111193303.12781-5-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Tue, 12 Nov 2019 17:05:16 +0000
+Subject: Re: [PATCH v5 04/10] IMA: Updated IMA policy functions to return keyrings option read from the polic
+Message-Id: <1573578316.17949.43.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191111193303.12781-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191111193303.12781-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+         <20191111193303.12781-5-nramas@linux.microsoft.com>
+In-Reply-To: <20191111193303.12781-5-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-keyrings option read from the IMA policy needs to be provided to
-the callers that determine the action to be performed.
-
-This patch updates ima_get_action() and ima_match_policy() functions
-to return the keyrings option specified in the IMA policy.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima.h          | 6 ++++--
- security/integrity/ima/ima_api.c      | 8 +++++---
- security/integrity/ima/ima_appraise.c | 2 +-
- security/integrity/ima/ima_main.c     | 5 +++--
- security/integrity/ima/ima_policy.c   | 7 ++++++-
- 5 files changed, 19 insertions(+), 9 deletions(-)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 7f23405b2718..387829afb9a2 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -208,7 +208,8 @@ struct modsig;
- /* LIM API function definitions */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
--		   struct ima_template_desc **template_desc);
-+		   struct ima_template_desc **template_desc,
-+		   char **keyrings);
- int ima_must_measure(struct inode *inode, int mask, enum ima_hooks func);
- int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct file *file, void *buf, loff_t size,
-@@ -235,7 +236,8 @@ const char *ima_d_path(const struct path *path, char **pathbuf, char *filename);
- /* IMA policy related functions */
- int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		     enum ima_hooks func, int mask, int flags, int *pcr,
--		     struct ima_template_desc **template_desc);
-+		     struct ima_template_desc **template_desc,
-+		     char **keyrings);
- void ima_init_policy(void);
- void ima_update_policy(void);
- void ima_update_policy_flag(void);
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 610759fe63b8..fa2cd71ddf1a 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -169,12 +169,13 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
-  * @func: caller identifier
-  * @pcr: pointer filled in if matched measure policy sets pcr  * @template_desc: pointer filled in if matched measure policy sets template+ * @keyrings: pointer filled in if matched measure policy sets keyrings  *
-  * The policy is defined in terms of keypairs:
-  *		subj=, obj=, type=, func=, mask=, fsmagic  *	subj,obj, and type: are LSM specific.
-  *	func: FILE_CHECK | BPRM_CHECK | CREDS_CHECK | MMAP_CHECK | MODULE_CHECK
-- *	| KEXEC_CMDLINE
-+ *	| KEXEC_CMDLINE | KEYRING_CHECK
-  *	mask: contains the permission mask
-  *	fsmagic: hex value
-  *
-@@ -183,14 +184,15 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
-  */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
--		   struct ima_template_desc **template_desc)
-+		   struct ima_template_desc **template_desc,
-+		   char **keyrings)
- {
- 	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE | IMA_HASH;
- 
- 	flags &= ima_policy_flag;
- 
- 	return ima_match_policy(inode, cred, secid, func, mask, flags, pcr,
--				template_desc);
-+				template_desc, keyrings);
- }
- 
- /*
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 300c8d2943c5..47ad4f56c0a8 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -55,7 +55,7 @@ int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func)
- 
- 	security_task_getsecid(current, &secid);
- 	return ima_match_policy(inode, current_cred(), secid, func, mask,
--				IMA_APPRAISE | IMA_HASH, NULL, NULL);
-+				IMA_APPRAISE | IMA_HASH, NULL, NULL, NULL);
- }
- 
- static int ima_fix_xattr(struct dentry *dentry,
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index d7e987baf127..68e15ff1fe8d 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -215,7 +215,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	 * Included is the appraise submask.
- 	 */
- 	action = ima_get_action(inode, cred, secid, mask, func, &pcr,
--				&template_desc);
-+				&template_desc, NULL);
- 	violation_check = ((func = FILE_CHECK || func = MMAP_CHECK) &&
- 			   (ima_policy_flag & IMA_MEASURE));
- 	if (!action && !violation_check)
-@@ -647,6 +647,7 @@ void process_buffer_measurement(const void *buf, int size,
- 					    .buf = buf,
- 					    .buf_len = size};
- 	struct ima_template_desc *template = NULL;
-+	char *keyrings = NULL;
- 	struct {
- 		struct ima_digest_data hdr;
- 		char digest[IMA_MAX_DIGEST_SIZE];
-@@ -665,7 +666,7 @@ void process_buffer_measurement(const void *buf, int size,
- 	if (func) {
- 		security_task_getsecid(current, &secid);
- 		action = ima_get_action(NULL, current_cred(), secid, 0, func,
--					&pcr, &template);
-+					&pcr, &template, &keyrings);
- 		if (!(action & IMA_MEASURE))
- 			return;
- 	}
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 1aee3c8b9cf6..d1889eee9287 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -481,6 +481,7 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
-  * @mask: requested action (MAY_READ | MAY_WRITE | MAY_APPEND | MAY_EXEC)
-  * @pcr: set the pcr to extend
-  * @template_desc: the template that should be used for this rule
-+ * @keyrings: set the keyrings for this rule, if specified
-  *
-  * Measure decision based on func/mask/fsmagic and LSM(subj/obj/type)
-  * conditions.
-@@ -491,7 +492,8 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
-  */
- int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		     enum ima_hooks func, int mask, int flags, int *pcr,
--		     struct ima_template_desc **template_desc)
-+		     struct ima_template_desc **template_desc,
-+		     char **keyrings)
- {
- 	struct ima_rule_entry *entry;
- 	int action = 0, actmask = flags | (flags << 1);
-@@ -527,6 +529,9 @@ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		if ((pcr) && (entry->flags & IMA_PCR))
- 			*pcr = entry->pcr;
- 
-+		if ((keyrings) && (entry->flags & IMA_KEYRINGS))
-+			*keyrings = entry->keyrings;
-+
- 		if (template_desc && entry->template)
- 			*template_desc = entry->template;
- 
--- 
-2.17.1
+T24gTW9uLCAyMDE5LTExLTExIGF0IDExOjMyIC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfcG9saWN5
+LmMgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYwo+IGluZGV4IDFhZWUzYzhi
+OWNmNi4uZDE4ODllZWU5Mjg3IDEwMDY0NAo+IC0tLSBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEv
+aW1hX3BvbGljeS5jCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfcG9saWN5LmMK
+PiBAQCAtNDgxLDYgKzQ4MSw3IEBAIHN0YXRpYyBpbnQgZ2V0X3N1YmFjdGlvbihzdHJ1Y3QgaW1h
+X3J1bGVfZW50cnkgKnJ1bGUsIGVudW0gaW1hX2hvb2tzIGZ1bmMpCj4gICAqIEBtYXNrOiByZXF1
+ZXN0ZWQgYWN0aW9uIChNQVlfUkVBRCB8IE1BWV9XUklURSB8IE1BWV9BUFBFTkQgfCBNQVlfRVhF
+QykKPiAgICogQHBjcjogc2V0IHRoZSBwY3IgdG8gZXh0ZW5kCj4gICAqIEB0ZW1wbGF0ZV9kZXNj
+OiB0aGUgdGVtcGxhdGUgdGhhdCBzaG91bGQgYmUgdXNlZCBmb3IgdGhpcyBydWxlCj4gKyAqIEBr
+ZXlyaW5nczogc2V0IHRoZSBrZXlyaW5ncyBmb3IgdGhpcyBydWxlLCBpZiBzcGVjaWZpZWQKPiAg
+ICoKPiAgICogTWVhc3VyZSBkZWNpc2lvbiBiYXNlZCBvbiBmdW5jL21hc2svZnNtYWdpYyBhbmQg
+TFNNKHN1Ymovb2JqL3R5cGUpCj4gICAqIGNvbmRpdGlvbnMuCj4gQEAgLTQ5MSw3ICs0OTIsOCBA
+QCBzdGF0aWMgaW50IGdldF9zdWJhY3Rpb24oc3RydWN0IGltYV9ydWxlX2VudHJ5ICpydWxlLCBl
+bnVtIGltYV9ob29rcyBmdW5jKQo+ICAgKi8KPiAgaW50IGltYV9tYXRjaF9wb2xpY3koc3RydWN0
+IGlub2RlICppbm9kZSwgY29uc3Qgc3RydWN0IGNyZWQgKmNyZWQsIHUzMiBzZWNpZCwKPiAgCQkg
+ICAgIGVudW0gaW1hX2hvb2tzIGZ1bmMsIGludCBtYXNrLCBpbnQgZmxhZ3MsIGludCAqcGNyLAo+
+IC0JCSAgICAgc3RydWN0IGltYV90ZW1wbGF0ZV9kZXNjICoqdGVtcGxhdGVfZGVzYykKPiArCQkg
+ICAgIHN0cnVjdCBpbWFfdGVtcGxhdGVfZGVzYyAqKnRlbXBsYXRlX2Rlc2MsCj4gKwkJICAgICBj
+aGFyICoqa2V5cmluZ3MpCj4gIHsKPiAgCXN0cnVjdCBpbWFfcnVsZV9lbnRyeSAqZW50cnk7Cj4g
+IAlpbnQgYWN0aW9uID0gMCwgYWN0bWFzayA9IGZsYWdzIHwgKGZsYWdzIDw8IDEpOwo+IEBAIC01
+MjcsNiArNTI5LDkgQEAgaW50IGltYV9tYXRjaF9wb2xpY3koc3RydWN0IGlub2RlICppbm9kZSwg
+Y29uc3Qgc3RydWN0IGNyZWQgKmNyZWQsIHUzMiBzZWNpZCwKPiAgCQlpZiAoKHBjcikgJiYgKGVu
+dHJ5LT5mbGFncyAmIElNQV9QQ1IpKQo+ICAJCQkqcGNyID0gZW50cnktPnBjcjsKPiAgCj4gKwkJ
+aWYgKChrZXlyaW5ncykgJiYgKGVudHJ5LT5mbGFncyAmIElNQV9LRVlSSU5HUykpCj4gKwkJCSpr
+ZXlyaW5ncyA9IGVudHJ5LT5rZXlyaW5nczsKCmltYV9tYXRjaF9ydWxlcygpIGRldGVybWluZXMg
+d2hldGhlciB0aGUgcnVsZSBpcyBpbiBwb2xpY3kgb3Igbm90LiBJdApyZXR1cm5zIHRydWUgb24g
+cnVsZSBtYXRjaCwgZmFsc2Ugb24gZmFpbHVyZS4gwqBUaGVyZSdzIG5vIG5lZWQgdG8KcmV0dXJu
+IHRoZSBsaXN0IG9mIGtleXJpbmdzLgoKTWltacKgCgo+ICsKPiAgCQlpZiAodGVtcGxhdGVfZGVz
+YyAmJiBlbnRyeS0+dGVtcGxhdGUpCj4gIAkJCSp0ZW1wbGF0ZV9kZXNjID0gZW50cnktPnRlbXBs
+YXRlOwo+ICAK
