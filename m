@@ -1,82 +1,62 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Mon, 11 Nov 2019 19:32:54 +0000
-Subject: [PATCH v5 01/10] IMA: Added KEYRING_CHECK func in IMA policy to measure keys
-Message-Id: <20191111193303.12781-2-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Tue, 12 Nov 2019 17:04:56 +0000
+Subject: Re: [PATCH v5 01/10] IMA: Added KEYRING_CHECK func in IMA policy to measure keys
+Message-Id: <1573578296.17949.41.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191111193303.12781-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191111193303.12781-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+         <20191111193303.12781-2-nramas@linux.microsoft.com>
+In-Reply-To: <20191111193303.12781-2-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-IMA policy needs to support a func to enable measurement of
-asymmetric keys.
-
-This patch defines a new IMA policy func namely KEYRING_CHECK to
-measure asymmetric keys.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- Documentation/ABI/testing/ima_policy | 6 ++++++
- security/integrity/ima/ima.h         | 1 +
- security/integrity/ima/ima_policy.c  | 4 +++-
- 3 files changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 29aaedf33246..341df49b5ad1 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -30,6 +30,7 @@ Description:
- 				[FIRMWARE_CHECK]
- 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
- 				[KEXEC_CMDLINE]
-+				[KEYRING_CHECK]
- 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
- 			       [[^]MAY_EXEC]
- 			fsmagic:= hex value
-@@ -113,3 +114,8 @@ Description:
- 		Example of appraise rule allowing modsig appended signatures:
- 
- 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
-+
-+		Example of measure rule using KEYRING_CHECK to measure
-+		all keys:
-+
-+			measure func=KEYRING_CHECK
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index df4ca482fb53..7f23405b2718 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
- 	hook(KEXEC_INITRAMFS_CHECK)	\
- 	hook(POLICY_CHECK)		\
- 	hook(KEXEC_CMDLINE)		\
-+	hook(KEYRING_CHECK)		\
- 	hook(MAX_CHECK)
- #define __ima_hook_enumify(ENUM)	ENUM,
- 
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index f19a895ad7cd..9ca32ffaaa9d 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
- {
- 	int i;
- 
--	if (func = KEXEC_CMDLINE) {
-+	if ((func = KEXEC_CMDLINE) || (func = KEYRING_CHECK)) {
- 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
- 			return true;
- 		return false;
-@@ -997,6 +997,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 				entry->func = POLICY_CHECK;
- 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
- 				entry->func = KEXEC_CMDLINE;
-+			else if (strcmp(args[0].from, "KEYRING_CHECK") = 0)
-+				entry->func = KEYRING_CHECK;
- 			else
- 				result = -EINVAL;
- 			if (!result)
--- 
-2.17.1
+T24gTW9uLCAyMDE5LTExLTExIGF0IDExOjMyIC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBJTUEgcG9saWN5IG5lZWRzIHRvIHN1cHBvcnQgYSBmdW5jIHRvIGVuYWJsZSBt
+ZWFzdXJlbWVudCBvZgo+IGFzeW1tZXRyaWMga2V5cy4KPiAKPiBUaGlzIHBhdGNoIGRlZmluZXMg
+YSBuZXcgSU1BIHBvbGljeSBmdW5jIG5hbWVseSBLRVlSSU5HX0NIRUNLIHRvCj4gbWVhc3VyZSBh
+c3ltbWV0cmljIGtleXMuCgpUaGlzIG5ldyBmZWF0dXJlIG1lYXN1cmVzICJrZXlzIiBiYXNlZCBv
+biBwb2xpY3ksIG5vdCAia2V5cmluZ3MiLgrCoFBsZWFzZSBjaGFuZ2UgdGhlIG5hbWUgdG8gS0VZ
+X0NIRUNLLgoKPiAKPiBTaWduZWQtb2ZmLWJ5OiBMYWtzaG1pIFJhbWFzdWJyYW1hbmlhbiA8bnJh
+bWFzQGxpbnV4Lm1pY3Jvc29mdC5jb20+Cj4gLS0tCj4gIERvY3VtZW50YXRpb24vQUJJL3Rlc3Rp
+bmcvaW1hX3BvbGljeSB8IDYgKysrKysrCj4gIHNlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmgg
+ICAgICAgICB8IDEgKwo+ICBzZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYyAgfCA0
+ICsrKy0KPiAgMyBmaWxlcyBjaGFuZ2VkLCAxMCBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9uKC0p
+Cj4gCj4gZGlmZiAtLWdpdCBhL0RvY3VtZW50YXRpb24vQUJJL3Rlc3RpbmcvaW1hX3BvbGljeSBi
+L0RvY3VtZW50YXRpb24vQUJJL3Rlc3RpbmcvaW1hX3BvbGljeQo+IGluZGV4IDI5YWFlZGYzMzI0
+Ni4uMzQxZGY0OWI1YWQxIDEwMDY0NAo+IC0tLSBhL0RvY3VtZW50YXRpb24vQUJJL3Rlc3Rpbmcv
+aW1hX3BvbGljeQo+ICsrKyBiL0RvY3VtZW50YXRpb24vQUJJL3Rlc3RpbmcvaW1hX3BvbGljeQo+
+IEBAIC0zMCw2ICszMCw3IEBAIERlc2NyaXB0aW9uOgo+ICAJCQkJW0ZJUk1XQVJFX0NIRUNLXQo+
+ICAJCQkJW0tFWEVDX0tFUk5FTF9DSEVDS10gW0tFWEVDX0lOSVRSQU1GU19DSEVDS10KPiAgCQkJ
+CVtLRVhFQ19DTURMSU5FXQo+ICsJCQkJW0tFWVJJTkdfQ0hFQ0tdCj4gIAkJCW1hc2s6PSBbW15d
+TUFZX1JFQURdIFtbXl1NQVlfV1JJVEVdIFtbXl1NQVlfQVBQRU5EXQo+ICAJCQkgICAgICAgW1te
+XU1BWV9FWEVDXQo+ICAJCQlmc21hZ2ljOj0gaGV4IHZhbHVlCj4gQEAgLTExMywzICsxMTQsOCBA
+QCBEZXNjcmlwdGlvbjoKPiAgCQlFeGFtcGxlIG9mIGFwcHJhaXNlIHJ1bGUgYWxsb3dpbmcgbW9k
+c2lnIGFwcGVuZGVkIHNpZ25hdHVyZXM6Cj4gIAo+ICAJCQlhcHByYWlzZSBmdW5jPUtFWEVDX0tF
+Uk5FTF9DSEVDSyBhcHByYWlzZV90eXBlPWltYXNpZ3xtb2RzaWcKPiArCj4gKwkJRXhhbXBsZSBv
+ZiBtZWFzdXJlIHJ1bGUgdXNpbmcgS0VZUklOR19DSEVDSyB0byBtZWFzdXJlCj4gKwkJYWxsIGtl
+eXM6Cj4gKwo+ICsJCQltZWFzdXJlIGZ1bmM9S0VZUklOR19DSEVDSwo+IGRpZmYgLS1naXQgYS9z
+ZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYS5oIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEu
+aAo+IGluZGV4IGRmNGNhNDgyZmI1My4uN2YyMzQwNWIyNzE4IDEwMDY0NAo+IC0tLSBhL3NlY3Vy
+aXR5L2ludGVncml0eS9pbWEvaW1hLmgKPiArKysgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2lt
+YS5oCj4gQEAgLTE5Myw2ICsxOTMsNyBAQCBzdGF0aWMgaW5saW5lIHVuc2lnbmVkIGxvbmcgaW1h
+X2hhc2hfa2V5KHU4ICpkaWdlc3QpCj4gIAlob29rKEtFWEVDX0lOSVRSQU1GU19DSEVDSykJXAo+
+ICAJaG9vayhQT0xJQ1lfQ0hFQ0spCQlcCj4gIAlob29rKEtFWEVDX0NNRExJTkUpCQlcCj4gKwlo
+b29rKEtFWVJJTkdfQ0hFQ0spCQlcCj4gIAlob29rKE1BWF9DSEVDSykKPiAgI2RlZmluZSBfX2lt
+YV9ob29rX2VudW1pZnkoRU5VTSkJRU5VTSwKPiAgCj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2lu
+dGVncml0eS9pbWEvaW1hX3BvbGljeS5jIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfcG9s
+aWN5LmMKPiBpbmRleCBmMTlhODk1YWQ3Y2QuLjljYTMyZmZhYWE5ZCAxMDA2NDQKPiAtLS0gYS9z
+ZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVn
+cml0eS9pbWEvaW1hX3BvbGljeS5jCj4gQEAgLTM3Myw3ICszNzMsNyBAQCBzdGF0aWMgYm9vbCBp
+bWFfbWF0Y2hfcnVsZXMoc3RydWN0IGltYV9ydWxlX2VudHJ5ICpydWxlLCBzdHJ1Y3QgaW5vZGUg
+Kmlub2RlLAo+ICB7Cj4gIAlpbnQgaTsKPiAgCj4gLQlpZiAoZnVuYyA9IEtFWEVDX0NNRExJTkUp
+IHsKPiArCWlmICgoZnVuYyA9IEtFWEVDX0NNRExJTkUpIHx8IChmdW5jID0gS0VZUklOR19DSEVD
+SykpIHsKPiAgCQlpZiAoKHJ1bGUtPmZsYWdzICYgSU1BX0ZVTkMpICYmIChydWxlLT5mdW5jID0g
+ZnVuYykpCj4gIAkJCXJldHVybiB0cnVlOwo+ICAJCXJldHVybiBmYWxzZTsKPiBAQCAtOTk3LDYg
+Kzk5Nyw4IEBAIHN0YXRpYyBpbnQgaW1hX3BhcnNlX3J1bGUoY2hhciAqcnVsZSwgc3RydWN0IGlt
+YV9ydWxlX2VudHJ5ICplbnRyeSkKPiAgCQkJCWVudHJ5LT5mdW5jID0gUE9MSUNZX0NIRUNLOwo+
+ICAJCQllbHNlIGlmIChzdHJjbXAoYXJnc1swXS5mcm9tLCAiS0VYRUNfQ01ETElORSIpID0gMCkK
+PiAgCQkJCWVudHJ5LT5mdW5jID0gS0VYRUNfQ01ETElORTsKPiArCQkJZWxzZSBpZiAoc3RyY21w
+KGFyZ3NbMF0uZnJvbSwgIktFWVJJTkdfQ0hFQ0siKSA9IDApCj4gKwkJCQllbnRyeS0+ZnVuYyA9
+IEtFWVJJTkdfQ0hFQ0s7Cj4gIAkJCWVsc2UKPiAgCQkJCXJlc3VsdCA9IC1FSU5WQUw7Cj4gIAkJ
+CWlmICghcmVzdWx0KQoKCgo=
