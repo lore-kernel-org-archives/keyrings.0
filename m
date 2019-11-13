@@ -1,91 +1,62 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 13 Nov 2019 18:46:58 +0000
-Subject: [PATCH v6 3/3] KEYS: Call the IMA hook to measure keys
-Message-Id: <20191113184658.2862-4-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Wed, 13 Nov 2019 20:09:24 +0000
+Subject: Re: [PATCH v6 3/3] KEYS: Call the IMA hook to measure keys
+Message-Id: <1573675764.4843.14.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191113184658.2862-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191113184658.2862-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+         <20191113184658.2862-4-nramas@linux.microsoft.com>
+In-Reply-To: <20191113184658.2862-4-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Call the IMA hook from key_create_or_update function to measure
-the key when a new key is created or an existing key is updated.
-
-This patch adds the call to the IMA hook from key_create_or_update
-function to measure the key on key create or update.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- include/linux/ima.h | 13 +++++++++++++
- security/keys/key.c |  9 +++++++++
- 2 files changed, 22 insertions(+)
-
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 6d904754d858..ec5afe319ab7 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -25,6 +25,12 @@ extern int ima_post_read_file(struct file *file, void *buf, loff_t size,
- extern void ima_post_path_mknod(struct dentry *dentry);
- extern void ima_kexec_cmdline(const void *buf, int size);
- 
-+#ifdef CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
-+extern void ima_post_key_create_or_update(struct key *keyring,
-+					  struct key *key,
-+					  unsigned long flags, bool create);
-+#endif
-+
- #ifdef CONFIG_IMA_KEXEC
- extern void ima_add_kexec_buffer(struct kimage *image);
- #endif
-@@ -101,6 +107,13 @@ static inline void ima_add_kexec_buffer(struct kimage *image)
- {}
- #endif
- 
-+#ifndef CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
-+static inline void ima_post_key_create_or_update(struct key *keyring,
-+						 struct key *key,
-+						 unsigned long flags,
-+						 bool create) {}
-+#endif
-+
- #ifdef CONFIG_IMA_APPRAISE
- extern bool is_ima_appraise_enabled(void);
- extern void ima_inode_post_setattr(struct dentry *dentry);
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 764f4c57913e..9782d4d046fd 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -13,6 +13,7 @@
- #include <linux/security.h>
- #include <linux/workqueue.h>
- #include <linux/random.h>
-+#include <linux/ima.h>
- #include <linux/err.h>
- #include "internal.h"
- 
-@@ -936,6 +937,9 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 		goto error_link_end;
- 	}
- 
-+	/* let the ima module know about the created key. */
-+	ima_post_key_create_or_update(keyring, key, flags, true);
-+
- 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
- 
- error_link_end:
-@@ -965,6 +969,11 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 	}
- 
- 	key_ref = __key_update(key_ref, &prep);
-+
-+	/* let the ima module know about the updated key. */
-+	if (!IS_ERR(key_ref))
-+		ima_post_key_create_or_update(keyring, key, flags, false);
-+
- 	goto error_free_prep;
- }
- EXPORT_SYMBOL(key_create_or_update);
--- 
-2.17.1
+T24gV2VkLCAyMDE5LTExLTEzIGF0IDEwOjQ2IC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBDYWxsIHRoZSBJTUEgaG9vayBmcm9tIGtleV9jcmVhdGVfb3JfdXBkYXRlIGZ1
+bmN0aW9uIHRvIG1lYXN1cmUKPiB0aGUga2V5IHdoZW4gYSBuZXcga2V5IGlzIGNyZWF0ZWQgb3Ig
+YW4gZXhpc3Rpbmcga2V5IGlzIHVwZGF0ZWQuCj4gCj4gVGhpcyBwYXRjaCBhZGRzIHRoZSBjYWxs
+IHRvIHRoZSBJTUEgaG9vayBmcm9tIGtleV9jcmVhdGVfb3JfdXBkYXRlCj4gZnVuY3Rpb24gdG8g
+bWVhc3VyZSB0aGUga2V5IG9uIGtleSBjcmVhdGUgb3IgdXBkYXRlLgo+IAo+IFNpZ25lZC1vZmYt
+Ynk6IExha3NobWkgUmFtYXN1YnJhbWFuaWFuIDxucmFtYXNAbGludXgubWljcm9zb2Z0LmNvbT4K
+PiAtLS0KPiAgaW5jbHVkZS9saW51eC9pbWEuaCB8IDEzICsrKysrKysrKysrKysKPiAgc2VjdXJp
+dHkva2V5cy9rZXkuYyB8ICA5ICsrKysrKysrKwo+ICAyIGZpbGVzIGNoYW5nZWQsIDIyIGluc2Vy
+dGlvbnMoKykKPiAKPiBkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9pbWEuaCBiL2luY2x1ZGUv
+bGludXgvaW1hLmgKPiBpbmRleCA2ZDkwNDc1NGQ4NTguLmVjNWFmZTMxOWFiNyAxMDA2NDQKPiAt
+LS0gYS9pbmNsdWRlL2xpbnV4L2ltYS5oCj4gKysrIGIvaW5jbHVkZS9saW51eC9pbWEuaAo+IEBA
+IC0yNSw2ICsyNSwxMiBAQCBleHRlcm4gaW50IGltYV9wb3N0X3JlYWRfZmlsZShzdHJ1Y3QgZmls
+ZSAqZmlsZSwgdm9pZCAqYnVmLCBsb2ZmX3Qgc2l6ZSwKPiAgZXh0ZXJuIHZvaWQgaW1hX3Bvc3Rf
+cGF0aF9ta25vZChzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpOwo+ICBleHRlcm4gdm9pZCBpbWFfa2V4
+ZWNfY21kbGluZShjb25zdCB2b2lkICpidWYsIGludCBzaXplKTsKPiAgCj4gKyNpZmRlZiBDT05G
+SUdfSU1BX01FQVNVUkVfQVNZTU1FVFJJQ19LRVlTCj4gK2V4dGVybiB2b2lkIGltYV9wb3N0X2tl
+eV9jcmVhdGVfb3JfdXBkYXRlKHN0cnVjdCBrZXkgKmtleXJpbmcsCj4gKwkJCQkJICBzdHJ1Y3Qg
+a2V5ICprZXksCj4gKwkJCQkJICB1bnNpZ25lZCBsb25nIGZsYWdzLCBib29sIGNyZWF0ZSk7Cj4g
+KyNlbmRpZgo+ICsKPiAgI2lmZGVmIENPTkZJR19JTUFfS0VYRUMKPiAgZXh0ZXJuIHZvaWQgaW1h
+X2FkZF9rZXhlY19idWZmZXIoc3RydWN0IGtpbWFnZSAqaW1hZ2UpOwo+ICAjZW5kaWYKPiBAQCAt
+MTAxLDYgKzEwNywxMyBAQCBzdGF0aWMgaW5saW5lIHZvaWQgaW1hX2FkZF9rZXhlY19idWZmZXIo
+c3RydWN0IGtpbWFnZSAqaW1hZ2UpCj4gIHt9Cj4gICNlbmRpZgo+ICAKPiArI2lmbmRlZiBDT05G
+SUdfSU1BX01FQVNVUkVfQVNZTU1FVFJJQ19LRVlTCj4gK3N0YXRpYyBpbmxpbmUgdm9pZCBpbWFf
+cG9zdF9rZXlfY3JlYXRlX29yX3VwZGF0ZShzdHJ1Y3Qga2V5ICprZXlyaW5nLAo+ICsJCQkJCQkg
+c3RydWN0IGtleSAqa2V5LAo+ICsJCQkJCQkgdW5zaWduZWQgbG9uZyBmbGFncywKPiArCQkJCQkJ
+IGJvb2wgY3JlYXRlKSB7fQo+ICsjZW5kaWYKPiArCj4gICNpZmRlZiBDT05GSUdfSU1BX0FQUFJB
+SVNFCj4gIGV4dGVybiBib29sIGlzX2ltYV9hcHByYWlzZV9lbmFibGVkKHZvaWQpOwo+ICBleHRl
+cm4gdm9pZCBpbWFfaW5vZGVfcG9zdF9zZXRhdHRyKHN0cnVjdCBkZW50cnkgKmRlbnRyeSk7Cj4g
+ZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2tleXMva2V5LmMgYi9zZWN1cml0eS9rZXlzL2tleS5jCj4g
+aW5kZXggNzY0ZjRjNTc5MTNlLi45NzgyZDRkMDQ2ZmQgMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkv
+a2V5cy9rZXkuYwo+ICsrKyBiL3NlY3VyaXR5L2tleXMva2V5LmMKPiBAQCAtMTMsNiArMTMsNyBA
+QAo+ICAjaW5jbHVkZSA8bGludXgvc2VjdXJpdHkuaD4KPiAgI2luY2x1ZGUgPGxpbnV4L3dvcmtx
+dWV1ZS5oPgo+ICAjaW5jbHVkZSA8bGludXgvcmFuZG9tLmg+Cj4gKyNpbmNsdWRlIDxsaW51eC9p
+bWEuaD4KPiAgI2luY2x1ZGUgPGxpbnV4L2Vyci5oPgo+ICAjaW5jbHVkZSAiaW50ZXJuYWwuaCIK
+PiAgCj4gQEAgLTkzNiw2ICs5MzcsOSBAQCBrZXlfcmVmX3Qga2V5X2NyZWF0ZV9vcl91cGRhdGUo
+a2V5X3JlZl90IGtleXJpbmdfcmVmLAo+ICAJCWdvdG8gZXJyb3JfbGlua19lbmQ7Cj4gIAl9Cj4g
+IAo+ICsJLyogbGV0IHRoZSBpbWEgbW9kdWxlIGtub3cgYWJvdXQgdGhlIGNyZWF0ZWQga2V5LiAq
+LwoKVGhpcyBjb21tZW50IGFuZCB0aGUgb25lIGJlbG93IGRvZXNuJ3QgcHJvdmlkZSBhbnkgYWRk
+aXRpb25hbAppbmZvcm1hdGlvbi4gwqBQbGVhc2UgcmVtb3ZlIHRoZW0uCgo+ICsJaW1hX3Bvc3Rf
+a2V5X2NyZWF0ZV9vcl91cGRhdGUoa2V5cmluZywga2V5LCBmbGFncywgdHJ1ZSk7Cj4gKwo+ICAJ
+a2V5X3JlZiA9IG1ha2Vfa2V5X3JlZihrZXksIGlzX2tleV9wb3NzZXNzZWQoa2V5cmluZ19yZWYp
+KTsKPiAgCj4gIGVycm9yX2xpbmtfZW5kOgo+IEBAIC05NjUsNiArOTY5LDExIEBAIGtleV9yZWZf
+dCBrZXlfY3JlYXRlX29yX3VwZGF0ZShrZXlfcmVmX3Qga2V5cmluZ19yZWYsCj4gIAl9Cj4gIAo+
+ICAJa2V5X3JlZiA9IF9fa2V5X3VwZGF0ZShrZXlfcmVmLCAmcHJlcCk7Cj4gKwo+ICsJLyogbGV0
+IHRoZSBpbWEgbW9kdWxlIGtub3cgYWJvdXQgdGhlIHVwZGF0ZWQga2V5LiAqLwo+ICsJaWYgKCFJ
+U19FUlIoa2V5X3JlZikpCj4gKwkJaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoa2V5cmlu
+Zywga2V5LCBmbGFncywgZmFsc2UpOwo+ICsKPiAgCWdvdG8gZXJyb3JfZnJlZV9wcmVwOwo+ICB9
+Cj4gIEVYUE9SVF9TWU1CT0woa2V5X2NyZWF0ZV9vcl91cGRhdGUpOwo=
