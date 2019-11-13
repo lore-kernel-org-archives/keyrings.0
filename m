@@ -1,62 +1,101 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 13 Nov 2019 20:09:24 +0000
-Subject: Re: [PATCH v6 3/3] KEYS: Call the IMA hook to measure keys
-Message-Id: <1573675764.4843.14.camel@linux.ibm.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 13 Nov 2019 18:46:56 +0000
+Subject: [PATCH v6 1/3] IMA: Add KEY_CHECK func to measure keys
+Message-Id: <20191113184658.2862-2-nramas@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191113184658.2862-1-nramas@linux.microsoft.com>
-         <20191113184658.2862-4-nramas@linux.microsoft.com>
-In-Reply-To: <20191113184658.2862-4-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20191113184658.2862-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-T24gV2VkLCAyMDE5LTExLTEzIGF0IDEwOjQ2IC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
-biB3cm90ZToKPiBDYWxsIHRoZSBJTUEgaG9vayBmcm9tIGtleV9jcmVhdGVfb3JfdXBkYXRlIGZ1
-bmN0aW9uIHRvIG1lYXN1cmUKPiB0aGUga2V5IHdoZW4gYSBuZXcga2V5IGlzIGNyZWF0ZWQgb3Ig
-YW4gZXhpc3Rpbmcga2V5IGlzIHVwZGF0ZWQuCj4gCj4gVGhpcyBwYXRjaCBhZGRzIHRoZSBjYWxs
-IHRvIHRoZSBJTUEgaG9vayBmcm9tIGtleV9jcmVhdGVfb3JfdXBkYXRlCj4gZnVuY3Rpb24gdG8g
-bWVhc3VyZSB0aGUga2V5IG9uIGtleSBjcmVhdGUgb3IgdXBkYXRlLgo+IAo+IFNpZ25lZC1vZmYt
-Ynk6IExha3NobWkgUmFtYXN1YnJhbWFuaWFuIDxucmFtYXNAbGludXgubWljcm9zb2Z0LmNvbT4K
-PiAtLS0KPiAgaW5jbHVkZS9saW51eC9pbWEuaCB8IDEzICsrKysrKysrKysrKysKPiAgc2VjdXJp
-dHkva2V5cy9rZXkuYyB8ICA5ICsrKysrKysrKwo+ICAyIGZpbGVzIGNoYW5nZWQsIDIyIGluc2Vy
-dGlvbnMoKykKPiAKPiBkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9pbWEuaCBiL2luY2x1ZGUv
-bGludXgvaW1hLmgKPiBpbmRleCA2ZDkwNDc1NGQ4NTguLmVjNWFmZTMxOWFiNyAxMDA2NDQKPiAt
-LS0gYS9pbmNsdWRlL2xpbnV4L2ltYS5oCj4gKysrIGIvaW5jbHVkZS9saW51eC9pbWEuaAo+IEBA
-IC0yNSw2ICsyNSwxMiBAQCBleHRlcm4gaW50IGltYV9wb3N0X3JlYWRfZmlsZShzdHJ1Y3QgZmls
-ZSAqZmlsZSwgdm9pZCAqYnVmLCBsb2ZmX3Qgc2l6ZSwKPiAgZXh0ZXJuIHZvaWQgaW1hX3Bvc3Rf
-cGF0aF9ta25vZChzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpOwo+ICBleHRlcm4gdm9pZCBpbWFfa2V4
-ZWNfY21kbGluZShjb25zdCB2b2lkICpidWYsIGludCBzaXplKTsKPiAgCj4gKyNpZmRlZiBDT05G
-SUdfSU1BX01FQVNVUkVfQVNZTU1FVFJJQ19LRVlTCj4gK2V4dGVybiB2b2lkIGltYV9wb3N0X2tl
-eV9jcmVhdGVfb3JfdXBkYXRlKHN0cnVjdCBrZXkgKmtleXJpbmcsCj4gKwkJCQkJICBzdHJ1Y3Qg
-a2V5ICprZXksCj4gKwkJCQkJICB1bnNpZ25lZCBsb25nIGZsYWdzLCBib29sIGNyZWF0ZSk7Cj4g
-KyNlbmRpZgo+ICsKPiAgI2lmZGVmIENPTkZJR19JTUFfS0VYRUMKPiAgZXh0ZXJuIHZvaWQgaW1h
-X2FkZF9rZXhlY19idWZmZXIoc3RydWN0IGtpbWFnZSAqaW1hZ2UpOwo+ICAjZW5kaWYKPiBAQCAt
-MTAxLDYgKzEwNywxMyBAQCBzdGF0aWMgaW5saW5lIHZvaWQgaW1hX2FkZF9rZXhlY19idWZmZXIo
-c3RydWN0IGtpbWFnZSAqaW1hZ2UpCj4gIHt9Cj4gICNlbmRpZgo+ICAKPiArI2lmbmRlZiBDT05G
-SUdfSU1BX01FQVNVUkVfQVNZTU1FVFJJQ19LRVlTCj4gK3N0YXRpYyBpbmxpbmUgdm9pZCBpbWFf
-cG9zdF9rZXlfY3JlYXRlX29yX3VwZGF0ZShzdHJ1Y3Qga2V5ICprZXlyaW5nLAo+ICsJCQkJCQkg
-c3RydWN0IGtleSAqa2V5LAo+ICsJCQkJCQkgdW5zaWduZWQgbG9uZyBmbGFncywKPiArCQkJCQkJ
-IGJvb2wgY3JlYXRlKSB7fQo+ICsjZW5kaWYKPiArCj4gICNpZmRlZiBDT05GSUdfSU1BX0FQUFJB
-SVNFCj4gIGV4dGVybiBib29sIGlzX2ltYV9hcHByYWlzZV9lbmFibGVkKHZvaWQpOwo+ICBleHRl
-cm4gdm9pZCBpbWFfaW5vZGVfcG9zdF9zZXRhdHRyKHN0cnVjdCBkZW50cnkgKmRlbnRyeSk7Cj4g
-ZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2tleXMva2V5LmMgYi9zZWN1cml0eS9rZXlzL2tleS5jCj4g
-aW5kZXggNzY0ZjRjNTc5MTNlLi45NzgyZDRkMDQ2ZmQgMTAwNjQ0Cj4gLS0tIGEvc2VjdXJpdHkv
-a2V5cy9rZXkuYwo+ICsrKyBiL3NlY3VyaXR5L2tleXMva2V5LmMKPiBAQCAtMTMsNiArMTMsNyBA
-QAo+ICAjaW5jbHVkZSA8bGludXgvc2VjdXJpdHkuaD4KPiAgI2luY2x1ZGUgPGxpbnV4L3dvcmtx
-dWV1ZS5oPgo+ICAjaW5jbHVkZSA8bGludXgvcmFuZG9tLmg+Cj4gKyNpbmNsdWRlIDxsaW51eC9p
-bWEuaD4KPiAgI2luY2x1ZGUgPGxpbnV4L2Vyci5oPgo+ICAjaW5jbHVkZSAiaW50ZXJuYWwuaCIK
-PiAgCj4gQEAgLTkzNiw2ICs5MzcsOSBAQCBrZXlfcmVmX3Qga2V5X2NyZWF0ZV9vcl91cGRhdGUo
-a2V5X3JlZl90IGtleXJpbmdfcmVmLAo+ICAJCWdvdG8gZXJyb3JfbGlua19lbmQ7Cj4gIAl9Cj4g
-IAo+ICsJLyogbGV0IHRoZSBpbWEgbW9kdWxlIGtub3cgYWJvdXQgdGhlIGNyZWF0ZWQga2V5LiAq
-LwoKVGhpcyBjb21tZW50IGFuZCB0aGUgb25lIGJlbG93IGRvZXNuJ3QgcHJvdmlkZSBhbnkgYWRk
-aXRpb25hbAppbmZvcm1hdGlvbi4gwqBQbGVhc2UgcmVtb3ZlIHRoZW0uCgo+ICsJaW1hX3Bvc3Rf
-a2V5X2NyZWF0ZV9vcl91cGRhdGUoa2V5cmluZywga2V5LCBmbGFncywgdHJ1ZSk7Cj4gKwo+ICAJ
-a2V5X3JlZiA9IG1ha2Vfa2V5X3JlZihrZXksIGlzX2tleV9wb3NzZXNzZWQoa2V5cmluZ19yZWYp
-KTsKPiAgCj4gIGVycm9yX2xpbmtfZW5kOgo+IEBAIC05NjUsNiArOTY5LDExIEBAIGtleV9yZWZf
-dCBrZXlfY3JlYXRlX29yX3VwZGF0ZShrZXlfcmVmX3Qga2V5cmluZ19yZWYsCj4gIAl9Cj4gIAo+
-ICAJa2V5X3JlZiA9IF9fa2V5X3VwZGF0ZShrZXlfcmVmLCAmcHJlcCk7Cj4gKwo+ICsJLyogbGV0
-IHRoZSBpbWEgbW9kdWxlIGtub3cgYWJvdXQgdGhlIHVwZGF0ZWQga2V5LiAqLwo+ICsJaWYgKCFJ
-U19FUlIoa2V5X3JlZikpCj4gKwkJaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoa2V5cmlu
-Zywga2V5LCBmbGFncywgZmFsc2UpOwo+ICsKPiAgCWdvdG8gZXJyb3JfZnJlZV9wcmVwOwo+ICB9
-Cj4gIEVYUE9SVF9TWU1CT0woa2V5X2NyZWF0ZV9vcl91cGRhdGUpOwo=
+Measure keys loaded onto any keyring.
+
+This patch defines a new IMA policy func namely KEY_CHECK to
+measure keys. Updated ima_match_rules() to check for KEY_CHECK
+and ima_parse_rule() to handle KEY_CHECK.
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ Documentation/ABI/testing/ima_policy | 6 +++++-
+ security/integrity/ima/ima.h         | 1 +
+ security/integrity/ima/ima_main.c    | 7 +++++++
+ security/integrity/ima/ima_policy.c  | 4 +++-
+ 4 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 29aaedf33246..066d32797500 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -29,7 +29,7 @@ Description:
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+-				[KEXEC_CMDLINE]
++				[KEXEC_CMDLINE] [KEY_CHECK]
+ 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
+ 			       [[^]MAY_EXEC]
+ 			fsmagic:= hex value
+@@ -113,3 +113,7 @@ Description:
+ 		Example of appraise rule allowing modsig appended signatures:
+ 
+ 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
++
++		Example of measure rule using KEY_CHECK to measure all keys:
++
++			measure func=KEY_CHECK
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index df4ca482fb53..fe6c698617bd 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ 	hook(KEXEC_INITRAMFS_CHECK)	\
+ 	hook(POLICY_CHECK)		\
+ 	hook(KEXEC_CMDLINE)		\
++	hook(KEY_CHECK)			\
+ 	hook(MAX_CHECK)
+ #define __ima_hook_enumify(ENUM)	ENUM,
+ 
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index d7e987baf127..12684e8d7124 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -655,6 +655,13 @@ void process_buffer_measurement(const void *buf, int size,
+ 	int action = 0;
+ 	u32 secid;
+ 
++	/*
++	 * If IMA is not yet initialized or IMA policy is empty
++	 * then there is no need to measure.
++	 */
++	if (!ima_policy_flag)
++		return;
++
+ 	/*
+ 	 * Both LSM hooks and auxilary based buffer measurements are
+ 	 * based on policy.  To avoid code duplication, differentiate
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index f19a895ad7cd..1525a28fd705 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
+ {
+ 	int i;
+ 
+-	if (func = KEXEC_CMDLINE) {
++	if ((func = KEXEC_CMDLINE) || (func = KEY_CHECK)) {
+ 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
+ 			return true;
+ 		return false;
+@@ -997,6 +997,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 				entry->func = POLICY_CHECK;
+ 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
+ 				entry->func = KEXEC_CMDLINE;
++			else if (strcmp(args[0].from, "KEY_CHECK") = 0)
++				entry->func = KEY_CHECK;
+ 			else
+ 				result = -EINVAL;
+ 			if (!result)
+-- 
+2.17.1
