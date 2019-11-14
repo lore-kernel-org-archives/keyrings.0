@@ -1,34 +1,89 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 08 Nov 2019 06:42:50 +0000
-Subject: Re: [RFC PATCH 04/14] pipe: Add O_NOTIFICATION_PIPE [ver #2]
-Message-Id: <7772.1573195370@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 14 Nov 2019 03:12:00 +0000
+Subject: [PATCH v7 3/5] KEYS: Call the IMA hook to measure keys
+Message-Id: <20191114031202.18012-4-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CALCETrWeN9CGJHz0dzG1uH5Qjbr+xG3OKZuEd33eBY_rAzVkqQ@mail.gmail.com> <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk> <157313375678.29677.15875689548927466028.stgit@warthog.procyon.org.uk> <CALCETrUka9KaOKFbNKUXcA6XvoFxiXPftctSHtN4DL35Cay61w@mail.gmail.com> <6964.1573152517@warthog.procyon.org.uk>
-In-Reply-To: <CALCETrWeN9CGJHz0dzG1uH5Qjbr+xG3OKZuEd33eBY_rAzVkqQ@mail.gmail.com>
-To: Andy Lutomirski <luto@kernel.org>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, USB list <linux-usb@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, Linux FS Devel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+References: <20191114031202.18012-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191114031202.18012-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@kernel.org> wrote:
+Call the IMA hook from key_create_or_update function to measure
+the key when a new key is created or an existing key is updated.
 
-> I can open a normal pipe from userspace (with pipe() or pipe2()), and
-> I can have two threads.  One thread writes to the pipe with write().
-> The other thread writes with splice().  Everything works fine.
+This patch adds the call to the IMA hook from key_create_or_update
+function to measure the key on key create or update.
 
-Yes.  Every operation you do on a pipe from userspace is serialised with the
-pipe mutex - and both ends share the same pipe.
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ include/linux/ima.h | 13 +++++++++++++
+ security/keys/key.c |  7 +++++++
+ 2 files changed, 20 insertions(+)
 
-> What's special about notifications?
-
-The post_notification() cannot take the pipe mutex.  It has to be callable
-from softirq context.  Linus's idea is that when you're actually altering the
-ring pointers you should hold the wake-queue spinlock, and post_notification()
-holds the wake queue spinlock for the duration of the operation.
-
-This means that post_notification() can be writing to the pipe whilst a
-userspace-invoked operation is holding the pipe mutex and is also doing
-something to the ring.
-
-David
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index 6d904754d858..0af88b781ab6 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -25,6 +25,12 @@ extern int ima_post_read_file(struct file *file, void *buf, loff_t size,
+ extern void ima_post_path_mknod(struct dentry *dentry);
+ extern void ima_kexec_cmdline(const void *buf, int size);
+ 
++#ifdef CONFIG_KEYS
++extern void ima_post_key_create_or_update(struct key *keyring,
++					  struct key *key,
++					  unsigned long flags, bool create);
++#endif
++
+ #ifdef CONFIG_IMA_KEXEC
+ extern void ima_add_kexec_buffer(struct kimage *image);
+ #endif
+@@ -101,6 +107,13 @@ static inline void ima_add_kexec_buffer(struct kimage *image)
+ {}
+ #endif
+ 
++#ifndef CONFIG_KEYS
++static inline void ima_post_key_create_or_update(struct key *keyring,
++						 struct key *key,
++						 unsigned long flags,
++						 bool create) {}
++#endif
++
+ #ifdef CONFIG_IMA_APPRAISE
+ extern bool is_ima_appraise_enabled(void);
+ extern void ima_inode_post_setattr(struct dentry *dentry);
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 764f4c57913e..a0f1e7b3b8b9 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -13,6 +13,7 @@
+ #include <linux/security.h>
+ #include <linux/workqueue.h>
+ #include <linux/random.h>
++#include <linux/ima.h>
+ #include <linux/err.h>
+ #include "internal.h"
+ 
+@@ -936,6 +937,8 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		goto error_link_end;
+ 	}
+ 
++	ima_post_key_create_or_update(keyring, key, flags, true);
++
+ 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
+ 
+ error_link_end:
+@@ -965,6 +968,10 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	}
+ 
+ 	key_ref = __key_update(key_ref, &prep);
++
++	if (!IS_ERR(key_ref))
++		ima_post_key_create_or_update(keyring, key, flags, false);
++
+ 	goto error_free_prep;
+ }
+ EXPORT_SYMBOL(key_create_or_update);
+-- 
+2.17.1
