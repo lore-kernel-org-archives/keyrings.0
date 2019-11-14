@@ -1,27 +1,96 @@
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 01 Nov 2019 22:12:23 +0000
-Subject: Re: [RFC PATCH 00/11] pipe: Notification queue preparation [ver #3]
-Message-Id: <CAHk-=wg_Fb-WdcD-cbJjwZaPCNK4WZ+Ak4KTSDhopD-_=+t=9Q@mail.gmail.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 14 Nov 2019 03:11:59 +0000
+Subject: [PATCH v7 2/5] IMA: Define an IMA hook to measure keys
+Message-Id: <20191114031202.18012-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
- <CAHk-=wjqx4j2vqg-tAwthNP1gcAcj1x4B7sq6Npbi8QJTUMd-A@mail.gmail.com> <13964.1572645926@warthog.procyon.org.uk>
-In-Reply-To: <13964.1572645926@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20191114031202.18012-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191114031202.18012-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2019 at 3:05 PM David Howells <dhowells@redhat.com> wrote:
->
-> Changing those to non-sync:
+Measure asymmetric keys used for verifying file signatures,
+certificates, etc.
 
-Your benchmark seems very insensitive to just about any changes.
+This patch defines a new IMA hook namely ima_post_key_create_or_update()
+to measure asymmetric keys.
 
-I suspect it is because you only test throughput. Latency is what the
-pipe wakeup has been optimized for, and which tends to be much more
-sensitive to other changes too (eg locking).
+The IMA hook is defined in a new file namely ima_asymmetric_keys.c
+which is built only if CONFIG_KEYS is enabled.
 
-That said, I'm not convinced a latency test would show much either.
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ security/integrity/ima/Makefile              |  1 +
+ security/integrity/ima/ima_asymmetric_keys.c | 51 ++++++++++++++++++++
+ 2 files changed, 52 insertions(+)
+ create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
 
-               Linus
+diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
+index 31d57cdf2421..3c796664be8a 100644
+--- a/security/integrity/ima/Makefile
++++ b/security/integrity/ima/Makefile
+@@ -12,3 +12,4 @@ ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
+ ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
+ ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
+ obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
++obj-$(CONFIG_KEYS) += ima_asymmetric_keys.o
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+new file mode 100644
+index 000000000000..f6884641a622
+--- /dev/null
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -0,0 +1,51 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2019 Microsoft Corporation
++ *
++ * Author: Lakshmi Ramasubramanian (nramas@linux.microsoft.com)
++ *
++ * File: ima_asymmetric_keys.c
++ *       Defines an IMA hook to measure asymmetric keys on key
++ *       create or update.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <crypto/public_key.h>
++#include <keys/asymmetric-type.h>
++#include "ima.h"
++
++/**
++ * ima_post_key_create_or_update - measure asymmetric keys
++ * @keyring: keyring to which the key is linked to
++ * @key: created or updated key
++ * @flags: key flags
++ * @create: flag indicating whether the key was created or updated
++ *
++ * Keys can only be measured, not appraised.
++ */
++void ima_post_key_create_or_update(struct key *keyring, struct key *key,
++				   unsigned long flags, bool create)
++{
++	const struct public_key *pk;
++
++	/* Only asymmetric keys are handled by this hook. */
++	if (key->type != &key_type_asymmetric)
++		return;
++
++	/* Get the public_key of the given asymmetric key to measure. */
++	pk = key->payload.data[asym_crypto];
++
++	/*
++	 * keyring->description points to the name of the keyring
++	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
++	 * which the given key is linked to.
++	 *
++	 * The name of the keyring is passed in the "eventname"
++	 * parameter to process_buffer_measurement() and is set
++	 * in the "eventname" field in ima_event_data for
++	 * the key measurement IMA event.
++	 */
++	process_buffer_measurement(pk->key, pk->keylen,
++				   keyring->description, KEY_CHECK, 0);
++}
+-- 
+2.17.1
