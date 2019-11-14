@@ -1,51 +1,97 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 01 Nov 2019 17:34:57 +0000
-Subject: [RFC PATCH 06/11] pipe: Advance tail pointer inside of wait spinlock in pipe_read() [ver #3]
-Message-Id: <157262969721.13142.294641621235161592.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 14 Nov 2019 03:12:02 +0000
+Subject: [PATCH v7 5/5] IMA: Read keyrings= option from the IMA policy
+Message-Id: <20191114031202.18012-6-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191114031202.18012-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191114031202.18012-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Advance the pipe ring tail pointer inside of wait spinlock in pipe_read()
-so that the pipe can be written into with kernel notifications from
-contexts where pipe->mutex cannot be taken.
+Read "keyrings=" option, if specified in the IMA policy, and store in
+the list of IMA rules when the configured IMA policy is read.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+This patch defines a new policy token enum namely Opt_keyrings
+and an option flag IMA_KEYRINGS for reading "keyrings=" option
+from the IMA policy.
+
+Updated ima_parse_rule() to parse "keyrings=" option in the policy.
+Updated ima_policy_show() to display "keyrings=" option.
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
+ security/integrity/ima/ima_policy.c | 29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
 
- fs/pipe.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/fs/pipe.c b/fs/pipe.c
-index 69afeab8a73a..ea134f69a292 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -325,9 +325,14 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 76da4f17bc79..577a51a548fb 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -34,6 +34,7 @@
+ #define IMA_EUID	0x0080
+ #define IMA_PCR		0x0100
+ #define IMA_FSNAME	0x0200
++#define IMA_KEYRINGS	0x0400
  
- 			if (!buf->len) {
- 				pipe_buf_release(pipe, buf);
-+				spin_lock_irq(&pipe->wait.lock);
- 				tail++;
- 				pipe->tail = tail;
--				do_wakeup = 1;
-+				do_wakeup = 0;
-+				wake_up_interruptible_sync_poll_locked(
-+					&pipe->wait, EPOLLOUT | EPOLLWRNORM);
-+				spin_unlock_irq(&pipe->wait.lock);
-+				kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
- 			}
- 			total_len -= chars;
- 			if (!total_len)
-@@ -359,6 +364,7 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
- 		if (do_wakeup) {
- 			wake_up_interruptible_sync_poll(&pipe->wait, EPOLLOUT | EPOLLWRNORM);
-  			kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
-+			do_wakeup = 0;
- 		}
- 		pipe_wait(pipe);
+ #define UNKNOWN		0
+ #define MEASURE		0x0001	/* same as IMA_MEASURE */
+@@ -795,7 +796,8 @@ enum {
+ 	Opt_uid_gt, Opt_euid_gt, Opt_fowner_gt,
+ 	Opt_uid_lt, Opt_euid_lt, Opt_fowner_lt,
+ 	Opt_appraise_type, Opt_appraise_flag,
+-	Opt_permit_directio, Opt_pcr, Opt_template, Opt_err
++	Opt_permit_directio, Opt_pcr, Opt_template, Opt_keyrings,
++	Opt_err
+ };
+ 
+ static const match_table_t policy_tokens = {
+@@ -831,6 +833,7 @@ static const match_table_t policy_tokens = {
+ 	{Opt_permit_directio, "permit_directio"},
+ 	{Opt_pcr, "pcr=%s"},
+ 	{Opt_template, "template=%s"},
++	{Opt_keyrings, "keyrings=%s"},
+ 	{Opt_err, NULL}
+ };
+ 
+@@ -1080,6 +1083,23 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 			result = 0;
+ 			entry->flags |= IMA_FSNAME;
+ 			break;
++		case Opt_keyrings:
++			ima_log_string(ab, "keyrings", args[0].from);
++
++			if ((entry->keyrings) ||
++			    (entry->action != MEASURE) ||
++			    (entry->func != KEY_CHECK)) {
++				result = -EINVAL;
++				break;
++			}
++			entry->keyrings = kstrdup(args[0].from, GFP_KERNEL);
++			if (!entry->keyrings) {
++				result = -ENOMEM;
++				break;
++			}
++			result = 0;
++			entry->flags |= IMA_KEYRINGS;
++			break;
+ 		case Opt_fsuuid:
+ 			ima_log_string(ab, "fsuuid", args[0].from);
+ 
+@@ -1455,6 +1475,13 @@ int ima_policy_show(struct seq_file *m, void *v)
+ 		seq_puts(m, " ");
  	}
+ 
++	if (entry->flags & IMA_KEYRINGS) {
++		if (entry->keyrings != NULL)
++			snprintf(tbuf, sizeof(tbuf), "%s", entry->keyrings);
++		seq_printf(m, pt(Opt_keyrings), tbuf);
++		seq_puts(m, " ");
++	}
++
+ 	if (entry->flags & IMA_PCR) {
+ 		snprintf(tbuf, sizeof(tbuf), "%d", entry->pcr);
+ 		seq_printf(m, pt(Opt_pcr), tbuf);
+-- 
+2.17.1
