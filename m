@@ -1,145 +1,149 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 01 Nov 2019 17:35:15 +0000
-Subject: [RFC PATCH 08/11] pipe: Rearrange sequence in pipe_write() to preallocate slot [ver #3]
-Message-Id: <157262971590.13142.1426435250123334464.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 14 Nov 2019 03:11:57 +0000
+Subject: [PATCH v7 0/5] KEYS: Measure keys when they are created or updated
+Message-Id: <20191114031202.18012-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Rearrange the sequence in pipe_write() so that the allocation of the new
-buffer, the allocation of a ring slot and the attachment to the ring is
-done under the pipe wait spinlock and then the lock is dropped and the
-buffer can be filled.
+Keys created or updated in the system are currently not measured.
+Therefore an attestation service, for instance, would not be able to
+attest whether or not the trusted keys keyring(s), for instance, contain
+only known good (trusted) keys.
 
-The data copy needs to be done with the spinlock unheld and irqs enabled,
-so the lock needs to be dropped first.  However, the reader can't progress
-as we're holding pipe->mutex.
+IMA measures system files, command line arguments passed to kexec,
+boot aggregate, etc. It can be used to measure keys as well.
+But there is no mechanism available in the kernel for IMA to
+know when a key is created or updated.
 
-We also need to drop the lock as that would impact others looking at the
-pipe waitqueue, such as poll(), the consumer and a future kernel message
-writer.
+This change aims to address measuring keys created or updated
+in the system.
 
-We just abandon the preallocated slot if we get a copy error.  Future
-writes may continue it and a future read will eventually recycle it.
+To achieve the above the following changes have been made:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+ - Added a new IMA hook namely, ima_post_key_create_or_update, which
+   measures the key. This IMA hook is called from key_create_or_update
+   function. The key measurement can be controlled through IMA policy.
 
- fs/pipe.c |   51 +++++++++++++++++++++++++++++++++------------------
- 1 file changed, 33 insertions(+), 18 deletions(-)
+   A new IMA policy function KEY_CHECK has been added to measure keys.
+   "keyrings=" option can be specified for KEY_CHECK to limit
+   measuring the keys loaded onto the specified keyrings only.
 
-diff --git a/fs/pipe.c b/fs/pipe.c
-index c16950e36ded..ce77ac0d8901 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -387,7 +387,7 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- {
- 	struct file *filp = iocb->ki_filp;
- 	struct pipe_inode_info *pipe = filp->private_data;
--	unsigned int head, tail, max_usage, mask;
-+	unsigned int head, max_usage, mask;
- 	ssize_t ret = 0;
- 	int do_wakeup = 0;
- 	size_t total_len = iov_iter_count(from);
-@@ -405,14 +405,13 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 		goto out;
- 	}
- 
--	tail = pipe->tail;
- 	head = pipe->head;
- 	max_usage = pipe->max_usage;
- 	mask = pipe->ring_size - 1;
- 
- 	/* We try to merge small writes */
- 	chars = total_len & (PAGE_SIZE-1); /* size of the last buffer */
--	if (!pipe_empty(head, tail) && chars != 0) {
-+	if (!pipe_empty(head, pipe->tail) && chars != 0) {
- 		struct pipe_buffer *buf = &pipe->bufs[(head - 1) & mask];
- 		int offset = buf->offset + buf->len;
- 
-@@ -441,8 +440,8 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 			break;
- 		}
- 
--		tail = pipe->tail;
--		if (!pipe_full(head, tail, max_usage)) {
-+		head = pipe->head;
-+		if (!pipe_full(head, pipe->tail, max_usage)) {
- 			struct pipe_buffer *buf = &pipe->bufs[head & mask];
- 			struct page *page = pipe->tmp_page;
- 			int copied;
-@@ -455,40 +454,56 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
- 				}
- 				pipe->tmp_page = page;
- 			}
-+
-+			/* Allocate a slot in the ring in advance and attach an
-+			 * empty buffer.  If we fault or otherwise fail to use
-+			 * it, either the reader will consume it or it'll still
-+			 * be there for the next write.
-+			 */
-+			spin_lock_irq(&pipe->wait.lock);
-+
-+			head = pipe->head;
-+			pipe->head = head + 1;
-+
- 			/* Always wake up, even if the copy fails. Otherwise
- 			 * we lock up (O_NONBLOCK-)readers that sleep due to
- 			 * syscall merging.
- 			 * FIXME! Is this really true?
- 			 */
--			do_wakeup = 1;
--			copied = copy_page_from_iter(page, 0, PAGE_SIZE, from);
--			if (unlikely(copied < PAGE_SIZE && iov_iter_count(from))) {
--				if (!ret)
--					ret = -EFAULT;
--				break;
--			}
--			ret += copied;
-+			wake_up_interruptible_sync_poll_locked(
-+				&pipe->wait, EPOLLIN | EPOLLRDNORM);
-+
-+			spin_unlock_irq(&pipe->wait.lock);
-+			kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 
- 			/* Insert it into the buffer array */
-+			buf = &pipe->bufs[head & mask];
- 			buf->page = page;
- 			buf->ops = &anon_pipe_buf_ops;
- 			buf->offset = 0;
--			buf->len = copied;
-+			buf->len = 0;
- 			buf->flags = 0;
- 			if (is_packetized(filp)) {
- 				buf->ops = &packet_pipe_buf_ops;
- 				buf->flags = PIPE_BUF_FLAG_PACKET;
- 			}
--
--			head++;
--			pipe->head = head;
- 			pipe->tmp_page = NULL;
- 
-+			copied = copy_page_from_iter(page, 0, PAGE_SIZE, from);
-+			if (unlikely(copied < PAGE_SIZE && iov_iter_count(from))) {
-+				if (!ret)
-+					ret = -EFAULT;
-+				break;
-+			}
-+			ret += copied;
-+			buf->offset = 0;
-+			buf->len = copied;
-+
- 			if (!iov_iter_count(from))
- 				break;
- 		}
- 
--		if (!pipe_full(head, tail, max_usage))
-+		if (!pipe_full(head, pipe->tail, max_usage))
- 			continue;
- 
- 		/* Wait for buffer space to become available. */
+   # measure keys loaded onto any keyring
+   measure func=KEY_CHECK
+
+   # measure keys loaded onto the IMA keyring only
+   measure func=KEY_CHECK keyring=".ima"
+
+   # measure keys on the BUILTIN and IMA keyrings into a different PCR
+   measure func=KEY_CHECK keyring=".builtin_trusted_keys|.ima" pcr
+
+Testing performed:
+
+  * Booted the kernel with this change.
+  * When KEY_CHECK policy is set IMA measures keys loaded
+    onto any keyring (keyrings= option not specified).
+  * Keys are not measured when KEY_CHECK is not set.
+  * When keyrings= option is specified for KEY_CHECK then only the keys
+    loaded onto a keyring specified in the option is measured.
+  * Added a new key to a keyring.
+    => Added keys to .ima and .evm keyrings.
+  * Added the same key again.
+    => Add the same key to .ima and .evm keyrings.
+
+Change Log:
+
+  v7:
+
+  => Removed CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS option and used
+     CONFIG_KEYS instead for ima_asymmetric_keys.c
+  => Added the patches related to "keyrings=" option support to
+     this patch set.
+
+  v6:
+
+  => Rebased the changes to v5.4-rc7
+  => Renamed KEYRING_CHECK to KEY_CHECK per Mimi's suggestion.
+  => Excluded the patches that add support for limiting key
+     measurement to specific keyrings ("keyrings=" option
+     for "measure func=KEY_CHECK" in the IMA policy).
+     Also, excluded the patches that add support for deferred
+     processing of keys (queue support).
+     These patches will be added in separate patch sets later.
+
+  v5:
+
+  => Reorganized the patches to add measurement of keys through
+     the IMA hook without any queuing and then added queuing support.
+  => Updated the queuing functions to minimize code executed inside mutex.
+  => Process queued keys after custom IMA policies have been applied.
+
+  v4:
+
+  => Rebased the changes to v5.4-rc3
+  => Applied the following dependent patch set first
+     and then added new changes.
+  https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
+  => Refactored the patch set to separate out changes related to
+     func KEYRING_CHECK and options keyrings into different patches.
+  => Moved the functions to queue and dequeue keys for measurement
+     from ima_queue.c to a new file ima_asymmetric_keys.c.
+  => Added a new config namely CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
+     to compile ima_asymmetric_keys.c
+
+  v3:
+
+  => Added KEYRING_CHECK for measuring keys. This can optionally specify
+     keyrings to measure.
+  => Updated ima_get_action() and related functions to return
+     the keyrings if specified in the policy.
+  => process_buffer_measurement() function is updated to take keyring
+     as a parameter. The key will be measured if the policy includes
+     the keyring in the list of measured keyrings. If the policy does not
+     specify any keyrings then all keys are measured.
+
+  v2:
+
+  => Per suggestion from Mimi reordered the patch set to first
+     enable measuring keys added or updated in the system.
+     And, then scope the measurement to keys added to 
+     builtin_trusted_keys keyring through ima policy.
+  => Removed security_key_create_or_update function and instead
+     call ima hook, to measure the key, directly from 
+     key_create_or_update function.
+
+  v1:
+
+  => LSM function for key_create_or_update. It calls ima.
+  => Added ima hook for measuring keys
+  => ima measures keys based on ima policy.
+
+  v0:
+
+  => Added LSM hook for key_create_or_update.
+  => Measure keys added to builtin or secondary trusted keys keyring.
+
+Lakshmi Ramasubramanian (5):
+  IMA: Add KEY_CHECK func to measure keys
+  IMA: Define an IMA hook to measure keys
+  KEYS: Call the IMA hook to measure keys
+  IMA: Add support to limit measuring keys
+  IMA: Read keyrings= option from the IMA policy
+
+ Documentation/ABI/testing/ima_policy         | 17 ++++-
+ include/linux/ima.h                          | 13 ++++
+ security/integrity/ima/Makefile              |  1 +
+ security/integrity/ima/ima.h                 |  9 ++-
+ security/integrity/ima/ima_api.c             |  8 ++-
+ security/integrity/ima/ima_appraise.c        |  4 +-
+ security/integrity/ima/ima_asymmetric_keys.c | 57 ++++++++++++++++
+ security/integrity/ima/ima_main.c            |  9 +--
+ security/integrity/ima/ima_policy.c          | 70 ++++++++++++++++++--
+ security/keys/key.c                          |  7 ++
+ 10 files changed, 175 insertions(+), 20 deletions(-)
+ create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
+
+-- 
+2.17.1
