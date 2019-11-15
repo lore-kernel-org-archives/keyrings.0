@@ -1,161 +1,39 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 06 Nov 2019 19:01:11 +0000
-Subject: [PATCH v4 05/10] IMA: Updated IMA policy functions to return keyrings option read from the policy
-Message-Id: <20191106190116.2578-6-nramas@linux.microsoft.com>
+From: "Ms.Mary Coster" <info.zennitbankplcnigerian@gmail.com>
+Date: Fri, 15 Nov 2019 15:49:07 +0000
+Subject: Goodnews, I have deposited your transfer total amount US$4.8million Dollars with Money Gram this mor
+Message-Id: <CABHzvrmypb4iEkfX0yr_sS+ZzXejHbQoznfDnH3aVoOB9wq8jA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191106190116.2578-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-keyrings option read from the IMA policy needs to be provided to
-the callers that determine the action to be performed.
-
-This patch updates ima_get_action() and ima_match_policy() functions
-to return the keyrings option specified in the IMA policy.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima.h          | 6 ++++--
- security/integrity/ima/ima_api.c      | 8 +++++---
- security/integrity/ima/ima_appraise.c | 2 +-
- security/integrity/ima/ima_main.c     | 5 +++--
- security/integrity/ima/ima_policy.c   | 7 ++++++-
- 5 files changed, 19 insertions(+), 9 deletions(-)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 7f23405b2718..387829afb9a2 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -208,7 +208,8 @@ struct modsig;
- /* LIM API function definitions */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
--		   struct ima_template_desc **template_desc);
-+		   struct ima_template_desc **template_desc,
-+		   char **keyrings);
- int ima_must_measure(struct inode *inode, int mask, enum ima_hooks func);
- int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct file *file, void *buf, loff_t size,
-@@ -235,7 +236,8 @@ const char *ima_d_path(const struct path *path, char **pathbuf, char *filename);
- /* IMA policy related functions */
- int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		     enum ima_hooks func, int mask, int flags, int *pcr,
--		     struct ima_template_desc **template_desc);
-+		     struct ima_template_desc **template_desc,
-+		     char **keyrings);
- void ima_init_policy(void);
- void ima_update_policy(void);
- void ima_update_policy_flag(void);
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 610759fe63b8..fa2cd71ddf1a 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -169,12 +169,13 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
-  * @func: caller identifier
-  * @pcr: pointer filled in if matched measure policy sets pcr  * @template_desc: pointer filled in if matched measure policy sets template+ * @keyrings: pointer filled in if matched measure policy sets keyrings  *
-  * The policy is defined in terms of keypairs:
-  *		subj=, obj=, type=, func=, mask=, fsmagic  *	subj,obj, and type: are LSM specific.
-  *	func: FILE_CHECK | BPRM_CHECK | CREDS_CHECK | MMAP_CHECK | MODULE_CHECK
-- *	| KEXEC_CMDLINE
-+ *	| KEXEC_CMDLINE | KEYRING_CHECK
-  *	mask: contains the permission mask
-  *	fsmagic: hex value
-  *
-@@ -183,14 +184,15 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
-  */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
--		   struct ima_template_desc **template_desc)
-+		   struct ima_template_desc **template_desc,
-+		   char **keyrings)
- {
- 	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE | IMA_HASH;
- 
- 	flags &= ima_policy_flag;
- 
- 	return ima_match_policy(inode, cred, secid, func, mask, flags, pcr,
--				template_desc);
-+				template_desc, keyrings);
- }
- 
- /*
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 300c8d2943c5..47ad4f56c0a8 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -55,7 +55,7 @@ int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func)
- 
- 	security_task_getsecid(current, &secid);
- 	return ima_match_policy(inode, current_cred(), secid, func, mask,
--				IMA_APPRAISE | IMA_HASH, NULL, NULL);
-+				IMA_APPRAISE | IMA_HASH, NULL, NULL, NULL);
- }
- 
- static int ima_fix_xattr(struct dentry *dentry,
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index a0e233afe876..b6d17f37ba61 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -215,7 +215,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	 * Included is the appraise submask.
- 	 */
- 	action = ima_get_action(inode, cred, secid, mask, func, &pcr,
--				&template_desc);
-+				&template_desc, NULL);
- 	violation_check = ((func = FILE_CHECK || func = MMAP_CHECK) &&
- 			   (ima_policy_flag & IMA_MEASURE));
- 	if (!action && !violation_check)
-@@ -647,6 +647,7 @@ void process_buffer_measurement(const void *buf, int size,
- 					    .buf = buf,
- 					    .buf_len = size};
- 	struct ima_template_desc *template = NULL;
-+	char *keyrings = NULL;
- 	struct {
- 		struct ima_digest_data hdr;
- 		char digest[IMA_MAX_DIGEST_SIZE];
-@@ -665,7 +666,7 @@ void process_buffer_measurement(const void *buf, int size,
- 	if (func) {
- 		security_task_getsecid(current, &secid);
- 		action = ima_get_action(NULL, current_cred(), secid, 0, func,
--					&pcr, &template);
-+					&pcr, &template, &keyrings);
- 		if (!(action & IMA_MEASURE))
- 			return;
- 	}
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 74a727dc6030..53379a19de43 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -481,6 +481,7 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
-  * @mask: requested action (MAY_READ | MAY_WRITE | MAY_APPEND | MAY_EXEC)
-  * @pcr: set the pcr to extend
-  * @template_desc: the template that should be used for this rule
-+ * @keyrings: set the keyrings for this rule, if specified
-  *
-  * Measure decision based on func/mask/fsmagic and LSM(subj/obj/type)
-  * conditions.
-@@ -491,7 +492,8 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
-  */
- int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		     enum ima_hooks func, int mask, int flags, int *pcr,
--		     struct ima_template_desc **template_desc)
-+		     struct ima_template_desc **template_desc,
-+		     char **keyrings)
- {
- 	struct ima_rule_entry *entry;
- 	int action = 0, actmask = flags | (flags << 1);
-@@ -527,6 +529,9 @@ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		if ((pcr) && (entry->flags & IMA_PCR))
- 			*pcr = entry->pcr;
- 
-+		if ((keyrings) && (entry->flags & IMA_KEYRINGS))
-+			*keyrings = entry->keyrings;
-+
- 		if (template_desc && entry->template)
- 			*template_desc = entry->template;
- 
--- 
-2.17.1
+Attn, Dear
+Goodnews, I have deposited your transfer total amount US$4.8million
+Dollars with Money Gram this morning. we agreed you will be receiving
+it $5000.00 daily.
+Contact Mr. John Dave Director, Money Gram to pick up your first Money
+Gram payment $5000.00 today.
+Contact Person; Mr. John Dave Director, Money Gram,International
+Remittance-Benin
+Email; moneygram.1820@outlook.fr
+Telephone; +229 62619517
+Please re-confirm your address to him once again such as listed below.
+1.Your Full Name..............................
+2.Address.........................
+3.Country....................
+4.Sex.........................................
+5.Your telephone numbers..........................
+6. Copy of your ID...........................
+This is to avoid sending your funds to wrong person, He is waiting to
+hear from you urgent today.
+Let me know once you pick up your transfer $5000.00 today.
+Finally, Note I have paid for the service fees, but only money will
+send to him is $90.00 transfer fee before you can pick up the transfer
+today.
+Ask, Mr. John Dave Director, Money Gram to give you direction where to
+send your transfer fee $90.00 only to Him Immediately so that you can
+pick up $5000.00 us dollars today.
+Thanks for undrstanding.
+Mary Coster
+m.coster@aol.com
