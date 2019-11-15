@@ -1,15 +1,15 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 13 Nov 2019 20:35:51 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Fri, 15 Nov 2019 17:28:53 +0000
 Subject: Re: [PATCH] fscrypt: support passing a keyring key to FS_IOC_ADD_ENCRYPTION_KEY
-Message-Id: <20191113203550.GI221701@gmail.com>
+Message-Id: <20191115172832.GA21300@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191107001259.115018-1-ebiggers@kernel.org>
 In-Reply-To: <20191107001259.115018-1-ebiggers@kernel.org>
-To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org
-Cc: linux-fscrypt@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Ondrej Mosnacek <omosnace@redhat.com>, linux-f2fs-devel@lists.sourceforge.net, Paul Lawrence <paullawrence@google.com>, linux-mtd@lists.infradead.org, Ondrej Kozina <okozina@redhat.com>, Jaegeuk Kim <jaegeuk@kernel.org>, linux-ext4@vger.kernel.org, Paul Crowley <paulcrowley@google.com>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: linux-fscrypt@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Paul Crowley <paulcrowley@google.com>, Paul Lawrence <paullawrence@google.com>, keyrings@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, David Howells <dhowells@redhat.com>, Ondrej Mosnacek <omosnace@redhat.com>, Ondrej Kozina <okozina@redhat.com>
 
 On Wed, Nov 06, 2019 at 04:12:59PM -0800, Eric Biggers wrote:
 > From: Eric Biggers <ebiggers@google.com>
@@ -51,8 +51,301 @@ On Wed, Nov 06, 2019 at 04:12:59PM -0800, Eric Biggers wrote:
 > kernel APIs; but since this is a new API, let's do it right.
 > 
 > Signed-off-by: Eric Biggers <ebiggers@google.com>
+> ---
+>  Documentation/filesystems/fscrypt.rst |  35 ++++++-
+>  fs/crypto/keyring.c                   | 126 ++++++++++++++++++++++++--
+>  include/uapi/linux/fscrypt.h          |  13 ++-
+>  3 files changed, 162 insertions(+), 12 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/fscrypt.rst b/Documentation/filesystems/fscrypt.rst
+> index 471a511c75088d..4d15dda36402e0 100644
+> --- a/Documentation/filesystems/fscrypt.rst
+> +++ b/Documentation/filesystems/fscrypt.rst
+> @@ -638,7 +638,8 @@ follows::
+>      struct fscrypt_add_key_arg {
+>              struct fscrypt_key_specifier key_spec;
+>              __u32 raw_size;
+> -            __u32 __reserved[9];
+> +            __u32 key_id;
+> +            __u32 __reserved[8];
+>              __u8 raw[];
+>      };
+>  
+> @@ -655,6 +656,12 @@ follows::
+>              } u;
+>      };
+>  
+> +    struct fscrypt_key_provisioning_payload {
+> +            __u32 type;
+> +            __u32 __reserved;
+> +            __u8 raw[];
+> +    };
+> +
+>  :c:type:`struct fscrypt_add_key_arg` must be zeroed, then initialized
+>  as follows:
+>  
+> @@ -677,9 +684,26 @@ as follows:
+>    ``Documentation/security/keys/core.rst``).
+>  
+>  - ``raw_size`` must be the size of the ``raw`` key provided, in bytes.
+> +  Alternatively, if ``key_id`` is nonzero, this field must be 0, since
+> +  in that case the size is implied by the specified Linux keyring key.
+> +
+> +- ``key_id`` is 0 if the raw key is given directly in the ``raw``
+> +  field.  Otherwise ``key_id`` is the ID of a Linux keyring key of
+> +  type "fscrypt-provisioning" whose payload is a ``struct
+> +  fscrypt_key_provisioning_payload`` whose ``raw`` field contains the
+> +  raw key and whose ``type`` field matches ``key_spec.type``.  Since
+> +  ``raw`` is variable-length, the total size of this key's payload
+> +  must be ``sizeof(struct fscrypt_key_provisioning_payload)`` plus the
+> +  raw key size.  The process must have Search permission on this key.
+> +
+> +  Most users should leave this 0 and specify the raw key directly.
+> +  The support for specifying a Linux keyring key is intended mainly to
+> +  allow re-adding keys after a filesystem is unmounted and re-mounted,
+> +  without having to store the raw keys in userspace memory.
+>  
+>  - ``raw`` is a variable-length field which must contain the actual
+> -  key, ``raw_size`` bytes long.
+> +  key, ``raw_size`` bytes long.  Alternatively, if ``key_id`` is
+> +  nonzero, then this field is unused.
+>  
+>  For v2 policy keys, the kernel keeps track of which user (identified
+>  by effective user ID) added the key, and only allows the key to be
+> @@ -701,11 +725,16 @@ FS_IOC_ADD_ENCRYPTION_KEY can fail with the following errors:
+>  
+>  - ``EACCES``: FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR was specified, but the
+>    caller does not have the CAP_SYS_ADMIN capability in the initial
+> -  user namespace
+> +  user namespace; or the raw key was specified by Linux key ID but the
+> +  process lacks Search permission on the key.
+>  - ``EDQUOT``: the key quota for this user would be exceeded by adding
+>    the key
+>  - ``EINVAL``: invalid key size or key specifier type, or reserved bits
+>    were set
+> +- ``EKEYREJECTED``: the raw key was specified by Linux key ID, but the
+> +  key has the wrong type
+> +- ``ENOKEY``: the raw key was specified by Linux key ID, but no key
+> +  exists with that ID
+>  - ``ENOTTY``: this type of filesystem does not implement encryption
+>  - ``EOPNOTSUPP``: the kernel was not configured with encryption
+>    support for this filesystem, or the filesystem superblock has not
+> diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+> index 040df1f5e1c8b1..ef5b171c0f1d64 100644
+> --- a/fs/crypto/keyring.c
+> +++ b/fs/crypto/keyring.c
+> @@ -465,6 +465,103 @@ static int add_master_key(struct super_block *sb,
+>  	return err;
+>  }
+>  
+> +static int fscrypt_provisioning_key_preparse(struct key_preparsed_payload *prep)
+> +{
+> +	const struct fscrypt_key_provisioning_payload *payload = prep->data;
+> +
+> +	if (prep->datalen < sizeof(*payload) + FSCRYPT_MIN_KEY_SIZE ||
+> +	    prep->datalen > sizeof(*payload) + FSCRYPT_MAX_KEY_SIZE)
+> +		return -EINVAL;
 
-David and Jarkko, are you okay with this patch from a keyrings subsystem
-perspective?
+<empty line>
 
-- Eric
+> +	if (payload->type != FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR &&
+> +	    payload->type != FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER)
+> +		return -EINVAL;
+
+<empty line>
+
+> +	if (payload->__reserved)
+> +		return -EINVAL;
+
+<empty line>
+
+> +	prep->payload.data[0] = kmemdup(payload, prep->datalen, GFP_KERNEL);
+> +	if (!prep->payload.data[0])
+> +		return -ENOMEM;
+
+<empty line>
+
+> +	prep->quotalen = prep->datalen;
+
+<empty line>
+
+> +	return 0;
+> +}
+> +
+> +static void fscrypt_provisioning_key_free_preparse(
+> +					struct key_preparsed_payload *prep)
+> +{
+> +	kzfree(prep->payload.data[0]);
+> +}
+> +
+> +static void fscrypt_provisioning_key_describe(const struct key *key,
+> +					      struct seq_file *m)
+> +{
+> +	seq_puts(m, key->description);
+> +	if (key_is_positive(key)) {
+> +		const struct fscrypt_key_provisioning_payload *payload > +			key->payload.data[0];
+> +
+> +		seq_printf(m, ": %u [%u]", key->datalen, payload->type);
+> +	}
+> +}
+> +
+> +static void fscrypt_provisioning_key_destroy(struct key *key)
+> +{
+> +	kzfree(key->payload.data[0]);
+> +}
+> +
+> +static struct key_type key_type_fscrypt_provisioning = {
+> +	.name			= "fscrypt-provisioning",
+> +	.preparse		= fscrypt_provisioning_key_preparse,
+> +	.free_preparse		= fscrypt_provisioning_key_free_preparse,
+> +	.instantiate		= generic_key_instantiate,
+> +	.describe		= fscrypt_provisioning_key_describe,
+> +	.destroy		= fscrypt_provisioning_key_destroy,
+> +};
+> +
+> +/*
+> + * Retrieve the raw key from the Linux keyring key specified by 'key_id', and
+> + * store it into 'secret'.
+> + *
+> + * The key must be of type "fscrypt-provisioning" and must have the field
+> + * fscrypt_key_provisioning_payload::type set to 'type', indicating that it's
+> + * only usable with fscrypt with the particular KDF version identified by
+> + * 'type'.  We don't use the "logon" key type because there's no way to
+> + * completely restrict the use of such keys; they can be used by any kernel API
+> + * that accepts "logon" keys and doesn't require a specific service prefix.
+> + *
+> + * The ability to specify the key via Linux keyring key is intended for cases
+> + * where userspace needs to re-add keys after the filesystem is unmounted and
+> + * re-mounted.  Most users should just provide the raw key directly instead.
+> + */
+> +static int get_keyring_key(u32 key_id, u32 type,
+> +			   struct fscrypt_master_key_secret *secret)
+> +{
+> +	key_ref_t ref;
+> +	struct key *key;
+> +	const struct fscrypt_key_provisioning_payload *payload;
+> +	int err;
+> +
+> +	ref = lookup_user_key(key_id, 0, KEY_NEED_SEARCH);
+> +	if (IS_ERR(ref))
+> +		return PTR_ERR(ref);
+
+<empty line>
+
+> +	key = key_ref_to_ptr(ref);
+> +	if (key->type != &key_type_fscrypt_provisioning)
+> +		goto bad_key;
+
+<empty line>
+
+> +	payload = key->payload.data[0];
+> +
+> +	/* Don't allow fscrypt v1 keys to be used as v2 keys and vice versa. */
+> +	if (payload->type != type)
+> +		goto bad_key;
+> +
+> +	secret->size = key->datalen - sizeof(*payload);
+> +	memcpy(secret->raw, payload->raw, secret->size);
+> +	err = 0;
+> +	goto out_put;
+
+<empty line>
+
+> +bad_key:
+> +	err = -EKEYREJECTED;
+
+<empty line>
+
+> +out_put:
+> +	key_ref_put(ref);
+> +	return err;
+> +}
+> +
+>  /*
+>   * Add a master encryption key to the filesystem, causing all files which were
+>   * encrypted with it to appear "unlocked" (decrypted) when accessed.
+> @@ -503,18 +600,25 @@ int fscrypt_ioctl_add_key(struct file *filp, void __user *_uarg)
+>  	if (!valid_key_spec(&arg.key_spec))
+>  		return -EINVAL;
+>  
+> -	if (arg.raw_size < FSCRYPT_MIN_KEY_SIZE ||
+> -	    arg.raw_size > FSCRYPT_MAX_KEY_SIZE)
+> -		return -EINVAL;
+> -
+>  	if (memchr_inv(arg.__reserved, 0, sizeof(arg.__reserved)))
+>  		return -EINVAL;
+>  
+>  	memset(&secret, 0, sizeof(secret));
+> -	secret.size = arg.raw_size;
+> -	err = -EFAULT;
+> -	if (copy_from_user(secret.raw, uarg->raw, secret.size))
+> -		goto out_wipe_secret;
+> +	if (arg.key_id) {
+> +		if (arg.raw_size != 0)
+> +			return -EINVAL;
+> +		err = get_keyring_key(arg.key_id, arg.key_spec.type, &secret);
+> +		if (err)
+> +			goto out_wipe_secret;
+> +	} else {
+> +		if (arg.raw_size < FSCRYPT_MIN_KEY_SIZE ||
+> +		    arg.raw_size > FSCRYPT_MAX_KEY_SIZE)
+> +			return -EINVAL;
+> +		secret.size = arg.raw_size;
+> +		err = -EFAULT;
+> +		if (copy_from_user(secret.raw, uarg->raw, secret.size))
+> +			goto out_wipe_secret;
+> +	}
+>  
+>  	switch (arg.key_spec.type) {
+>  	case FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR:
+> @@ -978,8 +1082,14 @@ int __init fscrypt_init_keyring(void)
+>  	if (err)
+>  		goto err_unregister_fscrypt;
+>  
+> +	err = register_key_type(&key_type_fscrypt_provisioning);
+> +	if (err)
+> +		goto err_unregister_fscrypt_user;
+> +
+>  	return 0;
+>  
+> +err_unregister_fscrypt_user:
+> +	unregister_key_type(&key_type_fscrypt_user);
+>  err_unregister_fscrypt:
+>  	unregister_key_type(&key_type_fscrypt);
+>  	return err;
+> diff --git a/include/uapi/linux/fscrypt.h b/include/uapi/linux/fscrypt.h
+> index 1beb174ad95056..605dde7343a4e4 100644
+> --- a/include/uapi/linux/fscrypt.h
+> +++ b/include/uapi/linux/fscrypt.h
+> @@ -109,11 +109,22 @@ struct fscrypt_key_specifier {
+>  	} u;
+>  };
+>  
+> +/*
+> + * Payload for Linux keyring key of type "fscrypt-provisioning", referenced by
+> + * fscrypt_add_key_arg::key_id as an alternative to fscrypt_add_key_arg::raw.
+> + */
+> +struct fscrypt_key_provisioning_payload {
+> +	__u32 type;
+> +	__u32 __reserved;
+> +	__u8 raw[];
+> +};
+> +
+>  /* Struct passed to FS_IOC_ADD_ENCRYPTION_KEY */
+>  struct fscrypt_add_key_arg {
+>  	struct fscrypt_key_specifier key_spec;
+>  	__u32 raw_size;
+> -	__u32 __reserved[9];
+> +	__u32 key_id;
+> +	__u32 __reserved[8];
+>  	__u8 raw[];
+>  };
+>  
+> -- 
+> 2.24.0.rc1.363.gb1bccd3e3d-goog
+> 
+
+I don't see anything obviously wrong. Just would reformat it a bit.
+How you tested it?
+
+/Jarkko
