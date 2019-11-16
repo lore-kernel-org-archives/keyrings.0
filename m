@@ -1,7 +1,7 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Fri, 15 Nov 2019 23:04:31 +0000
+From: "Theodore Y. Ts'o" <tytso@mit.edu>
+Date: Sat, 16 Nov 2019 00:01:39 +0000
 Subject: Re: [PATCH] fscrypt: support passing a keyring key to FS_IOC_ADD_ENCRYPTION_KEY
-Message-Id: <20191115230430.GA217050@gmail.com>
+Message-Id: <20191116000139.GB18146@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -12,10 +12,9 @@ References: <20191107001259.115018-1-ebiggers@kernel.org>
  <20191115225319.GB29389@linux.intel.com>
 In-Reply-To: <20191115225319.GB29389@linux.intel.com>
 To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: linux-fscrypt@vger.kernel.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, Paul Crowley <paulcrowley@google.com>, Paul Lawrence <paullawrence@google.com>, keyrings@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, David Howells <dhowells@redhat.com>, Ondrej Mosnacek <omosnace@redhat.com>, Ondrej Kozina <okozina@redhat.com>
+Cc: Eric Biggers <ebiggers@kernel.org>, linux-fscrypt@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, Paul Crowley <paulcrowley@google.com>, Paul Lawrence <paullawrence@google.com>, keyrings@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, David Howells <dhowells@redhat.com>, Ondrej Mosnacek <omosnace@redhat.com>, Ondrej Kozina <okozina@redhat.com>
 
 On Sat, Nov 16, 2019 at 12:53:19AM +0200, Jarkko Sakkinen wrote:
-> 
 > > I'm working on an xfstest for this:
 > > 
 > > 	https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfstests-dev.git/commit/?h=fscrypt-provisioning&id$ab6abb7cf6a80be44b7c72b73f0519ccaa5a97
@@ -27,10 +26,9 @@ On Sat, Nov 16, 2019 at 12:53:19AM +0200, Jarkko Sakkinen wrote:
 > 
 > Cool. Can you combine this patch and matching test (once it is done) to
 > a patch set?
-> 
 
-xfstests is developed separately from the kernel (different git repo and
-maintainer), so combining kernel and xfstests patches into the same patchset
-doesn't make sense.  I can certainly send them out at the same time, though.
+That's generally not done since the test goes to a different repo
+(xfstests.git) which has a different review process from the kernel
+change.
 
-- Eric
+					- Ted
