@@ -1,7 +1,7 @@
-From: "Theodore Y. Ts'o" <tytso@mit.edu>
-Date: Sat, 16 Nov 2019 00:01:39 +0000
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+Date: Sun, 17 Nov 2019 21:44:07 +0000
 Subject: Re: [PATCH] fscrypt: support passing a keyring key to FS_IOC_ADD_ENCRYPTION_KEY
-Message-Id: <20191116000139.GB18146@mit.edu>
+Message-Id: <20191117214407.GD6213@magnolia>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,25 +10,33 @@ References: <20191107001259.115018-1-ebiggers@kernel.org>
  <20191115172832.GA21300@linux.intel.com>
  <20191115192227.GA150987@sol.localdomain>
  <20191115225319.GB29389@linux.intel.com>
-In-Reply-To: <20191115225319.GB29389@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Eric Biggers <ebiggers@kernel.org>, linux-fscrypt@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, Paul Crowley <paulcrowley@google.com>, Paul Lawrence <paullawrence@google.com>, keyrings@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, David Howells <dhowells@redhat.com>, Ondrej Mosnacek <omosnace@redhat.com>, Ondrej Kozina <okozina@redhat.com>
+ <20191116000139.GB18146@mit.edu>
+In-Reply-To: <20191116000139.GB18146@mit.edu>
+To: "Theodore Y. Ts'o" <tytso@mit.edu>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Eric Biggers <ebiggers@kernel.org>, linux-fscrypt@vger.kernel.org, Jaegeuk Kim <jaegeuk@kernel.org>, Paul Crowley <paulcrowley@google.com>, Paul Lawrence <paullawrence@google.com>, keyrings@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, David Howells <dhowells@redhat.com>, Ondrej Mosnacek <omosnace@redhat.com>, Ondrej Kozina <okozina@redhat.com>
 
-On Sat, Nov 16, 2019 at 12:53:19AM +0200, Jarkko Sakkinen wrote:
-> > I'm working on an xfstest for this:
+On Fri, Nov 15, 2019 at 07:01:39PM -0500, Theodore Y. Ts'o wrote:
+> On Sat, Nov 16, 2019 at 12:53:19AM +0200, Jarkko Sakkinen wrote:
+> > > I'm working on an xfstest for this:
+> > > 
+> > > 	https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfstests-dev.git/commit/?h=fscrypt-provisioning&id$ab6abb7cf6a80be44b7c72b73f0519ccaa5a97
+> > > 
+> > > It's not quite ready, though.  I'll post it for review when it is.
+> > > 
+> > > Someone is also planning to update Android userspace to use this.  So if there
+> > > are any issues from that, I'll hear about it.
 > > 
-> > 	https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfstests-dev.git/commit/?h=fscrypt-provisioning&id$ab6abb7cf6a80be44b7c72b73f0519ccaa5a97
-> > 
-> > It's not quite ready, though.  I'll post it for review when it is.
-> > 
-> > Someone is also planning to update Android userspace to use this.  So if there
-> > are any issues from that, I'll hear about it.
+> > Cool. Can you combine this patch and matching test (once it is done) to
+> > a patch set?
 > 
-> Cool. Can you combine this patch and matching test (once it is done) to
-> a patch set?
+> That's generally not done since the test goes to a different repo
+> (xfstests.git) which has a different review process from the kernel
+> change.
 
-That's generally not done since the test goes to a different repo
-(xfstests.git) which has a different review process from the kernel
-change.
+FWIW I generally send one series per git tree (kernel, *progs, fstests)
+one right after another so that they'll all land more or less together
+in everybody's inboxes.
 
-					- Ted
+--D
+
+> 					- Ted
