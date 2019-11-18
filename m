@@ -1,287 +1,162 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 07 Nov 2019 13:36:24 +0000
-Subject: [RFC PATCH 07/14] Add sample notification program [ver #2]
-Message-Id: <157313378451.29677.3803723365602483685.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Mon, 18 Nov 2019 22:38:13 +0000
+Subject: [PATCH v8 0/5] KEYS: Measure keys when they are created or updated
+Message-Id: <20191118223818.3353-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-The sample program is run like:
+Keys created or updated in the system are currently not measured.
+Therefore an attestation service, for instance, would not be able to
+attest whether or not the trusted keys keyring(s), for instance, contain
+only known good (trusted) keys.
 
-	./samples/watch_queue/watch_test
+IMA measures system files, command line arguments passed to kexec,
+boot aggregate, etc. It can be used to measure keys as well.
+But there is no mechanism available in the kernel for IMA to
+know when a key is created or updated.
 
-and watches "/" for mount changes and the current session keyring for key
-changes:
+This change aims to address measuring keys created or updated
+in the system.
 
-	# keyctl add user a a @s
-	1035096409
-	# keyctl unlink 1035096409 @s
+To achieve the above the following changes have been made:
 
-producing:
+ - Added a new IMA hook namely, ima_post_key_create_or_update, which
+   measures the key. This IMA hook is called from key_create_or_update
+   function. The key measurement can be controlled through IMA policy.
 
-	# ./watch_test
-	read() = 16
-	NOTIFY[000]: ty=000001 sy=02 i=00000110
-	KEY 2ffc2e5d change=2[linked] aux=1035096409
-	read() = 16
-	NOTIFY[000]: ty=000001 sy=02 i=00000110
-	KEY 2ffc2e5d change=3[unlinked] aux=1035096409
+   A new IMA policy function KEY_CHECK has been added to measure keys.
+   "keyrings=" option can be specified for KEY_CHECK to limit
+   measuring the keys loaded onto the specified keyrings only.
 
-Other events may be produced, such as with a failing disk:
+   # measure keys loaded onto any keyring
+   measure func=KEY_CHECK
 
-	read() = 22
-	NOTIFY[000]: ty=000003 sy=02 i=00000416
-	USB 3-7.7 dev-reset e=0 r=0
-	read() = 24
-	NOTIFY[000]: ty=000002 sy=06 i=00000418
-	BLOCK 00800050 e=6[critical medium] s=64000ef8
+   # measure keys loaded onto the IMA keyring only
+   measure func=KEY_CHECK keyring=".ima"
 
-This corresponds to:
+   # measure keys on the BUILTIN and IMA keyrings into a different PCR
+   measure func=KEY_CHECK keyring=".builtin_trusted_keys|.ima" pcr
 
-	blk_update_request: critical medium error, dev sdf, sector 1677725432 op 0x0:(READ) flags 0x0 phys_seg 1 prio class 0
+Testing performed:
 
-in dmesg.
+  * Booted the kernel with this change.
+  * When KEY_CHECK policy is set IMA measures keys loaded
+    onto any keyring (keyrings= option not specified).
+  * Keys are not measured when KEY_CHECK is not set.
+  * When keyrings= option is specified for KEY_CHECK then only the keys
+    loaded onto a keyring specified in the option is measured.
+  * Added a new key to a keyring.
+    => Added keys to .ima and .evm keyrings.
+  * Added the same key again.
+    => Add the same key to .ima and .evm keyrings.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Change Log:
 
- samples/Kconfig                  |    7 +
- samples/Makefile                 |    1 
- samples/watch_queue/Makefile     |    7 +
- samples/watch_queue/watch_test.c |  183 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 198 insertions(+)
- create mode 100644 samples/watch_queue/Makefile
- create mode 100644 samples/watch_queue/watch_test.c
+  v8:
 
-diff --git a/samples/Kconfig b/samples/Kconfig
-index c8dacb4dda80..d0761f29ccb0 100644
---- a/samples/Kconfig
-+++ b/samples/Kconfig
-@@ -169,4 +169,11 @@ config SAMPLE_VFS
- 	  as mount API and statx().  Note that this is restricted to the x86
- 	  arch whilst it accesses system calls that aren't yet in all arches.
- 
-+config SAMPLE_WATCH_QUEUE
-+	bool "Build example /dev/watch_queue notification consumer"
-+	depends on HEADERS_INSTALL
-+	help
-+	  Build example userspace program to use the new mount_notify(),
-+	  sb_notify() syscalls and the KEYCTL_WATCH_KEY keyctl() function.
-+
- endif # SAMPLES
-diff --git a/samples/Makefile b/samples/Makefile
-index 7d6e4ca28d69..a61a39047d02 100644
---- a/samples/Makefile
-+++ b/samples/Makefile
-@@ -20,3 +20,4 @@ obj-$(CONFIG_SAMPLE_TRACE_PRINTK)	+= trace_printk/
- obj-$(CONFIG_VIDEO_PCI_SKELETON)	+= v4l/
- obj-y					+= vfio-mdev/
- subdir-$(CONFIG_SAMPLE_VFS)		+= vfs
-+subdir-$(CONFIG_SAMPLE_WATCH_QUEUE)	+= watch_queue
-diff --git a/samples/watch_queue/Makefile b/samples/watch_queue/Makefile
-new file mode 100644
-index 000000000000..eec00dd0a8df
---- /dev/null
-+++ b/samples/watch_queue/Makefile
-@@ -0,0 +1,7 @@
-+# List of programs to build
-+hostprogs-y := watch_test
-+
-+# Tell kbuild to always build the programs
-+always := $(hostprogs-y)
-+
-+HOSTCFLAGS_watch_test.o += -I$(objtree)/usr/include
-diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
-new file mode 100644
-index 000000000000..8925593bdb9b
---- /dev/null
-+++ b/samples/watch_queue/watch_test.c
-@@ -0,0 +1,183 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/* Use /dev/watch_queue to watch for notifications.
-+ *
-+ * Copyright (C) 2019 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ */
-+
-+#define _GNU_SOURCE
-+#include <stdbool.h>
-+#include <stdarg.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <signal.h>
-+#include <unistd.h>
-+#include <errno.h>
-+#include <sys/ioctl.h>
-+#include <limits.h>
-+#include <linux/watch_queue.h>
-+#include <linux/unistd.h>
-+#include <linux/keyctl.h>
-+
-+#ifndef KEYCTL_WATCH_KEY
-+#define KEYCTL_WATCH_KEY -1
-+#endif
-+#ifndef __NR_watch_devices
-+#define __NR_watch_devices -1
-+#endif
-+
-+#define BUF_SIZE 256
-+
-+static long keyctl_watch_key(int key, int watch_fd, int watch_id)
-+{
-+	return syscall(__NR_keyctl, KEYCTL_WATCH_KEY, key, watch_fd, watch_id);
-+}
-+
-+static const char *key_subtypes[256] = {
-+	[NOTIFY_KEY_INSTANTIATED]	= "instantiated",
-+	[NOTIFY_KEY_UPDATED]		= "updated",
-+	[NOTIFY_KEY_LINKED]		= "linked",
-+	[NOTIFY_KEY_UNLINKED]		= "unlinked",
-+	[NOTIFY_KEY_CLEARED]		= "cleared",
-+	[NOTIFY_KEY_REVOKED]		= "revoked",
-+	[NOTIFY_KEY_INVALIDATED]	= "invalidated",
-+	[NOTIFY_KEY_SETATTR]		= "setattr",
-+};
-+
-+static void saw_key_change(struct watch_notification *n, size_t len)
-+{
-+	struct key_notification *k = (struct key_notification *)n;
-+
-+	if (len != sizeof(struct key_notification)) {
-+		fprintf(stderr, "Incorrect key message length\n");
-+		return;
-+	}
-+
-+	printf("KEY %08x change=%u[%s] aux=%u\n",
-+	       k->key_id, n->subtype, key_subtypes[n->subtype], k->aux);
-+}
-+
-+/*
-+ * Consume and display events.
-+ */
-+static void consumer(int fd)
-+{
-+	unsigned char buffer[4096], *p, *end;
-+	union {
-+		struct watch_notification n;
-+		unsigned char buf1[128];
-+	} n;
-+	ssize_t buf_len;
-+
-+	for (;;) {
-+		buf_len = read(fd, buffer, sizeof(buffer));
-+		if (buf_len == -1) {
-+			perror("read");
-+			exit(1);
-+		}
-+
-+		if (buf_len == 0) {
-+			printf("-- END --\n");
-+			return;
-+		}
-+
-+		if (buf_len > sizeof(buffer)) {
-+			fprintf(stderr, "Read buffer overrun: %zd\n", buf_len);
-+			return;
-+		}
-+
-+		printf("read() = %zd\n", buf_len);
-+
-+		p = buffer;
-+		end = buffer + buf_len;
-+		while (p < end) {
-+			size_t largest, len;
-+
-+			largest = end - p;
-+			if (largest > 128)
-+				largest = 128;
-+			if (largest < sizeof(struct watch_notification)) {
-+				fprintf(stderr, "Short message header: %zu\n", largest);
-+				return;
-+			}
-+			memcpy(&n, p, largest);
-+
-+			printf("NOTIFY[%03zx]: ty=%06x sy=%02x i=%08x\n",
-+			       p - buffer, n.n.type, n.n.subtype, n.n.info);
-+
-+			len = n.n.info & WATCH_INFO_LENGTH;
-+			if (len < sizeof(n.n) || len > largest) {
-+				fprintf(stderr, "Bad message length: %zu/%zu\n", len, largest);
-+				exit(1);
-+			}
-+
-+			switch (n.n.type) {
-+			case WATCH_TYPE_META:
-+				switch (n.n.subtype) {
-+				case WATCH_META_REMOVAL_NOTIFICATION:
-+					printf("REMOVAL of watchpoint %08x\n",
-+					       (n.n.info & WATCH_INFO_ID) >>
-+					       WATCH_INFO_ID__SHIFT);
-+					break;
-+				default:
-+					printf("other meta record\n");
-+					break;
-+				}
-+				break;
-+			case WATCH_TYPE_KEY_NOTIFY:
-+				saw_key_change(&n.n, len);
-+				break;
-+			default:
-+				printf("other type\n");
-+				break;
-+			}
-+
-+			p += len;
-+		}
-+	}
-+}
-+
-+static struct watch_notification_filter filter = {
-+	.nr_filters	= 1,
-+	.filters = {
-+		[0]	= {
-+			.type			= WATCH_TYPE_KEY_NOTIFY,
-+			.subtype_filter[0]	= UINT_MAX,
-+		},
-+	},
-+};
-+
-+int main(int argc, char **argv)
-+{
-+	int pipefd[2], fd;
-+
-+	if (pipe2(pipefd, O_NOTIFICATION_PIPE) == -1) {
-+		perror("pipe2");
-+		exit(1);
-+	}
-+	fd = pipefd[0];
-+
-+	if (ioctl(fd, IOC_WATCH_QUEUE_SET_SIZE, BUF_SIZE) == -1) {
-+		perror("/dev/watch_queue(size)");
-+		exit(1);
-+	}
-+
-+	if (ioctl(fd, IOC_WATCH_QUEUE_SET_FILTER, &filter) == -1) {
-+		perror("/dev/watch_queue(filter)");
-+		exit(1);
-+	}
-+
-+	if (keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fd, 0x01) == -1) {
-+		perror("keyctl");
-+		exit(1);
-+	}
-+
-+	if (keyctl_watch_key(KEY_SPEC_USER_KEYRING, fd, 0x02) == -1) {
-+		perror("keyctl");
-+		exit(1);
-+	}
-+
-+	consumer(fd);
-+	exit(0);
-+}
+  => Updated ima_match_keyring() function to check for
+     whole keyring name match.
+  => Used CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE instead of
+     CONFIG_KEYS to build ima_asymmetric_keys.c and enable
+     the IMA hook to measure keys since this config handles
+     the required build time dependencies better.
+  => Updated patch description to illustrate verification
+     of key measurement.
+
+  v7:
+
+  => Removed CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS option and used
+     CONFIG_KEYS instead for ima_asymmetric_keys.c
+  => Added the patches related to "keyrings=" option support to
+     this patch set.
+
+  v6:
+
+  => Rebased the changes to v5.4-rc7
+  => Renamed KEYRING_CHECK to KEY_CHECK per Mimi's suggestion.
+  => Excluded the patches that add support for limiting key
+     measurement to specific keyrings ("keyrings=" option
+     for "measure func=KEY_CHECK" in the IMA policy).
+     Also, excluded the patches that add support for deferred
+     processing of keys (queue support).
+     These patches will be added in separate patch sets later.
+
+  v5:
+
+  => Reorganized the patches to add measurement of keys through
+     the IMA hook without any queuing and then added queuing support.
+  => Updated the queuing functions to minimize code executed inside mutex.
+  => Process queued keys after custom IMA policies have been applied.
+
+  v4:
+
+  => Rebased the changes to v5.4-rc3
+  => Applied the following dependent patch set first
+     and then added new changes.
+  https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
+  => Refactored the patch set to separate out changes related to
+     func KEYRING_CHECK and options keyrings into different patches.
+  => Moved the functions to queue and dequeue keys for measurement
+     from ima_queue.c to a new file ima_asymmetric_keys.c.
+  => Added a new config namely CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
+     to compile ima_asymmetric_keys.c
+
+  v3:
+
+  => Added KEYRING_CHECK for measuring keys. This can optionally specify
+     keyrings to measure.
+  => Updated ima_get_action() and related functions to return
+     the keyrings if specified in the policy.
+  => process_buffer_measurement() function is updated to take keyring
+     as a parameter. The key will be measured if the policy includes
+     the keyring in the list of measured keyrings. If the policy does not
+     specify any keyrings then all keys are measured.
+
+  v2:
+
+  => Per suggestion from Mimi reordered the patch set to first
+     enable measuring keys added or updated in the system.
+     And, then scope the measurement to keys added to 
+     builtin_trusted_keys keyring through ima policy.
+  => Removed security_key_create_or_update function and instead
+     call ima hook, to measure the key, directly from 
+     key_create_or_update function.
+
+  v1:
+
+  => LSM function for key_create_or_update. It calls ima.
+  => Added ima hook for measuring keys
+  => ima measures keys based on ima policy.
+
+  v0:
+
+  => Added LSM hook for key_create_or_update.
+  => Measure keys added to builtin or secondary trusted keys keyring.
+
+
+Lakshmi Ramasubramanian (5):
+  IMA: Add KEY_CHECK func to measure keys
+  IMA: Define an IMA hook to measure keys
+  KEYS: Call the IMA hook to measure keys
+  IMA: Add support to limit measuring keys
+  IMA: Read keyrings= option from the IMA policy
+
+ Documentation/ABI/testing/ima_policy         |  17 +++-
+ include/linux/ima.h                          |  13 +++
+ security/integrity/ima/Makefile              |   1 +
+ security/integrity/ima/ima.h                 |   9 +-
+ security/integrity/ima/ima_api.c             |   8 +-
+ security/integrity/ima/ima_appraise.c        |   4 +-
+ security/integrity/ima/ima_asymmetric_keys.c |  57 +++++++++++
+ security/integrity/ima/ima_main.c            |   9 +-
+ security/integrity/ima/ima_policy.c          | 100 +++++++++++++++++--
+ security/keys/key.c                          |   7 ++
+ 10 files changed, 205 insertions(+), 20 deletions(-)
+ create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
+
+-- 
+2.17.1
