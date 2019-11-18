@@ -1,130 +1,100 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 07 Nov 2019 13:35:38 +0000
-Subject: [RFC PATCH 02/14] security: Add hooks to rule on setting a watch [ver #2]
-Message-Id: <157313373855.29677.3888607349866181437.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Mon, 18 Nov 2019 22:38:18 +0000
+Subject: [PATCH v8 5/5] IMA: Read keyrings= option from the IMA policy
+Message-Id: <20191118223818.3353-6-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157313371694.29677.15388731274912671071.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191118223818.3353-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191118223818.3353-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Add security hooks that will allow an LSM to rule on whether or not a watch
-may be set.  More than one hook is required as the watches watch different
-types of object.
+Read "keyrings=" option, if specified in the IMA policy, and store in
+the list of IMA rules when the configured IMA policy is read.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
+This patch defines a new policy token enum namely Opt_keyrings
+and an option flag IMA_KEYRINGS for reading "keyrings=" option
+from the IMA policy.
+
+Updated ima_parse_rule() to parse "keyrings=" option in the policy.
+Updated ima_policy_show() to display "keyrings=" option.
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Cc: Sasha Levin <sashal@kernel.org>
+Cc: James Morris <jamorris@linux.microsoft.com>
 ---
+ security/integrity/ima/ima_policy.c | 29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
 
- include/linux/lsm_hooks.h |   24 ++++++++++++++++++++++++
- include/linux/security.h  |   17 +++++++++++++++++
- security/security.c       |   14 ++++++++++++++
- 3 files changed, 55 insertions(+)
-
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index a3763247547c..d62e92b768c4 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1416,6 +1416,18 @@
-  *	@ctx is a pointer in which to place the allocated security context.
-  *	@ctxlen points to the place to put the length of @ctx.
-  *
-+ * Security hooks for the general notification queue:
-+ *
-+ * @watch_key:
-+ *	Check to see if a process is allowed to watch for event notifications
-+ *	from a key or keyring.
-+ *	@key: The key to watch.
-+ *
-+ * @watch_devices:
-+ *	Check to see if a process is allowed to watch for event notifications
-+ *	from devices (as a global set).
-+ *
-+ *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-  *
-@@ -1698,6 +1710,12 @@ union security_list_options {
- 	int (*inode_notifysecctx)(struct inode *inode, void *ctx, u32 ctxlen);
- 	int (*inode_setsecctx)(struct dentry *dentry, void *ctx, u32 ctxlen);
- 	int (*inode_getsecctx)(struct inode *inode, void **ctx, u32 *ctxlen);
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+	int (*watch_key)(struct key *key);
-+#endif
-+#ifdef CONFIG_DEVICE_NOTIFICATIONS
-+	int (*watch_devices)(void);
-+#endif
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index d9400585fcda..78b25f083fe1 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -34,6 +34,7 @@
+ #define IMA_EUID	0x0080
+ #define IMA_PCR		0x0100
+ #define IMA_FSNAME	0x0200
++#define IMA_KEYRINGS	0x0400
  
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -1977,6 +1995,12 @@ struct security_hook_heads {
- 	struct hlist_head inode_notifysecctx;
- 	struct hlist_head inode_setsecctx;
- 	struct hlist_head inode_getsecctx;
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+	struct hlist_head watch_key;
-+#endif
-+#ifdef CONFIG_DEVICE_NOTIFICATIONS
-+	struct hlist_head watch_devices;
-+#endif
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index a8d59d612d27..5d1867772022 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1271,6 +1271,23 @@ static inline int security_locked_down(enum lockdown_reason what)
- }
- #endif	/* CONFIG_SECURITY */
+ #define UNKNOWN		0
+ #define MEASURE		0x0001	/* same as IMA_MEASURE */
+@@ -825,7 +826,8 @@ enum {
+ 	Opt_uid_gt, Opt_euid_gt, Opt_fowner_gt,
+ 	Opt_uid_lt, Opt_euid_lt, Opt_fowner_lt,
+ 	Opt_appraise_type, Opt_appraise_flag,
+-	Opt_permit_directio, Opt_pcr, Opt_template, Opt_err
++	Opt_permit_directio, Opt_pcr, Opt_template, Opt_keyrings,
++	Opt_err
+ };
  
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_KEY_NOTIFICATIONS)
-+int security_watch_key(struct key *key);
-+#else
-+static inline int security_watch_key(struct key *key)
-+{
-+	return 0;
-+}
-+#endif
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_DEVICE_NOTIFICATIONS)
-+int security_watch_devices(void);
-+#else
-+static inline int security_watch_devices(void)
-+{
-+	return 0;
-+}
-+#endif
+ static const match_table_t policy_tokens = {
+@@ -861,6 +863,7 @@ static const match_table_t policy_tokens = {
+ 	{Opt_permit_directio, "permit_directio"},
+ 	{Opt_pcr, "pcr=%s"},
+ 	{Opt_template, "template=%s"},
++	{Opt_keyrings, "keyrings=%s"},
+ 	{Opt_err, NULL}
+ };
+ 
+@@ -1110,6 +1113,23 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 			result = 0;
+ 			entry->flags |= IMA_FSNAME;
+ 			break;
++		case Opt_keyrings:
++			ima_log_string(ab, "keyrings", args[0].from);
 +
- #ifdef CONFIG_SECURITY_NETWORK
++			if ((entry->keyrings) ||
++			    (entry->action != MEASURE) ||
++			    (entry->func != KEY_CHECK)) {
++				result = -EINVAL;
++				break;
++			}
++			entry->keyrings = kstrdup(args[0].from, GFP_KERNEL);
++			if (!entry->keyrings) {
++				result = -ENOMEM;
++				break;
++			}
++			result = 0;
++			entry->flags |= IMA_KEYRINGS;
++			break;
+ 		case Opt_fsuuid:
+ 			ima_log_string(ab, "fsuuid", args[0].from);
  
- int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk);
-diff --git a/security/security.c b/security/security.c
-index 1bc000f834e2..4f970716fa6c 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1956,6 +1956,20 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
+@@ -1485,6 +1505,13 @@ int ima_policy_show(struct seq_file *m, void *v)
+ 		seq_puts(m, " ");
+ 	}
  
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+int security_watch_key(struct key *key)
-+{
-+	return call_int_hook(watch_key, 0, key);
-+}
-+#endif
++	if (entry->flags & IMA_KEYRINGS) {
++		if (entry->keyrings != NULL)
++			snprintf(tbuf, sizeof(tbuf), "%s", entry->keyrings);
++		seq_printf(m, pt(Opt_keyrings), tbuf);
++		seq_puts(m, " ");
++	}
 +
-+#ifdef CONFIG_DEVICE_NOTIFICATIONS
-+int security_watch_devices(void)
-+{
-+	return call_int_hook(watch_devices, 0);
-+}
-+#endif
-+
- #ifdef CONFIG_SECURITY_NETWORK
- 
- int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk)
+ 	if (entry->flags & IMA_PCR) {
+ 		snprintf(tbuf, sizeof(tbuf), "%d", entry->pcr);
+ 		seq_printf(m, pt(Opt_pcr), tbuf);
+-- 
+2.17.1
