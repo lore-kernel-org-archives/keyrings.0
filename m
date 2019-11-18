@@ -1,43 +1,86 @@
-From: kernel test robot <rong.a.chen@intel.com>
-Date: Mon, 18 Nov 2019 07:53:22 +0000
-Subject: Re: [LKP] Re: [pipe] d60337eff1: BUG:kernel_NULL_pointer_dereference,address
-Message-Id: <35daca93-ff2b-2c7d-b837-72396ca0677a@intel.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Mon, 18 Nov 2019 22:38:14 +0000
+Subject: [PATCH v8 1/5] IMA: Add KEY_CHECK func to measure keys
+Message-Id: <20191118223818.3353-2-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <9279.1573824532@warthog.procyon.org.uk>
- <20191110031348.GE29418@shao2-debian>
- <6853.1573834946@warthog.procyon.org.uk>
-In-Reply-To: <6853.1573834946@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>, kernel test robot <lkp@intel.com>
-Cc: torvalds@linux-foundation.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org, linux-kernel@vger.kernel.org, lkp@lists.01.org
+References: <20191118223818.3353-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191118223818.3353-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Hi David,
+Measure keys loaded onto any keyring.
 
-Yes, it can fix the problem.
+This patch defines a new IMA policy func namely KEY_CHECK to
+measure keys. Updated ima_match_rules() to check for KEY_CHECK
+and ima_parse_rule() to handle KEY_CHECK.
 
-Best Regards,
-Rong Chen
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Cc: Sasha Levin <sashal@kernel.org>
+Cc: James Morris <jamorris@linux.microsoft.com>
+---
+ Documentation/ABI/testing/ima_policy | 7 ++++++-
+ security/integrity/ima/ima.h         | 1 +
+ security/integrity/ima/ima_policy.c  | 4 +++-
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
-On 11/16/2019 12:22 AM, David Howells wrote:
-> Actually, no, this is the fix:
->
-> diff --git a/lib/iov_iter.c b/lib/iov_iter.c
-> index 7006b5b2106d..be2fc5793ddd 100644
-> --- a/lib/iov_iter.c
-> +++ b/lib/iov_iter.c
-> @@ -537,7 +537,7 @@ static size_t push_pipe(struct iov_iter *i, size_t size,
->   		buf->ops = &default_pipe_buf_ops;
->   		buf->page = page;
->   		buf->offset = 0;
-> -		buf->len = max_t(ssize_t, left, PAGE_SIZE);
-> +		buf->len = min_t(ssize_t, left, PAGE_SIZE);
->   		left -= buf->len;
->   		iter_head++;
->   		pipe->head = iter_head;
->
-> David
-> _______________________________________________
-> LKP mailing list -- lkp@lists.01.org
-> To unsubscribe send an email to lkp-leave@lists.01.org
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 29aaedf33246..3823c27894c5 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -29,7 +29,7 @@ Description:
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+-				[KEXEC_CMDLINE]
++				[KEXEC_CMDLINE] [KEY_CHECK]
+ 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
+ 			       [[^]MAY_EXEC]
+ 			fsmagic:= hex value
+@@ -113,3 +113,8 @@ Description:
+ 		Example of appraise rule allowing modsig appended signatures:
+ 
+ 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
++
++		Example of measure rule using KEY_CHECK to measure all keys:
++
++			measure func=KEY_CHECK
++
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index df4ca482fb53..fe6c698617bd 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ 	hook(KEXEC_INITRAMFS_CHECK)	\
+ 	hook(POLICY_CHECK)		\
+ 	hook(KEXEC_CMDLINE)		\
++	hook(KEY_CHECK)			\
+ 	hook(MAX_CHECK)
+ #define __ima_hook_enumify(ENUM)	ENUM,
+ 
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index f19a895ad7cd..1525a28fd705 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
+ {
+ 	int i;
+ 
+-	if (func = KEXEC_CMDLINE) {
++	if ((func = KEXEC_CMDLINE) || (func = KEY_CHECK)) {
+ 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
+ 			return true;
+ 		return false;
+@@ -997,6 +997,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 				entry->func = POLICY_CHECK;
+ 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
+ 				entry->func = KEXEC_CMDLINE;
++			else if (strcmp(args[0].from, "KEY_CHECK") = 0)
++				entry->func = KEY_CHECK;
+ 			else
+ 				result = -EINVAL;
+ 			if (!result)
+-- 
+2.17.1
