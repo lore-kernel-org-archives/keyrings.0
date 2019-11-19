@@ -1,67 +1,417 @@
-From: Chris von Recklinghausen <crecklin@redhat.com>
-Date: Wed, 06 Nov 2019 15:25:55 +0000
-Subject: Re: [PATCH] security/keyring: avoid pagefaults in keyring_read_iterator
-Message-Id: <3390b0d2-0f8e-3240-2ebb-94400456fdf0@redhat.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Tue, 19 Nov 2019 22:31:30 +0000
+Subject: [RFC PATCH 3/3] generic: test adding filesystem-level fscrypt key via key_id
+Message-Id: <20191119223130.228341-4-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191018184030.8407-1-crecklin@redhat.com>
- <30309.1571667719@warthog.procyon.org.uk>
- <b8aa0f7c-0a90-efae-9fb7-aa85b19a0d9a@redhat.com>
- <3c87bfba-9dc9-665f-17e8-0656e87c658b@redhat.com>
-In-Reply-To: <3c87bfba-9dc9-665f-17e8-0656e87c658b@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Waiman Long <longman@redhat.com>
+References: <20191119223130.228341-1-ebiggers@kernel.org>
+In-Reply-To: <20191119223130.228341-1-ebiggers@kernel.org>
+To: fstests@vger.kernel.org
+Cc: linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-On 10/25/2019 07:10 AM, Chris von Recklinghausen wrote:
-> On 10/21/2019 11:46 AM, Chris von Recklinghausen wrote:
->> On 10/21/2019 10:21 AM, David Howells wrote:
->>> Chris von Recklinghausen <crecklin@redhat.com> wrote:
->>>
->>>> The put_user call from keyring_read_iterator caused a page fault which
->>>> attempts to lock mm->mmap_sem and type->lock_class (key->sem) in the reverse
->>>> order that keyring_read_iterator did, thus causing the circular locking
->>>> dependency.
->>>>
->>>> Remedy this by using access_ok and __put_user instead of put_user so we'll
->>>> return an error instead of faulting in the page.
->>> I wonder if it's better to create a kernel buffer outside of the lock in
->>> keyctl_read_key().  Hmmm...  The reason I didn't want to do that is that
->>> keyrings have don't have limits on the size.  Maybe that's not actually a
->>> problem, since 1MiB would be able to hold a list of a quarter of a million
->>> keys.
->>>
->>> David
->>>
->> Hi David,
->>
->> Thanks for the feedback.
->>
->> I can try to prototype that, but regardless of where the kernel buffer
->> is allocated, the important part is causing the initial pagefault in the
->> read path outside the lock so __put_user won't fail due to a valid user
->> address but page backing the user address isn't in-core.
->>
->> I'll start work on v2.
-> Actually I'm going to back off on a v2 effort at this point and request
-> that folks comment on the code as-is. Changing keyctl_read_key to use
-> its own kernel buffer might be a worthwhile effort, but it doesn't
-> appear to me to have any effects on preventing pagefaults on user pages
-> at inopportune points of the code.
+From: Eric Biggers <ebiggers@google.com>
 
-Does anyone have any more feedback on v1 of this patch?
+Add a test which tests adding a key to a filesystem's fscrypt keyring
+via an "fscrypt-provisioning" keyring key.  This is an alternative to
+the normal method where the raw key is given directly.
 
-Thanks,
+For more details, see the corresponding kernel patch:
+https://lkml.kernel.org/linux-fscrypt/20191119222447.226853-1-ebiggers@kernel.org/T/#u
 
-Chris
+This test depends on an xfs_io patch which adds the '-k' option to the
+'add_enckey' command, e.g.:
 
->
-> Thanks,
->
-> Chris
->
->> Thanks,
->>
->> Chris
->>
+	xfs_io -c "add_enckey -k KEY_ID" MOUNTPOINT
+
+This test is skipped if the needed kernel or xfs_io support is absent.
+
+This has been tested on ext4, f2fs, and ubifs.
+
+Signed-off-by: Eric Biggers <ebiggers@google.com>
+---
+ common/encrypt        |  84 +++++++++++++++++++----
+ tests/generic/806     | 156 ++++++++++++++++++++++++++++++++++++++++++
+ tests/generic/806.out |  73 ++++++++++++++++++++
+ tests/generic/group   |   1 +
+ 4 files changed, 300 insertions(+), 14 deletions(-)
+ create mode 100644 tests/generic/806
+ create mode 100644 tests/generic/806.out
+
+diff --git a/common/encrypt b/common/encrypt
+index 98a407ce..cc7712c2 100644
+--- a/common/encrypt
++++ b/common/encrypt
+@@ -227,6 +227,28 @@ _generate_raw_encryption_key()
+ 	echo $raw
+ }
+ 
++# Serialize an integer into a CPU-endian bytestring of the given length, and
++# print it as a string where each byte is hex-escaped.  For example,
++# `_num_to_hex 1000 4` = "\xe8\x03\x00\x00" if the CPU is little endian.
++_num_to_hex()
++{
++	local value=$1
++	local nbytes=$2
++	local i
++	local big_endian=$(echo -ne '\x11' | od -tx2 | head -1 | \
++			   cut -f2 -d' ' | cut -c1)
++
++	if (( big_endian )); then
++		for (( i = 0; i < nbytes; i++ )); do
++			printf '\\x%02x' $(((value >> (8*(nbytes-1-i))) & 0xff))
++		done
++	else
++		for (( i = 0; i < nbytes; i++ )); do
++			printf '\\x%02x' $(((value >> (8*i)) & 0xff))
++		done
++	fi
++}
++
+ # Add the specified raw encryption key to the session keyring, using the
+ # specified key descriptor.
+ _add_session_encryption_key()
+@@ -237,12 +259,12 @@ _add_session_encryption_key()
+ 	#
+ 	# Add the key to the session keyring.  The required structure is:
+ 	#
+-	#	#define FS_MAX_KEY_SIZE 64
++	#	#define FSCRYPT_MAX_KEY_SIZE 64
+ 	#	struct fscrypt_key {
+-	#		u32 mode;
+-	#		u8 raw[FS_MAX_KEY_SIZE];
+-	#		u32 size;
+-	#	} __packed;
++	#		__u32 mode;
++	#		__u8 raw[FSCRYPT_MAX_KEY_SIZE];
++	#		__u32 size;
++	#	};
+ 	#
+ 	# The kernel ignores 'mode' but requires that 'size' be 64.
+ 	#
+@@ -253,15 +275,8 @@ _add_session_encryption_key()
+ 	# nice to use the common key prefix, but for now use the filesystem-
+ 	# specific prefix to make it possible to test older kernels...
+ 	#
+-	local big_endian=$(echo -ne '\x11' | od -tx2 | head -1 | \
+-			   cut -f2 -d' ' | cut -c1 )
+-	if (( big_endian )); then
+-		local mode='\x00\x00\x00\x00'
+-		local size='\x00\x00\x00\x40'
+-	else
+-		local mode='\x00\x00\x00\x00'
+-		local size='\x40\x00\x00\x00'
+-	fi
++	local mode=$(_num_to_hex 0 4)
++	local size=$(_num_to_hex 64 4)
+ 	echo -n -e "${mode}${raw}${size}" |
+ 		$KEYCTL_PROG padd logon $FSTYP:$keydesc @s >>$seqres.full
+ }
+@@ -389,6 +404,44 @@ _user_do_enckey_status()
+ 	_user_do "$XFS_IO_PROG -c \"enckey_status $* $keyspec\" \"$mnt\""
+ }
+ 
++# Require support for adding a key to a filesystem's fscrypt keyring via an
++# "fscrypt-provisioning" keyring key.
++_require_add_enckey_by_key_id()
++{
++	local mnt=$1
++
++	# Userspace support
++	_require_xfs_io_command "add_enckey" "-k"
++
++	# Kernel support
++	if $XFS_IO_PROG -c "$add_enckey -k 12345 $mnt" \
++		|& grep -q 'Invalid argument'; then
++		_notrun "Kernel doesn't support key_id parameter to FS_IOC_ADD_ENCRYPTION_KEY"
++	fi
++}
++
++# Add a key of type "fscrypt-provisioning" to the session keyring and print the
++# resulting key ID.
++_add_fscrypt_provisioning_key()
++{
++	local desc=$1
++	local type=$2
++	local raw=$3
++
++	# The format of the key payload must be:
++	#
++	#	struct fscrypt_provisioning_key_payload {
++	#		__u32 type;
++	#		__u32 __reserved;
++	#		__u8 raw[];
++	#	};
++	#
++	local type_hex=$(_num_to_hex $type 4)
++	local reserved=$(_num_to_hex 0 4)
++	echo -n -e "${type_hex}${reserved}${raw}" |
++		$KEYCTL_PROG padd fscrypt-provisioning "$desc" @s
++}
++
+ # Retrieve the encryption nonce of the given inode as a hex string.  The nonce
+ # was randomly generated by the filesystem and isn't exposed directly to
+ # userspace.  But it can be read using the filesystem's debugging tools.
+@@ -717,6 +770,9 @@ FSCRYPT_MODE_ADIANTUM=9
+ FSCRYPT_POLICY_FLAG_DIRECT_KEY=0x04
+ FSCRYPT_POLICY_FLAG_IV_INO_LBLK_64=0x08
+ 
++FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR=1
++FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER=2
++
+ _fscrypt_mode_name_to_num()
+ {
+ 	local name=$1
+diff --git a/tests/generic/806 b/tests/generic/806
+new file mode 100644
+index 00000000..29c09858
+--- /dev/null
++++ b/tests/generic/806
+@@ -0,0 +1,156 @@
++#! /bin/bash
++# SPDX-License-Identifier: GPL-2.0
++# Copyright 2019 Google LLC
++#
++# FS QA Test generic/806
++#
++# Test adding a key to a filesystem's fscrypt keyring via an
++# "fscrypt-provisioning" keyring key.  This is an alternative to the normal
++# method where the raw key is given directly.
++#
++seq=`basename $0`
++seqres=$RESULT_DIR/$seq
++echo "QA output created by $seq"
++
++here=`pwd`
++tmp=/tmp/$$
++status=1	# failure is the default!
++trap "_cleanup; exit \$status" 0 1 2 3 15
++
++_cleanup()
++{
++	cd /
++	rm -f $tmp.*
++}
++
++# get standard environment, filters and checks
++. ./common/rc
++. ./common/filter
++. ./common/encrypt
++
++# remove previous $seqres.full before test
++rm -f $seqres.full
++
++# real QA test starts here
++_supported_fs generic
++_supported_os Linux
++_require_scratch_encryption -v 2
++_require_command "$KEYCTL_PROG" keyctl
++
++_new_session_keyring
++_scratch_mkfs_encrypted &>> $seqres.full
++_scratch_mount
++_require_add_enckey_by_key_id $SCRATCH_MNT
++
++test_with_policy_version()
++{
++	local vers=$1
++	local raw_key=$TEST_RAW_KEY
++	local dir=$SCRATCH_MNT/dir
++	local keyid
++
++	echo
++	echo "# ============="
++	echo "# Test with policy version $vers"
++	echo "# ============="
++
++	case $vers in
++	1)
++		local key_type=$FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR
++		local keyspec=$TEST_KEY_DESCRIPTOR
++		local add_enckey_args="-d $TEST_KEY_DESCRIPTOR"
++		;;
++	2)
++		local key_type=$FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER
++		local keyspec=$TEST_KEY_IDENTIFIER
++		local add_enckey_args=""
++		;;
++	*)
++		_fail "Unknown policy version: $vers"
++		;;
++	esac
++
++	# First add the key in the regular way (raw key given directly), create
++	# an encrypted file with some contents, and remove the key.  After this,
++	# the encrypted file should no longer be readable.
++
++	echo -e "\n# Adding key to filesystem"
++	_add_enckey $SCRATCH_MNT "$raw_key" $add_enckey_args
++
++	echo -e "\n# Creating encrypted file"
++	mkdir $dir
++	_set_encpolicy $dir $keyspec
++	echo "contents" > $dir/file
++
++	echo -e "\n# Removing key from filesystem"
++	_rm_enckey $SCRATCH_MNT $keyspec
++	cat $dir/file |& _filter_scratch
++
++	# Now we should be able to add the key back via an fscrypt-provisioning
++	# key which contains the raw key, instead of providing the raw key
++	# directly.  After this, the encrypted file should be readable again.
++
++	echo -e "\n# Adding fscrypt-provisioning key"
++	keyid=$(_add_fscrypt_provisioning_key $keyspec $key_type "$raw_key")
++
++	echo -e "\n# Adding key to filesystem via fscrypt-provisioning key"
++	$XFS_IO_PROG -c "add_enckey -k $keyid $add_enckey_args" $SCRATCH_MNT
++
++	echo -e "\n# Reading encrypted file"
++	cat $dir/file
++
++	echo -e "\n# Cleaning up"
++	rm -rf $dir
++	_scratch_cycle_mount	# Clear all keys
++}
++
++# Test with both v1 and v2 encryption policies.
++test_with_policy_version 1
++test_with_policy_version 2
++
++# Now test that invalid fscrypt-provisioning keys can't be created, that
++# fscrypt-provisioning keys can't be read back by userspace, and that the
++# filesystem only accepts properly matching fscrypt-provisioning keys.
++echo
++echo "# ========"
++echo "# Validation tests"
++echo "# ========"
++
++echo -e "\n# Adding an invalid fscrypt-provisioning key fails"
++echo "# ... bad type"
++_add_fscrypt_provisioning_key desc 0 "$TEST_RAW_KEY"
++echo "# ... bad type"
++_add_fscrypt_provisioning_key desc 10000 "$TEST_RAW_KEY"
++echo "# ... raw key too small"
++_add_fscrypt_provisioning_key desc $FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR ""
++echo "# ... raw key too large"
++_add_fscrypt_provisioning_key desc $FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR \
++	"$TEST_RAW_KEY$TEST_RAW_KEY"
++
++echo -e "\n# keyctl_read() doesn't work on fscrypt-provisioning keys"
++keyid=$(_add_fscrypt_provisioning_key desc $FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR \
++	"$TEST_RAW_KEY")
++$KEYCTL_PROG read $keyid
++$KEYCTL_PROG unlink $keyid @s
++
++echo -e "\n# Only keys with the correct fscrypt_provisioning_key_payload::type field can be added"
++echo "# ... keyring key is v1, filesystem wants v2 key"
++keyid=$(_add_fscrypt_provisioning_key desc $FSCRYPT_KEY_SPEC_TYPE_DESCRIPTOR \
++	"$TEST_RAW_KEY")
++$XFS_IO_PROG -c "add_enckey -k $keyid" $SCRATCH_MNT
++$KEYCTL_PROG unlink $keyid @s
++
++echo "# ... keyring key is v2, filesystem wants v1 key"
++keyid=$(_add_fscrypt_provisioning_key desc $FSCRYPT_KEY_SPEC_TYPE_IDENTIFIER \
++	"$TEST_RAW_KEY")
++$XFS_IO_PROG -c "add_enckey -k $keyid -d $TEST_KEY_DESCRIPTOR" $SCRATCH_MNT
++$KEYCTL_PROG unlink $keyid @s
++
++echo -e "\n# Only keys of type fscrypt-provisioning can be added"
++keyid=$(head -c 64 /dev/urandom | $KEYCTL_PROG padd logon foo:desc @s)
++$XFS_IO_PROG -c "add_enckey -k $keyid" $SCRATCH_MNT
++$KEYCTL_PROG unlink $keyid @s
++
++# success, all done
++status=0
++exit
+diff --git a/tests/generic/806.out b/tests/generic/806.out
+new file mode 100644
+index 00000000..b7795f9a
+--- /dev/null
++++ b/tests/generic/806.out
+@@ -0,0 +1,73 @@
++QA output created by 806
++
++# =============
++# Test with policy version 1
++# =============
++
++# Adding key to filesystem
++Added encryption key with descriptor 0000111122223333
++
++# Creating encrypted file
++
++# Removing key from filesystem
++Removed encryption key with descriptor 0000111122223333
++cat: SCRATCH_MNT/dir/file: No such file or directory
++
++# Adding fscrypt-provisioning key
++
++# Adding key to filesystem via fscrypt-provisioning key
++Added encryption key with descriptor 0000111122223333
++
++# Reading encrypted file
++contents
++
++# Cleaning up
++
++# =============
++# Test with policy version 2
++# =============
++
++# Adding key to filesystem
++Added encryption key with identifier 69b2f6edeee720cce0577937eb8a6751
++
++# Creating encrypted file
++
++# Removing key from filesystem
++Removed encryption key with identifier 69b2f6edeee720cce0577937eb8a6751
++cat: SCRATCH_MNT/dir/file: No such file or directory
++
++# Adding fscrypt-provisioning key
++
++# Adding key to filesystem via fscrypt-provisioning key
++Added encryption key with identifier 69b2f6edeee720cce0577937eb8a6751
++
++# Reading encrypted file
++contents
++
++# Cleaning up
++
++# ========
++# Validation tests
++# ========
++
++# Adding an invalid fscrypt-provisioning key fails
++# ... bad type
++add_key: Invalid argument
++# ... bad type
++add_key: Invalid argument
++# ... raw key too small
++add_key: Invalid argument
++# ... raw key too large
++add_key: Invalid argument
++
++# keyctl_read() doesn't work on fscrypt-provisioning keys
++keyctl_read_alloc: Operation not supported
++
++# Only keys with the correct fscrypt_provisioning_key_payload::type field can be added
++# ... keyring key is v1, filesystem wants v2 key
++Error adding encryption key: Key was rejected by service
++# ... keyring key is v2, filesystem wants v1 key
++Error adding encryption key: Key was rejected by service
++
++# Only keys of type fscrypt-provisioning can be added
++Error adding encryption key: Key was rejected by service
+diff --git a/tests/generic/group b/tests/generic/group
+index 02e4cc45..ad571ea1 100644
+--- a/tests/generic/group
++++ b/tests/generic/group
+@@ -589,3 +589,4 @@
+ 584 auto quick encrypt
+ 585 auto rename
+ 805 auto quick encrypt
++806 auto quick encrypt
+-- 
+2.24.0.432.g9d3f5f5b63-goog
