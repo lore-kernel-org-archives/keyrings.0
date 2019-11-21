@@ -1,7 +1,7 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 21 Nov 2019 01:32:03 +0000
+Date: Thu, 21 Nov 2019 17:16:22 +0000
 Subject: Re: [PATCH v8 2/5] IMA: Define an IMA hook to measure keys
-Message-Id: <21c08fdf-43d7-67e0-1cb5-66bdbce1b6ad@linux.microsoft.com>
+Message-Id: <2dfe3a9b-8a24-5da4-f889-9ac3db44c50b@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
@@ -26,14 +26,10 @@ On 11/20/19 5:22 PM, Mimi Zohar wrote:
 > Did you post it as a separate patch?  I can't seem to find it.
 > 
 > Mimi
+> 
 
-No - I removed the above change from my patch since you mentioned it's 
-being upstreamed separately.
-
-I didn't realize you wanted me to include the above change alone in a 
-separate patch (in my patch set). Sorry - I guess I misunderstood.
-
-I can do that when I send an update - I expect to by the end of this week.
+I have sent a separate patch with just this change (to check 
+ima_policy_flag in process_buffer_measurement()).
 
 thanks,
   -lakshmi
