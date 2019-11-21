@@ -1,43 +1,42 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 21 Nov 2019 00:03:05 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 21 Nov 2019 00:53:31 +0000
 Subject: Re: [PATCH v8 4/5] IMA: Add support to limit measuring keys
-Message-Id: <fef8fc67-643d-e579-9628-6516fd02b4db@linux.microsoft.com>
+Message-Id: <1574297611.4793.154.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191118223818.3353-1-nramas@linux.microsoft.com>
- <20191118223818.3353-5-nramas@linux.microsoft.com>
- <1574291957.4793.144.camel@linux.ibm.com>
-In-Reply-To: <1574291957.4793.144.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
+         <20191118223818.3353-5-nramas@linux.microsoft.com>
+         <1574291957.4793.144.camel@linux.ibm.com>
+         <fef8fc67-643d-e579-9628-6516fd02b4db@linux.microsoft.com>
+In-Reply-To: <fef8fc67-643d-e579-9628-6516fd02b4db@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-On 11/20/2019 3:19 PM, Mimi Zohar wrote:
-
-Hi Mimi,
-
->> The above can be used to correlate the key measurement IMA entry,
->> ima-sig and ima-modsig entries using the same key.
-> 
-> True, but associating the public key measurement with the file
-> signature requires information from the certificate (e.g. issuer,
-> serial number, and/or subject, subject keyid).
-> 
-> For a regression test, it would be nice if the key measurement,
-> itself, contained everything needed in order to validate the file
-> signatures in the measurement list.
-
-I am just trying to understand your asks - Please clarify:
-
-1, My change includes only the public key and not the entire certificate 
-information in the measured buffer.
-
-Should I update this current patch set to measure the entire cert. Or, 
-can that be done as a separate patch set?
-
-2, Should a regression test be part of this patch set for the key 
-measurement changes to be accepted?
-
-thanks,
-  -lakshmi
+T24gV2VkLCAyMDE5LTExLTIwIGF0IDE2OjAzIC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBPbiAxMS8yMC8yMDE5IDM6MTkgUE0sIE1pbWkgWm9oYXIgd3JvdGU6Cj4gCj4g
+SGkgTWltaSwKPiAKPiA+PiBUaGUgYWJvdmUgY2FuIGJlIHVzZWQgdG8gY29ycmVsYXRlIHRoZSBr
+ZXkgbWVhc3VyZW1lbnQgSU1BIGVudHJ5LAo+ID4+IGltYS1zaWcgYW5kIGltYS1tb2RzaWcgZW50
+cmllcyB1c2luZyB0aGUgc2FtZSBrZXkuCj4gPiAKPiA+IFRydWUsIGJ1dCBhc3NvY2lhdGluZyB0
+aGUgcHVibGljIGtleSBtZWFzdXJlbWVudCB3aXRoIHRoZSBmaWxlCj4gPiBzaWduYXR1cmUgcmVx
+dWlyZXMgaW5mb3JtYXRpb24gZnJvbSB0aGUgY2VydGlmaWNhdGUgKGUuZy4gaXNzdWVyLAo+ID4g
+c2VyaWFsIG51bWJlciwgYW5kL29yIHN1YmplY3QsIHN1YmplY3Qga2V5aWQpLgo+ID4gCj4gPiBG
+b3IgYSByZWdyZXNzaW9uIHRlc3QsIGl0IHdvdWxkIGJlIG5pY2UgaWYgdGhlIGtleSBtZWFzdXJl
+bWVudCwKPiA+IGl0c2VsZiwgY29udGFpbmVkIGV2ZXJ5dGhpbmcgbmVlZGVkIGluIG9yZGVyIHRv
+IHZhbGlkYXRlIHRoZSBmaWxlCj4gPiBzaWduYXR1cmVzIGluIHRoZSBtZWFzdXJlbWVudCBsaXN0
+Lgo+IAo+IEkgYW0ganVzdCB0cnlpbmcgdG8gdW5kZXJzdGFuZCB5b3VyIGFza3MgLSBQbGVhc2Ug
+Y2xhcmlmeToKPiAKPiAxLCBNeSBjaGFuZ2UgaW5jbHVkZXMgb25seSB0aGUgcHVibGljIGtleSBh
+bmQgbm90IHRoZSBlbnRpcmUgY2VydGlmaWNhdGUgCj4gaW5mb3JtYXRpb24gaW4gdGhlIG1lYXN1
+cmVkIGJ1ZmZlci4KPiAKPiBTaG91bGQgSSB1cGRhdGUgdGhpcyBjdXJyZW50IHBhdGNoIHNldCB0
+byBtZWFzdXJlIHRoZSBlbnRpcmUgY2VydC4gT3IsIAo+IGNhbiB0aGF0IGJlIGRvbmUgYXMgYSBz
+ZXBhcmF0ZSBwYXRjaCBzZXQ/Cj4gCj4gMiwgU2hvdWxkIGEgcmVncmVzc2lvbiB0ZXN0IGJlIHBh
+cnQgb2YgdGhpcyBwYXRjaCBzZXQgZm9yIHRoZSBrZXkgCj4gbWVhc3VyZW1lbnQgY2hhbmdlcyB0
+byBiZSBhY2NlcHRlZD8KCk9uY2UgdGhlIGtleSBtZWFzdXJlbWVudCBpcyBkZWZpbmVkIGFuZCB1
+cHN0cmVhbWVkLCBjaGFuZ2luZyBpdCB3b3VsZApyZXN1bHQgaW4gYSByZWdyZXNzaW9uLiDCoElm
+IHdlIHRoaW5rIHRoYXQgaXQgd291bGQgY2hhbmdlIG11bHRpcGxlCnRpbWVzLCB0aGVuIHBlcmhh
+cHMgdGhlIGJ1ZmZlciBtZWFzdXJlbWVudCBuZWVkcyB0byBjb250YWluIHNvbWUgc29ydApvZiB2
+ZXJzaW9uaW5nLgoKSSB3b3VsZCB2ZXJ5IG11Y2ggbGlrZSBmb3IgYSByZWdyZXNzaW9uIHRlc3Qg
+dG8gYmUgaW5jbHVkZWQgaW4gdGhpcwpwYXRjaCBzZXQsIGJ1dCBpdCBpc24ndCBhIHJlcXVpcmVt
+ZW50LCBhcyBsb25nIGFzIGV2ZXJ5dGhpbmcgbmVlZGVkCmZvciB2ZXJpZnlpbmcgYSBzaWduYXR1
+cmUgaXMgaW5jbHVkZWQgaW4gdGhlIGtleSBtZWFzdXJlbWVudC4KCk1pbWkK
