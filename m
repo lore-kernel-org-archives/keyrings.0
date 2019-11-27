@@ -1,80 +1,126 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Tue, 26 Nov 2019 19:27:36 +0000
-Subject: Re: One question about trusted key of keyring in Linux kernel.
-Message-Id: <1574796456.4793.248.camel@linux.ibm.com>
+From: "Zhao, Shirley" <shirley.zhao@intel.com>
+Date: Wed, 27 Nov 2019 02:46:44 +0000
+Subject: RE: One question about trusted key of keyring in Linux kernel.
+Message-Id: <A888B25CD99C1141B7C254171A953E8E490961E5@shsmsx102.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <A888B25CD99C1141B7C254171A953E8E49094313@shsmsx102.ccr.corp.intel.com>
          <1573659978.17949.83.camel@linux.ibm.com>
          <A888B25CD99C1141B7C254171A953E8E49095F9B@shsmsx102.ccr.corp.intel.com>
-In-Reply-To: <A888B25CD99C1141B7C254171A953E8E49095F9B@shsmsx102.ccr.corp.intel.com>
-To: "Zhao, Shirley" <shirley.zhao@intel.com>, James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
+ <1574796456.4793.248.camel@linux.ibm.com>
+In-Reply-To: <1574796456.4793.248.camel@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>, James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
 Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 'Mauro Carvalho Chehab' <mchehab+samsung@kernel.org>, "Zhu, Bing" <bing.zhu@intel.com>, "Chen, Luhai" <luhai.chen@intel.com>
 
-On Tue, 2019-11-26 at 07:32 +0000, Zhao, Shirley wrote:
-> Thanks for your feedback, Mimi. 
-> But the document of dracut can't solve my problem. 
-> 
-> I did more test these days and try to descript my question in more detail. 
-> 
-> In my scenario, the trusted key will be sealed into TPM with PCR policy. 
-> And there are some related options in manual like 
->        hash=         hash algorithm name as a string. For TPM 1.x the only
->                      allowed value is sha1. For TPM 2.x the allowed values
->                      are sha1, sha256, sha384, sha512 and sm3-256.
->        policydigest= digest for the authorization policy. must be calculated
->                      with the same hash algorithm as specified by the 'hash='
->                      option.
->        policyhandle= handle to an authorization policy session that defines the
->                      same policy and with the same hash algorithm as was used to
->                      seal the key. 
-> 
-> Here is my test step. 
-> Firstly, the pcr policy is generated as below: 
-> $ tpm2_createpolicy --policy-pcr --pcr-list sha256:7 --policy pcr7_bin.policy > pcr7.policy
-> 
-> Pcr7.policy is the ascii hex of policy:
-> $ cat pcr7.policy
-> 321fbd28b60fcc23017d501b133bd5dbf2889814588e8a23510fe10105cb2cc9
-> 
-> Then generate the trusted key and configure policydigest and get the key ID: 
-> $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha256 policydigest=`cat pcr7.policy`" @u
-> 874117045
-> 
-> Save the trusted key. 
-> $ keyctl pipe 874117045 > kmk.blob
-> 
-> Reboot and load the key. 
-> Start a auth session to generate the policy:
-> $ tpm2_startauthsession -S session.ctx
-> session-handle: 0x3000000
-> $ tpm2_pcrlist -L sha256:7 -o pcr7.sha256
-> $ tpm2_policypcr -S session.ctx -L sha256:7 -F pcr7.sha256 -f pcr7.policy
-> policy-digest: 0x321FBD28B60FCC23017D501B133BD5DBF2889814588E8A23510FE10105CB2CC9
-> 
-> Input the policy handle to load trusted key:
-> $ keyctl add trusted kmk "load `cat kmk.blob` keyhandle=0x81000001 policyhandle=0x3000000" @u
-> add_key: Operation not permitted
-> 
-> The error should be policy check failed, because I use TPM command to unseal directly with error of policy check failed. 
-> $ tpm2_unseal -c 0x81000001 -L sha256:7
-> ERROR on line: "81" in file: "./lib/log.h": Tss2_Sys_Unseal(0x99D) - tpm:session(1):a policy check failed
-> ERROR on line: "213" in file: "tools/tpm2_unseal.c": Unseal failed!
-> ERROR on line: "166" in file: "tools/tpm2_tool.c": Unable to run tpm2_unseal
-> 
-> So my question is:
-> 1. How to use the option, policydigest, policyhandle?? Is there any example? 
-> 2. What's wrong with my test step? 
-
-When reporting a problem please state which kernel is experiencing
-this problem.  Recently there was a trusted key regression.  Refer to
-commit e13cd21ffd50 "tpm: Wrap the buffer from the caller to tpm_buf
-in tpm_send()" for the details.
-
-Before delving into this particular problem, first please make sure
-you are able to create, save, remove, and then reload a trusted key
-not sealed to a PCR.
-
-Mimi 
+SGksIE1pbWksIA0KDQpBbnN3ZXIgeW91ciB0d28gcXVlc3Rpb25zOg0KDQoxLiBZZXMsIEkgaGF2
+ZSB2ZXJpZmllZCB0cnVzdGVkIGtleSB3b3JrcyB3ZWxsIHdpdGhvdXQgUENSIHBvbGljeSBwcm90
+ZWN0aW9uIGFzIGJlbG93OiANCiQga2V5Y3RsIGFkZCB0cnVzdGVkIGttayAibmV3IDMyIGtleWhh
+bmRsZT0weDgxMDAwMDAxIiBAdQ0KMTA1NTI0MDkyOA0KJCBrZXljdGwgbGlzdCBAdQ0KMSBrZXlz
+IGluIGtleXJpbmc6DQoxMDU1MjQwOTI4OiAtLWFsc3dydiAgICAgMCAgICAgMCB0cnVzdGVkOiBr
+bWsNCiQga2V5Y3RsIHBpcGUgMTA1NTI0MDkyOCA+IGttay5ibG9iDQokIGNhdCBrbWsuYmxvYg0K
+MDA3ZjAwMjBmZjgwOGJkOGI3MjM5MTk0ZTg5YWFjNmE5NWI0ZDIxMDExNDc0MmMyMGFmYTMzNDkz
+ZjAwMmRmZmQwNjg1ZDUxMDAxMGMxMmQ3YWQ1MWViODNkNmQ5Mzg5NWRlMDY2YmYzZDM5NzE4Y2M1
+MDNhZGI0ODAyY2IwODdiODhiMmZmZjRiMDQwZmUzYTJiZTZhM2Y4N2M2NzQ5ZDA4N2M5ZmI2ZTg3
+MzRjYjIzZjQzOGQ2NDA4NzU4MWExM2JjODNkNWRjM2IwMjZlNzdhODk0ZWNlNjYyMGQwZWI4NWRm
+NjQ0OWZmM2M2MDlmZDc3ZDVmMGNhZjc5YjQ1MzViMDAyZTAwMDgwMDBiMDAwMDAwNDAwMDAwMDAx
+MDAwMjA5YTViMDBiMGQ1NThmY2Y5ZThjMDI5NTIyNzE1ZTZiNTkwNjM2NmVhZWM1ZjM0MzY3Yjhh
+YjE2YzBmYjkwMDlhMDA3MzAwMDAwMDAwMDAyMGUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZi
+OTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUwMTAwMGIwMDIyMDAwYmRjZGI2OTRl
+MTAyZTEzYTBmYmE1MTExMDgxY2I2Y2Y2MTZjMTE4ZDQwNDkzNmNhYzNlODRkYjI0YzcxZTQ3ZDUw
+MDIyMDAwYjA0YjVkYjFhYTUyNjM1ZGZiMjQyZTc2ZjZiZGU4ZTIxNzZhZTQ4ZmM2ODI5NDZjNmM3
+NmQ5NmY2MDgwNzlkMWYwMDAwMDAyMDM2YjZmY2NhODIwNmM3ZjcyMmRlODU4MjFkN2VjYjQ3ODU5
+NzZmZGQ2NDJiYzc1Mzg1MDVhMmE4MThjOGEyMzg4MDIxNDAwMDAwMDEwMDIwMmFlZGRlNDUwOGY1
+NDhkMTA4MTkzZWM4ZmUxNjZhN2JlZmRlMTkxMTNmZTcyN2FlMmIyOTkwMWJkZWNlOTZlNQ0KJCBr
+ZXljdGwgY2xlYXIgQHUNCiQga2V5Y3RsIGxpc3QgQHUNCmtleXJpbmcgaXMgZW1wdHkNCiQga2V5
+Y3RsIGFkZCB0cnVzdGVkIGttayAibG9hZCBgY2F0IGttay5ibG9iYCBrZXloYW5kbGU9MHg4MTAw
+MDAwMSIgQHUNCjEwMjI5NjM3MzENCiQga2V5Y3RsIHByaW50IDEwMjI5NjM3MzENCjAwN2YwMDIw
+ZmY4MDhiZDhiNzIzOTE5NGU4OWFhYzZhOTViNGQyMTAxMTQ3NDJjMjBhZmEzMzQ5M2YwMDJkZmZk
+MDY4NWQ1MTAwMTBjMTJkN2FkNTFlYjgzZDZkOTM4OTVkZTA2NmJmM2QzOTcxOGNjNTAzYWRiNDgw
+MmNiMDg3Yjg4YjJmZmY0YjA0MGZlM2EyYmU2YTNmODdjNjc0OWQwODdjOWZiNmU4NzM0Y2IyM2Y0
+MzhkNjQwODc1ODFhMTNiYzgzZDVkYzNiMDI2ZTc3YTg5NGVjZTY2MjBkMGViODVkZjY0NDlmZjNj
+NjA5ZmQ3N2Q1ZjBjYWY3OWI0NTM1YjAwMmUwMDA4MDAwYjAwMDAwMDQwMDAwMDAwMTAwMDIwOWE1
+YjAwYjBkNTU4ZmNmOWU4YzAyOTUyMjcxNWU2YjU5MDYzNjZlYWVjNWYzNDM2N2I4YWIxNmMwZmI5
+MDA5YTAwNzMwMDAwMDAwMDAwMjBlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0
+MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1MDEwMDBiMDAyMjAwMGJkY2RiNjk0ZTEwMmUxM2Ew
+ZmJhNTExMTA4MWNiNmNmNjE2YzExOGQ0MDQ5MzZjYWMzZTg0ZGIyNGM3MWU0N2Q1MDAyMjAwMGIw
+NGI1ZGIxYWE1MjYzNWRmYjI0MmU3NmY2YmRlOGUyMTc2YWU0OGZjNjgyOTQ2YzZjNzZkOTZmNjA4
+MDc5ZDFmMDAwMDAwMjAzNmI2ZmNjYTgyMDZjN2Y3MjJkZTg1ODIxZDdlY2I0Nzg1OTc2ZmRkNjQy
+YmM3NTM4NTA1YTJhODE4YzhhMjM4ODAyMTQwMDAwMDAxMDAyMDJhZWRkZTQ1MDhmNTQ4ZDEwODE5
+M2VjOGZlMTY2YTdiZWZkZTE5MTEzZmU3MjdhZTJiMjk5MDFiZGVjZTk2ZTUNCg0KMi4gVGhlIGZv
+bGxvd2luZyBrZXJuZWwgZmlsZSBpcyByZWxhdGVkIHdpdGggdGhpcyBwcm9ibGVtLiANCi9zZWN1
+cml0eS9rZXlzL2tleWN0bC5jDQovc2VjdXJpdHkva2V5cy9rZXkuYw0KL3NlY3VyaXR5L2tleXMv
+dHJ1c3RlZC1rZXlzL3RydXN0ZWRfdHBtMS5jDQovc2VjdXJpdHkva2V5cy90cnVzdGVkLWtleXMv
+dHJ1c3RlZF90cG0yLmMNCg0KVG8gbG9hZCB0aGUgUENSIHBvbGljeSBwcm90ZWN0aW9uIHRydXN0
+ZWQga2V5LCB0aGUgY2FsbCBzdGFjayBpczogDQpTWVNDQUxMX0RFRklORTUoYWRkX2tleSwuLi4p
+IC0tPiBrZXlfY3JlYXRlX29yX3VwZGF0ZSgpIC0tPiBfX2tleV9pbnN0YW50aWF0ZV9hbmRfbGlu
+aygpIC0tPiAgdHJ1c3RlZF9pbnN0YW50aWF0ZSgpIC0tPiB0cG0yX3Vuc2VhbF90cnVzdGVkKCkg
+LS0+IHRwbTJfdW5zZWFsX2NtZCgpLiANCg0KQ2hlY2sgZG1lc2csIHRoZXJlIHdpbGwgYmUgZXJy
+b3I6IA0KWzczMzM2LjM1MTU5Nl0gdHJ1c3RlZF9rZXk6IGtleV91bnNlYWwgZmFpbGVkICgtMSkN
+Cg0KLSBTaGlybGV5IA0KDQotLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KRnJvbTogTWltaSBa
+b2hhciA8em9oYXJAbGludXguaWJtLmNvbT4gDQpTZW50OiBXZWRuZXNkYXksIE5vdmVtYmVyIDI3
+LCAyMDE5IDM6MjggQU0NClRvOiBaaGFvLCBTaGlybGV5IDxzaGlybGV5LnpoYW9AaW50ZWwuY29t
+PjsgSmFtZXMgQm90dG9tbGV5IDxqZWpiQGxpbnV4LmlibS5jb20+OyBKYXJra28gU2Fra2luZW4g
+PGphcmtrby5zYWtraW5lbkBsaW51eC5pbnRlbC5jb20+OyBKb25hdGhhbiBDb3JiZXQgPGNvcmJl
+dEBsd24ubmV0Pg0KQ2M6IGxpbnV4LWludGVncml0eUB2Z2VyLmtlcm5lbC5vcmc7IGtleXJpbmdz
+QHZnZXIua2VybmVsLm9yZzsgbGludXgtZG9jQHZnZXIua2VybmVsLm9yZzsgbGludXgta2VybmVs
+QHZnZXIua2VybmVsLm9yZzsgJ01hdXJvIENhcnZhbGhvIENoZWhhYicgPG1jaGVoYWIrc2Ftc3Vu
+Z0BrZXJuZWwub3JnPjsgWmh1LCBCaW5nIDxiaW5nLnpodUBpbnRlbC5jb20+OyBDaGVuLCBMdWhh
+aSA8bHVoYWkuY2hlbkBpbnRlbC5jb20+DQpTdWJqZWN0OiBSZTogT25lIHF1ZXN0aW9uIGFib3V0
+IHRydXN0ZWQga2V5IG9mIGtleXJpbmcgaW4gTGludXgga2VybmVsLg0KDQpPbiBUdWUsIDIwMTkt
+MTEtMjYgYXQgMDc6MzIgKzAwMDAsIFpoYW8sIFNoaXJsZXkgd3JvdGU6DQo+IFRoYW5rcyBmb3Ig
+eW91ciBmZWVkYmFjaywgTWltaS4gDQo+IEJ1dCB0aGUgZG9jdW1lbnQgb2YgZHJhY3V0IGNhbid0
+IHNvbHZlIG15IHByb2JsZW0uIA0KPiANCj4gSSBkaWQgbW9yZSB0ZXN0IHRoZXNlIGRheXMgYW5k
+IHRyeSB0byBkZXNjcmlwdCBteSBxdWVzdGlvbiBpbiBtb3JlIGRldGFpbC4gDQo+IA0KPiBJbiBt
+eSBzY2VuYXJpbywgdGhlIHRydXN0ZWQga2V5IHdpbGwgYmUgc2VhbGVkIGludG8gVFBNIHdpdGgg
+UENSIHBvbGljeS4gDQo+IEFuZCB0aGVyZSBhcmUgc29tZSByZWxhdGVkIG9wdGlvbnMgaW4gbWFu
+dWFsIGxpa2UgDQo+ICAgICAgICBoYXNoPSAgICAgICAgIGhhc2ggYWxnb3JpdGhtIG5hbWUgYXMg
+YSBzdHJpbmcuIEZvciBUUE0gMS54IHRoZSBvbmx5DQo+ICAgICAgICAgICAgICAgICAgICAgIGFs
+bG93ZWQgdmFsdWUgaXMgc2hhMS4gRm9yIFRQTSAyLnggdGhlIGFsbG93ZWQgdmFsdWVzDQo+ICAg
+ICAgICAgICAgICAgICAgICAgIGFyZSBzaGExLCBzaGEyNTYsIHNoYTM4NCwgc2hhNTEyIGFuZCBz
+bTMtMjU2Lg0KPiAgICAgICAgcG9saWN5ZGlnZXN0PSBkaWdlc3QgZm9yIHRoZSBhdXRob3JpemF0
+aW9uIHBvbGljeS4gbXVzdCBiZSBjYWxjdWxhdGVkDQo+ICAgICAgICAgICAgICAgICAgICAgIHdp
+dGggdGhlIHNhbWUgaGFzaCBhbGdvcml0aG0gYXMgc3BlY2lmaWVkIGJ5IHRoZSAnaGFzaD0nDQo+
+ICAgICAgICAgICAgICAgICAgICAgIG9wdGlvbi4NCj4gICAgICAgIHBvbGljeWhhbmRsZT0gaGFu
+ZGxlIHRvIGFuIGF1dGhvcml6YXRpb24gcG9saWN5IHNlc3Npb24gdGhhdCBkZWZpbmVzIHRoZQ0K
+PiAgICAgICAgICAgICAgICAgICAgICBzYW1lIHBvbGljeSBhbmQgd2l0aCB0aGUgc2FtZSBoYXNo
+IGFsZ29yaXRobSBhcyB3YXMgdXNlZCB0bw0KPiAgICAgICAgICAgICAgICAgICAgICBzZWFsIHRo
+ZSBrZXkuIA0KPiANCj4gSGVyZSBpcyBteSB0ZXN0IHN0ZXAuIA0KPiBGaXJzdGx5LCB0aGUgcGNy
+IHBvbGljeSBpcyBnZW5lcmF0ZWQgYXMgYmVsb3c6IA0KPiAkIHRwbTJfY3JlYXRlcG9saWN5IC0t
+cG9saWN5LXBjciAtLXBjci1saXN0IHNoYTI1Njo3IC0tcG9saWN5IA0KPiBwY3I3X2Jpbi5wb2xp
+Y3kgPiBwY3I3LnBvbGljeQ0KPiANCj4gUGNyNy5wb2xpY3kgaXMgdGhlIGFzY2lpIGhleCBvZiBw
+b2xpY3k6DQo+ICQgY2F0IHBjcjcucG9saWN5DQo+IDMyMWZiZDI4YjYwZmNjMjMwMTdkNTAxYjEz
+M2JkNWRiZjI4ODk4MTQ1ODhlOGEyMzUxMGZlMTAxMDVjYjJjYzkNCj4gDQo+IFRoZW4gZ2VuZXJh
+dGUgdGhlIHRydXN0ZWQga2V5IGFuZCBjb25maWd1cmUgcG9saWN5ZGlnZXN0IGFuZCBnZXQgdGhl
+IGtleSBJRDogDQo+ICQga2V5Y3RsIGFkZCB0cnVzdGVkIGttayAibmV3IDMyIGtleWhhbmRsZT0w
+eDgxMDAwMDAxIGhhc2g9c2hhMjU2IA0KPiBwb2xpY3lkaWdlc3Q9YGNhdCBwY3I3LnBvbGljeWAi
+IEB1DQo+IDg3NDExNzA0NQ0KPiANCj4gU2F2ZSB0aGUgdHJ1c3RlZCBrZXkuIA0KPiAkIGtleWN0
+bCBwaXBlIDg3NDExNzA0NSA+IGttay5ibG9iDQo+IA0KPiBSZWJvb3QgYW5kIGxvYWQgdGhlIGtl
+eS4gDQo+IFN0YXJ0IGEgYXV0aCBzZXNzaW9uIHRvIGdlbmVyYXRlIHRoZSBwb2xpY3k6DQo+ICQg
+dHBtMl9zdGFydGF1dGhzZXNzaW9uIC1TIHNlc3Npb24uY3R4DQo+IHNlc3Npb24taGFuZGxlOiAw
+eDMwMDAwMDANCj4gJCB0cG0yX3Bjcmxpc3QgLUwgc2hhMjU2OjcgLW8gcGNyNy5zaGEyNTYgJCB0
+cG0yX3BvbGljeXBjciAtUyANCj4gc2Vzc2lvbi5jdHggLUwgc2hhMjU2OjcgLUYgcGNyNy5zaGEy
+NTYgLWYgcGNyNy5wb2xpY3kNCj4gcG9saWN5LWRpZ2VzdDogDQo+IDB4MzIxRkJEMjhCNjBGQ0My
+MzAxN0Q1MDFCMTMzQkQ1REJGMjg4OTgxNDU4OEU4QTIzNTEwRkUxMDEwNUNCMkNDOQ0KPiANCj4g
+SW5wdXQgdGhlIHBvbGljeSBoYW5kbGUgdG8gbG9hZCB0cnVzdGVkIGtleToNCj4gJCBrZXljdGwg
+YWRkIHRydXN0ZWQga21rICJsb2FkIGBjYXQga21rLmJsb2JgIGtleWhhbmRsZT0weDgxMDAwMDAx
+IA0KPiBwb2xpY3loYW5kbGU9MHgzMDAwMDAwIiBAdQ0KPiBhZGRfa2V5OiBPcGVyYXRpb24gbm90
+IHBlcm1pdHRlZA0KPiANCj4gVGhlIGVycm9yIHNob3VsZCBiZSBwb2xpY3kgY2hlY2sgZmFpbGVk
+LCBiZWNhdXNlIEkgdXNlIFRQTSBjb21tYW5kIHRvIHVuc2VhbCBkaXJlY3RseSB3aXRoIGVycm9y
+IG9mIHBvbGljeSBjaGVjayBmYWlsZWQuIA0KPiAkIHRwbTJfdW5zZWFsIC1jIDB4ODEwMDAwMDEg
+LUwgc2hhMjU2OjcgRVJST1Igb24gbGluZTogIjgxIiBpbiBmaWxlOiANCj4gIi4vbGliL2xvZy5o
+IjogVHNzMl9TeXNfVW5zZWFsKDB4OTlEKSAtIHRwbTpzZXNzaW9uKDEpOmEgcG9saWN5IGNoZWNr
+IA0KPiBmYWlsZWQgRVJST1Igb24gbGluZTogIjIxMyIgaW4gZmlsZTogInRvb2xzL3RwbTJfdW5z
+ZWFsLmMiOiBVbnNlYWwgZmFpbGVkIQ0KPiBFUlJPUiBvbiBsaW5lOiAiMTY2IiBpbiBmaWxlOiAi
+dG9vbHMvdHBtMl90b29sLmMiOiBVbmFibGUgdG8gcnVuIA0KPiB0cG0yX3Vuc2VhbA0KPiANCj4g
+U28gbXkgcXVlc3Rpb24gaXM6DQo+IDEuIEhvdyB0byB1c2UgdGhlIG9wdGlvbiwgcG9saWN5ZGln
+ZXN0LCBwb2xpY3loYW5kbGU/PyBJcyB0aGVyZSBhbnkgZXhhbXBsZT8gDQo+IDIuIFdoYXQncyB3
+cm9uZyB3aXRoIG15IHRlc3Qgc3RlcD8gDQoNCldoZW4gcmVwb3J0aW5nIGEgcHJvYmxlbSBwbGVh
+c2Ugc3RhdGUgd2hpY2gga2VybmVsIGlzIGV4cGVyaWVuY2luZyB0aGlzIHByb2JsZW0uIMKgUmVj
+ZW50bHkgdGhlcmUgd2FzIGEgdHJ1c3RlZCBrZXkgcmVncmVzc2lvbi4gwqBSZWZlciB0byBjb21t
+aXQgZTEzY2QyMWZmZDUwICJ0cG06IFdyYXAgdGhlIGJ1ZmZlciBmcm9tIHRoZSBjYWxsZXIgdG8g
+dHBtX2J1ZiBpbiB0cG1fc2VuZCgpIiBmb3IgdGhlIGRldGFpbHMuDQoNCkJlZm9yZSBkZWx2aW5n
+IGludG8gdGhpcyBwYXJ0aWN1bGFyIHByb2JsZW0sIGZpcnN0IHBsZWFzZSBtYWtlIHN1cmUgeW91
+IGFyZSBhYmxlIHRvIGNyZWF0ZSwgc2F2ZSwgcmVtb3ZlLCBhbmQgdGhlbiByZWxvYWQgYSB0cnVz
+dGVkIGtleSBub3Qgc2VhbGVkIHRvIGEgUENSLg0KDQpNaW1pwqANCg0K
