@@ -1,122 +1,98 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 06 Nov 2019 19:01:12 +0000
-Subject: [PATCH v4 06/10] IMA: Measure key if the IMA policy allows measurement for the keyring to which the 
-Message-Id: <20191106190116.2578-7-nramas@linux.microsoft.com>
+Date: Wed, 27 Nov 2019 01:56:51 +0000
+Subject: [PATCH v9 3/6] IMA: Define an IMA hook to measure keys
+Message-Id: <20191127015654.3744-4-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191106190116.2578-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191127015654.3744-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191127015654.3744-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-process_buffer_measurement() needs to check if the keyring to which
-the given key is linked to is listed in the keyrings option in
-the IMA policy.
+Measure asymmetric keys used for verifying file signatures,
+certificates, etc.
 
-This patch adds a new parameter "keyring" to process_buffer_measurement().
+This patch defines a new IMA hook namely ima_post_key_create_or_update()
+to measure the payload used to create a new key or update an existing key.
 
-If process_buffer_measurement() is called with func KEYRING_CHECK and
-the name of the keyring to which the key is linked to, then the given
-key is measured if:
-  1, IMA policy did not specify "keyrings=" option.
-  2, Or, the given keyring name is listed in the "keyrings=" option.
+The IMA hook is defined in a new file namely ima_asymmetric_keys.c
+which is built only if CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE is enabled.
 
 Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
- security/integrity/ima/ima.h          |  2 +-
- security/integrity/ima/ima_appraise.c |  2 +-
- security/integrity/ima/ima_main.c     | 26 ++++++++++++++++++++++++--
- 3 files changed, 26 insertions(+), 4 deletions(-)
+ security/integrity/ima/Makefile              |  1 +
+ security/integrity/ima/ima_asymmetric_keys.c | 52 ++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
+ create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 387829afb9a2..f15199f7ff2a 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -221,7 +221,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
- 			   struct ima_template_desc *template_desc);
- void process_buffer_measurement(const void *buf, int size,
- 				const char *eventname, enum ima_hooks func,
--				int pcr);
-+				int pcr, const char *keyring);
- void ima_audit_measurement(struct integrity_iint_cache *iint,
- 			   const unsigned char *filename);
- int ima_alloc_init_template(struct ima_event_data *event_data,
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 47ad4f56c0a8..a9649b04b9f1 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -330,7 +330,7 @@ int ima_check_blacklist(struct integrity_iint_cache *iint,
- 		if ((rc = -EPERM) && (iint->flags & IMA_MEASURE))
- 			process_buffer_measurement(digest, digestsize,
- 						   "blacklisted-hash", NONE,
--						   pcr);
-+						   pcr, NULL);
- 	}
- 
- 	return rc;
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index b6d17f37ba61..56540357c854 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -632,12 +632,22 @@ int ima_load_data(enum kernel_load_data_id id)
-  * @eventname: event name to be used for the buffer entry.
-  * @func: IMA hook
-  * @pcr: pcr to extend the measurement
-+ * @keyring: keyring for the measurement
+diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
+index 31d57cdf2421..207a0a9eb72c 100644
+--- a/security/integrity/ima/Makefile
++++ b/security/integrity/ima/Makefile
+@@ -12,3 +12,4 @@ ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
+ ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
+ ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
+ obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
++obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += ima_asymmetric_keys.o
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+new file mode 100644
+index 000000000000..2308adcdeff3
+--- /dev/null
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -0,0 +1,52 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2019 Microsoft Corporation
 + *
-+ *	The following scenarios are possible with respect to
-+ *	the parameter "keyring":
-+ *	1, keyring is NULL. In this case buffer is measured.
-+ *	2, keyring is not NULL, but ima_get_action returned
-+ *	   a NULL keyrings. In this case also the buffer is measured.
-+ *	3, keyring is not NULL and ima_get_action returned
-+ *	   a non-NULL keyrings. In this case measure the buffer
-+ *	   only if the given keyring is present in the keyrings.
-  *
-  * Based on policy, the buffer is measured into the ima log.
-  */
- void process_buffer_measurement(const void *buf, int size,
- 				const char *eventname, enum ima_hooks func,
--				int pcr)
-+				int pcr, const char *keyring)
- {
- 	int ret = 0;
- 	struct ima_template_entry *entry = NULL;
-@@ -656,6 +666,13 @@ void process_buffer_measurement(const void *buf, int size,
- 	int action = 0;
- 	u32 secid;
- 
++ * Author: Lakshmi Ramasubramanian (nramas@linux.microsoft.com)
++ *
++ * File: ima_asymmetric_keys.c
++ *       Defines an IMA hook to measure asymmetric keys on key
++ *       create or update.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <keys/asymmetric-type.h>
++#include "ima.h"
++
++/**
++ * ima_post_key_create_or_update - measure asymmetric keys
++ * @keyring: keyring to which the key is linked to
++ * @key: created or updated key
++ * @payload: The data used to instantiate or update the key.
++ * @plen: The length of @payload.
++ * @flags: key flags
++ * @create: flag indicating whether the key was created or updated
++ *
++ * Keys can only be measured, not appraised.
++ * The payload data used to instantiate or update the key is measured.
++ */
++void ima_post_key_create_or_update(struct key *keyring, struct key *key,
++				   const void *payload, size_t plen,
++				   unsigned long flags, bool create)
++{
++	/* Only asymmetric keys are handled by this hook. */
++	if (key->type != &key_type_asymmetric)
++		return;
++
++	if (!payload || (plen = 0))
++		return;
++
 +	/*
-+	 * If IMA is not yet initialized or IMA policy is empty
-+	 * then there is no need to measure.
++	 * keyring->description points to the name of the keyring
++	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
++	 * which the given key is linked to.
++	 *
++	 * The name of the keyring is passed in the "eventname"
++	 * parameter to process_buffer_measurement() and is set
++	 * in the "eventname" field in ima_event_data for
++	 * the key measurement IMA event.
 +	 */
-+	if (!ima_policy_flag)
-+		return;
-+
- 	/*
- 	 * Both LSM hooks and auxilary based buffer measurements are
- 	 * based on policy.  To avoid code duplication, differentiate
-@@ -671,6 +688,11 @@ void process_buffer_measurement(const void *buf, int size,
- 			return;
- 	}
- 
-+	if ((keyring != NULL) && (keyrings != NULL)
-+	    && (strstr(keyrings, keyring) = NULL)) {
-+		return;
-+	}
-+
- 	if (!pcr)
- 		pcr = CONFIG_IMA_MEASURE_PCR_IDX;
- 
-@@ -719,7 +741,7 @@ void ima_kexec_cmdline(const void *buf, int size)
- {
- 	if (buf && size != 0)
- 		process_buffer_measurement(buf, size, "kexec-cmdline",
--					   KEXEC_CMDLINE, 0);
-+					   KEXEC_CMDLINE, 0, NULL);
- }
- 
- /**
++	process_buffer_measurement(payload, plen,
++				   keyring->description, KEY_CHECK, 0);
++}
 -- 
 2.17.1
