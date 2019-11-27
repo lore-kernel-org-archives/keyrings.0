@@ -1,96 +1,83 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Tue, 19 Nov 2019 22:31:29 +0000
-Subject: [RFC PATCH 2/3] common/encrypt: move constant test key to common code
-Message-Id: <20191119223130.228341-3-ebiggers@kernel.org>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 27 Nov 2019 01:56:50 +0000
+Subject: [PATCH v9 2/6] IMA: Add KEY_CHECK func to measure keys
+Message-Id: <20191127015654.3744-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191119223130.228341-1-ebiggers@kernel.org>
-In-Reply-To: <20191119223130.228341-1-ebiggers@kernel.org>
-To: fstests@vger.kernel.org
-Cc: linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+References: <20191127015654.3744-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191127015654.3744-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+Measure keys loaded onto any keyring.
 
-For some encryption tests it's helpful to always use the same key so
-that the test's output is always the same.
+This patch defines a new IMA policy func namely KEY_CHECK to
+measure keys. Updated ima_match_rules() to check for KEY_CHECK
+and ima_parse_rule() to handle KEY_CHECK.
 
-generic/580 already defines such a key, so move it into common/encrypt
-so that other tests can use it too.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
- common/encrypt    | 11 +++++++++++
- tests/generic/580 | 17 ++++-------------
- 2 files changed, 15 insertions(+), 13 deletions(-)
+ Documentation/ABI/testing/ima_policy | 6 +++++-
+ security/integrity/ima/ima.h         | 1 +
+ security/integrity/ima/ima_policy.c  | 4 +++-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/common/encrypt b/common/encrypt
-index 2e9908ad..98a407ce 100644
---- a/common/encrypt
-+++ b/common/encrypt
-@@ -187,6 +187,17 @@ _scratch_mkfs_stable_inodes_encrypted()
- 	esac
- }
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 29aaedf33246..066d32797500 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -29,7 +29,7 @@ Description:
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+-				[KEXEC_CMDLINE]
++				[KEXEC_CMDLINE] [KEY_CHECK]
+ 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
+ 			       [[^]MAY_EXEC]
+ 			fsmagic:= hex value
+@@ -113,3 +113,7 @@ Description:
+ 		Example of appraise rule allowing modsig appended signatures:
  
-+# For some tests it's helpful to always use the same key so that the test's
-+# output is always the same.  For this purpose the following key can be used:
-+TEST_RAW_KEY+for i in {1..64}; do
-+	TEST_RAW_KEY+="\\x$(printf "%02x" $i)"
-+done
-+# Key descriptor: arbitrary value
-+TEST_KEY_DESCRIPTOR="0000111122223333"
-+# Key identifier: HKDF-SHA512(key=$TEST_RAW_KEY, salt="", info="fscrypt\0\x01")
-+TEST_KEY_IDENTIFIER="69b2f6edeee720cce0577937eb8a6751"
+ 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
 +
- # Give the invoking shell a new session keyring.  This makes any keys we add to
- # the session keyring scoped to the lifetime of the test script.
- _new_session_keyring()
-diff --git a/tests/generic/580 b/tests/generic/580
-index d0b0e9b3..283d6efa 100755
---- a/tests/generic/580
-+++ b/tests/generic/580
-@@ -43,21 +43,12 @@ _scratch_mount
- test_with_policy_version()
++		Example of measure rule using KEY_CHECK to measure all keys:
++
++			measure func=KEY_CHECK
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index df4ca482fb53..fe6c698617bd 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ 	hook(KEXEC_INITRAMFS_CHECK)	\
+ 	hook(POLICY_CHECK)		\
+ 	hook(KEXEC_CMDLINE)		\
++	hook(KEY_CHECK)			\
+ 	hook(MAX_CHECK)
+ #define __ima_hook_enumify(ENUM)	ENUM,
+ 
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index f19a895ad7cd..1525a28fd705 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
  {
- 	local vers=$1
--	local raw_key=""
--	local i
--
--	for i in {1..64}; do
--		raw_key+="\\x$(printf "%02x" $i)"
--	done
+ 	int i;
  
- 	if (( vers = 1 )); then
--		# Key descriptor: arbitrary value
--		local keyspec="0000111122223333"
-+		local keyspec=$TEST_KEY_DESCRIPTOR
- 		local add_enckey_args="-d $keyspec"
- 	else
--		# Key identifier:
--		# HKDF-SHA512(key=raw_key, salt="", info="fscrypt\0\x01")
--		local keyspec="69b2f6edeee720cce0577937eb8a6751"
-+		local keyspec=$TEST_KEY_IDENTIFIER
- 		local add_enckey_args=""
- 	fi
- 
-@@ -75,7 +66,7 @@ test_with_policy_version()
- 	echo "# Getting encryption key status"
- 	_enckey_status $SCRATCH_MNT $keyspec
- 	echo "# Adding encryption key"
--	_add_enckey $SCRATCH_MNT "$raw_key" $add_enckey_args
-+	_add_enckey $SCRATCH_MNT "$TEST_RAW_KEY" $add_enckey_args
- 	echo "# Creating encrypted file"
- 	echo contents > $dir/file
- 	echo "# Getting encryption key status"
-@@ -90,7 +81,7 @@ test_with_policy_version()
- 
- 	# Test removing key with a file open.
- 	echo "# Re-adding encryption key"
--	_add_enckey $SCRATCH_MNT "$raw_key" $add_enckey_args
-+	_add_enckey $SCRATCH_MNT "$TEST_RAW_KEY" $add_enckey_args
- 	echo "# Creating another encrypted file"
- 	echo foo > $dir/file2
- 	echo "# Removing key while an encrypted file is open"
+-	if (func = KEXEC_CMDLINE) {
++	if ((func = KEXEC_CMDLINE) || (func = KEY_CHECK)) {
+ 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
+ 			return true;
+ 		return false;
+@@ -997,6 +997,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 				entry->func = POLICY_CHECK;
+ 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
+ 				entry->func = KEXEC_CMDLINE;
++			else if (strcmp(args[0].from, "KEY_CHECK") = 0)
++				entry->func = KEY_CHECK;
+ 			else
+ 				result = -EINVAL;
+ 			if (!result)
 -- 
-2.24.0.432.g9d3f5f5b63-goog
+2.17.1
