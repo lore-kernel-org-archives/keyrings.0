@@ -1,31 +1,94 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 07 Nov 2019 17:42:18 +0000
-Subject: Re: [pipe] d60337eff1: phoronix-test-suite.noise-level.0.activity_level 144.0% improvement
-Message-Id: <25252.1573148538@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 27 Nov 2019 02:52:12 +0000
+Subject: [PATCH v0 2/2] IMA: Call queue functions to measure keys
+Message-Id: <20191127025212.3077-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAHk-=wiJ+jaT5Ev-wCg7iGNNO_JFUyMDcat0KDdA2b_+n_cZCQ@mail.gmail.com> <157262967752.13142.696874122947836210.stgit@warthog.procyon.org.uk> <20191107090306.GV29418@shao2-debian>
-In-Reply-To: <CAHk-=wiJ+jaT5Ev-wCg7iGNNO_JFUyMDcat0KDdA2b_+n_cZCQ@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, lkp report check <rong.a.chen@intel.com>, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, raven@themaw.net, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lkp@lists.01.org
+References: <20191127025212.3077-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191127025212.3077-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Keys should be queued for measurement if custom IMA policies have
+not yet been applied. Keys queued for measurement, if any, need to be
+processed when custom IMA policies have been applied.
 
-> > FYI, we noticed a 144.0% improvement of phoronix-test-suite.noise-level.0.activity_level due to commit:
-> >
-> > commit: d60337eff18a3c587832ab8053a567f1da9710d2 ("[RFC PATCH 04/11] pipe: Use head and tail pointers for the ring, not cursor and length [ver #3]")
-> 
-> That sounds nice, but is odd. That commit really shouldn't change
-> anything noticeable. David, any idea?
+This patch adds the call to ima_queue_key_for_measurement() in
+the IMA hook function if ima_process_keys_for_measurement flag is set
+to false. And, the call to ima_process_queued_keys_for_measurement()
+when custom IMA policies have been applied in ima_update_policy().
 
-Yeah, it does sound odd - the only thing that springs particularly to mind is
-that maybe it's an effect of one of the preceding patches that affects the
-waitqueue stuff.
+NOTE:
+If the kernel is built with CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+enabled then the IMA policy should be applied as custom IMA policies.
 
-TBH, I'm not sure what the Phoronix test suite is actually testing from the
-report.  "noise-level-1.1.0" seems more a reporting script than an actual
-test.
+Keys will be queued up until custom policies are applied and processed
+when custom policies have been applied.
 
-David
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ security/integrity/ima/ima_asymmetric_keys.c | 16 ++++++++++++++++
+ security/integrity/ima/ima_policy.c          | 12 ++++++++++++
+ 2 files changed, 28 insertions(+)
+
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+index 10deb77b22a0..adb7a307190f 100644
+--- a/security/integrity/ima/ima_asymmetric_keys.c
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -157,6 +157,8 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
+ 				   const void *payload, size_t payload_len,
+ 				   unsigned long flags, bool create)
+ {
++	bool key_queued = false;
++
+ 	/* Only asymmetric keys are handled by this hook. */
+ 	if (key->type != &key_type_asymmetric)
+ 		return;
+@@ -164,6 +166,20 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
+ 	if (!payload || (payload_len = 0))
+ 		return;
+ 
++	if (!ima_process_keys_for_measurement)
++		key_queued = ima_queue_key_for_measurement(keyring,
++							   payload,
++							   payload_len);
++
++	/*
++	 * Need to check again if the key was queued or not because
++	 * ima_process_keys_for_measurement could have flipped from
++	 * false to true after it was checked above, but before the key
++	 * could be queued by ima_queue_key_for_measurement().
++	 */
++	if (key_queued)
++		return;
++
+ 	/*
+ 	 * keyring->description points to the name of the keyring
+ 	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 78b25f083fe1..a2e30a90f97d 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -812,6 +812,18 @@ void ima_update_policy(void)
+ 		kfree(arch_policy_entry);
+ 	}
+ 	ima_update_policy_flag();
++
++	/*
++	 * Custom IMA policies have been setup.
++	 * Process key(s) queued up for measurement now.
++	 *
++	 * NOTE:
++	 *   Custom IMA policies always overwrite builtin policies
++	 *   (policies compiled in code). If one wants measurement
++	 *   of asymmetric keys then it has to be configured in
++	 *   custom policies and updated here.
++	 */
++	ima_process_queued_keys_for_measurement();
+ }
+ 
+ /* Keep the enumeration in sync with the policy_tokens! */
+-- 
+2.17.1
