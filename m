@@ -1,80 +1,60 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 01 Nov 2019 17:34:26 +0000
-Subject: [RFC PATCH 03/11] Add wake_up_interruptible_sync_poll_locked() [ver #3]
-Message-Id: <157262966653.13142.15080563290216609050.stgit@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 27 Nov 2019 02:52:10 +0000
+Subject: [PATCH v0 0/2] IMA: Deferred measurement of keys
+Message-Id: <20191127025212.3077-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157262963995.13142.5568934007158044624.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Peter Zijlstra <peterz@infradead.org>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Add a wakeup call for a case whereby the caller already has the waitqueue
-spinlock held.  This can be used by pipes to alter the ring buffer indices
-and issue a wakeup under the same spinlock.
+This patchset extends the previous version[1] by adding support for
+deferred processing of keys.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
----
+With the patchset referenced above, the IMA subsystem supports
+measuring keys when the key is created or updated. But the keys
+created or updated before IMA subsystem is initialized are not
+handled. This includes keys added to, for instance,
+.builtin_trusted_keys which happens very early in the boot process.
 
- include/linux/wait.h |    3 +++
- kernel/sched/wait.c  |   23 +++++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+This change adds support for queuing keys when IMA is not ready
+and process the keys (including queued keys) when IMA is initialized.
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index bb7676d396cd..3283c8d02137 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -202,6 +202,7 @@ void __wake_up_locked_key(struct wait_queue_head *wq_head, unsigned int mode, vo
- void __wake_up_locked_key_bookmark(struct wait_queue_head *wq_head,
- 		unsigned int mode, void *key, wait_queue_entry_t *bookmark);
- void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode, void *key);
-+void __wake_up_locked_sync_key(struct wait_queue_head *wq_head, unsigned int mode, void *key);
- void __wake_up_locked(struct wait_queue_head *wq_head, unsigned int mode, int nr);
- void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode);
- 
-@@ -229,6 +230,8 @@ void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode);
- 	__wake_up(x, TASK_INTERRUPTIBLE, 1, poll_to_key(m))
- #define wake_up_interruptible_sync_poll(x, m)					\
- 	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, poll_to_key(m))
-+#define wake_up_interruptible_sync_poll_locked(x, m)				\
-+	__wake_up_locked_sync_key((x), TASK_INTERRUPTIBLE, poll_to_key(m))
- 
- #define ___wait_cond_timeout(condition)						\
- ({										\
-diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index b4b52361dab7..ba059fbfc53a 100644
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -191,6 +191,29 @@ void __wake_up_sync_key(struct wait_queue_head *wq_head, unsigned int mode,
- }
- EXPORT_SYMBOL_GPL(__wake_up_sync_key);
- 
-+/**
-+ * __wake_up_locked_sync_key - wake up a thread blocked on a locked waitqueue.
-+ * @wq_head: the waitqueue
-+ * @mode: which threads
-+ * @key: opaque value to be passed to wakeup targets
-+ *
-+ * The sync wakeup differs in that the waker knows that it will schedule
-+ * away soon, so while the target thread will be woken up, it will not
-+ * be migrated to another CPU - ie. the two threads are 'synchronized'
-+ * with each other. This can prevent needless bouncing between CPUs.
-+ *
-+ * On UP it can prevent extra preemption.
-+ *
-+ * If this function wakes up a task, it executes a full memory barrier before
-+ * accessing the task state.
-+ */
-+void __wake_up_locked_sync_key(struct wait_queue_head *wq_head,
-+			       unsigned int mode, void *key)
-+{
-+        __wake_up_common(wq_head, mode, 1, WF_SYNC, key, NULL);
-+}
-+EXPORT_SYMBOL_GPL(__wake_up_locked_sync_key);
-+
- /*
-  * __wake_up_sync - see __wake_up_sync_key()
-  */
+[1] https://lore.kernel.org/linux-integrity/20191127015654.3744-1-nramas@linux.microsoft.com/
+
+Testing performed:
+
+  * Booted the kernel with this change.
+  * Added .builtin_trusted_keys in "keyrings=" option in
+    the IMA policy and verified the keys added to this
+    keyring are measured.
+  * Specified only func=KEY_CHECK and not "keyrings=" option,
+    and verified the keys added to builtin_trusted_keys keyring
+    are processed.
+  * Added keys at runtime and verified they are measured
+    if the IMA policy permitted.
+      => For example, added keys to .ima keyring and verified.
+
+Changelog:
+
+  v0
+
+  => Based changes on v5.4-rc8
+  => The following patchsets should be applied in that order
+     https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
+     https://lore.kernel.org/linux-integrity/20191127015654.3744-1-nramas@linux.microsoft.com/
+  => Added functions to queue and dequeue keys, and process
+     the queued keys when custom IMA policies are applied.
+
+Lakshmi Ramasubramanian (2):
+  IMA: Defined queue functions
+  IMA: Call queue and dequeue functions to measure keys
+
+ security/integrity/ima/ima.h                 |  15 ++
+ security/integrity/ima/ima_asymmetric_keys.c | 151 ++++++++++++++++++-
+ security/integrity/ima/ima_policy.c          |  12 ++
+ 3 files changed, 174 insertions(+), 4 deletions(-)
+
+-- 
+2.17.1
