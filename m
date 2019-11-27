@@ -1,7 +1,7 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 27 Nov 2019 20:46:22 +0000
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Wed, 27 Nov 2019 22:57:59 +0000
 Subject: Re: [RFC PATCH 0/3] xfstests: test adding filesystem-level fscrypt key via key_id
-Message-Id: <20191127204622.GB12520@linux.intel.com>
+Message-Id: <20191127225759.GA303989@sol.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,7 +9,7 @@ List-Id: <keyrings.vger.kernel.org>
 References: <20191119223130.228341-1-ebiggers@kernel.org>
  <20191127204536.GA12520@linux.intel.com>
 In-Reply-To: <20191127204536.GA12520@linux.intel.com>
-To: Eric Biggers <ebiggers@kernel.org>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 Cc: fstests@vger.kernel.org, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org
 
 On Wed, Nov 27, 2019 at 10:45:36PM +0200, Jarkko Sakkinen wrote:
@@ -79,7 +79,40 @@ On Wed, Nov 27, 2019 at 10:45:36PM +0200, Jarkko Sakkinen wrote:
 > would be first nice to smoke test the feature quickly.
 > 
 > I think for this patch that would actually be mostly sufficient testing.
+> 
 
-Sorry, this was meant for the kernel patch :-/
+You could manually do what the xfstest does, which is more or less the following
+(requires xfs_io patched with https://patchwork.kernel.org/patch/11252795/):
 
-/Jarkko
+	mkfs.ext4 -O encrypt /dev/vdc
+	mount /dev/vdc /vdc
+	keyctl new_session
+	payload='\x02\x00\x00\x00\x00\x00\x00\x00'
+	for i in {1..64}; do
+		payload+="\\x$(printf "%02x" $i)"
+	done
+	keyid=$(echo -ne "$payload" | keyctl padd fscrypt-provisioning desc @s)
+	keyspec=$(xfs_io -c "add_enckey -k $keyid" /vdc | awk '{print $NF}')
+	mkdir /vdc/edir
+	xfs_io -c "set_encpolicy $keyspec" /vdc/edir
+	echo contents > /vdc/edir/file
+
+I'm not yet planning to use this feature in the 'fscrypt' userspace tool
+https://github.com/google/fscrypt.  The user who actually wants this feature
+(Android) isn't using the 'fscrypt' tool, but rather is using custom code.
+
+Also, the 'fscrypt' tool isn't meant for testing or exposing every corner of the
+fscrypt kernel API.  Rather, it's meant to be a user-friendly tool for creating
+encrypted directories on "regular" Linux distros, supporting lots of higher
+level userspace features like passphrase hashing with Argon2, multiple
+protectors, and auto-unlocking directories with PAM.
+
+So for now, the important thing is to have an xfstest that fully tests this new
+API.  For that, like the other fscrypt tests, I'm using keyctl and xfs_io to
+access the kernel API directly.
+
+Later, if people really need the 'fscrypt' tool to do something that requires
+this feature, we can add it.  This would likely take the form of a user-friendly
+option to 'fscrypt unlock' rather than a direct translation of the kernel API.
+
+- Eric
