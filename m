@@ -1,73 +1,87 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 06 Nov 2019 19:01:08 +0000
-Subject: [PATCH v4 02/10] IMA: Added KEYRING_CHECK func in IMA policy to measure keys
-Message-Id: <20191106190116.2578-3-nramas@linux.microsoft.com>
+Date: Wed, 27 Nov 2019 01:56:52 +0000
+Subject: [PATCH v9 4/6] KEYS: Call the IMA hook to measure keys
+Message-Id: <20191127015654.3744-5-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191106190116.2578-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191106190116.2578-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191127015654.3744-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191127015654.3744-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-IMA policy needs to support a func to enable measurement of
-asymmetric keys.
+Call the IMA hook from key_create_or_update() function to measure
+the payload when a new key is created or an existing key is updated.
 
-This patch defines a new IMA policy func namely KEYRING_CHECK to
-measure asymmetric keys.
+This patch adds the call to the IMA hook from key_create_or_update()
+function to measure the key on key create or update.
 
 Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
- Documentation/ABI/testing/ima_policy | 6 ++++++
- security/integrity/ima/ima.h         | 1 +
- security/integrity/ima/ima_policy.c  | 2 +-
- 3 files changed, 8 insertions(+), 1 deletion(-)
+ include/linux/ima.h | 14 ++++++++++++++
+ security/keys/key.c | 10 ++++++++++
+ 2 files changed, 24 insertions(+)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 29aaedf33246..341df49b5ad1 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -30,6 +30,7 @@ Description:
- 				[FIRMWARE_CHECK]
- 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
- 				[KEXEC_CMDLINE]
-+				[KEYRING_CHECK]
- 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
- 			       [[^]MAY_EXEC]
- 			fsmagic:= hex value
-@@ -113,3 +114,8 @@ Description:
- 		Example of appraise rule allowing modsig appended signatures:
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index 6d904754d858..3b89136bc218 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -101,6 +101,20 @@ static inline void ima_add_kexec_buffer(struct kimage *image)
+ {}
+ #endif
  
- 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
++#if defined(CONFIG_IMA) && defined(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE)
++extern void ima_post_key_create_or_update(struct key *keyring,
++					  struct key *key,
++					  const void *payload, size_t plen,
++					  unsigned long flags, bool create);
++#else
++static inline void ima_post_key_create_or_update(struct key *keyring,
++						 struct key *key,
++						 const void *payload,
++						 size_t plen,
++						 unsigned long flags,
++						 bool create) {}
++#endif  /* CONFIG_IMA && CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE */
 +
-+		Example of measure rule using KEYRING_CHECK to measure
-+		all keys:
+ #ifdef CONFIG_IMA_APPRAISE
+ extern bool is_ima_appraise_enabled(void);
+ extern void ima_inode_post_setattr(struct dentry *dentry);
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 764f4c57913e..718bf7217420 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -13,6 +13,7 @@
+ #include <linux/security.h>
+ #include <linux/workqueue.h>
+ #include <linux/random.h>
++#include <linux/ima.h>
+ #include <linux/err.h>
+ #include "internal.h"
+ 
+@@ -936,6 +937,9 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		goto error_link_end;
+ 	}
+ 
++	ima_post_key_create_or_update(keyring, key, payload, plen,
++				      flags, true);
 +
-+			measure func=KEYRING_CHECK
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index df4ca482fb53..7f23405b2718 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
- 	hook(KEXEC_INITRAMFS_CHECK)	\
- 	hook(POLICY_CHECK)		\
- 	hook(KEXEC_CMDLINE)		\
-+	hook(KEYRING_CHECK)		\
- 	hook(MAX_CHECK)
- #define __ima_hook_enumify(ENUM)	ENUM,
+ 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
  
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index f19a895ad7cd..4344b7354fc5 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
- {
- 	int i;
+ error_link_end:
+@@ -965,6 +969,12 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	}
  
--	if (func = KEXEC_CMDLINE) {
-+	if ((func = KEXEC_CMDLINE) || (func = KEYRING_CHECK)) {
- 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
- 			return true;
- 		return false;
+ 	key_ref = __key_update(key_ref, &prep);
++
++	if (!IS_ERR(key_ref))
++		ima_post_key_create_or_update(keyring, key,
++					      payload, plen,
++					      flags, false);
++
+ 	goto error_free_prep;
+ }
+ EXPORT_SYMBOL(key_create_or_update);
 -- 
 2.17.1
