@@ -1,53 +1,85 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 27 Nov 2019 18:52:21 +0000
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 28 Nov 2019 00:44:22 +0000
 Subject: Re: [PATCH v9 5/6] IMA: Add support to limit measuring keys
-Message-Id: <1574880741.4793.292.camel@linux.ibm.com>
+Message-Id: <18b30666-7c44-f81e-8515-189052007e47@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191127015654.3744-1-nramas@linux.microsoft.com>
-         <20191127015654.3744-6-nramas@linux.microsoft.com>
-In-Reply-To: <20191127015654.3744-6-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
+ <20191127015654.3744-6-nramas@linux.microsoft.com>
+ <1574880741.4793.292.camel@linux.ibm.com>
+In-Reply-To: <1574880741.4793.292.camel@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-PiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYwo+ICsrKyBiL3NlY3Vy
-aXR5L2ludGVncml0eS9pbWEvaW1hX3BvbGljeS5jCj4gQEAgLTc5LDYgKzc5LDcgQEAgc3RydWN0
-IGltYV9ydWxlX2VudHJ5IHsKPiAgCQlpbnQgdHlwZTsJLyogYXVkaXQgdHlwZSAqLwo+ICAJfSBs
-c21bTUFYX0xTTV9SVUxFU107Cj4gIAljaGFyICpmc25hbWU7Cj4gKwljaGFyICprZXlyaW5nczsg
-LyogTWVhc3VyZSBrZXlzIGFkZGVkIHRvIHRoZXNlIGtleXJpbmdzICovCj4gIAlzdHJ1Y3QgaW1h
-X3RlbXBsYXRlX2Rlc2MgKnRlbXBsYXRlOwo+ICB9Owo+ICAKPiBAQCAtMzU2LDYgKzM1Nyw1NSBA
-QCBpbnQgaW1hX2xzbV9wb2xpY3lfY2hhbmdlKHN0cnVjdCBub3RpZmllcl9ibG9jayAqbmIsIHVu
-c2lnbmVkIGxvbmcgZXZlbnQsCj4gIAlyZXR1cm4gTk9USUZZX09LOwo+ICB9Cj4gIAo+ICsvKioK
-PiArICogaW1hX21hdGNoX2tleXJpbmcgLSBkZXRlcm1pbmUgd2hldGhlciB0aGUga2V5cmluZyBt
-YXRjaGVzIHRoZSBtZWFzdXJlIHJ1bGUKPiArICogQHJ1bGU6IGEgcG9pbnRlciB0byBhIHJ1bGUK
-PiArICogQGtleXJpbmc6IG5hbWUgb2YgdGhlIGtleXJpbmcgdG8gbWF0Y2ggYWdhaW5zdCB0aGUg
-bWVhc3VyZSBydWxlCj4gKyAqCj4gKyAqIElmIHRoZSBtZWFzdXJlIGFjdGlvbiBmb3IgS0VZX0NI
-RUNLIGRvZXMgbm90IHNwZWNpZnkga2V5cmluZ3M+ICsgKiBvcHRpb24gdGhlbiByZXR1cm4gdHJ1
-ZSAoTWVhc3VyZSBhbGwga2V5cykuCj4gKyAqIEVsc2UsIHJldHVybiB0cnVlIGlmIHRoZSBnaXZl
-biBrZXlyaW5nIG5hbWUgaXMgcHJlc2VudCBpbgo+ICsgKiB0aGUga2V5cmluZ3M9IG9wdGlvbi4g
-RmFsc2UsIG90aGVyd2lzZS4KClRoaXMgaXMgc3VwcG9zZSB0byBiZSBhIGNvbW1lbnQsIG5vdCBj
-b2RlIG9yIHBzZXVkbyBjb2RlLiDCoFBsZWFzZQpyZWZlciB0byB0aGUgc2VjdGlvbiAiQ29tbWVu
-dHMiIGluIERvY3VtZW50YXRpb24vcHJvY2Vzcy9jb2RpbmctCnN0eWxlLnJzdC4KwqAKPiArICov
-Cj4gK3N0YXRpYyBib29sIGltYV9tYXRjaF9rZXlyaW5nKHN0cnVjdCBpbWFfcnVsZV9lbnRyeSAq
-cnVsZSwKPiArCQkJICAgICAgY29uc3QgY2hhciAqa2V5cmluZykKPiArewo+ICsJY29uc3QgY2hh
-ciAqcDsKPiArCj4gKwkvKiBJZiAia2V5cmluZ3M9IiBpcyBub3Qgc3BlY2lmaWVkIGFsbCBrZXlz
-IGFyZSBtZWFzdXJlZC4gKi8KPiArCWlmICghcnVsZS0+a2V5cmluZ3MpCj4gKwkJcmV0dXJuIHRy
-dWU7Cj4gKwo+ICsJaWYgKCFrZXlyaW5nKQo+ICsJCXJldHVybiBmYWxzZTsKPiArCj4gKwkvKgo+
-ICsJICogImtleXJpbmdzPSIgaXMgc3BlY2lmaWVkIGluIHRoZSBwb2xpY3kgaW4gdGhlIGZvcm1h
-dCBiZWxvdzoKPiArCSAqICAga2V5cmluZ3M9LmJ1aWx0aW5fdHJ1c3RlZF9rZXlzfC5pbWF8LmV2
-bQo+ICsJICoKPiArCSAqIEVhY2gga2V5cmluZyBuYW1lIGluIHRoZSBvcHRpb24gaXMgc2VwYXJh
-dGVkIGJ5IGEgJ3wnIGFuZAo+ICsJICogdGhlIGxhc3Qga2V5cmluZyBuYW1lIGlzIG51bGwgdGVy
-bWluYXRlZC4KPiArCSAqCj4gKwkgKiBUaGUgZ2l2ZW4ga2V5cmluZyBpcyBjb25zaWRlcmVkIG1h
-dGNoZWQgb25seSBpZgo+ICsJICogdGhlIHdob2xlIGtleXJpbmcgbmFtZSBtYXRjaGVkIGEga2V5
-cmluZyBuYW1lIHNwZWNpZmllZAo+ICsJICogaW4gdGhlICJrZXlyaW5ncz0iIG9wdGlvbi4KPiAr
-CSAqLwo+ICsJcCA9IHN0cnN0cihydWxlLT5rZXlyaW5ncywga2V5cmluZyk7Cj4gKwlpZiAocCkg
-ewo+ICsJCS8qCj4gKwkJICogRm91bmQgYSBzdWJzdHJpbmcgbWF0Y2guIENoZWNrIGlmIHRoZSBj
-aGFyYWN0ZXIKPiArCQkgKiBhdCB0aGUgZW5kIG9mIHRoZSBrZXlyaW5nIG5hbWUgaXMgfCAoa2V5
-cmluZyBuYW1lCj4gKwkJICogc2VwYXJhdG9yKSBvciBpcyB0aGUgdGVybWluYXRpbmcgbnVsbCBj
-aGFyYWN0ZXIuCj4gKwkJICogSWYgeWVzLCB3ZSBoYXZlIGEgd2hvbGUgc3RyaW5nIG1hdGNoLgo+
-ICsJCSAqLwo+ICsJCXAgKz0gc3RybGVuKGtleXJpbmcpOwo+ICsJCWlmICgqcCA9ICd8JyB8fCAq
-cCA9ICdcMCcpCj4gKwkJCXJldHVybiB0cnVlOwo+ICsJfQo+ICsKClVzaW5nICJ3aGlsZSBzdHJz
-ZXAoKSIgd291bGQgc2ltcGxpZnkgdGhpcyBjb2RlLCByZW1vdmluZyB0aGUgbmVlZCBmb3IKc3Vj
-aCBhIGxvbmcgY29tbWVudC4KCk1pbWkKCj4gKwlyZXR1cm4gZmFsc2U7Cj4gK30KPiArCg==
+On 11/27/19 10:52 AM, Mimi Zohar wrote:
+
+Hi Mimi,
+
+>> +static bool ima_match_keyring(struct ima_rule_entry *rule,
+>> +			      const char *keyring)
+>> +{
+>> +	/*
+>> +	 * "keyrings=" is specified in the policy in the format below:
+>> +	 *   keyrings=.builtin_trusted_keys|.ima|.evm
+>> +	 *
+>> +	 * Each keyring name in the option is separated by a '|' and
+>> +	 * the last keyring name is null terminated.
+>> +	 *
+>> +	 * The given keyring is considered matched only if
+>> +	 * the whole keyring name matched a keyring name specified
+>> +	 * in the "keyrings=" option.
+>> +	 */
+>> +	p = strstr(rule->keyrings, keyring);
+>> +	if (p) {
+>> +		/*
+>> +		 * Found a substring match. Check if the character
+>> +		 * at the end of the keyring name is | (keyring name
+>> +		 * separator) or is the terminating null character.
+>> +		 * If yes, we have a whole string match.
+>> +		 */
+>> +		p += strlen(keyring);
+>> +		if (*p = '|' || *p = '\0')
+>> +			return true;
+>> +	}
+>> +
+> 
+> Using "while strsep()" would simplify this code, removing the need for
+> such a long comment.
+> 
+> Mimi
+
+strsep() modifies the source string (replaces the delimiter with '\0' 
+and also updates the source string pointer). I am not sure it can be 
+used for our scenario. Please correct me if I am wrong.
+
+Initial IMA policy:
+-------------------
+measure func=KEY_CHECK 
+keyrings=.ima|.evm|.builtin_trusted_keys|.blacklist template=ima-buf
+
+Policy after adding a key to .ima keyring:
+------------------------------------------
+measure func=KEY_CHECK keyrings=.evm|.builtin_trusted_keys|.blacklist 
+template=ima-buf
+
+Policy after adding a key to a keyring that is not listed in the policy:
+------------------------------------------------------------------------
+measure func=KEY_CHECK keyrings= template=ima-buf
+
+********************************************************************************
+
+Please see the description from the man page for strsep():
+
+http://man7.org/linux/man-pages/man3/strsep.3.html
+
+char *strsep(char **stringp, const char *delim);
+
+This function finds the first token in the string *stringp, that is 
+delimited by one of the bytes in the string delim.  This token is 
+terminated by overwriting the delimiter with a null byte ('\0'), and 
+*stringp is updated to point past the token.
+
+thanks,
+  -lakshmi
