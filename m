@@ -1,34 +1,62 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 12 Dec 2019 21:44:06 +0000
-Subject: Re: [PATCH RESEND] KEYS: remove CONFIG_KEYS_COMPAT
-Message-Id: <20191212214330.GA31054@linux.intel.com>
+From: "Zhao, Shirley" <shirley.zhao@intel.com>
+Date: Mon, 02 Dec 2019 01:44:00 +0000
+Subject: RE: One question about trusted key of keyring in Linux kernel.
+Message-Id: <A888B25CD99C1141B7C254171A953E8E4909BA3B@shsmsx102.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180105191947.91775-1-ebiggers3@gmail.com>
-In-Reply-To: <20180105191947.91775-1-ebiggers3@gmail.com>
-To: keyrings@vger.kernel.org
+References: <A888B25CD99C1141B7C254171A953E8E49094313@shsmsx102.ccr.corp.intel.com>
+         <1573659978.17949.83.camel@linux.ibm.com>
+         <A888B25CD99C1141B7C254171A953E8E49095F9B@shsmsx102.ccr.corp.intel.com>
+         <1574877977.3551.5.camel@linux.ibm.com>
+         <A888B25CD99C1141B7C254171A953E8E49096521@shsmsx102.ccr.corp.intel.com>
+ <1575057916.6220.7.camel@linux.ibm.com>
+In-Reply-To: <1575057916.6220.7.camel@linux.ibm.com>
+To: James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
+Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 'Mauro Carvalho Chehab' <mchehab+samsung@kernel.org>, "Zhu, Bing" <bing.zhu@intel.com>, "Chen, Luhai" <luhai.chen@intel.com>
 
-On Mon, Oct 14, 2019 at 10:53:54PM +0300, Jarkko Sakkinen wrote:
-> On Wed, Oct 09, 2019 at 04:04:43PM -0700, Eric Biggers wrote:
-> > From: Eric Biggers <ebiggers@google.com>
-> > 
-> > KEYS_COMPAT now always takes the value of COMPAT && KEYS.  But the
-> > security/keys/ directory is only compiled if KEYS is enabled, so in
-> > practice KEYS_COMPAT is the same as COMPAT.  Therefore, remove the
-> > unnecessary KEYS_COMPAT and just use COMPAT directly.
-> > 
-> > (Also remove an outdated comment from compat.c.)
-> > 
-> > Reviewed-by: James Morris <jamorris@linux.microsoft.com>
-> > Signed-off-by: Eric Biggers <ebiggers@google.com>
-> 
-> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> 
-> (aka compiling with the different combinations).
-
-I applied this to git://git.infradead.org/users/jjs/linux-tpmdd.git
-
-/Jarkko
+SGksIEphbWVzLCANCg0KVGhlIHZhbHVlIG9mIFBDUjcgaXMgbm90IGNoYW5nZWQuIEkgaGF2ZSBj
+aGVja2VkIGl0IHdpdGggVFBNIGNvbW1hbmQgdHBtX3Bjcmxpc3QuIA0KDQpTbyBJIHRoaW5rIHRo
+ZSBwcm9ibGVtIGlzIGhvdyB0byB1c2UgdGhlIG9wdGlvbiBwb2xpY3lkaWdlc3QgYW5kIHBvbGlj
+eWhhbmRsZT8gSXMgdGhlcmUgYW55IGV4YW1wbGU/DQpNYXliZSB0aGUgZm9ybWF0IGluIG15IGNv
+bW1hbmQgaXMgbm90IGNvcnJlY3QuIA0KDQpUaGFua3MuIA0KDQotIFNoaXJsZXkgDQoNCi0tLS0t
+T3JpZ2luYWwgTWVzc2FnZS0tLS0tDQpGcm9tOiBKYW1lcyBCb3R0b21sZXkgPGplamJAbGludXgu
+aWJtLmNvbT4gDQpTZW50OiBTYXR1cmRheSwgTm92ZW1iZXIgMzAsIDIwMTkgNDowNSBBTQ0KVG86
+IFpoYW8sIFNoaXJsZXkgPHNoaXJsZXkuemhhb0BpbnRlbC5jb20+OyBNaW1pIFpvaGFyIDx6b2hh
+ckBsaW51eC5pYm0uY29tPjsgSmFya2tvIFNha2tpbmVuIDxqYXJra28uc2Fra2luZW5AbGludXgu
+aW50ZWwuY29tPjsgSm9uYXRoYW4gQ29yYmV0IDxjb3JiZXRAbHduLm5ldD4NCkNjOiBsaW51eC1p
+bnRlZ3JpdHlAdmdlci5rZXJuZWwub3JnOyBrZXlyaW5nc0B2Z2VyLmtlcm5lbC5vcmc7IGxpbnV4
+LWRvY0B2Z2VyLmtlcm5lbC5vcmc7IGxpbnV4LWtlcm5lbEB2Z2VyLmtlcm5lbC5vcmc7ICdNYXVy
+byBDYXJ2YWxobyBDaGVoYWInIDxtY2hlaGFiK3NhbXN1bmdAa2VybmVsLm9yZz47IFpodSwgQmlu
+ZyA8YmluZy56aHVAaW50ZWwuY29tPjsgQ2hlbiwgTHVoYWkgPGx1aGFpLmNoZW5AaW50ZWwuY29t
+Pg0KU3ViamVjdDogUmU6IE9uZSBxdWVzdGlvbiBhYm91dCB0cnVzdGVkIGtleSBvZiBrZXlyaW5n
+IGluIExpbnV4IGtlcm5lbC4NCg0KT24gRnJpLCAyMDE5LTExLTI5IGF0IDAxOjQwICswMDAwLCBa
+aGFvLCBTaGlybGV5IHdyb3RlOg0KPiBIaSwgSmFtZXMsDQo+IA0KPiBNYXliZSB0aGUgVFBNIGNv
+bW1hbmQgY29uZnVzZWQgeW91LiANCg0KV2VsbCB5b3UgZGlkIHNlZW0gdG8gYmUgc2F5aW5nIHdl
+IGhhZCBhIHByb2JsZW0gaW4gdGhlIFRQTSBzZWFsZWQga2V5IHN1YnN5c3RlbS4NCg0KPiBUaGUg
+cXVlc3Rpb24gaXMgSSB1c2Uga2V5Y3RsIGNvbW1hbmQgc2VhbGVkIGEgdHJ1c3RlZCBrZXkgd2l0
+aCBQQ1IgDQo+IHBvbGljeSwgYnV0IGxvYWQgaXQgZmFpbGVkIGFmdGVyIHJlYm9vdC4NCj4gSSBk
+b24ndCBrbm93IHdoeSBpdCB3YXMgbG9hZGVkIGZhaWxlZC4gSSB1c2UgVFBNIGNvbW1hbmQgdG8g
+aGVscCBmaW5kIA0KPiBpdCwgaXQgcmVwb3J0IHBvbGljeSBjaGVjayBmYWlsZWQuDQoNClJpZ2h0
+LCBzbyB5b3VyIHF1ZXN0aW9uIHNlZW1zIHRvIGJlIHdoeSBhZnRlciBhIHJlYm9vdCwgdGhlIFRQ
+TSBwb2xpY3kgbm8gbG9uZ2VyIHdvcmtzIHRvIGF1dGhvcml6ZSB0aGUga2V5IGV2ZW4gZnJvbSB1
+c2VyIHNwYWNlPyAgTXkgYmVzdCBndWVzcyB3b3VsZCBiZSB0aGUgUENSIHZhbHVlIHlvdSd2ZSBz
+ZWFsZWQgaXQgdG8gY2hhbmdlZCBvdmVyIHRoZSByZWJvb3QgZm9yIHNvbWUgcmVhc29uLg0KDQo+
+IFNvIG15IHF1ZXN0aW9uIGlzIGhvdyB0byBsb2FkIHRoZSBQQ1IgcG9saWN5IHNlYWxlZCB0cnVz
+dGVkIGtleSANCj4gY29ycmVjdGx5Pw0KDQpZb3UgaGF2ZSB0byBzZXQgdGhlIHNlYWxpbmcgcmVs
+ZWFzZSBwb2xpY3kgdG8gc29tZXRoaW5nIHlvdSBrbm93IHdpbGwgYmUgaW52YXJpYW50IGFjcm9z
+cyByZWJvb3RzIGZvciBhbiB1bnNlYWwgdG8gaGFwcGVuIHJlbGlhYmx5LiAgSG93ZXZlciwgdXN1
+YWxseSB5b3UgYWxzbyB3YW50IHRoZSB1bnNlYWwgdG8gZmFpbCBpZiBzb21ldGhpbmcgeW91IGRv
+bid0IGxpa2UgY2hhbmdlcywgc28geW91IHNldCB0aGUgcG9saWN5IHRvIGJlIHNvbWV0aGluZyB0
+aGF0J3MgaW52YXJpYW50IHVubGVzcyB0aGF0IGhhcHBlbnMuICBOb3QgcmVhbGx5IGtub3dpbmcg
+d2hhdCB5b3VyIGNvbmRpdGlvbnMgYXJlIHdlIGNhbid0IHJlYWxseSB0ZWxsIHlvdSB3aGF0IHlv
+dXIgcG9saWN5IHNob3VsZCBsb29rIGxpa2UuDQoNCj4gSG93IHRvIHVzZSBwb2xpY3lkaWdlc3Qg
+YW5kIHBvbGljeWhhbmRsZSBjb3JyZWN0bHkuIA0KDQpJJ3ZlIG5vIHJlYWwgaWRlYSBob3cgdGhl
+IHRwbTJfIGNvbW1hbmRzIHdvcmssIGJ1dCB0aGUgdHNzcG9saWN5IGNvbW1hbmRzIGFsbCBoYXZl
+IG1hbiBwYWdlcyB3aGljaCBkbyBhIHByZXR0eSBnb29kIGV4cGxhbmF0aW9uLiAgSWYgSSBpbmZl
+ciBob3cgeW91ciB0cG0yXyBjb21tYW5kcyBzZWVtIHRvIGJlIHdvcmtpbmcsIEkgdGhpbmsgeW91
+J3JlIHNlYWxpbmcgdG8gYSBwY3I3IGhhc2g/ICBwY3I3IGlzIHRoZSBvbmUgdGhhdCdzIHN1cHBv
+c2VkIHRvIG1lYXN1cmUgdGhlIHNlY3VyZSBib290IHBhdGggYW5kIHByb3BlcnRpZXMgYW5kIGFz
+IHN1Y2ggc2hvdWxkbid0IGNoYW5nZSBhY3Jvc3MgcmVib290cywgc28gSSB0aGluayB5b3VyIHBy
+b2JsZW0gYmVjb21lcyBmaW5kaW5nIG91dCB3aHkgaXQgY2hhbmdlZC4NCg0KSmFtZXMNCg0K
