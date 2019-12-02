@@ -1,38 +1,48 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Tue, 03 Dec 2019 16:09:20 +0000
-Subject: Re: [PATCH v0 2/2] IMA: Call queue functions to measure keys
-Message-Id: <e89dcb1c-c463-919a-aabb-e285d884a914@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Mon, 02 Dec 2019 18:00:22 +0000
+Subject: Re: [PATCH v0 1/2] IMA: Defined queue functions
+Message-Id: <1575309622.4793.413.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191127025212.3077-1-nramas@linux.microsoft.com>
- <20191127025212.3077-3-nramas@linux.microsoft.com>
- <1575331353.4793.471.camel@linux.ibm.com>
-In-Reply-To: <1575331353.4793.471.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+         <20191127025212.3077-2-nramas@linux.microsoft.com>
+         <1574887137.4793.346.camel@linux.ibm.com>
+         <ea2fafb8-a97f-5365-debd-d90143e549bf@linux.microsoft.com>
+In-Reply-To: <ea2fafb8-a97f-5365-debd-d90143e549bf@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, Janne Karhunen <janne.karhunen@gmail.com>
 
-VGhhbmtzIGZvciByZXZpZXdpbmcgdGhlIGNoYW5nZXMgTWltaS4gSSdsbCBhZGRyZXNzIHlvdXIg
-Y29tbWVudHMgaW4gdGhlIApuZXh0IHVwZGF0ZS4KCj4gCj4gT3ZlcndyaXRpbmcgdGhlIGluaXRp
-YWwgcG9saWN5IGlzIGhpZ2hseSByZWNvbW1lbmRlZCwgYnV0IG5vdCBldmVyeW9uZQo+IGRlZmlu
-ZXMgYSBjdXN0b20gcG9saWN5LiDCoFNob3VsZCB0aGVyZSBiZSBhIHRpbWUgbGltaXQgb3Igc29t
-ZSBvdGhlcgo+IGNyaXRlcmlhIGJlZm9yZSBkZWxldGluZyB0aGUga2V5IG1lYXN1cmVtZW50IHF1
-ZXVlPwo+IAo+IE1pbWkKCkZvciB0aGUgYWJvdmUsIEkgZmVlbCBjaGVja2luZyBmb3IgdGhlIHBy
-ZXNlbmNlIG9mIGN1c3RvbSBwb2xpY3ksIGlmIAp0aGF0IGlzIHBvc3NpYmxlLCB3b3VsZCBiZSBh
-IG1vcmUgZGV0ZXJtaW5pc3RpYyBhcHByb2FjaCBjb21wYXJlZCB0byAKaGF2aW5nIGEgdGltZSBs
-aW1pdC4KCk9uIG15IG1hY2hpbmUsIHN5c3RlbWQgbG9hZHMgdGhlIGN1c3RvbSBJTUEgcG9saWN5
-IGZyb20gCi9ldGMvaW1hL2ltYS1wb2xpY3kgaWYgdGhhdCBmaWxlIGlzIHByZXNlbnQuIElzIHRo
-aXMgdGhlIHJlY29tbWVuZGVkIHdheSAKdG8gY29uZmlndXJlIGN1c3RvbSBJTUEgcG9saWN5PyBJ
-ZiB5ZXMsIGNhbiB0aGUgSU1BIGluaXRpYWxpemF0aW9uIApmdW5jdGlvbiBjaGVjayBmb3IgdGhl
-IHByZXNlbmNlIG9mIHRoZSBhYm92ZSBmaWxlPwoKQW5vdGhlciB3YXkgdG8gYWRkcmVzcyB0aGlz
-IGlzc3VlIGlzIHRvIGRlZmluZSBhIG5ldyBDT05GSUcgcGFyYW1ldGVyIHRvIApkZXRlcm1pbmUg
-d2hldGhlciBvciBub3QgdG8gc3VwcG9ydCBkZWZlcnJlZCBwcm9jZXNzaW5nIG9mIGtleXMuIElm
-IHRoaXMgCmNvbmZpZyBpcyBjaG9zZW4sIGN1c3RvbSBJTUEgcG9saWN5IG11c3QgYmUgZGVmaW5l
-ZC4KCkxlYXN0IHByZWZlcnJlZCBvcHRpb24gd291bGQgYmUgdG8gbGVhdmUgdGhlIHF1ZXVlZCBr
-ZXlzIGFzIGlzIGlmIGN1c3RvbSAKcG9saWN5IGlzIG5vdCBkZWZpbmVkIC0gYXQgdGhlIGNvc3Qg
-b2YsIG1heWJlLCBhIG5vbi10cml2aWFsIGFtb3VudCBvZiAKa2VybmVsIG1lbW9yeSBjb25zdW1l
-ZC4KCklmIGRldGVjdGlvbiBvZiBjdXN0b20gcG9saWN5IGlzIG5vdCBwb3NzaWJsZSwgdGhlbiBk
-ZWZpbmUgYSB0aW1lciB0byAKZHJhaW4gdGhlIGtleSBtZWFzdXJlbWVudCBxdWV1ZS4KClBsZWFz
-ZSBsZXQgbWUga25vdyB3aGljaCBhcHByb2FjaCB5b3UgdGhpbmsgaXMgb3B0aW1hbC4KCnRoYW5r
-cywKICAtbGFrc2htaQo=
+On Wed, 2019-11-27 at 13:11 -0800, Lakshmi Ramasubramanian wrote:
+> On 11/27/19 12:38 PM, Mimi Zohar wrote:
+
+> > I'm not sure why you want to differentiate between IMA being
+> > initialized vs. an empty policy.  I would think you would want to know
+> > when a custom policy has been loaded.
+> 
+> You are right - When custom ima policy rules are loaded (in 
+> ima_update_policy() function), ima_process_queued_keys_for_measurement() 
+> function is called to process queued keys.
+> 
+> The flag ima_process_keys_for_measurement is set to true in 
+> ima_process_queued_keys_for_measurement(). And, subsequent keys are 
+> processed immediately.
+> 
+> Please take a look at ima_process_queued_keys_for_measurement() in this 
+> patch (v0 1/2) and the ima_update_policy() change in "PATCH v0 2/2".
+
+ima_update_policy() is called from multiple places.  Initially, it is
+called before a custom policy has been loaded.  The call to
+ima_process_queued_keys_for_measurement() needs to be moved to within 
+the test, otherwise it runs the risk of dropping "key" measurements.
+
+All the queued keys need to be processed at the same time.  Afterwards
+the queue should be deleted.  Unfortunately, the current queue locking
+assumes ima_process_queued_keys_for_measurement() is called multiple
+times.
+
+Perhaps using the RCU method of walking lists would help.  I need to
+think about it some more.
+
+Mimi
