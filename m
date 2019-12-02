@@ -1,7 +1,7 @@
-From: James Bottomley <jejb@linux.ibm.com>
-Date: Mon, 02 Dec 2019 06:44:35 +0000
-Subject: Re: One question about trusted key of keyring in Linux kernel.
-Message-Id: <1575269075.4080.31.camel@linux.ibm.com>
+From: "Zhao, Shirley" <shirley.zhao@intel.com>
+Date: Mon, 02 Dec 2019 06:50:17 +0000
+Subject: RE: One question about trusted key of keyring in Linux kernel.
+Message-Id: <A888B25CD99C1141B7C254171A953E8E4909E399@shsmsx102.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -17,40 +17,54 @@ References: <A888B25CD99C1141B7C254171A953E8E49094313@shsmsx102.ccr.corp.intel.c
          <A888B25CD99C1141B7C254171A953E8E4909D360@shsmsx102.ccr.corp.intel.com>
          <1575267453.4080.26.camel@linux.ibm.com>
          <A888B25CD99C1141B7C254171A953E8E4909E381@shsmsx102.ccr.corp.intel.com>
-In-Reply-To: <A888B25CD99C1141B7C254171A953E8E4909E381@shsmsx102.ccr.corp.intel.com>
-To: "Zhao, Shirley" <shirley.zhao@intel.com>, Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
+ <1575269075.4080.31.camel@linux.ibm.com>
+In-Reply-To: <1575269075.4080.31.camel@linux.ibm.com>
+To: James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
 Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 'Mauro Carvalho Chehab' <mchehab+samsung@kernel.org>, "Zhu, Bing" <bing.zhu@intel.com>, "Chen, Luhai" <luhai.chen@intel.com>
 
-On Mon, 2019-12-02 at 06:23 +0000, Zhao, Shirley wrote:
-> Hi, James, 
-> 
-> The PCR7 value and PCR7 policy is as below, please review, thanks. 
-> 
-> # tpm2_pcrlist -L sha256:7 -o pcr7_2.sha256
-> sha256:
->   7 :
-> 0x061AAD0705A62361AD18E58B65D3D7383F4D10F7F5A7E78924BE057AC6797408
-> 
-> # tpm2_createpolicy --policy-pcr --pcr-list sha256:7 --policy
-> pcr7_bin.policy > pcr7.policy
-> 321fbd28b60fcc23017d501b133bd5dbf2889814588e8a23510fe10105cb2cc9
-> 
-> # cat pcr7.policy
-> 321fbd28b60fcc23017d501b133bd5dbf2889814588e8a23510fe10105cb2cc9
-
-Well, the IBM TSS says that's the correct policy.  Your policy command
-is
-
-jejb@jarvis:~> tsspolicymakerpcr -bm 000080 -if ~/pcr7.txt -pr | tee tmp.policy
-0000017f00000001000b038000009a47350fdbcc77ebeadcb4b4818d8e82a21717ea24434333c791c0cd0d1dc14e
-
-And that hashes to
-jejb@jarvis:~> tsspolicymaker -if ~/tmp.policy  -pr
- policy digest length 32
- 32 1f bd 28 b6 0f cc 23 01 7d 50 1b 13 3b d5 db 
- f2 88 98 14 58 8e 8a 23 51 0f e1 01 05 cb 2c c9 
-
-So I don't understand why the userspace Intel TSS command is failing to
-do the unseal.
-
-James
+U28gSSBndWVzcyBtb3N0bHkgbGlrZSwgaXQgaXMgdGhlIGZvcm1hdCBvZiBwb2xpY3lkaWdlc3Qs
+IHBvbGljeWhhbmRsZSBpcyBub3QgY29ycmVjdGx5IGluIG15IGtleWN0bCBjb21tYW5kLiANCkJ1
+dCB3aGF0IGlzIHRoZSBjb3JyZWN0IHVzaW5nPw0KDQpNeSBrZXljdGwgY29tbWFuZHMgYXJlIGF0
+dGFjaGVkIGFzIGJlbG93OiANCiQga2V5Y3RsIGFkZCB0cnVzdGVkIGttayAibmV3IDMyIGtleWhh
+bmRsZT0weDgxMDAwMDAxIGhhc2g9c2hhMjU2IHBvbGljeWRpZ2VzdD1gY2F0IHBjcjcucG9saWN5
+YCIgQHUNCjg3NDExNzA0NQ0KDQpTYXZlIHRoZSB0cnVzdGVkIGtleS4gDQokIGtleWN0bCBwaXBl
+IDg3NDExNzA0NSA+IGttay5ibG9iDQoNClJlYm9vdCBhbmQgbG9hZCB0aGUga2V5LiANClN0YXJ0
+IGEgYXV0aCBzZXNzaW9uIHRvIGdlbmVyYXRlIHRoZSBwb2xpY3k6DQokIHRwbTJfc3RhcnRhdXRo
+c2Vzc2lvbiAtUyBzZXNzaW9uLmN0eA0Kc2Vzc2lvbi1oYW5kbGU6IDB4MzAwMDAwMA0KJCB0cG0y
+X3Bjcmxpc3QgLUwgc2hhMjU2OjcgLW8gcGNyNy5zaGEyNTYgJCB0cG0yX3BvbGljeXBjciAtUyBz
+ZXNzaW9uLmN0eCAtTCBzaGEyNTY6NyAtRiBwY3I3LnNoYTI1NiAtZiBwY3I3LnBvbGljeQ0KcG9s
+aWN5LWRpZ2VzdDogMHgzMjFGQkQyOEI2MEZDQzIzMDE3RDUwMUIxMzNCRDVEQkYyODg5ODE0NTg4
+RThBMjM1MTBGRTEwMTA1Q0IyQ0M5DQoNCklucHV0IHRoZSBwb2xpY3kgaGFuZGxlIHRvIGxvYWQg
+dHJ1c3RlZCBrZXk6DQokIGtleWN0bCBhZGQgdHJ1c3RlZCBrbWsgImxvYWQgYGNhdCBrbWsuYmxv
+YmAga2V5aGFuZGxlPTB4ODEwMDAwMDEgcG9saWN5aGFuZGxlPTB4MzAwMDAwMCIgQHUNCmFkZF9r
+ZXk6IE9wZXJhdGlvbiBub3QgcGVybWl0dGVkDQoNCg0KVGhhbmtzLiANCg0KLSBTaGlybGV5IA0K
+DQoNCi0tLS0tT3JpZ2luYWwgTWVzc2FnZS0tLS0tDQpGcm9tOiBKYW1lcyBCb3R0b21sZXkgPGpl
+amJAbGludXguaWJtLmNvbT4gDQpTZW50OiBNb25kYXksIERlY2VtYmVyIDIsIDIwMTkgMjo0NSBQ
+TQ0KVG86IFpoYW8sIFNoaXJsZXkgPHNoaXJsZXkuemhhb0BpbnRlbC5jb20+OyBNaW1pIFpvaGFy
+IDx6b2hhckBsaW51eC5pYm0uY29tPjsgSmFya2tvIFNha2tpbmVuIDxqYXJra28uc2Fra2luZW5A
+bGludXguaW50ZWwuY29tPjsgSm9uYXRoYW4gQ29yYmV0IDxjb3JiZXRAbHduLm5ldD4NCkNjOiBs
+aW51eC1pbnRlZ3JpdHlAdmdlci5rZXJuZWwub3JnOyBrZXlyaW5nc0B2Z2VyLmtlcm5lbC5vcmc7
+IGxpbnV4LWRvY0B2Z2VyLmtlcm5lbC5vcmc7IGxpbnV4LWtlcm5lbEB2Z2VyLmtlcm5lbC5vcmc7
+ICdNYXVybyBDYXJ2YWxobyBDaGVoYWInIDxtY2hlaGFiK3NhbXN1bmdAa2VybmVsLm9yZz47IFpo
+dSwgQmluZyA8YmluZy56aHVAaW50ZWwuY29tPjsgQ2hlbiwgTHVoYWkgPGx1aGFpLmNoZW5AaW50
+ZWwuY29tPg0KU3ViamVjdDogUmU6IE9uZSBxdWVzdGlvbiBhYm91dCB0cnVzdGVkIGtleSBvZiBr
+ZXlyaW5nIGluIExpbnV4IGtlcm5lbC4NCg0KT24gTW9uLCAyMDE5LTEyLTAyIGF0IDA2OjIzICsw
+MDAwLCBaaGFvLCBTaGlybGV5IHdyb3RlOg0KPiBIaSwgSmFtZXMsDQo+IA0KPiBUaGUgUENSNyB2
+YWx1ZSBhbmQgUENSNyBwb2xpY3kgaXMgYXMgYmVsb3csIHBsZWFzZSByZXZpZXcsIHRoYW5rcy4g
+DQo+IA0KPiAjIHRwbTJfcGNybGlzdCAtTCBzaGEyNTY6NyAtbyBwY3I3XzIuc2hhMjU2DQo+IHNo
+YTI1NjoNCj4gICA3IDoNCj4gMHgwNjFBQUQwNzA1QTYyMzYxQUQxOEU1OEI2NUQzRDczODNGNEQx
+MEY3RjVBN0U3ODkyNEJFMDU3QUM2Nzk3NDA4DQo+IA0KPiAjIHRwbTJfY3JlYXRlcG9saWN5IC0t
+cG9saWN5LXBjciAtLXBjci1saXN0IHNoYTI1Njo3IC0tcG9saWN5IA0KPiBwY3I3X2Jpbi5wb2xp
+Y3kgPiBwY3I3LnBvbGljeQ0KPiAzMjFmYmQyOGI2MGZjYzIzMDE3ZDUwMWIxMzNiZDVkYmYyODg5
+ODE0NTg4ZThhMjM1MTBmZTEwMTA1Y2IyY2M5DQo+IA0KPiAjIGNhdCBwY3I3LnBvbGljeQ0KPiAz
+MjFmYmQyOGI2MGZjYzIzMDE3ZDUwMWIxMzNiZDVkYmYyODg5ODE0NTg4ZThhMjM1MTBmZTEwMTA1
+Y2IyY2M5DQoNCldlbGwsIHRoZSBJQk0gVFNTIHNheXMgdGhhdCdzIHRoZSBjb3JyZWN0IHBvbGlj
+eS4gIFlvdXIgcG9saWN5IGNvbW1hbmQgaXMNCg0KamVqYkBqYXJ2aXM6fj4gdHNzcG9saWN5bWFr
+ZXJwY3IgLWJtIDAwMDA4MCAtaWYgfi9wY3I3LnR4dCAtcHIgfCB0ZWUgdG1wLnBvbGljeSAwMDAw
+MDE3ZjAwMDAwMDAxMDAwYjAzODAwMDAwOWE0NzM1MGZkYmNjNzdlYmVhZGNiNGI0ODE4ZDhlODJh
+MjE3MTdlYTI0NDM0MzMzYzc5MWMwY2QwZDFkYzE0ZQ0KDQpBbmQgdGhhdCBoYXNoZXMgdG8NCmpl
+amJAamFydmlzOn4+IHRzc3BvbGljeW1ha2VyIC1pZiB+L3RtcC5wb2xpY3kgIC1wciAgcG9saWN5
+IGRpZ2VzdCBsZW5ndGggMzINCiAzMiAxZiBiZCAyOCBiNiAwZiBjYyAyMyAwMSA3ZCA1MCAxYiAx
+MyAzYiBkNSBkYg0KIGYyIDg4IDk4IDE0IDU4IDhlIDhhIDIzIDUxIDBmIGUxIDAxIDA1IGNiIDJj
+IGM5IA0KDQpTbyBJIGRvbid0IHVuZGVyc3RhbmQgd2h5IHRoZSB1c2Vyc3BhY2UgSW50ZWwgVFNT
+IGNvbW1hbmQgaXMgZmFpbGluZyB0byBkbyB0aGUgdW5zZWFsLg0KDQpKYW1lcw0KDQo
