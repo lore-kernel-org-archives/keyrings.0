@@ -1,7 +1,7 @@
-From: James Bottomley <jejb@linux.ibm.com>
-Date: Mon, 02 Dec 2019 18:55:32 +0000
-Subject: Re: One question about trusted key of keyring in Linux kernel.
-Message-Id: <1575312932.24227.13.camel@linux.ibm.com>
+From: "Zhao, Shirley" <shirley.zhao@intel.com>
+Date: Tue, 03 Dec 2019 02:11:06 +0000
+Subject: RE: One question about trusted key of keyring in Linux kernel.
+Message-Id: <A888B25CD99C1141B7C254171A953E8E4909E62E@shsmsx102.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -19,61 +19,89 @@ References: <A888B25CD99C1141B7C254171A953E8E49094313@shsmsx102.ccr.corp.intel.c
          <A888B25CD99C1141B7C254171A953E8E4909E381@shsmsx102.ccr.corp.intel.com>
          <1575269075.4080.31.camel@linux.ibm.com>
          <A888B25CD99C1141B7C254171A953E8E4909E399@shsmsx102.ccr.corp.intel.com>
-In-Reply-To: <A888B25CD99C1141B7C254171A953E8E4909E399@shsmsx102.ccr.corp.intel.com>
-To: "Zhao, Shirley" <shirley.zhao@intel.com>, Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
+ <1575312932.24227.13.camel@linux.ibm.com>
+In-Reply-To: <1575312932.24227.13.camel@linux.ibm.com>
+To: James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
 Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 'Mauro Carvalho Chehab' <mchehab+samsung@kernel.org>, "Zhu, Bing" <bing.zhu@intel.com>, "Chen, Luhai" <luhai.chen@intel.com>
 
-On Mon, 2019-12-02 at 06:50 +0000, Zhao, Shirley wrote:
-> So I guess mostly like, it is the format of policydigest,
-> policyhandle is not correctly in my keyctl command. 
-> But what is the correct using?
-> 
-> My keyctl commands are attached as below: 
-> $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha256
-> policydigest=`cat pcr7.policy`" @u
-> 874117045
-> 
-> Save the trusted key. 
-> $ keyctl pipe 874117045 > kmk.blob
-
-OK, looking at the actual code, it seems that whoever wrote it didn't
-account for the differences between TPM1.2 and TPM2.0.  With TPM2.0
-TPM2_Create returns the public and private parts plus three other tpm2b
-entites used to certify and check the key.  When you load the blob back
-using TPM2_Load, it only accepts the public and private parts. 
-However, your blob contains the other extraneous elements, that's why
-it can't be loaded.  You could make it loadable by stripping off the
-extraneous pieces ... just take the first two tpm2b elements of the
-blob but it looks like we need to fix the API.  I suppose the good news
-is given this failure that we have the opportunity to rewrite the API
-since no-one else can have used it for anything because of this.  The
-fundamental problem with the current API is that most TPM2's only have
-three available session registers.  It's simply not scalable to set
-them up in userspace and have the kernel use them, so what we should be
-doing is passing down the actual policy and having the kernel construct
-the session at the point of use and then flush it, thus solving the
-potential session exhaustion issue.
-
-I'd actually propose we make a TSSLOADABLE the fundamental element of
-operation for trusted keys.  The IBM and Intel TSS people have agreed
-to do this as the format for TPM loadable keys, but it should also
-apply to sealed data.  The beauty of TSSLOADABLE is that the ASN.1
-format includes a policy specification:
-
-/*
- * TSSLOADABLE ::= SEQUENCE {
- *	type		OBJECT IDENTIFIER
- *	emptyAuth	[0] EXPLICIT BOOLEAN OPTIONAL
- *	policy		[1] EXPLICIT SEQUENCE OF TPMPolicy OPTIONAL
- *	secret		[2] EXPLICIT OCTET STRING OPTIONAL
- *	parent		INTEGER
- *	pubkey		OCTET STRING
- *	privkey		OCTET STRING
- * }
- * TPMPolicy ::= SEQUENCE {
- *	CommandCode		[0] EXPLICIT INTEGER
- *	CommandPolicy		[1] EXPLICIT OCTET STRING
- * }
- */
-
-James
+VGhhbmtzIHNvIG11Y2ggZm9yIHlvdSBmZWVkYmFjaywgSmFtZXMuIA0KQW5kIGdsYWQgdG8gaGVh
+ciB0aGF0IHRoZSBBUEkgd2lsbCBiZSBtYWRlIG1vcmUgZnJpZW5kbHkuIA0KDQpCdXQgSSBoYXZl
+IGEgbGl0dGxlIGNvbmZ1c2VkIGFib3V0IHRoZSBjYWxsIHN0YWNrLiANCkZyb20gdGhlIGRvY3Vt
+ZW50LCBodHRwczovL2dpdGh1Yi5jb20vdG9ydmFsZHMvbGludXgvYmxvYi9tYXN0ZXIvRG9jdW1l
+bnRhdGlvbi9zZWN1cml0eS9rZXlzL3RydXN0ZWQtZW5jcnlwdGVkLnJzdCBhbmQgDQpodHRwczov
+L2dpdGh1Yi5jb20vemZzb25saW51eC9kcmFjdXQvdHJlZS9tYXN0ZXIvbW9kdWxlcy5kLzk3bWFz
+dGVya2V5LCB0aGUgdHJ1c3RlZCBrZXkgaXMgYSByYW5kb20gbnVtYmVyIGFuZCBnZW5lcmF0ZWQg
+YnkgVFBNMi4wIGFuZCBzZWFsZWQgd2l0aCBUUE0yLjAgMjA0OCBSU0Ega2V5LiANCg0KVGhlIDIw
+NDggUlNBIGtleSBpcyBnZW5lcmF0ZWQgYnkgdHBtMl9jcmVhdGVwcmltYXJ5LCBhbmQgaXQgY2Fu
+IGJlIGdvdCBieSB0aGUgVFBNMi4wIGhhbmRsZSwganVzdCB0aGUgImtleWhhbmRsZSIgdXNlZCBp
+biB0aGUgZm9sbG93aW5nIGtleWN0bCBjb21tYW5kLiANCiQga2V5Y3RsIGFkZCB0cnVzdGVkIGtt
+ayAibmV3IDMyIGtleWhhbmRsZT0weDgxMDAwMDAxIGhhc2g9c2hhMjU2IHBvbGljeWRpZ2VzdD1g
+Y2F0IHBjcjcucG9saWN5YCIgQHUNCg0KSWYgcmVib290LCB0byByZS1sb2FkIHRoZSB0cnVzdGVk
+IGtleSBiYWNrIHRvIGtleXJpbmcsIGp1c3QgY2FsbCB0cG0yX3Vuc2VhbCBpcyBlbm91Z2gsIGRv
+bid0IG5lZWQgdG8gY2FsbCB0cG0yX2xvYWQgdG8gbG9hZCB0aGUgVFBNMi4wIDIwNDggUlNBIGtl
+eS4NCklmIHRoZSB0cnVzdGVkIGtleSBpcyBhbHNvIHByb3RlY3RlZCBieSBwb2xpY3ksIHRoZW4g
+dGhlIHBvbGljeSB3aWxsIGJlIGNoZWNrZWQgZHVyaW5nIHRwbTJfdW5zZWFsLiANCg0KQWZ0ZXIg
+Y2hlY2sgdGhlIHNvdXJjZSBjb2RlLCB0aGUgY2FsbCBzdGFjayBpcyBtb3N0bHkgbGlrZTogDQpT
+WVNDQUxMX0RFRklORTUoYWRkX2tleSwuLi4pIC0tPiBrZXlfY3JlYXRlX29yX3VwZGF0ZSgpIC0t
+PiBfX2tleV9pbnN0YW50aWF0ZV9hbmRfbGluaygpIC0tPiAgdHJ1c3RlZF9pbnN0YW50aWF0ZSgp
+IC0tPiB0cG0yX3Vuc2VhbF90cnVzdGVkKCkgLS0+IHRwbTJfdW5zZWFsX2NtZCgpLg0KDQpBbm90
+aGVyIHByb2JsZW0gaGVyZSBpcywgdG8gYnVpbGQgdGhlIHBvbGljeSB0byB1bnNlYWwgdGhlIGtl
+eSwgaXQgbmVlZCB0byBzdGFydCBhbiBwb2xpY3kgc2Vzc2lvbiwgYW5kIHRyYW5zZmVyIHRoZSBz
+ZXNzaW9uIGhhbmRsZSB0byBUUE0yLjAgdW5zZWFsIGNvbW1hbmQuIA0KSW4gbXkga2V5Y3RsIGNv
+bW1hbmQsIEkgdXNlIHRwbTIuMCBjb21tYW5kIHRvIHN0YXJ0IHRoZSBzZXNzaW9uIGFuZCBnZXQg
+dGhlIGhhbmRsZSwgcHV0IGl0IGludG8gdGhlIGtleWN0bCBjb21tYW5kIGxpa2U6DQprZXljdGwg
+YWRkIHRydXN0ZWQga21rICJsb2FkIGBjYXQga21rLmJsb2JgIGtleWhhbmRsZT0weDgxMDAwMDAx
+IHBvbGljeWhhbmRsZT0weDMwMDAwMDAiIEB1DQoNCkkgYW0gbm90IHN1cmUgd2hldGhlciBpdCBp
+cyBjb3JyZWN0LiANCg0KVGhhbmtzLiANCg0KLSBTaGlybGV5IA0KDQoNCi0tLS0tT3JpZ2luYWwg
+TWVzc2FnZS0tLS0tDQpGcm9tOiBKYW1lcyBCb3R0b21sZXkgPGplamJAbGludXguaWJtLmNvbT4g
+DQpTZW50OiBUdWVzZGF5LCBEZWNlbWJlciAzLCAyMDE5IDI6NTYgQU0NClRvOiBaaGFvLCBTaGly
+bGV5IDxzaGlybGV5LnpoYW9AaW50ZWwuY29tPjsgTWltaSBab2hhciA8em9oYXJAbGludXguaWJt
+LmNvbT47IEphcmtrbyBTYWtraW5lbiA8amFya2tvLnNha2tpbmVuQGxpbnV4LmludGVsLmNvbT47
+IEpvbmF0aGFuIENvcmJldCA8Y29yYmV0QGx3bi5uZXQ+DQpDYzogbGludXgtaW50ZWdyaXR5QHZn
+ZXIua2VybmVsLm9yZzsga2V5cmluZ3NAdmdlci5rZXJuZWwub3JnOyBsaW51eC1kb2NAdmdlci5r
+ZXJuZWwub3JnOyBsaW51eC1rZXJuZWxAdmdlci5rZXJuZWwub3JnOyAnTWF1cm8gQ2FydmFsaG8g
+Q2hlaGFiJyA8bWNoZWhhYitzYW1zdW5nQGtlcm5lbC5vcmc+OyBaaHUsIEJpbmcgPGJpbmcuemh1
+QGludGVsLmNvbT47IENoZW4sIEx1aGFpIDxsdWhhaS5jaGVuQGludGVsLmNvbT4NClN1YmplY3Q6
+IFJlOiBPbmUgcXVlc3Rpb24gYWJvdXQgdHJ1c3RlZCBrZXkgb2Yga2V5cmluZyBpbiBMaW51eCBr
+ZXJuZWwuDQoNCk9uIE1vbiwgMjAxOS0xMi0wMiBhdCAwNjo1MCArMDAwMCwgWmhhbywgU2hpcmxl
+eSB3cm90ZToNCj4gU28gSSBndWVzcyBtb3N0bHkgbGlrZSwgaXQgaXMgdGhlIGZvcm1hdCBvZiBw
+b2xpY3lkaWdlc3QsIHBvbGljeWhhbmRsZSANCj4gaXMgbm90IGNvcnJlY3RseSBpbiBteSBrZXlj
+dGwgY29tbWFuZC4NCj4gQnV0IHdoYXQgaXMgdGhlIGNvcnJlY3QgdXNpbmc/DQo+IA0KPiBNeSBr
+ZXljdGwgY29tbWFuZHMgYXJlIGF0dGFjaGVkIGFzIGJlbG93OiANCj4gJCBrZXljdGwgYWRkIHRy
+dXN0ZWQga21rICJuZXcgMzIga2V5aGFuZGxlPTB4ODEwMDAwMDEgaGFzaD1zaGEyNTYgDQo+IHBv
+bGljeWRpZ2VzdD1gY2F0IHBjcjcucG9saWN5YCIgQHUNCj4gODc0MTE3MDQ1DQo+IA0KPiBTYXZl
+IHRoZSB0cnVzdGVkIGtleS4gDQo+ICQga2V5Y3RsIHBpcGUgODc0MTE3MDQ1ID4ga21rLmJsb2IN
+Cg0KT0ssIGxvb2tpbmcgYXQgdGhlIGFjdHVhbCBjb2RlLCBpdCBzZWVtcyB0aGF0IHdob2V2ZXIg
+d3JvdGUgaXQgZGlkbid0IGFjY291bnQgZm9yIHRoZSBkaWZmZXJlbmNlcyBiZXR3ZWVuIFRQTTEu
+MiBhbmQgVFBNMi4wLiAgV2l0aCBUUE0yLjAgVFBNMl9DcmVhdGUgcmV0dXJucyB0aGUgcHVibGlj
+IGFuZCBwcml2YXRlIHBhcnRzIHBsdXMgdGhyZWUgb3RoZXIgdHBtMmIgZW50aXRlcyB1c2VkIHRv
+IGNlcnRpZnkgYW5kIGNoZWNrIHRoZSBrZXkuICBXaGVuIHlvdSBsb2FkIHRoZSBibG9iIGJhY2sg
+dXNpbmcgVFBNMl9Mb2FkLCBpdCBvbmx5IGFjY2VwdHMgdGhlIHB1YmxpYyBhbmQgcHJpdmF0ZSBw
+YXJ0cy4gDQpIb3dldmVyLCB5b3VyIGJsb2IgY29udGFpbnMgdGhlIG90aGVyIGV4dHJhbmVvdXMg
+ZWxlbWVudHMsIHRoYXQncyB3aHkgaXQgY2FuJ3QgYmUgbG9hZGVkLiAgWW91IGNvdWxkIG1ha2Ug
+aXQgbG9hZGFibGUgYnkgc3RyaXBwaW5nIG9mZiB0aGUgZXh0cmFuZW91cyBwaWVjZXMgLi4uIGp1
+c3QgdGFrZSB0aGUgZmlyc3QgdHdvIHRwbTJiIGVsZW1lbnRzIG9mIHRoZSBibG9iIGJ1dCBpdCBs
+b29rcyBsaWtlIHdlIG5lZWQgdG8gZml4IHRoZSBBUEkuICBJIHN1cHBvc2UgdGhlIGdvb2QgbmV3
+cyBpcyBnaXZlbiB0aGlzIGZhaWx1cmUgdGhhdCB3ZSBoYXZlIHRoZSBvcHBvcnR1bml0eSB0byBy
+ZXdyaXRlIHRoZSBBUEkgc2luY2Ugbm8tb25lIGVsc2UgY2FuIGhhdmUgdXNlZCBpdCBmb3IgYW55
+dGhpbmcgYmVjYXVzZSBvZiB0aGlzLiAgVGhlIGZ1bmRhbWVudGFsIHByb2JsZW0gd2l0aCB0aGUg
+Y3VycmVudCBBUEkgaXMgdGhhdCBtb3N0IFRQTTIncyBvbmx5IGhhdmUgdGhyZWUgYXZhaWxhYmxl
+IHNlc3Npb24gcmVnaXN0ZXJzLiAgSXQncyBzaW1wbHkgbm90IHNjYWxhYmxlIHRvIHNldCB0aGVt
+IHVwIGluIHVzZXJzcGFjZSBhbmQgaGF2ZSB0aGUga2VybmVsIHVzZSB0aGVtLCBzbyB3aGF0IHdl
+IHNob3VsZCBiZSBkb2luZyBpcyBwYXNzaW5nIGRvd24gdGhlIGFjdHVhbCBwb2xpY3kgYW5kIGhh
+dmluZyB0aGUga2VybmVsIGNvbnN0cnVjdCB0aGUgc2Vzc2lvbiBhdCB0aGUgcG9pbnQgb2YgdXNl
+IGFuZCB0aGVuIGZsdXNoIGl0LCB0aHVzIHNvbHZpbmcgdGhlIHBvdGVudGlhbCBzZXNzaW9uIGV4
+aGF1c3Rpb24gaXNzdWUuDQoNCkknZCBhY3R1YWxseSBwcm9wb3NlIHdlIG1ha2UgYSBUU1NMT0FE
+QUJMRSB0aGUgZnVuZGFtZW50YWwgZWxlbWVudCBvZiBvcGVyYXRpb24gZm9yIHRydXN0ZWQga2V5
+cy4gIFRoZSBJQk0gYW5kIEludGVsIFRTUyBwZW9wbGUgaGF2ZSBhZ3JlZWQgdG8gZG8gdGhpcyBh
+cyB0aGUgZm9ybWF0IGZvciBUUE0gbG9hZGFibGUga2V5cywgYnV0IGl0IHNob3VsZCBhbHNvIGFw
+cGx5IHRvIHNlYWxlZCBkYXRhLiAgVGhlIGJlYXV0eSBvZiBUU1NMT0FEQUJMRSBpcyB0aGF0IHRo
+ZSBBU04uMSBmb3JtYXQgaW5jbHVkZXMgYSBwb2xpY3kgc3BlY2lmaWNhdGlvbjoNCg0KLyoNCiAq
+IFRTU0xPQURBQkxFIDo6PSBTRVFVRU5DRSB7DQogKgl0eXBlCQlPQkpFQ1QgSURFTlRJRklFUg0K
+ICoJZW1wdHlBdXRoCVswXSBFWFBMSUNJVCBCT09MRUFOIE9QVElPTkFMDQogKglwb2xpY3kJCVsx
+XSBFWFBMSUNJVCBTRVFVRU5DRSBPRiBUUE1Qb2xpY3kgT1BUSU9OQUwNCiAqCXNlY3JldAkJWzJd
+IEVYUExJQ0lUIE9DVEVUIFNUUklORyBPUFRJT05BTA0KICoJcGFyZW50CQlJTlRFR0VSDQogKglw
+dWJrZXkJCU9DVEVUIFNUUklORw0KICoJcHJpdmtleQkJT0NURVQgU1RSSU5HDQogKiB9DQogKiBU
+UE1Qb2xpY3kgOjo9IFNFUVVFTkNFIHsNCiAqCUNvbW1hbmRDb2RlCQlbMF0gRVhQTElDSVQgSU5U
+RUdFUg0KICoJQ29tbWFuZFBvbGljeQkJWzFdIEVYUExJQ0lUIE9DVEVUIFNUUklORw0KICogfQ0K
+ICovDQoNCkphbWVzDQoNCg=
