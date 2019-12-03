@@ -1,65 +1,42 @@
 From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Mon, 02 Dec 2019 18:18:34 +0000
+Date: Tue, 03 Dec 2019 12:25:45 +0000
 Subject: Re: [PATCH v9 5/6] IMA: Add support to limit measuring keys
-Message-Id: <1575310714.4793.420.camel@linux.ibm.com>
+Message-Id: <1575375945.5241.16.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191127015654.3744-1-nramas@linux.microsoft.com>
          <20191127015654.3744-6-nramas@linux.microsoft.com>
-         <1574880741.4793.292.camel@linux.ibm.com>
-         <18b30666-7c44-f81e-8515-189052007e47@linux.microsoft.com>
-In-Reply-To: <18b30666-7c44-f81e-8515-189052007e47@linux.microsoft.com>
+In-Reply-To: <20191127015654.3744-6-nramas@linux.microsoft.com>
 To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-T24gV2VkLCAyMDE5LTExLTI3IGF0IDE2OjQ0IC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
-biB3cm90ZToKPiBPbiAxMS8yNy8xOSAxMDo1MiBBTSwgTWltaSBab2hhciB3cm90ZToKPiAKPiBI
-aSBNaW1pLAo+IAo+ID4+ICtzdGF0aWMgYm9vbCBpbWFfbWF0Y2hfa2V5cmluZyhzdHJ1Y3QgaW1h
-X3J1bGVfZW50cnkgKnJ1bGUsCj4gPj4gKwkJCSAgICAgIGNvbnN0IGNoYXIgKmtleXJpbmcpCj4g
-Pj4gK3sKPiA+PiArCS8qCj4gPj4gKwkgKiAia2V5cmluZ3M9IiBpcyBzcGVjaWZpZWQgaW4gdGhl
-IHBvbGljeSBpbiB0aGUgZm9ybWF0IGJlbG93Ogo+ID4+ICsJICogICBrZXlyaW5ncz0uYnVpbHRp
-bl90cnVzdGVkX2tleXN8LmltYXwuZXZtCj4gPj4gKwkgKgo+ID4+ICsJICogRWFjaCBrZXlyaW5n
-IG5hbWUgaW4gdGhlIG9wdGlvbiBpcyBzZXBhcmF0ZWQgYnkgYSAnfCcgYW5kCj4gPj4gKwkgKiB0
-aGUgbGFzdCBrZXlyaW5nIG5hbWUgaXMgbnVsbCB0ZXJtaW5hdGVkLgo+ID4+ICsJICoKPiA+PiAr
-CSAqIFRoZSBnaXZlbiBrZXlyaW5nIGlzIGNvbnNpZGVyZWQgbWF0Y2hlZCBvbmx5IGlmCj4gPj4g
-KwkgKiB0aGUgd2hvbGUga2V5cmluZyBuYW1lIG1hdGNoZWQgYSBrZXlyaW5nIG5hbWUgc3BlY2lm
-aWVkCj4gPj4gKwkgKiBpbiB0aGUgImtleXJpbmdzPSIgb3B0aW9uLgo+ID4+ICsJICovCj4gPj4g
-KwlwID0gc3Ryc3RyKHJ1bGUtPmtleXJpbmdzLCBrZXlyaW5nKTsKPiA+PiArCWlmIChwKSB7Cj4g
-Pj4gKwkJLyoKPiA+PiArCQkgKiBGb3VuZCBhIHN1YnN0cmluZyBtYXRjaC4gQ2hlY2sgaWYgdGhl
-IGNoYXJhY3Rlcgo+ID4+ICsJCSAqIGF0IHRoZSBlbmQgb2YgdGhlIGtleXJpbmcgbmFtZSBpcyB8
-IChrZXlyaW5nIG5hbWUKPiA+PiArCQkgKiBzZXBhcmF0b3IpIG9yIGlzIHRoZSB0ZXJtaW5hdGlu
-ZyBudWxsIGNoYXJhY3Rlci4KPiA+PiArCQkgKiBJZiB5ZXMsIHdlIGhhdmUgYSB3aG9sZSBzdHJp
-bmcgbWF0Y2guCj4gPj4gKwkJICovCj4gPj4gKwkJcCArPSBzdHJsZW4oa2V5cmluZyk7Cj4gPj4g
-KwkJaWYgKCpwID0gJ3wnIHx8ICpwID0gJ1wwJykKPiA+PiArCQkJcmV0dXJuIHRydWU7CgpUaGlz
-IGNvZGUgY2hlY2tzIHRoYXQgdGhlIGtleXJpbmcgbmFtZSBpc24ndCBzdWZmaXhlZCwgYnV0IG5v
-dApwcmVmaXhlZC4KCj4gPj4gKwl9Cj4gPj4gKwo+ID4gCj4gPiBVc2luZyAid2hpbGUgc3Ryc2Vw
-KCkiIHdvdWxkIHNpbXBsaWZ5IHRoaXMgY29kZSwgcmVtb3ZpbmcgdGhlIG5lZWQgZm9yCj4gPiBz
-dWNoIGEgbG9uZyBjb21tZW50Lgo+ID4gCj4gPiBNaW1pCj4gCj4gc3Ryc2VwKCkgbW9kaWZpZXMg
-dGhlIHNvdXJjZSBzdHJpbmcgKHJlcGxhY2VzIHRoZSBkZWxpbWl0ZXIgd2l0aCAnXDAnIAo+IGFu
-ZCBhbHNvIHVwZGF0ZXMgdGhlIHNvdXJjZSBzdHJpbmcgcG9pbnRlcikuIEkgYW0gbm90IHN1cmUg
-aXQgY2FuIGJlIAo+IHVzZWQgZm9yIG91ciBzY2VuYXJpby4gUGxlYXNlIGNvcnJlY3QgbWUgaWYg
-SSBhbSB3cm9uZy4KPiAKPiBJbml0aWFsIElNQSBwb2xpY3k6Cj4gLS0tLS0tLS0tLS0tLS0tLS0t
-LQo+IG1lYXN1cmUgZnVuYz1LRVlfQ0hFQ0sgCj4ga2V5cmluZ3M9LmltYXwuZXZtfC5idWlsdGlu
-X3RydXN0ZWRfa2V5c3wuYmxhY2tsaXN0IHRlbXBsYXRlPWltYS1idWYKPiAKPiBQb2xpY3kgYWZ0
-ZXIgYWRkaW5nIGEga2V5IHRvIC5pbWEga2V5cmluZzoKPiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0KPiBtZWFzdXJlIGZ1bmM9S0VZX0NIRUNLIGtleXJpbmdzPS5l
-dm18LmJ1aWx0aW5fdHJ1c3RlZF9rZXlzfC5ibGFja2xpc3QgCj4gdGVtcGxhdGU9aW1hLWJ1Zgo+
-IAo+IFBvbGljeSBhZnRlciBhZGRpbmcgYSBrZXkgdG8gYSBrZXlyaW5nIHRoYXQgaXMgbm90IGxp
-c3RlZCBpbiB0aGUgcG9saWN5Ogo+IC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQo+IG1lYXN1cmUgZnVuYz1LRVlf
-Q0hFQ0sga2V5cmluZ3M9IHRlbXBsYXRlPWltYS1idWYKPiAKPiAqKioqKioqKioqKioqKioqKioq
-KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioq
-KioqKgo+IAo+IFBsZWFzZSBzZWUgdGhlIGRlc2NyaXB0aW9uIGZyb20gdGhlIG1hbiBwYWdlIGZv
-ciBzdHJzZXAoKToKPiAKPiBodHRwOi8vbWFuNy5vcmcvbGludXgvbWFuLXBhZ2VzL21hbjMvc3Ry
-c2VwLjMuaHRtbAo+IAo+IGNoYXIgKnN0cnNlcChjaGFyICoqc3RyaW5ncCwgY29uc3QgY2hhciAq
-ZGVsaW0pOwo+IAo+IFRoaXMgZnVuY3Rpb24gZmluZHMgdGhlIGZpcnN0IHRva2VuIGluIHRoZSBz
-dHJpbmcgKnN0cmluZ3AsIHRoYXQgaXMgCj4gZGVsaW1pdGVkIGJ5IG9uZSBvZiB0aGUgYnl0ZXMg
-aW4gdGhlIHN0cmluZyBkZWxpbS4gIFRoaXMgdG9rZW4gaXMgCj4gdGVybWluYXRlZCBieSBvdmVy
-d3JpdGluZyB0aGUgZGVsaW1pdGVyIHdpdGggYSBudWxsIGJ5dGUgKCdcMCcpLCBhbmQgCj4gKnN0
-cmluZ3AgaXMgdXBkYXRlZCB0byBwb2ludCBwYXN0IHRoZSB0b2tlbi4KClllcywgeW91IHdvdWxk
-IGhhdmUgdG8gbWFrZSBhIGNvcHkgb2YgdGhlIHN0cmluZyBiZWZvcmUgdXNpbmcKc3Ryc2VwKCku
-IMKgWW91IGNvdWxkIGFsd2F5cyB1c2Uga3N0cmR1cCgpLCByZW1lbWJlcmluZyB0byBmcmVlIGl0
-LCBvcgphbGxvY2F0ZSB0aGUgbWVtb3J5IGp1c3Qgb25jZSwgYW5kIHRoZW4ganVzdCB1c2UgbWVt
-Y3B5LgoKTWltaQo=
+Hi Lakshmi,
+
+On Tue, 2019-11-26 at 17:56 -0800, Lakshmi Ramasubramanian wrote:
+> Limit measuring keys to those keys being loaded onto a given set of
+> keyrings only.
+> 
+> This patch defines a new IMA policy option namely "keyrings=" that
+> can be used to specify a set of keyrings. If this option is specified
+> in the policy for "measure func=KEY_CHECK" then only the keys
+> loaded onto a keyring given in the "keyrings=" option are measured.
+> 
+> Added a new parameter namely "keyring" (name of the keyring) to
+> process_buffer_measurement(). The keyring name is passed to
+> ima_get_action() to determine the required action.
+> ima_match_rules() is updated to check keyring in the policy, if
+> specified, for KEY_CHECK function.
+> 
+> Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+
+A keyring can be created by any user with any keyring name, other than
+ ones dot prefixed, which are limited to the trusted builtin keyrings.
+ With a policy of "func=KEY_CHECK template=ima-buf keyrings=foo", for
+example, keys loaded onto any keyring named "foo" will be measured.
+ For files, the IMA policy may be constrained to a particular uid/gid.
+ An additional method of identifying or constraining keyring names
+needs to be defined.
+
+Mimi 
