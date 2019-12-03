@@ -1,7 +1,7 @@
-From: "Zhao, Shirley" <shirley.zhao@intel.com>
-Date: Tue, 03 Dec 2019 02:11:06 +0000
-Subject: RE: One question about trusted key of keyring in Linux kernel.
-Message-Id: <A888B25CD99C1141B7C254171A953E8E4909E62E@shsmsx102.ccr.corp.intel.com>
+From: James Bottomley <jejb@linux.ibm.com>
+Date: Tue, 03 Dec 2019 03:12:04 +0000
+Subject: Re: One question about trusted key of keyring in Linux kernel.
+Message-Id: <1575342724.24227.41.camel@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -19,89 +19,75 @@ References: <A888B25CD99C1141B7C254171A953E8E49094313@shsmsx102.ccr.corp.intel.c
          <A888B25CD99C1141B7C254171A953E8E4909E381@shsmsx102.ccr.corp.intel.com>
          <1575269075.4080.31.camel@linux.ibm.com>
          <A888B25CD99C1141B7C254171A953E8E4909E399@shsmsx102.ccr.corp.intel.com>
- <1575312932.24227.13.camel@linux.ibm.com>
-In-Reply-To: <1575312932.24227.13.camel@linux.ibm.com>
-To: James Bottomley <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
+         <1575312932.24227.13.camel@linux.ibm.com>
+         <A888B25CD99C1141B7C254171A953E8E4909E62E@shsmsx102.ccr.corp.intel.com>
+In-Reply-To: <A888B25CD99C1141B7C254171A953E8E4909E62E@shsmsx102.ccr.corp.intel.com>
+To: "Zhao, Shirley" <shirley.zhao@intel.com>, Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>
 Cc: "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 'Mauro Carvalho Chehab' <mchehab+samsung@kernel.org>, "Zhu, Bing" <bing.zhu@intel.com>, "Chen, Luhai" <luhai.chen@intel.com>
 
-VGhhbmtzIHNvIG11Y2ggZm9yIHlvdSBmZWVkYmFjaywgSmFtZXMuIA0KQW5kIGdsYWQgdG8gaGVh
-ciB0aGF0IHRoZSBBUEkgd2lsbCBiZSBtYWRlIG1vcmUgZnJpZW5kbHkuIA0KDQpCdXQgSSBoYXZl
-IGEgbGl0dGxlIGNvbmZ1c2VkIGFib3V0IHRoZSBjYWxsIHN0YWNrLiANCkZyb20gdGhlIGRvY3Vt
-ZW50LCBodHRwczovL2dpdGh1Yi5jb20vdG9ydmFsZHMvbGludXgvYmxvYi9tYXN0ZXIvRG9jdW1l
-bnRhdGlvbi9zZWN1cml0eS9rZXlzL3RydXN0ZWQtZW5jcnlwdGVkLnJzdCBhbmQgDQpodHRwczov
-L2dpdGh1Yi5jb20vemZzb25saW51eC9kcmFjdXQvdHJlZS9tYXN0ZXIvbW9kdWxlcy5kLzk3bWFz
-dGVya2V5LCB0aGUgdHJ1c3RlZCBrZXkgaXMgYSByYW5kb20gbnVtYmVyIGFuZCBnZW5lcmF0ZWQg
-YnkgVFBNMi4wIGFuZCBzZWFsZWQgd2l0aCBUUE0yLjAgMjA0OCBSU0Ega2V5LiANCg0KVGhlIDIw
-NDggUlNBIGtleSBpcyBnZW5lcmF0ZWQgYnkgdHBtMl9jcmVhdGVwcmltYXJ5LCBhbmQgaXQgY2Fu
-IGJlIGdvdCBieSB0aGUgVFBNMi4wIGhhbmRsZSwganVzdCB0aGUgImtleWhhbmRsZSIgdXNlZCBp
-biB0aGUgZm9sbG93aW5nIGtleWN0bCBjb21tYW5kLiANCiQga2V5Y3RsIGFkZCB0cnVzdGVkIGtt
-ayAibmV3IDMyIGtleWhhbmRsZT0weDgxMDAwMDAxIGhhc2g9c2hhMjU2IHBvbGljeWRpZ2VzdD1g
-Y2F0IHBjcjcucG9saWN5YCIgQHUNCg0KSWYgcmVib290LCB0byByZS1sb2FkIHRoZSB0cnVzdGVk
-IGtleSBiYWNrIHRvIGtleXJpbmcsIGp1c3QgY2FsbCB0cG0yX3Vuc2VhbCBpcyBlbm91Z2gsIGRv
-bid0IG5lZWQgdG8gY2FsbCB0cG0yX2xvYWQgdG8gbG9hZCB0aGUgVFBNMi4wIDIwNDggUlNBIGtl
-eS4NCklmIHRoZSB0cnVzdGVkIGtleSBpcyBhbHNvIHByb3RlY3RlZCBieSBwb2xpY3ksIHRoZW4g
-dGhlIHBvbGljeSB3aWxsIGJlIGNoZWNrZWQgZHVyaW5nIHRwbTJfdW5zZWFsLiANCg0KQWZ0ZXIg
-Y2hlY2sgdGhlIHNvdXJjZSBjb2RlLCB0aGUgY2FsbCBzdGFjayBpcyBtb3N0bHkgbGlrZTogDQpT
-WVNDQUxMX0RFRklORTUoYWRkX2tleSwuLi4pIC0tPiBrZXlfY3JlYXRlX29yX3VwZGF0ZSgpIC0t
-PiBfX2tleV9pbnN0YW50aWF0ZV9hbmRfbGluaygpIC0tPiAgdHJ1c3RlZF9pbnN0YW50aWF0ZSgp
-IC0tPiB0cG0yX3Vuc2VhbF90cnVzdGVkKCkgLS0+IHRwbTJfdW5zZWFsX2NtZCgpLg0KDQpBbm90
-aGVyIHByb2JsZW0gaGVyZSBpcywgdG8gYnVpbGQgdGhlIHBvbGljeSB0byB1bnNlYWwgdGhlIGtl
-eSwgaXQgbmVlZCB0byBzdGFydCBhbiBwb2xpY3kgc2Vzc2lvbiwgYW5kIHRyYW5zZmVyIHRoZSBz
-ZXNzaW9uIGhhbmRsZSB0byBUUE0yLjAgdW5zZWFsIGNvbW1hbmQuIA0KSW4gbXkga2V5Y3RsIGNv
-bW1hbmQsIEkgdXNlIHRwbTIuMCBjb21tYW5kIHRvIHN0YXJ0IHRoZSBzZXNzaW9uIGFuZCBnZXQg
-dGhlIGhhbmRsZSwgcHV0IGl0IGludG8gdGhlIGtleWN0bCBjb21tYW5kIGxpa2U6DQprZXljdGwg
-YWRkIHRydXN0ZWQga21rICJsb2FkIGBjYXQga21rLmJsb2JgIGtleWhhbmRsZT0weDgxMDAwMDAx
-IHBvbGljeWhhbmRsZT0weDMwMDAwMDAiIEB1DQoNCkkgYW0gbm90IHN1cmUgd2hldGhlciBpdCBp
-cyBjb3JyZWN0LiANCg0KVGhhbmtzLiANCg0KLSBTaGlybGV5IA0KDQoNCi0tLS0tT3JpZ2luYWwg
-TWVzc2FnZS0tLS0tDQpGcm9tOiBKYW1lcyBCb3R0b21sZXkgPGplamJAbGludXguaWJtLmNvbT4g
-DQpTZW50OiBUdWVzZGF5LCBEZWNlbWJlciAzLCAyMDE5IDI6NTYgQU0NClRvOiBaaGFvLCBTaGly
-bGV5IDxzaGlybGV5LnpoYW9AaW50ZWwuY29tPjsgTWltaSBab2hhciA8em9oYXJAbGludXguaWJt
-LmNvbT47IEphcmtrbyBTYWtraW5lbiA8amFya2tvLnNha2tpbmVuQGxpbnV4LmludGVsLmNvbT47
-IEpvbmF0aGFuIENvcmJldCA8Y29yYmV0QGx3bi5uZXQ+DQpDYzogbGludXgtaW50ZWdyaXR5QHZn
-ZXIua2VybmVsLm9yZzsga2V5cmluZ3NAdmdlci5rZXJuZWwub3JnOyBsaW51eC1kb2NAdmdlci5r
-ZXJuZWwub3JnOyBsaW51eC1rZXJuZWxAdmdlci5rZXJuZWwub3JnOyAnTWF1cm8gQ2FydmFsaG8g
-Q2hlaGFiJyA8bWNoZWhhYitzYW1zdW5nQGtlcm5lbC5vcmc+OyBaaHUsIEJpbmcgPGJpbmcuemh1
-QGludGVsLmNvbT47IENoZW4sIEx1aGFpIDxsdWhhaS5jaGVuQGludGVsLmNvbT4NClN1YmplY3Q6
-IFJlOiBPbmUgcXVlc3Rpb24gYWJvdXQgdHJ1c3RlZCBrZXkgb2Yga2V5cmluZyBpbiBMaW51eCBr
-ZXJuZWwuDQoNCk9uIE1vbiwgMjAxOS0xMi0wMiBhdCAwNjo1MCArMDAwMCwgWmhhbywgU2hpcmxl
-eSB3cm90ZToNCj4gU28gSSBndWVzcyBtb3N0bHkgbGlrZSwgaXQgaXMgdGhlIGZvcm1hdCBvZiBw
-b2xpY3lkaWdlc3QsIHBvbGljeWhhbmRsZSANCj4gaXMgbm90IGNvcnJlY3RseSBpbiBteSBrZXlj
-dGwgY29tbWFuZC4NCj4gQnV0IHdoYXQgaXMgdGhlIGNvcnJlY3QgdXNpbmc/DQo+IA0KPiBNeSBr
-ZXljdGwgY29tbWFuZHMgYXJlIGF0dGFjaGVkIGFzIGJlbG93OiANCj4gJCBrZXljdGwgYWRkIHRy
-dXN0ZWQga21rICJuZXcgMzIga2V5aGFuZGxlPTB4ODEwMDAwMDEgaGFzaD1zaGEyNTYgDQo+IHBv
-bGljeWRpZ2VzdD1gY2F0IHBjcjcucG9saWN5YCIgQHUNCj4gODc0MTE3MDQ1DQo+IA0KPiBTYXZl
-IHRoZSB0cnVzdGVkIGtleS4gDQo+ICQga2V5Y3RsIHBpcGUgODc0MTE3MDQ1ID4ga21rLmJsb2IN
-Cg0KT0ssIGxvb2tpbmcgYXQgdGhlIGFjdHVhbCBjb2RlLCBpdCBzZWVtcyB0aGF0IHdob2V2ZXIg
-d3JvdGUgaXQgZGlkbid0IGFjY291bnQgZm9yIHRoZSBkaWZmZXJlbmNlcyBiZXR3ZWVuIFRQTTEu
-MiBhbmQgVFBNMi4wLiAgV2l0aCBUUE0yLjAgVFBNMl9DcmVhdGUgcmV0dXJucyB0aGUgcHVibGlj
-IGFuZCBwcml2YXRlIHBhcnRzIHBsdXMgdGhyZWUgb3RoZXIgdHBtMmIgZW50aXRlcyB1c2VkIHRv
-IGNlcnRpZnkgYW5kIGNoZWNrIHRoZSBrZXkuICBXaGVuIHlvdSBsb2FkIHRoZSBibG9iIGJhY2sg
-dXNpbmcgVFBNMl9Mb2FkLCBpdCBvbmx5IGFjY2VwdHMgdGhlIHB1YmxpYyBhbmQgcHJpdmF0ZSBw
-YXJ0cy4gDQpIb3dldmVyLCB5b3VyIGJsb2IgY29udGFpbnMgdGhlIG90aGVyIGV4dHJhbmVvdXMg
-ZWxlbWVudHMsIHRoYXQncyB3aHkgaXQgY2FuJ3QgYmUgbG9hZGVkLiAgWW91IGNvdWxkIG1ha2Ug
-aXQgbG9hZGFibGUgYnkgc3RyaXBwaW5nIG9mZiB0aGUgZXh0cmFuZW91cyBwaWVjZXMgLi4uIGp1
-c3QgdGFrZSB0aGUgZmlyc3QgdHdvIHRwbTJiIGVsZW1lbnRzIG9mIHRoZSBibG9iIGJ1dCBpdCBs
-b29rcyBsaWtlIHdlIG5lZWQgdG8gZml4IHRoZSBBUEkuICBJIHN1cHBvc2UgdGhlIGdvb2QgbmV3
-cyBpcyBnaXZlbiB0aGlzIGZhaWx1cmUgdGhhdCB3ZSBoYXZlIHRoZSBvcHBvcnR1bml0eSB0byBy
-ZXdyaXRlIHRoZSBBUEkgc2luY2Ugbm8tb25lIGVsc2UgY2FuIGhhdmUgdXNlZCBpdCBmb3IgYW55
-dGhpbmcgYmVjYXVzZSBvZiB0aGlzLiAgVGhlIGZ1bmRhbWVudGFsIHByb2JsZW0gd2l0aCB0aGUg
-Y3VycmVudCBBUEkgaXMgdGhhdCBtb3N0IFRQTTIncyBvbmx5IGhhdmUgdGhyZWUgYXZhaWxhYmxl
-IHNlc3Npb24gcmVnaXN0ZXJzLiAgSXQncyBzaW1wbHkgbm90IHNjYWxhYmxlIHRvIHNldCB0aGVt
-IHVwIGluIHVzZXJzcGFjZSBhbmQgaGF2ZSB0aGUga2VybmVsIHVzZSB0aGVtLCBzbyB3aGF0IHdl
-IHNob3VsZCBiZSBkb2luZyBpcyBwYXNzaW5nIGRvd24gdGhlIGFjdHVhbCBwb2xpY3kgYW5kIGhh
-dmluZyB0aGUga2VybmVsIGNvbnN0cnVjdCB0aGUgc2Vzc2lvbiBhdCB0aGUgcG9pbnQgb2YgdXNl
-IGFuZCB0aGVuIGZsdXNoIGl0LCB0aHVzIHNvbHZpbmcgdGhlIHBvdGVudGlhbCBzZXNzaW9uIGV4
-aGF1c3Rpb24gaXNzdWUuDQoNCkknZCBhY3R1YWxseSBwcm9wb3NlIHdlIG1ha2UgYSBUU1NMT0FE
-QUJMRSB0aGUgZnVuZGFtZW50YWwgZWxlbWVudCBvZiBvcGVyYXRpb24gZm9yIHRydXN0ZWQga2V5
-cy4gIFRoZSBJQk0gYW5kIEludGVsIFRTUyBwZW9wbGUgaGF2ZSBhZ3JlZWQgdG8gZG8gdGhpcyBh
-cyB0aGUgZm9ybWF0IGZvciBUUE0gbG9hZGFibGUga2V5cywgYnV0IGl0IHNob3VsZCBhbHNvIGFw
-cGx5IHRvIHNlYWxlZCBkYXRhLiAgVGhlIGJlYXV0eSBvZiBUU1NMT0FEQUJMRSBpcyB0aGF0IHRo
-ZSBBU04uMSBmb3JtYXQgaW5jbHVkZXMgYSBwb2xpY3kgc3BlY2lmaWNhdGlvbjoNCg0KLyoNCiAq
-IFRTU0xPQURBQkxFIDo6PSBTRVFVRU5DRSB7DQogKgl0eXBlCQlPQkpFQ1QgSURFTlRJRklFUg0K
-ICoJZW1wdHlBdXRoCVswXSBFWFBMSUNJVCBCT09MRUFOIE9QVElPTkFMDQogKglwb2xpY3kJCVsx
-XSBFWFBMSUNJVCBTRVFVRU5DRSBPRiBUUE1Qb2xpY3kgT1BUSU9OQUwNCiAqCXNlY3JldAkJWzJd
-IEVYUExJQ0lUIE9DVEVUIFNUUklORyBPUFRJT05BTA0KICoJcGFyZW50CQlJTlRFR0VSDQogKglw
-dWJrZXkJCU9DVEVUIFNUUklORw0KICoJcHJpdmtleQkJT0NURVQgU1RSSU5HDQogKiB9DQogKiBU
-UE1Qb2xpY3kgOjo9IFNFUVVFTkNFIHsNCiAqCUNvbW1hbmRDb2RlCQlbMF0gRVhQTElDSVQgSU5U
-RUdFUg0KICoJQ29tbWFuZFBvbGljeQkJWzFdIEVYUExJQ0lUIE9DVEVUIFNUUklORw0KICogfQ0K
-ICovDQoNCkphbWVzDQoNCg=
+On Tue, 2019-12-03 at 02:11 +0000, Zhao, Shirley wrote:
+> Thanks so much for you feedback, James. 
+> And glad to hear that the API will be made more friendly. 
+> 
+> But I have a little confused about the call stack. 
+> From the document, https://github.com/torvalds/linux/blob/master/Docu
+> mentation/security/keys/trusted-encrypted.rst and 
+> https://github.com/zfsonlinux/dracut/tree/master/modules.d/97masterke
+> y, the trusted key is a random number and generated by TPM2.0 and
+> sealed with TPM2.0 2048 RSA key. 
+
+Well, um, that document seems to be based on TPM 1.2 ... a lot of what
+it says isn't quite true for TPM 2.0.  For instance all TPM 2.0 primary
+keys come with a symmetric component, so the sealed data in TPM 2.0 is
+actually symmetrically encrypted to a primary key.
+
+> The 2048 RSA key is generated by tpm2_createprimary, and it can be
+> got by the TPM2.0 handle, just the "keyhandle" used in the following
+> keyctl command. 
+> $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha256
+> policydigest=`cat pcr7.policy`" @u
+
+The problem TPM 2.0 has is that most of them can't generate prime
+numbers very fast, so even through the kernel could generate the RSA
+primary, it would usually take far too long, so if you want to use a
+RSA primary you have to pre-generate one and place it in NV storage;
+the TCG recommends doing this at handle 81000001, which is what you
+have above.  However, the more modern way is to derive an elliptic
+curve key primary key every time ... EC keys can be generated by most
+TPMs in 10s of milliseconds, so the primary doesn't need to be present
+in NVRAM.
+
+THe kernel should be using the EC primary method for the parent.  The
+only exception is when the key has an intermediate parent, and then it
+can be simply loaded from a file.
+
+> If reboot, to re-load the trusted key back to keyring, just call
+> tpm2_unseal is enough, don't need to call tpm2_load to load the
+> TPM2.0 2048 RSA key.
+> If the trusted key is also protected by policy, then the policy will
+> be checked during tpm2_unseal. 
+> 
+> After check the source code, the call stack is mostly like: 
+> SYSCALL_DEFINE5(add_key,...) --> key_create_or_update() -->
+> __key_instantiate_and_link() -->  trusted_instantiate() -->
+> tpm2_unseal_trusted() --> tpm2_unseal_cmd().
+
+Well, the API is confusing, but the code seems to imply the parent
+should be present somehow.  A key in NVRAM, like 81000001 is always
+present so it doesn't need to be loaded it can just be used as is.
+
+> Another problem here is, to build the policy to unseal the key, it
+> need to start an policy session, and transfer the session handle to
+> TPM2.0 unseal command. 
+> In my keyctl command, I use tpm2.0 command to start the session and
+> get the handle, put it into the keyctl command like:
+> keyctl add trusted kmk "load `cat kmk.blob` keyhandle=0x81000001
+> policyhandle=0x3000000" @u
+
+As I said, using policy handles simply won't scale, so we need to use
+the actual policy instead ... thus the policy should be passed into the
+kernel  as part of the trusted key and the kernel itself would generate
+a policy session from the policy statements ... this approach is aready
+proven to be useful and functional in the tpm2 openssl engine code.
+
+James
