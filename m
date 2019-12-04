@@ -1,27 +1,56 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 04 Dec 2019 22:43:59 +0000
+From: Mat Martineau <mathew.j.martineau@linux.intel.com>
+Date: Wed, 04 Dec 2019 23:25:48 +0000
 Subject: Re: [PATCH v9 5/6] IMA: Add support to limit measuring keys
-Message-Id: <2c613462-825e-a3d1-9bf2-2314f0c1a4da@linux.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Message-Id: <alpine.OSX.2.21.1912041411100.45746@pminglan-mobl.amr.corp.intel.com>
+MIME-Version: 1
+Content-Type: multipart/mixed; boundary="0-1154282419-1575501949=:45746"
 List-Id: <keyrings.vger.kernel.org>
-References: <20191127015654.3744-1-nramas@linux.microsoft.com>
- <20191127015654.3744-6-nramas@linux.microsoft.com>
- <1575375945.5241.16.camel@linux.ibm.com>
- <2d20ce36-e24e-e238-4a82-286db9eeab97@linux.microsoft.com>
- <1575403616.5241.76.camel@linux.ibm.com>
- <89bb3226-3a2e-c7fa-fff9-3a422739481c@linux.microsoft.com>
- <1575458192.5241.99.camel@linux.ibm.com>
+References: <20191127015654.3744-1-nramas@linux.microsoft.com>  <20191127015654.3744-6-nramas@linux.microsoft.com>  <1575375945.5241.16.camel@linux.ibm.com>  <2d20ce36-e24e-e238-4a82-286db9eeab97@linux.microsoft.com>  <1575403616.5241.76.camel@linux.ibm.com>
+  <89bb3226-3a2e-c7fa-fff9-3a422739481c@linux.microsoft.com> <1575458192.5241.99.camel@linux.ibm.com>
 In-Reply-To: <1575458192.5241.99.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc: Mat Martineau <mathew.j.martineau@linux.intel.com>, eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+To: Mimi Zohar <zohar@linux.ibm.com>
+Cc: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org, eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-On 12/4/19 3:16 AM, Mimi Zohar wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi Mimi,
+--0-1154282419-1575501949=:45746
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 
-> 
+
+On Wed, 4 Dec 2019, Mimi Zohar wrote:
+
+> [Cc'ing Mat Martineau]
+>
+> On Tue, 2019-12-03 at 15:37 -0800, Lakshmi Ramasubramanian wrote:
+>> On 12/3/2019 12:06 PM, Mimi Zohar wrote:
+>>
+>>> Suppose both root and uid 1000 define a keyring named "foo".  The
+>>> current "keyrings=foo" will measure all keys added to either keyring
+>>> named "foo".  There needs to be a way to limit measuring keys to a
+>>> particular keyring named "foo".
+>>>
+>>> Mimi
+>>
+>> Thanks for clarifying.
+>>
+>> Suppose two different non-root users create keyring with the same name
+>> "foo" and, say, both are measured, how would we know which keyring
+>> measurement belongs to which user?
+>>
+>> Wouldn't it be sufficient to include only keyrings created by "root"
+>> (UID value 0) in the key measurement? This will include all the builtin
+>> trusted keyrings (such as .builtin_trusted_keys,
+>> .secondary_trusted_keys, .ima, .evm, etc.).
+>>
+>> What would be the use case for including keyrings created by non-root
+>> users in key measurement?
+>>
+>> Also, since the UID for non-root users can be any integer value (greater
+>> than 0), can an an administrator craft a generic IMA policy that would
+>> be applicable to all clients in an enterprise?
+>
 > The integrity subsystem, and other concepts upstreamed to support it,
 > are being used by different people/companies in different ways.  I
 > know some of the ways, but not all, as how it is being used.  For
@@ -30,14 +59,22 @@ Hi Mimi,
 > would be interested in measuring keys on these restricted userspace
 > keyrings, but before we limit how a new feature works, we should at
 > least look to see if that limitation is really necessary.
-> 
-> Mimi
 
-I have updated the patch per your suggestion - if uid is specified in 
-the policy for key measurement, then it is checked against the current 
-user's credential.
+The use cases I'm most familiar with could have a use for key measurement 
+for something like enterprise Wi-Fi root certificates. I'm not sure of the 
+best way to uniquely identify a key to measure in that scenario, it could 
+be anchored in various ways (process, session, thread, or user keyrings, 
+for example) and may be owned by a non-root user. As Lakshmi noted above, 
+key names are not unique, and I'll add that namespace considerations may 
+come in to play too.
 
-Please review the updated patch set (v10).
+Keys (including keyrings like .builtin_trusted_keys, .ima, etc) can be 
+linked to multiple keyrings, maybe you could create a system-level 
+.ima_measured keyring. You could measure keys that are accessible from 
+that keyring, and opt in more keys for measurement by linking them to 
+.ima_measured or a keyring nested within .ima_measured.
 
-thanks,
-  -lakshmi
+--
+Mat Martineau
+Intel
+--0-1154282419-1575501949=:45746--
