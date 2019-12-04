@@ -1,36 +1,58 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Tue, 03 Dec 2019 23:37:17 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Wed, 04 Dec 2019 11:16:32 +0000
 Subject: Re: [PATCH v9 5/6] IMA: Add support to limit measuring keys
-Message-Id: <89bb3226-3a2e-c7fa-fff9-3a422739481c@linux.microsoft.com>
+Message-Id: <1575458192.5241.99.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191127015654.3744-1-nramas@linux.microsoft.com>
- <20191127015654.3744-6-nramas@linux.microsoft.com>
- <1575375945.5241.16.camel@linux.ibm.com>
- <2d20ce36-e24e-e238-4a82-286db9eeab97@linux.microsoft.com>
- <1575403616.5241.76.camel@linux.ibm.com>
-In-Reply-To: <1575403616.5241.76.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+         <20191127015654.3744-6-nramas@linux.microsoft.com>
+         <1575375945.5241.16.camel@linux.ibm.com>
+         <2d20ce36-e24e-e238-4a82-286db9eeab97@linux.microsoft.com>
+         <1575403616.5241.76.camel@linux.ibm.com>
+         <89bb3226-3a2e-c7fa-fff9-3a422739481c@linux.microsoft.com>
+In-Reply-To: <89bb3226-3a2e-c7fa-fff9-3a422739481c@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
+Cc: Mat Martineau <mathew.j.martineau@linux.intel.com>, eric.snowberg@oracle.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.orgMat Martineau <mathew.j.martineau@linux.intel.com>
 
-T24gMTIvMy8yMDE5IDEyOjA2IFBNLCBNaW1pIFpvaGFyIHdyb3RlOgoKPiBTdXBwb3NlIGJvdGgg
-cm9vdCBhbmQgdWlkIDEwMDAgZGVmaW5lIGEga2V5cmluZyBuYW1lZCAiZm9vIi4gwqBUaGUKPiBj
-dXJyZW50ICJrZXlyaW5ncz1mb28iIHdpbGwgbWVhc3VyZSBhbGwga2V5cyBhZGRlZCB0byBlaXRo
-ZXIga2V5cmluZwo+IG5hbWVkICJmb28iLiDCoFRoZXJlIG5lZWRzIHRvIGJlIGEgd2F5IHRvIGxp
-bWl0IG1lYXN1cmluZyBrZXlzIHRvIGEKPiBwYXJ0aWN1bGFyIGtleXJpbmcgbmFtZWQgImZvbyIu
-Cj4gCj4gTWltaQoKVGhhbmtzIGZvciBjbGFyaWZ5aW5nLgoKU3VwcG9zZSB0d28gZGlmZmVyZW50
-IG5vbi1yb290IHVzZXJzIGNyZWF0ZSBrZXlyaW5nIHdpdGggdGhlIHNhbWUgbmFtZSAKImZvbyIg
-YW5kLCBzYXksIGJvdGggYXJlIG1lYXN1cmVkLCBob3cgd291bGQgd2Uga25vdyB3aGljaCBrZXly
-aW5nIAptZWFzdXJlbWVudCBiZWxvbmdzIHRvIHdoaWNoIHVzZXI/CgpXb3VsZG4ndCBpdCBiZSBz
-dWZmaWNpZW50IHRvIGluY2x1ZGUgb25seSBrZXlyaW5ncyBjcmVhdGVkIGJ5ICJyb290IiAKKFVJ
-RCB2YWx1ZSAwKSBpbiB0aGUga2V5IG1lYXN1cmVtZW50PyBUaGlzIHdpbGwgaW5jbHVkZSBhbGwg
-dGhlIGJ1aWx0aW4gCnRydXN0ZWQga2V5cmluZ3MgKHN1Y2ggYXMgLmJ1aWx0aW5fdHJ1c3RlZF9r
-ZXlzLCAKLnNlY29uZGFyeV90cnVzdGVkX2tleXMsIC5pbWEsIC5ldm0sIGV0Yy4pLgoKV2hhdCB3
-b3VsZCBiZSB0aGUgdXNlIGNhc2UgZm9yIGluY2x1ZGluZyBrZXlyaW5ncyBjcmVhdGVkIGJ5IG5v
-bi1yb290IAp1c2VycyBpbiBrZXkgbWVhc3VyZW1lbnQ/CgpBbHNvLCBzaW5jZSB0aGUgVUlEIGZv
-ciBub24tcm9vdCB1c2VycyBjYW4gYmUgYW55IGludGVnZXIgdmFsdWUgKGdyZWF0ZXIgCnRoYW4g
-MCksIGNhbiBhbiBhbiBhZG1pbmlzdHJhdG9yIGNyYWZ0IGEgZ2VuZXJpYyBJTUEgcG9saWN5IHRo
-YXQgd291bGQgCmJlIGFwcGxpY2FibGUgdG8gYWxsIGNsaWVudHMgaW4gYW4gZW50ZXJwcmlzZT8K
-CnRoYW5rcywKICAtbGFrc2htaQoK
+[Cc'ing Mat Martineau]
+
+On Tue, 2019-12-03 at 15:37 -0800, Lakshmi Ramasubramanian wrote:
+> On 12/3/2019 12:06 PM, Mimi Zohar wrote:
+> 
+> > Suppose both root and uid 1000 define a keyring named "foo".  The
+> > current "keyrings=foo" will measure all keys added to either keyring
+> > named "foo".  There needs to be a way to limit measuring keys to a
+> > particular keyring named "foo".
+> > 
+> > Mimi
+> 
+> Thanks for clarifying.
+> 
+> Suppose two different non-root users create keyring with the same name 
+> "foo" and, say, both are measured, how would we know which keyring 
+> measurement belongs to which user?
+> 
+> Wouldn't it be sufficient to include only keyrings created by "root" 
+> (UID value 0) in the key measurement? This will include all the builtin 
+> trusted keyrings (such as .builtin_trusted_keys, 
+> .secondary_trusted_keys, .ima, .evm, etc.).
+> 
+> What would be the use case for including keyrings created by non-root 
+> users in key measurement?
+> 
+> Also, since the UID for non-root users can be any integer value (greater 
+> than 0), can an an administrator craft a generic IMA policy that would 
+> be applicable to all clients in an enterprise?
+
+The integrity subsystem, and other concepts upstreamed to support it,
+are being used by different people/companies in different ways.  I
+know some of the ways, but not all, as how it is being used.  For
+example, Mat Martineau gave an LSS2019-NA talk titled "Using and
+Implementing Keyring Restrictions for Userspace".  I don't know if he
+would be interested in measuring keys on these restricted userspace
+keyrings, but before we limit how a new feature works, we should at
+least look to see if that limitation is really necessary.
+
+Mimi
