@@ -1,184 +1,183 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Mon, 30 Dec 2019 17:38:00 +0000
-Subject: [PATCH v4 7/9] security: keys: trusted: add ability to specify arbitrary policy
-Message-Id: <20191230173802.8731-8-James.Bottomley@HansenPartnership.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 04 Dec 2019 22:41:25 +0000
+Subject: [PATCH v10 0/6] KEYS: Measure keys when they are created or updated
+Message-Id: <20191204224131.3384-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-This patch adds a policy= argument to key creation.  The policy is the
-standard tss policymaker format and each separate policy line must
-have a newline after it.
+Keys created or updated in the system are currently not measured.
+Therefore an attestation service, for instance, would not be able to
+attest whether or not the trusted keys keyring(s), for instance, contain
+only known good (trusted) keys.
 
-Thus to construct a policy requiring authorized value and pcr 16
-locking using a sha256 hash, the policy (policy.txt) file would be two
-lines:
+IMA measures system files, command line arguments passed to kexec,
+boot aggregate, etc. It can be used to measure keys as well.
+But there is no mechanism available in the kernel for IMA to
+know when a key is created or updated.
 
-0000017F00000001000B03000001303095B49BE85E381E5B20E557E46363EF55B0F43B132C2D8E3DE9AC436656F2
-0000016b
+This change aims to address measuring keys created or updated
+in the system.
 
-This can be inserted into the key with
+To achieve the above the following changes have been made:
 
-keyctl add trusted kmk "new 32 policy=`cat policy.txt` keyhandle=0x81000001 hash=sha256" @u
+ - Added a new IMA hook namely, ima_post_key_create_or_update, which
+   measures the key. This IMA hook is called from key_create_or_update
+   function. The key measurement can be controlled through IMA policy.
 
-Note that although a few policies work like this, most require special
-handling which must be added to the kernel policy construction
-routine.
+   A new IMA policy function KEY_CHECK has been added to measure keys.
+   "keyrings=" option can be specified for KEY_CHECK to limit
+   measuring the keys loaded onto the specified keyrings only.
 
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
----
- Documentation/security/keys/trusted-encrypted.rst | 16 ++++++++
- security/keys/trusted-keys/tpm2-policy.c          | 46 +++++++++++++++++++++++
- security/keys/trusted-keys/tpm2-policy.h          |  1 +
- security/keys/trusted-keys/trusted_tpm1.c         | 13 +++++++
- 4 files changed, 76 insertions(+)
+   uid can be specified to further restrict key measurement for keys
+   created by specific user.
 
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index 053344c4df5b..b68d3eb73f00 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -76,6 +76,9 @@ Usage::
-        policyhandle= handle to an authorization policy session that defines the
-                      same policy and with the same hash algorithm as was used to
-                      seal the key.
-+       policy=       specify an arbitrary set of policies.  These must
-+                     be in policymaker format with each separate
-+                     policy line newline terminated.
- 
- "keyctl print" returns an ascii hex copy of the sealed key, which is in standard
- TPM_STORED_DATA format.  The key length for new keys are always in bytes.
-@@ -168,6 +171,19 @@ zeros (the value of PCR 16)::
-     $ dd if=/dev/zero bs=1 count  2>/dev/null|sha1sum
-     6768033e216468247bd031a0a2d9876d79818f8f
- 
-+You can also specify arbitrary policy in policymaker format, so a two
-+value policy (the pcr example above and authvalue) would look like
-+this in policymaker format::
-+
-+    0000017F000000010004030000016768033e216468247bd031a0a2d9876d79818f8f
-+    0000016b
-+
-+This can be placed in a file (say policy.txt) and then added to the key as::
-+
-+    $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha1 policy=`cat policy.txt`" @u
-+
-+The newlines in the file policy.txt will be automatically processed.
-+
- Reseal a trusted key under new pcr values::
- 
-     $ keyctl update 268728824 "update pcrinfo=`cat pcr.blob`"
-diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 31ba8ee80c09..45fca829503b 100644
---- a/security/keys/trusted-keys/tpm2-policy.c
-+++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -352,3 +352,49 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 	}
- 	return 0;
- }
-+
-+int tpm2_parse_policies(struct tpm2_policies **ppols, char *str)
-+{
-+	struct tpm2_policies *pols;
-+	char *p;
-+	u8 *ptr;
-+	int i = 0, left = PAGE_SIZE, res;
-+
-+	pols = kmalloc(left, GFP_KERNEL);
-+	if (!pols)
-+		return -ENOMEM;
-+
-+	ptr = (u8 *)(pols + 1);
-+	left -= ptr - (u8 *)pols;
-+
-+	while ((p = strsep(&str, "\n"))) {
-+		if (*p = '\0' || *p = '\n')
-+			continue;
-+		pols->len[i] = strlen(p)/2;
-+		if (pols->len[i] > left) {
-+			res = -E2BIG;
-+			goto err;
-+		}
-+		res = hex2bin(ptr, p, pols->len[i]);
-+		if (res)
-+			goto err;
-+		/* get command code and skip past */
-+		pols->code[i] = get_unaligned_be32(ptr);
-+		pols->policies[i] = ptr + 4;
-+		ptr += pols->len[i];
-+		left -= pols->len[i];
-+		pols->len[i] -= 4;
-+		/*
-+		 * FIXME: this does leave the code embedded in dead
-+		 * regions of the memory, but it's easier than
-+		 * hexdumping to a temporary or copying over
-+		 */
-+		i++;
-+	}
-+	pols->count = i;
-+	*ppols = pols;
-+	return 0;
-+ err:
-+	kfree(pols);
-+	return res;
-+}
-diff --git a/security/keys/trusted-keys/tpm2-policy.h b/security/keys/trusted-keys/tpm2-policy.h
-index 152c948743f3..cb804a544ced 100644
---- a/security/keys/trusted-keys/tpm2-policy.h
-+++ b/security/keys/trusted-keys/tpm2-policy.h
-@@ -28,3 +28,4 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols, u32 hash,
- int tpm2_encode_policy(struct tpm2_policies *pols, u8 **data, u32 *len);
- int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 			    u32 *handle);
-+int tpm2_parse_policies(struct tpm2_policies **ppols, char *str);
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index 912792fd987a..af269f4774de 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -29,6 +29,8 @@
- 
- #include <keys/trusted_tpm.h>
- 
-+#include "tpm2-policy.h"
-+
- static const char hmac_alg[] = "hmac(sha1)";
- static const char hash_alg[] = "sha1";
- static struct tpm_chip *chip;
-@@ -709,6 +711,7 @@ enum {
- 	Opt_hash,
- 	Opt_policydigest,
- 	Opt_policyhandle,
-+	Opt_policy,
- };
- 
- static const match_table_t key_tokens = {
-@@ -724,6 +727,7 @@ static const match_table_t key_tokens = {
- 	{Opt_hash, "hash=%s"},
- 	{Opt_policydigest, "policydigest=%s"},
- 	{Opt_policyhandle, "policyhandle=%s"},
-+	{Opt_policy, "policy=%s"},
- 	{Opt_err, NULL}
- };
- 
-@@ -848,6 +852,15 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 				return -EINVAL;
- 			opt->policyhandle = handle;
- 			break;
-+		case Opt_policy:
-+			if (pay->policies)
-+				return -EINVAL;
-+			if (!tpm2)
-+				return -EINVAL;
-+			res = tpm2_parse_policies(&pay->policies, args[0].from);
-+			if (res)
-+				return res;
-+			break;
- 		default:
- 			return -EINVAL;
- 		}
+   # measure keys loaded onto any keyring
+   measure func=KEY_CHECK
+
+   # measure keys loaded onto the IMA keyring only for root user
+   measure func=KEY_CHECK uid=0 keyring=".ima"
+
+   # measure keys on the BUILTIN and IMA keyrings into a different PCR
+   measure func=KEY_CHECK keyring=".builtin_trusted_keys|.ima" pcr
+
+Testing performed:
+
+  * Booted the kernel with this change.
+  * When KEY_CHECK policy is set IMA measures keys loaded
+    onto any keyring (keyrings= option not specified).
+  * Keys are not measured when KEY_CHECK is not set.
+  * When keyrings= option is specified for KEY_CHECK then only the keys
+    loaded onto a keyring specified in the option is measured.
+  * When uid is specified in the policy the key is measured
+    only when the current user id matches the one given in the policy.
+  * Added a new key to a keyring.
+    => Added keys to .ima and .evm keyrings.
+  * Added the same key again.
+    => Add the same key to .ima and .evm keyrings.
+
+Change Log:
+
+  v10:
+
+  => Added check for user id (uid) in ima_match_keyring()
+  => Updated ima_match_keyring() function to use strsep() to
+     check for keyring match.
+  => Edited key measurement validation description.
+
+  v9:
+
+  => Changed the measured key data from just the public key to
+     the entire payload passed to key_create_or_update() function.
+     This payload is the certificate from which the key is created
+     or updated by key_create_or_update() function.
+  => Added check in process_buffer_measurement() to return
+     immediately if ima_policy_flag is set to zero.
+
+  v8:
+
+  => Updated ima_match_keyring() function to check for
+     whole keyring name match.
+  => Used CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE instead of
+     CONFIG_KEYS to build ima_asymmetric_keys.c and enable
+     the IMA hook to measure keys since this config handles
+     the required build time dependencies better.
+  => Updated patch description to illustrate verification
+     of key measurement.
+
+  v7:
+
+  => Removed CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS option and used
+     CONFIG_KEYS instead for ima_asymmetric_keys.c
+  => Added the patches related to "keyrings=" option support to
+     this patch set.
+
+  v6:
+
+  => Rebased the changes to v5.4-rc7
+  => Renamed KEYRING_CHECK to KEY_CHECK per Mimi's suggestion.
+  => Excluded the patches that add support for limiting key
+     measurement to specific keyrings ("keyrings=" option
+     for "measure func=KEY_CHECK" in the IMA policy).
+     Also, excluded the patches that add support for deferred
+     processing of keys (queue support).
+     These patches will be added in separate patch sets later.
+
+  v5:
+
+  => Reorganized the patches to add measurement of keys through
+     the IMA hook without any queuing and then added queuing support.
+  => Updated the queuing functions to minimize code executed inside mutex.
+  => Process queued keys after custom IMA policies have been applied.
+
+  v4:
+
+  => Rebased the changes to v5.4-rc3
+  => Applied the following dependent patch set first
+     and then added new changes.
+  https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
+  => Refactored the patch set to separate out changes related to
+     func KEYRING_CHECK and options keyrings into different patches.
+  => Moved the functions to queue and dequeue keys for measurement
+     from ima_queue.c to a new file ima_asymmetric_keys.c.
+  => Added a new config namely CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
+     to compile ima_asymmetric_keys.c
+
+  v3:
+
+  => Added KEYRING_CHECK for measuring keys. This can optionally specify
+     keyrings to measure.
+  => Updated ima_get_action() and related functions to return
+     the keyrings if specified in the policy.
+  => process_buffer_measurement() function is updated to take keyring
+     as a parameter. The key will be measured if the policy includes
+     the keyring in the list of measured keyrings. If the policy does not
+     specify any keyrings then all keys are measured.
+
+  v2:
+
+  => Per suggestion from Mimi reordered the patch set to first
+     enable measuring keys added or updated in the system.
+     And, then scope the measurement to keys added to 
+     builtin_trusted_keys keyring through ima policy.
+  => Removed security_key_create_or_update function and instead
+     call ima hook, to measure the key, directly from 
+     key_create_or_update function.
+
+  v1:
+
+  => LSM function for key_create_or_update. It calls ima.
+  => Added ima hook for measuring keys
+  => ima measures keys based on ima policy.
+
+  v0:
+
+  => Added LSM hook for key_create_or_update.
+  => Measure keys added to builtin or secondary trusted keys keyring.
+
+Lakshmi Ramasubramanian (6):
+  IMA: Check IMA policy flag
+  IMA: Add KEY_CHECK func to measure keys
+  IMA: Define an IMA hook to measure keys
+  KEYS: Call the IMA hook to measure keys
+  IMA: Add support to limit measuring keys
+  IMA: Read keyrings= option from the IMA policy
+
+ Documentation/ABI/testing/ima_policy         | 16 +++-
+ include/linux/ima.h                          | 14 +++
+ security/integrity/ima/Makefile              |  1 +
+ security/integrity/ima/ima.h                 |  9 +-
+ security/integrity/ima/ima_api.c             |  8 +-
+ security/integrity/ima/ima_appraise.c        |  4 +-
+ security/integrity/ima/ima_asymmetric_keys.c | 58 ++++++++++++
+ security/integrity/ima/ima_main.c            | 12 ++-
+ security/integrity/ima/ima_policy.c          | 96 ++++++++++++++++++--
+ security/keys/key.c                          | 10 ++
+ 10 files changed, 208 insertions(+), 20 deletions(-)
+ create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
+
 -- 
-2.16.4
+2.17.1
