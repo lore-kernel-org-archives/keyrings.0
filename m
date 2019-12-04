@@ -1,105 +1,83 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 10 Dec 2019 00:10:18 +0000
-Subject: [PATCH v2 8/8] security: keys: trusted: implement counter/timer policy
-Message-Id: <1575936618.31378.58.camel@HansenPartnership.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 04 Dec 2019 22:41:27 +0000
+Subject: [PATCH v10 2/6] IMA: Add KEY_CHECK func to measure keys
+Message-Id: <20191204224131.3384-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1575936272.31378.50.camel@HansenPartnership.com>
-In-Reply-To: <1575936272.31378.50.camel@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+References: <20191204224131.3384-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191204224131.3384-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-This is actually a generic policy allowing a range of comparisons
-against any value set in the TPM Clock, which includes things like the
-reset count, a monotonic millisecond count and the restart count.  The
-most useful comparison is against the millisecond count for expiring
-keys.  However, you have to remember that currently Linux doesn't try
-to sync the epoch timer with the TPM, so the expiration is actually
-measured in how long the TPM itself has been powered on ... the TPM
-timer doesn't count while the system is powered down.  The millisecond
-counter is a u64 quantity found at offset 8 in the timer structure,
-and the <= comparision operand is 9, so a policy set to expire after the
-TPM has been up for 100 seconds would look like
+Measure keys loaded onto any keyring.
 
-0000016d00000000000f424000080009
+This patch defines a new IMA policy func namely KEY_CHECK to
+measure keys. Updated ima_match_rules() to check for KEY_CHECK
+and ima_parse_rule() to handle KEY_CHECK.
 
-Where 0x16d is the counter timer policy code and 0xf4240 is 100 000 in
-hex.
-
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
- Documentation/security/keys/trusted-encrypted.rst | 29 +++++++++++++++++++++++
- security/keys/trusted-keys/tpm2-policy.c          | 19 +++++++++++++++
- 2 files changed, 48 insertions(+)
+ Documentation/ABI/testing/ima_policy | 6 +++++-
+ security/integrity/ima/ima.h         | 1 +
+ security/integrity/ima/ima_policy.c  | 4 +++-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index ade1a9dc8367..52d8bd8bef65 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -235,3 +235,32 @@ about the usage can be found in the file
- Another new format 'enc32' has been defined in order to support encrypted keys
- with payload size of 32 bytes. This will initially be used for nvdimm security
- but may expand to other usages that require 32 bytes payload.
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 29aaedf33246..066d32797500 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -29,7 +29,7 @@ Description:
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+-				[KEXEC_CMDLINE]
++				[KEXEC_CMDLINE] [KEY_CHECK]
+ 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
+ 			       [[^]MAY_EXEC]
+ 			fsmagic:= hex value
+@@ -113,3 +113,7 @@ Description:
+ 		Example of appraise rule allowing modsig appended signatures:
+ 
+ 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
 +
-+Appendix
-+--------
++		Example of measure rule using KEY_CHECK to measure all keys:
 +
-+TPM 2.0 Policies
-+----------------
-+
-+The current TPM supports PCR lock policies as documented above and
-+CounterTimer policies which can be used to create expiring keys.  One
-+caveat with expiring keys is that the TPM millisecond counter does not
-+update while a system is powered off and Linux does not sync the TPM
-+millisecond count with its internal clock, so the best you can expire
-+in is in terms of how long any given TPM has been powered on.  (FIXME:
-+Linux should simply update the millisecond clock to the current number
-+of seconds past the epoch on boot).
-+
-+A CounterTimer policy is expressed in terms of length and offset
-+against the TPM clock structure (TPMS_TIME_INFO), which looks like the
-+packed structure::
-+
-+    struct tpms_time_info {
-+            u64 uptime;       /* time in ms since last start or reset */
-+	    u64 clock;        /* cumulative uptime in ms */
-+	    u32 resetcount;   /* numer of times the TPM has been reset */
-+	    u32 restartcount; /* number of times the TPM has been restarted */
-+	    u8  safe          /* time was safely loaded from NVRam */
-+    };
-+
-+The usual comparison for expiring keys is against clock, at offset 8.
-diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 6d69f0300584..f19beb3e9e49 100644
---- a/security/keys/trusted-keys/tpm2-policy.c
-+++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -322,6 +322,25 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 			tpm_buf_append(&buf, pols->policies[i],
- 				       pols->len[i] - pols->hash_size);
- 			break;
-+		case TPM2_CC_POLICY_COUNTER_TIMER: {
-+			/*
-+			 * the format of this is the last two u16
-+			 * quantities are the offset and operation
-+			 * respectively.  The rest is operandB which
-+			 * must be zero padded in a hash digest
-+			 */
-+			u16 opb_len = pols->len[i] - 4;
-+
-+			if (opb_len > pols->hash_size)
-+				return -EINVAL;
-+
-+			tpm_buf_append_u16(&buf, opb_len);
-+			tpm_buf_append(&buf, pols->policies[i], opb_len);
-+			/* offset and operand*/
-+			tpm_buf_append(&buf, pols->policies[i] + opb_len, 4);
-+			failure = "Counter Timer";
-+			break;
-+		}
- 		default:
- 			failure = "unknown policy";
- 			break;
++			measure func=KEY_CHECK
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index df4ca482fb53..fe6c698617bd 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ 	hook(KEXEC_INITRAMFS_CHECK)	\
+ 	hook(POLICY_CHECK)		\
+ 	hook(KEXEC_CMDLINE)		\
++	hook(KEY_CHECK)			\
+ 	hook(MAX_CHECK)
+ #define __ima_hook_enumify(ENUM)	ENUM,
+ 
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index f19a895ad7cd..1525a28fd705 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
+ {
+ 	int i;
+ 
+-	if (func = KEXEC_CMDLINE) {
++	if ((func = KEXEC_CMDLINE) || (func = KEY_CHECK)) {
+ 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
+ 			return true;
+ 		return false;
+@@ -997,6 +997,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 				entry->func = POLICY_CHECK;
+ 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
+ 				entry->func = KEXEC_CMDLINE;
++			else if (strcmp(args[0].from, "KEY_CHECK") = 0)
++				entry->func = KEY_CHECK;
+ 			else
+ 				result = -EINVAL;
+ 			if (!result)
 -- 
-2.16.4
+2.17.1
