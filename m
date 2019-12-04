@@ -1,61 +1,98 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 11 Dec 2019 01:40:28 +0000
-Subject: Re: [PATCH v1 2/2] IMA: Call workqueue functions to measure queued keys
-Message-Id: <1576028428.4579.78.camel@linux.ibm.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 04 Dec 2019 22:41:28 +0000
+Subject: [PATCH v10 3/6] IMA: Define an IMA hook to measure keys
+Message-Id: <20191204224131.3384-4-nramas@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="maccentraleurope"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191206012936.2814-1-nramas@linux.microsoft.com>
-         <20191206012936.2814-3-nramas@linux.microsoft.com>
-In-Reply-To: <20191206012936.2814-3-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
+References: <20191204224131.3384-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191204224131.3384-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-T24gVGh1LCAyMDE5LTEyLTA1IGF0IDE3OjI5IC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
-biB3cm90ZToKPiBNZWFzdXJpbmcga2V5cyByZXF1aXJlcyBhIGN1c3RvbSBJTUEgcG9saWN5IHRv
-IGJlIGxvYWRlZC4KPiBLZXlzIHNob3VsZCBiZSBxdWV1ZWQgZm9yIG1lYXN1cmVtZW50IGlmIGEg
-Y3VzdG9tIElNQSBwb2xpY3kKPiBpcyBub3QgeWV0IGxvYWRlZC4gS2V5cyBxdWV1ZWQgZm9yIG1l
-YXN1cmVtZW50LCBpZiBhbnksIHNob3VsZCBiZQo+IHByb2Nlc3NlZCB3aGVuIGEgY3VzdG9tIElN
-QSBwb2xpY3kgaXMgbG9hZGVkLgo+IAo+IFRoaXMgcGF0Y2ggdXBkYXRlcyB0aGUgSU1BIGhvb2sg
-ZnVuY3Rpb24gaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoKQo+IHRvIHF1ZXVlIHRoZSBr
-ZXkgaWYgYSBjdXN0b20gSU1BIHBvbGljeSBoYXMgbm90IHlldCBiZWVuIGxvYWRlZC4KPiBBbmQs
-IGltYV91cGRhdGVfcG9saWN5KCkgZnVuY3Rpb24sIHdoaWNoIGlzIGNhbGxlZCB3aGVuCj4gYSBj
-dXN0b20gSU1BIHBvbGljeSBpcyBsb2FkZWQsIGlzIHVwZGF0ZWQgdG8gcHJvY2VzcyBxdWV1ZWQg
-a2V5cy4KPiAKPiBTaWduZWQtb2ZmLWJ5OiBMYWtzaG1pIFJhbWFzdWJyYW1hbmlhbiA8bnJhbWFz
-QGxpbnV4Lm1pY3Jvc29mdC5jb20+Cj4gLS0tCj4gIHNlY3VyaXR5L2ludGVncml0eS9pbWEvaW1h
-X2FzeW1tZXRyaWNfa2V5cy5jIHwgOSArKysrKysrKysKPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2lt
-YS9pbWFfcG9saWN5LmMgICAgICAgICAgfCA2ICsrKysrKwo+ICAyIGZpbGVzIGNoYW5nZWQsIDE1
-IGluc2VydGlvbnMoKykKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9p
-bWFfYXN5bW1ldHJpY19rZXlzLmMgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hc3ltbWV0
-cmljX2tleXMuYwo+IGluZGV4IGZiZGJlOWMyNjFjYi4uNTEwYjI5ZDE3YTdiIDEwMDY0NAo+IC0t
-LSBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FzeW1tZXRyaWNfa2V5cy5jCj4gKysrIGIv
-c2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXN5bW1ldHJpY19rZXlzLmMKPiBAQCAtMTU1LDYg
-KzE1NSw4IEBAIHZvaWQgaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoc3RydWN0IGtleSAq
-a2V5cmluZywgc3RydWN0IGtleSAqa2V5LAo+ICAJCQkJICAgY29uc3Qgdm9pZCAqcGF5bG9hZCwg
-c2l6ZV90IHBheWxvYWRfbGVuLAo+ICAJCQkJICAgdW5zaWduZWQgbG9uZyBmbGFncywgYm9vbCBj
-cmVhdGUpCj4gIHsKPiArCWJvb2wga2V5X3F1ZXVlZCA9IGZhbHNlOwo+ICsKPiAgCS8qIE9ubHkg
-YXN5bW1ldHJpYyBrZXlzIGFyZSBoYW5kbGVkIGJ5IHRoaXMgaG9vay4gKi8KPiAgCWlmIChrZXkt
-PnR5cGUgIT0gJmtleV90eXBlX2FzeW1tZXRyaWMpCj4gIAkJcmV0dXJuOwo+IEBAIC0xNjIsNiAr
-MTY0LDEzIEBAIHZvaWQgaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoc3RydWN0IGtleSAq
-a2V5cmluZywgc3RydWN0IGtleSAqa2V5LAo+ICAJaWYgKCFwYXlsb2FkIHx8IChwYXlsb2FkX2xl
-biA9IDApKQo+ICAJCXJldHVybjsKPiAgCj4gKwlpZiAoIWltYV9wcm9jZXNzX2tleXNfZm9yX21l
-YXN1cmVtZW50KQo+ICsJCWtleV9xdWV1ZWQgPSBpbWFfcXVldWVfa2V5X2Zvcl9tZWFzdXJlbWVu
-dChrZXlyaW5nLCBwYXlsb2FkLAo+ICsJCQkJCQkJICAgcGF5bG9hZF9sZW4pOwo+ICsKPiArCWlm
-IChrZXlfcXVldWVkKQo+ICsJCXJldHVybjsKPiArCj4gIAkvKgo+ICAJICoga2V5cmluZy0+ZGVz
-Y3JpcHRpb24gcG9pbnRzIHRvIHRoZSBuYW1lIG9mIHRoZSBrZXlyaW5nCj4gIAkgKiAoc3VjaCBh
-cyAiLmJ1aWx0aW5fdHJ1c3RlZF9rZXlzIiwgIi5pbWEiLCBldGMuKSB0bwo+IGRpZmYgLS1naXQg
-YS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYyBiL3NlY3VyaXR5L2ludGVncml0
-eS9pbWEvaW1hX3BvbGljeS5jCj4gaW5kZXggNzMwMzBhNjlkNTQ2Li40ZGM4ZmI5OTU3YWMgMTAw
-NjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfcG9saWN5LmMKPiArKysgYi9z
-ZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYwo+IEBAIC04MDgsNiArODA4LDEyIEBA
-IHZvaWQgaW1hX3VwZGF0ZV9wb2xpY3kodm9pZCkKPiAgCQlrZnJlZShhcmNoX3BvbGljeV9lbnRy
-eSk7Cj4gIAl9Cj4gIAlpbWFfdXBkYXRlX3BvbGljeV9mbGFnKCk7Cj4gKwo+ICsJLyoKPiArCSAq
-IEN1c3RvbSBJTUEgcG9saWNpZXMgaGF2ZSBiZWVuIHNldHVwLgoKXmhhcyBiZWVuIGxvYWRlZC4K
-Cj4gKwkgKiBQcm9jZXNzIGtleShzKSBxdWV1ZWQgdXAgZm9yIG1lYXN1cmVtZW50IG5vdy4KClRo
-ZSBmdW5jdGlvbiBuYW1lIGltYV9wcm9jZXNzX3F1ZXVlZF9rZXlzX2Zvcl9tZWFzdXJlbWVudCgp
-IHByb3ZpZGVzIGEKY2xlYXIgaW5kaWNhdGlvbiB0aGF0IHRoZSBrZXlzIHdpbGwgYmUgcHJvY2Vz
-c2VkLiDCoFdlIGRvbid0IGNvbW1lbnQKdGhlIG9idmlvdXMuIMKgUGxlYXNlIHJlbW92ZSB0aGUg
-YWJvdmUgY29tbWVudC4KCk1pbWkKCj4gKwkgKi8KPiArCWltYV9wcm9jZXNzX3F1ZXVlZF9rZXlz
-X2Zvcl9tZWFzdXJlbWVudCgpOwo+ICB9Cj4gIAo+ICAvKiBLZWVwIHRoZSBlbnVtZXJhdGlvbiBp
-biBzeW5jIHdpdGggdGhlIHBvbGljeV90b2tlbnMhICovCg==
+Measure asymmetric keys used for verifying file signatures,
+certificates, etc.
+
+This patch defines a new IMA hook namely ima_post_key_create_or_update()
+to measure the payload used to create a new key or update an existing key.
+
+The IMA hook is defined in a new file namely ima_asymmetric_keys.c
+which is built only if CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE is enabled.
+
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ security/integrity/ima/Makefile              |  1 +
+ security/integrity/ima/ima_asymmetric_keys.c | 52 ++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
+ create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
+
+diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
+index 31d57cdf2421..207a0a9eb72c 100644
+--- a/security/integrity/ima/Makefile
++++ b/security/integrity/ima/Makefile
+@@ -12,3 +12,4 @@ ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
+ ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
+ ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
+ obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
++obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += ima_asymmetric_keys.o
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+new file mode 100644
+index 000000000000..994d89d58af9
+--- /dev/null
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -0,0 +1,52 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2019 Microsoft Corporation
++ *
++ * Author: Lakshmi Ramasubramanian (nramas@linux.microsoft.com)
++ *
++ * File: ima_asymmetric_keys.c
++ *       Defines an IMA hook to measure asymmetric keys on key
++ *       create or update.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <keys/asymmetric-type.h>
++#include "ima.h"
++
++/**
++ * ima_post_key_create_or_update - measure asymmetric keys
++ * @keyring: keyring to which the key is linked to
++ * @key: created or updated key
++ * @payload: The data used to instantiate or update the key.
++ * @payload_len: The length of @payload.
++ * @flags: key flags
++ * @create: flag indicating whether the key was created or updated
++ *
++ * Keys can only be measured, not appraised.
++ * The payload data used to instantiate or update the key is measured.
++ */
++void ima_post_key_create_or_update(struct key *keyring, struct key *key,
++				   const void *payload, size_t payload_len,
++				   unsigned long flags, bool create)
++{
++	/* Only asymmetric keys are handled by this hook. */
++	if (key->type != &key_type_asymmetric)
++		return;
++
++	if (!payload || (payload_len = 0))
++		return;
++
++	/*
++	 * keyring->description points to the name of the keyring
++	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
++	 * which the given key is linked to.
++	 *
++	 * The name of the keyring is passed in the "eventname"
++	 * parameter to process_buffer_measurement() and is set
++	 * in the "eventname" field in ima_event_data for
++	 * the key measurement IMA event.
++	 */
++	process_buffer_measurement(payload, payload_len,
++				   keyring->description, KEY_CHECK, 0);
++}
+-- 
+2.17.1
