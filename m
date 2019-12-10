@@ -1,351 +1,105 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Mon, 30 Dec 2019 17:37:57 +0000
-Subject: [PATCH v4 4/9] security: keys: trusted: use ASN.1 tpm2 key format for the blobs
-Message-Id: <20191230173802.8731-5-James.Bottomley@HansenPartnership.com>
+Date: Tue, 10 Dec 2019 00:10:18 +0000
+Subject: [PATCH v2 8/8] security: keys: trusted: implement counter/timer policy
+Message-Id: <1575936618.31378.58.camel@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
+References: <1575936272.31378.50.camel@HansenPartnership.com>
+In-Reply-To: <1575936272.31378.50.camel@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Modify the tpm2 key format blob output to export and import in the
-ASN.1 form for tpm2 sealed object keys.  For compatibility with prior
-trusted keys, the importer will also accept two tpm2b quantities
-representing the public and private parts of the key.  However, the
-export via keyctl pipe will only output the ASN.1 format.
+This is actually a generic policy allowing a range of comparisons
+against any value set in the TPM Clock, which includes things like the
+reset count, a monotonic millisecond count and the restart count.  The
+most useful comparison is against the millisecond count for expiring
+keys.  However, you have to remember that currently Linux doesn't try
+to sync the epoch timer with the TPM, so the expiration is actually
+measured in how long the TPM itself has been powered on ... the TPM
+timer doesn't count while the system is powered down.  The millisecond
+counter is a u64 quantity found at offset 8 in the timer structure,
+and the <= comparision operand is 9, so a policy set to expire after the
+TPM has been up for 100 seconds would look like
 
-The benefit of the ASN.1 format is that it's a standard and thus the
-exported key can be used by userspace tools.  The format includes
-policy specifications, thus it gets us out of having to construct
-policy handles in userspace and the format includes the parent meaning
-you don't have to keep passing it in each time.
+0000016d00000000000f424000080009
 
-This patch only implements basic handling for the ASN.1 format, so
-keys with passwords but no policy.
+Where 0x16d is the counter timer policy code and 0xf4240 is 100 000 in
+hex.
 
 Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-
-v2: Updated encode API, added length checks
 ---
- security/keys/trusted-keys/Makefile       |   2 +-
- security/keys/trusted-keys/tpm2key.asn1   |  23 ++++
- security/keys/trusted-keys/trusted_tpm1.c |   2 +-
- security/keys/trusted-keys/trusted_tpm2.c | 187 +++++++++++++++++++++++++++++-
- 4 files changed, 207 insertions(+), 7 deletions(-)
- create mode 100644 security/keys/trusted-keys/tpm2key.asn1
+ Documentation/security/keys/trusted-encrypted.rst | 29 +++++++++++++++++++++++
+ security/keys/trusted-keys/tpm2-policy.c          | 19 +++++++++++++++
+ 2 files changed, 48 insertions(+)
 
-diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
-index 7b73cebbb378..e0198641eff2 100644
---- a/security/keys/trusted-keys/Makefile
-+++ b/security/keys/trusted-keys/Makefile
-@@ -5,4 +5,4 @@
- 
- obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
- trusted-y += trusted_tpm1.o
--trusted-y += trusted_tpm2.o
-+trusted-y += trusted_tpm2.o tpm2key.asn1.o
-diff --git a/security/keys/trusted-keys/tpm2key.asn1 b/security/keys/trusted-keys/tpm2key.asn1
-new file mode 100644
-index 000000000000..1851b7c80f08
---- /dev/null
-+++ b/security/keys/trusted-keys/tpm2key.asn1
-@@ -0,0 +1,23 @@
-+---
-+--- Note: This isn't quite the definition in the standard
-+---       However, the Linux asn.1 parser doesn't understand
-+---       [2] EXPLICIT SEQUENCE OF OPTIONAL
-+---       So there's an extra intermediate TPMPolicySequence
-+---       definition to work around this
+diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
+index ade1a9dc8367..52d8bd8bef65 100644
+--- a/Documentation/security/keys/trusted-encrypted.rst
++++ b/Documentation/security/keys/trusted-encrypted.rst
+@@ -235,3 +235,32 @@ about the usage can be found in the file
+ Another new format 'enc32' has been defined in order to support encrypted keys
+ with payload size of 32 bytes. This will initially be used for nvdimm security
+ but may expand to other usages that require 32 bytes payload.
 +
-+TPMKey ::= SEQUENCE {
-+	type		OBJECT IDENTIFIER ({tpmkey_type}),
-+	emptyAuth	[0] EXPLICIT BOOLEAN OPTIONAL,
-+	policy		[1] EXPLICIT TPMPolicySequence OPTIONAL,
-+	secret		[2] EXPLICIT OCTET STRING OPTIONAL,
-+	parent		INTEGER ({tpmkey_parent}),
-+	pubkey		OCTET STRING ({tpmkey_pub}),
-+	privkey		OCTET STRING ({tpmkey_priv})
-+	}
++Appendix
++--------
 +
-+TPMPolicySequence ::= SEQUENCE OF TPMPolicy
++TPM 2.0 Policies
++----------------
 +
-+TPMPolicy ::= SEQUENCE {
-+	commandCode		[0] EXPLICIT INTEGER,
-+	commandPolicy		[1] EXPLICIT OCTET STRING
-+	}
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index ef15b6cda6ec..d92d45d759c6 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -1005,7 +1005,7 @@ static int trusted_instantiate(struct key *key,
- 		goto out;
- 	}
- 
--	if (!options->keyhandle) {
-+	if (!options->keyhandle && !tpm2) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index 11a331a94327..cd7008d499ba 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -4,6 +4,8 @@
-  * Copyright (C) 2014 Intel Corporation
-  */
- 
-+#include <linux/asn1_encoder.h>
-+#include <linux/oid_registry.h>
- #include <linux/string.h>
- #include <linux/err.h>
- #include <linux/tpm.h>
-@@ -12,6 +14,10 @@
- #include <keys/trusted-type.h>
- #include <keys/trusted_tpm.h>
- 
-+#include <asm/unaligned.h>
++The current TPM supports PCR lock policies as documented above and
++CounterTimer policies which can be used to create expiring keys.  One
++caveat with expiring keys is that the TPM millisecond counter does not
++update while a system is powered off and Linux does not sync the TPM
++millisecond count with its internal clock, so the best you can expire
++in is in terms of how long any given TPM has been powered on.  (FIXME:
++Linux should simply update the millisecond clock to the current number
++of seconds past the epoch on boot).
 +
-+#include "tpm2key.asn1.h"
++A CounterTimer policy is expressed in terms of length and offset
++against the TPM clock structure (TPMS_TIME_INFO), which looks like the
++packed structure::
 +
- static struct tpm2_hash tpm2_hash_map[] = {
- 	{HASH_ALGO_SHA1, TPM_ALG_SHA1},
- 	{HASH_ALGO_SHA256, TPM_ALG_SHA256},
-@@ -20,6 +26,158 @@ static struct tpm2_hash tpm2_hash_map[] = {
- 	{HASH_ALGO_SM3_256, TPM_ALG_SM3_256},
- };
- 
-+static u32 tpm2key_oid[] = { 2,23,133,10,1,5 };
++    struct tpms_time_info {
++            u64 uptime;       /* time in ms since last start or reset */
++	    u64 clock;        /* cumulative uptime in ms */
++	    u32 resetcount;   /* numer of times the TPM has been reset */
++	    u32 restartcount; /* number of times the TPM has been restarted */
++	    u8  safe          /* time was safely loaded from NVRam */
++    };
 +
-+static int tpm2_key_encode(struct trusted_key_payload *payload,
-+			   struct trusted_key_options *options,
-+			   u8 *src, u32 len)
-+{
-+	const int SCRATCH_SIZE = PAGE_SIZE;
-+	u8 *scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
-+	u8 *work = scratch, *work1;
-+	u8 *end_work = scratch + SCRATCH_SIZE;
-+	u8 *priv, *pub;
-+	u16 priv_len, pub_len;
++The usual comparison for expiring keys is against clock, at offset 8.
+diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
+index 6d69f0300584..f19beb3e9e49 100644
+--- a/security/keys/trusted-keys/tpm2-policy.c
++++ b/security/keys/trusted-keys/tpm2-policy.c
+@@ -322,6 +322,25 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
+ 			tpm_buf_append(&buf, pols->policies[i],
+ 				       pols->len[i] - pols->hash_size);
+ 			break;
++		case TPM2_CC_POLICY_COUNTER_TIMER: {
++			/*
++			 * the format of this is the last two u16
++			 * quantities are the offset and operation
++			 * respectively.  The rest is operandB which
++			 * must be zero padded in a hash digest
++			 */
++			u16 opb_len = pols->len[i] - 4;
 +
-+	priv_len = get_unaligned_be16(src);
-+	src += 2;
-+	priv = src;
-+	src += priv_len;
-+	pub_len = get_unaligned_be16(src);
-+	src += 2;
-+	pub = src;
++			if (opb_len > pols->hash_size)
++				return -EINVAL;
 +
-+	if (!scratch)
-+		return -ENOMEM;
-+
-+	work = asn1_encode_oid(work, end_work, tpm2key_oid,
-+			       asn1_oid_len(tpm2key_oid));
-+	if (options->blobauth_len = 0) {
-+		unsigned char bool[3], *w = bool;
-+		/* tag 0 is emptyAuth */
-+		w = asn1_encode_boolean(w, w + sizeof(bool), true);
-+		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode"))
-+			return PTR_ERR(w);
-+		work = asn1_encode_tag(work, end_work, 0, bool, w - bool);
-+	}
-+	/*
-+	 * Assume both octet strings will encode to a 2 byte definite length
-+	 *
-+	 * Note: For a well behaved TPM, this warning should never
-+	 * trigger, so if it does there's something nefarious going on
-+	 */
-+	if (WARN(work - scratch + pub_len + priv_len + 14 > SCRATCH_SIZE,
-+		 "BUG: scratch buffer is too small"))
-+		return -EINVAL;
-+	work = asn1_encode_integer(work, end_work, options->keyhandle);
-+	work = asn1_encode_octet_string(work, end_work, pub, pub_len);
-+	work = asn1_encode_octet_string(work, end_work, priv, priv_len);
-+
-+	work1 = payload->blob;
-+	work1 = asn1_encode_sequence(work1, work1 + sizeof(payload->blob),
-+				     scratch, work - scratch);
-+	if (WARN(IS_ERR(work1), "BUG: ASN.1 encoder failed"))
-+		return PTR_ERR(work1);
-+
-+	return work1 - payload->blob;
-+}
-+
-+struct tpm2key_context {
-+	u32 parent;
-+	const u8 *pub;
-+	u32 pub_len;
-+	const u8 *priv;
-+	u32 priv_len;
-+};
-+
-+static int tpm2_key_decode(struct trusted_key_payload *payload,
-+			   struct trusted_key_options *options,
-+			   u8 **buf)
-+{
-+	int ret;
-+	struct tpm2key_context ctx;
-+	u8 *blob;
-+
-+	ret = asn1_ber_decoder(&tpm2key_decoder, &ctx, payload->blob,
-+			       payload->blob_len);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (ctx.priv_len + ctx.pub_len > MAX_BLOB_SIZE)
-+		return -EINVAL;
-+
-+	blob = kmalloc(ctx.priv_len + ctx.pub_len + 4, GFP_KERNEL);
-+	if (!blob)
-+		return -ENOMEM;
-+
-+	*buf = blob;
-+	options->keyhandle = ctx.parent;
-+	put_unaligned_be16(ctx.priv_len, blob);
-+	blob += 2;
-+	memcpy(blob, ctx.priv, ctx.priv_len);
-+	blob += ctx.priv_len;
-+	put_unaligned_be16(ctx.pub_len, blob);
-+	blob += 2;
-+	memcpy(blob, ctx.pub, ctx.pub_len);
-+
-+	return 0;
-+}
-+
-+int tpmkey_parent(void *context, size_t hdrlen,
-+		  unsigned char tag,
-+		  const void *value, size_t vlen)
-+{
-+	struct tpm2key_context *ctx = context;
-+	const u8 *v = value;
-+	int i;
-+
-+	ctx->parent = 0;
-+	for (i = 0; i < vlen; i++) {
-+		ctx->parent <<= 8;
-+		ctx->parent |= v[i];
-+	}
-+	return 0;
-+}
-+
-+int tpmkey_type(void *context, size_t hdrlen,
-+		unsigned char tag,
-+		const void *value, size_t vlen)
-+{
-+	enum OID oid = look_up_OID(value, vlen);
-+
-+	if (oid != OID_TPMSealedData) {
-+		char buffer[50];
-+
-+		sprint_oid(value, vlen, buffer, sizeof(buffer));
-+		pr_debug("OID is \"%s\" which is not TPMSealedData\n",
-+			 buffer);
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+int tpmkey_pub(void *context, size_t hdrlen,
-+	       unsigned char tag,
-+	       const void *value, size_t vlen)
-+{
-+	struct tpm2key_context *ctx = context;
-+
-+	ctx->pub = value;
-+	ctx->pub_len = vlen;
-+	return 0;
-+}
-+
-+int tpmkey_priv(void *context, size_t hdrlen,
-+		unsigned char tag,
-+		const void *value, size_t vlen)
-+{
-+	struct tpm2key_context *ctx = context;
-+
-+	ctx->priv = value;
-+	ctx->priv_len = vlen;
-+	return 0;
-+}
-+
- /**
-  * tpm_buf_append_auth() - append TPMS_AUTH_COMMAND to the buffer.
-  *
-@@ -79,6 +237,9 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 	if (i = ARRAY_SIZE(tpm2_hash_map))
- 		return -EINVAL;
- 
-+	if (!options->keyhandle)
-+		return -EINVAL;
-+
- 	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_CREATE);
- 	if (rc)
- 		return rc;
-@@ -145,8 +306,10 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		goto out;
- 	}
- 
--	memcpy(payload->blob, &buf.data[TPM_HEADER_SIZE + 4], blob_len);
--	payload->blob_len = blob_len;
-+	payload->blob_len +		tpm2_key_encode(payload, options,
-+				&buf.data[TPM_HEADER_SIZE + 4],
-+				blob_len);
- 
- out:
- 	tpm_buf_destroy(&buf);
-@@ -157,6 +320,8 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		else
- 			rc = -EPERM;
- 	}
-+	if (payload->blob_len < 0)
-+		return payload->blob_len;
- 
- 	return rc;
- }
-@@ -183,13 +348,23 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
- 	unsigned int private_len;
- 	unsigned int public_len;
- 	unsigned int blob_len;
-+	u8 *blob;
- 	int rc;
- 
--	private_len = be16_to_cpup((__be16 *) &payload->blob[0]);
-+	rc = tpm2_key_decode(payload, options, &blob);
-+	if (rc)
-+		/* old form */
-+		blob = payload->blob;
-+
-+	/* new format carries keyhandle but old format doesn't */
-+	if (!options->keyhandle)
-+		return -EINVAL;
-+
-+	private_len = be16_to_cpup((__be16 *) &blob[0]);
- 	if (private_len > (payload->blob_len - 2))
- 		return -E2BIG;
- 
--	public_len = be16_to_cpup((__be16 *) &payload->blob[2 + private_len]);
-+	public_len = be16_to_cpup((__be16 *) &blob[2 + private_len]);
- 	blob_len = private_len + public_len + 4;
- 	if (blob_len > payload->blob_len)
- 		return -E2BIG;
-@@ -205,7 +380,7 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
- 			     options->keyauth /* hmac */,
- 			     TPM_DIGEST_SIZE);
- 
--	tpm_buf_append(&buf, payload->blob, blob_len);
-+	tpm_buf_append(&buf, blob, blob_len);
- 
- 	if (buf.flags & TPM_BUF_OVERFLOW) {
- 		rc = -E2BIG;
-@@ -218,6 +393,8 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
- 			(__be32 *) &buf.data[TPM_HEADER_SIZE]);
- 
- out:
-+	if (blob != payload->blob)
-+		kfree(blob);
- 	tpm_buf_destroy(&buf);
- 
- 	if (rc > 0)
++			tpm_buf_append_u16(&buf, opb_len);
++			tpm_buf_append(&buf, pols->policies[i], opb_len);
++			/* offset and operand*/
++			tpm_buf_append(&buf, pols->policies[i] + opb_len, 4);
++			failure = "Counter Timer";
++			break;
++		}
+ 		default:
+ 			failure = "unknown policy";
+ 			break;
 -- 
 2.16.4
