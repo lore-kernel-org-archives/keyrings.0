@@ -1,85 +1,340 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Tue, 24 Dec 2019 20:35:04 +0000
-Subject: Re: [PATCH v2] IMA: Defined timer to free queued keys
-Message-Id: <1577219704.4487.2.camel@linux.ibm.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 10 Dec 2019 00:06:07 +0000
+Subject: [PATCH v2 2/8] lib: add asn.1 encoder
+Message-Id: <1575936367.31378.52.camel@HansenPartnership.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191224180114.2772-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191224180114.2772-1-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <1575936272.31378.50.camel@HansenPartnership.com>
+In-Reply-To: <1575936272.31378.50.camel@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-T24gVHVlLCAyMDE5LTEyLTI0IGF0IDEwOjAxIC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
-biB3cm90ZToKPiBrZXlzIHF1ZXVlZCBmb3IgbWVhc3VyZW1lbnQgc2hvdWxkIGJlIGZyZWVkIGlm
-IGEgY3VzdG9tIElNQSBwb2xpY3kKPiB3YXMgbm90IGxvYWRlZC4gT3RoZXJ3aXNlLCB0aGUga2V5
-cyB3aWxsIHJlbWFpbiBxdWV1ZWQgZm9yZXZlcgo+IGNvbnN1bWluZyBrZXJuZWwgbWVtb3J5Lgo+
-IAo+IFRoaXMgcGF0Y2ggZGVmaW5lcyBhIHRpbWVyIHRvIGhhbmRsZSB0aGUgYWJvdmUgc2NlbmFy
-aW8uIFRoZSB0aW1lcgo+IGlzIHNldHVwIHRvIGV4cGlyZSA1IG1pbnV0ZXMgYWZ0ZXIgSU1BIGlu
-aXRpYWxpemF0aW9uIGlzIGNvbXBsZXRlZC4KPiAKPiBJZiBhIGN1c3RvbSBJTUEgcG9saWN5IGlz
-IGxvYWRlZCBiZWZvcmUgdGhlIHRpbWVyIGV4cGlyZXMsIHRoZSB0aW1lcgo+IGlzIHJlbW92ZWQg
-YW5kIGFueSBxdWV1ZWQga2V5cyBhcmUgcHJvY2Vzc2VkIGZvciBtZWFzdXJlbWVudC4KPiBCdXQg
-aWYgYSBjdXN0b20gcG9saWN5IHdhcyBub3QgbG9hZGVkLCBvbiB0aW1lciBleHBpcmF0aW9uCj4g
-cXVldWVkIGtleXMgYXJlIGp1c3QgZnJlZWQuCj4gCj4gU2lnbmVkLW9mZi1ieTogTGFrc2htaSBS
-YW1hc3VicmFtYW5pYW4gPG5yYW1hc0BsaW51eC5taWNyb3NvZnQuY29tPgoKVGhhbmtzLiDCoFRo
-aXMgcGF0Y2ggaXMgbm93IHF1ZXVlZCBpbiBuZXh0LWludGVncml0eS10ZXN0aW5nLgoKTWltaQoK
-PiAtLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaCAgICAgICAgICAgICAgICAgfCAg
-MiArCj4gIHNlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FzeW1tZXRyaWNfa2V5cy5jIHwgNDIg
-KysrKysrKysrKysrKysrKysrLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfaW5pdC5j
-ICAgICAgICAgICAgfCAgOCArKystCj4gIDMgZmlsZXMgY2hhbmdlZCwgNDggaW5zZXJ0aW9ucygr
-KSwgNCBkZWxldGlvbnMoLSkKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2lt
-YS9pbWEuaCBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmgKPiBpbmRleCA5N2Y4YTQwNzg0
-ODMuLmM0ODMyMTVhOWVlNSAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2lt
-YS5oCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaAo+IEBAIC0yMTYsOCArMjE2
-LDEwIEBAIHN0cnVjdCBpbWFfa2V5X2VudHJ5IHsKPiAgCWNoYXIgKmtleXJpbmdfbmFtZTsKPiAg
-fTsKPiAgdm9pZCBpbWFfcHJvY2Vzc19xdWV1ZWRfa2V5cyh2b2lkKTsKPiArdm9pZCBpbWFfaW5p
-dF9rZXlfcXVldWUodm9pZCk7Cj4gICNlbHNlCj4gIHN0YXRpYyBpbmxpbmUgdm9pZCBpbWFfcHJv
-Y2Vzc19xdWV1ZWRfa2V5cyh2b2lkKSB7fQo+ICtzdGF0aWMgaW5saW5lIHZvaWQgaW1hX2luaXRf
-a2V5X3F1ZXVlKHZvaWQpIHt9Cj4gICNlbmRpZiAvKiBDT05GSUdfQVNZTU1FVFJJQ19QVUJMSUNf
-S0VZX1NVQlRZUEUgKi8KPiAgCj4gIC8qIExJTSBBUEkgZnVuY3Rpb24gZGVmaW5pdGlvbnMgKi8K
-PiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXN5bW1ldHJpY19rZXlz
-LmMgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hc3ltbWV0cmljX2tleXMuYwo+IGluZGV4
-IDQxMjRmMTBmZjBjMi4uOWVhMjIzM2M5MTFhIDEwMDY0NAo+IC0tLSBhL3NlY3VyaXR5L2ludGVn
-cml0eS9pbWEvaW1hX2FzeW1tZXRyaWNfa2V5cy5jCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5
-L2ltYS9pbWFfYXN5bW1ldHJpY19rZXlzLmMKPiBAQCAtMTEsNiArMTEsNyBAQAo+ICAKPiAgI2Rl
-ZmluZSBwcl9mbXQoZm10KSBLQlVJTERfTU9ETkFNRSAiOiAiIGZtdAo+ICAKPiArI2luY2x1ZGUg
-PGxpbnV4L3RpbWVyLmg+Cj4gICNpbmNsdWRlIDxrZXlzL2FzeW1tZXRyaWMtdHlwZS5oPgo+ICAj
-aW5jbHVkZSAiaW1hLmgiCj4gIAo+IEBAIC0yNiw2ICsyNywzNiBAQCBzdGF0aWMgYm9vbCBpbWFf
-cHJvY2Vzc19rZXlzOwo+ICBzdGF0aWMgREVGSU5FX01VVEVYKGltYV9rZXlzX211dGV4KTsKPiAg
-c3RhdGljIExJU1RfSEVBRChpbWFfa2V5cyk7Cj4gIAo+ICsvKgo+ICsgKiBJZiBjdXN0b20gSU1B
-IHBvbGljeSBpcyBub3QgbG9hZGVkIHRoZW4ga2V5cyBxdWV1ZWQgdXAKPiArICogZm9yIG1lYXN1
-cmVtZW50IHNob3VsZCBiZSBmcmVlZC4gVGhpcyB0aW1lciBpcyB1c2VkCj4gKyAqIGZvciBoYW5k
-bGluZyB0aGlzIHNjZW5hcmlvLgo+ICsgKi8KPiArc3RhdGljIGxvbmcgaW1hX2tleV9xdWV1ZV90
-aW1lb3V0ID0gMzAwMDAwOyAvKiA1IE1pbnV0ZXMgKi8KPiArc3RhdGljIHN0cnVjdCB0aW1lcl9s
-aXN0IGltYV9rZXlfcXVldWVfdGltZXI7Cj4gK3N0YXRpYyBib29sIHRpbWVyX2V4cGlyZWQ7Cj4g
-Kwo+ICsvKgo+ICsgKiBUaGlzIHRpbWVyIGNhbGxiYWNrIGZ1bmN0aW9uIGZyZWVzIGtleXMgdGhh
-dCBtYXkgc3RpbGwgYmUKPiArICogcXVldWVkIHVwIGluIGNhc2UgY3VzdG9tIElNQSBwb2xpY3kg
-d2FzIG5vdCBsb2FkZWQuCj4gKyAqLwo+ICtzdGF0aWMgdm9pZCBpbWFfdGltZXJfaGFuZGxlcihz
-dHJ1Y3QgdGltZXJfbGlzdCAqdGltZXIpCj4gK3sKPiArCXRpbWVyX2V4cGlyZWQgPSB0cnVlOwo+
-ICsJaW1hX3Byb2Nlc3NfcXVldWVkX2tleXMoKTsKPiArfQo+ICsKPiArLyoKPiArICogVGhpcyBm
-dW5jdGlvbiBzZXRzIHVwIGEgdGltZXIgdG8gZnJlZSBxdWV1ZWQga2V5cyBpbiBjYXNlCj4gKyAq
-IGN1c3RvbSBJTUEgcG9saWN5IHdhcyBuZXZlciBsb2FkZWQuCj4gKyAqLwo+ICt2b2lkIGltYV9p
-bml0X2tleV9xdWV1ZSh2b2lkKQo+ICt7Cj4gKwl0aW1lcl9zZXR1cCgmaW1hX2tleV9xdWV1ZV90
-aW1lciwgaW1hX3RpbWVyX2hhbmRsZXIsIDApOwo+ICsJbW9kX3RpbWVyKCZpbWFfa2V5X3F1ZXVl
-X3RpbWVyLAo+ICsJCSAgamlmZmllcyArIG1zZWNzX3RvX2ppZmZpZXMoaW1hX2tleV9xdWV1ZV90
-aW1lb3V0KSk7Cj4gK30KPiArCj4gIHN0YXRpYyB2b2lkIGltYV9mcmVlX2tleV9lbnRyeShzdHJ1
-Y3QgaW1hX2tleV9lbnRyeSAqZW50cnkpCj4gIHsKPiAgCWlmIChlbnRyeSkgewo+IEBAIC0xMjAs
-MTAgKzE1MSwxNSBAQCB2b2lkIGltYV9wcm9jZXNzX3F1ZXVlZF9rZXlzKHZvaWQpCj4gIAlpZiAo
-IXByb2Nlc3MpCj4gIAkJcmV0dXJuOwo+ICAKPiArCWRlbF90aW1lcigmaW1hX2tleV9xdWV1ZV90
-aW1lcik7Cj4gKwo+ICAJbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKGVudHJ5LCB0bXAsICZpbWFf
-a2V5cywgbGlzdCkgewo+IC0JCXByb2Nlc3NfYnVmZmVyX21lYXN1cmVtZW50KGVudHJ5LT5wYXls
-b2FkLCBlbnRyeS0+cGF5bG9hZF9sZW4sCj4gLQkJCQkJICAgZW50cnktPmtleXJpbmdfbmFtZSwg
-S0VZX0NIRUNLLCAwLAo+IC0JCQkJCSAgIGVudHJ5LT5rZXlyaW5nX25hbWUpOwo+ICsJCWlmICgh
-dGltZXJfZXhwaXJlZCkKPiArCQkJcHJvY2Vzc19idWZmZXJfbWVhc3VyZW1lbnQoZW50cnktPnBh
-eWxvYWQsCj4gKwkJCQkJCSAgIGVudHJ5LT5wYXlsb2FkX2xlbiwKPiArCQkJCQkJICAgZW50cnkt
-PmtleXJpbmdfbmFtZSwKPiArCQkJCQkJICAgS0VZX0NIRUNLLCAwLAo+ICsJCQkJCQkgICBlbnRy
-eS0+a2V5cmluZ19uYW1lKTsKPiAgCQlsaXN0X2RlbCgmZW50cnktPmxpc3QpOwo+ICAJCWltYV9m
-cmVlX2tleV9lbnRyeShlbnRyeSk7Cj4gIAl9Cj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVn
-cml0eS9pbWEvaW1hX2luaXQuYyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2luaXQuYwo+
-IGluZGV4IDVkNTVhZGU1ZjNiOS4uMTk1Y2I0MDc5YjJiIDEwMDY0NAo+IC0tLSBhL3NlY3VyaXR5
-L2ludGVncml0eS9pbWEvaW1hX2luaXQuYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEv
-aW1hX2luaXQuYwo+IEBAIC0xMzEsNSArMTMxLDExIEBAIGludCBfX2luaXQgaW1hX2luaXQodm9p
-ZCkKPiAgCj4gIAlpbWFfaW5pdF9wb2xpY3koKTsKPiAgCj4gLQlyZXR1cm4gaW1hX2ZzX2luaXQo
-KTsKPiArCXJjID0gaW1hX2ZzX2luaXQoKTsKPiArCWlmIChyYyAhPSAwKQo+ICsJCXJldHVybiBy
-YzsKPiArCj4gKwlpbWFfaW5pdF9rZXlfcXVldWUoKTsKPiArCj4gKwlyZXR1cm4gcmM7Cj4gIH0K
+We have a need in the TPM trusted keys to return the ASN.1 form of the
+TPM key blob so it can be operated on by tools outside of the kernel.
+To do that, we have to be able to read and write the key format.  The
+current ASN.1 decoder does fine for reading, but we need pieces of an
+ASN.1 encoder to return the key blob.
+
+The current implementation only encodes the ASN.1 bits we actually need.
+
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+
+---
+
+v2: updated API to use indefinite length, and made symbol exports gpl
+---
+ include/linux/asn1_encoder.h |  21 ++++
+ lib/Makefile                 |   2 +-
+ lib/asn1_encoder.c           | 258 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 280 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
+
+diff --git a/include/linux/asn1_encoder.h b/include/linux/asn1_encoder.h
+new file mode 100644
+index 000000000000..9cfb8035dc46
+--- /dev/null
++++ b/include/linux/asn1_encoder.h
+@@ -0,0 +1,21 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++
++#ifndef _LINUX_ASN1_ENCODER_H
++#define _LINUX_ASN1_ENCODER_H
++
++#include <linux/types.h>
++#include <linux/asn1.h>
++#include <linux/asn1_ber_bytecode.h>
++
++#define asn1_oid_len(oid) (sizeof(oid)/sizeof(u32))
++void asn1_encode_integer(unsigned char **_data, s64 integer, int len);
++void asn1_encode_oid(unsigned char **_data, u32 oid[], int oid_len);
++void asn1_encode_tag(unsigned char **data, u32 tag,
++		     const unsigned char *string, int len);
++void asn1_encode_octet_string(unsigned char **data, const unsigned char *string,
++			      u32 len);
++void asn1_encode_sequence(unsigned char **data, const unsigned char *seq,
++			  int len);
++void asn1_encode_boolean(unsigned char **data, bool val);
++
++#endif
+diff --git a/lib/Makefile b/lib/Makefile
+index c2f0e2a4e4e8..515b35f92c3c 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -233,7 +233,7 @@ obj-$(CONFIG_INTERVAL_TREE_TEST) += interval_tree_test.o
+ 
+ obj-$(CONFIG_PERCPU_TEST) += percpu_test.o
+ 
+-obj-$(CONFIG_ASN1) += asn1_decoder.o
++obj-$(CONFIG_ASN1) += asn1_decoder.o asn1_encoder.o
+ 
+ obj-$(CONFIG_FONT_SUPPORT) += fonts/
+ 
+diff --git a/lib/asn1_encoder.c b/lib/asn1_encoder.c
+new file mode 100644
+index 000000000000..768cabf8bf76
+--- /dev/null
++++ b/lib/asn1_encoder.c
+@@ -0,0 +1,258 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Simple encoder primitives for ASN.1 BER/DER/CER
++ *
++ * Copyright (C) 2019 James.Bottomley@HansenPartnership.com
++ */
++
++#include <linux/asn1_encoder.h>
++#include <linux/bug.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++/**
++ * asn1_encode_integer - encode positive integer to ASN.1
++ * @_data: pointer to the pointer to the data
++ * @integer: integer to be encoded
++ * @len: length of buffer
++ *
++ * This is a simplified encoder: it only currently does
++ * positive integers, but it should be simple enough to add the 
++ * negative case if a use comes along.
++ */
++void asn1_encode_integer(unsigned char **_data, s64 integer, int len)
++{
++	unsigned char *data = *_data, *d = &data[2];
++	int i;
++	bool found = false;
++
++	if (WARN(integer < 0,
++		 "BUG: asn1_encode_integer only supports positive integers"))
++		return;
++
++	if (WARN(len < 3,
++		 "BUG: buffer for integers must have at least 3 bytes"))
++		return;
++
++	len =- 2;
++
++	data[0] = _tag(UNIV, PRIM, INT);
++	if (integer = 0) {
++		*d++ = 0;
++		goto out;
++	}
++	for (i = sizeof(integer); i > 0 ; i--) {
++		int byte = integer >> (8*(i-1));
++
++		if (!found && byte = 0)
++			continue;
++		found = true;
++		if (byte & 0x80) {
++			/*
++			 * no check needed here, we already know we
++			 * have len >= 1
++			 */
++			*d++ = 0;
++			len--;
++		}
++		if (WARN(len = 0,
++			 "BUG buffer too short in asn1_encode_integer"))
++			return;
++		*d++ = byte;
++		len--;
++	}
++ out:
++	data[1] = d - data - 2;
++	*_data = d;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_integer);
++
++/* calculate the base 128 digit values setting the top bit of the first octet */
++static void asn1_encode_oid_digit(unsigned char **_data, u32 oid)
++{
++	int start = 7 + 7 + 7 + 7;
++	unsigned char *data = *_data;
++
++	/* quick case */
++	if (oid = 0) {
++		*data++ = 0x80;
++		goto out;
++	}
++
++	while (oid >> start = 0)
++		start -= 7;
++
++	while (start > 0) {
++		u8 byte;
++
++		byte = oid >> start;
++		oid = oid - (byte << start);
++		start -= 7;
++		byte |= 0x80;
++		*data++ = byte;
++	}
++	*data++ = oid;
++
++ out:
++	*_data = data;
++}
++
++/**
++ * asn1_encode_oid - encode an oid to ASN.1
++ * @_data: position to begin encoding at
++ * @oid: array of oids
++ * @oid_len: length of oid array
++ *
++ * this encodes an OID up to ASN.1 when presented as an array of OID values
++ */
++void asn1_encode_oid(unsigned char **_data, u32 oid[], int oid_len)
++{
++	unsigned char *data = *_data;
++	unsigned char *d = data + 2;
++	int i;
++
++	if (WARN(oid_len < 2, "OID must have at least two elements"))
++		return;
++	if (WARN(oid_len > 32, "OID is too large"))
++		return;
++
++	data[0] = _tag(UNIV, PRIM, OID);
++	*d++ = oid[0] * 40 + oid[1];
++	for (i = 2; i < oid_len; i++)
++		asn1_encode_oid_digit(&d, oid[i]);
++	data[1] = d - data - 2;
++	*_data = d;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_oid);
++
++static void asn1_encode_length(unsigned char **data, int len)
++{
++	if (len < 0) {
++		*((*data)++) = ASN1_INDEFINITE_LENGTH;
++		return;
++	}
++	if (len <= 0x7f) {
++		*((*data)++) = len;
++		return;
++	}
++	if (len <= 0xff) {
++		*((*data)++) = 0x81;
++		*((*data)++) = len & 0xff;
++		return;
++	}
++	if (len <= 0xffff) {
++		*((*data)++) = 0x82;
++		*((*data)++) = (len >> 8) & 0xff;
++		*((*data)++) = len & 0xff;
++		return;
++	}
++
++	if (WARN(len > 0xffffff, "ASN.1 length can't be > 0xffffff"))
++		return;
++
++	*((*data)++) = 0x83;
++	*((*data)++) = (len >> 16) & 0xff;
++	*((*data)++) = (len >> 8) & 0xff;
++	*((*data)++) = len & 0xff;
++}
++
++/**
++ * asn1_encode_tag - add a tag for optional or explicit value
++ * @data: pointer to place tag at
++ * @tag: tag to be placed
++ * @string: the data to be tagged
++ * @len: the length of the data to be tagged
++ *
++ * Note this currently only handles short form tags < 31.  To encode
++ * in place pass a NULL @string and -1 for @len; all this will do is
++ * add an indefinite length tag and update the data pointer to the
++ * place where the tag contents should be placed.  After the data is
++ * placed, repeat the prior statement but now with the known length.
++ * In order to avoid having to keep both before and after pointers,
++ * the repeat expects to be called with @data pointing to where the
++ * first encode placed it.
++ */
++void asn1_encode_tag(unsigned char **data, u32 tag,
++		     const unsigned char *string, int len)
++{
++	if (WARN(tag > 30, "ASN.1 tag can't be > 30"))
++		return;
++
++	if (!string && WARN(len > 127,
++			    "BUG: recode tag is too big (>127)"))
++		return;
++
++	if (!string && len > 0)
++		/* we're recoding, so move back to the start of the tag */
++		*data -= 2;
++
++	*((*data)++) = _tagn(CONT, CONS, tag);
++	asn1_encode_length(data, len);
++	if (!string)
++		return;
++	memcpy(*data, string, len);
++	*data += len;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_tag);
++
++/**
++ * asn1_encode_octet_string - encode an ASN.1 OCTET STRING
++ * @data: pointer to encode at
++ * @string: string to be encoded
++ * @len: length of string
++ *
++ * Note ASN.1 octet strings may contain zeros, so the length is obligatory.
++ */
++void asn1_encode_octet_string(unsigned char **data, const unsigned char *string,
++			      u32 len)
++{
++	*((*data)++) = _tag(UNIV, PRIM, OTS);
++	asn1_encode_length(data, len);
++	memcpy(*data, string, len);
++	*data += len;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_octet_string);
++
++/**
++ * asn1_encode_sequence - wrap a byte stream in an ASN.1 SEQUENCE
++ * @data: pointer to encode at
++ * @seq: data to be encoded as a sequence
++ * @len: length of the data to be encoded as a sequence
++ *
++ * Fill in a sequence.  To encode in place, pass NULL for @seq and -1
++ * for @len; then call again once the length is known (still with NULL
++ * for @seq). In order to avoid having to keep both before and after
++ * pointers, the repeat expects to be called with @data pointing to
++ * where the first encode placed it.
++ */
++void asn1_encode_sequence(unsigned char **data, const unsigned char *seq,
++			  int len)
++{
++	if (!seq && WARN(len > 127,
++			 "BUG: recode sequence is too big (>127)"))
++		return;
++	if (!seq && len > 0)
++		/* we're recoding, so move back to the start of the sequence */
++		*data -= 2;
++		
++	*((*data)++) = _tag(UNIV, CONS, SEQ);
++	asn1_encode_length(data, len);
++	if (!seq)
++		return;
++	memcpy(*data, seq, len);
++	*data += len;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_sequence);
++
++/**
++ * asn1_encode_boolean - encode a boolean value to ASN.1
++ * @data: pointer to encode at
++ * @val: the boolean true/false value
++ */
++void asn1_encode_boolean(unsigned char **data, bool val)
++{
++	*((*data)++) = _tag(UNIV, PRIM, BOOL);
++	asn1_encode_length(data, 1);
++	*((*data)++) = val ? 1 : 0;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_boolean);
+-- 
+2.16.4
