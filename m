@@ -1,44 +1,40 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 04 Dec 2019 22:41:26 +0000
-Subject: [PATCH v10 1/6] IMA: Check IMA policy flag
-Message-Id: <20191204224131.3384-2-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Tue, 10 Dec 2019 22:42:29 +0000
+Subject: Re: [PATCH v10 1/6] IMA: Check IMA policy flag
+Message-Id: <1576017749.4579.40.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191204224131.3384-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191204224131.3384-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+         <20191204224131.3384-2-nramas@linux.microsoft.com>
+In-Reply-To: <20191204224131.3384-2-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Return immediately from process_buffer_measurement()
-if the IMA policy flag is set to zero. Not doing this
-can result in kernel panic when process_buffer_measurement()
-is called before IMA is initialized (for instance, when
-the IMA hook is called when a key is added to
-the .builtin_trusted_keys keyring).
-
-This change adds the check in process_buffer_measurement()
-to return immediately if ima_policy_flag is set to zero.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima_main.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index d7e987baf127..9b35db2fc777 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -655,6 +655,9 @@ void process_buffer_measurement(const void *buf, int size,
- 	int action = 0;
- 	u32 secid;
- 
-+	if (!ima_policy_flag)
-+		return;
-+
- 	/*
- 	 * Both LSM hooks and auxilary based buffer measurements are
- 	 * based on policy.  To avoid code duplication, differentiate
--- 
-2.17.1
+T24gV2VkLCAyMDE5LTEyLTA0IGF0IDE0OjQxIC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBSZXR1cm4gaW1tZWRpYXRlbHkgZnJvbSBwcm9jZXNzX2J1ZmZlcl9tZWFzdXJl
+bWVudCgpCj4gaWYgdGhlIElNQSBwb2xpY3kgZmxhZyBpcyBzZXQgdG8gemVyby4gTm90IGRvaW5n
+IHRoaXMKPiBjYW4gcmVzdWx0IGluIGtlcm5lbCBwYW5pYyB3aGVuIHByb2Nlc3NfYnVmZmVyX21l
+YXN1cmVtZW50KCkKPiBpcyBjYWxsZWQgYmVmb3JlIElNQSBpcyBpbml0aWFsaXplZCAoZm9yIGlu
+c3RhbmNlLCB3aGVuCj4gdGhlIElNQSBob29rIGlzIGNhbGxlZCB3aGVuIGEga2V5IGlzIGFkZGVk
+IHRvCj4gdGhlIC5idWlsdGluX3RydXN0ZWRfa2V5cyBrZXlyaW5nKS4KPiAKPiBUaGlzIGNoYW5n
+ZSBhZGRzIHRoZSBjaGVjayBpbiBwcm9jZXNzX2J1ZmZlcl9tZWFzdXJlbWVudCgpCj4gdG8gcmV0
+dXJuIGltbWVkaWF0ZWx5IGlmIGltYV9wb2xpY3lfZmxhZyBpcyBzZXQgdG8gemVyby4KClBhdGNo
+IGRlc2NyaXB0aW9ucyBhcmVuJ3Qgc3VwcG9zZSB0byBiZSB3cml0dGVuIGFzIHBzZXVkbyBjb2Rl
+LiDCoFN0YXJ0CndpdGggdGhlIGN1cnJlbnQgc3RhdHVzIGFuZCBwcm9ibGVtIGRlc2NyaXB0aW9u
+LgoKRm9yIGV4YW1wbGUsICJwcm9jZXNzX2J1ZmZlcl9tZWFzdXJlbWVudCgpIG1heSBiZSBjYWxs
+ZWQgcHJpb3IgdG8gSU1BIGJlaW5nIGluaXRpYWxpemVkLCB3aGljaCB3b3VsZCByZXN1bHQgaW4g
+YSBrZXJuZWwgcGFuaWMuIMKgVGhpcyBwYXRjaCAuLi4iCgpNaW1pCgo+IAo+IFNpZ25lZC1vZmYt
+Ynk6IExha3NobWkgUmFtYXN1YnJhbWFuaWFuIDxucmFtYXNAbGludXgubWljcm9zb2Z0LmNvbT4K
+PiAtLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfbWFpbi5jIHwgMyArKysKPiAgMSBm
+aWxlIGNoYW5nZWQsIDMgaW5zZXJ0aW9ucygrKQo+IAo+IGRpZmYgLS1naXQgYS9zZWN1cml0eS9p
+bnRlZ3JpdHkvaW1hL2ltYV9tYWluLmMgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9tYWlu
+LmMKPiBpbmRleCBkN2U5ODdiYWYxMjcuLjliMzVkYjJmYzc3NyAxMDA2NDQKPiAtLS0gYS9zZWN1
+cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9tYWluLmMKPiArKysgYi9zZWN1cml0eS9pbnRlZ3JpdHkv
+aW1hL2ltYV9tYWluLmMKPiBAQCAtNjU1LDYgKzY1NSw5IEBAIHZvaWQgcHJvY2Vzc19idWZmZXJf
+bWVhc3VyZW1lbnQoY29uc3Qgdm9pZCAqYnVmLCBpbnQgc2l6ZSwKPiAgCWludCBhY3Rpb24gPSAw
+Owo+ICAJdTMyIHNlY2lkOwo+ICAKPiArCWlmICghaW1hX3BvbGljeV9mbGFnKQo+ICsJCXJldHVy
+bjsKPiArCj4gIAkvKgo+ICAJICogQm90aCBMU00gaG9va3MgYW5kIGF1eGlsYXJ5IGJhc2VkIGJ1
+ZmZlciBtZWFzdXJlbWVudHMgYXJlCj4gIAkgKiBiYXNlZCBvbiBwb2xpY3kuICBUbyBhdm9pZCBj
+b2RlIGR1cGxpY2F0aW9uLCBkaWZmZXJlbnRpYXRlCg==
