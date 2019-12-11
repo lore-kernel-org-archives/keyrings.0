@@ -1,72 +1,89 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Fri, 06 Dec 2019 01:29:34 +0000
-Subject: [PATCH v1 0/2] IMA: Deferred measurement of keys
-Message-Id: <20191206012936.2814-1-nramas@linux.microsoft.com>
+Date: Wed, 11 Dec 2019 16:47:05 +0000
+Subject: [PATCH v11 4/6] KEYS: Call the IMA hook to measure keys
+Message-Id: <20191211164707.4698-5-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20191211164707.4698-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191211164707.4698-1-nramas@linux.microsoft.com>
 To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-This patchset extends the previous version[1] by adding support for
-deferred processing of keys.
+Call the IMA hook from key_create_or_update() function to measure
+the payload when a new key is created or an existing key is updated.
 
-With the patchset referenced above, the IMA subsystem supports
-measuring asymmetric keys when the key is created or updated.
-But keys created or updated before a custom IMA policy is loaded
-are currently not measured. This includes keys added to, for instance,
-.builtin_trusted_keys which happens early in the boot process.
+This patch adds the call to the IMA hook from key_create_or_update()
+function to measure the key on key create or update.
 
-This change adds support for queuing keys created or updated before
-a custom IMA policy is loaded. The queued keys are processed when
-a custom policy is loaded. Keys created or updated after a custom policy
-is loaded are measured immediately (not queued).
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ include/linux/ima.h | 14 ++++++++++++++
+ security/keys/key.c | 10 ++++++++++
+ 2 files changed, 24 insertions(+)
 
-If the kernel is built with both CONFIG_IMA and
-CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE enabled then the IMA policy
-must be applied as a custom policy. Not providing a custom policy
-in the above configuration would result in asymmeteric keys being queued
-until a custom policy is loaded. This is by design.
-
-[1] https://lore.kernel.org/linux-integrity/20191204224131.3384-1-nramas@linux.microsoft.com/
-
-Testing performed:
-
-  * Booted the kernel with this change.
-  * Added .builtin_trusted_keys in "keyrings=" option in
-    the IMA policy and verified the keys added to this
-    keyring are measured.
-  * Specified only func=KEY_CHECK and not "keyrings=" option,
-    and verified the keys added to builtin_trusted_keys keyring
-    are processed.
-  * Added keys at runtime and verified they are measured
-    if the IMA policy permitted.
-      => For example, added keys to .ima keyring and verified.
-
-Changelog:
-
-  v1
-
-  => Code cleanup
-
-  v0
-
-  => Based changes on v5.4-rc8
-  => The following patchsets should be applied in that order
-     https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
-     https://lore.kernel.org/linux-integrity/20191204224131.3384-1-nramas@linux.microsoft.com/
-  => Added functions to queue and dequeue keys, and process
-     the queued keys when custom IMA policies are applied.
-
-Lakshmi Ramasubramanian (2):
-  IMA: Define workqueue for early boot "key" measurements
-  IMA: Call workqueue functions to measure queued keys
-
- security/integrity/ima/ima.h                 |  15 +++
- security/integrity/ima/ima_asymmetric_keys.c | 134 +++++++++++++++++++
- security/integrity/ima/ima_policy.c          |   6 +
- 3 files changed, 155 insertions(+)
-
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index 6d904754d858..3b89136bc218 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -101,6 +101,20 @@ static inline void ima_add_kexec_buffer(struct kimage *image)
+ {}
+ #endif
+ 
++#if defined(CONFIG_IMA) && defined(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE)
++extern void ima_post_key_create_or_update(struct key *keyring,
++					  struct key *key,
++					  const void *payload, size_t plen,
++					  unsigned long flags, bool create);
++#else
++static inline void ima_post_key_create_or_update(struct key *keyring,
++						 struct key *key,
++						 const void *payload,
++						 size_t plen,
++						 unsigned long flags,
++						 bool create) {}
++#endif  /* CONFIG_IMA && CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE */
++
+ #ifdef CONFIG_IMA_APPRAISE
+ extern bool is_ima_appraise_enabled(void);
+ extern void ima_inode_post_setattr(struct dentry *dentry);
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 764f4c57913e..718bf7217420 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -13,6 +13,7 @@
+ #include <linux/security.h>
+ #include <linux/workqueue.h>
+ #include <linux/random.h>
++#include <linux/ima.h>
+ #include <linux/err.h>
+ #include "internal.h"
+ 
+@@ -936,6 +937,9 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 		goto error_link_end;
+ 	}
+ 
++	ima_post_key_create_or_update(keyring, key, payload, plen,
++				      flags, true);
++
+ 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
+ 
+ error_link_end:
+@@ -965,6 +969,12 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	}
+ 
+ 	key_ref = __key_update(key_ref, &prep);
++
++	if (!IS_ERR(key_ref))
++		ima_post_key_create_or_update(keyring, key,
++					      payload, plen,
++					      flags, false);
++
+ 	goto error_free_prep;
+ }
+ EXPORT_SYMBOL(key_create_or_update);
 -- 
 2.17.1
