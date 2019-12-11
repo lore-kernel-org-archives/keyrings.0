@@ -1,80 +1,83 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 10 Dec 2019 00:05:29 +0000
-Subject: [PATCH v2 1/8] security: keys: trusted: flush the key handle after use
-Message-Id: <1575936329.31378.51.camel@HansenPartnership.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 11 Dec 2019 16:47:03 +0000
+Subject: [PATCH v11 2/6] IMA: Add KEY_CHECK func to measure keys
+Message-Id: <20191211164707.4698-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1575936272.31378.50.camel@HansenPartnership.com>
-In-Reply-To: <1575936272.31378.50.camel@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+References: <20191211164707.4698-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191211164707.4698-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-The trusted keys code currently loads a blob into the TPM and unseals
-on the handle.  However, it never flushes the handle meaning that
-volatile contexts build up until the TPM becomes unusable.  Fix this
-by flushing the handle after the unseal.
+Measure keys loaded onto any keyring.
 
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+This patch defines a new IMA policy func namely KEY_CHECK to
+measure keys. Updated ima_match_rules() to check for KEY_CHECK
+and ima_parse_rule() to handle KEY_CHECK.
 
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
 ---
+ Documentation/ABI/testing/ima_policy | 6 +++++-
+ security/integrity/ima/ima.h         | 1 +
+ security/integrity/ima/ima_policy.c  | 4 +++-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-v2: use EXPORT_SYMBOL_GPL
----
- drivers/char/tpm/tpm.h                    | 1 -
- drivers/char/tpm/tpm2-cmd.c               | 1 +
- include/linux/tpm.h                       | 1 +
- security/keys/trusted-keys/trusted_tpm2.c | 1 +
- 4 files changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index b9e1547be6b5..5620747da0cf 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -218,7 +218,6 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
- int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
- 		    struct tpm_digest *digests);
- int tpm2_get_random(struct tpm_chip *chip, u8 *dest, size_t max);
--void tpm2_flush_context(struct tpm_chip *chip, u32 handle);
- ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,
- 			u32 *value, const char *desc);
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 29aaedf33246..066d32797500 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -29,7 +29,7 @@ Description:
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
+ 				[FIRMWARE_CHECK]
+ 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
+-				[KEXEC_CMDLINE]
++				[KEXEC_CMDLINE] [KEY_CHECK]
+ 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
+ 			       [[^]MAY_EXEC]
+ 			fsmagic:= hex value
+@@ -113,3 +113,7 @@ Description:
+ 		Example of appraise rule allowing modsig appended signatures:
  
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-index fdb457704aa7..13696deceae8 100644
---- a/drivers/char/tpm/tpm2-cmd.c
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -362,6 +362,7 @@ void tpm2_flush_context(struct tpm_chip *chip, u32 handle)
- 	tpm_transmit_cmd(chip, &buf, 0, "flushing context");
- 	tpm_buf_destroy(&buf);
- }
-+EXPORT_SYMBOL_GPL(tpm2_flush_context);
+ 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
++
++		Example of measure rule using KEY_CHECK to measure all keys:
++
++			measure func=KEY_CHECK
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index df4ca482fb53..fe6c698617bd 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ 	hook(KEXEC_INITRAMFS_CHECK)	\
+ 	hook(POLICY_CHECK)		\
+ 	hook(KEXEC_CMDLINE)		\
++	hook(KEY_CHECK)			\
+ 	hook(MAX_CHECK)
+ #define __ima_hook_enumify(ENUM)	ENUM,
  
- struct tpm2_get_cap_out {
- 	u8 more_data;
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 0d6e949ba315..03e9b184411b 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -403,6 +403,7 @@ extern int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
- extern int tpm_send(struct tpm_chip *chip, void *cmd, size_t buflen);
- extern int tpm_get_random(struct tpm_chip *chip, u8 *data, size_t max);
- extern struct tpm_chip *tpm_default_chip(void);
-+void tpm2_flush_context(struct tpm_chip *chip, u32 handle);
- #else
- static inline int tpm_is_tpm2(struct tpm_chip *chip)
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index f19a895ad7cd..1525a28fd705 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
  {
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index a9810ac2776f..08ec7f48f01d 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -309,6 +309,7 @@ int tpm2_unseal_trusted(struct tpm_chip *chip,
- 		return rc;
+ 	int i;
  
- 	rc = tpm2_unseal_cmd(chip, payload, options, blob_handle);
-+	tpm2_flush_context(chip, blob_handle);
- 
- 	return rc;
- }
+-	if (func = KEXEC_CMDLINE) {
++	if ((func = KEXEC_CMDLINE) || (func = KEY_CHECK)) {
+ 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
+ 			return true;
+ 		return false;
+@@ -997,6 +997,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 				entry->func = POLICY_CHECK;
+ 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
+ 				entry->func = KEXEC_CMDLINE;
++			else if (strcmp(args[0].from, "KEY_CHECK") = 0)
++				entry->func = KEY_CHECK;
+ 			else
+ 				result = -EINVAL;
+ 			if (!result)
 -- 
-2.16.4
+2.17.1
