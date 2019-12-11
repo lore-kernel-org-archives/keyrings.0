@@ -1,75 +1,61 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Fri, 06 Dec 2019 01:29:36 +0000
-Subject: [PATCH v1 2/2] IMA: Call workqueue functions to measure queued keys
-Message-Id: <20191206012936.2814-3-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Wed, 11 Dec 2019 01:40:28 +0000
+Subject: Re: [PATCH v1 2/2] IMA: Call workqueue functions to measure queued keys
+Message-Id: <1576028428.4579.78.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191206012936.2814-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191206012936.2814-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+         <20191206012936.2814-3-nramas@linux.microsoft.com>
+In-Reply-To: <20191206012936.2814-3-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Measuring keys requires a custom IMA policy to be loaded.
-Keys should be queued for measurement if a custom IMA policy
-is not yet loaded. Keys queued for measurement, if any, should be
-processed when a custom IMA policy is loaded.
-
-This patch updates the IMA hook function ima_post_key_create_or_update()
-to queue the key if a custom IMA policy has not yet been loaded.
-And, ima_update_policy() function, which is called when
-a custom IMA policy is loaded, is updated to process queued keys.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima_asymmetric_keys.c | 9 +++++++++
- security/integrity/ima/ima_policy.c          | 6 ++++++
- 2 files changed, 15 insertions(+)
-
-diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
-index fbdbe9c261cb..510b29d17a7b 100644
---- a/security/integrity/ima/ima_asymmetric_keys.c
-+++ b/security/integrity/ima/ima_asymmetric_keys.c
-@@ -155,6 +155,8 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
- 				   const void *payload, size_t payload_len,
- 				   unsigned long flags, bool create)
- {
-+	bool key_queued = false;
-+
- 	/* Only asymmetric keys are handled by this hook. */
- 	if (key->type != &key_type_asymmetric)
- 		return;
-@@ -162,6 +164,13 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
- 	if (!payload || (payload_len = 0))
- 		return;
- 
-+	if (!ima_process_keys_for_measurement)
-+		key_queued = ima_queue_key_for_measurement(keyring, payload,
-+							   payload_len);
-+
-+	if (key_queued)
-+		return;
-+
- 	/*
- 	 * keyring->description points to the name of the keyring
- 	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 73030a69d546..4dc8fb9957ac 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -808,6 +808,12 @@ void ima_update_policy(void)
- 		kfree(arch_policy_entry);
- 	}
- 	ima_update_policy_flag();
-+
-+	/*
-+	 * Custom IMA policies have been setup.
-+	 * Process key(s) queued up for measurement now.
-+	 */
-+	ima_process_queued_keys_for_measurement();
- }
- 
- /* Keep the enumeration in sync with the policy_tokens! */
--- 
-2.17.1
+T24gVGh1LCAyMDE5LTEyLTA1IGF0IDE3OjI5IC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBNZWFzdXJpbmcga2V5cyByZXF1aXJlcyBhIGN1c3RvbSBJTUEgcG9saWN5IHRv
+IGJlIGxvYWRlZC4KPiBLZXlzIHNob3VsZCBiZSBxdWV1ZWQgZm9yIG1lYXN1cmVtZW50IGlmIGEg
+Y3VzdG9tIElNQSBwb2xpY3kKPiBpcyBub3QgeWV0IGxvYWRlZC4gS2V5cyBxdWV1ZWQgZm9yIG1l
+YXN1cmVtZW50LCBpZiBhbnksIHNob3VsZCBiZQo+IHByb2Nlc3NlZCB3aGVuIGEgY3VzdG9tIElN
+QSBwb2xpY3kgaXMgbG9hZGVkLgo+IAo+IFRoaXMgcGF0Y2ggdXBkYXRlcyB0aGUgSU1BIGhvb2sg
+ZnVuY3Rpb24gaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoKQo+IHRvIHF1ZXVlIHRoZSBr
+ZXkgaWYgYSBjdXN0b20gSU1BIHBvbGljeSBoYXMgbm90IHlldCBiZWVuIGxvYWRlZC4KPiBBbmQs
+IGltYV91cGRhdGVfcG9saWN5KCkgZnVuY3Rpb24sIHdoaWNoIGlzIGNhbGxlZCB3aGVuCj4gYSBj
+dXN0b20gSU1BIHBvbGljeSBpcyBsb2FkZWQsIGlzIHVwZGF0ZWQgdG8gcHJvY2VzcyBxdWV1ZWQg
+a2V5cy4KPiAKPiBTaWduZWQtb2ZmLWJ5OiBMYWtzaG1pIFJhbWFzdWJyYW1hbmlhbiA8bnJhbWFz
+QGxpbnV4Lm1pY3Jvc29mdC5jb20+Cj4gLS0tCj4gIHNlY3VyaXR5L2ludGVncml0eS9pbWEvaW1h
+X2FzeW1tZXRyaWNfa2V5cy5jIHwgOSArKysrKysrKysKPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2lt
+YS9pbWFfcG9saWN5LmMgICAgICAgICAgfCA2ICsrKysrKwo+ICAyIGZpbGVzIGNoYW5nZWQsIDE1
+IGluc2VydGlvbnMoKykKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9p
+bWFfYXN5bW1ldHJpY19rZXlzLmMgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hc3ltbWV0
+cmljX2tleXMuYwo+IGluZGV4IGZiZGJlOWMyNjFjYi4uNTEwYjI5ZDE3YTdiIDEwMDY0NAo+IC0t
+LSBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FzeW1tZXRyaWNfa2V5cy5jCj4gKysrIGIv
+c2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXN5bW1ldHJpY19rZXlzLmMKPiBAQCAtMTU1LDYg
+KzE1NSw4IEBAIHZvaWQgaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoc3RydWN0IGtleSAq
+a2V5cmluZywgc3RydWN0IGtleSAqa2V5LAo+ICAJCQkJICAgY29uc3Qgdm9pZCAqcGF5bG9hZCwg
+c2l6ZV90IHBheWxvYWRfbGVuLAo+ICAJCQkJICAgdW5zaWduZWQgbG9uZyBmbGFncywgYm9vbCBj
+cmVhdGUpCj4gIHsKPiArCWJvb2wga2V5X3F1ZXVlZCA9IGZhbHNlOwo+ICsKPiAgCS8qIE9ubHkg
+YXN5bW1ldHJpYyBrZXlzIGFyZSBoYW5kbGVkIGJ5IHRoaXMgaG9vay4gKi8KPiAgCWlmIChrZXkt
+PnR5cGUgIT0gJmtleV90eXBlX2FzeW1tZXRyaWMpCj4gIAkJcmV0dXJuOwo+IEBAIC0xNjIsNiAr
+MTY0LDEzIEBAIHZvaWQgaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUoc3RydWN0IGtleSAq
+a2V5cmluZywgc3RydWN0IGtleSAqa2V5LAo+ICAJaWYgKCFwYXlsb2FkIHx8IChwYXlsb2FkX2xl
+biA9IDApKQo+ICAJCXJldHVybjsKPiAgCj4gKwlpZiAoIWltYV9wcm9jZXNzX2tleXNfZm9yX21l
+YXN1cmVtZW50KQo+ICsJCWtleV9xdWV1ZWQgPSBpbWFfcXVldWVfa2V5X2Zvcl9tZWFzdXJlbWVu
+dChrZXlyaW5nLCBwYXlsb2FkLAo+ICsJCQkJCQkJICAgcGF5bG9hZF9sZW4pOwo+ICsKPiArCWlm
+IChrZXlfcXVldWVkKQo+ICsJCXJldHVybjsKPiArCj4gIAkvKgo+ICAJICoga2V5cmluZy0+ZGVz
+Y3JpcHRpb24gcG9pbnRzIHRvIHRoZSBuYW1lIG9mIHRoZSBrZXlyaW5nCj4gIAkgKiAoc3VjaCBh
+cyAiLmJ1aWx0aW5fdHJ1c3RlZF9rZXlzIiwgIi5pbWEiLCBldGMuKSB0bwo+IGRpZmYgLS1naXQg
+YS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYyBiL3NlY3VyaXR5L2ludGVncml0
+eS9pbWEvaW1hX3BvbGljeS5jCj4gaW5kZXggNzMwMzBhNjlkNTQ2Li40ZGM4ZmI5OTU3YWMgMTAw
+NjQ0Cj4gLS0tIGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfcG9saWN5LmMKPiArKysgYi9z
+ZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9wb2xpY3kuYwo+IEBAIC04MDgsNiArODA4LDEyIEBA
+IHZvaWQgaW1hX3VwZGF0ZV9wb2xpY3kodm9pZCkKPiAgCQlrZnJlZShhcmNoX3BvbGljeV9lbnRy
+eSk7Cj4gIAl9Cj4gIAlpbWFfdXBkYXRlX3BvbGljeV9mbGFnKCk7Cj4gKwo+ICsJLyoKPiArCSAq
+IEN1c3RvbSBJTUEgcG9saWNpZXMgaGF2ZSBiZWVuIHNldHVwLgoKXmhhcyBiZWVuIGxvYWRlZC4K
+Cj4gKwkgKiBQcm9jZXNzIGtleShzKSBxdWV1ZWQgdXAgZm9yIG1lYXN1cmVtZW50IG5vdy4KClRo
+ZSBmdW5jdGlvbiBuYW1lIGltYV9wcm9jZXNzX3F1ZXVlZF9rZXlzX2Zvcl9tZWFzdXJlbWVudCgp
+IHByb3ZpZGVzIGEKY2xlYXIgaW5kaWNhdGlvbiB0aGF0IHRoZSBrZXlzIHdpbGwgYmUgcHJvY2Vz
+c2VkLiDCoFdlIGRvbid0IGNvbW1lbnQKdGhlIG9idmlvdXMuIMKgUGxlYXNlIHJlbW92ZSB0aGUg
+YWJvdmUgY29tbWVudC4KCk1pbWkKCj4gKwkgKi8KPiArCWltYV9wcm9jZXNzX3F1ZXVlZF9rZXlz
+X2Zvcl9tZWFzdXJlbWVudCgpOwo+ICB9Cj4gIAo+ICAvKiBLZWVwIHRoZSBlbnVtZXJhdGlvbiBp
+biBzeW5jIHdpdGggdGhlIHBvbGljeV90b2tlbnMhICovCg==
