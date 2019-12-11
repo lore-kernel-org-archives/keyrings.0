@@ -1,10 +1,10 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 11 Dec 2019 17:12:22 +0000
+Date: Wed, 11 Dec 2019 17:23:59 +0000
 Subject: Re: One question about trusted key of keyring in Linux kernel.
-Message-Id: <20191211171222.GA4516@linux.intel.com>
+Message-Id: <20191211172345.GB4516@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <A888B25CD99C1141B7C254171A953E8E4909BA3B@shsmsx102.ccr.corp.intel.com>
  <1575260220.4080.17.camel@linux.ibm.com>
@@ -15,29 +15,47 @@ References: <A888B25CD99C1141B7C254171A953E8E4909BA3B@shsmsx102.ccr.corp.intel.c
  <A888B25CD99C1141B7C254171A953E8E4909E399@shsmsx102.ccr.corp.intel.com>
  <1575312932.24227.13.camel@linux.ibm.com>
  <20191209194715.GD19243@linux.intel.com>
- <1575926334.4557.17.camel@linux.ibm.com>
-In-Reply-To: <1575926334.4557.17.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>
-Cc: James Bottomley <jejb@linux.ibm.com>, "Zhao, Shirley" <shirley.zhao@intel.com>, Jonathan Corbet <corbet@lwn.net>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 'Mauro Carvalho Chehab' <mchehab+samsung@kernel.org>, "Zhu, Bing" <bing.zhu@intel.com>, "Chen, Luhai" <luhai.chen@intel.com>
+ <1575923513.31378.22.camel@linux.ibm.com>
+In-Reply-To: <1575923513.31378.22.camel@linux.ibm.com>
+To: James Bottomley <jejb@linux.ibm.com>
+Cc: "Zhao, Shirley" <shirley.zhao@intel.com>, Mimi Zohar <zohar@linux.ibm.com>, Jonathan Corbet <corbet@lwn.net>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 'Mauro Carvalho Chehab' <mchehab+samsung@kernel.org>, "Zhu, Bing" <bing.zhu@intel.com>, "Chen, Luhai" <luhai.chen@intel.com>
 
-On Mon, Dec 09, 2019 at 04:18:54PM -0500, Mimi Zohar wrote:
+On Mon, Dec 09, 2019 at 12:31:53PM -0800, James Bottomley wrote:
 > On Mon, 2019-12-09 at 21:47 +0200, Jarkko Sakkinen wrote:
 > > On Mon, Dec 02, 2019 at 10:55:32AM -0800, James Bottomley wrote:
-> > > blob but it looks like we need to fix the API.  I suppose the good ne=
-ws
-> > > is given this failure that we have the opportunity to rewrite the API
-> > > since no-one else can have used it for anything because of this.  The
-> >=20
+> > > blob but it looks like we need to fix the API.  I suppose the good
+> > > news is given this failure that we have the opportunity to rewrite
+> > > the API since no-one else can have used it for anything because of
+> > > this.  The
+> > 
 > > I did successfully run this test when I wrote it 5 years ago:
-> >=20
-> > https://github.com/jsakkine-intel/tpm2-scripts/blob/master/keyctl-smoke=
-.sh
->=20
-> Thanks, Jarkko. =A0Is this test still working or is there a regression?
+> > 
+> > https://github.com/jsakkine-intel/tpm2-scripts/blob/master/keyctl-smo
+> > ke.sh
+> > 
+> > Given that there is API a way must be found that backwards
+> > compatibility
+> > is not broken. New format is fine but it must co-exist.
+> 
+> The old API is unsupportable in the combination of policy + auth as I
+> already explained.  The kernel doesn't have access to the nonces to
+> generate the HMAC because the session was created by the user and the
+> API has no way to pass them in (plus passing them in would be a huge
+> security failure if we tried).  Given that Shirley appears to be the
+> first person ever to try this, I don't think the old API has grown any
+> policy users so its safe to remove it.  If we get a complaint, we can
+> discuss adding it back.
 
-I will run it and in addition to that I will make a patch out of it.
+It works within limits so it can be definitely be maintained for
+backwards compatibility.
 
-Any suggestions for the script name (should probably have 'tpm2' in
-it at least)?
+Also, you are making a claim of the users that we cannot verify.
+
+Finally, the new feature neither handles sessions. You claim that
+it could be added later. I have to deny that because until session
+handling is there we have no ways to be sure about that.
+
+I see your point but this needs more consideration. It does not
+make sense to rush.
 
 /Jarkko
