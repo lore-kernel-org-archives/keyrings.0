@@ -1,26 +1,59 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 12 Dec 2019 16:57:19 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 12 Dec 2019 21:13:09 +0000
 Subject: Re: [PATCH v2 1/2] IMA: Define workqueue for early boot "key" measurements
-Message-Id: <0cc15a43-8e1b-9819-33fe-8325068f8df2@linux.microsoft.com>
+Message-Id: <1576185189.4579.165.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191211185116.2740-1-nramas@linux.microsoft.com>
- <20191211185116.2740-2-nramas@linux.microsoft.com>
- <1576138743.4579.147.camel@linux.ibm.com>
-In-Reply-To: <1576138743.4579.147.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
+         <20191211185116.2740-2-nramas@linux.microsoft.com>
+         <1576138743.4579.147.camel@linux.ibm.com>
+         <0cc15a43-8e1b-9819-33fe-8325068f8df2@linux.microsoft.com>
+In-Reply-To: <0cc15a43-8e1b-9819-33fe-8325068f8df2@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-T24gMTIvMTIvMTkgMTI6MTkgQU0sIE1pbWkgWm9oYXIgd3JvdGU6Cgo+Pj4gKwlpbWFfcHJvY2Vz
-c19rZXlzID0gdHJ1ZTsKPj4gKwo+PiArCUlOSVRfTElTVF9IRUFEKCZ0ZW1wX2ltYV9rZXlzKTsK
-Pj4gKwo+PiArCW11dGV4X2xvY2soJmltYV9rZXlzX211dGV4KTsKPj4gKwo+PiArCWxpc3RfZm9y
-X2VhY2hfZW50cnlfc2FmZShlbnRyeSwgdG1wLCAmaW1hX2tleXMsIGxpc3QpCj4+ICsJCWxpc3Rf
-bW92ZV90YWlsKCZlbnRyeS0+bGlzdCwgJnRlbXBfaW1hX2tleXMpOwo+PiArCj4+ICsJbXV0ZXhf
-dW5sb2NrKCZpbWFfa2V5c19tdXRleCk7Cj4gCj4gCj4gVGhlIHYxIGNvbW1lbnQsIHdoaWNoIGV4
-cGxhaW5lZCB0aGUgbmVlZCBmb3IgdXNpbmcgYSB0ZW1wb3JhcnkKPiBrZXlyaW5nLCBpcyBhbiBl
-eGFtcGxlIG9mIGFuIGluZm9ybWF0aXZlIGNvbW1lbnQuIMKgSWYgeW91IGRvbid0Cj4gb2JqZWN0
-LCBpbnN0ZWFkIG9mIHJlLXBvc3RpbmcgdGhpcyBwYXRjaCwgSSBjYW4gaW5zZXJ0IGl0Lgo+IAo+
-IE1pbWkKClN1cmUgTWltaS4gVGhhbmtzIGZvciBpbmNsdWRpbmcgdGhlIGNvbW1lbnQgaW4gdGhl
-IHBhdGNoLgoKdGhhbmtzLAogIC1sYWtzaG1pCg==
+On Thu, 2019-12-12 at 08:57 -0800, Lakshmi Ramasubramanian wrote:
+> On 12/12/19 12:19 AM, Mimi Zohar wrote:
+> 
+> >>> +	ima_process_keys = true;
+> >> +
+> >> +	INIT_LIST_HEAD(&temp_ima_keys);
+> >> +
+> >> +	mutex_lock(&ima_keys_mutex);
+> >> +
+> >> +	list_for_each_entry_safe(entry, tmp, &ima_keys, list)
+> >> +		list_move_tail(&entry->list, &temp_ima_keys);
+> >> +
+> >> +	mutex_unlock(&ima_keys_mutex);
+> > 
+> > 
+> > The v1 comment, which explained the need for using a temporary
+> > keyring, is an example of an informative comment.  If you don't
+> > object, instead of re-posting this patch, I can insert it.
+> 
+> Sure Mimi. Thanks for including the comment in the patch.
+
+Looking at this again, something seems off or at least the comment 
+doesn't match the code.
+
+       /*
+         * To avoid holding the mutex while processing queued keys,
+         * transfer the queued keys with the mutex held to a temp list,
+         * release the mutex, and then process the queued keys from
+         * the temp list.
+         *
+         * Since ima_process_keys is set to true above, any new key will
+         * be processed immediately and not queued.
+         */
+
+Setting ima_process_key before taking the lock won't prevent the race.
+ I think you want to test ima_process_keys before taking the lock and
+again immediately afterward taking the lock, before setting it.  Then
+the comment would match the code.
+
+Shouldn't ima_process_keys be defined as static to limit the scope to
+this file?
+
+Mimi
