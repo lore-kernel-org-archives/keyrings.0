@@ -1,179 +1,101 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 11 Dec 2019 18:51:15 +0000
-Subject: [PATCH v2 1/2] IMA: Define workqueue for early boot "key" measurements
-Message-Id: <20191211185116.2740-2-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 12 Dec 2019 08:19:03 +0000
+Subject: Re: [PATCH v2 1/2] IMA: Define workqueue for early boot "key" measurements
+Message-Id: <1576138743.4579.147.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191211185116.2740-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191211185116.2740-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+         <20191211185116.2740-2-nramas@linux.microsoft.com>
+In-Reply-To: <20191211185116.2740-2-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Measuring keys requires a custom IMA policy to be loaded.
-Keys created or updated before a custom IMA policy is loaded should
-be queued and the keys should be processed after a custom policy
-is loaded.
-
-This patch defines workqueue for queuing keys when a custom IMA policy
-has not yet been loaded.
-
-A flag namely ima_process_keys is used to check if the key should be
-queued or should be processed immediately.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima.h                 |  15 +++
- security/integrity/ima/ima_asymmetric_keys.c | 110 +++++++++++++++++++
- 2 files changed, 125 insertions(+)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index f06238e41a7c..97f8a4078483 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -205,6 +205,21 @@ extern const char *const func_tokens[];
- 
- struct modsig;
- 
-+#ifdef CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE
-+/*
-+ * To track keys that need to be measured.
-+ */
-+struct ima_key_entry {
-+	struct list_head list;
-+	void *payload;
-+	size_t payload_len;
-+	char *keyring_name;
-+};
-+void ima_process_queued_keys(void);
-+#else
-+static inline void ima_process_queued_keys(void) {}
-+#endif /* CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE */
-+
- /* LIM API function definitions */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
-diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
-index fea2e7dd3b09..ba01e04ec025 100644
---- a/security/integrity/ima/ima_asymmetric_keys.c
-+++ b/security/integrity/ima/ima_asymmetric_keys.c
-@@ -14,6 +14,116 @@
- #include <keys/asymmetric-type.h>
- #include "ima.h"
- 
-+/*
-+ * Flag to indicate whether a key can be processed
-+ * right away or should be queued for processing later.
-+ */
-+bool ima_process_keys;
-+
-+/*
-+ * To synchronize access to the list of keys that need to be measured
-+ */
-+static DEFINE_MUTEX(ima_keys_mutex);
-+static LIST_HEAD(ima_keys);
-+
-+static void ima_free_key_entry(struct ima_key_entry *entry)
-+{
-+	if (entry) {
-+		kfree(entry->payload);
-+		kfree(entry->keyring_name);
-+		kfree(entry);
-+	}
-+}
-+
-+static struct ima_key_entry *ima_alloc_key_entry(
-+	struct key *keyring,
-+	const void *payload, size_t payload_len)
-+{
-+	int rc = 0;
-+	struct ima_key_entry *entry;
-+
-+	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-+	if (entry) {
-+		entry->payload = kmemdup(payload, payload_len, GFP_KERNEL);
-+		entry->keyring_name = kstrdup(keyring->description,
-+					      GFP_KERNEL);
-+		entry->payload_len = payload_len;
-+	}
-+
-+	if ((entry = NULL) || (entry->payload = NULL) ||
-+	    (entry->keyring_name = NULL)) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	INIT_LIST_HEAD(&entry->list);
-+
-+out:
-+	if (rc) {
-+		ima_free_key_entry(entry);
-+		entry = NULL;
-+	}
-+
-+	return entry;
-+}
-+
-+bool ima_queue_key(struct key *keyring, const void *payload,
-+		   size_t payload_len)
-+{
-+	bool queued = false;
-+	struct ima_key_entry *entry;
-+
-+	entry = ima_alloc_key_entry(keyring, payload, payload_len);
-+	if (!entry)
-+		return false;
-+
-+	mutex_lock(&ima_keys_mutex);
-+	if (!ima_process_keys) {
-+		list_add_tail(&entry->list, &ima_keys);
-+		queued = true;
-+	}
-+	mutex_unlock(&ima_keys_mutex);
-+
-+	if (!queued)
-+		ima_free_key_entry(entry);
-+
-+	return queued;
-+}
-+
-+/*
-+ * ima_process_queued_keys() - process keys queued for measurement
-+ *
-+ * This function sets ima_process_keys to true and processes queued keys.
-+ * From here on keys will be processed right away (not queued).
-+ */
-+void ima_process_queued_keys(void)
-+{
-+	struct ima_key_entry *entry, *tmp;
-+	LIST_HEAD(temp_ima_keys);
-+
-+	if (ima_process_keys)
-+		return;
-+
-+	ima_process_keys = true;
-+
-+	INIT_LIST_HEAD(&temp_ima_keys);
-+
-+	mutex_lock(&ima_keys_mutex);
-+
-+	list_for_each_entry_safe(entry, tmp, &ima_keys, list)
-+		list_move_tail(&entry->list, &temp_ima_keys);
-+
-+	mutex_unlock(&ima_keys_mutex);
-+
-+	list_for_each_entry_safe(entry, tmp, &temp_ima_keys, list) {
-+		process_buffer_measurement(entry->payload, entry->payload_len,
-+					   entry->keyring_name, KEY_CHECK, 0,
-+					   entry->keyring_name);
-+		list_del(&entry->list);
-+		ima_free_key_entry(entry);
-+	}
-+}
-+
- /**
-  * ima_post_key_create_or_update - measure asymmetric keys
-  * @keyring: keyring to which the key is linked to
--- 
-2.17.1
+T24gV2VkLCAyMDE5LTEyLTExIGF0IDEwOjUxIC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBNZWFzdXJpbmcga2V5cyByZXF1aXJlcyBhIGN1c3RvbSBJTUEgcG9saWN5IHRv
+IGJlIGxvYWRlZC4KPiBLZXlzIGNyZWF0ZWQgb3IgdXBkYXRlZCBiZWZvcmUgYSBjdXN0b20gSU1B
+IHBvbGljeSBpcyBsb2FkZWQgc2hvdWxkCj4gYmUgcXVldWVkIGFuZCB0aGUga2V5cyBzaG91bGQg
+YmUgcHJvY2Vzc2VkIGFmdGVyIGEgY3VzdG9tIHBvbGljeQo+IGlzIGxvYWRlZC4KPiAKPiBUaGlz
+IHBhdGNoIGRlZmluZXMgd29ya3F1ZXVlIGZvciBxdWV1aW5nIGtleXMgd2hlbiBhIGN1c3RvbSBJ
+TUEgcG9saWN5Cj4gaGFzIG5vdCB5ZXQgYmVlbiBsb2FkZWQuCj4gCj4gQSBmbGFnIG5hbWVseSBp
+bWFfcHJvY2Vzc19rZXlzIGlzIHVzZWQgdG8gY2hlY2sgaWYgdGhlIGtleSBzaG91bGQgYmUKPiBx
+dWV1ZWQgb3Igc2hvdWxkIGJlIHByb2Nlc3NlZCBpbW1lZGlhdGVseS4KPiAKPiBTaWduZWQtb2Zm
+LWJ5OiBMYWtzaG1pIFJhbWFzdWJyYW1hbmlhbiA8bnJhbWFzQGxpbnV4Lm1pY3Jvc29mdC5jb20+
+Cj4gLS0tCj4gIHNlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmggICAgICAgICAgICAgICAgIHwg
+IDE1ICsrKwo+ICBzZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hc3ltbWV0cmljX2tleXMuYyB8
+IDExMCArKysrKysrKysrKysrKysrKysrCj4gIDIgZmlsZXMgY2hhbmdlZCwgMTI1IGluc2VydGlv
+bnMoKykKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaCBiL3Nl
+Y3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmgKPiBpbmRleCBmMDYyMzhlNDFhN2MuLjk3ZjhhNDA3
+ODQ4MyAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYS5oCj4gKysrIGIv
+c2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaAo+IEBAIC0yMDUsNiArMjA1LDIxIEBAIGV4dGVy
+biBjb25zdCBjaGFyICpjb25zdCBmdW5jX3Rva2Vuc1tdOwo+ICAKPiAgc3RydWN0IG1vZHNpZzsK
+PiAgCj4gKyNpZmRlZiBDT05GSUdfQVNZTU1FVFJJQ19QVUJMSUNfS0VZX1NVQlRZUEUKPiArLyoK
+PiArICogVG8gdHJhY2sga2V5cyB0aGF0IG5lZWQgdG8gYmUgbWVhc3VyZWQuCj4gKyAqLwo+ICtz
+dHJ1Y3QgaW1hX2tleV9lbnRyeSB7Cj4gKwlzdHJ1Y3QgbGlzdF9oZWFkIGxpc3Q7Cj4gKwl2b2lk
+ICpwYXlsb2FkOwo+ICsJc2l6ZV90IHBheWxvYWRfbGVuOwo+ICsJY2hhciAqa2V5cmluZ19uYW1l
+Owo+ICt9Owo+ICt2b2lkIGltYV9wcm9jZXNzX3F1ZXVlZF9rZXlzKHZvaWQpOwo+ICsjZWxzZQo+
+ICtzdGF0aWMgaW5saW5lIHZvaWQgaW1hX3Byb2Nlc3NfcXVldWVkX2tleXModm9pZCkge30KPiAr
+I2VuZGlmIC8qIENPTkZJR19BU1lNTUVUUklDX1BVQkxJQ19LRVlfU1VCVFlQRSAqLwo+ICsKPiAg
+LyogTElNIEFQSSBmdW5jdGlvbiBkZWZpbml0aW9ucyAqLwo+ICBpbnQgaW1hX2dldF9hY3Rpb24o
+c3RydWN0IGlub2RlICppbm9kZSwgY29uc3Qgc3RydWN0IGNyZWQgKmNyZWQsIHUzMiBzZWNpZCwK
+PiAgCQkgICBpbnQgbWFzaywgZW51bSBpbWFfaG9va3MgZnVuYywgaW50ICpwY3IsCj4gZGlmZiAt
+LWdpdCBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FzeW1tZXRyaWNfa2V5cy5jIGIvc2Vj
+dXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXN5bW1ldHJpY19rZXlzLmMKPiBpbmRleCBmZWEyZTdk
+ZDNiMDkuLmJhMDFlMDRlYzAyNSAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1h
+L2ltYV9hc3ltbWV0cmljX2tleXMuYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1h
+X2FzeW1tZXRyaWNfa2V5cy5jCj4gQEAgLTE0LDYgKzE0LDExNiBAQAo+ICAjaW5jbHVkZSA8a2V5
+cy9hc3ltbWV0cmljLXR5cGUuaD4KPiAgI2luY2x1ZGUgImltYS5oIgo+ICAKPiArLyoKPiArICog
+RmxhZyB0byBpbmRpY2F0ZSB3aGV0aGVyIGEga2V5IGNhbiBiZSBwcm9jZXNzZWQKPiArICogcmln
+aHQgYXdheSBvciBzaG91bGQgYmUgcXVldWVkIGZvciBwcm9jZXNzaW5nIGxhdGVyLgo+ICsgKi8K
+PiArYm9vbCBpbWFfcHJvY2Vzc19rZXlzOwo+ICsKPiArLyoKPiArICogVG8gc3luY2hyb25pemUg
+YWNjZXNzIHRvIHRoZSBsaXN0IG9mIGtleXMgdGhhdCBuZWVkIHRvIGJlIG1lYXN1cmVkCj4gKyAq
+Lwo+ICtzdGF0aWMgREVGSU5FX01VVEVYKGltYV9rZXlzX211dGV4KTsKPiArc3RhdGljIExJU1Rf
+SEVBRChpbWFfa2V5cyk7Cj4gKwo+ICtzdGF0aWMgdm9pZCBpbWFfZnJlZV9rZXlfZW50cnkoc3Ry
+dWN0IGltYV9rZXlfZW50cnkgKmVudHJ5KQo+ICt7Cj4gKwlpZiAoZW50cnkpIHsKPiArCQlrZnJl
+ZShlbnRyeS0+cGF5bG9hZCk7Cj4gKwkJa2ZyZWUoZW50cnktPmtleXJpbmdfbmFtZSk7Cj4gKwkJ
+a2ZyZWUoZW50cnkpOwo+ICsJfQo+ICt9Cj4gKwo+ICtzdGF0aWMgc3RydWN0IGltYV9rZXlfZW50
+cnkgKmltYV9hbGxvY19rZXlfZW50cnkoCj4gKwlzdHJ1Y3Qga2V5ICprZXlyaW5nLAo+ICsJY29u
+c3Qgdm9pZCAqcGF5bG9hZCwgc2l6ZV90IHBheWxvYWRfbGVuKQo+ICt7Cj4gKwlpbnQgcmMgPSAw
+Owo+ICsJc3RydWN0IGltYV9rZXlfZW50cnkgKmVudHJ5Owo+ICsKPiArCWVudHJ5ID0ga3phbGxv
+YyhzaXplb2YoKmVudHJ5KSwgR0ZQX0tFUk5FTCk7Cj4gKwlpZiAoZW50cnkpIHsKPiArCQllbnRy
+eS0+cGF5bG9hZCA9IGttZW1kdXAocGF5bG9hZCwgcGF5bG9hZF9sZW4sIEdGUF9LRVJORUwpOwo+
+ICsJCWVudHJ5LT5rZXlyaW5nX25hbWUgPSBrc3RyZHVwKGtleXJpbmctPmRlc2NyaXB0aW9uLAo+
+ICsJCQkJCSAgICAgIEdGUF9LRVJORUwpOwo+ICsJCWVudHJ5LT5wYXlsb2FkX2xlbiA9IHBheWxv
+YWRfbGVuOwo+ICsJfQo+ICsKPiArCWlmICgoZW50cnkgPSBOVUxMKSB8fCAoZW50cnktPnBheWxv
+YWQgPSBOVUxMKSB8fAo+ICsJICAgIChlbnRyeS0+a2V5cmluZ19uYW1lID0gTlVMTCkpIHsKPiAr
+CQlyYyA9IC1FTk9NRU07Cj4gKwkJZ290byBvdXQ7Cj4gKwl9Cj4gKwo+ICsJSU5JVF9MSVNUX0hF
+QUQoJmVudHJ5LT5saXN0KTsKPiArCj4gK291dDoKPiArCWlmIChyYykgewo+ICsJCWltYV9mcmVl
+X2tleV9lbnRyeShlbnRyeSk7Cj4gKwkJZW50cnkgPSBOVUxMOwo+ICsJfQo+ICsKPiArCXJldHVy
+biBlbnRyeTsKPiArfQo+ICsKPiArYm9vbCBpbWFfcXVldWVfa2V5KHN0cnVjdCBrZXkgKmtleXJp
+bmcsIGNvbnN0IHZvaWQgKnBheWxvYWQsCj4gKwkJICAgc2l6ZV90IHBheWxvYWRfbGVuKQo+ICt7
+Cj4gKwlib29sIHF1ZXVlZCA9IGZhbHNlOwo+ICsJc3RydWN0IGltYV9rZXlfZW50cnkgKmVudHJ5
+Owo+ICsKPiArCWVudHJ5ID0gaW1hX2FsbG9jX2tleV9lbnRyeShrZXlyaW5nLCBwYXlsb2FkLCBw
+YXlsb2FkX2xlbik7Cj4gKwlpZiAoIWVudHJ5KQo+ICsJCXJldHVybiBmYWxzZTsKPiArCj4gKwlt
+dXRleF9sb2NrKCZpbWFfa2V5c19tdXRleCk7Cj4gKwlpZiAoIWltYV9wcm9jZXNzX2tleXMpIHsK
+PiArCQlsaXN0X2FkZF90YWlsKCZlbnRyeS0+bGlzdCwgJmltYV9rZXlzKTsKPiArCQlxdWV1ZWQg
+PSB0cnVlOwo+ICsJfQo+ICsJbXV0ZXhfdW5sb2NrKCZpbWFfa2V5c19tdXRleCk7Cj4gKwo+ICsJ
+aWYgKCFxdWV1ZWQpCj4gKwkJaW1hX2ZyZWVfa2V5X2VudHJ5KGVudHJ5KTsKPiArCj4gKwlyZXR1
+cm4gcXVldWVkOwo+ICt9Cj4gKwo+ICsvKgo+ICsgKiBpbWFfcHJvY2Vzc19xdWV1ZWRfa2V5cygp
+IC0gcHJvY2VzcyBrZXlzIHF1ZXVlZCBmb3IgbWVhc3VyZW1lbnQKPiArICoKPiArICogVGhpcyBm
+dW5jdGlvbiBzZXRzIGltYV9wcm9jZXNzX2tleXMgdG8gdHJ1ZSBhbmQgcHJvY2Vzc2VzIHF1ZXVl
+ZCBrZXlzLgo+ICsgKiBGcm9tIGhlcmUgb24ga2V5cyB3aWxsIGJlIHByb2Nlc3NlZCByaWdodCBh
+d2F5IChub3QgcXVldWVkKS4KPiArICovCj4gK3ZvaWQgaW1hX3Byb2Nlc3NfcXVldWVkX2tleXMo
+dm9pZCkKPiArewo+ICsJc3RydWN0IGltYV9rZXlfZW50cnkgKmVudHJ5LCAqdG1wOwo+ICsJTElT
+VF9IRUFEKHRlbXBfaW1hX2tleXMpOwo+ICsKPiArCWlmIChpbWFfcHJvY2Vzc19rZXlzKQo+ICsJ
+CXJldHVybjsKPiArCj4gKwlpbWFfcHJvY2Vzc19rZXlzID0gdHJ1ZTsKPiArCj4gKwlJTklUX0xJ
+U1RfSEVBRCgmdGVtcF9pbWFfa2V5cyk7Cj4gKwo+ICsJbXV0ZXhfbG9jaygmaW1hX2tleXNfbXV0
+ZXgpOwo+ICsKPiArCWxpc3RfZm9yX2VhY2hfZW50cnlfc2FmZShlbnRyeSwgdG1wLCAmaW1hX2tl
+eXMsIGxpc3QpCj4gKwkJbGlzdF9tb3ZlX3RhaWwoJmVudHJ5LT5saXN0LCAmdGVtcF9pbWFfa2V5
+cyk7Cj4gKwo+ICsJbXV0ZXhfdW5sb2NrKCZpbWFfa2V5c19tdXRleCk7CgoKVGhlIHYxIGNvbW1l
+bnQsIHdoaWNoIGV4cGxhaW5lZCB0aGUgbmVlZCBmb3IgdXNpbmcgYSB0ZW1wb3JhcnkKa2V5cmlu
+ZywgaXMgYW4gZXhhbXBsZSBvZiBhbiBpbmZvcm1hdGl2ZSBjb21tZW50LiDCoElmIHlvdSBkb24n
+dApvYmplY3QsIGluc3RlYWQgb2YgcmUtcG9zdGluZyB0aGlzIHBhdGNoLCBJIGNhbiBpbnNlcnQg
+aXQuCgpNaW1pCgo+ICsKPiArCWxpc3RfZm9yX2VhY2hfZW50cnlfc2FmZShlbnRyeSwgdG1wLCAm
+dGVtcF9pbWFfa2V5cywgbGlzdCkgewo+ICsJCXByb2Nlc3NfYnVmZmVyX21lYXN1cmVtZW50KGVu
+dHJ5LT5wYXlsb2FkLCBlbnRyeS0+cGF5bG9hZF9sZW4sCj4gKwkJCQkJICAgZW50cnktPmtleXJp
+bmdfbmFtZSwgS0VZX0NIRUNLLCAwLAo+ICsJCQkJCSAgIGVudHJ5LT5rZXlyaW5nX25hbWUpOwo+
+ICsJCWxpc3RfZGVsKCZlbnRyeS0+bGlzdCk7Cj4gKwkJaW1hX2ZyZWVfa2V5X2VudHJ5KGVudHJ5
+KTsKPiArCX0KPiArfQo+ICsKPiAgLyoqCj4gICAqIGltYV9wb3N0X2tleV9jcmVhdGVfb3JfdXBk
+YXRlIC0gbWVhc3VyZSBhc3ltbWV0cmljIGtleXMKPiAgICogQGtleXJpbmc6IGtleXJpbmcgdG8g
+d2hpY2ggdGhlIGtleSBpcyBsaW5rZWQgdG8K
