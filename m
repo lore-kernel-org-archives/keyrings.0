@@ -1,76 +1,31 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Thu, 12 Dec 2019 22:54:18 +0000
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 12 Dec 2019 22:58:22 +0000
 Subject: Re: [PATCH v2 1/2] IMA: Define workqueue for early boot "key" measurements
-Message-Id: <1576191258.4579.181.camel@linux.ibm.com>
+Message-Id: <cd0d6b0c-1be4-493d-6ba7-72bd60f601cb@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191211185116.2740-1-nramas@linux.microsoft.com>
-         <20191211185116.2740-2-nramas@linux.microsoft.com>
-         <1576138743.4579.147.camel@linux.ibm.com>
-         <0cc15a43-8e1b-9819-33fe-8325068f8df2@linux.microsoft.com>
-         <1576185189.4579.165.camel@linux.ibm.com>
-         <b4ff3607-076e-7b90-24d1-9a129d9ce720@linux.microsoft.com>
-In-Reply-To: <b4ff3607-076e-7b90-24d1-9a129d9ce720@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
+ <20191211185116.2740-2-nramas@linux.microsoft.com>
+ <1576138743.4579.147.camel@linux.ibm.com>
+ <0cc15a43-8e1b-9819-33fe-8325068f8df2@linux.microsoft.com>
+ <1576185189.4579.165.camel@linux.ibm.com>
+ <b4ff3607-076e-7b90-24d1-9a129d9ce720@linux.microsoft.com>
+ <1576191258.4579.181.camel@linux.ibm.com>
+In-Reply-To: <1576191258.4579.181.camel@linux.ibm.com>
+To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-On Thu, 2019-12-12 at 13:59 -0800, Lakshmi Ramasubramanian wrote:
-> On 12/12/19 1:13 PM, Mimi Zohar wrote:
-> 
-> > 
-> > Looking at this again, something seems off or at least the comment
-> > doesn't match the code.
-> > 
-> >         /*
-> >           * To avoid holding the mutex while processing queued keys,
-> >           * transfer the queued keys with the mutex held to a temp list,
-> >           * release the mutex, and then process the queued keys from
-> >           * the temp list.
-> >           *
-> >           * Since ima_process_keys is set to true above, any new key will
-> >           * be processed immediately and not queued.
-> >           */
-> > 
-> > Setting ima_process_key before taking the lock won't prevent the race.
-> >   I think you want to test ima_process_keys before taking the lock and
-> > again immediately afterward taking the lock, before setting it.  Then
-> > the comment would match the code.
-> > 
-> > Shouldn't ima_process_keys be defined as static to limit the scope to
-> > this file?
-> > 
-> > Mimi
-> > 
-> 
-> In IMA hook, ima_process_key is checked without lock. If it is false, 
-> ima_queue_key is called. If the key was queued (by ima_queue_key()) then 
-> the hook defers measurement. Else, it processes it immediately.
-> 
-> In ima_queue_key() function the check for ima_process_key is done after 
-> taking the lock and the key queued if the flag is false.
-> 
-> In ima_process_keys() ima_process_key is set without lock and then the 
-> queued keys are moved to a temp list after taking the lock.
-> 
-> I have reviewed the changes myself and also with a few of my colleagues. 
-> I don't think there is a race condition. Please let me know if you do 
-> see a problem.
-> 
-> I can move the setting of ima_process_key flag inside the lock. But 
-> honestly I don't think that is necessary.
-> 
-> I agree that ima_process_keys should be static since it is used in this 
-> file one. I'll make that change.
-> 
-> I can also move the setting of ima_process_key flag inside the lock 
-> along with the above change.
-
-My concern is with the last sentence "Since ima_process_keys is set to
-true above, any new key will be processed immediately and not queued."
-  It's unlikely, but possible, that a second process will wait for the
-ima_keys_mutex.  Either we remove this sentence or move setting
-ima_process_keys to after taking the lock.
-
-Mimi 
+Ck9uIDEyLzEyLzIwMTkgMjo1NCBQTSwgTWltaSBab2hhciB3cm90ZToKCj4+Cj4+IEkgY2FuIGFs
+c28gbW92ZSB0aGUgc2V0dGluZyBvZiBpbWFfcHJvY2Vzc19rZXkgZmxhZyBpbnNpZGUgdGhlIGxv
+Y2sKPj4gYWxvbmcgd2l0aCB0aGUgYWJvdmUgY2hhbmdlLgo+IAo+IE15IGNvbmNlcm4gaXMgd2l0
+aCB0aGUgbGFzdCBzZW50ZW5jZSAiU2luY2UgaW1hX3Byb2Nlc3Nfa2V5cyBpcyBzZXQgdG8KPiB0
+cnVlIGFib3ZlLCBhbnkgbmV3IGtleSB3aWxsIGJlIHByb2Nlc3NlZCBpbW1lZGlhdGVseSBhbmQg
+bm90IHF1ZXVlZC4iCj4gIMKgIEl0J3MgdW5saWtlbHksIGJ1dCBwb3NzaWJsZSwgdGhhdCBhIHNl
+Y29uZCBwcm9jZXNzIHdpbGwgd2FpdCBmb3IgdGhlCj4gaW1hX2tleXNfbXV0ZXguIMKgRWl0aGVy
+IHdlIHJlbW92ZSB0aGlzIHNlbnRlbmNlIG9yIG1vdmUgc2V0dGluZwo+IGltYV9wcm9jZXNzX2tl
+eXMgdG8gYWZ0ZXIgdGFraW5nIHRoZSBsb2NrLgo+IAo+IE1pbWkKClN1cmUgLSBpJ2xsIG1vdmUg
+dGhlIHNldHRpbmcgb2YgaW1hX3Byb2Nlc3Nfa2V5cyBmbGFnIGluc2lkZSB0aGUgbG9jayAKYW5k
+IGRlZmluZSB0aGUgZmxhZyBhcyBzdGF0aWMuIFdpbGwga2VlcCB0aGUgY29tbWVudCBhcyBpcy4K
+CnRoYW5rcywKICAtbGFrc2htaQo=
