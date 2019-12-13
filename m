@@ -1,158 +1,86 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Wed, 18 Dec 2019 06:31:42 +0000
-Subject: [PATCH v3 9/9] security: keys: trusted: add password based authorizations to policy keys
-Message-Id: <20191218063142.23033-10-James.Bottomley@HansenPartnership.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Fri, 13 Dec 2019 00:42:48 +0000
+Subject: [PATCH v3 0/2] IMA: Deferred measurement of keys
+Message-Id: <20191213004250.21132-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-TPM 2.0 has a trick where you can turn off the usual HMAC password
-session requirement using TPM2_PolicyPassword, so everywhere we see a
-TPM2_PolicyAuthValue (which does require HMAC password), we replace
-with the TPM2_PolicyPassword command instead.  This allows us to use
-passwords with TPM 2.0 trusted keys that also have a policy.
+This patchset extends the previous version[1] by adding support for
+deferred processing of keys.
 
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
----
- include/linux/tpm.h                       |  1 +
- security/keys/trusted-keys/tpm2-policy.c  | 16 ++++++++++++-
- security/keys/trusted-keys/trusted_tpm2.c | 38 ++++++++++++++++++++++++++++---
- 3 files changed, 51 insertions(+), 4 deletions(-)
+With the patchset referenced above, the IMA subsystem supports
+measuring asymmetric keys when the key is created or updated.
+But keys created or updated before a custom IMA policy is loaded
+are currently not measured. This includes keys added to, for instance,
+.builtin_trusted_keys which happens early in the boot process.
 
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index e32e9728adce..5026a06977e1 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -233,6 +233,7 @@ enum tpm2_command_codes {
- 	TPM2_CC_PCR_EXTEND	        = 0x0182,
- 	TPM2_CC_EVENT_SEQUENCE_COMPLETE = 0x0185,
- 	TPM2_CC_HASH_SEQUENCE_START     = 0x0186,
-+	TPM2_CC_POLICY_PASSWORD		= 0x018c,
- 	TPM2_CC_CREATE_LOADED           = 0x0191,
- 	TPM2_CC_LAST		        = 0x0193, /* Spec 1.36 */
- };
-diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 5698475b30cb..56b99419ce90 100644
---- a/security/keys/trusted-keys/tpm2-policy.c
-+++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -193,7 +193,8 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols,
- 			policy = digest;
- 			len = *plen;
- 		}
--		crypto_shash_update(sdesc, policy, len);
-+		if (len)
-+			crypto_shash_update(sdesc, policy, len);
- 		/* now output the intermediate to the policydigest */
- 		crypto_shash_final(sdesc, policydigest);
- 
-@@ -303,6 +304,16 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 		u32 cmd = pols->code[i];
- 		struct tpm_buf buf;
- 
-+		if (cmd = TPM2_CC_POLICY_AUTHVALUE)
-+			/*
-+			 * both PolicyAuthValue and PolicyPassword
-+			 * hash to the same thing, but one triggers
-+			 * HMAC authentication and the other simple
-+			 * authentication.  Since we have no HMAC
-+			 * code, we're choosing the simple
-+			 */
-+			cmd = TPM2_CC_POLICY_PASSWORD;
-+
- 		rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, cmd);
- 		if (rc)
- 			return rc;
-@@ -344,6 +355,9 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 		}
- 		default:
- 			failure = "unknown policy";
-+			if (pols->len[i])
-+				tpm_buf_append(&buf, pols->policies[i],
-+					       pols->len[i]);
- 			break;
- 		}
- 		rc = tpm_send(chip, buf.data, tpm_buf_length(&buf));
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index 82004273f8d4..085d09c4a4ed 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -53,7 +53,7 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
- 
- 	asn1_encode_oid(&work, &work_len, tpm2key_oid,
- 			asn1_oid_len(tpm2key_oid));
--	if (options->blobauth[0] = 0) {
-+	if (options->blobauth_len = 0) {
- 		unsigned char bool[3], *w = bool;
- 		int bool_len = sizeof(bool);
- 		/* tag 0 is emptyAuth */
-@@ -247,6 +247,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 	u32 flags;
- 	int i;
- 	int rc;
-+	static const int POLICY_SIZE = 2 * PAGE_SIZE;
- 
- 	for (i = 0; i < ARRAY_SIZE(tpm2_hash_map); i++) {
- 		if (options->hash = tpm2_hash_map[i].crypto_id) {
-@@ -267,7 +268,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		/* 4 array len, 2 hash alg */
- 		const int len = 4 + 2 + options->pcrinfo_len;
- 
--		pols = kmalloc(sizeof(*pols) + len, GFP_KERNEL);
-+		pols = kmalloc(POLICY_SIZE, GFP_KERNEL);
- 		if (!pols)
- 			return -ENOMEM;
- 
-@@ -288,6 +289,37 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * if we already have a policy, we have to add authorization
-+	 * to it.  If we don't, we can simply follow the usual
-+	 * non-policy route.
-+	 */
-+	if (options->blobauth_len != 0 && payload->policies) {
-+		struct tpm2_policies *pols;
-+		static u8 *scratch;
-+		int i;
-+		bool found = false;
-+
-+		pols = payload->policies;
-+
-+		/* make sure it's not already in policy */
-+		for (i = 0; i < pols->count; i++) {
-+			if (pols->code[i] = TPM2_CC_POLICY_AUTHVALUE) {
-+				found = true;
-+				break;
-+			}
-+		}
-+
-+		if (!found) {
-+			i = pols->count++;
-+			scratch = pols->policies[i - 1] + pols->len[i - 1];
-+			/* the TPM2_PolicyPassword command has no payload */
-+			pols->policies[i] = scratch;
-+			pols->len[i] = 0;
-+			pols->code[i] = TPM2_CC_POLICY_AUTHVALUE;
-+		}
-+	}
-+
- 	if (payload->policies) {
- 		rc = tpm2_generate_policy_digest(payload->policies,
- 						 options->hash,
-@@ -526,7 +558,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
- 			     NULL /* nonce */, 0,
- 			     TPM2_SA_CONTINUE_SESSION,
- 			     options->blobauth /* hmac */,
--			     TPM_DIGEST_SIZE);
-+			     options->blobauth_len);
- 
- 	rc = tpm_send(chip, buf.data, tpm_buf_length(&buf));
- 	if (payload->policies)
+This change adds support for queuing keys created or updated before
+a custom IMA policy is loaded. The queued keys are processed when
+a custom policy is loaded. Keys created or updated after a custom policy
+is loaded are measured immediately (not queued).
+
+If the kernel is built with both CONFIG_IMA and
+CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE enabled then the IMA policy
+must be applied as a custom policy. Not providing a custom policy
+in the above configuration would result in asymmeteric keys being queued
+until a custom policy is loaded. This is by design.
+
+[1] https://lore.kernel.org/linux-integrity/20191211164707.4698-1-nramas@linux.microsoft.com/
+
+Testing performed:
+
+  * Booted the kernel with this change.
+  * Added .builtin_trusted_keys in "keyrings=" option in
+    the IMA policy and verified the keys added to this
+    keyring are measured.
+  * Specified only func=KEY_CHECK and not "keyrings=" option,
+    and verified the keys added to builtin_trusted_keys keyring
+    are processed.
+  * Added keys at runtime and verified they are measured
+    if the IMA policy permitted.
+      => For example, added keys to .ima keyring and verified.
+
+Changelog:
+
+  v3
+
+  => Defined ima_process_keys flag to be static.
+  => Set ima_process_keys with ima_keys_mutex held.
+  => Added a comment in ima_process_queued_keys() function
+     to state the use of temporary list for keys.
+
+  v2
+
+  => Rebased the changes to v5.5-rc1
+  => Updated function names, variable names, and code comments
+     to be less verbose.
+
+  v1
+
+  => Code cleanup
+
+  v0
+
+  => Based changes on v5.4-rc8
+  => The following patchsets should be applied in that order
+     https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
+     https://lore.kernel.org/linux-integrity/20191204224131.3384-1-nramas@linux.microsoft.com/
+  => Added functions to queue and dequeue keys, and process
+     the queued keys when custom IMA policies are applied.
+
+
+Lakshmi Ramasubramanian (2):
+  IMA: Define workqueue for early boot key measurements
+  IMA: Call workqueue functions to measure queued keys
+
+ security/integrity/ima/ima.h                 |  15 +++
+ security/integrity/ima/ima_asymmetric_keys.c | 127 +++++++++++++++++++
+ security/integrity/ima/ima_policy.c          |   3 +
+ 3 files changed, 145 insertions(+)
+
 -- 
-2.16.4
+2.17.1
