@@ -1,149 +1,188 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 14 Nov 2019 03:11:57 +0000
-Subject: [PATCH v7 0/5] KEYS: Measure keys when they are created or updated
-Message-Id: <20191114031202.18012-1-nramas@linux.microsoft.com>
+Date: Fri, 13 Dec 2019 00:42:49 +0000
+Subject: [PATCH v3 1/2] IMA: Define workqueue for early boot "key" measurements
+Message-Id: <20191213004250.21132-2-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, dhowells@redhat.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20191213004250.21132-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191213004250.21132-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Keys created or updated in the system are currently not measured.
-Therefore an attestation service, for instance, would not be able to
-attest whether or not the trusted keys keyring(s), for instance, contain
-only known good (trusted) keys.
+Measuring keys requires a custom IMA policy to be loaded.
+Keys created or updated before a custom IMA policy is loaded should
+be queued and the keys should be processed after a custom policy
+is loaded.
 
-IMA measures system files, command line arguments passed to kexec,
-boot aggregate, etc. It can be used to measure keys as well.
-But there is no mechanism available in the kernel for IMA to
-know when a key is created or updated.
+This patch defines workqueue for queuing keys when a custom IMA policy
+has not yet been loaded.
 
-This change aims to address measuring keys created or updated
-in the system.
+A flag namely ima_process_keys is used to check if the key should be
+queued or should be processed immediately.
 
-To achieve the above the following changes have been made:
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+---
+ security/integrity/ima/ima.h                 |  15 +++
+ security/integrity/ima/ima_asymmetric_keys.c | 119 +++++++++++++++++++
+ 2 files changed, 134 insertions(+)
 
- - Added a new IMA hook namely, ima_post_key_create_or_update, which
-   measures the key. This IMA hook is called from key_create_or_update
-   function. The key measurement can be controlled through IMA policy.
-
-   A new IMA policy function KEY_CHECK has been added to measure keys.
-   "keyrings=" option can be specified for KEY_CHECK to limit
-   measuring the keys loaded onto the specified keyrings only.
-
-   # measure keys loaded onto any keyring
-   measure func=KEY_CHECK
-
-   # measure keys loaded onto the IMA keyring only
-   measure func=KEY_CHECK keyring=".ima"
-
-   # measure keys on the BUILTIN and IMA keyrings into a different PCR
-   measure func=KEY_CHECK keyring=".builtin_trusted_keys|.ima" pcr
-
-Testing performed:
-
-  * Booted the kernel with this change.
-  * When KEY_CHECK policy is set IMA measures keys loaded
-    onto any keyring (keyrings= option not specified).
-  * Keys are not measured when KEY_CHECK is not set.
-  * When keyrings= option is specified for KEY_CHECK then only the keys
-    loaded onto a keyring specified in the option is measured.
-  * Added a new key to a keyring.
-    => Added keys to .ima and .evm keyrings.
-  * Added the same key again.
-    => Add the same key to .ima and .evm keyrings.
-
-Change Log:
-
-  v7:
-
-  => Removed CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS option and used
-     CONFIG_KEYS instead for ima_asymmetric_keys.c
-  => Added the patches related to "keyrings=" option support to
-     this patch set.
-
-  v6:
-
-  => Rebased the changes to v5.4-rc7
-  => Renamed KEYRING_CHECK to KEY_CHECK per Mimi's suggestion.
-  => Excluded the patches that add support for limiting key
-     measurement to specific keyrings ("keyrings=" option
-     for "measure func=KEY_CHECK" in the IMA policy).
-     Also, excluded the patches that add support for deferred
-     processing of keys (queue support).
-     These patches will be added in separate patch sets later.
-
-  v5:
-
-  => Reorganized the patches to add measurement of keys through
-     the IMA hook without any queuing and then added queuing support.
-  => Updated the queuing functions to minimize code executed inside mutex.
-  => Process queued keys after custom IMA policies have been applied.
-
-  v4:
-
-  => Rebased the changes to v5.4-rc3
-  => Applied the following dependent patch set first
-     and then added new changes.
-  https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
-  => Refactored the patch set to separate out changes related to
-     func KEYRING_CHECK and options keyrings into different patches.
-  => Moved the functions to queue and dequeue keys for measurement
-     from ima_queue.c to a new file ima_asymmetric_keys.c.
-  => Added a new config namely CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
-     to compile ima_asymmetric_keys.c
-
-  v3:
-
-  => Added KEYRING_CHECK for measuring keys. This can optionally specify
-     keyrings to measure.
-  => Updated ima_get_action() and related functions to return
-     the keyrings if specified in the policy.
-  => process_buffer_measurement() function is updated to take keyring
-     as a parameter. The key will be measured if the policy includes
-     the keyring in the list of measured keyrings. If the policy does not
-     specify any keyrings then all keys are measured.
-
-  v2:
-
-  => Per suggestion from Mimi reordered the patch set to first
-     enable measuring keys added or updated in the system.
-     And, then scope the measurement to keys added to 
-     builtin_trusted_keys keyring through ima policy.
-  => Removed security_key_create_or_update function and instead
-     call ima hook, to measure the key, directly from 
-     key_create_or_update function.
-
-  v1:
-
-  => LSM function for key_create_or_update. It calls ima.
-  => Added ima hook for measuring keys
-  => ima measures keys based on ima policy.
-
-  v0:
-
-  => Added LSM hook for key_create_or_update.
-  => Measure keys added to builtin or secondary trusted keys keyring.
-
-Lakshmi Ramasubramanian (5):
-  IMA: Add KEY_CHECK func to measure keys
-  IMA: Define an IMA hook to measure keys
-  KEYS: Call the IMA hook to measure keys
-  IMA: Add support to limit measuring keys
-  IMA: Read keyrings= option from the IMA policy
-
- Documentation/ABI/testing/ima_policy         | 17 ++++-
- include/linux/ima.h                          | 13 ++++
- security/integrity/ima/Makefile              |  1 +
- security/integrity/ima/ima.h                 |  9 ++-
- security/integrity/ima/ima_api.c             |  8 ++-
- security/integrity/ima/ima_appraise.c        |  4 +-
- security/integrity/ima/ima_asymmetric_keys.c | 57 ++++++++++++++++
- security/integrity/ima/ima_main.c            |  9 +--
- security/integrity/ima/ima_policy.c          | 70 ++++++++++++++++++--
- security/keys/key.c                          |  7 ++
- 10 files changed, 175 insertions(+), 20 deletions(-)
- create mode 100644 security/integrity/ima/ima_asymmetric_keys.c
-
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index f06238e41a7c..97f8a4078483 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -205,6 +205,21 @@ extern const char *const func_tokens[];
+ 
+ struct modsig;
+ 
++#ifdef CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE
++/*
++ * To track keys that need to be measured.
++ */
++struct ima_key_entry {
++	struct list_head list;
++	void *payload;
++	size_t payload_len;
++	char *keyring_name;
++};
++void ima_process_queued_keys(void);
++#else
++static inline void ima_process_queued_keys(void) {}
++#endif /* CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE */
++
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+ 		   int mask, enum ima_hooks func, int *pcr,
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+index fea2e7dd3b09..a1781348ce69 100644
+--- a/security/integrity/ima/ima_asymmetric_keys.c
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -14,6 +14,125 @@
+ #include <keys/asymmetric-type.h>
+ #include "ima.h"
+ 
++/*
++ * Flag to indicate whether a key can be processed
++ * right away or should be queued for processing later.
++ */
++static bool ima_process_keys;
++
++/*
++ * To synchronize access to the list of keys that need to be measured
++ */
++static DEFINE_MUTEX(ima_keys_mutex);
++static LIST_HEAD(ima_keys);
++
++static void ima_free_key_entry(struct ima_key_entry *entry)
++{
++	if (entry) {
++		kfree(entry->payload);
++		kfree(entry->keyring_name);
++		kfree(entry);
++	}
++}
++
++static struct ima_key_entry *ima_alloc_key_entry(
++	struct key *keyring,
++	const void *payload, size_t payload_len)
++{
++	int rc = 0;
++	struct ima_key_entry *entry;
++
++	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
++	if (entry) {
++		entry->payload = kmemdup(payload, payload_len, GFP_KERNEL);
++		entry->keyring_name = kstrdup(keyring->description,
++					      GFP_KERNEL);
++		entry->payload_len = payload_len;
++	}
++
++	if ((entry = NULL) || (entry->payload = NULL) ||
++	    (entry->keyring_name = NULL)) {
++		rc = -ENOMEM;
++		goto out;
++	}
++
++	INIT_LIST_HEAD(&entry->list);
++
++out:
++	if (rc) {
++		ima_free_key_entry(entry);
++		entry = NULL;
++	}
++
++	return entry;
++}
++
++bool ima_queue_key(struct key *keyring, const void *payload,
++		   size_t payload_len)
++{
++	bool queued = false;
++	struct ima_key_entry *entry;
++
++	entry = ima_alloc_key_entry(keyring, payload, payload_len);
++	if (!entry)
++		return false;
++
++	mutex_lock(&ima_keys_mutex);
++	if (!ima_process_keys) {
++		list_add_tail(&entry->list, &ima_keys);
++		queued = true;
++	}
++	mutex_unlock(&ima_keys_mutex);
++
++	if (!queued)
++		ima_free_key_entry(entry);
++
++	return queued;
++}
++
++/*
++ * ima_process_queued_keys() - process keys queued for measurement
++ *
++ * This function sets ima_process_keys to true and processes queued keys.
++ * From here on keys will be processed right away (not queued).
++ */
++void ima_process_queued_keys(void)
++{
++	struct ima_key_entry *entry, *tmp;
++	LIST_HEAD(temp_ima_keys);
++
++	if (ima_process_keys)
++		return;
++
++	/*
++	 * To avoid holding the mutex when processing queued keys,
++	 * transfer the queued keys with the mutex held to a temp list,
++	 * release the mutex, and then process the queued keys from
++	 * the temp list.
++	 *
++	 * Since ima_process_keys is set to true, any new key will be
++	 * processed immediately and not be queued.
++	 */
++	INIT_LIST_HEAD(&temp_ima_keys);
++
++	mutex_lock(&ima_keys_mutex);
++
++	ima_process_keys = true;
++
++	list_for_each_entry_safe(entry, tmp, &ima_keys, list)
++		list_move_tail(&entry->list, &temp_ima_keys);
++
++	mutex_unlock(&ima_keys_mutex);
++
++	list_for_each_entry_safe(entry, tmp, &temp_ima_keys, list) {
++		process_buffer_measurement(entry->payload, entry->payload_len,
++					   entry->keyring_name, KEY_CHECK, 0,
++					   entry->keyring_name);
++		list_del(&entry->list);
++		ima_free_key_entry(entry);
++	}
++}
++
+ /**
+  * ima_post_key_create_or_update - measure asymmetric keys
+  * @keyring: keyring to which the key is linked to
 -- 
 2.17.1
