@@ -1,24 +1,52 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Fri, 13 Dec 2019 15:51:37 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Sun, 15 Dec 2019 12:44:37 +0000
 Subject: Re: [PATCH v3 1/2] IMA: Define workqueue for early boot "key" measurements
-Message-Id: <9938ff03-5cf2-5396-1172-5734cc10819e@linux.microsoft.com>
+Message-Id: <1576413877.4579.280.camel@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20191213004250.21132-1-nramas@linux.microsoft.com>
- <20191213004250.21132-2-nramas@linux.microsoft.com>
- <1576202134.4579.189.camel@linux.ibm.com>
- <6e0dad33-66f9-4807-d08d-ff30396cec5e@linux.microsoft.com>
- <1576204377.4579.206.camel@linux.ibm.com>
- <c60341a3-2329-cd92-c76c-6f8249a57b43@linux.microsoft.com>
- <1576242406.4579.239.camel@linux.ibm.com>
+         <20191213004250.21132-2-nramas@linux.microsoft.com>
+         <1576202134.4579.189.camel@linux.ibm.com>
+         <6e0dad33-66f9-4807-d08d-ff30396cec5e@linux.microsoft.com>
+         <1576204377.4579.206.camel@linux.ibm.com>
+         <c60341a3-2329-cd92-c76c-6f8249a57b43@linux.microsoft.com>
+         <1576242406.4579.239.camel@linux.ibm.com>
 In-Reply-To: <1576242406.4579.239.camel@linux.ibm.com>
-To: Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-On 12/13/19 5:06 AM, Mimi Zohar wrote:
-
+On Fri, 2019-12-13 at 08:06 -0500, Mimi Zohar wrote:
+> On Thu, 2019-12-12 at 18:59 -0800, Lakshmi Ramasubramanian wrote:
+> > On 12/12/2019 6:32 PM, Mimi Zohar wrote:
+> > 
+> > >>>
+> > >>> Don't you need a test here, before setting ima_process_keys?
+> > >>>
+> > >>> 	if (ima_process_keys)
+> > >>> 		return;
+> 
+> > >> That check is done before the comment - at the start of
+> > >> ima_process_queued_keys().
+> > > 
+> > > The first test prevents taking the mutex unnecessarily.
+> > > 
+> > 
+> > I am trying to understand your concern here. Could you please clarify?
+> > 
+> >   => If ima_process_keys is false
+> >        -> With the mutex held, should check ima_process_keys again 
+> > before setting?
+> > 
+> > Let's say 2 or more threads are racing in calling ima_process_queued_keys():
+> > 
+> > The 1st one will set ima_process_keys and process queued keys.
+> > 
+> > The 2nd and subsequent ones - even if they have gone past the initial 
+> > check, will find an empty list of keys (the list "ima_keys") when they 
+> > take the mutex. So they'll not process any keys.
+> 
 > I just need to convince myself that this is correct.  Normally before
 > reading and writing a flag, there is some sort of locking.  With
 > taking the mutex before setting the flag, there is now only a lock
@@ -30,15 +58,18 @@ On 12/13/19 5:06 AM, Mimi Zohar wrote:
 > after taking the mutex just re-enforces the comment.
 > 
 > Bottom line, does reading the flag need to be lock protected?
-> 
-> Mimi
-> 
 
-I'll change this function to check the flag again after taking the lock 
-and process only if the queue has entries. Will send an update today.
+Reading the flag IS lock protected, just spread across two functions.
+ For performance, ima_post_key_create_or_update() checks
+ima_process_keys, before calling ima_queue_key(), which takes the
+mutex before checking ima_process_keys again.
 
-Please let me know if you have any concern in other functions in this 
-file. I'll address them, if any, in today's update.
+As long as both the reader and writer, take the mutex before checking
+the flag, the locking is fine.  The additional check, before taking
+the mutex, is simply for performance.
 
-thanks,
-  -lakshmi
+Mimi
+
+
+
+ 
