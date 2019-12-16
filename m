@@ -1,197 +1,48 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Fri, 13 Dec 2019 17:18:26 +0000
-Subject: [PATCH v4 1/2] IMA: Define workqueue for early boot "key" measurements
-Message-Id: <20191213171827.28657-2-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Mon, 16 Dec 2019 12:30:00 +0000
+Subject: Re: [PATCH v4 1/2] IMA: Define workqueue for early boot "key" measurements
+Message-Id: <1576499400.4579.305.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
 References: <20191213171827.28657-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191213171827.28657-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
+         <20191213171827.28657-2-nramas@linux.microsoft.com>
+In-Reply-To: <20191213171827.28657-2-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Measuring keys requires a custom IMA policy to be loaded.
-Keys created or updated before a custom IMA policy is loaded should
-be queued and the keys should be processed after a custom policy
-is loaded.
-
-This patch defines workqueue for queuing keys when a custom IMA policy
-has not yet been loaded.
-
-A flag namely ima_process_keys is used to check if the key should be
-queued or should be processed immediately.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima.h                 |  15 +++
- security/integrity/ima/ima_asymmetric_keys.c | 128 +++++++++++++++++++
- 2 files changed, 143 insertions(+)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index f06238e41a7c..97f8a4078483 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -205,6 +205,21 @@ extern const char *const func_tokens[];
- 
- struct modsig;
- 
-+#ifdef CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE
-+/*
-+ * To track keys that need to be measured.
-+ */
-+struct ima_key_entry {
-+	struct list_head list;
-+	void *payload;
-+	size_t payload_len;
-+	char *keyring_name;
-+};
-+void ima_process_queued_keys(void);
-+#else
-+static inline void ima_process_queued_keys(void) {}
-+#endif /* CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE */
-+
- /* LIM API function definitions */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
-diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
-index fea2e7dd3b09..ae6de1bb2e79 100644
---- a/security/integrity/ima/ima_asymmetric_keys.c
-+++ b/security/integrity/ima/ima_asymmetric_keys.c
-@@ -14,6 +14,134 @@
- #include <keys/asymmetric-type.h>
- #include "ima.h"
- 
-+/*
-+ * Flag to indicate whether a key can be processed
-+ * right away or should be queued for processing later.
-+ */
-+static bool ima_process_keys;
-+
-+/*
-+ * To synchronize access to the list of keys that need to be measured
-+ */
-+static DEFINE_MUTEX(ima_keys_mutex);
-+static LIST_HEAD(ima_keys);
-+
-+static void ima_free_key_entry(struct ima_key_entry *entry)
-+{
-+	if (entry) {
-+		kfree(entry->payload);
-+		kfree(entry->keyring_name);
-+		kfree(entry);
-+	}
-+}
-+
-+static struct ima_key_entry *ima_alloc_key_entry(
-+	struct key *keyring,
-+	const void *payload, size_t payload_len)
-+{
-+	int rc = 0;
-+	struct ima_key_entry *entry;
-+
-+	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-+	if (entry) {
-+		entry->payload = kmemdup(payload, payload_len, GFP_KERNEL);
-+		entry->keyring_name = kstrdup(keyring->description,
-+					      GFP_KERNEL);
-+		entry->payload_len = payload_len;
-+	}
-+
-+	if ((entry = NULL) || (entry->payload = NULL) ||
-+	    (entry->keyring_name = NULL)) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	INIT_LIST_HEAD(&entry->list);
-+
-+out:
-+	if (rc) {
-+		ima_free_key_entry(entry);
-+		entry = NULL;
-+	}
-+
-+	return entry;
-+}
-+
-+bool ima_queue_key(struct key *keyring, const void *payload,
-+		   size_t payload_len)
-+{
-+	bool queued = false;
-+	struct ima_key_entry *entry;
-+
-+	entry = ima_alloc_key_entry(keyring, payload, payload_len);
-+	if (!entry)
-+		return false;
-+
-+	mutex_lock(&ima_keys_mutex);
-+	if (!ima_process_keys) {
-+		list_add_tail(&entry->list, &ima_keys);
-+		queued = true;
-+	}
-+	mutex_unlock(&ima_keys_mutex);
-+
-+	if (!queued)
-+		ima_free_key_entry(entry);
-+
-+	return queued;
-+}
-+
-+/*
-+ * ima_process_queued_keys() - process keys queued for measurement
-+ *
-+ * This function sets ima_process_keys to true and processes queued keys.
-+ * From here on keys will be processed right away (not queued).
-+ */
-+void ima_process_queued_keys(void)
-+{
-+	struct ima_key_entry *entry, *tmp;
-+	LIST_HEAD(temp_ima_keys);
-+	bool process = false;
-+
-+	if (ima_process_keys)
-+		return;
-+
-+	/*
-+	 * To avoid holding the mutex when processing queued keys,
-+	 * transfer the queued keys with the mutex held to a temp list,
-+	 * release the mutex, and then process the queued keys from
-+	 * the temp list.
-+	 *
-+	 * Since ima_process_keys is set to true, any new key will be
-+	 * processed immediately and not be queued.
-+	 */
-+	INIT_LIST_HEAD(&temp_ima_keys);
-+
-+	mutex_lock(&ima_keys_mutex);
-+
-+	if (!ima_process_keys) {
-+		ima_process_keys = true;
-+
-+		if (!list_empty(&ima_keys)) {
-+			list_for_each_entry_safe(entry, tmp, &ima_keys, list)
-+				list_move_tail(&entry->list, &temp_ima_keys);
-+			process = true;
-+		}
-+	}
-+
-+	mutex_unlock(&ima_keys_mutex);
-+
-+	if (!process)
-+		return;
-+
-+	list_for_each_entry_safe(entry, tmp, &temp_ima_keys, list) {
-+		process_buffer_measurement(entry->payload, entry->payload_len,
-+					   entry->keyring_name, KEY_CHECK, 0,
-+					   entry->keyring_name);
-+		list_del(&entry->list);
-+		ima_free_key_entry(entry);
-+	}
-+}
-+
- /**
-  * ima_post_key_create_or_update - measure asymmetric keys
-  * @keyring: keyring to which the key is linked to
--- 
-2.17.1
+T24gRnJpLCAyMDE5LTEyLTEzIGF0IDA5OjE4IC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKCj4gKy8qCj4gKyAqIGltYV9wcm9jZXNzX3F1ZXVlZF9rZXlzKCkgLSBwcm9jZXNz
+IGtleXMgcXVldWVkIGZvciBtZWFzdXJlbWVudAo+ICsgKgo+ICsgKiBUaGlzIGZ1bmN0aW9uIHNl
+dHMgaW1hX3Byb2Nlc3Nfa2V5cyB0byB0cnVlIGFuZCBwcm9jZXNzZXMgcXVldWVkIGtleXMuCj4g
+KyAqIEZyb20gaGVyZSBvbiBrZXlzIHdpbGwgYmUgcHJvY2Vzc2VkIHJpZ2h0IGF3YXkgKG5vdCBx
+dWV1ZWQpLgo+ICsgKi8KPiArdm9pZCBpbWFfcHJvY2Vzc19xdWV1ZWRfa2V5cyh2b2lkKQo+ICt7
+Cj4gKwlzdHJ1Y3QgaW1hX2tleV9lbnRyeSAqZW50cnksICp0bXA7Cj4gKwlMSVNUX0hFQUQodGVt
+cF9pbWFfa2V5cyk7Cj4gKwlib29sIHByb2Nlc3MgPSBmYWxzZTsKPiArCj4gKwlpZiAoaW1hX3By
+b2Nlc3Nfa2V5cykKPiArCQlyZXR1cm47Cj4gKwo+ICsJLyoKPiArCSAqIFRvIGF2b2lkIGhvbGRp
+bmcgdGhlIG11dGV4IHdoZW4gcHJvY2Vzc2luZyBxdWV1ZWQga2V5cywKPiArCSAqIHRyYW5zZmVy
+IHRoZSBxdWV1ZWQga2V5cyB3aXRoIHRoZSBtdXRleCBoZWxkIHRvIGEgdGVtcCBsaXN0LAo+ICsJ
+ICogcmVsZWFzZSB0aGUgbXV0ZXgsIGFuZCB0aGVuIHByb2Nlc3MgdGhlIHF1ZXVlZCBrZXlzIGZy
+b20KPiArCSAqIHRoZSB0ZW1wIGxpc3QuCj4gKwkgKgo+ICsJICogU2luY2UgaW1hX3Byb2Nlc3Nf
+a2V5cyBpcyBzZXQgdG8gdHJ1ZSwgYW55IG5ldyBrZXkgd2lsbCBiZQo+ICsJICogcHJvY2Vzc2Vk
+IGltbWVkaWF0ZWx5IGFuZCBub3QgYmUgcXVldWVkLgo+ICsJICovCj4gKwlJTklUX0xJU1RfSEVB
+RCgmdGVtcF9pbWFfa2V5cyk7Cj4gKwo+ICsJbXV0ZXhfbG9jaygmaW1hX2tleXNfbXV0ZXgpOwo+
+ICsKPiArCWlmICghaW1hX3Byb2Nlc3Nfa2V5cykgewo+ICsJCWltYV9wcm9jZXNzX2tleXMgPSB0
+cnVlOwoKVGhhbmsgeW91IGZvciBtb3ZpbmcgdGhlIGluaXRpYWxpemF0aW9uIGhlcmUuIMKgVGhl
+IGNvbW1lbnQgaXMgbm93CnZhbGlkIGFuZCB0aGUgZm9sbG93aW5nIGNvZGUgaXMgbm93IGd1YXJh
+bnRlZWQgdG8gZXhlY3V0ZSBqdXN0IG9uY2UuCgo+ICsKPiArCQlpZiAoIWxpc3RfZW1wdHkoJmlt
+YV9rZXlzKSkgewo+ICsJCQlsaXN0X2Zvcl9lYWNoX2VudHJ5X3NhZmUoZW50cnksIHRtcCwgJmlt
+YV9rZXlzLCBsaXN0KQo+ICsJCQkJbGlzdF9tb3ZlX3RhaWwoJmVudHJ5LT5saXN0LCAmdGVtcF9p
+bWFfa2V5cyk7Cj4gKwkJCXByb2Nlc3MgPSB0cnVlOwo+ICsJCX0KPiArCX0KPiArCj4gKwltdXRl
+eF91bmxvY2soJmltYV9rZXlzX211dGV4KTsKPiArCj4gKwlpZiAoIXByb2Nlc3MpCj4gKwkJcmV0
+dXJuOwoKVGhlIG5ldyBjaGFuZ2VzIC0gY2hlY2tpbmcgaWYgdGhlIGxpc3QgaXMgZW1wdHkgYW5k
+IHRoaXMgdGVzdCAtIGFyZQp1bm5lY2Vzc2FyeSwgYXMgeW91IGltcGxpZWQgZWFybGllci4KCk1p
+bWkKCj4gKwo+ICsJbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKGVudHJ5LCB0bXAsICZ0ZW1wX2lt
+YV9rZXlzLCBsaXN0KSB7Cj4gKwkJcHJvY2Vzc19idWZmZXJfbWVhc3VyZW1lbnQoZW50cnktPnBh
+eWxvYWQsIGVudHJ5LT5wYXlsb2FkX2xlbiwKPiArCQkJCQkgICBlbnRyeS0+a2V5cmluZ19uYW1l
+LCBLRVlfQ0hFQ0ssIDAsCj4gKwkJCQkJICAgZW50cnktPmtleXJpbmdfbmFtZSk7Cj4gKwkJbGlz
+dF9kZWwoJmVudHJ5LT5saXN0KTsKPiArCQlpbWFfZnJlZV9rZXlfZW50cnkoZW50cnkpOwo+ICsJ
+fQo+ICt9Cj4gKwo+ICAvKioKPiAgICogaW1hX3Bvc3Rfa2V5X2NyZWF0ZV9vcl91cGRhdGUgLSBt
+ZWFzdXJlIGFzeW1tZXRyaWMga2V5cwo+ICAgKiBAa2V5cmluZzoga2V5cmluZyB0byB3aGljaCB0
+aGUga2V5IGlzIGxpbmtlZCB0bwo=
