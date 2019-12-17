@@ -1,44 +1,98 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Wed, 11 Dec 2019 00:03:18 +0000
-Subject: Re: [PATCH v10 1/6] IMA: Check IMA policy flag
-Message-Id: <1576022598.4579.50.camel@linux.ibm.com>
+From: "Ben Dooks (Codethink)" <ben.dooks@codethink.co.uk>
+Date: Tue, 17 Dec 2019 11:09:39 +0000
+Subject: [PATCH] KEYS: trusted: fix type warnings in ntohl/nthos
+Message-Id: <20191217110939.2067979-1-ben.dooks@codethink.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191204224131.3384-1-nramas@linux.microsoft.com>
-         <20191204224131.3384-2-nramas@linux.microsoft.com>
-         <1576017749.4579.40.camel@linux.ibm.com>
-         <6385347a-bc40-7717-f9ad-8ed7dd7fee51@linux.microsoft.com>
-In-Reply-To: <6385347a-bc40-7717-f9ad-8ed7dd7fee51@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+To: ben.dooks@codethink.co.uk
+Cc: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Tue, 2019-12-10 at 15:29 -0800, Lakshmi Ramasubramanian wrote:
-> On 12/10/19 2:42 PM, Mimi Zohar wrote:
-> 
-> > Patch descriptions aren't suppose to be written as pseudo code.  Start
-> > with the current status and problem description.
-> > 
-> > For example, "process_buffer_measurement() may be called prior to IMA being initialized, which would result in a kernel panic.  This patch ..."
-> > 
-> > Mimi
-> 
-> I'll update the patch description in this one and in the other patches 
-> per your comments.
-> 
-> Are you done reviewing all the patches in this set?
-> 
-> Other than the one code change per your comment on "[PATCH v10 5/6]" 
-> there are no other code changes I need to make?
-> Just wanted to confirm.
-> 
-> 	[PATCH v10 5/6] IMA: Add support to limit measuring keys
-> => With the additional "uid" support this isn't necessarily true any
-> more.
+The ntohl takes a __be32 and ntohs takes __be16, so cast to
+those types before passing it to the byte swapping functions.
 
-Yes, other than the code change needed for this and the patch
-descriptions, it looks good.  Am continuing with reviewing the other
-patch set - queueing "key" measurements.
+Note, would be32_to_cpu and be16_to_cpu be better here?
 
-Mimi
+security/keys/trusted-keys/trusted_tpm1.c:201:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:201:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:201:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:201:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:201:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:201:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:202:15: warning: cast to restricted __be16
+security/keys/trusted-keys/trusted_tpm1.c:202:15: warning: cast to restricted __be16
+security/keys/trusted-keys/trusted_tpm1.c:202:15: warning: cast to restricted __be16
+security/keys/trusted-keys/trusted_tpm1.c:202:15: warning: cast to restricted __be16
+security/keys/trusted-keys/trusted_tpm1.c:289:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:289:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:289:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:289:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:289:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:289:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:290:15: warning: cast to restricted __be16
+security/keys/trusted-keys/trusted_tpm1.c:290:15: warning: cast to restricted __be16
+security/keys/trusted-keys/trusted_tpm1.c:290:15: warning: cast to restricted __be16
+security/keys/trusted-keys/trusted_tpm1.c:290:15: warning: cast to restricted __be16
+security/keys/trusted-keys/trusted_tpm1.c:418:21: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:418:21: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:418:21: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:418:21: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:418:21: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:418:21: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:442:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:442:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:442:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:442:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:442:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:442:19: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:549:24: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:549:24: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:549:24: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:549:24: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:549:24: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:549:24: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:550:23: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:550:23: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:550:23: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:550:23: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:550:23: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:550:23: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:602:17: warning: incorrect type in assignment (different base types)
+security/keys/trusted-keys/trusted_tpm1.c:602:17:    expected unsigned int [usertype] ordinal
+security/keys/trusted-keys/trusted_tpm1.c:602:17:    got restricted __be32 [usertype]
+security/keys/trusted-keys/trusted_tpm1.c:638:20: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:638:20: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:638:20: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:638:20: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:638:20: warning: cast to restricted __be32
+security/keys/trusted-keys/trusted_tpm1.c:638:20: warning: cast to restricted __be32
+
+Signed-off-by: Ben Dooks (Codethink) <ben.dooks@codethink.co.uk>
+---
+Cc: David Howells <dhowells@redhat.com>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: keyrings@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ include/keys/trusted_tpm.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/keys/trusted_tpm.h b/include/keys/trusted_tpm.h
+index a56d8e1298f2..e080967931d2 100644
+--- a/include/keys/trusted_tpm.h
++++ b/include/keys/trusted_tpm.h
+@@ -12,9 +12,9 @@
+ #define TPM_RETURN_OFFSET		6
+ #define TPM_DATA_OFFSET			10
+ 
+-#define LOAD32(buffer, offset)	(ntohl(*(uint32_t *)&buffer[offset]))
++#define LOAD32(buffer, offset)	(ntohl(*(__be32 *)&buffer[offset]))
+ #define LOAD32N(buffer, offset)	(*(uint32_t *)&buffer[offset])
+-#define LOAD16(buffer, offset)	(ntohs(*(uint16_t *)&buffer[offset]))
++#define LOAD16(buffer, offset)	(ntohs(*(__be16 *)&buffer[offset]))
+ 
+ struct osapsess {
+ 	uint32_t handle;
+-- 
+2.24.0
