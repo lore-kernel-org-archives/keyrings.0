@@ -1,348 +1,353 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 11 Dec 2019 16:47:06 +0000
-Subject: [PATCH v11 5/6] IMA: Add support to limit measuring keys
-Message-Id: <20191211164707.4698-6-nramas@linux.microsoft.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Wed, 18 Dec 2019 06:31:36 +0000
+Subject: [PATCH v3 3/9] security: keys: trusted: use ASN.1 tpm2 key format for the blobs
+Message-Id: <20191218063142.23033-4-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191211164707.4698-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191211164707.4698-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Limit measuring keys to those keys being loaded onto a given set of
-keyrings only and when the user id (uid) matches if uid is specified
-in the policy.
+Modify the tpm2 key format blob output to export and import in the
+ASN.1 form for tpm2 sealed object keys.  For compatibility with prior
+trusted keys, the importer will also accept two tpm2b quantities
+representing the public and private parts of the key.  However, the
+export via keyctl pipe will only output the ASN.1 format.
 
-This patch defines a new IMA policy option namely "keyrings=" that
-can be used to specify a set of keyrings. If this option is specified
-in the policy for "measure func=KEY_CHECK" then only the keys
-loaded onto a keyring given in the "keyrings=" option are measured.
+The benefit of the ASN.1 format is that it's a standard and thus the
+exported key can be used by userspace tools.  The format includes
+policy specifications, thus it gets us out of having to construct
+policy handles in userspace and the format includes the parent meaning
+you don't have to keep passing it in each time.
 
-If uid is specified in the policy then the key is measured only if
-the current user id matches the one specified in the policy.
+This patch only implements basic handling for the ASN.1 format, so
+keys with passwords but no policy.
 
-Added a new parameter namely "keyring" (name of the keyring) to
-process_buffer_measurement(). The keyring name is passed to
-ima_get_action() to determine the required action.
-ima_match_rules() is updated to check keyring in the policy, if
-specified, for KEY_CHECK function.
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+v2: Updated encode API, added length checks
 ---
- Documentation/ABI/testing/ima_policy         | 10 +++-
- security/integrity/ima/ima.h                 |  8 ++-
- security/integrity/ima/ima_api.c             |  8 ++-
- security/integrity/ima/ima_appraise.c        |  4 +-
- security/integrity/ima/ima_asymmetric_keys.c |  8 ++-
- security/integrity/ima/ima_main.c            |  9 +--
- security/integrity/ima/ima_policy.c          | 62 ++++++++++++++++++--
- 7 files changed, 91 insertions(+), 18 deletions(-)
+ security/keys/trusted-keys/Makefile       |   2 +-
+ security/keys/trusted-keys/tpm2key.asn1   |  23 ++++
+ security/keys/trusted-keys/trusted_tpm1.c |   2 +-
+ security/keys/trusted-keys/trusted_tpm2.c | 189 +++++++++++++++++++++++++++++-
+ 4 files changed, 209 insertions(+), 7 deletions(-)
+ create mode 100644 security/keys/trusted-keys/tpm2key.asn1
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 066d32797500..cd572912c593 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -25,7 +25,7 @@ Description:
- 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
- 				 [obj_user=] [obj_role=] [obj_type=]]
- 			option:	[[appraise_type=]] [template=] [permit_directio]
--				[appraise_flag=]
-+				[appraise_flag=] [keyrings=]
- 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
- 				[FIRMWARE_CHECK]
- 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
-@@ -42,6 +42,9 @@ Description:
- 			appraise_flag:= [check_blacklist]
- 			Currently, blacklist check is only for files signed with appended
- 			signature.
-+			keyrings:= list of keyrings
-+			(eg, .builtin_trusted_keys|.ima). Only valid
-+			when action is "measure" and func is KEY_CHECK.
- 			template:= name of a defined IMA template type
- 			(eg, ima-ng). Only valid when action is "measure".
- 			pcr:= decimal value
-@@ -117,3 +120,8 @@ Description:
- 		Example of measure rule using KEY_CHECK to measure all keys:
+diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
+index 7b73cebbb378..e0198641eff2 100644
+--- a/security/keys/trusted-keys/Makefile
++++ b/security/keys/trusted-keys/Makefile
+@@ -5,4 +5,4 @@
  
- 			measure func=KEY_CHECK
+ obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
+ trusted-y += trusted_tpm1.o
+-trusted-y += trusted_tpm2.o
++trusted-y += trusted_tpm2.o tpm2key.asn1.o
+diff --git a/security/keys/trusted-keys/tpm2key.asn1 b/security/keys/trusted-keys/tpm2key.asn1
+new file mode 100644
+index 000000000000..1851b7c80f08
+--- /dev/null
++++ b/security/keys/trusted-keys/tpm2key.asn1
+@@ -0,0 +1,23 @@
++---
++--- Note: This isn't quite the definition in the standard
++---       However, the Linux asn.1 parser doesn't understand
++---       [2] EXPLICIT SEQUENCE OF OPTIONAL
++---       So there's an extra intermediate TPMPolicySequence
++---       definition to work around this
 +
-+		Example of measure rule using KEY_CHECK to only measure
-+		keys added to .builtin_trusted_keys or .ima keyring:
-+
-+			measure func=KEY_CHECK keyrings=.builtin_trusted_keys|.ima
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index fe6c698617bd..f06238e41a7c 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -208,7 +208,8 @@ struct modsig;
- /* LIM API function definitions */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
--		   struct ima_template_desc **template_desc);
-+		   struct ima_template_desc **template_desc,
-+		   const char *keyring);
- int ima_must_measure(struct inode *inode, int mask, enum ima_hooks func);
- int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct file *file, void *buf, loff_t size,
-@@ -220,7 +221,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
- 			   struct ima_template_desc *template_desc);
- void process_buffer_measurement(const void *buf, int size,
- 				const char *eventname, enum ima_hooks func,
--				int pcr);
-+				int pcr, const char *keyring);
- void ima_audit_measurement(struct integrity_iint_cache *iint,
- 			   const unsigned char *filename);
- int ima_alloc_init_template(struct ima_event_data *event_data,
-@@ -235,7 +236,8 @@ const char *ima_d_path(const struct path *path, char **pathbuf, char *filename);
- /* IMA policy related functions */
- int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		     enum ima_hooks func, int mask, int flags, int *pcr,
--		     struct ima_template_desc **template_desc);
-+		     struct ima_template_desc **template_desc,
-+		     const char *keyring);
- void ima_init_policy(void);
- void ima_update_policy(void);
- void ima_update_policy_flag(void);
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 610759fe63b8..f6bc00914aa5 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -169,12 +169,13 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
-  * @func: caller identifier
-  * @pcr: pointer filled in if matched measure policy sets pcr  * @template_desc: pointer filled in if matched measure policy sets template+ * @keyring: keyring name used to determine the action
-  *
-  * The policy is defined in terms of keypairs:
-  *		subj=, obj=, type=, func=, mask=, fsmagic  *	subj,obj, and type: are LSM specific.
-  *	func: FILE_CHECK | BPRM_CHECK | CREDS_CHECK | MMAP_CHECK | MODULE_CHECK
-- *	| KEXEC_CMDLINE
-+ *	| KEXEC_CMDLINE | KEY_CHECK
-  *	mask: contains the permission mask
-  *	fsmagic: hex value
-  *
-@@ -183,14 +184,15 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
-  */
- int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
- 		   int mask, enum ima_hooks func, int *pcr,
--		   struct ima_template_desc **template_desc)
-+		   struct ima_template_desc **template_desc,
-+		   const char *keyring)
- {
- 	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE | IMA_HASH;
- 
- 	flags &= ima_policy_flag;
- 
- 	return ima_match_policy(inode, cred, secid, func, mask, flags, pcr,
--				template_desc);
-+				template_desc, keyring);
- }
- 
- /*
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 300c8d2943c5..a9649b04b9f1 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -55,7 +55,7 @@ int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func)
- 
- 	security_task_getsecid(current, &secid);
- 	return ima_match_policy(inode, current_cred(), secid, func, mask,
--				IMA_APPRAISE | IMA_HASH, NULL, NULL);
-+				IMA_APPRAISE | IMA_HASH, NULL, NULL, NULL);
- }
- 
- static int ima_fix_xattr(struct dentry *dentry,
-@@ -330,7 +330,7 @@ int ima_check_blacklist(struct integrity_iint_cache *iint,
- 		if ((rc = -EPERM) && (iint->flags & IMA_MEASURE))
- 			process_buffer_measurement(digest, digestsize,
- 						   "blacklisted-hash", NONE,
--						   pcr);
-+						   pcr, NULL);
- 	}
- 
- 	return rc;
-diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
-index 994d89d58af9..fea2e7dd3b09 100644
---- a/security/integrity/ima/ima_asymmetric_keys.c
-+++ b/security/integrity/ima/ima_asymmetric_keys.c
-@@ -46,7 +46,13 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
- 	 * parameter to process_buffer_measurement() and is set
- 	 * in the "eventname" field in ima_event_data for
- 	 * the key measurement IMA event.
-+	 *
-+	 * The name of the keyring is also passed in the "keyring"
-+	 * parameter to process_buffer_measurement() to check
-+	 * if the IMA policy is configured to measure a key linked
-+	 * to the given keyring.
- 	 */
- 	process_buffer_measurement(payload, payload_len,
--				   keyring->description, KEY_CHECK, 0);
-+				   keyring->description, KEY_CHECK, 0,
-+				   keyring->description);
- }
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 9b35db2fc777..2272c3255c7d 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -215,7 +215,7 @@ static int process_measurement(struct file *file, const struct cred *cred,
- 	 * Included is the appraise submask.
- 	 */
- 	action = ima_get_action(inode, cred, secid, mask, func, &pcr,
--				&template_desc);
-+				&template_desc, NULL);
- 	violation_check = ((func = FILE_CHECK || func = MMAP_CHECK) &&
- 			   (ima_policy_flag & IMA_MEASURE));
- 	if (!action && !violation_check)
-@@ -632,12 +632,13 @@ int ima_load_data(enum kernel_load_data_id id)
-  * @eventname: event name to be used for the buffer entry.
-  * @func: IMA hook
-  * @pcr: pcr to extend the measurement
-+ * @keyring: keyring name to determine the action to be performed
-  *
-  * Based on policy, the buffer is measured into the ima log.
-  */
- void process_buffer_measurement(const void *buf, int size,
- 				const char *eventname, enum ima_hooks func,
--				int pcr)
-+				int pcr, const char *keyring)
- {
- 	int ret = 0;
- 	struct ima_template_entry *entry = NULL;
-@@ -668,7 +669,7 @@ void process_buffer_measurement(const void *buf, int size,
- 	if (func) {
- 		security_task_getsecid(current, &secid);
- 		action = ima_get_action(NULL, current_cred(), secid, 0, func,
--					&pcr, &template);
-+					&pcr, &template, keyring);
- 		if (!(action & IMA_MEASURE))
- 			return;
- 	}
-@@ -721,7 +722,7 @@ void ima_kexec_cmdline(const void *buf, int size)
- {
- 	if (buf && size != 0)
- 		process_buffer_measurement(buf, size, "kexec-cmdline",
--					   KEXEC_CMDLINE, 0);
-+					   KEXEC_CMDLINE, 0, NULL);
- }
- 
- static int __init init_ima(void)
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 1525a28fd705..cca87c499c4f 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -79,6 +79,7 @@ struct ima_rule_entry {
- 		int type;	/* audit type */
- 	} lsm[MAX_LSM_RULES];
- 	char *fsname;
-+	char *keyrings; /* Measure keys added to these keyrings */
- 	struct ima_template_desc *template;
- };
- 
-@@ -356,6 +357,50 @@ int ima_lsm_policy_change(struct notifier_block *nb, unsigned long event,
- 	return NOTIFY_OK;
- }
- 
-+/**
-+ * ima_match_keyring - determine whether the keyring matches the measure rule
-+ * @rule: a pointer to a rule
-+ * @keyring: name of the keyring to match against the measure rule
-+ * @cred: a pointer to a credentials structure for user validation
-+ *
-+ * Returns true if keyring matches one in the rule, false otherwise.
-+ */
-+static bool ima_match_keyring(struct ima_rule_entry *rule,
-+			      const char *keyring, const struct cred *cred)
-+{
-+	char *keyrings, *next_keyring, *keyrings_ptr;
-+	bool matched = false;
-+
-+	if ((rule->flags & IMA_UID) && !rule->uid_op(cred->uid, rule->uid))
-+		return false;
-+
-+	if (!rule->keyrings)
-+		return true;
-+
-+	if (!keyring)
-+		return false;
-+
-+	keyrings = kstrdup(rule->keyrings, GFP_KERNEL);
-+	if (!keyrings)
-+		return false;
-+
-+	/*
-+	 * "keyrings=" is specified in the policy in the format below:
-+	 * keyrings=.builtin_trusted_keys|.ima|.evm
-+	 */
-+	keyrings_ptr = keyrings;
-+	while ((next_keyring = strsep(&keyrings_ptr, "|")) != NULL) {
-+		if (!strcmp(next_keyring, keyring)) {
-+			matched = true;
-+			break;
-+		}
++TPMKey ::= SEQUENCE {
++	type		OBJECT IDENTIFIER ({tpmkey_type}),
++	emptyAuth	[0] EXPLICIT BOOLEAN OPTIONAL,
++	policy		[1] EXPLICIT TPMPolicySequence OPTIONAL,
++	secret		[2] EXPLICIT OCTET STRING OPTIONAL,
++	parent		INTEGER ({tpmkey_parent}),
++	pubkey		OCTET STRING ({tpmkey_pub}),
++	privkey		OCTET STRING ({tpmkey_priv})
 +	}
 +
-+	kfree(keyrings);
++TPMPolicySequence ::= SEQUENCE OF TPMPolicy
 +
-+	return matched;
++TPMPolicy ::= SEQUENCE {
++	commandCode		[0] EXPLICIT INTEGER,
++	commandPolicy		[1] EXPLICIT OCTET STRING
++	}
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index d2c5ec1e040b..d744a0d1cb89 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -991,7 +991,7 @@ static int trusted_instantiate(struct key *key,
+ 		goto out;
+ 	}
+ 
+-	if (!options->keyhandle) {
++	if (!options->keyhandle && !tpm2) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index 08ec7f48f01d..cf10fea5410a 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -4,6 +4,8 @@
+  * Copyright (C) 2014 Intel Corporation
+  */
+ 
++#include <linux/asn1_encoder.h>
++#include <linux/oid_registry.h>
+ #include <linux/string.h>
+ #include <linux/err.h>
+ #include <linux/tpm.h>
+@@ -12,6 +14,10 @@
+ #include <keys/trusted-type.h>
+ #include <keys/trusted_tpm.h>
+ 
++#include <asm/unaligned.h>
++
++#include "tpm2key.asn1.h"
++
+ static struct tpm2_hash tpm2_hash_map[] = {
+ 	{HASH_ALGO_SHA1, TPM_ALG_SHA1},
+ 	{HASH_ALGO_SHA256, TPM_ALG_SHA256},
+@@ -20,6 +26,160 @@ static struct tpm2_hash tpm2_hash_map[] = {
+ 	{HASH_ALGO_SM3_256, TPM_ALG_SM3_256},
+ };
+ 
++static u32 tpm2key_oid[] = { 2,23,133,10,1,5 };
++
++static int tpm2_key_encode(struct trusted_key_payload *payload,
++			   struct trusted_key_options *options,
++			   u8 *src, u32 len)
++{
++	const int SCRATCH_SIZE = PAGE_SIZE;
++	u8 *scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
++	u8 *work = scratch, *work1;
++	int work_len = SCRATCH_SIZE, work1_len;
++	u8 *priv, *pub;
++	u16 priv_len, pub_len;
++
++	priv_len = get_unaligned_be16(src);
++	src += 2;
++	priv = src;
++	src += priv_len;
++	pub_len = get_unaligned_be16(src);
++	src += 2;
++	pub = src;
++
++	if (!scratch)
++		return -ENOMEM;
++
++	asn1_encode_oid(&work, &work_len, tpm2key_oid,
++			asn1_oid_len(tpm2key_oid));
++	if (options->blobauth[0] = 0) {
++		unsigned char bool[3], *w = bool;
++		int bool_len = sizeof(bool);
++		/* tag 0 is emptyAuth */
++		if (WARN(asn1_encode_boolean(&w, &bool_len, true) < 0,
++			 "BUG: Boolean failed to encode"))
++			return 0;
++		asn1_encode_tag(&work, &work_len, 0, bool, w - bool);
++	}
++	asn1_encode_integer(&work, &work_len, options->keyhandle);
++	/*
++	 * Assume both octet strings will encode to a 2 byte definite length
++	 *
++	 * Note: For a well behaved TPM, this warning should never
++	 * trigger, so if it does there's something nefarious going on
++	 */
++	if (WARN(work - scratch + pub_len + priv_len + 8 > SCRATCH_SIZE,
++		 "BUG: scratch buffer is too small"))
++		return 0;
++	asn1_encode_octet_string(&work, &work_len, pub, pub_len);
++	asn1_encode_octet_string(&work, &work_len, priv, priv_len);
++
++	work1 = payload->blob;
++	work1_len = MAX_BLOB_SIZE;
++	if (WARN(asn1_encode_sequence(&work1, &work1_len, scratch,
++				      work - scratch) < 0,
++		 "BUG: ASN.1 encoder failed"))
++		return 0;
++
++	return work1 - payload->blob;
++}
++
++struct tpm2key_context {
++	u32 parent;
++	const u8 *pub;
++	u32 pub_len;
++	const u8 *priv;
++	u32 priv_len;
++};
++
++static int tpm2_key_decode(struct trusted_key_payload *payload,
++			   struct trusted_key_options *options,
++			   u8 **buf)
++{
++	int ret;
++	struct tpm2key_context ctx;
++	u8 *blob;
++
++	ret = asn1_ber_decoder(&tpm2key_decoder, &ctx, payload->blob,
++			       payload->blob_len);
++	if (ret < 0)
++		return ret;
++
++	if (ctx.priv_len + ctx.pub_len > MAX_BLOB_SIZE)
++		return -EINVAL;
++
++	blob = kmalloc(ctx.priv_len + ctx.pub_len + 4, GFP_KERNEL);
++	if (!blob)
++		return -ENOMEM;
++
++	*buf = blob;
++	options->keyhandle = ctx.parent;
++	put_unaligned_be16(ctx.priv_len, blob);
++	blob += 2;
++	memcpy(blob, ctx.priv, ctx.priv_len);
++	blob += ctx.priv_len;
++	put_unaligned_be16(ctx.pub_len, blob);
++	blob += 2;
++	memcpy(blob, ctx.pub, ctx.pub_len);
++
++	return 0;
++}
++
++int tpmkey_parent(void *context, size_t hdrlen,
++		  unsigned char tag,
++		  const void *value, size_t vlen)
++{
++	struct tpm2key_context *ctx = context;
++	const u8 *v = value;
++	int i;
++
++	ctx->parent = 0;
++	for (i = 0; i < vlen; i++) {
++		ctx->parent <<= 8;
++		ctx->parent |= v[i];
++	}
++	return 0;
++}
++
++int tpmkey_type(void *context, size_t hdrlen,
++		unsigned char tag,
++		const void *value, size_t vlen)
++{
++	enum OID oid = look_up_OID(value, vlen);
++
++	if (oid != OID_TPMSealedData) {
++		char buffer[50];
++
++		sprint_oid(value, vlen, buffer, sizeof(buffer));
++		pr_debug("OID is \"%s\" which is not TPMSealedData\n",
++			 buffer);
++		return -EINVAL;
++	}
++	return 0;
++}
++
++int tpmkey_pub(void *context, size_t hdrlen,
++	       unsigned char tag,
++	       const void *value, size_t vlen)
++{
++	struct tpm2key_context *ctx = context;
++
++	ctx->pub = value;
++	ctx->pub_len = vlen;
++	return 0;
++}
++
++int tpmkey_priv(void *context, size_t hdrlen,
++		unsigned char tag,
++		const void *value, size_t vlen)
++{
++	struct tpm2key_context *ctx = context;
++
++	ctx->priv = value;
++	ctx->priv_len = vlen;
++	return 0;
 +}
 +
  /**
-  * ima_match_rules - determine whether an inode matches the measure rule.
-  * @rule: a pointer to a rule
-@@ -364,18 +409,23 @@ int ima_lsm_policy_change(struct notifier_block *nb, unsigned long event,
-  * @secid: the secid of the task to be validated
-  * @func: LIM hook identifier
-  * @mask: requested action (MAY_READ | MAY_WRITE | MAY_APPEND | MAY_EXEC)
-+ * @keyring: keyring name to check in policy for KEY_CHECK func
+  * tpm_buf_append_auth() - append TPMS_AUTH_COMMAND to the buffer.
   *
-  * Returns true on rule match, false on failure.
-  */
- static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
- 			    const struct cred *cred, u32 secid,
--			    enum ima_hooks func, int mask)
-+			    enum ima_hooks func, int mask,
-+			    const char *keyring)
- {
- 	int i;
+@@ -79,6 +239,9 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	if (i = ARRAY_SIZE(tpm2_hash_map))
+ 		return -EINVAL;
  
- 	if ((func = KEXEC_CMDLINE) || (func = KEY_CHECK)) {
--		if ((rule->flags & IMA_FUNC) && (rule->func = func))
-+		if ((rule->flags & IMA_FUNC) && (rule->func = func)) {
-+			if (func = KEY_CHECK)
-+				return ima_match_keyring(rule, keyring, cred);
- 			return true;
-+		}
- 		return false;
++	if (!options->keyhandle)
++		return -EINVAL;
++
+ 	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_CREATE);
+ 	if (rc)
+ 		return rc;
+@@ -144,8 +307,10 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 		goto out;
  	}
- 	if ((rule->flags & IMA_FUNC) &&
-@@ -479,6 +529,8 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
-  * @mask: requested action (MAY_READ | MAY_WRITE | MAY_APPEND | MAY_EXEC)
-  * @pcr: set the pcr to extend
-  * @template_desc: the template that should be used for this rule
-+ * @keyring: the keyring name, if given, to be used to check in the policy.
-+ *           keyring can be NULL if func is anything other than KEY_CHECK.
-  *
-  * Measure decision based on func/mask/fsmagic and LSM(subj/obj/type)
-  * conditions.
-@@ -489,7 +541,8 @@ static int get_subaction(struct ima_rule_entry *rule, enum ima_hooks func)
-  */
- int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		     enum ima_hooks func, int mask, int flags, int *pcr,
--		     struct ima_template_desc **template_desc)
-+		     struct ima_template_desc **template_desc,
-+		     const char *keyring)
- {
- 	struct ima_rule_entry *entry;
- 	int action = 0, actmask = flags | (flags << 1);
-@@ -503,7 +556,8 @@ int ima_match_policy(struct inode *inode, const struct cred *cred, u32 secid,
- 		if (!(entry->action & actmask))
- 			continue;
  
--		if (!ima_match_rules(entry, inode, cred, secid, func, mask))
-+		if (!ima_match_rules(entry, inode, cred, secid, func, mask,
-+				     keyring))
- 			continue;
+-	memcpy(payload->blob, &buf.data[TPM_HEADER_SIZE + 4], blob_len);
+-	payload->blob_len = blob_len;
++	payload->blob_len +		tpm2_key_encode(payload, options,
++				&buf.data[TPM_HEADER_SIZE + 4],
++				blob_len);
  
- 		action |= entry->flags & IMA_ACTION_FLAGS;
+ out:
+ 	tpm_buf_destroy(&buf);
+@@ -156,6 +321,8 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 		else
+ 			rc = -EPERM;
+ 	}
++	if (payload->blob_len < 0)
++		return payload->blob_len;
+ 
+ 	return rc;
+ }
+@@ -182,13 +349,23 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
++	u8 *blob;
+ 	int rc;
+ 
+-	private_len = be16_to_cpup((__be16 *) &payload->blob[0]);
++	rc = tpm2_key_decode(payload, options, &blob);
++	if (rc)
++		/* old form */
++		blob = payload->blob;
++
++	/* new format carries keyhandle but old format doesn't */
++	if (!options->keyhandle)
++		return -EINVAL;
++
++	private_len = be16_to_cpup((__be16 *) &blob[0]);
+ 	if (private_len > (payload->blob_len - 2))
+ 		return -E2BIG;
+ 
+-	public_len = be16_to_cpup((__be16 *) &payload->blob[2 + private_len]);
++	public_len = be16_to_cpup((__be16 *) &blob[2 + private_len]);
+ 	blob_len = private_len + public_len + 4;
+ 	if (blob_len > payload->blob_len)
+ 		return -E2BIG;
+@@ -204,7 +381,7 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 			     options->keyauth /* hmac */,
+ 			     TPM_DIGEST_SIZE);
+ 
+-	tpm_buf_append(&buf, payload->blob, blob_len);
++	tpm_buf_append(&buf, blob, blob_len);
+ 
+ 	if (buf.flags & TPM_BUF_OVERFLOW) {
+ 		rc = -E2BIG;
+@@ -217,6 +394,8 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 			(__be32 *) &buf.data[TPM_HEADER_SIZE]);
+ 
+ out:
++	if (blob != payload->blob)
++		kfree(blob);
+ 	tpm_buf_destroy(&buf);
+ 
+ 	if (rc > 0)
 -- 
-2.17.1
+2.16.4
