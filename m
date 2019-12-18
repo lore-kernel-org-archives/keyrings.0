@@ -1,83 +1,89 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 11 Dec 2019 16:47:03 +0000
-Subject: [PATCH v11 2/6] IMA: Add KEY_CHECK func to measure keys
-Message-Id: <20191211164707.4698-3-nramas@linux.microsoft.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Wed, 18 Dec 2019 06:31:41 +0000
+Subject: [PATCH v3 8/9] security: keys: trusted fix tpm2 authorizations
+Message-Id: <20191218063142.23033-9-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <20191211164707.4698-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191211164707.4698-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Measure keys loaded onto any keyring.
+In TPM 1.2 an authorization was a 20 byte number.  The spec actually
+recommended you to hash variable length passwords and use the sha1
+hash as the authorization.  Because the spec doesn't require this
+hashing, the current authorization for trusted keys is a 40 digit hex
+number.  For TPM 2.0 the spec allows the passing in of variable length
+passwords and passphrases directly, so we should allow that in trusted
+keys for ease of use.  Update the 'blobauth' parameter to take this
+into account, so we can now use plain text passwords for the keys.
 
-This patch defines a new IMA policy func namely KEY_CHECK to
-measure keys. Updated ima_match_rules() to check for KEY_CHECK
-and ima_parse_rule() to handle KEY_CHECK.
+so before
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+keyctl add trusted kmk "new 32 blobauth=F572d396fae9206628714fb2ce00f72e94f=
+2258f"
+
+after:
+
+keyctl add trusted kmk "new 32 blobauth=3Dhello keyhandle=81000001"
+
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 ---
- Documentation/ABI/testing/ima_policy | 6 +++++-
- security/integrity/ima/ima.h         | 1 +
- security/integrity/ima/ima_policy.c  | 4 +++-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ include/keys/trusted-type.h               |  1 +
+ security/keys/trusted-keys/trusted_tpm1.c | 24 +++++++++++++++++++-----
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 29aaedf33246..066d32797500 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -29,7 +29,7 @@ Description:
- 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][CREDS_CHECK][FILE_CHECK][MODULE_CHECK]
- 				[FIRMWARE_CHECK]
- 				[KEXEC_KERNEL_CHECK] [KEXEC_INITRAMFS_CHECK]
--				[KEXEC_CMDLINE]
-+				[KEXEC_CMDLINE] [KEY_CHECK]
- 			mask:= [[^]MAY_READ] [[^]MAY_WRITE] [[^]MAY_APPEND]
- 			       [[^]MAY_EXEC]
- 			fsmagic:= hex value
-@@ -113,3 +113,7 @@ Description:
- 		Example of appraise rule allowing modsig appended signatures:
- 
- 			appraise func=KEXEC_KERNEL_CHECK appraise_type=imasig|modsig
-+
-+		Example of measure rule using KEY_CHECK to measure all keys:
-+
-+			measure func=KEY_CHECK
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index df4ca482fb53..fe6c698617bd 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -193,6 +193,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
- 	hook(KEXEC_INITRAMFS_CHECK)	\
- 	hook(POLICY_CHECK)		\
- 	hook(KEXEC_CMDLINE)		\
-+	hook(KEY_CHECK)			\
- 	hook(MAX_CHECK)
- #define __ima_hook_enumify(ENUM)	ENUM,
- 
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index f19a895ad7cd..1525a28fd705 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -373,7 +373,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule, struct inode *inode,
- {
- 	int i;
- 
--	if (func = KEXEC_CMDLINE) {
-+	if ((func = KEXEC_CMDLINE) || (func = KEY_CHECK)) {
- 		if ((rule->flags & IMA_FUNC) && (rule->func = func))
- 			return true;
- 		return false;
-@@ -997,6 +997,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 				entry->func = POLICY_CHECK;
- 			else if (strcmp(args[0].from, "KEXEC_CMDLINE") = 0)
- 				entry->func = KEXEC_CMDLINE;
-+			else if (strcmp(args[0].from, "KEY_CHECK") = 0)
-+				entry->func = KEY_CHECK;
- 			else
- 				result = -EINVAL;
- 			if (!result)
--- 
-2.17.1
+diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+index fc9c13802c06..c117bf598230 100644
+--- a/include/keys/trusted-type.h
++++ b/include/keys/trusted-type.h
+@@ -34,6 +34,7 @@ struct trusted_key_options {
+ 	uint16_t keytype;
+ 	uint32_t keyhandle;
+ 	unsigned char keyauth[TPM_DIGEST_SIZE];
++	uint32_t blobauth_len;
+ 	unsigned char blobauth[TPM_DIGEST_SIZE];
+ 	uint32_t pcrinfo_len;
+ 	unsigned char pcrinfo[MAX_PCRINFO_SIZE];
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trus=
+ted-keys/trusted_tpm1.c
+index 668cbdc675b8..af269f4774de 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -785,12 +785,26 @@ static int getoptions(char *c, struct trusted_key_pay=
+load *pay,
+ 				return -EINVAL;
+ 			break;
+ 		case Opt_blobauth:
+-			if (strlen(args[0].from) !=3D 2 * SHA1_DIGEST_SIZE)
+-				return -EINVAL;
+-			res =3D hex2bin(opt->blobauth, args[0].from,
+-				      SHA1_DIGEST_SIZE);
+-			if (res < 0)
++			/*
++			 * TPM 1.2 authorizations are sha1 hashes
++			 * passed in as hex strings.  TPM 2.0
++			 * authorizations are simple passwords
++			 * (although it can take a hash as well)
++			 */
++			opt->blobauth_len =3D strlen(args[0].from);
++			if (opt->blobauth_len =3D 2 * TPM_DIGEST_SIZE) {
++				res =3D hex2bin(opt->blobauth, args[0].from,
++					      TPM_DIGEST_SIZE);
++				if (res < 0)
++					return -EINVAL;
++				opt->blobauth_len =3D TPM_DIGEST_SIZE;
++			} else if (tpm2 &&
++				   opt->blobauth_len <=3D sizeof(opt->blobauth)) {
++				memcpy(opt->blobauth, args[0].from,
++				       opt->blobauth_len);
++			} else {
+ 				return -EINVAL;
++			}
+ 			break;
+ 		case Opt_migratable:
+ 			if (*args[0].from =3D '0')
+--=20
+2.16.4
