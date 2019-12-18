@@ -1,48 +1,93 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Wed, 11 Dec 2019 18:00:55 +0000
-Subject: Re: [RFC PATCH 0/3] xfstests: test adding filesystem-level fscrypt key via key_id
-Message-Id: <20191211180054.GB82952@gmail.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Wed, 18 Dec 2019 16:44:32 +0000
+Subject: [PATCH v5 0/2] IMA: Deferred measurement of keys
+Message-Id: <20191218164434.2877-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191119223130.228341-1-ebiggers@kernel.org>
- <20191127204536.GA12520@linux.intel.com>
- <20191127225759.GA303989@sol.localdomain>
- <20191211095019.GA7077@linux.intel.com>
-In-Reply-To: <20191211095019.GA7077@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: dhowells@redhat.com, fstests@vger.kernel.org, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org
+To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
+Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Hi Jarkko,
+This patchset extends the previous version[1] by adding support for
+deferred processing of keys.
 
-On Wed, Dec 11, 2019 at 11:50:19AM +0200, Jarkko Sakkinen wrote:
-> On Wed, Nov 27, 2019 at 02:57:59PM -0800, Eric Biggers wrote:
-> > You could manually do what the xfstest does, which is more or less the following
-> > (requires xfs_io patched with https://patchwork.kernel.org/patch/11252795/):
-> 
-> I postpone testing/reviewing this patch up until its depedencies are in
-> the mainline.
-> 
-> I'll add these to my tree as soon as we have addressed a critical bug
-> in tpm_tis:
-> 
-> 1. KEYS: remove CONFIG_KEYS_COMPAT
-> 2. KEYS: asymmetric: return ENOMEM if akcipher_request_alloc() fails
-> 
-> Just mentioning that I haven't forgotten them.
-> 
+With the patchset referenced above, the IMA subsystem supports
+measuring asymmetric keys when the key is created or updated.
+But keys created or updated before a custom IMA policy is loaded
+are currently not measured. This includes keys added to, for instance,
+.builtin_trusted_keys which happens early in the boot process.
 
-xfstests and xfsprogs are developed separately from the kernel, and their
-maintainers don't apply patches that depend on non-mainlined features.  So
-unless there are objections to the kernel patch [1], in a couple weeks I'll
-apply it to the fscrypt tree for 5.6, and then once it's in mainline I'll resend
-the patches for the test.  I've simply sent the test out early as an RFC, in
-case it helps reviewing the kernel patch or in case there are early comments.
+This change adds support for queuing keys created or updated before
+a custom IMA policy is loaded. The queued keys are processed when
+a custom policy is loaded. Keys created or updated after a custom policy
+is loaded are measured immediately (not queued).
 
-Again, while you're certainly welcome to manually test the kernel patch, it's
-more important that we have test coverage of it in xfstests.
+If the kernel is built with both CONFIG_IMA and
+CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE enabled then the IMA policy
+must be applied as a custom policy. Not providing a custom policy
+in the above configuration would result in asymmeteric keys being queued
+until a custom policy is loaded. This is by design.
 
-[1] https://lkml.kernel.org/linux-fscrypt/20191119222447.226853-1-ebiggers@kernel.org/
+[1] https://lore.kernel.org/linux-integrity/20191211164707.4698-1-nramas@linux.microsoft.com/
 
-- Eric
+Testing performed:
+
+  * Booted the kernel with this change.
+  * Added .builtin_trusted_keys in "keyrings=" option in
+    the IMA policy and verified the keys added to this
+    keyring are measured.
+  * Specified only func=KEY_CHECK and not "keyrings=" option,
+    and verified the keys added to builtin_trusted_keys keyring
+    are processed.
+  * Added keys at runtime and verified they are measured
+    if the IMA policy permitted.
+      => For example, added keys to .ima keyring and verified.
+
+Changelog:
+
+  v5
+
+  => Removed temp keys list in ima_process_queued_keys()
+
+  v4
+
+  => Check and set ima_process_keys flag with mutex held.
+
+  v3
+
+  => Defined ima_process_keys flag to be static.
+  => Set ima_process_keys with ima_keys_mutex held.
+  => Added a comment in ima_process_queued_keys() function
+     to state the use of temporary list for keys.
+
+  v2
+
+  => Rebased the changes to v5.5-rc1
+  => Updated function names, variable names, and code comments
+     to be less verbose.
+
+  v1
+
+  => Code cleanup
+
+  v0
+
+  => Based changes on v5.4-rc8
+  => The following patchsets should be applied in that order
+     https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
+     https://lore.kernel.org/linux-integrity/20191204224131.3384-1-nramas@linux.microsoft.com/
+  => Added functions to queue and dequeue keys, and process
+     the queued keys when custom IMA policies are applied.
+
+Lakshmi Ramasubramanian (2):
+  IMA: Define workqueue for early boot key measurements
+  IMA: Call workqueue functions to measure queued keys
+
+ security/integrity/ima/ima.h                 |  15 +++
+ security/integrity/ima/ima_asymmetric_keys.c | 123 +++++++++++++++++++
+ security/integrity/ima/ima_policy.c          |   3 +
+ 3 files changed, 141 insertions(+)
+
+-- 
+2.17.1
