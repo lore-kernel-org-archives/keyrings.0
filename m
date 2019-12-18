@@ -1,77 +1,219 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Wed, 18 Dec 2019 06:31:33 +0000
-Subject: [PATCH v3 0/9] TPM 2.0 trusted keys with attached policy
-Message-Id: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+Date: Wed, 18 Dec 2019 06:31:37 +0000
+Subject: [PATCH v3 4/9] security: keys: trusted: Make sealed key properly interoperable
+Message-Id: <20191218063142.23033-5-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Since the last respin, I've sent the bug fixes separately, since they
-were an artifact of the prior code motion rather than zero day bugs in
-the code and redone the series to keep the existing external policy
-register setting.  This API is still problematic because it doesn't
-scale very well and doesn't interoperate with the in-kernel resource
-manager, but it can be made to work.
+The current implementation appends a migratable flag to the end of a
+key, meaning the format isn't exactly interoperable because the using
+party needs to know to strip this extra byte.  However, all other
+consumers of TPM sealed blobs expect the unseal to return exactly the
+key.  Since TPM2 keys have a key property flag that corresponds to
+migratable, use that flag instead and make the actual key the only
+sealed quantity.  This is secure because the key properties are bound
+to a hash in the private part, so if they're altered the key won't
+load.
 
-I've changed the output format to use the standardised ASN.1 coding
-for TPM2 keys, meaning they should interoperate with userspace TPM2
-key implementations.  Apart from interoperability, another advantage
-of the existing key format is that it carries all parameters like
-parent and hash with it and it is capable of carrying policy
-directives in a way that mean they're tied permanently to the key (no
-having to try to remember what the policy was and reconstruct it from
-userspace).  This actually allows us to support the TPM 1.2 commands
-like pcrinfo easily in 2.0.
+Backwards compatibility is implemented by detecting whether we're
+loading a new format key or not and correctly setting migratable from
+the last byte of old format keys.
 
-Using the TPM2_PolicyPassword trick, this series now combines
-authorization with policy in a flexible way that would allow us to
-move to HMAC based authorizations later for TPM security.  In getting
-passwords to work, I fixed the tpm2 password format in a separate
-patch.  TPM 1.2 only allows fixed length authorizations, but TPM 2.0
-allows for variable length passphrases, so we should support that in
-the keys.
-
-The ASN.1 encoder has been completely reworked to track the lengths of
-all the buffers passing through it and to return an error if we run
-out of space.
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 
 ---
 
-James Bottomley (9):
-  lib: add asn.1 encoder
-  oid_registry: Add TCG defined OIDS for TPM keys
-  security: keys: trusted: use ASN.1 tpm2 key format for the blobs
-  security: keys: trusted: Make sealed key properly interoperable
-  security: keys: trusted: add PCR policy to TPM2 keys
-  security: keys: trusted: add ability to specify arbitrary policy
-  security: keys: trusted: implement counter/timer policy
-  security: keys: trusted fix tpm2 authorizations
-  security: keys: trusted: add password based authorizations to policy
-    keys
+v2: added length checks to untrusted payload
+---
+ include/keys/trusted-type.h               |  1 +
+ include/linux/tpm.h                       |  2 +
+ security/keys/trusted-keys/trusted_tpm2.c | 76 ++++++++++++++++++++++---------
+ 3 files changed, 57 insertions(+), 22 deletions(-)
 
- Documentation/security/keys/trusted-encrypted.rst |  64 +++-
- include/keys/trusted-type.h                       |   7 +-
- include/linux/asn1_encoder.h                      |  24 ++
- include/linux/oid_registry.h                      |   5 +
- include/linux/tpm.h                               |   8 +
- lib/Makefile                                      |   2 +-
- lib/asn1_encoder.c                                | 367 +++++++++++++++++++
- security/keys/Kconfig                             |   2 +
- security/keys/trusted-keys/Makefile               |   2 +-
- security/keys/trusted-keys/tpm2-policy.c          | 420 ++++++++++++++++++++++
- security/keys/trusted-keys/tpm2-policy.h          |  31 ++
- security/keys/trusted-keys/tpm2key.asn1           |  23 ++
- security/keys/trusted-keys/trusted_tpm1.c         |  46 ++-
- security/keys/trusted-keys/trusted_tpm2.c         | 358 ++++++++++++++++--
- 14 files changed, 1325 insertions(+), 34 deletions(-)
- create mode 100644 include/linux/asn1_encoder.h
- create mode 100644 lib/asn1_encoder.c
- create mode 100644 security/keys/trusted-keys/tpm2-policy.c
- create mode 100644 security/keys/trusted-keys/tpm2-policy.h
- create mode 100644 security/keys/trusted-keys/tpm2key.asn1
-
+diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+index a94c03a61d8f..4728e13aada8 100644
+--- a/include/keys/trusted-type.h
++++ b/include/keys/trusted-type.h
+@@ -22,6 +22,7 @@ struct trusted_key_payload {
+ 	unsigned int key_len;
+ 	unsigned int blob_len;
+ 	unsigned char migratable;
++	unsigned char old_format;
+ 	unsigned char key[MAX_KEY_SIZE + 1];
+ 	unsigned char blob[MAX_BLOB_SIZE];
+ };
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 03e9b184411b..cd46ab27baa5 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -297,6 +297,8 @@ struct tpm_buf {
+ };
+ 
+ enum tpm2_object_attributes {
++	TPM2_OA_FIXED_TPM		= BIT(1),
++	TPM2_OA_FIXED_PARENT		= BIT(4),
+ 	TPM2_OA_USER_WITH_AUTH		= BIT(6),
+ };
+ 
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index cf10fea5410a..de83f43d2f7a 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -61,16 +61,17 @@ static int tpm2_key_encode(struct trusted_key_payload *payload,
+ 			return 0;
+ 		asn1_encode_tag(&work, &work_len, 0, bool, w - bool);
+ 	}
+-	asn1_encode_integer(&work, &work_len, options->keyhandle);
+ 	/*
+ 	 * Assume both octet strings will encode to a 2 byte definite length
+ 	 *
+ 	 * Note: For a well behaved TPM, this warning should never
+ 	 * trigger, so if it does there's something nefarious going on
+ 	 */
+-	if (WARN(work - scratch + pub_len + priv_len + 8 > SCRATCH_SIZE,
++	if (WARN(work - scratch + pub_len + priv_len + 14 > SCRATCH_SIZE,
+ 		 "BUG: scratch buffer is too small"))
+-		return 0;
++		return -EINVAL;
++
++	asn1_encode_integer(&work, &work_len, options->keyhandle);
+ 	asn1_encode_octet_string(&work, &work_len, pub, pub_len);
+ 	asn1_encode_octet_string(&work, &work_len, priv, priv_len);
+ 
+@@ -226,6 +227,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	unsigned int blob_len;
+ 	struct tpm_buf buf;
+ 	u32 hash;
++	u32 flags;
+ 	int i;
+ 	int rc;
+ 
+@@ -254,29 +256,30 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 			     TPM_DIGEST_SIZE);
+ 
+ 	/* sensitive */
+-	tpm_buf_append_u16(&buf, 4 + TPM_DIGEST_SIZE + payload->key_len + 1);
++	tpm_buf_append_u16(&buf, 4 + TPM_DIGEST_SIZE + payload->key_len);
+ 
+ 	tpm_buf_append_u16(&buf, TPM_DIGEST_SIZE);
+ 	tpm_buf_append(&buf, options->blobauth, TPM_DIGEST_SIZE);
+-	tpm_buf_append_u16(&buf, payload->key_len + 1);
++	tpm_buf_append_u16(&buf, payload->key_len);
+ 	tpm_buf_append(&buf, payload->key, payload->key_len);
+-	tpm_buf_append_u8(&buf, payload->migratable);
+ 
+ 	/* public */
+ 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
+ 	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
+ 	tpm_buf_append_u16(&buf, hash);
+ 
++	/* key properties */
++	flags = 0;
++	flags |= options->policydigest_len ? 0 : TPM2_OA_USER_WITH_AUTH;
++	flags |= payload->migratable ? (TPM2_OA_FIXED_TPM |
++					TPM2_OA_FIXED_PARENT) : 0;
++	tpm_buf_append_u32(&buf, flags);
++
+ 	/* policy */
+-	if (options->policydigest_len) {
+-		tpm_buf_append_u32(&buf, 0);
+-		tpm_buf_append_u16(&buf, options->policydigest_len);
++	tpm_buf_append_u16(&buf, options->policydigest_len);
++	if (options->policydigest_len)
+ 		tpm_buf_append(&buf, options->policydigest,
+ 			       options->policydigest_len);
+-	} else {
+-		tpm_buf_append_u32(&buf, TPM2_OA_USER_WITH_AUTH);
+-		tpm_buf_append_u16(&buf, 0);
+-	}
+ 
+ 	/* public parameters */
+ 	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
+@@ -349,23 +352,42 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
+-	u8 *blob;
++	u8 *blob, *pub;
+ 	int rc;
++	u32 attrs;
+ 
+ 	rc = tpm2_key_decode(payload, options, &blob);
+-	if (rc)
++	if (rc) {
+ 		/* old form */
+ 		blob = payload->blob;
++		payload->old_format = 1;
++	}
+ 
+ 	/* new format carries keyhandle but old format doesn't */
+ 	if (!options->keyhandle)
+ 		return -EINVAL;
+ 
+-	private_len = be16_to_cpup((__be16 *) &blob[0]);
+-	if (private_len > (payload->blob_len - 2))
++	/* must be big enough for at least the two be16 size counts */
++	if (payload->blob_len < 4)
++		return -EINVAL;
++	private_len = get_unaligned_be16(blob);
++	/* must be big enough for following public_len */
++	if (private_len + 2 + 2 > (payload->blob_len))
+ 		return -E2BIG;
+ 
+-	public_len = be16_to_cpup((__be16 *) &blob[2 + private_len]);
++	public_len = get_unaligned_be16(blob + 2 + private_len);
++	if (private_len + 2 + public_len + 2 > payload->blob_len)
++		return -E2BIG;
++
++	pub = blob + 2 + private_len + 2;
++	/* key attributes are always at offset 4 */
++	attrs = get_unaligned_be32(pub + 4);
++	if ((attrs & (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT)) =
++	    (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT))
++		payload->migratable = 0;
++	else
++		payload->migratable = 1;
++
+ 	blob_len = private_len + public_len + 4;
+ 	if (blob_len > payload->blob_len)
+ 		return -E2BIG;
+@@ -446,7 +468,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 	if (!rc) {
+ 		data_len = be16_to_cpup(
+ 			(__be16 *) &buf.data[TPM_HEADER_SIZE + 4]);
+-		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE + 1) {
++		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE) {
+ 			rc = -EFAULT;
+ 			goto out;
+ 		}
+@@ -457,9 +479,19 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		}
+ 		data = &buf.data[TPM_HEADER_SIZE + 6];
+ 
+-		memcpy(payload->key, data, data_len - 1);
+-		payload->key_len = data_len - 1;
+-		payload->migratable = data[data_len - 1];
++		if (payload->old_format) {
++			/* migratable flag is at the end of the key */
++			memcpy(payload->key, data, data_len - 1);
++			payload->key_len = data_len - 1;
++			payload->migratable = data[data_len - 1];
++		} else {
++			/*
++			 * migratable flag already collected from key
++			 * attributes
++			 */
++			memcpy(payload->key, data, data_len);
++			payload->key_len = data_len;
++		}
+ 	}
+ 
+ out:
 -- 
 2.16.4
