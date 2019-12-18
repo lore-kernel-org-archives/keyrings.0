@@ -1,71 +1,184 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 11 Dec 2019 18:51:16 +0000
-Subject: [PATCH v2 2/2] IMA: Call workqueue functions to measure queued keys
-Message-Id: <20191211185116.2740-3-nramas@linux.microsoft.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Wed, 18 Dec 2019 06:31:39 +0000
+Subject: [PATCH v3 6/9] security: keys: trusted: add ability to specify arbitrary policy
+Message-Id: <20191218063142.23033-7-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191211185116.2740-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191211185116.2740-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Measuring keys requires a custom IMA policy to be loaded.
-Keys should be queued for measurement if a custom IMA policy
-is not yet loaded. Keys queued for measurement, if any, should be
-processed when a custom IMA policy is loaded.
+This patch adds a policy= argument to key creation.  The policy is the
+standard tss policymaker format and each separate policy line must
+have a newline after it.
 
-This patch updates the IMA hook function ima_post_key_create_or_update()
-to queue the key if a custom IMA policy has not yet been loaded.
-And, ima_update_policy() function, which is called when
-a custom IMA policy is loaded, is updated to process queued keys.
+Thus to construct a policy requiring authorized value and pcr 16
+locking using a sha256 hash, the policy (policy.txt) file would be two
+lines:
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+0000017F00000001000B03000001303095B49BE85E381E5B20E557E46363EF55B0F43B132C2D8E3DE9AC436656F2
+0000016b
+
+This can be inserted into the key with
+
+keyctl add trusted kmk "new 32 policy=`cat policy.txt` keyhandle=0x81000001 hash=sha256" @u
+
+Note that although a few policies work like this, most require special
+handling which must be added to the kernel policy construction
+routine.
+
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 ---
- security/integrity/ima/ima_asymmetric_keys.c | 8 ++++++++
- security/integrity/ima/ima_policy.c          | 3 +++
- 2 files changed, 11 insertions(+)
+ Documentation/security/keys/trusted-encrypted.rst | 16 ++++++++
+ security/keys/trusted-keys/tpm2-policy.c          | 46 +++++++++++++++++++++++
+ security/keys/trusted-keys/tpm2-policy.h          |  1 +
+ security/keys/trusted-keys/trusted_tpm1.c         | 13 +++++++
+ 4 files changed, 76 insertions(+)
 
-diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
-index ba01e04ec025..61b801ff3747 100644
---- a/security/integrity/ima/ima_asymmetric_keys.c
-+++ b/security/integrity/ima/ima_asymmetric_keys.c
-@@ -140,6 +140,8 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
- 				   const void *payload, size_t payload_len,
- 				   unsigned long flags, bool create)
- {
-+	bool queued = false;
-+
- 	/* Only asymmetric keys are handled by this hook. */
- 	if (key->type != &key_type_asymmetric)
- 		return;
-@@ -147,6 +149,12 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
- 	if (!payload || (payload_len = 0))
- 		return;
+diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
+index 053344c4df5b..b68d3eb73f00 100644
+--- a/Documentation/security/keys/trusted-encrypted.rst
++++ b/Documentation/security/keys/trusted-encrypted.rst
+@@ -76,6 +76,9 @@ Usage::
+        policyhandle= handle to an authorization policy session that defines the
+                      same policy and with the same hash algorithm as was used to
+                      seal the key.
++       policy=       specify an arbitrary set of policies.  These must
++                     be in policymaker format with each separate
++                     policy line newline terminated.
  
-+	if (!ima_process_keys)
-+		queued = ima_queue_key(keyring, payload, payload_len);
+ "keyctl print" returns an ascii hex copy of the sealed key, which is in standard
+ TPM_STORED_DATA format.  The key length for new keys are always in bytes.
+@@ -168,6 +171,19 @@ zeros (the value of PCR 16)::
+     $ dd if=/dev/zero bs=1 count  2>/dev/null|sha1sum
+     6768033e216468247bd031a0a2d9876d79818f8f
+ 
++You can also specify arbitrary policy in policymaker format, so a two
++value policy (the pcr example above and authvalue) would look like
++this in policymaker format::
 +
-+	if (queued)
-+		return;
++    0000017F000000010004030000016768033e216468247bd031a0a2d9876d79818f8f
++    0000016b
 +
- 	/*
- 	 * keyring->description points to the name of the keyring
- 	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index a4dde9d575b2..04b9c6c555de 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -807,6 +807,9 @@ void ima_update_policy(void)
- 		kfree(arch_policy_entry);
++This can be placed in a file (say policy.txt) and then added to the key as::
++
++    $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha1 policy=`cat policy.txt`" @u
++
++The newlines in the file policy.txt will be automatically processed.
++
+ Reseal a trusted key under new pcr values::
+ 
+     $ keyctl update 268728824 "update pcrinfo=`cat pcr.blob`"
+diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
+index 8afbe90eed1b..2606d3bb5b82 100644
+--- a/security/keys/trusted-keys/tpm2-policy.c
++++ b/security/keys/trusted-keys/tpm2-policy.c
+@@ -339,3 +339,49 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
  	}
- 	ima_update_policy_flag();
-+
-+	/* Custom IMA policy has been loaded */
-+	ima_process_queued_keys();
+ 	return 0;
  }
++
++int tpm2_parse_policies(struct tpm2_policies **ppols, char *str)
++{
++	struct tpm2_policies *pols;
++	char *p;
++	u8 *ptr;
++	int i = 0, left = PAGE_SIZE, res;
++
++	pols = kmalloc(left, GFP_KERNEL);
++	if (!pols)
++		return -ENOMEM;
++
++	ptr = (u8 *)(pols + 1);
++	left -= ptr - (u8 *)pols;
++
++	while ((p = strsep(&str, "\n"))) {
++		if (*p = '\0' || *p = '\n')
++			continue;
++		pols->len[i] = strlen(p)/2;
++		if (pols->len[i] > left) {
++			res = -E2BIG;
++			goto err;
++		}
++		res = hex2bin(ptr, p, pols->len[i]);
++		if (res)
++			goto err;
++		/* get command code and skip past */
++		pols->code[i] = get_unaligned_be32(ptr);
++		pols->policies[i] = ptr + 4;
++		ptr += pols->len[i];
++		left -= pols->len[i];
++		pols->len[i] -= 4;
++		/*
++		 * FIXME: this does leave the code embedded in dead
++		 * regions of the memory, but it's easier than
++		 * hexdumping to a temporary or copying over
++		 */
++		i++;
++	}
++	pols->count = i;
++	*ppols = pols;
++	return 0;
++ err:
++	kfree(pols);
++	return res;
++}
+diff --git a/security/keys/trusted-keys/tpm2-policy.h b/security/keys/trusted-keys/tpm2-policy.h
+index 152c948743f3..cb804a544ced 100644
+--- a/security/keys/trusted-keys/tpm2-policy.h
++++ b/security/keys/trusted-keys/tpm2-policy.h
+@@ -28,3 +28,4 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols, u32 hash,
+ int tpm2_encode_policy(struct tpm2_policies *pols, u8 **data, u32 *len);
+ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
+ 			    u32 *handle);
++int tpm2_parse_policies(struct tpm2_policies **ppols, char *str);
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index b1b487c2c72e..668cbdc675b8 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -29,6 +29,8 @@
  
- /* Keep the enumeration in sync with the policy_tokens! */
+ #include <keys/trusted_tpm.h>
+ 
++#include "tpm2-policy.h"
++
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
+ static struct tpm_chip *chip;
+@@ -709,6 +711,7 @@ enum {
+ 	Opt_hash,
+ 	Opt_policydigest,
+ 	Opt_policyhandle,
++	Opt_policy,
+ };
+ 
+ static const match_table_t key_tokens = {
+@@ -724,6 +727,7 @@ static const match_table_t key_tokens = {
+ 	{Opt_hash, "hash=%s"},
+ 	{Opt_policydigest, "policydigest=%s"},
+ 	{Opt_policyhandle, "policyhandle=%s"},
++	{Opt_policy, "policy=%s"},
+ 	{Opt_err, NULL}
+ };
+ 
+@@ -834,6 +838,15 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 				return -EINVAL;
+ 			opt->policyhandle = handle;
+ 			break;
++		case Opt_policy:
++			if (pay->policies)
++				return -EINVAL;
++			if (!tpm2)
++				return -EINVAL;
++			res = tpm2_parse_policies(&pay->policies, args[0].from);
++			if (res)
++				return res;
++			break;
+ 		default:
+ 			return -EINVAL;
+ 		}
 -- 
-2.17.1
+2.16.4
