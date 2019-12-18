@@ -1,7 +1,7 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Wed, 18 Dec 2019 06:31:40 +0000
-Subject: [PATCH v3 7/9] security: keys: trusted: implement counter/timer policy
-Message-Id: <20191218063142.23033-8-James.Bottomley@HansenPartnership.com>
+Date: Wed, 18 Dec 2019 06:31:34 +0000
+Subject: [PATCH v3 1/9] lib: add asn.1 encoder
+Message-Id: <20191218063142.23033-2-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,95 +11,443 @@ In-Reply-To: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-This is actually a generic policy allowing a range of comparisons
-against any value set in the TPM Clock, which includes things like the
-reset count, a monotonic millisecond count and the restart count.  The
-most useful comparison is against the millisecond count for expiring
-keys.  However, you have to remember that currently Linux doesn't try
-to sync the epoch timer with the TPM, so the expiration is actually
-measured in how long the TPM itself has been powered on ... the TPM
-timer doesn't count while the system is powered down.  The millisecond
-counter is a u64 quantity found at offset 8 in the timer structure,
-and the <= comparision operand is 9, so a policy set to expire after the
-TPM has been up for 100 seconds would look like
+We have a need in the TPM trusted keys to return the ASN.1 form of the
+TPM key blob so it can be operated on by tools outside of the kernel.
+To do that, we have to be able to read and write the key format.  The
+current ASN.1 decoder does fine for reading, but we need pieces of an
+ASN.1 encoder to return the key blob.
 
-0000016d00000000000f424000080009
-
-Where 0x16d is the counter timer policy code and 0xf4240 is 100 000 in
-hex.
+The current implementation only encodes the ASN.1 bits we actually need.
 
 Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
----
- Documentation/security/keys/trusted-encrypted.rst | 29 +++++++++++++++++++++++
- security/keys/trusted-keys/tpm2-policy.c          | 19 +++++++++++++++
- 2 files changed, 48 insertions(+)
 
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index b68d3eb73f00..53a6196c7df9 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -241,3 +241,32 @@ about the usage can be found in the file
- Another new format 'enc32' has been defined in order to support encrypted keys
- with payload size of 32 bytes. This will initially be used for nvdimm security
- but may expand to other usages that require 32 bytes payload.
+---
+
+v2: updated API to use indefinite length, and made symbol exports gpl
+v3: add data length error handling
+---
+ include/linux/asn1_encoder.h |  24 +++
+ lib/Makefile                 |   2 +-
+ lib/asn1_encoder.c           | 367 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 392 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
+
+diff --git a/include/linux/asn1_encoder.h b/include/linux/asn1_encoder.h
+new file mode 100644
+index 000000000000..f4afe5ad79a8
+--- /dev/null
++++ b/include/linux/asn1_encoder.h
+@@ -0,0 +1,24 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
 +
-+Appendix
-+--------
++#ifndef _LINUX_ASN1_ENCODER_H
++#define _LINUX_ASN1_ENCODER_H
 +
-+TPM 2.0 Policies
-+----------------
++#include <linux/types.h>
++#include <linux/asn1.h>
++#include <linux/asn1_ber_bytecode.h>
++#include <linux/bug.h>
 +
-+The current TPM supports PCR lock policies as documented above and
-+CounterTimer policies which can be used to create expiring keys.  One
-+caveat with expiring keys is that the TPM millisecond counter does not
-+update while a system is powered off and Linux does not sync the TPM
-+millisecond count with its internal clock, so the best you can expire
-+in is in terms of how long any given TPM has been powered on.  (FIXME:
-+Linux should simply update the millisecond clock to the current number
-+of seconds past the epoch on boot).
++#define asn1_oid_len(oid) (sizeof(oid)/sizeof(u32))
++int asn1_encode_integer(unsigned char **_data, int *data_len,
++			s64 integer);
++int asn1_encode_oid(unsigned char **_data, int *data_len,
++		    u32 oid[], int oid_len);
++int asn1_encode_tag(unsigned char **data, int *data_len, u32 tag,
++		    const unsigned char *string, int len);
++int asn1_encode_octet_string(unsigned char **data, int *data_len,
++			     const unsigned char *string, u32 len);
++int asn1_encode_sequence(unsigned char **data, int *data_len,
++			 const unsigned char *seq, int len);
++int asn1_encode_boolean(unsigned char **data, int *data_len, bool val);
 +
-+A CounterTimer policy is expressed in terms of length and offset
-+against the TPM clock structure (TPMS_TIME_INFO), which looks like the
-+packed structure::
++#endif
+diff --git a/lib/Makefile b/lib/Makefile
+index c2f0e2a4e4e8..515b35f92c3c 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -233,7 +233,7 @@ obj-$(CONFIG_INTERVAL_TREE_TEST) += interval_tree_test.o
+ 
+ obj-$(CONFIG_PERCPU_TEST) += percpu_test.o
+ 
+-obj-$(CONFIG_ASN1) += asn1_decoder.o
++obj-$(CONFIG_ASN1) += asn1_decoder.o asn1_encoder.o
+ 
+ obj-$(CONFIG_FONT_SUPPORT) += fonts/
+ 
+diff --git a/lib/asn1_encoder.c b/lib/asn1_encoder.c
+new file mode 100644
+index 000000000000..edce59d2ede9
+--- /dev/null
++++ b/lib/asn1_encoder.c
+@@ -0,0 +1,367 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Simple encoder primitives for ASN.1 BER/DER/CER
++ *
++ * Copyright (C) 2019 James.Bottomley@HansenPartnership.com
++ */
 +
-+    struct tpms_time_info {
-+            u64 uptime;       /* time in ms since last start or reset */
-+	    u64 clock;        /* cumulative uptime in ms */
-+	    u32 resetcount;   /* numer of times the TPM has been reset */
-+	    u32 restartcount; /* number of times the TPM has been restarted */
-+	    u8  safe          /* time was safely loaded from NVRam */
-+    };
++#include <linux/asn1_encoder.h>
++#include <linux/bug.h>
++#include <linux/string.h>
++#include <linux/module.h>
 +
-+The usual comparison for expiring keys is against clock, at offset 8.
-diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 2606d3bb5b82..5698475b30cb 100644
---- a/security/keys/trusted-keys/tpm2-policy.c
-+++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -323,6 +323,25 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 			tpm_buf_append(&buf, pols->policies[i],
- 				       pols->len[i] - pols->hash_size);
- 			break;
-+		case TPM2_CC_POLICY_COUNTER_TIMER: {
++/**
++ * asn1_encode_integer - encode positive integer to ASN.1
++ * @_data: pointer to the pointer to the data
++ * @data_len: length of buffer remaining
++ * @integer: integer to be encoded
++ *
++ * This is a simplified encoder: it only currently does
++ * positive integers, but it should be simple enough to add the
++ * negative case if a use comes along.
++ */
++int asn1_encode_integer(unsigned char **_data, int *data_len, s64 integer)
++{
++	unsigned char *data = *_data, *d = &data[2];
++	int i;
++	bool found = false;
++
++	if (WARN(integer < 0,
++		 "BUG: integer encode only supports positive integers"))
++		return -EINVAL;
++
++	if (*data_len < 3)
++		return -EINVAL;
++
++	*data_len -= 2;
++
++	data[0] = _tag(UNIV, PRIM, INT);
++	if (integer = 0) {
++		*d++ = 0;
++		goto out;
++	}
++	for (i = sizeof(integer); i > 0 ; i--) {
++		int byte = integer >> (8*(i-1));
++
++		if (!found && byte = 0)
++			continue;
++		/*
++		 * for a positive number the first byte must have bit
++		 * 7 clear in two's complement (otherwise it's a
++		 * negative number) so prepend a leading zero if
++		 * that's not the case
++		 */
++		if (!found && (byte & 0x80)) {
 +			/*
-+			 * the format of this is the last two u16
-+			 * quantities are the offset and operation
-+			 * respectively.  The rest is operandB which
-+			 * must be zero padded in a hash digest
++			 * no check needed here, we already know we
++			 * have len >= 1
 +			 */
-+			u16 opb_len = pols->len[i] - 4;
-+
-+			if (opb_len > pols->hash_size)
-+				return -EINVAL;
-+
-+			tpm_buf_append_u16(&buf, opb_len);
-+			tpm_buf_append(&buf, pols->policies[i], opb_len);
-+			/* offset and operand*/
-+			tpm_buf_append(&buf, pols->policies[i] + opb_len, 4);
-+			failure = "Counter Timer";
-+			break;
++			*d++ = 0;
++			(*data_len)--;
 +		}
- 		default:
- 			failure = "unknown policy";
- 			break;
++		found = true;
++		if (*data_len = 0)
++			return -EINVAL;
++		*d++ = byte;
++		(*data_len)--;
++	}
++ out:
++	data[1] = d - data - 2;
++	*_data = d;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_integer);
++
++/* calculate the base 128 digit values setting the top bit of the first octet */
++static int asn1_encode_oid_digit(unsigned char **_data, int *data_len, u32 oid)
++{
++	int start = 7 + 7 + 7 + 7;
++	unsigned char *data = *_data;
++	int ret = 0;
++
++	if (*data_len < 1)
++		return -EINVAL;
++
++	/* quick case */
++	if (oid = 0) {
++		*data++ = 0x80;
++		(*data_len)--;
++		goto out;
++	}
++
++	while (oid >> start = 0)
++		start -= 7;
++
++	while (start > 0 && *data_len > 0) {
++		u8 byte;
++
++		byte = oid >> start;
++		oid = oid - (byte << start);
++		start -= 7;
++		byte |= 0x80;
++		*data++ = byte;
++		(*data_len)--;
++	}
++	if (*data_len > 0) {
++		*data++ = oid;
++		(*data_len)--;
++	} else {
++		ret = -EINVAL;
++	}
++
++ out:
++	*_data = data;
++	return ret;
++}
++
++/**
++ * asn1_encode_oid - encode an oid to ASN.1
++ * @_data: position to begin encoding at
++ * @data_len: remaining bytes in @_data
++ * @oid: array of oids
++ * @oid_len: length of oid array
++ *
++ * this encodes an OID up to ASN.1 when presented as an array of OID values
++ */
++int asn1_encode_oid(unsigned char **_data, int *data_len,
++		    u32 oid[], int oid_len)
++{
++	unsigned char *data = *_data;
++	unsigned char *d = data + 2;
++	int i, ret;
++
++	if (WARN(oid_len < 2, "OID must have at least two elements"))
++		return -EINVAL;
++	if (WARN(oid_len > 32, "OID is too large"))
++		return -EINVAL;
++	if (*data_len < 2)
++		return -EINVAL;
++
++	data[0] = _tag(UNIV, PRIM, OID);
++	*d++ = oid[0] * 40 + oid[1];
++	*data_len -= 2;
++	ret = 0;
++	for (i = 2; i < oid_len; i++) {
++		ret = asn1_encode_oid_digit(&d, data_len, oid[i]);
++		if (ret < 0)
++			return ret;
++	}
++	data[1] = d - data - 2;
++	*_data = d;
++	return ret;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_oid);
++
++static int asn1_encode_length(unsigned char **data, int *data_len, int len)
++{
++	if (*data_len < 1)
++		return -EINVAL;
++	if (len < 0) {
++		*((*data)++) = ASN1_INDEFINITE_LENGTH;
++		(*data_len)--;
++		return 0;
++	}
++	if (len <= 0x7f) {
++		*((*data)++) = len;
++		(*data_len)--;
++		return 0;
++	}
++
++	if (*data_len < 2)
++		return -EINVAL;
++	if (len <= 0xff) {
++		*((*data)++) = 0x81;
++		*((*data)++) = len & 0xff;
++		*data_len -= 2;
++		return 0;
++	}
++
++	if (*data_len < 3)
++		return -EINVAL;
++	if (len <= 0xffff) {
++		*((*data)++) = 0x82;
++		*((*data)++) = (len >> 8) & 0xff;
++		*((*data)++) = len & 0xff;
++		*data_len -= 3;
++		return 0;
++	}
++
++	if (WARN(len > 0xffffff, "ASN.1 length can't be > 0xffffff"))
++		return -EINVAL;
++
++	if (*data_len < 4)
++		return -EINVAL;
++	*((*data)++) = 0x83;
++	*((*data)++) = (len >> 16) & 0xff;
++	*((*data)++) = (len >> 8) & 0xff;
++	*((*data)++) = len & 0xff;
++	*data_len -= 4;
++
++	return 0;
++}
++
++/**
++ * asn1_encode_tag - add a tag for optional or explicit value
++ * @data: pointer to place tag at
++ * @data_len: remaining size of @data buffer
++ * @tag: tag to be placed
++ * @string: the data to be tagged
++ * @len: the length of the data to be tagged
++ *
++ * Note this currently only handles short form tags < 31.  To encode
++ * in place pass a NULL @string and -1 for @len; all this will do is
++ * add an indefinite length tag and update the data pointer to the
++ * place where the tag contents should be placed.  After the data is
++ * placed, repeat the prior statement but now with the known length.
++ * In order to avoid having to keep both before and after pointers,
++ * the repeat expects to be called with @data pointing to where the
++ * first encode placed it.  For the recode case, set @data_len to NULL
++ */
++int asn1_encode_tag(unsigned char **data, int *data_len, u32 tag,
++		    const unsigned char *string, int len)
++{
++	int ret, dummy_len = 2;
++
++	if (WARN(tag > 30, "ASN.1 tag can't be > 30"))
++		return -EINVAL;
++
++	if (!string && WARN(len > 127,
++			    "BUG: recode tag is too big (>127)"))
++		return -EINVAL;
++
++	if (!string && len > 0) {
++		/*
++		 * we're recoding, so move back to the start of the
++		 * tag and install a dummy length because the real
++		 * data_len should be NULL
++		 */
++		*data -= 2;
++		data_len = &dummy_len;
++	}
++
++	if (*data_len < 2)
++		return -EINVAL;
++
++	*((*data)++) = _tagn(CONT, CONS, tag);
++	(*data_len)--;
++	ret = asn1_encode_length(data, data_len, len);
++	if (ret < 0)
++		return ret;
++	if (!string)
++		return 0;
++	if (*data_len < len)
++		return -EINVAL;
++	memcpy(*data, string, len);
++	*data += len;
++	*data_len -= len;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_tag);
++
++/**
++ * asn1_encode_octet_string - encode an ASN.1 OCTET STRING
++ * @data: pointer to encode at
++ * @data_len: bytes remaining in @data buffer
++ * @string: string to be encoded
++ * @len: length of string
++ *
++ * Note ASN.1 octet strings may contain zeros, so the length is obligatory.
++ */
++int asn1_encode_octet_string(unsigned char **data, int *data_len,
++			     const unsigned char *string, u32 len)
++{
++	int ret;
++
++	if (*data_len < 2)
++		return -EINVAL;
++
++	*((*data)++) = _tag(UNIV, PRIM, OTS);
++	(*data_len)--;
++	ret = asn1_encode_length(data, data_len, len);
++	if (ret)
++		return ret;
++
++	if (*data_len < len)
++		return -EINVAL;
++
++	memcpy(*data, string, len);
++	*data += len;
++	*data_len -= len;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_octet_string);
++
++/**
++ * asn1_encode_sequence - wrap a byte stream in an ASN.1 SEQUENCE
++ * @data: pointer to encode at
++ * @data_len: remaining size of @data pointer
++ * @seq: data to be encoded as a sequence
++ * @len: length of the data to be encoded as a sequence
++ *
++ * Fill in a sequence.  To encode in place, pass NULL for @seq and -1
++ * for @len; then call again once the length is known (still with NULL
++ * for @seq). In order to avoid having to keep both before and after
++ * pointers, the repeat expects to be called with @data pointing to
++ * where the first encode placed it.  The recode case should pass NULL
++ * to @data_size
++ */
++int asn1_encode_sequence(unsigned char **data, int *data_len,
++			 const unsigned char *seq, int len)
++{
++	int ret, dummy_len = 2;
++
++	if (!seq && WARN(len > 127,
++			 "BUG: recode sequence is too big (>127)"))
++		return -EINVAL;
++	if (!seq && len >= 0) {
++		/*
++		 * we're recoding, so move back to the start of the
++		 * sequence and install a dummy length because the
++		 * real length should be NULL
++		 */
++		*data -= 2;
++		data_len = &dummy_len;
++	}
++
++	if (*data_len < 2)
++		return -EINVAL;
++
++	*((*data)++) = _tag(UNIV, CONS, SEQ);
++	(*data_len)--;
++	ret = asn1_encode_length(data, data_len, len);
++	if (ret)
++		return ret;
++	if (!seq)
++		return 0;
++
++	if (*data_len < len)
++		return -EINVAL;
++
++	memcpy(*data, seq, len);
++	*data += len;
++	*data_len -= len;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_sequence);
++
++/**
++ * asn1_encode_boolean - encode a boolean value to ASN.1
++ * @data: pointer to encode at
++ * @data_len: bytes remaining in @data buffer
++ * @val: the boolean true/false value
++ */
++int asn1_encode_boolean(unsigned char **data, int *data_len, bool val)
++{
++	if (*data_len < 2)
++		return -EINVAL;
++	*((*data)++) = _tag(UNIV, PRIM, BOOL);
++	asn1_encode_length(data, data_len, 1);
++	(*data_len)--;
++	*((*data)++) = val ? 1 : 0;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_boolean);
 -- 
 2.16.4
