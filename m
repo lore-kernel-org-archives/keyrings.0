@@ -1,132 +1,85 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Tue, 24 Dec 2019 18:01:14 +0000
-Subject: [PATCH v2] IMA: Defined timer to free queued keys
-Message-Id: <20191224180114.2772-1-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Tue, 24 Dec 2019 20:35:04 +0000
+Subject: Re: [PATCH v2] IMA: Defined timer to free queued keys
+Message-Id: <1577219704.4487.2.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
+References: <20191224180114.2772-1-nramas@linux.microsoft.com>
+In-Reply-To: <20191224180114.2772-1-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
 Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-keys queued for measurement should be freed if a custom IMA policy
-was not loaded. Otherwise, the keys will remain queued forever
-consuming kernel memory.
-
-This patch defines a timer to handle the above scenario. The timer
-is setup to expire 5 minutes after IMA initialization is completed.
-
-If a custom IMA policy is loaded before the timer expires, the timer
-is removed and any queued keys are processed for measurement.
-But if a custom policy was not loaded, on timer expiration
-queued keys are just freed.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima.h                 |  2 +
- security/integrity/ima/ima_asymmetric_keys.c | 42 ++++++++++++++++++--
- security/integrity/ima/ima_init.c            |  8 +++-
- 3 files changed, 48 insertions(+), 4 deletions(-)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 97f8a4078483..c483215a9ee5 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -216,8 +216,10 @@ struct ima_key_entry {
- 	char *keyring_name;
- };
- void ima_process_queued_keys(void);
-+void ima_init_key_queue(void);
- #else
- static inline void ima_process_queued_keys(void) {}
-+static inline void ima_init_key_queue(void) {}
- #endif /* CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE */
- 
- /* LIM API function definitions */
-diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
-index 4124f10ff0c2..9ea2233c911a 100644
---- a/security/integrity/ima/ima_asymmetric_keys.c
-+++ b/security/integrity/ima/ima_asymmetric_keys.c
-@@ -11,6 +11,7 @@
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+#include <linux/timer.h>
- #include <keys/asymmetric-type.h>
- #include "ima.h"
- 
-@@ -26,6 +27,36 @@ static bool ima_process_keys;
- static DEFINE_MUTEX(ima_keys_mutex);
- static LIST_HEAD(ima_keys);
- 
-+/*
-+ * If custom IMA policy is not loaded then keys queued up
-+ * for measurement should be freed. This timer is used
-+ * for handling this scenario.
-+ */
-+static long ima_key_queue_timeout = 300000; /* 5 Minutes */
-+static struct timer_list ima_key_queue_timer;
-+static bool timer_expired;
-+
-+/*
-+ * This timer callback function frees keys that may still be
-+ * queued up in case custom IMA policy was not loaded.
-+ */
-+static void ima_timer_handler(struct timer_list *timer)
-+{
-+	timer_expired = true;
-+	ima_process_queued_keys();
-+}
-+
-+/*
-+ * This function sets up a timer to free queued keys in case
-+ * custom IMA policy was never loaded.
-+ */
-+void ima_init_key_queue(void)
-+{
-+	timer_setup(&ima_key_queue_timer, ima_timer_handler, 0);
-+	mod_timer(&ima_key_queue_timer,
-+		  jiffies + msecs_to_jiffies(ima_key_queue_timeout));
-+}
-+
- static void ima_free_key_entry(struct ima_key_entry *entry)
- {
- 	if (entry) {
-@@ -120,10 +151,15 @@ void ima_process_queued_keys(void)
- 	if (!process)
- 		return;
- 
-+	del_timer(&ima_key_queue_timer);
-+
- 	list_for_each_entry_safe(entry, tmp, &ima_keys, list) {
--		process_buffer_measurement(entry->payload, entry->payload_len,
--					   entry->keyring_name, KEY_CHECK, 0,
--					   entry->keyring_name);
-+		if (!timer_expired)
-+			process_buffer_measurement(entry->payload,
-+						   entry->payload_len,
-+						   entry->keyring_name,
-+						   KEY_CHECK, 0,
-+						   entry->keyring_name);
- 		list_del(&entry->list);
- 		ima_free_key_entry(entry);
- 	}
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 5d55ade5f3b9..195cb4079b2b 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -131,5 +131,11 @@ int __init ima_init(void)
- 
- 	ima_init_policy();
- 
--	return ima_fs_init();
-+	rc = ima_fs_init();
-+	if (rc != 0)
-+		return rc;
-+
-+	ima_init_key_queue();
-+
-+	return rc;
- }
--- 
-2.17.1
+T24gVHVlLCAyMDE5LTEyLTI0IGF0IDEwOjAxIC0wODAwLCBMYWtzaG1pIFJhbWFzdWJyYW1hbmlh
+biB3cm90ZToKPiBrZXlzIHF1ZXVlZCBmb3IgbWVhc3VyZW1lbnQgc2hvdWxkIGJlIGZyZWVkIGlm
+IGEgY3VzdG9tIElNQSBwb2xpY3kKPiB3YXMgbm90IGxvYWRlZC4gT3RoZXJ3aXNlLCB0aGUga2V5
+cyB3aWxsIHJlbWFpbiBxdWV1ZWQgZm9yZXZlcgo+IGNvbnN1bWluZyBrZXJuZWwgbWVtb3J5Lgo+
+IAo+IFRoaXMgcGF0Y2ggZGVmaW5lcyBhIHRpbWVyIHRvIGhhbmRsZSB0aGUgYWJvdmUgc2NlbmFy
+aW8uIFRoZSB0aW1lcgo+IGlzIHNldHVwIHRvIGV4cGlyZSA1IG1pbnV0ZXMgYWZ0ZXIgSU1BIGlu
+aXRpYWxpemF0aW9uIGlzIGNvbXBsZXRlZC4KPiAKPiBJZiBhIGN1c3RvbSBJTUEgcG9saWN5IGlz
+IGxvYWRlZCBiZWZvcmUgdGhlIHRpbWVyIGV4cGlyZXMsIHRoZSB0aW1lcgo+IGlzIHJlbW92ZWQg
+YW5kIGFueSBxdWV1ZWQga2V5cyBhcmUgcHJvY2Vzc2VkIGZvciBtZWFzdXJlbWVudC4KPiBCdXQg
+aWYgYSBjdXN0b20gcG9saWN5IHdhcyBub3QgbG9hZGVkLCBvbiB0aW1lciBleHBpcmF0aW9uCj4g
+cXVldWVkIGtleXMgYXJlIGp1c3QgZnJlZWQuCj4gCj4gU2lnbmVkLW9mZi1ieTogTGFrc2htaSBS
+YW1hc3VicmFtYW5pYW4gPG5yYW1hc0BsaW51eC5taWNyb3NvZnQuY29tPgoKVGhhbmtzLiDCoFRo
+aXMgcGF0Y2ggaXMgbm93IHF1ZXVlZCBpbiBuZXh0LWludGVncml0eS10ZXN0aW5nLgoKTWltaQoK
+PiAtLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaCAgICAgICAgICAgICAgICAgfCAg
+MiArCj4gIHNlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2FzeW1tZXRyaWNfa2V5cy5jIHwgNDIg
+KysrKysrKysrKysrKysrKysrLS0KPiAgc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfaW5pdC5j
+ICAgICAgICAgICAgfCAgOCArKystCj4gIDMgZmlsZXMgY2hhbmdlZCwgNDggaW5zZXJ0aW9ucygr
+KSwgNCBkZWxldGlvbnMoLSkKPiAKPiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2lt
+YS9pbWEuaCBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hLmgKPiBpbmRleCA5N2Y4YTQwNzg0
+ODMuLmM0ODMyMTVhOWVlNSAxMDA2NDQKPiAtLS0gYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2lt
+YS5oCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWEuaAo+IEBAIC0yMTYsOCArMjE2
+LDEwIEBAIHN0cnVjdCBpbWFfa2V5X2VudHJ5IHsKPiAgCWNoYXIgKmtleXJpbmdfbmFtZTsKPiAg
+fTsKPiAgdm9pZCBpbWFfcHJvY2Vzc19xdWV1ZWRfa2V5cyh2b2lkKTsKPiArdm9pZCBpbWFfaW5p
+dF9rZXlfcXVldWUodm9pZCk7Cj4gICNlbHNlCj4gIHN0YXRpYyBpbmxpbmUgdm9pZCBpbWFfcHJv
+Y2Vzc19xdWV1ZWRfa2V5cyh2b2lkKSB7fQo+ICtzdGF0aWMgaW5saW5lIHZvaWQgaW1hX2luaXRf
+a2V5X3F1ZXVlKHZvaWQpIHt9Cj4gICNlbmRpZiAvKiBDT05GSUdfQVNZTU1FVFJJQ19QVUJMSUNf
+S0VZX1NVQlRZUEUgKi8KPiAgCj4gIC8qIExJTSBBUEkgZnVuY3Rpb24gZGVmaW5pdGlvbnMgKi8K
+PiBkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfYXN5bW1ldHJpY19rZXlz
+LmMgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9hc3ltbWV0cmljX2tleXMuYwo+IGluZGV4
+IDQxMjRmMTBmZjBjMi4uOWVhMjIzM2M5MTFhIDEwMDY0NAo+IC0tLSBhL3NlY3VyaXR5L2ludGVn
+cml0eS9pbWEvaW1hX2FzeW1tZXRyaWNfa2V5cy5jCj4gKysrIGIvc2VjdXJpdHkvaW50ZWdyaXR5
+L2ltYS9pbWFfYXN5bW1ldHJpY19rZXlzLmMKPiBAQCAtMTEsNiArMTEsNyBAQAo+ICAKPiAgI2Rl
+ZmluZSBwcl9mbXQoZm10KSBLQlVJTERfTU9ETkFNRSAiOiAiIGZtdAo+ICAKPiArI2luY2x1ZGUg
+PGxpbnV4L3RpbWVyLmg+Cj4gICNpbmNsdWRlIDxrZXlzL2FzeW1tZXRyaWMtdHlwZS5oPgo+ICAj
+aW5jbHVkZSAiaW1hLmgiCj4gIAo+IEBAIC0yNiw2ICsyNywzNiBAQCBzdGF0aWMgYm9vbCBpbWFf
+cHJvY2Vzc19rZXlzOwo+ICBzdGF0aWMgREVGSU5FX01VVEVYKGltYV9rZXlzX211dGV4KTsKPiAg
+c3RhdGljIExJU1RfSEVBRChpbWFfa2V5cyk7Cj4gIAo+ICsvKgo+ICsgKiBJZiBjdXN0b20gSU1B
+IHBvbGljeSBpcyBub3QgbG9hZGVkIHRoZW4ga2V5cyBxdWV1ZWQgdXAKPiArICogZm9yIG1lYXN1
+cmVtZW50IHNob3VsZCBiZSBmcmVlZC4gVGhpcyB0aW1lciBpcyB1c2VkCj4gKyAqIGZvciBoYW5k
+bGluZyB0aGlzIHNjZW5hcmlvLgo+ICsgKi8KPiArc3RhdGljIGxvbmcgaW1hX2tleV9xdWV1ZV90
+aW1lb3V0ID0gMzAwMDAwOyAvKiA1IE1pbnV0ZXMgKi8KPiArc3RhdGljIHN0cnVjdCB0aW1lcl9s
+aXN0IGltYV9rZXlfcXVldWVfdGltZXI7Cj4gK3N0YXRpYyBib29sIHRpbWVyX2V4cGlyZWQ7Cj4g
+Kwo+ICsvKgo+ICsgKiBUaGlzIHRpbWVyIGNhbGxiYWNrIGZ1bmN0aW9uIGZyZWVzIGtleXMgdGhh
+dCBtYXkgc3RpbGwgYmUKPiArICogcXVldWVkIHVwIGluIGNhc2UgY3VzdG9tIElNQSBwb2xpY3kg
+d2FzIG5vdCBsb2FkZWQuCj4gKyAqLwo+ICtzdGF0aWMgdm9pZCBpbWFfdGltZXJfaGFuZGxlcihz
+dHJ1Y3QgdGltZXJfbGlzdCAqdGltZXIpCj4gK3sKPiArCXRpbWVyX2V4cGlyZWQgPSB0cnVlOwo+
+ICsJaW1hX3Byb2Nlc3NfcXVldWVkX2tleXMoKTsKPiArfQo+ICsKPiArLyoKPiArICogVGhpcyBm
+dW5jdGlvbiBzZXRzIHVwIGEgdGltZXIgdG8gZnJlZSBxdWV1ZWQga2V5cyBpbiBjYXNlCj4gKyAq
+IGN1c3RvbSBJTUEgcG9saWN5IHdhcyBuZXZlciBsb2FkZWQuCj4gKyAqLwo+ICt2b2lkIGltYV9p
+bml0X2tleV9xdWV1ZSh2b2lkKQo+ICt7Cj4gKwl0aW1lcl9zZXR1cCgmaW1hX2tleV9xdWV1ZV90
+aW1lciwgaW1hX3RpbWVyX2hhbmRsZXIsIDApOwo+ICsJbW9kX3RpbWVyKCZpbWFfa2V5X3F1ZXVl
+X3RpbWVyLAo+ICsJCSAgamlmZmllcyArIG1zZWNzX3RvX2ppZmZpZXMoaW1hX2tleV9xdWV1ZV90
+aW1lb3V0KSk7Cj4gK30KPiArCj4gIHN0YXRpYyB2b2lkIGltYV9mcmVlX2tleV9lbnRyeShzdHJ1
+Y3QgaW1hX2tleV9lbnRyeSAqZW50cnkpCj4gIHsKPiAgCWlmIChlbnRyeSkgewo+IEBAIC0xMjAs
+MTAgKzE1MSwxNSBAQCB2b2lkIGltYV9wcm9jZXNzX3F1ZXVlZF9rZXlzKHZvaWQpCj4gIAlpZiAo
+IXByb2Nlc3MpCj4gIAkJcmV0dXJuOwo+ICAKPiArCWRlbF90aW1lcigmaW1hX2tleV9xdWV1ZV90
+aW1lcik7Cj4gKwo+ICAJbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKGVudHJ5LCB0bXAsICZpbWFf
+a2V5cywgbGlzdCkgewo+IC0JCXByb2Nlc3NfYnVmZmVyX21lYXN1cmVtZW50KGVudHJ5LT5wYXls
+b2FkLCBlbnRyeS0+cGF5bG9hZF9sZW4sCj4gLQkJCQkJICAgZW50cnktPmtleXJpbmdfbmFtZSwg
+S0VZX0NIRUNLLCAwLAo+IC0JCQkJCSAgIGVudHJ5LT5rZXlyaW5nX25hbWUpOwo+ICsJCWlmICgh
+dGltZXJfZXhwaXJlZCkKPiArCQkJcHJvY2Vzc19idWZmZXJfbWVhc3VyZW1lbnQoZW50cnktPnBh
+eWxvYWQsCj4gKwkJCQkJCSAgIGVudHJ5LT5wYXlsb2FkX2xlbiwKPiArCQkJCQkJICAgZW50cnkt
+PmtleXJpbmdfbmFtZSwKPiArCQkJCQkJICAgS0VZX0NIRUNLLCAwLAo+ICsJCQkJCQkgICBlbnRy
+eS0+a2V5cmluZ19uYW1lKTsKPiAgCQlsaXN0X2RlbCgmZW50cnktPmxpc3QpOwo+ICAJCWltYV9m
+cmVlX2tleV9lbnRyeShlbnRyeSk7Cj4gIAl9Cj4gZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2ludGVn
+cml0eS9pbWEvaW1hX2luaXQuYyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1hX2luaXQuYwo+
+IGluZGV4IDVkNTVhZGU1ZjNiOS4uMTk1Y2I0MDc5YjJiIDEwMDY0NAo+IC0tLSBhL3NlY3VyaXR5
+L2ludGVncml0eS9pbWEvaW1hX2luaXQuYwo+ICsrKyBiL3NlY3VyaXR5L2ludGVncml0eS9pbWEv
+aW1hX2luaXQuYwo+IEBAIC0xMzEsNSArMTMxLDExIEBAIGludCBfX2luaXQgaW1hX2luaXQodm9p
+ZCkKPiAgCj4gIAlpbWFfaW5pdF9wb2xpY3koKTsKPiAgCj4gLQlyZXR1cm4gaW1hX2ZzX2luaXQo
+KTsKPiArCXJjID0gaW1hX2ZzX2luaXQoKTsKPiArCWlmIChyYyAhPSAwKQo+ICsJCXJldHVybiBy
+YzsKPiArCj4gKwlpbWFfaW5pdF9rZXlfcXVldWUoKTsKPiArCj4gKwlyZXR1cm4gcmM7Cj4gIH0K
