@@ -1,89 +1,199 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Wed, 11 Dec 2019 16:47:05 +0000
-Subject: [PATCH v11 4/6] KEYS: Call the IMA hook to measure keys
-Message-Id: <20191211164707.4698-5-nramas@linux.microsoft.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Mon, 30 Dec 2019 17:37:58 +0000
+Subject: [PATCH v4 5/9] security: keys: trusted: Make sealed key properly interoperable
+Message-Id: <20191230173802.8731-6-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191211164707.4698-1-nramas@linux.microsoft.com>
-In-Reply-To: <20191211164707.4698-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Call the IMA hook from key_create_or_update() function to measure
-the payload when a new key is created or an existing key is updated.
+The current implementation appends a migratable flag to the end of a
+key, meaning the format isn't exactly interoperable because the using
+party needs to know to strip this extra byte.  However, all other
+consumers of TPM sealed blobs expect the unseal to return exactly the
+key.  Since TPM2 keys have a key property flag that corresponds to
+migratable, use that flag instead and make the actual key the only
+sealed quantity.  This is secure because the key properties are bound
+to a hash in the private part, so if they're altered the key won't
+load.
 
-This patch adds the call to the IMA hook from key_create_or_update()
-function to measure the key on key create or update.
+Backwards compatibility is implemented by detecting whether we're
+loading a new format key or not and correctly setting migratable from
+the last byte of old format keys.
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+
 ---
- include/linux/ima.h | 14 ++++++++++++++
- security/keys/key.c | 10 ++++++++++
- 2 files changed, 24 insertions(+)
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 6d904754d858..3b89136bc218 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -101,6 +101,20 @@ static inline void ima_add_kexec_buffer(struct kimage *image)
- {}
- #endif
+v2: added length checks to untrusted payload
+---
+ include/keys/trusted-type.h               |  1 +
+ include/linux/tpm.h                       |  2 +
+ security/keys/trusted-keys/trusted_tpm2.c | 69 ++++++++++++++++++++++---------
+ 3 files changed, 53 insertions(+), 19 deletions(-)
+
+diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+index b2ed3481c6a0..b2d87ad21714 100644
+--- a/include/keys/trusted-type.h
++++ b/include/keys/trusted-type.h
+@@ -22,6 +22,7 @@ struct trusted_key_payload {
+ 	unsigned int key_len;
+ 	unsigned int blob_len;
+ 	unsigned char migratable;
++	unsigned char old_format;
+ 	unsigned char key[MAX_KEY_SIZE + 1];
+ 	unsigned char blob[MAX_BLOB_SIZE];
+ };
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 03e9b184411b..cd46ab27baa5 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -297,6 +297,8 @@ struct tpm_buf {
+ };
  
-+#if defined(CONFIG_IMA) && defined(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE)
-+extern void ima_post_key_create_or_update(struct key *keyring,
-+					  struct key *key,
-+					  const void *payload, size_t plen,
-+					  unsigned long flags, bool create);
-+#else
-+static inline void ima_post_key_create_or_update(struct key *keyring,
-+						 struct key *key,
-+						 const void *payload,
-+						 size_t plen,
-+						 unsigned long flags,
-+						 bool create) {}
-+#endif  /* CONFIG_IMA && CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE */
+ enum tpm2_object_attributes {
++	TPM2_OA_FIXED_TPM		= BIT(1),
++	TPM2_OA_FIXED_PARENT		= BIT(4),
+ 	TPM2_OA_USER_WITH_AUTH		= BIT(6),
+ };
+ 
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index cd7008d499ba..4563a4c7b6ec 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -224,6 +224,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	unsigned int blob_len;
+ 	struct tpm_buf buf;
+ 	u32 hash;
++	u32 flags;
+ 	int i;
+ 	int rc;
+ 
+@@ -252,30 +253,31 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 			     TPM_DIGEST_SIZE);
+ 
+ 	/* sensitive */
+-	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len + 1);
++	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len);
+ 
+ 	tpm_buf_append_u16(&buf, options->blobauth_len);
+ 	if (options->blobauth_len)
+ 		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
+-	tpm_buf_append_u16(&buf, payload->key_len + 1);
++	tpm_buf_append_u16(&buf, payload->key_len);
+ 	tpm_buf_append(&buf, payload->key, payload->key_len);
+-	tpm_buf_append_u8(&buf, payload->migratable);
+ 
+ 	/* public */
+ 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
+ 	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
+ 	tpm_buf_append_u16(&buf, hash);
+ 
++	/* key properties */
++	flags = 0;
++	flags |= options->policydigest_len ? 0 : TPM2_OA_USER_WITH_AUTH;
++	flags |= payload->migratable ? (TPM2_OA_FIXED_TPM |
++					TPM2_OA_FIXED_PARENT) : 0;
++	tpm_buf_append_u32(&buf, flags);
 +
- #ifdef CONFIG_IMA_APPRAISE
- extern bool is_ima_appraise_enabled(void);
- extern void ima_inode_post_setattr(struct dentry *dentry);
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 764f4c57913e..718bf7217420 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -13,6 +13,7 @@
- #include <linux/security.h>
- #include <linux/workqueue.h>
- #include <linux/random.h>
-+#include <linux/ima.h>
- #include <linux/err.h>
- #include "internal.h"
+ 	/* policy */
+-	if (options->policydigest_len) {
+-		tpm_buf_append_u32(&buf, 0);
+-		tpm_buf_append_u16(&buf, options->policydigest_len);
++	tpm_buf_append_u16(&buf, options->policydigest_len);
++	if (options->policydigest_len)
+ 		tpm_buf_append(&buf, options->policydigest,
+ 			       options->policydigest_len);
+-	} else {
+-		tpm_buf_append_u32(&buf, TPM2_OA_USER_WITH_AUTH);
+-		tpm_buf_append_u16(&buf, 0);
+-	}
  
-@@ -936,6 +937,9 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 		goto error_link_end;
+ 	/* public parameters */
+ 	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
+@@ -348,23 +350,42 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
+-	u8 *blob;
++	u8 *blob, *pub;
+ 	int rc;
++	u32 attrs;
+ 
+ 	rc = tpm2_key_decode(payload, options, &blob);
+-	if (rc)
++	if (rc) {
+ 		/* old form */
+ 		blob = payload->blob;
++		payload->old_format = 1;
++	}
+ 
+ 	/* new format carries keyhandle but old format doesn't */
+ 	if (!options->keyhandle)
+ 		return -EINVAL;
+ 
+-	private_len = be16_to_cpup((__be16 *) &blob[0]);
+-	if (private_len > (payload->blob_len - 2))
++	/* must be big enough for at least the two be16 size counts */
++	if (payload->blob_len < 4)
++		return -EINVAL;
++	private_len = get_unaligned_be16(blob);
++	/* must be big enough for following public_len */
++	if (private_len + 2 + 2 > (payload->blob_len))
++		return -E2BIG;
++
++	public_len = get_unaligned_be16(blob + 2 + private_len);
++	if (private_len + 2 + public_len + 2 > payload->blob_len)
+ 		return -E2BIG;
+ 
+-	public_len = be16_to_cpup((__be16 *) &blob[2 + private_len]);
++	pub = blob + 2 + private_len + 2;
++	/* key attributes are always at offset 4 */
++	attrs = get_unaligned_be32(pub + 4);
++	if ((attrs & (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT)) =
++	    (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT))
++		payload->migratable = 0;
++	else
++		payload->migratable = 1;
++
+ 	blob_len = private_len + public_len + 4;
+ 	if (blob_len > payload->blob_len)
+ 		return -E2BIG;
+@@ -445,7 +466,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 	if (!rc) {
+ 		data_len = be16_to_cpup(
+ 			(__be16 *) &buf.data[TPM_HEADER_SIZE + 4]);
+-		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE + 1) {
++		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE) {
+ 			rc = -EFAULT;
+ 			goto out;
+ 		}
+@@ -456,9 +477,19 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		}
+ 		data = &buf.data[TPM_HEADER_SIZE + 6];
+ 
+-		memcpy(payload->key, data, data_len - 1);
+-		payload->key_len = data_len - 1;
+-		payload->migratable = data[data_len - 1];
++		if (payload->old_format) {
++			/* migratable flag is at the end of the key */
++			memcpy(payload->key, data, data_len - 1);
++			payload->key_len = data_len - 1;
++			payload->migratable = data[data_len - 1];
++		} else {
++			/*
++			 * migratable flag already collected from key
++			 * attributes
++			 */
++			memcpy(payload->key, data, data_len);
++			payload->key_len = data_len;
++		}
  	}
  
-+	ima_post_key_create_or_update(keyring, key, payload, plen,
-+				      flags, true);
-+
- 	key_ref = make_key_ref(key, is_key_possessed(keyring_ref));
- 
- error_link_end:
-@@ -965,6 +969,12 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 	}
- 
- 	key_ref = __key_update(key_ref, &prep);
-+
-+	if (!IS_ERR(key_ref))
-+		ima_post_key_create_or_update(keyring, key,
-+					      payload, plen,
-+					      flags, false);
-+
- 	goto error_free_prep;
- }
- EXPORT_SYMBOL(key_create_or_update);
+ out:
 -- 
-2.17.1
+2.16.4
