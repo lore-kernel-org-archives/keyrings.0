@@ -1,13 +1,13 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Wed, 18 Dec 2019 06:31:39 +0000
-Subject: [PATCH v3 6/9] security: keys: trusted: add ability to specify arbitrary policy
-Message-Id: <20191218063142.23033-7-James.Bottomley@HansenPartnership.com>
+Date: Mon, 30 Dec 2019 17:38:00 +0000
+Subject: [PATCH v4 7/9] security: keys: trusted: add ability to specify arbitrary policy
+Message-Id: <20191230173802.8731-8-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+References: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
@@ -73,10 +73,10 @@ index 053344c4df5b..b68d3eb73f00 100644
  
      $ keyctl update 268728824 "update pcrinfo=`cat pcr.blob`"
 diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 8afbe90eed1b..2606d3bb5b82 100644
+index 31ba8ee80c09..45fca829503b 100644
 --- a/security/keys/trusted-keys/tpm2-policy.c
 +++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -339,3 +339,49 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
+@@ -352,3 +352,49 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
  	}
  	return 0;
  }
@@ -136,7 +136,7 @@ index 152c948743f3..cb804a544ced 100644
  			    u32 *handle);
 +int tpm2_parse_policies(struct tpm2_policies **ppols, char *str);
 diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index b1b487c2c72e..668cbdc675b8 100644
+index 912792fd987a..af269f4774de 100644
 --- a/security/keys/trusted-keys/trusted_tpm1.c
 +++ b/security/keys/trusted-keys/trusted_tpm1.c
 @@ -29,6 +29,8 @@
@@ -164,7 +164,7 @@ index b1b487c2c72e..668cbdc675b8 100644
  	{Opt_err, NULL}
  };
  
-@@ -834,6 +838,15 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+@@ -848,6 +852,15 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
  				return -EINVAL;
  			opt->policyhandle = handle;
  			break;
