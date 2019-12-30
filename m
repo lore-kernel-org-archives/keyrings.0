@@ -1,13 +1,13 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Wed, 18 Dec 2019 06:31:35 +0000
-Subject: [PATCH v3 2/9] oid_registry: Add TCG defined OIDS for TPM keys
-Message-Id: <20191218063142.23033-3-James.Bottomley@HansenPartnership.com>
+Date: Mon, 30 Dec 2019 17:37:55 +0000
+Subject: [PATCH v4 2/9] oid_registry: Add TCG defined OIDS for TPM keys
+Message-Id: <20191230173802.8731-3-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20191218063142.23033-1-James.Bottomley@HansenPartnership.com>
+References: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
