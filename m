@@ -1,42 +1,140 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 31 Dec 2019 15:25:02 +0000
-Subject: [PATCH 3/3] afs: Fix afs_lookup() to not clobber the version on a new dentry
-Message-Id: <157780590246.25571.8995170375088979996.stgit@warthog.procyon.org.uk>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Mon, 30 Dec 2019 17:38:02 +0000
+Subject: [PATCH v4 9/9] security: keys: trusted: add password based authorizations to policy keys
+Message-Id: <20191230173802.8731-10-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157780588822.25571.7926816048227538205.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157780588822.25571.7926816048227538205.stgit@warthog.procyon.org.uk>
-To: linux-afs@lists.infradead.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, dhowells@redhat.com
+References: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20191230173802.8731-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Fix afs_lookup() to not clobber the version set on a new dentry by
-afs_do_lookup() - especially as it's using the wrong version of the version
-(we need to use the one given to us by whatever op the dir contents
-correspond to rather than what's in the afs_vnode).
+TPM 2.0 has a trick where you can turn off the usual HMAC password
+session requirement using TPM2_PolicyPassword, so everywhere we see a
+TPM2_PolicyAuthValue (which does require HMAC password), we replace
+with the TPM2_PolicyPassword command instead.  This allows us to use
+passwords with TPM 2.0 trusted keys that also have a policy.
 
-Fixes: 9dd0b82ef530 ("afs: Fix missing dentry data version updating")
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 ---
+ include/linux/tpm.h                       |  1 +
+ security/keys/trusted-keys/tpm2-policy.c  | 16 ++++++++++++++-
+ security/keys/trusted-keys/trusted_tpm2.c | 34 ++++++++++++++++++++++++++++++-
+ 3 files changed, 49 insertions(+), 2 deletions(-)
 
- fs/afs/dir.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/fs/afs/dir.c b/fs/afs/dir.c
-index 813db1708494..5c794f4b051a 100644
---- a/fs/afs/dir.c
-+++ b/fs/afs/dir.c
-@@ -952,12 +952,8 @@ static struct dentry *afs_lookup(struct inode *dir, struct dentry *dentry,
- 	afs_stat_v(dvnode, n_lookup);
- 	inode = afs_do_lookup(dir, dentry, key);
- 	key_put(key);
--	if (inode = ERR_PTR(-ENOENT)) {
-+	if (inode = ERR_PTR(-ENOENT))
- 		inode = afs_try_auto_mntpt(dentry, dir);
--	} else {
--		dentry->d_fsdata -			(void *)(unsigned long)dvnode->status.data_version;
--	}
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index e32e9728adce..5026a06977e1 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -233,6 +233,7 @@ enum tpm2_command_codes {
+ 	TPM2_CC_PCR_EXTEND	        = 0x0182,
+ 	TPM2_CC_EVENT_SEQUENCE_COMPLETE = 0x0185,
+ 	TPM2_CC_HASH_SEQUENCE_START     = 0x0186,
++	TPM2_CC_POLICY_PASSWORD		= 0x018c,
+ 	TPM2_CC_CREATE_LOADED           = 0x0191,
+ 	TPM2_CC_LAST		        = 0x0193, /* Spec 1.36 */
+ };
+diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
+index 3c7a8e6c84c8..2c93197edf2b 100644
+--- a/security/keys/trusted-keys/tpm2-policy.c
++++ b/security/keys/trusted-keys/tpm2-policy.c
+@@ -193,7 +193,8 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols,
+ 			policy = digest;
+ 			len = *plen;
+ 		}
+-		crypto_shash_update(sdesc, policy, len);
++		if (len)
++			crypto_shash_update(sdesc, policy, len);
+ 		/* now output the intermediate to the policydigest */
+ 		crypto_shash_final(sdesc, policydigest);
  
- 	if (!IS_ERR_OR_NULL(inode))
- 		fid = AFS_FS_I(inode)->fid;
+@@ -316,6 +317,16 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
+ 		u32 cmd = pols->code[i];
+ 		struct tpm_buf buf;
+ 
++		if (cmd = TPM2_CC_POLICY_AUTHVALUE)
++			/*
++			 * both PolicyAuthValue and PolicyPassword
++			 * hash to the same thing, but one triggers
++			 * HMAC authentication and the other simple
++			 * authentication.  Since we have no HMAC
++			 * code, we're choosing the simple
++			 */
++			cmd = TPM2_CC_POLICY_PASSWORD;
++
+ 		rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, cmd);
+ 		if (rc)
+ 			return rc;
+@@ -357,6 +368,9 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
+ 		}
+ 		default:
+ 			failure = "unknown policy";
++			if (pols->len[i])
++				tpm_buf_append(&buf, pols->policies[i],
++					       pols->len[i]);
+ 			break;
+ 		}
+ 		rc = tpm_send(chip, buf.data, tpm_buf_length(&buf));
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index 1f039b39aa7f..169846fde5f7 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -244,6 +244,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	u32 flags;
+ 	int i;
+ 	int rc;
++	static const int POLICY_SIZE = 2 * PAGE_SIZE;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(tpm2_hash_map); i++) {
+ 		if (options->hash = tpm2_hash_map[i].crypto_id) {
+@@ -264,7 +265,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 		/* 4 array len, 2 hash alg */
+ 		const int len = 4 + 2 + options->pcrinfo_len;
+ 
+-		pols = kmalloc(sizeof(*pols) + len, GFP_KERNEL);
++		pols = kmalloc(POLICY_SIZE, GFP_KERNEL);
+ 		if (!pols)
+ 			return -ENOMEM;
+ 
+@@ -285,6 +286,37 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 		return -EINVAL;
+ 	}
+ 
++	/*
++	 * if we already have a policy, we have to add authorization
++	 * to it.  If we don't, we can simply follow the usual
++	 * non-policy route.
++	 */
++	if (options->blobauth_len != 0 && payload->policies) {
++		struct tpm2_policies *pols;
++		static u8 *scratch;
++		int i;
++		bool found = false;
++
++		pols = payload->policies;
++
++		/* make sure it's not already in policy */
++		for (i = 0; i < pols->count; i++) {
++			if (pols->code[i] = TPM2_CC_POLICY_AUTHVALUE) {
++				found = true;
++				break;
++			}
++		}
++
++		if (!found) {
++			i = pols->count++;
++			scratch = pols->policies[i - 1] + pols->len[i - 1];
++			/* the TPM2_PolicyPassword command has no payload */
++			pols->policies[i] = scratch;
++			pols->len[i] = 0;
++			pols->code[i] = TPM2_CC_POLICY_AUTHVALUE;
++		}
++	}
++
+ 	if (payload->policies) {
+ 		rc = tpm2_generate_policy_digest(payload->policies,
+ 						 options->hash,
+-- 
+2.16.4
