@@ -1,127 +1,56 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 15 Jan 2020 13:31:02 +0000
-Subject: [RFC PATCH 03/14] security: Add a hook for the point of notification insertion [ver #3]
-Message-Id: <157909506262.20155.1543413154684187380.stgit@warthog.procyon.org.uk>
+From: "Rev.Dr Emmanuel Okoye CEO Ecobank-benin"  <westernunion.benin982@gmail.com>
+Date: Fri, 03 Jan 2020 20:20:41 +0000
+Subject: I promise you must be happy today, God has uplifted you and your family ok
+Message-Id: <CAP=nHB+phMQArOOcgzP2cy5hVK0izQHKwz6oRHFsTQs4UX_1uA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <157909503552.20155.3030058841911628518.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157909503552.20155.3030058841911628518.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Add a security hook that allows an LSM to rule on whether a notification
-message is allowed to be inserted into a particular watch queue.
+Dear Friend
 
-The hook is given the following information:
+i hope all is well with you,if so, glory be to God almighty. I'm very
+happy to inform you, about my success in getting payment funds under
+the cooperation of a new partner from United States of
+America.Presently I am in uk for investment projects with my own share
+of the total sum. I didn't forget your past efforts. IMF finally
+approved your compensation payment funds this morning by prepaid (ATM)
+Debit card of US$12,500.000.00Million Dollars, Since you not received
+this payment yet, I was not certified
+but it is not your fault and not my fault, I hold nothing against
+you.than bank official whom has been detaining the transfer in the
+bank, trying to claim your funds by themselves.
 
- (1) The credentials of the triggerer (which may be init_cred for a system
-     notification, eg. a hardware error).
+Therefore, in appreciation of your effort I have raised an
+International prepaid (ATM) Debit card of US$12,500.000.00 in your
+favor as compensation to you.
 
- (2) The credentials of the whoever set the watch.
+Now, i want you to contact my Diplomatic Agent, His name is Mike Benz
+on His  e-mail Address (mikebenz550@aol.com
 
- (3) The notification message.
+ask Him to send the Prepaid (ATM) Debit card to you. Bear in mind that
+the money is in Prepaid (ATM) Debit card, not cash, so you need to
+send to him,
+your full name
+address  where the prepaid (ATM) Debit card will be delivered to you,
+including your cell phone number. Finally, I left explicit
+instructions with him, on how to send the (ATM CARD) to you.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
----
+The Prepaid (ATM) Debit card, will be send to you through my
+Diplomatic Agent Mr. Mike Benz immediately you contact him. So contact
+my Diplomatic Agent Mr. Mike Benz immediately you receive this letter.
+Below is his contact information:
 
- include/linux/lsm_hooks.h |   14 ++++++++++++++
- include/linux/security.h  |   14 ++++++++++++++
- security/security.c       |    9 +++++++++
- 3 files changed, 37 insertions(+)
+NAME : MIKE BENZ
+EMAIL ADDRESS: mikebenz550@aol.com
+Text Him, (256) 284-4886
 
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index 79d7c73676d7..16530255dc11 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1427,6 +1427,12 @@
-  *	Check to see if a process is allowed to watch for event notifications
-  *	from devices (as a global set).
-  *
-+ * @post_notification:
-+ *	Check to see if a watch notification can be posted to a particular
-+ *	queue.
-+ *	@w_cred: The credentials of the whoever set the watch.
-+ *	@cred: The event-triggerer's credentials
-+ *	@n: The notification being posted
-  *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-@@ -1716,6 +1722,11 @@ union security_list_options {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	int (*watch_devices)(void);
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	int (*post_notification)(const struct cred *w_cred,
-+				 const struct cred *cred,
-+				 struct watch_notification *n);
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -2009,6 +2020,9 @@ struct security_hook_heads {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	struct hlist_head watch_devices;
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	struct hlist_head post_notification;
-+#endif /* CONFIG_WATCH_QUEUE */
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 8f2fa100d128..e03ee1164268 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -57,6 +57,8 @@ struct mm_struct;
- struct fs_context;
- struct fs_parameter;
- enum fs_value_type;
-+struct watch;
-+struct watch_notification;
- 
- /* Default (no) options for the capable function */
- #define CAP_OPT_NONE 0x0
-@@ -1290,6 +1292,18 @@ static inline int security_watch_devices(void)
- 	return 0;
- }
- #endif
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n);
-+#else
-+static inline int security_post_notification(const struct cred *w_cred,
-+					     const struct cred *cred,
-+					     struct watch_notification *n)
-+{
-+	return 0;
-+}
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 
-diff --git a/security/security.c b/security/security.c
-index 578863f230a6..9c1878a7fadf 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1956,6 +1956,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n)
-+{
-+	return call_int_hook(post_notification, 0, w_cred, cred, n);
-+}
-+#endif /* CONFIG_WATCH_QUEUE */
-+
- #ifdef CONFIG_KEY_NOTIFICATIONS
- int security_watch_key(struct key *key)
- {
+Request for Delivery of the Prepaid (ATM) Debit card  to you today.
+Note, please I have paid for the whole service fees for you, so the
+only money you will send to my Diplomatic Agent Mr. Mike Benz is
+$50.00 for your prepaid (ATM) Debit card DELIVERY FEE to your address
+ok.
+Let me know once you receive this Card at your address.
+Best regards,
+Rev.Dr, George Adadar
