@@ -1,134 +1,59 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 16 Jan 2020 23:46:23 +0000
-Subject: [PATCH v1] IMA: pre-allocate buffer to hold keyrings string
-Message-Id: <20200116234623.2959-1-nramas@linux.microsoft.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Fri, 03 Jan 2020 16:57:27 +0000
+Subject: Re: [PATCH v2] fscrypt: support passing a keyring key to FS_IOC_ADD_ENCRYPTION_KEY
+Message-Id: <20200103165727.GB19521@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
-Cc: dhowells@redhat.com, sashal@kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <20191119222447.226853-1-ebiggers@kernel.org>
+In-Reply-To: <20191119222447.226853-1-ebiggers@kernel.org>
+To: linux-fscrypt@vger.kernel.org
+Cc: keyrings@vger.kernel.org, linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org, "Theodore Y . Ts'o" <tytso@mit.edu>, Jaegeuk Kim <jaegeuk@kernel.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Paul Crowley <paulcrowley@google.com>, Paul Lawrence <paullawrence@google.com>, Ondrej Mosnacek <omosnace@redhat.com>, Ondrej Kozina <okozina@redhat.com>
 
-ima_match_keyring() is called while holding rcu read lock. Since this
-function executes in atmomic context, it should not call any function
-that can sleep (such as kstrdup()).
+On Tue, Nov 19, 2019 at 02:24:47PM -0800, Eric Biggers wrote:
+> From: Eric Biggers <ebiggers@google.com>
+> 
+> Extend the FS_IOC_ADD_ENCRYPTION_KEY ioctl to allow the raw key to be
+> specified by a Linux keyring key, rather than specified directly.
+> 
+> This is useful because fscrypt keys belong to a particular filesystem
+> instance, so they are destroyed when that filesystem is unmounted.
+> Usually this is desired.  But in some cases, userspace may need to
+> unmount and re-mount the filesystem while keeping the keys, e.g. during
+> a system update.  This requires keeping the keys somewhere else too.
+> 
+> The keys could be kept in memory in a userspace daemon.  But depending
+> on the security architecture and assumptions, it can be preferable to
+> keep them only in kernel memory, where they are unreadable by userspace.
+> 
+> We also can't solve this by going back to the original fscrypt API
+> (where for each file, the master key was looked up in the process's
+> keyring hierarchy) because that caused lots of problems of its own.
+> 
+> Therefore, add the ability for FS_IOC_ADD_ENCRYPTION_KEY to accept a
+> Linux keyring key.  This solves the problem by allowing userspace to (if
+> needed) save the keys securely in a Linux keyring for re-provisioning,
+> while still using the new fscrypt key management ioctls.
+> 
+> This is analogous to how dm-crypt accepts a Linux keyring key, but the
+> key is then stored internally in the dm-crypt data structures rather
+> than being looked up again each time the dm-crypt device is accessed.
+> 
+> Use a custom key type "fscrypt-provisioning" rather than one of the
+> existing key types such as "logon".  This is strongly desired because it
+> enforces that these keys are only usable for a particular purpose: for
+> fscrypt as input to a particular KDF.  Otherwise, the keys could also be
+> passed to any kernel API that accepts a "logon" key with any service
+> prefix, e.g. dm-crypt, UBIFS, or (recently proposed) AF_ALG.  This would
+> risk leaking information about the raw key despite it ostensibly being
+> unreadable.  Of course, this mistake has already been made for multiple
+> kernel APIs; but since this is a new API, let's do it right.
+> 
+> This patch has been tested using an xfstest which I wrote to test it.
+> 
+> Signed-off-by: Eric Biggers <ebiggers@google.com>
 
-This patch pre-allocates a buffer to hold the keyrings string read from
-the IMA policy and uses that to match the given keyring.
+Applied to fscrypt.git#master for 5.6.
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Fixes: e9085e0ad38a ("IMA: Add support to limit measuring keys")
----
- security/integrity/ima/ima_policy.c | 50 ++++++++++++++++++++++++-----
- 1 file changed, 42 insertions(+), 8 deletions(-)
-
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 9963863d6c92..180e2069e075 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -208,6 +208,10 @@ static LIST_HEAD(ima_policy_rules);
- static LIST_HEAD(ima_temp_rules);
- static struct list_head *ima_rules;
- 
-+/* Pre-allocated buffer used for matching keyrings. */
-+static char *ima_keyrings;
-+static size_t ima_keyrings_len;
-+
- static int ima_policy __initdata;
- 
- static int __init default_measure_policy_setup(char *str)
-@@ -369,7 +373,7 @@ int ima_lsm_policy_change(struct notifier_block *nb, unsigned long event,
- static bool ima_match_keyring(struct ima_rule_entry *rule,
- 			      const char *keyring, const struct cred *cred)
- {
--	char *keyrings, *next_keyring, *keyrings_ptr;
-+	char *next_keyring, *keyrings_ptr;
- 	bool matched = false;
- 
- 	if ((rule->flags & IMA_UID) && !rule->uid_op(cred->uid, rule->uid))
-@@ -381,15 +385,13 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
- 	if (!keyring)
- 		return false;
- 
--	keyrings = kstrdup(rule->keyrings, GFP_KERNEL);
--	if (!keyrings)
--		return false;
-+	strcpy(ima_keyrings, rule->keyrings);
- 
- 	/*
- 	 * "keyrings=" is specified in the policy in the format below:
- 	 * keyrings=.builtin_trusted_keys|.ima|.evm
- 	 */
--	keyrings_ptr = keyrings;
-+	keyrings_ptr = ima_keyrings;
- 	while ((next_keyring = strsep(&keyrings_ptr, "|")) != NULL) {
- 		if (!strcmp(next_keyring, keyring)) {
- 			matched = true;
-@@ -397,8 +399,6 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
- 		}
- 	}
- 
--	kfree(keyrings);
--
- 	return matched;
- }
- 
-@@ -949,6 +949,7 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 	bool uid_token;
- 	struct ima_template_desc *template_desc;
- 	int result = 0;
-+	size_t keyrings_len;
- 
- 	ab = integrity_audit_log_start(audit_context(), GFP_KERNEL,
- 				       AUDIT_INTEGRITY_POLICY_RULE);
-@@ -1114,14 +1115,47 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 		case Opt_keyrings:
- 			ima_log_string(ab, "keyrings", args[0].from);
- 
-+			keyrings_len = strlen(args[0].from) + 1;
-+
- 			if ((entry->keyrings) ||
- 			    (entry->action != MEASURE) ||
--			    (entry->func != KEY_CHECK)) {
-+			    (entry->func != KEY_CHECK) ||
-+			    (keyrings_len < 2)) {
- 				result = -EINVAL;
- 				break;
- 			}
-+
-+			if (ima_keyrings) {
-+				if (keyrings_len > ima_keyrings_len) {
-+					char *tmpbuf;
-+
-+					tmpbuf = krealloc(ima_keyrings,
-+							  keyrings_len,
-+							  GFP_KERNEL);
-+					if (!tmpbuf) {
-+						result = -ENOMEM;
-+						break;
-+					}
-+
-+					ima_keyrings = tmpbuf;
-+					ima_keyrings_len = keyrings_len;
-+				}
-+			} else {
-+				ima_keyrings = kzalloc(keyrings_len,
-+						       GFP_KERNEL);
-+				if (!ima_keyrings) {
-+					result = -ENOMEM;
-+					break;
-+				}
-+
-+				ima_keyrings_len = keyrings_len;
-+			}
-+
- 			entry->keyrings = kstrdup(args[0].from, GFP_KERNEL);
- 			if (!entry->keyrings) {
-+				kfree(ima_keyrings);
-+				ima_keyrings = NULL;
-+				ima_keyrings_len = 0;
- 				result = -ENOMEM;
- 				break;
- 			}
--- 
-2.17.1
+- Eric
