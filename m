@@ -1,14 +1,14 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 09 Jan 2020 02:42:15 +0000
+Date: Thu, 09 Jan 2020 02:43:58 +0000
 Subject: [PATCH v8 2/3] IMA: Call workqueue functions to measure queued keys
-Message-Id: <20200109024216.3350-3-nramas@linux.microsoft.com>
+Message-Id: <20200109024359.3410-3-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200109024216.3350-1-nramas@linux.microsoft.com>
-In-Reply-To: <20200109024216.3350-1-nramas@linux.microsoft.com>
-To: =zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
+References: <20200109024359.3410-1-nramas@linux.microsoft.com>
+In-Reply-To: <20200109024359.3410-1-nramas@linux.microsoft.com>
+To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
 Cc: dhowells@redhat.com, arnd@arndb.de, matthewgarrett@google.com, sashal@kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
 Measuring keys requires a custom IMA policy to be loaded.
