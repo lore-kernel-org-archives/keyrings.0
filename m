@@ -1,31 +1,138 @@
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 31 Jan 2020 17:19:38 +0000
-Subject: Re: [PATCH v2] keys: proc_keys_next should increase position index
-Message-Id: <265151.1580491178@warthog.procyon.org.uk>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 09 Jan 2020 02:42:16 +0000
+Subject: [PATCH v8 3/3] IMA: Defined timer to free queued keys
+Message-Id: <20200109024216.3350-4-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <22307ecd-3254-6077-8bc7-02693338b586@virtuozzo.com> <eaacb0b2-fd0d-480e-1868-0a1284c20185@virtuozzo.com>
-In-Reply-To: <22307ecd-3254-6077-8bc7-02693338b586@virtuozzo.com>
-To: Vasily Averin <vvs@virtuozzo.com>
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
+References: <20200109024216.3350-1-nramas@linux.microsoft.com>
+In-Reply-To: <20200109024216.3350-1-nramas@linux.microsoft.com>
+To: =zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
+Cc: dhowells@redhat.com, arnd@arndb.de, matthewgarrett@google.com, sashal@kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-Vasily Averin <vvs@virtuozzo.com> wrote:
+keys queued for measurement should be freed if a custom IMA policy
+was not loaded. Otherwise, the keys will remain queued forever
+consuming kernel memory.
 
-> If seq_file .next fuction does not change position index,
+This patch defines a timer to handle the above scenario. The timer
+is setup to expire 5 minutes after IMA initialization is completed.
 
-"function"
+If a custom IMA policy is loaded before the timer expires, the timer
+is removed and any queued keys are processed for measurement.
+But if a custom policy was not loaded, on timer expiration
+queued keys are just freed.
 
->    <<<< and whole last lien again
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Reported-by: kernel test robot <rong.a.chen@intel.com> # sleeping
+function called from invalid context
+Reported-by: kbuild test robot <lkp@intel.com> # redefinition of
+ima_init_key_queue() function.
+---
+ security/integrity/ima/ima.h                 |  2 +
+ security/integrity/ima/ima_asymmetric_keys.c | 42 ++++++++++++++++++--
+ security/integrity/ima/ima_init.c            |  8 +++-
+ 3 files changed, 48 insertions(+), 4 deletions(-)
 
-"line"
-
-I can fix these up for you.
-
-> https://bugzilla.kernel.org/show_bug.cgi?id 6283
-
-I wonder if this should have a tag - it looks kind of out of place without
-one, but I can't find one suggested.
-
-David
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index c7fdf3d66b98..6bb3152b3e24 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -216,8 +216,10 @@ struct ima_key_entry {
+ 	char *keyring_name;
+ };
+ void ima_process_queued_keys(void);
++void ima_init_key_queue(void);
+ #else
+ static inline void ima_process_queued_keys(void) {}
++static inline void ima_init_key_queue(void) {}
+ #endif /* CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS */
+ 
+ /* LIM API function definitions */
+diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
+index eb71cbf224c1..d1fa1706e03f 100644
+--- a/security/integrity/ima/ima_asymmetric_keys.c
++++ b/security/integrity/ima/ima_asymmetric_keys.c
+@@ -11,6 +11,7 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++#include <linux/timer.h>
+ #include <keys/asymmetric-type.h>
+ #include "ima.h"
+ 
+@@ -26,6 +27,36 @@ static bool ima_process_keys;
+ static DEFINE_SPINLOCK(ima_keys_lock);
+ static LIST_HEAD(ima_keys);
+ 
++/*
++ * If custom IMA policy is not loaded then keys queued up
++ * for measurement should be freed. This timer is used
++ * for handling this scenario.
++ */
++static long ima_key_queue_timeout = 300000; /* 5 Minutes */
++static struct timer_list ima_key_queue_timer;
++static bool timer_expired;
++
++/*
++ * This timer callback function frees keys that may still be
++ * queued up in case custom IMA policy was not loaded.
++ */
++static void ima_timer_handler(struct timer_list *timer)
++{
++	timer_expired = true;
++	ima_process_queued_keys();
++}
++
++/*
++ * This function sets up a timer to free queued keys in case
++ * custom IMA policy was never loaded.
++ */
++void ima_init_key_queue(void)
++{
++	timer_setup(&ima_key_queue_timer, ima_timer_handler, 0);
++	mod_timer(&ima_key_queue_timer,
++		  jiffies + msecs_to_jiffies(ima_key_queue_timeout));
++}
++
+ static void ima_free_key_entry(struct ima_key_entry *entry)
+ {
+ 	if (entry) {
+@@ -120,10 +151,15 @@ void ima_process_queued_keys(void)
+ 	if (!process)
+ 		return;
+ 
++	del_timer(&ima_key_queue_timer);
++
+ 	list_for_each_entry_safe(entry, tmp, &ima_keys, list) {
+-		process_buffer_measurement(entry->payload, entry->payload_len,
+-					   entry->keyring_name, KEY_CHECK, 0,
+-					   entry->keyring_name);
++		if (!timer_expired)
++			process_buffer_measurement(entry->payload,
++						   entry->payload_len,
++						   entry->keyring_name,
++						   KEY_CHECK, 0,
++						   entry->keyring_name);
+ 		list_del(&entry->list);
+ 		ima_free_key_entry(entry);
+ 	}
+diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
+index 5d55ade5f3b9..195cb4079b2b 100644
+--- a/security/integrity/ima/ima_init.c
++++ b/security/integrity/ima/ima_init.c
+@@ -131,5 +131,11 @@ int __init ima_init(void)
+ 
+ 	ima_init_policy();
+ 
+-	return ima_fs_init();
++	rc = ima_fs_init();
++	if (rc != 0)
++		return rc;
++
++	ima_init_key_queue();
++
++	return rc;
+ }
+-- 
+2.17.1
