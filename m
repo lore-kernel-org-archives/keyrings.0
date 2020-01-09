@@ -1,33 +1,54 @@
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Tue, 07 Jan 2020 22:06:05 +0000
-Subject: Re: [PATCH] ima: make ASYMMETRIC_PUBLIC_KEY_SUBTYPE 'bool'
-Message-Id: <CAK8P3a2GbfvgWep1JGNUX7c8jrtQs40PgUfq5C3d_zYuBK5nmw@mail.gmail.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 09 Jan 2020 17:50:46 +0000
+Subject: [PATCH] IMA: fix measuring early boot asymmetric keys
+Message-Id: <20200109175046.4024-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200107203041.843060-1-arnd@arndb.de> <1578430874.4288.2.camel@HansenPartnership.com>
-In-Reply-To: <1578430874.4288.2.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, Mimi Zohar <zohar@linux.ibm.com>, keyrings@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
+Cc: dhowells@redhat.com, arnd@arndb.de, matthewgarrett@google.com, sashal@kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-On Tue, Jan 7, 2020 at 10:01 PM James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
->
-> On Tue, 2020-01-07 at 21:30 +0100, Arnd Bergmann wrote:
+As a result of the asymmetric public keys subtype being defined as a
+tristate, with the existing IMA Makefile, ima_asymmetric_keys.c could
+be built as a kernel module. To prevent this from happening,
+an intermediate Kconfig boolean option named
+IMA_MEASURE_ASYMMETRIC_KEYS has been defined.
 
-> >  config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
-> > -     tristate "Asymmetric public-key crypto algorithm subtype"
-> > +     bool "Asymmetric public-key crypto algorithm subtype"
->
-> I believe the crypto guys do like stuff to be modular.
->
-> However, we've already implemented this solution:
->
-> https://lore.kernel.org/linux-integrity/20200107194350.3782-2-nramas@linux.microsoft.com/
->
-> To solve the problem via an intermediate boolean config variable.
+This patch uses this new config CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
+to declare the early boot key measurement functions.
 
-Ok, that looks good to me.
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Reported-by: kbuild test robot <lkp@intel.com> # redefinition of
+ima_init_key_queue() function.
+Suggested-by: James.Bottomley <James.Bottomley@HansenPartnership.com>
+Fixes: e164a1695a57 ("IMA: Define workqueue for early boot key measurements")
+Fixes: 1df595b4e120 ("IMA: Defined timer to free queued keys")
+---
+ security/integrity/ima/ima.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-    Arnd
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index c483215a9ee5..6bb3152b3e24 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -205,7 +205,7 @@ extern const char *const func_tokens[];
+ 
+ struct modsig;
+ 
+-#ifdef CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE
++#ifdef CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS
+ /*
+  * To track keys that need to be measured.
+  */
+@@ -220,7 +220,7 @@ void ima_init_key_queue(void);
+ #else
+ static inline void ima_process_queued_keys(void) {}
+ static inline void ima_init_key_queue(void) {}
+-#endif /* CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE */
++#endif /* CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS */
+ 
+ /* LIM API function definitions */
+ int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
+-- 
+2.17.1
