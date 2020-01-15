@@ -1,111 +1,130 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Fri, 03 Jan 2020 19:54:32 +0000
-Subject: [PATCH v7 0/3] IMA: Deferred measurement of keys
-Message-Id: <20200103195435.2647-1-nramas@linux.microsoft.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 15 Jan 2020 13:30:53 +0000
+Subject: [RFC PATCH 02/14] security: Add hooks to rule on setting a watch [ver #3]
+Message-Id: <157909505391.20155.3152153524575565871.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: James.Bottomley@HansenPartnership.com, eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <157909503552.20155.3030058841911628518.stgit@warthog.procyon.org.uk>
+In-Reply-To: <157909503552.20155.3030058841911628518.stgit-S6HVgzuS8uM4Awkfq6JHfwNdhmdF6hFW@public.gmane.org>
+To: torvalds-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org
+Cc: dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Greg Kroah-Hartman <gregkh-hQyY1W1yCW8ekmWlsbkhG0B+6BGkLq7r@public.gmane.org>, Casey Schaufler <casey-iSGtlc1asvQWG2LlvL+J4A@public.gmane.org>, Stephen Smalley <sds-+05T5uksL2qpZYMLLGbcSA@public.gmane.org>, nicolas.dichtel-pdR9zngts4EAvxtiuMwx3w@public.gmane.org, raven-PKsaG3nR2I+sTnJN9+BGXg@public.gmane.org, Christian Brauner <christian-STijNZzMWpgWenYVfaLwtA@public.gmane.org>dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-usb-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-block-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-The IMA subsystem supports measuring asymmetric keys when the key is
-created or updated[1]. But keys created or updated before a custom
-IMA policy is loaded are currently not measured. This includes keys
-added, for instance, to either the .ima or .builtin_trusted_keys keyrings,
-which happens early in the boot process.
+Add security hooks that will allow an LSM to rule on whether or not a watch
+may be set.  More than one hook is required as the watches watch different
+types of object.
 
-Measuring the early boot keys, by design, requires loading
-a custom IMA policy. This change adds support for queuing keys
-created or updated before a custom IMA policy is loaded.
-The queued keys are processed when a custom policy is loaded.
-Keys created or updated after a custom policy is loaded are measured
-immediately (not queued). In the case when a custom policy is not loaded
-within 5 minutes of IMA initialization, the queued keys are freed.
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>
+cc: Stephen Smalley <sds@tycho.nsa.gov>
+cc: linux-security-module@vger.kernel.org
+---
 
-[1] https://lore.kernel.org/linux-integrity/20191211164707.4698-1-nramas@linux.microsoft.com/
+ include/linux/lsm_hooks.h |   24 ++++++++++++++++++++++++
+ include/linux/security.h  |   17 +++++++++++++++++
+ security/security.c       |   14 ++++++++++++++
+ 3 files changed, 55 insertions(+)
 
-Testing performed:
-
-  * Ran kernel self-test following the instructions given in
-    https://www.kernel.org/doc/Documentation/kselftest.txt
-  * Ran the lkp-tests using the job script provided by
-    kernel test robot <rong.a.chen@intel.com>
-  * Booted the kernel with this change.
-  * Added .builtin_trusted_keys in "keyrings=" option in
-    the IMA policy and verified the keys added to this
-    keyring are measured.
-  * Specified only func=KEY_CHECK and not "keyrings=" option,
-    and verified the keys added to builtin_trusted_keys keyring
-    are processed.
-  * Added keys at runtime and verified they are measured
-    if the IMA policy permitted.
-      => For example, added keys to .ima keyring and verified.
-
-Changelog:
-
-  v7
-
-  => Updated cover letter per Mimi's suggestions.
-  => Updated "Reported-by" tag to be specific about
-     the issues fixed in the patch.
-
-  v6
-
-  => Replaced mutex with a spinlock to sychronize access to
-     queued keys. This fixes the problem reported by
-     "kernel test robot <rong.a.chen@intel.com>"
-     https://lore.kernel.org/linux-integrity/2a831fe9-30e5-63b4-af10-a69f327f7fb7@linux.microsoft.com/T/#t
-  => Changed ima_queue_key() to a static function. This fixes
-     the issue reported by "kbuild test robot <lkp@intel.com>"
-     https://lore.kernel.org/linux-integrity/1577370464.4487.10.camel@linux.ibm.com/
-  => Added the patch to free the queued keys if a custom IMA policy
-     was not loaded to this patch set.
-
-  v5
-
-  => Removed temp keys list in ima_process_queued_keys()
-
-  v4
-
-  => Check and set ima_process_keys flag with mutex held.
-
-  v3
-
-  => Defined ima_process_keys flag to be static.
-  => Set ima_process_keys with ima_keys_mutex held.
-  => Added a comment in ima_process_queued_keys() function
-     to state the use of temporary list for keys.
-
-  v2
-
-  => Rebased the changes to v5.5-rc1
-  => Updated function names, variable names, and code comments
-     to be less verbose.
-
-  v1
-
-  => Code cleanup
-
-  v0
-
-  => Based changes on v5.4-rc8
-  => The following patchsets should be applied in that order
-     https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
-     https://lore.kernel.org/linux-integrity/20191204224131.3384-1-nramas@linux.microsoft.com/
-  => Added functions to queue and dequeue keys, and process
-     the queued keys when custom IMA policies are applied.
-
-Lakshmi Ramasubramanian (3):
-  IMA: Define workqueue for early boot key measurements
-  IMA: Call workqueue functions to measure queued keys
-  IMA: Defined timer to free queued keys
-
- security/integrity/ima/ima.h                 |  17 ++
- security/integrity/ima/ima_asymmetric_keys.c | 159 +++++++++++++++++++
- security/integrity/ima/ima_init.c            |   8 +-
- security/integrity/ima/ima_policy.c          |   3 +
- 4 files changed, 186 insertions(+), 1 deletion(-)
-
--- 
-2.17.1
+diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
+index 20d8cf194fb7..79d7c73676d7 100644
+--- a/include/linux/lsm_hooks.h
++++ b/include/linux/lsm_hooks.h
+@@ -1416,6 +1416,18 @@
+  *	@ctx is a pointer in which to place the allocated security context.
+  *	@ctxlen points to the place to put the length of @ctx.
+  *
++ * Security hooks for the general notification queue:
++ *
++ * @watch_key:
++ *	Check to see if a process is allowed to watch for event notifications
++ *	from a key or keyring.
++ *	@key: The key to watch.
++ *
++ * @watch_devices:
++ *	Check to see if a process is allowed to watch for event notifications
++ *	from devices (as a global set).
++ *
++ *
+  * Security hooks for using the eBPF maps and programs functionalities through
+  * eBPF syscalls.
+  *
+@@ -1698,6 +1710,12 @@ union security_list_options {
+ 	int (*inode_notifysecctx)(struct inode *inode, void *ctx, u32 ctxlen);
+ 	int (*inode_setsecctx)(struct dentry *dentry, void *ctx, u32 ctxlen);
+ 	int (*inode_getsecctx)(struct inode *inode, void **ctx, u32 *ctxlen);
++#ifdef CONFIG_KEY_NOTIFICATIONS
++	int (*watch_key)(struct key *key);
++#endif
++#ifdef CONFIG_DEVICE_NOTIFICATIONS
++	int (*watch_devices)(void);
++#endif
+ 
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
+@@ -1985,6 +2003,12 @@ struct security_hook_heads {
+ 	struct hlist_head inode_notifysecctx;
+ 	struct hlist_head inode_setsecctx;
+ 	struct hlist_head inode_getsecctx;
++#ifdef CONFIG_KEY_NOTIFICATIONS
++	struct hlist_head watch_key;
++#endif
++#ifdef CONFIG_DEVICE_NOTIFICATIONS
++	struct hlist_head watch_devices;
++#endif
+ #ifdef CONFIG_SECURITY_NETWORK
+ 	struct hlist_head unix_stream_connect;
+ 	struct hlist_head unix_may_send;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 3e8d4bacd59d..8f2fa100d128 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1274,6 +1274,23 @@ static inline int security_locked_down(enum lockdown_reason what)
+ }
+ #endif	/* CONFIG_SECURITY */
+ 
++#if defined(CONFIG_SECURITY) && defined(CONFIG_KEY_NOTIFICATIONS)
++int security_watch_key(struct key *key);
++#else
++static inline int security_watch_key(struct key *key)
++{
++	return 0;
++}
++#endif
++#if defined(CONFIG_SECURITY) && defined(CONFIG_DEVICE_NOTIFICATIONS)
++int security_watch_devices(void);
++#else
++static inline int security_watch_devices(void)
++{
++	return 0;
++}
++#endif
++
+ #ifdef CONFIG_SECURITY_NETWORK
+ 
+ int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk);
+diff --git a/security/security.c b/security/security.c
+index cd2d18d2d279..578863f230a6 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1956,6 +1956,20 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
+ }
+ EXPORT_SYMBOL(security_inode_getsecctx);
+ 
++#ifdef CONFIG_KEY_NOTIFICATIONS
++int security_watch_key(struct key *key)
++{
++	return call_int_hook(watch_key, 0, key);
++}
++#endif
++
++#ifdef CONFIG_DEVICE_NOTIFICATIONS
++int security_watch_devices(void)
++{
++	return call_int_hook(watch_devices, 0);
++}
++#endif
++
+ #ifdef CONFIG_SECURITY_NETWORK
+ 
+ int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk)
