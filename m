@@ -1,59 +1,114 @@
 From: David Howells <dhowells@redhat.com>
-Date: Wed, 15 Jan 2020 13:32:31 +0000
-Subject: [RFC PATCH 13/14] selinux: Implement the watch_key security hook [ver #3]
-Message-Id: <157909515176.20155.5691408493465374252.stgit@warthog.procyon.org.uk>
+Date: Wed, 15 Jan 2020 13:30:45 +0000
+Subject: [RFC PATCH 01/14] uapi: General notification queue definitions [ver #3]
+Message-Id: <157909504508.20155.16673561263079184328.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <157909503552.20155.3030058841911628518.stgit@warthog.procyon.org.uk>
-In-Reply-To: <157909503552.20155.3030058841911628518.stgit-S6HVgzuS8uM4Awkfq6JHfwNdhmdF6hFW@public.gmane.org>
-To: torvalds-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org
-Cc: dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Greg Kroah-Hartman <gregkh-hQyY1W1yCW8ekmWlsbkhG0B+6BGkLq7r@public.gmane.org>, Casey Schaufler <casey-iSGtlc1asvQWG2LlvL+J4A@public.gmane.org>, Stephen Smalley <sds-+05T5uksL2qpZYMLLGbcSA@public.gmane.org>, nicolas.dichtel-pdR9zngts4EAvxtiuMwx3w@public.gmane.org, raven-PKsaG3nR2I+sTnJN9+BGXg@public.gmane.org, Christian Brauner <christian-STijNZzMWpgWenYVfaLwtA@public.gmane.org>dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-usb-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-block-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+In-Reply-To: <157909503552.20155.3030058841911628518.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, Christian Brauner <christian@brauner.io>dhowells@redhat.com, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Implement the watch_key security hook to make sure that a key grants the
-caller View permission in order to set a watch on a key.
+Add UAPI definitions for the general notification queue, including the
+following pieces:
 
-For the moment, the watch_devices security hook is left unimplemented as
-it's not obvious what the object should be since the queue is global and
-didn't previously exist.
+ (*) struct watch_notification.
+
+     This is the metadata header for notification messages.  It includes a
+     type and subtype that indicate the source of the message
+     (eg. WATCH_TYPE_MOUNT_NOTIFY) and the kind of the message
+     (eg. NOTIFY_MOUNT_NEW_MOUNT).
+
+     The header also contains an information field that conveys the
+     following information:
+
+	- WATCH_INFO_LENGTH.  The size of the entry (entries are variable
+          length).
+
+	- WATCH_INFO_ID.  The watch ID specified when the watchpoint was
+          set.
+
+	- WATCH_INFO_TYPE_INFO.  (Sub)type-specific information.
+
+	- WATCH_INFO_FLAG_*.  Flag bits overlain on the type-specific
+          information.  For use by the type.
+
+     All the information in the header can be used in filtering messages at
+     the point of writing into the buffer.
+
+ (*) struct watch_notification_removal
+
+     This is an extended watch-removal notification record that includes an
+     'id' field that can indicate the identifier of the object being
+     removed if available (for instance, a keyring serial number).
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
 ---
 
- security/selinux/hooks.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ include/uapi/linux/watch_queue.h |   55 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+ create mode 100644 include/uapi/linux/watch_queue.h
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 116b4d644f68..d838d1b58d88 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -6587,6 +6587,17 @@ static int selinux_key_getsecurity(struct key *key, char **_buffer)
- 	*_buffer = context;
- 	return rc;
- }
+diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
+new file mode 100644
+index 000000000000..5f3d21e8a34b
+--- /dev/null
++++ b/include/uapi/linux/watch_queue.h
+@@ -0,0 +1,55 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++#ifndef _UAPI_LINUX_WATCH_QUEUE_H
++#define _UAPI_LINUX_WATCH_QUEUE_H
 +
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+static int selinux_watch_key(struct key *key)
-+{
-+	struct key_security_struct *ksec = key->security;
-+	u32 sid = current_sid();
++#include <linux/types.h>
 +
-+	return avc_has_perm(&selinux_state,
-+			    sid, ksec->sid, SECCLASS_KEY, KEY_NEED_VIEW, NULL);
-+}
-+#endif
- #endif
- 
- #ifdef CONFIG_SECURITY_INFINIBAND
-@@ -7081,6 +7092,9 @@ static struct security_hook_list selinux_hooks[] __lsm_ro_after_init = {
- 	LSM_HOOK_INIT(key_free, selinux_key_free),
- 	LSM_HOOK_INIT(key_permission, selinux_key_permission),
- 	LSM_HOOK_INIT(key_getsecurity, selinux_key_getsecurity),
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+	LSM_HOOK_INIT(watch_key, selinux_watch_key),
-+#endif
- #endif
- 
- #ifdef CONFIG_AUDIT
++enum watch_notification_type {
++	WATCH_TYPE_META		= 0,	/* Special record */
++	WATCH_TYPE__NR		= 1
++};
++
++enum watch_meta_notification_subtype {
++	WATCH_META_REMOVAL_NOTIFICATION	= 0,	/* Watched object was removed */
++	WATCH_META_LOSS_NOTIFICATION	= 1,	/* Data loss occurred */
++};
++
++/*
++ * Notification record header.  This is aligned to 64-bits so that subclasses
++ * can contain __u64 fields.
++ */
++struct watch_notification {
++	__u32			type:24;	/* enum watch_notification_type */
++	__u32			subtype:8;	/* Type-specific subtype (filterable) */
++	__u32			info;
++#define WATCH_INFO_LENGTH	0x0000007f	/* Length of record */
++#define WATCH_INFO_LENGTH__SHIFT 0
++#define WATCH_INFO_ID		0x0000ff00	/* ID of watchpoint */
++#define WATCH_INFO_ID__SHIFT	8
++#define WATCH_INFO_TYPE_INFO	0xffff0000	/* Type-specific info */
++#define WATCH_INFO_TYPE_INFO__SHIFT 16
++#define WATCH_INFO_FLAG_0	0x00010000	/* Type-specific info, flag bit 0 */
++#define WATCH_INFO_FLAG_1	0x00020000	/* ... */
++#define WATCH_INFO_FLAG_2	0x00040000
++#define WATCH_INFO_FLAG_3	0x00080000
++#define WATCH_INFO_FLAG_4	0x00100000
++#define WATCH_INFO_FLAG_5	0x00200000
++#define WATCH_INFO_FLAG_6	0x00400000
++#define WATCH_INFO_FLAG_7	0x00800000
++};
++
++
++/*
++ * Extended watch removal notification.  This is used optionally if the type
++ * wants to indicate an identifier for the object being watched, if there is
++ * such.  This can be distinguished by the length.
++ *
++ * type -> WATCH_TYPE_META
++ * subtype -> WATCH_META_REMOVAL_NOTIFICATION
++ */
++struct watch_notification_removal {
++	struct watch_notification watch;
++	__u64	id;		/* Type-dependent identifier */
++};
++
++#endif /* _UAPI_LINUX_WATCH_QUEUE_H */
