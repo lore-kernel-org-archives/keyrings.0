@@ -1,251 +1,93 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Thu, 23 Jan 2020 14:19:58 +0000
-Subject: Re: [PATCH v9 1/3] IMA: Define workqueue for early boot key measurements
-Message-Id: <1579789198.31710.12.camel@linux.ibm.com>
+From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Date: Thu, 16 Jan 2020 03:15:08 +0000
+Subject: [PATCH] IMA: pre-allocate keyrings string
+Message-Id: <20200116031508.3481-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200123013206.8499-1-nramas@linux.microsoft.com>
-         <20200123013206.8499-2-nramas@linux.microsoft.com>
-In-Reply-To: <20200123013206.8499-2-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
-Cc: sashal@kernel.org, dhowells@redhat.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, arnd@arndb.de, linux-integrity@vger.kernel.org
+Cc: dhowells@redhat.com, sashal@kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
 
-Hi Lakshmi,
+ima_match_keyring() is called while holding rcu read lock.
+Since this function executes in atmomic context, it should
+not call any function that can sleep (such as kstrdup()).
 
-On Wed, 2020-01-22 at 17:32 -0800, Lakshmi Ramasubramanian wrote:
-> Measuring keys requires a custom IMA policy to be loaded.
-> Keys created or updated before a custom IMA policy is loaded should
-> be queued and the keys should be processed after a custom policy
-> is loaded.
+This patch pre-allocates a buffer to hold the keyrings
+string read from the IMA policy and uses that to check
+the given keyring in ima_match_keyring().
 
-The addition of "and the keys" makes the sentence a run-on.  I've
-reverted this change.
+Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+Fixes: e9085e0ad38a ("IMA: Add support to limit measuring keys")
+---
+ security/integrity/ima/ima_policy.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
-> 
-> This patch defines workqueue for queuing keys when a custom IMA policy
-> has not yet been loaded. An intermediate Kconfig boolean option namely
-> IMA_QUEUE_EARLY_BOOT_KEYS is used to declare the workqueue functions.
-> 
-> A flag namely ima_process_keys is used to check if the key should be
-> queued or should be processed immediately.
-> 
-> Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-
-Thanks!  With this patch, if queueing keys ever becomes an issue,
-resolving it will be straight forward.
-
-This patch set is now in the next-integrity-testing branch.  Assuming
-there are no problems, it will be merged into the next-integrity
-branch, requiring a rebase.  I'm sorry for any inconvenience this may
-cause.
-
-Mimi
-
-> ---
->  security/integrity/ima/Kconfig          |   5 +
->  security/integrity/ima/Makefile         |   1 +
->  security/integrity/ima/ima.h            |  22 ++++
->  security/integrity/ima/ima_queue_keys.c | 137 ++++++++++++++++++++++++
->  4 files changed, 165 insertions(+)
->  create mode 100644 security/integrity/ima/ima_queue_keys.c
-> 
-> diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-> index 6bec78eeeae8..711ff10fa36e 100644
-> --- a/security/integrity/ima/Kconfig
-> +++ b/security/integrity/ima/Kconfig
-> @@ -317,3 +317,8 @@ config IMA_MEASURE_ASYMMETRIC_KEYS
->  	depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE=y
->  	default y
->  
-> +config IMA_QUEUE_EARLY_BOOT_KEYS
-> +	bool
-> +	depends on IMA_MEASURE_ASYMMETRIC_KEYS
-> +	depends on SYSTEM_TRUSTED_KEYRING
-> +	default y
-> diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
-> index 3e9d0ad68c7b..064a256f8725 100644
-> --- a/security/integrity/ima/Makefile
-> +++ b/security/integrity/ima/Makefile
-> @@ -13,3 +13,4 @@ ima-$(CONFIG_IMA_APPRAISE_MODSIG) += ima_modsig.o
->  ima-$(CONFIG_HAVE_IMA_KEXEC) += ima_kexec.o
->  obj-$(CONFIG_IMA_BLACKLIST_KEYRING) += ima_mok.o
->  obj-$(CONFIG_IMA_MEASURE_ASYMMETRIC_KEYS) += ima_asymmetric_keys.o
-> +obj-$(CONFIG_IMA_QUEUE_EARLY_BOOT_KEYS) += ima_queue_keys.o
-> diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-> index f06238e41a7c..905ed2f7f778 100644
-> --- a/security/integrity/ima/ima.h
-> +++ b/security/integrity/ima/ima.h
-> @@ -205,6 +205,28 @@ extern const char *const func_tokens[];
->  
->  struct modsig;
->  
-> +#ifdef CONFIG_IMA_QUEUE_EARLY_BOOT_KEYS
-> +/*
-> + * To track keys that need to be measured.
-> + */
-> +struct ima_key_entry {
-> +	struct list_head list;
-> +	void *payload;
-> +	size_t payload_len;
-> +	char *keyring_name;
-> +};
-> +bool ima_should_queue_key(void);
-> +bool ima_queue_key(struct key *keyring, const void *payload,
-> +		   size_t payload_len);
-> +void ima_process_queued_keys(void);
-> +#else
-> +static inline bool ima_should_queue_key(void) { return false; }
-> +static inline bool ima_queue_key(struct key *keyring,
-> +				 const void *payload,
-> +				 size_t payload_len) { return false; }
-> +static inline void ima_process_queued_keys(void) {}
-> +#endif /* CONFIG_IMA_QUEUE_EARLY_BOOT_KEYS */
-> +
->  /* LIM API function definitions */
->  int ima_get_action(struct inode *inode, const struct cred *cred, u32 secid,
->  		   int mask, enum ima_hooks func, int *pcr,
-> diff --git a/security/integrity/ima/ima_queue_keys.c b/security/integrity/ima/ima_queue_keys.c
-> new file mode 100644
-> index 000000000000..9b561f2b86db
-> --- /dev/null
-> +++ b/security/integrity/ima/ima_queue_keys.c
-> @@ -0,0 +1,137 @@
-> +// SPDX-License-Identifier: GPL-2.0+
-> +/*
-> + * Copyright (C) 2019 Microsoft Corporation
-> + *
-> + * Author: Lakshmi Ramasubramanian (nramas@linux.microsoft.com)
-> + *
-> + * File: ima_queue_keys.c
-> + *       Enables deferred processing of keys
-> + */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
-> +#include <keys/asymmetric-type.h>
-> +#include "ima.h"
-> +
-> +/*
-> + * Flag to indicate whether a key can be processed
-> + * right away or should be queued for processing later.
-> + */
-> +static bool ima_process_keys;
-> +
-> +/*
-> + * To synchronize access to the list of keys that need to be measured
-> + */
-> +static DEFINE_MUTEX(ima_keys_lock);
-> +static LIST_HEAD(ima_keys);
-> +
-> +static void ima_free_key_entry(struct ima_key_entry *entry)
-> +{
-> +	if (entry) {
-> +		kfree(entry->payload);
-> +		kfree(entry->keyring_name);
-> +		kfree(entry);
-> +	}
-> +}
-> +
-> +static struct ima_key_entry *ima_alloc_key_entry(struct key *keyring,
-> +						 const void *payload,
-> +						 size_t payload_len)
-> +{
-> +	int rc = 0;
-> +	struct ima_key_entry *entry;
-> +
-> +	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-> +	if (entry) {
-> +		entry->payload = kmemdup(payload, payload_len, GFP_KERNEL);
-> +		entry->keyring_name = kstrdup(keyring->description,
-> +					      GFP_KERNEL);
-> +		entry->payload_len = payload_len;
-> +	}
-> +
-> +	if ((entry = NULL) || (entry->payload = NULL) ||
-> +	    (entry->keyring_name = NULL)) {
-> +		rc = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	INIT_LIST_HEAD(&entry->list);
-> +
-> +out:
-> +	if (rc) {
-> +		ima_free_key_entry(entry);
-> +		entry = NULL;
-> +	}
-> +
-> +	return entry;
-> +}
-> +
-> +bool ima_queue_key(struct key *keyring, const void *payload,
-> +		   size_t payload_len)
-> +{
-> +	bool queued = false;
-> +	struct ima_key_entry *entry;
-> +
-> +	entry = ima_alloc_key_entry(keyring, payload, payload_len);
-> +	if (!entry)
-> +		return false;
-> +
-> +	mutex_lock(&ima_keys_lock);
-> +	if (!ima_process_keys) {
-> +		list_add_tail(&entry->list, &ima_keys);
-> +		queued = true;
-> +	}
-> +	mutex_unlock(&ima_keys_lock);
-> +
-> +	if (!queued)
-> +		ima_free_key_entry(entry);
-> +
-> +	return queued;
-> +}
-> +
-> +/*
-> + * ima_process_queued_keys() - process keys queued for measurement
-> + *
-> + * This function sets ima_process_keys to true and processes queued keys.
-> + * From here on keys will be processed right away (not queued).
-> + */
-> +void ima_process_queued_keys(void)
-> +{
-> +	struct ima_key_entry *entry, *tmp;
-> +	bool process = false;
-> +
-> +	if (ima_process_keys)
-> +		return;
-> +
-> +	/*
-> +	 * Since ima_process_keys is set to true, any new key will be
-> +	 * processed immediately and not be queued to ima_keys list.
-> +	 * First one setting the ima_process_keys flag to true will
-> +	 * process the queued keys.
-> +	 */
-> +	mutex_lock(&ima_keys_lock);
-> +	if (!ima_process_keys) {
-> +		ima_process_keys = true;
-> +		process = true;
-> +	}
-> +	mutex_unlock(&ima_keys_lock);
-> +
-> +	if (!process)
-> +		return;
-> +
-> +
-> +	list_for_each_entry_safe(entry, tmp, &ima_keys, list) {
-> +		process_buffer_measurement(entry->payload,
-> +					   entry->payload_len,
-> +					   entry->keyring_name,
-> +					   KEY_CHECK, 0,
-> +					   entry->keyring_name);
-> +		list_del(&entry->list);
-> +		ima_free_key_entry(entry);
-> +	}
-> +}
-> +
-> +inline bool ima_should_queue_key(void)
-> +{
-> +	return !ima_process_keys;
-> +}
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 9963863d6c92..0bb4376ddba7 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -207,6 +207,7 @@ static LIST_HEAD(ima_default_rules);
+ static LIST_HEAD(ima_policy_rules);
+ static LIST_HEAD(ima_temp_rules);
+ static struct list_head *ima_rules;
++static char *ima_keyrings;
+ 
+ static int ima_policy __initdata;
+ 
+@@ -369,7 +370,7 @@ int ima_lsm_policy_change(struct notifier_block *nb, unsigned long event,
+ static bool ima_match_keyring(struct ima_rule_entry *rule,
+ 			      const char *keyring, const struct cred *cred)
+ {
+-	char *keyrings, *next_keyring, *keyrings_ptr;
++	char *next_keyring, *keyrings_ptr;
+ 	bool matched = false;
+ 
+ 	if ((rule->flags & IMA_UID) && !rule->uid_op(cred->uid, rule->uid))
+@@ -381,15 +382,13 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
+ 	if (!keyring)
+ 		return false;
+ 
+-	keyrings = kstrdup(rule->keyrings, GFP_KERNEL);
+-	if (!keyrings)
+-		return false;
++	strcpy(ima_keyrings, rule->keyrings);
+ 
+ 	/*
+ 	 * "keyrings=" is specified in the policy in the format below:
+ 	 * keyrings=.builtin_trusted_keys|.ima|.evm
+ 	 */
+-	keyrings_ptr = keyrings;
++	keyrings_ptr = ima_keyrings;
+ 	while ((next_keyring = strsep(&keyrings_ptr, "|")) != NULL) {
+ 		if (!strcmp(next_keyring, keyring)) {
+ 			matched = true;
+@@ -397,8 +396,6 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
+ 		}
+ 	}
+ 
+-	kfree(keyrings);
+-
+ 	return matched;
+ }
+ 
+@@ -1120,8 +1117,17 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 				result = -EINVAL;
+ 				break;
+ 			}
++
++			ima_keyrings = kstrdup(args[0].from, GFP_KERNEL);
++			if (!ima_keyrings) {
++				result = -ENOMEM;
++				break;
++			}
++
+ 			entry->keyrings = kstrdup(args[0].from, GFP_KERNEL);
+ 			if (!entry->keyrings) {
++				kfree(ima_keyrings);
++				ima_keyrings = NULL;
+ 				result = -ENOMEM;
+ 				break;
+ 			}
+-- 
+2.17.1
