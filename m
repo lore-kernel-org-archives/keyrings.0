@@ -1,93 +1,65 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 16 Jan 2020 03:15:08 +0000
-Subject: [PATCH] IMA: pre-allocate keyrings string
-Message-Id: <20200116031508.3481-1-nramas@linux.microsoft.com>
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Thu, 16 Jan 2020 12:56:50 +0000
+Subject: Re: [PATCH] IMA: pre-allocate keyrings string
+Message-Id: <1579179410.5857.21.camel@linux.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, arnd@arndb.de, linux-integrity@vger.kernel.org
-Cc: dhowells@redhat.com, sashal@kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <20200116031508.3481-1-nramas@linux.microsoft.com>
+In-Reply-To: <20200116031508.3481-1-nramas@linux.microsoft.com>
+To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, linux-integrity@vger.kernel.org
+Cc: sashal@kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
 
-ima_match_keyring() is called while holding rcu read lock.
-Since this function executes in atmomic context, it should
-not call any function that can sleep (such as kstrdup()).
+Hi Laskhmi,
 
-This patch pre-allocates a buffer to hold the keyrings
-string read from the IMA policy and uses that to check
-the given keyring in ima_match_keyring().
+On Wed, 2020-01-15 at 19:15 -0800, Lakshmi Ramasubramanian wrote:
+> ima_match_keyring() is called while holding rcu read lock.
+> Since this function executes in atmomic context, it should
+> not call any function that can sleep (such as kstrdup()).
 
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Fixes: e9085e0ad38a ("IMA: Add support to limit measuring keys")
----
- security/integrity/ima/ima_policy.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+Good catch!
 
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 9963863d6c92..0bb4376ddba7 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -207,6 +207,7 @@ static LIST_HEAD(ima_default_rules);
- static LIST_HEAD(ima_policy_rules);
- static LIST_HEAD(ima_temp_rules);
- static struct list_head *ima_rules;
-+static char *ima_keyrings;
+> This patch pre-allocates a buffer to hold the keyrings
+> string read from the IMA policy and uses that to check
+> the given keyring in ima_match_keyring().
+
+(Reminder: this patch description line length is a bit short.
+ According to  Documentation/process/submitting-patches.rst, the patch
+description line length should be line wrapped at 75 columns.)
+
+> 
+> Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
+> Fixes: e9085e0ad38a ("IMA: Add support to limit measuring keys")
+> ---
+
  
- static int ima_policy __initdata;
- 
-@@ -369,7 +370,7 @@ int ima_lsm_policy_change(struct notifier_block *nb, unsigned long event,
- static bool ima_match_keyring(struct ima_rule_entry *rule,
- 			      const char *keyring, const struct cred *cred)
- {
--	char *keyrings, *next_keyring, *keyrings_ptr;
-+	char *next_keyring, *keyrings_ptr;
- 	bool matched = false;
- 
- 	if ((rule->flags & IMA_UID) && !rule->uid_op(cred->uid, rule->uid))
-@@ -381,15 +382,13 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
- 	if (!keyring)
- 		return false;
- 
--	keyrings = kstrdup(rule->keyrings, GFP_KERNEL);
--	if (!keyrings)
--		return false;
-+	strcpy(ima_keyrings, rule->keyrings);
- 
- 	/*
- 	 * "keyrings=" is specified in the policy in the format below:
- 	 * keyrings=.builtin_trusted_keys|.ima|.evm
- 	 */
--	keyrings_ptr = keyrings;
-+	keyrings_ptr = ima_keyrings;
- 	while ((next_keyring = strsep(&keyrings_ptr, "|")) != NULL) {
- 		if (!strcmp(next_keyring, keyring)) {
- 			matched = true;
-@@ -397,8 +396,6 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
- 		}
- 	}
- 
--	kfree(keyrings);
--
- 	return matched;
- }
- 
-@@ -1120,8 +1117,17 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 				result = -EINVAL;
- 				break;
- 			}
-+
-+			ima_keyrings = kstrdup(args[0].from, GFP_KERNEL);
-+			if (!ima_keyrings) {
-+				result = -ENOMEM;
-+				break;
-+			}
-+
- 			entry->keyrings = kstrdup(args[0].from, GFP_KERNEL);
- 			if (!entry->keyrings) {
-+				kfree(ima_keyrings);
-+				ima_keyrings = NULL;
- 				result = -ENOMEM;
- 				break;
- 			}
--- 
-2.17.1
+> @@ -1120,8 +1117,17 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+>  				result = -EINVAL;
+>  				break;
+>  			}
+> +
+> +			ima_keyrings = kstrdup(args[0].from, GFP_KERNEL);
+> +			if (!ima_keyrings) {
+> +				result = -ENOMEM;
+> +				break;
+> +			}
+
+
+This would work for a single "key" measurement rule, but not for
+multiple rules, where the last "keyrings" string is shorter than the
+previous ones.  For example, in addition to the builtin trusted
+keyrings, another rule could measure a keyring owned by a user.
+
+measure func=KEY_CHECK template=ima-buf keyrings=.ima|.builtin_trusted_keys
+measure func=KEY_CHECK uid00 template=ima-buf keyrings=_foo
+
+Mimi
+
+>  			entry->keyrings = kstrdup(args[0].from, GFP_KERNEL);
+>  			if (!entry->keyrings) {
+> +				kfree(ima_keyrings);
+> +				ima_keyrings = NULL;
+>  				result = -ENOMEM;
+>  				break;
+>  			}
