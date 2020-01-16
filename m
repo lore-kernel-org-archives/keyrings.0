@@ -1,145 +1,134 @@
 From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 23 Jan 2020 01:32:06 +0000
-Subject: [PATCH v9 3/3] IMA: Defined delayed workqueue to free the queued keys
-Message-Id: <20200123013206.8499-4-nramas@linux.microsoft.com>
+Date: Thu, 16 Jan 2020 23:46:23 +0000
+Subject: [PATCH v1] IMA: pre-allocate buffer to hold keyrings string
+Message-Id: <20200116234623.2959-1-nramas@linux.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200123013206.8499-1-nramas@linux.microsoft.com>
-In-Reply-To: <20200123013206.8499-1-nramas@linux.microsoft.com>
 To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
-Cc: sashal@kernel.org, dhowells@redhat.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+Cc: dhowells@redhat.com, sashal@kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
 
-Keys queued for measurement should be freed if a custom IMA policy
-was not loaded. Otherwise, the keys will remain queued forever
-consuming kernel memory.
+ima_match_keyring() is called while holding rcu read lock. Since this
+function executes in atmomic context, it should not call any function
+that can sleep (such as kstrdup()).
 
-This patch defines a delayed workqueue to handle the above scenario.
-The workqueue handler is setup to execute 5 minutes after IMA
-initialization is completed.
-
-If a custom IMA policy is loaded before the workqueue handler is
-scheduled to execute, the workqueue task is cancelled and any queued keys
-are processed for measurement. But if a custom policy was not loaded then
-the queued keys are just freed when the delayed workqueue handler is run.
+This patch pre-allocates a buffer to hold the keyrings string read from
+the IMA policy and uses that to match the given keyring.
 
 Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Reported-by: kernel test robot <rong.a.chen@intel.com> # sleeping
-function called from invalid context
-Reported-by: kbuild test robot <lkp@intel.com> # redefinition of
-ima_init_key_queue() function.
+Fixes: e9085e0ad38a ("IMA: Add support to limit measuring keys")
 ---
- security/integrity/ima/ima.h            |  2 ++
- security/integrity/ima/ima_init.c       |  8 ++++-
- security/integrity/ima/ima_queue_keys.c | 44 ++++++++++++++++++++++---
- 3 files changed, 48 insertions(+), 6 deletions(-)
+ security/integrity/ima/ima_policy.c | 50 ++++++++++++++++++++++++-----
+ 1 file changed, 42 insertions(+), 8 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 905ed2f7f778..64317d95363e 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -215,11 +215,13 @@ struct ima_key_entry {
- 	size_t payload_len;
- 	char *keyring_name;
- };
-+void ima_init_key_queue(void);
- bool ima_should_queue_key(void);
- bool ima_queue_key(struct key *keyring, const void *payload,
- 		   size_t payload_len);
- void ima_process_queued_keys(void);
- #else
-+static inline void ima_init_key_queue(void) {}
- static inline bool ima_should_queue_key(void) { return false; }
- static inline bool ima_queue_key(struct key *keyring,
- 				 const void *payload,
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 5d55ade5f3b9..195cb4079b2b 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -131,5 +131,11 @@ int __init ima_init(void)
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 9963863d6c92..180e2069e075 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -208,6 +208,10 @@ static LIST_HEAD(ima_policy_rules);
+ static LIST_HEAD(ima_temp_rules);
+ static struct list_head *ima_rules;
  
- 	ima_init_policy();
- 
--	return ima_fs_init();
-+	rc = ima_fs_init();
-+	if (rc != 0)
-+		return rc;
++/* Pre-allocated buffer used for matching keyrings. */
++static char *ima_keyrings;
++static size_t ima_keyrings_len;
 +
-+	ima_init_key_queue();
-+
-+	return rc;
- }
-diff --git a/security/integrity/ima/ima_queue_keys.c b/security/integrity/ima/ima_queue_keys.c
-index 9b561f2b86db..c87c72299191 100644
---- a/security/integrity/ima/ima_queue_keys.c
-+++ b/security/integrity/ima/ima_queue_keys.c
-@@ -10,6 +10,7 @@
+ static int ima_policy __initdata;
  
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+#include <linux/workqueue.h>
- #include <keys/asymmetric-type.h>
- #include "ima.h"
- 
-@@ -25,6 +26,36 @@ static bool ima_process_keys;
- static DEFINE_MUTEX(ima_keys_lock);
- static LIST_HEAD(ima_keys);
- 
-+/*
-+ * If custom IMA policy is not loaded then keys queued up
-+ * for measurement should be freed. This worker is used
-+ * for handling this scenario.
-+ */
-+static long ima_key_queue_timeout = 300000; /* 5 Minutes */
-+static void ima_keys_handler(struct work_struct *work);
-+static DECLARE_DELAYED_WORK(ima_keys_delayed_work, ima_keys_handler);
-+static bool timer_expired;
-+
-+/*
-+ * This worker function frees keys that may still be
-+ * queued up in case custom IMA policy was not loaded.
-+ */
-+static void ima_keys_handler(struct work_struct *work)
-+{
-+	timer_expired = true;
-+	ima_process_queued_keys();
-+}
-+
-+/*
-+ * This function sets up a worker to free queued keys in case
-+ * custom IMA policy was never loaded.
-+ */
-+void ima_init_key_queue(void)
-+{
-+	schedule_delayed_work(&ima_keys_delayed_work,
-+			      msecs_to_jiffies(ima_key_queue_timeout));
-+}
-+
- static void ima_free_key_entry(struct ima_key_entry *entry)
+ static int __init default_measure_policy_setup(char *str)
+@@ -369,7 +373,7 @@ int ima_lsm_policy_change(struct notifier_block *nb, unsigned long event,
+ static bool ima_match_keyring(struct ima_rule_entry *rule,
+ 			      const char *keyring, const struct cred *cred)
  {
- 	if (entry) {
-@@ -119,13 +150,16 @@ void ima_process_queued_keys(void)
- 	if (!process)
- 		return;
+-	char *keyrings, *next_keyring, *keyrings_ptr;
++	char *next_keyring, *keyrings_ptr;
+ 	bool matched = false;
  
-+	if (!timer_expired)
-+		cancel_delayed_work_sync(&ima_keys_delayed_work);
+ 	if ((rule->flags & IMA_UID) && !rule->uid_op(cred->uid, rule->uid))
+@@ -381,15 +385,13 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
+ 	if (!keyring)
+ 		return false;
  
- 	list_for_each_entry_safe(entry, tmp, &ima_keys, list) {
--		process_buffer_measurement(entry->payload,
--					   entry->payload_len,
--					   entry->keyring_name,
--					   KEY_CHECK, 0,
--					   entry->keyring_name);
-+		if (!timer_expired)
-+			process_buffer_measurement(entry->payload,
-+						   entry->payload_len,
-+						   entry->keyring_name,
-+						   KEY_CHECK, 0,
-+						   entry->keyring_name);
- 		list_del(&entry->list);
- 		ima_free_key_entry(entry);
+-	keyrings = kstrdup(rule->keyrings, GFP_KERNEL);
+-	if (!keyrings)
+-		return false;
++	strcpy(ima_keyrings, rule->keyrings);
+ 
+ 	/*
+ 	 * "keyrings=" is specified in the policy in the format below:
+ 	 * keyrings=.builtin_trusted_keys|.ima|.evm
+ 	 */
+-	keyrings_ptr = keyrings;
++	keyrings_ptr = ima_keyrings;
+ 	while ((next_keyring = strsep(&keyrings_ptr, "|")) != NULL) {
+ 		if (!strcmp(next_keyring, keyring)) {
+ 			matched = true;
+@@ -397,8 +399,6 @@ static bool ima_match_keyring(struct ima_rule_entry *rule,
+ 		}
  	}
+ 
+-	kfree(keyrings);
+-
+ 	return matched;
+ }
+ 
+@@ -949,6 +949,7 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 	bool uid_token;
+ 	struct ima_template_desc *template_desc;
+ 	int result = 0;
++	size_t keyrings_len;
+ 
+ 	ab = integrity_audit_log_start(audit_context(), GFP_KERNEL,
+ 				       AUDIT_INTEGRITY_POLICY_RULE);
+@@ -1114,14 +1115,47 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 		case Opt_keyrings:
+ 			ima_log_string(ab, "keyrings", args[0].from);
+ 
++			keyrings_len = strlen(args[0].from) + 1;
++
+ 			if ((entry->keyrings) ||
+ 			    (entry->action != MEASURE) ||
+-			    (entry->func != KEY_CHECK)) {
++			    (entry->func != KEY_CHECK) ||
++			    (keyrings_len < 2)) {
+ 				result = -EINVAL;
+ 				break;
+ 			}
++
++			if (ima_keyrings) {
++				if (keyrings_len > ima_keyrings_len) {
++					char *tmpbuf;
++
++					tmpbuf = krealloc(ima_keyrings,
++							  keyrings_len,
++							  GFP_KERNEL);
++					if (!tmpbuf) {
++						result = -ENOMEM;
++						break;
++					}
++
++					ima_keyrings = tmpbuf;
++					ima_keyrings_len = keyrings_len;
++				}
++			} else {
++				ima_keyrings = kzalloc(keyrings_len,
++						       GFP_KERNEL);
++				if (!ima_keyrings) {
++					result = -ENOMEM;
++					break;
++				}
++
++				ima_keyrings_len = keyrings_len;
++			}
++
+ 			entry->keyrings = kstrdup(args[0].from, GFP_KERNEL);
+ 			if (!entry->keyrings) {
++				kfree(ima_keyrings);
++				ima_keyrings = NULL;
++				ima_keyrings_len = 0;
+ 				result = -ENOMEM;
+ 				break;
+ 			}
 -- 
 2.17.1
