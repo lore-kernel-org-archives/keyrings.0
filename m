@@ -1,113 +1,146 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Thu, 23 Jan 2020 01:32:03 +0000
-Subject: [PATCH v9 0/3] IMA: Deferred measurement of keys
-Message-Id: <20200123013206.8499-1-nramas@linux.microsoft.com>
+From: Maik Otto <m.otto@phytec.de>
+Date: Fri, 17 Jan 2020 11:52:21 +0000
+Subject: Re: [RFC PATCH 2/2] dm-crypt: Use any key type which is registered
+Message-Id: <97ab8779-1351-0030-7a9f-fababe1f57c2@phytec.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
-Cc: sashal@kernel.org, dhowells@redhat.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <1551456599-10603-1-git-send-email-franck.lenormand@nxp.com>
+ <1551456599-10603-3-git-send-email-franck.lenormand@nxp.com>
+In-Reply-To: <1551456599-10603-3-git-send-email-franck.lenormand@nxp.com>
+To: Franck LENORMAND <franck.lenormand@nxp.com>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+Cc: horia.geanta@nxp.com, silvano.dininno@nxp.com, agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com, dhowells@redhat.com, jmorris@namei.org, serge@hallyn.com
 
-The IMA subsystem supports measuring asymmetric keys when the key is
-created or updated[1]. But keys created or updated before a custom IMA
-policy is loaded are currently not measured.  This includes keys added,
-for instance, to either the .ima or .builtin_trusted_keys keyrings, which
-happens early in the boot process.
+Hi
 
-Measuring the early boot keys, by design, requires loading a custom IMA
-policy.  This change adds support for queuing keys created or updated
-before a custom IMA policy is loaded.  The queued keys are processed when
-a custom policy is loaded.  Keys created or updated after a custom policy
-is loaded are measured immediately (not queued).  In the case when a
-custom policy is not loaded within 5 minutes of IMA initialization, the
-queued keys are freed.
+little bug fix, because this version chrashed with access violation
+on an i.MX6Quad with a Mainline Kernel 4.19.88
 
-[1] https://lore.kernel.org/linux-integrity/20191211164707.4698-1-nramas@linux.microsoft.com/
+> There was only 2 key_type supported by dm-crypt which limits other
+> implementations.
+>
+> This patch allows to use any key_type which is registered obtaining
+> the key_type from key framework.
+>
+> This also remove the compilation dependency between dm-crypt and
+> key implementations.
+>
+> Signed-off-by: Franck LENORMAND <franck.lenormand@nxp.com>
+> ---
+>   drivers/md/dm-crypt.c    | 11 ++++++-----
+>   include/linux/key-type.h |  2 ++
+>   security/keys/key.c      | 42 ++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 50 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+> index dd538e6..e25efc2 100644
+> --- a/drivers/md/dm-crypt.c
+> +++ b/drivers/md/dm-crypt.c
+> @@ -35,6 +35,7 @@
+>   #include <crypto/authenc.h>
+>   #include <linux/rtnetlink.h> /* for struct rtattr and RTA macros only */
+>   #include <keys/user-type.h>
+> +#include <linux/key-type.h>
+>   
+>   #include <linux/device-mapper.h>
+>   
+> @@ -2010,6 +2011,7 @@ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string
+>   	int ret;
+>   	struct key *key;
+>   	const struct user_key_payload *ukp;
+> +	struct key_type *type;
+>   
+>   	/*
+>   	 * Reject key_string with whitespace. dm core currently lacks code for
+> @@ -2025,16 +2027,15 @@ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string
+>   	if (!key_desc || key_desc == key_string || !strlen(key_desc + 1))
+>   		return -EINVAL;
+>   
+> -	if (strncmp(key_string, "logon:", key_desc - key_string + 1) &&
+> -	    strncmp(key_string, "user:", key_desc - key_string + 1))
+> -		return -EINVAL;
+> +	type = get_key_type(key_string, key_desc - key_string);
+> +	if (!type)
+> +		return -ENOENT;
+>   
+>   	new_key_string = kstrdup(key_string, GFP_KERNEL);
+>   	if (!new_key_string)
+>   		return -ENOMEM;
+>   
+> -	key = request_key(key_string[0] == 'l' ? &key_type_logon : &key_type_user,
+> -			  key_desc + 1, NULL);
+> +	key = request_key(type, key_desc + 1, NULL);
+>   	if (IS_ERR(key)) {
+>   		kzfree(new_key_string);
+>   		return PTR_ERR(key);
+> diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+> index bc9af55..2b2167b 100644
+> --- a/include/linux/key-type.h
+> +++ b/include/linux/key-type.h
+> @@ -176,6 +176,8 @@ extern struct key_type key_type_keyring;
+>   extern int register_key_type(struct key_type *ktype);
+>   extern void unregister_key_type(struct key_type *ktype);
+>   
+> +extern struct key_type *get_key_type(const char *type_name, size_t string_size);
+> +
+>   extern int key_payload_reserve(struct key *key, size_t datalen);
+>   extern int key_instantiate_and_link(struct key *key,
+>   				    const void *data,
+> diff --git a/security/keys/key.c b/security/keys/key.c
+> index 44a80d6..ef76114 100644
+> --- a/security/keys/key.c
+> +++ b/security/keys/key.c
+> @@ -1156,6 +1156,48 @@ void unregister_key_type(struct key_type *ktype)
+>   }
+>   EXPORT_SYMBOL(unregister_key_type);
+>   
+> +/**
+> + * get_key_type - Get the type of key using its name
+> + * @type_name: Name of the key type to get
+> + * @string_size: Size of the string to match
+> + *
+> + * The functions support null ended string (string_size == 0) as well as
+> + * pointer on a string matching a number of characters (string_size > 0)
+> + *
+> + * Returns a pointer on the key type if successful, -ENOENT if the key type
+> + * is not registered.
+> + */
+> +struct key_type *get_key_type(const char *type_name, size_t string_size)
+> +{
+> +	struct key_type *p;
+> +	struct key_type *ktype = ERR_PTR(-ENOENT);
+> +
+> +	if (!type_name)
+> +		return ktype;
+> +
+> +	down_write(&key_types_sem);
 
-Changelog:
+down_write(&key_types_sem);  changed to down_read(&key_types_sem);
 
-  v9
-
-  => Rebased the changes to v5.5-rc7
-  => Defined an intermediate Kconfig boolean option namely
-     IMA_QUEUE_EARLY_BOOT_KEYS to declare the deferred key
-     measurement functions.
-  => Use delayed workqueue to free the queued keys when a custom IMA
-     policy is not loaded.
-
-  v8
-
-  => Rebased the changes to linux-next
-  => Need to apply the following patch first
-  https://lore.kernel.org/linux-integrity/20200108160508.5938-1-nramas@linux.microsoft.com/
-
-  v7
-
-  => Updated cover letter per Mimi's suggestions.
-  => Updated "Reported-by" tag to be specific about
-     the issues fixed in the patch.
-
-  v6
-
-  => Replaced mutex with a spinlock to sychronize access to
-     queued keys. This fixes the problem reported by
-     "kernel test robot <rong.a.chen@intel.com>"
-     https://lore.kernel.org/linux-integrity/2a831fe9-30e5-63b4-af10-a69f327f7fb7@linux.microsoft.com/T/#t
-  => Changed ima_queue_key() to a static function. This fixes
-     the issue reported by "kbuild test robot <lkp@intel.com>"
-     https://lore.kernel.org/linux-integrity/1577370464.4487.10.camel@linux.ibm.com/
-  => Added the patch to free the queued keys if a custom IMA policy
-     was not loaded to this patch set.
-
-  v5
-
-  => Removed temp keys list in ima_process_queued_keys()
-
-  v4
-
-  => Check and set ima_process_keys flag with mutex held.
-
-  v3
-
-  => Defined ima_process_keys flag to be static.
-  => Set ima_process_keys with ima_keys_mutex held.
-  => Added a comment in ima_process_queued_keys() function
-     to state the use of temporary list for keys.
-
-  v2
-
-  => Rebased the changes to v5.5-rc1
-  => Updated function names, variable names, and code comments
-     to be less verbose.
-
-  v1
-
-  => Code cleanup
-
-  v0
-
-  => Based changes on v5.4-rc8
-  => The following patchsets should be applied in that order
-     https://lore.kernel.org/linux-integrity/1572492694-6520-1-git-send-email-zohar@linux.ibm.com
-     https://lore.kernel.org/linux-integrity/20191204224131.3384-1-nramas@linux.microsoft.com/
-  => Added functions to queue and dequeue keys, and process
-     the queued keys when custom IMA policies are applied.
-
-Lakshmi Ramasubramanian (3):
-  IMA: Define workqueue for early boot key measurements
-  IMA: Call workqueue functions to measure queued keys
-  IMA: Defined delayed workqueue to free the queued keys
-
- security/integrity/ima/Kconfig               |   5 +
- security/integrity/ima/Makefile              |   1 +
- security/integrity/ima/ima.h                 |  24 +++
- security/integrity/ima/ima_asymmetric_keys.c |   8 +
- security/integrity/ima/ima_init.c            |   8 +-
- security/integrity/ima/ima_policy.c          |   3 +
- security/integrity/ima/ima_queue_keys.c      | 171 +++++++++++++++++++
- 7 files changed, 219 insertions(+), 1 deletion(-)
- create mode 100644 security/integrity/ima/ima_queue_keys.c
-
--- 
-2.17.1
+> +
+> +	/* Search the key type in the list */
+> +	list_for_each_entry(p, &key_types_list, link) {
+> +		if (string_size) {
+> +			if (strncmp(p->name, type_name, string_size) == 0) {
+> +				ktype = p;
+> +				break;
+> +			}
+> +		} else {
+> +			if (strcmp(p->name, type_name) == 0) {
+> +				ktype = p;
+> +				break;
+> +			}
+> +		}
+> +	}
+> +
+> +	up_read(&key_types_sem);
+> +
+> +	return ktype;
+> +}
+> +EXPORT_SYMBOL(get_key_type);
+> +
+>   /*
+>    * Initialise the key management state.
+>    */
+>
