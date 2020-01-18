@@ -1,34 +1,85 @@
-From: Mimi Zohar <zohar@linux.ibm.com>
-Date: Fri, 03 Jan 2020 14:15:37 +0000
-Subject: Re: [PATCH v6 1/3] IMA: Define workqueue for early boot key measurements
-Message-Id: <1578060937.5874.140.camel@linux.ibm.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Sat, 18 Jan 2020 17:51:04 +0000
+Subject: Re: [RFC PATCH 0/2] Create CAAM HW key in linux keyring and use in dmcrypt
+Message-Id: <1579369864.3421.16.camel@HansenPartnership.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200103055608.22491-1-nramas@linux.microsoft.com>
-         <20200103055608.22491-2-nramas@linux.microsoft.com>
-In-Reply-To: <20200103055608.22491-2-nramas@linux.microsoft.com>
-To: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, James.Bottomley@HansenPartnership.com, linux-integrity@vger.kernel.org
-Cc: eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+References: <1551456599-10603-1-git-send-email-franck.lenormand@nxp.com>
+         <11177.1551893395@warthog.procyon.org.uk>
+         <AM6PR04MB54473C2D30DDD7CDC8522DF9924C0@AM6PR04MB5447.eurprd04.prod.outlook.com>
+In-Reply-To: <AM6PR04MB54473C2D30DDD7CDC8522DF9924C0@AM6PR04MB5447.eurprd04.prod.outlook.com>
+To: Franck Lenormand <franck.lenormand@nxp.com>, David Howells <dhowells@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, Horia Geanta <horia.geanta@nxp.com>, Silvano Di Ninno <silvano.dininno@nxp.com>, "agk@redhat.com" <agk@redhat.com>, "snitzer@redhat.com" <snitzer@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "jmorris@namei.org" <jmorris@namei.org>, "serge@hallyn.com" <serge@hallyn.com>
 
-SGkgTGFrc2htaSwKCk9uIFRodSwgMjAyMC0wMS0wMiBhdCAyMTo1NiAtMDgwMCwgTGFrc2htaSBS
-YW1hc3VicmFtYW5pYW4gd3JvdGU6Cj4gTWVhc3VyaW5nIGtleXMgcmVxdWlyZXMgYSBjdXN0b20g
-SU1BIHBvbGljeSB0byBiZSBsb2FkZWQuCj4gS2V5cyBjcmVhdGVkIG9yIHVwZGF0ZWQgYmVmb3Jl
-IGEgY3VzdG9tIElNQSBwb2xpY3kgaXMgbG9hZGVkIHNob3VsZAo+IGJlIHF1ZXVlZCBhbmQgdGhl
-IGtleXMgc2hvdWxkIGJlIHByb2Nlc3NlZCBhZnRlciBhIGN1c3RvbSBwb2xpY3kKPiBpcyBsb2Fk
-ZWQuCj4gCj4gVGhpcyBwYXRjaCBkZWZpbmVzIHdvcmtxdWV1ZSBmb3IgcXVldWluZyBrZXlzIHdo
-ZW4gYSBjdXN0b20gSU1BIHBvbGljeQo+IGhhcyBub3QgeWV0IGJlZW4gbG9hZGVkLgo+IAo+IEEg
-ZmxhZyBuYW1lbHkgaW1hX3Byb2Nlc3Nfa2V5cyBpcyB1c2VkIHRvIGNoZWNrIGlmIHRoZSBrZXkg
-c2hvdWxkIGJlCj4gcXVldWVkIG9yIHNob3VsZCBiZSBwcm9jZXNzZWQgaW1tZWRpYXRlbHkuCj4g
-Cj4gU2lnbmVkLW9mZi1ieTogTGFrc2htaSBSYW1hc3VicmFtYW5pYW4gPG5yYW1hc0BsaW51eC5t
-aWNyb3NvZnQuY29tPgo+IFJlcG9ydGVkLWJ5OiBrZXJuZWwgdGVzdCByb2JvdCA8cm9uZy5hLmNo
-ZW5AaW50ZWwuY29tPgo+IFJlcG9ydGVkLWJ5OiBrYnVpbGQgdGVzdCByb2JvdCA8bGtwQGludGVs
-LmNvbT4KClRoZSBjaGFuZ2VzIGJhc2VkIG9uICJrZXJuZWwgdGVzdCByb2JvdCIgcmVwb3J0cyBh
-cmUgcHJvcGVybHkgZm9sZGVkCmludG8gdGhpcyBwYXRjaCwgYnV0IHVubGVzcyB0aGUgdGFnIC0g
-IkFja2VkLWJ5IiwgIlJlcG9ydGVkLWJ5IiAtIGlzCnF1YWxpZmllZCwgaXQgcmVmZXJzIHRvIHRo
-ZSBlbnRpcmUgcGF0Y2guIMKgTGV0J3MgbGltaXQgaXQgYXM6CgpSZXBvcnRlZC1ieToga2VybmVs
-IHRlc3Qgcm9ib3QgPHJvbmcuYS5jaGVuQGludGVsLmNvbT4gIyBzbGVlcGluZwpmdW5jdGlvbiBj
-YWxsZWQgZnJvbSBpbnZhbGlkIGNvbnRleHQKUmVwb3J0ZWQtYnk6IGtidWlsZCB0ZXN0IHJvYm90
-IDxsa3BAaW50ZWwuY29tPiAjIHNwYXJzZSBzeW1ib2wKaW1hX3F1ZXVlZF9rZXkoKSBzaG91bGQg
-YmUgc3RhdGljCgpNaW1pCg==
+On Thu, 2019-03-07 at 13:17 +0000, Franck Lenormand wrote:
+> > -----Original Message-----
+> > From: David Howells <dhowells@redhat.com>
+> > Sent: Wednesday, March 6, 2019 6:30 PM
+> > To: Franck Lenormand <franck.lenormand@nxp.com>
+> > Cc: dhowells@redhat.com; linux-kernel@vger.kernel.org; linux-
+> > security-
+> > module@vger.kernel.org; keyrings@vger.kernel.org; Horia Geanta
+> > <horia.geanta@nxp.com>; Silvano Di Ninno <silvano.dininno@nxp.com>;
+> > agk@redhat.com; snitzer@redhat.com; dm-devel@redhat.com;
+> > jmorris@namei.org; serge@hallyn.com
+> > Subject: Re: [RFC PATCH 0/2] Create CAAM HW key in linux keyring
+> > and use in
+> > dmcrypt
+> > 
+> > Franck LENORMAND <franck.lenormand@nxp.com> wrote:
+> > 
+> > > The capacity to generate or load keys already available in the
+> > > Linux
+> > > key retention service does not allows to exploit CAAM
+> > > capabilities
+> > > hence we need to create a new key_type. The new key type
+> > > "caam_tk"
+> > 
+> > allows to:
+> > >  - Create a black key from random
+> > >  - Create a black key from a red key
+> > >  - Load a black blob to retrieve the black key
+> > 
+> > Is it possible that this could be done through an existing key
+> > type, such as the
+> > asymmetric, trusted or encrypted key typed?
+> > 
+> > David
+> 
+> Hello David,
+> 
+> I didn't know about asymmetric key type so I looked it up, from my
+> observation, it would not be possible to use it for the caam_tk as
+> we must perform operations on the data provided.
+> The name " asymmetric " is also misleading for the use we would have.
+> 
+> The trusted and encrypted does not provides the necessary
+> callbacks to do what we would need or require huge modifications.
+> 
+> I would like, for this series to focus on the change related to
+> dm-crypt. In effect, it is currently not possible to pass a key
+> from the asymmetric key type to it.
+
+What you're performing are all bog standard key wrapping operations
+which is why we're asking the question: do we have to expose any of
+this to the user?  Can this whole thing not be encapsulated in such a
+way that the kernel automatically selects the best key
+escrow/accelerator technology on boot and uses it (if there are > 1
+there would have to be an interface for the user to choose).  We make
+all the accelerator device key formats distinguishable so the kernel
+can figure out on load what is supposed to be handling them.  That way
+the user never need worry about naming the actual key handler at all,
+it would all be taken care of under the covers.
+
+The one key type per escrow/accelerator has us all going ... "aren't
+there hundreds of these on the market?"  which would seem to be a huge
+usability explosion because a user will likely only have one, but they
+have to figure out the type instructions for that one.  I really think
+a better way is to have a more generic key type that's capable of
+interfacing to the wrap/unwrap and crypto functions in such a way that
+the end user doesn't have to know which they're using: most platforms
+only have one thing installed, so you use that thing.
+
+James
