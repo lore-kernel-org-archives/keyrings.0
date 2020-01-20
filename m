@@ -1,35 +1,48 @@
-From: Richard Haines <richard_c_haines@btinternet.com>
-Date: Thu, 23 Jan 2020 10:28:25 +0000
-Subject: SELinux issue with 'keys-acl' patch in kernel.org's 'linux-next' tree
-Message-Id: <8ee40192da117d9cdf4eab1e63ab5f77b359801c.camel@btinternet.com>
+From: "Prof, William Roberts" <eco.bank1204@gmail.com>
+Date: Mon, 20 Jan 2020 19:31:43 +0000
+Subject: Contact Diplomatic Agent, Mr. Mcclaine John to receive your ATM CARD valued the sum of $12.8Million 
+Message-Id: <CAOE+jABNCjHKFENN-Ek5YiJ5dzzDMN5vwD4KOGExG-PeQ=t=0Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1258"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com
-Cc: keyrings@vger.kernel.org, selinux@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-SSBzZWUgdGhlICdrZXlzLWFjbCcgWzFdIHBhdGNoIGlzIG5vdyBiYWNrIGluIGtlcm5lbC5vcmcn
-cyAnbGludXgtbmV4dCcgCnRyZWUuCkFmdGVyIHNvbWUgaW52ZXN0aWdhdGlvbiwgSSBoYXZlIGEg
-cXVlcnkgb24gdGhpcyB0aGF0IEkndmUgYXR0ZW1wdGVkIHRvCmV4cGxhaW4gYmVsb3cuCgpUaGUg
-a2V5dXRpbHMgdGVzdHMgd29yayB3aXRoIHRoaXMgcGF0Y2ggb24gc3RhbmRhcmQgRmVkb3JhIHBv
-bGljeQpiZWNhdXNlIHRoZSBwb2xpY3kgZ2l2ZXMgbW9zdCBkb21haW5zIGFjY2VzcyB0byBhbGwg
-a2V5IHBlcm1pc3Npb25zLgpBbHNvIHRoZSBwb2xjeSBpcyBidWlsdCB1c2luZyAnaGlkZV9icm9r
-ZW5fc3ltcHRvbXMnIHRoYXQgYWRkcyAnYWxsb3cKZG9tYWluIGRvbWFpbjprZXkgeyBsaW5rIHNl
-YXJjaCB9OycsIHRoZXJlZm9yZSBjYWxscyBtYWRlIGJ5IHRoZXNlCmFsd2F5cyBwYXNzOgoKa2V5
-cy9rZXlyaW5nLmMgLSBmaW5kX2tleXJpbmdfYnlfbmFtZSgpOgpPcmlnaW5hbGx5IHJlcXVpcmVk
-OiBLRVlfTkVFRF9TRUFSQ0gKTm93IHJlcXVpcmVzOiAgICAgICAgS0VZX05FRURfSk9JTgoKa2V5
-cy9rZXljdGwuYyAtIGtleWN0bF9zZXNzaW9uX3RvX3BhcmVudCgpOgpPcmlnaW5hbGx5IHJlcXVp
-cmVkOiBLRVlfTkVFRF9MSU5LCk5vdyByZXF1aXJlczogICAgICAgIEtFWV9ORUVEX0pPSU4KCkhv
-d2V2ZXIgaWYgKGFzIGluIHRoZSBzZWxpbnV4LXRlc3RzdWl0ZSAtIHRlc3Qva2V5cyksICdkb21h
-aW4nIGlzCnJlcGxhY2VkIGJ5IGEgbWFjcm8gdGhhdCBleGNsdWRlcyB0aGUgeyBsaW5rIHNlYXJj
-aCB9LCBhbmQgYWxsb3dzIGVhY2gKcGVybWlzc2lvbiB0byBiZSB0ZXN0ZWQsIHR3byB0ZXN0cyBm
-YWlsLiBUaGlzIGlzIGJlY2F1c2U6CgoxKSBrZXljdGxfc2Vzc2lvbl90b19wYXJlbnQoKSByZXF1
-aXJlcyBLRVlfTkVFRF9KT0lOIHRyYW5zbGF0ZWQgdG8KS0VZX05FRURfTElOSyBwZXJtaXNzaW9u
-LgoyKSBmaW5kX2tleXJpbmdfYnlfbmFtZSgpIHJlcXVpcmVzIEtFWV9ORUVEX0pPSU4gdHJhbnNs
-YXRlZCB0bwpLRVlfTkVFRF9TRUFSQ0ggcGVybWlzc2lvbi4KClRoZSBwYXRjaCBhbHdheXMgdHJh
-bnNsYXRlcyBLRVlfTkVFRF9KT0lOIHRvIEtFWV9ORUVEX1NFQVJDSApBbnkgdmlld3Mgb24gdGhp
-cyBhcyBpdCBzZWVtcyBhIHJlZ3Jlc3Npb24uCgpbMV0gCmh0dHBzOi8vZ2l0Lmtlcm5lbC5vcmcv
-cHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L25leHQvbGludXgtbmV4dC5naXQvY29tbWl0L3NlY3Vy
-aXR5L3NlbGludXg/aD1uZXh0LTIwMjAwMTIyJmlkqDYyYTc5OTUzNzQ5MGI3NGE4MWUxNGE2MjYy
-M2FmNTAyYmRiMjVkCgo=
+Attn: Dear Beneficiary,
+
+I wish to inform you that the diplomatic agent conveying your ATM CARD
+valued the sum of $12.8Million United States Dollars has misplaced
+your address and he is currently stranded at (George Bush
+International Airport) Houston Texas USA now
+We required you to reconfirm the following information's below to him
+so that he can deliver your Payment CARD to you today or tomorrow
+morning as information provided with open communications via email and
+telephone for security reasons.
+HERE IS THE DETAILS  HE NEED FROM YOU URGENT
+YOUR FULL NAME:====
+ADDRESS:====
+MOBILE NO:====
+NAME OF YOUR NEAREST AIRPORT:====
+A COPY OF YOUR IDENTIFICATION :====
+
+Note; do contact the diplomatic agent immediately through the
+information's listed below
+Contact Person: Diplomatic Agent, Mr. Mcclaine John
+EMAIL: mcclainejohn.13@gmail.com
+Tel:(223) 777-7518
+
+Contact the diplomatic agent immediately
+because he is waiting to hear from you today with the needed information's.
+
+NOTE: The Diplomatic agent does not know that the content of the
+consignment box is $12.800,000,00 Million United States Dollars and on
+no circumstances should you let him know the content. The consignment
+was moved from here as family treasures, so never allow him to open
+the box. Please I have paid delivery fees for you but the only money
+you must send to Mcclaine John is your ATM CARD delivery fee $25.00
+only. text Him as you contact Him Immediately
+
+Thanks,
+with Regards.
+Prof, William Roberts
+Director DHL COURIER SERVICES-Benin
