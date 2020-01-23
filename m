@@ -1,71 +1,35 @@
-From: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
-Date: Fri, 03 Jan 2020 19:54:34 +0000
-Subject: [PATCH v7 2/3] IMA: Call workqueue functions to measure queued keys
-Message-Id: <20200103195435.2647-3-nramas@linux.microsoft.com>
+From: Richard Haines <richard_c_haines@btinternet.com>
+Date: Thu, 23 Jan 2020 10:28:25 +0000
+Subject: SELinux issue with 'keys-acl' patch in kernel.org's 'linux-next' tree
+Message-Id: <8ee40192da117d9cdf4eab1e63ab5f77b359801c.camel@btinternet.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1258"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <20200103195435.2647-1-nramas@linux.microsoft.com>
-In-Reply-To: <20200103195435.2647-1-nramas@linux.microsoft.com>
-To: zohar@linux.ibm.com, linux-integrity@vger.kernel.org
-Cc: James.Bottomley@HansenPartnership.com, eric.snowberg@oracle.com, dhowells@redhat.com, mathew.j.martineau@linux.intel.com, matthewgarrett@google.com, sashal@kernel.org, jamorris@linux.microsoft.com, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org
+To: dhowells@redhat.com
+Cc: keyrings@vger.kernel.org, selinux@vger.kernel.org
 
-Measuring keys requires a custom IMA policy to be loaded.
-Keys should be queued for measurement if a custom IMA policy
-is not yet loaded. Keys queued for measurement, if any, should be
-processed when a custom IMA policy is loaded.
-
-This patch updates the IMA hook function ima_post_key_create_or_update()
-to queue the key if a custom IMA policy has not yet been loaded.
-And, ima_update_policy() function, which is called when
-a custom IMA policy is loaded, is updated to process queued keys.
-
-Signed-off-by: Lakshmi Ramasubramanian <nramas@linux.microsoft.com>
----
- security/integrity/ima/ima_asymmetric_keys.c | 8 ++++++++
- security/integrity/ima/ima_policy.c          | 3 +++
- 2 files changed, 11 insertions(+)
-
-diff --git a/security/integrity/ima/ima_asymmetric_keys.c b/security/integrity/ima/ima_asymmetric_keys.c
-index 1d56f003f1a7..eb71cbf224c1 100644
---- a/security/integrity/ima/ima_asymmetric_keys.c
-+++ b/security/integrity/ima/ima_asymmetric_keys.c
-@@ -145,6 +145,8 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
- 				   const void *payload, size_t payload_len,
- 				   unsigned long flags, bool create)
- {
-+	bool queued = false;
-+
- 	/* Only asymmetric keys are handled by this hook. */
- 	if (key->type != &key_type_asymmetric)
- 		return;
-@@ -152,6 +154,12 @@ void ima_post_key_create_or_update(struct key *keyring, struct key *key,
- 	if (!payload || (payload_len = 0))
- 		return;
- 
-+	if (!ima_process_keys)
-+		queued = ima_queue_key(keyring, payload, payload_len);
-+
-+	if (queued)
-+		return;
-+
- 	/*
- 	 * keyring->description points to the name of the keyring
- 	 * (such as ".builtin_trusted_keys", ".ima", etc.) to
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index a4dde9d575b2..04b9c6c555de 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -807,6 +807,9 @@ void ima_update_policy(void)
- 		kfree(arch_policy_entry);
- 	}
- 	ima_update_policy_flag();
-+
-+	/* Custom IMA policy has been loaded */
-+	ima_process_queued_keys();
- }
- 
- /* Keep the enumeration in sync with the policy_tokens! */
--- 
-2.17.1
+SSBzZWUgdGhlICdrZXlzLWFjbCcgWzFdIHBhdGNoIGlzIG5vdyBiYWNrIGluIGtlcm5lbC5vcmcn
+cyAnbGludXgtbmV4dCcgCnRyZWUuCkFmdGVyIHNvbWUgaW52ZXN0aWdhdGlvbiwgSSBoYXZlIGEg
+cXVlcnkgb24gdGhpcyB0aGF0IEkndmUgYXR0ZW1wdGVkIHRvCmV4cGxhaW4gYmVsb3cuCgpUaGUg
+a2V5dXRpbHMgdGVzdHMgd29yayB3aXRoIHRoaXMgcGF0Y2ggb24gc3RhbmRhcmQgRmVkb3JhIHBv
+bGljeQpiZWNhdXNlIHRoZSBwb2xpY3kgZ2l2ZXMgbW9zdCBkb21haW5zIGFjY2VzcyB0byBhbGwg
+a2V5IHBlcm1pc3Npb25zLgpBbHNvIHRoZSBwb2xjeSBpcyBidWlsdCB1c2luZyAnaGlkZV9icm9r
+ZW5fc3ltcHRvbXMnIHRoYXQgYWRkcyAnYWxsb3cKZG9tYWluIGRvbWFpbjprZXkgeyBsaW5rIHNl
+YXJjaCB9OycsIHRoZXJlZm9yZSBjYWxscyBtYWRlIGJ5IHRoZXNlCmFsd2F5cyBwYXNzOgoKa2V5
+cy9rZXlyaW5nLmMgLSBmaW5kX2tleXJpbmdfYnlfbmFtZSgpOgpPcmlnaW5hbGx5IHJlcXVpcmVk
+OiBLRVlfTkVFRF9TRUFSQ0gKTm93IHJlcXVpcmVzOiAgICAgICAgS0VZX05FRURfSk9JTgoKa2V5
+cy9rZXljdGwuYyAtIGtleWN0bF9zZXNzaW9uX3RvX3BhcmVudCgpOgpPcmlnaW5hbGx5IHJlcXVp
+cmVkOiBLRVlfTkVFRF9MSU5LCk5vdyByZXF1aXJlczogICAgICAgIEtFWV9ORUVEX0pPSU4KCkhv
+d2V2ZXIgaWYgKGFzIGluIHRoZSBzZWxpbnV4LXRlc3RzdWl0ZSAtIHRlc3Qva2V5cyksICdkb21h
+aW4nIGlzCnJlcGxhY2VkIGJ5IGEgbWFjcm8gdGhhdCBleGNsdWRlcyB0aGUgeyBsaW5rIHNlYXJj
+aCB9LCBhbmQgYWxsb3dzIGVhY2gKcGVybWlzc2lvbiB0byBiZSB0ZXN0ZWQsIHR3byB0ZXN0cyBm
+YWlsLiBUaGlzIGlzIGJlY2F1c2U6CgoxKSBrZXljdGxfc2Vzc2lvbl90b19wYXJlbnQoKSByZXF1
+aXJlcyBLRVlfTkVFRF9KT0lOIHRyYW5zbGF0ZWQgdG8KS0VZX05FRURfTElOSyBwZXJtaXNzaW9u
+LgoyKSBmaW5kX2tleXJpbmdfYnlfbmFtZSgpIHJlcXVpcmVzIEtFWV9ORUVEX0pPSU4gdHJhbnNs
+YXRlZCB0bwpLRVlfTkVFRF9TRUFSQ0ggcGVybWlzc2lvbi4KClRoZSBwYXRjaCBhbHdheXMgdHJh
+bnNsYXRlcyBLRVlfTkVFRF9KT0lOIHRvIEtFWV9ORUVEX1NFQVJDSApBbnkgdmlld3Mgb24gdGhp
+cyBhcyBpdCBzZWVtcyBhIHJlZ3Jlc3Npb24uCgpbMV0gCmh0dHBzOi8vZ2l0Lmtlcm5lbC5vcmcv
+cHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L25leHQvbGludXgtbmV4dC5naXQvY29tbWl0L3NlY3Vy
+aXR5L3NlbGludXg/aD1uZXh0LTIwMjAwMTIyJmlkqDYyYTc5OTUzNzQ5MGI3NGE4MWUxNGE2MjYy
+M2FmNTAyYmRiMjVkCgo=
