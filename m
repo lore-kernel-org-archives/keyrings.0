@@ -1,85 +1,46 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Sat, 18 Jan 2020 17:51:04 +0000
-Subject: Re: [RFC PATCH 0/2] Create CAAM HW key in linux keyring and use in dmcrypt
-Message-Id: <1579369864.3421.16.camel@HansenPartnership.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Thu, 23 Jan 2020 12:55:52 +0000
+Subject: Re: [PATCH v2 1/2] security/keys/secure_key: Adds the secure key support based on CAAM.
+Message-Id: <88a1bb22a5f63ff81161f25220d47710420a81ac.camel@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1551456599-10603-1-git-send-email-franck.lenormand@nxp.com>
-         <11177.1551893395@warthog.procyon.org.uk>
-         <AM6PR04MB54473C2D30DDD7CDC8522DF9924C0@AM6PR04MB5447.eurprd04.prod.outlook.com>
-In-Reply-To: <AM6PR04MB54473C2D30DDD7CDC8522DF9924C0@AM6PR04MB5447.eurprd04.prod.outlook.com>
-To: Franck Lenormand <franck.lenormand@nxp.com>, David Howells <dhowells@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, Horia Geanta <horia.geanta@nxp.com>, Silvano Di Ninno <silvano.dininno@nxp.com>, "agk@redhat.com" <agk@redhat.com>, "snitzer@redhat.com" <snitzer@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "jmorris@namei.org" <jmorris@namei.org>, "serge@hallyn.com" <serge@hallyn.com>
+References: <20180723111432.26830-1-udit.agarwal@nxp.com>
+         <ae70f48b-be78-ffb8-8b36-0d278b2e19f6@phytec.de>
+In-Reply-To: <ae70f48b-be78-ffb8-8b36-0d278b2e19f6@phytec.de>
+To: Maik Otto <m.otto@phytec.de>, Udit Agarwal <udit.agarwal@nxp.com>, dhowells@redhat.com, zohar@linux.vnet.ibm.com, jmorris@namei.org, serge@hallyn.com, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: sahil.malhotra@nxp.com, ruchika.gupta@nxp.com, horia.geanta@nxp.com, aymen.sghaier@nxp.com
 
-On Thu, 2019-03-07 at 13:17 +0000, Franck Lenormand wrote:
-> > -----Original Message-----
-> > From: David Howells <dhowells@redhat.com>
-> > Sent: Wednesday, March 6, 2019 6:30 PM
-> > To: Franck Lenormand <franck.lenormand@nxp.com>
-> > Cc: dhowells@redhat.com; linux-kernel@vger.kernel.org; linux-
-> > security-
-> > module@vger.kernel.org; keyrings@vger.kernel.org; Horia Geanta
-> > <horia.geanta@nxp.com>; Silvano Di Ninno <silvano.dininno@nxp.com>;
-> > agk@redhat.com; snitzer@redhat.com; dm-devel@redhat.com;
-> > jmorris@namei.org; serge@hallyn.com
-> > Subject: Re: [RFC PATCH 0/2] Create CAAM HW key in linux keyring
-> > and use in
-> > dmcrypt
-> > 
-> > Franck LENORMAND <franck.lenormand@nxp.com> wrote:
-> > 
-> > > The capacity to generate or load keys already available in the
-> > > Linux
-> > > key retention service does not allows to exploit CAAM
-> > > capabilities
-> > > hence we need to create a new key_type. The new key type
-> > > "caam_tk"
-> > 
-> > allows to:
-> > >  - Create a black key from random
-> > >  - Create a black key from a red key
-> > >  - Load a black blob to retrieve the black key
-> > 
-> > Is it possible that this could be done through an existing key
-> > type, such as the
-> > asymmetric, trusted or encrypted key typed?
-> > 
-> > David
+On Fri, 2020-01-17 at 12:52 +0100, Maik Otto wrote:
+> Hi
 > 
-> Hello David,
+> I tested both patches in combination with
+> [RFC,2/2] dm-crypt: Use any key type which is registered from
+> https://patchwork.kernel.org/patch/10835633/  with bug fix
+> and  an i.MX6Quad (logged device) with Mainline Kernel 4.19.88
 > 
-> I didn't know about asymmetric key type so I looked it up, from my
-> observation, it would not be possible to use it for the caam_tk as
-> we must perform operations on the data provided.
-> The name " asymmetric " is also misleading for the use we would have.
+> The following tests were successful:
+> - key generation with CAAM
+> keyctl add secure kmk-master "new 64" @s
+> - export and import key blob with same controller
+> keyctl pipe 332995568 > secure_key.blob
+> reboot device
+> keyctl add secure kmk-master "load `cat secure_key.blob`" @s
+> - import keyblob with an other cpu and same keys for secure boot
+> caam_jr 2102000.jr1: caam op done err: 20000c1a
+> [ 185.788931] secure_key: key_blob decap fail (-22)
+> add_key: Invalid argument
+> => failing import was expected: pass
+> - use key from keyring in dmcrypt with an sd-card
+> dmsetup create test --table "0 106496 crypt aes-xts-plain64
+> :64:secure:kmk-master 0 /dev/mmcblk0p3 0"
+> write,read reboot and read again
 > 
-> The trusted and encrypted does not provides the necessary
-> callbacks to do what we would need or require huge modifications.
-> 
-> I would like, for this series to focus on the change related to
-> dm-crypt. In effect, it is currently not possible to pass a key
-> from the asymmetric key type to it.
+> Tested-by: Maik Otto<m.otto@phytec.de>
 
-What you're performing are all bog standard key wrapping operations
-which is why we're asking the question: do we have to expose any of
-this to the user?  Can this whole thing not be encapsulated in such a
-way that the kernel automatically selects the best key
-escrow/accelerator technology on boot and uses it (if there are > 1
-there would have to be an interface for the user to choose).  We make
-all the accelerator device key formats distinguishable so the kernel
-can figure out on load what is supposed to be handling them.  That way
-the user never need worry about naming the actual key handler at all,
-it would all be taken care of under the covers.
+I cannot find the original patch. Can this patch set be
+sent together with a cover letter, which is obviously
+missing from the earlier version, please.
 
-The one key type per escrow/accelerator has us all going ... "aren't
-there hundreds of these on the market?"  which would seem to be a huge
-usability explosion because a user will likely only have one, but they
-have to figure out the type instructions for that one.  I really think
-a better way is to have a more generic key type that's capable of
-interfacing to the wrap/unwrap and crypto functions in such a way that
-the end user doesn't have to know which they're using: most platforms
-only have one thing installed, so you use that thing.
-
-James
+/Jarkko
