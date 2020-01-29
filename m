@@ -1,41 +1,37 @@
-From: Sasha Levin <sashal@kernel.org>
-Date: Thu, 16 Jan 2020 16:51:32 +0000
-Subject: [PATCH AUTOSEL 4.19 183/671] keys: Timestamp new keys
-Message-Id: <20200116165940.10720-66-sashal@kernel.org>
+From: Clay Chang <clayc@hpe.com>
+Date: Wed, 29 Jan 2020 09:36:12 +0000
+Subject: [PATCH] KEYS: check the certfile for ASN1 encoding before inserting
+Message-Id: <20200129093612.16889-1-clayc@hpe.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200116165940.10720-1-sashal@kernel.org>
-In-Reply-To: <20200116165940.10720-1-sashal@kernel.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, James Morris <james.morris@microsoft.com>, Sasha Levin <sashal@kernel.org>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
+To: dhowells@redhat.com, dwmw2@infradead.org
+Cc: keyrings@vger.kernel.org, Clay Chang <clayc@hpe.com>
 
-From: David Howells <dhowells@redhat.com>
+The certfile to be inserted into the kernel must be in ASN1 encoding.
+This patch implements a guard against invalid certfile.
 
-[ Upstream commit 7c1857bdbdf1e4c541e45eab477ee23ed4333ea4 ]
-
-Set the timestamp on new keys rather than leaving it unset.
-
-Fixes: 31d5a79d7f3d ("KEYS: Do LRU discard in full keyrings")
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: James Morris <james.morris@microsoft.com>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
+Signed-off-by: Clay Chang <clayc@hpe.com>
 ---
- security/keys/key.c | 1 +
- 1 file changed, 1 insertion(+)
+ scripts/insert-sys-cert.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 249a6da4d277..749a5cf27a19 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -297,6 +297,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 	key->gid = gid;
- 	key->perm = perm;
- 	key->restrict_link = restrict_link;
-+	key->last_used_at = ktime_get_real_seconds();
+diff --git a/scripts/insert-sys-cert.c b/scripts/insert-sys-cert.c
+index 8902836c2342..2d9139887ba0 100644
+--- a/scripts/insert-sys-cert.c
++++ b/scripts/insert-sys-cert.c
+@@ -311,6 +311,11 @@ int main(int argc, char **argv)
+ 	if (!cert)
+ 		exit(EXIT_FAILURE);
  
- 	if (!(flags & KEY_ALLOC_NOT_IN_QUOTA))
- 		key->flags |= 1 << KEY_FLAG_IN_QUOTA;
++	if (cert[0] != 0x30 && cert[1] != 0x82) {
++		err("Invalid certfile.\n");
++		exit(EXIT_FAILURE);
++	}
++
+ 	hdr = map_file(vmlinux_file, &vmlinux_size);
+ 	if (!hdr)
+ 		exit(EXIT_FAILURE);
 -- 
-2.20.1
+2.16.6
