@@ -1,27 +1,34 @@
-From: "Mr. Theophilus Odadudu" <cristinamedina0010@gmail.com>
-Date: Fri, 07 Feb 2020 20:37:40 +0000
-Subject: LETTER OF INQUIRY
-Message-Id: <CAPNvSTiQCz4Q0OvHzfTF7qRZgWPqpXcmi8OMyQAxxd=QWTK_ug@mail.gmail.com>
+From: Aisha Gaddafi <gaddafia487@gmail.com>
+Date: Mon, 03 Feb 2020 11:27:58 +0000
+Subject: Dear Friend,
+Message-Id: <103787947.623232.1580729278150@mail.yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 To: keyrings@vger.kernel.org
 
-Good Day,
+Dear Friend,
 
-I work as a clerk in a Bank here in Nigeria, I have a very
-confidential Business Proposition for you. There is a said amount of
-money floating in the bank unclaimed, belonging to the bank Foreign
-customer who die with his family in the Ethiopian Airline crash of
-March 11, 2019.
+I came across your e-mail contact prior a private search while in need of 
+your assistance. My name is Aisha  Gaddafi a single Mother and a Widow with 
+three Children. I am the only biological Daughter of late Libyan President 
+(Late Colonel Muammar Gaddafi).
 
-I seek your good collaboration to move the fund for our benefit. we
-have agreed that 40% be yours once you help claim.
+I have investment funds worth Twenty Seven Million Five Hundred Thousand 
+United State Dollar ($27.500.000.00 ) and i need a trusted investment 
+Manager/Partner because of my current refugee status, however, I am 
+interested in you for investment project assistance in your country, may be 
+from there, we can build business relationship in the nearest future.
 
-Do get back to with 1) Your Full Name: (2) Residential Address: (3)
-Phone, Mobile  (4) Scan Copy of Your ID. to apply for claims of the
-funds.
+I am willing to negotiate investment/business profit sharing ratio with you 
+base on the future investment earning profits.
 
-Regards
-Theophilus Odadudu
+If you are willing to handle this project on my behalf kindly reply urgent 
+to enable me provide you more information about the investment funds.
+
+Your Urgent Reply Will Be Appreciated.
+
+Best Regards
+Mrs Aisha Gaddafi
+(gaddafia504@gmail.com)
