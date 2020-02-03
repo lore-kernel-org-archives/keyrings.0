@@ -1,116 +1,51 @@
-From: Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
-Date: Mon, 17 Feb 2020 16:20:18 +0000
-Subject: [PATCH v2 00/24] Manually convert  thermal, crypto and misc devices to ReST
-Message-Id: <cover.1581956285.git.mchehab+huawei@kernel.org>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Mon, 03 Feb 2020 18:18:52 +0000
+Subject: [PATCH v2 0/3] xfstests: test adding filesystem-level fscrypt key via key_id
+Message-Id: <20200203181855.42987-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: Linux Doc Mailing List <linux-doc@vger.kernel.org>
-Cc: Rich Felker <dalias@libc.org>, Benjamin Herrenschmidt <benh@kernel.crashing.org>, linux-sh@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>, linux-pci@vger.kernel.org, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, Paul Mackerras <paulus@samba.org>, Javi Merino <javi.merino@kernel.org>, Will Deacon <will@kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>, Yoshinori Sato <ysato@users.sourceforge.jp>, Jonathan Corbet <corbet@lwn.net>, Mauro Carvalho Chehab <mchehab+huawei@kernel.org>, Michael Ellerman <mpe@ellerman.id.au>, Daniel Lezcano <daniel.lezcano@linaro.org>, Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>, Dan Williams <dan.j.williams@intel.com>, linux-arm-kernel@lists.infradead.org, Amit Daniel Kachhap <amit.kachhap@gmail.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+To: fstests@vger.kernel.org
+Cc: linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org
 
+This series adds a test which tests adding a key to a filesystem's
+fscrypt keyring via an "fscrypt-provisioning" keyring key.  This is an
+alternative to the normal method where the raw key is given directly.
 
-Manually convert some files from thermal, crypto and misc-devices
-to ReST format.
+The needed kernel support was merged in 5.6, so currently this test
+needs the latest mainline kernel to run.
 
-This patch is against linux-next 20200217 tag.
+This test also depends on an xfs_io patch which adds the '-k' option to
+the 'add_enckey' command, e.g.:
 
-v2: 
+        xfs_io -c "add_enckey -k KEY_ID" MOUNTPOINT
 
-- a small change at patch 2 to avoid uneeded whitespace changes;
-- added 13 new patches at the end
+This test is skipped if the needed kernel or xfs_io support is absent.
 
-Mauro Carvalho Chehab (24):
-  docs: thermal: convert cpu-idle-cooling.rst to ReST
-  docs: crypto: convert asymmetric-keys.txt to ReST
-  docs: crypto: convert api-intro.txt to ReST format
-  docs: crypto: convert async-tx-api.txt to ReST format
-  docs: crypto: descore-readme.txt: convert to ReST format
-  docs: misc-devices/spear-pcie-gadget.txt: convert to ReST
-  docs: misc-devices/pci-endpoint-test.txt: convert to ReST
-  docs: misc-devices/pci-endpoint-test.txt: convert to ReST
-  docs: misc-devices/c2port.txt: convert to ReST format
-  docs: misc-devices/bh1770glc.txt: convert to ReST
-  docs: misc-devices/apds990x.txt: convert to ReST format
-  docs: pci: endpoint/function/binding/pci-test.txt convert to ReST
-  docs: arm64: convert perf.txt to ReST format
-  docs: cpu-freq: convert index.txt to ReST
-  docs: cpu-freq: convert amd-powernow.txt to ReST
-  docs: cpu-freq: convert core.txt to ReST
-  docs: cpu-freq: convert cpu-drivers.txt to ReST
-  docs: cpu-freq: convert cpufreq-nforce2.txt to ReST
-  docs: cpu-freq: convert cpufreq-stats.txt to ReST
-  docs: cpu-freq: convert pcc-cpufreq.txt to ReST
-  docs: powerpc: convert vcpudispatch_stats.txt to ReST
-  docs: sh: convert new-machine.txt to ReST
-  docs: sh: convert register-banks.txt to ReST
-  docs: trace: ring-buffer-design.txt: convert to ReST format
+This has been tested on ext4, f2fs, and ubifs.
 
- .../endpoint/function/binding/pci-test.rst    |  26 +
- .../endpoint/function/binding/pci-test.txt    |  19 -
- Documentation/PCI/endpoint/index.rst          |   2 +
- Documentation/arm64/index.rst                 |   1 +
- Documentation/arm64/{perf.txt => perf.rst}    |   7 +-
- .../{amd-powernow.txt => amd-powernow.rst}    |  12 +-
- Documentation/cpu-freq/{core.txt => core.rst} |  65 +-
- .../{cpu-drivers.txt => cpu-drivers.rst}      | 129 ++-
- ...pufreq-nforce2.txt => cpufreq-nforce2.rst} |  18 +-
- .../{cpufreq-stats.txt => cpufreq-stats.rst}  | 121 +--
- Documentation/cpu-freq/index.rst              |  42 +
- Documentation/cpu-freq/index.txt              |  56 --
- .../{pcc-cpufreq.txt => pcc-cpufreq.rst}      |  86 +-
- .../crypto/{api-intro.txt => api-intro.rst}   | 186 ++--
- ...symmetric-keys.txt => asymmetric-keys.rst} |  91 +-
- .../{async-tx-api.txt => async-tx-api.rst}    | 253 +++---
- ...{descore-readme.txt => descore-readme.rst} | 152 +++-
- Documentation/crypto/index.rst                |   5 +
- .../driver-api/thermal/cpu-idle-cooling.rst   |  18 +-
- Documentation/driver-api/thermal/index.rst    |   1 +
- Documentation/index.rst                       |   1 +
- .../{ad525x_dpot.txt => ad525x_dpot.rst}      |  24 +-
- .../{apds990x.txt => apds990x.rst}            |  31 +-
- .../{bh1770glc.txt => bh1770glc.rst}          |  45 +-
- .../misc-devices/{c2port.txt => c2port.rst}   |  58 +-
- Documentation/misc-devices/index.rst          |   6 +
- .../misc-devices/pci-endpoint-test.rst        |  56 ++
- .../misc-devices/pci-endpoint-test.txt        |  41 -
- .../misc-devices/spear-pcie-gadget.rst        | 170 ++++
- .../misc-devices/spear-pcie-gadget.txt        | 130 ---
- Documentation/powerpc/index.rst               |   1 +
- ...patch_stats.txt => vcpudispatch_stats.rst} |  17 +-
- Documentation/sh/index.rst                    |   6 +
- .../sh/{new-machine.txt => new-machine.rst}   | 193 +++--
- ...{register-banks.txt => register-banks.rst} |  12 +-
- Documentation/trace/index.rst                 |   1 +
- ...ffer-design.txt => ring-buffer-design.rst} | 802 ++++++++++--------
- 37 files changed, 1603 insertions(+), 1281 deletions(-)
- create mode 100644 Documentation/PCI/endpoint/function/binding/pci-test.rst
- delete mode 100644 Documentation/PCI/endpoint/function/binding/pci-test.txt
- rename Documentation/arm64/{perf.txt => perf.rst} (95%)
- rename Documentation/cpu-freq/{amd-powernow.txt => amd-powernow.rst} (89%)
- rename Documentation/cpu-freq/{core.txt => core.rst} (69%)
- rename Documentation/cpu-freq/{cpu-drivers.txt => cpu-drivers.rst} (72%)
- rename Documentation/cpu-freq/{cpufreq-nforce2.txt => cpufreq-nforce2.rst} (55%)
- rename Documentation/cpu-freq/{cpufreq-stats.txt => cpufreq-stats.rst} (53%)
- create mode 100644 Documentation/cpu-freq/index.rst
- delete mode 100644 Documentation/cpu-freq/index.txt
- rename Documentation/cpu-freq/{pcc-cpufreq.txt => pcc-cpufreq.rst} (80%)
- rename Documentation/crypto/{api-intro.txt => api-intro.rst} (70%)
- rename Documentation/crypto/{asymmetric-keys.txt => asymmetric-keys.rst} (91%)
- rename Documentation/crypto/{async-tx-api.txt => async-tx-api.rst} (55%)
- rename Documentation/crypto/{descore-readme.txt => descore-readme.rst} (81%)
- rename Documentation/misc-devices/{ad525x_dpot.txt => ad525x_dpot.rst} (85%)
- rename Documentation/misc-devices/{apds990x.txt => apds990x.rst} (86%)
- rename Documentation/misc-devices/{bh1770glc.txt => bh1770glc.rst} (83%)
- rename Documentation/misc-devices/{c2port.txt => c2port.rst} (59%)
- create mode 100644 Documentation/misc-devices/pci-endpoint-test.rst
- delete mode 100644 Documentation/misc-devices/pci-endpoint-test.txt
- create mode 100644 Documentation/misc-devices/spear-pcie-gadget.rst
- delete mode 100644 Documentation/misc-devices/spear-pcie-gadget.txt
- rename Documentation/powerpc/{vcpudispatch_stats.txt => vcpudispatch_stats.rst} (94%)
- rename Documentation/sh/{new-machine.txt => new-machine.rst} (73%)
- rename Documentation/sh/{register-banks.txt => register-banks.rst} (88%)
- rename Documentation/trace/{ring-buffer-design.txt => ring-buffer-design.rst} (55%)
+This series can also be retrieved from
+https://git.kernel.org/pub/scm/linux/kernel/git/ebiggers/xfstests-dev.git
+tag "fscrypt-provisioning_2020-02-03".
+
+Changed since v1:
+  - Fixed incorrect detection of kernel support.
+
+Eric Biggers (3):
+  common/rc: handle option with argument in _require_xfs_io_command()
+  common/encrypt: move constant test key to common code
+  generic: test adding filesystem-level fscrypt key via key_id
+
+ common/encrypt        |  95 ++++++++++++++++++++++----
+ common/rc             |   2 +-
+ tests/generic/580     |  17 ++---
+ tests/generic/806     | 155 ++++++++++++++++++++++++++++++++++++++++++
+ tests/generic/806.out |  73 ++++++++++++++++++++
+ tests/generic/group   |   1 +
+ 6 files changed, 315 insertions(+), 28 deletions(-)
+ create mode 100644 tests/generic/806
+ create mode 100644 tests/generic/806.out
 
 -- 
-2.24.1
+2.25.0.341.g760bfbb309-goog
