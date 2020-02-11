@@ -1,160 +1,97 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Thu, 27 Feb 2020 17:49:29 +0000
-Subject: Re: [PATCH v5 3/6] security: keys: trusted fix tpm2 authorizations
-Message-Id: <1582825769.18445.18.camel@HansenPartnership.com>
+From: Andres Freund <andres@anarazel.de>
+Date: Tue, 11 Feb 2020 00:56:26 +0000
+Subject: Re: [RFC PATCH 00/14] pipe: Keyrings, Block and USB notifications [ver #3]
+Message-Id: <20200211005626.7yqjf5rbs3vbwagd@alap3.anarazel.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200130101812.6271-1-James.Bottomley@HansenPartnership.com>
-         <20200130101812.6271-4-James.Bottomley@HansenPartnership.com>
-         <20200225164850.GB15662@linux.intel.com>
-         <1582765091.4245.33.camel@HansenPartnership.com>
-         <20200227161949.GD5140@linux.intel.com>
-         <1582820506.18445.3.camel@HansenPartnership.com>
-In-Reply-To: <1582820506.18445.3.camel@HansenPartnership.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+References: <157909503552.20155.3030058841911628518.stgit@warthog.procyon.org.uk>
+ <CAHk-=wjrrOgznCy3yUmcmQY1z_7vXVr6GbvKiy8cLvWbxpmzcw@mail.gmail.com>
+In-Reply-To: <CAHk-=wjrrOgznCy3yUmcmQY1z_7vXVr6GbvKiy8cLvWbxpmzcw@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, Ian Kent <raven@themaw.net>, Christian Brauner <christian@brauner.io>, keyrings@vger.kernel.org, linux-usb@vger.kernel.org, linux-block <linux-block@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux API <linux-api@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-On Thu, 2020-02-27 at 08:21 -0800, James Bottomley wrote:
-> On Thu, 2020-02-27 at 18:19 +0200, Jarkko Sakkinen wrote:
-[...]
-> Ok, I'll add that commit as the fixes; it certainly makes no sense to
-> backport this change before the above commit.
+Hi,
 
-This is what I currently have.  Do you want me to resend the whole
-series?
+I only just now noticed this work after Dave Chinner pointed towards the
+feature in the email leading to
+https://lore.kernel.org/linux-fsdevel/20200211000405.5fohxgpt554gmnhu@alap3.anarazel.de/
 
-James
+On 2020-01-15 12:10:32 -0800, Linus Torvalds wrote:
+> So I no longer hate the implementation, but I do want to see the
+> actual user space users come out of the woodwork and try this out for
+> their use cases.
 
-----8>8>8>-----
+Postgres has been looking for something roughly like this, fwiw (or
+well, been forced to).
 
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [PATCH v6 3/6] security: keys: trusted: fix TPM2 authorizations
+While it's better than it used to be (due to b4678df184b3), we still
+have problems to reliably detect buffered IO errors, especially when
+done across multiple processes.  We can't easily keep an fd open that
+predates all writes to a file until, and ensure that fsyncs will happen
+only on that fd. The primary reasons for that are
+1) every connection (& some internal jobs) is a process, and neither do
+want to to fsyncing each touched file in short-lived connections, nor is
+it desirable to have to add the complication of having to transfer fds
+between processes just to reliably get an error in fsync().
+2) we have to cope with having more files open than allowed, so we have
+a layer that limits the number of OS level FDs open at the same time. We
+don't want to fsync whenever we have to juggle open fds though, as
+that'd be too costly.
 
-In TPM 1.2 an authorization was a 20 byte number.  The spec actually
-recommended you to hash variable length passwords and use the sha1
-hash as the authorization.  Because the spec doesn't require this
-hashing, the current authorization for trusted keys is a 40 digit hex
-number.  For TPM 2.0 the spec allows the passing in of variable length
-passwords and passphrases directly, so we should allow that in trusted
-keys for ease of use.  Update the 'blobauth' parameter to take this
-into account, so we can now use plain text passwords for the keys.
+So it'd good to have a way to *reliably* know when writeback io failed,
+so we can abort a checkpoint if necessary, and instead perform journal
+replay.
 
-so before
 
-keyctl add trusted kmk "new 32 blobauth=F572d396fae9206628714fb2ce00f72e94f=
-2258f"
+For our purposes we'd probably want errors on the fs/superblock level,
+rather than block devices. It's not always easy to map between blockdevs
+and relevant filesystems, there are errors above the block layer, and we
+definitely don'tt want to crash & restart a database just because
+somebody pulled an USB storage device that didn't have any of the
+database's data on it.
 
-after we will accept both the old hex sha1 form as well as a new
-directly supplied password:
+An earlier version of this patchset had some support for that, albeit
+perhaps not fully implemented (no errors raised, afaict?):
+https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/commit/?h=notifications&id38eec77a0cb29a7d2ae9350066c1990408ae58e
 
-keyctl add trusted kmk "new 32 blobauth=3Dhello keyhandle=81000001"
+Is the plan to pick this up again once the basic feature is in?
 
-Since a sha1 hex code must be exactly 40 bytes long and a direct
-password must be 20 or less, we use the length as the discriminator
-for which form is input.
 
-Note this is both and enhancement and a potential bug fix.  The TPM
-2.0 spec requires us to strip leading zeros, meaning empyty
-authorization is a zero length HMAC whereas we're currently passing in
-20 bytes of zeros.  A lot of TPMs simply accept this as OK, but the
-Microsoft TPM emulator rejects it with TPM_RC_BAD_AUTH, so this patch
-makes the Microsoft TPM emulator work with trusted keys.
+A few notes from the email referenced above (that actually seem to belong
+into this thread more than the other:
 
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-Fixes: 0fe5480303a1 ("keys, trusted: seal/unseal with TPM 2.0 chips")
+1) From the angle of reliably needing to detect writeback errors, I find it
+somewhat concerning that an LSM may end up entirely filtering away error
+notifications, without a consumer being able to detect that:
 
----
++void __post_watch_notification(struct watch_list *wlist,
++			       struct watch_notification *n,
++			       const struct cred *cred,
++			       u64 id)
++{
+...
++		if (security_post_notification(watch->cred, cred, n) < 0)
++			continue;
 
-v6: change comment, eliminate else clauses and add fixes tag
+It's an unpleasant thought that an overly restrictive [-ly configured]
+LSM could lead to silently swallowing data integrity errors.
 
-diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
-index a94c03a61d8f..b2ed3481c6a0 100644
---- a/include/keys/trusted-type.h
-+++ b/include/keys/trusted-type.h
-@@ -30,6 +30,7 @@ struct trusted_key_options {
- 	uint16_t keytype;
- 	uint32_t keyhandle;
- 	unsigned char keyauth[TPM_DIGEST_SIZE];
-+	uint32_t blobauth_len;
- 	unsigned char blobauth[TPM_DIGEST_SIZE];
- 	uint32_t pcrinfo_len;
- 	unsigned char pcrinfo[MAX_PCRINFO_SIZE];
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trus=
-ted-keys/trusted_tpm1.c
-index d2c5ec1e040b..add9f071d818 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -781,13 +781,33 @@ static int getoptions(char *c, struct trusted_key_pay=
-load *pay,
- 				return -EINVAL;
- 			break;
- 		case Opt_blobauth:
--			if (strlen(args[0].from) !=3D 2 * SHA1_DIGEST_SIZE)
--				return -EINVAL;
--			res =3D hex2bin(opt->blobauth, args[0].from,
--				      SHA1_DIGEST_SIZE);
--			if (res < 0)
--				return -EINVAL;
-+			/*
-+			 * TPM 1.2 authorizations are sha1 hashes passed in as
-+			 * hex strings.  TPM 2.0 authorizations are simple
-+			 * passwords (although it can take a hash as well)
-+			 */
-+			opt->blobauth_len =3D strlen(args[0].from);
-+
-+			if (opt->blobauth_len =3D 2 * TPM_DIGEST_SIZE) {
-+				res =3D hex2bin(opt->blobauth, args[0].from,
-+					      TPM_DIGEST_SIZE);
-+				if (res < 0)
-+					return -EINVAL;
-+
-+				opt->blobauth_len =3D TPM_DIGEST_SIZE;
-+				return 0;
-+			}
-+
-+			if (tpm2 && opt->blobauth_len <=3D sizeof(opt->blobauth)) {
-+				memcpy(opt->blobauth, args[0].from,
-+				       opt->blobauth_len);
-+				return 0;
-+			}
-+
-+			return -EINVAL;
-+
- 			break;
-+
- 		case Opt_migratable:
- 			if (*args[0].from =3D '0')
- 				pay->migratable =3D 0;
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trus=
-ted-keys/trusted_tpm2.c
-index 08ec7f48f01d..b4a5058107c2 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -91,10 +91,12 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 			     TPM_DIGEST_SIZE);
-=20
- 	/* sensitive */
--	tpm_buf_append_u16(&buf, 4 + TPM_DIGEST_SIZE + payload->key_len + 1);
-+	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len + 1=
-);
-+
-+	tpm_buf_append_u16(&buf, options->blobauth_len);
-+	if (options->blobauth_len)
-+		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
-=20
--	tpm_buf_append_u16(&buf, TPM_DIGEST_SIZE);
--	tpm_buf_append(&buf, options->blobauth, TPM_DIGEST_SIZE);
- 	tpm_buf_append_u16(&buf, payload->key_len + 1);
- 	tpm_buf_append(&buf, payload->key, payload->key_len);
- 	tpm_buf_append_u8(&buf, payload->migratable);
-@@ -258,7 +260,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
- 			     NULL /* nonce */, 0,
- 			     TPM2_SA_CONTINUE_SESSION,
- 			     options->blobauth /* hmac */,
--			     TPM_DIGEST_SIZE);
-+			     options->blobauth_len);
-=20
- 	rc =3D tpm_send(chip, buf.data, tpm_buf_length(&buf));
- 	if (rc > 0)
+2) It'd be good if there were documentation, aimed at userland consumers
+of this, explaining what the delivery guarantees are. To be useful for
+us, it needs to be guaranteed that consuming all notifications ensures
+that there are no pending notifications queued up somewhere (so we can
+do fsync(data); fsync(journal); check_for_errors();
+durable_rename(checkpoint_state.tmp, checkpoint_state);).
+
+3) What will the permission model for accessing the notifications be?
+It seems currently anyone, even within a container/namespace or
+something, will see blockdev errors from everywhere?  The earlier
+superblock support (I'm not sure I like that name btw, hard to
+understand for us userspace folks), seems to have required exec
+permission, but nothing else.
+
+Greetings,
+
+Andres Freund
