@@ -1,112 +1,331 @@
-From: Murphy Zhou <xzhou@redhat.com>
-Date: Wed, 05 Feb 2020 04:39:05 +0000
-Subject: Re: [PATCH] generic/581: try to avoid flakiness in keys quota test
-Message-Id: <20200205043905.xpp5rniupbi4j7qa@xzhoux.usersys.redhat.com>
+From: Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
+Date: Mon, 17 Feb 2020 16:20:20 +0000
+Subject: [PATCH v2 02/24] docs: crypto: convert asymmetric-keys.txt to ReST
+Message-Id: <0298ee3e130fdbbf3f8a73ddd3a62d79a0c4596a.1581956285.git.mchehab+huawei@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200129004251.133747-1-ebiggers@kernel.org>
-In-Reply-To: <20200129004251.133747-1-ebiggers@kernel.org>
-To: Eric Biggers <ebiggers@kernel.org>
-Cc: fstests@vger.kernel.org, linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org, Murphy Zhou <xzhou@redhat.com>
+References: <cover.1581956285.git.mchehab+huawei@kernel.org>
+In-Reply-To: <cover.1581956285.git.mchehab+huawei@kernel.org>
+To: Linux Doc Mailing List <linux-doc@vger.kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab+huawei@kernel.org>, Jonathan Corbet <corbet@lwn.net>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, David Howells <dhowells@redhat.com>, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org
 
-On Tue, Jan 28, 2020 at 04:42:51PM -0800, Eric Biggers wrote:
-> From: Eric Biggers <ebiggers@google.com>
-> 
-> generic/581 passes for me, but Murphy Zhou reported that it started
-> failing for him.  The part that failed is the part that sets the key
-> quota to the fsgqa user's current number of keys plus 5, then tries to
-> add 6 filesystem encryption keys as the fsgqa user.  Adding the 6th key
-> unexpectedly succeeded.
+This file is almost compatible with ReST. Just minor changes
+were needed:
 
-Ack. This patch fixed generic/581 failure on my side.
+- Adjust document and titles markups;
+- Adjust numbered list markups;
+- Add a comments markup for the Contents section;
+- Add markups for literal blocks.
 
-Thanks Eric!
+Signed-off-by: Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
+---
+ ...symmetric-keys.txt => asymmetric-keys.rst} | 91 +++++++++----------
+ Documentation/crypto/index.rst                |  1 +
+ 2 files changed, 44 insertions(+), 48 deletions(-)
+ rename Documentation/crypto/{asymmetric-keys.txt => asymmetric-keys.rst} (91%)
 
-Murphy
-
-> 
-> What I think is happening is that because the kernel's keys subsystem
-> garbage-collects keys asynchronously, the quota may be freed up later
-> than expected after removing fscrypt keys.  Thus the test is flaky.
-> 
-> It would be nice to fix this in the kernel, but unfortunately there
-> doesn't seem to be an easy fix, and the keys subsystem has always worked
-> this way.  And it seems unlikely to cause real-world problems, as the
-> keys quota really just exists to prevent denial-of-service attacks.
-> 
-> So, for now just try to make the test more reliable by:
-> 
-> (1) Reduce the scope of the modified keys quota to just the part of the
->     test that needs it.
-> (2) Before getting the current number of keys for the purpose of setting
->     the quota, wait for any invalidated keys to be garbage-collected.
-> 
-> Tested with a kernel that has a 1 second sleep hacked into the beginning
-> of key_garbage_collector().  With that, this test fails before this
-> patch and passes afterwards.
-> 
-> Reported-by: Murphy Zhou <xzhou@redhat.com>
-> Signed-off-by: Eric Biggers <ebiggers@google.com>
-> ---
->  tests/generic/581 | 29 +++++++++++++++++++++--------
->  1 file changed, 21 insertions(+), 8 deletions(-)
-> 
-> diff --git a/tests/generic/581 b/tests/generic/581
-> index 89aa03c2..bc49eadc 100755
-> --- a/tests/generic/581
-> +++ b/tests/generic/581
-> @@ -45,14 +45,6 @@ _require_scratch_encryption -v 2
->  _scratch_mkfs_encrypted &>> $seqres.full
->  _scratch_mount
->  
-> -# Set the fsgqa user's key quota to their current number of keys plus 5.
-> -orig_keys=$(_user_do "awk '/^[[:space:]]*$(id -u fsgqa):/{print \$4}' /proc/key-users | cut -d/ -f1")
-> -: ${orig_keys:=0}
-> -echo "orig_keys=$orig_keys" >> $seqres.full
-> -orig_maxkeys=$(</proc/sys/kernel/keys/maxkeys)
-> -keys_to_add=5
-> -echo $((orig_keys + keys_to_add)) > /proc/sys/kernel/keys/maxkeys
-> -
->  dir=$SCRATCH_MNT/dir
->  
->  raw_key=""
-> @@ -98,6 +90,24 @@ _user_do_rm_enckey $SCRATCH_MNT $keyid
->  
->  _scratch_cycle_mount	# Clear all keys
->  
-> +# Wait for any invalidated keys to be garbage-collected.
-> +i=0
-> +while grep -E -q '^[0-9a-f]+ [^ ]*i[^ ]*' /proc/keys; do
-> +	if ((++i >= 20)); then
-> +		echo "Timed out waiting for invalidated keys to be GC'ed" >> $seqres.full
-> +		break
-> +	fi
-> +	sleep 0.5
-> +done
-> +
-> +# Set the user key quota to the fsgqa user's current number of keys plus 5.
-> +orig_keys=$(_user_do "awk '/^[[:space:]]*$(id -u fsgqa):/{print \$4}' /proc/key-users | cut -d/ -f1")
-> +: ${orig_keys:=0}
-> +echo "orig_keys=$orig_keys" >> $seqres.full
-> +orig_maxkeys=$(</proc/sys/kernel/keys/maxkeys)
-> +keys_to_add=5
-> +echo $((orig_keys + keys_to_add)) > /proc/sys/kernel/keys/maxkeys
-> +
->  echo
->  echo "# Testing user key quota"
->  for i in `seq $((keys_to_add + 1))`; do
-> @@ -106,6 +116,9 @@ for i in `seq $((keys_to_add + 1))`; do
->  	    | sed 's/ with identifier .*$//'
->  done
->  
-> +# Restore the original key quota.
-> +echo "$orig_maxkeys" > /proc/sys/kernel/keys/maxkeys
-> +
->  rm -rf $dir
->  echo
->  _user_do "mkdir $dir"
-> -- 
-> 2.25.0.341.g760bfbb309-goog
-> 
+diff --git a/Documentation/crypto/asymmetric-keys.txt b/Documentation/crypto/asymmetric-keys.rst
+similarity index 91%
+rename from Documentation/crypto/asymmetric-keys.txt
+rename to Documentation/crypto/asymmetric-keys.rst
+index 8763866b11cf..349f44a29392 100644
+--- a/Documentation/crypto/asymmetric-keys.txt
++++ b/Documentation/crypto/asymmetric-keys.rst
+@@ -1,8 +1,10 @@
+-		======================-		ASYMMETRIC / PUBLIC-KEY CRYPTOGRAPHY KEY TYPE
+-		======================+.. SPDX-License-Identifier: GPL-2.0
+ 
+-Contents:
++======================+Asymmetric / Public-key Cryptography Key Type
++======================+
++.. Contents:
+ 
+   - Overview.
+   - Key identification.
+@@ -13,8 +15,7 @@ Contents:
+   - Keyring link restrictions.
+ 
+ 
+-====
+-OVERVIEW
++Overview
+ ====
+ 
+ The "asymmetric" key type is designed to be a container for the keys used in
+@@ -42,8 +43,7 @@ key, or it may interpret it as a reference to a key held somewhere else in the
+ system (for example, a TPM).
+ 
+ 
+-=========
+-KEY IDENTIFICATION
++Key Identification
+ =========
+ 
+ If a key is added with an empty name, the instantiation data parsers are given
+@@ -57,49 +57,48 @@ The asymmetric key type's match function can then perform a wider range of
+ comparisons than just the straightforward comparison of the description with
+ the criterion string:
+ 
+- (1) If the criterion string is of the form "id:<hexdigits>" then the match
++  1) If the criterion string is of the form "id:<hexdigits>" then the match
+      function will examine a key's fingerprint to see if the hex digits given
+-     after the "id:" match the tail.  For instance:
++     after the "id:" match the tail.  For instance::
+ 
+ 	keyctl search @s asymmetric id:5acc2142
+ 
+-     will match a key with fingerprint:
++     will match a key with fingerprint::
+ 
+ 	1A00 2040 7601 7889 DE11  882C 3823 04AD 5ACC 2142
+ 
+- (2) If the criterion string is of the form "<subtype>:<hexdigits>" then the
++  2) If the criterion string is of the form "<subtype>:<hexdigits>" then the
+      match will match the ID as in (1), but with the added restriction that
+      only keys of the specified subtype (e.g. tpm) will be matched.  For
+-     instance:
++     instance::
+ 
+ 	keyctl search @s asymmetric tpm:5acc2142
+ 
+ Looking in /proc/keys, the last 8 hex digits of the key fingerprint are
+-displayed, along with the subtype:
++displayed, along with the subtype::
+ 
+ 	1a39e171 I-----     1 perm 3f010000     0     0 asymmetric modsign.0: DSA 5acc2142 []
+ 
+ 
+-============-ACCESSING ASYMMETRIC KEYS
++Accessing Asymmetric Keys
+ ============ 
+ For general access to asymmetric keys from within the kernel, the following
+-inclusion is required:
++inclusion is required::
+ 
+ 	#include <crypto/public_key.h>
+ 
+ This gives access to functions for dealing with asymmetric / public keys.
+ Three enums are defined there for representing public-key cryptography
+-algorithms:
++algorithms::
+ 
+ 	enum pkey_algo
+ 
+-digest algorithms used by those:
++digest algorithms used by those::
+ 
+ 	enum pkey_hash_algo
+ 
+-and key identifier representations:
++and key identifier representations::
+ 
+ 	enum pkey_id_type
+ 
+@@ -110,25 +109,25 @@ PGP-specific metadata, whereas X.509 has arbitrary certificate identifiers.
+ 
+ The operations defined upon a key are:
+ 
+- (1) Signature verification.
++  1) Signature verification.
+ 
+ Other operations are possible (such as encryption) with the same key data
+ required for verification, but not currently supported, and others
+ (eg. decryption and signature generation) require extra key data.
+ 
+ 
+-SIGNATURE VERIFICATION
++Signature Verification
+ ----------------------
+ 
+ An operation is provided to perform cryptographic signature verification, using
+-an asymmetric key to provide or to provide access to the public key.
++an asymmetric key to provide or to provide access to the public key::
+ 
+ 	int verify_signature(const struct key *key,
+ 			     const struct public_key_signature *sig);
+ 
+ The caller must have already obtained the key from some source and can then use
+ it to check the signature.  The caller must have parsed the signature and
+-transferred the relevant bits to the structure pointed to by sig.
++transferred the relevant bits to the structure pointed to by sig::
+ 
+ 	struct public_key_signature {
+ 		u8 *digest;
+@@ -159,8 +158,7 @@ data; or -ENOMEM if an allocation can't be performed.  -EINVAL can be returned
+ if the key argument is the wrong type or is incompletely set up.
+ 
+ 
+-===========-ASYMMETRIC KEY SUBTYPES
++Asymmetric Key Subtypes
+ =========== 
+ Asymmetric keys have a subtype that defines the set of operations that can be
+@@ -171,11 +169,11 @@ The subtype is selected by the key data parser and the parser must initialise
+ the data required for it.  The asymmetric key retains a reference on the
+ subtype module.
+ 
+-The subtype definition structure can be found in:
++The subtype definition structure can be found in::
+ 
+ 	#include <keys/asymmetric-subtype.h>
+ 
+-and looks like the following:
++and looks like the following::
+ 
+ 	struct asymmetric_key_subtype {
+ 		struct module		*owner;
+@@ -198,39 +196,37 @@ the subtype.  Currently, the name is only used for print statements.
+ 
+ There are a number of operations defined by the subtype:
+ 
+- (1) describe().
++  1) describe().
+ 
+      Mandatory.  This allows the subtype to display something in /proc/keys
+      against the key.  For instance the name of the public key algorithm type
+      could be displayed.  The key type will display the tail of the key
+      identity string after this.
+ 
+- (2) destroy().
++  2) destroy().
+ 
+      Mandatory.  This should free the memory associated with the key.  The
+      asymmetric key will look after freeing the fingerprint and releasing the
+      reference on the subtype module.
+ 
+- (3) query().
++  3) query().
+ 
+      Mandatory.  This is a function for querying the capabilities of a key.
+ 
+- (4) eds_op().
++  4) eds_op().
+ 
+      Optional.  This is the entry point for the encryption, decryption and
+      signature creation operations (which are distinguished by the operation ID
+      in the parameter struct).  The subtype may do anything it likes to
+      implement an operation, including offloading to hardware.
+ 
+- (5) verify_signature().
++  5) verify_signature().
+ 
+      Optional.  This is the entry point for signature verification.  The
+      subtype may do anything it likes to implement an operation, including
+      offloading to hardware.
+ 
+-
+-=============
+-INSTANTIATION DATA PARSERS
++Instantiation Data Parsers
+ =============
+ 
+ The asymmetric key type doesn't generally want to store or to deal with a raw
+@@ -254,11 +250,11 @@ Examples of blob formats for which parsers could be implemented include:
+ During key instantiation each parser in the list is tried until one doesn't
+ return -EBADMSG.
+ 
+-The parser definition structure can be found in:
++The parser definition structure can be found in::
+ 
+ 	#include <keys/asymmetric-parser.h>
+ 
+-and looks like the following:
++and looks like the following::
+ 
+ 	struct asymmetric_key_parser {
+ 		struct module	*owner;
+@@ -273,7 +269,7 @@ the parser.
+ There is currently only a single operation defined by the parser, and it is
+ mandatory:
+ 
+- (1) parse().
++  1) parse().
+ 
+      This is called to preparse the key from the key creation and update paths.
+      In particular, it is called during the key creation _before_ a key is
+@@ -282,7 +278,7 @@ mandatory:
+ 
+      The caller passes a pointer to the following struct with all of the fields
+      cleared, except for data, datalen and quotalen [see
+-     Documentation/security/keys/core.rst].
++     Documentation/security/keys/core.rst]::
+ 
+ 	struct key_preparsed_payload {
+ 		char		*description;
+@@ -321,7 +317,7 @@ mandatory:
+      public-key algorithm such as RSA and DSA this will likely be a printable
+      hex version of the key's fingerprint.
+ 
+-Functions are provided to register and unregister parsers:
++Functions are provided to register and unregister parsers::
+ 
+ 	int register_asymmetric_key_parser(struct asymmetric_key_parser *parser);
+ 	void unregister_asymmetric_key_parser(struct asymmetric_key_parser *subtype);
+@@ -330,8 +326,7 @@ Parsers may not have the same name.  The names are otherwise only used for
+ displaying in debugging messages.
+ 
+ 
+-============-KEYRING LINK RESTRICTIONS
++Keyring Link Restrictions
+ ============ 
+ Keyrings created from userspace using add_key can be configured to check the
+@@ -340,7 +335,7 @@ allowed to link.
+ 
+ Several restriction methods are available:
+ 
+- (1) Restrict using the kernel builtin trusted keyring
++  1) Restrict using the kernel builtin trusted keyring
+ 
+      - Option string used with KEYCTL_RESTRICT_KEYRING:
+        - "builtin_trusted"
+@@ -350,7 +345,7 @@ Several restriction methods are available:
+      rejected.  The ca_keys kernel parameter also affects which keys are used
+      for signature verification.
+ 
+- (2) Restrict using the kernel builtin and secondary trusted keyrings
++  2) Restrict using the kernel builtin and secondary trusted keyrings
+ 
+      - Option string used with KEYCTL_RESTRICT_KEYRING:
+        - "builtin_and_secondary_trusted"
+@@ -361,7 +356,7 @@ Several restriction methods are available:
+      kernel parameter also affects which keys are used for signature
+      verification.
+ 
+- (3) Restrict using a separate key or keyring
++  3) Restrict using a separate key or keyring
+ 
+      - Option string used with KEYCTL_RESTRICT_KEYRING:
+        - "key_or_keyring:<key or keyring serial number>[:chain]"
+@@ -378,7 +373,7 @@ Several restriction methods are available:
+      certificate in order (starting closest to the root) to a keyring.  For
+      instance, one keyring can be populated with links to a set of root
+      certificates, with a separate, restricted keyring set up for each
+-     certificate chain to be validated:
++     certificate chain to be validated::
+ 
+ 	# Create and populate a keyring for root certificates
+ 	root_id=`keyctl add keyring root-certs "" @s`
+@@ -400,7 +395,7 @@ Several restriction methods are available:
+      one of the root certificates.
+ 
+      A single keyring can be used to verify a chain of signatures by
+-     restricting the keyring after linking the root certificate:
++     restricting the keyring after linking the root certificate::
+ 
+ 	# Create a keyring for the certificate chain and add the root
+ 	chain2_id=`keyctl add keyring chain2 "" @s`
+diff --git a/Documentation/crypto/index.rst b/Documentation/crypto/index.rst
+index c4ff5d791233..2bcaf422731e 100644
+--- a/Documentation/crypto/index.rst
++++ b/Documentation/crypto/index.rst
+@@ -18,6 +18,7 @@ for cryptographic use cases, as well as programming examples.
+ 
+    intro
+    architecture
++   asymmetric-keys
+    devel-algos
+    userspace-if
+    crypto_engine
+-- 
+2.24.1
