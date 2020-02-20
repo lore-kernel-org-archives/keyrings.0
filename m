@@ -1,96 +1,76 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Mon, 03 Feb 2020 18:18:54 +0000
-Subject: [PATCH v2 2/3] common/encrypt: move constant test key to common code
-Message-Id: <20200203181855.42987-3-ebiggers@kernel.org>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Thu, 20 Feb 2020 20:17:03 +0000
+Subject: Re: [PATCH v5 0/6] TPM 2.0 trusted keys with attached policy
+Message-Id: <20200220201703.GA24990@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200203181855.42987-1-ebiggers@kernel.org>
-In-Reply-To: <20200203181855.42987-1-ebiggers@kernel.org>
-To: fstests@vger.kernel.org
-Cc: linux-fscrypt@vger.kernel.org, keyrings@vger.kernel.org
+References: <20200130101812.6271-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200130101812.6271-1-James.Bottomley@HansenPartnership.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-From: Eric Biggers <ebiggers@google.com>
+On Thu, Jan 30, 2020 at 11:18:06AM +0100, James Bottomley wrote:
+> This is mainly a respin to add more spacing as Jarkko requested.
+> However, I also added the seal/unseal operations to the
+> openssl_tpm2_engine (next branch):
+> 
+> https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
+> 
+> With the result that the kernel code completely failed the
+> interoperability checks because the ASN.1 format requires the TPM2B
+> length prepended to the public and private blobs.  I corrected this in
+> patch 4 and now all the interoperability tests are passing.
+> 
+> General cover letter:
+> 
+> This patch updates the trusted key code to export keys in the ASN.1
+> format used by current TPM key tools (openssl_tpm2_engine and
+> openconnect).  It also simplifies the use of policy with keys because
+> the ASN.1 format is designed to carry a description of how to
+> construct the policy, with the result that simple policies (like
+> authorization and PCR locking) can now be constructed and used in the
+> kernel, bringing the TPM 2.0 policy use into line with how TPM 1.2
+> works.
+> 
+> James
+> 
+> ---
+> 
+> James Bottomley (6):
+>   lib: add ASN.1 encoder
+>   oid_registry: Add TCG defined OIDS for TPM keys
+>   security: keys: trusted fix tpm2 authorizations
+>   security: keys: trusted: use ASN.1 TPM2 key format for the blobs
+>   security: keys: trusted: add ability to specify arbitrary policy
+>   security: keys: trusted: implement counter/timer policy
+> 
+>  Documentation/security/keys/trusted-encrypted.rst |  64 ++-
+>  include/keys/trusted-type.h                       |   7 +-
+>  include/linux/asn1_encoder.h                      |  32 ++
+>  include/linux/oid_registry.h                      |   5 +
+>  include/linux/tpm.h                               |   8 +
+>  lib/Makefile                                      |   2 +-
+>  lib/asn1_encoder.c                                | 431 ++++++++++++++++++++
+>  security/keys/Kconfig                             |   2 +
+>  security/keys/trusted-keys/Makefile               |   2 +-
+>  security/keys/trusted-keys/tpm2-policy.c          | 463 ++++++++++++++++++++++
+>  security/keys/trusted-keys/tpm2-policy.h          |  31 ++
+>  security/keys/trusted-keys/tpm2key.asn1           |  23 ++
+>  security/keys/trusted-keys/trusted_tpm1.c         |  50 ++-
+>  security/keys/trusted-keys/trusted_tpm2.c         | 370 +++++++++++++++--
+>  14 files changed, 1454 insertions(+), 36 deletions(-)
+>  create mode 100644 include/linux/asn1_encoder.h
+>  create mode 100644 lib/asn1_encoder.c
+>  create mode 100644 security/keys/trusted-keys/tpm2-policy.c
+>  create mode 100644 security/keys/trusted-keys/tpm2-policy.h
+>  create mode 100644 security/keys/trusted-keys/tpm2key.asn1
+> 
+> -- 
+> 2.16.4
 
-For some encryption tests it's helpful to always use the same key so
-that the test's output is always the same.
+Somehow managed to drown this to my emails. Looking into next week.
 
-generic/580 already defines such a key, so move it into common/encrypt
-so that other tests can use it too.
-
-Signed-off-by: Eric Biggers <ebiggers@google.com>
----
- common/encrypt    | 11 +++++++++++
- tests/generic/580 | 17 ++++-------------
- 2 files changed, 15 insertions(+), 13 deletions(-)
-
-diff --git a/common/encrypt b/common/encrypt
-index 2e9908ad..98a407ce 100644
---- a/common/encrypt
-+++ b/common/encrypt
-@@ -187,6 +187,17 @@ _scratch_mkfs_stable_inodes_encrypted()
- 	esac
- }
- 
-+# For some tests it's helpful to always use the same key so that the test's
-+# output is always the same.  For this purpose the following key can be used:
-+TEST_RAW_KEY+for i in {1..64}; do
-+	TEST_RAW_KEY+="\\x$(printf "%02x" $i)"
-+done
-+# Key descriptor: arbitrary value
-+TEST_KEY_DESCRIPTOR="0000111122223333"
-+# Key identifier: HKDF-SHA512(key=$TEST_RAW_KEY, salt="", info="fscrypt\0\x01")
-+TEST_KEY_IDENTIFIER="69b2f6edeee720cce0577937eb8a6751"
-+
- # Give the invoking shell a new session keyring.  This makes any keys we add to
- # the session keyring scoped to the lifetime of the test script.
- _new_session_keyring()
-diff --git a/tests/generic/580 b/tests/generic/580
-index d0b0e9b3..283d6efa 100755
---- a/tests/generic/580
-+++ b/tests/generic/580
-@@ -43,21 +43,12 @@ _scratch_mount
- test_with_policy_version()
- {
- 	local vers=$1
--	local raw_key=""
--	local i
--
--	for i in {1..64}; do
--		raw_key+="\\x$(printf "%02x" $i)"
--	done
- 
- 	if (( vers = 1 )); then
--		# Key descriptor: arbitrary value
--		local keyspec="0000111122223333"
-+		local keyspec=$TEST_KEY_DESCRIPTOR
- 		local add_enckey_args="-d $keyspec"
- 	else
--		# Key identifier:
--		# HKDF-SHA512(key=raw_key, salt="", info="fscrypt\0\x01")
--		local keyspec="69b2f6edeee720cce0577937eb8a6751"
-+		local keyspec=$TEST_KEY_IDENTIFIER
- 		local add_enckey_args=""
- 	fi
- 
-@@ -75,7 +66,7 @@ test_with_policy_version()
- 	echo "# Getting encryption key status"
- 	_enckey_status $SCRATCH_MNT $keyspec
- 	echo "# Adding encryption key"
--	_add_enckey $SCRATCH_MNT "$raw_key" $add_enckey_args
-+	_add_enckey $SCRATCH_MNT "$TEST_RAW_KEY" $add_enckey_args
- 	echo "# Creating encrypted file"
- 	echo contents > $dir/file
- 	echo "# Getting encryption key status"
-@@ -90,7 +81,7 @@ test_with_policy_version()
- 
- 	# Test removing key with a file open.
- 	echo "# Re-adding encryption key"
--	_add_enckey $SCRATCH_MNT "$raw_key" $add_enckey_args
-+	_add_enckey $SCRATCH_MNT "$TEST_RAW_KEY" $add_enckey_args
- 	echo "# Creating another encrypted file"
- 	echo foo > $dir/file2
- 	echo "# Removing key while an encrypted file is open"
--- 
-2.25.0.341.g760bfbb309-goog
+/Jarkko
+> 
