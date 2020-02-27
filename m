@@ -1,237 +1,37 @@
-From: James Prestwood <prestwoj@gmail.com>
-Date: Thu, 27 Feb 2020 20:57:52 +0000
-Subject: Re: [PATCH v5 4/6] security: keys: trusted: use ASN.1 TPM2 key format for the blobs
-Message-Id: <3feaa7a3265b472bb3694045448fc44368f1fb99.camel@gmail.com>
+From: Yang Xu <xuyang2018.jy@cn.fujitsu.com>
+Date: Thu, 27 Feb 2020 10:25:45 +0000
+Subject: [PATCH] KEYS: reaching the keys quotas correctly when instanttiating
+Message-Id: <1582799145-16073-1-git-send-email-xuyang2018.jy@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200130101812.6271-1-James.Bottomley@HansenPartnership.com>
-         <20200130101812.6271-5-James.Bottomley@HansenPartnership.com>
-         <5c593b6f23ae41e90e6b3799141ea68944bb4034.camel@gmail.com>
-         <1582761736.4245.12.camel@HansenPartnership.com>
-         <f9b64fe39eb71a1560ca2d1887238d0b4f9f111a.camel@gmail.com>
-         <1582764844.4245.29.camel@HansenPartnership.com>
-         <17e025e222cb6aefb5680d6cdad64a9ecf76fa97.camel@gmail.com>
-         <1582834760.18538.15.camel@HansenPartnership.com>
-In-Reply-To: <1582834760.18538.15.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>, linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+To: dhowells@redhat.com
 
-On Thu, 2020-02-27 at 12:19 -0800, James Bottomley wrote:
-> On Thu, 2020-02-27 at 09:19 -0800, James Prestwood wrote:
-> > On Wed, 2020-02-26 at 16:54 -0800, James Bottomley wrote:
-> > > On Wed, 2020-02-26 at 16:20 -0800, James Prestwood wrote:
-> > > > > > I have been using your set of patches in order to get this
-> > > > > > ASN.1 parser/definition. I am implementing an asymmetric
-> > > > > > key
-> > > > > > parser/type TPM2 keys for enc/dec/sign/verify using keyctl.
-> > > > > > Note that this implementation goes in
-> > > > > > crypto/asymmetric_keys/, and your patches sit in
-> > > > > > security/keys/trusted-keys/.
-> > > > > > 
-> > > > > > Currently I am just including "../../security/keys/trusted-
-> > > > > > keys/{tpm2key.asn1.h,tpm2-policy.h}" in order to use the
-> > > > > > ASN.1 parser to verify my keys, but this obviously isn't
-> > > > > > going to fly.
-> > > > > > 
-> > > > > > Do you (or anyone) have any ideas as to how both trusted
-> > > > > > keys
-> > > > > > and asymmetric keys could share this ASN.1
-> > > > > > parser/definition?
-> > > > > > Some common area that both security and crypto could
-> > > > > > include?
-> > > > > > Or maybe there is some common way the kernel does things
-> > > > > > like
-> > > > > > this?
-> > > > > 
-> > > > > Actually TPM2 asymmetric keys was also on my list.  I was
-> > > > > going
-> > > > > to use the existing template and simply move it somewhere
-> > > > > everyone could use.  I also think you need the policy parser
-> > > > > pieces because at least one implementation we'd need to be
-> > > > > compatible with supports key policy.
-> > > > 
-> > > > In terms of policy, I haven't looked into that at all for
-> > > > asymmetric keys. I do already have enc/dec/sign/verify
-> > > > asymmetric
-> > > > key operations all working, and used your ASN1 template for
-> > > > parsing (just copied it into asymmetric_keys for now). Since
-> > > > the
-> > > > asymmetric operations use HMAC sessions I didn't see much carry
-> > > > over from your patches (but this could change if policy stuff
-> > > > gets introduced).
-> > > 
-> > > There's a related patch that introduces HMAC and encryption
-> > > sessions for pretty much everything in the TPM:
-> > > 
-> > > 
-> > 
-> > 
-https://lore.kernel.org/r/1568031408.6613.29.camel@HansenPartnership
-> > .
-> > com
-> > > 
-> > > I didn't resend this time around because of patch overload, and
-> > > anyway, the last patch needs updating for the current policy c
-> > 
-> > Well... I sure duplicated a lot of work. I haven't been on these
-> > lists long enough to see that come through. I am still reading
-> > through these patches, but noticed some differences already with
-> > how
-> > the session is started. I use the parent key handle for "salt key
-> > handle" ratherthan the null key.
-> 
-> That's a minor detail.  The routines could be updated to use anything
-> for the parent.  The null seed is just convenient and has nice
-> security
-> properties.
-> 
-> >  Also I used RSA/OAEP for encrypting the salt value rather than
-> > ECC.
-> > I hadn't read into the null key thing, but I will now. I would be
-> > more than happy to rip out the OAEP code though. I was just
-> > modeling
-> > everything how libtpms did it, which used OAEP.
-> 
-> There's not much the IBM and Intel TSS teams agree on, but we do
-> agree
-> that RSA is a bad choice for parents and that EC keys are much
-> better. 
-> The main reason is that most TPM 2's are much worse at RSA operations
-> than EC ones ... you're looking at factors of 10x to 100x simply
-> because of the huge bignum complexity of RSA, which really slows
-> everything down when you use RSA parents for crypto
-> operations.  Then,
-> as you found, no-one really does the padding with OAEP either.
+I wrote a regression test[1]to test commit a08bf91ce28ed
+("KEYS: allow reaching the keys quotas exactly"), but it
+failed even I used lastest kernel. It looks like the previous
+patch doesn't remove "=" when we instantiate the key.
 
-I am learning lots from this discussion, so thank you. I had assumed
-that the parent key crypto had to match the child key, RSA vs EC, but
-sounds like that is not the case. And yes, this sounds like a much
-better way to go now that I have a bit more info on it.
+[1]http://lists.linux.it/pipermail/ltp/2020-February/015331.html
 
-> 
-> > Obviously we don't want a bunch of duplicated code, but I am
-> > somewhat
-> > concerned about going right in and using these patches as they have
-> > been sitting around quite a while (plus you said they will need
-> > updating). Seems like the best route is get these merged, then
-> > update/send my patches.
-> 
-> So we figure out the correct precursor patches and have a couple of
-> sets ... Jarkko likes stuff done this way anyway.
+Signed-off-by: Yang Xu <xuyang2018.jy@cn.fujitsu.com>
+---
+ security/keys/key.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ok, I'll figure out exactly what I need. Its looking like the only
-duplication is starting the session and all the HMAC helpers.
-
-> 
-> > > > This will go in the eventual RFC soon but while I have you
-> > > > here:
-> > > >  I also implemented key wrapping. Exposing this as a keyctl API
-> > > > may take some rework, hopefully with some help from others in
-> > > > this subsystem.
-> > > 
-> > > Wrapping for what?  The output privkey in the ASN.1 is wrapped by
-> > > the TPM using its internal AES key.  The ASN.1 also defines ECDH
-> > > wrapping, that's what the secret element of the sequence is for,
-> > > but you'd only use that for creating a wrapped key to pass in to
-> > > the TPM knowing the parent.  The way current TPM crypto systems
-> > > use
-> > > this is they generate an EC parent from the storage primary seed
-> > > on
-> > > the NIST P256 curve.
-> > 
-> > I implemented CC_Import(). You generate the private key yourself
-> > (openssl or however) and import it into the TPM. Then the result of
-> > that is the TPM wrapped key that can be loaded later on. And yes
-> > this
-> > depends on knowing the parent handle.
-> 
-> Right, that's what the key wrapping code of the engine does as well,
-> except that we use EC parents and ECDH wrapping.
-> 
-> > I basically just implemented:
-> > 
-> > create_tpm2_key -w privkey.pem -p <handle> privkey.tpm
-> > 
-> > My reasoning for this was because I had issues with the
-> > openssl_tpm2_engine, and just the whole TPM2 on Linux support as it
-> > stands now. I was able to get everything working on Debian, but
-> > then
-> > I went to test on real TPM hardware, which happened to be a Fedora
-> > box.  This was a complete disaster; openssl_tpm2_engine did not
-> > compile due to (I think) a library versioning issue and build
-> > warnings. I ignored warnings, and manually built my own version
-> > ofopenssl libtpms but this just resulted in create_tpm2_key to
-> > segfault. At this point I just thought it would be more worth my
-> > time
-> > to implement Import() myself.
-> > 
-> > I think this was all a result of bad packaging on Fedora's part,
-> > but
-> > still, the experience didn't sit well with me and I felt it would
-> > be
-> > worth while to add support for this in keyctl.
-> 
-> Well there's a list you can report problems to and get help:
-> 
-> openssl-tpm2-engine@groups.io
-> 
-> I've got to confess I develop on openSUSE and debian, so Fedora
-> doesn't
-> get much testing.
-> 
-> > > It's on my todo list to accept bare primary identifiers as
-> > > parents
-> > > in the kernel code and create the EC primary on the fly, but it's
-> > > not in this patch set.
-> > > 
-> > > There's also another policy problem in that generating an RSA2048
-> > > key can lock the TPM up for ages, so there should likely be some
-> > > type of block on someone doing this.  I was thinking that an
-> > > unprivileged user should be allowed to create EC keys but not RSA
-> > > ones.
-> > 
-> > I didn't have any plans for RSA key generation inside the TPM
-> > itself,
-> > just wrapping/asym operations.
-> 
-> Well as long as we're interoperable with create_tpm2_key, the
-> consumer
-> can generate a TPM resident key outside the kernel if they want and
-> then simply pass it in.
-> 
-> > > > As it stand now you have to padd a key pair, then do a (new)
-> > > > pkey_wrap operation on it. This returns a DER with the wrapped
-> > > > TPM2 key. This required modifying the public_key type, which I
-> > > > really did not like since it now depends on TPM. Not sure if
-> > > > the
-> > > > route I went is gonna fly without tweaking, but this is all new
-> > > > to me :) Again, some guidance for how this should be is needed.
-> > > 
-> > > The way it's defined to be done using the ASN.1 secret parameter
-> > > is
-> > > simply the way the TPM2 command manual defines duplication with
-> > > an
-> > > outer wrapper.  The TPM2 manual even has a coded example in
-> > > section
-> > > 4 and the secret is simply a TPM2B_ENCRYPTED_SECRET.
-> > 
-> > I actually didn't do any inner/outer encryption when sending the
-> > key
-> > to the TPM (if this isn't what your talking about disregard). I
-> > just
-> > sent the private key over plainly. Maybe bus snooping is a concern,
-> > but as a first pass I just punted on this.
-> 
-> Well to get TPM2_Import to work with an encrypted secret *is* what
-> the
-> manuals call outer wrapping, you just used an RSA encrypted secret
-> instead of an ECDH protected one.  It's the same sequence of
-> operations
-> as for duplication.
-
-Ok this makes more sense now.
-
-Thanks,
-James
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 718bf7217420..e959b3c96b48 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -382,7 +382,7 @@ int key_payload_reserve(struct key *key, size_t datalen)
+ 		spin_lock(&key->user->lock);
+ 
+ 		if (delta > 0 &&
+-		    (key->user->qnbytes + delta >= maxbytes ||
++		    (key->user->qnbytes + delta > maxbytes ||
+ 		     key->user->qnbytes + delta < key->user->qnbytes)) {
+ 			ret = -EDQUOT;
+ 		}
+-- 
+2.18.0
