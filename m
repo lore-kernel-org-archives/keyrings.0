@@ -1,170 +1,456 @@
-From: Waiman Long <longman@redhat.com>
-Date: Wed, 11 Mar 2020 15:33:54 +0000
-Subject: Re: [PATCH v2 2/2] KEYS: Avoid false positive ENOMEM error on key read
-Message-Id: <7d0b0c5f-98e7-0fb6-69cd-76a31a010bcb@redhat.com>
-MIME-Version: 1
-Content-Type: multipart/mixed; boundary="------------38FC0D37D8A890979402365F"
+From: Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
+Date: Tue, 03 Mar 2020 13:59:09 +0000
+Subject: [PATCH v3 02/18] docs: crypto: convert asymmetric-keys.txt to ReST
+Message-Id: <0e467df334fb6563a50190e0523a5ed1af1638ed.1583243826.git.mchehab+huawei@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <da226448-4b76-0456-4c29-742a1a24fe79@redhat.com>
- <20200308170410.14166-3-longman@redhat.com>
- <20200308170410.14166-1-longman@redhat.com>
- <416690.1583771540@warthog.procyon.org.uk>
- <a4c92057-c364-965c-a251-02cbe46229b6@redhat.com>
- <675400.1583860343@warthog.procyon.org.uk>
-In-Reply-To: <675400.1583860343@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Eric Biggers <ebiggers@google.com>, Chris von Recklinghausen <crecklin@redhat.com>
+References: <cover.1583243826.git.mchehab+huawei@kernel.org>
+In-Reply-To: <cover.1583243826.git.mchehab+huawei@kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab+huawei@kernel.org>, David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, Jonathan Corbet <corbet@lwn.net>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-doc@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------38FC0D37D8A890979402365F
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+This file is almost compatible with ReST. Just minor changes
+were needed:
 
-On 3/10/20 1:12 PM, David Howells wrote:
-> Waiman Long <longman@redhat.com> wrote:
->
->> That is not as simple as I thought. First of that, there is not an
->> equivalent kzvfree() helper to clear the buffer first before clearing.
->> Of course, I can do that manually.
-> Yeah, the actual substance of vfree() may get deferred.  It may be worth
-> adding a kvzfree() that switches between kzfree() and memset(),vfree().
->
->> With patch 2, the allocated buffer length will be max(1024, keylen). The
->> security code uses kmalloc() for allocation. If we use kvalloc() here,
->> perhaps we should also use that for allocation that can be potentially
->> large like that in big_key. What do you think?
-> Not for big_key: if it's larger than BIG_KEY_FILE_THRESHOLD (~1KiB) it gets
-> written encrypted into shmem so that it can be swapped out to disk when not in
-> use.
->
-> However, other cases, sure - just be aware that on a 32-bit system,
-> vmalloc/vmap space is a strictly limited resource.
+- Adjust document and titles markups;
+- Adjust numbered list markups;
+- Add a comments markup for the Contents section;
+- Add markups for literal blocks.
 
-Attached is an additional patch to make the transition from kmalloc() to
-kvmalloc(). I put the __kvzfree() helper in internal.h for now. I plan
-to send a patch later to add a kvzfree() API once there is a use case in
-the kernel.
-
-I am not going to touch other places for now to make thing simpler.
-
-Cheers,
-Longman
-
-
---------------38FC0D37D8A890979402365F
-Content-Type: text/x-patch;
- name="v2-0003-KEYS-Use-kvmalloc-to-better-handle-large-buffer-a.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="v2-0003-KEYS-Use-kvmalloc-to-better-handle-large-buffer-a.pa";
- filename*1="tch"
-
-From e2e73e2bc0c5cd168de273b0fe9df1e5c48cd232 Mon Sep 17 00:00:00 2001
-From: Waiman Long <longman@redhat.com>
-Date: Wed, 11 Mar 2020 11:01:59 -0400
-Subject: [PATCH v2 3/3] KEYS: Use kvmalloc() to better handle large buffer
- allocation
-
-For large multi-page temporary buffer allocation, the security/keys
-subsystem don't need contiguous physical pages. It will work perfectly
-fine with virtually mapped pages.
-
-Replace the kmalloc() call by kvmalloc() and provide a __kvzfree()
-helper function to clear and free the kvmalloc'ed buffer. This will
-reduce the chance of memory allocation failure just because of highly
-fragmented pages.
-
-Suggested-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Waiman Long <longman@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
 ---
- security/keys/internal.h | 14 ++++++++++++++
- security/keys/keyctl.c   | 12 ++++++------
- 2 files changed, 20 insertions(+), 6 deletions(-)
+ ...symmetric-keys.txt => asymmetric-keys.rst} | 91 +++++++++----------
+ Documentation/crypto/index.rst                |  1 +
+ Documentation/security/keys/core.rst          |  2 +-
+ MAINTAINERS                                   |  2 +-
+ crypto/asymmetric_keys/asymmetric_type.c      |  2 +-
+ crypto/asymmetric_keys/public_key.c           |  2 +-
+ crypto/asymmetric_keys/signature.c            |  2 +-
+ include/crypto/public_key.h                   |  2 +-
+ include/keys/asymmetric-parser.h              |  2 +-
+ include/keys/asymmetric-subtype.h             |  2 +-
+ include/keys/asymmetric-type.h                |  2 +-
+ 11 files changed, 53 insertions(+), 57 deletions(-)
+ rename Documentation/crypto/{asymmetric-keys.txt => asymmetric-keys.rst} (91%)
 
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index ba3e2da14cef..1b6e2d66e378 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -16,6 +16,8 @@
- #include <linux/keyctl.h>
- #include <linux/refcount.h>
- #include <linux/compat.h>
-+#include <linux/mm.h>
-+#include <linux/vmalloc.h>
+diff --git a/Documentation/crypto/asymmetric-keys.txt b/Documentation/crypto/asymmetric-keys.rst
+similarity index 91%
+rename from Documentation/crypto/asymmetric-keys.txt
+rename to Documentation/crypto/asymmetric-keys.rst
+index 8763866b11cf..349f44a29392 100644
+--- a/Documentation/crypto/asymmetric-keys.txt
++++ b/Documentation/crypto/asymmetric-keys.rst
+@@ -1,8 +1,10 @@
+-		======================-		ASYMMETRIC / PUBLIC-KEY CRYPTOGRAPHY KEY TYPE
+-		======================+.. SPDX-License-Identifier: GPL-2.0
  
- struct iovec;
+-Contents:
++======================+Asymmetric / Public-key Cryptography Key Type
++======================+
++.. Contents:
  
-@@ -349,4 +351,16 @@ static inline void key_check(const struct key *key)
+   - Overview.
+   - Key identification.
+@@ -13,8 +15,7 @@ Contents:
+   - Keyring link restrictions.
  
- #endif
  
-+/*
-+ * Helper function to clear and free a kvmalloc'ed memory object.
-+ */
-+static inline void __kvzfree(const void *addr, size_t len)
-+{
-+	if (is_vmalloc_addr(addr)) {
-+		memset((char *)addr, 0, len);
-+		vfree(addr);
-+	} else {
-+		kzfree(addr);
-+	}
-+}
- #endif /* _INTERNAL_H */
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 662a638a680d..ca05604bc9c0 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -339,7 +339,7 @@ long keyctl_update_key(key_serial_t id,
- 	payload = NULL;
- 	if (plen) {
- 		ret = -ENOMEM;
--		payload = kmalloc(plen, GFP_KERNEL);
-+		payload = kvmalloc(plen, GFP_KERNEL);
- 		if (!payload)
- 			goto error;
+-====
+-OVERVIEW
++Overview
+ ====
  
-@@ -360,7 +360,7 @@ long keyctl_update_key(key_serial_t id,
+ The "asymmetric" key type is designed to be a container for the keys used in
+@@ -42,8 +43,7 @@ key, or it may interpret it as a reference to a key held somewhere else in the
+ system (for example, a TPM).
  
- 	key_ref_put(key_ref);
- error2:
--	kzfree(payload);
-+	__kvzfree(payload, plen);
- error:
- 	return ret;
- }
-@@ -870,7 +870,7 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
- 		 */
- 		if (buflen && buffer && (buflen <= 0x400)) {
- allocbuf:
--			tmpbuf = kmalloc(tbuflen, GFP_KERNEL);
-+			tmpbuf = kvmalloc(tbuflen, GFP_KERNEL);
- 			if (!tmpbuf) {
- 				ret = -ENOMEM;
- 				goto error2;
-@@ -892,9 +892,9 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
- 			 * again.
- 			 */
- 			if (!tmpbuf || unlikely(ret > tbuflen)) {
--				tbuflen = ret;
- 				if (unlikely(tmpbuf))
--					kzfree(tmpbuf);
-+					__kvzfree(tmpbuf, tbuflen);
-+				tbuflen = ret;
- 				goto allocbuf;
- 			}
  
-@@ -903,7 +903,7 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
- 		}
+-=========
+-KEY IDENTIFICATION
++Key Identification
+ =========
  
- 		if (tmpbuf)
--			kzfree(tmpbuf);
-+			__kvzfree(tmpbuf, tbuflen);
- 	}
+ If a key is added with an empty name, the instantiation data parsers are given
+@@ -57,49 +57,48 @@ The asymmetric key type's match function can then perform a wider range of
+ comparisons than just the straightforward comparison of the description with
+ the criterion string:
  
- error2:
+- (1) If the criterion string is of the form "id:<hexdigits>" then the match
++  1) If the criterion string is of the form "id:<hexdigits>" then the match
+      function will examine a key's fingerprint to see if the hex digits given
+-     after the "id:" match the tail.  For instance:
++     after the "id:" match the tail.  For instance::
+ 
+ 	keyctl search @s asymmetric id:5acc2142
+ 
+-     will match a key with fingerprint:
++     will match a key with fingerprint::
+ 
+ 	1A00 2040 7601 7889 DE11  882C 3823 04AD 5ACC 2142
+ 
+- (2) If the criterion string is of the form "<subtype>:<hexdigits>" then the
++  2) If the criterion string is of the form "<subtype>:<hexdigits>" then the
+      match will match the ID as in (1), but with the added restriction that
+      only keys of the specified subtype (e.g. tpm) will be matched.  For
+-     instance:
++     instance::
+ 
+ 	keyctl search @s asymmetric tpm:5acc2142
+ 
+ Looking in /proc/keys, the last 8 hex digits of the key fingerprint are
+-displayed, along with the subtype:
++displayed, along with the subtype::
+ 
+ 	1a39e171 I-----     1 perm 3f010000     0     0 asymmetric modsign.0: DSA 5acc2142 []
+ 
+ 
+-============-ACCESSING ASYMMETRIC KEYS
++Accessing Asymmetric Keys
+ ============ 
+ For general access to asymmetric keys from within the kernel, the following
+-inclusion is required:
++inclusion is required::
+ 
+ 	#include <crypto/public_key.h>
+ 
+ This gives access to functions for dealing with asymmetric / public keys.
+ Three enums are defined there for representing public-key cryptography
+-algorithms:
++algorithms::
+ 
+ 	enum pkey_algo
+ 
+-digest algorithms used by those:
++digest algorithms used by those::
+ 
+ 	enum pkey_hash_algo
+ 
+-and key identifier representations:
++and key identifier representations::
+ 
+ 	enum pkey_id_type
+ 
+@@ -110,25 +109,25 @@ PGP-specific metadata, whereas X.509 has arbitrary certificate identifiers.
+ 
+ The operations defined upon a key are:
+ 
+- (1) Signature verification.
++  1) Signature verification.
+ 
+ Other operations are possible (such as encryption) with the same key data
+ required for verification, but not currently supported, and others
+ (eg. decryption and signature generation) require extra key data.
+ 
+ 
+-SIGNATURE VERIFICATION
++Signature Verification
+ ----------------------
+ 
+ An operation is provided to perform cryptographic signature verification, using
+-an asymmetric key to provide or to provide access to the public key.
++an asymmetric key to provide or to provide access to the public key::
+ 
+ 	int verify_signature(const struct key *key,
+ 			     const struct public_key_signature *sig);
+ 
+ The caller must have already obtained the key from some source and can then use
+ it to check the signature.  The caller must have parsed the signature and
+-transferred the relevant bits to the structure pointed to by sig.
++transferred the relevant bits to the structure pointed to by sig::
+ 
+ 	struct public_key_signature {
+ 		u8 *digest;
+@@ -159,8 +158,7 @@ data; or -ENOMEM if an allocation can't be performed.  -EINVAL can be returned
+ if the key argument is the wrong type or is incompletely set up.
+ 
+ 
+-===========-ASYMMETRIC KEY SUBTYPES
++Asymmetric Key Subtypes
+ =========== 
+ Asymmetric keys have a subtype that defines the set of operations that can be
+@@ -171,11 +169,11 @@ The subtype is selected by the key data parser and the parser must initialise
+ the data required for it.  The asymmetric key retains a reference on the
+ subtype module.
+ 
+-The subtype definition structure can be found in:
++The subtype definition structure can be found in::
+ 
+ 	#include <keys/asymmetric-subtype.h>
+ 
+-and looks like the following:
++and looks like the following::
+ 
+ 	struct asymmetric_key_subtype {
+ 		struct module		*owner;
+@@ -198,39 +196,37 @@ the subtype.  Currently, the name is only used for print statements.
+ 
+ There are a number of operations defined by the subtype:
+ 
+- (1) describe().
++  1) describe().
+ 
+      Mandatory.  This allows the subtype to display something in /proc/keys
+      against the key.  For instance the name of the public key algorithm type
+      could be displayed.  The key type will display the tail of the key
+      identity string after this.
+ 
+- (2) destroy().
++  2) destroy().
+ 
+      Mandatory.  This should free the memory associated with the key.  The
+      asymmetric key will look after freeing the fingerprint and releasing the
+      reference on the subtype module.
+ 
+- (3) query().
++  3) query().
+ 
+      Mandatory.  This is a function for querying the capabilities of a key.
+ 
+- (4) eds_op().
++  4) eds_op().
+ 
+      Optional.  This is the entry point for the encryption, decryption and
+      signature creation operations (which are distinguished by the operation ID
+      in the parameter struct).  The subtype may do anything it likes to
+      implement an operation, including offloading to hardware.
+ 
+- (5) verify_signature().
++  5) verify_signature().
+ 
+      Optional.  This is the entry point for signature verification.  The
+      subtype may do anything it likes to implement an operation, including
+      offloading to hardware.
+ 
+-
+-=============
+-INSTANTIATION DATA PARSERS
++Instantiation Data Parsers
+ =============
+ 
+ The asymmetric key type doesn't generally want to store or to deal with a raw
+@@ -254,11 +250,11 @@ Examples of blob formats for which parsers could be implemented include:
+ During key instantiation each parser in the list is tried until one doesn't
+ return -EBADMSG.
+ 
+-The parser definition structure can be found in:
++The parser definition structure can be found in::
+ 
+ 	#include <keys/asymmetric-parser.h>
+ 
+-and looks like the following:
++and looks like the following::
+ 
+ 	struct asymmetric_key_parser {
+ 		struct module	*owner;
+@@ -273,7 +269,7 @@ the parser.
+ There is currently only a single operation defined by the parser, and it is
+ mandatory:
+ 
+- (1) parse().
++  1) parse().
+ 
+      This is called to preparse the key from the key creation and update paths.
+      In particular, it is called during the key creation _before_ a key is
+@@ -282,7 +278,7 @@ mandatory:
+ 
+      The caller passes a pointer to the following struct with all of the fields
+      cleared, except for data, datalen and quotalen [see
+-     Documentation/security/keys/core.rst].
++     Documentation/security/keys/core.rst]::
+ 
+ 	struct key_preparsed_payload {
+ 		char		*description;
+@@ -321,7 +317,7 @@ mandatory:
+      public-key algorithm such as RSA and DSA this will likely be a printable
+      hex version of the key's fingerprint.
+ 
+-Functions are provided to register and unregister parsers:
++Functions are provided to register and unregister parsers::
+ 
+ 	int register_asymmetric_key_parser(struct asymmetric_key_parser *parser);
+ 	void unregister_asymmetric_key_parser(struct asymmetric_key_parser *subtype);
+@@ -330,8 +326,7 @@ Parsers may not have the same name.  The names are otherwise only used for
+ displaying in debugging messages.
+ 
+ 
+-============-KEYRING LINK RESTRICTIONS
++Keyring Link Restrictions
+ ============ 
+ Keyrings created from userspace using add_key can be configured to check the
+@@ -340,7 +335,7 @@ allowed to link.
+ 
+ Several restriction methods are available:
+ 
+- (1) Restrict using the kernel builtin trusted keyring
++  1) Restrict using the kernel builtin trusted keyring
+ 
+      - Option string used with KEYCTL_RESTRICT_KEYRING:
+        - "builtin_trusted"
+@@ -350,7 +345,7 @@ Several restriction methods are available:
+      rejected.  The ca_keys kernel parameter also affects which keys are used
+      for signature verification.
+ 
+- (2) Restrict using the kernel builtin and secondary trusted keyrings
++  2) Restrict using the kernel builtin and secondary trusted keyrings
+ 
+      - Option string used with KEYCTL_RESTRICT_KEYRING:
+        - "builtin_and_secondary_trusted"
+@@ -361,7 +356,7 @@ Several restriction methods are available:
+      kernel parameter also affects which keys are used for signature
+      verification.
+ 
+- (3) Restrict using a separate key or keyring
++  3) Restrict using a separate key or keyring
+ 
+      - Option string used with KEYCTL_RESTRICT_KEYRING:
+        - "key_or_keyring:<key or keyring serial number>[:chain]"
+@@ -378,7 +373,7 @@ Several restriction methods are available:
+      certificate in order (starting closest to the root) to a keyring.  For
+      instance, one keyring can be populated with links to a set of root
+      certificates, with a separate, restricted keyring set up for each
+-     certificate chain to be validated:
++     certificate chain to be validated::
+ 
+ 	# Create and populate a keyring for root certificates
+ 	root_id=`keyctl add keyring root-certs "" @s`
+@@ -400,7 +395,7 @@ Several restriction methods are available:
+      one of the root certificates.
+ 
+      A single keyring can be used to verify a chain of signatures by
+-     restricting the keyring after linking the root certificate:
++     restricting the keyring after linking the root certificate::
+ 
+ 	# Create a keyring for the certificate chain and add the root
+ 	chain2_id=`keyctl add keyring chain2 "" @s`
+diff --git a/Documentation/crypto/index.rst b/Documentation/crypto/index.rst
+index c4ff5d791233..2bcaf422731e 100644
+--- a/Documentation/crypto/index.rst
++++ b/Documentation/crypto/index.rst
+@@ -18,6 +18,7 @@ for cryptographic use cases, as well as programming examples.
+ 
+    intro
+    architecture
++   asymmetric-keys
+    devel-algos
+    userspace-if
+    crypto_engine
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index 0154721b20b2..615331c7f0ec 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -913,7 +913,7 @@ The keyctl syscall functions are:
+ 
+      One application of restricted keyrings is to verify X.509 certificate
+      chains or individual certificate signatures using the asymmetric key type.
+-     See Documentation/crypto/asymmetric-keys.txt for specific restrictions
++     See Documentation/crypto/asymmetric-keys.rst for specific restrictions
+      applicable to the asymmetric key type.
+ 
+ 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 46fdb834d1fb..b9bb91ae2b80 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2768,7 +2768,7 @@ ASYMMETRIC KEYS
+ M:	David Howells <dhowells@redhat.com>
+ L:	keyrings@vger.kernel.org
+ S:	Maintained
+-F:	Documentation/crypto/asymmetric-keys.txt
++F:	Documentation/crypto/asymmetric-keys.rst
+ F:	include/linux/verification.h
+ F:	include/crypto/public_key.h
+ F:	include/crypto/pkcs7.h
+diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
+index 6e5fc8e31f01..33e77d846caa 100644
+--- a/crypto/asymmetric_keys/asymmetric_type.c
++++ b/crypto/asymmetric_keys/asymmetric_type.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ /* Asymmetric public-key cryptography key type
+  *
+- * See Documentation/crypto/asymmetric-keys.txt
++ * See Documentation/crypto/asymmetric-keys.rst
+  *
+  * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index d7f43d4ea925..da4d0b82d018 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ /* In-software asymmetric public-key crypto subtype
+  *
+- * See Documentation/crypto/asymmetric-keys.txt
++ * See Documentation/crypto/asymmetric-keys.rst
+  *
+  * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+diff --git a/crypto/asymmetric_keys/signature.c b/crypto/asymmetric_keys/signature.c
+index e24a031db1e4..4aff3eebec17 100644
+--- a/crypto/asymmetric_keys/signature.c
++++ b/crypto/asymmetric_keys/signature.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ /* Signature verification with an asymmetric key
+  *
+- * See Documentation/crypto/asymmetric-keys.txt
++ * See Documentation/crypto/asymmetric-keys.rst
+  *
+  * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index 0588ef3bc6ff..11f535cfb810 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -1,7 +1,7 @@
+ /* SPDX-License-Identifier: GPL-2.0-or-later */
+ /* Asymmetric public-key algorithm definitions
+  *
+- * See Documentation/crypto/asymmetric-keys.txt
++ * See Documentation/crypto/asymmetric-keys.rst
+  *
+  * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+diff --git a/include/keys/asymmetric-parser.h b/include/keys/asymmetric-parser.h
+index 8a21d6a613ab..c47dc5405f79 100644
+--- a/include/keys/asymmetric-parser.h
++++ b/include/keys/asymmetric-parser.h
+@@ -1,7 +1,7 @@
+ /* SPDX-License-Identifier: GPL-2.0-or-later */
+ /* Asymmetric public-key cryptography data parser
+  *
+- * See Documentation/crypto/asymmetric-keys.txt
++ * See Documentation/crypto/asymmetric-keys.rst
+  *
+  * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+diff --git a/include/keys/asymmetric-subtype.h b/include/keys/asymmetric-subtype.h
+index 21407815d9c3..d55171f640a0 100644
+--- a/include/keys/asymmetric-subtype.h
++++ b/include/keys/asymmetric-subtype.h
+@@ -1,7 +1,7 @@
+ /* SPDX-License-Identifier: GPL-2.0-or-later */
+ /* Asymmetric public-key cryptography key subtype
+  *
+- * See Documentation/crypto/asymmetric-keys.txt
++ * See Documentation/crypto/asymmetric-keys.rst
+  *
+  * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+diff --git a/include/keys/asymmetric-type.h b/include/keys/asymmetric-type.h
+index 91cfd9bd9385..a29d3ff2e7e8 100644
+--- a/include/keys/asymmetric-type.h
++++ b/include/keys/asymmetric-type.h
+@@ -1,7 +1,7 @@
+ /* SPDX-License-Identifier: GPL-2.0-or-later */
+ /* Asymmetric Public-key cryptography key type interface
+  *
+- * See Documentation/crypto/asymmetric-keys.txt
++ * See Documentation/crypto/asymmetric-keys.rst
+  *
+  * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
 -- 
-2.18.1
-
-
---------------38FC0D37D8A890979402365F--
+2.24.1
