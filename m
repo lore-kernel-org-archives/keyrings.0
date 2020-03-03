@@ -1,44 +1,48 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 03 Mar 2020 20:42:21 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Tue, 03 Mar 2020 21:20:53 +0000
 Subject: Re: [PATCH v6 4/6] security: keys: trusted: use ASN.1 TPM2 key format for the blobs
-Message-Id: <1583268141.3638.10.camel@HansenPartnership.com>
+Message-Id: <20200303212053.GB110353@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20200302122759.5204-1-James.Bottomley@HansenPartnership.com>
-         <20200302122759.5204-5-James.Bottomley@HansenPartnership.com>
-         <20200303200614.GD5775@linux.intel.com>
-In-Reply-To: <20200303200614.GD5775@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+ <20200302122759.5204-5-James.Bottomley@HansenPartnership.com>
+ <20200303200614.GD5775@linux.intel.com>
+ <1583268141.3638.10.camel@HansenPartnership.com>
+In-Reply-To: <1583268141.3638.10.camel@HansenPartnership.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
 Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-On Tue, 2020-03-03 at 22:06 +0200, Jarkko Sakkinen wrote:
-> On Mon, Mar 02, 2020 at 07:27:57AM -0500, James Bottomley wrote:
-> > Modify the TPM2 key format blob output to export and import in the
-> > ASN.1 form for TPM2 sealed object keys.  For compatibility with
-> > prior
-> > trusted keys, the importer will also accept two TPM2B quantities
-> > representing the public and private parts of the key.  However, the
-> > export via keyctl pipe will only output the ASN.1 format.
+On Tue, Mar 03, 2020 at 03:42:21PM -0500, James Bottomley wrote:
+> On Tue, 2020-03-03 at 22:06 +0200, Jarkko Sakkinen wrote:
+> > On Mon, Mar 02, 2020 at 07:27:57AM -0500, James Bottomley wrote:
+> > > Modify the TPM2 key format blob output to export and import in the
+> > > ASN.1 form for TPM2 sealed object keys.  For compatibility with
+> > > prior
+> > > trusted keys, the importer will also accept two TPM2B quantities
+> > > representing the public and private parts of the key.  However, the
+> > > export via keyctl pipe will only output the ASN.1 format.
+> > > 
+> > > The benefit of the ASN.1 format is that it's a standard and thus
+> > > the
+> > > exported key can be used by userspace tools (openssl_tpm2_engine,
+> > > openconnect and tpm2-tss-engine).  The format includes policy
+> > > specifications, thus it gets us out of having to construct policy
+> > > handles in userspace and the format includes the parent meaning you
+> > > don't have to keep passing it in each time.
+> > > 
+> > > This patch only implements basic handling for the ASN.1 format, so
+> > > keys with passwords but no policy.
+> > > 
+> > > Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.c
+> > > om>
 > > 
-> > The benefit of the ASN.1 format is that it's a standard and thus
-> > the
-> > exported key can be used by userspace tools (openssl_tpm2_engine,
-> > openconnect and tpm2-tss-engine).  The format includes policy
-> > specifications, thus it gets us out of having to construct policy
-> > handles in userspace and the format includes the parent meaning you
-> > don't have to keep passing it in each time.
-> > 
-> > This patch only implements basic handling for the ASN.1 format, so
-> > keys with passwords but no policy.
-> > 
-> > Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.c
-> > om>
+> > tpm_key (like you have tpm2_key prefix).
 > 
-> tpm_key (like you have tpm2_key prefix).
+> OK, I should probably do tpm2_key as the prefix since TPM 1.2 cannot do
+>  policy, that's a TPM 2 only thing.
 
-OK, I should probably do tpm2_key as the prefix since TPM 1.2 cannot do
- policy, that's a TPM 2 only thing.
+Agreed that would be even better.
 
-James
+/Jarkko
