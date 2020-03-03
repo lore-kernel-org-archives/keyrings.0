@@ -1,7 +1,7 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 02 Mar 2020 12:52:19 +0000
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Tue, 03 Mar 2020 04:17:32 +0000
 Subject: Re: [PATCH v3] KEYS: reaching the keys quotas correctly
-Message-Id: <7c44c7c9745d81361f3d38206e0a68095a06c171.camel@linux.intel.com>
+Message-Id: <20200303041732.GA14653@sol.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,7 +10,13 @@ References: <1582864911-30823-1-git-send-email-xuyang2018.jy@cn.fujitsu.com>
 In-Reply-To: <1582864911-30823-1-git-send-email-xuyang2018.jy@cn.fujitsu.com>
 To: keyrings@vger.kernel.org
 
-On Fri, 2020-02-28 at 12:41 +0800, Yang Xu wrote:
+On Fri, Feb 28, 2020 at 12:41:51PM +0800, Yang Xu wrote:
+>
+> Subject: Re: [PATCH v3] KEYS: reaching the keys quotas correctly
+
+The subject should be in imperative tense, like
+"KEYS: reach the keys quotas correctly"
+
 > Currently, when we add a new user key, the calltrace as below:
 > 
 > add_key()
@@ -35,6 +41,8 @@ On Fri, 2020-02-28 at 12:41 +0800, Yang Xu wrote:
 > Cc: Eric Biggers <ebiggers@google.com>
 > Signed-off-by: Yang Xu <xuyang2018.jy@cn.fujitsu.com>
 
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Otherwise this looks fine.  Thanks!
 
-/Jarkko
+Reviewed-by: Eric Biggers <ebiggers@google.com>
+
+- Eric
