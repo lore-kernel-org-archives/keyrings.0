@@ -1,13 +1,13 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 10 Mar 2020 05:16:07 +0000
-Subject: [PATCH v8 8/8] security: keys: trusted: implement counter/timer policy
-Message-Id: <20200310051607.30334-9-James.Bottomley@HansenPartnership.com>
+Date: Thu, 05 Mar 2020 02:27:44 +0000
+Subject: [PATCH v7 6/6] security: keys: trusted: implement counter/timer policy
+Message-Id: <20200305022744.12492-7-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
+References: <20200305022744.12492-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200305022744.12492-1-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
@@ -86,7 +86,7 @@ index e32e9728adce..5026a06977e1 100644
  	TPM2_CC_LAST		        = 0x0193, /* Spec 1.36 */
  };
 diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 87a13e607eca..bd8eb02e1094 100644
+index 66ae3b334ebb..11c7d84f921f 100644
 --- a/security/keys/trusted-keys/tpm2-policy.c
 +++ b/security/keys/trusted-keys/tpm2-policy.c
 @@ -197,7 +197,8 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols,
@@ -153,7 +153,7 @@ index 87a13e607eca..bd8eb02e1094 100644
  		}
  
 diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index 98c65431ca75..3ec01ed874d9 100644
+index 58b976b129e8..39256a88d9fd 100644
 --- a/security/keys/trusted-keys/trusted_tpm2.c
 +++ b/security/keys/trusted-keys/trusted_tpm2.c
 @@ -248,6 +248,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
