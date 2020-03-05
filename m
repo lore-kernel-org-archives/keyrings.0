@@ -1,15 +1,24 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Thu, 05 Mar 2020 02:27:39 +0000
-Subject: [PATCH v7 1/6] lib: add ASN.1 encoder
-Message-Id: <20200305022744.12492-2-James.Bottomley@HansenPartnership.com>
+Date: Thu, 05 Mar 2020 16:20:24 +0000
+Subject: Re: [PATCH v7 1/6] lib: add ASN.1 encoder
+Message-Id: <1583425224.3927.6.camel@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20200305022744.12492-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200305022744.12492-1-James.Bottomley@HansenPartnership.com>
+         <20200305022744.12492-2-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200305022744.12492-2-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+
+I screwed up the patch  This is the proper one with the correct
+spacing.
+
+==8<8<8<==
+
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [PATCH v7 1/6] lib: add ASN.1 encoder
 
 We have a need in the TPM2 trusted keys to return the ASN.1 form of
 the TPM key blob so it can be operated on by tools outside of the
@@ -33,7 +42,7 @@ v2: updated API to use indefinite length, and made symbol exports gpl
 v3: add data length error handling
 v4: use end_data instead of data_len pointer
 v5: mention tools and space out code
-v7: reverse christmas tree variable definitions
+v7: reverse christmas tree variable definitions and better spacing
 ---
  include/linux/asn1_encoder.h |  32 ++++
  lib/Makefile                 |   2 +-
@@ -95,7 +104,7 @@ index 611872c06926..1a9169ef2bed 100644
  
 diff --git a/lib/asn1_encoder.c b/lib/asn1_encoder.c
 new file mode 100644
-index 000000000000..835d3f5a4ce1
+index 000000000000..24d45a838887
 --- /dev/null
 +++ b/lib/asn1_encoder.c
 @@ -0,0 +1,431 @@
@@ -151,7 +160,7 @@ index 000000000000..835d3f5a4ce1
 +	}
 +
 +	for (i = sizeof(integer); i > 0 ; i--) {
-+		int byte = integer >> (8*(i-1));
++		int byte = integer >> (8 * (i - 1));
 +
 +		if (!found && byte = 0)
 +			continue;
