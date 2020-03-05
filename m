@@ -1,69 +1,534 @@
-From: Lukas Bulwahn <lukas.bulwahn@gmail.com>
-Date: Thu, 05 Mar 2020 21:10:00 +0000
-Subject: Re: [PATCH] MAINTAINERS: adjust to trusted keys subsystem creation
-Message-Id: <alpine.DEB.2.21.2003052204060.7885@felia>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Thu, 05 Mar 2020 02:27:39 +0000
+Subject: [PATCH v7 1/6] lib: add ASN.1 encoder
+Message-Id: <20200305022744.12492-2-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200304160359.16809-1-lukas.bulwahn@gmail.com> <9127f0318e8507ca0b4e146d9b99d9ecb27f7f28.camel@linux.intel.com> <alpine.DEB.2.21.2003052132540.5431@felia> <1583441170.3927.37.camel@linux.ibm.com>
-In-Reply-To: <1583441170.3927.37.camel@linux.ibm.com>
-To: James Bottomley <jejb@linux.ibm.com>
-Cc: Lukas Bulwahn <lukas.bulwahn@gmail.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Sumit Garg <sumit.garg@linaro.org>, Mimi Zohar <zohar@linux.ibm.com>, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, Sebastian Duda <sebastian.duda@fau.de>, Joe Perches <joe@perches.com>, kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20200305022744.12492-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200305022744.12492-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
+We have a need in the TPM2 trusted keys to return the ASN.1 form of
+the TPM key blob so it can be operated on by tools outside of the
+kernel.  The specific tools are the openssl_tpm2_engine, openconnect
+and the Intel tpm2-tss-engine.  To do that, we have to be able to read
+and write the same binary key format the tools use.  The current ASN.1
+decoder does fine for reading, but we need pieces of an ASN.1 encoder
+to write the key blob in binary compatible form.
 
+For backwards compatibility, the trusted key reader code will still
+accept the two TPM2B quantities that it uses today, but the writer
+will only output the ASN.1 form.
 
-On Thu, 5 Mar 2020, James Bottomley wrote:
+The current implementation only encodes the ASN.1 bits we actually need.
 
-> On Thu, 2020-03-05 at 21:34 +0100, Lukas Bulwahn wrote:
-> > 
-> > On Thu, 5 Mar 2020, Jarkko Sakkinen wrote:
-> > 
-> > > On Wed, 2020-03-04 at 17:03 +0100, Lukas Bulwahn wrote:
-> > > > Commit 47f9c2796891 ("KEYS: trusted: Create trusted keys
-> > > > subsystem")
-> > > > renamed trusted.h to trusted_tpm.h in include/keys/, and moved
-> > > > trusted.c
-> > > > to trusted-keys/trusted_tpm1.c in security/keys/.
-> > > > 
-> > > > Since then, ./scripts/get_maintainer.pl --self-test complains:
-> > > > 
-> > > >   warning: no file matches F: security/keys/trusted.c
-> > > >   warning: no file matches F: include/keys/trusted.h
-> > > > 
-> > > > Rectify the KEYS-TRUSTED entry in MAINTAINERS now.
-> > > > 
-> > > > Co-developed-by: Sebastian Duda <sebastian.duda@fau.de>
-> > > > Signed-off-by: Sebastian Duda <sebastian.duda@fau.de>
-> > > > Signed-off-by: Lukas Bulwahn <lukas.bulwahn@gmail.com>
-> > > > ---
-> > > > Sumit, please ack.
-> > > > Jarkko, please pick this patch.
-> > > 
-> > > I'll pick it when it is done. I acknowledge the regression but I
-> > > see no reason for rushing as this does not break any systems in
-> > > the wild.
-> > > 
-> > 
-> > Agree. No need to rush this. I sent out a v3, and I hope to get
-> > Sumit's ACK and then you can pick it for the next merge window.
-> 
-> From a process point of view, I don't quite understand this.  You're
-> altering an entry in the MAINTAINERS file which belongs to the three
-> maintainers of trusted keys, you only need our ack to do that, which
-> picking up via the trusted key tree will substitute for.  It would be
-> useful to have Sumit review this because he moved the files and there
-> may be something we missed, but a reviewed-by: is a nice to have and
-> not a block on the process.
->
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-Agree. I expect Sumit to acknowledge that the PATCH v3 "fixes" what he 
-missed in his commit from his point of view. I do not use the Fixes: tag, 
-because it just some basic administrative clean-up, but not any 
-functional change; commits with Fixes: tags are quickly picked up for 
-stable, but this patch should not be picked up, because changes to 
-MAINTAINERS do not need to be reflected in stable branches.
+---
 
-There is no rush and no blocker here.
+v2: updated API to use indefinite length, and made symbol exports gpl
+v3: add data length error handling
+v4: use end_data instead of data_len pointer
+v5: mention tools and space out code
+v7: reverse christmas tree variable definitions
+---
+ include/linux/asn1_encoder.h |  32 ++++
+ lib/Makefile                 |   2 +-
+ lib/asn1_encoder.c           | 431 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 464 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
 
-Lukas
+diff --git a/include/linux/asn1_encoder.h b/include/linux/asn1_encoder.h
+new file mode 100644
+index 000000000000..08cd0c2ad34f
+--- /dev/null
++++ b/include/linux/asn1_encoder.h
+@@ -0,0 +1,32 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++
++#ifndef _LINUX_ASN1_ENCODER_H
++#define _LINUX_ASN1_ENCODER_H
++
++#include <linux/types.h>
++#include <linux/asn1.h>
++#include <linux/asn1_ber_bytecode.h>
++#include <linux/bug.h>
++
++#define asn1_oid_len(oid) (sizeof(oid)/sizeof(u32))
++unsigned char *
++asn1_encode_integer(unsigned char *data, const unsigned char *end_data,
++		    s64 integer);
++unsigned char *
++asn1_encode_oid(unsigned char *data, const unsigned char *end_data,
++		u32 oid[], int oid_len);
++unsigned char *
++asn1_encode_tag(unsigned char *data, const unsigned char *end_data,
++		u32 tag, const unsigned char *string, int len);
++unsigned char *
++asn1_encode_octet_string(unsigned char *data,
++			 const unsigned char *end_data,
++			 const unsigned char *string, u32 len);
++unsigned char *
++asn1_encode_sequence(unsigned char *data, const unsigned char *end_data,
++		     const unsigned char *seq, int len);
++unsigned char *
++asn1_encode_boolean(unsigned char *data, const unsigned char *end_data,
++		    bool val);
++
++#endif
+diff --git a/lib/Makefile b/lib/Makefile
+index 611872c06926..1a9169ef2bed 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -237,7 +237,7 @@ obj-$(CONFIG_INTERVAL_TREE_TEST) += interval_tree_test.o
+ 
+ obj-$(CONFIG_PERCPU_TEST) += percpu_test.o
+ 
+-obj-$(CONFIG_ASN1) += asn1_decoder.o
++obj-$(CONFIG_ASN1) += asn1_decoder.o asn1_encoder.o
+ 
+ obj-$(CONFIG_FONT_SUPPORT) += fonts/
+ 
+diff --git a/lib/asn1_encoder.c b/lib/asn1_encoder.c
+new file mode 100644
+index 000000000000..835d3f5a4ce1
+--- /dev/null
++++ b/lib/asn1_encoder.c
+@@ -0,0 +1,431 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Simple encoder primitives for ASN.1 BER/DER/CER
++ *
++ * Copyright (C) 2019 James.Bottomley@HansenPartnership.com
++ */
++
++#include <linux/asn1_encoder.h>
++#include <linux/bug.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++/**
++ * asn1_encode_integer() - encode positive integer to ASN.1
++ * @data:	pointer to the pointer to the data
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @integer:	integer to be encoded
++ *
++ * This is a simplified encoder: it only currently does
++ * positive integers, but it should be simple enough to add the
++ * negative case if a use comes along.
++ */
++unsigned char *
++asn1_encode_integer(unsigned char *data, const unsigned char *end_data,
++		    s64 integer)
++{
++	int data_len = end_data - data;
++	unsigned char *d = &data[2];
++	bool found = false;
++	int i;
++
++	if (WARN(integer < 0,
++		 "BUG: integer encode only supports positive integers"))
++		return ERR_PTR(-EINVAL);
++
++	if (IS_ERR(data))
++		return data;
++
++	/* need at least 3 bytes for tag, length and integer encoding */
++	if (data_len < 3)
++		return ERR_PTR(-EINVAL);
++
++	/* remaining length where at d (the start of the integer encoding) */
++	data_len -= 2;
++
++	data[0] = _tag(UNIV, PRIM, INT);
++	if (integer = 0) {
++		*d++ = 0;
++		goto out;
++	}
++
++	for (i = sizeof(integer); i > 0 ; i--) {
++		int byte = integer >> (8*(i-1));
++
++		if (!found && byte = 0)
++			continue;
++
++		/*
++		 * for a positive number the first byte must have bit
++		 * 7 clear in two's complement (otherwise it's a
++		 * negative number) so prepend a leading zero if
++		 * that's not the case
++		 */
++		if (!found && (byte & 0x80)) {
++			/*
++			 * no check needed here, we already know we
++			 * have len >= 1
++			 */
++			*d++ = 0;
++			data_len--;
++		}
++
++		found = true;
++		if (data_len = 0)
++			return ERR_PTR(-EINVAL);
++
++		*d++ = byte;
++		data_len--;
++	}
++
++ out:
++	data[1] = d - data - 2;
++
++	return d;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_integer);
++
++/* calculate the base 128 digit values setting the top bit of the first octet */
++static int asn1_encode_oid_digit(unsigned char **_data, int *data_len, u32 oid)
++{
++	unsigned char *data = *_data;
++	int start = 7 + 7 + 7 + 7;
++	int ret = 0;
++
++	if (*data_len < 1)
++		return -EINVAL;
++
++	/* quick case */
++	if (oid = 0) {
++		*data++ = 0x80;
++		(*data_len)--;
++		goto out;
++	}
++
++	while (oid >> start = 0)
++		start -= 7;
++
++	while (start > 0 && *data_len > 0) {
++		u8 byte;
++
++		byte = oid >> start;
++		oid = oid - (byte << start);
++		start -= 7;
++		byte |= 0x80;
++		*data++ = byte;
++		(*data_len)--;
++	}
++
++	if (*data_len > 0) {
++		*data++ = oid;
++		(*data_len)--;
++	} else {
++		ret = -EINVAL;
++	}
++
++ out:
++	*_data = data;
++	return ret;
++}
++
++/**
++ * asn1_encode_oid() - encode an oid to ASN.1
++ * @data:	position to begin encoding at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @oid:	array of oids
++ * @oid_len:	length of oid array
++ *
++ * this encodes an OID up to ASN.1 when presented as an array of OID values
++ */
++unsigned char *
++asn1_encode_oid(unsigned char *data, const unsigned char *end_data,
++		u32 oid[], int oid_len)
++{
++	int data_len = end_data - data;
++	unsigned char *d = data + 2;
++	int i, ret;
++
++	if (WARN(oid_len < 2, "OID must have at least two elements"))
++		return ERR_PTR(-EINVAL);
++
++	if (WARN(oid_len > 32, "OID is too large"))
++		return ERR_PTR(-EINVAL);
++
++	if (IS_ERR(data))
++		return data;
++
++
++	/* need at least 3 bytes for tag, length and OID encoding */
++	if (data_len < 3)
++		return ERR_PTR(-EINVAL);
++
++	data[0] = _tag(UNIV, PRIM, OID);
++	*d++ = oid[0] * 40 + oid[1];
++
++	data_len -= 3;
++
++	ret = 0;
++
++	for (i = 2; i < oid_len; i++) {
++		ret = asn1_encode_oid_digit(&d, &data_len, oid[i]);
++		if (ret < 0)
++			return ERR_PTR(ret);
++	}
++
++	data[1] = d - data - 2;
++
++	return d;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_oid);
++
++static int asn1_encode_length(unsigned char **data, int *data_len, int len)
++{
++	if (*data_len < 1)
++		return -EINVAL;
++
++	if (len < 0) {
++		*((*data)++) = ASN1_INDEFINITE_LENGTH;
++		(*data_len)--;
++		return 0;
++	}
++
++	if (len <= 0x7f) {
++		*((*data)++) = len;
++		(*data_len)--;
++		return 0;
++	}
++
++	if (*data_len < 2)
++		return -EINVAL;
++
++	if (len <= 0xff) {
++		*((*data)++) = 0x81;
++		*((*data)++) = len & 0xff;
++		*data_len -= 2;
++		return 0;
++	}
++
++	if (*data_len < 3)
++		return -EINVAL;
++
++	if (len <= 0xffff) {
++		*((*data)++) = 0x82;
++		*((*data)++) = (len >> 8) & 0xff;
++		*((*data)++) = len & 0xff;
++		*data_len -= 3;
++		return 0;
++	}
++
++	if (WARN(len > 0xffffff, "ASN.1 length can't be > 0xffffff"))
++		return -EINVAL;
++
++	if (*data_len < 4)
++		return -EINVAL;
++	*((*data)++) = 0x83;
++	*((*data)++) = (len >> 16) & 0xff;
++	*((*data)++) = (len >> 8) & 0xff;
++	*((*data)++) = len & 0xff;
++	*data_len -= 4;
++
++	return 0;
++}
++
++/**
++ * asn1_encode_tag() - add a tag for optional or explicit value
++ * @data:	pointer to place tag at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @tag:	tag to be placed
++ * @string:	the data to be tagged
++ * @len:	the length of the data to be tagged
++ *
++ * Note this currently only handles short form tags < 31.  To encode
++ * in place pass a NULL @string and -1 for @len; all this will do is
++ * add an indefinite length tag and update the data pointer to the
++ * place where the tag contents should be placed.  After the data is
++ * placed, repeat the prior statement but now with the known length.
++ * In order to avoid having to keep both before and after pointers,
++ * the repeat expects to be called with @data pointing to where the
++ * first encode placed it.
++ */
++unsigned char *
++asn1_encode_tag(unsigned char *data, const unsigned char *end_data,
++		u32 tag, const unsigned char *string, int len)
++{
++	int data_len = end_data - data;
++	int ret;
++
++	if (WARN(tag > 30, "ASN.1 tag can't be > 30"))
++		return ERR_PTR(-EINVAL);
++
++	if (!string && WARN(len > 127,
++			    "BUG: recode tag is too big (>127)"))
++		return ERR_PTR(-EINVAL);
++
++	if (IS_ERR(data))
++		return data;
++
++	if (!string && len > 0) {
++		/*
++		 * we're recoding, so move back to the start of the
++		 * tag and install a dummy length because the real
++		 * data_len should be NULL
++		 */
++		data -= 2;
++		data_len = 2;
++	}
++
++	if (data_len < 2)
++		return ERR_PTR(-EINVAL);
++
++	*(data++) = _tagn(CONT, CONS, tag);
++	data_len--;
++	ret = asn1_encode_length(&data, &data_len, len);
++	if (ret < 0)
++		return ERR_PTR(ret);
++
++	if (!string)
++		return data;
++
++	if (data_len < len)
++		return ERR_PTR(-EINVAL);
++
++	memcpy(data, string, len);
++	data += len;
++
++	return data;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_tag);
++
++/**
++ * asn1_encode_octet_string() - encode an ASN.1 OCTET STRING
++ * @data:	pointer to encode at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @string:	string to be encoded
++ * @len:	length of string
++ *
++ * Note ASN.1 octet strings may contain zeros, so the length is obligatory.
++ */
++unsigned char *
++asn1_encode_octet_string(unsigned char *data,
++			 const unsigned char *end_data,
++			 const unsigned char *string, u32 len)
++{
++	int data_len = end_data - data;
++	int ret;
++
++	if (IS_ERR(data))
++		return data;
++
++	/* need minimum of 2 bytes for tag and length of zero length string */
++	if (data_len < 2)
++		return ERR_PTR(-EINVAL);
++
++	*(data++) = _tag(UNIV, PRIM, OTS);
++	data_len--;
++
++	ret = asn1_encode_length(&data, &data_len, len);
++	if (ret)
++		return ERR_PTR(ret);
++
++	if (data_len < len)
++		return ERR_PTR(-EINVAL);
++
++	memcpy(data, string, len);
++	data += len;
++
++	return data;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_octet_string);
++
++/**
++ * asn1_encode_sequence() - wrap a byte stream in an ASN.1 SEQUENCE
++ * @data:	pointer to encode at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @seq:	data to be encoded as a sequence
++ * @len:	length of the data to be encoded as a sequence
++ *
++ * Fill in a sequence.  To encode in place, pass NULL for @seq and -1
++ * for @len; then call again once the length is known (still with NULL
++ * for @seq). In order to avoid having to keep both before and after
++ * pointers, the repeat expects to be called with @data pointing to
++ * where the first encode placed it.
++ */
++unsigned char *
++asn1_encode_sequence(unsigned char *data, const unsigned char *end_data,
++		     const unsigned char *seq, int len)
++{
++	int data_len = end_data - data;
++	int ret;
++
++	if (!seq && WARN(len > 127,
++			 "BUG: recode sequence is too big (>127)"))
++		return ERR_PTR(-EINVAL);
++
++	if (IS_ERR(data))
++		return data;
++
++	if (!seq && len >= 0) {
++		/*
++		 * we're recoding, so move back to the start of the
++		 * sequence and install a dummy length because the
++		 * real length should be NULL
++		 */
++		data -= 2;
++		data_len = 2;
++	}
++
++	if (data_len < 2)
++		return ERR_PTR(-EINVAL);
++
++	*(data++) = _tag(UNIV, CONS, SEQ);
++	data_len--;
++
++	ret = asn1_encode_length(&data, &data_len, len);
++	if (ret)
++		return ERR_PTR(ret);
++
++	if (!seq)
++		return data;
++
++	if (data_len < len)
++		return ERR_PTR(-EINVAL);
++
++	memcpy(data, seq, len);
++	data += len;
++
++	return data;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_sequence);
++
++/**
++ * asn1_encode_boolean() - encode a boolean value to ASN.1
++ * @data:	pointer to encode at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @val:	the boolean true/false value
++ */
++unsigned char *
++asn1_encode_boolean(unsigned char *data, const unsigned char *end_data,
++		    bool val)
++{
++	int data_len = end_data - data;
++
++	if (IS_ERR(data))
++		return data;
++
++	/* booleans are 3 bytes: tag, length = 1 and value = 0 or 1 */
++	if (data_len < 3)
++		return ERR_PTR(-EINVAL);
++
++	*(data++) = _tag(UNIV, PRIM, BOOL);
++	data_len--;
++
++	asn1_encode_length(&data, &data_len, 1);
++
++	if (val)
++		*(data++) = 1;
++	else
++		*(data++) = 0;
++
++	return data;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_boolean);
+-- 
+2.16.4
