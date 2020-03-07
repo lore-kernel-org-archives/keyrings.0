@@ -1,7 +1,7 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 06 Mar 2020 20:03:31 +0000
+Date: Sat, 07 Mar 2020 22:00:26 +0000
 Subject: Re: [PATCH v7 4/6] security: keys: trusted: use ASN.1 TPM2 key format for the blobs
-Message-Id: <20200306200331.GB11362@linux.intel.com>
+Message-Id: <20200307220026.GA122868@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -31,7 +31,14 @@ On Wed, Mar 04, 2020 at 06:27:42PM -0800, James Bottomley wrote:
 > 
 > Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-Need to test. Try to get it done next week so there is still time
-to fit this into release.
+Not yet sure but I get
+
+keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha1 pcrinfo000001 6768033e216468247bd031a0a2d9876d79818f8f" @u
+add_key: No such device
+
+After applying 1/6-4/6.
+
+At this point I'm assuming that I've made mistake somewhere, which is
+entirely possible.
 
 /Jarkko
