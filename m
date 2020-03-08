@@ -1,26 +1,97 @@
 From: Waiman Long <longman@redhat.com>
-Date: Fri, 20 Mar 2020 13:56:42 +0000
-Subject: Re: [PATCH v5 1/2] KEYS: Don't write out to userspace while holding key semaphore
-Message-Id: <69678e1c-dfbe-7484-85ad-601ebe23c90d@redhat.com>
+Date: Sun, 08 Mar 2020 17:04:10 +0000
+Subject: [PATCH v2 2/2] KEYS: Avoid false positive ENOMEM error on key read
+Message-Id: <20200308170410.14166-3-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200318221457.1330-2-longman@redhat.com>
- <20200318221457.1330-1-longman@redhat.com>
- <3251035.1584692419@warthog.procyon.org.uk>
-In-Reply-To: <3251035.1584692419@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>, "David S. Miller" <davem@davemloft.net>, Jakub Kicinski <kuba@kernel.org>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Eric Biggers <ebiggers@google.com>, Chris von Recklinghausen <crecklin@redhat.com>
+References: <20200308170410.14166-1-longman@redhat.com>
+In-Reply-To: <20200308170410.14166-1-longman@redhat.com>
+To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>
+Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Eric Biggers <ebiggers@google.com>, Chris von Recklinghausen <crecklin@redhat.com>, Waiman Long <longman@redhat.com>
 
-On 3/20/20 4:20 AM, David Howells wrote:
-> Waiman Long <longman@redhat.com> wrote:
->
->> +		if ((ret > 0) && (ret <= buflen)) {
-> That's a bit excessive on the bracketage, btw, but don't worry about it unless
-> you respin the patches.
+By allocating a kernel buffer with an user-supplied buffer length, it
+is possible that a false positive ENOMEM error may be returned because
+the user-supplied length is just too large even if the system do have
+enough memory to hold the actual key data.
 
-Got it.
+To reduce this possibility, we set a threshold (1024) over which we
+do check the actual key length first before allocating a buffer of the
+right size to hold it.
 
-Thanks,
-Longman
+Signed-off-by: Waiman Long <longman@redhat.com>
+---
+ security/keys/keyctl.c | 46 ++++++++++++++++++++++++++++++++----------
+ 1 file changed, 35 insertions(+), 11 deletions(-)
+
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 89a14e71eb0a..662a638a680d 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -855,28 +855,52 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
+ 		 * deadlock involving page fault and mmap_sem.
+ 		 */
+ 		char *tmpbuf = NULL;
++		size_t tbuflen = buflen;
+ 
+-		if (buffer && buflen) {
+-			tmpbuf = kmalloc(buflen, GFP_KERNEL);
++		/*
++		 * We don't want an erronous -ENOMEM error due to an
++		 * arbitrary large user-supplied buflen. So if buflen
++		 * exceeds a threshold (1024 bytes in this case), we call
++		 * the read method twice. The first time to get the buffer
++		 * length and the second time to read out the key data.
++		 *
++		 * N.B. All the read methods will return the required
++		 *      buffer length with a NULL input buffer or when
++		 *      the input buffer length isn't large enough.
++		 */
++		if (buflen && buffer && (buflen <= 0x400)) {
++allocbuf:
++			tmpbuf = kmalloc(tbuflen, GFP_KERNEL);
+ 			if (!tmpbuf) {
+ 				ret = -ENOMEM;
+ 				goto error2;
+ 			}
+ 		}
++
+ 		down_read(&key->sem);
+ 		ret = key_validate(key);
+ 		if (ret = 0)
+-			ret = key->type->read(key, tmpbuf, buflen);
++			ret = key->type->read(key, tmpbuf, tbuflen);
+ 		up_read(&key->sem);
+ 
+-		/*
+-		 * Read methods will just return the required length
+-		 * without any copying if the provided length isn't big
+-		 * enough.
+-		 */
+-		if ((ret > 0) && (ret <= buflen) && buffer &&
+-		    copy_to_user(buffer, tmpbuf, ret))
+-			ret = -EFAULT;
++		if ((ret > 0) && (ret <= buflen) && buffer) {
++			/*
++			 * It is possible, though unlikely, that the key
++			 * changes in between the up_read->down_read period.
++			 * If the key becomes longer, we will have to
++			 * allocate a larger buffer and redo the key read
++			 * again.
++			 */
++			if (!tmpbuf || unlikely(ret > tbuflen)) {
++				tbuflen = ret;
++				if (unlikely(tmpbuf))
++					kzfree(tmpbuf);
++				goto allocbuf;
++			}
++
++			if (copy_to_user(buffer, tmpbuf, ret))
++				ret = -EFAULT;
++		}
+ 
+ 		if (tmpbuf)
+ 			kzfree(tmpbuf);
+-- 
+2.18.1
