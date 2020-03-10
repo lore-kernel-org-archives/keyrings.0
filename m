@@ -1,114 +1,168 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 18 Mar 2020 15:03:17 +0000
-Subject: [PATCH 01/17] uapi: General notification queue definitions [ver #5]
-Message-Id: <158454379781.2863966.14636232398055723657.stgit@warthog.procyon.org.uk>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 10 Mar 2020 05:16:04 +0000
+Subject: [PATCH v8 5/8] security: keys: trusted: Make sealed key properly interoperable
+Message-Id: <20200310051607.30334-6-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
-In-Reply-To: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, casey@schaufler-ca.com, sds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Add UAPI definitions for the general notification queue, including the
-following pieces:
+The current implementation appends a migratable flag to the end of a
+key, meaning the format isn't exactly interoperable because the using
+party needs to know to strip this extra byte.  However, all other
+consumers of TPM sealed blobs expect the unseal to return exactly the
+key.  Since TPM2 keys have a key property flag that corresponds to
+migratable, use that flag instead and make the actual key the only
+sealed quantity.  This is secure because the key properties are bound
+to a hash in the private part, so if they're altered the key won't
+load.
 
- (*) struct watch_notification.
+Backwards compatibility is implemented by detecting whether we're
+loading a new format key or not and correctly setting migratable from
+the last byte of old format keys.
 
-     This is the metadata header for notification messages.  It includes a
-     type and subtype that indicate the source of the message
-     (eg. WATCH_TYPE_MOUNT_NOTIFY) and the kind of the message
-     (eg. NOTIFY_MOUNT_NEW_MOUNT).
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-     The header also contains an information field that conveys the
-     following information:
-
-	- WATCH_INFO_LENGTH.  The size of the entry (entries are variable
-          length).
-
-	- WATCH_INFO_ID.  The watch ID specified when the watchpoint was
-          set.
-
-	- WATCH_INFO_TYPE_INFO.  (Sub)type-specific information.
-
-	- WATCH_INFO_FLAG_*.  Flag bits overlain on the type-specific
-          information.  For use by the type.
-
-     All the information in the header can be used in filtering messages at
-     the point of writing into the buffer.
-
- (*) struct watch_notification_removal
-
-     This is an extended watch-removal notification record that includes an
-     'id' field that can indicate the identifier of the object being
-     removed if available (for instance, a keyring serial number).
-
-Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/uapi/linux/watch_queue.h |   55 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
- create mode 100644 include/uapi/linux/watch_queue.h
+v2: added length checks to untrusted payload
+v8: recover patch
+---
+ include/linux/tpm.h                       |  2 ++
+ security/keys/trusted-keys/trusted_tpm2.c | 53 ++++++++++++++++++++++---------
+ 2 files changed, 40 insertions(+), 15 deletions(-)
 
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-new file mode 100644
-index 000000000000..5f3d21e8a34b
---- /dev/null
-+++ b/include/uapi/linux/watch_queue.h
-@@ -0,0 +1,55 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-+#ifndef _UAPI_LINUX_WATCH_QUEUE_H
-+#define _UAPI_LINUX_WATCH_QUEUE_H
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 03e9b184411b..cd46ab27baa5 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -297,6 +297,8 @@ struct tpm_buf {
+ };
+ 
+ enum tpm2_object_attributes {
++	TPM2_OA_FIXED_TPM		= BIT(1),
++	TPM2_OA_FIXED_PARENT		= BIT(4),
+ 	TPM2_OA_USER_WITH_AUTH		= BIT(6),
+ };
+ 
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index e8dcc47b3388..905c5ca4d51c 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -231,6 +231,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	unsigned int blob_len;
+ 	struct tpm_buf buf;
+ 	u32 hash;
++	u32 flags;
+ 	int i;
+ 	int rc;
+ 
+@@ -259,31 +260,32 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 			     TPM_DIGEST_SIZE);
+ 
+ 	/* sensitive */
+-	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len + 1);
++	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len);
+ 
+ 	tpm_buf_append_u16(&buf, options->blobauth_len);
+ 	if (options->blobauth_len)
+ 		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
+ 
+-	tpm_buf_append_u16(&buf, payload->key_len + 1);
++	tpm_buf_append_u16(&buf, payload->key_len);
+ 	tpm_buf_append(&buf, payload->key, payload->key_len);
+-	tpm_buf_append_u8(&buf, payload->migratable);
+ 
+ 	/* public */
+ 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
+ 	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
+ 	tpm_buf_append_u16(&buf, hash);
+ 
++	/* key properties */
++	flags = 0;
++	flags |= options->policydigest_len ? 0 : TPM2_OA_USER_WITH_AUTH;
++	flags |= payload->migratable ? (TPM2_OA_FIXED_TPM |
++					TPM2_OA_FIXED_PARENT) : 0;
++	tpm_buf_append_u32(&buf, flags);
 +
-+#include <linux/types.h>
+ 	/* policy */
+-	if (options->policydigest_len) {
+-		tpm_buf_append_u32(&buf, 0);
+-		tpm_buf_append_u16(&buf, options->policydigest_len);
++	tpm_buf_append_u16(&buf, options->policydigest_len);
++	if (options->policydigest_len)
+ 		tpm_buf_append(&buf, options->policydigest,
+ 			       options->policydigest_len);
+-	} else {
+-		tpm_buf_append_u32(&buf, TPM2_OA_USER_WITH_AUTH);
+-		tpm_buf_append_u16(&buf, 0);
+-	}
+ 
+ 	/* public parameters */
+ 	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
+@@ -356,8 +358,9 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
+-	u8 *blob;
++	u8 *blob, *pub;
+ 	int rc;
++	u32 attrs;
+ 
+ 	rc = tpm2_key_decode(payload, options, &blob);
+ 	if (rc) {
+@@ -384,6 +387,16 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	if (private_len + 2 + public_len + 2 > payload->blob_len)
+ 		return -E2BIG;
+ 
++	pub = blob + 2 + private_len + 2;
++	/* key attributes are always at offset 4 */
++	attrs = get_unaligned_be32(pub + 4);
 +
-+enum watch_notification_type {
-+	WATCH_TYPE_META		= 0,	/* Special record */
-+	WATCH_TYPE__NR		= 1
-+};
++	if ((attrs & (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT)) =
++	    (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT))
++		payload->migratable = 0;
++	else
++		payload->migratable = 1;
 +
-+enum watch_meta_notification_subtype {
-+	WATCH_META_REMOVAL_NOTIFICATION	= 0,	/* Watched object was removed */
-+	WATCH_META_LOSS_NOTIFICATION	= 1,	/* Data loss occurred */
-+};
-+
-+/*
-+ * Notification record header.  This is aligned to 64-bits so that subclasses
-+ * can contain __u64 fields.
-+ */
-+struct watch_notification {
-+	__u32			type:24;	/* enum watch_notification_type */
-+	__u32			subtype:8;	/* Type-specific subtype (filterable) */
-+	__u32			info;
-+#define WATCH_INFO_LENGTH	0x0000007f	/* Length of record */
-+#define WATCH_INFO_LENGTH__SHIFT 0
-+#define WATCH_INFO_ID		0x0000ff00	/* ID of watchpoint */
-+#define WATCH_INFO_ID__SHIFT	8
-+#define WATCH_INFO_TYPE_INFO	0xffff0000	/* Type-specific info */
-+#define WATCH_INFO_TYPE_INFO__SHIFT 16
-+#define WATCH_INFO_FLAG_0	0x00010000	/* Type-specific info, flag bit 0 */
-+#define WATCH_INFO_FLAG_1	0x00020000	/* ... */
-+#define WATCH_INFO_FLAG_2	0x00040000
-+#define WATCH_INFO_FLAG_3	0x00080000
-+#define WATCH_INFO_FLAG_4	0x00100000
-+#define WATCH_INFO_FLAG_5	0x00200000
-+#define WATCH_INFO_FLAG_6	0x00400000
-+#define WATCH_INFO_FLAG_7	0x00800000
-+};
-+
-+
-+/*
-+ * Extended watch removal notification.  This is used optionally if the type
-+ * wants to indicate an identifier for the object being watched, if there is
-+ * such.  This can be distinguished by the length.
-+ *
-+ * type -> WATCH_TYPE_META
-+ * subtype -> WATCH_META_REMOVAL_NOTIFICATION
-+ */
-+struct watch_notification_removal {
-+	struct watch_notification watch;
-+	__u64	id;		/* Type-dependent identifier */
-+};
-+
-+#endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+ 	blob_len = private_len + public_len + 4;
+ 	if (blob_len > payload->blob_len)
+ 		return -E2BIG;
+@@ -464,7 +477,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 	if (!rc) {
+ 		data_len = be16_to_cpup(
+ 			(__be16 *) &buf.data[TPM_HEADER_SIZE + 4]);
+-		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE + 1) {
++		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE) {
+ 			rc = -EFAULT;
+ 			goto out;
+ 		}
+@@ -475,9 +488,19 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		}
+ 		data = &buf.data[TPM_HEADER_SIZE + 6];
+ 
+-		memcpy(payload->key, data, data_len - 1);
+-		payload->key_len = data_len - 1;
+-		payload->migratable = data[data_len - 1];
++		if (payload->old_format) {
++			/* migratable flag is at the end of the key */
++			memcpy(payload->key, data, data_len - 1);
++			payload->key_len = data_len - 1;
++			payload->migratable = data[data_len - 1];
++		} else {
++			/*
++			 * migratable flag already collected from key
++			 * attributes
++			 */
++			memcpy(payload->key, data, data_len);
++			payload->key_len = data_len;
++		}
+ 	}
+ 
+ out:
+-- 
+2.16.4
