@@ -1,13 +1,13 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 10 Mar 2020 05:09:32 +0000
+Date: Tue, 10 Mar 2020 05:16:00 +0000
 Subject: [PATCH v8 1/8] lib: add ASN.1 encoder
-Message-Id: <20200310050939.29251-2-James.Bottomley@HansenPartnership.com>
+Message-Id: <20200310051607.30334-2-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200310050939.29251-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200310050939.29251-1-James.Bottomley@HansenPartnership.com>
+References: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
@@ -26,6 +26,7 @@ will only output the ASN.1 form.
 The current implementation only encodes the ASN.1 bits we actually need.
 
 Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
 ---
 
