@@ -1,162 +1,388 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 18 Mar 2020 15:04:55 +0000
-Subject: [PATCH 11/17] smack: Implement the watch_key and post_notification hooks [ver #5]
-Message-Id: <158454389492.2863966.1081946626597156477.stgit@warthog.procyon.org.uk>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 10 Mar 2020 05:16:03 +0000
+Subject: [PATCH v8 4/8] security: keys: trusted: use ASN.1 TPM2 key format for the blobs
+Message-Id: <20200310051607.30334-5-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
-In-Reply-To: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: Casey Schaufler <casey@schaufler-ca.com>, dhowells@redhat.comcasey@schaufler-ca.com, sds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
-Implement the watch_key security hook in Smack to make sure that a key
-grants the caller Read permission in order to set a watch on a key.
+Modify the TPM2 key format blob output to export and import in the
+ASN.1 form for TPM2 sealed object keys.  For compatibility with prior
+trusted keys, the importer will also accept two TPM2B quantities
+representing the public and private parts of the key.  However, the
+export via keyctl pipe will only output the ASN.1 format.
 
-Also implement the post_notification security hook to make sure that the
-notification source is granted Write permission by the watch queue.
+The benefit of the ASN.1 format is that it's a standard and thus the
+exported key can be used by userspace tools (openssl_tpm2_engine,
+openconnect and tpm2-tss-engine).  The format includes policy
+specifications, thus it gets us out of having to construct policy
+handles in userspace and the format includes the parent meaning you
+don't have to keep passing it in each time.
 
-For the moment, the watch_devices security hook is left unimplemented as
-it's not obvious what the object should be since the queue is global and
-didn't previously exist.
+This patch only implements basic handling for the ASN.1 format, so
+keys with passwords but no policy.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Casey Schaufler <casey@schaufler-ca.com>
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+
 ---
+v2: Updated encode API, added length checks
+v5: correct export format after doing interoperability checks
+v7: use prefix tpm2_key_ instead of tpmkey_ for functions
+v8: resplit commit
+---
+ include/keys/trusted-type.h               |   1 +
+ security/keys/trusted-keys/Makefile       |   2 +-
+ security/keys/trusted-keys/tpm2key.asn1   |  23 ++++
+ security/keys/trusted-keys/trusted_tpm1.c |   2 +-
+ security/keys/trusted-keys/trusted_tpm2.c | 207 +++++++++++++++++++++++++++++-
+ 5 files changed, 227 insertions(+), 8 deletions(-)
+ create mode 100644 security/keys/trusted-keys/tpm2key.asn1
 
- include/linux/lsm_audit.h  |    1 +
- security/smack/smack_lsm.c |   83 +++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 83 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/lsm_audit.h b/include/linux/lsm_audit.h
-index 99d629fd9944..28f23b341c1c 100644
---- a/include/linux/lsm_audit.h
-+++ b/include/linux/lsm_audit.h
-@@ -75,6 +75,7 @@ struct common_audit_data {
- #define LSM_AUDIT_DATA_IBPKEY	13
- #define LSM_AUDIT_DATA_IBENDPORT 14
- #define LSM_AUDIT_DATA_LOCKDOWN 15
-+#define LSM_AUDIT_DATA_NOTIFICATION 16
- 	union 	{
- 		struct path path;
- 		struct dentry *dentry;
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 8c61d175e195..2862fc383473 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -41,6 +41,7 @@
- #include <linux/parser.h>
- #include <linux/fs_context.h>
- #include <linux/fs_parser.h>
-+#include <linux/watch_queue.h>
- #include "smack.h"
+diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+index b2ed3481c6a0..b2d87ad21714 100644
+--- a/include/keys/trusted-type.h
++++ b/include/keys/trusted-type.h
+@@ -22,6 +22,7 @@ struct trusted_key_payload {
+ 	unsigned int key_len;
+ 	unsigned int blob_len;
+ 	unsigned char migratable;
++	unsigned char old_format;
+ 	unsigned char key[MAX_KEY_SIZE + 1];
+ 	unsigned char blob[MAX_BLOB_SIZE];
+ };
+diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
+index 7b73cebbb378..e0198641eff2 100644
+--- a/security/keys/trusted-keys/Makefile
++++ b/security/keys/trusted-keys/Makefile
+@@ -5,4 +5,4 @@
  
- #define TRANS_TRUE	"TRUE"
-@@ -4265,7 +4266,7 @@ static int smack_key_permission(key_ref_t key_ref,
- 	if (tkp = NULL)
- 		return -EACCES;
- 
--	if (smack_privileged_cred(CAP_MAC_OVERRIDE, cred))
-+	if (smack_privileged(CAP_MAC_OVERRIDE))
- 		return 0;
- 
- #ifdef CONFIG_AUDIT
-@@ -4311,8 +4312,81 @@ static int smack_key_getsecurity(struct key *key, char **_buffer)
- 	return length;
- }
- 
+ obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
+ trusted-y += trusted_tpm1.o
+-trusted-y += trusted_tpm2.o
++trusted-y += trusted_tpm2.o tpm2key.asn1.o
+diff --git a/security/keys/trusted-keys/tpm2key.asn1 b/security/keys/trusted-keys/tpm2key.asn1
+new file mode 100644
+index 000000000000..660b3fa917ae
+--- /dev/null
++++ b/security/keys/trusted-keys/tpm2key.asn1
+@@ -0,0 +1,23 @@
++---
++--- Note: This isn't quite the definition in the standard
++---       However, the Linux asn.1 parser doesn't understand
++---       [2] EXPLICIT SEQUENCE OF OPTIONAL
++---       So there's an extra intermediate TPMPolicySequence
++---       definition to work around this
 +
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+/**
-+ * smack_watch_key - Smack access to watch a key for notifications.
-+ * @key: The key to be watched
-+ *
-+ * Return 0 if the @watch->cred has permission to read from the key object and
-+ * an error otherwise.
-+ */
-+static int smack_watch_key(struct key *key)
++TPMKey ::= SEQUENCE {
++	type		OBJECT IDENTIFIER ({tpm2_key_type}),
++	emptyAuth	[0] EXPLICIT BOOLEAN OPTIONAL,
++	policy		[1] EXPLICIT TPMPolicySequence OPTIONAL,
++	secret		[2] EXPLICIT OCTET STRING OPTIONAL,
++	parent		INTEGER ({tpm2_key_parent}),
++	pubkey		OCTET STRING ({tpm2_key_pub}),
++	privkey		OCTET STRING ({tpm2_key_priv})
++	}
++
++TPMPolicySequence ::= SEQUENCE OF TPMPolicy
++
++TPMPolicy ::= SEQUENCE {
++	commandCode		[0] EXPLICIT INTEGER,
++	commandPolicy		[1] EXPLICIT OCTET STRING
++	}
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index add9f071d818..77e16caa6a65 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -1011,7 +1011,7 @@ static int trusted_instantiate(struct key *key,
+ 		goto out;
+ 	}
+ 
+-	if (!options->keyhandle) {
++	if (!options->keyhandle && !tpm2) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index b4a5058107c2..e8dcc47b3388 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -4,6 +4,8 @@
+  * Copyright (C) 2014 Intel Corporation
+  */
+ 
++#include <linux/asn1_encoder.h>
++#include <linux/oid_registry.h>
+ #include <linux/string.h>
+ #include <linux/err.h>
+ #include <linux/tpm.h>
+@@ -12,6 +14,10 @@
+ #include <keys/trusted-type.h>
+ #include <keys/trusted_tpm.h>
+ 
++#include <asm/unaligned.h>
++
++#include "tpm2key.asn1.h"
++
+ static struct tpm2_hash tpm2_hash_map[] = {
+ 	{HASH_ALGO_SHA1, TPM_ALG_SHA1},
+ 	{HASH_ALGO_SHA256, TPM_ALG_SHA256},
+@@ -20,6 +26,165 @@ static struct tpm2_hash tpm2_hash_map[] = {
+ 	{HASH_ALGO_SM3_256, TPM_ALG_SM3_256},
+ };
+ 
++static u32 tpm2key_oid[] = { 2,23,133,10,1,5 };
++
++static int tpm2_key_encode(struct trusted_key_payload *payload,
++			   struct trusted_key_options *options,
++			   u8 *src, u32 len)
 +{
-+	struct smk_audit_info ad;
-+	struct smack_known *tkp = smk_of_current();
-+	int rc;
++	const int SCRATCH_SIZE = PAGE_SIZE;
++	u8 *scratch = kmalloc(SCRATCH_SIZE, GFP_KERNEL);
++	u8 *work = scratch, *work1;
++	u8 *end_work = scratch + SCRATCH_SIZE;
++	u8 *priv, *pub;
++	u16 priv_len, pub_len;
 +
-+	if (key = NULL)
++	priv_len = get_unaligned_be16(src) + 2;
++	priv = src;
++
++	src += priv_len;
++
++	pub_len = get_unaligned_be16(src) + 2;
++	pub = src;
++
++	if (!scratch)
++		return -ENOMEM;
++
++	work = asn1_encode_oid(work, end_work, tpm2key_oid,
++			       asn1_oid_len(tpm2key_oid));
++
++	if (options->blobauth_len = 0) {
++		unsigned char bool[3], *w = bool;
++		/* tag 0 is emptyAuth */
++		w = asn1_encode_boolean(w, w + sizeof(bool), true);
++		if (WARN(IS_ERR(w), "BUG: Boolean failed to encode"))
++			return PTR_ERR(w);
++		work = asn1_encode_tag(work, end_work, 0, bool, w - bool);
++	}
++
++	/*
++	 * Assume both octet strings will encode to a 2 byte definite length
++	 *
++	 * Note: For a well behaved TPM, this warning should never
++	 * trigger, so if it does there's something nefarious going on
++	 */
++	if (WARN(work - scratch + pub_len + priv_len + 14 > SCRATCH_SIZE,
++		 "BUG: scratch buffer is too small"))
 +		return -EINVAL;
-+	/*
-+	 * If the key hasn't been initialized give it access so that
-+	 * it may do so.
-+	 */
-+	if (key->security = NULL)
-+		return 0;
-+	/*
-+	 * This should not occur
-+	 */
-+	if (tkp = NULL)
-+		return -EACCES;
 +
-+	if (smack_privileged_cred(CAP_MAC_OVERRIDE, current_cred()))
-+		return 0;
++	work = asn1_encode_integer(work, end_work, options->keyhandle);
++	work = asn1_encode_octet_string(work, end_work, pub, pub_len);
++	work = asn1_encode_octet_string(work, end_work, priv, priv_len);
 +
-+#ifdef CONFIG_AUDIT
-+	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_KEY);
-+	ad.a.u.key_struct.key = key->serial;
-+	ad.a.u.key_struct.key_desc = key->description;
-+#endif
-+	rc = smk_access(tkp, key->security, MAY_READ, &ad);
-+	rc = smk_bu_note("key watch", tkp, key->security, MAY_READ, rc);
-+	return rc;
++	work1 = payload->blob;
++	work1 = asn1_encode_sequence(work1, work1 + sizeof(payload->blob),
++				     scratch, work - scratch);
++	if (WARN(IS_ERR(work1), "BUG: ASN.1 encoder failed"))
++		return PTR_ERR(work1);
++
++	return work1 - payload->blob;
 +}
-+#endif /* CONFIG_KEY_NOTIFICATIONS */
- #endif /* CONFIG_KEYS */
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+/**
-+ * smack_post_notification - Smack access to post a notification to a queue
-+ * @w_cred: The credentials of the watcher.
-+ * @cred: The credentials of the event source (may be NULL).
-+ * @n: The notification message to be posted.
-+ */
-+static int smack_post_notification(const struct cred *w_cred,
-+				   const struct cred *cred,
-+				   struct watch_notification *n)
++
++struct tpm2_key_context {
++	u32 parent;
++	const u8 *pub;
++	u32 pub_len;
++	const u8 *priv;
++	u32 priv_len;
++};
++
++static int tpm2_key_decode(struct trusted_key_payload *payload,
++			   struct trusted_key_options *options,
++			   u8 **buf)
 +{
-+	struct smk_audit_info ad;
-+	struct smack_known *subj, *obj;
-+	int rc;
++	int ret;
++	struct tpm2_key_context ctx;
++	u8 *blob;
 +
-+	/* Always let maintenance notifications through. */
-+	if (n->type = WATCH_TYPE_META)
-+		return 0;
++	memset(&ctx, 0, sizeof(ctx));
 +
-+	if (!cred)
-+		return 0;
-+	subj = smk_of_task(smack_cred(cred));
-+	obj = smk_of_task(smack_cred(w_cred));
++	ret = asn1_ber_decoder(&tpm2key_decoder, &ctx, payload->blob,
++			       payload->blob_len);
++	if (ret < 0)
++		return ret;
 +
-+	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_NOTIFICATION);
-+	rc = smk_access(subj, obj, MAY_WRITE, &ad);
-+	rc = smk_bu_note("notification", subj, obj, MAY_WRITE, rc);
-+	return rc;
++	if (ctx.priv_len + ctx.pub_len > MAX_BLOB_SIZE)
++		return -EINVAL;
++
++	blob = kmalloc(ctx.priv_len + ctx.pub_len + 4, GFP_KERNEL);
++	if (!blob)
++		return -ENOMEM;
++
++	*buf = blob;
++	options->keyhandle = ctx.parent;
++
++	memcpy(blob, ctx.priv, ctx.priv_len);
++	blob += ctx.priv_len;
++
++	memcpy(blob, ctx.pub, ctx.pub_len);
++
++	return 0;
 +}
-+#endif /* CONFIG_WATCH_QUEUE */
 +
- /*
-  * Smack Audit hooks
++int tpm2_key_parent(void *context, size_t hdrlen,
++		  unsigned char tag,
++		  const void *value, size_t vlen)
++{
++	struct tpm2_key_context *ctx = context;
++	const u8 *v = value;
++	int i;
++
++	ctx->parent = 0;
++	for (i = 0; i < vlen; i++) {
++		ctx->parent <<= 8;
++		ctx->parent |= v[i];
++	}
++
++	return 0;
++}
++
++int tpm2_key_type(void *context, size_t hdrlen,
++		unsigned char tag,
++		const void *value, size_t vlen)
++{
++	enum OID oid = look_up_OID(value, vlen);
++
++	if (oid != OID_TPMSealedData) {
++		char buffer[50];
++
++		sprint_oid(value, vlen, buffer, sizeof(buffer));
++		pr_debug("OID is \"%s\" which is not TPMSealedData\n",
++			 buffer);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++int tpm2_key_pub(void *context, size_t hdrlen,
++	       unsigned char tag,
++	       const void *value, size_t vlen)
++{
++	struct tpm2_key_context *ctx = context;
++
++	ctx->pub = value;
++	ctx->pub_len = vlen;
++
++	return 0;
++}
++
++int tpm2_key_priv(void *context, size_t hdrlen,
++		unsigned char tag,
++		const void *value, size_t vlen)
++{
++	struct tpm2_key_context *ctx = context;
++
++	ctx->priv = value;
++	ctx->priv_len = vlen;
++
++	return 0;
++}
++
+ /**
+  * tpm_buf_append_auth() - append TPMS_AUTH_COMMAND to the buffer.
   *
-@@ -4701,8 +4775,15 @@ static struct security_hook_list smack_hooks[] __lsm_ro_after_init = {
- 	LSM_HOOK_INIT(key_free, smack_key_free),
- 	LSM_HOOK_INIT(key_permission, smack_key_permission),
- 	LSM_HOOK_INIT(key_getsecurity, smack_key_getsecurity),
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+	LSM_HOOK_INIT(watch_key, smack_watch_key),
-+#endif
- #endif /* CONFIG_KEYS */
+@@ -79,6 +244,9 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	if (i = ARRAY_SIZE(tpm2_hash_map))
+ 		return -EINVAL;
  
-+#ifdef CONFIG_WATCH_QUEUE
-+	LSM_HOOK_INIT(post_notification, smack_post_notification),
-+#endif
++	if (!options->keyhandle)
++		return -EINVAL;
 +
-  /* Audit hooks */
- #ifdef CONFIG_AUDIT
- 	LSM_HOOK_INIT(audit_rule_init, smack_audit_rule_init),
+ 	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_CREATE);
+ 	if (rc)
+ 		return rc;
+@@ -146,8 +314,10 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 		goto out;
+ 	}
+ 
+-	memcpy(payload->blob, &buf.data[TPM_HEADER_SIZE + 4], blob_len);
+-	payload->blob_len = blob_len;
++	payload->blob_len +		tpm2_key_encode(payload, options,
++				&buf.data[TPM_HEADER_SIZE + 4],
++				blob_len);
+ 
+ out:
+ 	tpm_buf_destroy(&buf);
+@@ -158,6 +328,8 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 		else
+ 			rc = -EPERM;
+ 	}
++	if (payload->blob_len < 0)
++		return payload->blob_len;
+ 
+ 	return rc;
+ }
+@@ -184,13 +356,34 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
++	u8 *blob;
+ 	int rc;
+ 
+-	private_len = be16_to_cpup((__be16 *) &payload->blob[0]);
+-	if (private_len > (payload->blob_len - 2))
++	rc = tpm2_key_decode(payload, options, &blob);
++	if (rc) {
++		/* old form */
++		blob = payload->blob;
++		payload->old_format = 1;
++	}
++
++	/* new format carries keyhandle but old format doesn't */
++	if (!options->keyhandle)
++		return -EINVAL;
++
++	/* must be big enough for at least the two be16 size counts */
++	if (payload->blob_len < 4)
++		return -EINVAL;
++
++	private_len = get_unaligned_be16(blob);
++
++	/* must be big enough for following public_len */
++	if (private_len + 2 + 2 > (payload->blob_len))
++		return -E2BIG;
++
++	public_len = get_unaligned_be16(blob + 2 + private_len);
++	if (private_len + 2 + public_len + 2 > payload->blob_len)
+ 		return -E2BIG;
+ 
+-	public_len = be16_to_cpup((__be16 *) &payload->blob[2 + private_len]);
+ 	blob_len = private_len + public_len + 4;
+ 	if (blob_len > payload->blob_len)
+ 		return -E2BIG;
+@@ -206,7 +399,7 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 			     options->keyauth /* hmac */,
+ 			     TPM_DIGEST_SIZE);
+ 
+-	tpm_buf_append(&buf, payload->blob, blob_len);
++	tpm_buf_append(&buf, blob, blob_len);
+ 
+ 	if (buf.flags & TPM_BUF_OVERFLOW) {
+ 		rc = -E2BIG;
+@@ -219,6 +412,8 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 			(__be32 *) &buf.data[TPM_HEADER_SIZE]);
+ 
+ out:
++	if (blob != payload->blob)
++		kfree(blob);
+ 	tpm_buf_destroy(&buf);
+ 
+ 	if (rc > 0)
+-- 
+2.16.4
