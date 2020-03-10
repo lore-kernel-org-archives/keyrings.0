@@ -1,11 +1,13 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 10 Mar 2020 05:09:31 +0000
+Date: Tue, 10 Mar 2020 05:15:59 +0000
 Subject: [PATCH v8 0/8] TPM 2.0 trusted keys with attached policy
-Message-Id: <20200310050939.29251-1-James.Bottomley@HansenPartnership.com>
+Message-Id: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20200310050939.29251-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200310050939.29251-1-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
 
