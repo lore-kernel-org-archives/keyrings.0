@@ -1,103 +1,24 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 18 Mar 2020 15:05:31 +0000
-Subject: [PATCH 15/17] watch_queue: Introduce a non-repeating system-unique superblock ID [ver #5]
-Message-Id: <158454393118.2863966.9023596791549468748.stgit@warthog.procyon.org.uk>
+From: Omar Ousman <omarousman25@gmail.com>
+Date: Sat, 14 Mar 2020 17:23:36 +0000
+Subject: You received my last mail,,,,
+Message-Id: <CAOdk3H=BWVFSbBHnPp89pkv5eyhE_YLWx_uztwjom2+untGdDQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
-In-Reply-To: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.com, casey@schaufler-ca.com, sds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: keyrings@vger.kernel.org
 
-Introduce an (effectively) non-repeating system-unique superblock ID that
-can be used to determine that two object are in the same superblock without
-risking reuse of the ID in the meantime (as is possible with device IDs).
+I am Mr.Omar Ousman, a regional managing director (CORIS BANK
+INTERNATIONAL) Ouagadougou Burkina Faso, in my department we have
+US$9,500.0000 million united state dollars, to transfer into your
+account as a dormant fund.If you are interested to use this fund to
+help the orphans around the world contact and send me your personal
+information for more details to my email omarousman25@gmail.com
 
-The ID is time-based to make it harder to use it as a covert communications
-channel.
+Your full names..........
+Your country of origin..........
+Your occupation..........
+Your Age..........
+Your Mobile Number..........
 
-In future patches, this ID will be used to tag superblock notification
-messages.  It will also be made queryable.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/internal.h      |    1 +
- fs/super.c         |   24 ++++++++++++++++++++++++
- include/linux/fs.h |    3 +++
- 3 files changed, 28 insertions(+)
-
-diff --git a/fs/internal.h b/fs/internal.h
-index f3f280b952a3..a0d90f23593c 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -109,6 +109,7 @@ extern int reconfigure_super(struct fs_context *);
- extern bool trylock_super(struct super_block *sb);
- extern struct super_block *user_get_super(dev_t);
- extern bool mount_capable(struct fs_context *);
-+extern void vfs_generate_unique_id(u64 *);
- 
- /*
-  * open.c
-diff --git a/fs/super.c b/fs/super.c
-index cd352530eca9..ececa5695fd1 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -44,6 +44,8 @@ static int thaw_super_locked(struct super_block *sb);
- 
- static LIST_HEAD(super_blocks);
- static DEFINE_SPINLOCK(sb_lock);
-+static u64 vfs_last_identifier;
-+static u64 vfs_identifier_offset;
- 
- static char *sb_writers_name[SB_FREEZE_LEVELS] = {
- 	"sb_writers",
-@@ -273,6 +275,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags,
- 		goto fail;
- 	if (list_lru_init_memcg(&s->s_inode_lru, &s->s_shrink))
- 		goto fail;
-+	vfs_generate_unique_id(&s->s_unique_id);
- 	return s;
- 
- fail:
-@@ -1867,3 +1870,24 @@ int thaw_super(struct super_block *sb)
- 	return thaw_super_locked(sb);
- }
- EXPORT_SYMBOL(thaw_super);
-+
-+/*
-+ * Generate a unique identifier for a superblock or mount object.
-+ */
-+void vfs_generate_unique_id(u64 *_id)
-+{
-+	u64 id = ktime_to_ns(ktime_get());
-+
-+	spin_lock(&sb_lock);
-+
-+	id += vfs_identifier_offset;
-+	if (id <= vfs_last_identifier) {
-+		id = vfs_last_identifier + 1;
-+		vfs_identifier_offset = vfs_last_identifier - id;
-+	}
-+
-+	vfs_last_identifier = id;
-+	spin_unlock(&sb_lock);
-+
-+	*_id = id;
-+}
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 3cd4fe6b845e..9de6bfe41016 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1548,6 +1548,9 @@ struct super_block {
- 
- 	spinlock_t		s_inode_wblist_lock;
- 	struct list_head	s_inodes_wb;	/* writeback inodes */
-+
-+	/* Superblock event notifications */
-+	u64			s_unique_id;
- } __randomize_layout;
- 
- /* Helper functions so that in most cases filesystems will
+Best Regards,
