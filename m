@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Mon, 16 Mar 2020 11:22:44 +0000
+Date: Mon, 16 Mar 2020 11:34:19 +0000
 Subject: Re: [PATCH v3 1/3] KEYS: Don't write out to userspace while holding key semaphore
-Message-Id: <1793253.1584357764@warthog.procyon.org.uk>
+Message-Id: <1794026.1584358459@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,10 +13,9 @@ Cc: dhowells@redhat.com, Waiman Long <longman@redhat.com>, James Morris <jmorris
 
 Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
 
-> I guess we cannot sanely define fixes tag for this one, can we?
+> Do you have a test case that can reproduce this on a constant basis?
 
-Use:
-
-	Fixes: ^1da177e4c3f4 ("Linux-2.6.12-rc2")
+In this case it's quite tricky because a network filesystem is involved.  I
+wonder if it might be possible to do it with fscrypt or ecryptfs.
 
 David
