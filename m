@@ -1,35 +1,18 @@
-From: Waiman Long <longman@redhat.com>
-Date: Sun, 15 Mar 2020 22:01:51 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 16 Mar 2020 14:24:32 +0000
 Subject: Re: [PATCH v3 3/3] KEYS: Use kvmalloc() to better handle large buffer allocation
-Message-Id: <74ec00b8-d7a7-0035-d650-710415660926@redhat.com>
+Message-Id: <1809107.1584368672@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200313152102.1707-1-longman@redhat.com>
- <20200313152102.1707-4-longman@redhat.com>
- <20200313164306.GA907@sol.localdomain>
- <8f2f1787-88b0-f86d-991c-34cfd2f9b4aa@redhat.com>
- <20200315215253.GG224162@linux.intel.com>
-In-Reply-To: <20200315215253.GG224162@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Eric Biggers <ebiggers@kernel.org>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Chris von Recklinghausen <crecklin@redhat.com>
+References: <20200313152102.1707-4-longman@redhat.com> <20200313152102.1707-1-longman@redhat.com>
+In-Reply-To: <20200313152102.1707-4-longman@redhat.com>
+To: Waiman Long <longman@redhat.com>
+Cc: dhowells@redhat.com, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Eric Biggers <ebiggers@google.com>, Chris von Recklinghausen <crecklin@redhat.com>
 
-On 3/15/20 5:52 PM, Jarkko Sakkinen wrote:
-> On Fri, Mar 13, 2020 at 01:49:57PM -0400, Waiman Long wrote:
->>>>  			if (!tmpbuf || unlikely(ret > tmpbuflen)) {
->>>>  				if (unlikely(tmpbuf))
->>>> -					kzfree(tmpbuf);
->>>> +					__kvzfree(tmpbuf, tmpbuflen);
->>> Both kzfree() and __kvzfree() handle a NULL pointer, so there's no need for the
->>> NULL check first.
->>>
->> I would like to keep this one because of the unlikely annotation.
-> What (measurable) gain does it bring anyway?
+I wonder if it's worth merging this into patch 2.  I'm not sure it's really
+worth its own patch.  If you want to generalise kvzfree(), then that could go
+as its own patch first.
 
-It is not a performance issue. I just want to indicate that the need to
-free should not happen at all. It match the unlikely tag in the if
-condition above.
-
-Cheers,
-Longman
+David
