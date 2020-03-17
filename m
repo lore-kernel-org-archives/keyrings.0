@@ -1,640 +1,457 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 09 Mar 2020 12:19:37 +0000
-Subject: [RFC PATCH 16/17] watch_queue: Add superblock notifications [ver #4]
-Message-Id: <158375637720.334846.6091993686806244308.stgit@warthog.procyon.org.uk>
+From: Waiman Long <longman@redhat.com>
+Date: Tue, 17 Mar 2020 19:41:37 +0000
+Subject: [PATCH v4 1/4] KEYS: Don't write out to userspace while holding key semaphore
+Message-Id: <20200317194140.6031-2-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158375623086.334846.16121725232323108842.stgit@warthog.procyon.org.uk>
-In-Reply-To: <158375623086.334846.16121725232323108842.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.comdhowells@redhat.com, casey@schaufler-ca.com, sds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20200317194140.6031-1-longman@redhat.com>
+In-Reply-To: <20200317194140.6031-1-longman@redhat.com>
+To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>, "David S. Miller" <davem@davemloft.net>, Jakub Kicinski <kuba@kernel.org>
+Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Eric Biggers <ebiggers@google.com>, Chris von Recklinghausen <crecklin@redhat.com>, Waiman Long <longman@redhat.com>
 
-Add a superblock event notification facility whereby notifications about
-superblock events, such as I/O errors (EIO), quota limits being hit
-(EDQUOT) and running out of space (ENOSPC) can be reported to a monitoring
-process asynchronously.  Note that this does not cover vfsmount topology
-changes.  watch_mount() is used for that.
+A lockdep circular locking dependency report was seen when running a
+keyutils test:
 
-Firstly, a watch queue needs to be created:
+[12537.027242] ===========================
+[12537.059309] WARNING: possible circular locking dependency detected
+[12537.088148] 4.18.0-147.7.1.el8_1.x86_64+debug #1 Tainted: G OE    --------- -  -
+[12537.125253] ------------------------------------------------------
+[12537.153189] keyctl/25598 is trying to acquire lock:
+[12537.175087] 000000007c39f96c (&mm->mmap_sem){++++}, at: __might_fault+0xc4/0x1b0
+[12537.208365]
+[12537.208365] but task is already holding lock:
+[12537.234507] 000000003de5b58d (&type->lock_class){++++}, at: keyctl_read_key+0x15a/0x220
+[12537.270476]
+[12537.270476] which lock already depends on the new lock.
+[12537.270476]
+[12537.307209]
+[12537.307209] the existing dependency chain (in reverse order) is:
+[12537.340754]
+[12537.340754] -> #3 (&type->lock_class){++++}:
+[12537.367434]        down_write+0x4d/0x110
+[12537.385202]        __key_link_begin+0x87/0x280
+[12537.405232]        request_key_and_link+0x483/0xf70
+[12537.427221]        request_key+0x3c/0x80
+[12537.444839]        dns_query+0x1db/0x5a5 [dns_resolver]
+[12537.468445]        dns_resolve_server_name_to_ip+0x1e1/0x4d0 [cifs]
+[12537.496731]        cifs_reconnect+0xe04/0x2500 [cifs]
+[12537.519418]        cifs_readv_from_socket+0x461/0x690 [cifs]
+[12537.546263]        cifs_read_from_socket+0xa0/0xe0 [cifs]
+[12537.573551]        cifs_demultiplex_thread+0x311/0x2db0 [cifs]
+[12537.601045]        kthread+0x30c/0x3d0
+[12537.617906]        ret_from_fork+0x3a/0x50
+[12537.636225]
+[12537.636225] -> #2 (root_key_user.cons_lock){+.+.}:
+[12537.664525]        __mutex_lock+0x105/0x11f0
+[12537.683734]        request_key_and_link+0x35a/0xf70
+[12537.705640]        request_key+0x3c/0x80
+[12537.723304]        dns_query+0x1db/0x5a5 [dns_resolver]
+[12537.746773]        dns_resolve_server_name_to_ip+0x1e1/0x4d0 [cifs]
+[12537.775607]        cifs_reconnect+0xe04/0x2500 [cifs]
+[12537.798322]        cifs_readv_from_socket+0x461/0x690 [cifs]
+[12537.823369]        cifs_read_from_socket+0xa0/0xe0 [cifs]
+[12537.847262]        cifs_demultiplex_thread+0x311/0x2db0 [cifs]
+[12537.873477]        kthread+0x30c/0x3d0
+[12537.890281]        ret_from_fork+0x3a/0x50
+[12537.908649]
+[12537.908649] -> #1 (&tcp_ses->srv_mutex){+.+.}:
+[12537.935225]        __mutex_lock+0x105/0x11f0
+[12537.954450]        cifs_call_async+0x102/0x7f0 [cifs]
+[12537.977250]        smb2_async_readv+0x6c3/0xc90 [cifs]
+[12538.000659]        cifs_readpages+0x120a/0x1e50 [cifs]
+[12538.023920]        read_pages+0xf5/0x560
+[12538.041583]        __do_page_cache_readahead+0x41d/0x4b0
+[12538.067047]        ondemand_readahead+0x44c/0xc10
+[12538.092069]        filemap_fault+0xec1/0x1830
+[12538.111637]        __do_fault+0x82/0x260
+[12538.129216]        do_fault+0x419/0xfb0
+[12538.146390]        __handle_mm_fault+0x862/0xdf0
+[12538.167408]        handle_mm_fault+0x154/0x550
+[12538.187401]        __do_page_fault+0x42f/0xa60
+[12538.207395]        do_page_fault+0x38/0x5e0
+[12538.225777]        page_fault+0x1e/0x30
+[12538.243010]
+[12538.243010] -> #0 (&mm->mmap_sem){++++}:
+[12538.267875]        lock_acquire+0x14c/0x420
+[12538.286848]        __might_fault+0x119/0x1b0
+[12538.306006]        keyring_read_iterator+0x7e/0x170
+[12538.327936]        assoc_array_subtree_iterate+0x97/0x280
+[12538.352154]        keyring_read+0xe9/0x110
+[12538.370558]        keyctl_read_key+0x1b9/0x220
+[12538.391470]        do_syscall_64+0xa5/0x4b0
+[12538.410511]        entry_SYSCALL_64_after_hwframe+0x6a/0xdf
+[12538.435535]
+[12538.435535] other info that might help us debug this:
+[12538.435535]
+[12538.472829] Chain exists of:
+[12538.472829]   &mm->mmap_sem --> root_key_user.cons_lock --> &type->lock_class
+[12538.472829]
+[12538.524820]  Possible unsafe locking scenario:
+[12538.524820]
+[12538.551431]        CPU0                    CPU1
+[12538.572654]        ----                    ----
+[12538.595865]   lock(&type->lock_class);
+[12538.613737]                                lock(root_key_user.cons_lock);
+[12538.644234]                                lock(&type->lock_class);
+[12538.672410]   lock(&mm->mmap_sem);
+[12538.687758]
+[12538.687758]  *** DEADLOCK ***
+[12538.687758]
+[12538.714455] 1 lock held by keyctl/25598:
+[12538.732097]  #0: 000000003de5b58d (&type->lock_class){++++}, at: keyctl_read_key+0x15a/0x220
+[12538.770573]
+[12538.770573] stack backtrace:
+[12538.790136] CPU: 2 PID: 25598 Comm: keyctl Kdump: loaded Tainted: G
+[12538.844855] Hardware name: HP ProLiant DL360 Gen9/ProLiant DL360 Gen9, BIOS P89 12/27/2015
+[12538.881963] Call Trace:
+[12538.892897]  dump_stack+0x9a/0xf0
+[12538.907908]  print_circular_bug.isra.25.cold.50+0x1bc/0x279
+[12538.932891]  ? save_trace+0xd6/0x250
+[12538.948979]  check_prev_add.constprop.32+0xc36/0x14f0
+[12538.971643]  ? keyring_compare_object+0x104/0x190
+[12538.992738]  ? check_usage+0x550/0x550
+[12539.009845]  ? sched_clock+0x5/0x10
+[12539.025484]  ? sched_clock_cpu+0x18/0x1e0
+[12539.043555]  __lock_acquire+0x1f12/0x38d0
+[12539.061551]  ? trace_hardirqs_on+0x10/0x10
+[12539.080554]  lock_acquire+0x14c/0x420
+[12539.100330]  ? __might_fault+0xc4/0x1b0
+[12539.119079]  __might_fault+0x119/0x1b0
+[12539.135869]  ? __might_fault+0xc4/0x1b0
+[12539.153234]  keyring_read_iterator+0x7e/0x170
+[12539.172787]  ? keyring_read+0x110/0x110
+[12539.190059]  assoc_array_subtree_iterate+0x97/0x280
+[12539.211526]  keyring_read+0xe9/0x110
+[12539.227561]  ? keyring_gc_check_iterator+0xc0/0xc0
+[12539.249076]  keyctl_read_key+0x1b9/0x220
+[12539.266660]  do_syscall_64+0xa5/0x4b0
+[12539.283091]  entry_SYSCALL_64_after_hwframe+0x6a/0xdf
 
-	pipe2(fds, O_NOTIFICATION_PIPE);
-	ioctl(fds[1], IOC_WATCH_QUEUE_SET_SIZE, 256);
+One way to prevent this deadlock scenario from happening is to not
+allow writing to userspace while holding the key semaphore. Instead,
+an internal buffer is allocated for getting the keys out from the
+read method first before copying them out to userspace without holding
+the lock.
 
-then a notification can be set up to report notifications via that queue:
+That requires taking out the __user modifier from the read methods as
+well as additional changes to not use any userspace write helpers.
 
-	struct watch_notification_filter filter = {
-		.nr_filters = 1,
-		.filters = {
-			[0] = {
-				.type = WATCH_TYPE_SB_NOTIFY,
-				.subtype_filter[0] = UINT_MAX,
-			},
-		},
-	};
-	ioctl(fds[1], IOC_WATCH_QUEUE_SET_FILTER, &filter);
-	watch_sb(AT_FDCWD, "/home/dhowells", 0, fds[1], 0x03);
-
-In this case, it would let me monitor my own homedir for events.  After
-setting the watch, records will be placed into the queue when, for example,
-as superblock switches between read-write and read-only.  Records are of
-the following format:
-
-	struct superblock_notification {
-		struct watch_notification watch;
-		__u64	sb_id;
-	} *n;
-
-Where:
-
-	n->watch.type will be WATCH_TYPE_SB_NOTIFY.
-
-	n->watch.subtype will indicate the type of event, such as
-	NOTIFY_SUPERBLOCK_READONLY.
-
-	n->watch.info & WATCH_INFO_LENGTH will indicate the length of the
-	record.
-
-	n->watch.info & WATCH_INFO_ID will be the fifth argument to
-	watch_sb(), shifted.
-
-	n->watch.info & NOTIFY_SUPERBLOCK_IS_NOW_RO will be used for
-	NOTIFY_SUPERBLOCK_READONLY, being set if the superblock becomes
-	R/O, and being cleared otherwise.
-
-	n->sb_id will be the ID of the superblock, as can be retrieved with
-	the fsinfo() syscall, as part of the fsinfo_sb_notifications
-	attribute in the the watch_id field.
-
-Note that it is permissible for event records to be of variable length -
-or, at least, the length may be dependent on the subtype.  Note also that
-the queue can be shared between multiple notifications of various types.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Fixes: ^1da177e4c3f4 ("Linux-2.6.12-rc2")
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Waiman Long <longman@redhat.com>
 ---
+ include/keys/big_key-type.h               |  2 +-
+ include/keys/user-type.h                  |  3 +-
+ include/linux/key-type.h                  |  2 +-
+ security/keys/big_key.c                   | 11 ++---
+ security/keys/encrypted-keys/encrypted.c  |  7 ++-
+ security/keys/keyctl.c                    | 57 +++++++++++++++++++----
+ security/keys/keyring.c                   |  6 +--
+ security/keys/request_key_auth.c          |  7 ++-
+ security/keys/trusted-keys/trusted_tpm1.c | 14 +-----
+ security/keys/user_defined.c              |  5 +-
+ 10 files changed, 67 insertions(+), 47 deletions(-)
 
- arch/alpha/kernel/syscalls/syscall.tbl      |    1 
- arch/arm/tools/syscall.tbl                  |    1 
- arch/arm64/include/asm/unistd.h             |    2 
- arch/ia64/kernel/syscalls/syscall.tbl       |    1 
- arch/m68k/kernel/syscalls/syscall.tbl       |    1 
- arch/microblaze/kernel/syscalls/syscall.tbl |    1 
- arch/mips/kernel/syscalls/syscall_n32.tbl   |    1 
- arch/mips/kernel/syscalls/syscall_n64.tbl   |    1 
- arch/mips/kernel/syscalls/syscall_o32.tbl   |    1 
- arch/parisc/kernel/syscalls/syscall.tbl     |    1 
- arch/powerpc/kernel/syscalls/syscall.tbl    |    1 
- arch/s390/kernel/syscalls/syscall.tbl       |    1 
- arch/sh/kernel/syscalls/syscall.tbl         |    1 
- arch/sparc/kernel/syscalls/syscall.tbl      |    1 
- arch/x86/entry/syscalls/syscall_32.tbl      |    1 
- arch/x86/entry/syscalls/syscall_64.tbl      |    1 
- arch/xtensa/kernel/syscalls/syscall.tbl     |    1 
- fs/Kconfig                                  |   12 ++
- fs/super.c                                  |  132 +++++++++++++++++++++++++++
- include/linux/fs.h                          |   81 +++++++++++++++++
- include/linux/syscalls.h                    |    2 
- include/uapi/asm-generic/unistd.h           |    4 +
- include/uapi/linux/watch_queue.h            |   31 ++++++
- kernel/sys_ni.c                             |    3 +
- 24 files changed, 280 insertions(+), 3 deletions(-)
-
-diff --git a/arch/alpha/kernel/syscalls/syscall.tbl b/arch/alpha/kernel/syscalls/syscall.tbl
-index b869428033ef..7c0115af9010 100644
---- a/arch/alpha/kernel/syscalls/syscall.tbl
-+++ b/arch/alpha/kernel/syscalls/syscall.tbl
-@@ -478,3 +478,4 @@
- 547	common	openat2				sys_openat2
- 548	common	pidfd_getfd			sys_pidfd_getfd
- 549	common	watch_mount			sys_watch_mount
-+550	common	watch_sb			sys_watch_sb
-diff --git a/arch/arm/tools/syscall.tbl b/arch/arm/tools/syscall.tbl
-index 9c389da9efcc..f256f009a89f 100644
---- a/arch/arm/tools/syscall.tbl
-+++ b/arch/arm/tools/syscall.tbl
-@@ -452,3 +452,4 @@
- 437	common	openat2				sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
-index 75f04a1023be..bc0f923e0e04 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -38,7 +38,7 @@
- #define __ARM_NR_compat_set_tls		(__ARM_NR_COMPAT_BASE + 5)
- #define __ARM_NR_COMPAT_END		(__ARM_NR_COMPAT_BASE + 0x800)
+diff --git a/include/keys/big_key-type.h b/include/keys/big_key-type.h
+index f6a7ba4dccd4..3fee04f81439 100644
+--- a/include/keys/big_key-type.h
++++ b/include/keys/big_key-type.h
+@@ -17,6 +17,6 @@ extern void big_key_free_preparse(struct key_preparsed_payload *prep);
+ extern void big_key_revoke(struct key *key);
+ extern void big_key_destroy(struct key *key);
+ extern void big_key_describe(const struct key *big_key, struct seq_file *m);
+-extern long big_key_read(const struct key *key, char __user *buffer, size_t buflen);
++extern long big_key_read(const struct key *key, char *buffer, size_t buflen);
  
--#define __NR_compat_syscalls		440
-+#define __NR_compat_syscalls		441
- #endif
+ #endif /* _KEYS_BIG_KEY_TYPE_H */
+diff --git a/include/keys/user-type.h b/include/keys/user-type.h
+index d5e73266a81a..be61fcddc02a 100644
+--- a/include/keys/user-type.h
++++ b/include/keys/user-type.h
+@@ -41,8 +41,7 @@ extern int user_update(struct key *key, struct key_preparsed_payload *prep);
+ extern void user_revoke(struct key *key);
+ extern void user_destroy(struct key *key);
+ extern void user_describe(const struct key *user, struct seq_file *m);
+-extern long user_read(const struct key *key,
+-		      char __user *buffer, size_t buflen);
++extern long user_read(const struct key *key, char *buffer, size_t buflen);
  
- #define __ARCH_WANT_SYS_CLONE
-diff --git a/arch/ia64/kernel/syscalls/syscall.tbl b/arch/ia64/kernel/syscalls/syscall.tbl
-index 6817f865cc71..a4dafc659647 100644
---- a/arch/ia64/kernel/syscalls/syscall.tbl
-+++ b/arch/ia64/kernel/syscalls/syscall.tbl
-@@ -359,3 +359,4 @@
- 437	common	openat2				sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/arch/m68k/kernel/syscalls/syscall.tbl b/arch/m68k/kernel/syscalls/syscall.tbl
-index fbf85da75ecb..893fb4151547 100644
---- a/arch/m68k/kernel/syscalls/syscall.tbl
-+++ b/arch/m68k/kernel/syscalls/syscall.tbl
-@@ -438,3 +438,4 @@
- 437	common	openat2				sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/arch/microblaze/kernel/syscalls/syscall.tbl b/arch/microblaze/kernel/syscalls/syscall.tbl
-index b05b192da1e2..54aaf0d40c64 100644
---- a/arch/microblaze/kernel/syscalls/syscall.tbl
-+++ b/arch/microblaze/kernel/syscalls/syscall.tbl
-@@ -444,3 +444,4 @@
- 437	common	openat2				sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/arch/mips/kernel/syscalls/syscall_n32.tbl b/arch/mips/kernel/syscalls/syscall_n32.tbl
-index 0f85d2a033f9..fd34dd0efed0 100644
---- a/arch/mips/kernel/syscalls/syscall_n32.tbl
-+++ b/arch/mips/kernel/syscalls/syscall_n32.tbl
-@@ -377,3 +377,4 @@
- 437	n32	openat2				sys_openat2
- 438	n32	pidfd_getfd			sys_pidfd_getfd
- 439	n32	watch_mount			sys_watch_mount
-+440	n32	watch_sb			sys_watch_sb
-diff --git a/arch/mips/kernel/syscalls/syscall_n64.tbl b/arch/mips/kernel/syscalls/syscall_n64.tbl
-index 905cf9ac0792..db0f4c0a0a0b 100644
---- a/arch/mips/kernel/syscalls/syscall_n64.tbl
-+++ b/arch/mips/kernel/syscalls/syscall_n64.tbl
-@@ -353,3 +353,4 @@
- 437	n64	openat2				sys_openat2
- 438	n64	pidfd_getfd			sys_pidfd_getfd
- 439	n64	watch_mount			sys_watch_mount
-+440	n64	watch_sb			sys_watch_sb
-diff --git a/arch/mips/kernel/syscalls/syscall_o32.tbl b/arch/mips/kernel/syscalls/syscall_o32.tbl
-index 834b26b08d74..ce2e1326de8f 100644
---- a/arch/mips/kernel/syscalls/syscall_o32.tbl
-+++ b/arch/mips/kernel/syscalls/syscall_o32.tbl
-@@ -426,3 +426,4 @@
- 437	o32	openat2				sys_openat2
- 438	o32	pidfd_getfd			sys_pidfd_getfd
- 439	o32	watch_mount			sys_watch_mount
-+440	o32	watch_sb			sys_watch_sb
-diff --git a/arch/parisc/kernel/syscalls/syscall.tbl b/arch/parisc/kernel/syscalls/syscall.tbl
-index badd3449db43..6e4a7c08b64b 100644
---- a/arch/parisc/kernel/syscalls/syscall.tbl
-+++ b/arch/parisc/kernel/syscalls/syscall.tbl
-@@ -436,3 +436,4 @@
- 437	common	openat2				sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/arch/powerpc/kernel/syscalls/syscall.tbl b/arch/powerpc/kernel/syscalls/syscall.tbl
-index b404361bc929..08943f3b8206 100644
---- a/arch/powerpc/kernel/syscalls/syscall.tbl
-+++ b/arch/powerpc/kernel/syscalls/syscall.tbl
-@@ -520,3 +520,4 @@
- 437	common	openat2				sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/arch/s390/kernel/syscalls/syscall.tbl b/arch/s390/kernel/syscalls/syscall.tbl
-index 33071de24511..b3b8529d2b74 100644
---- a/arch/s390/kernel/syscalls/syscall.tbl
-+++ b/arch/s390/kernel/syscalls/syscall.tbl
-@@ -441,3 +441,4 @@
- 437  common	openat2			sys_openat2			sys_openat2
- 438  common	pidfd_getfd		sys_pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount		sys_watch_mount			sys_watch_mount
-+440	common	watch_sb		sys_watch_sb			sys_watch_sb
-diff --git a/arch/sh/kernel/syscalls/syscall.tbl b/arch/sh/kernel/syscalls/syscall.tbl
-index 682c125122f4..89307a20657c 100644
---- a/arch/sh/kernel/syscalls/syscall.tbl
-+++ b/arch/sh/kernel/syscalls/syscall.tbl
-@@ -441,3 +441,4 @@
- 437	common	openat2				sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/arch/sparc/kernel/syscalls/syscall.tbl b/arch/sparc/kernel/syscalls/syscall.tbl
-index febf3cd675e3..4ff841a00450 100644
---- a/arch/sparc/kernel/syscalls/syscall.tbl
-+++ b/arch/sparc/kernel/syscalls/syscall.tbl
-@@ -484,3 +484,4 @@
- 437	common	openat2			sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
-index 085bcc5afdf1..e2731d295f88 100644
---- a/arch/x86/entry/syscalls/syscall_32.tbl
-+++ b/arch/x86/entry/syscalls/syscall_32.tbl
-@@ -443,3 +443,4 @@
- 437	i386	openat2			sys_openat2			__ia32_sys_openat2
- 438	i386	pidfd_getfd		sys_pidfd_getfd			__ia32_sys_pidfd_getfd
- 439	i386	watch_mount		sys_watch_mount			__ia32_sys_watch_mount
-+440	i386	watch_sb		sys_watch_sb			__ia32_sys_watch_sb
-diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
-index 9cfb6b2eb319..f4391176102c 100644
---- a/arch/x86/entry/syscalls/syscall_64.tbl
-+++ b/arch/x86/entry/syscalls/syscall_64.tbl
-@@ -360,6 +360,7 @@
- 437	common	openat2			__x64_sys_openat2
- 438	common	pidfd_getfd		__x64_sys_pidfd_getfd
- 439	common	watch_mount		__x64_sys_watch_mount
-+440	common	watch_sb		__x64_sys_watch_sb
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/arch/xtensa/kernel/syscalls/syscall.tbl b/arch/xtensa/kernel/syscalls/syscall.tbl
-index 1a066a43a58b..8e7d731ed6cf 100644
---- a/arch/xtensa/kernel/syscalls/syscall.tbl
-+++ b/arch/xtensa/kernel/syscalls/syscall.tbl
-@@ -409,3 +409,4 @@
- 437	common	openat2				sys_openat2
- 438	common	pidfd_getfd			sys_pidfd_getfd
- 439	common	watch_mount			sys_watch_mount
-+440	common	watch_sb			sys_watch_sb
-diff --git a/fs/Kconfig b/fs/Kconfig
-index d7039137d538..fef1365c23a5 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -126,6 +126,18 @@ config MOUNT_NOTIFICATIONS
- 	  device to handle the notification buffer and provides the
- 	  mount_notify() system call to enable/disable watchpoints.
- 
-+config SB_NOTIFICATIONS
-+	bool "Superblock event notifications"
-+	select WATCH_QUEUE
-+	help
-+	  This option provides support for receiving superblock event
-+	  notifications.  This makes use of the /dev/watch_queue misc device to
-+	  handle the notification buffer and provides the sb_notify() system
-+	  call to enable/disable watches.
-+
-+	  Events can include things like changing between R/W and R/O, EIO
-+	  generation, ENOSPC generation and EDQUOT generation.
-+
- source "fs/quota/Kconfig"
- 
- source "fs/autofs/Kconfig"
-diff --git a/fs/super.c b/fs/super.c
-index ececa5695fd1..a7aa16ca380c 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -37,6 +37,8 @@
- #include <linux/lockdep.h>
- #include <linux/user_namespace.h>
- #include <linux/fs_context.h>
-+#include <linux/syscalls.h>
-+#include <linux/namei.h>
- #include <uapi/linux/mount.h>
- #include "internal.h"
- 
-@@ -333,6 +335,10 @@ void deactivate_locked_super(struct super_block *s)
+ static inline const struct user_key_payload *user_key_payload_rcu(const struct key *key)
  {
- 	struct file_system_type *fs = s->s_type;
- 	if (atomic_dec_and_test(&s->s_active)) {
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+		if (s->s_watchers)
-+			remove_watch_list(s->s_watchers, s->s_unique_id);
-+#endif
- 		cleancache_invalidate_fs(s);
- 		unregister_shrinker(&s->s_shrink);
- 		fs->kill_sb(s);
-@@ -972,6 +978,8 @@ int reconfigure_super(struct fs_context *fc)
- 	/* Needs to be ordered wrt mnt_is_readonly() */
- 	smp_wmb();
- 	sb->s_readonly_remount = 0;
-+	notify_sb(sb, NOTIFY_SUPERBLOCK_READONLY,
-+		  remount_ro ? NOTIFY_SUPERBLOCK_IS_NOW_RO : 0);
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index 4ded94bcf274..2ab2d6d6aeab 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -127,7 +127,7 @@ struct key_type {
+ 	 *   much is copied into the buffer
+ 	 * - shouldn't do the copy if the buffer is NULL
+ 	 */
+-	long (*read)(const struct key *key, char __user *buffer, size_t buflen);
++	long (*read)(const struct key *key, char *buffer, size_t buflen);
  
- 	/*
- 	 * Some filesystems modify their metadata via some other path than the
-@@ -1891,3 +1899,127 @@ void vfs_generate_unique_id(u64 *_id)
+ 	/* handle request_key() for this type instead of invoking
+ 	 * /sbin/request-key (optional)
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 001abe530a0d..82008f900930 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -352,7 +352,7 @@ void big_key_describe(const struct key *key, struct seq_file *m)
+  * read the key data
+  * - the key's semaphore is read-locked
+  */
+-long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
++long big_key_read(const struct key *key, char *buffer, size_t buflen)
+ {
+ 	size_t datalen = (size_t)key->payload.data[big_key_len];
+ 	long ret;
+@@ -391,9 +391,8 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
  
- 	*_id = id;
+ 		ret = datalen;
+ 
+-		/* copy decrypted data to user */
+-		if (copy_to_user(buffer, buf->virt, datalen) != 0)
+-			ret = -EFAULT;
++		/* copy out decrypted data */
++		memcpy(buffer, buf->virt, datalen);
+ 
+ err_fput:
+ 		fput(file);
+@@ -401,9 +400,7 @@ long big_key_read(const struct key *key, char __user *buffer, size_t buflen)
+ 		big_key_free_buffer(buf);
+ 	} else {
+ 		ret = datalen;
+-		if (copy_to_user(buffer, key->payload.data[big_key_data],
+-				 datalen) != 0)
+-			ret = -EFAULT;
++		memcpy(buffer, key->payload.data[big_key_data], datalen);
+ 	}
+ 
+ 	return ret;
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index 60720f58cbe0..f6797ba44bf7 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -902,14 +902,14 @@ static int encrypted_update(struct key *key, struct key_preparsed_payload *prep)
  }
-+
-+#ifdef CONFIG_SB_NOTIFICATIONS
+ 
+ /*
+- * encrypted_read - format and copy the encrypted data to userspace
++ * encrypted_read - format and copy out the encrypted data
+  *
+  * The resulting datablob format is:
+  * <master-key name> <decrypted data length> <encrypted iv> <encrypted data>
+  *
+  * On success, return to userspace the encrypted key datablob size.
+  */
+-static long encrypted_read(const struct key *key, char __user *buffer,
++static long encrypted_read(const struct key *key, char *buffer,
+ 			   size_t buflen)
+ {
+ 	struct encrypted_key_payload *epayload;
+@@ -957,8 +957,7 @@ static long encrypted_read(const struct key *key, char __user *buffer,
+ 	key_put(mkey);
+ 	memzero_explicit(derived_key, sizeof(derived_key));
+ 
+-	if (copy_to_user(buffer, ascii_buf, asciiblob_len) != 0)
+-		ret = -EFAULT;
++	memcpy(buffer, ascii_buf, asciiblob_len);
+ 	kzfree(ascii_buf);
+ 
+ 	return asciiblob_len;
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 9b898c969558..81f68e434b9f 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -797,6 +797,21 @@ long keyctl_keyring_search(key_serial_t ringid,
+ 	return ret;
+ }
+ 
 +/*
-+ * Post superblock notifications.
++ * Call the read method
 + */
-+void post_sb_notification(struct super_block *s, struct superblock_notification *n)
++static long __keyctl_read_key(struct key *key, char *buffer, size_t buflen)
 +{
-+	post_watch_notification(s->s_watchers, &n->watch, current_cred(),
-+				s->s_unique_id);
-+}
++	long ret;
 +
-+static void sb_release_watch(struct watch *watch)
-+{
-+	put_super(watch->private);
-+}
-+
-+/**
-+ * sys_watch_sb - Watch for superblock events.
-+ * @dfd: Base directory to pathwalk from or fd referring to superblock.
-+ * @filename: Path to superblock to place the watch upon
-+ * @at_flags: Pathwalk control flags
-+ * @watch_fd: The watch queue to send notifications to.
-+ * @watch_id: The watch ID to be placed in the notification (-1 to remove watch)
-+ */
-+SYSCALL_DEFINE5(watch_sb,
-+		int, dfd,
-+		const char __user *, filename,
-+		unsigned int, at_flags,
-+		int, watch_fd,
-+		int, watch_id)
-+{
-+	struct watch_queue *wqueue;
-+	struct super_block *s;
-+	struct watch_list *wlist = NULL;
-+	struct watch *watch = NULL;
-+	struct path path;
-+	unsigned int lookup_flags +		LOOKUP_DIRECTORY | LOOKUP_FOLLOW | LOOKUP_AUTOMOUNT;
-+	bool drop_s_count = false;
-+	int ret;
-+
-+	if (watch_id < -1 || watch_id > 0xff)
-+		return -EINVAL;
-+	if ((at_flags & ~(AT_NO_AUTOMOUNT | AT_EMPTY_PATH)) != 0)
-+		return -EINVAL;
-+	if (at_flags & AT_NO_AUTOMOUNT)
-+		lookup_flags &= ~LOOKUP_AUTOMOUNT;
-+	if (at_flags & AT_EMPTY_PATH)
-+		lookup_flags |= LOOKUP_EMPTY;
-+
-+	ret = user_path_at(dfd, filename, at_flags, &path);
-+	if (ret)
-+		return ret;
-+
-+	ret = inode_permission(path.dentry->d_inode, MAY_EXEC);
-+	if (ret)
-+		goto err_path;
-+
-+	wqueue = get_watch_queue(watch_fd);
-+	if (IS_ERR(wqueue))
-+		goto err_path;
-+
-+	s = path.dentry->d_sb;
-+	if (watch_id >= 0) {
-+		ret = -ENOMEM;
-+		if (!READ_ONCE(s->s_watchers)) {
-+			wlist = kzalloc(sizeof(*wlist), GFP_KERNEL);
-+			if (!wlist)
-+				goto err_wqueue;
-+			init_watch_list(wlist, sb_release_watch);
-+		}
-+
-+		watch = kzalloc(sizeof(*watch), GFP_KERNEL);
-+		if (!watch)
-+			goto err_wlist;
-+
-+		init_watch(watch, wqueue);
-+		watch->id		= s->s_unique_id;
-+		watch->private		= s;
-+		watch->info_id		= (u32)watch_id << 24;
-+
-+		ret = security_watch_sb(watch, s);
-+		if (ret < 0)
-+			goto err_watch;
-+
-+		down_write(&s->s_umount);
-+		ret = -EIO;
-+		if (atomic_read(&s->s_active)) {
-+			if (!s->s_watchers) {
-+				s->s_watchers = wlist;
-+				wlist = NULL;
-+			}
-+
-+			spin_lock(&sb_lock);
-+			s->s_count++;
-+			spin_unlock(&sb_lock);
-+			ret = add_watch_to_object(watch, s->s_watchers);
-+			if (ret = 0)
-+				watch = NULL; /* It worked */
-+			else
-+				drop_s_count = true;
-+		}
-+		up_write(&s->s_umount);
-+		if (drop_s_count)
-+			put_super(s);
-+	} else {
-+		ret = -EBADSLT;
-+		down_write(&s->s_umount);
-+		ret = remove_watch_from_object(s->s_watchers, wqueue,
-+					       s->s_unique_id, false);
-+		up_write(&s->s_umount);
-+	}
-+
-+err_watch:
-+	kfree(watch);
-+err_wlist:
-+	kfree(wlist);
-+err_wqueue:
-+	put_watch_queue(wqueue);
-+err_path:
-+	path_put(&path);
++	down_read(&key->sem);
++	ret = key_validate(key);
++	if (ret = 0)
++		ret = key->type->read(key, buffer, buflen);
++	up_read(&key->sem);
 +	return ret;
 +}
-+#endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9de6bfe41016..9181cfcd5265 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -40,6 +40,7 @@
- #include <linux/fs_types.h>
- #include <linux/build_bug.h>
- #include <linux/stddef.h>
-+#include <linux/watch_queue.h>
- 
- #include <asm/byteorder.h>
- #include <uapi/linux/fs.h>
-@@ -1551,6 +1552,12 @@ struct super_block {
- 
- 	/* Superblock event notifications */
- 	u64			s_unique_id;
 +
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	struct watch_list	*s_watchers;
-+#endif
-+	atomic_t		s_change_counter;	/* Count of config change notifications */
-+	atomic_t		s_notify_counter;	/* Count of other notifications */
- } __randomize_layout;
+ /*
+  * Read a key's payload.
+  *
+@@ -844,16 +859,42 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
  
- /* Helper functions so that in most cases filesystems will
-@@ -3654,4 +3661,78 @@ static inline int inode_drain_writes(struct inode *inode)
- 	return filemap_write_and_wait(inode->i_mapping);
+ 	/* the key is probably readable - now try to read it */
+ can_read_key:
+-	ret = -EOPNOTSUPP;
+-	if (key->type->read) {
+-		/* Read the data with the semaphore held (since we might sleep)
++	if (!key->type->read) {
++		ret = -EOPNOTSUPP;
++		goto error2;
++	}
++
++	if (!buffer || !buflen) {
++		/* Get the key length from the read method */
++		ret = __keyctl_read_key(key, NULL, 0);
++	} else {
++
++		/*
++		 * Read the data with the semaphore held (since we might sleep)
+ 		 * to protect against the key being updated or revoked.
++		 *
++		 * Allocating a temporary buffer to hold the keys before
++		 * transferring them to user buffer to avoid potential
++		 * deadlock involving page fault and mmap_sem.
++		 */
++		char *tmpbuf = kmalloc(buflen, GFP_KERNEL);
++
++		if (!tmpbuf) {
++			ret = -ENOMEM;
++			goto error2;
++		}
++		ret = __keyctl_read_key(key, tmpbuf, buflen);
++
++		/*
++		 * Read methods will just return the required length
++		 * without any copying if the provided length isn't big
++		 * enough.
+ 		 */
+-		down_read(&key->sem);
+-		ret = key_validate(key);
+-		if (ret = 0)
+-			ret = key->type->read(key, buffer, buflen);
+-		up_read(&key->sem);
++		if ((ret > 0) && (ret <= buflen)) {
++			if (copy_to_user(buffer, tmpbuf, ret))
++				ret = -EFAULT;
++		}
++		kzfree(tmpbuf);
+ 	}
+ 
+ error2:
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index febf36c6ddc5..5ca620d31cd3 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -459,7 +459,6 @@ static int keyring_read_iterator(const void *object, void *data)
+ {
+ 	struct keyring_read_iterator_context *ctx = data;
+ 	const struct key *key = keyring_ptr_to_key(object);
+-	int ret;
+ 
+ 	kenter("{%s,%d},,{%zu/%zu}",
+ 	       key->type->name, key->serial, ctx->count, ctx->buflen);
+@@ -467,10 +466,7 @@ static int keyring_read_iterator(const void *object, void *data)
+ 	if (ctx->count >= ctx->buflen)
+ 		return 1;
+ 
+-	ret = put_user(key->serial, ctx->buffer);
+-	if (ret < 0)
+-		return ret;
+-	ctx->buffer++;
++	*ctx->buffer++ = key->serial;
+ 	ctx->count += sizeof(key->serial);
+ 	return 0;
  }
- 
-+extern void post_sb_notification(struct super_block *, struct superblock_notification *);
-+
-+/**
-+ * notify_sb: Post simple superblock notification.
-+ * @s: The superblock the notification is about.
-+ * @subtype: The type of notification.
-+ * @info: WATCH_INFO_FLAG_* flags to be set in the record.
-+ */
-+static inline void notify_sb(struct super_block *s,
-+			     enum superblock_notification_type subtype,
-+			     u32 info)
-+{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	atomic_inc(&s->s_change_counter);
-+	if (unlikely(READ_ONCE(s->s_watchers))) {
-+		struct superblock_notification n = {
-+			.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.watch.subtype	= subtype,
-+			.watch.info	= watch_sizeof(n) | info,
-+			.sb_id		= s->s_unique_id,
-+		};
-+
-+		post_sb_notification(s, &n);
-+	}
-+#endif
-+}
-+
-+/**
-+ * notify_sb_error: Post superblock error notification.
-+ * @s: The superblock the notification is about.
-+ * @error: The error number to be recorded.
-+ */
-+static inline int notify_sb_error(struct super_block *s, int error)
-+{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	atomic_inc(&s->s_notify_counter);
-+	if (unlikely(READ_ONCE(s->s_watchers))) {
-+		struct superblock_error_notification n = {
-+			.s.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.s.watch.subtype = NOTIFY_SUPERBLOCK_ERROR,
-+			.s.watch.info	= watch_sizeof(n),
-+			.s.sb_id	= s->s_unique_id,
-+			.error_number	= error,
-+			.error_cookie	= 0,
-+		};
-+
-+		post_sb_notification(s, &n.s);
-+	}
-+#endif
-+	return error;
-+}
-+
-+/**
-+ * notify_sb_EDQUOT: Post superblock quota overrun notification.
-+ * @s: The superblock the notification is about.
-+ */
-+static inline int notify_sb_EQDUOT(struct super_block *s)
-+{
-+#ifdef CONFIG_SB_NOTIFICATIONS
-+	atomic_inc(&s->s_notify_counter);
-+	if (unlikely(READ_ONCE(s->s_watchers))) {
-+		struct superblock_notification n = {
-+			.watch.type	= WATCH_TYPE_SB_NOTIFY,
-+			.watch.subtype	= NOTIFY_SUPERBLOCK_EDQUOT,
-+			.watch.info	= watch_sizeof(n),
-+			.sb_id		= s->s_unique_id,
-+		};
-+
-+		post_sb_notification(s, &n);
-+	}
-+#endif
-+	return -EDQUOT;
-+}
-+
- #endif /* _LINUX_FS_H */
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 1fd43af3b22d..c84440d57f52 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -1005,6 +1005,8 @@ asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
- asmlinkage long sys_pidfd_getfd(int pidfd, int fd, unsigned int flags);
- asmlinkage long sys_watch_mount(int dfd, const char __user *path,
- 				unsigned int at_flags, int watch_fd, int watch_id);
-+asmlinkage long sys_watch_sb(int dfd, const char __user *path,
-+			     unsigned int at_flags, int watch_fd, int watch_id);
+diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
+index ecba39c93fd9..41e9735006d0 100644
+--- a/security/keys/request_key_auth.c
++++ b/security/keys/request_key_auth.c
+@@ -22,7 +22,7 @@ static int request_key_auth_instantiate(struct key *,
+ static void request_key_auth_describe(const struct key *, struct seq_file *);
+ static void request_key_auth_revoke(struct key *);
+ static void request_key_auth_destroy(struct key *);
+-static long request_key_auth_read(const struct key *, char __user *, size_t);
++static long request_key_auth_read(const struct key *, char *, size_t);
  
  /*
-  * Architecture-specific system calls
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index 6b5748287883..5bff318b7ffa 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -857,9 +857,11 @@ __SYSCALL(__NR_openat2, sys_openat2)
- __SYSCALL(__NR_pidfd_getfd, sys_pidfd_getfd)
- #define __NR_watch_mount 439
- __SYSCALL(__NR_watch_mount, sys_watch_mount)
-+#define __NR_watch_sb 440
-+__SYSCALL(__NR_watch_sb, sys_watch_sb)
+  * The request-key authorisation key type definition.
+@@ -80,7 +80,7 @@ static void request_key_auth_describe(const struct key *key,
+  * - the key's semaphore is read-locked
+  */
+ static long request_key_auth_read(const struct key *key,
+-				  char __user *buffer, size_t buflen)
++				  char *buffer, size_t buflen)
+ {
+ 	struct request_key_auth *rka = dereference_key_locked(key);
+ 	size_t datalen;
+@@ -97,8 +97,7 @@ static long request_key_auth_read(const struct key *key,
+ 		if (buflen > datalen)
+ 			buflen = datalen;
  
- #undef __NR_syscalls
--#define __NR_syscalls 440
-+#define __NR_syscalls 441
+-		if (copy_to_user(buffer, rka->callout_info, buflen) != 0)
+-			ret = -EFAULT;
++		memcpy(buffer, rka->callout_info, buflen);
+ 	}
  
- /*
-  * 32 bit systems traditionally used different
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-index b0f35cf51394..e9c37b1ae68d 100644
---- a/include/uapi/linux/watch_queue.h
-+++ b/include/uapi/linux/watch_queue.h
-@@ -15,7 +15,8 @@ enum watch_notification_type {
- 	WATCH_TYPE_META		= 0,	/* Special record */
- 	WATCH_TYPE_KEY_NOTIFY	= 1,	/* Key change event notification */
- 	WATCH_TYPE_MOUNT_NOTIFY	= 2,	/* Mount topology change notification */
--	WATCH_TYPE___NR		= 3
-+	WATCH_TYPE_SB_NOTIFY	= 3,	/* Superblock event notification */
-+	WATCH_TYPE___NR		= 4
- };
+ 	return ret;
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index d2c5ec1e040b..8001ab07e63b 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -1130,11 +1130,10 @@ static int trusted_update(struct key *key, struct key_preparsed_payload *prep)
+  * trusted_read - copy the sealed blob data to userspace in hex.
+  * On success, return to userspace the trusted key datablob size.
+  */
+-static long trusted_read(const struct key *key, char __user *buffer,
++static long trusted_read(const struct key *key, char *buffer,
+ 			 size_t buflen)
+ {
+ 	const struct trusted_key_payload *p;
+-	char *ascii_buf;
+ 	char *bufp;
+ 	int i;
  
- enum watch_meta_notification_subtype {
-@@ -131,4 +132,32 @@ struct mount_notification {
- 	__u32	changed_mount;		/* The mount that got changed */
- };
+@@ -1143,18 +1142,9 @@ static long trusted_read(const struct key *key, char __user *buffer,
+ 		return -EINVAL;
  
-+/*
-+ * Type of superblock notification.
-+ */
-+enum superblock_notification_type {
-+	NOTIFY_SUPERBLOCK_READONLY	= 0, /* Filesystem toggled between R/O and R/W */
-+	NOTIFY_SUPERBLOCK_ERROR		= 1, /* Error in filesystem or blockdev */
-+	NOTIFY_SUPERBLOCK_EDQUOT	= 2, /* EDQUOT notification */
-+	NOTIFY_SUPERBLOCK_NETWORK	= 3, /* Network status change */
-+};
-+
-+#define NOTIFY_SUPERBLOCK_IS_NOW_RO	WATCH_INFO_FLAG_0 /* Superblock changed to R/O */
-+
-+/*
-+ * Superblock notification record.
-+ * - watch.type = WATCH_TYPE_MOUNT_NOTIFY
-+ * - watch.subtype = enum superblock_notification_subtype
-+ */
-+struct superblock_notification {
-+	struct watch_notification watch; /* WATCH_TYPE_SB_NOTIFY */
-+	__u64	sb_id;			/* 64-bit superblock ID */
-+};
-+
-+struct superblock_error_notification {
-+	struct superblock_notification s; /* subtype = notify_superblock_error */
-+	__u32	error_number;
-+	__u32	error_cookie;
-+};
-+
- #endif /* _UAPI_LINUX_WATCH_QUEUE_H */
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 3e1c5c9d2efe..0ce01f86e5db 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -119,6 +119,9 @@ COND_SYSCALL_COMPAT(signalfd4);
+ 	if (buffer && buflen >= 2 * p->blob_len) {
+-		ascii_buf = kmalloc_array(2, p->blob_len, GFP_KERNEL);
+-		if (!ascii_buf)
+-			return -ENOMEM;
+-
+-		bufp = ascii_buf;
++		bufp = buffer;
+ 		for (i = 0; i < p->blob_len; i++)
+ 			bufp = hex_byte_pack(bufp, p->blob[i]);
+-		if (copy_to_user(buffer, ascii_buf, 2 * p->blob_len) != 0) {
+-			kzfree(ascii_buf);
+-			return -EFAULT;
+-		}
+-		kzfree(ascii_buf);
+ 	}
+ 	return 2 * p->blob_len;
+ }
+diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+index 6f12de4ce549..07d4287e9084 100644
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -168,7 +168,7 @@ EXPORT_SYMBOL_GPL(user_describe);
+  * read the key data
+  * - the key's semaphore is read-locked
+  */
+-long user_read(const struct key *key, char __user *buffer, size_t buflen)
++long user_read(const struct key *key, char *buffer, size_t buflen)
+ {
+ 	const struct user_key_payload *upayload;
+ 	long ret;
+@@ -181,8 +181,7 @@ long user_read(const struct key *key, char __user *buffer, size_t buflen)
+ 		if (buflen > upayload->datalen)
+ 			buflen = upayload->datalen;
  
- /* fs/sync.c */
+-		if (copy_to_user(buffer, upayload->data, buflen) != 0)
+-			ret = -EFAULT;
++		memcpy(buffer, upayload->data, buflen);
+ 	}
  
-+/* fs/super.c */
-+COND_SYSCALL(watch_sb);
-+
- /* fs/timerfd.c */
- COND_SYSCALL(timerfd_create);
- COND_SYSCALL(timerfd_settime);
+ 	return ret;
+-- 
+2.18.1
