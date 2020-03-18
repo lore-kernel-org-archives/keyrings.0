@@ -1,31 +1,59 @@
 From: David Howells <dhowells@redhat.com>
-Date: Mon, 02 Mar 2020 09:27:21 +0000
-Subject: Re: kernel BUG at lib/assoc_array.c:LINE!
-Message-Id: <686378.1583141241@warthog.procyon.org.uk>
+Date: Wed, 18 Mar 2020 15:04:46 +0000
+Subject: [PATCH 10/17] selinux: Implement the watch_key security hook [ver #5]
+Message-Id: <158454388633.2863966.17799427202351674141.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <538780.1583137732@warthog.procyon.org.uk> <20200218211259.GA19673@linux.intel.com> <000000000000f4bf93059db8b081@google.com>
-In-Reply-To: <538780.1583137732@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, jmorris@namei.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, serge@hallyn.com
+References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
+In-Reply-To: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, dhowells@redhat.com, casey@schaufler-ca.comsds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+Implement the watch_key security hook to make sure that a key grants the
+caller View permission in order to set a watch on a key.
 
-> [  621.627412][ T6728] kAFS: unable to lookup cell '?T]??J??n/P4?['
-> 
-> This is a bit odd, since the version allegedly being tested includes a patch
-> to prohibit AFS cell names that contain unprintable chars.  It should error
-> out in afs_alloc_cell(), way before it tries to do a DNS lookup.
+For the moment, the watch_devices security hook is left unimplemented as
+it's not obvious what the object should be since the queue is global and
+didn't previously exist.
 
-Ah, no, that's okay.  This error message is printed in afs_parse_source() on
-the way out after afs_lookup_cell() fails (presumably due to afs_alloc_cell()
-failing).
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
+---
 
-It seems unlikely that the dead process is actually anything to do with the
-mount that more or less immediately preceded it in the log.  It mount should
-have failed without creating a cell record - which then precludes affecting
-afs_manage_cell().  However, a previously created cell with a valid name can
-feasibly be driving afs_manage_cell() and causing the problem.
+ security/selinux/hooks.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-David
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 1659b59fb5d7..2c19ac4d7894 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -6563,6 +6563,17 @@ static int selinux_key_getsecurity(struct key *key, char **_buffer)
+ 	*_buffer = context;
+ 	return rc;
+ }
++
++#ifdef CONFIG_KEY_NOTIFICATIONS
++static int selinux_watch_key(struct key *key)
++{
++	struct key_security_struct *ksec = key->security;
++	u32 sid = current_sid();
++
++	return avc_has_perm(&selinux_state,
++			    sid, ksec->sid, SECCLASS_KEY, KEY_NEED_VIEW, NULL);
++}
++#endif
+ #endif
+ 
+ #ifdef CONFIG_SECURITY_INFINIBAND
+@@ -7078,6 +7089,9 @@ static struct security_hook_list selinux_hooks[] __lsm_ro_after_init = {
+ 	LSM_HOOK_INIT(key_free, selinux_key_free),
+ 	LSM_HOOK_INIT(key_permission, selinux_key_permission),
+ 	LSM_HOOK_INIT(key_getsecurity, selinux_key_getsecurity),
++#ifdef CONFIG_KEY_NOTIFICATIONS
++	LSM_HOOK_INIT(watch_key, selinux_watch_key),
++#endif
+ #endif
+ 
+ #ifdef CONFIG_AUDIT
