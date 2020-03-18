@@ -1,127 +1,45 @@
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 18 Mar 2020 15:03:41 +0000
-Subject: [PATCH 03/17] security: Add a hook for the point of notification insertion [ver #5]
-Message-Id: <158454382138.2863966.4611034029343321389.stgit@warthog.procyon.org.uk>
+From: James Morris <jmorris@namei.org>
+Date: Wed, 18 Mar 2020 18:57:34 +0000
+Subject: Re: [PATCH 03/17] security: Add a hook for the point of notification insertion [ver #5]
+Message-Id: <alpine.LRH.2.21.2003190557200.29708@namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
-In-Reply-To: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, linux-security-module@vger.kernel.org, dhowells@redhat.comcasey@schaufler-ca.comsds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.orglinux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk> <158454382138.2863966.4611034029343321389.stgit@warthog.procyon.org.uk>
+In-Reply-To: <158454382138.2863966.4611034029343321389.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, linux-security-module@vger.kernel.orgCasey Schaufler <casey@schaufler-ca.com>Stephen Smalley <sds@tycho.nsa.gov>, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.orglinux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add a security hook that allows an LSM to rule on whether a notification
-message is allowed to be inserted into a particular watch queue.
+On Wed, 18 Mar 2020, David Howells wrote:
 
-The hook is given the following information:
+> Add a security hook that allows an LSM to rule on whether a notification
+> message is allowed to be inserted into a particular watch queue.
+> 
+> The hook is given the following information:
+> 
+>  (1) The credentials of the triggerer (which may be init_cred for a system
+>      notification, eg. a hardware error).
+> 
+>  (2) The credentials of the whoever set the watch.
+> 
+>  (3) The notification message.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> cc: Casey Schaufler <casey@schaufler-ca.com>
+> cc: Stephen Smalley <sds@tycho.nsa.gov>
+> cc: linux-security-module@vger.kernel.org
+> ---
+> 
+>  include/linux/lsm_hooks.h |   14 ++++++++++++++
+>  include/linux/security.h  |   14 ++++++++++++++
+>  security/security.c       |    9 +++++++++
+>  3 files changed, 37 insertions(+)
 
- (1) The credentials of the triggerer (which may be init_cred for a system
-     notification, eg. a hardware error).
 
- (2) The credentials of the whoever set the watch.
+Acked-by: James Morris <jamorris@linux.microsoft.com>
 
- (3) The notification message.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
----
-
- include/linux/lsm_hooks.h |   14 ++++++++++++++
- include/linux/security.h  |   14 ++++++++++++++
- security/security.c       |    9 +++++++++
- 3 files changed, 37 insertions(+)
-
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index 79d7c73676d7..16530255dc11 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1427,6 +1427,12 @@
-  *	Check to see if a process is allowed to watch for event notifications
-  *	from devices (as a global set).
-  *
-+ * @post_notification:
-+ *	Check to see if a watch notification can be posted to a particular
-+ *	queue.
-+ *	@w_cred: The credentials of the whoever set the watch.
-+ *	@cred: The event-triggerer's credentials
-+ *	@n: The notification being posted
-  *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-@@ -1716,6 +1722,11 @@ union security_list_options {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	int (*watch_devices)(void);
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	int (*post_notification)(const struct cred *w_cred,
-+				 const struct cred *cred,
-+				 struct watch_notification *n);
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -2009,6 +2020,9 @@ struct security_hook_heads {
- #ifdef CONFIG_DEVICE_NOTIFICATIONS
- 	struct hlist_head watch_devices;
- #endif
-+#ifdef CONFIG_WATCH_QUEUE
-+	struct hlist_head post_notification;
-+#endif /* CONFIG_WATCH_QUEUE */
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 7a36064a64ea..910a1efa9a79 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -57,6 +57,8 @@ struct mm_struct;
- struct fs_context;
- struct fs_parameter;
- enum fs_value_type;
-+struct watch;
-+struct watch_notification;
- 
- /* Default (no) options for the capable function */
- #define CAP_OPT_NONE 0x0
-@@ -1292,6 +1294,18 @@ static inline int security_watch_devices(void)
- 	return 0;
- }
- #endif
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_WATCH_QUEUE)
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n);
-+#else
-+static inline int security_post_notification(const struct cred *w_cred,
-+					     const struct cred *cred,
-+					     struct watch_notification *n)
-+{
-+	return 0;
-+}
-+#endif
- 
- #ifdef CONFIG_SECURITY_NETWORK
- 
-diff --git a/security/security.c b/security/security.c
-index 22877f47cf62..db7b574c9c70 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1988,6 +1988,15 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_WATCH_QUEUE
-+int security_post_notification(const struct cred *w_cred,
-+			       const struct cred *cred,
-+			       struct watch_notification *n)
-+{
-+	return call_int_hook(post_notification, 0, w_cred, cred, n);
-+}
-+#endif /* CONFIG_WATCH_QUEUE */
-+
- #ifdef CONFIG_KEY_NOTIFICATIONS
- int security_watch_key(struct key *key)
- {
+-- 
+James Morris
+<jmorris@namei.org>
