@@ -1,130 +1,103 @@
 From: David Howells <dhowells@redhat.com>
-Date: Mon, 09 Mar 2020 12:17:31 +0000
-Subject: [RFC PATCH 02/17] security: Add hooks to rule on setting a watch [ver #4]
-Message-Id: <158375625185.334846.2783340609753629918.stgit@warthog.procyon.org.uk>
+Date: Wed, 18 Mar 2020 15:05:31 +0000
+Subject: [PATCH 15/17] watch_queue: Introduce a non-repeating system-unique superblock ID [ver #5]
+Message-Id: <158454393118.2863966.9023596791549468748.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158375623086.334846.16121725232323108842.stgit@warthog.procyon.org.uk>
-In-Reply-To: <158375623086.334846.16121725232323108842.stgit@warthog.procyon.org.uk>
+References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
+In-Reply-To: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
 To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, linux-security-module@vger.kernel.org, dhowells@redhat.comdhowells@redhat.comcasey@schaufler-ca.comsds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.orglinux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, casey@schaufler-ca.com, sds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Add security hooks that will allow an LSM to rule on whether or not a watch
-may be set.  More than one hook is required as the watches watch different
-types of object.
+Introduce an (effectively) non-repeating system-unique superblock ID that
+can be used to determine that two object are in the same superblock without
+risking reuse of the ID in the meantime (as is possible with device IDs).
+
+The ID is time-based to make it harder to use it as a covert communications
+channel.
+
+In future patches, this ID will be used to tag superblock notification
+messages.  It will also be made queryable.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>
-cc: Stephen Smalley <sds@tycho.nsa.gov>
-cc: linux-security-module@vger.kernel.org
 ---
 
- include/linux/lsm_hooks.h |   24 ++++++++++++++++++++++++
- include/linux/security.h  |   17 +++++++++++++++++
- security/security.c       |   14 ++++++++++++++
- 3 files changed, 55 insertions(+)
+ fs/internal.h      |    1 +
+ fs/super.c         |   24 ++++++++++++++++++++++++
+ include/linux/fs.h |    3 +++
+ 3 files changed, 28 insertions(+)
 
-diff --git a/include/linux/lsm_hooks.h b/include/linux/lsm_hooks.h
-index 20d8cf194fb7..79d7c73676d7 100644
---- a/include/linux/lsm_hooks.h
-+++ b/include/linux/lsm_hooks.h
-@@ -1416,6 +1416,18 @@
-  *	@ctx is a pointer in which to place the allocated security context.
-  *	@ctxlen points to the place to put the length of @ctx.
-  *
-+ * Security hooks for the general notification queue:
-+ *
-+ * @watch_key:
-+ *	Check to see if a process is allowed to watch for event notifications
-+ *	from a key or keyring.
-+ *	@key: The key to watch.
-+ *
-+ * @watch_devices:
-+ *	Check to see if a process is allowed to watch for event notifications
-+ *	from devices (as a global set).
-+ *
-+ *
-  * Security hooks for using the eBPF maps and programs functionalities through
-  * eBPF syscalls.
-  *
-@@ -1698,6 +1710,12 @@ union security_list_options {
- 	int (*inode_notifysecctx)(struct inode *inode, void *ctx, u32 ctxlen);
- 	int (*inode_setsecctx)(struct dentry *dentry, void *ctx, u32 ctxlen);
- 	int (*inode_getsecctx)(struct inode *inode, void **ctx, u32 *ctxlen);
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+	int (*watch_key)(struct key *key);
-+#endif
-+#ifdef CONFIG_DEVICE_NOTIFICATIONS
-+	int (*watch_devices)(void);
-+#endif
+diff --git a/fs/internal.h b/fs/internal.h
+index f3f280b952a3..a0d90f23593c 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -109,6 +109,7 @@ extern int reconfigure_super(struct fs_context *);
+ extern bool trylock_super(struct super_block *sb);
+ extern struct super_block *user_get_super(dev_t);
+ extern bool mount_capable(struct fs_context *);
++extern void vfs_generate_unique_id(u64 *);
  
- #ifdef CONFIG_SECURITY_NETWORK
- 	int (*unix_stream_connect)(struct sock *sock, struct sock *other,
-@@ -1985,6 +2003,12 @@ struct security_hook_heads {
- 	struct hlist_head inode_notifysecctx;
- 	struct hlist_head inode_setsecctx;
- 	struct hlist_head inode_getsecctx;
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+	struct hlist_head watch_key;
-+#endif
-+#ifdef CONFIG_DEVICE_NOTIFICATIONS
-+	struct hlist_head watch_devices;
-+#endif
- #ifdef CONFIG_SECURITY_NETWORK
- 	struct hlist_head unix_stream_connect;
- 	struct hlist_head unix_may_send;
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 64b19f050343..7a36064a64ea 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1276,6 +1276,23 @@ static inline int security_locked_down(enum lockdown_reason what)
+ /*
+  * open.c
+diff --git a/fs/super.c b/fs/super.c
+index cd352530eca9..ececa5695fd1 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -44,6 +44,8 @@ static int thaw_super_locked(struct super_block *sb);
+ 
+ static LIST_HEAD(super_blocks);
+ static DEFINE_SPINLOCK(sb_lock);
++static u64 vfs_last_identifier;
++static u64 vfs_identifier_offset;
+ 
+ static char *sb_writers_name[SB_FREEZE_LEVELS] = {
+ 	"sb_writers",
+@@ -273,6 +275,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags,
+ 		goto fail;
+ 	if (list_lru_init_memcg(&s->s_inode_lru, &s->s_shrink))
+ 		goto fail;
++	vfs_generate_unique_id(&s->s_unique_id);
+ 	return s;
+ 
+ fail:
+@@ -1867,3 +1870,24 @@ int thaw_super(struct super_block *sb)
+ 	return thaw_super_locked(sb);
  }
- #endif	/* CONFIG_SECURITY */
- 
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_KEY_NOTIFICATIONS)
-+int security_watch_key(struct key *key);
-+#else
-+static inline int security_watch_key(struct key *key)
-+{
-+	return 0;
-+}
-+#endif
-+#if defined(CONFIG_SECURITY) && defined(CONFIG_DEVICE_NOTIFICATIONS)
-+int security_watch_devices(void);
-+#else
-+static inline int security_watch_devices(void)
-+{
-+	return 0;
-+}
-+#endif
+ EXPORT_SYMBOL(thaw_super);
 +
- #ifdef CONFIG_SECURITY_NETWORK
- 
- int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk);
-diff --git a/security/security.c b/security/security.c
-index 565bc9b67276..22877f47cf62 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1988,6 +1988,20 @@ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen)
- }
- EXPORT_SYMBOL(security_inode_getsecctx);
- 
-+#ifdef CONFIG_KEY_NOTIFICATIONS
-+int security_watch_key(struct key *key)
++/*
++ * Generate a unique identifier for a superblock or mount object.
++ */
++void vfs_generate_unique_id(u64 *_id)
 +{
-+	return call_int_hook(watch_key, 0, key);
-+}
-+#endif
++	u64 id = ktime_to_ns(ktime_get());
 +
-+#ifdef CONFIG_DEVICE_NOTIFICATIONS
-+int security_watch_devices(void)
-+{
-+	return call_int_hook(watch_devices, 0);
-+}
-+#endif
++	spin_lock(&sb_lock);
 +
- #ifdef CONFIG_SECURITY_NETWORK
++	id += vfs_identifier_offset;
++	if (id <= vfs_last_identifier) {
++		id = vfs_last_identifier + 1;
++		vfs_identifier_offset = vfs_last_identifier - id;
++	}
++
++	vfs_last_identifier = id;
++	spin_unlock(&sb_lock);
++
++	*_id = id;
++}
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 3cd4fe6b845e..9de6bfe41016 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1548,6 +1548,9 @@ struct super_block {
  
- int security_unix_stream_connect(struct sock *sock, struct sock *other, struct sock *newsk)
+ 	spinlock_t		s_inode_wblist_lock;
+ 	struct list_head	s_inodes_wb;	/* writeback inodes */
++
++	/* Superblock event notifications */
++	u64			s_unique_id;
+ } __randomize_layout;
+ 
+ /* Helper functions so that in most cases filesystems will
