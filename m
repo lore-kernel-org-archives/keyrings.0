@@ -1,54 +1,52 @@
-From: Waiman Long <longman@redhat.com>
-Date: Fri, 13 Mar 2020 15:20:59 +0000
-Subject: [PATCH v3 0/3] KEYS: Read keys to internal buffer & then copy to userspace
-Message-Id: <20200313152102.1707-1-longman@redhat.com>
+From: Mikhail Novosyolov <m.novosyolov@rosalinux.ru>
+Date: Wed, 18 Mar 2020 21:31:45 +0000
+Subject: sign-file: full functionality with modern LibreSSL
+Message-Id: <f13b4174-bcfa-6569-0601-65a9bfc9bb92@rosalinux.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Eric Biggers <ebiggers@google.com>, Chris von Recklinghausen <crecklin@redhat.com>, Waiman Long <longman@redhat.com>
+To: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Mikhail Novosyolov <m.novosyolov@rosalinux.ru>
 
-v3:
- - Reorganize the keyctl_read_key() code to make it more readable as
-   suggested by Jarkko Sakkinen.
- - Add patch 3 to use kvmalloc() for safer large buffer allocation as
-   suggested by David Howells.
 
-v2:
- - Handle NULL buffer and buflen properly in patch 1.
- - Fix a bug in big_key.c.
- - Add patch 2 to handle arbitrary large user-supplied buflen.
+Current pre-release version of LibreSSL has enabled CMS support,
+and now sign-file is fully functional with it.
 
-The current security key read methods are called with the key semaphore
-held.  The methods then copy out the key data to userspace which is
-subjected to page fault and may acquire the mmap semaphore. That can
-result in circular lock dependency and hence a chance to get into
-deadlock.
+See https://github.com/libressl-portable/openbsd/commits/master
 
-To avoid such a deadlock, an internal buffer is now allocated for getting
-out the necessary data first. After releasing the key semaphore, the
-key data are then copied out to userspace sidestepping the circular
-lock dependency.
+To test buildability with current LibreSSL:
+~$ git clone https://github.com/libressl-portable/portable.git
+~$ cd portable && ./autogen.sh
+~$ ./configure --prefix=/opt/libressl
+~$ make
+~# make install
+Go to the kernel source tree and:
+~$ gcc -I/opt/libressl/include -L /opt/libressl/lib -lcrypto -Wl,-rpath,/opt/libressl/lib scripts/sign-file.c -o scripts/sign-file
 
-The keyutils test suite was run and the test passed with these patchset
-applied without any falure.
+Fixes: f8688017 ("sign-file: fix build error in sign-file.c with libressl")
 
-Waiman Long (3):
-  KEYS: Don't write out to userspace while holding key semaphore
-  KEYS: Avoid false positive ENOMEM error on key read
-  KEYS: Use kvmalloc() to better handle large buffer allocation
+Signed-off-by: Mikhail Novosyolov <m.novosyolov@rosalinux.ru>
+---
+ scripts/sign-file.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
- include/linux/key-type.h                  |  2 +-
- security/keys/big_key.c                   | 11 ++-
- security/keys/encrypted-keys/encrypted.c  |  7 +-
- security/keys/internal.h                  | 14 ++++
- security/keys/keyctl.c                    | 87 ++++++++++++++++++++---
- security/keys/keyring.c                   |  6 +-
- security/keys/request_key_auth.c          |  7 +-
- security/keys/trusted-keys/trusted_tpm1.c | 14 +---
- security/keys/user_defined.c              |  5 +-
- 9 files changed, 107 insertions(+), 46 deletions(-)
-
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index fbd34b8e8f57..fd4d7c31d1bf 100644
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -41,9 +41,10 @@
+  * signing with anything other than SHA1 - so we're stuck with that if such is
+  * the case.
+  */
+-#if defined(LIBRESSL_VERSION_NUMBER) || \
+-    OPENSSL_VERSION_NUMBER < 0x10000000L || \
+-    defined(OPENSSL_NO_CMS)
++#if defined(OPENSSL_NO_CMS) || \
++    ( defined(LIBRESSL_VERSION_NUMBER) \
++    && (LIBRESSL_VERSION_NUMBER < 0x3010000fL) ) || \
++    OPENSSL_VERSION_NUMBER < 0x10000000L
+ #define USE_PKCS7
+ #endif
+ #ifndef USE_PKCS7
 -- 
-2.18.1
+2.20.1
