@@ -1,13 +1,13 @@
 From: Waiman Long <longman@redhat.com>
-Date: Sat, 21 Mar 2020 18:49:31 +0000
-Subject: [PATCH v7 1/2] KEYS: Don't write out to userspace while holding key semaphore
-Message-Id: <20200321184932.16579-2-longman@redhat.com>
+Date: Fri, 20 Mar 2020 19:19:02 +0000
+Subject: [PATCH v6 1/2] KEYS: Don't write out to userspace while holding key semaphore
+Message-Id: <20200320191903.19494-2-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200321184932.16579-1-longman@redhat.com>
-In-Reply-To: <20200321184932.16579-1-longman@redhat.com>
+References: <20200320191903.19494-1-longman@redhat.com>
+In-Reply-To: <20200320191903.19494-1-longman@redhat.com>
 To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>, "David S. Miller" <davem@davemloft.net>, Jakub Kicinski <kuba@kernel.org>
 Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Eric Biggers <ebiggers@google.com>, Chris von Recklinghausen <crecklin@redhat.com>, Waiman Long <longman@redhat.com>
 
@@ -154,15 +154,15 @@ Signed-off-by: Waiman Long <longman@redhat.com>
  include/keys/user-type.h                  |  3 +-
  include/linux/key-type.h                  |  2 +-
  net/dns_resolver/dns_key.c                |  2 +-
- net/rxrpc/key.c                           | 27 +++------
- security/keys/big_key.c                   | 11 ++--
- security/keys/encrypted-keys/encrypted.c  |  7 +--
- security/keys/keyctl.c                    | 73 ++++++++++++++++++-----
- security/keys/keyring.c                   |  6 +-
- security/keys/request_key_auth.c          |  7 +--
- security/keys/trusted-keys/trusted_tpm1.c | 14 +----
+ net/rxrpc/key.c                           | 27 ++++-------
+ security/keys/big_key.c                   | 11 ++---
+ security/keys/encrypted-keys/encrypted.c  |  7 ++-
+ security/keys/keyctl.c                    | 57 +++++++++++++++++++----
+ security/keys/keyring.c                   |  6 +--
+ security/keys/request_key_auth.c          |  7 ++-
+ security/keys/trusted-keys/trusted_tpm1.c | 14 +-----
  security/keys/user_defined.c              |  5 +-
- 12 files changed, 85 insertions(+), 74 deletions(-)
+ 12 files changed, 77 insertions(+), 66 deletions(-)
 
 diff --git a/include/keys/big_key-type.h b/include/keys/big_key-type.h
 index f6a7ba4dccd4..3fee04f81439 100644
@@ -358,7 +358,7 @@ index 60720f58cbe0..f6797ba44bf7 100644
  
  	return asciiblob_len;
 diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 9b898c969558..434ed9defd3a 100644
+index 9b898c969558..5a0794cb8815 100644
 --- a/security/keys/keyctl.c
 +++ b/security/keys/keyctl.c
 @@ -797,6 +797,21 @@ long keyctl_keyring_search(key_serial_t ringid,
@@ -383,102 +383,57 @@ index 9b898c969558..434ed9defd3a 100644
  /*
   * Read a key's payload.
   *
-@@ -812,26 +827,27 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
- 	struct key *key;
- 	key_ref_t key_ref;
- 	long ret;
-+	char *key_data;
- 
- 	/* find the key first */
- 	key_ref = lookup_user_key(keyid, 0, 0);
- 	if (IS_ERR(key_ref)) {
- 		ret = -ENOKEY;
--		goto error;
-+		goto out;
- 	}
- 
- 	key = key_ref_to_ptr(key_ref);
- 
- 	ret = key_read_state(key);
- 	if (ret < 0)
--		goto error2; /* Negatively instantiated */
-+		goto key_put_out; /* Negatively instantiated */
- 
- 	/* see if we can read it directly */
- 	ret = key_permission(key_ref, KEY_NEED_READ);
- 	if (ret = 0)
- 		goto can_read_key;
- 	if (ret != -EACCES)
--		goto error2;
-+		goto key_put_out;
- 
- 	/* we can't; see if it's searchable from this process's keyrings
- 	 * - we automatically take account of the fact that it may be
-@@ -839,26 +855,51 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
- 	 */
- 	if (!is_key_possessed(key_ref)) {
- 		ret = -EACCES;
--		goto error2;
-+		goto key_put_out;
- 	}
+@@ -844,16 +859,42 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
  
  	/* the key is probably readable - now try to read it */
  can_read_key:
 -	ret = -EOPNOTSUPP;
 -	if (key->type->read) {
 -		/* Read the data with the semaphore held (since we might sleep)
--		 * to protect against the key being updated or revoked.
--		 */
++	if (!key->type->read) {
++		ret = -EOPNOTSUPP;
++		goto error2;
++	}
++
++	if (!buffer || !buflen) {
++		/* Get the key length from the read method */
++		ret = __keyctl_read_key(key, NULL, 0);
++	} else {
++
++		/*
++		 * Read the data with the semaphore held (since we might sleep)
+ 		 * to protect against the key being updated or revoked.
++		 *
++		 * Allocating a temporary buffer to hold the keys before
++		 * transferring them to user buffer to avoid potential
++		 * deadlock involving page fault and mmap_sem.
++		 */
++		char *key_data = kmalloc(buflen, GFP_KERNEL);
++
++		if (!key_data) {
++			ret = -ENOMEM;
++			goto error2;
++		}
++		ret = __keyctl_read_key(key, key_data, buflen);
++
++		/*
++		 * Read methods will just return the required length
++		 * without any copying if the provided length isn't big
++		 * enough.
+ 		 */
 -		down_read(&key->sem);
 -		ret = key_validate(key);
 -		if (ret = 0)
 -			ret = key->type->read(key, buffer, buflen);
 -		up_read(&key->sem);
-+	if (!key->type->read) {
-+		ret = -EOPNOTSUPP;
-+		goto key_put_out;
++		if (ret > 0 && ret <= buflen) {
++			if (copy_to_user(buffer, key_data, ret))
++				ret = -EFAULT;
++		}
++		kzfree(key_data);
  	}
  
--error2:
-+	if (!buffer || !buflen) {
-+		/* Get the key length from the read method */
-+		ret = __keyctl_read_key(key, NULL, 0);
-+		goto key_put_out;
-+	}
-+
-+	/*
-+	 * Read the data with the semaphore held (since we might sleep)
-+	 * to protect against the key being updated or revoked.
-+	 *
-+	 * Allocating a temporary buffer to hold the keys before
-+	 * transferring them to user buffer to avoid potential
-+	 * deadlock involving page fault and mmap_sem.
-+	 */
-+	key_data = kmalloc(buflen, GFP_KERNEL);
-+
-+	if (!key_data) {
-+		ret = -ENOMEM;
-+		goto key_put_out;
-+	}
-+	ret = __keyctl_read_key(key, key_data, buflen);
-+
-+	/*
-+	 * Read methods will just return the required length without
-+	 * any copying if the provided length isn't large enough.
-+	 */
-+	if (ret > 0 && ret <= buflen) {
-+		if (copy_to_user(buffer, key_data, ret))
-+			ret = -EFAULT;
-+	}
-+	kzfree(key_data);
-+
-+key_put_out:
- 	key_put(key);
--error:
-+out:
- 	return ret;
- }
- 
+ error2:
 diff --git a/security/keys/keyring.c b/security/keys/keyring.c
 index febf36c6ddc5..5ca620d31cd3 100644
 --- a/security/keys/keyring.c
