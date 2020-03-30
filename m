@@ -1,51 +1,82 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 06 Mar 2020 19:52:47 +0000
-Subject: Re: [PATCH v7 3/6] security: keys: trusted: fix TPM2 authorizations
-Message-Id: <20200306195247.GA11362@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 30 Mar 2020 13:58:22 +0000
+Subject: Upcoming: Notifications, FS notifications and fsinfo()
+Message-Id: <1445647.1585576702@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <20200305022744.12492-1-James.Bottomley@HansenPartnership.com>
- <20200305022744.12492-4-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200305022744.12492-4-James.Bottomley@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, dray@redhat.com, kzak@redhat.com, mszeredi@redhat.com, swhiteho@redhat.com, jlayton@redhat.com, raven@themaw.net, andres@anarazel.de, christian.brauner@ubuntu.com, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, Mar 04, 2020 at 06:27:41PM -0800, James Bottomley wrote:
-> In TPM 1.2 an authorization was a 20 byte number.  The spec actually
-> recommended you to hash variable length passwords and use the sha1
-> hash as the authorization.  Because the spec doesn't require this
-> hashing, the current authorization for trusted keys is a 40 digit hex
-> number.  For TPM 2.0 the spec allows the passing in of variable length
-> passwords and passphrases directly, so we should allow that in trusted
-> keys for ease of use.  Update the 'blobauth' parameter to take this
-> into account, so we can now use plain text passwords for the keys.
->=20
-> so before
->=20
-> keyctl add trusted kmk "new 32 blobauth=F572d396fae9206628714fb2ce00f72e9=
-4f2258f"
->=20
-> after we will accept both the old hex sha1 form as well as a new
-> directly supplied password:
->=20
-> keyctl add trusted kmk "new 32 blobauth=3Dhello keyhandle=81000001"
->=20
-> Since a sha1 hex code must be exactly 40 bytes long and a direct
-> password must be 20 or less, we use the length as the discriminator
-> for which form is input.
->=20
-> Note this is both and enhancement and a potential bug fix.  The TPM
-> 2.0 spec requires us to strip leading zeros, meaning empyty
-> authorization is a zero length HMAC whereas we're currently passing in
-> 20 bytes of zeros.  A lot of TPMs simply accept this as OK, but the
-> Microsoft TPM emulator rejects it with TPM_RC_BAD_AUTH, so this patch
-> makes the Microsoft TPM emulator work with trusted keys.
->=20
-> Fixes: 0fe5480303a1 ("keys, trusted: seal/unseal with TPM 2.0 chips")
-> Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-
-/Jarkko
+CkhpIExpbnVzLAoKSSBoYXZlIHRocmVlIHNldHMgb2YgcGF0Y2hlcyBJJ2QgbGlrZSB0byBwdXNo
+IHlvdXIgd2F5LCBpZiB5b3UgKGFuZCBBbCkgYXJlCndpbGxpbmcgdG8gY29uc2lkZXIgdGhlbS4K
+CiAoMSkgR2VuZXJhbCBub3RpZmljYXRpb24gcXVldWUgcGx1cyBrZXkva2V5cmluZyBub3RpZmlj
+YXRpb25zLgoKICAgICBUaGlzIGFkZHMgdGhlIGNvcmUgb2YgdGhlIG5vdGlmaWNhdGlvbiBxdWV1
+ZSBidWlsdCBvbiBwaXBlcywgYW5kIGFkZHMKICAgICB0aGUgYWJpbGl0eSB0byB3YXRjaCBmb3Ig
+Y2hhbmdlcyB0byBrZXlzLgoKICgyKSBNb3VudCBhbmQgc3VwZXJibG9jayBub3RpZmljYXRpb25z
+LgoKICAgICBUaGlzIGJ1aWxkcyBvbiAoMSkgdG8gcHJvdmlkZSBub3RpZmljYXRpb25zIG9mIG1v
+dW50IHRvcG9sb2d5IGNoYW5nZXMKICAgICBhbmQgaW1wbGVtZW50cyBhIGZyYW1ld29yayBmb3Ig
+c3VwZXJibG9jayBldmVudHMgKGNvbmZpZ3VyYXRpb24KICAgICBjaGFuZ2VzLCBJL08gZXJyb3Jz
+LCBxdW90YS9zcGFjZSBvdmVycnVucyBhbmQgbmV0d29yayBzdGF0dXMgY2hhbmdlcykuCgogKDMp
+IEZpbGVzeXN0ZW0gaW5mb3JtYXRpb24gcmV0cmlldmFsLgoKICAgICBUaGlzIHByb3ZpZGVzIGFu
+IGV4dGVuc2libGUgd2F5IHRvIHJldHJpZXZlIGluZm9ybWF0aW9uYWwgYXR0cmlidXRlcwogICAg
+IGFib3V0IG1vdW50IG9iamVjdHMgYW5kIGZpbGVzeXN0ZW1zLiAgVGhpcyBpbmNsdWRlcyBwcm92
+aWRpbmcKICAgICBpbmZvcm1hdGlvbiBpbnRlbmRlZCB0byBtYWtlIHJlY292ZXJpbmcgZnJvbSBh
+IG5vdGlmaWNhdGlvbiBxdWV1ZQogICAgIG92ZXJydW4gbXVjaCBlYXNpZXIuCgpXZSBuZWVkICgx
+KSBmb3IgR25vbWUgdG8gZWZmaWNpZW50bHkgd2F0Y2ggZm9yIGNoYW5nZXMgaW4ga2VyYmVyb3MK
+a2V5cmluZ3MuICBEZWJhcnNoaSBSYXkgaGFzIHBhdGNoZXMgcmVhZHkgdG8gZ28gZm9yIGdub21l
+LW9ubGluZS1hY2NvdW50cwpzbyB0aGF0IGl0IGNhbiBtYWtlIHVzZSBvZiB0aGUgZmFjaWxpdHku
+CgpTZXRzICgyKSBhbmQgKDMpIGNhbiBtYWtlIGxpYm1vdW50IG1vcmUgZWZmaWNpZW50LiAgS2Fy
+ZWwgWmFrIGlzIHdvcmtpbmcgb24KbWFraW5nIHVzZSBvZiB0aGlzIHRvIGF2b2lkIHJlYWRpbmcg
+L3Byb2MvbW91bnRpbmZvLgoKV2UgbmVlZCBzb21ldGhpbmcgdG8gbWFrZSBzeXN0ZW1kJ3Mgd2F0
+Y2hpbmcgb2YgdGhlIG1vdW50IHRvcG9sb2d5IG1vcmUKZWZmaWNpZW50LCBhbmQgKDIpIGFuZCAo
+MykgY2FuIGhlbHAgd2l0aCB0aGlzIGJ5IG1ha2luZyBpdCBmYXN0ZXIgdG8gbmFycm93CmRvd24g
+d2hhdCBjaGFuZ2VkLiAgSSB0aGluayBLYXJlbCBoYXMgdGhpcyBpbiBoaXMgc2lnaHRzLCBidXQg
+aGFzbid0IHlldAptYW5hZ2VkIHRvIHdvcmsgb24gaXQuCgpTZXQgKDIpIHNob3VsZCBiZSBhYmxl
+IHRvIG1ha2UgaXQgZWFzaWVyIHRvIHdhdGNoIGZvciBtb3VudCBvcHRpb25zIGluc2lkZQphIGNv
+bnRhaW5lciwgYW5kIHNldCAoMykgc2hvdWxkIG1ha2UgaXQgZWFzaWVyIHRvIGV4YW1pbmUgdGhl
+IG1vdW50cyBpbnNpZGUKYW5vdGhlciBtb3VudCBuYW1lc3BhY2UgaW5zaWRlIGEgY29udGFpbmVy
+IGluIGEgd2F5IHRoYXQgY2FuJ3QgYmUgZG9uZSB3aXRoCi9wcm9jL21vdW50cy4gIFRoaXMgaXMg
+cmVxdWVzdGVkIGJ5IENocmlzdGlhbiBCcmF1bmVyLgoKSmVmZiBMYXl0b24gaGFzIGEgdGVudGF0
+aXZlIGFkZGl0aW9uIHRvICgzKSB0byBleHBvc2UgZXJyb3Igc3RhdGUgdG8KdXNlcnNwYWNlLCBh
+bmQgQW5kcmVzIEZyZXVuZCB3b3VsZCBsaWtlIHRoaXMgZm9yIFBvc3RncmVzLgoKU2V0ICgzKSBm
+dXJ0aGVyIGFsbG93cyB0aGUgaW5mb3JtYXRpb24gcmV0dXJuZWQgYnkgc3VjaCBhcyBzdGF0eCgp
+IGFuZAppb2N0bChGU19JT0NfR0VURkxBR1MpIHRvIGJlIHF1YWxpZmllZCBieSBpbmRpY2F0aW5n
+IHdoaWNoIGJpdHMgYXJlL2FyZW4ndApzdXBwb3J0ZWQuCgpGdXJ0aGVyLCBmb3IgKDMpLCBJIGFs
+c28gYWxsb3cgZmlsZXN5c3RlbS1zcGVjaWZpYyBvdmVycmlkZXMvZXh0ZW5zaW9ucyB0bwpmc2lu
+Zm8oKSBhbmQgaGF2ZSBhIHVzZSBmb3IgaXQgdG8gQUZTIHRvIGV4cG9zZSBpbmZvcm1hdGlvbiBh
+Ym91dCBzZXJ2ZXIKcHJlZmVyZW5jZSBmb3IgYSBwYXJ0aWN1bGFyIHZvbHVtZSAoc29tZXRoaW5n
+IHRoYXQgaXMgbmVjZXNzYXJ5IGZvcgppbXBsZW1lbnRpbmcgdGhlIHRvb2xzZXQpLiAgSSd2ZSBw
+cm92aWRlZCBleGFtcGxlIGNvZGUgdGhhdCBkb2VzIHNpbWlsYXIKZm9yIE5GUyBhbmQgc29tZSB0
+aGF0IGV4cG9zZXMgc3VwZXJibG9jayBpbmZvIGZyb20gRXh0NC4gIEF0IFZhdWx0LCBTdGV2ZQpl
+eHByZXNzZWQgYW4gaW50ZXJlc3QgaW4gdGhpcyBmb3IgQ0lGUyBhbmQgVGVkIFRzJ28gZXhwcmVz
+c2VkIGEgcG9zc2libGUKaW50ZXJlc3QgZm9yIEV4dDQuCgpOb3RlczoKCiAoKikgVGhlc2UgcGF0
+Y2hlcyB3aWxsIGNvbmZsaWN0IHdpdGggYXBwYXJlbnRseSB1cGNvbWluZyByZWZhY3RvcmluZyBv
+ZgogICAgIHRoZSBzZWN1cml0eSBjb3JlLCBidXQgdGhlIGZpeHVwIGRvZXNuJ3QgbG9vayB0b28g
+YmFkOgoKCWh0dHBzOi8vbG9yZS5rZXJuZWwub3JnL2xpbnV4LW5leHQvMjAyMDAzMzAxMzA2MzYu
+MDg0NmUzOTRAY2FuYi5hdXVnLm9yZy5hdS9ULyN1CgogKCopIE1pa2zDs3MgU3plcmVkaSB3b3Vs
+ZCBtdWNoIHByZWZlciB0byBpbXBsZW1lbnQgZnNpbmZvKCkgYXMgYSBtYWdpYwogICAgIGZpbGVz
+eXN0ZW0gbW91bnRlZCBvbiAvcHJvYy9zZWxmL2ZzaW5mby8gd2hlcmVieSB5b3VyIG9wZW4gZmRz
+IGFwcGVhcgogICAgIGFzIGRpcmVjdG9yaWVzIHVuZGVyIHRoZXJlLCBlYWNoIHdpdGggYSBzZXQg
+b2YgYXR0cmlidXRlIGZpbGVzCiAgICAgY29ycmVzcG9uZGluZyB0byB0aGUgYXR0cmlidXRlcyB0
+aGF0IGZzaW5mbygpIHdvdWxkIG90aGVyd2lzZSBwcm92aWRlLgogICAgIFRvIGV4YW1pbmUgc29t
+ZXRoaW5nIGJ5IGZpbGVuYW1lLCB5b3UnZCBoYXZlIHRvIG9wZW4gaXQgT19QQVRIIGFuZAogICAg
+IHRoZW4gcmVhZCB0aGUgaW5kaXZpZHVhbCBhdHRyaWJ1dGUgZmlsZXMgaW4gdGhlIGNvcnJlc3Bv
+bmRpbmcgcGVyLWZkCiAgICAgZGlyZWN0b3J5LiAgQSByZWFkZmlsZSgpIHN5c3RlbSBjYWxsIGhh
+cyBiZWVuIG1vb3RlZCB0byBlbGlkZSB0aGUKICAgICB7b3BlbixyZWFkLGNsb3NlfSBzZXF1ZW5j
+ZSB0byBtYWtlIGl0IG1vcmUgZWZmaWNpZW50LgoKICgqKSBKYW1lcyBCb3R0b21sZXkgd291bGQg
+bGlrZSB0byBkZXByZWNhdGUgZnNvcGVuKCksIGZzcGljaygpLCBmc2NvbmZpZygpCiAgICAgYW5k
+IGZzbW91bnQoKSBpbiBmYXZvdXIgb2YgYSBtb3JlIGdlbmVyaWMgY29uZmlnZnMgd2l0aCBkZWRp
+Y2F0ZWQKICAgICBvcGVuLCBzZXQtY29uZmlnIGFuZCBhY3Rpb24gc3lzY2FsbHMsIHdpdGggYW4g
+YWRkaXRpb25hbCBnZXQtY29uZmlnCiAgICAgc3lzY2FsbCB0aGF0IHdvdWxkIGJlIHVzZWQgaW5z
+dGVhZCBvZiBmc2luZm8oKSAtIHRob3VnaCwgYXMgSQogICAgIHVuZGVyc3RhbmQgaXQsIHlvdSdk
+IGhhdmUgdG8gY3JlYXRlIGEgY29uZmlnIChmc3BpY2stZXF1aXZhbGVudCkKICAgICBiZWZvcmUg
+eW91IGNvdWxkIHVzZSBnZXQtY29uZmlnLgoKICgqKSBJIGRvbid0IHRoaW5rIEFsIGhhcyBwYXJ0
+aWN1bGFybHkgbG9va2VkIGF0IGZzaW5mbygpIG9yIHRoZSBmcwogICAgIG5vdGlmaWNhdGlvbnMg
+cGF0Y2hlcyB5ZXQuCgogKCopIEknbSBub3Qgc3VyZSB3aGF0ICp5b3VyKiBvcGluaW9uIG9mIGZz
+aW5mbygpIGlzIHlldC4gIElmIHlvdSBkb24ndAogICAgIGRpc2xpa2UgaXQgdG9vLCB1bSwgZnJh
+Z3JhbnRseSwgd291bGQgeW91IGJlIHdpbGxpbmcgdG8gZW50ZXJ0YWluIHBhcnQKICAgICBvZiBp
+dCBmb3Igbm93IGFuZCBwcmVmZXIgdGhlIHJlc3QgdG8gc3RldyBhIGJpdCBsb25nZXI/ICBJIGNh
+biBkcm9wCiAgICAgc29tZSBvZiB0aGUgcGllY2VzLgoKQW55d2F5LCBJJ20gZ29pbmcgdG8gZm9y
+bXVsYXRlIGEgcHVsbCByZXF1ZXN0IGZvciBlYWNoIG9mIHRoZW0uCgpUaGFua3MsCkRhdmlkCg==
