@@ -1,183 +1,134 @@
-From: Waiman Long <longman@redhat.com>
-Date: Sat, 21 Mar 2020 01:51:46 +0000
-Subject: Re: [PATCH v6 2/2] KEYS: Avoid false positive ENOMEM error on key read
-Message-Id: <208854de-824e-5926-e02d-1f5678af3548@redhat.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 30 Mar 2020 14:36:54 +0000
+Subject: [GIT PULL] Mount and superblock notifications
+Message-Id: <1449543.1585579014@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200320191903.19494-1-longman@redhat.com>
- <20200320191903.19494-3-longman@redhat.com>
- <20200320221918.GA5284@linux.intel.com>
-In-Reply-To: <20200320221918.GA5284@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Mimi Zohar <zohar@linux.ibm.com>, "David S. Miller" <davem@davemloft.net>, Jakub Kicinski <kuba@kernel.org>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-integrity@vger.kernel.org, netdev@vger.kernel.org, linux-afs@lists.infradead.org, Sumit Garg <sumit.garg@linaro.org>, Jerry Snitselaar <jsnitsel@redhat.com>, Roberto Sassu <roberto.sassu@huawei.com>, Eric Biggers <ebiggers@google.com>, Chris von Recklinghausen <crecklin@redhat.com>
+References: <1445647.1585576702@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, dray@redhat.com, kzak@redhat.com, mszeredi@redhat.com, swhiteho@redhat.com, jlayton@redhat.com, raven@themaw.net, andres@anarazel.de, christian.brauner@ubuntu.com, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On 3/20/20 6:19 PM, Jarkko Sakkinen wrote:
-> On Fri, Mar 20, 2020 at 03:19:03PM -0400, Waiman Long wrote:
->> By allocating a kernel buffer with a user-supplied buffer length, it
->> is possible that a false positive ENOMEM error may be returned because
->> the user-supplied length is just too large even if the system do have
->> enough memory to hold the actual key data.
->>
->> Moreover, if the buffer length is larger than the maximum amount of
->> memory that can be returned by kmalloc() (2^(MAX_ORDER-1) number of
->> pages), a warning message will also be printed.
->>
->> To reduce this possibility, we set a threshold (page size) over which we
->> do check the actual key length first before allocating a buffer of the
->> right size to hold it. The threshold is arbitrary, it is just used to
->> trigger a buffer length check. It does not limit the actual key length
->> as long as there is enough memory to satisfy the memory request.
->>
->> To further avoid large buffer allocation failure due to page
->> fragmentation, kvmalloc() is used to allocate the buffer so that vmapped
->> pages can be used when there is not a large enough contiguous set of
->> pages available for allocation.
->>
->> Signed-off-by: Waiman Long <longman@redhat.com>
->> ---
->>  security/keys/internal.h | 12 ++++++++++++
->>  security/keys/keyctl.c   | 39 +++++++++++++++++++++++++++++++--------
->>  2 files changed, 43 insertions(+), 8 deletions(-)
->>
->> diff --git a/security/keys/internal.h b/security/keys/internal.h
->> index ba3e2da14cef..6d0ca48ae9a5 100644
->> --- a/security/keys/internal.h
->> +++ b/security/keys/internal.h
->> @@ -16,6 +16,8 @@
->>  #include <linux/keyctl.h>
->>  #include <linux/refcount.h>
->>  #include <linux/compat.h>
->> +#include <linux/mm.h>
->> +#include <linux/vmalloc.h>
->>  
->>  struct iovec;
->>  
->> @@ -349,4 +351,14 @@ static inline void key_check(const struct key *key)
->>  
->>  #endif
->>  
->> +/*
->> + * Helper function to clear and free a kvmalloc'ed memory object.
->> + */
->> +static inline void __kvzfree(const void *addr, size_t len)
->> +{
->> +	if (addr) {
->> +		memset((void *)addr, 0, len);
->> +		kvfree(addr);
->> +	}
->> +}
->>  #endif /* _INTERNAL_H */
->> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
->> index 5a0794cb8815..ded69108db0d 100644
->> --- a/security/keys/keyctl.c
->> +++ b/security/keys/keyctl.c
->> @@ -339,7 +339,7 @@ long keyctl_update_key(key_serial_t id,
->>  	payload = NULL;
->>  	if (plen) {
->>  		ret = -ENOMEM;
->> -		payload = kmalloc(plen, GFP_KERNEL);
->> +		payload = kvmalloc(plen, GFP_KERNEL);
->>  		if (!payload)
->>  			goto error;
->>  
->> @@ -360,7 +360,7 @@ long keyctl_update_key(key_serial_t id,
->>  
->>  	key_ref_put(key_ref);
->>  error2:
->> -	kzfree(payload);
->> +	__kvzfree(payload, plen);
->>  error:
->>  	return ret;
->>  }
->> @@ -877,13 +877,23 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
->>  		 * transferring them to user buffer to avoid potential
->>  		 * deadlock involving page fault and mmap_sem.
->>  		 */
->> -		char *key_data = kmalloc(buflen, GFP_KERNEL);
->> +		char *key_data = NULL;
->> +		size_t key_data_len = buflen;
->>  
->> -		if (!key_data) {
->> -			ret = -ENOMEM;
->> -			goto error2;
->> +		/*
->> +		 * When the user-supplied key length is larger than
->> +		 * PAGE_SIZE, we get the actual key length first before
->> +		 * allocating a right-sized key data buffer.
->> +		 */
->> +		if (buflen <= PAGE_SIZE) {
->> +allocbuf:
-> Would move this label before condition instead of jumping inside the
-> nested block since it will always evaluate correctly.
+Hi Linus,
 
-Yes, you are right. That was not the case for initial version and I
-didn't recheck it.
+If you could consider pulling this - or would you prefer it to go through
+Al?  It adds a couple of VFS-related event sources for the general
+notification mechanism:
+
+ (1) Mount topology events, such as mounting, unmounting, mount expiry,
+     mount reconfiguration.
+
+ (2) Superblock events, such as R/W<->R/O changes, quota overrun and I/O
+     errors (not complete yet).
 
 
-> To this version haven't really gotten why you don't use a legit loop
-> construct but instead jump from one random nested location to another
-> random nested location? This construct will be somewhat nasty to
-> maintain. The construct is weird enough that you should have rather
-> good explanation in the long description why such a mess.
+WHY
+===
 
-I did that to avoid deep nesting. I can rewrite it to remove the the
-goto statement.
+ (1) Mount notifications.
 
+     This one is wanted to avoid repeated trawling of /proc/mounts or
+     similar to work out changes to the mount object attributes and mount
+     topology.  I'm told that the proc file holding the namespace_sem is a
+     point of contention, especially as the process of generating the text
+     descriptions of the mounts/superblocks can be quite involved.
 
->
->> +			key_data = kvmalloc(key_data_len, GFP_KERNEL);
->> +			if (!key_data) {
->> +				ret = -ENOMEM;
->> +				goto error2;
->> +			}
->>  		}
->> -		ret = __keyctl_read_key(key, key_data, buflen);
->> +		ret = __keyctl_read_key(key, key_data, key_data_len);
->>  
->>  		/*
->>  		 * Read methods will just return the required length
->> @@ -891,10 +901,23 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
->>  		 * enough.
->>  		 */
->>  		if (ret > 0 && ret <= buflen) {
->> +			/*
->> +			 * The key may change (unlikely) in between 2
->> +			 * consecutive __keyctl_read_key() calls. We will
->> +			 * need to allocate a larger buffer and redo the key
->> +			 * read when key_data_len < ret <= buflen.
->> +			 */
->> +			if (!key_data || unlikely(ret > key_data_len)) {
->> +				if (unlikely(key_data))
->> +					__kvzfree(key_data, key_data_len);
->> +				key_data_len = ret;
->> +				goto allocbuf;
->> +			}
->> +
->>  			if (copy_to_user(buffer, key_data, ret))
->>  				ret = -EFAULT;
->>  		}
->> -		kzfree(key_data);
->> +		__kvzfree(key_data, key_data_len);
->>  	}
->>  
->>  error2:
->> -- 
->> 2.18.1
->>
-> Doesn't this go to infinite loop if actual key size is at least
-> PAGE_SIZE + 1? Where is the guarantee that this cannot happen?
+     Whilst you can use poll() on /proc/mounts, it doesn't give you any
+     clues as to what changed.  The notification generated here directly
+     indicates the mounts involved in any particular event and gives an
+     idea of what the change was.
 
-I think you may have the wrong impression that it caps the buffer length
-to PAGE_SIZE. That is not true. key_data_len can be greater than
-PAGE_SIZE. I run tests that include one that creates a big key of almost
-1Mb. So for buflen <= PAGE_SIZE, key_data_len = buflen. For buflen >
-PAGE_SIZE, key_data_len = the actual key length which can be >
-PAGE_SIZE. This patch just tries to avoid allocating arbitrary large
-buffer with a length much larger than the actual key length.
+     This is combined with a new fsinfo() system call that allows, amongst
+     other things, the ability to retrieve in one go an { id,
+     change_counter } tuple from all the children of a specified mount,
+     allowing buffer overruns to be dealt with quickly.
 
-I will try to make the code easier to read.
+     This can be used by systemd to improve efficiency:
 
-Cheers,
-Longman
+	https://lore.kernel.org/linux-fsdevel/20200227151421.3u74ijhqt6ekbiss@ws.net.home/
+
+     And it's not just Red Hat that's potentially interested in this:
+
+	https://lore.kernel.org/linux-fsdevel/293c9bd3-f530-d75e-c353-ddeabac27cf6@6wind.com/
+
+     Also, this can be used to improve management of containers by allowing
+     watches to be set in foreign mount namespaces, such as are in a
+     container.
+
+ (2) Superblock notifications.
+
+     This one is provided to allow systemd or the desktop to more easily
+     detect events such as I/O errors and EDQUOT/ENOSPC.  This would be of
+     interest to Postgres:
+
+	https://lore.kernel.org/linux-fsdevel/20200211005626.7yqjf5rbs3vbwagd@alap3.anarazel.de/
+
+     But could also be used to indicate to systemd when a superblock has
+     had its configuration changed.
+
+Thanks,
+David
+---
+The following changes since commit 694435dbde3d1da79aafaf4cd680802f9eb229b7:
+
+  smack: Implement the watch_key and post_notification hooks (2020-03-19 17:31:09 +0000)
+
+are available in the Git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/notifications-fs-20200330
+
+for you to fetch changes up to 8dbf1aa122da5bbb4ede0f363a8a18dfc723be33:
+
+  watch_queue: sample: Display superblock notifications (2020-03-19 17:31:09 +0000)
+
+----------------------------------------------------------------
+Filesystem notifications
+
+----------------------------------------------------------------
+David Howells (6):
+      watch_queue: Add security hooks to rule on setting mount and sb watches
+      watch_queue: Implement mount topology and attribute change notifications
+      watch_queue: sample: Display mount tree change notifications
+      watch_queue: Introduce a non-repeating system-unique superblock ID
+      watch_queue: Add superblock notifications
+      watch_queue: sample: Display superblock notifications
+
+ Documentation/watch_queue.rst               |  24 ++-
+ arch/alpha/kernel/syscalls/syscall.tbl      |   2 +
+ arch/arm/tools/syscall.tbl                  |   2 +
+ arch/arm64/include/asm/unistd.h             |   2 +-
+ arch/arm64/include/asm/unistd32.h           |   4 +
+ arch/ia64/kernel/syscalls/syscall.tbl       |   2 +
+ arch/m68k/kernel/syscalls/syscall.tbl       |   2 +
+ arch/microblaze/kernel/syscalls/syscall.tbl |   2 +
+ arch/mips/kernel/syscalls/syscall_n32.tbl   |   2 +
+ arch/mips/kernel/syscalls/syscall_n64.tbl   |   2 +
+ arch/mips/kernel/syscalls/syscall_o32.tbl   |   2 +
+ arch/parisc/kernel/syscalls/syscall.tbl     |   2 +
+ arch/powerpc/kernel/syscalls/syscall.tbl    |   2 +
+ arch/s390/kernel/syscalls/syscall.tbl       |   2 +
+ arch/sh/kernel/syscalls/syscall.tbl         |   2 +
+ arch/sparc/kernel/syscalls/syscall.tbl      |   2 +
+ arch/x86/entry/syscalls/syscall_32.tbl      |   2 +
+ arch/x86/entry/syscalls/syscall_64.tbl      |   2 +
+ arch/xtensa/kernel/syscalls/syscall.tbl     |   2 +
+ fs/Kconfig                                  |  21 +++
+ fs/Makefile                                 |   1 +
+ fs/internal.h                               |   1 +
+ fs/mount.h                                  |  21 +++
+ fs/mount_notify.c                           | 228 ++++++++++++++++++++++++++++
+ fs/namespace.c                              |  22 +++
+ fs/super.c                                  | 205 +++++++++++++++++++++++++
+ include/linux/dcache.h                      |   1 +
+ include/linux/fs.h                          |  62 ++++++++
+ include/linux/lsm_hooks.h                   |  24 +++
+ include/linux/security.h                    |  16 ++
+ include/linux/syscalls.h                    |   4 +
+ include/uapi/asm-generic/unistd.h           |   6 +-
+ include/uapi/linux/watch_queue.h            |  65 +++++++-
+ kernel/sys_ni.c                             |   6 +
+ samples/watch_queue/watch_test.c            |  81 +++++++++-
+ security/security.c                         |  14 ++
+ 36 files changed, 835 insertions(+), 5 deletions(-)
+ create mode 100644 fs/mount_notify.c
