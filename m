@@ -1,193 +1,340 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 10 Mar 2020 05:16:06 +0000
-Subject: [PATCH v8 7/8] security: keys: trusted: add ability to specify arbitrary policy
-Message-Id: <20200310051607.30334-8-James.Bottomley@HansenPartnership.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 30 Mar 2020 14:43:19 +0000
+Subject: [GIT PULL] fsinfo: Filesystem information query
+Message-Id: <1450012.1585579399@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200310051607.30334-1-James.Bottomley@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org
+References: <1445647.1585576702@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, dray@redhat.com, kzak@redhat.com, mszeredi@redhat.com, swhiteho@redhat.com, jlayton@redhat.com, raven@themaw.net, andres@anarazel.de, christian.brauner@ubuntu.com, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-This patch adds a policy= argument to key creation.  The policy is the
-standard tss policymaker format and each separate policy line must
-have a newline after it.
+Hi Linus,
 
-Thus to construct a policy requiring authorized value and pcr 16
-locking using a sha256 hash, the policy (policy.txt) file would be two
-lines:
+If you could consider pulling this - or would you prefer it to go through
+Al?  It adds a system call, fsinfo(), that allows information about the
+VFS, mount topology, superblock and files to be retrieved.
 
-0000017F00000001000B03000001303095B49BE85E381E5B20E557E46363EF55B0F43B132C2D8E3DE9AC436656F2
-0000016b
+This based on top of the mount and superblock notifications patchset and
+allows event counters implemented in the latter to be retrieved to allow
+overruns to be efficiently managed.
 
-This can be inserted into the key with
+I've excluded the Ext4 and NFS sample code from this pull request that I've
+previously included in my posted patchsets.
 
-keyctl add trusted kmk "new 32 policy=`cat policy.txt` keyhandle=0x81000001 hash=sha256" @u
 
-Note that although a few policies work like this, most require special
-handling which must be added to the kernel policy construction
-routine.
+=======
+THE WHY
+=======
 
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Why do we want this?
+
+Using /proc/mounts (or similar) has problems:
+
+ (1) Reading from it holds a global lock (namespace_sem) that prevents
+     mounting and unmounting.  Lots of data is encoded and mangled into
+     text whilst the lock is held, including superblock option strings and
+     mount point paths.  This causes performance problems when there are a
+     lot of mount objects in a system.
+
+ (2) Even though namespace_sem is held during a read, reading the whole
+     file isn't necessarily atomic with respect to mount-type operations.
+     If a read isn't satisfied in one go, then it may return to userspace
+     briefly and then continue reading some way into the file.  But changes
+     can occur in the interval that may then go unseen.
+
+ (3) Determining what has changed means parsing and comparing consecutive
+     outputs of /proc/mounts.
+
+ (4) Querying a specific mount or superblock means searching through
+     /proc/mounts and searching by path or mount ID - but we might have an
+     fd we want to query.
+
+ (5) Mount topology is not explicit.  One must derive it manually by
+     comparing entries.
+
+ (6) Whilst you can poll() it for events, it only tells you that something
+     changed in the namespace, not what or whether you can even see the
+     change.
+
+To fix the notification issues, the preceding notifications patchset added
+mount watch notifications whereby you can watch for notifications in a
+specific mount subtree.  The notification messages include the ID(s) of the
+affected mounts.
+
+To support notifications, however, we need to be able to handle overruns in
+the notification queue.  I added a number of event counters to struct
+super_block and struct mount to allow you to pin down the changes, but
+there needs to be a way to retrieve them.  Exposing them through /proc
+would require adding yet another /proc/mounts-type file.  We could add
+per-mount directories full of attributes in sysfs, but that has issues also
+(see below).
+
+Adding an extensible system call interface for retrieving filesystem
+information also allows other things to be exposed:
+
+ (1) Jeff Layton's error handling changes need a way to allow error event
+     information to be retrieved.
+
+ (2) Bits in masks returned by things like statx() and FS_IOC_GETFLAGS are
+     actually 3-state { Set, Unset, Not supported }.  It could be useful to
+     provide a way to expose information like this[*].
+
+ (3) Limits of the numerical metadata values in a filesystem[*].
+
+ (4) Filesystem capability information[*].  Filesystems don't all have the
+     same capabilities, and even different instances may have different
+     capabilities, particularly with network filesystems where the set of
+     may be server-dependent.  Capabilities might even vary at file
+     granularity - though possibly such information should be conveyed
+     through statx() instead.
+
+ (5) ID mapping/shifting tables in use for a superblock.
+
+ (6) Filesystem-specific information.  I need something for AFS so that I
+     can do pioctl()-emulation, thereby allowing me to implement certain of
+     the AFS command line utilities that query state of a particular file.
+     This could also have application for other filesystems, such as NFS,
+     CIFS and ext4.
+
+ [*] In a lot of cases these are probably fixed and can be memcpy'd from
+     static data.
+
+There's a further consideration: I want to make it possible to have
+fsconfig(fd, FSCONFIG_CMD_CREATE) be intercepted by a container manager
+such that the manager can supervise a mount attempted inside the container.
+The manager would be given an fd pointing to the fs_context struct and
+would then need some way to query it (fsinfo()) and modify it (fsconfig()).
+This could also be used to arbitrate user-requested mounts when containers
+are not in play.
+
+
+================
+DESIGN DECISIONS
+================
+
+ (1) Information is partitioned into sets of attributes.
+
+ (2) Attribute IDs are integers as they're fast to compare.
+
+ (3) Attribute values are typed (struct, list of structs, string, opaque
+     blob).  They type is fixed for a particular attribute.
+
+ (4) For structure types, the length is also a version.  New fields can be
+     tacked onto the end.
+
+ (5) When copying a versioned struct to userspace, the core handles a
+     version mismatch by truncating or zero-padding the data as necessary.
+     None of this is seen by the filesystem.
+
+ (6) The core handles all the buffering and buffer resizing.
+
+ (7) The filesystem never gets any access to the userspace parameter buffer
+     or result buffer.
+
+ (8) "Meta" attributes can describe other attributes.
+
+
+========
+OVERVIEW
+========
+
+fsinfo() is a system call that allows information about the filesystem at a
+particular path point to be queried as a set of attributes.
+
+Attribute values are of four basic types:
+
+ (1) Structure with version-dependent length (the length is the version).
+
+ (2) Variable-length string.
+
+ (3) List of structures (all the same length).
+
+ (4) Opaque blob.
+
+Attributes can have multiple values either as a sequence of values or a
+sequence-of-sequences of values and all the values of a particular
+attribute must be of the same type.  Values can be up to INT_MAX size,
+subject to memory availability.
+
+Note that the values of an attribute *are* allowed to vary between dentries
+within a single superblock, depending on the specific dentry that you're
+looking at, but the values still have to be of the type for that attribute.
+
+I've tried to make the interface as light as possible, so integer attribute
+ID rather than string and the core does all the buffer allocation and
+expansion and all the extensibility support work rather than leaving that
+to the filesystems.  This means that userspace pointers are not exposed to
+the filesystem.
+
+
+fsinfo() allows a variety of information to be retrieved about a filesystem
+and the mount topology:
+
+ (1) General superblock attributes:
+
+     - Filesystem identifiers (UUID, volume label, device numbers, ...)
+     - The limits on a filesystem's capabilities
+     - Information on supported statx fields and attributes and IOC flags.
+     - A variety single-bit flags indicating supported capabilities.
+     - Timestamp resolution and range.
+     - The amount of space/free space in a filesystem (as statfs()).
+     - Superblock notification counter.
+
+ (2) Filesystem-specific superblock attributes:
+
+     - Superblock-level timestamps.
+     - Cell name, workgroup or other netfs grouping concept.
+     - Server names and addresses.
+
+ (3) VFS information:
+
+     - Mount topology information.
+     - Mount attributes.
+     - Mount notification counter.
+     - Mount point path.
+
+ (4) Information about what the fsinfo() syscall itself supports, including
+     the type and struct size of attributes.
+
+The system is extensible:
+
+ (1) New attributes can be added.  There is no requirement that a
+     filesystem implement every attribute.  A helper function is provided
+     to scan a list of attributes and a filesystem can have multiple such
+     lists.
+
+ (2) Version length-dependent structure attributes can be made larger and
+     have additional information tacked on the end, provided it keeps the
+     layout of the existing fields.  If an older process asks for a shorter
+     structure, it will only be given the bits it asks for.  If a newer
+     process asks for a longer structure on an older kernel, the extra
+     space will be set to 0.  In all cases, the size of the data actually
+     available is returned.
+
+     In essence, the size of a structure is that structure's version: a
+     smaller size is an earlier version and a later version includes
+     everything that the earlier version did.
+
+ (3) New single-bit capability flags can be added.  This is a structure-typed
+     attribute and, as such, (2) applies.  Any bits you wanted but the kernel
+     doesn't support are automatically set to 0.
+
+fsinfo() may be called like the following, for example:
+
+	struct fsinfo_params params = {
+		.at_flags	= AT_SYMLINK_NOFOLLOW,
+		.flags		= FSINFO_FLAGS_QUERY_PATH,
+		.request	= FSINFO_ATTR_AFS_SERVER_ADDRESSES,
+		.Nth		= 2,
+	};
+	struct fsinfo_server_address address;
+	len = fsinfo(AT_FDCWD, "/afs/grand.central.org/doc", &params,
+		     &address, sizeof(address));
+
+The above example would query an AFS filesystem to retrieve the address
+list for the 3rd server, and:
+
+	struct fsinfo_params params = {
+		.at_flags	= AT_SYMLINK_NOFOLLOW,
+		.flags		= FSINFO_FLAGS_QUERY_PATH,
+		.request	= FSINFO_ATTR_NFS_SERVER_NAME;
+	};
+	char server_name[256];
+	len = fsinfo(AT_FDCWD, "/home/dhowells/", &params,
+		     &server_name, sizeof(server_name));
+
+would retrieve the name of the NFS server as a string.
+
+In future, I want to make fsinfo() capable of querying a context created by
+fsopen() or fspick(), e.g.:
+
+	fd = fsopen("ext4", 0);
+	struct fsinfo_params params = {
+		.flags		= FSINFO_FLAGS_QUERY_FSCONTEXT,
+		.request	= FSINFO_ATTR_CONFIGURATION;
+	};
+	char buffer[65536];
+	fsinfo(fd, NULL, &params, &buffer, sizeof(buffer));
+
+even if that context doesn't currently have a superblock attached.
+
+Thanks,
+David
 ---
- Documentation/security/keys/trusted-encrypted.rst | 16 +++++++
- security/keys/trusted-keys/tpm2-policy.c          | 53 +++++++++++++++++++++++
- security/keys/trusted-keys/tpm2-policy.h          |  1 +
- security/keys/trusted-keys/trusted_tpm1.c         | 15 +++++++
- 4 files changed, 85 insertions(+)
+The following changes since commit 8dbf1aa122da5bbb4ede0f363a8a18dfc723be33:
 
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index 053344c4df5b..b68d3eb73f00 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -76,6 +76,9 @@ Usage::
-        policyhandle= handle to an authorization policy session that defines the
-                      same policy and with the same hash algorithm as was used to
-                      seal the key.
-+       policy=       specify an arbitrary set of policies.  These must
-+                     be in policymaker format with each separate
-+                     policy line newline terminated.
- 
- "keyctl print" returns an ascii hex copy of the sealed key, which is in standard
- TPM_STORED_DATA format.  The key length for new keys are always in bytes.
-@@ -168,6 +171,19 @@ zeros (the value of PCR 16)::
-     $ dd if=/dev/zero bs=1 count  2>/dev/null|sha1sum
-     6768033e216468247bd031a0a2d9876d79818f8f
- 
-+You can also specify arbitrary policy in policymaker format, so a two
-+value policy (the pcr example above and authvalue) would look like
-+this in policymaker format::
-+
-+    0000017F000000010004030000016768033e216468247bd031a0a2d9876d79818f8f
-+    0000016b
-+
-+This can be placed in a file (say policy.txt) and then added to the key as::
-+
-+    $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha1 policy=`cat policy.txt`" @u
-+
-+The newlines in the file policy.txt will be automatically processed.
-+
- Reseal a trusted key under new pcr values::
- 
-     $ keyctl update 268728824 "update pcrinfo=`cat pcr.blob`"
-diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 080a76e879fd..87a13e607eca 100644
---- a/security/keys/trusted-keys/tpm2-policy.c
-+++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -370,3 +370,56 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 
- 	return 0;
- }
-+
-+int tpm2_parse_policies(struct tpm2_policies **ppols, char *str)
-+{
-+	struct tpm2_policies *pols;
-+	char *p;
-+	u8 *ptr;
-+	int i = 0, left = PAGE_SIZE, res;
-+
-+	pols = kmalloc(left, GFP_KERNEL);
-+	if (!pols)
-+		return -ENOMEM;
-+
-+	ptr = (u8 *)(pols + 1);
-+	left -= ptr - (u8 *)pols;
-+
-+	while ((p = strsep(&str, "\n"))) {
-+		if (*p = '\0' || *p = '\n')
-+			continue;
-+
-+		pols->len[i] = strlen(p)/2;
-+		if (pols->len[i] > left) {
-+			res = -E2BIG;
-+			goto err;
-+		}
-+
-+		res = hex2bin(ptr, p, pols->len[i]);
-+		if (res)
-+			goto err;
-+
-+		/* get command code and skip past */
-+		pols->code[i] = get_unaligned_be32(ptr);
-+		pols->policies[i] = ptr + 4;
-+		ptr += pols->len[i];
-+		left -= pols->len[i];
-+		pols->len[i] -= 4;
-+
-+		/*
-+		 * FIXME: this does leave the code embedded in dead
-+		 * regions of the memory, but it's easier than
-+		 * hexdumping to a temporary or copying over
-+		 */
-+		i++;
-+	}
-+
-+	pols->count = i;
-+	*ppols = pols;
-+
-+	return 0;
-+
-+ err:
-+	kfree(pols);
-+	return res;
-+}
-diff --git a/security/keys/trusted-keys/tpm2-policy.h b/security/keys/trusted-keys/tpm2-policy.h
-index 46bf1f0a9325..0da013116c1c 100644
---- a/security/keys/trusted-keys/tpm2-policy.h
-+++ b/security/keys/trusted-keys/tpm2-policy.h
-@@ -28,3 +28,4 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols, u32 hash,
- int tpm2_encode_policy(struct tpm2_policies *pols, u8 **data, u32 *len);
- int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 			    u32 *handle);
-+int tpm2_parse_policies(struct tpm2_policies **ppols, char *str);
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index 08e7bb89f7bf..242181c6304b 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -29,6 +29,8 @@
- 
- #include <keys/trusted_tpm.h>
- 
-+#include "tpm2-policy.h"
-+
- static const char hmac_alg[] = "hmac(sha1)";
- static const char hash_alg[] = "sha1";
- static struct tpm_chip *chip;
-@@ -709,6 +711,7 @@ enum {
- 	Opt_hash,
- 	Opt_policydigest,
- 	Opt_policyhandle,
-+	Opt_policy,
- };
- 
- static const match_table_t key_tokens = {
-@@ -724,6 +727,7 @@ static const match_table_t key_tokens = {
- 	{Opt_hash, "hash=%s"},
- 	{Opt_policydigest, "policydigest=%s"},
- 	{Opt_policyhandle, "policyhandle=%s"},
-+	{Opt_policy, "policy=%s"},
- 	{Opt_err, NULL}
- };
- 
-@@ -854,6 +858,17 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 				return -EINVAL;
- 			opt->policyhandle = handle;
- 			break;
-+
-+		case Opt_policy:
-+			if (pay->policies)
-+				return -EINVAL;
-+			if (!tpm2)
-+				return -EINVAL;
-+			res = tpm2_parse_policies(&pay->policies, args[0].from);
-+			if (res)
-+				return res;
-+			break;
-+
- 		default:
- 			return -EINVAL;
- 		}
--- 
-2.16.4
+  watch_queue: sample: Display superblock notifications (2020-03-19 17:31:09 +0000)
+
+are available in the Git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/fsinfo-20200330
+
+for you to fetch changes up to 80f0ef902951fd3e7446767e7d37d543d936b72f:
+
+  fsinfo: Add support for AFS (2020-03-19 17:31:34 +0000)
+
+----------------------------------------------------------------
+Filesystem information
+
+----------------------------------------------------------------
+David Howells (11):
+      fsinfo: Add fsinfo() syscall to query filesystem information
+      fsinfo: Provide a bitmap of supported features
+      fsinfo: Allow retrieval of superblock devname, options and stats
+      fsinfo: Allow fsinfo() to look up a mount object by ID
+      fsinfo: Add a uniquifier ID to struct mount
+      fsinfo: Allow mount information to be queried
+      fsinfo: Allow mount topology and propagation info to be retrieved
+      fsinfo: Provide notification overrun handling support
+      fsinfo: sample: Mount listing program
+      fsinfo: Add API documentation
+      fsinfo: Add support for AFS
+
+ Documentation/filesystems/fsinfo.rst        | 574 +++++++++++++++++++
+ arch/alpha/kernel/syscalls/syscall.tbl      |   1 +
+ arch/arm/tools/syscall.tbl                  |   1 +
+ arch/arm64/include/asm/unistd.h             |   2 +-
+ arch/arm64/include/asm/unistd32.h           |   2 +
+ arch/ia64/kernel/syscalls/syscall.tbl       |   1 +
+ arch/m68k/kernel/syscalls/syscall.tbl       |   1 +
+ arch/microblaze/kernel/syscalls/syscall.tbl |   1 +
+ arch/mips/kernel/syscalls/syscall_n32.tbl   |   1 +
+ arch/mips/kernel/syscalls/syscall_n64.tbl   |   1 +
+ arch/mips/kernel/syscalls/syscall_o32.tbl   |   1 +
+ arch/parisc/kernel/syscalls/syscall.tbl     |   1 +
+ arch/powerpc/kernel/syscalls/syscall.tbl    |   1 +
+ arch/s390/kernel/syscalls/syscall.tbl       |   1 +
+ arch/sh/kernel/syscalls/syscall.tbl         |   1 +
+ arch/sparc/kernel/syscalls/syscall.tbl      |   1 +
+ arch/x86/entry/syscalls/syscall_32.tbl      |   1 +
+ arch/x86/entry/syscalls/syscall_64.tbl      |   1 +
+ arch/xtensa/kernel/syscalls/syscall.tbl     |   1 +
+ fs/Kconfig                                  |   7 +
+ fs/Makefile                                 |   1 +
+ fs/afs/internal.h                           |   1 +
+ fs/afs/super.c                              | 218 +++++++-
+ fs/d_path.c                                 |   2 +-
+ fs/fsinfo.c                                 | 725 ++++++++++++++++++++++++
+ fs/internal.h                               |  14 +
+ fs/mount.h                                  |   3 +
+ fs/mount_notify.c                           |   2 +
+ fs/namespace.c                              | 389 ++++++++++++-
+ include/linux/fs.h                          |   4 +
+ include/linux/fsinfo.h                      | 111 ++++
+ include/linux/syscalls.h                    |   4 +
+ include/uapi/asm-generic/unistd.h           |   4 +-
+ include/uapi/linux/fsinfo.h                 | 326 +++++++++++
+ include/uapi/linux/mount.h                  |  10 +-
+ kernel/sys_ni.c                             |   1 +
+ samples/vfs/Makefile                        |   7 +
+ samples/vfs/test-fsinfo.c                   | 818 ++++++++++++++++++++++++++++
+ samples/vfs/test-mntinfo.c                  | 279 ++++++++++
+ 39 files changed, 3511 insertions(+), 9 deletions(-)
+ create mode 100644 Documentation/filesystems/fsinfo.rst
+ create mode 100644 fs/fsinfo.c
+ create mode 100644 include/linux/fsinfo.h
+ create mode 100644 include/uapi/linux/fsinfo.h
+ create mode 100644 samples/vfs/test-fsinfo.c
+ create mode 100644 samples/vfs/test-mntinfo.c
