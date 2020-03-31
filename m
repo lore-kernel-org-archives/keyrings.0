@@ -1,41 +1,64 @@
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 31 Mar 2020 05:11:11 +0000
+From: Lennart Poettering <mzxreary@0pointer.de>
+Date: Tue, 31 Mar 2020 07:22:24 +0000
 Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
-Message-Id: <CAJfpegtjmkJUSqORFv6jw-sYbqEMh9vJz64+dmzWhATYiBmzVQ@mail.gmail.com>
+Message-Id: <20200331072224.GA27062@gardel-login>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1445647.1585576702@warthog.procyon.org.uk> <20200330211700.g7evnuvvjenq3fzm@wittgenstein>
+References: <1445647.1585576702@warthog.procyon.org.uk>
+ <20200330211700.g7evnuvvjenq3fzm@wittgenstein>
 In-Reply-To: <20200330211700.g7evnuvvjenq3fzm@wittgenstein>
 To: Christian Brauner <christian.brauner@ubuntu.com>
-Cc: David Howells <dhowells@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, Ian Kent <raven@themaw.net>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Lennart Poettering <lennart@poettering.net>, Aleksa Sarai <cyphar@cyphar.com>
+Cc: David Howells <dhowells@redhat.com>, torvalds@linux-foundation.org, viro@zeniv.linux.org.uk, dray@redhat.com, kzak@redhat.com, mszeredi@redhat.com, swhiteho@redhat.com, jlayton@redhat.com, raven@themaw.net, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, cyphar@cyphar.com
 
-On Mon, Mar 30, 2020 at 11:17 PM Christian Brauner
-<christian.brauner@ubuntu.com> wrote:
+On Mo, 30.03.20 23:17, Christian Brauner (christian.brauner@ubuntu.com) wrote:
 
 > Fwiw, putting down my kernel hat and speaking as someone who maintains
 > two container runtimes and various other low-level bits and pieces in
 > userspace who'd make heavy use of this stuff I would prefer the fd-based
 > fsinfo() approach especially in the light of across namespace
 > operations, querying all properties of a mount atomically all-at-once,
-
-fsinfo(2) doesn't meet the atomically all-at-once requirement.  Sure,
-it's possible to check the various change counters before and after a
-batch of calls to check that the result is consistent.  Still, that's
-not an atomic all-at-once query, if you'd really require that, than
-fsinfo(2) as it currently stands would be inadequate.
-
 > and safe delegation through fds. Another heavy user of this would be
 > systemd (Cced Lennart who I've discussed this with) which would prefer
 > the fd-based approach as well. I think pulling this into a filesystem
 > and making userspace parse around in a filesystem tree to query mount
 > information is the wrong approach and will get messy pretty quickly
 > especially in the face of mount and user namespace interactions and
-> various other pitfalls.
+> various other pitfalls. fsinfo() fits quite nicely with the all-fd-based
+> approach of the whole mount api. So yes, definitely preferred from my
+> end.
 
-Have you actually looked at my proposed patch?   Do you have concrete
-issues or just vague bad feelings?
+Christian is right. I think it's very important to have an API that
+allows to query the state of fs attributes in a consistent state,
+i.e. so that the attributes userspace is interested in can be queried
+in a single call, so they all describe the very same point in
+time. Distributing attributes onto multiple individual files just
+sucks, because it's then guaranteed that you never can read them in a
+way they actually fit together, some attributes you read will be
+older, others newer. It's a big design flaw of sysfs (which is
+structured like this) if you ask me.
 
-Thanks,
-Miklos
+I don't really care if the kernel API for this is binary or
+textual. Slight preference for binary, but I don't care too much.
+
+I think it would be wise to bind such APIs to fds, simply because it
+always works. Doing path based stuff sucks, because you always need to
+mount stuff and have a path tree set up, which is less ideal in a
+world where namespacing is common, and namespaces are a shared concept
+(at least with your other threads, if not with other processes). As a
+maintainer of an init system I really dislike APIs that I can only use
+after a mount structure has been set up, too often we want to do stuff
+before that. Moreover, philosophically I find it questionnable to use
+path based APIs to interface with the path object hierarchy itself. it
+feels "too recursive". Just keep this separate: build stuff on top of
+the fs that fits on top of the fs, but don't build fs APIs on top of
+fs APIs that stem from the same layer.
+
+Summary: atomic APIs rock, fd-based APIs rock. APIs built on
+individual files one can only read individually suck. APIs of the path
+layer exposed in the path layer suck.
+
+Hope this makes some sense?
+
+Lennart
