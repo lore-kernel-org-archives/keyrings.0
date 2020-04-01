@@ -1,56 +1,37 @@
-From: Paul Moore <paul@paul-moore.com>
-Date: Sun, 26 Apr 2020 20:53:31 +0000
-Subject: Re: Problem with 9ba09998baa9 ("selinux: Implement the watch_key security hook") in linux-next
-Message-Id: <CAHC9VhQbhG8-ZABtkZr1FXo9cuH4_nsbB=HP_fGvW+FNQ7iAXg@mail.gmail.com>
+From: Karel Zak <kzak@redhat.com>
+Date: Wed, 01 Apr 2020 08:43:46 +0000
+Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
+Message-Id: <20200401084346.kety7m2dwo7okeuk@ws.net.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAHC9VhT95GJKNTMvTtmZL35UOoVwbGH-eDWZyELb5oZ5rQU+Tw@mail.gmail.com>
- <2136640.1587472186@warthog.procyon.org.uk> <CAHC9VhQnORRaRapbb1wrUsxweJCRJ+X+RdvKw8_U0pT0fuxZ6A@mail.gmail.com>
- <3834193.1587771802@warthog.procyon.org.uk>
-In-Reply-To: <3834193.1587771802@warthog.procyon.org.uk>
+References: <20200331083430.kserp35qabnxvths@ws.net.home>
+ <1445647.1585576702@warthog.procyon.org.uk>
+ <20200330211700.g7evnuvvjenq3fzm@wittgenstein>
+ <CAJfpegtjmkJUSqORFv6jw-sYbqEMh9vJz64+dmzWhATYiBmzVQ@mail.gmail.com>
+ <2418416.1585691663@warthog.procyon.org.uk>
+In-Reply-To: <2418416.1585691663@warthog.procyon.org.uk>
 To: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org, selinux@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, Ian Kent <raven@themaw.net>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Lennart Poettering <lennart@poettering.net>, Aleksa Sarai <cyphar@cyphar.com>
 
-On Fri, Apr 24, 2020 at 7:43 PM David Howells <dhowells@redhat.com> wrote:
->
-> Paul Moore <paul@paul-moore.com> wrote:
->
-> > > > and then use this newly created mapping function in [...]
-> > > > selinux_watch_key()
-> > >
-> > > No, I think I should just hard-code KEY__VIEW there.
-> >
-> > FWIW, my comment was based on a version of linux-next where you were
-> > making policycap based permission adjustments to KEY_VIEW and I
-> > thought you would want the same adjustments to be applied to both
-> > access control points.  That code appears to now be gone in
-> > linux-next.
->
-> I don't think I changed KEY_VIEW specifically; anyway, that code is on hold
-> for the moment since it collides with this.
->
-> What I was wondering is if I should change KEY_NEED_xxx from a bitmask into an
-> enum to remove the confusion about whether or not you're allowed to provide
-> multiple 'needs' OR'd together.
->
-> > > +       perm = selinux_keyperm_to_av(need_perm);
-> >
-> > ... and add a check for (perm < 0) as discussed above if we stick with
-> > the switch statement.
->
-> Actually, there was supposed to be a:
->
->         if (!perm)
->                 return -EPERM;
->
-> after that line.
+On Tue, Mar 31, 2020 at 10:54:23PM +0100, David Howells wrote:
+> Karel Zak <kzak@redhat.com> wrote:
+> 
+> > - improve fsinfo() to provide set (list) of the attributes by one call
+> 
+> That would be my preferred way.  I wouldn't want to let the user pin copies of
+> state, and I wouldn't want to make open(O_PATH) do it automatically.
 
-Okay, can you send the next version of the patch to the SELinux list for review?
+You can create cow object on first fsinfo() call, ideally add some
+flags to control this behavior -- but you're right, this way is
+complicated to implement and possibly dangerous.
 
-Thank you.
+I guess return some vector of attributes in one fsinfo() will be good
+enough.
+
+    Karel
 
 -- 
-paul moore
-www.paul-moore.com
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
