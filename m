@@ -1,36 +1,45 @@
 From: Karel Zak <kzak@redhat.com>
-Date: Wed, 01 Apr 2020 08:43:46 +0000
+Date: Wed, 01 Apr 2020 09:04:45 +0000
 Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
-Message-Id: <20200401084346.kety7m2dwo7okeuk@ws.net.home>
+Message-Id: <20200401090445.6t73dt7gz36bv4rh@ws.net.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200331083430.kserp35qabnxvths@ws.net.home>
+References: <20200330211700.g7evnuvvjenq3fzm@wittgenstein>
  <1445647.1585576702@warthog.procyon.org.uk>
- <20200330211700.g7evnuvvjenq3fzm@wittgenstein>
- <CAJfpegtjmkJUSqORFv6jw-sYbqEMh9vJz64+dmzWhATYiBmzVQ@mail.gmail.com>
- <2418416.1585691663@warthog.procyon.org.uk>
-In-Reply-To: <2418416.1585691663@warthog.procyon.org.uk>
+ <2418286.1585691572@warthog.procyon.org.uk>
+In-Reply-To: <2418286.1585691572@warthog.procyon.org.uk>
 To: David Howells <dhowells@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, Ian Kent <raven@themaw.net>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Lennart Poettering <lennart@poettering.net>, Aleksa Sarai <cyphar@cyphar.com>
+Cc: Christian Brauner <christian.brauner@ubuntu.com>, torvalds@linux-foundation.org, viro@zeniv.linux.org.uk, dray@redhat.com, mszeredi@redhat.com, swhiteho@redhat.com, jlayton@redhat.com, raven@themaw.net, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, lennart@poettering.net, cyphar@cyphar.com
 
-On Tue, Mar 31, 2020 at 10:54:23PM +0100, David Howells wrote:
-> Karel Zak <kzak@redhat.com> wrote:
+On Tue, Mar 31, 2020 at 10:52:52PM +0100, David Howells wrote:
+> Christian Brauner <christian.brauner@ubuntu.com> wrote:
 > 
-> > - improve fsinfo() to provide set (list) of the attributes by one call
+> > querying all properties of a mount atomically all-at-once,
 > 
-> That would be my preferred way.  I wouldn't want to let the user pin copies of
-> state, and I wouldn't want to make open(O_PATH) do it automatically.
+> I don't actually offer that, per se.
+> 
+> Having an atomic all-at-once query for a single mount is actually quite a
+> burden on the system.  There's potentially a lot of state involved, much of
+> which you don't necessarily need.
 
-You can create cow object on first fsinfo() call, ideally add some
-flags to control this behavior -- but you're right, this way is
-complicated to implement and possibly dangerous.
+If all means "all possible attributes" than it is unnecessary, for
+example ext4 timestamps or volume uuid/label are rarely necessary.
+We usually need together (as consistent set):
 
-I guess return some vector of attributes in one fsinfo() will be good
-enough.
+    source
+    mountpoint
+    FS type
+    FS root (FSINFO_ATTR_MOUNT_PATH)
+    FS options (FSINFO_ATTR_CONFIGURATION)
+    VFS attributes
+    VFS propagation flags
+    mount ID
+    parent ID
+    devno (or maj:min)
 
-    Karel
+ Karel
 
 -- 
  Karel Zak  <kzak@redhat.com>
