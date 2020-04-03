@@ -1,67 +1,39 @@
 From: Lennart Poettering <mzxreary@0pointer.de>
-Date: Fri, 03 Apr 2020 11:08:42 +0000
+Date: Fri, 03 Apr 2020 11:11:44 +0000
 Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
-Message-Id: <20200403110842.GA34663@gardel-login>
+Message-Id: <20200403111144.GB34663@gardel-login>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <2590640.1585757211@warthog.procyon.org.uk>
+References: <20200330211700.g7evnuvvjenq3fzm@wittgenstein>
+ <1445647.1585576702@warthog.procyon.org.uk>
+ <2418286.1585691572@warthog.procyon.org.uk>
+ <20200401144109.GA29945@gardel-login>
+ <CAJfpegs3uDzFTE4PCjZ7aZsEh8b=iy_LqO1DBJoQzkP+i4aBmw@mail.gmail.com>
+ <2590640.1585757211@warthog.procyon.org.uk>
  <CAJfpegsXqxizOGwa045jfT6YdUpMxpXET-yJ4T8qudyQbCGkHQ@mail.gmail.com>
  <36e45eae8ad78f7b8889d9d03b8846e78d735d28.camel@themaw.net>
  <CAJfpegsCDWehsTRQ9UJYuQnghnE=M8L0_bJBTTPA+Upu87t90w@mail.gmail.com>
- <20200402143623.GB31529@gardel-login>
- <CAJfpegtRi9epdxAeoVbm+7UxkZfzC6XmD4K_5dg=RKADxy_TVA@mail.gmail.com>
- <20200402152831.GA31612@gardel-login>
- <CAJfpegum_PsCfnar8+V2f_VO3k8CJN1LOFJV5OkHRDbQKR=EHg@mail.gmail.com>
- <20200402155020.GA31715@gardel-login>
- <CAJfpeguM__+S6DiD4MWFv5GCf_EUWvGFT0mzuUCCrfQwggqtDQ@mail.gmail.com>
-In-Reply-To: <CAJfpeguM__+S6DiD4MWFv5GCf_EUWvGFT0mzuUCCrfQwggqtDQ@mail.gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Aleksa Sarai <cyphar@cyphar.com>
+ <27994c53034c8f769ea063a54169317c3ee62c04.camel@themaw.net>
+In-Reply-To: <27994c53034c8f769ea063a54169317c3ee62c04.camel@themaw.net>
+To: Ian Kent <raven@themaw.net>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Aleksa Sarai <cyphar@cyphar.com>
 
-On Do, 02.04.20 19:20, Miklos Szeredi (miklos@szeredi.hu) wrote:
+On Fr, 03.04.20 09:44, Ian Kent (raven@themaw.net) wrote:
 
-> On Thu, Apr 2, 2020 at 5:50 PM Lennart Poettering <mzxreary@0pointer.de> wrote:
-> >
-> > On Do, 02.04.20 17:35, Miklos Szeredi (miklos@szeredi.hu) wrote:
-> >
-> > > > systemd cares about all mount points in PID1's mount namespace.
-> > > >
-> > > > The fact that mount tables can grow large is why we want something
-> > > > better than constantly reparsing the whole /proc/self/mountinfo. But
-> > > > filtering subsets of that is something we don't really care about.
-> > >
-> > > I can accept that, but you haven't given a reason why that's so.
-> > >
-> > > What does it do with the fact that an automount point was crossed, for
-> > > example?  How does that affect the operation of systemd?
-> >
-> > We don't care how a mount point came to be. If it's autofs or
-> > something else, we don't care. We don't access these mount points
-> > ourselves ever, we just watch their existance.
-> >
-> > I mean, it's not just about startup it's also about shutdown. At
-> > shutdown we need to unmount everything from the leaves towards the
-> > root so that all file systems are in a clean state.
->
-> Unfortunately that's not guaranteed by umounting all filesystems from
-> the init namespace.  A filesystem is shut down when all references to
-> it are gone.  Perhaps you instead want to lazy unmount root (yeah,
-> that may not actually be allowed, but anyway, lazy unmounting the top
-> level ones should do) and watch for super block shutdown events
-> instead.
->
-> Does that make any sense?
+> > Currently the only way to find the mount id from a path is by parsing
+> > /proc/self/fdinfo/$fd.  It is trivial, however, to extend statx(2) to
+> > return it directly from a path.   Also the mount notification queue
+> > that David implemented contains the mount ID of the changed mount.
 
-When all mounts in the init mount namespace are unmounted and all
-remaining processes killed we switch root back to the initrd, so that
-even the root fs can be unmounted, and then we disassemble any backing
-complex storage if there is, i.e. lvm, luks, raid, …
+I would love to have the mount ID exposed via statx().
 
-Because the initrd is its own little root fs independent of the actual
-root we can fully disassemble everything this way, as we do not retain
-any references to it anymore in any way.
+In systemd we generally try name_to_handle_at() to query the mount ID
+first. It returns both the actual fhandle and the mount ID after all,
+and we then throw the fhandle away. It's not available on all fs
+though, but it has the benefit that it works without procfs and on
+a number of older kernels that didn't expose the mnt id in fdinfo.
 
 Lennart
 
