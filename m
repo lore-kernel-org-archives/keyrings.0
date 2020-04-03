@@ -1,7 +1,7 @@
-From: Lennart Poettering <mzxreary@0pointer.de>
-Date: Fri, 03 Apr 2020 15:41:39 +0000
+From: bfields@fieldses.org (J. Bruce Fields)
+Date: Fri, 03 Apr 2020 20:30:24 +0000
 Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
-Message-Id: <20200403154139.GA34867@gardel-login>
+Message-Id: <20200403203024.GB27105@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -15,26 +15,30 @@ References: <20200401144109.GA29945@gardel-login>
  <27994c53034c8f769ea063a54169317c3ee62c04.camel@themaw.net>
  <20200403111144.GB34663@gardel-login>
  <CAJfpeguQAw+Mgc8QBNd+h3KV8=Y-SOGT7TB_N_54wa8MCoOSzg@mail.gmail.com>
- <3248809.1585928191@warthog.procyon.org.uk>
-In-Reply-To: <3248809.1585928191@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Ian Kent <raven@themaw.net>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Aleksa Sarai <cyphar@cyphar.com>
+ <20200403151223.GB34800@gardel-login>
+In-Reply-To: <20200403151223.GB34800@gardel-login>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Aleksa Sarai <cyphar@cyphar.com>
 
-On Fr, 03.04.20 16:36, David Howells (dhowells@redhat.com) wrote:
+On Fri, Apr 03, 2020 at 05:12:23PM +0200, Lennart Poettering wrote:
+> BTW, while we are at it: one more thing I'd love to see exposed by
+> statx() is a simple flag whether the inode is a mount point. There's
+> plenty code that implements a test like this all over the place, and
+> it usually isn't very safe. There's one implementation in util-linux
+> for example (in the /usr/bin/mountpoint binary), and another one in
+> systemd. Would be awesome to just have a statx() return flag for that,
+> that would make things *so* much easier and more robust. because in
+> fact most code isn't very good that implements this, as much of it
+> just compares st_dev of the specified file and its parent. Better code
+> compares the mount ID, but as mentioned that's not as pretty as it
+> could be so far...
 
-> Lennart Poettering <mzxreary@0pointer.de> wrote:
->
-> > BTW, while we are at it: one more thing I'd love to see exposed by
-> > statx() is a simple flag whether the inode is a mount point.
->
-> Note that an inode or a dentry might be a mount point in one namespace, but
-> not in another.  Do you actually mean an inode - or do you actually mean the
-> (mount,dentry) pair that you're looking at?  (Ie. should it be namespace
-> specific?)
+nfs-utils/support/misc/mountpoint.c:check_is_mountpoint() stats the file
+and ".." and returns true if they have different st_dev or the same
+st_ino.  Comparing mount ids sounds better.
 
-yes, it should be specific to the mount hierarchy in the current namespace.
+So anyway, yes, everybody reinvents the wheel here, and this would be
+useful.  (And, yes, we want to know for the vfsmount, we don't care
+whether the same inode is used as a mountpoint someplace else.)
 
-Lennart
-
---
-Lennart Poettering, Berlin
+--b.
