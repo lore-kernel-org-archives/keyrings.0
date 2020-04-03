@@ -1,37 +1,69 @@
-From: Karel Zak <kzak@redhat.com>
-Date: Fri, 03 Apr 2020 09:11:24 +0000
+From: Lennart Poettering <mzxreary@0pointer.de>
+Date: Fri, 03 Apr 2020 11:08:42 +0000
 Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
-Message-Id: <20200403091124.zxo7cckcvygzwvgl@ws.net.home>
+Message-Id: <20200403110842.GA34663@gardel-login>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAJfpeguu52VuLAzjFH4rJJ7WYLB5ag8y+r3VMb-0bqH8c-uJUg@mail.gmail.com>
- <20200330211700.g7evnuvvjenq3fzm@wittgenstein>
- <1445647.1585576702@warthog.procyon.org.uk>
- <2418286.1585691572@warthog.procyon.org.uk>
- <20200401090445.6t73dt7gz36bv4rh@ws.net.home>
- <2488530.1585749351@warthog.procyon.org.uk>
- <2488734.1585749502@warthog.procyon.org.uk>
- <CAJfpeguLJcAEgx2JWRNcKMkyFTWB0r4wS6F4fJHK3VHtY=EjXQ@mail.gmail.com>
-In-Reply-To: <CAJfpeguLJcAEgx2JWRNcKMkyFTWB0r4wS6F4fJHK3VHtY=EjXQ@mail.gmail.com>
+References: <2590640.1585757211@warthog.procyon.org.uk>
+ <CAJfpegsXqxizOGwa045jfT6YdUpMxpXET-yJ4T8qudyQbCGkHQ@mail.gmail.com>
+ <36e45eae8ad78f7b8889d9d03b8846e78d735d28.camel@themaw.net>
+ <CAJfpegsCDWehsTRQ9UJYuQnghnE=M8L0_bJBTTPA+Upu87t90w@mail.gmail.com>
+ <20200402143623.GB31529@gardel-login>
+ <CAJfpegtRi9epdxAeoVbm+7UxkZfzC6XmD4K_5dg=RKADxy_TVA@mail.gmail.com>
+ <20200402152831.GA31612@gardel-login>
+ <CAJfpegum_PsCfnar8+V2f_VO3k8CJN1LOFJV5OkHRDbQKR=EHg@mail.gmail.com>
+ <20200402155020.GA31715@gardel-login>
+ <CAJfpeguM__+S6DiD4MWFv5GCf_EUWvGFT0mzuUCCrfQwggqtDQ@mail.gmail.com>
+In-Reply-To: <CAJfpeguM__+S6DiD4MWFv5GCf_EUWvGFT0mzuUCCrfQwggqtDQ@mail.gmail.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, Ian Kent <raven@themaw.net>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Lennart Poettering <lennart@poettering.net>, Aleksa Sarai <cyphar@cyphar.com>
+Cc: Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Aleksa Sarai <cyphar@cyphar.com>
 
-On Wed, Apr 01, 2020 at 05:25:54PM +0200, Miklos Szeredi wrote:
-> fsinfo(2) will never be substantially cheaper than reading and parsing
-> /mnt/MNT_ID/info.  In fact reading a large part of the mount table
-> using fsinfo(2) will be substantially slower than parsing
-> /proc/self/mountinfo (this doesn't actually do the parsing but that
-> would add a very small amount of overhead):
+On Do, 02.04.20 19:20, Miklos Szeredi (miklos@szeredi.hu) wrote:
 
-I think nobody wants to use fsinfo() or mountfs as replacement to whole
-/proc/self/mountinfo. It does not make sense. We need per-mountpoint
-API, for whole mount table use-cases (like findmnt or lsblk) the
-current mountinfo is good enough.
+> On Thu, Apr 2, 2020 at 5:50 PM Lennart Poettering <mzxreary@0pointer.de> wrote:
+> >
+> > On Do, 02.04.20 17:35, Miklos Szeredi (miklos@szeredi.hu) wrote:
+> >
+> > > > systemd cares about all mount points in PID1's mount namespace.
+> > > >
+> > > > The fact that mount tables can grow large is why we want something
+> > > > better than constantly reparsing the whole /proc/self/mountinfo. But
+> > > > filtering subsets of that is something we don't really care about.
+> > >
+> > > I can accept that, but you haven't given a reason why that's so.
+> > >
+> > > What does it do with the fact that an automount point was crossed, for
+> > > example?  How does that affect the operation of systemd?
+> >
+> > We don't care how a mount point came to be. If it's autofs or
+> > something else, we don't care. We don't access these mount points
+> > ourselves ever, we just watch their existance.
+> >
+> > I mean, it's not just about startup it's also about shutdown. At
+> > shutdown we need to unmount everything from the leaves towards the
+> > root so that all file systems are in a clean state.
+>
+> Unfortunately that's not guaranteed by umounting all filesystems from
+> the init namespace.  A filesystem is shut down when all references to
+> it are gone.  Perhaps you instead want to lazy unmount root (yeah,
+> that may not actually be allowed, but anyway, lazy unmounting the top
+> level ones should do) and watch for super block shutdown events
+> instead.
+>
+> Does that make any sense?
 
-    Karel
+When all mounts in the init mount namespace are unmounted and all
+remaining processes killed we switch root back to the initrd, so that
+even the root fs can be unmounted, and then we disassemble any backing
+complex storage if there is, i.e. lvm, luks, raid, …
 
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Because the initrd is its own little root fs independent of the actual
+root we can fully disassemble everything this way, as we do not retain
+any references to it anymore in any way.
+
+Lennart
+
+--
+Lennart Poettering, Berlin
