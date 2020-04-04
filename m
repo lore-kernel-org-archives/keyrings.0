@@ -1,59 +1,69 @@
-From: Waiman Long <longman@redhat.com>
-Date: Mon, 13 Apr 2020 21:52:24 +0000
-Subject: Re: [PATCH 2/2] crypto: Remove unnecessary memzero_explicit()
-Message-Id: <7e13a94b-2e92-850f-33f7-0f42cfcd9009@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 04 Apr 2020 21:13:03 +0000
+Subject: Re: [GIT PULL] Mount and superblock notifications
+Message-Id: <CAHk-=wghjTM+z_oAATqWOvPa8Lh6BKRtTVMi7hLxo6pbqc+kVg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200413211550.8307-1-longman@redhat.com>
- <20200413211550.8307-3-longman@redhat.com>
- <efd6ceb1f182aa7364e9706422768a1c1335aee4.camel@perches.com>
-In-Reply-To: <efd6ceb1f182aa7364e9706422768a1c1335aee4.camel@perches.com>
-To: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linus Torvalds <torvalds@linux-foundation.org>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
-Cc: samba-technical@lists.samba.org, virtualization@lists.linux-foundation.org, linux-mm@kvack.org, linux-sctp@vger.kernel.org, target-devel@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, devel@driverdev.osuosl.org, linux-s390@vger.kernel.org, linux-scsi@vger.kernel.org, x86@kernel.org, kasan-dev@googlegroups.com, cocci@systeme.lip6.fr, linux-wpan@vger.kernel.org, intel-wired-lan@lists.osuosl.org, linux-crypto@vger.kernel.org, linux-pm@vger.kernel.org, ecryptfs@vger.kernel.org, linux-nfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-amlogic@lists.infradead.org, linux-arm-kernel@lists.infradead.org, linux-cifs@vger.kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, tipc-discussion@lists.sourceforge.net, wireguard@lists.zx2c4.com, linux-ppp@vger.kernel.org, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-btrfs@vger.kernel.org
+References: <1445647.1585576702@warthog.procyon.org.uk> <1449543.1585579014@warthog.procyon.org.uk>
+In-Reply-To: <1449543.1585579014@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, jlayton@redhat.com, Ian Kent <raven@themaw.net>, andres@anarazel.de, Christian Brauner <christian.brauner@ubuntu.com>, keyrings@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-On 4/13/20 5:31 PM, Joe Perches wrote:
-> On Mon, 2020-04-13 at 17:15 -0400, Waiman Long wrote:
->> Since kfree_sensitive() will do an implicit memzero_explicit(), there
->> is no need to call memzero_explicit() before it. Eliminate those
->> memzero_explicit() and simplify the call sites.
-> 2 bits of trivia:
+On Mon, Mar 30, 2020 at 7:37 AM David Howells <dhowells@redhat.com> wrote:
 >
->> diff --git a/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c b/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
-> []
->> @@ -391,10 +388,7 @@ int sun8i_ce_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
->>  		dev_dbg(ce->dev, "ERROR: Invalid keylen %u\n", keylen);
->>  		return -EINVAL;
->>  	}
->> -	if (op->key) {
->> -		memzero_explicit(op->key, op->keylen);
->> -		kfree(op->key);
->> -	}
->> +	kfree_sensitive(op->key);
->>  	op->keylen = keylen;
->>  	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
->>  	if (!op->key)
-> It might be a defect to set op->keylen before the kmemdup succeeds.
-It could be. I can move it down after the op->key check.
->> @@ -416,10 +410,7 @@ int sun8i_ce_des3_setkey(struct crypto_skcipher *tfm, const u8 *key,
->>  	if (err)
->>  		return err;
->>  
->> -	if (op->key) {
->> -		memzero_explicit(op->key, op->keylen);
->> -		kfree(op->key);
->> -	}
->> +	free_sensitive(op->key, op->keylen);
-> Why not kfree_sensitive(op->key) ?
+> If you could consider pulling this - or would you prefer it to go through
+> Al?  It adds a couple of VFS-related event sources for the general
+> notification mechanism:
 
-Oh, it is a bug. I will send out v2 to fix that.
+<y issue with these remains the same it was last time, so I'll just
+quote what I said back then:
 
-Thanks for spotting it.
+ "So I no longer hate the implementation, but I do want to see the
+  actual user space users come out of the woodwork and try this out for
+  their use cases.
 
-Cheers,
-Longman
+  I'd hate to see a new event queue interface that people then can't
+  really use due to it not fulfilling their needs, or can't use for some
+  other reason."
 
+I want to see somebody step up enough to say "yes, I actually use
+this, and have the patches for the user space side, and it helps my
+load by 3000%, and here are the numbers, and the event overflow case
+isn't an issue because Y"
 
->
->
+Or whatever. It doesn't have to be performance, but the separate
+discussion I've seen has been about that being the reason for it.
+
+I just don't want it to be a _hypothetical_ reason. I want it to be a
+tested reason where people said "yeah, this is easy to use and
+actually fixes the problems".
+
+Because if what happens is that when the events overflow, and maybe
+people fall back on the old model (or whatever) then that probably
+just means that you do better up until a point where you start doing
+_worse_ than we used to.
+
+Or people find out that they needed more information anyway, and the
+event model doesn't work when you restart your special server because
+you've lost the original state. Or any other number of "cool feature,
+but I can't really use it".
+
+IOW, I really want to know that yes, the design is what people will
+then use and it actually fixes real-world issues.
+
+And it needs to be interesting and pressing enough that those people
+actually at least do a working prototype on top of a patch-set that
+hasn't made it into the kernel yet.
+
+Now, I realize that other projects won't _upstream_ their support
+before the kernel has the infrastructure, so I'm not looking for
+_that_ kind of "yeah, look, project XYZ already does this and Red Hat
+ships it". No, I'm looking for those outside developers who say more
+than "this is a pet peeve of mine with the existing interface". I want
+to see some actual use - even if it's just in a development
+environment - that shows that it's (a) sufficient and (b) actually
+fixes problems.
+
+             Linus
