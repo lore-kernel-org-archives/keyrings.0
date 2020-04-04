@@ -1,186 +1,67 @@
-From: Corentin Labbe <clabbe.montjoie@gmail.com>
-Date: Thu, 16 Apr 2020 09:06:18 +0000
-Subject: Re: [PATCH v3 2/3] crypto: Remove unnecessary memzero_explicit()
-Message-Id: <20200416090618.GB29148@Red>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 04 Apr 2020 20:00:08 +0000
+Subject: Re: [GIT PULL] keys: Fix key->sem vs mmap_sem issue when reading key
+Message-Id: <CAHk-=wgWnZCvTFDfiYAy=uMUf2F1Yy1r9ur5ARcmtqLjX8Tz4Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200413211550.8307-1-longman@redhat.com>
- <20200414200214.1873-1-longman@redhat.com>
-In-Reply-To: <20200414200214.1873-1-longman@redhat.com>
-To: Waiman Long <longman@redhat.com>
-Cc: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>, James Morris <jmorris@namei.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>, linux-mm@kvack.org, Chen-Yu Tsai <wens@csie.org>, keyrings@vger.kernel.org, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>, linux-amlogic@lists.infradead.org, Andrew Morton <akpm@linux-foundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, "David S. Miller" <davem@davemloft.net>, linux-arm-kernel@lists.infradead.org, "Serge E. Hallyn" <serge@hallyn.com>
+References: <1437197.1585570598@warthog.procyon.org.uk>
+In-Reply-To: <1437197.1585570598@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>, Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Waiman Long <longman@redhat.com>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-On Tue, Apr 14, 2020 at 04:02:14PM -0400, Waiman Long wrote:
-> Since kfree_sensitive() will do an implicit memzero_explicit(),
-> there is no need to call memzero_explicit() before it. Eliminate those
-> memzero_explicit() and simplify the call sites. For better correctness,
-> keylen is cleared if key memory allocation fails.
-> 
-> Signed-off-by: Waiman Long <longman@redhat.com>
-> ---
->  .../allwinner/sun8i-ce/sun8i-ce-cipher.c      | 23 +++++++-----------
->  .../allwinner/sun8i-ss/sun8i-ss-cipher.c      | 24 +++++++------------
->  drivers/crypto/amlogic/amlogic-gxl-cipher.c   | 14 ++++-------
->  drivers/crypto/inside-secure/safexcel_hash.c  |  3 +--
->  4 files changed, 24 insertions(+), 40 deletions(-)
-> 
-> diff --git a/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c b/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
-> index aa4e8fdc2b32..a2bac10d2876 100644
-> --- a/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
-> +++ b/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
-> @@ -366,10 +366,7 @@ void sun8i_ce_cipher_exit(struct crypto_tfm *tfm)
->  {
->  	struct sun8i_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
->  
-> -	if (op->key) {
-> -		memzero_explicit(op->key, op->keylen);
-> -		kfree(op->key);
-> -	}
-> +	kfree_sensitive(op->key);
->  	crypto_free_sync_skcipher(op->fallback_tfm);
->  	pm_runtime_put_sync_suspend(op->ce->dev);
->  }
-> @@ -391,14 +388,13 @@ int sun8i_ce_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
->  		dev_dbg(ce->dev, "ERROR: Invalid keylen %u\n", keylen);
->  		return -EINVAL;
->  	}
-> -	if (op->key) {
-> -		memzero_explicit(op->key, op->keylen);
-> -		kfree(op->key);
-> -	}
-> +	kfree_sensitive(op->key);
->  	op->keylen = keylen;
->  	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
-> -	if (!op->key)
-> +	if (unlikely(!op->key)) {
-> +		op->keylen = 0;
->  		return -ENOMEM;
-> +	}
->  
->  	crypto_sync_skcipher_clear_flags(op->fallback_tfm, CRYPTO_TFM_REQ_MASK);
->  	crypto_sync_skcipher_set_flags(op->fallback_tfm, tfm->base.crt_flags & CRYPTO_TFM_REQ_MASK);
-> @@ -416,14 +412,13 @@ int sun8i_ce_des3_setkey(struct crypto_skcipher *tfm, const u8 *key,
->  	if (err)
->  		return err;
->  
-> -	if (op->key) {
-> -		memzero_explicit(op->key, op->keylen);
-> -		kfree(op->key);
-> -	}
-> +	kfree_sensitive(op->key);
->  	op->keylen = keylen;
->  	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
-> -	if (!op->key)
-> +	if (unlikely(!op->key)) {
-> +		op->keylen = 0;
->  		return -ENOMEM;
-> +	}
->  
->  	crypto_sync_skcipher_clear_flags(op->fallback_tfm, CRYPTO_TFM_REQ_MASK);
->  	crypto_sync_skcipher_set_flags(op->fallback_tfm, tfm->base.crt_flags & CRYPTO_TFM_REQ_MASK);
-> diff --git a/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c b/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
-> index 5246ef4f5430..a24d567a6c36 100644
-> --- a/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
-> +++ b/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
-> @@ -249,7 +249,6 @@ static int sun8i_ss_cipher(struct skcipher_request *areq)
->  			offset = areq->cryptlen - ivsize;
->  			if (rctx->op_dir & SS_DECRYPTION) {
->  				memcpy(areq->iv, backup_iv, ivsize);
-> -				memzero_explicit(backup_iv, ivsize);
->  				kfree_sensitive(backup_iv);
->  			} else {
->  				scatterwalk_map_and_copy(areq->iv, areq->dst, offset,
-> @@ -367,10 +366,7 @@ void sun8i_ss_cipher_exit(struct crypto_tfm *tfm)
->  {
->  	struct sun8i_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
->  
-> -	if (op->key) {
-> -		memzero_explicit(op->key, op->keylen);
-> -		kfree(op->key);
-> -	}
-> +	kfree_sensitive(op->key);
->  	crypto_free_sync_skcipher(op->fallback_tfm);
->  	pm_runtime_put_sync(op->ss->dev);
->  }
-> @@ -392,14 +388,13 @@ int sun8i_ss_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
->  		dev_dbg(ss->dev, "ERROR: Invalid keylen %u\n", keylen);
->  		return -EINVAL;
->  	}
-> -	if (op->key) {
-> -		memzero_explicit(op->key, op->keylen);
-> -		kfree(op->key);
-> -	}
-> +	kfree_sensitive(op->key);
->  	op->keylen = keylen;
->  	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
-> -	if (!op->key)
-> +	if (unlikely(!op->key))
-> +		op->keylen = 0;
->  		return -ENOMEM;
-> +	}
->  
->  	crypto_sync_skcipher_clear_flags(op->fallback_tfm, CRYPTO_TFM_REQ_MASK);
->  	crypto_sync_skcipher_set_flags(op->fallback_tfm, tfm->base.crt_flags & CRYPTO_TFM_REQ_MASK);
-> @@ -418,14 +413,13 @@ int sun8i_ss_des3_setkey(struct crypto_skcipher *tfm, const u8 *key,
->  		return -EINVAL;
->  	}
->  
-> -	if (op->key) {
-> -		memzero_explicit(op->key, op->keylen);
-> -		kfree(op->key);
-> -	}
-> +	kfree_sensitive(op->key);
->  	op->keylen = keylen;
->  	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
-> -	if (!op->key)
-> +	if (unlikely(!op->key))
-> +		op->keylen = 0;
->  		return -ENOMEM;
-> +	}
->  
->  	crypto_sync_skcipher_clear_flags(op->fallback_tfm, CRYPTO_TFM_REQ_MASK);
->  	crypto_sync_skcipher_set_flags(op->fallback_tfm, tfm->base.crt_flags & CRYPTO_TFM_REQ_MASK);
-> diff --git a/drivers/crypto/amlogic/amlogic-gxl-cipher.c b/drivers/crypto/amlogic/amlogic-gxl-cipher.c
-> index fd1269900d67..5312bad7534e 100644
-> --- a/drivers/crypto/amlogic/amlogic-gxl-cipher.c
-> +++ b/drivers/crypto/amlogic/amlogic-gxl-cipher.c
-> @@ -341,10 +341,7 @@ void meson_cipher_exit(struct crypto_tfm *tfm)
->  {
->  	struct meson_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
->  
-> -	if (op->key) {
-> -		memzero_explicit(op->key, op->keylen);
-> -		kfree(op->key);
-> -	}
-> +	kfree_sensitive(op->key);
->  	crypto_free_sync_skcipher(op->fallback_tfm);
->  }
->  
-> @@ -368,14 +365,13 @@ int meson_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
->  		dev_dbg(mc->dev, "ERROR: Invalid keylen %u\n", keylen);
->  		return -EINVAL;
->  	}
-> -	if (op->key) {
-> -		memzero_explicit(op->key, op->keylen);
-> -		kfree(op->key);
-> -	}
-> +	kfree_sensitive(op->key);
->  	op->keylen = keylen;
->  	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
-> -	if (!op->key)
-> +	if (unlikely(!op->key))
-> +		op->keylen = 0;
->  		return -ENOMEM;
-> +	}
->  
->  	return crypto_sync_skcipher_setkey(op->fallback_tfm, key, keylen);
->  }
+On Mon, Mar 30, 2020 at 5:16 AM David Howells <dhowells@redhat.com> wrote:
+>
+>  security/keys/internal.h                  |  12 ++++
 
-For sun8i-ss/sun8i-ce
-Acked-by: Corentin Labbe <clabbe.montjoie@gmail.com>
-For amlogic
-Acked-by: Corentin Labbe <clabbe@baylibre.com>
+This isn't so much about this pull (which I have taken), as about the
+fact that this code re-inforces bad behavior we already in the slub
+layer, and now extends it further to kvfree.
 
-Thanks
+Doing this:
+
+
+   __kvzfree(const void *addr, size_t len)
+  ..
+                memset((void *)addr, 0, len);
+                kvfree(addr);
+
+is wrong to begin with. It's wrong because if the compiler ever knows
+that kvfree is a freeing function (with something like
+__attribute__((free)) - I don't think gcc is smart enough today), the
+compiler might throw the memset away.
+
+Yeah, so far we've only seen that for automatic stack clearing, but
+there are very much compilers that know that alloc/free are special
+(both for warning about use-after-free issues, and for "improving"
+code generation by blindly removing dead writes).
+
+We have a function for clearing sensitive information: it's called
+"memclear_explicit()", and it's about forced (explicit) clearing even
+if the data might look dead afterwards.
+
+The other problem with that function is the name: "__kvzfree()" is not
+a useful name for this function. We use the "__" format for internal
+low-level helpers, and it generally means that it does *less* than the
+full function. This does more, not less, and "__" is not following any
+sane naming model.
+
+So the name should probably be something like "kvfree_sensitive()" or
+similar. Or maybe it could go even further, and talk about _why_ it's
+sensitive, and call it "kvfree_cleartext()" or something like that.
+
+Because the clearing is really not what even matters. It might choose
+other patterns to overwrite things with, but it might do other things
+too, like putting special barriers for data leakage (or flags to tell
+return-to-user-mode to do so).
+
+And yes, kzfree() isn't a good name either, and had that same
+memset(), but at least it doesn't do the dual-underscore mistake.
+
+Including some kzfree()/crypto people explicitly - I hope we can get
+away from this incorrect and actively wrong pattern of thinking that
+"sensitive data should be memset(), and then we should add a random
+'z' in the name somewhere to 'document' that".
+
+               Linus
