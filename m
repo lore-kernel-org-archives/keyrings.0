@@ -1,32 +1,31 @@
-From: David Howells <dhowells@redhat.com>
-Date: Sun, 05 Apr 2020 09:03:50 +0000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 05 Apr 2020 17:31:41 +0000
 Subject: Re: [GIT PULL] keys: Fix key->sem vs mmap_sem issue when reading key
-Message-Id: <3567369.1586077430@warthog.procyon.org.uk>
+Message-Id: <CAHk-=wg-6906+D68VHWv_SCvWUSG8R9w=js7kExmTum90Evu4g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <78ff6e5d-9643-8798-09cb-65b1415140be@redhat.com> <1437197.1585570598@warthog.procyon.org.uk> <CAHk-=wgWnZCvTFDfiYAy=uMUf2F1Yy1r9ur5ARcmtqLjX8Tz4Q@mail.gmail.com>
-In-Reply-To: <78ff6e5d-9643-8798-09cb-65b1415140be@redhat.com>
-To: Waiman Long <longman@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, Johannes Weiner <hannes@cmpxchg.org>, Herbert Xu <herbert@gondor.apana.org.au>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1437197.1585570598@warthog.procyon.org.uk> <CAHk-=wgWnZCvTFDfiYAy=uMUf2F1Yy1r9ur5ARcmtqLjX8Tz4Q@mail.gmail.com>
+ <78ff6e5d-9643-8798-09cb-65b1415140be@redhat.com> <3567369.1586077430@warthog.procyon.org.uk>
+In-Reply-To: <3567369.1586077430@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Waiman Long <longman@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>, Herbert Xu <herbert@gondor.apana.org.au>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-Waiman Long <longman@redhat.com> wrote:
+On Sun, Apr 5, 2020 at 2:04 AM David Howells <dhowells@redhat.com> wrote:
+>
+> Should this be moved into core code, rather than being squirrelled away in
+> security/keys/?
 
-> > And yes, kzfree() isn't a good name either, and had that same
-> > memset(), but at least it doesn't do the dual-underscore mistake.
-> >
-> > Including some kzfree()/crypto people explicitly - I hope we can get
-> > away from this incorrect and actively wrong pattern of thinking that
-> > "sensitive data should be memset(), and then we should add a random
-> > 'z' in the name somewhere to 'document' that".
-> >
-> >                Linus
-> >
-> Thanks for the suggestion, I will post a patch to rename the function to
-> kvzfree_explicit() and use memzero_explicit() for clearing memory.
+Yes. I do think that that __kvzfree() function makes sense in general
+(the same way that kzfree does).
 
-Should this be moved into core code, rather than being squirrelled away in
-security/keys/?
+I just happen to despise the name, and think that the implementation
+isn't great.
 
-David
+It also probably makes no sense to make it an inline function. It's
+not like that function is done for performance reasons, and it might
+only get worse if we then end up making it cause barriers or something
+for CPU data leakage issues or whatever.
+
+           Linus
