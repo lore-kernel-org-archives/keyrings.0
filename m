@@ -1,61 +1,149 @@
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 08 Apr 2020 03:36:27 +0000
-Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
-Message-Id: <CAHk-=wgNuJaJS9Vfe83Tfgq92PonhpfLy1-vvG63SC=3VYf3+g@mail.gmail.com>
+From: Waiman Long <longman@redhat.com>
+Date: Mon, 06 Apr 2020 18:58:27 +0000
+Subject: [PATCH v2] mm: Add kvfree_sensitive() for freeing sensitive data objects
+Message-Id: <20200406185827.22249-1-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAJfpegsXqxizOGwa045jfT6YdUpMxpXET-yJ4T8qudyQbCGkHQ@mail.gmail.com>
- <36e45eae8ad78f7b8889d9d03b8846e78d735d28.camel@themaw.net>
- <CAJfpegsCDWehsTRQ9UJYuQnghnE=M8L0_bJBTTPA+Upu87t90w@mail.gmail.com>
- <27994c53034c8f769ea063a54169317c3ee62c04.camel@themaw.net>
- <20200403111144.GB34663@gardel-login> <CAJfpeguQAw+Mgc8QBNd+h3KV8=Y-SOGT7TB_N_54wa8MCoOSzg@mail.gmail.com>
- <20200403151223.GB34800@gardel-login> <20200403203024.GB27105@fieldses.org>
- <20200406091701.q7ctdek2grzryiu3@ws.net.home> <CAHk-=wjW735UE+byK1xsM9UvpF2ubh7bCMaAOwz575U7hRCKyA@mail.gmail.com>
- <20200406184812.GA37843@gardel-login>
-In-Reply-To: <20200406184812.GA37843@gardel-login>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Karel Zak <kzak@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>, Miklos Szeredi <miklos@szeredi.hu>, Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Aleksa Sarai <cyphar@cyphar.com>
+To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-mm@kvack.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>, Waiman Long <longman@redhat.com>
 
-On Mon, Apr 6, 2020 at 11:48 AM Lennart Poettering <mzxreary@0pointer.de> wrote:
->
-> On Mo, 06.04.20 09:34, Linus Torvalds (torvalds@linux-foundation.org) wrote:
->
-> > On Mon, Apr 6, 2020 at 2:17 AM Karel Zak <kzak@redhat.com> wrote:
-> > >
-> > > On Fri, Apr 03, 2020 at 04:30:24PM -0400, J. Bruce Fields wrote:
-> > > >
-> > > > nfs-utils/support/misc/mountpoint.c:check_is_mountpoint() stats the file
-> > > > and ".." and returns true if they have different st_dev or the same
-> > > > st_ino.  Comparing mount ids sounds better.
-> > >
-> > > BTW, this traditional st_dev+st_ino way is not reliable for bind mounts.
-> > > For mountpoint(1) we search the directory in /proc/self/mountinfo.
-> >
-> > These days you should probably use openat2() with RESOLVE_NO_XDEV.
->
-> Note that opening a file is relatively "heavy" i.e. typically triggers
-> autofs and stuff, and results in security checks (which can fail and
-> such, and show up in audit).
+For kvmalloc'ed data object that contains sensitive information like
+cryptographic key, we need to make sure that the buffer is always
+cleared before freeing it. Using memset() alone for buffer clearing may
+not provide certainty as the compiler may compile it away. To be sure,
+the special memzero_explicit() has to be used.
 
-For the use that Bruce outlined, openat2() with RESOLVE_NO_XDEV is
-absolutely the right thing.
+This patch introduces a new kvfree_sensitive() for freeing those
+sensitive data objects allocated by kvmalloc(). The relevnat places
+where kvfree_sensitive() can be used are modified to use it.
 
-He already did the stat() of the file (and ".."), RESOLVE_NO_XDEV is
-only an improvement. It's also a lot better than trying to parse
-mountinfo.
+Fixes: 4f0882491a14 ("KEYS: Avoid false positive ENOMEM error on key read")
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Waiman Long <longman@redhat.com>
+---
+ include/linux/mm.h       |  1 +
+ mm/util.c                | 18 ++++++++++++++++++
+ security/keys/internal.h | 11 -----------
+ security/keys/keyctl.c   | 16 +++++-----------
+ 4 files changed, 24 insertions(+), 22 deletions(-)
 
-Now, I don't disagree that a statx() flag to also indicate "that's a
-top-level mount" might be a good idea, and may be the right answer for
-other cases.
-
-I'm just saying that considering what Bruce does now, RESOLVE_NO_XDEV
-sounds like the nobrainer approach, and needs no new support outside
-of what we already had for other reasons.
-
-(And O_PATH _may_ or may not be part of what you want to do, it's an
-independent separate issue, but automount behavior wrt a O_PATH lookup
-is somewhat unclear - see Al's other emails on that subject)
-
-             Linus
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 7dd5c4ccbf85..9b3130b20f42 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -757,6 +757,7 @@ static inline void *kvcalloc(size_t n, size_t size, gfp_t flags)
+ }
+ 
+ extern void kvfree(const void *addr);
++extern void kvfree_sensitive(const void *addr, size_t len);
+ 
+ static inline int compound_mapcount(struct page *page)
+ {
+diff --git a/mm/util.c b/mm/util.c
+index 988d11e6c17c..01e210766f3d 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -604,6 +604,24 @@ void kvfree(const void *addr)
+ }
+ EXPORT_SYMBOL(kvfree);
+ 
++/**
++ * kvfree_sensitive - free a data object containing sensitive information
++ * @addr - address of the data object to be freed
++ * @len  - length of the data object
++ *
++ * Use the special memzero_explicit() function to clear the content of a
++ * kvmalloc'ed object containing sensitive data to make sure that the
++ * compiler won't optimize out the data clearing.
++ */
++void kvfree_sensitive(const void *addr, size_t len)
++{
++	if (likely(!ZERO_OR_NULL_PTR(addr))) {
++		memzero_explicit((void *)addr, len);
++		kvfree(addr);
++	}
++}
++EXPORT_SYMBOL(kvfree_sensitive);
++
+ static inline void *__page_rmapping(struct page *page)
+ {
+ 	unsigned long mapping;
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 6d0ca48ae9a5..153d35c20d3d 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -350,15 +350,4 @@ static inline void key_check(const struct key *key)
+ #define key_check(key) do {} while(0)
+ 
+ #endif
+-
+-/*
+- * Helper function to clear and free a kvmalloc'ed memory object.
+- */
+-static inline void __kvzfree(const void *addr, size_t len)
+-{
+-	if (addr) {
+-		memset((void *)addr, 0, len);
+-		kvfree(addr);
+-	}
+-}
+ #endif /* _INTERNAL_H */
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 5e01192e222a..edde63a63007 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -142,10 +142,7 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
+ 
+ 	key_ref_put(keyring_ref);
+  error3:
+-	if (payload) {
+-		memzero_explicit(payload, plen);
+-		kvfree(payload);
+-	}
++	kvfree_sensitive(payload, plen);
+  error2:
+ 	kfree(description);
+  error:
+@@ -360,7 +357,7 @@ long keyctl_update_key(key_serial_t id,
+ 
+ 	key_ref_put(key_ref);
+ error2:
+-	__kvzfree(payload, plen);
++	kvfree_sensitive(payload, plen);
+ error:
+ 	return ret;
+ }
+@@ -914,7 +911,7 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
+ 		 */
+ 		if (ret > key_data_len) {
+ 			if (unlikely(key_data))
+-				__kvzfree(key_data, key_data_len);
++				kvfree_sensitive(key_data, key_data_len);
+ 			key_data_len = ret;
+ 			continue;	/* Allocate buffer */
+ 		}
+@@ -923,7 +920,7 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
+ 			ret = -EFAULT;
+ 		break;
+ 	}
+-	__kvzfree(key_data, key_data_len);
++	kvfree_sensitive(key_data, key_data_len);
+ 
+ key_put_out:
+ 	key_put(key);
+@@ -1225,10 +1222,7 @@ long keyctl_instantiate_key_common(key_serial_t id,
+ 		keyctl_change_reqkey_auth(NULL);
+ 
+ error2:
+-	if (payload) {
+-		memzero_explicit(payload, plen);
+-		kvfree(payload);
+-	}
++	kvfree_sensitive(payload, plen);
+ error:
+ 	return ret;
+ }
+-- 
+2.18.1
