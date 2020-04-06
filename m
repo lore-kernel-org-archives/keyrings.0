@@ -1,57 +1,135 @@
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 07 Apr 2020 23:50:11 +0000
-Subject: Re: [PATCH v2] mm: Add kvfree_sensitive() for freeing sensitive data objects
-Message-Id: <CAHk-=wjJ4A8h=Qqq-mYuQ1CwyQkquQpNfHmeOkkbsPtb19+z5Q@mail.gmail.com>
+From: Waiman Long <longman@redhat.com>
+Date: Mon, 06 Apr 2020 02:37:00 +0000
+Subject: [PATCH] mm: Add kvfree_sensitive() for freeing sensitive data objects
+Message-Id: <20200406023700.1367-1-longman@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1258"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200406185827.22249-1-longman@redhat.com> <c2c8adf48be7cb18bbdf0aef7d21e2defe3d2183.camel@perches.com>
- <CAHk-=wg_mkSc-pH8ntGHR=no9DOLRQyxdtU20p55DrM1su6QzA@mail.gmail.com>
- <CAHk-=wg2Vsb0JETo24=Tc-T2drwMopMRfKnc__r5SZ6tEnbwcA@mail.gmail.com>
- <699292.1586294051@warthog.procyon.org.uk> <CAHk-=whwaNvyd1q=h0nUQio9byojpxufGkOiVfAh10woRs8KSA@mail.gmail.com>
- <749735.1586300050@warthog.procyon.org.uk>
-In-Reply-To: <749735.1586300050@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Joe Perches <joe@perches.com>, Waiman Long <longman@redhat.com>, Andrew Morton <akpm@linux-foundation.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linux-MM <linux-mm@kvack.org>, keyrings@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>, law@redhat.com
+To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-mm@kvack.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>, Waiman Long <longman@redhat.com>
 
-T24gVHVlLCBBcHIgNywgMjAyMCBhdCAzOjU0IFBNIERhdmlkIEhvd2VsbHMgPGRob3dlbGxzQHJl
-ZGhhdC5jb20+IHdyb3RlOgo+Cj4gaHR0cHM6Ly9nY2MuZ251Lm9yZy9idWd6aWxsYS9zaG93X2J1
-Zy5jZ2k/aWSUNTI3Cj4KPiBXaXRoIHJlZ2FyZCB0byB0aGlzLCBJJ3ZlIGdvdCBiYWNrICJub3Qg
-c3VyZSB3aGF0IExpbnVzIHdhcyB0YWxraW5nIGFib3V0IFdSVAo+IERTRSwgaWYgaGUncyBnb3Qg
-ZXhhbXBsZXMgaGUgY291bGQgcGFzcyBhbG9uZywgdGhleSdkIGJlIGFwcHJlY2lhdGVkIgoKSSds
-bCBkbyB0aGF0LiBXZSBoYXZlIHJlYWwgZXhhbXBsZXMgaW4gdGhlIGtlcm5lbCwgYWx0aG91Z2gg
-dGhleQpwcm9iYWJseSBhcmVuJ3QgYWxsIHRoYXQgX2ltcG9ydGFudF8uCgpJIGRvbid0IHNlZSB0
-aGF0IGNvbW1lbnQgb24gdGhlIGJ1Z3ppbGxhLCBidXQgSSdsbCBwdXQgdGhlIHN0dXBpZApleGFt
-cGxlIGluIHRoZXJlIHRvby4KCk9uZSBzdWNoIGV4YW1wbGUgd291bGQgYmUga2VybmVsL2FzeW5j
-LmM6IGFzeW5jX3J1bl9lbnRyeV9mbigpLCB3aGVyZSB3ZSBoYXZlCgogICAgICAgIC8qIDIpIHJl
-bW92ZSBzZWxmIGZyb20gdGhlIHBlbmRpbmcgcXVldWVzICovCiAgICAgICAgc3Bpbl9sb2NrX2ly
-cXNhdmUoJmFzeW5jX2xvY2ssIGZsYWdzKTsKICAgICAgICBsaXN0X2RlbF9pbml0KCZlbnRyeS0+
-ZG9tYWluX2xpc3QpOwogICAgICAgIGxpc3RfZGVsX2luaXQoJmVudHJ5LT5nbG9iYWxfbGlzdCk7
-CgogICAgICAgIC8qIDMpIGZyZWUgdGhlIGVudHJ5ICovCiAgICAgICAga2ZyZWUoZW50cnkpOwog
-ICAgICAgIGF0b21pY19kZWMoJmVudHJ5X2NvdW50KTsKCmFuZCB3aGlsZSBpdCdzIGdvb2QgZm9y
-bSB0byBkbyAibGlzdF9kZWxfaW5pdCgpIiBvbiB0aG9zZSBmaWVsZHMgaW4KZW50cnksIHRoZSBm
-YWN0IHRoYXQgd2UgdGhlbiBkbyAia2ZyZWUoZW50cnkpIiByaWdodCBhZnRlcndhcmRzIG1lYW5z
-CnRoYXQgdGhlIHN0b3JlcyB0aGF0IHJlLWluaXRpYWxpemUgdGhlIGVudHJ5IGxpc3QgYXJlIGRl
-YWQuCgpTbyBfaWZfIHdlIGhhZCBzb21lIHdheSB0byB0ZWxsIHRoZSBjb21waWxlciB0aGF0ICJo
-ZXksIGtmcmVlKHB0cikKa2lsbHMgdGhlIGxpZmV0aW1lIG9mIHRoYXQgb2JqZWN0IiwgdGhlIGNv
-bXBpbGVyIGNvdWxkIGVsaW1pbmF0ZSB0aGUKZGVhZCBzdG9yZXMuCgpJIHRoaW5rIHRoYXQgZGVh
-ZCBzdG9yZSBlbGltaW5hdGlvbiBpcyBwZXJoYXBzIGxlc3MgaW1wb3J0YW50IHRoYW4gaWYKdGhl
-IGNvbXBpbGVyIGNvdWxkIHdhcm4gYWJvdXQgdXMgc3R1cGlkbHkgdXNpbmcgdGhlIGRlYWQgc3Rv
-cmFnZQphZnRlcndhcmRzLCBidXQgSSBtZW50aW9uIGl0IGFzIGEgIml0IGNhbiBhY3R1YWxseSBt
-YXR0ZXIgZm9yIGNvZGUKZ2VuZXJhdGlvbiIgZXhhbXBsZSB0b28uCgpOb3csIHRoZSBhYm92ZSBp
-cyBhIHBhcnRpY3VsYXJseSBzdHVwaWQgZXhhbXBsZSwgYmVjYXVzZSBpZiB3ZSBjYXJlZCwKd2Ug
-Y291bGQganVzdCB0dXJuIHRoZSAibGlzdF9kZWxfaW5pdCgpIiBpbnRvIGEgcGxhaW4gImxpc3Rf
-ZGVsKCkiLAphbmQgc2ltcGx5IG5vdCBkbyB0aGUgdW5uZWNlc3NhcnkgcmUtaW5pdGlhbGl6YXRp
-b24gb2YgdGhlIGxpc3QgZW50cnkKYWZ0ZXIgcmVtb3ZpbmcgaXQuCgpCdXQgSSBwaWNrZWQgYSBz
-dHVwaWQgZXhhbXBsZSBiZWNhdXNlIGl0J3MgZWFzeSB0byB1bmRlcnN0YW5kLgoKTGVzcyBzdHVw
-aWRseSwgd2Ugc29tZXRpbWVzIGhhdmUgImNsZWFudXAiIGZ1bmN0aW9ucyB0aGF0IGdldCByaWQg
-b2YKdGhpbmdzLCBhbmQgYXJlIGNhbGxlZCBiZWZvcmUgeW91IGZyZWUgdGhlIHVuZGVybHlpbmcg
-c3RvcmFnZS4KCkFuZCB0aGVyZSwgdGhlIGNsZWFudXAgZnVuY3Rpb24gbWlnaHQgYmUgdXNlZCBp
-biBnZW5lcmFsLCBhbmQgbm90IG9ubHkKanVzdCBiZWZvcmUgZnJlZWluZy4gU28gdGhlIHJlLWlu
-aXRpYWxpemF0aW9uIGNvdWxkIG1ha2Ugc2Vuc2UgaW4gdGhhdApjb250ZXh0LCBidXQgbWlnaHQg
-YWdhaW4gYmUganVzdCBkZWFkIHN0b3JlcyBmb3IgdGhlIGFjdHVhbCBmaW5hbApmcmVlaW5nIGNh
-c2UuCgpJcyB0aGlzIGEgYmlnIGRlYWw/IE5vIGl0J3Mgbm90LiBCdXQgaXQncyBub3QgcmVhbGx5
-IGFueSBkaWZmZXJlbnQKZnJvbSB0aGUgZGVhZCBzdG9yZSBlbGltaW5hdGlvbiB0aGF0IGdjYyBh
-bHJlYWR5IGRvZXMgZm9yIGxvY2FsCnZhcmlhYmxlcyBvbiBzdGFjay4KCiAgICAgICAgICBMaW51
-cw==
+For kvmalloc'ed data object that contains sensitive information like
+cryptographic key, we need to make sure that the buffer is always
+cleared before freeing it. Using memset() alone for buffer clearing may
+not provide certainty as the compiler may compile it away. To be sure,
+the special memzero_explicit() has to be used.
+
+This patch introduces a new kvfree_sensitive() for freeing those
+sensitive data objects allocated by kvmalloc(). The relevnat places
+where kvfree_sensitive() can be used are modified to use it.
+
+Fixes: 4f0882491a14 ("KEYS: Avoid false positive ENOMEM error on key read")
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Waiman Long <longman@redhat.com>
+---
+ include/linux/mm.h       | 17 +++++++++++++++++
+ security/keys/internal.h | 11 -----------
+ security/keys/keyctl.c   | 16 +++++-----------
+ 3 files changed, 22 insertions(+), 22 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 7dd5c4ccbf85..c26f279f1956 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -758,6 +758,23 @@ static inline void *kvcalloc(size_t n, size_t size, gfp_t flags)
+ 
+ extern void kvfree(const void *addr);
+ 
++/**
++ * kvfree_sensitive - free a data object containing sensitive information
++ * @addr - address of the data object to be freed
++ * @len  - length of the data object
++ *
++ * Use the special memzero_explicit() function to clear the content of a
++ * kvmalloc'ed object containing sensitive data to make sure that the
++ * compiler won't optimize out the data clearing.
++ */
++static inline void kvfree_sensitive(const void *addr, size_t len)
++{
++	if (addr) {
++		memzero_explicit((void *)addr, len);
++		kvfree(addr);
++	}
++}
++
+ static inline int compound_mapcount(struct page *page)
+ {
+ 	VM_BUG_ON_PAGE(!PageCompound(page), page);
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 6d0ca48ae9a5..153d35c20d3d 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -350,15 +350,4 @@ static inline void key_check(const struct key *key)
+ #define key_check(key) do {} while(0)
+ 
+ #endif
+-
+-/*
+- * Helper function to clear and free a kvmalloc'ed memory object.
+- */
+-static inline void __kvzfree(const void *addr, size_t len)
+-{
+-	if (addr) {
+-		memset((void *)addr, 0, len);
+-		kvfree(addr);
+-	}
+-}
+ #endif /* _INTERNAL_H */
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 5e01192e222a..edde63a63007 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -142,10 +142,7 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
+ 
+ 	key_ref_put(keyring_ref);
+  error3:
+-	if (payload) {
+-		memzero_explicit(payload, plen);
+-		kvfree(payload);
+-	}
++	kvfree_sensitive(payload, plen);
+  error2:
+ 	kfree(description);
+  error:
+@@ -360,7 +357,7 @@ long keyctl_update_key(key_serial_t id,
+ 
+ 	key_ref_put(key_ref);
+ error2:
+-	__kvzfree(payload, plen);
++	kvfree_sensitive(payload, plen);
+ error:
+ 	return ret;
+ }
+@@ -914,7 +911,7 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
+ 		 */
+ 		if (ret > key_data_len) {
+ 			if (unlikely(key_data))
+-				__kvzfree(key_data, key_data_len);
++				kvfree_sensitive(key_data, key_data_len);
+ 			key_data_len = ret;
+ 			continue;	/* Allocate buffer */
+ 		}
+@@ -923,7 +920,7 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
+ 			ret = -EFAULT;
+ 		break;
+ 	}
+-	__kvzfree(key_data, key_data_len);
++	kvfree_sensitive(key_data, key_data_len);
+ 
+ key_put_out:
+ 	key_put(key);
+@@ -1225,10 +1222,7 @@ long keyctl_instantiate_key_common(key_serial_t id,
+ 		keyctl_change_reqkey_auth(NULL);
+ 
+ error2:
+-	if (payload) {
+-		memzero_explicit(payload, plen);
+-		kvfree(payload);
+-	}
++	kvfree_sensitive(payload, plen);
+ error:
+ 	return ret;
+ }
+-- 
+2.18.1
