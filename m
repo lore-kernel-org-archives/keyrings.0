@@ -1,34 +1,57 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 07 Apr 2020 22:54:10 +0000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 07 Apr 2020 23:50:11 +0000
 Subject: Re: [PATCH v2] mm: Add kvfree_sensitive() for freeing sensitive data objects
-Message-Id: <749735.1586300050@warthog.procyon.org.uk>
+Message-Id: <CAHk-=wjJ4A8h=Qqq-mYuQ1CwyQkquQpNfHmeOkkbsPtb19+z5Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1258"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <CAHk-=whwaNvyd1q=h0nUQio9byojpxufGkOiVfAh10woRs8KSA@mail.gmail.com> <20200406185827.22249-1-longman@redhat.com> <c2c8adf48be7cb18bbdf0aef7d21e2defe3d2183.camel@perches.com> <CAHk-=wg_mkSc-pH8ntGHR=no9DOLRQyxdtU20p55DrM1su6QzA@mail.gmail.com> <CAHk-=wg2Vsb0JETo24=Tc-T2drwMopMRfKnc__r5SZ6tEnbwcA@mail.gmail.com> <699292.1586294051@warthog.procyon.org.uk>
-In-Reply-To: <CAHk-=whwaNvyd1q=h0nUQio9byojpxufGkOiVfAh10woRs8KSA@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, Joe Perches <joe@perches.com>, Waiman Long <longman@redhat.com>, Andrew Morton <akpm@linux-foundation.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linux-MM <linux-mm@kvack.org>, keyrings@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>, law@redhat.com
+References: <20200406185827.22249-1-longman@redhat.com> <c2c8adf48be7cb18bbdf0aef7d21e2defe3d2183.camel@perches.com>
+ <CAHk-=wg_mkSc-pH8ntGHR=no9DOLRQyxdtU20p55DrM1su6QzA@mail.gmail.com>
+ <CAHk-=wg2Vsb0JETo24=Tc-T2drwMopMRfKnc__r5SZ6tEnbwcA@mail.gmail.com>
+ <699292.1586294051@warthog.procyon.org.uk> <CAHk-=whwaNvyd1q=h0nUQio9byojpxufGkOiVfAh10woRs8KSA@mail.gmail.com>
+ <749735.1586300050@warthog.procyon.org.uk>
+In-Reply-To: <749735.1586300050@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: Joe Perches <joe@perches.com>, Waiman Long <longman@redhat.com>, Andrew Morton <akpm@linux-foundation.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linux-MM <linux-mm@kvack.org>, keyrings@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>, law@redhat.com
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> > It might be worth asking the compiler folks to give us an __attribute__ for
-> > that - even if they don't do anything with it immediately.  So we might have
-> > something like:
-> >
-> >         void free(const volatile void *ptr) __attribute__((free(1)));
-> 
-> Yeah, that sounds sane.
-
-https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94527
-
-> Even if it wasn't initially used for anything it wouldn't hurt, and maybe
-> some day it would improve warnings (and allow the compiler to do the dead
-> store elimination that started this whole long set of threads in the first
-> place..)
-
-With regard to this, I've got back "not sure what Linus was talking about WRT
-DSE, if he's got examples he could pass along, they'd be appreciated"
-
-David
+T24gVHVlLCBBcHIgNywgMjAyMCBhdCAzOjU0IFBNIERhdmlkIEhvd2VsbHMgPGRob3dlbGxzQHJl
+ZGhhdC5jb20+IHdyb3RlOgo+Cj4gaHR0cHM6Ly9nY2MuZ251Lm9yZy9idWd6aWxsYS9zaG93X2J1
+Zy5jZ2k/aWSUNTI3Cj4KPiBXaXRoIHJlZ2FyZCB0byB0aGlzLCBJJ3ZlIGdvdCBiYWNrICJub3Qg
+c3VyZSB3aGF0IExpbnVzIHdhcyB0YWxraW5nIGFib3V0IFdSVAo+IERTRSwgaWYgaGUncyBnb3Qg
+ZXhhbXBsZXMgaGUgY291bGQgcGFzcyBhbG9uZywgdGhleSdkIGJlIGFwcHJlY2lhdGVkIgoKSSds
+bCBkbyB0aGF0LiBXZSBoYXZlIHJlYWwgZXhhbXBsZXMgaW4gdGhlIGtlcm5lbCwgYWx0aG91Z2gg
+dGhleQpwcm9iYWJseSBhcmVuJ3QgYWxsIHRoYXQgX2ltcG9ydGFudF8uCgpJIGRvbid0IHNlZSB0
+aGF0IGNvbW1lbnQgb24gdGhlIGJ1Z3ppbGxhLCBidXQgSSdsbCBwdXQgdGhlIHN0dXBpZApleGFt
+cGxlIGluIHRoZXJlIHRvby4KCk9uZSBzdWNoIGV4YW1wbGUgd291bGQgYmUga2VybmVsL2FzeW5j
+LmM6IGFzeW5jX3J1bl9lbnRyeV9mbigpLCB3aGVyZSB3ZSBoYXZlCgogICAgICAgIC8qIDIpIHJl
+bW92ZSBzZWxmIGZyb20gdGhlIHBlbmRpbmcgcXVldWVzICovCiAgICAgICAgc3Bpbl9sb2NrX2ly
+cXNhdmUoJmFzeW5jX2xvY2ssIGZsYWdzKTsKICAgICAgICBsaXN0X2RlbF9pbml0KCZlbnRyeS0+
+ZG9tYWluX2xpc3QpOwogICAgICAgIGxpc3RfZGVsX2luaXQoJmVudHJ5LT5nbG9iYWxfbGlzdCk7
+CgogICAgICAgIC8qIDMpIGZyZWUgdGhlIGVudHJ5ICovCiAgICAgICAga2ZyZWUoZW50cnkpOwog
+ICAgICAgIGF0b21pY19kZWMoJmVudHJ5X2NvdW50KTsKCmFuZCB3aGlsZSBpdCdzIGdvb2QgZm9y
+bSB0byBkbyAibGlzdF9kZWxfaW5pdCgpIiBvbiB0aG9zZSBmaWVsZHMgaW4KZW50cnksIHRoZSBm
+YWN0IHRoYXQgd2UgdGhlbiBkbyAia2ZyZWUoZW50cnkpIiByaWdodCBhZnRlcndhcmRzIG1lYW5z
+CnRoYXQgdGhlIHN0b3JlcyB0aGF0IHJlLWluaXRpYWxpemUgdGhlIGVudHJ5IGxpc3QgYXJlIGRl
+YWQuCgpTbyBfaWZfIHdlIGhhZCBzb21lIHdheSB0byB0ZWxsIHRoZSBjb21waWxlciB0aGF0ICJo
+ZXksIGtmcmVlKHB0cikKa2lsbHMgdGhlIGxpZmV0aW1lIG9mIHRoYXQgb2JqZWN0IiwgdGhlIGNv
+bXBpbGVyIGNvdWxkIGVsaW1pbmF0ZSB0aGUKZGVhZCBzdG9yZXMuCgpJIHRoaW5rIHRoYXQgZGVh
+ZCBzdG9yZSBlbGltaW5hdGlvbiBpcyBwZXJoYXBzIGxlc3MgaW1wb3J0YW50IHRoYW4gaWYKdGhl
+IGNvbXBpbGVyIGNvdWxkIHdhcm4gYWJvdXQgdXMgc3R1cGlkbHkgdXNpbmcgdGhlIGRlYWQgc3Rv
+cmFnZQphZnRlcndhcmRzLCBidXQgSSBtZW50aW9uIGl0IGFzIGEgIml0IGNhbiBhY3R1YWxseSBt
+YXR0ZXIgZm9yIGNvZGUKZ2VuZXJhdGlvbiIgZXhhbXBsZSB0b28uCgpOb3csIHRoZSBhYm92ZSBp
+cyBhIHBhcnRpY3VsYXJseSBzdHVwaWQgZXhhbXBsZSwgYmVjYXVzZSBpZiB3ZSBjYXJlZCwKd2Ug
+Y291bGQganVzdCB0dXJuIHRoZSAibGlzdF9kZWxfaW5pdCgpIiBpbnRvIGEgcGxhaW4gImxpc3Rf
+ZGVsKCkiLAphbmQgc2ltcGx5IG5vdCBkbyB0aGUgdW5uZWNlc3NhcnkgcmUtaW5pdGlhbGl6YXRp
+b24gb2YgdGhlIGxpc3QgZW50cnkKYWZ0ZXIgcmVtb3ZpbmcgaXQuCgpCdXQgSSBwaWNrZWQgYSBz
+dHVwaWQgZXhhbXBsZSBiZWNhdXNlIGl0J3MgZWFzeSB0byB1bmRlcnN0YW5kLgoKTGVzcyBzdHVw
+aWRseSwgd2Ugc29tZXRpbWVzIGhhdmUgImNsZWFudXAiIGZ1bmN0aW9ucyB0aGF0IGdldCByaWQg
+b2YKdGhpbmdzLCBhbmQgYXJlIGNhbGxlZCBiZWZvcmUgeW91IGZyZWUgdGhlIHVuZGVybHlpbmcg
+c3RvcmFnZS4KCkFuZCB0aGVyZSwgdGhlIGNsZWFudXAgZnVuY3Rpb24gbWlnaHQgYmUgdXNlZCBp
+biBnZW5lcmFsLCBhbmQgbm90IG9ubHkKanVzdCBiZWZvcmUgZnJlZWluZy4gU28gdGhlIHJlLWlu
+aXRpYWxpemF0aW9uIGNvdWxkIG1ha2Ugc2Vuc2UgaW4gdGhhdApjb250ZXh0LCBidXQgbWlnaHQg
+YWdhaW4gYmUganVzdCBkZWFkIHN0b3JlcyBmb3IgdGhlIGFjdHVhbCBmaW5hbApmcmVlaW5nIGNh
+c2UuCgpJcyB0aGlzIGEgYmlnIGRlYWw/IE5vIGl0J3Mgbm90LiBCdXQgaXQncyBub3QgcmVhbGx5
+IGFueSBkaWZmZXJlbnQKZnJvbSB0aGUgZGVhZCBzdG9yZSBlbGltaW5hdGlvbiB0aGF0IGdjYyBh
+bHJlYWR5IGRvZXMgZm9yIGxvY2FsCnZhcmlhYmxlcyBvbiBzdGFjay4KCiAgICAgICAgICBMaW51
+cw==
