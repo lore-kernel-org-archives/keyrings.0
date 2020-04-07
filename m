@@ -1,60 +1,140 @@
-From: Lennart Poettering <mzxreary@0pointer.de>
-Date: Mon, 06 Apr 2020 18:48:12 +0000
+From: Ian Kent <raven@themaw.net>
+Date: Tue, 07 Apr 2020 02:21:59 +0000
 Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
-Message-Id: <20200406184812.GA37843@gardel-login>
+Message-Id: <a4b5828d73ff097794f63f5f9d0fd1532067941c.camel@themaw.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAJfpegsXqxizOGwa045jfT6YdUpMxpXET-yJ4T8qudyQbCGkHQ@mail.gmail.com>
- <36e45eae8ad78f7b8889d9d03b8846e78d735d28.camel@themaw.net>
- <CAJfpegsCDWehsTRQ9UJYuQnghnE=M8L0_bJBTTPA+Upu87t90w@mail.gmail.com>
- <27994c53034c8f769ea063a54169317c3ee62c04.camel@themaw.net>
- <20200403111144.GB34663@gardel-login>
- <CAJfpeguQAw+Mgc8QBNd+h3KV8=Y-SOGT7TB_N_54wa8MCoOSzg@mail.gmail.com>
- <20200403151223.GB34800@gardel-login>
- <20200403203024.GB27105@fieldses.org>
- <20200406091701.q7ctdek2grzryiu3@ws.net.home>
- <CAHk-=wjW735UE+byK1xsM9UvpF2ubh7bCMaAOwz575U7hRCKyA@mail.gmail.com>
-In-Reply-To: <CAHk-=wjW735UE+byK1xsM9UvpF2ubh7bCMaAOwz575U7hRCKyA@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Karel Zak <kzak@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>, Miklos Szeredi <miklos@szeredi.hu>, Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Aleksa Sarai <cyphar@cyphar.com>
+References: <20200402143623.GB31529@gardel-login>
+         <CAJfpegtRi9epdxAeoVbm+7UxkZfzC6XmD4K_5dg=RKADxy_TVA@mail.gmail.com>
+         <20200402152831.GA31612@gardel-login>
+         <CAJfpegum_PsCfnar8+V2f_VO3k8CJN1LOFJV5OkHRDbQKR=EHg@mail.gmail.com>
+         <20200402155020.GA31715@gardel-login>
+         <CAJfpeguM__+S6DiD4MWFv5GCf_EUWvGFT0mzuUCCrfQwggqtDQ@mail.gmail.com>
+         <20200403110842.GA34663@gardel-login>
+         <CAJfpegtYKhXB-HNddUeEMKupR5L=RRuydULrvm39eTung0=yRg@mail.gmail.com>
+         <20200403150143.GA34800@gardel-login>
+         <CAJfpegudLD8F-25k-k=9G96JKB+5Y=xFT=ZMwiBkNTwkjMDumA@mail.gmail.com>
+         <20200406172917.GA37692@gardel-login>
+In-Reply-To: <20200406172917.GA37692@gardel-login>
+To: Lennart Poettering <mzxreary@0pointer.de>, Miklos Szeredi <miklos@szeredi.hu>
+Cc: David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Aleksa Sarai <cyphar@cyphar.com>
 
-On Mo, 06.04.20 09:34, Linus Torvalds (torvalds@linux-foundation.org) wrote:
+On Mon, 2020-04-06 at 19:29 +0200, Lennart Poettering wrote:
+> On Mo, 06.04.20 11:22, Miklos Szeredi (miklos@szeredi.hu) wrote:
+> 
+> > > Nah. What I wrote above is drastically simplified. It's IRL more
+> > > complex. Specific services need to be killed between certain
+> > > mounts
+> > > are unmounted, since they are a backend for another mount. NFS,
+> > > or
+> > > FUSE or stuff like that usually has some processes backing them
+> > > around, and we need to stop the mounts they provide before these
+> > > services, and then the mounts these services reside on after
+> > > that, and
+> > > so on. It's a complex dependency tree of stuff that needs to be
+> > > done
+> > > in order, so that we can deal with arbitrarily nested mounts,
+> > > storage
+> > > subsystems, and backing services.
+> > 
+> > That still doesn't explain why you need to keep track of all mounts
+> > in
+> > the system.
+> > 
+> > If you are aware of the dependency, then you need to keep track of
+> > that particular mount. If not, then why?
+> 
+> it works the other way round in systemd: something happens, i.e. a
+> device pops up or a mount is established and systemd figures our if
+> there's something to do. i.e. whether services shall be pulled in or
+> so.
+> 
+> It's that way for a reason: there are plenty services that want to
+> instantiated once for each object of a certain kind to pop up (this
+> happens very often for devices, but could also happen for any other
+> kind of "unit" systemd manages, and one of those kinds are mount
+> units). For those we don't know the unit to pull in yet (because it's
+> not going to be a well-named singleton, but an instance incorporating
+> some identifier from the source unit) when the unit that pops up does
+> so, thus we can only wait for the the latter to determine what to
+> pull
+> in.
+> 
+> > What I'm starting to see is that there's a fundamental conflict
+> > between how systemd people want to deal with new mounts and how
+> > some
+> > other people want to use mounts (i.e. tens of thousands of mounts
+> > in
+> > an automount map).
+> 
+> Well, I am not sure what automount has to do with anything. You can
+> have 10K mounts with or without automount, it's orthogonal to that.
+> In
+> fact, I assumed the point of automount was to pretend there are 10K
+> mounts but not actually have them most of the time, no?
 
-> On Mon, Apr 6, 2020 at 2:17 AM Karel Zak <kzak@redhat.com> wrote:
-> >
-> > On Fri, Apr 03, 2020 at 04:30:24PM -0400, J. Bruce Fields wrote:
-> > >
-> > > nfs-utils/support/misc/mountpoint.c:check_is_mountpoint() stats the file
-> > > and ".." and returns true if they have different st_dev or the same
-> > > st_ino.  Comparing mount ids sounds better.
-> >
-> > BTW, this traditional st_dev+st_ino way is not reliable for bind mounts.
-> > For mountpoint(1) we search the directory in /proc/self/mountinfo.
->
-> These days you should probably use openat2() with RESOLVE_NO_XDEV.
+Yes, but automount, when using a large direct mount map will, be the
+source of lots of mounts which of an autofs file system.
 
-Note that opening a file is relatively "heavy" i.e. typically triggers
-autofs and stuff, and results in security checks (which can fail and
-such, and show up in audit).
+> 
+> I mean, whether there's room to optimize D-Bus IPC or not is entirely
+> orthogonal to anything discussed here regarding fsinfo(). Don't make
+> this about systemd sending messages over D-Bus, that's a very
+> different story, and a non-issue if you ask me:
 
-statx() doesn't do that, and that's explicitly documented
-(i.e. AT_NO_AUTOMOUNT and stuff).
+Quite probably, yes, that's something you can care about if it really
+is an issue but isn't something I care about myself either.
 
-Hence, unless openat2() has some mechanism of doing something like an
-"open() but not really" (O_PATH isn't really sufficient for this, no?)
-I don't think it could be a good replacement for a statx() type check
-if something is a mount point or not.
+> 
+> Right now, when you have n mounts, and any mount changes, or one is
+> added or removed then we have to parse the whole mount table again,
+> asynchronously, processing all n entries again, every frickin
+> time. This means the work to process n mounts popping up at boot is
+> O(n²). That sucks, it should be obvious to anyone. Now if we get that
+> fixed, by some mount API that can send us minimal notifications about
+> what happened and where, then this becomes O(n), which is totally OK.
 
-I mean, think about usecases: a common usecase for "is this a
-mountpoint" checks are tools that traverse directory trees and want to
-stop at submounts. They generally try to minimize operations and hence
-stat stuff but don't open anything unless its what they look foor (or a
-subdir they identified as a non-submount). Doing an extra openat2() in
-between there doesn't sound so attractive, since you pay heavily...
+But this is clearly a problem and is what I do care about and the
+infrastructure being proposed here can be used to achieve this.
 
-Lennart
+Unfortunately, and I was mistaken about what systemd does, I don't
+see a simple way of improving this. This is because it appears that
+systemd, having had to scan the entire mount table every time has,
+necessarily, lead to code that can't easily accommodate the ability
+to directly get the info immediately for a single mount.
 
---
-Lennart Poettering, Berlin
+So to improve this I think quite a few changes will be needed in
+systemd and libmount. I'm not quite sure how to get that started.
+After all it needs to be done how Karel would like to see it done
+in libmount and how systemd folks would like to see it done in
+systemd which is very probably not how I would approach it myself.
+
+> 
+> You keep talking about filtering, which will just lower the "n" a bit
+> in particular cases to some value "m" maybe (with m < n), it does not
+> address the fact that O(m²) is still a big problem.
+> 
+> hence, filtering is great, no problem, add it if you want it. I
+> personally don't care about filtering though, and I doubt we'd use it
+> in systemd, I just care about the O(n²) issue.
+> 
+> If you ask me if D-Bus can handle 10K messages sent over the bus
+> during boot, then yes, it totally can handle that. Can systemd nicely
+> process O(n²) mounts internally though equally well? No, obviously
+> not,
+> if n grows too large. Anyone computer scientist should understand
+> that..
+> 
+> Anyway, I have the suspicion this discussion has stopped being
+> useful. I think you are trying to fix problems that userspce actually
+> doesn't have. I can just tell you what we understand the problems
+> are,
+> but if you are out trying to fix other percieved ones, then great,
+> but
+> I mostly lost interest.
+
+Yes, filtering sounds like we've wandered off topic, ;)
+
+Ian
