@@ -1,40 +1,38 @@
-From: Waiman Long <longman@redhat.com>
-Date: Tue, 14 Apr 2020 19:29:33 +0000
-Subject: [PATCH v2 3/3] btrfs: Use kfree() in btrfs_ioctl_get_subvol_info()
-Message-Id: <20200414192933.26846-1-longman@redhat.com>
+From: SANDRA DEWI <dewisandra154@gmail.com>
+Date: Tue, 07 Apr 2020 05:10:22 +0000
+Subject: whether this is your correct email address or not
+Message-Id: <CABRVPWyGvNCN0LYptG2iubN9H=5-q0tBFHwXF3pKPiOaC1GVRA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200413211550.8307-1-longman@redhat.com>
-In-Reply-To: <20200413211550.8307-1-longman@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>, Chris Mason <clm@fb.com>, Josef Bacik <josef@toxicpanda.com>, David Sterba <dsterba@suse.com>
-Cc: linux-mm@kvack.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org, linux-crypto@vger.kernel.org, linux-btrfs@vger.kernel.org, Waiman Long <longman@redhat.com>
+To: keyrings@vger.kernel.org
 
-In btrfs_ioctl_get_subvol_info(), there is a classic case where kzalloc()
-was incorrectly paired with kzfree(). According to David Sterba, there
-isn't any sensitive information in the subvol_info that needs to be
-cleared before freeing. So kfree_sensitive() isn't really needed,
-use kfree() instead.
+Dear ,Pastor
 
-Reported-by: David Sterba <dsterba@suse.cz>
-Signed-off-by: Waiman Long <longman@redhat.com>
----
- fs/btrfs/ioctl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index eab3f8510426..5070bd2436b7 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -2691,7 +2691,7 @@ static int btrfs_ioctl_get_subvol_info(struct file *file, void __user *argp)
- 	btrfs_put_root(root);
- out_free:
- 	btrfs_free_path(path);
--	kfree_sensitive(subvol_info);
-+	kfree(subvol_info);
- 	return ret;
- }
- 
--- 
-2.18.1
+
+I have a client who is an oil business man and he made a fixed deposit
+of $26 million USD in my bank, where I am the director of the branch,
+My client died with his entire family in Jordanian
+
+50% of the fund will be for the church  for the work of God,the
+balance 50% we share it in the ratio of 50/50. Meaning 50% to you and
+50% for me
+
+intervention in the Syrian Civil War 2014 leaving behind no next of
+kin. I Propose to present you as next of kin to claim the funds, if
+interested reply me for full details and how we are to
+
+
+
+proceed to close this deal.
+
+
+
+
+Mrs. Sandra Dewi
+
+
+
+Email  mrsdewi@gmx.com
