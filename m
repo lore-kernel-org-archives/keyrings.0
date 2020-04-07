@@ -1,114 +1,65 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 09 Mar 2020 12:17:21 +0000
-Subject: [RFC PATCH 01/17] uapi: General notification queue definitions [ver #4]
-Message-Id: <158375624103.334846.15282432828559449957.stgit@warthog.procyon.org.uk>
+From: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Date: Tue, 07 Apr 2020 00:25:26 +0000
+Subject: [RESEND][PATCH] keys: Handle missing Authority Key Identifier X509 extension
+Message-Id: <20200407002526.25135-1-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158375623086.334846.16121725232323108842.stgit@warthog.procyon.org.uk>
-In-Reply-To: <158375623086.334846.16121725232323108842.stgit@warthog.procyon.org.uk>
-To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk
-Cc: dhowells@redhat.comdhowells@redhat.com, casey@schaufler-ca.com, sds@tycho.nsa.gov, nicolas.dichtel@6wind.com, raven@themaw.net, christian@brauner.io, andres@anarazel.de, jlayton@redhat.com, dray@redhat.com, kzak@redhat.com, keyrings@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20180505060152.21571-1-andrew.zaborowski@intel.com>
+In-Reply-To: <20180505060152.21571-1-andrew.zaborowski@intel.com>
+To: keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>
 
-Add UAPI definitions for the general notification queue, including the
-following pieces:
+In a self-signed certificate the subject and issuer are the same and so
+the Authority Key Identifier X.509 v3 extension is explicitly made
+optional in RFC5280 section 4.2.1.1.
+crypto/asymmetric_keys/x509_cert_parser.c can't handle this and makes
+(at least) the restrict.c functions refuse to work with certificates
+that don't include the AKID.  Fix this by filling in the missing
+cert->sig->auth_ids with the certificate's own IDs after parsing and
+determinig the certificate is self-signed.
 
- (*) struct watch_notification.
+The asymmetric_key_generate_id return value is not checked because it's
+already succeeded once at this point.
 
-     This is the metadata header for notification messages.  It includes a
-     type and subtype that indicate the source of the message
-     (eg. WATCH_TYPE_MOUNT_NOTIFY) and the kind of the message
-     (eg. NOTIFY_MOUNT_NEW_MOUNT).
+There are root X.509 v3 certificates in use where this is the case,
+mostly oldish ones.
 
-     The header also contains an information field that conveys the
-     following information:
-
-	- WATCH_INFO_LENGTH.  The size of the entry (entries are variable
-          length).
-
-	- WATCH_INFO_ID.  The watch ID specified when the watchpoint was
-          set.
-
-	- WATCH_INFO_TYPE_INFO.  (Sub)type-specific information.
-
-	- WATCH_INFO_FLAG_*.  Flag bits overlain on the type-specific
-          information.  For use by the type.
-
-     All the information in the header can be used in filtering messages at
-     the point of writing into the buffer.
-
- (*) struct watch_notification_removal
-
-     This is an extended watch-removal notification record that includes an
-     'id' field that can indicate the identifier of the object being
-     removed if available (for instance, a keyring serial number).
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
 ---
+ crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
- include/uapi/linux/watch_queue.h |   55 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
- create mode 100644 include/uapi/linux/watch_queue.h
-
-diff --git a/include/uapi/linux/watch_queue.h b/include/uapi/linux/watch_queue.h
-new file mode 100644
-index 000000000000..5f3d21e8a34b
---- /dev/null
-+++ b/include/uapi/linux/watch_queue.h
-@@ -0,0 +1,55 @@
-+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-+#ifndef _UAPI_LINUX_WATCH_QUEUE_H
-+#define _UAPI_LINUX_WATCH_QUEUE_H
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 26ec20ef489..a5a2f93e242 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -136,6 +136,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
+ 	if (ret < 0)
+ 		goto error_decode;
+ 
++	if (cert->self_signed) {
++		if (!cert->sig->auth_ids[0]) {
++			/* Duplicate cert->id */
++			kid = asymmetric_key_generate_id(cert->raw_serial,
++							 cert->raw_serial_size,
++							 cert->raw_issuer,
++							 cert->raw_issuer_size);
++			cert->sig->auth_ids[0] = kid;
++		}
 +
-+#include <linux/types.h>
++		if (!cert->sig->auth_ids[1] && cert->skid) {
++			/* Duplicate cert->skid */
++			kid = asymmetric_key_generate_id(cert->raw_skid,
++							 cert->raw_skid_size,
++							 "", 0);
++			cert->sig->auth_ids[1] = kid;
++		}
++	}
 +
-+enum watch_notification_type {
-+	WATCH_TYPE_META		= 0,	/* Special record */
-+	WATCH_TYPE__NR		= 1
-+};
-+
-+enum watch_meta_notification_subtype {
-+	WATCH_META_REMOVAL_NOTIFICATION	= 0,	/* Watched object was removed */
-+	WATCH_META_LOSS_NOTIFICATION	= 1,	/* Data loss occurred */
-+};
-+
-+/*
-+ * Notification record header.  This is aligned to 64-bits so that subclasses
-+ * can contain __u64 fields.
-+ */
-+struct watch_notification {
-+	__u32			type:24;	/* enum watch_notification_type */
-+	__u32			subtype:8;	/* Type-specific subtype (filterable) */
-+	__u32			info;
-+#define WATCH_INFO_LENGTH	0x0000007f	/* Length of record */
-+#define WATCH_INFO_LENGTH__SHIFT 0
-+#define WATCH_INFO_ID		0x0000ff00	/* ID of watchpoint */
-+#define WATCH_INFO_ID__SHIFT	8
-+#define WATCH_INFO_TYPE_INFO	0xffff0000	/* Type-specific info */
-+#define WATCH_INFO_TYPE_INFO__SHIFT 16
-+#define WATCH_INFO_FLAG_0	0x00010000	/* Type-specific info, flag bit 0 */
-+#define WATCH_INFO_FLAG_1	0x00020000	/* ... */
-+#define WATCH_INFO_FLAG_2	0x00040000
-+#define WATCH_INFO_FLAG_3	0x00080000
-+#define WATCH_INFO_FLAG_4	0x00100000
-+#define WATCH_INFO_FLAG_5	0x00200000
-+#define WATCH_INFO_FLAG_6	0x00400000
-+#define WATCH_INFO_FLAG_7	0x00800000
-+};
-+
-+
-+/*
-+ * Extended watch removal notification.  This is used optionally if the type
-+ * wants to indicate an identifier for the object being watched, if there is
-+ * such.  This can be distinguished by the length.
-+ *
-+ * type -> WATCH_TYPE_META
-+ * subtype -> WATCH_META_REMOVAL_NOTIFICATION
-+ */
-+struct watch_notification_removal {
-+	struct watch_notification watch;
-+	__u64	id;		/* Type-dependent identifier */
-+};
-+
-+#endif /* _UAPI_LINUX_WATCH_QUEUE_H */
+ 	kfree(ctx);
+ 	return cert;
+ 
+-- 
+2.20.1
