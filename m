@@ -1,33 +1,34 @@
-From: Matthew Wilcox <willy@infradead.org>
-Date: Mon, 06 Apr 2020 20:00:16 +0000
+From: Waiman Long <longman@redhat.com>
+Date: Tue, 07 Apr 2020 02:16:04 +0000
 Subject: Re: [PATCH v2] mm: Add kvfree_sensitive() for freeing sensitive data objects
-Message-Id: <20200406200016.GJ21484@bombadil.infradead.org>
+Message-Id: <1e4a6174-04be-6c05-fd6e-b43fefd317fc@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20200406185827.22249-1-longman@redhat.com>
-In-Reply-To: <20200406185827.22249-1-longman@redhat.com>
-To: Waiman Long <longman@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, linux-mm@kvack.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, David Rientjes <rientjes@google.com>
+ <c2c8adf48be7cb18bbdf0aef7d21e2defe3d2183.camel@perches.com>
+In-Reply-To: <c2c8adf48be7cb18bbdf0aef7d21e2defe3d2183.camel@perches.com>
+To: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-mm@kvack.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
 
-On Mon, Apr 06, 2020 at 02:58:27PM -0400, Waiman Long wrote:
-> +/**
-> + * kvfree_sensitive - free a data object containing sensitive information
-> + * @addr - address of the data object to be freed
-> + * @len  - length of the data object
+On 4/6/20 3:38 PM, Joe Perches wrote:
+> On Mon, 2020-04-06 at 14:58 -0400, Waiman Long wrote:
+>> For kvmalloc'ed data object that contains sensitive information like
+>> cryptographic key, we need to make sure that the buffer is always
+>> cleared before freeing it. Using memset() alone for buffer clearing may
+>> not provide certainty as the compiler may compile it away. To be sure,
+>> the special memzero_explicit() has to be used.
+> [] 
+>>  extern void kvfree(const void *addr);
+>> +extern void kvfree_sensitive(const void *addr, size_t len);
+> Question: why should this be const?
+>
+> 2.1.44 changed kfree(void *) to kfree(const void *) but
+> I didn't find a particular reason why.
 
-Did you try building this with W=1?  I believe this is incorrect kerneldoc.
-It should be @addr: and @len:
+I am just following the function prototype used by kvfree(). Even
+kzfree(const void *) use const. I can remove "const" if others agree.
 
-Also, it reads better in the htmldocs if you capitalise the first letter
-of each sentence and finish with a full stop.
-
-> @@ -914,7 +911,7 @@ long keyctl_read_key(key_serial_t keyid, char __user *buffer, size_t buflen)
->  		 */
->  		if (ret > key_data_len) {
->  			if (unlikely(key_data))
-> -				__kvzfree(key_data, key_data_len);
-> +				kvfree_sensitive(key_data, key_data_len);
-
-I'd drop the test of key_data here.
+Cheers,
+Longman
