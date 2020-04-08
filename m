@@ -1,80 +1,61 @@
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 07 Apr 2020 16:06:13 +0000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 08 Apr 2020 03:36:27 +0000
 Subject: Re: Upcoming: Notifications, FS notifications and fsinfo()
-Message-Id: <CAJfpegufdi7u3Wyo0YWeoPs9MQa1TePD=AHNW9S9Ey9jTuofHw@mail.gmail.com>
+Message-Id: <CAHk-=wgNuJaJS9Vfe83Tfgq92PonhpfLy1-vvG63SC=3VYf3+g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAJfpegum_PsCfnar8+V2f_VO3k8CJN1LOFJV5OkHRDbQKR=EHg@mail.gmail.com>
- <20200402155020.GA31715@gardel-login> <CAJfpeguM__+S6DiD4MWFv5GCf_EUWvGFT0mzuUCCrfQwggqtDQ@mail.gmail.com>
- <20200403110842.GA34663@gardel-login> <CAJfpegtYKhXB-HNddUeEMKupR5L=RRuydULrvm39eTung0=yRg@mail.gmail.com>
- <20200403150143.GA34800@gardel-login> <CAJfpegudLD8F-25k-k=9G96JKB+5Y=xFT=ZMwiBkNTwkjMDumA@mail.gmail.com>
- <20200406172917.GA37692@gardel-login> <a4b5828d73ff097794f63f5f9d0fd1532067941c.camel@themaw.net>
- <CAJfpegvYGB01i9eqCH-95Ynqy0P=CuxPCSAbSpBPa-TV8iXN0Q@mail.gmail.com> <20200407155329.GA39803@gardel-login>
-In-Reply-To: <20200407155329.GA39803@gardel-login>
+References: <CAJfpegsXqxizOGwa045jfT6YdUpMxpXET-yJ4T8qudyQbCGkHQ@mail.gmail.com>
+ <36e45eae8ad78f7b8889d9d03b8846e78d735d28.camel@themaw.net>
+ <CAJfpegsCDWehsTRQ9UJYuQnghnE=M8L0_bJBTTPA+Upu87t90w@mail.gmail.com>
+ <27994c53034c8f769ea063a54169317c3ee62c04.camel@themaw.net>
+ <20200403111144.GB34663@gardel-login> <CAJfpeguQAw+Mgc8QBNd+h3KV8=Y-SOGT7TB_N_54wa8MCoOSzg@mail.gmail.com>
+ <20200403151223.GB34800@gardel-login> <20200403203024.GB27105@fieldses.org>
+ <20200406091701.q7ctdek2grzryiu3@ws.net.home> <CAHk-=wjW735UE+byK1xsM9UvpF2ubh7bCMaAOwz575U7hRCKyA@mail.gmail.com>
+ <20200406184812.GA37843@gardel-login>
+In-Reply-To: <20200406184812.GA37843@gardel-login>
 To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Karel Zak <kzak@redhat.com>, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, Aleksa Sarai <cyphar@cyphar.com>
+Cc: Karel Zak <kzak@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>, Miklos Szeredi <miklos@szeredi.hu>, Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>, Christian Brauner <christian.brauner@ubuntu.com>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, andres@anarazel.de, keyrings@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Aleksa Sarai <cyphar@cyphar.com>
 
-On Tue, Apr 7, 2020 at 5:53 PM Lennart Poettering <mzxreary@0pointer.de> wrote:
+On Mon, Apr 6, 2020 at 11:48 AM Lennart Poettering <mzxreary@0pointer.de> wrote:
 >
-> On Di, 07.04.20 15:59, Miklos Szeredi (miklos@szeredi.hu) wrote:
+> On Mo, 06.04.20 09:34, Linus Torvalds (torvalds@linux-foundation.org) wrote:
 >
-> > On Tue, Apr 7, 2020 at 4:22 AM Ian Kent <raven@themaw.net> wrote:
-> > > > Right now, when you have n mounts, and any mount changes, or one is
-> > > > added or removed then we have to parse the whole mount table again,
-> > > > asynchronously, processing all n entries again, every frickin
-> > > > time. This means the work to process n mounts popping up at boot is
-> > > > O(n²). That sucks, it should be obvious to anyone. Now if we get that
-> > > > fixed, by some mount API that can send us minimal notifications about
-> > > > what happened and where, then this becomes O(n), which is totally OK.
+> > On Mon, Apr 6, 2020 at 2:17 AM Karel Zak <kzak@redhat.com> wrote:
+> > >
+> > > On Fri, Apr 03, 2020 at 04:30:24PM -0400, J. Bruce Fields wrote:
+> > > >
+> > > > nfs-utils/support/misc/mountpoint.c:check_is_mountpoint() stats the file
+> > > > and ".." and returns true if they have different st_dev or the same
+> > > > st_ino.  Comparing mount ids sounds better.
+> > >
+> > > BTW, this traditional st_dev+st_ino way is not reliable for bind mounts.
+> > > For mountpoint(1) we search the directory in /proc/self/mountinfo.
 > >
-> > Something's not right with the above statement.  Hint: if there are
-> > lots of events in quick succession, you can batch them quite easily to
-> > prevent overloading the system.
-> >
-> > Wrote a pair of utilities to check out the capabilities of the current
-> > API.   The first one just creates N mounts, optionally sleeping
-> > between each.  The second one watches /proc/self/mountinfo and
-> > generates individual (add/del/change) events based on POLLPRI and
-> > comparing contents with previous instance.
-> >
-> > First use case: create 10,000 mounts, then start the watcher and
-> > create 1000 mounts with a 50ms sleep between them.  Total time (user +
-> > system) consumed by the watcher: 25s.  This is indeed pretty dismal,
-> > and a per-mount query will help tremendously.  But it's still "just"
-> > 25ms per mount, so if the mounts are far apart (which is what this
-> > test is about), this won't thrash the system.  Note, how this is self
-> > regulating: if the load is high, it will automatically batch more
-> > requests, preventing overload.  It is also prone to lose pairs of add
-> > + remove in these case (and so is the ring buffer based one from
-> > David).
+> > These days you should probably use openat2() with RESOLVE_NO_XDEV.
 >
-> We will batch requests too in systemd, of course, necessarily, given
-> that the /p/s/mi inotify stuff is async. Thing though is that this
-> means we buy lower CPU usage — working around the O(n²) issue — by
-> introducing artifical higher latencies. We usually want to boot
-> quickly, and not artificially slow.
->
-> Sure one can come up with some super smart scheme how to tweak the
-> artifical latencies, how to grow them, how to shrink them, depending
-> on a perceived flood of events, some backing off scheme. But that's
-> just polishing a turd, if all we want is proper queued change
-> notification without the O(n²) behaviour.
->
-> I mean, the fix for an O(n²) algorithm is to make it O(n) or so. By
-> coalescing wake-up events you just lower the n again, probably
-> linearly, but that still means we pay O(n²), which sucks.
+> Note that opening a file is relatively "heavy" i.e. typically triggers
+> autofs and stuff, and results in security checks (which can fail and
+> such, and show up in audit).
 
-Obviously.  But you keep ignoring event queue overflows; it's
-basically guaranteed to happen with a sizable mount storm and then you
-are back to O(n^2).
+For the use that Bruce outlined, openat2() with RESOLVE_NO_XDEV is
+absolutely the right thing.
 
-Give it some testing please, as Linus is not going to take any
-solution without an actual use case and testing.  When you come back
-and say that fsinfo(2) works fine with systemd and a 100k mount/umount
-storm, then we can have a look at the performance budget and revisit
-the fine points of API design.
+He already did the stat() of the file (and ".."), RESOLVE_NO_XDEV is
+only an improvement. It's also a lot better than trying to parse
+mountinfo.
 
-Thanks,
-Miklos
+Now, I don't disagree that a statx() flag to also indicate "that's a
+top-level mount" might be a good idea, and may be the right answer for
+other cases.
+
+I'm just saying that considering what Bruce does now, RESOLVE_NO_XDEV
+sounds like the nobrainer approach, and needs no new support outside
+of what we already had for other reasons.
+
+(And O_PATH _may_ or may not be part of what you want to do, it's an
+independent separate issue, but automount behavior wrt a O_PATH lookup
+is somewhat unclear - see Al's other emails on that subject)
+
+             Linus
