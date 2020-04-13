@@ -1,61 +1,183 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 16 Apr 2020 16:54:32 +0000
-Subject: Re: [PATCH] keys: Fix proc_keys_next to increase position index
-Message-Id: <20200416165432.GA199110@linux.intel.com>
+From: Waiman Long <longman@redhat.com>
+Date: Mon, 13 Apr 2020 22:28:46 +0000
+Subject: [PATCH v2 2/2] crypto: Remove unnecessary memzero_explicit()
+Message-Id: <20200413222846.24240-1-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158689639664.3925765.4549426529245164675.stgit@warthog.procyon.org.uk>
-In-Reply-To: <158689639664.3925765.4549426529245164675.stgit@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, stable@vger.kernel.org, Vasily Averin <vvs@virtuozzo.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20200413211550.8307-1-longman@redhat.com>
+In-Reply-To: <20200413211550.8307-1-longman@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
+Cc: samba-technical@lists.samba.org, virtualization@lists.linux-foundation.org, linux-mm@kvack.org, linux-sctp@vger.kernel.org, target-devel@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, devel@driverdev.osuosl.org, linux-s390@vger.kernel.org, linux-scsi@vger.kernel.org, x86@kernel.org, kasan-dev@googlegroups.com, cocci@systeme.lip6.fr, linux-wpan@vger.kernel.org, intel-wired-lan@lists.osuosl.org, Waiman Long <longman@redhat.com>, linux-crypto@vger.kernel.org, linux-pm@vger.kernel.org, ecryptfs@vger.kernel.org, linux-nfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-amlogic@lists.infradead.org, linux-arm-kernel@lists.infradead.org, linux-cifs@vger.kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, tipc-discussion@lists.sourceforge.net, wireguard@lists.zx2c4.com, linux-ppp@vger.kernel.org, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-btrfs@vger.kernel.org
 
-On Tue, Apr 14, 2020 at 09:33:16PM +0100, David Howells wrote:
-> From: Vasily Averin <vvs@virtuozzo.com>
-> 
-> If seq_file .next function does not change position index,
-> read after some lseek can generate unexpected output:
-> 
-> $ dd if=/proc/keys bs=1  # full usual output
-> 0f6bfdf5 I--Q---     2 perm 3f010000  1000  1000 user      4af2f79ab8848d0a: 740
-> 1fb91b32 I--Q---     3 perm 1f3f0000  1000 65534 keyring   _uid.1000: 2
-> 27589480 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
-> 2f33ab67 I--Q---   152 perm 3f030000     0     0 keyring   _ses: 2
-> 33f1d8fa I--Q---     4 perm 3f030000  1000  1000 keyring   _ses: 1
-> 3d427fda I--Q---     2 perm 3f010000  1000  1000 user      69ec44aec7678e5a: 740
-> 3ead4096 I--Q---     1 perm 1f3f0000  1000 65534 keyring   _uid_ses.1000: 1
-> 521+0 records in
-> 521+0 records out
-> 521 bytes copied, 0,00123769 s, 421 kB/s
-> 
-> $ dd if=/proc/keys bsP0 skip=1  # read after lseek in middle of last line
-> dd: /proc/keys: cannot skip to specified offset
-> g   _uid_ses.1000: 1        <<<< end of last line
-> 3ead4096 I--Q---     1 perm 1f3f0000  1000 65534 keyring   _uid_ses.1000: 1
->    <<<< and whole last line again
-> 0+1 records in
-> 0+1 records out
-> 97 bytes copied, 0,000135035 s, 718 kB/s
-> 
-> $ dd if=/proc/keys bs00 skip=1   # read after lseek beyond end of file
-> dd: /proc/keys: cannot skip to specified offset
-> 3ead4096 I--Q---     1 perm 1f3f0000  1000 65534 keyring   _uid_ses.1000: 1
->    <<<< generates last line
-> 0+1 records in
-> 0+1 records out
-> 76 bytes copied, 0,000119981 s, 633 kB/s
-> 
-> See https://bugzilla.kernel.org/show_bug.cgi?id 6283
-> 
-> Cc: stable@vger.kernel.org
+Since kfree_sensitive() will do an implicit memzero_explicit(), there
+is no need to call memzero_explicit() before it. Eliminate those
+memzero_explicit() and simplify the call sites. For better correctness,
+the setting of keylen is also moved down after the key pointer check.
 
-# 4.19.x
+Signed-off-by: Waiman Long <longman@redhat.com>
+---
+ .../allwinner/sun8i-ce/sun8i-ce-cipher.c      | 19 +++++-------------
+ .../allwinner/sun8i-ss/sun8i-ss-cipher.c      | 20 +++++--------------
+ drivers/crypto/amlogic/amlogic-gxl-cipher.c   | 12 +++--------
+ drivers/crypto/inside-secure/safexcel_hash.c  |  3 +--
+ 4 files changed, 14 insertions(+), 40 deletions(-)
 
-> Fixes: 1f4aace60b0e ("fs/seq_file.c: simplify seq_file iteration code ...")
-> Signed-off-by: Vasily Averin <vvs@virtuozzo.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-
-/Jarkko
+diff --git a/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c b/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
+index aa4e8fdc2b32..8358fac98719 100644
+--- a/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
++++ b/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
+@@ -366,10 +366,7 @@ void sun8i_ce_cipher_exit(struct crypto_tfm *tfm)
+ {
+ 	struct sun8i_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	crypto_free_sync_skcipher(op->fallback_tfm);
+ 	pm_runtime_put_sync_suspend(op->ce->dev);
+ }
+@@ -391,14 +388,11 @@ int sun8i_ce_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 		dev_dbg(ce->dev, "ERROR: Invalid keylen %u\n", keylen);
+ 		return -EINVAL;
+ 	}
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
+-	op->keylen = keylen;
++	kfree_sensitive(op->key);
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+ 		return -ENOMEM;
++	op->keylen = keylen;
+ 
+ 	crypto_sync_skcipher_clear_flags(op->fallback_tfm, CRYPTO_TFM_REQ_MASK);
+ 	crypto_sync_skcipher_set_flags(op->fallback_tfm, tfm->base.crt_flags & CRYPTO_TFM_REQ_MASK);
+@@ -416,14 +410,11 @@ int sun8i_ce_des3_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 	if (err)
+ 		return err;
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
+-	op->keylen = keylen;
++	kfree_sensitive(op->key);
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+ 		return -ENOMEM;
++	op->keylen = keylen;
+ 
+ 	crypto_sync_skcipher_clear_flags(op->fallback_tfm, CRYPTO_TFM_REQ_MASK);
+ 	crypto_sync_skcipher_set_flags(op->fallback_tfm, tfm->base.crt_flags & CRYPTO_TFM_REQ_MASK);
+diff --git a/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c b/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
+index 5246ef4f5430..0495fbc27fcc 100644
+--- a/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
++++ b/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
+@@ -249,7 +249,6 @@ static int sun8i_ss_cipher(struct skcipher_request *areq)
+ 			offset = areq->cryptlen - ivsize;
+ 			if (rctx->op_dir & SS_DECRYPTION) {
+ 				memcpy(areq->iv, backup_iv, ivsize);
+-				memzero_explicit(backup_iv, ivsize);
+ 				kfree_sensitive(backup_iv);
+ 			} else {
+ 				scatterwalk_map_and_copy(areq->iv, areq->dst, offset,
+@@ -367,10 +366,7 @@ void sun8i_ss_cipher_exit(struct crypto_tfm *tfm)
+ {
+ 	struct sun8i_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	crypto_free_sync_skcipher(op->fallback_tfm);
+ 	pm_runtime_put_sync(op->ss->dev);
+ }
+@@ -392,14 +388,11 @@ int sun8i_ss_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 		dev_dbg(ss->dev, "ERROR: Invalid keylen %u\n", keylen);
+ 		return -EINVAL;
+ 	}
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
+-	op->keylen = keylen;
++	kfree_sensitive(op->key);
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+ 		return -ENOMEM;
++	op->keylen = keylen;
+ 
+ 	crypto_sync_skcipher_clear_flags(op->fallback_tfm, CRYPTO_TFM_REQ_MASK);
+ 	crypto_sync_skcipher_set_flags(op->fallback_tfm, tfm->base.crt_flags & CRYPTO_TFM_REQ_MASK);
+@@ -418,14 +411,11 @@ int sun8i_ss_des3_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
+-	op->keylen = keylen;
++	kfree_sensitive(op->key);
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+ 		return -ENOMEM;
++	op->keylen = keylen;
+ 
+ 	crypto_sync_skcipher_clear_flags(op->fallback_tfm, CRYPTO_TFM_REQ_MASK);
+ 	crypto_sync_skcipher_set_flags(op->fallback_tfm, tfm->base.crt_flags & CRYPTO_TFM_REQ_MASK);
+diff --git a/drivers/crypto/amlogic/amlogic-gxl-cipher.c b/drivers/crypto/amlogic/amlogic-gxl-cipher.c
+index fd1269900d67..6aa9ce7bbbd4 100644
+--- a/drivers/crypto/amlogic/amlogic-gxl-cipher.c
++++ b/drivers/crypto/amlogic/amlogic-gxl-cipher.c
+@@ -341,10 +341,7 @@ void meson_cipher_exit(struct crypto_tfm *tfm)
+ {
+ 	struct meson_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	crypto_free_sync_skcipher(op->fallback_tfm);
+ }
+ 
+@@ -368,14 +365,11 @@ int meson_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 		dev_dbg(mc->dev, "ERROR: Invalid keylen %u\n", keylen);
+ 		return -EINVAL;
+ 	}
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
+-	op->keylen = keylen;
++	kfree_sensitive(op->key);
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+ 		return -ENOMEM;
++	op->keylen = keylen;
+ 
+ 	return crypto_sync_skcipher_setkey(op->fallback_tfm, key, keylen);
+ }
+diff --git a/drivers/crypto/inside-secure/safexcel_hash.c b/drivers/crypto/inside-secure/safexcel_hash.c
+index 43962bc709c6..4a2d162914de 100644
+--- a/drivers/crypto/inside-secure/safexcel_hash.c
++++ b/drivers/crypto/inside-secure/safexcel_hash.c
+@@ -1081,8 +1081,7 @@ static int safexcel_hmac_init_pad(struct ahash_request *areq,
+ 		}
+ 
+ 		/* Avoid leaking */
+-		memzero_explicit(keydup, keylen);
+-		kfree(keydup);
++		kfree_sensitive(keydup);
+ 
+ 		if (ret)
+ 			return ret;
+-- 
+2.18.1
