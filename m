@@ -1,83 +1,157 @@
-From: Steve French <smfrench@gmail.com>
-Date: Tue, 21 Apr 2020 02:29:44 +0000
-Subject: Re: cifs - Race between IP address change and sget()?
-Message-Id: <CAH2r5msv0r1-bXJKdN-ansMnpay0+Aw9FP5us5zHrhp3adzV=Q@mail.gmail.com>
+From: Waiman Long <longman@redhat.com>
+Date: Mon, 13 Apr 2020 21:15:50 +0000
+Subject: [PATCH 2/2] crypto: Remove unnecessary memzero_explicit()
+Message-Id: <20200413211550.8307-3-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <878siq587w.fsf@cjr.nz> <87imhvj7m6.fsf@cjr.nz>
- <CAH2r5mv5p=WJQu2SbTn53FeTsXyN6ke_CgEjVARQ3fX8QAtK_w@mail.gmail.com>
- <3865908.1586874010@warthog.procyon.org.uk> <927453.1587285472@warthog.procyon.org.uk>
- <1136024.1587388420@warthog.procyon.org.uk> <1986040.1587420879@warthog.procyon.org.uk>
- <93e1141d15e44a7490d756b0a00060660306fadc.camel@redhat.com>
-In-Reply-To: <93e1141d15e44a7490d756b0a00060660306fadc.camel@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: David Howells <dhowells@redhat.com>, Paulo Alcantara <pc@cjr.nz>, Al Viro <viro@zeniv.linux.org.uk>, linux-nfs <linux-nfs@vger.kernel.org>, CIFS <linux-cifs@vger.kernel.org>, linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org, keyrings@vger.kernel.org, Network Development <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, Florian Weimer <fweimer@redhat.com>
+References: <20200413211550.8307-1-longman@redhat.com>
+In-Reply-To: <20200413211550.8307-1-longman@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
+Cc: samba-technical@lists.samba.org, virtualization@lists.linux-foundation.org, linux-mm@kvack.org, linux-sctp@vger.kernel.org, target-devel@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, devel@driverdev.osuosl.org, linux-s390@vger.kernel.org, linux-scsi@vger.kernel.org, x86@kernel.org, kasan-dev@googlegroups.com, cocci@systeme.lip6.fr, linux-wpan@vger.kernel.org, intel-wired-lan@lists.osuosl.org, Waiman Long <longman@redhat.com>, linux-crypto@vger.kernel.org, linux-pm@vger.kernel.org, ecryptfs@vger.kernel.org, linux-nfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-amlogic@lists.infradead.org, linux-arm-kernel@lists.infradead.org, linux-cifs@vger.kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, tipc-discussion@lists.sourceforge.net, wireguard@lists.zx2c4.com, linux-ppp@vger.kernel.org, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-btrfs@vger.kernel.org
 
-On Mon, Apr 20, 2020 at 5:30 PM Jeff Layton <jlayton@redhat.com> wrote:
->
-> On Mon, 2020-04-20 at 23:14 +0100, David Howells wrote:
-> > Paulo Alcantara <pc@cjr.nz> wrote:
-> >
-> > > > > > What happens if the IP address the superblock is going to changes, then
-> > > > > > another mount is made back to the original IP address?  Does the second
-> > > > > > mount just pick the original superblock?
-> > > > >
-> > > > > It is going to transparently reconnect to the new ip address, SMB share,
-> > > > > and cifs superblock is kept unchanged.  We, however, update internal
-> > > > > TCP_Server_Info structure to reflect new destination ip address.
-> > > > >
-> > > > > For the second mount, since the hostname (extracted out of the UNC path
-> > > > > at mount time) resolves to a new ip address and that address was saved
-> > > > > earlier in TCP_Server_Info structure during reconnect, we will end up
-> > > > > reusing same cifs superblock as per fs/cifs/connect.c:cifs_match_super().
-> > > >
-> > > > Would that be a bug?
-> > >
-> > > Probably.
-> > >
-> > > I'm not sure how that code is supposed to work, TBH.
-> >
-> > Hmmm...  I think there may be a race here then - but I'm not sure it can be
-> > avoided or if it matters.
-> >
-> > Since the address is part of the primary key to sget() for cifs, changing the
-> > IP address will change the primary key.  Jeff tells me that this is governed
-> > by a spinlock taken by cifs_match_super().  However, sget() may be busy
-> > attaching a new mount to the old superblock under the sb_lock core vfs lock,
-> > having already found a match.
-> >
->
-> Not exactly. Both places that match TCP_Server_Info objects by address
-> hold the cifs_tcp_ses_lock. The address looks like it gets changed in
-> reconn_set_ipaddr, and the lock is not currently taken there, AFAICT. I
-> think it probably should be (at least around the cifs_convert_address
-> call).
->
-> > Should the change of parameters made by cifs be effected with sb_lock held to
-> > try and avoid ending up using the wrong superblock?
-> >
-> > However, because the TCP_Server_Info is apparently updated, it looks like my
-> > original concern is not actually a problem (the idea that if a mounted server
-> > changes its IP address and then a new server comes online at the old IP
-> > address, it might end up sharing superblocks because the IP address is part of
-> > the key).
-> >
->
-> I'm not sure we should concern ourselves with much more than just not
-> allowing addresses to change while matching/searching. If you're
-> standing up new servers at old addresses while you still have clients
-> are migrating, then you are probably Doing it Wrong.
+Since kfree_sensitive() will do an implicit memzero_explicit(), there
+is no need to call memzero_explicit() before it. Eliminate those
+memzero_explicit() and simplify the call sites.
 
-Yes.   The most important thing is to support the reasonably
-common scenario where the server's IP address changes (there are
-fancier ways to handle this gracefully e.g. the "Witness Protocol" feature
-of SMB3 mounts, but that is not always supported by servers and we
-still need to add Witness protocol to clients - but current code allowing
-SMB3 server IP address to change has helped some customers out)
+Signed-off-by: Waiman Long <longman@redhat.com>
+---
+ .../crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c  | 15 +++------------
+ .../crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c  | 16 +++-------------
+ drivers/crypto/amlogic/amlogic-gxl-cipher.c      | 10 ++--------
+ drivers/crypto/inside-secure/safexcel_hash.c     |  3 +--
+ 4 files changed, 9 insertions(+), 35 deletions(-)
 
+diff --git a/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c b/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
+index aa4e8fdc2b32..46c10c7ca6d0 100644
+--- a/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
++++ b/drivers/crypto/allwinner/sun8i-ce/sun8i-ce-cipher.c
+@@ -366,10 +366,7 @@ void sun8i_ce_cipher_exit(struct crypto_tfm *tfm)
+ {
+ 	struct sun8i_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	crypto_free_sync_skcipher(op->fallback_tfm);
+ 	pm_runtime_put_sync_suspend(op->ce->dev);
+ }
+@@ -391,10 +388,7 @@ int sun8i_ce_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 		dev_dbg(ce->dev, "ERROR: Invalid keylen %u\n", keylen);
+ 		return -EINVAL;
+ 	}
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	op->keylen = keylen;
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+@@ -416,10 +410,7 @@ int sun8i_ce_des3_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 	if (err)
+ 		return err;
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	free_sensitive(op->key, op->keylen);
+ 	op->keylen = keylen;
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+diff --git a/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c b/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
+index 5246ef4f5430..7e09a923cbaf 100644
+--- a/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
++++ b/drivers/crypto/allwinner/sun8i-ss/sun8i-ss-cipher.c
+@@ -249,7 +249,6 @@ static int sun8i_ss_cipher(struct skcipher_request *areq)
+ 			offset = areq->cryptlen - ivsize;
+ 			if (rctx->op_dir & SS_DECRYPTION) {
+ 				memcpy(areq->iv, backup_iv, ivsize);
+-				memzero_explicit(backup_iv, ivsize);
+ 				kfree_sensitive(backup_iv);
+ 			} else {
+ 				scatterwalk_map_and_copy(areq->iv, areq->dst, offset,
+@@ -367,10 +366,7 @@ void sun8i_ss_cipher_exit(struct crypto_tfm *tfm)
+ {
+ 	struct sun8i_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	crypto_free_sync_skcipher(op->fallback_tfm);
+ 	pm_runtime_put_sync(op->ss->dev);
+ }
+@@ -392,10 +388,7 @@ int sun8i_ss_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 		dev_dbg(ss->dev, "ERROR: Invalid keylen %u\n", keylen);
+ 		return -EINVAL;
+ 	}
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	op->keylen = keylen;
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+@@ -418,10 +411,7 @@ int sun8i_ss_des3_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	op->keylen = keylen;
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+diff --git a/drivers/crypto/amlogic/amlogic-gxl-cipher.c b/drivers/crypto/amlogic/amlogic-gxl-cipher.c
+index fd1269900d67..f424397fbba4 100644
+--- a/drivers/crypto/amlogic/amlogic-gxl-cipher.c
++++ b/drivers/crypto/amlogic/amlogic-gxl-cipher.c
+@@ -341,10 +341,7 @@ void meson_cipher_exit(struct crypto_tfm *tfm)
+ {
+ 	struct meson_cipher_tfm_ctx *op = crypto_tfm_ctx(tfm);
+ 
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key)
+ 	crypto_free_sync_skcipher(op->fallback_tfm);
+ }
+ 
+@@ -368,10 +365,7 @@ int meson_aes_setkey(struct crypto_skcipher *tfm, const u8 *key,
+ 		dev_dbg(mc->dev, "ERROR: Invalid keylen %u\n", keylen);
+ 		return -EINVAL;
+ 	}
+-	if (op->key) {
+-		memzero_explicit(op->key, op->keylen);
+-		kfree(op->key);
+-	}
++	kfree_sensitive(op->key);
+ 	op->keylen = keylen;
+ 	op->key = kmemdup(key, keylen, GFP_KERNEL | GFP_DMA);
+ 	if (!op->key)
+diff --git a/drivers/crypto/inside-secure/safexcel_hash.c b/drivers/crypto/inside-secure/safexcel_hash.c
+index 43962bc709c6..4a2d162914de 100644
+--- a/drivers/crypto/inside-secure/safexcel_hash.c
++++ b/drivers/crypto/inside-secure/safexcel_hash.c
+@@ -1081,8 +1081,7 @@ static int safexcel_hmac_init_pad(struct ahash_request *areq,
+ 		}
+ 
+ 		/* Avoid leaking */
+-		memzero_explicit(keydup, keylen);
+-		kfree(keydup);
++		kfree_sensitive(keydup);
+ 
+ 		if (ret)
+ 			return ret;
 -- 
-Thanks,
-
-Steve
+2.18.1
