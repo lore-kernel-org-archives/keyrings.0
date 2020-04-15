@@ -1,52 +1,53 @@
-From: Florian Weimer <fweimer@redhat.com>
-Date: Wed, 15 Apr 2020 09:44:29 +0000
+From: Steve French <smfrench@gmail.com>
+Date: Wed, 15 Apr 2020 17:07:26 +0000
 Subject: Re: What's a good default TTL for DNS keys in the kernel
-Message-Id: <874ktl2ide.fsf@oldenburg2.str.redhat.com>
+Message-Id: <CAH2r5mvj7GF3i8AE6E=+5f_Vigtb3uw=665F2uuBOgGzUhHObQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <3865908.1586874010@warthog.procyon.org.uk>
-In-Reply-To: <3865908.1586874010@warthog.procyon.org.uk> (David Howells's
-        message of "Tue, 14 Apr 2020 15:20:10 +0100")
-To: David Howells <dhowells@redhat.com>
-Cc: linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org, keyrings@vger.kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <3865908.1586874010@warthog.procyon.org.uk> <e751977dac616d93806d98f4ad3ce144bb1eb244.camel@kernel.org>
+In-Reply-To: <e751977dac616d93806d98f4ad3ce144bb1eb244.camel-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+To: Jeff Layton <jlayton-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+Cc: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, linux-nfs <linux-nfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, CIFS <linux-cifs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, linux-afs-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@public.gmane.org, ceph-devel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Network Development <netdev-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, fweimer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
 
-* David Howells:
-
-> Since key.dns_resolver isn't given a TTL for the address information obtained
-> for getaddrinfo(), no expiry is set on dns_resolver keys in the kernel for
-> NFS, CIFS or Ceph.  AFS gets one if it looks up a cell SRV or AFSDB record
-> because that is looked up in the DNS directly, but it doesn't look up A or
-> AAAA records, so doesn't get an expiry for the addresses themselves.
+On Wed, Apr 15, 2020 at 8:22 AM Jeff Layton <jlayton@kernel.org> wrote:
 >
-> I've previously asked the libc folks if there's a way to get this information
-> exposed in struct addrinfo, but I don't think that ended up going anywhere -
-> and, in any case, would take a few years to work through the system.
+> On Tue, 2020-04-14 at 15:20 +0100, David Howells wrote:
+> > Since key.dns_resolver isn't given a TTL for the address information obtained
+> > for getaddrinfo(), no expiry is set on dns_resolver keys in the kernel for
+> > NFS, CIFS or Ceph.  AFS gets one if it looks up a cell SRV or AFSDB record
+> > because that is looked up in the DNS directly, but it doesn't look up A or
+> > AAAA records, so doesn't get an expiry for the addresses themselves.
+> >
+> > I've previously asked the libc folks if there's a way to get this information
+> > exposed in struct addrinfo, but I don't think that ended up going anywhere -
+> > and, in any case, would take a few years to work through the system.
+> >
+> > For the moment, I think I should put a default on any dns_resolver keys and
+> > have it applied either by the kernel (configurable with a /proc/sys/ setting)
+> > or by the key.dnf_resolver program (configurable with an /etc file).
+> >
+> > Any suggestion as to the preferred default TTL?  10 minutes?
+> >
 >
-> For the moment, I think I should put a default on any dns_resolver keys and
-> have it applied either by the kernel (configurable with a /proc/sys/ setting)
-> or by the key.dnf_resolver program (configurable with an /etc file).
+> Typical DNS TTL values are on the order of a day but it can vary widely.
+> There's really no correct answer for this, since you have no way to tell
+> how long the entry has been sitting in the DNS server's cache before you
+> queried for it.
 >
-> Any suggestion as to the preferred default TTL?  10 minutes?
+> So, you're probably down to just finding some value that doesn't hammer
+> the DNS server too much, but that allows you to get new entries in a
+> reasonable amount of time.
+>
+> 10 mins sounds like a reasonable default to me.
 
-You can get the real TTL if you do a DNS resolution on the name and
-match the addresses against what you get out of the NSS functions.  If
-they match, you can use the TTL from DNS.  Hackish, but it does give you
-*some* TTL value.
+I would lean toward slightly longer (20 minutes?) but aren't there
+usually different timeouts for 'static' vs. 'dynamic' DNS records (so
+static records would have longer timeouts)?
 
-The question remains what the expected impact of TTL expiry is.  Will
-the kernel just perform a new DNS query if it needs one?  Or would you
-expect that (say) the NFS client rechecks the addresses after TTL expiry
-and if they change, reconnect to a new NFS server?
 
-If a TTL expiration does not trigger anything, than it seems purely an
-optimization to avoid kernel → userspace callbacks.  I think you can do
-with a very short TTL in this case, on the order of seconds (or no
-caching at all).
-
-Negative caching is also worthy of consideration and can be considerably
-more tricky.
-
+-- 
 Thanks,
-Florian
+
+Steve
