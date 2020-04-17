@@ -1,74 +1,59 @@
-From: Chuck Lever <chuck.lever@oracle.com>
-Date: Thu, 16 Apr 2020 13:40:30 +0000
+From: =?utf-8?Q?Aur=C3=A9lien?= Aptel <aaptel@suse.com>
+Date: Fri, 17 Apr 2020 11:31:39 +0000
 Subject: Re: What's a good default TTL for DNS keys in the kernel
-Message-Id: <8DC44895-E904-4155-B7B8-B109A777F23C@oracle.com>
+Message-Id: <87sgh22vs4.fsf@suse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <874ktl2ide.fsf@oldenburg2.str.redhat.com>
  <3865908.1586874010@warthog.procyon.org.uk>
  <128769.1587032833@warthog.procyon.org.uk>
-In-Reply-To: <128769.1587032833-S6HVgzuS8uM4Awkfq6JHfwNdhmdF6hFW@public.gmane.org>
-To: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Cc: Florian Weimer <fweimer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Linux NFS Mailing List <linux-nfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, linux-cifs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-afs-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@public.gmane.org, ceph-devel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, netdev-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+ <8DC44895-E904-4155-B7B8-B109A777F23C@oracle.com>
+In-Reply-To: <8DC44895-E904-4155-B7B8-B109A777F23C@oracle.com>
+To: Chuck Lever <chuck.lever@oracle.com>, David Howells <dhowells@redhat.com>
+Cc: Florian Weimer <fweimer@redhat.com>, Linux NFS Mailing List <linux-nfs@vger.kernel.org>, linux-cifs@vger.kernel.org, linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org, keyrings@vger.kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Hi David-
+Chuck Lever <chuck.lever@oracle.com> writes:
+> The Linux NFS client won't connect to a new server when the server's
+> DNS information changes. A fresh mount operation would be needed for
+> the client to recognize and make use of it.
+>
+> There are mechanisms in the NFSv4 protocol to collect server IP addresses
+> from the server itself (fs_locations) and then try those locations if the
+> current server fails to respond. But currently that is not implemented in
+> Linux (and servers would need to be ready to provide that kind of update).
 
-> On Apr 16, 2020, at 6:27 AM, David Howells <dhowells@redhat.com> wrote:
-> 
-> Florian Weimer <fweimer@redhat.com> wrote:
-> 
->> You can get the real TTL if you do a DNS resolution on the name and
->> match the addresses against what you get out of the NSS functions.  If
->> they match, you can use the TTL from DNS.  Hackish, but it does give you
->> *some* TTL value.
-> 
-> I guess I'd have to do that in parallel.  Would calling something like
-> res_mkquery() use local DNS caching?
-> 
->> The question remains what the expected impact of TTL expiry is.  Will
->> the kernel just perform a new DNS query if it needs one?  Or would you
->> expect that (say) the NFS client rechecks the addresses after TTL expiry
->> and if they change, reconnect to a new NFS server?
-> 
-> It depends on the filesystem.
+We have a very similar system in CIFS. Failover can be handled in 2 ways
+(technically both can be used at the same time):
 
-Agreed. For example:
+a) with DFS, the mount can have a list of possible location to connect
+   to, sort of like cross-server symlinks with multiple possible
+   targets. Note that the target value uses hostnames.
+b) the domain controler can notice the server is down and automatically
+   switch the server hostname DNS entry to a backup one with a different IP.
 
-The Linux NFS client won't connect to a new server when the server's
-DNS information changes. A fresh mount operation would be needed for
-the client to recognize and make use of it.
+>> CIFS also doesn't make direct use of the TTL, and again this may be because it
+>> uses the server address as part of the primary key for the superblock (see
+>> cifs_match_super()).
 
-There are mechanisms in the NFSv4 protocol to collect server IP addresses
-from the server itself (fs_locations) and then try those locations if the
-current server fails to respond. But currently that is not implemented in
-Linux (and servers would need to be ready to provide that kind of update).
+When we try to reconnect after a failure (using (a) or just reconnecting
+to same server) we resolve the host again to try to use any new IP (in
+case (b) happened). This is done via upcalling using the request_key()
+API.
 
+The cifs.upcall prog (from cifs-utils) calls getaddrinfo() and sets a
+key with a default TTL of 10mn [2][3] but if the system uses DNS caching
+via nscd[1] there's no way to tell how long the old IP will remain in
+use...
 
-> AFS keeps track of the expiration on the record and will issue a new lookup
-> when the data expires, but NFS doesn't make use of this information.  The
-> keyring subsystem will itself dispose of dns_resolver keys that expire and
-> request_key() will only upcall again if the key has expired.
+1: https://linux.die.net/man/8/nscd
+2: https://github.com/piastry/cifs-utils/blob/9a8c21ad9e4510a83a3a41f7a04f763a4fe9ec09/cifs.upcall.c#L66
+3: https://github.com/piastry/cifs-utils/blob/9a8c21ad9e4510a83a3a41f7a04f763a4fe9ec09/cifs.upcall.c#L783
 
-Our NFS colleagues working on Solaris have noted that handling the expiry
-of DNS information can be tricky. It is usually desirable to continue using
-expired information when a new DNS query fails temporarily (times out, or
-the network is partitioned, etc). That makes for a more robust network file
-service.
-
-
-> The problem for NFS is that the host IP address is the primary key for the
-> superblock (see nfs_compare_super_address()).
-
-I thought that NFSv4.1 and newer have server-provided unique information
-that might be used in place of the server's IP address. This information
-is supposed to be independent of a server's network addresses.
-
-
-> CIFS also doesn't make direct use of the TTL, and again this may be because it
-> uses the server address as part of the primary key for the superblock (see
-> cifs_match_super()).
-
---
-Chuck Lever
+Cheers,
+-- 
+Aurélien Aptel / SUSE Labs Samba Team
+GPG: 1839 CB5F 9F5B FB9B AA97  8C99 03C8 A49B 521B D5D3
+SUSE Software Solutions Germany GmbH, Maxfeldstr. 5, 90409 Nürnberg, DE
+GF: Felix Imendörffer, Mary Higgins, Sri Rasiah HRB 247165 (AG München)
