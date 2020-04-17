@@ -1,65 +1,59 @@
-From: Andrew Zaborowski <andrew.zaborowski@intel.com>
-Date: Tue, 07 Apr 2020 00:25:26 +0000
-Subject: [RESEND][PATCH] keys: Handle missing Authority Key Identifier X509 extension
-Message-Id: <20200407002526.25135-1-andrew.zaborowski@intel.com>
+From: Paul Moore <paul@paul-moore.com>
+Date: Fri, 17 Apr 2020 15:48:47 +0000
+Subject: Problem with 9ba09998baa9 ("selinux: Implement the watch_key security hook") in linux-next
+Message-Id: <CAHC9VhT95GJKNTMvTtmZL35UOoVwbGH-eDWZyELb5oZ5rQU+Tw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180505060152.21571-1-andrew.zaborowski@intel.com>
-In-Reply-To: <20180505060152.21571-1-andrew.zaborowski@intel.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@vger.kernel.org, selinux@vger.kernel.org, linux-security-module@vger.kernel.org
 
-In a self-signed certificate the subject and issuer are the same and so
-the Authority Key Identifier X.509 v3 extension is explicitly made
-optional in RFC5280 section 4.2.1.1.
-crypto/asymmetric_keys/x509_cert_parser.c can't handle this and makes
-(at least) the restrict.c functions refuse to work with certificates
-that don't include the AKID.  Fix this by filling in the missing
-cert->sig->auth_ids with the certificate's own IDs after parsing and
-determinig the certificate is self-signed.
+I just notice that the "selinux: Implement the watch_key security
+hook" patch made it's way into linux-next via 9ba09998baa9:
 
-The asymmetric_key_generate_id return value is not checked because it's
-already succeeded once at this point.
+  commit 9ba09998baa995518d94c9a32e6329b28ccb9045
+  Author: David Howells <dhowells@redhat.com>
+  Date:   Tue Jan 14 17:07:13 2020 +0000
 
-There are root X.509 v3 certificates in use where this is the case,
-mostly oldish ones.
+   selinux: Implement the watch_key security hook
 
-Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
----
- crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+   Implement the watch_key security hook to make sure that a key grants the
+   caller View permission in order to set a watch on a key.
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 26ec20ef489..a5a2f93e242 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -136,6 +136,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
- 	if (ret < 0)
- 		goto error_decode;
- 
-+	if (cert->self_signed) {
-+		if (!cert->sig->auth_ids[0]) {
-+			/* Duplicate cert->id */
-+			kid = asymmetric_key_generate_id(cert->raw_serial,
-+							 cert->raw_serial_size,
-+							 cert->raw_issuer,
-+							 cert->raw_issuer_size);
-+			cert->sig->auth_ids[0] = kid;
-+		}
+   For the moment, the watch_devices security hook is left unimplemented as
+   it's not obvious what the object should be since the queue is global and
+   didn't previously exist.
+
+   Signed-off-by: David Howells <dhowells@redhat.com>
+   Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
+
+I'm reasonably confident that this code hasn't been tested as I expect
+it would fail, or at the very least behave in unintended ways.  The
+problem is the selinux_watch_key(...) function, shown below:
+
++static int selinux_watch_key(struct key *key)
++{
++       struct key_security_struct *ksec = key->security;
++       u32 sid = current_sid();
 +
-+		if (!cert->sig->auth_ids[1] && cert->skid) {
-+			/* Duplicate cert->skid */
-+			kid = asymmetric_key_generate_id(cert->raw_skid,
-+							 cert->raw_skid_size,
-+							 "", 0);
-+			cert->sig->auth_ids[1] = kid;
-+		}
-+	}
-+
- 	kfree(ctx);
- 	return cert;
- 
++       return avc_has_perm(&selinux_state,
++                           sid, ksec->sid, SECCLASS_KEY, KEY_NEED_VIEW, NULL);
++}
+
+... in particular it is the fifth argument to avc_has_perm(),
+"KEY_NEED_VIEW" which is a problem.  KEY_NEED_VIEW is not a SELinux
+permission and would likely result in odd behavior when passed to
+avc_has_perm().  Given that the keyring permission to SELinux object
+class permission is variable depending on the key_perms policy
+capability, it probably makes the most sense to pull the permission
+mapping in selinux_key_permission() out into a separate function, e.g.
+key_perm_to_av(...) (see the other XXX_to_av() functions in
+security/selinux/hooks.c), and then use this newly created mapping
+function in both selinux_key_permission() and selinux_watch_key().  Or
+you could just duplicate the KEY_NEED_VIEW mapping code in both
+functions, but I would advise against that.
+
 -- 
-2.20.1
+paul moore
+www.paul-moore.com
