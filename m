@@ -1,32 +1,53 @@
-From: David Rientjes <rientjes@google.com>
-Date: Mon, 06 Apr 2020 23:20:12 +0000
-Subject: Re: [PATCH] mm: Add kvfree_sensitive() for freeing sensitive data objects
-Message-Id: <alpine.DEB.2.21.2004061618580.45667@chino.kir.corp.google.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 20 Apr 2020 22:14:39 +0000
+Subject: cifs - Race between IP address change and sget()?
+Message-Id: <1986040.1587420879@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <alpine.DEB.2.21.2004052119530.243304@chino.kir.corp.google.com> <20200406023700.1367-1-longman@redhat.com> <6504.1586159053@warthog.procyon.org.uk>
-In-Reply-To: <6504.1586159053@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Waiman Long <longman@redhat.com>, Andrew Morton <akpm@linux-foundation.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, linux-mm@kvack.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>
+References: <878siq587w.fsf@cjr.nz> <87imhvj7m6.fsf@cjr.nz> <CAH2r5mv5p=WJQu2SbTn53FeTsXyN6ke_CgEjVARQ3fX8QAtK_w@mail.gmail.com> <3865908.1586874010@warthog.procyon.org.uk> <927453.1587285472@warthog.procyon.org.uk> <1136024.1587388420@warthog.procyon.org.uk>
+In-Reply-To: <878siq587w.fsf@cjr.nz>
+To: Paulo Alcantara <pc@cjr.nz>
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, Steve French <smfrench@gmail.com>, jlayton@redhat.com, linux-nfs <linux-nfs@vger.kernel.org>, CIFS <linux-cifs@vger.kernel.org>, linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org, keyrings@vger.kernel.org, Network Development <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, fweimer@redhat.com
 
-On Mon, 6 Apr 2020, David Howells wrote:
+Paulo Alcantara <pc@cjr.nz> wrote:
 
-> David Rientjes <rientjes@google.com> wrote:
+> >> > What happens if the IP address the superblock is going to changes, then
+> >> > another mount is made back to the original IP address?  Does the second
+> >> > mount just pick the original superblock?
+> >> 
+> >> It is going to transparently reconnect to the new ip address, SMB share,
+> >> and cifs superblock is kept unchanged.  We, however, update internal
+> >> TCP_Server_Info structure to reflect new destination ip address.
+> >> 
+> >> For the second mount, since the hostname (extracted out of the UNC path
+> >> at mount time) resolves to a new ip address and that address was saved
+> >> earlier in TCP_Server_Info structure during reconnect, we will end up
+> >> reusing same cifs superblock as per fs/cifs/connect.c:cifs_match_super().
+> >
+> > Would that be a bug?
 > 
-> > > +static inline void kvfree_sensitive(const void *addr, size_t len)
-> > > +{
-> > > +	if (addr) {
-> > 
-> > Shouldn't this be if (unlikely(ZERO_OR_NULL_PTR(addr))?
+> Probably.
 > 
-> You've reversed the logic - it needs a '!' there.
-> 
+> I'm not sure how that code is supposed to work, TBH.
 
-Ah lol, yeah.  Probably just better to do
+Hmmm...  I think there may be a race here then - but I'm not sure it can be
+avoided or if it matters.
 
-	if (unlikely(ZERO_OR_NULL_PTR(addr)))
-		return;
+Since the address is part of the primary key to sget() for cifs, changing the
+IP address will change the primary key.  Jeff tells me that this is governed
+by a spinlock taken by cifs_match_super().  However, sget() may be busy
+attaching a new mount to the old superblock under the sb_lock core vfs lock,
+having already found a match.
 
-but I agree that mm.h is likely not the right spot.
+Should the change of parameters made by cifs be effected with sb_lock held to
+try and avoid ending up using the wrong superblock?
+
+However, because the TCP_Server_Info is apparently updated, it looks like my
+original concern is not actually a problem (the idea that if a mounted server
+changes its IP address and then a new server comes online at the old IP
+address, it might end up sharing superblocks because the IP address is part of
+the key).
+
+David
