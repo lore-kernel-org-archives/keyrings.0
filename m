@@ -1,77 +1,94 @@
-From: Paul Moore <paul@paul-moore.com>
-Date: Fri, 17 Apr 2020 16:59:10 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 21 Apr 2020 12:29:46 +0000
 Subject: Re: Problem with 9ba09998baa9 ("selinux: Implement the watch_key security hook") in linux-next
-Message-Id: <CAHC9VhQLYNzs=uBqxwZCh=h8n-C3z-EAojQEmt6DCoJxCKL5-A@mail.gmail.com>
+Message-Id: <2136640.1587472186@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <CAHC9VhT95GJKNTMvTtmZL35UOoVwbGH-eDWZyELb5oZ5rQU+Tw@mail.gmail.com>
- <56808ee47c8b6e184fd013b90072c6fb07ef84f2.camel@btinternet.com>
-In-Reply-To: <56808ee47c8b6e184fd013b90072c6fb07ef84f2.camel@btinternet.com>
-To: Richard Haines <richard_c_haines@btinternet.com>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, selinux@vger.kernel.org, linux-security-module@vger.kernel.org
+In-Reply-To: <CAHC9VhT95GJKNTMvTtmZL35UOoVwbGH-eDWZyELb5oZ5rQU+Tw@mail.gmail.com>
+To: Paul Moore <paul@paul-moore.com>
+Cc: dhowells@redhat.com, keyrings@vger.kernel.org, selinux@vger.kernel.org, linux-security-module@vger.kernel.org
 
-On Fri, Apr 17, 2020 at 12:32 PM Richard Haines
-<richard_c_haines@btinternet.com> wrote:
-> On Fri, 2020-04-17 at 11:48 -0400, Paul Moore wrote:
-> > I just notice that the "selinux: Implement the watch_key security
-> > hook" patch made it's way into linux-next via 9ba09998baa9:
-> >
-> >   commit 9ba09998baa995518d94c9a32e6329b28ccb9045
-> >   Author: David Howells <dhowells@redhat.com>
-> >   Date:   Tue Jan 14 17:07:13 2020 +0000
-> >
-> >    selinux: Implement the watch_key security hook
-> >
-> >    Implement the watch_key security hook to make sure that a key
-> > grants the
-> >    caller View permission in order to set a watch on a key.
-> >
-> >    For the moment, the watch_devices security hook is left
-> > unimplemented as
-> >    it's not obvious what the object should be since the queue is
-> > global and
-> >    didn't previously exist.
-> >
-> >    Signed-off-by: David Howells <dhowells@redhat.com>
-> >    Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
-> >
-> > I'm reasonably confident that this code hasn't been tested as I
-> > expect
-> > it would fail, or at the very least behave in unintended ways.  The
-> > problem is the selinux_watch_key(...) function, shown below:
->
-> I built an selinx-testsuite test for this last year and it worked fine
-> then. I'll send the test as an RFC patch as its been some time since I
-> ran it. David also has a test in kernel
-> samples/watch_queue/watch_test.c
+Paul Moore <paul@paul-moore.com> wrote:
 
-See below.
+> ... in particular it is the fifth argument to avc_has_perm(),
+> "KEY_NEED_VIEW" which is a problem.  KEY_NEED_VIEW is not a SELinux
+> permission and would likely result in odd behavior when passed to
+> avc_has_perm().
 
-> > +static int selinux_watch_key(struct key *key)
-> > +{
-> > +       struct key_security_struct *ksec = key->security;
-> > +       u32 sid = current_sid();
-> > +
-> > +       return avc_has_perm(&selinux_state,
-> > +                           sid, ksec->sid, SECCLASS_KEY,
-> > KEY_NEED_VIEW, NULL);
-> > +}
-> >
-> > ... in particular it is the fifth argument to avc_has_perm(),
-> > "KEY_NEED_VIEW" which is a problem.  KEY_NEED_VIEW is not a SELinux
->
-> True, however by magic the KEY_NEED_* perms match with the bits defined
-> in classmap.h. I did some work on this during the 'keys' saga, see
-> various emails in list like [1]
->
-> [1]
-> https://lore.kernel.org/selinux/20200220181031.156674-2-richard_c_haines@btinternet.com/
+I think it works because KEY_NEED_VIEW happens to coincide with KEY__VIEW.  It
+should just use KEY__VIEW instead.
 
-Esh, relying on the constants to line up is a recipe for disaster.  We
-really need that permission translation layer.
+> it probably makes the most sense to pull the permission mapping in
+> selinux_key_permission() out into a separate function, e.g.
+> key_perm_to_av(...)
 
--- 
-paul moore
-www.paul-moore.com
+Agreed.  How about the attached patch?  I wonder if I should do bit-by-bit
+translation rather than using a switch?  But then it's difficult to decide
+what it means if someone passes in two KEY_NEED_* flags OR'd together - is it
+either or both?
+
+> and then use this newly created mapping function in [...]
+> selinux_watch_key()
+
+No, I think I should just hard-code KEY__VIEW there.
+
+David
+---
+commit 70d1d82aa014ae4511976b4d80c17138006dddec
+Author: David Howells <dhowells@redhat.com>
+Date:   Tue Apr 21 13:15:16 2020 +0100
+
+    selinux: Fix use of KEY_NEED_* instead of KEY__* perms
+    
+    selinux_key_getsecurity() is passing the KEY_NEED_* permissions to
+    security_sid_to_context() instead of the KEY__* values.  It happens to work
+    because the values are all coincident.
+    
+    Fixes: d720024e94de ("[PATCH] selinux: add hooks for key subsystem")
+    Reported-by: Paul Moore <paul@paul-moore.com>
+    Signed-off-by: David Howells <dhowells@redhat.com>
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 0b4e32161b77..32f7fa538c5f 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -6539,12 +6539,27 @@ static void selinux_key_free(struct key *k)
+ 	kfree(ksec);
+ }
+ 
++static unsigned int selinux_keyperm_to_av(unsigned int need_perm)
++{
++	switch (need_perm) {
++	case KEY_NEED_VIEW:	return KEY__VIEW;
++	case KEY_NEED_READ:	return KEY__READ;
++	case KEY_NEED_WRITE:	return KEY__WRITE;
++	case KEY_NEED_SEARCH:	return KEY__SEARCH;
++	case KEY_NEED_LINK:	return KEY__LINK;
++	case KEY_NEED_SETATTR:	return KEY__SETATTR;
++	default:
++		return 0;
++	}
++}
++
+ static int selinux_key_permission(key_ref_t key_ref,
+ 				  const struct cred *cred,
+-				  unsigned perm)
++				  unsigned need_perm)
+ {
+ 	struct key *key;
+ 	struct key_security_struct *ksec;
++	unsigned int perm;
+ 	u32 sid;
+ 
+ 	/* if no specific permissions are requested, we skip the
+@@ -6553,6 +6568,7 @@ static int selinux_key_permission(key_ref_t key_ref,
+ 	if (perm == 0)
+ 		return 0;
+ 
++	perm = selinux_keyperm_to_av(need_perm);
+ 	sid = cred_sid(cred);
+ 
+ 	key = key_ref_to_ptr(key_ref);
