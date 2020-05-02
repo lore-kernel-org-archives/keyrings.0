@@ -1,135 +1,35 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Fri, 01 May 2020 23:09:13 +0000
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Date: Sat, 02 May 2020 00:06:17 +0000
 Subject: Re: [PATCH] security/keys: rewrite big_key crypto to use Zinc
-Message-Id: <20200501230913.GB915@sol.localdomain>
+Message-Id: <CAHmME9rpZGiwrK93=+6z8qBdDVs273MaR_boDd1xjjZRwbqpKQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200501222357.543312-1-Jason@zx2c4.com>
-In-Reply-To: <20200501222357.543312-1-Jason@zx2c4.com>
-To: "Jason A. Donenfeld" <Jason@zx2c4.com>
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, Andy Lutomirski <luto@kernel.org>, Greg KH <gregkh@linuxfoundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, kernel-hardening@lists.openwall.com
+References: <20200501222357.543312-1-Jason@zx2c4.com> <20200501230913.GB915@sol.localdomain>
+In-Reply-To: <20200501230913.GB915@sol.localdomain>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, Andy Lutomirski <luto@kernel.org>, Greg KH <gregkh@linuxfoundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, kernel-hardening@lists.openwall.com
 
-On Fri, May 01, 2020 at 04:23:57PM -0600, Jason A. Donenfeld wrote:
-> A while back, I noticed that the crypto and crypto API usage in big_keys
-> were entirely broken in multiple ways, so I rewrote it. Now, I'm
-> rewriting it again, but this time using Zinc's ChaCha20Poly1305
-> function. This makes the file considerably more simple; the diffstat
-> alone should justify this commit. It also should be faster, since it no
-> longer requires a mutex around the "aead api object" (nor allocations),
-> allowing us to encrypt multiple items in parallel. We also benefit from
-> being able to pass any type of pointer, so we can get rid of the
-> ridiculously complex custom page allocator that big_key really doesn't
-> need.
-> 
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Andy Lutomirski <luto@kernel.org>
-> Cc: Greg KH <gregkh@linuxfoundation.org>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: kernel-hardening@lists.openwall.com
-> Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
-> ---
-> I finally got around to updating this patch from the mailing list posts
-> back in 2017-2018, using the library interface that we eventually merged
-> in 2019. I haven't retested this for functionality, but nothing much has
-> changed, so I suspect things should still be good to go.
-> 
->  security/keys/Kconfig   |   4 +-
->  security/keys/big_key.c | 230 +++++-----------------------------------
->  2 files changed, 28 insertions(+), 206 deletions(-)
-> 
-> diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-> index 47c041563d41..5aa442490d52 100644
-> --- a/security/keys/Kconfig
-> +++ b/security/keys/Kconfig
-> @@ -60,9 +60,7 @@ config BIG_KEYS
->  	bool "Large payload keys"
->  	depends on KEYS
->  	depends on TMPFS
-> -	select CRYPTO
-> -	select CRYPTO_AES
-> -	select CRYPTO_GCM
-> +	select CRYPTO_LIB_CHACHA20POLY1305
->  	help
->  	  This option provides support for holding large keys within the kernel
->  	  (for example Kerberos ticket caches).  The data may be stored out to
+Hey Eric,
 
-The 'select CRYPTO' is actually still needed because CRYPTO_LIB_CHACHA20POLY1305
-is under the CRYPTO menuconfig:
+Thanks for the review.
 
-make allnoconfig
-cat >> .config << EOF
-CONFIG_SHMEM=y
-CONFIG_TMPFS=y
-CONFIG_KEYS=y
-CONFIG_BIG_KEYS=y
-EOF
-make olddefconfig
+I'll add `select CONFIG` as you suggested. I agree about trying to
+move as much as possible out of crypto and into lib/crypto. Breaking
+those dependency cycles won't be easy but perhaps it'll be possible to
+chip away at that gradually. (I'd also lib a
+lib/crypto/arch/{arch}/..., but I guess that's a separate discussion.)
 
-WARNING: unmet direct dependencies detected for CRYPTO_LIB_CHACHA20POLY1305
-  Depends on [n]: CRYPTO [=n] && (CRYPTO_ARCH_HAVE_LIB_CHACHA [=n] || !CRYPTO_ARCH_HAVE_LIB_CHACHA [=n]) && (CRYPTO_ARCH_HAVE_LIB_POLY1305 [=n] || !CRYPTO_ARCH_HAVE_LIB_POLY1305 [=n])
-  Selected by [y]:
-  - BIG_KEYS [=y] && KEYS [=y] && TMPFS [=y]
+I'll also change -EINVAL to -EBADMSG. Nice catch.
 
+Regarding the buffer zeroing... are you sure? These buffers are
+already being copied into filesystem caches and all sorts of places
+over which we have zero control. At that point, does it matter? Or do
+you argue that because it's still technically key material, we should
+zero out both the plaintext and ciphertext everywhere we can, and
+hopefully at some point the places where we can't will go away? IOW,
+I'm fine doing that, but would like to learn your explicit reasoning
+before.
 
-Maybe the 'source "lib/crypto/Kconfig"' in crypto/Kconfig should be moved to
-lib/Kconfig so that it's under "Library routines" and the crypto library options
-can be selected without the full CRYPTO framework?
-
-But lib/crypto/libchacha.c uses crypto_xor_cpy(), and
-lib/crypto/chacha20poly1305.c uses crypto_memneq().  So those functions would
-first need to be pulled into lib/crypto/ too.
-
-> @@ -265,7 +121,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
->  		*path = file->f_path;
->  		path_get(path);
->  		fput(file);
-> -		big_key_free_buffer(buf);
-> +		kvfree(buf);
->  	} else {
->  		/* Just store the data in a buffer */
->  		void *data = kmalloc(datalen, GFP_KERNEL);
-> @@ -283,7 +139,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
->  err_enckey:
->  	kzfree(enckey);
->  error:
-> -	big_key_free_buffer(buf);
-> +	kvfree(buf);
->  	return ret;
->  }
-
-There should be a 'memzero_explicit(buf, enclen);' before the above two calls to
-kvfree().
-
-Or even better these should use kvfree_sensitive(), but that hasn't been merged
-yet.  It was under discussion last month:
-https://lkml.kernel.org/lkml/20200407200318.11711-1-longman@redhat.com/
-
->  
-> -		ret = big_key_crypt(BIG_KEY_DEC, buf, enclen, enckey);
-> -		if (ret)
-> +		ret = chacha20poly1305_decrypt(buf, buf, enclen, NULL, 0, 0,
-> +					       enckey) ? 0 : -EINVAL;
-> +		if (unlikely(ret))
->  			goto err_fput;
-
--EINVAL is often unclear, since everyone uses it for everything.  How about
-using -EBADMSG, which is what was used before via crypto_aead_decrypt()?
-
->  
->  		ret = datalen;
->  
->  		/* copy out decrypted data */
-> -		memcpy(buffer, buf->virt, datalen);
-> +		memcpy(buffer, buf, datalen);
->  
->  err_fput:
->  		fput(file);
->  error:
-> -		big_key_free_buffer(buf);
-> +		kvfree(buf);
-
-Likewise, the buffer should be zeroed before freeing here.
-
-- Eric
+Jason
