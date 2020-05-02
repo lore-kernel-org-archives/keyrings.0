@@ -1,52 +1,87 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 15 May 2020 00:00:25 +0000
-Subject: Re: [PATCH v4 1/4] KEYS: trusted: Add generic trusted keys framework
-Message-Id: <956b284c2b144313fd158de75cba510eb98f71bf.camel@linux.intel.com>
+From: Eric Biggers <ebiggers@kernel.org>
+Date: Sat, 02 May 2020 05:31:02 +0000
+Subject: [PATCH 00/20] crypto: introduce crypto_shash_tfm_digest()
+Message-Id: <20200502053122.995648-1-ebiggers@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1588758017-30426-1-git-send-email-sumit.garg@linaro.org>
- <1588758017-30426-2-git-send-email-sumit.garg@linaro.org>
- <07bb6080f8be9f6613f460e2d6e19f3d456e219c.camel@linux.intel.com>
- <CAFA6WYMciZ=qkG3N_9YWzt_DJr2dGwdAy9diMXCJSNjr2o5ONA@mail.gmail.com>
-In-Reply-To: <CAFA6WYMciZ=qkG3N_9YWzt_DJr2dGwdAy9diMXCJSNjr2o5ONA@mail.gmail.com>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, op-tee@lists.trustedfirmware.org, Jonathan Corbet <corbet@lwn.net>, James Bottomley <jejb@linux.ibm.com>, Janne Karhunen <janne.karhunen@gmail.com>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.ibm.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dhowells@redhat.com, linux-security-module@vger.kernel.org, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, Markus Wamser <Markus.Wamser@mixed-mode.de>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, Jens Wiklander <jens.wiklander@linaro.org>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E.
- Hallyn" <serge@hallyn.com>
+To: linux-crypto@vger.kernel.org
+Cc: Cheng-Yi Chiang <cychiang@chromium.org>, ecryptfs@vger.kernel.org, Enric Balletbo i Serra <enric.balletbo@collabora.com>, Gilad Ben-Yossef <gilad@benyossef.com>, Guenter Roeck <groeck@chromium.org>, Jesper Nilsson <jesper.nilsson@axis.com>, Kamil Konieczny <k.konieczny@samsung.com>, keyrings@vger.kernel.org, Krzysztof Kozlowski <krzk@kernel.org>, Krzysztof Opasiak <k.opasiak@samsung.com>, Lars Persson <lars.persson@axis.com>, linux-bluetooth@vger.kernel.org, linux-mtd@lists.infradead.org, linux-nfs@vger.kernel.org, linux-sctp@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>, Tom Lendacky <thomas.lendacky@amd.com>, Vladimir Zapolskiy <vz@mleia.com>, Zaibo Xu <xuzaibo@huawei.com>
 
-On Thu, 2020-05-14 at 16:53 +0530, Sumit Garg wrote:
-> On Thu, 14 May 2020 at 05:55, Jarkko Sakkinen
-> <jarkko.sakkinen@linux.intel.com> wrote:
-> > On Wed, 2020-05-06 at 15:10 +0530, Sumit Garg wrote:
-> > > Current trusted keys framework is tightly coupled to use TPM device as
-> > > an underlying implementation which makes it difficult for implementations
-> > > like Trusted Execution Environment (TEE) etc. to provide trusked keys
-> > > support in case platform doesn't posses a TPM device.
-> > > 
-> > > So this patch tries to add generic trusted keys framework where underlying
-> > > implemtations like TPM, TEE etc. could be easily plugged-in.
-> > > 
-> > > Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > > Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-> > 
-> > I tend to agree how this is implemented and could merge it as such.
-> > 
-> > I'm just thinking if we could refine this patch in a way that instead of
-> > copying TRUSTED_DEBUG macro we could just replace pr_info() statements
-> > with pr_debug()?
-> 
-> AFAIU, TRUSTED_DEBUG being a security sensitive operation is only
-> meant to be used in development environments and should be strictly
-> disabled in production environments. But it may not always be true
-> with pr_debug() with CONFIG_DYNAMIC_DEBUG=y which allows the debug
-> paths to be compiled into the kernel which can be enabled/disabled at
-> runtime.
-> 
-> IMO we should keep this TRUSTED_DEBUG macro, so that users are aware
-> of its security sensitive nature and need to explicitly enable it to
-> debug.
+This series introduces a helper function crypto_shash_tfm_digest() which
+replaces the following common pattern:
 
-You are absolutely correct.
+	{
+		SHASH_DESC_ON_STACK(desc, tfm);
+		int err;
 
-/Jarkko
+		desc->tfm = tfm;
+
+		err = crypto_shash_digest(desc, data, len, out);
+
+		shash_desc_zero(desc);
+	}
+
+with:
+
+	err = crypto_shash_tfm_digest(tfm, data, len, out);
+
+Patch 1 introduces this helper function, and patches 2-20 convert all
+relevant users to use it.
+
+IMO, it would be easiest to take all these patches through the crypto
+tree.  But taking just the "crypto:" ones and then me trying to get the
+rest merged later via subsystem trees is also an option.
+
+Eric Biggers (20):
+  crypto: hash - introduce crypto_shash_tfm_digest()
+  crypto: arm64/aes-glue - use crypto_shash_tfm_digest()
+  crypto: essiv - use crypto_shash_tfm_digest()
+  crypto: artpec6 - use crypto_shash_tfm_digest()
+  crypto: ccp - use crypto_shash_tfm_digest()
+  crypto: ccree - use crypto_shash_tfm_digest()
+  crypto: hisilicon/sec2 - use crypto_shash_tfm_digest()
+  crypto: mediatek - use crypto_shash_tfm_digest()
+  crypto: n2 - use crypto_shash_tfm_digest()
+  crypto: omap-sham - use crypto_shash_tfm_digest()
+  crypto: s5p-sss - use crypto_shash_tfm_digest()
+  nfc: s3fwrn5: use crypto_shash_tfm_digest()
+  fscrypt: use crypto_shash_tfm_digest()
+  ecryptfs: use crypto_shash_tfm_digest()
+  nfsd: use crypto_shash_tfm_digest()
+  ubifs: use crypto_shash_tfm_digest()
+  Bluetooth: use crypto_shash_tfm_digest()
+  sctp: use crypto_shash_tfm_digest()
+  KEYS: encrypted: use crypto_shash_tfm_digest()
+  ASoC: cros_ec_codec: use crypto_shash_tfm_digest()
+
+ arch/arm64/crypto/aes-glue.c               |  4 +--
+ crypto/essiv.c                             |  4 +--
+ crypto/shash.c                             | 16 +++++++++
+ drivers/crypto/axis/artpec6_crypto.c       | 10 ++----
+ drivers/crypto/ccp/ccp-crypto-sha.c        |  9 ++---
+ drivers/crypto/ccree/cc_cipher.c           |  9 ++---
+ drivers/crypto/hisilicon/sec2/sec_crypto.c |  5 ++-
+ drivers/crypto/mediatek/mtk-sha.c          |  7 ++--
+ drivers/crypto/n2_core.c                   |  7 ++--
+ drivers/crypto/omap-sham.c                 | 20 +++--------
+ drivers/crypto/s5p-sss.c                   | 39 ++++------------------
+ drivers/nfc/s3fwrn5/firmware.c             | 10 +-----
+ fs/crypto/fname.c                          |  7 +---
+ fs/crypto/hkdf.c                           |  6 +---
+ fs/ecryptfs/crypto.c                       | 17 +---------
+ fs/nfsd/nfs4recover.c                      | 26 ++++-----------
+ fs/ubifs/auth.c                            | 20 ++---------
+ fs/ubifs/master.c                          |  9 ++---
+ fs/ubifs/replay.c                          | 14 ++------
+ include/crypto/hash.h                      | 19 +++++++++++
+ net/bluetooth/smp.c                        |  6 +---
+ net/sctp/auth.c                            | 10 ++----
+ net/sctp/sm_make_chunk.c                   | 23 +++++--------
+ security/keys/encrypted-keys/encrypted.c   | 18 ++--------
+ sound/soc/codecs/cros_ec_codec.c           |  9 +----
+ 25 files changed, 95 insertions(+), 229 deletions(-)
+
+-- 
+2.26.2
