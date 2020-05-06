@@ -1,65 +1,41 @@
-From: Andrew Zaborowski <andrew.zaborowski@intel.com>
-Date: Mon, 04 May 2020 08:51:53 +0000
-Subject: [RESEND][PATCH] keys: Handle missing Authority Key Identifier X509 extension
-Message-Id: <20200504085153.127903-1-andrew.zaborowski@intel.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Wed, 06 May 2020 09:52:17 +0000
+Subject: [PATCH v4 4/4] MAINTAINERS: Add entry for TEE based Trusted Keys
+Message-Id: <1588758017-30426-5-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180505060152.21571-1-andrew.zaborowski@intel.com>
-In-Reply-To: <20180505060152.21571-1-andrew.zaborowski@intel.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
+References: <1588758017-30426-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1588758017-30426-1-git-send-email-sumit.garg@linaro.org>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jejb@linux.ibm.com
+Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-In a self-signed certificate the subject and issuer are the same and so
-the Authority Key Identifier X.509 v3 extension is explicitly made
-optional in RFC5280 section 4.2.1.1.
-crypto/asymmetric_keys/x509_cert_parser.c can't handle this and makes
-(at least) the restrict.c functions refuse to work with certificates
-that don't include the AKID.  Fix this by filling in the missing
-cert->sig->auth_ids with the certificate's own IDs after parsing and
-determinig the certificate is self-signed.
+Add MAINTAINERS entry for TEE based Trusted Keys framework.
 
-The asymmetric_key_generate_id return value is not checked because it's
-already succeeded once at this point.
-
-There are root X.509 v3 certificates in use where this is the case,
-mostly oldish ones.
-
-Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
 ---
- crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ MAINTAINERS | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 26ec20ef489..a5a2f93e242 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -136,6 +136,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
- 	if (ret < 0)
- 		goto error_decode;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b816a45..fc8bf16 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -9403,6 +9403,14 @@ F:	include/keys/trusted-type.h
+ F:	include/keys/trusted_tpm.h
+ F:	security/keys/trusted-keys/
  
-+	if (cert->self_signed) {
-+		if (!cert->sig->auth_ids[0]) {
-+			/* Duplicate cert->id */
-+			kid = asymmetric_key_generate_id(cert->raw_serial,
-+							 cert->raw_serial_size,
-+							 cert->raw_issuer,
-+							 cert->raw_issuer_size);
-+			cert->sig->auth_ids[0] = kid;
-+		}
++KEYS-TRUSTED-TEE
++M:	Sumit Garg <sumit.garg@linaro.org>
++L:	linux-integrity@vger.kernel.org
++L:	keyrings@vger.kernel.org
++S:	Supported
++F:	include/keys/trusted_tee.h
++F:	security/keys/trusted-keys/trusted_tee.c
 +
-+		if (!cert->sig->auth_ids[1] && cert->skid) {
-+			/* Duplicate cert->skid */
-+			kid = asymmetric_key_generate_id(cert->raw_skid,
-+							 cert->raw_skid_size,
-+							 "", 0);
-+			cert->sig->auth_ids[1] = kid;
-+		}
-+	}
-+
- 	kfree(ctx);
- 	return cert;
- 
+ KEYS/KEYRINGS
+ M:	David Howells <dhowells@redhat.com>
+ M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 -- 
-2.20.1
+2.7.4
