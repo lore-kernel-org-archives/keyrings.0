@@ -1,32 +1,59 @@
-From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Date: Sun, 17 May 2020 08:17:49 +0000
-Subject: Re: [PATCH v9 1/8] lib: add ASN.1 encoder
-Message-Id: <49e454ea4fbcf53962d62f806a77497d9f0c6c0d.camel@intel.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Wed, 06 May 2020 09:52:13 +0000
+Subject: [PATCH v4 0/4] Introduce TEE based Trusted Keys support
+Message-Id: <1588758017-30426-1-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
-         <20200507231147.27025-2-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200507231147.27025-2-James.Bottomley@HansenPartnership.com>
-To: "James.Bottomley@HansenPartnership.com" <James.Bottomley@HansenPartnership.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>
-Cc: "jarkko.sakkinen@linux.intel.com" <jarkko.sakkinen@linux.intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "zohar@linux.ibm.com" <zohar@linux.ibm.com>, "dwmw2@infradead.org" <dwmw2@infradead.org>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jejb@linux.ibm.com
+Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-T24gVGh1LCAyMDIwLTA1LTA3IGF0IDE2OjExIC0wNzAwLCBKYW1lcyBCb3R0b21sZXkgd3JvdGU6
-DQo+IFdlIGhhdmUgYSBuZWVkIGluIHRoZSBUUE0yIHRydXN0ZWQga2V5cyB0byByZXR1cm4gdGhl
-IEFTTi4xIGZvcm0gb2YNCj4gdGhlIFRQTSBrZXkgYmxvYiBzbyBpdCBjYW4gYmUgb3BlcmF0ZWQg
-b24gYnkgdG9vbHMgb3V0c2lkZSBvZiB0aGUNCj4ga2VybmVsLiAgVGhlIHNwZWNpZmljIHRvb2xz
-IGFyZSB0aGUgb3BlbnNzbF90cG0yX2VuZ2luZSwgb3BlbmNvbm5lY3QNCj4gYW5kIHRoZSBJbnRl
-bCB0cG0yLXRzcy1lbmdpbmUuICBUbyBkbyB0aGF0LCB3ZSBoYXZlIHRvIGJlIGFibGUgdG8gcmVh
-ZA0KPiBhbmQgd3JpdGUgdGhlIHNhbWUgYmluYXJ5IGtleSBmb3JtYXQgdGhlIHRvb2xzIHVzZS4g
-IFRoZSBjdXJyZW50IEFTTi4xDQo+IGRlY29kZXIgZG9lcyBmaW5lIGZvciByZWFkaW5nLCBidXQg
-d2UgbmVlZCBwaWVjZXMgb2YgYW4gQVNOLjEgZW5jb2Rlcg0KPiB0byB3cml0ZSB0aGUga2V5IGJs
-b2IgaW4gYmluYXJ5IGNvbXBhdGlibGUgZm9ybS4NCj4gDQo+IEZvciBiYWNrd2FyZHMgY29tcGF0
-aWJpbGl0eSwgdGhlIHRydXN0ZWQga2V5IHJlYWRlciBjb2RlIHdpbGwgc3RpbGwNCj4gYWNjZXB0
-IHRoZSB0d28gVFBNMkIgcXVhbnRpdGllcyB0aGF0IGl0IHVzZXMgdG9kYXksIGJ1dCB0aGUgd3Jp
-dGVyDQo+IHdpbGwgb25seSBvdXRwdXQgdGhlIEFTTi4xIGZvcm0uDQo+IA0KPiBUaGUgY3VycmVu
-dCBpbXBsZW1lbnRhdGlvbiBvbmx5IGVuY29kZXMgdGhlIEFTTi4xIGJpdHMgd2UgYWN0dWFsbHkg
-bmVlZC4NCj4gDQo+IFNpZ25lZC1vZmYtYnk6IEphbWVzIEJvdHRvbWxleSA8SmFtZXMuQm90dG9t
-bGV5QEhhbnNlblBhcnRuZXJzaGlwLmNvbT4NCj4gUmV2aWV3ZWQtYnk6IEphcmtrbyBTYWtraW5l
-biA8amFya2tvLnNha2tpbmVuQGxpbnV4LmludGVsLmNvbT4NCg0KVGVzdGVkLWJ5OiBKYXJra28g
-U2Fra2luZW4gPGphcmtrby5zYWtraW5lbkBsaW51eC5pbnRlbC5jb20+DQoNCi9KYXJra28NCg=
+Add support for TEE based trusted keys where TEE provides the functionality
+to seal and unseal trusted keys using hardware unique key. Also, this is
+an alternative in case platform doesn't possess a TPM device.
+
+This patch-set has been tested with OP-TEE based early TA which can be
+found here [1].
+
+[1] https://github.com/OP-TEE/optee_os/pull/3838
+
+Changes in v4:
+1. Pushed independent TEE features separately:
+  - Part of recent TEE PR: https://lkml.org/lkml/2020/5/4/1062
+2. Updated trusted-encrypted doc with TEE as a new trust source.
+3. Rebased onto latest tpmdd/master.
+
+Changes in v3:
+1. Update patch #2 to support registration of multiple kernel pages.
+2. Incoporate dependency patch #4 in this patch-set:
+   https://patchwork.kernel.org/patch/11091435/
+
+Changes in v2:
+1. Add reviewed-by tags for patch #1 and #2.
+2. Incorporate comments from Jens for patch #3.
+3. Switch to use generic trusted keys framework.
+
+Sumit Garg (4):
+  KEYS: trusted: Add generic trusted keys framework
+  KEYS: trusted: Introduce TEE based Trusted Keys
+  doc: trusted-encrypted: updates with TEE as a new trust source
+  MAINTAINERS: Add entry for TEE based Trusted Keys
+
+ Documentation/security/keys/trusted-encrypted.rst | 203 ++++++++++---
+ MAINTAINERS                                       |   8 +
+ include/keys/trusted-type.h                       |  48 ++++
+ include/keys/trusted_tee.h                        |  66 +++++
+ include/keys/trusted_tpm.h                        |  15 -
+ security/keys/Kconfig                             |   3 +
+ security/keys/trusted-keys/Makefile               |   2 +
+ security/keys/trusted-keys/trusted_common.c       | 336 ++++++++++++++++++++++
+ security/keys/trusted-keys/trusted_tee.c          | 282 ++++++++++++++++++
+ security/keys/trusted-keys/trusted_tpm1.c         | 335 ++++-----------------
+ 10 files changed, 974 insertions(+), 324 deletions(-)
+ create mode 100644 include/keys/trusted_tee.h
+ create mode 100644 security/keys/trusted-keys/trusted_common.c
+ create mode 100644 security/keys/trusted-keys/trusted_tee.c
+
+-- 
+2.7.4
