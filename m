@@ -1,28 +1,64 @@
-From: Ben Boeckel <me@benboeckel.net>
-Date: Wed, 13 May 2020 22:23:05 +0000
-Subject: [PATCH 0/1] Clarify keyctl_set_reqkey_keyring(3) return value
-Message-Id: <20200513222306.870160-1-list.lkml.keyrings@me.benboeckel.net>
+From: "Gustavo A. R. Silva" <gustavoars@kernel.org>
+Date: Thu, 07 May 2020 18:57:04 +0000
+Subject: [PATCH] encrypted-keys: Replace zero-length array with flexible-array
+Message-Id: <20200507185704.GA14874@embeddedor>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+To: Mimi Zohar <zohar@linux.ibm.com>
+Cc: linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-From: Ben Boeckel <mathstuf@gmail.com>
+The current codebase makes use of the zero-length array language
+extension to the C90 standard, but the preferred mechanism to declare
+variable-length types such as these ones is a flexible array member[1][2],
+introduced in C99:
 
-Minor documentation fixup I noticed.
+struct foo {
+        int stuff;
+        struct boo array[];
+};
 
-I'm still in the process of migrating emails for various usages hence
-the email From mismatch here (I've migrated my list subscription, but
-not my general contribution email).
+By making use of the mechanism above, we will get a compiler warning
+in case the flexible array does not occur last in the structure, which
+will help us prevent some kind of undefined behavior bugs from being
+inadvertently introduced[3] to the codebase from now on.
 
-Ben Boeckel (1):
-  man: clarify that keyctl_set_reqkey_keyring(3) returns the old default
+Also, notice that, dynamic memory allocations won't be affected by
+this change:
 
- man/keyctl_set_reqkey_keyring.3 | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+"Flexible array members have incomplete type, and so the sizeof operator
+may not be applied. As a quirk of the original implementation of
+zero-length arrays, sizeof evaluates to zero."[1]
 
+sizeof(flexible-array-member) triggers a warning because flexible array
+members have incomplete type[1]. There are some instances of code in
+which the sizeof operator is being incorrectly/erroneously applied to
+zero-length arrays and the result is zero. Such instances may be hiding
+some bugs. So, this work (flexible-array member conversions) will also
+help to get completely rid of those sorts of issues.
 
-base-commit: 704802463dd1fd74000132d4325300c718a4b474
--- 
-2.25.4
+This issue was found with the help of Coccinelle.
+
+[1] https://gcc.gnu.org/onlinedocs/gcc/Zero-Length.html
+[2] https://github.com/KSPP/linux/issues/21
+[3] commit 76497732932f ("cxgb3/l2t: Fix undefined behaviour")
+
+Signed-off-by: Gustavo A. R. Silva <gustavoars@kernel.org>
+---
+ include/keys/encrypted-type.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/keys/encrypted-type.h b/include/keys/encrypted-type.h
+index 9e9ccb20d586..38afb341c3f2 100644
+--- a/include/keys/encrypted-type.h
++++ b/include/keys/encrypted-type.h
+@@ -27,7 +27,7 @@ struct encrypted_key_payload {
+ 	unsigned short payload_datalen;		/* payload data length */
+ 	unsigned short encrypted_key_format;	/* encrypted key format */
+ 	u8 *decrypted_data;	/* decrypted data */
+-	u8 payload_data[0];	/* payload data + datablob + hmac */
++	u8 payload_data[];	/* payload data + datablob + hmac */
+ };
+ 
+ extern struct key_type key_type_encrypted;
