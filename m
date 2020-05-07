@@ -1,46 +1,70 @@
-From: James Prestwood <prestwoj@gmail.com>
-Date: Mon, 18 May 2020 17:27:01 +0000
-Subject: [PATCH 14/17] include: linux: tpm: expose tpm2_rsa_decrypt
-Message-Id: <20200518172704.29608-15-prestwoj@gmail.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Thu, 07 May 2020 23:11:41 +0000
+Subject: [PATCH v9 2/8] oid_registry: Add TCG defined OIDS for TPM keys
+Message-Id: <20200507231147.27025-3-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200518172704.29608-1-prestwoj@gmail.com>
-In-Reply-To: <20200518172704.29608-1-prestwoj@gmail.com>
-To: keyrings@vger.kernel.org
-Cc: James.Bottomley@HansenPartnership.com, James Prestwood <prestwoj@gmail.com>
+References: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-Expose these APIs so other modules can use them.
+The TCG has defined an OID prefix "2.23.133.10.1" for the various TPM
+key uses.  We've defined three of the available numbers:
+
+2.23.133.10.1.3 TPM Loadable key.  This is an asymmetric key (Usually
+		RSA2048 or Elliptic Curve) which can be imported by a
+		TPM2_Load() operation.
+
+2.23.133.10.1.4 TPM Importable Key.  This is an asymmetric key (Usually
+		RSA2048 or Elliptic Curve) which can be imported by a
+		TPM2_Import() operation.
+
+Both loadable and importable keys are specific to a given TPM, the
+difference is that a loadable key is wrapped with the symmetric
+secret, so must have been created by the TPM itself.  An importable
+key is wrapped with a DH shared secret, and may be created without
+access to the TPM provided you know the public part of the parent key.
+
+2.23.133.10.1.5 TPM Sealed Data.  This is a set of data (up to 128
+		bytes) which is sealed by the TPM.  It usually
+		represents a symmetric key and must be unsealed before
+		use.
+
+The ASN.1 binary key form starts of with this OID as the first element
+of a sequence, giving the binary form a unique recognizable identity
+marker regardless of encoding.
+
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Reviewed-by: David Howells <dhowells@redhat.com>
+
 ---
- include/linux/tpm.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
 
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index b1c96ee7b672..7dd33f144bce 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -387,6 +387,9 @@ static inline u32 tpm2_rc_value(u32 rc)
-        return (rc & BIT(7)) ? rc & 0xff : rc;
- }
+v3: correct OID_TPMImportableKey name
+v7: add ack
+v9: add review
+---
+ include/linux/oid_registry.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index 657d6bf2c064..f6e2276e5f30 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -107,6 +107,11 @@ enum OID {
+ 	OID_gostTC26Sign512B,		/* 1.2.643.7.1.2.1.2.2 */
+ 	OID_gostTC26Sign512C,		/* 1.2.643.7.1.2.1.2.3 */
  
-+extern int tpm2_rsa_decrypt(struct tpm_chip *chip, u32 parent,
-+			    const unsigned char *keyblob, size_t bloblen,
-+			    const void *data, size_t len, void *out);
- #else
- static inline int tpm_is_tpm2(struct tpm_chip *chip)
- {
-@@ -418,5 +421,11 @@ static inline struct tpm_chip *tpm_default_chip(void)
- {
- 	return NULL;
- }
-+static inline int tpm2_rsa_decrypt(struct tpm_chip *chip, u32 parent,
-+				   const unsigned char *keyblob, size_t bloblen,
-+				   const void *data, size_t len, void *out)
-+{
-+	return -ENODEV;
-+}
- #endif
- #endif
++	/* TCG defined OIDS for TPM based keys */
++	OID_TPMLoadableKey,		/* 2.23.133.10.1.3 */
++	OID_TPMImportableKey,		/* 2.23.133.10.1.4 */
++	OID_TPMSealedData,		/* 2.23.133.10.1.5 */
++
+ 	OID__NR
+ };
+ 
 -- 
-2.21.1
+2.26.1
