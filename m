@@ -1,51 +1,74 @@
-From: Paul Moore <paul@paul-moore.com>
-Date: Fri, 01 May 2020 16:37:32 +0000
-Subject: Re: [PATCH] selinux: Fix use of KEY_NEED_* instead of KEY__* perms [v2]
-Message-Id: <CAHC9VhTO0Ag-CODexD8hjZdTzUBEd4nJdR191o__=+iOLUHmFw@mail.gmail.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Thu, 07 May 2020 23:11:39 +0000
+Subject: [PATCH v9 0/8] TPM 2.0 trusted keys with attached policy
+Message-Id: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAHC9VhT95GJKNTMvTtmZL35UOoVwbGH-eDWZyELb5oZ5rQU+Tw@mail.gmail.com>
- <924658.1588078484@warthog.procyon.org.uk> <CAEjxPJ5+DtZfX36OLYiLbU=1tGZcPUWFUi1=mFfx=ntehtvd3Q@mail.gmail.com>
- <1072935.1588089479@warthog.procyon.org.uk> <CAEjxPJ6pFdDfm55pv9bT3CV5DTFF9VqzRmG_Xi5bKNxPaGuOLg@mail.gmail.com>
-In-Reply-To: <CAEjxPJ6pFdDfm55pv9bT3CV5DTFF9VqzRmG_Xi5bKNxPaGuOLg@mail.gmail.com>
-To: Stephen Smalley <stephen.smalley.work@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, SElinux list <selinux@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-On Tue, Apr 28, 2020 at 12:19 PM Stephen Smalley
-<stephen.smalley.work@gmail.com> wrote:
-> On Tue, Apr 28, 2020 at 11:58 AM David Howells <dhowells@redhat.com> wrote:
-> > Stephen Smalley <stephen.smalley.work@gmail.com> wrote:
-> >
-> > > 1) Are we guaranteed that the caller only ever passes a single
-> > > KEY_NEED_* perm at a time (i.e. hook is never called with a bitmask
-> > > of multiple permissions)?  Where is that guarantee enforced?
-> >
-> > Currently it's the case that only one perm is ever used at once.  I'm tempted
-> > to enforce this by switching the KEY_NEED_* to an enum rather than a bitmask.
-> >
-> > I'm not sure how I would actually define the meaning of two perms being OR'd
-> > together.  Either okay?  Both required?
->
-> Both required is the usual convention in functions like
-> inode_permission() or avc_has_perm().
-> But if you know that you'll never use combinations, we should just
-> prohibit it up front, e.g.
-> key_task_permission() or whatever can reject them before they reach
-> the hook call.  Then the
-> hook code doesn't have to revisit the issue.
->
-> >
-> > > 2) We had talked about adding a BUILD_BUG_ON() or other build-time
-> > > guard
-> >
-> > That doesn't help you trap unallowed perm combinations, though.
->
-> I think we want both.
+This is a respin on v8 to make the encoder selectable and address
+David's comments.  The trusted key part hasn't changed except to add a
+now necessary select for ASN1_ENCODER to patch 4 and the changelog of
+patch 6 has been updated to correct the cut and paste error in the
+keyctl statement.
 
-Yep, we want both. #moarsafety
+General cover letter:
+
+This patch updates the trusted key code to export keys in the ASN.1
+format used by current TPM key tools (openssl_tpm2_engine and
+openconnect).  It also simplifies the use of policy with keys because
+the ASN.1 format is designed to carry a description of how to
+construct the policy, with the result that simple policies (like
+authorization and PCR locking) can now be constructed and used in the
+kernel, bringing the TPM 2.0 policy use into line with how TPM 1.2
+works.
+
+The key format is designed to be compatible with our two openssl
+engine implementations as well as with the format used by openconnect.
+I've added seal/unseal to my engine so I can use it for
+interoperability testing and I'll later use this for sealed symmetric
+keys via engine:
+
+https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
+
+James
+
+---
+
+James Bottomley (8):
+  lib: add ASN.1 encoder
+  oid_registry: Add TCG defined OIDS for TPM keys
+  security: keys: trusted: fix TPM2 authorizations
+  security: keys: trusted: use ASN.1 TPM2 key format for the blobs
+  security: keys: trusted: Make sealed key properly interoperable
+  security: keys: trusted: add PCR policy to TPM2 keys
+  security: keys: trusted: add ability to specify arbitrary policy
+  security: keys: trusted: implement counter/timer policy
+
+ .../security/keys/trusted-encrypted.rst       |  64 ++-
+ include/keys/trusted-type.h                   |   7 +-
+ include/linux/asn1_encoder.h                  |  32 ++
+ include/linux/oid_registry.h                  |   5 +
+ include/linux/tpm.h                           |   8 +
+ lib/Kconfig                                   |   3 +
+ lib/Makefile                                  |   1 +
+ lib/asn1_encoder.c                            | 454 +++++++++++++++++
+ security/keys/Kconfig                         |   3 +
+ security/keys/trusted-keys/Makefile           |   2 +-
+ security/keys/trusted-keys/tpm2-policy.c      | 463 ++++++++++++++++++
+ security/keys/trusted-keys/tpm2-policy.h      |  31 ++
+ security/keys/trusted-keys/tpm2key.asn1       |  23 +
+ security/keys/trusted-keys/trusted_tpm1.c     |  56 ++-
+ security/keys/trusted-keys/trusted_tpm2.c     | 370 +++++++++++++-
+ 15 files changed, 1486 insertions(+), 36 deletions(-)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
+ create mode 100644 security/keys/trusted-keys/tpm2-policy.c
+ create mode 100644 security/keys/trusted-keys/tpm2-policy.h
+ create mode 100644 security/keys/trusted-keys/tpm2key.asn1
 
 -- 
-paul moore
-www.paul-moore.com
+2.26.1
