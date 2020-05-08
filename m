@@ -1,30 +1,26 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Wed, 27 May 2020 19:58:21 +0000
-Subject: Re: [RESEND] security/keys: remove possessor verify after key permission check
-Message-Id: <1590609501.4731.3.camel@HansenPartnership.com>
+From: Barrister Robert Richter UN-Attorney NY  <info.zennitbankplcnigerian@gmail.com>
+Date: Fri, 08 May 2020 18:54:54 +0000
+Subject: Contact JP Morgan Chase Bank NY USA to receive your transfer $35.700,000Million USD Deposited this M
+Message-Id: <CABHzvr=s1kQwPQRMJURJuh3WhBfg0b3RjwH+kyvcs50kBUaHSQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200505091958.GD16980@willie-the-truck>
-In-Reply-To: <20200505091958.GD16980@willie-the-truck>
 To: keyrings@vger.kernel.org
 
-On Wed, 2020-05-27 at 22:47 +0300, Jarkko Sakkinen wrote:
-[...]
-> > ping
-> 
-> Please send a new version with a full example of the scenario that
-> you are referring. This thread became too messy to follow with the
-> HTML emails included (that do no reach vger).
+Dear Friend.
+Goodnews to you
+Contact JP Morgan Chase Bank NY USA to receive your transfer
+$35.700,000Million USD Deposited this Morning, All Service Fees was
+taking care of by IMF Ny,
+Contact Bank Director, James Binton
+Email ID: jpmorganchasebanknyusa@gmail.com
+Phone(906) 205-3516 TEXT THE OFFICE
+JP MORGAN CHASE BANK NY USA
+Contact the bank once you receive this email including your bank
+information where the funds worth $35.700,000Million USD will be
+transferred to you, only money you required to send to bank is $50.00
+Your Funds wire transfer fee okay,
+God Bless you
 
-Yes, please ... I'm missing most of the emails because of the vger and
-html problem.  I think the request is to remove the possessor check in
-keyctl_read, but just done blindly that would completely destroy our
-namespaced security system for keys, so it doesn't sound like a good
-idea at all.  What's the actual problem this is trying to solve?  It's
-annoying that root has to join the session keyring to read a key, but
-the reason for it is well justified and the fact that even root can't
-reach some session keyrings is a feature not a bug.
-
-James
+Barrister  Robert Richter
