@@ -1,70 +1,60 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Thu, 07 May 2020 23:11:41 +0000
-Subject: [PATCH v9 2/8] oid_registry: Add TCG defined OIDS for TPM keys
-Message-Id: <20200507231147.27025-3-James.Bottomley@HansenPartnership.com>
+From: Mikhail Novosyolov <m.novosyolov@rosalinux.ru>
+Date: Sun, 10 May 2020 15:51:15 +0000
+Subject: Re: sign-file: full functionality with modern LibreSSL
+Message-Id: <375f18b9-c23a-7f59-4432-374816725a79@rosalinux.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+References: <f13b4174-bcfa-6569-0601-65a9bfc9bb92@rosalinux.ru>
+In-Reply-To: <f13b4174-bcfa-6569-0601-65a9bfc9bb92@rosalinux.ru>
+To: keyrings@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 
-The TCG has defined an OID prefix "2.23.133.10.1" for the various TPM
-key uses.  We've defined three of the available numbers:
+19.03.2020 00:31, Mikhail Novosyolov пишет:
+> Current pre-release version of LibreSSL has enabled CMS support,
+> and now sign-file is fully functional with it.
+>
+> See https://github.com/libressl-portable/openbsd/commits/master
+>
+> To test buildability with current LibreSSL:
+> ~$ git clone https://github.com/libressl-portable/portable.git
+> ~$ cd portable && ./autogen.sh
+> ~$ ./configure --prefix=/opt/libressl
+> ~$ make
+> ~# make install
+> Go to the kernel source tree and:
+> ~$ gcc -I/opt/libressl/include -L /opt/libressl/lib -lcrypto -Wl,-rpath,/opt/libressl/lib scripts/sign-file.c -o scripts/sign-file
+>
+> Fixes: f8688017 ("sign-file: fix build error in sign-file.c with libressl")
+>
+> Signed-off-by: Mikhail Novosyolov <m.novosyolov@rosalinux.ru>
 
-2.23.133.10.1.3 TPM Loadable key.  This is an asymmetric key (Usually
-		RSA2048 or Elliptic Curve) which can be imported by a
-		TPM2_Load() operation.
+I would like to remember about this.
 
-2.23.133.10.1.4 TPM Importable Key.  This is an asymmetric key (Usually
-		RSA2048 or Elliptic Curve) which can be imported by a
-		TPM2_Import() operation.
+LibreSSL 3.1.1 has been released, and this patch (https://patchwork.kernel.org/patch/11446123/) is required to sign kernel modules using libressl.
 
-Both loadable and importable keys are specific to a given TPM, the
-difference is that a loadable key is wrapped with the symmetric
-secret, so must have been created by the TPM itself.  An importable
-key is wrapped with a DH shared secret, and may be created without
-access to the TPM provided you know the public part of the parent key.
+Libressl 3.1.1 can sign them with functional parity with OpenSSL.
 
-2.23.133.10.1.5 TPM Sealed Data.  This is a set of data (up to 128
-		bytes) which is sealed by the TPM.  It usually
-		represents a symmetric key and must be unsealed before
-		use.
-
-The ASN.1 binary key form starts of with this OID as the first element
-of a sequence, giving the binary form a unique recognizable identity
-marker regardless of encoding.
-
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Reviewed-by: David Howells <dhowells@redhat.com>
-
----
-
-v3: correct OID_TPMImportableKey name
-v7: add ack
-v9: add review
----
- include/linux/oid_registry.h | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
-index 657d6bf2c064..f6e2276e5f30 100644
---- a/include/linux/oid_registry.h
-+++ b/include/linux/oid_registry.h
-@@ -107,6 +107,11 @@ enum OID {
- 	OID_gostTC26Sign512B,		/* 1.2.643.7.1.2.1.2.2 */
- 	OID_gostTC26Sign512C,		/* 1.2.643.7.1.2.1.2.3 */
- 
-+	/* TCG defined OIDS for TPM based keys */
-+	OID_TPMLoadableKey,		/* 2.23.133.10.1.3 */
-+	OID_TPMImportableKey,		/* 2.23.133.10.1.4 */
-+	OID_TPMSealedData,		/* 2.23.133.10.1.5 */
-+
- 	OID__NR
- };
- 
--- 
-2.26.1
+> ---
+>  scripts/sign-file.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+> index fbd34b8e8f57..fd4d7c31d1bf 100644
+> --- a/scripts/sign-file.c
+> +++ b/scripts/sign-file.c
+> @@ -41,9 +41,10 @@
+>   * signing with anything other than SHA1 - so we're stuck with that if such is
+>   * the case.
+>   */
+> -#if defined(LIBRESSL_VERSION_NUMBER) || \
+> -    OPENSSL_VERSION_NUMBER < 0x10000000L || \
+> -    defined(OPENSSL_NO_CMS)
+> +#if defined(OPENSSL_NO_CMS) || \
+> +    ( defined(LIBRESSL_VERSION_NUMBER) \
+> +    && (LIBRESSL_VERSION_NUMBER < 0x3010000fL) ) || \
+> +    OPENSSL_VERSION_NUMBER < 0x10000000L
+>  #define USE_PKCS7
+>  #endif
+>  #ifndef USE_PKCS7
