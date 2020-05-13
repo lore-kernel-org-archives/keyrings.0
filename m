@@ -1,7 +1,7 @@
-From: Paul Moore <paul@paul-moore.com>
-Date: Wed, 13 May 2020 01:04:29 +0000
+From: Stephen Smalley <stephen.smalley.work@gmail.com>
+Date: Wed, 13 May 2020 12:58:33 +0000
 Subject: Re: [PATCH] keys: Make the KEY_NEED_* perms an enum rather than a mask
-Message-Id: <CAHC9VhQhYz8xZ6MGv0S9q2D-gReb0Pqqb=2+oX=NVuxb_F5WfA@mail.gmail.com>
+Message-Id: <CAEjxPJ4=ZN_jKP2nX5mrMA3OxC8XLsYEmCPCD-78H4XQw=_hCA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,9 +10,10 @@ References: <CAEjxPJ6pFdDfm55pv9bT3CV5DTFF9VqzRmG_Xi5bKNxPaGuOLg@mail.gmail.com>
  <158932282880.2885325.2688622278854566047.stgit@warthog.procyon.org.uk>
 In-Reply-To: <158932282880.2885325.2688622278854566047.stgit@warthog.procyon.org.uk>
 To: David Howells <dhowells@redhat.com>
-Cc: Stephen Smalley <stephen.smalley.work@gmail.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Casey Schaufler <casey@schaufler-ca.com>, keyrings@vger.kernel.org, selinux@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Paul Moore <paul@paul-moore.com>, Casey Schaufler <casey@schaufler-ca.com>, keyrings@vger.kernel.org, SElinux list <selinux@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
 
 On Tue, May 12, 2020 at 6:33 PM David Howells <dhowells@redhat.com> wrote:
+>
 > Since the meaning of combining the KEY_NEED_* constants is undefined, make
 > it so that you can't do that by turning them into an enum.
 >
@@ -26,38 +27,80 @@ On Tue, May 12, 2020 at 6:33 PM David Howells <dhowells@redhat.com> wrote:
 >      the keyring, (this replaces the KEY_LOOKUP_FOR_UNLINK flag).
 >
 >  (3) An override due to CAP_SYS_ADMIN.
->
+
+CAP_SYS_ADMIN should never skip SELinux checking.  Even for Smack,
+there is a separate capability (CAP_MAC_ADMIN) for that purpose.
+
 >  (4) An override due to an instantiation token being present.
+
+Not sure what this means but again we shouldn't skip SELinux checking
+based on mere possession of an object capability (not a POSIX
+capability).
+
 >
 >  (5) The permissions check is being deferred to later key_permission()
 >      calls.
 >
 > The extra values give the opportunity for LSMs to audit these situations.
->
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> cc: Paul Moore <paul@paul-moore.com>
-> cc: Stephen Smalley <stephen.smalley.work@gmail.com>
-> cc: Casey Schaufler <casey@schaufler-ca.com>
-> cc: keyrings@vger.kernel.org
-> cc: selinux@vger.kernel.org
 > ---
+
+> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> index 7d8de1c9a478..6763ee45e04d 100644
+> --- a/security/keys/keyctl.c
+> +++ b/security/keys/keyctl.c
+> @@ -434,7 +434,7 @@ long keyctl_invalidate_key(key_serial_t id)
 >
->  include/linux/key.h          |   30 ++++++++++++++++-----------
->  include/linux/security.h     |    6 +++--
->  security/keys/internal.h     |    8 ++++---
->  security/keys/keyctl.c       |   16 ++++++++-------
->  security/keys/permission.c   |   31 ++++++++++++++++++++++------
->  security/keys/process_keys.c |   46 ++++++++++++++++++++----------------------
->  security/security.c          |    6 +++--
->  security/selinux/hooks.c     |   25 ++++++++++++++++-------
->  security/smack/smack_lsm.c   |   31 +++++++++++++++++++++-------
->  9 files changed, 124 insertions(+), 75 deletions(-)
+>                 /* Root is permitted to invalidate certain special keys */
+>                 if (capable(CAP_SYS_ADMIN)) {
+> -                       key_ref = lookup_user_key(id, 0, 0);
+> +                       key_ref = lookup_user_key(id, 0, KEY_SYSADMIN_OVERRIDE);
 
-Thanks for clarifying this, it helps a lot.
+It would be better if the permission indicated the actual operation
+(e.g. KEY_NEED_INVALIDATE_SPECIAL), and the decision whether to permit
+CAP_SYS_ADMIN processes to override was left to the security modules.
+SELinux doesn't automatically allow CAP_SYS_ADMIN processes to do
+everything.
 
-My comments below are nitpicky, but take them into account, the style
-of the SELinux code changes makes my eyes hurt.
+> @@ -479,7 +479,8 @@ long keyctl_keyring_clear(key_serial_t ringid)
+>
+>                 /* Root is permitted to invalidate certain special keyrings */
+>                 if (capable(CAP_SYS_ADMIN)) {
+> -                       keyring_ref = lookup_user_key(ringid, 0, 0);
+> +                       keyring_ref = lookup_user_key(ringid, 0,
+> +                                                     KEY_SYSADMIN_OVERRIDE);
+
+Ditto.
+
+> @@ -663,7 +664,7 @@ long keyctl_describe_key(key_serial_t keyid,
+>                                 key_put(instkey);
+>                                 key_ref = lookup_user_key(keyid,
+>                                                           KEY_LOOKUP_PARTIAL,
+> -                                                         0);
+> +                                                         KEY_AUTHTOKEN_OVERRIDE);
+
+Similarly, it would be better if the permission indicated the
+operation (e.g. KEY_NEED_DESCRIBE) rather than the means by which it
+is being authorized.  A MAC scheme won't allow mere knowledge of a
+token/password-capability to permit violation of its policy.
+
+> @@ -1471,7 +1472,7 @@ long keyctl_set_timeout(key_serial_t id, unsigned timeout)
+>                                 key_put(instkey);
+>                                 key_ref = lookup_user_key(id,
+>                                                           KEY_LOOKUP_PARTIAL,
+> -                                                         0);
+> +                                                         KEY_AUTHTOKEN_OVERRIDE);
+
+Ditto.
+
+> @@ -1579,7 +1580,8 @@ long keyctl_get_security(key_serial_t keyid,
+>                         return PTR_ERR(instkey);
+>                 key_put(instkey);
+>
+> -               key_ref = lookup_user_key(keyid, KEY_LOOKUP_PARTIAL, 0);
+> +               key_ref = lookup_user_key(keyid, KEY_LOOKUP_PARTIAL,
+> +                                         KEY_AUTHTOKEN_OVERRIDE);
+
+Ditto
 
 > diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
 > index 0b4e32161b77..3ff6b6dfc5ca 100644
@@ -85,33 +128,6 @@ of the SELinux code changes makes my eyes hurt.
 > +       case KEY_AUTHTOKEN_OVERRIDE:
 > +       case KEY_DEFER_PERM_CHECK:
 >                 return 0;
-> +       default:
-> +               WARN_ON(1);
-> +               return -EPERM;
 
-Please move the default case to the bottom of the switch statement.
-
-> -       sid = cred_sid(cred);
-> +       case KEY_NEED_VIEW:     perm = KEY__VIEW;       break;
-> +       case KEY_NEED_READ:     perm = KEY__READ;       break;
-> +       case KEY_NEED_WRITE:    perm = KEY__WRITE;      break;
-> +       case KEY_NEED_SEARCH:   perm = KEY__SEARCH;     break;
-> +       case KEY_NEED_LINK:     perm = KEY__LINK;       break;
-> +       case KEY_NEED_SETATTR:  perm = KEY__SETATTR;    break;
-
-Please don't put the case statements all on one line, use the more
-traditional multi-line format.  For example:
-
-  case KEY_NEED_SETATTR:
-          perm = KEY__SETATTR;
-          break;
-
-> +       }
->
-> +       sid = cred_sid(cred);
->         key = key_ref_to_ptr(key_ref);
->         ksec = key->security;
-
--- 
-paul moore
-www.paul-moore.com
+We really shouldn't be skipping any/all checking on CAP_SYS_ADMIN or
+an AUTHTOKEN; those should still be subject to MAC policy.
