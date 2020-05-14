@@ -1,62 +1,92 @@
-From: Waiman Long <longman@redhat.com>
-Date: Wed, 06 May 2020 01:29:58 +0000
+From: Balbir Singh <bsingharora@gmail.com>
+Date: Thu, 14 May 2020 11:00:40 +0000
 Subject: Re: [PATCH v3] mm: Add kvfree_sensitive() for freeing sensitive data objects
-Message-Id: <3be0ef1d-fe7f-6b02-d9c0-c6b750fd94f3@redhat.com>
+Message-Id: <1158ff38-c65d-379f-8ae7-6f507d9fc8dd@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <694135.1586290793@warthog.procyon.org.uk>
- <20200407200318.11711-1-longman@redhat.com>
- <694340.1586290917@warthog.procyon.org.uk>
- <20200505133521.eb8901d0b92e09452191ab49@linux-foundation.org>
-In-Reply-To: <20200505133521.eb8901d0b92e09452191ab49@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, linux-mm@kvack.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
+References: <20200407200318.11711-1-longman@redhat.com>
+In-Reply-To: <20200407200318.11711-1-longman@redhat.com>
+To: Waiman Long <longman@redhat.com>, Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-mm@kvack.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
 
-On 5/5/20 4:35 PM, Andrew Morton wrote:
-> On Tue, 07 Apr 2020 21:21:57 +0100 David Howells <dhowells@redhat.com> wr=
-ote:
->
->> David Howells <dhowells@redhat.com> wrote:
->>
->>>>   			if (unlikely(key_data))
->>>> -				__kvzfree(key_data, key_data_len);
->>>> +				kvfree_sensitive(key_data, key_data_len);
->>> I think the if-statement is redundant.
->> Ah - I see that you explicitly wanted to keep it.
-> Why's that?
 
-There is a comment above it:
+On 8/4/20 6:03 am, Waiman Long wrote:
+> For kvmalloc'ed data object that contains sensitive information like
+> cryptographic key, we need to make sure that the buffer is always
+> cleared before freeing it. Using memset() alone for buffer clearing may
+> not provide certainty as the compiler may compile it away. To be sure,
+> the special memzero_explicit() has to be used.
+> 
+> This patch introduces a new kvfree_sensitive() for freeing those
+> sensitive data objects allocated by kvmalloc(). The relevnat places
+> where kvfree_sensitive() can be used are modified to use it.
+> 
+> Fixes: 4f0882491a14 ("KEYS: Avoid false positive ENOMEM error on key read")
+> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Waiman Long <longman@redhat.com>
+> ---
+>  include/linux/mm.h       |  1 +
+>  mm/util.c                | 18 ++++++++++++++++++
+>  security/keys/internal.h | 11 -----------
+>  security/keys/keyctl.c   | 16 +++++-----------
+>  4 files changed, 24 insertions(+), 22 deletions(-)
+> 
+>  [v3: Fix kerneldoc errors]
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 7dd5c4ccbf85..9b3130b20f42 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -757,6 +757,7 @@ static inline void *kvcalloc(size_t n, size_t size, gfp_t flags)
+>  }
+>  
+>  extern void kvfree(const void *addr);
+> +extern void kvfree_sensitive(const void *addr, size_t len);
+>  
+>  static inline int compound_mapcount(struct page *page)
+>  {
+> diff --git a/mm/util.c b/mm/util.c
+> index 988d11e6c17c..dc1c877d5481 100644
+> --- a/mm/util.c
+> +++ b/mm/util.c
+> @@ -604,6 +604,24 @@ void kvfree(const void *addr)
+>  }
+>  EXPORT_SYMBOL(kvfree);
+>  
+> +/**
+> + * kvfree_sensitive - Free a data object containing sensitive information.
+> + * @addr: address of the data object to be freed.
+> + * @len: length of the data object.
+> + *
+> + * Use the special memzero_explicit() function to clear the content of a
+> + * kvmalloc'ed object containing sensitive data to make sure that the
+> + * compiler won't optimize out the data clearing.
+> + */
+> +void kvfree_sensitive(const void *addr, size_t len)
+> +{
+> +	if (likely(!ZERO_OR_NULL_PTR(addr))) {
+> +		memzero_explicit((void *)addr, len);
+> +		kvfree(addr);
+> +	}
+> +}
+> +EXPORT_SYMBOL(kvfree_sensitive);
+> +
 
- =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 =A0=A0=A0 /*
- =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 * The key may change (unl=
-ikely) in between 2 consecutive
- =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 * __keyctl_read_key() cal=
-ls. In this case, we reallocate
- =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 * a larger buffer and red=
-o the key read when
- =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 * key_data_len < ret <=3D=
- buflen.
- =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 */
- =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 if (ret > key_data_len) {
- =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0 if (=
-unlikely(key_data))
- =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=A0=
-=A0=A0=A0=A0=A0=A0=A0 __kvzfree(key_data, key_data_len);
+I wonder if the right thing to do is also to disable pre-emption, just so that the thread does not linger on with sensitive data.
 
-key_data will be defined only if the unlikely case that the key increase=20
-in length between the 2 consecutive __keyctl_read_key() call and we have=20
-to enlarge the buffer and read the key again. I want to keep the=20
-unlikely() macro to emphasize the fact that this condition should not=20
-happen.
+void kvfree_sensitive(const void *addr, size_t len)
+{
+	preempt_disable();
+	if (likely(!ZERO_OR_NULL_PTR(addr))) {
+		memzero_explicit((void *)addr, len);
+		kvfree(addr);
+	}
+	preempt_enable();
+}
+EXPORT_SYMBOL(kvfree_sensitive);
 
->> There's a good chance it'll get janitored at some point.
-> Indeed.  Perhaps add a few little comments to explain the reasoning and
-> to keep the janitorial fingers away?
->
-I can reword the comment to make it more explicit and send a v4 if you=20
-think the current comment is not clear enough.
 
-Cheers,
-Longman
+
+Balbir Singh.
