@@ -1,7 +1,7 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Fri, 15 May 2020 23:23:09 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Sat, 16 May 2020 09:59:34 +0000
 Subject: Re: [PATCH v9 0/8] TPM 2.0 trusted keys with attached policy
-Message-Id: <1589584989.30847.20.camel@HansenPartnership.com>
+Message-Id: <1668d149a6604c598f87368a3ef7a9140cf7eb51.camel@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,61 +11,85 @@ References: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
          <483c4f1af7be41c8d091b11d4484b606ebd319b7.camel@linux.intel.com>
          <1589514263.5759.25.camel@HansenPartnership.com>
          <20200515084702.GA3404@linux.intel.com>
-         <20200515191758.ieojyk5xhsx2hzzd@cantor>
-         <1589571278.3653.22.camel@HansenPartnership.com>
-         <1589573417.3653.28.camel@HansenPartnership.com>
-         <56688CD4-A4A5-4D98-8724-6CBA10C7E1CE@unh.edu>
-         <1589581169.30847.5.camel@HansenPartnership.com>
-In-Reply-To: <1589581169.30847.5.camel@HansenPartnership.com>
-To: "Kayaalp, Mehmet" <Mehmet.Kayaalp@unh.edu>
-Cc: Jerry Snitselaar <jsnitsel@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, David Howells <dhowells@redhat.com>
+         <20200515093000.naogi4a7j22bzggz@cantor>
+In-Reply-To: <20200515093000.naogi4a7j22bzggz@cantor>
+To: Jerry Snitselaar <jsnitsel@redhat.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>, linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-On Fri, 2020-05-15 at 15:19 -0700, James Bottomley wrote:
-> On Fri, 2020-05-15 at 21:03 +0000, Kayaalp, Mehmet wrote:
-> > > On May 15, 2020, at 4:10 PM, James Bottomley <James.Bottomley@han
-> > > se
-> > > npartnership.com> wrote:
+On Fri, 2020-05-15 at 02:30 -0700, Jerry Snitselaar wrote:
+> On Fri May 15 20, Jarkko Sakkinen wrote:
+> > On Thu, May 14, 2020 at 08:44:23PM -0700, James Bottomley wrote:
+> > > On Fri, 2020-05-15 at 05:22 +0300, Jarkko Sakkinen wrote:
+> > > > On Thu, 2020-05-14 at 17:31 +0300, Jarkko Sakkinen wrote:
+> > > > > I'm compiling now kernel with all series included.
+> > > > > 
+> > > > > Kind of checking if I could just take the whole series. Let see.
+> > > > > 
+> > > > > In all cases I want the style errors in 3/8 to be fixes with a
+> > > > > helper
+> > > > > but maybe better to hold before sending anything. Possibly that is
+> > > > > all
+> > > > > needed I'll just carve that patch myself.
+> > > > > 
+> > > > > Please don't do anything for the moment.
+> > > > 
+> > > > This is what I tried first (with the full series applied):
+> > > > 
+> > > > #!/bin/sh
+> > > > 
+> > > > die()
+> > > > {
+> > > > 	keyctl clear @u
+> > > > 	./tpm2-flush --all-transient
+> > > > 	exit $1
+> > > > }
+> > > > 
+> > > > KEYHANDLE=$(./tpm2-root-key || die 1)
+> > > > KEYID=$(keyctl add trusted kmk "new 32 keyhandle=$KEYHANDLE
+> > > > hash=sha256" @u || die 1)
+> > > > 
+> > > > echo "$KEYID ($KEYHANDLE)"
+> > > > 
+> > > > keyctl pipe $KEYID > blob.hex || die 1
+> > > > keyctl clear @u || die 1
+> > > > 
+> > > > echo "Import key from blob"
+> > > > 
+> > > > keyctl add trusted kmk "load `cat blob.hex` keyhandle=$KEYHANDLE" @u
+> > > > > > die 1
+> > > > 
+> > > > die 0
+> > > > 
+> > > > Result:
+> > > > 
+> > > > sudo ./keyctl-smoke.sh
+> > > > 566201053 (0x80000000)
+> > > > keyctl_read_alloc: Permission denied
 > > > 
-> > > I think that means the solution is not to run the smoke test
-> > > under sudo but to do sudo -s and then run it.
+> > > Well, it's clearly failing in keyctl pipe
 > > > 
-> > > James
+> > > I do confess to never having tested a volatile primary, but I just did
+> > > so and it works for me.  I will also add the keyhandle in the load
+> > > isn't necessary, because it should be in the blob, but there should
+> > > also be no harm (just tested).
+> > > 
+> > > However, I don't have keyctl_read_alloc in my tree, so it may be an
+> > > incompatibility with another patch set.  What's your base and what
+> > > other patches do you have applied?
 > > 
-> > How about "sudo -i":
+> > http://git.infradead.org/users/jjs/linux-tpmdd.git
 > > 
-> > https://askubuntu.com/questions/376199/sudo-su-vs-sudo-i-vs-sudo-
-> > bin-bash-when-does-it-matter-which-is-used
+> > Or exactly:
+> > 
+> > git://git.infradead.org/users/jjs/linux-tpmdd.git (master)
+> > 
+> > /Jarkko
+> > 
 > 
-> Actually, no that doesn't work either:
+> keyctl_read_alloc is in the userspace keyctl program, right?
 > 
-> jejb@testdeb> sudo -i keyctl list @s
-> 1 key in keyring:
-> 1041514063: ---lswrv  1000 65534 keyring: _uid.1000
-> 
-> I suspect this might be a very subtle bug to do with when you get a
-> new session keyring.
+> git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git
 
-It turns out to be incredibly subtle, but I'm not sure if it's a bug or
-not.  the util-linux sudo like commands have special pam profiles
+Yes.
 
-/etc/pam.d/su-l 
-/etc/pam.d/runuser-l
-
-These special profiles call pam_keyinit.so with flags to install a new
-session keyring.  sudo doesn't have this, so it never, on its own, even
-when called with -i or -s, installs a new session keyring. This does
-strike me as a bizarre oversight which leads directly to this weird
-keyctl pipe behaviour.
-
-I'm also not sure the keyctl pipe behaviour is correct: why should
-keyctl pipe deny access to root to read a key just because it's in a
-different session keyring?  It defintely seems intentional, because if
-I create a key as a non root user and try to print it by id as root I
-get EPERM.
-
-The weirdest behaviour, though seems to be keyctl:  keyctl add ... @u
-will add to the session keyrings of the actual uid regardless of what
-session keyring the creator actually has, which is why keyctl add ...
-@u works under sudo but you get EPERM back trying to pipe it by id.
- 
-James
+/Jarkko
