@@ -1,7 +1,7 @@
-From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Date: Sat, 16 May 2020 13:01:01 +0000
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Sat, 16 May 2020 21:44:38 +0000
 Subject: Re: [PATCH v9 0/8] TPM 2.0 trusted keys with attached policy
-Message-Id: <fc542b516c9ddf0e13a68bb52728035c37a1fdf2.camel@intel.com>
+Message-Id: <9a7fe3f44bb5772eb6c8cdac04d042190d4a53e1.camel@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -14,35 +14,65 @@ References: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
          <20200515191758.ieojyk5xhsx2hzzd@cantor>
          <1589571278.3653.22.camel@HansenPartnership.com>
          <1589573417.3653.28.camel@HansenPartnership.com>
-In-Reply-To: <1589573417.3653.28.camel@HansenPartnership.com>
-To: "jsnitsel@redhat.com" <jsnitsel@redhat.com>, "James.Bottomley@HansenPartnership.com" <James.Bottomley@HansenPartnership.com>
-Cc: "dhowells@redhat.com" <dhowells@redhat.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, "zohar@linux.ibm.com" <zohar@linux.ibm.com>, "dwmw2@infradead.org" <dwmw2@infradead.org>
+         <56688CD4-A4A5-4D98-8724-6CBA10C7E1CE@unh.edu>
+         <1589581169.30847.5.camel@HansenPartnership.com>
+         <1589584989.30847.20.camel@HansenPartnership.com>
+In-Reply-To: <1589584989.30847.20.camel@HansenPartnership.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>, "Kayaalp, Mehmet" <Mehmet.Kayaalp@unh.edu>
+Cc: Jerry Snitselaar <jsnitsel@redhat.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, David Howells <dhowells@redhat.com>
 
-T24gRnJpLCAyMDIwLTA1LTE1IGF0IDEzOjEwIC0wNzAwLCBKYW1lcyBCb3R0b21sZXkgd3JvdGU6
-DQo+IE9uIEZyaSwgMjAyMC0wNS0xNSBhdCAxMjozNCAtMDcwMCwgSmFtZXMgQm90dG9tbGV5IHdy
-b3RlOg0KPiA+IE9uIEZyaSwgMjAyMC0wNS0xNSBhdCAxMjoxNyAtMDcwMCwgSmVycnkgU25pdHNl
-bGFhciB3cm90ZToNCj4gPiA+IE9uIEZyaSBNYXkgMTUgMjAsIEphcmtrbyBTYWtraW5lbiB3cm90
-ZToNCj4gPiA+ID4gT24gVGh1LCBNYXkgMTQsIDIwMjAgYXQgMDg6NDQ6MjNQTSAtMDcwMCwgSmFt
-ZXMgQm90dG9tbGV5IHdyb3RlOg0KPiA+ID4gPiA+IE9uIEZyaSwgMjAyMC0wNS0xNSBhdCAwNToy
-MiArMDMwMCwgSmFya2tvIFNha2tpbmVuIHdyb3RlOg0KPiA+IA0KPiA+IFsuLi5dDQo+ID4gPiA+
-ID4gPiBzdWRvIC4va2V5Y3RsLXNtb2tlLnNoDQo+ID4gPiA+ID4gPiA1NjYyMDEwNTMgKDB4ODAw
-MDAwMDApDQo+ID4gPiA+ID4gPiBrZXljdGxfcmVhZF9hbGxvYzogUGVybWlzc2lvbiBkZW5pZWQN
-Cj4gPiA+IA0KPiA+ID4gSSBnZXQga2V5Y3RsX3JlYWRfYWxsb2MgLUVQRVJNIHdoZW4gSSAnc3Vk
-byBzdScgYW5kIHRyeSB0byBwbGF5DQo+ID4gPiB3aXRoDQo+ID4gPiBrZXljdGwgcHJpbnQuDQo+
-ID4gPiBJZiBJICdzdWRvIHN1IC0nIGFuZCB0aGVuIHRyeSBpdCB3b3JrcyBhcyBleHBlY3RlZC4g
-QWxzbyB3b3JrcyBmb3INCj4gPiA+IG5vcm1hbCB1c2VyLg0KPiA+IA0KPiA+IE9LLCBJIGNvbmZp
-cm0gb24gZGViaWFuIGFzIHdlbGwuICBJZiBJIGNyZWF0ZSBhIGtleSBhcyByZWFsIHJvb3QgYW5k
-DQo+ID4gdGhlbiB0cnkgdG8gc3VkbyBzdSBrZXljdGwgcGlwZSBpdCBhcyBhbiBvcmRpbmFyeSB1
-c2VyLCBJIGdldCBFUEVSTS4NCj4gPiANCj4gPiBJdCBzbWVsbHMgbGlrZSBhIGNvY2t1cCBpbiBy
-ZWFsIHZzIGVmZmVjdGl2ZSBwZXJtaXNzaW9ucyBzb21ld2hlcmUgaW4NCj4gPiB0aGUga2V5Y3Rs
-IGhhbmRsZXIuDQo+IA0KPiBPSywgc28gdGhlIHByb2JsZW0gaXMNCj4gDQo+IHN1ZG8ga2V5Y3Rs
-IGxpc3QgQHMNCj4gDQo+IFN0aWxsIHNob3dzIHRoZSBzZXNzaW9uIGtleXMgb2YgdGhlIHByZXZp
-b3VzIHVzZXINCj4gDQo+IHRoYXQgY2F1c2VzIHN1ZG8ga2V5Y3RsIHNob3cgb24gYSByb290IG93
-bmVkIGtleSB0byBmYWlsIHRoZQ0KPiBpc19rZXlfcG9zc2Vzc2VkKCkgY2hlY2ssIHJldHVybmlu
-ZyAtRUFDQ0VTUyB3aGljaCBnZXRzIHRyYW5zbGF0ZWQgdG8NCj4gRVBFUk0NCj4gDQo+IGlmIHlv
-dSBkbw0KPiANCj4gc3VkbyBzdSAtDQo+IA0KPiBUaGVuIGtleWN0bCBsaXN0IEBzIHNob3dzIHRo
-ZSByb290IHNlc3Npb24ga2V5cmluZyBhbmQgZXZlcnl0aGluZyB3b3Jrcw0KPiANCj4gSSB0aGlu
-ayB0aGF0IG1lYW5zIHRoZSBzb2x1dGlvbiBpcyBub3QgdG8gcnVuIHRoZSBzbW9rZSB0ZXN0IHVu
-ZGVyIHN1ZG8NCj4gYnV0IHRvIGRvIHN1ZG8gLXMgYW5kIHRoZW4gcnVuIGl0Lg0KDQpSaWdodCwg
-bWFrZXMgc2Vuc2UgYW5kIEkgY2FuIGFsc28gY29uZmlybSB0aGlzIGluIG15IGVudmlyb25tZW50
-Lg0KVGhhbmtzIQ0KDQovSmFya2tvDQo
+On Fri, 2020-05-15 at 16:23 -0700, James Bottomley wrote:
+> On Fri, 2020-05-15 at 15:19 -0700, James Bottomley wrote:
+> > On Fri, 2020-05-15 at 21:03 +0000, Kayaalp, Mehmet wrote:
+> > > > On May 15, 2020, at 4:10 PM, James Bottomley <James.Bottomley@han
+> > > > se
+> > > > npartnership.com> wrote:
+> > > > 
+> > > > I think that means the solution is not to run the smoke test
+> > > > under sudo but to do sudo -s and then run it.
+> > > > 
+> > > > James
+> > > 
+> > > How about "sudo -i":
+> > > 
+> > > https://askubuntu.com/questions/376199/sudo-su-vs-sudo-i-vs-sudo-
+> > > bin-bash-when-does-it-matter-which-is-used
+> > 
+> > Actually, no that doesn't work either:
+> > 
+> > jejb@testdeb> sudo -i keyctl list @s
+> > 1 key in keyring:
+> > 1041514063: ---lswrv  1000 65534 keyring: _uid.1000
+> > 
+> > I suspect this might be a very subtle bug to do with when you get a
+> > new session keyring.
+> 
+> It turns out to be incredibly subtle, but I'm not sure if it's a bug or
+> not.  the util-linux sudo like commands have special pam profiles
+> 
+> /etc/pam.d/su-l 
+> /etc/pam.d/runuser-l
+> 
+> These special profiles call pam_keyinit.so with flags to install a new
+> session keyring.  sudo doesn't have this, so it never, on its own, even
+> when called with -i or -s, installs a new session keyring. This does
+> strike me as a bizarre oversight which leads directly to this weird
+> keyctl pipe behaviour.
+> 
+> I'm also not sure the keyctl pipe behaviour is correct: why should
+> keyctl pipe deny access to root to read a key just because it's in a
+> different session keyring?  It defintely seems intentional, because if
+> I create a key as a non root user and try to print it by id as root I
+> get EPERM.
+> 
+> The weirdest behaviour, though seems to be keyctl:  keyctl add ... @u
+> will add to the session keyrings of the actual uid regardless of what
+> session keyring the creator actually has, which is why keyctl add ...
+> @u works under sudo but you get EPERM back trying to pipe it by id.
+>  
+> James
+
+I think I construct a low priority bug to kernel bugzilla and link these
+from l.k.o. Thanks for digging this all up.
+
+/Jarkko
