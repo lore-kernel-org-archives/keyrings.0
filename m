@@ -1,7 +1,7 @@
 From: James Prestwood <prestwoj@gmail.com>
-Date: Mon, 18 May 2020 17:26:51 +0000
-Subject: [PATCH 04/17] tpm2-space: export the context save and load commands
-Message-Id: <20200518172704.29608-5-prestwoj@gmail.com>
+Date: Mon, 18 May 2020 17:26:54 +0000
+Subject: [PATCH 07/17] tpm2: add hmac checks to tpm2_pcr_extend()
+Message-Id: <20200518172704.29608-8-prestwoj@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,56 +13,77 @@ Cc: James.Bottomley@HansenPartnership.com
 
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-The TPM2 session handling code needs to save and restore a single
-volatile context for the elliptic curve version of the NULL seed, so
-export the APIs which do this for internal use.
+We use tpm2_pcr_extend() in trusted keys to extend a PCR to prevent a
+key from being re-loaded until the next reboot.  To use this
+functionality securely, that extend must be protected by a session
+hmac.
 
 Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 ---
- drivers/char/tpm/tpm.h        | 4 ++++
- drivers/char/tpm/tpm2-space.c | 8 ++++----
- 2 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/char/tpm/tpm2-cmd.c | 28 +++++++++++-----------------
+ 1 file changed, 11 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index c75340dc3bce..ba76bec04ca4 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -250,6 +250,10 @@ int tpm2_prepare_space(struct tpm_chip *chip, struct tpm_space *space, u8 *cmd,
- 		       size_t cmdsiz);
- int tpm2_commit_space(struct tpm_chip *chip, struct tpm_space *space, void *buf,
- 		      size_t *bufsiz);
-+int tpm2_save_context(struct tpm_chip *chip, u32 handle, u8 *buf,
-+		      unsigned int buf_size, unsigned int *offset);
-+int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
-+		      unsigned int *offset, u32 *handle);
- 
- int tpm_bios_log_setup(struct tpm_chip *chip);
- void tpm_bios_log_teardown(struct tpm_chip *chip);
-diff --git a/drivers/char/tpm/tpm2-space.c b/drivers/char/tpm/tpm2-space.c
-index 982d341d8837..ca1cb56ccc51 100644
---- a/drivers/char/tpm/tpm2-space.c
-+++ b/drivers/char/tpm/tpm2-space.c
-@@ -65,8 +65,8 @@ void tpm2_del_space(struct tpm_chip *chip, struct tpm_space *space)
- 	kfree(space->session_buf);
+diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
+index 8d076c6752eb..b29824ae237c 100644
+--- a/drivers/char/tpm/tpm2-cmd.c
++++ b/drivers/char/tpm/tpm2-cmd.c
+@@ -218,13 +218,6 @@ int tpm2_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
+ 	return rc;
  }
  
--static int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
--			     unsigned int *offset, u32 *handle)
-+int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
-+		      unsigned int *offset, u32 *handle)
+-struct tpm2_null_auth_area {
+-	__be32  handle;
+-	__be16  nonce_size;
+-	u8  attributes;
+-	__be16  auth_size;
+-} __packed;
+-
+ /**
+  * tpm2_pcr_extend() - extend a PCR value
+  *
+@@ -238,24 +231,23 @@ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
+ 		    struct tpm_digest *digests)
  {
- 	struct tpm_buf tbuf;
- 	struct tpm2_context *ctx;
-@@ -116,8 +116,8 @@ static int tpm2_load_context(struct tpm_chip *chip, u8 *buf,
- 	return 0;
- }
+ 	struct tpm_buf buf;
+-	struct tpm2_null_auth_area auth_area;
++	struct tpm2_auth *auth;
+ 	int rc;
+ 	int i;
  
--static int tpm2_save_context(struct tpm_chip *chip, u32 handle, u8 *buf,
--			     unsigned int buf_size, unsigned int *offset)
-+int tpm2_save_context(struct tpm_chip *chip, u32 handle, u8 *buf,
-+		      unsigned int buf_size, unsigned int *offset)
- {
- 	struct tpm_buf tbuf;
- 	unsigned int body_size;
+-	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_PCR_EXTEND);
++	rc = tpm2_start_auth_session(chip, &auth);
+ 	if (rc)
+ 		return rc;
+ 
+-	tpm_buf_append_u32(&buf, pcr_idx);
++	rc = tpm_buf_init(&buf, TPM2_ST_SESSIONS, TPM2_CC_PCR_EXTEND);
++	if (rc) {
++		tpm2_end_auth_session(auth);
++		return rc;
++	}
+ 
+-	auth_area.handle = cpu_to_be32(TPM2_RS_PW);
+-	auth_area.nonce_size = 0;
+-	auth_area.attributes = 0;
+-	auth_area.auth_size = 0;
++	tpm_buf_append_name(&buf, auth, pcr_idx, NULL);
++	tpm_buf_append_hmac_session(&buf, auth, 0, NULL, 0);
+ 
+-	tpm_buf_append_u32(&buf, sizeof(struct tpm2_null_auth_area));
+-	tpm_buf_append(&buf, (const unsigned char *)&auth_area,
+-		       sizeof(auth_area));
+ 	tpm_buf_append_u32(&buf, chip->nr_allocated_banks);
+ 
+ 	for (i = 0; i < chip->nr_allocated_banks; i++) {
+@@ -264,7 +256,9 @@ int tpm2_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
+ 			       chip->allocated_banks[i].digest_size);
+ 	}
+ 
++	tpm_buf_fill_hmac_session(&buf, auth);
+ 	rc = tpm_transmit_cmd(chip, &buf, 0, "attempting extend a PCR value");
++	rc = tpm_buf_check_hmac_response(&buf, auth, rc);
+ 
+ 	tpm_buf_destroy(&buf);
+ 
 -- 
 2.21.1
