@@ -1,7 +1,7 @@
 From: James Prestwood <prestwoj@gmail.com>
-Date: Mon, 18 May 2020 17:27:02 +0000
-Subject: [PATCH 15/17] include: crypto: add asym_tpm2_subtype definition
-Message-Id: <20200518172704.29608-16-prestwoj@gmail.com>
+Date: Mon, 18 May 2020 17:27:01 +0000
+Subject: [PATCH 14/17] include: linux: tpm: expose tpm2_rsa_decrypt
+Message-Id: <20200518172704.29608-15-prestwoj@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,51 +11,36 @@ In-Reply-To: <20200518172704.29608-1-prestwoj@gmail.com>
 To: keyrings@vger.kernel.org
 Cc: James.Bottomley@HansenPartnership.com, James Prestwood <prestwoj@gmail.com>
 
-This defines the structure of a TPM2 key in the kernel.
-
-Signed-off-by: James Prestwood <prestwoj@gmail.com>
+Expose these APIs so other modules can use them.
 ---
- include/crypto/asym_tpm2_subtype.h | 32 ++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
- create mode 100644 include/crypto/asym_tpm2_subtype.h
+ include/linux/tpm.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/include/crypto/asym_tpm2_subtype.h b/include/crypto/asym_tpm2_subtype.h
-new file mode 100644
-index 000000000000..dea80b2e6e66
---- /dev/null
-+++ b/include/crypto/asym_tpm2_subtype.h
-@@ -0,0 +1,32 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+#ifndef _LINUX_ASYM_TPM2_SUBTYPE_H
-+#define _LINUX_ASYM_TPM2_SUBTYPE_H
-+
-+#include <linux/keyctl.h>
-+
-+struct tpm2_parse_context {
-+	u32 parent;
-+	const u8 *pub;
-+	u32 pub_len;
-+	const u8 *priv;
-+	u32 priv_len;
-+};
-+
-+struct tpm2_key {
-+	struct tpm_chip *chip;
-+	u32 parent;
-+
-+	u8 *blob;
-+	u32 bloblen;
-+
-+	/* pointer into 'blob' where public key begins */
-+	const u8 *pub;
-+	u32 pub_len;
-+
-+};
-+
-+struct tpm2_key *tpm2_key_create(struct tpm2_parse_context *ctx);
-+
-+extern struct asymmetric_key_subtype asym_tpm2_subtype;
-+
-+#endif /* _LINUX_ASYM_TPM2_SUBTYPE_H */
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index b1c96ee7b672..7dd33f144bce 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -387,6 +387,9 @@ static inline u32 tpm2_rc_value(u32 rc)
+        return (rc & BIT(7)) ? rc & 0xff : rc;
+ }
+ 
++extern int tpm2_rsa_decrypt(struct tpm_chip *chip, u32 parent,
++			    const unsigned char *keyblob, size_t bloblen,
++			    const void *data, size_t len, void *out);
+ #else
+ static inline int tpm_is_tpm2(struct tpm_chip *chip)
+ {
+@@ -418,5 +421,11 @@ static inline struct tpm_chip *tpm_default_chip(void)
+ {
+ 	return NULL;
+ }
++static inline int tpm2_rsa_decrypt(struct tpm_chip *chip, u32 parent,
++				   const unsigned char *keyblob, size_t bloblen,
++				   const void *data, size_t len, void *out)
++{
++	return -ENODEV;
++}
+ #endif
+ #endif
 -- 
 2.21.1
