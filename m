@@ -1,193 +1,235 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Thu, 07 May 2020 23:11:46 +0000
-Subject: [PATCH v9 7/8] security: keys: trusted: add ability to specify arbitrary policy
-Message-Id: <20200507231147.27025-8-James.Bottomley@HansenPartnership.com>
+From: James Prestwood <prestwoj@gmail.com>
+Date: Mon, 18 May 2020 17:26:58 +0000
+Subject: [PATCH 11/17] Documentation: add tpm-security.rst
+Message-Id: <20200518172704.29608-12-prestwoj@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+References: <20200518172704.29608-1-prestwoj@gmail.com>
+In-Reply-To: <20200518172704.29608-1-prestwoj@gmail.com>
+To: keyrings@vger.kernel.org
+Cc: James.Bottomley@HansenPartnership.com
 
-This patch adds a policy= argument to key creation.  The policy is the
-standard tss policymaker format and each separate policy line must
-have a newline after it.
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-Thus to construct a policy requiring authorized value and pcr 16
-locking using a sha256 hash, the policy (policy.txt) file would be two
-lines:
-
-0000017F00000001000B03000001303095B49BE85E381E5B20E557E46363EF55B0F43B132C2D8E3DE9AC436656F2
-0000016b
-
-This can be inserted into the key with
-
-keyctl add trusted kmk "new 32 policy=`cat policy.txt` keyhandle=0x81000001 hash=sha256" @u
-
-Note that although a few policies work like this, most require special
-handling which must be added to the kernel policy construction
-routine.
+Document how the new encrypted secure interface for TPM2 works and how
+security can be assured after boot by certifying the NULL seed.
 
 Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 ---
- .../security/keys/trusted-encrypted.rst       | 16 ++++++
- security/keys/trusted-keys/tpm2-policy.c      | 53 +++++++++++++++++++
- security/keys/trusted-keys/tpm2-policy.h      |  1 +
- security/keys/trusted-keys/trusted_tpm1.c     | 15 ++++++
- 4 files changed, 85 insertions(+)
+ Documentation/security/tpm/tpm-security.rst | 204 ++++++++++++++++++++
+ 1 file changed, 204 insertions(+)
+ create mode 100644 Documentation/security/tpm/tpm-security.rst
 
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index 053344c4df5b..b68d3eb73f00 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -76,6 +76,9 @@ Usage::
-        policyhandle= handle to an authorization policy session that defines the
-                      same policy and with the same hash algorithm as was used to
-                      seal the key.
-+       policy=       specify an arbitrary set of policies.  These must
-+                     be in policymaker format with each separate
-+                     policy line newline terminated.
- 
- "keyctl print" returns an ascii hex copy of the sealed key, which is in standard
- TPM_STORED_DATA format.  The key length for new keys are always in bytes.
-@@ -168,6 +171,19 @@ zeros (the value of PCR 16)::
-     $ dd if=/dev/zero bs=1 count  2>/dev/null|sha1sum
-     6768033e216468247bd031a0a2d9876d79818f8f
- 
-+You can also specify arbitrary policy in policymaker format, so a two
-+value policy (the pcr example above and authvalue) would look like
-+this in policymaker format::
+diff --git a/Documentation/security/tpm/tpm-security.rst b/Documentation/security/tpm/tpm-security.rst
+new file mode 100644
+index 000000000000..3411030505a1
+--- /dev/null
++++ b/Documentation/security/tpm/tpm-security.rst
+@@ -0,0 +1,204 @@
++TPM Security
++======
 +
-+    0000017F000000010004030000016768033e216468247bd031a0a2d9876d79818f8f
-+    0000016b
++The object of this document is to describe how we make the kernel's
++use of the TPM reasonably robust in the face of external snooping and
++packet alteration attacks.  The current security document is for TPM
++2.0.
 +
-+This can be placed in a file (say policy.txt) and then added to the key as::
++Introduction
++------------
 +
-+    $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha1 policy=`cat policy.txt`" @u
++The TPM is usually a discrete chip attached to a PC via some type of
++low bandwidth bus.  There are exceptions to this such as the Intel
++PTT, which is a software TPM running inside a software environment
++close to the CPU, which are subject to different attacks, but right at
++the moment, most hardened security environments require a discrete
++hardware TPM, which is the use case discussed here.
 +
-+The newlines in the file policy.txt will be automatically processed.
++Snooping and Alteration Attacks against the bus
++-----------------------------------------------
 +
- Reseal a trusted key under new pcr values::
- 
-     $ keyctl update 268728824 "update pcrinfo=`cat pcr.blob`"
-diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 080a76e879fd..87a13e607eca 100644
---- a/security/keys/trusted-keys/tpm2-policy.c
-+++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -370,3 +370,56 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 
- 	return 0;
- }
++The current state of the art for snooping the TPM Genie hardware
++interposer https://www.nccgroup.trust/us/our-research/tpm-genie/ which
++is a simple external device that can be installed in a couple of
++seconds on any system or laptop.  However, the next phase of research
++seems to be hacking existing devices on the bus to act as interposers,
++so the fact that the attacker requires physical access for a few
++seconds might evaporate.  However, the goal of this document is to
++protect TPM secrets and integrity as far as we are able in this
++environment and to try to insure that if we can't prevent the attack
++then at least we can detect it.
 +
-+int tpm2_parse_policies(struct tpm2_policies **ppols, char *str)
-+{
-+	struct tpm2_policies *pols;
-+	char *p;
-+	u8 *ptr;
-+	int i = 0, left = PAGE_SIZE, res;
++Unfortunately, most of the TPM functionality, including the hardware
++reset capability can be controlled by an attacker who has access to
++the bus, so we'll discuss some of the disruption possibilities below.
 +
-+	pols = kmalloc(left, GFP_KERNEL);
-+	if (!pols)
-+		return -ENOMEM;
++Measurement (PCR) Integrity
++---------------------------
 +
-+	ptr = (u8 *)(pols + 1);
-+	left -= ptr - (u8 *)pols;
++Since the attacker can send their own commands to the TPM, they can
++send arbitrary PCR extends and thus disrupt the measurement system,
++which would be an annoying denial of service attack.  However, there
++are two, more serious, classes of attack aimed at entities sealed to
++trust measurements.
 +
-+	while ((p = strsep(&str, "\n"))) {
-+		if (*p = '\0' || *p = '\n')
-+			continue;
++1. The attacker could intercept all PCR extends coming from the system
++   and completely substitute their own values, producing a replay of
++   an untampered state that would cause PCR measurements to attest to
++   a trusted state and release secrets
 +
-+		pols->len[i] = strlen(p)/2;
-+		if (pols->len[i] > left) {
-+			res = -E2BIG;
-+			goto err;
-+		}
++2. At some point in time the attacker could reset the TPM, clearing
++   the PCRs and then send down their own measurements which would
++   effectively overwrite the boot time measurements the TPM has
++   already done.
 +
-+		res = hex2bin(ptr, p, pols->len[i]);
-+		if (res)
-+			goto err;
++The first can be thwarted by always doing HMAC protection of the PCR
++extend and read command meaning measurement values cannot be
++substituted without producing a detectable HMAC failure in the
++response.  However, the second can only really be detected by relying
++on some sort of mechanism for protection which would change over TPM
++reset.
 +
-+		/* get command code and skip past */
-+		pols->code[i] = get_unaligned_be32(ptr);
-+		pols->policies[i] = ptr + 4;
-+		ptr += pols->len[i];
-+		left -= pols->len[i];
-+		pols->len[i] -= 4;
++Secrets Guarding
++----------------
 +
-+		/*
-+		 * FIXME: this does leave the code embedded in dead
-+		 * regions of the memory, but it's easier than
-+		 * hexdumping to a temporary or copying over
-+		 */
-+		i++;
-+	}
++Certain information passing in and out of the TPM, such as key sealing
++and private key import and random number generation, is vulnerable to
++interception which HMAC protection alone cannot protect, so for these
++types of command we must also employ request and response encryption
++to prevent the loss of secret information.
 +
-+	pols->count = i;
-+	*ppols = pols;
++Establishing Initial Trust with the TPM
++---------------------------------------
 +
-+	return 0;
++In order to provide security from the beginning, an initial shared or
++asymmetric secret must be established which must also be unknown to
++the attacker.  The most obvious avenues for this are the endorsement
++and storage seeds, which can be used to derive asymmetric keys.
++However, using these keys is difficult because the only way to pass
++them into the kernel would be on the command line, which requires
++extensive support in the boot system, and there's no guarantee that
++either hierarchy would not have some type of authorization.
 +
-+ err:
-+	kfree(pols);
-+	return res;
-+}
-diff --git a/security/keys/trusted-keys/tpm2-policy.h b/security/keys/trusted-keys/tpm2-policy.h
-index 46bf1f0a9325..0da013116c1c 100644
---- a/security/keys/trusted-keys/tpm2-policy.h
-+++ b/security/keys/trusted-keys/tpm2-policy.h
-@@ -28,3 +28,4 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols, u32 hash,
- int tpm2_encode_policy(struct tpm2_policies *pols, u8 **data, u32 *len);
- int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 			    u32 *handle);
-+int tpm2_parse_policies(struct tpm2_policies **ppols, char *str);
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index 892b18275b0c..cd2a44fcef98 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -29,6 +29,8 @@
- 
- #include <keys/trusted_tpm.h>
- 
-+#include "tpm2-policy.h"
++The mechanism chosen for the Linux Kernel is to derive the primary
++elliptic curve key from the null seed using the standard storage seed
++parameters.  The null seed has two advantages: firstly the hierarchy
++physically cannot have an authorization, so we are always able to use
++it and secondly, the null seed changes across TPM resets, meaning if
++we establish trust on the null seed at start of day, all sessions
++salted with the derived key will fail if the TPM is reset and the seed
++changes.
 +
- static const char hmac_alg[] = "hmac(sha1)";
- static const char hash_alg[] = "sha1";
- static struct tpm_chip *chip;
-@@ -709,6 +711,7 @@ enum {
- 	Opt_hash,
- 	Opt_policydigest,
- 	Opt_policyhandle,
-+	Opt_policy,
- };
- 
- static const match_table_t key_tokens = {
-@@ -724,6 +727,7 @@ static const match_table_t key_tokens = {
- 	{Opt_hash, "hash=%s"},
- 	{Opt_policydigest, "policydigest=%s"},
- 	{Opt_policyhandle, "policyhandle=%s"},
-+	{Opt_policy, "policy=%s"},
- 	{Opt_err, NULL}
- };
- 
-@@ -854,6 +858,17 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 				return -EINVAL;
- 			opt->policyhandle = handle;
- 			break;
++Obviously using the null seed without any other prior shared secrets,
++we have to create and read the initial public key which could, of
++course, be intercepted and substituted by the bus interposer.
++However, the TPM has a key certification mechanism (using the EK
++endorsement certificate, creating an attestation identity key and
++certifying the null seed primary with that key) which is too complex
++to run within the kernel, so we keep a copy of the null primary key
++name, which is what is certified so user-space can run the full
++certification when it boots.  The definitive guarantee here is that if
++the null primary key certifies correctly, you know all your TPM
++transactions since start of day were secure and if it doesn't, you
++know there's an interposer on your system (and that any secret used
++during boot may have been leaked).
 +
-+		case Opt_policy:
-+			if (pay->policies)
-+				return -EINVAL;
-+			if (!tpm2)
-+				return -EINVAL;
-+			res = tpm2_parse_policies(&pay->policies, args[0].from);
-+			if (res)
-+				return res;
-+			break;
++Stacking Trust
++--------------
 +
- 		default:
- 			return -EINVAL;
- 		}
++In the current null primary scenario, the TPM must be completely
++cleared before handing it on to the next consumer.  However the kernel
++hands to user-space the name of the derived null seed key which can
++then be verified by certification in user-space.  Therefore, this chain
++of name handoff can be used between the various boot components as
++well (via an unspecified mechanism).  For instance, grub could use the
++null seed scheme for security and hand the name off to the kernel in
++the boot area.  The kernel could make its own derivation of the key
++and the name and know definitively that if they differ from the handed
++off version that tampering has occurred.  Thus it becomes possible to
++chain arbitrary boot components together (UEFI to grub to kernel) via
++the name handoff provided each successive component knows how to
++collect the name and verifies it against its derived key.
++
++Session Properties
++------------------
++
++All TPM commands the kernel uses allow sessions.  HMAC sessions may be
++used to check the integrity of requests and responses and decrypt and
++encrypt flags may be used to shield parameters and responses.  The
++HMAC and encryption keys are usually derived from the shared
++authorization secret, but for a lot of kernel operations that is well
++known (and usually empty).  Thus, every HMAC session used by the
++kernel must be created using the null primary key as the salt key
++which thus provides a cryptographic input into the session key
++derivation.  Thus, the kernel creates the null primary key once (as a
++volatile TPM handle) and keeps it around in a saved context stored in
++tpm_chip for every in-kernel use of the TPM.  Currently, because of a
++lack of de-gapping in the in-kernel resource manager, the session must
++be created and destroyed for each operation, but, in future, a single
++session may also be reused for the in-kernel HMAC, encryption and
++decryption sessions.
++
++Protection Types
++----------------
++
++For every in-kernel operation we use null primary salted HMAC to
++protect the integrity.  Additionally, we use parameter encryption to
++protect key sealing and parameter decryption to protect key unsealing
++and random number generation.
++
++Null Primary Key Certification in Userspace
++=====================+
++Every TPM comes shipped with a couple of X.509 certificates for the
++primary endorsement key.  This document assumes that the Elliptic
++Curve version of the certificate exists at 01C00002, but will work
++equally well with the RSA certificate (at 01C00001).
++
++The first step in the certification is primary creation using the
++template from the `TCG EK Credential Profile`_ which allows comparison
++of the generated primary key against the one in the certificate (the
++public key must match).  Note that generation of the EK primary
++requires the EK hierarchy password, but a pre-generated version of the
++EC primary should exist at 81010002 and a TPM2_ReadPublic() may be
++performed on this without needing the key authority.  Next, the
++certificate itself must be verified to chain back to the manufacturer
++root (which should be published on the manufacturer website).  Once
++this is done, the generated EK primary key may now be used to run an
++attestation on the null seed.  The specific problem here is that the
++EK primary is not a signing key so cannot on its own be used to sign
++the key certification, hence the complex process below.
++
++Note: this process is a simplified abbreviation of the usual privacy
++CA based attestation process.  The assumption here is that the
++attestation is done by the TPM owner who thus has access to only the
++owner hierarchy.  The owner creates an external public/private key
++pair (assume elliptic curve in this case) and wraps the private key
++for import using an inner wrapping process and parented to the EC
++derived storage primary.  The TPM2_Import() is done using a parameter
++decryption HMAC session salted to the EK primary (which also does not
++require the EK key authority) meaning that the inner wrapping key is
++the encrypted parameter and thus the TPM will not be able to perform
++the import unless is possesses the certified EK so if the command
++succeeds and the HMAC verifies on return we know we have a loadable
++copy of the private key only for the certified TPM.  This key is now
++loaded into the TPM and the Storage primary flushed (to free up space
++for the null key generation).
++
++The null EC primary is now generated using the Storage profile
++outlined in the `TCG TPM v2.0 Provisioning Guidance`_; the name of
++this key (the hash of the public area) is computed and compared to the
++null seed name presented by the kernel in
++/sys/class/tpm/tpm0/null_name.  If the names do not match, the TPM is
++compromised.  If the names match, the user performs a TPM2_Certify()
++using the null primary as the object handle and the loaded private key
++as the sign handle and providing randomized qualifying data.  The
++signature of the returned certifyInfo is verified against the public
++part of the loaded private key and the qualifying data checked to
++prevent replay.  If all of these tests pass, the user is now assured
++that TPM integrity and privacy was preserved across the entire boot
++sequence of this kernel.
++
++.. _TCG EK Credential Profile: https://trustedcomputinggroup.org/resource/tcg-ek-credential-profile-for-tpm-family-2-0/
++.. _TCG TPM v2.0 Provisioning Guidance: https://trustedcomputinggroup.org/resource/tcg-tpm-v2-0-provisioning-guidance/
 -- 
-2.26.1
+2.21.1
