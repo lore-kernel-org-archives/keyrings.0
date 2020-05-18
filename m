@@ -1,7 +1,7 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 13 May 2020 17:02:23 +0000
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 18 May 2020 15:14:24 +0000
 Subject: Re: [PATCH] KEYS: Replace zero-length array with flexible-array
-Message-Id: <20200513170223.GC25598@linux.intel.com>
+Message-Id: <932086.1589814864@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -9,9 +9,10 @@ List-Id: <keyrings.vger.kernel.org>
 References: <20200507185710.GA14910@embeddedor>
 In-Reply-To: <20200507185710.GA14910@embeddedor>
 To: "Gustavo A. R. Silva" <gustavoars@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Thu, May 07, 2020 at 01:57:10PM -0500, Gustavo A. R. Silva wrote:
+Gustavo A. R. Silva <gustavoars@kernel.org> wrote:
+
 > The current codebase makes use of the zero-length array language
 > extension to the C90 standard, but the preferred mechanism to declare
 > variable-length types such as these ones is a flexible array member[1][2],
@@ -49,12 +50,4 @@ On Thu, May 07, 2020 at 01:57:10PM -0500, Gustavo A. R. Silva wrote:
 > 
 > Signed-off-by: Gustavo A. R. Silva <gustavoars@kernel.org>
 
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-
-David, can you pick this up? [*]
-
-[*] Maybe a good workflow to start with is the following that you mostly
-pick up the pure keyring patches. We can retune this over time if/when
-needed.
-
-/Jarkko
+Applied to keys-next.
