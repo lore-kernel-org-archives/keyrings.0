@@ -1,30 +1,52 @@
-From: Ben Boeckel <me@benboeckel.net>
-Date: Sat, 16 May 2020 00:39:16 +0000
-Subject: [PATCH 0/1] Document keyctl(KEYCTL_PKEY_QUERY) arguments correctly
-Message-Id: <20200516003917.2035545-1-list.lkml.keyrings@me.benboeckel.net>
+From: James Prestwood <prestwoj@gmail.com>
+Date: Mon, 18 May 2020 17:27:03 +0000
+Subject: [PATCH 16/17] asymmetric_keys: add TPM2 ASN1 definition
+Message-Id: <20200518172704.29608-17-prestwoj@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20200518172704.29608-1-prestwoj@gmail.com>
+In-Reply-To: <20200518172704.29608-1-prestwoj@gmail.com>
 To: keyrings@vger.kernel.org
-Cc: Ben Boeckel <mathstuf@gmail.com>, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, corbet@lwn.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: James.Bottomley@HansenPartnership.com, James Prestwood <prestwoj@gmail.com>
 
-From: Ben Boeckel <mathstuf@gmail.com>
+Copied the TPM2 ASN1 definition from trusted-keys
 
-This is the way the code parses the arguments and libkeyutils calls the
-syscall.
+Signed-off-by: James Prestwood <prestwoj@gmail.com>
+---
+ crypto/asymmetric_keys/tpm2key.asn1 | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/tpm2key.asn1
 
-Note on the email split: I'm still in the process of migrating emails
-for various usages hence the email From mismatch here (I've migrated my
-list subscription, but not my general contribution email).
-
-Ben Boeckel (1):
-  Documentation: security: core.rst: add missing argument
-
- Documentation/security/keys/core.rst | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-
-base-commit: 12bf0b632ed090358cbf03e323e5342212d0b2e4
+diff --git a/crypto/asymmetric_keys/tpm2key.asn1 b/crypto/asymmetric_keys/tpm2key.asn1
+new file mode 100644
+index 000000000000..f930fd812db3
+--- /dev/null
++++ b/crypto/asymmetric_keys/tpm2key.asn1
+@@ -0,0 +1,23 @@
++---
++--- Note: This isn't quite the definition in the standard
++---       However, the Linux asn.1 parser doesn't understand
++---       [2] EXPLICIT SEQUENCE OF OPTIONAL
++---       So there's an extra intermediate TPMPolicySequence
++---       definition to work around this
++
++TPMKey ::= SEQUENCE {
++	type		OBJECT IDENTIFIER ({tpmkey_type}),
++	emptyAuth	[0] EXPLICIT BOOLEAN OPTIONAL,
++	policy		[1] EXPLICIT TPMPolicySequence OPTIONAL,
++	secret		[2] EXPLICIT OCTET STRING OPTIONAL,
++	parent		INTEGER ({tpmkey_parent}),
++	pubkey		OCTET STRING ({tpmkey_pub}),
++	privkey		OCTET STRING ({tpmkey_priv})
++	}
++
++TPMPolicySequence ::= SEQUENCE OF TPMPolicy
++
++TPMPolicy ::= SEQUENCE {
++	commandCode		[0] EXPLICIT INTEGER ({tpmkey_code}),
++	commandPolicy		[1] EXPLICIT OCTET STRING ({tpmkey_policy})
++	}
 -- 
-2.25.4
+2.21.1
