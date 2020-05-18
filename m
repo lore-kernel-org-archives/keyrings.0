@@ -1,43 +1,62 @@
 From: James Prestwood <prestwoj@gmail.com>
-Date: Fri, 01 May 2020 17:17:06 +0000
-Subject: Re: old "add integrity and security to TPM2 transactions" patches
-Message-Id: <CAPv5Ue72DaLDNu5QhHPgxSk3r3mSXN5PZMKXA1LUo88nmKymCQ@mail.gmail.com>
+Date: Mon, 18 May 2020 17:26:53 +0000
+Subject: [PATCH 06/17] tpm-buf: add tpm_buf_parameters()
+Message-Id: <20200518172704.29608-7-prestwoj@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20200518172704.29608-1-prestwoj@gmail.com>
+In-Reply-To: <20200518172704.29608-1-prestwoj@gmail.com>
 To: keyrings@vger.kernel.org
+Cc: James.Bottomley@HansenPartnership.com
 
-Hi,
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-I don't have the original email to reply to, but can be found in the archives:
+Introducing encryption sessions changes where the return parameters
+are located in the buffer because if a return session is present
+they're 4 bytes beyond the header with those 4 bytes showing the
+parameter length.  If there is no return session, then they're in the
+usual place immediately after the header.  The tpm_buf_parameters()
+encapsulates this calculation and should be used everywhere
+&buf.data[TPM_HEADER_SIZE] is used now
 
-https://lore.kernel.org/linux-crypto/20190910162132.GA11338@linux.intel.com/
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+---
+ drivers/char/tpm/tpm-buf.c | 10 ++++++++++
+ drivers/char/tpm/tpm.h     |  2 ++
+ 2 files changed, 12 insertions(+)
 
-I am trying to get these patches working on my hardware TPM. They work
-fine with an emulated TPM but not on the TPM I have. I have a Dell XPS
-9550, which came stock with a 1.2 TPM. I did a firmware upgrade
-provided by Dell to get TPM 2.0.
-
-The kernel TPM initialization/start up works fine, and seems to create
-the null primary key successfully. The problem starts when trying to
-load the null key context (tpm2_load_context) in
-tpm2_start_auth_session(). This command fails to transmit with -EIO. I
-can't really get any more info other than this since there is no debug
-info to get from a TPM.
-
-I am trying to determine if its the above patches, or my TPM behaving
-badly. Is there some preparation I need to do on the TPM to get this
-working? I have cleared it a few times to start fresh but nothing
-seems to change.
-
-I am not very familiar with the various tss tools to interact with the
-TPM, but I was able to create a primary key (tsscreateprimarykey) as
-well as get capabilities, so the TPM is at least accepting those, just
-not a load context apparently.
-
-Thanks,
-James
-
-Thanks,
-James
+diff --git a/drivers/char/tpm/tpm-buf.c b/drivers/char/tpm/tpm-buf.c
+index f56350123a08..a5d793d8180d 100644
+--- a/drivers/char/tpm/tpm-buf.c
++++ b/drivers/char/tpm/tpm-buf.c
+@@ -190,3 +190,13 @@ u32 tpm_get_inc_u32(const u8 **ptr)
+ 	return val;
+ }
+ EXPORT_SYMBOL_GPL(tpm_get_inc_u32);
++
++u8 *tpm_buf_parameters(struct tpm_buf *buf)
++{
++	int offset = TPM_HEADER_SIZE;
++
++	if (tpm_buf_tag(buf) = TPM2_ST_SESSIONS)
++		offset += 4;
++
++	return &buf->data[offset];
++}
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index a1959675a889..ade4af4d52ca 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -169,6 +169,8 @@ u8 tpm_get_inc_u8(const u8 **ptr);
+ u16 tpm_get_inc_u16(const u8 **ptr);
+ u32 tpm_get_inc_u32(const u8 **ptr);
+ 
++u8 *tpm_buf_parameters(struct tpm_buf *buf);
++
+ /* opaque structure, holds auth session parameters like the session key */
+ struct tpm2_auth;
+ 
+-- 
+2.21.1
