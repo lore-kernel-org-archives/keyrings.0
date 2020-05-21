@@ -1,34 +1,47 @@
-From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Date: Sun, 17 May 2020 08:18:51 +0000
-Subject: Re: [PATCH v9 4/8] security: keys: trusted: use ASN.1 TPM2 key format for the blobs
-Message-Id: <742880c1bcbdd2ae116c049908bfe079619aed34.camel@intel.com>
+From: Xu Wang <vulab@iscas.ac.cn>
+Date: Thu, 21 May 2020 06:32:26 +0000
+Subject: [PATCH] scrpits: Remove unneeded assignment parentheses
+Message-Id: <20200521063226.7434-1-vulab@iscas.ac.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200507231147.27025-1-James.Bottomley@HansenPartnership.com>
-         <20200507231147.27025-5-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200507231147.27025-5-James.Bottomley@HansenPartnership.com>
-To: "James.Bottomley@HansenPartnership.com" <James.Bottomley@HansenPartnership.com>, "linux-integrity@vger.kernel.org" <linux-integrity@vger.kernel.org>
-Cc: "jarkko.sakkinen@linux.intel.com" <jarkko.sakkinen@linux.intel.com>, "dhowells@redhat.com" <dhowells@redhat.com>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, "zohar@linux.ibm.com" <zohar@linux.ibm.com>, "dwmw2@infradead.org" <dwmw2@infradead.org>
+To: dhowells@redhat.com, dwmw2@infradead.org, keyrings@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 
-T24gVGh1LCAyMDIwLTA1LTA3IGF0IDE2OjExIC0wNzAwLCBKYW1lcyBCb3R0b21sZXkgd3JvdGU6
-DQo+IE1vZGlmeSB0aGUgVFBNMiBrZXkgZm9ybWF0IGJsb2Igb3V0cHV0IHRvIGV4cG9ydCBhbmQg
-aW1wb3J0IGluIHRoZQ0KPiBBU04uMSBmb3JtIGZvciBUUE0yIHNlYWxlZCBvYmplY3Qga2V5cy4g
-IEZvciBjb21wYXRpYmlsaXR5IHdpdGggcHJpb3INCj4gdHJ1c3RlZCBrZXlzLCB0aGUgaW1wb3J0
-ZXIgd2lsbCBhbHNvIGFjY2VwdCB0d28gVFBNMkIgcXVhbnRpdGllcw0KPiByZXByZXNlbnRpbmcg
-dGhlIHB1YmxpYyBhbmQgcHJpdmF0ZSBwYXJ0cyBvZiB0aGUga2V5LiAgSG93ZXZlciwgdGhlDQo+
-IGV4cG9ydCB2aWEga2V5Y3RsIHBpcGUgd2lsbCBvbmx5IG91dHB1dCB0aGUgQVNOLjEgZm9ybWF0
-Lg0KPiANCj4gVGhlIGJlbmVmaXQgb2YgdGhlIEFTTi4xIGZvcm1hdCBpcyB0aGF0IGl0J3MgYSBz
-dGFuZGFyZCBhbmQgdGh1cyB0aGUNCj4gZXhwb3J0ZWQga2V5IGNhbiBiZSB1c2VkIGJ5IHVzZXJz
-cGFjZSB0b29scyAob3BlbnNzbF90cG0yX2VuZ2luZSwNCj4gb3BlbmNvbm5lY3QgYW5kIHRwbTIt
-dHNzLWVuZ2luZSkuICBUaGUgZm9ybWF0IGluY2x1ZGVzIHBvbGljeQ0KPiBzcGVjaWZpY2F0aW9u
-cywgdGh1cyBpdCBnZXRzIHVzIG91dCBvZiBoYXZpbmcgdG8gY29uc3RydWN0IHBvbGljeQ0KPiBo
-YW5kbGVzIGluIHVzZXJzcGFjZSBhbmQgdGhlIGZvcm1hdCBpbmNsdWRlcyB0aGUgcGFyZW50IG1l
-YW5pbmcgeW91DQo+IGRvbid0IGhhdmUgdG8ga2VlcCBwYXNzaW5nIGl0IGluIGVhY2ggdGltZS4N
-Cj4gDQo+IFRoaXMgcGF0Y2ggb25seSBpbXBsZW1lbnRzIGJhc2ljIGhhbmRsaW5nIGZvciB0aGUg
-QVNOLjEgZm9ybWF0LCBzbw0KPiBrZXlzIHdpdGggcGFzc3dvcmRzIGJ1dCBubyBwb2xpY3kuDQo+
-IA0KPiBTaWduZWQtb2ZmLWJ5OiBKYW1lcyBCb3R0b21sZXkgPEphbWVzLkJvdHRvbWxleUBIYW5z
-ZW5QYXJ0bmVyc2hpcC5jb20+DQoNClJldmlld2VkLWJ5OiBKYXJra28gU2Fra2luZW4gPGphcmtr
-by5zYWtraW5lbkBsaW51eC5pbnRlbC5jb20+DQpUZXN0ZWQtYnk6IEphcmtrbyBTYWtraW5lbiA8
-amFya2tvLnNha2tpbmVuQGxpbnV4LmludGVsLmNvbT4NCg0KL0phcmtrbw0K
+Remove unneeded assignment parentheses.
+
+Signed-off-by: Xu Wang <vulab@iscas.ac.cn>
+---
+ scripts/extract-cert.c | 2 +-
+ scripts/sign-file.c    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/extract-cert.c b/scripts/extract-cert.c
+index b071bf476fea..8005911926b8 100644
+--- a/scripts/extract-cert.c
++++ b/scripts/extract-cert.c
+@@ -61,7 +61,7 @@ static void drain_openssl_errors(void)
+ 
+ #define ERR(cond, fmt, ...)				\
+ 	do {						\
+-		bool __cond = (cond);			\
++		bool __cond = cond;			\
+ 		display_openssl_errors(__LINE__);	\
+ 		if (__cond) {				\
+ 			err(1, fmt, ## __VA_ARGS__);	\
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index fbd34b8e8f57..9ea08b07a0aa 100644
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -104,7 +104,7 @@ static void drain_openssl_errors(void)
+ 
+ #define ERR(cond, fmt, ...)				\
+ 	do {						\
+-		bool __cond = (cond);			\
++		bool __cond = cond;			\
+ 		display_openssl_errors(__LINE__);	\
+ 		if (__cond) {				\
+ 			err(1, fmt, ## __VA_ARGS__);	\
+-- 
+2.17.1
