@@ -1,23 +1,29 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 18 May 2020 14:09:21 +0000
+From: Jonathan Corbet <corbet@lwn.net>
+Date: Mon, 25 May 2020 16:33:10 +0000
 Subject: Re: [PATCH 1/1] Documentation: security: core.rst: add missing argument
-Message-Id: <870601.1589810961@warthog.procyon.org.uk>
+Message-Id: <20200525103310.455f50e0@lwn.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200516003917.2035545-2-list.lkml.keyrings@me.benboeckel.net> <20200516003917.2035545-1-list.lkml.keyrings@me.benboeckel.net>
+References: <20200516003917.2035545-1-list.lkml.keyrings@me.benboeckel.net>
+        <20200516003917.2035545-2-list.lkml.keyrings@me.benboeckel.net>
 In-Reply-To: <20200516003917.2035545-2-list.lkml.keyrings@me.benboeckel.net>
 To: Ben Boeckel <me@benboeckel.net>
-Cc: dhowells@redhat.com, keyrings@vger.kernel.org, Ben Boeckel <mathstuf@gmail.com>, jarkko.sakkinen@linux.intel.com, corbet@lwn.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: keyrings@vger.kernel.org, Ben Boeckel <mathstuf@gmail.com>, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
 
+On Fri, 15 May 2020 20:39:17 -0400
 Ben Boeckel <me@benboeckel.net> wrote:
 
->  	long keyctl(KEYCTL_PKEY_QUERY,
->  		    key_serial_t key_id, unsigned long reserved,
-> +		    const char* params,
->  		    struct keyctl_pkey_query *info);
+> From: Ben Boeckel <mathstuf@gmail.com>
+> 
+> This argument was just never documented in the first place.
+> 
+> Signed-off-by: Ben Boeckel <mathstuf@gmail.com>
+> ---
+>  Documentation/security/keys/core.rst | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
 
-"const char *params".  I fixed that and applied it.
+Applied, thanks.
 
-David
+jon
