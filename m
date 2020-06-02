@@ -1,186 +1,178 @@
-From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Date: Tue, 09 Jun 2020 13:48:54 +0000
-Subject: [PATCH v3 7/8] X.509: support OSCCA sm2-with-sm3 certificate verification
-Message-Id: <20200609134855.21431-8-tianjia.zhang@linux.alibaba.com>
+From: David Howells <dhowells@redhat.com>
+Date: Tue, 02 Jun 2020 15:51:44 +0000
+Subject: [GIT PULL] General notification queue and key notifications
+Message-Id: <1503047.1591113104@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
-In-Reply-To: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
-To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com, mcoquelin.stm32@gmail.com, alexandre.torgue@st.com, jmorris@namei.org, serge@hallyn.com, nramas@linux.microsoft.com, tusharsu@linux.microsoft.com, zohar@linux.ibm.com, gilad@benyossef.com, pvanleeuwen@rambus.com
-Cc: tianjia.zhang@linux.alibaba.com, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, zhang.jia@linux.alibaba.com, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, dray@redhat.com, kzak@redhat.com, mszeredi@redhat.com, swhiteho@redhat.com, jlayton@redhat.com, raven@themaw.net, andres@anarazel.de, christian.brauner@ubuntu.com, jarkko.sakkinen@linux.intel.com, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-The digital certificate format based on SM2 crypto algorithm as
-specified in GM/T 0015-2012. It was published by State Encryption
-Management Bureau, China.
+Hi Linus,
 
-The method of generating Other User Information is defined as
-ZA=H256(ENTLA || IDA || a || b || xG || yG || xA || yA), it also
-specified in https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02.
+Can you pull this, please?  It adds a general notification queue concept
+and adds an event source for keys/keyrings, such as linking and unlinking
+keys and changing their attributes.
 
-The x509 certificate supports sm2-with-sm3 type certificate
-verification.  Because certificate verification requires ZA
-in addition to tbs data, ZA also depends on elliptic curve
-parameters and public key data, so you need to access tbs in sig
-and calculate ZA. Finally calculate the digest of the
-signature and complete the verification work. The calculation
-process of ZA is declared in specifications GM/T 0009-2012
-and GM/T 0003.2-2012.
+Thanks to Debarshi Ray, we do have a pull request to use this to fix a
+problem with gnome-online-accounts - as mentioned last time:
 
-Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
----
- crypto/asymmetric_keys/Makefile          |  1 +
- crypto/asymmetric_keys/public_key.c      |  6 +++
- crypto/asymmetric_keys/public_key_sm2.c  | 59 ++++++++++++++++++++++++
- crypto/asymmetric_keys/x509_public_key.c |  2 +
- include/crypto/public_key.h              | 14 ++++++
- 5 files changed, 82 insertions(+)
- create mode 100644 crypto/asymmetric_keys/public_key_sm2.c
+    https://gitlab.gnome.org/GNOME/gnome-online-accounts/merge_requests/47
 
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index 28b91adba2ae..d499367dd253 100644
---- a/crypto/asymmetric_keys/Makefile
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -11,6 +11,7 @@ asymmetric_keys-y := \
- 	signature.o
- 
- obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
-+obj-$(CONFIG_CRYPTO_SM2) += public_key_sm2.o
- obj-$(CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE) += asym_tpm.o
- 
- #
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index d7f43d4ea925..7283ddb7c5e2 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -298,6 +298,12 @@ int public_key_verify_signature(const struct public_key *pkey,
- 	if (ret)
- 		goto error_free_key;
- 
-+	if (strcmp(sig->pkey_algo, "sm2") = 0) {
-+		ret = cert_sig_digest_update(sig, tfm);
-+		if (ret)
-+			goto error_free_key;
-+	}
-+
- 	sg_init_table(src_sg, 2);
- 	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
- 	sg_set_buf(&src_sg[1], sig->digest, sig->digest_size);
-diff --git a/crypto/asymmetric_keys/public_key_sm2.c b/crypto/asymmetric_keys/public_key_sm2.c
-new file mode 100644
-index 000000000000..d7f144e53f41
---- /dev/null
-+++ b/crypto/asymmetric_keys/public_key_sm2.c
-@@ -0,0 +1,59 @@
-+/* SPDX-License-Identifier: GPL-2.0-or-later */
-+/*
-+ * asymmetric public-key algorithm for SM2-with-SM3 certificate
-+ * as specified by OSCCA GM/T 0003.1-2012 -- 0003.5-2012 SM2 and
-+ * described at https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
-+ *
-+ * Copyright (c) 2020, Alibaba Group.
-+ * Authors: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-+ */
-+
-+#include <crypto/sm3_base.h>
-+#include <crypto/sm2.h>
-+#include "x509_parser.h"
-+
-+int cert_sig_digest_update(const struct public_key_signature *sig,
-+				struct crypto_akcipher *tfm_pkey)
-+{
-+	struct x509_certificate *cert = sig->cert;
-+	struct crypto_shash *tfm;
-+	struct shash_desc *desc;
-+	size_t desc_size;
-+	unsigned char dgst[SM3_DIGEST_SIZE];
-+	int ret;
-+
-+	if (!cert)
-+		return -EINVAL;
-+
-+	ret = sm2_compute_z_digest(tfm_pkey, SM2_DEFAULT_USERID,
-+					SM2_DEFAULT_USERID_LEN, dgst);
-+	if (ret)
-+		return ret;
-+
-+	tfm = crypto_alloc_shash(sig->hash_algo, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
-+	desc = kzalloc(desc_size, GFP_KERNEL);
-+	if (!desc)
-+		goto error_free_tfm;
-+
-+	desc->tfm = tfm;
-+
-+	ret = crypto_shash_init(desc);
-+	if (ret < 0)
-+		goto error_free_desc;
-+
-+	ret = crypto_shash_update(desc, dgst, SM3_DIGEST_SIZE);
-+	if (ret < 0)
-+		goto error_free_desc;
-+
-+	ret = crypto_shash_finup(desc, cert->tbs, cert->tbs_size, sig->digest);
-+
-+error_free_desc:
-+	kfree(desc);
-+error_free_tfm:
-+	crypto_free_shash(tfm);
-+	return ret;
-+}
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index d964cc82b69c..feccec08b244 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -30,6 +30,8 @@ int x509_get_sig_params(struct x509_certificate *cert)
- 
- 	pr_devel("=>%s()\n", __func__);
- 
-+	sig->cert = cert;
-+
- 	if (!cert->pub->pkey_algo)
- 		cert->unsupported_key = true;
- 
-diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-index 0588ef3bc6ff..4bf007424f56 100644
---- a/include/crypto/public_key.h
-+++ b/include/crypto/public_key.h
-@@ -12,6 +12,7 @@
- 
- #include <linux/keyctl.h>
- #include <linux/oid_registry.h>
-+#include <crypto/akcipher.h>
- 
- /*
-  * Cryptographic data for the public-key subtype of the asymmetric key type.
-@@ -44,6 +45,7 @@ struct public_key_signature {
- 	const char *pkey_algo;
- 	const char *hash_algo;
- 	const char *encoding;
-+	void *cert;		/* For certificate */
- };
- 
- extern void public_key_signature_free(struct public_key_signature *sig);
-@@ -81,4 +83,16 @@ extern int verify_signature(const struct key *,
- int public_key_verify_signature(const struct public_key *pkey,
- 				const struct public_key_signature *sig);
- 
-+#ifdef CONFIG_CRYPTO_SM2
-+int cert_sig_digest_update(const struct public_key_signature *sig,
-+				struct crypto_akcipher *tfm_pkey);
-+#else
-+static inline
-+int cert_sig_digest_update(const struct public_key_signature *sig,
-+				struct crypto_akcipher *tfm_pkey)
-+{
-+	return -ENOTSUPP;
-+}
-+#endif
-+
- #endif /* _LINUX_PUBLIC_KEY_H */
--- 
-2.17.1
+Without this, g-o-a has to constantly poll a keyring-based kerberos cache
+to find out if kinit has changed anything.
+
+[[ With regard to the mount/sb notifications and fsinfo(), Karel Zak and
+   Ian Kent have been working on making libmount use them, preparatory to
+   working on systemd:
+
+	https://github.com/karelzak/util-linux/commits/topic/fsinfo
+	https://github.com/raven-au/util-linux/commits/topic/fsinfo.public
+
+   Development has stalled briefly due to other commitments, so I'm not
+   sure I can ask you to pull those parts of the series for now.  Christian
+   Brauner would like to use them in lxc, but hasn't started.
+   ]]
+
+
+LSM hooks are included:
+
+ (1) A set of hooks are provided that allow an LSM to rule on whether or
+     not a watch may be set.  Each of these hooks takes a different
+     "watched object" parameter, so they're not really shareable.  The LSM
+     should use current's credentials.  [Wanted by SELinux & Smack]
+
+ (2) A hook is provided to allow an LSM to rule on whether or not a
+     particular message may be posted to a particular queue.  This is given
+     the credentials from the event generator (which may be the system) and
+     the watch setter.  [Wanted by Smack]
+
+I've provided SELinux and Smack with implementations of some of these hooks.
+
+
+WHY
+===
+
+Key/keyring notifications are desirable because if you have your kerberos
+tickets in a file/directory, your Gnome desktop will monitor that using
+something like fanotify and tell you if your credentials cache changes.
+
+However, we also have the ability to cache your kerberos tickets in the
+session, user or persistent keyring so that it isn't left around on disk
+across a reboot or logout.  Keyrings, however, cannot currently be
+monitored asynchronously, so the desktop has to poll for it - not so good
+on a laptop.  This facility will allow the desktop to avoid the need to
+poll.
+
+
+DESIGN DECISIONS
+================
+
+ (1) The notification queue is built on top of a standard pipe.  Messages
+     are effectively spliced in.  The pipe is opened with a special flag:
+
+	pipe2(fds, O_NOTIFICATION_PIPE);
+
+     The special flag has the same value as O_EXCL (which doesn't seem like
+     it will ever be applicable in this context)[?].  It is given up front
+     to make it a lot easier to prohibit splice and co. from accessing the
+     pipe.
+
+     [?] Should this be done some other way?  I'd rather not use up a new
+     	 O_* flag if I can avoid it - should I add a pipe3() system call
+     	 instead?
+
+     The pipe is then configured::
+
+	ioctl(fds[1], IOC_WATCH_QUEUE_SET_SIZE, queue_depth);
+	ioctl(fds[1], IOC_WATCH_QUEUE_SET_FILTER, &filter);
+
+     Messages are then read out of the pipe using read().
+
+ (2) It should be possible to allow write() to insert data into the
+     notification pipes too, but this is currently disabled as the kernel
+     has to be able to insert messages into the pipe *without* holding
+     pipe->mutex and the code to make this work needs careful auditing.
+
+ (3) sendfile(), splice() and vmsplice() are disabled on notification pipes
+     because of the pipe->mutex issue and also because they sometimes want
+     to revert what they just did - but one or more notification messages
+     might've been interleaved in the ring.
+
+ (4) The kernel inserts messages with the wait queue spinlock held.  This
+     means that pipe_read() and pipe_write() have to take the spinlock to
+     update the queue pointers.
+
+ (5) Records in the buffer are binary, typed and have a length so that they
+     can be of varying size.
+
+     This allows multiple heterogeneous sources to share a common buffer;
+     there are 16 million types available, of which I've used just a few,
+     so there is scope for others to be used.  Tags may be specified when a
+     watchpoint is created to help distinguish the sources.
+
+ (6) Records are filterable as types have up to 256 subtypes that can be
+     individually filtered.  Other filtration is also available.
+
+ (7) Notification pipes don't interfere with each other; each may be bound
+     to a different set of watches.  Any particular notification will be
+     copied to all the queues that are currently watching for it - and only
+     those that are watching for it.
+
+ (8) When recording a notification, the kernel will not sleep, but will
+     rather mark a queue as having lost a message if there's insufficient
+     space.  read() will fabricate a loss notification message at an
+     appropriate point later.
+
+ (9) The notification pipe is created and then watchpoints are attached to
+     it, using one of:
+
+	keyctl_watch_key(KEY_SPEC_SESSION_KEYRING, fds[1], 0x01);
+	watch_mount(AT_FDCWD, "/", 0, fd, 0x02);
+	watch_sb(AT_FDCWD, "/mnt", 0, fd, 0x03);
+
+     where in both cases, fd indicates the queue and the number after is a
+     tag between 0 and 255.
+
+(10) Watches are removed if either the notification pipe is destroyed or
+     the watched object is destroyed.  In the latter case, a message will
+     be generated indicating the enforced watch removal.
+
+
+Things I want to avoid:
+
+ (1) Introducing features that make the core VFS dependent on the network
+     stack or networking namespaces (ie. usage of netlink).
+
+ (2) Dumping all this stuff into dmesg and having a daemon that sits there
+     parsing the output and distributing it as this then puts the
+     responsibility for security into userspace and makes handling
+     namespaces tricky.  Further, dmesg might not exist or might be
+     inaccessible inside a container.
+
+ (3) Letting users see events they shouldn't be able to see.
+
+
+TESTING AND MANPAGES
+====================
+
+ (*) The keyutils tree has a pipe-watch branch that has keyctl commands for
+     making use of notifications.  Proposed manual pages can also be found
+     on this branch, though a couple of them really need to go to the main
+     manpages repository instead.
+
+     If the kernel supports the watching of keys, then running "make test"
+     on that branch will cause the testing infrastructure to spawn a
+     monitoring process on the side that monitors a notifications pipe for
+     all the key/keyring changes induced by the tests and they'll all be
+     checked off to make sure they happened.
+
+	https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/log/?h=pipe-watch
+
+ (*) A test program is provided (samples/watch_queue/watch_test) that can
+     be used to monitor for keyrings, mount and superblock events.
+     Information on the notifications is simply logged to stdout.
+
+Thanks,
+David
