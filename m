@@ -1,47 +1,68 @@
-From: Naresh Kamboju <naresh.kamboju@linaro.org>
-Date: Tue, 30 Jun 2020 08:48:29 +0000
-Subject: Re: [PATCH] crypto: af_alg - Fix regression on empty requests
-Message-Id: <CA+G9fYutuU55iL_6Qrk3oG3iq-37PaxvtA4KnEQHuLH9YpH-QA@mail.gmail.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Tue, 02 Jun 2020 14:30:21 +0000
+Subject: [PATCH v5 0/4] Introduce TEE based Trusted Keys support
+Message-Id: <1591107505-6030-1-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CA+G9fYvHFs5Yx8TnT6VavtfjMN8QLPuXg6us-dXVJqUUt68adA@mail.gmail.com>
- <20200622224920.GA4332@42.do-not-panic.com> <CA+G9fYsXDZUspc5OyfqrGZn=k=2uRiGzWY_aPePK2C_kZ+dYGQ@mail.gmail.com>
- <20200623064056.GA8121@gondor.apana.org.au> <20200623170217.GB150582@gmail.com>
- <20200626062948.GA25285@gondor.apana.org.au>
-In-Reply-To: <20200626062948.GA25285@gondor.apana.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>, Eric Biggers <ebiggers@kernel.org>
-Cc: Luis Chamberlain <mcgrof@kernel.org>, LTP List <ltp@lists.linux.it>, open list <linux-kernel@vger.kernel.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, lkft-triage@lists.linaro.org, Linux Crypto Mailing List <linux-crypto@vger.kernel.org>, Jan Stancek <jstancek@redhat.com>, chrubis <chrubis@suse.cz>, "Serge E. Hallyn" <serge@hallyn.com>, James Morris <jmorris@namei.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Howells <dhowells@redhat.com>, "David S. Miller" <davem@davemloft.net>, Sachin Sant <sachinp@linux.vnet.ibm.com>, Linux Next Mailing List <linux-next@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux- stable <stable@vger.kernel.org>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jejb@linux.ibm.com
+Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-On Fri, 26 Jun 2020 at 12:00, Herbert Xu <herbert@gondor.apana.org.au> wrote:
->
-> On Tue, Jun 23, 2020 at 10:02:17AM -0700, Eric Biggers wrote:
-> >
-> > The source code for the two failing AF_ALG tests is here:
-> >
-> > https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/crypto/af_alg02.c
-> > https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/crypto/af_alg05.c
-> >
-> > They use read() and write(), not send() and recv().
-> >
-> > af_alg02 uses read() to read from a "salsa20" request socket without writing
-> > anything to it.  It is expected that this returns 0, i.e. that behaves like
-> > encrypting an empty message.
+Add support for TEE based trusted keys where TEE provides the functionality
+to seal and unseal trusted keys using hardware unique key. Also, this is
+an alternative in case platform doesn't possess a TPM device.
 
-Since we are on this subject,
-LTP af_alg02  test case fails on stable 4.9 and stable 4.4
-This is not a regression because the test case has been failing from
-the beginning.
+This patch-set has been tested with OP-TEE based early TA which is already
+merged in upstream [1].
 
-Is this test case expected to fail on stable 4.9 and 4.4 ?
-or any chance to fix this on these older branches ?
+[1] https://github.com/OP-TEE/optee_os/commit/f86ab8e7e0de869dfa25ca05a37ee070d7e5b86b
 
-Test output:
-af_alg02.c:52: BROK: Timed out while reading from request socket.
+Changes in v5:
+1. Drop dynamic detection of trust source and use compile time flags
+   instead.
+2. Rename trusted_common.c -> trusted_core.c.
+3. Rename callback: cleanup() -> exit().
+4. Drop "tk" acronym.
+5. Other misc. comments.
+6. Added review tags for patch #3 and #4.
 
-ref:
-https://qa-reports.linaro.org/lkft/linux-stable-rc-4.9-oe/build/v4.9.228-191-g082e807235d7/testrun/2884917/suite/ltp-crypto-tests/test/af_alg02/history/
-https://qa-reports.linaro.org/lkft/linux-stable-rc-4.9-oe/build/v4.9.228-191-g082e807235d7/testrun/2884606/suite/ltp-crypto-tests/test/af_alg02/log
+Changes in v4:
+1. Pushed independent TEE features separately:
+  - Part of recent TEE PR: https://lkml.org/lkml/2020/5/4/1062
+2. Updated trusted-encrypted doc with TEE as a new trust source.
+3. Rebased onto latest tpmdd/master.
 
-- Naresh
+Changes in v3:
+1. Update patch #2 to support registration of multiple kernel pages.
+2. Incoporate dependency patch #4 in this patch-set:
+   https://patchwork.kernel.org/patch/11091435/
+
+Changes in v2:
+1. Add reviewed-by tags for patch #1 and #2.
+2. Incorporate comments from Jens for patch #3.
+3. Switch to use generic trusted keys framework.
+
+Sumit Garg (4):
+  KEYS: trusted: Add generic trusted keys framework
+  KEYS: trusted: Introduce TEE based Trusted Keys
+  doc: trusted-encrypted: updates with TEE as a new trust source
+  MAINTAINERS: Add entry for TEE based Trusted Keys
+
+ Documentation/security/keys/trusted-encrypted.rst | 203 ++++++++++---
+ MAINTAINERS                                       |   8 +
+ include/keys/trusted-type.h                       |  48 ++++
+ include/keys/trusted_tee.h                        |  66 +++++
+ include/keys/trusted_tpm.h                        |  15 -
+ security/keys/Kconfig                             |  31 +-
+ security/keys/trusted-keys/Makefile               |   6 +-
+ security/keys/trusted-keys/trusted_core.c         | 321 +++++++++++++++++++++
+ security/keys/trusted-keys/trusted_tee.c          | 280 ++++++++++++++++++
+ security/keys/trusted-keys/trusted_tpm1.c         | 335 ++++------------------
+ 10 files changed, 981 insertions(+), 332 deletions(-)
+ create mode 100644 include/keys/trusted_tee.h
+ create mode 100644 security/keys/trusted-keys/trusted_core.c
+ create mode 100644 security/keys/trusted-keys/trusted_tee.c
+
+-- 
+2.7.4
