@@ -1,48 +1,77 @@
-From: James Bottomley <jejb@linux.ibm.com>
-Date: Tue, 02 Jun 2020 14:43:01 +0000
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Wed, 03 Jun 2020 08:19:44 +0000
 Subject: Re: [PATCH v5 0/4] Introduce TEE based Trusted Keys support
-Message-Id: <1591108981.4253.17.camel@linux.ibm.com>
+Message-Id: <CAFA6WYOoMdLJ2g3gocZBZWdu-7Nfw7LKHnzX8S8FKeC7cuNwYg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <1591107505-6030-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1591107505-6030-1-git-send-email-sumit.garg@linaro.org>
-To: Sumit Garg <sumit.garg@linaro.org>, jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com
-Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+ <1591108981.4253.17.camel@linux.ibm.com>
+In-Reply-To: <1591108981.4253.17.camel@linux.ibm.com>
+To: James Bottomley <jejb@linux.ibm.com>
+Cc: "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, op-tee@lists.trustedfirmware.org, Jonathan Corbet <corbet@lwn.net>, Janne Karhunen <janne.karhunen@gmail.com>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.ibm.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dhowells@redhat.com, linux-security-module@vger.kernel.org, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Markus Wamser <Markus.Wamser@mixed-mode.de>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, Jens Wiklander <jens.wiklander@linaro.org>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
 
-On Tue, 2020-06-02 at 19:48 +0530, Sumit Garg wrote:
-> Add support for TEE based trusted keys where TEE provides the
-> functionality to seal and unseal trusted keys using hardware unique
-> key. Also, this is an alternative in case platform doesn't possess a
-> TPM device.
+On Tue, 2 Jun 2020 at 20:14, James Bottomley <jejb@linux.ibm.com> wrote:
+>
+> On Tue, 2020-06-02 at 19:48 +0530, Sumit Garg wrote:
+> > Add support for TEE based trusted keys where TEE provides the
+> > functionality to seal and unseal trusted keys using hardware unique
+> > key. Also, this is an alternative in case platform doesn't possess a
+> > TPM device.
+>
+> So here's a meta problem: in the case when the platform possesses both
+> TEE and TPM  what should it do?
 
-So here's a meta problem: in the case when the platform possesses both
-TEE and TPM  what should it do?  Things like this:
+IMO, trust source (either a TPM or a TEE) should be unique and
+carefully chosen as per platform security policy corresponding to a
+particular threat model.
 
-> --- a/security/keys/trusted-keys/trusted_core.c
-> +++ b/security/keys/trusted-keys/trusted_core.c
-> @@ -25,6 +25,8 @@
->  
->  #if defined(CONFIG_TRUSTED_TPM)
->  static struct trusted_key_ops *trusted_key_ops > &tpm_trusted_key_ops;
-> +#elif defined(CONFIG_TRUSTED_TEE)
-> +static struct trusted_key_ops *trusted_key_ops > &tee_trusted_key_ops;
->  #else
+And moreover TEEs have been mostly used in the embedded world where
+having a hardware TPM is cumbersome given constraints regarding BoM
+cost and hardware resources.
 
-Say it's either/or at a Kconfig level: so if you select both TEE and
-TPM based trusted keys at compile time, we intall the TPM ops and
-ignore the TEE ops, is that right?  Surely this should be runtime
-selectable based on what the platform has ... perhaps it should even be
-selectable per key?
+>  Things like this:
+>
+> > --- a/security/keys/trusted-keys/trusted_core.c
+> > +++ b/security/keys/trusted-keys/trusted_core.c
+> > @@ -25,6 +25,8 @@
+> >
+> >  #if defined(CONFIG_TRUSTED_TPM)
+> >  static struct trusted_key_ops *trusted_key_ops > > &tpm_trusted_key_ops;
+> > +#elif defined(CONFIG_TRUSTED_TEE)
+> > +static struct trusted_key_ops *trusted_key_ops > > &tee_trusted_key_ops;
+> >  #else
+>
+> Say it's either/or at a Kconfig level: so if you select both TEE and
+> TPM based trusted keys at compile time, we intall the TPM ops and
+> ignore the TEE ops, is that right?  Surely this should be runtime
+> selectable based on what the platform has ...
 
-Once it is runtime selectable, what should be selected in the both
-case?  Or should we allow the user to decide, if so, how?
+This dynamic selection was already part of v4 patch-set but after
+objection from Jarrko here [1], I switched to compile time mode
+instead.
 
-when you pipe a trusted key, I think the subtype (TEE or TPM) should be
-part of the piped information, so it loads again seamlessly.  This
-would actually be fixed by something like the ASN.1 scheme I'm trying
-to upstream, at least for TPM keys, but do TEE keys have a recognized
-ASN.1 format?
+[1] https://lkml.org/lkml/2020/6/2/139
 
-James
+> perhaps it should even be
+> selectable per key?
+>
+> Once it is runtime selectable, what should be selected in the both
+> case?  Or should we allow the user to decide, if so, how?
+>
+> when you pipe a trusted key, I think the subtype (TEE or TPM) should be
+> part of the piped information, so it loads again seamlessly.  This
+> would actually be fixed by something like the ASN.1 scheme I'm trying
+> to upstream, at least for TPM keys, but do TEE keys have a recognized
+> ASN.1 format?
+>
+
+I guess this is something which we can refine later if there are real
+platforms that have a particular security requirement to support both
+TPM and a TEE.
+
+-Sumit
+
+> James
+>
