@@ -1,61 +1,25 @@
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 02 Jun 2020 16:28:00 +0000
-Subject: [GIT PULL] keys: Changes for 5.8
-Message-Id: <1509351.1591115280@warthog.procyon.org.uk>
+From: pr-tracker-bot@kernel.org
+Date: Thu, 04 Jun 2020 17:35:07 +0000
+Subject: Re: [GIT PULL] keys: Changes for 5.8
+Message-Id: <159129210706.22790.7029741775337917188.pr-tracker-bot@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, mathstuf@gmail.com, gustavoars@kernel.org, Jason@zx2c4.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1509351.1591115280@warthog.procyon.org.uk>
+In-Reply-To: <1509351.1591115280@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, jarkko.sakkinen@linux.intel.com, mathstuf@gmail.com, gustavoars@kernel.org, Jason@zx2c4.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Hi Linus,
+The pull request you sent on Tue, 02 Jun 2020 17:28:00 +0100:
 
-Could you pull these keyrings fixes please?
+> git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-20200602
 
- (1) Fix a documentation warning.
+has been merged into torvalds/linux.git:
+https://git.kernel.org/torvalds/c/a484a497c98a0447aca2d70de19d11b1d66e6ef7
 
- (2) Replace a [0] array with [].
+Thank you!
 
- (3) Make the big_key key type use ChaCha20Poly1305 and use the crypto
-     algorithm directly rather than going through the crypto layer.
-
- (4) Implement the update op for the big_key type.
-
-Thanks,
-David
----
-The following changes since commit 6a8b55ed4056ea5559ebe4f6a4b247f627870d4c:
-
-  Linux 5.7-rc3 (2020-04-26 13:51:02 -0700)
-
-are available in the Git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-20200602
-
-for you to fetch changes up to b6f61c31464940513ef4eccb3a030a405b4256d6:
-
-  keys: Implement update for the big_key type (2020-06-02 17:22:31 +0100)
-
-----------------------------------------------------------------
-Keyrings changes
-
-----------------------------------------------------------------
-Ben Boeckel (1):
-      Documentation: security: core.rst: add missing argument
-
-David Howells (1):
-      keys: Implement update for the big_key type
-
-Gustavo A. R. Silva (1):
-      KEYS: Replace zero-length array with flexible-array
-
-Jason A. Donenfeld (1):
-      security/keys: rewrite big_key crypto to use library interface
-
- Documentation/security/keys/core.rst |   8 +-
- include/keys/big_key-type.h          |   1 +
- include/keys/user-type.h             |   2 +-
- security/keys/Kconfig                |   4 +-
- security/keys/big_key.c              | 257 +++++++----------------------------
- 5 files changed, 60 insertions(+), 212 deletions(-)
+-- 
+Deet-doot-dot, I am a bot.
+https://korg.wiki.kernel.org/userdoc/prtracker
