@@ -1,194 +1,186 @@
-From: "Luis R. Rodriguez" <mcgrof@kernel.org>
-Date: Wed, 10 Jun 2020 15:49:22 +0000
-Subject: [PATCH 4/5] umh: fix processed error when UMH_WAIT_PROC is used
-Message-Id: <20200610154923.27510-5-mcgrof@kernel.org>
+From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Date: Tue, 09 Jun 2020 13:48:54 +0000
+Subject: [PATCH v3 7/8] X.509: support OSCCA sm2-with-sm3 certificate verification
+Message-Id: <20200609134855.21431-8-tianjia.zhang@linux.alibaba.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200610154923.27510-1-mcgrof@kernel.org>
-In-Reply-To: <20200610154923.27510-1-mcgrof@kernel.org>
-To: gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, axboe@kernel.dk, bfields@fieldses.org, chuck.lever@oracle.com, roopa@cumulusnetworks.com, nikolay@cumulusnetworks.com, davem@davemloft.net, kuba@kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, serge@hallyn.com, christian.brauner@ubuntu.com
-Cc: slyfox@gentoo.org, ast@kernel.org, keescook@chromium.org, josh@joshtriplett.org, ravenexp@gmail.com, chainsaw@gentoo.org, linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org, bridge@lists.linux-foundation.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Luis Chamberlain <mcgrof@kernel.org>, Tiezhu Yang <yangtiezhu@loongson.cn>
+References: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
+In-Reply-To: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
+To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com, mcoquelin.stm32@gmail.com, alexandre.torgue@st.com, jmorris@namei.org, serge@hallyn.com, nramas@linux.microsoft.com, tusharsu@linux.microsoft.com, zohar@linux.ibm.com, gilad@benyossef.com, pvanleeuwen@rambus.com
+Cc: tianjia.zhang@linux.alibaba.com, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, zhang.jia@linux.alibaba.com, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org
 
-From: Luis Chamberlain <mcgrof@kernel.org>
+The digital certificate format based on SM2 crypto algorithm as
+specified in GM/T 0015-2012. It was published by State Encryption
+Management Bureau, China.
 
-When UMH_WAIT_PROC is used we call kernel_wait4(). This is
-the *only* place in the kernel where we actually inspect the
-error code. Prior to this patch we returned the value from the
-wait call, and that technically requires us to use wrappers
-such as WEXITSTATUS(). We either fix all callers to start
-using WEXITSTATUS() and friends *or* we do address this within
-the umh code and let the callers get the actual error code.
+The method of generating Other User Information is defined as
+ZA=H256(ENTLA || IDA || a || b || xG || yG || xA || yA), it also
+specified in https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02.
 
-The way we use kernel_wait4() on the umh is with the options
-set to 0, and when this is done the wait call only waits for
-terminated children. Because of this, there is no point to
-complicate checks for the umh with W*() calls. That would
-make the checks complex, redundant, and simply not needed.
+The x509 certificate supports sm2-with-sm3 type certificate
+verification.  Because certificate verification requires ZA
+in addition to tbs data, ZA also depends on elliptic curve
+parameters and public key data, so you need to access tbs in sig
+and calculate ZA. Finally calculate the digest of the
+signature and complete the verification work. The calculation
+process of ZA is declared in specifications GM/T 0009-2012
+and GM/T 0003.2-2012.
 
-By making the umh do the checks for us we keep users
-kernel_wait4() at bay, and promote avoiding introduction of
-further W*() macros and the complexities this can bring.
-
-There were only a few callers which properly checked for
-the error status using open-coded solutions. We remove
-them as they are no longer needed, and also remove open
-coded implicit uses of W*() uses which should never
-trigger given that the options passed to wait is 0.
-
-The only helpers we really need are for termination, so we
-just include those, and we prefix our W*() helpers with K.
-
-Since all this does is *correct* an error code, if one
-was found, this change only fixes reporting the *correct*
-error, and there are two places where this matters, and
-which this patch fixes:
-
-  * request_module() used to fail with an error code of
-    256 when a module was not found. Now it properly
-    returns 1.
-
-  * fs/nfsd/nfs4recover.c: we never were disabling the
-    upcall as the error code of -ENOENT or -EACCES was
-    *never* properly checked for.
-
-Reported-by: Tiezhu Yang <yangtiezhu@loongson.cn>
-Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
+Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
 ---
- drivers/block/drbd/drbd_nl.c | 20 ++++++++------------
- fs/nfsd/nfs4recover.c        |  2 +-
- include/linux/sched/task.h   | 13 +++++++++++++
- kernel/umh.c                 |  4 ++--
- net/bridge/br_stp_if.c       | 10 ++--------
- security/keys/request_key.c  |  2 +-
- 6 files changed, 27 insertions(+), 24 deletions(-)
+ crypto/asymmetric_keys/Makefile          |  1 +
+ crypto/asymmetric_keys/public_key.c      |  6 +++
+ crypto/asymmetric_keys/public_key_sm2.c  | 59 ++++++++++++++++++++++++
+ crypto/asymmetric_keys/x509_public_key.c |  2 +
+ include/crypto/public_key.h              | 14 ++++++
+ 5 files changed, 82 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/public_key_sm2.c
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index da4a3ebe04ef..aee272e620b9 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -382,13 +382,11 @@ int drbd_khelper(struct drbd_device *device, char *cmd)
- 	notify_helper(NOTIFY_CALL, device, connection, cmd, 0);
- 	ret = call_usermodehelper(drbd_usermode_helper, argv, envp, UMH_WAIT_PROC);
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index 28b91adba2ae..d499367dd253 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -11,6 +11,7 @@ asymmetric_keys-y := \
+ 	signature.o
+ 
+ obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
++obj-$(CONFIG_CRYPTO_SM2) += public_key_sm2.o
+ obj-$(CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE) += asym_tpm.o
+ 
+ #
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index d7f43d4ea925..7283ddb7c5e2 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -298,6 +298,12 @@ int public_key_verify_signature(const struct public_key *pkey,
  	if (ret)
--		drbd_warn(device, "helper command: %s %s %s exit code %u (0x%x)\n",
--				drbd_usermode_helper, cmd, mb,
--				(ret >> 8) & 0xff, ret);
-+		drbd_warn(device, "helper command: %s %s %s failed with exit code %u (0x%x)\n",
-+				drbd_usermode_helper, cmd, mb, ret, ret);
- 	else
--		drbd_info(device, "helper command: %s %s %s exit code %u (0x%x)\n",
--				drbd_usermode_helper, cmd, mb,
--				(ret >> 8) & 0xff, ret);
-+		drbd_info(device, "helper command: %s %s %s completed successfully\n",
-+				drbd_usermode_helper, cmd, mb);
- 	sib.sib_reason = SIB_HELPER_POST;
- 	sib.helper_exit_code = ret;
- 	drbd_bcast_event(device, &sib);
-@@ -424,13 +422,11 @@ enum drbd_peer_state conn_khelper(struct drbd_connection *connection, char *cmd)
+ 		goto error_free_key;
  
- 	ret = call_usermodehelper(drbd_usermode_helper, argv, envp, UMH_WAIT_PROC);
- 	if (ret)
--		drbd_warn(connection, "helper command: %s %s %s exit code %u (0x%x)\n",
--			  drbd_usermode_helper, cmd, resource_name,
--			  (ret >> 8) & 0xff, ret);
-+		drbd_warn(connection, "helper command: %s %s %s failed with exit code %u (0x%x)\n",
-+			  drbd_usermode_helper, cmd, resource_name, ret, ret);
- 	else
--		drbd_info(connection, "helper command: %s %s %s exit code %u (0x%x)\n",
--			  drbd_usermode_helper, cmd, resource_name,
--			  (ret >> 8) & 0xff, ret);
-+		drbd_info(connection, "helper command: %s %s %s completed successfully\n",
-+			  drbd_usermode_helper, cmd, resource_name);
- 	/* TODO: conn_bcast_event() ?? */
- 	notify_helper(NOTIFY_RESPONSE, NULL, connection, cmd, ret);
- 
-diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-index 9e40dfecf1b1..33e6a7fd7961 100644
---- a/fs/nfsd/nfs4recover.c
-+++ b/fs/nfsd/nfs4recover.c
-@@ -1820,7 +1820,7 @@ nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *env0, char *env1)
- 
- 	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
- 	/*
--	 * Disable the upcall mechanism if we're getting an ENOENT or EACCES
-+	 * Disable the upcall mechanism if we're getting an -ENOENT or -EACCES
- 	 * error. The admin can re-enable it on the fly by using sysfs
- 	 * once the problem has been fixed.
- 	 */
-diff --git a/include/linux/sched/task.h b/include/linux/sched/task.h
-index 38359071236a..bba06befbff5 100644
---- a/include/linux/sched/task.h
-+++ b/include/linux/sched/task.h
-@@ -103,6 +103,19 @@ struct mm_struct *copy_init_mm(void);
- extern pid_t kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
- extern long kernel_wait4(pid_t, int __user *, int, struct rusage *);
- 
-+/* Only add helpers for actual use cases in the kernel */
-+#define KWEXITSTATUS(status)		(__KWEXITSTATUS(status))
-+#define KWIFEXITED(status)		(__KWIFEXITED(status))
++	if (strcmp(sig->pkey_algo, "sm2") = 0) {
++		ret = cert_sig_digest_update(sig, tfm);
++		if (ret)
++			goto error_free_key;
++	}
 +
-+/* Nonzero if STATUS indicates normal termination.  */
-+#define __KWIFEXITED(status)     (__KWTERMSIG(status) = 0)
+ 	sg_init_table(src_sg, 2);
+ 	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
+ 	sg_set_buf(&src_sg[1], sig->digest, sig->digest_size);
+diff --git a/crypto/asymmetric_keys/public_key_sm2.c b/crypto/asymmetric_keys/public_key_sm2.c
+new file mode 100644
+index 000000000000..d7f144e53f41
+--- /dev/null
++++ b/crypto/asymmetric_keys/public_key_sm2.c
+@@ -0,0 +1,59 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * asymmetric public-key algorithm for SM2-with-SM3 certificate
++ * as specified by OSCCA GM/T 0003.1-2012 -- 0003.5-2012 SM2 and
++ * described at https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
++ *
++ * Copyright (c) 2020, Alibaba Group.
++ * Authors: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
++ */
 +
-+/* If KWIFEXITED(STATUS), the low-order 8 bits of the status.  */
-+#define __KWEXITSTATUS(status)   (((status) & 0xff00) >> 8)
++#include <crypto/sm3_base.h>
++#include <crypto/sm2.h>
++#include "x509_parser.h"
 +
-+/* If KWIFSIGNALED(STATUS), the terminating signal.  */
-+#define __KWTERMSIG(status)      ((status) & 0x7f)
++int cert_sig_digest_update(const struct public_key_signature *sig,
++				struct crypto_akcipher *tfm_pkey)
++{
++	struct x509_certificate *cert = sig->cert;
++	struct crypto_shash *tfm;
++	struct shash_desc *desc;
++	size_t desc_size;
++	unsigned char dgst[SM3_DIGEST_SIZE];
++	int ret;
 +
- extern void free_task(struct task_struct *tsk);
++	if (!cert)
++		return -EINVAL;
++
++	ret = sm2_compute_z_digest(tfm_pkey, SM2_DEFAULT_USERID,
++					SM2_DEFAULT_USERID_LEN, dgst);
++	if (ret)
++		return ret;
++
++	tfm = crypto_alloc_shash(sig->hash_algo, 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm);
++
++	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
++	desc = kzalloc(desc_size, GFP_KERNEL);
++	if (!desc)
++		goto error_free_tfm;
++
++	desc->tfm = tfm;
++
++	ret = crypto_shash_init(desc);
++	if (ret < 0)
++		goto error_free_desc;
++
++	ret = crypto_shash_update(desc, dgst, SM3_DIGEST_SIZE);
++	if (ret < 0)
++		goto error_free_desc;
++
++	ret = crypto_shash_finup(desc, cert->tbs, cert->tbs_size, sig->digest);
++
++error_free_desc:
++	kfree(desc);
++error_free_tfm:
++	crypto_free_shash(tfm);
++	return ret;
++}
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index d964cc82b69c..feccec08b244 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -30,6 +30,8 @@ int x509_get_sig_params(struct x509_certificate *cert)
  
- /* sched_exec is called by processes performing an exec */
-diff --git a/kernel/umh.c b/kernel/umh.c
-index 79f139a7ca03..f81e8698e36e 100644
---- a/kernel/umh.c
-+++ b/kernel/umh.c
-@@ -154,8 +154,8 @@ static void call_usermodehelper_exec_sync(struct subprocess_info *sub_info)
- 		 * the real error code is already in sub_info->retval or
- 		 * sub_info->retval is 0 anyway, so don't mess with it then.
- 		 */
--		if (ret)
--			sub_info->retval = ret;
-+		if (KWIFEXITED(ret))
-+			sub_info->retval = KWEXITSTATUS(ret);
- 	}
+ 	pr_devel("=>%s()\n", __func__);
  
- 	/* Restore default kernel sig handler */
-diff --git a/net/bridge/br_stp_if.c b/net/bridge/br_stp_if.c
-index ba55851fe132..bdd94b45396b 100644
---- a/net/bridge/br_stp_if.c
-+++ b/net/bridge/br_stp_if.c
-@@ -133,14 +133,8 @@ static int br_stp_call_user(struct net_bridge *br, char *arg)
++	sig->cert = cert;
++
+ 	if (!cert->pub->pkey_algo)
+ 		cert->unsupported_key = true;
  
- 	/* call userspace STP and report program errors */
- 	rc = call_usermodehelper(BR_STP_PROG, argv, envp, UMH_WAIT_PROC);
--	if (rc > 0) {
--		if (rc & 0xff)
--			br_debug(br, BR_STP_PROG " received signal %d\n",
--				 rc & 0x7f);
--		else
--			br_debug(br, BR_STP_PROG " exited with code %d\n",
--				 (rc >> 8) & 0xff);
--	}
-+	if (rc != 0)
-+		br_debug(br, BR_STP_PROG " failed with exit code %d\n", rc);
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index 0588ef3bc6ff..4bf007424f56 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -12,6 +12,7 @@
  
- 	return rc;
- }
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index e1b9f1a80676..ff462f3d46ca 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -193,7 +193,7 @@ static int call_sbin_request_key(struct key *authkey, void *aux)
- 	ret = call_usermodehelper_keys(request_key, argv, envp, keyring,
- 				       UMH_WAIT_PROC);
- 	kdebug("usermode -> 0x%x", ret);
--	if (ret >= 0) {
-+	if (ret != 0) {
- 		/* ret is the exit/wait code */
- 		if (test_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags) ||
- 		    key_validate(key) < 0)
+ #include <linux/keyctl.h>
+ #include <linux/oid_registry.h>
++#include <crypto/akcipher.h>
+ 
+ /*
+  * Cryptographic data for the public-key subtype of the asymmetric key type.
+@@ -44,6 +45,7 @@ struct public_key_signature {
+ 	const char *pkey_algo;
+ 	const char *hash_algo;
+ 	const char *encoding;
++	void *cert;		/* For certificate */
+ };
+ 
+ extern void public_key_signature_free(struct public_key_signature *sig);
+@@ -81,4 +83,16 @@ extern int verify_signature(const struct key *,
+ int public_key_verify_signature(const struct public_key *pkey,
+ 				const struct public_key_signature *sig);
+ 
++#ifdef CONFIG_CRYPTO_SM2
++int cert_sig_digest_update(const struct public_key_signature *sig,
++				struct crypto_akcipher *tfm_pkey);
++#else
++static inline
++int cert_sig_digest_update(const struct public_key_signature *sig,
++				struct crypto_akcipher *tfm_pkey)
++{
++	return -ENOTSUPP;
++}
++#endif
++
+ #endif /* _LINUX_PUBLIC_KEY_H */
 -- 
-2.26.2
+2.17.1
