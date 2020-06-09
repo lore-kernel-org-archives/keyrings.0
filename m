@@ -1,51 +1,73 @@
-From: Joe Perches <joe@perches.com>
-Date: Wed, 17 Jun 2020 23:12:06 +0000
-Subject: Re: [PATCH v4 0/3] mm, treewide: Rename kzfree() to kfree_sensitive()
-Message-Id: <38c5745d14cff75fe264a3bc61d19fd837baf7ad.camel@perches.com>
+From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Date: Tue, 09 Jun 2020 13:48:48 +0000
+Subject: [PATCH v3 1/8] crypto: sm3 - export crypto_sm3_final function
+Message-Id: <20200609134855.21431-2-tianjia.zhang@linux.alibaba.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200616015718.7812-1-longman@redhat.com>
- <fe3b9a437be4aeab3bac68f04193cb6daaa5bee4.camel@perches.com>
- <17e4fede-bab0-d93c-6964-69decc889d7d@ispras.ru>
-In-Reply-To: <17e4fede-bab0-d93c-6964-69decc889d7d@ispras.ru>
-To: Denis Efremov <efremov@ispras.ru>, Waiman Long <longman@redhat.com>, Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linus Torvalds <torvalds@linux-foundation.org>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
-Cc: "Jason A . Donenfeld" <Jason@zx2c4.com>, Michal Hocko <mhocko@suse.com>, linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-sctp@vger.kernel.org, target-devel@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, devel@driverdev.osuosl.org, linux-cifs@vger.kernel.org, linux-scsi@vger.kernel.org, kasan-dev@googlegroups.com, linux-wpan@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>, linux-pm@vger.kernel.org, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-amlogic@lists.infradead.org, virtualization@lists.linux-foundation.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org, David Sterba <dsterba@suse.cz>, linux-bluetooth@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, tipc-discussion@lists.sourceforge.net, linux-crypto@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, wireguard@lists.zx2c4.com, linux-ppp@vger.kernel.org
+References: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
+In-Reply-To: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
+To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com, mcoquelin.stm32@gmail.com, alexandre.torgue@st.com, jmorris@namei.org, serge@hallyn.com, nramas@linux.microsoft.com, tusharsu@linux.microsoft.com, zohar@linux.ibm.com, gilad@benyossef.com, pvanleeuwen@rambus.com
+Cc: tianjia.zhang@linux.alibaba.com, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, zhang.jia@linux.alibaba.com, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org
 
-On Thu, 2020-06-18 at 00:31 +0300, Denis Efremov wrote:
-> 
-> On 6/16/20 9:53 PM, Joe Perches wrote:
-> > On Mon, 2020-06-15 at 21:57 -0400, Waiman Long wrote:
-> > >  v4:
-> > >   - Break out the memzero_explicit() change as suggested by Dan Carpenter
-> > >     so that it can be backported to stable.
-> > >   - Drop the "crypto: Remove unnecessary memzero_explicit()" patch for
-> > >     now as there can be a bit more discussion on what is best. It will be
-> > >     introduced as a separate patch later on after this one is merged.
-> > 
-> > To this larger audience and last week without reply:
-> > https://lore.kernel.org/lkml/573b3fbd5927c643920e1364230c296b23e7584d.camel@perches.com/
-> > 
-> > Are there _any_ fastpath uses of kfree or vfree?
-> > 
-> > Many patches have been posted recently to fix mispairings
-> > of specific types of alloc and free functions.
-> 
-> I've prepared a coccinelle script to highlight these mispairings in a function
-> a couple of days ago: https://lkml.org/lkml/2020/6/5/953
-> I've listed all the fixes in the commit message. 
-> 
-> Not so many mispairings actually, and most of them are harmless like:
-> kmalloc(E) -> kvfree(E)
-> 
-> However, coccinelle script can't detect cross-functions mispairings, i.e.
-> allocation in one function, free in another funtion.
+Both crypto_sm3_update and crypto_sm3_finup have been
+exported, exporting crypto_sm3_final, to avoid having to
+use crypto_sm3_finup(desc, NULL, 0, dgst) to calculate
+the hash in some cases.
 
-Hey Denis, thanks for those patches.
+Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+---
+ crypto/sm3_generic.c | 7 ++++---
+ include/crypto/sm3.h | 2 ++
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-If possible, it's probably better to not require these pairings
-and use a single standard kfree/free function.
-
-Given the existing ifs in kfree in slab/slob/slub, it seems
-likely that adding a few more wouldn't have much impact.
+diff --git a/crypto/sm3_generic.c b/crypto/sm3_generic.c
+index 3468975215ca..193c4584bd00 100644
+--- a/crypto/sm3_generic.c
++++ b/crypto/sm3_generic.c
+@@ -149,17 +149,18 @@ int crypto_sm3_update(struct shash_desc *desc, const u8 *data,
+ }
+ EXPORT_SYMBOL(crypto_sm3_update);
+ 
+-static int sm3_final(struct shash_desc *desc, u8 *out)
++int crypto_sm3_final(struct shash_desc *desc, u8 *out)
+ {
+ 	sm3_base_do_finalize(desc, sm3_generic_block_fn);
+ 	return sm3_base_finish(desc, out);
+ }
++EXPORT_SYMBOL(crypto_sm3_final);
+ 
+ int crypto_sm3_finup(struct shash_desc *desc, const u8 *data,
+ 			unsigned int len, u8 *hash)
+ {
+ 	sm3_base_do_update(desc, data, len, sm3_generic_block_fn);
+-	return sm3_final(desc, hash);
++	return crypto_sm3_final(desc, hash);
+ }
+ EXPORT_SYMBOL(crypto_sm3_finup);
+ 
+@@ -167,7 +168,7 @@ static struct shash_alg sm3_alg = {
+ 	.digestsize	=	SM3_DIGEST_SIZE,
+ 	.init		=	sm3_base_init,
+ 	.update		=	crypto_sm3_update,
+-	.final		=	sm3_final,
++	.final		=	crypto_sm3_final,
+ 	.finup		=	crypto_sm3_finup,
+ 	.descsize	=	sizeof(struct sm3_state),
+ 	.base		=	{
+diff --git a/include/crypto/sm3.h b/include/crypto/sm3.h
+index 1438942dc773..42ea21289ba9 100644
+--- a/include/crypto/sm3.h
++++ b/include/crypto/sm3.h
+@@ -35,6 +35,8 @@ struct shash_desc;
+ extern int crypto_sm3_update(struct shash_desc *desc, const u8 *data,
+ 			      unsigned int len);
+ 
++extern int crypto_sm3_final(struct shash_desc *desc, u8 *out);
++
+ extern int crypto_sm3_finup(struct shash_desc *desc, const u8 *data,
+ 			     unsigned int len, u8 *hash);
+ #endif
+-- 
+2.17.1
