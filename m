@@ -1,279 +1,48 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Tue, 02 Jun 2020 14:30:24 +0000
-Subject: [PATCH v5 3/4] doc: trusted-encrypted: updates with TEE as a new trust source
-Message-Id: <1591107505-6030-4-git-send-email-sumit.garg@linaro.org>
+From: "Luis R. Rodriguez" <mcgrof@kernel.org>
+Date: Wed, 10 Jun 2020 15:49:19 +0000
+Subject: [PATCH 1/5] selftests: kmod: Use variable NAME in kmod_test_0001()
+Message-Id: <20200610154923.27510-2-mcgrof@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1591107505-6030-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1591107505-6030-1-git-send-email-sumit.garg@linaro.org>
-To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jejb@linux.ibm.com
-Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+References: <20200610154923.27510-1-mcgrof@kernel.org>
+In-Reply-To: <20200610154923.27510-1-mcgrof@kernel.org>
+To: gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, axboe@kernel.dk, bfields@fieldses.org, chuck.lever@oracle.com, roopa@cumulusnetworks.com, nikolay@cumulusnetworks.com, davem@davemloft.net, kuba@kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, serge@hallyn.com, christian.brauner@ubuntu.com
+Cc: slyfox@gentoo.org, ast@kernel.org, keescook@chromium.org, josh@joshtriplett.org, ravenexp@gmail.com, chainsaw@gentoo.org, linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org, bridge@lists.linux-foundation.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Tiezhu Yang <yangtiezhu@loongson.cn>, Luis Chamberlain <mcgrof@kernel.org>
 
-Update documentation for Trusted and Encrypted Keys with TEE as a new
-trust source. Following is brief description of updates:
+From: Tiezhu Yang <yangtiezhu@loongson.cn>
 
-- Add a section to demostrate a list of supported devices along with
-  their security properties/guarantees.
-- Add a key generation section.
-- Updates for usage section including differences specific to a trust
-  source.
+Use the variable NAME instead of "\000" directly in kmod_test_0001().
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Acked-by: Luis Chamberlain <mcgrof@kernel.org>
+Signed-off-by: Tiezhu Yang <yangtiezhu@loongson.cn>
+Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
 ---
- Documentation/security/keys/trusted-encrypted.rst | 203 ++++++++++++++++++----
- 1 file changed, 171 insertions(+), 32 deletions(-)
+ tools/testing/selftests/kmod/kmod.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index 50ac8bc..4764a6d 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -6,30 +6,161 @@ Trusted and Encrypted Keys are two new key types added to the existing kernel
- key ring service.  Both of these new types are variable length symmetric keys,
- and in both cases all keys are created in the kernel, and user space sees,
- stores, and loads only encrypted blobs.  Trusted Keys require the availability
--of a Trusted Platform Module (TPM) chip for greater security, while Encrypted
--Keys can be used on any system.  All user level blobs, are displayed and loaded
--in hex ascii for convenience, and are integrity verified.
-+of a Trust Source for greater security, while Encrypted Keys can be used on any
-+system. All user level blobs, are displayed and loaded in hex ascii for
-+convenience, and are integrity verified.
+diff --git a/tools/testing/selftests/kmod/kmod.sh b/tools/testing/selftests/kmod/kmod.sh
+index 3702dbcc90a7..da60c3bd4f23 100755
+--- a/tools/testing/selftests/kmod/kmod.sh
++++ b/tools/testing/selftests/kmod/kmod.sh
+@@ -341,7 +341,7 @@ kmod_test_0001_driver()
  
--Trusted Keys use a TPM both to generate and to seal the keys.  Keys are sealed
--under a 2048 bit RSA key in the TPM, and optionally sealed to specified PCR
--(integrity measurement) values, and only unsealed by the TPM, if PCRs and blob
--integrity verifications match.  A loaded Trusted Key can be updated with new
--(future) PCR values, so keys are easily migrated to new pcr values, such as
--when the kernel and initramfs are updated.  The same key can have many saved
--blobs under different PCR values, so multiple boots are easily supported.
+ 	kmod_defaults_driver
+ 	config_num_threads 1
+-	printf '\000' >"$DIR"/config_test_driver
++	printf $NAME >"$DIR"/config_test_driver
+ 	config_trigger ${FUNCNAME[0]}
+ 	config_expect_result ${FUNCNAME[0]} MODULE_NOT_FOUND
+ }
+@@ -352,7 +352,7 @@ kmod_test_0001_fs()
  
--TPM 1.2
---------
-+Trust Source
-+======
- 
--By default, trusted keys are sealed under the SRK, which has the default
--authorization value (20 zeros).  This can be set at takeownership time with the
--trouser's utility: "tpm_takeownership -u -z".
-+Trust Source provides the source of security for the Trusted Keys, on which
-+basis Trusted Keys establishes a Trust model with its user. A Trust Source could
-+differ from one system to another depending on its security requirements. It
-+could be either an off-chip device or an on-chip device. Following section
-+demostrates a list of supported devices along with their security properties/
-+guarantees:
- 
--TPM 2.0
---------
-+  *  Root of trust for storage
- 
--The user must first create a storage key and make it persistent, so the key is
--available after reboot. This can be done using the following commands.
-+     (1) TPM (Trusted Platform Module: hardware device)
-+
-+         Rooted to Storage Root Key (SRK) which never leaves the TPM that
-+         provides crypto operation to establish root of trust for storage.
-+
-+     (2) TEE (Trusted Execution Environment: OP-TEE based on Arm TrustZone)
-+
-+         Rooted to Hardware Unique Key (HUK) which is generally burnt in on-chip
-+         fuses and is accessible to TEE only.
-+
-+  *  Execution isolation
-+
-+     (1) TPM
-+
-+         Fixed set of operations running in isolated execution environment.
-+
-+     (2) TEE
-+
-+         Customizable set of operations running in isolated execution
-+         environment verified via Secure/Trusted boot process.
-+
-+  * Optional binding to platform integrity state
-+
-+     (1) TPM
-+
-+         Keys can be optionally sealed to specified PCR (integrity measurement)
-+         values, and only unsealed by the TPM, if PCRs and blob integrity
-+         verifications match. A loaded Trusted Key can be updated with new
-+         (future) PCR values, so keys are easily migrated to new PCR values,
-+         such as when the kernel and initramfs are updated. The same key can
-+         have many saved blobs under different PCR values, so multiple boots are
-+         easily supported.
-+
-+     (2) TEE
-+
-+         Relies on Secure/Trusted boot process for platform integrity. It can
-+         be extended with TEE based measured boot process.
-+
-+  *  On-chip versus off-chip
-+
-+     (1) TPM
-+
-+         Off-chip device connected via serial bus (like I2C, SPI etc.) exposing
-+         physical access which represents an attack surface that can be
-+         mitigated via tamper detection.
-+
-+     (2) TEE
-+
-+         On-chip functionality, immune to this attack surface.
-+
-+  *  Memory attacks (DRAM based like attaching a bus monitor etc.)
-+
-+     (1) TPM
-+
-+         Immune to these attacks as it doesn’t make use of system DRAM.
-+
-+     (2) TEE
-+
-+         An implementation based on TrustZone protected DRAM is susceptible to
-+         such attacks. In order to mitigate these attacks one needs to rely on
-+         on-chip secure RAM to store secrets or have the entire TEE
-+         implementation based on on-chip secure RAM. An alternative mitigation
-+         would be to use encrypted DRAM.
-+
-+  *  Side-channel attacks (cache, memory, CPU or time based)
-+
-+     (1) TPM
-+
-+         Immune to side-channel attacks as its resources are isolated from the
-+         main OS.
-+
-+     (2) TEE
-+
-+         A careful implementation is required to mitigate against these attacks
-+         for resources which are shared (eg. shared memory) with the main OS.
-+         Cache and CPU based side-channel attacks can be mitigated via
-+         invalidating caches and CPU registers during context switch to and from
-+         the secure world.
-+         To mitigate against time based attacks, one needs to have time
-+         invariant implementations (like crypto algorithms etc.).
-+
-+  *  Resistance to physical attacks (power analysis, electromagnetic emanation,
-+     probes etc.)
-+
-+     (1) TPM
-+
-+         Provides limited protection utilizing tamper resistance.
-+
-+     (2) TEE
-+
-+         Provides no protection by itself, relies on the underlying platform for
-+         features such as tamper resistance.
-+
-+
-+Key Generation
-+=======
-+
-+Trusted Keys
-+------------
-+
-+New keys are created from trust source generated random numbers, and are
-+encrypted/decrypted using trust source storage root key.
-+
-+  *  TPM (hardware device) based RNG
-+
-+     Strength of random numbers may vary from one device manufacturer to
-+     another.
-+
-+  *  TEE (OP-TEE based on Arm TrustZone) based RNG
-+
-+     RNG is customizable as per platform needs. It can either be direct output
-+     from platform specific hardware RNG or a software based Fortuna CSPRNG
-+     which can be seeded via multiple entropy sources.
-+
-+Encrypted Keys
-+--------------
-+
-+Encrypted keys do not depend on a trust source, and are faster, as they use AES
-+for encryption/decryption. New keys are created from kernel generated random
-+numbers, and are encrypted/decrypted using a specified ‘master’ key. The
-+‘master’ key can either be a trusted-key or user-key type. The main disadvantage
-+of encrypted keys is that if they are not rooted in a trusted key, they are only
-+as secure as the user key encrypting them. The master user key should therefore
-+be loaded in as secure a way as possible, preferably early in boot.
-+
-+
-+Usage
-+==+
-+Trusted Keys usage: TPM
-+-----------------------
-+
-+TPM 1.2: By default, trusted keys are sealed under the SRK, which has the
-+default authorization value (20 zeros).  This can be set at takeownership time
-+with the TrouSerS utility: "tpm_takeownership -u -z".
-+
-+TPM 2.0: The user must first create a storage key and make it persistent, so the
-+key is available after reboot. This can be done using the following commands.
- 
- With the IBM TSS 2 stack::
- 
-@@ -79,14 +210,21 @@ TPM_STORED_DATA format.  The key length for new keys are always in bytes.
- Trusted Keys can be 32 - 128 bytes (256 - 1024 bits), the upper limit is to fit
- within the 2048 bit SRK (RSA) keylength, with all necessary structure/padding.
- 
--Encrypted keys do not depend on a TPM, and are faster, as they use AES for
--encryption/decryption.  New keys are created from kernel generated random
--numbers, and are encrypted/decrypted using a specified 'master' key.  The
--'master' key can either be a trusted-key or user-key type.  The main
--disadvantage of encrypted keys is that if they are not rooted in a trusted key,
--they are only as secure as the user key encrypting them.  The master user key
--should therefore be loaded in as secure a way as possible, preferably early in
--boot.
-+Trusted Keys usage: TEE
-+-----------------------
-+
-+Usage::
-+
-+    keyctl add trusted name "new keylen" ring
-+    keyctl add trusted name "load hex_blob" ring
-+    keyctl print keyid
-+
-+"keyctl print" returns an ascii hex copy of the sealed key, which is in format
-+specific to TEE device implementation.  The key length for new keys are always
-+in bytes. Trusted Keys can be 32 - 128 bytes (256 - 1024 bits).
-+
-+Encrypted Keys usage
-+--------------------
- 
- The decrypted portion of encrypted keys can contain either a simple symmetric
- key or a more complex structure. The format of the more complex structure is
-@@ -104,8 +242,8 @@ Where::
- 	format:= 'default | ecryptfs | enc32'
- 	key-type:= 'trusted' | 'user'
- 
--
- Examples of trusted and encrypted key usage:
-+--------------------------------------------
- 
- Create and save a trusted key named "kmk" of length 32 bytes.
- 
-@@ -151,7 +289,7 @@ Load a trusted key from the saved blob::
-     f1f8fff03ad0acb083725535636addb08d73dedb9832da198081e5deae84bfaf0409c22b
-     e4a8aea2b607ec96931e6f4d4fe563ba
- 
--Reseal a trusted key under new pcr values::
-+Reseal (TPM specific) a trusted key under new PCR values::
- 
-     $ keyctl update 268728824 "update pcrinfo=`cat pcr.blob`"
-     $ keyctl print 268728824
-@@ -165,11 +303,12 @@ Reseal a trusted key under new pcr values::
-     7ef6a24defe4846104209bf0c3eced7fa1a672ed5b125fc9d8cd88b476a658a4434644ef
-     df8ae9a178e9f83ba9f08d10fa47e4226b98b0702f06b3b8
- 
-+
- The initial consumer of trusted keys is EVM, which at boot time needs a high
--quality symmetric key for HMAC protection of file metadata.  The use of a
-+quality symmetric key for HMAC protection of file metadata. The use of a
- trusted key provides strong guarantees that the EVM key has not been
--compromised by a user level problem, and when sealed to specific boot PCR
--values, protects against boot and offline attacks.  Create and save an
-+compromised by a user level problem, and when sealed to a platform integrity
-+state, protects against boot and offline attacks. Create and save an
- encrypted key "evm" using the above trusted key "kmk":
- 
- option 1: omitting 'format'::
+ 	kmod_defaults_fs
+ 	config_num_threads 1
+-	printf '\000' >"$DIR"/config_test_fs
++	printf $NAME >"$DIR"/config_test_fs
+ 	config_trigger ${FUNCNAME[0]}
+ 	config_expect_result ${FUNCNAME[0]} -EINVAL
+ }
 -- 
-2.7.4
+2.26.2
