@@ -1,32 +1,47 @@
-From: Wei Yongjun <weiyongjun1@huawei.com>
-Date: Mon, 22 Jun 2020 11:21:36 +0000
-Subject: [PATCH] KEYS: asymmetric: fix error return code in software_key_query()
-Message-Id: <20200622112136.72745-1-weiyongjun1@huawei.com>
+From: "Luis R. Rodriguez" <mcgrof@kernel.org>
+Date: Wed, 10 Jun 2020 15:49:18 +0000
+Subject: [PATCH 0/5] kmod/umh: a few fixes
+Message-Id: <20200610154923.27510-1-mcgrof@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, Vitaly Chikunov <vt@altlinux.org>
-Cc: Wei Yongjun <weiyongjun1@huawei.com>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, kernel-janitors@vger.kernel.org
+To: gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, axboe@kernel.dk, bfields@fieldses.org, chuck.lever@oracle.com, roopa@cumulusnetworks.com, nikolay@cumulusnetworks.com, davem@davemloft.net, kuba@kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, serge@hallyn.com, christian.brauner@ubuntu.com
+Cc: slyfox@gentoo.org, ast@kernel.org, keescook@chromium.org, josh@joshtriplett.org, ravenexp@gmail.com, chainsaw@gentoo.org, linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org, bridge@lists.linux-foundation.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Luis Chamberlain <mcgrof@kernel.org>
 
-Fix to return negative error code -ENOMEM from kmalloc() error handling
-case instead of 0, as done elsewhere in this function.
+From: Luis Chamberlain <mcgrof@kernel.org>
 
-Fixes: f1774cb8956a ("X.509: parse public key parameters from x509 for akcipher")
-Signed-off-by: Wei Yongjun <weiyongjun1@huawei.com>
----
- crypto/asymmetric_keys/public_key.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Tiezhu Yang had sent out a patch set with a slew of kmod selftest
+fixes, and one patch which modified kmod to return 254 when a module
+was not found. This opened up pandora's box about why that was being
+used for and low and behold its because when UMH_WAIT_PROC is used
+we call a kernel_wait4() call but have never unwrapped the error code.
+The commit log for that fix details the rationale for the approach
+taken. I'd appreciate some review on that, in particular nfs folks
+as it seems a case was never really hit before.
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index d7f43d4ea925..c15bde024b4c 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -119,6 +119,7 @@ static int software_key_query(const struct kernel_pkey_params *params,
- 	if (IS_ERR(tfm))
- 		return PTR_ERR(tfm);
- 
-+	ret = -ENOMEM;
- 	key = kmalloc(pkey->keylen + sizeof(u32) * 2 + pkey->paramlen,
- 		      GFP_KERNEL);
- 	if (!key)
+This goes boot tested, selftested with kmod, and 0-day gives its
+build blessings.
+
+Luis Chamberlain (2):
+  umh: fix processed error when UMH_WAIT_PROC is used
+  selftests: simplify kmod failure value
+
+Tiezhu Yang (3):
+  selftests: kmod: Use variable NAME in kmod_test_0001()
+  kmod: Remove redundant "be an" in the comment
+  test_kmod: Avoid potential double free in trigger_config_run_type()
+
+ drivers/block/drbd/drbd_nl.c         | 20 +++++------
+ fs/nfsd/nfs4recover.c                |  2 +-
+ include/linux/sched/task.h           | 13 ++++++++
+ kernel/kmod.c                        |  5 ++-
+ kernel/umh.c                         |  4 +--
+ lib/test_kmod.c                      |  2 +-
+ net/bridge/br_stp_if.c               | 10 ++----
+ security/keys/request_key.c          |  2 +-
+ tools/testing/selftests/kmod/kmod.sh | 50 +++++++++++++++++++++++-----
+ 9 files changed, 71 insertions(+), 37 deletions(-)
+
+-- 
+2.26.2
