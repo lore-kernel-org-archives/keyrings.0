@@ -1,42 +1,52 @@
-From: Andrew Zaborowski <andrew.zaborowski@intel.com>
-Date: Thu, 25 Jun 2020 22:10:53 +0000
-Subject: [RESEND][PATCH] keys: Update comment for restrict_link_by_key_or_keyring_chain
-Message-Id: <20200625221053.165938-2-andrew.zaborowski@intel.com>
+From: Marcus Huewe <suse-tux@gmx.de>
+Date: Fri, 12 Jun 2020 11:25:33 +0000
+Subject: [PATCH] keys: Do not check the retval of commit_creds in join_session_keyring
+Message-Id: <c8ccba0bbcb9147fb220fd18b3b5e1e951b6d5fd.1591960478.git.suse-tux@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200625221053.165938-1-andrew.zaborowski@intel.com>
-In-Reply-To: <20200625221053.165938-1-andrew.zaborowski@intel.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
+References: <044b34c4388405e995e38fb57fc120361bf962db.1568124150.git.suse-tux@gmx.de>
+In-Reply-To: <044b34c4388405e995e38fb57fc120361bf962db.1568124150.git.suse-tux@gmx.de>
+To: dhowells@redhat.com, jarkko.sakkinen@linux.intel.com
+Cc: keyrings@vger.kernel.org
 
-Add the bit of information that makes
-restrict_link_by_key_or_keyring_chain different from
-restrict_link_by_key_or_keyring to the inline docs comment.
+Do not check the return value of the commit_creds call in
+join_session_keyring in order to make the code more concise.
+Since commit_creds always returns 0, the if-statement is not needed
+and the session keyring's serial can be directly assigned to the
+"ret" variable.
 
-Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Signed-off-by: Marcus Huewe <suse-tux@gmx.de>
 ---
- crypto/asymmetric_keys/restrict.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ security/keys/process_keys.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
-index 77ebebada29..84cefe3b358 100644
---- a/crypto/asymmetric_keys/restrict.c
-+++ b/crypto/asymmetric_keys/restrict.c
-@@ -244,9 +244,10 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
-  * @payload: The payload of the new key.
-  * @trusted: A key or ring of keys that can be used to vouch for the new cert.
-  *
-- * Check the new certificate only against the key or keys passed in the data
-- * parameter. If one of those is the signing key and validates the new
-- * certificate, then mark the new certificate as being ok to link.
-+ * Check the new certificate against the key or keys passed in the data
-+ * parameter and against the keys already linked to the destination keyring. If
-+ * one of those is the signing key and validates the new certificate, then mark
-+ * the new certificate as being ok to link.
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we
-  * couldn't find a matching parent certificate in the trusted list,
--- 
-2.20.1
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 09541de31f2f..e7cd1ff84709 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -840,7 +840,7 @@ long join_session_keyring(const char *name)
+ 	const struct cred *old;
+ 	struct cred *new;
+ 	struct key *keyring;
+-	long ret, serial;
++	long ret;
+
+ 	new = prepare_creds();
+ 	if (!new)
+@@ -853,10 +853,8 @@ long join_session_keyring(const char *name)
+ 		if (ret < 0)
+ 			goto error;
+
+-		serial = new->session_keyring->serial;
+-		ret = commit_creds(new);
+-		if (ret == 0)
+-			ret = serial;
++		ret = new->session_keyring->serial;
++		commit_creds(new);
+ 		goto okay;
+ 	}
+
+--
+2.26.2
