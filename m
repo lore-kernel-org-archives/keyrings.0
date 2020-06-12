@@ -1,7 +1,7 @@
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 12 Jun 2020 21:32:42 +0000
+Date: Fri, 12 Jun 2020 22:01:11 +0000
 Subject: Re: [GIT PULL] General notification queue and key notifications
-Message-Id: <CAHk-=whypJLi6T01HOZ5+UPe_rs+hft8wn6iOmQpZgbZzbAumA@mail.gmail.com>
+Message-Id: <CAHk-=wjUP6WmngGq70GFKrtDp5Z9mkqORtBD2uStp2p_H-nzqA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -11,42 +11,44 @@ In-Reply-To: <20200610111256.s47agmgy5gvj3zwz@ws.net.home>
 To: Karel Zak <kzak@redhat.com>
 Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Miklos Szeredi <mszeredi@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, Ian Kent <raven@themaw.net>, andres@anarazel.de, Christian Brauner <christian.brauner@ubuntu.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-[ Finally getting around to this since my normal pull queue is now empty ]
+[ Actually going through the code now ]
 
 On Wed, Jun 10, 2020 at 4:13 AM Karel Zak <kzak@redhat.com> wrote:
 >
-> The notification stuff looks pretty promising, but I do not understand
-> why we need to use pipe for this purpose
+> All the next operations are done with "fd". It's nowhere used as a
+> pipe, and nothing uses pipefd[1].
 
-The original intent was never to use the "pipe()" system call itself,
-only use pipes as the actual transport mechanism (because I do not for
-a second believe in the crazy "use sockets" model that a lot of other
-people seem to blindly believe in).
+As an aside, that isn't necessarily true.
 
-But using "pipe()" also allows for non-kernel notification queues (ie
-where the events come from a user space process). Then you'd not use
-O_NOTIFICATION_PIPE, but O_DIRECT (for a packetized pipe).
+In some of the examples, pipefd[1] is used for configuration (sizing
+and adding filters), although I think right now that's not really
+enforced, and other examples seem to have pipefd[0] do that too.
 
-> Is it because we need to create a new file descriptor from nothing?
-> Why O_NOTIFICATION_PIPE is better than introduce a new syscall
-> notifyfd()?
+DavidH: should that perhaps be a hard rule, so that you can pass a
+pipefd[0] to readers, while knowing that they can't then change the
+kinds of notifications they see.
 
-We could eventually introduce a new system call.
+In the "pipe: Add general notification queue support" commit message,
+the code example uses pipefd[0] for IOC_WATCH_QUEUE_SET_SIZE, but then
+in the commit message for "watch_queue: Add a key/keyring notification
+facility" it uses pipefd[1].
 
-But I most definitely did *NOT* want to see anything like that for any
-first gen stuff.  Especially since it wasn't clear who was going to
-use it, and whether early trials would literally be done with that
-user-space emulation model of using a perfectly regular pipe (just
-with packetization).
+And that latter example does make sense: using the write-side
+pipefd[1] for configuration, while the read-side pipefd[0] is the side
+that sees the results. That is also how it would work if you have a
+user-mode pipe with the notification source controlling the writing
+side - the reading side can obviously not add filters or change the
+semantics of the watches.
 
-I'm not even convinced O_NOTIFICATION_PIPE is necessary, but at worst
-it will be a useful marker. I think the only real reason for it was to
-avoid any clashes with splice(), which has more complex use of the
-pipe buffers.
+So that allows a trusted side to add and create filters, while some
+untrusted entity can then see the results.
 
-I'm so far just reading this thread and the arguments for users, and I
-haven't yet looked at all the actual details in the pull request - but
-last time I had objections to things it wasn't the code, it was the
-lack of any use.
+This isn't going to hold up me merging the code, but it would be good
+to clarify and make that something that gets enforced if we decide
+it's worth it.
 
-             Linus
+It does seem conceptually like a good idea, and potentially actually
+useful to clearly separate the domain of "you can add watches and
+filters" from "you can see the notifications".
+
+               Linus
