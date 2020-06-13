@@ -1,25 +1,43 @@
-From: pr-tracker-bot@kernel.org
-Date: Sat, 13 Jun 2020 18:00:03 +0000
+From: Miklos Szeredi <mszeredi@redhat.com>
+Date: Sat, 13 Jun 2020 19:22:49 +0000
 Subject: Re: [GIT PULL] General notification queue and key notifications
-Message-Id: <159207120392.28894.7192041280504683519.pr-tracker-bot@kernel.org>
+Message-Id: <CAOssrKe2hNU9OfMo5CWiq7L_Mmv_2OStYMgYgeo5yy6ppmhTrQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1503686.1591113304@warthog.procyon.org.uk>
-In-Reply-To: <1503686.1591113304@warthog.procyon.org.uk>
+References: <1503686.1591113304@warthog.procyon.org.uk> <20200610111256.s47agmgy5gvj3zwz@ws.net.home>
+ <CAHk-=whypJLi6T01HOZ5+UPe_rs+hft8wn6iOmQpZgbZzbAumA@mail.gmail.com> <3984625.1592053492@warthog.procyon.org.uk>
+In-Reply-To: <3984625.1592053492@warthog.procyon.org.uk>
 To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk, dray@redhat.com, kzak@redhat.com, mszeredi@redhat.com, swhiteho@redhat.com, jlayton@redhat.com, raven@themaw.net, andres@anarazel.de, christian.brauner@ubuntu.com, jarkko.sakkinen@linux.intel.com, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Karel Zak <kzak@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>, dray@redhat.com, Steven Whitehouse <swhiteho@redhat.com>, Jeff Layton <jlayton@redhat.com>, Ian Kent <raven@themaw.net>, andres@anarazel.de, Christian Brauner <christian.brauner@ubuntu.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 
-The pull request you sent on Tue, 02 Jun 2020 16:55:04 +0100:
+On Sat, Jun 13, 2020 at 3:05 PM David Howells <dhowells@redhat.com> wrote:
 
-> git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/notifications-20200601
+> > I'm so far just reading this thread and the arguments for users, and I
+> > haven't yet looked at all the actual details in the pull request - but
+> > last time I had objections to things it wasn't the code, it was the
+> > lack of any use.
+>
+> Would you be willing at this point to consider pulling the mount notifications
+> and fsinfo() which helps support that?  I could whip up pull reqs for those
+> two pieces - or do you want to see more concrete patches that use it?
 
-has been merged into torvalds/linux.git:
-https://git.kernel.org/torvalds/c/6c3297841472b4e53e22e53826eea9e483d993e5
+Well, I had some questions and comments for the mount notifications
+last time around[1] and didn't yet get a reply.
 
-Thank you!
+And the fsinfo stuff is simply immature, please lets not merge it just
+yet.  When we have some uses (most notably systemd) running on top of
+the current fsinfo interface, we can sit down and discuss how the API
+can be cleaned up.
 
--- 
-Deet-doot-dot, I am a bot.
-https://korg.wiki.kernel.org/userdoc/prtracker
+BTW I had a similar experience with the fsconfig() merge, which was
+pushed with some unpolished bits and where my comments were also
+largely ignored.  So, before asking to pull, please at least *answer*
+reviews.  You don't have to agree, but at least consider and think
+about the comments.
+
+Thanks,
+Miklos
+
+[1] https://lore.kernel.org/linux-fsdevel/CAJfpegspWA6oUtdcYvYF?ij=Bnq03b8VMbU9RNMKc+zzjbag@mail.gmail.com/
