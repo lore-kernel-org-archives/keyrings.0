@@ -1,42 +1,37 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Tue, 02 Jun 2020 14:30:25 +0000
-Subject: [PATCH v5 4/4] MAINTAINERS: Add entry for TEE based Trusted Keys
-Message-Id: <1591107505-6030-5-git-send-email-sumit.garg@linaro.org>
+From: Xingxing Su <suxingxing@loongson.cn>
+Date: Mon, 15 Jun 2020 03:53:40 +0000
+Subject: [PATCH] certs/blacklist_hashes.c: Use __initconst for const init definition
+Message-Id: <1592193220-7460-1-git-send-email-suxingxing@loongson.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1591107505-6030-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1591107505-6030-1-git-send-email-sumit.garg@linaro.org>
-To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jejb@linux.ibm.com
-Cc: tee-dev@lists.linaro.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+To: dhowells@redhat.com, dwmw2@infradead.org
+Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, yangtiezhu@loongson.cn, lixuefeng@loongson.cn
 
-Add MAINTAINERS entry for TEE based Trusted Keys framework.
+Fix the following checkpatch error:
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+ERROR: Use of const init definition must use __initconst
+#4: FILE: certs/blacklist_hashes.c:4:
++const char __initdata *const blacklist_hashes[] = {
+
+Signed-off-by: Xingxing Su <suxingxing@loongson.cn>
 ---
- MAINTAINERS | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ certs/blacklist_hashes.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7b58ca2..50d0502 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9396,6 +9396,14 @@ F:	include/keys/trusted-type.h
- F:	include/keys/trusted_tpm.h
- F:	security/keys/trusted-keys/
+diff --git a/certs/blacklist_hashes.c b/certs/blacklist_hashes.c
+index 3448923..d5961aa 100644
+--- a/certs/blacklist_hashes.c
++++ b/certs/blacklist_hashes.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0
+ #include "blacklist.h"
  
-+KEYS-TRUSTED-TEE
-+M:	Sumit Garg <sumit.garg@linaro.org>
-+L:	linux-integrity@vger.kernel.org
-+L:	keyrings@vger.kernel.org
-+S:	Supported
-+F:	include/keys/trusted_tee.h
-+F:	security/keys/trusted-keys/trusted_tee.c
-+
- KEYS/KEYRINGS
- M:	David Howells <dhowells@redhat.com>
- M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+-const char __initdata *const blacklist_hashes[] = {
++const char __initconst *const blacklist_hashes[] = {
+ #include CONFIG_SYSTEM_BLACKLIST_HASH_LIST
+ 	, NULL
+ };
 -- 
-2.7.4
+2.1.0
