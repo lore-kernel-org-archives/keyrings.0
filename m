@@ -1,608 +1,156 @@
-From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Date: Tue, 09 Jun 2020 13:48:51 +0000
-Subject: [PATCH v3 4/8] crypto: sm2 - introduce OSCCA SM2 asymmetric cipher algorithm
-Message-Id: <20200609134855.21431-5-tianjia.zhang@linux.alibaba.com>
+From: Waiman Long <longman@redhat.com>
+Date: Tue, 16 Jun 2020 15:43:09 +0000
+Subject: [PATCH v5 0/2] mm, treewide: Rename kzfree() to kfree_sensitive()
+Message-Id: <20200616154311.12314-1-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
-In-Reply-To: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
-To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com, mcoquelin.stm32@gmail.com, alexandre.torgue@st.com, jmorris@namei.org, serge@hallyn.com, nramas@linux.microsoft.com, tusharsu@linux.microsoft.com, zohar@linux.ibm.com, gilad@benyossef.com, pvanleeuwen@rambus.com
-Cc: tianjia.zhang@linux.alibaba.com, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, zhang.jia@linux.alibaba.com, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org
+To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
+Cc: "Jason A . Donenfeld" <Jason@zx2c4.com>, Michal Hocko <mhocko@suse.com>, virtualization@lists.linux-foundation.org, linux-mm@kvack.org, linux-sctp@vger.kernel.org, target-devel@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, devel@driverdev.osuosl.org, linux-cifs@vger.kernel.org, linux-scsi@vger.kernel.org, kasan-dev@googlegroups.com, linux-wpan@vger.kernel.org, Waiman Long <longman@redhat.com>, Dan Carpenter <dan.carpenter@oracle.com>, linux-pm@vger.kernel.org, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-amlogic@lists.infradead.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, tipc-discussion@lists.sourceforge.net, linux-crypto@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, wireguard@lists.zx2c4.com, linux-ppp@vger.kernel.org
 
-This new module implement the SM2 public key algorithm. It was
-published by State Encryption Management Bureau, China.
-List of specifications for SM2 elliptic curve public key cryptography:
+ v5:
+  - Break the btrfs patch out as a separate patch to be processed
+    independently.
+  - Update the commit log of patch 1 to make it less scary.
+  - Add a kzfree backward compatibility macro in patch 2.
 
-* GM/T 0003.1-2012
-* GM/T 0003.2-2012
-* GM/T 0003.3-2012
-* GM/T 0003.4-2012
-* GM/T 0003.5-2012
+ v4:
+  - Break out the memzero_explicit() change as suggested by Dan Carpenter
+    so that it can be backported to stable.
+  - Drop the "crypto: Remove unnecessary memzero_explicit()" patch for
+    now as there can be a bit more discussion on what is best. It will be
+    introduced as a separate patch later on after this one is merged.
 
-IETF: https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
-oscca: http://www.oscca.gov.cn/sca/xxgk/2010-12/17/content_1002386.shtml
-scctc: http://www.gmbz.org.cn/main/bzlb.html
+This patchset makes a global rename of the kzfree() to kfree_sensitive()
+to highlight the fact buffer clearing is only needed if the data objects
+contain sensitive information like encrpytion key. The fact that kzfree()
+uses memset() to do the clearing isn't totally safe either as compiler
+may compile out the clearing in their optimizer especially if LTO is
+used. Instead, the new kfree_sensitive() uses memzero_explicit() which
+won't get compiled out.
 
-Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
----
- crypto/Kconfig           |  17 ++
- crypto/Makefile          |   8 +
- crypto/sm2.c             | 473 +++++++++++++++++++++++++++++++++++++++
- crypto/sm2signature.asn1 |   4 +
- include/crypto/sm2.h     |  25 +++
- 5 files changed, 527 insertions(+)
- create mode 100644 crypto/sm2.c
- create mode 100644 crypto/sm2signature.asn1
- create mode 100644 include/crypto/sm2.h
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index d5daf35431e3..03b686842e90 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -260,6 +260,23 @@ config CRYPTO_ECRDSA
- 	  standard algorithms (called GOST algorithms). Only signature verification
- 	  is implemented.
- 
-+config CRYPTO_SM2
-+	tristate "SM2 algorithm"
-+	select CRYPTO_SM3
-+	select CRYPTO_AKCIPHER
-+	select CRYPTO_MANAGER
-+	select MPILIB
-+	select ASN1
-+	help
-+	  Generic implementation of the SM2 public key algorithm. It was
-+	  published by State Encryption Management Bureau, China.
-+	  as specified by OSCCA GM/T 0003.1-2012 -- 0003.5-2012.
-+
-+	  References:
-+	  https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
-+	  http://www.oscca.gov.cn/sca/xxgk/2010-12/17/content_1002386.shtml
-+	  http://www.gmbz.org.cn/main/bzlb.html
-+
- config CRYPTO_CURVE25519
- 	tristate "Curve25519 algorithm"
- 	select CRYPTO_KPP
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 4ca12b6044f7..b279483fba50 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -42,6 +42,14 @@ rsa_generic-y += rsa_helper.o
- rsa_generic-y += rsa-pkcs1pad.o
- obj-$(CONFIG_CRYPTO_RSA) += rsa_generic.o
- 
-+$(obj)/sm2signature.asn1.o: $(obj)/sm2signature.asn1.c $(obj)/sm2signature.asn1.h
-+$(obj)/sm2.o: $(obj)/sm2signature.asn1.h
-+
-+sm2_generic-y += sm2signature.asn1.o
-+sm2_generic-y += sm2.o
-+
-+obj-$(CONFIG_CRYPTO_SM2) += sm2_generic.o
-+
- crypto_acompress-y := acompress.o
- crypto_acompress-y += scompress.o
- obj-$(CONFIG_CRYPTO_ACOMP2) += crypto_acompress.o
-diff --git a/crypto/sm2.c b/crypto/sm2.c
-new file mode 100644
-index 000000000000..86da175bcda6
---- /dev/null
-+++ b/crypto/sm2.c
-@@ -0,0 +1,473 @@
-+/* SPDX-License-Identifier: GPL-2.0-or-later */
-+/*
-+ * SM2 asymmetric public-key algorithm
-+ * as specified by OSCCA GM/T 0003.1-2012 -- 0003.5-2012 SM2 and
-+ * described at https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
-+ *
-+ * Copyright (c) 2020, Alibaba Group.
-+ * Authors: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/mpi.h>
-+#include <crypto/internal/akcipher.h>
-+#include <crypto/akcipher.h>
-+#include <crypto/hash.h>
-+#include <crypto/sm3_base.h>
-+#include <crypto/rng.h>
-+#include <crypto/sm2.h>
-+#include "sm2signature.asn1.h"
-+
-+#define MPI_NBYTES(m)   ((mpi_get_nbits(m) + 7) / 8)
-+
-+struct ecc_domain_parms {
-+	const char *desc;           /* Description of the curve.  */
-+	unsigned int nbits;         /* Number of bits.  */
-+	unsigned int fips:1; /* True if this is a FIPS140-2 approved curve */
-+
-+	/* The model describing this curve.  This is mainly used to select
-+	 * the group equation.
-+	 */
-+	enum gcry_mpi_ec_models model;
-+
-+	/* The actual ECC dialect used.  This is used for curve specific
-+	 * optimizations and to select encodings etc.
-+	 */
-+	enum ecc_dialects dialect;
-+
-+	const char *p;              /* The prime defining the field.  */
-+	const char *a, *b;          /* The coefficients.  For Twisted Edwards
-+				     * Curves b is used for d.  For Montgomery
-+				     * Curves (a,b) has ((A-2)/4,B^-1).
-+				     */
-+	const char *n;              /* The order of the base point.  */
-+	const char *g_x, *g_y;      /* Base point.  */
-+	unsigned int h;             /* Cofactor.  */
-+};
-+
-+static const struct ecc_domain_parms sm2_ecp = {
-+	.desc = "sm2p256v1",
-+	.nbits = 256,
-+	.fips = 0,
-+	.model = MPI_EC_WEIERSTRASS,
-+	.dialect = ECC_DIALECT_STANDARD,
-+	.p   = "0xfffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff",
-+	.a   = "0xfffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffc",
-+	.b   = "0x28e9fa9e9d9f5e344d5a9e4bcf6509a7f39789f515ab8f92ddbcbd414d940e93",
-+	.n   = "0xfffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123",
-+	.g_x = "0x32c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7",
-+	.g_y = "0xbc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0",
-+	.h = 1
-+};
-+
-+static int sm2_ec_ctx_init(struct mpi_ec_ctx *ec)
-+{
-+	const struct ecc_domain_parms *ecp = &sm2_ecp;
-+	MPI p, a, b;
-+	MPI x, y;
-+	int rc = -EINVAL;
-+
-+	p = mpi_scanval(ecp->p);
-+	a = mpi_scanval(ecp->a);
-+	b = mpi_scanval(ecp->b);
-+	if (!p || !a || !b)
-+		goto free_p;
-+
-+	x = mpi_scanval(ecp->g_x);
-+	y = mpi_scanval(ecp->g_y);
-+	if (!x || !y)
-+		goto free;
-+
-+	/* mpi_ec_setup_elliptic_curve */
-+	ec->G = mpi_point_new(0);
-+	if (!ec->G)
-+		goto free;
-+
-+	mpi_set(ec->G->x, x);
-+	mpi_set(ec->G->y, y);
-+	mpi_set_ui(ec->G->z, 1);
-+
-+	ec->n = mpi_scanval(ecp->n);
-+	if (!ec->n) {
-+		mpi_point_release(ec->G);
-+		goto free;
-+	}
-+
-+	ec->h = ecp->h;
-+	ec->name = ecp->desc;
-+	mpi_ec_init(ec, ecp->model, ecp->dialect, 0, p, a, b);
-+
-+	rc = 0;
-+
-+free:
-+	mpi_free(x);
-+	mpi_free(y);
-+free_p:
-+	mpi_free(p);
-+	mpi_free(a);
-+	mpi_free(b);
-+
-+	return rc;
-+}
-+
-+static void sm2_ec_ctx_deinit(struct mpi_ec_ctx *ec)
-+{
-+	mpi_free(ec->n);
-+	mpi_point_release(ec->G);
-+
-+	mpi_ec_deinit(ec);
-+
-+	memset(ec, 0, sizeof(*ec));
-+}
-+
-+static int sm2_ec_ctx_reset(struct mpi_ec_ctx *ec)
-+{
-+	sm2_ec_ctx_deinit(ec);
-+	return sm2_ec_ctx_init(ec);
-+}
-+
-+/* RESULT must have been initialized and is set on success to the
-+ * point given by VALUE.
-+ */
-+static int sm2_ecc_os2ec(MPI_POINT result, MPI value)
-+{
-+	int rc;
-+	size_t n;
-+	const unsigned char *buf;
-+	unsigned char *buf_memory;
-+	MPI x, y;
-+
-+	n = (mpi_get_nbits(value)+7)/8;
-+	buf_memory = kmalloc(n, GFP_KERNEL);
-+	rc = mpi_print(GCRYMPI_FMT_USG, buf_memory, n, &n, value);
-+	if (rc) {
-+		kfree(buf_memory);
-+		return rc;
-+	}
-+	buf = buf_memory;
-+
-+	if (n < 1) {
-+		kfree(buf_memory);
-+		return -EINVAL;
-+	}
-+	if (*buf != 4) {
-+		kfree(buf_memory);
-+		return -EINVAL; /* No support for point compression.  */
-+	}
-+	if (((n-1)%2)) {
-+		kfree(buf_memory);
-+		return -EINVAL;
-+	}
-+	n = (n-1)/2;
-+	x = mpi_read_raw_data(buf + 1, n);
-+	if (!x) {
-+		kfree(buf_memory);
-+		return -ENOMEM;
-+	}
-+	y = mpi_read_raw_data(buf + 1 + n, n);
-+	kfree(buf_memory);
-+	if (!y) {
-+		mpi_free(x);
-+		return -ENOMEM;
-+	}
-+
-+	mpi_normalize(x);
-+	mpi_normalize(y);
-+
-+	mpi_set(result->x, x);
-+	mpi_set(result->y, y);
-+	mpi_set_ui(result->z, 1);
-+
-+	mpi_free(x);
-+	mpi_free(y);
-+
-+	return 0;
-+}
-+
-+struct sm2_signature_ctx {
-+	MPI sig_r;
-+	MPI sig_s;
-+};
-+
-+int sm2_get_signature_r(void *context, size_t hdrlen, unsigned char tag,
-+				const void *value, size_t vlen)
-+{
-+	struct sm2_signature_ctx *sig = context;
-+
-+	if (!value || !vlen)
-+		return -EINVAL;
-+
-+	sig->sig_r = mpi_read_raw_data(value, vlen);
-+	if (!sig->sig_r)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+int sm2_get_signature_s(void *context, size_t hdrlen, unsigned char tag,
-+				const void *value, size_t vlen)
-+{
-+	struct sm2_signature_ctx *sig = context;
-+
-+	if (!value || !vlen)
-+		return -EINVAL;
-+
-+	sig->sig_s = mpi_read_raw_data(value, vlen);
-+	if (!sig->sig_s)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static int sm2_z_digest_update(struct shash_desc *desc,
-+			MPI m, unsigned int pbytes)
-+{
-+	static const unsigned char zero[32];
-+	unsigned char *in;
-+	unsigned int inlen;
-+
-+	in = mpi_get_buffer(m, &inlen, NULL);
-+	if (!in)
-+		return -EINVAL;
-+
-+	if (inlen < pbytes) {
-+		/* padding with zero */
-+		crypto_sm3_update(desc, zero, pbytes - inlen);
-+		crypto_sm3_update(desc, in, inlen);
-+	} else if (inlen > pbytes) {
-+		/* skip the starting zero */
-+		crypto_sm3_update(desc, in + inlen - pbytes, pbytes);
-+	} else {
-+		crypto_sm3_update(desc, in, inlen);
-+	}
-+
-+	kfree(in);
-+	return 0;
-+}
-+
-+static int sm2_z_digest_update_point(struct shash_desc *desc,
-+			MPI_POINT point, struct mpi_ec_ctx *ec, unsigned int pbytes)
-+{
-+	MPI x, y;
-+	int ret = -EINVAL;
-+
-+	x = mpi_new(0);
-+	y = mpi_new(0);
-+
-+	if (!mpi_ec_get_affine(x, y, point, ec) &&
-+		!sm2_z_digest_update(desc, x, pbytes) &&
-+		!sm2_z_digest_update(desc, y, pbytes))
-+		ret = 0;
-+
-+	mpi_free(x);
-+	mpi_free(y);
-+	return ret;
-+}
-+
-+int sm2_compute_z_digest(struct crypto_akcipher *tfm,
-+			const unsigned char *id, size_t id_len,
-+			unsigned char dgst[SM3_DIGEST_SIZE])
-+{
-+	struct mpi_ec_ctx *ec = akcipher_tfm_ctx(tfm);
-+	uint16_t bits_len;
-+	unsigned char entl[2];
-+	SHASH_DESC_ON_STACK(desc, NULL);
-+	unsigned int pbytes;
-+
-+	if (id_len > (USHRT_MAX / 8) || !ec->Q)
-+		return -EINVAL;
-+
-+	bits_len = (uint16_t)(id_len * 8);
-+	entl[0] = bits_len >> 8;
-+	entl[1] = bits_len & 0xff;
-+
-+	pbytes = MPI_NBYTES(ec->p);
-+
-+	/* ZA = H256(ENTLA | IDA | a | b | xG | yG | xA | yA) */
-+	sm3_base_init(desc);
-+	crypto_sm3_update(desc, entl, 2);
-+	crypto_sm3_update(desc, id, id_len);
-+
-+	if (sm2_z_digest_update(desc, ec->a, pbytes) ||
-+		sm2_z_digest_update(desc, ec->b, pbytes) ||
-+		sm2_z_digest_update_point(desc, ec->G, ec, pbytes) ||
-+		sm2_z_digest_update_point(desc, ec->Q, ec, pbytes))
-+		return -EINVAL;
-+
-+	crypto_sm3_finup(desc, NULL, 0, dgst);
-+	return 0;
-+}
-+EXPORT_SYMBOL(sm2_compute_z_digest);
-+
-+static int _sm2_verify(struct mpi_ec_ctx *ec, MPI hash, MPI sig_r, MPI sig_s)
-+{
-+	int rc = -EINVAL;
-+	struct gcry_mpi_point sG, tP;
-+	MPI t = NULL;
-+	MPI x1 = NULL, y1 = NULL;
-+
-+	mpi_point_init(&sG);
-+	mpi_point_init(&tP);
-+	x1 = mpi_new(0);
-+	y1 = mpi_new(0);
-+	t = mpi_new(0);
-+
-+	/* r, s in [1, n-1] */
-+	if (mpi_cmp_ui(sig_r, 1) < 0 || mpi_cmp(sig_r, ec->n) > 0 ||
-+		mpi_cmp_ui(sig_s, 1) < 0 || mpi_cmp(sig_s, ec->n) > 0) {
-+		goto leave;
-+	}
-+
-+	/* t = (r + s) % n, t = 0 */
-+	mpi_addm(t, sig_r, sig_s, ec->n);
-+	if (mpi_cmp_ui(t, 0) = 0)
-+		goto leave;
-+
-+	/* sG + tP = (x1, y1) */
-+	rc = -EBADMSG;
-+	mpi_ec_mul_point(&sG, sig_s, ec->G, ec);
-+	mpi_ec_mul_point(&tP, t, ec->Q, ec);
-+	mpi_ec_add_points(&sG, &sG, &tP, ec);
-+	if (mpi_ec_get_affine(x1, y1, &sG, ec))
-+		goto leave;
-+
-+	/* R = (e + x1) % n */
-+	mpi_addm(t, hash, x1, ec->n);
-+
-+	/* check R = r */
-+	rc = -EKEYREJECTED;
-+	if (mpi_cmp(t, sig_r))
-+		goto leave;
-+
-+	rc = 0;
-+
-+leave:
-+	mpi_point_free_parts(&sG);
-+	mpi_point_free_parts(&tP);
-+	mpi_free(x1);
-+	mpi_free(y1);
-+	mpi_free(t);
-+
-+	return rc;
-+}
-+
-+static int sm2_verify(struct akcipher_request *req)
-+{
-+	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
-+	struct mpi_ec_ctx *ec = akcipher_tfm_ctx(tfm);
-+	unsigned char *buffer;
-+	struct sm2_signature_ctx sig;
-+	MPI hash;
-+	int ret;
-+
-+	if (unlikely(!ec->Q))
-+		return -EINVAL;
-+
-+	buffer = kmalloc(req->src_len + req->dst_len, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	sg_pcopy_to_buffer(req->src,
-+			sg_nents_for_len(req->src, req->src_len + req->dst_len),
-+			buffer, req->src_len + req->dst_len, 0);
-+
-+	sig.sig_r = NULL;
-+	sig.sig_s = NULL;
-+	ret = asn1_ber_decoder(&sm2signature_decoder, &sig, buffer, req->src_len);
-+	if (ret)
-+		goto error;
-+
-+	ret = -ENOMEM;
-+	hash = mpi_read_raw_data(buffer + req->src_len, req->dst_len);
-+	if (!hash)
-+		goto error;
-+
-+	ret = _sm2_verify(ec, hash, sig.sig_r, sig.sig_s);
-+
-+	mpi_free(hash);
-+error:
-+	mpi_free(sig.sig_r);
-+	mpi_free(sig.sig_s);
-+	kfree(buffer);
-+	return ret;
-+}
-+
-+static int sm2_set_pub_key(struct crypto_akcipher *tfm, const void *key,
-+						unsigned int keylen)
-+{
-+	struct mpi_ec_ctx *ec = akcipher_tfm_ctx(tfm);
-+	MPI a;
-+	int rc;
-+
-+	rc = sm2_ec_ctx_reset(ec);
-+	if (rc)
-+		return rc;
-+
-+	ec->Q = mpi_point_new(0);
-+	if (!ec->Q)
-+		return -ENOMEM;
-+
-+	/* include the uncompressed flag '0x04' */
-+	rc = -ENOMEM;
-+	a = mpi_read_raw_data(key, keylen);
-+	if (!a)
-+		goto error;
-+
-+	mpi_normalize(a);
-+	rc = sm2_ecc_os2ec(ec->Q, a);
-+	mpi_free(a);
-+	if (rc)
-+		goto error;
-+
-+	return 0;
-+
-+error:
-+	mpi_point_release(ec->Q);
-+	ec->Q = NULL;
-+	return rc;
-+}
-+
-+static unsigned int sm2_max_size(struct crypto_akcipher *tfm)
-+{
-+	/* Unlimited max size */
-+	return PAGE_SIZE;
-+}
-+
-+static void sm2_exit_tfm(struct crypto_akcipher *tfm)
-+{
-+	struct mpi_ec_ctx *ec = akcipher_tfm_ctx(tfm);
-+
-+	mpi_ec_deinit(ec);
-+}
-+
-+static struct akcipher_alg sm2 = {
-+	.verify = sm2_verify,
-+	.set_pub_key = sm2_set_pub_key,
-+	.max_size = sm2_max_size,
-+	.exit = sm2_exit_tfm,
-+	.base = {
-+		.cra_name = "sm2",
-+		.cra_driver_name = "sm2-generic",
-+		.cra_priority = 100,
-+		.cra_module = THIS_MODULE,
-+		.cra_ctxsize = sizeof(struct mpi_ec_ctx),
-+	},
-+};
-+
-+static int sm2_init(void)
-+{
-+	return crypto_register_akcipher(&sm2);
-+}
-+
-+static void sm2_exit(void)
-+{
-+	crypto_unregister_akcipher(&sm2);
-+}
-+
-+subsys_initcall(sm2_init);
-+module_exit(sm2_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Tianjia Zhang <tianjia.zhang@linux.alibaba.com>");
-+MODULE_DESCRIPTION("SM2 generic algorithm");
-+MODULE_ALIAS_CRYPTO("sm2-generic");
-diff --git a/crypto/sm2signature.asn1 b/crypto/sm2signature.asn1
-new file mode 100644
-index 000000000000..ab8c0b754d21
---- /dev/null
-+++ b/crypto/sm2signature.asn1
-@@ -0,0 +1,4 @@
-+Sm2Signature ::= SEQUENCE {
-+	sig_r	INTEGER ({ sm2_get_signature_r }),
-+	sig_s	INTEGER ({ sm2_get_signature_s })
-+}
-diff --git a/include/crypto/sm2.h b/include/crypto/sm2.h
-new file mode 100644
-index 000000000000..af452556dcd4
---- /dev/null
-+++ b/include/crypto/sm2.h
-@@ -0,0 +1,25 @@
-+/* SPDX-License-Identifier: GPL-2.0-or-later */
-+/*
-+ * sm2.h - SM2 asymmetric public-key algorithm
-+ * as specified by OSCCA GM/T 0003.1-2012 -- 0003.5-2012 SM2 and
-+ * described at https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
-+ *
-+ * Copyright (c) 2020, Alibaba Group.
-+ * Written by Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-+ */
-+
-+#ifndef _CRYPTO_SM2_H
-+#define _CRYPTO_SM2_H
-+
-+#include <crypto/sm3.h>
-+#include <crypto/akcipher.h>
-+
-+/* The default user id as specified in GM/T 0009-2012 */
-+#define SM2_DEFAULT_USERID "1234567812345678"
-+#define SM2_DEFAULT_USERID_LEN 16
-+
-+extern int sm2_compute_z_digest(struct crypto_akcipher *tfm,
-+			const unsigned char *id, size_t id_len,
-+			unsigned char dgst[SM3_DIGEST_SIZE]);
-+
-+#endif /* _CRYPTO_SM2_H */
+Waiman Long (2):
+  mm/slab: Use memzero_explicit() in kzfree()
+  mm, treewide: Rename kzfree() to kfree_sensitive()
+
+ arch/s390/crypto/prng.c                       |  4 +--
+ arch/x86/power/hibernate.c                    |  2 +-
+ crypto/adiantum.c                             |  2 +-
+ crypto/ahash.c                                |  4 +--
+ crypto/api.c                                  |  2 +-
+ crypto/asymmetric_keys/verify_pefile.c        |  4 +--
+ crypto/deflate.c                              |  2 +-
+ crypto/drbg.c                                 | 10 +++---
+ crypto/ecc.c                                  |  8 ++---
+ crypto/ecdh.c                                 |  2 +-
+ crypto/gcm.c                                  |  2 +-
+ crypto/gf128mul.c                             |  4 +--
+ crypto/jitterentropy-kcapi.c                  |  2 +-
+ crypto/rng.c                                  |  2 +-
+ crypto/rsa-pkcs1pad.c                         |  6 ++--
+ crypto/seqiv.c                                |  2 +-
+ crypto/shash.c                                |  2 +-
+ crypto/skcipher.c                             |  2 +-
+ crypto/testmgr.c                              |  6 ++--
+ crypto/zstd.c                                 |  2 +-
+ .../allwinner/sun8i-ce/sun8i-ce-cipher.c      |  2 +-
+ .../allwinner/sun8i-ss/sun8i-ss-cipher.c      |  2 +-
+ drivers/crypto/amlogic/amlogic-gxl-cipher.c   |  4 +--
+ drivers/crypto/atmel-ecc.c                    |  2 +-
+ drivers/crypto/caam/caampkc.c                 | 28 +++++++--------
+ drivers/crypto/cavium/cpt/cptvf_main.c        |  6 ++--
+ drivers/crypto/cavium/cpt/cptvf_reqmanager.c  | 12 +++----
+ drivers/crypto/cavium/nitrox/nitrox_lib.c     |  4 +--
+ drivers/crypto/cavium/zip/zip_crypto.c        |  6 ++--
+ drivers/crypto/ccp/ccp-crypto-rsa.c           |  6 ++--
+ drivers/crypto/ccree/cc_aead.c                |  4 +--
+ drivers/crypto/ccree/cc_buffer_mgr.c          |  4 +--
+ drivers/crypto/ccree/cc_cipher.c              |  6 ++--
+ drivers/crypto/ccree/cc_hash.c                |  8 ++---
+ drivers/crypto/ccree/cc_request_mgr.c         |  2 +-
+ drivers/crypto/marvell/cesa/hash.c            |  2 +-
+ .../crypto/marvell/octeontx/otx_cptvf_main.c  |  6 ++--
+ .../marvell/octeontx/otx_cptvf_reqmgr.h       |  2 +-
+ drivers/crypto/mediatek/mtk-aes.c             |  2 +-
+ drivers/crypto/nx/nx.c                        |  4 +--
+ drivers/crypto/virtio/virtio_crypto_algs.c    | 12 +++----
+ drivers/crypto/virtio/virtio_crypto_core.c    |  2 +-
+ drivers/md/dm-crypt.c                         | 32 ++++++++---------
+ drivers/md/dm-integrity.c                     |  6 ++--
+ drivers/misc/ibmvmc.c                         |  6 ++--
+ .../hisilicon/hns3/hns3pf/hclge_mbx.c         |  2 +-
+ .../net/ethernet/intel/ixgbe/ixgbe_ipsec.c    |  6 ++--
+ drivers/net/ppp/ppp_mppe.c                    |  6 ++--
+ drivers/net/wireguard/noise.c                 |  4 +--
+ drivers/net/wireguard/peer.c                  |  2 +-
+ drivers/net/wireless/intel/iwlwifi/pcie/rx.c  |  2 +-
+ .../net/wireless/intel/iwlwifi/pcie/tx-gen2.c |  6 ++--
+ drivers/net/wireless/intel/iwlwifi/pcie/tx.c  |  6 ++--
+ drivers/net/wireless/intersil/orinoco/wext.c  |  4 +--
+ drivers/s390/crypto/ap_bus.h                  |  4 +--
+ drivers/staging/ks7010/ks_hostif.c            |  2 +-
+ drivers/staging/rtl8723bs/core/rtw_security.c |  2 +-
+ drivers/staging/wlan-ng/p80211netdev.c        |  2 +-
+ drivers/target/iscsi/iscsi_target_auth.c      |  2 +-
+ fs/cifs/cifsencrypt.c                         |  2 +-
+ fs/cifs/connect.c                             | 10 +++---
+ fs/cifs/dfs_cache.c                           |  2 +-
+ fs/cifs/misc.c                                |  8 ++---
+ fs/crypto/keyring.c                           |  6 ++--
+ fs/crypto/keysetup_v1.c                       |  4 +--
+ fs/ecryptfs/keystore.c                        |  4 +--
+ fs/ecryptfs/messaging.c                       |  2 +-
+ include/crypto/aead.h                         |  2 +-
+ include/crypto/akcipher.h                     |  2 +-
+ include/crypto/gf128mul.h                     |  2 +-
+ include/crypto/hash.h                         |  2 +-
+ include/crypto/internal/acompress.h           |  2 +-
+ include/crypto/kpp.h                          |  2 +-
+ include/crypto/skcipher.h                     |  2 +-
+ include/linux/slab.h                          |  4 ++-
+ lib/mpi/mpiutil.c                             |  6 ++--
+ lib/test_kasan.c                              |  6 ++--
+ mm/slab_common.c                              | 10 +++---
+ net/atm/mpoa_caches.c                         |  4 +--
+ net/bluetooth/ecdh_helper.c                   |  6 ++--
+ net/bluetooth/smp.c                           | 24 ++++++-------
+ net/core/sock.c                               |  2 +-
+ net/ipv4/tcp_fastopen.c                       |  2 +-
+ net/mac80211/aead_api.c                       |  4 +--
+ net/mac80211/aes_gmac.c                       |  2 +-
+ net/mac80211/key.c                            |  2 +-
+ net/mac802154/llsec.c                         | 20 +++++------
+ net/sctp/auth.c                               |  2 +-
+ net/sctp/socket.c                             |  2 +-
+ net/sunrpc/auth_gss/gss_krb5_crypto.c         |  4 +--
+ net/sunrpc/auth_gss/gss_krb5_keys.c           |  6 ++--
+ net/sunrpc/auth_gss/gss_krb5_mech.c           |  2 +-
+ net/tipc/crypto.c                             | 10 +++---
+ net/wireless/core.c                           |  2 +-
+ net/wireless/ibss.c                           |  4 +--
+ net/wireless/lib80211_crypt_tkip.c            |  2 +-
+ net/wireless/lib80211_crypt_wep.c             |  2 +-
+ net/wireless/nl80211.c                        | 24 ++++++-------
+ net/wireless/sme.c                            |  6 ++--
+ net/wireless/util.c                           |  2 +-
+ net/wireless/wext-sme.c                       |  2 +-
+ scripts/coccinelle/free/devm_free.cocci       |  4 +--
+ scripts/coccinelle/free/ifnullfree.cocci      |  4 +--
+ scripts/coccinelle/free/kfree.cocci           |  6 ++--
+ scripts/coccinelle/free/kfreeaddr.cocci       |  2 +-
+ security/apparmor/domain.c                    |  4 +--
+ security/apparmor/include/file.h              |  2 +-
+ security/apparmor/policy.c                    | 24 ++++++-------
+ security/apparmor/policy_ns.c                 |  6 ++--
+ security/apparmor/policy_unpack.c             | 14 ++++----
+ security/keys/big_key.c                       |  6 ++--
+ security/keys/dh.c                            | 14 ++++----
+ security/keys/encrypted-keys/encrypted.c      | 14 ++++----
+ security/keys/trusted-keys/trusted_tpm1.c     | 34 +++++++++----------
+ security/keys/user_defined.c                  |  6 ++--
+ 115 files changed, 323 insertions(+), 321 deletions(-)
+
 -- 
-2.17.1
+2.18.1
