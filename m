@@ -1,76 +1,71 @@
-From: Waiman Long <longman@redhat.com>
-Date: Tue, 16 Jun 2020 18:36:15 +0000
-Subject: Re: [PATCH v5 2/2] mm, treewide: Rename kzfree() to kfree_sensitive()
-Message-Id: <65002c1e-5e31-1f4e-283c-186e06e55ef0@redhat.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 16 Jun 2020 15:49:54 +0000
+Subject: [PATCH v10 0/8] TPM 2.0 trusted keys with attached policy
+Message-Id: <20200616155002.7405-1-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200616154311.12314-1-longman@redhat.com>
- <20200616154311.12314-3-longman@redhat.com>
- <20200616110944.c13f221e5c3f54e775190afe@linux-foundation.org>
-In-Reply-To: <20200616110944.c13f221e5c3f54e775190afe@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Jason A . Donenfeld" <Jason@zx2c4.com>, Michal Hocko <mhocko@suse.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, virtualization@lists.linux-foundation.org, David Howells <dhowells@redhat.com>, linux-mm@kvack.org, linux-sctp@vger.kernel.org, keyrings@vger.kernel.org, kasan-dev@googlegroups.com, linux-stm32@st-md-mailman.stormreply.com, devel@driverdev.osuosl.org, linux-cifs@vger.kernel.org, linux-scsi@vger.kernel.org, James Morris <jmorris@namei.org>, Matthew Wilcox <willy@infradead.org>, linux-wpan@vger.kernel.org, David Rientjes <rientjes@google.com>, Dan Carpenter <dan.carpenter@oracle.com>, linux-pm@vger.kernel.org, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-amlogic@lists.infradead.org, linux-nfs@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>, linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org, linux-security-module@vger.kernel.org, target-devel@vger.kernel.org, tipc-discussion@lists.sourceforge.net, linux-crypto@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>, Joe Perches <joe@perches.com>, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org, wireguard@lists.zx2c4.com, linux-ppp@vger.kernel.org
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-On 6/16/20 2:09 PM, Andrew Morton wrote:
-> On Tue, 16 Jun 2020 11:43:11 -0400 Waiman Long <longman@redhat.com> wrote:
->
->> As said by Linus:
->>
->>    A symmetric naming is only helpful if it implies symmetries in use.
->>    Otherwise it's actively misleading.
->>
->>    In "kzalloc()", the z is meaningful and an important part of what the
->>    caller wants.
->>
->>    In "kzfree()", the z is actively detrimental, because maybe in the
->>    future we really _might_ want to use that "memfill(0xdeadbeef)" or
->>    something. The "zero" part of the interface isn't even _relevant_.
->>
->> The main reason that kzfree() exists is to clear sensitive information
->> that should not be leaked to other future users of the same memory
->> objects.
->>
->> Rename kzfree() to kfree_sensitive() to follow the example of the
->> recently added kvfree_sensitive() and make the intention of the API
->> more explicit. In addition, memzero_explicit() is used to clear the
->> memory to make sure that it won't get optimized away by the compiler.
->>
->> The renaming is done by using the command sequence:
->>
->>    git grep -w --name-only kzfree |\
->>    xargs sed -i 's/\bkzfree\b/kfree_sensitive/'
->>
->> followed by some editing of the kfree_sensitive() kerneldoc and adding
->> a kzfree backward compatibility macro in slab.h.
->>
->> ...
->>
->> --- a/include/linux/slab.h
->> +++ b/include/linux/slab.h
->> @@ -186,10 +186,12 @@ void memcg_deactivate_kmem_caches(struct mem_cgroup *, struct mem_cgroup *);
->>    */
->>   void * __must_check krealloc(const void *, size_t, gfp_t);
->>   void kfree(const void *);
->> -void kzfree(const void *);
->> +void kfree_sensitive(const void *);
->>   size_t __ksize(const void *);
->>   size_t ksize(const void *);
->>   
->> +#define kzfree(x)	kfree_sensitive(x)	/* For backward compatibility */
->> +
-> What was the thinking here?  Is this really necessary?
->
-> I suppose we could keep this around for a while to ease migration.  But
-> not for too long, please.
->
-It should be there just for 1 release cycle. I have broken out the btrfs 
-patch to the btrfs list and I didn't make the kzfree to kfree_sensitive 
-conversion there as that patch was in front in my patch list. So 
-depending on which one lands first, there can be a window where the 
-compilation may fail without this workaround. I am going to send out 
-another patch in the next release cycle to remove it.
+This is pretty much the same as the last time around except for a
+couple of folded lines and some added reviews/acks.
 
-Cheers,
-Longman
+General cover letter:
+
+This patch updates the trusted key code to export keys in the ASN.1
+format used by current TPM key tools (openssl_tpm2_engine and
+openconnect).  It also simplifies the use of policy with keys because
+the ASN.1 format is designed to carry a description of how to
+construct the policy, with the result that simple policies (like
+authorization and PCR locking) can now be constructed and used in the
+kernel, bringing the TPM 2.0 policy use into line with how TPM 1.2
+works.
+
+The key format is designed to be compatible with our two openssl
+engine implementations as well as with the format used by openconnect.
+I've added seal/unseal to my engine so I can use it for
+interoperability testing and I'll later use this for sealed symmetric
+keys via engine:
+
+https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
+
+James
+
+---
+
+James Bottomley (8):
+  lib: add ASN.1 encoder
+  oid_registry: Add TCG defined OIDS for TPM keys
+  security: keys: trusted: fix TPM2 authorizations
+  security: keys: trusted: use ASN.1 TPM2 key format for the blobs
+  security: keys: trusted: Make sealed key properly interoperable
+  security: keys: trusted: add PCR policy to TPM2 keys
+  security: keys: trusted: add ability to specify arbitrary policy
+  security: keys: trusted: implement counter/timer policy
+
+ .../security/keys/trusted-encrypted.rst       |  64 ++-
+ include/keys/trusted-type.h                   |   7 +-
+ include/linux/asn1_encoder.h                  |  32 ++
+ include/linux/oid_registry.h                  |   5 +
+ include/linux/tpm.h                           |   8 +
+ lib/Kconfig                                   |   3 +
+ lib/Makefile                                  |   1 +
+ lib/asn1_encoder.c                            | 454 +++++++++++++++++
+ security/keys/Kconfig                         |   3 +
+ security/keys/trusted-keys/Makefile           |   2 +-
+ security/keys/trusted-keys/tpm2-policy.c      | 463 ++++++++++++++++++
+ security/keys/trusted-keys/tpm2-policy.h      |  31 ++
+ security/keys/trusted-keys/tpm2key.asn1       |  23 +
+ security/keys/trusted-keys/trusted_tpm1.c     |  57 ++-
+ security/keys/trusted-keys/trusted_tpm2.c     | 370 +++++++++++++-
+ 15 files changed, 1487 insertions(+), 36 deletions(-)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
+ create mode 100644 security/keys/trusted-keys/tpm2-policy.c
+ create mode 100644 security/keys/trusted-keys/tpm2-policy.h
+ create mode 100644 security/keys/trusted-keys/tpm2key.asn1
+
+-- 
+2.26.2
