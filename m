@@ -1,122 +1,169 @@
-From: Luis Chamberlain <mcgrof@kernel.org>
-Date: Tue, 30 Jun 2020 17:57:04 +0000
-Subject: Re: linux-next: umh: fix processed error when UMH_WAIT_PROC is used seems to break linux bridge on s
-Message-Id: <20200630175704.GO13911@42.do-not-panic.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 16 Jun 2020 16:02:26 +0000
+Subject: [PATCH v10 5/8] security: keys: trusted: Make sealed key properly interoperable
+Message-Id: <20200616160229.8018-6-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <b7d658b9-606a-feb1-61f9-b58e3420d711@de.ibm.com>
- <3118dc0d-a3af-9337-c897-2380062a8644@de.ibm.com>
- <20200624144311.GA5839@infradead.org>
- <9e767819-9bbe-2181-521e-4d8ca28ca4f7@de.ibm.com>
- <20200624160953.GH4332@42.do-not-panic.com>
- <ea41e2a9-61f7-aec1-79e5-7b08b6dd5119@de.ibm.com>
- <4e27098e-ac8d-98f0-3a9a-ea25242e24ec@de.ibm.com>
- <4d8fbcea-a892-3453-091f-d57c03f9aa90@de.ibm.com>
- <1263e370-7cee-24d8-b98c-117bf7c90a83@de.ibm.com>
- <20200626025410.GJ4332@42.do-not-panic.com>
-In-Reply-To: <20200626025410.GJ4332@42.do-not-panic.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Christoph Hellwig <hch@infradead.org>, ast@kernel.org, axboe@kernel.dk, bfields@fieldses.org, bridge@lists.linux-foundation.org, chainsaw@gentoo.org, christian.brauner@ubuntu.com, chuck.lever@oracle.com, davem@davemloft.net, dhowells@redhat.com, gregkh@linuxfoundation.org, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, josh@joshtriplett.org, keescook@chromium.org, keyrings@vger.kernel.org, kuba@kernel.org, lars.ellenberg@linbit.com, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, nikolay@cumulusnetworks.com, philipp.reisner@linbit.com, ravenexp@gmail.com, roopa@cumulusnetworks.com, serge@hallyn.com, slyfox@gentoo.org, viro@zeniv.linux.org.uk, yangtiezhu@loongson.cn, netdev@vger.kernel.org, markward@linux.ibm.com, linux-s390 <linux-s390@vger.kernel.org>
+References: <20200616160229.8018-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200616160229.8018-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-On Fri, Jun 26, 2020 at 02:54:10AM +0000, Luis Chamberlain wrote:
-> On Wed, Jun 24, 2020 at 08:37:55PM +0200, Christian Borntraeger wrote:
-> > 
-> > 
-> > On 24.06.20 20:32, Christian Borntraeger wrote:
-> > [...]> 
-> > > So the translations look correct. But your change is actually a sematic change
-> > > if(ret) will only trigger if there is an error
-> > > if (KWIFEXITED(ret)) will always trigger when the process ends. So we will always overwrite -ECHILD
-> > > and we did not do it before. 
-> > > 
-> > 
-> > So the right fix is
-> > 
-> > diff --git a/kernel/umh.c b/kernel/umh.c
-> > index f81e8698e36e..a3a3196e84d1 100644
-> > --- a/kernel/umh.c
-> > +++ b/kernel/umh.c
-> > @@ -154,7 +154,7 @@ static void call_usermodehelper_exec_sync(struct subprocess_info *sub_info)
-> >                  * the real error code is already in sub_info->retval or
-> >                  * sub_info->retval is 0 anyway, so don't mess with it then.
-> >                  */
-> > -               if (KWIFEXITED(ret))
-> > +               if (KWEXITSTATUS(ret))
-> >                         sub_info->retval = KWEXITSTATUS(ret);
-> >         }
-> >  
-> > I think.
-> 
-> Nope, the right form is to check for WIFEXITED() before using WEXITSTATUS().
-> I'm not able to reproduce this on x86 with a bridge. What type of bridge
-> are you using on a guest, or did you mean using KVM so that the *host*
-> can spawn kvm guests?
-> 
-> It would be good if you can try to add a bridge manually and see where
-> things fail. Can you do something like this:
-> 
-> brctl addbr br0
-> brctl addif br0 ens6 
-> ip link set dev br0 up
-> 
-> Note that most callers are for modprobe. I'd be curious to see which
-> umh is failing which breaks bridge for you. Can you trut this so we can
-> see which umh call is failing?
+The current implementation appends a migratable flag to the end of a
+key, meaning the format isn't exactly interoperable because the using
+party needs to know to strip this extra byte.  However, all other
+consumers of TPM sealed blobs expect the unseal to return exactly the
+key.  Since TPM2 keys have a key property flag that corresponds to
+migratable, use that flag instead and make the actual key the only
+sealed quantity.  This is secure because the key properties are bound
+to a hash in the private part, so if they're altered the key won't
+load.
 
-Christian, any luck getting to test the code below to see what this
-reveals?
+Backwards compatibility is implemented by detecting whether we're
+loading a new format key or not and correctly setting migratable from
+the last byte of old format keys.
 
-  Luis
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-> 
-> diff --git a/kernel/umh.c b/kernel/umh.c
-> index f81e8698e36e..5ad74bc301d8 100644
-> --- a/kernel/umh.c
-> +++ b/kernel/umh.c
-> @@ -2,6 +2,9 @@
->  /*
->   * umh - the kernel usermode helper
->   */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/module.h>
->  #include <linux/sched.h>
->  #include <linux/sched/task.h>
-> @@ -154,8 +157,12 @@ static void call_usermodehelper_exec_sync(struct subprocess_info *sub_info)
->  		 * the real error code is already in sub_info->retval or
->  		 * sub_info->retval is 0 anyway, so don't mess with it then.
->  		 */
-> -		if (KWIFEXITED(ret))
-> +		printk("= ret: %02x\n", ret);
-> +		printk("= KWIFEXITED(ret): %02x\n", KWIFEXITED(ret));
-> +		if (KWIFEXITED(ret)) {
-> +			printk("KWEXITSTATUS(ret): %d\n", KWEXITSTATUS(ret));
->  			sub_info->retval = KWEXITSTATUS(ret);
-> +		}
->  	}
->  
->  	/* Restore default kernel sig handler */
-> @@ -383,6 +390,7 @@ struct subprocess_info *call_usermodehelper_setup(const char *path, char **argv,
->  		void *data)
->  {
->  	struct subprocess_info *sub_info;
-> +	unsigned int i = 0;
->  	sub_info = kzalloc(sizeof(struct subprocess_info), gfp_mask);
->  	if (!sub_info)
->  		goto out;
-> @@ -394,6 +402,11 @@ struct subprocess_info *call_usermodehelper_setup(const char *path, char **argv,
->  #else
->  	sub_info->path = path;
->  #endif
-> +	pr_info("sub_info->path: %s\n", sub_info->path);
-> +	while (argv[i])
-> +		printk(KERN_INFO "%s ", argv[i++]);
-> +	printk(KERN_INFO  "\n");
-> +
->  	sub_info->argv = argv;
->  	sub_info->envp = envp;
->  
-> 
+---
+
+v2: added length checks to untrusted payload
+v8: recover patch
+---
+ include/linux/tpm.h                       |  2 +
+ security/keys/trusted-keys/trusted_tpm2.c | 54 ++++++++++++++++-------
+ 2 files changed, 40 insertions(+), 16 deletions(-)
+
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 03e9b184411b..cd46ab27baa5 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -297,6 +297,8 @@ struct tpm_buf {
+ };
+ 
+ enum tpm2_object_attributes {
++	TPM2_OA_FIXED_TPM		= BIT(1),
++	TPM2_OA_FIXED_PARENT		= BIT(4),
+ 	TPM2_OA_USER_WITH_AUTH		= BIT(6),
+ };
+ 
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index 51d845da8728..905c5ca4d51c 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -231,6 +231,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	unsigned int blob_len;
+ 	struct tpm_buf buf;
+ 	u32 hash;
++	u32 flags;
+ 	int i;
+ 	int rc;
+ 
+@@ -259,32 +260,32 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 			     TPM_DIGEST_SIZE);
+ 
+ 	/* sensitive */
+-	tpm_buf_append_u16(&buf, 4 + options->blobauth_len +
+-			   payload->key_len + 1);
++	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len);
+ 
+ 	tpm_buf_append_u16(&buf, options->blobauth_len);
+ 	if (options->blobauth_len)
+ 		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
+ 
+-	tpm_buf_append_u16(&buf, payload->key_len + 1);
++	tpm_buf_append_u16(&buf, payload->key_len);
+ 	tpm_buf_append(&buf, payload->key, payload->key_len);
+-	tpm_buf_append_u8(&buf, payload->migratable);
+ 
+ 	/* public */
+ 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
+ 	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
+ 	tpm_buf_append_u16(&buf, hash);
+ 
++	/* key properties */
++	flags = 0;
++	flags |= options->policydigest_len ? 0 : TPM2_OA_USER_WITH_AUTH;
++	flags |= payload->migratable ? (TPM2_OA_FIXED_TPM |
++					TPM2_OA_FIXED_PARENT) : 0;
++	tpm_buf_append_u32(&buf, flags);
++
+ 	/* policy */
+-	if (options->policydigest_len) {
+-		tpm_buf_append_u32(&buf, 0);
+-		tpm_buf_append_u16(&buf, options->policydigest_len);
++	tpm_buf_append_u16(&buf, options->policydigest_len);
++	if (options->policydigest_len)
+ 		tpm_buf_append(&buf, options->policydigest,
+ 			       options->policydigest_len);
+-	} else {
+-		tpm_buf_append_u32(&buf, TPM2_OA_USER_WITH_AUTH);
+-		tpm_buf_append_u16(&buf, 0);
+-	}
+ 
+ 	/* public parameters */
+ 	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
+@@ -357,8 +358,9 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
+-	u8 *blob;
++	u8 *blob, *pub;
+ 	int rc;
++	u32 attrs;
+ 
+ 	rc = tpm2_key_decode(payload, options, &blob);
+ 	if (rc) {
+@@ -385,6 +387,16 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	if (private_len + 2 + public_len + 2 > payload->blob_len)
+ 		return -E2BIG;
+ 
++	pub = blob + 2 + private_len + 2;
++	/* key attributes are always at offset 4 */
++	attrs = get_unaligned_be32(pub + 4);
++
++	if ((attrs & (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT)) =
++	    (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT))
++		payload->migratable = 0;
++	else
++		payload->migratable = 1;
++
+ 	blob_len = private_len + public_len + 4;
+ 	if (blob_len > payload->blob_len)
+ 		return -E2BIG;
+@@ -465,7 +477,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 	if (!rc) {
+ 		data_len = be16_to_cpup(
+ 			(__be16 *) &buf.data[TPM_HEADER_SIZE + 4]);
+-		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE + 1) {
++		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE) {
+ 			rc = -EFAULT;
+ 			goto out;
+ 		}
+@@ -476,9 +488,19 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		}
+ 		data = &buf.data[TPM_HEADER_SIZE + 6];
+ 
+-		memcpy(payload->key, data, data_len - 1);
+-		payload->key_len = data_len - 1;
+-		payload->migratable = data[data_len - 1];
++		if (payload->old_format) {
++			/* migratable flag is at the end of the key */
++			memcpy(payload->key, data, data_len - 1);
++			payload->key_len = data_len - 1;
++			payload->migratable = data[data_len - 1];
++		} else {
++			/*
++			 * migratable flag already collected from key
++			 * attributes
++			 */
++			memcpy(payload->key, data, data_len);
++			payload->key_len = data_len;
++		}
+ 	}
+ 
+ out:
+-- 
+2.26.2
