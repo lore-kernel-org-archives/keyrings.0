@@ -1,69 +1,70 @@
-From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Date: Tue, 16 Jun 2020 09:35:58 +0000
-Subject: Re: [PATCH v3 0/8] crpyto: introduce OSCCA certificate and SM2 asymmetric algorithm
-Message-Id: <254bf52e-eeb8-b615-be2a-d5cba976b63a@linux.alibaba.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 16 Jun 2020 16:02:23 +0000
+Subject: [PATCH v10 2/8] oid_registry: Add TCG defined OIDS for TPM keys
+Message-Id: <20200616160229.8018-3-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200609134855.21431-1-tianjia.zhang@linux.alibaba.com>
- <20200609205837.osganry2tyzwvanz@altlinux.org>
-In-Reply-To: <20200609205837.osganry2tyzwvanz@altlinux.org>
-To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com, mcoquelin.stm32@gmail.com, alexandre.torgue@st.com, jmorris@namei.org, serge@hallyn.com, nramas@linux.microsoft.com, tusharsu@linux.microsoft.com, zohar@linux.ibm.com, gilad@benyossef.com, pvanleeuwen@rambus.com, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org, linux-security-module@vger.kernel.org, zhang.jia@linux.alibaba.com
+References: <20200616160229.8018-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200616160229.8018-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
+The TCG has defined an OID prefix "2.23.133.10.1" for the various TPM
+key uses.  We've defined three of the available numbers:
 
+2.23.133.10.1.3 TPM Loadable key.  This is an asymmetric key (Usually
+		RSA2048 or Elliptic Curve) which can be imported by a
+		TPM2_Load() operation.
 
-On 2020/6/10 4:58, Vitaly Chikunov wrote:
-> Tianjia,
-> 
-> On Tue, Jun 09, 2020 at 09:48:47PM +0800, Tianjia Zhang wrote:
->> Hello all,
->>
->> This new module implement the OSCCA certificate and SM2 public key
->> algorithm. It was published by State Encryption Management Bureau, China.
->> List of specifications for OSCCA certificate and SM2 elliptic curve
->> public key cryptography:
->>
->> * GM/T 0003.1-2012
->> * GM/T 0003.2-2012
->> * GM/T 0003.3-2012
->> * GM/T 0003.4-2012
->> * GM/T 0003.5-2012
->> * GM/T 0015-2012
->> * GM/T 0009-2012
->>
->> IETF: https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
->> oscca: http://www.oscca.gov.cn/sca/xxgk/2010-12/17/content_1002386.shtml
->> scctc: http://www.gmbz.org.cn/main/bzlb.html
->>
->> These patchs add the OID object identifier defined by OSCCA. The
->> x509 certificate supports sm2-with-sm3 type certificate parsing
->> and verification.
->>
->> The sm2 algorithm is based on libgcrypt's mpi implementation, and has
->> made some additions to the kernel's original mpi library, and added the
->> implementation of ec to better support elliptic curve-like algorithms.
->>
->> sm2 has good support in both openssl and gnupg projects, and sm3 and sm4
->> of the OSCCA algorithm family have also been implemented in the kernel.
->>
->> Among them, sm3 and sm4 have been well implemented in the kernel.
->> This group of patches has newly introduced sm2. In order to implement
->> sm2 more perfectly, I expanded the mpi library and introduced the
->> ec implementation of the mpi library as the basic algorithm. Compared
->> to the kernel's crypto/ecc.c, the implementation of mpi/ec.c is more
->> complete and elegant, sm2 is implemented based on these algorithms.
-> 
-> Does it use constant-time algorithms?
-> 
-> Thanks,
-> 
+2.23.133.10.1.4 TPM Importable Key.  This is an asymmetric key (Usually
+		RSA2048 or Elliptic Curve) which can be imported by a
+		TPM2_Import() operation.
 
-Sorry for not responding in time.
-This algorithm is constant-time algorithms, and this logic is 
-implemented in ec_mul_point().
-Will you consider implementing ecrdsa based on the mpi ec algorithm in 
-the future?
+Both loadable and importable keys are specific to a given TPM, the
+difference is that a loadable key is wrapped with the symmetric
+secret, so must have been created by the TPM itself.  An importable
+key is wrapped with a DH shared secret, and may be created without
+access to the TPM provided you know the public part of the parent key.
 
-Thanks and best,
-Tianjia
+2.23.133.10.1.5 TPM Sealed Data.  This is a set of data (up to 128
+		bytes) which is sealed by the TPM.  It usually
+		represents a symmetric key and must be unsealed before
+		use.
+
+The ASN.1 binary key form starts of with this OID as the first element
+of a sequence, giving the binary form a unique recognizable identity
+marker regardless of encoding.
+
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Reviewed-by: David Howells <dhowells@redhat.com>
+
+---
+
+v3: correct OID_TPMImportableKey name
+v7: add ack
+v9: add review
+---
+ include/linux/oid_registry.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index 657d6bf2c064..f6e2276e5f30 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -107,6 +107,11 @@ enum OID {
+ 	OID_gostTC26Sign512B,		/* 1.2.643.7.1.2.1.2.2 */
+ 	OID_gostTC26Sign512C,		/* 1.2.643.7.1.2.1.2.3 */
+ 
++	/* TCG defined OIDS for TPM based keys */
++	OID_TPMLoadableKey,		/* 2.23.133.10.1.3 */
++	OID_TPMImportableKey,		/* 2.23.133.10.1.4 */
++	OID_TPMSealedData,		/* 2.23.133.10.1.5 */
++
+ 	OID__NR
+ };
+ 
+-- 
+2.26.2
