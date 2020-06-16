@@ -1,48 +1,45 @@
-From: "Luis R. Rodriguez" <mcgrof@kernel.org>
-Date: Wed, 10 Jun 2020 15:49:19 +0000
-Subject: [PATCH 1/5] selftests: kmod: Use variable NAME in kmod_test_0001()
-Message-Id: <20200610154923.27510-2-mcgrof@kernel.org>
+From: Waiman Long <longman@redhat.com>
+Date: Tue, 16 Jun 2020 15:43:10 +0000
+Subject: [PATCH v5 1/2] mm/slab: Use memzero_explicit() in kzfree()
+Message-Id: <20200616154311.12314-2-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200610154923.27510-1-mcgrof@kernel.org>
-In-Reply-To: <20200610154923.27510-1-mcgrof@kernel.org>
-To: gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, axboe@kernel.dk, bfields@fieldses.org, chuck.lever@oracle.com, roopa@cumulusnetworks.com, nikolay@cumulusnetworks.com, davem@davemloft.net, kuba@kernel.org, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, serge@hallyn.com, christian.brauner@ubuntu.com
-Cc: slyfox@gentoo.org, ast@kernel.org, keescook@chromium.org, josh@joshtriplett.org, ravenexp@gmail.com, chainsaw@gentoo.org, linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org, bridge@lists.linux-foundation.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Tiezhu Yang <yangtiezhu@loongson.cn>, Luis Chamberlain <mcgrof@kernel.org>
+References: <20200616154311.12314-1-longman@redhat.com>
+In-Reply-To: <20200616154311.12314-1-longman@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
+Cc: "Jason A . Donenfeld" <Jason@zx2c4.com>, Michal Hocko <mhocko@suse.com>, virtualization@lists.linux-foundation.org, linux-mm@kvack.org, linux-sctp@vger.kernel.org, target-devel@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, devel@driverdev.osuosl.org, linux-cifs@vger.kernel.org, linux-scsi@vger.kernel.org, kasan-dev@googlegroups.com, linux-wpan@vger.kernel.org, Waiman Long <longman@redhat.com>, Dan Carpenter <dan.carpenter@oracle.com>, linux-pm@vger.kernel.org, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-amlogic@lists.infradead.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org, linux-bluetooth@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, tipc-discussion@lists.sourceforge.net, linux-crypto@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, wireguard@lists.zx2c4.com, linux-ppp@vger.kernel.org
 
-From: Tiezhu Yang <yangtiezhu@loongson.cn>
+The kzfree() function is normally used to clear some sensitive
+information, like encryption keys, in the buffer before freeing it back
+to the pool. Memset() is currently used for buffer clearing. However
+unlikely, there is still a non-zero probability that the compiler may
+choose to optimize away the memory clearing especially if LTO is being
+used in the future. To make sure that this optimization will never
+happen, memzero_explicit(), which is introduced in v3.18, is now used
+in kzfree() to future-proof it.
 
-Use the variable NAME instead of "\000" directly in kmod_test_0001().
-
-Acked-by: Luis Chamberlain <mcgrof@kernel.org>
-Signed-off-by: Tiezhu Yang <yangtiezhu@loongson.cn>
-Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
+Fixes: 3ef0e5ba4673 ("slab: introduce kzfree()")
+Cc: stable@vger.kernel.org
+Acked-by: Michal Hocko <mhocko@suse.com>
+Signed-off-by: Waiman Long <longman@redhat.com>
 ---
- tools/testing/selftests/kmod/kmod.sh | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/slab_common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/kmod/kmod.sh b/tools/testing/selftests/kmod/kmod.sh
-index 3702dbcc90a7..da60c3bd4f23 100755
---- a/tools/testing/selftests/kmod/kmod.sh
-+++ b/tools/testing/selftests/kmod/kmod.sh
-@@ -341,7 +341,7 @@ kmod_test_0001_driver()
- 
- 	kmod_defaults_driver
- 	config_num_threads 1
--	printf '\000' >"$DIR"/config_test_driver
-+	printf $NAME >"$DIR"/config_test_driver
- 	config_trigger ${FUNCNAME[0]}
- 	config_expect_result ${FUNCNAME[0]} MODULE_NOT_FOUND
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 9e72ba224175..37d48a56431d 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -1726,7 +1726,7 @@ void kzfree(const void *p)
+ 	if (unlikely(ZERO_OR_NULL_PTR(mem)))
+ 		return;
+ 	ks = ksize(mem);
+-	memset(mem, 0, ks);
++	memzero_explicit(mem, ks);
+ 	kfree(mem);
  }
-@@ -352,7 +352,7 @@ kmod_test_0001_fs()
- 
- 	kmod_defaults_fs
- 	config_num_threads 1
--	printf '\000' >"$DIR"/config_test_fs
-+	printf $NAME >"$DIR"/config_test_fs
- 	config_trigger ${FUNCNAME[0]}
- 	config_expect_result ${FUNCNAME[0]} -EINVAL
- }
+ EXPORT_SYMBOL(kzfree);
 -- 
-2.26.2
+2.18.1
