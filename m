@@ -1,93 +1,40 @@
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Mon, 15 Jun 2020 08:44:57 +0000
-Subject: Re: [PATCH 13/17] watch_queue: Implement mount topology and attribute change notifications [ver #5]
-Message-Id: <CAJfpeguZuCTmCWf-mF3=iZQeaaUYRoCRU9wcyz_gCMD94-bFFQ@mail.gmail.com>
+From: Waiman Long <longman@redhat.com>
+Date: Tue, 16 Jun 2020 01:57:18 +0000
+Subject: [PATCH v4 3/3] btrfs: Use kfree() in btrfs_ioctl_get_subvol_info()
+Message-Id: <20200616015718.7812-4-longman@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
- <158454391302.2863966.1884682840541676280.stgit@warthog.procyon.org.uk>
- <CAJfpegspWA6oUtdcYvYF=3fij=Bnq03b8VMbU9RNMKc+zzjbag@mail.gmail.com> <0991792b6e2af0a5cc1a2c2257b535b5e6b032e4.camel@themaw.net>
-In-Reply-To: <0991792b6e2af0a5cc1a2c2257b535b5e6b032e4.camel@themaw.net>
-To: Ian Kent <raven@themaw.net>
-Cc: David Howells <dhowells@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, Christian Brauner <christian@brauner.io>, andres@anarazel.de, Jeff Layton <jlayton@redhat.com>, dray@redhat.com, Karel Zak <kzak@redhat.com>, keyrings@vger.kernel.org, Linux API <linux-api@vger.kernel.org>, linux-fsdevel@vger.kernel.org, LSM <linux-security-module@vger.kernel.org>, linux-kernel@vger.kernel.org
+References: <20200616015718.7812-1-longman@redhat.com>
+In-Reply-To: <20200616015718.7812-1-longman@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Linus Torvalds <torvalds@linux-foundation.org>, Joe Perches <joe@perches.com>, Matthew Wilcox <willy@infradead.org>, David Rientjes <rientjes@google.com>
+Cc: "Jason A . Donenfeld" <Jason@zx2c4.com>, Michal Hocko <mhocko@suse.com>, linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-sctp@vger.kernel.org, target-devel@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, devel@driverdev.osuosl.org, linux-cifs@vger.kernel.org, linux-scsi@vger.kernel.org, kasan-dev@googlegroups.com, linux-wpan@vger.kernel.org, Waiman Long <longman@redhat.com>, Dan Carpenter <dan.carpenter@oracle.com>, linux-pm@vger.kernel.org, ecryptfs@vger.kernel.org, linux-fscrypt@vger.kernel.org, linux-mediatek@lists.infradead.org, linux-amlogic@lists.infradead.org, virtualization@lists.linux-foundation.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org, linux-wireless@vger.kernel.org, David Sterba <dsterba@suse.cz>, linux-bluetooth@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, tipc-discussion@lists.sourceforge.net, linux-crypto@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>, linux-integrity@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, wireguard@lists.zx2c4.com, linux-ppp@vger.kernel.org
 
-On Sun, Jun 14, 2020 at 5:07 AM Ian Kent <raven@themaw.net> wrote:
->
-> On Thu, 2020-04-02 at 17:19 +0200, Miklos Szeredi wrote:
-> >
-> > > Firstly, a watch queue needs to be created:
-> > >
-> > >         pipe2(fds, O_NOTIFICATION_PIPE);
-> > >         ioctl(fds[1], IOC_WATCH_QUEUE_SET_SIZE, 256);
-> > >
-> > > then a notification can be set up to report notifications via that
-> > > queue:
-> > >
-> > >         struct watch_notification_filter filter = {
-> > >                 .nr_filters = 1,
-> > >                 .filters = {
-> > >                         [0] = {
-> > >                                 .type = WATCH_TYPE_MOUNT_NOTIFY,
-> > >                                 .subtype_filter[0] = UINT_MAX,
-> > >                         },
-> > >                 },
-> > >         };
-> > >         ioctl(fds[1], IOC_WATCH_QUEUE_SET_FILTER, &filter);
-> > >         watch_mount(AT_FDCWD, "/", 0, fds[1], 0x02);
-> > >
-> > > In this case, it would let me monitor the mount topology subtree
-> > > rooted at
-> > > "/" for events.  Mount notifications propagate up the tree towards
-> > > the
-> > > root, so a watch will catch all of the events happening in the
-> > > subtree
-> > > rooted at the watch.
-> >
-> > Does it make sense to watch a single mount?  A set of mounts?   A
-> > subtree with an exclusion list (subtrees, types, ???)?
->
-> Yes, filtering, perhaps, I'm not sure a single mount is useful
-> as changes generally need to be monitored for a set of mounts.
->
-> Monitoring a subtree is obviously possible because the monitor
-> path doesn't need to be "/".
->
-> Or am I misunderstanding what your trying to get at.
->
-> The notion of filtering types and other things is interesting
-> but what I've seen that doesn't fit in the current implementation
-> so far probably isn't appropriate for kernel implementation.
->
-> There's a special case of acquiring a list of mounts where the
-> path is not a mount point itself but you need all mount below
-> that path prefix.
->
-> In this case you get all mounts, including the mounts of the mount
-> containing the path, so you still need to traverse the list to match
-> the prefix and that can easily mean the whole list of mounts in the
-> system.
->
-> Point is it leads to multiple traversals of a larger than needed list
-> of mounts, one to get the list of mounts to check, and one to filter
-> on the prefix.
->
-> I've seen this use case with fsinfo() and that's where it's needed
-> although it may be useful to carry it through to notifications as
-> well.
->
-> While this sounds like it isn't such a big deal it can sometimes
-> make a considerable difference to the number of mounts you need
-> to traverse when there are a large number of mounts in the system.
->
-> I didn't consider it appropriate for kernel implementation but
-> since you asked here it is. OTOH were checking for connectedness
-> in fsinfo() anyway so maybe this is something that could be done
-> without undue overhead.
+In btrfs_ioctl_get_subvol_info(), there is a classic case where kzalloc()
+was incorrectly paired with kzfree(). According to David Sterba, there
+isn't any sensitive information in the subvol_info that needs to be
+cleared before freeing. So kfree_sensitive() isn't really needed,
+use kfree() instead.
 
-Good point.  Filtering notifications for mounts outside of the
-specified path makes sense.
+Reported-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Waiman Long <longman@redhat.com>
+---
+ fs/btrfs/ioctl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Miklos
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index f1dd9e4271e9..e8f7c5f00894 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -2692,7 +2692,7 @@ static int btrfs_ioctl_get_subvol_info(struct file *file, void __user *argp)
+ 	btrfs_put_root(root);
+ out_free:
+ 	btrfs_free_path(path);
+-	kfree_sensitive(subvol_info);
++	kfree(subvol_info);
+ 	return ret;
+ }
+ 
+-- 
+2.18.1
