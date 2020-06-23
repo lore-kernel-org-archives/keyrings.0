@@ -1,48 +1,37 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 18 Jun 2020 07:19:55 +0000
-Subject: Re: [PATCH v5 1/4] KEYS: trusted: Add generic trusted keys framework
-Message-Id: <20200618071955.GE6560@linux.intel.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+Date: Tue, 23 Jun 2020 14:11:57 +0000
+Subject: linux-next: umh: fix processed error when UMH_WAIT_PROC is used seems to break linux bridge on s390x
+Message-Id: <20200623141157.5409-1-borntraeger@de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1591107505-6030-1-git-send-email-sumit.garg@linaro.org>
- <1591107505-6030-2-git-send-email-sumit.garg@linaro.org>
- <20200615182457.GB5416@linux.intel.com>
- <CAFA6WYNEnXm5FOGHGAg4XB-+GXD=C+YMh+6t976=pStU0WshAA@mail.gmail.com>
- <20200617231429.GD62794@linux.intel.com>
- <CAFA6WYOdtwnewqY0ASnMf7fyw3s_hQx0+oWJRhT3CpkkkxYpDA@mail.gmail.com>
-In-Reply-To: <CAFA6WYOdtwnewqY0ASnMf7fyw3s_hQx0+oWJRhT3CpkkkxYpDA@mail.gmail.com>
-To: Sumit Garg <sumit.garg@linaro.org>
-Cc: "tee-dev @ lists . linaro . org" <tee-dev@lists.linaro.org>, Daniel Thompson <daniel.thompson@linaro.org>, Luke Hinds <lhinds@redhat.com>, op-tee@lists.trustedfirmware.org, Jonathan Corbet <corbet@lwn.net>, James Bottomley <jejb@linux.ibm.com>, Janne Karhunen <janne.karhunen@gmail.com>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.ibm.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, linux-security-module@vger.kernel.org, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, Markus Wamser <Markus.Wamser@mixed-mode.de>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, Jens Wiklander <jens.wiklander@linaro.org>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
+References: <20200610154923.27510-5-mcgrof@kernel.org>
+In-Reply-To: <20200610154923.27510-5-mcgrof@kernel.org>
+To: mcgrof@kernel.org
+Cc: ast@kernel.org, axboe@kernel.dk, bfields@fieldses.org, bridge@lists.linux-foundation.org, chainsaw@gentoo.org, christian.brauner@ubuntu.com, chuck.lever@oracle.com, davem@davemloft.net, dhowells@redhat.com, gregkh@linuxfoundation.org, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, josh@joshtriplett.org, keescook@chromium.org, keyrings@vger.kernel.org, kuba@kernel.org, lars.ellenberg@linbit.com, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, nikolay@cumulusnetworks.com, philipp.reisner@linbit.com, ravenexp@gmail.com, roopa@cumulusnetworks.com, serge@hallyn.com, slyfox@gentoo.org, viro@zeniv.linux.org.uk, yangtiezhu@loongson.cn, netdev@vger.kernel.org, markward@linux.ibm.com, linux-s390@vger.kernel.or
 
-On Thu, Jun 18, 2020 at 12:12:41PM +0530, Sumit Garg wrote:
-> On Thu, 18 Jun 2020 at 04:44, Jarkko Sakkinen
-> <jarkko.sakkinen@linux.intel.com> wrote:
-> >
-> > On Tue, Jun 16, 2020 at 07:02:37PM +0530, Sumit Garg wrote:
-> > > + Luke
-> > >
-> > > Hi Jarkko,
-> > >
-> > > Prior to addressing your comments below which seems to show your
-> > > preference for compile time selection of trust source (TPM or TEE), I
-> > > would just like to hear the reasons for this preference especially if
-> > > it makes distro vendor's life difficult [1] to make opinionated
-> > > selection which could rather be achieved dynamically based on platform
-> > > capability.
-> > >
-> > > [1] https://lkml.org/lkml/2020/6/3/405
-> > >
-> > > -Sumit
-> >
-> > Hmm... I do get the distribution kernel point. OK, lets revert to
-> > dynamic then. Thanks for the remark.
-> >
-> > /Jarkko
-> 
-> Thanks, will revert to dynamic mode in v6.
+Jens Markwardt reported a regression in the linux-next runs.  with "umh: fix
+processed error when UMH_WAIT_PROC is used" (from linux-next) a linux bridge
+with an KVM guests no longer activates :
 
-Sorry about the extra trouble caused by me.
+without patch
+# ip addr show dev virbr1
+6: virbr1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 52:54:00:1e:3f:c0 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.254.254/24 brd 192.168.254.255 scope global virbr1
+       valid_lft forever preferred_lft forever
 
-/Jarkko
+with this patch the bridge stays DOWN with NO-CARRIER
+
+# ip addr show dev virbr1
+6: virbr1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
+    link/ether 52:54:00:1e:3f:c0 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.254.254/24 brd 192.168.254.255 scope global virbr1
+       valid_lft forever preferred_lft forever
+
+This was bisected in linux-next. Reverting from linux-next also fixes the issue.
+
+Any idea?
+
+Christian
