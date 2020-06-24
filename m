@@ -1,7 +1,7 @@
 From: Christian Borntraeger <borntraeger@de.ibm.com>
-Date: Wed, 24 Jun 2020 18:09:55 +0000
+Date: Wed, 24 Jun 2020 18:32:12 +0000
 Subject: Re: linux-next: umh: fix processed error when UMH_WAIT_PROC is used seems to break linux bridge on s
-Message-Id: <4e27098e-ac8d-98f0-3a9a-ea25242e24ec@de.ibm.com>
+Message-Id: <4d8fbcea-a892-3453-091f-d57c03f9aa90@de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -14,102 +14,149 @@ References: <20200610154923.27510-5-mcgrof@kernel.org>
  <9e767819-9bbe-2181-521e-4d8ca28ca4f7@de.ibm.com>
  <20200624160953.GH4332@42.do-not-panic.com>
  <ea41e2a9-61f7-aec1-79e5-7b08b6dd5119@de.ibm.com>
-In-Reply-To: <ea41e2a9-61f7-aec1-79e5-7b08b6dd5119@de.ibm.com>
+ <4e27098e-ac8d-98f0-3a9a-ea25242e24ec@de.ibm.com>
+In-Reply-To: <4e27098e-ac8d-98f0-3a9a-ea25242e24ec@de.ibm.com>
 To: Luis Chamberlain <mcgrof@kernel.org>
 Cc: Christoph Hellwig <hch@infradead.org>, ast@kernel.org, axboe@kernel.dk, bfields@fieldses.org, bridge@lists.linux-foundation.org, chainsaw@gentoo.org, christian.brauner@ubuntu.com, chuck.lever@oracle.com, davem@davemloft.net, dhowells@redhat.com, gregkh@linuxfoundation.org, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, josh@joshtriplett.org, keescook@chromium.org, keyrings@vger.kernel.org, kuba@kernel.org, lars.ellenberg@linbit.com, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org, nikolay@cumulusnetworks.com, philipp.reisner@linbit.com, ravenexp@gmail.com, roopa@cumulusnetworks.com, serge@hallyn.com, slyfox@gentoo.org, viro@zeniv.linux.org.uk, yangtiezhu@loongson.cn, netdev@vger.kernel.org, markward@linux.ibm.com, linux-s390 <linux-s390@vger.kernel.org>
 
 
 
-On 24.06.20 19:58, Christian Borntraeger wrote:
+On 24.06.20 20:09, Christian Borntraeger wrote:
 > 
 > 
-> On 24.06.20 18:09, Luis Chamberlain wrote:
->> On Wed, Jun 24, 2020 at 05:54:46PM +0200, Christian Borntraeger wrote:
->>>
->>>
->>> On 24.06.20 16:43, Christoph Hellwig wrote:
->>>> On Wed, Jun 24, 2020 at 01:11:54PM +0200, Christian Borntraeger wrote:
->>>>> Does anyone have an idea why "umh: fix processed error when UMH_WAIT_PROC is used" breaks the
->>>>> linux-bridge on s390?
+> On 24.06.20 19:58, Christian Borntraeger wrote:
+>>
+>>
+>> On 24.06.20 18:09, Luis Chamberlain wrote:
+>>> On Wed, Jun 24, 2020 at 05:54:46PM +0200, Christian Borntraeger wrote:
 >>>>
->>>> Are we even sure this is s390 specific and doesn't happen on other
->>>> architectures with the same bridge setup?
+>>>>
+>>>> On 24.06.20 16:43, Christoph Hellwig wrote:
+>>>>> On Wed, Jun 24, 2020 at 01:11:54PM +0200, Christian Borntraeger wrote:
+>>>>>> Does anyone have an idea why "umh: fix processed error when UMH_WAIT_PROC is used" breaks the
+>>>>>> linux-bridge on s390?
+>>>>>
+>>>>> Are we even sure this is s390 specific and doesn't happen on other
+>>>>> architectures with the same bridge setup?
+>>>>
+>>>> Fair point. AFAIK nobody has tested this yet on x86.
 >>>
->>> Fair point. AFAIK nobody has tested this yet on x86.
+>>> Regardless, can you enable dynamic debug prints, to see if the kernel
+>>> reveals anything on the bridge code which may be relevant:
+>>>
+>>> echo "file net/bridge/* +p" > /sys/kernel/debug/dynamic_debug/control
+>>>
+>>>   Luis
 >>
->> Regardless, can you enable dynamic debug prints, to see if the kernel
->> reveals anything on the bridge code which may be relevant:
+>> When I start a guest the following happens with the patch:
 >>
->> echo "file net/bridge/* +p" > /sys/kernel/debug/dynamic_debug/control
+>> [   47.420237] virbr0: port 2(vnet0) entered blocking state
+>> [   47.420242] virbr0: port 2(vnet0) entered disabled state
+>> [   47.420315] device vnet0 entered promiscuous mode
+>> [   47.420365] virbr0: port 2(vnet0) event 16
+>> [   47.420366] virbr0: br_fill_info event 16 port vnet0 master virbr0
+>> [   47.420373] virbr0: toggle option: 12 state: 0 -> 0
+>> [   47.420536] virbr0: port 2(vnet0) entered blocking state
+>> [   47.420538] virbr0: port 2(vnet0) event 16
+>> [   47.420539] virbr0: br_fill_info event 16 port vnet0 master virbr0
 >>
->>   Luis
+>> and the nothing happens.
+>>
+>>
+>> without the patch
+>> [   33.805410] virbr0: hello timer expired
+>> [   35.805413] virbr0: hello timer expired
+>> [   36.184349] virbr0: port 2(vnet0) entered blocking state
+>> [   36.184353] virbr0: port 2(vnet0) entered disabled state
+>> [   36.184427] device vnet0 entered promiscuous mode
+>> [   36.184479] virbr0: port 2(vnet0) event 16
+>> [   36.184480] virbr0: br_fill_info event 16 port vnet0 master virbr0
+>> [   36.184487] virbr0: toggle option: 12 state: 0 -> 0
+>> [   36.184636] virbr0: port 2(vnet0) entered blocking state
+>> [   36.184638] virbr0: port 2(vnet0) entered listening state
+>> [   36.184639] virbr0: port 2(vnet0) event 16
+>> [   36.184640] virbr0: br_fill_info event 16 port vnet0 master virbr0
+>> [   36.184645] virbr0: port 2(vnet0) event 16
+>> [   36.184646] virbr0: br_fill_info event 16 port vnet0 master virbr0
+>> [   37.805478] virbr0: hello timer expired
+>> [   38.205413] virbr0: port 2(vnet0) forward delay timer
+>> [   38.205414] virbr0: port 2(vnet0) entered learning state
+>> [   38.205427] virbr0: port 2(vnet0) event 16
+>> [   38.205430] virbr0: br_fill_info event 16 port vnet0 master virbr0
+>> [   38.765414] virbr0: port 2(vnet0) hold timer expired
+>> [   39.805415] virbr0: hello timer expired
+>> [   40.285410] virbr0: port 2(vnet0) forward delay timer
+>> [   40.285411] virbr0: port 2(vnet0) entered forwarding state
+>> [   40.285418] virbr0: topology change detected, propagating
+>> [   40.285420] virbr0: decreasing ageing time to 400
+>> [   40.285427] virbr0: port 2(vnet0) event 16
+>> [   40.285432] virbr0: br_fill_info event 16 port vnet0 master virbr0
+>> [   40.765408] virbr0: port 2(vnet0) hold timer expired
+>> [   41.805415] virbr0: hello timer expired
+>> [   42.765426] virbr0: port 2(vnet0) hold timer expired
+>> [   43.805425] virbr0: hello timer expired
+>> [   44.765426] virbr0: port 2(vnet0) hold timer expired
+>> [   45.805418] virbr0: hello timer expired
+>>
+>> and continuing....
 > 
-> When I start a guest the following happens with the patch:
+> Just reverting the umh.c parts like this makes the problem go away.
 > 
-> [   47.420237] virbr0: port 2(vnet0) entered blocking state
-> [   47.420242] virbr0: port 2(vnet0) entered disabled state
-> [   47.420315] device vnet0 entered promiscuous mode
-> [   47.420365] virbr0: port 2(vnet0) event 16
-> [   47.420366] virbr0: br_fill_info event 16 port vnet0 master virbr0
-> [   47.420373] virbr0: toggle option: 12 state: 0 -> 0
-> [   47.420536] virbr0: port 2(vnet0) entered blocking state
-> [   47.420538] virbr0: port 2(vnet0) event 16
-> [   47.420539] virbr0: br_fill_info event 16 port vnet0 master virbr0
-> 
-> and the nothing happens.
-> 
-> 
-> without the patch
-> [   33.805410] virbr0: hello timer expired
-> [   35.805413] virbr0: hello timer expired
-> [   36.184349] virbr0: port 2(vnet0) entered blocking state
-> [   36.184353] virbr0: port 2(vnet0) entered disabled state
-> [   36.184427] device vnet0 entered promiscuous mode
-> [   36.184479] virbr0: port 2(vnet0) event 16
-> [   36.184480] virbr0: br_fill_info event 16 port vnet0 master virbr0
-> [   36.184487] virbr0: toggle option: 12 state: 0 -> 0
-> [   36.184636] virbr0: port 2(vnet0) entered blocking state
-> [   36.184638] virbr0: port 2(vnet0) entered listening state
-> [   36.184639] virbr0: port 2(vnet0) event 16
-> [   36.184640] virbr0: br_fill_info event 16 port vnet0 master virbr0
-> [   36.184645] virbr0: port 2(vnet0) event 16
-> [   36.184646] virbr0: br_fill_info event 16 port vnet0 master virbr0
-> [   37.805478] virbr0: hello timer expired
-> [   38.205413] virbr0: port 2(vnet0) forward delay timer
-> [   38.205414] virbr0: port 2(vnet0) entered learning state
-> [   38.205427] virbr0: port 2(vnet0) event 16
-> [   38.205430] virbr0: br_fill_info event 16 port vnet0 master virbr0
-> [   38.765414] virbr0: port 2(vnet0) hold timer expired
-> [   39.805415] virbr0: hello timer expired
-> [   40.285410] virbr0: port 2(vnet0) forward delay timer
-> [   40.285411] virbr0: port 2(vnet0) entered forwarding state
-> [   40.285418] virbr0: topology change detected, propagating
-> [   40.285420] virbr0: decreasing ageing time to 400
-> [   40.285427] virbr0: port 2(vnet0) event 16
-> [   40.285432] virbr0: br_fill_info event 16 port vnet0 master virbr0
-> [   40.765408] virbr0: port 2(vnet0) hold timer expired
-> [   41.805415] virbr0: hello timer expired
-> [   42.765426] virbr0: port 2(vnet0) hold timer expired
-> [   43.805425] virbr0: hello timer expired
-> [   44.765426] virbr0: port 2(vnet0) hold timer expired
-> [   45.805418] virbr0: hello timer expired
-> 
-> and continuing....
+> diff --git a/kernel/umh.c b/kernel/umh.c
+> index f81e8698e36e..79f139a7ca03 100644
+> --- a/kernel/umh.c
+> +++ b/kernel/umh.c
+> @@ -154,8 +154,8 @@ static void call_usermodehelper_exec_sync(struct subprocess_info *sub_info)
+>                  * the real error code is already in sub_info->retval or
+>                  * sub_info->retval is 0 anyway, so don't mess with it then.
+>                  */
+> -               if (KWIFEXITED(ret))
+> -                       sub_info->retval = KWEXITSTATUS(ret);
+> +               if (ret)
+> +                       sub_info->retval = ret;
+>         }
+>  
+>         /* Restore default kernel sig handler */
 
-Just reverting the umh.c parts like this makes the problem go away.
+I instrumented this:
 
-diff --git a/kernel/umh.c b/kernel/umh.c
-index f81e8698e36e..79f139a7ca03 100644
---- a/kernel/umh.c
-+++ b/kernel/umh.c
-@@ -154,8 +154,8 @@ static void call_usermodehelper_exec_sync(struct subprocess_info *sub_info)
-                 * the real error code is already in sub_info->retval or
-                 * sub_info->retval is 0 anyway, so don't mess with it then.
-                 */
--               if (KWIFEXITED(ret))
--                       sub_info->retval = KWEXITSTATUS(ret);
-+               if (ret)
-+                       sub_info->retval = ret;
-        }
- 
-        /* Restore default kernel sig handler */
+[    5.118528] ret=0x100 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x1 
+[    9.409235] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   10.114914] ret=0x100 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x1 
+[   10.116308] ret=0x100 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x1 
+[   10.117690] ret=0x100 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x1 
+[   10.118732] ret=0x100 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x1 
+[   10.119899] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   10.121365] ret=0x100 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x1 
+[   10.128044] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   10.945814] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   10.962799] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   10.983755] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   10.992705] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.118877] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.124359] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.129364] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.142139] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.148385] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.153686] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.158861] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.164068] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.192445] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.200605] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.208493] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.216612] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.226467] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.525363] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.532758] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.535279] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.697660] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.701634] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.818652] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   11.836228] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   12.082266] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+[   40.965898] ret=0x0 KWIFEXITED(ret) = 0x1 KWEXITSTATUS(ret)= 0x0 
+
+So the translations look correct. But your change is actually a sematic change
+if(ret) will only trigger if there is an error
+if (KWIFEXITED(ret)) will always trigger when the process ends. So we will always overwrite -ECHILD
+and we did not do it before. 
