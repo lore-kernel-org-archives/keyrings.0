@@ -1,81 +1,42 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 22 Jun 2020 22:04:44 +0000
-Subject: Re: [PATCH v10 2/8] oid_registry: Add TCG defined OIDS for TPM keys
-Message-Id: <20200622220444.GG22727@linux.intel.com>
+From: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Date: Thu, 25 Jun 2020 22:10:53 +0000
+Subject: [RESEND][PATCH] keys: Update comment for restrict_link_by_key_or_keyring_chain
+Message-Id: <20200625221053.165938-2-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200616160229.8018-1-James.Bottomley@HansenPartnership.com>
- <20200616160229.8018-3-James.Bottomley@HansenPartnership.com>
- <20200617214237.dlvfnx2s7aw4sfng@cantor>
- <1592439940.3515.40.camel@HansenPartnership.com>
- <20200618071451.GC6560@linux.intel.com>
- <1592508122.15159.7.camel@HansenPartnership.com>
-In-Reply-To: <1592508122.15159.7.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jerry Snitselaar <jsnitsel@redhat.com>, linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+References: <20200625221053.165938-1-andrew.zaborowski@intel.com>
+In-Reply-To: <20200625221053.165938-1-andrew.zaborowski@intel.com>
+To: keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>
 
-On Thu, Jun 18, 2020 at 12:22:02PM -0700, James Bottomley wrote:
-> On Thu, 2020-06-18 at 10:14 +0300, Jarkko Sakkinen wrote:
-> > On Wed, Jun 17, 2020 at 05:25:40PM -0700, James Bottomley wrote:
-> > > On Wed, 2020-06-17 at 14:42 -0700, Jerry Snitselaar wrote:
-> > > > On Tue Jun 16 20, James Bottomley wrote:
-> > > > > The TCG has defined an OID prefix "2.23.133.10.1" for the
-> > > > > various
-> > > > > TPM
-> > > > > key uses.  We've defined three of the available numbers:
-> > > > > 
-> > > > > 2.23.133.10.1.3 TPM Loadable key.  This is an asymmetric key
-> > > > > (Usually
-> > > > > 		RSA2048 or Elliptic Curve) which can be
-> > > > > imported by a
-> > > > > 		TPM2_Load() operation.
-> > > > > 
-> > > > > 2.23.133.10.1.4 TPM Importable Key.  This is an asymmetric key
-> > > > > (Usually
-> > > > > 		RSA2048 or Elliptic Curve) which can be
-> > > > > imported by a
-> > > > > 		TPM2_Import() operation.
-> > > > > 
-> > > > > Both loadable and importable keys are specific to a given TPM,
-> > > > > the
-> > > > > difference is that a loadable key is wrapped with the symmetric
-> > > > > secret, so must have been created by the TPM itself.  An
-> > > > > importable
-> > > > > key is wrapped with a DH shared secret, and may be created
-> > > > > without
-> > > > > access to the TPM provided you know the public part of the
-> > > > > parent
-> > > > > key.
-> > > > > 
-> > > > > 2.23.133.10.1.5 TPM Sealed Data.  This is a set of data (up to
-> > > > > 128
-> > > > > 		bytes) which is sealed by the TPM.  It usually
-> > > > > 		represents a symmetric key and must be unsealed
-> > > > > before
-> > > > > 		use.
-> > > > > 
-> > > > 
-> > > > James, which document are these defined in? I was searching last
-> > > > night, and couldn't find it.
-> > > 
-> > > It isn't.  It's defined in a TCG spreadsheet that Monty Wiseman
-> > > keeps, but that seems to be as "official" as it gets with the TCG
-> > > OID registry.
-> > > 
-> > > James
-> > 
-> > "The TCG has defined an OID prefix "2.23.133.10.1" for the various
-> > TPM key uses."
-> > 
-> > Should this sentence start just as "TCG ...", not sure if "the" is
-> > required?
-> 
-> I've always referred to it as The Trusted Computing Group (so the TCG)
-> partly to show they're not just any old trusted computing group.  But I
-> think they mostly do refer to themselves in literature as TCG.
+Add the bit of information that makes
+restrict_link_by_key_or_keyring_chain different from
+restrict_link_by_key_or_keyring to the inline docs comment.
 
-... not that this highly important, just asking for pure interest :-)
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+---
+ crypto/asymmetric_keys/restrict.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-/Jarkko
+diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
+index 77ebebada29..84cefe3b358 100644
+--- a/crypto/asymmetric_keys/restrict.c
++++ b/crypto/asymmetric_keys/restrict.c
+@@ -244,9 +244,10 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
+  * @payload: The payload of the new key.
+  * @trusted: A key or ring of keys that can be used to vouch for the new cert.
+  *
+- * Check the new certificate only against the key or keys passed in the data
+- * parameter. If one of those is the signing key and validates the new
+- * certificate, then mark the new certificate as being ok to link.
++ * Check the new certificate against the key or keys passed in the data
++ * parameter and against the keys already linked to the destination keyring. If
++ * one of those is the signing key and validates the new certificate, then mark
++ * the new certificate as being ok to link.
+  *
+  * Returns 0 if the new certificate was accepted, -ENOKEY if we
+  * couldn't find a matching parent certificate in the trusted list,
+-- 
+2.20.1
