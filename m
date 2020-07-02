@@ -1,42 +1,48 @@
-From: Andrew Zaborowski <andrew.zaborowski@intel.com>
-Date: Wed, 29 Jul 2020 23:50:00 +0000
-Subject: [RESEND][PATCH] keys: Update comment for restrict_link_by_key_or_keyring_chain
-Message-Id: <20200729235000.45250-2-andrew.zaborowski@intel.com>
+From: Christophe Vu-Brugier <cvubrugier@fastmail.fm>
+Date: Thu, 02 Jul 2020 08:57:19 +0000
+Subject: [PATCH 0/4] keyutils: fix compilation error with C++
+Message-Id: <20200702085723.7026-1-cvubrugier@fastmail.fm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200729235000.45250-1-andrew.zaborowski@intel.com>
-In-Reply-To: <20200729235000.45250-1-andrew.zaborowski@intel.com>
 To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
 
-Add the bit of information that makes
-restrict_link_by_key_or_keyring_chain different from
-restrict_link_by_key_or_keyring to the inline docs comment.
+These patches are for the userspace keyutils program and library.
 
-Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
----
- crypto/asymmetric_keys/restrict.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+While working on a C++ program that could take advantage of the
+keyutils library, I observed that the compilation fails because the
+"keyutils.h" header file contains a parameter named "private" which is
+a C++ reserved keyword.
 
-diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
-index 77ebebada29..84cefe3b358 100644
---- a/crypto/asymmetric_keys/restrict.c
-+++ b/crypto/asymmetric_keys/restrict.c
-@@ -244,9 +244,10 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
-  * @payload: The payload of the new key.
-  * @trusted: A key or ring of keys that can be used to vouch for the new cert.
-  *
-- * Check the new certificate only against the key or keys passed in the data
-- * parameter. If one of those is the signing key and validates the new
-- * certificate, then mark the new certificate as being ok to link.
-+ * Check the new certificate against the key or keys passed in the data
-+ * parameter and against the keys already linked to the destination keyring. If
-+ * one of those is the signing key and validates the new certificate, then mark
-+ * the new certificate as being ok to link.
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we
-  * couldn't find a matching parent certificate in the trusted list,
+* Patch #1 fixes a few typos in the man pages.
+* Patch #2 fixes the aforementioned issue.
+* Patch #3 helps prevent a similar issue from happening in the future.
+* Patch #4 fixes an issue reported by C++ compilers at link time.
+
+With best regards,
+
+Christophe Vu-Brugier (4):
+  man: fix typos
+  Fix compilation error when keyutils.h is used in C++
+  Check that keyutils.h has valid C++ syntax at build time
+  Fix error when a C++ program is linked with libkeyutils
+
+ Makefile                  | 16 +++++++++++++++-
+ keyutils.c                |  4 ++--
+ keyutils.h                | 10 +++++++++-
+ man/keyctl.3              |  4 ++--
+ man/keyctl_capabilities.3 |  2 +-
+ man/keyctl_chown.3        |  2 +-
+ man/keyctl_clear.3        |  3 +--
+ man/keyctl_link.3         |  3 +--
+ man/keyctl_move.3         |  3 +--
+ man/keyctl_read.3         |  3 +--
+ man/keyctl_revoke.3       |  2 +-
+ man/keyctl_set_timeout.3  |  2 +-
+ man/keyctl_setperm.3      |  2 +-
+ man/keyctl_update.3       |  2 +-
+ 14 files changed, 38 insertions(+), 20 deletions(-)
+
 -- 
-2.20.1
+2.27.0
