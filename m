@@ -1,7 +1,7 @@
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Thu, 02 Jul 2020 03:32:21 +0000
-Subject: [v2 PATCH] crypto: af_alg - Fix regression on empty requests
-Message-Id: <20200702033221.GA19367@gondor.apana.org.au>
+From: Luis Chamberlain <mcgrof@kernel.org>
+Date: Fri, 03 Jul 2020 13:35:58 +0000
+Subject: Re: [v2 PATCH] crypto: af_alg - Fix regression on empty requests
+Message-Id: <20200703133558.GX4332@42.do-not-panic.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,74 +13,35 @@ References: <CA+G9fYvHFs5Yx8TnT6VavtfjMN8QLPuXg6us-dXVJqUUt68adA@mail.gmail.com>
  <20200623170217.GB150582@gmail.com>
  <20200626062948.GA25285@gondor.apana.org.au>
  <CA+G9fYutuU55iL_6Qrk3oG3iq-37PaxvtA4KnEQHuLH9YpH-QA@mail.gmail.com>
-In-Reply-To: <CA+G9fYutuU55iL_6Qrk3oG3iq-37PaxvtA4KnEQHuLH9YpH-QA@mail.gmail.com>
-To: Naresh Kamboju <naresh.kamboju@linaro.org>
-Cc: Eric Biggers <ebiggers@kernel.org>, Luis Chamberlain <mcgrof@kernel.org>, LTP List <ltp@lists.linux.it>, open list <linux-kernel@vger.kernel.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, lkft-triage@lists.linaro.org, Linux Crypto Mailing List <linux-crypto@vger.kernel.org>, Jan Stancek <jstancek@redhat.com>, chrubis <chrubis@suse.cz>, "Serge E. Hallyn" <serge@hallyn.com>, James Morris <jmorris@namei.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Howells <dhowells@redhat.com>, "David S. Miller" <davem@davemloft.net>, Sachin Sant <sachinp@linux.vnet.ibm.com>, Linux Next Mailing List <linux-next@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux- stable <stable@vger.kernel.org>
+ <20200702033221.GA19367@gondor.apana.org.au>
+In-Reply-To: <20200702033221.GA19367@gondor.apana.org.au>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Naresh Kamboju <naresh.kamboju@linaro.org>, Eric Biggers <ebiggers@kernel.org>, LTP List <ltp@lists.linux.it>, open list <linux-kernel@vger.kernel.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, lkft-triage@lists.linaro.org, Linux Crypto Mailing List <linux-crypto@vger.kernel.org>, Jan Stancek <jstancek@redhat.com>, chrubis <chrubis@suse.cz>, "Serge E. Hallyn" <serge@hallyn.com>, James Morris <jmorris@namei.org>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Howells <dhowells@redhat.com>, "David S. Miller" <davem@davemloft.net>, Sachin Sant <sachinp@linux.vnet.ibm.com>, Linux Next Mailing List <linux-next@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux- stable <stable@vger.kernel.org>
 
-On Tue, Jun 30, 2020 at 02:18:11PM +0530, Naresh Kamboju wrote:
+On Thu, Jul 02, 2020 at 01:32:21PM +1000, Herbert Xu wrote:
+> On Tue, Jun 30, 2020 at 02:18:11PM +0530, Naresh Kamboju wrote:
+> > 
+> > Since we are on this subject,
+> > LTP af_alg02  test case fails on stable 4.9 and stable 4.4
+> > This is not a regression because the test case has been failing from
+> > the beginning.
+> > 
+> > Is this test case expected to fail on stable 4.9 and 4.4 ?
+> > or any chance to fix this on these older branches ?
+> > 
+> > Test output:
+> > af_alg02.c:52: BROK: Timed out while reading from request socket.
+> > 
+> > ref:
+> > https://qa-reports.linaro.org/lkft/linux-stable-rc-4.9-oe/build/v4.9.228-191-g082e807235d7/testrun/2884917/suite/ltp-crypto-tests/test/af_alg02/history/
+> > https://qa-reports.linaro.org/lkft/linux-stable-rc-4.9-oe/build/v4.9.228-191-g082e807235d7/testrun/2884606/suite/ltp-crypto-tests/test/af_alg02/log
 > 
-> Since we are on this subject,
-> LTP af_alg02  test case fails on stable 4.9 and stable 4.4
-> This is not a regression because the test case has been failing from
-> the beginning.
-> 
-> Is this test case expected to fail on stable 4.9 and 4.4 ?
-> or any chance to fix this on these older branches ?
-> 
-> Test output:
-> af_alg02.c:52: BROK: Timed out while reading from request socket.
-> 
-> ref:
-> https://qa-reports.linaro.org/lkft/linux-stable-rc-4.9-oe/build/v4.9.228-191-g082e807235d7/testrun/2884917/suite/ltp-crypto-tests/test/af_alg02/history/
-> https://qa-reports.linaro.org/lkft/linux-stable-rc-4.9-oe/build/v4.9.228-191-g082e807235d7/testrun/2884606/suite/ltp-crypto-tests/test/af_alg02/log
+> Actually this test really is broken.
 
-Actually this test really is broken.  Even though empty requests
-are legal, they should never be done with no write(2) at all.
-Because this fundamentally breaks the use of a blocking read(2)
-to wait for more data.
+FWIW the patch "umh: fix processed error when UMH_WAIT_PROC is used" was
+dropped from linux-next for now as it was missing checking for signals.
+I'll be open coding iall checks for each UMH_WAIT_PROC callers next. Its
+not clear if this was the issue with this test case, but figured I'd let
+you know.
 
-Granted this has been broken since 2017 but I'm not going to
-reintroduce this just because of a broken test case.
-
-So please either remove af_alg02 or fix it by adding a control
-message through sendmsg(2).
-
-Thanks,
-
----8<---
-Some user-space programs rely on crypto requests that have no
-control metadata.  This broke when a check was added to require
-the presence of control metadata with the ctx->init flag.
-
-This patch fixes the regression by setting ctx->init as long as
-one sendmsg(2) has been made, with or without a control message.
-
-Reported-by: Sachin Sant <sachinp@linux.vnet.ibm.com>
-Reported-by: Naresh Kamboju <naresh.kamboju@linaro.org>
-Fixes: f3c802a1f300 ("crypto: algif_aead - Only wake up when...")
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-diff --git a/crypto/af_alg.c b/crypto/af_alg.c
-index 9fcb91ea10c41..5882ed46f1adb 100644
---- a/crypto/af_alg.c
-+++ b/crypto/af_alg.c
-@@ -851,6 +851,7 @@ int af_alg_sendmsg(struct socket *sock, struct msghdr *msg, size_t size,
- 		err = -EINVAL;
- 		goto unlock;
- 	}
-+	ctx->init = true;
- 
- 	if (init) {
- 		ctx->enc = enc;
-@@ -858,7 +859,6 @@ int af_alg_sendmsg(struct socket *sock, struct msghdr *msg, size_t size,
- 			memcpy(ctx->iv, con.iv->iv, ivsize);
- 
- 		ctx->aead_assoclen = con.aead_assoclen;
--		ctx->init = true;
- 	}
- 
- 	while (size) {
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+  Luis
