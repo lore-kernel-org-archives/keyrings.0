@@ -1,61 +1,53 @@
-From: Christophe Vu-Brugier <cvubrugier@fastmail.fm>
-Date: Thu, 02 Jul 2020 08:57:21 +0000
-Subject: [PATCH 2/4] Fix compilation error when keyutils.h is used in C++
-Message-Id: <20200702085723.7026-3-cvubrugier@fastmail.fm>
+From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Date: Thu, 09 Jul 2020 08:40:12 +0000
+Subject: [PATCH v5 5/8] crypto: testmgr - support test with different ciphertext per encryption
+Message-Id: <20200709084015.21886-6-tianjia.zhang@linux.alibaba.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200702085723.7026-1-cvubrugier@fastmail.fm>
-In-Reply-To: <20200702085723.7026-1-cvubrugier@fastmail.fm>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, =?utf-8?q?Stephan_M=C3=BCller?= <smueller@chronox.de>, Christophe Vu-Brugier <cvubrugier@fastmail.fm>
+References: <20200709084015.21886-1-tianjia.zhang@linux.alibaba.com>
+In-Reply-To: <20200709084015.21886-1-tianjia.zhang@linux.alibaba.com>
+To: herbert@gondor.apana.org.au, davem@davemloft.net, dhowells@redhat.com, mcoquelin.stm32@gmail.com, alexandre.torgue@st.com, jmorris@namei.org, serge@hallyn.com, nramas@linux.microsoft.com, tusharsu@linux.microsoft.com, zohar@linux.ibm.com, vt@altlinux.org, gilad@benyossef.com, pvanleeuwen@rambus.com, zhang.jia@linux.alibaba.com
+Cc: tianjia.zhang@linux.alibaba.com, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org
 
-The declaration of the keyctl_dh_compute_kdf() function contains a
-parameter named "private". Unfortunately, "private" is a C++ reserved
-keyword. As a consequence, compiling a C++ program that includes
-keyutils.h fails.
+Some asymmetric algorithms will get different ciphertext after
+each encryption, such as SM2, and let testmgr support the testing
+of such algorithms.
 
-This patch renames the "private" variable to "priv" since a similar
-parameter is named this way in the nearby keyctl_dh_compute()
-function.
+In struct akcipher_testvec, set c and c_size to be empty, skip
+the comparison of the ciphertext, and compare the decrypted
+plaintext with m to achieve the test purpose.
 
-Signed-off-by: Christophe Vu-Brugier <cvubrugier@fastmail.fm>
+Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
 ---
- keyutils.c | 4 ++--
- keyutils.h | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ crypto/testmgr.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/keyutils.c b/keyutils.c
-index 9c37256..9877fdb 100644
---- a/keyutils.c
-+++ b/keyutils.c
-@@ -244,11 +244,11 @@ long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
- 	return keyctl(KEYCTL_DH_COMPUTE, &params, buffer, buflen, 0);
- }
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 6863f911fcee..0dc94461c437 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -4025,7 +4025,7 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 		pr_err("alg: akcipher: %s test failed. err %d\n", op, err);
+ 		goto free_all;
+ 	}
+-	if (!vecs->siggen_sigver_test) {
++	if (!vecs->siggen_sigver_test && c) {
+ 		if (req->dst_len != c_size) {
+ 			pr_err("alg: akcipher: %s test failed. Invalid output len\n",
+ 			       op);
+@@ -4056,6 +4056,11 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 		goto free_all;
+ 	}
  
--long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
-+long keyctl_dh_compute_kdf(key_serial_t priv, key_serial_t prime,
- 			   key_serial_t base, char *hashname, char *otherinfo,
- 			   size_t otherinfolen, char *buffer, size_t buflen)
- {
--	struct keyctl_dh_params params = { .priv = private,
-+	struct keyctl_dh_params params = { .priv = priv,
- 					   .prime = prime,
- 					   .base = base };
- 	struct keyctl_kdf_params kdfparams = { .hashname = hashname,
-diff --git a/keyutils.h b/keyutils.h
-index d50119e..bdecf15 100644
---- a/keyutils.h
-+++ b/keyutils.h
-@@ -220,7 +220,7 @@ extern long keyctl_invalidate(key_serial_t id);
- extern long keyctl_get_persistent(uid_t uid, key_serial_t id);
- extern long keyctl_dh_compute(key_serial_t priv, key_serial_t prime,
- 			      key_serial_t base, char *buffer, size_t buflen);
--extern long keyctl_dh_compute_kdf(key_serial_t private, key_serial_t prime,
-+extern long keyctl_dh_compute_kdf(key_serial_t priv, key_serial_t prime,
- 				  key_serial_t base, char *hashname,
- 				  char *otherinfo, size_t otherinfolen,
- 				  char *buffer, size_t buflen);
++	if (!vecs->siggen_sigver_test && !c) {
++		c = outbuf_enc;
++		c_size = req->dst_len;
++	}
++
+ 	op = vecs->siggen_sigver_test ? "sign" : "decrypt";
+ 	if (WARN_ON(c_size > PAGE_SIZE))
+ 		goto free_all;
 -- 
-2.27.0
+2.17.1
