@@ -1,65 +1,38 @@
-From: Andrew Zaborowski <andrew.zaborowski@intel.com>
-Date: Wed, 29 Jul 2020 23:49:59 +0000
-Subject: [RESEND][PATCH] keys: Handle missing Authority Key Identifier X509 extension
-Message-Id: <20200729235000.45250-1-andrew.zaborowski@intel.com>
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 15 Jul 2020 22:28:38 +0000
+Subject: [PATCH] keys: asymmetric: fix error return code in software_key_query()
+Message-Id: <159485211858.2340757.9890754969922775496.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180505060152.21571-1-andrew.zaborowski@intel.com>
-In-Reply-To: <20180505060152.21571-1-andrew.zaborowski@intel.com>
-To: keyrings@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
+References: <20200622112136.72745-1-weiyongjun1@huawei.com>
+In-Reply-To: <20200622112136.72745-1-weiyongjun1@huawei.com>
+To: torvalds@linux-foundation.org
+Cc: Wei Yongjun <weiyongjun1@huawei.com>, dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-In a self-signed certificate the subject and issuer are the same and so
-the Authority Key Identifier X.509 v3 extension is explicitly made
-optional in RFC5280 section 4.2.1.1.
-crypto/asymmetric_keys/x509_cert_parser.c can't handle this and makes
-(at least) the restrict.c functions refuse to work with certificates
-that don't include the AKID.  Fix this by filling in the missing
-cert->sig->auth_ids with the certificate's own IDs after parsing and
-determinig the certificate is self-signed.
+From: Wei Yongjun <weiyongjun1@huawei.com>
 
-The asymmetric_key_generate_id return value is not checked because it's
-already succeeded once at this point.
+Fix to return negative error code -ENOMEM from kmalloc() error handling
+case instead of 0, as done elsewhere in this function.
 
-There are root X.509 v3 certificates in use where this is the case,
-mostly oldish ones.
-
-Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Fixes: f1774cb8956a ("X.509: parse public key parameters from x509 for akcipher")
+Signed-off-by: Wei Yongjun <weiyongjun1@huawei.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 26ec20ef489..a5a2f93e242 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -136,6 +136,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
- 	if (ret < 0)
- 		goto error_decode;
+ crypto/asymmetric_keys/public_key.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index d7f43d4ea925..e5fae4e838c0 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -119,6 +119,7 @@ static int software_key_query(const struct kernel_pkey_params *params,
+ 	if (IS_ERR(tfm))
+ 		return PTR_ERR(tfm);
  
-+	if (cert->self_signed) {
-+		if (!cert->sig->auth_ids[0]) {
-+			/* Duplicate cert->id */
-+			kid = asymmetric_key_generate_id(cert->raw_serial,
-+							 cert->raw_serial_size,
-+							 cert->raw_issuer,
-+							 cert->raw_issuer_size);
-+			cert->sig->auth_ids[0] = kid;
-+		}
-+
-+		if (!cert->sig->auth_ids[1] && cert->skid) {
-+			/* Duplicate cert->skid */
-+			kid = asymmetric_key_generate_id(cert->raw_skid,
-+							 cert->raw_skid_size,
-+							 "", 0);
-+			cert->sig->auth_ids[1] = kid;
-+		}
-+	}
-+
- 	kfree(ctx);
- 	return cert;
- 
--- 
-2.20.1
++	ret = -ENOMEM;
+ 	key = kmalloc(pkey->keylen + sizeof(u32) * 2 + pkey->paramlen,
+ 		      GFP_KERNEL);
+ 	if (!key)
