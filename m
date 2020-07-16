@@ -1,45 +1,68 @@
-From: "Mrs. Safitaou Zoungrana" <s.alireza1972@gmail.com>
-Date: Wed, 08 Jul 2020 12:31:09 +0000
-Subject: My Dear Beloved One,
-Message-Id: <CAPGBjpwPwm-gJmdO58mUNPZHtm=q-TV63pAg3Etzkaj0tq+pxg@mail.gmail.com>
+From: Stephan Mueller <smueller@chronox.de>
+Date: Thu, 16 Jul 2020 14:59:37 +0000
+Subject: Re: [PATCH 0/1] crypto: af_alg - add extra parameters for DRBG interface
+Message-Id: <4708215.a9HWlOh95j@tauon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20200713164857.1031117-1-lenaptr@google.com> <CABvBcwaB3RLuRWEzSoeADc4Jg28fK6mqwevaywLsZhvFgBi+BA@mail.gmail.com> <5740551.2l3rmUXbR5@tauon.chronox.de>
+In-Reply-To: <5740551.2l3rmUXbR5@tauon.chronox.de>
+To: Elena Petrova <lenaptr@google.com>, herbert@gondor.apana.org.au
+Cc: "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, Eric Biggers <ebiggers@kernel.org>, Ard Biesheuvel <ardb@kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>
 
-My Dear Beloved One,
+Am Donnerstag, 16. Juli 2020, 16:49:52 CEST schrieb Stephan Mueller:
 
-I greet you in the name of God almighty the givers of all good things
-in life. Please kindly pardon me for any inconvenience this letter may
-cost you because I know it may come to you as a surprise as we have no
-previous correspondence.  I sent this mail praying for it to reach you
-in good health, since I myself are in a very critical health condition
-in which I sleep every night without knowing if I may be alive to see
-the next day.
+Hi Herbert,
 
-I am Mrs. Safiatou Zoungrana,  the wife of late Engineer Ralph
-Alphonso Zoungrana from Paris France but based here in Burkina Faso
-West Africa since eight years ago as a business woman dealing with
-gold exportation and Sales. We have been married for years before his
-sudden death although we were childless. I have been diagnosed with
-ovarian cancer and I have been battling with the sickness when my late
-lovely husband of a blessed memory was alive. May his soul rest in
-peace, Amen.
+(resent, adding Herbert to the list and fix the keyrings address)
 
-My late Husband left the sum of €7.900.000.00 Seven Million Nine
-Hundred Thousand Euros in a fix/suspense account in one of the prime
-bank here in Burkina Faso. Recently, my Doctor told me that I have few
-days to live due to the cancer problem. The one that disturbs me most
-is my blood pressure sickness.
+> Am Donnerstag, 16. Juli 2020, 16:41:26 CEST schrieb Elena Petrova:
+> 
+> Hi Herbert,
+> 
+> > > > > With these issues, I would assume you are better off creating your
+> > > > > own
+> > > > > kernel module just like I did that externalizes the crypto API to
+> > > > > user
+> > > > > space but is only available on your test kernel and will not affect
+> > > > > all
+> > > > > other users.
+> > > > 
+> > > > I considered publishing my kernel driver on GitHub, but there appears
+> > > > to
+> > > > be
+> > > > a sufficiently large number of users to justify having this
+> > > > functionality
+> > > > upstream.
+> > > 
+> > > So, I should then dust off my AF_ALG KPP and AF_ALG akcipher patches
+> > > then?
+> > > 
+> > > :-D
+> > 
+> > Sure :)
+> 
+> Long time ago when I released the patches now found in [1] and [2] they
+> where rejected as it was said, the official route to access the RSA/ECDSA
+> and the DH/ECDH ciphers is through the keyring.
+> 
+> Obviously this interface of the keyring is not suitable for testing these
+> algorithms. Considering the request that the kernel crypto API ciphers
+> should be testable with arbitrary test vectors, would the dusted-off
+> patches for AF_ALG KPP and akcipher be accepted?
+> 
+> Ciao
+> Stephan
+> 
+> [1]
+> https://github.com/smuellerDD/libkcapi/tree/master/kernel-patches/4.15-rc3/
+> asym
+> 
+> [2]
+> https://github.com/smuellerDD/libkcapi/tree/master/kernel-patches/4.15-rc3/
+> kpp
 
-Having known my health condition I decided to seek for your kind
-assistance to transfer this fund into your account and you will use it
-to establish an orphanage home in my name. I will give you more
-details about the project as soon as I receive your reply in my
-private email (mmsafiatou057@gmail.com) to handle this project because
-I do not want to state all here until I see your reply, desire and
-commitment to handle this project.
 
-My Regards to your family.
-Mrs. Safiatou Zoungrana.
+Ciao
+Stephan
