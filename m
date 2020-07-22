@@ -1,47 +1,49 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Fri, 24 Jul 2020 07:16:34 +0000
-Subject: Re: [PATCH] keys: asymmetric: fix error return code in software_key_query()
-Message-Id: <20200724071634.GA1872662@linux.intel.com>
+From: trix@redhat.com
+Date: Wed, 22 Jul 2020 13:46:10 +0000
+Subject: [PATCH v2] KEYS: remove redundant memset
+Message-Id: <20200722134610.31947-1-trix@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200723013223.GA45081@linux.intel.com>
- <159485211858.2340757.9890754969922775496.stgit@warthog.procyon.org.uk>
- <1269137.1595490145@warthog.procyon.org.uk>
-In-Reply-To: <1269137.1595490145@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, Wei Yongjun <weiyongjun1@huawei.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, jmorris@namei.org, serge@hallyn.com, denkenz@gmail.com, marcel@holtmann.org
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Tom Rix <trix@redhat.com>
 
-On Thu, Jul 23, 2020 at 08:42:25AM +0100, David Howells wrote:
-> Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
-> 
-> > Why f1774cb8956a lacked any possible testing? It extends ABI anyway.
-> > 
-> > I think it is a kind of change that would require more screening before
-> > getting applied.
-> 
-> Yeah.  It went in via a round-about route.  I left off development of it when
-> the tpm stuff I wrote broke because the tpm2 stuff went in upstream.  I then
-> handed the patches off to Denis who did the tpm support, but I never got my
-> stuff finished enough to work out how to do the testsuite (since it would
-> involve using a tpm).  However, since I did the PKCS#8 testing module as well,
-> I guess I don't need that to at least test the API.  I'll look at using that
-> to add some tests.  Any suggestions as to how to do testing via the tpm?
-> 
-> David
+From: Tom Rix <trix@redhat.com>
 
-The unfortunate thing is that I was not involved with asym_tpm.c review
-process in any possible way, which means that at the moment I lack both:
+Reviewing use of memset in keyctrl_pkey.c
 
-1. Knowledge of crypto/asymmetric_keys.
-2. How asym_tpm.c is implemented.
+keyctl_pkey_params_get prologue code to set params up
 
-I only became aware of asym_tpm.c's existence last Sep [*].
+	memset(params, 0, sizeof(*params));
+	params->encoding = "raw";
 
-I'll put to my backlog to try TPM asymmetric keys (earliest when I'm back
-from vacation 08/10).
+keyctl_pkey_query has the same prologue
+and calls keyctl_pkey_params_get.
 
-[*] https://lore.kernel.org/linux-integrity/20190926171601.30404-1-jarkko.sakkinen@linux.intel.com/
+So remove the prologue.
 
-/Jarkko
+Fixes: 00d60fd3b932 ("KEYS: Provide keyctls to drive the new key type ops for asymmetric keys [ver #2]")
+
+Signed-off-by: Tom Rix <trix@redhat.com>
+---
+v1: remove change to keyctl_pkey_params_get_2
+
+ security/keys/keyctl_pkey.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+index 931d8dfb4a7f..5de0d599a274 100644
+--- a/security/keys/keyctl_pkey.c
++++ b/security/keys/keyctl_pkey.c
+@@ -166,8 +166,6 @@ long keyctl_pkey_query(key_serial_t id,
+ 	struct kernel_pkey_query res;
+ 	long ret;
+ 
+-	memset(&params, 0, sizeof(params));
+-
+ 	ret = keyctl_pkey_params_get(id, _info, &params);
+ 	if (ret < 0)
+ 		goto error;
+-- 
+2.18.1
