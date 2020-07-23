@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Thu, 23 Jul 2020 07:31:23 +0000
+Date: Thu, 23 Jul 2020 07:42:25 +0000
 Subject: Re: [PATCH] keys: asymmetric: fix error return code in software_key_query()
-Message-Id: <1267853.1595489483@warthog.procyon.org.uk>
+Message-Id: <1269137.1595490145@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -13,22 +13,17 @@ Cc: dhowells@redhat.com, torvalds@linux-foundation.org, Wei Yongjun <weiyongjun1
 
 Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
 
-> >  	if (IS_ERR(tfm))
-> >  		return PTR_ERR(tfm);
-> >  
-> > +	ret = -ENOMEM;
+> Why f1774cb8956a lacked any possible testing? It extends ABI anyway.
 > 
-> This is extremely confusing to read way to handle 'ret'.
-> 
-> Would be way more cleaner to be just simple and stupid:
-> 
-> 	if (!key) {
-> 		ret = -ENOMEM;
-> 		goto error_free_tfm;
-> 	}
+> I think it is a kind of change that would require more screening before
+> getting applied.
 
-I agree, but we have some people who will (or who used to) moan at you for
-doing in four lines what you could've done in three.  I don't know if this is
-still the standard.
+Yeah.  It went in via a round-about route.  I left off development of it when
+the tpm stuff I wrote broke because the tpm2 stuff went in upstream.  I then
+handed the patches off to Denis who did the tpm support, but I never got my
+stuff finished enough to work out how to do the testsuite (since it would
+involve using a tpm).  However, since I did the PKCS#8 testing module as well,
+I guess I don't need that to at least test the API.  I'll look at using that
+to add some tests.  Any suggestions as to how to do testing via the tpm?
 
 David
