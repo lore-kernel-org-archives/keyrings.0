@@ -1,36 +1,96 @@
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sun, 19 Jul 2020 18:10:04 +0000
-Subject: Re: [RFC PATCH 0/5] keys: Security changes, ACLs and Container keyring
-Message-Id: <87tuy3nzpf.fsf@x220.int.ebiederm.org>
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 24 Jul 2020 22:17:26 +0000
+Subject: [PATCH] watch_queue: Limit the number of watches a user can hold
+Message-Id: <159562904644.2287160.13294507067766261970.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <159493167778.3249370.8145886688150701997.stgit@warthog.procyon.org.uk>
-In-Reply-To: <159493167778.3249370.8145886688150701997.stgit@warthog.procyon.org.uk>
-        (David Howells's message of "Thu, 16 Jul 2020 21:34:37 +0100")
-To: David Howells <dhowells@redhat.com>
-Cc: Stephen Smalley <stephen.smalley.work@gmail.com>, Casey Schaufler <casey@schaufler-ca.com>, keyrings@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Paul Moore <paul@paul-moore.com>, selinux@vger.kernel.org, jlayton@redhat.com, christian@brauner.io, linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org, linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org, Linus Torvalds <torvalds@linux-foundation.org>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, jarkko.sakkinen@linux.intel.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> writes:
+Impose a limit on the number of watches that a user can hold so that they
+can't use this mechanism to fill up all the available memory.
 
-> Here are some patches to provide some security changes and some container
-> support:
+This is done by putting a counter in user_struct that's incremented when a
+watch is allocated and decreased when it is released.  If the number
+exceeds the RLIMIT_NOFILE limit, the watch is rejected with EAGAIN.
 
-Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+This can be tested by the following means:
 
-There remain unfixed security issues in the new mount api.   Those need
-to get fixed before it is even worth anyones time reviewing new code.
+ (1) Create a watch queue and attach it to fd 5 in the program given - in
+     this case, bash:
 
-Those issues came up in the review.  I successfully demonstrated how to
-address the security issues in the new mount api before the code was
-merged.  Yet the code was merged with the security issues present,
-and I have not seem those issues addressed.
+	keyctl watch_session /tmp/nlog /tmp/gclog 5 bash
 
-So far I have had to rewrite two filesystems because of bugs in the
-mount API.
+ (2) In the shell, set the maximum number of files to, say, 99:
 
-Enough is enough.  Let's get the what has already been merged sorted
-out before we had more.
+	ulimit -n 99
 
-Eric
+ (3) Add 200 keyrings:
+
+	for ((i=0; i<200; i++)); do keyctl newring a$i @s || break; done
+
+ (4) Try to watch all of the keyrings:
+
+	for ((i=0; i<200; i++)); do echo $i; keyctl watch_add 5 %:a$i || break; done
+
+     This should fail when the number of watches belonging to the user hits
+     99.
+
+ (5) Remove all the keyrings and all of those watches should go away:
+
+	for ((i=0; i<200; i++)); do keyctl unlink %:a$i; done
+
+ (6) Kill off the watch queue by exiting the shell spawned by
+     watch_session.
+
+Fixes: c73be61cede5 ("pipe: Add general notification queue support")
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ include/linux/sched/user.h |    3 +++
+ kernel/watch_queue.c       |    8 ++++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/include/linux/sched/user.h b/include/linux/sched/user.h
+index 917d88edb7b9..a8ec3b6093fc 100644
+--- a/include/linux/sched/user.h
++++ b/include/linux/sched/user.h
+@@ -36,6 +36,9 @@ struct user_struct {
+     defined(CONFIG_NET) || defined(CONFIG_IO_URING)
+ 	atomic_long_t locked_vm;
+ #endif
++#ifdef CONFIG_WATCH_QUEUE
++	atomic_t nr_watches;	/* The number of watches this user currently has */
++#endif
+ 
+ 	/* Miscellaneous per-user rate limit */
+ 	struct ratelimit_state ratelimit;
+diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
+index f74020f6bd9d..0ef8f65bd2d7 100644
+--- a/kernel/watch_queue.c
++++ b/kernel/watch_queue.c
+@@ -393,6 +393,7 @@ static void free_watch(struct rcu_head *rcu)
+ 	struct watch *watch = container_of(rcu, struct watch, rcu);
+ 
+ 	put_watch_queue(rcu_access_pointer(watch->queue));
++	atomic_dec(&watch->cred->user->nr_watches);
+ 	put_cred(watch->cred);
+ }
+ 
+@@ -452,6 +453,13 @@ int add_watch_to_object(struct watch *watch, struct watch_list *wlist)
+ 	watch->cred = get_current_cred();
+ 	rcu_assign_pointer(watch->watch_list, wlist);
+ 
++	if (atomic_inc_return(&watch->cred->user->nr_watches) >
++	    task_rlimit(current, RLIMIT_NOFILE)) {
++		atomic_dec(&watch->cred->user->nr_watches);
++		put_cred(watch->cred);
++		return -EAGAIN;
++	}
++
+ 	spin_lock_bh(&wqueue->lock);
+ 	kref_get(&wqueue->usage);
+ 	kref_get(&watch->usage);
