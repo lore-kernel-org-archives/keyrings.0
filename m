@@ -1,68 +1,49 @@
-From: Stephan Mueller <smueller@chronox.de>
-Date: Thu, 16 Jul 2020 14:59:37 +0000
-Subject: Re: [PATCH 0/1] crypto: af_alg - add extra parameters for DRBG interface
-Message-Id: <4708215.a9HWlOh95j@tauon.chronox.de>
+From: Krzysztof Kozlowski <krzk@kernel.org>
+Date: Tue, 28 Jul 2020 17:10:29 +0000
+Subject: [PATCH] KEYS: asymmetric: Fix kerneldoc
+Message-Id: <20200728171029.28525-1-krzk@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200713164857.1031117-1-lenaptr@google.com> <CABvBcwaB3RLuRWEzSoeADc4Jg28fK6mqwevaywLsZhvFgBi+BA@mail.gmail.com> <5740551.2l3rmUXbR5@tauon.chronox.de>
-In-Reply-To: <5740551.2l3rmUXbR5@tauon.chronox.de>
-To: Elena Petrova <lenaptr@google.com>, herbert@gondor.apana.org.au
-Cc: "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, Eric Biggers <ebiggers@kernel.org>, Ard Biesheuvel <ardb@kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>
+To: David Howells <dhowells@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, keyrings@vger.kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <krzk@kernel.org>
 
-Am Donnerstag, 16. Juli 2020, 16:49:52 CEST schrieb Stephan Mueller:
+Fix W=1 compile warnings (invalid kerneldoc):
 
-Hi Herbert,
+    crypto/asymmetric_keys/asymmetric_type.c:160: warning: Function parameter or member 'kid1' not described in 'asymmetric_key_id_same'
+    crypto/asymmetric_keys/asymmetric_type.c:160: warning: Function parameter or member 'kid2' not described in 'asymmetric_key_id_same'
+    crypto/asymmetric_keys/asymmetric_type.c:160: warning: Excess function parameter 'kid_1' description in 'asymmetric_key_id_same'
+    crypto/asymmetric_keys/asymmetric_type.c:160: warning: Excess function parameter 'kid_2' description in 'asymmetric_key_id_same'
 
-(resent, adding Herbert to the list and fix the keyrings address)
+Signed-off-by: Krzysztof Kozlowski <krzk@kernel.org>
+---
+ crypto/asymmetric_keys/asymmetric_type.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> Am Donnerstag, 16. Juli 2020, 16:41:26 CEST schrieb Elena Petrova:
-> 
-> Hi Herbert,
-> 
-> > > > > With these issues, I would assume you are better off creating your
-> > > > > own
-> > > > > kernel module just like I did that externalizes the crypto API to
-> > > > > user
-> > > > > space but is only available on your test kernel and will not affect
-> > > > > all
-> > > > > other users.
-> > > > 
-> > > > I considered publishing my kernel driver on GitHub, but there appears
-> > > > to
-> > > > be
-> > > > a sufficiently large number of users to justify having this
-> > > > functionality
-> > > > upstream.
-> > > 
-> > > So, I should then dust off my AF_ALG KPP and AF_ALG akcipher patches
-> > > then?
-> > > 
-> > > :-D
-> > 
-> > Sure :)
-> 
-> Long time ago when I released the patches now found in [1] and [2] they
-> where rejected as it was said, the official route to access the RSA/ECDSA
-> and the DH/ECDH ciphers is through the keyring.
-> 
-> Obviously this interface of the keyring is not suitable for testing these
-> algorithms. Considering the request that the kernel crypto API ciphers
-> should be testable with arbitrary test vectors, would the dusted-off
-> patches for AF_ALG KPP and akcipher be accepted?
-> 
-> Ciao
-> Stephan
-> 
-> [1]
-> https://github.com/smuellerDD/libkcapi/tree/master/kernel-patches/4.15-rc3/
-> asym
-> 
-> [2]
-> https://github.com/smuellerDD/libkcapi/tree/master/kernel-patches/4.15-rc3/
-> kpp
-
-
-Ciao
-Stephan
+diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
+index 33e77d846caa..ad8af3d70ac0 100644
+--- a/crypto/asymmetric_keys/asymmetric_type.c
++++ b/crypto/asymmetric_keys/asymmetric_type.c
+@@ -152,7 +152,8 @@ EXPORT_SYMBOL_GPL(asymmetric_key_generate_id);
+ 
+ /**
+  * asymmetric_key_id_same - Return true if two asymmetric keys IDs are the same.
+- * @kid_1, @kid_2: The key IDs to compare
++ * @kid1: The key ID to compare
++ * @kid2: The key ID to compare
+  */
+ bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
+ 			    const struct asymmetric_key_id *kid2)
+@@ -168,7 +169,8 @@ EXPORT_SYMBOL_GPL(asymmetric_key_id_same);
+ /**
+  * asymmetric_key_id_partial - Return true if two asymmetric keys IDs
+  * partially match
+- * @kid_1, @kid_2: The key IDs to compare
++ * @kid1: The key ID to compare
++ * @kid2: The key ID to compare
+  */
+ bool asymmetric_key_id_partial(const struct asymmetric_key_id *kid1,
+ 			       const struct asymmetric_key_id *kid2)
+-- 
+2.17.1
