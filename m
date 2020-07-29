@@ -1,37 +1,65 @@
-From: Xingxing Su <suxingxing@loongson.cn>
-Date: Mon, 15 Jun 2020 03:53:40 +0000
-Subject: [PATCH] certs/blacklist_hashes.c: Use __initconst for const init definition
-Message-Id: <1592193220-7460-1-git-send-email-suxingxing@loongson.cn>
+From: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Date: Wed, 29 Jul 2020 23:49:59 +0000
+Subject: [RESEND][PATCH] keys: Handle missing Authority Key Identifier X509 extension
+Message-Id: <20200729235000.45250-1-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com, dwmw2@infradead.org
-Cc: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, yangtiezhu@loongson.cn, lixuefeng@loongson.cn
+References: <20180505060152.21571-1-andrew.zaborowski@intel.com>
+In-Reply-To: <20180505060152.21571-1-andrew.zaborowski@intel.com>
+To: keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>
 
-Fix the following checkpatch error:
+In a self-signed certificate the subject and issuer are the same and so
+the Authority Key Identifier X.509 v3 extension is explicitly made
+optional in RFC5280 section 4.2.1.1.
+crypto/asymmetric_keys/x509_cert_parser.c can't handle this and makes
+(at least) the restrict.c functions refuse to work with certificates
+that don't include the AKID.  Fix this by filling in the missing
+cert->sig->auth_ids with the certificate's own IDs after parsing and
+determinig the certificate is self-signed.
 
-ERROR: Use of const init definition must use __initconst
-#4: FILE: certs/blacklist_hashes.c:4:
-+const char __initdata *const blacklist_hashes[] = {
+The asymmetric_key_generate_id return value is not checked because it's
+already succeeded once at this point.
 
-Signed-off-by: Xingxing Su <suxingxing@loongson.cn>
+There are root X.509 v3 certificates in use where this is the case,
+mostly oldish ones.
+
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
 ---
- certs/blacklist_hashes.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/certs/blacklist_hashes.c b/certs/blacklist_hashes.c
-index 3448923..d5961aa 100644
---- a/certs/blacklist_hashes.c
-+++ b/certs/blacklist_hashes.c
-@@ -1,7 +1,7 @@
- // SPDX-License-Identifier: GPL-2.0
- #include "blacklist.h"
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 26ec20ef489..a5a2f93e242 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -136,6 +136,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
+ 	if (ret < 0)
+ 		goto error_decode;
  
--const char __initdata *const blacklist_hashes[] = {
-+const char __initconst *const blacklist_hashes[] = {
- #include CONFIG_SYSTEM_BLACKLIST_HASH_LIST
- 	, NULL
- };
++	if (cert->self_signed) {
++		if (!cert->sig->auth_ids[0]) {
++			/* Duplicate cert->id */
++			kid = asymmetric_key_generate_id(cert->raw_serial,
++							 cert->raw_serial_size,
++							 cert->raw_issuer,
++							 cert->raw_issuer_size);
++			cert->sig->auth_ids[0] = kid;
++		}
++
++		if (!cert->sig->auth_ids[1] && cert->skid) {
++			/* Duplicate cert->skid */
++			kid = asymmetric_key_generate_id(cert->raw_skid,
++							 cert->raw_skid_size,
++							 "", 0);
++			cert->sig->auth_ids[1] = kid;
++		}
++	}
++
+ 	kfree(ctx);
+ 	return cert;
+ 
 -- 
-2.1.0
+2.20.1
