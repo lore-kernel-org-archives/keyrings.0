@@ -1,23 +1,42 @@
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 23 Jul 2020 07:45:10 +0000
-Subject: Re: [PATCH] encrypted-keys: Replace HTTP links with HTTPS ones
-Message-Id: <1269485.1595490310@warthog.procyon.org.uk>
+From: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Date: Wed, 29 Jul 2020 23:50:00 +0000
+Subject: [RESEND][PATCH] keys: Update comment for restrict_link_by_key_or_keyring_chain
+Message-Id: <20200729235000.45250-2-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200723020114.GG45081@linux.intel.com> <20200716195227.65839-1-grandmaster@al2klimov.de>
-In-Reply-To: <20200723020114.GG45081@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: dhowells@redhat.com, "Alexander A. Klimov" <grandmaster@al2klimov.de>, zohar@linux.ibm.com, linux-integrity@vger.kernel.org, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20200729235000.45250-1-andrew.zaborowski@intel.com>
+In-Reply-To: <20200729235000.45250-1-andrew.zaborowski@intel.com>
+To: keyrings@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>
 
-Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
+Add the bit of information that makes
+restrict_link_by_key_or_keyring_chain different from
+restrict_link_by_key_or_keyring to the inline docs comment.
 
-> Please remove this. We don't care about it. Git log should only contain
-> information either for studying or maintaining the kernel source code.
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+---
+ crypto/asymmetric_keys/restrict.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-Yeah - in this case it's not useful.  Sometimes it's worth including the
-script if you think the target audience might be interested in running it for
-themselves - such as to help resolve merge problems.
-
-David
+diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
+index 77ebebada29..84cefe3b358 100644
+--- a/crypto/asymmetric_keys/restrict.c
++++ b/crypto/asymmetric_keys/restrict.c
+@@ -244,9 +244,10 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
+  * @payload: The payload of the new key.
+  * @trusted: A key or ring of keys that can be used to vouch for the new cert.
+  *
+- * Check the new certificate only against the key or keys passed in the data
+- * parameter. If one of those is the signing key and validates the new
+- * certificate, then mark the new certificate as being ok to link.
++ * Check the new certificate against the key or keys passed in the data
++ * parameter and against the keys already linked to the destination keyring. If
++ * one of those is the signing key and validates the new certificate, then mark
++ * the new certificate as being ok to link.
+  *
+  * Returns 0 if the new certificate was accepted, -ENOKEY if we
+  * couldn't find a matching parent certificate in the trusted list,
+-- 
+2.20.1
