@@ -1,7 +1,7 @@
 From: David Howells <dhowells@redhat.com>
-Date: Mon, 03 Aug 2020 10:08:21 +0000
+Date: Mon, 03 Aug 2020 10:18:09 +0000
 Subject: Re: [PATCH 13/17] watch_queue: Implement mount topology and attribute change notifications [ver #5]
-Message-Id: <1272197.1596449301@warthog.procyon.org.uk>
+Message-Id: <1283475.1596449889@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -17,6 +17,10 @@ Miklos Szeredi <miklos@szeredi.hu> wrote:
 > 
 > Shouldn't the notification interface provide the unique ID?
 
-It could make sense - instead of the reusable mnt_id.
+Hmmm...  If I'm going to do that, I have to put the fsinfo-core branch first
+otherwise you can't actually retrieve the unique ID - and thus won't be able
+to make sense of the notification record.  Such a rearrangement might make
+sense anyway since Ian and Karel have been primarily concentrating on fsinfo
+and only more recently started adding notification support.
 
 David
