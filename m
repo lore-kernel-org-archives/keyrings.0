@@ -1,56 +1,81 @@
 From: Ian Kent <raven@themaw.net>
-Date: Mon, 03 Aug 2020 14:30:26 +0000
+Date: Tue, 04 Aug 2020 11:38:59 +0000
 Subject: Re: [PATCH 13/17] watch_queue: Implement mount topology and attribute change notifications [ver #5]
-Message-Id: <bfba8e858885b8c507b8816d5296f7ab7f949e78.camel@themaw.net>
+Message-Id: <43c061d26ddef2aa3ca1ac726da7db9ab461e7be.camel@themaw.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <303106be4785135446e56cb606138a6e94885887.camel@themaw.net>
-         <CAJfpeguO8Qwkzx9zfGVT7W+pT5p6fgj-_8oJqJbXX_KQBpLLEQ@mail.gmail.com>
-         <1293241.1595501326@warthog.procyon.org.uk>
-         <CAJfpegspWA6oUtdcYvYF=3fij=Bnq03b8VMbU9RNMKc+zzjbag@mail.gmail.com>
-         <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
+References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
          <158454391302.2863966.1884682840541676280.stgit@warthog.procyon.org.uk>
-         <2003787.1595585999@warthog.procyon.org.uk>
-         <865566fb800a014868a9a7e36a00a14430efb11e.camel@themaw.net>
-         <2023286.1595590563@warthog.procyon.org.uk>
-         <CAJfpegsT_3YqHPWCZGX7Lr+sE0NVmczWz5L6cN8CzsVz4YKLCQ@mail.gmail.com>
-         <1283475.1596449889@warthog.procyon.org.uk>
-         <1576646.1596455376@warthog.procyon.org.uk>
-         <1692826.1596457912@warthog.procyon.org.uk>
-In-Reply-To: <1692826.1596457912@warthog.procyon.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, Christian Brauner <christian@brauner.io>, andres@anarazel.de, Jeff Layton <jlayton@redhat.com>, dray@redhat.com, Karel Zak <kzak@redhat.com>, keyrings@vger.kernel.org, Linux API <linux-api@vger.kernel.org>, linux-fsdevel@vger.kernel.org, LSM <linux-security-module@vger.kernel.org>, linux-kernel@vger.kernel.org
+         <CAJfpegspWA6oUtdcYvYF=3fij=Bnq03b8VMbU9RNMKc+zzjbag@mail.gmail.com>
+         <1293241.1595501326@warthog.procyon.org.uk>
+         <CAJfpeguvLMCw1H8+DPsfZE_k0sEiRtA17pD9HjnceSsAvqqAZw@mail.gmail.com>
+In-Reply-To: <CAJfpeguvLMCw1H8+DPsfZE_k0sEiRtA17pD9HjnceSsAvqqAZw@mail.gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, Christian Brauner <christian@brauner.io>, andres@anarazel.de, Jeff Layton <jlayton@redhat.com>, dray@redhat.com, Karel Zak <kzak@redhat.com>, keyrings@vger.kernel.org, Linux API <linux-api@vger.kernel.org>, linux-fsdevel@vger.kernel.org, LSM <linux-security-module@vger.kernel.org>, linux-kernel@vger.kernel.org
 
-On Mon, 2020-08-03 at 13:31 +0100, David Howells wrote:
-> Ian Kent <raven@themaw.net> wrote:
+On Mon, 2020-08-03 at 11:29 +0200, Miklos Szeredi wrote:
+> On Thu, Jul 23, 2020 at 12:48 PM David Howells <dhowells@redhat.com>
+> wrote:
 > 
-> > > I'm changing it so that the fields are 64-bit, but initialised
-> > > with the
-> > > existing mount ID in the notifications set.  The fsinfo set
-> > > changes that
-> > > to a unique ID.  I'm tempted to make the unique IDs start at
-> > > UINT_MAX+1 to
-> > > disambiguate them.
+> > > >                 __u32   topology_changes;
+> > > >                 __u32   attr_changes;
+> > > >                 __u32   aux_topology_changes;
+> > > 
+> > > Being 32bit this introduces wraparound effects.  Is that really
+> > > worth it?
 > > 
-> > Mmm ... so what would I use as a mount id that's not used, like
-> > NULL
-> > for strings?
+> > You'd have to make 2 billion changes without whoever's monitoring
+> > getting a
+> > chance to update their counters.  But maybe it's not worth it
+> > putting them
+> > here.  If you'd prefer, I can make the counters all 64-bit and just
+> > retrieve
+> > them with fsinfo().
 > 
-> Zero is skipped, so you could use that.
-> 
-> > I'm using -1 now but changing this will mean I need something
-> > different.
-> 
-> It's 64-bits, so you're not likely to see it reach -1, even if it
-> does start
-> at UINT_MAX+1.
+> Yes, I think that would be preferable.
 
-Ha, either or, I don't think it will be a problem, there's
-bound to be a few changes so the components using this will
-need to change a bit before it's finalized, shouldn't be a
-big deal I think. At least not for me and shouldn't be much
-for libmount either I think.
+I think this is the source of the recommendation for removing the
+change counters from the notification message, correct?
 
-Ian
+While it looks like I may not need those counters for systemd message
+buffer overflow handling myself I think removing them from the
+notification message isn't a sensible thing to do.
+
+If you need to detect missing messages, perhaps due to message buffer
+overflow, then you need change counters that are relevant to the
+notification message itself. That's so the next time you get a message
+for that object you can be sure that change counter comparisons you
+you make relate to object notifications you have processed.
+
+Yes, I know it isn't quite that simple, but tallying up what you have
+processed in the current batch of messages (or in multiple batches of
+messages if more than one read has been possible) to perform the check
+is a user space responsibility. And it simply can't be done if the
+counters consistency is in question which it would be if you need to
+perform another system call to get it.
+
+It's way more useful to have these in the notification than obtainable
+via fsinfo() IMHO.
+
+> 
+> > > >         n->watch.info & NOTIFY_MOUNT_IS_RECURSIVE if true
+> > > > indicates that
+> > > >         the notifcation was generated by an event (eg. SETATTR)
+> > > > that was
+> > > >         applied recursively.  The notification is only
+> > > > generated for the
+> > > >         object that initially triggered it.
+> > > 
+> > > Unused in this patchset.  Please don't add things to the API
+> > > which are not
+> > > used.
+> > 
+> > Christian Brauner has patches for mount_setattr() that will need to
+> > use this.
+> 
+> Fine, then that patch can add the flag.
+> 
+> Thanks,
+> Miklos
