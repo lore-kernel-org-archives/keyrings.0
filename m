@@ -1,59 +1,45 @@
-From: Coly Li <colyli@suse.de>
-Date: Fri, 21 Aug 2020 13:53:56 +0000
-Subject: [PATCH v4] docs: trusted-encrypted.rst: update parameters for command examples
-Message-Id: <20200821135356.15737-1-colyli@suse.de>
+From: "Mr. Scott Donald" <mes64543@gmail.com>
+Date: Fri, 14 Aug 2020 10:28:23 +0000
+Subject: Hello. Please
+Message-Id: <CAF4hjb9+Pq34CgLokF9MnypbQWXhombhtDEObi6O9uyopL0L6Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Stefan Berger <stefanb@linux.ibm.com>, Dan Williams <dan.j.williams@intel.com>, James Bottomley <jejb@linux.ibm.com>, Jason Gunthorpe <jgg@ziepe.ca>, Jonathan Corbet <corbet@lwn.net>, Mimi Zohar <zohar@linux.ibm.com>, Peter Huewe <peterhuewe@gmx.de>
+To: keyrings@vger.kernel.org
 
-The parameters in command examples for tpm2_createprimary and
-tpm2_evictcontrol are outdated, people (like me) are not able to create
-trusted key by these command examples.
-
-This patch updates the parameters of command example tpm2_createprimary
-and tpm2_evictcontrol in trusted-encrypted.rst. With Linux kernel v5.8
-and tpm2-tools-4.1, people can create a trusted key by following the
-examples in this document.
-
-Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: James Bottomley <jejb@linux.ibm.com>
-Cc: Jason Gunthorpe <jgg@ziepe.ca>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>
----
-Changelog:
-v4: update Reviewed-by list, and Cc linux-doc and linux-integrity
-    maintainers.
-v3: update commit log with review comments from Jarkko Sakkinen. 
-v2: remove the change of trusted key related operation.
-v1: initial version.
-
- Documentation/security/keys/trusted-encrypted.rst | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index 9483a7425ad5..1da879a68640 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -39,10 +39,9 @@ With the IBM TSS 2 stack::
- 
- Or with the Intel TSS 2 stack::
- 
--  #> tpm2_createprimary --hierarchy o -G rsa2048 -o key.ctxt
-+  #> tpm2_createprimary --hierarchy o -G rsa2048 -c key.ctxt
-   [...]
--  handle: 0x800000FF
--  #> tpm2_evictcontrol -c key.ctxt -p 0x81000001
-+  #> tpm2_evictcontrol -c key.ctxt 0x81000001
-   persistentHandle: 0x81000001
- 
- Usage::
 -- 
-2.26.2
+Dear Friend,
+
+I'm Mr. Scott Donald a Successful businessMan dealing with
+Exportation, I got your mail contact through search to let you know my
+intension and my Ugly Situation Am a dying Man here in Los Angeles
+California Hospital Bed in (USA), I Lost my Wife and my only Daughter
+for Covid-19 and I also have a problem in my Health and I can die
+anytime I Know,
+
+I have a project that I am about to hand over to you. and I already
+instructed the Bankia S.A. Madrid, Spain(BSA) to transfer my fund sum
+of £3,7M GBP. Equivalent to €4,077,033.91 EUR, to you as to enable you
+to give 50% of this fund to Charitable Home in your State and take 50%
+don't think otherwise and why would anybody send someone you barely
+know to help you deliver a message, help me do this for the happiness
+of my soul and for God to mercy me and my Family and give Us a good
+place.
+
+please, do as I said there was someone from your State that I deeply
+love so very very much and I miss her so badly I have no means to
+reach any Charitable Home there. that is why I go for a personal
+search of the Country and State and I got your mail contact through
+search to let you know my Bitterness and please, help me is getting
+Dark I ask my Doctor to help me keep you notice failure for me to
+reach you in person Your urgent Response, here is my Doctor Whats-app
+Number for urgent notice +13019692737
+
+Hope To Hear From You. I'm sending this email to you for the second
+time yet no response from you.
+
+My Regards.
+
+Mr. Scott Donald
+CEO
