@@ -1,13 +1,17 @@
-From: Coly Li <colyli@suse.de>
-Date: Sat, 15 Aug 2020 07:51:43 +0000
+From: colyli@suse.de
+Date: Sat, 15 Aug 2020 12:46:14 +0000
 Subject: [PATCH RESEND] docs: update trusted-encrypted.rst
-Message-Id: <20200815075143.47082-1-colyli@suse.de>
+Message-Id: <20200815124614.115201-1-colyli@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20200815075143.47082-1-colyli@suse.de>
+In-Reply-To: <20200815075143.47082-1-colyli@suse.de>
 To: keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Dan Williams <dan.j.williams@intel.com>, James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Mimi Zohar <zohar@linux.ibm.com>, Stefan Berger <stefanb@linux.ibm.com>
+
+From: Coly Li <colyli@suse.de>
 
 The parameters in tmp2 commands are outdated, people are not able to
 create trusted key by the example commands.
