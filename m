@@ -1,7 +1,7 @@
 From: Coly Li <colyli@suse.de>
-Date: Sun, 16 Aug 2020 17:01:38 +0000
+Date: Sun, 16 Aug 2020 17:05:24 +0000
 Subject: Re: [PATCH RESEND] docs: update trusted-encrypted.rst
-Message-Id: <096636f4-a928-dd00-dba6-216651c3d63b@suse.de>
+Message-Id: <dbe58528-e445-f637-4e22-fbcff7b6965a@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
@@ -51,56 +51,11 @@ On 2020/8/17 00:06, Stefan Berger wrote:
 >          The file path to save the object context of the generated
 > primary object.
 > 
-> 
 
-Yes of course you are right, it is s/-o/-c
-
-> 
->> -  #> tpm2_evictcontrol -c key.ctxt -p 0x81000001
->> +  #> tpm2_evictcontrol -c key.ctxt 0x81000001
->>     persistentHandle: 0x81000001
-> 
-> 
-> This seems correct.
-> 
-> 
->>     Usage::
->> @@ -115,7 +114,7 @@ append 'keyhandle=0x81000001' to statements
->> between quotes, such as
-> 
-> 
-> A note in this file states this:
-> 
-> Note: When using a TPM 2.0 with a persistent key with handle 0x81000001,
-> append 'keyhandle=0x81000001' to statements between quotes, such as
-> "new 32 keyhandle=0x81000001".
-> 
-> Now if someone was (still) interested in TPM 1.2 then the below changes
-> you are proposing wouldn't work for them. Maybe you should adapt the
-> note to state that these keyhandle=... should be removed for the TPM 1.2
-> case.
-> 
-
-I agree. Indeed I have no idea why number 0x81000001 is used, and I
-don't have practice experience with TPM 1.2. Now the purpose of this
-patch accomplished: experts response and confirm my guess :-)
+BTW, where can I get the document you mentioned for "4.1.3 on F32
+states" ? I only have a pdf file "A practical Guide to TPM 2.0" which
+does not have 4.1.3
 
 Thanks.
-
->>     ::
->>   -    $ keyctl add trusted kmk "new 32" @u
->> +    $ keyctl add trusted kmk "new 32 keyhandle=0x81000001" @u
->>       440502848
->>         $ keyctl show
->> @@ -138,7 +137,7 @@ append 'keyhandle=0x81000001' to statements
->> between quotes, such as
->>     Load a trusted key from the saved blob::
->>   -    $ keyctl add trusted kmk "load `cat kmk.blob`" @u
->> +    $ keyctl add trusted kmk "load `cat kmk.blob`
->> keyhandle=0x81000001" @u
->>       268728824
->>         $ keyctl print 268728824
-> 
-> 
 
 Coly Li
