@@ -1,70 +1,42 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 19 Aug 2020 21:01:33 +0000
-Subject: Re: [PATCH RESEND] docs: update trusted-encrypted.rst
-Message-Id: <20200819210133.GA9942@linux.intel.com>
+Date: Mon, 17 Aug 2020 21:17:37 +0000
+Subject: Re: [PATCH] keys: Do not check the retval of commit_creds in join_session_keyring
+Message-Id: <20200817211737.GC44714@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <20200815075143.47082-1-colyli@suse.de>
- <cf667ea0-dab7-a242-886c-938582c62ff6@linux.ibm.com>
- <1597595769.8344.7.camel@linux.ibm.com>
- <f9d4c4a9-5059-eae2-bc89-51f16e8ca4d9@suse.de>
- <1597597933.8344.13.camel@linux.ibm.com>
- <20200818154444.GA137138@linux.intel.com>
- <1597767558.3898.14.camel@linux.ibm.com>
-In-Reply-To: <1597767558.3898.14.camel@linux.ibm.com>
-To: James Bottomley <jejb@linux.ibm.com>
-Cc: Coly Li <colyli@suse.de>, Stefan Berger <stefanb@linux.ibm.com>, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>, Mimi Zohar <zohar@linux.ibm.com>
+References: <044b34c4388405e995e38fb57fc120361bf962db.1568124150.git.suse-tux@gmx.de>
+In-Reply-To: <044b34c4388405e995e38fb57fc120361bf962db.1568124150.git.suse-tux@gmx.de>
+To: keyrings@vger.kernel.org
 
-On Tue, Aug 18, 2020 at 09:19:18AM -0700, James Bottomley wrote:
-> On Tue, 2020-08-18 at 18:44 +0300, Jarkko Sakkinen wrote:
-> > On Sun, Aug 16, 2020 at 10:12:13AM -0700, James Bottomley wrote:
-> > > On Mon, 2020-08-17 at 00:57 +0800, Coly Li wrote:
-> > > > On 2020/8/17 00:36, James Bottomley wrote:
-> > > > > On Sun, 2020-08-16 at 12:06 -0400, Stefan Berger wrote:
-> > > > > [...]
-> > > > > > A note in this file states this:
-> > > > > > 
-> > > > > > Note: When using a TPM 2.0 with a persistent key with handle
-> > > > > > 0x81000001, append 'keyhandle=0x81000001' to statements
-> > > > > > between quotes, such as "new 32 keyhandle=0x81000001".
-> > > > > > 
-> > > > > > Now if someone was (still) interested in TPM 1.2 
-> > > > > > adapt the  note to state that these keyhandle=... should be
-> > > > > > removed for the TPM 1.2 case.
-> > > > > 
-> > > > > Actually, I also have a plan to match what userspace does and
-> > > > > simply assume a keyhandle of 40000001 (generate an EC Storage
-> > > > > Primary Key on the fly) if it's not specified, which will make
-> > > > > the TPM1.2 and 2.0 versions of this the same.  Unfortunately
-> > > > > the necessary precursor patches are taking an age to get
-> > > > > upstream.
-> > > > 
-> > > > Hi James,
-> > > > 
-> > > > Do you have a plan to push such patches into upstream soon? If
-> > > > yes than I may wait for your patch and withdraw this one.
-> > > 
-> > > Well, as I said above it depends on not yet upstream precursor
-> > > patches.  They have been pending for about a year, so I've no real
-> > > idea of the timeline.
-> > > 
-> > > James
-> > 
-> > As far as I remember there was not much left in the previous version
-> > to do. Some time has passed when it was discussed but I recall it was
-> > mainly about documenting the key format.
-> 
-> Actually, no, unfortunately it's not in that update.  Generating an on-
-> the-fly primary would involve the cryptographic security patch (same
-> mechanism as used to generate the null primary).  I was thinking I'd
-> extract just that piece and use it in a follow on.  So both the rework
-> of the key format and this extra patch that's not yet even broken out
-> of the TPM security series are required precursors.
-> 
-> James
+On Tue, Jul 28, 2020 at 01:06:35PM +0200, Marcus H=FCwe wrote:
+> On 2020-06-17 04:46:24 +0300, Jarkko Sakkinen wrote:
+> > On Fri, Jun 12, 2020 at 01:25:33PM +0200, Marcus Huewe wrote:
+> > > Do not check the return value of the commit_creds call in
+> > > join_session_keyring in order to make the code more concise.
+> > > Since commit_creds always returns 0, the if-statement is not needed
+> > > and the session keyring's serial can be directly assigned to the
+> > > "ret" variable.
+> > >
+> > > Signed-off-by: Marcus Huewe <suse-tux@gmx.de>
+> >
+> > Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> >
+> > David, can you pick this up to your tree (give that a generic
+> > keyring change)?
+> >
+> Just a gentle ping - any news on this?:)
+>=20
+> (I'm perfectly fine if you don't want to take it... (since it is
+> just a minor cleanup and no bugfix))
+>=20
+>=20
+> Marcus
 
-OK, sorry I mixed up thinks. Thanks.
+I just came from two weeks of vacation and one week of network
+connectivity issues (could not connect to the company VPN).
+
+I still think that David should at least ack this.
 
 /Jarkko
