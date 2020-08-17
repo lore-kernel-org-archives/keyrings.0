@@ -1,42 +1,99 @@
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 05 Aug 2020 11:56:01 +0000
-Subject: Re: [PATCH 13/17] watch_queue: Implement mount topology and attribute change notifications [ver #5]
-Message-Id: <CAJfpegvT-UznTC5CT1kjVF=Gr+DfTJXKj5CEkP67G9zFhjLMEg@mail.gmail.com>
+From: David Howells <dhowells@redhat.com>
+Date: Mon, 17 Aug 2020 10:07:28 +0000
+Subject: [PATCH] watch_queue: Limit the number of watches a user can hold
+Message-Id: <159765884811.1436382.16387370517871969276.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <158454378820.2863966.10496767254293183123.stgit@warthog.procyon.org.uk>
- <158454391302.2863966.1884682840541676280.stgit@warthog.procyon.org.uk>
- <CAJfpegspWA6oUtdcYvYF=3fij=Bnq03b8VMbU9RNMKc+zzjbag@mail.gmail.com>
- <1293241.1595501326@warthog.procyon.org.uk> <CAJfpeguvLMCw1H8+DPsfZE_k0sEiRtA17pD9HjnceSsAvqqAZw@mail.gmail.com>
- <43c061d26ddef2aa3ca1ac726da7db9ab461e7be.camel@themaw.net>
- <CAJfpeguFkDDhz7+70pSUv_j=xY5L08ESpaE+jER9vE5p+ZmfFw@mail.gmail.com>
- <c558fc4af785f62a2751be3b297d1ccbbfcfa969.camel@themaw.net>
- <CAJfpegvxKTy+4Zk6banvxQ83PeFV7Xnt2Qv=kkOg57rxFKqVEg@mail.gmail.com> <013e9bb3cb1536c73a5b58c5ff000b3b00629561.camel@themaw.net>
-In-Reply-To: <013e9bb3cb1536c73a5b58c5ff000b3b00629561.camel@themaw.net>
-To: Ian Kent <raven@themaw.net>
-Cc: David Howells <dhowells@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>, Al Viro <viro@zeniv.linux.org.uk>, Casey Schaufler <casey@schaufler-ca.com>, Stephen Smalley <sds@tycho.nsa.gov>, Nicolas Dichtel <nicolas.dichtel@6wind.com>, Christian Brauner <christian@brauner.io>, andres@anarazel.de, Jeff Layton <jlayton@redhat.com>, dray@redhat.com, Karel Zak <kzak@redhat.com>, keyrings@vger.kernel.org, Linux API <linux-api@vger.kernel.org>, linux-fsdevel@vger.kernel.org, LSM <linux-security-module@vger.kernel.org>, linux-kernel@vger.kernel.org
+References: <159562904644.2287160.13294507067766261970.stgit@warthog.procyon.org.uk>
+In-Reply-To: <159562904644.2287160.13294507067766261970.stgit@warthog.procyon.org.uk>
+To: torvalds@linux-foundation.org
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, dhowells@redhat.com, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, Aug 5, 2020 at 1:36 PM Ian Kent <raven@themaw.net> wrote:
->
+Impose a limit on the number of watches that a user can hold so that they
+can't use this mechanism to fill up all the available memory.
 
-> I can see in the kernel code that an error is returned if the message
-> buffer is full when trying to add a message, I just can't see where
-> to get it in the libmount code.
->
-> That's not really a communication protocol problem.
->
-> Still I need to work out how to detect it, maybe it is seen by
-> the code in libmount already and I simply can't see what I need
-> to do to recognise it ...
->
-> So I'm stuck wanting to verify I have got everything that was
-> sent and am having trouble moving on from that.
+This is done by putting a counter in user_struct that's incremented when a
+watch is allocated and decreased when it is released.  If the number
+exceeds the RLIMIT_NOFILE limit, the watch is rejected with EAGAIN.
 
-This is the commit that should add the overrun detection capability:
+This can be tested by the following means:
 
-e7d553d69cf6 ("pipe: Add notification lossage handling")
+ (1) Create a watch queue and attach it to fd 5 in the program given - in
+     this case, bash:
 
-Thanks,
-Miklos
+	keyctl watch_session /tmp/nlog /tmp/gclog 5 bash
+
+ (2) In the shell, set the maximum number of files to, say, 99:
+
+	ulimit -n 99
+
+ (3) Add 200 keyrings:
+
+	for ((i=0; i<200; i++)); do keyctl newring a$i @s || break; done
+
+ (4) Try to watch all of the keyrings:
+
+	for ((i=0; i<200; i++)); do echo $i; keyctl watch_add 5 %:a$i || break; done
+
+     This should fail when the number of watches belonging to the user hits
+     99.
+
+ (5) Remove all the keyrings and all of those watches should go away:
+
+	for ((i=0; i<200; i++)); do keyctl unlink %:a$i; done
+
+ (6) Kill off the watch queue by exiting the shell spawned by
+     watch_session.
+
+Fixes: c73be61cede5 ("pipe: Add general notification queue support")
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+
+ include/linux/sched/user.h |    3 +++
+ kernel/watch_queue.c       |    8 ++++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/include/linux/sched/user.h b/include/linux/sched/user.h
+index 917d88edb7b9..a8ec3b6093fc 100644
+--- a/include/linux/sched/user.h
++++ b/include/linux/sched/user.h
+@@ -36,6 +36,9 @@ struct user_struct {
+     defined(CONFIG_NET) || defined(CONFIG_IO_URING)
+ 	atomic_long_t locked_vm;
+ #endif
++#ifdef CONFIG_WATCH_QUEUE
++	atomic_t nr_watches;	/* The number of watches this user currently has */
++#endif
+ 
+ 	/* Miscellaneous per-user rate limit */
+ 	struct ratelimit_state ratelimit;
+diff --git a/kernel/watch_queue.c b/kernel/watch_queue.c
+index f74020f6bd9d..0ef8f65bd2d7 100644
+--- a/kernel/watch_queue.c
++++ b/kernel/watch_queue.c
+@@ -393,6 +393,7 @@ static void free_watch(struct rcu_head *rcu)
+ 	struct watch *watch = container_of(rcu, struct watch, rcu);
+ 
+ 	put_watch_queue(rcu_access_pointer(watch->queue));
++	atomic_dec(&watch->cred->user->nr_watches);
+ 	put_cred(watch->cred);
+ }
+ 
+@@ -452,6 +453,13 @@ int add_watch_to_object(struct watch *watch, struct watch_list *wlist)
+ 	watch->cred = get_current_cred();
+ 	rcu_assign_pointer(watch->watch_list, wlist);
+ 
++	if (atomic_inc_return(&watch->cred->user->nr_watches) >
++	    task_rlimit(current, RLIMIT_NOFILE)) {
++		atomic_dec(&watch->cred->user->nr_watches);
++		put_cred(watch->cred);
++		return -EAGAIN;
++	}
++
+ 	spin_lock_bh(&wqueue->lock);
+ 	kref_get(&wqueue->usage);
+ 	kref_get(&watch->usage);
