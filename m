@@ -1,46 +1,46 @@
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 24 Aug 2020 15:30:38 +0000
-Subject: [PATCH 2/2] Modify the pipe(2) manpage for notification queues
-Message-Id: <159828303892.330133.569968242547202064.stgit@warthog.procyon.org.uk>
+From: Naresh Kamboju <naresh.kamboju@linaro.org>
+Date: Thu, 20 Aug 2020 15:39:57 +0000
+Subject: Re: [PATCH 5.8 000/232] 5.8.3-rc1 review
+Message-Id: <CA+G9fYtebf78TH-XpqArunHc1L6s9mHdLEbpY1EY9tSyDjp=sg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <159828303137.330133.10953708050467314086.stgit@warthog.procyon.org.uk>
-In-Reply-To: <159828303137.330133.10953708050467314086.stgit@warthog.procyon.org.uk>
-To: mtk.manpages@gmail.com, me@benboeckel.net
-Cc: torvalds@linux-foundation.org, dhowells@redhat.com, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-man@vger.kernel.org, linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20200820091612.692383444@linuxfoundation.org>
+In-Reply-To: <20200820091612.692383444@linuxfoundation.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: open list <linux-kernel@vger.kernel.org>, Shuah Khan <shuah@kernel.org>, patches@kernelci.org, lkft-triage@lists.linaro.org, Ben Hutchings <ben.hutchings@codethink.co.uk>, linux- stable <stable@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, Guenter Roeck <linux@roeck-us.net>, Herbert Xu <herbert@gondor.apana.org.au>, LTP List <ltp@lists.linux.it>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>
 
-Modify the pipe(2) manual page to cover support for notification queues
-
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- man2/pipe.2 |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/man2/pipe.2 b/man2/pipe.2
-index 117f8950c..c50b38530 100644
---- a/man2/pipe.2
-+++ b/man2/pipe.2
-@@ -146,6 +146,13 @@ referred to by the new file descriptors.
- Using this flag saves extra calls to
- .BR fcntl (2)
- to achieve the same result.
-+.TP
-+.B O_NOTIFICATION_PIPE
-+This enables use of the pipe as a notification transport (see
-+.BR watch_queue (7)
-+for more information).  When a pipe is in this mode, it may not be spliced as
-+the insertion of notification messages into the pipe buffer can happen
-+asynchronously and may cause splice to malfunction.
- .SH RETURN VALUE
- On success, zero is returned.
- On error, \-1 is returned,
-@@ -292,4 +299,5 @@ main(int argc, char *argv[])
- .BR vmsplice (2),
- .BR write (2),
- .BR popen (3),
--.BR pipe (7)
-+.BR pipe (7),
-+.BR watch_queue (7)
+T24gVGh1LCAyMCBBdWcgMjAyMCBhdCAxNDo1NSwgR3JlZyBLcm9haC1IYXJ0bWFuCjxncmVna2hA
+bGludXhmb3VuZGF0aW9uLm9yZz4gd3JvdGU6Cj4KPiBUaGlzIGlzIHRoZSBzdGFydCBvZiB0aGUg
+c3RhYmxlIHJldmlldyBjeWNsZSBmb3IgdGhlIDUuOC4zIHJlbGVhc2UuCj4gVGhlcmUgYXJlIDIz
+MiBwYXRjaGVzIGluIHRoaXMgc2VyaWVzLCBhbGwgd2lsbCBiZSBwb3N0ZWQgYXMgYSByZXNwb25z
+ZQo+IHRvIHRoaXMgb25lLiAgSWYgYW55b25lIGhhcyBhbnkgaXNzdWVzIHdpdGggdGhlc2UgYmVp
+bmcgYXBwbGllZCwgcGxlYXNlCj4gbGV0IG1lIGtub3cuCj4KPiBSZXNwb25zZXMgc2hvdWxkIGJl
+IG1hZGUgYnkgU2F0LCAyMiBBdWcgMjAyMCAwOToxNTowOSArMDAwMC4KPiBBbnl0aGluZyByZWNl
+aXZlZCBhZnRlciB0aGF0IHRpbWUgbWlnaHQgYmUgdG9vIGxhdGUuCj4KPiBUaGUgd2hvbGUgcGF0
+Y2ggc2VyaWVzIGNhbiBiZSBmb3VuZCBpbiBvbmUgcGF0Y2ggYXQ6Cj4gICAgICAgICBodHRwczov
+L3d3dy5rZXJuZWwub3JnL3B1Yi9saW51eC9rZXJuZWwvdjUueC9zdGFibGUtcmV2aWV3L3BhdGNo
+LTUuOC4zLXJjMS5nego+IG9yIGluIHRoZSBnaXQgdHJlZSBhbmQgYnJhbmNoIGF0Ogo+ICAgICAg
+ICAgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3N0YWJsZS9s
+aW51eC1zdGFibGUtcmMuZ2l0IGxpbnV4LTUuOC55Cj4gYW5kIHRoZSBkaWZmc3RhdCBjYW4gYmUg
+Zm91bmQgYmVsb3cuCj4KPiB0aGFua3MsCj4KPiBncmVnIGstaAoKPiBIZXJiZXJ0IFh1IDxoZXJi
+ZXJ0QGdvbmRvci5hcGFuYS5vcmcuYXU+Cj4gICAgIGNyeXB0bzogYWZfYWxnIC0gRml4IHJlZ3Jl
+c3Npb24gb24gZW1wdHkgcmVxdWVzdHMKClJlc3VsdHMgZnJvbSBMaW5hcm/igJlzIHRlc3QgZmFy
+bS4KUmVncmVzc2lvbnMgZGV0ZWN0ZWQuCgogIGx0cC1jcnlwdG8tdGVzdHM6CiAgICAqIGFmX2Fs
+ZzAyCiAgbHRwLWN2ZS10ZXN0czoKICAgICogY3ZlLTIwMTctMTc4MDUKCmFmX2FsZzAyLmM6NTI6
+IEJST0s6IFRpbWVkIG91dCB3aGlsZSByZWFkaW5nIGZyb20gcmVxdWVzdCBzb2NrZXQuCldlIGFy
+ZSBydW5uaW5nIHRoZSBMVFAgMjAyMDA1MTUgdGFnIHJlbGVhc2VkIHRlc3Qgc3VpdGUuCiBodHRw
+czovL2dpdGh1Yi5jb20vbGludXgtdGVzdC1wcm9qZWN0L2x0cC9ibG9iL21hc3Rlci90ZXN0Y2Fz
+ZXMva2VybmVsL2NyeXB0by9hZl9hbGcwMi5jCgpTdW1tYXJ5Ci0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKa2Vy
+bmVsOiA1LjguMy1yYzEKZ2l0IHJlcG86IGh0dHBzOi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9s
+aW51eC9rZXJuZWwvZ2l0L3N0YWJsZS9saW51eC1zdGFibGUtcmMuZ2l0CmdpdCBicmFuY2g6IGxp
+bnV4LTUuOC55CmdpdCBjb21taXQ6IDIwMWZmZjgwNzMxMGNlMTA0ODViY2ZmMjk0ZDQ3YmU5NWYz
+NzY5ZWIKZ2l0IGRlc2NyaWJlOiB2NS44LjItMjMzLWcyMDFmZmY4MDczMTAKVGVzdCBkZXRhaWxz
+OiBodHRwczovL3FhLXJlcG9ydHMubGluYXJvLm9yZy9sa2Z0L2xpbnV4LXN0YWJsZS1yYy01Ljgt
+b2UvYnVpbGQvdjUuOC4yLTIzMy1nMjAxZmZmODA3MzEwCgpSZWdyZXNzaW9ucyAoY29tcGFyZWQg
+dG8gYnVpbGQgdjUuOC4yKQotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCngxNToKICBsdHAtY3J5cHRvLXRlc3Rz
+OgogICAgKiBhZl9hbGcwMgoKICBsdHAtY3ZlLXRlc3RzOgogICAgKiBjdmUtMjAxNy0xNzgwNQoK
+Ci0tIApMaW5hcm8gTEtGVApodHRwczovL2xrZnQubGluYXJvLm9yZw==
