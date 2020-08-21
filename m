@@ -1,33 +1,58 @@
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-Date: Tue, 25 Aug 2020 21:50:40 +0000
-Subject: [PATCH] keys: Print more useful debug info if encryption algo is not available
-Message-Id: <20200825215040.307947-1-anatol.pomozov@gmail.com>
+From: Petr Vorel <pvorel@suse.cz>
+Date: Fri, 21 Aug 2020 06:51:05 +0000
+Subject: Re: [LTP] [PATCH 5.8 000/232] 5.8.3-rc1 review
+Message-Id: <20200821065105.GB11908@dell5510>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="maccentraleurope"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, keyrings@vger.kernel.org
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>
+References: <20200820091612.692383444@linuxfoundation.org>
+ <CA+G9fYtebf78TH-XpqArunHc1L6s9mHdLEbpY1EY9tSyDjp=sg@mail.gmail.com>
+ <20200820182516.GA49496@sol.localdomain>
+In-Reply-To: <20200820182516.GA49496@sol.localdomain>
+To: Eric Biggers <ebiggers@kernel.org>
+Cc: Naresh Kamboju <naresh.kamboju@linaro.org>, Ben Hutchings <ben.hutchings@codethink.co.uk>, Herbert Xu <herbert@gondor.apana.org.au>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, LTP List <ltp@lists.linux.it>, open list <linux-kernel@vger.kernel.org>, lkft-triage@lists.linaro.org, patches@kernelci.org, Linus Torvalds <torvalds@linux-foundation.org>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, linux- stable <stable@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>, Shuah Khan <shuah@kernel.org>, Guenter Roeck <linux@roeck-us.net>
 
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
----
- security/keys/encrypted-keys/encrypted.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-index 192e531c146f..c09d48f53682 100644
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -84,8 +84,8 @@ static int aes_get_sizes(void)
- 
- 	tfm = crypto_alloc_skcipher(blkcipher_alg, 0, CRYPTO_ALG_ASYNC);
- 	if (IS_ERR(tfm)) {
--		pr_err("encrypted_key: failed to alloc_cipher (%ld)\n",
--		       PTR_ERR(tfm));
-+		pr_err("encrypted_key: failed to alloc_cipher for %s (%ld)\n",
-+		       blkcipher_alg, PTR_ERR(tfm));
- 		return PTR_ERR(tfm);
- 	}
- 	ivsize = crypto_skcipher_ivsize(tfm);
--- 
-2.28.0
+SGkgYWxsLAoKPiBPbiBUaHUsIEF1ZyAyMCwgMjAyMCBhdCAwODo1Nzo1N1BNICswNTMwLCBOYXJl
+c2ggS2FtYm9qdSB3cm90ZToKPiA+IE9uIFRodSwgMjAgQXVnIDIwMjAgYXQgMTQ6NTUsIEdyZWcg
+S3JvYWgtSGFydG1hbgo+ID4gPGdyZWdraEBsaW51eGZvdW5kYXRpb24ub3JnPiB3cm90ZToKCj4g
+PiA+IFRoaXMgaXMgdGhlIHN0YXJ0IG9mIHRoZSBzdGFibGUgcmV2aWV3IGN5Y2xlIGZvciB0aGUg
+NS44LjMgcmVsZWFzZS4KPiA+ID4gVGhlcmUgYXJlIDIzMiBwYXRjaGVzIGluIHRoaXMgc2VyaWVz
+LCBhbGwgd2lsbCBiZSBwb3N0ZWQgYXMgYSByZXNwb25zZQo+ID4gPiB0byB0aGlzIG9uZS4gIElm
+IGFueW9uZSBoYXMgYW55IGlzc3VlcyB3aXRoIHRoZXNlIGJlaW5nIGFwcGxpZWQsIHBsZWFzZQo+
+ID4gPiBsZXQgbWUga25vdy4KCj4gPiA+IFJlc3BvbnNlcyBzaG91bGQgYmUgbWFkZSBieSBTYXQs
+IDIyIEF1ZyAyMDIwIDA5OjE1OjA5ICswMDAwLgo+ID4gPiBBbnl0aGluZyByZWNlaXZlZCBhZnRl
+ciB0aGF0IHRpbWUgbWlnaHQgYmUgdG9vIGxhdGUuCgo+ID4gPiBUaGUgd2hvbGUgcGF0Y2ggc2Vy
+aWVzIGNhbiBiZSBmb3VuZCBpbiBvbmUgcGF0Y2ggYXQ6Cj4gPiA+ICAgICAgICAgaHR0cHM6Ly93
+d3cua2VybmVsLm9yZy9wdWIvbGludXgva2VybmVsL3Y1Lngvc3RhYmxlLXJldmlldy9wYXRjaC01
+LjguMy1yYzEuZ3oKPiA+ID4gb3IgaW4gdGhlIGdpdCB0cmVlIGFuZCBicmFuY2ggYXQ6Cj4gPiA+
+ICAgICAgICAgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3N0
+YWJsZS9saW51eC1zdGFibGUtcmMuZ2l0IGxpbnV4LTUuOC55Cj4gPiA+IGFuZCB0aGUgZGlmZnN0
+YXQgY2FuIGJlIGZvdW5kIGJlbG93LgoKPiA+ID4gdGhhbmtzLAoKPiA+ID4gZ3JlZyBrLWgKCj4g
+PiA+IEhlcmJlcnQgWHUgPGhlcmJlcnRAZ29uZG9yLmFwYW5hLm9yZy5hdT4KPiA+ID4gICAgIGNy
+eXB0bzogYWZfYWxnIC0gRml4IHJlZ3Jlc3Npb24gb24gZW1wdHkgcmVxdWVzdHMKCj4gPiBSZXN1
+bHRzIGZyb20gTGluYXJv4oCZcyB0ZXN0IGZhcm0uCj4gPiBSZWdyZXNzaW9ucyBkZXRlY3RlZC4K
+Cj4gPiAgIGx0cC1jcnlwdG8tdGVzdHM6Cj4gPiAgICAgKiBhZl9hbGcwMgo+ID4gICBsdHAtY3Zl
+LXRlc3RzOgo+ID4gICAgICogY3ZlLTIwMTctMTc4MDUKCj4gPiBhZl9hbGcwMi5jOjUyOiBCUk9L
+OiBUaW1lZCBvdXQgd2hpbGUgcmVhZGluZyBmcm9tIHJlcXVlc3Qgc29ja2V0Lgo+ID4gV2UgYXJl
+IHJ1bm5pbmcgdGhlIExUUCAyMDIwMDUxNSB0YWcgcmVsZWFzZWQgdGVzdCBzdWl0ZS4KPiA+ICBo
+dHRwczovL2dpdGh1Yi5jb20vbGludXgtdGVzdC1wcm9qZWN0L2x0cC9ibG9iL21hc3Rlci90ZXN0
+Y2FzZXMva2VybmVsL2NyeXB0by9hZl9hbGcwMi5jCgo+ID4gU3VtbWFyeQo+ID4gLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tCgo+ID4ga2VybmVsOiA1LjguMy1yYzEKPiA+IGdpdCByZXBvOiBodHRwczovL2dpdC5r
+ZXJuZWwub3JnL3B1Yi9zY20vbGludXgva2VybmVsL2dpdC9zdGFibGUvbGludXgtc3RhYmxlLXJj
+LmdpdAo+ID4gZ2l0IGJyYW5jaDogbGludXgtNS44LnkKPiA+IGdpdCBjb21taXQ6IDIwMWZmZjgw
+NzMxMGNlMTA0ODViY2ZmMjk0ZDQ3YmU5NWYzNzY5ZWIKPiA+IGdpdCBkZXNjcmliZTogdjUuOC4y
+LTIzMy1nMjAxZmZmODA3MzEwCj4gPiBUZXN0IGRldGFpbHM6IGh0dHBzOi8vcWEtcmVwb3J0cy5s
+aW5hcm8ub3JnL2xrZnQvbGludXgtc3RhYmxlLXJjLTUuOC1vZS9idWlsZC92NS44LjItMjMzLWcy
+MDFmZmY4MDczMTAKCj4gPiBSZWdyZXNzaW9ucyAoY29tcGFyZWQgdG8gYnVpbGQgdjUuOC4yKQo+
+ID4gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tCgo+ID4geDE1Ogo+ID4gICBsdHAtY3J5cHRvLXRlc3RzOgo+ID4g
+ICAgICogYWZfYWxnMDIKCj4gPiAgIGx0cC1jdmUtdGVzdHM6Cj4gPiAgICAgKiBjdmUtMjAxNy0x
+NzgwNQoKCj4gTG9va3MgbGlrZSB0aGlzIHRlc3QgaXMgc3RpbGwgImJyb2tlbiIgYmVjYXVzZSBp
+dCBhc3N1bWVzIGJlaGF2aW9yIHRoYXQgaXNuJ3QKPiBjbGVhcmx5IHNwZWNpZmllZCwgYXMgcHJl
+dmlvdXNseSBkaXNjdXNzZWQgYXQKPiBodHRwczovL2xrbWwua2VybmVsLm9yZy9yLzIwMjAwNzAy
+MDMzMjIxLkdBMTkzNjdAZ29uZG9yLmFwYW5hLm9yZy5hdS4KCj4gSSBzZW50IG91dCBMVFAgcGF0
+Y2hlcyB0byBmaXggaXQ6Cj4gaHR0cHM6Ly9sa21sLmtlcm5lbC5vcmcvbGludXgtY3J5cHRvLzIw
+MjAwODIwMTgxOTE4LjQwNDc1OC0xLWViaWdnZXJzQGtlcm5lbC5vcmcvVC8jdQoKRllJIGZpeCBm
+b3IgTFRQIG1lcmdlZC4KCktpbmQgcmVnYXJkcywKUGV0cgoKPiAtIEVyaWM=
