@@ -1,7 +1,7 @@
-From: Eric Biggers <ebiggers@kernel.org>
-Date: Thu, 20 Aug 2020 18:25:16 +0000
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Fri, 21 Aug 2020 11:15:35 +0000
 Subject: Re: [PATCH 5.8 000/232] 5.8.3-rc1 review
-Message-Id: <20200820182516.GA49496@sol.localdomain>
+Message-Id: <20200821111535.GC2222852@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="maccentraleurope"
 Content-Transfer-Encoding: base64
@@ -10,7 +10,7 @@ References: <20200820091612.692383444@linuxfoundation.org>
  <CA+G9fYtebf78TH-XpqArunHc1L6s9mHdLEbpY1EY9tSyDjp=sg@mail.gmail.com>
 In-Reply-To: <CA+G9fYtebf78TH-XpqArunHc1L6s9mHdLEbpY1EY9tSyDjp=sg@mail.gmail.com>
 To: Naresh Kamboju <naresh.kamboju@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, open list <linux-kernel@vger.kernel.org>, Shuah Khan <shuah@kernel.org>, patches@kernelci.org, lkft-triage@lists.linaro.org, Ben Hutchings <ben.hutchings@codethink.co.uk>, linux- stable <stable@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, Guenter Roeck <linux@roeck-us.net>, Herbert Xu <herbert@gondor.apana.org.au>, LTP List <ltp@lists.linux.it>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org
+Cc: open list <linux-kernel@vger.kernel.org>, Shuah Khan <shuah@kernel.org>, patches@kernelci.org, lkft-triage@lists.linaro.org, Ben Hutchings <ben.hutchings@codethink.co.uk>, linux- stable <stable@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, Guenter Roeck <linux@roeck-us.net>, Herbert Xu <herbert@gondor.apana.org.au>, LTP List <ltp@lists.linux.it>, linux-security-module@vger.kernel.org, keyrings@vger.kernel.org, Eric Biggers <ebiggers@kernel.org>
 
 T24gVGh1LCBBdWcgMjAsIDIwMjAgYXQgMDg6NTc6NTdQTSArMDUzMCwgTmFyZXNoIEthbWJvanUg
 d3JvdGU6Cj4gT24gVGh1LCAyMCBBdWcgMjAyMCBhdCAxNDo1NSwgR3JlZyBLcm9haC1IYXJ0bWFu
@@ -35,21 +35,6 @@ ICogYWZfYWxnMDIKPiAgIGx0cC1jdmUtdGVzdHM6Cj4gICAgICogY3ZlLTIwMTctMTc4MDUKPiAK
 PiBhZl9hbGcwMi5jOjUyOiBCUk9LOiBUaW1lZCBvdXQgd2hpbGUgcmVhZGluZyBmcm9tIHJlcXVl
 c3Qgc29ja2V0Lgo+IFdlIGFyZSBydW5uaW5nIHRoZSBMVFAgMjAyMDA1MTUgdGFnIHJlbGVhc2Vk
 IHRlc3Qgc3VpdGUuCj4gIGh0dHBzOi8vZ2l0aHViLmNvbS9saW51eC10ZXN0LXByb2plY3QvbHRw
-L2Jsb2IvbWFzdGVyL3Rlc3RjYXNlcy9rZXJuZWwvY3J5cHRvL2FmX2FsZzAyLmMKPiAKPiBTdW1t
-YXJ5Cj4gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tCj4gCj4ga2VybmVsOiA1LjguMy1yYzEKPiBnaXQgcmVwbzog
-aHR0cHM6Ly9naXQua2VybmVsLm9yZy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvc3RhYmxlL2xp
-bnV4LXN0YWJsZS1yYy5naXQKPiBnaXQgYnJhbmNoOiBsaW51eC01LjgueQo+IGdpdCBjb21taXQ6
-IDIwMWZmZjgwNzMxMGNlMTA0ODViY2ZmMjk0ZDQ3YmU5NWYzNzY5ZWIKPiBnaXQgZGVzY3JpYmU6
-IHY1LjguMi0yMzMtZzIwMWZmZjgwNzMxMAo+IFRlc3QgZGV0YWlsczogaHR0cHM6Ly9xYS1yZXBv
-cnRzLmxpbmFyby5vcmcvbGtmdC9saW51eC1zdGFibGUtcmMtNS44LW9lL2J1aWxkL3Y1LjguMi0y
-MzMtZzIwMWZmZjgwNzMxMAo+IAo+IFJlZ3Jlc3Npb25zIChjb21wYXJlZCB0byBidWlsZCB2NS44
-LjIpCj4gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tCj4gCj4geDE1Ogo+ICAgbHRwLWNyeXB0by10ZXN0czoKPiAg
-ICAgKiBhZl9hbGcwMgo+IAo+ICAgbHRwLWN2ZS10ZXN0czoKPiAgICAgKiBjdmUtMjAxNy0xNzgw
-NQo+IAoKTG9va3MgbGlrZSB0aGlzIHRlc3QgaXMgc3RpbGwgImJyb2tlbiIgYmVjYXVzZSBpdCBh
-c3N1bWVzIGJlaGF2aW9yIHRoYXQgaXNuJ3QKY2xlYXJseSBzcGVjaWZpZWQsIGFzIHByZXZpb3Vz
-bHkgZGlzY3Vzc2VkIGF0Cmh0dHBzOi8vbGttbC5rZXJuZWwub3JnL3IvMjAyMDA3MDIwMzMyMjEu
-R0ExOTM2N0Bnb25kb3IuYXBhbmEub3JnLmF1LgoKSSBzZW50IG91dCBMVFAgcGF0Y2hlcyB0byBm
-aXggaXQ6Cmh0dHBzOi8vbGttbC5rZXJuZWwub3JnL2xpbnV4LWNyeXB0by8yMDIwMDgyMDE4MTkx
-OC40MDQ3NTgtMS1lYmlnZ2Vyc0BrZXJuZWwub3JnL1QvI3UKCi0gRXJpYw==
+L2Jsb2IvbWFzdGVyL3Rlc3RjYXNlcy9rZXJuZWwvY3J5cHRvL2FmX2FsZzAyLmMKCkxvb2tzIGxp
+a2UgdGhlIGNyeXB0byB0ZXN0cyBhcmUgbm93IGZpeGVkIDopCgpBbnl3YXksIHRoYW5rcyBmb3Ig
+dGVzdGluZyBhbGwgb2YgdGhlc2UgYW5kIGxldHRpbmcgbWUga25vdy4KCmdyZWcgay1o
