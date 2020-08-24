@@ -1,14 +1,14 @@
 From: David Howells <dhowells@redhat.com>
-Date: Fri, 07 Aug 2020 15:06:23 +0000
+Date: Mon, 24 Aug 2020 15:30:38 +0000
 Subject: [PATCH 2/2] Modify the pipe(2) manpage for notification queues
-Message-Id: <159681278389.35436.15823690384983762521.stgit@warthog.procyon.org.uk>
+Message-Id: <159828303892.330133.569968242547202064.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <159681277616.35436.11229310534842613599.stgit@warthog.procyon.org.uk>
-In-Reply-To: <159681277616.35436.11229310534842613599.stgit@warthog.procyon.org.uk>
-To: mtk.manpages@gmail.com
+References: <159828303137.330133.10953708050467314086.stgit@warthog.procyon.org.uk>
+In-Reply-To: <159828303137.330133.10953708050467314086.stgit@warthog.procyon.org.uk>
+To: mtk.manpages@gmail.com, me@benboeckel.net
 Cc: torvalds@linux-foundation.org, dhowells@redhat.com, keyrings@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-man@vger.kernel.org, linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
 
 Modify the pipe(2) manual page to cover support for notification queues
