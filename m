@@ -1,28 +1,54 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 18 Aug 2020 05:57:00 +0000
-Subject: Re: [PATCH] security: keys: delete repeated words in comments
-Message-Id: <20200818055700.GB120477@linux.intel.com>
+From: Denis Efremov <efremov@linux.com>
+Date: Thu, 27 Aug 2020 07:29:23 +0000
+Subject: [PATCH] security/keys: use kvfree_sensitive()
+Message-Id: <20200827072923.14718-1-efremov@linux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200807165123.3863-1-rdunlap@infradead.org>
-In-Reply-To: <20200807165123.3863-1-rdunlap@infradead.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, linux-security-module@vger.kernel.org
+To: David Howells <dhowells@redhat.com>
+Cc: Denis Efremov <efremov@linux.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Fri, Aug 07, 2020 at 09:51:23AM -0700, Randy Dunlap wrote:
-> Drop repeated words in comments.
-> {to, will, the}
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> Cc: keyrings@vger.kernel.org
-> Cc: James Morris <jmorris@namei.org>
-> Cc: "Serge E. Hallyn" <serge@hallyn.com>
-> Cc: linux-security-module@vger.kernel.org
+Use kvfree_sensitive() instead of open-coding it.
 
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Denis Efremov <efremov@linux.com>
+---
+ security/keys/big_key.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-/Jarkko
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 691347dea3c1..d17e5f09eeb8 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -121,8 +121,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 		*path = file->f_path;
+ 		path_get(path);
+ 		fput(file);
+-		memzero_explicit(buf, enclen);
+-		kvfree(buf);
++		kvfree_sensitive(buf, enclen);
+ 	} else {
+ 		/* Just store the data in a buffer */
+ 		void *data = kmalloc(datalen, GFP_KERNEL);
+@@ -140,8 +139,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ err_enckey:
+ 	kfree_sensitive(enckey);
+ error:
+-	memzero_explicit(buf, enclen);
+-	kvfree(buf);
++	kvfree_sensitive(buf, enclen);
+ 	return ret;
+ }
+ 
+@@ -273,8 +271,7 @@ long big_key_read(const struct key *key, char *buffer, size_t buflen)
+ err_fput:
+ 		fput(file);
+ error:
+-		memzero_explicit(buf, enclen);
+-		kvfree(buf);
++		kvfree_sensitive(buf, enclen);
+ 	} else {
+ 		ret = datalen;
+ 		memcpy(buffer, key->payload.data[big_key_data], datalen);
+-- 
+2.26.2
