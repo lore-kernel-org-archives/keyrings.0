@@ -1,77 +1,169 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 30 Sep 2020 15:35:04 +0000
-Subject: Re: [PATCH v13 4/5] security: keys: trusted: use ASN.1 TPM2 key format for the blobs
-Message-Id: <20200930153504.GB52739@linux.intel.com>
+From: Eric Snowberg <eric.snowberg@oracle.com>
+Date: Tue, 01 Sep 2020 16:51:43 +0000
+Subject: [RFC PATCH] certs: Add EFI_CERT_X509_GUID support for dbx entries
+Message-Id: <20200901165143.10295-1-eric.snowberg@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
- <20200922022809.7105-5-James.Bottomley@HansenPartnership.com>
- <20200930111102.GB5145@linux.intel.com>
- <b8de8923e026525589c97b3cb7691a557c0a292f.camel@HansenPartnership.com>
-In-Reply-To: <b8de8923e026525589c97b3cb7691a557c0a292f.camel@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+To: dhowells@redhat.com, dwmw2@infradead.org
+Cc: jarkko.sakkinen@linux.intel.com, jmorris@namei.org, serge@hallyn.com, zohar@linux.ibm.com, erichte@linux.ibm.com, nayna@linux.ibm.com, mpe@ellerman.id.au, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, eric.snowberg@oracle.com
 
-On Wed, Sep 30, 2020 at 07:49:51AM -0700, James Bottomley wrote:
-> On Wed, 2020-09-30 at 14:11 +0300, Jarkko Sakkinen wrote:
-> > On Mon, Sep 21, 2020 at 07:28:08PM -0700, James Bottomley wrote:
-> > > Modify the TPM2 key format blob output to export and import in the
-> > > ASN.1 form for TPM2 sealed object keys.  For compatibility with
-> > > prior trusted keys, the importer will also accept two TPM2B
-> > > quantities representing the public and private parts of the
-> > > key.  However, the export via keyctl pipe will only output the
-> > > ASN.1 format.
-> > > 
-> > > The benefit of the ASN.1 format is that it's a standard and thus
-> > > the exported key can be used by userspace tools
-> > > (openssl_tpm2_engine, openconnect and tpm2-tss-engine).  The format
-> > > includes policy specifications, thus it gets us out of having to
-> > > construct policy handles in userspace and the format includes the
-> > > parent meaning you don't have to keep passing it in each time.
-> > > 
-> > > This patch only implements basic handling for the ASN.1 format, so
-> > > keys with passwords but no policy.
-> > > 
-> > > Signed-off-by: James Bottomley <
-> > > James.Bottomley@HansenPartnership.com>
-> > 
-> > I did the test for 3/5 with this patch applied (actually all patches
-> > in this series) so I can safely
-> > 
-> > Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > 
-> > I have one wish though before giving reviewed-by.
-> > 
-> > In my recent trusted keys fixes I took the convention trusted_tpm_*
-> > for TPM trusted keys functions. I think we should start doing that
-> > for all functions:
-> > 
-> > 1. For interface functions trusted_tpm_*
-> > 2. TPM1: trusted_tpm1_*
-> > 2. TPM2: trusted_tpm2_*
-> 
-> I'm not such a fan of this: we've discussed moving some of the
-> functions around because we expect to grow consumers.  We really don't
-> want to be having to rename everything as we move it, so I'd far prefer
-> the name were related to the function rather than the location in the
-> kernel tree.
+The Secure Boot Forbidden Signature Database, dbx, contains a list of now
+revoked signatures and keys previously approved to boot with UEFI Secure
+Boot enabled.  The dbx is capable of containing any number of
+EFI_CERT_X509_SHA256_GUID, EFI_CERT_SHA256_GUID, and EFI_CERT_X509_GUID
+entries.
 
-OK, I see you point here. The trusted_tpm_* functions that I added are
-directly bound to the specifict trusted keys implementation,  so it is
-a different situation.
+Currently when EFI_CERT_X509_GUID are contained in the dbx, the entries are
+skipped.
 
-> > This is to manage chaos with TEE Trusted Keys in future and make the
-> > distinction with TPM subsystem functions, and make it easier to grep
-> > and trace this stuff with the various tracing tools.
-> > 
-> > This anyway needs one more rebase on top of the fixes that I did.
-> > 
-> > BTW, what is the situation with the ARM compilation issue?
-> 
-> It was fixed in this incarnation.
+This change adds support for EFI_CERT_X509_GUID dbx entries. When a
+EFI_CERT_X509_GUID is found, it is added as an asymmetrical key to the
+.blacklist keyring.  Anytime the .platform keyring is used, the keys in
+the .blacklist keyring are referenced, if a matching key is found, the
+key will be rejected.
 
-OK, great.
+Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
+---
+ certs/blacklist.c                             | 36 +++++++++++++++++++
+ certs/system_keyring.c                        |  6 ++++
+ include/keys/system_keyring.h                 | 11 ++++++
+ .../platform_certs/keyring_handler.c          | 11 ++++++
+ 4 files changed, 64 insertions(+)
 
-/Jarkko
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index 6514f9ebc943..17ebf50cf0ae 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -15,6 +15,7 @@
+ #include <linux/err.h>
+ #include <linux/seq_file.h>
+ #include <keys/system_keyring.h>
++#include <crypto/pkcs7.h>
+ #include "blacklist.h"
+ 
+ static struct key *blacklist_keyring;
+@@ -100,6 +101,41 @@ int mark_hash_blacklisted(const char *hash)
+ 	return 0;
+ }
+ 
++int mark_key_revocationlisted(const char *data, size_t size)
++{
++	key_ref_t key;
++
++	key = key_create_or_update(make_key_ref(blacklist_keyring, true),
++				   "asymmetric",
++				   NULL,
++				   data,
++				   size,
++				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
++				    KEY_USR_VIEW),
++				   KEY_ALLOC_NOT_IN_QUOTA |
++				   KEY_ALLOC_BUILT_IN);
++
++	if (IS_ERR(key)) {
++		pr_err("Problem with revocation key (%ld)\n", PTR_ERR(key));
++		return PTR_ERR(key);
++	}
++
++	return 0;
++}
++
++int is_key_revocationlisted(struct pkcs7_message *pkcs7)
++{
++	int ret;
++
++	ret = pkcs7_validate_trust(pkcs7, blacklist_keyring);
++
++	if (ret = 0)
++		return -EKEYREJECTED;
++
++	return -ENOKEY;
++}
++EXPORT_SYMBOL_GPL(is_key_revocationlisted);
++
+ /**
+  * is_hash_blacklisted - Determine if a hash is blacklisted
+  * @hash: The hash to be checked as a binary blob
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 798291177186..f8ea96219155 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -241,6 +241,12 @@ int verify_pkcs7_message_sig(const void *data, size_t len,
+ 			pr_devel("PKCS#7 platform keyring is not available\n");
+ 			goto error;
+ 		}
++
++		ret = is_key_revocationlisted(pkcs7);
++		if (ret != -ENOKEY) {
++			pr_devel("PKCS#7 platform key revocationlisted\n");
++			goto error;
++		}
+ 	}
+ 	ret = pkcs7_validate_trust(pkcs7, trusted_keys);
+ 	if (ret < 0) {
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index fb8b07daa9d1..b6991cfe1b6d 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -31,11 +31,14 @@ extern int restrict_link_by_builtin_and_secondary_trusted(
+ #define restrict_link_by_builtin_and_secondary_trusted restrict_link_by_builtin_trusted
+ #endif
+ 
++extern struct pkcs7_message *pkcs7;
+ #ifdef CONFIG_SYSTEM_BLACKLIST_KEYRING
+ extern int mark_hash_blacklisted(const char *hash);
++extern int mark_key_revocationlisted(const char *data, size_t size);
+ extern int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+ 			       const char *type);
+ extern int is_binary_blacklisted(const u8 *hash, size_t hash_len);
++extern int is_key_revocationlisted(struct pkcs7_message *pkcs7);
+ #else
+ static inline int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+ 				      const char *type)
+@@ -47,6 +50,14 @@ static inline int is_binary_blacklisted(const u8 *hash, size_t hash_len)
+ {
+ 	return 0;
+ }
++static inline int mark_key_revocationlisted(const char *data, size_t size)
++{
++	return 0;
++}
++static inline int is_key_revocationlisted(struct pkcs7_message *pkcs7)
++{
++	return -ENOKEY;
++}
+ #endif
+ 
+ #ifdef CONFIG_IMA_BLACKLIST_KEYRING
+diff --git a/security/integrity/platform_certs/keyring_handler.c b/security/integrity/platform_certs/keyring_handler.c
+index c5ba695c10e3..cc5a43804bc4 100644
+--- a/security/integrity/platform_certs/keyring_handler.c
++++ b/security/integrity/platform_certs/keyring_handler.c
+@@ -55,6 +55,15 @@ static __init void uefi_blacklist_binary(const char *source,
+ 	uefi_blacklist_hash(source, data, len, "bin:", 4);
+ }
+ 
++/*
++ * Revocationlist the X509 cert
++ */
++static __init void uefi_revocationlist_x509(const char *source,
++					    const void *data, size_t len)
++{
++	mark_key_revocationlisted(data, len);
++}
++
+ /*
+  * Return the appropriate handler for particular signature list types found in
+  * the UEFI db and MokListRT tables.
+@@ -76,5 +85,7 @@ __init efi_element_handler_t get_handler_for_dbx(const efi_guid_t *sig_type)
+ 		return uefi_blacklist_x509_tbs;
+ 	if (efi_guidcmp(*sig_type, efi_cert_sha256_guid) = 0)
+ 		return uefi_blacklist_binary;
++	if (efi_guidcmp(*sig_type, efi_cert_x509_guid) = 0)
++		return uefi_revocationlist_x509;
+ 	return 0;
+ }
+-- 
+2.18.1
