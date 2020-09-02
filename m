@@ -1,27 +1,129 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 14 Sep 2020 18:05:10 +0000
-Subject: Re: [PATCH] security: keys: Use kvfree_sensitive in a few places
-Message-Id: <20200914180510.GC9369@linux.intel.com>
+From: Alexey Krasikov <alexey_krasikov@mail.ru>
+Date: Wed, 02 Sep 2020 17:28:40 +0000
+Subject: Re: [RFC PATCH 0/1] security/keys: remove possessor verify after key
+Message-Id: <a8c50741-c109-8e32-e09a-e3bf2de50b50@mail.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200911114400.82207-1-alex.dewar90@gmail.com>
- <f97076d2-de8a-4600-ee81-4cf4fcdc3ec1@linux.com>
-In-Reply-To: <f97076d2-de8a-4600-ee81-4cf4fcdc3ec1@linux.com>
-To: Denis Efremov <efremov@linux.com>, David Howells <dhowells@redhat.com>
-Cc: Alex Dewar <alex.dewar90@gmail.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20200529081527.GC1376838@linux.intel.com>
+In-Reply-To: <20200529081527.GC1376838@linux.intel.com>
+To: keyrings@vger.kernel.org
 
-On Fri, Sep 11, 2020 at 07:05:16PM +0300, Denis Efremov wrote:
-> Hi,
-> 
-> same patch
-> 
-> https://lkml.org/lkml/2020/8/27/168
-> 
-> Thanks,
-> Denis
+On 7/3/20 4:14 AM, Jarkko Sakkinen wrote:
+> On Sun, Jun 28, 2020 at 03:27:37AM +0300, Alexey Krasikov wrote:
+>> On 6/23/20 4:28 AM, Jarkko Sakkinen wrote:
+>>> On Mon, Jun 22, 2020 at 02:30:28PM +0200, Greg KH wrote:
+>>>> On Mon, Jun 22, 2020 at 12:04:29PM +0300, Alexey Krasikov wrote:
+>>>>> On 6/15/20 8:00 PM, Jarkko Sakkinen wrote:
+>>>>>> On Tue, Jun 02, 2020 at 01:30:52PM +0300, Alexey Krasikov wrote:
+>>>>>>> On Mon, June 1, 2020 at 08:34PM +300, Jarkko Sakkinen wrote:
+>>>>>>>> On Fri, May 29, 2020 at 09:00:39AM +0300, Alexey Krasikov wrote:
+>>>>>>>>> $ KEYID=$(keyctl add user john smith @u)
+>>>>>>>>> $ keyctl describe $KEYID
+>>>>>>>>> 5927639: alswrv-----v------------  1000  1000 user: john
+>>>>>>>>> $ keyctl setperm $KEYID 0x3d000000
+>>>>>>>>> $ keyctl describe $KEYID
+>>>>>>>>> 5927639: alsw-v-----v------------  1000  1000 user: john
+>>>>>>>>> $ keyctl print $KEYID
+>>>>>>>>> smith
+>>>>>>>> A keyring default permissions are 0x3f3f0000.
+>>>>>>>> A key default permissions are 0x3f010000.
+>>>>>>>>
+>>>>>>>> Because of this:
+>>>>>>>>
+>>>>>>>> $ KEYID=$(keyctl add user john smith @u)
+>>>>>>>> $ keyctl setperm $KEYID 0x3d000000
+>>>>>>>> keyctl_setperm: Permission denied
+>>>>>>>>
+>>>>>>>> Are you sure that your example is correct?
+>>>>>>>>
+>>>>>>>> /Jarkko
+>>>>>>> Yes, this example works correctly.
+>>>>>>>
+>>>>>>> Why do you think, that the current keyring and key rights
+>>>>>>>
+>>>>>>> shoukd not allow this to be done?
+>>>>>> I'm just saying that I cannot figure out your point in the cover letter.
+>>>>>> It contains random dumps of keyctl output.
+>>>>>>
+>>>>>> Maybe a better idea would be to write a test script that demonstrates
+>>>>>> the issue?
+>>>>>>
+>>>>>> /Jarkko
+>>>>> + alexey_krasikov@mail.ru
+>>>>>
+>>>>> Possible you may not be able to reproduce the problem because you have a
+>>>>> different version of Linux.
+>>>>>
+>>>>> I get to reproduce the problem on two systems:
+>>>>>
+>>>>> Linux 4.14.74-28+yc11.91
+>>>>>
+>>>>> and
+>>>>>
+>>>>> Linux ubuntu 4.15.0-106-generic
+>>>> Both of those are distro-specific kernels, can you reproduce this on
+>>>> 5.8-rc2 or 5.7 as released from kernel.org?
+>>> Alexey,
+>>>
+>>> A shell script containing the keyctl command chain with some output, and
+>>> then your version of the output when running the script would be also
+>>> very useful for better comparison.
+>>>
+>>> /Jarkko
+>> Ok. I have the following script:
+>>
+>> ----------------------------------------------------------------------------
+>> #!/usr/bin/sh
+>>
+>> uname -r
+>>
+>> KEYID=$(keyctl add user john smith @u)
+>> keyctl describe $KEYID
+>> keyctl setperm $KEYID 0x3d000000
+>> keyctl describe $KEYID
+>> keyctl print $KEYID
+> pam_keyinit.so should create user keyring when the login session is
+> created. If the user space stack is working correclty, you should not
+> end up to be the possessor for the user keyring.
+>
+> However, I can simulate your environment with the session keyring:
+>
+> KEYID=`keyctl add user john smith @s`
+>
+> keyctl describe $KEYID
+> keyctl setperm $KEYID 0x3d000000
+> keyctl describe $KEYID
+> keyctl print $KEYID
+>
+> And yes I do get:
+>
+> 564302411: alswrv-----v------------  1000  1000 user: john
+> 564302411: alsw-v------------------  1000  1000 user: john
+> smith
+>
+> Here's another sequence that also removes setattr:
+>
+> KEYID=`keyctl add user john smith @s`
+>
+> keyctl describe $KEYID
+> keyctl setperm $KEYID 0x08000000
+> keyctl describe $KEYID
+> keyctl print $KEYID
+>
+> 700153280: alswrv-----v------------  1000  1000 user: john
+> keyctl_describe_alloc: Permission denied
+> smith
+>
+> David, this look at least with a quick sight somewhat weird: my
+> possessor permissions are only "search", so why does reading the
+> payload succeed?
+>
+> /Jarkko
+ping
 
-David, can you pick this up?
-
-/Jarkko
+-- 
+With best regards,
+Alexey Krasikov,
++7-999-789-0-789
