@@ -1,35 +1,54 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 17 Sep 2020 15:17:52 +0000
-Subject: Re: [PATCH v11 4/5] security: keys: trusted: use ASN.1 TPM2 key format for the blobs
-Message-Id: <20200917151752.GA7389@linux.intel.com>
+From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Date: Thu, 03 Sep 2020 13:12:39 +0000
+Subject: [PATCH v6 5/8] crypto: testmgr - support test with different ciphertext per encryption
+Message-Id: <20200903131242.128665-6-tianjia.zhang@linux.alibaba.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200912172643.9063-5-James.Bottomley@HansenPartnership.com>
- <202009131413.8dt8QEc8%lkp@intel.com>
- <1600016571.7833.9.camel@HansenPartnership.com>
- <20200915091140.GC3612@linux.intel.com>
- <CAKwvOdnDJKPJ__sVKX2HmLUWyNPo=b0ccLvyBLyWoFfC0EFkiA@mail.gmail.com>
- <20200916162707.GF21026@linux.intel.com>
- <CAKwvOdnM66H2CNwsscgvALsb=gdiV9UDLQuqrKzdbmCr5S1McA@mail.gmail.com>
-In-Reply-To: <CAKwvOdnM66H2CNwsscgvALsb=gdiV9UDLQuqrKzdbmCr5S1McA@mail.gmail.com>
-To: Nick Desaulniers <ndesaulniers@google.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>, kernel test robot <lkp@intel.com>, linux-integrity@vger.kernel.org, kbuild-all@lists.01.org, clang-built-linux <clang-built-linux@googlegroups.com>, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+References: <20200903131242.128665-1-tianjia.zhang@linux.alibaba.com>
+In-Reply-To: <20200903131242.128665-1-tianjia.zhang@linux.alibaba.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, David Howells <dhowells@redhat.com>, Maxime Coquelin <mcoquelin.stm32@gmail.com>, Alexandre Torgue <alexandre.torgue@st.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Stephan Mueller <smueller@chronox.de>, Marcelo Henrique Cerri <marcelo.cerri@canonical.com>, "Steven Rostedt (VMware)" <rostedt@goodmis.org>, Masahiro Yamada <masahiroy@kernel.org>, Brendan Higgins <brendanhiggins@google.com>, Andrew Morton <akpm@linux-foundation.org>, Johannes Weiner <hannes@cmpxchg.org>, Waiman Long <longman@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, Colin Ian King <colin.king@canonical.com>, Tushar Sugandhi <tusharsu@linux.microsoft.com>, Vitaly Chikunov <vt@altlinux.org>, Gilad Ben-Yossef <gilad@benyossef.com>, Pascal van Leeuwen <pvanleeuwen@rambus.com>, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org, linux-security-module@vger.kernel.org
+Cc: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>, Tianjia Zhang <tianjia.zhang@linux.alibaba.com>, Jia Zhang <zhang.jia@linux.alibaba.com>
 
-On Wed, Sep 16, 2020 at 11:04:33AM -0700, Nick Desaulniers wrote:
-> On Wed, Sep 16, 2020 at 9:27 AM Jarkko Sakkinen
-> <jarkko.sakkinen@linux.intel.com> wrote:
-> >
-> > The compiler that you use in your example is unfortunately not
-> > preincluded to my Ubuntu installation...
-> 
-> $ sudo apt install gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
-> -- 
-> Thanks,
-> ~Nick Desaulniers
+Some asymmetric algorithms will get different ciphertext after
+each encryption, such as SM2, and let testmgr support the testing
+of such algorithms.
 
-Thanks, installed for the future. A bit more convenient than compile
-your own chain :-)
+In struct akcipher_testvec, set c and c_size to be empty, skip
+the comparison of the ciphertext, and compare the decrypted
+plaintext with m to achieve the test purpose.
 
-/Jarkko
+Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Tested-by: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>
+---
+ crypto/testmgr.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 23c27fc96394..cd002a030af5 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -4025,7 +4025,7 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 		pr_err("alg: akcipher: %s test failed. err %d\n", op, err);
+ 		goto free_all;
+ 	}
+-	if (!vecs->siggen_sigver_test) {
++	if (!vecs->siggen_sigver_test && c) {
+ 		if (req->dst_len != c_size) {
+ 			pr_err("alg: akcipher: %s test failed. Invalid output len\n",
+ 			       op);
+@@ -4056,6 +4056,11 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
+ 		goto free_all;
+ 	}
+ 
++	if (!vecs->siggen_sigver_test && !c) {
++		c = outbuf_enc;
++		c_size = req->dst_len;
++	}
++
+ 	op = vecs->siggen_sigver_test ? "sign" : "decrypt";
+ 	if (WARN_ON(c_size > PAGE_SIZE))
+ 		goto free_all;
+-- 
+2.19.1.3.ge56e4f7
