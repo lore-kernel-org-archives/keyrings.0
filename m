@@ -1,42 +1,41 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 30 Sep 2020 03:43:11 +0000
-Subject: Re: [PATCH v13 0/5] TPM 2.0 trusted key rework
-Message-Id: <20200930034311.GA881524@linux.intel.com>
+From: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Date: Mon, 07 Sep 2020 10:39:36 +0000
+Subject: [RESEND][PATCH] keys: Update comment for restrict_link_by_key_or_keyring_chain
+Message-Id: <20200907103936.263810-2-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+References: <20200907103936.263810-1-andrew.zaborowski@intel.com>
+In-Reply-To: <20200907103936.263810-1-andrew.zaborowski@intel.com>
+To: keyrings@vger.kernel.org
 
-On Mon, Sep 21, 2020 at 07:28:04PM -0700, James Bottomley wrote:
-> Updated to fix compile problem identified by 0day
-> 
-> General cover letter minus policy bit:
-> 
-> This patch updates the trusted key code to export keys in the ASN.1
-> format used by current TPM key tools (openssl_tpm2_engine and
-> openconnect).  The current code will try to load keys containing
-> policy, but being unable to formulate the policy commands necessary to
-> load them, the unseal will always fail unless the policy is executed
-> in user space and a pre-formed policy session passed in.
-> 
-> The key format is designed to be compatible with our two openssl
-> engine implementations as well as with the format used by openconnect.
-> I've added seal/unseal to my engine so I can use it for
-> interoperability testing and I'll later use this for sealed symmetric
-> keys via engine:
-> 
-> https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
-> 
-> James
+Add the bit of information that makes
+restrict_link_by_key_or_keyring_chain different from
+restrict_link_by_key_or_keyring to the inline docs comment.
 
-I started a kernel build for GLK NUC that I have. I'm hopeful that
-tpm2-scripts fix will sort out this patch set. Will report the results
-once I have them. I have a hunch that things will finally work out.
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+---
+ crypto/asymmetric_keys/restrict.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-Using my master branch without the trusted keys fixes that I did.
-
-/Jarkko
+diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
+index 77ebebada29..84cefe3b358 100644
+--- a/crypto/asymmetric_keys/restrict.c
++++ b/crypto/asymmetric_keys/restrict.c
+@@ -244,9 +244,10 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
+  * @payload: The payload of the new key.
+  * @trusted: A key or ring of keys that can be used to vouch for the new cert.
+  *
+- * Check the new certificate only against the key or keys passed in the data
+- * parameter. If one of those is the signing key and validates the new
+- * certificate, then mark the new certificate as being ok to link.
++ * Check the new certificate against the key or keys passed in the data
++ * parameter and against the keys already linked to the destination keyring. If
++ * one of those is the signing key and validates the new certificate, then mark
++ * the new certificate as being ok to link.
+  *
+  * Returns 0 if the new certificate was accepted, -ENOKEY if we
+  * couldn't find a matching parent certificate in the trusted list,
+-- 
+2.20.1
