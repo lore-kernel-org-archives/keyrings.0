@@ -1,45 +1,64 @@
-From: "Mr. Scott Donald" <mes64543@gmail.com>
-Date: Fri, 14 Aug 2020 10:28:23 +0000
-Subject: Hello. Please
-Message-Id: <CAF4hjb9+Pq34CgLokF9MnypbQWXhombhtDEObi6O9uyopL0L6Q@mail.gmail.com>
+From: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Date: Mon, 07 Sep 2020 10:39:35 +0000
+Subject: [RESEND][PATCH] keys: Handle missing Authority Key Identifier X509 extension
+Message-Id: <20200907103936.263810-1-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
+References: <20180505060152.21571-1-andrew.zaborowski@intel.com>
+In-Reply-To: <20180505060152.21571-1-andrew.zaborowski@intel.com>
 To: keyrings@vger.kernel.org
 
+In a self-signed certificate the subject and issuer are the same and so
+the Authority Key Identifier X.509 v3 extension is explicitly made
+optional in RFC5280 section 4.2.1.1.
+crypto/asymmetric_keys/x509_cert_parser.c can't handle this and makes
+(at least) the restrict.c functions refuse to work with certificates
+that don't include the AKID.  Fix this by filling in the missing
+cert->sig->auth_ids with the certificate's own IDs after parsing and
+determinig the certificate is self-signed.
+
+The asymmetric_key_generate_id return value is not checked because it's
+already succeeded once at this point.
+
+There are root X.509 v3 certificates in use where this is the case,
+mostly oldish ones.
+
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+---
+ crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 26ec20ef489..a5a2f93e242 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -136,6 +136,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
+ 	if (ret < 0)
+ 		goto error_decode;
+ 
++	if (cert->self_signed) {
++		if (!cert->sig->auth_ids[0]) {
++			/* Duplicate cert->id */
++			kid = asymmetric_key_generate_id(cert->raw_serial,
++							 cert->raw_serial_size,
++							 cert->raw_issuer,
++							 cert->raw_issuer_size);
++			cert->sig->auth_ids[0] = kid;
++		}
++
++		if (!cert->sig->auth_ids[1] && cert->skid) {
++			/* Duplicate cert->skid */
++			kid = asymmetric_key_generate_id(cert->raw_skid,
++							 cert->raw_skid_size,
++							 "", 0);
++			cert->sig->auth_ids[1] = kid;
++		}
++	}
++
+ 	kfree(ctx);
+ 	return cert;
+ 
 -- 
-Dear Friend,
-
-I'm Mr. Scott Donald a Successful businessMan dealing with
-Exportation, I got your mail contact through search to let you know my
-intension and my Ugly Situation Am a dying Man here in Los Angeles
-California Hospital Bed in (USA), I Lost my Wife and my only Daughter
-for Covid-19 and I also have a problem in my Health and I can die
-anytime I Know,
-
-I have a project that I am about to hand over to you. and I already
-instructed the Bankia S.A. Madrid, Spain(BSA) to transfer my fund sum
-of £3,7M GBP. Equivalent to €4,077,033.91 EUR, to you as to enable you
-to give 50% of this fund to Charitable Home in your State and take 50%
-don't think otherwise and why would anybody send someone you barely
-know to help you deliver a message, help me do this for the happiness
-of my soul and for God to mercy me and my Family and give Us a good
-place.
-
-please, do as I said there was someone from your State that I deeply
-love so very very much and I miss her so badly I have no means to
-reach any Charitable Home there. that is why I go for a personal
-search of the Country and State and I got your mail contact through
-search to let you know my Bitterness and please, help me is getting
-Dark I ask my Doctor to help me keep you notice failure for me to
-reach you in person Your urgent Response, here is my Doctor Whats-app
-Number for urgent notice +13019692737
-
-Hope To Hear From You. I'm sending this email to you for the second
-time yet no response from you.
-
-My Regards.
-
-Mr. Scott Donald
-CEO
+2.20.1
