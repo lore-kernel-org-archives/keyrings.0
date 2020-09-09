@@ -1,193 +1,66 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 22 Sep 2020 02:32:17 +0000
-Subject: [PATCH v13 2/3] security: keys: trusted: add ability to specify arbitrary policy
-Message-Id: <20200922023218.7466-3-James.Bottomley@HansenPartnership.com>
+From: Jonathan Corbet <corbet@lwn.net>
+Date: Wed, 09 Sep 2020 17:30:08 +0000
+Subject: Re: [PATCH v4] docs: trusted-encrypted.rst: update parameters for command examples
+Message-Id: <20200909113008.6ee6e109@lwn.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200922023218.7466-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200922023218.7466-1-James.Bottomley@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+References: <20200821135356.15737-1-colyli@suse.de>
+In-Reply-To: <20200821135356.15737-1-colyli@suse.de>
+To: Coly Li <colyli@suse.de>
+Cc: keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Stefan Berger <stefanb@linux.ibm.com>, Dan Williams <dan.j.williams@intel.com>, James Bottomley <jejb@linux.ibm.com>, Jason Gunthorpe <jgg@ziepe.ca>, Mimi Zohar <zohar@linux.ibm.com>, Peter Huewe <peterhuewe@gmx.de>
 
-This patch adds a policy= argument to key creation.  The policy is the
-standard tss policymaker format and each separate policy line must
-have a newline after it.
+On Fri, 21 Aug 2020 21:53:56 +0800
+Coly Li <colyli@suse.de> wrote:
 
-Thus to construct a policy requiring authorized value and pcr 16
-locking using a sha256 hash, the policy (policy.txt) file would be two
-lines:
+> The parameters in command examples for tpm2_createprimary and
+> tpm2_evictcontrol are outdated, people (like me) are not able to create
+> trusted key by these command examples.
+> 
+> This patch updates the parameters of command example tpm2_createprimary
+> and tpm2_evictcontrol in trusted-encrypted.rst. With Linux kernel v5.8
+> and tpm2-tools-4.1, people can create a trusted key by following the
+> examples in this document.
+> 
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> Reviewed-by: Stefan Berger <stefanb@linux.ibm.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: James Bottomley <jejb@linux.ibm.com>
+> Cc: Jason Gunthorpe <jgg@ziepe.ca>
+> Cc: Jonathan Corbet <corbet@lwn.net>
+> Cc: Mimi Zohar <zohar@linux.ibm.com>
+> Cc: Peter Huewe <peterhuewe@gmx.de>
+> ---
+> Changelog:
+> v4: update Reviewed-by list, and Cc linux-doc and linux-integrity
+>     maintainers.
+> v3: update commit log with review comments from Jarkko Sakkinen. 
+> v2: remove the change of trusted key related operation.
+> v1: initial version.
+> 
+>  Documentation/security/keys/trusted-encrypted.rst | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
+> index 9483a7425ad5..1da879a68640 100644
+> --- a/Documentation/security/keys/trusted-encrypted.rst
+> +++ b/Documentation/security/keys/trusted-encrypted.rst
+> @@ -39,10 +39,9 @@ With the IBM TSS 2 stack::
+>  
+>  Or with the Intel TSS 2 stack::
+>  
+> -  #> tpm2_createprimary --hierarchy o -G rsa2048 -o key.ctxt  
+> +  #> tpm2_createprimary --hierarchy o -G rsa2048 -c key.ctxt
+>    [...]
+> -  handle: 0x800000FF
+> -  #> tpm2_evictcontrol -c key.ctxt -p 0x81000001  
+> +  #> tpm2_evictcontrol -c key.ctxt 0x81000001
+>    persistentHandle: 0x81000001
 
-0000017F00000001000B03000001303095B49BE85E381E5B20E557E46363EF55B0F43B132C2D8E3DE9AC436656F2
-0000016b
+This has been languishing, sorry; I've just applied it.
 
-This can be inserted into the key with
+Thanks,
 
-keyctl add trusted kmk "new 32 policy=`cat policy.txt` keyhandle=0x81000001 hash=sha256" @u
-
-Note that although a few policies work like this, most require special
-handling which must be added to the kernel policy construction
-routine.
-
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
----
- .../security/keys/trusted-encrypted.rst       | 16 ++++++
- security/keys/trusted-keys/tpm2-policy.c      | 53 +++++++++++++++++++
- security/keys/trusted-keys/tpm2-policy.h      |  1 +
- security/keys/trusted-keys/trusted_tpm1.c     | 15 ++++++
- 4 files changed, 85 insertions(+)
-
-diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index 8b7853a277bc..f001752adaa1 100644
---- a/Documentation/security/keys/trusted-encrypted.rst
-+++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -76,6 +76,9 @@ Usage::
-        policyhandle= handle to an authorization policy session that defines the
-                      same policy and with the same hash algorithm as was used to
-                      seal the key.
-+       policy=       specify an arbitrary set of policies.  These must
-+                     be in policymaker format with each separate
-+                     policy line newline terminated.
- 
- "keyctl print" returns an ascii hex copy of the sealed key, which is in standard
- TPM_STORED_DATA format.  The key length for new keys are always in bytes.
-@@ -168,6 +171,19 @@ zeros (the value of PCR 16)::
-     $ dd if=/dev/zero bs=1 count  2>/dev/null|sha1sum
-     6768033e216468247bd031a0a2d9876d79818f8f
- 
-+You can also specify arbitrary policy in policymaker format, so a two
-+value policy (the pcr example above and authvalue) would look like
-+this in policymaker format::
-+
-+    0000017F000000010004030000016768033e216468247bd031a0a2d9876d79818f8f
-+    0000016b
-+
-+This can be placed in a file (say policy.txt) and then added to the key as::
-+
-+    $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha1 policy=`cat policy.txt`" @u
-+
-+The newlines in the file policy.txt will be automatically processed.
-+
- Reseal a trusted key under new pcr values::
- 
-     $ keyctl update 268728824 "update pcrinfo=`cat pcr.blob`"
-diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 011f42e574db..78daa0310e9e 100644
---- a/security/keys/trusted-keys/tpm2-policy.c
-+++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -372,3 +372,56 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 
- 	return 0;
- }
-+
-+int tpm2_parse_policies(struct tpm2_policies **ppols, char *str)
-+{
-+	struct tpm2_policies *pols;
-+	char *p;
-+	u8 *ptr;
-+	int i = 0, left = PAGE_SIZE, res;
-+
-+	pols = kmalloc(left, GFP_KERNEL);
-+	if (!pols)
-+		return -ENOMEM;
-+
-+	ptr = (u8 *)(pols + 1);
-+	left -= ptr - (u8 *)pols;
-+
-+	while ((p = strsep(&str, "\n"))) {
-+		if (*p = '\0' || *p = '\n')
-+			continue;
-+
-+		pols->len[i] = strlen(p)/2;
-+		if (pols->len[i] > left) {
-+			res = -E2BIG;
-+			goto err;
-+		}
-+
-+		res = hex2bin(ptr, p, pols->len[i]);
-+		if (res)
-+			goto err;
-+
-+		/* get command code and skip past */
-+		pols->code[i] = get_unaligned_be32(ptr);
-+		pols->policies[i] = ptr + 4;
-+		ptr += pols->len[i];
-+		left -= pols->len[i];
-+		pols->len[i] -= 4;
-+
-+		/*
-+		 * FIXME: this does leave the code embedded in dead
-+		 * regions of the memory, but it's easier than
-+		 * hexdumping to a temporary or copying over
-+		 */
-+		i++;
-+	}
-+
-+	pols->count = i;
-+	*ppols = pols;
-+
-+	return 0;
-+
-+ err:
-+	kfree(pols);
-+	return res;
-+}
-diff --git a/security/keys/trusted-keys/tpm2-policy.h b/security/keys/trusted-keys/tpm2-policy.h
-index 46bf1f0a9325..0da013116c1c 100644
---- a/security/keys/trusted-keys/tpm2-policy.h
-+++ b/security/keys/trusted-keys/tpm2-policy.h
-@@ -28,3 +28,4 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols, u32 hash,
- int tpm2_encode_policy(struct tpm2_policies *pols, u8 **data, u32 *len);
- int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 			    u32 *handle);
-+int tpm2_parse_policies(struct tpm2_policies **ppols, char *str);
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index 2130a27fcbff..2f2e78a4f503 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -29,6 +29,8 @@
- 
- #include <keys/trusted_tpm.h>
- 
-+#include "tpm2-policy.h"
-+
- static const char hmac_alg[] = "hmac(sha1)";
- static const char hash_alg[] = "sha1";
- static struct tpm_chip *chip;
-@@ -709,6 +711,7 @@ enum {
- 	Opt_hash,
- 	Opt_policydigest,
- 	Opt_policyhandle,
-+	Opt_policy,
- };
- 
- static const match_table_t key_tokens = {
-@@ -724,6 +727,7 @@ static const match_table_t key_tokens = {
- 	{Opt_hash, "hash=%s"},
- 	{Opt_policydigest, "policydigest=%s"},
- 	{Opt_policyhandle, "policyhandle=%s"},
-+	{Opt_policy, "policy=%s"},
- 	{Opt_err, NULL}
- };
- 
-@@ -854,6 +858,17 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 				return -EINVAL;
- 			opt->policyhandle = handle;
- 			break;
-+
-+		case Opt_policy:
-+			if (pay->policies)
-+				return -EINVAL;
-+			if (!tpm2)
-+				return -EINVAL;
-+			res = tpm2_parse_policies(&pay->policies, args[0].from);
-+			if (res)
-+				return res;
-+			break;
-+
- 		default:
- 			return -EINVAL;
- 		}
--- 
-2.26.2
+jon
