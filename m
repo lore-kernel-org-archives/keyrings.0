@@ -1,53 +1,59 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 22 Sep 2020 02:32:15 +0000
-Subject: [PATCH v13 0/3] Trusted Key policy for TPM 2.0
-Message-Id: <20200922023218.7466-1-James.Bottomley@HansenPartnership.com>
+From: Alex Dewar <alex.dewar90@gmail.com>
+Date: Fri, 11 Sep 2020 16:06:50 +0000
+Subject: [PATCH v2] security: keys: Use kvfree_sensitive in a few places
+Message-Id: <20200911160649.20164-1-alex.dewar90@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+References: <20200911160009.n2drvcjpzrsloxcj@lenovo-laptop>
+In-Reply-To: <20200911160009.n2drvcjpzrsloxcj@lenovo-laptop>
+Cc: Alex Dewar <alex.dewar90@gmail.com>, David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Updated to fix compile problem identified by 0day
+In big_key.c, there are a few places where memzero_explicit + kvfree is
+used. Replace these with a single call to kvfree_sensitive, to make the
+code more readable.
 
-Original cover letter:
-
-This is a lockstep patch with the prior trusted key rework patch (so
-requires it as a percursor).  Now the key format is ASN.1, the policy
-statements needed to unseal the key can be coded into the key file
-itself meaning the kernel can now construct and use the policy session
-necessary rather than the user having to do it.  This makes using TPM
-2.0 keys with policy much easier.
-
-The current implementation only has a limited subset of the full TPM
-2.0 policy commands, but it is enough to implement keys locked to PCR
-values and expiring keys.  The main missing feature is support for the
-TPM2_PolicyOR statement, which means all current policy has to be AND
-chains (key doesn't unlock unless every policy statement succeeds).
-
-James
-
+Signed-off-by: Alex Dewar <alex.dewar90@gmail.com>
 ---
+v2 - Update commit message as per James Bottomley's suggestion
 
-James Bottomley (3):
-  security: keys: trusted: add PCR policy to TPM2 keys
-  security: keys: trusted: add ability to specify arbitrary policy
-  security: keys: trusted: implement counter/timer policy
+ security/keys/big_key.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
- .../security/keys/trusted-encrypted.rst       |  83 +++-
- include/keys/trusted-type.h                   |   5 +-
- include/linux/tpm.h                           |   6 +
- security/keys/Kconfig                         |   2 +
- security/keys/trusted-keys/Makefile           |   4 +-
- security/keys/trusted-keys/tpm2-policy.c      | 465 ++++++++++++++++++
- security/keys/trusted-keys/tpm2-policy.h      |  31 ++
- security/keys/trusted-keys/tpm2key.asn1       |  13 +
- security/keys/trusted-keys/trusted_tpm1.c     |  23 +-
- security/keys/trusted-keys/trusted_tpm2.c     | 120 ++++-
- 10 files changed, 736 insertions(+), 16 deletions(-)
- create mode 100644 security/keys/trusted-keys/tpm2-policy.c
- create mode 100644 security/keys/trusted-keys/tpm2-policy.h
-
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 691347dea3c1..d17e5f09eeb8 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -121,8 +121,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 		*path = file->f_path;
+ 		path_get(path);
+ 		fput(file);
+-		memzero_explicit(buf, enclen);
+-		kvfree(buf);
++		kvfree_sensitive(buf, enclen);
+ 	} else {
+ 		/* Just store the data in a buffer */
+ 		void *data = kmalloc(datalen, GFP_KERNEL);
+@@ -140,8 +139,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ err_enckey:
+ 	kfree_sensitive(enckey);
+ error:
+-	memzero_explicit(buf, enclen);
+-	kvfree(buf);
++	kvfree_sensitive(buf, enclen);
+ 	return ret;
+ }
+ 
+@@ -273,8 +271,7 @@ long big_key_read(const struct key *key, char *buffer, size_t buflen)
+ err_fput:
+ 		fput(file);
+ error:
+-		memzero_explicit(buf, enclen);
+-		kvfree(buf);
++		kvfree_sensitive(buf, enclen);
+ 	} else {
+ 		ret = datalen;
+ 		memcpy(buffer, key->payload.data[big_key_data], datalen);
 -- 
-2.26.2
+2.28.0
