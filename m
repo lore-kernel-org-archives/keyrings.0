@@ -1,74 +1,65 @@
-From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Date: Thu, 03 Sep 2020 13:12:35 +0000
-Subject: [PATCH v6 1/8] crypto: sm3 - export crypto_sm3_final function
-Message-Id: <20200903131242.128665-2-tianjia.zhang@linux.alibaba.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Sat, 12 Sep 2020 17:26:38 +0000
+Subject: [PATCH v11 0/5] TPM 2.0 trusted key rework
+Message-Id: <20200912172643.9063-1-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200903131242.128665-1-tianjia.zhang@linux.alibaba.com>
-In-Reply-To: <20200903131242.128665-1-tianjia.zhang@linux.alibaba.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, David Howells <dhowells@redhat.com>, Maxime Coquelin <mcoquelin.stm32@gmail.com>, Alexandre Torgue <alexandre.torgue@st.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Stephan Mueller <smueller@chronox.de>, Marcelo Henrique Cerri <marcelo.cerri@canonical.com>, "Steven Rostedt (VMware)" <rostedt@goodmis.org>, Masahiro Yamada <masahiroy@kernel.org>, Brendan Higgins <brendanhiggins@google.com>, Andrew Morton <akpm@linux-foundation.org>, Johannes Weiner <hannes@cmpxchg.org>, Waiman Long <longman@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, Colin Ian King <colin.king@canonical.com>, Tushar Sugandhi <tusharsu@linux.microsoft.com>, Vitaly Chikunov <vt@altlinux.org>, Gilad Ben-Yossef <gilad@benyossef.com>, Pascal van Leeuwen <pvanleeuwen@rambus.com>, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org, linux-security-module@vger.kernel.org
-Cc: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>, Tianjia Zhang <tianjia.zhang@linux.alibaba.com>, Jia Zhang <zhang.jia@linux.alibaba.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-Both crypto_sm3_update and crypto_sm3_finup have been
-exported, exporting crypto_sm3_final, to avoid having to
-use crypto_sm3_finup(desc, NULL, 0, dgst) to calculate
-the hash in some cases.
+As requested this is the patch set to make the TPM 2.0 trusted key
+infrastructure use the same ASN.1 format as the external key tools.
+The addition of the policy use cases has been broken out into a
+separate patch.  The new code here is adding a description of the
+ASN.1 key format to trusted-encrypted.rst.
 
-Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Tested-by: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>
+General cover letter minus policy bit:
+
+This patch updates the trusted key code to export keys in the ASN.1
+format used by current TPM key tools (openssl_tpm2_engine and
+openconnect).  The current code will try to load keys containing
+policy, but being unable to formulate the policy commands necessary to
+load them, the unseal will always fail unless the policy is executed
+in user space and a pre-formed policy session passed in.
+
+The key format is designed to be compatible with our two openssl
+engine implementations as well as with the format used by openconnect.
+I've added seal/unseal to my engine so I can use it for
+interoperability testing and I'll later use this for sealed symmetric
+keys via engine:
+
+https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
+
+James
+
 ---
- crypto/sm3_generic.c | 7 ++++---
- include/crypto/sm3.h | 2 ++
- 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/crypto/sm3_generic.c b/crypto/sm3_generic.c
-index 3468975215ca..193c4584bd00 100644
---- a/crypto/sm3_generic.c
-+++ b/crypto/sm3_generic.c
-@@ -149,17 +149,18 @@ int crypto_sm3_update(struct shash_desc *desc, const u8 *data,
- }
- EXPORT_SYMBOL(crypto_sm3_update);
- 
--static int sm3_final(struct shash_desc *desc, u8 *out)
-+int crypto_sm3_final(struct shash_desc *desc, u8 *out)
- {
- 	sm3_base_do_finalize(desc, sm3_generic_block_fn);
- 	return sm3_base_finish(desc, out);
- }
-+EXPORT_SYMBOL(crypto_sm3_final);
- 
- int crypto_sm3_finup(struct shash_desc *desc, const u8 *data,
- 			unsigned int len, u8 *hash)
- {
- 	sm3_base_do_update(desc, data, len, sm3_generic_block_fn);
--	return sm3_final(desc, hash);
-+	return crypto_sm3_final(desc, hash);
- }
- EXPORT_SYMBOL(crypto_sm3_finup);
- 
-@@ -167,7 +168,7 @@ static struct shash_alg sm3_alg = {
- 	.digestsize	=	SM3_DIGEST_SIZE,
- 	.init		=	sm3_base_init,
- 	.update		=	crypto_sm3_update,
--	.final		=	sm3_final,
-+	.final		=	crypto_sm3_final,
- 	.finup		=	crypto_sm3_finup,
- 	.descsize	=	sizeof(struct sm3_state),
- 	.base		=	{
-diff --git a/include/crypto/sm3.h b/include/crypto/sm3.h
-index 1438942dc773..42ea21289ba9 100644
---- a/include/crypto/sm3.h
-+++ b/include/crypto/sm3.h
-@@ -35,6 +35,8 @@ struct shash_desc;
- extern int crypto_sm3_update(struct shash_desc *desc, const u8 *data,
- 			      unsigned int len);
- 
-+extern int crypto_sm3_final(struct shash_desc *desc, u8 *out);
-+
- extern int crypto_sm3_finup(struct shash_desc *desc, const u8 *data,
- 			     unsigned int len, u8 *hash);
- #endif
+James Bottomley (5):
+  lib: add ASN.1 encoder
+  oid_registry: Add TCG defined OIDS for TPM keys
+  security: keys: trusted: fix TPM2 authorizations
+  security: keys: trusted: use ASN.1 TPM2 key format for the blobs
+  security: keys: trusted: Make sealed key properly interoperable
+
+ .../security/keys/trusted-encrypted.rst       |  58 +++
+ include/keys/trusted-type.h                   |   2 +
+ include/linux/asn1_encoder.h                  |  32 ++
+ include/linux/oid_registry.h                  |   5 +
+ include/linux/tpm.h                           |   2 +
+ lib/Kconfig                                   |   3 +
+ lib/Makefile                                  |   1 +
+ lib/asn1_encoder.c                            | 454 ++++++++++++++++++
+ security/keys/Kconfig                         |   1 +
+ security/keys/trusted-keys/Makefile           |   2 +-
+ security/keys/trusted-keys/tpm2key.asn1       |  11 +
+ security/keys/trusted-keys/trusted_tpm1.c     |  34 +-
+ security/keys/trusted-keys/trusted_tpm2.c     | 266 +++++++++-
+ 13 files changed, 840 insertions(+), 31 deletions(-)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
+ create mode 100644 security/keys/trusted-keys/tpm2key.asn1
+
 -- 
-2.19.1.3.ge56e4f7
+2.26.2
