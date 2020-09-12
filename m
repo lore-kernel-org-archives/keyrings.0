@@ -1,226 +1,193 @@
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 22 Sep 2020 02:32:18 +0000
-Subject: [PATCH v13 3/3] security: keys: trusted: implement counter/timer policy
-Message-Id: <20200922023218.7466-4-James.Bottomley@HansenPartnership.com>
+Date: Sat, 12 Sep 2020 17:39:37 +0000
+Subject: [PATCH v11 2/3] security: keys: trusted: add ability to specify arbitrary policy
+Message-Id: <20200912173938.9714-3-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200922023218.7466-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200922023218.7466-1-James.Bottomley@HansenPartnership.com>
+References: <20200912173938.9714-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200912173938.9714-1-James.Bottomley@HansenPartnership.com>
 To: linux-integrity@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-This is actually a generic policy allowing a range of comparisons
-against any value set in the TPM Clock, which includes things like the
-reset count, a monotonic millisecond count and the restart count.  The
-most useful comparison is against the millisecond count for expiring
-keys.  However, you have to remember that currently Linux doesn't try
-to sync the epoch timer with the TPM, so the expiration is actually
-measured in how long the TPM itself has been powered on ... the TPM
-timer doesn't count while the system is powered down.  The millisecond
-counter is a u64 quantity found at offset 8 in the timer structure,
-and the <= comparision operand is 9, so a policy set to expire after the
-TPM has been up for 100 seconds would look like
+This patch adds a policy= argument to key creation.  The policy is the
+standard tss policymaker format and each separate policy line must
+have a newline after it.
 
-0000016d00000000000f424000080009
+Thus to construct a policy requiring authorized value and pcr 16
+locking using a sha256 hash, the policy (policy.txt) file would be two
+lines:
 
-Where 0x16d is the counter timer policy code and 0xf4240 is 100 000 in
-hex.
+0000017F00000001000B03000001303095B49BE85E381E5B20E557E46363EF55B0F43B132C2D8E3DE9AC436656F2
+0000016b
+
+This can be inserted into the key with
+
+keyctl add trusted kmk "new 32 policy=`cat policy.txt` keyhandle=0x81000001 hash=sha256" @u
+
+Note that although a few policies work like this, most require special
+handling which must be added to the kernel policy construction
+routine.
 
 Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 ---
- .../security/keys/trusted-encrypted.rst       | 31 +++++++++++++-
- include/linux/tpm.h                           |  1 +
- security/keys/trusted-keys/tpm2-policy.c      | 40 ++++++++++++++++++-
- security/keys/trusted-keys/trusted_tpm2.c     | 36 ++++++++++++++++-
- 4 files changed, 105 insertions(+), 3 deletions(-)
+ .../security/keys/trusted-encrypted.rst       | 16 ++++++
+ security/keys/trusted-keys/tpm2-policy.c      | 53 +++++++++++++++++++
+ security/keys/trusted-keys/tpm2-policy.h      |  1 +
+ security/keys/trusted-keys/trusted_tpm1.c     | 15 ++++++
+ 4 files changed, 85 insertions(+)
 
 diff --git a/Documentation/security/keys/trusted-encrypted.rst b/Documentation/security/keys/trusted-encrypted.rst
-index f001752adaa1..e5414ed996bf 100644
+index 8b7853a277bc..f001752adaa1 100644
 --- a/Documentation/security/keys/trusted-encrypted.rst
 +++ b/Documentation/security/keys/trusted-encrypted.rst
-@@ -242,7 +242,6 @@ Another new format 'enc32' has been defined in order to support encrypted keys
- with payload size of 32 bytes. This will initially be used for nvdimm security
- but may expand to other usages that require 32 bytes payload.
+@@ -76,6 +76,9 @@ Usage::
+        policyhandle= handle to an authorization policy session that defines the
+                      same policy and with the same hash algorithm as was used to
+                      seal the key.
++       policy=       specify an arbitrary set of policies.  These must
++                     be in policymaker format with each separate
++                     policy line newline terminated.
  
--
- TPM 2.0 ASN.1 Key Format
- ------------------------
+ "keyctl print" returns an ascii hex copy of the sealed key, which is in standard
+ TPM_STORED_DATA format.  The key length for new keys are always in bytes.
+@@ -168,6 +171,19 @@ zeros (the value of PCR 16)::
+     $ dd if=/dev/zero bs=1 count  2>/dev/null|sha1sum
+     6768033e216468247bd031a0a2d9876d79818f8f
  
-@@ -316,3 +315,33 @@ string length.
- privkey is the binary representation of TPM2B_PUBLIC excluding the
- initial TPM2B header which can be reconstructed from the ASN.1 octed
- string length.
++You can also specify arbitrary policy in policymaker format, so a two
++value policy (the pcr example above and authvalue) would look like
++this in policymaker format::
 +
++    0000017F000000010004030000016768033e216468247bd031a0a2d9876d79818f8f
++    0000016b
 +
-+Appendix
-+--------
++This can be placed in a file (say policy.txt) and then added to the key as::
 +
-+TPM 2.0 Policies
-+----------------
++    $ keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha1 policy=`cat policy.txt`" @u
 +
-+The current TPM supports PCR lock policies as documented above and
-+CounterTimer policies which can be used to create expiring keys.  One
-+caveat with expiring keys is that the TPM millisecond counter does not
-+update while a system is powered off and Linux does not sync the TPM
-+millisecond count with its internal clock, so the best you can expire
-+in is in terms of how long any given TPM has been powered on.  (FIXME:
-+Linux should simply update the millisecond clock to the current number
-+of seconds past the epoch on boot).
++The newlines in the file policy.txt will be automatically processed.
 +
-+A CounterTimer policy is expressed in terms of length and offset
-+against the TPM clock structure (TPMS_TIME_INFO), which looks like the
-+packed structure::
-+
-+    struct tpms_time_info {
-+            u64 uptime;       /* time in ms since last start or reset */
-+	    u64 clock;        /* cumulative uptime in ms */
-+	    u32 resetcount;   /* numer of times the TPM has been reset */
-+	    u32 restartcount; /* number of times the TPM has been restarted */
-+	    u8  safe          /* time was safely loaded from NVRam */
-+    };
-+
-+The usual comparison for expiring keys is against clock, at offset 8.
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 254c33086288..cc0b94dcf21e 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -241,6 +241,7 @@ enum tpm2_command_codes {
- 	TPM2_CC_PCR_EXTEND	        = 0x0182,
- 	TPM2_CC_EVENT_SEQUENCE_COMPLETE = 0x0185,
- 	TPM2_CC_HASH_SEQUENCE_START     = 0x0186,
-+	TPM2_CC_POLICY_PASSWORD		= 0x018c,
- 	TPM2_CC_CREATE_LOADED           = 0x0191,
- 	TPM2_CC_LAST		        = 0x0193, /* Spec 1.36 */
- };
+ Reseal a trusted key under new pcr values::
+ 
+     $ keyctl update 268728824 "update pcrinfo=`cat pcr.blob`"
 diff --git a/security/keys/trusted-keys/tpm2-policy.c b/security/keys/trusted-keys/tpm2-policy.c
-index 78daa0310e9e..e0632838351c 100644
+index 080a76e879fd..87a13e607eca 100644
 --- a/security/keys/trusted-keys/tpm2-policy.c
 +++ b/security/keys/trusted-keys/tpm2-policy.c
-@@ -199,7 +199,8 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols,
- 			len = *plen;
- 		}
+@@ -370,3 +370,56 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
  
--		crypto_shash_update(sdesc, policy, len);
-+		if (len)
-+			crypto_shash_update(sdesc, policy, len);
- 
- 		/* now output the intermediate to the policydigest */
- 		crypto_shash_final(sdesc, policydigest);
-@@ -334,6 +335,16 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 		u32 cmd = pols->code[i];
- 		struct tpm_buf buf;
- 
-+		if (cmd = TPM2_CC_POLICY_AUTHVALUE)
-+			/*
-+			 * both PolicyAuthValue and PolicyPassword
-+			 * hash to the same thing, but one triggers
-+			 * HMAC authentication and the other simple
-+			 * authentication.  Since we have no HMAC
-+			 * code, we're choosing the simple
-+			 */
-+			cmd = TPM2_CC_POLICY_PASSWORD;
+ 	return 0;
+ }
 +
- 		rc = tpm_buf_init(&buf, TPM2_ST_NO_SESSIONS, cmd);
- 		if (rc)
- 			return rc;
-@@ -354,8 +365,35 @@ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
- 			tpm_buf_append(&buf, pols->policies[i],
- 				       pols->len[i] - pols->hash_size);
- 			break;
++int tpm2_parse_policies(struct tpm2_policies **ppols, char *str)
++{
++	struct tpm2_policies *pols;
++	char *p;
++	u8 *ptr;
++	int i = 0, left = PAGE_SIZE, res;
 +
-+		case TPM2_CC_POLICY_COUNTER_TIMER: {
-+			/*
-+			 * the format of this is the last two u16
-+			 * quantities are the offset and operation
-+			 * respectively.  The rest is operandB which
-+			 * must be zero padded in a hash digest
-+			 */
-+			u16 opb_len = pols->len[i] - 4;
++	pols = kmalloc(left, GFP_KERNEL);
++	if (!pols)
++		return -ENOMEM;
 +
-+			if (opb_len > pols->hash_size)
-+				return -EINVAL;
++	ptr = (u8 *)(pols + 1);
++	left -= ptr - (u8 *)pols;
 +
-+			tpm_buf_append_u16(&buf, opb_len);
-+			tpm_buf_append(&buf, pols->policies[i], opb_len);
++	while ((p = strsep(&str, "\n"))) {
++		if (*p = '\0' || *p = '\n')
++			continue;
 +
-+			/* offset and operand*/
-+			tpm_buf_append(&buf, pols->policies[i] + opb_len, 4);
-+			failure = "Counter Timer";
-+
-+			break;
++		pols->len[i] = strlen(p)/2;
++		if (pols->len[i] > left) {
++			res = -E2BIG;
++			goto err;
 +		}
 +
- 		default:
- 			failure = "unknown policy";
-+			if (pols->len[i])
-+				tpm_buf_append(&buf, pols->policies[i],
-+					       pols->len[i]);
++		res = hex2bin(ptr, p, pols->len[i]);
++		if (res)
++			goto err;
 +
- 			break;
- 		}
- 
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index 98c65431ca75..3ec01ed874d9 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -248,6 +248,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 	u32 flags;
- 	int i;
- 	int rc;
-+	static const int POLICY_SIZE = 2 * PAGE_SIZE;
- 
- 	for (i = 0; i < ARRAY_SIZE(tpm2_hash_map); i++) {
- 		if (options->hash = tpm2_hash_map[i].crypto_id) {
-@@ -268,7 +269,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		/* 4 array len, 2 hash alg */
- 		const int len = 4 + 2 + options->pcrinfo_len;
- 
--		pols = kmalloc(sizeof(*pols) + len, GFP_KERNEL);
-+		pols = kmalloc(POLICY_SIZE, GFP_KERNEL);
- 		if (!pols)
- 			return -ENOMEM;
- 
-@@ -289,6 +290,39 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * if we already have a policy, we have to add authorization
-+	 * to it.  If we don't, we can simply follow the usual
-+	 * non-policy route.
-+	 */
-+	if (options->blobauth_len != 0 && payload->policies) {
-+		struct tpm2_policies *pols;
-+		static u8 *scratch;
-+		int i;
-+		bool found = false;
++		/* get command code and skip past */
++		pols->code[i] = get_unaligned_be32(ptr);
++		pols->policies[i] = ptr + 4;
++		ptr += pols->len[i];
++		left -= pols->len[i];
++		pols->len[i] -= 4;
 +
-+		pols = payload->policies;
-+
-+		/* make sure it's not already in policy */
-+		for (i = 0; i < pols->count; i++) {
-+			if (pols->code[i] = TPM2_CC_POLICY_AUTHVALUE) {
-+				found = true;
-+
-+				break;
-+			}
-+		}
-+
-+		if (!found) {
-+			i = pols->count++;
-+			scratch = pols->policies[i - 1] + pols->len[i - 1];
-+
-+			/* the TPM2_PolicyPassword command has no payload */
-+			pols->policies[i] = scratch;
-+			pols->len[i] = 0;
-+			pols->code[i] = TPM2_CC_POLICY_AUTHVALUE;
-+		}
++		/*
++		 * FIXME: this does leave the code embedded in dead
++		 * regions of the memory, but it's easier than
++		 * hexdumping to a temporary or copying over
++		 */
++		i++;
 +	}
 +
- 	if (payload->policies) {
- 		rc = tpm2_generate_policy_digest(payload->policies,
- 						 options->hash,
++	pols->count = i;
++	*ppols = pols;
++
++	return 0;
++
++ err:
++	kfree(pols);
++	return res;
++}
+diff --git a/security/keys/trusted-keys/tpm2-policy.h b/security/keys/trusted-keys/tpm2-policy.h
+index 46bf1f0a9325..0da013116c1c 100644
+--- a/security/keys/trusted-keys/tpm2-policy.h
++++ b/security/keys/trusted-keys/tpm2-policy.h
+@@ -28,3 +28,4 @@ int tpm2_generate_policy_digest(struct tpm2_policies *pols, u32 hash,
+ int tpm2_encode_policy(struct tpm2_policies *pols, u8 **data, u32 *len);
+ int tpm2_get_policy_session(struct tpm_chip *chip, struct tpm2_policies *pols,
+ 			    u32 *handle);
++int tpm2_parse_policies(struct tpm2_policies **ppols, char *str);
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index 2f62db74e771..8b428daba738 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -29,6 +29,8 @@
+ 
+ #include <keys/trusted_tpm.h>
+ 
++#include "tpm2-policy.h"
++
+ static const char hmac_alg[] = "hmac(sha1)";
+ static const char hash_alg[] = "sha1";
+ static struct tpm_chip *chip;
+@@ -709,6 +711,7 @@ enum {
+ 	Opt_hash,
+ 	Opt_policydigest,
+ 	Opt_policyhandle,
++	Opt_policy,
+ };
+ 
+ static const match_table_t key_tokens = {
+@@ -724,6 +727,7 @@ static const match_table_t key_tokens = {
+ 	{Opt_hash, "hash=%s"},
+ 	{Opt_policydigest, "policydigest=%s"},
+ 	{Opt_policyhandle, "policyhandle=%s"},
++	{Opt_policy, "policy=%s"},
+ 	{Opt_err, NULL}
+ };
+ 
+@@ -854,6 +858,17 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
+ 				return -EINVAL;
+ 			opt->policyhandle = handle;
+ 			break;
++
++		case Opt_policy:
++			if (pay->policies)
++				return -EINVAL;
++			if (!tpm2)
++				return -EINVAL;
++			res = tpm2_parse_policies(&pay->policies, args[0].from);
++			if (res)
++				return res;
++			break;
++
+ 		default:
+ 			return -EINVAL;
+ 		}
 -- 
 2.26.2
