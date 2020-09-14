@@ -1,65 +1,33 @@
-From: Ms Mary Mcniff <dhlcouriercompanymiami@gmail.com>
-Date: Mon, 14 Sep 2020 12:11:48 +0000
-Subject: Your Respond ASAP
-Message-Id: <CAG_Oktqa56Bp7PLufmpy8BRuakuVfeDqG3cGaWACLE6sUUX7kg@mail.gmail.com>
+From: Liu Shixin <liushixin2@huawei.com>
+Date: Mon, 14 Sep 2020 03:55:42 +0000
+Subject: [PATCH -next] dh key: convert to use be32_add_cpu()
+Message-Id: <20200914041747.3701948-1-liushixin2@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>
+Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Liu Shixin <liushixin2@huawei.com>
 
+Convert cpu_to_be32(be32_to_cpu(E1) + E2) to use be32_add_cpu().
+
+Signed-off-by: Liu Shixin <liushixin2@huawei.com>
+---
+ security/keys/dh.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/security/keys/dh.c b/security/keys/dh.c
+index 1abfa70ed6e1..2635cb8a4561 100644
+--- a/security/keys/dh.c
++++ b/security/keys/dh.c
+@@ -186,7 +186,7 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+ 
+ 		dlen -= h;
+ 		dst += h;
+-		counter = cpu_to_be32(be32_to_cpu(counter) + 1);
++		be32_add_cpu(&counter, 1);
+ 	}
+ 
+ 	return 0;
 -- 
-From Chief Compliance Officer, Citigroup Inc CITIBANK
-388 Greenwich St, New York, 10013, United States United.
-PAYMENT CODE: FRB010
-Swift: PTBLBXXX
-=======================
-
-Attention: Beneficiary,
-
-We write to inform you that Series of meetings have been held over the
-past 2 weeks with the Secretary General of United Nations,U.S
-Department of State and Dubai Union Organization this ended last
-week.And parcel is under our custody right now, It will deliver to you
-within 24 hours once you clear the charges which will cost you
-according to the BANKERS COURIER SERVICES that wish to deliver your
-ATM CARD card to
-you immediately.
-
-However, it is the pleasure of this office to inform you that your ATM
-CARD number; is 29741733 and it has been approved and upgraded in your
-favor .you call me for the pin code numbers. The ATM CARD value is us
-$10.5 Million only.
-
-Kindly contact the paying bank for the claim of your ATM visa card
-payment fund $10,500,000.00 through the below contact information;
-
-Contact Person:Mr Williams S Young
-Director of Financial Controller
-Bank Name: CITIBANK
-Bank address; 388 Greenwich St,
-New York City,10013, United States
-Email:mrsmegwilliam6@gmail.com
-
-Reconfirm the following information?
-
-(1)Your Full Name======(2)Mobile Phone Number===
-(3)Current Home Address== ==
-(4)Fax Number========
-(5)Passport/Drivers license ===
-
-Endeavor to keep me posted once you contacted the officer in charge
-through the above mentioned information.
-
-Your timely response is highly appreciated.To this end, you are
-required to forward your payment information as follows to enable us
-load your fund into the card with your information and deliver it to
-your door step. as the BANKERS COURIER SERVICES are in charge of the
-delivery services to your destination.
-
-Yours truly;
-
-Ms Mary Mcniff.
-Chief Compliance Officer, Citigroup Inc
-FEDERAL RESERVE SYSTEM.
-Email: marymcniff7@gmail.com.
+2.25.1
