@@ -1,90 +1,189 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Fri, 18 Sep 2020 23:40:15 +0000
-Subject: Re: [PATCH v11 1/3] security: keys: trusted: add PCR policy to TPM2 keys
-Message-Id: <1600472415.10078.30.camel@HansenPartnership.com>
+From: Eric Snowberg <eric.snowberg@oracle.com>
+Date: Wed, 16 Sep 2020 00:49:27 +0000
+Subject: [PATCH v4] certs: Add EFI_CERT_X509_GUID support for dbx entries
+Message-Id: <20200916004927.64276-1-eric.snowberg@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200912173938.9714-1-James.Bottomley@HansenPartnership.com>
-         <20200912173938.9714-2-James.Bottomley@HansenPartnership.com>
-         <20200914193712.GA3612@linux.intel.com>
-In-Reply-To: <20200914193712.GA3612@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+To: dhowells@redhat.com, dwmw2@infradead.org, jarkko.sakkinen@linux.intel.com
+Cc: herbert@gondor.apana.org.au, davem@davemloft.net, jmorris@namei.org, serge@hallyn.com, nayna@linux.ibm.com, zohar@linux.ibm.com, eric.snowberg@oracle.com, erichte@linux.ibm.com, mpe@ellerman.id.au, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
 
-On Mon, 2020-09-14 at 22:37 +0300, Jarkko Sakkinen wrote:
-> No sure why this is v11. I don't think we have reviewed this series
-> that many times.
+The Secure Boot Forbidden Signature Database, dbx, contains a list of now
+revoked signatures and keys previously approved to boot with UEFI Secure
+Boot enabled.  The dbx is capable of containing any number of
+EFI_CERT_X509_SHA256_GUID, EFI_CERT_SHA256_GUID, and EFI_CERT_X509_GUID
+entries.
 
-It was originally with the other patch set from the very beginning, so
-it's definitely been sent 11 times.
+Currently when EFI_CERT_X509_GUID are contained in the dbx, the entries are
+skipped.
 
-> On Sat, Sep 12, 2020 at 10:39:36AM -0700, James Bottomley wrote:
-> > This commit adds the ability to specify a PCR lock policy to TPM2
-> > keys.  There is a complexity in that the creator of the key must
-> > chose either to use a PCR lock policy or to use authentication.  At
-> > the current time they can't use both due to a complexity with the
-> > way authentication works when policy registers are in use.  The way
-> > to construct a pcrinfo statement for a key is simply to use the
-> > TPMS_PCR_SELECT structure to specify the PCRs and follow this by a
-> > hash of all their values in order of ascending PCR number.
-> > 
-> > For simplicity, we require the policy name hash and the hash used
-> > for the PCRs to be the same.  Thus to construct a policy around the
-> > value
-> 
-> It would be better to write "name hash algorithm" and "policy hash
-> algorithm".
+Add support for EFI_CERT_X509_GUID dbx entries. When a EFI_CERT_X509_GUID
+is found, it is added as an asymmetrical key to the .blacklist keyring.
+Anytime the .platform keyring is used, the keys in the .blacklist keyring
+are referenced, if a matching key is found, the key will be rejected.
 
-For simplicity we require the hash of the PCRs to use the same
-algorithm as the policy hash
+Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
+---
+v4:
+Remove unneeded symbol export found by Jarkko Sakkinen
 
-> > of the resettable PCR 16 using the sha1 bank, first reset the pcr
-> > to
-> 
->                                                                 ~~~
-> 								PCR
-> 
-> > zero giving a hash of all zeros as:
-> > 
-> > 6768033e216468247bd031a0a2d9876d79818f8f
-> > 
-> > Then the TPMS_PCR_SELECT value for PCR 16 is
-> > 
-> > 03000001
-> > 
-> > So create a new 32 byte key with a policy policy locking the key to
-> > this value of PCR 16 with a parent key of 81000001 would be:
-> > 
-> > keyctl add trusted kmk "new 32 keyhandle=0x81000001 hash=sha1
-> > pcrinfo0000016768033e216468247bd031a0a2d9876d79818f8f" @u
-> > 
-> > Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.c
-> > om>
-> > 
-> 
-> Extra newline.
+v3:
+Fixed an issue when CONFIG_PKCS7_MESSAGE_PARSER is not builtin and defined
+as a module instead, pointed out by Randy Dunlap
 
-git am just elides this, but I can fix it and the other phrases up.]
+v2: 
+Fixed build issue reported by kernel test robot <lkp@intel.com>
+Commit message update (suggested by Jarkko Sakkinen)
+---
+ certs/blacklist.c                             | 32 +++++++++++++++++++
+ certs/blacklist.h                             | 12 +++++++
+ certs/system_keyring.c                        |  6 ++++
+ include/keys/system_keyring.h                 | 11 +++++++
+ .../platform_certs/keyring_handler.c          | 11 +++++++
+ 5 files changed, 72 insertions(+)
 
-[...]
-> > 
-> > +int tpm2_key_policy(void *context, size_t hdrlen,
-> > +		  unsigned char tag,
-> > +		  const void *value, size_t vlen)
-> > +{
-> > +	struct tpm2_key_context *ctx = context;
-> > +
-> > +	ctx->policies[ctx->policy_count] = value;
-> > +	ctx->policy_len[ctx->policy_count++] = vlen;
-> > +
-> > +	return 0;
-> > +}
-> 
-> As non-static symbols, and in general to make the code more
-> understandable, must be documeted.
-
-Will add docbook comment.
-
-James
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index 6514f9ebc943..4adac7f8fd94 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -100,6 +100,38 @@ int mark_hash_blacklisted(const char *hash)
+ 	return 0;
+ }
+ 
++int mark_key_revocationlisted(const char *data, size_t size)
++{
++	key_ref_t key;
++
++	key = key_create_or_update(make_key_ref(blacklist_keyring, true),
++				   "asymmetric",
++				   NULL,
++				   data,
++				   size,
++				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW),
++				   KEY_ALLOC_NOT_IN_QUOTA | KEY_ALLOC_BUILT_IN);
++
++	if (IS_ERR(key)) {
++		pr_err("Problem with revocation key (%ld)\n", PTR_ERR(key));
++		return PTR_ERR(key);
++	}
++
++	return 0;
++}
++
++int is_key_revocationlisted(struct pkcs7_message *pkcs7)
++{
++	int ret;
++
++	ret = validate_trust(pkcs7, blacklist_keyring);
++
++	if (ret = 0)
++		return -EKEYREJECTED;
++
++	return -ENOKEY;
++}
++
+ /**
+  * is_hash_blacklisted - Determine if a hash is blacklisted
+  * @hash: The hash to be checked as a binary blob
+diff --git a/certs/blacklist.h b/certs/blacklist.h
+index 1efd6fa0dc60..420bb7c86e07 100644
+--- a/certs/blacklist.h
++++ b/certs/blacklist.h
+@@ -1,3 +1,15 @@
+ #include <linux/kernel.h>
++#include <linux/errno.h>
++#include <crypto/pkcs7.h>
+ 
+ extern const char __initconst *const blacklist_hashes[];
++
++#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
++#define validate_trust pkcs7_validate_trust
++#else
++static inline int validate_trust(struct pkcs7_message *pkcs7,
++				 struct key *trust_keyring)
++{
++	return -ENOKEY;
++}
++#endif
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 798291177186..f8ea96219155 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -241,6 +241,12 @@ int verify_pkcs7_message_sig(const void *data, size_t len,
+ 			pr_devel("PKCS#7 platform keyring is not available\n");
+ 			goto error;
+ 		}
++
++		ret = is_key_revocationlisted(pkcs7);
++		if (ret != -ENOKEY) {
++			pr_devel("PKCS#7 platform key revocationlisted\n");
++			goto error;
++		}
+ 	}
+ 	ret = pkcs7_validate_trust(pkcs7, trusted_keys);
+ 	if (ret < 0) {
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index fb8b07daa9d1..b6991cfe1b6d 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -31,11 +31,14 @@ extern int restrict_link_by_builtin_and_secondary_trusted(
+ #define restrict_link_by_builtin_and_secondary_trusted restrict_link_by_builtin_trusted
+ #endif
+ 
++extern struct pkcs7_message *pkcs7;
+ #ifdef CONFIG_SYSTEM_BLACKLIST_KEYRING
+ extern int mark_hash_blacklisted(const char *hash);
++extern int mark_key_revocationlisted(const char *data, size_t size);
+ extern int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+ 			       const char *type);
+ extern int is_binary_blacklisted(const u8 *hash, size_t hash_len);
++extern int is_key_revocationlisted(struct pkcs7_message *pkcs7);
+ #else
+ static inline int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+ 				      const char *type)
+@@ -47,6 +50,14 @@ static inline int is_binary_blacklisted(const u8 *hash, size_t hash_len)
+ {
+ 	return 0;
+ }
++static inline int mark_key_revocationlisted(const char *data, size_t size)
++{
++	return 0;
++}
++static inline int is_key_revocationlisted(struct pkcs7_message *pkcs7)
++{
++	return -ENOKEY;
++}
+ #endif
+ 
+ #ifdef CONFIG_IMA_BLACKLIST_KEYRING
+diff --git a/security/integrity/platform_certs/keyring_handler.c b/security/integrity/platform_certs/keyring_handler.c
+index c5ba695c10e3..cc5a43804bc4 100644
+--- a/security/integrity/platform_certs/keyring_handler.c
++++ b/security/integrity/platform_certs/keyring_handler.c
+@@ -55,6 +55,15 @@ static __init void uefi_blacklist_binary(const char *source,
+ 	uefi_blacklist_hash(source, data, len, "bin:", 4);
+ }
+ 
++/*
++ * Revocationlist the X509 cert
++ */
++static __init void uefi_revocationlist_x509(const char *source,
++					    const void *data, size_t len)
++{
++	mark_key_revocationlisted(data, len);
++}
++
+ /*
+  * Return the appropriate handler for particular signature list types found in
+  * the UEFI db and MokListRT tables.
+@@ -76,5 +85,7 @@ __init efi_element_handler_t get_handler_for_dbx(const efi_guid_t *sig_type)
+ 		return uefi_blacklist_x509_tbs;
+ 	if (efi_guidcmp(*sig_type, efi_cert_sha256_guid) = 0)
+ 		return uefi_blacklist_binary;
++	if (efi_guidcmp(*sig_type, efi_cert_x509_guid) = 0)
++		return uefi_revocationlist_x509;
+ 	return 0;
+ }
+-- 
+2.18.1
