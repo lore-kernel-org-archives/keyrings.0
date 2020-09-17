@@ -1,440 +1,406 @@
-From: Christoph Hellwig <hch@lst.de>
-Date: Mon, 21 Sep 2020 14:34:26 +0000
-Subject: [PATCH 03/11] iov_iter: move rw_copy_check_uvector() into lib/iov_iter.c and mark it static
-Message-Id: <20200921143434.707844-4-hch@lst.de>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Thu, 17 Sep 2020 13:58:36 +0000
+Subject: [PATCH v6 2/4] KEYS: trusted: Introduce TEE based Trusted Keys
+Message-Id: <1600350398-4813-3-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200921143434.707844-1-hch@lst.de>
-In-Reply-To: <20200921143434.707844-1-hch@lst.de>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, David Laight <David.Laight@aculab.com>, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, David Laight <David.Laight@ACULAB.COM>, David Laight <david.laight@aculab.com>
+References: <1600350398-4813-1-git-send-email-sumit.garg@linaro.org>
+In-Reply-To: <1600350398-4813-1-git-send-email-sumit.garg@linaro.org>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jejb@linux.ibm.com
+Cc: linux-security-module@vger.kernel.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, lhinds@redhat.com, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-From: David Laight <David.Laight@ACULAB.COM>
+Add support for TEE based trusted keys where TEE provides the functionality
+to seal and unseal trusted keys using hardware unique key.
 
-This lets the compiler inline it into import_iovec() generating
-much better code.
+Refer to Documentation/tee.txt for detailed information about TEE.
 
-Signed-off-by: David Laight <david.laight@aculab.com>
-[hch: drop the now pointless kerneldoc for a static function, and update
-      a few other comments]
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
 ---
- fs/read_write.c        | 179 -----------------------------------------
- include/linux/compat.h |   6 --
- include/linux/fs.h     |  11 +--
- lib/iov_iter.c         | 150 +++++++++++++++++++++++++++++++++-
- 4 files changed, 151 insertions(+), 195 deletions(-)
+ include/keys/trusted_tee.h                |  55 ++++++
+ security/keys/trusted-keys/Makefile       |   1 +
+ security/keys/trusted-keys/trusted_core.c |   4 +
+ security/keys/trusted-keys/trusted_tee.c  | 278 ++++++++++++++++++++++++++++++
+ 4 files changed, 338 insertions(+)
+ create mode 100644 include/keys/trusted_tee.h
+ create mode 100644 security/keys/trusted-keys/trusted_tee.c
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 5db58b8c78d0dd..e5e891a88442ef 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -752,185 +752,6 @@ static ssize_t do_loop_readv_writev(struct file *filp, struct iov_iter *iter,
- 	return ret;
- }
+diff --git a/include/keys/trusted_tee.h b/include/keys/trusted_tee.h
+new file mode 100644
+index 0000000..2e2bb15
+--- /dev/null
++++ b/include/keys/trusted_tee.h
+@@ -0,0 +1,55 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (C) 2019-2020 Linaro Ltd.
++ *
++ * Author:
++ * Sumit Garg <sumit.garg@linaro.org>
++ */
++
++#ifndef __TEE_TRUSTED_KEY_H
++#define __TEE_TRUSTED_KEY_H
++
++#include <linux/tee_drv.h>
++
++#define DRIVER_NAME "tee-trusted-key"
++
++/*
++ * Get random data for symmetric key
++ *
++ * [out]     memref[0]        Random data
++ */
++#define TA_CMD_GET_RANDOM	0x0
++
++/*
++ * Seal trusted key using hardware unique key
++ *
++ * [in]      memref[0]        Plain key
++ * [out]     memref[1]        Sealed key datablob
++ */
++#define TA_CMD_SEAL		0x1
++
++/*
++ * Unseal trusted key using hardware unique key
++ *
++ * [in]      memref[0]        Sealed key datablob
++ * [out]     memref[1]        Plain key
++ */
++#define TA_CMD_UNSEAL		0x2
++
++/**
++ * struct trusted_key_private - TEE Trusted key private data
++ * @dev:		TEE based Trusted key device.
++ * @ctx:		TEE context handler.
++ * @session_id:		Trusted key TA session identifier.
++ * @shm_pool:		Memory pool shared with TEE device.
++ */
++struct trusted_key_private {
++	struct device *dev;
++	struct tee_context *ctx;
++	u32 session_id;
++	struct tee_shm *shm_pool;
++};
++
++extern struct trusted_key_ops tee_trusted_key_ops;
++
++#endif
+diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
+index 49e3bcf..012dd78 100644
+--- a/security/keys/trusted-keys/Makefile
++++ b/security/keys/trusted-keys/Makefile
+@@ -7,3 +7,4 @@ obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
+ trusted-y += trusted_core.o
+ trusted-y += trusted_tpm1.o
+ trusted-y += trusted_tpm2.o
++trusted-y += trusted_tee.o
+diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
+index 4ae3fb4..83a6a15 100644
+--- a/security/keys/trusted-keys/trusted_core.c
++++ b/security/keys/trusted-keys/trusted_core.c
+@@ -8,6 +8,7 @@
  
--/**
-- * rw_copy_check_uvector() - Copy an array of &struct iovec from userspace
-- *     into the kernel and check that it is valid.
-- *
-- * @type: One of %CHECK_IOVEC_ONLY, %READ, or %WRITE.
-- * @uvector: Pointer to the userspace array.
-- * @nr_segs: Number of elements in userspace array.
-- * @fast_segs: Number of elements in @fast_pointer.
-- * @fast_pointer: Pointer to (usually small on-stack) kernel array.
-- * @ret_pointer: (output parameter) Pointer to a variable that will point to
-- *     either @fast_pointer, a newly allocated kernel array, or NULL,
-- *     depending on which array was used.
-- *
-- * This function copies an array of &struct iovec of @nr_segs from
-- * userspace into the kernel and checks that each element is valid (e.g.
-- * it does not point to a kernel address or cause overflow by being too
-- * large, etc.).
-- *
-- * As an optimization, the caller may provide a pointer to a small
-- * on-stack array in @fast_pointer, typically %UIO_FASTIOV elements long
-- * (the size of this array, or 0 if unused, should be given in @fast_segs).
-- *
-- * @ret_pointer will always point to the array that was used, so the
-- * caller must take care not to call kfree() on it e.g. in case the
-- * @fast_pointer array was used and it was allocated on the stack.
-- *
-- * Return: The total number of bytes covered by the iovec array on success
-- *   or a negative error code on error.
-- */
--ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
--			      unsigned long nr_segs, unsigned long fast_segs,
--			      struct iovec *fast_pointer,
--			      struct iovec **ret_pointer)
--{
--	unsigned long seg;
--	ssize_t ret;
--	struct iovec *iov = fast_pointer;
--
--	/*
--	 * SuS says "The readv() function *may* fail if the iovcnt argument
--	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
--	 * traditionally returned zero for zero segments, so...
--	 */
--	if (nr_segs = 0) {
--		ret = 0;
--		goto out;
--	}
--
--	/*
--	 * First get the "struct iovec" from user memory and
--	 * verify all the pointers
--	 */
--	if (nr_segs > UIO_MAXIOV) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (nr_segs > fast_segs) {
--		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
--		if (iov = NULL) {
--			ret = -ENOMEM;
--			goto out;
--		}
--	}
--	if (copy_from_user(iov, uvector, nr_segs*sizeof(*uvector))) {
--		ret = -EFAULT;
--		goto out;
--	}
--
--	/*
--	 * According to the Single Unix Specification we should return EINVAL
--	 * if an element length is < 0 when cast to ssize_t or if the
--	 * total length would overflow the ssize_t return value of the
--	 * system call.
--	 *
--	 * Linux caps all read/write calls to MAX_RW_COUNT, and avoids the
--	 * overflow case.
--	 */
--	ret = 0;
--	for (seg = 0; seg < nr_segs; seg++) {
--		void __user *buf = iov[seg].iov_base;
--		ssize_t len = (ssize_t)iov[seg].iov_len;
--
--		/* see if we we're about to use an invalid len or if
--		 * it's about to overflow ssize_t */
--		if (len < 0) {
--			ret = -EINVAL;
--			goto out;
--		}
--		if (type >= 0
--		    && unlikely(!access_ok(buf, len))) {
--			ret = -EFAULT;
--			goto out;
--		}
--		if (len > MAX_RW_COUNT - ret) {
--			len = MAX_RW_COUNT - ret;
--			iov[seg].iov_len = len;
--		}
--		ret += len;
--	}
--out:
--	*ret_pointer = iov;
--	return ret;
--}
--
--#ifdef CONFIG_COMPAT
--ssize_t compat_rw_copy_check_uvector(int type,
--		const struct compat_iovec __user *uvector, unsigned long nr_segs,
--		unsigned long fast_segs, struct iovec *fast_pointer,
--		struct iovec **ret_pointer)
--{
--	compat_ssize_t tot_len;
--	struct iovec *iov = *ret_pointer = fast_pointer;
--	ssize_t ret = 0;
--	int seg;
--
--	/*
--	 * SuS says "The readv() function *may* fail if the iovcnt argument
--	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
--	 * traditionally returned zero for zero segments, so...
--	 */
--	if (nr_segs = 0)
--		goto out;
--
--	ret = -EINVAL;
--	if (nr_segs > UIO_MAXIOV)
--		goto out;
--	if (nr_segs > fast_segs) {
--		ret = -ENOMEM;
--		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
--		if (iov = NULL)
--			goto out;
--	}
--	*ret_pointer = iov;
--
--	ret = -EFAULT;
--	if (!access_ok(uvector, nr_segs*sizeof(*uvector)))
--		goto out;
--
--	/*
--	 * Single unix specification:
--	 * We should -EINVAL if an element length is not >= 0 and fitting an
--	 * ssize_t.
--	 *
--	 * In Linux, the total length is limited to MAX_RW_COUNT, there is
--	 * no overflow possibility.
--	 */
--	tot_len = 0;
--	ret = -EINVAL;
--	for (seg = 0; seg < nr_segs; seg++) {
--		compat_uptr_t buf;
--		compat_ssize_t len;
--
--		if (__get_user(len, &uvector->iov_len) ||
--		   __get_user(buf, &uvector->iov_base)) {
--			ret = -EFAULT;
--			goto out;
--		}
--		if (len < 0)	/* size_t not fitting in compat_ssize_t .. */
--			goto out;
--		if (type >= 0 &&
--		    !access_ok(compat_ptr(buf), len)) {
--			ret = -EFAULT;
--			goto out;
--		}
--		if (len > MAX_RW_COUNT - tot_len)
--			len = MAX_RW_COUNT - tot_len;
--		tot_len += len;
--		iov->iov_base = compat_ptr(buf);
--		iov->iov_len = (compat_size_t) len;
--		uvector++;
--		iov++;
--	}
--	ret = tot_len;
--
--out:
--	return ret;
--}
--#endif
--
- static ssize_t do_iter_read(struct file *file, struct iov_iter *iter,
- 		loff_t *pos, rwf_t flags)
- {
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 654c1ec36671a4..b930de791ff16b 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -451,12 +451,6 @@ extern long compat_arch_ptrace(struct task_struct *child, compat_long_t request,
+ #include <keys/user-type.h>
+ #include <keys/trusted-type.h>
++#include <keys/trusted_tee.h>
+ #include <keys/trusted_tpm.h>
+ #include <linux/capability.h>
+ #include <linux/err.h>
+@@ -24,6 +25,9 @@ static struct trusted_key_ops *available_trusted_key_ops[] = {
+ #if defined(CONFIG_TCG_TPM)
+ 	&tpm_trusted_key_ops,
+ #endif
++#if defined(CONFIG_TEE)
++	&tee_trusted_key_ops,
++#endif
+ };
+ static struct trusted_key_ops *trusted_key_ops;
  
- struct epoll_event;	/* fortunately, this one is fixed-layout */
- 
--extern ssize_t compat_rw_copy_check_uvector(int type,
--		const struct compat_iovec __user *uvector,
--		unsigned long nr_segs,
--		unsigned long fast_segs, struct iovec *fast_pointer,
--		struct iovec **ret_pointer);
--
- extern void __user *compat_alloc_user_space(unsigned long len);
- 
- int compat_restore_altstack(const compat_stack_t __user *uss);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 7519ae003a082c..5420822104a99d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -179,10 +179,8 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
- #define FMODE_BUF_RASYNC	((__force fmode_t)0x40000000)
- 
- /*
-- * Flag for rw_copy_check_uvector and compat_rw_copy_check_uvector
-- * that indicates that they should check the contents of the iovec are
-- * valid, but not check the memory that the iovec elements
-- * points too.
-+ * Flag for import_iovec that indicates that it should check the contents of the
-+ * iovec is valid, but not check the memory that the iovec elements points too.
-  */
- #define CHECK_IOVEC_ONLY -1
- 
-@@ -1887,11 +1885,6 @@ static inline int call_mmap(struct file *file, struct vm_area_struct *vma)
- 	return file->f_op->mmap(file, vma);
- }
- 
--ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
--			      unsigned long nr_segs, unsigned long fast_segs,
--			      struct iovec *fast_pointer,
--			      struct iovec **ret_pointer);
--
- extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
- extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
- extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
-diff --git a/lib/iov_iter.c b/lib/iov_iter.c
-index db54588406dfae..d7e72343c360eb 100644
---- a/lib/iov_iter.c
-+++ b/lib/iov_iter.c
-@@ -1650,12 +1650,87 @@ const void *dup_iter(struct iov_iter *new, struct iov_iter *old, gfp_t flags)
- }
- EXPORT_SYMBOL(dup_iter);
- 
-+static ssize_t rw_copy_check_uvector(int type,
-+		const struct iovec __user *uvector, unsigned long nr_segs,
-+		unsigned long fast_segs, struct iovec *fast_pointer,
-+		struct iovec **ret_pointer)
+diff --git a/security/keys/trusted-keys/trusted_tee.c b/security/keys/trusted-keys/trusted_tee.c
+new file mode 100644
+index 0000000..b414d52
+--- /dev/null
++++ b/security/keys/trusted-keys/trusted_tee.c
+@@ -0,0 +1,278 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2019-2020 Linaro Ltd.
++ *
++ * Author:
++ * Sumit Garg <sumit.garg@linaro.org>
++ */
++
++#include <linux/err.h>
++#include <linux/key-type.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++#include <linux/uuid.h>
++
++#include <keys/trusted-type.h>
++#include <keys/trusted_tee.h>
++
++static struct trusted_key_private pvt_data;
++
++/*
++ * Have the TEE seal(encrypt) the symmetric key
++ */
++static int tee_trusted_seal(struct trusted_key_payload *p, char *datablob)
 +{
-+	unsigned long seg;
-+	ssize_t ret;
-+	struct iovec *iov = fast_pointer;
++	int ret = 0;
++	struct tee_ioctl_invoke_arg inv_arg;
++	struct tee_param param[4];
++	struct tee_shm *reg_shm_in = NULL, *reg_shm_out = NULL;
 +
-+	/*
-+	 * SuS says "The readv() function *may* fail if the iovcnt argument
-+	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
-+	 * traditionally returned zero for zero segments, so...
-+	 */
-+	if (nr_segs = 0) {
-+		ret = 0;
++	memset(&inv_arg, 0, sizeof(inv_arg));
++	memset(&param, 0, sizeof(param));
++
++	reg_shm_in = tee_shm_register(pvt_data.ctx, (unsigned long)p->key,
++				      p->key_len, TEE_SHM_DMA_BUF |
++				      TEE_SHM_KERNEL_MAPPED);
++	if (IS_ERR(reg_shm_in)) {
++		dev_err(pvt_data.dev, "key shm register failed\n");
++		return PTR_ERR(reg_shm_in);
++	}
++
++	reg_shm_out = tee_shm_register(pvt_data.ctx, (unsigned long)p->blob,
++				       sizeof(p->blob), TEE_SHM_DMA_BUF |
++				       TEE_SHM_KERNEL_MAPPED);
++	if (IS_ERR(reg_shm_out)) {
++		dev_err(pvt_data.dev, "blob shm register failed\n");
++		ret = PTR_ERR(reg_shm_out);
 +		goto out;
 +	}
 +
-+	/*
-+	 * First get the "struct iovec" from user memory and
-+	 * verify all the pointers
-+	 */
-+	if (nr_segs > UIO_MAXIOV) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	if (nr_segs > fast_segs) {
-+		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
-+		if (iov = NULL) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+	}
-+	if (copy_from_user(iov, uvector, nr_segs*sizeof(*uvector))) {
++	inv_arg.func = TA_CMD_SEAL;
++	inv_arg.session = pvt_data.session_id;
++	inv_arg.num_params = 4;
++
++	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT;
++	param[0].u.memref.shm = reg_shm_in;
++	param[0].u.memref.size = p->key_len;
++	param[0].u.memref.shm_offs = 0;
++	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT;
++	param[1].u.memref.shm = reg_shm_out;
++	param[1].u.memref.size = sizeof(p->blob);
++	param[1].u.memref.shm_offs = 0;
++
++	ret = tee_client_invoke_func(pvt_data.ctx, &inv_arg, param);
++	if ((ret < 0) || (inv_arg.ret != 0)) {
++		dev_err(pvt_data.dev, "TA_CMD_SEAL invoke err: %x\n",
++			inv_arg.ret);
 +		ret = -EFAULT;
-+		goto out;
++	} else {
++		p->blob_len = param[1].u.memref.size;
 +	}
 +
-+	/*
-+	 * According to the Single Unix Specification we should return EINVAL
-+	 * if an element length is < 0 when cast to ssize_t or if the
-+	 * total length would overflow the ssize_t return value of the
-+	 * system call.
-+	 *
-+	 * Linux caps all read/write calls to MAX_RW_COUNT, and avoids the
-+	 * overflow case.
-+	 */
-+	ret = 0;
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		void __user *buf = iov[seg].iov_base;
-+		ssize_t len = (ssize_t)iov[seg].iov_len;
-+
-+		/* see if we we're about to use an invalid len or if
-+		 * it's about to overflow ssize_t */
-+		if (len < 0) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+		if (type >= 0
-+		    && unlikely(!access_ok(buf, len))) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+		if (len > MAX_RW_COUNT - ret) {
-+			len = MAX_RW_COUNT - ret;
-+			iov[seg].iov_len = len;
-+		}
-+		ret += len;
-+	}
 +out:
-+	*ret_pointer = iov;
++	if (reg_shm_out)
++		tee_shm_free(reg_shm_out);
++	if (reg_shm_in)
++		tee_shm_free(reg_shm_in);
++
 +	return ret;
 +}
 +
- /**
-  * import_iovec() - Copy an array of &struct iovec from userspace
-  *     into the kernel, check that it is valid, and initialize a new
-  *     &struct iov_iter iterator to access it.
-  *
-- * @type: One of %READ or %WRITE.
-+ * @type: One of %CHECK_IOVEC_ONLY, %READ, or %WRITE.
-  * @uvector: Pointer to the userspace array.
-  * @nr_segs: Number of elements in userspace array.
-  * @fast_segs: Number of elements in @iov.
-@@ -1695,6 +1770,79 @@ EXPORT_SYMBOL(import_iovec);
- #ifdef CONFIG_COMPAT
- #include <linux/compat.h>
- 
-+static ssize_t compat_rw_copy_check_uvector(int type,
-+		const struct compat_iovec __user *uvector, unsigned long nr_segs,
-+		unsigned long fast_segs, struct iovec *fast_pointer,
-+		struct iovec **ret_pointer)
++/*
++ * Have the TEE unseal(decrypt) the symmetric key
++ */
++static int tee_trusted_unseal(struct trusted_key_payload *p, char *datablob)
 +{
-+	compat_ssize_t tot_len;
-+	struct iovec *iov = *ret_pointer = fast_pointer;
-+	ssize_t ret = 0;
-+	int seg;
++	int ret = 0;
++	struct tee_ioctl_invoke_arg inv_arg;
++	struct tee_param param[4];
++	struct tee_shm *reg_shm_in = NULL, *reg_shm_out = NULL;
 +
-+	/*
-+	 * SuS says "The readv() function *may* fail if the iovcnt argument
-+	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
-+	 * traditionally returned zero for zero segments, so...
-+	 */
-+	if (nr_segs = 0)
-+		goto out;
++	memset(&inv_arg, 0, sizeof(inv_arg));
++	memset(&param, 0, sizeof(param));
 +
-+	ret = -EINVAL;
-+	if (nr_segs > UIO_MAXIOV)
-+		goto out;
-+	if (nr_segs > fast_segs) {
-+		ret = -ENOMEM;
-+		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
-+		if (iov = NULL)
-+			goto out;
++	reg_shm_in = tee_shm_register(pvt_data.ctx, (unsigned long)p->blob,
++				      p->blob_len, TEE_SHM_DMA_BUF |
++				      TEE_SHM_KERNEL_MAPPED);
++	if (IS_ERR(reg_shm_in)) {
++		dev_err(pvt_data.dev, "blob shm register failed\n");
++		return PTR_ERR(reg_shm_in);
 +	}
-+	*ret_pointer = iov;
 +
-+	ret = -EFAULT;
-+	if (!access_ok(uvector, nr_segs*sizeof(*uvector)))
++	reg_shm_out = tee_shm_register(pvt_data.ctx, (unsigned long)p->key,
++				       sizeof(p->key), TEE_SHM_DMA_BUF |
++				       TEE_SHM_KERNEL_MAPPED);
++	if (IS_ERR(reg_shm_out)) {
++		dev_err(pvt_data.dev, "key shm register failed\n");
++		ret = PTR_ERR(reg_shm_out);
 +		goto out;
-+
-+	/*
-+	 * Single unix specification:
-+	 * We should -EINVAL if an element length is not >= 0 and fitting an
-+	 * ssize_t.
-+	 *
-+	 * In Linux, the total length is limited to MAX_RW_COUNT, there is
-+	 * no overflow possibility.
-+	 */
-+	tot_len = 0;
-+	ret = -EINVAL;
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		compat_uptr_t buf;
-+		compat_ssize_t len;
-+
-+		if (__get_user(len, &uvector->iov_len) ||
-+		   __get_user(buf, &uvector->iov_base)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+		if (len < 0)	/* size_t not fitting in compat_ssize_t .. */
-+			goto out;
-+		if (type >= 0 &&
-+		    !access_ok(compat_ptr(buf), len)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+		if (len > MAX_RW_COUNT - tot_len)
-+			len = MAX_RW_COUNT - tot_len;
-+		tot_len += len;
-+		iov->iov_base = compat_ptr(buf);
-+		iov->iov_len = (compat_size_t) len;
-+		uvector++;
-+		iov++;
 +	}
-+	ret = tot_len;
++
++	inv_arg.func = TA_CMD_UNSEAL;
++	inv_arg.session = pvt_data.session_id;
++	inv_arg.num_params = 4;
++
++	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT;
++	param[0].u.memref.shm = reg_shm_in;
++	param[0].u.memref.size = p->blob_len;
++	param[0].u.memref.shm_offs = 0;
++	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT;
++	param[1].u.memref.shm = reg_shm_out;
++	param[1].u.memref.size = sizeof(p->key);
++	param[1].u.memref.shm_offs = 0;
++
++	ret = tee_client_invoke_func(pvt_data.ctx, &inv_arg, param);
++	if ((ret < 0) || (inv_arg.ret != 0)) {
++		dev_err(pvt_data.dev, "TA_CMD_UNSEAL invoke err: %x\n",
++			inv_arg.ret);
++		ret = -EFAULT;
++	} else {
++		p->key_len = param[1].u.memref.size;
++	}
 +
 +out:
++	if (reg_shm_out)
++		tee_shm_free(reg_shm_out);
++	if (reg_shm_in)
++		tee_shm_free(reg_shm_in);
++
 +	return ret;
 +}
 +
- ssize_t compat_import_iovec(int type,
- 		const struct compat_iovec __user * uvector,
- 		unsigned nr_segs, unsigned fast_segs,
++/*
++ * Have the TEE generate random symmetric key
++ */
++static int tee_trusted_get_random(unsigned char *key, size_t key_len)
++{
++	int ret = 0;
++	struct tee_ioctl_invoke_arg inv_arg;
++	struct tee_param param[4];
++	struct tee_shm *reg_shm = NULL;
++
++	memset(&inv_arg, 0, sizeof(inv_arg));
++	memset(&param, 0, sizeof(param));
++
++	reg_shm = tee_shm_register(pvt_data.ctx, (unsigned long)key, key_len,
++				   TEE_SHM_DMA_BUF | TEE_SHM_KERNEL_MAPPED);
++	if (IS_ERR(reg_shm)) {
++		dev_err(pvt_data.dev, "key shm register failed\n");
++		return PTR_ERR(reg_shm);
++	}
++
++	inv_arg.func = TA_CMD_GET_RANDOM;
++	inv_arg.session = pvt_data.session_id;
++	inv_arg.num_params = 4;
++
++	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT;
++	param[0].u.memref.shm = reg_shm;
++	param[0].u.memref.size = key_len;
++	param[0].u.memref.shm_offs = 0;
++
++	ret = tee_client_invoke_func(pvt_data.ctx, &inv_arg, param);
++	if ((ret < 0) || (inv_arg.ret != 0)) {
++		dev_err(pvt_data.dev, "TA_CMD_GET_RANDOM invoke err: %x\n",
++			inv_arg.ret);
++		ret = -EFAULT;
++	} else {
++		ret = param[0].u.memref.size;
++	}
++
++	tee_shm_free(reg_shm);
++
++	return ret;
++}
++
++static int optee_ctx_match(struct tee_ioctl_version_data *ver, const void *data)
++{
++	if (ver->impl_id = TEE_IMPL_ID_OPTEE)
++		return 1;
++	else
++		return 0;
++}
++
++static int trusted_key_probe(struct device *dev)
++{
++	struct tee_client_device *rng_device = to_tee_client_device(dev);
++	int ret = 0, err = -ENODEV;
++	struct tee_ioctl_open_session_arg sess_arg;
++
++	memset(&sess_arg, 0, sizeof(sess_arg));
++
++	pvt_data.ctx = tee_client_open_context(NULL, optee_ctx_match, NULL,
++					       NULL);
++	if (IS_ERR(pvt_data.ctx))
++		return -ENODEV;
++
++	memcpy(sess_arg.uuid, rng_device->id.uuid.b, TEE_IOCTL_UUID_LEN);
++	sess_arg.clnt_login = TEE_IOCTL_LOGIN_REE_KERNEL;
++	sess_arg.num_params = 0;
++
++	ret = tee_client_open_session(pvt_data.ctx, &sess_arg, NULL);
++	if ((ret < 0) || (sess_arg.ret != 0)) {
++		dev_err(dev, "tee_client_open_session failed, err: %x\n",
++			sess_arg.ret);
++		err = -EINVAL;
++		goto out_ctx;
++	}
++	pvt_data.session_id = sess_arg.session;
++
++	ret = register_key_type(&key_type_trusted);
++	if (ret < 0)
++		goto out_sess;
++
++	pvt_data.dev = dev;
++
++	return 0;
++
++out_sess:
++	tee_client_close_session(pvt_data.ctx, pvt_data.session_id);
++out_ctx:
++	tee_client_close_context(pvt_data.ctx);
++
++	return err;
++}
++
++static int trusted_key_remove(struct device *dev)
++{
++	unregister_key_type(&key_type_trusted);
++	tee_client_close_session(pvt_data.ctx, pvt_data.session_id);
++	tee_client_close_context(pvt_data.ctx);
++
++	return 0;
++}
++
++static const struct tee_client_device_id trusted_key_id_table[] = {
++	{UUID_INIT(0xf04a0fe7, 0x1f5d, 0x4b9b,
++		   0xab, 0xf7, 0x61, 0x9b, 0x85, 0xb4, 0xce, 0x8c)},
++	{}
++};
++MODULE_DEVICE_TABLE(tee, trusted_key_id_table);
++
++static struct tee_client_driver trusted_key_driver = {
++	.id_table	= trusted_key_id_table,
++	.driver		= {
++		.name		= DRIVER_NAME,
++		.bus		= &tee_bus_type,
++		.probe		= trusted_key_probe,
++		.remove		= trusted_key_remove,
++	},
++};
++
++static int __init init_tee_trusted(void)
++{
++	return driver_register(&trusted_key_driver.driver);
++}
++
++static void __exit exit_tee_trusted(void)
++{
++	driver_unregister(&trusted_key_driver.driver);
++}
++
++struct trusted_key_ops tee_trusted_key_ops = {
++	.migratable = 0, /* non-migratable */
++	.init = init_tee_trusted,
++	.seal = tee_trusted_seal,
++	.unseal = tee_trusted_unseal,
++	.get_random = tee_trusted_get_random,
++	.exit = exit_tee_trusted,
++};
 -- 
-2.28.0
+2.7.4
