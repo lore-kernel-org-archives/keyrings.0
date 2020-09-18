@@ -1,129 +1,55 @@
-From: Alexey Krasikov <alexey_krasikov@mail.ru>
-Date: Wed, 02 Sep 2020 17:28:40 +0000
-Subject: Re: [RFC PATCH 0/1] security/keys: remove possessor verify after key
-Message-Id: <a8c50741-c109-8e32-e09a-e3bf2de50b50@mail.ru>
+From: Christoph Hellwig <hch@lst.de>
+Date: Fri, 18 Sep 2020 12:45:24 +0000
+Subject: let import_iovec deal with compat_iovecs as well
+Message-Id: <20200918124533.3487701-1-hch@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200529081527.GC1376838@linux.intel.com>
-In-Reply-To: <20200529081527.GC1376838@linux.intel.com>
-To: keyrings@vger.kernel.org
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-On 7/3/20 4:14 AM, Jarkko Sakkinen wrote:
-> On Sun, Jun 28, 2020 at 03:27:37AM +0300, Alexey Krasikov wrote:
->> On 6/23/20 4:28 AM, Jarkko Sakkinen wrote:
->>> On Mon, Jun 22, 2020 at 02:30:28PM +0200, Greg KH wrote:
->>>> On Mon, Jun 22, 2020 at 12:04:29PM +0300, Alexey Krasikov wrote:
->>>>> On 6/15/20 8:00 PM, Jarkko Sakkinen wrote:
->>>>>> On Tue, Jun 02, 2020 at 01:30:52PM +0300, Alexey Krasikov wrote:
->>>>>>> On Mon, June 1, 2020 at 08:34PM +300, Jarkko Sakkinen wrote:
->>>>>>>> On Fri, May 29, 2020 at 09:00:39AM +0300, Alexey Krasikov wrote:
->>>>>>>>> $ KEYID=$(keyctl add user john smith @u)
->>>>>>>>> $ keyctl describe $KEYID
->>>>>>>>> 5927639: alswrv-----v------------  1000  1000 user: john
->>>>>>>>> $ keyctl setperm $KEYID 0x3d000000
->>>>>>>>> $ keyctl describe $KEYID
->>>>>>>>> 5927639: alsw-v-----v------------  1000  1000 user: john
->>>>>>>>> $ keyctl print $KEYID
->>>>>>>>> smith
->>>>>>>> A keyring default permissions are 0x3f3f0000.
->>>>>>>> A key default permissions are 0x3f010000.
->>>>>>>>
->>>>>>>> Because of this:
->>>>>>>>
->>>>>>>> $ KEYID=$(keyctl add user john smith @u)
->>>>>>>> $ keyctl setperm $KEYID 0x3d000000
->>>>>>>> keyctl_setperm: Permission denied
->>>>>>>>
->>>>>>>> Are you sure that your example is correct?
->>>>>>>>
->>>>>>>> /Jarkko
->>>>>>> Yes, this example works correctly.
->>>>>>>
->>>>>>> Why do you think, that the current keyring and key rights
->>>>>>>
->>>>>>> shoukd not allow this to be done?
->>>>>> I'm just saying that I cannot figure out your point in the cover letter.
->>>>>> It contains random dumps of keyctl output.
->>>>>>
->>>>>> Maybe a better idea would be to write a test script that demonstrates
->>>>>> the issue?
->>>>>>
->>>>>> /Jarkko
->>>>> + alexey_krasikov@mail.ru
->>>>>
->>>>> Possible you may not be able to reproduce the problem because you have a
->>>>> different version of Linux.
->>>>>
->>>>> I get to reproduce the problem on two systems:
->>>>>
->>>>> Linux 4.14.74-28+yc11.91
->>>>>
->>>>> and
->>>>>
->>>>> Linux ubuntu 4.15.0-106-generic
->>>> Both of those are distro-specific kernels, can you reproduce this on
->>>> 5.8-rc2 or 5.7 as released from kernel.org?
->>> Alexey,
->>>
->>> A shell script containing the keyctl command chain with some output, and
->>> then your version of the output when running the script would be also
->>> very useful for better comparison.
->>>
->>> /Jarkko
->> Ok. I have the following script:
->>
->> ----------------------------------------------------------------------------
->> #!/usr/bin/sh
->>
->> uname -r
->>
->> KEYID=$(keyctl add user john smith @u)
->> keyctl describe $KEYID
->> keyctl setperm $KEYID 0x3d000000
->> keyctl describe $KEYID
->> keyctl print $KEYID
-> pam_keyinit.so should create user keyring when the login session is
-> created. If the user space stack is working correclty, you should not
-> end up to be the possessor for the user keyring.
->
-> However, I can simulate your environment with the session keyring:
->
-> KEYID=`keyctl add user john smith @s`
->
-> keyctl describe $KEYID
-> keyctl setperm $KEYID 0x3d000000
-> keyctl describe $KEYID
-> keyctl print $KEYID
->
-> And yes I do get:
->
-> 564302411: alswrv-----v------------  1000  1000 user: john
-> 564302411: alsw-v------------------  1000  1000 user: john
-> smith
->
-> Here's another sequence that also removes setattr:
->
-> KEYID=`keyctl add user john smith @s`
->
-> keyctl describe $KEYID
-> keyctl setperm $KEYID 0x08000000
-> keyctl describe $KEYID
-> keyctl print $KEYID
->
-> 700153280: alswrv-----v------------  1000  1000 user: john
-> keyctl_describe_alloc: Permission denied
-> smith
->
-> David, this look at least with a quick sight somewhat weird: my
-> possessor permissions are only "search", so why does reading the
-> payload succeed?
->
-> /Jarkko
-ping
+Hi Al,
 
--- 
-With best regards,
-Alexey Krasikov,
-+7-999-789-0-789
+this series changes import_iovec to transparently deal with comat iovec
+structures, and then cleanups up a lot of code dupliation.  But to get
+there it first has to fix the pre-existing bug that io_uring compat
+contexts don't trigger the in_compat_syscall() check.  This has so far
+been relatively harmless as very little code callable from io_uring used
+the check, and even that code that could be called usually wasn't.
+
+Diffstat
+ arch/arm64/include/asm/unistd32.h                  |   10 
+ arch/mips/kernel/syscalls/syscall_n32.tbl          |   10 
+ arch/mips/kernel/syscalls/syscall_o32.tbl          |   10 
+ arch/parisc/kernel/syscalls/syscall.tbl            |   10 
+ arch/powerpc/kernel/syscalls/syscall.tbl           |   10 
+ arch/s390/kernel/syscalls/syscall.tbl              |   10 
+ arch/sparc/include/asm/compat.h                    |    3 
+ arch/sparc/kernel/syscalls/syscall.tbl             |   10 
+ arch/x86/entry/syscall_x32.c                       |    5 
+ arch/x86/entry/syscalls/syscall_32.tbl             |   10 
+ arch/x86/entry/syscalls/syscall_64.tbl             |   10 
+ arch/x86/include/asm/compat.h                      |    2 
+ block/scsi_ioctl.c                                 |   12 
+ drivers/scsi/sg.c                                  |    9 
+ fs/aio.c                                           |   38 --
+ fs/io_uring.c                                      |   21 -
+ fs/read_write.c                                    |  307 ++++-----------------
+ fs/splice.c                                        |   57 ---
+ include/linux/compat.h                             |   29 -
+ include/linux/fs.h                                 |    7 
+ include/linux/sched.h                              |    1 
+ include/linux/uio.h                                |    7 
+ include/uapi/asm-generic/unistd.h                  |   12 
+ lib/iov_iter.c                                     |   30 --
+ mm/process_vm_access.c                             |   69 ----
+ net/compat.c                                       |    4 
+ security/keys/compat.c                             |   37 --
+ security/keys/internal.h                           |    5 
+ security/keys/keyctl.c                             |    2 
+ tools/include/uapi/asm-generic/unistd.h            |   12 
+ tools/perf/arch/powerpc/entry/syscalls/syscall.tbl |   10 
+ tools/perf/arch/s390/entry/syscalls/syscall.tbl    |   10 
+ tools/perf/arch/x86/entry/syscalls/syscall_64.tbl  |   10 
+ 33 files changed, 207 insertions(+), 582 deletions(-)
