@@ -1,136 +1,312 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Fri, 18 Sep 2020 07:15:17 +0000
-Subject: Re: [PATCH v6 1/4] KEYS: trusted: Add generic trusted keys framework
-Message-Id: <CAFA6WYNR2rMkEskJooDjQuu+dQ_zwVq-_9paW=zBgXmqM1GJqA@mail.gmail.com>
+From: Christoph Hellwig <hch@lst.de>
+Date: Fri, 18 Sep 2020 12:45:30 +0000
+Subject: [PATCH 6/9] fs: remove the compat readv/writev syscalls
+Message-Id: <20200918124533.3487701-7-hch@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1600350398-4813-1-git-send-email-sumit.garg@linaro.org>
- <1600350398-4813-2-git-send-email-sumit.garg@linaro.org>
- <20200917162142.GB9750@linux.intel.com>
- <20200917162506.GC9750@linux.intel.com>
-In-Reply-To: <20200917162506.GC9750@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: linux-security-module@vger.kernel.org, Daniel Thompson <daniel.thompson@linaro.org>, op-tee@lists.trustedfirmware.org, Jonathan Corbet <corbet@lwn.net>, James Bottomley <jejb@linux.ibm.com>, Janne Karhunen <janne.karhunen@gmail.com>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.ibm.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, Luke Hinds <lhinds@redhat.com>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, Markus Wamser <Markus.Wamser@mixed-mode.de>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, Jens Wiklander <jens.wiklander@linaro.org>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
+References: <20200918124533.3487701-1-hch@lst.de>
+In-Reply-To: <20200918124533.3487701-1-hch@lst.de>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-On Thu, 17 Sep 2020 at 21:55, Jarkko Sakkinen
-<jarkko.sakkinen@linux.intel.com> wrote:
->
-> On Thu, Sep 17, 2020 at 07:21:49PM +0300, Jarkko Sakkinen wrote:
-> > On Thu, Sep 17, 2020 at 07:16:35PM +0530, Sumit Garg wrote:
-> > > Current trusted keys framework is tightly coupled to use TPM device as
-> > > an underlying implementation which makes it difficult for implementations
-> > > like Trusted Execution Environment (TEE) etc. to provide trusted keys
-> > > support in case platform doesn't posses a TPM device.
-> > >
-> > > So this patch tries to add generic trusted keys framework where underlying
-> > > implementations like TPM, TEE etc. could be easily plugged-in.
-> >
-> > I would rephrase this a bit:
-> >
-> > "Add a generic trusted keys framework where underlying implementations
-> > can be easily plugged in. Create struct trusted_key_ops to achieve this,
-> > which contains necessary functions of a backend."
-> >
+Now that import_iovec handles compat iovecs, the native readv and writev
+syscalls can be used for the compat case as well.
 
-Okay, will use it instead.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ arch/arm64/include/asm/unistd32.h                  |  4 ++--
+ arch/mips/kernel/syscalls/syscall_n32.tbl          |  4 ++--
+ arch/mips/kernel/syscalls/syscall_o32.tbl          |  4 ++--
+ arch/parisc/kernel/syscalls/syscall.tbl            |  4 ++--
+ arch/powerpc/kernel/syscalls/syscall.tbl           |  4 ++--
+ arch/s390/kernel/syscalls/syscall.tbl              |  4 ++--
+ arch/sparc/kernel/syscalls/syscall.tbl             |  4 ++--
+ arch/x86/entry/syscall_x32.c                       |  2 ++
+ arch/x86/entry/syscalls/syscall_32.tbl             |  4 ++--
+ arch/x86/entry/syscalls/syscall_64.tbl             |  4 ++--
+ fs/read_write.c                                    | 14 --------------
+ include/linux/compat.h                             |  4 ----
+ include/uapi/asm-generic/unistd.h                  |  4 ++--
+ tools/include/uapi/asm-generic/unistd.h            |  4 ++--
+ tools/perf/arch/powerpc/entry/syscalls/syscall.tbl |  4 ++--
+ tools/perf/arch/s390/entry/syscalls/syscall.tbl    |  4 ++--
+ tools/perf/arch/x86/entry/syscalls/syscall_64.tbl  |  4 ++--
+ 17 files changed, 30 insertions(+), 46 deletions(-)
 
-> > I remember asking about this approach that what if there was just a
-> > header for trusted key functions and a compile time decision, which C
-> > file to include instead of ops struct. I don't remember if these was a
-> > conclusion on this or not.
-
-This approach was implemented as part of v5 and we concluded here [1]
-to revert back to the dynamic approach as distro vendors won't like to
-make opinionated selection at compile time which could rather be
-achieved dynamically based on platform capability.
-
-[1] https://www.spinics.net/lists/keyrings/msg08161.html
-
-> >
-> > E.g. lets say you have a device with TEE and TPM, should you be able
-> > to be use both at run-time? I might play along how this works now but
-> > somehow, in the commit message preferably, it should be conclude why
-> > one alternative is chosen over another.
->
-
-Okay, so how about adding a kernel module parameter which can enforce
-the user's preference about which trust source to use at runtime? And
-we should only check availability for that trust source if preference
-is provided otherwise by default we can traverse the trust sources
-list.
-
-See following change, if this approach looks sane, I can include it in
-next version:
-
-diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
-index edd635a..a566451 100644
---- a/include/keys/trusted-type.h
-+++ b/include/keys/trusted-type.h
-@@ -63,6 +63,11 @@ struct trusted_key_ops {
-        void (*exit)(void);
- };
-
-+struct trusted_key_source {
-+       char *name;
-+       struct trusted_key_ops *ops;
-+};
-+
- extern struct key_type key_type_trusted;
-
- #define TRUSTED_DEBUG 0
-diff --git a/security/keys/trusted-keys/trusted_core.c
-b/security/keys/trusted-keys/trusted_core.c
-index 83a6a15..74a3d80 100644
---- a/security/keys/trusted-keys/trusted_core.c
-+++ b/security/keys/trusted-keys/trusted_core.c
-@@ -21,12 +21,16 @@
- #include <linux/string.h>
- #include <linux/uaccess.h>
-
--static struct trusted_key_ops *available_trusted_key_ops[] = {
-+static char *trusted_key_source;
-+module_param_named(source, trusted_key_source, charp, 0);
-+MODULE_PARM_DESC(source, "Select trusted keys source (tpm or tee)");
-+
-+static struct trusted_key_source trusted_key_sources[] = {
- #if defined(CONFIG_TCG_TPM)
--       &tpm_trusted_key_ops,
-+       { "tpm", &tpm_trusted_key_ops },
- #endif
- #if defined(CONFIG_TEE)
--       &tee_trusted_key_ops,
-+       { "tee", &tee_trusted_key_ops },
- #endif
- };
- static struct trusted_key_ops *trusted_key_ops;
-@@ -296,8 +300,13 @@ static int __init init_trusted(void)
- {
-        int i, ret = 0;
-
--       for (i = 0; i < sizeof(available_trusted_key_ops); i++) {
--               trusted_key_ops = available_trusted_key_ops[i];
-+       for (i = 0; i < ARRAY_SIZE(trusted_key_sources); i++) {
-+               if (trusted_key_source &&
-+                   strncmp(trusted_key_source, trusted_key_sources[i].name,
-+                           strlen(trusted_key_sources[i].name)))
-+                       continue;
-+
-+               trusted_key_ops = trusted_key_sources[i].ops;
-
-                ret = trusted_key_ops->init();
-                if (!ret)
-
-> We must somehow seal this discussion because the other changes are
-> based on this decision.
->
-> I don't think tail of this patch set takes a long time spin. This
-> is the main architectural decision.
-
-Agree.
-
--Sumit
-
->
-> /Jarkko
+diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
+index 734860ac7cf9d5..4a236493dca5b9 100644
+--- a/arch/arm64/include/asm/unistd32.h
++++ b/arch/arm64/include/asm/unistd32.h
+@@ -301,9 +301,9 @@ __SYSCALL(__NR_flock, sys_flock)
+ #define __NR_msync 144
+ __SYSCALL(__NR_msync, sys_msync)
+ #define __NR_readv 145
+-__SYSCALL(__NR_readv, compat_sys_readv)
++__SYSCALL(__NR_readv, sys_readv)
+ #define __NR_writev 146
+-__SYSCALL(__NR_writev, compat_sys_writev)
++__SYSCALL(__NR_writev, sys_writev)
+ #define __NR_getsid 147
+ __SYSCALL(__NR_getsid, sys_getsid)
+ #define __NR_fdatasync 148
+diff --git a/arch/mips/kernel/syscalls/syscall_n32.tbl b/arch/mips/kernel/syscalls/syscall_n32.tbl
+index f9df9edb67a407..c99a92646f8ee9 100644
+--- a/arch/mips/kernel/syscalls/syscall_n32.tbl
++++ b/arch/mips/kernel/syscalls/syscall_n32.tbl
+@@ -25,8 +25,8 @@
+ 15	n32	ioctl				compat_sys_ioctl
+ 16	n32	pread64				sys_pread64
+ 17	n32	pwrite64			sys_pwrite64
+-18	n32	readv				compat_sys_readv
+-19	n32	writev				compat_sys_writev
++18	n32	readv				sys_readv
++19	n32	writev				sys_writev
+ 20	n32	access				sys_access
+ 21	n32	pipe				sysm_pipe
+ 22	n32	_newselect			compat_sys_select
+diff --git a/arch/mips/kernel/syscalls/syscall_o32.tbl b/arch/mips/kernel/syscalls/syscall_o32.tbl
+index 195b43cf27c848..075064d10661bf 100644
+--- a/arch/mips/kernel/syscalls/syscall_o32.tbl
++++ b/arch/mips/kernel/syscalls/syscall_o32.tbl
+@@ -156,8 +156,8 @@
+ 142	o32	_newselect			sys_select			compat_sys_select
+ 143	o32	flock				sys_flock
+ 144	o32	msync				sys_msync
+-145	o32	readv				sys_readv			compat_sys_readv
+-146	o32	writev				sys_writev			compat_sys_writev
++145	o32	readv				sys_readv
++146	o32	writev				sys_writev
+ 147	o32	cacheflush			sys_cacheflush
+ 148	o32	cachectl			sys_cachectl
+ 149	o32	sysmips				__sys_sysmips
+diff --git a/arch/parisc/kernel/syscalls/syscall.tbl b/arch/parisc/kernel/syscalls/syscall.tbl
+index def64d221cd4fb..192abde0001d9d 100644
+--- a/arch/parisc/kernel/syscalls/syscall.tbl
++++ b/arch/parisc/kernel/syscalls/syscall.tbl
+@@ -159,8 +159,8 @@
+ 142	common	_newselect		sys_select			compat_sys_select
+ 143	common	flock			sys_flock
+ 144	common	msync			sys_msync
+-145	common	readv			sys_readv			compat_sys_readv
+-146	common	writev			sys_writev			compat_sys_writev
++145	common	readv			sys_readv
++146	common	writev			sys_writev
+ 147	common	getsid			sys_getsid
+ 148	common	fdatasync		sys_fdatasync
+ 149	common	_sysctl			sys_ni_syscall
+diff --git a/arch/powerpc/kernel/syscalls/syscall.tbl b/arch/powerpc/kernel/syscalls/syscall.tbl
+index c2d737ff2e7bec..6f1e2ecf0edad9 100644
+--- a/arch/powerpc/kernel/syscalls/syscall.tbl
++++ b/arch/powerpc/kernel/syscalls/syscall.tbl
+@@ -193,8 +193,8 @@
+ 142	common	_newselect			sys_select			compat_sys_select
+ 143	common	flock				sys_flock
+ 144	common	msync				sys_msync
+-145	common	readv				sys_readv			compat_sys_readv
+-146	common	writev				sys_writev			compat_sys_writev
++145	common	readv				sys_readv
++146	common	writev				sys_writev
+ 147	common	getsid				sys_getsid
+ 148	common	fdatasync			sys_fdatasync
+ 149	nospu	_sysctl				sys_ni_syscall
+diff --git a/arch/s390/kernel/syscalls/syscall.tbl b/arch/s390/kernel/syscalls/syscall.tbl
+index 10456bc936fb09..6101cf2e004cb4 100644
+--- a/arch/s390/kernel/syscalls/syscall.tbl
++++ b/arch/s390/kernel/syscalls/syscall.tbl
+@@ -134,8 +134,8 @@
+ 142  64		select			sys_select			-
+ 143  common	flock			sys_flock			sys_flock
+ 144  common	msync			sys_msync			sys_msync
+-145  common	readv			sys_readv			compat_sys_readv
+-146  common	writev			sys_writev			compat_sys_writev
++145  common	readv			sys_readv			sys_readv
++146  common	writev			sys_writev			sys_writev
+ 147  common	getsid			sys_getsid			sys_getsid
+ 148  common	fdatasync		sys_fdatasync			sys_fdatasync
+ 149  common	_sysctl			-				-
+diff --git a/arch/sparc/kernel/syscalls/syscall.tbl b/arch/sparc/kernel/syscalls/syscall.tbl
+index 4af114e84f2022..a87ddb282ab16f 100644
+--- a/arch/sparc/kernel/syscalls/syscall.tbl
++++ b/arch/sparc/kernel/syscalls/syscall.tbl
+@@ -149,8 +149,8 @@
+ 117	common	getrusage		sys_getrusage			compat_sys_getrusage
+ 118	common	getsockopt		sys_getsockopt			sys_getsockopt
+ 119	common	getcwd			sys_getcwd
+-120	common	readv			sys_readv			compat_sys_readv
+-121	common	writev			sys_writev			compat_sys_writev
++120	common	readv			sys_readv
++121	common	writev			sys_writev
+ 122	common	settimeofday		sys_settimeofday		compat_sys_settimeofday
+ 123	32	fchown			sys_fchown16
+ 123	64	fchown			sys_fchown
+diff --git a/arch/x86/entry/syscall_x32.c b/arch/x86/entry/syscall_x32.c
+index 1583831f61a9df..aa321444a41f63 100644
+--- a/arch/x86/entry/syscall_x32.c
++++ b/arch/x86/entry/syscall_x32.c
+@@ -12,6 +12,8 @@
+  * Reuse the 64-bit entry points for the x32 versions that occupy different
+  * slots in the syscall table.
+  */
++#define __x32_sys_readv		__x64_sys_readv
++#define __x32_sys_writev	__x64_sys_writev
+ #define __x32_sys_getsockopt	__x64_sys_getsockopt
+ #define __x32_sys_setsockopt	__x64_sys_setsockopt
+ 
+diff --git a/arch/x86/entry/syscalls/syscall_32.tbl b/arch/x86/entry/syscalls/syscall_32.tbl
+index 9d11028736661b..54ab4beb517f25 100644
+--- a/arch/x86/entry/syscalls/syscall_32.tbl
++++ b/arch/x86/entry/syscalls/syscall_32.tbl
+@@ -156,8 +156,8 @@
+ 142	i386	_newselect		sys_select			compat_sys_select
+ 143	i386	flock			sys_flock
+ 144	i386	msync			sys_msync
+-145	i386	readv			sys_readv			compat_sys_readv
+-146	i386	writev			sys_writev			compat_sys_writev
++145	i386	readv			sys_readv
++146	i386	writev			sys_writev
+ 147	i386	getsid			sys_getsid
+ 148	i386	fdatasync		sys_fdatasync
+ 149	i386	_sysctl			sys_ni_syscall
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index f30d6ae9a6883c..b1e59957c5c51c 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -371,8 +371,8 @@
+ 512	x32	rt_sigaction		compat_sys_rt_sigaction
+ 513	x32	rt_sigreturn		compat_sys_x32_rt_sigreturn
+ 514	x32	ioctl			compat_sys_ioctl
+-515	x32	readv			compat_sys_readv
+-516	x32	writev			compat_sys_writev
++515	x32	readv			sys_readv
++516	x32	writev			sys_writev
+ 517	x32	recvfrom		compat_sys_recvfrom
+ 518	x32	sendmsg			compat_sys_sendmsg
+ 519	x32	recvmsg			compat_sys_recvmsg
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 9eb63c53da78f2..560d1b0bdef7bc 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -1217,13 +1217,6 @@ SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
+  * in_compat_syscall().
+  */
+ #ifdef CONFIG_COMPAT
+-COMPAT_SYSCALL_DEFINE3(readv, compat_ulong_t, fd,
+-		const struct iovec __user *, vec,
+-		compat_ulong_t, vlen)
+-{
+-	return do_readv(fd, vec, vlen, 0);
+-}
+-
+ #ifdef __ARCH_WANT_COMPAT_SYS_PREADV64
+ COMPAT_SYSCALL_DEFINE4(preadv64, unsigned long, fd,
+ 		const struct iovec __user *, vec,
+@@ -1265,13 +1258,6 @@ COMPAT_SYSCALL_DEFINE6(preadv2, compat_ulong_t, fd,
+ 	return do_preadv(fd, vec, vlen, pos, flags);
+ }
+ 
+-COMPAT_SYSCALL_DEFINE3(writev, compat_ulong_t, fd,
+-		const struct iovec __user *, vec,
+-		compat_ulong_t, vlen)
+-{
+-	return do_writev(fd, vec, vlen, 0);
+-}
+-
+ #ifdef __ARCH_WANT_COMPAT_SYS_PWRITEV64
+ COMPAT_SYSCALL_DEFINE4(pwritev64, unsigned long, fd,
+ 		const struct iovec __user *, vec,
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index ad6dc56e8828d6..0ff848234df8ba 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -545,10 +545,6 @@ asmlinkage long compat_sys_getdents(unsigned int fd,
+ 
+ /* fs/read_write.c */
+ asmlinkage long compat_sys_lseek(unsigned int, compat_off_t, unsigned int);
+-asmlinkage ssize_t compat_sys_readv(compat_ulong_t fd,
+-		const struct compat_iovec __user *vec, compat_ulong_t vlen);
+-asmlinkage ssize_t compat_sys_writev(compat_ulong_t fd,
+-		const struct compat_iovec __user *vec, compat_ulong_t vlen);
+ /* No generic prototype for pread64 and pwrite64 */
+ asmlinkage ssize_t compat_sys_preadv(compat_ulong_t fd,
+ 		const struct compat_iovec __user *vec,
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index 995b36c2ea7d8a..211c9eacbda6eb 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -207,9 +207,9 @@ __SYSCALL(__NR_read, sys_read)
+ #define __NR_write 64
+ __SYSCALL(__NR_write, sys_write)
+ #define __NR_readv 65
+-__SC_COMP(__NR_readv, sys_readv, compat_sys_readv)
++__SC_COMP(__NR_readv, sys_readv, sys_readv)
+ #define __NR_writev 66
+-__SC_COMP(__NR_writev, sys_writev, compat_sys_writev)
++__SC_COMP(__NR_writev, sys_writev, sys_writev)
+ #define __NR_pread64 67
+ __SC_COMP(__NR_pread64, sys_pread64, compat_sys_pread64)
+ #define __NR_pwrite64 68
+diff --git a/tools/include/uapi/asm-generic/unistd.h b/tools/include/uapi/asm-generic/unistd.h
+index 995b36c2ea7d8a..211c9eacbda6eb 100644
+--- a/tools/include/uapi/asm-generic/unistd.h
++++ b/tools/include/uapi/asm-generic/unistd.h
+@@ -207,9 +207,9 @@ __SYSCALL(__NR_read, sys_read)
+ #define __NR_write 64
+ __SYSCALL(__NR_write, sys_write)
+ #define __NR_readv 65
+-__SC_COMP(__NR_readv, sys_readv, compat_sys_readv)
++__SC_COMP(__NR_readv, sys_readv, sys_readv)
+ #define __NR_writev 66
+-__SC_COMP(__NR_writev, sys_writev, compat_sys_writev)
++__SC_COMP(__NR_writev, sys_writev, sys_writev)
+ #define __NR_pread64 67
+ __SC_COMP(__NR_pread64, sys_pread64, compat_sys_pread64)
+ #define __NR_pwrite64 68
+diff --git a/tools/perf/arch/powerpc/entry/syscalls/syscall.tbl b/tools/perf/arch/powerpc/entry/syscalls/syscall.tbl
+index 3ca6fe057a0b1f..46be68029587f9 100644
+--- a/tools/perf/arch/powerpc/entry/syscalls/syscall.tbl
++++ b/tools/perf/arch/powerpc/entry/syscalls/syscall.tbl
+@@ -189,8 +189,8 @@
+ 142	common	_newselect			sys_select			compat_sys_select
+ 143	common	flock				sys_flock
+ 144	common	msync				sys_msync
+-145	common	readv				sys_readv			compat_sys_readv
+-146	common	writev				sys_writev			compat_sys_writev
++145	common	readv				sys_readv
++146	common	writev				sys_writev
+ 147	common	getsid				sys_getsid
+ 148	common	fdatasync			sys_fdatasync
+ 149	nospu	_sysctl				sys_ni_syscall
+diff --git a/tools/perf/arch/s390/entry/syscalls/syscall.tbl b/tools/perf/arch/s390/entry/syscalls/syscall.tbl
+index 6a0bbea225db0d..fb5e61ce9d5838 100644
+--- a/tools/perf/arch/s390/entry/syscalls/syscall.tbl
++++ b/tools/perf/arch/s390/entry/syscalls/syscall.tbl
+@@ -134,8 +134,8 @@
+ 142  64		select			sys_select			-
+ 143  common	flock			sys_flock			sys_flock
+ 144  common	msync			sys_msync			compat_sys_msync
+-145  common	readv			sys_readv			compat_sys_readv
+-146  common	writev			sys_writev			compat_sys_writev
++145  common	readv			sys_readv
++146  common	writev			sys_writev
+ 147  common	getsid			sys_getsid			sys_getsid
+ 148  common	fdatasync		sys_fdatasync			sys_fdatasync
+ 149  common	_sysctl			-				-
+diff --git a/tools/perf/arch/x86/entry/syscalls/syscall_64.tbl b/tools/perf/arch/x86/entry/syscalls/syscall_64.tbl
+index f30d6ae9a6883c..b1e59957c5c51c 100644
+--- a/tools/perf/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/tools/perf/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -371,8 +371,8 @@
+ 512	x32	rt_sigaction		compat_sys_rt_sigaction
+ 513	x32	rt_sigreturn		compat_sys_x32_rt_sigreturn
+ 514	x32	ioctl			compat_sys_ioctl
+-515	x32	readv			compat_sys_readv
+-516	x32	writev			compat_sys_writev
++515	x32	readv			sys_readv
++516	x32	writev			sys_writev
+ 517	x32	recvfrom		compat_sys_recvfrom
+ 518	x32	sendmsg			compat_sys_sendmsg
+ 519	x32	recvmsg			compat_sys_recvmsg
+-- 
+2.28.0
