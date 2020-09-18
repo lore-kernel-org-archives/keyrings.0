@@ -1,41 +1,285 @@
-From: Andrew Zaborowski <andrew.zaborowski@intel.com>
-Date: Mon, 07 Sep 2020 10:39:36 +0000
-Subject: [RESEND][PATCH] keys: Update comment for restrict_link_by_key_or_keyring_chain
-Message-Id: <20200907103936.263810-2-andrew.zaborowski@intel.com>
+From: Christoph Hellwig <hch@lst.de>
+Date: Fri, 18 Sep 2020 12:45:29 +0000
+Subject: [PATCH 5/9] fs: remove various compat readv/writev helpers
+Message-Id: <20200918124533.3487701-6-hch@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200907103936.263810-1-andrew.zaborowski@intel.com>
-In-Reply-To: <20200907103936.263810-1-andrew.zaborowski@intel.com>
-To: keyrings@vger.kernel.org
+References: <20200918124533.3487701-1-hch@lst.de>
+In-Reply-To: <20200918124533.3487701-1-hch@lst.de>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-Add the bit of information that makes
-restrict_link_by_key_or_keyring_chain different from
-restrict_link_by_key_or_keyring to the inline docs comment.
+Now that import_iovec handles compat iovecs as well, all the duplicated
+code in the compat readv/writev helpers is not needed.  Remove them
+and switch the compat syscall handlers to use the native helpers.
 
-Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- crypto/asymmetric_keys/restrict.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ fs/read_write.c | 179 ++++++++----------------------------------------
+ 1 file changed, 30 insertions(+), 149 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
-index 77ebebada29..84cefe3b358 100644
---- a/crypto/asymmetric_keys/restrict.c
-+++ b/crypto/asymmetric_keys/restrict.c
-@@ -244,9 +244,10 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
-  * @payload: The payload of the new key.
-  * @trusted: A key or ring of keys that can be used to vouch for the new cert.
-  *
-- * Check the new certificate only against the key or keys passed in the data
-- * parameter. If one of those is the signing key and validates the new
-- * certificate, then mark the new certificate as being ok to link.
-+ * Check the new certificate against the key or keys passed in the data
-+ * parameter and against the keys already linked to the destination keyring. If
-+ * one of those is the signing key and validates the new certificate, then mark
-+ * the new certificate as being ok to link.
-  *
-  * Returns 0 if the new certificate was accepted, -ENOKEY if we
-  * couldn't find a matching parent certificate in the trusted list,
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 2f961c653ce561..9eb63c53da78f2 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -1211,226 +1211,107 @@ SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
+ 	return do_pwritev(fd, vec, vlen, pos, flags);
+ }
+ 
++/*
++ * Various compat syscalls.  Note that they all pretend to take a native
++ * iovec - import_iovec will properly treat those as compat_iovecs based on
++ * in_compat_syscall().
++ */
+ #ifdef CONFIG_COMPAT
+-static size_t compat_readv(struct file *file,
+-			   const struct compat_iovec __user *vec,
+-			   unsigned long vlen, loff_t *pos, rwf_t flags)
+-{
+-	struct iovec iovstack[UIO_FASTIOV];
+-	struct iovec *iov = iovstack;
+-	struct iov_iter iter;
+-	ssize_t ret;
+-
+-	ret = import_iovec(READ, (const struct iovec __user *)vec, vlen,
+-			   UIO_FASTIOV, &iov, &iter);
+-	if (ret >= 0) {
+-		ret = do_iter_read(file, &iter, pos, flags);
+-		kfree(iov);
+-	}
+-	if (ret > 0)
+-		add_rchar(current, ret);
+-	inc_syscr(current);
+-	return ret;
+-}
+-
+-static size_t do_compat_readv(compat_ulong_t fd,
+-				 const struct compat_iovec __user *vec,
+-				 compat_ulong_t vlen, rwf_t flags)
+-{
+-	struct fd f = fdget_pos(fd);
+-	ssize_t ret;
+-	loff_t pos;
+-
+-	if (!f.file)
+-		return -EBADF;
+-	pos = f.file->f_pos;
+-	ret = compat_readv(f.file, vec, vlen, &pos, flags);
+-	if (ret >= 0)
+-		f.file->f_pos = pos;
+-	fdput_pos(f);
+-	return ret;
+-
+-}
+-
+ COMPAT_SYSCALL_DEFINE3(readv, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		compat_ulong_t, vlen)
+ {
+-	return do_compat_readv(fd, vec, vlen, 0);
+-}
+-
+-static long do_compat_preadv64(unsigned long fd,
+-				  const struct compat_iovec __user *vec,
+-				  unsigned long vlen, loff_t pos, rwf_t flags)
+-{
+-	struct fd f;
+-	ssize_t ret;
+-
+-	if (pos < 0)
+-		return -EINVAL;
+-	f = fdget(fd);
+-	if (!f.file)
+-		return -EBADF;
+-	ret = -ESPIPE;
+-	if (f.file->f_mode & FMODE_PREAD)
+-		ret = compat_readv(f.file, vec, vlen, &pos, flags);
+-	fdput(f);
+-	return ret;
++	return do_readv(fd, vec, vlen, 0);
+ }
+ 
+ #ifdef __ARCH_WANT_COMPAT_SYS_PREADV64
+ COMPAT_SYSCALL_DEFINE4(preadv64, unsigned long, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		unsigned long, vlen, loff_t, pos)
+ {
+-	return do_compat_preadv64(fd, vec, vlen, pos, 0);
++	return do_preadv(fd, vec, vlen, pos, 0);
+ }
+ #endif
+ 
+ COMPAT_SYSCALL_DEFINE5(preadv, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		compat_ulong_t, vlen, u32, pos_low, u32, pos_high)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
+ 
+-	return do_compat_preadv64(fd, vec, vlen, pos, 0);
++	return do_preadv(fd, vec, vlen, pos, 0);
+ }
+ 
+ #ifdef __ARCH_WANT_COMPAT_SYS_PREADV64V2
+ COMPAT_SYSCALL_DEFINE5(preadv64v2, unsigned long, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		unsigned long, vlen, loff_t, pos, rwf_t, flags)
+ {
+ 	if (pos = -1)
+-		return do_compat_readv(fd, vec, vlen, flags);
+-
+-	return do_compat_preadv64(fd, vec, vlen, pos, flags);
++		return do_readv(fd, vec, vlen, flags);
++	return do_preadv(fd, vec, vlen, pos, flags);
+ }
+ #endif
+ 
+ COMPAT_SYSCALL_DEFINE6(preadv2, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		compat_ulong_t, vlen, u32, pos_low, u32, pos_high,
+ 		rwf_t, flags)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
+ 
+ 	if (pos = -1)
+-		return do_compat_readv(fd, vec, vlen, flags);
+-
+-	return do_compat_preadv64(fd, vec, vlen, pos, flags);
+-}
+-
+-static size_t compat_writev(struct file *file,
+-			    const struct compat_iovec __user *vec,
+-			    unsigned long vlen, loff_t *pos, rwf_t flags)
+-{
+-	struct iovec iovstack[UIO_FASTIOV];
+-	struct iovec *iov = iovstack;
+-	struct iov_iter iter;
+-	ssize_t ret;
+-
+-	ret = import_iovec(WRITE, (const struct iovec __user *)vec, vlen,
+-			   UIO_FASTIOV, &iov, &iter);
+-	if (ret >= 0) {
+-		file_start_write(file);
+-		ret = do_iter_write(file, &iter, pos, flags);
+-		file_end_write(file);
+-		kfree(iov);
+-	}
+-	if (ret > 0)
+-		add_wchar(current, ret);
+-	inc_syscw(current);
+-	return ret;
+-}
+-
+-static size_t do_compat_writev(compat_ulong_t fd,
+-				  const struct compat_iovec __user* vec,
+-				  compat_ulong_t vlen, rwf_t flags)
+-{
+-	struct fd f = fdget_pos(fd);
+-	ssize_t ret;
+-	loff_t pos;
+-
+-	if (!f.file)
+-		return -EBADF;
+-	pos = f.file->f_pos;
+-	ret = compat_writev(f.file, vec, vlen, &pos, flags);
+-	if (ret >= 0)
+-		f.file->f_pos = pos;
+-	fdput_pos(f);
+-	return ret;
++		return do_readv(fd, vec, vlen, flags);
++	return do_preadv(fd, vec, vlen, pos, flags);
+ }
+ 
+ COMPAT_SYSCALL_DEFINE3(writev, compat_ulong_t, fd,
+-		const struct compat_iovec __user *, vec,
++		const struct iovec __user *, vec,
+ 		compat_ulong_t, vlen)
+ {
+-	return do_compat_writev(fd, vec, vlen, 0);
+-}
+-
+-static long do_compat_pwritev64(unsigned long fd,
+-				   const struct compat_iovec __user *vec,
+-				   unsigned long vlen, loff_t pos, rwf_t flags)
+-{
+-	struct fd f;
+-	ssize_t ret;
+-
+-	if (pos < 0)
+-		return -EINVAL;
+-	f = fdget(fd);
+-	if (!f.file)
+-		return -EBADF;
+-	ret = -ESPIPE;
+-	if (f.file->f_mode & FMODE_PWRITE)
+-		ret = compat_writev(f.file, vec, vlen, &pos, flags);
+-	fdput(f);
+-	return ret;
++	return do_writev(fd, vec, vlen, 0);
+ }
+ 
+ #ifdef __ARCH_WANT_COMPAT_SYS_PWRITEV64
+ COMPAT_SYSCALL_DEFINE4(pwritev64, unsigned long, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		unsigned long, vlen, loff_t, pos)
+ {
+-	return do_compat_pwritev64(fd, vec, vlen, pos, 0);
++	return do_pwritev(fd, vec, vlen, pos, 0);
+ }
+ #endif
+ 
+ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *,vec,
+ 		compat_ulong_t, vlen, u32, pos_low, u32, pos_high)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
+ 
+-	return do_compat_pwritev64(fd, vec, vlen, pos, 0);
++	return do_pwritev(fd, vec, vlen, pos, 0);
+ }
+ 
+ #ifdef __ARCH_WANT_COMPAT_SYS_PWRITEV64V2
+ COMPAT_SYSCALL_DEFINE5(pwritev64v2, unsigned long, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		unsigned long, vlen, loff_t, pos, rwf_t, flags)
+ {
+ 	if (pos = -1)
+-		return do_compat_writev(fd, vec, vlen, flags);
+-
+-	return do_compat_pwritev64(fd, vec, vlen, pos, flags);
++		return do_writev(fd, vec, vlen, flags);
++	return do_pwritev(fd, vec, vlen, pos, flags);
+ }
+ #endif
+ 
+ COMPAT_SYSCALL_DEFINE6(pwritev2, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *,vec,
+ 		compat_ulong_t, vlen, u32, pos_low, u32, pos_high, rwf_t, flags)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
+ 
+ 	if (pos = -1)
+-		return do_compat_writev(fd, vec, vlen, flags);
+-
+-	return do_compat_pwritev64(fd, vec, vlen, pos, flags);
++		return do_writev(fd, vec, vlen, flags);
++	return do_pwritev(fd, vec, vlen, pos, flags);
+ }
+-
+-#endif
++#endif /* CONFIG_COMPAT */
+ 
+ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
+ 		  	   size_t count, loff_t max)
 -- 
-2.20.1
+2.28.0
