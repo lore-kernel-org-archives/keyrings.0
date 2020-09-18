@@ -1,54 +1,36 @@
-From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Date: Thu, 03 Sep 2020 13:12:39 +0000
-Subject: [PATCH v6 5/8] crypto: testmgr - support test with different ciphertext per encryption
-Message-Id: <20200903131242.128665-6-tianjia.zhang@linux.alibaba.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Fri, 18 Sep 2020 06:47:21 +0000
+Subject: Re: [PATCH v6 5/8] crypto: testmgr - support test with different ciphertext per encryption
+Message-Id: <20200918064721.GA9520@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20200903131242.128665-1-tianjia.zhang@linux.alibaba.com>
-In-Reply-To: <20200903131242.128665-1-tianjia.zhang@linux.alibaba.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, David Howells <dhowells@redhat.com>, Maxime Coquelin <mcoquelin.stm32@gmail.com>, Alexandre Torgue <alexandre.torgue@st.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Stephan Mueller <smueller@chronox.de>, Marcelo Henrique Cerri <marcelo.cerri@canonical.com>, "Steven Rostedt (VMware)" <rostedt@goodmis.org>, Masahiro Yamada <masahiroy@kernel.org>, Brendan Higgins <brendanhiggins@google.com>, Andrew Morton <akpm@linux-foundation.org>, Johannes Weiner <hannes@cmpxchg.org>, Waiman Long <longman@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, Colin Ian King <colin.king@canonical.com>, Tushar Sugandhi <tusharsu@linux.microsoft.com>, Vitaly Chikunov <vt@altlinux.org>, Gilad Ben-Yossef <gilad@benyossef.com>, Pascal van Leeuwen <pvanleeuwen@rambus.com>, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org, linux-security-module@vger.kernel.org
-Cc: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>, Tianjia Zhang <tianjia.zhang@linux.alibaba.com>, Jia Zhang <zhang.jia@linux.alibaba.com>
+ <20200903131242.128665-6-tianjia.zhang@linux.alibaba.com>
+In-Reply-To: <20200903131242.128665-6-tianjia.zhang@linux.alibaba.com>
+To: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Cc: Stephan Mueller <smueller@chronox.de>, Brendan Higgins <brendanhiggins@google.com>, Jia Zhang <zhang.jia@linux.alibaba.com>, Mimi Zohar <zohar@linux.ibm.com>, Vitaly Chikunov <vt@altlinux.org>, keyrings@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, Masahiro Yamada <masahiroy@kernel.org>, James Morris <jmorris@namei.org>, Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, Marcelo Henrique Cerri <marcelo.cerri@canonical.com>, Waiman Long <longman@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>, Alexandre Torgue <alexandre.torgue@st.com>, "Steven Rostedt (VMware)" <rostedt@goodmis.org>, Gilad Ben-Yossef <gilad@benyossef.com>, Tushar Sugandhi <tusharsu@linux.microsoft.com>, linux-arm-kernel@lists.infradead.org, David Howells <dhowells@redhat.com>, Pascal van Leeuwen <pvanleeuwen@rambus.com>, linux-kernel@vger.kernel.org, Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>, linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org, Maxime Coquelin <mcoquelin.stm32@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>, Colin Ian King <colin.king@canonical.com>, Andrew Morton <akpm@linux-foundation.org>, "David S. Miller" <davem@davemloft.net>
 
-Some asymmetric algorithms will get different ciphertext after
-each encryption, such as SM2, and let testmgr support the testing
-of such algorithms.
+On Thu, Sep 03, 2020 at 09:12:39PM +0800, Tianjia Zhang wrote:
+> Some asymmetric algorithms will get different ciphertext after
+> each encryption, such as SM2, and let testmgr support the testing
+> of such algorithms.
+> 
+> In struct akcipher_testvec, set c and c_size to be empty, skip
+> the comparison of the ciphertext, and compare the decrypted
+> plaintext with m to achieve the test purpose.
+> 
+> Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+> Tested-by: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>
+> ---
+>  crypto/testmgr.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 
-In struct akcipher_testvec, set c and c_size to be empty, skip
-the comparison of the ciphertext, and compare the decrypted
-plaintext with m to achieve the test purpose.
+Is there supposed to be another patch that contains test vectors?
 
-Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Tested-by: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>
----
- crypto/testmgr.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 23c27fc96394..cd002a030af5 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -4025,7 +4025,7 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 		pr_err("alg: akcipher: %s test failed. err %d\n", op, err);
- 		goto free_all;
- 	}
--	if (!vecs->siggen_sigver_test) {
-+	if (!vecs->siggen_sigver_test && c) {
- 		if (req->dst_len != c_size) {
- 			pr_err("alg: akcipher: %s test failed. Invalid output len\n",
- 			       op);
-@@ -4056,6 +4056,11 @@ static int test_akcipher_one(struct crypto_akcipher *tfm,
- 		goto free_all;
- 	}
- 
-+	if (!vecs->siggen_sigver_test && !c) {
-+		c = outbuf_enc;
-+		c_size = req->dst_len;
-+	}
-+
- 	op = vecs->siggen_sigver_test ? "sign" : "decrypt";
- 	if (WARN_ON(c_size > PAGE_SIZE))
- 		goto free_all;
+Thanks,
 -- 
-2.19.1.3.ge56e4f7
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
