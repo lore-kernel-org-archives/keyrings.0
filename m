@@ -1,126 +1,108 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 22 Sep 2020 19:31:44 +0000
-Subject: Re: [PATCH v12 4/5] security: keys: trusted: use ASN.1 TPM2 key format for the blobs
-Message-Id: <a2bb4d02f6de58bc7660f9896a34313a0c84bfcc.camel@HansenPartnership.com>
+From: Christoph Hellwig <hch@lst.de>
+Date: Fri, 18 Sep 2020 12:45:33 +0000
+Subject: [PATCH 9/9] security/keys: remove compat_keyctl_instantiate_key_iov
+Message-Id: <20200918124533.3487701-10-hch@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200920163351.11293-5-James.Bottomley@HansenPartnership.com>
-         <202009210844.KCwzdqmx%lkp@intel.com>
-         <2d395d924b70fba7f1867eb83946497ce1f6eb47.camel@HansenPartnership.com>
-         <CAKwvOd=yqYh9i1n84djbX_+8-4JbAUbRQL6FYnhugOocu+vCKg@mail.gmail.com>
-In-Reply-To: <CAKwvOd=yqYh9i1n84djbX_+8-4JbAUbRQL6FYnhugOocu+vCKg@mail.gmail.com>
-To: Nick Desaulniers <ndesaulniers@google.com>, Masahiro Yamada <masahiroy@kernel.org>, Philip Li <philip.li@intel.com>
-Cc: kernel test robot <lkp@intel.com>, linux-integrity@vger.kernel.org, kbuild-all@lists.01.org, clang-built-linux <clang-built-linux@googlegroups.com>, Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+References: <20200918124533.3487701-1-hch@lst.de>
+In-Reply-To: <20200918124533.3487701-1-hch@lst.de>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-On Tue, 2020-09-22 at 12:14 -0700, Nick Desaulniers wrote:
-> On Mon, Sep 21, 2020 at 2:31 PM James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
-> > On Mon, 2020-09-21 at 08:07 +0800, kernel test robot wrote:
-> > > Hi James,
-> > > 
-> > > I love your patch! Yet something to improve:
-> > > 
-> > > [auto build test ERROR on integrity/next-integrity]
-> > > [also build test ERROR on linus/master v5.9-rc5 next-20200918]
-> > > [cannot apply to security/next-testing dhowells-fs/fscache-next]
-> > > [If your patch is applied to the wrong git tree, kindly drop us a
-> > > note. And when submitting patch, we suggest to use '--base' as
-> > > documented in https://git-scm.com/docs/git-format-patch]
-> > > 
-> > > url:
-> > > https://github.com/0day-ci/linux/commits/James-Bottomley/TPM-2-0-trusted-key-rework/20200921-003922
-> > > base:
-> > > https://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity.git
-> > > next-integrity
-> > > config: x86_64-randconfig-a003-20200921 (attached as .config)
-> > > compiler: clang version 12.0.0 (
-> > > https://github.com/llvm/llvm-project
-> > > f4e554180962aa6bc93678898b6933ea712bde50)
-> > > reproduce (this is a W=1 build):
-> > >         wget
-> > > https://raw.githubusercontent.com/intel/lkp-tests/master/sbin/make.cross
-> > > -O ~/bin/make.cross
-> > >         chmod +x ~/bin/make.cross
-> > >         # install x86_64 cross compiling tool for clang build
-> > >         # apt-get install binutils-x86-64-linux-gnu
-> > >         # save the attached .config to linux build tree
-> > >         COMPILER_INSTALL_PATH=$HOME/0day COMPILER=clang
-> > > make.cross
-> > > ARCH=x86_64
-> > > 
-> > > If you fix the issue, kindly add following tag as appropriate
-> > > Reported-by: kernel test robot <lkp@intel.com>
-> > > 
-> > > All errors (new ones prefixed by >>):
-> > > 
-> > > > > make[4]: *** No rule to make target 'security/keys/trusted-
-> > > > > keys/tpm2key.asn1.o', needed by 'security/keys/trusted-
-> > > > > keys/built-in.a'.
-> > >    make[4]: *** [scripts/Makefile.build:283:
-> > > security/keys/trusted-
-> > > keys/trusted_tpm2.o] Error 1
-> > >    make[4]: Target '__build' not remade because of errors.
-> > 
-> > So can I still add that tracking this down involved installing an
-> > entirely unnecessary ARM build environment, which was a huge effort
-> > I didn't need to do if you'd just provided the build log which
-> > fingered the ASN.1 compiler problem if you know what to look for.
-> 
-> Having a link to the build log artifact is a valid criticism.
+Now that import_iovec handles compat iovecs, the native version of
+keyctl_instantiate_key_iov can be used for the compat case as well.
 
-Heh, I'm just annoyed because when I finally got the ARM environment
-installed and the problem replicated, I realised it could be reproduced
-with an x86 build ... just one that would never be useful in practice.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ security/keys/compat.c   | 36 ++----------------------------------
+ security/keys/internal.h |  5 -----
+ security/keys/keyctl.c   |  2 +-
+ 3 files changed, 3 insertions(+), 40 deletions(-)
 
-> > The reason for the problem is because ASN1 isn't selected in the
-> > Kconfig which causes the ASN.1 compiler not to be built.  The way
-> > our current build rules are structured causes the make rule for
-> > this simply to be skipped, which means you have to know to look for
-> > the absence of ASN.1 in the build log.  I propose adding this to
-> > the build rules, which produces the much more explicit:
-> > 
-> > /home/jejb/git/linux-build/scripts/Makefile.build:387: ***
-> > CONFIG_ASN1 must be defined for the asn1_compiler.  Stop.
-> > make[3]: *** [/home/jejb/git/linux-
-> > build/scripts/Makefile.build:505: security/keys/trusted-keys] Error
-> > 2
-> > 
-> > James
-> > 
-> > ---
-> > 
-> > diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-> > index a467b9323442..bca7003beac8 100644
-> > --- a/scripts/Makefile.build
-> > +++ b/scripts/Makefile.build
-> > @@ -382,6 +382,11 @@ quiet_cmd_asn1_compiler = ASN.1   $(basename
-> > $@).[ch]
-> >        cmd_asn1_compiler = $(objtree)/scripts/asn1_compiler $< \
-> >                                 $(basename $@).c $(basename $@).h
-> > 
-> > +ifndef CONFIG_ASN1
-> > +$(objtree)/scripts/asn1_compiler:
-> > +       $(error CONFIG_ASN1 must be defined for the asn1_compiler)
-> > +endif
-> > +
-> >  $(obj)/%.asn1.c $(obj)/%.asn1.h: $(src)/%.asn1
-> > $(objtree)/scripts/asn1_compiler
-> >         $(call cmd,asn1_compiler)
-> 
-> Is there a better way via Kconfig to gate whatever consumes
-> CONFIG_ASN1 on CONFIG_ASN1 being set, rather than erroring for
-> randconfig builds? I don't see how the diff would solve the case of
-> CI systems doing randconfig builds.
-
-Well, no there's an actual bug: all consumers of asn1_compile need a
-select ASN1.  This was missing from the v12 patch and is now included
-in the v13 one.  This Makefile.build patch here was just to make the
-problem explicit in the 0day logs if it ever occurs again.
-
-The reason it only showed up on arm32 is that pretty much only an
-embedded kernel is cut down enough to create a randconfig that doesn't
-pull in CRYPTO_RSA, which also selects ASN1 and hides the problem.
-
-James
+diff --git a/security/keys/compat.c b/security/keys/compat.c
+index 7ae531db031cf8..1545efdca56227 100644
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -11,38 +11,6 @@
+ #include <linux/slab.h>
+ #include "internal.h"
+ 
+-/*
+- * Instantiate a key with the specified compatibility multipart payload and
+- * link the key into the destination keyring if one is given.
+- *
+- * The caller must have the appropriate instantiation permit set for this to
+- * work (see keyctl_assume_authority).  No other permissions are required.
+- *
+- * If successful, 0 will be returned.
+- */
+-static long compat_keyctl_instantiate_key_iov(
+-	key_serial_t id,
+-	const struct compat_iovec __user *_payload_iov,
+-	unsigned ioc,
+-	key_serial_t ringid)
+-{
+-	struct iovec iovstack[UIO_FASTIOV], *iov = iovstack;
+-	struct iov_iter from;
+-	long ret;
+-
+-	if (!_payload_iov)
+-		ioc = 0;
+-
+-	ret = import_iovec(WRITE, (const struct iovec __user *)_payload_iov,
+-			   ioc, ARRAY_SIZE(iovstack), &iov, &from);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = keyctl_instantiate_key_common(id, &from, ringid);
+-	kfree(iov);
+-	return ret;
+-}
+-
+ /*
+  * The key control system call, 32-bit compatibility version for 64-bit archs
+  */
+@@ -113,8 +81,8 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
+ 		return keyctl_reject_key(arg2, arg3, arg4, arg5);
+ 
+ 	case KEYCTL_INSTANTIATE_IOV:
+-		return compat_keyctl_instantiate_key_iov(
+-			arg2, compat_ptr(arg3), arg4, arg5);
++		return keyctl_instantiate_key_iov(arg2, compat_ptr(arg3), arg4,
++						  arg5);
+ 
+ 	case KEYCTL_INVALIDATE:
+ 		return keyctl_invalidate_key(arg2);
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 338a526cbfa516..9b9cf3b6fcbb4d 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -262,11 +262,6 @@ extern long keyctl_instantiate_key_iov(key_serial_t,
+ 				       const struct iovec __user *,
+ 				       unsigned, key_serial_t);
+ extern long keyctl_invalidate_key(key_serial_t);
+-
+-struct iov_iter;
+-extern long keyctl_instantiate_key_common(key_serial_t,
+-					  struct iov_iter *,
+-					  key_serial_t);
+ extern long keyctl_restrict_keyring(key_serial_t id,
+ 				    const char __user *_type,
+ 				    const char __user *_restriction);
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 9febd37a168fd0..e26bbccda7ccee 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1164,7 +1164,7 @@ static int keyctl_change_reqkey_auth(struct key *key)
+  *
+  * If successful, 0 will be returned.
+  */
+-long keyctl_instantiate_key_common(key_serial_t id,
++static long keyctl_instantiate_key_common(key_serial_t id,
+ 				   struct iov_iter *from,
+ 				   key_serial_t ringid)
+ {
+-- 
+2.28.0
