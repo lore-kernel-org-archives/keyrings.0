@@ -1,48 +1,35 @@
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 19 Sep 2020 22:22:04 +0000
+Date: Sat, 19 Sep 2020 22:23:54 +0000
 Subject: Re: [PATCH 1/9] kernel: add a PF_FORCE_COMPAT flag
-Message-Id: <D0791499-1190-4C3F-A984-0A313ECA81C7@amacapital.net>
+Message-Id: <AA2CFC7E-E685-4596-84AD-0E314137B93F@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="ibm852"
 Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <CAK8P3a2Mi+1yttyGk4k7HxRVrMtmFqJewouVhynqUL0PJycmog@mail.gmail.com>
-In-Reply-To: <CAK8P3a2Mi+1yttyGk4k7HxRVrMtmFqJewouVhynqUL0PJycmog@mail.gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andy Lutomirski <luto@kernel.org>, Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, David Howells <dhowells@redhat.com>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>, "open list:MIPS" <linux-mips@vger.kernel.org>, Parisc List <linux-parisc@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-s390 <linux-s390@vger.kernel.org>, sparclinux <sparclinux@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Linux SCSI List <linux-scsi@vger.kernel.org>, Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-aio <linux-aio@kvack.org>, io-uring@vger.kernel.org, linux-arch <linux-arch@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, Network Development <netdev@vger.kernel.org>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>
+References: <20200919220920.GI3421308@ZenIV.linux.org.uk>
+In-Reply-To: <20200919220920.GI3421308@ZenIV.linux.org.uk>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-Cj4gT24gU2VwIDE5LCAyMDIwLCBhdCAyOjE2IFBNLCBBcm5kIEJlcmdtYW5uIDxhcm5kQGFybmRi
-LmRlPiB3cm90ZToKPiAKPiDvu79PbiBTYXQsIFNlcCAxOSwgMjAyMCBhdCA2OjIxIFBNIEFuZHkg
-THV0b21pcnNraSA8bHV0b0BrZXJuZWwub3JnPiB3cm90ZToKPj4+IE9uIEZyaSwgU2VwIDE4LCAy
-MDIwIGF0IDg6MTYgQU0gQ2hyaXN0b3BoIEhlbGx3aWcgPGhjaEBsc3QuZGU+IHdyb3RlOgo+Pj4g
-T24gRnJpLCBTZXAgMTgsIDIwMjAgYXQgMDI6NTg6MjJQTSArMDEwMCwgQWwgVmlybyB3cm90ZToK
-Pj4+PiBTYWlkIHRoYXQsIHdoeSBub3QgcHJvdmlkZSBhIHZhcmlhbnQgdGhhdCB3b3VsZCB0YWtl
-IGFuIGV4cGxpY2l0Cj4+Pj4gImlzIGl0IGNvbXBhdCIgYXJndW1lbnQgYW5kIHVzZSBpdCB0aGVy
-ZT8gIEFuZCBoYXZlIHRoZSBub3JtYWwKPj4+PiBvbmUgcGFzcyBpbl9jb21wYXRfc3lzY2FsbCgp
-IHRvIHRoYXQuLi4KPj4+IAo+Pj4gVGhhdCB3b3VsZCBoZWxwIHRvIG5vdCBpbnRyb2R1Y2UgYSBy
-ZWdyZXNzaW9uIHdpdGggdGhpcyBzZXJpZXMgeWVzLgo+Pj4gQnV0IGl0IHdvdWxkbid0IGZpeCBl
-eGlzdGluZyBidWdzIHdoZW4gaW9fdXJpbmcgaXMgdXNlZCB0byBhY2Nlc3MKPj4+IHJlYWQgb3Ig
-d3JpdGUgbWV0aG9kcyB0aGF0IHVzZSBpbl9jb21wYXRfc3lzY2FsbCgpLiAgT25lIGV4YW1wbGUg
-dGhhdAo+Pj4gSSByZWNlbnRseSByYW4gaW50byBpcyBkcml2ZXJzL3Njc2kvc2cuYy4KPiAKPiBB
-aCwgc28gcmVhZGluZyAvZGV2L2lucHV0L2V2ZW50KiB3b3VsZCBzdWZmZXIgZnJvbSB0aGUgc2Ft
-ZSBpc3N1ZSwKPiBhbmQgdGhhdCBvbmUgd291bGQgaW4gZmFjdCBiZSBicm9rZW4gYnkgeW91ciBw
-YXRjaCBpbiB0aGUgaHlwb3RoZXRpY2FsCj4gY2FzZSB0aGF0IHNvbWVvbmUgdHJpZWQgdG8gdXNl
-IGlvX3VyaW5nIHRvIHJlYWQgL2Rldi9pbnB1dC9ldmVudCBvbiB4MzIuLi4KPiAKPiBGb3IgcmVm
-ZXJlbmNlLCBJIGNoZWNrZWQgdGhlIHNvY2tldCB0aW1lc3RhbXAgaGFuZGxpbmcgdGhhdCBoYXMg
-YQo+IG51bWJlciBvZiBjb3JuZXIgY2FzZXMgd2l0aCB0aW1lMzIvdGltZTY0IGZvcm1hdHMgaW4g
-Y29tcGF0IG1vZGUsCj4gYnV0IG5vbmUgb2YgdGhvc2UgYXBwZWFyIHRvIGJlIGFmZmVjdGVkIGJ5
-IHRoZSBwcm9ibGVtLgo+IAo+PiBBc2lkZSBmcm9tIHRoZSBwb3RlbnRpYWxseSBuYXN0eSB1c2Ug
-b2YgcGVyLXRhc2sgdmFyaWFibGVzLCBvbmUgdGhpbmcKPj4gSSBkb24ndCBsaWtlIGFib3V0IFBG
-X0ZPUkNFX0NPTVBBVCBpcyB0aGF0IGl0J3Mgb25lLXdheS4gIElmIHdlJ3JlCj4+IGdvaW5nIHRv
-IGhhdmUgYSBnZW5lcmljIG1lY2hhbmlzbSBmb3IgdGhpcywgc2hvdWxkbid0IHdlIGFsbG93IGEg
-ZnVsbAo+PiBvdmVycmlkZSBvZiB0aGUgc3lzY2FsbCBhcmNoIGluc3RlYWQgb2YganVzdCBhbGxv
-d2luZyBmb3JjaW5nIGNvbXBhdAo+PiBzbyB0aGF0IGEgY29tcGF0IHN5c2NhbGwgY2FuIGRvIGEg
-bm9uLWNvbXBhdCBvcGVyYXRpb24/Cj4gCj4gVGhlIG9ubHkgcmVhc29uIGl0J3MgbmVlZGVkIGhl
-cmUgaXMgdGhhdCB0aGUgY2FsbGVyIGlzIGluIGEga2VybmVsCj4gdGhyZWFkIHJhdGhlciB0aGFu
-IGEgc3lzdGVtIGNhbGwuIEFyZSB0aGVyZSBhbnkgcG9zc2libGUgc2NlbmFyaW9zCj4gd2hlcmUg
-b25lIHdvdWxkIGFjdHVhbGx5IG5lZWQgdGhlIG9wcG9zaXRlPwo+IAoKSSBjYW4gY2VydGFpbmx5
-IGltYWdpbmUgbmVlZGluZyB0byBmb3JjZSB4MzIgbW9kZSBmcm9tIGEga2VybmVsIHRocmVhZC4K
-CkFzIGZvciB0aGUgb3RoZXIgZGlyZWN0aW9uOiB3aGF0IGV4YWN0bHkgYXJlIHRoZSBkZXNpcmVk
-IGJpdG5lc3MvYXJjaCBzZW1hbnRpY3Mgb2YgaW9fdXJpbmc/ICBJcyB0aGUgb3BlcmF0aW9uIGJp
-dG5lc3MgY2hvc2VuIGJ5IHRoZSBpb191cmluZyBjcmVhdGlvbiBvciBieSB0aGUgaW9fdXJpbmdf
-ZW50ZXIoKSBiaXRuZXNzPw==
+Cj4gT24gU2VwIDE5LCAyMDIwLCBhdCAzOjA5IFBNLCBBbCBWaXJvIDx2aXJvQHplbml2LmxpbnV4
+Lm9yZy51az4gd3JvdGU6Cj4gCj4g77u/T24gRnJpLCBTZXAgMTgsIDIwMjAgYXQgMDU6MTY6MTVQ
+TSArMDIwMCwgQ2hyaXN0b3BoIEhlbGx3aWcgd3JvdGU6Cj4+PiBPbiBGcmksIFNlcCAxOCwgMjAy
+MCBhdCAwMjo1ODoyMlBNICswMTAwLCBBbCBWaXJvIHdyb3RlOgo+Pj4gU2FpZCB0aGF0LCB3aHkg
+bm90IHByb3ZpZGUgYSB2YXJpYW50IHRoYXQgd291bGQgdGFrZSBhbiBleHBsaWNpdAo+Pj4gImlz
+IGl0IGNvbXBhdCIgYXJndW1lbnQgYW5kIHVzZSBpdCB0aGVyZT8gIEFuZCBoYXZlIHRoZSBub3Jt
+YWwKPj4+IG9uZSBwYXNzIGluX2NvbXBhdF9zeXNjYWxsKCkgdG8gdGhhdC4uLgo+PiAKPj4gVGhh
+dCB3b3VsZCBoZWxwIHRvIG5vdCBpbnRyb2R1Y2UgYSByZWdyZXNzaW9uIHdpdGggdGhpcyBzZXJp
+ZXMgeWVzLgo+PiBCdXQgaXQgd291bGRuJ3QgZml4IGV4aXN0aW5nIGJ1Z3Mgd2hlbiBpb191cmlu
+ZyBpcyB1c2VkIHRvIGFjY2Vzcwo+PiByZWFkIG9yIHdyaXRlIG1ldGhvZHMgdGhhdCB1c2UgaW5f
+Y29tcGF0X3N5c2NhbGwoKS4gIE9uZSBleGFtcGxlIHRoYXQKPj4gSSByZWNlbnRseSByYW4gaW50
+byBpcyBkcml2ZXJzL3Njc2kvc2cuYy4KPiAKPiBTbyBzY3JldyBzdWNoIHJlYWQvd3JpdGUgbWV0
+aG9kcyAtIGRvbid0IHVzZSB0aGVtIHdpdGggaW9fdXJpbmcuCj4gVGhhdCwgQlRXLCBpcyBvbmUg
+b2YgdGhlIHJlYXNvbnMgSSdtIHNjZXB0aWNhbCBhYm91dCBidXJ5aW5nIHRoZQo+IGRlY2lzaW9u
+cyBkZWVwIGludG8gdGhlIGNhbGxjaGFpbiAtIHdlIGRvbid0IF93YW50XyBkaWZmZXJlbnQKPiBk
+YXRhIGxheW91dHMgb24gcmVhZC93cml0ZSBkZXBlbmRpbmcgdXBvbiB0aGUgMzJiaXQgdnMuIDY0
+Yml0Cj4gY2FsbGVyLCBsZXQgYWxvbmUgdGhlIHBvaW50ZXItY2hhc2luZyBnYXJiYWdlIHRoYXQg
+aXMgL2Rldi9zZy4KCldlbGwsIHdlIGNvdWxkIHJlbW92ZSBpbl9jb21wYXRfc3lzY2FsbCgpLCBl
+dGMgYW5kIGluc3RlYWQgaGF2ZSBhbiBpbXBsaWNpdCBwYXJhbWV0ZXIgaW4gREVGSU5FX1NZU0NB
+TEwuICBUaGVuIGV2ZXJ5dGhpbmcgd291bGQgaGF2ZSB0byBiZSBleHBsaWNpdC4gIFRoaXMgd291
+bGQgcHJvYmFibHkgYmUgYSB3aW4sIGFsdGhvdWdoIGl0IGNvdWxkIGJlIHF1aXRlIGEgYml0IG9m
+IHdvcmsu
