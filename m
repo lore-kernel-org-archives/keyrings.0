@@ -1,39 +1,46 @@
-From: Al Viro <viro@zeniv.linux.org.uk>
-Date: Sat, 19 Sep 2020 22:41:22 +0000
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 19 Sep 2020 22:53:40 +0000
 Subject: Re: [PATCH 1/9] kernel: add a PF_FORCE_COMPAT flag
-Message-Id: <20200919224122.GJ3421308@ZenIV.linux.org.uk>
+Message-Id: <36CF3DE7-7B4B-41FD-9818-FDF8A5B440FB@amacapital.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200919220920.GI3421308@ZenIV.linux.org.uk>
- <AA2CFC7E-E685-4596-84AD-0E314137B93F@amacapital.net>
-In-Reply-To: <AA2CFC7E-E685-4596-84AD-0E314137B93F@amacapital.net>
-To: Andy Lutomirski <luto@amacapital.net>
+References: <20200919224122.GJ3421308@ZenIV.linux.org.uk>
+In-Reply-To: <20200919224122.GJ3421308@ZenIV.linux.org.uk>
+To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-T24gU2F0LCBTZXAgMTksIDIwMjAgYXQgMDM6MjM6NTRQTSAtMDcwMCwgQW5keSBMdXRvbWlyc2tp
-IHdyb3RlOgo+IAo+ID4gT24gU2VwIDE5LCAyMDIwLCBhdCAzOjA5IFBNLCBBbCBWaXJvIDx2aXJv
-QHplbml2LmxpbnV4Lm9yZy51az4gd3JvdGU6Cj4gPiAKPiA+IO+7v09uIEZyaSwgU2VwIDE4LCAy
-MDIwIGF0IDA1OjE2OjE1UE0gKzAyMDAsIENocmlzdG9waCBIZWxsd2lnIHdyb3RlOgo+ID4+PiBP
-biBGcmksIFNlcCAxOCwgMjAyMCBhdCAwMjo1ODoyMlBNICswMTAwLCBBbCBWaXJvIHdyb3RlOgo+
-ID4+PiBTYWlkIHRoYXQsIHdoeSBub3QgcHJvdmlkZSBhIHZhcmlhbnQgdGhhdCB3b3VsZCB0YWtl
-IGFuIGV4cGxpY2l0Cj4gPj4+ICJpcyBpdCBjb21wYXQiIGFyZ3VtZW50IGFuZCB1c2UgaXQgdGhl
-cmU/ICBBbmQgaGF2ZSB0aGUgbm9ybWFsCj4gPj4+IG9uZSBwYXNzIGluX2NvbXBhdF9zeXNjYWxs
-KCkgdG8gdGhhdC4uLgo+ID4+IAo+ID4+IFRoYXQgd291bGQgaGVscCB0byBub3QgaW50cm9kdWNl
-IGEgcmVncmVzc2lvbiB3aXRoIHRoaXMgc2VyaWVzIHllcy4KPiA+PiBCdXQgaXQgd291bGRuJ3Qg
-Zml4IGV4aXN0aW5nIGJ1Z3Mgd2hlbiBpb191cmluZyBpcyB1c2VkIHRvIGFjY2Vzcwo+ID4+IHJl
-YWQgb3Igd3JpdGUgbWV0aG9kcyB0aGF0IHVzZSBpbl9jb21wYXRfc3lzY2FsbCgpLiAgT25lIGV4
-YW1wbGUgdGhhdAo+ID4+IEkgcmVjZW50bHkgcmFuIGludG8gaXMgZHJpdmVycy9zY3NpL3NnLmMu
-Cj4gPiAKPiA+IFNvIHNjcmV3IHN1Y2ggcmVhZC93cml0ZSBtZXRob2RzIC0gZG9uJ3QgdXNlIHRo
-ZW0gd2l0aCBpb191cmluZy4KPiA+IFRoYXQsIEJUVywgaXMgb25lIG9mIHRoZSByZWFzb25zIEkn
-bSBzY2VwdGljYWwgYWJvdXQgYnVyeWluZyB0aGUKPiA+IGRlY2lzaW9ucyBkZWVwIGludG8gdGhl
-IGNhbGxjaGFpbiAtIHdlIGRvbid0IF93YW50XyBkaWZmZXJlbnQKPiA+IGRhdGEgbGF5b3V0cyBv
-biByZWFkL3dyaXRlIGRlcGVuZGluZyB1cG9uIHRoZSAzMmJpdCB2cy4gNjRiaXQKPiA+IGNhbGxl
-ciwgbGV0IGFsb25lIHRoZSBwb2ludGVyLWNoYXNpbmcgZ2FyYmFnZSB0aGF0IGlzIC9kZXYvc2cu
-Cj4gCj4gV2VsbCwgd2UgY291bGQgcmVtb3ZlIGluX2NvbXBhdF9zeXNjYWxsKCksIGV0YyBhbmQg
-aW5zdGVhZCBoYXZlIGFuIGltcGxpY2l0IHBhcmFtZXRlciBpbiBERUZJTkVfU1lTQ0FMTC4gIFRo
-ZW4gZXZlcnl0aGluZyB3b3VsZCBoYXZlIHRvIGJlIGV4cGxpY2l0LiAgVGhpcyB3b3VsZCBwcm9i
-YWJseSBiZSBhIHdpbiwgYWx0aG91Z2ggaXQgY291bGQgYmUgcXVpdGUgYSBiaXQgb2Ygd29yay4K
-Ckl0IHdvdWxkIG5vdCBiZSBhIHdpbiAtIG1vc3Qgb2YgdGhlIHN5c2NhbGxzIGRvbid0IGdpdmUg
-YSBkYW1uCmFib3V0IDMyYml0IHZzLiA2NGJpdC4uLg==
+
+
+> On Sep 19, 2020, at 3:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> 
+> ﻿On Sat, Sep 19, 2020 at 03:23:54PM -0700, Andy Lutomirski wrote:
+>> 
+>>>> On Sep 19, 2020, at 3:09 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>> 
+>>> ﻿On Fri, Sep 18, 2020 at 05:16:15PM +0200, Christoph Hellwig wrote:
+>>>>> On Fri, Sep 18, 2020 at 02:58:22PM +0100, Al Viro wrote:
+>>>>> Said that, why not provide a variant that would take an explicit
+>>>>> "is it compat" argument and use it there?  And have the normal
+>>>>> one pass in_compat_syscall() to that...
+>>>> 
+>>>> That would help to not introduce a regression with this series yes.
+>>>> But it wouldn't fix existing bugs when io_uring is used to access
+>>>> read or write methods that use in_compat_syscall().  One example that
+>>>> I recently ran into is drivers/scsi/sg.c.
+>>> 
+>>> So screw such read/write methods - don't use them with io_uring.
+>>> That, BTW, is one of the reasons I'm sceptical about burying the
+>>> decisions deep into the callchain - we don't _want_ different
+>>> data layouts on read/write depending upon the 32bit vs. 64bit
+>>> caller, let alone the pointer-chasing garbage that is /dev/sg.
+>> 
+>> Well, we could remove in_compat_syscall(), etc and instead have an implicit parameter in DEFINE_SYSCALL.  Then everything would have to be explicit.  This would probably be a win, although it could be quite a bit of work.
+> 
+> It would not be a win - most of the syscalls don't give a damn
+> about 32bit vs. 64bit...
+
+Any reasonable implementation would optimize it out for syscalls that don’t care.  Or it could be explicit:
+
+DEFINE_MULTIARCH_SYSCALL(...)
