@@ -1,56 +1,70 @@
-From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Date: Sun, 20 Sep 2020 16:21:03 +0000
-Subject: [PATCH v7 10/10] integrity: Asymmetric digsig supports SM2-with-SM3 algorithm
-Message-Id: <20200920162103.83197-11-tianjia.zhang@linux.alibaba.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Sun, 20 Sep 2020 16:33:48 +0000
+Subject: [PATCH v12 2/5] oid_registry: Add TCG defined OIDS for TPM keys
+Message-Id: <20200920163351.11293-3-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200920162103.83197-1-tianjia.zhang@linux.alibaba.com>
-In-Reply-To: <20200920162103.83197-1-tianjia.zhang@linux.alibaba.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers@google.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Maxime Coquelin <mcoquelin.stm32@gmail.com>, Alexandre Torgue <alexandre.torgue@st.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Stephan Mueller <smueller@chronox.de>, Marcelo Henrique Cerri <marcelo.cerri@canonical.com>, "Steven Rostedt (VMware)" <rostedt@goodmis.org>, Masahiro Yamada <masahiroy@kernel.org>, Brendan Higgins <brendanhiggins@google.com>, Andrew Morton <akpm@linux-foundation.org>, Johannes Weiner <hannes@cmpxchg.org>, Waiman Long <longman@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, Colin Ian King <colin.king@canonical.com>, Tushar Sugandhi <tusharsu@linux.microsoft.com>, Vitaly Chikunov <vt@altlinux.org>, Gilad Ben-Yossef <gilad@benyossef.com>, Pascal van Leeuwen <pvanleeuwen@rambus.com>, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>, Tianjia Zhang <tianjia.zhang@linux.alibaba.com>, Jia Zhang <zhang.jia@linux.alibaba.com>
+References: <20200920163351.11293-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200920163351.11293-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-Asymmetric digsig supports SM2-with-SM3 algorithm combination,
-so that IMA can also verify SM2's signature data.
+The TCG has defined an OID prefix "2.23.133.10.1" for the various TPM
+key uses.  We've defined three of the available numbers:
 
-Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Tested-by: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>
-Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
-Reviewed-by: Vitaly Chikunov <vt@altlinux.org>
+2.23.133.10.1.3 TPM Loadable key.  This is an asymmetric key (Usually
+		RSA2048 or Elliptic Curve) which can be imported by a
+		TPM2_Load() operation.
+
+2.23.133.10.1.4 TPM Importable Key.  This is an asymmetric key (Usually
+		RSA2048 or Elliptic Curve) which can be imported by a
+		TPM2_Import() operation.
+
+Both loadable and importable keys are specific to a given TPM, the
+difference is that a loadable key is wrapped with the symmetric
+secret, so must have been created by the TPM itself.  An importable
+key is wrapped with a DH shared secret, and may be created without
+access to the TPM provided you know the public part of the parent key.
+
+2.23.133.10.1.5 TPM Sealed Data.  This is a set of data (up to 128
+		bytes) which is sealed by the TPM.  It usually
+		represents a symmetric key and must be unsealed before
+		use.
+
+The ASN.1 binary key form starts of with this OID as the first element
+of a sequence, giving the binary form a unique recognizable identity
+marker regardless of encoding.
+
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Reviewed-by: David Howells <dhowells@redhat.com>
+
 ---
- security/integrity/digsig_asymmetric.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/security/integrity/digsig_asymmetric.c b/security/integrity/digsig_asymmetric.c
-index cfa4127d0518..b86a4a8f61ab 100644
---- a/security/integrity/digsig_asymmetric.c
-+++ b/security/integrity/digsig_asymmetric.c
-@@ -99,14 +99,22 @@ int asymmetric_verify(struct key *keyring, const char *sig,
- 	memset(&pks, 0, sizeof(pks));
+v3: correct OID_TPMImportableKey name
+v7: add ack
+v9: add review
+---
+ include/linux/oid_registry.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index 657d6bf2c064..f6e2276e5f30 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -107,6 +107,11 @@ enum OID {
+ 	OID_gostTC26Sign512B,		/* 1.2.643.7.1.2.1.2.2 */
+ 	OID_gostTC26Sign512C,		/* 1.2.643.7.1.2.1.2.3 */
  
- 	pks.hash_algo = hash_algo_name[hdr->hash_algo];
--	if (hdr->hash_algo = HASH_ALGO_STREEBOG_256 ||
--	    hdr->hash_algo = HASH_ALGO_STREEBOG_512) {
-+	switch (hdr->hash_algo) {
-+	case HASH_ALGO_STREEBOG_256:
-+	case HASH_ALGO_STREEBOG_512:
- 		/* EC-RDSA and Streebog should go together. */
- 		pks.pkey_algo = "ecrdsa";
- 		pks.encoding = "raw";
--	} else {
-+		break;
-+	case HASH_ALGO_SM3_256:
-+		/* SM2 and SM3 should go together. */
-+		pks.pkey_algo = "sm2";
-+		pks.encoding = "raw";
-+		break;
-+	default:
- 		pks.pkey_algo = "rsa";
- 		pks.encoding = "pkcs1";
-+		break;
- 	}
- 	pks.digest = (u8 *)data;
- 	pks.digest_size = datalen;
++	/* TCG defined OIDS for TPM based keys */
++	OID_TPMLoadableKey,		/* 2.23.133.10.1.3 */
++	OID_TPMImportableKey,		/* 2.23.133.10.1.4 */
++	OID_TPMSealedData,		/* 2.23.133.10.1.5 */
++
+ 	OID__NR
+ };
+ 
 -- 
-2.19.1.3.ge56e4f7
+2.26.2
