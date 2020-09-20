@@ -1,406 +1,570 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Thu, 17 Sep 2020 13:58:36 +0000
-Subject: [PATCH v6 2/4] KEYS: trusted: Introduce TEE based Trusted Keys
-Message-Id: <1600350398-4813-3-git-send-email-sumit.garg@linaro.org>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Sun, 20 Sep 2020 16:33:47 +0000
+Subject: [PATCH v12 1/5] lib: add ASN.1 encoder
+Message-Id: <20200920163351.11293-2-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1600350398-4813-1-git-send-email-sumit.garg@linaro.org>
-In-Reply-To: <1600350398-4813-1-git-send-email-sumit.garg@linaro.org>
-To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jejb@linux.ibm.com
-Cc: linux-security-module@vger.kernel.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, lhinds@redhat.com, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
+References: <20200920163351.11293-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200920163351.11293-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-Add support for TEE based trusted keys where TEE provides the functionality
-to seal and unseal trusted keys using hardware unique key.
+We have a need in the TPM2 trusted keys to return the ASN.1 form of
+the TPM key blob so it can be operated on by tools outside of the
+kernel.  The specific tools are the openssl_tpm2_engine, openconnect
+and the Intel tpm2-tss-engine.  To do that, we have to be able to read
+and write the same binary key format the tools use.  The current ASN.1
+decoder does fine for reading, but we need pieces of an ASN.1 encoder
+to write the key blob in binary compatible form.
 
-Refer to Documentation/tee.txt for detailed information about TEE.
+For backwards compatibility, the trusted key reader code will still
+accept the two TPM2B quantities that it uses today, but the writer
+will only output the ASN.1 form.
 
-Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
+The current implementation only encodes the ASN.1 bits we actually need.
+
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+
 ---
- include/keys/trusted_tee.h                |  55 ++++++
- security/keys/trusted-keys/Makefile       |   1 +
- security/keys/trusted-keys/trusted_core.c |   4 +
- security/keys/trusted-keys/trusted_tee.c  | 278 ++++++++++++++++++++++++++++++
- 4 files changed, 338 insertions(+)
- create mode 100644 include/keys/trusted_tee.h
- create mode 100644 security/keys/trusted-keys/trusted_tee.c
 
-diff --git a/include/keys/trusted_tee.h b/include/keys/trusted_tee.h
+v2: updated API to use indefinite length, and made symbol exports gpl
+v3: add data length error handling
+v4: use end_data instead of data_len pointer
+v5: mention tools and space out code
+v7: reverse christmas tree variable definitions and better spacing
+v9: update comments, remove indefinite length, make encoder config dependent
+---
+ include/linux/asn1_encoder.h |  32 +++
+ lib/Kconfig                  |   3 +
+ lib/Makefile                 |   1 +
+ lib/asn1_encoder.c           | 454 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 490 insertions(+)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
+
+diff --git a/include/linux/asn1_encoder.h b/include/linux/asn1_encoder.h
 new file mode 100644
-index 0000000..2e2bb15
+index 000000000000..08cd0c2ad34f
 --- /dev/null
-+++ b/include/keys/trusted_tee.h
-@@ -0,0 +1,55 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
++++ b/include/linux/asn1_encoder.h
+@@ -0,0 +1,32 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++
++#ifndef _LINUX_ASN1_ENCODER_H
++#define _LINUX_ASN1_ENCODER_H
++
++#include <linux/types.h>
++#include <linux/asn1.h>
++#include <linux/asn1_ber_bytecode.h>
++#include <linux/bug.h>
++
++#define asn1_oid_len(oid) (sizeof(oid)/sizeof(u32))
++unsigned char *
++asn1_encode_integer(unsigned char *data, const unsigned char *end_data,
++		    s64 integer);
++unsigned char *
++asn1_encode_oid(unsigned char *data, const unsigned char *end_data,
++		u32 oid[], int oid_len);
++unsigned char *
++asn1_encode_tag(unsigned char *data, const unsigned char *end_data,
++		u32 tag, const unsigned char *string, int len);
++unsigned char *
++asn1_encode_octet_string(unsigned char *data,
++			 const unsigned char *end_data,
++			 const unsigned char *string, u32 len);
++unsigned char *
++asn1_encode_sequence(unsigned char *data, const unsigned char *end_data,
++		     const unsigned char *seq, int len);
++unsigned char *
++asn1_encode_boolean(unsigned char *data, const unsigned char *end_data,
++		    bool val);
++
++#endif
+diff --git a/lib/Kconfig b/lib/Kconfig
+index b4b98a03ff98..6ac79fe3fe52 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -684,3 +684,6 @@ config GENERIC_LIB_UCMPDI2
+ config PLDMFW
+ 	bool
+ 	default n
++
++config ASN1_ENCODER
++       tristate
+diff --git a/lib/Makefile b/lib/Makefile
+index a4a4c6864f51..3df3998a83d6 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -278,6 +278,7 @@ obj-$(CONFIG_INTERVAL_TREE_TEST) += interval_tree_test.o
+ obj-$(CONFIG_PERCPU_TEST) += percpu_test.o
+ 
+ obj-$(CONFIG_ASN1) += asn1_decoder.o
++obj-$(CONFIG_ASN1_ENCODER) += asn1_encoder.o
+ 
+ obj-$(CONFIG_FONT_SUPPORT) += fonts/
+ 
+diff --git a/lib/asn1_encoder.c b/lib/asn1_encoder.c
+new file mode 100644
+index 000000000000..41e71aae3ef6
+--- /dev/null
++++ b/lib/asn1_encoder.c
+@@ -0,0 +1,454 @@
++// SPDX-License-Identifier: GPL-2.0-only
 +/*
-+ * Copyright (C) 2019-2020 Linaro Ltd.
++ * Simple encoder primitives for ASN.1 BER/DER/CER
 + *
-+ * Author:
-+ * Sumit Garg <sumit.garg@linaro.org>
++ * Copyright (C) 2019 James.Bottomley@HansenPartnership.com
 + */
 +
-+#ifndef __TEE_TRUSTED_KEY_H
-+#define __TEE_TRUSTED_KEY_H
-+
-+#include <linux/tee_drv.h>
-+
-+#define DRIVER_NAME "tee-trusted-key"
-+
-+/*
-+ * Get random data for symmetric key
-+ *
-+ * [out]     memref[0]        Random data
-+ */
-+#define TA_CMD_GET_RANDOM	0x0
-+
-+/*
-+ * Seal trusted key using hardware unique key
-+ *
-+ * [in]      memref[0]        Plain key
-+ * [out]     memref[1]        Sealed key datablob
-+ */
-+#define TA_CMD_SEAL		0x1
-+
-+/*
-+ * Unseal trusted key using hardware unique key
-+ *
-+ * [in]      memref[0]        Sealed key datablob
-+ * [out]     memref[1]        Plain key
-+ */
-+#define TA_CMD_UNSEAL		0x2
++#include <linux/asn1_encoder.h>
++#include <linux/bug.h>
++#include <linux/string.h>
++#include <linux/module.h>
 +
 +/**
-+ * struct trusted_key_private - TEE Trusted key private data
-+ * @dev:		TEE based Trusted key device.
-+ * @ctx:		TEE context handler.
-+ * @session_id:		Trusted key TA session identifier.
-+ * @shm_pool:		Memory pool shared with TEE device.
-+ */
-+struct trusted_key_private {
-+	struct device *dev;
-+	struct tee_context *ctx;
-+	u32 session_id;
-+	struct tee_shm *shm_pool;
-+};
-+
-+extern struct trusted_key_ops tee_trusted_key_ops;
-+
-+#endif
-diff --git a/security/keys/trusted-keys/Makefile b/security/keys/trusted-keys/Makefile
-index 49e3bcf..012dd78 100644
---- a/security/keys/trusted-keys/Makefile
-+++ b/security/keys/trusted-keys/Makefile
-@@ -7,3 +7,4 @@ obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
- trusted-y += trusted_core.o
- trusted-y += trusted_tpm1.o
- trusted-y += trusted_tpm2.o
-+trusted-y += trusted_tee.o
-diff --git a/security/keys/trusted-keys/trusted_core.c b/security/keys/trusted-keys/trusted_core.c
-index 4ae3fb4..83a6a15 100644
---- a/security/keys/trusted-keys/trusted_core.c
-+++ b/security/keys/trusted-keys/trusted_core.c
-@@ -8,6 +8,7 @@
- 
- #include <keys/user-type.h>
- #include <keys/trusted-type.h>
-+#include <keys/trusted_tee.h>
- #include <keys/trusted_tpm.h>
- #include <linux/capability.h>
- #include <linux/err.h>
-@@ -24,6 +25,9 @@ static struct trusted_key_ops *available_trusted_key_ops[] = {
- #if defined(CONFIG_TCG_TPM)
- 	&tpm_trusted_key_ops,
- #endif
-+#if defined(CONFIG_TEE)
-+	&tee_trusted_key_ops,
-+#endif
- };
- static struct trusted_key_ops *trusted_key_ops;
- 
-diff --git a/security/keys/trusted-keys/trusted_tee.c b/security/keys/trusted-keys/trusted_tee.c
-new file mode 100644
-index 0000000..b414d52
---- /dev/null
-+++ b/security/keys/trusted-keys/trusted_tee.c
-@@ -0,0 +1,278 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/*
-+ * Copyright (C) 2019-2020 Linaro Ltd.
++ * asn1_encode_integer() - encode positive integer to ASN.1
++ * @data:	pointer to the pointer to the data
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @integer:	integer to be encoded
 + *
-+ * Author:
-+ * Sumit Garg <sumit.garg@linaro.org>
++ * This is a simplified encoder: it only currently does
++ * positive integers, but it should be simple enough to add the
++ * negative case if a use comes along.
 + */
-+
-+#include <linux/err.h>
-+#include <linux/key-type.h>
-+#include <linux/slab.h>
-+#include <linux/string.h>
-+#include <linux/uuid.h>
-+
-+#include <keys/trusted-type.h>
-+#include <keys/trusted_tee.h>
-+
-+static struct trusted_key_private pvt_data;
-+
-+/*
-+ * Have the TEE seal(encrypt) the symmetric key
-+ */
-+static int tee_trusted_seal(struct trusted_key_payload *p, char *datablob)
++unsigned char *
++asn1_encode_integer(unsigned char *data, const unsigned char *end_data,
++		    s64 integer)
 +{
-+	int ret = 0;
-+	struct tee_ioctl_invoke_arg inv_arg;
-+	struct tee_param param[4];
-+	struct tee_shm *reg_shm_in = NULL, *reg_shm_out = NULL;
++	int data_len = end_data - data;
++	unsigned char *d = &data[2];
++	bool found = false;
++	int i;
 +
-+	memset(&inv_arg, 0, sizeof(inv_arg));
-+	memset(&param, 0, sizeof(param));
++	if (WARN(integer < 0,
++		 "BUG: integer encode only supports positive integers"))
++		return ERR_PTR(-EINVAL);
 +
-+	reg_shm_in = tee_shm_register(pvt_data.ctx, (unsigned long)p->key,
-+				      p->key_len, TEE_SHM_DMA_BUF |
-+				      TEE_SHM_KERNEL_MAPPED);
-+	if (IS_ERR(reg_shm_in)) {
-+		dev_err(pvt_data.dev, "key shm register failed\n");
-+		return PTR_ERR(reg_shm_in);
-+	}
++	if (IS_ERR(data))
++		return data;
 +
-+	reg_shm_out = tee_shm_register(pvt_data.ctx, (unsigned long)p->blob,
-+				       sizeof(p->blob), TEE_SHM_DMA_BUF |
-+				       TEE_SHM_KERNEL_MAPPED);
-+	if (IS_ERR(reg_shm_out)) {
-+		dev_err(pvt_data.dev, "blob shm register failed\n");
-+		ret = PTR_ERR(reg_shm_out);
++	/* need at least 3 bytes for tag, length and integer encoding */
++	if (data_len < 3)
++		return ERR_PTR(-EINVAL);
++
++	/* remaining length where at d (the start of the integer encoding) */
++	data_len -= 2;
++
++	data[0] = _tag(UNIV, PRIM, INT);
++	if (integer = 0) {
++		*d++ = 0;
 +		goto out;
 +	}
 +
-+	inv_arg.func = TA_CMD_SEAL;
-+	inv_arg.session = pvt_data.session_id;
-+	inv_arg.num_params = 4;
++	for (i = sizeof(integer); i > 0 ; i--) {
++		int byte = integer >> (8 * (i - 1));
 +
-+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT;
-+	param[0].u.memref.shm = reg_shm_in;
-+	param[0].u.memref.size = p->key_len;
-+	param[0].u.memref.shm_offs = 0;
-+	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT;
-+	param[1].u.memref.shm = reg_shm_out;
-+	param[1].u.memref.size = sizeof(p->blob);
-+	param[1].u.memref.shm_offs = 0;
++		if (!found && byte = 0)
++			continue;
 +
-+	ret = tee_client_invoke_func(pvt_data.ctx, &inv_arg, param);
-+	if ((ret < 0) || (inv_arg.ret != 0)) {
-+		dev_err(pvt_data.dev, "TA_CMD_SEAL invoke err: %x\n",
-+			inv_arg.ret);
-+		ret = -EFAULT;
-+	} else {
-+		p->blob_len = param[1].u.memref.size;
++		/*
++		 * for a positive number the first byte must have bit
++		 * 7 clear in two's complement (otherwise it's a
++		 * negative number) so prepend a leading zero if
++		 * that's not the case
++		 */
++		if (!found && (byte & 0x80)) {
++			/*
++			 * no check needed here, we already know we
++			 * have len >= 1
++			 */
++			*d++ = 0;
++			data_len--;
++		}
++
++		found = true;
++		if (data_len = 0)
++			return ERR_PTR(-EINVAL);
++
++		*d++ = byte;
++		data_len--;
 +	}
 +
-+out:
-+	if (reg_shm_out)
-+		tee_shm_free(reg_shm_out);
-+	if (reg_shm_in)
-+		tee_shm_free(reg_shm_in);
++ out:
++	data[1] = d - data - 2;
 +
-+	return ret;
++	return d;
 +}
++EXPORT_SYMBOL_GPL(asn1_encode_integer);
 +
-+/*
-+ * Have the TEE unseal(decrypt) the symmetric key
-+ */
-+static int tee_trusted_unseal(struct trusted_key_payload *p, char *datablob)
++/* calculate the base 128 digit values setting the top bit of the first octet */
++static int asn1_encode_oid_digit(unsigned char **_data, int *data_len, u32 oid)
 +{
++	unsigned char *data = *_data;
++	int start = 7 + 7 + 7 + 7;
 +	int ret = 0;
-+	struct tee_ioctl_invoke_arg inv_arg;
-+	struct tee_param param[4];
-+	struct tee_shm *reg_shm_in = NULL, *reg_shm_out = NULL;
 +
-+	memset(&inv_arg, 0, sizeof(inv_arg));
-+	memset(&param, 0, sizeof(param));
++	if (*data_len < 1)
++		return -EINVAL;
 +
-+	reg_shm_in = tee_shm_register(pvt_data.ctx, (unsigned long)p->blob,
-+				      p->blob_len, TEE_SHM_DMA_BUF |
-+				      TEE_SHM_KERNEL_MAPPED);
-+	if (IS_ERR(reg_shm_in)) {
-+		dev_err(pvt_data.dev, "blob shm register failed\n");
-+		return PTR_ERR(reg_shm_in);
-+	}
-+
-+	reg_shm_out = tee_shm_register(pvt_data.ctx, (unsigned long)p->key,
-+				       sizeof(p->key), TEE_SHM_DMA_BUF |
-+				       TEE_SHM_KERNEL_MAPPED);
-+	if (IS_ERR(reg_shm_out)) {
-+		dev_err(pvt_data.dev, "key shm register failed\n");
-+		ret = PTR_ERR(reg_shm_out);
++	/* quick case */
++	if (oid = 0) {
++		*data++ = 0x80;
++		(*data_len)--;
 +		goto out;
 +	}
 +
-+	inv_arg.func = TA_CMD_UNSEAL;
-+	inv_arg.session = pvt_data.session_id;
-+	inv_arg.num_params = 4;
++	while (oid >> start = 0)
++		start -= 7;
 +
-+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT;
-+	param[0].u.memref.shm = reg_shm_in;
-+	param[0].u.memref.size = p->blob_len;
-+	param[0].u.memref.shm_offs = 0;
-+	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT;
-+	param[1].u.memref.shm = reg_shm_out;
-+	param[1].u.memref.size = sizeof(p->key);
-+	param[1].u.memref.shm_offs = 0;
++	while (start > 0 && *data_len > 0) {
++		u8 byte;
 +
-+	ret = tee_client_invoke_func(pvt_data.ctx, &inv_arg, param);
-+	if ((ret < 0) || (inv_arg.ret != 0)) {
-+		dev_err(pvt_data.dev, "TA_CMD_UNSEAL invoke err: %x\n",
-+			inv_arg.ret);
-+		ret = -EFAULT;
-+	} else {
-+		p->key_len = param[1].u.memref.size;
++		byte = oid >> start;
++		oid = oid - (byte << start);
++		start -= 7;
++		byte |= 0x80;
++		*data++ = byte;
++		(*data_len)--;
 +	}
 +
-+out:
-+	if (reg_shm_out)
-+		tee_shm_free(reg_shm_out);
-+	if (reg_shm_in)
-+		tee_shm_free(reg_shm_in);
++	if (*data_len > 0) {
++		*data++ = oid;
++		(*data_len)--;
++	} else {
++		ret = -EINVAL;
++	}
 +
++ out:
++	*_data = data;
 +	return ret;
 +}
 +
-+/*
-+ * Have the TEE generate random symmetric key
++/**
++ * asn1_encode_oid() - encode an oid to ASN.1
++ * @data:	position to begin encoding at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @oid:	array of oids
++ * @oid_len:	length of oid array
++ *
++ * this encodes an OID up to ASN.1 when presented as an array of OID values
 + */
-+static int tee_trusted_get_random(unsigned char *key, size_t key_len)
++unsigned char *
++asn1_encode_oid(unsigned char *data, const unsigned char *end_data,
++		u32 oid[], int oid_len)
 +{
-+	int ret = 0;
-+	struct tee_ioctl_invoke_arg inv_arg;
-+	struct tee_param param[4];
-+	struct tee_shm *reg_shm = NULL;
++	int data_len = end_data - data;
++	unsigned char *d = data + 2;
++	int i, ret;
 +
-+	memset(&inv_arg, 0, sizeof(inv_arg));
-+	memset(&param, 0, sizeof(param));
++	if (WARN(oid_len < 2, "OID must have at least two elements"))
++		return ERR_PTR(-EINVAL);
 +
-+	reg_shm = tee_shm_register(pvt_data.ctx, (unsigned long)key, key_len,
-+				   TEE_SHM_DMA_BUF | TEE_SHM_KERNEL_MAPPED);
-+	if (IS_ERR(reg_shm)) {
-+		dev_err(pvt_data.dev, "key shm register failed\n");
-+		return PTR_ERR(reg_shm);
++	if (WARN(oid_len > 32, "OID is too large"))
++		return ERR_PTR(-EINVAL);
++
++	if (IS_ERR(data))
++		return data;
++
++
++	/* need at least 3 bytes for tag, length and OID encoding */
++	if (data_len < 3)
++		return ERR_PTR(-EINVAL);
++
++	data[0] = _tag(UNIV, PRIM, OID);
++	*d++ = oid[0] * 40 + oid[1];
++
++	data_len -= 3;
++
++	ret = 0;
++
++	for (i = 2; i < oid_len; i++) {
++		ret = asn1_encode_oid_digit(&d, &data_len, oid[i]);
++		if (ret < 0)
++			return ERR_PTR(ret);
 +	}
 +
-+	inv_arg.func = TA_CMD_GET_RANDOM;
-+	inv_arg.session = pvt_data.session_id;
-+	inv_arg.num_params = 4;
++	data[1] = d - data - 2;
 +
-+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT;
-+	param[0].u.memref.shm = reg_shm;
-+	param[0].u.memref.size = key_len;
-+	param[0].u.memref.shm_offs = 0;
-+
-+	ret = tee_client_invoke_func(pvt_data.ctx, &inv_arg, param);
-+	if ((ret < 0) || (inv_arg.ret != 0)) {
-+		dev_err(pvt_data.dev, "TA_CMD_GET_RANDOM invoke err: %x\n",
-+			inv_arg.ret);
-+		ret = -EFAULT;
-+	} else {
-+		ret = param[0].u.memref.size;
-+	}
-+
-+	tee_shm_free(reg_shm);
-+
-+	return ret;
++	return d;
 +}
++EXPORT_SYMBOL_GPL(asn1_encode_oid);
 +
-+static int optee_ctx_match(struct tee_ioctl_version_data *ver, const void *data)
++/**
++ * asn1_encode_length() - encode a length to follow an ASN.1 tag
++ * @data: pointer to encode at
++ * @data_len: pointer to remaning length (adjusted by routine)
++ * @len: length to encode
++ *
++ * This routine can encode lengths up to 65535 using the ASN.1 rules.
++ * It will accept a negative length and place a zero length tag
++ * instead (to keep the ASN.1 valid).  This convention allows other
++ * encoder primitives to accept negative lengths as singalling the
++ * sequence will be re-encoded when the length is known.
++ */
++static int asn1_encode_length(unsigned char **data, int *data_len, int len)
 +{
-+	if (ver->impl_id = TEE_IMPL_ID_OPTEE)
-+		return 1;
-+	else
++	if (*data_len < 1)
++		return -EINVAL;
++
++	if (len < 0) {
++		*((*data)++) = 0;
++		(*data_len)--;
 +		return 0;
-+}
-+
-+static int trusted_key_probe(struct device *dev)
-+{
-+	struct tee_client_device *rng_device = to_tee_client_device(dev);
-+	int ret = 0, err = -ENODEV;
-+	struct tee_ioctl_open_session_arg sess_arg;
-+
-+	memset(&sess_arg, 0, sizeof(sess_arg));
-+
-+	pvt_data.ctx = tee_client_open_context(NULL, optee_ctx_match, NULL,
-+					       NULL);
-+	if (IS_ERR(pvt_data.ctx))
-+		return -ENODEV;
-+
-+	memcpy(sess_arg.uuid, rng_device->id.uuid.b, TEE_IOCTL_UUID_LEN);
-+	sess_arg.clnt_login = TEE_IOCTL_LOGIN_REE_KERNEL;
-+	sess_arg.num_params = 0;
-+
-+	ret = tee_client_open_session(pvt_data.ctx, &sess_arg, NULL);
-+	if ((ret < 0) || (sess_arg.ret != 0)) {
-+		dev_err(dev, "tee_client_open_session failed, err: %x\n",
-+			sess_arg.ret);
-+		err = -EINVAL;
-+		goto out_ctx;
 +	}
-+	pvt_data.session_id = sess_arg.session;
 +
-+	ret = register_key_type(&key_type_trusted);
++	if (len <= 0x7f) {
++		*((*data)++) = len;
++		(*data_len)--;
++		return 0;
++	}
++
++	if (*data_len < 2)
++		return -EINVAL;
++
++	if (len <= 0xff) {
++		*((*data)++) = 0x81;
++		*((*data)++) = len & 0xff;
++		*data_len -= 2;
++		return 0;
++	}
++
++	if (*data_len < 3)
++		return -EINVAL;
++
++	if (len <= 0xffff) {
++		*((*data)++) = 0x82;
++		*((*data)++) = (len >> 8) & 0xff;
++		*((*data)++) = len & 0xff;
++		*data_len -= 3;
++		return 0;
++	}
++
++	if (WARN(len > 0xffffff, "ASN.1 length can't be > 0xffffff"))
++		return -EINVAL;
++
++	if (*data_len < 4)
++		return -EINVAL;
++	*((*data)++) = 0x83;
++	*((*data)++) = (len >> 16) & 0xff;
++	*((*data)++) = (len >> 8) & 0xff;
++	*((*data)++) = len & 0xff;
++	*data_len -= 4;
++
++	return 0;
++}
++
++/**
++ * asn1_encode_tag() - add a tag for optional or explicit value
++ * @data:	pointer to place tag at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @tag:	tag to be placed
++ * @string:	the data to be tagged
++ * @len:	the length of the data to be tagged
++ *
++ * Note this currently only handles short form tags < 31.
++ *
++ * Standard usage is to pass in a @tag, @string and @length and the
++ * @string will be ASN.1 encoded with @tag and placed into @data.  If
++ * the encoding would put data past @end_data then an error is
++ * returned, otherwise a pointer to a position one beyond the encoding
++ * is returned.
++ *
++ * To encode in place pass a NULL @string and -1 for @len and the
++ * maximum allowable beginning and end of the data; all this will do
++ * is add the current maximum length and update the data pointer to
++ * the place where the tag contents should be placed is returned.  The
++ * data should be copied in by the calling routine which should then
++ * repeat the prior statement but now with the known length.  In order
++ * to avoid having to keep both before and after pointers, the repeat
++ * expects to be called with @data pointing to where the first encode
++ * returned it and still NULL for @string but the real length in @len.
++ */
++unsigned char *
++asn1_encode_tag(unsigned char *data, const unsigned char *end_data,
++		u32 tag, const unsigned char *string, int len)
++{
++	int data_len = end_data - data;
++	int ret;
++
++	if (WARN(tag > 30, "ASN.1 tag can't be > 30"))
++		return ERR_PTR(-EINVAL);
++
++	if (!string && WARN(len > 127,
++			    "BUG: recode tag is too big (>127)"))
++		return ERR_PTR(-EINVAL);
++
++	if (IS_ERR(data))
++		return data;
++
++	if (!string && len > 0) {
++		/*
++		 * we're recoding, so move back to the start of the
++		 * tag and install a dummy length because the real
++		 * data_len should be NULL
++		 */
++		data -= 2;
++		data_len = 2;
++	}
++
++	if (data_len < 2)
++		return ERR_PTR(-EINVAL);
++
++	*(data++) = _tagn(CONT, CONS, tag);
++	data_len--;
++	ret = asn1_encode_length(&data, &data_len, len);
 +	if (ret < 0)
-+		goto out_sess;
++		return ERR_PTR(ret);
 +
-+	pvt_data.dev = dev;
++	if (!string)
++		return data;
 +
-+	return 0;
++	if (data_len < len)
++		return ERR_PTR(-EINVAL);
 +
-+out_sess:
-+	tee_client_close_session(pvt_data.ctx, pvt_data.session_id);
-+out_ctx:
-+	tee_client_close_context(pvt_data.ctx);
++	memcpy(data, string, len);
++	data += len;
 +
-+	return err;
++	return data;
 +}
++EXPORT_SYMBOL_GPL(asn1_encode_tag);
 +
-+static int trusted_key_remove(struct device *dev)
++/**
++ * asn1_encode_octet_string() - encode an ASN.1 OCTET STRING
++ * @data:	pointer to encode at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @string:	string to be encoded
++ * @len:	length of string
++ *
++ * Note ASN.1 octet strings may contain zeros, so the length is obligatory.
++ */
++unsigned char *
++asn1_encode_octet_string(unsigned char *data,
++			 const unsigned char *end_data,
++			 const unsigned char *string, u32 len)
 +{
-+	unregister_key_type(&key_type_trusted);
-+	tee_client_close_session(pvt_data.ctx, pvt_data.session_id);
-+	tee_client_close_context(pvt_data.ctx);
++	int data_len = end_data - data;
++	int ret;
 +
-+	return 0;
++	if (IS_ERR(data))
++		return data;
++
++	/* need minimum of 2 bytes for tag and length of zero length string */
++	if (data_len < 2)
++		return ERR_PTR(-EINVAL);
++
++	*(data++) = _tag(UNIV, PRIM, OTS);
++	data_len--;
++
++	ret = asn1_encode_length(&data, &data_len, len);
++	if (ret)
++		return ERR_PTR(ret);
++
++	if (data_len < len)
++		return ERR_PTR(-EINVAL);
++
++	memcpy(data, string, len);
++	data += len;
++
++	return data;
 +}
++EXPORT_SYMBOL_GPL(asn1_encode_octet_string);
 +
-+static const struct tee_client_device_id trusted_key_id_table[] = {
-+	{UUID_INIT(0xf04a0fe7, 0x1f5d, 0x4b9b,
-+		   0xab, 0xf7, 0x61, 0x9b, 0x85, 0xb4, 0xce, 0x8c)},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(tee, trusted_key_id_table);
-+
-+static struct tee_client_driver trusted_key_driver = {
-+	.id_table	= trusted_key_id_table,
-+	.driver		= {
-+		.name		= DRIVER_NAME,
-+		.bus		= &tee_bus_type,
-+		.probe		= trusted_key_probe,
-+		.remove		= trusted_key_remove,
-+	},
-+};
-+
-+static int __init init_tee_trusted(void)
++/**
++ * asn1_encode_sequence() - wrap a byte stream in an ASN.1 SEQUENCE
++ * @data:	pointer to encode at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @seq:	data to be encoded as a sequence
++ * @len:	length of the data to be encoded as a sequence
++ *
++ * Fill in a sequence.  To encode in place, pass NULL for @seq and -1
++ * for @len; then call again once the length is known (still with NULL
++ * for @seq). In order to avoid having to keep both before and after
++ * pointers, the repeat expects to be called with @data pointing to
++ * where the first encode placed it.
++ */
++unsigned char *
++asn1_encode_sequence(unsigned char *data, const unsigned char *end_data,
++		     const unsigned char *seq, int len)
 +{
-+	return driver_register(&trusted_key_driver.driver);
-+}
++	int data_len = end_data - data;
++	int ret;
 +
-+static void __exit exit_tee_trusted(void)
++	if (!seq && WARN(len > 127,
++			 "BUG: recode sequence is too big (>127)"))
++		return ERR_PTR(-EINVAL);
++
++	if (IS_ERR(data))
++		return data;
++
++	if (!seq && len >= 0) {
++		/*
++		 * we're recoding, so move back to the start of the
++		 * sequence and install a dummy length because the
++		 * real length should be NULL
++		 */
++		data -= 2;
++		data_len = 2;
++	}
++
++	if (data_len < 2)
++		return ERR_PTR(-EINVAL);
++
++	*(data++) = _tag(UNIV, CONS, SEQ);
++	data_len--;
++
++	ret = asn1_encode_length(&data, &data_len, len);
++	if (ret)
++		return ERR_PTR(ret);
++
++	if (!seq)
++		return data;
++
++	if (data_len < len)
++		return ERR_PTR(-EINVAL);
++
++	memcpy(data, seq, len);
++	data += len;
++
++	return data;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_sequence);
++
++/**
++ * asn1_encode_boolean() - encode a boolean value to ASN.1
++ * @data:	pointer to encode at
++ * @end_data:	end of data pointer, points one beyond last usable byte in @data
++ * @val:	the boolean true/false value
++ */
++unsigned char *
++asn1_encode_boolean(unsigned char *data, const unsigned char *end_data,
++		    bool val)
 +{
-+	driver_unregister(&trusted_key_driver.driver);
-+}
++	int data_len = end_data - data;
 +
-+struct trusted_key_ops tee_trusted_key_ops = {
-+	.migratable = 0, /* non-migratable */
-+	.init = init_tee_trusted,
-+	.seal = tee_trusted_seal,
-+	.unseal = tee_trusted_unseal,
-+	.get_random = tee_trusted_get_random,
-+	.exit = exit_tee_trusted,
-+};
++	if (IS_ERR(data))
++		return data;
++
++	/* booleans are 3 bytes: tag, length = 1 and value = 0 or 1 */
++	if (data_len < 3)
++		return ERR_PTR(-EINVAL);
++
++	*(data++) = _tag(UNIV, PRIM, BOOL);
++	data_len--;
++
++	asn1_encode_length(&data, &data_len, 1);
++
++	if (val)
++		*(data++) = 1;
++	else
++		*(data++) = 0;
++
++	return data;
++}
++EXPORT_SYMBOL_GPL(asn1_encode_boolean);
++
++MODULE_LICENSE("GPL");
 -- 
-2.7.4
+2.26.2
