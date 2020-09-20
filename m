@@ -1,43 +1,47 @@
-From: Al Viro <viro@zeniv.linux.org.uk>
-Date: Sun, 20 Sep 2020 18:41:57 +0000
+From: Matthew Wilcox <willy@infradead.org>
+Date: Sun, 20 Sep 2020 19:01:59 +0000
 Subject: Re: [PATCH 1/9] kernel: add a PF_FORCE_COMPAT flag
-Message-Id: <20200920184157.GP3421308@ZenIV.linux.org.uk>
+Message-Id: <20200920190159.GT32101@casper.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20200918124533.3487701-1-hch@lst.de>
  <20200918124533.3487701-2-hch@lst.de>
  <20200920151510.GS32101@casper.infradead.org>
  <20200920180742.GN3421308@ZenIV.linux.org.uk>
 In-Reply-To: <20200920180742.GN3421308@ZenIV.linux.org.uk>
-To: Matthew Wilcox <willy@infradead.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-T24gU3VuLCBTZXAgMjAsIDIwMjAgYXQgMDc6MDc6NDJQTSArMDEwMCwgQWwgVmlybyB3cm90ZToK
-Cj4gL3Byb2MvYnVzL2lucHV0L2RldmljZXMgKGZ1Y2tlZCBiaXRtYXAtdG8tdGV4dCByZXByZXNl
-bnRhdGlvbikKClRvIGlsbHVzdHJhdGUgdGhlLCBlciwgYmVhdXR5IG9mIHRoYXQgc3R1ZmY6Cgo7
-IGNhdDMyIC9wcm9jL2J1cy9pbnB1dC9kZXZpY2VzID4vdG1wL2EKOyBjYXQgL3Byb2MvYnVzL2lu
-cHV0L2RldmljZXMgPi90bXAvYgo7IGRpZmYgLXUgL3RtcC9hIC90bXAvYnxncmVwICdeWy0rXScK
-LS0tIC90bXAvYSAgICAgIDIwMjAtMDktMjAgMTQ6Mjg6NDMuNDQyNTYwNjkxIC0wNDAwCisrKyAv
-dG1wL2IgICAgICAyMDIwLTA5LTIwIDE0OjI4OjQ5LjAxODU0MzIzMCAtMDQwMAotQjogS0VZETAw
-ZiAyOTAyMDAwIDgzODAzMDdjIGY5MTBmMDAxIGZlZmZmZmRmIGZmZWZmZmZmIGZmZmZmZmZmIGZm
-ZmZmZmZlCitCOiBLRVkRMDBmMDI5MDIwMDAgODM4MDMwN2NmOTEwZjAwMSBmZWZmZmZkZmZmZWZm
-ZmZmIGZmZmZmZmZmZmZmZmZmZmUKLUI6IEtFWXAwMDAgMCAwIDAgMCAwIDAgMCAwCitCOiBLRVlw
-MDAwIDAgMCAwIDAKLUI6IEtFWUIwIDAgNzAwMDAgMCAwIDAgMCAwIDAgMCAwCitCOiBLRVlCMCA3
-MDAwMCAwIDAgMCAwCi1COiBLRVkQMDAwMCAwIDAgMAorQjogS0VZEDAwMDAwMDAwMDAwMCAwCi1C
-OiBLRVlAMDAgMCAwIDAgMAorQjogS0VZQDAwIDAgMAotQjogS0VZgDAwIDAgMCAwIDAgMCAxMTAw
-YiA4MDAgMiAyMDAwMDAgMCAwIDAgMAorQjogS0VZgDAwMDAwMDAwMDAgMCAwIDExMDBiMDAwMDA4
-MDAgMjAwMjAwMDAwIDAgMAotQjogS0VZPjAwMGIgMCAwIDAgMCAwIDAgMAorQjogS0VZPjAwMGIw
-MDAwMDAwMCAwIDAgMAotQjogS0VZ/2ZmZmZmZiBmZmZmZmZmZiBmZmZmZmZmZiBmZmZmZmZmZiBm
-ZmZmZmZmZiBmZmZmZmZmZiBmZmZmZmZmZiBmZmZmZmZmZQorQjogS0VZ/2ZmZmZmZmZmZmZmZmZm
-IGZmZmZmZmZmZmZmZmZmZmYgZmZmZmZmZmZmZmZmZmZmZiBmZmZmZmZmZmZmZmZmZmZlCjsgCihj
-YXQzMiBiZWluZyBhIDMyYml0IGJpbmFyeSBvZiBjYXQpCkFsbCB0aGUgZGlmZmVyZW5jZXMgYXJl
-IGR1ZSB0byBob21lZ3Jvd24gYml0bWFwLXRvLXRleHQgY29udmVyc2lvbi4KCk5vdGUgdGhhdCBm
-ZWVkaW5nIHRoYXQgaW50byBhIHBpcGUgbGVhdmVzIHRoZSByZWNlcGllbnQgd2l0aCBhIGxvdmVs
-eSBwcm9ibGVtIC0KeW91IGNhbid0IGdvIGJ5IHRoZSB3aWR0aCBvZiB3b3JkcyAodGhleSBhcmUg
-bm90IHplcm8tcGFkZGVkKSBhbmQgeW91IGNhbid0CmdvIGJ5IHRoZSBudW1iZXIgb2Ygd29yZHMg
-ZWl0aGVyIC0gaXQgdmFyaWVzIGZyb20gZGV2aWNlIHRvIGRldmljZS4KCkFuZCB0aGVyZSdzIG5v
-dGhpbmcgd2UgY2FuIGRvIHdpdGggdGhhdCAtIGl0J3MgYSB1c2VybGFuZCBBQkksIGNhbid0IGJl
-CmNoYW5nZWQgd2l0aG91dCBicmVha2luZyBzdHVmZi4gIEkgd291bGQgcHJlZmVyIHRvIGF2b2lk
-IGFkZGl0aW9uYWwgZXhhbXBsZXMKbGlrZSB0aGF0LCBUWVZNLi4u
+On Sun, Sep 20, 2020 at 07:07:42PM +0100, Al Viro wrote:
+> 	2) a few drivers are really fucked in head.  They use different
+> *DATA* layouts for reads/writes, depending upon the calling process.
+> IOW, if you fork/exec a 32bit binary and your stdin is one of those,
+> reads from stdin in parent and child will yield different data layouts.
+> On the same struct file.
+> 	That's what Christoph worries about (/dev/sg he'd mentioned is
+> one of those).
+> 
+> 	IMO we should simply have that dozen or so of pathological files
+> marked with FMODE_SHITTY_ABI; it's not about how they'd been opened -
+> it describes the userland ABI provided by those.  And it's cast in stone.
+> 
+> 	Any in_compat_syscall() in ->read()/->write() instances is an ABI
+> bug, plain and simple.  Some are unfixable for compatibility reasons, but
+> any new caller like that should be a big red flag.
+
+So an IOCB_COMPAT flag would let us know whether the caller is expecting
+a 32-bit or 64-bit layout?  And io_uring could set it based on the
+ctx->compat flag.
+
+> 	Current list of those turds:
+> /dev/sg (pointer-chasing, generally insane)
+> /sys/firmware/efi/vars/*/raw_var (fucked binary structure)
+> /sys/firmware/efi/vars/new_var (fucked binary structure)
+> /sys/firmware/efi/vars/del_var (fucked binary structure)
+> /dev/uhid	(pointer-chasing for one obsolete command)
+> /dev/input/event* (timestamps)
+> /dev/uinput (timestamps)
+> /proc/bus/input/devices (fucked bitmap-to-text representation)
+> /sys/class/input/*/capabilities/* (fucked bitmap-to-text representation)
