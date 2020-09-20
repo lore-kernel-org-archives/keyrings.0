@@ -1,40 +1,43 @@
 From: Al Viro <viro@zeniv.linux.org.uk>
-Date: Sun, 20 Sep 2020 18:12:08 +0000
+Date: Sun, 20 Sep 2020 18:41:57 +0000
 Subject: Re: [PATCH 1/9] kernel: add a PF_FORCE_COMPAT flag
-Message-Id: <20200920181208.GO3421308@ZenIV.linux.org.uk>
+Message-Id: <20200920184157.GP3421308@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1250"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <20200919224122.GJ3421308@ZenIV.linux.org.uk>
- <36CF3DE7-7B4B-41FD-9818-FDF8A5B440FB@amacapital.net>
- <20200919232411.GK3421308@ZenIV.linux.org.uk>
- <CALCETrViwOdFia_aX4p4riE8aqop1zoOqVfiQtSAZEzheC+Ozg@mail.gmail.com>
- <20200920025745.GL3421308@ZenIV.linux.org.uk>
- <CALCETrWj1i-oyfA1rCXsNqdJddK6Vwm=W31YEf=k-OMBTC0vHw@mail.gmail.com>
-In-Reply-To: <CALCETrWj1i-oyfA1rCXsNqdJddK6Vwm=W31YEf=k-OMBTC0vHw@mail.gmail.com>
-To: Andy Lutomirski <luto@kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>, "open list:MIPS" <linux-mips@vger.kernel.org>, Parisc List <linux-parisc@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-s390 <linux-s390@vger.kernel.org>, sparclinux <sparclinux@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Linux SCSI List <linux-scsi@vger.kernel.org>, Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-aio <linux-aio@kvack.org>, io-uring@vger.kernel.org, linux-arch <linux-arch@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, Network Development <netdev@vger.kernel.org>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>
+References: <20200918124533.3487701-1-hch@lst.de>
+ <20200918124533.3487701-2-hch@lst.de>
+ <20200920151510.GS32101@casper.infradead.org>
+ <20200920180742.GN3421308@ZenIV.linux.org.uk>
+In-Reply-To: <20200920180742.GN3421308@ZenIV.linux.org.uk>
+To: Matthew Wilcox <willy@infradead.org>
+Cc: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-On Sun, Sep 20, 2020 at 09:59:36AM -0700, Andy Lutomirski wrote:
-
-> As one example, look at __sys_setsockopt().  It's called for the
-> native and compat versions, and it contains an in_compat_syscall()
-> check.  (This particularly check looks dubious to me, but that's
-> another story.)  If this were to be done with equivalent semantics
-> without a separate COMPAT_DEFINE_SYSCALL and without
-> in_compat_syscall(), there would need to be some indication as to
-> whether this is compat or native setsockopt.  There are other
-> setsockopt implementations in the net stack with more
-> legitimate-seeming uses of in_compat_syscall() that would need some
-> other mechanism if in_compat_syscall() were to go away.
-> 
-> setsockopt is (I hope!) out of scope for io_uring, but the situation
-> isn't fundamentally different from read and write.
-
-	Except that setsockopt() had that crap very widespread; for read()
-and write() those are very rare exceptions.
-
-	Andy, please RTFS.  Or dig through archives.  The situation
-with setsockopt() is *NOT* a good thing - it's (probably) the least
-of the evils.  The last thing we need is making that the norm.
+T24gU3VuLCBTZXAgMjAsIDIwMjAgYXQgMDc6MDc6NDJQTSArMDEwMCwgQWwgVmlybyB3cm90ZToK
+Cj4gL3Byb2MvYnVzL2lucHV0L2RldmljZXMgKGZ1Y2tlZCBiaXRtYXAtdG8tdGV4dCByZXByZXNl
+bnRhdGlvbikKClRvIGlsbHVzdHJhdGUgdGhlLCBlciwgYmVhdXR5IG9mIHRoYXQgc3R1ZmY6Cgo7
+IGNhdDMyIC9wcm9jL2J1cy9pbnB1dC9kZXZpY2VzID4vdG1wL2EKOyBjYXQgL3Byb2MvYnVzL2lu
+cHV0L2RldmljZXMgPi90bXAvYgo7IGRpZmYgLXUgL3RtcC9hIC90bXAvYnxncmVwICdeWy0rXScK
+LS0tIC90bXAvYSAgICAgIDIwMjAtMDktMjAgMTQ6Mjg6NDMuNDQyNTYwNjkxIC0wNDAwCisrKyAv
+dG1wL2IgICAgICAyMDIwLTA5LTIwIDE0OjI4OjQ5LjAxODU0MzIzMCAtMDQwMAotQjogS0VZETAw
+ZiAyOTAyMDAwIDgzODAzMDdjIGY5MTBmMDAxIGZlZmZmZmRmIGZmZWZmZmZmIGZmZmZmZmZmIGZm
+ZmZmZmZlCitCOiBLRVkRMDBmMDI5MDIwMDAgODM4MDMwN2NmOTEwZjAwMSBmZWZmZmZkZmZmZWZm
+ZmZmIGZmZmZmZmZmZmZmZmZmZmUKLUI6IEtFWXAwMDAgMCAwIDAgMCAwIDAgMCAwCitCOiBLRVlw
+MDAwIDAgMCAwIDAKLUI6IEtFWUIwIDAgNzAwMDAgMCAwIDAgMCAwIDAgMCAwCitCOiBLRVlCMCA3
+MDAwMCAwIDAgMCAwCi1COiBLRVkQMDAwMCAwIDAgMAorQjogS0VZEDAwMDAwMDAwMDAwMCAwCi1C
+OiBLRVlAMDAgMCAwIDAgMAorQjogS0VZQDAwIDAgMAotQjogS0VZgDAwIDAgMCAwIDAgMCAxMTAw
+YiA4MDAgMiAyMDAwMDAgMCAwIDAgMAorQjogS0VZgDAwMDAwMDAwMDAgMCAwIDExMDBiMDAwMDA4
+MDAgMjAwMjAwMDAwIDAgMAotQjogS0VZPjAwMGIgMCAwIDAgMCAwIDAgMAorQjogS0VZPjAwMGIw
+MDAwMDAwMCAwIDAgMAotQjogS0VZ/2ZmZmZmZiBmZmZmZmZmZiBmZmZmZmZmZiBmZmZmZmZmZiBm
+ZmZmZmZmZiBmZmZmZmZmZiBmZmZmZmZmZiBmZmZmZmZmZQorQjogS0VZ/2ZmZmZmZmZmZmZmZmZm
+IGZmZmZmZmZmZmZmZmZmZmYgZmZmZmZmZmZmZmZmZmZmZiBmZmZmZmZmZmZmZmZmZmZlCjsgCihj
+YXQzMiBiZWluZyBhIDMyYml0IGJpbmFyeSBvZiBjYXQpCkFsbCB0aGUgZGlmZmVyZW5jZXMgYXJl
+IGR1ZSB0byBob21lZ3Jvd24gYml0bWFwLXRvLXRleHQgY29udmVyc2lvbi4KCk5vdGUgdGhhdCBm
+ZWVkaW5nIHRoYXQgaW50byBhIHBpcGUgbGVhdmVzIHRoZSByZWNlcGllbnQgd2l0aCBhIGxvdmVs
+eSBwcm9ibGVtIC0KeW91IGNhbid0IGdvIGJ5IHRoZSB3aWR0aCBvZiB3b3JkcyAodGhleSBhcmUg
+bm90IHplcm8tcGFkZGVkKSBhbmQgeW91IGNhbid0CmdvIGJ5IHRoZSBudW1iZXIgb2Ygd29yZHMg
+ZWl0aGVyIC0gaXQgdmFyaWVzIGZyb20gZGV2aWNlIHRvIGRldmljZS4KCkFuZCB0aGVyZSdzIG5v
+dGhpbmcgd2UgY2FuIGRvIHdpdGggdGhhdCAtIGl0J3MgYSB1c2VybGFuZCBBQkksIGNhbid0IGJl
+CmNoYW5nZWQgd2l0aG91dCBicmVha2luZyBzdHVmZi4gIEkgd291bGQgcHJlZmVyIHRvIGF2b2lk
+IGFkZGl0aW9uYWwgZXhhbXBsZXMKbGlrZSB0aGF0LCBUWVZNLi4u
