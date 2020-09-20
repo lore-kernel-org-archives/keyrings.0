@@ -1,166 +1,135 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 30 Sep 2020 11:02:34 +0000
-Subject: Re: [PATCH v13 3/5] security: keys: trusted: fix TPM2 authorizations
-Message-Id: <20200930110227.GA5145@linux.intel.com>
+From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Date: Sun, 20 Sep 2020 16:20:53 +0000
+Subject: [PATCH v7 00/10] crpyto: introduce OSCCA certificate and SM2 asymmetric algorithm
+Message-Id: <20200920162103.83197-1-tianjia.zhang@linux.alibaba.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
- <20200922022809.7105-4-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200922022809.7105-4-James.Bottomley@HansenPartnership.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers@google.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Maxime Coquelin <mcoquelin.stm32@gmail.com>, Alexandre Torgue <alexandre.torgue@st.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Stephan Mueller <smueller@chronox.de>, Marcelo Henrique Cerri <marcelo.cerri@canonical.com>, "Steven Rostedt (VMware)" <rostedt@goodmis.org>, Masahiro Yamada <masahiroy@kernel.org>, Brendan Higgins <brendanhiggins@google.com>, Andrew Morton <akpm@linux-foundation.org>, Johannes Weiner <hannes@cmpxchg.org>, Waiman Long <longman@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, Colin Ian King <colin.king@canonical.com>, Tushar Sugandhi <tusharsu@linux.microsoft.com>, Vitaly Chikunov <vt@altlinux.org>, Gilad Ben-Yossef <gilad@benyossef.com>, Pascal van Leeuwen <pvanleeuwen@rambus.com>, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>, Tianjia Zhang <tianjia.zhang@linux.alibaba.com>, Jia Zhang <zhang.jia@linux.alibaba.com>
 
-On Mon, Sep 21, 2020 at 07:28:07PM -0700, James Bottomley wrote:
-> In TPM 1.2 an authorization was a 20 byte number.  The spec actually
-> recommended you to hash variable length passwords and use the sha1
-> hash as the authorization.  Because the spec doesn't require this
-> hashing, the current authorization for trusted keys is a 40 digit hex
-> number.  For TPM 2.0 the spec allows the passing in of variable length
-> passwords and passphrases directly, so we should allow that in trusted
-> keys for ease of use.  Update the 'blobauth' parameter to take this
-> into account, so we can now use plain text passwords for the keys.
->=20
-> so before
->=20
-> keyctl add trusted kmk "new 32 blobauth=F572d396fae9206628714fb2ce00f72e9=
-4f2258fkeyhandle=81000001" @u
->=20
-> after we will accept both the old hex sha1 form as well as a new
-> directly supplied password:
->=20
-> keyctl add trusted kmk "new 32 blobauth=3Dhello keyhandle=81000001" @u
->=20
-> Since a sha1 hex code must be exactly 40 bytes long and a direct
-> password must be 20 or less, we use the length as the discriminator
-> for which form is input.
->=20
-> Note this is both and enhancement and a potential bug fix.  The TPM
-> 2.0 spec requires us to strip leading zeros, meaning empyty
-> authorization is a zero length HMAC whereas we're currently passing in
-> 20 bytes of zeros.  A lot of TPMs simply accept this as OK, but the
-> Microsoft TPM emulator rejects it with TPM_RC_BAD_AUTH, so this patch
-> makes the Microsoft TPM emulator work with trusted keys.
->=20
-> Fixes: 0fe5480303a1 ("keys, trusted: seal/unseal with TPM 2.0 chips")
-> Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
->=20
-> ---
->=20
-> v6: change comment, eliminate else clauses and add fixes tag
-> v7: fixes before signoff
-> v12: fix mismerge from v6 to make processing continue after blobauth
->=20
-> Merge with auth fix
-> ---
->  include/keys/trusted-type.h               |  1 +
->  security/keys/trusted-keys/trusted_tpm1.c | 32 ++++++++++++++++++-----
->  security/keys/trusted-keys/trusted_tpm2.c | 10 ++++---
->  3 files changed, 33 insertions(+), 10 deletions(-)
->=20
-> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
-> index a94c03a61d8f..b2ed3481c6a0 100644
-> --- a/include/keys/trusted-type.h
-> +++ b/include/keys/trusted-type.h
-> @@ -30,6 +30,7 @@ struct trusted_key_options {
->  	uint16_t keytype;
->  	uint32_t keyhandle;
->  	unsigned char keyauth[TPM_DIGEST_SIZE];
-> +	uint32_t blobauth_len;
->  	unsigned char blobauth[TPM_DIGEST_SIZE];
->  	uint32_t pcrinfo_len;
->  	unsigned char pcrinfo[MAX_PCRINFO_SIZE];
-> diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/tr=
-usted-keys/trusted_tpm1.c
-> index b9fe02e5f84f..eaa2e7ca136e 100644
-> --- a/security/keys/trusted-keys/trusted_tpm1.c
-> +++ b/security/keys/trusted-keys/trusted_tpm1.c
-> @@ -781,13 +781,33 @@ static int getoptions(char *c, struct trusted_key_p=
-ayload *pay,
->  				return -EINVAL;
->  			break;
->  		case Opt_blobauth:
-> -			if (strlen(args[0].from) !=3D 2 * SHA1_DIGEST_SIZE)
-> -				return -EINVAL;
-> -			res =3D hex2bin(opt->blobauth, args[0].from,
-> -				      SHA1_DIGEST_SIZE);
-> -			if (res < 0)
-> -				return -EINVAL;
-> +			/*
-> +			 * TPM 1.2 authorizations are sha1 hashes passed in as
-> +			 * hex strings.  TPM 2.0 authorizations are simple
-> +			 * passwords (although it can take a hash as well)
-> +			 */
-> +			opt->blobauth_len =3D strlen(args[0].from);
-> +
-> +			if (opt->blobauth_len =3D 2 * TPM_DIGEST_SIZE) {
-> +				res =3D hex2bin(opt->blobauth, args[0].from,
-> +					      TPM_DIGEST_SIZE);
-> +				if (res < 0)
-> +					return -EINVAL;
-> +
-> +				opt->blobauth_len =3D TPM_DIGEST_SIZE;
-> +				break;
-> +			}
-> +
-> +			if (tpm2 && opt->blobauth_len <=3D sizeof(opt->blobauth)) {
-> +				memcpy(opt->blobauth, args[0].from,
-> +				       opt->blobauth_len);
-> +				break;
-> +			}
-> +
-> +			return -EINVAL;
-> +
->  			break;
-> +
->  		case Opt_migratable:
->  			if (*args[0].from =3D '0')
->  				pay->migratable =3D 0;
-> diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/tr=
-usted-keys/trusted_tpm2.c
-> index 08ec7f48f01d..b4a5058107c2 100644
-> --- a/security/keys/trusted-keys/trusted_tpm2.c
-> +++ b/security/keys/trusted-keys/trusted_tpm2.c
-> @@ -91,10 +91,12 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
->  			     TPM_DIGEST_SIZE);
-> =20
->  	/* sensitive */
-> -	tpm_buf_append_u16(&buf, 4 + TPM_DIGEST_SIZE + payload->key_len + 1);
-> +	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len +=
- 1);
-> +
-> +	tpm_buf_append_u16(&buf, options->blobauth_len);
-> +	if (options->blobauth_len)
-> +		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
-> =20
-> -	tpm_buf_append_u16(&buf, TPM_DIGEST_SIZE);
-> -	tpm_buf_append(&buf, options->blobauth, TPM_DIGEST_SIZE);
->  	tpm_buf_append_u16(&buf, payload->key_len + 1);
->  	tpm_buf_append(&buf, payload->key, payload->key_len);
->  	tpm_buf_append_u8(&buf, payload->migratable);
-> @@ -258,7 +260,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
->  			     NULL /* nonce */, 0,
->  			     TPM2_SA_CONTINUE_SESSION,
->  			     options->blobauth /* hmac */,
-> -			     TPM_DIGEST_SIZE);
-> +			     options->blobauth_len);
-> =20
->  	rc =3D tpm_send(chip, buf.data, tpm_buf_length(&buf));
->  	if (rc > 0)
-> --=20
-> 2.26.2
->=20
+Hello all,
 
-Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+This new module implement the OSCCA certificate and SM2 public key
+algorithm. It was published by State Encryption Management Bureau, China.
+List of specifications for OSCCA certificate and SM2 elliptic curve
+public key cryptography:
 
-Transcript:
+* GM/T 0003.1-2012
+* GM/T 0003.2-2012
+* GM/T 0003.3-2012
+* GM/T 0003.4-2012
+* GM/T 0003.5-2012
+* GM/T 0015-2012
+* GM/T 0009-2012 
 
-=E2=9E=9C  tpm2-scripts (master) =E2=9C=97 sudo ./tpm2-root-key
-0x80000000
-=E2=9E=9C  tpm2-scripts (master) =E2=9C=97 sudo keyctl add trusted kmk "new=
- 32 blobauth=3Dhello keyhandle=80000000" @u
-751240563
+IETF: https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
+oscca: http://www.oscca.gov.cn/sca/xxgk/2010-12/17/content_1002386.shtml
+scctc: http://www.gmbz.org.cn/main/bzlb.html
 
-/Jarkko
+These patchs add the OID object identifier defined by OSCCA. The
+x509 certificate supports sm2-with-sm3 type certificate parsing
+and verification.
+
+The sm2 algorithm is based on libgcrypt's mpi implementation, and has
+made some additions to the kernel's original mpi library, and added the
+implementation of ec to better support elliptic curve-like algorithms.
+
+sm2 has good support in both openssl and gnupg projects, and sm3 and sm4
+of the OSCCA algorithm family have also been implemented in the kernel.
+
+Among them, sm3 and sm4 have been well implemented in the kernel.
+This group of patches has newly introduced sm2. In order to implement
+sm2 more perfectly, I expanded the mpi library and introduced the
+ec implementation of the mpi library as the basic algorithm. Compared
+to the kernel's crypto/ecc.c, the implementation of mpi/ec.c is more
+complete and elegant, sm2 is implemented based on these algorithms.
+
+---
+v7 changes:
+  1. add sm2 test vectors to testmgr.
+  2. fix potential memory leak in testmgr (PATCH 6/10).
+  3. rebase on mainline.
+
+v6 changes:
+  1. remove mpi_sub_ui function from mpi library.
+  2. rebase on mainline.
+
+v5 changes:
+  1. fix compilation failure when SM2 is configured as a module.
+  2. simplify the mpi and ec code, remove unused functions reported by test robot.
+
+v4 changes:
+  1. Pass data directly when calculating sm2 certificate digest.
+  2. rebase on mainline.
+
+v3 changes:
+  1. integrity asymmetric digsig support sm2-with-sm3 algorithm.
+  2. remove unused sm2_set_priv_key().
+  3. rebase on mainline.
+
+v2 changes:
+  1. simplify the sm2 algorithm and only retain the verify function.
+  2. extract the sm2 certificate code into a separate file.
+
+
+Tianjia Zhang (10):
+  crypto: sm3 - export crypto_sm3_final function
+  lib/mpi: Extend the MPI library
+  lib/mpi: Introduce ec implementation to MPI library
+  crypto: sm2 - introduce OSCCA SM2 asymmetric cipher algorithm
+  crypto: testmgr - support test with different ciphertext per
+    encryption
+  crypto: testmgr - Fix potential memory leak in test_akcipher_one()
+  crypto: sm2 - add SM2 test vectors to testmgr
+  X.509: support OSCCA certificate parse
+  X.509: support OSCCA SM2-with-SM3 certificate verification
+  integrity: Asymmetric digsig supports SM2-with-SM3 algorithm
+
+ crypto/Kconfig                            |   17 +
+ crypto/Makefile                           |    8 +
+ crypto/asymmetric_keys/Makefile           |    1 +
+ crypto/asymmetric_keys/public_key.c       |    6 +
+ crypto/asymmetric_keys/public_key_sm2.c   |   61 +
+ crypto/asymmetric_keys/x509_cert_parser.c |   27 +-
+ crypto/asymmetric_keys/x509_public_key.c  |    3 +
+ crypto/sm2.c                              |  481 +++++++
+ crypto/sm2signature.asn1                  |    4 +
+ crypto/sm3_generic.c                      |    7 +-
+ crypto/testmgr.c                          |   24 +-
+ crypto/testmgr.h                          |   59 +
+ include/crypto/public_key.h               |   15 +
+ include/crypto/sm2.h                      |   25 +
+ include/crypto/sm3.h                      |    2 +
+ include/linux/mpi.h                       |  192 +++
+ include/linux/oid_registry.h              |    6 +
+ lib/mpi/Makefile                          |    6 +
+ lib/mpi/ec.c                              | 1509 +++++++++++++++++++++
+ lib/mpi/mpi-add.c                         |  155 +++
+ lib/mpi/mpi-bit.c                         |  251 ++++
+ lib/mpi/mpi-cmp.c                         |   46 +-
+ lib/mpi/mpi-div.c                         |  238 ++++
+ lib/mpi/mpi-internal.h                    |   53 +
+ lib/mpi/mpi-inv.c                         |  143 ++
+ lib/mpi/mpi-mod.c                         |  155 +++
+ lib/mpi/mpi-mul.c                         |   94 ++
+ lib/mpi/mpicoder.c                        |  336 +++++
+ lib/mpi/mpih-div.c                        |  294 ++++
+ lib/mpi/mpih-mul.c                        |   25 +
+ lib/mpi/mpiutil.c                         |  204 +++
+ security/integrity/digsig_asymmetric.c    |   14 +-
+ 32 files changed, 4435 insertions(+), 26 deletions(-)
+ create mode 100644 crypto/asymmetric_keys/public_key_sm2.c
+ create mode 100644 crypto/sm2.c
+ create mode 100644 crypto/sm2signature.asn1
+ create mode 100644 include/crypto/sm2.h
+ create mode 100644 lib/mpi/ec.c
+ create mode 100644 lib/mpi/mpi-add.c
+ create mode 100644 lib/mpi/mpi-div.c
+ create mode 100644 lib/mpi/mpi-inv.c
+ create mode 100644 lib/mpi/mpi-mod.c
+ create mode 100644 lib/mpi/mpi-mul.c
+
+-- 
+2.19.1.3.ge56e4f7
