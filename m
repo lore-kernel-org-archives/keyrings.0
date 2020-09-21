@@ -1,33 +1,108 @@
-From: Liu Shixin <liushixin2@huawei.com>
-Date: Mon, 14 Sep 2020 03:55:42 +0000
-Subject: [PATCH -next] dh key: convert to use be32_add_cpu()
-Message-Id: <20200914041747.3701948-1-liushixin2@huawei.com>
+From: Christoph Hellwig <hch@lst.de>
+Date: Mon, 21 Sep 2020 14:34:34 +0000
+Subject: [PATCH 11/11] security/keys: remove compat_keyctl_instantiate_key_iov
+Message-Id: <20200921143434.707844-12-hch@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: David Howells <dhowells@redhat.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, James Morris <jmorris@namei.org>
-Cc: keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, Liu Shixin <liushixin2@huawei.com>
+References: <20200921143434.707844-1-hch@lst.de>
+In-Reply-To: <20200921143434.707844-1-hch@lst.de>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, David Laight <David.Laight@aculab.com>, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-Convert cpu_to_be32(be32_to_cpu(E1) + E2) to use be32_add_cpu().
+Now that import_iovec handles compat iovecs, the native version of
+keyctl_instantiate_key_iov can be used for the compat case as well.
 
-Signed-off-by: Liu Shixin <liushixin2@huawei.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- security/keys/dh.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/keys/compat.c   | 36 ++----------------------------------
+ security/keys/internal.h |  5 -----
+ security/keys/keyctl.c   |  2 +-
+ 3 files changed, 3 insertions(+), 40 deletions(-)
 
-diff --git a/security/keys/dh.c b/security/keys/dh.c
-index 1abfa70ed6e1..2635cb8a4561 100644
---- a/security/keys/dh.c
-+++ b/security/keys/dh.c
-@@ -186,7 +186,7 @@ static int kdf_ctr(struct kdf_sdesc *sdesc, const u8 *src, unsigned int slen,
+diff --git a/security/keys/compat.c b/security/keys/compat.c
+index 7ae531db031cf8..1545efdca56227 100644
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -11,38 +11,6 @@
+ #include <linux/slab.h>
+ #include "internal.h"
  
- 		dlen -= h;
- 		dst += h;
--		counter = cpu_to_be32(be32_to_cpu(counter) + 1);
-+		be32_add_cpu(&counter, 1);
- 	}
+-/*
+- * Instantiate a key with the specified compatibility multipart payload and
+- * link the key into the destination keyring if one is given.
+- *
+- * The caller must have the appropriate instantiation permit set for this to
+- * work (see keyctl_assume_authority).  No other permissions are required.
+- *
+- * If successful, 0 will be returned.
+- */
+-static long compat_keyctl_instantiate_key_iov(
+-	key_serial_t id,
+-	const struct compat_iovec __user *_payload_iov,
+-	unsigned ioc,
+-	key_serial_t ringid)
+-{
+-	struct iovec iovstack[UIO_FASTIOV], *iov = iovstack;
+-	struct iov_iter from;
+-	long ret;
+-
+-	if (!_payload_iov)
+-		ioc = 0;
+-
+-	ret = import_iovec(WRITE, (const struct iovec __user *)_payload_iov,
+-			   ioc, ARRAY_SIZE(iovstack), &iov, &from);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = keyctl_instantiate_key_common(id, &from, ringid);
+-	kfree(iov);
+-	return ret;
+-}
+-
+ /*
+  * The key control system call, 32-bit compatibility version for 64-bit archs
+  */
+@@ -113,8 +81,8 @@ COMPAT_SYSCALL_DEFINE5(keyctl, u32, option,
+ 		return keyctl_reject_key(arg2, arg3, arg4, arg5);
  
- 	return 0;
+ 	case KEYCTL_INSTANTIATE_IOV:
+-		return compat_keyctl_instantiate_key_iov(
+-			arg2, compat_ptr(arg3), arg4, arg5);
++		return keyctl_instantiate_key_iov(arg2, compat_ptr(arg3), arg4,
++						  arg5);
+ 
+ 	case KEYCTL_INVALIDATE:
+ 		return keyctl_invalidate_key(arg2);
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 338a526cbfa516..9b9cf3b6fcbb4d 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -262,11 +262,6 @@ extern long keyctl_instantiate_key_iov(key_serial_t,
+ 				       const struct iovec __user *,
+ 				       unsigned, key_serial_t);
+ extern long keyctl_invalidate_key(key_serial_t);
+-
+-struct iov_iter;
+-extern long keyctl_instantiate_key_common(key_serial_t,
+-					  struct iov_iter *,
+-					  key_serial_t);
+ extern long keyctl_restrict_keyring(key_serial_t id,
+ 				    const char __user *_type,
+ 				    const char __user *_restriction);
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 9febd37a168fd0..e26bbccda7ccee 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1164,7 +1164,7 @@ static int keyctl_change_reqkey_auth(struct key *key)
+  *
+  * If successful, 0 will be returned.
+  */
+-long keyctl_instantiate_key_common(key_serial_t id,
++static long keyctl_instantiate_key_common(key_serial_t id,
+ 				   struct iov_iter *from,
+ 				   key_serial_t ringid)
+ {
 -- 
-2.25.1
+2.28.0
