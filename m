@@ -1,72 +1,63 @@
-From: Pavel Begunkov <asml.silence@gmail.com>
-Date: Mon, 21 Sep 2020 16:31:49 +0000
+From: Andy Lutomirski <luto@kernel.org>
+Date: Mon, 21 Sep 2020 23:51:01 +0000
 Subject: Re: [PATCH 1/9] kernel: add a PF_FORCE_COMPAT flag
-Message-Id: <7fc71d22-e213-b050-75fe-b45adc6bf0d8@gmail.com>
+Message-Id: <CALCETrW3rwGsgfLNnu_0JAcL5jvrPVTLTWM3JpbB5P9Hye6Fdw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ibm852"
+Content-Transfer-Encoding: base64
 List-Id: <keyrings.vger.kernel.org>
-References: <20200918124533.3487701-1-hch@lst.de>
- <20200918124533.3487701-2-hch@lst.de>
- <20200920151510.GS32101@casper.infradead.org>
- <20200920180742.GN3421308@ZenIV.linux.org.uk>
- <20200920190159.GT32101@casper.infradead.org>
- <20200920191031.GQ3421308@ZenIV.linux.org.uk>
- <20200920192259.GU32101@casper.infradead.org>
- <CALCETrXVtBkxNJcMxf9myaKT9snHKbCWUenKHGRfp8AOtORBPg@mail.gmail.com>
- <CAK8P3a37BRFj_qg61gP2oVrjJzBrZ58y1vggeTk_5n55Ou5U2Q@mail.gmail.com>
- <8363d874e503470f8caa201e85e9fbd4@AcuMS.aculab.com>
-In-Reply-To: <8363d874e503470f8caa201e85e9fbd4@AcuMS.aculab.com>
-To: David Laight <David.Laight@ACULAB.COM>, 'Arnd Bergmann' <arnd@arndb.de>, Andy Lutomirski <luto@kernel.org>
-Cc: Matthew Wilcox <willy@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, David Howells <dhowells@redhat.com>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>, "open list:MIPS" <linux-mips@vger.kernel.org>, Parisc List <linux-parisc@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-s390 <linux-s390@vger.kernel.org>, sparclinux <sparclinux@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Linux SCSI List <linux-scsi@vger.kernel.org>, Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-aio <linux-aio@kvack.org>, "io-uring@vger.kernel.org" <io-uring@vger.kernel.org>, linux-arch <linux-arch@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, Network Development <netdev@vger.kernel.org>, "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>, LSM List <linux-security-module@vger.kernel.org>
+References: <CAK8P3a2Mi+1yttyGk4k7HxRVrMtmFqJewouVhynqUL0PJycmog@mail.gmail.com>
+ <D0791499-1190-4C3F-A984-0A313ECA81C7@amacapital.net> <563138b5-7073-74bc-f0c5-b2bad6277e87@gmail.com>
+ <486c92d0-0f2e-bd61-1ab8-302524af5e08@gmail.com>
+In-Reply-To: <486c92d0-0f2e-bd61-1ab8-302524af5e08@gmail.com>
+To: Pavel Begunkov <asml.silence@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andy Lutomirski <luto@kernel.org>, Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, David Howells <dhowells@redhat.com>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>, "open list:MIPS" <linux-mips@vger.kernel.org>, Parisc List <linux-parisc@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-s390 <linux-s390@vger.kernel.org>, sparclinux <sparclinux@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Linux SCSI List <linux-scsi@vger.kernel.org>, Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-aio <linux-aio@kvack.org>, io-uring@vger.kernel.org, linux-arch <linux-arch@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, Network Development <netdev@vger.kernel.org>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>
 
-On 21/09/2020 00:13, David Laight wrote:
-> From: Arnd Bergmann
->> Sent: 20 September 2020 21:49
->>
->> On Sun, Sep 20, 2020 at 9:28 PM Andy Lutomirski <luto@kernel.org> wrote:
->>> On Sun, Sep 20, 2020 at 12:23 PM Matthew Wilcox <willy@infradead.org> wrote:
->>>>
->>>> On Sun, Sep 20, 2020 at 08:10:31PM +0100, Al Viro wrote:
->>>>> IMO it's much saner to mark those and refuse to touch them from io_uring...
->>>>
->>>> Simpler solution is to remove io_uring from the 32-bit syscall list.
->>>> If you're a 32-bit process, you don't get to use io_uring.  Would
->>>> any real users actually care about that?
->>>
->>> We could go one step farther and declare that we're done adding *any*
->>> new compat syscalls :)
->>
->> Would you also stop adding system calls to native 32-bit systems then?
->>
->> On memory constrained systems (less than 2GB a.t.m.), there is still a
->> strong demand for running 32-bit user space, but all of the recent Arm
->> cores (after Cortex-A55) dropped the ability to run 32-bit kernels, so
->> that compat mode may eventually become the primary way to run
->> Linux on cheap embedded systems.
->>
->> I don't think there is any chance we can realistically take away io_uring
->> from the 32-bit ABI any more now.
-> 
-> Can't it just run requests from 32bit apps in a kernel thread that has
-> the 'in_compat_syscall' flag set?
-> Not that i recall seeing the code where it saves the 'compat' nature
-> of any requests.
-> 
-> It is already completely f*cked if you try to pass the command ring
-> to a child process - it uses the wrong 'mm'.
-
-And how so? io_uring uses mm of a submitter. The exception is SQPOLL
-mode, but it requires CAP_SYS_ADMIN or CAP_SYS_NICE anyway.
-
-> I suspect there are some really horrid security holes in that area.
-> 
-> 	David.
-> 
-> -
-> Registered Address Lakeside, Bramley Road, Mount Farm, Milton Keynes, MK1 1PT, UK
-> Registration No: 1397386 (Wales)
-> 
-
--- 
-Pavel Begunkov
+T24gTW9uLCBTZXAgMjEsIDIwMjAgYXQgOToxNSBBTSBQYXZlbCBCZWd1bmtvdiA8YXNtbC5zaWxl
+bmNlQGdtYWlsLmNvbT4gd3JvdGU6Cj4KPiBPbiAyMS8wOS8yMDIwIDE5OjEwLCBQYXZlbCBCZWd1
+bmtvdiB3cm90ZToKPiA+IE9uIDIwLzA5LzIwMjAgMDE6MjIsIEFuZHkgTHV0b21pcnNraSB3cm90
+ZToKPiA+Pgo+ID4+PiBPbiBTZXAgMTksIDIwMjAsIGF0IDI6MTYgUE0sIEFybmQgQmVyZ21hbm4g
+PGFybmRAYXJuZGIuZGU+IHdyb3RlOgo+ID4+Pgo+ID4+PiDvu79PbiBTYXQsIFNlcCAxOSwgMjAy
+MCBhdCA2OjIxIFBNIEFuZHkgTHV0b21pcnNraSA8bHV0b0BrZXJuZWwub3JnPiB3cm90ZToKPiA+
+Pj4+PiBPbiBGcmksIFNlcCAxOCwgMjAyMCBhdCA4OjE2IEFNIENocmlzdG9waCBIZWxsd2lnIDxo
+Y2hAbHN0LmRlPiB3cm90ZToKPiA+Pj4+PiBPbiBGcmksIFNlcCAxOCwgMjAyMCBhdCAwMjo1ODoy
+MlBNICswMTAwLCBBbCBWaXJvIHdyb3RlOgo+ID4+Pj4+PiBTYWlkIHRoYXQsIHdoeSBub3QgcHJv
+dmlkZSBhIHZhcmlhbnQgdGhhdCB3b3VsZCB0YWtlIGFuIGV4cGxpY2l0Cj4gPj4+Pj4+ICJpcyBp
+dCBjb21wYXQiIGFyZ3VtZW50IGFuZCB1c2UgaXQgdGhlcmU/ICBBbmQgaGF2ZSB0aGUgbm9ybWFs
+Cj4gPj4+Pj4+IG9uZSBwYXNzIGluX2NvbXBhdF9zeXNjYWxsKCkgdG8gdGhhdC4uLgo+ID4+Pj4+
+Cj4gPj4+Pj4gVGhhdCB3b3VsZCBoZWxwIHRvIG5vdCBpbnRyb2R1Y2UgYSByZWdyZXNzaW9uIHdp
+dGggdGhpcyBzZXJpZXMgeWVzLgo+ID4+Pj4+IEJ1dCBpdCB3b3VsZG4ndCBmaXggZXhpc3Rpbmcg
+YnVncyB3aGVuIGlvX3VyaW5nIGlzIHVzZWQgdG8gYWNjZXNzCj4gPj4+Pj4gcmVhZCBvciB3cml0
+ZSBtZXRob2RzIHRoYXQgdXNlIGluX2NvbXBhdF9zeXNjYWxsKCkuICBPbmUgZXhhbXBsZSB0aGF0
+Cj4gPj4+Pj4gSSByZWNlbnRseSByYW4gaW50byBpcyBkcml2ZXJzL3Njc2kvc2cuYy4KPiA+Pj4K
+PiA+Pj4gQWgsIHNvIHJlYWRpbmcgL2Rldi9pbnB1dC9ldmVudCogd291bGQgc3VmZmVyIGZyb20g
+dGhlIHNhbWUgaXNzdWUsCj4gPj4+IGFuZCB0aGF0IG9uZSB3b3VsZCBpbiBmYWN0IGJlIGJyb2tl
+biBieSB5b3VyIHBhdGNoIGluIHRoZSBoeXBvdGhldGljYWwKPiA+Pj4gY2FzZSB0aGF0IHNvbWVv
+bmUgdHJpZWQgdG8gdXNlIGlvX3VyaW5nIHRvIHJlYWQgL2Rldi9pbnB1dC9ldmVudCBvbiB4MzIu
+Li4KPiA+Pj4KPiA+Pj4gRm9yIHJlZmVyZW5jZSwgSSBjaGVja2VkIHRoZSBzb2NrZXQgdGltZXN0
+YW1wIGhhbmRsaW5nIHRoYXQgaGFzIGEKPiA+Pj4gbnVtYmVyIG9mIGNvcm5lciBjYXNlcyB3aXRo
+IHRpbWUzMi90aW1lNjQgZm9ybWF0cyBpbiBjb21wYXQgbW9kZSwKPiA+Pj4gYnV0IG5vbmUgb2Yg
+dGhvc2UgYXBwZWFyIHRvIGJlIGFmZmVjdGVkIGJ5IHRoZSBwcm9ibGVtLgo+ID4+Pgo+ID4+Pj4g
+QXNpZGUgZnJvbSB0aGUgcG90ZW50aWFsbHkgbmFzdHkgdXNlIG9mIHBlci10YXNrIHZhcmlhYmxl
+cywgb25lIHRoaW5nCj4gPj4+PiBJIGRvbid0IGxpa2UgYWJvdXQgUEZfRk9SQ0VfQ09NUEFUIGlz
+IHRoYXQgaXQncyBvbmUtd2F5LiAgSWYgd2UncmUKPiA+Pj4+IGdvaW5nIHRvIGhhdmUgYSBnZW5l
+cmljIG1lY2hhbmlzbSBmb3IgdGhpcywgc2hvdWxkbid0IHdlIGFsbG93IGEgZnVsbAo+ID4+Pj4g
+b3ZlcnJpZGUgb2YgdGhlIHN5c2NhbGwgYXJjaCBpbnN0ZWFkIG9mIGp1c3QgYWxsb3dpbmcgZm9y
+Y2luZyBjb21wYXQKPiA+Pj4+IHNvIHRoYXQgYSBjb21wYXQgc3lzY2FsbCBjYW4gZG8gYSBub24t
+Y29tcGF0IG9wZXJhdGlvbj8KPiA+Pj4KPiA+Pj4gVGhlIG9ubHkgcmVhc29uIGl0J3MgbmVlZGVk
+IGhlcmUgaXMgdGhhdCB0aGUgY2FsbGVyIGlzIGluIGEga2VybmVsCj4gPj4+IHRocmVhZCByYXRo
+ZXIgdGhhbiBhIHN5c3RlbSBjYWxsLiBBcmUgdGhlcmUgYW55IHBvc3NpYmxlIHNjZW5hcmlvcwo+
+ID4+PiB3aGVyZSBvbmUgd291bGQgYWN0dWFsbHkgbmVlZCB0aGUgb3Bwb3NpdGU/Cj4gPj4+Cj4g
+Pj4KPiA+PiBJIGNhbiBjZXJ0YWlubHkgaW1hZ2luZSBuZWVkaW5nIHRvIGZvcmNlIHgzMiBtb2Rl
+IGZyb20gYSBrZXJuZWwgdGhyZWFkLgo+ID4+Cj4gPj4gQXMgZm9yIHRoZSBvdGhlciBkaXJlY3Rp
+b246IHdoYXQgZXhhY3RseSBhcmUgdGhlIGRlc2lyZWQgYml0bmVzcy9hcmNoIHNlbWFudGljcyBv
+ZiBpb191cmluZz8gIElzIHRoZSBvcGVyYXRpb24gYml0bmVzcyBjaG9zZW4gYnkgdGhlIGlvX3Vy
+aW5nIGNyZWF0aW9uIG9yIGJ5IHRoZSBpb191cmluZ19lbnRlcigpIGJpdG5lc3M/Cj4gPgo+ID4g
+SXQncyByYXRoZXIgdGhlIHNlY29uZCBvbmUuIEV2ZW4gdGhvdWdoIEFGQUlSIGl0IHdhc24ndCBk
+aXNjdXNzZWQKPiA+IHNwZWNpZmljYWxseSwgdGhhdCBob3cgaXQgd29ya3Mgbm93IChfcGFydGlh
+bGx5XykuCj4KPiBEb3VibGUgY2hlY2tlZCAtLSBJJ20gd3JvbmcsIHRoYXQncyB0aGUgZm9ybWVy
+IG9uZS4gTW9zdCBvZiBpdCBpcyBiYXNlZAo+IG9uIGEgZmxhZyB0aGF0IHdhcyBzZXQgYW4gY3Jl
+YXRpb24uCj4KCkNvdWxkIHdlIGdldCBhd2F5IHdpdGggbWFraW5nIGlvX3VyaW5nX2VudGVyKCkg
+cmV0dXJuIC1FSU5WQUwgKG9yCm1heWJlIC1FTk9UVFk/KSBpZiB5b3UgdHJ5IHRvIGRvIGl0IHdp
+dGggYml0bmVzcyB0aGF0IGRvZXNuJ3QgbWF0Y2gKdGhlIGlvX3VyaW5nPyAgQW5kIGRpc2FibGUg
+U1FQT0xMIGluIGNvbXBhdCBtb2RlPwoKLS1BbmR5
