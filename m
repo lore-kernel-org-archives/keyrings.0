@@ -1,192 +1,285 @@
-From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Date: Sun, 20 Sep 2020 16:21:02 +0000
-Subject: [PATCH v7 09/10] X.509: support OSCCA SM2-with-SM3 certificate verification
-Message-Id: <20200920162103.83197-10-tianjia.zhang@linux.alibaba.com>
+From: Christoph Hellwig <hch@lst.de>
+Date: Mon, 21 Sep 2020 14:34:30 +0000
+Subject: [PATCH 07/11] fs: remove various compat readv/writev helpers
+Message-Id: <20200921143434.707844-8-hch@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200920162103.83197-1-tianjia.zhang@linux.alibaba.com>
-In-Reply-To: <20200920162103.83197-1-tianjia.zhang@linux.alibaba.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "David S. Miller" <davem@davemloft.net>, David Howells <dhowells@redhat.com>, Eric Biggers <ebiggers@google.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Maxime Coquelin <mcoquelin.stm32@gmail.com>, Alexandre Torgue <alexandre.torgue@st.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Stephan Mueller <smueller@chronox.de>, Marcelo Henrique Cerri <marcelo.cerri@canonical.com>, "Steven Rostedt (VMware)" <rostedt@goodmis.org>, Masahiro Yamada <masahiroy@kernel.org>, Brendan Higgins <brendanhiggins@google.com>, Andrew Morton <akpm@linux-foundation.org>, Johannes Weiner <hannes@cmpxchg.org>, Waiman Long <longman@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Lakshmi Ramasubramanian <nramas@linux.microsoft.com>, Colin Ian King <colin.king@canonical.com>, Tushar Sugandhi <tusharsu@linux.microsoft.com>, Vitaly Chikunov <vt@altlinux.org>, Gilad Ben-Yossef <gilad@benyossef.com>, Pascal van Leeuwen <pvanleeuwen@rambus.com>, linux-crypto@vger.kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-stm32@st-md-mailman.stormreply.com, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>, Tianjia Zhang <tianjia.zhang@linux.alibaba.com>, Jia Zhang <zhang.jia@linux.alibaba.com>
+References: <20200921143434.707844-1-hch@lst.de>
+In-Reply-To: <20200921143434.707844-1-hch@lst.de>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, David Laight <David.Laight@aculab.com>, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-The digital certificate format based on SM2 crypto algorithm as
-specified in GM/T 0015-2012. It was published by State Encryption
-Management Bureau, China.
+Now that import_iovec handles compat iovecs as well, all the duplicated
+code in the compat readv/writev helpers is not needed.  Remove them
+and switch the compat syscall handlers to use the native helpers.
 
-The method of generating Other User Information is defined as
-ZA=H256(ENTLA || IDA || a || b || xG || yG || xA || yA), it also
-specified in https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02.
-
-The x509 certificate supports SM2-with-SM3 type certificate
-verification.  Because certificate verification requires ZA
-in addition to tbs data, ZA also depends on elliptic curve
-parameters and public key data, so you need to access tbs in sig
-and calculate ZA. Finally calculate the digest of the
-signature and complete the verification work. The calculation
-process of ZA is declared in specifications GM/T 0009-2012
-and GM/T 0003.2-2012.
-
-Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Tested-by: Xufeng Zhang <yunbo.xufeng@linux.alibaba.com>
-Reviewed-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- crypto/asymmetric_keys/Makefile          |  1 +
- crypto/asymmetric_keys/public_key.c      |  6 +++
- crypto/asymmetric_keys/public_key_sm2.c  | 61 ++++++++++++++++++++++++
- crypto/asymmetric_keys/x509_public_key.c |  3 ++
- include/crypto/public_key.h              | 15 ++++++
- 5 files changed, 86 insertions(+)
- create mode 100644 crypto/asymmetric_keys/public_key_sm2.c
+ fs/read_write.c | 179 ++++++++----------------------------------------
+ 1 file changed, 30 insertions(+), 149 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index 28b91adba2ae..1a99ea5acb6b 100644
---- a/crypto/asymmetric_keys/Makefile
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -11,6 +11,7 @@ asymmetric_keys-y := \
- 	signature.o
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 0a68037580b455..eab427b7cc0a3f 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -1068,226 +1068,107 @@ SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
+ 	return do_pwritev(fd, vec, vlen, pos, flags);
+ }
  
- obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
-+obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key_sm2.o
- obj-$(CONFIG_ASYMMETRIC_TPM_KEY_SUBTYPE) += asym_tpm.o
- 
- #
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index d8410ffd7f12..1d0492098bbd 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -299,6 +299,12 @@ int public_key_verify_signature(const struct public_key *pkey,
- 	if (ret)
- 		goto error_free_key;
- 
-+	if (strcmp(sig->pkey_algo, "sm2") = 0 && sig->data_size) {
-+		ret = cert_sig_digest_update(sig, tfm);
-+		if (ret)
-+			goto error_free_key;
-+	}
-+
- 	sg_init_table(src_sg, 2);
- 	sg_set_buf(&src_sg[0], sig->s, sig->s_size);
- 	sg_set_buf(&src_sg[1], sig->digest, sig->digest_size);
-diff --git a/crypto/asymmetric_keys/public_key_sm2.c b/crypto/asymmetric_keys/public_key_sm2.c
-new file mode 100644
-index 000000000000..7325cf21dbb4
---- /dev/null
-+++ b/crypto/asymmetric_keys/public_key_sm2.c
-@@ -0,0 +1,61 @@
-+/* SPDX-License-Identifier: GPL-2.0-or-later */
 +/*
-+ * asymmetric public-key algorithm for SM2-with-SM3 certificate
-+ * as specified by OSCCA GM/T 0003.1-2012 -- 0003.5-2012 SM2 and
-+ * described at https://tools.ietf.org/html/draft-shen-sm2-ecdsa-02
-+ *
-+ * Copyright (c) 2020, Alibaba Group.
-+ * Authors: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
++ * Various compat syscalls.  Note that they all pretend to take a native
++ * iovec - import_iovec will properly treat those as compat_iovecs based on
++ * in_compat_syscall().
 + */
-+
-+#include <crypto/sm3_base.h>
-+#include <crypto/sm2.h>
-+#include <crypto/public_key.h>
-+
-+#if IS_REACHABLE(CONFIG_CRYPTO_SM2)
-+
-+int cert_sig_digest_update(const struct public_key_signature *sig,
-+				struct crypto_akcipher *tfm_pkey)
-+{
-+	struct crypto_shash *tfm;
-+	struct shash_desc *desc;
-+	size_t desc_size;
-+	unsigned char dgst[SM3_DIGEST_SIZE];
-+	int ret;
-+
-+	BUG_ON(!sig->data);
-+
-+	ret = sm2_compute_z_digest(tfm_pkey, SM2_DEFAULT_USERID,
-+					SM2_DEFAULT_USERID_LEN, dgst);
-+	if (ret)
-+		return ret;
-+
-+	tfm = crypto_alloc_shash(sig->hash_algo, 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
-+	desc = kzalloc(desc_size, GFP_KERNEL);
-+	if (!desc)
-+		goto error_free_tfm;
-+
-+	desc->tfm = tfm;
-+
-+	ret = crypto_shash_init(desc);
-+	if (ret < 0)
-+		goto error_free_desc;
-+
-+	ret = crypto_shash_update(desc, dgst, SM3_DIGEST_SIZE);
-+	if (ret < 0)
-+		goto error_free_desc;
-+
-+	ret = crypto_shash_finup(desc, sig->data, sig->data_size, sig->digest);
-+
-+error_free_desc:
-+	kfree(desc);
-+error_free_tfm:
-+	crypto_free_shash(tfm);
-+	return ret;
-+}
-+
-+#endif /* ! IS_REACHABLE(CONFIG_CRYPTO_SM2) */
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index d964cc82b69c..ae450eb8be14 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -30,6 +30,9 @@ int x509_get_sig_params(struct x509_certificate *cert)
+ #ifdef CONFIG_COMPAT
+-static size_t compat_readv(struct file *file,
+-			   const struct compat_iovec __user *vec,
+-			   unsigned long vlen, loff_t *pos, rwf_t flags)
+-{
+-	struct iovec iovstack[UIO_FASTIOV];
+-	struct iovec *iov = iovstack;
+-	struct iov_iter iter;
+-	ssize_t ret;
+-
+-	ret = import_iovec(READ, (const struct iovec __user *)vec, vlen,
+-			   UIO_FASTIOV, &iov, &iter);
+-	if (ret >= 0) {
+-		ret = do_iter_read(file, &iter, pos, flags);
+-		kfree(iov);
+-	}
+-	if (ret > 0)
+-		add_rchar(current, ret);
+-	inc_syscr(current);
+-	return ret;
+-}
+-
+-static size_t do_compat_readv(compat_ulong_t fd,
+-				 const struct compat_iovec __user *vec,
+-				 compat_ulong_t vlen, rwf_t flags)
+-{
+-	struct fd f = fdget_pos(fd);
+-	ssize_t ret;
+-	loff_t pos;
+-
+-	if (!f.file)
+-		return -EBADF;
+-	pos = f.file->f_pos;
+-	ret = compat_readv(f.file, vec, vlen, &pos, flags);
+-	if (ret >= 0)
+-		f.file->f_pos = pos;
+-	fdput_pos(f);
+-	return ret;
+-
+-}
+-
+ COMPAT_SYSCALL_DEFINE3(readv, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		compat_ulong_t, vlen)
+ {
+-	return do_compat_readv(fd, vec, vlen, 0);
+-}
+-
+-static long do_compat_preadv64(unsigned long fd,
+-				  const struct compat_iovec __user *vec,
+-				  unsigned long vlen, loff_t pos, rwf_t flags)
+-{
+-	struct fd f;
+-	ssize_t ret;
+-
+-	if (pos < 0)
+-		return -EINVAL;
+-	f = fdget(fd);
+-	if (!f.file)
+-		return -EBADF;
+-	ret = -ESPIPE;
+-	if (f.file->f_mode & FMODE_PREAD)
+-		ret = compat_readv(f.file, vec, vlen, &pos, flags);
+-	fdput(f);
+-	return ret;
++	return do_readv(fd, vec, vlen, 0);
+ }
  
- 	pr_devel("=>%s()\n", __func__);
+ #ifdef __ARCH_WANT_COMPAT_SYS_PREADV64
+ COMPAT_SYSCALL_DEFINE4(preadv64, unsigned long, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		unsigned long, vlen, loff_t, pos)
+ {
+-	return do_compat_preadv64(fd, vec, vlen, pos, 0);
++	return do_preadv(fd, vec, vlen, pos, 0);
+ }
+ #endif
  
-+	sig->data = cert->tbs;
-+	sig->data_size = cert->tbs_size;
-+
- 	if (!cert->pub->pkey_algo)
- 		cert->unsupported_key = true;
+ COMPAT_SYSCALL_DEFINE5(preadv, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		compat_ulong_t, vlen, u32, pos_low, u32, pos_high)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
  
-diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-index 11f535cfb810..02a6dbe5c366 100644
---- a/include/crypto/public_key.h
-+++ b/include/crypto/public_key.h
-@@ -12,6 +12,7 @@
+-	return do_compat_preadv64(fd, vec, vlen, pos, 0);
++	return do_preadv(fd, vec, vlen, pos, 0);
+ }
  
- #include <linux/keyctl.h>
- #include <linux/oid_registry.h>
-+#include <crypto/akcipher.h>
+ #ifdef __ARCH_WANT_COMPAT_SYS_PREADV64V2
+ COMPAT_SYSCALL_DEFINE5(preadv64v2, unsigned long, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		unsigned long, vlen, loff_t, pos, rwf_t, flags)
+ {
+ 	if (pos = -1)
+-		return do_compat_readv(fd, vec, vlen, flags);
+-
+-	return do_compat_preadv64(fd, vec, vlen, pos, flags);
++		return do_readv(fd, vec, vlen, flags);
++	return do_preadv(fd, vec, vlen, pos, flags);
+ }
+ #endif
  
- /*
-  * Cryptographic data for the public-key subtype of the asymmetric key type.
-@@ -44,6 +45,8 @@ struct public_key_signature {
- 	const char *pkey_algo;
- 	const char *hash_algo;
- 	const char *encoding;
-+	const void *data;
-+	unsigned int data_size;
- };
+ COMPAT_SYSCALL_DEFINE6(preadv2, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		compat_ulong_t, vlen, u32, pos_low, u32, pos_high,
+ 		rwf_t, flags)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
  
- extern void public_key_signature_free(struct public_key_signature *sig);
-@@ -81,4 +84,16 @@ extern int verify_signature(const struct key *,
- int public_key_verify_signature(const struct public_key *pkey,
- 				const struct public_key_signature *sig);
+ 	if (pos = -1)
+-		return do_compat_readv(fd, vec, vlen, flags);
+-
+-	return do_compat_preadv64(fd, vec, vlen, pos, flags);
+-}
+-
+-static size_t compat_writev(struct file *file,
+-			    const struct compat_iovec __user *vec,
+-			    unsigned long vlen, loff_t *pos, rwf_t flags)
+-{
+-	struct iovec iovstack[UIO_FASTIOV];
+-	struct iovec *iov = iovstack;
+-	struct iov_iter iter;
+-	ssize_t ret;
+-
+-	ret = import_iovec(WRITE, (const struct iovec __user *)vec, vlen,
+-			   UIO_FASTIOV, &iov, &iter);
+-	if (ret >= 0) {
+-		file_start_write(file);
+-		ret = do_iter_write(file, &iter, pos, flags);
+-		file_end_write(file);
+-		kfree(iov);
+-	}
+-	if (ret > 0)
+-		add_wchar(current, ret);
+-	inc_syscw(current);
+-	return ret;
+-}
+-
+-static size_t do_compat_writev(compat_ulong_t fd,
+-				  const struct compat_iovec __user* vec,
+-				  compat_ulong_t vlen, rwf_t flags)
+-{
+-	struct fd f = fdget_pos(fd);
+-	ssize_t ret;
+-	loff_t pos;
+-
+-	if (!f.file)
+-		return -EBADF;
+-	pos = f.file->f_pos;
+-	ret = compat_writev(f.file, vec, vlen, &pos, flags);
+-	if (ret >= 0)
+-		f.file->f_pos = pos;
+-	fdput_pos(f);
+-	return ret;
++		return do_readv(fd, vec, vlen, flags);
++	return do_preadv(fd, vec, vlen, pos, flags);
+ }
  
-+#if IS_REACHABLE(CONFIG_CRYPTO_SM2)
-+int cert_sig_digest_update(const struct public_key_signature *sig,
-+				struct crypto_akcipher *tfm_pkey);
-+#else
-+static inline
-+int cert_sig_digest_update(const struct public_key_signature *sig,
-+				struct crypto_akcipher *tfm_pkey)
-+{
-+	return -ENOTSUPP;
-+}
-+#endif
-+
- #endif /* _LINUX_PUBLIC_KEY_H */
+ COMPAT_SYSCALL_DEFINE3(writev, compat_ulong_t, fd,
+-		const struct compat_iovec __user *, vec,
++		const struct iovec __user *, vec,
+ 		compat_ulong_t, vlen)
+ {
+-	return do_compat_writev(fd, vec, vlen, 0);
+-}
+-
+-static long do_compat_pwritev64(unsigned long fd,
+-				   const struct compat_iovec __user *vec,
+-				   unsigned long vlen, loff_t pos, rwf_t flags)
+-{
+-	struct fd f;
+-	ssize_t ret;
+-
+-	if (pos < 0)
+-		return -EINVAL;
+-	f = fdget(fd);
+-	if (!f.file)
+-		return -EBADF;
+-	ret = -ESPIPE;
+-	if (f.file->f_mode & FMODE_PWRITE)
+-		ret = compat_writev(f.file, vec, vlen, &pos, flags);
+-	fdput(f);
+-	return ret;
++	return do_writev(fd, vec, vlen, 0);
+ }
+ 
+ #ifdef __ARCH_WANT_COMPAT_SYS_PWRITEV64
+ COMPAT_SYSCALL_DEFINE4(pwritev64, unsigned long, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		unsigned long, vlen, loff_t, pos)
+ {
+-	return do_compat_pwritev64(fd, vec, vlen, pos, 0);
++	return do_pwritev(fd, vec, vlen, pos, 0);
+ }
+ #endif
+ 
+ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *,vec,
+ 		compat_ulong_t, vlen, u32, pos_low, u32, pos_high)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
+ 
+-	return do_compat_pwritev64(fd, vec, vlen, pos, 0);
++	return do_pwritev(fd, vec, vlen, pos, 0);
+ }
+ 
+ #ifdef __ARCH_WANT_COMPAT_SYS_PWRITEV64V2
+ COMPAT_SYSCALL_DEFINE5(pwritev64v2, unsigned long, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *, vec,
+ 		unsigned long, vlen, loff_t, pos, rwf_t, flags)
+ {
+ 	if (pos = -1)
+-		return do_compat_writev(fd, vec, vlen, flags);
+-
+-	return do_compat_pwritev64(fd, vec, vlen, pos, flags);
++		return do_writev(fd, vec, vlen, flags);
++	return do_pwritev(fd, vec, vlen, pos, flags);
+ }
+ #endif
+ 
+ COMPAT_SYSCALL_DEFINE6(pwritev2, compat_ulong_t, fd,
+-		const struct compat_iovec __user *,vec,
++		const struct iovec __user *,vec,
+ 		compat_ulong_t, vlen, u32, pos_low, u32, pos_high, rwf_t, flags)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
+ 
+ 	if (pos = -1)
+-		return do_compat_writev(fd, vec, vlen, flags);
+-
+-	return do_compat_pwritev64(fd, vec, vlen, pos, flags);
++		return do_writev(fd, vec, vlen, flags);
++	return do_pwritev(fd, vec, vlen, pos, flags);
+ }
+-
+-#endif
++#endif /* CONFIG_COMPAT */
+ 
+ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
+ 		  	   size_t count, loff_t max)
 -- 
-2.19.1.3.ge56e4f7
+2.28.0
