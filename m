@@ -1,57 +1,35 @@
 From: Pavel Begunkov <asml.silence@gmail.com>
-Date: Mon, 21 Sep 2020 16:13:18 +0000
+Date: Mon, 21 Sep 2020 16:20:42 +0000
 Subject: Re: [PATCH 1/9] kernel: add a PF_FORCE_COMPAT flag
-Message-Id: <486c92d0-0f2e-bd61-1ab8-302524af5e08@gmail.com>
+Message-Id: <2f2ee014-688e-8835-369b-61deb0688c73@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
-References: <CAK8P3a2Mi+1yttyGk4k7HxRVrMtmFqJewouVhynqUL0PJycmog@mail.gmail.com>
- <D0791499-1190-4C3F-A984-0A313ECA81C7@amacapital.net>
- <563138b5-7073-74bc-f0c5-b2bad6277e87@gmail.com>
-In-Reply-To: <563138b5-7073-74bc-f0c5-b2bad6277e87@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>, Arnd Bergmann <arnd@arndb.de>
-Cc: Andy Lutomirski <luto@kernel.org>, Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, David Howells <dhowells@redhat.com>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>, "open list:MIPS" <linux-mips@vger.kernel.org>, Parisc List <linux-parisc@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-s390 <linux-s390@vger.kernel.org>, sparclinux <sparclinux@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Linux SCSI List <linux-scsi@vger.kernel.org>, Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-aio <linux-aio@kvack.org>, io-uring@vger.kernel.org, linux-arch <linux-arch@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, Network Development <netdev@vger.kernel.org>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>
+References: <20200920151510.GS32101@casper.infradead.org>
+ <76A432F3-4532-42A4-900E-16C0AC2D21D8@gmail.com>
+In-Reply-To: <76A432F3-4532-42A4-900E-16C0AC2D21D8@gmail.com>
+To: William Kucharski <kucharsk@gmail.com>, Matthew Wilcox <willy@infradead.org>
+Cc: Christoph Hellwig <hch@lst.de>, Alexander Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, linux-arm-kernel@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-T24gMjEvMDkvMjAyMCAxOToxMCwgUGF2ZWwgQmVndW5rb3Ygd3JvdGU6Cj4gT24gMjAvMDkvMjAy
-MCAwMToyMiwgQW5keSBMdXRvbWlyc2tpIHdyb3RlOgo+Pgo+Pj4gT24gU2VwIDE5LCAyMDIwLCBh
-dCAyOjE2IFBNLCBBcm5kIEJlcmdtYW5uIDxhcm5kQGFybmRiLmRlPiB3cm90ZToKPj4+Cj4+PiDv
-u79PbiBTYXQsIFNlcCAxOSwgMjAyMCBhdCA2OjIxIFBNIEFuZHkgTHV0b21pcnNraSA8bHV0b0Br
-ZXJuZWwub3JnPiB3cm90ZToKPj4+Pj4gT24gRnJpLCBTZXAgMTgsIDIwMjAgYXQgODoxNiBBTSBD
-aHJpc3RvcGggSGVsbHdpZyA8aGNoQGxzdC5kZT4gd3JvdGU6Cj4+Pj4+IE9uIEZyaSwgU2VwIDE4
-LCAyMDIwIGF0IDAyOjU4OjIyUE0gKzAxMDAsIEFsIFZpcm8gd3JvdGU6Cj4+Pj4+PiBTYWlkIHRo
-YXQsIHdoeSBub3QgcHJvdmlkZSBhIHZhcmlhbnQgdGhhdCB3b3VsZCB0YWtlIGFuIGV4cGxpY2l0
-Cj4+Pj4+PiAiaXMgaXQgY29tcGF0IiBhcmd1bWVudCBhbmQgdXNlIGl0IHRoZXJlPyAgQW5kIGhh
-dmUgdGhlIG5vcm1hbAo+Pj4+Pj4gb25lIHBhc3MgaW5fY29tcGF0X3N5c2NhbGwoKSB0byB0aGF0
-Li4uCj4+Pj4+Cj4+Pj4+IFRoYXQgd291bGQgaGVscCB0byBub3QgaW50cm9kdWNlIGEgcmVncmVz
-c2lvbiB3aXRoIHRoaXMgc2VyaWVzIHllcy4KPj4+Pj4gQnV0IGl0IHdvdWxkbid0IGZpeCBleGlz
-dGluZyBidWdzIHdoZW4gaW9fdXJpbmcgaXMgdXNlZCB0byBhY2Nlc3MKPj4+Pj4gcmVhZCBvciB3
-cml0ZSBtZXRob2RzIHRoYXQgdXNlIGluX2NvbXBhdF9zeXNjYWxsKCkuICBPbmUgZXhhbXBsZSB0
-aGF0Cj4+Pj4+IEkgcmVjZW50bHkgcmFuIGludG8gaXMgZHJpdmVycy9zY3NpL3NnLmMuCj4+Pgo+
-Pj4gQWgsIHNvIHJlYWRpbmcgL2Rldi9pbnB1dC9ldmVudCogd291bGQgc3VmZmVyIGZyb20gdGhl
-IHNhbWUgaXNzdWUsCj4+PiBhbmQgdGhhdCBvbmUgd291bGQgaW4gZmFjdCBiZSBicm9rZW4gYnkg
-eW91ciBwYXRjaCBpbiB0aGUgaHlwb3RoZXRpY2FsCj4+PiBjYXNlIHRoYXQgc29tZW9uZSB0cmll
-ZCB0byB1c2UgaW9fdXJpbmcgdG8gcmVhZCAvZGV2L2lucHV0L2V2ZW50IG9uIHgzMi4uLgo+Pj4K
-Pj4+IEZvciByZWZlcmVuY2UsIEkgY2hlY2tlZCB0aGUgc29ja2V0IHRpbWVzdGFtcCBoYW5kbGlu
-ZyB0aGF0IGhhcyBhCj4+PiBudW1iZXIgb2YgY29ybmVyIGNhc2VzIHdpdGggdGltZTMyL3RpbWU2
-NCBmb3JtYXRzIGluIGNvbXBhdCBtb2RlLAo+Pj4gYnV0IG5vbmUgb2YgdGhvc2UgYXBwZWFyIHRv
-IGJlIGFmZmVjdGVkIGJ5IHRoZSBwcm9ibGVtLgo+Pj4KPj4+PiBBc2lkZSBmcm9tIHRoZSBwb3Rl
-bnRpYWxseSBuYXN0eSB1c2Ugb2YgcGVyLXRhc2sgdmFyaWFibGVzLCBvbmUgdGhpbmcKPj4+PiBJ
-IGRvbid0IGxpa2UgYWJvdXQgUEZfRk9SQ0VfQ09NUEFUIGlzIHRoYXQgaXQncyBvbmUtd2F5LiAg
-SWYgd2UncmUKPj4+PiBnb2luZyB0byBoYXZlIGEgZ2VuZXJpYyBtZWNoYW5pc20gZm9yIHRoaXMs
-IHNob3VsZG4ndCB3ZSBhbGxvdyBhIGZ1bGwKPj4+PiBvdmVycmlkZSBvZiB0aGUgc3lzY2FsbCBh
-cmNoIGluc3RlYWQgb2YganVzdCBhbGxvd2luZyBmb3JjaW5nIGNvbXBhdAo+Pj4+IHNvIHRoYXQg
-YSBjb21wYXQgc3lzY2FsbCBjYW4gZG8gYSBub24tY29tcGF0IG9wZXJhdGlvbj8KPj4+Cj4+PiBU
-aGUgb25seSByZWFzb24gaXQncyBuZWVkZWQgaGVyZSBpcyB0aGF0IHRoZSBjYWxsZXIgaXMgaW4g
-YSBrZXJuZWwKPj4+IHRocmVhZCByYXRoZXIgdGhhbiBhIHN5c3RlbSBjYWxsLiBBcmUgdGhlcmUg
-YW55IHBvc3NpYmxlIHNjZW5hcmlvcwo+Pj4gd2hlcmUgb25lIHdvdWxkIGFjdHVhbGx5IG5lZWQg
-dGhlIG9wcG9zaXRlPwo+Pj4KPj4KPj4gSSBjYW4gY2VydGFpbmx5IGltYWdpbmUgbmVlZGluZyB0
-byBmb3JjZSB4MzIgbW9kZSBmcm9tIGEga2VybmVsIHRocmVhZC4KPj4KPj4gQXMgZm9yIHRoZSBv
-dGhlciBkaXJlY3Rpb246IHdoYXQgZXhhY3RseSBhcmUgdGhlIGRlc2lyZWQgYml0bmVzcy9hcmNo
-IHNlbWFudGljcyBvZiBpb191cmluZz8gIElzIHRoZSBvcGVyYXRpb24gYml0bmVzcyBjaG9zZW4g
-YnkgdGhlIGlvX3VyaW5nIGNyZWF0aW9uIG9yIGJ5IHRoZSBpb191cmluZ19lbnRlcigpIGJpdG5l
-c3M/Cj4gCj4gSXQncyByYXRoZXIgdGhlIHNlY29uZCBvbmUuIEV2ZW4gdGhvdWdoIEFGQUlSIGl0
-IHdhc24ndCBkaXNjdXNzZWQKPiBzcGVjaWZpY2FsbHksIHRoYXQgaG93IGl0IHdvcmtzIG5vdyAo
-X3BhcnRpYWxseV8pLgoKRG91YmxlIGNoZWNrZWQgLS0gSSdtIHdyb25nLCB0aGF0J3MgdGhlIGZv
-cm1lciBvbmUuIE1vc3Qgb2YgaXQgaXMgYmFzZWQKb24gYSBmbGFnIHRoYXQgd2FzIHNldCBhbiBj
-cmVhdGlvbi4KCi0tIApQYXZlbCBCZWd1bmtvdg==
+On 20/09/2020 18:55, William Kucharski wrote:
+> I really like that as it’s self-documenting and anyone debugging it can see what is actually being used at a glance.
+
+Also creates special cases for things that few people care about,
+and makes it a pain for cross-platform (cross-bitness) development.
+
+> 
+>> On Sep 20, 2020, at 09:15, Matthew Wilcox <willy@infradead.org> wrote:
+>>
+>> ﻿On Fri, Sep 18, 2020 at 02:45:25PM +0200, Christoph Hellwig wrote:
+>>> Add a flag to force processing a syscall as a compat syscall.  This is
+>>> required so that in_compat_syscall() works for I/O submitted by io_uring
+>>> helper threads on behalf of compat syscalls.
+>>
+>> Al doesn't like this much, but my suggestion is to introduce two new
+>> opcodes -- IORING_OP_READV32 and IORING_OP_WRITEV32.  The compat code
+>> can translate IORING_OP_READV to IORING_OP_READV32 and then the core
+>> code can know what that user pointer is pointing to.
+
+-- 
+Pavel Begunkov
