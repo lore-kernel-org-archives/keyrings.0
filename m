@@ -1,102 +1,61 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 14 Sep 2020 18:02:38 +0000
-Subject: Re: [PATCH v2] certs: Add EFI_CERT_X509_GUID support for dbx entries
-Message-Id: <20200914180238.GB9369@linux.intel.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 22 Sep 2020 02:28:04 +0000
+Subject: [PATCH v13 0/5] TPM 2.0 trusted key rework
+Message-Id: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200909172736.73003-1-eric.snowberg@oracle.com>
- <20200914180127.GA9369@linux.intel.com>
-In-Reply-To: <20200914180127.GA9369@linux.intel.com>
-To: Eric Snowberg <eric.snowberg@oracle.com>
-Cc: dhowells@redhat.com, dwmw2@infradead.org, herbert@gondor.apana.org.au, davem@davemloft.net, jmorris@namei.org, serge@hallyn.com, nayna@linux.ibm.com, zohar@linux.ibm.com, erichte@linux.ibm.com, mpe@ellerman.id.au, keyrings@vger.kernel.org, linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-On Mon, Sep 14, 2020 at 09:01:34PM +0300, Jarkko Sakkinen wrote:
-> On Wed, Sep 09, 2020 at 01:27:36PM -0400, Eric Snowberg wrote:
-> > The Secure Boot Forbidden Signature Database, dbx, contains a list of now
-> > revoked signatures and keys previously approved to boot with UEFI Secure
-> > Boot enabled.  The dbx is capable of containing any number of
-> > EFI_CERT_X509_SHA256_GUID, EFI_CERT_SHA256_GUID, and EFI_CERT_X509_GUID
-> > entries.
-> > 
-> > Currently when EFI_CERT_X509_GUID are contained in the dbx, the entries are
-> > skipped.
-> > 
-> > Add support for EFI_CERT_X509_GUID dbx entries. When a EFI_CERT_X509_GUID
-> > is found, it is added as an asymmetrical key to the .blacklist keyring.
-> > Anytime the .platform keyring is used, the keys in the .blacklist keyring
-> > are referenced, if a matching key is found, the key will be rejected.
-> > 
-> > Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
-> > ---
-> > 
-> > v2: 
-> >  Fixed build issue reported by kernel test robot <lkp@intel.com>
-> >  Commit message update (suggested by Jarkko Sakkinen)
-> > 
-> > ---
-> >  certs/blacklist.c                             | 36 +++++++++++++++++++
-> >  certs/system_keyring.c                        |  6 ++++
-> >  include/crypto/pkcs7.h                        |  8 +++++
-> >  include/keys/system_keyring.h                 | 11 ++++++
-> >  .../platform_certs/keyring_handler.c          | 11 ++++++
-> >  5 files changed, 72 insertions(+)
-> > 
-> > diff --git a/certs/blacklist.c b/certs/blacklist.c
-> > index 6514f9ebc943..17ebf50cf0ae 100644
-> > --- a/certs/blacklist.c
-> > +++ b/certs/blacklist.c
-> > @@ -15,6 +15,7 @@
-> >  #include <linux/err.h>
-> >  #include <linux/seq_file.h>
-> >  #include <keys/system_keyring.h>
-> > +#include <crypto/pkcs7.h>
-> >  #include "blacklist.h"
-> >  
-> >  static struct key *blacklist_keyring;
-> > @@ -100,6 +101,41 @@ int mark_hash_blacklisted(const char *hash)
-> >  	return 0;
-> >  }
-> >  
-> > +int mark_key_revocationlisted(const char *data, size_t size)
-> > +{
-> > +	key_ref_t key;
-> > +
-> > +	key = key_create_or_update(make_key_ref(blacklist_keyring, true),
-> > +				   "asymmetric",
-> > +				   NULL,
-> > +				   data,
-> > +				   size,
-> > +				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
-> > +				    KEY_USR_VIEW),
-> > +				   KEY_ALLOC_NOT_IN_QUOTA |
-> > +				   KEY_ALLOC_BUILT_IN);
-> > +
-> > +	if (IS_ERR(key)) {
-> > +		pr_err("Problem with revocation key (%ld)\n", PTR_ERR(key));
-> > +		return PTR_ERR(key);
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +int is_key_revocationlisted(struct pkcs7_message *pkcs7)
-> > +{
-> > +	int ret;
-> > +
-> > +	ret = pkcs7_validate_trust(pkcs7, blacklist_keyring);
-> > +
-> > +	if (ret = 0)
-> > +		return -EKEYREJECTED;
-> > +
-> > +	return -ENOKEY;
-> > +}
-> > +EXPORT_SYMBOL_GPL(is_key_revocationlisted);
-> 
-> What required this callable from a module?
+Updated to fix compile problem identified by 0day
 
-Right, nees to be exported for pkcs7.
+General cover letter minus policy bit:
 
+This patch updates the trusted key code to export keys in the ASN.1
+format used by current TPM key tools (openssl_tpm2_engine and
+openconnect).  The current code will try to load keys containing
+policy, but being unable to formulate the policy commands necessary to
+load them, the unseal will always fail unless the policy is executed
+in user space and a pre-formed policy session passed in.
 
-/Jarkko
+The key format is designed to be compatible with our two openssl
+engine implementations as well as with the format used by openconnect.
+I've added seal/unseal to my engine so I can use it for
+interoperability testing and I'll later use this for sealed symmetric
+keys via engine:
+
+https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
+
+James
+
+---
+
+James Bottomley (5):
+  lib: add ASN.1 encoder
+  oid_registry: Add TCG defined OIDS for TPM keys
+  security: keys: trusted: fix TPM2 authorizations
+  security: keys: trusted: use ASN.1 TPM2 key format for the blobs
+  security: keys: trusted: Make sealed key properly interoperable
+
+ .../security/keys/trusted-encrypted.rst       |  58 +++
+ include/keys/trusted-type.h                   |   2 +
+ include/linux/asn1_encoder.h                  |  32 ++
+ include/linux/oid_registry.h                  |   5 +
+ include/linux/tpm.h                           |   2 +
+ lib/Kconfig                                   |   3 +
+ lib/Makefile                                  |   1 +
+ lib/asn1_encoder.c                            | 454 ++++++++++++++++++
+ security/keys/Kconfig                         |   2 +
+ security/keys/trusted-keys/Makefile           |   4 +-
+ security/keys/trusted-keys/tpm2key.asn1       |  11 +
+ security/keys/trusted-keys/trusted_tpm1.c     |  34 +-
+ security/keys/trusted-keys/trusted_tpm2.c     | 266 +++++++++-
+ 13 files changed, 843 insertions(+), 31 deletions(-)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
+ create mode 100644 security/keys/trusted-keys/tpm2key.asn1
+
+-- 
+2.26.2
