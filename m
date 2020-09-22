@@ -1,411 +1,169 @@
-From: Christoph Hellwig <hch@lst.de>
-Date: Fri, 25 Sep 2020 04:51:39 +0000
-Subject: [PATCH 2/9] iov_iter: move rw_copy_check_uvector() into lib/iov_iter.c
-Message-Id: <20200925045146.1283714-3-hch@lst.de>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Tue, 22 Sep 2020 02:28:09 +0000
+Subject: [PATCH v13 5/5] security: keys: trusted: Make sealed key properly interoperable
+Message-Id: <20200922022809.7105-6-James.Bottomley@HansenPartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200925045146.1283714-1-hch@lst.de>
-In-Reply-To: <20200925045146.1283714-1-hch@lst.de>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, David Laight <David.Laight@aculab.com>, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org, David Laight <David.Laight@ACULAB.COM>, David Laight <david.laight@aculab.com>
+References: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
+To: linux-integrity@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-From: David Laight <David.Laight@ACULAB.COM>
+The current implementation appends a migratable flag to the end of a
+key, meaning the format isn't exactly interoperable because the using
+party needs to know to strip this extra byte.  However, all other
+consumers of TPM sealed blobs expect the unseal to return exactly the
+key.  Since TPM2 keys have a key property flag that corresponds to
+migratable, use that flag instead and make the actual key the only
+sealed quantity.  This is secure because the key properties are bound
+to a hash in the private part, so if they're altered the key won't
+load.
 
-This lets the compiler inline it into import_iovec() generating
-much better code.
+Backwards compatibility is implemented by detecting whether we're
+loading a new format key or not and correctly setting migratable from
+the last byte of old format keys.
 
-Signed-off-by: David Laight <david.laight@aculab.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+
 ---
- fs/read_write.c | 179 ------------------------------------------------
- lib/iov_iter.c  | 176 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 176 insertions(+), 179 deletions(-)
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 5db58b8c78d0dd..e5e891a88442ef 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -752,185 +752,6 @@ static ssize_t do_loop_readv_writev(struct file *filp, struct iov_iter *iter,
- 	return ret;
- }
+v2: added length checks to untrusted payload
+v8: recover patch
+---
+ include/linux/tpm.h                       |  2 +
+ security/keys/trusted-keys/trusted_tpm2.c | 53 ++++++++++++++++-------
+ 2 files changed, 40 insertions(+), 15 deletions(-)
+
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index ae2482510f8c..35224860fd0c 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -305,6 +305,8 @@ struct tpm_buf {
+ };
  
--/**
-- * rw_copy_check_uvector() - Copy an array of &struct iovec from userspace
-- *     into the kernel and check that it is valid.
-- *
-- * @type: One of %CHECK_IOVEC_ONLY, %READ, or %WRITE.
-- * @uvector: Pointer to the userspace array.
-- * @nr_segs: Number of elements in userspace array.
-- * @fast_segs: Number of elements in @fast_pointer.
-- * @fast_pointer: Pointer to (usually small on-stack) kernel array.
-- * @ret_pointer: (output parameter) Pointer to a variable that will point to
-- *     either @fast_pointer, a newly allocated kernel array, or NULL,
-- *     depending on which array was used.
-- *
-- * This function copies an array of &struct iovec of @nr_segs from
-- * userspace into the kernel and checks that each element is valid (e.g.
-- * it does not point to a kernel address or cause overflow by being too
-- * large, etc.).
-- *
-- * As an optimization, the caller may provide a pointer to a small
-- * on-stack array in @fast_pointer, typically %UIO_FASTIOV elements long
-- * (the size of this array, or 0 if unused, should be given in @fast_segs).
-- *
-- * @ret_pointer will always point to the array that was used, so the
-- * caller must take care not to call kfree() on it e.g. in case the
-- * @fast_pointer array was used and it was allocated on the stack.
-- *
-- * Return: The total number of bytes covered by the iovec array on success
-- *   or a negative error code on error.
-- */
--ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
--			      unsigned long nr_segs, unsigned long fast_segs,
--			      struct iovec *fast_pointer,
--			      struct iovec **ret_pointer)
--{
--	unsigned long seg;
--	ssize_t ret;
--	struct iovec *iov = fast_pointer;
--
--	/*
--	 * SuS says "The readv() function *may* fail if the iovcnt argument
--	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
--	 * traditionally returned zero for zero segments, so...
--	 */
--	if (nr_segs = 0) {
--		ret = 0;
--		goto out;
--	}
--
--	/*
--	 * First get the "struct iovec" from user memory and
--	 * verify all the pointers
--	 */
--	if (nr_segs > UIO_MAXIOV) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (nr_segs > fast_segs) {
--		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
--		if (iov = NULL) {
--			ret = -ENOMEM;
--			goto out;
--		}
--	}
--	if (copy_from_user(iov, uvector, nr_segs*sizeof(*uvector))) {
--		ret = -EFAULT;
--		goto out;
--	}
--
--	/*
--	 * According to the Single Unix Specification we should return EINVAL
--	 * if an element length is < 0 when cast to ssize_t or if the
--	 * total length would overflow the ssize_t return value of the
--	 * system call.
--	 *
--	 * Linux caps all read/write calls to MAX_RW_COUNT, and avoids the
--	 * overflow case.
--	 */
--	ret = 0;
--	for (seg = 0; seg < nr_segs; seg++) {
--		void __user *buf = iov[seg].iov_base;
--		ssize_t len = (ssize_t)iov[seg].iov_len;
--
--		/* see if we we're about to use an invalid len or if
--		 * it's about to overflow ssize_t */
--		if (len < 0) {
--			ret = -EINVAL;
--			goto out;
--		}
--		if (type >= 0
--		    && unlikely(!access_ok(buf, len))) {
--			ret = -EFAULT;
--			goto out;
--		}
--		if (len > MAX_RW_COUNT - ret) {
--			len = MAX_RW_COUNT - ret;
--			iov[seg].iov_len = len;
--		}
--		ret += len;
--	}
--out:
--	*ret_pointer = iov;
--	return ret;
--}
--
--#ifdef CONFIG_COMPAT
--ssize_t compat_rw_copy_check_uvector(int type,
--		const struct compat_iovec __user *uvector, unsigned long nr_segs,
--		unsigned long fast_segs, struct iovec *fast_pointer,
--		struct iovec **ret_pointer)
--{
--	compat_ssize_t tot_len;
--	struct iovec *iov = *ret_pointer = fast_pointer;
--	ssize_t ret = 0;
--	int seg;
--
--	/*
--	 * SuS says "The readv() function *may* fail if the iovcnt argument
--	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
--	 * traditionally returned zero for zero segments, so...
--	 */
--	if (nr_segs = 0)
--		goto out;
--
--	ret = -EINVAL;
--	if (nr_segs > UIO_MAXIOV)
--		goto out;
--	if (nr_segs > fast_segs) {
--		ret = -ENOMEM;
--		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
--		if (iov = NULL)
--			goto out;
--	}
--	*ret_pointer = iov;
--
--	ret = -EFAULT;
--	if (!access_ok(uvector, nr_segs*sizeof(*uvector)))
--		goto out;
--
--	/*
--	 * Single unix specification:
--	 * We should -EINVAL if an element length is not >= 0 and fitting an
--	 * ssize_t.
--	 *
--	 * In Linux, the total length is limited to MAX_RW_COUNT, there is
--	 * no overflow possibility.
--	 */
--	tot_len = 0;
--	ret = -EINVAL;
--	for (seg = 0; seg < nr_segs; seg++) {
--		compat_uptr_t buf;
--		compat_ssize_t len;
--
--		if (__get_user(len, &uvector->iov_len) ||
--		   __get_user(buf, &uvector->iov_base)) {
--			ret = -EFAULT;
--			goto out;
--		}
--		if (len < 0)	/* size_t not fitting in compat_ssize_t .. */
--			goto out;
--		if (type >= 0 &&
--		    !access_ok(compat_ptr(buf), len)) {
--			ret = -EFAULT;
--			goto out;
--		}
--		if (len > MAX_RW_COUNT - tot_len)
--			len = MAX_RW_COUNT - tot_len;
--		tot_len += len;
--		iov->iov_base = compat_ptr(buf);
--		iov->iov_len = (compat_size_t) len;
--		uvector++;
--		iov++;
--	}
--	ret = tot_len;
--
--out:
--	return ret;
--}
--#endif
--
- static ssize_t do_iter_read(struct file *file, struct iov_iter *iter,
- 		loff_t *pos, rwf_t flags)
- {
-diff --git a/lib/iov_iter.c b/lib/iov_iter.c
-index 5e40786c8f1232..ccea9db3f72be8 100644
---- a/lib/iov_iter.c
-+++ b/lib/iov_iter.c
-@@ -1650,6 +1650,109 @@ const void *dup_iter(struct iov_iter *new, struct iov_iter *old, gfp_t flags)
- }
- EXPORT_SYMBOL(dup_iter);
+ enum tpm2_object_attributes {
++	TPM2_OA_FIXED_TPM		= BIT(1),
++	TPM2_OA_FIXED_PARENT		= BIT(4),
+ 	TPM2_OA_USER_WITH_AUTH		= BIT(6),
+ };
  
-+/**
-+ * rw_copy_check_uvector() - Copy an array of &struct iovec from userspace
-+ *     into the kernel and check that it is valid.
-+ *
-+ * @type: One of %CHECK_IOVEC_ONLY, %READ, or %WRITE.
-+ * @uvector: Pointer to the userspace array.
-+ * @nr_segs: Number of elements in userspace array.
-+ * @fast_segs: Number of elements in @fast_pointer.
-+ * @fast_pointer: Pointer to (usually small on-stack) kernel array.
-+ * @ret_pointer: (output parameter) Pointer to a variable that will point to
-+ *     either @fast_pointer, a newly allocated kernel array, or NULL,
-+ *     depending on which array was used.
-+ *
-+ * This function copies an array of &struct iovec of @nr_segs from
-+ * userspace into the kernel and checks that each element is valid (e.g.
-+ * it does not point to a kernel address or cause overflow by being too
-+ * large, etc.).
-+ *
-+ * As an optimization, the caller may provide a pointer to a small
-+ * on-stack array in @fast_pointer, typically %UIO_FASTIOV elements long
-+ * (the size of this array, or 0 if unused, should be given in @fast_segs).
-+ *
-+ * @ret_pointer will always point to the array that was used, so the
-+ * caller must take care not to call kfree() on it e.g. in case the
-+ * @fast_pointer array was used and it was allocated on the stack.
-+ *
-+ * Return: The total number of bytes covered by the iovec array on success
-+ *   or a negative error code on error.
-+ */
-+ssize_t rw_copy_check_uvector(int type, const struct iovec __user *uvector,
-+		unsigned long nr_segs, unsigned long fast_segs,
-+		struct iovec *fast_pointer, struct iovec **ret_pointer)
-+{
-+	unsigned long seg;
-+	ssize_t ret;
-+	struct iovec *iov = fast_pointer;
-+
-+	/*
-+	 * SuS says "The readv() function *may* fail if the iovcnt argument
-+	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
-+	 * traditionally returned zero for zero segments, so...
-+	 */
-+	if (nr_segs = 0) {
-+		ret = 0;
-+		goto out;
-+	}
-+
-+	/*
-+	 * First get the "struct iovec" from user memory and
-+	 * verify all the pointers
-+	 */
-+	if (nr_segs > UIO_MAXIOV) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	if (nr_segs > fast_segs) {
-+		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
-+		if (iov = NULL) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+	}
-+	if (copy_from_user(iov, uvector, nr_segs*sizeof(*uvector))) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+
-+	/*
-+	 * According to the Single Unix Specification we should return EINVAL
-+	 * if an element length is < 0 when cast to ssize_t or if the
-+	 * total length would overflow the ssize_t return value of the
-+	 * system call.
-+	 *
-+	 * Linux caps all read/write calls to MAX_RW_COUNT, and avoids the
-+	 * overflow case.
-+	 */
-+	ret = 0;
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		void __user *buf = iov[seg].iov_base;
-+		ssize_t len = (ssize_t)iov[seg].iov_len;
-+
-+		/* see if we we're about to use an invalid len or if
-+		 * it's about to overflow ssize_t */
-+		if (len < 0) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+		if (type >= 0
-+		    && unlikely(!access_ok(buf, len))) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+		if (len > MAX_RW_COUNT - ret) {
-+			len = MAX_RW_COUNT - ret;
-+			iov[seg].iov_len = len;
-+		}
-+		ret += len;
-+	}
-+out:
-+	*ret_pointer = iov;
-+	return ret;
-+}
-+
- /**
-  * import_iovec() - Copy an array of &struct iovec from userspace
-  *     into the kernel, check that it is valid, and initialize a new
-@@ -1695,6 +1798,79 @@ EXPORT_SYMBOL(import_iovec);
- #ifdef CONFIG_COMPAT
- #include <linux/compat.h>
+diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
+index e8dcc47b3388..905c5ca4d51c 100644
+--- a/security/keys/trusted-keys/trusted_tpm2.c
++++ b/security/keys/trusted-keys/trusted_tpm2.c
+@@ -231,6 +231,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 	unsigned int blob_len;
+ 	struct tpm_buf buf;
+ 	u32 hash;
++	u32 flags;
+ 	int i;
+ 	int rc;
  
-+ssize_t compat_rw_copy_check_uvector(int type,
-+		const struct compat_iovec __user *uvector,
-+		unsigned long nr_segs, unsigned long fast_segs,
-+		struct iovec *fast_pointer, struct iovec **ret_pointer)
-+{
-+	compat_ssize_t tot_len;
-+	struct iovec *iov = *ret_pointer = fast_pointer;
-+	ssize_t ret = 0;
-+	int seg;
+@@ -259,31 +260,32 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+ 			     TPM_DIGEST_SIZE);
+ 
+ 	/* sensitive */
+-	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len + 1);
++	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len);
+ 
+ 	tpm_buf_append_u16(&buf, options->blobauth_len);
+ 	if (options->blobauth_len)
+ 		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
+ 
+-	tpm_buf_append_u16(&buf, payload->key_len + 1);
++	tpm_buf_append_u16(&buf, payload->key_len);
+ 	tpm_buf_append(&buf, payload->key, payload->key_len);
+-	tpm_buf_append_u8(&buf, payload->migratable);
+ 
+ 	/* public */
+ 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
+ 	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
+ 	tpm_buf_append_u16(&buf, hash);
+ 
++	/* key properties */
++	flags = 0;
++	flags |= options->policydigest_len ? 0 : TPM2_OA_USER_WITH_AUTH;
++	flags |= payload->migratable ? (TPM2_OA_FIXED_TPM |
++					TPM2_OA_FIXED_PARENT) : 0;
++	tpm_buf_append_u32(&buf, flags);
 +
-+	/*
-+	 * SuS says "The readv() function *may* fail if the iovcnt argument
-+	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
-+	 * traditionally returned zero for zero segments, so...
-+	 */
-+	if (nr_segs = 0)
-+		goto out;
+ 	/* policy */
+-	if (options->policydigest_len) {
+-		tpm_buf_append_u32(&buf, 0);
+-		tpm_buf_append_u16(&buf, options->policydigest_len);
++	tpm_buf_append_u16(&buf, options->policydigest_len);
++	if (options->policydigest_len)
+ 		tpm_buf_append(&buf, options->policydigest,
+ 			       options->policydigest_len);
+-	} else {
+-		tpm_buf_append_u32(&buf, TPM2_OA_USER_WITH_AUTH);
+-		tpm_buf_append_u16(&buf, 0);
+-	}
+ 
+ 	/* public parameters */
+ 	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
+@@ -356,8 +358,9 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	unsigned int private_len;
+ 	unsigned int public_len;
+ 	unsigned int blob_len;
+-	u8 *blob;
++	u8 *blob, *pub;
+ 	int rc;
++	u32 attrs;
+ 
+ 	rc = tpm2_key_decode(payload, options, &blob);
+ 	if (rc) {
+@@ -384,6 +387,16 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
+ 	if (private_len + 2 + public_len + 2 > payload->blob_len)
+ 		return -E2BIG;
+ 
++	pub = blob + 2 + private_len + 2;
++	/* key attributes are always at offset 4 */
++	attrs = get_unaligned_be32(pub + 4);
 +
-+	ret = -EINVAL;
-+	if (nr_segs > UIO_MAXIOV)
-+		goto out;
-+	if (nr_segs > fast_segs) {
-+		ret = -ENOMEM;
-+		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
-+		if (iov = NULL)
-+			goto out;
-+	}
-+	*ret_pointer = iov;
++	if ((attrs & (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT)) =
++	    (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT))
++		payload->migratable = 0;
++	else
++		payload->migratable = 1;
 +
-+	ret = -EFAULT;
-+	if (!access_ok(uvector, nr_segs*sizeof(*uvector)))
-+		goto out;
-+
-+	/*
-+	 * Single unix specification:
-+	 * We should -EINVAL if an element length is not >= 0 and fitting an
-+	 * ssize_t.
-+	 *
-+	 * In Linux, the total length is limited to MAX_RW_COUNT, there is
-+	 * no overflow possibility.
-+	 */
-+	tot_len = 0;
-+	ret = -EINVAL;
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		compat_uptr_t buf;
-+		compat_ssize_t len;
-+
-+		if (__get_user(len, &uvector->iov_len) ||
-+		   __get_user(buf, &uvector->iov_base)) {
-+			ret = -EFAULT;
-+			goto out;
+ 	blob_len = private_len + public_len + 4;
+ 	if (blob_len > payload->blob_len)
+ 		return -E2BIG;
+@@ -464,7 +477,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 	if (!rc) {
+ 		data_len = be16_to_cpup(
+ 			(__be16 *) &buf.data[TPM_HEADER_SIZE + 4]);
+-		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE + 1) {
++		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE) {
+ 			rc = -EFAULT;
+ 			goto out;
+ 		}
+@@ -475,9 +488,19 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+ 		}
+ 		data = &buf.data[TPM_HEADER_SIZE + 6];
+ 
+-		memcpy(payload->key, data, data_len - 1);
+-		payload->key_len = data_len - 1;
+-		payload->migratable = data[data_len - 1];
++		if (payload->old_format) {
++			/* migratable flag is at the end of the key */
++			memcpy(payload->key, data, data_len - 1);
++			payload->key_len = data_len - 1;
++			payload->migratable = data[data_len - 1];
++		} else {
++			/*
++			 * migratable flag already collected from key
++			 * attributes
++			 */
++			memcpy(payload->key, data, data_len);
++			payload->key_len = data_len;
 +		}
-+		if (len < 0)	/* size_t not fitting in compat_ssize_t .. */
-+			goto out;
-+		if (type >= 0 &&
-+		    !access_ok(compat_ptr(buf), len)) {
-+			ret = -EFAULT;
-+			goto out;
-+		}
-+		if (len > MAX_RW_COUNT - tot_len)
-+			len = MAX_RW_COUNT - tot_len;
-+		tot_len += len;
-+		iov->iov_base = compat_ptr(buf);
-+		iov->iov_len = (compat_size_t) len;
-+		uvector++;
-+		iov++;
-+	}
-+	ret = tot_len;
-+
-+out:
-+	return ret;
-+}
-+
- ssize_t compat_import_iovec(int type,
- 		const struct compat_iovec __user * uvector,
- 		unsigned nr_segs, unsigned fast_segs,
+ 	}
+ 
+ out:
 -- 
-2.28.0
+2.26.2
