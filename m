@@ -1,93 +1,101 @@
-From: Andy Lutomirski <luto@kernel.org>
-Date: Tue, 22 Sep 2020 00:58:20 +0000
+From: Pavel Begunkov <asml.silence@gmail.com>
+Date: Tue, 22 Sep 2020 06:30:09 +0000
 Subject: Re: [PATCH 1/9] kernel: add a PF_FORCE_COMPAT flag
-Message-Id: <CALCETrUEC81va8-fuUXG1uA5rbKxnKDYsDOXC70_HtKD4LAeAg@mail.gmail.com>
+Message-Id: <e0a1b4d1-ff47-18d1-d535-c62812cb3105@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ibm852"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
 References: <CAK8P3a2Mi+1yttyGk4k7HxRVrMtmFqJewouVhynqUL0PJycmog@mail.gmail.com>
- <D0791499-1190-4C3F-A984-0A313ECA81C7@amacapital.net> <563138b5-7073-74bc-f0c5-b2bad6277e87@gmail.com>
- <486c92d0-0f2e-bd61-1ab8-302524af5e08@gmail.com> <CALCETrW3rwGsgfLNnu_0JAcL5jvrPVTLTWM3JpbB5P9Hye6Fdw@mail.gmail.com>
+ <D0791499-1190-4C3F-A984-0A313ECA81C7@amacapital.net>
+ <563138b5-7073-74bc-f0c5-b2bad6277e87@gmail.com>
+ <486c92d0-0f2e-bd61-1ab8-302524af5e08@gmail.com>
+ <CALCETrW3rwGsgfLNnu_0JAcL5jvrPVTLTWM3JpbB5P9Hye6Fdw@mail.gmail.com>
  <d5c6736a-2cb4-4e22-78da-a667bda5c05a@gmail.com>
-In-Reply-To: <d5c6736a-2cb4-4e22-78da-a667bda5c05a@gmail.com>
-To: Pavel Begunkov <asml.silence@gmail.com>
-Cc: Andy Lutomirski <luto@kernel.org>, Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, David Howells <dhowells@redhat.com>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>, "open list:MIPS" <linux-mips@vger.kernel.org>, Parisc List <linux-parisc@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-s390 <linux-s390@vger.kernel.org>, sparclinux <sparclinux@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Linux SCSI List <linux-scsi@vger.kernel.org>, Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-aio <linux-aio@kvack.org>, io-uring@vger.kernel.org, linux-arch <linux-arch@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, Network Development <netdev@vger.kernel.org>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>
+ <CALCETrUEC81va8-fuUXG1uA5rbKxnKDYsDOXC70_HtKD4LAeAg@mail.gmail.com>
+In-Reply-To: <CALCETrUEC81va8-fuUXG1uA5rbKxnKDYsDOXC70_HtKD4LAeAg@mail.gmail.com>
+To: Andy Lutomirski <luto@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, David Howells <dhowells@redhat.com>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>, "open list:MIPS" <linux-mips@vger.kernel.org>, Parisc List <linux-parisc@vger.kernel.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-s390 <linux-s390@vger.kernel.org>, sparclinux <sparclinux@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Linux SCSI List <linux-scsi@vger.kernel.org>, Linux FS Devel <linux-fsdevel@vger.kernel.org>, linux-aio <linux-aio@kvack.org>, io-uring@vger.kernel.org, linux-arch <linux-arch@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>, Network Development <netdev@vger.kernel.org>, keyrings@vger.kernel.org, LSM List <linux-security-module@vger.kernel.org>
 
-T24gTW9uLCBTZXAgMjEsIDIwMjAgYXQgNToyNCBQTSBQYXZlbCBCZWd1bmtvdiA8YXNtbC5zaWxl
-bmNlQGdtYWlsLmNvbT4gd3JvdGU6Cj4KPgo+Cj4gT24gMjIvMDkvMjAyMCAwMjo1MSwgQW5keSBM
-dXRvbWlyc2tpIHdyb3RlOgo+ID4gT24gTW9uLCBTZXAgMjEsIDIwMjAgYXQgOToxNSBBTSBQYXZl
-bCBCZWd1bmtvdiA8YXNtbC5zaWxlbmNlQGdtYWlsLmNvbT4gd3JvdGU6Cj4gPj4KPiA+PiBPbiAy
-MS8wOS8yMDIwIDE5OjEwLCBQYXZlbCBCZWd1bmtvdiB3cm90ZToKPiA+Pj4gT24gMjAvMDkvMjAy
-MCAwMToyMiwgQW5keSBMdXRvbWlyc2tpIHdyb3RlOgo+ID4+Pj4KPiA+Pj4+PiBPbiBTZXAgMTks
-IDIwMjAsIGF0IDI6MTYgUE0sIEFybmQgQmVyZ21hbm4gPGFybmRAYXJuZGIuZGU+IHdyb3RlOgo+
-ID4+Pj4+Cj4gPj4+Pj4g77u/T24gU2F0LCBTZXAgMTksIDIwMjAgYXQgNjoyMSBQTSBBbmR5IEx1
-dG9taXJza2kgPGx1dG9Aa2VybmVsLm9yZz4gd3JvdGU6Cj4gPj4+Pj4+PiBPbiBGcmksIFNlcCAx
-OCwgMjAyMCBhdCA4OjE2IEFNIENocmlzdG9waCBIZWxsd2lnIDxoY2hAbHN0LmRlPiB3cm90ZToK
-PiA+Pj4+Pj4+IE9uIEZyaSwgU2VwIDE4LCAyMDIwIGF0IDAyOjU4OjIyUE0gKzAxMDAsIEFsIFZp
-cm8gd3JvdGU6Cj4gPj4+Pj4+Pj4gU2FpZCB0aGF0LCB3aHkgbm90IHByb3ZpZGUgYSB2YXJpYW50
-IHRoYXQgd291bGQgdGFrZSBhbiBleHBsaWNpdAo+ID4+Pj4+Pj4+ICJpcyBpdCBjb21wYXQiIGFy
-Z3VtZW50IGFuZCB1c2UgaXQgdGhlcmU/ICBBbmQgaGF2ZSB0aGUgbm9ybWFsCj4gPj4+Pj4+Pj4g
-b25lIHBhc3MgaW5fY29tcGF0X3N5c2NhbGwoKSB0byB0aGF0Li4uCj4gPj4+Pj4+Pgo+ID4+Pj4+
-Pj4gVGhhdCB3b3VsZCBoZWxwIHRvIG5vdCBpbnRyb2R1Y2UgYSByZWdyZXNzaW9uIHdpdGggdGhp
-cyBzZXJpZXMgeWVzLgo+ID4+Pj4+Pj4gQnV0IGl0IHdvdWxkbid0IGZpeCBleGlzdGluZyBidWdz
-IHdoZW4gaW9fdXJpbmcgaXMgdXNlZCB0byBhY2Nlc3MKPiA+Pj4+Pj4+IHJlYWQgb3Igd3JpdGUg
-bWV0aG9kcyB0aGF0IHVzZSBpbl9jb21wYXRfc3lzY2FsbCgpLiAgT25lIGV4YW1wbGUgdGhhdAo+
-ID4+Pj4+Pj4gSSByZWNlbnRseSByYW4gaW50byBpcyBkcml2ZXJzL3Njc2kvc2cuYy4KPiA+Pj4+
-Pgo+ID4+Pj4+IEFoLCBzbyByZWFkaW5nIC9kZXYvaW5wdXQvZXZlbnQqIHdvdWxkIHN1ZmZlciBm
-cm9tIHRoZSBzYW1lIGlzc3VlLAo+ID4+Pj4+IGFuZCB0aGF0IG9uZSB3b3VsZCBpbiBmYWN0IGJl
-IGJyb2tlbiBieSB5b3VyIHBhdGNoIGluIHRoZSBoeXBvdGhldGljYWwKPiA+Pj4+PiBjYXNlIHRo
-YXQgc29tZW9uZSB0cmllZCB0byB1c2UgaW9fdXJpbmcgdG8gcmVhZCAvZGV2L2lucHV0L2V2ZW50
-IG9uIHgzMi4uLgo+ID4+Pj4+Cj4gPj4+Pj4gRm9yIHJlZmVyZW5jZSwgSSBjaGVja2VkIHRoZSBz
-b2NrZXQgdGltZXN0YW1wIGhhbmRsaW5nIHRoYXQgaGFzIGEKPiA+Pj4+PiBudW1iZXIgb2YgY29y
-bmVyIGNhc2VzIHdpdGggdGltZTMyL3RpbWU2NCBmb3JtYXRzIGluIGNvbXBhdCBtb2RlLAo+ID4+
-Pj4+IGJ1dCBub25lIG9mIHRob3NlIGFwcGVhciB0byBiZSBhZmZlY3RlZCBieSB0aGUgcHJvYmxl
-bS4KPiA+Pj4+Pgo+ID4+Pj4+PiBBc2lkZSBmcm9tIHRoZSBwb3RlbnRpYWxseSBuYXN0eSB1c2Ug
-b2YgcGVyLXRhc2sgdmFyaWFibGVzLCBvbmUgdGhpbmcKPiA+Pj4+Pj4gSSBkb24ndCBsaWtlIGFi
-b3V0IFBGX0ZPUkNFX0NPTVBBVCBpcyB0aGF0IGl0J3Mgb25lLXdheS4gIElmIHdlJ3JlCj4gPj4+
-Pj4+IGdvaW5nIHRvIGhhdmUgYSBnZW5lcmljIG1lY2hhbmlzbSBmb3IgdGhpcywgc2hvdWxkbid0
-IHdlIGFsbG93IGEgZnVsbAo+ID4+Pj4+PiBvdmVycmlkZSBvZiB0aGUgc3lzY2FsbCBhcmNoIGlu
-c3RlYWQgb2YganVzdCBhbGxvd2luZyBmb3JjaW5nIGNvbXBhdAo+ID4+Pj4+PiBzbyB0aGF0IGEg
-Y29tcGF0IHN5c2NhbGwgY2FuIGRvIGEgbm9uLWNvbXBhdCBvcGVyYXRpb24/Cj4gPj4+Pj4KPiA+
-Pj4+PiBUaGUgb25seSByZWFzb24gaXQncyBuZWVkZWQgaGVyZSBpcyB0aGF0IHRoZSBjYWxsZXIg
-aXMgaW4gYSBrZXJuZWwKPiA+Pj4+PiB0aHJlYWQgcmF0aGVyIHRoYW4gYSBzeXN0ZW0gY2FsbC4g
-QXJlIHRoZXJlIGFueSBwb3NzaWJsZSBzY2VuYXJpb3MKPiA+Pj4+PiB3aGVyZSBvbmUgd291bGQg
-YWN0dWFsbHkgbmVlZCB0aGUgb3Bwb3NpdGU/Cj4gPj4+Pj4KPiA+Pj4+Cj4gPj4+PiBJIGNhbiBj
-ZXJ0YWlubHkgaW1hZ2luZSBuZWVkaW5nIHRvIGZvcmNlIHgzMiBtb2RlIGZyb20gYSBrZXJuZWwg
-dGhyZWFkLgo+ID4+Pj4KPiA+Pj4+IEFzIGZvciB0aGUgb3RoZXIgZGlyZWN0aW9uOiB3aGF0IGV4
-YWN0bHkgYXJlIHRoZSBkZXNpcmVkIGJpdG5lc3MvYXJjaCBzZW1hbnRpY3Mgb2YgaW9fdXJpbmc/
-ICBJcyB0aGUgb3BlcmF0aW9uIGJpdG5lc3MgY2hvc2VuIGJ5IHRoZSBpb191cmluZyBjcmVhdGlv
-biBvciBieSB0aGUgaW9fdXJpbmdfZW50ZXIoKSBiaXRuZXNzPwo+ID4+Pgo+ID4+PiBJdCdzIHJh
-dGhlciB0aGUgc2Vjb25kIG9uZS4gRXZlbiB0aG91Z2ggQUZBSVIgaXQgd2Fzbid0IGRpc2N1c3Nl
-ZAo+ID4+PiBzcGVjaWZpY2FsbHksIHRoYXQgaG93IGl0IHdvcmtzIG5vdyAoX3BhcnRpYWxseV8p
-Lgo+ID4+Cj4gPj4gRG91YmxlIGNoZWNrZWQgLS0gSSdtIHdyb25nLCB0aGF0J3MgdGhlIGZvcm1l
-ciBvbmUuIE1vc3Qgb2YgaXQgaXMgYmFzZWQKPiA+PiBvbiBhIGZsYWcgdGhhdCB3YXMgc2V0IGFu
-IGNyZWF0aW9uLgo+ID4+Cj4gPgo+ID4gQ291bGQgd2UgZ2V0IGF3YXkgd2l0aCBtYWtpbmcgaW9f
-dXJpbmdfZW50ZXIoKSByZXR1cm4gLUVJTlZBTCAob3IKPiA+IG1heWJlIC1FTk9UVFk/KSBpZiB5
-b3UgdHJ5IHRvIGRvIGl0IHdpdGggYml0bmVzcyB0aGF0IGRvZXNuJ3QgbWF0Y2gKPiA+IHRoZSBp
-b191cmluZz8gIEFuZCBkaXNhYmxlIFNRUE9MTCBpbiBjb21wYXQgbW9kZT8KPgo+IFNvbWV0aGlu
-ZyBsaWtlIGJlbG93LiBJZiBQRl9GT1JDRV9DT01QQVQgb3IgYW55IG90aGVyIHNvbHV0aW9uCj4g
-ZG9lc24ndCBsZW5kIGJ5IHRoZSB0aW1lLCBJJ2xsIHRha2UgYSBsb29rIHdoZXRoZXIgb3RoZXIg
-aW9fdXJpbmcncwo+IHN5c2NhbGxzIG5lZWQgc2ltaWxhciBjaGVja3MsIGV0Yy4KPgo+Cj4gZGlm
-ZiAtLWdpdCBhL2ZzL2lvX3VyaW5nLmMgYi9mcy9pb191cmluZy5jCj4gaW5kZXggMDQ1OGYwMmQ0
-Y2E4Li5hYWIyMDc4NWZhOWEgMTAwNjQ0Cj4gLS0tIGEvZnMvaW9fdXJpbmcuYwo+ICsrKyBiL2Zz
-L2lvX3VyaW5nLmMKPiBAQCAtODY3MSw2ICs4NjcxLDEwIEBAIFNZU0NBTExfREVGSU5FNihpb191
-cmluZ19lbnRlciwgdW5zaWduZWQgaW50LCBmZCwgdTMyLCB0b19zdWJtaXQsCj4gICAgICAgICBp
-ZiAoY3R4LT5mbGFncyAmIElPUklOR19TRVRVUF9SX0RJU0FCTEVEKQo+ICAgICAgICAgICAgICAg
-ICBnb3RvIG91dDsKPgo+ICsgICAgICAgcmV0ID0gLUVJTlZBbDsKPiArICAgICAgIGlmIChjdHgt
-PmNvbXBhdCAhPSBpbl9jb21wYXRfc3lzY2FsbCgpKQo+ICsgICAgICAgICAgICAgICBnb3RvIG91
-dDsKPiArCgpUaGlzIHNlZW1zIGVudGlyZWx5IHJlYXNvbmFibGUgdG8gbWUuICBTaGFyaW5nIGFu
-IGlvX3VyaW5nIHJpbmcKYmV0d2VlbiBwcm9ncmFtcyB3aXRoIGRpZmZlcmVudCBBQklzIHNlZW1z
-IGEgYml0IG51dHR5LgoKPiAgICAgICAgIC8qCj4gICAgICAgICAgKiBGb3IgU1EgcG9sbGluZywg
-dGhlIHRocmVhZCB3aWxsIGRvIGFsbCBzdWJtaXNzaW9ucyBhbmQgY29tcGxldGlvbnMuCj4gICAg
-ICAgICAgKiBKdXN0IHJldHVybiB0aGUgcmVxdWVzdGVkIHN1Ym1pdCBjb3VudCwgYW5kIHdha2Ug
-dGhlIHRocmVhZCBpZgo+IEBAIC05MDA2LDYgKzkwMTAsMTAgQEAgc3RhdGljIGludCBpb191cmlu
-Z19jcmVhdGUodW5zaWduZWQgZW50cmllcywgc3RydWN0IGlvX3VyaW5nX3BhcmFtcyAqcCwKPiAg
-ICAgICAgIGlmIChyZXQpCj4gICAgICAgICAgICAgICAgIGdvdG8gZXJyOwo+Cj4gKyAgICAgICBy
-ZXQgPSAtRUlOVkFMOwo+ICsgICAgICAgaWYgKGN0eC0+Y29tcGF0KQo+ICsgICAgICAgICAgICAg
-ICBnb3RvIGVycjsKPiArCgpJIG1heSBiZSBsb29raW5nIGF0IGEgZGlmZmVyZW50IGtlcm5lbCB0
-aGFuIHlvdSwgYnV0IGFyZW4ndCB5b3UKcHJldmVudGluZyBjcmVhdGluZyBhbiBpb191cmluZyBy
-ZWdhcmRsZXNzIG9mIHdoZXRoZXIgU1FQT0xMIGlzCnJlcXVlc3RlZD8KCj4gICAgICAgICAvKiBP
-bmx5IGdldHMgdGhlIHJpbmcgZmQsIGRvZXNuJ3QgaW5zdGFsbCBpdCBpbiB0aGUgZmlsZSB0YWJs
-ZSAqLwo+ICAgICAgICAgZmQgPSBpb191cmluZ19nZXRfZmQoY3R4LCAmZmlsZSk7Cj4gICAgICAg
-ICBpZiAoZmQgPCAwKSB7Cj4gLS0KPiBQYXZlbCBCZWd1bmtvdg==
+On 22/09/2020 03:58, Andy Lutomirski wrote:
+> On Mon, Sep 21, 2020 at 5:24 PM Pavel Begunkov <asml.silence@gmail.com> wrote:
+>>>>>>> Ah, so reading /dev/input/event* would suffer from the same issue,
+>>>>>>> and that one would in fact be broken by your patch in the hypothetical
+>>>>>>> case that someone tried to use io_uring to read /dev/input/event on x32...
+>>>>>>>
+>>>>>>> For reference, I checked the socket timestamp handling that has a
+>>>>>>> number of corner cases with time32/time64 formats in compat mode,
+>>>>>>> but none of those appear to be affected by the problem.
+>>>>>>>
+>>>>>>>> Aside from the potentially nasty use of per-task variables, one thing
+>>>>>>>> I don't like about PF_FORCE_COMPAT is that it's one-way.  If we're
+>>>>>>>> going to have a generic mechanism for this, shouldn't we allow a full
+>>>>>>>> override of the syscall arch instead of just allowing forcing compat
+>>>>>>>> so that a compat syscall can do a non-compat operation?
+>>>>>>>
+>>>>>>> The only reason it's needed here is that the caller is in a kernel
+>>>>>>> thread rather than a system call. Are there any possible scenarios
+>>>>>>> where one would actually need the opposite?
+>>>>>>>
+>>>>>>
+>>>>>> I can certainly imagine needing to force x32 mode from a kernel thread.
+>>>>>>
+>>>>>> As for the other direction: what exactly are the desired bitness/arch semantics of io_uring?  Is the operation bitness chosen by the io_uring creation or by the io_uring_enter() bitness?
+>>>>>
+>>>>> It's rather the second one. Even though AFAIR it wasn't discussed
+>>>>> specifically, that how it works now (_partially_).
+>>>>
+>>>> Double checked -- I'm wrong, that's the former one. Most of it is based
+>>>> on a flag that was set an creation.
+>>>>
+>>>
+>>> Could we get away with making io_uring_enter() return -EINVAL (or
+>>> maybe -ENOTTY?) if you try to do it with bitness that doesn't match
+>>> the io_uring?  And disable SQPOLL in compat mode?
+>>
+>> Something like below. If PF_FORCE_COMPAT or any other solution
+>> doesn't lend by the time, I'll take a look whether other io_uring's
+>> syscalls need similar checks, etc.
+>>
+>>
+>> diff --git a/fs/io_uring.c b/fs/io_uring.c
+>> index 0458f02d4ca8..aab20785fa9a 100644
+>> --- a/fs/io_uring.c
+>> +++ b/fs/io_uring.c
+>> @@ -8671,6 +8671,10 @@ SYSCALL_DEFINE6(io_uring_enter, unsigned int, fd, u32, to_submit,
+>>         if (ctx->flags & IORING_SETUP_R_DISABLED)
+>>                 goto out;
+>>
+>> +       ret = -EINVAl;
+>> +       if (ctx->compat != in_compat_syscall())
+>> +               goto out;
+>> +
+> 
+> This seems entirely reasonable to me.  Sharing an io_uring ring
+> between programs with different ABIs seems a bit nutty.
+> 
+>>         /*
+>>          * For SQ polling, the thread will do all submissions and completions.
+>>          * Just return the requested submit count, and wake the thread if
+>> @@ -9006,6 +9010,10 @@ static int io_uring_create(unsigned entries, struct io_uring_params *p,
+>>         if (ret)
+>>                 goto err;
+>>
+>> +       ret = -EINVAL;
+>> +       if (ctx->compat)
+>> +               goto err;
+>> +
+> 
+> I may be looking at a different kernel than you, but aren't you
+> preventing creating an io_uring regardless of whether SQPOLL is
+> requested?
+
+I diffed a not-saved file on a sleepy head, thanks for noticing.
+As you said, there should be an SQPOLL check.
+
+...
+if (ctx->compat && (p->flags & IORING_SETUP_SQPOLL))
+	goto err;
+
+-- 
+Pavel Begunkov
