@@ -1,13 +1,13 @@
 From: Christoph Hellwig <hch@lst.de>
-Date: Wed, 23 Sep 2020 06:05:46 +0000
+Date: Fri, 25 Sep 2020 04:51:45 +0000
 Subject: [PATCH 8/9] mm: remove compat_process_vm_{readv,writev}
-Message-Id: <20200923060547.16903-9-hch@lst.de>
+Message-Id: <20200925045146.1283714-9-hch@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20200923060547.16903-1-hch@lst.de>
-In-Reply-To: <20200923060547.16903-1-hch@lst.de>
+References: <20200925045146.1283714-1-hch@lst.de>
+In-Reply-To: <20200925045146.1283714-1-hch@lst.de>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>, David Laight <David.Laight@aculab.com>, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org, linux-mips@vger.kernel.org, linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, linux-block@vger.kernel.org, linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, io-uring@vger.kernel.org, linux-arch@vger.kernel.org, linux-mm@kvack.org, netdev@vger.kernel.org, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
@@ -185,7 +185,7 @@ index 642af919183de4..347809649ba28f 100644
  542	x32	getsockopt		sys_getsockopt
  543	x32	io_setup		compat_sys_io_setup
 diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 14d8bf412bd02e..d46e5905970817 100644
+index 9e8aa148651455..2ae4e4bc22c0a4 100644
 --- a/include/linux/compat.h
 +++ b/include/linux/compat.h
 @@ -780,14 +780,6 @@ asmlinkage long compat_sys_open_by_handle_at(int mountdirfd,
