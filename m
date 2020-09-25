@@ -1,7 +1,7 @@
 From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Date: Fri, 25 Sep 2020 09:59:51 +0000
+Date: Fri, 25 Sep 2020 14:01:12 +0000
 Subject: Re: [PATCH] lib/mpi: Fix unused variable warnings
-Message-Id: <c14352da-bc82-3401-755d-f618ca908f84@linux.alibaba.com>
+Message-Id: <5dc5b1cf-389c-0f96-0b8c-50fa41d186a9@linux.alibaba.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -15,10 +15,10 @@ Cc: Eric Biggers <ebiggers@google.com>, Stephan Mueller <smueller@chronox.de>, B
 
 Hi Herbert,
 
-Thanks for your patch, I will do a test later.
+Thanks for your patch, The changes look good.
+I have tested this patch, so,
 
-By the way, did you add special compilation parameters? I compile 
-normally without warnings in gcc 6.5 and 9.3.
+Tested-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
 
 Best regards,
 Tianjia
