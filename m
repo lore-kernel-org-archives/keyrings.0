@@ -1,61 +1,42 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 22 Sep 2020 02:28:04 +0000
-Subject: [PATCH v13 0/5] TPM 2.0 trusted key rework
-Message-Id: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Wed, 30 Sep 2020 03:43:11 +0000
+Subject: Re: [PATCH v13 0/5] TPM 2.0 trusted key rework
+Message-Id: <20200930034311.GA881524@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+References: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-Updated to fix compile problem identified by 0day
+On Mon, Sep 21, 2020 at 07:28:04PM -0700, James Bottomley wrote:
+> Updated to fix compile problem identified by 0day
+> 
+> General cover letter minus policy bit:
+> 
+> This patch updates the trusted key code to export keys in the ASN.1
+> format used by current TPM key tools (openssl_tpm2_engine and
+> openconnect).  The current code will try to load keys containing
+> policy, but being unable to formulate the policy commands necessary to
+> load them, the unseal will always fail unless the policy is executed
+> in user space and a pre-formed policy session passed in.
+> 
+> The key format is designed to be compatible with our two openssl
+> engine implementations as well as with the format used by openconnect.
+> I've added seal/unseal to my engine so I can use it for
+> interoperability testing and I'll later use this for sealed symmetric
+> keys via engine:
+> 
+> https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
+> 
+> James
 
-General cover letter minus policy bit:
+I started a kernel build for GLK NUC that I have. I'm hopeful that
+tpm2-scripts fix will sort out this patch set. Will report the results
+once I have them. I have a hunch that things will finally work out.
 
-This patch updates the trusted key code to export keys in the ASN.1
-format used by current TPM key tools (openssl_tpm2_engine and
-openconnect).  The current code will try to load keys containing
-policy, but being unable to formulate the policy commands necessary to
-load them, the unseal will always fail unless the policy is executed
-in user space and a pre-formed policy session passed in.
+Using my master branch without the trusted keys fixes that I did.
 
-The key format is designed to be compatible with our two openssl
-engine implementations as well as with the format used by openconnect.
-I've added seal/unseal to my engine so I can use it for
-interoperability testing and I'll later use this for sealed symmetric
-keys via engine:
-
-https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
-
-James
-
----
-
-James Bottomley (5):
-  lib: add ASN.1 encoder
-  oid_registry: Add TCG defined OIDS for TPM keys
-  security: keys: trusted: fix TPM2 authorizations
-  security: keys: trusted: use ASN.1 TPM2 key format for the blobs
-  security: keys: trusted: Make sealed key properly interoperable
-
- .../security/keys/trusted-encrypted.rst       |  58 +++
- include/keys/trusted-type.h                   |   2 +
- include/linux/asn1_encoder.h                  |  32 ++
- include/linux/oid_registry.h                  |   5 +
- include/linux/tpm.h                           |   2 +
- lib/Kconfig                                   |   3 +
- lib/Makefile                                  |   1 +
- lib/asn1_encoder.c                            | 454 ++++++++++++++++++
- security/keys/Kconfig                         |   2 +
- security/keys/trusted-keys/Makefile           |   4 +-
- security/keys/trusted-keys/tpm2key.asn1       |  11 +
- security/keys/trusted-keys/trusted_tpm1.c     |  34 +-
- security/keys/trusted-keys/trusted_tpm2.c     | 266 +++++++++-
- 13 files changed, 843 insertions(+), 31 deletions(-)
- create mode 100644 include/linux/asn1_encoder.h
- create mode 100644 lib/asn1_encoder.c
- create mode 100644 security/keys/trusted-keys/tpm2key.asn1
-
--- 
-2.26.2
+/Jarkko
