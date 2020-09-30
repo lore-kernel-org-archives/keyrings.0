@@ -1,169 +1,65 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Tue, 22 Sep 2020 02:28:09 +0000
-Subject: [PATCH v13 5/5] security: keys: trusted: Make sealed key properly interoperable
-Message-Id: <20200922022809.7105-6-James.Bottomley@HansenPartnership.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Wed, 30 Sep 2020 11:24:44 +0000
+Subject: Re: [PATCH v13 5/5] security: keys: trusted: Make sealed key properly interoperable
+Message-Id: <20200930112444.GC5145@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 List-Id: <keyrings.vger.kernel.org>
 References: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
-To: linux-integrity@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+ <20200922022809.7105-6-James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20200922022809.7105-6-James.Bottomley@HansenPartnership.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-The current implementation appends a migratable flag to the end of a
-key, meaning the format isn't exactly interoperable because the using
-party needs to know to strip this extra byte.  However, all other
-consumers of TPM sealed blobs expect the unseal to return exactly the
-key.  Since TPM2 keys have a key property flag that corresponds to
-migratable, use that flag instead and make the actual key the only
-sealed quantity.  This is secure because the key properties are bound
-to a hash in the private part, so if they're altered the key won't
-load.
+On Mon, Sep 21, 2020 at 07:28:09PM -0700, James Bottomley wrote:
+> The current implementation appends a migratable flag to the end of a
+> key, meaning the format isn't exactly interoperable because the using
+> party needs to know to strip this extra byte.  However, all other
+> consumers of TPM sealed blobs expect the unseal to return exactly the
+> key.  Since TPM2 keys have a key property flag that corresponds to
+> migratable, use that flag instead and make the actual key the only
+> sealed quantity.  This is secure because the key properties are bound
+> to a hash in the private part, so if they're altered the key won't
+> load.
+> 
+> Backwards compatibility is implemented by detecting whether we're
+> loading a new format key or not and correctly setting migratable from
+> the last byte of old format keys.
+> 
+> Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-Backwards compatibility is implemented by detecting whether we're
-loading a new format key or not and correctly setting migratable from
-the last byte of old format keys.
+Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+➜  tpm2-scripts (master) ✗ sudo keyctl add trusted kmk2 "new 32 blobauth=world keyhandle�000000 migratable=1" @u
+add_key: Invalid argument
+➜  tpm2-scripts (master) ✗ sudo keyctl add trusted kmk2 "new 32 blobauth=world keyhandle�000000 migratable=0" @u
+608433517
 
----
+Showed the -EINVAL example just to point out this:
 
-v2: added length checks to untrusted payload
-v8: recover patch
----
- include/linux/tpm.h                       |  2 +
- security/keys/trusted-keys/trusted_tpm2.c | 53 ++++++++++++++++-------
- 2 files changed, 40 insertions(+), 15 deletions(-)
+	case Opt_migratable:
+		if (*args[0].from = '0')
+			pay->migratable = 0;
+		else
+			return -EINVAL;
+		break;
 
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index ae2482510f8c..35224860fd0c 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -305,6 +305,8 @@ struct tpm_buf {
- };
- 
- enum tpm2_object_attributes {
-+	TPM2_OA_FIXED_TPM		= BIT(1),
-+	TPM2_OA_FIXED_PARENT		= BIT(4),
- 	TPM2_OA_USER_WITH_AUTH		= BIT(6),
- };
- 
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index e8dcc47b3388..905c5ca4d51c 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -231,6 +231,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 	unsigned int blob_len;
- 	struct tpm_buf buf;
- 	u32 hash;
-+	u32 flags;
- 	int i;
- 	int rc;
- 
-@@ -259,31 +260,32 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 			     TPM_DIGEST_SIZE);
- 
- 	/* sensitive */
--	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len + 1);
-+	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len);
- 
- 	tpm_buf_append_u16(&buf, options->blobauth_len);
- 	if (options->blobauth_len)
- 		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
- 
--	tpm_buf_append_u16(&buf, payload->key_len + 1);
-+	tpm_buf_append_u16(&buf, payload->key_len);
- 	tpm_buf_append(&buf, payload->key, payload->key_len);
--	tpm_buf_append_u8(&buf, payload->migratable);
- 
- 	/* public */
- 	tpm_buf_append_u16(&buf, 14 + options->policydigest_len);
- 	tpm_buf_append_u16(&buf, TPM_ALG_KEYEDHASH);
- 	tpm_buf_append_u16(&buf, hash);
- 
-+	/* key properties */
-+	flags = 0;
-+	flags |= options->policydigest_len ? 0 : TPM2_OA_USER_WITH_AUTH;
-+	flags |= payload->migratable ? (TPM2_OA_FIXED_TPM |
-+					TPM2_OA_FIXED_PARENT) : 0;
-+	tpm_buf_append_u32(&buf, flags);
-+
- 	/* policy */
--	if (options->policydigest_len) {
--		tpm_buf_append_u32(&buf, 0);
--		tpm_buf_append_u16(&buf, options->policydigest_len);
-+	tpm_buf_append_u16(&buf, options->policydigest_len);
-+	if (options->policydigest_len)
- 		tpm_buf_append(&buf, options->policydigest,
- 			       options->policydigest_len);
--	} else {
--		tpm_buf_append_u32(&buf, TPM2_OA_USER_WITH_AUTH);
--		tpm_buf_append_u16(&buf, 0);
--	}
- 
- 	/* public parameters */
- 	tpm_buf_append_u16(&buf, TPM_ALG_NULL);
-@@ -356,8 +358,9 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
- 	unsigned int private_len;
- 	unsigned int public_len;
- 	unsigned int blob_len;
--	u8 *blob;
-+	u8 *blob, *pub;
- 	int rc;
-+	u32 attrs;
- 
- 	rc = tpm2_key_decode(payload, options, &blob);
- 	if (rc) {
-@@ -384,6 +387,16 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
- 	if (private_len + 2 + public_len + 2 > payload->blob_len)
- 		return -E2BIG;
- 
-+	pub = blob + 2 + private_len + 2;
-+	/* key attributes are always at offset 4 */
-+	attrs = get_unaligned_be32(pub + 4);
-+
-+	if ((attrs & (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT)) =
-+	    (TPM2_OA_FIXED_TPM | TPM2_OA_FIXED_PARENT))
-+		payload->migratable = 0;
-+	else
-+		payload->migratable = 1;
-+
- 	blob_len = private_len + public_len + 4;
- 	if (blob_len > payload->blob_len)
- 		return -E2BIG;
-@@ -464,7 +477,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
- 	if (!rc) {
- 		data_len = be16_to_cpup(
- 			(__be16 *) &buf.data[TPM_HEADER_SIZE + 4]);
--		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE + 1) {
-+		if (data_len < MIN_KEY_SIZE ||  data_len > MAX_KEY_SIZE) {
- 			rc = -EFAULT;
- 			goto out;
- 		}
-@@ -475,9 +488,19 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
- 		}
- 		data = &buf.data[TPM_HEADER_SIZE + 6];
- 
--		memcpy(payload->key, data, data_len - 1);
--		payload->key_len = data_len - 1;
--		payload->migratable = data[data_len - 1];
-+		if (payload->old_format) {
-+			/* migratable flag is at the end of the key */
-+			memcpy(payload->key, data, data_len - 1);
-+			payload->key_len = data_len - 1;
-+			payload->migratable = data[data_len - 1];
-+		} else {
-+			/*
-+			 * migratable flag already collected from key
-+			 * attributes
-+			 */
-+			memcpy(payload->key, data, data_len);
-+			payload->key_len = data_len;
-+		}
- 	}
- 
- out:
--- 
-2.26.2
+I think it should just set migratable in both cases even if no-op,
+given that it takes the value and also the documentation says that
+"migratable=1" is legit:
+
+"migratable=   0|1 indicating permission to reseal to new PCR values,
+                default 1 (resealing allowed)"
+
+Obviously not a concern of this patch but this is still IMHO a bug.
+Would be nce if you could drop a prepending patch to fix this, when you
+rebase the series, with this fixes tag:
+
+Fixes: d00a1c72f7f4 ("keys: add new trusted key-type")
+
+BTW, please check my fixes so that I can push them ASAP and you get to
+rebase this and we can land it. Now everything is properly tested.
+
+/Jarkko
