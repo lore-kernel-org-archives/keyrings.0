@@ -1,55 +1,166 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Sun, 27 Sep 2020 23:48:50 +0000
+Date: Wed, 30 Sep 2020 11:02:34 +0000
 Subject: Re: [PATCH v13 3/5] security: keys: trusted: fix TPM2 authorizations
-Message-Id: <20200927234850.GB5283@linux.intel.com>
+Message-Id: <20200930110227.GA5145@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
 References: <20200922022809.7105-1-James.Bottomley@HansenPartnership.com>
  <20200922022809.7105-4-James.Bottomley@HansenPartnership.com>
- <20200925072829.GA170658@linux.intel.com>
- <49f167946299ced25cf6ad0db1a53f8b319c3491.camel@HansenPartnership.com>
-In-Reply-To: <49f167946299ced25cf6ad0db1a53f8b319c3491.camel@HansenPartnership.com>
+In-Reply-To: <20200922022809.7105-4-James.Bottomley@HansenPartnership.com>
 To: James Bottomley <James.Bottomley@HansenPartnership.com>
 Cc: linux-integrity@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, David Woodhouse <dwmw2@infradead.org>, keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
 
-On Fri, Sep 25, 2020 at 10:39:23AM -0700, James Bottomley wrote:
-> On Fri, 2020-09-25 at 10:28 +0300, Jarkko Sakkinen wrote:
-> > On Mon, Sep 21, 2020 at 07:28:07PM -0700, James Bottomley wrote:
-> [...]
-> > > keyctl add trusted kmk "new 32
-> > > blobauth=F572d396fae9206628714fb2ce00f72e94f2258fkeyhandle=81000001
-> > > " @u
-> > >=20
-> > > after we will accept both the old hex sha1 form as well as a new
-> > > directly supplied password:
-> > >=20
-> > > keyctl add trusted kmk "new 32 blobauth=3Dhello keyhandle=81000001"
-> > > @u
-> >=20
-> > I'm still getting -EINVAL from both with a Geminilake NUC.
+On Mon, Sep 21, 2020 at 07:28:07PM -0700, James Bottomley wrote:
+> In TPM 1.2 an authorization was a 20 byte number.  The spec actually
+> recommended you to hash variable length passwords and use the sha1
+> hash as the authorization.  Because the spec doesn't require this
+> hashing, the current authorization for trusted keys is a 40 digit hex
+> number.  For TPM 2.0 the spec allows the passing in of variable length
+> passwords and passphrases directly, so we should allow that in trusted
+> keys for ease of use.  Update the 'blobauth' parameter to take this
+> into account, so we can now use plain text passwords for the keys.
 >=20
-> Since I don't have one of those you're going to have to give me more to
-> go on.  I've tested this works in a VM with the ibmtss and on a Rainbow
-> Pass with a variety of physical TPMs.  Keyctl returns -EINVAL for an
-> annoying number of conditions it shouldn't ... the most frequent of
-> which is that the key already exists in the keyring.
+> so before
 >=20
-> So what's different about the Geminilake NUC?  Either it's a kernel
-> problem with the TPM, in which case there should be something in dmesg
-> or it's a userspace problem with keyctl, in which case perhaps strace
-> might get us further forward.
+> keyctl add trusted kmk "new 32 blobauth=F572d396fae9206628714fb2ce00f72e9=
+4f2258fkeyhandle=81000001" @u
 >=20
-> James
+> after we will accept both the old hex sha1 form as well as a new
+> directly supplied password:
+>=20
+> keyctl add trusted kmk "new 32 blobauth=3Dhello keyhandle=81000001" @u
+>=20
+> Since a sha1 hex code must be exactly 40 bytes long and a direct
+> password must be 20 or less, we use the length as the discriminator
+> for which form is input.
+>=20
+> Note this is both and enhancement and a potential bug fix.  The TPM
+> 2.0 spec requires us to strip leading zeros, meaning empyty
+> authorization is a zero length HMAC whereas we're currently passing in
+> 20 bytes of zeros.  A lot of TPMs simply accept this as OK, but the
+> Microsoft TPM emulator rejects it with TPM_RC_BAD_AUTH, so this patch
+> makes the Microsoft TPM emulator work with trusted keys.
+>=20
+> Fixes: 0fe5480303a1 ("keys, trusted: seal/unseal with TPM 2.0 chips")
+> Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+>=20
+> ---
+>=20
+> v6: change comment, eliminate else clauses and add fixes tag
+> v7: fixes before signoff
+> v12: fix mismerge from v6 to make processing continue after blobauth
+>=20
+> Merge with auth fix
+> ---
+>  include/keys/trusted-type.h               |  1 +
+>  security/keys/trusted-keys/trusted_tpm1.c | 32 ++++++++++++++++++-----
+>  security/keys/trusted-keys/trusted_tpm2.c | 10 ++++---
+>  3 files changed, 33 insertions(+), 10 deletions(-)
+>=20
+> diff --git a/include/keys/trusted-type.h b/include/keys/trusted-type.h
+> index a94c03a61d8f..b2ed3481c6a0 100644
+> --- a/include/keys/trusted-type.h
+> +++ b/include/keys/trusted-type.h
+> @@ -30,6 +30,7 @@ struct trusted_key_options {
+>  	uint16_t keytype;
+>  	uint32_t keyhandle;
+>  	unsigned char keyauth[TPM_DIGEST_SIZE];
+> +	uint32_t blobauth_len;
+>  	unsigned char blobauth[TPM_DIGEST_SIZE];
+>  	uint32_t pcrinfo_len;
+>  	unsigned char pcrinfo[MAX_PCRINFO_SIZE];
+> diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/tr=
+usted-keys/trusted_tpm1.c
+> index b9fe02e5f84f..eaa2e7ca136e 100644
+> --- a/security/keys/trusted-keys/trusted_tpm1.c
+> +++ b/security/keys/trusted-keys/trusted_tpm1.c
+> @@ -781,13 +781,33 @@ static int getoptions(char *c, struct trusted_key_p=
+ayload *pay,
+>  				return -EINVAL;
+>  			break;
+>  		case Opt_blobauth:
+> -			if (strlen(args[0].from) !=3D 2 * SHA1_DIGEST_SIZE)
+> -				return -EINVAL;
+> -			res =3D hex2bin(opt->blobauth, args[0].from,
+> -				      SHA1_DIGEST_SIZE);
+> -			if (res < 0)
+> -				return -EINVAL;
+> +			/*
+> +			 * TPM 1.2 authorizations are sha1 hashes passed in as
+> +			 * hex strings.  TPM 2.0 authorizations are simple
+> +			 * passwords (although it can take a hash as well)
+> +			 */
+> +			opt->blobauth_len =3D strlen(args[0].from);
+> +
+> +			if (opt->blobauth_len =3D 2 * TPM_DIGEST_SIZE) {
+> +				res =3D hex2bin(opt->blobauth, args[0].from,
+> +					      TPM_DIGEST_SIZE);
+> +				if (res < 0)
+> +					return -EINVAL;
+> +
+> +				opt->blobauth_len =3D TPM_DIGEST_SIZE;
+> +				break;
+> +			}
+> +
+> +			if (tpm2 && opt->blobauth_len <=3D sizeof(opt->blobauth)) {
+> +				memcpy(opt->blobauth, args[0].from,
+> +				       opt->blobauth_len);
+> +				break;
+> +			}
+> +
+> +			return -EINVAL;
+> +
+>  			break;
+> +
+>  		case Opt_migratable:
+>  			if (*args[0].from =3D '0')
+>  				pay->migratable =3D 0;
+> diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/tr=
+usted-keys/trusted_tpm2.c
+> index 08ec7f48f01d..b4a5058107c2 100644
+> --- a/security/keys/trusted-keys/trusted_tpm2.c
+> +++ b/security/keys/trusted-keys/trusted_tpm2.c
+> @@ -91,10 +91,12 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
+>  			     TPM_DIGEST_SIZE);
+> =20
+>  	/* sensitive */
+> -	tpm_buf_append_u16(&buf, 4 + TPM_DIGEST_SIZE + payload->key_len + 1);
+> +	tpm_buf_append_u16(&buf, 4 + options->blobauth_len + payload->key_len +=
+ 1);
+> +
+> +	tpm_buf_append_u16(&buf, options->blobauth_len);
+> +	if (options->blobauth_len)
+> +		tpm_buf_append(&buf, options->blobauth, options->blobauth_len);
+> =20
+> -	tpm_buf_append_u16(&buf, TPM_DIGEST_SIZE);
+> -	tpm_buf_append(&buf, options->blobauth, TPM_DIGEST_SIZE);
+>  	tpm_buf_append_u16(&buf, payload->key_len + 1);
+>  	tpm_buf_append(&buf, payload->key, payload->key_len);
+>  	tpm_buf_append_u8(&buf, payload->migratable);
+> @@ -258,7 +260,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
+>  			     NULL /* nonce */, 0,
+>  			     TPM2_SA_CONTINUE_SESSION,
+>  			     options->blobauth /* hmac */,
+> -			     TPM_DIGEST_SIZE);
+> +			     options->blobauth_len);
+> =20
+>  	rc =3D tpm_send(chip, buf.data, tpm_buf_length(&buf));
+>  	if (rc > 0)
+> --=20
+> 2.26.2
+>=20
 
-I'll debug it further sometime next week, just acknowledged the issue.
-I'll use bpftrace for the purpose.
+Tested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-In your environment, would be interesting to see what happens if you use
-tpm2-root-key to generate the key instead of IBMTSS. It is now available
-here:
+Transcript:
 
-https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/tpm2-scripts.git/
+=E2=9E=9C  tpm2-scripts (master) =E2=9C=97 sudo ./tpm2-root-key
+0x80000000
+=E2=9E=9C  tpm2-scripts (master) =E2=9C=97 sudo keyctl add trusted kmk "new=
+ 32 blobauth=3Dhello keyhandle=80000000" @u
+751240563
 
 /Jarkko
