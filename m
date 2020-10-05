@@ -1,24 +1,56 @@
-From: "William Jones" <william.jones@fastestway24.com>
-Date: Tue, 13 Oct 2020 07:41:06 +0000
-Subject: Disinfectant
-Message-Id: <20201013074502-0.1.4d.9h4b.0.3jg5cp0i4h@fastestway24.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Mon, 05 Oct 2020 00:26:59 +0000
+Subject: [PATCH 3/3] KEYS: trusted: Fix migratable=1 failing
+Message-Id: <20201005002659.81588-4-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-To: keyrings@vger.kernel.org
+References: <20201005002659.81588-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20201005002659.81588-1-jarkko.sakkinen@linux.intel.com>
+To: linux-integrity@vger.kernel.org
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, stable@vger.kernel.org, "James E.J. Bottomley" <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@watson.ibm.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-Good morning,
+Consider the following transcript:
 
-looking for companies interested in raising additional capital by diversifying their offer in soaps, liquids and gels for hand disinfection and cosmetics for body and hair care.
+$ keyctl add trusted kmk "new 32 blobauth=3Dhelloworld keyhandle=80000000 m=
+igratable=3D1" @u
+add_key: Invalid argument
 
-The distribution of innovative products corresponding to the current preferences of customers in the field of hygiene and preventive healthcare allows our partners to gain new markets and achieve better economic results.
+The documentation has the following description:
 
-In addition to products with bactericidal action, our range includes shower gels, shampoos and hair conditioners, as well as efficient, concentrated detergents.
+  migratable=3D   0|1 indicating permission to reseal to new PCR values,
+                default 1 (resealing allowed)
 
-The versatility (suitable for all skin types) combined with an affordable price means that customers make an informed choice of a product among others available on the market.
+The consequence is that "migratable=3D1" should succeed. Fix this by
+allowing this condition to pass instead of return -EINVAL.
 
-Are you interested in cooperation?
+[*] Documentation/security/keys/trusted-encrypted.rst
 
+Cc: stable@vger.kernel.org
+Cc: "James E.J. Bottomley" <jejb@linux.ibm.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Fixes: d00a1c72f7f4 ("keys: add new trusted key-type")
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ security/keys/trusted-keys/trusted_tpm1.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-William Jones
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trus=
+ted-keys/trusted_tpm1.c
+index c1dfc32c780b..20ca18e17437 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -801,7 +801,7 @@ static int getoptions(char *c, struct trusted_key_paylo=
+ad *pay,
+ 		case Opt_migratable:
+ 			if (*args[0].from =3D '0')
+ 				pay->migratable =3D 0;
+-			else
++			else if (*args[0].from !=3D '1')
+ 				return -EINVAL;
+ 			break;
+ 		case Opt_pcrlock:
+--=20
+2.25.1
