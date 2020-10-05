@@ -1,68 +1,97 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Thu, 15 Oct 2020 14:26:37 +0000
-Subject: [PATCH v2] MAINTAINERS: jarkko.sakkinen@linux.intel.com -> jarkko@kernel.org
-Message-Id: <20201015142710.8371-1-jarkko.sakkinen@linux.intel.com>
+Date: Mon, 05 Oct 2020 00:26:57 +0000
+Subject: [PATCH 1/3] KEYS: trusted: Fix incorrect handling of tpm_get_random()
+Message-Id: <20201005002659.81588-2-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-sgx@vger.kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, Joe Perches <joe@perches.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Jonathan Corbet <corbet@lwn.net>, Andrew Morton <akpm@linux-foundation.org>, Kees Cook <keescook@chromium.org>, Mauro Carvalho Chehab <mchehab+huawei@kernel.org>, "David S. Miller" <davem@davemloft.net>, Rob Herring <robh@kernel.org>
+References: <20201005002659.81588-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20201005002659.81588-1-jarkko.sakkinen@linux.intel.com>
+To: linux-integrity@vger.kernel.org
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, stable@vger.kernel.org, Mimi Zohar <zohar@linux.ibm.com>, "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>, David Howells <dhowells@redhat.com>, Kent Yoder <key@linux.vnet.ibm.com>, James Bottomley <jejb@linux.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, "H. Peter Anvin" <hpa@linux.intel.com>, David Safford <safford@linux.vnet.ibm.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-Use @kernel.org address as the main communications end point. Update the
-corresponding M-entries and .mailmap (for git shortlog translation).
+When tpm_get_random() was introduced, it defined the following API for the
+return value:
 
+1. A positive value tells how many bytes of random data was generated.
+2. A negative value on error.
+
+However, in the call sites the API was used incorrectly, i.e. as it would
+only return negative values and otherwise zero. Returning he positive read
+counts to the user space does not make any possible sense.
+
+Fix this by returning -EIO when tpm_get_random() returns a positive value.
+
+Fixes: 41ab999c80f1 ("tpm: Move tpm_get_random api into the TPM device driver")
+Cc: stable@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.ibm.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Kent Yoder <key@linux.vnet.ibm.com>
 Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
-v2:
-* Update the .mailmap (suggested by Joe Perches).
-  https://lore.kernel.org/lkml/b1ccdfbb3119528490ea10f40e1da084b1b23f87.camel@perches.com/
- .mailmap    | 1 +
- MAINTAINERS | 6 +++---
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ security/keys/trusted-keys/trusted_tpm1.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/.mailmap b/.mailmap
-index e4ccac4e2f88..1e14566a3d56 100644
---- a/.mailmap
-+++ b/.mailmap
-@@ -133,6 +133,7 @@ James Ketrenos <jketreno@io.(none)>
- Jan Glauber <jan.glauber@gmail.com> <jang@de.ibm.com>
- Jan Glauber <jan.glauber@gmail.com> <jang@linux.vnet.ibm.com>
- Jan Glauber <jan.glauber@gmail.com> <jglauber@cavium.com>
-+Jarkko Sakkinen <jarkko@kernel.org> <jarkko.sakkinen@linux.intel.com>
- Jason Gunthorpe <jgg@ziepe.ca> <jgg@mellanox.com>
- Jason Gunthorpe <jgg@ziepe.ca> <jgg@nvidia.com>
- Jason Gunthorpe <jgg@ziepe.ca> <jgunthorpe@obsidianresearch.com>
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6594f0966716..afe2a20fb85a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9668,7 +9668,7 @@ F:	security/keys/encrypted-keys/
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
+index b9fe02e5f84f..c7b1701cdac5 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -403,9 +403,12 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
+ 	int ret;
  
- KEYS-TRUSTED
- M:	James Bottomley <jejb@linux.ibm.com>
--M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-+M:	Jarkko Sakkinen <jarkko@kernel.org>
- M:	Mimi Zohar <zohar@linux.ibm.com>
- L:	linux-integrity@vger.kernel.org
- L:	keyrings@vger.kernel.org
-@@ -9680,7 +9680,7 @@ F:	security/keys/trusted-keys/
+ 	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
+-	if (ret != TPM_NONCE_SIZE)
++	if (ret < 0)
+ 		return ret;
  
- KEYS/KEYRINGS
- M:	David Howells <dhowells@redhat.com>
--M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-+M:	Jarkko Sakkinen <jarkko@kernel.org>
- L:	keyrings@vger.kernel.org
- S:	Maintained
- F:	Documentation/security/keys/core.rst
-@@ -17616,7 +17616,7 @@ F:	drivers/platform/x86/toshiba-wmi.c
++	if (ret != TPM_NONCE_SIZE)
++		return -EIO;
++
+ 	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OSAP);
+ 	tpm_buf_append_u16(tb, type);
+ 	tpm_buf_append_u32(tb, handle);
+@@ -496,8 +499,12 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+ 		goto out;
  
- TPM DEVICE DRIVER
- M:	Peter Huewe <peterhuewe@gmx.de>
--M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-+M:	Jarkko Sakkinen <jarkko@kernel.org>
- R:	Jason Gunthorpe <jgg@ziepe.ca>
- L:	linux-integrity@vger.kernel.org
- S:	Maintained
+ 	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
++	if (ret < 0)
++		return ret;
++
+ 	if (ret != TPM_NONCE_SIZE)
+-		goto out;
++		return -EIO;
++
+ 	ordinal = htonl(TPM_ORD_SEAL);
+ 	datsize = htonl(datalen);
+ 	pcrsize = htonl(pcrinfosize);
+@@ -601,9 +608,12 @@ static int tpm_unseal(struct tpm_buf *tb,
+ 
+ 	ordinal = htonl(TPM_ORD_UNSEAL);
+ 	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
++	if (ret < 0)
++		return ret;
++
+ 	if (ret != TPM_NONCE_SIZE) {
+ 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
+-		return ret;
++		return -EIO;
+ 	}
+ 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
+ 			   enonce1, nonceodd, cont, sizeof(uint32_t),
+@@ -1013,8 +1023,12 @@ static int trusted_instantiate(struct key *key,
+ 	case Opt_new:
+ 		key_len = payload->key_len;
+ 		ret = tpm_get_random(chip, payload->key, key_len);
++		if (ret < 0)
++			goto out;
++
+ 		if (ret != key_len) {
+ 			pr_info("trusted_key: key_create failed (%d)\n", ret);
++			ret = -EIO;
+ 			goto out;
+ 		}
+ 		if (tpm2)
 -- 
 2.25.1
