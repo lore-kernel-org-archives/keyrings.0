@@ -1,72 +1,36 @@
-From: Jarkko Sakkinen <jarkko@kernel.org>
-Date: Sun, 18 Oct 2020 20:22:34 +0000
-Subject: Re: [RESEND][PATCH] keys: Handle missing Authority Key Identifier X509 extension
-Message-Id: <20201018202234.GA574776@kapsi.fi>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+Date: Mon, 05 Oct 2020 22:52:58 +0000
+Subject: [PATCH v2] encrypted-keys: Print more useful debug info if encryption algo is not available
+Message-Id: <20201005225258.200181-1-anatol.pomozov@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20180505060152.21571-1-andrew.zaborowski@intel.com>
-In-Reply-To: <20180505060152.21571-1-andrew.zaborowski@intel.com>
 To: keyrings@vger.kernel.org
+Cc: zohar@linux.ibm.com, Anatol Pomozov <anatol.pomozov@gmail.com>
 
-On Tue, Oct 13, 2020 at 03:39:38PM +0200, Andrew Zaborowski wrote:
-> In a self-signed certificate the subject and issuer are the same and so
-> the Authority Key Identifier X.509 v3 extension is explicitly made
-> optional in RFC5280 section 4.2.1.1.
-> crypto/asymmetric_keys/x509_cert_parser.c can't handle this and makes
-> (at least) the restrict.c functions refuse to work with certificates
-> that don't include the AKID.  Fix this by filling in the missing
-> cert->sig->auth_ids with the certificate's own IDs after parsing and
-> determinig the certificate is self-signed.
-> 
-> The asymmetric_key_generate_id return value is not checked because it's
-> already succeeded once at this point.
-> 
-> There are root X.509 v3 certificates in use where this is the case,
-> mostly oldish ones.
-> 
-> Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+It helps to improve a cryptic message "encrypted_key failed to alloc_cipher (-2)".
+Adding algo name makes it easier to understand what cipher has failed.
 
-Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+---
+ security/keys/encrypted-keys/encrypted.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> ---
->  crypto/asymmetric_keys/x509_cert_parser.c | 19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
-> 
-> diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-> index 26ec20ef489..a5a2f93e242 100644
-> --- a/crypto/asymmetric_keys/x509_cert_parser.c
-> +++ b/crypto/asymmetric_keys/x509_cert_parser.c
-> @@ -136,6 +136,25 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
->  	if (ret < 0)
->  		goto error_decode;
->  
-> +	if (cert->self_signed) {
-> +		if (!cert->sig->auth_ids[0]) {
-> +			/* Duplicate cert->id */
-> +			kid = asymmetric_key_generate_id(cert->raw_serial,
-> +							 cert->raw_serial_size,
-> +							 cert->raw_issuer,
-> +							 cert->raw_issuer_size);
-> +			cert->sig->auth_ids[0] = kid;
-> +		}
-> +
-> +		if (!cert->sig->auth_ids[1] && cert->skid) {
-> +			/* Duplicate cert->skid */
-> +			kid = asymmetric_key_generate_id(cert->raw_skid,
-> +							 cert->raw_skid_size,
-> +							 "", 0);
-> +			cert->sig->auth_ids[1] = kid;
-> +		}
-> +	}
-> +
->  	kfree(ctx);
->  	return cert;
->  
-> -- 
-> 2.20.1
-> 
-> 
-
-/Jarkko
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index 192e531c146f..c09d48f53682 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -84,8 +84,8 @@ static int aes_get_sizes(void)
+ 
+ 	tfm = crypto_alloc_skcipher(blkcipher_alg, 0, CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(tfm)) {
+-		pr_err("encrypted_key: failed to alloc_cipher (%ld)\n",
+-		       PTR_ERR(tfm));
++		pr_err("encrypted_key: failed to alloc_cipher for %s (%ld)\n",
++		       blkcipher_alg, PTR_ERR(tfm));
+ 		return PTR_ERR(tfm);
+ 	}
+ 	ivsize = crypto_skcipher_ivsize(tfm);
+-- 
+2.28.0
