@@ -1,80 +1,56 @@
-From: Gabriel Krisman Bertazi <krisman@collabora.com>
-Date: Mon, 19 Oct 2020 16:57:09 +0000
-Subject: [PATCH] watch_queue: Drop references to /dev/watch_queue
-Message-Id: <20201019165709.5164-1-krisman@collabora.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Mon, 05 Oct 2020 03:49:48 +0000
+Subject: [PATCH v2 3/3] KEYS: trusted: Fix migratable=1 failing
+Message-Id: <20201005034948.174228-4-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-To: dhowells@redhat.com
-Cc: jarkko@kernel.org, keyrings@vger.kernel.org, Gabriel Krisman Bertazi <krisman@collabora.com>, kernel@collabora.com
+References: <20201005034948.174228-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20201005034948.174228-1-jarkko.sakkinen@linux.intel.com>
+To: linux-integrity@vger.kernel.org
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, stable@vger.kernel.org, "James E.J. Bottomley" <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@watson.ibm.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-The merged API doesn't use a watch_queue device, but instead relies on
-pipes, so let the documentation reflect that.
+Consider the following transcript:
 
+$ keyctl add trusted kmk "new 32 blobauth=3Dhelloworld keyhandle=80000000 m=
+igratable=3D1" @u
+add_key: Invalid argument
+
+The documentation has the following description:
+
+  migratable=3D   0|1 indicating permission to reseal to new PCR values,
+                default 1 (resealing allowed)
+
+The consequence is that "migratable=3D1" should succeed. Fix this by
+allowing this condition to pass instead of return -EINVAL.
+
+[*] Documentation/security/keys/trusted-encrypted.rst
+
+Cc: stable@vger.kernel.org
+Cc: "James E.J. Bottomley" <jejb@linux.ibm.com>
+Cc: Mimi Zohar <zohar@linux.ibm.com>
 Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Gabriel Krisman Bertazi <krisman@collabora.com>
+Fixes: d00a1c72f7f4 ("keys: add new trusted key-type")
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
- Documentation/security/keys/core.rst | 4 ++--
- samples/Kconfig                      | 2 +-
- samples/watch_queue/watch_test.c     | 2 +-
- security/keys/Kconfig                | 8 ++++----
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ security/keys/trusted-keys/trusted_tpm1.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
-index aa0081685ee1..b3ed5c581034 100644
---- a/Documentation/security/keys/core.rst
-+++ b/Documentation/security/keys/core.rst
-@@ -1040,8 +1040,8 @@ The keyctl syscall functions are:
- 
-      "key" is the ID of the key to be watched.
- 
--     "queue_fd" is a file descriptor referring to an open "/dev/watch_queue"
--     which manages the buffer into which notifications will be delivered.
-+     "queue_fd" is a file descriptor referring to an open pipe which
-+     manages the buffer into which notifications will be delivered.
- 
-      "filter" is either NULL to remove a watch or a filter specification to
-      indicate what events are required from the key.
-diff --git a/samples/Kconfig b/samples/Kconfig
-index 0ed6e4d71d87..e76cdfc50e25 100644
---- a/samples/Kconfig
-+++ b/samples/Kconfig
-@@ -210,7 +210,7 @@ config SAMPLE_WATCHDOG
- 	depends on CC_CAN_LINK
- 
- config SAMPLE_WATCH_QUEUE
--	bool "Build example /dev/watch_queue notification consumer"
-+	bool "Build example watch_queue notification API consumer"
- 	depends on CC_CAN_LINK && HEADERS_INSTALL
- 	help
- 	  Build example userspace program to use the new mount_notify(),
-diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
-index 46e618a897fe..8c6cb57d5cfc 100644
---- a/samples/watch_queue/watch_test.c
-+++ b/samples/watch_queue/watch_test.c
-@@ -1,5 +1,5 @@
- // SPDX-License-Identifier: GPL-2.0
--/* Use /dev/watch_queue to watch for notifications.
-+/* Use watch_queue API to watch for notifications.
-  *
-  * Copyright (C) 2020 Red Hat, Inc. All Rights Reserved.
-  * Written by David Howells (dhowells@redhat.com)
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 83bc23409164..c161642a8484 100644
---- a/security/keys/Kconfig
-+++ b/security/keys/Kconfig
-@@ -119,7 +119,7 @@ config KEY_NOTIFICATIONS
- 	bool "Provide key/keyring change notifications"
- 	depends on KEYS && WATCH_QUEUE
- 	help
--	  This option provides support for getting change notifications on keys
--	  and keyrings on which the caller has View permission.  This makes use
--	  of the /dev/watch_queue misc device to handle the notification
--	  buffer and provides KEYCTL_WATCH_KEY to enable/disable watches.
-+	  This option provides support for getting change notifications
-+	  on keys and keyrings on which the caller has View permission.
-+	  This makes use of pipes to handle the notification buffer and
-+	  provides KEYCTL_WATCH_KEY to enable/disable watches.
--- 
-2.28.0
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trus=
+ted-keys/trusted_tpm1.c
+index c1dfc32c780b..20ca18e17437 100644
+--- a/security/keys/trusted-keys/trusted_tpm1.c
++++ b/security/keys/trusted-keys/trusted_tpm1.c
+@@ -801,7 +801,7 @@ static int getoptions(char *c, struct trusted_key_paylo=
+ad *pay,
+ 		case Opt_migratable:
+ 			if (*args[0].from =3D '0')
+ 				pay->migratable =3D 0;
+-			else
++			else if (*args[0].from !=3D '1')
+ 				return -EINVAL;
+ 			break;
+ 		case Opt_pcrlock:
+--=20
+2.25.1
