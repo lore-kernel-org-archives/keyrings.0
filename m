@@ -1,105 +1,39 @@
-From: ira.weiny@intel.com
-Date: Fri, 09 Oct 2020 20:14:09 +0000
-Subject: [PATCH RFC PKS/Trusted keys 1/2] vmalloc: Add vmalloc_pks() call
-Message-Id: <20201009201410.3209180-2-ira.weiny@intel.com>
+From: Marilyn Robert <fredodinga22@gmail.com>
+Date: Wed, 07 Oct 2020 16:23:57 +0000
+Subject: =?UTF-8?B?0J3QsNGY0LzQuNC70LAg0LrQsNGYINCz0L7RgdC/0L7QtNCw0YDQvtGC?=
+Message-Id: <1873493109.151916.1602087837662@mail.yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20201009201410.3209180-1-ira.weiny@intel.com>
-In-Reply-To: <20201009201410.3209180-1-ira.weiny@intel.com>
-To: Jonathan Corbet <corbet@lwn.net>, David Howells <dhowells@redhat.com>, Andrew Morton <akpm@linux-foundation.org>, James Bottomley <jejb@linux.ibm.com>, Mike Rapoport <rppt@kernel.org>
-Cc: Ira Weiny <ira.weiny@intel.com>, Dave Hansen <dave.hansen@linux.intel.com>, Dan Williams <dan.j.williams@intel.com>, Fenghua Yu <fenghua.yu@intel.com>, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org, "open list:KEYS-TRUSTED" <linux-integrity@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+To: keyrings@vger.kernel.org
 
-From: Ira Weiny <ira.weiny@intel.com>
-
-Add a vmalloc call which allocates and creates a new mapping with the
-specified pkey in the mapping.
-
-This is currently a placeholder for the idea of an interface.  This
-does not attempt to update the direct map and as such leaves access via
-that map open.  Protecting that map would potentially fragment the
-direct map.
-
-Signed-off-by: Ira Weiny <ira.weiny@intel.com>
----
- Documentation/core-api/protection-keys.rst |  4 ++++
- include/linux/vmalloc.h                    |  1 +
- mm/vmalloc.c                               | 28 ++++++++++++++++++++++
- 3 files changed, 33 insertions(+)
-
-diff --git a/Documentation/core-api/protection-keys.rst b/Documentation/core-api/protection-keys.rst
-index 9e8a98653e13..574c88f45830 100644
---- a/Documentation/core-api/protection-keys.rst
-+++ b/Documentation/core-api/protection-keys.rst
-@@ -121,6 +121,7 @@ mapping adds that mapping to the protection domain.
-         int pks_key_alloc(const char * const pkey_user);
-         #define PAGE_KERNEL_PKEY(pkey)
-         #define _PAGE_KEY(pkey)
-+        void * vmalloc_pks(unsigned long size, int pkey);
-         void pks_mknoaccess(int pkey, bool global);
-         void pks_mkread(int pkey, bool global);
-         void pks_mkrdwr(int pkey, bool global);
-@@ -138,6 +139,9 @@ Kernel users must set the PTE permissions in the page table entries for the
- mappings they want to protect.  This can be done with PAGE_KERNEL_PKEY() or
- _PAGE_KEY().
- 
-+Alternatively, vmalloc_pks() is provided to allocate memory within the pkey
-+domain specified.
-+
- The pks_mk*() family of calls allows kernel users the ability to change the
- protections for the domain identified by the pkey specified.  3 states are
- available pks_mknoaccess(), pks_mkread(), and pks_mkrdwr() which set the access
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 0221f852a7e1..f5aa1d54b9b7 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -115,6 +115,7 @@ extern void *__vmalloc_node_range(unsigned long size, unsigned long align,
- 			const void *caller);
- void *__vmalloc_node(unsigned long size, unsigned long align, gfp_t gfp_mask,
- 		int node, const void *caller);
-+extern void *vmalloc_pks(unsigned long size, int pkey);
- 
- extern void vfree(const void *addr);
- extern void vfree_atomic(const void *addr);
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index be4724b916b3..8cc973a968c4 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2589,6 +2589,34 @@ void *vmalloc(unsigned long size)
- }
- EXPORT_SYMBOL(vmalloc);
- 
-+/**
-+ * vmalloc_pks - allocate virtually contiguous memory within the specified pkey
-+ * domain
-+ *
-+ * @size:     allocation size
-+ * @pkey:     the pkey domain to allocate the memory under
-+ *
-+ * Allocate enough pages to cover @size from the page level allocator and map
-+ * them into contiguous kernel virtual space with the specific PKS protections
-+ * if the architecture supports it.
-+ *
-+ * NOTE: This does not change the PKS settings established with other mappings
-+ * such as the direct map.
-+ *
-+ * WARNING: Calling this with an invalid pkey is undefined.
-+ *
-+ * Return: pointer to the allocated memory or %NULL on error
-+ */
-+void *vmalloc_pks(unsigned long size, int pkey)
-+{
-+	void *ret = __vmalloc_node_range(size, 1, VMALLOC_START, VMALLOC_END,
-+					 GFP_KERNEL, PAGE_KERNEL_PKEY(pkey), 0,
-+					 NUMA_NO_NODE, __builtin_return_address(0));
-+	vm_unmap_aliases();
-+	return ret;
-+}
-+EXPORT_SYMBOL(vmalloc_pks);
-+
- /**
-  * vzalloc - allocate virtually contiguous memory with zero fill
-  * @size:    allocation size
--- 
-2.28.0.rc0.12.gb6a658bd00c9
+DQoNCtCd0LDRmNC80LjQu9CwINC60LDRmCDQs9C+0YHQv9C+0LTQsNGA0L7Rgg0KDQrQiNCw0YEg
+0YHRg9C8IDY4LdCz0L7QtNC40YjQvdCwINC20LXQvdCwLCDQutC+0ZjQsCDRgdGC0YDQsNC00LAg
+0L7QtCDQv9GA0L7QtNC+0LvQttC10L0g0LrQsNGA0YbQuNC90L7QvCDQvdCwINC00L7RmNC60LAs
+INC+0LQg0YHQuNGC0LUg0LzQtdC00LjRhtC40L3RgdC60Lgg0LjQvdC00LjQutCw0YbQuNC4LCDQ
+vNC+0ZjQsNGC0LAg0YHQvtGB0YLQvtGY0LHQsCDQvdCw0LLQuNGB0YLQuNC90LAg0YHQtSDQstC7
+0L7RiNC4INC4INC+0YfQuNCz0LvQtdC00L3QviDQtSDQtNC10LrQsCDQvNC+0LbQtdCx0Lgg0L3Q
+tdC80LAg0LTQsCDQttC40LLQtdCw0Lwg0L/QvtCy0LXRnNC1INC+0LQg0YjQtdGB0YIg0LzQtdGB
+0LXRhtC4INC60LDQutC+INGA0LXQt9GD0LvRgtCw0YIg0L3QsCDQsdGA0LfQuNC+0YIg0YDQsNGB
+0YIg0Lgg0LHQvtC70LrQsNGC0LAg0YjRgtC+INGB0LUg0ZjQsNCy0YPQstCwINC60LDRmCDQvdC1
+0LAuINCc0L7RmNC+0YIg0YHQvtC/0YDRg9CzINC/0L7Rh9C40L3QsCDQvdC10LrQvtC70LrRgyDQ
+s9C+0LTQuNC90Lgg0L3QsNC90LDQt9Cw0LQg0Lgg0L3QsNGI0LjRgtC1INC00L7Qu9Cz0Lgg0LPQ
+vtC00LjQvdC4INCx0YDQsNC6INC90LUg0LHQtdCwINCx0LvQsNCz0L7RgdC70L7QstC10L3QuCDR
+gdC+INC90LjRgtGDINC10LTQvdC+INC00LXRgtC1LCDQv9C+INC90LXQs9C+0LLQsNGC0LAg0YHQ
+vNGA0YIg0LPQviDQvdCw0YHQu9C10LTQuNCyINGG0LXQu9C+0YLQviDQvdC10LPQvtCy0L4g0LHQ
+vtCz0LDRgtGB0YLQstC+Lg0KDQrQlNC+0LDRk9Cw0Lwg0LrQsNGYINCy0LDRgSDQvtGC0LrQsNC6
+0L4g0YHQtSDQv9C+0LzQvtC70LjQsiDQt9CwINGC0L7QsCwg0L/QvtC00LPQvtGC0LLQtdC9INGB
+0YPQvCDQtNCwINC00L7QvdC40YDQsNC8INGB0YPQvNCwINC+0LQgMiwgMzAwLCAwMDAg0LXQstGA
+0LAg0LfQsCDQv9C+0LzQvtGIINC90LAg0YHQuNGA0L7QvNCw0YjQvdC40YLQtSwg0YHQuNGA0L7Q
+vNCw0YjQvdC40YLQtSDQuCDQv9C+0LzQsNC70LrRgyDQv9GA0LjQstC40LvQtdCz0LjRgNCw0L3Q
+uNGC0LUg0LzQtdGT0YMg0LLQsNGI0LjRgtC1INGB0L7QsdGA0LDQvdC40ZjQsCAvINC+0L/RiNGC
+0LXRgdGC0LLQvi4g0JfQsNCx0LXQu9C10LbQtdGC0LUg0LTQtdC60LAg0L7QstC+0Zgg0YTQvtC9
+0LQg0LUg0LTQtdC/0L7QvdC40YDQsNC9INCy0L4g0LHQsNC90LrQsCDQutCw0LTQtSDRiNGC0L4g
+0YDQsNCx0L7RgtC10YjQtSDQvNC+0ZjQvtGCINGB0L7Qv9GA0YPQsy4gQXBwcmVjaWF0ZdC1INGG
+0LXQvdCw0Lwg0LDQutC+INC+0LHRgNC90LXRgtC1INCy0L3QuNC80LDQvdC40LUg0L3QsCDQvNC+
+0LXRgtC+INCx0LDRgNCw0ZrQtSDQt9CwINC/0YDQvtC/0LDQs9C40YDQsNGa0LUg0L3QsCDQvNCw
+0YHQsNC20LDRgtCwINC90LAg0LrRgNCw0LvRgdGC0LLQvtGC0L4sINGc0LUg0LLQuCDQtNCw0LTQ
+sNC8INC/0L7QstC10ZzQtSDQtNC10YLQsNC70Lgg0LfQsCDRgtC+0LAg0LrQsNC60L4g0LTQsCDQ
+v9C+0YHRgtCw0L/QuNGC0LUuDQoNCtCR0LvQsNCz0L7QtNCw0YDQsNC8DQrQky3Rk9CwINCc0LXR
+gNC40LvQuNC9INCg0L7QsdC10YDRgg=
