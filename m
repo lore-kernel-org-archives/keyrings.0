@@ -1,97 +1,77 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 13 Oct 2020 02:51:54 +0000
-Subject: [PATCH v4 1/3] KEYS: trusted: Fix incorrect handling of tpm_get_random()
-Message-Id: <20201013025156.111305-2-jarkko.sakkinen@linux.intel.com>
+From: Sumit Garg <sumit.garg@linaro.org>
+Date: Wed, 07 Oct 2020 10:19:44 +0000
+Subject: [PATCH v7 0/4] Introduce TEE based Trusted Keys support
+Message-Id: <1602065268-26017-1-git-send-email-sumit.garg@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20201013025156.111305-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20201013025156.111305-1-jarkko.sakkinen@linux.intel.com>
-To: linux-integrity@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, stable@vger.kernel.org, "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>, Kent Yoder <key@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, "H. Peter Anvin" <hpa@linux.intel.com>, David Safford <safford@linux.vnet.ibm.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+To: jarkko.sakkinen@linux.intel.com, zohar@linux.ibm.com, jejb@linux.ibm.com
+Cc: linux-security-module@vger.kernel.org, daniel.thompson@linaro.org, Sumit Garg <sumit.garg@linaro.org>, op-tee@lists.trustedfirmware.org, corbet@lwn.net, janne.karhunen@gmail.com, linux-doc@vger.kernel.org, jmorris@namei.org, linux-kernel@vger.kernel.org, dhowells@redhat.com, lhinds@redhat.com, keyrings@vger.kernel.org, Markus.Wamser@mixed-mode.de, casey@schaufler-ca.com, linux-integrity@vger.kernel.org, jens.wiklander@linaro.org, linux-arm-kernel@lists.infradead.org, serge@hallyn.com
 
-When tpm_get_random() was introduced, it defined the following API for the
-return value:
+Add support for TEE based trusted keys where TEE provides the functionality
+to seal and unseal trusted keys using hardware unique key. Also, this is
+an alternative in case platform doesn't possess a TPM device.
 
-1. A positive value tells how many bytes of random data was generated.
-2. A negative value on error.
+This patch-set has been tested with OP-TEE based early TA which is already
+merged in upstream [1].
 
-However, in the call sites the API was used incorrectly, i.e. as it would
-only return negative values and otherwise zero. Returning he positive read
-counts to the user space does not make any possible sense.
+[1] https://github.com/OP-TEE/optee_os/commit/f86ab8e7e0de869dfa25ca05a37ee070d7e5b86b
 
-Fix this by returning -EIO when tpm_get_random() returns a positive value.
+Changes in v7:
+1. Added a trusted.source module parameter in order to enforce user's
+   choice in case a particular platform posses both TPM and TEE.
+2. Refine commit description for patch #1.
 
-Fixes: 41ab999c80f1 ("tpm: Move tpm_get_random api into the TPM device driver")
-Cc: stable@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Kent Yoder <key@linux.vnet.ibm.com>
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- security/keys/trusted-keys/trusted_tpm1.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+Changes in v6:
+1. Revert back to dynamic detection of trust source.
+2. Drop author mention from trusted_core.c and trusted_tpm1.c files.
+3. Rebased to latest tpmdd/master.
 
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index b9fe02e5f84f..c7b1701cdac5 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -403,9 +403,12 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
- 	int ret;
- 
- 	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
--	if (ret != TPM_NONCE_SIZE)
-+	if (ret < 0)
- 		return ret;
- 
-+	if (ret != TPM_NONCE_SIZE)
-+		return -EIO;
-+
- 	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OSAP);
- 	tpm_buf_append_u16(tb, type);
- 	tpm_buf_append_u32(tb, handle);
-@@ -496,8 +499,12 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
- 		goto out;
- 
- 	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (ret != TPM_NONCE_SIZE)
--		goto out;
-+		return -EIO;
-+
- 	ordinal = htonl(TPM_ORD_SEAL);
- 	datsize = htonl(datalen);
- 	pcrsize = htonl(pcrinfosize);
-@@ -601,9 +608,12 @@ static int tpm_unseal(struct tpm_buf *tb,
- 
- 	ordinal = htonl(TPM_ORD_UNSEAL);
- 	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (ret != TPM_NONCE_SIZE) {
- 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
--		return ret;
-+		return -EIO;
- 	}
- 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
- 			   enonce1, nonceodd, cont, sizeof(uint32_t),
-@@ -1013,8 +1023,12 @@ static int trusted_instantiate(struct key *key,
- 	case Opt_new:
- 		key_len = payload->key_len;
- 		ret = tpm_get_random(chip, payload->key, key_len);
-+		if (ret < 0)
-+			goto out;
-+
- 		if (ret != key_len) {
- 			pr_info("trusted_key: key_create failed (%d)\n", ret);
-+			ret = -EIO;
- 			goto out;
- 		}
- 		if (tpm2)
+Changes in v5:
+1. Drop dynamic detection of trust source and use compile time flags
+   instead.
+2. Rename trusted_common.c -> trusted_core.c.
+3. Rename callback: cleanup() -> exit().
+4. Drop "tk" acronym.
+5. Other misc. comments.
+6. Added review tags for patch #3 and #4.
+
+Changes in v4:
+1. Pushed independent TEE features separately:
+  - Part of recent TEE PR: https://lkml.org/lkml/2020/5/4/1062
+2. Updated trusted-encrypted doc with TEE as a new trust source.
+3. Rebased onto latest tpmdd/master.
+
+Changes in v3:
+1. Update patch #2 to support registration of multiple kernel pages.
+2. Incoporate dependency patch #4 in this patch-set:
+   https://patchwork.kernel.org/patch/11091435/
+
+Changes in v2:
+1. Add reviewed-by tags for patch #1 and #2.
+2. Incorporate comments from Jens for patch #3.
+3. Switch to use generic trusted keys framework.
+
+Sumit Garg (4):
+  KEYS: trusted: Add generic trusted keys framework
+  KEYS: trusted: Introduce TEE based Trusted Keys
+  doc: trusted-encrypted: updates with TEE as a new trust source
+  MAINTAINERS: Add entry for TEE based Trusted Keys
+
+ Documentation/security/keys/trusted-encrypted.rst | 203 ++++++++++---
+ MAINTAINERS                                       |   8 +
+ include/keys/trusted-type.h                       |  47 +++
+ include/keys/trusted_tee.h                        |  55 ++++
+ include/keys/trusted_tpm.h                        |  17 +-
+ security/keys/trusted-keys/Makefile               |   2 +
+ security/keys/trusted-keys/trusted_core.c         | 334 +++++++++++++++++++++
+ security/keys/trusted-keys/trusted_tee.c          | 278 ++++++++++++++++++
+ security/keys/trusted-keys/trusted_tpm1.c         | 336 ++++------------------
+ 9 files changed, 953 insertions(+), 327 deletions(-)
+ create mode 100644 include/keys/trusted_tee.h
+ create mode 100644 security/keys/trusted-keys/trusted_core.c
+ create mode 100644 security/keys/trusted-keys/trusted_tee.c
+
 -- 
-2.25.1
+2.7.4
