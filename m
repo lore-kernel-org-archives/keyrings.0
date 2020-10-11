@@ -1,238 +1,116 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 05 Oct 2020 00:26:58 +0000
-Subject: [PATCH 2/3] KEYS: trusted: Reserve TPM for seal and unseal operations
-Message-Id: <20201005002659.81588-3-jarkko.sakkinen@linux.intel.com>
+From: rishi gupta <gupt21@gmail.com>
+Date: Sun, 11 Oct 2020 17:56:54 +0000
+Subject: Does selinux rule needed for .ima keyring access - integrity: Request for unknown key 'id:87deb3bf' 
+Message-Id: <CALUj-gs2-kCX00Pf42kb+fYo0UE6DD6he3z=-Lz8M52-AFFi_Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20201005002659.81588-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20201005002659.81588-1-jarkko.sakkinen@linux.intel.com>
-To: linux-integrity@vger.kernel.org
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>, stable@vger.kernel.org, David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, Sumit Garg <sumit.garg@linaro.org>, Peter Huewe <peterhuewe@gmx.de>, Jason Gunthorpe <jgg@ziepe.ca>, Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, James Bottomley <jejb@linux.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, Jerry Snitselaar <jsnitsel@redhat.com>, Alexey Klimov <aklimov@redhat.com>, open list <linux-kernel@vger.kernel.org>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>
+To: linux-integrity <linux-integrity@vger.kernel.org>, keyrings@vger.kernel.org, linux-security-module@vger.kernel.org
 
-When TPM 2.0 trusted keys code was moved to the trusted keys subsystem,
-the operations were unwrapped from tpm_try_get_ops() and tpm_put_ops(),
-which are used to take temporarily the ownership of the TPM chip. The
-ownership is only taken inside tpm_send(), but this is not sufficient,
-as in the key load TPM2_CC_LOAD, TPM2_CC_UNSEAL and TPM2_FLUSH_CONTEXT
-need to be done as a one single atom.
+Hi IMA experts,
 
-Fix this issue by introducting trusted_tpm_load() and trusted_tpm_new(),
-which wrap these operations, and take the TPM chip ownership before
-sending anything. Use tpm_transmit_cmd() to send TPM commands instead
-of tpm_send(), reverting back to the old behaviour.
+Do we need to write any rule for selinux to allow access to key in
+.ima keyring for all processes or I am thinking in wrong direction.
 
-Fixes: 2e19e10131a0 ("KEYS: trusted: Move TPM2 trusted keys code")
-Reported-by: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Cc: stable@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: Sumit Garg <sumit.garg@linaro.org>
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- drivers/char/tpm/tpm.h                    |  4 --
- include/linux/tpm.h                       | 16 ++++-
- security/keys/trusted-keys/trusted_tpm1.c | 78 +++++++++++++++--------
- security/keys/trusted-keys/trusted_tpm2.c |  6 +-
- 4 files changed, 71 insertions(+), 33 deletions(-)
+"integrity: Request for unknown key 'id:87deb3bf' err -13" is the
+error with selinux enabled (kernel is 4.14). Without selinux enabled,
+IMA appraisal works fine.
+Audit logs:
+[10012.824868] type00 audit(315974764.149:5729): pidu11 uid01
+auidB94967295 sesB94967295
+subj=system_u:system_r:testd_cm_t:s0-s15:c0.c1023 op="appraise_data"
+cause="invalid-signature" comm="sh" name="/sbin/testdaemon"
+dev="ubifs" ino446 res=0
 
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 947d1db0a5cc..283f78211c3a 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -164,8 +164,6 @@ extern const struct file_operations tpmrm_fops;
- extern struct idr dev_nums_idr;
- 
- ssize_t tpm_transmit(struct tpm_chip *chip, u8 *buf, size_t bufsiz);
--ssize_t tpm_transmit_cmd(struct tpm_chip *chip, struct tpm_buf *buf,
--			 size_t min_rsp_body_length, const char *desc);
- int tpm_get_timeouts(struct tpm_chip *);
- int tpm_auto_startup(struct tpm_chip *chip);
- 
-@@ -194,8 +192,6 @@ static inline void tpm_msleep(unsigned int delay_msec)
- int tpm_chip_start(struct tpm_chip *chip);
- void tpm_chip_stop(struct tpm_chip *chip);
- struct tpm_chip *tpm_find_get_ops(struct tpm_chip *chip);
--__must_check int tpm_try_get_ops(struct tpm_chip *chip);
--void tpm_put_ops(struct tpm_chip *chip);
- 
- struct tpm_chip *tpm_chip_alloc(struct device *dev,
- 				const struct tpm_class_ops *ops);
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index 8f4ff39f51e7..c908349a2f15 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -397,6 +397,10 @@ static inline u32 tpm2_rc_value(u32 rc)
- #if defined(CONFIG_TCG_TPM) || defined(CONFIG_TCG_TPM_MODULE)
- 
- extern int tpm_is_tpm2(struct tpm_chip *chip);
-+extern __must_check int tpm_try_get_ops(struct tpm_chip *chip);
-+extern void tpm_put_ops(struct tpm_chip *chip);
-+extern ssize_t tpm_transmit_cmd(struct tpm_chip *chip, struct tpm_buf *buf,
-+				size_t min_rsp_body_length, const char *desc);
- extern int tpm_pcr_read(struct tpm_chip *chip, u32 pcr_idx,
- 			struct tpm_digest *digest);
- extern int tpm_pcr_extend(struct tpm_chip *chip, u32 pcr_idx,
-@@ -410,7 +414,17 @@ static inline int tpm_is_tpm2(struct tpm_chip *chip)
- {
- 	return -ENODEV;
- }
--
-+static inline int tpm_try_get_ops(struct tpm_chip *chip)
-+{
-+	return -ENODEV;
-+}
-+static inline void tpm_put_ops(struct tpm_chip *chip)
-+{
-+}
-+extern ssize_t tpm_transmit_cmd(struct tpm_chip *chip, struct tpm_buf *buf,
-+				size_t min_rsp_body_length, const char *desc)
-+{
-+}
- static inline int tpm_pcr_read(struct tpm_chip *chip, int pcr_idx,
- 			       struct tpm_digest *digest)
- {
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index c7b1701cdac5..c1dfc32c780b 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -950,6 +950,51 @@ static struct trusted_key_payload *trusted_payload_alloc(struct key *key)
- 	return p;
- }
- 
-+static int trusted_tpm_load(struct tpm_chip *chip,
-+			    struct trusted_key_payload *payload,
-+			    struct trusted_key_options *options)
-+{
-+	int ret;
-+
-+	if (tpm_is_tpm2(chip)) {
-+		ret = tpm_try_get_ops(chip);
-+		if (!ret) {
-+			ret = tpm2_unseal_trusted(chip, payload, options);
-+			tpm_put_ops(chip);
-+		}
-+	} else {
-+		ret = key_unseal(payload, options);
-+	}
-+
-+	return ret;
-+}
-+
-+static int trusted_tpm_new(struct tpm_chip *chip,
-+			   struct trusted_key_payload *payload,
-+			   struct trusted_key_options *options)
-+{
-+	int ret;
-+
-+	ret = tpm_get_random(chip, payload->key, payload->key_len);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (ret != payload->key_len)
-+		return -EIO;
-+
-+	if (tpm_is_tpm2(chip)) {
-+		ret = tpm_try_get_ops(chip);
-+		if (!ret) {
-+			ret = tpm2_seal_trusted(chip, payload, options);
-+			tpm_put_ops(chip);
-+		}
-+	} else {
-+		ret = key_seal(payload, options);
-+	}
-+
-+	return ret;
-+}
-+
- /*
-  * trusted_instantiate - create a new trusted key
-  *
-@@ -968,12 +1013,6 @@ static int trusted_instantiate(struct key *key,
- 	char *datablob;
- 	int ret = 0;
- 	int key_cmd;
--	size_t key_len;
--	int tpm2;
--
--	tpm2 = tpm_is_tpm2(chip);
--	if (tpm2 < 0)
--		return tpm2;
- 
- 	if (datalen <= 0 || datalen > 32767 || !prep->data)
- 		return -EINVAL;
-@@ -1011,32 +1050,21 @@ static int trusted_instantiate(struct key *key,
- 
- 	switch (key_cmd) {
- 	case Opt_load:
--		if (tpm2)
--			ret = tpm2_unseal_trusted(chip, payload, options);
--		else
--			ret = key_unseal(payload, options);
-+		ret = trusted_tpm_load(chip, payload, options);
-+
- 		dump_payload(payload);
- 		dump_options(options);
-+
- 		if (ret < 0)
--			pr_info("trusted_key: key_unseal failed (%d)\n", ret);
-+			pr_info("%s: load failed (%d)\n", __func__, ret);
-+
- 		break;
- 	case Opt_new:
--		key_len = payload->key_len;
--		ret = tpm_get_random(chip, payload->key, key_len);
--		if (ret < 0)
--			goto out;
-+		ret = trusted_tpm_new(chip, payload, options);
- 
--		if (ret != key_len) {
--			pr_info("trusted_key: key_create failed (%d)\n", ret);
--			ret = -EIO;
--			goto out;
--		}
--		if (tpm2)
--			ret = tpm2_seal_trusted(chip, payload, options);
--		else
--			ret = key_seal(payload, options);
- 		if (ret < 0)
--			pr_info("trusted_key: key_seal failed (%d)\n", ret);
-+			pr_info("%s: new failed (%d)\n", __func__, ret);
-+
- 		break;
- 	default:
- 		ret = -EINVAL;
-diff --git a/security/keys/trusted-keys/trusted_tpm2.c b/security/keys/trusted-keys/trusted_tpm2.c
-index 08ec7f48f01d..effdb67fac6d 100644
---- a/security/keys/trusted-keys/trusted_tpm2.c
-+++ b/security/keys/trusted-keys/trusted_tpm2.c
-@@ -130,7 +130,7 @@ int tpm2_seal_trusted(struct tpm_chip *chip,
- 		goto out;
- 	}
- 
--	rc = tpm_send(chip, buf.data, tpm_buf_length(&buf));
-+	rc = tpm_transmit_cmd(chip, &buf, 4, "sealing data");
- 	if (rc)
- 		goto out;
- 
-@@ -211,7 +211,7 @@ static int tpm2_load_cmd(struct tpm_chip *chip,
- 		goto out;
- 	}
- 
--	rc = tpm_send(chip, buf.data, tpm_buf_length(&buf));
-+	rc = tpm_transmit_cmd(chip, &buf, 4, "loading blob");
- 	if (!rc)
- 		*blob_handle = be32_to_cpup(
- 			(__be32 *) &buf.data[TPM_HEADER_SIZE]);
-@@ -260,7 +260,7 @@ static int tpm2_unseal_cmd(struct tpm_chip *chip,
- 			     options->blobauth /* hmac */,
- 			     TPM_DIGEST_SIZE);
- 
--	rc = tpm_send(chip, buf.data, tpm_buf_length(&buf));
-+	rc = tpm_transmit_cmd(chip, &buf, 6, "unsealing");
- 	if (rc > 0)
- 		rc = -EPERM;
- 
--- 
-2.25.1
+Output of few commands just in case it is useful:
+
+# keyctl show -x %:.builtin_trusted_keys
+Keyring
+0x26edf4c7 ---lswrv      0     0  keyring: .builtin_trusted_keys
+0x3e65ef00 ---lswrv      0     0   \_ asymmetric: IMA-CA: IMA/EVM
+certificate signing key: 20c98dcf771b2a945c0ffd245011118299f90bdf
+
+# keyctl show -x %:.ima
+Keyring
+0x0e961ca8 ---lswrv      0     0  keyring: .ima
+0x2e3011f8 ---lswrv      0     0   \_ asymmetric: ima: signing key:
+edc4697e8b77ef2713e491616726090c87deb3bf
+
+/ # cat /proc/keys
+02fdee99 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+035ab7c0 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+0439d238 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+04964e3e I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+04da590e I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+054ef37d I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+055154e2 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+06511dd4 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+0761426a I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+0793080e I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+07f495f8 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+082f71d6 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+096dee7c I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+09904799 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+0b87b742 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+0c1b072c I--Q---     3 perm 3f030000     0     0 keyring   _ses: 1
+0d02c3ff I--Q---     2 perm 3f030000     0     0 keyring   _ses: 1
+0db26b5a I--Q---     8 perm 3f030000     0     0 keyring   _ses: 1
+0dc6c62e I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+0e961ca8 I------     1 perm 1f0f0000     0     0 keyring   .ima: 1
+0ff12212 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+1156ac2d I--Q---    13 perm 3f030000     0     0 keyring   _ses: 1
+1252fe6f I--Q---     3 perm 3f030000     0     0 keyring   _ses: 1
+1285aef6 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+1322fc5e I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+13866397 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+14173f44 I--Q---     2 perm 1f3f0000     0 65534 keyring   _uid.0: empty
+14931524 I--Q---     3 perm 3f030000     0     0 keyring   _ses: 1
+155502e8 I--Q---     3 perm 3f030000     0     0 keyring   _ses: 1
+1604215d I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+16b40b6b I--Q---     4 perm 3f030000     0     0 keyring   _ses: 1
+17db30d9 I--Q---     3 perm 3f030000     0     0 keyring   _ses: 1
+18ea41e0 I--Q---     5 perm 3f030000     0     0 keyring   _ses: 1
+19b92253 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+19eeed3f I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+1b89b979 I--Q---     2 perm 3f030000     0     0 keyring   _ses: 1
+1c0a573f I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+1cd763d5 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+1d3caf71 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+1d6a3880 I--Q---     2 perm 3f030000     0     0 keyring   _ses: 1
+1ddffca9 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+1df0c622 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+201c5a37 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+2045b3bb I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+20993304 I--Q---     2 perm 3f030000     0     0 keyring   _ses: 1
+2154e4a6 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+22f2253f I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+25e97a49 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+2665b7b4 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+26edf4c7 I------     1 perm 1f0b0000     0     0 keyring
+.builtin_trusted_keys: 1
+2798bd15 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+29931371 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+2a3853b1 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+2cc594f1 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+2dc04d98 I--Q---     2 perm 3f030000     0     0 keyring   _ses: 1
+2e0e4f06 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+2e3011f8 I------     1 perm 1f030000     0     0 asymmetri ima:
+signing key: edc4697e8b77ef2713e491616726090c87deb3bf: X509.rsa
+87deb3bf []
+2e769ee9 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+2ebb4809 I--Q---     1 perm 1f3f0000     0 65534 keyring   _uid_ses.0: 1
+2fdc0299 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+307f8910 I--Q---     1 perm 3f030000     0     0 keyring   _ses: 1
+3384a46f I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+357dd4d1 I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+3be9a95e I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+3c3162f6 I--Q---     3 perm 3f030000     0     0 keyring   _ses: 1
+3d47a3ab I--Q---     1 perm 0b0b0000     0     0 user      invocation_id: 16
+3e65ef00 I------     1 perm 1f030000     0     0 asymmetri IMA-CA:
+IMA/EVM certificate signing key:
+20c98dcf771b2a945c0ffd245011118299f90bdf: X509.rsa 99f90bdf []
+3f625ed4 I--Q---     5 perm 3f030000     0     0 keyring   _ses: 1
+
+Regards.,
+Rishi
