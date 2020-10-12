@@ -1,7 +1,7 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Wed, 07 Oct 2020 03:15:08 +0000
+From: Mimi Zohar <zohar@linux.ibm.com>
+Date: Mon, 12 Oct 2020 20:18:02 +0000
 Subject: Re: [PATCH v2] encrypted-keys: Print more useful debug info if encryption algo is not available
-Message-Id: <20201007031508.GB143690@linux.intel.com>
+Message-Id: <17400748c976eb3964c5356fe41b3cca3cd23d65.camel@linux.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -10,64 +10,43 @@ References: <20201005225258.200181-1-anatol.pomozov@gmail.com>
 In-Reply-To: <20201005225258.200181-1-anatol.pomozov@gmail.com>
 To: keyrings@vger.kernel.org
 
-On Tue, Oct 06, 2020 at 08:33:24PM -0400, Mimi Zohar wrote:
-> On Wed, 2020-10-07 at 02:39 +0300, Jarkko Sakkinen wrote:
-> > On Tue, Oct 06, 2020 at 10:18:43AM -0700, Anatol Pomozov wrote:
-> > > Hi
-> > > 
-> > > On Tue, Oct 6, 2020 at 8:59 AM Jarkko Sakkinen
-> > > <jarkko.sakkinen@linux.intel.com> wrote:
-> > > >
-> > > > On Tue, Oct 06, 2020 at 06:56:28PM +0300, Jarkko Sakkinen wrote:
-> > > > > On Mon, Oct 05, 2020 at 03:52:58PM -0700, Anatol Pomozov wrote:
-> > > > > > It helps to improve a cryptic message "encrypted_key failed to alloc_cipher (-2)".
-> > > > > > Adding algo name makes it easier to understand what cipher has failed.
-> > > > > >
-> > > > > > Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-> > > > >
-> > > > > NAK, because you are missing David Howells from the CC list.
-> > > >
-> > > > Oh and also me. You are essentially missing all the keyring maintainers.
-> > > 
-> > > The MAINTAINERS file states following:
-> > > 
-> > > KEYS-ENCRYPTED
-> > > M:      Mimi Zohar <zohar@linux.ibm.com>
-> > > L:      linux-integrity@vger.kernel.org
-> > > L:      keyrings@vger.kernel.org
-> > > S:      Supported
-> > > F:      Documentation/security/keys/trusted-encrypted.rst
-> > > F:      include/keys/encrypted-type.h
-> > > F:      security/keys/encrypted-keys/
-> > > 
-> > > Everything seems fine as I included the official maintainer and the
-> > > project maillist.
-> > > 
-> > > If David is not subscribed to the project maillist I'll be glad to CC
-> > > him as well.
-> > 
-> > Ugh, you are right then. Those two lists still confuse me thought
-> > but that is not your fault.
+Hi Anatol,
+
+On Mon, 2020-10-05 at 15:52 -0700, Anatol Pomozov wrote:
+> It helps to improve a cryptic message "encrypted_key failed to alloc_cipher (-2)".
+> Adding algo name makes it easier to understand what cipher has failed.
 > 
-> Please refer to Documentation/security/keys/trusted-encrypted.rst for
-> an explanation.
+> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-Yeah, I was not sure about the organization and just spotted keyrings
-in the CC list :-)
+The "if" clause in the Subject line doesn't belong there, but in the
+patch description.  I would start the patch description with "Improve
+the cryptic message ... by adding ..."
 
+> ---
+>  security/keys/encrypted-keys/encrypted.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> > 
-> > Based on that I can give my ack because the change looks right
-> > still.
-> > 
-> > Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > 
-> > Thanks for explaining the situation.
-> 
-> Thanks, Jarrko.  I'm on vacation, returning next week.
+> diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+> index 192e531c146f..c09d48f53682 100644
+> --- a/security/keys/encrypted-keys/encrypted.c
+> +++ b/security/keys/encrypted-keys/encrypted.c
+> @@ -84,8 +84,8 @@ static int aes_get_sizes(void)
+>  
+>  	tfm = crypto_alloc_skcipher(blkcipher_alg, 0, CRYPTO_ALG_ASYNC);
+>  	if (IS_ERR(tfm)) {
+> -		pr_err("encrypted_key: failed to alloc_cipher (%ld)\n",
+> -		       PTR_ERR(tfm));
+> +		pr_err("encrypted_key: failed to alloc_cipher for %s (%ld)\n",
+> +		       blkcipher_alg, PTR_ERR(tfm));
 
-Have a good one!
+I don't have a problem with including the blkcipher_alg in the error
+message.   It is currently defined as "cbc(aes)".   Is it ever anything
+else?
 
-> Mimi
+thanks,
 
-/Jarkko
+Mimi
+
+>  		return PTR_ERR(tfm);
+>  	}
+>  	ivsize = crypto_skcipher_ivsize(tfm);
