@@ -1,61 +1,52 @@
-From: Nick Desaulniers <ndesaulniers@google.com>
-Date: Mon, 19 Oct 2020 19:42:15 +0000
-Subject: Re: [RFC] treewide: cleanup unreachable breaks
-Message-Id: <CAKwvOdkR_Ttfo7_JKUiZFVqr=Uh=4b05KCPCSuzwk=zaWtA2_Q@mail.gmail.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Date: Tue, 13 Oct 2020 10:46:33 +0000
+Subject: [PATCH] MAINTAINERS: jarkko.sakkinen@linux.intel.com -> jarkko@kernel.org
+Message-Id: <20201013104705.140127-1-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20201017160928.12698-1-trix@redhat.com>
- <20201018054332.GB593954@kroah.com>
-In-Reply-To: <20201018054332.GB593954@kroah.com>
-To: Tom Rix <trix@redhat.com>
-Cc: alsa-devel@alsa-project.org, clang-built-linux <clang-built-linux@googlegroups.com>, Greg KH <gregkh@linuxfoundation.org>, linux-iio@vger.kernel.org, nouveau@lists.freedesktop.org, storagedev@microchip.com, dri-devel <dri-devel@lists.freedesktop.org>, virtualization@lists.linux-foundation.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, ath10k@lists.infradead.org, linux-stm32@st-md-mailman.stormreply.com, usb-storage@lists.one-eyed-alien.net, linux-watchdog@vger.kernel.org, devel@driverdev.osuosl.org, linux-samsung-soc@vger.kernel.org, linux-scsi@vger.kernel.org, linux-nvdimm <linux-nvdimm@lists.01.org>, amd-gfx list <amd-gfx@lists.freedesktop.org>, linux-acpi@vger.kernel.org, intel-wired-lan@lists.osuosl.org, industrypack-devel@lists.sourceforge.net, linux-pci@vger.kernel.org, spice-devel@lists.freedesktop.org, MPT-FusionLinux.pdl@broadcom.com, linux-media@vger.kernel.org, linux-serial@vger.kernel.org, linux-nfc@lists.01.org, linux-pm@vger.kernel.org, linux-can@vger.kernel.org, linux-block@vger.kernel.org, linux-gpio@vger.kernel.org, xen-devel@lists.xenproject.org, linux-amlogic@lists.infradead.org, openipmi-developer@lists.sourceforge.net, platform-driver-x86@vger.kernel.org, linux-integrity@vger.kernel.org, Linux ARM <linux-arm-kernel@lists.infradead.org>, linux-edac@vger.kernel.org, George Burgess <gbiv@google.com>, Network Development <netdev@vger.kernel.org>, linux-usb@vger.kernel.org, linux-wireless <linux-wireless@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, linux-security-module@vger.kernel.org, "open list:HARDWARE RANDOM NUMBER GENERATOR CORE" <linux-crypto@vger.kernel.org>, patches@opensource.cirrus.com, bpf <bpf@vger.kernel.org>, ocfs2-devel@oss.oracle.com, linux-power@fi.rohmeurope.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-sgx@vger.kernel.org, keyrings@vger.kernel.org, linux-integrity@vger.kernel.org, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, Mauro Carvalho Chehab <mchehab+huawei@kernel.org>, "David S. Miller" <davem@davemloft.net>, Rob Herring <robh@kernel.org>
 
-On Sat, Oct 17, 2020 at 10:43 PM Greg KH <gregkh@linuxfoundation.org> wrote:
->
-> On Sat, Oct 17, 2020 at 09:09:28AM -0700, trix@redhat.com wrote:
-> > From: Tom Rix <trix@redhat.com>
-> >
-> > This is a upcoming change to clean up a new warning treewide.
-> > I am wondering if the change could be one mega patch (see below) or
-> > normal patch per file about 100 patches or somewhere half way by collecting
-> > early acks.
->
-> Please break it up into one-patch-per-subsystem, like normal, and get it
-> merged that way.
->
-> Sending us a patch, without even a diffstat to review, isn't going to
-> get you very far...
+Use korg address as the main communications end point. Update the
+corresponding M-entries.
 
-Tom,
-If you're able to automate this cleanup, I suggest checking in a
-script that can be run on a directory.  Then for each subsystem you
-can say in your commit "I ran scripts/fix_whatever.py on this subdir."
- Then others can help you drive the tree wide cleanup.  Then we can
-enable -Wunreachable-code-break either by default, or W=2 right now
-might be a good idea.
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ MAINTAINERS | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Ah, George (gbiv@, cc'ed), did an analysis recently of
-`-Wunreachable-code-loop-increment`, `-Wunreachable-code-break`, and
-`-Wunreachable-code-return` for Android userspace.  From the review:
-```
-Spoilers: of these, it seems useful to turn on
--Wunreachable-code-loop-increment and -Wunreachable-code-return by
-default for Android
-...
-While these conventions about always having break arguably became
-obsolete when we enabled -Wfallthrough, my sample turned up zero
-potential bugs caught by this warning, and we'd need to put a lot of
-effort into getting a clean tree. So this warning doesn't seem to be
-worth it.
-```
-Looks like there's an order of magnitude of `-Wunreachable-code-break`
-than the other two.
-
-We probably should add all 3 to W=2 builds (wrapped in cc-option).
-I've filed https://github.com/ClangBuiltLinux/linux/issues/1180 to
-follow up on.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6594f0966716..afe2a20fb85a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -9668,7 +9668,7 @@ F:	security/keys/encrypted-keys/
+ 
+ KEYS-TRUSTED
+ M:	James Bottomley <jejb@linux.ibm.com>
+-M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
++M:	Jarkko Sakkinen <jarkko@kernel.org>
+ M:	Mimi Zohar <zohar@linux.ibm.com>
+ L:	linux-integrity@vger.kernel.org
+ L:	keyrings@vger.kernel.org
+@@ -9680,7 +9680,7 @@ F:	security/keys/trusted-keys/
+ 
+ KEYS/KEYRINGS
+ M:	David Howells <dhowells@redhat.com>
+-M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
++M:	Jarkko Sakkinen <jarkko@kernel.org>
+ L:	keyrings@vger.kernel.org
+ S:	Maintained
+ F:	Documentation/security/keys/core.rst
+@@ -17616,7 +17616,7 @@ F:	drivers/platform/x86/toshiba-wmi.c
+ 
+ TPM DEVICE DRIVER
+ M:	Peter Huewe <peterhuewe@gmx.de>
+-M:	Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
++M:	Jarkko Sakkinen <jarkko@kernel.org>
+ R:	Jason Gunthorpe <jgg@ziepe.ca>
+ L:	linux-integrity@vger.kernel.org
+ S:	Maintained
 -- 
-Thanks,
-~Nick Desaulniers
+2.25.1
