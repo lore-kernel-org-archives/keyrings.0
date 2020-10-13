@@ -1,97 +1,56 @@
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Tue, 13 Oct 2020 00:28:13 +0000
-Subject: [PATCH v3 1/3] KEYS: trusted: Fix incorrect handling of tpm_get_random()
-Message-Id: <20201013002815.40256-2-jarkko.sakkinen@linux.intel.com>
+Date: Tue, 13 Oct 2020 02:51:55 +0000
+Subject: [PATCH v4 2/3] KEYS: trusted: Fix migratable=1 failing
+Message-Id: <20201013025156.111305-3-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
 List-Id: <keyrings.vger.kernel.org>
-References: <20201013002815.40256-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20201013002815.40256-1-jarkko.sakkinen@linux.intel.com>
+References: <20201013025156.111305-1-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <20201013025156.111305-1-jarkko.sakkinen@linux.intel.com>
 To: linux-integrity@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, stable@vger.kernel.org, "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>, Kent Yoder <key@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@linux.intel.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+Cc: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.ibm.com>, James Bottomley <jejb@linux.ibm.com>, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, stable@vger.kernel.org, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@watson.ibm.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
 
-When tpm_get_random() was introduced, it defined the following API for the
-return value:
+Consider the following transcript:
 
-1. A positive value tells how many bytes of random data was generated.
-2. A negative value on error.
+$ keyctl add trusted kmk "new 32 blobauth=3Dhelloworld keyhandle=80000000 m=
+igratable=3D1" @u
+add_key: Invalid argument
 
-However, in the call sites the API was used incorrectly, i.e. as it would
-only return negative values and otherwise zero. Returning he positive read
-counts to the user space does not make any possible sense.
+The documentation has the following description:
 
-Fix this by returning -EIO when tpm_get_random() returns a positive value.
+  migratable=3D   0|1 indicating permission to reseal to new PCR values,
+                default 1 (resealing allowed)
 
-Fixes: 41ab999c80f1 ("tpm: Move tpm_get_random api into the TPM device driver")
+The consequence is that "migratable=3D1" should succeed. Fix this by
+allowing this condition to pass instead of return -EINVAL.
+
+[*] Documentation/security/keys/trusted-encrypted.rst
+
 Cc: stable@vger.kernel.org
+Cc: "James E.J. Bottomley" <jejb@linux.ibm.com>
 Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
 Cc: David Howells <dhowells@redhat.com>
-Cc: Kent Yoder <key@linux.vnet.ibm.com>
+Fixes: d00a1c72f7f4 ("keys: add new trusted key-type")
 Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
- security/keys/trusted-keys/trusted_tpm1.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ security/keys/trusted-keys/trusted_tpm1.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index b9fe02e5f84f..c7b1701cdac5 100644
+diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trus=
+ted-keys/trusted_tpm1.c
+index c7b1701cdac5..7a937c3c5283 100644
 --- a/security/keys/trusted-keys/trusted_tpm1.c
 +++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -403,9 +403,12 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
- 	int ret;
- 
- 	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
--	if (ret != TPM_NONCE_SIZE)
-+	if (ret < 0)
- 		return ret;
- 
-+	if (ret != TPM_NONCE_SIZE)
-+		return -EIO;
-+
- 	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OSAP);
- 	tpm_buf_append_u16(tb, type);
- 	tpm_buf_append_u32(tb, handle);
-@@ -496,8 +499,12 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
- 		goto out;
- 
- 	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (ret != TPM_NONCE_SIZE)
--		goto out;
-+		return -EIO;
-+
- 	ordinal = htonl(TPM_ORD_SEAL);
- 	datsize = htonl(datalen);
- 	pcrsize = htonl(pcrinfosize);
-@@ -601,9 +608,12 @@ static int tpm_unseal(struct tpm_buf *tb,
- 
- 	ordinal = htonl(TPM_ORD_UNSEAL);
- 	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (ret != TPM_NONCE_SIZE) {
- 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
--		return ret;
-+		return -EIO;
- 	}
- 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
- 			   enonce1, nonceodd, cont, sizeof(uint32_t),
-@@ -1013,8 +1023,12 @@ static int trusted_instantiate(struct key *key,
- 	case Opt_new:
- 		key_len = payload->key_len;
- 		ret = tpm_get_random(chip, payload->key, key_len);
-+		if (ret < 0)
-+			goto out;
-+
- 		if (ret != key_len) {
- 			pr_info("trusted_key: key_create failed (%d)\n", ret);
-+			ret = -EIO;
- 			goto out;
- 		}
- 		if (tpm2)
--- 
+@@ -801,7 +801,7 @@ static int getoptions(char *c, struct trusted_key_paylo=
+ad *pay,
+ 		case Opt_migratable:
+ 			if (*args[0].from =3D '0')
+ 				pay->migratable =3D 0;
+-			else
++			else if (*args[0].from !=3D '1')
+ 				return -EINVAL;
+ 			break;
+ 		case Opt_pcrlock:
+--=20
 2.25.1
