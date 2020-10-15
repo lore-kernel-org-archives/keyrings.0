@@ -1,56 +1,22 @@
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Date: Mon, 05 Oct 2020 00:26:59 +0000
-Subject: [PATCH 3/3] KEYS: trusted: Fix migratable=1 failing
-Message-Id: <20201005002659.81588-4-jarkko.sakkinen@linux.intel.com>
+From: Kim Leang <mechanik@kilargo.pl>
+Date: Thu, 15 Oct 2020 12:52:46 +0000
+Subject: Greeting! !!
+Message-Id: <93c64c57c99f4887a746174418cb18d4@mail.kilargo.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <20201005002659.81588-1-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <20201005002659.81588-1-jarkko.sakkinen@linux.intel.com>
-To: linux-integrity@vger.kernel.org
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>, stable@vger.kernel.org, "James E.J. Bottomley" <jejb@linux.ibm.com>, Mimi Zohar <zohar@linux.ibm.com>, David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>, "Serge E. Hallyn" <serge@hallyn.com>, David Safford <safford@watson.ibm.com>, "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>, "open list:SECURITY SUBSYSTEM" <linux-security-module@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>
+To: keyrings@vger.kernel.org
 
-Consider the following transcript:
+Greeting!
 
-$ keyctl add trusted kmk "new 32 blobauth=3Dhelloworld keyhandle=80000000 m=
-igratable=3D1" @u
-add_key: Invalid argument
+I am contacting you to receive and share with me an abandoned fund ( $21,537.000.00 ) left in our bank by a deceased customer. I was going through the Internet search when I found your email address. My name is Mr. Kim Leang.
 
-The documentation has the following description:
+I want to utilize this opportunity and make use of this fund if I should present your name to the bank to stand as his business associate/ trustee for the fund to be released to you via Visa card for easy withdrawals in any VISA ATM machine anywhere in the World.
 
-  migratable=3D   0|1 indicating permission to reseal to new PCR values,
-                default 1 (resealing allowed)
+The bank will also give you international online transfer options. With these you can transfer the funds without any risk.
 
-The consequence is that "migratable=3D1" should succeed. Fix this by
-allowing this condition to pass instead of return -EINVAL.
+Should you be interested in working with me in this project? Please reply back and let's benefit from this golden opportunity.You are my first contact. I shall wait a few days and if I do not hear from you, I shall look for another person.
 
-[*] Documentation/security/keys/trusted-encrypted.rst
-
-Cc: stable@vger.kernel.org
-Cc: "James E.J. Bottomley" <jejb@linux.ibm.com>
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Fixes: d00a1c72f7f4 ("keys: add new trusted key-type")
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- security/keys/trusted-keys/trusted_tpm1.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trus=
-ted-keys/trusted_tpm1.c
-index c1dfc32c780b..20ca18e17437 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -801,7 +801,7 @@ static int getoptions(char *c, struct trusted_key_paylo=
-ad *pay,
- 		case Opt_migratable:
- 			if (*args[0].from =3D '0')
- 				pay->migratable =3D 0;
--			else
-+			else if (*args[0].from !=3D '1')
- 				return -EINVAL;
- 			break;
- 		case Opt_pcrlock:
---=20
-2.25.1
+Thanks and have a nice day,
+Mr. Kim Leang.
