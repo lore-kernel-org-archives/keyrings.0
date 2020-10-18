@@ -1,111 +1,33 @@
-From: Sumit Garg <sumit.garg@linaro.org>
-Date: Wed, 14 Oct 2020 05:16:38 +0000
-Subject: Re: [PATCH v7 1/4] KEYS: trusted: Add generic trusted keys framework
-Message-Id: <CAFA6WYMvqmCVjjb9vW0y+_2+AtoGUE0ZvwBhc4F=4Es-94redA@mail.gmail.com>
+From: Matthew Wilcox <willy@infradead.org>
+Date: Sun, 18 Oct 2020 18:59:43 +0000
+Subject: Re: [Ocfs2-devel] [RFC] treewide: cleanup unreachable breaks
+Message-Id: <20201018185943.GM20115@casper.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-References: <1602065268-26017-1-git-send-email-sumit.garg@linaro.org>
- <1602065268-26017-2-git-send-email-sumit.garg@linaro.org>
- <20201013014304.GC41176@linux.intel.com>
- <CAFA6WYN1n_x1wUefXEf-4Y+bUZybNAMeD9cirvz4WQnK2E7djw@mail.gmail.com>
- <20201013115918.GB141833@linux.intel.com>
-In-Reply-To: <20201013115918.GB141833@linux.intel.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: linux-security-module@vger.kernel.org, Daniel Thompson <daniel.thompson@linaro.org>, op-tee@lists.trustedfirmware.org, Jonathan Corbet <corbet@lwn.net>, James Bottomley <jejb@linux.ibm.com>, Janne Karhunen <janne.karhunen@gmail.com>, Linux Doc Mailing List <linux-doc@vger.kernel.org>, James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.ibm.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>, Luke Hinds <lhinds@redhat.com>, "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>, Josh Poimboeuf <jpoimboe@redhat.com>, Markus Wamser <Markus.Wamser@mixed-mode.de>, Casey Schaufler <casey@schaufler-ca.com>, linux-integrity@vger.kernel.org, Jens Wiklander <jens.wiklander@linaro.org>, linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, "Serge E. Hallyn" <serge@hallyn.com>
+References: <20201017160928.12698-1-trix@redhat.com>
+In-Reply-To: <20201017160928.12698-1-trix@redhat.com>
+To: trix@redhat.com
+Cc: alsa-devel@alsa-project.org, linux-iio@vger.kernel.org, nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org, virtualization@lists.linux-foundation.org, keyrings@vger.kernel.org, linux-mtd@lists.infradead.org, amd-gfx@lists.freedesktop.org, linux-stm32@st-md-mailman.stormreply.com, usb-storage@lists.one-eyed-alien.net, devel@driverdev.osuosl.org, linux-samsung-soc@vger.kernel.org, xen-devel@lists.xenproject.org, linux-scsi@vger.kernel.org, linux-nvdimm@lists.01.org, linux-pm@vger.kernel.org, ath10k@lists.infradead.org, linux-acpi@vger.kernel.org, intel-wired-lan@lists.osuosl.org, industrypack-devel@lists.sourceforge.net, linux-pci@vger.kernel.org, spice-devel@lists.freedesktop.org, MPT-FusionLinux.pdl@broadcom.com, linux-media@vger.kernel.org, linux-watchdog@vger.kernel.org, linux-nfc@lists.01.org, linux-serial@vger.kernel.org, linux-can@vger.kernel.org, linux-block@vger.kernel.org, linux-gpio@vger.kernel.org, storagedev@microchip.com, linux-amlogic@lists.infradead.org, openipmi-developer@lists.sourceforge.net, platform-driver-x86@vger.kernel.org, bpf@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org, netdev@vger.kernel.org, linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org, clang-built-linux@googlegroups.com, patches@opensource.cirrus.com, linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org, ocfs2-devel@oss.oracle.com, linux-power@fi.rohmeurope.com
 
-On Tue, 13 Oct 2020 at 17:29, Jarkko Sakkinen
-<jarkko.sakkinen@linux.intel.com> wrote:
->
-> On Tue, Oct 13, 2020 at 04:23:36PM +0530, Sumit Garg wrote:
-> > On Tue, 13 Oct 2020 at 07:13, Jarkko Sakkinen
-> > <jarkko.sakkinen@linux.intel.com> wrote:
-> > >
-> > > On Wed, Oct 07, 2020 at 03:37:45PM +0530, Sumit Garg wrote:
-> > > > Current trusted keys framework is tightly coupled to use TPM device as
-> > > > an underlying implementation which makes it difficult for implementations
-> > > > like Trusted Execution Environment (TEE) etc. to provide trusted keys
-> > > > support in case platform doesn't posses a TPM device.
-> > > >
-> > > > Add a generic trusted keys framework where underlying implementations
-> > > > can be easily plugged in. Create struct trusted_key_ops to achieve this,
-> > > > which contains necessary functions of a backend.
-> > > >
-> > > > Also, add a module parameter in order to select a particular trust source
-> > > > in case a platform support multiple trust sources.
-> > > >
-> > > > Suggested-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > > > Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-> > >
-> > > This is exactly kind of place where I think static_call() should be
-> > > taken into use, which is a v5.10 feature [1]. For background and
-> > > context, I'd read [2].
-> >
-> > This looks like an interesting feature. But I am not sure about the
-> > real benefits that it will provide in case of trusted keys. If we are
-> > looking at it performance wise then I think the gain will be
-> > negligible when compared with slow TPM communication interface (eg.
-> > SPI, I2C) or when compared with context switching involved in TEE.
-> >
-> > Also, it requires arch specific support too which currently seems to
-> > be limited to x86 only.
->
-> Please, do not purposely add indirect calls, unless you  must. Here it's
-> not a must.
->
-> static_call() is the correct kernel idiom to define what you are doing
-> in this patch. arch's will catch up.
+On Sat, Oct 17, 2020 at 09:09:28AM -0700, trix@redhat.com wrote:
+> clang has a number of useful, new warnings see
+> https://urldefense.com/v3/__https://clang.llvm.org/docs/DiagnosticsReference.html__;!!GqivPVa7Brio!Krxz78O3RKcB9JBMVo_F98FupVhj_jxX60ddN6tKGEbv_cnooXc1nnBmchm-e_O9ieGnyQ$ 
 
-Okay, fair enough. I will try to use it instead.
+Please get your IT department to remove that stupidity.  If you can't,
+please send email from a non-Red Hat email address.
 
->
-> > > The other thing that I see that does not make much else than additional
-> > > complexity, is trusted_tpm.ko. We can do with one trusted.ko.
-> > >
-> >
-> > Current implementation only builds a single trusted.ko module. There
-> > isn't any trusted_tpm.ko.
-> > -Sumit
->
-> You're right, I'm sorry. I misread this:
->
-> -static void __exit cleanup_trusted(void)
-> +static void __exit exit_tpm_trusted(void)
->  {
->         if (chip) {
->                 put_device(&chip->dev);
-> @@ -1257,7 +1029,11 @@  static void __exit cleanup_trusted(void)
->         }
->  }
->
-> -late_initcall(init_trusted);
-> -module_exit(cleanup_trusted);
-> -
-> -MODULE_LICENSE("GPL");
-> +struct trusted_key_ops tpm_trusted_key_ops = {
-> +       .migratable = 1, /* migratable by default */
-> +       .init = init_tpm_trusted,
-> +       .seal = tpm_trusted_seal,
-> +       .unseal = tpm_trusted_unseal,
-> +       .get_random = tpm_trusted_get_random,
-> +       .exit = exit_tpm_trusted,
-> +};
->
-> Please remove "__init" and  "__exit" for the functions as they are used
-> as fields as members of a struct that has neither life span. That messed
-> up my head.
+I don't understand why this is a useful warning to fix.  What actual
+problem is caused by the code below?
 
-Okay.
+> return and break
+> 
+>  	switch (c->x86_vendor) {
+>  	case X86_VENDOR_INTEL:
+>  		intel_p5_mcheck_init(c);
+>  		return 1;
+> -		break;
 
->
-> Please use a single convention for the function names. It would
-> be optimal to prefix with the subsystem name because that makes easier
-> to use tracing tools:  trusted_tpm_<callback name> would work.
->
-
-Okay.
-
--Sumit
-
-> /Jarkko
+Sure, it's unnecessary, but it's not masking a bug.  It's not unclear.
+Why do we want to enable this warning?
