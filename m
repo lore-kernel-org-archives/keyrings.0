@@ -1,72 +1,80 @@
-From: trix@redhat.com
-Date: Mon, 19 Oct 2020 17:36:53 +0000
-Subject: [PATCH] security: remove unneeded break
-Message-Id: <20201019173653.527-1-trix@redhat.com>
+From: Gabriel Krisman Bertazi <krisman@collabora.com>
+Date: Mon, 19 Oct 2020 16:57:09 +0000
+Subject: [PATCH] watch_queue: Drop references to /dev/watch_queue
+Message-Id: <20201019165709.5164-1-krisman@collabora.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 List-Id: <keyrings.vger.kernel.org>
-To: zohar@linux.ibm.com, dmitry.kasatkin@gmail.com, jmorris@namei.org, serge@hallyn.com, jejb@linux.ibm.com, jarkko.sakkinen@linux.intel.com, dhowells@redhat.com, mortonm@chromium.org
-Cc: linux-integrity@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org, keyrings@vger.kernel.org, Tom Rix <trix@redhat.com>
+To: dhowells@redhat.com
+Cc: jarkko@kernel.org, keyrings@vger.kernel.org, Gabriel Krisman Bertazi <krisman@collabora.com>, kernel@collabora.com
 
-From: Tom Rix <trix@redhat.com>
+The merged API doesn't use a watch_queue device, but instead relies on
+pipes, so let the documentation reflect that.
 
-A break is not needed if it is preceded by a return
-
-Signed-off-by: Tom Rix <trix@redhat.com>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Gabriel Krisman Bertazi <krisman@collabora.com>
 ---
- security/integrity/ima/ima_appraise.c     | 1 -
- security/keys/trusted-keys/trusted_tpm1.c | 1 -
- security/safesetid/lsm.c                  | 3 ---
- 3 files changed, 5 deletions(-)
+ Documentation/security/keys/core.rst | 4 ++--
+ samples/Kconfig                      | 2 +-
+ samples/watch_queue/watch_test.c     | 2 +-
+ security/keys/Kconfig                | 8 ++++----
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 3dd8c2e4314e..f400a6122b3c 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -181,7 +181,6 @@ enum hash_algo ima_get_hash_algo(struct evm_ima_xattr_data *xattr_value,
- 		if (sig->version != 2 || xattr_len <= sizeof(*sig))
- 			return ima_hash_algo;
- 		return sig->hash_algo;
--		break;
- 	case IMA_XATTR_DIGEST_NG:
- 		/* first byte contains algorithm id */
- 		ret = xattr_value->data[0];
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index b9fe02e5f84f..eddc9477d42a 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -901,7 +901,6 @@ static int datablob_parse(char *datablob, struct trusted_key_payload *p,
- 		break;
- 	case Opt_err:
- 		return -EINVAL;
--		break;
- 	}
- 	return ret;
- }
-diff --git a/security/safesetid/lsm.c b/security/safesetid/lsm.c
-index 8a176b6adbe5..1079c6d54784 100644
---- a/security/safesetid/lsm.c
-+++ b/security/safesetid/lsm.c
-@@ -125,7 +125,6 @@ static int safesetid_security_capable(const struct cred *cred,
- 		pr_warn("Operation requires CAP_SETUID, which is not available to UID %u for operations besides approved set*uid transitions\n",
- 			__kuid_val(cred->uid));
- 		return -EPERM;
--		break;
- 	case CAP_SETGID:
- 		/*
- 		* If no policy applies to this task, allow the use of CAP_SETGID for
-@@ -140,11 +139,9 @@ static int safesetid_security_capable(const struct cred *cred,
- 		pr_warn("Operation requires CAP_SETGID, which is not available to GID %u for operations besides approved set*gid transitions\n",
- 			__kuid_val(cred->uid));
- 		return -EPERM;
--		break;
- 	default:
- 		/* Error, the only capabilities were checking for is CAP_SETUID/GID */
- 		return 0;
--		break;
- 	}
- 	return 0;
- }
+diff --git a/Documentation/security/keys/core.rst b/Documentation/security/keys/core.rst
+index aa0081685ee1..b3ed5c581034 100644
+--- a/Documentation/security/keys/core.rst
++++ b/Documentation/security/keys/core.rst
+@@ -1040,8 +1040,8 @@ The keyctl syscall functions are:
+ 
+      "key" is the ID of the key to be watched.
+ 
+-     "queue_fd" is a file descriptor referring to an open "/dev/watch_queue"
+-     which manages the buffer into which notifications will be delivered.
++     "queue_fd" is a file descriptor referring to an open pipe which
++     manages the buffer into which notifications will be delivered.
+ 
+      "filter" is either NULL to remove a watch or a filter specification to
+      indicate what events are required from the key.
+diff --git a/samples/Kconfig b/samples/Kconfig
+index 0ed6e4d71d87..e76cdfc50e25 100644
+--- a/samples/Kconfig
++++ b/samples/Kconfig
+@@ -210,7 +210,7 @@ config SAMPLE_WATCHDOG
+ 	depends on CC_CAN_LINK
+ 
+ config SAMPLE_WATCH_QUEUE
+-	bool "Build example /dev/watch_queue notification consumer"
++	bool "Build example watch_queue notification API consumer"
+ 	depends on CC_CAN_LINK && HEADERS_INSTALL
+ 	help
+ 	  Build example userspace program to use the new mount_notify(),
+diff --git a/samples/watch_queue/watch_test.c b/samples/watch_queue/watch_test.c
+index 46e618a897fe..8c6cb57d5cfc 100644
+--- a/samples/watch_queue/watch_test.c
++++ b/samples/watch_queue/watch_test.c
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: GPL-2.0
+-/* Use /dev/watch_queue to watch for notifications.
++/* Use watch_queue API to watch for notifications.
+  *
+  * Copyright (C) 2020 Red Hat, Inc. All Rights Reserved.
+  * Written by David Howells (dhowells@redhat.com)
+diff --git a/security/keys/Kconfig b/security/keys/Kconfig
+index 83bc23409164..c161642a8484 100644
+--- a/security/keys/Kconfig
++++ b/security/keys/Kconfig
+@@ -119,7 +119,7 @@ config KEY_NOTIFICATIONS
+ 	bool "Provide key/keyring change notifications"
+ 	depends on KEYS && WATCH_QUEUE
+ 	help
+-	  This option provides support for getting change notifications on keys
+-	  and keyrings on which the caller has View permission.  This makes use
+-	  of the /dev/watch_queue misc device to handle the notification
+-	  buffer and provides KEYCTL_WATCH_KEY to enable/disable watches.
++	  This option provides support for getting change notifications
++	  on keys and keyrings on which the caller has View permission.
++	  This makes use of pipes to handle the notification buffer and
++	  provides KEYCTL_WATCH_KEY to enable/disable watches.
 -- 
-2.18.1
+2.28.0
