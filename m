@@ -1,142 +1,125 @@
-Return-Path: <SRS0=mUL/=EF=vger.kernel.org=keyrings-owner@kernel.org>
+Return-Path: <SRS0=1c07=EI=vger.kernel.org=keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-12.7 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-3.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
+	autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C0B1FC55179
-	for <keyrings@archiver.kernel.org>; Fri, 30 Oct 2020 08:53:05 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 508A8C55179
+	for <keyrings@archiver.kernel.org>; Mon,  2 Nov 2020 09:08:11 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 7F9F022241
-	for <keyrings@archiver.kernel.org>; Fri, 30 Oct 2020 08:53:05 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 24F1D22277
+	for <keyrings@archiver.kernel.org>; Mon,  2 Nov 2020 09:08:11 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726154AbgJ3IxA (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 30 Oct 2020 04:53:00 -0400
-Received: from mail.kernel.org ([198.145.29.99]:56470 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1725808AbgJ3Iwx (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Fri, 30 Oct 2020 04:52:53 -0400
-Received: from kernel.org (83-245-197-237.elisa-laajakaista.fi [83.245.197.237])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by mail.kernel.org (Postfix) with ESMTPSA id 7B47520578;
-        Fri, 30 Oct 2020 08:52:10 +0000 (UTC)
-Date:   Fri, 30 Oct 2020 10:52:06 +0200
-From:   Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To:     linux-integrity@vger.kernel.org
-Cc:     David Howells <dhowells@redhat.com>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        James Bottomley <jejb@linux.ibm.com>,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        stable@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@hansenpartnership.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Safford <safford@linux.vnet.ibm.com>,
-        "open list:KEYS-TRUSTED" <keyrings@vger.kernel.org>,
-        "open list:SECURITY SUBSYSTEM" 
-        <linux-security-module@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 1/3,RESEND] KEYS: trusted: Fix incorrect handling of
- tpm_get_random()
-Message-ID: <20201030085206.GB52376@kernel.org>
-References: <20201013025156.111305-1-jarkko.sakkinen@linux.intel.com>
+        id S1728296AbgKBJIF convert rfc822-to-8bit (ORCPT
+        <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 2 Nov 2020 04:08:05 -0500
+Received: from eu-smtp-delivery-151.mimecast.com ([207.82.80.151]:56254 "EHLO
+        eu-smtp-delivery-151.mimecast.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1728292AbgKBJID (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 2 Nov 2020 04:08:03 -0500
+Received: from AcuMS.aculab.com (156.67.243.126 [156.67.243.126]) (Using
+ TLS) by relay.mimecast.com with ESMTP id uk-mta-2-3gt7SuvxPWOqa-ZpIA1B2g-1;
+ Mon, 02 Nov 2020 09:06:39 +0000
+X-MC-Unique: 3gt7SuvxPWOqa-ZpIA1B2g-1
+Received: from AcuMS.Aculab.com (fd9f:af1c:a25b:0:43c:695e:880f:8750) by
+ AcuMS.aculab.com (fd9f:af1c:a25b:0:43c:695e:880f:8750) with Microsoft SMTP
+ Server (TLS) id 15.0.1347.2; Mon, 2 Nov 2020 09:06:38 +0000
+Received: from AcuMS.Aculab.com ([fe80::43c:695e:880f:8750]) by
+ AcuMS.aculab.com ([fe80::43c:695e:880f:8750%12]) with mapi id 15.00.1347.000;
+ Mon, 2 Nov 2020 09:06:38 +0000
+From:   David Laight <David.Laight@ACULAB.COM>
+To:     'Greg KH' <gregkh@linuxfoundation.org>
+CC:     'David Hildenbrand' <david@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Nick Desaulniers <ndesaulniers@google.com>,
+        Christoph Hellwig <hch@lst.de>,
+        "kernel-team@android.com" <kernel-team@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+        <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@vger.kernel.org" <linux-mips@vger.kernel.org>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
+        "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        "io-uring@vger.kernel.org" <io-uring@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+        <linux-security-module@vger.kernel.org>
+Subject: RE: Buggy commit tracked to: "Re: [PATCH 2/9] iov_iter: move
+ rw_copy_check_uvector() into lib/iov_iter.c"
+Thread-Topic: Buggy commit tracked to: "Re: [PATCH 2/9] iov_iter: move
+ rw_copy_check_uvector() into lib/iov_iter.c"
+Thread-Index: AQHWqE5GNDfnH4y9nkGWtfqJueR1KKmjTCJQgAAN4UiAAAD2IIAASOeCgAF+12CAAB+UKYAAAQNg///yIQCAD2i/YA==
+Date:   Mon, 2 Nov 2020 09:06:38 +0000
+Message-ID: <0ab5ac71f28d459db2f350c2e07b88ca@AcuMS.aculab.com>
+References: <5fd6003b-55a6-2c3c-9a28-8fd3a575ca78@redhat.com>
+ <20201022104805.GA1503673@kroah.com> <20201022121849.GA1664412@kroah.com>
+ <98d9df88-b7ef-fdfb-7d90-2fa7a9d7bab5@redhat.com>
+ <20201022125759.GA1685526@kroah.com> <20201022135036.GA1787470@kroah.com>
+ <134f162d711d466ebbd88906fae35b33@AcuMS.aculab.com>
+ <935f7168-c2f5-dd14-7124-412b284693a2@redhat.com>
+ <999e2926-9a75-72fd-007a-1de0af341292@redhat.com>
+ <35d0ec90ef4f4a35a75b9df7d791f719@AcuMS.aculab.com>
+ <20201023144718.GA2525489@kroah.com>
+In-Reply-To: <20201023144718.GA2525489@kroah.com>
+Accept-Language: en-GB, en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [10.202.205.107]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20201013025156.111305-1-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.25.1
+Authentication-Results: relay.mimecast.com;
+        auth=pass smtp.auth=C51A453 smtp.mailfrom=david.laight@aculab.com
+X-Mimecast-Spam-Score: 0
+X-Mimecast-Originator: aculab.com
+Content-Language: en-US
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-When tpm_get_random() was introduced, it defined the following API for the
-return value:
+From: 'Greg KH'
+> Sent: 23 October 2020 15:47
+> 
+> On Fri, Oct 23, 2020 at 02:39:24PM +0000, David Laight wrote:
+> > From: David Hildenbrand
+> > > Sent: 23 October 2020 15:33
+> > ...
+> > > I just checked against upstream code generated by clang 10 and it
+> > > properly discards the upper 32bit via a mov w23 w2.
+> > >
+> > > So at least clang 10 indeed properly assumes we could have garbage and
+> > > masks it off.
+> > >
+> > > Maybe the issue is somewhere else, unrelated to nr_pages ... or clang 11
+> > > behaves differently.
+> >
+> > We'll need the disassembly from a failing kernel image.
+> > It isn't that big to hand annotate.
+> 
+> I've worked around the merge at the moment in the android tree, but it
+> is still quite reproducable, and will try to get a .o file to
+> disassemble on Monday or so...
 
-1. A positive value tells how many bytes of random data was generated.
-2. A negative value on error.
+Did this get properly resolved?
 
-However, in the call sites the API was used incorrectly, i.e. as it would
-only return negative values and otherwise zero. Returning he positive read
-counts to the user space does not make any possible sense.
+	David
 
-Fix this by returning -EIO when tpm_get_random() returns a positive value.
-
-Fixes: 41ab999c80f1 ("tpm: Move tpm_get_random api into the TPM device driver")
-Cc: stable@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.ibm.com>
-Cc: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Kent Yoder <key@linux.vnet.ibm.com>
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- security/keys/trusted-keys/trusted_tpm1.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
-
-diff --git a/security/keys/trusted-keys/trusted_tpm1.c b/security/keys/trusted-keys/trusted_tpm1.c
-index b9fe02e5f84f..c7b1701cdac5 100644
---- a/security/keys/trusted-keys/trusted_tpm1.c
-+++ b/security/keys/trusted-keys/trusted_tpm1.c
-@@ -403,9 +403,12 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
- 	int ret;
- 
- 	ret = tpm_get_random(chip, ononce, TPM_NONCE_SIZE);
--	if (ret != TPM_NONCE_SIZE)
-+	if (ret < 0)
- 		return ret;
- 
-+	if (ret != TPM_NONCE_SIZE)
-+		return -EIO;
-+
- 	tpm_buf_reset(tb, TPM_TAG_RQU_COMMAND, TPM_ORD_OSAP);
- 	tpm_buf_append_u16(tb, type);
- 	tpm_buf_append_u32(tb, handle);
-@@ -496,8 +499,12 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
- 		goto out;
- 
- 	ret = tpm_get_random(chip, td->nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (ret != TPM_NONCE_SIZE)
--		goto out;
-+		return -EIO;
-+
- 	ordinal = htonl(TPM_ORD_SEAL);
- 	datsize = htonl(datalen);
- 	pcrsize = htonl(pcrinfosize);
-@@ -601,9 +608,12 @@ static int tpm_unseal(struct tpm_buf *tb,
- 
- 	ordinal = htonl(TPM_ORD_UNSEAL);
- 	ret = tpm_get_random(chip, nonceodd, TPM_NONCE_SIZE);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (ret != TPM_NONCE_SIZE) {
- 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
--		return ret;
-+		return -EIO;
- 	}
- 	ret = TSS_authhmac(authdata1, keyauth, TPM_NONCE_SIZE,
- 			   enonce1, nonceodd, cont, sizeof(uint32_t),
-@@ -1013,8 +1023,12 @@ static int trusted_instantiate(struct key *key,
- 	case Opt_new:
- 		key_len = payload->key_len;
- 		ret = tpm_get_random(chip, payload->key, key_len);
-+		if (ret < 0)
-+			goto out;
-+
- 		if (ret != key_len) {
- 			pr_info("trusted_key: key_create failed (%d)\n", ret);
-+			ret = -EIO;
- 			goto out;
- 		}
- 		if (tpm2)
--- 
-2.25.1
+-
+Registered Address Lakeside, Bramley Road, Mount Farm, Milton Keynes, MK1 1PT, UK
+Registration No: 1397386 (Wales)
 
