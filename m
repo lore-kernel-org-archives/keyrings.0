@@ -2,138 +2,64 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,
-	NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1
-	autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,UNPARSEABLE_RELAY,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 1AEE6C63798
-	for <keyrings@archiver.kernel.org>; Tue, 17 Nov 2020 10:17:06 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4EDF4C63777
+	for <keyrings@archiver.kernel.org>; Wed, 18 Nov 2020 12:31:00 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id AF7B5223C7
-	for <keyrings@archiver.kernel.org>; Tue, 17 Nov 2020 10:17:05 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=pass (1024-bit key) header.d=openvpn.net header.i=@openvpn.net header.b="MgM5nsMq"
+	by mail.kernel.org (Postfix) with ESMTP id DA142238E6
+	for <keyrings@archiver.kernel.org>; Wed, 18 Nov 2020 12:30:59 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727408AbgKQKQr (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 17 Nov 2020 05:16:47 -0500
-Received: from smtp75.iad3a.emailsrvr.com ([173.203.187.75]:48582 "EHLO
-        smtp75.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1727402AbgKQKQr (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 17 Nov 2020 05:16:47 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=openvpn.net;
-        s=20170822-45nk5nwl; t=1605607660;
-        bh=OoSt4zI/A55xd2DmFGEKW06kRreOILROaH9aCHdoT70=;
-        h=To:From:Subject:Date:From;
-        b=MgM5nsMqzl6NvYT70GkQLaNWEi3sv6HhVY8rhkLkqN81v03JT1oBZOuJ2UfFwEVr2
-         fibYI7U9518Oi7nddW/kZVDex+x4jI0IZX3B5Kjx1oHVHupMKDN5cjk6CQnBtJMLiy
-         uxayVsr7qFYgGoAprmv/CNMmsxuSOhMplBYvx0Eg=
-X-Auth-ID: antonio@openvpn.net
-Received: by smtp26.relay.iad3a.emailsrvr.com (Authenticated sender: antonio-AT-openvpn.net) with ESMTPSA id 8742A1A17;
-        Tue, 17 Nov 2020 05:07:38 -0500 (EST)
-To:     Ard Biesheuvel <ardb@kernel.org>, Antonio Quartulli <a@unstable.cc>
-Cc:     Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        wireguard@lists.zx2c4.com,
-        "open list:BPF JIT for MIPS (32-BIT AND 64-BIT)" 
-        <netdev@vger.kernel.org>, keyrings@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        David Howells <dhowells@redhat.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Jakub Kicinski <kuba@kernel.org>
-References: <20201117021839.4146-1-a@unstable.cc>
- <CAMj1kXFxk31wtD3H8V0KbMd82UL_babEWpVTSkfqPpNjSqPNLA@mail.gmail.com>
- <5096882f-2b39-eafb-4901-0899783c5519@unstable.cc>
- <CAMj1kXGZATR7XyFb2SWiAxcBCUzXgvojvgR9fHczEu9zrpF9ug@mail.gmail.com>
-From:   Antonio Quartulli <antonio@openvpn.net>
-Organization: OpenVPN Inc.
-Subject: Re: [PATCH cryptodev] crypto: lib/chacha20poly1305 - allow users to
- specify 96bit nonce
-Message-ID: <47819bd4-3bed-d7e5-523a-6ec5c70caad8@openvpn.net>
-Date:   Tue, 17 Nov 2020 11:06:48 +0100
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
- Thunderbird/78.4.0
+        id S1726156AbgKRMai (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 18 Nov 2020 07:30:38 -0500
+Received: from out30-133.freemail.mail.aliyun.com ([115.124.30.133]:35879 "EHLO
+        out30-133.freemail.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1725747AbgKRMai (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 18 Nov 2020 07:30:38 -0500
+X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R361e4;CH=green;DM=||false|;DS=||;FP=0|-1|-1|-1|0|-1|-1|-1;HT=e01e04426;MF=tianjia.zhang@linux.alibaba.com;NM=1;PH=DS;RN=7;SR=0;TI=SMTPD_---0UFoCyub_1605702631;
+Received: from localhost(mailfrom:tianjia.zhang@linux.alibaba.com fp:SMTPD_---0UFoCyub_1605702631)
+          by smtp.aliyun-inc.com(127.0.0.1);
+          Wed, 18 Nov 2020 20:30:31 +0800
+From:   Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+To:     Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc:     Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Subject: [PATCH] crypto: public_key: Remove redundant header file from public_key.h
+Date:   Wed, 18 Nov 2020 20:30:31 +0800
+Message-Id: <20201118123031.551-1-tianjia.zhang@linux.alibaba.com>
+X-Mailer: git-send-email 2.19.1.3.ge56e4f7
 MIME-Version: 1.0
-In-Reply-To: <CAMj1kXGZATR7XyFb2SWiAxcBCUzXgvojvgR9fHczEu9zrpF9ug@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
 Content-Transfer-Encoding: 8bit
-X-Classification-ID: 3c7d4df9-03f3-4138-8fe9-03b0ab2b7cbf-1-1
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi,
+The akcipher.h header file was originally introduced in SM2, and
+then the definition of SM2 was moved to the existing code. This
+header file is left and should be removed.
 
-On 17/11/2020 10:52, Ard Biesheuvel wrote:
-> On Tue, 17 Nov 2020 at 10:47, Antonio Quartulli <a@unstable.cc> wrote:
->>
->> Hi,
->>
->>
->> On 17/11/2020 09:31, Ard Biesheuvel wrote:
->>> If you are going back to the drawing board with in-kernel acceleration
->>> for OpenVPN, I strongly suggest to:
->>> a) either stick to one implementation, and use the library interface,
->>> or use dynamic dispatch using the crypto API AEAD abstraction, which
->>> already implements 96-bit nonces for ChaCha20Poly1305,
->>
->> What we are implementing is a simple Data Channel Offload, which is
->> expected to be compatible with the current userspace implementation.
->> Therefore we don't want to change how encryption is performed.
->>
->> Using the crypto API AEAD abstraction will be my next move at this point.
->>
-> 
-> Aren't you already using that for gcm(aes) ?
+Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+---
+ include/crypto/public_key.h | 1 -
+ 1 file changed, 1 deletion(-)
 
-Yes, correct. That's why I had no real objection to using it :-)
-
-At first I was confused and I thought this new library interface was
-"the preferred way" for using chacha20poly1305, therefore I went down
-this path.
-
-> 
->> I just find it a bit strange that an API of a well defined crypto schema
->> is implemented in a way that accommodates only some of its use cases.
->>
-> 
-> You mean the 64-bit nonce used by the library version of
-> ChaCha20Poly1305? I agree that this is a bit unusual, but a library
-> interface doesn't seem like the right abstraction for this in the
-> first place, so I guess it is irrelevant.
-
-Alright.
-
-> 
->>
->> But I guess it's accepted that we will have to live with two APIs for a bit.
->>
->>
->>> b) consider using Aegis128 instead of AES-GCM or ChaChaPoly - it is
->>> one of the winners of the CAESAR competition, and on hardware that
->>> supports AES instructions, it is extremely efficient, and not
->>> encumbered by the same issues that make AES-GCM tricky to use.
->>>
->>> We might implement a library interface for Aegis128 if that is preferable.
->>
->> Thanks for the pointer!
->> I guess we will consider supporting Aegis128 once it gets standardized
->> (AFAIK it is not yet).
->>
-> 
-> It is. The CAESAR competition is over, and produced a suite of
-> recommended algorithms, one of which is Aegis128 for the high
-> performance use case. (Note that other variants of Aegis did not make
-> it into the final recommendation)
-
-oops, I was not up-to-date. Thanks again!
-We'll definitely look into this soon.
-
-
-Best Regards,
-
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index 948c5203ca9c..47accec68cb0 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -12,7 +12,6 @@
+ 
+ #include <linux/keyctl.h>
+ #include <linux/oid_registry.h>
+-#include <crypto/akcipher.h>
+ 
+ /*
+  * Cryptographic data for the public-key subtype of the asymmetric key type.
 -- 
-Antonio Quartulli
-OpenVPN Inc.
+2.19.1.3.ge56e4f7
+
