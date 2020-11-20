@@ -7,25 +7,24 @@ X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 59ACBC56201
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 76FEFC6379D
 	for <keyrings@archiver.kernel.org>; Fri, 20 Nov 2020 18:11:38 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 18D1822470
+	by mail.kernel.org (Postfix) with ESMTP id 4975524171
 	for <keyrings@archiver.kernel.org>; Fri, 20 Nov 2020 18:11:38 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726200AbgKTSLP (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 20 Nov 2020 13:11:15 -0500
-Received: from smtp-1909.mail.infomaniak.ch ([185.125.25.9]:58557 "EHLO
-        smtp-1909.mail.infomaniak.ch" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1729305AbgKTSLM (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 20 Nov 2020 13:11:12 -0500
-X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Nov 2020 13:11:11 EST
+        id S1726172AbgKTSLT (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 20 Nov 2020 13:11:19 -0500
+Received: from smtp-bc0f.mail.infomaniak.ch ([45.157.188.15]:49187 "EHLO
+        smtp-bc0f.mail.infomaniak.ch" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1729378AbgKTSLN (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 20 Nov 2020 13:11:13 -0500
 Received: from smtp-3-0000.mail.infomaniak.ch (unknown [10.4.36.107])
-        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4Cd4FP431bzlhVg5;
-        Fri, 20 Nov 2020 19:04:41 +0100 (CET)
+        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4Cd4FK01NSzlhMNm;
+        Fri, 20 Nov 2020 19:04:37 +0100 (CET)
 Received: from localhost (unknown [94.23.54.103])
-        by smtp-3-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4Cd4FP1txHzlh8T2;
-        Fri, 20 Nov 2020 19:04:41 +0100 (CET)
+        by smtp-3-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4Cd4FJ57Hnzlh8T2;
+        Fri, 20 Nov 2020 19:04:36 +0100 (CET)
 From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
 To:     David Howells <dhowells@redhat.com>,
         David Woodhouse <dwmw2@infradead.org>
@@ -39,9 +38,9 @@ Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
         "Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
         linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v1 7/9] certs: Allow root user to append signed hashes to the blacklist keyring
-Date:   Fri, 20 Nov 2020 19:04:24 +0100
-Message-Id: <20201120180426.922572-8-mic@digikod.net>
+Subject: [PATCH v1 3/9] certs: Factor out the blacklist hash creation
+Date:   Fri, 20 Nov 2020 19:04:20 +0100
+Message-Id: <20201120180426.922572-4-mic@digikod.net>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201120180426.922572-1-mic@digikod.net>
 References: <20201120180426.922572-1-mic@digikod.net>
@@ -54,208 +53,240 @@ X-Mailing-List: keyrings@vger.kernel.org
 
 From: Mickaël Salaün <mic@linux.microsoft.com>
 
-Add a kernel option SYSTEM_BLACKLIST_AUTH_UPDATE to enable the root user
-to dynamically add new keys to the blacklist keyring.  This enables to
-invalidate new certificates, either from being loaded in a keyring, or
-from being trusted in a PKCS#7 certificate chain.  This also enables to
-add new file hashes to be denied by the integrity infrastructure.
-
-Being able to untrust a certificate which could have normaly been
-trusted is a sensitive operation.  This is why adding new hashes to the
-blacklist keyring is only allowed when these hashes are signed and
-vouched by the builtin trusted keyring.  A blacklist hash is stored as a
-key description.  The PKCS#7 signature of this description must be
-provided as the key payload.
-
-Marking a certificate as untrusted should be enforced while the system
-is running.  It is then forbiden to remove such blacklist keys.
-
-Update blacklist keyring and blacklist key access rights:
-* allows the root user to search for a specific blacklisted hash, which
-  make sense because the descriptions are already viewable;
-* forbids key update;
-* restricts kernel rights on the blacklist keyring to align with the
-  root user rights.
-
-See the help in tools/certs/print-cert-tbs-hash.sh provided by a
-following commit.
+Factor out the blacklist hash creation with the get_raw_hash() helper.
+This also centralize the "tbs" and "bin" prefixes and make them private,
+which help to manage them consistently.
 
 Cc: David Howells <dhowells@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
 Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Jarkko Sakkinen <jarkko@kernel.org>
 Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
 ---
- certs/Kconfig     | 10 ++++++
- certs/blacklist.c | 85 ++++++++++++++++++++++++++++++++++++-----------
- 2 files changed, 76 insertions(+), 19 deletions(-)
+ certs/blacklist.c                             | 73 ++++++++++++++-----
+ crypto/asymmetric_keys/x509_public_key.c      |  3 +-
+ include/keys/system_keyring.h                 | 14 +++-
+ .../platform_certs/keyring_handler.c          | 26 +------
+ 4 files changed, 70 insertions(+), 46 deletions(-)
 
-diff --git a/certs/Kconfig b/certs/Kconfig
-index c94e93d8bccf..35fe9989e7b9 100644
---- a/certs/Kconfig
-+++ b/certs/Kconfig
-@@ -83,4 +83,14 @@ config SYSTEM_BLACKLIST_HASH_LIST
- 	  wrapper to incorporate the list into the kernel.  Each <hash> should
- 	  be a string of hex digits.
- 
-+config SYSTEM_BLACKLIST_AUTH_UPDATE
-+	bool "Allow root to add signed blacklist keys"
-+	depends on SYSTEM_BLACKLIST_KEYRING
-+	depends on SYSTEM_DATA_VERIFICATION
-+	help
-+	  If set, provide the ability to load new blacklist keys at run time if
-+	  they are signed and vouched by a certificate from the builtin trusted
-+	  keyring.  The PKCS#7 signature of the description is set in the key
-+	  payload.  Blacklist keys cannot be removed.
-+
- endmenu
 diff --git a/certs/blacklist.c b/certs/blacklist.c
-index d1e2f69d91c2..e869a23f38de 100644
+index 961359885881..0d2c959e9422 100644
 --- a/certs/blacklist.c
 +++ b/certs/blacklist.c
-@@ -14,6 +14,7 @@
- #include <linux/ctype.h>
- #include <linux/err.h>
- #include <linux/seq_file.h>
-+#include <linux/verification.h>
- #include <keys/system_keyring.h>
- #include "blacklist.h"
- 
-@@ -24,6 +25,9 @@
-  */
- #define MAX_HASH_LEN	128
- 
-+#define BLACKLIST_KEY_PERM (KEY_POS_SEARCH | KEY_POS_VIEW | \
-+			    KEY_USR_SEARCH | KEY_USR_VIEW)
-+
- static const char tbs_prefix[] = "tbs";
- static const char bin_prefix[] = "bin";
- 
-@@ -73,19 +77,46 @@ static int blacklist_vet_description(const char *desc)
- 	return 0;
- }
- 
--/*
-- * The hash to be blacklisted is expected to be in the description.  There will
-- * be no payload.
-- */
--static int blacklist_preparse(struct key_preparsed_payload *prep)
-+static int blacklist_key_instantiate(struct key *key,
-+		struct key_preparsed_payload *prep)
- {
--	if (prep->datalen > 0)
--		return -EINVAL;
--	return 0;
-+#ifdef CONFIG_SYSTEM_BLACKLIST_AUTH_UPDATE
-+	int err;
-+#endif
-+
-+	/* Sets safe default permissions for keys loaded by user space. */
-+	key->perm = BLACKLIST_KEY_PERM;
-+
-+	/*
-+	 * Skips the authentication step for builtin hashes, they are not
-+	 * signed but still trusted.
-+	 */
-+	if (key->flags & (1 << KEY_FLAG_BUILTIN))
-+		goto out;
-+
-+#ifdef CONFIG_SYSTEM_BLACKLIST_AUTH_UPDATE
-+	/*
-+	 * Verifies the description's PKCS#7 signature against the builtin
-+	 * trusted keyring.
-+	 */
-+	err = verify_pkcs7_signature(key->description,
-+			strlen(key->description), prep->data, prep->datalen,
-+			NULL, VERIFYING_UNSPECIFIED_SIGNATURE, NULL, NULL);
-+	if (err)
-+		return err;
-+#else
-+	WARN_ON_ONCE(1);
-+	return -EPERM;
-+#endif
-+
-+out:
-+	return generic_key_instantiate(key, prep);
- }
- 
--static void blacklist_free_preparse(struct key_preparsed_payload *prep)
-+static int blacklist_key_update(struct key *key,
-+		struct key_preparsed_payload *prep)
- {
-+	return -EPERM;
- }
- 
- static void blacklist_describe(const struct key *key, struct seq_file *m)
-@@ -96,9 +127,8 @@ static void blacklist_describe(const struct key *key, struct seq_file *m)
- static struct key_type key_type_blacklist = {
- 	.name			= "blacklist",
- 	.vet_description	= blacklist_vet_description,
--	.preparse		= blacklist_preparse,
--	.free_preparse		= blacklist_free_preparse,
--	.instantiate		= generic_key_instantiate,
-+	.instantiate		= blacklist_key_instantiate,
-+	.update			= blacklist_key_update,
+@@ -102,11 +102,43 @@ static struct key_type key_type_blacklist = {
  	.describe		= blacklist_describe,
  };
  
-@@ -147,8 +177,7 @@ static int mark_raw_hash_blacklisted(const char *hash)
- 				   hash,
- 				   NULL,
- 				   0,
--				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
--				    KEY_USR_VIEW),
-+				   BLACKLIST_KEY_PERM,
- 				   KEY_ALLOC_NOT_IN_QUOTA |
- 				   KEY_ALLOC_BUILT_IN);
- 	if (IS_ERR(key)) {
-@@ -207,25 +236,43 @@ int is_binary_blacklisted(const u8 *hash, size_t hash_len)
- }
- EXPORT_SYMBOL_GPL(is_binary_blacklisted);
- 
-+static int restrict_link_for_blacklist(struct key *dest_keyring,
-+		const struct key_type *type, const union key_payload *payload,
-+		struct key *restrict_key)
++static char *get_raw_hash(const u8 *hash, size_t hash_len,
++		enum blacklist_hash_type hash_type)
 +{
-+	if (type != &key_type_blacklist)
-+		return -EPERM;
-+	return 0;
++	size_t type_len;
++	const char *type_prefix;
++	char *buffer, *p;
++
++	switch (hash_type) {
++	case BLACKLIST_HASH_X509_TBS:
++		type_len = sizeof(tbs_prefix) - 1;
++		type_prefix = tbs_prefix;
++		break;
++	case BLACKLIST_HASH_BINARY:
++		type_len = sizeof(bin_prefix) - 1;
++		type_prefix = bin_prefix;
++		break;
++	default:
++		WARN_ON_ONCE(1);
++		return ERR_PTR(-EINVAL);
++	}
++	buffer = kmalloc(type_len + 1 + hash_len * 2 + 1, GFP_KERNEL);
++	if (!buffer)
++		return ERR_PTR(-ENOMEM);
++	p = memcpy(buffer, type_prefix, type_len);
++	p += type_len;
++	*p++ = ':';
++	bin2hex(p, hash, hash_len);
++	p += hash_len * 2;
++	*p = '\0';
++	return buffer;
 +}
 +
- /*
-  * Initialise the blacklist
+ /**
+- * mark_hash_blacklisted - Add a hash to the system blacklist
++ * mark_raw_hash_blacklisted - Add a hash to the system blacklist
+  * @hash - The hash as a hex string with a type prefix (eg. "tbs:23aa429783")
   */
- static int __init blacklist_init(void)
+-int mark_hash_blacklisted(const char *hash)
++static int mark_raw_hash_blacklisted(const char *hash)
  {
- 	const char *const *bl;
-+	struct key_restriction *restriction;
+ 	key_ref_t key;
  
- 	if (register_key_type(&key_type_blacklist) < 0)
- 		panic("Can't allocate system blacklist key type\n");
+@@ -126,29 +158,33 @@ int mark_hash_blacklisted(const char *hash)
+ 	return 0;
+ }
  
-+	restriction = kzalloc(sizeof(*restriction), GFP_KERNEL);
-+	if (!restriction)
-+		panic("Can't allocate blacklist keyring restriction\n");
-+	restriction->check = restrict_link_for_blacklist;
++int mark_hash_blacklisted(const u8 *hash, size_t hash_len,
++		enum blacklist_hash_type hash_type)
++{
++	const char *buffer;
 +
- 	blacklist_keyring =
- 		keyring_alloc(".blacklist",
- 			      KUIDT_INIT(0), KGIDT_INIT(0),
- 			      current_cred(),
--			      (KEY_POS_ALL & ~KEY_POS_SETATTR) |
--			      KEY_USR_VIEW | KEY_USR_READ |
--			      KEY_USR_SEARCH,
--			      KEY_ALLOC_NOT_IN_QUOTA,
--			      NULL, NULL);
-+			      KEY_POS_VIEW | KEY_POS_READ | KEY_POS_SEARCH |
-+			      KEY_POS_WRITE |
-+			      KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH
-+#ifdef CONFIG_SYSTEM_BLACKLIST_AUTH_UPDATE
-+			      | KEY_USR_WRITE
-+#endif
-+			      , KEY_ALLOC_NOT_IN_QUOTA,
-+			      restriction, NULL);
- 	if (IS_ERR(blacklist_keyring))
++	buffer = get_raw_hash(hash, hash_len, hash_type);
++	if (IS_ERR(buffer))
++		return PTR_ERR(buffer);
++	kfree(buffer);
++	return 0;
++}
+ /**
+  * is_hash_blacklisted - Determine if a hash is blacklisted
+  * @hash: The hash to be checked as a binary blob
+  * @hash_len: The length of the binary hash
+- * @type: Type of hash
++ * @hash_type: Type of hash
+  */
+-int is_hash_blacklisted(const u8 *hash, size_t hash_len, const char *type)
++int is_hash_blacklisted(const u8 *hash, size_t hash_len,
++		enum blacklist_hash_type hash_type)
+ {
+ 	key_ref_t kref;
+-	size_t type_len = strlen(type);
+-	char *buffer, *p;
++	const char *buffer;
+ 	int ret = 0;
+ 
+-	buffer = kmalloc(type_len + 1 + hash_len * 2 + 1, GFP_KERNEL);
+-	if (!buffer)
+-		return -ENOMEM;
+-	p = memcpy(buffer, type, type_len);
+-	p += type_len;
+-	*p++ = ':';
+-	bin2hex(p, hash, hash_len);
+-	p += hash_len * 2;
+-	*p = 0;
+-
++	buffer = get_raw_hash(hash, hash_len, hash_type);
++	if (IS_ERR(buffer))
++		return PTR_ERR(buffer);
+ 	kref = keyring_search(make_key_ref(blacklist_keyring, true),
+ 			      &key_type_blacklist, buffer, false);
+ 	if (!IS_ERR(kref)) {
+@@ -163,7 +199,8 @@ EXPORT_SYMBOL_GPL(is_hash_blacklisted);
+ 
+ int is_binary_blacklisted(const u8 *hash, size_t hash_len)
+ {
+-	if (is_hash_blacklisted(hash, hash_len, "bin") == -EKEYREJECTED)
++	if (is_hash_blacklisted(hash, hash_len, BLACKLIST_HASH_BINARY) ==
++			-EKEYREJECTED)
+ 		return -EPERM;
+ 
+ 	return 0;
+@@ -194,7 +231,7 @@ static int __init blacklist_init(void)
  		panic("Can't allocate system blacklist keyring\n");
- 	set_bit(KEY_FLAG_KEEP, &blacklist_keyring->flags);
+ 
+ 	for (bl = blacklist_hashes; *bl; bl++)
+-		if (mark_hash_blacklisted(*bl) < 0)
++		if (mark_raw_hash_blacklisted(*bl) < 0)
+ 			pr_err("- blacklisting failed\n");
+ 	return 0;
+ }
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index ae450eb8be14..3b7dba5e4cd9 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -81,7 +81,8 @@ int x509_get_sig_params(struct x509_certificate *cert)
+ 	if (ret < 0)
+ 		goto error_2;
+ 
+-	ret = is_hash_blacklisted(sig->digest, sig->digest_size, "tbs");
++	ret = is_hash_blacklisted(sig->digest, sig->digest_size,
++				  BLACKLIST_HASH_X509_TBS);
+ 	if (ret == -EKEYREJECTED) {
+ 		pr_err("Cert %*phN is blacklisted\n",
+ 		       sig->digest_size, sig->digest);
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index fb8b07daa9d1..b184d8743e23 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -10,6 +10,13 @@
+ 
+ #include <linux/key.h>
+ 
++enum blacklist_hash_type {
++	/* TBSCertificate hash */
++	BLACKLIST_HASH_X509_TBS = 1,
++	/* Raw data hash */
++	BLACKLIST_HASH_BINARY = 2,
++};
++
+ #ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
+ 
+ extern int restrict_link_by_builtin_trusted(struct key *keyring,
+@@ -32,13 +39,14 @@ extern int restrict_link_by_builtin_and_secondary_trusted(
+ #endif
+ 
+ #ifdef CONFIG_SYSTEM_BLACKLIST_KEYRING
+-extern int mark_hash_blacklisted(const char *hash);
++extern int mark_hash_blacklisted(const u8 *hash, size_t hash_len,
++			       enum blacklist_hash_type hash_type);
+ extern int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+-			       const char *type);
++			       enum blacklist_hash_type hash_type);
+ extern int is_binary_blacklisted(const u8 *hash, size_t hash_len);
+ #else
+ static inline int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+-				      const char *type)
++				      enum blacklist_hash_type hash_type)
+ {
+ 	return 0;
+ }
+diff --git a/security/integrity/platform_certs/keyring_handler.c b/security/integrity/platform_certs/keyring_handler.c
+index c5ba695c10e3..4a78fa1fde53 100644
+--- a/security/integrity/platform_certs/keyring_handler.c
++++ b/security/integrity/platform_certs/keyring_handler.c
+@@ -15,35 +15,13 @@ static efi_guid_t efi_cert_x509_sha256_guid __initdata =
+ 	EFI_CERT_X509_SHA256_GUID;
+ static efi_guid_t efi_cert_sha256_guid __initdata = EFI_CERT_SHA256_GUID;
+ 
+-/*
+- * Blacklist a hash.
+- */
+-static __init void uefi_blacklist_hash(const char *source, const void *data,
+-				       size_t len, const char *type,
+-				       size_t type_len)
+-{
+-	char *hash, *p;
+-
+-	hash = kmalloc(type_len + len * 2 + 1, GFP_KERNEL);
+-	if (!hash)
+-		return;
+-	p = memcpy(hash, type, type_len);
+-	p += type_len;
+-	bin2hex(p, data, len);
+-	p += len * 2;
+-	*p = 0;
+-
+-	mark_hash_blacklisted(hash);
+-	kfree(hash);
+-}
+-
+ /*
+  * Blacklist an X509 TBS hash.
+  */
+ static __init void uefi_blacklist_x509_tbs(const char *source,
+ 					   const void *data, size_t len)
+ {
+-	uefi_blacklist_hash(source, data, len, "tbs:", 4);
++	mark_hash_blacklisted(data, len, BLACKLIST_HASH_X509_TBS);
+ }
+ 
+ /*
+@@ -52,7 +30,7 @@ static __init void uefi_blacklist_x509_tbs(const char *source,
+ static __init void uefi_blacklist_binary(const char *source,
+ 					 const void *data, size_t len)
+ {
+-	uefi_blacklist_hash(source, data, len, "bin:", 4);
++	mark_hash_blacklisted(data, len, BLACKLIST_HASH_BINARY);
+ }
+ 
+ /*
 -- 
 2.29.2
 
