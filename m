@@ -2,29 +2,29 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 67E9DC63798
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C823AC6379D
 	for <keyrings@archiver.kernel.org>; Fri, 20 Nov 2020 18:14:12 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 223752245D
+	by mail.kernel.org (Postfix) with ESMTP id 6F78024073
 	for <keyrings@archiver.kernel.org>; Fri, 20 Nov 2020 18:14:12 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728200AbgKTSN4 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 20 Nov 2020 13:13:56 -0500
-Received: from smtp-bc0a.mail.infomaniak.ch ([45.157.188.10]:55509 "EHLO
-        smtp-bc0a.mail.infomaniak.ch" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1726678AbgKTSN4 (ORCPT
+        id S1728104AbgKTSN6 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 20 Nov 2020 13:13:58 -0500
+Received: from smtp-42ae.mail.infomaniak.ch ([84.16.66.174]:50079 "EHLO
+        smtp-42ae.mail.infomaniak.ch" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1728162AbgKTSN4 (ORCPT
         <rfc822;keyrings@vger.kernel.org>); Fri, 20 Nov 2020 13:13:56 -0500
-Received: from smtp-2-0001.mail.infomaniak.ch (unknown [10.5.36.108])
-        by smtp-3-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4Cd4FF3WcZzlhSjB;
-        Fri, 20 Nov 2020 19:04:33 +0100 (CET)
+Received: from smtp-3-0001.mail.infomaniak.ch (unknown [10.4.36.108])
+        by smtp-3-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4Cd4FR6vGczlhXm5;
+        Fri, 20 Nov 2020 19:04:43 +0100 (CET)
 Received: from localhost (unknown [94.23.54.103])
-        by smtp-2-0001.mail.infomaniak.ch (Postfix) with ESMTPA id 4Cd4FD09NRzlh8T4;
-        Fri, 20 Nov 2020 19:04:31 +0100 (CET)
+        by smtp-3-0001.mail.infomaniak.ch (Postfix) with ESMTPA id 4Cd4FQ3LJ6zlh8T3;
+        Fri, 20 Nov 2020 19:04:42 +0100 (CET)
 From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
 To:     David Howells <dhowells@redhat.com>,
         David Woodhouse <dwmw2@infradead.org>
@@ -38,10 +38,12 @@ Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
         "Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
         linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v1 0/9] Enable root to update the blacklist keyring
-Date:   Fri, 20 Nov 2020 19:04:17 +0100
-Message-Id: <20201120180426.922572-1-mic@digikod.net>
+Subject: [PATCH v1 8/9] certs: Replace K{U,G}IDT_INIT() with GLOBAL_ROOT_{U,G}ID
+Date:   Fri, 20 Nov 2020 19:04:25 +0100
+Message-Id: <20201120180426.922572-9-mic@digikod.net>
 X-Mailer: git-send-email 2.29.2
+In-Reply-To: <20201120180426.922572-1-mic@digikod.net>
+References: <20201120180426.922572-1-mic@digikod.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -49,45 +51,70 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Hi,
+From: Mickaël Salaün <mic@linux.microsoft.com>
 
-This patch series mainly add a new configuration option to enable the
-root user to load signed keys in the blacklist keyring.  This keyring is
-useful to "untrust" certificates or files.  Enabling to safely update
-this keyring without recompiling the kernel makes it more usable.
+Align with the new macros and fix include files.
 
-Regards,
+Cc: David Howells <dhowells@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
+---
+ certs/blacklist.c      | 4 ++--
+ certs/system_keyring.c | 5 +++--
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
-Mickaël Salaün (9):
-  certs: Fix blacklisted hexadecimal hash string check
-  certs: Make blacklist_vet_description() more strict
-  certs: Factor out the blacklist hash creation
-  certs: Check that builtin blacklist hashes are valid
-  PKCS#7: Fix missing include
-  certs: Fix blacklist flag type confusion
-  certs: Allow root user to append signed hashes to the blacklist
-    keyring
-  certs: Replace K{U,G}IDT_INIT() with GLOBAL_ROOT_{U,G}ID
-  tools/certs: Add print-cert-tbs-hash.sh
-
- MAINTAINERS                                   |   2 +
- certs/.gitignore                              |   1 +
- certs/Kconfig                                 |  10 +
- certs/Makefile                                |  15 +-
- certs/blacklist.c                             | 210 +++++++++++++-----
- certs/system_keyring.c                        |   5 +-
- crypto/asymmetric_keys/x509_public_key.c      |   3 +-
- include/keys/system_keyring.h                 |  14 +-
- include/linux/verification.h                  |   2 +
- scripts/check-blacklist-hashes.awk            |  37 +++
- .../platform_certs/keyring_handler.c          |  26 +--
- tools/certs/print-cert-tbs-hash.sh            |  91 ++++++++
- 12 files changed, 335 insertions(+), 81 deletions(-)
- create mode 100755 scripts/check-blacklist-hashes.awk
- create mode 100755 tools/certs/print-cert-tbs-hash.sh
-
-
-base-commit: 09162bc32c880a791c6c0668ce0745cf7958f576
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index e869a23f38de..2404175d76c2 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -14,6 +14,7 @@
+ #include <linux/ctype.h>
+ #include <linux/err.h>
+ #include <linux/seq_file.h>
++#include <linux/uidgid.h>
+ #include <linux/verification.h>
+ #include <keys/system_keyring.h>
+ #include "blacklist.h"
+@@ -263,8 +264,7 @@ static int __init blacklist_init(void)
+ 
+ 	blacklist_keyring =
+ 		keyring_alloc(".blacklist",
+-			      KUIDT_INIT(0), KGIDT_INIT(0),
+-			      current_cred(),
++			      GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, current_cred(),
+ 			      KEY_POS_VIEW | KEY_POS_READ | KEY_POS_SEARCH |
+ 			      KEY_POS_WRITE |
+ 			      KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH
+diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+index 798291177186..4b693da488f1 100644
+--- a/certs/system_keyring.c
++++ b/certs/system_keyring.c
+@@ -11,6 +11,7 @@
+ #include <linux/cred.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
++#include <linux/uidgid.h>
+ #include <linux/verification.h>
+ #include <keys/asymmetric-type.h>
+ #include <keys/system_keyring.h>
+@@ -98,7 +99,7 @@ static __init int system_trusted_keyring_init(void)
+ 
+ 	builtin_trusted_keys =
+ 		keyring_alloc(".builtin_trusted_keys",
+-			      KUIDT_INIT(0), KGIDT_INIT(0), current_cred(),
++			      GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, current_cred(),
+ 			      ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+ 			      KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH),
+ 			      KEY_ALLOC_NOT_IN_QUOTA,
+@@ -109,7 +110,7 @@ static __init int system_trusted_keyring_init(void)
+ #ifdef CONFIG_SECONDARY_TRUSTED_KEYRING
+ 	secondary_trusted_keys =
+ 		keyring_alloc(".secondary_trusted_keys",
+-			      KUIDT_INIT(0), KGIDT_INIT(0), current_cred(),
++			      GLOBAL_ROOT_UID, GLOBAL_ROOT_GID, current_cred(),
+ 			      ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+ 			       KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH |
+ 			       KEY_USR_WRITE),
 -- 
 2.29.2
 
