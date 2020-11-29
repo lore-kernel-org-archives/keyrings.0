@@ -2,67 +2,105 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-8.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-18.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,MENTIONS_GIT_HOSTING,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B6FBDC3E8C5
-	for <keyrings@archiver.kernel.org>; Sun, 29 Nov 2020 05:31:43 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C0340C3E8C5
+	for <keyrings@archiver.kernel.org>; Sun, 29 Nov 2020 22:21:18 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 7209020825
-	for <keyrings@archiver.kernel.org>; Sun, 29 Nov 2020 05:31:43 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 62FD02078D
+	for <keyrings@archiver.kernel.org>; Sun, 29 Nov 2020 22:21:18 +0000 (UTC)
+Authentication-Results: mail.kernel.org;
+	dkim=pass (1024-bit key) header.d=hansenpartnership.com header.i=@hansenpartnership.com header.b="Q5eRoAMJ"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1725830AbgK2Fb2 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sun, 29 Nov 2020 00:31:28 -0500
-Received: from smtprelay0232.hostedemail.com ([216.40.44.232]:52326 "EHLO
-        smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-        by vger.kernel.org with ESMTP id S1725468AbgK2Fb1 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sun, 29 Nov 2020 00:31:27 -0500
-Received: from filter.hostedemail.com (clb03-v110.bra.tucows.net [216.40.38.60])
-        by smtprelay06.hostedemail.com (Postfix) with ESMTP id B352F180154A5;
-        Sun, 29 Nov 2020 05:30:46 +0000 (UTC)
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-HE-Tag: glass65_2d09b2427396
-X-Filterd-Recvd-Size: 1523
-Received: from XPS-9350.home (unknown [47.151.128.180])
-        (Authenticated sender: joe@perches.com)
-        by omf07.hostedemail.com (Postfix) with ESMTPA;
-        Sun, 29 Nov 2020 05:30:45 +0000 (UTC)
-Message-ID: <d9e5515497f5215294cf79bec973155d0132f25e.camel@perches.com>
-Subject: Re: [PATCH] keys: remove trailing semicolon in macro definition
-From:   Joe Perches <joe@perches.com>
-To:     Jarkko Sakkinen <jarkko@kernel.org>, trix@redhat.com
-Cc:     dhowells@redhat.com, keyrings@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date:   Sat, 28 Nov 2020 21:30:44 -0800
-In-Reply-To: <20201129044514.GH39488@kernel.org>
-References: <20201127191543.2854306-1-trix@redhat.com>
-         <20201129044514.GH39488@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-User-Agent: Evolution 3.38.1-1 
+        id S1726293AbgK2WVD (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 29 Nov 2020 17:21:03 -0500
+Received: from bedivere.hansenpartnership.com ([96.44.175.130]:41576 "EHLO
+        bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1725950AbgK2WVC (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 29 Nov 2020 17:21:02 -0500
+Received: from localhost (localhost [127.0.0.1])
+        by bedivere.hansenpartnership.com (Postfix) with ESMTP id 1DE0F12809F1;
+        Sun, 29 Nov 2020 14:20:22 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+        d=hansenpartnership.com; s=20151216; t=1606688422;
+        bh=YOoJ7RWkrpvNBdAnSja7ssyO8s7KyeO4jEN80+naE4c=;
+        h=From:To:Subject:Date:Message-Id:From;
+        b=Q5eRoAMJW6iqQxM4QGvDZPVwm4REavReD6hFeNfjcnzpXbnEe73bz2/RmqwVLrTmg
+         RJpP/dmgAPVNH+vBlpVEvRbcGUKrpYVAzuxbSSjKepozCh8F610V0UD3jUerC7R/jg
+         E3RFaImL1Yyiz7096XAy+RZpTpLd3FNQuDd59Id0=
+Received: from bedivere.hansenpartnership.com ([127.0.0.1])
+        by localhost (bedivere.hansenpartnership.com [127.0.0.1]) (amavisd-new, port 10024)
+        with ESMTP id noC5li4PlgxD; Sun, 29 Nov 2020 14:20:22 -0800 (PST)
+Received: from jarvis.int.hansenpartnership.com (jarvis.ext.hansenpartnership.com [153.66.160.226])
+        by bedivere.hansenpartnership.com (Postfix) with ESMTP id 9539B12809EF;
+        Sun, 29 Nov 2020 14:20:21 -0800 (PST)
+From:   James Bottomley <James.Bottomley@HansenPartnership.com>
+To:     linux-integrity@vger.kernel.org
+Cc:     Mimi Zohar <zohar@linux.ibm.com>,
+        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: [PATCH v14 0/5] TPM 2.0 trusted key rework
+Date:   Sun, 29 Nov 2020 14:19:59 -0800
+Message-Id: <20201129222004.4428-1-James.Bottomley@HansenPartnership.com>
+X-Mailer: git-send-email 2.26.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Sun, 2020-11-29 at 06:45 +0200, Jarkko Sakkinen wrote:
-> On Fri, Nov 27, 2020 at 11:15:43AM -0800, trix@redhat.com wrote:
-> > From: Tom Rix <trix@redhat.com>
-> > 
-> > The macro use will already have a semicolon.
-> > 
-> > Signed-off-by: Tom Rix <trix@redhat.com>
-> 
-> I'm in-between whether this is worth of merging. The commit message
-> does not help with that decision too much.
+v14: add tested by flags and fix one more 0day select problem
 
-It seems worthy of merging to me modulo whatver improvement is desired in
-the commit message.
+General cover letter minus policy bit:
 
-There are 3 existing uses of request_key_net.  All have a trailing semicolon.
-There is 1 existing use of request_key_net_rcu.  It has a trailing semicolon.
+This patch updates the trusted key code to export keys in the ASN.1
+format used by current TPM key tools (openssl_tpm2_engine and
+openconnect).  The current code will try to load keys containing
+policy, but being unable to formulate the policy commands necessary to
+load them, the unseal will always fail unless the policy is executed
+in user space and a pre-formed policy session passed in.
 
-No object change should occur.
+The key format is designed to be compatible with our two openssl
+engine implementations as well as with the format used by openconnect.
+I've added seal/unseal to my engine so I can use it for
+interoperability testing and I'll later use this for sealed symmetric
+keys via engine:
 
+https://git.kernel.org/pub/scm/linux/kernel/git/jejb/openssl_tpm2_engine.git/
+
+James
+
+---
+
+James Bottomley (5):
+  lib: add ASN.1 encoder
+  oid_registry: Add TCG defined OIDS for TPM keys
+  security: keys: trusted: fix TPM2 authorizations
+  security: keys: trusted: use ASN.1 TPM2 key format for the blobs
+  security: keys: trusted: Make sealed key properly interoperable
+
+ .../security/keys/trusted-encrypted.rst       |  58 +++
+ include/keys/trusted-type.h                   |   2 +
+ include/linux/asn1_encoder.h                  |  32 ++
+ include/linux/oid_registry.h                  |   5 +
+ include/linux/tpm.h                           |   2 +
+ lib/Kconfig                                   |   3 +
+ lib/Makefile                                  |   1 +
+ lib/asn1_encoder.c                            | 454 ++++++++++++++++++
+ security/keys/Kconfig                         |   3 +
+ security/keys/trusted-keys/Makefile           |   4 +-
+ security/keys/trusted-keys/tpm2key.asn1       |  11 +
+ security/keys/trusted-keys/trusted_tpm1.c     |  34 +-
+ security/keys/trusted-keys/trusted_tpm2.c     | 266 +++++++++-
+ 13 files changed, 844 insertions(+), 31 deletions(-)
+ create mode 100644 include/linux/asn1_encoder.h
+ create mode 100644 lib/asn1_encoder.c
+ create mode 100644 security/keys/trusted-keys/tpm2key.asn1
+
+-- 
+2.26.2
 
