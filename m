@@ -5,101 +5,119 @@ X-Spam-Level:
 X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
 	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED autolearn=ham autolearn_force=no version=3.4.0
+	URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 65A50C433FE
-	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:20:21 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2F88FC4361B
+	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:20:41 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 33C2723BCE
-	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:20:21 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id F1B1123BCE
+	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:20:40 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728786AbgLIMUJ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 9 Dec 2020 07:20:09 -0500
-Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:38008 "EHLO
+        id S1731411AbgLIMQt (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 9 Dec 2020 07:16:49 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:23103 "EHLO
         us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1731492AbgLIMRM (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 9 Dec 2020 07:17:12 -0500
+        by vger.kernel.org with ESMTP id S1731424AbgLIMQq (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 9 Dec 2020 07:16:46 -0500
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1607516145;
+        s=mimecast20190719; t=1607516119;
         h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
          to:to:cc:cc:mime-version:mime-version:content-type:content-type:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=I2OeoEaPoabGaS5Q60oqAdJsgF7TInIBkil2seWc1YY=;
-        b=WRQHzUOgIkg3zccAwBVoRbskP0tBiXMAx2g/pBOjvGDu+97CbRu0rOVfaYqj8Ji0EZVcoQ
-        UtedSARZmQ8IsGp2A4iORQfVdahnUJNji2R6r3mrMmRbXjVUTPCPVpX3ZbmF7xvolmDgxW
-        5TgQpcn6qreODrpj+YYZmteFgarTRbQ=
+        bh=/mvd3i8Iisj3of36p/MCFCEO3iZ3VRAoJPd3yylzh6w=;
+        b=ULUneFF/JfolHdwcCA+E6fkQs1wAwkqaY/sIe/vISMArqkOPf206W8HDe6RwdI8NB5gtmE
+        5u2hMSC4dyWxWza27hZ1Capwd9MpRtRKRVR0rbOWeRR1LX2sY+JhhUIw7Ix/tc2Lj+pc8T
+        vXA3R619HTjXtWNs9X0+C6azE78juRE=
 Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
  [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
- us-mta-411-absk2GxwMJWUb2H1Gy9eyg-1; Wed, 09 Dec 2020 07:15:36 -0500
-X-MC-Unique: absk2GxwMJWUb2H1Gy9eyg-1
-Received: from smtp.corp.redhat.com (int-mx01.intmail.prod.int.phx2.redhat.com [10.5.11.11])
+ us-mta-257-9cqO1hUXOkmEWPtLscZjoA-1; Wed, 09 Dec 2020 07:15:15 -0500
+X-MC-Unique: 9cqO1hUXOkmEWPtLscZjoA-1
+Received: from smtp.corp.redhat.com (int-mx03.intmail.prod.int.phx2.redhat.com [10.5.11.13])
         (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id C5109800D55;
-        Wed,  9 Dec 2020 12:15:34 +0000 (UTC)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id ECB49107ACE3;
+        Wed,  9 Dec 2020 12:15:13 +0000 (UTC)
 Received: from warthog.procyon.org.uk (ovpn-116-67.rdu2.redhat.com [10.10.116.67])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id D173D620DE;
-        Wed,  9 Dec 2020 12:15:33 +0000 (UTC)
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 136096E521;
+        Wed,  9 Dec 2020 12:15:11 +0000 (UTC)
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
         Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
         Kingdom.
         Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 09/18] encrypted-keys: Replace HTTP links with HTTPS ones
+Subject: [PATCH 06/18] security: keys: delete repeated words in comments
 From:   David Howells <dhowells@redhat.com>
 To:     Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc:     "Alexander A. Klimov" <grandmaster@al2klimov.de>,
-        dhowells@redhat.com, keyrings@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date:   Wed, 09 Dec 2020 12:15:33 +0000
-Message-ID: <160751613305.1238376.10058420900385575623.stgit@warthog.procyon.org.uk>
+Cc:     Randy Dunlap <rdunlap@infradead.org>, keyrings@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org, dhowells@redhat.com,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Date:   Wed, 09 Dec 2020 12:15:11 +0000
+Message-ID: <160751611127.1238376.11653059698742959354.stgit@warthog.procyon.org.uk>
 In-Reply-To: <160751606428.1238376.14935502103503420781.stgit@warthog.procyon.org.uk>
 References: <160751606428.1238376.14935502103503420781.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.23
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Scanned-By: MIMEDefang 2.79 on 10.5.11.11
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.13
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Alexander A. Klimov <grandmaster@al2klimov.de>
+From: Randy Dunlap <rdunlap@infradead.org>
 
-Rationale:
-Reduces attack surface on kernel devs opening the links for MITM
-as HTTPS traffic is much harder to manipulate.
+Drop repeated words in comments.
+{to, will, the}
 
-Deterministic algorithm:
-For each file:
-  If not .svg:
-    For each line:
-      If doesn't contain `\bxmlns\b`:
-        For each link, `\bhttp://[^# \t\r\n]*(?:\w|/)`:
-	  If neither `\bgnu\.org/license`, nor `\bmozilla\.org/MPL\b`:
-            If both the HTTP and HTTPS versions
-            return 200 OK and serve the same content:
-              Replace HTTP with HTTPS.
-
-Signed-off-by: Alexander A. Klimov <grandmaster@al2klimov.de>
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
 Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: keyrings@vger.kernel.org
+Cc: James Morris <jmorris@namei.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-security-module@vger.kernel.org
 ---
 
- include/keys/encrypted-type.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/keys/keyctl.c  |    2 +-
+ security/keys/keyring.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/keys/encrypted-type.h b/include/keys/encrypted-type.h
-index 38afb341c3f2..abfcbe02001a 100644
---- a/include/keys/encrypted-type.h
-+++ b/include/keys/encrypted-type.h
-@@ -2,7 +2,7 @@
- /*
-  * Copyright (C) 2010 IBM Corporation
-  * Copyright (C) 2010 Politecnico di Torino, Italy
-- *                    TORSEC group -- http://security.polito.it
-+ *                    TORSEC group -- https://security.polito.it
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 61a614c21b9b..96a92a645216 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -506,7 +506,7 @@ long keyctl_keyring_clear(key_serial_t ringid)
+  * keyring, otherwise replace the link to the matching key with a link to the
+  * new key.
   *
-  * Authors:
-  * Mimi Zohar <zohar@us.ibm.com>
+- * The key must grant the caller Link permission and the the keyring must grant
++ * The key must grant the caller Link permission and the keyring must grant
+  * the caller Write permission.  Furthermore, if an additional link is created,
+  * the keyring's quota will be extended.
+  *
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 977066208387..5e6a90760753 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -881,7 +881,7 @@ static bool search_nested_keyrings(struct key *keyring,
+  *
+  * Keys are matched to the type provided and are then filtered by the match
+  * function, which is given the description to use in any way it sees fit.  The
+- * match function may use any attributes of a key that it wishes to to
++ * match function may use any attributes of a key that it wishes to
+  * determine the match.  Normally the match function from the key type would be
+  * used.
+  *
+@@ -1204,7 +1204,7 @@ static int keyring_detect_cycle_iterator(const void *object,
+ }
+ 
+ /*
+- * See if a cycle will will be created by inserting acyclic tree B in acyclic
++ * See if a cycle will be created by inserting acyclic tree B in acyclic
+  * tree A at the topmost level (ie: as a direct child of A).
+  *
+  * Since we are adding B to A at the top level, checking for cycles should just
 
 
