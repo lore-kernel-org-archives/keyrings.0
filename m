@@ -7,94 +7,93 @@ X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
 	URIBL_BLOCKED autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D70A7C4361B
-	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:17:25 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1B472C4361B
+	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:18:24 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A808A23BED
-	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:17:25 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id E154C23BCA
+	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:18:23 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731475AbgLIMRZ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 9 Dec 2020 07:17:25 -0500
-Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:58650 "EHLO
+        id S1731575AbgLIMR4 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 9 Dec 2020 07:17:56 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:60754 "EHLO
         us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1731534AbgLIMRY (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 9 Dec 2020 07:17:24 -0500
+        by vger.kernel.org with ESMTP id S1731551AbgLIMRr (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 9 Dec 2020 07:17:47 -0500
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1607516157;
+        s=mimecast20190719; t=1607516180;
         h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
          to:to:cc:cc:mime-version:mime-version:content-type:content-type:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=vewwtXxJtD28dxpSxT0QfL5oq5dwmyIjTJHGwncoaiU=;
-        b=Eb2mQMnkdblxzkZu9pNpyAg/SZnHP+6NMHUiU3nutjNdiFqMgYtNxZ4u63iCi6MEfcltUP
-        FDhl3WwXU+UDemhQnCYFV84Dixhhh8rRZd0Qu8yunYxUAV1+Kyiaag1pnZum6xQUPDHq9o
-        Nmllfmd2F782ApRwtfHDGD5bfzw3/IU=
+        bh=6n5IZX39MrG3EesHjIkPB9DQmLLlhjhbqUZOtbzeyyo=;
+        b=U8AnNwotSBG6EGiBJeVjPv8V8s+rVGzaNhV3hUNfWgPqr8/RhGSBFvyo2hx67FSr2tlvH+
+        yeC2d3oWjtAdYrRTtfScZkkgyL0z54FZ64KfKgqx41EFO38BaN1jA4hVUjcX0agm/Us991
+        8pfrjrT4Oznz3wZ6CieTaOsmaBUHlXM=
 Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
  [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
- us-mta-589-3jflfmXYOai4h_rnOWIOsg-1; Wed, 09 Dec 2020 07:15:53 -0500
-X-MC-Unique: 3jflfmXYOai4h_rnOWIOsg-1
-Received: from smtp.corp.redhat.com (int-mx06.intmail.prod.int.phx2.redhat.com [10.5.11.16])
+ us-mta-531-VvzraQT8NBO2p70p3j0-AA-1; Wed, 09 Dec 2020 07:16:18 -0500
+X-MC-Unique: VvzraQT8NBO2p70p3j0-AA-1
+Received: from smtp.corp.redhat.com (int-mx03.intmail.prod.int.phx2.redhat.com [10.5.11.13])
         (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 5F6A31800D42;
-        Wed,  9 Dec 2020 12:15:52 +0000 (UTC)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 55593190D36F;
+        Wed,  9 Dec 2020 12:16:16 +0000 (UTC)
 Received: from warthog.procyon.org.uk (ovpn-116-67.rdu2.redhat.com [10.10.116.67])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 6CE4071CA7;
-        Wed,  9 Dec 2020 12:15:49 +0000 (UTC)
+        by smtp.corp.redhat.com (Postfix) with ESMTP id D54FC6F960;
+        Wed,  9 Dec 2020 12:16:14 +0000 (UTC)
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
         Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
         Kingdom.
         Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 11/18] crypto: pkcs7: Use match_string() helper to simplify
- the code
+Subject: [PATCH 14/18] certs/blacklist: fix kernel doc interface issue
 From:   David Howells <dhowells@redhat.com>
 To:     Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc:     YueHaibing <yuehaibing@huawei.com>, dhowells@redhat.com,
-        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
-Date:   Wed, 09 Dec 2020 12:15:48 +0000
-Message-ID: <160751614848.1238376.4757193989177203825.stgit@warthog.procyon.org.uk>
+Cc:     Alex Shi <alex.shi@linux.alibaba.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, keyrings@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date:   Wed, 09 Dec 2020 12:16:14 +0000
+Message-ID: <160751617400.1238376.9845973545419551111.stgit@warthog.procyon.org.uk>
 In-Reply-To: <160751606428.1238376.14935502103503420781.stgit@warthog.procyon.org.uk>
 References: <160751606428.1238376.14935502103503420781.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.23
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Scanned-By: MIMEDefang 2.79 on 10.5.11.16
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.13
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: YueHaibing <yuehaibing@huawei.com>
+From: Alex Shi <alex.shi@linux.alibaba.com>
 
-match_string() returns the array index of a matching string.
-Use it instead of the open-coded implementation.
+certs/blacklist.c:84: warning: Function parameter or member 'hash' not
+described in 'mark_hash_blacklisted'
 
-Signed-off-by: YueHaibing <yuehaibing@huawei.com>
+Signed-off-by: Alex Shi <alex.shi@linux.alibaba.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: keyrings@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/pkcs7_verify.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ certs/blacklist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index ce49820caa97..0b4d07aa8811 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -141,11 +141,10 @@ int pkcs7_get_digest(struct pkcs7_message *pkcs7, const u8 **buf, u32 *len,
- 	*buf = sinfo->sig->digest;
- 	*len = sinfo->sig->digest_size;
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index 6514f9ebc943..2719fb2fbc1c 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -78,7 +78,7 @@ static struct key_type key_type_blacklist = {
  
--	for (i = 0; i < HASH_ALGO__LAST; i++)
--		if (!strcmp(hash_algo_name[i], sinfo->sig->hash_algo)) {
--			*hash_algo = i;
--			break;
--		}
-+	i = match_string(hash_algo_name, HASH_ALGO__LAST,
-+			 sinfo->sig->hash_algo);
-+	if (i >= 0)
-+		*hash_algo = i;
- 
- 	return 0;
- }
+ /**
+  * mark_hash_blacklisted - Add a hash to the system blacklist
+- * @hash - The hash as a hex string with a type prefix (eg. "tbs:23aa429783")
++ * @hash: The hash as a hex string with a type prefix (eg. "tbs:23aa429783")
+  */
+ int mark_hash_blacklisted(const char *hash)
+ {
 
 
