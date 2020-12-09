@@ -7,117 +7,107 @@ X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
 	URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 2F88FC4361B
-	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:20:41 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 802B1C433FE
+	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:21:47 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id F1B1123BCE
-	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:20:40 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 50DDF23BE3
+	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:21:47 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731411AbgLIMQt (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 9 Dec 2020 07:16:49 -0500
-Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:23103 "EHLO
+        id S1731275AbgLIMQc (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 9 Dec 2020 07:16:32 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:51741 "EHLO
         us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1731424AbgLIMQq (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 9 Dec 2020 07:16:46 -0500
+        by vger.kernel.org with ESMTP id S1731391AbgLIMQ2 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 9 Dec 2020 07:16:28 -0500
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1607516119;
+        s=mimecast20190719; t=1607516102;
         h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
          to:to:cc:cc:mime-version:mime-version:content-type:content-type:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=/mvd3i8Iisj3of36p/MCFCEO3iZ3VRAoJPd3yylzh6w=;
-        b=ULUneFF/JfolHdwcCA+E6fkQs1wAwkqaY/sIe/vISMArqkOPf206W8HDe6RwdI8NB5gtmE
-        5u2hMSC4dyWxWza27hZ1Capwd9MpRtRKRVR0rbOWeRR1LX2sY+JhhUIw7Ix/tc2Lj+pc8T
-        vXA3R619HTjXtWNs9X0+C6azE78juRE=
+        bh=YwmNy2yecVSpA3zuuQKT7O6PCaKtPmRiW5EIYH3QEW8=;
+        b=K6oG+T0a926j2IErMtTuz1pIiPlQGzuxdlDaZLkSF7n6qAUCvAvIx2DoX/aZJg63dCzQGI
+        5dWgJxoTgHAA+7Kg1sTT8Bsp887Zl56gPLwPdGOFW82VmkOHeXDzB0ignl3VKbagyPIolS
+        jKAtmbatQXc1CHxQdovH/kwgRUcAwRo=
 Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
  [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
- us-mta-257-9cqO1hUXOkmEWPtLscZjoA-1; Wed, 09 Dec 2020 07:15:15 -0500
-X-MC-Unique: 9cqO1hUXOkmEWPtLscZjoA-1
-Received: from smtp.corp.redhat.com (int-mx03.intmail.prod.int.phx2.redhat.com [10.5.11.13])
+ us-mta-589-GeElnHFXPGuvzElqb4d5IA-1; Wed, 09 Dec 2020 07:14:59 -0500
+X-MC-Unique: GeElnHFXPGuvzElqb4d5IA-1
+Received: from smtp.corp.redhat.com (int-mx02.intmail.prod.int.phx2.redhat.com [10.5.11.12])
         (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id ECB49107ACE3;
-        Wed,  9 Dec 2020 12:15:13 +0000 (UTC)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id A136C801ABA;
+        Wed,  9 Dec 2020 12:14:58 +0000 (UTC)
 Received: from warthog.procyon.org.uk (ovpn-116-67.rdu2.redhat.com [10.10.116.67])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 136096E521;
-        Wed,  9 Dec 2020 12:15:11 +0000 (UTC)
+        by smtp.corp.redhat.com (Postfix) with ESMTP id B9EEE60BF3;
+        Wed,  9 Dec 2020 12:14:57 +0000 (UTC)
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
         Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
         Kingdom.
         Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 06/18] security: keys: delete repeated words in comments
+Subject: [PATCH 04/18] security/keys: use kvfree_sensitive()
 From:   David Howells <dhowells@redhat.com>
 To:     Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc:     Randy Dunlap <rdunlap@infradead.org>, keyrings@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        linux-security-module@vger.kernel.org, dhowells@redhat.com,
+Cc:     Denis Efremov <efremov@linux.com>, dhowells@redhat.com,
         keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
-Date:   Wed, 09 Dec 2020 12:15:11 +0000
-Message-ID: <160751611127.1238376.11653059698742959354.stgit@warthog.procyon.org.uk>
+Date:   Wed, 09 Dec 2020 12:14:57 +0000
+Message-ID: <160751609699.1238376.10901466590541653794.stgit@warthog.procyon.org.uk>
 In-Reply-To: <160751606428.1238376.14935502103503420781.stgit@warthog.procyon.org.uk>
 References: <160751606428.1238376.14935502103503420781.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.23
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Scanned-By: MIMEDefang 2.79 on 10.5.11.13
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.12
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+From: Denis Efremov <efremov@linux.com>
 
-Drop repeated words in comments.
-{to, will, the}
+Use kvfree_sensitive() instead of open-coding it.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Denis Efremov <efremov@linux.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: keyrings@vger.kernel.org
-Cc: James Morris <jmorris@namei.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-security-module@vger.kernel.org
 ---
 
- security/keys/keyctl.c  |    2 +-
- security/keys/keyring.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ security/keys/big_key.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 61a614c21b9b..96a92a645216 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -506,7 +506,7 @@ long keyctl_keyring_clear(key_serial_t ringid)
-  * keyring, otherwise replace the link to the matching key with a link to the
-  * new key.
-  *
-- * The key must grant the caller Link permission and the the keyring must grant
-+ * The key must grant the caller Link permission and the keyring must grant
-  * the caller Write permission.  Furthermore, if an additional link is created,
-  * the keyring's quota will be extended.
-  *
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 977066208387..5e6a90760753 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -881,7 +881,7 @@ static bool search_nested_keyrings(struct key *keyring,
-  *
-  * Keys are matched to the type provided and are then filtered by the match
-  * function, which is given the description to use in any way it sees fit.  The
-- * match function may use any attributes of a key that it wishes to to
-+ * match function may use any attributes of a key that it wishes to
-  * determine the match.  Normally the match function from the key type would be
-  * used.
-  *
-@@ -1204,7 +1204,7 @@ static int keyring_detect_cycle_iterator(const void *object,
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 691347dea3c1..d17e5f09eeb8 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -121,8 +121,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ 		*path = file->f_path;
+ 		path_get(path);
+ 		fput(file);
+-		memzero_explicit(buf, enclen);
+-		kvfree(buf);
++		kvfree_sensitive(buf, enclen);
+ 	} else {
+ 		/* Just store the data in a buffer */
+ 		void *data = kmalloc(datalen, GFP_KERNEL);
+@@ -140,8 +139,7 @@ int big_key_preparse(struct key_preparsed_payload *prep)
+ err_enckey:
+ 	kfree_sensitive(enckey);
+ error:
+-	memzero_explicit(buf, enclen);
+-	kvfree(buf);
++	kvfree_sensitive(buf, enclen);
+ 	return ret;
  }
  
- /*
-- * See if a cycle will will be created by inserting acyclic tree B in acyclic
-+ * See if a cycle will be created by inserting acyclic tree B in acyclic
-  * tree A at the topmost level (ie: as a direct child of A).
-  *
-  * Since we are adding B to A at the top level, checking for cycles should just
+@@ -273,8 +271,7 @@ long big_key_read(const struct key *key, char *buffer, size_t buflen)
+ err_fput:
+ 		fput(file);
+ error:
+-		memzero_explicit(buf, enclen);
+-		kvfree(buf);
++		kvfree_sensitive(buf, enclen);
+ 	} else {
+ 		ret = datalen;
+ 		memcpy(buffer, key->payload.data[big_key_data], datalen);
 
 
