@@ -4,110 +4,98 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED autolearn=ham autolearn_force=no version=3.4.0
+	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E5D26C433FE
-	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:16:46 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C74ACC4361B
+	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:17:05 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id C91F123BAF
-	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:16:46 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8936F23B85
+	for <keyrings@archiver.kernel.org>; Wed,  9 Dec 2020 12:17:05 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731429AbgLIMQo (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 9 Dec 2020 07:16:44 -0500
-Received: from us-smtp-delivery-124.mimecast.com ([63.128.21.124]:37066 "EHLO
+        id S1730684AbgLIMRB (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 9 Dec 2020 07:17:01 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([63.128.21.124]:33885 "EHLO
         us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1731415AbgLIMQi (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 9 Dec 2020 07:16:38 -0500
+        by vger.kernel.org with ESMTP id S1731437AbgLIMQu (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 9 Dec 2020 07:16:50 -0500
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1607516112;
+        s=mimecast20190719; t=1607516124;
         h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
          to:to:cc:cc:mime-version:mime-version:content-type:content-type:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=2hCEY4/SQPzDg3IIM7GlZ/Meflenf1/Y7AL3ZB5FbPk=;
-        b=iNoWeHg0uKAzSZdH7gftwIkBTArR8GzCVacyGTXFLyj5dCzzSf76JKs1cnbjFw/QJldjVS
-        ECXH66NP4CpcZ707Xb8a9c0Y6wDy6V/SJ2ftLJE7XyOkUAOMXOmBXRNrlO/NWd+r5JHNFz
-        yyGl6+aQlnzVZCNtEGmVWfY9cuR2jjE=
+        bh=zGZTiwKPbzuNxYRc0EhfYab3vSDv6XVztRD7Rd/Qdu8=;
+        b=Z1fID4S3CVZKfVAablqtDRnIXgwAiLQkk9gwQWLj46XdssGjJfLumYPCJ4GwzixZsiTTyB
+        bibKQ1JUrGlYr8f4aQbR8NsSL/w5U7A2cYCx857HIHTCG5XHEcgeTearhQXEVqmsInHKdr
+        iYro6iTy+eSQNQJpgqNlbbRZFaaYKbk=
 Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
  [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
- us-mta-14-eJsGjwiCOGCpuaN_U1OShA-1; Wed, 09 Dec 2020 07:15:07 -0500
-X-MC-Unique: eJsGjwiCOGCpuaN_U1OShA-1
-Received: from smtp.corp.redhat.com (int-mx06.intmail.prod.int.phx2.redhat.com [10.5.11.16])
+ us-mta-366-tvjdctg3PO-8Q_5Se2UQKw-1; Wed, 09 Dec 2020 07:15:21 -0500
+X-MC-Unique: tvjdctg3PO-8Q_5Se2UQKw-1
+Received: from smtp.corp.redhat.com (int-mx05.intmail.prod.int.phx2.redhat.com [10.5.11.15])
         (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
         (No client certificate requested)
-        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 0E560801AE6;
-        Wed,  9 Dec 2020 12:15:06 +0000 (UTC)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id D3854107ACE6;
+        Wed,  9 Dec 2020 12:15:20 +0000 (UTC)
 Received: from warthog.procyon.org.uk (ovpn-116-67.rdu2.redhat.com [10.10.116.67])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 9F8C55C1D0;
-        Wed,  9 Dec 2020 12:15:04 +0000 (UTC)
+        by smtp.corp.redhat.com (Postfix) with ESMTP id ED63C5D719;
+        Wed,  9 Dec 2020 12:15:19 +0000 (UTC)
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
         Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
         Kingdom.
         Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 05/18] KEYS: asymmetric: Fix kerneldoc
+Subject: [PATCH 07/18] KEYS: remove redundant memset
 From:   David Howells <dhowells@redhat.com>
 To:     Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc:     Krzysztof Kozlowski <krzk@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Ben Boeckel <mathstuf@gmail.com>,
-        Jarkko Sakkinen <jarkko.sakkinen@iki.fi>, dhowells@redhat.com,
+Cc:     Tom Rix <trix@redhat.com>, dhowells@redhat.com,
         keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
-Date:   Wed, 09 Dec 2020 12:15:03 +0000
-Message-ID: <160751610385.1238376.13063844632857670423.stgit@warthog.procyon.org.uk>
+Date:   Wed, 09 Dec 2020 12:15:19 +0000
+Message-ID: <160751611918.1238376.7060458630378643472.stgit@warthog.procyon.org.uk>
 In-Reply-To: <160751606428.1238376.14935502103503420781.stgit@warthog.procyon.org.uk>
 References: <160751606428.1238376.14935502103503420781.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.23
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Scanned-By: MIMEDefang 2.79 on 10.5.11.16
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.15
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Krzysztof Kozlowski <krzk@kernel.org>
+From: Tom Rix <trix@redhat.com>
 
-Fix W=1 compile warnings (invalid kerneldoc):
+Reviewing use of memset in keyctrl_pkey.c
 
-    crypto/asymmetric_keys/asymmetric_type.c:160: warning: Function parameter or member 'kid1' not described in 'asymmetric_key_id_same'
-    crypto/asymmetric_keys/asymmetric_type.c:160: warning: Function parameter or member 'kid2' not described in 'asymmetric_key_id_same'
-    crypto/asymmetric_keys/asymmetric_type.c:160: warning: Excess function parameter 'kid_1' description in 'asymmetric_key_id_same'
-    crypto/asymmetric_keys/asymmetric_type.c:160: warning: Excess function parameter 'kid_2' description in 'asymmetric_key_id_same'
+keyctl_pkey_params_get prologue code to set params up
 
-Signed-off-by: Krzysztof Kozlowski <krzk@kernel.org>
+	memset(params, 0, sizeof(*params));
+	params->encoding = "raw";
+
+keyctl_pkey_query has the same prologue
+and calls keyctl_pkey_params_get.
+
+So remove the prologue.
+
+Signed-off-by: Tom Rix <trix@redhat.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-Reviewed-by: Ben Boeckel <mathstuf@gmail.com>
-Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
 ---
 
- crypto/asymmetric_keys/asymmetric_type.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ security/keys/keyctl_pkey.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index 33e77d846caa..ad8af3d70ac0 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -152,7 +152,8 @@ EXPORT_SYMBOL_GPL(asymmetric_key_generate_id);
+diff --git a/security/keys/keyctl_pkey.c b/security/keys/keyctl_pkey.c
+index 931d8dfb4a7f..5de0d599a274 100644
+--- a/security/keys/keyctl_pkey.c
++++ b/security/keys/keyctl_pkey.c
+@@ -166,8 +166,6 @@ long keyctl_pkey_query(key_serial_t id,
+ 	struct kernel_pkey_query res;
+ 	long ret;
  
- /**
-  * asymmetric_key_id_same - Return true if two asymmetric keys IDs are the same.
-- * @kid_1, @kid_2: The key IDs to compare
-+ * @kid1: The key ID to compare
-+ * @kid2: The key ID to compare
-  */
- bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
- 			    const struct asymmetric_key_id *kid2)
-@@ -168,7 +169,8 @@ EXPORT_SYMBOL_GPL(asymmetric_key_id_same);
- /**
-  * asymmetric_key_id_partial - Return true if two asymmetric keys IDs
-  * partially match
-- * @kid_1, @kid_2: The key IDs to compare
-+ * @kid1: The key ID to compare
-+ * @kid2: The key ID to compare
-  */
- bool asymmetric_key_id_partial(const struct asymmetric_key_id *kid1,
- 			       const struct asymmetric_key_id *kid2)
+-	memset(&params, 0, sizeof(params));
+-
+ 	ret = keyctl_pkey_params_get(id, _info, &params);
+ 	if (ret < 0)
+ 		goto error;
 
 
