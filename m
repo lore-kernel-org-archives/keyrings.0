@@ -7,41 +7,41 @@ X-Spam-Status: No, score=-19.0 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D141FC4360C
-	for <keyrings@archiver.kernel.org>; Wed, 23 Dec 2020 02:49:33 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 61458C4321A
+	for <keyrings@archiver.kernel.org>; Wed, 23 Dec 2020 03:01:37 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A10BA229C5
-	for <keyrings@archiver.kernel.org>; Wed, 23 Dec 2020 02:49:33 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 309CE206F6
+	for <keyrings@archiver.kernel.org>; Wed, 23 Dec 2020 03:01:37 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729566AbgLWCWJ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 22 Dec 2020 21:22:09 -0500
-Received: from mail.kernel.org ([198.145.29.99]:49802 "EHLO mail.kernel.org"
+        id S1728801AbgLWDBZ (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 22 Dec 2020 22:01:25 -0500
+Received: from mail.kernel.org ([198.145.29.99]:46328 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1729561AbgLWCWI (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Tue, 22 Dec 2020 21:22:08 -0500
-Received: by mail.kernel.org (Postfix) with ESMTPSA id 42FD922A99;
-        Wed, 23 Dec 2020 02:21:49 +0000 (UTC)
+        id S1728790AbgLWCTw (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Tue, 22 Dec 2020 21:19:52 -0500
+Received: by mail.kernel.org (Postfix) with ESMTPSA id 9F0072313F;
+        Wed, 23 Dec 2020 02:19:27 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1608690110;
-        bh=mCL/6JX8PjkAtZ/N2abdTYj3YjbBv9fu3lg3hFY6z3U=;
+        s=k20201202; t=1608689968;
+        bh=bUikZc6WrHRG8DzuQtqkB5TrUw9iQtknHqSrG9JnOtM=;
         h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=V/NN+3AHEvYErDjKGlM/CBQLfJ7XECL2AWuLD5SMWH73GsFBGR4TKpaB3hqeHQ68U
-         5ZKTOvu2Ikzsn0dUull0z2wZEQqMj0/n/t7vjNyDq+5N4vh3w59sQEhCoB5ZcscolT
-         T7H8cs9mfxikCzKMSpXC3oppaDRIcd0E8NfV3TrlPBe9wggXWlZIidhXhOGSsHU4x7
-         LVp1V0+sG3WiZy9LX4B0cGVyiHkldVzIJe5dRoJRLRSZbtZokc3DtNX8MkUE6WYu6K
-         gVN0h3xs0AHxhhBGO5tWdvsl8B4yb8eK+VfW8dUIPNph94KkTXIwgHRgrbeqqT+l0Y
-         zgm45jFgFoSYg==
+        b=Em+58dAYGxOYH33LrUOFQQ+6RZ8jYmdq7NUpI/GfCqzlEHmbZaNxo6LKtCx5AQDVG
+         A0cxLHQyIlI0YkVV3zVkXtdABO373bb/UZB6YjKT1WSm7KfulTnLNX58Ffk0FsDKRy
+         3dxdVPUTvMQrES2AOkTSAhAn8xLe8eKh+eY8ejs8JALSw2AkHuR9VCcb09JniRw7YV
+         ibvKckYV58jCG1abWDjVZpp83W94o0GoJYjylCK/PT7PpBmtsgsxy9LU7+auW3M3hF
+         fV+lXuSn4YfnUgGe732nJEr080in1BES4FKU7pMr3b9G1m1YKHBsYcwb6HPXdCmZj+
+         OUU0HPh1Csv3w==
 From:   Sasha Levin <sashal@kernel.org>
 To:     linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc:     David Howells <dhowells@redhat.com>,
         Sasha Levin <sashal@kernel.org>, linux-afs@lists.infradead.org,
         keyrings@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH AUTOSEL 4.19 38/87] rxrpc: Don't leak the service-side session key to userspace
-Date:   Tue, 22 Dec 2020 21:20:14 -0500
-Message-Id: <20201223022103.2792705-38-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.4 058/130] rxrpc: Don't leak the service-side session key to userspace
+Date:   Tue, 22 Dec 2020 21:17:01 -0500
+Message-Id: <20201223021813.2791612-58-sashal@kernel.org>
 X-Mailer: git-send-email 2.27.0
-In-Reply-To: <20201223022103.2792705-1-sashal@kernel.org>
-References: <20201223022103.2792705-1-sashal@kernel.org>
+In-Reply-To: <20201223021813.2791612-1-sashal@kernel.org>
+References: <20201223021813.2791612-1-sashal@kernel.org>
 MIME-Version: 1.0
 X-stable: review
 X-Patchwork-Hint: Ignore
@@ -67,10 +67,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  2 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/include/keys/rxrpc-type.h b/include/keys/rxrpc-type.h
-index 8cf829dbf20ec..1cb996dac3238 100644
+index a183278c3e9ef..63dc02507b8f3 100644
 --- a/include/keys/rxrpc-type.h
 +++ b/include/keys/rxrpc-type.h
-@@ -88,6 +88,7 @@ struct rxk5_key {
+@@ -84,6 +84,7 @@ struct rxk5_key {
   */
  struct rxrpc_key_token {
  	u16	security_index;		/* RxRPC header security index */
@@ -79,10 +79,10 @@ index 8cf829dbf20ec..1cb996dac3238 100644
  	union {
  		struct rxkad_key *kad;
 diff --git a/net/rxrpc/key.c b/net/rxrpc/key.c
-index 2fe2add62a8ed..dd8a12847b712 100644
+index 85a9ff8cd236a..131fd90638248 100644
 --- a/net/rxrpc/key.c
 +++ b/net/rxrpc/key.c
-@@ -1077,7 +1077,8 @@ static long rxrpc_read(const struct key *key,
+@@ -1075,7 +1075,8 @@ static long rxrpc_read(const struct key *key,
  		case RXRPC_SECURITY_RXKAD:
  			toksize += 8 * 4;	/* viceid, kvno, key*2, begin,
  						 * end, primary, tktlen */
@@ -92,7 +92,7 @@ index 2fe2add62a8ed..dd8a12847b712 100644
  			break;
  
  		case RXRPC_SECURITY_RXK5:
-@@ -1181,7 +1182,10 @@ static long rxrpc_read(const struct key *key,
+@@ -1179,7 +1180,10 @@ static long rxrpc_read(const struct key *key,
  			ENCODE(token->kad->start);
  			ENCODE(token->kad->expiry);
  			ENCODE(token->kad->primary_flag);
