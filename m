@@ -2,102 +2,88 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 46769C433DB
-	for <keyrings@archiver.kernel.org>; Wed, 23 Dec 2020 19:59:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0BCA9C433DB
+	for <keyrings@archiver.kernel.org>; Mon,  4 Jan 2021 16:41:52 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 10D442247F
-	for <keyrings@archiver.kernel.org>; Wed, 23 Dec 2020 19:59:17 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id D3161224DF
+	for <keyrings@archiver.kernel.org>; Mon,  4 Jan 2021 16:41:51 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728017AbgLWT7B (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 23 Dec 2020 14:59:01 -0500
-Received: from bedivere.hansenpartnership.com ([96.44.175.130]:45284 "EHLO
-        bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1728156AbgLWT67 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 23 Dec 2020 14:58:59 -0500
-Received: from localhost (localhost [127.0.0.1])
-        by bedivere.hansenpartnership.com (Postfix) with ESMTP id EC8D01280557;
-        Wed, 23 Dec 2020 11:58:18 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-        d=hansenpartnership.com; s=20151216; t=1608753498;
-        bh=wqtAxY0FfYTORD4SPEnmy1FaaSHPAOyRwfe2oiJr3pM=;
-        h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-        b=RUSOup40JNt3n7UTMYVW7TNayXu2YimWLbHvMvjYjBBJ6Q+y1xy+aaS4dXVjg5xFv
-         CThfDCGVmrK2CAgs+7YZZaqRpt8llg6HSRUFTpG83RnjY9zFJ8gTJG9LFrzA+kj0lW
-         0YAMI/JDFVuqQHuzRY4J0zPXsXCnpOAPC5NVKDIE=
-Received: from bedivere.hansenpartnership.com ([127.0.0.1])
-        by localhost (bedivere.hansenpartnership.com [127.0.0.1]) (amavisd-new, port 10024)
-        with ESMTP id 49pKqgaFtOs4; Wed, 23 Dec 2020 11:58:18 -0800 (PST)
-Received: from jarvis.int.hansenpartnership.com (c-73-35-198-56.hsd1.wa.comcast.net [73.35.198.56])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by bedivere.hansenpartnership.com (Postfix) with ESMTPSA id 631E2128047C;
-        Wed, 23 Dec 2020 11:58:18 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-        d=hansenpartnership.com; s=20151216; t=1608753498;
-        bh=wqtAxY0FfYTORD4SPEnmy1FaaSHPAOyRwfe2oiJr3pM=;
-        h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
-        b=RUSOup40JNt3n7UTMYVW7TNayXu2YimWLbHvMvjYjBBJ6Q+y1xy+aaS4dXVjg5xFv
-         CThfDCGVmrK2CAgs+7YZZaqRpt8llg6HSRUFTpG83RnjY9zFJ8gTJG9LFrzA+kj0lW
-         0YAMI/JDFVuqQHuzRY4J0zPXsXCnpOAPC5NVKDIE=
-Message-ID: <aa82e85e1a5055367517b1f0c0f00206f51353cb.camel@HansenPartnership.com>
-Subject: Re: [PATCH v14 3/5] security: keys: trusted: fix TPM2 authorizations
-From:   James Bottomley <James.Bottomley@HansenPartnership.com>
-To:     Ken Goldman <kgold@linux.ibm.com>, linux-integrity@vger.kernel.org
-Cc:     Mimi Zohar <zohar@linux.ibm.com>,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date:   Wed, 23 Dec 2020 11:58:17 -0800
-In-Reply-To: <dfd33d3d-8e1c-8acf-a3aa-3b62659d5d68@linux.ibm.com>
-References: <20201129222004.4428-1-James.Bottomley@HansenPartnership.com>
-         <20201129222004.4428-4-James.Bottomley@HansenPartnership.com>
-         <dfd33d3d-8e1c-8acf-a3aa-3b62659d5d68@linux.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-User-Agent: Evolution 3.34.4 
+        id S1727535AbhADQlh (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 4 Jan 2021 11:41:37 -0500
+Received: from mail-wr1-f43.google.com ([209.85.221.43]:33540 "EHLO
+        mail-wr1-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1727623AbhADQlh (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 4 Jan 2021 11:41:37 -0500
+Received: by mail-wr1-f43.google.com with SMTP id t30so32858117wrb.0
+        for <keyrings@vger.kernel.org>; Mon, 04 Jan 2021 08:41:20 -0800 (PST)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
+         :references:mime-version:content-transfer-encoding;
+        bh=yo2De2Pk0T/ha9hsXodD8WV8ytF7ugRHa6ZAnUm2dXY=;
+        b=VJ/ahTIADEwbwdaws/mnCi1MPuvjUMqrrc2b+WVBdpweLQ9upwDX9RGkqStjQWdeV4
+         3ezuErwRhHllNM8DMN9TjbHqjVlG/nUHYHLouKMntIIXkhFUvtBMFEoemfAFZkFwjJX9
+         uQeTIjG0XllTev6kzMh+3Yfde/6Su6RaYwc3lEoHqSsHfKAZ1zL+x9AEgk/U1yAcLtOq
+         RhXxJyJffiVRNfKK7CTpFNof9q+hMZbiCGG/xzRolfAl0WQUg4yn3e7MkXXsF2HyKvlJ
+         /3GnSEQjZYW1ek7oE1GFI7k5fn5HSi5qSUtbXQAobHzpLLMYVCiGBwWhmcU4Tn9y85M0
+         CObg==
+X-Gm-Message-State: AOAM533mbtjdBnMMpB7mrDtmFGaIAM1Uybc27+V6vC1HpPuWtkiaC0db
+        q4qmb9H+M8onI/Vtd9X4aRl+eAdIMoQE3A==
+X-Google-Smtp-Source: ABdhPJwmmCvwagcjQKxC/eweuhQUUVaqgg/xPfvOHK4m5YI0tWvw2EeQ/o46niwceXrWkjyHAbuO9w==
+X-Received: by 2002:adf:80ae:: with SMTP id 43mr81324758wrl.50.1609778454798;
+        Mon, 04 Jan 2021 08:40:54 -0800 (PST)
+Received: from localhost.localdomain ([82.213.213.214])
+        by smtp.gmail.com with ESMTPSA id s20sm33810524wmj.46.2021.01.04.08.40.53
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 04 Jan 2021 08:40:54 -0800 (PST)
+From:   Andrew Zaborowski <andrew.zaborowski@intel.com>
+To:     keyrings@vger.kernel.org
+Cc:     David Howells <dhowells@redhat.com>
+Subject: [PATCH][RESEND] keys: Update comment for restrict_link_by_key_or_keyring_chain
+Date:   Mon,  4 Jan 2021 17:40:48 +0100
+Message-Id: <20210104164048.1378237-2-andrew.zaborowski@intel.com>
+X-Mailer: git-send-email 2.27.0
+In-Reply-To: <20210104164048.1378237-1-andrew.zaborowski@intel.com>
+References: <20210104164048.1378237-1-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, 2020-12-22 at 18:01 -0500, Ken Goldman wrote:
-> On 11/29/2020 5:20 PM, James Bottomley wrote:
-> > Note this is both and enhancement and a potential bug fix.  The TPM
-> > 2.0 spec requires us to strip leading zeros, meaning empyty
-> > authorization is a zero length HMAC whereas we're currently passing
-> > in 20 bytes of zeros.  A lot of TPMs simply accept this as OK, but
-> > the Microsoft TPM emulator rejects it with TPM_RC_BAD_AUTH, so this
-> > patch makes the Microsoft TPM emulator work with trusted keys.
-> 
-> 1 - To be precise, it strips trailing zeros, but 20 bytes of zero
-> results in an empty buffer either way.
-> 
-> "
-> Part 1 19.6.4.3	Authorization Size Convention
-> 
-> Trailing octets of zero are to be removed from any string before it
-> is used as an authValue.
-> "
-> 
-> 
-> 2 - If you have a test case for the MS simulator, post it and I'll
-> give it a try.
-> 
-> I did a quick test, power cycle to set platform auth to empty, than
-> create primary with a parent password 20 bytes of zero, and the
-> SW TPM accepted it.
-> 
-> This was a password session, not an HMAC session.
+Add the bit of information that makes
+restrict_link_by_key_or_keyring_chain different from
+restrict_link_by_key_or_keyring to the inline docs comment.
 
-I reported it to Microsoft as soon as I found the problem, so, since
-this patch set has been languishing for years, I'd hope it would be
-fixed by now.  It is still, however, possible there still exist TPM
-implementations based on the unfixed Microsoft reference platform.
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
+---
+ crypto/asymmetric_keys/restrict.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-James
-
+diff --git a/crypto/asymmetric_keys/restrict.c b/crypto/asymmetric_keys/restrict.c
+index 77ebebada29..84cefe3b358 100644
+--- a/crypto/asymmetric_keys/restrict.c
++++ b/crypto/asymmetric_keys/restrict.c
+@@ -244,9 +244,10 @@ int restrict_link_by_key_or_keyring(struct key *dest_keyring,
+  * @payload: The payload of the new key.
+  * @trusted: A key or ring of keys that can be used to vouch for the new cert.
+  *
+- * Check the new certificate only against the key or keys passed in the data
+- * parameter. If one of those is the signing key and validates the new
+- * certificate, then mark the new certificate as being ok to link.
++ * Check the new certificate against the key or keys passed in the data
++ * parameter and against the keys already linked to the destination keyring. If
++ * one of those is the signing key and validates the new certificate, then mark
++ * the new certificate as being ok to link.
+  *
+  * Returns 0 if the new certificate was accepted, -ENOKEY if we
+  * couldn't find a matching parent certificate in the trusted list,
+-- 
+2.20.1
 
