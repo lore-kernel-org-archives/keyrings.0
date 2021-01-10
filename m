@@ -2,140 +2,84 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-11.3 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
+	SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 2420BC433DB
-	for <keyrings@archiver.kernel.org>; Fri,  8 Jan 2021 11:51:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AF51FC433DB
+	for <keyrings@archiver.kernel.org>; Sun, 10 Jan 2021 04:46:11 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id E4AA2239EB
-	for <keyrings@archiver.kernel.org>; Fri,  8 Jan 2021 11:51:39 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 7039A22A85
+	for <keyrings@archiver.kernel.org>; Sun, 10 Jan 2021 04:46:11 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726735AbhAHLvI convert rfc822-to-8bit (ORCPT
-        <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 8 Jan 2021 06:51:08 -0500
-Received: from eu-smtp-delivery-151.mimecast.com ([185.58.86.151]:40611 "EHLO
-        eu-smtp-delivery-151.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1726832AbhAHLvH (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 8 Jan 2021 06:51:07 -0500
-Received: from AcuMS.aculab.com (156.67.243.126 [156.67.243.126]) (Using
- TLS) by relay.mimecast.com with ESMTP id
- uk-mta-227-JrkSGbMLN9-FUY2lxHNdvQ-1; Fri, 08 Jan 2021 11:49:28 +0000
-X-MC-Unique: JrkSGbMLN9-FUY2lxHNdvQ-1
-Received: from AcuMS.Aculab.com (fd9f:af1c:a25b:0:43c:695e:880f:8750) by
- AcuMS.aculab.com (fd9f:af1c:a25b:0:43c:695e:880f:8750) with Microsoft SMTP
- Server (TLS) id 15.0.1347.2; Fri, 8 Jan 2021 11:49:27 +0000
-Received: from AcuMS.Aculab.com ([fe80::43c:695e:880f:8750]) by
- AcuMS.aculab.com ([fe80::43c:695e:880f:8750%12]) with mapi id 15.00.1347.000;
- Fri, 8 Jan 2021 11:49:27 +0000
-From:   David Laight <David.Laight@ACULAB.COM>
-To:     'Christoph Hellwig' <hch@lst.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-CC:     Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-        <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@vger.kernel.org" <linux-mips@vger.kernel.org>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        "io-uring@vger.kernel.org" <io-uring@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "keyrings@vger.kernel.org" <keyrings@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-        <linux-security-module@vger.kernel.org>
-Subject: RE: [PATCH 05/11] iov_iter: merge the compat case into
- rw_copy_check_uvector
-Thread-Topic: [PATCH 05/11] iov_iter: merge the compat case into
- rw_copy_check_uvector
-Thread-Index: AQHWkCRUvpDO9SBAlU68E+WeFLSma6oeR04A
-Date:   Fri, 8 Jan 2021 11:49:27 +0000
-Message-ID: <7167a94511a84f30b18733d56007a7a5@AcuMS.aculab.com>
-References: <20200921143434.707844-1-hch@lst.de>
- <20200921143434.707844-6-hch@lst.de>
-In-Reply-To: <20200921143434.707844-6-hch@lst.de>
-Accept-Language: en-GB, en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [10.202.205.107]
+        id S1726283AbhAJEp4 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sat, 9 Jan 2021 23:45:56 -0500
+Received: from mail.kernel.org ([198.145.29.99]:38910 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1726253AbhAJEpz (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Sat, 9 Jan 2021 23:45:55 -0500
+Received: by mail.kernel.org (Postfix) with ESMTPSA id 60D7B22A85;
+        Sun, 10 Jan 2021 04:45:13 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1610253915;
+        bh=NxsW+qsquAq7R6XhkIuUvATm3JptHl6Udvl+KUglLRk=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=D88PJJGgkwpH2vcMzOcDyqvkZZ77Wf1qyN+O0SvatxPci5pIWODhrT4ocf3NX7J/d
+         2rgLMqd/0GbxI9TdLEkDlI/lPxA/ztRu3uFyaOhP43D8VKwYi8XyTG1YTLQgGav/4J
+         5yd2ctkrJ6i/RPyuz582c0bSrbzMseipXhe10zYgdPS76mzvg67Lm29xQpzDLLZCJq
+         daUpvPOQCJJNjngn3kcqH2e2lufWblpqeicb4WLwOROiEQK+JpZNWsIXWsQdIWus6g
+         /EiAKeKywezm4mdDu+BUyaJOzrQHnHIAh9/6+Fjx8DHsfLs0B2aD8Q6brG2EG5fKDF
+         ndIGXtAtBKyFw==
+Date:   Sun, 10 Jan 2021 06:45:09 +0200
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Andrew Zaborowski <andrew.zaborowski@intel.com>
+Cc:     keyrings@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH][RESEND#15] keys: Handle missing Authority Key Identifier
+ X509 extension
+Message-ID: <X/qGVSXVoTeEks/j@kernel.org>
+References: <20210104164048.1378237-1-andrew.zaborowski@intel.com>
 MIME-Version: 1.0
-Authentication-Results: relay.mimecast.com;
-        auth=pass smtp.auth=C51A453 smtp.mailfrom=david.laight@aculab.com
-X-Mimecast-Spam-Score: 0
-X-Mimecast-Originator: aculab.com
-Content-Language: en-US
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20210104164048.1378237-1-andrew.zaborowski@intel.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Christoph Hellwig <hch@lst.de>
-> Sent: 21 September 2020 15:34
+On Mon, Jan 04, 2021 at 05:40:47PM +0100, Andrew Zaborowski wrote:
+> In a self-signed certificate the subject and issuer are the same and so
+> the Authority Key Identifier X.509 v3 extension is explicitly made
+> optional in RFC5280 section 4.2.1.1.
+> crypto/asymmetric_keys/x509_cert_parser.c can't handle this and makes
+> (at least) the restrict.c functions refuse to work with certificates
+> that don't include the AKID.  Fix this by filling in the missing
+> cert->sig->auth_ids with the certificate's own IDs after parsing and
+> determinig the certificate is self-signed.
 > 
-> Stop duplicating the iovec verify code, and instead add add a
-> __import_iovec helper that does the whole verify and import, but takes
-> a bool compat to decided on the native or compat layout.  This also
-> ends up massively simplifying the calling conventions.
+> The asymmetric_key_generate_id return value is not checked because it's
+> already succeeded once at this point.
 > 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  lib/iov_iter.c | 195 ++++++++++++++++++-------------------------------
->  1 file changed, 70 insertions(+), 125 deletions(-)
+> There are root X.509 v3 certificates in use where this is the case,
+> mostly oldish ones.
 > 
-> diff --git a/lib/iov_iter.c b/lib/iov_iter.c
-> index a64867501a7483..8bfa47b63d39aa 100644
-> --- a/lib/iov_iter.c
-> +++ b/lib/iov_iter.c
-> @@ -10,6 +10,7 @@
->  #include <net/checksum.h>
->  #include <linux/scatterlist.h>
->  #include <linux/instrumented.h>
-> +#include <linux/compat.h>
-> 
->  #define PIPE_PARANOIA /* for now */
-> 
-> @@ -1650,43 +1651,76 @@ const void *dup_iter(struct iov_iter *new, struct iov_iter *old, gfp_t flags)
->  }
->  EXPORT_SYMBOL(dup_iter);
-> 
-> -static ssize_t rw_copy_check_uvector(int type,
-> -		const struct iovec __user *uvector, unsigned long nr_segs,
-> -		unsigned long fast_segs, struct iovec *fast_pointer,
-> -		struct iovec **ret_pointer)
-> +static int compat_copy_iovecs_from_user(struct iovec *iov,
-> +		const struct iovec __user *uvector, unsigned long nr_segs)
-> +{
-> +	const struct compat_iovec __user *uiov =
-> +		(const struct compat_iovec __user *)uvector;
-> +	unsigned long i;
-> +	int ret = -EFAULT;
-> +
-> +	if (!user_access_begin(uvector, nr_segs * sizeof(*uvector)))
-> +		return -EFAULT;
+> Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+> Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
 
-I little bit late, but the above isn't quite right.
-It should be sizeof(*iouv) - the length is double what it should be.
+I'll take active role with these.
 
-Not that access_ok() can fail for compat addresses
-and the extra length won't matter for architectures that
-need the address/length to open an address hole into userspace.
+I don't think that adding field data that does not exist is a great
+idea.
 
-	David
+I think that a more sane way to fix this issue, would be to add field
+'self_signed' to 'struct public_key_signature', and remove the
+equivalent field from 'struct x509_certificate'.
 
--
-Registered Address Lakeside, Bramley Road, Mount Farm, Milton Keynes, MK1 1PT, UK
-Registration No: 1397386 (Wales)
+Minor updates are required to:
 
+- x509_check_for_self_signed()
+- pkcs7_verify_sig_chain()
+
+Then you can use then new field to refine the check in
+restrict_link_by_signature().
+
+/Jarkko
