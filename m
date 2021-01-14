@@ -2,159 +2,85 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,
+	SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 568F4C43381
-	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 15:21:39 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6AAEEC433DB
+	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 16:19:19 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 33E2523B06
-	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 15:21:39 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2F17423B2A
+	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 16:19:19 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729624AbhANPVY (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 14 Jan 2021 10:21:24 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47886 "EHLO
+        id S1726205AbhANQTT (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 14 Jan 2021 11:19:19 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60410 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1729621AbhANPVY (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 14 Jan 2021 10:21:24 -0500
-Received: from smtp-8faa.mail.infomaniak.ch (smtp-8faa.mail.infomaniak.ch [IPv6:2001:1600:4:17::8faa])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DFD2AC0617A0
-        for <keyrings@vger.kernel.org>; Thu, 14 Jan 2021 07:19:59 -0800 (PST)
-Received: from smtp-2-0001.mail.infomaniak.ch (unknown [10.5.36.108])
-        by smtp-3-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DGnz35yzlzMr1Xr;
-        Thu, 14 Jan 2021 16:19:11 +0100 (CET)
-Received: from localhost (unknown [23.97.221.149])
-        by smtp-2-0001.mail.infomaniak.ch (Postfix) with ESMTPA id 4DGnz33mP1zlh8Tf;
-        Thu, 14 Jan 2021 16:19:11 +0100 (CET)
-From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
-To:     David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
-        "David S . Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        James Morris <jmorris@namei.org>,
-        =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@linux.microsoft.com>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        "Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v3 06/10] certs: Make blacklist_vet_description() more strict
-Date:   Thu, 14 Jan 2021 16:19:05 +0100
-Message-Id: <20210114151909.2344974-7-mic@digikod.net>
-X-Mailer: git-send-email 2.30.0
-In-Reply-To: <20210114151909.2344974-1-mic@digikod.net>
-References: <20210114151909.2344974-1-mic@digikod.net>
+        with ESMTP id S1726175AbhANQTS (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 14 Jan 2021 11:19:18 -0500
+Received: from mail-qt1-x835.google.com (mail-qt1-x835.google.com [IPv6:2607:f8b0:4864:20::835])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6A5F9C061574
+        for <keyrings@vger.kernel.org>; Thu, 14 Jan 2021 08:18:38 -0800 (PST)
+Received: by mail-qt1-x835.google.com with SMTP id j26so3858132qtq.8
+        for <keyrings@vger.kernel.org>; Thu, 14 Jan 2021 08:18:38 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=linuxfoundation.org; s=google;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-disposition:in-reply-to;
+        bh=GZZCax3Sk4ZEK6KwnjsFpLNMUTzSsn7Z4GPXiXPrRRQ=;
+        b=HLnNfD/BCHCWkoAlqX/vk6hJB0I/BZlY145ZFWpOCp6ZsjfStliI7phDq74KWKlC/Y
+         /5pUjanleAY5AgMITdMMWXtELHVbqfZpkC8pZt4zZ1aIg9DDPxQg8v9E6duRH+PN3aEJ
+         4YyAeZpcslcUFTJ4izRGW426scy/bgp45rcE4=
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:date:from:to:cc:subject:message-id:references
+         :mime-version:content-disposition:in-reply-to;
+        bh=GZZCax3Sk4ZEK6KwnjsFpLNMUTzSsn7Z4GPXiXPrRRQ=;
+        b=JSgtvCbSATgXSu/QVlFThdMDffldAGrZGEJd25v3dagH54F3eQIf/ubvJ11fMAlZUk
+         5fLTCgz2Jswev3zLWyJjzvU0Slfp4N0+HW1yEjpHlycdjQ3n7TRy8MwoKJ5IAuGNFlTa
+         vkuauKbq46AsMQ7gosXYFV6bqYqpAwV7EvKSWhDdCO+pYU/idskl/xxCjtzBLzrxVFBl
+         9yftR3zJXgAkP4YJZLr9VOxvKMK83ENGbG4tZXbKWni5On64Y5e1H/SdpNlSoG5p1RSn
+         A5Eybo2rneGnpZJhRHP4KXLecbNGZ1qlQb3gNkLTjL+XmaMUe5xFtRUCAcsk5N17qz1g
+         pfTg==
+X-Gm-Message-State: AOAM533ShtDUYad1kRKr7Mq6xyrdIeLIIVz8uotQfM3+0hXViAIiqf6U
+        UOAevnHFAP8eqotK8foxdq91kA==
+X-Google-Smtp-Source: ABdhPJy2OTnnOQ75i/DaSSKHleX/IA/Tv085c7wsjnr4CuIxN9CZ1bNEO/Kyg4RK2NM4zy3GqqbVVw==
+X-Received: by 2002:ac8:7b56:: with SMTP id m22mr8023144qtu.380.1610641117493;
+        Thu, 14 Jan 2021 08:18:37 -0800 (PST)
+Received: from chatter.i7.local ([89.36.78.230])
+        by smtp.gmail.com with ESMTPSA id y26sm3206996qth.53.2021.01.14.08.18.36
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 14 Jan 2021 08:18:36 -0800 (PST)
+Date:   Thu, 14 Jan 2021 11:18:34 -0500
+From:   Konstantin Ryabitsev <konstantin@linuxfoundation.org>
+To:     Jarkko Sakkinen <jarkko@kernel.org>
+Cc:     Andrew Zaborowski <andrew.zaborowski@intel.com>,
+        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org
+Subject: Re: [PATCH] keys: X.509 public key issuer lookup without AKID
+Message-ID: <20210114161834.aog7ai7zxfs7awuv@chatter.i7.local>
+References: <20210113142340.1963770-1-andrew.zaborowski@intel.com>
+ <X/+5GkmrxN5WwTjL@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <X/+5GkmrxN5WwTjL@kernel.org>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Mickaël Salaün <mic@linux.microsoft.com>
+On Thu, Jan 14, 2021 at 05:23:06AM +0200, Jarkko Sakkinen wrote:
+> David, Konstantin, any ideas why the patchwork is jammed, and how
+> to get it up and running again.
+> 
+> https://patchwork.kernel.org/project/keyrings/list/
 
-Before exposing this new key type to user space, make sure that only
-meaningful blacklisted hashes are accepted.  This is also checked for
-builtin blacklisted hashes, but a following commit make sure that the
-user will notice (at built time) and will fix the configuration if it
-already included errors.
+Ah, sorry about that -- it got messed up during migration last month. The
+good news is that it's easy to backfill, so you should have all the missing
+patches there now.
 
-Check that a blacklist key description starts with a valid prefix and
-then a valid hexadecimal string.
+> I mainly would like to have it working because of git-pw, which is
+> really nice tool for applying patches for testing.
 
-Cc: David Howells <dhowells@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
-Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
----
+Try b4, too. :)
 
-Changes since v2:
-* Fix typo in blacklist_vet_description() comment, spotted by Tyler
-  Hicks.
-* Add Jarkko's Acked-by.
-
-Changes since v1:
-* Return ENOPKG (instead of EINVAL) when a hash is greater than the
-  maximum currently known hash (suggested by David Howells).
----
- certs/blacklist.c | 46 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 36 insertions(+), 10 deletions(-)
-
-diff --git a/certs/blacklist.c b/certs/blacklist.c
-index bffe4c6f4a9e..334ab7b964bc 100644
---- a/certs/blacklist.c
-+++ b/certs/blacklist.c
-@@ -18,6 +18,16 @@
- #include <keys/system_keyring.h>
- #include "blacklist.h"
- 
-+/*
-+ * According to crypto/asymmetric_keys/x509_cert_parser.c:x509_note_pkey_algo(),
-+ * the size of the currently longest supported hash algorithm is 512 bits,
-+ * which translates into 128 hex characters.
-+ */
-+#define MAX_HASH_LEN	128
-+
-+static const char tbs_prefix[] = "tbs";
-+static const char bin_prefix[] = "bin";
-+
- static struct key *blacklist_keyring;
- 
- /*
-@@ -26,24 +36,40 @@ static struct key *blacklist_keyring;
-  */
- static int blacklist_vet_description(const char *desc)
- {
--	int n = 0;
--
--	if (*desc == ':')
--		return -EINVAL;
--	for (; *desc; desc++)
--		if (*desc == ':')
--			goto found_colon;
-+	int i, prefix_len, tbs_step = 0, bin_step = 0;
-+
-+	/* The following algorithm only works if prefix lengths match. */
-+	BUILD_BUG_ON(sizeof(tbs_prefix) != sizeof(bin_prefix));
-+	prefix_len = sizeof(tbs_prefix) - 1;
-+	for (i = 0; *desc; desc++, i++) {
-+		if (*desc == ':') {
-+			if (tbs_step == prefix_len)
-+				goto found_colon;
-+			if (bin_step == prefix_len)
-+				goto found_colon;
-+			return -EINVAL;
-+		}
-+		if (i >= prefix_len)
-+			return -EINVAL;
-+		if (*desc == tbs_prefix[i])
-+			tbs_step++;
-+		if (*desc == bin_prefix[i])
-+			bin_step++;
-+	}
- 	return -EINVAL;
- 
- found_colon:
- 	desc++;
--	for (; *desc; desc++) {
-+	for (i = 0; *desc && i < MAX_HASH_LEN; desc++, i++) {
- 		if (!isxdigit(*desc) || isupper(*desc))
- 			return -EINVAL;
--		n++;
- 	}
-+	if (*desc)
-+		/* The hash is greater than MAX_HASH_LEN. */
-+		return -ENOPKG;
- 
--	if (n == 0 || n & 1)
-+	/* Checks for an even number of hexadecimal characters. */
-+	if (i == 0 || i & 1)
- 		return -EINVAL;
- 	return 0;
- }
--- 
-2.30.0
-
+-K
