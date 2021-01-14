@@ -7,27 +7,27 @@ X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9A20BC43217
-	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 15:20:46 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 087E4C4361B
+	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 15:20:47 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 6B32F23B01
+	by mail.kernel.org (Postfix) with ESMTP id E3E1123B06
 	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 15:20:46 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729227AbhANPUi (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 14 Jan 2021 10:20:38 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47696 "EHLO
+        id S1729275AbhANPUn (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 14 Jan 2021 10:20:43 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47722 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1728574AbhANPUh (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 14 Jan 2021 10:20:37 -0500
-Received: from smtp-190f.mail.infomaniak.ch (smtp-190f.mail.infomaniak.ch [IPv6:2001:1600:3:17::190f])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 072FBC0613D6
-        for <keyrings@vger.kernel.org>; Thu, 14 Jan 2021 07:19:10 -0800 (PST)
+        with ESMTP id S1729589AbhANPUk (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 14 Jan 2021 10:20:40 -0500
+Received: from smtp-42ae.mail.infomaniak.ch (smtp-42ae.mail.infomaniak.ch [IPv6:2001:1600:4:17::42ae])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4F34CC061799
+        for <keyrings@vger.kernel.org>; Thu, 14 Jan 2021 07:19:16 -0800 (PST)
 Received: from smtp-2-0000.mail.infomaniak.ch (unknown [10.5.36.107])
-        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DGnz12R99zMqq1X;
-        Thu, 14 Jan 2021 16:19:09 +0100 (CET)
+        by smtp-3-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DGnz64fzFzMq7M9;
+        Thu, 14 Jan 2021 16:19:14 +0100 (CET)
 Received: from localhost (unknown [23.97.221.149])
-        by smtp-2-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DGnz109Spzlppyw;
-        Thu, 14 Jan 2021 16:19:09 +0100 (CET)
+        by smtp-2-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DGnz62Jx7zlppyl;
+        Thu, 14 Jan 2021 16:19:14 +0100 (CET)
 From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
 To:     David Howells <dhowells@redhat.com>,
         David Woodhouse <dwmw2@infradead.org>,
@@ -40,12 +40,10 @@ Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
         Mimi Zohar <zohar@linux.ibm.com>,
         "Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
         linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH v3 04/10] certs: Fix blacklist flag type confusion
-Date:   Thu, 14 Jan 2021 16:19:03 +0100
-Message-Id: <20210114151909.2344974-5-mic@digikod.net>
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH v3 08/10] certs: Check that builtin blacklist hashes are valid
+Date:   Thu, 14 Jan 2021 16:19:07 +0100
+Message-Id: <20210114151909.2344974-9-mic@digikod.net>
 X-Mailer: git-send-email 2.30.0
 In-Reply-To: <20210114151909.2344974-1-mic@digikod.net>
 References: <20210114151909.2344974-1-mic@digikod.net>
@@ -56,105 +54,131 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+From: Mickaël Salaün <mic@linux.microsoft.com>
 
-KEY_FLAG_KEEP is not meant to be passed to keyring_alloc() or key_alloc(),
-as these only take KEY_ALLOC_* flags.  KEY_FLAG_KEEP has the same value as
-KEY_ALLOC_BYPASS_RESTRICTION, but fortunately only key_create_or_update()
-uses it.  LSMs using the key_alloc hook don't check that flag.
+Add and use a check-blacklist-hashes.awk script to make sure that the
+builtin blacklist hashes will be approved by the run time blacklist
+description checks.  This is useful to debug invalid hash formats, and
+it make sure that previous hashes which could have been loaded in the
+kernel (but ignored) are now noticed and deal with by the user.
 
-KEY_FLAG_KEEP is then ignored but fortunately (again) the root user cannot
-write to the blacklist keyring, so it is not possible to remove a key/hash
-from it.
-
-Fix this by adding a KEY_ALLOC_SET_KEEP flag that tells key_alloc() to set
-KEY_FLAG_KEEP on the new key.  blacklist_init() can then, correctly, pass
-this to keyring_alloc().
-
-We can also use this in ima_mok_init() rather than setting the flag
-manually.
-
-Note that this doesn't fix an observable bug with the current
-implementation but it is required to allow addition of new hashes to the
-blacklist in the future without making it possible for them to be removed.
-
-Fixes: 734114f8782f ("KEYS: Add a system blacklist keyring")
-cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
 Cc: David Woodhouse <dwmw2@infradead.org>
-Reported-by: Mickaël Salaün <mic@linux.microsoft.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-[mic@linux.microsoft.com: fix ima_mok_init()]
 Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
+Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
 
 Changes since v2:
-* Cherry-pick rewritten v1 patch from
-  https://lore.kernel.org/lkml/2659836.1607940186@warthog.procyon.org.uk/
-  to rebase on v5.11-rc3 and fix ima_mok_init().
----
- certs/blacklist.c                | 2 +-
- include/linux/key.h              | 1 +
- security/integrity/ima/ima_mok.c | 4 +---
- security/keys/key.c              | 2 ++
- 4 files changed, 5 insertions(+), 4 deletions(-)
+* Add Jarkko's Acked-by.
 
-diff --git a/certs/blacklist.c b/certs/blacklist.c
-index a888b934a1cd..029471947838 100644
---- a/certs/blacklist.c
-+++ b/certs/blacklist.c
-@@ -162,7 +162,7 @@ static int __init blacklist_init(void)
- 			      KEY_USR_VIEW | KEY_USR_READ |
- 			      KEY_USR_SEARCH,
- 			      KEY_ALLOC_NOT_IN_QUOTA |
--			      KEY_FLAG_KEEP,
-+			      KEY_ALLOC_SET_KEEP,
- 			      NULL, NULL);
- 	if (IS_ERR(blacklist_keyring))
- 		panic("Can't allocate system blacklist keyring\n");
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 0f2e24f13c2b..eed3ce139a32 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -289,6 +289,7 @@ extern struct key *key_alloc(struct key_type *type,
- #define KEY_ALLOC_BUILT_IN		0x0004	/* Key is built into kernel */
- #define KEY_ALLOC_BYPASS_RESTRICTION	0x0008	/* Override the check on restricted keyrings */
- #define KEY_ALLOC_UID_KEYRING		0x0010	/* allocating a user or user session keyring */
-+#define KEY_ALLOC_SET_KEEP		0x0020	/* Set the KEEP flag on the key/keyring */
+Changes since v1:
+* Prefix script path with $(scrtree)/ (suggested by David Howells).
+* Fix hexadecimal number check.
+---
+ MAINTAINERS                        |  1 +
+ certs/.gitignore                   |  1 +
+ certs/Makefile                     | 15 +++++++++++-
+ scripts/check-blacklist-hashes.awk | 37 ++++++++++++++++++++++++++++++
+ 4 files changed, 53 insertions(+), 1 deletion(-)
+ create mode 100755 scripts/check-blacklist-hashes.awk
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index cc1e6a5ee6e6..bda31ccbfad0 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4120,6 +4120,7 @@ L:	keyrings@vger.kernel.org
+ S:	Maintained
+ F:	Documentation/admin-guide/module-signing.rst
+ F:	certs/
++F:	scripts/check-blacklist-hashes.awk
+ F:	scripts/extract-cert.c
+ F:	scripts/sign-file.c
  
- extern void key_revoke(struct key *key);
- extern void key_invalidate(struct key *key);
-diff --git a/security/integrity/ima/ima_mok.c b/security/integrity/ima/ima_mok.c
-index 36cadadbfba4..5594dd38ab04 100644
---- a/security/integrity/ima/ima_mok.c
-+++ b/security/integrity/ima/ima_mok.c
-@@ -38,13 +38,11 @@ __init int ima_mok_init(void)
- 				(KEY_POS_ALL & ~KEY_POS_SETATTR) |
- 				KEY_USR_VIEW | KEY_USR_READ |
- 				KEY_USR_WRITE | KEY_USR_SEARCH,
--				KEY_ALLOC_NOT_IN_QUOTA,
-+				KEY_ALLOC_NOT_IN_QUOTA | KEY_ALLOC_SET_KEEP,
- 				restriction, NULL);
+diff --git a/certs/.gitignore b/certs/.gitignore
+index 2a2483990686..42cc2ac24b93 100644
+--- a/certs/.gitignore
++++ b/certs/.gitignore
+@@ -1,2 +1,3 @@
+ # SPDX-License-Identifier: GPL-2.0-only
++blacklist_hashes_checked
+ x509_certificate_list
+diff --git a/certs/Makefile b/certs/Makefile
+index f4c25b67aad9..eb45407ff282 100644
+--- a/certs/Makefile
++++ b/certs/Makefile
+@@ -6,7 +6,20 @@
+ obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += system_keyring.o system_certificates.o
+ obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o
+ ifneq ($(CONFIG_SYSTEM_BLACKLIST_HASH_LIST),"")
++
++quiet_cmd_check_blacklist_hashes = CHECK   $(patsubst "%",%,$(2))
++      cmd_check_blacklist_hashes = $(AWK) -f $(srctree)/scripts/check-blacklist-hashes.awk $(2); touch $@
++
++$(eval $(call config_filename,SYSTEM_BLACKLIST_HASH_LIST))
++
++$(obj)/blacklist_hashes.o: $(obj)/blacklist_hashes_checked
++
++targets += blacklist_hashes_checked
++$(obj)/blacklist_hashes_checked: $(SYSTEM_BLACKLIST_HASH_LIST_SRCPREFIX)$(SYSTEM_BLACKLIST_HASH_LIST_FILENAME) scripts/check-blacklist-hashes.awk FORCE
++	$(call if_changed,check_blacklist_hashes,$(SYSTEM_BLACKLIST_HASH_LIST_SRCPREFIX)$(CONFIG_SYSTEM_BLACKLIST_HASH_LIST))
++
+ obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_hashes.o
++
+ else
+ obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_nohashes.o
+ endif
+@@ -29,7 +42,7 @@ $(obj)/x509_certificate_list: scripts/extract-cert $(SYSTEM_TRUSTED_KEYS_SRCPREF
+ 	$(call if_changed,extract_certs,$(SYSTEM_TRUSTED_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_TRUSTED_KEYS))
+ endif # CONFIG_SYSTEM_TRUSTED_KEYRING
  
- 	if (IS_ERR(ima_blacklist_keyring))
- 		panic("Can't allocate IMA blacklist keyring.");
--
--	set_bit(KEY_FLAG_KEEP, &ima_blacklist_keyring->flags);
- 	return 0;
- }
- device_initcall(ima_mok_init);
-diff --git a/security/keys/key.c b/security/keys/key.c
-index ebe752b137aa..c45afdd1dfbb 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -303,6 +303,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 		key->flags |= 1 << KEY_FLAG_BUILTIN;
- 	if (flags & KEY_ALLOC_UID_KEYRING)
- 		key->flags |= 1 << KEY_FLAG_UID_KEYRING;
-+	if (flags & KEY_ALLOC_SET_KEEP)
-+		key->flags |= 1 << KEY_FLAG_KEEP;
+-clean-files := x509_certificate_list .x509.list
++clean-files := x509_certificate_list .x509.list blacklist_hashes_checked
  
- #ifdef KEY_DEBUGGING
- 	key->magic = KEY_DEBUG_MAGIC;
+ ifeq ($(CONFIG_MODULE_SIG),y)
+ ###############################################################################
+diff --git a/scripts/check-blacklist-hashes.awk b/scripts/check-blacklist-hashes.awk
+new file mode 100755
+index 000000000000..107c1d3204d4
+--- /dev/null
++++ b/scripts/check-blacklist-hashes.awk
+@@ -0,0 +1,37 @@
++#!/usr/bin/awk -f
++# SPDX-License-Identifier: GPL-2.0
++#
++# Copyright © 2020, Microsoft Corporation. All rights reserved.
++#
++# Author: Mickaël Salaün <mic@linux.microsoft.com>
++#
++# Check that a CONFIG_SYSTEM_BLACKLIST_HASH_LIST file contains a valid array of
++# hash strings.  Such string must start with a prefix ("tbs" or "bin"), then a
++# colon (":"), and finally an even number of hexadecimal lowercase characters
++# (up to 128).
++
++BEGIN {
++	RS = ","
++}
++{
++	if (!match($0, "^[ \t\n\r]*\"([^\"]*)\"[ \t\n\r]*$", part1)) {
++		print "Not a string (item " NR "):", $0;
++		exit 1;
++	}
++	if (!match(part1[1], "^(tbs|bin):(.*)$", part2)) {
++		print "Unknown prefix (item " NR "):", part1[1];
++		exit 1;
++	}
++	if (!match(part2[2], "^([0-9a-f]+)$", part3)) {
++		print "Not a lowercase hexadecimal string (item " NR "):", part2[2];
++		exit 1;
++	}
++	if (length(part3[1]) > 128) {
++		print "Hash string too long (item " NR "):", part3[1];
++		exit 1;
++	}
++	if (length(part3[1]) % 2 == 1) {
++		print "Not an even number of hexadecimal characters (item " NR "):", part3[1];
++		exit 1;
++	}
++}
 -- 
 2.30.0
 
