@@ -2,90 +2,94 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.2 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0EE2BC433E0
-	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 04:16:29 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 32A2EC433DB
+	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 15:19:53 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id C44E3221EA
-	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 04:16:28 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id F264323AA9
+	for <keyrings@archiver.kernel.org>; Thu, 14 Jan 2021 15:19:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726379AbhANEQL (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 13 Jan 2021 23:16:11 -0500
-Received: from mail.kernel.org ([198.145.29.99]:32928 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1725997AbhANEQK (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Wed, 13 Jan 2021 23:16:10 -0500
-Received: by mail.kernel.org (Postfix) with ESMTPSA id A9062221EA;
-        Thu, 14 Jan 2021 04:15:27 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1610597730;
-        bh=5bNu9OxM9PUIxaOuedQwfOFYLhmDVNIPEZSAT3dGhb4=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=lrSQCF9v7s7KHxfHt1nkxgsmvAit5IxBibLwjFe2veJ3/4mOHUNU1Z4GkBW3HKTfX
-         V5Vcy5OHNrVjf3NxqbB/STou7PmQ+6bK0zTLYvQieLffpEzIXdlAa3eMGytH4gxVoh
-         f/3+LsE4zIaW9espS0TlkNyF4vihVTAUORBcgS40TZDk2U/Pt3+4GV36s4mJ90qp6x
-         BmUWhC9474MZLGcxHWUG6uwhLPx/ECjuQ92VnC7nPZNhD+kXzamEL5TQbmzgUbDN2d
-         L0gmAdcGs8DocVDSD68w0WVDWbF+KNM4Gf1+s2XbynEQo9SR3QnfURob5hY+q2kRm8
-         H2ENi2WpF+SZg==
-Date:   Thu, 14 Jan 2021 06:15:24 +0200
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     =?iso-8859-1?Q?Micka=EBl_Sala=FCn?= <mic@digikod.net>
-Cc:     David Howells <dhowells@redhat.com>,
+        id S1729215AbhANPTw (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 14 Jan 2021 10:19:52 -0500
+Received: from smtp-bc0d.mail.infomaniak.ch ([45.157.188.13]:57979 "EHLO
+        smtp-bc0d.mail.infomaniak.ch" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1729125AbhANPTw (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 14 Jan 2021 10:19:52 -0500
+Received: from smtp-2-0000.mail.infomaniak.ch (unknown [10.5.36.107])
+        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DGnyx49bPzMqK38;
+        Thu, 14 Jan 2021 16:19:05 +0100 (CET)
+Received: from localhost (unknown [23.97.221.149])
+        by smtp-2-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DGnyw1V8nzlpq09;
+        Thu, 14 Jan 2021 16:19:04 +0100 (CET)
+From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
+To:     David Howells <dhowells@redhat.com>,
         David Woodhouse <dwmw2@infradead.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>
+Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
         "David S . Miller" <davem@davemloft.net>,
         Herbert Xu <herbert@gondor.apana.org.au>,
         James Morris <jmorris@namei.org>,
-        =?iso-8859-1?Q?Micka=EBl_Sala=FCn?= <mic@linux.microsoft.com>,
+        =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@linux.microsoft.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
         "Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
         linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Enable root to update the blacklist keyring
-Message-ID: <X//FXJjQNV/ElHQg@kernel.org>
-References: <20201211190330.2586116-1-mic@digikod.net>
- <67945fa6-2796-bfcd-5541-d54662e9802a@digikod.net>
- <X/qJJsVe7+nP+gR6@kernel.org>
+        linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Alex Shi <alex.shi@linux.alibaba.com>,
+        Ben Boeckel <mathstuf@gmail.com>
+Subject: [PATCH v3 01/10] certs/blacklist: fix kernel doc interface issue
+Date:   Thu, 14 Jan 2021 16:19:00 +0100
+Message-Id: <20210114151909.2344974-2-mic@digikod.net>
+X-Mailer: git-send-email 2.30.0
+In-Reply-To: <20210114151909.2344974-1-mic@digikod.net>
+References: <20210114151909.2344974-1-mic@digikod.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <X/qJJsVe7+nP+gR6@kernel.org>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Sun, Jan 10, 2021 at 06:57:10AM +0200, Jarkko Sakkinen wrote:
-> On Tue, Jan 05, 2021 at 11:12:57AM +0100, Mickaël Salaün wrote:
-> > Jarkko, David, what is the status of this patch series? Do you need help
-> > to test it?
-> 
-> Hi, a leave/vacation and the holiday period badly mixed my schedules.
-> 
-> I'm testing this upcoming week.
-> 
-> /Jarkko
+From: Alex Shi <alex.shi@linux.alibaba.com>
 
-❯ git-pw series apply 400795
-Applying: certs: Make blacklist_vet_description() more strict
-error: sha1 information is lacking or useless (certs/blacklist.c).
-error: could not build fake ancestor
-hint: Use 'git am --show-current-patch=diff' to see the failed patch
-Patch failed at 0001 certs: Make blacklist_vet_description() more strict
-When you have resolved this problem, run "git am --continue".
-If you prefer to skip this patch, run "git am --skip" instead.
-To restore the original branch and stop patching, run "git am --abort".
+certs/blacklist.c:84: warning: Function parameter or member 'hash' not
+described in 'mark_hash_blacklisted'
 
-Can you rebase to rc3 and resend? 
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: keyrings@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Alex Shi <alex.shi@linux.alibaba.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Ben Boeckel <mathstuf@gmail.com>
+Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
+---
 
-Also, please add this to the patches 1-3:
+Changes since v2:
+* Cherry-pick patch from
+  https://lore.kernel.org/lkml/2659836.1607940186@warthog.procyon.org.uk/
+  to avoid future merge conflicts.
+* Rearrange Signed-off-by and Reviewed-by order.
+---
+ certs/blacklist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index 6514f9ebc943..2719fb2fbc1c 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -78,7 +78,7 @@ static struct key_type key_type_blacklist = {
+ 
+ /**
+  * mark_hash_blacklisted - Add a hash to the system blacklist
+- * @hash - The hash as a hex string with a type prefix (eg. "tbs:23aa429783")
++ * @hash: The hash as a hex string with a type prefix (eg. "tbs:23aa429783")
+  */
+ int mark_hash_blacklisted(const char *hash)
+ {
+-- 
+2.30.0
 
-Also, 4-5 look good but I hold for testing before acking further.
-
-Thanks, and apologies for such a long wait.
-
-/Jarkko
