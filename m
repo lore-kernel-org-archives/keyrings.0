@@ -2,212 +2,109 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-15.9 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
+	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 2F32FC433DB
-	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:52:21 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 61BE2C433DB
+	for <keyrings@archiver.kernel.org>; Tue, 19 Jan 2021 00:12:22 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D1BC423A53
-	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:52:20 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 230C722EBF
+	for <keyrings@archiver.kernel.org>; Tue, 19 Jan 2021 00:12:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731734AbhAUQwK (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 21 Jan 2021 11:52:10 -0500
-Received: from smtp-190b.mail.infomaniak.ch ([185.125.25.11]:43139 "EHLO
-        smtp-190b.mail.infomaniak.ch" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1731142AbhAUP4m (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 21 Jan 2021 10:56:42 -0500
-Received: from smtp-3-0000.mail.infomaniak.ch (unknown [10.4.36.107])
-        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DM6Rd4TrPzMr5H6;
-        Thu, 21 Jan 2021 16:55:25 +0100 (CET)
-Received: from localhost (unknown [23.97.221.149])
-        by smtp-3-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DM6Rd2K7fzlh8TL;
-        Thu, 21 Jan 2021 16:55:25 +0100 (CET)
-From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
-To:     David Howells <dhowells@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
-        "David S . Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        James Morris <jmorris@namei.org>,
-        =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@linux.microsoft.com>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        "Serge E . Hallyn" <serge@hallyn.com>,
-        Tyler Hicks <tyhicks@linux.microsoft.com>,
-        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v4 02/10] certs: Check that builtin blacklist hashes are valid
-Date:   Thu, 21 Jan 2021 16:55:05 +0100
-Message-Id: <20210121155513.539519-3-mic@digikod.net>
-X-Mailer: git-send-email 2.30.0
-In-Reply-To: <20210121155513.539519-1-mic@digikod.net>
-References: <20210121155513.539519-1-mic@digikod.net>
+        id S2391111AbhASAMG (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 18 Jan 2021 19:12:06 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:47768 "EHLO
+        us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S2390871AbhASAMF (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 18 Jan 2021 19:12:05 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1611015039;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding;
+        bh=k8uZwZ9l9/9GHM34N72Urrm3zDwDS5163gHM9WUjrbg=;
+        b=N1PXWVKhMMIDMIXDYOaS3HL03n/rXd/p4AKvs/5dQxHBGNYCbJNwuaEIcX+PpnOvQVR3NS
+        rrqFE6Q7ppa7LrJeTRuwx52SiwVCeQ9P1Q7qctdfGUcXOygbPPV/G96v+5iokaGD3hIcLh
+        ZOz4BYVcDU7nYcohlBwai8i6tPwrgiM=
+Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
+ [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
+ us-mta-233-32ViLy7wPfmqPoRVTwRs-A-1; Mon, 18 Jan 2021 19:10:37 -0500
+X-MC-Unique: 32ViLy7wPfmqPoRVTwRs-A-1
+Received: from smtp.corp.redhat.com (int-mx01.intmail.prod.int.phx2.redhat.com [10.5.11.11])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id ACA7118C89C4;
+        Tue, 19 Jan 2021 00:10:35 +0000 (UTC)
+Received: from warthog.procyon.org.uk (ovpn-115-23.rdu2.redhat.com [10.10.115.23])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 1A20370464;
+        Tue, 19 Jan 2021 00:10:33 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+To:     torvalds@linux-foundation.org
+Cc:     Tobias Markus <tobias@markus-regensburg.de>,
+        Tianjia Zhang <tianjia.zhang@linux.alibaba.com>,
+        dhowells@redhat.com, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date:   Tue, 19 Jan 2021 00:10:33 +0000
+Message-ID: <163546.1611015033@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.11
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Mickaël Salaün <mic@linux.microsoft.com>
 
-Add and use a check-blacklist-hashes.awk script to make sure that the
-builtin blacklist hashes set with CONFIG_SYSTEM_BLACKLIST_HASH_LIST will
-effectively be taken into account as blacklisted hashes.  This is useful
-to debug invalid hash formats, and it make sure that previous hashes
-which could have been loaded in the kernel, but silently ignored, are
-now noticed and deal with by the user at kernel build time.
+From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
 
-This also prevent stricter blacklist key description checking (provided
-by following commits) to failed for builtin hashes.
+On the following call path, `sig->pkey_algo` is not assigned
+in asymmetric_key_verify_signature(), which causes runtime
+crash in public_key_verify_signature().
 
-Update CONFIG_SYSTEM_BLACKLIST_HASH_LIST help to explain the content of
-a hash string and how to generate certificate ones.
+  keyctl_pkey_verify
+    asymmetric_key_verify_signature
+      verify_signature
+        public_key_verify_signature
 
-Cc: David Howells <dhowells@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Jarkko Sakkinen <jarkko@kernel.org>
-Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
+This patch simply check this situation and fixes the crash
+caused by NULL pointer.
+
+Fixes: 215525639631 ("X.509: support OSCCA SM2-with-SM3 certificate verific=
+ation")
+Reported-by: Tobias Markus <tobias@markus-regensburg.de>
+Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-and-tested-by: Toke H=C3=B8iland-J=C3=B8rgensen <toke@redhat.com>
+Tested-by: Jo=C3=A3o Fonseca <jpedrofonseca@ua.pt>
+Cc: stable@vger.kernel.org # v5.10+
 ---
 
-Changes since v3:
-* Improve commit description.
-* Update CONFIG_SYSTEM_BLACKLIST_HASH_LIST help.
-* Remove Acked-by Jarkko Sakkinen because of the above changes.
+ crypto/asymmetric_keys/public_key.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Changes since v2:
-* Add Jarkko's Acked-by.
-
-Changes since v1:
-* Prefix script path with $(scrtree)/ (suggested by David Howells).
-* Fix hexadecimal number check.
----
- MAINTAINERS                        |  1 +
- certs/.gitignore                   |  1 +
- certs/Kconfig                      |  7 ++++--
- certs/Makefile                     | 15 +++++++++++-
- scripts/check-blacklist-hashes.awk | 37 ++++++++++++++++++++++++++++++
- 5 files changed, 58 insertions(+), 3 deletions(-)
- create mode 100755 scripts/check-blacklist-hashes.awk
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 773a362e807f..a18fd3d283c6 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4118,6 +4118,7 @@ L:	keyrings@vger.kernel.org
- S:	Maintained
- F:	Documentation/admin-guide/module-signing.rst
- F:	certs/
-+F:	scripts/check-blacklist-hashes.awk
- F:	scripts/extract-cert.c
- F:	scripts/sign-file.c
- F:	tools/certs/
-diff --git a/certs/.gitignore b/certs/.gitignore
-index 2a2483990686..42cc2ac24b93 100644
---- a/certs/.gitignore
-+++ b/certs/.gitignore
-@@ -1,2 +1,3 @@
- # SPDX-License-Identifier: GPL-2.0-only
-+blacklist_hashes_checked
- x509_certificate_list
-diff --git a/certs/Kconfig b/certs/Kconfig
-index c94e93d8bccf..6d09dec4a9e3 100644
---- a/certs/Kconfig
-+++ b/certs/Kconfig
-@@ -80,7 +80,10 @@ config SYSTEM_BLACKLIST_HASH_LIST
- 	help
- 	  If set, this option should be the filename of a list of hashes in the
- 	  form "<hash>", "<hash>", ... .  This will be included into a C
--	  wrapper to incorporate the list into the kernel.  Each <hash> should
--	  be a string of hex digits.
-+	  wrapper to incorporate the list into the kernel.  Each <hash> must be a
-+	  string starting with a prefix ("tbs" or "bin"), then a colon (":"), and
-+	  finally an even number of hexadecimal lowercase characters (up to 128).
-+	  Certificate hashes can be generated with
-+	  tools/certs/print-cert-tbs-hash.sh .
- 
- endmenu
-diff --git a/certs/Makefile b/certs/Makefile
-index f4c25b67aad9..eb45407ff282 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -6,7 +6,20 @@
- obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += system_keyring.o system_certificates.o
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o
- ifneq ($(CONFIG_SYSTEM_BLACKLIST_HASH_LIST),"")
-+
-+quiet_cmd_check_blacklist_hashes = CHECK   $(patsubst "%",%,$(2))
-+      cmd_check_blacklist_hashes = $(AWK) -f $(srctree)/scripts/check-blacklist-hashes.awk $(2); touch $@
-+
-+$(eval $(call config_filename,SYSTEM_BLACKLIST_HASH_LIST))
-+
-+$(obj)/blacklist_hashes.o: $(obj)/blacklist_hashes_checked
-+
-+targets += blacklist_hashes_checked
-+$(obj)/blacklist_hashes_checked: $(SYSTEM_BLACKLIST_HASH_LIST_SRCPREFIX)$(SYSTEM_BLACKLIST_HASH_LIST_FILENAME) scripts/check-blacklist-hashes.awk FORCE
-+	$(call if_changed,check_blacklist_hashes,$(SYSTEM_BLACKLIST_HASH_LIST_SRCPREFIX)$(CONFIG_SYSTEM_BLACKLIST_HASH_LIST))
-+
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_hashes.o
-+
- else
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_nohashes.o
- endif
-@@ -29,7 +42,7 @@ $(obj)/x509_certificate_list: scripts/extract-cert $(SYSTEM_TRUSTED_KEYS_SRCPREF
- 	$(call if_changed,extract_certs,$(SYSTEM_TRUSTED_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_TRUSTED_KEYS))
- endif # CONFIG_SYSTEM_TRUSTED_KEYRING
- 
--clean-files := x509_certificate_list .x509.list
-+clean-files := x509_certificate_list .x509.list blacklist_hashes_checked
- 
- ifeq ($(CONFIG_MODULE_SIG),y)
- ###############################################################################
-diff --git a/scripts/check-blacklist-hashes.awk b/scripts/check-blacklist-hashes.awk
-new file mode 100755
-index 000000000000..107c1d3204d4
---- /dev/null
-+++ b/scripts/check-blacklist-hashes.awk
-@@ -0,0 +1,37 @@
-+#!/usr/bin/awk -f
-+# SPDX-License-Identifier: GPL-2.0
-+#
-+# Copyright © 2020, Microsoft Corporation. All rights reserved.
-+#
-+# Author: Mickaël Salaün <mic@linux.microsoft.com>
-+#
-+# Check that a CONFIG_SYSTEM_BLACKLIST_HASH_LIST file contains a valid array of
-+# hash strings.  Such string must start with a prefix ("tbs" or "bin"), then a
-+# colon (":"), and finally an even number of hexadecimal lowercase characters
-+# (up to 128).
-+
-+BEGIN {
-+	RS = ","
-+}
-+{
-+	if (!match($0, "^[ \t\n\r]*\"([^\"]*)\"[ \t\n\r]*$", part1)) {
-+		print "Not a string (item " NR "):", $0;
-+		exit 1;
-+	}
-+	if (!match(part1[1], "^(tbs|bin):(.*)$", part2)) {
-+		print "Unknown prefix (item " NR "):", part1[1];
-+		exit 1;
-+	}
-+	if (!match(part2[2], "^([0-9a-f]+)$", part3)) {
-+		print "Not a lowercase hexadecimal string (item " NR "):", part2[2];
-+		exit 1;
-+	}
-+	if (length(part3[1]) > 128) {
-+		print "Hash string too long (item " NR "):", part3[1];
-+		exit 1;
-+	}
-+	if (length(part3[1]) % 2 == 1) {
-+		print "Not an even number of hexadecimal characters (item " NR "):", part3[1];
-+		exit 1;
-+	}
-+}
--- 
-2.30.0
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/p=
+ublic_key.c
+index 8892908ad58c..788a4ba1e2e7 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -356,7 +356,8 @@ int public_key_verify_signature(const struct public_key=
+ *pkey,
+ 	if (ret)
+ 		goto error_free_key;
+=20
+-	if (strcmp(sig->pkey_algo, "sm2") =3D=3D 0 && sig->data_size) {
++	if (sig->pkey_algo && strcmp(sig->pkey_algo, "sm2") =3D=3D 0 &&
++	    sig->data_size) {
+ 		ret =3D cert_sig_digest_update(sig, tfm);
+ 		if (ret)
+ 			goto error_free_key;
 
