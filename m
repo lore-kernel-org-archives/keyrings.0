@@ -2,36 +2,36 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.2 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable autolearn_force=no
+X-Spam-Status: No, score=-16.2 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no
 	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C243DC433E0
-	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 03:42:20 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 256F9C433E6
+	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 03:47:55 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 630DB22573
-	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 03:42:20 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id EE09D22B42
+	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 03:47:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731423AbhATDlg (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 19 Jan 2021 22:41:36 -0500
-Received: from mail.kernel.org ([198.145.29.99]:43172 "EHLO mail.kernel.org"
+        id S1728418AbhATDr0 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 19 Jan 2021 22:47:26 -0500
+Received: from mail.kernel.org ([198.145.29.99]:43868 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1730871AbhATDkO (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Tue, 19 Jan 2021 22:40:14 -0500
-Received: by mail.kernel.org (Postfix) with ESMTPSA id 8F4C622509;
-        Wed, 20 Jan 2021 03:39:30 +0000 (UTC)
+        id S1730704AbhATDpT (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Tue, 19 Jan 2021 22:45:19 -0500
+Received: by mail.kernel.org (Postfix) with ESMTPSA id C867E2310D;
+        Wed, 20 Jan 2021 03:44:33 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1611113973;
-        bh=8ny0YdT7nC/riWxP8GCLjur6sgAwzB/GqDPXV5E+PSs=;
+        s=k20201202; t=1611114276;
+        bh=o4dFhnmo8NNilWpjqXo1M/kBGFykKAEc+Gsy/1MMNaQ=;
         h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=f9hn8pHSQ5Okh3y1QaYyUUxnMyC13YxTJt/9rG4pdby1t7UxGHXURNjDVhhbElbaQ
-         HUG4xm/sfF9/OJIrdeipjJs0ImEMZjd/430T2jpDDFoyxid8BKaKwaEKjSzv5l4P2J
-         7MEBeKSO2JKi9mnExmfkulV67+KAKnbsl/liu3MttLW4mKl7Gga0sKZ7+emYLYefm1
-         GetCLP3QYCjvZXlwj61T7vMr1JkaykFDoZA5kKPyR3Ypc/L/ZUYU8a6ZF/++JMr6hY
-         k/B3f5TVyV2I40zJ+U6l3EBubS2at3FhhyxM5xmxeNPTutMgA3JosTkcVF1NkYTS7o
-         35PDzBsFC4XUg==
-Date:   Wed, 20 Jan 2021 05:39:27 +0200
+        b=bR31vcP6Ka8YVuRYmX7LQWSRt52QRzsKnPHqbssGd85Xk1ZY/1urVHIQGeiOOkFdD
+         l/Fvxd1f8vlKI22JxEiRMlU5omAZq0t5i97eIWDXvRr/2zvYZxga+G6p8YOvUgJ4Qw
+         9+IG9kcPd585nnH9N6I+FHPXIyv+89yajnqq+Msy0PSi8u0AU7N5UInvOPNVEhxxLP
+         vl4RNsgI7QQ0UmX32It99X/QE6XShwlZIb057E+eczkXn03fhBxidPiPAEKhetyvoi
+         /0un8sdQWAOGA5Uag2tMZ+3v85shMkAg+N7KqhSo8Q5q78AcNklE8eWVPMcK741Gyd
+         XB2u0VNX0CtVA==
+Date:   Wed, 20 Jan 2021 05:44:30 +0200
 From:   Jarkko Sakkinen <jarkko@kernel.org>
 To:     =?iso-8859-1?Q?Micka=EBl_Sala=FCn?= <mic@digikod.net>
 Cc:     David Howells <dhowells@redhat.com>,
@@ -45,35 +45,58 @@ Cc:     David Howells <dhowells@redhat.com>,
         linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org,
-        Alex Shi <alex.shi@linux.alibaba.com>,
         Ben Boeckel <mathstuf@gmail.com>
-Subject: Re: [PATCH v3 01/10] certs/blacklist: fix kernel doc interface issue
-Message-ID: <YAel72yeCybbRmDN@kernel.org>
+Subject: Re: [PATCH v3 03/10] PKCS#7: Fix missing include
+Message-ID: <YAenHl0Zk8BfQfpi@kernel.org>
 References: <20210114151909.2344974-1-mic@digikod.net>
- <20210114151909.2344974-2-mic@digikod.net>
+ <20210114151909.2344974-4-mic@digikod.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20210114151909.2344974-2-mic@digikod.net>
+In-Reply-To: <20210114151909.2344974-4-mic@digikod.net>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Thu, Jan 14, 2021 at 04:19:00PM +0100, Mickaël Salaün wrote:
-> From: Alex Shi <alex.shi@linux.alibaba.com>
+On Thu, Jan 14, 2021 at 04:19:02PM +0100, Mickaël Salaün wrote:
+> From: Mickaël Salaün <mic@linux.microsoft.com>
 > 
-> certs/blacklist.c:84: warning: Function parameter or member 'hash' not
-> described in 'mark_hash_blacklisted'
+> Add missing linux/types.h for size_t.
 > 
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: keyrings@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Alex Shi <alex.shi@linux.alibaba.com>
+> [DH: Changed from stddef.h]
+> 
+> Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
 > Signed-off-by: David Howells <dhowells@redhat.com>
 > Reviewed-by: Ben Boeckel <mathstuf@gmail.com>
-> Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
+> ---
 
 Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 
 /Jarkko
+
+> 
+> Changes since v2:
+> * Cherry-pick v1 patch from
+>   https://lore.kernel.org/lkml/2659836.1607940186@warthog.procyon.org.uk/
+>   to rebase on v5.11-rc3.
+> ---
+>  include/linux/verification.h | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/include/linux/verification.h b/include/linux/verification.h
+> index 911ab7c2b1ab..a655923335ae 100644
+> --- a/include/linux/verification.h
+> +++ b/include/linux/verification.h
+> @@ -8,6 +8,8 @@
+>  #ifndef _LINUX_VERIFICATION_H
+>  #define _LINUX_VERIFICATION_H
+>  
+> +#include <linux/types.h>
+> +
+>  /*
+>   * Indicate that both builtin trusted keys and secondary trusted keys
+>   * should be used.
+> -- 
+> 2.30.0
+> 
