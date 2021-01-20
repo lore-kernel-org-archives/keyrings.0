@@ -2,36 +2,35 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.2 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-6.2 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4DDAFC433E0
-	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 04:55:14 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 61702C43381
+	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 06:34:02 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id F3153238EC
-	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 04:55:13 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2514E23977
+	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 06:34:02 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1730601AbhAUDw5 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 20 Jan 2021 22:52:57 -0500
-Received: from mail.kernel.org ([198.145.29.99]:51512 "EHLO mail.kernel.org"
+        id S1726935AbhAUGce (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 21 Jan 2021 01:32:34 -0500
+Received: from mail.kernel.org ([198.145.29.99]:51004 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S2388702AbhATXt0 (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Wed, 20 Jan 2021 18:49:26 -0500
-Received: by mail.kernel.org (Postfix) with ESMTPSA id F0B69221FE;
-        Wed, 20 Jan 2021 23:48:39 +0000 (UTC)
+        id S2387805AbhATXqq (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Wed, 20 Jan 2021 18:46:46 -0500
+Received: by mail.kernel.org (Postfix) with ESMTPSA id 3EBC2223DB;
+        Wed, 20 Jan 2021 23:45:58 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1611186522;
-        bh=2BgVV18n0FiTAx3Ktk2+qq/+MuryRP60T+o5yjWBck4=;
+        s=k20201202; t=1611186361;
+        bh=Y7yPimnwlZiWOVF8artsqTLZ2o9NMklqcf3t/32s7vo=;
         h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=tyAPTm4TVc8RBvCmozjOhaqCARYGaelqOnoxhCn1FdCSw3nMaWzQnnJgzAxfpJdL0
-         dNc+PfScLbvgqk7iYIEyRL62sY+wPjr3sKcz+h+iDR/XvyRiQTNOcBM6hRJgjmqsqb
-         sTo7XfeBp57TftPu0R7AvFoQb9+qXgdPmQJXfcrknC2Us2s4aK+5cHLTYFdzpLpfdp
-         OsZP2xBSMEh6M+K/28nNnQPOqfiD0UHTo0LtejjLE5jgGgiswwd6lOxQb3IuL6aAov
-         vJBJlI0N8oUAqe5BYZRr0ixWXSpaC4PcDH7azCxLw/tEztgTAagQoyGO2e2HaDSN2/
-         1cvhhoB9t5TAw==
-Date:   Thu, 21 Jan 2021 01:48:36 +0200
+        b=jIbgduiy7h6RXVcu3vanpKkTOj/w3EtR8hRdz+oqt+FzACvklqlu0yNsWr8lgmqHq
+         pPuDIB17c1IK97pn+bAMDMdrypJNHZkMR9l4aZfeI4Hxjn3iNS6GJ5y/z/56TwTP4k
+         0mzi0q16u+FOYIbrECeKSVuTQrcF3X3Sb9bIypRiXlIfZ6vtgAq/ZV+MqYiiEkJwhi
+         dBHS9k4KS3J6p+pnPl3bUrJV/j8BB6d2PxYX84thKc485+2f1NeSlcVU/XNT2zvy1J
+         G6VEBM+gEo0jGxBnd6P80heNA4t1lO5f1QJIbmxgZv5sskDoPp0UXRbT7uS93Oib2B
+         TEoSqLoShlM6A==
+Date:   Thu, 21 Jan 2021 01:45:55 +0200
 From:   Jarkko Sakkinen <jarkko@kernel.org>
 To:     =?iso-8859-1?Q?Micka=EBl_Sala=FCn?= <mic@digikod.net>
 Cc:     David Howells <dhowells@redhat.com>,
@@ -43,41 +42,59 @@ Cc:     David Howells <dhowells@redhat.com>,
         Mimi Zohar <zohar@linux.ibm.com>,
         "Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
         linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v3 05/10] certs: Replace K{U,G}IDT_INIT() with
- GLOBAL_ROOT_{U,G}ID
-Message-ID: <YAjBVNxsZ7Zn2Ksi@kernel.org>
+        linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3 04/10] certs: Fix blacklist flag type confusion
+Message-ID: <YAjAswPAr3tcuDhd@kernel.org>
 References: <20210114151909.2344974-1-mic@digikod.net>
- <20210114151909.2344974-6-mic@digikod.net>
- <YAe8cr7bS2Dn0RRn@kernel.org>
- <96550031-5183-e60f-f279-3475ab3851bc@digikod.net>
+ <20210114151909.2344974-5-mic@digikod.net>
+ <YAepvxOBcEU0paqA@kernel.org>
+ <fc4d5812-238c-baf7-d7f6-cc123bdb855d@digikod.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <96550031-5183-e60f-f279-3475ab3851bc@digikod.net>
+In-Reply-To: <fc4d5812-238c-baf7-d7f6-cc123bdb855d@digikod.net>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Wed, Jan 20, 2021 at 12:17:28PM +0100, Mickaël Salaün wrote:
+On Wed, Jan 20, 2021 at 12:15:10PM +0100, Mickaël Salaün wrote:
 > 
-> On 20/01/2021 06:15, Jarkko Sakkinen wrote:
-> > On Thu, Jan 14, 2021 at 04:19:04PM +0100, Mickaël Salaün wrote:
-> >> From: Mickaël Salaün <mic@linux.microsoft.com>
+> On 20/01/2021 04:55, Jarkko Sakkinen wrote:
+> > On Thu, Jan 14, 2021 at 04:19:03PM +0100, Mickaël Salaün wrote:
+> >> From: David Howells <dhowells@redhat.com>
 > >>
-> >> Align with the new macros and add appropriate include files.
+> >> KEY_FLAG_KEEP is not meant to be passed to keyring_alloc() or key_alloc(),
+> >> as these only take KEY_ALLOC_* flags.  KEY_FLAG_KEEP has the same value as
+> >> KEY_ALLOC_BYPASS_RESTRICTION, but fortunately only key_create_or_update()
+> >> uses it.  LSMs using the key_alloc hook don't check that flag.
 > >>
-> >> Cc: David Woodhouse <dwmw2@infradead.org>
-> >> Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
-> >> Signed-off-by: David Howells <dhowells@redhat.com>
+> >> KEY_FLAG_KEEP is then ignored but fortunately (again) the root user cannot
+> >> write to the blacklist keyring, so it is not possible to remove a key/hash
+> >> from it.
+> >>
+> >> Fix this by adding a KEY_ALLOC_SET_KEEP flag that tells key_alloc() to set
+> >> KEY_FLAG_KEEP on the new key.  blacklist_init() can then, correctly, pass
+> >> this to keyring_alloc().
 > > 
-> > The commit message makes no sense. What you new macros?
+> > OK, so thing work by luck now, but given the new patches which allow
+> > to append new keys they would break, right?
 > 
-> What about "Use the new GLOBAL_ROOT_UID and GLOBAL_ROOT_GID definitions,
-> and add appropriate include files."?
-
-They were added in 2011 so you could just remove "the new". Otherwise,
-WFM.
+> Without this fix, patch 9/10 would allow to remove and modify keys from
+> the blacklist keyring.
+> 
+> > 
+> >> We can also use this in ima_mok_init() rather than setting the flag
+> >> manually.
+> > 
+> > What does ima_mok_init() do?
+> 
+> This was initially an addition from David Howells, I only fixed the
+> argument bit-ORing. ima_mok_init() allocates a blacklist keyring (with
+> different properties) dedicated to IMA.
+ 
+Please add this to the commit message.
 
 /Jarkko
