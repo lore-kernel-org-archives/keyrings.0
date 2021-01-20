@@ -2,247 +2,164 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-20.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,MENTIONS_GIT_HOSTING,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 96F4CC433E0
-	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 07:24:50 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 8C4BAC433E0
+	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 09:10:36 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5AEA722C9E
-	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 07:24:50 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 3E0EA22D08
+	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 09:10:36 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726044AbhATHYe (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 20 Jan 2021 02:24:34 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46398 "EHLO
+        id S1730025AbhATJKR (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 20 Jan 2021 04:10:17 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40104 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1727903AbhATHYV (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 20 Jan 2021 02:24:21 -0500
-Received: from mail-lj1-x22d.google.com (mail-lj1-x22d.google.com [IPv6:2a00:1450:4864:20::22d])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3A6B1C0613C1
-        for <keyrings@vger.kernel.org>; Tue, 19 Jan 2021 23:23:41 -0800 (PST)
-Received: by mail-lj1-x22d.google.com with SMTP id b10so24857046ljp.6
-        for <keyrings@vger.kernel.org>; Tue, 19 Jan 2021 23:23:41 -0800 (PST)
+        with ESMTP id S1726423AbhATJGh (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 20 Jan 2021 04:06:37 -0500
+Received: from mail-pf1-x42a.google.com (mail-pf1-x42a.google.com [IPv6:2607:f8b0:4864:20::42a])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id EAB0EC061757;
+        Wed, 20 Jan 2021 01:05:55 -0800 (PST)
+Received: by mail-pf1-x42a.google.com with SMTP id q20so14102334pfu.8;
+        Wed, 20 Jan 2021 01:05:55 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=linaro.org; s=google;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc:content-transfer-encoding;
-        bh=IUrgv0FBuTz3H165Mc6si/82NmlQEG5UHik5rW9EBXc=;
-        b=Z331GKUf4msxWQjIsscyU4jNlxcRf4pxDM2Uz6mDa89b78iB1MTaYFw1M7w11vF92h
-         HVH8eTSRaamzb/MxUh9KeqM6+MqnMJoUcHJ1m1kG+2YjSntSPaBT9NognuJtRcb91UlT
-         HhPHINiUeMpNd3RuTdek5oJDxNzSXUD4aQJifORFowq98JoRqV4EsmkMIV7kDllPo4Pa
-         tp11kBRk2uInvz0FwjBcJvo3wYzmh18/ZTOeEbyJTCQ6uPJUmWzfqZizWJeRYMoobGtM
-         N/dvWKYJ+EdJIrodZecOtXksqYriISceww1J4WD9M/s7kAFdeUkcqEthd8S4pQDbc2pj
-         fuPg==
+        d=gmail.com; s=20161025;
+        h=from:to:cc:subject:date:message-id:in-reply-to:references;
+        bh=Fk1XjhsIVpehEyUHjISdm6QYmnqvAVbB3cg/2P5Gk18=;
+        b=izM2+iRUl2skyG50FPHidJyx0thFwCOakDW/tHdUbcuQKuNlixfk3rh/s5i7zXvNQi
+         tR+8LIpzYMENOAKjg3IzdoO34tNeq2qIA1EI3uN0BZdzFwYFZNJlyqJeR3hBdS4sxPwi
+         P9mjeteI/DXwe3yWFCoVJooeZxg8+aLgf2tZlfK0moaG6z9x7Y1QaDk4vraXXVcDn6ay
+         TUmUlVfIVpTZGTRbcapvpCqCOiDYaENtpoWj2ssVAlaWzEmMsquhWfbcctGssixhi80J
+         h5nZQiuq3Waemp9aolNU44zLjkuBUk3zO+sc3IdgF0Nu6Sa5AuFc/KHHK4fDHudvWC7/
+         kHOQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20161025;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc:content-transfer-encoding;
-        bh=IUrgv0FBuTz3H165Mc6si/82NmlQEG5UHik5rW9EBXc=;
-        b=DZbvotuIOK5vFh4cbZKWlNnjwaHPXf1t3S/STP7X8IYmqiCbWQXgsTMEjjrOZVNDop
-         YevwWx4SoYGb0uSlJFUz7Ou4cJIJGrllN15WNUwOlEcHWVkMXw68PLeYHh4GeYsnTPuc
-         9L48TT7M2JOiHWfD6PxWFjzrOWa/YZ0MY6BTdOJP8euIT/R5zSz5zTg6O2/Fj2ohl/sc
-         VxE1ixQ8bioUtxIjyYUulKLjkxHsMI4S4vQ7Z5uTmh1Empr1oq5IB1P+E7qfyvuum+ub
-         cHj7PbqdTbvE2S//vMQFIjIRoxlfyMXVihjHk/fx4ksECypqm9zDMSXeYIZZSgquzAlJ
-         OxYA==
-X-Gm-Message-State: AOAM5315Sce0FzQCVLodKQZlFEHM+8kdA8ZnK/zuu5BPdA7fcUijqo74
-        Ht9fkGq1bHrtZ+rM6U3ggA+F4h370b/KyHZ5tZ6HHg==
-X-Google-Smtp-Source: ABdhPJyckOX7g74YSWC/ebW0pan/8Eqz0VHarq+xR94sRitnHKl336t8hKlAqWXfY8EZ7wW8kJQ/ToXhb+NEXaFgrlI=
-X-Received: by 2002:a05:651c:1192:: with SMTP id w18mr3565930ljo.40.1611127419625;
- Tue, 19 Jan 2021 23:23:39 -0800 (PST)
-MIME-Version: 1.0
-References: <1604419306-26105-1-git-send-email-sumit.garg@linaro.org>
- <1604419306-26105-3-git-send-email-sumit.garg@linaro.org> <X/x+N0fgrzIZTeNi@kernel.org>
- <CAFA6WYOUvWAZtYfR4q8beZFkX-CtdxqwJaRQM+GHNMDfQiEWOA@mail.gmail.com>
- <X/+m6+m2/snYj9Vc@kernel.org> <CAFA6WYNyirit_AFhoE+XR9PHw=OjRgEdXDqz1uanj_SN2NXeMw@mail.gmail.com>
- <YAa0ys4YJcZtKdfF@kernel.org> <YAeH2pb8szQyjusL@kernel.org>
-In-Reply-To: <YAeH2pb8szQyjusL@kernel.org>
-From:   Sumit Garg <sumit.garg@linaro.org>
-Date:   Wed, 20 Jan 2021 12:53:28 +0530
-Message-ID: <CAFA6WYP5G6NfGk96ePOC+2kpD6B+4hz9nywyUM9Nh=dJDYMiuA@mail.gmail.com>
-Subject: Re: [PATCH v8 2/4] KEYS: trusted: Introduce TEE based Trusted Keys
-To:     Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        James Bottomley <jejb@linux.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Jens Wiklander <jens.wiklander@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Janne Karhunen <janne.karhunen@gmail.com>,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Markus Wamser <Markus.Wamser@mixed-mode.de>,
-        Luke Hinds <lhinds@redhat.com>,
-        "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>,
-        linux-integrity@vger.kernel.org,
-        "open list:SECURITY SUBSYSTEM" 
-        <linux-security-module@vger.kernel.org>,
-        Linux Doc Mailing List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        op-tee@lists.trustedfirmware.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
+         :references;
+        bh=Fk1XjhsIVpehEyUHjISdm6QYmnqvAVbB3cg/2P5Gk18=;
+        b=BzNXM7YE1AWdxfN9DMQcjr9U4dISpftMTdT3xqBD0IvGWSf1Zxv1BANsUspdq2YIDs
+         dYt22UL2Ug4ue5c3MWwunV8Vx6g4z/1JsgxtwNtLtTuGAsvFnkEK67PUKmLtYAGulSFf
+         CX05jSrzKOBGig3nHpqZnK9YjWrsrk4dPACj2PMNvz+te/j8OtRTxb/bzMTKYSdoVJIK
+         3R/sXf5kqTA06vZkDcAWwDS/mdi0TlxUO4PMKtqZRGn9Ibjiw9kJY3cOy/2gtfzTAumL
+         oL0fmn4oOB19VHYKM6x5rARbAWOwGgH7dx3Vz7MW57HQCtfPTS7cytqbY9rBOoO/vwFv
+         hkmA==
+X-Gm-Message-State: AOAM530XdzxPUV8WzdHsac7uu9jpMP8qux1KlR5a1Y9Lb0zhwFdTgm90
+        eV/HrF/ozqwMEeDjKJGOZI6IY0FmjMw=
+X-Google-Smtp-Source: ABdhPJzymenlXLQUh4txhzCtmPWXasuMZ3bSstpHmgMnTKuEn39YiKspDCKNQ5jQiyTlyNspd17IQQ==
+X-Received: by 2002:a65:5bc8:: with SMTP id o8mr8374442pgr.100.1611133555321;
+        Wed, 20 Jan 2021 01:05:55 -0800 (PST)
+Received: from linux-l9pv.suse ([124.11.22.254])
+        by smtp.gmail.com with ESMTPSA id z2sm1585226pgl.49.2021.01.20.01.05.50
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Wed, 20 Jan 2021 01:05:54 -0800 (PST)
+From:   "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+X-Google-Original-From: "Lee, Chun-Yi" <jlee@suse.com>
+To:     David Howells <dhowells@redhat.com>
+Cc:     Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S . Miller" <davem@davemloft.net>,
+        Ben Boeckel <me@benboeckel.net>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Malte Gell <malte.gell@gmx.de>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Lee, Chun-Yi" <jlee@suse.com>
+Subject: [PATCH 1/4] X.509: Add CodeSigning extended key usage parsing
+Date:   Wed, 20 Jan 2021 17:05:14 +0800
+Message-Id: <20210120090517.23851-2-jlee@suse.com>
+X-Mailer: git-send-email 2.12.3
+In-Reply-To: <20210120090517.23851-1-jlee@suse.com>
+References: <20210120090517.23851-1-jlee@suse.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Wed, 20 Jan 2021 at 07:01, Jarkko Sakkinen <jarkko@kernel.org> wrote:
->
-> On Tue, Jan 19, 2021 at 12:30:42PM +0200, Jarkko Sakkinen wrote:
-> > On Fri, Jan 15, 2021 at 11:32:31AM +0530, Sumit Garg wrote:
-> > > On Thu, 14 Jan 2021 at 07:35, Jarkko Sakkinen <jarkko@kernel.org> wro=
-te:
-> > > >
-> > > > On Wed, Jan 13, 2021 at 04:47:00PM +0530, Sumit Garg wrote:
-> > > > > Hi Jarkko,
-> > > > >
-> > > > > On Mon, 11 Jan 2021 at 22:05, Jarkko Sakkinen <jarkko@kernel.org>=
- wrote:
-> > > > > >
-> > > > > > On Tue, Nov 03, 2020 at 09:31:44PM +0530, Sumit Garg wrote:
-> > > > > > > Add support for TEE based trusted keys where TEE provides the=
- functionality
-> > > > > > > to seal and unseal trusted keys using hardware unique key.
-> > > > > > >
-> > > > > > > Refer to Documentation/tee.txt for detailed information about=
- TEE.
-> > > > > > >
-> > > > > > > Signed-off-by: Sumit Garg <sumit.garg@linaro.org>
-> > > > > >
-> > > > > > I haven't yet got QEMU environment working with aarch64, this p=
-roduces
-> > > > > > just a blank screen:
-> > > > > >
-> > > > > > ./output/host/usr/bin/qemu-system-aarch64 -M virt -cpu cortex-a=
-53 -smp 1 -kernel output/images/Image -initrd output/images/rootfs.cpio -se=
-rial stdio
-> > > > > >
-> > > > > > My BuildRoot fork for TPM and keyring testing is located over h=
-ere:
-> > > > > >
-> > > > > > https://git.kernel.org/pub/scm/linux/kernel/git/jarkko/buildroo=
-t-tpmdd.git/
-> > > > > >
-> > > > > > The "ARM version" is at this point in aarch64 branch. Over time=
- I will
-> > > > > > define tpmdd-x86_64 and tpmdd-aarch64 boards and everything wil=
-l be then
-> > > > > > in the master branch.
-> > > > > >
-> > > > > > To create identical images you just need to
-> > > > > >
-> > > > > > $ make tpmdd_defconfig && make
-> > > > > >
-> > > > > > Can you check if you see anything obviously wrong? I'm eager to=
- test this
-> > > > > > patch set, and in bigger picture I really need to have ready to=
- run
-> > > > > > aarch64 environment available.
-> > > > >
-> > > > > I would rather suggest you to follow steps listed here [1] as to =
-test
-> > > > > this feature on Qemu aarch64 we need to build firmwares such as T=
-F-A,
-> > > > > OP-TEE, UEFI etc. which are all integrated into OP-TEE Qemu build
-> > > > > system [2]. And then it would be easier to migrate them to your
-> > > > > buildroot environment as well.
-> > > > >
-> > > > > [1] https://lists.trustedfirmware.org/pipermail/op-tee/2020-May/0=
-00027.html
-> > > > > [2] https://optee.readthedocs.io/en/latest/building/devices/qemu.=
-html#qemu-v8
-> > > > >
-> > > > > -Sumit
-> > > >
-> > > > Can you provide 'keyctl_change'? Otherwise, the steps are easy to f=
-ollow.
-> > > >
-> > >
-> > > $ cat keyctl_change
-> > > diff --git a/common.mk b/common.mk
-> > > index aeb7b41..663e528 100644
-> > > --- a/common.mk
-> > > +++ b/common.mk
-> > > @@ -229,6 +229,7 @@ BR2_PACKAGE_OPTEE_TEST_SDK ?=3D $(OPTEE_OS_TA_DEV=
-_KIT_DIR)
-> > >  BR2_PACKAGE_OPTEE_TEST_SITE ?=3D $(OPTEE_TEST_PATH)
-> > >  BR2_PACKAGE_STRACE ?=3D y
-> > >  BR2_TARGET_GENERIC_GETTY_PORT ?=3D $(if
-> > > $(CFG_NW_CONSOLE_UART),ttyAMA$(CFG_NW_CONSOLE_UART),ttyAMA0)
-> > > +BR2_PACKAGE_KEYUTILS :=3D y
-> > >
-> > >  # All BR2_* variables from the makefile or the environment are appen=
-ded to
-> > >  # ../out-br/extra.conf. All values are quoted "..." except y and n.
-> > > diff --git a/kconfigs/qemu.conf b/kconfigs/qemu.conf
-> > > index 368c18a..832ab74 100644
-> > > --- a/kconfigs/qemu.conf
-> > > +++ b/kconfigs/qemu.conf
-> > > @@ -20,3 +20,5 @@ CONFIG_9P_FS=3Dy
-> > >  CONFIG_9P_FS_POSIX_ACL=3Dy
-> > >  CONFIG_HW_RANDOM=3Dy
-> > >  CONFIG_HW_RANDOM_VIRTIO=3Dy
-> > > +CONFIG_TRUSTED_KEYS=3Dy
-> > > +CONFIG_ENCRYPTED_KEYS=3Dy
-> > >
-> > > > After I've successfully tested 2/4, I'd suggest that you roll out o=
-ne more
-> > > > version and CC the documentation patch to Elaine and Mini, and clea=
-rly
-> > > > remark in the commit message that TEE is a standard, with a link to=
- the
-> > > > specification.
-> > > >
-> > >
-> > > Sure, I will roll out the next version after your testing.
-> >
-> > Thanks, I'll try this at instant, and give my feedback.
->
-> I bump into this:
->
-> $ make run-only
-> ln -sf /home/jarkko/devel/tpm/optee/build/../out-br/images/rootfs.cpio.gz=
- /home/jarkko/devel/tpm/optee/build/../out/bin/
-> ln: failed to create symbolic link '/home/jarkko/devel/tpm/optee/build/..=
-/out/bin/': No such file or directory
-> make: *** [Makefile:194: run-only] Error 1
->
+This patch adds the logic for parsing the CodeSign extended key usage
+extension in X.509. The parsing result will be set to the eku flag
+which is carried by public key. It can be used in the PKCS#7
+verification.
 
-Could you check if the following directory tree is built after
-executing the below command?
+Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
+---
+ crypto/asymmetric_keys/x509_cert_parser.c | 24 ++++++++++++++++++++++++
+ include/crypto/public_key.h               |  1 +
+ include/linux/oid_registry.h              |  5 +++++
+ 3 files changed, 30 insertions(+)
 
-$ make -j`nproc`
-CFG_IN_TREE_EARLY_TAS=3Dtrusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 52c9b455fc7d..65721313b265 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -497,6 +497,8 @@ int x509_process_extension(void *context, size_t hdrlen,
+ 	struct x509_parse_context *ctx = context;
+ 	struct asymmetric_key_id *kid;
+ 	const unsigned char *v = value;
++	int i = 0;
++	enum OID oid;
+ 
+ 	pr_debug("Extension: %u\n", ctx->last_oid);
+ 
+@@ -526,6 +528,28 @@ int x509_process_extension(void *context, size_t hdrlen,
+ 		return 0;
+ 	}
+ 
++	if (ctx->last_oid == OID_extKeyUsage) {
++		if (v[0] != ((ASN1_UNIV << 6) | ASN1_CONS_BIT | ASN1_SEQ) ||
++		    v[1] != vlen - 2)
++			return -EBADMSG;
++		i += 2;
++
++		while (i < vlen) {
++			/* A 10 bytes EKU OID Octet blob =
++			 * ASN1_OID + size byte + 8 bytes OID */
++			if (v[i] != ASN1_OID || v[i + 1] != 8 || (i + 10) > vlen)
++				return -EBADMSG;
++
++			oid = look_up_OID(v + i + 2, v[i + 1]);
++			if (oid == OID_codeSigning) {
++				ctx->cert->pub->eku |= EKU_codeSigning;
++			}
++			i += 10;
++		}
++		pr_debug("extKeyUsage: %d\n", ctx->cert->pub->eku);
++		return 0;
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index 948c5203ca9c..07a1b28460a2 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -29,6 +29,7 @@ struct public_key {
+ 	bool key_is_private;
+ 	const char *id_type;
+ 	const char *pkey_algo;
++	unsigned int eku : 9;      /* Extended Key Usage (9-bit) */
+ };
+ 
+ extern void public_key_free(struct public_key *key);
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index 4462ed2c18cd..e20e8eb53b21 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -113,9 +113,14 @@ enum OID {
+ 	OID_SM2_with_SM3,		/* 1.2.156.10197.1.501 */
+ 	OID_sm3WithRSAEncryption,	/* 1.2.156.10197.1.504 */
+ 
++	/* Extended key purpose OIDs [RFC 5280] */
++	OID_codeSigning,		/* 1.3.6.1.5.5.7.3.3 */
++
+ 	OID__NR
+ };
+ 
++#define EKU_codeSigning	(1 << 2)
++
+ extern enum OID look_up_OID(const void *data, size_t datasize);
+ extern int sprint_oid(const void *, size_t, char *, size_t);
+ extern int sprint_OID(enum OID, char *, size_t);
+-- 
+2.16.4
 
-$ tree out/bin/
-out/bin/
-=E2=94=9C=E2=94=80=E2=94=80 bl1.bin -> /home/sumit/build/optee/build/../tru=
-sted-firmware-a/build/qemu/release/bl1.bin
-=E2=94=9C=E2=94=80=E2=94=80 bl2.bin -> /home/sumit/build/optee/build/../tru=
-sted-firmware-a/build/qemu/release/bl2.bin
-=E2=94=9C=E2=94=80=E2=94=80 bl31.bin ->
-/home/sumit/build/optee/build/../trusted-firmware-a/build/qemu/release/bl31=
-.bin
-=E2=94=9C=E2=94=80=E2=94=80 bl32.bin ->
-/home/sumit/build/optee/build/../optee_os/out/arm/core/tee-header_v2.bin
-=E2=94=9C=E2=94=80=E2=94=80 bl32_extra1.bin ->
-/home/sumit/build/optee/build/../optee_os/out/arm/core/tee-pager_v2.bin
-=E2=94=9C=E2=94=80=E2=94=80 bl32_extra2.bin ->
-/home/sumit/build/optee/build/../optee_os/out/arm/core/tee-pageable_v2.bin
-=E2=94=9C=E2=94=80=E2=94=80 bl33.bin ->
-/home/sumit/build/optee/build/../edk2/Build/ArmVirtQemuKernel-AARCH64/RELEA=
-SE_GCC49/FV/QEMU_EFI.fd
-=E2=94=9C=E2=94=80=E2=94=80 Image -> /home/sumit/build/optee/build/../linux=
-/arch/arm64/boot/Image
-=E2=94=94=E2=94=80=E2=94=80 rootfs.cpio.gz ->
-/home/sumit/build/optee/build/../out-br/images/rootfs.cpio.gz
-
-0 directories, 9 files
-
--Sumit
-
-> /Jarkko
