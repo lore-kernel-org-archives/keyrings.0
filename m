@@ -2,104 +2,187 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
+X-Spam-Status: No, score=-13.8 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 51D8DC433E6
-	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 09:32:37 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B8578C433DB
+	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 12:40:26 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 1C33F23139
-	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 09:32:37 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8076922A84
+	for <keyrings@archiver.kernel.org>; Wed, 20 Jan 2021 12:40:26 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729126AbhATJKm (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 20 Jan 2021 04:10:42 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40232 "EHLO
+        id S1732308AbhATMkF (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 20 Jan 2021 07:40:05 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39532 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1729178AbhATJHK (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 20 Jan 2021 04:07:10 -0500
-Received: from mail-pj1-x1034.google.com (mail-pj1-x1034.google.com [IPv6:2607:f8b0:4864:20::1034])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C4261C0613D6;
-        Wed, 20 Jan 2021 01:06:12 -0800 (PST)
-Received: by mail-pj1-x1034.google.com with SMTP id cq1so1784214pjb.4;
-        Wed, 20 Jan 2021 01:06:12 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20161025;
-        h=from:to:cc:subject:date:message-id:in-reply-to:references;
-        bh=M1CBK07C46laJoyWYovF4lSgfEz56MEL8US4G4KcnR0=;
-        b=n2l91F4By3VLGwLBJpVvXP1nkvLFb4J3UfQ45CgFVauOpq/R8UE7naJRjzVsK1Z6Tc
-         yWUZFgzSvOsCrj4dSiqWh5zkhzAAyNGOpRjfytobhn3SySy85wP/rh7m4zAat4FSGBVi
-         GATV3bkpxqrkswVNkMig1anryhdnb0I2uzsBHTN8EdV5edS/0Gvy2JAmU3Wio6v9sm9o
-         fk8/5az/W4xrAJyZbNPUJnnO8bb3S/8s2nydTMMcWJC8cZMWw3NOvyUcmF+2rr4sQXuF
-         tlXrpNK/tOOiOU+uCeNypTb3qrO3y35dI8eJKRbXPzu0zwu6zqzGldfo14lHb+JN+L+g
-         4WOQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
-         :references;
-        bh=M1CBK07C46laJoyWYovF4lSgfEz56MEL8US4G4KcnR0=;
-        b=gz/tnbNrS8+BuLvdl6LktTzRRSoglFNfueYJWJS5Y1cMRAMY6leNJJ5kZcPcCwp5Hi
-         tv5gYM/gMufM+4ufT+ygls9RB7xZ+/XFnXvMsEocW7avh4OHWRVo1V1f/jC39siS6RcE
-         cs2gEyon4o8DMmOVpAbtZEHSQNRNZPCwCLL+heOv0UUleH1JyZNbE0BqfEqAs6rRmW0o
-         PdyL+I/EKfOR3tSEpIEfzvLg2fldJiTONzwLs1NcIySO/rtQ97WqhaMH3BFPqfgjo1Wy
-         LBm8u0AKLwvVgn7UDUStLAWV0tw0miY3UEjOEGKHM3KSKVBrCbCC0zq+5wN+ZW+4xbGT
-         iWcg==
-X-Gm-Message-State: AOAM533Al0dSBFv9UYQobsq4sjHtv/bpi5bkS0JOpa8zP+hDreJu4rFc
-        SbM7/uEjmm54mEqOBbTkFuI=
-X-Google-Smtp-Source: ABdhPJwTBQGrDFW8IYQg0Vzds4hUdO8l4R2fsonSWR9cfY9ArY5yg0M0Z1wKgVBSjDJul+B2iZNz+Q==
-X-Received: by 2002:a17:90a:d3c7:: with SMTP id d7mr4594364pjw.169.1611133572338;
-        Wed, 20 Jan 2021 01:06:12 -0800 (PST)
-Received: from linux-l9pv.suse ([124.11.22.254])
-        by smtp.gmail.com with ESMTPSA id z2sm1585226pgl.49.2021.01.20.01.06.08
-        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
-        Wed, 20 Jan 2021 01:06:11 -0800 (PST)
-From:   "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-X-Google-Original-From: "Lee, Chun-Yi" <jlee@suse.com>
-To:     David Howells <dhowells@redhat.com>
-Cc:     Herbert Xu <herbert@gondor.apana.org.au>,
+        with ESMTP id S2389054AbhATLQC (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 20 Jan 2021 06:16:02 -0500
+Received: from smtp-bc08.mail.infomaniak.ch (smtp-bc08.mail.infomaniak.ch [IPv6:2001:1600:4:17::bc08])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2F9C7C0613ED
+        for <keyrings@vger.kernel.org>; Wed, 20 Jan 2021 03:15:14 -0800 (PST)
+Received: from smtp-3-0000.mail.infomaniak.ch (unknown [10.4.36.107])
+        by smtp-3-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DLNGm2v28zMqQD9;
+        Wed, 20 Jan 2021 12:15:12 +0100 (CET)
+Received: from ns3096276.ip-94-23-54.eu (unknown [23.97.221.149])
+        by smtp-3-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DLNGl3psPzlh8TX;
+        Wed, 20 Jan 2021 12:15:11 +0100 (CET)
+Subject: Re: [PATCH v3 04/10] certs: Fix blacklist flag type confusion
+To:     Jarkko Sakkinen <jarkko@kernel.org>
+Cc:     David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
         "David S . Miller" <davem@davemloft.net>,
-        Ben Boeckel <me@benboeckel.net>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Malte Gell <malte.gell@gmx.de>, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH 4/4] Documentation/admin-guide/module-signing.rst: add openssl command option example for CodeSign EKU
-Date:   Wed, 20 Jan 2021 17:05:17 +0800
-Message-Id: <20210120090517.23851-5-jlee@suse.com>
-X-Mailer: git-send-email 2.12.3
-In-Reply-To: <20210120090517.23851-1-jlee@suse.com>
-References: <20210120090517.23851-1-jlee@suse.com>
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        James Morris <jmorris@namei.org>,
+        =?UTF-8?Q?Micka=c3=abl_Sala=c3=bcn?= <mic@linux.microsoft.com>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        "Serge E . Hallyn" <serge@hallyn.com>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+References: <20210114151909.2344974-1-mic@digikod.net>
+ <20210114151909.2344974-5-mic@digikod.net> <YAepvxOBcEU0paqA@kernel.org>
+From:   =?UTF-8?Q?Micka=c3=abl_Sala=c3=bcn?= <mic@digikod.net>
+Message-ID: <fc4d5812-238c-baf7-d7f6-cc123bdb855d@digikod.net>
+Date:   Wed, 20 Jan 2021 12:15:10 +0100
+User-Agent: 
+MIME-Version: 1.0
+In-Reply-To: <YAepvxOBcEU0paqA@kernel.org>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Language: en-US
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Add an openssl command option example for generating CodeSign extended
-key usage in X.509 when CONFIG_CHECK_CODESIGN_EKU is enabled.
 
-Signed-off-by: "Lee, Chun-Yi" <jlee@suse.com>
----
- Documentation/admin-guide/module-signing.rst | 6 ++++++
- 1 file changed, 6 insertions(+)
+On 20/01/2021 04:55, Jarkko Sakkinen wrote:
+> On Thu, Jan 14, 2021 at 04:19:03PM +0100, Mickaël Salaün wrote:
+>> From: David Howells <dhowells@redhat.com>
+>>
+>> KEY_FLAG_KEEP is not meant to be passed to keyring_alloc() or key_alloc(),
+>> as these only take KEY_ALLOC_* flags.  KEY_FLAG_KEEP has the same value as
+>> KEY_ALLOC_BYPASS_RESTRICTION, but fortunately only key_create_or_update()
+>> uses it.  LSMs using the key_alloc hook don't check that flag.
+>>
+>> KEY_FLAG_KEEP is then ignored but fortunately (again) the root user cannot
+>> write to the blacklist keyring, so it is not possible to remove a key/hash
+>> from it.
+>>
+>> Fix this by adding a KEY_ALLOC_SET_KEEP flag that tells key_alloc() to set
+>> KEY_FLAG_KEEP on the new key.  blacklist_init() can then, correctly, pass
+>> this to keyring_alloc().
+> 
+> OK, so thing work by luck now, but given the new patches which allow
+> to append new keys they would break, right?
 
-diff --git a/Documentation/admin-guide/module-signing.rst b/Documentation/admin-guide/module-signing.rst
-index 7d7c7c8a545c..b57b30c7125f 100644
---- a/Documentation/admin-guide/module-signing.rst
-+++ b/Documentation/admin-guide/module-signing.rst
-@@ -170,6 +170,12 @@ generate the public/private key files::
- 	   -config x509.genkey -outform PEM -out kernel_key.pem \
- 	   -keyout kernel_key.pem
- 
-+When ``CONFIG_CHECK_CODESIGN_EKU`` option be enabled, the following openssl
-+command option should be added for generating CodeSign extended key usage in
-+X.509::
-+
-+        -addext "extendedKeyUsage=codeSigning"
-+
- The full pathname for the resulting kernel_key.pem file can then be specified
- in the ``CONFIG_MODULE_SIG_KEY`` option, and the certificate and key therein will
- be used instead of an autogenerated keypair.
--- 
-2.16.4
+Without this fix, patch 9/10 would allow to remove and modify keys from
+the blacklist keyring.
 
+> 
+>> We can also use this in ima_mok_init() rather than setting the flag
+>> manually.
+> 
+> What does ima_mok_init() do?
+
+This was initially an addition from David Howells, I only fixed the
+argument bit-ORing. ima_mok_init() allocates a blacklist keyring (with
+different properties) dedicated to IMA.
+
+>> Note that this doesn't fix an observable bug with the current
+>> implementation but it is required to allow addition of new hashes to the
+>> blacklist in the future without making it possible for them to be removed.
+>>
+>> Fixes: 734114f8782f ("KEYS: Add a system blacklist keyring")
+>> cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> 
+> Nit: Cc
+
+OK
+
+> 
+>> Cc: David Woodhouse <dwmw2@infradead.org>
+>> Reported-by: Mickaël Salaün <mic@linux.microsoft.com>
+>> Signed-off-by: David Howells <dhowells@redhat.com>
+>> [mic@linux.microsoft.com: fix ima_mok_init()]
+>> Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
+>> ---
+>>
+>> Changes since v2:
+>> * Cherry-pick rewritten v1 patch from
+>>   https://lore.kernel.org/lkml/2659836.1607940186@warthog.procyon.org.uk/
+>>   to rebase on v5.11-rc3 and fix ima_mok_init().
+>> ---
+>>  certs/blacklist.c                | 2 +-
+>>  include/linux/key.h              | 1 +
+>>  security/integrity/ima/ima_mok.c | 4 +---
+>>  security/keys/key.c              | 2 ++
+>>  4 files changed, 5 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/certs/blacklist.c b/certs/blacklist.c
+>> index a888b934a1cd..029471947838 100644
+>> --- a/certs/blacklist.c
+>> +++ b/certs/blacklist.c
+>> @@ -162,7 +162,7 @@ static int __init blacklist_init(void)
+>>  			      KEY_USR_VIEW | KEY_USR_READ |
+>>  			      KEY_USR_SEARCH,
+>>  			      KEY_ALLOC_NOT_IN_QUOTA |
+>> -			      KEY_FLAG_KEEP,
+>> +			      KEY_ALLOC_SET_KEEP,
+>>  			      NULL, NULL);
+>>  	if (IS_ERR(blacklist_keyring))
+>>  		panic("Can't allocate system blacklist keyring\n");
+>> diff --git a/include/linux/key.h b/include/linux/key.h
+>> index 0f2e24f13c2b..eed3ce139a32 100644
+>> --- a/include/linux/key.h
+>> +++ b/include/linux/key.h
+>> @@ -289,6 +289,7 @@ extern struct key *key_alloc(struct key_type *type,
+>>  #define KEY_ALLOC_BUILT_IN		0x0004	/* Key is built into kernel */
+>>  #define KEY_ALLOC_BYPASS_RESTRICTION	0x0008	/* Override the check on restricted keyrings */
+>>  #define KEY_ALLOC_UID_KEYRING		0x0010	/* allocating a user or user session keyring */
+>> +#define KEY_ALLOC_SET_KEEP		0x0020	/* Set the KEEP flag on the key/keyring */
+>>  
+>>  extern void key_revoke(struct key *key);
+>>  extern void key_invalidate(struct key *key);
+>> diff --git a/security/integrity/ima/ima_mok.c b/security/integrity/ima/ima_mok.c
+>> index 36cadadbfba4..5594dd38ab04 100644
+>> --- a/security/integrity/ima/ima_mok.c
+>> +++ b/security/integrity/ima/ima_mok.c
+>> @@ -38,13 +38,11 @@ __init int ima_mok_init(void)
+>>  				(KEY_POS_ALL & ~KEY_POS_SETATTR) |
+>>  				KEY_USR_VIEW | KEY_USR_READ |
+>>  				KEY_USR_WRITE | KEY_USR_SEARCH,
+>> -				KEY_ALLOC_NOT_IN_QUOTA,
+>> +				KEY_ALLOC_NOT_IN_QUOTA | KEY_ALLOC_SET_KEEP,
+>>  				restriction, NULL);
+>>  
+>>  	if (IS_ERR(ima_blacklist_keyring))
+>>  		panic("Can't allocate IMA blacklist keyring.");
+>> -
+>> -	set_bit(KEY_FLAG_KEEP, &ima_blacklist_keyring->flags);
+>>  	return 0;
+>>  }
+>>  device_initcall(ima_mok_init);
+>> diff --git a/security/keys/key.c b/security/keys/key.c
+>> index ebe752b137aa..c45afdd1dfbb 100644
+>> --- a/security/keys/key.c
+>> +++ b/security/keys/key.c
+>> @@ -303,6 +303,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+>>  		key->flags |= 1 << KEY_FLAG_BUILTIN;
+>>  	if (flags & KEY_ALLOC_UID_KEYRING)
+>>  		key->flags |= 1 << KEY_FLAG_UID_KEYRING;
+>> +	if (flags & KEY_ALLOC_SET_KEEP)
+>> +		key->flags |= 1 << KEY_FLAG_KEEP;
+>>  
+>>  #ifdef KEY_DEBUGGING
+>>  	key->magic = KEY_DEBUG_MAGIC;
+>> -- 
+>> 2.30.0
+>>
+> 
+> Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
+> 
+> /Jarkko
+> 
