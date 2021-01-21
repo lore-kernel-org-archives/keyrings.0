@@ -4,30 +4,30 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 27408C433E0
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B67C9C433E6
 	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:34:53 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D042A212CC
-	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:34:52 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 6743F212CC
+	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:34:53 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1733171AbhAUQeq (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 21 Jan 2021 11:34:46 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43286 "EHLO
+        id S1732513AbhAUQev (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 21 Jan 2021 11:34:51 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43290 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1732513AbhAUP6r (ORCPT
+        with ESMTP id S1732522AbhAUP6r (ORCPT
         <rfc822;keyrings@vger.kernel.org>); Thu, 21 Jan 2021 10:58:47 -0500
-Received: from smtp-190a.mail.infomaniak.ch (smtp-190a.mail.infomaniak.ch [IPv6:2001:1600:4:17::190a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9C41FC06178C
-        for <keyrings@vger.kernel.org>; Thu, 21 Jan 2021 07:58:19 -0800 (PST)
-Received: from smtp-3-0000.mail.infomaniak.ch (unknown [10.4.36.107])
-        by smtp-3-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DM6Rl18rszMpnPf;
-        Thu, 21 Jan 2021 16:55:31 +0100 (CET)
+Received: from smtp-8fa9.mail.infomaniak.ch (smtp-8fa9.mail.infomaniak.ch [IPv6:2001:1600:3:17::8fa9])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9FF14C061793
+        for <keyrings@vger.kernel.org>; Thu, 21 Jan 2021 07:58:20 -0800 (PST)
+Received: from smtp-2-0000.mail.infomaniak.ch (unknown [10.5.36.107])
+        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DM6Rr1BKfzMr5GF;
+        Thu, 21 Jan 2021 16:55:36 +0100 (CET)
 Received: from localhost (unknown [23.97.221.149])
-        by smtp-3-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DM6Rk5yXDzlh8TW;
-        Thu, 21 Jan 2021 16:55:30 +0100 (CET)
+        by smtp-2-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DM6Rq5lVXzlppys;
+        Thu, 21 Jan 2021 16:55:35 +0100 (CET)
 From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
 To:     David Howells <dhowells@redhat.com>,
         David Woodhouse <dwmw2@infradead.org>,
@@ -42,10 +42,11 @@ Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
         Tyler Hicks <tyhicks@linux.microsoft.com>,
         keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
         linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v4 06/10] certs: Make blacklist_vet_description() more strict
-Date:   Thu, 21 Jan 2021 16:55:09 +0100
-Message-Id: <20210121155513.539519-7-mic@digikod.net>
+        linux-security-module@vger.kernel.org,
+        Ben Boeckel <mathstuf@gmail.com>
+Subject: [PATCH v4 09/10] PKCS#7: Fix missing include
+Date:   Thu, 21 Jan 2021 16:55:12 +0100
+Message-Id: <20210121155513.539519-10-mic@digikod.net>
 X-Mailer: git-send-email 2.30.0
 In-Reply-To: <20210121155513.539519-1-mic@digikod.net>
 References: <20210121155513.539519-1-mic@digikod.net>
@@ -58,105 +59,40 @@ X-Mailing-List: keyrings@vger.kernel.org
 
 From: Mickaël Salaün <mic@linux.microsoft.com>
 
-Before exposing this new key type to user space, make sure that only
-meaningful blacklisted hashes are accepted.  This is also checked for
-builtin blacklisted hashes, but a following commit make sure that the
-user will notice (at built time) and will fix the configuration if it
-already included errors.
+Add missing linux/types.h for size_t.
 
-Check that a blacklist key description starts with a valid prefix and
-then a valid hexadecimal string.
+[DH: Changed from stddef.h]
 
-Cc: David Howells <dhowells@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
-Acked-by: Jarkko Sakkinen <jarkko@kernel.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Ben Boeckel <mathstuf@gmail.com>
+Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
+
+Changes since v3:
+* Add Reviewed-by Jarkko Sakkinen.
 
 Changes since v2:
-* Fix typo in blacklist_vet_description() comment, spotted by Tyler
-  Hicks.
-* Add Jarkko's Acked-by.
-
-Changes since v1:
-* Return ENOPKG (instead of EINVAL) when a hash is greater than the
-  maximum currently known hash (suggested by David Howells).
+* Cherry-pick v1 patch from
+  https://lore.kernel.org/lkml/2659836.1607940186@warthog.procyon.org.uk/
+  to rebase on v5.11-rc3.
 ---
- certs/blacklist.c | 46 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 36 insertions(+), 10 deletions(-)
+ include/linux/verification.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/certs/blacklist.c b/certs/blacklist.c
-index 8a64b9e89cae..069050884bd2 100644
---- a/certs/blacklist.c
-+++ b/certs/blacklist.c
-@@ -18,6 +18,16 @@
- #include <keys/system_keyring.h>
- #include "blacklist.h"
+diff --git a/include/linux/verification.h b/include/linux/verification.h
+index 911ab7c2b1ab..a655923335ae 100644
+--- a/include/linux/verification.h
++++ b/include/linux/verification.h
+@@ -8,6 +8,8 @@
+ #ifndef _LINUX_VERIFICATION_H
+ #define _LINUX_VERIFICATION_H
  
-+/*
-+ * According to crypto/asymmetric_keys/x509_cert_parser.c:x509_note_pkey_algo(),
-+ * the size of the currently longest supported hash algorithm is 512 bits,
-+ * which translates into 128 hex characters.
-+ */
-+#define MAX_HASH_LEN	128
++#include <linux/types.h>
 +
-+static const char tbs_prefix[] = "tbs";
-+static const char bin_prefix[] = "bin";
-+
- static struct key *blacklist_keyring;
- 
  /*
-@@ -26,24 +36,40 @@ static struct key *blacklist_keyring;
-  */
- static int blacklist_vet_description(const char *desc)
- {
--	int n = 0;
--
--	if (*desc == ':')
--		return -EINVAL;
--	for (; *desc; desc++)
--		if (*desc == ':')
--			goto found_colon;
-+	int i, prefix_len, tbs_step = 0, bin_step = 0;
-+
-+	/* The following algorithm only works if prefix lengths match. */
-+	BUILD_BUG_ON(sizeof(tbs_prefix) != sizeof(bin_prefix));
-+	prefix_len = sizeof(tbs_prefix) - 1;
-+	for (i = 0; *desc; desc++, i++) {
-+		if (*desc == ':') {
-+			if (tbs_step == prefix_len)
-+				goto found_colon;
-+			if (bin_step == prefix_len)
-+				goto found_colon;
-+			return -EINVAL;
-+		}
-+		if (i >= prefix_len)
-+			return -EINVAL;
-+		if (*desc == tbs_prefix[i])
-+			tbs_step++;
-+		if (*desc == bin_prefix[i])
-+			bin_step++;
-+	}
- 	return -EINVAL;
- 
- found_colon:
- 	desc++;
--	for (; *desc; desc++) {
-+	for (i = 0; *desc && i < MAX_HASH_LEN; desc++, i++) {
- 		if (!isxdigit(*desc) || isupper(*desc))
- 			return -EINVAL;
--		n++;
- 	}
-+	if (*desc)
-+		/* The hash is greater than MAX_HASH_LEN. */
-+		return -ENOPKG;
- 
--	if (n == 0 || n & 1)
-+	/* Checks for an even number of hexadecimal characters. */
-+	if (i == 0 || i & 1)
- 		return -EINVAL;
- 	return 0;
- }
+  * Indicate that both builtin trusted keys and secondary trusted keys
+  * should be used.
 -- 
 2.30.0
 
