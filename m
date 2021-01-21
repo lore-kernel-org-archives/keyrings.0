@@ -4,30 +4,30 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B67C9C433E6
-	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:34:53 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2BDF6C433DB
+	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:37:03 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 6743F212CC
-	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:34:53 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id D966A239FD
+	for <keyrings@archiver.kernel.org>; Thu, 21 Jan 2021 16:37:02 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1732513AbhAUQev (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 21 Jan 2021 11:34:51 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43290 "EHLO
+        id S1733096AbhAUQgz (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 21 Jan 2021 11:36:55 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43188 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1732522AbhAUP6r (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 21 Jan 2021 10:58:47 -0500
-Received: from smtp-8fa9.mail.infomaniak.ch (smtp-8fa9.mail.infomaniak.ch [IPv6:2001:1600:3:17::8fa9])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9FF14C061793
-        for <keyrings@vger.kernel.org>; Thu, 21 Jan 2021 07:58:20 -0800 (PST)
+        with ESMTP id S1732459AbhAUP6j (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 21 Jan 2021 10:58:39 -0500
+Received: from smtp-42ad.mail.infomaniak.ch (smtp-42ad.mail.infomaniak.ch [IPv6:2001:1600:3:17::42ad])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1FA79C061223
+        for <keyrings@vger.kernel.org>; Thu, 21 Jan 2021 07:57:20 -0800 (PST)
 Received: from smtp-2-0000.mail.infomaniak.ch (unknown [10.5.36.107])
-        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DM6Rr1BKfzMr5GF;
-        Thu, 21 Jan 2021 16:55:36 +0100 (CET)
+        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DM6Rm4WDMzMr6dq;
+        Thu, 21 Jan 2021 16:55:32 +0100 (CET)
 Received: from localhost (unknown [23.97.221.149])
-        by smtp-2-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DM6Rq5lVXzlppys;
-        Thu, 21 Jan 2021 16:55:35 +0100 (CET)
+        by smtp-2-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4DM6Rm1Cf9zlppys;
+        Thu, 21 Jan 2021 16:55:32 +0100 (CET)
 From:   =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>
 To:     David Howells <dhowells@redhat.com>,
         David Woodhouse <dwmw2@infradead.org>,
@@ -43,10 +43,11 @@ Cc:     =?UTF-8?q?Micka=C3=ABl=20Sala=C3=BCn?= <mic@digikod.net>,
         keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
         linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org,
+        Alex Shi <alex.shi@linux.alibaba.com>,
         Ben Boeckel <mathstuf@gmail.com>
-Subject: [PATCH v4 09/10] PKCS#7: Fix missing include
-Date:   Thu, 21 Jan 2021 16:55:12 +0100
-Message-Id: <20210121155513.539519-10-mic@digikod.net>
+Subject: [PATCH v4 07/10] certs/blacklist: fix kernel doc interface issue
+Date:   Thu, 21 Jan 2021 16:55:10 +0100
+Message-Id: <20210121155513.539519-8-mic@digikod.net>
 X-Mailer: git-send-email 2.30.0
 In-Reply-To: <20210121155513.539519-1-mic@digikod.net>
 References: <20210121155513.539519-1-mic@digikod.net>
@@ -57,15 +58,18 @@ Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Mickaël Salaün <mic@linux.microsoft.com>
+From: Alex Shi <alex.shi@linux.alibaba.com>
 
-Add missing linux/types.h for size_t.
+certs/blacklist.c:84: warning: Function parameter or member 'hash' not
+described in 'mark_hash_blacklisted'
 
-[DH: Changed from stddef.h]
-
-Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: keyrings@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Alex Shi <alex.shi@linux.alibaba.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 Reviewed-by: Ben Boeckel <mathstuf@gmail.com>
+Signed-off-by: Mickaël Salaün <mic@linux.microsoft.com>
 Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
 ---
 
@@ -73,26 +77,27 @@ Changes since v3:
 * Add Reviewed-by Jarkko Sakkinen.
 
 Changes since v2:
-* Cherry-pick v1 patch from
+* Cherry-pick patch from
   https://lore.kernel.org/lkml/2659836.1607940186@warthog.procyon.org.uk/
-  to rebase on v5.11-rc3.
+  to avoid future merge conflicts.
+* Rearrange Signed-off-by and Reviewed-by order.
 ---
- include/linux/verification.h | 2 ++
- 1 file changed, 2 insertions(+)
+ certs/blacklist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/verification.h b/include/linux/verification.h
-index 911ab7c2b1ab..a655923335ae 100644
---- a/include/linux/verification.h
-+++ b/include/linux/verification.h
-@@ -8,6 +8,8 @@
- #ifndef _LINUX_VERIFICATION_H
- #define _LINUX_VERIFICATION_H
+diff --git a/certs/blacklist.c b/certs/blacklist.c
+index 069050884bd2..334ab7b964bc 100644
+--- a/certs/blacklist.c
++++ b/certs/blacklist.c
+@@ -105,7 +105,7 @@ static struct key_type key_type_blacklist = {
  
-+#include <linux/types.h>
-+
- /*
-  * Indicate that both builtin trusted keys and secondary trusted keys
-  * should be used.
+ /**
+  * mark_hash_blacklisted - Add a hash to the system blacklist
+- * @hash - The hash as a hex string with a type prefix (eg. "tbs:23aa429783")
++ * @hash: The hash as a hex string with a type prefix (eg. "tbs:23aa429783")
+  */
+ int mark_hash_blacklisted(const char *hash)
+ {
 -- 
 2.30.0
 
