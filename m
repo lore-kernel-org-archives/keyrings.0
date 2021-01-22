@@ -2,72 +2,70 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-18.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,MSGID_FROM_MTA_HEADER,SPF_HELO_NONE,
-	SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-13.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,MSGID_FROM_MTA_HEADER,SPF_HELO_NONE,SPF_PASS,
+	USER_AGENT_GIT autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 52844C433E9
-	for <keyrings@archiver.kernel.org>; Fri, 22 Jan 2021 18:44:15 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 8135AC43381
+	for <keyrings@archiver.kernel.org>; Fri, 22 Jan 2021 19:17:22 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 1DCD323AC2
-	for <keyrings@archiver.kernel.org>; Fri, 22 Jan 2021 18:44:15 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 54FB223AC8
+	for <keyrings@archiver.kernel.org>; Fri, 22 Jan 2021 19:17:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729985AbhAVSnC (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 22 Jan 2021 13:43:02 -0500
-Received: from aserp2120.oracle.com ([141.146.126.78]:49848 "EHLO
-        aserp2120.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1729633AbhAVSOd (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Fri, 22 Jan 2021 13:14:33 -0500
-Received: from pps.filterd (aserp2120.oracle.com [127.0.0.1])
-        by aserp2120.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 10MIAcum038714;
-        Fri, 22 Jan 2021 18:13:40 GMT
+        id S1729643AbhAVSms (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 22 Jan 2021 13:42:48 -0500
+Received: from userp2130.oracle.com ([156.151.31.86]:45572 "EHLO
+        userp2130.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1728978AbhAVSNO (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 22 Jan 2021 13:13:14 -0500
+Received: from pps.filterd (userp2130.oracle.com [127.0.0.1])
+        by userp2130.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 10MI9dRq150783;
+        Fri, 22 Jan 2021 18:11:35 GMT
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=oracle.com; h=from : to : cc :
- subject : date : message-id : in-reply-to : references : content-type :
- mime-version; s=corp-2020-01-29;
- bh=jFhaaN6+2ClnE90wSGul6o1qszCGh3uNfMkXhhYxoVg=;
- b=wWbDmRxG0chyVCBcyXyVpgbmDjlbj0td1kFllhlBhZmBfn6qikVRbJWzGkjOvxqdHU9w
- puWE/aCiiYBzLU6cpxTruTonGvM5wS8q9yvdN0As961AtXDCIBGFT3lKHqFTTIpA0WD5
- oRc3tvy2RbSPFR2LNG6/LCY+4SL9+phGmvajwv4RQo6fhWg4hNAwW3qZNQM+mtJzCn3O
- ByTdBpurYnOm744A91gLJ8DsqhsndZX6bIF4MPZ7EnaKqRVWa8iPya2JFMC43AHksd1H
- UtQJG2u+glZlnovZxsTpPke4sGjUjIkuey3QN2HFs4F22flyBd0K3OJKbhIAAIwj5Ko6 nA== 
+ subject : date : message-id : content-type : mime-version;
+ s=corp-2020-01-29; bh=4Kdy3H1vNCwIMuqOEPXO+hJ8hB+cADG3Kgr05wZdrMQ=;
+ b=aA1d8bWI7nJ0uFEsEChzcwNgdX7h53YuBEE8e+Isa3ppM9IdME4WwQ+mVa4ExWyiwF90
+ vFXzNkfz1Q2bXy7LoXESO2051vY2Z1PyKhf+Y2MRLdehTiYEYuTaboTid93ln2u8xcY6
+ DoyOhBZ00mCa7lZqs3adI3u5S2orOD0NAu6elE+Tl792xwoXFBCeSItOVbaoe5+o3v0Q
+ i5xLmBubMm2RDwM+gziJqek53Jqp9dkT03e4mwg5oRbRNG+KCw9LSb3fZ6hk27dUC5DQ
+ tLiJAaBI6tVIwtfmfVWxILCcnVZxVpNtB+3CaMbBWlglknouCBQo/nS4CWMnTyM2vM+j OQ== 
 Received: from userp3020.oracle.com (userp3020.oracle.com [156.151.31.79])
-        by aserp2120.oracle.com with ESMTP id 3668qn5csb-1
+        by userp2130.oracle.com with ESMTP id 3668qand96-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Fri, 22 Jan 2021 18:13:39 +0000
+        Fri, 22 Jan 2021 18:11:34 +0000
 Received: from pps.filterd (userp3020.oracle.com [127.0.0.1])
-        by userp3020.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 10MI4xMq149816;
-        Fri, 22 Jan 2021 18:11:39 GMT
-Received: from nam10-bn7-obe.outbound.protection.outlook.com (mail-bn7nam10lp2109.outbound.protection.outlook.com [104.47.70.109])
-        by userp3020.oracle.com with ESMTP id 3668r1dqa5-2
+        by userp3020.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 10MI4xS4149933;
+        Fri, 22 Jan 2021 18:11:34 GMT
+Received: from nam10-bn7-obe.outbound.protection.outlook.com (mail-bn7nam10lp2108.outbound.protection.outlook.com [104.47.70.108])
+        by userp3020.oracle.com with ESMTP id 3668r1dq72-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Fri, 22 Jan 2021 18:11:38 +0000
+        Fri, 22 Jan 2021 18:11:34 +0000
 ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
- b=gqID+BVfeqBo/NSyAWPM1WQvze5C8NDku6rvfKI06vxd2UchfqRhI0z43vcaml+Uzot+j5wga1ku2VVPT+xxQ3fW4nWjAynJDL4wyk6FfV34fhxzZNQkGDDLMerhKIx+d7JRKl6W4M+LGGSIqpC2pcGZPVl+76FhvwLO3pl+XuIzDOfL2/G8+l+kmrWI7ul1Ru3UiISzLyXDzJvytWLrgKAyehRGTFNTDmKpOb92FsGKeqnA76EYeYxCg0UTCaUJMZqONBVTRXnlEaXGQkm4m5DcOIpInr/Za1aCsYoz79pMuI65AinrGp3/QYO7gKMO715KkZETbtUs5WwBEZLsOQ==
+ b=IYCXJpBCTeFm9W8WgwYegd5/iwp81Do9njUKXZHT892sQf5cFA/XFdQVWLA4dYQh2/eFk1oIt4LMcvhO8bxJpPfeKaKpoZllvy1G9Eph4OOj/F+jnAzutdROF5K6dPN1jHAd3L6LelDsKssMxr+e37Y1Twl7DycXbT7tlUiug8Pc59GFfYrxKGrGASZlQtR6u2r9jhnbyVPJU8idZeBz7ivB6g3be8YQExmn3yBOsXYkUZJLBq1wy9+AuDkFe/Yt/lT+ewA0IZEFXVbHkUzVJRmokj192jLHyhoPWbX/J5FwcCzCIVJ2SnipVD4KMP5TEs1x09ZRjCooPJlZXllfog==
 ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
  s=arcselector9901;
  h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=jFhaaN6+2ClnE90wSGul6o1qszCGh3uNfMkXhhYxoVg=;
- b=VW15JNLK/Wdwu4kDv4SQQ3NE02xjPbNJl6P+YojSm3NFU6/8+8Oy/cia+BxS5o91cqYLAOutuQJTg9hqphHQL07oxymDA/YqCuoX/K8jN2I7RN/Qrf27k+2dbjI65tIauuhdgysktUjn84K+iaNVqU5n0r6XZ16o4ujRKa7LaNjMtjnvinj+nGiLN+KOqoum0GWDITaqIH1BhTgpLcLLZeTYYreSS3jouTL5X/YI3sTykS7pPCBGzOxVyKq8QKgGBbM7qjeeBWt+1YWMxprLTGUbRuhDJ+A5EHGDiEooDSaplEQiYMD2udjGuf3jpFu95w70jRM5TyUc4/4JRjOMzA==
+ bh=4Kdy3H1vNCwIMuqOEPXO+hJ8hB+cADG3Kgr05wZdrMQ=;
+ b=FsPU26Wry/SpTZ+6lCkfwRcBPaDmz5tuschXeU1Q5grBWA8RGSnnkk5edk8JJxB27+vWZyBIsF7DvxGvePcQST6rWu0pg1ptRHZmSw+vc/k+vpYeAx8zIfKRWLS0TRwXnRiyVGAL36aWssUBo5rQSNWuhaBNtMolJXg3iTdFv7uQsz2UydG4DFlRPbjeP4pwBY7wAxj6yO1kIxU+2TCQd8H6PRMyXCvzPhP3YSQ9WaXfj7Ow3tcSPrDWdNgGWQtjvXzTw8nSoyAMUUCZb9ImiHaAwApoQcZ/5YFkyoi+i64gV8xdfYvkwGTIOPgGOG4jPPuxX0+8NbncPhMsdzkndw==
 ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
  smtp.mailfrom=oracle.com; dmarc=pass action=none header.from=oracle.com;
  dkim=pass header.d=oracle.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
  d=oracle.onmicrosoft.com; s=selector2-oracle-onmicrosoft-com;
  h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=jFhaaN6+2ClnE90wSGul6o1qszCGh3uNfMkXhhYxoVg=;
- b=f6SZq2WKa9jR4nEb/4zHCkxnJaIjAdSxKS0P+VqnFgp9jDtx05iVxtVOlrwNCRv0HyM9N7tYdFaFgLIJHNYvQ5fMyuA3Yio0jDpNuu5sVESAP6Vf43npfkh+foRwrs6aHYkj8s76KHm+uXU3cwLrN+TYcJcgkerEqQf3R4//f1Q=
+ bh=4Kdy3H1vNCwIMuqOEPXO+hJ8hB+cADG3Kgr05wZdrMQ=;
+ b=T8uE/y5IATvsrvDUII54bJXSwEHm6U+8JCXrS1TzVhNbvzJzl55GzBTCs/r923AB3cgNmFk9hHiRRKEenCiAR2LuHlsna5LFOA0Y+qUofeoRfRMw7p+qNWujmt3yhV0ucuro3pl+iUM+i5zsSlIQfIvzvgWlbeSlAGyIA1MgI4Q=
 Authentication-Results: redhat.com; dkim=none (message not signed)
  header.d=none;redhat.com; dmarc=none action=none header.from=oracle.com;
 Received: from DM6PR10MB3099.namprd10.prod.outlook.com (2603:10b6:5:1ad::18)
  by DM5PR10MB1673.namprd10.prod.outlook.com (2603:10b6:4:6::14) with Microsoft
  SMTP Server (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- 15.20.3784.11; Fri, 22 Jan 2021 18:11:37 +0000
+ 15.20.3784.11; Fri, 22 Jan 2021 18:11:32 +0000
 Received: from DM6PR10MB3099.namprd10.prod.outlook.com
  ([fe80::70bf:d626:5218:70e4]) by DM6PR10MB3099.namprd10.prod.outlook.com
  ([fe80::70bf:d626:5218:70e4%7]) with mapi id 15.20.3763.017; Fri, 22 Jan 2021
- 18:11:37 +0000
+ 18:11:32 +0000
 From:   Eric Snowberg <eric.snowberg@oracle.com>
 To:     dhowells@redhat.com, dwmw2@infradead.org, jarkko@kernel.org,
         James.Bottomley@HansenPartnership.com
@@ -76,12 +74,10 @@ Cc:     masahiroy@kernel.org, michal.lkml@markovi.net, jmorris@namei.org,
         zohar@linux.ibm.com, lszubowi@redhat.com, javierm@redhat.com,
         keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-kbuild@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH v5 3/4] certs: Add ability to preload revocation certs
-Date:   Fri, 22 Jan 2021 13:10:53 -0500
-Message-Id: <20210122181054.32635-4-eric.snowberg@oracle.com>
+Subject: [PATCH v5 0/4] Add EFI_CERT_X509_GUID support for dbx/mokx entries
+Date:   Fri, 22 Jan 2021 13:10:50 -0500
+Message-Id: <20210122181054.32635-1-eric.snowberg@oracle.com>
 X-Mailer: git-send-email 2.18.4
-In-Reply-To: <20210122181054.32635-1-eric.snowberg@oracle.com>
-References: <20210122181054.32635-1-eric.snowberg@oracle.com>
 Content-Type: text/plain
 X-Originating-IP: [138.3.200.2]
 X-ClientProxiedBy: CH2PR10CA0006.namprd10.prod.outlook.com
@@ -89,44 +85,44 @@ X-ClientProxiedBy: CH2PR10CA0006.namprd10.prod.outlook.com
  (2603:10b6:5:1ad::18)
 MIME-Version: 1.0
 X-MS-Exchange-MessageSentRepresentingType: 1
-Received: from localhost.us.oracle.com (138.3.200.2) by CH2PR10CA0006.namprd10.prod.outlook.com (2603:10b6:610:4c::16) with Microsoft SMTP Server (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.3784.11 via Frontend Transport; Fri, 22 Jan 2021 18:11:35 +0000
+Received: from localhost.us.oracle.com (138.3.200.2) by CH2PR10CA0006.namprd10.prod.outlook.com (2603:10b6:610:4c::16) with Microsoft SMTP Server (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.3784.11 via Frontend Transport; Fri, 22 Jan 2021 18:11:30 +0000
 X-MS-PublicTrafficType: Email
-X-MS-Office365-Filtering-Correlation-Id: ee3b9d6a-9cfa-4c6f-a11a-08d8bf0128cd
+X-MS-Office365-Filtering-Correlation-Id: 39b3255f-bb04-45a0-8927-08d8bf01259c
 X-MS-TrafficTypeDiagnostic: DM5PR10MB1673:
 X-MS-Exchange-Transport-Forked: True
-X-Microsoft-Antispam-PRVS: <DM5PR10MB167301EC46C85B44D2F86A3587A09@DM5PR10MB1673.namprd10.prod.outlook.com>
-X-MS-Oob-TLC-OOBClassifiers: OLM:8273;
+X-Microsoft-Antispam-PRVS: <DM5PR10MB16736B982C49B13BDCEE973287A09@DM5PR10MB1673.namprd10.prod.outlook.com>
+X-MS-Oob-TLC-OOBClassifiers: OLM:1079;
 X-MS-Exchange-SenderADCheck: 1
 X-Microsoft-Antispam: BCL:0;
-X-Microsoft-Antispam-Message-Info: ICjMV494sOVeqs5schre05cS1fZW4FJVrj0Dmb5sOVlKtAmpmNUkZ+GAu3xvMHlgizi2DqlqMGvoxJESb+ujpHDwSgPQ3Fe/vFsgvVELc3kUnMwWdM4MKTKoGjRGNdeug23qUVmqDb/Ep2uRpp3U7DHU1iGL5OpwRzpJmtljZofq/gH4cJJKUmBzgmIg3dD67oiCcp7VeTYQ4qc42zCRs8LOZYnlf3dd8zNTLXRnz0juXfXxmZWUrF9OwxjQyCB0ZlhFsLI8JD3InZZdeKpzYkFiPojOk3pF1OyYX4kV6IY2VqTNxtSGRW0TtjzuhKhFTLf12ihBERs6wx+75Otei6273krexKYgpVD0NfKVfVCFNTvcZs1NhUTFencW/toXd+CHNWayfqKyIC6MhhzUrmsk2BtAHvm3enwauoY+xS5b43zUom67pF7WWorHVw0qlrEqPtw+feRBI/j+kSU0qhODi1iJ+I2u7NqUMvJ2OPDYLRMQQpsHRKDwA/70L2E94lW+WqETAug6E7UsXX94Lg==
-X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:DM6PR10MB3099.namprd10.prod.outlook.com;PTR:;CAT:NONE;SFS:(376002)(396003)(39860400002)(366004)(136003)(346002)(316002)(7416002)(6486002)(7696005)(2616005)(1076003)(52116002)(5660300002)(4326008)(44832011)(2906002)(8676002)(16526019)(26005)(66946007)(478600001)(186003)(956004)(36756003)(83380400001)(66556008)(66476007)(8936002)(86362001)(6666004);DIR:OUT;SFP:1101;
-X-MS-Exchange-AntiSpam-MessageData: =?us-ascii?Q?XuxvA+S1EFyUl4eBDa/H234r3fLh8N2TkTbKNo0XCGnY51+y82+xN07FkzQE?=
- =?us-ascii?Q?Q7eisD96lYL4C6CcJu3bd7ZVKlTmH0CUsnk9xkE90KJK927/1uYwLg4cJmva?=
- =?us-ascii?Q?7026mJYkHSYdcRbMkKiCiEim7Pc/Ne8JvfXu4da1qfq7FKSu+f7uwI7w4PQ6?=
- =?us-ascii?Q?6/wd5rjUN0GrXel3AwR7KoDfE6URFYMO3lVQvOQp/UXORW0n+XX1YSEvePma?=
- =?us-ascii?Q?aXYdIiX2MtOHtVBJN+RkZcliROeLCpeKWeuG74clQxyS/zBlkRs6exnhWwAN?=
- =?us-ascii?Q?Scc0Wr+LYiSYXciCZBy1J7IIMYRqeMZjn5xbAcJ7kPj300pjRU3w9eLCpb+k?=
- =?us-ascii?Q?/hXtunCAs1RvFcwoHtaKhEZD+trPnH00TwXlGfpBq1gfFXZi5Nx/iEgY4hKQ?=
- =?us-ascii?Q?pPUuY9BTCbaIT5PMsiwsYTSYAP4SFIYjEknoql+LTtnObWM3QfoAmhivRI0Z?=
- =?us-ascii?Q?8nxhz1OVBfIO0ChXyfLbwPbXAZzoQ+fmnnXcS1uq2CZWneOVSCpNDNwMCamy?=
- =?us-ascii?Q?lttj8qCU+iiFyr8Via005zYX55zidt51I65eeP7CSAzGRyqdMXuDU9RJO4kN?=
- =?us-ascii?Q?T4l9178egM7rF7EYbiN76+HLMxRNAB33BjsFKsDyZvdoqIHW0WVZRiiKq11L?=
- =?us-ascii?Q?3cRFHg9YJLCTHR2jEQAiRVg22dnf+qi5DzXQ3SEOOO+8QZ8CqDIm83VkhKXa?=
- =?us-ascii?Q?qRwyNo2PQdkb6tQQ5MDQqDzDI4qcKnepWfQiOc6l9qbn6oWFeCWGHfnXSK0G?=
- =?us-ascii?Q?eooY9axrhHAIip/QC1l2lIIBR7RxIf15FNJR1Hd3W9uIcgwvdUjMHa0ZcJmo?=
- =?us-ascii?Q?cpZ7pI1Ah0GwClHHduXEuqhJtV3/1RWiwPopEhBW8v96S+PqzhHEnAF0NpVE?=
- =?us-ascii?Q?IEFUiSUl4cbhuZ+5Di0DxpntbU010o3A/iI/Ys60MeJcxhYGhcBv+0bhGFH/?=
- =?us-ascii?Q?0xbEpkeUhC87SwTCH7QqHnPjdDsMumsKc+ljxex5Jn0=3D?=
+X-Microsoft-Antispam-Message-Info: ucpL3MCWWdNqCLuh31e1AH2NBQHlb4RlWeIfHmaVgWLO3DewaUbvOqEmVglDCEOfohxw4ag32FIou1TkBsjuf+ErV5kdwRyBIXmNM0VeW/n8AChHlVykVNEQDnrb93j1uy+23ux9U6DqObOSYGYQWLogiSQehLkoMWbyYgePfVNefMIp/4kvB/1UUp8r4iCbhjpilm4jLoYxqQpPD1HPunz079OB7NYjRtsO7RfdSHCpowtrKWUgIftPjYd9E494YJmxB921/YJKuKMjSjM86v+BsDQsjJ7bGC76PTLIahut5Y5k2ejGvkKCb9DKiGVyEuN9C5LMzqAW5L2x9arJiVPVUpvEON6owEdbyE4Aa733pARM4teHENs7mOrK47wThkZCBWpvs7cGd0WbcQn46xHVjmZuXrlruOpRS41p2R5B89Ooq20N1YDBiQVyjq6F6RshS9Sg9UEfinahIXWGpucPw3iZU9//jnyxQUANpPVFbjEM9gU265ebxMDGQJmWCItYMxwI7yucJsFOJk2qpeSEeK5o4C7cScnjYyqVxZ0ZJthku0eQZZR+EPhi16V318LVLXgDLTcG0mu5SIXOnoQvKSgGujTQmLOvqStMazo=
+X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:DM6PR10MB3099.namprd10.prod.outlook.com;PTR:;CAT:NONE;SFS:(376002)(396003)(39860400002)(366004)(136003)(346002)(316002)(7416002)(6486002)(7696005)(2616005)(1076003)(966005)(52116002)(5660300002)(4326008)(44832011)(2906002)(8676002)(16526019)(26005)(66946007)(478600001)(186003)(956004)(36756003)(83380400001)(66556008)(66476007)(8936002)(86362001)(6666004);DIR:OUT;SFP:1101;
+X-MS-Exchange-AntiSpam-MessageData: =?us-ascii?Q?aemAvyxxAgk+mwroTydRLW41Nr6mY2TxlvuRQXmCbpKOYyuIIsUgnkQMbqFp?=
+ =?us-ascii?Q?2kGyHaeMEy06NaZBkhL9YiGymAbJKU2IRjygL8aele3gEvceS1R6V6m8Cs77?=
+ =?us-ascii?Q?2kYq3JD4iTS8DkgxFCd5/lNzuK99k85VxpNOyHGssOE2IFKTSues91O6F7u7?=
+ =?us-ascii?Q?lnryovp3wH6j69lAejLQcaKRy5vwDbJf0tudrtta8dMnSnKdGTM6ToBJHpnT?=
+ =?us-ascii?Q?lXbvNdP4MfIR2md1q+1kLsu6WbFD2t6I31w9mttMhXbI42Xui8jtZEAvwkrN?=
+ =?us-ascii?Q?blatJr9TsxeXfn0ExzG2yvK0onniFeYktIvY8DYokqVshp3s/UDv7B/WXSee?=
+ =?us-ascii?Q?7G0gEDI3XtWsKwdZ4PSmw5AG5Po3cp95lNkXfMfQsb/p4LysRN13t782jbJ9?=
+ =?us-ascii?Q?GFoNRMrDkafNuzbXiN8B2Kxy9f5Ox4YgEyb7u+YqwvEOSSarzrj0IzzSB+Zf?=
+ =?us-ascii?Q?D3bzfCv//S5gH3LFJhonpR7lrRifSk3lqHA7TNrL7X7DJEYSGGJmOp384SQd?=
+ =?us-ascii?Q?fEla1ubF62QXbZfkXrvE0pAdvD4wFuo5J5HL3L5/XinD7EBjQaGLnfQvEah2?=
+ =?us-ascii?Q?hNkAdptmv291HaP20+HCigFVa2hpMae3qYcqxciqg/8LEQzybI3SPUAZ8+jP?=
+ =?us-ascii?Q?AlIzyQ4sWVyDUWh2tiDoxdiO24nSVqerToEtf42xBF3D895dHA7f8erihwAT?=
+ =?us-ascii?Q?Rwx6cr3aDxnA2qQs395ZOHY2+SCzsojMghUaVuBN2tCT0wS18UhEueZutnGS?=
+ =?us-ascii?Q?yi4Eo6FnTzm7JUB5ExkRkz7DZAZojniQweVf+LagZWueFEDybYv/M/b+2eYC?=
+ =?us-ascii?Q?FDNIK8SXOQzoi2Av8YTHMCJ1S34iarDsPvarxIcx0g76PT8h7E8TMCD1hxE5?=
+ =?us-ascii?Q?C3jXrinN6Jvi8aqRz/BwbAShF9scbPMsVydxcw38iGCY9vOPSAV6rE0od4wQ?=
+ =?us-ascii?Q?bCxRqKEq7ILRhp1gilspm0Ilkz1frW2ZEkoqVZQ1K3I=3D?=
 X-OriginatorOrg: oracle.com
-X-MS-Exchange-CrossTenant-Network-Message-Id: ee3b9d6a-9cfa-4c6f-a11a-08d8bf0128cd
+X-MS-Exchange-CrossTenant-Network-Message-Id: 39b3255f-bb04-45a0-8927-08d8bf01259c
 X-MS-Exchange-CrossTenant-AuthSource: DM6PR10MB3099.namprd10.prod.outlook.com
 X-MS-Exchange-CrossTenant-AuthAs: Internal
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Jan 2021 18:11:37.5251
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Jan 2021 18:11:32.1482
  (UTC)
 X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
 X-MS-Exchange-CrossTenant-Id: 4e2c6054-71cb-48f1-bd6c-3a9705aca71b
 X-MS-Exchange-CrossTenant-MailboxType: HOSTED
-X-MS-Exchange-CrossTenant-UserPrincipalName: MhcFnNCfGQKWZvaiWT7GotTI2YPNYZW6H5m8XsjsWuo2gXTjHZ44GBZCp/BGGEFvJ+IzY8NAJgeXVyHSSld4xDBMsWcE2MBBaJ7tsiDMTAc=
+X-MS-Exchange-CrossTenant-UserPrincipalName: 5cXvcEHaAvZHJOlETFLFCCepxzOuVkEKnKCoLNgl3sFrbdrUbahLr4EvRHu/faQUtkgQGQfQ/1Y9zTpcrpaaAtVja2NEq6EZ+cuTBRMybxM=
 X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM5PR10MB1673
 X-Proofpoint-Virus-Version: vendor=nai engine=6200 definitions=9872 signatures=668683
 X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 bulkscore=0 phishscore=0 adultscore=0
@@ -134,161 +130,50 @@ X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 bulkscore=0 phish
  classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2009150000
  definitions=main-2101220093
 X-Proofpoint-Virus-Version: vendor=nai engine=6200 definitions=9872 signatures=668683
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 malwarescore=0 priorityscore=1501
- adultscore=0 impostorscore=0 mlxlogscore=999 spamscore=0 suspectscore=0
- phishscore=0 clxscore=1015 bulkscore=0 mlxscore=0 lowpriorityscore=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 suspectscore=0 spamscore=0
+ impostorscore=0 mlxscore=0 priorityscore=1501 phishscore=0 mlxlogscore=999
+ lowpriorityscore=0 malwarescore=0 adultscore=0 clxscore=1011 bulkscore=0
  classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2009150000
  definitions=main-2101220093
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Add a new Kconfig option called SYSTEM_REVOCATION_KEYS. If set,
-this option should be the filename of a PEM-formated file containing
-X.509 certificates to be included in the default blacklist keyring.
+This is the fifth patch series for adding support for 
+EFI_CERT_X509_GUID entries [1].  It has been expanded to not only include
+dbx entries but also entries in the mokx.  Additionally my series to
+preload these certificate [2] has also been included.
 
-Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
-Acked-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- certs/Kconfig                   |  8 ++++++++
- certs/Makefile                  | 18 ++++++++++++++++--
- certs/blacklist.c               | 17 +++++++++++++++++
- certs/revocation_certificates.S | 21 +++++++++++++++++++++
- scripts/Makefile                |  1 +
- 5 files changed, 63 insertions(+), 2 deletions(-)
+This series is based on v5.11-rc4.
+
+[1] https://patchwork.kernel.org/project/linux-security-module/patch/20200916004927.64276-1-eric.snowberg@oracle.com/
+[2] https://lore.kernel.org/patchwork/cover/1315485/
+
+Eric Snowberg (4):
+  certs: Add EFI_CERT_X509_GUID support for dbx entries
+  certs: Move load_system_certificate_list to a common function
+  certs: Add ability to preload revocation certs
+  integrity: Load mokx variables into the blacklist keyring
+
+ certs/Kconfig                                 |  8 +++
+ certs/Makefile                                | 20 ++++++-
+ certs/blacklist.c                             | 49 ++++++++++++++++
+ certs/blacklist.h                             | 12 ++++
+ certs/common.c                                | 56 +++++++++++++++++++
+ certs/common.h                                |  9 +++
+ certs/revocation_certificates.S               | 21 +++++++
+ certs/system_keyring.c                        | 55 +++---------------
+ include/keys/system_keyring.h                 | 11 ++++
+ scripts/Makefile                              |  1 +
+ .../platform_certs/keyring_handler.c          | 11 ++++
+ security/integrity/platform_certs/load_uefi.c | 20 ++++++-
+ 12 files changed, 222 insertions(+), 51 deletions(-)
+ create mode 100644 certs/common.c
+ create mode 100644 certs/common.h
  create mode 100644 certs/revocation_certificates.S
 
-diff --git a/certs/Kconfig b/certs/Kconfig
-index c94e93d8bccf..379a6e198459 100644
---- a/certs/Kconfig
-+++ b/certs/Kconfig
-@@ -83,4 +83,12 @@ config SYSTEM_BLACKLIST_HASH_LIST
- 	  wrapper to incorporate the list into the kernel.  Each <hash> should
- 	  be a string of hex digits.
- 
-+config SYSTEM_REVOCATION_KEYS
-+	string "X.509 certificates to be preloaded into the system blacklist keyring"
-+	depends on SYSTEM_BLACKLIST_KEYRING
-+	help
-+	  If set, this option should be the filename of a PEM-formatted file
-+	  containing X.509 certificates to be included in the default blacklist
-+	  keyring.
-+
- endmenu
-diff --git a/certs/Makefile b/certs/Makefile
-index f4b90bad8690..e3f4926fd21e 100644
---- a/certs/Makefile
-+++ b/certs/Makefile
-@@ -4,7 +4,7 @@
- #
- 
- obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += system_keyring.o system_certificates.o common.o
--obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o
-+obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist.o revocation_certificates.o common.o
- ifneq ($(CONFIG_SYSTEM_BLACKLIST_HASH_LIST),"")
- obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += blacklist_hashes.o
- else
-@@ -29,7 +29,7 @@ $(obj)/x509_certificate_list: scripts/extract-cert $(SYSTEM_TRUSTED_KEYS_SRCPREF
- 	$(call if_changed,extract_certs,$(SYSTEM_TRUSTED_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_TRUSTED_KEYS))
- endif # CONFIG_SYSTEM_TRUSTED_KEYRING
- 
--clean-files := x509_certificate_list .x509.list
-+clean-files := x509_certificate_list .x509.list x509_revocation_list
- 
- ifeq ($(CONFIG_MODULE_SIG),y)
- ###############################################################################
-@@ -104,3 +104,17 @@ targets += signing_key.x509
- $(obj)/signing_key.x509: scripts/extract-cert $(X509_DEP) FORCE
- 	$(call if_changed,extract_certs,$(MODULE_SIG_KEY_SRCPREFIX)$(CONFIG_MODULE_SIG_KEY))
- endif # CONFIG_MODULE_SIG
-+
-+ifeq ($(CONFIG_SYSTEM_BLACKLIST_KEYRING),y)
-+
-+$(eval $(call config_filename,SYSTEM_REVOCATION_KEYS))
-+
-+$(obj)/revocation_certificates.o: $(obj)/x509_revocation_list
-+
-+quiet_cmd_extract_certs  = EXTRACT_CERTS   $(patsubst "%",%,$(2))
-+      cmd_extract_certs  = scripts/extract-cert $(2) $@
-+
-+targets += x509_revocation_list
-+$(obj)/x509_revocation_list: scripts/extract-cert $(SYSTEM_REVOCATION_KEYS_SRCPREFIX)$(SYSTEM_REVOCATION_KEYS_FILENAME) FORCE
-+	$(call if_changed,extract_certs,$(SYSTEM_REVOCATION_KEYS_SRCPREFIX)$(CONFIG_SYSTEM_REVOCATION_KEYS))
-+endif
-diff --git a/certs/blacklist.c b/certs/blacklist.c
-index a7f021878a4b..4e8a1068adb2 100644
---- a/certs/blacklist.c
-+++ b/certs/blacklist.c
-@@ -16,9 +16,13 @@
- #include <linux/seq_file.h>
- #include <keys/system_keyring.h>
- #include "blacklist.h"
-+#include "common.h"
- 
- static struct key *blacklist_keyring;
- 
-+extern __initconst const u8 revocation_certificate_list[];
-+extern __initconst const unsigned long revocation_certificate_list_size;
-+
- /*
-  * The description must be a type prefix, a colon and then an even number of
-  * hex digits.  The hash is kept in the description.
-@@ -209,3 +213,16 @@ static int __init blacklist_init(void)
-  * Must be initialised before we try and load the keys into the keyring.
-  */
- device_initcall(blacklist_init);
-+
-+/*
-+ * Load the compiled-in list of revocation X.509 certificates.
-+ */
-+static __init int load_revocation_certificate_list(void)
-+{
-+	if (revocation_certificate_list_size)
-+		pr_notice("Loading compiled-in revocation X.509 certificates\n");
-+
-+	return load_certificate_list(revocation_certificate_list, revocation_certificate_list_size,
-+				     blacklist_keyring);
-+}
-+late_initcall(load_revocation_certificate_list);
-diff --git a/certs/revocation_certificates.S b/certs/revocation_certificates.S
-new file mode 100644
-index 000000000000..f21aae8a8f0e
---- /dev/null
-+++ b/certs/revocation_certificates.S
-@@ -0,0 +1,21 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+#include <linux/export.h>
-+#include <linux/init.h>
-+
-+	__INITRODATA
-+
-+	.align 8
-+	.globl revocation_certificate_list
-+revocation_certificate_list:
-+__revocation_list_start:
-+	.incbin "certs/x509_revocation_list"
-+__revocation_list_end:
-+
-+	.align 8
-+	.globl revocation_certificate_list_size
-+revocation_certificate_list_size:
-+#ifdef CONFIG_64BIT
-+	.quad __revocation_list_end - __revocation_list_start
-+#else
-+	.long __revocation_list_end - __revocation_list_start
-+#endif
-diff --git a/scripts/Makefile b/scripts/Makefile
-index b5418ec587fb..983b785f13cb 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -11,6 +11,7 @@ hostprogs-always-$(CONFIG_ASN1)				+= asn1_compiler
- hostprogs-always-$(CONFIG_MODULE_SIG_FORMAT)		+= sign-file
- hostprogs-always-$(CONFIG_SYSTEM_TRUSTED_KEYRING)	+= extract-cert
- hostprogs-always-$(CONFIG_SYSTEM_EXTRA_CERTIFICATE)	+= insert-sys-cert
-+ hostprogs-always-$(CONFIG_SYSTEM_BLACKLIST_KEYRING)	+= extract-cert
- 
- HOSTCFLAGS_sorttable.o = -I$(srctree)/tools/include
- HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
+
+base-commit: 19c329f6808995b142b3966301f217c831e7cf31
 -- 
 2.18.4
 
