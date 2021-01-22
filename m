@@ -2,109 +2,161 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-15.9 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 61BE2C433DB
-	for <keyrings@archiver.kernel.org>; Tue, 19 Jan 2021 00:12:22 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0B645C433DB
+	for <keyrings@archiver.kernel.org>; Fri, 22 Jan 2021 08:46:27 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 230C722EBF
-	for <keyrings@archiver.kernel.org>; Tue, 19 Jan 2021 00:12:22 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id CBF5D239EF
+	for <keyrings@archiver.kernel.org>; Fri, 22 Jan 2021 08:46:26 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2391111AbhASAMG (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 18 Jan 2021 19:12:06 -0500
-Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:47768 "EHLO
-        us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S2390871AbhASAMF (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 18 Jan 2021 19:12:05 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1611015039;
-        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding;
-        bh=k8uZwZ9l9/9GHM34N72Urrm3zDwDS5163gHM9WUjrbg=;
-        b=N1PXWVKhMMIDMIXDYOaS3HL03n/rXd/p4AKvs/5dQxHBGNYCbJNwuaEIcX+PpnOvQVR3NS
-        rrqFE6Q7ppa7LrJeTRuwx52SiwVCeQ9P1Q7qctdfGUcXOygbPPV/G96v+5iokaGD3hIcLh
-        ZOz4BYVcDU7nYcohlBwai8i6tPwrgiM=
-Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
- [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
- us-mta-233-32ViLy7wPfmqPoRVTwRs-A-1; Mon, 18 Jan 2021 19:10:37 -0500
-X-MC-Unique: 32ViLy7wPfmqPoRVTwRs-A-1
-Received: from smtp.corp.redhat.com (int-mx01.intmail.prod.int.phx2.redhat.com [10.5.11.11])
-        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id ACA7118C89C4;
-        Tue, 19 Jan 2021 00:10:35 +0000 (UTC)
-Received: from warthog.procyon.org.uk (ovpn-115-23.rdu2.redhat.com [10.10.115.23])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 1A20370464;
-        Tue, 19 Jan 2021 00:10:33 +0000 (UTC)
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-        Kingdom.
-        Registered in England and Wales under Company Registration No. 3798903
-From:   David Howells <dhowells@redhat.com>
-To:     torvalds@linux-foundation.org
-Cc:     Tobias Markus <tobias@markus-regensburg.de>,
-        Tianjia Zhang <tianjia.zhang@linux.alibaba.com>,
-        dhowells@redhat.com, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: 
+        id S1726688AbhAVIpg (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Fri, 22 Jan 2021 03:45:36 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34174 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1727263AbhAVIov (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Fri, 22 Jan 2021 03:44:51 -0500
+Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F3BD5C061786
+        for <keyrings@vger.kernel.org>; Fri, 22 Jan 2021 00:44:09 -0800 (PST)
+Received: from dude.hi.pengutronix.de ([2001:67c:670:100:1d::7])
+        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
+        (Exim 4.92)
+        (envelope-from <afa@pengutronix.de>)
+        id 1l2s2s-00061d-GP; Fri, 22 Jan 2021 09:43:54 +0100
+Received: from afa by dude.hi.pengutronix.de with local (Exim 4.92)
+        (envelope-from <afa@pengutronix.de>)
+        id 1l2s2r-0006HR-PH; Fri, 22 Jan 2021 09:43:53 +0100
+From:   Ahmad Fatoum <a.fatoum@pengutronix.de>
+To:     Alasdair Kergon <agk@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com,
+        Song Liu <song@kernel.org>
+Cc:     kernel@pengutronix.de, Ahmad Fatoum <a.fatoum@pengutronix.de>,
+        =?UTF-8?q?Jan=20L=C3=BCbbe?= <jlu@pengutronix.de>,
+        linux-integrity@vger.kernel.org, keyrings@vger.kernel.org,
+        Dmitry Baryshkov <dbaryshkov@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
+Subject: [PATCH 2/2] dm crypt: support using trusted keys
+Date:   Fri, 22 Jan 2021 09:43:21 +0100
+Message-Id: <20210122084321.24012-2-a.fatoum@pengutronix.de>
+X-Mailer: git-send-email 2.30.0
+In-Reply-To: <20210122084321.24012-1-a.fatoum@pengutronix.de>
+References: <20210122084321.24012-1-a.fatoum@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date:   Tue, 19 Jan 2021 00:10:33 +0000
-Message-ID: <163546.1611015033@warthog.procyon.org.uk>
-X-Scanned-By: MIMEDefang 2.79 on 10.5.11.11
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
+X-SA-Exim-Mail-From: afa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: keyrings@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+Commit 27f5411a718c ("dm crypt: support using encrypted keys") extended
+dm-crypt to allow use of "encrypted" keys along with "user" and "logon".
 
-From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Along the same lines, teach dm-crypt to support "trusted" keys as well.
 
-On the following call path, `sig->pkey_algo` is not assigned
-in asymmetric_key_verify_signature(), which causes runtime
-crash in public_key_verify_signature().
-
-  keyctl_pkey_verify
-    asymmetric_key_verify_signature
-      verify_signature
-        public_key_verify_signature
-
-This patch simply check this situation and fixes the crash
-caused by NULL pointer.
-
-Fixes: 215525639631 ("X.509: support OSCCA SM2-with-SM3 certificate verific=
-ation")
-Reported-by: Tobias Markus <tobias@markus-regensburg.de>
-Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-and-tested-by: Toke H=C3=B8iland-J=C3=B8rgensen <toke@redhat.com>
-Tested-by: Jo=C3=A3o Fonseca <jpedrofonseca@ua.pt>
-Cc: stable@vger.kernel.org # v5.10+
+Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
 ---
+Unsure on whether target_type::version is something authors increment or
+maintainers fix up. I can respin if needed.
 
- crypto/asymmetric_keys/public_key.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Cc: Jan Lübbe <jlu@pengutronix.de>
+Cc: linux-integrity@vger.kernel.org
+Cc: keyrings@vger.kernel.org
+Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+---
+ .../admin-guide/device-mapper/dm-crypt.rst    |  2 +-
+ drivers/md/Kconfig                            |  1 +
+ drivers/md/dm-crypt.c                         | 23 ++++++++++++++++++-
+ 3 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/p=
-ublic_key.c
-index 8892908ad58c..788a4ba1e2e7 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -356,7 +356,8 @@ int public_key_verify_signature(const struct public_key=
- *pkey,
- 	if (ret)
- 		goto error_free_key;
-=20
--	if (strcmp(sig->pkey_algo, "sm2") =3D=3D 0 && sig->data_size) {
-+	if (sig->pkey_algo && strcmp(sig->pkey_algo, "sm2") =3D=3D 0 &&
-+	    sig->data_size) {
- 		ret =3D cert_sig_digest_update(sig, tfm);
- 		if (ret)
- 			goto error_free_key;
+diff --git a/Documentation/admin-guide/device-mapper/dm-crypt.rst b/Documentation/admin-guide/device-mapper/dm-crypt.rst
+index 1a6753b76dbb..aa2d04d95df6 100644
+--- a/Documentation/admin-guide/device-mapper/dm-crypt.rst
++++ b/Documentation/admin-guide/device-mapper/dm-crypt.rst
+@@ -67,7 +67,7 @@ Parameters::
+     the value passed in <key_size>.
+ 
+ <key_type>
+-    Either 'logon', 'user' or 'encrypted' kernel key type.
++    Either 'logon', 'user', 'encrypted' or 'trusted' kernel key type.
+ 
+ <key_description>
+     The kernel keyring key description crypt target should look for
+diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
+index 9e44c09f6410..f2014385d48b 100644
+--- a/drivers/md/Kconfig
++++ b/drivers/md/Kconfig
+@@ -270,6 +270,7 @@ config DM_CRYPT
+ 	tristate "Crypt target support"
+ 	depends on BLK_DEV_DM
+ 	depends on (ENCRYPTED_KEYS || ENCRYPTED_KEYS=n)
++	depends on (TRUSTED_KEYS || TRUSTED_KEYS=n)
+ 	select CRYPTO
+ 	select CRYPTO_CBC
+ 	select CRYPTO_ESSIV
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 7eeb9248eda5..6c7c687e546c 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -37,6 +37,7 @@
+ #include <linux/key-type.h>
+ #include <keys/user-type.h>
+ #include <keys/encrypted-type.h>
++#include <keys/trusted-type.h>
+ 
+ #include <linux/device-mapper.h>
+ 
+@@ -2452,6 +2453,22 @@ static int set_key_encrypted(struct crypt_config *cc, struct key *key)
+ 	return 0;
+ }
+ 
++static int set_key_trusted(struct crypt_config *cc, struct key *key)
++{
++	const struct trusted_key_payload *tkp;
++
++	tkp = key->payload.data[0];
++	if (!tkp)
++		return -EKEYREVOKED;
++
++	if (cc->key_size != tkp->key_len)
++		return -EINVAL;
++
++	memcpy(cc->key, tkp->key, cc->key_size);
++
++	return 0;
++}
++
+ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string)
+ {
+ 	char *new_key_string, *key_desc;
+@@ -2484,6 +2501,10 @@ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string
+ 		   !strncmp(key_string, "encrypted:", key_desc - key_string + 1)) {
+ 		type = &key_type_encrypted;
+ 		set_key = set_key_encrypted;
++	} else if (IS_ENABLED(CONFIG_TRUSTED_KEYS) &&
++	           !strncmp(key_string, "trusted:", key_desc - key_string + 1)) {
++		type = &key_type_trusted;
++		set_key = set_key_trusted;
+ 	} else {
+ 		return -EINVAL;
+ 	}
+@@ -3555,7 +3576,7 @@ static void crypt_io_hints(struct dm_target *ti, struct queue_limits *limits)
+ 
+ static struct target_type crypt_target = {
+ 	.name   = "crypt",
+-	.version = {1, 22, 0},
++	.version = {1, 23, 0},
+ 	.module = THIS_MODULE,
+ 	.ctr    = crypt_ctr,
+ 	.dtr    = crypt_dtr,
+-- 
+2.30.0
 
