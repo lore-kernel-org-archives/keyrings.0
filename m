@@ -2,87 +2,133 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-6.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 97AD7C433E6
-	for <keyrings@archiver.kernel.org>; Wed, 27 Jan 2021 11:56:29 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1FDD9C433E0
+	for <keyrings@archiver.kernel.org>; Wed, 27 Jan 2021 12:37:23 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 52A4F2076B
-	for <keyrings@archiver.kernel.org>; Wed, 27 Jan 2021 11:56:29 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id C8AD720739
+	for <keyrings@archiver.kernel.org>; Wed, 27 Jan 2021 12:37:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234597AbhA0L4A (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 27 Jan 2021 06:56:00 -0500
-Received: from us-smtp-delivery-124.mimecast.com ([216.205.24.124]:44238 "EHLO
-        us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S234254AbhA0Lrs (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 27 Jan 2021 06:47:48 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
-        s=mimecast20190719; t=1611747982;
-        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=uGnFFbNsJBXnBWydvWton8GaNo0bt/G64Cx3q+ooLGE=;
-        b=FRvO9NAD05eCKxqu0jenJskPI55i0i8V/72Oe0EPT66t/hkB4aljVieLGaPjyAnvOrj8Hr
-        4lNBtJYcv/AZSM41qarb5ayHI/yPXRVEEn0VdAz0jGy7GgZTdIPfypW9WFjJowgoF9sSCR
-        L+gwwJUbwUp8TJSDcWRFZaVx5n6jMkE=
-Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
- [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
- us-mta-525-BzXRkwwmNAyQlm6f4Tn4tg-1; Wed, 27 Jan 2021 06:46:18 -0500
-X-MC-Unique: BzXRkwwmNAyQlm6f4Tn4tg-1
-Received: from smtp.corp.redhat.com (int-mx06.intmail.prod.int.phx2.redhat.com [10.5.11.16])
-        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 4694B8030A3;
-        Wed, 27 Jan 2021 11:46:16 +0000 (UTC)
-Received: from warthog.procyon.org.uk (ovpn-115-23.rdu2.redhat.com [10.10.115.23])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id 355375C1A1;
-        Wed, 27 Jan 2021 11:46:12 +0000 (UTC)
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-        Kingdom.
-        Registered in England and Wales under Company Registration No. 3798903
-From:   David Howells <dhowells@redhat.com>
-In-Reply-To: <YAjMm9Gq/FFOzQYG@kernel.org>
-References: <YAjMm9Gq/FFOzQYG@kernel.org> <E090372C-06A3-4991-8FC3-F06A0DA60729@oracle.com> <20200916004927.64276-1-eric.snowberg@oracle.com> <1360578.1607593748@warthog.procyon.org.uk> <2442460.1610463459@warthog.procyon.org.uk> <X/9a8naM8p4tT5sO@linux.intel.com> <A05E3573-B1AF-474B-94A5-779E69E5880A@oracle.com> <YAFdNiYZSWpB9vOw@kernel.org> <CFBF6AEC-2832-44F7-9D7F-F20489498C33@oracle.com> <YAgTawk3EENF/P6j@kernel.org> <D9F5E0BD-E2FC-428F-91B3-35D2750493A0@oracle.com>
-To:     Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     dhowells@redhat.com, Eric Snowberg <eric.snowberg@oracle.com>,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        dwmw2@infradead.org, herbert@gondor.apana.org.au,
-        davem@davemloft.net, jmorris@namei.org, serge@hallyn.com,
-        nayna@linux.ibm.com, Mimi Zohar <zohar@linux.ibm.com>,
-        erichte@linux.ibm.com, mpe@ellerman.id.au,
-        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        James.Bottomley@hansenpartnership.com
-Subject: Re: [PATCH v4] certs: Add EFI_CERT_X509_GUID support for dbx entries
+        id S231878AbhA0Mgx (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 27 Jan 2021 07:36:53 -0500
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:51034 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1343519AbhA0Mep (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 27 Jan 2021 07:34:45 -0500
+Received: from pps.filterd (m0098404.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 10RCW5Cn149763;
+        Wed, 27 Jan 2021 07:33:56 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
+ : date : message-id : in-reply-to : references : mime-version :
+ content-transfer-encoding; s=pp1;
+ bh=vfwSj6vlYSSmIGdUcZZ+Hwp8PfJM9qaqp+/yheoF7G4=;
+ b=dloe6DeP0AAHM46xfhdxr/TmFpxYdxb3klG1m/iDHfaDhR3LniowKXRgEuEJkQHazADy
+ dUDh9eE1N/p103Y9KhSmyIvFDQk7YMybgVx+fRip5zH0nUn6uVG8D21CFxavoV4vD/Z1
+ 7Awh8Oyqfy29cJ+Zyv5nCdd2mYN/vZoIl5gSwdMFBhV6J08rXX8WP3MNTIlPP6z+QpTn
+ TBegQObb/KIyvA5tPyHIuULYLLM8Lw73waCzBqorDuTRrWYWtY7ghnNm/VjJBYVx8i7W
+ 1QR5Ie8pjCsoBvwkeCRC8qING36HHdRlHUcbCJLwBrrGva0QIFWzdBqzbArjM66wxfHD 8A== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 36b503dtnb-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Wed, 27 Jan 2021 07:33:56 -0500
+Received: from m0098404.ppops.net (m0098404.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.36/8.16.0.36) with SMTP id 10RCXtnT159722;
+        Wed, 27 Jan 2021 07:33:55 -0500
+Received: from ppma02wdc.us.ibm.com (aa.5b.37a9.ip4.static.sl-reverse.com [169.55.91.170])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 36b503dtmn-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Wed, 27 Jan 2021 07:33:55 -0500
+Received: from pps.filterd (ppma02wdc.us.ibm.com [127.0.0.1])
+        by ppma02wdc.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 10RCWoUO003551;
+        Wed, 27 Jan 2021 12:33:54 GMT
+Received: from b03cxnp07027.gho.boulder.ibm.com (b03cxnp07027.gho.boulder.ibm.com [9.17.130.14])
+        by ppma02wdc.us.ibm.com with ESMTP id 36acj99k2p-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Wed, 27 Jan 2021 12:33:54 +0000
+Received: from b03ledav002.gho.boulder.ibm.com (b03ledav002.gho.boulder.ibm.com [9.17.130.233])
+        by b03cxnp07027.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 10RCXrS625231754
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Wed, 27 Jan 2021 12:33:53 GMT
+Received: from b03ledav002.gho.boulder.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id AE08A13604F;
+        Wed, 27 Jan 2021 12:33:53 +0000 (GMT)
+Received: from b03ledav002.gho.boulder.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 020EE136053;
+        Wed, 27 Jan 2021 12:33:53 +0000 (GMT)
+Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
+        by b03ledav002.gho.boulder.ibm.com (Postfix) with ESMTP;
+        Wed, 27 Jan 2021 12:33:52 +0000 (GMT)
+From:   Stefan Berger <stefanb@linux.vnet.ibm.com>
+To:     dhowells@redhat.com, keyrings@vger.kernel.org
+Cc:     linux-kernel@vger.kernel.org, herbert@gondor.apana.org.au,
+        davem@davemloft.net, linux-crypto@vger.kernel.org,
+        patrick@puiterwijk.org, Stefan Berger <stefanb@linux.ibm.com>
+Subject: [PATCH v3 1/3] x509: Detect sm2 keys by their parameters OID
+Date:   Wed, 27 Jan 2021 07:33:48 -0500
+Message-Id: <20210127123350.817593-2-stefanb@linux.vnet.ibm.com>
+X-Mailer: git-send-email 2.26.2
+In-Reply-To: <20210127123350.817593-1-stefanb@linux.vnet.ibm.com>
+References: <20210127123350.817593-1-stefanb@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Date:   Wed, 27 Jan 2021 11:46:11 +0000
-Message-ID: <3063834.1611747971@warthog.procyon.org.uk>
-X-Scanned-By: MIMEDefang 2.79 on 10.5.11.16
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.343,18.0.737
+ definitions=2021-01-27_05:2021-01-27,2021-01-27 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxlogscore=999 bulkscore=0
+ spamscore=0 suspectscore=0 clxscore=1015 adultscore=0 lowpriorityscore=0
+ priorityscore=1501 impostorscore=0 phishscore=0 mlxscore=0 malwarescore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2009150000
+ definitions=main-2101270067
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-Jarkko Sakkinen <jarkko@kernel.org> wrote:
+From: Stefan Berger <stefanb@linux.ibm.com>
 
-> > I suppose a user space tool could be created. But wouldn=E2=80=99t what=
- is
-> > currently done in the kernel in this area need to be removed?
->=20
-> Right. I don't think this was a great idea in the first place to
-> do to the kernel but since it exists, I guess the patch does make
-> sense.
+Detect whether a key is an sm2 type of key by its OID in the parameters
+array rather than assuming that everything under OID_id_ecPublicKey
+is sm2, which is not the case.
 
-This information needs to be loaded from the UEFI tables before the system
-starts loading any kernel modules or running any programs (if we do
-verification of such, which I think IMA can do).
+Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
+---
+ crypto/asymmetric_keys/x509_cert_parser.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-David
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 52c9b455fc7d..4643fe5ed69a 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -459,6 +459,7 @@ int x509_extract_key_data(void *context, size_t hdrlen,
+ 			  const void *value, size_t vlen)
+ {
+ 	struct x509_parse_context *ctx = context;
++	enum OID oid;
+ 
+ 	ctx->key_algo = ctx->last_oid;
+ 	switch (ctx->last_oid) {
+@@ -470,7 +471,17 @@ int x509_extract_key_data(void *context, size_t hdrlen,
+ 		ctx->cert->pub->pkey_algo = "ecrdsa";
+ 		break;
+ 	case OID_id_ecPublicKey:
+-		ctx->cert->pub->pkey_algo = "sm2";
++		if (ctx->params_size < 2)
++			return -ENOPKG;
++
++		oid = look_up_OID(ctx->params + 2, ctx->params_size - 2);
++		switch (oid) {
++		case OID_sm2:
++			ctx->cert->pub->pkey_algo = "sm2";
++			break;
++		default:
++			return -ENOPKG;
++		}
+ 		break;
+ 	default:
+ 		return -ENOPKG;
+-- 
+2.25.4
 
