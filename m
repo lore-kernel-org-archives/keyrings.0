@@ -2,454 +2,342 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-15.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
+	INCLUDES_PATCH,MAILING_LIST_MULTI,MSGID_FROM_MTA_HEADER,SPF_HELO_NONE,
+	SPF_PASS,URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 17986C433E9
-	for <keyrings@archiver.kernel.org>; Thu, 28 Jan 2021 00:16:11 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2962DC433DB
+	for <keyrings@archiver.kernel.org>; Thu, 28 Jan 2021 04:12:55 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id E6C6864D99
-	for <keyrings@archiver.kernel.org>; Thu, 28 Jan 2021 00:16:10 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id DFD8664DCD
+	for <keyrings@archiver.kernel.org>; Thu, 28 Jan 2021 04:12:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231815AbhA1APz (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 27 Jan 2021 19:15:55 -0500
-Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:14172 "EHLO
-        mx0b-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S231132AbhA1APT (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 27 Jan 2021 19:15:19 -0500
-Received: from pps.filterd (m0127361.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 10RNXjlE068715;
-        Wed, 27 Jan 2021 19:14:19 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding; s=pp1;
- bh=f8l1OS8MIPpB1SXV7cJD0BErSfvofm+rcezPXa5kSms=;
- b=jwM+oPp5nZOcX5rQ9ZRD0bfSFAw2EBWAHqGmr4dZZKWgNu5dX3ORlft+ftA8zfIl5+to
- xTZgEYeYh+mmvAwhzgtABdcMl3w5XIYBw458iHkxjTrdLEWhwBfEw6Bti0GhAqj8xAjd
- 1KEWvRUSkE6hEDJUedfaIn0jzEHhxXSnGGLnEF64ErHI3G+odEkCb4jfrmoYd+TMxipd
- 5TAcN5yt4E5Y8UWLLGnJrGTFH0CwRCTIwZWG5nipRn4EBob8/KL6lzGgqbvqDWwM2OUx
- ZZ1DGwqk9g+dfFr6uN7L4lZRv2L8tTZ8eW9VsHZ2jql+dr8lNj4dsEAJIaWwKwCcUdch +g== 
-Received: from ppma02wdc.us.ibm.com (aa.5b.37a9.ip4.static.sl-reverse.com [169.55.91.170])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 36b5t4kt5k-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Wed, 27 Jan 2021 19:14:18 -0500
-Received: from pps.filterd (ppma02wdc.us.ibm.com [127.0.0.1])
-        by ppma02wdc.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 10S07kfq029389;
-        Thu, 28 Jan 2021 00:14:18 GMT
-Received: from b01cxnp22033.gho.pok.ibm.com (b01cxnp22033.gho.pok.ibm.com [9.57.198.23])
-        by ppma02wdc.us.ibm.com with ESMTP id 36acj9dkwc-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Thu, 28 Jan 2021 00:14:17 +0000
-Received: from b01ledav005.gho.pok.ibm.com (b01ledav005.gho.pok.ibm.com [9.57.199.110])
-        by b01cxnp22033.gho.pok.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 10S0EHpP29622646
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Thu, 28 Jan 2021 00:14:17 GMT
-Received: from b01ledav005.gho.pok.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 7B761AE064;
-        Thu, 28 Jan 2021 00:14:17 +0000 (GMT)
-Received: from b01ledav005.gho.pok.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 69F0EAE063;
-        Thu, 28 Jan 2021 00:14:17 +0000 (GMT)
-Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
-        by b01ledav005.gho.pok.ibm.com (Postfix) with ESMTP;
-        Thu, 28 Jan 2021 00:14:17 +0000 (GMT)
-From:   Stefan Berger <stefanb@linux.vnet.ibm.com>
-To:     keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc:     linux-kernel@vger.kernel.org, patrick@puiterwijk.org,
-        Stefan Berger <stefanb@linux.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH v4 1/3] crypto: Add support for ECDSA signature verification
-Date:   Wed, 27 Jan 2021 19:14:10 -0500
-Message-Id: <20210128001412.822048-2-stefanb@linux.vnet.ibm.com>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20210128001412.822048-1-stefanb@linux.vnet.ibm.com>
-References: <20210128001412.822048-1-stefanb@linux.vnet.ibm.com>
+        id S231177AbhA1EMw (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 27 Jan 2021 23:12:52 -0500
+Received: from userp2130.oracle.com ([156.151.31.86]:56472 "EHLO
+        userp2130.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S231172AbhA1EMs (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 27 Jan 2021 23:12:48 -0500
+Received: from pps.filterd (userp2130.oracle.com [127.0.0.1])
+        by userp2130.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 10S3s1ca050748;
+        Thu, 28 Jan 2021 04:11:30 GMT
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=oracle.com; h=content-type :
+ subject : from : in-reply-to : date : cc : content-transfer-encoding :
+ message-id : references : to : mime-version; s=corp-2020-01-29;
+ bh=ypAsYmrWYJsKhFqIVEWrsvzNQMoXhR7AJcGUxqv2uGw=;
+ b=VxlGP4dHM9QtSgCqUGJXmIcRYlWO7zOF2gTJ8j/DdIJL3JWnrs9jPzSs9ESjqOA/pYCa
+ fQO2LR0/00qUJyJslTXjzKYZNnIUT6xFUlieCvv/tYxNtdHDzU9FuKwQ2jIAfAxftgH3
+ Gw5X+1Ua+5uSkW9NIxSU8o2pKDEYC8UK54C/VZz00sTRoIn2cyIRX1WNayJdSbePrTEl
+ zXuadF3FFnF8Y2NZ0KYacfA2Q9r1QmVhtaXHiFu4u3uWkxUe7zvL09q37Td/7a0yGZZu
+ NDuzx6ZkmzLYfb17We6/zsELRrkIMAXtTrsPVCLXiYHK30jN8q0O0CfEPJURrKM/4ylx gw== 
+Received: from aserp3020.oracle.com (aserp3020.oracle.com [141.146.126.70])
+        by userp2130.oracle.com with ESMTP id 368b7r28mn-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Thu, 28 Jan 2021 04:11:30 +0000
+Received: from pps.filterd (aserp3020.oracle.com [127.0.0.1])
+        by aserp3020.oracle.com (8.16.0.42/8.16.0.42) with SMTP id 10S3ubvO184312;
+        Thu, 28 Jan 2021 04:11:29 GMT
+Received: from nam04-bn8-obe.outbound.protection.outlook.com (mail-bn8nam08lp2040.outbound.protection.outlook.com [104.47.74.40])
+        by aserp3020.oracle.com with ESMTP id 368wq13b24-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Thu, 28 Jan 2021 04:11:29 +0000
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
+ b=L+Th5zy8bJvLoeJWoxYY3YD/eg0bMp6FeIYSJjLaUz+thT63feis3LbdXcJtzSCCVsqhRZflbDaHddDEKE2xfhA5nfkyZlXtND5sNQkGrRDMqaTdjG3iOC0TqxkyWd8fOMfSsFVqooVVFJmlsO+WcwquWXJ+eBRfMQQhMrVLLRANFxurTipzC10kiFZntrWX+x6/TxdXwdMeNDMh+wXUnkURds5znnsRSDs9/ZGrctW3MhaC0a4KLwa6lNyghINwkNOncceeZm+FKV0SXvJt1we4rEN8UVoR4xyR+Q6lyiZkAupcbT0MuM93tkGQgiowTfwtilKPVb1qfyZ3eIIGjA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector9901;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=ypAsYmrWYJsKhFqIVEWrsvzNQMoXhR7AJcGUxqv2uGw=;
+ b=ZRaNo0mgJqy8BPUYy0UuO7qLedfEZsenRF7JSrm/DBaXbD1f/Ykd0arPoDk21caK7jjFHChhxmnraLpaI9GrhUbxIFhAac1xyBZvmjft7VWvF5tmSaK/Fmbp+4m5eloSY+6hKN/Ze0EgAtmBZ2j+J6RbEW9j6gcFZZnqA/O9FmeP357mUzL2OPPmLMKKkP9HbAITNi6bUTvYEg5Esopk8WgOQikkqLo1d5Vvw4mzXie0exFMWe0Bk18oqEMUIY2mE4t2cpR5ItWcVt7/zTv/jySTTRPt3VSZGVZVbyR4JPQmhVBBl7UpLHYTb6L/DVc8NZKsrt35hBF6pwtiSH7Zkg==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=oracle.com; dmarc=pass action=none header.from=oracle.com;
+ dkim=pass header.d=oracle.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=oracle.onmicrosoft.com; s=selector2-oracle-onmicrosoft-com;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=ypAsYmrWYJsKhFqIVEWrsvzNQMoXhR7AJcGUxqv2uGw=;
+ b=E+IYkgZfVZqsOi0Tn3wnwdjjd54ejw0oGr7+hBJlwVI1lFZhWHT8FigCWK/maz43RnmCG+R8YbdGFRzhd79QdRXSxwf06T5XvKUMkQIQoh/73yqlYRj3xL6HuTEbj+5qP340d31eaQCb+nIHoubooGOXzajYbWgnFn/LBxQA7NM=
+Authentication-Results: linux.vnet.ibm.com; dkim=none (message not signed)
+ header.d=none;linux.vnet.ibm.com; dmarc=none action=none
+ header.from=oracle.com;
+Received: from DM6PR10MB3099.namprd10.prod.outlook.com (2603:10b6:5:1ad::18)
+ by DM6PR10MB2938.namprd10.prod.outlook.com (2603:10b6:5:6c::30) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.3805.17; Thu, 28 Jan
+ 2021 04:11:27 +0000
+Received: from DM6PR10MB3099.namprd10.prod.outlook.com
+ ([fe80::70bf:d626:5218:70e4]) by DM6PR10MB3099.namprd10.prod.outlook.com
+ ([fe80::70bf:d626:5218:70e4%7]) with mapi id 15.20.3784.019; Thu, 28 Jan 2021
+ 04:11:27 +0000
+Content-Type: text/plain; charset=us-ascii
+Subject: Re: [PATCH v5 1/4] certs: Add EFI_CERT_X509_GUID support for dbx
+ entries
+From:   Eric Snowberg <eric.snowberg@oracle.com>
+In-Reply-To: <399024a1-59fb-12b8-9ea9-9bbee843dbc8@linux.vnet.ibm.com>
+Date:   Wed, 27 Jan 2021 21:11:22 -0700
+Cc:     David Howells <dhowells@redhat.com>, dwmw2@infradead.org,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        James.Bottomley@HansenPartnership.com, masahiroy@kernel.org,
+        michal.lkml@markovi.net, jmorris@namei.org, serge@hallyn.com,
+        ardb@kernel.org, zohar@linux.ibm.com, lszubowi@redhat.com,
+        javierm@redhat.com, keyrings@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <13EE0575-2F90-4C49-AF5D-365B63D2CB64@oracle.com>
+References: <20210122181054.32635-1-eric.snowberg@oracle.com>
+ <20210122181054.32635-2-eric.snowberg@oracle.com>
+ <399024a1-59fb-12b8-9ea9-9bbee843dbc8@linux.vnet.ibm.com>
+To:     Nayna <nayna@linux.vnet.ibm.com>
+X-Mailer: Apple Mail (2.3273)
+X-Originating-IP: [24.52.35.144]
+X-ClientProxiedBy: CO2PR05CA0092.namprd05.prod.outlook.com
+ (2603:10b6:104:1::18) To DM6PR10MB3099.namprd10.prod.outlook.com
+ (2603:10b6:5:1ad::18)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.343,18.0.737
- definitions=2021-01-27_10:2021-01-27,2021-01-27 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 bulkscore=0
- phishscore=0 adultscore=0 clxscore=1015 suspectscore=0 lowpriorityscore=0
- mlxscore=0 mlxlogscore=999 priorityscore=1501 malwarescore=0
- impostorscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2009150000 definitions=main-2101270116
+X-MS-Exchange-MessageSentRepresentingType: 1
+Received: from [172.16.177.128] (24.52.35.144) by CO2PR05CA0092.namprd05.prod.outlook.com (2603:10b6:104:1::18) with Microsoft SMTP Server (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.3825.8 via Frontend Transport; Thu, 28 Jan 2021 04:11:25 +0000
+X-MS-PublicTrafficType: Email
+X-MS-Office365-Filtering-Correlation-Id: 28ffecf3-d927-482f-6b95-08d8c342c837
+X-MS-TrafficTypeDiagnostic: DM6PR10MB2938:
+X-Microsoft-Antispam-PRVS: <DM6PR10MB2938F8F019F96E99ED41F1CC87BA9@DM6PR10MB2938.namprd10.prod.outlook.com>
+X-MS-Oob-TLC-OOBClassifiers: OLM:8882;
+X-MS-Exchange-SenderADCheck: 1
+X-Microsoft-Antispam: BCL:0;
+X-Microsoft-Antispam-Message-Info: I9kIngCCiAdMN+kDAzLDR0fE0VuEnt4UHJaUrcG5Rbjff/1i22aVtzXhaY2Q5Lu9AzFMs7guBFcA/Rj4uEx+RB70WVuGpJjWUw99OBeng9Ioncll/StJriJl17gNNXxJqvPzGbPt3+INYYG/9dIzjeccZfne+aoxC8AxGY+Z4YRCUfjXLarCsXFWzdF9uaSLERbFLL4U2RUNDpLrYmi1BwsingpYGeOchHwWS0lfH1SUmo3XV9YVU6O69tHpSwdWsVJXlE2rXveoSW6LthLCoXVTNAemsE4rXIAORAjjQAMJ4KUJL+l4ewtLB2ajrpL4YWgWyeJIJJ1eYEhb6rSzh1BHsoCHZIzswy4xa6EaPntDACi56nPgUvstra6UjR2Mc3jeDIvMGdMr3ohf2ytzZeszXxXDWF0DXWvo/twU7uXzScfXSpRXu3DEyVyKS4RJzg4+NeMkcFKaZfJjevOy88ZU93AjAzuWpn2OehYTqVnHfQ1EcGu5STIb8Lrr+RI9RtcwDhDijYvO7feLFHLy2d5rUWzYbbObOyFaVUbLyrlgD8hxg22y2dPB02c0PnpI0oQC3uH2UjnMsGMQej/JR+k+7dIrVW+WkTzS7hXkTqR/8QG8EjfKeElXYPxFBVyEff+oCsoacXP2bAMQNnnsZg==
+X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:DM6PR10MB3099.namprd10.prod.outlook.com;PTR:;CAT:NONE;SFS:(39860400002)(346002)(376002)(366004)(136003)(396003)(2616005)(66556008)(26005)(66476007)(66946007)(956004)(44832011)(5660300002)(7416002)(52116002)(316002)(36756003)(16526019)(186003)(54906003)(16576012)(83380400001)(86362001)(53546011)(8936002)(6666004)(8676002)(6486002)(6916009)(2906002)(966005)(478600001)(33656002)(4326008)(45980500001);DIR:OUT;SFP:1101;
+X-MS-Exchange-AntiSpam-MessageData: =?us-ascii?Q?0azgqn7Y3Sem/TMXS16iDZWTHiWZfW9hTv9ZhSktYDuK0NMFHGQnEg9S/jHr?=
+ =?us-ascii?Q?AqN0aWNQTAtRgP86PlaZkebgRYW/wr0DqUHkUBtQF858xqZh9PhOFjXwZAeT?=
+ =?us-ascii?Q?pRoVKZudRQ2YbSUOm8iLL3WaZxFQrzaWd18iVioqRqmbPGMasEXg+KHoXeZQ?=
+ =?us-ascii?Q?4rIrpxl6iQIlZ7okNSMNLS6htwQY3zYnL+IG09OJgXJCyKlr6L6dl9TfZYhn?=
+ =?us-ascii?Q?eNrKJbfy5EhftIJLrHGlNu83ve5uSSg9cDoQcqTNr4ufd+TeUfNDsQQm0zaV?=
+ =?us-ascii?Q?r7ZAUXazgd62q+MZlHHobqL0KyeE9iz26t0VQgsmtAWqa41VSLJbMUhtw2+n?=
+ =?us-ascii?Q?D9KAs0Mv8BWLbf41OkmBsCI7EwVduoOV0cYQl2g3QT+sjJLeRHMf4Ar3hKe8?=
+ =?us-ascii?Q?7CUhLIZwHzcHM0d338JLvfoO41hJtO0oGljzX2aPYwckO63L4a3savsa/eZJ?=
+ =?us-ascii?Q?5GWS/p9ir33iaU7QdzxpYdIVfYas1l5PTh892+PZBct7Gmnfmf2vesHUadPW?=
+ =?us-ascii?Q?FyXrBDNqkWmbPeMCXm5EMV0VMER8hUlB26liD7jN1zCyuo5TOoBMb8Hctl8k?=
+ =?us-ascii?Q?pUTs36uCbdfiCEkAq/kYe77YkKw8pQshggzUTTKVuBtoojdquirVzmUlqBxb?=
+ =?us-ascii?Q?rgPAHz4+PMuSS0+ABqSnr49Ub24HheKdixm2s/ONa+YW9UzQRwaexEU8N90/?=
+ =?us-ascii?Q?LBGB35JwHCrUZAMCFKL5SloxTP/mBBS1F1qKm206VNkPMKszYQ42jD+mG7Ia?=
+ =?us-ascii?Q?3XXDLP0t/7rLaoOFz9Oec4Tjp37L7x5MUeiAlsZDTSraw43PGFdAW7fPEibd?=
+ =?us-ascii?Q?A8G92HgoE8pmGNn4XmLVajqT6AjcU/s03j1h3xhXwLZexc5e/JE9k/67R+oZ?=
+ =?us-ascii?Q?uolCfBnkbqUpHsU6eEbjKw1lGcqdF3JkUM6WcECKyHKrD9bTfO6Xe7e8g36x?=
+ =?us-ascii?Q?8DPDlPXc7zLtF5y4dpUaJc5HCiM9tHh8keVNOxCtigzDQ8Q5pjnqNjWvuyXh?=
+ =?us-ascii?Q?vwco0wJFx2mt3LXUh+VSAXRsvxMgY5eaKhk9g1fnK0uqt99OplSljL8aP7V5?=
+ =?us-ascii?Q?WETAGQf5?=
+X-OriginatorOrg: oracle.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: 28ffecf3-d927-482f-6b95-08d8c342c837
+X-MS-Exchange-CrossTenant-AuthSource: DM6PR10MB3099.namprd10.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 28 Jan 2021 04:11:27.2755
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 4e2c6054-71cb-48f1-bd6c-3a9705aca71b
+X-MS-Exchange-CrossTenant-MailboxType: HOSTED
+X-MS-Exchange-CrossTenant-UserPrincipalName: 78apjSuZL9ENFOG61Y00JgjrTnixSkplqwTTBaljctd3z6ewJd9Uj+4+xNkSx4uN6X9hIurip/kWW7paRIJoWTEv/l8LdAP7WkuurzdQhRE=
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM6PR10MB2938
+X-Proofpoint-Virus-Version: vendor=nai engine=6200 definitions=9877 signatures=668683
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 mlxlogscore=999 mlxscore=0 spamscore=0
+ adultscore=0 bulkscore=0 phishscore=0 suspectscore=0 malwarescore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2009150000
+ definitions=main-2101280018
+X-Proofpoint-Virus-Version: vendor=nai engine=6200 definitions=9877 signatures=668683
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 suspectscore=0 spamscore=0 phishscore=0
+ adultscore=0 impostorscore=0 malwarescore=0 lowpriorityscore=0 bulkscore=0
+ priorityscore=1501 mlxscore=0 clxscore=1011 mlxlogscore=999
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2009150000
+ definitions=main-2101280018
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Stefan Berger <stefanb@linux.ibm.com>
 
-Add support for parsing the parameters of a NIST P256 or NIST P192 key.
-Enable signature verification using these keys.
+> On Jan 27, 2021, at 8:54 PM, Nayna <nayna@linux.vnet.ibm.com> wrote:
+>=20
+>=20
+> On 1/22/21 1:10 PM, Eric Snowberg wrote:
+>> This fixes CVE-2020-26541.
+>>=20
+>> The Secure Boot Forbidden Signature Database, dbx, contains a list of no=
+w
+>> revoked signatures and keys previously approved to boot with UEFI Secure
+>> Boot enabled.  The dbx is capable of containing any number of
+>> EFI_CERT_X509_SHA256_GUID, EFI_CERT_SHA256_GUID, and EFI_CERT_X509_GUID
+>> entries.
+>>=20
+>> Currently when EFI_CERT_X509_GUID are contained in the dbx, the entries =
+are
+>> skipped.
+>>=20
+>> Add support for EFI_CERT_X509_GUID dbx entries. When a EFI_CERT_X509_GUI=
+D
+>> is found, it is added as an asymmetrical key to the .blacklist keyring.
+>> Anytime the .platform keyring is used, the keys in the .blacklist keyrin=
+g
+>> are referenced, if a matching key is found, the key will be rejected.
+>>=20
+>> Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
+>> Reviewed-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+>> Signed-off-by: David Howells <dhowells@redhat.com>
+>> ---
+>> v5: Function name changes done by David Howells
+>> ---
+>>  certs/blacklist.c                             | 32 +++++++++++++++++++
+>>  certs/blacklist.h                             | 12 +++++++
+>>  certs/system_keyring.c                        |  6 ++++
+>>  include/keys/system_keyring.h                 | 11 +++++++
+>>  .../platform_certs/keyring_handler.c          | 11 +++++++
+>>  5 files changed, 72 insertions(+)
+>>=20
+>> diff --git a/certs/blacklist.c b/certs/blacklist.c
+>> index 6514f9ebc943..a7f021878a4b 100644
+>> --- a/certs/blacklist.c
+>> +++ b/certs/blacklist.c
+>> @@ -100,6 +100,38 @@ int mark_hash_blacklisted(const char *hash)
+>>  	return 0;
+>>  }
+>>=20
+>> +int add_key_to_revocation_list(const char *data, size_t size)
+>> +{
+>> +	key_ref_t key;
+>> +
+>> +	key =3D key_create_or_update(make_key_ref(blacklist_keyring, true),
+>> +				   "asymmetric",
+>> +				   NULL,
+>> +				   data,
+>> +				   size,
+>> +				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) | KEY_USR_VIEW),
+>> +				   KEY_ALLOC_NOT_IN_QUOTA | KEY_ALLOC_BUILT_IN);
+>> +
+>> +	if (IS_ERR(key)) {
+>> +		pr_err("Problem with revocation key (%ld)\n", PTR_ERR(key));
+>> +		return PTR_ERR(key);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +int is_key_on_revocation_list(struct pkcs7_message *pkcs7)
+>> +{
+>> +	int ret;
+>> +
+>> +	ret =3D validate_trust(pkcs7, blacklist_keyring);
+>> +
+>> +	if (ret =3D=3D 0)
+>> +		return -EKEYREJECTED;
+>> +
+>> +	return -ENOKEY;
+>> +}
+>> +
+>>  /**
+>>   * is_hash_blacklisted - Determine if a hash is blacklisted
+>>   * @hash: The hash to be checked as a binary blob
+>> diff --git a/certs/blacklist.h b/certs/blacklist.h
+>> index 1efd6fa0dc60..420bb7c86e07 100644
+>> --- a/certs/blacklist.h
+>> +++ b/certs/blacklist.h
+>> @@ -1,3 +1,15 @@
+>>  #include <linux/kernel.h>
+>> +#include <linux/errno.h>
+>> +#include <crypto/pkcs7.h>
+>>=20
+>>  extern const char __initconst *const blacklist_hashes[];
+>> +
+>> +#ifdef CONFIG_INTEGRITY_PLATFORM_KEYRING
+>> +#define validate_trust pkcs7_validate_trust
+>> +#else
+>> +static inline int validate_trust(struct pkcs7_message *pkcs7,
+>> +				 struct key *trust_keyring)
+>> +{
+>> +	return -ENOKEY;
+>> +}
+>> +#endif
+>> diff --git a/certs/system_keyring.c b/certs/system_keyring.c
+>> index 798291177186..cc165b359ea3 100644
+>> --- a/certs/system_keyring.c
+>> +++ b/certs/system_keyring.c
+>> @@ -241,6 +241,12 @@ int verify_pkcs7_message_sig(const void *data, size=
+_t len,
+>>  			pr_devel("PKCS#7 platform keyring is not available\n");
+>>  			goto error;
+>>  		}
+>> +
+>> +		ret =3D is_key_on_revocation_list(pkcs7);
+>> +		if (ret !=3D -ENOKEY) {
+>> +			pr_devel("PKCS#7 platform key is on revocation list\n");
+>> +			goto error;
+>> +		}
+>>  	}
+>>  	ret =3D pkcs7_validate_trust(pkcs7, trusted_keys);
+>>  	if (ret < 0) {
+>> diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring=
+.h
+>> index fb8b07daa9d1..61f98739e8b1 100644
+>> --- a/include/keys/system_keyring.h
+>> +++ b/include/keys/system_keyring.h
+>> @@ -31,11 +31,14 @@ extern int restrict_link_by_builtin_and_secondary_tr=
+usted(
+>>  #define restrict_link_by_builtin_and_secondary_trusted restrict_link_by=
+_builtin_trusted
+>>  #endif
+>>=20
+>> +extern struct pkcs7_message *pkcs7;
+>>  #ifdef CONFIG_SYSTEM_BLACKLIST_KEYRING
+>>  extern int mark_hash_blacklisted(const char *hash);
+>> +extern int add_key_to_revocation_list(const char *data, size_t size);
+>>  extern int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+>>  			       const char *type);
+>>  extern int is_binary_blacklisted(const u8 *hash, size_t hash_len);
+>> +extern int is_key_on_revocation_list(struct pkcs7_message *pkcs7);
+>>  #else
+>>  static inline int is_hash_blacklisted(const u8 *hash, size_t hash_len,
+>>  				      const char *type)
+>> @@ -47,6 +50,14 @@ static inline int is_binary_blacklisted(const u8 *has=
+h, size_t hash_len)
+>>  {
+>>  	return 0;
+>>  }
+>> +static inline int add_key_to_revocation_list(const char *data, size_t s=
+ize)
+>> +{
+>> +	return 0;
+>> +}
+>> +static inline int is_key_on_revocation_list(struct pkcs7_message *pkcs7=
+)
+>> +{
+>> +	return -ENOKEY;
+>> +}
+>>  #endif
+>>=20
+>>  #ifdef CONFIG_IMA_BLACKLIST_KEYRING
+>> diff --git a/security/integrity/platform_certs/keyring_handler.c b/secur=
+ity/integrity/platform_certs/keyring_handler.c
+>> index c5ba695c10e3..5604bd57c990 100644
+>> --- a/security/integrity/platform_certs/keyring_handler.c
+>> +++ b/security/integrity/platform_certs/keyring_handler.c
+>> @@ -55,6 +55,15 @@ static __init void uefi_blacklist_binary(const char *=
+source,
+>>  	uefi_blacklist_hash(source, data, len, "bin:", 4);
+>>  }
+>>=20
+>> +/*
+>> + * Add an X509 cert to the revocation list.
+>> + */
+>> +static __init void uefi_revocation_list_x509(const char *source,
+>> +					     const void *data, size_t len)
+>> +{
+>> +	add_key_to_revocation_list(data, len);
+>> +}
+>=20
+> In keeping the naming convention with other functions that blacklist hash=
+es, why can't we call these functions:
+>=20
+> * uefi_revocation_list_x509() -> uefi_blacklist_x509_cert()
+> * add_key_to_revocation_list() -> uefi_blacklist_cert()
+> * is_key_on_revocation_list() -> is_cert_blacklisted()
 
-Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org
----
- crypto/Makefile            |   9 +-
- crypto/ecc.c               | 279 +++++++++++++++++++++++++++++++++++++
- crypto/ecc.h               |   2 +
- crypto/ecdsasignature.asn1 |   4 +
- 4 files changed, 293 insertions(+), 1 deletion(-)
- create mode 100644 crypto/ecdsasignature.asn1
+The word revocation was used do to the updated Linux coding style:
 
-diff --git a/crypto/Makefile b/crypto/Makefile
-index b279483fba50..767f6b71aa20 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -50,6 +50,14 @@ sm2_generic-y += sm2.o
- 
- obj-$(CONFIG_CRYPTO_SM2) += sm2_generic.o
- 
-+$(obj)/ecdsasignature.asn1.o: $(obj)/ecdsasignature.asn1.c $(obj)/ecdsasignature.asn1.h
-+$(obj)/ecc.o: $(obj)/ecdsasignature.asn1.h
-+
-+ecc_generic-y += ecdsasignature.asn1.o
-+ecc_generic-y += ecc.o
-+
-+obj-$(CONFIG_CRYPTO_ECC) += ecc_generic.o
-+
- crypto_acompress-y := acompress.o
- crypto_acompress-y += scompress.o
- obj-$(CONFIG_CRYPTO_ACOMP2) += crypto_acompress.o
-@@ -172,7 +180,6 @@ obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
- obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
- obj-$(CONFIG_CRYPTO_ZSTD) += zstd.o
- obj-$(CONFIG_CRYPTO_OFB) += ofb.o
--obj-$(CONFIG_CRYPTO_ECC) += ecc.o
- obj-$(CONFIG_CRYPTO_ESSIV) += essiv.o
- obj-$(CONFIG_CRYPTO_CURVE25519) += curve25519-generic.o
- 
-diff --git a/crypto/ecc.c b/crypto/ecc.c
-index c80aa25994a0..3636f9d17eaf 100644
---- a/crypto/ecc.c
-+++ b/crypto/ecc.c
-@@ -29,13 +29,18 @@
- #include <linux/slab.h>
- #include <linux/swab.h>
- #include <linux/fips.h>
-+#include <crypto/internal/akcipher.h>
-+#include <crypto/akcipher.h>
- #include <crypto/ecdh.h>
- #include <crypto/rng.h>
- #include <asm/unaligned.h>
- #include <linux/ratelimit.h>
-+#include <linux/asn1_decoder.h>
-+#include <linux/scatterlist.h>
- 
- #include "ecc.h"
- #include "ecc_curve_defs.h"
-+#include "ecdsasignature.asn1.h"
- 
- typedef struct {
- 	u64 m_low;
-@@ -1542,4 +1547,278 @@ int crypto_ecdh_shared_secret(unsigned int curve_id, unsigned int ndigits,
- }
- EXPORT_SYMBOL(crypto_ecdh_shared_secret);
- 
-+struct ecc_ctx {
-+	const struct ecc_curve *curve;
-+	struct ecc_point *pub_key;
-+};
-+
-+struct ecdsa_signature_ctx {
-+	const struct ecc_curve *curve;
-+	u64 r[ECC_MAX_DIGITS];
-+	u64 s[ECC_MAX_DIGITS];
-+};
-+
-+/*
-+ * Get the r and s components of a signature from the X509 certificate.
-+ */
-+static int ecdsa_get_signature_rs(u64 *dest, size_t hdrlen, unsigned char tag,
-+				  const void *value, size_t vlen,
-+				  unsigned int ndigits)
-+{
-+	size_t keylen = ndigits * sizeof(u64);
-+	ssize_t diff = vlen - keylen;
-+	const char *d = value;
-+	u8 rs[ECC_MAX_BYTES];
-+
-+	if (!value || !vlen)
-+		return -EINVAL;
-+
-+	/* diff = 0: 'value' has exacly the right size
-+	 * diff > 0: 'value' has too many bytes; one leading zero is allowed that
-+	 *           makes the value a positive integer; error on more
-+	 * diff < 0: 'value' is missing leading zeros, which we add
-+	 */
-+	if (diff > 0) {
-+		/* skip over leading zeros that make 'value' a positive int */
-+		if (*d == 0) {
-+			vlen -= 1;
-+			diff--;
-+			d++;
-+		}
-+		if (diff)
-+			return -EINVAL;
-+	}
-+	if (-diff >= keylen)
-+		return -EINVAL;
-+
-+	if (diff) {
-+		/* leading zeros not given in 'value' */
-+		memset(rs, 0, -diff);
-+	}
-+
-+	memcpy(&rs[-diff], d, vlen);
-+
-+	ecc_swap_digits((u64 *)rs, dest, ndigits);
-+
-+	return 0;
-+}
-+
-+int ecdsa_get_signature_r(void *context, size_t hdrlen, unsigned char tag,
-+			const void *value, size_t vlen)
-+{
-+	struct ecdsa_signature_ctx *sig = context;
-+
-+	return ecdsa_get_signature_rs(sig->r, hdrlen, tag, value, vlen,
-+				      sig->curve->g.ndigits);
-+}
-+
-+int ecdsa_get_signature_s(void *context, size_t hdrlen, unsigned char tag,
-+			  const void *value, size_t vlen)
-+{
-+	struct ecdsa_signature_ctx *sig = context;
-+
-+	return ecdsa_get_signature_rs(sig->s, hdrlen, tag, value, vlen,
-+				      sig->curve->g.ndigits);
-+}
-+
-+static int _ecdsa_verify(struct ecc_ctx *ctx, const u64 *hash,
-+			 const u64 *r, const u64 *s)
-+{
-+	const struct ecc_curve *curve = ctx->curve;
-+	unsigned int ndigits = curve->g.ndigits;
-+	u64 s1[ECC_MAX_DIGITS];
-+	u64 u1[ECC_MAX_DIGITS];
-+	u64 u2[ECC_MAX_DIGITS];
-+	u64 x1[ECC_MAX_DIGITS];
-+	u64 y1[ECC_MAX_DIGITS];
-+	struct ecc_point res = ECC_POINT_INIT(x1, y1, ndigits);
-+
-+	/* 0 < r < n  and 0 < s < n */
-+	if (vli_is_zero(r, ndigits) || vli_cmp(r, curve->n, ndigits) >= 0 ||
-+	    vli_is_zero(s, ndigits) || vli_cmp(s, curve->n, ndigits) >= 0)
-+		return -EBADMSG;
-+
-+	/* hash is given */
-+	pr_devel("hash : %016llx %016llx ... %016llx\n",
-+		 hash[ndigits - 1], hash[ndigits - 2], hash[0]);
-+
-+	/* s1 = (s^-1) mod n */
-+	vli_mod_inv(s1, s, curve->n, ndigits);
-+	/* u1 = (hash * s1) mod n */
-+	vli_mod_mult_slow(u1, hash, s1, curve->n, ndigits);
-+	/* u2 = (r * s1) mod n */
-+	vli_mod_mult_slow(u2, r, s1, curve->n, ndigits);
-+	/* res = u1*G + u2 * pub_key */
-+	ecc_point_mult_shamir(&res, u1, &curve->g, u2, ctx->pub_key, curve);
-+
-+	/* res.x = res.x mod n (if res.x > order) */
-+	if (unlikely(vli_cmp(res.x, curve->n, ndigits) == 1))
-+		/* faster alternative for NIST p256 & p192 */
-+		vli_sub(res.x, res.x, curve->n, ndigits);
-+
-+	if (!vli_cmp(res.x, r, ndigits))
-+		return 0;
-+
-+	return -EKEYREJECTED;
-+}
-+
-+/*
-+ * Verify an ECDSA signature.
-+ */
-+static int ecdsa_verify(struct akcipher_request *req)
-+{
-+	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
-+	struct ecc_ctx *ctx = akcipher_tfm_ctx(tfm);
-+	size_t keylen = ctx->curve->g.ndigits * sizeof(u64);
-+	struct ecdsa_signature_ctx sig_ctx = {
-+		.curve = ctx->curve,
-+	};
-+	u8 rawhash[ECC_MAX_BYTES];
-+	u64 hash[ECC_MAX_DIGITS];
-+	unsigned char *buffer;
-+	ssize_t diff;
-+	int ret;
-+
-+	if (unlikely(!ctx->pub_key))
-+		return -EINVAL;
-+
-+	buffer = kmalloc(req->src_len + req->dst_len, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	sg_pcopy_to_buffer(req->src,
-+		sg_nents_for_len(req->src, req->src_len + req->dst_len),
-+		buffer, req->src_len + req->dst_len, 0);
-+
-+	ret = asn1_ber_decoder(&ecdsasignature_decoder, &sig_ctx,
-+			       buffer, req->src_len);
-+	if (ret < 0)
-+		goto error;
-+
-+	/* if the hash is shorter then we will add leading zeros to fit to ndigits */
-+	diff = keylen - req->dst_len;
-+	if (diff >= 0) {
-+		if (diff)
-+			memset(rawhash, 0, diff);
-+		memcpy(&rawhash[diff], buffer + req->src_len, req->dst_len);
-+	} else if (diff < 0) {
-+		/* given hash is longer, we take the left-most bytes */
-+		memcpy(&rawhash, buffer + req->src_len, keylen);
-+	}
-+
-+	ecc_swap_digits((u64 *)rawhash, hash, ctx->curve->g.ndigits);
-+
-+	ret = _ecdsa_verify(ctx, hash, sig_ctx.r, sig_ctx.s);
-+
-+error:
-+	kfree(buffer);
-+
-+	return ret;
-+}
-+
-+static void ecdsa_ec_ctx_deinit(struct ecc_ctx *ctx)
-+{
-+	ecc_free_point(ctx->pub_key);
-+	ctx->pub_key = NULL;
-+}
-+
-+static int ecdsa_ec_ctx_reset(struct ecc_ctx *ctx)
-+{
-+	ecdsa_ec_ctx_deinit(ctx);
-+	return 0;
-+}
-+
-+/*
-+ * Set the public key given the raw uncompressed key data from an X509
-+ * certificate. The key data contain the concatenated X and Y coordinates of
-+ * the public key.
-+ */
-+static int ecdsa_set_pub_key(struct crypto_akcipher *tfm,
-+			     const void *key, unsigned int keylen)
-+{
-+	struct ecc_ctx *ctx = akcipher_tfm_ctx(tfm);
-+	const unsigned char *d = key;
-+	const u64 *digits = (const u64 *)&d[1];
-+	unsigned int ndigits;
-+	int ret;
-+
-+	ret = ecdsa_ec_ctx_reset(ctx);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (keylen < 1 || (((keylen - 1) >> 1) % sizeof(u64)) != 0)
-+		return -EINVAL;
-+	/* we only accept uncompressed format */
-+	if (d[0] != 4)
-+		return -EINVAL;
-+
-+	keylen--;
-+	ndigits = (keylen >> 1) / sizeof(u64);
-+	switch (ndigits) {
-+	case 3:
-+		ctx->curve = ecc_get_curve(ECC_CURVE_NIST_P192);
-+		break;
-+	case 4:
-+		ctx->curve = ecc_get_curve(ECC_CURVE_NIST_P256);
-+		break;
-+	}
-+	if (!ctx->curve)
-+		return -EINVAL;
-+
-+	ctx->pub_key = ecc_alloc_point(ndigits);
-+	if (!ctx->pub_key)
-+		return -ENOMEM;
-+
-+	ecc_swap_digits(digits, ctx->pub_key->x, ndigits);
-+	ecc_swap_digits(&digits[ndigits], ctx->pub_key->y, ndigits);
-+	return ecc_is_pubkey_valid_full(ctx->curve, ctx->pub_key);
-+}
-+
-+static void ecdsa_exit_tfm(struct crypto_akcipher *tfm)
-+{
-+	struct ecc_ctx *ctx = akcipher_tfm_ctx(tfm);
-+
-+	ecdsa_ec_ctx_deinit(ctx);
-+}
-+
-+static unsigned int ecdsa_max_size(struct crypto_akcipher *tfm)
-+{
-+	struct ecc_ctx *ctx = akcipher_tfm_ctx(tfm);
-+
-+	return ctx->pub_key->ndigits << ECC_DIGITS_TO_BYTES_SHIFT;
-+}
-+
-+static int ecdsa_init_tfm(struct crypto_akcipher *tfm)
-+{
-+	return 0;
-+}
-+
-+static struct akcipher_alg ecdsa = {
-+	.verify = ecdsa_verify,
-+	.set_pub_key = ecdsa_set_pub_key,
-+	.max_size = ecdsa_max_size,
-+	.init = ecdsa_init_tfm,
-+	.exit = ecdsa_exit_tfm,
-+	.base = {
-+		.cra_name = "ecdsa",
-+		.cra_driver_name = "ecdsa-generic",
-+		.cra_priority = 100,
-+		.cra_module = THIS_MODULE,
-+		.cra_ctxsize = sizeof(struct ecc_ctx),
-+	},
-+};
-+
-+static int ecdsa_init(void)
-+{
-+	return crypto_register_akcipher(&ecdsa);
-+}
-+
-+static void ecdsa_exit(void)
-+{
-+	crypto_unregister_akcipher(&ecdsa);
-+}
-+
-+subsys_initcall(ecdsa_init);
-+module_exit(ecdsa_exit);
-+
- MODULE_LICENSE("Dual BSD/GPL");
-diff --git a/crypto/ecc.h b/crypto/ecc.h
-index d4e546b9ad79..26d7c83908bc 100644
---- a/crypto/ecc.h
-+++ b/crypto/ecc.h
-@@ -33,6 +33,8 @@
- 
- #define ECC_DIGITS_TO_BYTES_SHIFT 3
- 
-+#define ECC_MAX_BYTES (ECC_MAX_DIGITS << ECC_DIGITS_TO_BYTES_SHIFT)
-+
- /**
-  * struct ecc_point - elliptic curve point in affine coordinates
-  *
-diff --git a/crypto/ecdsasignature.asn1 b/crypto/ecdsasignature.asn1
-new file mode 100644
-index 000000000000..621ab754fb9f
---- /dev/null
-+++ b/crypto/ecdsasignature.asn1
-@@ -0,0 +1,4 @@
-+ECDSASignature ::= SEQUENCE {
-+	r	INTEGER ({ ecdsa_get_signature_r }),
-+	s	INTEGER ({ ecdsa_get_signature_s })
-+}
--- 
-2.26.2
+https://lkml.org/lkml/2020/7/4/229
+
 
