@@ -2,185 +2,170 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-3.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	MENTIONS_GIT_HOSTING,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9A497C433DB
-	for <keyrings@archiver.kernel.org>; Sun, 31 Jan 2021 20:12:29 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1C242C43381
+	for <keyrings@archiver.kernel.org>; Sun, 31 Jan 2021 23:34:23 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 4C72C64E25
-	for <keyrings@archiver.kernel.org>; Sun, 31 Jan 2021 20:12:29 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id E59A664E31
+	for <keyrings@archiver.kernel.org>; Sun, 31 Jan 2021 23:34:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229973AbhAaUM1 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sun, 31 Jan 2021 15:12:27 -0500
-Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:46452 "EHLO
-        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-        by vger.kernel.org with ESMTP id S231329AbhAaTpX (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sun, 31 Jan 2021 14:45:23 -0500
-Received: from pps.filterd (m0098413.ppops.net [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 10VI1HwP062940;
-        Sun, 31 Jan 2021 13:10:01 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
- from : reply-to : to : cc : date : in-reply-to : references : content-type
- : mime-version : content-transfer-encoding; s=pp1;
- bh=NYwwPXnKTvtbxcHJO8ZCSxE1/bI2BZQ+pSd+KZpx11k=;
- b=c+WnTmaCFyijzidSpXm34w3P25aRIQ/Y+w5VgJY9NXXuh5/NsWwbp+RPNWk07yv45pj6
- w8YmqES50lgVaTMe/D4W6VmwTodcdldGMwykKYGrJ2coeRTP3enA4uSIkLNCABlkSoVs
- B8/0uCaV+zGKdBDTHoCPjulHm8zvNZf4xUsI4rGALuYLJSLCtx5TeNxMUtnUEVYp+lNf
- od+DumpDrkH61M3EJm3OQR5CgXV1+2TfLGKuzxl8Ld/wNeLi1LG1eBv7zHQFbzY/LhpC
- cq0jTWZzLneVH21w4kunmCjT7bQeMHuQUj5iwTlKBAfer3C1jzbfwaGnw+Awo5c5vs0b uw== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 36dwsubb6c-1
+        id S229908AbhAaXd6 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 31 Jan 2021 18:33:58 -0500
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:7248 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S229656AbhAaXdx (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 31 Jan 2021 18:33:53 -0500
+Received: from pps.filterd (m0098409.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 10VNX9hu103073;
+        Sun, 31 Jan 2021 18:33:09 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
+ : date : message-id : mime-version : content-transfer-encoding; s=pp1;
+ bh=kv9UZKQxGHcWZCbXo58TjMf1KJPsQMzbU/+ItkdKJwE=;
+ b=YVd62iJYbchCjTIYOS+yehZm7dp+IkQW52C7lD1OhagbWVJN7uOZNU3qKMVD3FxOSyV+
+ 21DP8O1NpFYxRRAh3DxVl0HxSULjagwLK2QWbqq6ZKf9/RmiZPWVY+HHEVV9CS0wVvqd
+ pE923VUGMICKTOFkwZGcHxBD+VOiaYiQXTmzLFgOU0tlw+yaFxkJTBSbwrGhc4BavGgM
+ sAYMY1QLeOuvwgXL+e1mBXNzvD6TyHmliJWw5kJ3IPoSNH/MWO64BI7t1ANALMVMrwyW
+ n3JzhnwRTDk6+9tFThn+7YW8loQQabXYFJgeZlGkkxO0MQPdl+NGjkpNNjLPfU3zLshO hA== 
+Received: from ppma02wdc.us.ibm.com (aa.5b.37a9.ip4.static.sl-reverse.com [169.55.91.170])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 36e58b0xd6-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Sun, 31 Jan 2021 13:10:01 -0500
-Received: from m0098413.ppops.net (m0098413.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.36/8.16.0.36) with SMTP id 10VIA0SM087751;
-        Sun, 31 Jan 2021 13:10:00 -0500
-Received: from ppma02dal.us.ibm.com (a.bd.3ea9.ip4.static.sl-reverse.com [169.62.189.10])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 36dwsubb64-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Sun, 31 Jan 2021 13:10:00 -0500
-Received: from pps.filterd (ppma02dal.us.ibm.com [127.0.0.1])
-        by ppma02dal.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 10VI6poI025079;
-        Sun, 31 Jan 2021 18:09:59 GMT
+        Sun, 31 Jan 2021 18:33:09 -0500
+Received: from pps.filterd (ppma02wdc.us.ibm.com [127.0.0.1])
+        by ppma02wdc.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 10VNMd5c009297;
+        Sun, 31 Jan 2021 23:33:08 GMT
 Received: from b03cxnp08025.gho.boulder.ibm.com (b03cxnp08025.gho.boulder.ibm.com [9.17.130.17])
-        by ppma02dal.us.ibm.com with ESMTP id 36cy38kqab-1
+        by ppma02wdc.us.ibm.com with ESMTP id 36cy38tht1-1
         (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Sun, 31 Jan 2021 18:09:59 +0000
-Received: from b03ledav004.gho.boulder.ibm.com (b03ledav004.gho.boulder.ibm.com [9.17.130.235])
-        by b03cxnp08025.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 10VI9ws527525628
+        Sun, 31 Jan 2021 23:33:08 +0000
+Received: from b03ledav005.gho.boulder.ibm.com (b03ledav005.gho.boulder.ibm.com [9.17.130.236])
+        by b03cxnp08025.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 10VNX5Jc24969638
         (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Sun, 31 Jan 2021 18:09:58 GMT
-Received: from b03ledav004.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 48F9F78060;
-        Sun, 31 Jan 2021 18:09:58 +0000 (GMT)
-Received: from b03ledav004.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 94DF97805F;
-        Sun, 31 Jan 2021 18:09:55 +0000 (GMT)
-Received: from jarvis.int.hansenpartnership.com (unknown [9.85.153.205])
-        by b03ledav004.gho.boulder.ibm.com (Postfix) with ESMTP;
-        Sun, 31 Jan 2021 18:09:55 +0000 (GMT)
-Message-ID: <18529562ed71becf21401ec9fd9d95c4ac44fdc0.camel@linux.ibm.com>
-Subject: Re: Migration to trusted keys: sealing user-provided key?
-From:   James Bottomley <jejb@linux.ibm.com>
-Reply-To: jejb@linux.ibm.com
-To:     Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>,
-        Mimi Zohar <zohar@linux.ibm.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-        Sumit Garg <sumit.garg@linaro.org>
-Cc:     linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, kernel@pengutronix.de
-Date:   Sun, 31 Jan 2021 10:09:54 -0800
-In-Reply-To: <8b9477e150d7c939dc0def3ebb4443efcc83cd85.camel@pengutronix.de>
-References: <74830d4f-5a76-8ba8-aad0-0d79f7c01af9@pengutronix.de>
-         <6dc99fd9ffbc5f405c5f64d0802d1399fc6428e4.camel@kernel.org>
-         <d1bed49f89495ceb529355cb41655a208fdb2197.camel@linux.ibm.com>
-         <8b9477e150d7c939dc0def3ebb4443efcc83cd85.camel@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-User-Agent: Evolution 3.34.4 
+        Sun, 31 Jan 2021 23:33:05 GMT
+Received: from b03ledav005.gho.boulder.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 40805BE051;
+        Sun, 31 Jan 2021 23:33:05 +0000 (GMT)
+Received: from b03ledav005.gho.boulder.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id BEEB1BE04F;
+        Sun, 31 Jan 2021 23:33:04 +0000 (GMT)
+Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
+        by b03ledav005.gho.boulder.ibm.com (Postfix) with ESMTP;
+        Sun, 31 Jan 2021 23:33:04 +0000 (GMT)
+From:   Stefan Berger <stefanb@linux.ibm.com>
+To:     keyrings@vger.kernel.org, linux-crypto@vger.kernel.org
+Cc:     linux-kernel@vger.kernel.org, patrick@puiterwijk.org,
+        linux-integrity@vger.kernel.org,
+        Stefan Berger <stefanb@linux.ibm.com>
+Subject: [PATCH v6 0/4]  Add support for x509 certs with NIST p256 and p192 keys
+Date:   Sun, 31 Jan 2021 18:32:57 -0500
+Message-Id: <20210131233301.1301787-1-stefanb@linux.ibm.com>
+X-Mailer: git-send-email 2.26.2
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-TM-AS-GCONF: 00
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.737
- definitions=2021-01-31_05:2021-01-29,2021-01-31 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0
- lowpriorityscore=0 adultscore=0 malwarescore=0 priorityscore=1501
- phishscore=0 bulkscore=0 impostorscore=0 mlxlogscore=760 mlxscore=0
- suspectscore=0 clxscore=1011 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=8.12.0-2009150000 definitions=main-2101310102
+ definitions=2021-01-31_08:2021-01-29,2021-01-31 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 adultscore=0 phishscore=0
+ clxscore=1015 mlxscore=0 spamscore=0 malwarescore=0 impostorscore=0
+ suspectscore=0 bulkscore=0 lowpriorityscore=0 priorityscore=1501
+ mlxlogscore=999 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2009150000 definitions=main-2101310137
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Sun, 2021-01-31 at 15:14 +0100, Jan Lübbe wrote:
-> On Sun, 2021-01-31 at 07:09 -0500, Mimi Zohar wrote:
-> > On Sat, 2021-01-30 at 19:53 +0200, Jarkko Sakkinen wrote:
-> > > On Thu, 2021-01-28 at 18:31 +0100, Ahmad Fatoum wrote:
-> > > > Hello,
-> > > > 
-> > > > I've been looking into how a migration to using
-> > > > trusted/encrypted keys would look like (particularly with dm-
-> > > > crypt).
-> > > > 
-> > > > Currently, it seems the the only way is to re-encrypt the
-> > > > partitions because trusted/encrypted keys always generate their
-> > > > payloads from RNG.
-> > > > 
-> > > > If instead there was a key command to initialize a new
-> > > > trusted/encrypted key with a user provided value, users could
-> > > > use whatever mechanism they used beforehand to get a plaintext
-> > > > key and use that to initialize a new trusted/encrypted key.
-> > > > From there on, the key will be like any other trusted/encrypted
-> > > > key and not be disclosed again to userspace.
-> > > > 
-> > > > What are your thoughts on this? Would an API like
-> > > > 
-> > > >   keyctl add trusted dmcrypt-key 'set <content>' # user-
-> > > > supplied content
-> > > > 
-> > > > be acceptable?
-> > > 
-> > > Maybe it's the lack of knowledge with dm-crypt, but why this
-> > > would be useful? Just want to understand the bottleneck, that's
-> > > all.
-> 
-> Our goal in this case is to move away from having the dm-crypt key
-> material accessible to user-space on embedded devices. For an
-> existing dm-crypt volume, this key is fixed. A key can be loaded into
-> user key type and used by dm-crypt (cryptsetup can already do it this
-> way). But at this point, you can still do 'keyctl read' on that key,
-> exposing the key material to user space.
-> 
-> Currently, with both encrypted and trusted keys, you can only
-> generate new random keys, not import existing key material. 
-> 
-> James Bottomley mentioned in the other reply that the key format will
-> become compatible with the openssl_tpm2_engine, which would provide a
-> workaround. This wouldn't work with OP-TEE-based trusted keys (see
-> Sumit Garg's series), though.
+This series of patches adds support for x509 certificates signed by a CA
+that uses NIST p256 or p192 keys for signing. It also adds support for
+certificates where the public key is a NIST p256 or p192 key. The math
+for ECDSA signature verification is also added.
 
-Assuming OP-TEE has the same use model as the TPM, someone will
-eventually realise the need for interoperable key formats between key
-consumers and then it will work in the same way once the kernel gets
-updated to speak whatever format they come up with.
+Since self-signed certificates are verified upon loading, the following
+script can be used for testing:
 
-> > We upstreamed "trusted" & "encrypted" keys together in order to
-> > address this sort of problem.   Instead of directly using a
-> > "trusted" key for persistent file signatures being stored as
-> > xattrs, the "encrypted" key provides one level of
-> > indirection.   The "encrypted" key may be encrypted/decrypted with
-> > either a TPM based "trusted" key or with a "user" type symmetric
-> > key[1].
-> > 
-> > Instead of modifying "trusted" keys, use a "user" type "encrypted"
-> > key.
-> 
-> I don't see how this would help. When using dm-crypt with an
-> encrypted key, I can't use my existing key material.
-> 
-> Except for the migration aspect, trusted keys seem ideal. Only a
-> single exported blob needs to be stored and can only be loaded/used
-> again on the same (trusted) system. Userspace cannot extract the key
-> material. 
+k=$(keyctl newring test @u)
 
-Yes, that's what I was thinking ... especially when you can add policy
-to the keys, which includes PCR locking.  Part of the problem is that
-changing policy, which you have to do if something happens to update
-the PCR values, is technically a migration, so your trusted keys for
-dm-crypt are really going to have to be migrateable.
+while :; do
+	for hash in sha1 sha224 sha256 sha384 sha512; do
+		openssl req \
+			-x509 \
+			-${hash} \
+			-newkey ec \
+			-pkeyopt ec_paramgen_curve:prime256v1 \
+			-keyout key.pem \
+			-days 365 \
+			-subj '/CN=test' \
+			-nodes \
+			-outform der \
+			-out cert.der
+		keyctl padd asymmetric testkey $k < cert.der
+		if [ $? -ne 0 ]; then
+			echo "ERROR"
+			exit 1
+		fi
+	done
+done
 
-> To get to this point on systems in the field without re-encryption of
-> the whole storage, only the initial trusted/encrypted key creation
-> would need to allow passing in existing key material.
+It also works with restricted keyrings where an RSA key is used to sign
+a NIST P256/P192 key. Scripts for testing are here:
 
-What about a third option: why not make dm-crypt store the master key
-it uses as an encrypted key (if a parent trusted key is available)? 
-That way you'd be able to extract the encrypted form of the key as
-root, but wouldn't be able to extract the actual master key.
+https://github.com/stefanberger/eckey-testing
 
-James
+The ECDSA signature verification will be used by IMA Appraisal where ECDSA
+file signatures stored in RPM packages will use substantially less space
+than if RSA signatures were to be used.
 
+   Stefan
+
+v5->v6:
+  - moved ecdsa code into its own module ecdsa_generic built from ecdsa.c
+  - added script-generated test vectors for NIST P256 & P192 and all hashes
+  - parsing of OID that contain header with new parse_oid()
+
+v4->v5:
+  - registering crypto support under names ecdsa-nist-p256/p192 following
+    Hubert Xu's suggestion in other thread
+  - appended IMA ECDSA support patch
+
+v3->v4:
+  - split off of ecdsa crypto part; registering akcipher as "ecdsa" and
+    deriving used curve from digits in parsed key
+
+v2->v3:
+  - patch 2 now includes linux/scatterlist.h
+
+v1->v2:
+  - using faster vli_sub rather than newly added vli_mod_fast to 'reduce'
+    result
+  - rearranged switch statements to follow after RSA
+  - 3rd patch from 1st posting is now 1st patch
+
+Stefan Berger (4):
+  crypto: Add support for ECDSA signature verification
+  x509: Detect sm2 keys by their parameters OID
+  x509: Add support for parsing x509 certs with ECDSA keys
+  ima: Support EC keys for signature verification
+
+ crypto/Kconfig                            |  10 +
+ crypto/Makefile                           |   6 +
+ crypto/asymmetric_keys/public_key.c       |  19 ++
+ crypto/asymmetric_keys/x509_cert_parser.c |  44 ++-
+ crypto/ecc.c                              |  13 +-
+ crypto/ecc.h                              |  28 ++
+ crypto/ecdsa.c                            | 361 ++++++++++++++++++++++
+ crypto/ecdsasignature.asn1                |   4 +
+ crypto/testmgr.c                          |  12 +
+ crypto/testmgr.h                          | 267 ++++++++++++++++
+ include/keys/asymmetric-type.h            |   6 +
+ include/linux/oid_registry.h              |   7 +
+ lib/oid_registry.c                        |  13 +
+ security/integrity/digsig_asymmetric.c    |  29 +-
+ 14 files changed, 790 insertions(+), 29 deletions(-)
+ create mode 100644 crypto/ecdsa.c
+ create mode 100644 crypto/ecdsasignature.asn1
+
+-- 
+2.29.2
 
