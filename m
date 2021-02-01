@@ -2,220 +2,116 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-3.7 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	URIBL_BLOCKED autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 45723C433E0
-	for <keyrings@archiver.kernel.org>; Mon,  1 Feb 2021 15:24:54 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 557B1C433E0
+	for <keyrings@archiver.kernel.org>; Mon,  1 Feb 2021 15:35:16 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 1169464DBD
-	for <keyrings@archiver.kernel.org>; Mon,  1 Feb 2021 15:24:54 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2AB9964EA4
+	for <keyrings@archiver.kernel.org>; Mon,  1 Feb 2021 15:35:16 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231696AbhBAPYc (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 1 Feb 2021 10:24:32 -0500
-Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:11202 "EHLO
-        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S230436AbhBAPUK (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 1 Feb 2021 10:20:10 -0500
-Received: from pps.filterd (m0187473.ppops.net [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 111F2OU0182056;
-        Mon, 1 Feb 2021 10:19:25 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding; s=pp1;
- bh=XkFDbQLhTIFupP+vfDZ32Gfx1EJZyZA7D1DfhWtCCWE=;
- b=K/7CBWT3NS0psRKhmJlz4q1A93Cf4GksCGzPddAZf29wYiEJJMyTZU7tPqSX0an3YF3M
- 56OZwWE2QXRPPk+TLndyO8PpDN4TbKf99p95QmbVlb76T+u5vDPNDBmtUVzNFGE0Zz0T
- WLplKPh+21V7+nl67cDdz0nExXO3V710wDAoIF9veFLU+CGc0mC8xu0R7QNxKKl95Uw7
- A7JNalluchW2Vp7pc7Isch/0UZCqnyBr4+XAXN4AfzGjBw8em+5aUpAbu4axhlHy8mqI
- OEWNlraRiBaK5OH6reVT30Tz5q2OGcAXdCXyBtcmaeIesveYA7YWEHHTq8+O4IpRzWcs 4w== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 36ekm8h3fs-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Mon, 01 Feb 2021 10:19:24 -0500
-Received: from m0187473.ppops.net (m0187473.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.36/8.16.0.36) with SMTP id 111F2WQb182737;
-        Mon, 1 Feb 2021 10:19:23 -0500
-Received: from ppma01dal.us.ibm.com (83.d6.3fa9.ip4.static.sl-reverse.com [169.63.214.131])
-        by mx0a-001b2d01.pphosted.com with ESMTP id 36ekm8h3ew-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Mon, 01 Feb 2021 10:19:23 -0500
-Received: from pps.filterd (ppma01dal.us.ibm.com [127.0.0.1])
-        by ppma01dal.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 111FC1Zk008194;
-        Mon, 1 Feb 2021 15:19:22 GMT
-Received: from b03cxnp08027.gho.boulder.ibm.com (b03cxnp08027.gho.boulder.ibm.com [9.17.130.19])
-        by ppma01dal.us.ibm.com with ESMTP id 36cy3934qj-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Mon, 01 Feb 2021 15:19:22 +0000
-Received: from b03ledav001.gho.boulder.ibm.com (b03ledav001.gho.boulder.ibm.com [9.17.130.232])
-        by b03cxnp08027.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 111FJKvL8257794
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Mon, 1 Feb 2021 15:19:20 GMT
-Received: from b03ledav001.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 343D26E05D;
-        Mon,  1 Feb 2021 15:19:20 +0000 (GMT)
-Received: from b03ledav001.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 6420A6E058;
-        Mon,  1 Feb 2021 15:19:19 +0000 (GMT)
-Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
-        by b03ledav001.gho.boulder.ibm.com (Postfix) with ESMTP;
-        Mon,  1 Feb 2021 15:19:19 +0000 (GMT)
-From:   Stefan Berger <stefanb@linux.ibm.com>
-To:     keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, herbert@gondor.apana.org.au,
-        dhowells@redhat.com, zohar@linux.ibm.com
-Cc:     linux-kernel@vger.kernel.org, patrick@puiterwijk.org,
-        linux-integrity@vger.kernel.org,
-        Stefan Berger <stefanb@linux.ibm.com>
-Subject: [PATCH v7 3/4] x509: Add support for parsing x509 certs with ECDSA keys
-Date:   Mon,  1 Feb 2021 10:19:09 -0500
-Message-Id: <20210201151910.1465705-4-stefanb@linux.ibm.com>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20210201151910.1465705-1-stefanb@linux.ibm.com>
-References: <20210201151910.1465705-1-stefanb@linux.ibm.com>
+        id S231713AbhBAPfH (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 1 Feb 2021 10:35:07 -0500
+Received: from metis.ext.pengutronix.de ([85.220.165.71]:51837 "EHLO
+        metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S231674AbhBAPec (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 1 Feb 2021 10:34:32 -0500
+Received: from ptx.hi.pengutronix.de ([2001:67c:670:100:1d::c0])
+        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
+        (Exim 4.92)
+        (envelope-from <jlu@pengutronix.de>)
+        id 1l6bAp-00061s-PF; Mon, 01 Feb 2021 16:31:31 +0100
+Received: from localhost ([127.0.0.1])
+        by ptx.hi.pengutronix.de with esmtp (Exim 4.92)
+        (envelope-from <jlu@pengutronix.de>)
+        id 1l6bAp-0006V4-2s; Mon, 01 Feb 2021 16:31:31 +0100
+Message-ID: <64472434a367060ddce6e03425156b8312a5ad6c.camel@pengutronix.de>
+Subject: Re: Migration to trusted keys: sealing user-provided key?
+From:   Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
+To:     Mimi Zohar <zohar@linux.ibm.com>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Ahmad Fatoum <a.fatoum@pengutronix.de>,
+        James Bottomley <jejb@linux.ibm.com>,
+        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
+        Sumit Garg <sumit.garg@linaro.org>
+Cc:     linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, kernel@pengutronix.de
+Date:   Mon, 01 Feb 2021 16:31:30 +0100
+In-Reply-To: <d4eeefa0c13395e91850630e22d0d9e3690f43ac.camel@linux.ibm.com>
+References: <74830d4f-5a76-8ba8-aad0-0d79f7c01af9@pengutronix.de>
+         <6dc99fd9ffbc5f405c5f64d0802d1399fc6428e4.camel@kernel.org>
+         <d1bed49f89495ceb529355cb41655a208fdb2197.camel@linux.ibm.com>
+         <8b9477e150d7c939dc0def3ebb4443efcc83cd85.camel@pengutronix.de>
+         <d4eeefa0c13395e91850630e22d0d9e3690f43ac.camel@linux.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+User-Agent: Evolution 3.38.3-1 
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.737
- definitions=2021-02-01_05:2021-01-29,2021-02-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxscore=0 suspectscore=0
- clxscore=1015 mlxlogscore=999 impostorscore=0 lowpriorityscore=0
- spamscore=0 bulkscore=0 phishscore=0 adultscore=0 malwarescore=0
- priorityscore=1501 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2009150000 definitions=main-2102010077
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: jlu@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: keyrings@vger.kernel.org
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-This patch adds support for parsing of x509 certificates that contain
-ECDSA keys, such as NIST P256, that have been signed by a CA using any
-of the current SHA hash algorithms.
+On Sun, 2021-01-31 at 09:29 -0500, Mimi Zohar wrote:
+> On Sun, 2021-01-31 at 15:14 +0100, Jan Lübbe wrote:
+> > On Sun, 2021-01-31 at 07:09 -0500, Mimi Zohar wrote:
+> 
+> <snip>
+> 
+> > > 
+> > > [1] The ima-evm-utils README contains EVM examples of "trusted" and
+> > > "user" based "encrypted" keys.
+> > 
+> > I assume you refer to
+> > https://sourceforge.net/p/linux-ima/ima-evm-utils/ci/master/tree/README#l143
+> > "Generate EVM encrypted keys" and "Generate EVM trusted keys (TPM based)"?
+> > 
+> > In both cases, the key used by EVM is a *newly generated* random key. The only
+> > difference is whether it's encrypted to a user key or a (random) trusted key.
+> 
+> The "encrypted" asymmetric key data doesn't change, "update" just
+> changes the key under which it is encrypted/decrypted.
+> 
+> Usage::
+> 
+>     keyctl add encrypted name "new [format] key-type:master-key-name keylen"
+>         ring
+>     keyctl add encrypted name "load hex_blob" ring
 
-Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: keyrings@vger.kernel.org
----
- crypto/asymmetric_keys/public_key.c       | 19 ++++++++++++++
- crypto/asymmetric_keys/x509_cert_parser.c | 32 ++++++++++++++++++++++-
- include/linux/oid_registry.h              |  2 ++
- 3 files changed, 52 insertions(+), 1 deletion(-)
+'load' (as I understand the code) only accepts an encrypted blob.
 
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index 8892908ad58c..7dae61b79d5a 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -14,6 +14,7 @@
- #include <linux/slab.h>
- #include <linux/seq_file.h>
- #include <linux/scatterlist.h>
-+#include <linux/asn1.h>
- #include <keys/asymmetric-subtype.h>
- #include <crypto/public_key.h>
- #include <crypto/akcipher.h>
-@@ -90,6 +91,24 @@ int software_key_determine_akcipher(const char *encoding,
- 		return 0;
- 	}
- 
-+	if (strcmp(encoding, "x962") == 0) {
-+		enum OID oid;
-+
-+		if (parse_OID(pkey->params, pkey->paramlen, &oid) != 0)
-+			return -EBADMSG;
-+
-+		switch (oid) {
-+		case OID_id_prime192v1:
-+			strcpy(alg_name, "ecdsa-nist-p192");
-+			return 0;
-+		case OID_id_prime256v1:
-+			strcpy(alg_name, "ecdsa-nist-p256");
-+			return 0;
-+		default:
-+			return -EINVAL;
-+		}
-+	}
-+
- 	return -ENOPKG;
- }
- 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 1621ceaf5c95..0aff4e584b11 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -227,6 +227,26 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
- 		ctx->cert->sig->hash_algo = "sha224";
- 		goto rsa_pkcs1;
- 
-+	case OID_id_ecdsa_with_sha1:
-+		ctx->cert->sig->hash_algo = "sha1";
-+		goto ecdsa;
-+
-+	case OID_id_ecdsa_with_sha224:
-+		ctx->cert->sig->hash_algo = "sha224";
-+		goto ecdsa;
-+
-+	case OID_id_ecdsa_with_sha256:
-+		ctx->cert->sig->hash_algo = "sha256";
-+		goto ecdsa;
-+
-+	case OID_id_ecdsa_with_sha384:
-+		ctx->cert->sig->hash_algo = "sha384";
-+		goto ecdsa;
-+
-+	case OID_id_ecdsa_with_sha512:
-+		ctx->cert->sig->hash_algo = "sha512";
-+		goto ecdsa;
-+
- 	case OID_gost2012Signature256:
- 		ctx->cert->sig->hash_algo = "streebog256";
- 		goto ecrdsa;
-@@ -255,6 +275,11 @@ int x509_note_pkey_algo(void *context, size_t hdrlen,
- 	ctx->cert->sig->encoding = "raw";
- 	ctx->algo_oid = ctx->last_oid;
- 	return 0;
-+ecdsa:
-+	ctx->cert->sig->pkey_algo = "ecdsa";
-+	ctx->cert->sig->encoding = "x962";
-+	ctx->algo_oid = ctx->last_oid;
-+	return 0;
- }
- 
- /*
-@@ -276,7 +301,8 @@ int x509_note_signature(void *context, size_t hdrlen,
- 
- 	if (strcmp(ctx->cert->sig->pkey_algo, "rsa") == 0 ||
- 	    strcmp(ctx->cert->sig->pkey_algo, "ecrdsa") == 0 ||
--	    strcmp(ctx->cert->sig->pkey_algo, "sm2") == 0) {
-+	    strcmp(ctx->cert->sig->pkey_algo, "sm2") == 0 ||
-+	    strcmp(ctx->cert->sig->pkey_algo, "ecdsa") == 0) {
- 		/* Discard the BIT STRING metadata */
- 		if (vlen < 1 || *(const u8 *)value != 0)
- 			return -EBADMSG;
-@@ -478,6 +504,10 @@ int x509_extract_key_data(void *context, size_t hdrlen,
- 		case OID_sm2:
- 			ctx->cert->pub->pkey_algo = "sm2";
- 			break;
-+		case OID_id_prime192v1:
-+		case OID_id_prime256v1:
-+			ctx->cert->pub->pkey_algo = "ecdsa";
-+			break;
- 		default:
- 			return -ENOPKG;
- 		}
-diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
-index f3b2c097c886..ff3cad9f8c1f 100644
---- a/include/linux/oid_registry.h
-+++ b/include/linux/oid_registry.h
-@@ -21,6 +21,8 @@ enum OID {
- 	OID_id_dsa,			/* 1.2.840.10040.4.1 */
- 	OID_id_ecdsa_with_sha1,		/* 1.2.840.10045.4.1 */
- 	OID_id_ecPublicKey,		/* 1.2.840.10045.2.1 */
-+	OID_id_prime192v1,		/* 1.2.840.10045.3.1.1 */
-+	OID_id_prime256v1,		/* 1.2.840.10045.3.1.7 */
- 	OID_id_ecdsa_with_sha224,	/* 1.2.840.10045.4.3.1 */
- 	OID_id_ecdsa_with_sha256,	/* 1.2.840.10045.4.3.2 */
- 	OID_id_ecdsa_with_sha384,	/* 1.2.840.10045.4.3.3 */
+So the only way I see to have an encrypted key with a non-random key data would
+be:
+- create a random temporary master key and load a copy as a user key
+- encrypt the chosen key data with the temporary master key (using a new
+userspace reimplementation of the kernel encrypted key blob format)
+- use keyctl add encrypted dmcrypt "load <encrypted blob>" <keyring>
+- create new trusted master key (OP-TEE or CAAM in our case) as 
+- use keyctl update to switch to the new trusted master key
+- use keyctl pipe on the trusted and encrypted keys and store both for loading
+on later boots
+
+If we'd support importing a pre-existing key into a trusted or encrypted key,
+we'd do instead:
+- use keyctl add trusted dmcrypt "import <unencrypted key data>"
+- use keyctl pipe on the trusted key and store it for loading on later boots
+
+This way, users wouldn't need to care which backend is used by trusted keys
+(TPM/OP-TEE/CAAM/...). That would make use-cases where a random key is not
+suitable as straight-forward as the those where a random key is OK.
+
+Best regards
+Jan
+
+>     keyctl update keyid "update key-type:master-key-name"
 -- 
-2.29.2
+Pengutronix e.K.                           |                             |
+Steuerwalder Str. 21                       | http://www.pengutronix.de/  |
+31137 Hildesheim, Germany                  | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
