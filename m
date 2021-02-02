@@ -2,149 +2,98 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-3.7 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.4 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 567FFC433DB
-	for <keyrings@archiver.kernel.org>; Tue,  2 Feb 2021 12:37:37 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 450EFC433E0
+	for <keyrings@archiver.kernel.org>; Tue,  2 Feb 2021 15:20:13 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 28D1664F5C
-	for <keyrings@archiver.kernel.org>; Tue,  2 Feb 2021 12:37:37 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 053B864E8F
+	for <keyrings@archiver.kernel.org>; Tue,  2 Feb 2021 15:20:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231517AbhBBMhV (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 2 Feb 2021 07:37:21 -0500
-Received: from metis.ext.pengutronix.de ([85.220.165.71]:34745 "EHLO
-        metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229632AbhBBMhU (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 2 Feb 2021 07:37:20 -0500
-Received: from ptx.hi.pengutronix.de ([2001:67c:670:100:1d::c0])
-        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
-        (Exim 4.92)
-        (envelope-from <jlu@pengutronix.de>)
-        id 1l6ust-0007Jm-15; Tue, 02 Feb 2021 13:34:19 +0100
-Received: from localhost ([127.0.0.1])
-        by ptx.hi.pengutronix.de with esmtp (Exim 4.92)
-        (envelope-from <jlu@pengutronix.de>)
-        id 1l6usr-0001nH-QE; Tue, 02 Feb 2021 13:34:17 +0100
-Message-ID: <2012751fd653c284679aa2c6ac9a56a5edbf1410.camel@pengutronix.de>
-Subject: Re: Migration to trusted keys: sealing user-provided key?
-From:   Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
-To:     Sumit Garg <sumit.garg@linaro.org>,
-        James Bottomley <jejb@linux.ibm.com>
-Cc:     Mimi Zohar <zohar@linux.ibm.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>,
-        Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        David Howells <dhowells@redhat.com>,
-        "open list:ASYMMETRIC KEYS" <keyrings@vger.kernel.org>,
-        linux-integrity@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "open list:SECURITY SUBSYSTEM" 
-        <linux-security-module@vger.kernel.org>, kernel@pengutronix.de
-Date:   Tue, 02 Feb 2021 13:34:17 +0100
-In-Reply-To: <CAFA6WYMn519aF=uodjnSUZ+kKaRzdoh6Enu0OsRMge=21iBNBA@mail.gmail.com>
-References: <74830d4f-5a76-8ba8-aad0-0d79f7c01af9@pengutronix.de>
-         <6dc99fd9ffbc5f405c5f64d0802d1399fc6428e4.camel@kernel.org>
-         <d1bed49f89495ceb529355cb41655a208fdb2197.camel@linux.ibm.com>
-         <8b9477e150d7c939dc0def3ebb4443efcc83cd85.camel@pengutronix.de>
-         <18529562ed71becf21401ec9fd9d95c4ac44fdc0.camel@linux.ibm.com>
-         <CAFA6WYMn519aF=uodjnSUZ+kKaRzdoh6Enu0OsRMge=21iBNBA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-User-Agent: Evolution 3.38.3-1 
+        id S235364AbhBBPTm (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 2 Feb 2021 10:19:42 -0500
+Received: from mail.kernel.org ([198.145.29.99]:41200 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S235415AbhBBPRr (ORCPT <rfc822;keyrings@vger.kernel.org>);
+        Tue, 2 Feb 2021 10:17:47 -0500
+Received: by mail.kernel.org (Postfix) with ESMTPSA id 3836764EBF;
+        Tue,  2 Feb 2021 15:17:05 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1612279025;
+        bh=gsqH5R2MIBk8ennetSW+5uxOlY9Y3VrMrn7TTPDHofU=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=CFneDKyiNp/x1cpnR5unToS/CuwUXHXJEVCQdz92PdwdNubg8GGIf5DFIUJxv/cFX
+         SUMlzfH3SqgpbjIf64QxC56MT+TDwD6gVrdhv5SSH9/CMHjS78KR7SPmVAGE+wqaU1
+         Kp2LvNItkEyd3h4QFpvWVyPZEIAQHBxz4Iwp3R8oQXvgMP7Sa4zU6OImzZdgBGyZcu
+         UyfBoeC1KXYczlJrb6ze/DeC52nRFQYCtNOyYMFfTOVI0GAB+9Z0jvKqroDMk8rxZw
+         cJuZRND0porSFY2zcQKH9JPSANa9HIqHBeslgrZ3K7AOV4v5wBV9eIB2WfNU1FoYXM
+         Iclmbsp1jEhoA==
+Date:   Tue, 2 Feb 2021 17:16:58 +0200
+From:   Jarkko Sakkinen <jarkko@kernel.org>
+To:     Stefan Berger <stefanb@linux.ibm.com>
+Cc:     Stefan Berger <stefanb@linux.vnet.ibm.com>, dhowells@redhat.com,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, patrick@puiterwijk.org
+Subject: Re: [PATCH v3 1/3] x509: Detect sm2 keys by their parameters OID
+Message-ID: <YBls6paPlQ9L797n@kernel.org>
+References: <20210127123350.817593-1-stefanb@linux.vnet.ibm.com>
+ <20210127123350.817593-2-stefanb@linux.vnet.ibm.com>
+ <689c44925d60238181390e775b52809e89e0b26a.camel@kernel.org>
+ <e975bd1e-5256-ea8f-2247-fc362302e647@linux.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
+In-Reply-To: <e975bd1e-5256-ea8f-2247-fc362302e647@linux.ibm.com>
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Tue, 2021-02-02 at 17:45 +0530, Sumit Garg wrote:
-> Hi Jan,
-> 
-> On Sun, 31 Jan 2021 at 23:40, James Bottomley <jejb@linux.ibm.com> wrote:
-> > 
-> > On Sun, 2021-01-31 at 15:14 +0100, Jan LÃ¼bbe wrote:
-> > > On Sun, 2021-01-31 at 07:09 -0500, Mimi Zohar wrote:
-> > > > On Sat, 2021-01-30 at 19:53 +0200, Jarkko Sakkinen wrote:
-> > > > > On Thu, 2021-01-28 at 18:31 +0100, Ahmad Fatoum wrote:
-> > > > > > Hello,
-> > > > > > 
-> > > > > > I've been looking into how a migration to using
-> > > > > > trusted/encrypted keys would look like (particularly with dm-
-> > > > > > crypt).
-> > > > > > 
-> > > > > > Currently, it seems the the only way is to re-encrypt the
-> > > > > > partitions because trusted/encrypted keys always generate their
-> > > > > > payloads from RNG.
-> > > > > > 
-> > > > > > If instead there was a key command to initialize a new
-> > > > > > trusted/encrypted key with a user provided value, users could
-> > > > > > use whatever mechanism they used beforehand to get a plaintext
-> > > > > > key and use that to initialize a new trusted/encrypted key.
-> > > > > > From there on, the key will be like any other trusted/encrypted
-> > > > > > key and not be disclosed again to userspace.
-> > > > > > 
-> > > > > > What are your thoughts on this? Would an API like
-> > > > > > 
-> > > > > > Â Â keyctl add trusted dmcrypt-key 'set <content>' # user-
-> > > > > > supplied content
-> > > > > > 
-> > > > > > be acceptable?
-> > > > > 
-> > > > > Maybe it's the lack of knowledge with dm-crypt, but why this
-> > > > > would be useful? Just want to understand the bottleneck, that's
-> > > > > all.
+On Sat, Jan 30, 2021 at 09:57:40PM -0500, Stefan Berger wrote:
+> On 1/30/21 4:26 PM, Jarkko Sakkinen wrote:
+> > On Wed, 2021-01-27 at 07:33 -0500, Stefan Berger wrote:
+> > > From: Stefan Berger <stefanb@linux.ibm.com>
 > > > 
-> > > Our goal in this case is to move away from having the dm-crypt key
-> > > material accessible to user-space on embedded devices. For an
-> > > existing dm-crypt volume, this key is fixed. A key can be loaded into
-> > > user key type and used by dm-crypt (cryptsetup can already do it this
-> > > way). But at this point, you can still do 'keyctl read' on that key,
-> > > exposing the key material to user space.
+> > > Detect whether a key is an sm2 type of key by its OID in the parameters
+> > > array rather than assuming that everything under OID_id_ecPublicKey
+> > > is sm2, which is not the case.
 > > > 
-> > > Currently, with both encrypted and trusted keys, you can only
-> > > generate new random keys, not import existing key material.
+> > > Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
+> > > ---
+> > >   crypto/asymmetric_keys/x509_cert_parser.c | 13 ++++++++++++-
+> > >   1 file changed, 12 insertions(+), 1 deletion(-)
 > > > 
-> > > James Bottomley mentioned in the other reply that the key format will
-> > > become compatible with the openssl_tpm2_engine, which would provide a
-> > > workaround. This wouldn't work with OP-TEE-based trusted keys (see
-> > > Sumit Garg's series), though.
-> > 
-> > Assuming OP-TEE has the same use model as the TPM, someone will
-> > eventually realise the need for interoperable key formats between key
-> > consumers and then it will work in the same way once the kernel gets
-> > updated to speak whatever format they come up with.
+> > > diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+> > > index 52c9b455fc7d..4643fe5ed69a 100644
+> > > --- a/crypto/asymmetric_keys/x509_cert_parser.c
+> > > +++ b/crypto/asymmetric_keys/x509_cert_parser.c
+> > > @@ -459,6 +459,7 @@ int x509_extract_key_data(void *context, size_t hdrlen,
+> > >                            const void *value, size_t vlen)
+> > >   {
+> > >          struct x509_parse_context *ctx = context;
+> > > +       enum OID oid;
+> > >          ctx->key_algo = ctx->last_oid;
+> > >          switch (ctx->last_oid) {
+> > > @@ -470,7 +471,17 @@ int x509_extract_key_data(void *context, size_t hdrlen,
+> > >                  ctx->cert->pub->pkey_algo = "ecrdsa";
+> > >                  break;
+> > >          case OID_id_ecPublicKey:
+> > > -               ctx->cert->pub->pkey_algo = "sm2";
+> > > +               if (ctx->params_size < 2)
+> > Either a named constant, or at least a comment instead of just '2'.
 > 
-> IIUC, James re-work for TPM trusted keys is to allow loading of sealed
-> trusted keys directly via user-space (with proper authorization) into
-> the kernel keyring.
 > 
-> I think similar should be achievable with OP-TEE (via extending pseudo
-> TA [1]) as well to allow restricted user-space access (with proper
-> authorization) to generate sealed trusted key blob that should be
-> interoperable with the kernel. Currently OP-TEE exposes trusted key
-> interfaces for kernel users only.
+> I will look at the 2 entries whether they contain the expected values:
+> ASN1_OID and length
+> 
+> Thanks!
+> 
+>    Stefan
 
-What is the security benefit of having the key blob creation in user-space
-instead of in the kernel? Key import is a standard operation in HSMs or PKCS#11
-tokens.
+Just add inline comment that explains that.
 
-I mainly see the downside of having to add another API to access the underlying
-functionality (be it trusted key TA or the NXP CAAM HW *) and requiring
-platform-specific userspace code.
-
-This CAAM specific API (in out-of-tree patches) was exactly the part I was
-trying to get rid of. ;)
-
-Regards,
-Jan
-
--- 
-Pengutronix e.K.                           |                             |
-Steuerwalder Str. 21                       | http://www.pengutronix.de/  |
-31137 Hildesheim, Germany                  | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
+/Jarkko
