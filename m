@@ -2,148 +2,85 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-3.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-6.3 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5B6CEC433E0
-	for <keyrings@archiver.kernel.org>; Tue,  9 Feb 2021 07:17:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A1B5AC433DB
+	for <keyrings@archiver.kernel.org>; Tue,  9 Feb 2021 13:16:03 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 0E7EC64EC2
-	for <keyrings@archiver.kernel.org>; Tue,  9 Feb 2021 07:17:44 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 410F764EC3
+	for <keyrings@archiver.kernel.org>; Tue,  9 Feb 2021 13:16:03 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229789AbhBIHR2 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 9 Feb 2021 02:17:28 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33094 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229558AbhBIHRX (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Feb 2021 02:17:23 -0500
-Received: from metis.ext.pengutronix.de (metis.ext.pengutronix.de [IPv6:2001:67c:670:201:290:27ff:fe1d:cc33])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 78341C061786
-        for <keyrings@vger.kernel.org>; Mon,  8 Feb 2021 23:16:42 -0800 (PST)
-Received: from ptx.hi.pengutronix.de ([2001:67c:670:100:1d::c0])
-        by metis.ext.pengutronix.de with esmtps (TLS1.3:ECDHE_RSA_AES_256_GCM_SHA384:256)
-        (Exim 4.92)
-        (envelope-from <jlu@pengutronix.de>)
-        id 1l9NGC-0006mV-H4; Tue, 09 Feb 2021 08:16:32 +0100
-Received: from localhost ([127.0.0.1])
-        by ptx.hi.pengutronix.de with esmtp (Exim 4.92)
-        (envelope-from <jlu@pengutronix.de>)
-        id 1l9NGB-0000sq-8K; Tue, 09 Feb 2021 08:16:31 +0100
-Message-ID: <e8f149cddce55a4e4615396108e4c900cbec75a8.camel@pengutronix.de>
-Subject: Re: Migration to trusted keys: sealing user-provided key?
-From:   Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
-To:     Mimi Zohar <zohar@linux.ibm.com>,
+        id S229988AbhBINPr (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 9 Feb 2021 08:15:47 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([63.128.21.124]:54039 "EHLO
+        us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S230409AbhBINPo (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 9 Feb 2021 08:15:44 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1612876458;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=ZJO2coTOPSTpGO+5F/K+/F71lw3kWLqwpbNc9WcP6uE=;
+        b=e535usWZ+cAYkvEkUpetu9XTS68VSpsEhhdJ8rwpHAa7n8qyJeSElZSgwQcxTVkY6qmmph
+        qLG/+FjhYzhO4iOeKaBxpiOoBe4Alqxep4d1Bsrmj76S7KR34lkXiDj5HsYbTV7kSuqMJJ
+        0BV1CwQe1AUX9+EqWVzZDRhX1zqM/9I=
+Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
+ [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
+ us-mta-514-rLjhSlqKPti5cKiHGW7mzQ-1; Tue, 09 Feb 2021 08:14:17 -0500
+X-MC-Unique: rLjhSlqKPti5cKiHGW7mzQ-1
+Received: from smtp.corp.redhat.com (int-mx06.intmail.prod.int.phx2.redhat.com [10.5.11.16])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 049E9CE647;
+        Tue,  9 Feb 2021 13:14:14 +0000 (UTC)
+Received: from warthog.procyon.org.uk (ovpn-115-23.rdu2.redhat.com [10.10.115.23])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id D1F401725E;
+        Tue,  9 Feb 2021 13:14:06 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+In-Reply-To: <74EC102D-BD18-4863-A7FB-C88439654C8C@oracle.com>
+References: <74EC102D-BD18-4863-A7FB-C88439654C8C@oracle.com> <20210122181054.32635-1-eric.snowberg@oracle.com> <1103491.1612369600@warthog.procyon.org.uk> <10e6616e-0598-9f33-2de9-4a5268bba586@digikod.net> <A5B5DEC0-E47A-4C3D-8E79-AF37B6C2E565@oracle.com> <7924ce4c-ea94-9540-0730-bddae7c6af07@digikod.net> <BFC930B3-7994-4C5B-A8EF-1DD1C73F5750@oracle.com> <dc6a4524-3935-fda6-40a8-cebf80942cdf@digikod.net> <188DE1AF-A011-4631-B88A-2C4324DA013B@oracle.com> <99066eb7-53ac-41b0-46cf-36ea3d7f6590@digikod.net>
+To:     Eric Snowberg <eric.snowberg@oracle.com>,
+        =?us-ascii?Q?=3D=3Futf-8=3FQ=3FMicka=3DC3=3DABl=5FSala=3DC3=3DBCn=3F?=
+         =?us-ascii?Q?=3D?= <mic@digikod.net>
+Cc:     dhowells@redhat.com, dwmw2@infradead.org,
         Jarkko Sakkinen <jarkko@kernel.org>,
-        Ahmad Fatoum <a.fatoum@pengutronix.de>,
-        James Bottomley <jejb@linux.ibm.com>,
-        David Howells <dhowells@redhat.com>, keyrings@vger.kernel.org,
-        Sumit Garg <sumit.garg@linaro.org>
-Cc:     linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, kernel@pengutronix.de
-Date:   Tue, 09 Feb 2021 08:16:30 +0100
-In-Reply-To: <9bd1eaab236f095f1dbdc01752c3c6f487f33525.camel@linux.ibm.com>
-References: <74830d4f-5a76-8ba8-aad0-0d79f7c01af9@pengutronix.de>
-         <6dc99fd9ffbc5f405c5f64d0802d1399fc6428e4.camel@kernel.org>
-         <d1bed49f89495ceb529355cb41655a208fdb2197.camel@linux.ibm.com>
-         <8b9477e150d7c939dc0def3ebb4443efcc83cd85.camel@pengutronix.de>
-         <d4eeefa0c13395e91850630e22d0d9e3690f43ac.camel@linux.ibm.com>
-         <64472434a367060ddce6e03425156b8312a5ad6c.camel@pengutronix.de>
-         <bd3246ebb4eae526c84efe2d27c6fadff662b0c8.camel@linux.ibm.com>
-         <0be34899c9686b95cd22aa016f466523579cbeed.camel@pengutronix.de>
-         <e9e7814c35d9ce5a6351a960081bf3c6b90bdca7.camel@linux.ibm.com>
-         <b6ee219924e7195070062b6453931595faa640af.camel@pengutronix.de>
-         <9bd1eaab236f095f1dbdc01752c3c6f487f33525.camel@linux.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-User-Agent: Evolution 3.38.3-1 
+        James.Bottomley@HansenPartnership.com, masahiroy@kernel.org,
+        michal.lkml@markovi.net, jmorris@namei.org, serge@hallyn.com,
+        ardb@kernel.org, Mimi Zohar <zohar@linux.ibm.com>,
+        lszubowi@redhat.com, javierm@redhat.com, keyrings@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Tyler Hicks <tyhicks@linux.microsoft.com>
+Subject: Re: Re: Conflict with =?utf-8?Q?Micka=C3=ABl_Sala=C3=BCn's?=
+ blacklist patches [was [PATCH v5 0/4] Add EFI_CERT_X509_GUID support for
+ dbx/mokx entries]
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: keyrings@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Date:   Tue, 09 Feb 2021 13:14:06 +0000
+Message-ID: <525705.1612876446@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.16
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Mon, 2021-02-08 at 16:50 -0500, Mimi Zohar wrote:
-> On Mon, 2021-02-08 at 15:38 +0100, Jan Lübbe wrote:
-> 
-> > As it seems that this feature would not be appropriate for all use-cases and
-> > threat models, I wonder if making it optional would be acceptable. Something
-> > like:
-> > 
-> > config TRUSTED_KEYS_IMPORT
-> 
-> To me "IMPORT" implies from a trusted source, which this is not. 
-> Perhaps "UNSAFE_IMPORT", "DEBUGGING_IMPORT, "DEVELOPMENT_IMPORT", ...
-> 
-> Defining a Kconfig with any of these names and the other changes below,
-> makes it very clear using predefined key data is not recommended.  My
-> concern with extending trusted keys to new trust sources is the
-> implication that the security/integrity is equivalent to the existing
-> discrete TPM.
-> 
-> >         bool "Allow creating TRUSTED KEYS from existing key material"
-> >         depends on TRUSTED_KEYS
-> 
-> Missing "default n"
 
-According to Documentation/kbuild/kconfig-language.rst: "The default value
-deliberately defaults to 'n' in order to avoid bloating the build.". So an
-explicit "default n" should not be needed. I'll add it though, for now.
+Hi Eric, Micka=C3=ABl,
 
-> >         help
-> >           This option adds support for creating new trusted keys from
-> > existing 
-> >           key material supplied by userspace, instead of using random
-> > numbers.
-> >           As with random trusted keys, userspace cannot extract the plain-
-> > text 
-> 
-> Once defined, as with random trusted keys, userspace cannot ...
-> 
-> >           key material again and will only ever see encrypted blobs.
-> >           
-> > 
-> >           This option should *only* be enabled for use in a trusted
-> >           environment (such as during debugging/development or in a secured
-> >           factory). Also, consider using 'keyctl padd' instead of 'keyctl
-> > add' 
-> 
-> Even the "secured factory" is not a good idea.  Please limit the usage
-> to debugging/development.
-> 
-> >           to avoid exposing the plain-text key on the process command line.
-> > 
-> >           If you are unsure as to whether this is required, answer N.
-> 
-> The above would be fine.
+Do we have a consensus on this?  From what's written here, I don't think I =
+can
+ask Linus to pull the merge of your two branches.  I feel that I probably n=
+eed
+to push Eric's first as that fixes a CVE if I can't offer a merge.
 
-OK, that would result in:
-
-config TRUSTED_KEYS_DEVELOPMENT_IMPORT
-        bool "Allow creating TRUSTED KEYS from existing key material for development"
-        depends on TRUSTED_KEYS
-        default n
-        help
-          This option adds support for creating new trusted keys from
-          existing key material supplied by userspace, instead of using
-          random numbers. Once defined,  as with random trusted keys,
-          userspace cannot extract the plain-text key material again
-          and will only ever see encrypted blobs.
-          
-          This option should *only* be enabled for debugging/development.
-          Also, consider using 'keyctl padd' instead of 'keyctl add' to
-          avoid exposing the plain-text key on the process command line.
-
-          If you are unsure as to whether this is required, answer N.
-
-Thanks,
-Jan
--- 
-Pengutronix e.K.                           |                             |
-Steuerwalder Str. 21                       | http://www.pengutronix.de/  |
-31137 Hildesheim, Germany                  | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+David
 
