@@ -2,135 +2,107 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-8.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=ham autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D1F17C433DB
-	for <keyrings@archiver.kernel.org>; Wed, 10 Feb 2021 12:16:32 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 86E9AC433E0
+	for <keyrings@archiver.kernel.org>; Wed, 10 Feb 2021 15:00:55 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 852AD64DFF
-	for <keyrings@archiver.kernel.org>; Wed, 10 Feb 2021 12:16:32 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 4033E64E7E
+	for <keyrings@archiver.kernel.org>; Wed, 10 Feb 2021 15:00:55 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231649AbhBJMPn (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Wed, 10 Feb 2021 07:15:43 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40456 "EHLO
+        id S231866AbhBJPAh (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 10 Feb 2021 10:00:37 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48114 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229517AbhBJMN3 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Wed, 10 Feb 2021 07:13:29 -0500
-Received: from smtp-42ac.mail.infomaniak.ch (smtp-42ac.mail.infomaniak.ch [IPv6:2001:1600:4:17::42ac])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A40CDC06178A
-        for <keyrings@vger.kernel.org>; Wed, 10 Feb 2021 04:08:21 -0800 (PST)
-Received: from smtp-3-0001.mail.infomaniak.ch (unknown [10.4.36.108])
-        by smtp-3-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4DbJRS2vZ7zMpnnY;
-        Wed, 10 Feb 2021 13:07:32 +0100 (CET)
-Received: from ns3096276.ip-94-23-54.eu (unknown [23.97.221.149])
-        by smtp-3-0001.mail.infomaniak.ch (Postfix) with ESMTPA id 4DbJRP6qQzzlh8TJ;
-        Wed, 10 Feb 2021 13:07:29 +0100 (CET)
-Subject: =?UTF-8?Q?Re=3a_Conflict_with_Micka=c3=abl_Sala=c3=bcn=27s_blacklis?=
- =?UTF-8?Q?t_patches_=5bwas_=5bPATCH_v5_0/4=5d_Add_EFI=5fCERT=5fX509=5fGUID_?=
- =?UTF-8?Q?support_for_dbx/mokx_entries=5d?=
-From:   =?UTF-8?Q?Micka=c3=abl_Sala=c3=bcn?= <mic@digikod.net>
-To:     Eric Snowberg <eric.snowberg@oracle.com>,
-        David Howells <dhowells@redhat.com>
-Cc:     dwmw2@infradead.org, Jarkko Sakkinen <jarkko@kernel.org>,
-        James.Bottomley@HansenPartnership.com, masahiroy@kernel.org,
-        michal.lkml@markovi.net, jmorris@namei.org, serge@hallyn.com,
-        ardb@kernel.org, Mimi Zohar <zohar@linux.ibm.com>,
-        lszubowi@redhat.com, javierm@redhat.com, keyrings@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Tyler Hicks <tyhicks@linux.microsoft.com>
-References: <20210122181054.32635-1-eric.snowberg@oracle.com>
- <1103491.1612369600@warthog.procyon.org.uk>
- <10e6616e-0598-9f33-2de9-4a5268bba586@digikod.net>
- <A5B5DEC0-E47A-4C3D-8E79-AF37B6C2E565@oracle.com>
- <7924ce4c-ea94-9540-0730-bddae7c6af07@digikod.net>
- <BFC930B3-7994-4C5B-A8EF-1DD1C73F5750@oracle.com>
- <dc6a4524-3935-fda6-40a8-cebf80942cdf@digikod.net>
- <188DE1AF-A011-4631-B88A-2C4324DA013B@oracle.com>
- <99066eb7-53ac-41b0-46cf-36ea3d7f6590@digikod.net>
- <74EC102D-BD18-4863-A7FB-C88439654C8C@oracle.com>
- <456712ef-1349-ffe2-9e34-7d49848980ff@digikod.net>
-Message-ID: <999f0763-b1c1-a9ad-0efe-d3e148663ced@digikod.net>
-Date:   Wed, 10 Feb 2021 13:07:59 +0100
-User-Agent: 
+        with ESMTP id S231439AbhBJPAa (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 10 Feb 2021 10:00:30 -0500
+Received: from bedivere.hansenpartnership.com (bedivere.hansenpartnership.com [IPv6:2607:fcd0:100:8a00::2])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A488BC06174A;
+        Wed, 10 Feb 2021 06:59:48 -0800 (PST)
+Received: from localhost (localhost [127.0.0.1])
+        by bedivere.hansenpartnership.com (Postfix) with ESMTP id 3062F1280970;
+        Wed, 10 Feb 2021 06:59:46 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+        d=hansenpartnership.com; s=20151216; t=1612969186;
+        bh=DxDyCNcnCVoW8QKTNX6Mk6L5XH6eZAVV8RI1Foj2CAQ=;
+        h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
+        b=UvkRPgOA60dj2pJQ9mMtEt+ah+IaqxBFtQnSUiPAbl5y53XfePEMwUS2VDPQLh90W
+         QgKcUfHMV8ER1UjeCp9umLKYi3I6Phybt+cnR8LCJpGzcvkYHyW3sg0SMjLIthhrXt
+         +iIrQGhg0Kd3uXwJSubKKVgGYtkaeNo4vbydFr6U=
+Received: from bedivere.hansenpartnership.com ([127.0.0.1])
+        by localhost (bedivere.hansenpartnership.com [127.0.0.1]) (amavisd-new, port 10024)
+        with ESMTP id tXk5NU9INlaf; Wed, 10 Feb 2021 06:59:46 -0800 (PST)
+Received: from jarvis.int.hansenpartnership.com (unknown [IPv6:2601:600:8280:66d1::c447])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by bedivere.hansenpartnership.com (Postfix) with ESMTPSA id 9DCA4128096F;
+        Wed, 10 Feb 2021 06:59:45 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+        d=hansenpartnership.com; s=20151216; t=1612969186;
+        bh=DxDyCNcnCVoW8QKTNX6Mk6L5XH6eZAVV8RI1Foj2CAQ=;
+        h=Message-ID:Subject:From:To:Date:In-Reply-To:References:From;
+        b=UvkRPgOA60dj2pJQ9mMtEt+ah+IaqxBFtQnSUiPAbl5y53XfePEMwUS2VDPQLh90W
+         QgKcUfHMV8ER1UjeCp9umLKYi3I6Phybt+cnR8LCJpGzcvkYHyW3sg0SMjLIthhrXt
+         +iIrQGhg0Kd3uXwJSubKKVgGYtkaeNo4vbydFr6U=
+Message-ID: <a4ed4f9a5181995bb304490be219fa32dbb6a061.camel@HansenPartnership.com>
+Subject: Re: [PATCH] sign-file: add openssl engine support
+From:   James Bottomley <James.Bottomley@HansenPartnership.com>
+To:     David Woodhouse <dwmw2@infradead.org>,
+        Yang Song <songyang@linux.alibaba.com>, dhowells@redhat.com,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc:     zhang.jia@linux.alibaba.com, tianjia.zhang@linux.alibaba.com
+Date:   Wed, 10 Feb 2021 06:59:44 -0800
+In-Reply-To: <E4E1860E-57B8-44AA-B370-9589F9C20215@infradead.org>
+References: <20210210074554.81100-1-songyang@linux.alibaba.com>
+         <E4E1860E-57B8-44AA-B370-9589F9C20215@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+User-Agent: Evolution 3.34.4 
 MIME-Version: 1.0
-In-Reply-To: <456712ef-1349-ffe2-9e34-7d49848980ff@digikod.net>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
+On Wed, 2021-02-10 at 08:01 +0000, David Woodhouse wrote:
+> 
+> On 10 February 2021 07:45:54 GMT, Yang Song <
+> songyang@linux.alibaba.com> wrote:
+> > Use a customized signature service supported by openssl engine
+> > to sign the kernel module.
+> > Add command line parameters that support engine for sign-file
+> > to use the customized openssl engine service to sign kernel
+> > modules.
+> > 
+> > Signed-off-by: Yang Song <songyang@linux.alibaba.com>
+> 
+> Aren't engines already obsolete in the latest versions of OpenSSL, as
+> well as being an implementation detail of one particular crypto
+> library?
 
-On 09/02/2021 22:53, Mickaël Salaün wrote:
-> 
-> On 09/02/2021 00:05, Eric Snowberg wrote:
->>
->>> On Feb 6, 2021, at 11:30 AM, Mickaël Salaün <mic@digikod.net> wrote:
->>>
->>> On 06/02/2021 02:14, Eric Snowberg wrote:
->>>
->>>> I have done some additional testing, I am seeing a regression. The blacklist 
->>>> keyring is no longer picking up any of the hashes from the dbx during boot. 
->>>> I backed out the merge with my changes  (fdbbe7ceeb95090d09c33ce0497e0394c82aa33d) 
->>>> and still see the regression.  I then backed out Mickaël merge
->>>> (5bf1adccf5c41dbdd51d1f4de220d335d9548598) and it fixes the regression.
->>>>
->>>> On a x86 with the updated dbx from uefi.org, I’d expect to see 234 bin hash entries
->>>> in the blacklist keyring.  With the current merged code, there is none.
->>>
->>> Hum, I missed a part in refactoring (commit
->>> f78e50c8f750c0ac6767ac1ed006360cf77c56c4). :/
->>> Could you please test the following patch?
->>>
->>> diff --git a/certs/blacklist.c b/certs/blacklist.c
->>> index 07c592ae5307..f998a2e85ddc 100644
->>> --- a/certs/blacklist.c
->>> +++ b/certs/blacklist.c
->>> @@ -197,13 +197,16 @@ int mark_hash_blacklisted(const u8 *hash, size_t
->>> hash_len,
->>>                enum blacklist_hash_type hash_type)
->>> {
->>>        const char *buffer;
->>> +       int err;
->>>
->>>        buffer = get_raw_hash(hash, hash_len, hash_type);
->>>        if (IS_ERR(buffer))
->>>                return PTR_ERR(buffer);
->>> +       err = mark_raw_hash_blacklisted(buffer);
->>>        kfree(buffer);
->>> -       return 0;
->>> +       return err;
->>> }
->>
->> I applied this patch, it works better, but there is still a regression. 
->> Most of the hashes show up in the blacklist keyring now.  However some 
->> do not, here is what I see in the log during boot:
->>
->> [    2.321876] blacklist: Problem blacklisting hash (-13)
->> [    2.322729] blacklist: Problem blacklisting hash (-13)
->> [    2.323549] blacklist: Problem blacklisting hash (-13)
->> [    2.324369] blacklist: Problem blacklisting hash (-13)
->>
->>> Is it possible to test these kind of dbx blacklist with Qemu?
->>
->> Yes, just use OVMF. 
->>
-> 
-> My changes (with the fix) don't change the previous semantic. I just
-> tested without my changes and with my changes (and the fix), and I get
-> the same result: 184 bin hashes with
-> https://uefi.org/sites/default/files/resources/dbxupdate_x64.bin
-> 
-> Could you please re-test and if there is still an issue bisect and share
-> the certificates causing this issue?
-> 
-> David, do you want me to send the two new patches or an updated full
-> patch series?
-> 
+Um, no, they're getting renamed providers with some annoying API
+changes that require a bit of a rewrite but the concept of a crypto
+"engine" plug in to the code base isn't going away.
 
-I found the issue and fixed it in a new patch series:
-https://lore.kernel.org/lkml/20210210120410.471693-1-mic@digikod.net/
+>  They aren't really a concept we should be exposing in *our* user
+> interface.
+
+We already do ... grep ENGINE in scripts/sign-file.c
+
+Just by the way in case anyone is interested in history:
+
+https://lore.kernel.org/keyrings/1518452963.3114.6.camel@HansenPartnership.com/
+
+> Better to make sign-file automatically recognise RFC7512 PKCS#11 URIs
+> and handle them by automatically loading the PKCS#11 engine.
+
+PKCS11 can't cover everyting engines can.  Engines are mostly used for
+accelerators, which are not in the PKCS11 API and even for external
+keys, PKCS11 can't cope if the key isn't inside what PKCS11 thinks of
+as a token.
+
+James
+
+
