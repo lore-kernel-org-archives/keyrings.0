@@ -2,90 +2,111 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.4 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E9478C433E0
-	for <keyrings@archiver.kernel.org>; Thu, 11 Feb 2021 13:29:41 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D3CC6C433E0
+	for <keyrings@archiver.kernel.org>; Thu, 11 Feb 2021 17:34:15 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 95A3164E7E
-	for <keyrings@archiver.kernel.org>; Thu, 11 Feb 2021 13:29:41 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id A0D6964E8A
+	for <keyrings@archiver.kernel.org>; Thu, 11 Feb 2021 17:34:15 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229752AbhBKN3d (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Thu, 11 Feb 2021 08:29:33 -0500
-Received: from mail-wm1-f51.google.com ([209.85.128.51]:54989 "EHLO
-        mail-wm1-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231265AbhBKNZs (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Thu, 11 Feb 2021 08:25:48 -0500
-Received: by mail-wm1-f51.google.com with SMTP id w4so5541728wmi.4
-        for <keyrings@vger.kernel.org>; Thu, 11 Feb 2021 05:25:30 -0800 (PST)
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:from:to:cc:subject:date:message-id:mime-version
-         :content-transfer-encoding;
-        bh=yVOAMLQtHgH63cMZg+F/kTpWBAiKNH2of3Em41CxuKU=;
-        b=ir10PXr9PwmBMWKMnf/FxlWha2LCHONMN2uCvaZb+ql85T82wdD4U/9fPtRY65oZHx
-         BFjrZj44DSjS/szHgF+uxa7WGXfFHI5RQ9z5CCQwh+oKrAym9uTnXDWDznitqdV8NQay
-         kjAvbdjmMtj8xH16WGVHJXCR+FLTvECK8Y0tvx893jf4Tu5kFDM2M3jtzDMQ2BGDNroL
-         J99cAeTX4hC5eNVIwMz0c2KzKyD+nUWaHfig4UkY03FsfddlCYWHpj4FB093n9pmTshd
-         npvQzro/9U25RooI6zdBuKGjpPk+UuWdH5comqudKmIY4AV/HgHX3J6ICurZiAffrlAi
-         2yTg==
-X-Gm-Message-State: AOAM532OUGs3fWmSFbybPuQ+gKEDuMGfIfhgmkHQD4YUc/PtDni/9YoR
-        8avNzLYoXyYRiT7r2uzKPokUXnlXYvxBXeo6
-X-Google-Smtp-Source: ABdhPJye81XaiYaPrp+yoxRuWXdHmOI+9MWJCCMupzNjDIYiQJmBWfOVWzGJhmsXRn+7eRwLuPkBHg==
-X-Received: by 2002:a05:600c:1552:: with SMTP id f18mr5173543wmg.46.1613049903907;
-        Thu, 11 Feb 2021 05:25:03 -0800 (PST)
-Received: from localhost.localdomain ([82.213.213.214])
-        by smtp.gmail.com with ESMTPSA id n5sm8558489wmq.7.2021.02.11.05.25.03
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 11 Feb 2021 05:25:03 -0800 (PST)
-From:   Andrew Zaborowski <andrew.zaborowski@intel.com>
-To:     keyrings@vger.kernel.org
-Cc:     David Howells <dhowells@redhat.com>,
-        Jarkko Sakkinen <jarkko@kernel.org>
-Subject: [PATCH v3 1/2] keys: crypto: Replace BUG_ON() with WARN() in find_asymmetric_key()
-Date:   Thu, 11 Feb 2021 14:24:28 +0100
-Message-Id: <20210211132429.283122-1-andrew.zaborowski@intel.com>
-X-Mailer: git-send-email 2.27.0
+        id S229863AbhBKRd4 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Thu, 11 Feb 2021 12:33:56 -0500
+Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:28970 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+        by vger.kernel.org with ESMTP id S230080AbhBKRbv (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Thu, 11 Feb 2021 12:31:51 -0500
+Received: from pps.filterd (m0098413.ppops.net [127.0.0.1])
+        by mx0b-001b2d01.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 11BHFcD1001797;
+        Thu, 11 Feb 2021 12:30:56 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=subject : to : cc :
+ references : from : message-id : date : mime-version : in-reply-to :
+ content-type : content-transfer-encoding; s=pp1;
+ bh=X8cuwiMr09qjFxf3XEBiGBA3KDQWNK0BI9F02bgDVdk=;
+ b=ZWehr9KynkzulnULjBvqvXYl3tu9pzBFwv5KZKLBVxZ+e56KoSs6EP7B9ol4sJKKWjE9
+ Ntyne4J905/Bn9dUzqz+AwsX2QaV8YtTwItbPUmhngPNeEVj8KUGFuWIJBXDs79bexiD
+ 3rHrb1wJljzlN64iq5O0X7Hz4A9FMajqlPguB6Ck16LG74gQVQ9o6D6TUN9CBO0cLjEZ
+ wYiueS1kugIwYhE55iviHOGsYWj4TPtTNSKXm01UvzHOyroTw8Lic5qWdXhjIONWfLAY
+ D+HOqTQ1dlTB+U96VxCOn0dP/DxUKN9ejxUl30pndgFBQSOZyK/breS6YsoUntRXXOj7 JA== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0b-001b2d01.pphosted.com with ESMTP id 36n8tx0dxu-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Thu, 11 Feb 2021 12:30:55 -0500
+Received: from m0098413.ppops.net (m0098413.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.36/8.16.0.36) with SMTP id 11BHIsxi011950;
+        Thu, 11 Feb 2021 12:30:55 -0500
+Received: from ppma03dal.us.ibm.com (b.bd.3ea9.ip4.static.sl-reverse.com [169.62.189.11])
+        by mx0b-001b2d01.pphosted.com with ESMTP id 36n8tx0dw7-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Thu, 11 Feb 2021 12:30:55 -0500
+Received: from pps.filterd (ppma03dal.us.ibm.com [127.0.0.1])
+        by ppma03dal.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 11BHQvLE014523;
+        Thu, 11 Feb 2021 17:30:53 GMT
+Received: from b01cxnp23034.gho.pok.ibm.com (b01cxnp23034.gho.pok.ibm.com [9.57.198.29])
+        by ppma03dal.us.ibm.com with ESMTP id 36hjr9s5a2-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Thu, 11 Feb 2021 17:30:53 +0000
+Received: from b01ledav002.gho.pok.ibm.com (b01ledav002.gho.pok.ibm.com [9.57.199.107])
+        by b01cxnp23034.gho.pok.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 11BHUqIB41091570
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Thu, 11 Feb 2021 17:30:52 GMT
+Received: from b01ledav002.gho.pok.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 57A92124052;
+        Thu, 11 Feb 2021 17:30:52 +0000 (GMT)
+Received: from b01ledav002.gho.pok.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 4477C124058;
+        Thu, 11 Feb 2021 17:30:52 +0000 (GMT)
+Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
+        by b01ledav002.gho.pok.ibm.com (Postfix) with ESMTP;
+        Thu, 11 Feb 2021 17:30:52 +0000 (GMT)
+Subject: Re: [PATCH v7 3/4] x509: Add support for parsing x509 certs with
+ ECDSA keys
+To:     kernel test robot <lkp@intel.com>, keyrings@vger.kernel.org,
+        linux-crypto@vger.kernel.org, davem@davemloft.net,
+        herbert@gondor.apana.org.au, dhowells@redhat.com,
+        zohar@linux.ibm.com
+Cc:     kbuild-all@lists.01.org, linux-kernel@vger.kernel.org,
+        patrick@puiterwijk.org, linux-integrity@vger.kernel.org
+References: <20210201151910.1465705-4-stefanb@linux.ibm.com>
+ <202102111531.JYJl0c7G-lkp@intel.com>
+From:   Stefan Berger <stefanb@linux.ibm.com>
+Message-ID: <b72f396e-fafa-cff3-cee2-a47ac5274dc4@linux.ibm.com>
+Date:   Thu, 11 Feb 2021 12:30:52 -0500
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
+ Thunderbird/78.6.0
 MIME-Version: 1.0
+In-Reply-To: <202102111531.JYJl0c7G-lkp@intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 8bit
+Content-Language: en-US
+X-TM-AS-GCONF: 00
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.737
+ definitions=2021-02-11_07:2021-02-11,2021-02-11 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 bulkscore=0
+ lowpriorityscore=0 mlxlogscore=999 malwarescore=0 priorityscore=1501
+ suspectscore=0 clxscore=1011 spamscore=0 adultscore=0 impostorscore=0
+ mlxscore=0 phishscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2009150000 definitions=main-2102110137
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-From: Jarkko Sakkinen <jarkko@kernel.org>
+On 2/11/21 3:03 AM, kernel test robot wrote:
+> Hi Stefan,
+>
+> Thank you for the patch! Yet something to improve:
+>
+>>> crypto/asymmetric_keys/public_key.c:97: undefined reference to `parse_OID'
 
-BUG_ON() should not be used in the kernel code, unless there are
-exceptional reasons to do so. Replace BUG_ON() with WARN() and
-return.
 
-Cc: stable@vger.kernel.org
-Fixes: b3811d36a3e7 ("KEYS: checking the input id parameters before finding asymmetric key")
-Signed-off-by: Jarkko Sakkinen <jarkko@kernel.org>
----
-No changes from original submission by Jarkko.
+So the issue is that  only ASYMMETRIC_PUBLIC_KEY_SUBTYPE is selected in 
+this config and the selection of OID_REGISTRY is missing. I am not sure 
+whether ASYMMETRIC_PUBLIC_KEY_SUBTYPE should/could select OID_REGISTRY 
+or whether that would be wrong... ?
 
- crypto/asymmetric_keys/asymmetric_type.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index 33e77d846ca..47cc88fa0fa 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -54,7 +54,10 @@ struct key *find_asymmetric_key(struct key *keyring,
- 	char *req, *p;
- 	int len;
- 
--	BUG_ON(!id_0 && !id_1);
-+	if (!id_0 && !id_1) {
-+		WARN(1, "All ID's are NULL\n");
-+		return ERR_PTR(-EINVAL);
-+	}
- 
- 	if (id_0) {
- 		lookup = id_0->data;
--- 
-2.27.0
+     Stefan
 
