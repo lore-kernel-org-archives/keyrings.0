@@ -2,71 +2,108 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.0 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-13.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	MENTIONS_GIT_HOSTING,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7D960C433E0
-	for <keyrings@archiver.kernel.org>; Sat, 20 Feb 2021 03:10:05 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 198FEC433E0
+	for <keyrings@archiver.kernel.org>; Sun, 21 Feb 2021 11:17:35 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3A23764EE1
-	for <keyrings@archiver.kernel.org>; Sat, 20 Feb 2021 03:10:05 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id E2C2064EB4
+	for <keyrings@archiver.kernel.org>; Sun, 21 Feb 2021 11:17:34 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229887AbhBTDKE (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Fri, 19 Feb 2021 22:10:04 -0500
-Received: from mail.kernel.org ([198.145.29.99]:45064 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S229765AbhBTDKD (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Fri, 19 Feb 2021 22:10:03 -0500
-Received: by mail.kernel.org (Postfix) with ESMTPSA id B717064EE0;
-        Sat, 20 Feb 2021 03:09:22 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1613790563;
-        bh=BKUd+jallq37FDOP7XZNlKIoHsBYEgg+risJ2luufz8=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=F2sQxU/R9X/6fZkIEcVkTVPkOug75dkQlMgvr2tDh/+49Rn3rP6Xe1/UPE2raBAdJ
-         vwTG3NOpHrftST365HlCBYQy9WyZeUmhZd8sFnZrz6G3xt4Vxw6IMGFzYXM+VyRRoH
-         DPCB+GmOfOlA1oAVNNoeEwWxZyvHX3UvF/2+YEEdvC1+xoKwbZrN+k2CAIZ+oYHvMq
-         r94OWRrCDwG+C3kJFKachpZkSh3PrpCsozjuVgnrL7oAMk2o9vZfbe/WcNsT6WetAd
-         xgZakwtUVC5GMfYJrUVPPXhxbeRFRdLpq/Cpa+Pz0aMKD5aKH9RNu1SCyjkdIPllxy
-         ciQmefUC0pHgw==
-Date:   Sat, 20 Feb 2021 05:09:07 +0200
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     Matthew Garrett <matthewgarrett@google.com>
-Cc:     linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-pm@vger.kernel.org, keyrings@vger.kernel.org,
-        zohar@linux.ibm.com, jejb@linux.ibm.com, corbet@lwn.net,
-        rjw@rjwysocki.net, Matthew Garrett <mjg59@google.com>
-Subject: Re: [PATCH 5/9] security: keys: trusted: Allow storage of PCR values
- in creation data
-Message-ID: <YDB9U2oyt0fmvLDF@kernel.org>
-References: <20210220013255.1083202-1-matthewgarrett@google.com>
- <20210220013255.1083202-6-matthewgarrett@google.com>
+        id S229905AbhBULRe (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Sun, 21 Feb 2021 06:17:34 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49954 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S229903AbhBULRc (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Sun, 21 Feb 2021 06:17:32 -0500
+Received: from smtp-8fa9.mail.infomaniak.ch (smtp-8fa9.mail.infomaniak.ch [IPv6:2001:1600:3:17::8fa9])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 785B1C061574
+        for <keyrings@vger.kernel.org>; Sun, 21 Feb 2021 03:16:46 -0800 (PST)
+Received: from smtp-3-0000.mail.infomaniak.ch (unknown [10.4.36.107])
+        by smtp-2-3000.mail.infomaniak.ch (Postfix) with ESMTPS id 4Dk2nm4X2pzMqFPR;
+        Sun, 21 Feb 2021 12:16:44 +0100 (CET)
+Received: from ns3096276.ip-94-23-54.eu (unknown [23.97.221.149])
+        by smtp-3-0000.mail.infomaniak.ch (Postfix) with ESMTPA id 4Dk2nj6xrTzlh8T8;
+        Sun, 21 Feb 2021 12:16:41 +0100 (CET)
+Subject: Re: [PATCH v6 0/5] Enable root to update the blacklist keyring
+To:     David Howells <dhowells@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jarkko Sakkinen <jarkko@kernel.org>,
+        Eric Snowberg <eric.snowberg@oracle.com>
+Cc:     "David S . Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        James Morris <jmorris@namei.org>,
+        =?UTF-8?Q?Micka=c3=abl_Sala=c3=bcn?= <mic@linux.microsoft.com>,
+        Mimi Zohar <zohar@linux.ibm.com>,
+        "Serge E . Hallyn" <serge@hallyn.com>,
+        Tyler Hicks <tyhicks@linux.microsoft.com>,
+        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-integrity@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+References: <20210210120410.471693-1-mic@digikod.net>
+From:   =?UTF-8?Q?Micka=c3=abl_Sala=c3=bcn?= <mic@digikod.net>
+Message-ID: <132a6049-e91b-3922-cd3f-89574dd049fe@digikod.net>
+Date:   Sun, 21 Feb 2021 12:17:54 +0100
+User-Agent: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20210220013255.1083202-6-matthewgarrett@google.com>
+In-Reply-To: <20210210120410.471693-1-mic@digikod.net>
+Content-Type: text/plain; charset=utf-8
+Content-Language: en-US
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Sat, Feb 20, 2021 at 01:32:51AM +0000, Matthew Garrett wrote:
-> When TPMs generate keys, they can also generate some information
-> describing the state of the PCRs at creation time. This data can then
-> later be certified by the TPM, allowing verification of the PCR values.
-> This allows us to determine the state of the system at the time a key
-> was generated. Add an additional argument to the trusted key creation
-> options, allowing the user to provide the set of PCRs that should have
-> their values incorporated into the creation data.
+David, Eric, what is the status of this patch series?
+
+On 10/02/2021 13:04, Mickaël Salaün wrote:
+> This new patch series is a rebase on David Howells's keys-misc branch.
+> This mainly fixes UEFI DBX and the new Eric Snowberg's feature to import
+> asymmetric keys to the blacklist keyring.
+> I successfully tested this patch series with the 186 entries from
+> https://uefi.org/sites/default/files/resources/dbxupdate_x64.bin (184
+> binary hashes and 2 certificates).
 > 
-> Signed-off-by: Matthew Garrett <mjg59@google.com>
-
-LGTM too.
-
-Something popped into mind: could we make PCR 23 reservation dynamic
-instead of a config option.
-
-E.g. if the user space uses it, then it's dirty and hibernate will
-fail. I really dislike the static compilation time firewall on it.
-
-/Jarkko
+> The goal of these patches is to add a new configuration option to enable the
+> root user to load signed keys in the blacklist keyring.  This keyring is useful
+> to "untrust" certificates or files.  Enabling to safely update this keyring
+> without recompiling the kernel makes it more usable.
+> 
+> This can be applied on top of David Howells's keys-next branch:
+> https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-next
+> Git commits can be found in https://github.com/l0kod/linux branch
+> dyn-auth-blacklist-v6 commit fcf976b74ffcd4551683e6b70dbf5fb102cf9906 .
+> 
+> Previous patch series:
+> https://lore.kernel.org/lkml/20210128191705.3568820-1-mic@digikod.net/
+> 
+> Regards,
+> 
+> Mickaël Salaün (5):
+>   tools/certs: Add print-cert-tbs-hash.sh
+>   certs: Check that builtin blacklist hashes are valid
+>   certs: Make blacklist_vet_description() more strict
+>   certs: Factor out the blacklist hash creation
+>   certs: Allow root user to append signed hashes to the blacklist
+>     keyring
+> 
+>  MAINTAINERS                                   |   2 +
+>  certs/.gitignore                              |   1 +
+>  certs/Kconfig                                 |  17 +-
+>  certs/Makefile                                |  17 +-
+>  certs/blacklist.c                             | 218 ++++++++++++++----
+>  crypto/asymmetric_keys/x509_public_key.c      |   3 +-
+>  include/keys/system_keyring.h                 |  14 +-
+>  scripts/check-blacklist-hashes.awk            |  37 +++
+>  .../platform_certs/keyring_handler.c          |  26 +--
+>  tools/certs/print-cert-tbs-hash.sh            |  91 ++++++++
+>  10 files changed, 346 insertions(+), 80 deletions(-)
+>  create mode 100755 scripts/check-blacklist-hashes.awk
+>  create mode 100755 tools/certs/print-cert-tbs-hash.sh
+> 
+> 
+> base-commit: 5bcd72358a7d7794ade0452ed12919b8c4d6ffc7
+> 
