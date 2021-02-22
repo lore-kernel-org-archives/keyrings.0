@@ -2,67 +2,128 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
+	MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id AB771C43381
-	for <keyrings@archiver.kernel.org>; Mon, 22 Feb 2021 07:46:33 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E3E75C433E0
+	for <keyrings@archiver.kernel.org>; Mon, 22 Feb 2021 14:38:47 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 7FE7664E67
-	for <keyrings@archiver.kernel.org>; Mon, 22 Feb 2021 07:46:33 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id B37D764E77
+	for <keyrings@archiver.kernel.org>; Mon, 22 Feb 2021 14:38:47 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230195AbhBVHqR (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 22 Feb 2021 02:46:17 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57212 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230114AbhBVHqQ (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 22 Feb 2021 02:46:16 -0500
-Received: from cavan.codon.org.uk (cavan.codon.org.uk [IPv6:2a00:1098:84:22e::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DAE4AC06178A;
-        Sun, 21 Feb 2021 23:45:35 -0800 (PST)
-Received: by cavan.codon.org.uk (Postfix, from userid 1000)
-        id 109D340A2E; Mon, 22 Feb 2021 07:36:27 +0000 (UTC)
-Date:   Mon, 22 Feb 2021 07:36:27 +0000
-From:   Matthew Garrett <mjg59@srcf.ucam.org>
-To:     Jarkko Sakkinen <jarkko@kernel.org>
-Cc:     Matthew Garrett <matthewgarrett@google.com>,
-        linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-pm@vger.kernel.org, keyrings@vger.kernel.org,
-        zohar@linux.ibm.com, jejb@linux.ibm.com, corbet@lwn.net,
-        rjw@rjwysocki.net, Matthew Garrett <mjg59@google.com>
-Subject: Re: [PATCH 3/9] security: keys: trusted: Parse out individual
- components of the key blob
-Message-ID: <20210222073627.GB30403@codon.org.uk>
-References: <20210220013255.1083202-1-matthewgarrett@google.com>
- <20210220013255.1083202-4-matthewgarrett@google.com>
- <YDB8gM6Z9OOKujQu@kernel.org>
+        id S230060AbhBVOis (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 22 Feb 2021 09:38:48 -0500
+Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:29824 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+        by vger.kernel.org with ESMTP id S230141AbhBVOis (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 22 Feb 2021 09:38:48 -0500
+Received: from pps.filterd (m0098413.ppops.net [127.0.0.1])
+        by mx0b-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 11MERiEk019933;
+        Mon, 22 Feb 2021 09:31:57 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=subject : to : cc :
+ references : from : message-id : date : mime-version : in-reply-to :
+ content-type : content-transfer-encoding; s=pp1;
+ bh=YxyJsHAAeNR+8tn06sJ65l8NksUBProCeCm942uGM28=;
+ b=KCf/VOJyHk7yDs1M57qJUxiXMklQbP1wIsGfHepyqSYclilS4twht9U5hQ+cDhtvnkcJ
+ pb3CIaJB6SYZAAmGDmxlwu++1lcbGot4TCRqBNkwKOmXzh1BVf7FZqjMPKDMHijtaaMS
+ GGuQEdMdQrRUeAFYOHIipa6yGfqE1TYcd/ZAfjm2HQj3ehN/fA7beaI+TiYTv3qhX1u9
+ 2RNQoEZfyS53Xba9yIsBSMIM2GP5C8tLuFSI2ee7ROW/Z2NRlMergbaE4EreBN+7xiYZ
+ /OX564OjoOXvvmdN6WgG7EcBw09oRu6V+CCCVn1+lS998fnXR/8hlCypTBcWyzyLwG3G 0Q== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0b-001b2d01.pphosted.com with ESMTP id 36vecy88sn-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 22 Feb 2021 09:31:55 -0500
+Received: from m0098413.ppops.net (m0098413.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 11MERidF019992;
+        Mon, 22 Feb 2021 09:30:25 -0500
+Received: from ppma01dal.us.ibm.com (83.d6.3fa9.ip4.static.sl-reverse.com [169.63.214.131])
+        by mx0b-001b2d01.pphosted.com with ESMTP id 36vecy82vw-27
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 22 Feb 2021 09:30:25 -0500
+Received: from pps.filterd (ppma01dal.us.ibm.com [127.0.0.1])
+        by ppma01dal.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 11MDXRPx031337;
+        Mon, 22 Feb 2021 13:33:36 GMT
+Received: from b01cxnp22036.gho.pok.ibm.com (b01cxnp22036.gho.pok.ibm.com [9.57.198.26])
+        by ppma01dal.us.ibm.com with ESMTP id 36tt29aew5-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 22 Feb 2021 13:33:36 +0000
+Received: from b01ledav006.gho.pok.ibm.com (b01ledav006.gho.pok.ibm.com [9.57.199.111])
+        by b01cxnp22036.gho.pok.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 11MDXZUK7734048
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Mon, 22 Feb 2021 13:33:35 GMT
+Received: from b01ledav006.gho.pok.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id 161AEAC05B;
+        Mon, 22 Feb 2021 13:33:35 +0000 (GMT)
+Received: from b01ledav006.gho.pok.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id D88FCAC059;
+        Mon, 22 Feb 2021 13:33:34 +0000 (GMT)
+Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
+        by b01ledav006.gho.pok.ibm.com (Postfix) with ESMTP;
+        Mon, 22 Feb 2021 13:33:34 +0000 (GMT)
+Subject: Re: [PATCH] certs: Add support for using elliptic curve keys for
+ signing modules
+To:     Mimi Zohar <zohar@linux.ibm.com>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        keyrings@vger.kernel.org, dhowells@redhat.com, dwmw2@infradead.org,
+        linux-security-module@vger.kernel.org
+Cc:     linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org,
+        nayna@linux.ibm.com, saulo.alessandre@gmail.com
+References: <20210219154114.2416778-1-stefanb@linux.vnet.ibm.com>
+ <0e2a789456a970ebdde9a65717b15d478af73ae3.camel@linux.ibm.com>
+From:   Stefan Berger <stefanb@linux.ibm.com>
+Message-ID: <e96a24ea-be12-616e-09dc-f8cffa56bee9@linux.ibm.com>
+Date:   Mon, 22 Feb 2021 08:33:34 -0500
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
+ Thunderbird/78.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <YDB8gM6Z9OOKujQu@kernel.org>
-User-Agent: Mutt/1.10.1 (2018-07-13)
+In-Reply-To: <0e2a789456a970ebdde9a65717b15d478af73ae3.camel@linux.ibm.com>
+Content-Type: text/plain; charset=iso-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
+Content-Language: en-US
+X-TM-AS-GCONF: 00
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.761
+ definitions=2021-02-22_02:2021-02-22,2021-02-22 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 clxscore=1011 phishscore=0
+ suspectscore=0 priorityscore=1501 impostorscore=0 spamscore=0
+ lowpriorityscore=0 malwarescore=0 mlxlogscore=999 mlxscore=0 adultscore=0
+ bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2009150000 definitions=main-2102220130
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Sat, Feb 20, 2021 at 05:05:36AM +0200, Jarkko Sakkinen wrote:
-> On Sat, Feb 20, 2021 at 01:32:49AM +0000, Matthew Garrett wrote:
-> > Performing any sort of state validation of a sealed TPM blob requires
-> > being able to access the individual members in the response. Parse the
-> > blob sufficiently to be able to stash pointers to each member, along
-> > with the length.
-> > 
-> > Signed-off-by: Matthew Garrett <mjg59@google.com>
-> 
-> I'll just say LGTM for now. Did not see anything obviously wrong in
-> the code change (and does make sense to nitpick minor things just
-> yet).
-> 
-> Need to understand the whole use case just a little bit better.
+On 2/19/21 11:52 AM, Mimi Zohar wrote:
+> On Fri, 2021-02-19 at 10:41 -0500, Stefan Berger wrote:
+>> From: Stefan Berger <stefanb@linux.ibm.com>
+>>
+>> This patch adds support for using elliptic curve keys for signing
+>> modules. It uses a NIST P256 (prime256v1) key if the user chooses an
+>> elliptic curve key.
+>>
+>> A developer choosing an ECDSA key for signing modules has to manually
+>> delete the signing key (rm certs/signing_key.*) when falling back to
+>> an older version of a kernel that only supports RSA key since otherwise
+>> ECDSA-signed modules will not be usable when that older kernel runs.
+>>
+>> Signed-off-by: Stefan Berger <stefanb@linux.ibm.com>
+> Thanks, Stefan!
+>
+> Tested with this patch applied on top of "[PATCH v8 0/4] Add support
+> for x509 certs with NIST p256 and p192" and "[PATCH v2 0/5] ima: kernel
+> build support for loading the kernel module" patch sets.
 
-I wrote this up with some more detail at 
-https://mjg59.dreamwidth.org/55845.html - it seemed longer than
-appropriate for a commit message, but if you'd like more detail
-somewhere I can certainly add it.
+With Saulo's NIST p384 support we will now be able to improve this patch 
+to use secp384r1 (NIST P384), which is probably the better equivalent to 
+the current RSA 4096.
+
+
+    Stefan
+
+
+>
+> Tested-by: Mimi Zohar <zohar@linux.ibm.com>
+> Reviewed-by: Mimi Zohar <zohar@linux.ibm.com>
+>
+
