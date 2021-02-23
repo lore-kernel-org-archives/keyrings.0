@@ -2,136 +2,118 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.2 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
-	USER_AGENT_SANE_1 autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id F13F9C433E6
-	for <keyrings@archiver.kernel.org>; Mon, 22 Feb 2021 20:27:28 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C04F4C433DB
+	for <keyrings@archiver.kernel.org>; Tue, 23 Feb 2021 17:46:36 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id B6B2F64E05
-	for <keyrings@archiver.kernel.org>; Mon, 22 Feb 2021 20:27:28 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 80C766146D
+	for <keyrings@archiver.kernel.org>; Tue, 23 Feb 2021 17:46:36 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231550AbhBVU11 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Mon, 22 Feb 2021 15:27:27 -0500
-Received: from mx0b-001b2d01.pphosted.com ([148.163.158.5]:51398 "EHLO
-        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-        by vger.kernel.org with ESMTP id S230194AbhBVU11 (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Mon, 22 Feb 2021 15:27:27 -0500
-Received: from pps.filterd (m0098416.ppops.net [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 11MKEe5J139109;
-        Mon, 22 Feb 2021 15:26:35 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=subject : to : cc :
- references : from : message-id : date : mime-version : in-reply-to :
- content-type : content-transfer-encoding; s=pp1;
- bh=tVmELn3VsCgeksMVtevqHAXOUtGg56LbMNv5Twg88uQ=;
- b=EkDjDcI2/uMtZ0wunrDGnlGtnLnkoFMGQk2BsOrvEAD9wyjJ8OKwPMMqil/U51eHsF0W
- OsR2i6/ITcUflF/SEGcXEtMghe8IX2YHAwZyuY9DIOwH/nOnmf75PCx7i8YBv4MQ3KXf
- PkmeiZdFtsq2kBqskXreSaTs9Aa1kyI5uRveAe3AbeFgLrwsQIfl1K3d57UtWEockzOH
- JAcItK4SK7o/zAIesHp9K3yEXgSNyleOS+kGUp0u2MAygm6Hs3ehIktR6I6nXpu8sn23
- A2MQoorvD5edbhgZqyNxqMkEC2RWBkQpq7vJ7ByBji7TvFYNJVnC6lGPKlteeQMaPYxE ow== 
-Received: from pps.reinject (localhost [127.0.0.1])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 36vkehs4mw-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Mon, 22 Feb 2021 15:26:34 -0500
-Received: from m0098416.ppops.net (m0098416.ppops.net [127.0.0.1])
-        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 11MKGTOe030143;
-        Mon, 22 Feb 2021 15:26:32 -0500
-Received: from ppma02wdc.us.ibm.com (aa.5b.37a9.ip4.static.sl-reverse.com [169.55.91.170])
-        by mx0b-001b2d01.pphosted.com with ESMTP id 36vkehs441-9
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Mon, 22 Feb 2021 15:26:31 -0500
-Received: from pps.filterd (ppma02wdc.us.ibm.com [127.0.0.1])
-        by ppma02wdc.us.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 11MIMwBG014578;
-        Mon, 22 Feb 2021 18:37:44 GMT
-Received: from b03cxnp08028.gho.boulder.ibm.com (b03cxnp08028.gho.boulder.ibm.com [9.17.130.20])
-        by ppma02wdc.us.ibm.com with ESMTP id 36tt28rky0-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-        Mon, 22 Feb 2021 18:37:44 +0000
-Received: from b03ledav004.gho.boulder.ibm.com (b03ledav004.gho.boulder.ibm.com [9.17.130.235])
-        by b03cxnp08028.gho.boulder.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 11MIbhQS35389714
-        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Mon, 22 Feb 2021 18:37:43 GMT
-Received: from b03ledav004.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 992F578060;
-        Mon, 22 Feb 2021 18:37:43 +0000 (GMT)
-Received: from b03ledav004.gho.boulder.ibm.com (unknown [127.0.0.1])
-        by IMSVA (Postfix) with ESMTP id 5F9DC7805E;
-        Mon, 22 Feb 2021 18:37:42 +0000 (GMT)
-Received: from sbct-3.pok.ibm.com (unknown [9.47.158.153])
-        by b03ledav004.gho.boulder.ibm.com (Postfix) with ESMTP;
-        Mon, 22 Feb 2021 18:37:42 +0000 (GMT)
-Subject: Re: [PATCH v2 1/3] add params and ids to support nist_p384
-To:     Saulo Alessandre <saulo.alessandre@gmail.com>
-Cc:     davem@davemloft.net, dhowells@redhat.com,
-        herbert@gondor.apana.org.au, keyrings@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patrick@puiterwijk.org,
-        zohar@linux.ibm.com, Saulo Alessandre <saulo.alessandre@tse.jus.br>
-References: <20210215162532.1077098-1-stefanb@linux.ibm.com>
- <20210222175850.1131780-1-saulo.alessandre@gmail.com>
-From:   Stefan Berger <stefanb@linux.ibm.com>
-Message-ID: <2e829730-bb0c-47eb-70f2-731c184eba33@linux.ibm.com>
-Date:   Mon, 22 Feb 2021 13:37:41 -0500
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
- Thunderbird/78.6.0
+        id S233751AbhBWRqK (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Tue, 23 Feb 2021 12:46:10 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([63.128.21.124]:35828 "EHLO
+        us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S233794AbhBWRqC (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Tue, 23 Feb 2021 12:46:02 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1614102276;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=w4TvOd5ViWOKQi/Wx7BwXFqaCkAgT3HmAHVmSL0o44o=;
+        b=YvPxFsQ2AbRNBqfi6F1ysquntg724wUFKowrWlZfE6dZdWt8NdVxUcIAyppE0ayfElE9y5
+        nSJkmfMjgKGsQ+fh6ZKA37QTxki62/luVKTnqkTmkvamPVCPjDNqbSqh0kZBI4bPPJxdhH
+        60fxvY0FnpbrKQU1fpMd3hFxTnk8nFI=
+Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
+ [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
+ us-mta-458-RYDG_V6LM3edxTTVmWMdOA-1; Tue, 23 Feb 2021 12:44:34 -0500
+X-MC-Unique: RYDG_V6LM3edxTTVmWMdOA-1
+Received: from smtp.corp.redhat.com (int-mx03.intmail.prod.int.phx2.redhat.com [10.5.11.13])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id F1383107ACF8;
+        Tue, 23 Feb 2021 17:44:32 +0000 (UTC)
+Received: from warthog.procyon.org.uk (ovpn-119-68.rdu2.redhat.com [10.10.119.68])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 783E060CFB;
+        Tue, 23 Feb 2021 17:44:31 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+In-Reply-To: <1323922.1612970030@warthog.procyon.org.uk>
+References: <1323922.1612970030@warthog.procyon.org.uk>
+To:     torvalds@linux-foundation.org
+Cc:     dhowells@redhat.com, Jarkko Sakkinen <jarkko@kernel.org>,
+        Eric Snowberg <eric.snowberg@oracle.com>,
+        =?utf-8?Q?Micka=C3=ABl_Sala=C3=BCn?= <mic@linux.microsoft.com>,
+        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Add EFI_CERT_X509_GUID support for dbx/mokx entries
 MIME-Version: 1.0
-In-Reply-To: <20210222175850.1131780-1-saulo.alessandre@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-Content-Language: en-US
-X-TM-AS-GCONF: 00
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.761
- definitions=2021-02-22_07:2021-02-22,2021-02-22 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 mlxscore=0 malwarescore=0
- clxscore=1015 bulkscore=0 impostorscore=0 phishscore=0 mlxlogscore=999
- lowpriorityscore=0 suspectscore=0 spamscore=0 priorityscore=1501
- adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2009150000 definitions=main-2102220173
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <3493920.1614102270.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: quoted-printable
+Date:   Tue, 23 Feb 2021 17:44:30 +0000
+Message-ID: <3493921.1614102270@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.13
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On 2/22/21 12:58 PM, Saulo Alessandre wrote:
-> From: Saulo Alessandre <saulo.alessandre@tse.jus.br>
->
-> * crypto/asymmetric_keys/x509_cert_parser.c
->    - prepare x509 parser to load nist_secp384r1
->
-> * crypto/ecc_curve_defs.h
->    - add nist_p384 params
->
-> * include/crypto/ecdh.h
->    - add ECC_CURVE_NIST_P384
->
-> * include/linux/oid_registry.h
->    - reorder OID_id_ecdsa_with_sha1
->    - add OID_id_secp384r1
->
-> Signed-off-by: Saulo Alessandre <saulo.alessandre@tse.jus.br>
+David Howells <dhowells@redhat.com> wrote:
 
-I would separate this patch into an x509: and certs: part since it 
-touches two subsystems.
+> This set of patches from Eric Snowberg that add support for
+> EFI_CERT_X509_GUID entries in the dbx and mokx UEFI tables (such entries
+> cause matching certificates to be rejected).  These are currently ignore=
+d
+> and only the hash entries are made use of.
+> =
 
-I can take this series of patches and post my v9 including them at the 
-end. This would make it easier for others to test. I would massage them 
-a bit, including the separation of the 1st patch into 2 patches, if you 
-don't mind, preserving your Signed-off-by. I need to fix something in my 
-v8 regarding registration failure handling. Let me know whether this is 
-fine with you.
+> These patches fix CVE-2020-26541.
+> =
 
-I had tested your patches over the weekend with my endless test tool 
-creating keys in user space and loading them into the kernel. It worked 
-fine for NIST p256 & p384. Also signing kernel modules with NIST p384 is 
-working fine.
+> To quote Eric:
+> =
 
-So, for the series:
+> 	This is the fifth patch series for adding support for
+> 	EFI_CERT_X509_GUID entries [1].  It has been expanded to not only
+> 	include dbx entries but also entries in the mokx.  Additionally my
+> 	series to preload these certificate [2] has also been included.
+> =
 
-Tested-by: Stefan Berger <stefanb@linux.ibm.com>
+> 	This series is based on v5.11-rc4.
+> =
 
-Regards,
+> 	[1] https://patchwork.kernel.org/project/linux-security-module/patch/20=
+200916004927.64276-1-eric.snowberg@oracle.com/
+> 	[2] https://lore.kernel.org/patchwork/cover/1315485/
+> =
 
-     Stefan
+> Note that this is based on top of the collected minor fixes I sent you a
+> preceding pull request for.  If you would rather this was not based on m=
+y
+> keys-misc branch, but was instead based on your tree directly, I can reb=
+ase
+> it.  Note that there would be very minor conflict between the two branch=
+es,
+> but I think git merge should be able to handle it automatically.
 
+Please drop this request for now.  It turns out there's a broken dependenc=
+y
+in there:
+
+	https://lore.kernel.org/keyrings/20210217165058.1336155-1-eric.snowberg@o=
+racle.com/
+
+I'll look at folding that in, but I'm not sure Eric's solution is the righ=
+t
+one.  I suspect there needs to be something in Kconfig somewhere.
+
+David
 
