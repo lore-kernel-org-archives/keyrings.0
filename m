@@ -2,87 +2,130 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_2 autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D10E3C433E0
-	for <keyrings@archiver.kernel.org>; Sun, 28 Feb 2021 08:00:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 34416C433E6
+	for <keyrings@archiver.kernel.org>; Mon,  1 Mar 2021 13:12:33 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8F4B864E58
-	for <keyrings@archiver.kernel.org>; Sun, 28 Feb 2021 08:00:04 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id DD8D56023C
+	for <keyrings@archiver.kernel.org>; Mon,  1 Mar 2021 13:12:32 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230299AbhB1H7r (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Sun, 28 Feb 2021 02:59:47 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44544 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229984AbhB1H7q (ORCPT
-        <rfc822;keyrings@vger.kernel.org>); Sun, 28 Feb 2021 02:59:46 -0500
-Received: from cavan.codon.org.uk (cavan.codon.org.uk [IPv6:2a00:1098:84:22e::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 18070C06174A;
-        Sat, 27 Feb 2021 23:59:05 -0800 (PST)
-Received: by cavan.codon.org.uk (Postfix, from userid 1000)
-        id 1B1A540A0A; Sun, 28 Feb 2021 07:59:02 +0000 (UTC)
-Date:   Sun, 28 Feb 2021 07:59:02 +0000
-From:   Matthew Garrett <mjg59@srcf.ucam.org>
-To:     James Bottomley <jejb@linux.ibm.com>
-Cc:     Matthew Garrett <matthewgarrett@google.com>,
-        linux-kernel@vger.kernel.org, linux-integrity@vger.kernel.org,
-        linux-pm@vger.kernel.org, keyrings@vger.kernel.org,
-        zohar@linux.ibm.com, jarkko@kernel.org, corbet@lwn.net,
-        rjw@rjwysocki.net, Matthew Garrett <mjg59@google.com>
-Subject: Re: [PATCH 2/9] tpm: Allow PCR 23 to be restricted to kernel-only use
-Message-ID: <20210228075902.GA9183@codon.org.uk>
-References: <20210220013255.1083202-1-matthewgarrett@google.com>
- <20210220013255.1083202-3-matthewgarrett@google.com>
- <b0c4980c8fad14115daa3040979c52f07f7fbe2c.camel@linux.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b0c4980c8fad14115daa3040979c52f07f7fbe2c.camel@linux.ibm.com>
-User-Agent: Mutt/1.10.1 (2018-07-13)
+        id S235418AbhCANMa (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Mon, 1 Mar 2021 08:12:30 -0500
+Received: from mx0a-001b2d01.pphosted.com ([148.163.156.1]:1620 "EHLO
+        mx0a-001b2d01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S235381AbhCANM2 (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Mon, 1 Mar 2021 08:12:28 -0500
+Received: from pps.filterd (m0098404.ppops.net [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com (8.16.0.43/8.16.0.43) with SMTP id 121D47DD154971;
+        Mon, 1 Mar 2021 08:11:34 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=message-id : subject :
+ from : to : cc : date : in-reply-to : references : content-type :
+ mime-version : content-transfer-encoding; s=pp1;
+ bh=tJ9ufPL3b03q4eIjrN7DuEgd4aWZDYb3QhchfQ4FRbI=;
+ b=j8Y2IacpCeG31mBIQisurejZbgnX9kjSdByPP/jdWaxfRURSVQmyv+2d+E+ShnbJOM1z
+ ODjptmUvTr34UxjNOtJt5eBCh8ksvv1fJ7thC1R9cdbq9vsvPigIjuIn/1zueRNZM/XH
+ s5fntKr1877MaedAD+IKBcgPE7dq6rnAvRVoMBtKKKHuKiOyjOqyX0RqiHIu1KwVUNcG
+ NxGn0wvA9Lvk7Y6GcUTszd19HhqjO1n4bvOaaGHQp6yxE1U0VE9PtClV9XCeK836rMcD
+ 9BkNGa7e8AyK7W8R9aPxrqYsIu4g7a2GyEQofsC/N5HkxQu6jkd30ppTg2RIxyIpNL3u dA== 
+Received: from pps.reinject (localhost [127.0.0.1])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3710tk0a9w-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 01 Mar 2021 08:11:34 -0500
+Received: from m0098404.ppops.net (m0098404.ppops.net [127.0.0.1])
+        by pps.reinject (8.16.0.43/8.16.0.43) with SMTP id 121D4RKT161377;
+        Mon, 1 Mar 2021 08:11:34 -0500
+Received: from ppma02fra.de.ibm.com (47.49.7a9f.ip4.static.sl-reverse.com [159.122.73.71])
+        by mx0a-001b2d01.pphosted.com with ESMTP id 3710tk0a8v-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 01 Mar 2021 08:11:34 -0500
+Received: from pps.filterd (ppma02fra.de.ibm.com [127.0.0.1])
+        by ppma02fra.de.ibm.com (8.16.0.42/8.16.0.42) with SMTP id 121D7nsY002485;
+        Mon, 1 Mar 2021 13:11:31 GMT
+Received: from b06cxnps4076.portsmouth.uk.ibm.com (d06relay13.portsmouth.uk.ibm.com [9.149.109.198])
+        by ppma02fra.de.ibm.com with ESMTP id 36yj530w1k-1
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
+        Mon, 01 Mar 2021 13:11:31 +0000
+Received: from d06av22.portsmouth.uk.ibm.com (d06av22.portsmouth.uk.ibm.com [9.149.105.58])
+        by b06cxnps4076.portsmouth.uk.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 121DBSGG30343558
+        (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
+        Mon, 1 Mar 2021 13:11:28 GMT
+Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id BDA174C04E;
+        Mon,  1 Mar 2021 13:11:28 +0000 (GMT)
+Received: from d06av22.portsmouth.uk.ibm.com (unknown [127.0.0.1])
+        by IMSVA (Postfix) with ESMTP id ADCCE4C046;
+        Mon,  1 Mar 2021 13:11:25 +0000 (GMT)
+Received: from li-f45666cc-3089-11b2-a85c-c57d1a57929f.ibm.com (unknown [9.211.103.165])
+        by d06av22.portsmouth.uk.ibm.com (Postfix) with ESMTP;
+        Mon,  1 Mar 2021 13:11:25 +0000 (GMT)
+Message-ID: <8618fdb7107ec6ec1aeb4e37faf82421050bdf91.camel@linux.ibm.com>
+Subject: Re: [PATCH v9 9/9] certs: Add support for using elliptic curve keys
+ for signing modules
+From:   Mimi Zohar <zohar@linux.ibm.com>
+To:     yumeng <yumeng18@huawei.com>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        keyrings@vger.kernel.org, linux-crypto@vger.kernel.org,
+        davem@davemloft.net, herbert@gondor.apana.org.au,
+        dhowells@redhat.com
+Cc:     linux-kernel@vger.kernel.org, patrick@puiterwijk.org,
+        linux-integrity@vger.kernel.org,
+        Stefan Berger <stefanb@linux.ibm.com>
+Date:   Mon, 01 Mar 2021 08:11:24 -0500
+In-Reply-To: <ce098224-893c-fba8-5995-a7bac90f82c2@huawei.com>
+References: <20210225160802.2478700-1-stefanb@linux.vnet.ibm.com>
+         <20210225160802.2478700-10-stefanb@linux.vnet.ibm.com>
+         <ce098224-893c-fba8-5995-a7bac90f82c2@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.28.5 (3.28.5-14.el8) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-TM-AS-GCONF: 00
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.369,18.0.761
+ definitions=2021-03-01_08:2021-03-01,2021-03-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 bulkscore=0
+ priorityscore=1501 suspectscore=0 phishscore=0 spamscore=0 impostorscore=0
+ malwarescore=0 lowpriorityscore=0 adultscore=0 mlxlogscore=999 mlxscore=0
+ clxscore=1011 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=8.12.0-2009150000 definitions=main-2103010108
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Wed, Feb 24, 2021 at 10:00:53AM -0800, James Bottomley wrote:
-> On Sat, 2021-02-20 at 01:32 +0000, Matthew Garrett wrote:
-> > Under certain circumstances it might be desirable to enable the
-> > creation of TPM-backed secrets that are only accessible to the
-> > kernel. In an ideal world this could be achieved by using TPM
-> > localities, but these don't appear to be available on consumer
-> > systems.
+On Sat, 2021-02-27 at 11:35 +0800, yumeng wrote:
+> 在 2021/2/26 0:08, Stefan Berger 写道:
+> > From: Stefan Berger <stefanb@linux.ibm.com>
+> > 
 > 
-> I don't understand this ... the localities seem to work fine on all the
-> systems I have ... is this some embedded thing?
-
-I haven't made it work on an HP Z440 or a Lenovo P520. So now I'm
-wondering whether having chipsets with TXT support (even if it's turned
-off) confuse this point. Sigh. I'd really prefer to use localities than
-a PCR, so if it works on client platforms I'd be inclined to say we'll
-do a self-test and go for that, and workstation vendors can just
-recommend their customers use UPSes or something.
-
-> >  An alternative is to simply block userland from modifying one of the
-> > resettable PCRs, leaving it available to the kernel. If the kernel
-> > ensures that no userland can access the TPM while it is carrying out
-> > work, it can reset PCR 23, extend it to an arbitrary value, create or
-> > load a secret, and then reset the PCR again. Even if userland somehow
-> > obtains the sealed material, it will be unable to unseal it since PCR
-> > 23 will never be in the appropriate state.
+> > diff --git a/certs/Makefile b/certs/Makefile
+> > index 3fe6b73786fa..c487d7021c54 100644
+> > --- a/certs/Makefile
+> > +++ b/certs/Makefile
+> > @@ -69,6 +69,18 @@ else
+> >   SIGNER = -signkey $(obj)/signing_key.key
+> >   endif # CONFIG_IMA_APPRAISE_MODSIG
+> >   
 > 
-> This seems a bit arbitrary: You're removing this PCR from user space
-> accessibility, but PCR 23 is defined as "Application Support" how can
-> we be sure no application will actually want to use it (and then fail)?
+> Is there anything wrong in this patch?
+> I can't apply it when I use 'git am '.
+> errors like below:
+> 
+> error: certs/Kconfig: does not match index
+> error: patch failed: certs/Makefile:69
+> error: certs/Makefile: patch does not apply
+> 
+> Thanks
 
-Absolutely no way of guaranteeing that, and enabling this option is
-certainly an ABI break.
+Nothing wrong with the patch, just a dependency.  From the Change log:
+   - This patch builds on top Nayna's series for 'kernel build support
+   for loading the kernel module signing key'.
+   - https://lkml.org/lkml/2021/2/18/856
 
-> Since PCRs are very scarce, why not use a NV index instead.  They're
-> still a bounded resource, but most TPMs have far more of them than they
-> do PCRs, and the address space is much bigger so picking a nice
-> arbitrary 24 bit value reduces the chance of collisions.
+thanks,
 
-How many write cycles do we expect the NV to survive? But I'll find a
-client system with a TPM and play with locality support there - maybe we
-can just avoid this problem anyway.
+Mimi
+
+
