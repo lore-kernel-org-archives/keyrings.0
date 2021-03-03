@@ -2,123 +2,87 @@ Return-Path: <keyrings-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.0 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0F06CC433DB
-	for <keyrings@archiver.kernel.org>; Wed,  3 Mar 2021 01:30:35 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1EE49C15509
+	for <keyrings@archiver.kernel.org>; Thu,  4 Mar 2021 00:07:17 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id BCB5A64E21
-	for <keyrings@archiver.kernel.org>; Wed,  3 Mar 2021 01:30:32 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id EE85E64F3F
+	for <keyrings@archiver.kernel.org>; Thu,  4 Mar 2021 00:07:16 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233823AbhCCB0r (ORCPT <rfc822;keyrings@archiver.kernel.org>);
-        Tue, 2 Mar 2021 20:26:47 -0500
-Received: from mail.kernel.org ([198.145.29.99]:38674 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1578525AbhCBPYn (ORCPT <rfc822;keyrings@vger.kernel.org>);
-        Tue, 2 Mar 2021 10:24:43 -0500
-Received: by mail.kernel.org (Postfix) with ESMTPSA id ECFEE64F2F;
-        Tue,  2 Mar 2021 15:24:01 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=k20201202; t=1614698642;
-        bh=IrNN0AID3YGfmGdzydEWNqVZIr3VxKBZ4AD1PLT3A54=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=s9alLJsicIDJdy9j3gC3rcF92phcwBEE0otKMBxcTzov/+uV+UUdUAUC/rHGWL3el
-         BLkYQdW2zLBep7Ck9vg456yF8Epr7GhUUcc4CRPMcJGKdCv2ifTTMbsoTIMXRQ+Flj
-         FXmydfQo+FrIWuLrVKHQxIsLTZS4cnqz6kCnasmGh0OcynAZYQq3VAJVK9LQwQ/lTF
-         8cxMw2jYEg6RN8dE1VJpo7fIUFHaA7b+KeQwJkCgZofLhR3gtdy9IIzIOBvyPWw/rp
-         MrYwrHnMb/YZPhTkTS1RfTY565RjDOgxgo+dhJQCoogHMhxhjDQDw3AlvwKAxehPKy
-         eLf08y8HCMDAw==
-Date:   Tue, 2 Mar 2021 17:23:43 +0200
-From:   Jarkko Sakkinen <jarkko@kernel.org>
-To:     David Howells <dhowells@redhat.com>
-Cc:     Eric Snowberg <eric.snowberg@oracle.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        =?iso-8859-1?Q?Micka=EBl_Sala=FCn?= <mic@digikod.net>,
-        keyrings@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] integrity: Load mokx variables into the blacklist
- keyring
-Message-ID: <YD5Yf1gqvoKKRL+C@kernel.org>
-References: <161433310139.902181.11787442834918634133.stgit@warthog.procyon.org.uk>
- <161433313205.902181.2502803393898221637.stgit@warthog.procyon.org.uk>
+        id S236659AbhCCX74 (ORCPT <rfc822;keyrings@archiver.kernel.org>);
+        Wed, 3 Mar 2021 18:59:56 -0500
+Received: from us-smtp-delivery-124.mimecast.com ([170.10.133.124]:50920 "EHLO
+        us-smtp-delivery-124.mimecast.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S241091AbhCCK0t (ORCPT
+        <rfc822;keyrings@vger.kernel.org>); Wed, 3 Mar 2021 05:26:49 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+        s=mimecast20190719; t=1614767122;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+         in-reply-to:in-reply-to:references:references;
+        bh=vMUUJSbWiaKTXgtpt8GHYmtHVmZoDHu1V86PH+IT7A0=;
+        b=gKSyR3LXr/zD8dLGnPTk0SHwospUbNN9Qrg0Jw1ipKh0jPCWgCkctpUr2iHPcmkq7i3RL0
+        mQ2ThlceCo0ZV0SkoZLuW7ADQ9mIhA9a7UucWhT4iM0HN3eT8QMPTTG4nC6ZjjEIr67DoB
+        o5JhBubwDwjauanHXU4Zphx63Zv4U4k=
+Received: from mimecast-mx01.redhat.com (mimecast-mx01.redhat.com
+ [209.132.183.4]) (Using TLS) by relay.mimecast.com with ESMTP id
+ us-mta-390-719A2JaVNDKjt3KlIWojNA-1; Wed, 03 Mar 2021 04:24:44 -0500
+X-MC-Unique: 719A2JaVNDKjt3KlIWojNA-1
+Received: from smtp.corp.redhat.com (int-mx02.intmail.prod.int.phx2.redhat.com [10.5.11.12])
+        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mimecast-mx01.redhat.com (Postfix) with ESMTPS id 9E756835E21;
+        Wed,  3 Mar 2021 09:24:43 +0000 (UTC)
+Received: from warthog.procyon.org.uk (ovpn-119-68.rdu2.redhat.com [10.10.119.68])
+        by smtp.corp.redhat.com (Postfix) with ESMTP id 84D1B60BFA;
+        Wed,  3 Mar 2021 09:24:42 +0000 (UTC)
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+        Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+        Kingdom.
+        Registered in England and Wales under Company Registration No. 3798903
+From:   David Howells <dhowells@redhat.com>
+In-Reply-To: <20210303034418.106762-1-eric.snowberg@oracle.com>
+References: <20210303034418.106762-1-eric.snowberg@oracle.com>
+To:     Eric Snowberg <eric.snowberg@oracle.com>
+Cc:     dhowells@redhat.com, rdunlap@infradead.org, dwmw2@infradead.org,
+        keyrings@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] certs: Fix wrong kconfig option used for x509_revocation_list
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <161433313205.902181.2502803393898221637.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <2033456.1614763481.1@warthog.procyon.org.uk>
+Date:   Wed, 03 Mar 2021 09:24:41 +0000
+Message-ID: <2033457.1614763481@warthog.procyon.org.uk>
+X-Scanned-By: MIMEDefang 2.79 on 10.5.11.12
 Precedence: bulk
 List-ID: <keyrings.vger.kernel.org>
 X-Mailing-List: keyrings@vger.kernel.org
 
-On Fri, Feb 26, 2021 at 09:52:12AM +0000, David Howells wrote:
-> From: Eric Snowberg <eric.snowberg@oracle.com>
-> 
-> During boot the Secure Boot Forbidden Signature Database, dbx,
-> is loaded into the blacklist keyring.  Systems booted with shim
-> have an equivalent Forbidden Signature Database called mokx.
-> Currently mokx is only used by shim and grub, the contents are
-> ignored by the kernel.
-> 
-> Add the ability to load mokx into the blacklist keyring during boot.
-> 
-> Signed-off-by: Eric Snowberg <eric.snowberg@oracle.com>
-> Suggested-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Jarkko Sakkinen <jarkko@kernel.org>
-> Link: https://lore.kernel.org/r/20210122181054.32635-5-eric.snowberg@oracle.com/ # v5
-> Link: https://lore.kernel.org/r/c33c8e3839a41e9654f41cc92c7231104931b1d7.camel@HansenPartnership.com/
-> Link: ohttps://lore.kernel.org/r/161428674320.677100.12637282414018170743.stgit@warthog.procyon.org.uk/
+Eric Snowberg <eric.snowberg@oracle.com> wrote:
 
-For all:
+> +ifeq ($(CONFIG_SYSTEM_REVOCATION_LIST),y)
+> +obj-$(CONFIG_SYSTEM_BLACKLIST_KEYRING) += revocation_certificates.o
+> +endif
 
-Reviewed-by: Jarkko Sakkinen <jarkko@kernel.org>
+Should the ifeq be referring to CONFIG_SYSTEM_REVOCATION_KEYS rather than
+CONFIG_SYSTEM_REVOCATION_LIST?  In fact, since S_R_K depends indirectly on
+S_B_K, you should be able to just do:
 
-/Jarkko
+	+obj-$(CONFIG_SYSTEM_REVOCATION_KEYS) += revocation_certificates.o
 
-> ---
-> 
->  security/integrity/platform_certs/load_uefi.c |   20 ++++++++++++++++++--
->  1 file changed, 18 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/integrity/platform_certs/load_uefi.c b/security/integrity/platform_certs/load_uefi.c
-> index ee4b4c666854..f290f78c3f30 100644
-> --- a/security/integrity/platform_certs/load_uefi.c
-> +++ b/security/integrity/platform_certs/load_uefi.c
-> @@ -132,8 +132,9 @@ static int __init load_moklist_certs(void)
->  static int __init load_uefi_certs(void)
->  {
->  	efi_guid_t secure_var = EFI_IMAGE_SECURITY_DATABASE_GUID;
-> -	void *db = NULL, *dbx = NULL;
-> -	unsigned long dbsize = 0, dbxsize = 0;
-> +	efi_guid_t mok_var = EFI_SHIM_LOCK_GUID;
-> +	void *db = NULL, *dbx = NULL, *mokx = NULL;
-> +	unsigned long dbsize = 0, dbxsize = 0, mokxsize = 0;
->  	efi_status_t status;
->  	int rc = 0;
->  
-> @@ -175,6 +176,21 @@ static int __init load_uefi_certs(void)
->  		kfree(dbx);
->  	}
->  
-> +	mokx = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &status);
-> +	if (!mokx) {
-> +		if (status == EFI_NOT_FOUND)
-> +			pr_debug("mokx variable wasn't found\n");
-> +		else
-> +			pr_info("Couldn't get mokx list\n");
-> +	} else {
-> +		rc = parse_efi_signature_list("UEFI:MokListXRT",
-> +					      mokx, mokxsize,
-> +					      get_handler_for_dbx);
-> +		if (rc)
-> +			pr_err("Couldn't parse mokx signatures %d\n", rc);
-> +		kfree(mokx);
-> +	}
-> +
->  	/* Load the MokListRT certs */
->  	rc = load_moklist_certs();
->  
-> 
-> 
+> +#ifdef CONFIG_SYSTEM_REVOCATION_LIST
+
+Here also?
+
+> + hostprogs-always-$(CONFIG_SYSTEM_BLACKLIST_KEYRING)   += extract-cert
+
+And here too?
+
+(As an aside, I wonder if SYSTEM_REVOCATION_CERTS would be a better name, but
+I'm okay with leaving it as-is for now).
+
+David
+
